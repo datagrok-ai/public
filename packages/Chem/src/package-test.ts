@@ -31,8 +31,10 @@ import './tests/chemical-table-parsing';
 import './tests/is-smarts-tests';
 import './tests/fingerprints';
 import './tests/scaffold-tree-tests';
+import './tests/projects-tests';
 //import './tests/clone-layout-tests';
 import './tests/mmpa-tests';
+import './tests/chemprop-tests';
 
 export const _package = new DG.Package();
 export {tests};
@@ -41,8 +43,9 @@ export {tests};
 //input: string category {optional: true}
 //input: string test {optional: true}
 //input: object testContext {optional: true}
+//input: bool stressTest {optional: true}
 //output: dataframe result
-export async function test(category: string, test: string, testContext: TestContext): Promise<DG.DataFrame> {
-  const data = await runTests({category, test, testContext});
+export async function test(category: string, test: string, testContext: TestContext, stressTest?: boolean): Promise<DG.DataFrame> {
+  const data = await runTests({category, test, testContext, stressTest});
   return DG.DataFrame.fromObjects(data)!;
 }

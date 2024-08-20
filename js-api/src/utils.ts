@@ -1,8 +1,12 @@
 import {Balloon, Color} from './widgets';
 import {toDart, toJs} from './wrappers';
-import {ColorType, MARKER_TYPE} from "./const";
-import {Point, Rect, GridCell} from "./grid";
-import {IDartApi} from "./api/grok_api.g";
+import {MARKER_TYPE, ViewerType} from './const';
+import {Point, Rect} from './grid';
+import {IDartApi} from './api/grok_api.g';
+import * as rxjs from 'rxjs';
+import {StreamSubscription} from './events';
+import {DataFrame} from './dataframe';
+import {TableView} from './views/view';
 
 const api: IDartApi = <any>window;
 
@@ -15,14 +19,20 @@ declare global {
 
     roundRect(x: number, y: number, w: number, h: number, r: number): CanvasRenderingContext2D
 
-    line(x1: number, y1: number, x2: number, y2: number, color: ColorType): CanvasRenderingContext2D;
+    line(x1: number, y1: number, x2: number, y2: number, color: number): CanvasRenderingContext2D;
 
     /**
      * Use stroke() or fill() after.
      */
     polygon(pa: Point[]): CanvasRenderingContext2D;
   }
+
+  interface HTMLCanvasElement {
+    g2(): CanvasRenderingContext2D;
+  }
 }
+
+HTMLCanvasElement.prototype.g2 = function() { return this.getContext('2d')!; }
 
 CanvasRenderingContext2D.prototype.setFillStyle = function (fill: string | CanvasGradient | CanvasPattern) {
   this.fillStyle = fill;
@@ -121,7 +131,7 @@ export namespace Paint {
         g.drawImage(img, bounds.x, bounds.y, bounds.width, bounds.height);
       }
 
-      img.src = "data:image/jpeg;base64," + window.btoa(r.result as string);
+      img.src = 'data:image/jpeg;base64,' + window.btoa(r.result as string);
     };
   }
 }
@@ -195,6 +205,19 @@ export class Utils {
    * Example: `loadJsCss(['common/exceljs.min.js', 'common/exceljs.min.css'])` */
   static async loadJsCss(files: string[]): Promise<null> {
     return toJs(api.grok_Utils_LoadJsCss(files));
+  }
+
+  static streamToObservable<T = any>(dartStream: any): rxjs.Observable<T> {
+    return rxjs.fromEventPattern(
+      function (handler) {
+        return api.grok_Stream_Listen(dartStream, function (x: any) {
+          handler(x);
+        });
+      },
+      function (handler, dart) {
+        new StreamSubscription(dart).cancel();
+      }
+    );
   }
 }
 
@@ -680,6 +703,11 @@ export function format(x: number, format?: string): string {
   return api.grok_Utils_FormatNumber(x, format);
 }
 
+/* Waits [ms] milliseconds */
+export async function delay(ms: number) {
+  await new Promise((r) => setTimeout(r, ms));
+}
+
 
 /** Autotest-related helpers */
 export namespace Test {
@@ -705,4 +733,32 @@ export namespace Test {
   export function getInputTestDataGeneratorByType(inputType: string) {
     return api.grok_Test_GetInputTestDataGeneratorByType(inputType);
   }
+
+  export async function testViewerProperties(df: DataFrame, viewerType: ViewerType, properties: { [key: string]: any}): Promise<TableView> {
+    const tv = TableView.create(df, true);
+    const viewer = tv.addViewer(viewerType);
+    viewer.setOptions(properties);
+    await delay(1000);
+    return tv;
+  }
+
+  export async function testViewer(viewerType: ViewerType) {
+    await api.grok_Test_RunViewerTest(viewerType);
+  }
+}
+
+// Completer class based on https://stackoverflow.com/a/67007151
+export class Completer<T> {
+	public readonly promise: Promise<T>;
+	public complete: (value: (PromiseLike<T> | T)) => void;
+	public reject: (reason?: any) => void;
+
+	public constructor() {
+    this.complete = (_) => {};
+    this.reject = (_) => {};
+    this.promise = new Promise<T>((resolve, reject) => {
+        this.complete = resolve;
+        this.reject = reject;
+    })
+	}
 }

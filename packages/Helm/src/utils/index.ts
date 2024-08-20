@@ -1,9 +1,9 @@
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import * as scil from 'scil';
-import * as org from 'org';
-
-import {_package} from '../package';
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
+import {OrgHelmModule, ScilModule} from '../types';
 
 import {
   RGROUP_CAP_GROUP_NAME,
@@ -15,6 +15,10 @@ import {
   RGROUP_LABEL,
   SDF_MONOMER_NAME
 } from '../constants';
+
+
+declare const scil: ScilModule;
+declare const org: OrgHelmModule;
 
 // Global flag is for replaceAll
 const helmGapStartRe = /\{(\*\.)+/g;
@@ -109,19 +113,8 @@ export function parseHelm(s: string): string[] {
 // }
 
 /** Searches monomers of helmString for missed. */
-export function findMonomers(monomerSymbolList: string[]): Set<string> {
-  const types = Object.keys(org.helm.webeditor.monomerTypeList());
-  const monomers: any = [];
-  const monomerNames: any = [];
-  for (let i = 0; i < types.length; i++) {
-    // @ts-ignore
-    // eslint-disable-next-line new-cap
-    monomers.push(new org.helm.webeditor.Monomers.getMonomerSet(types[i]));
-    Object.keys(monomers[i]).forEach((k) => {
-      monomerNames.push(monomers[i][k].id);
-    });
-  }
-  return new Set(monomerSymbolList.filter((val) => !monomerNames.includes(val)));
+export function findMonomers(seqMonomerSymbolList: string[], monomerLib: IMonomerLib): Set<string> {
+  return new Set(seqMonomerSymbolList.filter((s) => monomerLib?.getMonomer(null, s)));
 }
 
 function findClosing(s: string, start: number, open: string, close: string) {

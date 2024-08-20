@@ -1,5 +1,29 @@
 # math changelog
 
+## 1.1.12 (2024-08-07)
+
+Correct NW calculation on webGPU
+
+## 1.1.11 (2024-08-06)
+
+Modify MCL and NW calculations on webGPU
+
+## 1.1.10 (2024-06-07)
+
+MMP generations on webGPU
+
+## 1.1.9 (2024-05-27)
+
+Add inflation factor to MCL
+
+## 1.1.8 (2024-05-16)
+
+Fix inconsistent KNN size in webGPU.
+
+## 1.1.7 (2024-05-09)
+
+* Fix webGPU description nullish value.
+
 ## 1.1.6 (2024-04-25)
 
 Matched molecular pairs analysis paralleled via gpu.

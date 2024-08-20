@@ -1,9 +1,9 @@
 // @ts-check
 // Note: type annotations allow type checking and IDEs autocompletion
 
-const lightCodeTheme = require('prism-react-renderer/themes/github');
-const darkCodeTheme = require('prism-react-renderer/themes/dracula');
-const imagePlaceholder = require('./src/remark/image-placeholder');
+const imagePlaceholder = require('./src/remark/image-placeholder').default;
+import {themes as prismThemes} from 'prism-react-renderer';
+
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
@@ -13,6 +13,7 @@ const config = {
     baseUrl: '/',
     onBrokenLinks: 'warn',
     onBrokenMarkdownLinks: 'warn',
+    onBrokenAnchors: 'warn',
     onDuplicateRoutes: 'warn',
     favicon: 'favicon/favicon.ico',
     staticDirectories: ['static'],
@@ -37,24 +38,38 @@ const config = {
                 entryPoints: ['../js-api/dg.ts', '../js-api/ui.ts', '../js-api/grok.ts'],
                 tsconfig: '../js-api/tsconfig.json',
                 readme: '../help/develop/packages/js-api.md',
-                out: '../../js-api/docs',
+                mergeReadme: true,
+                entryFileName: "index",
+                out: './js-api',
+                indexFormat: "table",
+                parametersFormat: "table",
+                propertiesFormat: "table",
+                enumMembersFormat: "table",
+                typeDeclarationFormat: "table",
+                expandParameters: false,
+                sanitizeComments: true,
+                sidebar: { pretty: true },
+                textContentMappings: {
+                    "title.indexPage": "JavaScript API",
+                    "title.memberPage": "{name}",
+                },
                 plugin: ['typedoc-plugin-replace-text'],
                 replaceText: {
                     replacements: [
                         {
-                            "pattern": "\\(\\.\\.\\/\\.\\.\\/(?!help)(.*)\\.md(#.*)?\\)",
+                            "pattern": "\\(\\.\\.\\/\\.\\.\\/(?!help)(.*)\\.mdx?(#.*)?\\)",
                             "replace": "(https://datagrok.ai/help/$1$2)"
                         },
                         {
-                            "pattern": "\\(\\.\\./(?!help)develop\\.md(#.*)?\\)",
+                            "pattern": "\\(\\.\\./(?!help)develop\\.mdx?(#.*)?\\)",
                             "replace": "(https://datagrok.ai/help/develop$1)"
                         },
                         {
-                            "pattern": "\\(\\.\\./(?!help)(.*)\\.md(#.*)?\\)",
+                            "pattern": "\\(\\.\\./(?!help)(.*)\\.mdx?(#.*)?\\)",
                             "replace": "(https://datagrok.ai/help/develop/$1$2)"
                         },
                         {
-                            "pattern": "\\(\\./(?!help)(.*)\\.md(#.*)?\\)",
+                            "pattern": "\\(\\./(?!help)(.*)\\.mdx?(#.*)?\\)",
                             "replace": "(https://datagrok.ai/help/develop/packages/$1$2)"
                         },
                         {
@@ -71,21 +86,17 @@ const config = {
                             "pattern": "\\(\\./(?!help)(.*)\\.(png|gif|jpg|jpeg)",
                             "flags": "gi",
                             "replace": "(../../help/develop/packages/$1.$2"
-                        },
-                        {
-                            "pattern": "title: \"(.*)\"",
-                            "replace": "$1"
                         }
                     ]
-                },
-                watch: process.env.TYPEDOC_WATCH
+                }
             },
         ],
         [
             '@docusaurus/plugin-content-docs',
             {
+                sidebarPath: require.resolve('./typedoc-sidebar.js'),
                 id: 'api',
-                path: '../js-api/docs',
+                path: './js-api',
                 routeBasePath: '/js-api',
             }
         ],
@@ -147,7 +158,7 @@ const config = {
             links: [
                 {
                     label: 'Help',
-                    to: '/help/datagrok/datagrok',
+                    to: '/help/datagrok',
                 },
                 {
                     label: 'API Docs',
@@ -165,8 +176,8 @@ const config = {
             copyright: `Copyright © ${new Date().getFullYear()} Datagrok, Inc.`,
         },
         prism: {
-            theme: lightCodeTheme,
-            darkTheme: darkCodeTheme,
+            theme: prismThemes.github,
+            darkTheme: prismThemes.dracula,
         },
         typesense: {
             typesenseCollectionName: 'Datagrok',
@@ -178,7 +189,7 @@ const config = {
                         protocol: 'https',
                     }
                 ],
-                apiKey: 'a8CNZZG8DUP0bOr7EsICwicdmIgPtK6c',
+                apiKey: 'Crm7kyT3PHDgImIroB9cpkE0SHqTKAJZ',
             },
 
             // Optional: Typesense search parameters: https://typesense.org/docs/0.21.0/api/search.md#search-parameters

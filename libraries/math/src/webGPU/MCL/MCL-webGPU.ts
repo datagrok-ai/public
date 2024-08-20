@@ -6,7 +6,9 @@ import {expandNoRevive, inflate} from './inflate-expand';
 import {MCLOpReturnType} from './types';
 import {toSparseKNNSimilarityForm} from './utils';
 
-export async function markovClusterWebGPU(sparseMatrix: SparseMatrix, nRows: number, maxIterations: number = 5) {
+export async function markovClusterWebGPU(
+  sparseMatrix: SparseMatrix, nRows: number, maxIterations: number = 5, inflateFactor: number = 2
+): Promise<MCLOpReturnType> {
   const device = await getGPUDevice();
   if (!device)
     throw new Error('no gpu device found');
@@ -23,8 +25,10 @@ export async function markovClusterWebGPU(sparseMatrix: SparseMatrix, nRows: num
     //console.log(checkSorted(res.KNNIndexes, res.indexOffsets));
 
     const expandRes = await expandNoRevive(device, res.KNNSimilarities, res.KNNIndexes, res.indexOffsets, nRows);
+
+    await sparseKNNNoralizeColwise(device, expandRes.KNNSimilarities, expandRes.indexOffsets, nRows);
     // then we inflate the similarities
-    inflate(expandRes.KNNSimilarities, 2);
+    inflate(expandRes.KNNSimilarities, inflateFactor);
 
     // then we normilize the similarities again
     await sparseKNNNoralizeColwise(device, expandRes.KNNSimilarities, expandRes.indexOffsets, nRows);

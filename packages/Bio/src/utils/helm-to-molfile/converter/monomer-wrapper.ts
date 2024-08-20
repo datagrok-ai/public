@@ -1,11 +1,11 @@
-import {Monomer} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 import {HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {MonomerLibManager} from '../../monomer-lib/lib-manager';
+import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
+
 import {Helm} from './helm';
 import {MolfileWrapper} from './mol-wrapper';
 import {MolfileWrapperFactory} from './mol-wrapper-factory';
-import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 
 export class MonomerWrapper {
   private molfileWrapper: MolfileWrapper;
@@ -15,8 +15,9 @@ export class MonomerWrapper {
     private monomerSymbol: string,
     private monomerIdx: number,
     private helm: Helm,
-    shift: {x: number, y: number},
-    rdKitModule: RDModule
+    shift: { x: number, y: number },
+    rdKitModule: RDModule,
+    private readonly monomerLib: IMonomerLib
   ) {
     const libraryMonomerObject = this.getLibraryMonomerObject();
 
@@ -37,7 +38,7 @@ export class MonomerWrapper {
   private convertMolfileToV3KFormat(molfileV2K: string, monomerSymbol: string, rdKitModule: RDModule): string {
     let mol: RDMol | null = null;
     try {
-      mol = rdKitModule.get_mol(molfileV2K, JSON.stringify({mergeQueryHs: true}))
+      mol = rdKitModule.get_mol(molfileV2K, JSON.stringify({mergeQueryHs: true}));
       if (mol)
         return mol.get_v3Kmolblock();
       else
@@ -49,8 +50,7 @@ export class MonomerWrapper {
 
   private getLibraryMonomerObject(): Monomer {
     const polymerType = this.helm.getPolymerTypeByMonomerIdx(this.monomerIdx);
-    const monomerLib = MonomerLibManager.instance.getBioLib();
-    const monomer = monomerLib.getMonomer(polymerType, this.monomerSymbol);
+    const monomer = this.monomerLib.getMonomer(polymerType, this.monomerSymbol);
     if (!monomer)
       throw new Error(`Monomer ${this.monomerSymbol} is not found in the library`);
     return monomer;
@@ -72,7 +72,7 @@ export class MonomerWrapper {
     return result;
   }
 
-  private shiftCoordinates(shift: {x: number, y: number}): void {
+  private shiftCoordinates(shift: { x: number, y: number }): void {
     this.molfileWrapper.shiftCoordinates(shift);
   }
 

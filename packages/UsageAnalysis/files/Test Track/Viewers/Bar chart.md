@@ -4,14 +4,14 @@
 4. On the **Bar chart** viewer, click the **Gear** icon. The **Property Pane** opens.
 5. Split and coloring:
     1. Go to the **Category** info panel.
-    2. Set Split to `Series`, `Primary Scaffold`
+    2. Set Split to `Series`, `Primary Scaffold Name`
     3. Check/uncheck the checkboxes
     4. Go to the grid. Right-click the Primary Scaffold and select **Color coding > Categorical, Edit.**
     5. Edit the color scheme. Check the bar chart coloring.
     6. Save to Layout. Check
 6. Check aggregation functions
 7. Selection
-    1. Go to the grid and select the first 50 columns. The selection should be reflected on bar chart
+    1. Go to the grid and select the first 300 rows. The selection should be reflected on bar chart
     2. Go to the Property Pane > Selection. Toggle the **Show selected rows** checkbox.
     3. Click the bar chart and check the selection in grid.
 8. Filtering
@@ -20,7 +20,7 @@
 9. Go to the **Data** info panel and check all the properties, including the following:
     1. Tables switching (SPGI-linked1, SPGI-linked2, SPGI)
     2. **Row Source** with different options
-    3. Set **Filter** to `${CAST Idea ID} < 636500` , set color coding by Chemical Space Y, and arbitrarily change other options.
+    3. Set **Filter** to `${CAST Idea ID} < 636500`, set color coding by Chemical Space Y, and arbitrarily change other options.
     4. Save to Layout. Check
     5. Set **On click** to **Filter**. Check filtering (to cancel filtering click the bar chart)
 10. Title, Description:

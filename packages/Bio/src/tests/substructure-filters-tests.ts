@@ -5,15 +5,16 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import wu from 'wu';
 
-
 import {after, before, category, test, expect, delay, testEvent, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {
   getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
+import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
 import {awaitGrid, readDataframe} from './utils';
+
 import {
   BioSubstructureFilter, FastaBioFilter, SeparatorBioFilter, SeparatorFilterProps
 } from '../widgets/bio-substructure-filter';
@@ -24,23 +25,25 @@ import {_package} from '../package-test';
 
 
 category('bio-substructure-filters', async () => {
+  let helmHelper: IHelmHelper;
   let monomerLibHelper: IMonomerLibHelper;
   /** Backup actual user's monomer libraries settings */
   let userLibSettings: UserLibSettings;
 
   before(async () => {
+    helmHelper = await getHelmHelper(); // init Helm package
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
 
     // Test 'helm' requires default monomer library loaded
     await setUserLibSettingsForTests();
-    await monomerLibHelper.loadLibraries(true); // load default libraries
+    await monomerLibHelper.loadMonomerLib(true); // load default libraries
   });
 
   after(async () => {
     // UserDataStorage.put() replaces existing data
     await setUserLibSettings(userLibSettings);
-    await monomerLibHelper.loadLibraries(true); // load user settings libraries
+    await monomerLibHelper.loadMonomerLib(true); // load user settings libraries
   });
 
   test('fasta', async () => {
@@ -185,6 +188,7 @@ category('bio-substructure-filters', async () => {
       dlg.close();
     }
     await filter.awaitRendered();
+    await delay(3000); //TODO: await for grid.onLookChanged
   });
 
   // Generates unhandled exception accessing isFiltering before bioFilter created
@@ -308,6 +312,7 @@ category('bio-substructure-filters', async () => {
     }
     await Promise.all([f1.awaitRendered(), f2.awaitRendered()]);
     await awaitGrid(view.grid);
+    await delay(3000); //TODO: await for grid.onLookChanged
   });
 
   // two seq columns

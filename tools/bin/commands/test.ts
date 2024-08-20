@@ -1,11 +1,11 @@
 /* eslint-disable max-len */
-import {exec} from 'child_process';
+import { exec } from 'child_process';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import puppeteer from 'puppeteer';
-import {Browser, Page} from 'puppeteer';
-import {PuppeteerScreenRecorder} from 'puppeteer-screen-recorder';
+import { Browser, Page } from 'puppeteer';
+import { PuppeteerScreenRecorder } from 'puppeteer-screen-recorder';
 import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
@@ -14,8 +14,8 @@ import * as testUtils from '../utils/test-utils';
 
 export function test(args: TestArgs): boolean {
   const options = Object.keys(args).slice(1);
-  const commandOptions = ['host', 'csv', 'gui', 'catchUnhandled', 'platform', 'core',
-    'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark'];
+  const commandOptions = ['host', 'package', 'csv', 'gui', 'catchUnhandled', 'platform', 'core',
+    'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test'];
   const nArgs = args['_'].length;
   const curDir = process.cwd();
   const grokDir = path.join(os.homedir(), '.grok');
@@ -25,17 +25,12 @@ export function test(args: TestArgs): boolean {
     !options.every((op) => commandOptions.includes(op))))
     return false;
 
-  if (!utils.isPackageDir(curDir)) {
-    color.error('File `package.json` not found. Run the command from the package directory');
-    return false;
-  }
-
   if (!fs.existsSync(confPath)) {
     color.error(`File \`${confPath}\` not found. Run \`grok config\` to set up the config file`);
     return false;
   }
 
-  const config = yaml.load(fs.readFileSync(confPath, {encoding: 'utf-8'})) as utils.Config;
+  const config = yaml.load(fs.readFileSync(confPath, { encoding: 'utf-8' })) as utils.Config;
 
   if (args.host) {
     if (args.host in config.servers) {
@@ -50,14 +45,35 @@ export function test(args: TestArgs): boolean {
     console.log('Environment variable `HOST` is set to', config.default);
   }
 
-  const packageData = JSON.parse(fs.readFileSync(path.join(curDir, 'package.json'), {encoding: 'utf-8'}));
-  if (packageData.name) {
-    process.env.TARGET_PACKAGE = utils.kebabToCamelCase(utils.removeScope(packageData.name));
-    console.log('Environment variable `TARGET_PACKAGE` is set to', process.env.TARGET_PACKAGE);
-  } else {
-    color.error('Invalid package name. Set the `name` field in `package.json`');
-    return false;
+  let categoryToCheck: string | undefined = undefined;
+  if (args.category) {
+    categoryToCheck = args.category.toString();
   }
+
+  let testToCheck: string | undefined = undefined;
+  if (args.category && args.test) {
+    testToCheck = args.test.toString();
+  }
+
+  if (args.package) {
+    process.env.TARGET_PACKAGE = utils.kebabToCamelCase(args.package);
+  } else {
+    if (!utils.isPackageDir(curDir)) {
+      color.error('File `package.json` not found. Run the command from the package directory or specify plugin using \'--package\' option');
+      return false;
+    } else {
+      const packageData = JSON.parse(fs.readFileSync(path.join(curDir, 'package.json'), { encoding: 'utf-8' }));
+      if (packageData.name) {
+        process.env.TARGET_PACKAGE = utils.kebabToCamelCase(utils.removeScope(packageData.name));
+      } else {
+        color.error('Invalid package name. Set the `name` field in `package.json`');
+        return false;
+      }
+    }
+  }
+
+  console.log('Environment variable `TARGET_PACKAGE` is set to', process.env.TARGET_PACKAGE);
+
 
   if (args.platform && process.env.TARGET_PACKAGE !== 'ApiTests') {
     color.error('--platform flag can only be used in the ApiTests package');
@@ -69,14 +85,15 @@ export function test(args: TestArgs): boolean {
     return false;
   }
 
-  if (args['skip-build']) {
-    if (args['skip-publish'])
-      test();
-    else
+  if (args['skip-publish'] || args.package) {
+    test()
+  } else {
+    if (args['skip-build']) {
       publish(test);
-  } else 
-    build(args['skip-publish'] ? test : () => publish(test));
-  
+    } else {
+      build(() => publish(test));
+    }
+  }
 
   function build(callback: Function): void {
     exec('npm run build', (err, stdout, stderr) => {
@@ -107,18 +124,20 @@ export function test(args: TestArgs): boolean {
 
   function test(): void {
     color.info('Starting tests...');
-    const P_START_TIMEOUT: number = 3600000;
+    const P_START_TIMEOUT: number = 900000;
     let browser: Browser;
     let page: Page;
     let recorder: PuppeteerScreenRecorder;
-    type resultObject = { failReport: string, skipReport: string, passReport: string,
-      failed: boolean, csv?: string, countReport: {skip: number, pass: number} };
+    type resultObject = {
+      failReport: string, skipReport: string, passReport: string,
+      failed: boolean, csv?: string, countReport: { skip: number, pass: number }
+    };
 
-    function init(timeout: number): Promise<void> {
+    function init(time: number): Promise<void> {
       const params = Object.assign({}, testUtils.defaultLaunchParameters);
       if (args.gui)
         params['headless'] = false;
-      return testUtils.runWithTimeout(timeout, async () => {
+      return testUtils.timeout(async () => {
         try {
           const out = await testUtils.getBrowserPage(puppeteer, params);
           browser = out.browser;
@@ -127,39 +146,52 @@ export function test(args: TestArgs): boolean {
         } catch (e) {
           throw e;
         }
-      });
+      }, time);
     }
 
-    function runTest(timeout: number, options: {path?: string, catchUnhandled?: boolean, core?: boolean,
-      report?: boolean, record?: boolean, verbose?: boolean, benchmark?: boolean, platform?: boolean} = {}): Promise<resultObject> {
-      return testUtils.runWithTimeout(timeout, async () => {
-        let consoleLog: string = '';
+    function runTest(timeout: number, options: {
+      path?: string, catchUnhandled?: boolean, core?: boolean,
+      report?: boolean, record?: boolean, verbose?: boolean, benchmark?: boolean, platform?: boolean, category?: string, test?: string,
+      stressTest?: boolean
+    } = {}): Promise<resultObject> {
+      return testUtils.timeout(async () => {
+        const consoleLogOutputDir = './test-console-output.log';
+        function addLogsToFile(msg: any) {
+          fs.appendFileSync(consoleLogOutputDir, `${msg}`);
+        }
+        await page.exposeFunction("addLogsToFile", addLogsToFile);
+
         if (options.record) {
+          fs.writeFileSync(consoleLogOutputDir, ``);
           await recorder.start('./test-record.mp4');
-          page.on('console', (msg) => consoleLog += `CONSOLE LOG ENTRY: ${msg.text()}\n`);
+          page.on('console', (msg) => { addLogsToFile(`CONSOLE LOG ENTRY: ${msg.text()}\n`); });
           page.on('pageerror', (error) => {
-            consoleLog += `CONSOLE LOG ERROR: ${error.message}\n`;
+            addLogsToFile(`CONSOLE LOG ERROR: ${error.message}\n`);
           });
           page.on('response', (response) => {
-            consoleLog += `CONSOLE LOG REQUEST: ${response.status()}, ${response.url()}\n`;
+            addLogsToFile(`CONSOLE LOG REQUEST: ${response.status()}, ${response.url()}\n`);
           });
         }
         const targetPackage: string = process.env.TARGET_PACKAGE ?? '#{PACKAGE_NAMESPACE}';
         console.log(`Testing ${targetPackage} package...\n`);
-
         const r: resultObject = await page.evaluate((targetPackage, options, testContext): Promise<resultObject> => {
           if (options.benchmark)
             (<any>window).DG.Test.isInBenchmark = true;
-          return new Promise<resultObject>((resolve, reject) => {     
+          return new Promise<resultObject>((resolve, reject) => {
             const params: {
               category?: string,
               test?: string,
               testContext: testUtils.TestContext,
               skipCore?: boolean,
               verbose?: boolean
+              stressTest?: boolean
             } = {
               testContext: testContext,
+              category: options.category,
+              test: options.test
             };
+            if (options.stressTest) 
+              params.stressTest = options.stressTest;
             if (options.path) {
               const split = options.path.split(' -- ');
               params.category = split[0];
@@ -174,12 +206,12 @@ export function test(args: TestArgs): boolean {
               let skipReport = '';
               let passReport = '';
               let failReport = '';
-              const countReport = {skip: 0, pass: 0};
+              const countReport = { skip: 0, pass: 0 };
 
               if (df == null) {
                 failed = true;
-                failReport = `Fail reason: No package tests found${options.path ? ` for path "${options.path}"` : ''}`;
-                resolve({failReport, skipReport, passReport, failed, countReport});
+                failReport = `Fail reason: No package tests found${options.path ? ' for path "' + options.path + '"' : ''}`;
+                resolve({ failReport, skipReport, passReport, failed, countReport });
                 return;
               }
 
@@ -206,20 +238,27 @@ export function test(args: TestArgs): boolean {
               if (!options.verbose)
                 df.rows.removeWhere((r: any) => r.get('success'));
               const csv = df.toCsv();
-              resolve({failReport, skipReport, passReport, failed, csv, countReport});
+              resolve({ failReport, skipReport, passReport, failed, csv, countReport });
             }).catch((e: any) => {
-              const stack = (<any>window).DG.Logger.translateStackTrace(e.stack);
-              resolve({failReport: `${e.message}\n${stack}`, skipReport: '', passReport: '', failed: true, csv: '', countReport: {skip: 0, pass: 0}});
+              const stack = ((<any>window).DG.Logger.translateStackTrace(e.stack)).then(() => {
+                resolve({
+                  failReport: `${e.message}\n${stack}`,
+                  skipReport: '',
+                  passReport: '',
+                  failed: true,
+                  csv: '',
+                  countReport: { skip: 0, pass: 0 }
+                });
+              });
             });
           });
         }, targetPackage, options, new testUtils.TestContext(options.catchUnhandled, options.report));
 
         if (options.record) {
           await recorder.stop();
-          fs.writeFileSync('./test-console-output.log', consoleLog);
         }
         return r;
-      });
+      }, timeout);
     }
 
     (async () => {
@@ -231,11 +270,13 @@ export function test(args: TestArgs): boolean {
         throw e;
       }
 
-      const r = await runTest(7200000, {path: args.path, verbose: args.verbose, platform: args.platform,
+      const r = await runTest(3600000, {
+        path: args.path, verbose: args.verbose, platform: args.platform,
         catchUnhandled: args.catchUnhandled, report: args.report, record: args.record, benchmark: args.benchmark,
-        core: args.core});
+        core: args.core, category: categoryToCheck, test: testToCheck, stressTest: args['stress-test'] 
+      });
 
-      if (r.csv && args.csv) {
+      if (r.csv && args.csv) {  
         fs.writeFileSync(path.join(curDir, 'test-report.csv'), r.csv, 'utf8');
         color.info('Saved `test-report.csv`\n');
       }
@@ -270,9 +311,11 @@ export function test(args: TestArgs): boolean {
 
 interface TestArgs {
   _: string[],
-  // category?: string,
+  category?: any,
+  test?: any,
   path?: string,
   host?: string,
+  package?: string,
   csv?: boolean,
   gui?: boolean,
   catchUnhandled?: boolean,
@@ -283,5 +326,6 @@ interface TestArgs {
   verbose?: boolean,
   benchmark?: boolean,
   platform?: boolean,
-  core?: boolean
+  core?: boolean,
+  'stress-test'?: boolean,
 }

@@ -51,7 +51,7 @@ export class SeqHandler {
     if (col.type !== DG.TYPE.STRING)
       throw new Error(`Unexpected column type '${col.type}', must be '${DG.TYPE.STRING}'.`);
     this._column = col;
-    const units = this._column.getTag(DG.TAGS.UNITS);
+    const units = this._column.meta.units;
     if (units !== null && units !== undefined)
       this._units = units;
     else
@@ -74,7 +74,7 @@ export class SeqHandler {
       } else if (this.isHelm())
         SeqHandler.setUnitsToHelmColumn(this);
       else
-        throw new Error(`Unexpected units '${this.column.getTag(DG.TAGS.UNITS)}'.`);
+        throw new Error(`Unexpected units '${this.column.meta.units}'.`);
     }
 
     // if (!this.column.tags.has(TAGS.alphabetSize)) {
@@ -100,20 +100,20 @@ export class SeqHandler {
   }
 
   public static setUnitsToFastaColumn(uh: SeqHandler) {
-    if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE || uh.column.getTag(DG.TAGS.UNITS) !== NOTATION.FASTA)
+    if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE || uh.column.meta.units !== NOTATION.FASTA)
       throw new Error(`The column of notation '${NOTATION.FASTA}' must be '${DG.SEMTYPE.MACROMOLECULE}'.`);
 
-    uh.column.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    uh.column.meta.units = NOTATION.FASTA;
     SeqHandler.setTags(uh);
   }
 
   public static setUnitsToSeparatorColumn(uh: SeqHandler, separator?: string) {
-    if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE || uh.column.getTag(DG.TAGS.UNITS) !== NOTATION.SEPARATOR)
+    if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE || uh.column.meta.units !== NOTATION.SEPARATOR)
       throw new Error(`The column of notation '${NOTATION.SEPARATOR}' must be '${DG.SEMTYPE.MACROMOLECULE}'.`);
     if (!separator)
       throw new Error(`The column of notation '${NOTATION.SEPARATOR}' must have the separator tag.`);
 
-    uh.column.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
+    uh.column.meta.units = NOTATION.SEPARATOR;
     uh.column.setTag(TAGS.separator, separator);
     SeqHandler.setTags(uh);
   }
@@ -122,35 +122,33 @@ export class SeqHandler {
     if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE)
       throw new Error(`The column of notation '${NOTATION.HELM}' must be '${DG.SEMTYPE.MACROMOLECULE}'`);
 
-    uh.column.setTag(DG.TAGS.UNITS, NOTATION.HELM);
+    uh.column.meta.units = NOTATION.HELM;
     SeqHandler.setTags(uh);
   }
 
   /** From detectMacromolecule */
   public static setTags(uh: SeqHandler): void {
-    const units = uh.column.getTag(DG.TAGS.UNITS) as NOTATION;
-    const stats: SeqColStats = uh.stats;
-    const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);
+    const units = uh.column.meta.units as NOTATION;
 
     if ([NOTATION.FASTA, NOTATION.SEPARATOR].includes(units)) {
       // Empty monomer alphabet is allowed, only if alphabet tag is annotated
-      if (!uh.column.getTag(TAGS.alphabet) && Object.keys(stats.freq).length === 0)
+      if (!uh.column.getTag(TAGS.alphabet) && Object.keys(uh.stats.freq).length === 0)
         throw new Error('Alphabet is empty and not annotated.');
 
       let aligned = uh.column.getTag(TAGS.aligned);
       if (aligned === null) {
-        aligned = stats.sameLength ? ALIGNMENT.SEQ_MSA : ALIGNMENT.SEQ;
+        aligned = uh.stats.sameLength ? ALIGNMENT.SEQ_MSA : ALIGNMENT.SEQ;
         uh.column.setTag(TAGS.aligned, aligned);
       }
 
       let alphabet = uh.column.getTag(TAGS.alphabet);
       if (alphabet === null) {
-        alphabet = detectAlphabet(stats.freq, candidateAlphabets);
+        alphabet = detectAlphabet(uh.stats.freq, candidateAlphabets);
         uh.column.setTag(TAGS.alphabet, alphabet);
       }
       if (alphabet === ALPHABET.UN) {
-        const alphabetSize = Object.keys(stats.freq).length;
-        const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);
+        const alphabetSize = Object.keys(uh.stats.freq).length;
+        const alphabetIsMultichar = Object.keys(uh.stats.freq).some((m) => m.length > 1);
         uh.column.setTag(TAGS.alphabetSize, alphabetSize.toString());
         uh.column.setTag(TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
       }
@@ -255,10 +253,10 @@ export class SeqHandler {
   //   }
   //   return this._splitted;
   // }
-  public getSplitted(rowIdx: number): ISeqSplitted {
-    if (!this.cached) {
+  public getSplitted(rowIdx: number, limit?: number): ISeqSplitted {
+    if (!this.cached || limit !== undefined) {
       const seq = this.column.get(rowIdx);
-      return this.splitter(seq);
+      return this.getSplitter(limit)(seq);
     } else {
       if (this.column.version !== this.columnVersion || this._splitted === null) {
         this.columnVersion = this.column.version;
@@ -393,12 +391,12 @@ export class SeqHandler {
     const newColName = colName ?? col.dataFrame.columns.getUnusedName(name);
     const newColumn = DG.Column.fromList('string', newColName, data ?? new Array(this.column.length).fill(''));
     newColumn.semType = DG.SEMTYPE.MACROMOLECULE;
-    newColumn.setTag(DG.TAGS.UNITS, tgtNotation);
+    newColumn.meta.units = tgtNotation;
     if (tgtNotation === NOTATION.SEPARATOR) {
       if (!tgtSeparator) throw new Error(`Notation \'${NOTATION.SEPARATOR}\' requires separator value.`);
       newColumn.setTag(TAGS.separator, tgtSeparator);
     }
-    newColumn.setTag(DG.TAGS.CELL_RENDERER, 'sequence'); // cell.renderer
+    newColumn.setTag(DG.TAGS.CELL_RENDERER, tgtNotation === NOTATION.HELM ? 'helm' : 'sequence'); // cell.renderer
 
     const srcAligned = col.getTag(TAGS.aligned);
     if (srcAligned)
@@ -480,7 +478,7 @@ export class SeqHandler {
       throw new Error('Invalid format of \'units\' parameter');
     const newColumn = DG.Column.fromList('string', name, new Array(len).fill(''));
     newColumn.semType = DG.SEMTYPE.MACROMOLECULE;
-    newColumn.setTag(DG.TAGS.UNITS, units);
+    newColumn.meta.units = units;
     return newColumn;
   }
 
@@ -542,9 +540,9 @@ export class SeqHandler {
 
     // get the monomer lib and check against the column
     const monomerLibHelper: IMonomerLibHelper = await getMonomerLibHelper();
-    const bioLib = monomerLibHelper.getBioLib();
+    const bioLib = monomerLibHelper.getMonomerLib();
     // retrieve peptides
-    const peptides = bioLib.getMonomerSymbolsByType(HELM_POLYMER_TYPE.PEPTIDE.toString());
+    const peptides = bioLib.getMonomerSymbolsByType(HELM_POLYMER_TYPE.PEPTIDE);
     // convert the peptides list to a set for faster lookup
     const peptidesSet = new Set(peptides);
     // get splitter for given separator and check if all monomers are in the lib

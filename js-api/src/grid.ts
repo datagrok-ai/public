@@ -7,12 +7,14 @@ import {Observable} from 'rxjs';
 import {Color, RangeSlider} from './widgets';
 import {SemType} from './const';
 import {Property} from './entities';
-import {IFormLookSettings, IGridLookSettings} from "./interfaces/d4";
+import {IFormSettings, IGridSettings} from "./interfaces/d4";
 import {IDartApi} from "./api/grok_api.g";
 
 
 const api: IDartApi = <any>window;
 let _bytes = new Float64Array(4);
+
+export type ColorType = number | string;
 
 export interface IPoint {
   x: number;
@@ -638,8 +640,8 @@ export class GridColumn {
   set width(x: number) { api.grok_GridColumn_Set_Width(this.dart, x); }
 
   /** Background column as a 4-byte ARGB number. */
-  get backColor(): number { return api.grok_GridColumn_Get_BackColor(this.dart); }
-  set backColor(x: number) { api.grok_GridColumn_Set_BackColor(this.dart, x); }
+  get backColor(): Color { return api.grok_GridColumn_Get_BackColor(this.dart); }
+  set backColor(x: Color) { api.grok_GridColumn_Set_BackColor(this.dart, x); }
 
   /** Column format.
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/html-markup-cells} */
@@ -776,7 +778,7 @@ export class GridColumnList {
 }
 
 /** DataFrame-bound viewer that contains {@link Form} */
-export class FormViewer extends Viewer<IFormLookSettings> {
+export class FormViewer extends Viewer<IFormSettings> {
   constructor(dart: any) {
     super(dart);
   }
@@ -828,7 +830,7 @@ export class Form {
 
 
 /** High-performance, flexible spreadsheet control */
-export class Grid extends Viewer<IGridLookSettings> {
+export class Grid extends Viewer<IGridSettings> {
 
   constructor(dart: any) {
     super(dart);

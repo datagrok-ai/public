@@ -70,8 +70,8 @@ export class VirtualScreeningTutorial extends Tutorial {
     await this.action('Transform the column "Ki" according to the formula "9 - Log10(${Ki})" and click "OK"',
       this.t!.onColumnsAdded.pipe(filter((data) => data.args.columns.some((col: DG.Column) => {
         return col.name === activityColName &&
-          col.tags.has(DG.TAGS.FORMULA) &&
-          formulaRegex.test(col.tags[DG.TAGS.FORMULA]);
+          col.meta.formula !== null &&
+          formulaRegex.test(col.meta.formula);
       }))), null, pKiInfo);
 
     const descriptors = ['MolWt', 'HeavyAtomMolWt', 'NumValenceElectrons', 'NumRadicalElectrons',
@@ -146,7 +146,7 @@ export class VirtualScreeningTutorial extends Tutorial {
         '"MolSurf", "EState VSA" and "Descriptors 3D" and press the "OK" button',
       grok.functions.onAfterRunAction.pipe(filter((call) => {
         const inputs = call.inputs.get('descriptors');
-        return call.func.name === 'ChemDescriptors' &&
+        return call.func.name === 'chemDescriptors' &&
             descriptors.length == inputs.length &&
             descriptors.every((d) => inputs.includes(d));
       })), groupHints, hasHistory ? descriptorDlgHistory : groupDescription);

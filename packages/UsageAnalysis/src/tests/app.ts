@@ -1,43 +1,37 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import { before, after, category, test, expect, awaitCheck } from '@datagrok-libraries/utils/src/test';
 
-import {before, after, category, test, expect, awaitCheck} from '@datagrok-libraries/utils/src/test';
-import {ViewHandler} from '../view-handler';
 
 category('App', () => {
-  const tabs = ['Overview', 'Packages', 'Functions', 'Events', 'Log', 'Tests', 'Reports'];
-  const num = [4, 4, 5, 4, 3, 5, 7];
-  const handler = new ViewHandler();
+  const tabs = ['Overview', 'Packages', 'Functions', 'Events', 'Log', 'Tests'];
+  const num = [4, 4, 5, 4, 3, 5];
+  let view: DG.MultiView;
 
   before(async () => {
-    if (grok.shell.sidebar.panes.every((p) => p.name != ViewHandler.UA_NAME)) {
-      await handler.init();
-      grok.shell.addView(handler.view);
-      grok.shell.sidebar.currentPane = grok.shell.sidebar.getPane(ViewHandler.UA_NAME);
-    }
+    view = await grok.functions.eval('UsageAnalysis:usageAnalysisApp()');
+    grok.shell.addView(view);
   });
 
   test('open', async () => {
     expect(grok.shell.v.name === 'Usage Analysis', true, 'cannot find Usage Analysis view');
   });
 
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 6; i++) {
     test(tabs[i], async () => {
-      handler.changeTab(tabs[i]);
-      const view = grok.shell.v.root;
-      let err = null;
-      let s = ['Log', 'Errors'].includes(tabs[i]) ? '.grok-wait + .d4-grid canvas' : 'canvas';
-      s = tabs[i] === 'Reports' ? '.d4-grid' : s;
+      view.tabs.currentPane = view.tabs.getPane(tabs[i]);
+      let err: any = undefined;
+      let s = ['Log'].includes(tabs[i]) ? '.grok-wait + .d4-grid canvas' : 'canvas';
       try {
-        await awaitCheck(() => view.querySelectorAll(s).length === num[i], '', 10000);
+        await awaitCheck(() => view.root.querySelectorAll(s).length === num[i], '', 10000);
       } catch (e) {
         err = 'Tab failed to load in 10 seconds';
       }
-      await awaitCheck(() => view.querySelectorAll(s).length === num[i],
+      await awaitCheck(() => view.root.querySelectorAll(s).length === num[i],
         `expected ${num[i]}, got ${document.querySelectorAll(s).length}`, 45000);
       if (err)
         throw new Error(err);
-    });
+    }, {stressTest: true});
   }
 
   after(async () => {
@@ -45,4 +39,4 @@ category('App', () => {
     DG.Balloon.closeAll();
     grok.shell.windows.showContextPanel = true;
   });
-}, {clear: false, timeout: 60000});
+}, { clear: false, timeout: 60000 });

@@ -1,5 +1,47 @@
 # statistics changelog
 
+## 1.3.6 (2024-08-13)
+
+### Features
+
+* Added exponential fit function
+
+## 1.3.5 (2024-05-23)
+
+### Bug fixes
+
+* [#2855](https://github.com/datagrok-ai/public/issues/2855): Changed labels (Marker Type -> Marker and Outlier Marker Type -> Outlier Marker)
+
+## 1.3.4 (2024-05-22)
+
+### Bug fixes
+
+* [#2855](https://github.com/datagrok-ai/public/issues/2855): Rollback from marker to markerType
+
+## 1.3.3 (2024-05-22)
+
+### Features
+
+* [#2855](https://github.com/datagrok-ai/public/issues/2855): Changed markerType to marker
+
+## 1.3.2 (2024-05-21)
+
+### Features
+
+* [#2855](https://github.com/datagrok-ai/public/issues/2855): Added outlier marker option
+
+## 1.3.1 (2024-05-21)
+
+### Features
+
+* [#2797](https://github.com/datagrok-ai/public/issues/2797): Added log-linear fit function
+
+## 1.3.0 (2024-05-11)
+
+### Features
+
+* [#2797](https://github.com/datagrok-ai/public/issues/2797): Changed optimizer for fitting
+
 ## 1.2.13 (2024-04-18)
 
 ### Features

@@ -69,8 +69,7 @@ public class OracleDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public void prepareProvider() throws ClassNotFoundException {
-        super.prepareProvider();
+    public void prepareProvider() {
         System.getProperties().setProperty("oracle.jdbc.J2EE13Compliant", "true");
     }
 
@@ -155,13 +154,6 @@ public class OracleDataProvider extends JdbcDataProvider {
     public String limitToSql(String query, Integer limit) {
         return String.format("SELECT * FROM (%s%s%s) WHERE ROWNUM <= %s", System.lineSeparator(),
                 query, System.lineSeparator(), limit);
-    }
-
-    @Override
-    public String addBrackets(String name) {
-        String brackets = descriptor.nameBrackets;
-        return name.startsWith(brackets.substring(0, 1)) ? name :
-                brackets.charAt(0) + name + brackets.substring(brackets.length() - 1);
     }
 
     @Override

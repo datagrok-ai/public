@@ -7,7 +7,7 @@ import wu from 'wu';
 
 import {before, after, category, test, expectArray, expect} from '@datagrok-libraries/utils/src/test';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
-import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {
@@ -64,7 +64,7 @@ category('toAtomicLevel', async () => {
     userLibSettings = await getUserLibSettings();
     // Clear settings to test default
     await setUserLibSettingsForTests();
-    await monomerLibHelper.loadLibraries(true);
+    await monomerLibHelper.loadMonomerLib(true);
 
     for (const [testName, testData] of Object.entries(TestsData)) {
       const inputPath = testData.inPath;
@@ -77,7 +77,7 @@ category('toAtomicLevel', async () => {
 
   after(async () => {
     await setUserLibSettings(userLibSettings);
-    await monomerLibHelper.loadLibraries(true);
+    await monomerLibHelper.loadMonomerLib(true);
   });
 
   async function getTestResult(source: DG.DataFrame, target: DG.DataFrame): Promise<void> {
@@ -100,6 +100,7 @@ category('toAtomicLevel', async () => {
     fastaDna = 'fastaDna',
     fastaRna = 'fastaRna',
     fastaPt = 'fastaPt',
+    fastaUn = 'fastaUn',
 
     separatorDna = 'separatorDna',
     separatorRna = 'separatorRna',
@@ -122,6 +123,10 @@ UUCAACUUCAAC`,
 FWPHEYFWPHEY
 YNRQWYVYNRQWYV
 MKPSEYVMKPSEYV`,
+    [csvTests.fastaUn]: `seq
+[meI][hHis][Aca]NT[dE][Thr_PO3H2][Aca]D[meI][hHis][Aca]NT[dE][Thr_PO3H2][Aca]D
+[meI][hHis][Aca][Cys_SEt]T[dK][Thr_PO3H2][Aca][Tyr_PO3H2][meI][hHis][Aca][Cys_SEt]T[dK][Thr_PO3H2][Aca][Tyr_PO3H2]
+[Lys_Boc][hHis][Aca][Cys_SEt]T[dK][Thr_PO3H2][Aca][Tyr_PO3H2][Lys_Boc][hHis][Aca][Cys_SEt]T[dK][Thr_PO3H2][Aca][Tyr_PO3H2]`,
     [csvTests.separatorDna]: `seq
 A/C/G/T/C/A/C/G/T/C
 C/A/G/T/G/T/C/A/G/T/G/T
@@ -169,6 +174,10 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr
     await _testToAtomicLevel(await readCsv(csvTests.fastaPt), 'seq', monomerLibHelper);
   });
 
+  test('fastaUn', async () => {
+    await _testToAtomicLevel(await readCsv(csvTests.fastaUn), 'seq', monomerLibHelper);
+  });
+
   test('separatorDna', async () => {
     await _testToAtomicLevel(await readCsv(csvTests.separatorDna), 'seq', monomerLibHelper);
   });
@@ -196,7 +205,7 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr
     const srcDf = DG.DataFrame.fromCsv(srcCsv);
     const seqCol = srcDf.getCol('seq');
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    seqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    seqCol.meta.units = NOTATION.FASTA;
     seqCol.setTag(bioTAGS.alphabet, ALPHABET.PT);
     const sh = SeqHandler.forColumn(seqCol);
     const resCol = (await _testToAtomicLevel(srcDf, 'seq', monomerLibHelper))!;
@@ -208,7 +217,7 @@ async function _testToAtomicLevel(
   df: DG.DataFrame, seqColName: string = 'seq', monomerLibHelper: IMonomerLibHelper
 ): Promise<DG.Column | null> {
   const seqCol: DG.Column<string> = df.getCol(seqColName);
-  const monomerLib: IMonomerLib = monomerLibHelper.getBioLib();
+  const monomerLib: IMonomerLib = monomerLibHelper.getMonomerLib();
   const res = await _toAtomicLevel(df, seqCol, monomerLib);
   if (res.warnings.length > 0)
     _package.logger.warning(`_toAtomicLevel() warnings ${res.warnings.join('\n')}`);

@@ -25,10 +25,7 @@ epics. Here we provide recommendations for each item:
   (enhancement of existing functionality or UI), and _new feature_ (requesting
   new capability or software feature).
 * **Title (Summary)**. Start the title with the platform module or package name,
-  then name unexpected behavior for a bug and a new feature name or improvement
-  summary for an enhancement. If relevant, use a hierarchical representation of
-  the issue location: list modules and submodules in their logical order using
-  the “|” symbol.
+  then name unexpected behavior for a bug and a new feature name or improvement SWsummary for an enhancement. 
 
 |Issue type|Formula|Example|
 |----------|-------|-------|
@@ -89,4 +86,4 @@ To track the actual state of the platform, it's important to keep tickets' statu
 * Set the status to **Ready for QA** if you think your work is done and it's time for the QA engineer to test it.
 If there are no errors or comments, the QA engineer sets the Done status for the ticket.
 
->Note: Write meaningful commits, and don't forget to mention the issue number. For details, see the [commit message policy](../advanced/git-policy.mdx).
+>Note: Write meaningful commits, and don't forget to mention the issue number. For details, see the [commit message policy](../dev-process/git-policy.mdx).

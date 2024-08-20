@@ -1,5 +1,40 @@
 # PowerPack changelog
 
+## 1.1.10 (2024-08-07)
+
+### Bug Fixes
+
+* Add new column: incorrect input parameters when autocomplete
+
+## 1.1.9 (2024-08-05)
+
+### Bug Fixes
+
+* [#2949](https://github.com/datagrok-ai/public/issues/2949): Calculated columns dialog: extra scroll bars
+
+## 1.1.8 (2024-07-24)
+
+* Dependency: datagarok-api >= 1.20.0*
+
+### Features
+
+* Updated 'Add new column' dialog: autocomplete and hints, formula validation, sorting by column type
+
+## 1.1.7 (2024-06-12)
+
+* Semantic value extractors
+* Better tooltip phrasing
+* [#2747](https://github.com/datagrok-ai/public/issues/2747): Formula lines:
+  * Fixed vertical line is rendered as horizontal in the dialog
+  * Added capability to change axes in line chart dialog
+* Startup speed improvements
+* Home page: Search: support for recognized entities
+* [#2424](https://github.com/datagrok-ai/public/issues/2424): Viewers gallery:
+  * Added invalid data handling in viewers gallery for Charts
+  * Made Charts viewers disabled if the data is invalid in viewers gallery
+* [#2830](https://github.com/datagrok-ai/public/issues/2830): Recent projects: Fixed double-clicking issue
+* Help: Synchronized icons with the settings
+
 ## 1.1.5 (2023-11-28)
 
 ### Bug Fixes

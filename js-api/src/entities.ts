@@ -1,6 +1,6 @@
 // noinspection JSUnusedGlobalSymbols
 
-import {ColumnType, FUNC_TYPES, ScriptLanguage, SemType, Type, TYPE, USER_STATUS} from "./const";
+import {ColumnType, ScriptLanguage, SemType, Type, TYPE, USER_STATUS} from "./const";
 import { FuncCall } from "./functions";
 import {toDart, toJs} from "./wrappers";
 import {FileSource} from "./dapi";
@@ -98,7 +98,10 @@ export class Entity {
   get createdOn(): dayjs.Dayjs { return dayjs(api.grok_Entity_Get_CreatedOn(this.dart)); }
 
   /** Time when entity was updated **/
-  get updatedOn(): dayjs.Dayjs { return dayjs(api.grok_Entity_Get_UpdatedOn(this.dart)); }
+  get updatedOn(): dayjs.Dayjs | null {
+    const d = api.grok_Entity_Get_UpdatedOn(this.dart);
+    return d ? dayjs(d) : null;
+  }
 
   /** Who created entity **/
   get author(): User { return toJs(api.grok_Entity_Get_Author(this.dart)); }
@@ -255,7 +258,7 @@ export class Func extends Entity {
   }
 
   /**
-   *  Executes the function with the specified {link parameters}, and returns result.
+   *  Executes the function with the specified {@link parameters}, and returns result.
    *  If necessary, the corresponding package will be loaded as part of the call.
    * */
   async apply(parameters: {[name: string]: any} | any[] = {}): Promise<any> {
@@ -418,7 +421,7 @@ export class DataQuery extends Func {
 /** Represents a table query
  * @extends DataQuery */
 export class TableQuery extends DataQuery {
-  /** @constructs TableQeury */
+  /** @constructs TableQuery */
   constructor(dart: any) { super(dart); }
 
   /** Creates a TableQuery
@@ -677,6 +680,8 @@ export class FileInfo extends Entity {
     super(dart);
   }
 
+  get connection(): DataConnection { return api.grok_FileInfo_Get_Connection(toJs(this.dart)); }
+
   /** Returns path, i.e. `geo/dmv_offices.csv` */
   get path(): string { return api.grok_FileInfo_Get_Path(this.dart); }
 
@@ -698,6 +703,11 @@ export class FileInfo extends Entity {
   /** Checks if directory */
   get isDirectory(): boolean { return api.grok_FileInfo_Get_IsDirectory(this.dart); }
 
+  get updatedOn(): dayjs.Dayjs | null {
+    const d = api.grok_FileInfo_Get_UpdatedOn(this.dart);
+    return d ? dayjs(d) : null;
+  }
+
   /** @returns {Promise<string>} */
   // readAsString(): Promise<string> {
   //   return new Promise((resolve, reject) => api.grok_FileInfo_ReadAsString(this.dart, (x: any) => resolve(x), (x: any) => reject(x)));
@@ -714,12 +724,16 @@ export class FileInfo extends Entity {
     return api.grok_FileInfo_ReadAsBytes(this.dart);
   }
 
-  static fromBytes(data: Uint8Array): FileInfo {
-      return api.grok_FileInfo_FromBytes(data);
+  static fromBytes(path: string, data: Uint8Array): FileInfo {
+    if (!path)
+      throw new Error('Path can\'t be null or empty');
+    return api.grok_FileInfo_FromBytes(path, data);
   }
 
-  static fromString(data: string): FileInfo {
-    return api.grok_FileInfo_FromString(data);
+  static fromString(path: string, data: string): FileInfo {
+    if (!path)
+      throw new Error('Path can\'t be null or empty');
+    return api.grok_FileInfo_FromString(path, data);
   }
 }
 
@@ -1076,8 +1090,8 @@ export class Package extends Entity {
   }
 
   /**
-   * Deprecated. Use getSettings instead. 
-   *  Returns properties for a package. 
+   * Deprecated. Use getSettings instead.
+   *  Returns properties for a package.
   */
   getProperties(): Promise<any> {
     return this.getSettings();
@@ -1177,8 +1191,12 @@ export interface PropertyOptions {
   /** List of value validators (functions that take a value and return error message or null) */
   valueValidators?: ValueValidator<any>[];
 
-  /** Custom field caption shown in [PropertyGrid] */
+  /** Custom field caption shown in [PropertyGrid]
+   * @deprecated The property will be removed soon. Use {@link friendlyName} instead */
   caption?: string;
+
+  /** Custom field friendly name shown in [PropertyGrid] */
+  friendlyName?: string;
 
   /** Field postfix shown in [PropertyGrid]. [units] take precedence over the [postfix] value. */
   postfix?: string;
@@ -1187,6 +1205,9 @@ export interface PropertyOptions {
   fieldName?: string;
 
   tags?: any;
+
+  /** Filter for columns, can be numerical, categorical or directly a column type (string, int...) */
+  columnTypeFilter?: ColumnType | 'numerical' | 'categorical';
 }
 
 
@@ -1221,6 +1242,7 @@ export class Property {
   set name(s: string) { api.grok_Property_Set_Name(this.dart, s); }
 
   get caption(): string { return api.grok_Property_Get_Caption(this.dart); }
+  set caption(s: string) { api.grok_Property_Set_Caption(this.dart, s); }
 
   /** Property category */
   get category(): string { return api.grok_Property_Get_Category(this.dart); }
@@ -1344,10 +1366,7 @@ export class Property {
    * It is editable via the context panel, and gets saved into the view layout as well.
    * Property getter/setter typically uses Widget's "temp" property for storing the value. */
   static registerAttachedProperty(typeName: string, property: Property) {
-    throw 'Not implemented';
-    // Andrew: looks like my commit got lost somewhere :(
-    // Will need to bring it back, it was a nice feature
-    // api.grok_Property_RegisterAttachedProperty(typeName, property.dart);
+    api.grok_Property_RegisterAttachedProperty(typeName, property.dart);
   }
 }
 
@@ -1406,4 +1425,44 @@ export class Schema {
   set properties(p: EntityProperty[]) { api.grok_Schema_Set_Properties(this.dart, p); }
   get entityTypes(): EntityType[] { return toJs(api.grok_Schema_Get_EntityTypes(this.dart)); }
   set entityTypes(et: EntityType[]) { api.grok_Schema_Set_EntityTypes(this.dart, et); }
+}
+
+export class UserReport extends Entity {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  get isResolved(): boolean {
+    return api.grok_UserReport_IsResolved(this.dart);
+  }
+
+  get jiraTicket(): string {
+    return api.grok_UserReport_JiraTicket(this.dart);
+  }
+
+  get assignee(): User {
+    return toJs(api.grok_UserReport_Assignee(this.dart));
+  }
+
+  get reporter(): User {
+    return toJs(api.grok_UserReport_Reporter(this.dart));
+  }
+
+  get description(): string {
+    return toJs(api.grok_UserReport_Description(this.dart));
+  }
+
+  get createdOn(): dayjs.Dayjs {
+    return dayjs(api.grok_UserReport_CreatedOn(this.dart));
+  }
+}
+
+export class UserReportsRule extends Entity {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  static async showAddDialog(): Promise<void> {
+    await api.grok_ReportsRule_Add_Dialog();
+  }
 }

@@ -30,6 +30,7 @@ export function getSelectionWidget(table: DG.DataFrame, options: SelectionWidget
   newTable.name = 'Selected compounds';
   newTable.filter.copyFrom(options.tableSelection);
   const numericalCols = wu(table.columns.numerical);
+  let gridSortOrder: {cols: DG.Column[], types: boolean[]} | null = null;
   for (let gridColIdx = 1; gridColIdx < options.gridColumns.length; gridColIdx++) {
     const gridCol = options.gridColumns.byIndex(gridColIdx)!;
     if (!gridCol.visible)
@@ -40,15 +41,29 @@ export function getSelectionWidget(table: DG.DataFrame, options: SelectionWidget
     if (sourceCol.type === DG.COLUMN_TYPE.BOOL)
       continue;
 
+    // restore sorting
+    if (gridSortOrder === null && gridCol.grid && gridCol.grid.sortByColumns?.length > 0 &&
+       gridCol.grid.sortTypes?.length === gridCol.grid.sortByColumns.length)
+      gridSortOrder = {cols: gridCol.grid.sortByColumns, types: gridCol.grid.sortTypes};
 
-    const sourceColRawData = sourceCol.getRawData();
-    const sourceColCategories = sourceCol.categories;
-    const getValue = numericalCols
-      .some((col) => col.name === sourceCol.name) ? (i: number): number => sourceColRawData[i] :
-      (i: number): string => sourceColCategories[sourceColRawData[i]];
+
+    // bigint or qnum columns can throw an error when getting raw data (might be fixed in future versions)
+    let sourceColRawData: ArrayLike<number> | null = null;
+    let sourceColCategories: string[] | null = null;
+
+    try {
+      sourceColRawData = sourceCol.getRawData();
+      sourceColCategories = sourceCol.categories;
+    } catch (_e) {
+    }
+    const getValue = !sourceColRawData || !sourceColCategories ?
+      (i: number): any => sourceCol.get(i) :
+      numericalCols
+        .some((col) => col.name === sourceCol.name) ? (i: number): number => sourceColRawData[i] :
+        (i: number): string => sourceColCategories[sourceColRawData[i]];
     const col = sourceCol.name === options.activityColumn.name ?
-      newTable.columns.addNewFloat(gridCol.name).init((i) => getValue(i)) :
-      newTable.columns.addNewVirtual(gridCol.name, (i) => getValue(i), sourceCol.type as DG.TYPE);
+      newTable.columns.addNewFloat(gridCol.name).init((i) => getValue(i) as number) :
+      newTable.columns.addNewVirtual(gridCol.name, (i) => getValue(i) as unknown, sourceCol.type as DG.TYPE);
     for (const [tag, value] of sourceCol.tags)
       col.setTag(tag, value);
   }
@@ -72,6 +87,8 @@ export function getSelectionWidget(table: DG.DataFrame, options: SelectionWidget
   const gridHost = ui.box(grid.root);
   gridHost.style.marginLeft = '0px';
   setTimeout(() => {
+    if (gridSortOrder !== null)
+      grid.sort(gridSortOrder.cols, gridSortOrder.types);
     for (let gridColIdx = 1; gridColIdx < options.gridColumns.length; gridColIdx++) {
       const originalGridCol = options.gridColumns.byIndex(gridColIdx)!;
       if (!originalGridCol.visible)

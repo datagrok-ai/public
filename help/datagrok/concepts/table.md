@@ -6,23 +6,33 @@ sidebar_position: 1
 Table (also known as a dataframe) is a two-dimensional structure with named columns of different types. Supported types
 are: `string`, `bool`, `int`, `bigint`, `double`, `qnum`, `datetime`.
 
+Dataframes are visualized using the [grid](../../visualize/viewers/grid.md) viewer.
+
 ## Column
 
-Dataframes consist of columns. In addition to the data type, a column can be associated with
-[tags](../../govern/catalog/tags.md) that specify units, data format, [semantic type](../../govern/catalog/semantic-types.md), tooltip content and so forth. Right-click 
-a column header and open **Properties...** to view the tags and other column information.
+Dataframes consist of columns. In addition to the data type, a column can be
+associated with [tags](../../govern/catalog/tags.md) that specify units, data
+format, [semantic type](../../govern/catalog/semantic-types.md), tooltip content
+and so forth. 
+
+To view column properties, right-click a column header and select
+**Properties...** The [Context Panel](../navigation/panels/panels.md#context-panel) updates to shows the column's properties.
 
 ## Metadata
 
-Same as columns, each table can be annotated with attributes in the form of key-value pairs. Datagrok automatically
-annotates certain tables with metadata (such as the source of the table, or time of import, etc). To edit metadata
-manually, use **Properties...** context menu option.
+Like columns, each table can be annotated with attributes in the form of
+key-value pairs. Datagrok automatically annotates certain tables with metadata
+(such as the source of the table, or time of import, etc). To edit metadata
+manually, right-click a column header and select
+**Column Properties...**.
 
-It is possible to use metadata as a search criteria in the [Projects](../../datagrok/concepts/project/project.md).
+<!--TODO: revise when this feature (manually add metadata) is updated. Possibly merge Column Properties and Properties context menu options -->
+
+You can search tables by metadata in [projects](project/project.md).
 
 ## Filtering
 
-You can use these fields to filter tables with [smart search](../../explore/search-filter-select/smart-search.md):
+You can use these fields to filter tables with smart search:
 
 | Field       | Description                      |
 |-------------|----------------------------------|
@@ -32,15 +42,15 @@ You can use these fields to filter tables with [smart search](../../explore/sear
 | colCount    |                                  |
 | createdOn   |                                  |
 | updatedOn   |                                  |
-| author      | [User](../../govern/user.md) object |
-| starredBy   | [User](../../govern/user.md) object |
-| commentedBy | [User](../../govern/user.md) object |
+| author      | [User](../../govern/access-control/users-and-groups#users) object |
+| starredBy   | [User](../../govern/access-control/users-and-groups#users) object |
+| commentedBy | [User](../../govern/access-control/users-and-groups#users) object |
 
 See also:
 
 * [JS API: Dataframe](https://datagrok.ai/js-api/classes/dg.DataFrame)
-* [Project](../../datagrok/concepts/project/project.md)
-* [Table view](../navigation/table-view.md)
+* [Project](project/project.md)
+* [Table view](../navigation/views/table-view.md)
 * [View layout](../../visualize/view-layout.md)
 * [Tags](../../govern/catalog/tags.md)
 * [Grid](../../visualize/viewers/grid.md)

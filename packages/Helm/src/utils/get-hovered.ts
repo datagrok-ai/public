@@ -2,18 +2,15 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import * as org from 'org';
-import * as JSDraw2 from 'JSDraw2';
+import {HelmType, PolymerType, Atom, Mol, ISeqMonomer, HelmMol, HelmAtom} from '@datagrok-libraries/bio/src/helm/types';
 
-import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
+import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 
-import {HelmMonomerPlacer, ISeqMonomer} from '../helm-monomer-placer';
+import {HelmMonomerPlacer} from '../helm-monomer-placer';
 
 export function getHoveredMonomerFromEditorMol(
-  argsX: number, argsY: number, gridCell: DG.GridCell, mol: JSDraw2.IEditorMol
-): ISeqMonomer | null {
-  let hoveredSeqMonomer: ISeqMonomer | null = null;
-
+  argsX: number, argsY: number, mol: HelmMol, cellHeight?: number
+): HelmAtom | null {
   /** @return {[number, number]} [atom, distance] */
   function getNearest(excluded: (number | undefined)[]): [number | undefined, number | undefined] {
     let atom: number | undefined = undefined;
@@ -35,18 +32,18 @@ export function getHoveredMonomerFromEditorMol(
   const [firstAtomI, firstDistance] = getNearest([]);
   const [secondAtomI, secondDistance] = getNearest([firstAtomI]);
 
+  let resAtom: HelmAtom | null = null;
   if (firstAtomI !== undefined && firstDistance !== undefined) {
     const firstAtom = mol.atoms[firstAtomI];
-    const firstSeqMonomer = getSeqMonomerFromHelmAtom(firstAtom);
     if (secondAtomI !== undefined && secondDistance !== undefined) {
       if (firstDistance < secondDistance * 0.45)
-        hoveredSeqMonomer = firstSeqMonomer;
+        resAtom = firstAtom;
     } else {
-      if (firstDistance < 0.35 * gridCell.bounds.height)
-        hoveredSeqMonomer = firstSeqMonomer;
+      if (cellHeight && firstDistance < 0.35 * cellHeight)
+        resAtom = firstAtom;
     }
   }
-  return hoveredSeqMonomer;
+  return resAtom;
 }
 
 export function getHoveredMonomerFallback(
@@ -80,32 +77,21 @@ export function getHoveredMonomerFallback(
   }
   left = (argsX >= sumLengths[left]) ? left : left - 1; // correct left to between sumLengths
   if (left >= 0)
-    hoveredSeqMonomer = getSeqMonomerFromHelm(allParts[0], allParts[left], helmPlacer.monomerLib);
+    hoveredSeqMonomer = getSeqMonomerFromHelm(allParts[0], allParts[left]);
   return hoveredSeqMonomer;
 }
 
-function getSeqMonomerFromHelmAtom(atom: JSDraw2.IEditorMolAtom): ISeqMonomer {
-  let polymerType: string | undefined = undefined;
-  switch (atom.bio.type) {
-  case 'HELM_BASE':
-  case 'HELM_SUGAR': // r - ribose, d - deoxyribose
-  case 'HELM_LINKER': // p - phosphate
-    polymerType = 'RNA';
-    break;
-  case 'HELM_AA':
-    polymerType = 'PEPTIDE';
-    break;
-  default:
-    polymerType = 'PEPTIDE';
-  }
+export function getSeqMonomerFromHelmAtom(atom: HelmAtom): ISeqMonomer {
+  const polymerType = helmTypeToPolymerType(atom.bio!.type);
   return {symbol: atom.elem, polymerType: polymerType};
 }
 
 function getSeqMonomerFromHelm(
-  helmPrefix: string, symbol: string, monomerLib: IMonomerLib
+  helmPrefix: string, symbol: string
 ): ISeqMonomer {
   let resSeqMonomer: ISeqMonomer | undefined = undefined;
-  for (const polymerType of monomerLib.getPolymerTypes()) {
+  const polymerTypeList: PolymerType[] = ['RNA', 'PEPTIDE', 'CHEM', 'BLOB', 'G'];
+  for (const polymerType of polymerTypeList) {
     if (helmPrefix.startsWith(polymerType))
       resSeqMonomer = {symbol: symbol, polymerType: polymerType};
   }

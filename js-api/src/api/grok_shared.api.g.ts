@@ -25,6 +25,8 @@ export class DataSourceType {
 
   static MariaDB = 'MariaDB';
 
+  static MlFlow = 'MlFlow';
+
   static MongoDB = 'MongoDB';
 
   static MsSql = 'MS SQL';
@@ -83,9 +85,9 @@ export class DataSourceType {
 
   static CoreWeave = 'CoreWeave';
 
-  static get fileDataSources(): Array<string> { return api.grok_DataSourceType_Get_fileDataSources(); };
+  static fileDataSources = ['Azure Blob', 'Dropbox', 'Files', 'GitHub', 'GoogleCloud', 'S3', 'CoreWeave', 'SharePoint'];
 
-  static get systemDataSources(): Array<string> { return api.grok_DataSourceType_Get_systemDataSources(); };
+  static systemDataSources = ['AWS', 'PostgresDart'];
 
 }
 import {Entity} from '../entities'
@@ -93,7 +95,7 @@ import {Entity} from '../entities'
 export class DockerImage extends Entity {
   constructor(dart: any) { super(dart); };
 
-  static fromJson(map: Map<any, any>): DockerImage { return new DockerImage(api.grok_DockerImage_fromJson(toDart(map)))};
+  static fromJson(map: {[index: string]: any}): DockerImage { return new DockerImage(api.grok_DockerImage_fromJson(toDart(map)))};
   static STATUS_READY = 'ready';
 
   static STATUS_ERROR = 'error';

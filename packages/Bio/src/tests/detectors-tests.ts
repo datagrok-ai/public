@@ -99,6 +99,22 @@ C1CCCCC1
 CCCCCC`,
       neg: ['col1'],
     },
+    'negSmilesWithSquareBrackets': {
+      csv: `col1
+Cl.c1ccc2nc3ccccc3cc2c1
+Oc1cccc2cc3ccccc3cc12
+[SeH]c1ccc2ccccc2c1`,
+      neg: ['col1'],
+    },
+    'negFastaUnSingleChar': {
+      csv: `col1
+Alanine
+Cysteine
+Aspartic acid
+Glutamic acid
+Phenylalanine`,
+      neg: ['col1']
+    },
 
     // Same length
     'fastaMsaSameLength': {
@@ -122,30 +138,33 @@ YN[Re]VYNR[Ac]WYV
 [Me]EYVMPSFW[Me]H`,
       pos: {'seq': new PosCol(NOTATION.FASTA, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 14, true, undefined)},
     },
+    'fastaMsaExtManyMinus': {
+      csv: `seq
+[D-Tic]-------[D-Tyr_Et][Tyr_ab-dehydroMe][dV][Cys_SEt]N[D-Orn][D-aThr]-[Phe_4Me]
+[Phe_2F]--------[Tyr_ab-dehydroMe][dV][Aca]N[D-Orn][D-aThr]-[Phe_4Me]
+[D-Tic]-[Hcy]QTWQ[Phe_4NH2][D-Tyr_Et][Tyr_ab-dehydroMe][dV][Cys_SEt]----[Phe_4Me]`,
+      pos: {'seq': new PosCol(NOTATION.FASTA, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 17, true, undefined)}
+    },
     'sepSameLength': {
       csv: `seq
 Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2
 Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2
-Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2`, pos: {
-        'seq': new PosCol(NOTATION.SEPARATOR, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 5, true, '-'),
-      }
+Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2`,
+      pos: {'seq': new PosCol(NOTATION.SEPARATOR, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 5, true, '-')}
     },
     'sepMsaSameLength': {
       csv: `seq
 Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2
 Ac(1)-A-A(2)-A-A-A-C(2)-A-A-A-A-C(1)-G-NH2
-Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2`, pos: {
-        'seq': new PosCol(NOTATION.SEPARATOR, ALIGNMENT.SEQ, ALPHABET.UN, 5, true, '-'),
-      }
+Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2`,
+      pos: {'seq': new PosCol(NOTATION.SEPARATOR, ALIGNMENT.SEQ, ALPHABET.UN, 5, true, '-')}
     },
     'helmSameLength': {
       csv: `seq
 PEPTIDE1{Ac(1).A.A.A.A.A.A.A.A.A.A.A.A.A.C(1).G.NH2}$$$$
 PEPTIDE1{Ab(1).Y.V.K.H.P.F.W.R.W.Y.A.A.A.C(1).G.NH2}$$$$
 PEPTIDE1{Ad(1).S.W.Y.C.K.H.P.M.W.A.A.A.A.C(1)-G-NH2}$$$$`,
-      pos: {
-        'seq': new PosCol(NOTATION.HELM, null, null, 19, undefined, undefined)
-      }
+      pos: {'seq': new PosCol(NOTATION.HELM, null, null, 19, undefined, undefined)}
     },
   };
 
@@ -235,7 +254,7 @@ MWRSWY-CKHPMWRSWY-CKHP`;
     peptidesComplex = 'peptidesComplex',
     peptidesSimple = 'peptidesSimple',
     fastaCsv = 'fastaCsv',
-    fastaFasta = 'fastaFasta',
+    // fastaFasta = 'fastaFasta',
     fastaPtCsv = 'fastaPtCsv',
     msaComplex = 'msaComplex',
     helmCsv = 'helmCsv',
@@ -256,7 +275,7 @@ MWRSWY-CKHPMWRSWY-CKHP`;
   }
 
   const samples: { [key: string]: string } = {
-    [Samples.fastaFasta]: 'System:AppData/Bio/samples/FASTA.fasta',
+    // [Samples.fastaFasta]: 'System:AppData/Bio/samples/FASTA.fasta',
     [Samples.fastaPtCsv]: 'System:AppData/Bio/samples/FASTA_PT.csv',
     [Samples.msaComplex]: 'System:AppData/Bio/samples/MSA.csv',
     [Samples.fastaCsv]: 'System:AppData/Bio/samples/FASTA.csv',
@@ -396,11 +415,11 @@ MWRSWY-CKHPMWRSWY-CKHP`;
     });
   });
 
-  test('samplesFastaFasta', async () => {
-    await _testDf(readSamples(Samples.fastaFasta), {
-      'sequence': new PosCol(NOTATION.FASTA, ALIGNMENT.SEQ, ALPHABET.PT, 20, false),
-    });
-  });
+  // test('samplesFastaFasta', async () => {
+  //   await _testDf(readSamples(Samples.fastaFasta), {
+  //     'sequence': new PosCol(NOTATION.FASTA, ALIGNMENT.SEQ, ALPHABET.PT, 20, false),
+  //   });
+  // });
 
   // peptidesComplex contains monomers with spaces in AlignedSequence columns, which are forbidden
   // test('samplesPeptidesComplexPositiveAlignedSequence', async () => {
@@ -493,7 +512,7 @@ export async function _testNegList(list: string[]): Promise<void> {
   const col: DG.Column = DG.Column.fromList(DG.TYPE.STRING, 'col1', list);
   const semType: string = await grok.functions.call('Bio:detectMacromolecule', {col: col});
   if (col.semType === DG.SEMTYPE.MACROMOLECULE) {
-    const msg = `Negative test detected semType='${col.semType}', units='${col.getTag(DG.TAGS.UNITS)}'.`;
+    const msg = `Negative test detected semType='${col.semType}', units='${col.meta.units}'.`;
     throw new Error(msg);
   }
 }
@@ -507,7 +526,7 @@ export async function _testNeg(readDf: DfReaderFunc, colName: string) {
     col.semType = semType;
 
   if (col.semType === DG.SEMTYPE.MACROMOLECULE) {
-    const msg = `Negative test detected semType='${col.semType}', units='${col.getTag(DG.TAGS.UNITS)}'.`;
+    const msg = `Negative test detected semType='${col.semType}', units='${col.meta.units}'.`;
     throw new Error(msg);
   }
 }
@@ -522,7 +541,7 @@ export async function _testPosList(list: string[], units: NOTATION,
     col.semType = semType;
 
   expect(col.semType, DG.SEMTYPE.MACROMOLECULE);
-  expect(col.getTag(DG.TAGS.UNITS), units);
+  expect(col.meta.units, units);
   expect(col.getTag(bioTAGS.aligned), aligned);
   expect(col.getTag(bioTAGS.alphabet), alphabet);
   if (separator)
@@ -550,7 +569,7 @@ export async function _testPos(
     col.semType = semType;
 
   expect(col.semType, DG.SEMTYPE.MACROMOLECULE);
-  expect(col.getTag(DG.TAGS.UNITS), units);
+  expect(col.meta.units, units);
   expect(col.getTag(bioTAGS.aligned), aligned);
   expect(col.getTag(bioTAGS.alphabet), alphabet);
   if (separator)

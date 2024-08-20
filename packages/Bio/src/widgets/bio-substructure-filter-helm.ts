@@ -2,11 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import * as org from 'org';
 import $ from 'cash-dom';
 import {fromEvent, Unsubscribable} from 'rxjs';
 
-import {IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
+import {App, IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
@@ -55,7 +54,7 @@ export class HelmBioFilter extends BioFilterBase<BioFilterProps> /* implements I
       this.logger.warning('TEST: HelmBioFilter.init().sync() waitForElementInDom ready');
       this.updateFilterPanel();
       let webEditorHost: HTMLDivElement | null;
-      let webEditorApp: org.helm.IWebEditorApp | null;
+      let webEditorApp: App | null;
       // TODO: Unsubscribe 'click' and 'sizeChanged'
       this.viewSubs.push(fromEvent(this._filterPanel, 'click').subscribe(() => {
         webEditorHost = ui.div();
@@ -64,7 +63,7 @@ export class HelmBioFilter extends BioFilterBase<BioFilterProps> /* implements I
           .add(webEditorHost!)
           .onOK(() => {
             try {
-              const webEditorValue = webEditorApp!.canvas.getHelm(true)
+              const webEditorValue = webEditorApp!.canvas!.getHelm(true)
                 .replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
               this.props = new BioFilterProps(webEditorValue);
             } catch (err: any) {
@@ -91,7 +90,7 @@ export class HelmBioFilter extends BioFilterBase<BioFilterProps> /* implements I
       this.viewSubs.push(ui.onSizeChanged(this._filterPanel).subscribe((_: any) => {
         try {
           if (!!webEditorApp) {
-            const helmString = webEditorApp.canvas.getHelm(true)
+            const helmString = webEditorApp!.canvas!.getHelm(true)
               .replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
             this.updateFilterPanel(helmString);
           }
@@ -135,9 +134,15 @@ export class HelmBioFilter extends BioFilterBase<BioFilterProps> /* implements I
   }
 
   async substructureSearch(column: DG.Column): Promise<DG.BitSet | null> {
-    await delay(10);
-    const res = await helmSubstructureSearch(this.props.substructure, column);
-    return res;
+    const logPrefix = `${this.viewerToLog()}.substructureSearch( column = <${column.name}> )`;
+    _package.logger.debug(`${logPrefix}, start`);
+    try {
+      await delay(10);
+      const res = await helmSubstructureSearch(this.props.substructure, column);
+      return res;
+    } finally {
+      _package.logger.debug(`${logPrefix}, end`);
+    }
   }
 
   // // -- IRenderer --

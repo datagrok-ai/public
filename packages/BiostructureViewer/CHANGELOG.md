@@ -1,12 +1,26 @@
 # BiostructureViewer changelog
 
+## 1.1.2 (2024-07-23)
+
+Bump dependencies versions, datagrok-api to 1.20.0
+
+## 1.1.1 (2024-06-10)
+
+### Bug fixes
+
+* Fix .pdbqt parser assuming ROOT for MODEL
+* Fix .pdbqt to .pdb sorting atoms, add tests
+* Fix default representation to ball+stick for small molecule
+* Fix awaitNgl, test NgGlService/pdb
+* Fix MolstarPreview open .mmcif
+
 ## 1.1.0 (2024-05-01)
 
 Use generalized cell renderer on async renderer base
 
 ## 1.0.27 (2024-04-15)
 
-Fix description for Docking Conformations demo
+Fix the description for Docking Conformations demo
 
 ## 1.0.26 (2024-03-30)
 
@@ -31,7 +45,7 @@ Fix description for Docking Conformations demo
 
 ### Bug fixes
 
-* Fix error on right click on row header,test
+* Fix error on right click on row header, test
 
 ## 1.0.23 (2024-01-19)
 
@@ -46,7 +60,7 @@ Fix description for Docking Conformations demo
 * Add Molecule3D ligands for Biostructure viewer
 * Add PdbHelper converters parsePdbqt, molToPdb, pdbqtToMol with NGL
 * Add NgViewer support formats other than PDB
-* Add columns descriptions to Demo Docking Conformations
+* Add column descriptions to Demo Docking Conformations
 * Add layout to Demo Docking Conformations
 * Add AutoDockService
 * Add Molecule3D detector for pdbqt units
@@ -59,9 +73,9 @@ Fix description for Docking Conformations demo
 * Fix pdbGridCellRenderer, test
 * Fix NglGlDocService to not miss tasks, refactor, handle errors, restore by timeout count limit
 * Fix MolstarViewer for dataFrame detach
-* Fix MolstarViewer usages to dispose WebGL on view closing, Could not create WebGL program
+* Fix MolstarViewer usages to dispose WebGL on view closing. Could not create WebGL program
 * Fix NglViewer ensure create, waits first render
-* Fix MolstarViewer ensure creat, wait canvas3dInit
+* Fix MolstarViewer ensure create, waits canvas3dInit
 * Fix AutoDock to support atoms of a ligand
 * Add AutoDock test
 * Fix MolstarViewer, NglViewer tests for IRenderer.awaitRendered
@@ -87,8 +101,9 @@ Fix description for Docking Conformations demo
 ### Features
 
 * `Molecule3D`, `PDB_ID` semantic type
-* [Biostructure](../../help/visualize/viewers/biostructure) viewer (Mol* based)
-* [NGL](../../help/visualize/viewers/ngl) viewer
+* [Biostructure](https://datagrok.ai/help/visualize/viewers/biostructure) viewer (Mol* based)
+* [NGL](https://datagrok.ai/help/visualize/viewers/ngl) viewer
 * [Molecule3D](https://public.datagrok.ai/apps/Tutorials/Demo/Bioinformatics/Proteins) cell renderer
-* Biostructure and NGL viewers support [Molecule](../../help/develop/domains/chem) column for ligands
-* File handlers for file [formats supported by Molstar or NGL](../../help/access/files/supported-formats.md)
+* Biostructure and NGL viewers support [Molecule](https://datagrok.ai/help/develop/domains/chem/cheminformatics) column
+  for ligands
+* File handlers for file [formats supported by Molstar or NGL](https://datagrok.ai/help/access/files/supported-formats)

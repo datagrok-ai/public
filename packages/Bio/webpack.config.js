@@ -2,11 +2,13 @@ const path = require('path');
 const FuncGeneratorPlugin = require('datagrok-tools/plugins/func-gen-plugin');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
-const mode = 'development';
+const mode = process.env.NODE_ENV ?? 'production';
+if (mode !== 'production')
+  console.warn(`Building Bio in '${mode}' mode.`);
+
 module.exports = {
-  cache: {
-    type: 'filesystem',
-  },
+  // ...(mode === 'production' ? {cache: {type: 'filesystem'}} : {}),
+  cache: {type: 'filesystem'},
   mode: mode,
   entry: {
     package: ['./src/package.ts'],
@@ -18,7 +20,7 @@ module.exports = {
   },
   resolve: {
     fallback: {'url': false},
-    extensions: ['.wasm', '.mjs', '.ts', '.tsx', '.js', '.json'],
+    extensions: ['.ts', '.tsx', '.wasm', '.mjs', '.js', '.json'],
   },
   module: {
     rules: [
@@ -30,7 +32,7 @@ module.exports = {
   plugins: [
     new FuncGeneratorPlugin({outputPath: './src/package.g.ts'}),
   ],
-  devtool: mode === 'development' ? 'source-map' : 'inline-source-map',
+  devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',
@@ -41,8 +43,6 @@ module.exports = {
     'cash-dom': '$',
     'dayjs': 'dayjs',
     'wu': 'wu',
-    'scil': 'scil',
-    'org': 'org',
   },
   output: {
     filename: '[name].js',

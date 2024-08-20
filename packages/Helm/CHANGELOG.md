@@ -1,5 +1,95 @@
 # Helm changelog
 
+## 2.4.2 (2024-08-19)
+
+### Bug fixes
+
+* Fix Helm editor default tab to Helm
+
+## 2.4.1 (2024-08-16)
+
+### Features
+
+* HWE option for continuous number, typing
+* Add HelmInput mouse events, redraw, showTooltip
+* Bump HWE dependencies versions
+
+### Bug fixes
+
+* Polish HelmInput size handling, tooltip
+
+## 2.4.0 (2024-08-06)
+
+### Features
+
+* Add monomer placeholders to HELMWebEditor palette
+
+### Bug fixes
+
+## 2.3.4 (2024-08-06)
+
+### Bug fixes
+
+* Fix HelmInput/tooltip flapping test
+* Fix dojo dijit locale to en-us
+* Fix HELMWebEditor and Bio init order to handle monomer lib
+
+## 2.3.3 (2024-08-05)
+
+### Features
+
+* Load dojo without CDN
+
+### Bug fixes
+
+* Fix monomers palette filling of HWE
+* Fix init dojo require
+* Fix test findMonomers
+
+## 2.3.2 (2024-07-23)
+
+### Features
+
+* Add HelmInput
+
+### Bug fixes
+
+* Add tooltip to HelmInput showing monomer of lib, test
+* Fix HelmInput to redraw on monomer lib changed
+* Fix HelmInput to handle dialog resize
+
+## 2.3.1 (2024-06-28)
+
+Fix cell renderer error before package initialized
+
+## 2.3.0 (2024-06-24)
+
+Use forked JSDraw.Lite and HELMWebEditor
+
+### Bug fixes
+
+* Add test for helm-web-editor
+* Add test parseHelm without DOM
+* Add test seq properties widget for fasta RNA
+* GROK-15994: Color missing monomers
+* Fix cell renderer to invalidate on lib changed
+* Fix dojo load and patch
+
+## 2.2.2 (2024-05-16)
+
+Fix seq properties widget, warning for too long seq, test
+
+## 2.2.1 (2024-05-13)
+
+### Features
+
+* Use Bio monomerLib within Helm Web Editor
+
+### Bug fixes
+
+* Optimize getMonomer tests to prevent reloading the monomer lib
+* Add tests for adding missing monomers with Helm Web Editor
+
 ## 2.2.0 (2024-05-01)
 
 Optimize cell renderer on async renderer base

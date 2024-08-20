@@ -6,8 +6,8 @@ info:
   x-logo:
     backgroundColor: '#FFFFFF'
     url: 'https://www.enaminestore.com/IMG/logo1.png'
-host: www.enaminestore.com
-basePath: /api
+host: new.enaminestore.com
+basePath: /api/v1/catalog
 schemes:
   - https
 paths:
@@ -19,10 +19,31 @@ paths:
         - application/json
       parameters:
         - in: query
-          name: code
+          name: q
           required: true
           description: 'Compound ID or search query'
           type: string
+        - in: query
+          name: cat
+          description: >
+            Compound catalog:
+              * `BB` – Building blocks collection
+              * `SCR` – Screening compounds collection
+              * `REAL` – Compounds from REAL database
+          type: string
+          enum: [BB, SCR, REAL]
+        - in: query
+          name: type
+          required: true
+          description: 'Compount type'
+          type: string
+          enum: [SMARTS]
+        - in: query
+          name: sstype
+          required: true
+          description: 'Search type'
+          type: string
+          enum: [EXACT, SUB, SIM]
         - in: query
           name: currency
           required: true
@@ -35,8 +56,20 @@ paths:
           description: 'Similarity'
           type: number
           default: 0.8
+  /price:
+    get:
+      summary: Price
+      operationId: Price
+      produces:
+        - application/json
+      parameters:
         - in: query
-          name: mode
+          name: id
+          required: true
+          description: 'Compound ID or search query'
+          type: string
+        - in: query
+          name: cat
           description: >
             Compound catalog:
               * `BB` – Building blocks collection
@@ -44,6 +77,13 @@ paths:
               * `REAL` – Compounds from REAL database
           type: string
           enum: [BB, SCR, REAL]
+        - in: query
+          name: cur
+          required: true
+          description: 'Currency'
+          type: string
+          enum: [USD, EUR]
+          default: USD
 securityDefinitions:
   api_key:
     type: apiKey

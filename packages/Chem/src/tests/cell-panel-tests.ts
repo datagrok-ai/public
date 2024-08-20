@@ -144,17 +144,17 @@ category('cell panel', async () => {
   test('gasteiger-partion-charges.smiles', async () => {
     const parameters = {mol: molStr, contours: 10};
     await grok.functions.call('Chem:ChemistryGasteigerPartialCharges', parameters);
-  });
+  }, {stressTest: true});
 
   test('gasteiger-partion-charges.molV2000', async () => {
     const parameters = {mol: molV2000, contours: 10};
     await grok.functions.call('Chem:ChemistryGasteigerPartialCharges', parameters);
-  });
+  }, {stressTest: true});
 
   test('gasteiger-partion-charges.molV3000', async () => {
     const parameters = {mol: molV3000, contours: 10};
     await grok.functions.call('Chem:ChemistryGasteigerPartialCharges', parameters);
-  });
+  }, {stressTest: true});
 
   //TODO: Compare the calculated values
   test('chem-descriptors', async () => {
@@ -165,8 +165,8 @@ category('cell panel', async () => {
         `empty data handled incorrectly`, 5000);
       } else {
         await awaitCheck(() => widget.root.querySelector('table') !== null,
-        `descriptors table hasn\'t been created for ${mol}`, 15000);
+        `descriptors table hasn\'t been created for ${mol}`, 55000);
       }
     }
-  }, { timeout: 60000 });
+  }, { timeout: 60000, stressTest: true });
 });

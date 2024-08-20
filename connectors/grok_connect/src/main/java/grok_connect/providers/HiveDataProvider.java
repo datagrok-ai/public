@@ -1,8 +1,6 @@
 package grok_connect.providers;
 
-import java.io.IOException;
 import java.sql.*;
-import java.text.ParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 import grok_connect.connectors_info.DataConnection;
@@ -14,7 +12,6 @@ import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Property;
-import grok_connect.utils.QueryCancelledByUser;
 import serialization.Column;
 import serialization.DataFrame;
 import serialization.StringColumn;
@@ -68,50 +65,51 @@ public class HiveDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        prepareProvider();
+    public Connection getConnection(DataConnection conn) throws SQLException {
         return DriverManager.getConnection(getConnectionString(conn), getProperties(conn));
     }
 
     @Override
-    public DataFrame getSchemas(DataConnection connection) throws ClassNotFoundException, SQLException,
-            ParseException, IOException, QueryCancelledByUser, GrokConnectException {
-        DataFrame result = new DataFrame();
-        Column tableSchemaColumn = new StringColumn();
-        tableSchemaColumn.name = "table_schema";
-        result.addColumn(tableSchemaColumn);
-        Connection dbConnection = getConnection(connection);
-        ResultSet schemas = dbConnection.getMetaData().getSchemas();
-        while (schemas.next())
-            result.addRow(schemas.getString(1));
-
-        return result;
+    public DataFrame getSchemas(DataConnection connection) throws GrokConnectException {
+        try (Connection dbConnection = getConnection(connection);
+             ResultSet schemas = dbConnection.getMetaData().getSchemas()) {
+            DataFrame result = new DataFrame();
+            Column tableSchemaColumn = new StringColumn();
+            tableSchemaColumn.name = "table_schema";
+            result.addColumn(tableSchemaColumn);
+            while (schemas.next())
+                result.addRow(schemas.getString(1));
+            return result;
+        } catch (SQLException e) {
+            throw new GrokConnectException(e);
+        }
     }
 
     @Override
-    public DataFrame getSchema(DataConnection connection, String schema, String table) throws
-            ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser,
-            GrokConnectException {
-        DataFrame result = new DataFrame();
-        Column tableSchema = new StringColumn();
-        tableSchema.name = "table_schema";
-        Column tableNameColumn = new StringColumn();
-        tableNameColumn.name = "table_name";
-        Column columnName = new StringColumn();
-        columnName.name = "column_name";
-        Column dataType = new StringColumn();
-        dataType.name = "data_type";
-        result.addColumn(tableSchema);
-        result.addColumn(tableNameColumn);
-        result.addColumn(columnName);
-        result.addColumn(dataType);
-        Connection dbConnection = getConnection(connection);
-        ResultSet columns = dbConnection.getMetaData().getColumns(null, schema, table, null);
-        while (columns.next())
-            result.addRow(columns.getString(2), columns.getString(3),
-                    columns.getString(4), columns.getString(6));
-
-        return result;
+    public DataFrame getSchema(DataConnection connection, String schema, String table) throws GrokConnectException {
+        try (Connection dbConnection = getConnection(connection);
+             ResultSet columns = dbConnection.getMetaData().getColumns(null, schema, table,
+                     null)) {
+            DataFrame result = new DataFrame();
+            Column tableSchema = new StringColumn();
+            tableSchema.name = "table_schema";
+            Column tableNameColumn = new StringColumn();
+            tableNameColumn.name = "table_name";
+            Column columnName = new StringColumn();
+            columnName.name = "column_name";
+            Column dataType = new StringColumn();
+            dataType.name = "data_type";
+            result.addColumn(tableSchema);
+            result.addColumn(tableNameColumn);
+            result.addColumn(columnName);
+            result.addColumn(dataType);
+            while (columns.next())
+                result.addRow(columns.getString(2), columns.getString(3),
+                        columns.getString(4), columns.getString(6));
+            return result;
+        } catch (SQLException e) {
+            throw new GrokConnectException(e);
+        }
     }
 
     @Override
@@ -146,14 +144,9 @@ public class HiveDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public void setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) {
+    public void setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) throws SQLException {
         Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)funcParam.value);
         Timestamp ts = new Timestamp(calendar.getTime().getTime());
-        try {
-            statement.setTimestamp(parameterIndex, ts);
-        } catch (SQLException e) {
-            throw new RuntimeException(String.format("Something went wrong when setting datetime parameter at %s index",
-                    parameterIndex), e);
-        }
+        statement.setTimestamp(parameterIndex, ts);
     }
 }

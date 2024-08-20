@@ -1,5 +1,34 @@
 # HitTriage changelog
 
+## 1.2.0 (2024-07-30)
+
+Permission management and sharing of campaigns. Deleting templates. optimization of function loading
+
+## 1.1.16 (2024-07-29)
+
+Fix re-running calculations on the first index.
+
+## 1.1.15 (2024-07-29)
+
+Fixed duplicate detection on fingerprints. added rerunning calculations
+
+## 1.1.14 (2024-07-26)
+
+Added detection of duplicate molecules in campaign and vid coloring of duplicates.
+
+## 1.1.13 (2024-07-23)
+
+Fix chem descriptors breaking loop.
+
+## 1.1.12 (2024-07-18)
+
+Fix broken demo campaign file.
+
+## 1.1.11 (2024-06-03)
+
+* Add ability for collaboration on same campaign.
+* Fixed bugs with tiles viewer forms crashing in case of removing columns.
+
 ## 1.1.10 (2024-04-09)
 
 Fixed bugs with tiles viewer forms and functions loading.

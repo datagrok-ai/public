@@ -7,7 +7,7 @@ automatically in the **Context Panel** when you select a molecule in a dataset.
 
 |Panel|Description|
 |-----|-----------|
-|[Gasteiger partial charges](link) | [RDKit-based script](https://dev.datagrok.ai/script/7acf813d-4f65-51f2-bc3f-503cde26c460) |  
+|Gasteiger partial charges | [RDKit-based script](https://dev.datagrok.ai/script/7acf813d-4f65-51f2-bc3f-503cde26c460) |  
 |Descriptors |The following descriptors are shown by default:<br/><li>FractionCSP3</li><li>HeavyAtomCount</li><li>NHOHCount</li><br/> To calculate other descriptors, click the **SELECT** button and choose from the list. The info pane updates accordingly|
 |Properties | Shows molecular properties, such as formula, molecular weight, LogP, and others|
 | Databases | Depending on the plugins installed, allows to search by substructure or similarity in databases like ChEMBL, Chemspace, DrugBank, PubChem, as well as the Enamine store catalog |

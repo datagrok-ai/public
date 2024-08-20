@@ -1,20 +1,32 @@
 /// this file was generated automatically from d4 classes declarations
 
 
-export interface IScatterPlot3dLookSettings {
+export interface IScatterPlot3dSettings {
+  x: string;
   xColumnName: string;
 
+  y: string;
   yColumnName: string;
 
+  z: string;
   zColumnName: string;
 
+  size: string;
   sizeColumnName: string;
 
+  color: string;
   colorColumnName: string;
 
+  label: string;
   labelColumnName: string;
 
   showAxes: boolean;
+
+  xAxisType: keyof typeof AxisType;
+
+  yAxisType: keyof typeof AxisType;
+
+  zAxisType: keyof typeof AxisType;
 
   backColor: number;
 
@@ -55,11 +67,12 @@ export interface IScatterPlot3dLookSettings {
   markerRandomRotation: boolean;
 
   /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
   /// Formula that filters out rows to show.
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -72,23 +85,65 @@ export interface IScatterPlot3dLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 
-export interface ITreeMapLookSettings {
+export enum AxisType {
+  linear = 'linear',
+  logarithmic = 'logarithmic',
+}
+
+export enum RowSet {
+  All = 'All',
+  Filtered = 'Filtered',
+  Selected = 'Selected',
+  SelectedOrCurrent = 'SelectedOrCurrent',
+  FilteredSelected = 'FilteredSelected',
+  MouseOverGroup = 'MouseOverGroup',
+  CurrentRow = 'CurrentRow',
+  MouseOverRow = 'MouseOverRow',
+}
+
+export enum FlexPosition {
+  Left = 'Left',
+  Right = 'Right',
+  Top = 'Top',
+  Bottom = 'Bottom',
+  Center = 'Center',
+}
+
+export enum VisibilityMode {
+  Auto = 'Auto',
+  Always = 'Always',
+  Never = 'Never',
+}
+
+export interface ITreeMapSettings {
   splitByColumnNames: Array<string>;
 
+  color: string;
   colorColumnName: string;
 
   colorAggrType: string;
 
+  size: string;
   sizeColumnName: string;
 
   autoLayout: boolean;
@@ -108,11 +163,12 @@ export interface ITreeMapLookSettings {
   outerMarginBottom: number;
 
   /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
   /// Formula that filters out rows to show.
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -125,26 +181,36 @@ export interface ITreeMapLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 
-export interface IHistogramLookSettings {
+export interface IHistogramSettings {
   /// Whether the filtered out rows should be shown with the semi-transparent color
   /// See also *Filtered Out Color*
   showFilteredOutRows: boolean;
 
   /// Allows to filter table using the range slider on the bottom.
-  /// This option also controls slider visibility.
   filteringEnabled: boolean;
 
   /// A numerical column used to calculate the distribution of values.
+  value: string;
   valueColumnName: string;
 
   showXAxis: boolean;
@@ -158,6 +224,7 @@ export interface IHistogramLookSettings {
   bins: number;
 
   /// A categorical column to split data on (each bar represents a category)
+  split: string;
   splitColumnName: string;
 
   /// Whether the values should be normalized when multiple histograms are shown.
@@ -189,6 +256,7 @@ export interface IHistogramLookSettings {
 
   /// Numerical column to be used for color-coding.
   /// The values in the bin get aggregated using the *Color Aggr Type* property.
+  color: string;
   colorColumnName: string;
 
   colorAggrType: string;
@@ -252,6 +320,10 @@ export interface IHistogramLookSettings {
 
   showCharts: boolean;
 
+  legendVisibility: keyof typeof VisibilityMode;
+
+  legendPosition: keyof typeof FlexPosition;
+
   marginLeft: number;
 
   marginTop: number;
@@ -267,11 +339,12 @@ export interface IHistogramLookSettings {
   aggTooltipColumns: string;
 
   /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
   /// Formula that filters out rows to show.
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   title: string;
@@ -280,18 +353,30 @@ export interface IHistogramLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 
-export interface IFiltersLookSettings {
+export interface IFiltersSettings {
   active: boolean;
+
+  histogramLook: any;
 
   showFilterCountsIndication: boolean;
 
@@ -322,9 +407,8 @@ export interface IFiltersLookSettings {
 
   columnNames: Array<string>;
 
-  filters: Array<Map<string, any>>;
+  filters: Array<{[index: string]: any}>;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -337,17 +421,27 @@ export interface IFiltersLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 
-export interface IScatterPlotLookSettings {
+export interface IScatterPlotSettings {
   /// Invalid are null values and not positive numbers if axis is logarithmic.
   filterOutInvalid: boolean;
 
@@ -366,10 +460,16 @@ export interface IScatterPlotLookSettings {
   zoomAndFilter: string;
 
   /// A column to use on the X axis. Could be numerical or categorical.
+  x: string;
   xColumnName: string;
 
   /// A column to use on the Y axis. Could be numerical or categorical.
+  y: string;
   yColumnName: string;
+
+  xAxisType: keyof typeof AxisType;
+
+  yAxisType: keyof typeof AxisType;
 
   invertXAxis: boolean;
 
@@ -401,19 +501,28 @@ export interface IScatterPlotLookSettings {
   /// If not set, *Filtered Rows Color* is used for markers that pass the filter.
   /// Color palettes could defined either for columns in the column context panel,
   /// or via *Linear Color Scheme* and *Categorical Color Scheme* properties.
+  color: string;
   colorColumnName: string;
 
   showColorSelector: boolean;
 
+  colorAxisType: keyof typeof AxisType;
+
   invertColorScheme: boolean;
+
+  colorMin: number;
+
+  colorMax: number;
 
   /// A numerical column to use for size-coding markers.
   /// See also *Marker Min Size* and *Marker Max Size*.
+  size: string;
   sizeColumnName: string;
 
   showSizeSelector: boolean;
 
   /// A categorical column that determines the shape of the markers.
+  markers: string;
   markersColumnName: string;
 
   markerType: string;
@@ -436,9 +545,12 @@ export interface IScatterPlotLookSettings {
   markerMaxSize: number;
 
   /// Labels to show next to the markers.
+  labels: string;
   labelsColumnName: string;
 
   /// Determines the rows shown on the scatter plot.
+  showLabelsFor: keyof typeof RowSet;
+
   labelColorAsMarker: boolean;
 
   /// Regression line visibility (toggle by pressing R)
@@ -521,6 +633,8 @@ export interface IScatterPlotLookSettings {
   /// Controls scatter plot tooltip visibility
   showTooltip: string;
 
+  showLabels: keyof typeof VisibilityMode;
+
   /// Controls whether columns on X and Y axes are displayed in tooltip
   /// * Do not add: they are not shown
   /// * Data values only: only they are shown
@@ -543,6 +657,10 @@ export interface IScatterPlotLookSettings {
   /// Requires *Auto Axis Size* to be turned off.
   yAxisWidth: number;
 
+  legendVisibility: keyof typeof VisibilityMode;
+
+  legendPosition: keyof typeof FlexPosition;
+
   axisFont: string;
 
   labelFont: string;
@@ -550,11 +668,12 @@ export interface IScatterPlotLookSettings {
   defaultRenderer: boolean;
 
   /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
   /// Formula that filters out rows to show.
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -567,24 +686,36 @@ export interface IScatterPlotLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 
-export interface ILineChartLookSettings {
+export interface ILineChartSettings {
   /// Deprecated, use splitColumnNames instead
+  split: string;
   splitColumnName: string;
 
   /// A categorical column by which lines are split
   splitColumnNames: Array<string>;
 
   /// Defines a Y column for the chart on the bottom used for zooming
+  overview: string;
   overviewColumnName: string;
 
   /// Aggregation types for all columns
@@ -601,10 +732,14 @@ export interface ILineChartLookSettings {
   multiAxis: boolean;
 
   /// Column to be used on the X axis
+  x: string;
   xColumnName: string;
+
+  xAxisType: keyof typeof AxisType;
 
   /// When defined, background is colored according to the segment column.
   /// Example: time series data with the "stimuli" column
+  segment: string;
   segmentColumnName: string;
 
   invertXAxis: boolean;
@@ -615,13 +750,21 @@ export interface ILineChartLookSettings {
 
   xAxisLabelOrientation: string;
 
+  xAxisTickmarksMode: keyof typeof AxisTickmarksMode;
+
   xMin: number;
 
   xMax: number;
 
+  yMin: number;
+
+  yMax: number;
+
   /// Numerical columns to be used on Y axes.
   /// Depending on the *
   yColumnNames: Array<string>;
+
+  yAxisType: keyof typeof AxisType;
 
   showYAxis: boolean;
 
@@ -633,11 +776,15 @@ export interface ILineChartLookSettings {
   /// Axis title to be shown on the left axis in multi-axis mode
   y2AxisTitle: string;
 
+  yAxisTickmarksMode: keyof typeof AxisTickmarksMode;
+
   showYSelectors: boolean;
 
   showAggrSelectors: boolean;
 
   showSplitSelector: boolean;
+
+  interpolation: keyof typeof LineInterpolationMode;
 
   splineTension: number;
 
@@ -738,11 +885,25 @@ export interface ILineChartLookSettings {
   /// Controls scatter plot tooltip visibility
   showTooltip: string;
 
+  showLabels: keyof typeof VisibilityMode;
+
   /// Newline-separated list of column names to be used in a tooltip.
   /// Requires *showTooltip* to be enabled.
   rowTooltip: string;
 
   rowGroupTooltip: string;
+
+  legendVisibility: keyof typeof VisibilityMode;
+
+  legendPosition: keyof typeof FlexPosition;
+
+  /// When true, lines are added to the legend
+  /// Requires *Multi Axis* to be enabled
+  addLinesToLegend: boolean;
+
+  autoAdjustMultiAxisLegendPosition: boolean;
+
+  multiAxisLegendPosition: keyof typeof FlexExtendedPosition;
 
   innerChartMarginTop: number;
 
@@ -771,11 +932,12 @@ export interface ILineChartLookSettings {
   aggTooltipColumns: string;
 
   /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
   /// Formula that filters out rows to show.
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -788,24 +950,63 @@ export interface ILineChartLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 
-export interface IBarChartLookSettings {
+export enum AxisTickmarksMode {
+  Auto = 'Auto',
+  MinMax = 'MinMax',
+  Custom = 'Custom',
+  AutoAndCustom = 'AutoAndCustom',
+}
+
+export enum LineInterpolationMode {
+  None = 'None',
+  Spline = 'Spline',
+}
+
+export enum FlexExtendedPosition {
+  LeftTop = 'LeftTop',
+  LeftCenter = 'LeftCenter',
+  LeftBottom = 'LeftBottom',
+  CenterTop = 'CenterTop',
+  CenterCenter = 'CenterCenter',
+  CenterBottom = 'CenterBottom',
+  RightTop = 'RightTop',
+  RightCenter = 'RightCenter',
+  RightBottom = 'RightBottom',
+}
+
+export interface IBarChartSettings {
   /// Determines the rows shown on the scatter plot.
+  rowSource: keyof typeof RowSet;
+
   /// Formula that filters out rows to show.
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
   /// Determines what happens when you click on a bar.
+  onClick: keyof typeof RowGroupAction;
+
   /// Value column. See *Value Aggr Type* for aggregation options.
+  value: string;
   valueColumnName: string;
 
   /// Value aggregation.
@@ -827,11 +1028,16 @@ export interface IBarChartLookSettings {
   /// See also *Bar Sort Type*.
   barSortOrder: string;
 
+  axisType: keyof typeof AxisType;
+
   showValueAxis: boolean;
 
   showValueSelector: boolean;
 
+  orientation: string;
+
   /// A categorical column to split data on (each bar represents a category)
+  split: string;
   splitColumnName: string;
 
   /// Aggregation function (applicable to dates only).
@@ -845,12 +1051,14 @@ export interface IBarChartLookSettings {
 
   /// A categorical column to further split data on.
   /// Each category would become a part of the bar resulting from *Split*.
+  stack: string;
   stackColumnName: string;
 
   showStackSelector: boolean;
 
   /// Numerical column to be used for color-coding.
   /// The values in the bin get aggregated using the *Color Aggr Type* property.
+  color: string;
   colorColumnName: string;
 
   /// Color aggregation type.
@@ -886,6 +1094,8 @@ export interface IBarChartLookSettings {
 
   barCornerRadius: number;
 
+  verticalAlign: keyof typeof VerticalAlignType;
+
   font: string;
 
   axisFont: string;
@@ -908,6 +1118,10 @@ export interface IBarChartLookSettings {
 
   barBorderLineColor: number;
 
+  legendVisibility: keyof typeof VisibilityMode;
+
+  legendPosition: keyof typeof FlexPosition;
+
   outerMarginLeft: number;
 
   outerMarginRight: number;
@@ -924,7 +1138,6 @@ export interface IBarChartLookSettings {
 
   showLabels: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -937,21 +1150,44 @@ export interface IBarChartLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 
-export interface IDensityPlotLookSettings {
+export enum RowGroupAction {
+  Select = 'Select',
+  Filter = 'Filter',
+}
+
+export enum VerticalAlignType {
+  Center = 'Center',
+  Top = 'Top',
+  Bottom = 'Bottom',
+}
+
+export interface IDensityPlotSettings {
   /// Columns to be put on the X axis
+  x: string;
   xColumnName: string;
 
   /// Columns to be put on the Y axis
+  y: string;
   yColumnName: string;
 
   autoLayout: boolean;
@@ -962,6 +1198,18 @@ export interface IDensityPlotLookSettings {
 
   showYAxis: boolean;
 
+  xAxisType: keyof typeof AxisType;
+
+  yAxisType: keyof typeof AxisType;
+
+  invertXAxis: boolean;
+
+  invertYAxis: boolean;
+
+  allowZoom: boolean;
+
+  binToRange: boolean;
+
   xBins: number;
 
   yBins: number;
@@ -969,11 +1217,12 @@ export interface IDensityPlotLookSettings {
   backColor: number;
 
   /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
   /// Formula that filters out rows to show.
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -986,26 +1235,44 @@ export interface IDensityPlotLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 
-export interface IBoxPlotLookSettings {
-  showStatistics: boolean;
+export interface IBoxPlotSettings {
+  categoryColumnNames: Array<string>;
 
-  categoryColumnName: string;
+  showStatistics: boolean;
 
   showCategoryAxis: boolean;
 
   showCategorySelector: boolean;
 
+  labelOrientation: keyof typeof TextOrientation;
+
+  /// Display subcategories - category combibations in the x axis table.
+  showMinorCategories: boolean;
+
+  value: string;
   valueColumnName: string;
+
+  axisType: keyof typeof AxisType;
 
   invertYAxis: boolean;
 
@@ -1013,22 +1280,45 @@ export interface IBoxPlotLookSettings {
 
   showValueSelector: boolean;
 
+  /// Include plots, which are empty or have null values.
+  showEmptyCategories: boolean;
+
   /// Column to color-code boxes (Q2-Q3 region).
   /// See also *Bin Color Aggr Type*.
+  binColor: string;
   binColorColumnName: string;
 
   /// Aggregation function for color-coding.
   /// See also *Bin Color*.
   binColorAggrType: string;
 
+  showColorSelector: boolean;
+
   /// Column to color-code markers.
+  markerColor: string;
   markerColorColumnName: string;
+
+  markers: string;
+  markersColumnName: string;
+
+  markerMinSize: number;
+
+  markerMaxSize: number;
+
+  showSizeSelector: boolean;
+
+  markerSizeColumnName: string;
 
   markerType: string;
 
   markerSize: number;
 
   markerOpacity: number;
+
+  /// Points are not shown if the number of rows is greater than *Show Values Limit*.
+  legendVisibility: keyof typeof VisibilityMode;
+
+  legendPosition: keyof typeof FlexPosition;
 
   showMeanCross: boolean;
 
@@ -1053,9 +1343,13 @@ export interface IBoxPlotLookSettings {
 
   showMouseOverPoint: boolean;
 
+  showMouseOverRowGroup: boolean;
+
   statistics: Array<string>;
 
   autoLayout: boolean;
+
+  plotStyle: string;
 
   axisFont: string;
 
@@ -1063,15 +1357,20 @@ export interface IBoxPlotLookSettings {
 
   statisticsFont: string;
 
-  borderLineWidth: number;
+  whiskerLineWidth: number;
+
+  interquartileLineWidth: number;
 
   whiskerWidthRatio: number;
 
-  maxBinWidth: number;
-
   axisUseColumnFormat: boolean;
 
-  borderColor: number;
+  /// Number of KDE bins to display a violin plot.
+  bins: number;
+
+  whiskerColor: number;
+
+  violinWhiskerColor: number;
 
   backColor: number;
 
@@ -1088,16 +1387,19 @@ export interface IBoxPlotLookSettings {
   /// Controls box plot tooltip visibility
   showTooltip: string;
 
+  showLabels: keyof typeof VisibilityMode;
+
   /// Newline-separated list of column names to be used in a tooltip.
   /// Requires *showTooltip* to be enabled.
   rowTooltip: string;
 
   /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
   /// Formula that filters out rows to show.
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1110,17 +1412,34 @@ export interface IBoxPlotLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 
-export interface IPieChartLookSettings {
+export enum TextOrientation {
+  Auto = 'Auto',
+  Horz = 'Horz',
+  Vert = 'Vert',
+}
+
+export interface IPieChartSettings {
+  category: string;
   categoryColumnName: string;
 
   categoryFunction: string;
@@ -1133,15 +1452,23 @@ export interface IPieChartLookSettings {
 
   autoLayout: boolean;
 
+  legendVisibility: keyof typeof VisibilityMode;
+
+  legendPosition: keyof typeof FlexPosition;
+
+  segmentAngle: string;
   segmentAngleColumnName: string;
 
   segmentAngleAggrType: string;
 
+  segmentLength: string;
   segmentLengthColumnName: string;
 
   segmentLengthAggrType: string;
 
   /// Action to be performed when you click on a pie
+  onClick: keyof typeof RowGroupAction;
+
   startAngle: number;
 
   shift: number;
@@ -1155,6 +1482,8 @@ export interface IPieChartLookSettings {
   mouseOverOutlineColor: number;
 
   innerLabelColor: number;
+
+  missingValueColor: number;
 
   showInnerPercent: boolean;
 
@@ -1179,11 +1508,12 @@ export interface IPieChartLookSettings {
   aggTooltipColumns: string;
 
   /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
   /// Formula that filters out rows to show.
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1196,17 +1526,27 @@ export interface IPieChartLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 
-export interface IMatrixPlotLookSettings {
+export interface IMatrixPlotSettings {
   /// Columns to use on the X axis
   xColumnNames: Array<string>;
 
@@ -1225,12 +1565,15 @@ export interface IMatrixPlotLookSettings {
 
   backColor: number;
 
+  innerViewerLook: any;
+
   /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
   /// Formula that filters out rows to show.
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1243,27 +1586,31 @@ export interface IMatrixPlotLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 
-export interface ISummaryLookSettings {
-  /// Column to show aggregation on
-  aggrColumnName: string;
-
+export interface ISummarySettings {
   /// List of columns to show aggregations on
   columnNames: Array<string>;
 
-  /// Aggregation that will be used for the columns
-  aggregation: string;
-
-  /// List of aggregations for the columns (temporarily unavailable from UI)
+  /// List of aggregations for the columns
   aggregations: Array<string>;
 
   /// Controls the source of the data comparison
@@ -1277,6 +1624,7 @@ export interface ISummaryLookSettings {
 
   /// Numerical column to be used for color-coding.
   /// The values in the bin get aggregated using the *Color Aggr Type* property.
+  color: string;
   colorColumnName: string;
 
   /// Color aggregation type.
@@ -1290,7 +1638,6 @@ export interface ISummaryLookSettings {
 
   invertColorScheme: boolean;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1303,22 +1650,29 @@ export interface ISummaryLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 
-export interface ISparklinesLookSettings {
+export interface ISparklinesSettings {
   /// List of columns to show aggregations on
   columnNames: Array<string>;
-
-  /// Aggregation that will be used for the columns
-  aggregation: string;
 
   /// List of aggregations for the columns
   aggregations: Array<string>;
@@ -1327,12 +1681,12 @@ export interface ISparklinesLookSettings {
 
   /// Numerical column to be used for color-coding.
   /// The values in the bin get aggregated using the *Color Aggr Type* property.
+  color: string;
   colorColumnName: string;
 
   /// Color aggregation type.
   colorAggrType: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1345,17 +1699,27 @@ export interface ISparklinesLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 
-export interface IGridLookSettings {
+export interface IGridSettings {
   /// Indicates whether the grid is editable.
   /// See also *Show Add New Row Icon*
   allowEdit: boolean;
@@ -1368,6 +1732,10 @@ export interface IGridLookSettings {
   /// Automatically adds a new row in the end of the dataframe when the last row is edited
   /// The grid should also be in the editable mode
   addNewRowOnLastRowEdit: boolean;
+
+  /// When [allowEditable] is true, allows user to remove the mouse over row.
+  /// The grid should also be in the editable mode
+  showRemoveRowIcon: boolean;
 
   showColumnLabels: boolean;
 
@@ -1383,6 +1751,7 @@ export interface IGridLookSettings {
   /// and *Col Header Height* is not specified.
   horzColLabelsHeight: number;
 
+  /// Applicable only to grid
   rowHeight: number;
 
   /// Indicates mouse-over row by drawing a vertical stripe on the row header
@@ -1458,13 +1827,15 @@ export interface IGridLookSettings {
 
   extendLastColumn: boolean;
 
-  /// Resize rows by dragging the border between rows on a row header
+  /// Resize rows by dragging the border between rows on a row header.
+  /// Applicable only to grid.
   allowRowResizing: boolean;
 
   /// Indicates the way colors are sampled in the heatmap mode when there is not enough
   /// pixels on the screen for each row:
   /// True: each row is draws (but the result is blended and the resulting color might not represent any row)
   /// False: a row is sampled and then drawn as one pixel (but non-sampled rows do not get drawn at all)
+  /// Applicable only to heatmap.
   drawEveryRow: boolean;
 
   /// Whether the context menu is shown
@@ -1479,6 +1850,8 @@ export interface IGridLookSettings {
 
   /// Color-coding that applies to all columns.
   /// Additionally, each column can be individually color-coded.
+  colorCoding: keyof typeof GridColorCodingType;
+
   defaultCellFont: string;
 
   maxFontSize: number;
@@ -1488,6 +1861,8 @@ export interface IGridLookSettings {
   /// Orientation of the column header text.
   /// In spreadsheet mode, it defaults to horizontal no matter how small the columns are.
   /// In heat map mode, it depends on whether the text can fit in the area.
+  colLabelsOrientation: keyof typeof TextOrientation;
+
   /// Resizing column header by dragging the border between the header and the first row
   allowColHeaderResizing: boolean;
 
@@ -1522,10 +1897,13 @@ export interface IGridLookSettings {
 
   /// true: colors are scaled based on the global min/max in all numerical columns
   /// false: colors are scaled based on the column min/max.
+  /// Applicable only to heatmap.
   globalColorScaling: boolean;
 
   /// Controls grid tooltip visibility
   showTooltip: string;
+
+  showLabels: keyof typeof VisibilityMode;
 
   showCellTooltip: boolean;
 
@@ -1546,12 +1924,22 @@ export interface IGridLookSettings {
 
   marginBottom: number;
 
+  /// Heatmap horizontal scroll positions (maxRangeValue, minValue, maxValue)
+  heatmapHorzScroll: Array<number>;
+
+  /// Heatmap vertical scroll positions (maxRangeValue, minValue, maxValue)
+  heatmapVertScroll: Array<number>;
+
   /// Determines whether newly added columns are added to the grid
   syncNewColumns: boolean;
 
   colorScheme: Array<number>;
 
   columnHeaderTypes: Array<string>;
+
+  cellStyle: any;
+
+  currentRowCellStyle: any;
 
   columns: Array<any>;
 
@@ -1560,11 +1948,12 @@ export interface IGridLookSettings {
   maxHeatmapColumns: number;
 
   /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
   /// Formula that filters out rows to show.
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   title: string;
@@ -1573,17 +1962,33 @@ export interface IGridLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 
-export interface IGridCellStyleSettings {
+export enum GridColorCodingType {
+  Auto = 'Auto',
+  All = 'All',
+  None = 'None',
+}
+
+export interface IGridCellStyle {
   font: string;
 
   horzAlign: string;
@@ -1623,12 +2028,15 @@ export interface IGridCellStyleSettings {
   clip: boolean;
 
   /// For 'html' cell types only
+  element: any;
+
   /// When defined, the cell editor becomes a combo box with the specified values
   choices: Array<string>;
 
 }
 
-export interface ICalendarLookSettings {
+export interface ICalendarSettings {
+  date: string;
   dateColumnName: string;
 
   showHeader: boolean;
@@ -1646,11 +2054,12 @@ export interface ICalendarLookSettings {
   evenMonthColor: number;
 
   /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
   /// Formula that filters out rows to show.
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1663,34 +2072,58 @@ export interface ICalendarLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 
-export interface ITrellisPlotLookSettings {
+export interface ITrellisPlotSettings {
   xColumnNames: Array<string>;
 
   yColumnNames: Array<string>;
 
   viewerType: string;
 
+  yLabelsOrientation: keyof typeof TextOrientation;
+
+  xLabelsOrientation: keyof typeof TextOrientation;
+
   categoryLabelFont: string;
 
-  innerViewerLooks: Map<string, any>;
+  innerViewerLook: any;
+
+  innerViewerLooks: {[index: string]: any};
 
   globalScale: boolean;
 
   showGridlines: string;
 
+  legendVisibility: keyof typeof VisibilityMode;
+
+  legendPosition: keyof typeof FlexPosition;
+
   showXSelectors: boolean;
 
   showYSelectors: boolean;
+
+  showXAxes: keyof typeof VisibilityMode;
+
+  showYAxes: keyof typeof VisibilityMode;
 
   showXLabels: boolean;
 
@@ -1711,11 +2144,12 @@ export interface ITrellisPlotLookSettings {
   backColor: number;
 
   /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
   /// Formula that filters out rows to show.
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1728,17 +2162,27 @@ export interface ITrellisPlotLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 
-export interface IPcPlotLookSettings {
+export interface IPcPlotSettings {
   /// Whether the filtered out values are shown.
   /// See also *Filtered Out Line Color*
   showFilteredOutLines: boolean;
@@ -1750,6 +2194,7 @@ export interface IPcPlotLookSettings {
   /// Should be a subset of *Column Names*.
   logColumnsColumnNames: Array<string>;
 
+  color: string;
   colorColumnName: string;
 
   /// Determines the way a value is mapped to the vertical scale.
@@ -1783,6 +2228,8 @@ export interface IPcPlotLookSettings {
 
   transformation: string;
 
+  labelsOrientation: keyof typeof TextOrientation;
+
   backColor: number;
 
   selectedRowsColor: number;
@@ -1808,11 +2255,12 @@ export interface IPcPlotLookSettings {
   horzMargin: number;
 
   /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
   /// Formula that filters out rows to show.
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1825,19 +2273,31 @@ export interface IPcPlotLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 
-export interface IMapViewerLookSettings {
+export interface IMapViewerSettings {
+  region: string;
   regionColumnName: string;
 
+  color: string;
   colorColumnName: string;
 
   colorAggrType: string;
@@ -1855,11 +2315,12 @@ export interface IMapViewerLookSettings {
   categoricalColorScheme: Array<number>;
 
   /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
   /// Formula that filters out rows to show.
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1872,17 +2333,27 @@ export interface IMapViewerLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 
-export interface IStatsViewerLookSettings {
+export interface IStatsViewerSettings {
   columnNames: Array<string>;
 
   stats: Array<string>;
@@ -1890,11 +2361,12 @@ export interface IStatsViewerLookSettings {
   backColor: number;
 
   /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
   /// Formula that filters out rows to show.
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1907,22 +2379,34 @@ export interface IStatsViewerLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 
-export interface ICorrelationPlotLookSettings {
+export interface ICorrelationPlotSettings {
   /// Columns to be put on the X axis
   xColumnNames: Array<string>;
 
   /// Columns to be put on the Y axis
   yColumnNames: Array<string>;
+
+  correlationType: keyof typeof CorrelationType;
 
   /// Shows the Pearson correlation coefficient inside the corresponding cell.
   showPearsonR: boolean;
@@ -1930,14 +2414,18 @@ export interface ICorrelationPlotLookSettings {
   /// Shows the tooltip with the corresponding scatter plot inside.
   showTooltip: boolean;
 
+  /// Ignores double click behavior on the grid cells.
+  ignoreDoubleClick: boolean;
+
   backColor: number;
 
   /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
   /// Formula that filters out rows to show.
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1950,17 +2438,32 @@ export interface ICorrelationPlotLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 
-export interface IFormLookSettings {
+export enum CorrelationType {
+  Pearson = 'Pearson',
+  Spearman = 'Spearman',
+}
+
+export interface IFormSettings {
   /// Determines what gets shown on the form.
   syncMode: string;
 
@@ -1982,9 +2485,10 @@ export interface IFormLookSettings {
 
   showOpenFile: boolean;
 
-  sketchState: Map<any, any>;
+  sketchState: {[index: string]: any};
 
-  //StreamController _changes;
+  columnNames: Array<string>;
+
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1997,27 +2501,37 @@ export interface IFormLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 
-export interface IMarkupViewerLookSettings {
+export interface IMarkupViewerSettings {
   stretch: boolean;
 
   content: string;
+
+  mode: keyof typeof TextInterpretationMode;
 
   /// Whether the rendered html is passed through Grok's [Markup] engine (don't confuse it
   /// with the Markup that might be used for html rendering)
   markupEnabled: boolean;
 
-  //StreamController _changes;
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2032,23 +2546,44 @@ export interface IMarkupViewerLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 
-export interface INetworkDiagramLookSettings {
+export enum TextInterpretationMode {
+  None = 'None',
+  Html = 'Html',
+  Markup = 'Markup',
+  Auto = 'Auto',
+}
+
+export interface INetworkDiagramSettings {
+  node1: string;
   node1ColumnName: string;
 
+  node2: string;
   node2ColumnName: string;
 
   edgeColorColumnName: string;
@@ -2059,10 +2594,12 @@ export interface INetworkDiagramLookSettings {
 
   edgeWidthAggrType: string;
 
+  node1Size: string;
   node1SizeColumnName: string;
 
   node1SizeAggrType: string;
 
+  node2Size: string;
   node2SizeColumnName: string;
 
   node2SizeAggrType: string;
@@ -2075,15 +2612,21 @@ export interface INetworkDiagramLookSettings {
 
   node2ColorAggrType: string;
 
+  node1Image: string;
   node1ImageColumnName: string;
 
+  node2Image: string;
   node2ImageColumnName: string;
 
+  node1Label: string;
   node1LabelColumnName: string;
 
+  node2Label: string;
   node2LabelColumnName: string;
 
   autoLayout: boolean;
+
+  node1Shape: keyof typeof ShapeType;
 
   node1Color: number;
 
@@ -2091,6 +2634,8 @@ export interface INetworkDiagramLookSettings {
   node1Img: string;
 
   node1Physics: boolean;
+
+  node2Shape: keyof typeof ShapeType;
 
   node2Color: number;
 
@@ -2118,6 +2663,8 @@ export interface INetworkDiagramLookSettings {
 
   useGoogleImage: boolean;
 
+  nodeShape: keyof typeof ShapeType;
+
   nodeImg: string;
 
   nodeColor: number;
@@ -2125,6 +2672,8 @@ export interface INetworkDiagramLookSettings {
   edgeColor: number;
 
   edgeWidth: number;
+
+  showArrows: keyof typeof ArrowType;
 
   edgesPhysics: boolean;
 
@@ -2143,7 +2692,6 @@ export interface INetworkDiagramLookSettings {
   /// Its signature: `dataframe expand(dynamic nodeId)`.
   onNodeExpandFunction: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2156,25 +2704,60 @@ export interface INetworkDiagramLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 
-export interface ICardLookSettings {
+export enum ShapeType {
+  none = 'none',
+  ellipse = 'ellipse',
+  circle = 'circle',
+  database = 'database',
+  box = 'box',
+  dot = 'dot',
+  diamond = 'diamond',
+  circularImage = 'circularImage',
+  image = 'image',
+  icon = 'icon',
+}
+
+export enum ArrowType {
+  none = 'none',
+  to = 'to',
+  from = 'from',
+  middle = 'middle',
+  to_middle_from = 'to_middle_from',
+  to_from = 'to_from',
+  to_middle = 'to_middle',
+  middle_from = 'middle_from',
+}
+
+export interface ICardSettings {
   caption: string;
+
+  valueSourceType: keyof typeof CardValueSourceType;
 
   /// Source-type specific value.
   value: string;
 
   format: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2187,17 +2770,36 @@ export interface ICardLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 
-export interface ITileViewerLookSettings {
+export enum CardValueSourceType {
+  Constant = 'Constant',
+  TableMeta = 'TableMeta',
+  ColumnMeta = 'ColumnMeta',
+  Markup = 'Markup',
+  Formula = 'Formula',
+  External = 'External',
+}
+
+export interface ITileViewerSettings {
   lanesColumnName: string;
 
   cardMarkup: string;
@@ -2207,19 +2809,19 @@ export interface ITileViewerLookSettings {
   /// Whether the form auto-generates whenever columns change
   autoGenerate: boolean;
 
-  sketchState: Map<any, any>;
+  sketchState: {[index: string]: any};
 
   columnsJson: string;
 
   lanes: Array<string>;
 
   /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
   /// Formula that filters out rows to show.
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2234,21 +2836,33 @@ export interface ITileViewerLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 
-export interface IPivotViewerLookSettings {
+export interface IPivotViewerSettings {
   showHeader: boolean;
 
   pivotColumnNames: Array<string>;
@@ -2261,14 +2875,19 @@ export interface IPivotViewerLookSettings {
 
   viewerSettings: Array<any>;
 
+  filteringEnabled: boolean;
+
+  gridLook: any;
+
   allowViewers: boolean;
 
   /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
   /// Formula that filters out rows to show.
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2281,13 +2900,23 @@ export interface IPivotViewerLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 

@@ -4,7 +4,7 @@ Diff Studio is a [package](https://datagrok.ai/help/develop/#packages) for the [
 
 * Go to **Apps** and run **Diff Studio**
 * Enter formulas or modify template
-* Click **F5** or go to **Run** tab
+* Press **F5** or go to **Run** tab
 
 The solver takes a set of the differential equations in a declarative form, and creates a UI that solves the equations, visualizes the results, and lets you change parameters on the fly.
 
@@ -17,27 +17,30 @@ Datagrok provides intuitive tools for the rapid solving ODEs.
   * Go to **Run** tab to launch computations
 * Modify a template:
   * Edit formulas or add new ones
-  * Click **F5** or go to **Run** tab
+  * Press **F5** or go to **Run** tab
   * Cahnge inputs and explore your model
 * Use an advanced template:
-  * Press <i class="fas fa-folder-open"></i> **Open** icon on the top panel
+  * Click on the "Open" icon <i class="fas fa-folder-open"></i> on the top panel
   * Select **Templates > Advanced...**
-  * Modify formulas and click **F5**
+  * Modify formulas and press **F5**
 * Save formulas in a local file:
-  * Press <i class="fas fa-save"></i> **Save** icon on the top panel  
+  * Click on the "Save" icon <i class="fas fa-save"></i> on the top panel  
   * Find the *ivp*-file in Downloads, modify it using any text editor
 * Drag-n-drop:
   * Drag *ivp*-file with equations right into the browser
 * Load equations from a local file:
-  * Press <i class="fas fa-folder-open"></i> **Open** icon on the top panel
+  * Click on the "Open" icon <i class="fas fa-folder-open"></i> on the top panel
   * Select **From file...**
   * Select a file with formulas
 * Explore model:
-  * Press <i class="fas fa-analytics"></i> **Run sensitivity analysis** icon
+  * Click on the "Run sensitivity analysis" icon <i class="fas fa-analytics"></i>
   * Analyze the relationship between inputs and outputs using one of the following methods:
     * [Monte Carlo](https://datagrok.ai/help/compute#monte-carlo)
     * [Sobol](https://datagrok.ai/help/compute#sobol)
     * [Grid](https://datagrok.ai/help/compute#grid)
+* Fit parameters:
+  * Click on the "Fit inputs" icon <i class="grok-icon fas fa-chart-line"></i>
+  * Find input conditions leading to specified output constraints
 
 ## Create model from template
 
@@ -65,7 +68,7 @@ The solver has built-in use cases. Get access to them via the context menu. You 
   * shows the usage of `min` and `max` in inputs annotation
 * `PK`
   * [pharmacokinetic](https://en.wikipedia.org/wiki/Pharmacokinetics) (PK) simulation
-  * one-compartment model
+  * demonstrates the usage of the `meta.solver` feature for numerical solver management
 * `PK-PD`
   * simulates pharmacokinetics (PK), pharmacodynamics (PD), and their [relationship](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7348046)
   * illustrates the usage of the `loop` feature for dosing specification
@@ -103,17 +106,18 @@ Use the following sections to specify various problems:
 
 |Control block|Features|
 |-------------|--------|
-|```#name```|Defines a name.|
+|```#name```|Defines a name|
 |```#equations```|Differential equation specification|
 |```#argument```|Independent variable specification|
 |```#inits```|Initial values specification|
 |```#constants```|Constants specification|
 |```#parameters```|Parameters specification|
-|```#expressions```|Defines auxiliary compuations.|
+|```#expressions```|Defines auxiliary compuations|
 |```#output```|Defines output columns and their captions|
-|```#tags```|Specifies tags (`model`, `app`, etc.).|
-|```#description```|Defines description of the model.|
-|```#comment```|Specifies comments block.|
+|```#tags```|Specifies tags (`model`, `app`, etc.)|
+|```#description```|Defines description of the model|
+|```#comment```|Specifies comments block|
+|```#meta.solver```|Defines the solver settings|
 
 ## Annotations
 
@@ -150,12 +154,46 @@ Provide hints in brackets `[ ]`:
   P1 = 1 {category: Parameters} [P1 parameter tooltip]
 ```
 
+## Solver management
+
+You can manage the solver of ODEs. Specify its settings in the `#meta.solver`-line:
+
+* the numerical method (`method`)
+* the maximum number of iterations (`maxIterations`)
+* the maximum computation time (`maxTimeMs`)
+
+Diff Studio implements the following [Rosenbrock–Wanner](https://doi.org/10.1016/j.cam.2015.03.010) methods for solving ODEs:
+
+|Method|Value|
+|-------------|--------|
+|the modified Rosenbrock triple|`'mrt'`|
+|the ROS3PRw method|`'ros3prw'`|
+|the ROS34PRw method|`'ros34prw'`|
+
+By default, Diff Studio uses ROS34PRw. You may specify the method as follows:
+
+```python
+#meta.solver: {method: 'mrt'}
+```
+
+To check correctness of formulas, set the maximum number of iterations:
+
+```python
+#meta.solver: {method: 'mrt'; maxIterations: 1}
+```
+
+Diff Studio alerts you if computations take too long. The default time limit is 5 seconds. To customize it, set the maximum computation time (in milliseconds):
+
+```python
+#meta.solver: {method: 'mrt'; maxTimeMs: 50}
+```
+
 ## Export to JavaScript script
 
 Once you are satisfied with the result, you can convert your model to a Datagrok application. To do so:
 
-1. Press **JS** button on the top panel
-2. Press **SAVE** button
+1. Click **JS** button on the top panel
+2. Click **SAVE** button
 3. Script is created, and can be found in the "Scripts" section of the platform
 
 Improve usability. Use `#tags: model` to add your model to `Model Catalog`. Provide a description in the `#description`-line:
@@ -176,5 +214,5 @@ Find more features in Diff Studio [docs](https://datagrok.ai/help/compute/diff-s
 See also
 
 * [Sensitivity analysis](https://datagrok.ai/help/compute/#sensitivity-analysis)
-* [Viewers gallery](https://datagrok.ai/help/visualize/gallery)
+* [Parameter optimization](https://datagrok.ai/help/compute/#input-parameter-optimization)
 * [Scripting](https://datagrok.ai/help/compute/scripting)

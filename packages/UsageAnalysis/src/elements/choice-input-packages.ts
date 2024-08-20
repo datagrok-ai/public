@@ -11,7 +11,7 @@ export class ChoiceInputPackages {
   field: DG.InputBase;
 
   static async construct() {
-    const field = ui.choiceInput('Packages', null, []);
+    const field = ui.input.choice('Packages');
 
     field.input.setAttribute('multiple', '');
     field.input.querySelectorAll('option').forEach((o) => {o.selected = false;});

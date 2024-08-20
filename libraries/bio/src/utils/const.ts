@@ -2,6 +2,15 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
+import {MonomerType, PolymerType} from '../helm/types';
+import {MonomerTypes, PolymerTypes} from '../helm/consts';
+
+import HELM_POLYMER_TYPE = PolymerTypes;
+import HELM_MONOMER_TYPE = MonomerTypes;
+import {RGroup} from '../types';
+
+export {HELM_POLYMER_TYPE, HELM_MONOMER_TYPE};
+
 /** Required HELM library monomer fields:
  * https://github.com/PistoiaHELM/HELMMonomerSets/blob/master/HELMmonomerSchema.json */
 export const enum HELM_REQUIRED_FIELD {
@@ -19,7 +28,7 @@ export const enum HELM_REQUIRED_FIELD {
 
 // fields of "rgroups" sub-object in HELM library
 export const enum HELM_RGROUP_FIELDS {
-  CAP_GROUP_SMILES = 'capGroupSMILES',
+  CAP_GROUP_SMILES = 'capGroupSmiles',
   // WARNING: both capitalization variants coexist
   CAP_GROUP_SMILES_UPPERCASE = 'capGroupSMILES',
   ALTERNATE_ID = 'alternateId',
@@ -45,18 +54,6 @@ export const enum HELM_FIELDS {
   ID = 'id',
   POLYMER_TYPE = 'polymerType',
   SYMBOL = 'symbol'
-}
-
-// possible values of polymers
-export const enum HELM_POLYMER_TYPE {
-  PEPTIDE = 'PEPTIDE',
-  RNA = 'RNA',
-}
-
-export const enum HELM_MONOMER_TYPE {
-  BACKBONE = 'Backbone',
-  TERMINAL = 'Terminal',
-  BRANCH = 'Branch',
 }
 
 // core fields of HELM library object used in toAtomicLevel function
@@ -87,16 +84,16 @@ export const jsonSdfMonomerLibDict = {
 };
 
 export const DUMMY_MONOMER = {
-  'monomerType': 'Backbone',
+  'monomerType': 'Backbone' as MonomerType,
   'smiles': '',
   'name': '',
   'author': 'Datagrok',
   'molfile': '',
   'naturalAnalog': '',
-  'rgroups': [],
+  'rgroups': [] as RGroup[],
   'createDate': null,
   'id': 0,
-  'polymerType': 'PEPTIDE',
+  'polymerType': 'PEPTIDE' as PolymerType,
   'symbol': ''
 };
 // range of hex nubers used in PepSea library to endode monomers

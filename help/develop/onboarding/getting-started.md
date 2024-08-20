@@ -93,9 +93,9 @@ extensions.
 
 [Demo]: https://www.youtube.com/watch?v=tVwpRB8fikQ
 
-[Platform overview]: ../../../datagrok/resources/video-contents.md#getting-started
+[Platform overview]: ../../datagrok/resources/video-contents.md#getting-started
 
-[JS API overview]: ../../../datagrok/resources/video-contents.md#javascript-api
+[JS API overview]: ../../datagrok/resources/video-contents.md#javascript-api
 
 [datagrok-tools overview (part 1)]: https://www.youtube.com/watch?v=zVVmlRorpjg&t=258s
 
@@ -103,9 +103,9 @@ extensions.
 
 [VS Code Integration]: https://www.youtube.com/watch?v=zVVmlRorpjg&t=870s
 
-[Data access]: ../../../datagrok/resources/video-contents.md#data-access
+[Data access]: ../../datagrok/resources/video-contents.md#data-access
 
-[Visualization and viewers]: ../../../datagrok/resources/video-contents.md#visualizations
+[Visualization and viewers]: ../../datagrok/resources/video-contents.md#visualizations
 
 [Datagrok demo]: https://www.youtube.com/watch?v=tVwpRB8fikQ
 

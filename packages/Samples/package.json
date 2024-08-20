@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/samples",
   "friendlyName": "Samples",
-  "version": "1.0.0",
+  "version": "1.0.4",
   "author": {
     "name": "Alexander Paramonov",
     "email": "aparamonov@datagrok.ai"
@@ -13,7 +13,7 @@
     "directory": "packages/Samples"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.1.22",
+    "@datagrok-libraries/utils": "^4.2.13",
     "datagrok-api": "^1.13.0",
     "rxjs": "^6.5.5",
     "ts-loader": "latest",
@@ -33,7 +33,7 @@
     "link-api": "npm link datagrok-api",
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
-    "debug-demo": "grok publish",
+    "debug-demo": "grok publish public --release",
     "release-demo": "grok publish localhost --release",
     "build-demo": "webpack",
     "build": "tsc && webpack",

@@ -1,7 +1,13 @@
-import * as rxjs from 'rxjs';
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+
+import {BehaviorSubject, Observable, Subject} from 'rxjs';
 import {debounceTime, tap, skip} from 'rxjs/operators';
 
-export class MonomerLibFileEventManager {
+import {IMonomerLibFileEventManager} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+
+export class MonomerLibFileEventManager implements IMonomerLibFileEventManager {
   // WARNING: this must be a singleton because it manages the unique state
   private constructor() {}
 
@@ -14,43 +20,60 @@ export class MonomerLibFileEventManager {
     return MonomerLibFileEventManager._instance;
   }
 
-  private _libraryFilesUpdateSubject$ = new rxjs.BehaviorSubject<string[]>([]);
-  private _addLibraryFilesSubject$ = new rxjs.Subject<void>();
-  private _librarySelectionSubject$ = new rxjs.Subject<[string, boolean]>();
+  private _libFilesUpdateSubject$ = new BehaviorSubject<string[]>([]);
+  private _setFilesUpdateSubject$ = new BehaviorSubject<string[]>([]);
 
-  getValidFilesPathList(): string[] {
-    return this._libraryFilesUpdateSubject$.getValue();
+  private _addLibraryFilesSubject$ = new Subject<void>();
+  private _librarySelectionSubject$ = new Subject<[string, boolean]>();
+
+  getValidLibPathList(): string[] {
+    return this._libFilesUpdateSubject$.getValue();
+  }
+
+  getValidSetPathList(): string[] {
+    return this._setFilesUpdateSubject$.getValue();
   }
 
   // TODO: remove after adding init from user data storage
   // WARNING: a temporary solution
   async getValidLibraryPathsAsynchronously(): Promise<string[]> {
     return new Promise((resolve) => {
-      this._libraryFilesUpdateSubject$.pipe<string[]>(
+      const sub = this._libFilesUpdateSubject$.pipe<string[]>(
         skip(1)
       ).subscribe((fileNames) => {
         resolve(fileNames);
+        sub.unsubscribe();
       });
     });
   }
 
-  changeValidFilesPathList(newList: string[]): void {
-    this._libraryFilesUpdateSubject$.next(newList);
+  changeValidLibPathList(newLibPathList: string[]): void {
+    this._libFilesUpdateSubject$.next(newLibPathList);
   }
 
-  get updateUIControlsRequested$(): rxjs.Observable<string[]> {
-    return this._libraryFilesUpdateSubject$.pipe(
+  changeValidSetPathList(newSetPathList: string[]): void {
+    this._setFilesUpdateSubject$.next(newSetPathList);
+  }
+
+  get updateUIControlsRequested$(): Observable<string[]> {
+    return this._libFilesUpdateSubject$.pipe(
       // debounceTime(1000)
     );
   }
 
-  get updateValidLibraryFileListRequested$(): rxjs.Observable<string[]> {
-    return this._libraryFilesUpdateSubject$.pipe(
+  get updateValidLibraryFileListRequested$(): Observable<string[]> {
+    return this._libFilesUpdateSubject$.pipe(
       // debounceTime(3000)
     );
   }
 
-  get addLibraryFileRequested$(): rxjs.Observable<void> {
+  get updateValidSetFileListRequested$(): Observable<string[]> {
+    return this._setFilesUpdateSubject$.pipe(
+      // debounceTime(1000)
+    );
+  }
+
+  get addLibraryFileRequested$(): Observable<void> {
     return this._addLibraryFilesSubject$.pipe(
       // debounceTime(1000)
     );
@@ -60,7 +83,7 @@ export class MonomerLibFileEventManager {
     this._addLibraryFilesSubject$.next();
   }
 
-  get librarySelectionRequested$(): rxjs.Observable<[string, boolean]> {
+  get librarySelectionRequested$(): Observable<[string, boolean]> {
     return this._librarySelectionSubject$;
   }
 

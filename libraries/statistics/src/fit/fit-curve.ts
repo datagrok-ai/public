@@ -1,29 +1,16 @@
 /* eslint-disable max-len */
 /* eslint-disable no-multi-spaces */
 import * as DG from 'datagrok-api/dg';
-
-import {limitedMemoryBFGS} from '../../lbfgs/lbfgs';
 //@ts-ignore: no types
 import * as jStat from 'jstat';
+import {performNelderMeadOptimization} from './fitting-algorithm/optimizer';
+import {NELDER_MEAD_DEFAULTS} from './fitting-algorithm/optimizer-nelder-mead';
 
-
-type Optimizable = {
-  getValue: (parameters: number[]) => number,
-  getGradient: (parameters: number[], gradient: number[]) => number[],
-}
-
-type Likelihood = {
-  value: number,
-  const: number,
-  mult: number
-};
-
-type ObjectiveFunction = (targetFunc: (params: number[], x: number) => number,
-  data: {x: number[], y: number[]}, params: number[]) => Likelihood;
 
 export const FitErrorModel = {
   CONSTANT: 'constant',
   PROPORTIONAL: 'proportional',
+  COMBINED: 'combined',
 };
 
 export type FitParamBounds = {
@@ -42,7 +29,7 @@ export interface IFitFunctionDescription {
 
 export type FitCurve = {
   fittedCurve: (x: number) => number;
-  parameters: number[];
+  parameters: Float32Array;
 };
 
 export type FitConfidenceIntervals = {
@@ -53,11 +40,11 @@ export type FitConfidenceIntervals = {
 export type FitStatistics = {
   rSquared?: number,
   auc?: number,
-  interceptX: number, // parameters[2]
-  interceptY: number, // fittedCurve[parameters[2]]
-  slope: number, // parameters[1]
-  top: number, // parameters[0]
-  bottom: number, // parameters[3]
+  interceptX?: number, // parameters[2]
+  interceptY?: number, // fittedCurve[parameters[2]]
+  slope?: number, // parameters[1]
+  top?: number, // parameters[0]
+  bottom?: number, // parameters[3]
 };
 
 export type FitInvertedFunctions = {
@@ -88,26 +75,17 @@ export type FitInvertedFunctions = {
  * - Work with series stored in multiple formats (binary for performance, json for flexibility, etc)
 */
 
-export const FIT_SEM_TYPE = 'fit';
-export const FIT_CELL_TYPE = 'fit';
-export const TAG_FIT = '.fit';
-
-export const CONFIDENCE_INTERVAL_STROKE_COLOR = 'rgba(255,191,63,0.4)';
-export const CONFIDENCE_INTERVAL_FILL_COLOR = 'rgba(255,238,204,0.3)';
-
-export const CURVE_CONFIDENCE_INTERVAL_BOUNDS = {
-  TOP: 'top',
-  BOTTOM: 'bottom',
-};
-
-export const DROPLINES = ['IC50'];
+const DROPLINES = ['IC50'];
 
 export type FitMarkerType = 'asterisk' | 'circle' | 'cross border' | 'diamond' | 'square' | 'star' | 'triangle bottom' |
   'triangle left' | 'triangle right' | 'triangle top';
 
+export type FitOutlierMarkerType = 'asterisk' | 'circle' | 'cross border' | 'diamond' | 'outlier' | 'square' | 'star' |
+  'triangle bottom' | 'triangle left' | 'triangle right' | 'triangle top';
+
 export type FitLineStyle = 'solid' | 'dotted' | 'dashed' | 'dashdotted';
 
-export type FitErrorModelType = 'constant' | 'proportional';
+export type FitErrorModelType = 'constant' | 'proportional' | 'combined';
 
 /** A point in the fit series. Only x and y are required. Can override some fields defined in IFitSeriesOptions. */
 export interface IFitPoint {
@@ -117,6 +95,7 @@ export interface IFitPoint {
   color?: string;          // overrides the marker color defined in IFitSeriesOptions
   outlierColor?: string;   // overrides the outlier color defined in IFitSeriesOptions
   marker?: FitMarkerType;  // overrides the marker type defined in IFitSeriesOptions
+  outlierMarker?: FitOutlierMarkerType; // overrides the outlier marker type defined in IFitSeriesOptions
   size?: number;           // overrides the default marker size
   stdev?: number;          // when defined, renders an error bar candlestick
   // minY?: number;           // when defined, the marker renders as a candlestick with whiskers [minY, maxY]
@@ -179,6 +158,7 @@ export interface IFitSeriesOptions {
   parameters?: number[];                // controls the series parameters, auto-fitting when not defined
   parameterBounds?: FitParamBounds[];   // defines the acceptable range of each parameter, which is taken into account during the fitting. See also `parameters`.
   markerType?: FitMarkerType;           // defines the series marker type
+  outlierMarkerType?: FitOutlierMarkerType;  // defines the series outlier marker type
   lineStyle?: FitLineStyle;             // defines the series line style
   pointColor?: string;                  // overrides the standardized series point color
   fitLineColor?: string;                // overrides the standardized series fit line color
@@ -196,88 +176,13 @@ export interface IFitSeriesOptions {
 }
 // TODO: show labels in property panel if present, color by default from series
 
-
-/** Properties that describe {@link FitStatistics}. Useful for editing, initialization, transformations, etc. */
-export const statisticsProperties: DG.Property[] = [
-  DG.Property.js('rSquared', DG.TYPE.FLOAT, {userEditable: false}),
-  DG.Property.js('auc', DG.TYPE.FLOAT, {userEditable: false}),
-  DG.Property.js('interceptY', DG.TYPE.FLOAT, {userEditable: false}),
-  DG.Property.js('interceptX', DG.TYPE.FLOAT, {userEditable: false}),
-  DG.Property.js('slope', DG.TYPE.FLOAT, {userEditable: false}),
-  DG.Property.js('top', DG.TYPE.FLOAT, {userEditable: false}),
-  DG.Property.js('bottom', DG.TYPE.FLOAT, {userEditable: false}),
-];
-
-/** Properties that describe {@link IFitChartOptions}. Useful for editing, initialization, transformations, etc. */
-export const fitChartDataProperties: DG.Property[] = [
-  // Style and zoom
-  DG.Property.js('minX', DG.TYPE.FLOAT, {description: 'Minimum value of the X axis', nullable: true}),
-  DG.Property.js('minY', DG.TYPE.FLOAT, {description: 'Minimum value of the Y axis', nullable: true}),
-  DG.Property.js('maxX', DG.TYPE.FLOAT, {description: 'Maximum value of the X axis', nullable: true}),
-  DG.Property.js('maxY', DG.TYPE.FLOAT, {description: 'Maximum value of the Y axis', nullable: true}),
-  DG.Property.js('title', DG.TYPE.STRING, {nullable: true}),
-  DG.Property.js('xAxisName', DG.TYPE.STRING, {description:
-    'Label to show on the X axis. If not specified, corresponding data column name is used', nullable: true}),
-  DG.Property.js('yAxisName', DG.TYPE.STRING, {description:
-    'Label to show on the Y axis. If not specified, corresponding data column name is used', nullable: true}),
-  DG.Property.js('logX', DG.TYPE.BOOL, {description: 'Whether the X axis should be logarithmic', defaultValue: false}),
-  DG.Property.js('logY', DG.TYPE.BOOL, {description: 'Whether the Y axis should be logarithmic', defaultValue: false}),
-  DG.Property.js('allowXZeroes', DG.TYPE.BOOL, {description: 'Whether x zeroes allowed for logarithmic data or not', defaultValue: true}),
-  DG.Property.js('mergeSeries', DG.TYPE.BOOL, {description: 'Whether to merge series or not', defaultValue: false}),
-  DG.Property.js('showColumnLabel', DG.TYPE.BOOL, {description: 'Whether to show the column label in the legend or not', defaultValue: false}),
-  DG.Property.js('showStatistics', DG.TYPE.STRING_LIST, {description: 'Whether specific statistics should be rendered',
-    choices: statisticsProperties.map((frp) => frp.name), inputType: 'MultiChoice',
-    //@ts-ignore
-    friendlyName: 'Statistics'}),
-];
-
-/** Properties that describe {@link IFitSeriesOptions}. Useful for editing, initialization, transformations, etc. */
-export const fitSeriesProperties: DG.Property[] = [
-  DG.Property.js('fitFunction', DG.TYPE.STRING,
-    {category: 'Fitting', choices: ['sigmoid', 'linear'], defaultValue: 'sigmoid'}),
-  DG.Property.js('pointColor', DG.TYPE.STRING,
-    {category: 'Rendering', nullable: true, inputType: 'Color'}),
-  DG.Property.js('fitLineColor', DG.TYPE.STRING,
-    {category: 'Rendering', nullable: true, inputType: 'Color'}),
-  DG.Property.js('outlierColor', DG.TYPE.STRING,
-    {category: 'Rendering', nullable: true, inputType: 'Color'}),
-  DG.Property.js('errorModel', DG.TYPE.STRING, {category: 'Fitting', defaultValue: 'constant',
-    choices: ['constant', 'proportional'], nullable: false}),
-  DG.Property.js('connectDots', DG.TYPE.BOOL, {category: 'Fitting', defaultValue: false}),
-  DG.Property.js('clickToToggle', DG.TYPE.BOOL, {category: 'Fitting', description:
-    'Click on a point to mark it as outlier and refit', nullable: true, defaultValue: false}),
-  DG.Property.js('showFitLine', DG.TYPE.BOOL, {category: 'Fitting', defaultValue: true}),
-  DG.Property.js('showPoints', DG.TYPE.STRING, // rewrite description
-    {category: 'Fitting', description: 'Whether points/candlesticks/none should be rendered',
-      defaultValue: 'points', choices: ['points', 'candlesticks', 'both']}),
-  DG.Property.js('showCurveConfidenceInterval', DG.TYPE.BOOL,
-    {category: 'Fitting', description: 'Whether confidence intervals should be rendered', defaultValue: false,
-      //@ts-ignore
-      friendlyName: 'Confidence Interval'}),
-  DG.Property.js('markerType', DG.TYPE.STRING, {category: 'Rendering', defaultValue: 'circle',
-    choices: ['asterisk', 'circle', 'cross border', 'diamond', 'square', 'star',
-      'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false}),
-  DG.Property.js('lineStyle', DG.TYPE.STRING, {category: 'Rendering', defaultValue: 'solid',
-    choices: ['solid', 'dotted', 'dashed', 'dashdotted'], nullable: false}),
-  DG.Property.js('droplines', DG.TYPE.STRING_LIST, {description: 'Whether specific droplines should be rendered',
-    choices: DROPLINES, inputType: 'MultiChoice'}),
-  DG.Property.js('columnName', DG.TYPE.STRING, {description: 'Column name where the series is stored', defaultValue: ''}),
-];
-
-export const FIT_FUNCTION_SIGMOID = 'sigmoid';
-export const FIT_FUNCTION_LINEAR = 'linear';
-
-export const FIT_STATS_RSQUARED = 'rSquared';
-export const FIT_STATS_AUC = 'auc';
-
-
 // TODO?: add method to return parameters - get parameters from fit function
 /** Class for the fit functions */
 export abstract class FitFunction {
   abstract get name(): string;
   abstract get parameterNames(): string[];
-  abstract y(params: number[], x: number): number;
-  abstract getInitialParameters(x: number[], y: number[]): number[];
+  abstract y(params: Float32Array, x: number): number;
+  abstract getInitialParameters(x: number[], y: number[]): Float32Array;
 }
 
 /** Class that implements the linear function */
@@ -290,11 +195,11 @@ export class LinearFunction extends FitFunction {
     return ['Slope', 'Intercept'];
   }
 
-  y(params: number[], x: number): number {
+  y(params: Float32Array, x: number): number {
     return linear(params, x);
   }
 
-  getInitialParameters(x: number[], y: number[]): number[] {
+  getInitialParameters(x: number[], y: number[]): Float32Array {
     let minIndex = 0;
     let maxIndex = 0;
     for (let i = 1; i < x.length; i++) {
@@ -308,7 +213,9 @@ export class LinearFunction extends FitFunction {
     const deltaY = y[maxIndex] - y[minIndex];
     const A = deltaY / deltaX;
     const B = y[maxIndex] - A * x[maxIndex];
-    return [A, B];
+    const params = new Float32Array(2);
+    params.set([A, B]);
+    return params;
   }
 }
 
@@ -322,11 +229,11 @@ export class SigmoidFunction extends FitFunction {
     return ['Top', 'Bottom', 'Slope', 'IC50'];
   }
 
-  y(params: number[], x: number): number {
+  y(params: Float32Array, x: number): number {
     return sigmoid(params, x);
   }
 
-  getInitialParameters(x: number[], y: number[]): number[] {
+  getInitialParameters(x: number[], y: number[]): Float32Array {
     const dataBounds = DG.Rect.fromXYArrays(x, y);
     const medY = (dataBounds.bottom - dataBounds.top) / 2 + dataBounds.top;
     let maxYInterval = dataBounds.bottom - dataBounds.top;
@@ -342,7 +249,51 @@ export class SigmoidFunction extends FitFunction {
     const slope = y[0] > y[y.length - 1] ? 1 : -1;
 
     // params are: [max, tan, IC50, min]
-    return [dataBounds.bottom, slope, xAtMedY, dataBounds.top];
+    const params = new Float32Array(4);
+    params.set([dataBounds.bottom, slope, xAtMedY, dataBounds.top]);
+    return params;
+  }
+}
+
+/** Class that implements the linear logarithmic function */
+export class LogLinearFunction extends FitFunction {
+  get name(): string {
+    return FIT_FUNCTION_LOG_LINEAR;
+  }
+
+  get parameterNames(): string[] {
+    return ['Slope', 'Intercept'];
+  }
+
+  y(params: Float32Array, x: number): number {
+    return logLinear(params, x);
+  }
+
+  getInitialParameters(x: number[], y: number[]): Float32Array {
+    const params = new Float32Array(2);
+    params.set([-5, 100]);
+    return params;
+  }
+}
+
+/** Class that implements the exponential function */
+export class ExponentialFunction extends FitFunction {
+  get name(): string {
+    return FIT_FUNCTION_EXPONENTIAL;
+  }
+
+  get parameterNames(): string[] {
+    return ['Mantissa', 'Power'];
+  }
+
+  y(params: Float32Array, x: number): number {
+    return exponential(params, x);
+  }
+
+  getInitialParameters(x: number[], y: number[]): Float32Array {
+    const params = new Float32Array(2);
+    params.set([100, -2]);
+    return params;
   }
 }
 
@@ -351,8 +302,8 @@ export class JsFunction extends FitFunction {
   private _name: string;
   private _parameterNames: string[];
 
-  constructor(name: string, yFunc: (params: number[], x: number) => number,
-    getInitParamsFunc: (x: number[], y: number[]) => number[], parameterNames: string[]) {
+  constructor(name: string, yFunc: (params: Float32Array, x: number) => number,
+    getInitParamsFunc: (x: number[], y: number[]) => Float32Array, parameterNames: string[]) {
     super();
 
     this._name = name;
@@ -370,11 +321,11 @@ export class JsFunction extends FitFunction {
     return this._parameterNames;
   }
 
-  y(params: number[], x: number): number {
+  y(params: Float32Array, x: number): number {
     throw new Error('Not implemented');
   }
 
-  getInitialParameters(x: number[], y: number[]): number[] {
+  getInitialParameters(x: number[], y: number[]): Float32Array {
     throw new Error('Not implemented');
   }
 }
@@ -383,47 +334,92 @@ export class JsFunction extends FitFunction {
 export const fitFunctions: {[index: string]: FitFunction} = {
   'linear': new LinearFunction(),
   'sigmoid': new SigmoidFunction(),
+  'log-linear': new LogLinearFunction(),
+  'exponential': new ExponentialFunction(),
 };
 
-export interface IFitOptions {
-  errorModel: FitErrorModelType;
-  confidenceLevel: number;
-  statistics: boolean;
-}
+/** Properties that describe {@link FitStatistics}. Useful for editing, initialization, transformations, etc. */
+export const statisticsProperties: DG.Property[] = [
+  DG.Property.js('rSquared', DG.TYPE.FLOAT, {userEditable: false}),
+  DG.Property.js('auc', DG.TYPE.FLOAT, {userEditable: false}),
+  DG.Property.js('interceptY', DG.TYPE.FLOAT, {userEditable: false}),
+  DG.Property.js('interceptX', DG.TYPE.FLOAT, {userEditable: false}),
+  DG.Property.js('slope', DG.TYPE.FLOAT, {userEditable: false}),
+  DG.Property.js('top', DG.TYPE.FLOAT, {userEditable: false}),
+  DG.Property.js('bottom', DG.TYPE.FLOAT, {userEditable: false}),
+];
 
+/** Properties that describe {@link IFitChartOptions}. Useful for editing, initialization, transformations, etc. */
+export const fitChartDataProperties: DG.Property[] = [
+  // Style and zoom
+  // remove unnecessary tooltips
+  DG.Property.js('minX', DG.TYPE.FLOAT, {nullable: true}),
+  DG.Property.js('minY', DG.TYPE.FLOAT, {nullable: true}),
+  DG.Property.js('maxX', DG.TYPE.FLOAT, {nullable: true}),
+  DG.Property.js('maxY', DG.TYPE.FLOAT, {nullable: true}),
+  DG.Property.js('title', DG.TYPE.STRING, {nullable: true}),
+  DG.Property.js('xAxisName', DG.TYPE.STRING, {description:
+    'Label to show on the X axis. If not specified, corresponding data column name is used', nullable: true}),
+  DG.Property.js('yAxisName', DG.TYPE.STRING, {description:
+    'Label to show on the Y axis. If not specified, corresponding data column name is used', nullable: true}),
+  DG.Property.js('logX', DG.TYPE.BOOL, {description: 'Whether the X axis should be logarithmic', defaultValue: false}),
+  DG.Property.js('logY', DG.TYPE.BOOL, {description: 'Whether the Y axis should be logarithmic', defaultValue: false}),
+  DG.Property.js('allowXZeroes', DG.TYPE.BOOL, {description: 'Whether x zeroes allowed for logarithmic data or not', defaultValue: true}),
+  DG.Property.js('mergeSeries', DG.TYPE.BOOL, {description: 'Merges all series within one cell into one series', defaultValue: false}),
+  DG.Property.js('showColumnLabel', DG.TYPE.BOOL, {description: 'Whether to show the column label in the legend or not', defaultValue: false}),
+  DG.Property.js('showStatistics', DG.TYPE.STRING_LIST, {description: 'Whether specific statistics should be rendered',
+    choices: statisticsProperties.map((frp) => frp.name), inputType: 'MultiChoice',
+    //@ts-ignore
+    friendlyName: 'Statistics'}),
+];
 
-function createObjectiveFunction(errorModel: FitErrorModelType): ObjectiveFunction {
-  let of: ObjectiveFunction;
+/** Properties that describe {@link IFitSeriesOptions}. Useful for editing, initialization, transformations, etc. */
+export const fitSeriesProperties: DG.Property[] = [
+  DG.Property.js('fitFunction', DG.TYPE.STRING,
+    {category: 'Fitting', choices: Object.keys(fitFunctions), defaultValue: 'sigmoid'}),
+  DG.Property.js('pointColor', DG.TYPE.STRING,
+    {category: 'Rendering', nullable: true, inputType: 'Color'}),
+  DG.Property.js('fitLineColor', DG.TYPE.STRING,
+    {category: 'Rendering', nullable: true, inputType: 'Color'}),
+  DG.Property.js('outlierColor', DG.TYPE.STRING,
+    {category: 'Rendering', nullable: true, inputType: 'Color'}),
+  DG.Property.js('errorModel', DG.TYPE.STRING, {category: 'Fitting', defaultValue: 'constant',
+    choices: ['constant', 'proportional', 'combined'], nullable: false}),
+  DG.Property.js('connectDots', DG.TYPE.BOOL, {category: 'Fitting', defaultValue: false}),
+  DG.Property.js('clickToToggle', DG.TYPE.BOOL, {category: 'Fitting', description:
+    'Click on a point to mark it as outlier and refit', nullable: true, defaultValue: false}),
+  DG.Property.js('showFitLine', DG.TYPE.BOOL, {category: 'Fitting', defaultValue: true}),
+  DG.Property.js('showPoints', DG.TYPE.STRING, // rewrite description
+    {category: 'Fitting', description: 'Whether points/candlesticks/none should be rendered',
+      defaultValue: 'points', choices: ['points', 'candlesticks', 'both']}),
+  DG.Property.js('showCurveConfidenceInterval', DG.TYPE.BOOL,
+    {category: 'Fitting', description: 'Whether confidence intervals should be rendered', defaultValue: false,
+      //@ts-ignore
+      friendlyName: 'Confidence Interval'}),
+  DG.Property.js('markerType', DG.TYPE.STRING, {category: 'Rendering', defaultValue: 'circle',
+    choices: ['asterisk', 'circle', 'cross border', 'diamond', 'square', 'star',
+      'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false,
+    //@ts-ignore
+    friendlyName: 'Marker'}),
+  DG.Property.js('outlierMarkerType', DG.TYPE.STRING, {category: 'Rendering', defaultValue: 'outlier',
+    choices: ['asterisk', 'circle', 'cross border', 'diamond', 'outlier', 'square', 'star',
+      'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false,
+    //@ts-ignore
+    friendlyName: 'Outlier Marker'}),
+  DG.Property.js('lineStyle', DG.TYPE.STRING, {category: 'Rendering', defaultValue: 'solid',
+    choices: ['solid', 'dotted', 'dashed', 'dashdotted'], nullable: false}),
+  DG.Property.js('droplines', DG.TYPE.STRING_LIST, {description: 'Whether specific droplines should be rendered',
+    choices: DROPLINES, inputType: 'MultiChoice'}),
+  DG.Property.js('columnName', DG.TYPE.STRING, {description: 'Column name where the series is stored', defaultValue: ''}),
+];
 
-  switch (errorModel) {
-  case FitErrorModel.CONSTANT:
-    of = objectiveNormalConstant;
-    break;
-  case FitErrorModel.PROPORTIONAL:
-    of = objectiveNormalProportional;
-    break;
-  default:
-    of = objectiveNormalConstant;
-    break;
-  }
+export const FIT_FUNCTION_SIGMOID = 'sigmoid';
+export const FIT_FUNCTION_LINEAR = 'linear';
+export const FIT_FUNCTION_LOG_LINEAR = 'log-linear';
+export const FIT_FUNCTION_EXPONENTIAL = 'exponential';
 
-  return of;
-}
-
-function createOptimizable(data: {x: number[], y: number[]}, curveFunction: (params: number[], x: number) => number,
-  of: ObjectiveFunction, fixed: number[]): Optimizable {
-  return {
-    getValue: (parameters: number[]) => {
-      return of(curveFunction, data, parameters).value;
-    },
-    getGradient: (parameters: number[], gradient: number[]) => {
-      for (let i = 0; i < parameters.length; i++)
-        gradient[i] = fixed.includes(i) ? 0 : getObjectiveDerivative(of, curveFunction, data, parameters, i);
-
-      return gradient;
-    },
-  };
-}
+export const FIT_STATS_RSQUARED = 'rSquared';
+export const FIT_STATS_AUC = 'auc';
 
 export function getOrCreateFitFunction(seriesFitFunc: string | IFitFunctionDescription): FitFunction {
   if (typeof seriesFitFunc === 'string')
@@ -437,8 +433,8 @@ export function getOrCreateFitFunction(seriesFitFunc: string | IFitFunctionDescr
       `${fitFunctionParts[1].includes(';') ? '' : 'return '}${fitFunctionParts[1]}`);
     const getInitParamsFunc = new Function(getInitParamsParts[0].slice(1, getInitParamsParts[0].length - 1),
       `return ${getInitParamsParts[1]}`);
-    const fitFunc = new JsFunction(name, (fitFunction as (params: number[], x: number) => number),
-      (getInitParamsFunc as (x: number[], y: number[]) => number[]), paramNames);
+    const fitFunc = new JsFunction(name, (fitFunction as (params: Float32Array, x: number) => number),
+      (getInitParamsFunc as (x: number[], y: number[]) => Float32Array), paramNames);
     fitFunctions[name] = fitFunc;
   }
 
@@ -448,37 +444,33 @@ export function getOrCreateFitFunction(seriesFitFunc: string | IFitFunctionDescr
 export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFunction, errorModel: FitErrorModelType,
   parameterBounds?: FitParamBounds[]): FitCurve {
   const curveFunction = fitFunction.y;
-  const paramValues = fitFunction.getInitialParameters(data.x, data.y);
+  let paramValues = fitFunction.getInitialParameters(data.x, data.y);
 
-  const of = createObjectiveFunction(errorModel);
-  const fixed: number[] = [];
-  let overLimits = true;
-
-  while (overLimits) {
-    const optimizable = createOptimizable(data, curveFunction, of, fixed);
-    limitedMemoryBFGS(optimizable, paramValues);
-    limitedMemoryBFGS(optimizable, paramValues);
-
-    overLimits = false;
-    if (!parameterBounds)
-      break;
-
-    for (let i = 0; i < parameterBounds.length; i++) {
-      if (parameterBounds[i]?.max !== undefined && paramValues[i] > parameterBounds[i].max!) {
-        overLimits = true;
-        fixed.push(i);
-        paramValues[i] = parameterBounds[i].max!;
-        break;
-      }
-      if (parameterBounds[i]?.min !== undefined && paramValues[i] < parameterBounds[i].min!) {
-        overLimits = true;
-        fixed.push(i);
-        paramValues[i] = parameterBounds[i].min!;
-        break;
-      }
-    }
+  const of = objectiveFactory(curveFunction, data, errorModel);
+  let bottomParamBounds = new Float32Array(fitFunction.parameterNames.length);
+  let topParamBounds = new Float32Array(fitFunction.parameterNames.length);
+  for (let i = 0; i < fitFunction.parameterNames.length; i++) {
+    bottomParamBounds[i] = paramValues[i] === 0 ? -1 : paramValues[i] - Math.abs(paramValues[i] * 0.5);
+    topParamBounds[i] = paramValues[i] === 0 ? 1 : paramValues[i] + Math.abs(paramValues[i] * 0.5);
+  }
+  if (parameterBounds && parameterBounds.length !== 0) {
+    bottomParamBounds = new Float32Array(parameterBounds.length);
+    bottomParamBounds.set(parameterBounds.map((pb) => pb.min!));
+    topParamBounds = new Float32Array(parameterBounds.length);
+    topParamBounds.set(parameterBounds.map((pb) => pb.max!));
   }
 
+  const optimization = performNelderMeadOptimization(of, bottomParamBounds, topParamBounds, {
+    tolerance: NELDER_MEAD_DEFAULTS.TOLERANCE,
+    maxIter: NELDER_MEAD_DEFAULTS.MAX_ITER,
+    nonZeroParam: NELDER_MEAD_DEFAULTS.NON_ZERO_PARAM,
+    initialScale: NELDER_MEAD_DEFAULTS.INITIAL_SCALE,
+    scaleReflection: NELDER_MEAD_DEFAULTS.SCALE_REFLECTION,
+    scaleExpansion: NELDER_MEAD_DEFAULTS.SCALE_EXPANSION,
+    scaleContraction: NELDER_MEAD_DEFAULTS.SCALE_CONTRACTION,
+  }, 1, paramValues);
+
+  paramValues = optimization.extremums[0].point;
   const fittedCurve = getFittedCurve(curveFunction, paramValues);
 
   return {
@@ -487,45 +479,35 @@ export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFuncti
   };
 }
 
-export function getFittedCurve(curveFunction: (params: number[], x: number) => number, paramValues: number[]):
+export function getFittedCurve(curveFunction: (params: Float32Array, x: number) => number, paramValues: Float32Array):
  (x: number) => number {
   return (x: number) => {
     return curveFunction(paramValues, x);
   };
 }
 
-export function getCurveConfidenceIntervals(data: {x: number[], y: number[]}, paramValues: number[],
-  curveFunction: (params: number[], x: number) => number, confidenceLevel: number = 0.05, errorModel: FitErrorModelType):
+export function getCurveConfidenceIntervals(data: {x: number[], y: number[]}, paramValues: Float32Array,
+  curveFunction: (params: Float32Array, x: number) => number, confidenceLevel: number = 0.05, errorModel: FitErrorModelType):
   FitConfidenceIntervals {
-  const of = createObjectiveFunction(errorModel);
-
-  const error = errorModel === FitErrorModel.PROPORTIONAL ?
-    of(curveFunction, data, paramValues).mult :
-    of(curveFunction, data, paramValues).const;
-
+  const error = getSigma(curveFunction, data, errorModel, paramValues);
   const quantile = jStat.normal.inv(1 - confidenceLevel/2, 0, 1);
 
   const top = (x: number) => {
     const value = curveFunction(paramValues, x);
-    if (errorModel === FitErrorModel.CONSTANT)
-      return value + quantile * error;
-    else
-      return value + quantile * Math.abs(value) * error;
+    return value + quantile * (error.sigmaA + Math.abs(value) * error.sigmaB);
   };
 
   const bottom = (x: number) => {
     const value = curveFunction(paramValues, x);
-    if (errorModel === FitErrorModel.CONSTANT)
-      return value - quantile * error;
-    else
-      return value - quantile * Math.abs(value) * error;
+    return value - quantile * (error.sigmaA + Math.abs(value) * error.sigmaB);
   };
 
   return {confidenceTop: top, confidenceBottom: bottom};
 }
 
-export function getStatistics(data: {x: number[], y: number[]}, paramValues: number[],
-  curveFunction: (params: number[], x: number) => number, statistics: boolean = true): FitStatistics {
+// TODO: for linear - slope - A, interceptY - B
+export function getStatistics(data: {x: number[], y: number[]}, paramValues: Float32Array,
+  curveFunction: (params: Float32Array, x: number) => number, statistics: boolean = true): FitStatistics {
   const fittedCurve = getFittedCurve(curveFunction, paramValues);
 
   return {
@@ -581,7 +563,7 @@ export function getInvertedFunctions(data: {x: number[], y: number[]}, paramValu
   return null;
 }
 
-export function sigmoid(params: number[], x: number): number {
+export function sigmoid(params: Float32Array, x: number): number {
   const A = params[0];
   const B = params[1];
   const C = params[2];
@@ -589,19 +571,29 @@ export function sigmoid(params: number[], x: number): number {
   return (D + (A - D) / (1 + Math.pow(10, (x - C) * B)));
 }
 
-export function linear(params: number[], x: number) {
+export function linear(params: Float32Array, x: number): number {
   const A = params[0];
   const B = params[1];
   return A * x + B;
 }
 
+export function logLinear(params: Float32Array, x: number): number {
+  const A = params[0];
+  const B = params[1];
+  return A * Math.log(x + 1) + B;
+}
+
+export function exponential(params: Float32Array, x: number): number {
+  const A = params[0];
+  const B = params[1];
+  return A * Math.exp(x * B);
+}
+
 export function getAuc(fittedCurve: (x: number) => number, data: {x: number[], y: number[]}): number {
   let auc = 0;
-
   const min = Math.min(...data.x);
   const max = Math.max(...data.x);
   const integrationStep = (max - min) / 1000;
-
   for (let x = min; x < max; x+= integrationStep)
     auc += integrationStep * fittedCurve(x);
 
@@ -611,9 +603,7 @@ export function getAuc(fittedCurve: (x: number) => number, data: {x: number[], y
 export function getDetCoeff(fittedCurve: (x: number) => number, data: {x: number[], y: number[]}): number {
   let ssRes = 0;
   let ssTot = 0;
-
   const yMean = jStat.mean(data.y);
-
   for (let i = 0; i < data.x.length; i++) {
     ssRes += Math.pow(data.y[i] - fittedCurve(data.x[i]), 2);
     ssTot += Math.pow(data.y[i] - yMean, 2);
@@ -625,7 +615,6 @@ export function getDetCoeff(fittedCurve: (x: number) => number, data: {x: number
 function getInvError(targetFunc: (y: number) => number, data: {y: number[], x: number[]}): number {
   let sigma = 0;
   let sigmaSq = 0;
-
   const residuesSquares = new Float32Array(data.y.length);
   for (let i = 0; i < data.y.length; i++) {
     const obs = data.x[i];
@@ -642,76 +631,86 @@ function getInvError(targetFunc: (y: number) => number, data: {y: number[], x: n
   return sigma;
 }
 
-function getObjectiveDerivative(of: ObjectiveFunction, curveFunction: (params: number[], x: number) => number,
-  data: {x: number[], y: number[]}, params: number[], selectedParam: number): number {
-  const step = (params[selectedParam] * 0.0001) === 0 ? 0.001 : (params[selectedParam] * 0.0001);
-  const paramsTop: number[] = [];
-  const paramsBottom: number[] = [];
-  for (let i = 0; i < params.length; i++) {
-    if (i === selectedParam) {
-      paramsTop.push(params[i] + step);
-      paramsBottom.push(params[i] - step);
-    } else {
-      paramsTop.push(params[i]);
-      paramsBottom.push(params[i]);
+function objectiveFactory(targetFunc: (params: Float32Array, x: number) => number,
+  data: {y: number[], x: number[]}, errorModel: FitErrorModelType): (params: Float32Array) => number {
+  return (params: Float32Array) => {
+    let likelihood = 0;
+    let sigmaA = 0;
+    let sigmaB = 0;
+
+    const obs = data.y;
+    const pred = data.x.map((x) => targetFunc(params, x));
+    const residuals = obs.map((obs, i) => obs - pred[i]);
+    const residuesSquares = residuals.map((res) => Math.pow(res, 2));
+
+    for (let i = 0; i < residuesSquares.length; i++) {
+      if ([FitErrorModel.CONSTANT, FitErrorModel.COMBINED].includes(errorModel))
+        sigmaA += residuesSquares[i];
+      else if (errorModel === FitErrorModel.PROPORTIONAL)
+        sigmaB += residuesSquares[i] / (pred[i] * pred[i]);
+    }
+    sigmaA = Math.sqrt(sigmaA / residuesSquares.length);
+    sigmaB = Math.sqrt(sigmaB / residuesSquares.length);
+
+    if (errorModel === FitErrorModel.COMBINED)
+      ({sigmaA, sigmaB} = getSigmasForCombinedErrorModel(sigmaA, sigmaB, residuesSquares, pred));
+
+    const sigmaSqI: number[] = [];
+    for (let i = 0; i < residuesSquares.length; i++) {
+      sigmaSqI[i] = Math.pow(sigmaA + sigmaB * pred[i], 2);
+      likelihood += residuesSquares[i] / sigmaSqI[i] + Math.log(2 * Math.PI * sigmaSqI[i]);
+    }
+
+    return likelihood;
+  };
+}
+
+function getSigma(targetFunc: (params: Float32Array, x: number) => number,
+  data: {y: number[], x: number[]}, errorModel: FitErrorModelType, params: Float32Array): {sigmaA: number, sigmaB: number} {
+  let sigmaA = 0;
+  let sigmaB = 0;
+
+  const obs = data.y;
+  const pred = data.x.map((x) => targetFunc(params, x));
+  const residuals = obs.map((obs, i) => obs - pred[i]);
+  const residuesSquares = residuals.map((res) => Math.pow(res, 2));
+
+  for (let i = 0; i < residuesSquares.length; i++) {
+    if ([FitErrorModel.CONSTANT, FitErrorModel.COMBINED].includes(errorModel))
+      sigmaA += residuesSquares[i];
+    else if (errorModel === FitErrorModel.PROPORTIONAL)
+      sigmaB += Math.pow(residuals[i] / Math.abs(pred[i]), 2);
+  }
+  sigmaA = Math.sqrt(sigmaA / residuesSquares.length);
+  sigmaB = Math.sqrt(sigmaB / residuesSquares.length);
+
+  if (errorModel === FitErrorModel.COMBINED)
+    ({sigmaA, sigmaB} = getSigmasForCombinedErrorModel(sigmaA, sigmaB, residuesSquares, pred));
+
+  return {sigmaA, sigmaB};
+}
+
+function getSigmasForCombinedErrorModel(sigmaA: number, sigmaB: number, residuesSquares: number[], pred: number[]):
+  {sigmaA: number, sigmaB: number} {
+  let likelihoodCombined = Number.MAX_VALUE;
+  let finalProportion = 0;
+  for (let i = 0; i <= 10; i++) {
+    let likelihoodCombinedLocal = 0;
+    const proportion = i / 10;
+    const sigmaACombined = sigmaA * proportion;
+    const sigmaBCombined = sigmaA * (1 - proportion);
+    const sigmaSqICombined: number[] = [];
+    for (let i = 0; i < residuesSquares.length; i++) {
+      sigmaSqICombined[i] = Math.pow(sigmaACombined + sigmaBCombined * pred[i], 2);
+      likelihoodCombinedLocal += residuesSquares[i] / sigmaSqICombined[i] + Math.log(2 * Math.PI * sigmaSqICombined[i]);
+    }
+    if (likelihoodCombinedLocal < likelihoodCombined) {
+      likelihoodCombined = likelihoodCombinedLocal;
+      finalProportion = proportion;
     }
   }
-  const drvTop = of(curveFunction, data, paramsTop).value;
-  const drvBottom = of(curveFunction, data, paramsBottom).value;
+  sigmaB = sigmaA * (1 - finalProportion);
+  sigmaA = sigmaA * finalProportion;
 
-  return (drvTop - drvBottom) / (2 * step);
-}
-
-function objectiveNormalConstant(targetFunc: (params: number[], x: number) => number,
-  data: {y: number[], x: number[]}, params: number[]): Likelihood {
-  //assure observed and args same length
-  const pi = Math.PI;
-  let sigma = 0;
-  let sigmaSq = 0;
-  let likelihood = 0;
-
-  const residuesSquares = new Float32Array(data.x.length);
-  for (let i = 0; i < data.x.length; i++) {
-    const obs = data.y[i];
-    const pred = targetFunc(params, data.x[i]);
-    residuesSquares[i] = Math.pow(obs - pred, 2);
-  }
-
-  for (let i = 0; i < residuesSquares.length; i++)
-    sigmaSq += residuesSquares[i];
-
-  sigmaSq /= residuesSquares.length;
-  sigma = Math.sqrt(sigmaSq);
-
-  for (let i = 0; i < residuesSquares.length; i++)
-    likelihood += residuesSquares[i] / sigmaSq + Math.log(2 * pi * sigmaSq);
-
-  return {value: -likelihood, const: sigma, mult: 0};
-}
-
-function objectiveNormalProportional(targetFunc: (params: number[], x: number) => number,
-  data: {y: number[], x: number[]}, params: number[]): Likelihood {
-  //assure observed and args same length
-  const pi = Math.PI;
-  let sigma = 0;
-  let sigmaSq = 0;
-  let likelihood = 0;
-
-  const residuesSquares = new Float32Array(data.x.length);
-  for (let i = 0; i < data.x.length; i++) {
-    const obs = data.y[i];
-    const pred = targetFunc(params, data.x[i]);
-    residuesSquares[i] = Math.pow(obs - pred, 2);
-  }
-
-  for (let i = 0; i < residuesSquares.length; i++)
-    sigmaSq += residuesSquares[i];
-
-  sigmaSq /= residuesSquares.length;
-  sigma = Math.sqrt(sigmaSq);
-
-  for (let i = 0; i < residuesSquares.length; i++)
-    likelihood += residuesSquares[i] / sigmaSq + Math.log(2 * pi * sigmaSq);
-
-  return {value: -likelihood, const: 0, mult: sigma};
+  return {sigmaA, sigmaB};
 }

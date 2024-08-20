@@ -1,5 +1,23 @@
 # Tutorials changelog
 
+## 1.3.27 (2024-07-19)
+
+### Bug fixes
+
+* Fixed Cheminformatics tutorials
+
+## 1.3.26 (2024-06-04)
+
+### Features
+
+* GROK-15447: Tutorials: Add radar as a part of viewers tutorial
+
+### Bug Fixes
+
+* GROK-15228: Tutorials | Dashboards: Not running
+* GROK-15620: Tutorials | Scripting: Cannot read properties of undefined (reading 'content')
+* Fixed connection to starbucks
+
 ## 1.3.25 (2024-04-16)
 
 Updated the Multivariate analysis tutorial.

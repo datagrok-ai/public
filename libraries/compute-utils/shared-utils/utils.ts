@@ -3,14 +3,18 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import wu from 'wu';
-import ExcelJS from 'exceljs';
-import html2canvas from 'html2canvas';
+import type ExcelJS from 'exceljs';
+import type html2canvas from 'html2canvas';
 import {AUTHOR_COLUMN_NAME, VIEWER_PATH, viewerTypesMapping} from './consts';
 import {FuncCallInput, isInputLockable} from './input-wrappers';
 import {ValidationResultBase, getValidationIcon} from './validation';
 import {FunctionView, RichFunctionView} from '../function-views';
 
 export const createPartialCopy = async (call: DG.FuncCall) => {
+  const previousId = call.id;
+  // grok.functions.eval creates an ID.
+  // So we should control it and overwrite ID by null again if necessary.
+
   const callCopy: DG.FuncCall = (await grok.functions.eval(call.func.nqName))
     //@ts-ignore
     .prepare([...call.inputs].reduce((acc, [key, val]) => {
@@ -18,6 +22,9 @@ export const createPartialCopy = async (call: DG.FuncCall) => {
       return acc;
     }, {} as Record<string, any>));
   call.options.forEach((key: string) => callCopy.options[key] = call.options[key]);
+
+  //@ts-ignore
+  if (!previousId) callCopy.id = null;
 
   return callCopy;
 };
@@ -62,7 +69,13 @@ export function isInputBase(input: FuncCallInput): input is DG.InputBase {
 }
 
 export const deepCopy = (call: DG.FuncCall) => {
+  const previousId = call.id;
+  // FuncCall.clone() creates an ID for original (!) call if it was null.
+  // So we should control it and overwrite ID by null again if necessary.
   const deepClone = call.clone();
+
+  //@ts-ignore
+  if (!previousId) deepClone.id = null;
 
   call.options.forEach((key: string) => deepClone.options[key] = call.options[key]);
 
@@ -168,6 +181,17 @@ export const inputBaseAdditionalRenderHandler = (val: DG.FuncCallParam, t: DG.In
   });
 };
 
+export const updateOutputValidationSign = (
+  sign: readonly [HTMLElement, HTMLElement],
+  messages: ValidationResultBase | undefined,
+):readonly [HTMLElement, HTMLElement] => {
+  const newSign = getValidationIcon(messages);
+  sign[0].replaceWith(newSign[0]);
+  sign[1].replaceWith(newSign[1]);
+
+  return newSign;
+};
+
 export const injectInputBaseValidation = (t: DG.InputBase) => {
   const validationIndicator = ui.element('i');
   t.addOptions(validationIndicator);
@@ -235,9 +259,11 @@ export const dfToSheet = (sheet: ExcelJS.Worksheet, df: DG.DataFrame, column?: n
 export const plotToSheet =
   async (exportWb: ExcelJS.Workbook, sheet: ExcelJS.Worksheet, plot: HTMLElement,
     columnForImage: number, rowForImage: number = 0) => {
-    DG.Utils.loadJsCss(['/js/common/html2canvas.min.js']);
+    await DG.Utils.loadJsCss(['/js/common/html2canvas.min.js']);
+    //@ts-ignore
+    const loadedHtml2canvas: typeof html2canvas = window.html2canvas;
 
-    const canvas = await html2canvas(plot as HTMLElement, {logging: false});
+    const canvas = await loadedHtml2canvas(plot as HTMLElement, {logging: false});
     const dataUrl = canvas.toDataURL('image/png');
 
     const imageId = exportWb.addImage({

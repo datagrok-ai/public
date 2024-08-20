@@ -49,7 +49,6 @@ export class ErrorsView extends UaView {
           'showRowHeader': false,
           'showColumnGridlines': false,
           'allowRowSelection': false,
-          'allowColumnSelection': false,
           'allowBlockSelection': false,
           'showCurrentCellOutline': false,
           'defaultCellFont': '13px monospace'
@@ -117,7 +116,7 @@ export class ErrorsView extends UaView {
             if (df) {
               df.filter.handleClick((i) => {
                 const column = df.getCol('error_message');
-                return column.get(i) == args.args.categories[0];
+                return column.get(i) == args.args.options.categories[0];
               }, new MouseEvent(''));
             }
           });

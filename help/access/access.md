@@ -7,9 +7,9 @@ Datagrok provides a single, unified access point for data across an organization
 
 ## Data sources
 
-Besides local files that you can drag and drop from your computer, Datagrok integrates with various data providers. You can connect to any machine readable source: [a file storage](files/files.mdx) (like third-party cloud services or an organization-hosted Datagrok server), [databases](databases/databases.mdx), or [webservices](open-api.md).
+Besides local files that you can drag and drop from your computer, Datagrok integrates with various data providers. You can connect to any machine readable source: [a file storage](files/files.md) (like third-party cloud services or an organization-hosted Datagrok server), [databases](databases/databases.md), or [webservices](open-api.md).
 
-Datagrok also supports scripting in various languages, such as R, Julia, and Python, which means you can create custom data sources. For example, you can [load a dataframe](https://public.datagrok.ai/js/samples/data-access/load-csv) from an external website or package, [open a specific table using its ID](https://public.datagrok.ai/js/samples/data-access/open-table-by-id), or write a package to extract data from multiple sources and combine them into one. For more information on getting data using functions and scripts, see [Access data](../develop/how-to/access-data.md/#reading-files) section in the developers' documentation.
+Datagrok also supports scripting in various languages, such as R, Julia, and Python, which means you can create custom data sources. For example, you can [load a dataframe](https://public.datagrok.ai/js/samples/data-access/load-csv) from an external website or package, [open a specific table using its ID](https://public.datagrok.ai/js/samples/data-access/open-table-by-id), or write a package to extract data from multiple sources and combine them into one. For more information on getting data using functions and scripts, see [Access data](../develop/how-to/access-data.md#reading-files) section in the developers' documentation.
 
 Datagrok also hosts [public datasets](public-datasets.md) that can be used for analysis, testing, and prototyping. These datasets cover various domains, including cheminformatics, clinical trials, and more.
 
@@ -50,10 +50,10 @@ To see all available data source connections, on the **Sidebar**, select **Manag
 | description |                                  |
 | createdOn   |                                  |
 | updatedOn   |                                  |
-| author      | [User](../govern/user.md) object |
-| starredBy   | [User](../govern/user.md) object |
-| commentedBy | [User](../govern/user.md) object |
-| usedBy      | [User](../govern/user.md) object |
+| author      | [User](../govern/access-control/users-and-groups#users) object |
+| starredBy   | [User](../govern/access-control/users-and-groups#users) object |
+| commentedBy | [User](../govern/access-control/users-and-groups#users) object |
+| usedBy      | [User](../govern/access-control/users-and-groups#users) object |
 
 </details>
 
@@ -63,7 +63,7 @@ A data connection is an [entity](../datagrok/concepts/objects.md), which means i
 
 For instructions on how to add a supported data source, set credentials, share, and manage it from the UI, see documentation for each data source type.
 
-For instructions on how to add a supported data source, set credentials, share, and manage it programmatically, see [developer's documentation](../develop/how-to/access-data.md/#connections).
+For instructions on how to add a supported data source, set credentials, share, and manage it programmatically, see [developer's documentation](../develop/how-to/access-data.md#connections).
 
 For specific details on the configuration required, see each individual connector's documentation page in the Connectors directory.
 
@@ -99,16 +99,16 @@ With Datagrok, you can retrieve both structured and unstructured data. Datagrok 
 
 Datagrok offers an array of capabilities and features designed to help users efficiently browse, manage, and preview the content of their data. For more information, see:
 
-* [Database Manager](databases/databases.mdx#database-manager)
-* [File Manager](files/files.mdx#file-manager)
+* [Database Manager](databases/databases.md#database-manager)
+* [File Manager](files/files.md#file-manager)
 * [Webservices Manager](open-api.md#webservices-manager).
 
 ## Sharing and access control
 
-Datagrok treats data connections, file shares, database tables and columns, and queries as [entities](../datagrok/concepts/objects.md), which means there is a common set of operations that can be applied to them. These entities can be shared with others, assigned access privileges, commented on, versioned, [audited](../govern/audit.md), and so on. Some of the most popular privileges are: `view`, `edit`, `delete`, and `share`. These privileges can be given to individual users, or
-to [groups](../govern/group.md). For more information on the access privilege model, see [Privileges](../govern/security.md#privileges).
+Datagrok treats data connections, file shares, database tables and columns, and queries as [entities](../datagrok/concepts/objects.md), which means there is a common set of operations that can be applied to them. These entities can be shared with others, assigned access privileges, commented on, versioned, [audited](../govern/audit/audit.md), and so on. Some of the most popular privileges are: `view`, `edit`, `delete`, and `share`. These privileges can be given to individual users, or
+to [groups](../govern/access-control/users-and-groups.md#groups). For more information on the access privilege model, see [Access Control](../govern/access-control/access-control.md).
 
-Data connections can be shared as part of a [project](../datagrok/concepts/project/project.md), [package](../develop/develop.md#packages) (and [repository](databases/connectors/git.md) containing this package), or as a standalone [entity](../datagrok/concepts/objects.md). When you share a query with someone, the database connection associated with it is automatically shared as well. This is because the query's access rights depend on the access rights of the connection. However, if you share a database connection with someone, your queries won't be shared automatically. You need to share them separately. For web queries, they are shared automatically when the corresponding connection is shared.
+Data connections can be shared as part of a [project](../datagrok/concepts/project/project.md), [package](../develop/develop.md#packages), or as a standalone [entity](../datagrok/concepts/objects.md). When you share a query with someone, the database connection associated with it is automatically shared as well. This is because the query's access rights depend on the access rights of the connection. However, if you share a database connection with someone, your queries won't be shared automatically. You need to share them separately. For web queries, they are shared automatically when the corresponding connection is shared.
 
 To learn how to control access for each data source, see the documentation for the corresponding data source.
 
@@ -117,7 +117,7 @@ To learn how to control access for each data source, see the documentation for t
 We designed Datagrok as an extensible environment, where extensions can customize or enhance any part
 of the platform. For example, you can [create custom connectors](databases/create-custom-connectors.md), add organization-specific data formats, customize menus, add context actions, customize data preview, and more.
 
-To learn more about extending and customizing Datagrok, see the [Develop](../develop/develop.md) section of our documentation. For examples related to data access, see [File Manager](files/files.mdx#file-manager).
+To learn more about extending and customizing Datagrok, see the [Develop](../develop/develop.md) section of our documentation. For examples related to data access, see [File Manager](files/files.md#file-manager).
 
 ## Resources
 

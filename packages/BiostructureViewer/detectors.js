@@ -16,14 +16,14 @@ class BiostructureViewerPackageDetectors extends DG.Package {
       (s) => s.match(/^COMPND/m) && s.match(/^END/m) &&
         (s.match(/^ATOM/m) || s.match(/^HETATM/m)),
     )) {
-      col.setTag(DG.TAGS.UNITS, 'pdb');
+      col.meta.units = 'pdb';
       return 'Molecule3D';
     } else if (DG.Detector.sampleCategories(col,
       (s) => s.match(/^MODEL/m) && s.match(/^ENDMDL/m) &&
         (s.match(/^ATOM/m) || s.match(/^HETATM/m)),
       1)
     ) {
-      col.setTag(DG.TAGS.UNITS, 'pdbqt');
+      col.meta.units = 'pdbqt';
       return 'Molecule3D';
     }
 
@@ -54,7 +54,10 @@ class BiostructureViewerPackageDetectors extends DG.Package {
   }
 
   autostartContextMenu() {
+    const logPrefix = 'BsV: detectors.js: autostartContextMenu()';
+    this.logger.debug(`${logPrefix}, start`);
     grok.events.onContextMenu.subscribe((event) => {
+      this.logger.debug(`${logPrefix}, onContextMenu, start`);
       if (event.args.item) {
         const item = event.args.item;
         // TODO: TreeViewNode.value is not real DG.FileInfo (no extension property)
@@ -72,6 +75,7 @@ class BiostructureViewerPackageDetectors extends DG.Package {
             });
         }
       }
+      this.logger.debug(`${logPrefix}, onContextMenu, end`);
     });
   }
 }

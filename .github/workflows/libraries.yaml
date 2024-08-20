@@ -41,7 +41,7 @@ jobs:
         with:
           fetch-depth: ${{ env.FETCH_DEPTH }}
           sparse-checkout: |
-            libraries
+            ./libraries
       - name: Get changed files
         uses: tj-actions/changed-files@v42
         id: changed-files
@@ -126,14 +126,14 @@ jobs:
         run: |
           echo -e "publish_matrix: ${{ steps.generate-matrix.outputs.publish_matrix }}"
           echo -e "continue: ${{ steps.generate-matrix.outputs.continue }}"
-      - name: Slack Failed Notification
-        if: failure()
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"        
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+#      - name: Slack Failed Notification
+#        if: failure()
+#        uses: act10ns/slack@v2.1.0
+#        with:
+#          status: ${{ job.status }}
+#          steps: ${{ toJson(steps) }}
+#          config: ".github/config/slack.yml"
+#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
 
   publish:
     name: "${{ matrix.project }}: ${{ matrix.job_name }}"
@@ -148,8 +148,8 @@ jobs:
         with:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
           sparse-checkout: |
-            libraries
-            js-api
+            ./libraries
+            ./js-api
       - name: Check library properties
         working-directory: libraries/${{ matrix.project }}
         run: |
@@ -175,6 +175,15 @@ jobs:
           crnt=$(pwd)
           for dep in $(echo -e ${{ matrix.unpublished_deps }}); do
             cd $(awk -F'=' '{print $2}' <<<$dep)
+            unpublished_deps_deep="$(jq -r '. | to_entries | map(select(.value | match("\\.\\./.*")))[] | "\(.key)=\(.value)"' <<<$dependencies  | tr '\n' ' ')"
+            for dep_deep in $(echo -e ${unpublished_deps_deep}); do
+              crnt_deep=$(pwd)
+              echo "Install dependencies for $(awk -F'=' '{print $2}' <<<$dep_deep)"
+              cd $(awk -F'=' '{print $2}' <<<$dep_deep)
+              npm install
+              npm run build
+              cd $crnt_deep
+            done
             echo "Install dependencies for $(awk -F'=' '{print $2}' <<<$dep)"
             npm install
             npm run build
@@ -208,13 +217,13 @@ jobs:
         working-directory: libraries/${{ matrix.project }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - name: Slack Notification
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ steps.publish.outcome }}
-          steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"        
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+#      - name: Slack Notification
+#        uses: act10ns/slack@v2.1.0
+#        with:
+#          status: ${{ steps.publish.outcome }}
+#          steps: ${{ toJson(steps) }}
+#          config: ".github/config/slack.yml"
+#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
 
       - name: Prepare Slack Message
         if: steps.publish.outcome == 'success'
@@ -355,11 +364,11 @@ jobs:
           from: monitoring@grok.datagrok.ai
           body: "Failed to update library ${{ matrix.project }} (${{ steps.commit.outputs.name }}) for packages ${{ steps.commit.outputs.changed }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           reply_to: monitoring@datagrok.ai
-      - name: Slack Failed Notification
-        if: failure()
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"        
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+#      - name: Slack Failed Notification
+#        if: failure()
+#        uses: act10ns/slack@v2.1.0
+#        with:
+#          status: ${{ job.status }}
+#          steps: ${{ toJson(steps) }}
+#          config: ".github/config/slack.yml"
+#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}

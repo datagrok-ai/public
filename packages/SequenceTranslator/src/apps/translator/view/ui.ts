@@ -3,13 +3,12 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
+import {Subject, BehaviorSubject, Observable} from 'rxjs';
+
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
-import * as rxjs from 'rxjs';
-
 import {DEFAULT_FORMATS} from '../../common/model/const';
-import {CODES_TO_HELM_DICT} from '../../common/model/data-loader/json-loader';
 import {download} from '../../common/model/helpers';
 import {FormatDetector} from '../../common/model/parsing-validation/format-detector';
 import {SequenceValidator} from '../../common/model/parsing-validation/sequence-validator';
@@ -22,19 +21,25 @@ import {MonomerLibViewer} from '../../common/view/monomer-lib-viewer';
 import {SequenceToMolfileConverter} from '../../structure/model/sequence-to-molfile';
 import {convert, getSupportedTargetFormats, getTranslatedSequences} from '../model/conversion-utils';
 import {FormatConverter} from '../model/format-converter';
+import {ITranslationHelper} from '../../../types';
+
 import {NUCLEOTIDES_FORMAT, SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG} from './const';
 import './style.css';
+import {_package} from '../../../package';
 
 const enum REQUIRED_COLUMN_LABEL {
   SEQUENCE = 'Sequence',
 }
+
 const REQUIRED_COLUMN_LABELS = [REQUIRED_COLUMN_LABEL.SEQUENCE];
 
 class TranslatorAppLayout {
   private eventBus: EventBus;
-  private inputFormats = Object.keys(CODES_TO_HELM_DICT).concat(DEFAULT_FORMATS.HELM);
+  private inputFormats = Object.keys(_package.jsonData.codesToHelmDict).concat(DEFAULT_FORMATS.HELM);
 
-  constructor() {
+  constructor(
+    private readonly th: ITranslationHelper
+  ) {
     this.moleculeImgDiv = ui.div([]);
     this.moleculeImgDiv.className = 'mol-host';
     this.moleculeImgDiv.style.border = '1px solid var(--grey-2)';
@@ -42,13 +47,12 @@ class TranslatorAppLayout {
     this.moleculeImgDiv.style.marginTop = '12px';
 
     this.outputTableDiv = ui.div([]);
-    this.formatChoiceInput = ui.choiceInput('', DEFAULT_FORMATS.HELM, this.inputFormats, async () => {
+    this.formatChoiceInput = ui.input.choice('', {value: DEFAULT_FORMATS.HELM, items: this.inputFormats, onValueChanged: async () => {
       this.format = this.formatChoiceInput.value;
       this.updateTable();
       await this.updateMolImg();
-    });
-    this.sequenceInputBase = ui.textInput('', DEFAULT_AXOLABS_INPUT,
-      () => { this.onInput.next(); });
+    }});
+    this.sequenceInputBase = ui.input.textArea('', {value: DEFAULT_AXOLABS_INPUT, onValueChanged: () => { this.onInput.next(); }});
 
     this.init();
 
@@ -63,7 +67,7 @@ class TranslatorAppLayout {
   }
 
   // todo: reduce # of state vars by further refactoring legacy code
-  private onInput = new rxjs.Subject<string>();
+  private onInput = new Subject<string>();
   private moleculeImgDiv: HTMLDivElement;
   private outputTableDiv: HTMLDivElement;
   private formatChoiceInput: DG.InputBase;
@@ -95,18 +99,12 @@ class TranslatorAppLayout {
 
     const tableControlsManager = new TableControlsManager(this.eventBus);
     const tableControls = tableControlsManager.createUIComponents();
-    const inputFormats = ui.choiceInput(
-      'Input format',
-      DEFAULT_FORMATS.AXOLABS,
-      this.inputFormats,
-      (value: string) => this.eventBus.selectInputFormat(value)
+    const inputFormats = ui.input.choice('Input format', {value: DEFAULT_FORMATS.AXOLABS,
+      items: this.inputFormats, onValueChanged: (input) => this.eventBus.selectInputFormat(input.value)}
     );
 
-    const outputFormats = ui.choiceInput(
-      'Output format',
-      NUCLEOTIDES_FORMAT,
-      getSupportedTargetFormats(),
-      (value: string) => this.eventBus.selectOutputFormat(value)
+    const outputFormats = ui.input.choice('Output format', {value: NUCLEOTIDES_FORMAT,
+      items: getSupportedTargetFormats(this.th), onValueChanged: (input) => this.eventBus.selectOutputFormat(input.value)}
     );
     const convertBulkButton = this.createConvertBulkButton();
 
@@ -156,7 +154,7 @@ class TranslatorAppLayout {
       DG.TYPE.STRING,
       newColumnName,
       sequenceColumn.toList().map((sequence: string) => {
-        const result = convert(sequence, inputFormat, outputFormat);
+        const result = convert(sequence, inputFormat, outputFormat, this.th);
         return result;
       })
     );
@@ -164,8 +162,8 @@ class TranslatorAppLayout {
     if (outputFormat === NUCLEOTIDES_FORMAT || outputFormat === DEFAULT_FORMATS.HELM) {
       translatedColumn.semType = DG.SEMTYPE.MACROMOLECULE;
       const units = outputFormat == NUCLEOTIDES_FORMAT ? NOTATION.FASTA : NOTATION.HELM;
-      translatedColumn.setTag(DG.TAGS.UNITS, units);
-      const seqHandler = SeqHandler.forColumn(translatedColumn);
+      translatedColumn.meta.units = units;
+      const seqHandler = SeqHandler.forColumn(translatedColumn as DG.Column<string>);
       const setUnits = outputFormat == NUCLEOTIDES_FORMAT ? SeqHandler.setUnitsToFastaColumn :
         SeqHandler.setUnitsToHelmColumn;
       setUnits(seqHandler);
@@ -180,7 +178,8 @@ class TranslatorAppLayout {
   }
 
   private constructSingleSequenceControls(): HTMLDivElement {
-    const sequenceColoredInput = new ColoredTextInput(this.sequenceInputBase, highlightInvalidSubsequence);
+    const sequenceColoredInput = new ColoredTextInput(this.sequenceInputBase,
+      (s: string) => { return highlightInvalidSubsequence(s, this.th); });
 
     const downloadMolfileButton = ui.button(
       'Get SDF',
@@ -242,8 +241,9 @@ class TranslatorAppLayout {
     this.outputTableDiv.innerHTML = '';
     // todo: does not detect correctly (U-A)(U-A)
     const indexOfInvalidChar = (!this.format) ? 0 :
-      (new SequenceValidator(this.sequence)).getInvalidCodeIndex(this.format!);
-    const translatedSequences = getTranslatedSequences(this.sequence, indexOfInvalidChar, this.format!);
+      this.th.createSequenceValidator(this.sequence).getInvalidCodeIndex(this.format!);
+    const translatedSequences = getTranslatedSequences(
+      this.sequence, indexOfInvalidChar, this.format!, this.th);
     const tableRows = [];
 
     for (const key of Object.keys(translatedSequences)) {
@@ -278,7 +278,7 @@ class TranslatorAppLayout {
   private init(): void {
     this.sequence = this.getFormattedSequence();
 
-    this.format = (new FormatDetector(this.sequence)).getFormat();
+    this.format = this.th.createFormatDetector(this.sequence).getFormat();
 
     // warning: getMolfile relies on 'this.format', so the order is important
     this.molfile = this.getMolfile();
@@ -292,7 +292,8 @@ class TranslatorAppLayout {
     if (!this.format)
       return '';
     if (this.format === DEFAULT_FORMATS.HELM) {
-      const axolabs = (new FormatConverter(this.sequence, this.format).convertTo(DEFAULT_FORMATS.AXOLABS));
+      const axolabs = this.th.createFormatConverter(this.sequence, this.format)
+        .convertTo(DEFAULT_FORMATS.AXOLABS);
       return (new SequenceToMolfileConverter(axolabs, false, DEFAULT_FORMATS.AXOLABS).convert());
     }
     const molfile = (new SequenceToMolfileConverter(this.sequence, false, this.format)).convert();
@@ -373,16 +374,13 @@ class TableInputManager {
   private createTableInput(): DG.InputBase<DG.DataFrame | null> {
     const currentlySelectedTable = this.eventBus.getSelectedTable();
 
-    const tableInput = ui.tableInput(
-      'Table',
-      currentlySelectedTable,
-      this.availableTables,
-      (table: DG.DataFrame) => {
+    const tableInput = ui.input.table('Table', {value: currentlySelectedTable!, items: this.availableTables,
+      onValueChanged: (input) => {
         // WARNING: non-null check necessary to prevent resetting columns to
         // null upon handling onTableAdded
-        if (table !== null && table instanceof DG.DataFrame)
-          this.eventBus.selectTable(table);
-      });
+        if (input.value !== null)
+          this.eventBus.selectTable(input.value);
+      }});
     return tableInput;
   }
 
@@ -451,10 +449,8 @@ class ColumnInputsManager {
     const selectedColumnName = matchingColumnName ? matchingColumnName : columnNames[0];
     this.selectColumnIfTableNotNull(selectedTable, selectedColumnName, columnLabel);
 
-    const input = ui.choiceInput(
-      `${columnLabel}`,
-      selectedColumnName, columnNames,
-      (colName: string) => this.selectColumnIfTableNotNull(selectedTable, colName, columnLabel)
+    const input = ui.input.choice(`${columnLabel}`, {value: selectedColumnName, items: columnNames,
+      onValueChanged: (input) => this.selectColumnIfTableNotNull(selectedTable, input.value, columnLabel)}
     );
 
     return input;
@@ -473,13 +469,13 @@ class ColumnInputsManager {
 export class EventBus {
   private static _instance: EventBus;
 
-  private _tableSelection$ = new rxjs.BehaviorSubject<DG.DataFrame | null>(null);
+  private _tableSelection$ = new BehaviorSubject<DG.DataFrame | null>(null);
   private _columnSelection = Object.fromEntries(REQUIRED_COLUMN_LABELS.map((columnLabel: string) => {
-    const columnSelection$ = new rxjs.BehaviorSubject<DG.Column<string> | null>(null);
+    const columnSelection$ = new BehaviorSubject<DG.Column<string> | null>(null);
     return [columnLabel, columnSelection$];
   }));
-  private _inputFormatSelection$ = new rxjs.BehaviorSubject<string>(DEFAULT_FORMATS.AXOLABS);
-  private _outputFormatSelection$ = new rxjs.BehaviorSubject<string>(NUCLEOTIDES_FORMAT);
+  private _inputFormatSelection$ = new BehaviorSubject<string>(DEFAULT_FORMATS.AXOLABS);
+  private _outputFormatSelection$ = new BehaviorSubject<string>(NUCLEOTIDES_FORMAT);
 
   private constructor() {}
 
@@ -489,7 +485,7 @@ export class EventBus {
     return EventBus._instance;
   }
 
-  get tableSelected$(): rxjs.Observable<DG.DataFrame | null> {
+  get tableSelected$(): Observable<DG.DataFrame | null> {
     return this._tableSelection$.asObservable();
   }
 
@@ -528,11 +524,15 @@ export class EventBus {
 
 export class OligoTranslatorUI extends IsolatedAppUIBase {
   private readonly topPanel: HTMLElement[];
-  private readonly layout = new TranslatorAppLayout();
+  private readonly layout: TranslatorAppLayout;
 
-  constructor() {
+  constructor(
+    private readonly th: ITranslationHelper
+  ) {
     super(APP_NAME.TRANSLATOR);
 
+    this.th = _package;
+    this.layout = new TranslatorAppLayout(this.th);
     const viewMonomerLibIcon = ui.iconFA('book', MonomerLibViewer.view, 'View monomer library');
     this.topPanel = [
       viewMonomerLibIcon,

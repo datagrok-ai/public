@@ -11,7 +11,7 @@ age intervals.
 - [BinByDateTime](#binbydatetime)
 - [BinBySpecificLimits](#binbyspecificlimits)
 
-## <a name="binbydatetime"></a>BinByDateTime(`dt`, `levels`, `levelIndex`)
+## BinByDateTime(`dt`, `levels`, `levelIndex`) {#binbydatetime}
 
 Groups the values into bins based on a datetime hierarchy.
 
@@ -39,7 +39,7 @@ BinByDateTime(${Age}, "yy.qq.mm", 2)
 BinByDateTime(Date(1970, 11, 17), "qq.mm.dd", 0)    // 4
 ```
 
-## <a name="binbyspecificlimits"></a>BinBySpecificLimits(`x`, `limits`)
+## BinBySpecificLimits(`x`, `limits`) {#binbyspecificlimits}
 
 Groups the values in the column by defined limits for the bins. `x` is the checked value to bin and the following
 arguments are the `limits` for the bins. `limits` here is a list of numbers.

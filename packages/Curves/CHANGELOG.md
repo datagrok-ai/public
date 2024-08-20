@@ -1,6 +1,55 @@
 # Curves changelog
 
+## 1.4.6 (2024-08-13)
+
+### Features
+
+* Added exponential fit function
+
+## 1.4.5 (2024-07-24)
+
+## 1.4.4 (2024-07-02)
+
+### Bug fixes
+
+* [#2924](https://github.com/datagrok-ai/public/issues/2924): Fixed connectDots doesn't work if fit is turned off
+
+## 1.4.3 (2024-05-23)
+
+### Bug fixes
+
+* [#2855](https://github.com/datagrok-ai/public/issues/2855): Changed labels (Marker Type -> Marker and Outlier Marker Type -> Outlier Marker)
+
+## 1.4.2 (2024-05-21)
+
+### Features
+
+* [#2855](https://github.com/datagrok-ai/public/issues/2855): Added outlier marker option
+
+## 1.4.1 (2024-05-21)
+
+### Features
+
+* [#2797](https://github.com/datagrok-ai/public/issues/2797): Added log-linear fit function
+
+## 1.4.0 (2024-05-11)
+
+### Features
+
+* Changed optimizer for fitting
+
+### Bug Fixes
+
+* [#1645](https://github.com/datagrok-ai/public/issues/1645): MultiCurveViewer: Removed unnecessary margins
+
 ## 1.3.1 (2024-05-03)
+
+### Features
+
+* [#1645](https://github.com/datagrok-ai/public/issues/1645): MultiCurveViewer:
+  * Added filter on fit columns in the MultiCurveViewer
+  * Made property panel fields work and made automatic chart options merge
+  * Code refactoring and restructure, render improvements
 
 ## 1.3.0 (2024-04-18)
 

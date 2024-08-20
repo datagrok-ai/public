@@ -151,18 +151,22 @@ export class GroupAnalysisViewer extends DG.JsViewer {
     }
   }
 
+  _testColumns() {
+    return this.dataFrame.columns.length >= 1;
+  }
+
   createAddColumnDialog() {
-    const columnInput = ui.columnInput('Column', this.dataFrame, this.dataFrame.columns.byIndex(0));
+    const columnInput = ui.input.column('Column', {table: this.dataFrame, value: this.dataFrame.columns.byIndex(0)});
     columnInput.input.style.width = '100px';
 
-    const colTypeInput = ui.choiceInput('Column type', Object.keys(COL_TYPES)[0], Object.keys(COL_TYPES));
+    const colTypeInput = ui.input.choice('Column type', {value: Object.keys(COL_TYPES)[0], items: Object.keys(COL_TYPES)});
 
-    const aggrTypesChoice = ui.choiceInput('Function', Object.keys(COL_TYPES[AGGR_TYPE])[0],
-      Object.keys(COL_TYPES[AGGR_TYPE]));
-    const chartTypesChoice = ui.choiceInput('Chart', Object.keys(COL_TYPES[CHART_TYPE])[0],
-      Object.keys(COL_TYPES[CHART_TYPE]));
-    const statTypesChoice = ui.choiceInput('Statistic', Object.keys(COL_TYPES[STAT_TYPE])[0],
-      Object.keys(COL_TYPES[STAT_TYPE]));
+    const aggrTypesChoice = ui.input.choice('Function', {value: Object.keys(COL_TYPES[AGGR_TYPE])[0],
+      items: Object.keys(COL_TYPES[AGGR_TYPE])});
+    const chartTypesChoice = ui.input.choice('Chart', {value: Object.keys(COL_TYPES[CHART_TYPE])[0],
+      items: Object.keys(COL_TYPES[CHART_TYPE])});
+    const statTypesChoice = ui.input.choice('Statistic', {value: Object.keys(COL_TYPES[STAT_TYPE])[0],
+      items: Object.keys(COL_TYPES[STAT_TYPE])});
     const columnTypeDiv = ui.div();
     columnTypeDiv.append(aggrTypesChoice.root);
 
@@ -260,7 +264,7 @@ export class GroupAnalysisViewer extends DG.JsViewer {
 
   getStatisticsCol(column: IAnalyzedColumn, length: number) {
     const col = DG.Column.float(`pValue(${column.colName}`, length).init((i) => this.performTTest(column.colName, i));
-    col.tags[DG.TAGS.FORMAT] = '#.0000000';
+    col.meta.format = '#.0000000';
     return col;
   }
 
@@ -270,7 +274,7 @@ export class GroupAnalysisViewer extends DG.JsViewer {
       choicesInputsName, {style: {fontWeight: 'bold', paddingTop: '10px', paddingRight: '10px'}}));
     for (let i = 0; i < selectedCols.length + 1; i++) {
       const selectedValue = selectedCols.length === i ? '' : selectedCols[i];
-      const groupChoiceInput = ui.choiceInput('', selectedValue, this.totalColumns!);
+      const groupChoiceInput = ui.input.choice('', {value: selectedValue, items: this.totalColumns!});
       ui.tooltip.bind(groupChoiceInput.root, () => selectedValue);
       groupChoiceInput.onChanged(() => {
         if (groupChoiceInput.value === '')

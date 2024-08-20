@@ -104,11 +104,13 @@ export const nonNullValidator: Validator = async (value: any) => {
     return makeValidationResult({errors: ['Missing value']});
 };
 
-export function getValidationIcon(messages: ValidationResultBase | undefined) {
-  let popover: any;
-  let icon: any;
-  if (messages?.pending)
+export function getValidationIcon(messages?: ValidationResultBase) {
+  let popover!: HTMLElement;
+  let icon!: HTMLElement;
+  if (messages?.pending) {
     icon = ui.iconFA('spinner', () => {displayValidation(messages, icon, popover);});
+    icon.classList.add('fa-spin');
+  }
 
   if (messages?.errors && messages.errors.length) {
     icon = ui.iconFA('exclamation-circle', () => {displayValidation(messages, icon, popover);});
@@ -126,7 +128,7 @@ export function getValidationIcon(messages: ValidationResultBase | undefined) {
     popover = addPopover(icon);
   }
 
-  return [icon, popover];
+  return [icon ?? ui.div(), popover ?? ui.div()] as const;
 }
 
 function addPopover(icon: HTMLElement) {
@@ -157,6 +159,8 @@ function stylePopover(popover: HTMLElement): void {
   popover.popover = 'auto';
   popover.style.fontStyle = 'normal';
   popover.style.pointerEvents = 'all';
+  popover.style.maxWidth = '300px';
+  popover.style.textWrap = 'pretty';
 }
 
 function renderValidationResults(messages: ValidationResultBase) {

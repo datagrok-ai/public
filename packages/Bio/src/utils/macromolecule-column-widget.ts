@@ -25,7 +25,7 @@ export class MacromoleculeColumnWidget extends DG.Widget {
 
   async init(): Promise<void> {
     const sh = SeqHandler.forColumn(this.seqCol);
-    const pkgTooltipWebLogo = _package.properties.TooltipWebLogo;
+    const pkgTooltipWebLogo = _package.properties.tooltipWebLogo;
     const colTooltipWebLogo = this.seqCol.getTag(wlTAGS.tooltipWebLogo);
 
     if (pkgTooltipWebLogo !== false && !['false', 'off', 'disable', 'disabled'].includes(colTooltipWebLogo)) {
@@ -38,6 +38,8 @@ export class MacromoleculeColumnWidget extends DG.Widget {
         fitArea: false,
         // maxHeight: 100,
         // minHeight: 25,
+        positionNames: '', // to ensure position names by default
+        endPositionName: '50', // limit WebLogo for visible monomers
       }) as unknown as WebLogoViewer;
       this.wlViewer.root.style.height = `50px`;
 

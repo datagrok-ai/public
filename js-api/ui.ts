@@ -40,7 +40,8 @@ import { Wizard, WizardPage } from './src/ui/wizard';
 import {ItemsGrid} from "./src/ui/items-grid";
 import * as d4 from './src/api/d4.api.g';
 import {IDartApi} from "./src/api/grok_api.g";
-
+// import {Dictionary, typeaheadConfig} from "typeahead-standalone/dist/types";
+// import typeahead from "typeahead-standalone";
 
 let api: IDartApi = <any>window;
 declare let grok: any;
@@ -129,7 +130,7 @@ export function canvas(width: number | null = null, height: number | null = null
   return result as HTMLCanvasElement;
 }
 
-/** 
+/**
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
  * @returns {HTMLHeadingElement} */
 export function h1(s: string | Element, options: string | ElementOptions | null = null): HTMLHeadingElement {
@@ -141,7 +142,7 @@ export function h1(s: string | Element, options: string | ElementOptions | null 
   return _options(x, options) as HTMLHeadingElement;
 }
 
-/** 
+/**
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
  * @returns {HTMLHeadingElement} */
 export function h2(s: string | Element, options: string | ElementOptions | null = null): HTMLHeadingElement {
@@ -153,7 +154,7 @@ export function h2(s: string | Element, options: string | ElementOptions | null 
   return _options(x, options) as HTMLHeadingElement;
 }
 
-/** 
+/**
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
  * @returns {HTMLHeadingElement} */
 export function h3(s: string | Element, options: string | ElementOptions | null = null): HTMLHeadingElement {
@@ -349,7 +350,7 @@ export function div(children: any[] | string | HTMLElement = [], options: string
 }
 
 /**
- * Example: {@link https://public.datagrok.ai/js/samples/ui/components/info-bar} 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/info-bar}
  */
 export function info(children: HTMLElement[] | HTMLElement | string, header: string | null = null, reopenable: boolean = true): HTMLDivElement {
   let root: HTMLDivElement | null;
@@ -382,7 +383,7 @@ export function info(children: HTMLElement[] | HTMLElement | string, header: str
 }
 
 /** Div flex-box container that positions child elements vertically.
- * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/flexbox} 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/flexbox}
  * @param {object[]} items
  * @param {string | ElementOptions} options
  * @returns {HTMLDivElement} */
@@ -391,7 +392,7 @@ export function divV(items: any[], options: string | ElementOptions | null = nul
 }
 
 /** Div flex-box container that positions child elements horizontally.
- * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/flexbox} 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/flexbox}
  * @param {object[]} items
  * @param {string | ElementOptions} options
  * @returns {HTMLDivElement} */
@@ -454,7 +455,7 @@ export function comboPopupItems(caption: string | HTMLElement, items: { [key: st
   return api.grok_UI_ComboPopup(caption, Object.keys(items), (key: string) => items[key](), null);
 }
 
-/** Creates an html table based on [map]. 
+/** Creates an html table based on [map].
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/html-tables}
 */
 export function tableFromMap(map: { [key: string]: any }): HTMLTableElement {
@@ -487,7 +488,7 @@ export function waitBox(getElement: () => Promise<HTMLElement>): any {
   return toJs(api.grok_UI_WaitBox(getElement));
 }
 
-/** Creates a visual element representing list of [items]. 
+/** Creates a visual element representing list of [items].
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/list}
 */
 export function list(items: any[], options?: {processNode?: (node: HTMLElement) => void}): HTMLElement {
@@ -572,7 +573,7 @@ export function link(
   return link;
 }
 
-/** Creates a [Dialog]. 
+/** Creates a [Dialog].
  * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/splitters}
 */
 export function dialog(options?: { title?: string, helpUrl?: string, showHeader?: boolean, showFooter?: boolean } | string): Dialog {
@@ -586,13 +587,10 @@ export function bind(item: any, element: HTMLElement, options?: {contextMenu: bo
 }
 
 /** Shows popup with the [element] near the [anchor].
- * tooltip, and popup menu.
- * @param {Element} element
- * @param {Element} anchor
- * @param {boolean} vertical
- * @returns {Element}. */
-export function showPopup(element: HTMLElement, anchor: HTMLElement, vertical: boolean = false): Element {
-  return api.grok_UI_ShowPopup(element, anchor, vertical);
+ * tooltip, and popup menu. */
+export function showPopup(element: HTMLElement, anchor: HTMLElement, options?: {vertical?: boolean, dx?: number,
+  dy?: number, smart?: boolean}): Element {
+  return api.grok_UI_ShowPopup(element, anchor, options?.vertical ?? false, options?.dx ?? 0, options?.dy ?? 0, options?.smart ?? true);
 }
 
 /**
@@ -612,7 +610,7 @@ export function rangeSlider(minRange: number, maxRange: number, min: number, max
  * @param {boolean} verticalScroll - vertical or horizontal scrolling
  * @param {number} maxColumns - maximum number of items on the non-scrolling axis
  * @returns {VirtualView} */
-export function virtualView(length: number, renderer: Function, verticalScroll: boolean = true, maxColumns: number = 1000): VirtualView {
+export function virtualView(length: number, renderer: (index: number) => HTMLElement, verticalScroll: boolean = true, maxColumns: number = 1000): VirtualView {
   let view = VirtualView.create(verticalScroll, maxColumns);
   view.setData(length, renderer);
   return view;
@@ -711,23 +709,23 @@ export namespace input {
     width: number;
   }
 
-  const optionsMap: {[key: string]: (input: InputBase, inputType: d4.InputType, option: any) => void} = {
-    value: (input, inputType, x) => input.value = inputType === d4.InputType.File ? toDart(x) : x,
-    nullable: (input, inputType, x) => input.nullable = x, // finish it?
-    property: (input, inputType, x) => input.property = x,
-    tooltipText: (input, inputType, x) => input.setTooltip(x),
-    onCreated: (input, inputType, x) => x(input),
-    onValueChanged: (input, inputType, x) => input.onChanged(() => x(input.value)),
-    clearIcon: (input, inputType, x) => api.grok_StringInput_AddClearIcon(input.dart, x),
-    escClears: (input, inputType, x) => api.grok_StringInput_AddEscClears(input.dart, x),
-    size: (input, inputType, x) => api.grok_TextInput_SetSize(input.dart, x.width, x.height),
-    placeholder: (input, inputType, x) => (input.input as HTMLInputElement).placeholder = x,
-    items: (input, inputType, x) => inputType === d4.InputType.Choice ? (input as ChoiceInput<typeof x>).items = x :
-      inputType === d4.InputType.Table ? (input as ChoiceInput<typeof x>).items = x.map((elem: DataFrame) => toDart(elem)) :
-      inputType === d4.InputType.MultiChoice ? api.grok_MultiChoiceInput_Set_Items(input.dart, x) : api.grok_RadioInput_Set_Items(input.dart, x),
-    icon: (input, inputType, x) => api.grok_StringInput_AddIcon(input.dart, x),
-    available: (input, inputType, x) => api.grok_ColumnsInput_ChangeAvailableColumns(input.dart, x),
-    checked: (input, inputType, x) => api.grok_ColumnsInput_ChangeCheckedColumns(input.dart, x),
+  const optionsMap: {[key: string]: (input: InputBase, option: any) => void} = {
+    value: (input, x) => input.value = input.inputType === d4.InputType.File ? toDart(x) : x,
+    nullable: (input, x) => input.nullable = x, // finish it?
+    property: (input, x) => input.property = x,
+    tooltipText: (input, x) => input.setTooltip(x),
+    onCreated: (input, x) => x(input),
+    onValueChanged: (input, x) => input.onChanged(() => x(input)),
+    clearIcon: (input, x) => api.grok_StringInput_AddClearIcon(input.dart, x),
+    escClears: (input, x) => api.grok_StringInput_AddEscClears(input.dart, x),
+    size: (input, x) => api.grok_TextInput_SetSize(input.dart, x.width, x.height),
+    placeholder: (input, x) => (input.input as HTMLInputElement).placeholder = x,
+    items: (input, x) => input.inputType === d4.InputType.Choice ? (input as ChoiceInput<typeof x>).items = x :
+      input.inputType === d4.InputType.Table ? (input as ChoiceInput<typeof x>).items = x.map((elem: DataFrame) => toDart(elem)) :
+        input.inputType === d4.InputType.MultiChoice ? api.grok_MultiChoiceInput_Set_Items(input.dart, x) : api.grok_RadioInput_Set_Items(input.dart, x),
+    icon: (input, x) => api.grok_StringInput_AddIcon(input.dart, x),
+    available: (input, x) => api.grok_ColumnsInput_ChangeAvailableColumns(input.dart, x),
+    checked: (input, x) => api.grok_ColumnsInput_ChangeCheckedColumns(input.dart, x),
   };
 
   function setInputOptions(input: InputBase, inputType: d4.InputType, options?: IInputInitOptions): void {
@@ -746,7 +744,7 @@ export namespace input {
           api.grok_ColumnsInput_ChangeTable(input.dart, (specificOptions as IIndexable)[key].dart, filter);
       }
       if (optionsMap[key] !== undefined)
-        optionsMap[key](input, inputType, (specificOptions as IIndexable)[key]);
+        optionsMap[key](input, (specificOptions as IIndexable)[key]);
     }
     const baseOptions = (({value, nullable, property, onCreated, onValueChanged}) => ({value, nullable, property, onCreated, onValueChanged}))(options);
     for (let key of Object.keys(baseOptions)) {
@@ -755,11 +753,11 @@ export namespace input {
       if (key === 'nullable' && baseOptions[key] !== undefined)
         options.property.nullable = baseOptions[key]!;
       if ((baseOptions as IIndexable)[key] !== undefined && optionsMap[key] !== undefined)
-        optionsMap[key](input, inputType, (baseOptions as IIndexable)[key]);
+        optionsMap[key](input, (baseOptions as IIndexable)[key]);
     }
   }
 
-  interface IInputInitOptions<T = any> {
+  export interface IInputInitOptions<T = any> {
     value?: T;
     property?: Property;
     nullable?: boolean;
@@ -769,7 +767,7 @@ export namespace input {
     onValueChanged?: (input: InputBase<T>) => void;
   }
 
-  interface INumberInputInitOptions<T> extends IInputInitOptions<T> {
+  export interface INumberInputInitOptions<T> extends IInputInitOptions<T> {
     min?: number;
     max?: number;
     step?: number;
@@ -777,15 +775,15 @@ export namespace input {
     showPlusMinus?: boolean;
   }
 
-  interface IChoiceInputInitOptions<T> extends IInputInitOptions<T> {
+  export interface IChoiceInputInitOptions<T> extends IInputInitOptions<T> {
     items?: T[];
   }
 
-  interface IMultiChoiceInputInitOptions<T> extends Omit<IChoiceInputInitOptions<T>, 'value'> {
+  export interface IMultiChoiceInputInitOptions<T> extends Omit<IChoiceInputInitOptions<T>, 'value'> {
     value?: T[];
   }
 
-  interface IStringInputInitOptions<T> extends IInputInitOptions<T> {
+  export interface IStringInputInitOptions<T> extends IInputInitOptions<T> {
     clearIcon?: boolean;
     escClears?: boolean;
     icon?: string | HTMLElement;
@@ -793,16 +791,16 @@ export namespace input {
     // typeAheadConfig?: typeaheadConfig<Dictionary>; // - if it is set - create TypeAhead - make it for text input
   }
 
-  interface ITextAreaInputInitOptions<T> extends IInputInitOptions<T> {
-    size: Size;
+  export interface ITextAreaInputInitOptions<T> extends IInputInitOptions<T> {
+    size?: Size;
   }
 
-  interface IColumnInputInitOptions<T> extends IInputInitOptions<T> {
+  export interface IColumnInputInitOptions<T> extends IInputInitOptions<T> {
     table?: DataFrame;
     filter?: Function;
   }
 
-  interface IColumnsInputInitOptions<T> extends IColumnInputInitOptions<T> {
+  export interface IColumnsInputInitOptions<T> extends IColumnInputInitOptions<T> {
     available?: string[];
     checked?: string[];
   }
@@ -839,27 +837,27 @@ export namespace input {
     return input;
   }
 
-  export function int(name: string, options?: INumberInputInitOptions<number>): InputBase<number> {
+  export function int(name: string, options?: INumberInputInitOptions<number>): InputBase<number | null> {
     return _create(d4.InputType.Int, name, options);
   }
 
-  export function bigInt(name: string, options?: IInputInitOptions<BigInt>): InputBase<BigInt> {
+  export function bigInt(name: string, options?: IInputInitOptions<BigInt>): InputBase<BigInt | null> {
     return _create(d4.InputType.BigInt, name, options);
   }
 
-  export function qNum(name: string, options?: IInputInitOptions): InputBase<number> {
+  export function qNum(name: string, options?: IInputInitOptions): InputBase<number | null> {
     return _create(d4.InputType.QNum, name, options);
   }
 
-  export function slider(name: string, options?: INumberInputInitOptions<number>): InputBase<number> {
+  export function slider(name: string, options?: INumberInputInitOptions<number>): InputBase<number | null> {
     return _create(d4.InputType.Slider, name, options);
   }
 
-  export function choice<T>(name: string, options?: IChoiceInputInitOptions<T>): ChoiceInput<T> {
+  export function choice<T>(name: string, options?: IChoiceInputInitOptions<T>): ChoiceInput<T | null> {
     return _create(d4.InputType.Choice, name, options) as ChoiceInput<T>;
   }
 
-  export function multiChoice<T>(name: string, options?: IMultiChoiceInputInitOptions<T>): InputBase<T[]> {
+  export function multiChoice<T>(name: string, options?: IMultiChoiceInputInitOptions<T>): InputBase<T[] | null> {
     return _create(d4.InputType.MultiChoice, name, options);
   }
 
@@ -871,7 +869,7 @@ export namespace input {
     return _create(d4.InputType.Search, name, options);
   }
 
-  export function float(name: string, options?: INumberInputInitOptions<number>): InputBase<number> {
+  export function float(name: string, options?: INumberInputInitOptions<number>): InputBase<number | null> {
     return _create(d4.InputType.Float, name, options);
   }
 
@@ -879,7 +877,7 @@ export namespace input {
     return _create(d4.InputType.Date, name, options);
   }
 
-  export function map(name: string, options?: IInputInitOptions<Map<string, string>>): InputBase<Map<string, string>> {
+  export function map(name: string, options?: IInputInitOptions<Map<string, string>>): InputBase<Map<string, string> | null> {
     return _create(d4.InputType.Map, name, options);
   }
 
@@ -891,11 +889,11 @@ export namespace input {
     return _create(d4.InputType.Switch, name, options);
   }
 
-  export function file(name: string, options?: IInputInitOptions<FileInfo>): InputBase<FileInfo> {
+  export function file(name: string, options?: IInputInitOptions<FileInfo>): InputBase<FileInfo | null> {
     return _create(d4.InputType.File, name, options);
   }
 
-  export function list(name: string, options?: IInputInitOptions<Array<any>>): InputBase<Array<any>> {
+  export function list(name: string, options?: IInputInitOptions<Array<any>>): InputBase<Array<any> | null> {
     return _create(d4.InputType.List, name, options);
   }
 
@@ -903,7 +901,7 @@ export namespace input {
     return _create(d4.InputType.Molecule, name, options);
   }
 
-  export function column(name: string, options?: IColumnInputInitOptions<Column>): InputBase<Column> {
+  export function column(name: string, options?: IColumnInputInitOptions<Column>): InputBase<Column | null> {
     return _create(d4.InputType.Column, name, options);
   }
 
@@ -911,7 +909,7 @@ export namespace input {
     return _create(d4.InputType.Columns, name, options);
   }
 
-  export function table(name: string, options?: IChoiceInputInitOptions<DataFrame[]>): InputBase<DataFrame> {
+  export function table(name: string, options?: IChoiceInputInitOptions<DataFrame>): InputBase<DataFrame | null> {
     return _create(d4.InputType.Table, name, options);
   }
 
@@ -923,19 +921,19 @@ export namespace input {
     return _create(d4.InputType.Color, name, options);
   }
 
-  export function radio(name: string, options?: IChoiceInputInitOptions<string>): InputBase<string> {
+  export function radio(name: string, options?: IChoiceInputInitOptions<string>): InputBase<string | null> {
     return _create(d4.InputType.Radio, name, options);
   }
 
-  export function user(name: string, options?: IInputInitOptions<User[]>): InputBase<User[]> {
+  export function user(name: string, options?: IInputInitOptions<User[]>): InputBase<User[] | null> {
     return _create(d4.InputType.User, name, options);
   }
 
-  export function userGroups(name: string, options?: IInputInitOptions<User[]>): InputBase<User[]> {
+  export function userGroups(name: string, options?: IInputInitOptions<User[]>): InputBase<User[] | null> {
     return _create(d4.InputType.UserGroups, name, options);
   }
 
-  export function image(name: string, options?: IInputInitOptions<string>): InputBase<string> {
+  export function image(name: string, options?: IInputInitOptions<string>): InputBase<string | null> {
     return _create(d4.InputType.Image, name, options);
   }
 
@@ -1081,12 +1079,14 @@ export function onSizeChanged(element: HTMLElement): rxjs.Observable<any> {
     });
   }
 
-  return rxjs.Observable.create(function (observer: { next: (arg0: ResizeObserverEntry) => void; }) {
+  return new rxjs.Observable(function (observer: { next: (arg0: ResizeObserverEntry) => void; }) {
     const resizeObserver = new ResizeObserver(observerEntries => {
       // trigger a new item on the stream when resizes happen
-      for (const entry of observerEntries) {
-        observer.next(entry);
-      }
+      setTimeout(() => {
+        for (const entry of observerEntries) {
+          observer.next(entry);
+        }
+      }, 1);
     });
 
     // start listening for resize events
@@ -1110,22 +1110,10 @@ export class tools {
   //static void annotateEntities(element: HTMLElement) { }
 
   static handleResize(element: HTMLElement, onChanged: (width: number, height: number) => void): () => void {
-    let width = element.clientWidth;
-    let height = element.clientHeight;
-    let interval = setInterval(() => {
-      let newWidth = element.clientWidth;
-      let newHeight = element.clientHeight;
-      if ((newWidth === 0 && newHeight === 0)) {
-        return
-      }
-
-      if (newWidth !== width || newHeight !== height) {
-        width = newWidth;
-        height = newHeight;
-        onChanged(width, height);
-      }
-    }, 100);
-    return () => clearInterval(interval);
+    let sub = onSizeChanged(element).subscribe((_) => {
+      onChanged(element.clientWidth, element.clientHeight);
+    });
+    return () => sub.unsubscribe();
   }
 
   static setHoverVisibility(host: HTMLElement, items: HTMLElement[]) {
@@ -1167,7 +1155,7 @@ export class tools {
       childList: true,
       subtree: true,
     });
-    
+
     return new Promise(resolve => {
       if (document.contains(element))
         return resolve(element);
@@ -1175,441 +1163,173 @@ export class tools {
     });
   }
 
-  static async resizeFormLabels(element: HTMLElement): Promise<void> {
-    if (this.skipResizing(element)) return;
-    
-    //Default form width
-    let minFormWidth = 150;
-    let maxFormWidth = 450;
+  private static formResizeObserver = _isDartium() ? null : new ResizeObserver((records, observer) => {
+    for (let r of records) {
+      setTimeout(() => {
+        let shouldHandle = tools.handleFormResize(r.target as HTMLElement);
+        if (!shouldHandle) {
+          observer.unobserve(r.target as HTMLElement);
+        }
+      }, 10);
+    }
+  });
 
-    //Min input width and padding
-    const minInputWidth = 58;
-    const minInputPadding = 28;
-
-    const tempForm = this.createTempForm(element, minFormWidth, maxFormWidth);
-
-    const selectors = [
-      'div.ui-input-root:not(.ui-input-buttons) > label.ui-input-label:not(:empty',
-      'div.ui-input-root:not(.ui-input-buttons) > .ui-input-editor, div.ui-input-root:not(.ui-input-buttons) > .d4-table.d4-item-table',
-      'div.ui-input-root:not(.ui-input-buttons) > .ui-input-options'
-    ];
-    const labels = this.calculateWidths(tempForm, selectors[0], 'data-label', minInputWidth, minInputPadding);
-    const inputs = this.calculateWidths(tempForm, selectors[1], 'data-input', minInputWidth, minInputPadding);
-    const options = this.calculateWidths(tempForm, selectors[2], 'data-options', minInputWidth, minInputPadding);
-
-    this.applyStyles(tempForm, labels, inputs, options, minInputWidth);
-    this.copyAttributesToForm(element, tempForm, labels);
-    this.adjustButtonContainer(element);
-    this.adjustDialogForm(element, tempForm);
-    this.handleFormResize(element, labels, minInputWidth);
-
-    tempForm.remove();
+  private static setLabelsWidth(form: HTMLElement, w: number) {
+    for (const label of Array.from(form.querySelectorAll('div.ui-input-root > label.ui-input-label:not(:empty)'))) {
+      (label as HTMLElement).style.minWidth = `${w}px`;
+      (label as HTMLElement).style.maxWidth = `${w}px`;
+      (label as HTMLElement).style.width = 'initial';
+    }
   }
 
-  private static createInputRows (tempForm: HTMLElement) {
+  private static formLabelWidths: WeakMap<HTMLElement, number[]> = new WeakMap<HTMLElement, number[]>();
+  private static formMinInputWidths: WeakMap<HTMLElement, number> = new WeakMap<HTMLElement, number>();
+  private static formLabelMaxWidths: WeakMap<HTMLElement, number> = new WeakMap<HTMLElement, number>();
 
-    Array.from(tempForm.children).forEach((item, index) => {
-      if(!item.hasAttribute('data-align')) return;
-      if (item.getAttribute('data-align') != 'row') return;
+  private static calcWidths(form: HTMLElement): void {
+    this.formMinInputWidths.set(form, 150);
+    this.formLabelMaxWidths.set(form, 140);
+    let widths = tools.getLabelsWidths(form);
+    widths.sort();
+    this.formLabelWidths.set(form, widths);
+    const inputsMinWidths = tools.getInputsMinWidths(form);
 
-      let root = document.createElement('div');
-      root.className = 'ui-input-root ui-input-row';
+    this.formMinInputWidths.set(form, Math.max(...inputsMinWidths));
+    this.formLabelMaxWidths.set(form, Math.max(...this.formLabelWidths.get(form)!));
+  }
 
-      let label = document.createElement('label');
-      label.className = 'ui-input-label ui-label';
-
-      let editor = document.createElement('div');
-      editor.className = 'ui-input-editor ui-input-row';
-
+  private static handleFormResize(form: HTMLElement): boolean {
+   let parent: HTMLElement | null = form.parentElement;
+    while (parent != null) {
+      if (parent.classList.contains('ui-form') && tools.getFormId(parent) != undefined) {
+        return false;
+      }
+      parent = parent.parentElement;
+    }
+    window.requestAnimationFrame(() => {
+      let labelWidth = tools.formLabelMaxWidths.get(form)!;
+      if (form.clientWidth - labelWidth < tools.formMinInputWidths.get(form)!) {
+        // try to shrink long labels if they are present
+        let labelsToShrink = Math.ceil(tools.formLabelWidths.get(form)!.length * 0.2); // find 20% longest labels
+        if (labelsToShrink > 0 && labelsToShrink < tools.formLabelWidths.get(form)!.length) {
+          let newWidth = Math.max(...tools.formLabelWidths.get(form)!.slice(labelsToShrink))
+          if (newWidth < 0.8 * labelWidth) // worths it?
+            labelWidth = Math.max(newWidth, form.clientWidth - tools.formMinInputWidths.get(form)!);
+        }
+      }
+      if (form.classList.contains('d4-dialog-contents')) {
+        let dialogFormWidth = tools.formLabelMaxWidths.get(form)! + tools.formMinInputWidths.get(form)! + 40;
+        if (form.style.minWidth != `${dialogFormWidth}px`)
+          form.style.minWidth = `${dialogFormWidth}px`;
+      } else {
+        if (form.clientWidth - labelWidth < tools.formMinInputWidths.get(form)!) {
+          // switch form to tall view if inputs room is too small
+          form.classList.add('ui-form-condensed');
+        } else if (form.clientWidth - labelWidth > tools.formMinInputWidths.get(form)! + 10) { // hysteresis
+          form.classList.remove('ui-form-condensed');
+        }
+      }
+      tools.setLabelsWidth(form, labelWidth);
     });
+    return true;
   }
 
-  private static createTempForm(element: HTMLElement, minFormWidth:number, maxFormWidth:number): HTMLElement {
-    const tempForm = element.cloneNode(true) as HTMLElement;
-    document.body.append(tempForm);
-    tempForm.className = 'ui-form';
-    tempForm.setAttribute('data-min-width', String(minFormWidth));
-    tempForm.setAttribute('data-max-width', String(maxFormWidth));
-    tempForm.setAttribute('data-type','form');
-
-    this.createInputRows(element);
-    return tempForm;
+  private static getFormId(form: HTMLElement) {
+    return form.dataset['num'] as string;
   }
 
-  private static skipResizing(element: HTMLElement): boolean {
-    return element.hasAttribute('data-type') || element.children.length == 0 || element.classList.contains('ui-form-condensed') || element.classList.contains('ui-form-wide');
+  private static formNumber: number = 0;
+
+  static resizeFormLabels(form: HTMLElement): void {
+    if (this.getFormId(form) == undefined)
+      form.dataset['num'] = `${this.formNumber++}`;
+
+    let formObserver = new MutationObserver((records) => {
+      this.calcWidths(form);
+      this.setLabelsWidth(form, tools.formLabelMaxWidths.get(form)!);
+    });
+
+    formObserver.observe(form, {
+      childList: true,
+      subtree: true,
+    });
+
+    this.calcWidths(form);
+    this.setLabelsWidth(form, tools.formMinInputWidths.get(form)!);
+    this.handleFormResize(form);
+    if (!_isDartium())
+      this.formResizeObserver!.observe(form);
   }
 
-  private static calculateWidths(tempForm: HTMLElement, selector: string, attribute: string, minInputWidth: number, minInputPadding:number): number[] {
-    const width: number[] = [];
-    const elements = $(tempForm).find(selector);
+  private static getInputsMinWidths(form: HTMLElement): number[] {
+    const widths: number[] = [];
+    const elements = $(form).find('div.ui-input-root:not(.ui-input-buttons)');
+    elements.each((i) => {
+      let element = elements[i] as HTMLElement;
+      if ($(element).find('label').length == 0)
+        return;
+      let width = 100;
+      if (element.classList.contains('ui-input-bool'))
+        width = 30;
+      if (element.classList.contains('ui-input-switch'))
+        width = 50;
+      if (element.classList.contains('ui-input-table'))
+        width = 200;
+      if (element.classList.contains('ui-input-float'))
+        width = 140;
+      if (element.classList.contains('ui-input-int'))
+        width = 100;
+      if (element.classList.contains('ui-input-date'))
+        width = 140;
+      if (element.classList.contains('ui-input-text'))
+        width = 200;
+      if (element.classList.contains('ui-input-choice')) {
+        width = 40;
+        let options = $(element).find('select option');
+        options.each((i) => {
+          let calc = this.getLabelWidth(options[i] as HTMLElement);
+          if (calc > width)
+            width = calc;
+        });
+        let e = $(element).find('select')[0];
+        if (e != undefined)
+          e.style.maxWidth = `${width + 30}px`;
+      }
+      // todo: analyze content(?) and metadata
+      // todo: analyze more types
+      widths.push(width);
+    });
+    return widths;
+  }
+
+  private static getLabelsWidths(tempForm: HTMLElement): number[] {
+    const widths: number[] = [];
+    const elements = $(tempForm).find('div.ui-input-root:not(.ui-input-buttons) > label.ui-input-label:not(:empty)');
 
     elements.each((i) => {
-      let renderWidth = minInputWidth;
       let element = elements[i] as HTMLElement;
-      let value = document.createElement('span');
-      value.style.visibility = 'hidden';
-      value.style.position = 'fixed';
-      value.style.padding = '0';
-      value.style.margin = '0';
-      tempForm.append(value);
-
-      // Calculate width for field labels
-      if (attribute == 'data-label') {
-        value.textContent = element.textContent;
-        renderWidth = Math.ceil(value.getBoundingClientRect().width);
-        element.parentElement?.setAttribute(attribute, String(renderWidth));
-      }
-
-      // Calculate width for field options
-      if (attribute == 'data-options') {
-        renderWidth = Math.ceil(element.getBoundingClientRect().width);
-        element.parentElement?.setAttribute(attribute, String(renderWidth));
-      }
-
-      // Calculate width for field inputs
-      if (attribute == 'data-input') {
-
-        // Calculate value width
-        if (element.tagName == 'INPUT' || element.tagName == 'SELECT') {
-          let temp = element as HTMLInputElement;
-          value.textContent = temp.value != undefined ? temp.value : '';
-          renderWidth = Math.ceil(value.getBoundingClientRect().width);
-        }
-
-        // Get table container width
-        if (element.tagName == 'TABLE') {
-          renderWidth = Math.ceil(element.getBoundingClientRect().width);
-        }
-
-        // Get textarea container width
-        if (element.tagName == 'TEXTAREA') {
-          let temp = element as HTMLInputElement;
-          value.textContent = temp.value != undefined ? temp.value : '';
-          renderWidth = Math.ceil(value.getBoundingClientRect().width);
-          if (renderWidth < 120)
-            renderWidth = 120
-          else if (renderWidth > 250) {
-            //IF form has other elements exept textarea limit width to 250px (222+28)
-            //Else expand to 400px (372+28)
-            //28 is input paddings
-            if ($(tempForm).find('.ui-input-editor:not(textarea, .ui-buttons-editor)').length != 0)
-              renderWidth = 222
-            else
-              renderWidth = 372
-          }
-        }
-
-        // Get text content width
-        if (element.tagName == 'DIV') {
-          // If Multi-choice or radio button - get container width
-          if (element.parentElement?.classList.contains('ui-input-radio') || element.parentElement?.classList.contains('ui-input-multi-choice')) {
-            renderWidth = Math.ceil(element.getBoundingClientRect().width)-minInputPadding;
-          } else {
-            value.textContent = element.textContent;
-            renderWidth = Math.ceil(value.getBoundingClientRect().width);
-          }
-        }
-
-        // Set canvas min width
-        if ($(element).has('canvas').length != 0) { renderWidth = 100; }
-
-        //Check if calculated width not smaller than minimun input width
-        renderWidth+minInputPadding < minInputWidth ? renderWidth = minInputWidth : renderWidth = renderWidth+minInputPadding;
-        element.parentElement?.setAttribute(attribute, String(renderWidth));
-      }
-
-      width.push(renderWidth);
-      value.remove();
+      let renderWidth = this.getLabelWidth(element);
+      widths.push(renderWidth);
     });
-
-    return width;
+    return widths;
   }
 
-  private static applyStyles(tempForm: HTMLElement, labels: number[], inputs: number[], options: number[], minInputWidth:number) {
-    
-    //Set the min and max width to input label element
-    Array.from(tempForm.children).forEach((element) => {
-      let label = element.querySelector('label.ui-input-label') as HTMLElement;
-      
-      if (label == null) return;
-
-      label.style.minWidth = String(Math.min(...labels))+'px';
-      label.style.maxWidth = String(Math.max(...labels))+'px';
-      label.style.width = '100%';
-
-    });
-
-    //Set the min and max width to input-root element
-    Array.from(tempForm.children).forEach((item, index) => {
-      let element = item as HTMLElement;
-
-      if (!item.classList.contains('ui-input-root')) return;
-
-      //Get the max width;
-      let maxLabelWidth = labels.length > 0 ? Math.max(...labels) : 0;
-      let maxInputWidth = inputs.length > 0 ? Math.max(...inputs) : 0;
-      let maxOptionsWidth = options.length > 0 ? Math.max(...options) : 0;
-      
-      //Max and min form width + 8px label margin
-      let maxFormWidth = maxLabelWidth + maxInputWidth + maxOptionsWidth + 8;
-      let minFormWidth = maxLabelWidth + minInputWidth + 8;
-
-      element.style.width = '100%';
-      element.style.maxWidth = String(maxFormWidth)+'px';
-
-      //Update the max form width attribute
-      tempForm.setAttribute('data-max-width', String(maxFormWidth));
-      tempForm.setAttribute('data-min-width', String(minFormWidth));
-    });
-
+  private static getLabelWidth(element: HTMLElement) {
+    let value = document.createElement('span');
+    value.style.visibility = 'hidden';
+    value.style.position = 'fixed';
+    value.style.padding = '0';
+    value.style.margin = '0';
+    value.textContent = element.textContent;
+    document.body.append(value);
+    let renderWidth = Math.ceil(value.getBoundingClientRect().width);
+    value.remove();
+    return renderWidth;
   }
 
-  private static copyAttributesToForm (element: HTMLElement, tempForm: HTMLElement, labels: number[]) {
-    let currentWidth = element.getBoundingClientRect().width;
-    let maxFormWidth = Number(tempForm.getAttribute('data-max-width'));
-    let maxLabelWidth = Math.max(...labels);
-    let avaliableSpace = currentWidth - maxFormWidth > 0 ? currentWidth - maxFormWidth : 0;
-    let inputWidth = 0;
-
-    //If form has avalibable space then adjust min form width to maxFormWidth+128. 
-    //Where 128 is space form input-ediotr + input-options if exist.
-    if (maxFormWidth < maxLabelWidth+128) {
-      if (avaliableSpace != 0){
-        if (maxFormWidth+avaliableSpace < maxLabelWidth+128) {
-          maxFormWidth = maxFormWidth+avaliableSpace;
-          inputWidth = maxFormWidth - maxLabelWidth - 8;
-        }
-        else {
-          maxFormWidth = maxLabelWidth+128;
-          inputWidth = 120;
-        }
-      }
-    }
-
-    //Set attributes to form fields
-    Array.from(tempForm.children).forEach((item, index) => {
-      let root = element.children[index] as HTMLElement;
-      let label = element.children[index].firstElementChild as HTMLElement;
-
-      let rootStyle = item.getAttribute('style');
-      let labelStyle = item.firstElementChild?.getAttribute('style');
-
-      if (rootStyle != null) {
-        root.setAttribute('style', rootStyle);
-        root.style.maxWidth = String(maxFormWidth)+'px';
-      }
-      if (labelStyle != null) label.setAttribute('style', labelStyle);
-
-      let dataLabel = item.getAttribute('data-label');
-      let dataInput = item.getAttribute('data-input');
-      let dataOptions = item.getAttribute('data-options');
-
-      if (dataLabel != null) root.setAttribute('data-label', dataLabel);
-      if (dataOptions != null) root.setAttribute('data-options', dataOptions);
-      if (dataInput != null) root.setAttribute('data-input', dataInput);
-
-    });
-
-    //Set attributes to form
-    element.setAttribute('data-type', 'form');
-    element.setAttribute('data-min-width', tempForm.getAttribute('data-min-width')!);
-    element.setAttribute('data-max-width', String(maxFormWidth));
-    element.style.maxWidth = String(maxFormWidth)+'px';
-  }
-
-  private static adjustDialogForm(element: HTMLElement, tempForm:HTMLElement) {
-    if (element.classList.contains('d4-dialog-contents') || element.parentElement?.classList.contains('d4-dialog-contents')) {
-      element.style.removeProperty('max-width');
-    
-      const formWidth = Math.ceil(element.getBoundingClientRect().width-24);
-      const maxFormWidth = Number(element.getAttribute('data-max-width'));
-
-      Array.from(element.children).forEach((field) => {
-        let root = field as HTMLElement;
-        let label = root.querySelector('label') as HTMLElement;
-
-        if (label == null) return;
-
-        if (maxFormWidth < formWidth)
-          root.style.maxWidth = String(formWidth)+'px';
-
-        label.style.removeProperty('width')
-      });
-    } 
-    else {
-      this.adjustForm(element, tempForm);
-    }
-  }
-  
-  private static adjustButtonContainer(element: HTMLElement) {
-    let buttons = element.querySelector('.ui-input-buttons') as HTMLElement;
-    
-    if (buttons == null) return;
-
-    let label = buttons.querySelector('label') as HTMLElement;
-    let editor = buttons.querySelector('div.ui-input-editor') as HTMLElement;
-
-    if (element.querySelector('.ui-input-root:not(.ui-input-buttons)') == null) {
-      element.style.removeProperty('max-width');
-      buttons.style.removeProperty('max-width');
-      editor.style.removeProperty('max-width');
-      let totalWidth = 0;
-      for (let i = 0; i < editor.children.length; i++)
-        totalWidth += editor.children[i].getBoundingClientRect().width;
-      element.style.maxWidth = `${totalWidth}px`;
-      buttons.style.maxWidth = `${totalWidth}px`;
-    }
-
-    if (label != null) label.remove();
-
-    if (editor != null) {
-      editor.classList.add('ui-buttons-editor');
-      editor.style.flexWrap = 'wrap';
-      editor.style.padding = '0';
-    }
-  }
-
-  private static adjustForm(element:HTMLElement, tempForm:HTMLElement){
-    const minFormWidth = Number(tempForm.getAttribute('data-min-width'));
-    const maxFormWidth = Number(tempForm.getAttribute('data-max-width'));
-    const currentWidth = element.getBoundingClientRect().width;
-    const label = tempForm.querySelector('label.ui-input-label') as HTMLElement;
-    const maxLabelWidth = label != null ? parseInt(label.style.maxWidth) : 0;
-    
-    if (currentWidth > minFormWidth) {
-      Array.from(element.children).forEach((field)=>{
-        let inputWidth = field.getAttribute('data-input') != null ? Number(field.getAttribute('data-input')) : 0;
-        let optionWidth = field.getAttribute('data-options') != null ? Number(field.getAttribute('data-options')) : 0;
-        let option = field.querySelector('.ui-input-options') as HTMLElement;
-        let optionIcon = iconFA('ellipsis-h', ()=>{
-          $(element).find('.ui-input-options').not(option).removeClass('ui-input-options-expand');
-          $(option).toggleClass('ui-input-options-expand');
-        });
-        optionIcon.classList.add('ui-input-options-icon');
-
-        if (option == null) return;
-
-        if ($(option).has('i').length != 0) option.append(optionIcon);
-
-        if (currentWidth < maxLabelWidth+inputWidth+8+optionWidth) {
-         $(option).children().css('display', 'none');
-         $(optionIcon).css('display', 'flex');
-        }
-        else {
-          $(option).children().css('display', 'flex');
-          $(optionIcon).css('display', 'none');
-        }
-
-      });
-    }
-    else if (currentWidth < minFormWidth)
-      element.classList.add('ui-form-condensed')
-
-    // Add tooltips for radio and multi-choice inputs
-    Array.from(element.children).forEach((field)=>{ 
-      let editor = field.querySelector('.ui-input-editor');
-      if (editor != null && editor.children.length != 0) {
-        Array.from(editor.children).forEach((item) => {
-          let label = item.querySelector('label');
-          if (label != null)
-            api.grok_Tooltip_SetOn(label, label.textContent)
-        })
-      }
-    });
-  }
-
-  private static handleFormResize(element: HTMLElement, labels: number[], minInputWidth: number) {
-    const fields = Array.from(element.children) as HTMLElement [];
-    const fieldsCount = element.querySelectorAll('.ui-input-root').length;
-    const formClassName = element.className;
-    const minFormWidth = element.getAttribute('data-min-width') != null ? Number(element.getAttribute('data-min-width')) : Math.max(...labels)+minInputWidth;
-    
-    tools.handleResize(element, (currentWidth) => { 
-      let shrinkedLabels = 0;
-
-      fields.forEach((field, index) => {
-        //Get label and options containers
-        let label = field.querySelector('label.ui-input-label') as HTMLElement;
-        let editor = field.querySelector('.ui-input-editor') as HTMLElement;
-        let option = field.querySelector('.ui-input-options') as HTMLElement;
-
-        //Get field data attributes
-        let labelWidth = field.getAttribute('data-label') != null ? Number(field.getAttribute('data-label')) : 0;
-        let inputWidth = field.getAttribute('data-input') != null ? Number(field.getAttribute('data-input')) : 0;
-        let optionWidth = field.getAttribute('data-options') != null ? Number(field.getAttribute('data-options')) : 0;
-        
-        //Hide options if current width less than max label width + current input and options width + 8px label margin
-        if (currentWidth < Math.max(...labels)+inputWidth+8+optionWidth) {
-          if (option != null)
-            $(option).children().css('display','none');
-            $(option).find('.ui-input-options-icon').css('display','flex');
-        }
-        else {
-          if (option != null)
-            $(option).removeClass('ui-input-options-expand');
-            $(option).children().css('display','flex');
-            $(option).find('.ui-input-options-icon').css('display','none');
-        }
-
-        //Shrink labels if current form width less than min form width
-        if (currentWidth < Math.max(...labels)+minInputWidth) {
-          if (label != null) {
-            label.style.width = String(Math.ceil(Math.max(...labels)/(Math.max(...labels)+58)*100))+'%';
-            label.style.flexShrink = String(1-Math.max(...labels)/(Math.max(...labels)+58));
-            api.grok_Tooltip_SetOn(label, label?.textContent);
-          }
-
-          if (editor == null) return;
-
-          editor.style.maxWidth = String(minInputWidth)+'px';
-          editor.style.width = '100%';
-        }
-        else {
-          if (label != null) {
-            label.style.width = '100%';
-            label.style.removeProperty('flex-shrink');
-          }
-          if (editor != null) {
-            editor.style.removeProperty('max-width');
-            editor.style.removeProperty('width');
-          }
-        }
-  
-        //Detect when label become to shrink  
-        if (currentWidth < labelWidth+minInputWidth)
-          shrinkedLabels++;
-  
-        //Hide options for condensed form  
-        if (element.classList.contains('ui-form-condensed')) {
-          if (editor != null) {
-            editor.style.maxWidth = 'initial';
-            editor.style.removeProperty('width');
-          }
-
-          if (currentWidth < inputWidth+8+optionWidth) {
-            if (option != null) { 
-              $(option).children().css('display','none');
-              $(option).find('.ui-input-options-icon').css('display','flex');
-            }
-          }
-          else {
-            if (option != null) {
-              $(option).removeClass('ui-input-options-expand');
-              $(option).children().css('display','flex');
-              $(option).find('.ui-input-options-icon').css('display','none');
-            }
-          }
-        }
-      });
-
-      //If 80% of labels are shrinked change form type to condensed
-      if (Math.round(100-(shrinkedLabels/fieldsCount*100)) < 80)
-        element.classList.add('ui-form-condensed');
-      else
-        element.classList.remove('ui-form-condensed');
-    });
-    
+  static scrollIntoViewIfNeeded(e: HTMLElement) {
+    // @ts-ignore
+    e.scrollIntoViewIfNeeded(false);
   }
 }
 
@@ -1621,7 +1341,7 @@ export class Tooltip {
     api.grok_Tooltip_Hide();
   }
 
-  /** Associated the specified visual element with the corresponding item. 
+  /** Associated the specified visual element with the corresponding item.
    * Example: {@link https://public.datagrok.ai/js/samples/ui/tooltips/tooltips}
   */
   bind(element: HTMLElement, tooltip?: string | null | (() => string | HTMLElement | null)): HTMLElement {
@@ -1685,6 +1405,11 @@ export class ObjectHandler {
   /** Type of the object that this meta handles. */
   get type(): string {
     throw 'Not defined.';
+  }
+
+  /** URL of help page for the object that this meta handles. */
+  get helpUrl(): string | null {
+    return null;
   }
 
   get name(): string { return `${this.type} handler`; }
@@ -1848,7 +1573,7 @@ export class EntityMetaDartProxy extends ObjectHandler {
 }
 
 /**
- * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/box} 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/box}
  */
 export function box(item: Widget | InputBase | HTMLElement | null = null, options: string | ElementOptions | null = null): HTMLDivElement {
   if (item instanceof Widget) {
@@ -1873,8 +1598,8 @@ export function boxFixed(item: Widget | InputBase | HTMLElement | null, options:
   return c;
 }
 
-/** Div flex-box container that positions child elements vertically. 
- * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/splitters} 
+/** Div flex-box container that positions child elements vertically.
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/splitters}
 */
 export function splitV(items: HTMLElement[], options: ElementOptions | null = null, resize: boolean | null = false): HTMLDivElement {
   let b = box(null, options);
@@ -1894,8 +1619,8 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
       const childs = Array.from(b.children as HTMLCollectionOf<HTMLElement>);
       let defaultHeigh = 0;
       let noHeightCount = 0;
-      
-      childs.forEach((element) => { 
+
+      childs.forEach((element) => {
         if (!element.classList.contains('ui-split-v-divider')) {
           if (element.style.height != '') {
             defaultHeigh += Number(element.style.height.replace(/px$/, ''));
@@ -1904,10 +1629,10 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
           }
         }else{
           element.style.height = '4px';
-        } 
+        }
       });
 
-      childs.forEach((element) => { 
+      childs.forEach((element) => {
         if (!element.classList.contains('ui-split-v-divider')) {
           if (element.style.height == '') {
             let height = (rootHeight-defaultHeigh-($(b).find('.ui-split-v-divider').length*4))/noHeightCount;
@@ -1930,7 +1655,7 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
           $(b.childNodes[i]).css('height', 4);
         }
       }
-      
+
     });
 
   } else {
@@ -1939,7 +1664,7 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
   return b;
 }
 
-/** Div flex-box container that positions child elements horizontally. 
+/** Div flex-box container that positions child elements horizontally.
  * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/splitters}
 */
 export function splitH(items: HTMLElement[], options: ElementOptions | null = null, resize: boolean | null = false): HTMLDivElement {
@@ -1961,8 +1686,8 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
       const childs = Array.from(b.children as HTMLCollectionOf<HTMLElement>);
       let defaultWidth = 0;
       let noWidthCount = 0;
-      
-      childs.forEach((element) => { 
+
+      childs.forEach((element) => {
         if (!element.classList.contains('ui-split-h-divider')) {
           if (element.style.width != '') {
             defaultWidth += Number(element.style.width.replace(/px$/, ''));
@@ -1971,10 +1696,10 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
           }
         }else{
           element.style.width = '4px';
-        } 
+        }
       });
 
-      childs.forEach((element) => { 
+      childs.forEach((element) => {
         if (!element.classList.contains('ui-split-h-divider')) {
           if (element.style.width == '') {
             let width = (rootWidth-defaultWidth-($(b).find('.ui-split-h-divider').length*4))/noWidthCount;
@@ -1996,7 +1721,7 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
           $(b.childNodes[i]).css('width', 4);
         }
       }
-      
+
     });
 
   } else {
@@ -2145,7 +1870,7 @@ export function p(text: string, options: any = null): HTMLParagraphElement {
 }
 
 /**
- * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/panels} 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/panels}
  */
 export function panel(items: HTMLElement[] = [], options?: string | ElementOptions): HTMLDivElement {
   let e = div(items, options);
@@ -2200,7 +1925,7 @@ export namespace forms {
   export function addButtons(form: HTMLElement, children: HTMLButtonElement[] = []) {
     if (!Array.isArray(children))
       children = [children];
-  
+
     if (children == null)
       return;
 
@@ -2209,7 +1934,7 @@ export namespace forms {
     let editor = document.createElement('div');
     $(editor).addClass('ui-input-editor').css('flex-wrap', 'wrap').css('padding', '0');
     $(root).addClass('ui-input-root ui-input-buttons').attr('style', style != null ? style : '');
-    
+
     if ($(form).find('.ui-input-buttons').length != 0) {
         $(form).find('.ui-input-buttons > div.ui-input-editor').prepend(children.map(x => render(x)));
     } else {
@@ -2291,8 +2016,8 @@ function _iconFA(type: string, handler: Function | null, tooltipMsg: string | nu
   return e;
 }
 
-/**  
- * Example: {@link https://public.datagrok.ai/js/samples/ui/components/breadcrumbs} 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/breadcrumbs}
  */
 export function breadcrumbs(path: string[]): Breadcrumbs {
   return new Breadcrumbs(path);
@@ -2304,6 +2029,13 @@ export function breadcrumbs(path: string[]): Breadcrumbs {
 export function dropDown(label: string | Element, createElement: () => HTMLElement): DropDown {
   return new DropDown(label, createElement);
 }
+
+// export function makeInputTypeAhead(input: HTMLInputElement, config: TypeAheadConfig): void {
+//   const typeAheadConfig: typeaheadConfig<Dictionary> = Object.assign(
+//       {input: <HTMLInputElement> input}, config);
+//
+//   typeahead(typeAheadConfig);
+// }
 
 export function typeAhead(name: string, config: TypeAheadConfig): TypeAhead {
   return new TypeAhead(name, config);
@@ -2369,13 +2101,13 @@ export function setDisabled(element: HTMLElement, disabled:boolean, tooltip?: st
 
   let interval = setInterval(()=> {
     let target = element.getBoundingClientRect();
-    
+
     overlay.style.left = String(target.left)+'px';
     overlay.style.top = String(target.top)+'px';
     overlay.style.width = String(target.width)+'px';
     overlay.style.height = String(target.height)+'px';
-    
-    if ($('body').has(element).length == 0 || !element.classList.contains('d4-disabled')) { 
+
+    if ($('body').has(element).length == 0 || !element.classList.contains('d4-disabled')) {
       overlay.remove();
       clearInterval(interval);
     }
@@ -2408,7 +2140,7 @@ export namespace tools {
 
 export namespace cards {
 
-  /** Two columns, with picture on the left and details on the right. 
+  /** Two columns, with picture on the left and details on the right.
    * Example: {@link https://public.datagrok.ai/js/samples/ui/components/summary-card}
   */
   export function summary(picture: HTMLElement, details: any[]): HTMLElement {
@@ -2501,7 +2233,7 @@ export namespace hints {
 
     el.classList.add('ui-hint-target');
     $('body').append(hintIndicator);
-    
+
     hintIndicator.style.position = 'fixed';
     hintIndicator.style.zIndex = '4000';
 
@@ -2513,7 +2245,7 @@ export namespace hints {
       } else {
         hintIndicator.remove();
         clearInterval(setPosition);
-      } 
+      }
     }, 10);
 
     if (clickToClose) {
@@ -2835,7 +2567,7 @@ export namespace css {
     linesCol = 'css-table-col-lines',
     striped = 'css-table-striped'
   }
-  
+
   export enum border {
     all = 'css-border',
     right = 'css-border-right',

@@ -2,18 +2,21 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import * as JSDraw2 from 'JSDraw2';
 import wu from 'wu';
 
-import {printLeftOrCentered} from '@datagrok-libraries/bio/src/utils/cell-renderer';
-import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
+import {HelmMol, ISeqMonomer} from '@datagrok-libraries/bio/src/helm/types';
 
-import {findMonomers, parseHelm, removeGapsFromHelm} from './utils';
-import {HelmMonomerPlacer, ISeqMonomer} from './helm-monomer-placer';
-import {getHoveredMonomerFallback, getHoveredMonomerFromEditorMol} from './utils/get-hovered';
+import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {getGridCellRendererBack} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 
-// import {_package} from './package'; // NullError: method not found: '_package' on null
+import {findMonomers, parseHelm, removeGapsFromHelm} from './utils';
+import {HelmMonomerPlacer} from './helm-monomer-placer';
+import {getHoveredMonomerFallback, getHoveredMonomerFromEditorMol, getSeqMonomerFromHelmAtom} from './utils/get-hovered';
+import {JSDraw2Module} from './types';
+
+import {_package} from './package';
+
+declare const JSDraw2: JSDraw2Module;
 
 const enum tempTAGS {
   helmSumMaxLengthWords = 'helm-sum-maxLengthWords',
@@ -46,15 +49,17 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       const argsX = e.offsetX - gcb.x;
       const argsY = e.offsetY - gcb.y;
 
-      const editorMol: JSDraw2.IEditorMol | null = helmPlacer.getEditorMol(gridCell.tableRowIndex!);
+      const monomerLib = _package.monomerLib;
+      const editorMol: HelmMol | null = helmPlacer.getEditorMol(gridCell.tableRowIndex!);
       let seqMonomer: ISeqMonomer | null;
       let missedMonomers: Set<string> = new Set<string>(); // of .size = 0
-      if (editorMol)
-        seqMonomer = getHoveredMonomerFromEditorMol(argsX, argsY, gridCell, editorMol);
-      else {
+      if (editorMol) {
+        const hoveredAtom = getHoveredMonomerFromEditorMol(argsX, argsY, editorMol, gridCell.bounds.height);
+        seqMonomer = hoveredAtom ? getSeqMonomerFromHelmAtom(hoveredAtom) : null;
+      } else {
         const seq: string = !gridCell.cell.value ? '' : removeGapsFromHelm(gridCell.cell.value as string);
         const monomerList = parseHelm(seq);
-        missedMonomers = findMonomers(monomerList);
+        missedMonomers = findMonomers(monomerList, monomerLib);
         const parsedMonomers = new Set<string>(monomerList);
         seqMonomer = getHoveredMonomerFallback(argsX, argsY, gridCell, helmPlacer);
         if (seqMonomer && !parsedMonomers.has(seqMonomer.symbol)) seqMonomer = null;
@@ -73,7 +78,8 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       if (seqMonomer) {
         if (!missedMonomers.has(seqMonomer.symbol)) {
           const tooltipElements: HTMLElement[] = [ui.div(seqMonomer.symbol)];
-          const monomerDiv = helmPlacer.monomerLib.getTooltip(seqMonomer.polymerType, seqMonomer.symbol);
+          const monomerDiv = monomerLib ? monomerLib.getTooltip(seqMonomer.polymerType, seqMonomer.symbol) :
+            ui.divText('Monomer library is not available.');
           tooltipElements.push(monomerDiv);
           ui.tooltip.show(ui.divV(tooltipElements), e.x + 16, e.y + 16);
         } else {
@@ -123,7 +129,8 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       const seq: string = !gridCell.cell.value ? '' : removeGapsFromHelm(gridCell.cell.value);
       const monomerList = parseHelm(seq);
       const monomers: Set<string> = new Set<string>(monomerList);
-      const missedMonomers: Set<string> = findMonomers(monomerList);
+      const monomerLib = _package.monomerLib;
+      const missedMonomers: Set<string> = findMonomers(monomerList, monomerLib);
 
       if (missedMonomers.size == 0) {
         // Recreate host to avoid hanging in window.dojox.gfx.svg.Text.prototype.getTextWidth
@@ -146,37 +153,8 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
         return;
       }
 
-      if (missedMonomers.size > 0) {
-        if (!grid) {
-          const r = window.devicePixelRatio;
-          h = 28;
-          g.canvas.height = h * r;
-          g.canvas.style.height = `${h}px`;
-        }
-
-        w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
-        //g.save();
-        g.beginPath();
-        g.rect(x, y, w, h);
-        g.clip();
-        g.transform(1, 0, 0, 1, x, y);
-        g.font = '12px monospace';
-        g.textBaseline = 'top';
-        const [allParts, _lengths, sumLengths] = helmPlacer.getCellAllPartsLengths(gridCell.tableRowIndex!);
-
-        for (let i = 0; i < allParts.length; ++i) {
-          const part: string = allParts[i];
-          const color: string =
-            part === '.' || part.endsWith('{') || part.startsWith('}') ? frameColor :
-              missedMonomers.has(part) ? missedColor :
-                monomers.has(part) ? monomerColor :
-                  frameColor;
-          g.fillStyle = color;
-          printLeftOrCentered(sumLengths[i], 0, w, h, g, allParts[i], color, 0, true, 1.0,
-            undefined, undefined, undefined, undefined, undefined,
-            undefined, undefined, undefined, helmPlacer.monomerTextSizeMap);
-        }
-      }
+      if (missedMonomers.size > 0)
+        throw new Error('Unexpected missed monomers');
     } finally {
       g.restore();
     }

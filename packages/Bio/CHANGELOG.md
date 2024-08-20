@@ -1,5 +1,133 @@
 # Bio changelog
 
+## 2.14.1 (2024-08-14)
+
+Fix monomer substitution matrix calculation
+
+## 2.14.0 (2024-08-06)
+
+### Features
+
+* Add loading monomer sets from .json files
+
+### Bug fixes
+
+* Fix cell renderer dirty flag and reset
+
+## 2.13.8 (2024-08-08)
+
+* Downgrade API version
+
+## 2.13.7 (2024-08-08)
+
+* Adjust monomer max lengths for monomer renderer
+
+## 2.13.6 (2024-07-29)
+
+* SequenceChemSimilarity: warning in case reference monomer not found in monomer library
+
+## 2.13.5 (2024-07-23)
+
+### Bug fixes
+
+* Fix tests for Helm package init wait
+* Add detectMacromolecule tests for fasta single char unknown alphabet
+* Fix detectMacromolecule checkBadMultichar wo RegExp and fail early
+* Fix use allowUnionTypes to allow union types in JSON schema
+* GROK-15793: Fix Calculate Identity, Similarity error Index out of bounds
+* Add progress indicator for loading monomer libraries
+* Fix detectMacromolecule to reject FASTA with numeric monomer
+
+## 2.13.4 (2024-07-02)
+
+### Bug fixes
+
+* GROK-15798: Fix To Atomic Level for units FASTA, UN alphabet
+* Fix detectMacromolecule to check for bad monomers on separator
+* Fix for review camelCase properties
+
+## 2.13.3 (2024-06-28)
+
+### Bug fixes
+
+* Fix MaxMonomerLength package setting, and column setting
+* Fix loading monomer libs for explicit stuck from tests
+
+## 2.13.2 (2024-06-26)
+
+### Features
+
+* Add package settings for MonomerWidthMode
+
+### Bug fixes
+
+* Fix cell renderer for long mode
+* Fix Cell Renderer column widget for MonomerWidthMode
+* Enable package settings editor widget
+
+## 2.13.1 (2024-06-25)
+
+Bump dependencies versions JSDraw.Lite and HELMWebEditor
+
+## 2.13.0 (2024-06-24)
+
+### Bug fixes
+
+* PolyTool: files moved to SequenceTranslator
+* GROK-15994: Bio: Color missing monomers
+* Use types from js-draw-lite, helm-web-editor
+* Fix error on access to MaxMonomerLength package settings
+* Fix getMonomer for PolymerType unspecified as any
+* Fix monomer lib validation
+* GROK-15995: Colors for libraries monomers
+* Fix error on open Manage Monomer Libraries
+* Fix WebLogo in a column header tooltip
+
+## 2.12.23 (2024-05-30)
+
+### Bug fixes
+
+* to Atomic level: fix the issue with isotopes
+
+## 2.12.22 (2024-05-28)
+
+### Bug fixes
+
+* GROK-15525: MSA: Add check unsuitable data to avoid running MSA with them
+* GROK-15796: Bio: Fix cell renderer for convert to Helm
+* GROK-15798: Bio: Fix To Atomic Level for units FASTA and alphabet UN
+* Fix converter MSA to fasta invalid tags, fix tests
+
+## 2.12.21 (2024-05-20)
+
+Fix cell renderer for column width changed
+
+## 2.12.20 (2024-05-16)
+
+### Bug fixes
+
+* Fix monomer tooltip layout
+* Fix monomer name for gaps and any monomer
+
+## 2.12.19 (2024-05-16)
+
+### Bug fixes
+
+* Fix tests cell renderer monomer placer for default monomer lib
+* Add tests for monomer placer hitBounds
+* Fix cell renderer to limit for visible monomers
+* Fix MacromoleculeColumnWidget to limit WebLogo for visible
+* Fix WebLogo to limit seq splitting on end position specified
+* GROK-15678: Bio: Fix bio-substructure-filter tests on Helm
+* GROK-15293: Fix MSA Dialog error while picking empty value in Sequence
+
+## 2.12.18 (2024-05-13)
+
+### Bug fixes
+
+Bio: Fix MonomerLibManager composition with files and events
+Bio: Unveil cell renderer errors for tests
+
 ## 2.12.17 (2024-05-01)
 
 ### Features
@@ -29,13 +157,13 @@ Bio: Fix cell renderer for scatter plot, add test
 
 ## 2.12.12 (2024-04-15)
 
-### Features 
+### Features
 
 * Polytool: working with molV3000
 
 ## 2.12.11 (2024-04-12)
 
-### Features 
+### Features
 
 * Add displaying a monomer's origin lib
 

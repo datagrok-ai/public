@@ -2,7 +2,6 @@ import * as ui from 'datagrok-api/ui';
 
 import $ from 'cash-dom';
 
-import {PATTERN_APP_DATA} from '../../../../common/model/data-loader/json-loader';
 import {STRAND, STRANDS, STRAND_LABEL} from '../../../model/const';
 import {EventBus} from '../../../model/event-bus';
 import {StrandType} from '../../../model/types';
@@ -79,7 +78,7 @@ export class StrandControls {
       );
     const nucleotides = this.eventBus.getNucleotideSequences()[strand];
     const choiceInputs = nucleotides.map((nucleotide, index) => {
-      const input = ui.choiceInput<string>('', nucleotide, nucleotideBaseChoices);
+      const input = ui.input.choice<string>('', {value: nucleotide, items: nucleotideBaseChoices});
       input.onInput(() => {
         const newValue = input.value!;
         this.eventBus.setNucleotide(strand, index, newValue);
@@ -93,7 +92,7 @@ export class StrandControls {
   private createPTOFlagInputs(strand: StrandType): BooleanInput[] {
     const ptoLinkageFlags = this.eventBus.getPhosphorothioateLinkageFlags()[strand].slice(1);
     const ptoLinkageInputs = ptoLinkageFlags.map((flag, index) => {
-      const input = ui.boolInput('', flag);
+      const input = ui.input.bool('', {value: flag});
       input.onInput(() => {
         const newValue = input.value!;
         this.eventBus.setPhosphorothioateLinkageFlag(strand, index + 1, newValue);

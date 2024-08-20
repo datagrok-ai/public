@@ -37,14 +37,14 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
       },
       onInit: (ketcher: Ketcher) => {
         this._sketcher = ketcher;
-        grok.dapi.userDataStorage.getValue(KETCHER_OPTIONS, KETCHER_USER_STORAGE, true).then((opts: string) => {
-          if (opts) {
-            this._sketcher?.editor.setOptions(opts);
-          }
-        });
-        this.setMoleculeFromHost();
+        // grok.dapi.userDataStorage.getValue(KETCHER_OPTIONS, KETCHER_USER_STORAGE, true).then((opts: string) => {
+        //   if (opts) {
+        //     this._sketcher?.editor.setOptions(opts);
+        //   }
+        // });
         //@ts-ignore
         window[KETCHER_WINDOW_OBJECT] = ketcher;
+        this.setMoleculeFromHost();
         (this._sketcher.editor as any).subscribe("change", async (_: any) => {
           try {
             this._smiles = await this._sketcher!.getSmiles();
@@ -174,7 +174,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   detach() {
-    grok.dapi.userDataStorage.postValue(KETCHER_OPTIONS, KETCHER_USER_STORAGE, JSON.stringify(this._sketcher?.editor.options()), true);
+   // grok.dapi.userDataStorage.postValue(KETCHER_OPTIONS, KETCHER_USER_STORAGE, JSON.stringify(this._sketcher?.editor.options()), true);
     super.detach();
   }
 

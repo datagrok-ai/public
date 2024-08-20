@@ -47,7 +47,7 @@ do it on demand whenever the current record changes), and visualize the results 
 
 ## Info panes
 
-[Info panes](info-panels.md) provide additional information about the current context (which can be a table, a column,
+[Info panes](../../datagrok/navigation/panels/info-panels.md) provide additional information about the current context (which can be a table, a column,
 or any other [object](../../datagrok/concepts/objects.md)). Info panels are meant to be easily developed by the users of the
 platform, and shared with other users. You can use all features of the Datagrok platform, such as scripting, data
 querying and transformation pipeline, user-defined functions, markup, viewers, predictive models.
@@ -62,8 +62,19 @@ how to contribute to the public repository of scientific functions.
 
 ![chem-model-augment](../../uploads/gifs/chem-model-augment.gif)
 
+## Identifiers
+
+Datagrok allows you to easily detect and handle specific patterns in text across the platform. For example, you can configure Datagrok to recognize CHEMBL identifiers (a common format used in chemical databases) and retrieve relevant information, such as compound structures, to display in tooltips or [info panes](../../datagrok/navigation/panels/info-panels.md).
+
+![CHEMBL_IDS](../../develop/how-to/chembl-hover.png)
+
+To register an identifier pattern and handler, follow the instructions provided [here](../../develop/how-to/register-identifiers.md). Once set up, Datagrok will automatically detect, highlight and handle the identifiers in text. You can also search for the identifiers using the "Search Everywhere" feature, and Datagrok will display the relevant information in the search results.
+
+![CHEMBL_IDS](../../develop/how-to/chembl-search-everywhere.png)
+
+
 See also:
 
-* [Info panes](info-panels.md)
+* [Info panes](../../datagrok/navigation/panels/info-panels.md)
 * [Predictive modeling](../../learn/learn.md)
 * [Public repository](../../collaborate/public-repository.md)

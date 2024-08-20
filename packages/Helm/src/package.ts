@@ -3,161 +3,70 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-// import '@datagrok-libraries/bio/src/types/dojo';
-// import * as dojo from 'DOJO';
-import '@datagrok-libraries/bio/src/types/helm';
-import * as scil from 'scil';
-import * as org from 'org';
-import '@datagrok-libraries/bio/src/types/jsdraw2';
-import * as JSDraw2 from 'JSDraw2';
-
 import $ from 'cash-dom';
+import {Unsubscribable} from 'rxjs';
 
+import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
+import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {GapOriginals, SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
-import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
-import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
+import {App, Editor, HelmMol, HelmType, HweWindow} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmInputBase, IHelmHelper, IHelmInputInitOptions} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
+import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
-import {findMonomers, parseHelm} from './utils';
 import {HelmCellRenderer} from './cell-renderer';
 import {HelmHelper} from './helm-helper';
 import {getPropertiesWidget} from './widgets/properties-widget';
 import {HelmGridCellRenderer, HelmGridCellRendererBack} from './utils/helm-grid-cell-renderer';
-import {_getHelmService} from './package-utils';
+import {_getHelmService, HelmPackage, initHelmLoadAndPatchDojo} from './package-utils';
+import {RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
+import {getRS} from './utils/get-monomer-dummy';
 
-import {WebEditorMonomer, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
+// Do not import anything than types from @datagrok/helm-web-editor/src/types
+import type {JSDraw2Module, OrgHelmModule, ScilModule} from './types';
 
-let monomerLib: IMonomerLib | null = null;
+export const _package = new HelmPackage({debug: true});
 
-export const _package = new DG.Package();
+/*
+  Loading modules:
+  Through Helm/package.json/sources section
+    dojo from ajax.googleapis.com
+    HELMWebEditor
+      JSDraw.Lite is embedded into HELMWebEditor bundle (dist/package.js)
+ */
 
-function initHelmPatchDojo(): void {
-  // patch window.dojox.gfx.svg.Text.prototype.getTextWidth hangs
-  /** get the text width in pixels */
-  // @ts-ignore
-  window.dojox.gfx.svg.Text.prototype.getTextWidth = function() {
-    const rawNode = this.rawNode;
-    const oldParent = rawNode.parentNode;
-    const _measurementNode = rawNode.cloneNode(true);
-    _measurementNode.style.visibility = 'hidden';
-
-    // solution to the "orphan issue" in FF
-    let _width = 0;
-    const _text = _measurementNode.firstChild.nodeValue;
-    oldParent.appendChild(_measurementNode);
-
-    // solution to the "orphan issue" in Opera
-    // (nodeValue == "" hangs firefox)
-    if (_text != '') {
-      let watchdogCounter = 100;
-      while (!_width && --watchdogCounter > 0) { // <-- hangs
-        //Yang: work around svgweb bug 417 -- http://code.google.com/p/svgweb/issues/detail?id=417
-        if (_measurementNode.getBBox)
-          _width = parseInt(_measurementNode.getBBox().width);
-        else
-          _width = 68;
-      }
-    }
-    oldParent.removeChild(_measurementNode);
-    return _width;
-  };
-}
+declare const window: Window & HweWindow;
+declare const scil: ScilModule;
+declare const JSDraw2: JSDraw2Module;
+declare const org: OrgHelmModule;
 
 //tags: init
 export async function initHelm(): Promise<void> {
-  const logPrefix: string = 'Helm: initHelm()';
+  const logPrefix: string = 'Helm: _package.initHelm()';
   _package.logger.debug(`${logPrefix}, start`);
-  org.helm.webeditor.kCaseSensitive = true; // GROK-13880
 
-  return Promise.all([
-    new Promise((resolve, reject) => {
-      // @ts-ignore
-      dojo.ready(function() { resolve(null); });
-    }).then(() => {
-      initHelmPatchDojo();
-    }),
-    grok.functions.call('Bio:getBioLib'),
-  ])
-    .then(([_, lib]: [unknown, IMonomerLib]) => {
-      _package.logger.debug(`${logPrefix}, then(), lib loaded`);
-      monomerLib = lib;
-      rewriteLibraries(); // initHelm()
-      monomerLib.onChanged.subscribe((_) => {
-        try {
-          const logPrefixInt = `${logPrefix} monomerLib.onChanged()`;
-          _package.logger.debug(`${logPrefixInt}, start, org,helm.webeditor.Monomers updating`);
-          rewriteLibraries(); // initHelm()
+  try {
+    const [_, libHelper] = await Promise.all([
+      _package.initHELMWebEditor(),
+      getMonomerLibHelper(),
+    ]);
 
-          const libSummary: string = monomerLib!.getSummary()
-            .replaceAll('\n', '<br />\n')
-            .replaceAll(',', ' ');
-          const libMsg: string = `Monomer lib updated:<br /> ${libSummary}'`;
-          grok.shell.info(libMsg);
-
-          _package.logger.debug(`${logPrefixInt}, end, org.helm.webeditor.Monomers completed`);
-        } catch (err: any) {
-          const errMsg = errorToConsole(err);
-          console.error('Helm: initHelm monomerLib.onChanged() error:\n' + errMsg);
-          // throw err; // Prevent disabling event handler
-        }
-      });
-    })
-    .catch((err: any) => {
-      const errMsg: string = err instanceof Error ? err.message : !!err ? err.toString() : 'Exception \'undefined\'';
-      grok.shell.error(`Package \'Helm\' init initHelm() error: ${errMsg}`);
-      const errRes = new Error(errMsg);
-      errRes.stack = err.stack;
-      throw errRes;
-    });
-}
-
-export function getMonomerLib(): IMonomerLib {
-  return monomerLib!;
-}
-
-/** Fills org.helm.webeditor.Monomers dictionary for WebEditor */
-function rewriteLibraries() {
-  org.helm.webeditor.Monomers.clear();
-  monomerLib!.getPolymerTypes().forEach((polymerType) => {
-    const monomerSymbols = monomerLib!.getMonomerSymbolsByType(polymerType);
-    monomerSymbols.forEach((monomerSymbol) => {
-      let isBroken = false;
-      const monomer: Monomer = monomerLib!.getMonomer(polymerType, monomerSymbol)!;
-      const webEditorMonomer: WebEditorMonomer = {
-        id: monomerSymbol,
-        m: monomer.molfile,
-        n: monomer.name,
-        na: monomer.naturalAnalog,
-        rs: monomer.rgroups.length,
-        type: monomer.polymerType,
-        mt: monomer.monomerType,
-        at: {}
-      };
-
-      if (monomer.rgroups.length > 0) {
-        webEditorMonomer.rs = monomer.rgroups.length;
-        const at: { [prop: string]: any } = {};
-        monomer.rgroups.forEach((it) => {
-          at[it[RGROUP_LABEL]] = it[RGROUP_CAP_GROUP_NAME];
-        });
-        webEditorMonomer.at = at;
-      } else if (monomer[SMILES] != null) {
-        webEditorMonomer.rs = Object.keys(getRS(monomer[SMILES].toString())).length;
-        webEditorMonomer.at = getRS(monomer[SMILES].toString());
-      } else
-        isBroken = true;
-
-      if (!isBroken) {
-        org.helm.webeditor.Monomers.addOneMonomer(webEditorMonomer);
-      }
-    });
-  });
-
-  // Obsolete
-  const grid: DG.Grid = grok.shell.tv?.grid;
-  if (grid) grid.invalidate();
+    _package.logger.debug(`${logPrefix}, lib loaded`);
+    _package.initMonomerLib(libHelper);
+  } catch (err: any) {
+    const [errMsg, errStack] = errInfo(err);
+    // const errMsg: string = err instanceof Error ? err.message : !!err ? err.toString() : 'Exception \'undefined\'';
+    grok.shell.error(`Package \'Helm\' init error:\n${errMsg}`);
+    const errRes = new Error(`${logPrefix} error:\n  ${errMsg}\n${errStack}`);
+    errRes.stack = errStack;
+    throw errRes;
+  } finally {
+    _package.logger.debug(`${logPrefix}, finally`);
+  }
+  _package.logger.debug(`${logPrefix}, end`);
 }
 
 //name: getHelmService
@@ -172,24 +81,14 @@ export function getHelmService(): HelmServiceBase {
 //meta.columnTags: quality=Macromolecule, units=helm
 //output: grid_cell_renderer result
 export function helmCellRenderer(): HelmCellRenderer {
+  const logPrefix = `Helm: _package.getHelmCellRenderer()`;
+  _package.logger.debug(`${logPrefix}, start`);
   // return new HelmCellRenderer(); // old
   return new HelmGridCellRenderer(); // new
 }
 
 function checkMonomersAndOpenWebEditor(cell: DG.Cell, value?: string, units?: string) {
-  const cellValue: string = !!cell && units === undefined ? cell.value : value;
-  const monomerList: string[] = parseHelm(cellValue);
-  const missedMonomerSet = findMonomers(monomerList);
-  if (missedMonomerSet.size === 0)
-    webEditor(cell, value, units);
-  else if (missedMonomerSet.size === 1 && missedMonomerSet.has(GapOriginals[NOTATION.HELM]))
-    grok.shell.warning(`WebEditor doesn't support Helm with gaps '${GapOriginals[NOTATION.HELM]}'.`);
-  else {
-    grok.shell.warning(
-      `Monomers ${Array.from(missedMonomerSet).map((m) => `'${m}'`).join(', ')} are not found. <br/>` +
-      `Please specify the monomer library to use. <br/>` +
-      `<a href="https://datagrok.ai/help/datagrok/solutions/domains/bio/#manage-monomer-libraries" target="_blank">Learn more</a>`);
-  }
+  openWebEditor(cell, value, units);
 }
 
 //tags: cellEditor
@@ -208,12 +107,12 @@ export function openEditor(mol: string): void {
   const df = grok.shell.tv.grid.dataFrame;
   const col = df.columns.bySemType('Macromolecule')! as DG.Column<string>;
   const colSh = SeqHandler.forColumn(col);
-  const colUnits = col.getTag(DG.TAGS.UNITS);
+  const colUnits = col.meta.units;
   if (colUnits === NOTATION.HELM)
     checkMonomersAndOpenWebEditor(df.currentCell, undefined, undefined);
   const convert = colSh.getConverter(NOTATION.HELM);
   const helmMol = convert(mol);
-  checkMonomersAndOpenWebEditor(df.currentCell, helmMol, col.getTag(DG.TAGS.UNITS));
+  checkMonomersAndOpenWebEditor(df.currentCell, helmMol, col.meta.units!);
 }
 
 //name: Properties
@@ -224,43 +123,18 @@ export function propertiesWidget(sequence: DG.SemanticValue): DG.Widget {
   return getPropertiesWidget(sequence);
 }
 
-function webEditor(cell: DG.Cell, value?: string, units?: string) {
+function openWebEditor(cell: DG.Cell, value?: string, units?: string) {
   const view = ui.div();
   // const df = grok.shell.tv.grid.dataFrame;
   // const col = df.columns.bySemType('Macromolecule')!;
   const col = cell.column as DG.Column<string>;
   const sh = SeqHandler.forColumn(col);
   const rowIdx = cell.rowIndex;
-  org.helm.webeditor.MolViewer.molscale = 0.8;
-  const app = new org.helm.webeditor.App(view, {
-    showabout: false,
-    mexfontsize: '90%',
-    mexrnapinontab: true,
-    topmargin: 20,
-    mexmonomerstab: true,
-    sequenceviewonly: false,
-    mexfavoritefirst: true,
-    mexfilter: true
-  });
-  const sizes = app.calculateSizes();
-  app.canvas.resize(sizes.rightwidth - 100, sizes.topheight - 210);
-  let s = {width: sizes.rightwidth - 100 + 'px', height: sizes.bottomheight + 'px'};
-  scil.apply(app.sequence.style, s);
-  scil.apply(app.notation.style, s);
-  s = {width: sizes.rightwidth + 'px', height: (sizes.bottomheight + app.toolbarheight) + 'px'};
-  scil.apply(app.properties.parent.style, s);
-  app.structureview.resize(sizes.rightwidth, sizes.bottomheight + app.toolbarheight);
-  app.mex.resize(sizes.topheight - 80);
-  setTimeout(() => {
-    if (!!cell && units === undefined)
-      app.canvas.helm.setSequence(cell.value, 'HELM');
-    else
-      app.canvas.helm.setSequence(value!, 'HELM');
-  }, 200);
-  ui.dialog({showHeader: false, showFooter: true})
-    .add(view)
+  const app: App = _package.helmHelper.createWebEditorApp(view, !!cell && units === undefined ? cell.value : value!);
+  const dlg = ui.dialog({showHeader: false, showFooter: true});
+  dlg.add(view)
     .onOK(() => {
-      const helmValue: string = app.canvas.getHelm(true).replace(/<\/span>/g, '')
+      const helmValue: string = app.canvas!.getHelm(true).replace(/<\/span>/g, '')
         .replace(/<span style='background:#bbf;'>/g, '');
       if (!!cell) {
         if (units === undefined)
@@ -271,30 +145,10 @@ function webEditor(cell: DG.Cell, value?: string, units?: string) {
         }
       }
     }).show({modal: true, fullScreen: true});
-}
 
-function getRS(smiles: string) {
-  const newS = smiles.match(/(?<=\[)[^\][]*(?=])/gm);
-  const res: { [name: string]: string } = {};
-  let el = '';
-  let digit;
-  if (!!newS) {
-    for (let i = 0; i < newS.length; i++) {
-      if (newS[i] != null) {
-        if (/\d/.test(newS[i])) {
-          digit = newS[i][newS[i].length - 1];
-          newS[i] = newS[i].replace(/[0-9]/g, '');
-          for (let j = 0; j < newS[i].length; j++) {
-            if (newS[i][j] != ':')
-              el += newS[i][j];
-          }
-          res['R' + digit] = el;
-          el = '';
-        }
-      }
-    }
-  }
-  return res;
+  // Quick fix for full screen dialog
+  const dlgCntDiv = $(dlg.root).find('div').get()[0] as HTMLDivElement;
+  dlgCntDiv.className = dlgCntDiv.className.replace('dlg- ui-form', 'dlg-ui-form');
 }
 
 //name: getMolfiles
@@ -319,16 +173,27 @@ export function getMolfiles(col: DG.Column): DG.Column {
   }
 }
 
+// -- Inputs --
+
+//name: helmInput
+//tags: valueEditor
+//meta.propertyType: string
+//meta.semType: Macromolecule
+//input: string name =undefined {optional: true}
+//input: object options =undefined {optional: true}
+//output: object result
+export function helmInput(name: string, options: IHelmInputInitOptions): HelmInputBase {
+  // TODO: Annotate for semType = 'Macromolecule' AND units = 'helm'
+  return _package.helmHelper.createHelmInput(name, options);
+}
+
 // -- Utils --
 
 //name: getHelmHelper
 //output: object result
 export async function getHelmHelper(): Promise<IHelmHelper> {
-  return HelmHelper.getInstance();
+  return _package.helmHelper;
 }
-
-import {testEvent} from '@datagrok-libraries/utils/src/test';
-import {CellRendererBackAsyncBase} from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
 
 //name: measureCellRenderer
 export async function measureCellRenderer(): Promise<void> {

@@ -45,6 +45,34 @@ const groupMaps = [
   'Map',
 ];
 
+interface ViewersTestData {
+  checkFunc: ((table: DG.DataFrame) => boolean),
+  tooltip: string,
+}
+
+const CHARTS_VIEWERS_TEST_DATA: {[key: string] : ViewersTestData} = {
+  'Chord': {checkFunc: (table) => [...table.columns.categorical].length >= 2 && [...table.columns.numerical].length >= 1,
+    tooltip: 'Chord viewer needs at least 2 categorical columns and 1 numerical column'},
+  'Globe': {checkFunc: (table) => table.columns.toList().filter((col) => ['double', 'int']
+    .includes(col.type)).length >= 1, tooltip: 'Globe viewer needs at least 1 numerical column'},
+  'Group Analysis': {checkFunc: (table) => table.columns.length >= 1,
+    tooltip: 'Group Analysis viewer needs at least 1 column'},
+  'Radar': {checkFunc: (table) => table.columns.toList().filter((col) => ['double', 'int']
+    .includes(col.type)).length >= 1, tooltip: 'Radar viewer needs at least 1 numerical column'},
+  'Sankey': {checkFunc: (table) => table.columns.toList().filter((col) => col.type === 'string' &&
+    col.categories.length <= 50).length >= 2 && table.columns.toList().filter((col) => ['double', 'int'].includes(col.type)).length >= 1,
+    tooltip: 'Sankey viewer needs at least 2 string columns with less than 50 categories and 1 numerical column'},
+  'Sunburst': {checkFunc: (table) => table.columns.toList().length >= 1,
+    tooltip: 'Sunburst viewer needs at least 1 column'},
+  'Surface plot': {checkFunc: (table) => table.columns.toList().length >= 3,
+    tooltip: 'Surface plot viewer needs at least 3 columns'},
+  'Timelines': {checkFunc: (table) => table.columns.toList().filter((col) => col.type === DG.COLUMN_TYPE.STRING)
+    .length >= 1 && [...table.columns.numerical].length >= 1, tooltip: 'Timelines viewer needs at least 1 string column and 1 numerical column'},
+  'Tree': {checkFunc: (table) => table.columns.toList().length >= 1, tooltip: 'Tree viewer needs at least 1 column'},
+  'Word cloud': {checkFunc: (table) => table.columns.toList().filter((col) => col.type === DG.TYPE.STRING)
+    .length >= 1, tooltip: 'Word cloud viewer needs at least 1 string column'},
+};
+
 const viewers: any = {};
 const jsViewers: any = {};
 const rootViewers = ui.divH([], 'viewer-gallery');
@@ -54,7 +82,7 @@ const viewersCount = ui.div([], 'vg-counter-label');
 
 export function viewersDialog(currentView: DG.TableView, currentTable: DG.DataFrame) {
   getViewers(viewers);
-  getJsViewers(jsViewers);
+  getJsViewers(jsViewers, currentTable);
 
   view = currentView;
   table = currentTable;
@@ -67,7 +95,7 @@ export function viewersDialog(currentView: DG.TableView, currentTable: DG.DataFr
       dlg.close();
     }
   })
-  search = ui.searchInput('', '', (v: string) => findViewer(v));
+  search = ui.input.search('', {value: '', onValueChanged: (input) => findViewer(input.value)});
   search.input.setAttribute('tabindex', '-1');
   search.input.setAttribute('placeholder', 'Search by name, keywords, description, tag, or package');
   
@@ -149,6 +177,7 @@ function getViewers(viewers: { [v: string]: { [k: string]: any } }) {
       [i]: {
         name: viewerList[i],
         icon: 'grok-icon svg-icon svg-' + viewerList[i].toLowerCase().replace(/(\s)/g, '-'),
+        enabled: true,
         group: '',
         type: 'viewer',
       },
@@ -162,14 +191,26 @@ function getViewers(viewers: { [v: string]: { [k: string]: any } }) {
   }
 }
 
-function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }) {
+function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }, table: DG.DataFrame) {
   const skip = ['TestViewerForProperties', 'OutliersSelectionViewer'];
   const list = DG.Func.find({tags: ['viewer']}).filter((v) => !skip.includes(v.friendlyName));
   let i = 0;
   for (const v of list) {
+    let isViewerEnabled = true;
+    if (v.package.name === 'Charts') {
+      const viewerTestData = CHARTS_VIEWERS_TEST_DATA[v.friendlyName];
+      if (viewerTestData !== undefined) {
+        if (!viewerTestData.checkFunc(table))
+          isViewerEnabled = false;
+      }
+      else
+        isViewerEnabled = false;
+    }
     Object.assign(jsViewers, {
       [i]: {
         name: v.friendlyName,
+        enabled: isViewerEnabled,
+        tooltip: isViewerEnabled ? '' : CHARTS_VIEWERS_TEST_DATA[v.friendlyName].tooltip,
         icon: (v.options['icon'] != undefined) ? `${v.package.webRoot.endsWith('/') ?
           v.package.webRoot : v.package.webRoot + '/'}${v.options['icon']}` : 'svg-project',
         description: v.description,
@@ -247,19 +288,23 @@ function renderCard(viewers: { [v: string]: { [k: string]: any } }, index: strin
   name.classList.add('card-label');
   const card = ui.div([
     ui.divH([icon!, name]),
-  ], 'd4-item-card viewer-gallery vg-card-small');
+  ], `d4-item-card viewer-gallery vg-card-small${viewer.enabled ? '' : ' disabled'}`);
 
-  card.addEventListener('click', () => {
-    dockViewers(viewer.name, view, table);
-    dlg.close();
-  });
+  if (viewer.enabled) {
+    card.addEventListener('click', () => {
+      dockViewers(viewer.name, view, table);
+      dlg.close();
+    });
 
-  card.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      card.click();
-    }
-  });
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        card.click();
+      }
+    });
+  }
+  else
+    ui.tooltip.bind(card, viewer.tooltip);
 
   if (viewer.name.length > 18) {
     name.addEventListener('mouseenter', () => {

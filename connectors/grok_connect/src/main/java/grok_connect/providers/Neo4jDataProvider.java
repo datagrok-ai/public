@@ -17,6 +17,7 @@ import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
+import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.PatternMatcher;
 import grok_connect.utils.PatternMatcherResult;
 import grok_connect.utils.Property;
@@ -45,11 +46,14 @@ public class Neo4jDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public void prepareProvider() throws ClassNotFoundException {
-        super.prepareProvider();
-        Class.forName("org.neo4j.jdbc.bolt.BoltDriver");
-        Class.forName("org.neo4j.jdbc.boltrouting.BoltRoutingNeo4jDriver");
-        Class.forName("org.neo4j.jdbc.http.HttpDriver");
+    public void prepareProvider() throws GrokConnectException {
+        try {
+            Class.forName("org.neo4j.jdbc.bolt.BoltDriver");
+            Class.forName("org.neo4j.jdbc.boltrouting.BoltRoutingNeo4jDriver");
+            Class.forName("org.neo4j.jdbc.http.HttpDriver");
+        } catch (ClassNotFoundException e) {
+            throw new GrokConnectException(e);
+        }
     }
 
     @Override
@@ -76,7 +80,7 @@ public class Neo4jDataProvider extends JdbcDataProvider {
         PatternMatcherResult result = new PatternMatcherResult();
         String type = "string";
         String formatQuery = "(toLower(%s) %s toLower(@%s))";
-        String value = ((String)matcher.values.get(0)).toLowerCase();
+        String value = (matcher.values.get(0)).toLowerCase();
         switch (matcher.op) {
             case PatternMatcher.EQUALS:
                 result.setQuery(String.format(formatQuery, matcher.colName, "=", param.name));
@@ -155,14 +159,9 @@ public class Neo4jDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public void setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) {
+    public void setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) throws SQLException {
         Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)funcParam.value);
         Timestamp ts = new Timestamp(calendar.getTime().getTime());
-        try {
-            statement.setTimestamp(parameterIndex, ts);
-        } catch (SQLException e) {
-            throw new RuntimeException(String.format("Something went wrong when setting datetime parameter at %s index",
-                    parameterIndex), e);
-        }
+        statement.setTimestamp(parameterIndex, ts);
     }
 }

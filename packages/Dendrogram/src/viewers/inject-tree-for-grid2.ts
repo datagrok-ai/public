@@ -60,7 +60,7 @@ export function injectTreeForGridUI2(
     // TODO: Get max from tree height
     //@ts-ignore
     const treeHeight: number = (treeRoot as MarkupNodeType).subtreeLength;
-    cutSlider = ui.sliderInput('', 0, 0, treeHeight);
+    cutSlider = ui.input.slider('', {value: 0, min: 0, max: treeHeight});
     $(cutSlider.root).find('input').each((_, el) => {
       el.setAttribute('step', '0.01');
       el.style.width = '100%';

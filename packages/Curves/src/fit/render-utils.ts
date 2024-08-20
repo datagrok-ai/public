@@ -1,8 +1,5 @@
 import * as DG from 'datagrok-api/dg';
 import {
-    CONFIDENCE_INTERVAL_FILL_COLOR,
-    CONFIDENCE_INTERVAL_STROKE_COLOR,
-    CURVE_CONFIDENCE_INTERVAL_BOUNDS,
     FitConfidenceIntervals,
     FitFunction,
     IFitChartData,
@@ -136,9 +133,10 @@ function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries, options: Fi
           p.outlier ? (p.outlierColor ? DG.Color.fromHtml(p.outlierColor) ? p.outlierColor : series.outlierColor! : series.outlierColor!) :
           (p.color ? DG.Color.fromHtml(p.color) ? p.color : series.pointColor! : series.pointColor!);
         const marker = p.marker ? p.marker as DG.MARKER_TYPE : series.markerType as DG.MARKER_TYPE;
+        const outlierMarker = p.outlierMarker ? p.outlierMarker as DG.MARKER_TYPE : series.outlierMarkerType as DG.MARKER_TYPE;
         const size = !series.connectDots ? p.outlier ? FitConstants.OUTLIER_PX_SIZE * options.ratio! :
           p.size ? p.size : FitConstants.POINT_PX_SIZE * options.ratio! : FitConstants.POINT_PX_SIZE * options.ratio!;
-        DG.Paint.marker(g, !series.connectDots ? p.outlier ? DG.MARKER_TYPE.OUTLIER : marker : marker,
+        DG.Paint.marker(g, !series.connectDots ? p.outlier ? outlierMarker : marker : marker,
           options.viewport.xToScreen(p.x), options.viewport.yToScreen(p.y), color, size);
         if (p.stdev && !p.outlier) {
             g.strokeStyle = color;
@@ -233,17 +231,17 @@ export function renderFitLine(g: CanvasRenderingContext2D, series: IFitSeries, r
 export function renderConfidenceIntervals(g: CanvasRenderingContext2D, series: IFitSeries, renderOptions: FitConfidenceIntervalRenderOptions): void {
     if ((series.showFitLine ?? true) && (series.showCurveConfidenceInterval ?? false)) {
         // TODO: improve confidence intervals colors
-        g.strokeStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_STROKE_COLOR;
-        g.fillStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_FILL_COLOR;
+        g.strokeStyle = series.confidenceIntervalColor ?? FitConstants.CONFIDENCE_INTERVAL_STROKE_COLOR;
+        g.fillStyle = series.confidenceIntervalColor ?? FitConstants.CONFIDENCE_INTERVAL_FILL_COLOR;
 
         const confidenceIntervals = getSeriesConfidenceInterval(series, renderOptions.fitFunc!,
           renderOptions.userParamsFlag!, renderOptions.logOptions);
         drawConfidenceInterval(g, {viewport: renderOptions.viewport, logOptions: renderOptions.logOptions,
             showAxes: renderOptions.showAxes, showAxesLabels: renderOptions.showAxesLabels, screenBounds: renderOptions.screenBounds,
-            confidenceIntervals: confidenceIntervals, confidenceType: CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP});
+            confidenceIntervals: confidenceIntervals, confidenceType: FitConstants.CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP});
         drawConfidenceInterval(g, {viewport: renderOptions.viewport, logOptions: renderOptions.logOptions,
             showAxes: renderOptions.showAxes, showAxesLabels: renderOptions.showAxesLabels, screenBounds: renderOptions.screenBounds,
-            confidenceIntervals: confidenceIntervals, confidenceType: CURVE_CONFIDENCE_INTERVAL_BOUNDS.BOTTOM});
+            confidenceIntervals: confidenceIntervals, confidenceType: FitConstants.CURVE_CONFIDENCE_INTERVAL_BOUNDS.BOTTOM});
         fillConfidenceInterval(g, {viewport: renderOptions.viewport, logOptions: renderOptions.logOptions,
             showAxes: renderOptions.showAxes, showAxesLabels: renderOptions.showAxesLabels, screenBounds: renderOptions.screenBounds,
             confidenceIntervals: confidenceIntervals});
@@ -256,7 +254,7 @@ function drawConfidenceInterval(g: CanvasRenderingContext2D, renderOptions: FitC
     const axesLeftPxMargin = renderOptions.showAxes ? renderOptions.showAxesLabels ?
       FitConstants.AXES_LEFT_PX_MARGIN_WITH_AXES_LABELS : FitConstants.AXES_LEFT_PX_MARGIN : 0;
     const axesRightPxMargin = renderOptions.showAxes ? FitConstants.AXES_RIGHT_PX_MARGIN : 0;
-    const confIntervalFunc = renderOptions.confidenceType === CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP ?
+    const confIntervalFunc = renderOptions.confidenceType === FitConstants.CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP ?
       renderOptions.confidenceIntervals!.confidenceTop : renderOptions.confidenceIntervals!.confidenceBottom;
     for (let i = axesLeftPxMargin; i <= renderOptions.screenBounds.width - axesRightPxMargin; i++) {
         const x = renderOptions.screenBounds.x + i;

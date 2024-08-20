@@ -17,17 +17,20 @@ export interface IDartApi {
   grok_List_Add(x: any, element: any): any;
   grok_List_Sort(x: any): any;
   grok_List_Remove(x: any, element: any): any;
+  grok_JSON_encode(o: any): any;
+  grok_JSON_decode(s: String): any;
   grok_JS_To_Map(js: any): any;
   grok_Complete(c: any, result: any): any;
-  grok_CompleteError(c: any, result: any): any;
+  grok_CompleteError(c: any, result: any, stack: any): any;
   grok_GetLogger(params: any): any;
   grok_Log(logger: any, level: String, message: String, params: any, auditType: String, stackTrace: String): any;
   grok_Get_CurrentObject(): any;
-  grok_Set_CurrentObject(x: any): any;
+  grok_Set_CurrentObject(x: any, freeze: Bool): any;
   grok_Get_CurrentViewer(): any;
   grok_Set_CurrentViewer(x: any): any;
-  grok_Get_LastError(): any;
-  grok_Set_LastError(s: String): any;
+  grok_Get_LastError(): Promise<any>;
+  grok_Clear_LastError(): any;
+  grok_Set_LastError(_: any): any;
   grok_Get_TopMenu(): any;
   grok_Get_TopPanel(): any;
   grok_Get_BottomPanel(): any;
@@ -83,6 +86,8 @@ export interface IDartApi {
   grok_Dapi_LogTypes(): any;
   grok_Dapi_DockerImages(): any;
   grok_Dapi_DockerContainers(): any;
+  grok_Dapi_User_Reports(): any;
+  grok_Dapi_User_Reports_Rules(): any;
   grok_DataSource_Find(s: any, id: String): Promise<any>;
   grok_DataSource_Save(s: any, e: any): Promise<any>;
   grok_DataSource_Delete(s: any, e: any): Promise<any>;
@@ -187,6 +192,7 @@ export interface IDartApi {
   grok_TableView_GetFilters(tv: any, addDefaultFilters: Bool): any;
   grok_TableView_LoadState(v: any, state: String, pickupColumnsTags: Bool): any;
   grok_TableView_SaveState(v: any): any;
+  grok_TableView_ProcessNewViewer(v: any, viewer: any): any;
   grok_CardView_Create(options: any): any;
   grok_CardView_Get_SearchValue(v: any): any;
   grok_CardView_Set_SearchValue(v: any, s: String): any;
@@ -351,6 +357,7 @@ export interface IDartApi {
   grok_DockManager_UndockNode(m: any, n: any): any;
   grok_DockManager_FindNode(m: any, e: any): any;
   grok_DockManager_HandleResize(d: any): any;
+  grok_DockManager_OnElementClosed(d: any): any;
   grok_Viewer_GetViewerTypes(): any;
   grok_Viewer_Root(v: any): any;
   grok_Viewer_Get_Type(v: any): any;
@@ -414,6 +421,9 @@ export interface IDartApi {
   grok_Form_Get_State(form: any): any;
   grok_Form_Set_State(form: any, state: String): any;
   grok_LineChartViewer_activeFrame(s: any): any;
+  grok_LineChartViewer_ResetView(l: any): any;
+  grok_BarChartViewer_ResetView(b: any): any;
+  grok_BoxPlotViewer_ResetView(b: any): any;
   grok_FormulaLineHelper_SetDefaultParams(formulaItem: any): any;
   grok_FormulaLineHelper_GetMeta(formulaItem: any): any;
   grok_CanvasViewer_RunPostponedComputations(v: any): any;
@@ -466,11 +476,13 @@ export interface IDartApi {
   grok_DataFrame_FireValuesChanged(t: any): any;
   grok_DataFrame_ChangeColumnType(t: any, column: any, newType: String, format: String): any;
   grok_DataFrame_Append(t1: any, t2: any, inPlace: Bool, columnsToAppend: any): any;
+  grok_DataFrame_Append_Merge(parent: any, t: any): any;
   grok_DataFrame_Get_Temp(t: any): any;
   grok_DataFrame_Get_Tags(t: any): any;
   grok_DataFrame_GetSortedOrder(t: any, sortByColumnIds: any, sortOrders: any, mask: any): any;
   grok_DataFrame_FromByteArray(bytes: any): any;
   grok_DataFrame_ToByteArray(t: any): any;
+  grok_DataFrame_ExportAndReopen(t: any): any;
   grok_Map_Get(map: any, key: any): any;
   grok_Map_Set(map: any, key: any, value: any): any;
   grok_Map_Delete(map: any, key: any): any;
@@ -495,7 +507,7 @@ export interface IDartApi {
   grok_Func_OutputParamMap_Values(call: any): any;
   grok_Func_OutputParamMap_Clear(call: any): any;
   grok_Func_OutputParamMap_Size(call: any): any;
-  grok_GroupByBuilder_Aggregate(b: any): any;
+  grok_GroupByBuilder_Aggregate(b: any, autoName: Bool): any;
   grok_GroupByBuilder_WhereBitSet(b: any, bitset: any): any;
   grok_GroupByBuilder_Add(b: any, agg: String, colName: String, resultColName: String): any;
   grok_GroupByBuilder_GetGroups(b: any): any;
@@ -517,11 +529,16 @@ export interface IDartApi {
   grok_ColumnList_Replace(cols: any, columnToReplace: any, newColumn: any): any;
   grok_ColumnList_Categorical(cols: any): any;
   grok_ColumnList_Numerical(cols: any): any;
+  grok_ColumnList_DateTime(cols: any): any;
+  grok_ColumnList_NumericalNoDateTime(cols: any): any;
+  grok_ColumnList_Boolean(cols: any): any;
+  grok_ColumnList_Selected(cols: any): any;
   grok_ColumnList_ByTags(cols: any, desiredTags: any): any;
   grok_ColumnList_GetUnusedName(cols: any, name: String, choices: any): any;
   grok_Column_FromStrings(name: String, list: any): any;
   grok_Column_FromInt32Array(name: String, data: any, length: Num): any;
   grok_Column_FromFloat32Array(name: String, data: any, length: Num): any;
+  grok_Column_FromFloat64Array(name: String, data: any, length: Num): any;
   grok_Column_FromList(type: String, name: String, list: any): any;
   grok_Column_FromIndexes(name: String, categories: any, indexes: any): any;
   grok_Column_FromType(type: String, name: String, length: Num): any;
@@ -539,6 +556,7 @@ export interface IDartApi {
   grok_Column_GetRawDataDartium(c: any): any;
   grok_Column_GetRawData(c: any): any;
   grok_Column_SetRawData(c: any, rawData: any, notify: any): any;
+  grok_Column_AsDoubleList(c: any): any;
   grok_Column_Scale(c: any, i: Num): any;
   grok_Column_GetValue(c: any, i: Num): any;
   grok_Column_SetValue(c: any, i: Num, x: any, notify: Bool): any;
@@ -573,6 +591,10 @@ export interface IDartApi {
   grok_Column_GetColors(column: any): any;
   grok_Column_GetColor(column: any, index: Num): any;
   grok_Column_GetAutoFormat(column: any): any;
+  grok_Column_Get_Is_Categorical(column: any): any;
+  grok_Column_Get_Is_Numerical(column: any): any;
+  grok_FloatColumn_GetDoublePrecision(c: any): any;
+  grok_FloatColumn_SetDoublePrecision(c: any, doublePrecision: Bool): any;
   grok_BigIntColumn_GetValue(c: any, i: Num): any;
   grok_BigIntColumn_SetValue(c: any, i: Num, x: String, notify: Bool): any;
   grok_BigIntJs_To_BigInt(bigint: String): any;
@@ -798,6 +820,7 @@ export interface IDartApi {
   grok_Property_Get_Set(p: any): any;
   grok_Property_Set_Set(p: any, x: any): any;
   grok_Property_Get_Caption(p: any): any;
+  grok_Property_Set_Caption(p: any, x: String): any;
   grok_Property_Get_Name(p: any): any;
   grok_Property_Set_Name(p: any, x: String): any;
   grok_Property_Get_Category(p: any): any;
@@ -833,6 +856,7 @@ export interface IDartApi {
   grok_Property_Set(p: any, propertyName: String, propertyValue: any): any;
   grok_Property_Get_ColumnTypeFilter(p: any): any;
   grok_Property_Options(p: any, options: any): any;
+  grok_Property_RegisterAttachedProperty(typeName: String, p: any): any;
   grok_SemanticValue(value: any, semType: String): any;
   grok_SemanticValue_Get_Value(v: any): any;
   grok_SemanticValue_Set_Value(v: any, x: any): any;
@@ -1002,7 +1026,7 @@ export interface IDartApi {
   grok_ColorInput(name: any, value: any): any;
   grok_ColorPicker(color: any, onChanged: any, colorDiv: any): any;
   grok_RadioInput(name: any, value: any, items: any): any;
-  grok_CodeEditor(script: String, mode: String, placeholder: String): any;
+  grok_CodeEditor(script: String, mode: String, placeholder: String, root: any): any;
   grok_ProgressIndicator_Get_Canceled(pi: any): any;
   grok_ProgressIndicator_Get_Percent(pi: any): any;
   grok_ProgressIndicator_Get_Description(pi: any): any;
@@ -1013,7 +1037,7 @@ export interface IDartApi {
   grok_Progress_Updated(pi: any): any;
   grok_Progress_Log_Updated(pi: any): any;
   grok_Progress_Canceled(pi: any): any;
-  grok_Log_TranslateStackTrace(s: String): any;
+  grok_Log_TranslateStackTrace(s: String): Promise<any>;
   grok_TaskBarProgressIndicator_Create(name: String, cancelable: Bool, pausable: Bool, spinner: Bool): any;
   grok_TaskBarProgressIndicator_Close(pi: any): any;
   grok_TagEditor(): any;
@@ -1111,8 +1135,11 @@ export interface IDartApi {
   grok_TreeViewNode_Set_Checked(node: any, checked: Bool): any;
   grok_TreeViewNode_Get_Tag(node: any): any;
   grok_TreeViewNode_Set_Tag(node: any, tag: any): any;
-  grok_TreeViewNode_Text(node: any): any;
-  grok_TreeViewNode_Group(node: any, text: any, value: any, expanded: Bool): any;
+  grok_TreeViewNode_Get_CurrentItem(node: any): any;
+  grok_TreeViewNode_Set_CurrentItem(group: any, node: any): any;
+  grok_TreeViewNode_Get_Text(node: any): any;
+  grok_TreeViewNode_Set_Text(node: any, value: String): any;
+  grok_TreeViewNode_Group(node: any, text: any, value: any, expanded: Bool, index: Num): any;
   grok_TreeViewNode_GetOrCreateGroup(node: any, text: String, value: any, expanded: Bool): any;
   grok_TreeViewNode_Item(node: any, text: any, value: any): any;
   grok_TreeViewNode_Items(node: any): any;
@@ -1123,6 +1150,7 @@ export interface IDartApi {
   grok_TreeViewNode_Get_Expanded(node: any): any;
   grok_TreeViewNode_Set_Expanded(node: any, expanded: Bool): any;
   grok_FilesWidget(options: any): any;
+  grok_Test_RunViewerTest(viewerName: String): Promise<any>;
   grok_Windows_Get_Sidebar(): any;
   grok_Windows_Get_ShowSidebar(): any;
   grok_Windows_Set_ShowSidebar(x: Bool): any;
@@ -1283,7 +1311,7 @@ export interface IDartApi {
   grok_UI_Bind(item: any, element: any, contextMenu: any): any;
   grok_UI_Wait(jsugetElement: any): any;
   grok_UI_WaitBox(jsugetElement: any): any;
-  grok_UI_ShowPopup(element: any, anchor: any, vertical: Bool): any;
+  grok_UI_ShowPopup(element: any, anchor: any, vertical: Bool, dx: Num, dy: Num, smart: Bool): any;
   grok_UI_Markdown(x: String): any;
   grok_UI_Tags(x: any): any;
   grok_UI_Context_Actions(x: any): any;
@@ -1298,8 +1326,6 @@ export interface IDartApi {
   grok_ML_Cluster(table: any, features: any, clusters: any): Promise<any>;
   grok_ML_PCA(table: any, features: any, components: any, center: any, scale: any): Promise<any>;
   grok_ML_RandomData(table: any, distribution: String, params: any, seed: any): Promise<any>;
-  grok_Chem_Descriptors(table: any, column: String, descriptors: any): Promise<any>;
-  grok_Chem_DescriptorsTree(): Promise<any>;
   grok_Chem_Sketcher(handler: any, smiles: String): any;
   grok_Notebook_Get_Environment(n: any): any;
   grok_Notebook_Set_Environment(n: any, e: String): any;
@@ -1320,8 +1346,9 @@ export interface IDartApi {
   grok_Package_Get_Properties(packageName: String): Promise<any>;
   grok_Rect_Pack(r: any, bytes: any): any;
   grok_Rect_Unpack(bytes: any): any;
-  grok_FileInfo_FromBytes(data: any): any;
-  grok_FileInfo_FromString(data: String): any;
+  grok_FileInfo_FromBytes(path: String, data: any): any;
+  grok_FileInfo_FromString(path: String, data: String): any;
+  grok_FileInfo_Get_Connection(fi: any): any;
   grok_FileInfo_Get_Path(fi: any): any;
   grok_FileInfo_Get_FullPath(fi: any): any;
   grok_FileInfo_Get_Extension(fi: any): any;
@@ -1330,6 +1357,7 @@ export interface IDartApi {
   grok_FileInfo_Get_IsFile(fi: any): any;
   grok_FileInfo_Get_IsDirectory(fi: any): any;
   grok_FileInfo_Get_Data(fi: any): any;
+  grok_FileInfo_Get_UpdatedOn(fi: any): any;
   grok_FileInfo_ReadAsBytes(fi: any): Promise<any>;
   grok_FileInfo_ReadAsString(fi: any): Promise<any>;
   grok_Dapi_Root(): any;
@@ -1431,8 +1459,25 @@ export interface IDartApi {
   grok_BrowseView_Get_MainTree(view: any): any;
   grok_BrowseView_Get_Preview(view: any): any;
   grok_BrowseView_Set_Preview(view: any, preview: any): any;
+  grok_BrowseView_Get_DockManager(view: any): any;
+  grok_BrowseView_Get_ShowTree(view: any): any;
+  grok_BrowseView_Set_ShowTree(view: any, x: Bool): any;
   grok_InfoPanels_GetAccordion(x: any): any;
-  grok_DetailedLog_Get_Accordion(reportId: String, df: any, index: Num): any;
+  grok_Reports_Get(num: Num): Promise<any>;
+  grok_Reports_Find(id: String): Promise<any>;
+  grok_UserReport_Id(report: any): any;
+  grok_UserReport_IsResolved(report: any): any;
+  grok_UserReport_JiraTicket(report: any): any;
+  grok_UserReport_Assignee(report: any): any;
+  grok_UserReport_Reporter(report: any): any;
+  grok_UserReport_Description(report: any): any;
+  grok_UserReport_CreatedOn(report: any): any;
+  grok_Get_StackTrace_Hash(stackTrace: String): any;
+  grok_Get_Simple_StackTrace_Hash(stackTrace: String): any;
+  grok_TreeViewGroup_Load_Sources(node: any, source: any): Promise<any>;
+  grok_ReportsRule_Add_Dialog(): Promise<any>;
+  grok_Parse_Command(command: String, safe: Bool): any;
+  grok_Set_AutoReport_Options(options: any): any;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;
@@ -1485,6 +1530,8 @@ export interface IDartApi {
   grok_ViewerEvent_Set_filters(x: any, v: any): any;
   grok_ViewerEvent_Get_row(x: any): any;
   grok_ViewerEvent_Set_row(x: any, v: Num): any;
+  grok_ViewerEvent_Get_mouseEvent(x: any): any;
+  grok_ViewerEvent_Set_mouseEvent(x: any, v: any): any;
   grok_ViewerEvent_Get_bitset(x: any): any;
   grok_InputType_Create(): any;
   grok_GridCellStyle_Create(): any;

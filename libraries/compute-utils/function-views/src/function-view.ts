@@ -3,7 +3,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Subject, BehaviorSubject} from 'rxjs';
+import {Subject, BehaviorSubject, merge} from 'rxjs';
 import $ from 'cash-dom';
 import dayjs from 'dayjs';
 import {historyUtils} from '../../history-utils';
@@ -85,8 +85,7 @@ export abstract class FunctionView extends DG.ViewBase {
   /**
    * Runs after an initial FuncCall loading done.
    */
-  protected async onFuncCallReady() {
-    await historyUtils.augmentCallWithFunc(this.funcCall, false);
+  public async onFuncCallReady() {
     if (!this.options.isTabbed) {
       if (!this.name || this.name === 'New view') this.name = this.funcCall.func.friendlyName;
       try {
@@ -295,7 +294,7 @@ export abstract class FunctionView extends DG.ViewBase {
    * Method loads corresponding FuncCall from DB if "id" param is provided in URL.
    * @stability Stable
    */
-  protected async loadFuncCallById() {
+  public async loadFuncCallById() {
     if (this.initValue instanceof DG.FuncCall) {
       // next tick is needed to run funcCallReplaced before building UI
       await new Promise((resolve) => setTimeout(resolve, 0));
@@ -398,7 +397,7 @@ export abstract class FunctionView extends DG.ViewBase {
    */
   public buildHistoryBlock(): HTMLElement {
     const newHistoryBlock = UiUtils.historyPanel(this.func!);
-    let isHistoryBlockOpened = false;
+    let wasHistoryBlockOpened = false;
 
     this.subs.push(
       newHistoryBlock.onCompactModeChanged.subscribe((newValue) => {
@@ -433,9 +432,20 @@ export abstract class FunctionView extends DG.ViewBase {
             this.name = `${this.name.substring(0, this.name.indexOf(' — '))} — ${editedCall.options['title'] ?? dateStarted}`;
         }
       }),
+      grok.events.onViewRemoving.subscribe((event) => {
+        const closedView = event.args.view as DG.ViewBase;
+        if (closedView == this) {
+          const historyPanel = grok.shell.dockManager.findNode(this.historyRoot);
+          if (historyPanel) {
+            grok.shell.dockManager.close(historyPanel);
+            wasHistoryBlockOpened = true;
+          } else
+            wasHistoryBlockOpened = false;
+        }
+      }),
       grok.events.onCurrentViewChanged.subscribe(() => {
         if (grok.shell.v == this) {
-          if (isHistoryBlockOpened) {
+          if (wasHistoryBlockOpened) {
             if (this.historyBlock?.compactMode)
               grok.shell.dockManager.dock(this.historyRoot, 'right', null, 'History', 0.3);
             else
@@ -445,9 +455,9 @@ export abstract class FunctionView extends DG.ViewBase {
           const historyPanel = grok.shell.dockManager.findNode(this.historyRoot);
           if (historyPanel) {
             grok.shell.dockManager.close(historyPanel);
-            isHistoryBlockOpened = true;
+            wasHistoryBlockOpened = true;
           } else
-            isHistoryBlockOpened = false;
+            wasHistoryBlockOpened = false;
         }
       }),
     );
@@ -656,7 +666,7 @@ export abstract class FunctionView extends DG.ViewBase {
     let callCopy = deepCopy(callToSave);
     await this.onBeforeSaveRun(callCopy);
 
-    if (isIncomplete(callToSave)) {
+    if (isIncomplete(callCopy)) {
       // Used to reset 'started' field
       callCopy = await createPartialCopy(callToSave);
     }
@@ -826,17 +836,17 @@ export abstract class FunctionView extends DG.ViewBase {
     * @param extOverride Overrides extension defined in {@link defaultSupportedExportExtensions}.
     * @stability Stable
    */
-  protected defaultExportFilename = (format: string, extOverride?: string) => {
+  public defaultExportFilename = (format: string, extOverride?: string) => {
     return `${this.name} - ${new Date().toLocaleString('en-US').replaceAll(/:|\//g, '-')}.${extOverride ?? this.exportConfig!.supportedExtensions[format]}`;
   };
 
-  protected defaultSupportedExportExtensions: () => Record<string, string> = () => {
+  public defaultSupportedExportExtensions: () => Record<string, string> = () => {
     return {
       'Excel': 'xlsx',
     };
   };
 
-  protected defaultSupportedExportFormats = () => {
+  public defaultSupportedExportFormats = () => {
     return ['Excel'];
   };
 
@@ -928,5 +938,9 @@ export abstract class FunctionView extends DG.ViewBase {
 
   protected get hasUploadMode() {
     return this.getFeature('upload', false);
+  }
+
+  protected get isFittingEnabled() {
+    return this.getFeature('fitting', false);
   }
 }

@@ -1,7 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {DetailedLog} from "datagrok-api/dg";
 
 export class ReportsWidget extends DG.Widget {
   caption: string;
@@ -11,31 +10,31 @@ export class ReportsWidget extends DG.Widget {
     super(ui.box());
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Top reports');
     this.order = super.addProperty('order', DG.TYPE.STRING, '2');
-    const currentUserId = DG.User.current().id;
+    const link = ui.link('Open Reports', async () => {
+      const progress = DG.TaskBarProgressIndicator.create('Opening Reports...');
+      try {
+        grok.shell.addView(await grok.functions.eval('UsageAnalysis:reportsApp()'));
+      } catch (e) {
+        console.error(e);
+      } finally {
+        progress.close();
+      }
+    });
+    this.root.appendChild(ui.box(ui.div(link, {style: {display: 'flex', justifyContent: 'end', alignItems: 'center', height: '40px', paddingRight: '8px'}}), {style: {maxHeight: '40px'}}));
     this.root.appendChild(ui.waitBox(async () => {
-      const result: DG.DataFrame = await grok.functions.call('UsageAnalysis:ReportsTop20', {'packageOwnerId': currentUserId});
-      const users: {[_: string]: any} = {};
-      (await grok.dapi.users.list()).forEach((user) => {
-        users[user.friendlyName] = {
-          'avatar': user.picture,
-          'name': user.friendlyName,
-          'data': user,
-        };
-      });
+      const result: DG.UserReport[] = await grok.dapi.reports.include('reporter').list({pageNumber: 1, pageSize: 20});
       const items = [];
-      for (let i = 0; i < result.rowCount; i++) {
+      for (let report of result) {
         // todo: add css instead of inline styles
-        const currentRow = result.row(i);
-        const reporter = users[currentRow.get('reporter')];
-        const clock = ui.iconFA('clock', null, currentRow.get('time'));
+        const userHandler = DG.ObjectHandler.forEntity(report.reporter)!;
+        const reportHandler = DG.ObjectHandler.forEntity(report)!;
+        const clock = ui.iconFA('clock', null, report.createdOn.toISOString());
         clock.style.marginRight = '10px';
-        const portrait = ui.tooltip.bind(DG.ObjectHandler.forEntity(reporter.data)?.renderIcon(reporter.data.dart)!, () => {
-          return DG.ObjectHandler.forEntity(reporter.data)?.renderTooltip(reporter.data.dart)!;
+        const portrait = ui.tooltip.bind(userHandler.renderIcon(report.reporter.dart)!, () => {
+          return userHandler.renderTooltip(report.reporter.dart)!;
         });
         portrait.style.marginRight = '10px';
-        // if (currentRow.get('package_owner') === currentUserId)
-        //   text.style.fontWeight = 'bold';
-        const content = ui.divH([clock, portrait, ui.divText(currentRow.get('description'))]);
+        const content = ui.divH([clock, portrait, ui.divText(report.description)]);
         const item = ui.card(content);
         item.style.overflow = 'visible';
         item.style.width = '100%';
@@ -43,9 +42,9 @@ export class ReportsWidget extends DG.Widget {
         item.style.border = 'none';
         item.style.marginLeft = 'auto';
         item.style.padding = '5px';
-        item.addEventListener('click', (e) => {
+        item.addEventListener('click', async (e) => {
           e.preventDefault();
-          DetailedLog.showReportProperties(currentRow.get('report_id'), result, i);
+          grok.shell.setCurrentObject(reportHandler.renderProperties(report.dart), false);
         });
         items.push(item);
       }

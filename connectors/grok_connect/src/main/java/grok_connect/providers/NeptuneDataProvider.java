@@ -8,6 +8,7 @@ import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
+import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
 import serialization.Types;
@@ -35,9 +36,6 @@ public class NeptuneDataProvider extends JdbcDataProvider {
             add(new Property(Property.STRING_TYPE, "serviceRegion"));
             add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
                     DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
-            add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_SCHEMA));
-            add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_RESULTS));
-            add(new Property(Property.STRING_TYPE, DbCredentials.CACHE_INVALIDATE_SCHEDULE));
         }};
         descriptor.credentialsTemplate = new ArrayList<Property>() {{
             add(new Property(Property.STRING_TYPE, "accessKey"));
@@ -60,14 +58,12 @@ public class NeptuneDataProvider extends JdbcDataProvider {
                 System.setProperty("aws.secretKey",
                         conn.credentials.parameters.get("secretAccessKey").toString());
         }
-        if (conn.parameters.get("serviceRegion") != null)
-            properties.setProperty("serviceRegion",  conn.parameters.get("serviceRegion").toString());
-
+        setIfNotNull(properties, "serviceRegion", (String) conn.parameters.get("serviceRegion"));
         return properties;
     }
 
     @Override
-    public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
+    public Connection getConnection(DataConnection conn) throws GrokConnectException, SQLException {
         prepareProvider();
         return DriverManager.getConnection(getConnectionString(conn), getProperties(conn));
     }

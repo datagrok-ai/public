@@ -40,13 +40,12 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
     public Properties getProperties(DataConnection conn) {
         java.util.Properties properties = defaultConnectionProperties(conn);
         if (!conn.hasCustomConnectionString()) {
-            properties.put(DbCredentials.DB, conn.getDb());
-            properties.put(DbCredentials.WAREHOUSE, conn.get(DbCredentials.WAREHOUSE));
-            properties.put(DbCredentials.ACCOUNT, buildAccount(conn));
+            setIfNotNull(properties, DbCredentials.DB, conn.getDb());
+            setIfNotNull(properties, DbCredentials.WAREHOUSE, conn.get(DbCredentials.WAREHOUSE));
+            setIfNotNull(properties, DbCredentials.ACCOUNT, buildAccount(conn));
             String schema = conn.get(DbCredentials.SCHEMA);
-            properties.put(DbCredentials.SCHEMA, schema == null ? DEFAULT_SCHEMA : schema);
-            if (conn.parameters.containsKey(DbCredentials.ROLE))
-                properties.put(DbCredentials.ROLE, conn.get(DbCredentials.ROLE));
+            properties.setProperty(DbCredentials.SCHEMA, schema == null ? DEFAULT_SCHEMA : schema);
+            setIfNotNull(properties, DbCredentials.ROLE, conn.get(DbCredentials.ROLE));
         }
         return properties;
     }
@@ -84,11 +83,6 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
     @Override
     protected String getRegexQuery(String columnName, String regexExpression) {
         return String.format("%s REGEXP '%s'", columnName, regexExpression);
-    }
-
-    @Override
-    public String addBrackets(String name) {
-        return String.format("\"%s\"", name);
     }
 
     @Override
@@ -136,9 +130,6 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
             add(new Property(Property.STRING_TYPE, DbCredentials.ROLE));
             add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
                     DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
-            add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_SCHEMA));
-            add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_RESULTS));
-            add(new Property(Property.STRING_TYPE, DbCredentials.CACHE_INVALIDATE_SCHEDULE));
         }};
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.nameBrackets = "\"";

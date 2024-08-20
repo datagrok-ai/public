@@ -1,4 +1,4 @@
-import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -14,20 +14,20 @@ category('UI: Inputs', () => {
 
   before(async () => {
     inputs = {
-      'stringInput': ui.stringInput('', ''),
-      'intInput': ui.intInput('', 0),
-      'floatInput': ui.floatInput('', 0.00),
-      'boolInput': ui.boolInput('', true),
-      'switchInput': ui.switchInput('', true),
-      'choiceInput': ui.choiceInput('', '1', ['1', '2', '3']),
-      'multiChoiceInput': ui.multiChoiceInput('', [], []),
-      // 'dateInput': ui.dateInput('', dayjs('2001-01-01')),
-      'textInput': ui.textInput('', ''),
-      'searchInput': ui.searchInput('', ''),
-      'columnInput': ui.columnInput('', t, t.col('age')),
-      'columnsInput': ui.columnsInput('', t, () => null),
-      'tableInput': ui.tableInput('', tables[0], tables),
-      'colorInput': ui.colorInput('', '#ff0000'),
+      'stringInput': ui.input.string('', {value: ''}),
+      'intInput': ui.input.int('', {value: 0}),
+      'floatInput': ui.input.float('', {value: 0.00}),
+      'boolInput': ui.input.bool('', {value: true}),
+      'switchInput': ui.input.toggle('', {value: true}),
+      'choiceInput': ui.input.choice('', {value: '1', items: ['1', '2', '3']}),
+      'multiChoiceInput': ui.input.multiChoice('', {value: [], items: []}),
+      // 'dateInput': ui.input.date('', {value: dayjs('2001-01-01')}),
+      'textInput': ui.input.textArea('', {value: ''}),
+      'searchInput': ui.input.search('', {value: ''}),
+      'columnInput': ui.input.column('', {table: t, value: t.col('age')!}),
+      'columnsInput': ui.input.columns('', {table: t, onValueChanged: () => null}),
+      'tableInput': ui.input.table('', {value: tables[0], items: tables}),
+      'colorInput': ui.input.color('', {value: '#ff0000'}),
     };
     v = grok.shell.newView('');
     grok.shell.windows.showContextPanel = true;
@@ -105,7 +105,7 @@ category('UI: Inputs', () => {
   });
 
   test('floatInput', async () => {
-    const t = ui.floatInput('Label', 0.003567);
+    const t = ui.input.float('Label', {value: 0.003567});
     t.format = '0.0000';
     const v = grok.shell.newView('Test', [t]);
     const input = t.input as HTMLInputElement;
@@ -161,9 +161,36 @@ category('UI: Inputs', () => {
 }, {clear: false});
 
 category('UI: Choice input', () => {
+  test('nullable', async () => {
+    const t = ui.input.choice('test', {value: '1', items: ['1', '2'], nullable: true});
+
+    const view = grok.shell.newView();
+    view.append(t);
+
+    const selector = view.root.querySelector('select.ui-input-editor') as HTMLSelectElement;
+    expect(selector.item(0)?.textContent, '');
+    expect(selector.item(1)?.textContent, '1');
+    expect(selector.item(2)?.textContent, '2');
+
+    expectArray(t.items, [null, '1', '2']);
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15799'});
+
+  test('non-nullable', async () => {
+    const t = ui.input.choice('test', {value: '1', items: ['1', '2'], nullable: false});
+
+    const view = grok.shell.newView();
+    view.append(t);
+
+    const selector = view.root.querySelector('select.ui-input-editor') as HTMLSelectElement;
+    expect(selector.item(0)?.textContent, '1');
+    expect(selector.item(1)?.textContent, '2');
+
+    expectArray(t.items, ['1', '2']);
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15799'});
+
   test('fromFunction', async () => {
     const view = grok.shell.newView();
-    const input = ui.choiceInput('Sex', 'Male', ['Male', 'Female']);
+    const input = ui.input.choice('Sex', {value: 'Male', items: ['Male', 'Female']});
     view.root.appendChild(input.root);
 
     input.value = null;
@@ -219,6 +246,127 @@ category('UI: Choice input', () => {
     select.value = '';
     expect(select.value, '');
   });
+
+  after(async () => {
+    grok.shell.closeAll();
+  });
+});
+
+category('UI: Choice input new', () => {
+  test('nullable', async () => {
+    const t = ui.input.choice('test', {value: '1', items: ['1', '2'], nullable: true});
+
+    const view = grok.shell.newView();
+    view.append(t);
+
+    const selector = view.root.querySelector('select.ui-input-editor') as HTMLSelectElement;
+    expect(selector.item(0)?.textContent, '');
+    expect(selector.item(1)?.textContent, '1');
+    expect(selector.item(2)?.textContent, '2');
+
+    expectArray(t.items, [null, '1', '2']);
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15799'});
+
+  test('non-nullable', async () => {
+    const t = ui.input.choice('test', {value: '1', items: ['1', '2'], nullable: false});
+
+    const view = grok.shell.newView();
+    view.append(t);
+
+    const selector = view.root.querySelector('select.ui-input-editor') as HTMLSelectElement;
+    expect(selector.item(0)?.textContent, '1');
+    expect(selector.item(1)?.textContent, '2');
+
+    expectArray(t.items, ['1', '2']);
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15799'});
+
+  test('fromFunction', async () => {
+    const view = grok.shell.newView();
+    const input = ui.input.choice('Sex', {value: 'Male', items: ['Male', 'Female']});
+    view.root.appendChild(input.root);
+
+    input.value = 'Male';
+    expect(input.value, 'Male');
+    input.value = 'Female';
+    expect(input.value, 'Female');
+    // input.value = '';
+    // expect(input.value, '');
+
+    const select = document.querySelector('select.ui-input-editor') as HTMLSelectElement;
+
+    // select.value = null;
+    // expect(select.value, null);
+    select.value = 'Male';
+    expect(select.value, 'Male');
+    select.value = 'Female';
+    expect(select.value, 'Female');
+    select.value = '';
+    expect(select.value, '');
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15799'});
+
+  test('fromProperty', async () => {
+    const property = DG.Property.js('showPoints', DG.TYPE.STRING, {category: 'Fitting',
+      description: 'Whether points/candlesticks/none should be rendered',
+      defaultValue: 'points', choices: ['points', 'candlesticks', 'both']});
+    const input = DG.InputBase.forProperty(property, {});
+    const view = grok.shell.newView();
+    view.root.appendChild(input.root);
+
+    input.value = null;
+    expect(input.value == null);
+    input.value = 'points';
+    expect(input.value, 'points');
+    input.value = 'candlesticks';
+    expect(input.value, 'candlesticks');
+    input.value = 'both';
+    expect(input.value, 'both');
+    // input.value = '';
+    // expect(input.value, '');
+
+    const select = document.querySelector('select.ui-input-editor') as HTMLSelectElement;
+
+    // select.value = null;
+    // expect(select.value, null);
+    select.value = 'points';
+    expect(select.value, 'points');
+    select.value = 'candlesticks';
+    expect(select.value, 'candlesticks');
+    select.value = 'both';
+    expect(select.value, 'both');
+    select.value = '';
+    expect(select.value, '');
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15799'});
+
+  after(async () => {
+    grok.shell.closeAll();
+  });
+});
+
+category('UI: Table input new', () => {
+  before(async () => {
+    grok.shell.addTableView(grok.data.demo.demog(10));
+  });
+
+  test('nullable', async () => {
+    const t = ui.input.table('test', {nullable: true});
+
+    const view = grok.shell.newView();
+    view.append(t);
+
+    const selector = view.root.querySelector('select.ui-input-editor') as HTMLSelectElement;
+    expect(selector.item(0)?.textContent, '');
+    expect(selector.item(1)?.textContent, 'demog 10');
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15799'});
+
+  test('non-nullable', async () => {
+    const t = ui.input.table('test', {nullable: false});
+
+    const view = grok.shell.newView();
+    view.append(t);
+
+    const selector = view.root.querySelector('select.ui-input-editor') as HTMLSelectElement;
+    expect(selector.item(0)?.textContent, 'demog 10');
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15799'});
 
   after(async () => {
     grok.shell.closeAll();

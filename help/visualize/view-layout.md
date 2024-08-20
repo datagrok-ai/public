@@ -1,61 +1,79 @@
 ---
-title: "View layout"
+title: "Layout"
 sidebar_position: 2
+format: mdx
 ---
 
-View Layout contains relative positions of [viewers](../visualize/viewers/viewers.md) in
-a [table view](../datagrok/navigation/table-view.md), along with the viewers' properties. By separating layouts from the actual
-data displayed, we now can save current layout (**View | Layout | Save to Gallery**)
-and later apply it to a different dataset
-(**View | Layout | Open Gallery**).
+In Datagrok, the visual representation of data (a _layout_) is separate from the data itself
+(a [table](../datagrok/concepts/table.md)). This separation lets you save just
+the layout and apply it later to a different dataset.
 
-To clone current view, either do **View | Layout | Clone**, or click on the plus sign on the view header strip, and
-choose **Clone**.
+You can save layouts for:
+* A [Table View](../datagrok/navigation/views/table-view.md)
+* A specific [viewer](viewers/viewers.md)
 
-:::note developers: DataFrame-synchronized tags
-Sometimes, you want presentation-related tags (such as color coding) to be defined on a table level so
-that all derived table views will pick it. In such cases, these tags need to be saved as part of the layout.
-When such layout is applied, these tags are re-applied back to table/column tags. 
-Such a tag should start with "%", i.e. "%myColorCoding".
+## Table View layout
+
+A **Table View** layout defines the arrangement of viewers in a **Table View** and their properties. 
+
+To save a **Table View** layout and apply it to a different dataset:
+1. Open a table. Add [viewers](viewers/viewers.md), arrange them, and customize the way you want.
+2. Save the layout:
+   * **In Datagrok**: On the **Top Menu**, click **View > Layout > Save to
+   Gallery**. This action saves the layout on a server. 
+   * **Locally**: On the **Top Menu**, click **View > Layout > Download**. This action saves the layout to your local drive.
+3. Open another table with similar columns.
+4. On the **Top Menu**, click **View > Layout > Open Gallery**. This action
+   opens a panel with [suggestions](#layout-suggestions). 
+5. To apply the layout, find and click the layout you saved earlier. If you
+downloaded the layout, drag and drop the layout file into the
+view.
+
+To create a copy of your current view, on the  **Top Menu**, click **View >
+Layout > Clone**.
+
+![](view-layout.gif)
+
+:::note developers DATAFRAME-SYNCHRONIZED TAGS
+
+Sometimes, you want presentation-related tags (such as color coding) to be
+defined on a table level so that all derived **Table Views** will pick it up. To
+do this, you need to save these tags as part of the layout. When such a layout
+is applied, these tags are re-applied to table/column tags. Such a tag should
+start with "%", e.g., "%myColorCoding".
+
 :::
-
-## Viewer layout
-
-Similarly to view layout, it is possible to reuse the settings of individual [viewers](../visualize/viewers/viewers.md).
-Under
-the 'Viewer' menu (either right-click on the viewer, or click on the 'hamburger' menu on the top left), you will find
-the following layout-specific commands:
-
-* Clone
-* Save to Gallery
-
-To open a gallery containing viewer and view layout suggestions: **View | Layout | Open Gallery**
 
 ### Layout suggestions
 
-Moreover, the platform will proactively suggest layouts (even created by other users) to be applied to your data, if a
-previously saved layout can be used for visualizing currently opened dataset. The suggestions are based on
-the [layout applicability](#layout-applicability), popularity and specificity of the layout, as well as on the
-previously observed actions.
+When a **Table View** is open, Datagrok automatically suggests relevant layouts
+from the layout gallery, accessible via **Top Menu > View > Layout > Open
+Gallery**.
 
-To check layouts applicable to the current table, open 'Layouts' pane on the left. Alternatively, open the specialized
-view/viewer layout suggestion panel: **View | Layout | Open Gallery**
+A layout is deemed relevant if its "columns of interest" match a subset of
+columns in the current table, determined based on their names, data types,
+semantic types, and other metadata.
 
-### Layout applicability
+When saving a layout, the columns of interest are determined as follows:
 
-When a view layout is saved, the visual arrangement of the viewers along with the metadata of the layout data columns (
-columns selected on viewers, such as "X" column on a scatter plot) gets saved. Metadata includes column name, type,
-semantic type, and other metadata.
+* For layouts that include non-grid viewers, all data columns used in these
+  viewers become the columns of interest.
+* For layouts that include only a [grid](viewers/grid.md), all visible
+  (non-hidden) columns become the columns of interest.
 
-To determine whether a view layout is applicable to a particular table, the platform checks whether all layout data
-columns could be mapped to the table columns. There are few different ways a layout column gets mapped to the table
-column, which are evaluated in the following order:
+## Viewer layout
 
-1. Column names AND column types match
-2. Both columns have the same [layout-id](../govern/catalog/tags.md#layout-id)
-3. Both columns have the same [semantic type](../govern/catalog/tags.md#quality)
+Similarly to a **Table View** layout, you can save and reuse the settings of
+individual [viewers](../visualize/viewers/viewers.md). To do this, click a
+**Hamburger icon** on the viewer's header and select the command you want under
+**General**:
 
-See also:
+* **Clone**: Add an exact copy of this viewer to your current **Table View**
+* **Save to Gallery**: Save to the layouts gallery
 
-* [Table view](../datagrok/navigation/table-view.md)
-* [Self-learning platform](../govern/catalog/self-learning-platform.md)
+To apply the viewer saved earlier, find it in the gallery (**Top Menu** >
+**View > Layout > Open Gallery**) and double click it. This adds the viewer to
+the **Table View**.
+
+<!--update: Double click will be replaced with the button-->
+

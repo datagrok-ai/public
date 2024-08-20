@@ -9,7 +9,7 @@ import { STORAGE_NAME, KEY, TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, Te
 
 export let DEFAULT_LOWER_VALUE = 0.8;
 export let DEFAULT_UPPER_VALUE = 1.0;
-export let DEFAULT_APPLICABILITY_VALUE = 0.5;
+export let DEFAULT_APPLICABILITY_VALUE = 0.41;
 export let properties: any;
 
 async function getAdmetoxContainer() {
@@ -80,7 +80,7 @@ export async function performChemicalPropertyPredictions(molColumn: DG.Column, v
 }
 
 async function extractSmilesColumn(molColumn: DG.Column): Promise<DG.Column> {
-  const isSmiles = molColumn?.getTag(DG.TAGS.UNITS) === DG.UNITS.Molecule.SMILES;
+  const isSmiles = molColumn?.meta.units === DG.UNITS.Molecule.SMILES;
   const smilesList: string[] = new Array<string>(molColumn.length);
   for (let rowIndex = 0; rowIndex < molColumn.length; rowIndex++) {
     let el: string = molColumn?.get(rowIndex);
@@ -106,8 +106,8 @@ function applyColorCoding(col: DG.GridColumn, model: Model): void {
   if (!model.coloring) return;
   col.isTextColorCoded = true;
   const { type, min, max, colors } = model.coloring;
-  if (type === 'Linear') {
-    col.column!.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Linear';
+  if (type === DG.COLOR_CODING_TYPE.LINEAR) {
+    col.column!.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.LINEAR;
     col.column!.tags[DG.TAGS.COLOR_CODING_LINEAR] = colors;
     col.column!.tags[DG.TAGS.COLOR_CODING_SCHEME_MIN] = min;
     col.column!.tags[DG.TAGS.COLOR_CODING_SCHEME_MAX] = max;
@@ -149,6 +149,11 @@ export async function getQueryParams(): Promise<string> {
       .map((model: Model) => model.name).join(',');
 }
 
+function generateNumber(): number {
+  return Math.round(Math.random() * 10) / 10;
+}
+
+
 function createPieSettings(columnNames: string[], properties: any, probabilities: { [key: string]: number[] }): any {
   const colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728'];
   let sectors: any[] = [];
@@ -167,7 +172,6 @@ function createPieSettings(columnNames: string[], properties: any, probabilities
         let { min, max } = model;
         if (model.properties) {
           const directionProperty = model.properties.find((prop: any) => prop.property.name === 'direction');
-          weightProperty = model.properties.find((prop: any) => prop.property.name === 'weight');
           if (directionProperty && directionProperty.object.direction === 'Lower is better')
             [min, max] = [max, min];
         }
@@ -176,7 +180,7 @@ function createPieSettings(columnNames: string[], properties: any, probabilities
           name: modelName,
           lowThreshold: min,
           highThreshold: max,
-          weight: weightProperty.object.weight,
+          weight: generateNumber(),
           applicability: DEFAULT_APPLICABILITY_VALUE,
           probabilities: Object.entries(probabilities)
             .filter(([key, value]) => key.includes(modelName))
@@ -256,9 +260,9 @@ export function addCustomTooltip(table: string): void {
 function updateColumnProperties(column: DG.Column, model: any, viewTable: DG.DataFrame): void {
   const newColumnName = viewTable.columns.getUnusedName(column.name);
   column.name = newColumnName;
-  column.setTag(DG.TAGS.FORMAT, '0.00');
+  column.meta.format = '0.00';
   column.setTag(DG.TAGS.DESCRIPTION, model.properties.find((prop: any) => prop.property.name === 'description').object.description);
-  column.setTag(DG.TAGS.UNITS, model.units);
+  column.meta.units = model.units;
 }
 
 export function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, addPiechart: boolean = true): void {

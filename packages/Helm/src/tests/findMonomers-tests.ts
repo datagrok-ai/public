@@ -10,6 +10,7 @@ import {
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 
 import {findMonomers, parseHelm} from '../utils';
+import {initHelmMainPackage} from './utils';
 
 
 /** Tests with default monomer library */
@@ -19,17 +20,18 @@ category('findMonomers', () => {
   let userLibSettings: UserLibSettings;
 
   before(async () => {
+    await initHelmMainPackage();
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
 
     // Tests 'findMonomers' requires default monomer library loaded
     await setUserLibSettingsForTests();
-    await monomerLibHelper.loadLibraries(true); // load default libraries for tests
+    await monomerLibHelper.loadMonomerLib(true); // load default libraries for tests
   });
 
   after(async () => {
     await setUserLibSettings(userLibSettings);
-    await monomerLibHelper.loadLibraries(true);
+    await monomerLibHelper.loadMonomerLib(true);
   });
 
   const tests: { [testName: string]: { test: string, tgt: Set<string> } } = {
@@ -51,8 +53,9 @@ category('findMonomers', () => {
   }
 
   function _testFindMonomers(testHelmValue: string, tgtMissedSet: Set<string>): void {
+    const monomerLib = monomerLibHelper.getMonomerLib();
     const monomerSymbolList: string[] = parseHelm(testHelmValue);
-    const resMissedSet: Set<string> = findMonomers(monomerSymbolList);
+    const resMissedSet: Set<string> = findMonomers(monomerSymbolList, monomerLib);
     expectObject(resMissedSet, tgtMissedSet);
   }
 });

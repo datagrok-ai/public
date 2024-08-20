@@ -4,9 +4,11 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 import $ from 'cash-dom';
 import {Subject, BehaviorSubject} from 'rxjs';
+import {take} from 'rxjs/operators';
 import {historyUtils} from '../../history-utils';
 import {HistoricalRunsDelete, HistoricalRunEdit} from './history-dialogs';
 import {ACTIONS_COLUMN_NAME, AUTHOR_COLUMN_NAME,
+  COMPLETE_COLUMN_NAME,
   DESC_COLUMN_NAME, EXPERIMENTAL_TAG, EXP_COLUMN_NAME,
   FAVORITE_COLUMN_NAME, STARTED_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME
   , storageName} from '../../shared-utils/consts';
@@ -14,6 +16,9 @@ import {ID_COLUMN_NAME} from './history-input';
 import {camel2title, extractStringValue, getMainParams, getStartedOrNull} from '../../shared-utils/utils';
 import {getStarted} from '../../function-views/src/shared/utils';
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+
+dayjs.extend(utc);
 
 const SUPPORTED_COL_TYPES = Object.values(DG.COLUMN_TYPE).filter((type: any) => type !== DG.TYPE.DATA_FRAME);
 
@@ -37,6 +42,7 @@ export class HistoricalRunsList extends DG.Widget {
       DG.Column.bool(EXP_COLUMN_NAME, 0),
       ...this.options?.isHistory ? [DG.Column.bool(FAVORITE_COLUMN_NAME, 0)]: [],
       ...this.options?.showActions ? [DG.Column.string(ACTIONS_COLUMN_NAME, 0)]: [],
+      DG.Column.bool(COMPLETE_COLUMN_NAME, 0),
       DG.Column.dateTime(STARTED_COLUMN_NAME, 0),
       DG.Column.string(AUTHOR_COLUMN_NAME, 0),
       DG.Column.string(TAGS_COLUMN_NAME, 0),
@@ -234,20 +240,18 @@ export class HistoricalRunsList extends DG.Widget {
 
       const getColumnByName = (key: string) => {
         if (key === STARTED_COLUMN_NAME) {
-          const getStartedOrNull = (run: DG.FuncCall) => {
-            try {
-              return run.started;
-            } catch {
-              return null;
-            }
-          };
-
           return DG.Column.dateTime(getColumnName(key), newRuns.length)
             // Workaround for https://reddata.atlassian.net/browse/GROK-15286
             .init((idx) =>
               (<any>window).grok_DayJs_To_DateTime(getStartedOrNull(newRuns[idx]) ?
-                newRuns[idx].started: dayjs.unix(newRuns[idx].options['createdOn'])),
+                newRuns[idx].started.utc(true): dayjs.unix(newRuns[idx].options['createdOn'])),
             );
+        }
+
+        if (key === COMPLETE_COLUMN_NAME) {
+          return DG.Column.bool(getColumnName(key), newRuns.length)
+            // Workaround for https://reddata.atlassian.net/browse/GROK-15286
+            .init((idx) =>getStartedOrNull(newRuns[idx]));
         }
 
         return DG.Column.fromStrings(
@@ -256,12 +260,12 @@ export class HistoricalRunsList extends DG.Widget {
         );
       };
 
-      if (runs.size > 0) {
+      if (newRuns.length > 0) {
         const favoritesRecord: Record<string, string> =
           await grok.dapi.userDataStorage.get(this.storageName(runs)) ?? {};
         const favorites = Object.keys(favoritesRecord);
 
-        const func = [...this.runs.values()][0].func;
+        const func = newRuns[0].func;
 
         const getColumn = (key: string) => {
           const prop =
@@ -283,6 +287,7 @@ export class HistoricalRunsList extends DG.Widget {
               .init((idx) => favorites.includes(newRuns[idx].id))]: [],
           ...this.options?.showActions ? [DG.Column.string(ACTIONS_COLUMN_NAME, newRuns.length).init('')]: [],
           getColumnByName(STARTED_COLUMN_NAME),
+          getColumnByName(COMPLETE_COLUMN_NAME),
           getColumnByName(AUTHOR_COLUMN_NAME),
           DG.Column.string(TAGS_COLUMN_NAME, newRuns.length).init((idx) =>
             newRuns[idx].options['tags'] ? newRuns[idx].options['tags'].join(','): '',
@@ -330,7 +335,7 @@ export class HistoricalRunsList extends DG.Widget {
       this._historyFilters.dataFrame = newRunsGridDf;
       this._historyGrid.dataFrame = newRunsGridDf;
 
-      this.currentDf.getCol(TAGS_COLUMN_NAME).setTag(DG.TAGS.MULTI_VALUE_SEPARATOR, ',');
+      this.currentDf.getCol(TAGS_COLUMN_NAME).meta.multiValueSeparator = ',';
 
       this.styleHistoryGrid();
       this.styleHistoryFilters();
@@ -454,14 +459,22 @@ export class HistoricalRunsList extends DG.Widget {
             const setToDelete = new Set([this.getRunByIdx(cell.tableRowIndex!)!]);
             const deleteDialog = new HistoricalRunsDelete(setToDelete);
 
-            const onDeleteSub = deleteDialog.onFuncCallDelete.subscribe(async () => {
-              await Promise.all(
-                wu(setToDelete.values()).map(async (funcCall) => {
-                  await this.deleteRun(funcCall.id);
+            deleteDialog.onFuncCallDelete.pipe(
+              take(1),
+            ).subscribe(async () => {
+              ui.setUpdateIndicator(this.root, true);
+              try {
+                await Promise.all(
+                  wu(setToDelete.values()).map(async (funcCall) => {
+                    await this.deleteRun(funcCall.id);
 
-                  return Promise.resolve();
-                }));
-              onDeleteSub.unsubscribe();
+                    return Promise.resolve();
+                  }));
+              } catch (e: any) {
+                grok.shell.error(e);
+              } finally {
+                ui.setUpdateIndicator(this.root, false);
+              }
             });
             deleteDialog.show({center: true, width: 500});
           }, 'Remove run from history'),
@@ -544,16 +557,24 @@ export class HistoricalRunsList extends DG.Widget {
 
         const deleteIcon = ui.iconFA('trash-alt', async (ev) => {
           ev.stopPropagation();
-          const setToDelete= new Set([this.getRunByIdx(cell.tableRowIndex!)!]);
+          const setToDelete = new Set([this.getRunByIdx(cell.tableRowIndex!)!]);
           const deleteDialog = new HistoricalRunsDelete(setToDelete);
-          const onDeleteSub = deleteDialog.onFuncCallDelete.subscribe(async () => {
-            await Promise.all(
-              wu(setToDelete.values()).map(async (funcCall) => {
-                await this.deleteRun(funcCall.id);
+          deleteDialog.onFuncCallDelete.pipe(
+            take(1),
+          ) .subscribe(async () => {
+            ui.setUpdateIndicator(this.root, true);
+            try {
+              await Promise.all(
+                wu(setToDelete.values()).map(async (funcCall) => {
+                  await this.deleteRun(funcCall.id);
 
-                return Promise.resolve();
-              }));
-            onDeleteSub.unsubscribe();
+                  return Promise.resolve();
+                }));
+            } catch (e: any) {
+              grok.shell.error(e);
+            } finally {
+              ui.setUpdateIndicator(this.root, false);
+            }
           });
           deleteDialog.show({center: true, width: 500});
         }, 'Delete run');
@@ -618,9 +639,9 @@ export class HistoricalRunsList extends DG.Widget {
 
   async deleteRun(id: string) {
     return historyUtils.loadRun(id, true)
-      .then((loadedRun) => {
+      .then(async (loadedRun) => {
         return [
-          (this.options?.isHistory) ? historyUtils.deleteRun(loadedRun): Promise.resolve(),
+          await (this.options?.isHistory ? historyUtils.deleteRun(loadedRun): Promise.resolve()),
           loadedRun,
         ] as const;
       })
@@ -667,15 +688,22 @@ export class HistoricalRunsList extends DG.Widget {
 
     const deleteDialog = new HistoricalRunsDelete(setToDelete);
 
-    const onDeleteSub = deleteDialog.onFuncCallDelete.subscribe(async (setToDelete) => {
-      await Promise.all(
-        wu(setToDelete.values()).map(async (funcCall) => {
-          await this.deleteRun(funcCall.id);
+    deleteDialog.onFuncCallDelete.pipe(
+      take(1),
+    ).subscribe(async (setToDelete) => {
+      ui.setUpdateIndicator(this.root, true);
+      try {
+        await Promise.all(
+          wu(setToDelete.values()).map(async (funcCall) => {
+            await this.deleteRun(funcCall.id);
 
-          return Promise.resolve();
-        }));
-
-      onDeleteSub.unsubscribe();
+            return Promise.resolve();
+          }));
+      } catch (e: any) {
+        grok.shell.error(e);
+      } finally {
+        ui.setUpdateIndicator(this.root, false);
+      }
     });
 
     deleteDialog.show({center: true, width: 500, modal: true});
@@ -721,12 +749,13 @@ export class HistoricalRunsList extends DG.Widget {
     this.compactMode = !this.compactMode;
   }, 'Toggle compact mode'), {style: {'padding-top': '4px'}});
 
-  private showMetadataIcon = ui.switchInput('Metadata', true, () => {
+  private showMetadataIcon = ui.input.toggle('Metadata', {value: true, onValueChanged: () => {
     this.styleHistoryGrid();
     this.styleHistoryFilters();
-  });
+  }});
 
-  private showInputsIcon = ui.switchInput('Params', false, async (newValue: boolean) => {
+  private showInputsIcon = ui.input.toggle('Params', {value: false, onValueChanged: async () => {
+    const newValue = this.showInputsIcon.value;
     if (this.runs.size === 0) return;
 
     if (newValue && this.options?.isHistory) {
@@ -749,7 +778,7 @@ export class HistoricalRunsList extends DG.Widget {
       this.styleHistoryGrid();
       this.styleHistoryFilters();
     }
-  });
+  }});
 
   private styleHistoryGrid() {
     this._historyGrid.setOptions({
@@ -767,7 +796,7 @@ export class HistoricalRunsList extends DG.Widget {
     for (let i = 0; i < this._historyGrid.columns.length; i++) {
       const col = this._historyGrid.columns.byIndex(i);
       if (col && col.column?.type === DG.TYPE.DATE_TIME)
-        col.format = 'MMM d HH:mm';
+        col.format = 'MMM d, h:mm tt';
     }
 
     this.setGridColumnsRendering();
@@ -826,7 +855,7 @@ export class HistoricalRunsList extends DG.Widget {
         ...showMetadata &&
         (this.currentDf.col(FAVORITE_COLUMN_NAME)?.categories.length ?? 0) > 1 ?
           [FAVORITE_COLUMN_NAME]: [],
-        ...showMetadata ? [STARTED_COLUMN_NAME]:[],
+        ...showMetadata ? [STARTED_COLUMN_NAME, COMPLETE_COLUMN_NAME]:[],
         ...showMetadata &&
         this.currentDf.getCol(AUTHOR_COLUMN_NAME).categories.length > 1 ? [AUTHOR_COLUMN_NAME]: [],
         ...showMetadata &&

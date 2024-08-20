@@ -1,13 +1,13 @@
 import {toDart, toJs} from "./wrappers";
-import {__obs, _sub, observeStream, StreamSubscription} from "./events";
+import {__obs, _sub, EventData, InputArgs, observeStream, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
 import {fromEvent, Observable, Subject, Subscription} from "rxjs";
 import {Func, Property, PropertyOptions} from "./entities";
 import {Cell, Column, DataFrame} from "./dataframe";
-import {ColorType, LegendPosition, Type} from "./const";
+import {LegendPosition, Type} from "./const";
 import {filter, map} from 'rxjs/operators';
 import $ from "cash-dom";
-import {MapProxy} from "./utils";
+import {MapProxy, Completer} from "./utils";
 import dayjs from "dayjs";
 import typeahead from 'typeahead-standalone';
 import {Dictionary, typeaheadConfig} from 'typeahead-standalone/dist/types';
@@ -20,6 +20,7 @@ import '../css/typeahead-input.css';
 import '../css/tags-input.css';
 import {FuncCall} from "./functions";
 import {IDartApi} from "./api/grok_api.g";
+import {HttpDataSource} from "./dapi";
 
 declare let grok: any;
 declare let DG: any;
@@ -27,12 +28,43 @@ declare let ui: any;
 const api: IDartApi = <any>window;
 
 
+export class TypedEventArgs<TData> {
+  dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  /** Event type id */
+  get type(): string {
+    return api.grok_TypedEventArgs_Get_Type(this.dart);
+  }
+
+  get data(): TData {
+    let data = api.grok_TypedEventArgs_Get_Data(this.dart);
+    return toJs(data);
+  }
+
+  /** Event arguments. Only applies when data is EventData */
+  get args(): {[key: string]: any} | null {
+    // @ts-ignore
+    if (!this.data?.dart)
+      return null;
+
+    // @ts-ignore
+    return api.grok_EventData_Get_Args(this.data.dart);
+  }
+}
+
 export type RangeSliderStyle = 'barbell' | 'lines' | 'thin_barbell';
 
 export type SliderOptions = {
   style?: RangeSliderStyle
 }
 
+export type ICodeEditorOptions = {
+  root?: HTMLDivElement;
+}
 export type TypeAheadConfig = Omit<typeaheadConfig<Dictionary>, 'input' | 'className'>;
 export type CodeConfig = {
   script?: string;
@@ -267,7 +299,7 @@ export class Widget<TSettings = any> {
   }
 
   /** Registers an property with the specified type, name, and defaultValue.
-   *  Registered property gets added to {@see properties}.
+   *  @see Registered property gets added to {@link properties}.
    *  Returns default value, thus allowing to combine registering a property with the initialization
    *
    * @param {string} propertyName
@@ -382,7 +414,6 @@ export abstract class Filter extends Widget {
 
   /** Override to save filter state. */
   saveState(): any {
-    console.log('save state');
     return {
       column: this.columnName,
       columnName: this.columnName
@@ -393,7 +424,6 @@ export abstract class Filter extends Widget {
   applyState(state: any): void {
     this.columnName = state.columnName;
     this.column = this.columnName && this.dataFrame ? this.dataFrame.col(this.columnName) : null;
-    console.log('apply state');
   }
 
   /** Gets called when a data frame is attached.
@@ -520,7 +550,7 @@ export class Accordion extends DartWidget {
 
 /** A pane in the {@link Accordion} control. */
 export class AccordionPane extends DartWidget {
-  dart: any;
+  declare dart: any;
 
   constructor(dart: any) {
     super(dart);
@@ -702,6 +732,22 @@ export class Dialog extends DartWidget {
   onOK(handler: Function): Dialog {
     api.grok_Dialog_OnOK(this.dart, handler);
     return this;
+  }
+
+  /**
+   * Sets the OK button handler and returns a promise of the handler callback.
+   * @param {Function} handler
+   * @returns {Promise} */
+  async awaitOnOK<T = any>(handler: () => Promise<T>): Promise<T> {
+    let completer = new Completer<T>();
+    this.onOK(() => {
+      handler().then((res) => completer.complete(res))
+               .catch((error) => completer.reject(error));
+    });
+    this.onCancel(() => {
+      completer.reject();
+    });
+    return completer.promise;
   }
 
   /**
@@ -997,8 +1043,8 @@ export class CodeEditor {
     this.dart = dart;
   }
 
-  static create(script = '', mode = 'javascript', placeholder = ''): CodeEditor {
-    return toJs(api.grok_CodeEditor(script, mode, placeholder));
+  static create(script = '', mode = 'javascript', placeholder = '', options?: ICodeEditorOptions): CodeEditor {
+    return toJs(api.grok_CodeEditor(script, mode, placeholder, options?.root));
   }
 
   append(text: string): void {
@@ -1199,7 +1245,7 @@ export class InputForm extends DartWrapper {
   set source(source: any) { api.grok_InputForm_Set_Source(this.dart, toDart(source)); };
 
   /** Occurs when user changes any input value in a form. */
-  get onInputChanged(): Observable<any> { return observeStream(api.grok_InputForm_OnInputChanged(this.dart)); }
+  get onInputChanged(): Observable<EventData<InputArgs>> { return observeStream(api.grok_InputForm_OnInputChanged(this.dart)); }
 
   /** Occurs after the form is validated, no matter whether it is valid or not. */
   get onValidationCompleted(): Observable<any> { return observeStream(api.grok_InputForm_OnValidationCompleted(this.dart)); }
@@ -1239,7 +1285,7 @@ export abstract class JsInputBase<T = any> extends InputBase<T> {
 
 
 export class DateInput extends InputBase<dayjs.Dayjs | null> {
-  dart: any;
+  declare dart: any;
 
   constructor(dart: any, onChanged: any = null) {
     super(dart, onChanged);
@@ -1254,7 +1300,7 @@ export class DateInput extends InputBase<dayjs.Dayjs | null> {
 
 
 export class ChoiceInput<T> extends InputBase<T> {
-  dart: any;
+  declare dart: any;
 
   constructor(dart: any, onChanged: any = null) {
     super(dart, onChanged);
@@ -1424,12 +1470,12 @@ export class Color {
   }
 
   /** Returns i-th categorical color (looping over the palette if needed) */
-  static getCategoricalColor(i: number): ColorType {
+  static getCategoricalColor(i: number): number {
     return Color.categoricalPalette[i % Color.categoricalPalette.length];
   }
 
   /** Returns either black or white color, depending on which one would be most contrast to the specified [color]. */
-  static getContrastColor(color: ColorType): ColorType {
+  static getContrastColor(color: number): number {
     return api.grok_Color_GetContrastColor(color);
   }
 
@@ -1440,16 +1486,16 @@ export class Color {
   static fromHtml(htmlColor: string): number { return api.grok_Color_FromHtml(htmlColor); }
 
   /** Converts ARGB-formatted integer color to a HTML-formatted string (such as `rbg(20, 46, 124)`). See also {@link toHtml. }*/
-  static toRgb(color: ColorType): string {
+  static toRgb(color: number): string {
     return color === null ? '' : `rgb(${Color.r(color)},${Color.g(color)},${Color.b(color)})`;
   }
 
   /** Returns the standard palette of the categorical colors used across all visualizations in Datagrok. */
-  static get categoricalPalette(): ColorType[] {
+  static get categoricalPalette(): number[] {
     return api.grok_Color_CategoricalPalette();
   }
 
-  static get categoricalPalettes(): Array<ColorType[]> {
+  static get categoricalPalettes(): Array<number[]> {
     return api.grok_Color_GetCategoricalPalettes();
   }
 
@@ -1473,163 +1519,163 @@ export class Color {
     return min === max ? min : (x - min) / (max - min);
   }
 
-  static get gray(): ColorType {
+  static get gray(): number {
     return 0xFF808080;
   }
 
-  static get lightLightGray(): ColorType {
+  static get lightLightGray(): number {
     return 0xFFF0F0F0;
   }
 
-  static get lightGray(): ColorType {
+  static get lightGray(): number {
     return 0xFFD3D3D3;
   }
 
-  static get darkGray(): ColorType {
+  static get darkGray(): number {
     return 0xFF838383;
   }
 
-  static get blue(): ColorType {
+  static get blue(): number {
     return 0xFF0000FF;
   }
 
-  static get green(): ColorType {
+  static get green(): number {
     return 0xFF00FF00;
   }
 
-  static get darkGreen(): ColorType {
+  static get darkGreen(): number {
     return 0xFF006400;
   }
 
-  static get black(): ColorType {
+  static get black(): number {
     return 0xFF000000;
   }
 
-  static get yellow(): ColorType {
+  static get yellow(): number {
     return 0xFFFFFF00;
   }
 
-  static get white(): ColorType {
+  static get white(): number {
     return 0xFFFFFFFF;
   }
 
-  static get red(): ColorType {
+  static get red(): number {
     return 0xFFFF0000;
   }
 
-  static get darkRed(): ColorType {
+  static get darkRed(): number {
     return 0xFF8b0000;
   }
 
-  static get maroon(): ColorType {
+  static get maroon(): number {
     return 0xFF800000;
   }
 
-  static get olive(): ColorType {
+  static get olive(): number {
     return 0xFF808000;
   }
 
-  static get orange(): ColorType {
+  static get orange(): number {
     return 0xFFFFA500;
   }
 
-  static get darkOrange(): ColorType {
+  static get darkOrange(): number {
     return 0xFFFF8C00;
   }
 
-  static get lightBlue(): ColorType {
+  static get lightBlue(): number {
     return 0xFFADD8E6;
   }
 
-  static get darkBlue(): ColorType {
+  static get darkBlue(): number {
     return 0xFF0000A0;
   }
 
-  static get purple(): ColorType {
+  static get purple(): number {
     return 0xFF800080;
   }
 
-  static get whitesmoke(): ColorType {
+  static get whitesmoke(): number {
     return 0xFFF5F5F5;
   }
 
-  static get navy(): ColorType {
+  static get navy(): number {
     return 0xFF000080;
   }
 
-  static get cyan(): ColorType {
+  static get cyan(): number {
     return 0xFF00ffff;
   }
 
-  static get filteredRows(): ColorType {
+  static get filteredRows(): number {
     return 0xff1f77b4;
   }
 
-  static get filteredOutRows(): ColorType {
+  static get filteredOutRows(): number {
     return Color.lightLightGray;
   }
 
-  static get selectedRows(): ColorType {
+  static get selectedRows(): number {
     return Color.darkOrange;
   }
 
-  static get missingValueRows(): ColorType {
+  static get missingValueRows(): number {
     return Color.filteredOutRows;
   }
 
-  static get mouseOverRows(): ColorType {
+  static get mouseOverRows(): number {
     return 0xFFAAAAAA;
   }
 
-  static get currentRow(): ColorType {
+  static get currentRow(): number {
     return 0xFF38B738;
   }
 
-  static get histogramBar(): ColorType {
+  static get histogramBar(): number {
     return Color.filteredRows;
   }
 
-  static get barChart(): ColorType {
+  static get barChart(): number {
     return 0xFF24A221;
   }
 
-  static get scatterPlotMarker(): ColorType {
+  static get scatterPlotMarker(): number {
     return 0xFF40699c;
   }
 
-  static get scatterPlotSelection(): ColorType {
+  static get scatterPlotSelection(): number {
     return 0x80323232;
   }
 
-  static get scatterPlotZoom(): ColorType {
+  static get scatterPlotZoom(): number {
     return 0x80626200;
   }
 
-  static get areaSelection(): ColorType {
+  static get areaSelection(): number {
     return Color.lightBlue;
   }
 
-  static get rowSelection(): ColorType {
+  static get rowSelection(): number {
     return 0x60dcdca0;
   }
 
-  static get colSelection(): ColorType {
+  static get colSelection(): number {
     return 0x60dcdca0;
   }
 
-  static get areaZoom(): ColorType {
+  static get areaZoom(): number {
     return 0x80323232;
   }
 
-  static get gridWarningBackground(): ColorType {
+  static get gridWarningBackground(): number {
     return 0xFFFFB9A7;
   }
 
-  static get success(): ColorType {
+  static get success(): number {
     return 0xFF3cb173;
   }
 
-  static get failure(): ColorType {
+  static get failure(): number {
     return 0xFFeb6767;
   }
 }
@@ -1678,7 +1724,8 @@ export class TreeViewNode<T = any> {
   set checked(checked: boolean) { api.grok_TreeViewNode_Set_Checked(this.dart, checked); }
 
   /** Node text */
-  get text(): string { return api.grok_TreeViewNode_Text(this.dart); }
+  get text(): string { return api.grok_TreeViewNode_Get_Text(this.dart); }
+  set text(value: string) {api.grok_TreeViewNode_Set_Text(this.dart, value); }
 
   get tag(): any { return api.grok_TreeViewNode_Get_Tag(this.dart); }
   set tag(t : any) { api.grok_TreeViewNode_Set_Tag(this.dart, t); }
@@ -1763,10 +1810,13 @@ export class TreeViewGroup extends TreeViewNode {
   /** Indicates whether check or uncheck is applied to a node only or to all node's children */
   get autoCheckChildren(): boolean { return api.grok_TreeViewNode_GetAutoCheckChildren(this.dart); }
   set autoCheckChildren(auto: boolean) { api.grok_TreeViewNode_SetAutoCheckChildren(this.dart, auto); }
+  
+  get currentItem(): TreeViewNode { return toJs(api.grok_TreeViewNode_Get_CurrentItem(this.dart)); }
+  set currentItem(node: TreeViewNode) { api.grok_TreeViewNode_Set_CurrentItem(this.dart, toDart(node)); }
 
   /** Adds new group */
-  group(text: string | Element, value: object | null = null, expanded: boolean = true): TreeViewGroup {
-    return toJs(api.grok_TreeViewNode_Group(this.dart, text, value, expanded));
+  group(text: string | Element, value: object | null = null, expanded: boolean = true, index: number | null = null): TreeViewGroup {
+    return toJs(api.grok_TreeViewNode_Group(this.dart, text, value, expanded, index));
   }
 
   /** Returns existing, or creates a new node group */
@@ -1799,6 +1849,10 @@ export class TreeViewGroup extends TreeViewNode {
   get onNodeMouseLeave(): Observable<TreeViewNode> { return __obs('d4-tree-view-child-node-mouse-leave', this.dart); }
 
   get onNodeEnter(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-enter', this.dart); }
+
+  async loadSources(source: HttpDataSource<any>): Promise<void> {
+    return api.grok_TreeViewGroup_Load_Sources(this.dart, source.dart);
+  }
 }
 
 
@@ -1839,7 +1893,6 @@ export class RangeSlider extends DartWidget {
   /** Sets showHandles in range slider.
    * @param {boolean} value */
   setShowHandles(value: boolean): void {
-    console.log('setShowHandles', value);
     api.grok_RangeSlider_SetShowHandles(this.dart, value);
   }
 
@@ -2074,7 +2127,7 @@ export class DropDown {
 
 export class TypeAhead extends InputBase {
   constructor(name: string, config: TypeAheadConfig) {
-    const inputElement = ui.stringInput(name, '');
+    const inputElement = ui.input.string(name, {value: ''});
     super(inputElement.dart);
 
     const typeAheadConfig: typeaheadConfig<Dictionary> = Object.assign(
@@ -2102,7 +2155,7 @@ export class TagsInput extends InputBase {
 
 
   constructor(name: string, config?: TagsInputConfig) {
-    super(ui.stringInput(name, '').dart);
+    super(ui.input.string(name, {value: ''}).dart);
 
     this._addTagIcon = (config?.showButton ?? true) ?
       ui.iconFA('plus', () => this.addTag((this.input as HTMLInputElement).value)) :
@@ -2288,7 +2341,7 @@ export class MarkdownInput extends InputBase {
 }
 
 export class CodeInput extends InputBase {
-  dart: any;
+  declare dart: any;
   editor: CodeEditor;
 
   constructor(name: string, config?: CodeConfig) {
@@ -2305,4 +2358,31 @@ export class CodeInput extends InputBase {
   set value(x: string) { this.editor.value = x; }
 
   get onValueChanged(): Observable<any> { return this.editor.onValueChanged; }
+}
+
+export class FunctionsWidget extends DartWidget {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+    /** Observes platform events with the specified eventId. */
+    onEvent(eventId: string | null = null): rxjs.Observable<any> {
+      if (eventId !== null)
+        return __obs(eventId, this.dart);
+
+      let dartStream = api.grok_Viewer_Get_EventBus_Events(this.dart);
+      return rxjs.fromEventPattern(
+        function (handler) {
+          return api.grok_Stream_Listen(dartStream, function (x: any) {
+            handler(new TypedEventArgs(x));
+          });
+        },
+        function (handler, dart) {
+          new StreamSubscription(dart).cancel();
+        }
+      );
+    }
+
+  get onActionClicked(): rxjs.Observable<Func> { return this.onEvent('d4-action-click'); }
+  get onActionPlusIconClicked(): rxjs.Observable<Func> { return this.onEvent('d4-action-plus-icon-click'); }
 }

@@ -1,0 +1,53 @@
+---
+title: "Specify the environment"
+---
+
+```mdx-code-block
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import BrowserWindow from '@site/src/components/browser-window';
+```
+
+Set an `environment` parameter of the script
+to a one-liner YAML following the standard Conda YAML config (omit it's name).
+
+For example, we need to use the following Conda config:
+
+```yaml
+name: envtest01
+channels:
+  - Conda-forge
+dependencies:
+  - python=3.8
+  - glom
+  - pip:
+      - requests
+```
+
+To use it in a script, specify it as follows:
+
+```python
+#name: EnvTestInline
+#environment: channels: [Conda-forge], dependencies: [python=3.8, glom, {pip: [requests]}]
+#language: python
+#output: string result
+
+import re, requests
+from glom import glom
+import pandas as pd
+
+target = {'a': {'b': {'c': 'd'}}}
+result = glom(target, 'a.b.c')  # returns 'd'
+```
+
+:::tip First launch may take time
+
+When the script runs the first time, Datagrok creates the environment on
+the [Compute Virtual Machine](../../../develop/under-the-hood/infrastructure.md#compute-components),
+which may take up to several minutes.
+For all next script runs, Datagrok will reuse this environment.
+
+:::
+
+Datagrok distinguishes in-place environments using *MD5 hashes* of their body strings.
+If there is a ready-to-use environment with the same environment config, Datagrok will reuse it.

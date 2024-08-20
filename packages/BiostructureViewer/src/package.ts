@@ -159,7 +159,7 @@ export async function importPdbqt(fileContent: string, test: boolean): Promise<D
  * //TODO: Fix preview .pqr
  */
 //tags: fileViewer
-//meta.fileViewer: mmtf,cns,top,prmtop
+//meta.fileViewer: mmtf,cns,top,prmtop,pqr
 //input: file file
 //output: view result
 export function previewNglStructure(file: any): DG.View {
@@ -696,4 +696,22 @@ export function biostructureDataToJson(
   binary: boolean, data: string | Uint8Array, ext: string, options: object
 ): string {
   return BiostructureDataJson.fromData({binary, data, ext, options});
+}
+
+//name: 3D Structure
+//tags: panel, bio, widgets
+//input: semantic_value molecule { semType: Molecule3D }
+//output: widget result
+export function structure3D(molecule: DG.SemanticValue): DG.Widget {
+  const widget = new DG.Widget(ui.div([]));
+  const { dataFrame, column, rowIndex } = molecule.cell;
+  const gridCell = grok.shell.getTableView(dataFrame.name)?.grid.cell(column.name, rowIndex);
+  const renderer = new PdbGridCellRendererBack(null, column);
+
+  renderer.createViewer(gridCell).then(async ({ tview, viewer }) => {
+    if (tview && viewer) {
+      widget.root.appendChild(viewer.root);
+    }
+  });
+  return widget;
 }

@@ -1,14 +1,10 @@
---name: PostgresqlTestCacheTableWide
---friendlyName: PostgresqlTestCacheTableWide
---connection: PostgreSQLDBTests
---meta.cache: server
-SELECT * FROM Test_Wide;
---end
-
 --name: PostgresqlTestCacheTableNormal
 --friendlyName: PostgresqlTestCacheTableNormal
 --connection: PostgreSQLDBTests
 --meta.cache: server
+--meta.batchMode: true
+SELECT pg_sleep(5);
+--batch
 SELECT * FROM Test_Normal;
 --end
 
@@ -21,7 +17,7 @@ SELECT * FROM Test_Normal;
 --output: datetime date
 --meta.cache: server
 --meta.batchMode: true
-SELECT pg_sleep(3);
+SELECT pg_sleep(5);
 --batch
 SELECT max(some_number) as max_value,
        (SELECT count(*) FROM MOCK_DATA) as count,
@@ -96,15 +92,21 @@ SELECT max(some_number) as max_value,
 SELECT * FROM Test_Normal;
 --end
 
---meta.connectFetchSize: 2000
---meta.cache: client
---name: CachedHeavy
---connection: PostgreSQLDBTests
-select * from mock_json_data limit 5000;
+--name: TestConnCache
+--connection: PostgreSQLDBTestsCached
+SELECT *, pg_sleep(0.1) FROM MOCK_DATA;
 --end
 
---meta.connectFetchSize: 2000
---name: NotCachedHeavy
+--name: PostgresqlTableWideCachedClient
+--friendlyName: PostgresqlTableWideCachedClient
 --connection: PostgreSQLDBTests
-select * from mock_json_data limit 5000;
+--meta.cache: client
+SELECT * FROM Test_Wide;
+--end
+
+--name: PostgresqlTableWideCachedServer
+--friendlyName: PostgresqlTableWideCachedServer
+--connection: PostgreSQLDBTests
+--meta.cache: server
+SELECT * FROM Test_Wide;
 --end

@@ -1,33 +1,54 @@
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {Unsubscribable} from 'rxjs';
 import wu from 'wu';
 
 import {SeqHandler} from './seq-handler';
 import {MonomerToShortFunc} from './macromolecule';
-import {IMonomerLib} from '../types';
 import {SeqSplittedBase} from './macromolecule/types';
 import {CellRendererBackBase} from './cell-renderer-back-base';
 import {ILogger} from './logger';
+import {getMonomerLibHelper} from '../monomer-works/monomer-utils';
+import {errInfo} from './err-info';
 
 type MonomerPlacerProps = {
   seqHandler: SeqHandler,
-  monomerLib: IMonomerLib,
   monomerCharWidth: number, separatorWidth: number,
-  monomerToShort: MonomerToShortFunc, monomerLengthLimit: number,
+  monomerToShort: MonomerToShortFunc
 };
 
+export function hitBounds(bounds: number[], x: number): number | null {
+  let iterationCount: number = 100;
+  let leftI: number = 0;
+  let rightI = bounds.length - 1;
+  let midI;
+  while (leftI <= rightI) {
+    midI = Math.floor((rightI + leftI) / 2);
+    if (bounds[midI] <= x && x < bounds[midI + 1])
+      return midI;
+    else if (x < bounds[midI])
+      rightI = midI - 1;
+    else /* if (bounds[midI + 1] <= x) */
+      leftI = midI + 1;
+
+    if (--iterationCount <= 0) {
+      throw new Error(`Get position for pointer x = ${x} searching has not converged ` +
+        `on ${JSON.stringify(bounds)}. `);
+    }
+  }
+  return null;
+}
+
 export class MonomerPlacer extends CellRendererBackBase<string> {
+  private colWidth: number = 0;
   private _monomerLengthList: number[][] | null = null;
 
   // width of separator symbol
   private separatorWidth = 5;
   public props: MonomerPlacerProps;
-  private _rowsProcessed: DG.BitSet; // rows for which monomer lengths were processed
-
-  private _updated: boolean = false;
-  public get updated(): boolean { return this._updated; }
+  private _processedRows: DG.BitSet; // rows for which monomer lengths were processed
+  private _processedMaxVisibleSeqLength: number = 0;
 
   public _monomerLengthMap: { [key: string]: TextMetrics } = {}; // caches the lengths to save time on g.measureText
   public _monomerStructureMap: { [key: string]: HTMLElement } = {}; // caches the atomic structures of monomers
@@ -37,27 +58,51 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     gridCol: DG.GridColumn | null,
     tableCol: DG.Column<string>,
     logger: ILogger,
+    public monomerLengthLimit: number,
     private readonly propsProvider: () => MonomerPlacerProps
   ) {
     super(gridCol, tableCol, logger);
     this.props = this.propsProvider();
-    this._rowsProcessed = DG.BitSet.create(this.tableCol!.length);
+    this._processedRows = DG.BitSet.create(this.tableCol!.length);
 
-    this.subs.push(this.props.monomerLib.onChanged.subscribe(() => {
-      this.reset();
-    }));
+    if (this.gridCol) {
+      this.subs.push(this.gridCol.grid.onAfterDrawContent.subscribe(() => {
+        this._onRendered.next();
+      }));
+    }
+
+    getMonomerLibHelper().then((libHelper) => {
+      if (this.destroyed) return;
+      const monomerLib = libHelper.getMonomerLib();
+      this.subs.push(monomerLib.onChanged.subscribe(() => {
+        this.dirty = true;
+        this.gridCol?.grid?.invalidate();
+      }));
+    });
   }
 
   protected override reset(): void {
     if (this.propsProvider) this.props = this.propsProvider();
-    this._rowsProcessed = DG.BitSet.create(this.tableCol!.length);
+    this._processedRows = DG.BitSet.create(this.tableCol!.length);
     this._monomerLengthList = null;
     this._monomerLengthMap = {};
     this._monomerStructureMap = {};
+    super.reset();
   }
 
   /** Returns monomers lengths of the {@link rowIdx} and cumulative sums for borders, monomer places */
-  public getCellMonomerLengths(rowIdx: number): [number[], number[]] {
+  public getCellMonomerLengths(rowIdx: number, newWidth: number): [number[], number[]] {
+    if (this.colWidth < newWidth) {
+      this.colWidth = newWidth;
+      this.dirty = true;
+    }
+    if (this.dirty) {
+      try { this.reset(); } catch (err) {
+        const [errMsg, errStack] = errInfo(err);
+        this.logger.error(errMsg, undefined, errStack);
+      }
+    }
+
     const res: number[] = this.props.seqHandler.isMsa() ? this.getCellMonomerLengthsForSeqMsa() :
       this.getCellMonomerLengthsForSeq(rowIdx);
 
@@ -69,31 +114,41 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
   }
 
   private getCellMonomerLengthsForSeq(rowIdx: number): number[] {
+    const logPrefix = `${this.toLog()}.getCellMonomerLengthsForSeqMsa()`;
+    // this.logger.debug(`${logPrefix}, start`);
+
     if (this._monomerLengthList === null) {
       this._monomerLengthList = new Array(this.tableCol.length).fill(null);
-      this._updated = true;
     }
 
+    const minMonWidth = this.props.separatorWidth + 1 * this.props.monomerCharWidth;
+    const maxVisibleSeqLength: number = Math.ceil(this.colWidth / minMonWidth);
+    const seqMonList: SeqSplittedBase = SeqHandler.forColumn(this.tableCol).getSplitted(rowIdx).originals;
+    const visibleSeqLength: number = Math.min(maxVisibleSeqLength, seqMonList.length);
+
     let res: number[] = this._monomerLengthList[rowIdx];
-    if (res === null) {
-      const seqMonList: SeqSplittedBase = SeqHandler.forColumn(this.tableCol).getSplitted(rowIdx).originals;
+    if (res === null || res.length < visibleSeqLength) {
       res = this._monomerLengthList[rowIdx] = new Array<number>(seqMonList.length);
 
-      for (const [seqMonLabel, seqMonI] of wu.enumerate(seqMonList)) {
-        const shortMon: string = this.props.monomerToShort(seqMonLabel, this.props.monomerLengthLimit);
+      let seqWidth: number = 0;
+      for (let seqMonI = 0; seqMonI < visibleSeqLength; ++seqMonI) {
+        const seqMonLabel = seqMonList[seqMonI];
+        const shortMon: string = this.props.monomerToShort(seqMonLabel, this.monomerLengthLimit);
         const separatorWidth = this.props.seqHandler.isSeparator() ? this.separatorWidth : this.props.separatorWidth;
         const seqMonWidth: number = separatorWidth + shortMon.length * this.props.monomerCharWidth;
         res[seqMonI] = seqMonWidth;
+        seqWidth += seqMonWidth;
+        if (seqWidth > this.colWidth) break;
       }
-      this._updated = true;
     }
     return res;
   }
 
   private getCellMonomerLengthsForSeqMsa(): number[] {
+    const logPrefix = `${this.toLog()}.getCellMonomerLengthsForSeqMsa()`;
+    // this.logger.debug(`${logPrefix}, start`);
     if (this._monomerLengthList === null) {
       this._monomerLengthList = new Array(1).fill(null);
-      this._updated = true;
     }
     this._monomerLengthList[0] ??= new Array(0);
     const res = this._monomerLengthList[0];
@@ -114,66 +169,50 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
       }
     })();
 
+    const minMonWidth = this.props.separatorWidth + 1 * this.props.monomerCharWidth;
+    const maxVisibleSeqLength: number = Math.ceil(this.colWidth / minMonWidth);
     for (let seqIdx = startIdx; seqIdx < endIdx; seqIdx++) {
-      if (this._rowsProcessed.get(seqIdx))
+      if (this._processedRows.get(seqIdx) && maxVisibleSeqLength <= this._processedMaxVisibleSeqLength)
         continue;
-      const seqMonList: SeqSplittedBase = SeqHandler.forColumn(this.tableCol).getSplitted(seqIdx).originals;
-      if (seqMonList.length > res.length)
-        res.push(...new Array<number>(seqMonList.length - res.length).fill(0));
+      const seqMonList: SeqSplittedBase = SeqHandler.forColumn(this.tableCol)
+        .getSplitted(seqIdx, maxVisibleSeqLength).originals;
 
-      for (const [seqMonLabel, seqMonI] of wu.enumerate(seqMonList)) {
-        const shortMon: string = this.props.monomerToShort(seqMonLabel, this.props.monomerLengthLimit);
+      const visibleSeqLength: number = Math.min(maxVisibleSeqLength, seqMonList.length);
+      if (visibleSeqLength > res.length)
+        res.push(...new Array<number>(visibleSeqLength - res.length).fill(minMonWidth));
+
+      let seqWidth: number = 0;
+      for (let seqMonI = 0; seqMonI < visibleSeqLength; ++seqMonI) {
+        const seqMonLabel: string = seqMonList[seqMonI];
+        const shortMon: string = this.props.monomerToShort(seqMonLabel, this.monomerLengthLimit);
         const seqMonWidth: number = this.props.separatorWidth + shortMon.length * this.props.monomerCharWidth;
         res[seqMonI] = Math.max(res[seqMonI] ?? 0, seqMonWidth);
+        seqWidth += seqMonWidth;
+        if (seqWidth >= this.colWidth) break;
       }
-      this._updated = true;
+      this._processedMaxVisibleSeqLength = Math.max(this._processedMaxVisibleSeqLength, maxVisibleSeqLength);
     }
     return res; // first (and single) row of data
   }
 
   /** Returns seq position for pointer x */
-  public getPosition(rowIdx: number, x: number): number | null {
-    const [_monomerMaxLengthList, monomerMaxLengthSumList]: [number[], number[]] = this.getCellMonomerLengths(rowIdx);
+  public getPosition(rowIdx: number, x: number, width: number): number | null {
+    const [_monomerMaxLengthList, monomerMaxLengthSumList]: [number[], number[]] =
+      this.getCellMonomerLengths(rowIdx, width);
     const sh = SeqHandler.forColumn(this.tableCol);
     const seqMonList: string[] = wu(sh.getSplitted(rowIdx).originals).toArray();
     if (seqMonList.length === 0) return null;
-
-    let iterationCount: number = 100;
-    let left: number | null = null;
-    let right = seqMonList.length;
-    let found = false;
-    let mid = 0;
-    if (monomerMaxLengthSumList[0] <= x && x < monomerMaxLengthSumList.slice(-1)[0]) {
-      while (!found) {
-        mid = Math.floor((right + (left ?? 0)) / 2);
-        if (x >= monomerMaxLengthSumList[mid] && x <= monomerMaxLengthSumList[mid + 1]) {
-          left = mid;
-          found = true;
-        } else if (x < monomerMaxLengthSumList[mid])
-          right = mid - 1;
-        else if (x > monomerMaxLengthSumList[mid + 1])
-          left = mid + 1;
-
-        if (left == right)
-          found = true;
-
-        if (--iterationCount <= 0) {
-          throw new Error(`Get position for pointer x = ${x} searching has not converged ` +
-            `on ${JSON.stringify(monomerMaxLengthSumList)}. `);
-        }
-      }
-    }
-    return left;
+    return hitBounds(monomerMaxLengthSumList, x);
   }
 
   public setMonomerLengthLimit(limit: number): void {
-    this.props.monomerLengthLimit = limit;
-    this._updated = true;
+    this.monomerLengthLimit = limit;
+    this.dirty = true;
   }
 
   public setSeparatorWidth(width: number): void {
     this.props.separatorWidth = width;
-    this._updated = true;
+    this.dirty = true;
   }
 
   public isMsa(): boolean {

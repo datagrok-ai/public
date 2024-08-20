@@ -91,7 +91,7 @@ application. Let's look at a more UI-rich side of things.
 
 Most applications built on Datagrok start with a Datagrok's [view](custom-views.md). A view is a set of visualizations
 and controls grouped together. Typically, the view is associated with a particular [dataframe](#dataframes), in this
-case it's called a [table view](../../datagrok/navigation/table-view.md). However, essentially a view can contain pretty much
+case it's called a [table view](../../datagrok/navigation/views/table-view.md). However, essentially a view can contain pretty much
 anything.
 
 Imagine you are composing an application. You likely start with the root / main view, add logical blocks to it either
@@ -264,7 +264,7 @@ a namespace for it.
 
 Another popular case is when you actually host the application's code in the customer's repository,
 but the credentials to proprietary data sources remain as what you won't put there along the code.
-For this scenario, consider [pushing credentials](govern/security.md#credentials) to your Datagrok instance
+For this scenario, consider [pushing credentials](govern/access-control/access-control.md#credentials-management-system#credentials) to your Datagrok instance
 as part of the package deployment process.
 
 -->
@@ -345,12 +345,12 @@ Most of the objects in Datagrok can be annotated with metadata (key-value pairs)
 additionally, some of it gets assigned automatically. Some keys affect the way an object (such as a column) interacts
 with the platform; other have no effect at all, except that you can search objects by metadata.
 
-There is a variety of metadata in Datagrok, discussed [here](../../govern/catalog/metadata.md). Out of all metadata, column
+There is a variety of metadata in Datagrok, discussed [here](../../datagrok/concepts/objects.md#metadata). Out of all metadata, column
 tags and semantic types are of particular interest in application development and working with dataframes.
 
 *References:*
 
-* [Metadata](../../govern/catalog/metadata.md)
+* [Metadata](../../datagrok/concepts/objects.md#metadata)
 
 ##### Column tags
 
@@ -545,13 +545,13 @@ our `SimpleFunctionJS` in exact same way with `grok.functions.call`.
 
 *References:*
 
-* [Running a script](../../compute/scripting/scripting.mdx#running-a-script)
+* [Running a script](../../compute/scripting/getting-started.md#run-the-script)
 * [Functions](../../datagrok/concepts/functions/functions.md)
 
 ### Visualizations
 
 Datagrok provides for rich data visualization with more than 25+ viewers out of the box, including
-[Scatter Plot](../../visualize/viewers/scatter-plot.mdx)
+[Scatter Plot](../../visualize/viewers/scatter-plot.md)
 , [Histogram](../../visualize/viewers/histogram.md), Line Chart, Bar Chart, Pie Chart, Trellis, Matrix Plot, 3D Scatter,
 Density Plot, PC Plot, Word Cloud, Network, Box Plot, Tree Map, Heat Map, Statistics, Correlation, Calendar, Table Grid,
 Markup, Tiles, Form, Map, Shape, Chord, and Tree. These viewers were crafted for web from scratch, and are purpose-fit
@@ -587,12 +587,12 @@ security patterns for storing credentials and authorized access to Datagrok usin
 
 Datagrok has a flexible mechanism for grouping users together. A user can belong to more than one group. A group can be
 included in another group, which is useful for both reflecting organization hierarchy and implementing
-role-based [security](../../govern/security.md).
+role-based [security](../../govern/access-control/access-control.md).
 
 Many types of objects within the Datagrok platform can be shared with other users or
-[groups](../../govern/group.md). Such shareable objects are called [entities](../../datagrok/concepts/objects.md). When an object
-is shared, you are essentially granting a [privilege](../../govern/authorization.md)
-(typically, 'view' or 'edit') to a grantee. See the [Security](../../govern/security.md) article for details.
+[groups](../../govern/access-control/users-and-groups#groups). Such shareable objects are called [entities](../../datagrok/concepts/objects.md). When an object
+is shared, you are essentially granting a [privilege](../../govern/access-control/access-control.md#authorization)
+(typically, 'view' or 'edit') to a grantee. See the [Security](../../govern/access-control/access-control.md#permissions) article for details.
 
 Often it's a reasonable choice to create a new group for the users of your application. To let users access your
 application, share application's package with their group. Open the "Manage" pane in the sidebar, navigate to "Packages"
@@ -602,8 +602,8 @@ and other package entities shared to the group.
 *References:*
 
 * [Sharing](../../datagrok/navigation/basic-tasks/basic-tasks.md#share)
-* [Security](../../govern/security.md)
-* [Authorization](../../govern/authorization.md)
+* [Security](../../govern/access-control/access-control.md#credentials-management-system)
+* [Authorization](../../govern/access-control/access-control.md#authorization)
 
 #### Authentication
 
@@ -614,7 +614,7 @@ scheme. We can accommodate these needs by developing a customer-specific integra
 
 *References:*
 
-* [Authentication](../../govern/authentication.md)
+* [Authentication](../../govern/access-control/access-control.md#authentication)
 
 #### Obtaining groups and users info
 
@@ -675,7 +675,7 @@ along with a target of high performance and low latency of the UI, we've built o
 relying on one of the existing frameworks.
 
 For most HTML elements such as buttons or dropdowns, our library is very lightweight, our classes such as
-`ui.button` or `ui.choiceInput` are just tiny wrappers around regular DOM elements. In fact, you can always access an
+`ui.button` or `ui.input.choice` are just tiny wrappers around regular DOM elements. In fact, you can always access an
 underlying DOM object of our UI element with the `.root` property. There are also more advanced controls not available
 in browsers out of the box, such as panes, accordions and dock views.
 

@@ -8,17 +8,18 @@ import {basicSetup, EditorView} from 'codemirror';
 import {EditorState} from '@codemirror/state';
 import {python} from '@codemirror/lang-python';
 import {autocompletion} from '@codemirror/autocomplete';
-//import {SensitivityAnalysisView} from '../../../libraries/compute-utils/function-views/src/sensitivity-analysis-view';
-import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
+import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
+import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 
 import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
 import {TEMPLATES, DEMO_TEMPLATE} from './templates';
 import {USE_CASES} from './use-cases';
 import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO,
-  WARNING, MISC, demoInfo, INPUT_TYPE, PATH, TIMEOUT} from './ui-constants';
+  WARNING, MISC, demoInfo, INPUT_TYPE, PATH, UI_TIME} from './ui-constants';
 import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
-  CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS} from './scripting-tools';
+  CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS} from './scripting-tools';
+import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools/solver-defs';
 
 import './css/app-styles.css';
 
@@ -112,6 +113,7 @@ const completions = [
   {label: `${CONTROL_EXPR.PARAMS}:\n  `, type: 'keyword', info: INFO.PARAMS},
   {label: `${CONTROL_EXPR.CONSTS}:\n  `, type: 'keyword', info: INFO.CONSTS},
   {label: `${CONTROL_EXPR.TOL}: `, type: 'keyword', info: INFO.TOL},
+  {label: `${CONTROL_EXPR.SOLVER}: `, type: 'keyword', info: INFO.SOLVER},
   {label: `${CONTROL_EXPR.LOOP}:\n  `, type: 'keyword', info: INFO.LOOP},
   {label: `${CONTROL_EXPR.UPDATE}:  `, type: 'keyword', info: INFO.UPDATE},
   {label: `${CONTROL_EXPR.OUTPUT}:\n  `, type: 'keyword', info: INFO.OUTPUT},
@@ -131,16 +133,16 @@ function contrCompletions(context: any) {
 }
 
 /** Return options of line chart */
-function getLineChartOptions(colNames: string[]): Object {
+function getLineChartOptions(colNames: string[]): Partial<DG.ILineChartSettings> {
   const count = colNames.length;
   return {
     xColumnName: colNames[0],
-    yColumnNames: (count > 1) ? colNames.slice(1).filter((name) => name !== STAGE_COL_NAME) : colNames[0],
+    yColumnNames: (count > 1) ? colNames.slice(1).filter((name) => name !== STAGE_COL_NAME) : [colNames[0]],
     showTitle: true,
-    sharex: true,
     multiAxis: count > MAX_LINE_CHART,
+    // @ts-ignore
     multiAxisLegendPosition: 'RightTop',
-    segmentColumnName: colNames.includes(STAGE_COL_NAME) ? STAGE_COL_NAME: null,
+    segmentColumnName: colNames.includes(STAGE_COL_NAME) ? STAGE_COL_NAME: undefined,
     showAggrSelectors: false,
   };
 }
@@ -158,7 +160,7 @@ export class DiffStudio {
     this.createEditorView(content, true);
     this.solverView.setRibbonPanels([
       [this.openIcon, this.saveIcon],
-      [this.exportButton, this.sensAnIcon],
+      [this.exportButton, this.sensAnIcon, this.fittingIcon],
       [this.helpIcon],
     ]);
     this.toChangePath = true;
@@ -196,7 +198,7 @@ export class DiffStudio {
           await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
       }
     },
-    TIMEOUT.APP_RUN_SOLVING);
+    UI_TIME.APP_RUN_SOLVING);
 
     return this.solverView;
   } // runSolverApp
@@ -204,14 +206,21 @@ export class DiffStudio {
   /** Run Diff Studio demo application */
   public async runSolverDemoApp(): Promise<void> {
     this.createEditorView(DEMO_TEMPLATE, true);
-    this.solverView.setRibbonPanels([[this.openIcon, this.saveIcon], [this.exportButton, this.sensAnIcon], [this.helpIcon]]);
+    this.solverView.setRibbonPanels([
+      [this.openIcon, this.saveIcon],
+      [this.exportButton, this.sensAnIcon, this.fittingIcon],
+      [this.helpIcon],
+    ]);
     this.toChangePath = false;
     const helpMD = ui.markdown(demoInfo);
     helpMD.classList.add('diff-studio-demo-app-div-md');
     const divHelp = ui.div([helpMD], 'diff-studio-demo-app-div-help');
-    this.solverView.dockManager.dock(divHelp, DG.DOCK_TYPE.RIGHT, undefined, undefined, 0.3);
+    grok.shell.windows.help.showHelp(divHelp);
+    grok.shell.windows.context.visible = true;
+    grok.shell.windows.showContextPanel = false;
+    grok.shell.windows.showProperties = false;
+    grok.shell.windows.help.visible = true;
     await this.runSolving(false);
-    // dfdf
   } // runSolverDemoApp
 
   /** Return file preview view */
@@ -238,7 +247,7 @@ export class DiffStudio {
     let isSaveBtnAdded = false;
 
     const ribbonPnls = browseView!.getRibbonPanels();
-    ribbonPnls.push([this.sensAnIcon]);
+    ribbonPnls.push([this.sensAnIcon, this.fittingIcon]);
     browseView!.setRibbonPanels(ribbonPnls);
 
     const addSaveBtnToRibbon = () => {
@@ -270,7 +279,7 @@ export class DiffStudio {
 
     this.toRunWhenFormCreated = true;
 
-    setTimeout(() => this.runSolving(true), TIMEOUT.PREVIEW_RUN_SOLVING);
+    setTimeout(() => this.runSolving(true), UI_TIME.PREVIEW_RUN_SOLVING);
 
     return this.solverView;
   } // getFilePreview
@@ -296,6 +305,9 @@ export class DiffStudio {
   private isSolvingSuccess = false;
   private toChangePath = false;
   private toRunWhenFormCreated = true;
+  private toCheckPerformance = true;
+  private toShowPerformanceDlg = true;
+  private secondsLimit = UI_TIME.SOLV_DEFAULT_TIME_SEC;
   private modelPane: DG.TabPane;
   private runPane: DG.TabPane;
   private editorView: EditorView | undefined;
@@ -305,6 +317,8 @@ export class DiffStudio {
   private helpIcon: HTMLElement;
   private exportButton: HTMLButtonElement;
   private sensAnIcon: HTMLElement;
+  private fittingIcon: HTMLElement;
+  private performanceDlg: DG.Dialog | null = null;
 
   private inputsByCategories = new Map<string, DG.InputBase[]>();
 
@@ -318,7 +332,8 @@ export class DiffStudio {
     this.modelPane = this.tabControl.addPane(TITLE.MODEL, () => {
       setTimeout(() => {
         this.modelDiv.style.height = '100%';
-        this.editorView!.dom.style.height = '100%';
+        if (this.editorView)
+          this.editorView!.dom.style.height = '100%';
       }, 10);
       return this.modelDiv;
     });
@@ -336,7 +351,7 @@ export class DiffStudio {
     };
 
     if (!toAddTableView)
-      setTimeout(dockTabCtrl, TIMEOUT.PREVIEW_DOCK_EDITOR);
+      setTimeout(dockTabCtrl, UI_TIME.PREVIEW_DOCK_EDITOR);
     else
       dockTabCtrl();
 
@@ -368,6 +383,7 @@ export class DiffStudio {
     this.helpIcon = ui.iconFA('question', () => {window.open(LINK.DIF_STUDIO, '_blank');}, HINT.HELP);
     this.exportButton = ui.bigButton(TITLE.TO_JS, async () => {await this.exportToJS();}, HINT.TO_JS);
     this.sensAnIcon = ui.iconFA('analytics', async () => {await this.runSensitivityAnalysis();}, HINT.SENS_AN);
+    this.fittingIcon = ui.iconFA('chart-line', async () => {await this.runFitting();}, HINT.FITTING);
   }; // constructor
 
   /** Create model editor */
@@ -527,7 +543,7 @@ export class DiffStudio {
   /** Overwrite the editor content */
   private async overwrite(state?: EDITOR_STATE): Promise<void> {
     if (this.toShowWarning && this.isModelChanged) {
-      const boolInput = ui.boolInput(WARNING.CHECK, true, () => this.toShowWarning = !this.toShowWarning);
+      const boolInput = ui.input.bool(WARNING.CHECK, {value: true, onValueChanged: () => this.toShowWarning = !this.toShowWarning});
       const dlg = ui.dialog({title: WARNING.TITLE, helpUrl: LINK.DIF_STUDIO_REL});
       this.solverView.append(dlg);
 
@@ -551,24 +567,22 @@ export class DiffStudio {
   private async exportToJS(): Promise<void> {
     try {
       const ivp = getIVP(this.editorView!.state.doc.toString());
+      await this.tryToSolve(ivp);
       const scriptText = getScriptLines(ivp, true, true).join('\n');
       const script = DG.Script.create(scriptText);
-
-      // try to call computations - correctness check
-      const params = getScriptParams(ivp);
-      const call = script.prepare(params);
-      await call.call();
-
       const sView = DG.ScriptView.create(script);
       grok.shell.addView(sView);
     } catch (err) {
       this.clearSolution();
-      grok.shell.error(`${ERROR_MSG.EXPORT_TO_SCRIPT_FAILS}: ${err instanceof Error ? err.message : ERROR_MSG.SCRIPTING_ISSUE}`);
+      grok.shell.error(`${ERROR_MSG.EXPORT_TO_SCRIPT_FAILS}:
+      ${err instanceof Error ? err.message : ERROR_MSG.SCRIPTING_ISSUE}`);
     }
   }; // exportToJS
 
   /** Solve IVP */
   private async solve(ivp: IVP, inputsPath: string): Promise<void> {
+    const customSettings = (ivp.solverSettings !== DEFAULT_SOLVER_SETTINGS);
+
     try {
       if (this.toChangePath)
         this.solverView.path = `${this.solverMainPath}${PATH.PARAM}${inputsPath}`;
@@ -583,6 +597,9 @@ export class DiffStudio {
       if ((step <= 0) || (step > finish - start))
         return;
 
+      if (this.toCheckPerformance && !customSettings)
+        ivp.solverSettings = `{maxTimeMs: ${this.secondsLimit * 1000}}`;
+
       const scriptText = getScriptLines(ivp).join('\n');
       const script = DG.Script.create(scriptText);
       const params = getScriptParams(ivp);
@@ -590,8 +607,18 @@ export class DiffStudio {
 
       await call.call();
 
-      if (this.solutionViewer)
-        this.solutionViewer.setOptions({segmentColumnName: (ivp.updates !== null) ? STAGE_COL_NAME: null});
+      if (!customSettings)
+        ivp.solverSettings = DEFAULT_SOLVER_SETTINGS;
+
+      if (this.solutionViewer) {
+        const options = this.solutionViewer.getOptions().look;
+
+        if (Object.keys(options).includes('segmentColumnName')) {
+          this.solutionViewer.setOptions({
+            segmentColumnName: '',
+          });
+        }
+      }
 
       this.solutionTable = call.outputs[DF_NAME];
       this.solverView.dataFrame = call.outputs[DF_NAME];
@@ -615,6 +642,12 @@ export class DiffStudio {
       } else {
         this.solutionViewer.dataFrame = this.solutionTable;
 
+        if (ivp.updates) {
+          this.solutionViewer.setOptions({
+            segmentColumnName: STAGE_COL_NAME,
+          });
+        }
+
         if (this.toChangeSolutionViewerProps) {
           this.solutionViewer.setOptions(getLineChartOptions(this.solutionTable.columns.names()));
           this.toChangeSolutionViewerProps = false;
@@ -624,9 +657,20 @@ export class DiffStudio {
       this.isSolvingSuccess = true;
       this.runPane.header.hidden = false;
     } catch (error) {
-      this.clearSolution();
-      this.isSolvingSuccess = false;
-      grok.shell.error(error instanceof Error ? error.message : ERROR_MSG.SCRIPTING_ISSUE);
+      if (error instanceof CallbackAction) {
+        this.isSolvingSuccess = true;
+        this.runPane.header.hidden = false;
+
+        if (this.toShowPerformanceDlg && !customSettings) {
+          ivp.solverSettings = DEFAULT_SOLVER_SETTINGS;
+          this.showPerformanceDlg(ivp, inputsPath);
+        } else
+          grok.shell.warning(error.message);
+      } else {
+        this.clearSolution();
+        this.isSolvingSuccess = false;
+        grok.shell.error(error instanceof Error ? error.message : ERROR_MSG.SCRIPTING_ISSUE);
+      }
     }
   }; // solve
 
@@ -673,8 +717,12 @@ export class DiffStudio {
       } else
         this.tabControl.currentPane = this.modelPane;
     } catch (error) {
-      this.clearSolution();
-      grok.shell.error(error instanceof Error ? error.message : ERROR_MSG.UI_ISSUE);
+      if (error instanceof CallbackAction)
+        grok.shell.warning(error.message);
+      else {
+        this.clearSolution();
+        grok.shell.error(error instanceof Error ? error.message : ERROR_MSG.SCRIPTING_ISSUE);
+      }
     }
   }; // runSolving
 
@@ -683,6 +731,7 @@ export class DiffStudio {
     this.runPane.header.hidden = !toShow;
     this.exportButton.disabled = !toShow;
     this.sensAnIcon.hidden = !toShow;
+    this.fittingIcon.hidden = !toShow;
   }
 
   /** Clear solution table & viewer */
@@ -818,7 +867,7 @@ export class DiffStudio {
     }
 
     // Inputs for initial values
-    ivp.inits.forEach((val, key, map) => {
+    ivp.inits.forEach((val, key) => {
       options = getOptions(key, val, CONTROL_EXPR.INITS);
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
       input.onChanged(async () => {
@@ -833,7 +882,7 @@ export class DiffStudio {
 
     // Inputs for parameters
     if (ivp.params !== null) {
-      ivp.params.forEach((val, key, map) => {
+      ivp.params.forEach((val, key) => {
         options = getOptions(key, val, CONTROL_EXPR.PARAMS);
         const input = ui.input.forProperty(DG.Property.fromOptions(options));
         input.onChanged(async () => {
@@ -869,187 +918,100 @@ export class DiffStudio {
     this.inputsByCategories = inputsByCategories;
   } // getInputsUI
 
-  /** Return form with model inputs */
-  private async getInputsForm2(ivp: IVP): Promise<void> {
-    /** Return options with respect to the model input specification */
-    const getOptions = (name: string, modelInput: Input, modelBlock: string) => {
-      const options: DG.PropertyOptions = {
-        name: name,
-        defaultValue: modelInput.value,
-        type: DG.TYPE.FLOAT,
-        inputType: INPUT_TYPE.FLOAT,
-      };
-
-      if (modelInput.annot !== null) {
-        let annot = modelInput.annot;
-        let descr: string | undefined = undefined;
-
-        let posOpen = annot.indexOf(BRACKET_OPEN);
-        let posClose = annot.indexOf(BRACKET_CLOSE);
-
-        if (posOpen !== -1) {
-          if (posClose === -1)
-            throw new Error(`${ERROR_MSG.MISSING_CLOSING_BRACKET}, see '${name}' in ${modelBlock}-block`);
-
-          descr = annot.slice(posOpen + 1, posClose);
-
-          annot = annot.slice(0, posOpen);
-        }
-
-        posOpen = annot.indexOf(BRACE_OPEN);
-        posClose = annot.indexOf(BRACE_CLOSE);
-
-        if (posOpen >= posClose)
-          throw new Error(`${ERROR_MSG.INCORRECT_BRACES_USE}, see '${name}' in ${modelBlock}-block`);
-
-        let pos: number;
-        let key: string;
-        let val;
-
-        annot.slice(posOpen + 1, posClose).split(ANNOT_SEPAR).forEach((str) => {
-          pos = str.indexOf(CONTROL_SEP);
-
-          if (pos === -1)
-            throw new Error(`${ERROR_MSG.MISSING_COLON}, see '${name}' in ${modelBlock}-block`);
-
-          key = str.slice(0, pos).trim();
-          val = str.slice(pos + 1).trim();
-
-          // @ts-ignore
-          options[key] = strToVal(val);
-        });
-
-        options.description = descr ?? '';
-        options.name = options.caption ?? options.name;
-        options.caption = options.name;
-      }
-
-      if (this.startingInputs) {
-        options.defaultValue = this.startingInputs
-          .get(options.name!.replace(' ', '').toLowerCase()) ?? options.defaultValue;
-        modelInput.value = options.defaultValue;
-      }
-
-      return options;
-    }; // getOptions
-
-    const inputsByCategories = new Map<string, DG.InputBase[]>();
-    inputsByCategories.set(TITLE.MISC, []);
-    let options: DG.PropertyOptions;
-
-    /** Pull input to appropriate category & add tooltip */
-    const categorizeInput = (options: DG.PropertyOptions, input: DG.InputBase) => {
-      const category = options.category;
-
-      if (category === undefined)
-        inputsByCategories.get(TITLE.MISC)?.push(input);
-      else if (inputsByCategories.has(category))
-        inputsByCategories.get(category)!.push(input);
-      else
-        inputsByCategories.set(category, [input]);
-
-      input.setTooltip(options.description!);
-    };
-
-    /** Return line with inputs names & values */
-    const getInputsPath = () => {
-      let line = '';
-
-      inputsByCategories.forEach((inputs, cat) => {
-        if (cat !== TITLE.MISC)
-          inputs.forEach((input) => {line += `${PATH.AND}${input.caption.replace(' ', '')}${PATH.EQ}${input.value}`;});
-      });
-
-      inputsByCategories.get(TITLE.MISC)!.forEach((input) => {
-        line += `${PATH.AND}${input.caption.replace(' ', '')}${PATH.EQ}${input.value}`;
-      });
-
-      return line.slice(1); // we ignore 1-st '&'
-    };
-
-    // Inputs for argument
-    for (const key of ARG_INPUT_KEYS) {
-      //@ts-ignore
-      options = getOptions(key, ivp.arg[key], CONTROL_EXPR.ARG);
-      const input = ui.input.forProperty(DG.Property.fromOptions(options));
-      input.onChanged(async () => {
-        if (input.value !== null) {
-          //@ts-ignore
-          ivp.arg[key].value = input.value;
-        // await this.solve(ivp, getInputsPath());
-        }
-      });
-
-      categorizeInput(options, input);
-    }
-
-    // Inputs for initial values
-    ivp.inits.forEach((val, key, map) => {
-      options = getOptions(key, val, CONTROL_EXPR.INITS);
-      const input = ui.input.forProperty(DG.Property.fromOptions(options));
-      input.onChanged(async () => {
-        if (input.value !== null)
-        ivp.inits.get(key)!.value = input.value;
-        //await this.solve(ivp, getInputsPath());
-      });
-
-      categorizeInput(options, input);
-    });
-
-    // Inputs for parameters
-    if (ivp.params !== null) {
-      ivp.params.forEach((val, key, map) => {
-        options = getOptions(key, val, CONTROL_EXPR.PARAMS);
-        const input = ui.input.forProperty(DG.Property.fromOptions(options));
-        input.onChanged(async () => {
-          if (input.value !== null)
-            ivp.params!.get(key)!.value = input.value;
-            //await this.solve(ivp, getInputsPath());
-        });
-
-        categorizeInput(options, input);
-      });
-    }
-
-    // Inputs for loop
-    if (ivp.loop !== null) {
-      options = getOptions(SCRIPTING.COUNT, ivp.loop.count, CONTROL_EXPR.LOOP);
-      options.inputType = INPUT_TYPE.INT; // since it's an integer
-      options.type = DG.TYPE.INT; // since it's an integer
-      const input = ui.input.forProperty(DG.Property.fromOptions(options));
-      input.onChanged(async () => {
-        if (input.value !== null)
-          ivp.loop!.count.value = input.value;
-          //await this.solve(ivp, getInputsPath());
-      });
-
-      categorizeInput(options, input);
-    }
-
-    if (this.toRunWhenFormCreated)
-      await this.solve(ivp, getInputsPath());
-
-    this.inputsByCategories = inputsByCategories;
-  } // getInputsUI
-
-
   /** Run sensitivity analysis */
   private async runSensitivityAnalysis(): Promise<void> {
     try {
       const ivp = getIVP(this.editorView!.state.doc.toString());
+      await this.tryToSolve(ivp);
       const scriptText = getScriptLines(ivp, true, true).join('\n');
+      const script = DG.Script.create(scriptText);
+      //@ts-ignore
+      await SensitivityAnalysisView.fromEmpty(script);
+    } catch (err) {
+      this.clearSolution();
+      grok.shell.error(`${ERROR_MSG.SENS_AN_FAILS}:
+      ${(err instanceof Error) ? err.message : ERROR_MSG.SCRIPTING_ISSUE}`);
+    }
+  }
+
+  /** Run fitting */
+  private async runFitting(): Promise<void> {
+    try {
+      const ivp = getIVP(this.editorView!.state.doc.toString());
+      await this.tryToSolve(ivp);
+      const scriptText = getScriptLines(ivp, true, true).join('\n');
+      const script = DG.Script.create(scriptText);
+      //@ts-ignore
+      await FittingView.fromEmpty(script);
+    } catch (err) {
+      this.clearSolution();
+      grok.shell.error(`${ERROR_MSG.SENS_AN_FAILS}:
+        ${(err instanceof Error) ? err.message : ERROR_MSG.SCRIPTING_ISSUE}`);
+    }
+  }
+
+  /** Try to solve IVP */
+  private async tryToSolve(ivp: IVP): Promise<void> {
+    const optionsBuf = ivp.solverSettings;
+    ivp.solverSettings = DEFAULT_OPTIONS.SCRIPTING;
+
+    try {
+      const scriptText = getScriptLines(ivp, true, true).join('\n');
+      ivp.solverSettings = optionsBuf;
       const script = DG.Script.create(scriptText);
 
       // try to call computations - correctness check
       const params = getScriptParams(ivp);
       const call = script.prepare(params);
       await call.call();
-
-      //@ts-ignore
-      await SensitivityAnalysisView.fromEmpty(script);
     } catch (err) {
-      this.clearSolution();
-      grok.shell.error(`${ERROR_MSG.SENS_AN_FAILS}: ${(err instanceof Error) ? err.message : ERROR_MSG.SCRIPTING_ISSUE}`);
+      if (!(err instanceof CallbackAction))
+        throw new Error((err instanceof Error) ? err.message : ERROR_MSG.SCRIPTING_ISSUE);
     }
+  }
+
+  /** Close previousely opened performance dialog */
+  private closePerformanceDlg(): void {
+    this.performanceDlg?.close();
+    this.performanceDlg = null;
+  }
+
+  /** Show performance dialog */
+  private showPerformanceDlg(ivp: IVP, inputsPath: string): DG.Dialog {
+    this.closePerformanceDlg();
+    this.performanceDlg = ui.dialog({title: WARNING.TITLE, helpUrl: LINK.DIF_STUDIO_REL});
+    this.solverView.append(this.performanceDlg);
+
+    const opts = {
+      name: WARNING.TIME_LIM,
+      defaultValue: this.secondsLimit,
+      inputType: INPUT_TYPE.INT,
+      min: UI_TIME.SOLV_TIME_MIN_SEC,
+      description: HINT.MAX_TIME,
+      showPlusMinus: true,
+      units: WARNING.UNITS,
+    };
+    const maxTimeInput = ui.input.forProperty(DG.Property.fromOptions(opts));
+    maxTimeInput.onInput(() => {
+      if (maxTimeInput.value >= UI_TIME.SOLV_TIME_MIN_SEC)
+        this.secondsLimit = maxTimeInput.value;
+      else maxTimeInput.value = this.secondsLimit;
+    });
+
+    this.performanceDlg.add(ui.label(`Max time exceeded (${this.secondsLimit} sec.). ${WARNING.CONTINUE}`))
+      .onCancel(() => this.performanceDlg.close())
+      .onOK(async () => {
+        ivp.solverSettings = DEFAULT_SOLVER_SETTINGS;
+        this.performanceDlg.close();
+        setTimeout(async () => await this.solve(ivp, inputsPath), 20);
+        ;
+      })
+      .show();
+
+    this.performanceDlg.add(ui.form([maxTimeInput]));
+    ui.tooltip.bind(this.performanceDlg.getButton('OK'), HINT.CONTINUE);
+    ui.tooltip.bind(this.performanceDlg.getButton('CANCEL'), HINT.ABORT);
+
+    return this.performanceDlg;
   }
 };

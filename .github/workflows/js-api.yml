@@ -1,6 +1,7 @@
 name: JS API
 on:
   workflow_dispatch: { }
+
   push:
     paths:
       - 'js-api/**'
@@ -34,9 +35,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           sparse-checkout: |
-            js-api
-            packages
-            libraries
+            ./js-api
+            ./packages
+            ./libraries
       - name: Check version was changed
         id: check-version
         working-directory: ./js-api
@@ -157,10 +158,11 @@ jobs:
         with:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
           sparse-checkout: |
-            js-api
-            .github
-            docker
-            packages/ApiTests
+            ./js-api
+            ./.github
+            ./docker
+            ./packages/ApiTests
+            ./docusaurus
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -168,6 +170,7 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
           cache-dependency-path: |
+            docusaurus/package-lock.json
             js-api/package-lock.json
       - name: Upgrade npm
         run: npm install -g npm@x
@@ -191,6 +194,9 @@ jobs:
           profiles='--profile datagrok --profile db --profile grok_connect --profile grok_spawner'
           echo "Run datagrok stand with profiles ${profiles}"
           docker system prune -af --volumes
+          # Skip initial setup in CI
+          sed -i '/"dbServer": "database"/a\ \ \ \ \ \ \ \ \ \ "initialSetupCompleted": true,' docker/localhost.docker-compose.yaml
+          sed -i '/"dbServer": "database"/a\ \ \ \ \ \ \ \ \ \ "initialSetupCompleted": true,' docker/localhost.js-api.debug.docker-compose.yaml
           docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" -f "docker/localhost.js-api.debug.docker-compose.yaml" ${profiles} up -d
           echo "Set docker_sha"
           docker_sha=$(docker images --quiet "datagrok/datagrok:$DATAGROK_VERSION")
@@ -310,7 +316,7 @@ jobs:
           channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
           echo "::add-mask::$channel_id"
           echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
-          
+
           header="GitHub <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}> failed tests:"
           echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
           context="*Branch:* <${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}|${{ github.ref_name }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo ${{ github.sha }} | cut -c1-8) $(git log --format=%B -n 1 ${{ github.sha }} | head -n1 | sed -e 's/"/\\"/g')>"
@@ -357,7 +363,7 @@ jobs:
             }
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
-
+#
       - name: npm publish
         id: publish
         run: |
@@ -370,13 +376,45 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         if: needs.version.outputs.changed_version == 'true'
-      - name: Slack Notification
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ steps.publish.outcome }}
-          steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"        
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}  
+      - name: Commit js-api version json for compatibility-tool
+        if: ${{ steps.publish.outcome == 'success' }}
+        working-directory: docusaurus
+        run: |
+          npm install
+          version=${{ needs.version.outputs.current_version }}
+          npx ts-node parser.ts $version         
+          if [ -n "$(git status -s static/versions)" ]; then
+            git config --global user.name 'github-actions[bot]'
+            git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+            git pull
+            git add ./static/versions
+            git commit -m 'GitHub Actions: js-api version updated by Compatibility tool
+
+            Workflow ${{ github.workflow }} ${{ github.run_number }}
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+            count=0
+            until git push; do
+              exit=$?
+              wait=$((2 ** count))
+              count=$((count + 1))
+              if [ $count -lt "10" ]; then
+                echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
+                sleep $wait
+                git pull --rebase
+              else
+                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
+                exit $exit
+              fi
+            done
+          fi
+#      - name: Slack Notification
+#        uses: act10ns/slack@v2.1.0
+#        with:
+#          status: ${{ steps.publish.outcome }}
+#          steps: ${{ toJson(steps) }}
+#          config: ".github/config/slack.yml"
+#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+
       - name: Commit package-lock.json
         continue-on-error: true
         if: github.ref == 'refs/heads/master' && needs.version.outputs.changed_version == 'true'
@@ -406,22 +444,22 @@ jobs:
             done
           fi
 
-      - name: Slack Notification
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ steps.publish.outcome }}
-          steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"        
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+#      - name: Slack Notification
+#        uses: act10ns/slack@v2.1.0
+#        with:
+#          status: ${{ steps.publish.outcome }}
+#          steps: ${{ toJson(steps) }}
+#          config: ".github/config/slack.yml"
+#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
 
-      - name: Slack Failed-Cancelled Notification
-        if: failure() || cancelled()
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"        
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+#      - name: Slack Failed-Cancelled Notification
+#        if: failure() || cancelled()
+#        uses: act10ns/slack@v2.1.0
+#        with:
+#          status: ${{ job.status }}
+#          steps: ${{ toJson(steps) }}
+#          config: ".github/config/slack.yml"
+#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
 
   libraries:
     name: Check libraries
@@ -441,9 +479,9 @@ jobs:
         with:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
           sparse-checkout: |
-            js-api
-            .github
-            libraries/${{ matrix.library }}
+            ./js-api
+            ./.github
+            ./libraries/${{ matrix.library }}
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -495,7 +533,7 @@ jobs:
               fi
             done
           fi
-     
+
       - name: Send mail
         if: always() && steps.commit.outcome == 'failure'
         uses: dawidd6/action-send-mail@v3
@@ -510,15 +548,15 @@ jobs:
           from: monitoring@grok.datagrok.ai
           body: "Failed to update JS API dependency for library ${{ matrix.library }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           reply_to: monitoring@datagrok.ai
-      
-      - name: Slack Failed Notification
-        if: failure()
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"        
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+
+#      - name: Slack Failed Notification
+#        if: failure()
+#        uses: act10ns/slack@v2.1.0
+#        with:
+#          status: ${{ job.status }}
+#          steps: ${{ toJson(steps) }}
+#          config: ".github/config/slack.yml"
+#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
   packages:
     name: Check packages
     runs-on: ubuntu-22.04
@@ -537,10 +575,10 @@ jobs:
         with:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
           sparse-checkout: |
-            js-api
-            .github
-            libraries
-            packages/${{ matrix.package }}
+            ./js-api
+            ./.github
+            ./libraries
+            ./packages/${{ matrix.package }}
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -606,11 +644,11 @@ jobs:
           from: monitoring@grok.datagrok.ai
           body: "Failed to update JS API dependency for package ${{ matrix.package }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           reply_to: monitoring@datagrok.ai
-      - name: Slack Failed Notification
-        if: failure()
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"        
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+#      - name: Slack Failed Notification
+#        if: failure()
+#        uses: act10ns/slack@v2.1.0
+#        with:
+#          status: ${{ job.status }}
+#          steps: ${{ toJson(steps) }}
+#          config: ".github/config/slack.yml"
+#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}

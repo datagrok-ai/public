@@ -2,6 +2,7 @@
     "cSpell.words": [
         "ADME",
         "ADMET",
+        "airnowapi",
         "anonymization",
         "ANOVA",
         "Autosolver",
@@ -32,6 +33,7 @@
         "geospatial",
         "hashcode",
         "Inchi",
+        "interactiveness",
         "introspectable",
         "JDBC",
         "Ketcher",
@@ -46,6 +48,7 @@
         "Northwind",
         "Oligo",
         "oligonecleotide",
+        "openapi",
         "pepsea",
         "pharma",
         "pharmacokinetics",
@@ -53,6 +56,7 @@
         "Phylo",
         "Phylocanvas",
         "Phylotree",
+        "qnum",
         "QSAR",
         "QSPR",
         "rdkit",
@@ -69,11 +73,11 @@
         "unpivot",
         "USRCAT",
         "versionable",
+        "webservice",
         "Webservices"
     ],
 
     "files.exclude": {
-        "**/*-test.md": {},
         "**/*-test.side": {},
         "**/*.d.ts": {"when": "$(basename).ts"},
         "**/*.js": {"when": "$(basename).ts"},

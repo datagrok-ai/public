@@ -66,8 +66,8 @@ export function getDendrogramService(): IDendrogramService {
 
 //name: generateTreeDialog
 export function generateTreeDialog() {
-  const sizeInput = ui.intInput('Tree size (node count)', 10000);
-  const filenameInput = ui.stringInput('File name', 'tree-gen-10000');
+  const sizeInput = ui.input.int('Tree size (node count)', {value: 10000});
+  const filenameInput = ui.input.string('File name', {value: 'tree-gen-10000'});
 
   return ui.dialog('Generate tree')
     .add(ui.divV([sizeInput, filenameInput]))
@@ -273,21 +273,21 @@ export async function previewNewick(file: DG.FileInfo) {
 // -- Top menu --
 
 //top-menu: Bio | Analyze | Hierarchical Clustering...
-//name: Hierarchical Clustering
+//name: Hierarchical Clustering (Sequences)
 //description: Calculates hierarchical clustering on features and injects tree to grid
 export async function hierarchicalClusteringSequences(): Promise<void> {
   hierarchicalClusteringDialog();
 }
 
 //top-menu: Chem | Analyze | Hierarchical Clustering...
-//name: Hierarchical Clustering
+//name: Hierarchical Clustering (Molecules)
 //description: Calculates hierarchical clustering on features and injects tree to grid
 export async function hierarchicalClusteringMolecules(): Promise<void> {
   hierarchicalClusteringDialog();
 }
 
 //top-menu: ML | Cluster | Hierarchical Clustering...
-//name: Hierarchical Clustering
+//name: Hierarchical Clustering (All)
 //description: Calculates hierarchical clustering on features and injects tree to grid
 export async function hierarchicalClustering2(): Promise<void> {
   hierarchicalClusteringDialog();

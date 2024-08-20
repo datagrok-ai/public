@@ -3,6 +3,8 @@
   "name": "Neo4jNorthwind",
   "friendlyName": "Northwind",
   "parameters": {
+    "cacheResults": true,
+    "cacheSchema": true,
     "server": "db.datagrok.ai",
     "db": "northwind",
     "port": 17687

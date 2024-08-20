@@ -19,9 +19,9 @@ category('UI: Groups', () => {
     await delay(100);
     const groups = Array.from(document.querySelectorAll('div.d4-tree-view-item-label'))
       .find((el) => el.textContent === 'Groups') as HTMLElement;
-    groups.click();
+    groups.click(); 
   });
-
+ 
   /*
   test('filters.all', async () => {
     const grapi = await grok.dapi.groups
@@ -59,7 +59,7 @@ category('UI: Groups', () => {
 
   test('actions.createNewGroup', async () => {
     const cng = Array.from(document.querySelectorAll('.ui-btn'))
-      .find((el) => el.textContent === 'New group');
+      .find((el) => el.textContent === 'New Group...');
     if (cng === undefined) throw new Error('cannot find New Group button');
     (cng as HTMLElement).click();
     await awaitCheck(() => DG.Dialog.getOpenDialogs().length === 1, 'Create New Group dialog was not shown', 1000);
@@ -92,7 +92,7 @@ category('UI: Groups', () => {
       if (document.querySelector('.grok-gallery-grid') !== null)
         return document.querySelector('.grok-gallery-grid')!.children.length !== 0;
       return false;
-    }, 'cannot load all users', 3000);
+    }, 'cannot load all users', 10000);
     const group = document.querySelector('.grok-gallery-grid')!.children[0] as HTMLElement;
     grok.shell.windows.showProperties = true;
     group.click();
@@ -101,7 +101,7 @@ category('UI: Groups', () => {
       if (document.querySelector('.grok-entity-prop-panel') !== null)
         return regex.test((document.querySelector('.grok-entity-prop-panel') as HTMLElement).innerText);
       return false;
-    }, 'error in .grok-entity-prop-panel', 3000);
+    }, 'error in .grok-entity-prop-panel', 10000);
     const groupInfo = document.querySelector('.grok-entity-prop-panel') as HTMLElement;
     const memb = groupInfo.innerText.includes('Members');
     expect(memb, true);

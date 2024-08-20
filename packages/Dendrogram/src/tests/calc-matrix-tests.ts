@@ -35,7 +35,7 @@ const numericsDistancesTwoCols = [0.833, 1.054, 0.417, 1.118, 1.031, 0.75];
 
 function setMacromoleculeTags(col: DG.Column) {
   col.semType = DG.SEMTYPE.MACROMOLECULE;
-  col.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+  col.meta.units = NOTATION.FASTA;
   col.setTag(TAGS.aligned, ALIGNMENT.SEQ);
   col.setTag(TAGS.alphabet, ALPHABET.DNA);
 }

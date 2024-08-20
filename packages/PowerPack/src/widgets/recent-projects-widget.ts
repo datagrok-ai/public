@@ -37,9 +37,9 @@ function projectData(p: DG.Project){
   let card = ui.cards.summary(
     ui.image(p.pictureUrl, 70, 50, {target: () => {}}),
     [
-      ui.h2(ui.link(p.friendlyName, p, undefined, null))
+      ui.h2(ui.link(p.friendlyName, (_: any) => {}, undefined, null))
     ]);
-  ui.bind(p, card);
+  ui.bind(p, card, {contextMenu: true});
   return card;
 }
 

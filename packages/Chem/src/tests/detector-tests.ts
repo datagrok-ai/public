@@ -10,7 +10,7 @@ category('detectors', () => {
     let col = df.columns.byName('smiles');
     await grok.data.detectSemanticTypes(df);
     expect(col.semType, DG.SEMTYPE.MOLECULE);
-    expect(col.tags[DG.TAGS.UNITS], DG.UNITS.Molecule.SMILES);
+    expect(col.meta.units, DG.UNITS.Molecule.SMILES);
 
     const testSmiles2 = `smiles
 O=C1CN=C(c2ccccc2N1)C3CCCCC3
@@ -24,7 +24,7 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`;
     col = df2.columns.byName('smiles');
     await grok.data.detectSemanticTypes(df2);
     expect(col.semType, DG.SEMTYPE.MOLECULE);
-    expect(col.tags[DG.TAGS.UNITS], DG.UNITS.Molecule.SMILES);
+    expect(col.meta.units, DG.UNITS.Molecule.SMILES);
 
     const df3 = DG.DataFrame.fromCsv(testSmiles2);
     col = df3.columns.byName('smiles');
@@ -32,7 +32,7 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`;
     col.set(4, 'not a molstring');
     await grok.data.detectSemanticTypes(df3);
     expect(col.semType, DG.SEMTYPE.MOLECULE);
-    expect(col.tags[DG.TAGS.UNITS], DG.UNITS.Molecule.SMILES);
+    expect(col.meta.units, DG.UNITS.Molecule.SMILES);
   });
 
   test('detectShortSmiles', async () => {
@@ -45,7 +45,7 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`;
     col = df.columns.byName('smiles');
     await grok.data.detectSemanticTypes(df);
     expect(col.semType, DG.SEMTYPE.MOLECULE);
-    expect(col.tags[DG.TAGS.UNITS], DG.UNITS.Molecule.SMILES);
+    expect(col.meta.units, DG.UNITS.Molecule.SMILES);
 
     df = await dfFromColWithOneCategory('smiles', 'OK', 10);
     col = df.columns.byName('smiles');
@@ -59,7 +59,7 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`;
     col.name = 'not familiar name';
     await grok.data.detectSemanticTypes(df);
     expect(col.semType, DG.SEMTYPE.MOLECULE);
-    expect(col.tags[DG.TAGS.UNITS], DG.UNITS.Molecule.MOLBLOCK);
+    expect(col.meta.units, DG.UNITS.Molecule.MOLBLOCK);
   });
 
   test('detectMolblockSDF', async () => {
@@ -67,7 +67,7 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`;
     await grok.data.detectSemanticTypes(df);
     const col = df.columns.byName('molecule');
     expect(col.semType, DG.SEMTYPE.MOLECULE);
-    expect(col.tags[DG.TAGS.UNITS], DG.UNITS.Molecule.MOLBLOCK);
+    expect(col.meta.units, DG.UNITS.Molecule.MOLBLOCK);
   });
 
   test('spgi', async () => {

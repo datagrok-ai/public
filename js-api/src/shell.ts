@@ -1,5 +1,5 @@
 import { DataFrame } from "./dataframe";
-import { TableView, View, ViewBase } from "./views/view";
+import {BrowseView, TableView, View, ViewBase} from "./views/view";
 import { Project, User } from "./entities";
 import { toDart, toJs } from "./wrappers";
 import { Menu, TabControl } from "./widgets";
@@ -10,10 +10,10 @@ import {_toIterable} from "./utils";
 import { FuncCall } from "./functions";
 import { SettingsInterface } from './api/xamgle.api.g';
 import {IDartApi} from "./api/grok_api.g";
-import {ComponentBuildInfo} from "./dapi";
+import {ComponentBuildInfo, Dapi} from "./dapi";
 
 declare let ui: any;
-declare let grok: { shell: Shell };
+declare let grok: { shell: Shell, dapi: Dapi };
 const api: IDartApi = <any>window;
 
 class AppBuildInfo {
@@ -30,9 +30,18 @@ export class Shell {
   windows: Windows = new Windows();
   settings: Settings & SettingsInterface = new Settings() as Settings & SettingsInterface;
   build: AppBuildInfo = new AppBuildInfo();
+  isInDemo: boolean = false;
 
   testError(s: String): void {
     return api.grok_Test_Error(s);
+  }
+
+  async reportTest(type: String, params: object): Promise<void> {
+    await fetch(`${grok.dapi.root}/log/tests/${type}?benchmark=${(<any>window).DG.Test.isInBenchmark}`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      credentials: 'same-origin',
+      body: api.grok_JSON_encode(toDart(params))
+    });
   }
 
   /** Current table, or null. */
@@ -64,8 +73,11 @@ export class Shell {
   }
 
   /** Last error state */
-  get lastError(): string { return api.grok_Get_LastError(); }
-  set lastError(s: string) { api.grok_Set_LastError(s); }
+  get lastError(): Promise<string|undefined> { return api.grok_Get_LastError(); }
+
+  set lastError(s: any) { api.grok_Set_LastError(s); }
+
+  clearLastError(): void { api.grok_Clear_LastError(); }
 
   /** Current user */
   get user(): User {
@@ -74,7 +86,11 @@ export class Shell {
 
   /** Current object (rendered in the context panel) */
   get o(): any { return toJs(api.grok_Get_CurrentObject(), false); }
-  set o(x: any) { api.grok_Set_CurrentObject(toDart(x)); }
+  set o(x: any) { this.setCurrentObject(x, true); }
+
+  setCurrentObject(x: any, freeze: boolean) {
+    api.grok_Set_CurrentObject(toDart(x), freeze);
+  }
 
   /** Current viewer */
   get viewer(): Viewer { return toJs(api.grok_Get_CurrentViewer(), false); }
@@ -158,7 +174,12 @@ export class Shell {
     } else {
       if (context != null)
         v.parentCall = context;
-      api.grok_AddView(v.dart, dockType, width);
+      if (this.isInDemo && grok.shell.view('Browse') !== null) {
+        const bv = grok.shell.view('Browse') as BrowseView;
+        bv.preview = v as View;
+      }
+      else
+        api.grok_AddView(v.dart, dockType, width);
     }
     return v;
   }
@@ -186,7 +207,14 @@ export class Shell {
    * @param {number} width
    * @returns {TableView} */
   addTableView(table: DataFrame, dockType: DockType | null = DOCK_TYPE.FILL, width: number | null = null): TableView {
-    return toJs(api.grok_AddTableView(table.dart, dockType, width));
+    if (this.isInDemo && grok.shell.view('Browse') !== null) {
+      const tv = TableView.create(table, false);
+      const bv = grok.shell.view('Browse') as BrowseView;
+      bv.preview = tv;
+      return tv;
+    }
+    else
+      return toJs(api.grok_AddTableView(table.dart, dockType, width));
   }
 
   /**

@@ -1,5 +1,67 @@
 # Chem changelog
 
+## 1.11.3 (2024-08-12)
+
+### Features
+
+* Chem: MMPA: Work with multucomponent entities
+
+## 1.11.2 (2024-08-12)
+
+### Features
+
+* Chem: Chemprop: Remove redundant calls in the core and move it fully to package
+* Chem: MMPA: Add meaningfull dataset for demo
+* Chem: MMPA: Restrictions and CPU fallback
+* Chem: MMPA: Compensate filtering by cutoff
+* Chem: MMPA: Add reflection for selection
+* Chem: MMPA: Add pairs filter, expose filters object so it can be used in any tab, minor improvements
+* Chem: Update demos in order to be shown in the Browse
+
+### Bug Fixes
+
+* Chem: MMPA: Fixes for cliffs tab and lines improvements
+* [#2964](https://github.com/datagrok-ai/public/issues/2964): Scaffold Tree: 'Selection to filter' reset immediately for some data if scaffold tree is present
+
+## 1.11.1 (2024-07-25)
+
+### Bug Fixes
+
+* Removed unnecessary code
+
+## 1.11.0 (2024-07-24)
+
+*Dependency: datagarok-api >= 1.20.0*
+
+### Bug Fixes
+
+* GROK-16328: Chem: R-Group analysis: Broken styles
+* GROK-16329: Chem: R-Group analysis: Error when none R groups were found
+* GROK-16338: Chem: Chemical space: Reseting marker type to circles
+* Chem: Scaffold Tree: Fix representation when the viewers are stacked
+* Chem: Chemprop: Fix applying the model to different datasets
+* Chem: Fix substructure filter style
+* Chem: Do not render molecules with invisible width
+
+## 1.10.0 (2024-06-12)
+
+### Features
+
+* Webgpu acceleration for chem space, activity cliffs, molecule generations
+* GROK-15299: Chem: Ability to save results of Chem functions to projects with and without data sync
+* GROK-15454: Chem: Similarity/Diversity search viewers: Row source property
+* GROK-15508: Chem: MMP: Generated - show what cases are actually generated
+* GROK-15501: Chem: MMPA: UI/UX improvements
+* GROK-15502: Chem: MMPA: Ability to swith activity on/off
+* GROK-15507: Chem: MMP: Control of fragments size
+* Chem: Integrate with Chemprop
+* Chem: Chemprop upgrade from version "1.6.7" to version "2.0" (reduced memory usage, improved performance)
+
+### Bug Fixes
+
+* GROK-15285: Chem: MMP: Error on re-run
+* GROK-15321: Chem: MMP: Error while running Close All after running MMP
+
 ## 1.9.2 (2024-04-12)
 
 ### Features

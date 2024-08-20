@@ -2,13 +2,16 @@ import {multiColWebGPUSparseMatrix} from '@datagrok-libraries/math/src/webGPU/sp
 import {SparseMatrixResult, SparseMatrixService} from '../distance-matrix/sparse-matrix-service';
 import {DistanceAggregationMethod} from '../distance-matrix/types';
 import {KnownMetrics} from '../typed-metrics';
-import {MCLSparseReducer} from './marcov-cluster';
+import {MCLSparseReducer} from './markov-cluster';
 
 onmessage = async (event) => {
-  const {data, threshold, weights, aggregationMethod, distanceFnArgs, distanceFns, maxIterations, useWebGPU}:
-   {data: any[][], threshold: number,
+  const {data, threshold, weights, aggregationMethod, distanceFnArgs, distanceFns, maxIterations, useWebGPU, inflate}:
+   {
+    data: any[][], threshold: number,
     weights: number[], aggregationMethod: DistanceAggregationMethod,
-    distanceFns: KnownMetrics[], distanceFnArgs: any[], maxIterations: number, useWebGPU?: boolean} = event.data;
+    distanceFns: KnownMetrics[], distanceFnArgs: any[], maxIterations: number,
+    useWebGPU?: boolean, inflate?: number
+  } = event.data;
 
   console.time('sparse matrix');
   let sparse: SparseMatrixResult | null = null;
@@ -30,7 +33,7 @@ onmessage = async (event) => {
   console.timeEnd('sparse matrix');
 
   //const res = await new MCLSparseReducer({maxIterations: maxIterations ?? 5}).transform(sparse, data[0].length);
-  const reducer = new MCLSparseReducer({maxIterations: maxIterations ?? 5});
+  const reducer = new MCLSparseReducer({maxIterations: maxIterations ?? 5, inflateFactor: inflate ?? 2});
   console.time('MCL');
   let res: any = null;
   if (useWebGPU) {

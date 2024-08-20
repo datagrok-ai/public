@@ -8,7 +8,7 @@ declare global {
 
     setStrokeStyle(stroke: string | CanvasGradient | CanvasPattern): CanvasRenderingContext2D;
 
-    line(x1: number, y1: number, x2: number, y2: number, color: DG.ColorType): CanvasRenderingContext2D;
+    line(x1: number, y1: number, x2: number, y2: number, color: number): CanvasRenderingContext2D;
 
     /**
      * Use stroke() or fill() after.

@@ -3,9 +3,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {Observable} from 'rxjs';
+
+import {HelmType, IWebEditorMonomer, MonomerSetType, MonomerType, PolymerType} from '../helm/types';
 import {
   HELM_REQUIRED_FIELD as REQ,
-  HELM_RGROUP_FIELDS as RGP, HELM_OPTIONAL_FIELDS as OPT, HELM_POLYMER_TYPE
+  HELM_RGROUP_FIELDS as RGP, HELM_OPTIONAL_FIELDS as OPT, HELM_POLYMER_TYPE,
 } from '../utils/const';
 import {ALPHABET} from '../utils/macromolecule';
 
@@ -15,6 +17,8 @@ export type RGroup = {
   [RGP.CAP_GROUP_NAME]: string,
   [RGP.LABEL]: string,
 }
+
+/** https://github.com/PistoiaHELM/HELMMonomerSets/blob/master/HELMmonomerSchema.json */
 export type Monomer = {
   [REQ.SYMBOL]: string,
   [REQ.NAME]: string,
@@ -23,29 +27,74 @@ export type Monomer = {
   [REQ.ID]: number,
   [REQ.RGROUPS]: RGroup[],
   [REQ.SMILES]: string,
-  [REQ.POLYMER_TYPE]: string,
-  [REQ.MONOMER_TYPE]: string,
+  [REQ.POLYMER_TYPE]: PolymerType,
+  [REQ.MONOMER_TYPE]: MonomerType,
   [REQ.CREATE_DATE]: string | null,
   [OPT.NATURAL_ANALOG]?: string,
   [OPT.META]?: { [property: string]: any },
+
   lib?: IMonomerLib,
+  wem?: IWebEditorMonomer,
 };
+
+export interface IMonomerLinkData {
+  source: string;
+  symbol: string;
+  notes: string;
+}
+
+export interface IMonomerLink {
+  get lib(): IMonomerLib;
+  get symbol(): string;
+}
+
+export interface IMonomerSetPlaceholder {
+  get symbol(): string;
+  get polymerType(): PolymerType;
+  get monomerType(): MonomerType;
+  get monomerLinks(): IMonomerLinkData[];
+
+  get monomers(): Monomer[];
+}
+
+export interface IMonomerSet {
+  get source(): string | undefined;
+  get error(): string | undefined;
+
+  get description(): string;
+  get placeholders(): IMonomerSetPlaceholder[];
+}
+
+export type MonomerLibSummaryType = { [polymerType: string]: number };
 
 export interface IMonomerLib {
   get source(): string | undefined;
   get error(): string | undefined;
 
-  getMonomer(polymerType: string, monomerSymbol: string): Monomer | null;
-  getMonomerMolsByPolymerType(polymerType: string): { [monomerSymbol: string]: string } | null;
-  getMonomerSymbolsByRGroup(rGroupNumber: number, polymerType: string, element?: string): string[];
-  getMonomerSymbolsByType(polymerType: string): string[];
-  getPolymerTypes(): string[];
+  /* Gets library monomer for sequence monomer */
+  getMonomer(polymerType: PolymerType | null, monomerSymbol: string): Monomer | null;
+  addMissingMonomer(polymerType: PolymerType, monomerSymbol: string): Monomer;
+  getMonomerMolsByPolymerType(polymerType: PolymerType): { [monomerSymbol: string]: string } | null;
+  getMonomerSymbolsByRGroup(rGroupNumber: number, polymerType: PolymerType, element?: string): string[];
+  getMonomerSymbolsByType(polymerType: PolymerType): string[];
+  getPolymerTypes(): PolymerType[];
   update(lib: IMonomerLib): void;
   get onChanged(): Observable<any>;
 
-  /** Summary with lib monomer count by type, csv */
+  /** Summary string with lib monomer count by type
+   * @deprecated Keep for backward compatibility */
   getSummary(): string;
-  getTooltip(polymerType: string, monomerSymbol: string): HTMLElement;
+
+  /** Summary with lib monomer count by type */
+  getSummaryObj(): MonomerLibSummaryType;
+
+  /** Gets dataframe with columns 'polymerType', 'count'. */
+  getSummaryDf(): DG.DataFrame;
+
+  getTooltip(polymerType: PolymerType, monomerSymbol: string): HTMLElement;
+
+  // For monomer palettes
+  getMonomerSet(type: HelmType): MonomerSetType | null;
 }
 
 export const alphabetPolymerTypes = {

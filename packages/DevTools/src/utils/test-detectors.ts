@@ -126,8 +126,8 @@ export function _testDetectorsDialog(): void {
   // TODO: consider automatic choice of connections
   const dirsArray = ['Demo:Files/', 'System:AppData/'];
 
-  const pathInput = ui.choiceInput('Path', dirsArray[0], dirsArray);
-  const detectorInput = ui.choiceInput('Detector', funcArray[0], funcArray);
+  const pathInput = ui.input.choice('Path', {value: dirsArray[0], items: dirsArray});
+  const detectorInput = ui.input.choice('Detector', {value: funcArray[0], items: funcArray});
 
   ui.dialog('Test semType detectors')
     .add(ui.div([

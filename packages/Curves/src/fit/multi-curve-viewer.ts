@@ -1,10 +1,11 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 
 import {CellRenderViewer} from './cell-render-viewer';
 import {FitChartCellRenderer, mergeChartOptions, mergeSeries} from './fit-renderer';
 import {getChartData, mergeProperties} from './fit-renderer';
-import {FIT_SEM_TYPE, FitChartData, fitChartDataProperties, IFitChartData, IFitChartOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {FitChartData, fitChartDataProperties, IFitChartData, IFitChartOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 
 import {debounce} from 'rxjs/operators';
 import {interval, merge} from 'rxjs';
@@ -13,6 +14,11 @@ import {FitConstants} from './const';
 
 const ERROR_CLASS = 'd4-viewer-error';
 
+@grok.decorators.viewer({
+  name: 'MultiCurveViewer',
+  description: 'A viewer that superimposes multiple in-cell curves on one chart',
+  icon: 'icons/multi-curve-viewer.png',
+})
 export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
   [index: string]: any;
   curvesColumnNames?: string[] = [];
@@ -31,7 +37,7 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
   constructor() {
     super(new FitChartCellRenderer());
 
-    this.curvesColumnNames = this.addProperty('curvesColumnNames', DG.TYPE.COLUMN_LIST, [], {semType: FIT_SEM_TYPE});
+    this.curvesColumnNames = this.addProperty('curvesColumnNames', DG.TYPE.COLUMN_LIST, [], {semType: FitConstants.FIT_SEM_TYPE});
 
     this.showSelectedRowsCurves = this.bool('showSelectedRowsCurves', false, { description: 'Adds curves from the selected rows'});
     this.showCurrentRowCurve = this.bool('showCurrentRowCurve', true);
@@ -143,7 +149,7 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
 
   onTableAttached(): void {
     const grid = this.tableView?.grid!;
-    const fitCol = this.dataFrame.columns.bySemType(FIT_SEM_TYPE);
+    const fitCol = this.dataFrame.columns.bySemType(FitConstants.FIT_SEM_TYPE);
     if (fitCol !== null)
       this.curvesColumnNames = [fitCol.name];
 

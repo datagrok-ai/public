@@ -13,7 +13,7 @@ We write our technical documentation using [GitHub-flavored Markdown](https://gi
 Good documentation is clear, simple, and complete. To help you write clearly and concisely, we've created a [writing style guide](writing-style.md). We also follow these principles:
 
 * Every page is page one. This means users can fully understand a topic and achieve their objectives by reading a single page. To follow this principle, you should provide comprehensive information, clear explanations, and relevant examples within each page. To avoid creating lengthy, overwhelming documents, we leverage [plain language](writing-style.md) and [Docusaurus Markdown features](markdown.md#content). 
-* How-To pages are reserved for complex multi-step processes that require long, detailed explanations. For simpler tasks, such as launching a tool from the **Top Menu**, we use the [details feature](markdown.md/#content) or write them out in a single sentence. This ensures that users can quickly grasp and execute the task without needing to switch between different pages.
+* How-To pages are reserved for complex multi-step processes that require long, detailed explanations. For simpler tasks, such as launching a tool from the **Top Menu**, we use the [details feature](markdown.md#content) or write them out in a single sentence. This ensures that users can quickly grasp and execute the task without needing to switch between different pages.
 * Rather than creating separate tutorial documents, we incorporate tutorials directly into the Datagrok platform by [coding them](../how-to/write-tutorials.md). We then link to these tutorials within our documents as needed. For example, [here's a cheminformatics tutorial](https://public.datagrok.ai/apps/tutorials/Tutorials/Cheminformatics/VirtualScreening). The same approach applies to code samples like scripts and functions.
 * Reference pages primarily serve as lookup resources and often present information in table format. [Supported file formats](../../access/files/supported-formats.md) is a good example.  
 
@@ -36,7 +36,7 @@ Once you've finished checking the basics, do the following:
   * Assess the flow of the document when a user starts reading from the beginning. Ensure that the document's structure makes it easy to understand the purpose and topic of the page.
   * Consider users who get to a specific section within the page from another page or a search engine. Evaluate whether there is enough context provided for them to understand both the section contents, and how it relates to the rest of the document.
 
-Lastly, make sure you adhere to our [commit message policy](../advanced/git-policy.mdx#commit-message-policy).
+Lastly, make sure you adhere to our [commit message policy](../dev-process/git-policy.mdx#commit-message-policy).
 
 ## Resources
 

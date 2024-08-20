@@ -1,5 +1,70 @@
 # ml changelog
 
+## 6.6.21 (2024-08-14)
+
+Fix Worker import
+
+## 6.6.20 (2024-08-14)
+
+MCL Optimization: Remove use of extra column major map sparse matrix.
+
+## 6.6.19 (2024-08-09)
+
+Activity cliffs: make docked grid available in browse view for demo purposes
+
+## 6.6.18 (2024-08-09)
+
+Activity cliffs: ability to run as demo in Browse view
+
+## 6.6.17 (2024-08-08)
+
+Add limit to intercluster connections in mcl
+
+## 6.6.16 (2024-08-07)
+
+Correct NW Calculation on webGPU on CPU
+
+## 6.6.15 (2024-08-06)
+
+MCL layout with force directed graph and atlas
+
+## 6.6.14 (2024-07-09)
+
+Use only numeric columns without datetime for Activities in activity cliffs editor
+
+## 6.6.13 (2024-07-09)
+
+Reverse order of MCL Clusters
+
+## 6.6.12 (2024-06-24)
+
+Fix activity cliffs styles
+
+## 6.6.11 (2024-06-11)
+
+* Fix dialog styles
+* Initialization of MCL viewer
+
+## 6.6.10 (2024-05-27)
+
+Activity cliffs: ability to use with layouts and progects
+
+## 6.6.9 (2024-05-27)
+
+Add inflation factor to MCL
+
+## 6.6.8 (2024-05-16)
+
+Fix inconsistent KNN size in webGPU.
+
+## 6.6.7 (2024-05-09)
+
+* Fix GPU description getting if value is nullish.
+
+## 6.6.6 (2024-05-09)
+
+Disable webGPU input in case if none is available.
+
 ## 6.6.5 (2024-04-25)
 
 Add webGPU MCL implementation.

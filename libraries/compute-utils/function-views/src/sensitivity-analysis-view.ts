@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {BehaviorSubject} from 'rxjs';
-import {getDfFromRuns, getPropViewers} from './shared/utils';
+import {getDefaultValue, getPropViewers} from './shared/utils';
 import {SobolAnalysis} from './variance-based-analysis/sobol-sensitivity-analysis';
 import {RandomAnalysis} from './variance-based-analysis/random-sensitivity-analysis';
 import {getOutput} from './variance-based-analysis/sa-outputs-routine';
@@ -13,7 +13,7 @@ import {getCalledFuncCalls} from './variance-based-analysis/utils';
 import {RunComparisonView} from './run-comparison-view';
 import {combineLatest} from 'rxjs';
 import '../css/sens-analysis.css';
-import {CARD_VIEW_TYPE, VIEWER_PATH, viewerTypesMapping} from '../../shared-utils/consts';
+import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {DOCK_RATIO, ROW_HEIGHT, STARTING_HELP} from './variance-based-analysis/constants';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
@@ -75,21 +75,24 @@ export class SensitivityAnalysisView {
   generateInputFields = (func: DG.Func) => {
     const analysisInputs = {
       analysisType: {
-        input: ui.choiceInput(
-          'Method', ANALYSIS_TYPE.RANDOM_ANALYSIS, [ANALYSIS_TYPE.RANDOM_ANALYSIS, ANALYSIS_TYPE.SOBOL_ANALYSIS, ANALYSIS_TYPE.GRID_ANALYSIS],
-          (v: ANALYSIS_TYPE) => {
-            analysisInputs.analysisType.value.next(v);
-            this.updateRunWidgetsState();
-            this.setAnalysisInputTooltip();
-            this.store.analysisInputs.samplesCount.input.setTooltip(this.samplesCountTooltip());
-          }),
+        input: ui.input.choice(
+          'Method', {
+            value: ANALYSIS_TYPE.RANDOM_ANALYSIS,
+            items: [ANALYSIS_TYPE.RANDOM_ANALYSIS, ANALYSIS_TYPE.SOBOL_ANALYSIS, ANALYSIS_TYPE.GRID_ANALYSIS],
+            onValueChanged: () => {
+              const v = analysisInputs.analysisType.input.value;
+              analysisInputs.analysisType.value.next(v);
+              this.updateRunWidgetsState();
+              this.setAnalysisInputTooltip();
+              this.store.analysisInputs.samplesCount.input.setTooltip(this.samplesCountTooltip());
+            }}),
         value: new BehaviorSubject(ANALYSIS_TYPE.RANDOM_ANALYSIS),
       },
       samplesCount: {
-        input: ui.intInput('Samples', 10, (v: number) => {
-          analysisInputs.samplesCount.value = v;
+        input: ui.input.int('Samples', {value: 10, onValueChanged: () => {
+          analysisInputs.samplesCount.value = analysisInputs.samplesCount.input.value;
           this.updateRunWidgetsState();
-        }),
+        }}),
         value: 10,
       },
     } as AnalysisProps;
@@ -98,11 +101,11 @@ export class SensitivityAnalysisView {
     analysisInputs.samplesCount.input.root.insertBefore(getSwitchMock(), analysisInputs.samplesCount.input.captionLabel);
 
     const getInputValue = (input: DG.Property, key: string) => (
-      input.options[key] === undefined ? input.defaultValue : Number(input.options[key])
+      input.options[key] === undefined ? getDefaultValue(input) : Number(input.options[key])
     );
 
     const getSwitchElement = (defaultValue: boolean, f: (v: boolean) => any, isInput = true) => {
-      const input = ui.switchInput(' ', defaultValue, f);
+      const input = ui.input.toggle(' ', {value: defaultValue, onValueChanged: () => f(input.value)});
       $(input.root).addClass('sa-switch-input');
       $(input.captionLabel).hide();
 
@@ -121,6 +124,8 @@ export class SensitivityAnalysisView {
     };
 
     const inputs = func.inputs.reduce((acc, inputProp) => {
+      const defaultValue = getInputValue(inputProp, 'default');
+
       switch (inputProp.propertyType) {
       case DG.TYPE.INT:
       case DG.TYPE.BIG_INT:
@@ -141,17 +146,23 @@ export class SensitivityAnalysisView {
           const: {
             input:
             (() => {
-              const inp = ui.intInput(inputProp.caption ?? inputProp.name, inputProp.defaultValue, (v: number) => ref.const.value = v);
+              const inp = ui.input.float(inputProp.caption ?? inputProp.name, {
+                value: getDefaultValue(inputProp),
+                onValueChanged: () => ref.const.value = inp.value!,
+              });
               inp.root.insertBefore(isChangingInputConst.root, inp.captionLabel);
               inp.addPostfix(inputProp.options['units']);
               return inp;
             })(),
-            value: inputProp.defaultValue,
+            value: getDefaultValue(inputProp),
           },
           min: {
             input:
               (() => {
-                const inp = ui.floatInput(`${inputProp.caption ?? inputProp.name} min`, getInputValue(inputProp, 'min'), (v: number) => (ref as SensitivityNumericStore).min.value = v);
+                const inp = ui.input.float(`${inputProp.caption ?? inputProp.name} min`, {
+                  value: getInputValue(inputProp, 'min'),
+                  onValueChanged: () => (ref as SensitivityNumericStore).min.value = inp.value!,
+                });
                 inp.root.insertBefore(isChangingInputMin.root, inp.captionLabel);
                 inp.addPostfix(inputProp.options['units']);
                 return inp;
@@ -160,17 +171,22 @@ export class SensitivityAnalysisView {
           },
           max: {
             input: (() => {
-              const inp = ui.floatInput(`${inputProp.caption ?? inputProp.name} max`, getInputValue(inputProp, 'max'), (v: number) => (ref as SensitivityNumericStore).max.value = v);
+              const inp = ui.input.float(`${inputProp.caption ?? inputProp.name} max`,
+                {
+                  value: getInputValue(inputProp, 'max'),
+                  onValueChanged: () => (ref as SensitivityNumericStore).max.value = inp.value!,
+                });
               inp.addPostfix(inputProp.options['units']);
               return inp;
             })(),
             value: getInputValue(inputProp, 'max'),
           },
           lvl: {
-            input: ui.intInput('Samples', 3, (v: number) => {
-              (ref as SensitivityNumericStore).lvl.value = v;
+            input: ui.input.int('Samples', {value: 3, onValueChanged: () => {
+              const v = temp.lvl.input.value;
+              (ref as SensitivityNumericStore).lvl.value = v!;
               this.updateRunWidgetsState();
-            }),
+            }}),
             value: 3,
           },
           isChanging: new BehaviorSubject<boolean>(false),
@@ -227,12 +243,16 @@ export class SensitivityAnalysisView {
           prop: inputProp,
           const: {
             input: (() => {
-              const temp = ui.boolInput(`${inputProp.caption ?? inputProp.name}`, inputProp.defaultValue ?? false, (v: boolean) => boolRef.const.value = v);
+              const temp = ui.input.bool(`${inputProp.caption ?? inputProp.name}`,
+                {
+                  value: getDefaultValue(inputProp) ?? false,
+                  onValueChanged: () => boolRef.const.value = tempBool.const.input.value,
+                });
               temp.root.insertBefore(isChangingInputBoolConst.root, temp.captionLabel);
 
               return temp;
             })(),
-            value: false,
+            value: defaultValue,
           } as InputWithValue<boolean>,
           isChanging: new BehaviorSubject<boolean>(false),
           lvl: 1,
@@ -260,7 +280,7 @@ export class SensitivityAnalysisView {
 
             return temp;
           })(),
-          value: inputProp.defaultValue,
+          value: getDefaultValue(inputProp),
         };
         acc[inputProp.name] = {
           const: tempDefault,
@@ -284,18 +304,21 @@ export class SensitivityAnalysisView {
             let input: DG.InputBase;
 
             if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
-              input = ui.choiceInput(
+              input = ui.input.choice(
                 caption,
-                DF_OPTIONS.LAST_ROW,
-                [DF_OPTIONS.LAST_ROW, DF_OPTIONS.FIRST_ROW, DF_OPTIONS.BY_COL_VAL],
-                (v: DF_OPTIONS) => {
-                  temp.value.returning = v;
+                {
+                  value: DF_OPTIONS.LAST_ROW,
+                  items: [DF_OPTIONS.LAST_ROW, DF_OPTIONS.FIRST_ROW, DF_OPTIONS.BY_COL_VAL],
+                  onValueChanged: () => {
+                    const v = input.value;
+                    temp.value.returning = v;
 
-                  temp.analysisInputs.forEach((inp) => {
-                    inp.root.hidden = (v !== DF_OPTIONS.BY_COL_VAL);
-                  });
+                    temp.analysisInputs.forEach((inp) => {
+                      inp.root.hidden = (v !== DF_OPTIONS.BY_COL_VAL);
+                    });
 
-                  input.setTooltip(this.getOutputTooltip(caption, v));
+                    input.setTooltip(this.getOutputTooltip(caption, v));
+                  },
                 });
 
               input.setTooltip(this.getOutputTooltip(caption, DF_OPTIONS.LAST_ROW));
@@ -327,16 +350,16 @@ export class SensitivityAnalysisView {
           })(),
         analysisInputs:
           outputProp.propertyType === DG.TYPE.DATA_FRAME ? [(() => {
-            const input = ui.stringInput('Column', DF_OPTIONS.ALL_COLUMNS, (v: string) => {
-              temp.value.colName = v;
-            });
+            const input = ui.input.string('Column', {value: DF_OPTIONS.ALL_COLUMNS, onValueChanged: () => {
+              temp.value.colName = input.value;
+            }});
             input.root.insertBefore(getSwitchMock(), input.captionLabel);
             input.root.hidden = true;
             input.setTooltip(`Name of column of the '${outputProp.caption ?? outputProp.name}' dataframe`);
             return input;
           })(),
           (() => {
-            const input = ui.floatInput('Value', 0, (v: number) => {temp.value.colValue = v;});
+            const input = ui.input.float('Value', {value: 0, onValueChanged: () => {temp.value.colValue = input.value!;}});
             input.root.insertBefore(getSwitchMock(), input.captionLabel);
             input.root.hidden = true;
             input.setTooltip(`Value specifying the '${outputProp.caption ?? outputProp.name}' dataframe row`);
@@ -444,7 +467,7 @@ export class SensitivityAnalysisView {
     this.addTooltips();
     this.comparisonView = baseView;
 
-    const saDock = this.comparisonView.dockManager.dock(
+    this.comparisonView.dockManager.dock(
       form,
       DG.DOCK_TYPE.LEFT,
       null,
@@ -609,7 +632,7 @@ export class SensitivityAnalysisView {
     let isAnyOutputSelectedAsOfInterest = false;
 
     for (const name of Object.keys(this.store.outputs)) {
-      if (this.store.outputs[name].isInterest.value === true) {
+      if (this.store.outputs[name].isInterest.value) {
         isAnyOutputSelectedAsOfInterest = true;
         break;
       }
@@ -719,7 +742,7 @@ export class SensitivityAnalysisView {
 
   private isAnyInputSelected(): boolean {
     for (const propName of Object.keys(this.store.inputs)) {
-      if (this.store.inputs[propName].isChanging.value === true)
+      if (this.store.inputs[propName].isChanging.value)
         return true;
     }
     return false;
@@ -727,7 +750,7 @@ export class SensitivityAnalysisView {
 
   private isAnyOutputSelected(): boolean {
     for (const propName of Object.keys(this.store.outputs)) {
-      if (this.store.outputs[propName].isInterest.value === true)
+      if (this.store.outputs[propName].isInterest.value)
         return true;
     }
     return false;
@@ -1292,30 +1315,28 @@ export class SensitivityAnalysisView {
     return outputsOfInterest;
   }
 
-  private getScatterOpt(colNamesToShow: string[], nameOfNonFixedOutput: string): Object {
+  private getScatterOpt(colNamesToShow: string[], nameOfNonFixedOutput: string): Partial<DG.IScatterPlotSettings> {
     return {
       xColumnName: colNamesToShow[0],
       yColumnName: colNamesToShow[1],
-      color: nameOfNonFixedOutput,
-      size: nameOfNonFixedOutput,
+      colorColumnName: nameOfNonFixedOutput,
+      sizeColumnName: nameOfNonFixedOutput,
       markerMaxSize: 12,
       jitterSize: 5,
     };
   }
 
-  private getLineChartOpt(colNamesToShow: string[]): Object {
+  private getLineChartOpt(colNamesToShow: string[]): Partial<DG.ILineChartSettings> {
     return {
       xColumnName: colNamesToShow[0],
       yColumnNames: colNamesToShow.slice(1, Math.min(colNamesToShow.length, 8)),
       markerSize: 1,
       markerType: DG.MARKER_TYPE.GRADIENT,
-      sharex: true,
       multiAxis: true,
-      multiAxisLegendPosition: 'RightCenter',
     };
   }
 
-  private getBarChartOpt(descr: string, split: string, value: string): Object {
+  private getBarChartOpt(descr: string, split: string, value: string): Partial<DG.IBarChartSettings> {
     return {
       description: descr,
       splitColumnName: split,

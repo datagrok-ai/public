@@ -8,10 +8,11 @@ import {fromEvent} from 'rxjs';
 import {category, expect, test, delay, testEvent} from '@datagrok-libraries/utils/src/test';
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {generateLongSequence, generateManySequences} from '@datagrok-libraries/bio/src/utils/generator';
 
 import {importFasta} from '../package';
 import {convertDo} from '../utils/convert';
-import {generateLongSequence, generateManySequences, performanceTest} from './utils/sequences-generators';
+import {performanceTest} from './utils/sequences-generators';
 import {multipleSequenceAlignmentUI} from '../utils/multiple-sequence-alignment-ui';
 import {awaitGrid} from './utils';
 import * as C from '../utils/constants';
@@ -23,9 +24,6 @@ category('renderers', () => {
     await performanceTest(generateLongSequence, 'Long sequences');
   });
 
-  test('many sequence performance', async () => {
-    await performanceTest(generateManySequences, 'Many sequences');
-  });
   test('many sequence performance', async () => {
     await performanceTest(generateManySequences, 'Many sequences');
   });
@@ -48,6 +46,10 @@ category('renderers', () => {
 
   test('afterConvert', async () => {
     await _testAfterConvert();
+  });
+
+  test('afterConvertToHelm', async () => {
+    await _testAfterConvertToHelm();
   });
 
   test('selectRendererBySemType', async () => {
@@ -101,7 +103,7 @@ category('renderers', () => {
   async function _rendererMacromoleculeDifference() {
     const seqDiffCol: DG.Column = DG.Column.fromStrings('SequencesDiff',
       ['meI/hHis/Aca/N/T/dK/Thr_PO3H2/Aca#D-Tyr_Et/Tyr_ab-dehydroMe/meN/E/N/dV']);
-    seqDiffCol.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
+    seqDiffCol.meta.units = NOTATION.SEPARATOR;
     seqDiffCol.setTag(bioTAGS.separator, '/');
     seqDiffCol.setTag(bioTAGS.aligned, 'SEQ');
     seqDiffCol.setTag(bioTAGS.alphabet, 'UN');
@@ -138,10 +140,10 @@ category('renderers', () => {
     expect(tv.grid.dataFrame.id, df.id);
 
     console.log('Bio: tests/renderers/afterMsa, src before test ' +
-      `semType="${srcSeqCol!.semType}", units="${srcSeqCol!.getTag(DG.TAGS.UNITS)}", ` +
+      `semType="${srcSeqCol!.semType}", units="${srcSeqCol!.meta.units}", ` +
       `cell.renderer="${srcSeqCol!.getTag(DG.TAGS.CELL_RENDERER)}"`);
     expect(srcSeqCol.semType, DG.SEMTYPE.MACROMOLECULE);
-    expect(srcSeqCol.getTag(DG.TAGS.UNITS), NOTATION.FASTA);
+    expect(srcSeqCol.meta.units, NOTATION.FASTA);
     expect(srcSeqCol.getTag(bioTAGS.aligned), ALIGNMENT.SEQ);
     expect(srcSeqCol.getTag(bioTAGS.alphabet), ALPHABET.PT);
     expect(srcSeqCol.getTag(DG.TAGS.CELL_RENDERER), 'sequence');
@@ -151,7 +153,7 @@ category('renderers', () => {
     expect(tv.grid.dataFrame.id, df.id);
 
     expect(msaSeqCol.semType, DG.SEMTYPE.MACROMOLECULE);
-    expect(msaSeqCol.getTag(DG.TAGS.UNITS), NOTATION.FASTA);
+    expect(msaSeqCol.meta.units, NOTATION.FASTA);
     expect(msaSeqCol.getTag(bioTAGS.aligned), ALIGNMENT.SEQ_MSA);
     expect(msaSeqCol.getTag(bioTAGS.alphabet), ALPHABET.PT);
     expect(msaSeqCol.getTag(DG.TAGS.CELL_RENDERER), 'sequence');
@@ -164,7 +166,7 @@ category('renderers', () => {
     const csv: string = await grok.dapi.files.readAsText('System:AppData/Bio/samples/FASTA_PT.csv');
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
 
-    const srcCol: DG.Column = df.col('sequence')!;
+    const srcCol: DG.Column = df.getCol('sequence')!;
     const semType: string = await grok.functions.call('Bio:detectMacromolecule', {col: srcCol});
     if (semType)
       srcCol.semType = semType;
@@ -184,13 +186,26 @@ category('renderers', () => {
     const _sh: SeqHandler = SeqHandler.forColumn(tgtCol);
   }
 
+  async function _testAfterConvertToHelm() {
+    const df: DG.DataFrame = await grok.dapi.files.readCsv('System:AppData/Bio/samples/FASTA_PT.csv');
+    const view = grok.shell.addTableView(df);
+    await awaitGrid(view.grid);
+
+    const srcCol = df.getCol('sequence');
+    const sh = SeqHandler.forColumn(srcCol);
+    const tgtCol = sh.convert(NOTATION.HELM);
+    df.columns.add(tgtCol);
+    await awaitGrid(view.grid);
+    expect(tgtCol.getTag(DG.TAGS.CELL_RENDERER), 'helm');
+  }
+
   async function _selectRendererBySemType() {
     /* There are renderers for semType Macromolecule and MacromoleculeDifference.
        Misbehavior was by selecting Macromolecule renderers for MacromoleculeDifference semType column
     /**/
     const seqDiffCol: DG.Column = DG.Column.fromStrings('SequencesDiff',
       ['meI/hHis/Aca/N/T/dK/Thr_PO3H2/Aca#D-Tyr_Et/Tyr_ab-dehydroMe/meN/E/N/dV']);
-    seqDiffCol.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
+    seqDiffCol.meta.units = NOTATION.SEPARATOR;
     seqDiffCol.setTag(bioTAGS.separator, '/');
     seqDiffCol.setTag(bioTAGS.aligned, 'SEQ');
     seqDiffCol.setTag(bioTAGS.alphabet, 'UN');

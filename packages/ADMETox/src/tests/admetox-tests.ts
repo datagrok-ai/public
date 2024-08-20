@@ -60,8 +60,8 @@ category('Admetox', () => {
     await performChemicalPropertyPredictions(smilesColumn, v.dataFrame, newTableColumn);
     expect(molecules.columns.names().includes(newTableColumn), true, `${newTableColumn} column has not been added`);
     expect(molecules.col(newTableColumn)!.get(0), 0.6650083661079407, `Calculated value for ${newTableColumn} is incorrect`);
-    expect(molecules.col(newTableColumn)!.colors.getColor(0), 4280670464, 'Wrong color coding was added');
-    expect(molecules.col(newTableColumn)!.colors.getColor(4), 4293138944, 'Wrong color coding was added');
+    expect(molecules.col(newTableColumn)!.meta.colors.getColor(0), 4280670464, 'Wrong color coding was added');
+    expect(molecules.col(newTableColumn)!.meta.colors.getColor(4), 4293138944, 'Wrong color coding was added');
   }, {timeout: 100000});
 
   test('Calculate. For single cell', async () => {
@@ -98,7 +98,7 @@ category('Admetox', () => {
     const mol10k = await runAdmetoxBenchmark(10000);
 
     return DG.toDart({"1k molecules": mol1k, "5k molecules": mol5k, "10k molecules": mol10k});
-}, {timeout: 10000000000});
+}, {timeout: 10000000000, benchmark: true });
 
   test('Calculate.Benchmark cell', async () => {
     const smiles = `smiles
@@ -110,7 +110,7 @@ category('Admetox', () => {
     const args = [smiles, distributionModels, 'false'];
     const cellResults = await runInLoop(iterations, runAdmetox, ...args);
     return DG.toDart({"results": cellResults});
-  }, {timeout: 1000000});
+  }, {timeout: 1000000, benchmark: true});
 });
 
 async function runInLoop(iterations: number, func: (...args: string[]) => Promise<string | null>, ...args: string[]) {

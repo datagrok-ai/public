@@ -65,6 +65,7 @@ export const storageName = `ModelStorage`;
 
 export const EXP_COLUMN_NAME = 'Source';
 export const FAVORITE_COLUMN_NAME = 'Is favorite';
+export const COMPLETE_COLUMN_NAME = 'Is complete';
 export const ACTIONS_COLUMN_NAME = 'Delete';
 export const AUTHOR_COLUMN_NAME = 'Author';
 export const STARTED_COLUMN_NAME = 'Date';

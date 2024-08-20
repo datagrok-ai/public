@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import { filter } from 'rxjs/operators';
 import { Tutorial, TutorialPrerequisites } from '@datagrok-libraries/tutorials/src/tutorial';
+import { Observable } from 'rxjs';
 
 
 export class CalculatedColumnsTutorial extends Tutorial {
@@ -40,9 +41,22 @@ export class CalculatedColumnsTutorial extends Tutorial {
     const simpleFormula = 'Div(170, 100)';
     await this.dlgInputAction(addNCDlg, `Enter the expression "${simpleFormula}"`, '', simpleFormula, '', false, 2);
 
+    await this.action(`Enter the expression "${simpleFormula}"`, new Observable((subscriber: any) => {
+      const observer = new MutationObserver((mutationsList, observer) => {
+        mutationsList.forEach((m) => {
+          //@ts-ignore
+          if (m.target.innerText === simpleFormula) {
+            subscriber.next(true);
+            observer.disconnect();
+          }
+        });
+      });
+      observer.observe(addNCDlg!.root.querySelector('.cm-line')!, {childList: true, attributes: true});
+    }));
+
     await this.action('Click "OK"', this.t!.onColumnsAdded.pipe(filter((data) =>
-      data.args.columns.some((col: DG.Column) => col.name === columnName && col.tags.has(DG.TAGS.FORMULA) &&
-      col.tags[DG.TAGS.FORMULA] === simpleFormula))), addNCDlg.getButton('OK'), 'Once a valid expression is entered, ' +
+      data.args.columns.some((col: DG.Column) => col.name === columnName && col.meta.formula !== null &&
+      col.meta.formula === simpleFormula))), addNCDlg.getButton('OK'), 'Once a valid expression is entered, ' +
       'a new column will appear in the preview. Note that the column type is set automatically to "double". The type is ' +
       'determined based on the function output parameter type. You can change the column type manually, if necessary. For ' +
       'convenience, we\'ll automatically change the number formatting to match the format of the original column. You ' +
@@ -50,7 +64,7 @@ export class CalculatedColumnsTutorial extends Tutorial {
 
     const heightCol = this.t!.getCol('height');
     const heightInMetersCol = this.t!.getCol(columnName);
-    heightInMetersCol.tags[DG.TAGS.FORMAT] = heightCol.tags[DG.TAGS.FORMAT];
+    heightInMetersCol.meta.format = heightCol.meta.format;
 
     this.describe('Now you should see a new column added to the grid. Let\'s learn how to edit a formula to replace ' +
       'the constant value with the actual patient height from the corresponding column.');
@@ -116,9 +130,9 @@ export class CalculatedColumnsTutorial extends Tutorial {
         return call.func.name === 'AddNewColumn' && column.name === columnName &&
           Math.abs(column.min - 1.279) < tolerance && Math.abs(column.max - 2.029) < tolerance;
       })), null, 'You can apply the new formula from the <b>Formula</b> pane of the context panel. Use the ' +
-      '"RoundFloat" function with two arguments (the previous expression column and the number of decimal places). Pay attention to ' +
-      `the "${columnNameBMI}" column. When we change the formula of the underlying column (that is, its metadata), ` +
-      're-calculation is triggered automatically.');
+      '"RoundFloat" function with two arguments (the previous expression column and the number of decimal places).' + 
+      `Enter the new formula and click \'APPLY\' button. Pay attention to the "${columnNameBMI}" column. ` +
+      `When we change the formula of the underlying column (that is, its metadata), re-calculation is triggered automatically.`);
     
     this.describe('Calculated columns can be based on various functions: core functions (shown in the function search), ' +
       'platform commands, scripts, and package functions. Aside from core functions, you need to specify a fully-' +

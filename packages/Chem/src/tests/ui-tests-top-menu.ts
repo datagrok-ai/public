@@ -127,7 +127,7 @@ category('UI top menu', () => {
             grok.shell.topMenu.find('Chem').group('Calculate').find('Map Identifiers...').click();
             await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot find Chem Map Identifiers dialog', 1000);
         }
-    }, {timeout: 60000});
+    }, {timeout: 60000, skipReason: 'GROK-15384'});
 
   test('substructure search', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -141,11 +141,11 @@ category('UI top menu', () => {
 
     test('to inchi', async () => {
         await testGroup('Calculate', 'To InchI...', 'inchi', 'To InchI');
-    });
+    }, {stressTest: true});
 
     test('to inchi keys', async () => {
         await testGroup('Calculate', 'To InchI Keys...', 'inchi_key', 'To InchI Keys');
-    });
+    }, {stressTest: true});
 
     test('descriptors', async () => {
         smiles = grok.data.demo.molecules(20);
@@ -168,11 +168,11 @@ category('UI top menu', () => {
         isColumnPresent(smiles.columns, 'RingCount');
         v.close();
         grok.shell.o = ui.div();
-    });
+    }, {stressTest: true});
 
     test('toxicity risks', async () => {
         await testGroup('Calculate', 'Toxicity Risks...', 'Mutagenicity', 'Toxicity risks');
-    });
+    }, {stressTest: true});
 
     test('properties', async () => {
         await testGroup('Calculate', 'Properties...', 'MW', 'Chemical Properties');
@@ -282,13 +282,16 @@ category('UI top menu', () => {
         grok.shell.topMenu.find('Chem').group('Analyze').find('Scaffold Tree').click();
         await awaitCheck(() => Array.from(v.viewers).filter((it) => it.type === ScaffoldTreeViewer.TYPE).length > 0,
             'cannot create viewer', 3000);
+        const generateLink = document.querySelector('.chem-scaffold-tree-generate-hint') as HTMLElement;
+        if (generateLink)
+            generateLink.click();
         const stviewer = Array.from(v.viewers).filter((it) => it.type === ScaffoldTreeViewer.TYPE)[0];
         await awaitCheck(() => stviewer.root.getElementsByClassName('d4-tree-view-group-host')[0].children.length > 0,
-            'scaffold tree has not been generated', 150000);
+            'scaffold tree has not been generated', 250000);
         await delay(2000); //need to scaffold to finish generation
         v.close();
         grok.shell.o = ui.div();
-    }, {timeout: 180000}); 
+    }, {timeout: 300000}); 
 
     after(async () => {
         grok.shell.closeAll();

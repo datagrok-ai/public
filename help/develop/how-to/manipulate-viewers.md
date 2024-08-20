@@ -3,7 +3,7 @@ title: "Manipulate viewers"
 ---
 
 [Viewers](../../visualize/viewers/viewers.md) are main visual components of the Datagrok platform. Our JavaScript API exposes
-functionality for manipulating native viewers, such as [scatter plot](../../visualize/viewers/scatter-plot.mdx)
+functionality for manipulating native viewers, such as [scatter plot](../../visualize/viewers/scatter-plot.md)
 or [histogram](../../visualize/viewers/histogram.md), as well as
 for [developing custom viewers](develop-custom-viewer.md).
 
@@ -271,6 +271,46 @@ grok.shell.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT);
 Examples:
 
 - [Docking viewers](https://public.datagrok.ai/js/samples/ui/docking/docking-table-view)
+
+## Custom viewer initialization
+
+Some viewers can require additional initialization actions such as rendering something on top of the viewer, setting some options based on additional computations and so on. A good example is an [Activity cliffs](https://datagrok.ai/help/datagrok/solutions/domains/chem/#activity-cliffs) analysis, which draw lines, adds additional information and buttons on top of the scatter plot.
+
+To add custom such initialization to your viewer:
+
+- create your function which takes `DG.Viewer` as an argument and performs all custom actions with the viewer.
+- pass the name of the function as a `initializationFunction` parameter when creating the viewer.
+
+And that's it! Now you can save layouts and projects with your viewer. Custom `initializationFunction` will run every time when you create the viewer including restore from projects or layouts.
+
+<details>
+<summary>Example</summary>
+
+```typescript
+// Custom viewer initialization function.
+// Using this approach, you can attach behavior to functions that could be saved in the layout, etc.
+// For JS-based initialization, see init-script.js
+
+
+// This function is dynamically registered for the sake of simplicity.
+// Normally, you would use a package function
+grok.functions.register({
+  signature: 'void initScatterSquare(viewer v)',
+  run: (v) => {
+    v.onAfterDrawScene.subscribe((_) => {
+      v.canvas.getContext('2d')
+        .setFillStyle('red')
+        .fillRect(100, 100, 50, 50);
+    });
+  }
+});
+
+grok.shell
+  .addTableView(grok.data.demo.demog())
+  .scatterPlot({ initializationFunction: 'initScatterSquare' });
+```
+
+</details>
 
 See also:
 

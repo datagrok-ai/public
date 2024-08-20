@@ -1,10 +1,11 @@
 1. Open:
-   * Table form local storage
-   * Table form Home dir
-   * query result
-   * GetTop100 or GetAll result
+   * Table from local storage
+   * Table from Home dir
+   * Query result from Northwind:OrdersByEmployee
+   * GetTop100 result from DB Northwind, table products 
+   * GetAll result from DB Northwind, table products
 1. Click the **Add new column** icon.
-1. Add a formula using columns from the dataset.
+1. Add a formula using columns from the dataset. (TODO: specify which formula to use)
 1. Add another new column using the column added in the previous step.
 1. In the grid, change the used columns names and some values - newly added columns should change their formulas and values accordingly.
 1. Save a project with datasync (where available).

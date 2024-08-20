@@ -27,7 +27,7 @@ let filter = DG.Viewer.filters(table, {
   columnNames: ['race']
 });
 
-let markup = `<div style="padding:0px 20px">
+let markup = `<div style="padding:0 20px">
 <h2>HTML Markup</h2>
 Markup Viewer lets you combine HTML markup with the properties that are dynamically evaluated against
 the current dataset. This is useful for creating custom dashboards, or telling stories with data. Here are some

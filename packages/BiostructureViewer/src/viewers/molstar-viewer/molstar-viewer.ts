@@ -14,8 +14,13 @@ import {PluginLayoutControlsDisplay, PluginLayoutStateProps} from 'molstar/lib/m
 import {StructureComponentRef} from 'molstar/lib/mol-plugin-state/manager/structure/hierarchy-state';
 import {BuiltInTrajectoryFormat, TrajectoryFormatProvider} from 'molstar/lib/mol-plugin-state/formats/trajectory';
 import {PluginCommands} from 'molstar/lib/mol-plugin/commands';
+import {to_mmCIF} from 'molstar/lib/mol-model/structure/export/mmcif';
+import {utf8ByteCount, utf8Write} from 'molstar/lib/mol-io/common/utf8';
+import { zip } from 'molstar/lib/mol-util/zip/zip';
+import { SyncRuntimeContext } from 'molstar/lib/mol-task/execution/synchronous';
+import { AssetManager } from 'molstar/lib/mol-util/assets';
 
-import {delay, testEvent} from '@datagrok-libraries/utils/src/test';
+import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {
   BiostructureData, BiostructureDataJson, BiostructureDataProviderFunc
 } from '@datagrok-libraries/bio/src/pdb/types';
@@ -39,6 +44,7 @@ import {defaults, molecule3dFileExtensions} from './consts';
 import {createRcsbViewer, disposeRcsbViewer} from './utils';
 
 import {_package} from '../../package';
+import { convertWasm } from '../../conversion/wasm/converterWasm';
 
 // TODO: find out which extensions are needed.
 /*const Extensions = {
@@ -266,6 +272,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     this.setDataRequest = new Subject<void>();
     this.subs.push(DG.debounce(this.setDataRequest, DebounceIntervals.setData)
       .subscribe(() => { this.onSetDataRequestDebounced(); }));
+    this.viewSubs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
+    this._initMenu();
   }
 
   private static viewerCounter: number = -1;
@@ -431,6 +439,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         ['', ...this.biostructureDataProviderList.map((f) => f.nqName)];
     });
 
+    //this.subs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
+
     superOnTableAttached();
     this.setData(logIndent + 1, callLog);
     this.logger.debug(`${logPrefix}, end`);
@@ -452,6 +462,85 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       superDetach();
     });
     this.logger.debug(`${logPrefix}, end`);
+  }
+
+  _initMenu(): void {
+    this.root.oncontextmenu = (e) => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const menu = DG.Menu.popup();
+      this.onContextMenuHandler(menu);
+      menu.show();
+    };
+  }
+
+  onContextMenuHandler(menu: DG.Menu): void {
+    menu
+      .group('Download')
+      .item('As CIF', async () => await this.writeToFormat('cif'))
+      .item('As PDB', async () => await this.writeToFormat('pdb'));
+  }
+
+  async writeToFormat(format: 'cif' | 'pdb') {
+    const fileName = 'file';
+    const { structures } = this.viewer!.plugin.managers.structure.hierarchy.current;
+    const _s = structures[0];
+    const s = _s.transform?.cell.obj?.data ?? _s.cell.obj?.data;
+    const cif = to_mmCIF(fileName, s!) as string;
+    
+    if (format === 'cif')
+      DG.Utils.download(`${fileName}.cif`, cif);
+    else if (format === 'pdb') {
+      const pdb = await convertWasm(cif);
+      DG.Utils.download(`${fileName}.pdb`, pdb);
+    }
+  }
+  
+  async _exportHierarchy(plugin: PluginContext, options?: { format?: 'cif' }) {
+    const format = options?.format ?? 'cif';
+    const { structures } = plugin.managers.structure.hierarchy.current;
+    const files: [name: string, data: string | Uint8Array][] = [];
+    const entryMap = new Map<string, number>();
+    for (const _s of structures) {
+      const s = _s.transform?.cell.obj?.data ?? _s.cell.obj?.data;
+      if (!s) continue;
+      const name = s.model.entryId || 'unnamed';
+
+      const fileName = entryMap.has(name)
+        ? `${name}_${entryMap.get(name)! + 1}.${format}`
+        : `${name}.${format}`;
+      entryMap.set(name, (entryMap.get(name) ?? 0) + 1);
+
+      if (s.elementCount > 100000)
+        await new Promise(res => setTimeout(res, 50));
+
+      try {
+        files.push([fileName, to_mmCIF(name, s)]);
+      } catch (e) {
+        this.logger.error(e);
+      }
+    }
+    
+    var blob;
+    if (files.length === 1)
+      blob = new Blob([files[0][1]]), files[0][0];
+    else if (files.length > 1) {
+      const zipData: Record<string, Uint8Array> = {};
+      for (const [fn, data] of files) {
+        if (data instanceof Uint8Array)
+          zipData[fn] = data;
+        else {
+          const bytes = new Uint8Array(utf8ByteCount(data));
+          utf8Write(bytes, 0, data);
+          zipData[fn] = bytes;
+        }
+      }
+      const assetManager = new AssetManager();
+      const ctx = { runtime: SyncRuntimeContext, assetManager };
+      const buffer = await zip(ctx.runtime, zipData);
+      blob = new Blob([new Uint8Array(buffer, 0, buffer.byteLength)]);
+    }
+    return await blob?.text();
   }
 
   // -- Data --
@@ -788,7 +877,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       throw new Error(`${this.viewerToLog()}.getLigandStrOfRow(), no dataFrame or ligandColumnName`);
 
     const ligandCol: DG.Column = this.dataFrame.getCol(this.ligandColumnName);
-    const ligandUnits: string = ligandCol.getTag(DG.TAGS.UNITS);
+    const ligandUnits: string = ligandCol.meta.units!;
     const ligandCellValue: string = ligandCol.get(rowIdx);
     let ligandValue: string;
     let ligandFormat: BuiltInTrajectoryFormat | TrajectoryFormatProvider;

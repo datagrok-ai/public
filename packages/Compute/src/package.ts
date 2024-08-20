@@ -4,10 +4,24 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {filter} from 'rxjs/operators';
 import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-viewer';
-import {RichFunctionView, UiUtils} from "@datagrok-libraries/compute-utils";
-import { ValidationInfo, makeAdvice, makeValidationResult } from '@datagrok-libraries/compute-utils/shared-utils/validation';
+import {
+  ComputationView as ComputationViewInst,
+  RichFunctionView as RichFunctionViewInst, 
+  PipelineView as PipelineViewInst,
+  CompositionPipeline as CompositionPipelineViewInst,
+  UiUtils, 
+} from "@datagrok-libraries/compute-utils";
+import { 
+  ValidationInfo, 
+  makeAdvice as makeAdviceInst, 
+  makeValidationResult as makeValidationResultInst,
+  makeRevalidation as makeRevalidationInst,
+  mergeValidationResults as mergeValidationResultsInst,
+} from '@datagrok-libraries/compute-utils/shared-utils/validation';
 import {ModelCatalogView, ModelHandler} from '@datagrok-libraries/compute-utils/model-catalog';
-import './css/model-card.css';
+import {
+  testPipeline as testPipelineInst
+} from '@datagrok-libraries/compute-utils/shared-utils/function-views-testing';
 
 let initCompleted: boolean = false;
 export const _package = new DG.Package();
@@ -31,7 +45,7 @@ export function OutliersSelection() {
 //input: funccall call
 //output: view result
 export function RichFunctionViewEditor(call: DG.FuncCall) {
-  return RichFunctionView.fromFuncCall(call, {historyEnabled: true, isTabbed: false});
+  return RichFunctionViewInst.fromFuncCall(call, {historyEnabled: true, isTabbed: false});
 }
 
 //name: PipelineStepEditor
@@ -39,7 +53,7 @@ export function RichFunctionViewEditor(call: DG.FuncCall) {
 //input: funccall call
 //output: view result
 export function PipelineStepEditor(call: DG.FuncCall) {
-  return RichFunctionView.fromFuncCall(call, {historyEnabled: false, isTabbed: true});
+  return RichFunctionViewInst.fromFuncCall(call, {historyEnabled: false, isTabbed: true});
 }
 
 //name: renderRestPanel
@@ -80,13 +94,6 @@ function getCookie(name: string): string | undefined{
     "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
   ));
   return matches ? decodeURIComponent(matches[1]) : undefined;
-}
-
-
-//tags: autostart
-//meta.autostartImmediate: true
-export function autostart() {
-
 }
 
 //name: CustomDataUploader
@@ -154,7 +161,9 @@ export function init() {
   if (initCompleted)
     return;
 
-  DG.ObjectHandler.register(new ModelHandler());
+  if (!(DG.ObjectHandler.list().find((handler) => handler.type === "Model"))) {
+    DG.ObjectHandler.register(new ModelHandler());
+  }  
   
   grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
     const ent = acc.context;
@@ -238,7 +247,7 @@ export function modelCatalog() {
 export function SimTimeValidator(params: any) {
   const {reasonableMin, reasonableMax} = params;
   return (val: number) => {
-    return makeValidationResult({
+    return makeValidationResultInst({
       warnings: val < reasonableMin || val > reasonableMax ? [`Minimum reasonable time is ${reasonableMin}. Maximum reasonable time is ${reasonableMax}`]: undefined,
       errors: val < 0 ? [`Time should be strictly positive`]: undefined,
     });
@@ -252,9 +261,9 @@ export function DesiredTempValidator(params: any) {
   return (val: number, info: ValidationInfo) => {
     const ambTemp = info.funcCall.inputs['ambTemp'];
     const initTemp = info.funcCall.inputs['initTemp'];
-    return makeValidationResult({
+    return makeValidationResultInst({
       errors: [
-        ...(val < ambTemp) ? [makeAdvice(`Desired temperature cannot be less than ambient temperature (${ambTemp}). \n`, [
+        ...(val < ambTemp) ? [makeAdviceInst(`Desired temperature cannot be less than ambient temperature (${ambTemp}). \n`, [
           {actionName: 'Set desired equal to ambient', action: () => info.funcCall.inputs['desiredTemp'] = ambTemp }
         ])]: [],
         ...(val > initTemp) ? [`Desired temperature cannot be higher than initial temperature (${initTemp})`]: [],
@@ -269,7 +278,7 @@ export function DesiredTempValidator(params: any) {
 export function InitialTempValidator(params: any) {
   return (val: number, info: ValidationInfo) => {
     const ambTemp = info.funcCall.inputs['ambTemp'];
-    return makeValidationResult({
+    return makeValidationResultInst({
       errors: [
         ...(val < ambTemp) ? [`Initial temperature cannot be less than ambient temperature (${ambTemp}).`]: [],
       ]
@@ -283,7 +292,7 @@ export function InitialTempValidator(params: any) {
 export function AmbTempValidator(params: any) {
   return (val: number, info: ValidationInfo) => {
     const initTemp = info.funcCall.inputs['initTemp'];
-    return makeValidationResult({
+    return makeValidationResultInst({
       errors: [
         ...(val > initTemp) ? [`Ambient temperature cannot be higher than initial temperature (${initTemp})`]: [],
       ]
@@ -296,12 +305,12 @@ export function AmbTempValidator(params: any) {
 //output: object validator
 export function HeatCapValidator(params: any) {
   return (val: number, info: ValidationInfo) => {
-    return makeValidationResult({
+    return makeValidationResultInst({
       errors: [
         ...val <= 0 ? ['Heat capacity must be greater than zero.']: []
       ],
       notifications: [
-        makeAdvice(`Heat capacity is only dependent on the object material.`, [
+        makeAdviceInst(`Heat capacity is only dependent on the object material.`, [
           {actionName: 'Google it', action: () => { window.open(`http://google.com`)}}
         ]),
       ]
@@ -313,7 +322,7 @@ export function HeatCapValidator(params: any) {
 //input: object params
 //output: object input
 export function CustomStringInput(params: any) {
-  const defaultInput = ui.stringInput('Custom input', '');
+  const defaultInput = ui.input.string('Custom input', {value:''});
   defaultInput.root.style.backgroundColor = 'aqua';
   defaultInput.input.style.backgroundColor = 'aqua';
   return defaultInput;
@@ -328,3 +337,19 @@ export function ObjectCoolingSelector(params: any) {
     'ObjectCooling',
   );
 }
+
+//// Compute-utils API section
+
+export const testPipeline = testPipelineInst;
+export const CompView = ComputationViewInst;
+export const RFV = RichFunctionViewInst;
+export const Pipeline = PipelineViewInst;
+export const CompositionPipeline = CompositionPipelineViewInst;
+export const makeValidationResult = makeValidationResultInst;
+export const makeAdvice = makeAdviceInst;
+export const makeRevalidation = makeRevalidationInst;
+export const mergeValidationResults = mergeValidationResultsInst;
+export const fileInput = UiUtils.fileInput;
+export const historyInput = UiUtils.historyInput;
+export const historyInputJSON = UiUtils.historyInputJSON;
+export const historyPanel = UiUtils.historyPanel;

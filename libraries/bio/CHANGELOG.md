@@ -1,5 +1,135 @@
 # bio changelog
 
+## 5.42.9
+
+### Features
+
+* HWE option for continuous monomer numbering
+* Add HelmInput mouse events redraw, showTooltip
+* Bump HWE dependencies versions
+
+## 5.42.8 (2024-08-14)
+
+Fix monomer substitution matrix calculation
+
+## 5.42.7 (2024-08-12)
+
+### Features
+
+* Monomer sets defined with .json files
+
+### Bug fixes
+
+* Fix cell renderer base dirty flag and reset
+
+## 5.42.6 (2024-07-29)
+
+### Features
+
+* sequenceChemSimilarity: warning in case reference monomer not found in monomer library
+
+## 5.42.5 (2024-07-23)
+
+### Features
+
+* Add IHelmHelper.createHelmInput, ui.input.helmAsync
+
+### Bug fixes
+
+* Fix identity scoring for seqs of different lengths
+
+## 5.42.4 (2024-07-02)
+
+Fix types ISeqMonomer from Helm
+
+## 5.42.3 (2024-06-26)
+
+### Bug fixes
+
+* GROK-15996: Fix cell renderer for long mode
+* Fix package-lock.json
+
+## 5.42.2 (2024-06-25)
+
+Bump dependencies versions JSDraw.Lite and HELMWebEditor
+
+## 5.42.1 (2024-06-24)
+
+Fix for JSDraw types
+
+## 5.42.0 (2024-06-21)
+
+Use types of forked JSDraw.Lite and HELMWebEditor
+
+## 5.41.12 (2024-06-12)
+
+### Bug fixes
+
+* Fix .pdbqt to .pdb sorting atoms, add tests
+* Fix cell renderer async base to reset errorCount
+
+## 5.41.11 (2024-06-11)
+
+### Bug fixes
+
+Fix Pdbqt parser to assume ROOT as MODEL
+Fix Pdbqt.toPdb sorting atoms, tests
+
+## 5.41.10 (2024-06-10)
+
+NGL typings
+
+## 5.41.9 (2024-05-29)
+
+Fix Monomer type
+
+## 5.41.8 (2024-05-29)
+
+Fix TAGS, ALPHABET enum
+
+## 5.41.7 (2024-05-28)
+
+### Bug fixes
+
+* GROK-15796: Bio: Fix to Helm cell renderer for convert to Helm
+
+## 5.41.6 (2024-05-20)
+
+Fix monomer placer optimization for column width changed
+
+## 5.41.5 (2024-05-16)
+
+Fix separator splitter to ceil splitter limit
+Add seq generator for various notations
+
+## 5.41.4 (2024-05-15)
+
+Move long/many sequence generators to bio lib
+Fix SeqHandler setTags optimizing call getStats
+
+## 5.41.3 (2024-05-15)
+
+Fix cell renderer monomer placer hit test
+
+## 5.41.2 (2024-05-13)
+
+### Bug fixes
+
+Fix MonomerLib.getSummary for backward compatibility
+Fix cell renderer async base for sync rendering
+
+## 5.41.1 (2024-05-13)
+
+### Features
+
+* Add types for Helm Web Editor
+
+### Bug fixes
+
+* Unveil cell renderer errors for tests
+* Fix cell renderer for StackOverflow error on long seqs
+* Optimize SeqHandler.getSplitter for split limit (separator)
+
 ## 5.41.0 (2024-05-01)
 
 Optimize cell renderer on async renderer base

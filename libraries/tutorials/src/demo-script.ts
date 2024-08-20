@@ -137,7 +137,9 @@ export class DemoScript {
     grok.shell.windows.showContextPanel = true;
     grok.shell.windows.showHelp = false;
 
-    const scriptDockNode = Array.from(grok.shell.dockManager.rootNode.children)[0];
+    const scriptDockNode = grok.shell.isInDemo ?
+      Array.from((grok.shell.view('Browse') as DG.BrowseView).dockManager.rootNode.children)[0] :
+      Array.from(grok.shell.dockManager.rootNode.children)[0];
 
     this._node = grok.shell.dockManager.dock(this._root, DG.DOCK_TYPE.FILL, scriptDockNode, '');
 
@@ -174,7 +176,13 @@ export class DemoScript {
     const stepDelay = this._steps[this._currentStep].options?.delay ?
       this._steps[this._currentStep].options?.delay! : 2000;
 
-    await this._steps[this._currentStep].func();
+    try {
+      await this._steps[this._currentStep].func();
+    } catch (e) {
+      grok.shell.isInDemo = false;
+      console.error(e);
+    }
+
     this._scrollTo(this._root, currentStep.offsetTop - this._mainHeader.offsetHeight);
     if (this._isAutomatic) {
       await this._countdown(entry as HTMLElement, entryIndicator as HTMLElement, stepDelay);
@@ -204,6 +212,12 @@ export class DemoScript {
       nextStepEntryIndicator.replaceWith(startNextStepIcon);
       this._nextStepBtn.classList.remove('disabled');
       (this._nextStepBtn.firstChild as HTMLElement).classList.remove('fa-disabled');
+    }
+
+    if (grok.shell.isInDemo) {
+      const browseView = grok.shell.view('Browse') as DG.BrowseView;
+      if (browseView?.preview instanceof DG.TableView)
+        await grok.data.detectSemanticTypes(browseView.preview.dataFrame);
     }
   }
 
@@ -334,6 +348,7 @@ export class DemoScript {
   cancelScript(): void {
     this._isCancelled = true;
     DemoScript.currentObject = null;
+    grok.shell.isInDemo = false;
   }
 
   /**

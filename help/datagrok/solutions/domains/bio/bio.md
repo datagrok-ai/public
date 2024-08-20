@@ -58,7 +58,7 @@ Datagrok lets you work with macromolecules both on the macro (sequence) level an
     * A fit-for-purpose application for [SAR analysis for peptides](#sar-for-peptides)
   * A comprehensive [ML toolkit](../../../solutions/domains/data-science.md) for
 clustering, dimensionality reduction techniques, imputation, PCA/PLS, and other tasks. Built-in statistics.
-  * Flexible reporting and sharing options, including [dynamic dashboards](../../../../access/databases/databases.mdx#sharing-query-results).
+  * Flexible reporting and sharing options, including [dynamic dashboards](../../../../access/databases/databases.md#sharing-query-results).
 * [Oligonucleotides chemical modifications and format conversion](#oligo-toolkit).
 * Connection to chemistry level: [split to monomers](#split-to-monomers), and [get the atomic-level structure](#get-atomic-level-structure).
 * [Extensible environment](#customizing-and-extending-the-platform)
@@ -180,7 +180,7 @@ an interconnected system ideal for exploratory data analysis.
 Macromolecule-specific viewers include [sequence logo](../../../../visualize/viewers/web-logo.md), 3D structure viewers
 ([biostructure](../../../../visualize/viewers/biostructure.md) and [NGL viewer](../../../../visualize/viewers/ngl.md)),
 and [sequence tree viewers](../../../../visualize/viewers/dendrogram.md). Examples of general-purpose viewers that
-can be used to analyze biological data include a [scatterplot](../../../../visualize/viewers/scatter-plot.mdx),
+can be used to analyze biological data include a [scatterplot](../../../../visualize/viewers/scatter-plot.md),
 a [network diagram](../../../../visualize/viewers/network-diagram.md), a [tile viewer](../../../../visualize/viewers/tile-viewer.md),
 a [bar chart](../../../../visualize/viewers/bar-chart.md), a [form viewer](../../../../visualize/viewers/form.md),
 and [trellis plot](../../../../visualize/viewers/trellis-plot.md), and others.
@@ -298,7 +298,7 @@ To search a dataset for matching sequences, do the following:
 
 </details>
 
-To learn more about filtering, watch this [video](https://www.youtube.com/watch?v=GM3XixUFFUs&t=2688s) or read [this article](../../../../visualize/viewers/viewers.md#filter).
+To learn more about filtering, watch this [video](https://www.youtube.com/watch?v=GM3XixUFFUs&t=2688s) or read [this article](../../../navigation/views/table-view.md#select-and-filter).
 
 ## Manage monomer libraries
 
@@ -308,7 +308,7 @@ The default [HELM monomer library](https://github.com/datagrok-ai/public/blob/ma
 
 To include monomers from a library, click on a checkbox next to its name.
 
-To add a new monomer library file, click **ADD** button. All monomer library files are validated against the standard HELM [JSON schema](https://github.com/datagrok-ai/public/blob/master/packages/Bio/files/tests/libraries/HELMmonomerSchema.json) and must fully conform to it. The added files will be stored under `AppData/Bio/monomer-libraries` in [file shares](../../../../access/files/files.mdx#connecting-to-file-storage).
+To add a new monomer library file, click **ADD** button. All monomer library files are validated against the standard HELM [JSON schema](https://github.com/datagrok-ai/public/blob/master/packages/Bio/files/tests/libraries/HELMmonomerSchema.json) and must fully conform to it. The added files will be stored under `AppData/Bio/monomer-libraries` in [file shares](../../../../access/files/files.md#connecting-to-file-storage).
 
 ## Sequence analysis
 
@@ -333,7 +333,7 @@ A common use is to visualize protein-binding sites in DNA or functional motives 
 ### Sequence space
 
 Sequence space visualizes a collection of sequences in 2D such that similar sequences are placed close to each other
-(geekspeak: [dimensionality reduction](https://en.wikipedia.org/wiki/Dimensionality_reduction), [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html), [UMAP](https://umap-learn.readthedocs.io/en/latest/), [distance functions](https://www.sciencedirect.com/science/article/pii/S0888613X07000382)). This allows to identify clusters of similar sequences, outliers, or patterns that might be difficult to detect otherwise. Results are visualized on the interactive [scatterplot](../../../../visualize/viewers/scatter-plot.mdx).
+(geekspeak: [dimensionality reduction](https://en.wikipedia.org/wiki/Dimensionality_reduction), [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html), [UMAP](https://umap-learn.readthedocs.io/en/latest/), [distance functions](https://www.sciencedirect.com/science/article/pii/S0888613X07000382)). This allows to identify clusters of similar sequences, outliers, or patterns that might be difficult to detect otherwise. Results are visualized on the interactive [scatterplot](../../../../visualize/viewers/scatter-plot.md).
 
 Sequence space analysis is particularly useful for separating groups of sequences with common motifs, such as different variants of complementarity-determining regions (CDRs) for antibodies.
 

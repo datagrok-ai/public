@@ -91,7 +91,7 @@ MRGGL
     const srcSeq: string = wrapData[testKey].src;
     const col = DG.Column.fromStrings('src', [srcSeq]);
     col.semType = DG.SEMTYPE.MACROMOLECULE;
-    col.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    col.meta.units = NOTATION.FASTA;
     const sh = SeqHandler.forColumn(col);
     const srcSS = sh.getSplitted(0);
     const wrapRes: string[] = wrapSequence(srcSS, lineWidth);
@@ -105,7 +105,7 @@ MRGGL
 
     const seqCol: DG.Column = df.getCol(args.seqCol);
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    seqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    seqCol.meta.units = NOTATION.FASTA;
     const idCols: DG.Column[] = args.idCols.map((colName) => df.getCol(colName));
 
     const fastaRes: string = saveAsFastaDo(idCols, seqCol, args.lineWidth);

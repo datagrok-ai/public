@@ -138,8 +138,7 @@ class Table {
       this._dataFrame.rows.removeAt(itemIdx);
       if (this._currentItemIdx > itemIdx)
         this._currentItemIdx--;
-      if (this._currentItemIdx >= 0)
-        this._onItemChangedAction(this._currentItemIdx);
+      this._onItemChangedAction(this._currentItemIdx);
     });
     btn.style.textAlign = 'center';
     btn.style.height = '20px';
@@ -258,7 +257,7 @@ export interface EditorOptions {
  * Scatter Plot viewer by default.
  */
 class Preview {
-  viewer: DG.ScatterPlotViewer | DG.Viewer<DG.ILineChartLookSettings>;
+  viewer: DG.ScatterPlotViewer | DG.Viewer<DG.ILineChartSettings>;
   dataFrame: DG.DataFrame;
   items: DG.FormulaLine[];
 
@@ -272,12 +271,12 @@ class Preview {
   get axisCols(): AxisColumns {
     let yColName;
     if (this.viewer.type === DG.VIEWER.LINE_CHART) {
-      const yCols: string[] = (this.viewer.props as DG.ILineChartLookSettings).yColumnNames;
+      const yCols: string[] = (this.viewer.props as DG.ILineChartSettings).yColumnNames;
       yColName = this.dataFrame.columns.toList().find((col) => col.name != this.viewer.props.xColumnName &&
         yCols.some((n) => col.name.includes(n)))?.name;
     }
     else
-      yColName = (this.viewer.props as DG.IScatterPlotLookSettings).yColumnName;
+      yColName = (this.viewer.props as DG.IScatterPlotSettings).yColumnName;
     return {
       y: this.dataFrame.getCol(yColName!),
       x: this.dataFrame.getCol(this.viewer.props.xColumnName),
@@ -327,9 +326,13 @@ class Preview {
         const yCol = this.dataFrame.columns.toList()
           .find((col) => col.name != src.props.xColumnName && yCols.some((n) => col.name.includes(n)));
         this._scrAxes = {x: src.props.xColumnName, y: yCol === undefined ? src.props.xColumnName : yCol.name};
+      } else if (src.getOptions()['type'] === DG.VIEWER.TRELLIS_PLOT) {
+        this.dataFrame = src.dataFrame!;
+        const innerLook = src.getOptions()['look'];
+        this._scrAxes = {y: innerLook['yColumnName'], x: innerLook['xColumnName']};
       } else {
         this.dataFrame = src.dataFrame!;
-        this._scrAxes = { y: src.props.yColumnName, x: src.props.xColumnName };
+        this._scrAxes = {y: src.props.yColumnName, x: src.props.xColumnName};
       }
     } else
       throw 'Host is not DataFrame or Viewer.';
@@ -344,15 +347,15 @@ class Preview {
         showContextMenu: false,
         axesFollowFilter: false,
         axisFont: '11px Arial',
-        legendVisibility: 'Never',
+        legendVisibility: DG.VisibilityMode.Never,
         xAxisHeight: 25,
       });
-    else
+    else {
       this.viewer = DG.Viewer.scatterPlot(this.dataFrame, {
-        yAxisType: src instanceof DG.Viewer ? src.props.yAxisType : 'linear',
-        xAxisType: src instanceof DG.Viewer ? src.props.xAxisType : 'linear',
-        invertXAxis: src instanceof DG.Viewer ? src.props.invertXAxis : false,
-        invertYAxis: src instanceof DG.Viewer && src.getOptions()['type'] != DG.VIEWER.LINE_CHART ?
+        yAxisType: src instanceof DG.Viewer && src.getOptions()['type'] == DG.VIEWER.SCATTER_PLOT ? src.props.yAxisType : 'linear',
+        xAxisType: src instanceof DG.Viewer && src.getOptions()['type'] == DG.VIEWER.SCATTER_PLOT ? src.props.xAxisType : 'linear',
+        invertXAxis: src instanceof DG.Viewer && src.getOptions()['type'] == DG.VIEWER.SCATTER_PLOT ? src.props.invertXAxis : false,
+        invertYAxis: src instanceof DG.Viewer && src.getOptions()['type'] == DG.VIEWER.SCATTER_PLOT ?
           src.props.invertYAxis : false,
         showDataframeFormulaLines: false,
         showViewerFormulaLines: true,
@@ -365,9 +368,10 @@ class Preview {
         showCurrentPoint: false,
         zoomAndFilter: 'no action',
         axisFont: '11px Arial',
-        legendVisibility: 'Never',
+        legendVisibility: DG.VisibilityMode.Never,
         xAxisHeight: 25,
       });
+    }
 
     /**
      * Creates special context menu for preview Scatter Plot.
@@ -492,14 +496,14 @@ class Editor {
   _inputFormula(itemIdx: number): HTMLElement {
     const item = this.items[itemIdx];
 
-    const ibFormula = ui.textInput('', item.formula ?? '',
-      (value: string) => {
+    const ibFormula = ui.input.textArea('', {value: item.formula ?? '',
+      onValueChanged: (input) => {
         const oldFormula = item.formula!;
-        item.formula = value;
+        item.formula = input.value;
         const resultOk = this._onItemChangedAction(itemIdx);
         elFormula.classList.toggle('d4-forced-invalid', !resultOk);
         this._setTitleIfEmpty(oldFormula, item.formula);
-      });
+      }});
 
     const elFormula = ibFormula.input as HTMLInputElement;
     elFormula.placeholder = 'Formula';
@@ -515,11 +519,11 @@ class Editor {
   _inputColor(itemIdx: number): HTMLElement {
     const item = this.items[itemIdx];
 
-    const ibColor = ui.colorInput('Color', item.color ?? '#000000',
-      (value: string) => {
-        item.color = value;
+    const ibColor = ui.input.color('Color', {value: item.color ?? '#000000',
+      onValueChanged: (input) => {
+        item.color = input.value;
         this._onItemChangedAction(itemIdx);
-      });
+      }});
 
     const elColor = ibColor.input as HTMLInputElement;
     elColor.placeholder = '#000000';
@@ -553,21 +557,20 @@ class Editor {
   _inputStyle(itemIdx: number): HTMLElement {
     const item = this.items[itemIdx];
 
-    const ibStyle = ui.choiceInput('Style', item.style ?? 'solid',
-      ['solid', 'dotted', 'dashed', 'longdash', 'dotdash'],
-      (value: string) => {
-        item.style = value;
+    const ibStyle = ui.input.choice('Style', {value: item.style ?? 'solid',
+      items: ['solid', 'dotted', 'dashed', 'longdash', 'dotdash'], onValueChanged: (input) => {
+        item.style = input.value;
         this._onItemChangedAction(itemIdx);
-      });
+      }});
 
     const elStyle = ibStyle.input as HTMLInputElement;
     //elStyle.style.width = '135px';
 
-    const ibWidth = ui.intInput('', item.width ?? 1,
-      (value: number) => {
-        item.width = value;
+    const ibWidth = ui.input.int('', {value: item.width ?? 1,
+      onValueChanged: (input) => {
+        item.width = input.value;
         this._onItemChangedAction(itemIdx);
-      });
+      }});
     ibWidth.addPostfix('px');
 
     const elWidth = ibWidth.input as HTMLInputElement;
@@ -583,21 +586,21 @@ class Editor {
   _inputRange(itemIdx: number): HTMLElement {
     const item = this.items[itemIdx];
 
-    const ibMin = ui.stringInput('Range', `${item.min ?? ''}`,
-      (value: string) => {
-        item.min = value.length === 0 ? undefined : Number(value);
+    const ibMin = ui.input.string('Range', {value: `${item.min ?? ''}`,
+      onValueChanged: (input) => {
+        item.min = input.value.length === 0 ? undefined : Number(input.value);
         this._onItemChangedAction(itemIdx);
-      });
+      }});
 
     const elMin = ibMin.input as HTMLInputElement;
     elMin.placeholder = 'min';
     elMin.setAttribute('style', 'width: 98px;');
 
-    const ibMax = ui.stringInput('', `${item.max ?? ''}`,
-      (value: string) => {
-        item.max = value.length === 0 ? undefined : Number(value);
+    const ibMax = ui.input.string('', {value: `${item.max ?? ''}`,
+      onValueChanged: (input) => {
+        item.max = input.value.length === 0 ? undefined : Number(input.value);
         this._onItemChangedAction(itemIdx);
-      });
+      }});
 
     const elMax = ibMax.input as HTMLInputElement;
     elMax.placeholder = 'max';
@@ -610,12 +613,12 @@ class Editor {
   _inputArrange(itemIdx: number): HTMLElement {
     const item = this.items[itemIdx];
 
-    const ibArrange = ui.choiceInput('Arrange',
-      item.zIndex && item.zIndex > 0 ? 'above markers' : 'below markers', ['above markers', 'below markers'],
-      (value: string) => {
-        item.zIndex = value === 'above markers' ? 100 : -100;
+    const ibArrange = ui.input.choice('Arrange', {
+      value: item.zIndex && item.zIndex > 0 ? 'above markers' : 'below markers', items: ['above markers', 'below markers'],
+      onValueChanged: (input) => {
+        item.zIndex = input.value === 'above markers' ? 100 : -100;
         this._onItemChangedAction(itemIdx);
-      });
+      }});
 
     const elArrange = ibArrange.input as HTMLInputElement;
     elArrange.setAttribute('style', 'width: 204px; max-width: none;');
@@ -637,11 +640,11 @@ class Editor {
       return value;
     }
 
-    this._ibTitle = ui.stringInput('Title', item.title ?? '',
-      (value: string) => {
-        item.title = formTitleValue(value);
+    this._ibTitle = ui.input.string('Title', {value: item.title ?? '',
+      onValueChanged: (input) => {
+        item.title = formTitleValue(input.value);
         this._onItemChangedAction(itemIdx);
-      });
+      }});
 
     const elTitle = this._ibTitle.input as HTMLInputElement;
     elTitle.setAttribute('style', 'width: 204px; max-width: none;');
@@ -654,11 +657,11 @@ class Editor {
   _inputShowLabels(itemIdx: number): HTMLElement {
     const item = this.items[itemIdx];
 
-    const iShowLabels = ui.boolInput('Show on plot', item.showOnPlot ?? true,
-      (value: boolean) => {
-        item.showOnPlot = value;
+    const iShowLabels = ui.input.bool('Show on plot', {value: item.showOnPlot ?? true,
+      onValueChanged: (input) => {
+        item.showOnPlot = input.value;
         this._onItemChangedAction(itemIdx);
-      });
+      }});
 
 
     return iShowLabels.root;
@@ -668,11 +671,11 @@ class Editor {
   _inputShowDescriptionInTooltip(itemIdx: number): HTMLElement {
     const item = this.items[itemIdx];
 
-    const iShowLabels = ui.boolInput('Show on tooltip', item.showOnTooltip ?? true,
-      (value: boolean) => {
-        item.showOnTooltip = value;
+    const iShowLabels = ui.input.bool('Show on tooltip', {value: item.showOnTooltip ?? true,
+      onValueChanged: (input) => {
+        item.showOnTooltip = input.value;
         this._onItemChangedAction(itemIdx);
-      });
+      }});
 
 
     return iShowLabels.root;
@@ -682,11 +685,11 @@ class Editor {
   _inputDescription(itemIdx: number): HTMLElement {
     const item = this.items[itemIdx];
 
-    const ibDescription = ui.textInput('Description', item.description ?? '',
-      (value: string) => {
-        item.description = value;
+    const ibDescription = ui.input.textArea('Description', {value: item.description ?? '',
+      onValueChanged: (input) => {
+        item.description = input.value;
         this._onItemChangedAction(itemIdx);
-      });
+      }});
 
     const elDescription = ibDescription.input as HTMLInputElement;
     elDescription.setAttribute('style',
@@ -700,12 +703,12 @@ class Editor {
   _inputColumn2(itemIdx: number): HTMLElement {
     const item = this.items[itemIdx];
 
-    const ibColumn2 = ui.columnInput('Adjacent column', this._dataFrame,
-      item.column2 ? this._dataFrame.col(item.column2) : null,
-      (value: DG.Column) => {
-        item.column2 = value.name;
+    //@ts-ignore
+    const ibColumn2 = ui.input.column('Adjacent column', {table: this._dataFrame, value: item.column2 ? this._dataFrame.col(item.column2) : null,
+      onValueChanged: (input) => {
+        item.column2 = input.value.name;
         this._onItemChangedAction(itemIdx);
-      });
+      }});
 
     const elColumn2 = ibColumn2.input as HTMLInputElement;
     //elColumn2.setAttribute('style', 'width: 204px; max-width: none;');
@@ -717,23 +720,24 @@ class Editor {
   _inputConstant(itemIdx: number, colName: string, value: string): HTMLElement {
     const item = this.items[itemIdx];
 
-    const ibColumn = ui.columnInput('Column', this._dataFrame, colName ? this._dataFrame.col(colName) : null,
-      (value: DG.Column) => {
+    //@ts-ignore
+    const ibColumn = ui.input.column('Column', {table: this._dataFrame, value: colName ? this._dataFrame.col(colName) : null,
+      onValueChanged: (input) => {
         const oldFormula = item.formula!;
-        item.formula = '${' + value + '} = ' + ibValue.value;
+        item.formula = '${' + input.value + '} = ' + ibValue.value;
         this._onItemChangedAction(itemIdx);
         this._setTitleIfEmpty(oldFormula, item.formula);
-      });
+      }});
 
     const elColumn = ibColumn.input as HTMLInputElement;
     //elColumn.setAttribute('style', 'width: 204px; max-width: none; margin-right: -10px;');
 
-    const ibValue = ui.stringInput('Value', value, (value: string) => {
+    const ibValue = ui.input.string('Value', {value: value, onValueChanged: (input) => {
       const oldFormula = item.formula!;
-      item.formula = '${' + ibColumn.value + '} = ' + value;
+      item.formula = '${' + ibColumn.value + '} = ' + input.value;
       this._onItemChangedAction(itemIdx);
       this._setTitleIfEmpty(oldFormula, item.formula);
-    });
+    }});
     ibValue.nullable = false;
 
     const elValue = ibValue.input as HTMLInputElement;

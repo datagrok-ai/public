@@ -174,14 +174,15 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
     const colorCodeNormalizeInput = DG.InputBase.forProperty(colorCodeScaleProp, settings);
     colorCodeNormalizeInput.onChanged(() => { gridColumn.grid.invalidate(); });
 
+    const columnNames = settings?.columnNames ?? names(gridColumn.grid.dataFrame.columns.numerical);
     return ui.inputs([
       normalizeInput,
-      ui.columnsInput('Сolumns', gridColumn.grid.dataFrame, (columns) => {
-        settings.columnNames = names(columns);
-        gridColumn.grid.invalidate();
-      }, {
-        available: names(gridColumn.grid.dataFrame.columns.numerical),
-        checked: settings?.columnNames ?? names(gridColumn.grid.dataFrame.columns.numerical),
+      ui.input.columns('Сolumns', {value: gridColumn.grid.dataFrame.columns.byNames(columnNames),
+        table: gridColumn.grid.dataFrame,
+        onValueChanged: (input) => {
+          settings.columnNames = names(input.value);
+          gridColumn.grid.invalidate();
+        }, available: names(gridColumn.grid.dataFrame.columns.numerical),
       }),
       colorCodeNormalizeInput,
     ]);

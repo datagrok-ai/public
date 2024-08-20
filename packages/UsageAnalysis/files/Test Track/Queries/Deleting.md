@@ -1,8 +1,8 @@
-1. Go to **Browse** > **Databases** and find queries from the previous steps (3.1)
-1. Delete them one after the other:
+1. Go to **Browse** > **Databases** > **PostgresDart** > **NorthwindTest** and find query from the previous steps with name `new_test_query`.
+2. Delete `new_test_query`:
     * Right-click the connection and select **Delete** from the context menu.
-    * In the confirmation dialog, click YES.
-1. Check that queries have been deleted and are no longer present.
+    * In the confirmation dialog, click DELETE.
+3. Reftesh **Browse** view and check that query has been deleted and is no longer present.
 ---
 {
   "order": 4

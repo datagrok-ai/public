@@ -63,12 +63,12 @@ export function getDistributionWidget(table: DG.DataFrame, options: Distribution
   const inputsArray: DG.InputBase[] = new Array(inputsNames.length);
   for (let inputIdx = 0; inputIdx < inputsNames.length; inputIdx++) {
     const inputName = inputsNames[inputIdx].substring(8);
-    inputsArray[inputIdx] = ui.boolInput(inputName,
-      table.getTag(inputsNames[inputIdx]) === `${true}`, () => {
+    inputsArray[inputIdx] = ui.input.bool(inputName,
+      {value: table.getTag(inputsNames[inputIdx]) === `${true}`, onValueChanged: () => {
         table.setTag(inputsNames[inputIdx], `${inputsArray[inputIdx].value}`);
         $(distributionCategoriesHost).empty();
         distributionCategoriesHost.append(getDistributionCategoreisHost());
-      }) as DG.InputBase<boolean>;
+      }}) as DG.InputBase<boolean>;
     $(inputsArray[inputIdx].captionLabel).addClass('ui-label-right').css('text-align', 'left');
     $(inputsArray[inputIdx].root).find('.ui-input-editor').css('margin', '0px');
     $(inputsArray[inputIdx].root).find('.ui-input-description').css('margin', '0px');
@@ -91,8 +91,10 @@ export function getDistributionWidget(table: DG.DataFrame, options: Distribution
  * @param isTooltip - Is histogram for tooltip
  * @return - Histogram viewer
  */
-export function getActivityDistribution(table: DG.DataFrame, isTooltip: boolean = false,
-): DG.Viewer<DG.IHistogramLookSettings> {
+export function getActivityDistribution(
+  table: DG.DataFrame, isTooltip: boolean = false,
+  // @ts-ignore TODO: fix after api update
+): DG.Viewer<DG.IHistogramSettings> {
   const hist = table.plot.histogram({
     filteringEnabled: false,
     valueColumnName: C.COLUMNS_NAMES.ACTIVITY,
@@ -103,7 +105,8 @@ export function getActivityDistribution(table: DG.DataFrame, isTooltip: boolean 
     showRangeSlider: false,
     showBinSelector: false,
     backColor: isTooltip ? '#fdffe5' : '#fffff',
-  }) as DG.Viewer<DG.IHistogramLookSettings>;
+    // @ts-ignore TODO: fix after api update
+  }) as DG.Viewer<DG.IHistogramSettings>;
   hist.root.style.width = 'auto';
   return hist;
 }
@@ -115,16 +118,17 @@ export function getActivityDistribution(table: DG.DataFrame, isTooltip: boolean 
  * @param options.fractionDigits - Number of fraction digits for stats values
  * @return - Stats table map
  */
-export function getStatsTableMap(stats: StatsItem, options: { fractionDigits?: number } = {}): StringDictionary {
+export function getStatsTableMap(stats: StatsItem,
+  options: { fractionDigits?: number } = {},
+): StringDictionary {
   options.fractionDigits ??= 3;
   const tableMap: StringDictionary = {
-    'Count': `${stats.count} (${stats.ratio.toFixed(options.fractionDigits)}%)`,
+    'Count': `${stats.count} (${(stats.ratio * 100).toFixed(options.fractionDigits)}%)`,
     'Mean difference': stats.meanDifference.toFixed(options.fractionDigits),
     'Mean activity': stats.mean.toFixed(options.fractionDigits),
   };
-  if (stats.pValue !== null)
+  if (stats.pValue != null)
     tableMap['p-value'] = stats.pValue < 0.01 ? '<0.01' : stats.pValue.toFixed(options.fractionDigits);
-
 
   return tableMap;
 }

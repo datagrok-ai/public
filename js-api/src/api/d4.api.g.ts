@@ -28,10 +28,12 @@ export class ViewerEvent {
   set type(x: string) {api.grok_ViewerEvent_Set_type(this.dart, toDart(x)); }
   get eventFlag(): boolean { return api.grok_ViewerEvent_Get_eventFlag(this.dart); };
   set eventFlag(x: boolean) {api.grok_ViewerEvent_Set_eventFlag(this.dart, toDart(x)); }
-  get filters(): Map<string, any> { return api.grok_ViewerEvent_Get_filters(this.dart); };
-  set filters(x: Map<string, any>) {api.grok_ViewerEvent_Set_filters(this.dart, toDart(x)); }
+  get filters(): {[index: string]: any} { return api.grok_ViewerEvent_Get_filters(this.dart); };
+  set filters(x: {[index: string]: any}) {api.grok_ViewerEvent_Set_filters(this.dart, toDart(x)); }
   get row(): number { return api.grok_ViewerEvent_Get_row(this.dart); };
   set row(x: number) {api.grok_ViewerEvent_Set_row(this.dart, toDart(x)); }
+  get mouseEvent(): any { return api.grok_ViewerEvent_Get_mouseEvent(this.dart); };
+  set mouseEvent(x: any) {api.grok_ViewerEvent_Set_mouseEvent(this.dart, toDart(x)); }
   get bitset(): any { return api.grok_ViewerEvent_Get_bitset(this.dart); };
 
 }
@@ -137,8 +139,8 @@ export class GridCellStyleEx {
   static set textStyle(x: any) {api.grok_GridCellStyle_Set_textStyle(toDart(x)); }
   static get numberStyle(): any { return api.grok_GridCellStyle_Get_numberStyle(); };
   static set numberStyle(x: any) {api.grok_GridCellStyle_Set_numberStyle(toDart(x)); }
-  static get styles(): Map<string, any> { return api.grok_GridCellStyle_Get_styles(); };
-  static set styles(x: Map<string, any>) {api.grok_GridCellStyle_Set_styles(toDart(x)); }
+  static get styles(): {[index: string]: any} { return api.grok_GridCellStyle_Get_styles(); };
+  static set styles(x: {[index: string]: any}) {api.grok_GridCellStyle_Set_styles(toDart(x)); }
   get font(): string { return api.grok_GridCellStyle_Get_font(this.dart); };
   set font(x: string) {api.grok_GridCellStyle_Set_font(this.dart, toDart(x)); }
   get horzAlign(): string { return api.grok_GridCellStyle_Get_horzAlign(this.dart); };

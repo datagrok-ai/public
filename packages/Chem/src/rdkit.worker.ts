@@ -19,7 +19,7 @@ ctx.addEventListener('message', async (e: any) => {
       const webRoot = args[0];
       _rdKitModule = await initRDKitModule({locateFile: () => `${webRoot}/dist/${rdKitLibVersion}.wasm`});
       _rdKitModule.use_legacy_stereo_perception(false);
-      console.log('RDKit (worker) initialized');
+      // console.log('RDKit (worker) initialized');
       _rdKitServiceWorker = new ServiceWorkerClass(_rdKitModule, webRoot);
     } else if (op === WORKER_CALL.INIT_MOLECULES_STRUCTURES)
       result = _rdKitServiceWorker!.initMoleculesStructures(args[0]);
@@ -43,6 +43,8 @@ ctx.addEventListener('message', async (e: any) => {
       _rdKitServiceWorker!.setTerminateFlag(args[0]);
     else if (op === WORKER_CALL.MMP_GET_FRAGMENTS)
       result = _rdKitServiceWorker!.mmpGetFragments(args[0]);
+    else if (op === WORKER_CALL.MMP_LINK_FRAGMENTS)
+      result = _rdKitServiceWorker!.mmpLinkFragments(args[0], args[1]);
     else if (op === WORKER_CALL.MMP_GET_MCS)
       result = _rdKitServiceWorker!.mmpGetMcs(args[0]);
     else if (op === WORKER_CALL.MOST_COMMON_STRUCTURE)

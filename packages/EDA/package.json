@@ -1,17 +1,17 @@
 {
   "name": "@datagrok/eda",
   "friendlyName": "EDA",
-  "version": "1.1.22",
+  "version": "1.1.34",
   "description": "Exploratory Data Analysis Tools",
   "dependencies": {
-    "@datagrok-libraries/math": "^1.1.5",
-    "@datagrok-libraries/ml": "^6.6.5",
-    "@datagrok-libraries/tutorials": "^1.3.6",
-    "@datagrok-libraries/utils": "^4.1.44",
+    "@datagrok-libraries/math": "^1.1.11",
+    "@datagrok-libraries/ml": "^6.6.21",
+    "@datagrok-libraries/tutorials": "^1.3.13",
+    "@datagrok-libraries/utils": "^4.2.20",
     "@keckelt/tsne": "^1.0.2",
     "@webgpu/types": "^0.1.40",
     "cash-dom": "^8.1.1",
-    "datagrok-api": "^1.16.0",
+    "datagrok-api": "^1.20.1",
     "dayjs": "^1.11.9",
     "jstat": "^1.9.6",
     "source-map-loader": "^4.0.1",
@@ -25,14 +25,14 @@
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
+    "css-loader": "latest",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
+    "style-loader": "latest",
     "ts-loader": "latest",
     "typescript": "latest",
     "webpack": "latest",
-    "webpack-cli": "latest",
-    "css-loader": "latest",
-    "style-loader": "latest"
+    "webpack-cli": "latest"
   },
   "scripts": {
     "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/tutorials",
@@ -59,7 +59,8 @@
   },
   "category": "Machine Learning",
   "sources": [
-    "wasm/EDA.js"
+    "wasm/EDA.js",
+    "wasm/XGBoostAPI.js"
   ],
   "meta": {
     "menu": {

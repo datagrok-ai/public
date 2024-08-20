@@ -117,6 +117,8 @@ ${CONTROL_EXPR.PARAMS}:
   KA = 0.3 {caption: rate constant; category: Paramters; min: 0.1; max: 1}
   CL = 2 {caption: clearance; category: Paramters; min: 1; max: 5}
   V2 = 4 {caption: central volume; category: Paramters; min: 1; max: 10} [Central compartment volume]
+
+${CONTROL_EXPR.SOLVER}: {method: 'mrt'; maxTimeMs: 50}
   
 ${CONTROL_EXPR.TOL}: 1e-9`;
 
@@ -135,7 +137,7 @@ ${CONTROL_EXPR.EXPR}:
   C3 = peri / V3
 
 ${CONTROL_EXPR.LOOP}:
-  count = 10 {category: Dosing; min: 1; max: 20} [Number of doses]
+  count = 10 {caption: count; category: Dosing; min: 1; max: 20} [Number of doses]
   depot += dose
 
 ${CONTROL_EXPR.ARG}: t
@@ -177,12 +179,12 @@ ${CONTROL_EXPR.EXPR}:
   rX = mu * X
 
 ${CONTROL_EXPR.ARG}: t, 1-st stage
-  start = 0 {units: h; caption: initial; category: Time} [Start of the process]
-  stage1 = 60 {units: h; caption: 1-st stage; category: Stages duration; min: 40; max: 80} [Duration of the 1-st stage]
-  step = 0.1 {units: h; caption: step; category: Time; min: 0.01; max: 1} [Time step of simlulation]
+  _t0 = 0 {units: h; caption: initial; category: Misc} [Start of the process]
+  _t1 = 60 {units: h; caption: 1-st stage; category: Durations; min: 20; max: 80} [Duration of the 1-st stage]
+  step = 0.1 {units: h; caption: step; category: Misc; min: 0.01; max: 1} [Time step of simlulation]
 
 ${CONTROL_EXPR.UPDATE}: 2-nd stage
-  duration = stage2
+  duration = overall - _t1
   S += 70
 
 ${CONTROL_EXPR.INITS}:  
@@ -199,7 +201,7 @@ ${CONTROL_EXPR.OUTPUT}:
   P {caption: acid}
 
 ${CONTROL_EXPR.PARAMS}:
-  stage2 = 60 {units: h; caption: 2-nd stage; category: Stages duration; min: 40; max: 80} [Duration of the 2-nd stage]
+  overall = 100 {units: h; category: Durations; min: 100; max: 140} [Overall duration]
   muM = 0.668 {units: 1/h; category: Parameters} [Monod type model parameter]
   alpha = 2.92 {category: Parameters} [Monod type model parameter]
   beta = 0.131 {units: 1/h; category: Parameters} [Monod type model parameter]
@@ -347,19 +349,35 @@ ${CONTROL_EXPR.ARG}: t
    h = 1     {units: min; caption: Step;    category: Time; min: 0.1; max: 2}     [Time step of simlulation]
 
 ${CONTROL_EXPR.INITS}:  
-  FFox     = 0.2   {units: mmol/L; category: Initial values; min: 0.1; max: 0.3; step: 0.01}  [FF oxidized]
-  KKox     = 0.2   {units: mmol/L; category: Initial values; min: 0.1; max: 0.3; step: 0.01}  [KK oxidized]
-  FFred    = 0.1   {units: mmol/L; category: Initial values}                                  [FF reduced]
-  KKred    = 0.1   {units: mmol/L; category: Initial values}                                  [KK reduced]
-  Ffree    = 0     {units: mmol/L; category: Initial values}                                  [F free]
-  Kfree    = 0     {units: mmol/L; category: Initial values}                                  [K free]
-  FKred    = 0     {units: mmol/L; category: Initial values}                                  [FK reduced]
-  FKox     = 0     {units: mmol/L; category: Initial values}                                  [FK oxidized]
-  MEAthiol = 15    {units: mmol/L; category: Initial values}                                  [MEAthiol]
-  CO2      = 0.12  {units: mmol/L; category: Initial values}                                  [Dissolved oxygen]
-  yO2P     = 0.209 {units: atm;    category: Initial values}                                  [Atm headspace]
-  CYST     = 0     {units: mmol/L; category: Initial values}                                  [Cystamine]
-  VL       = 7.2   {units: L;      category: Initial values}                                  [Liquid volume]
+  FFox     = 0.2   {units: mmol/L; category: Initial values; min: 0.15; max: 0.25; step: 0.01}  [FF oxidized]
+  KKox     = 0.2   {units: mmol/L; category: Initial values; min: 0.15; max: 0.25; step: 0.01}  [KK oxidized]
+  FFred    = 0.1   {units: mmol/L; category: Initial values; min: 0.08; max: 0.12; step: 0.01}  [FF reduced]
+  KKred    = 0.1   {units: mmol/L; category: Initial values; min: 0.08; max: 0.12; step: 0.01}  [KK reduced]
+  Ffree    = 0     {units: mmol/L; category: Initial values}                                    [F free]
+  Kfree    = 0     {units: mmol/L; category: Initial values}                                    [K free]
+  FKred    = 0     {units: mmol/L; category: Initial values}                                    [FK reduced]
+  FKox     = 0     {units: mmol/L; category: Initial values}                                    [FK oxidized]
+  MEAthiol = 15    {units: mmol/L; category: Initial values; min: 10;   max: 16}                [MEAthiol]
+  CO2      = 0.12  {units: mmol/L; category: Initial values; min: 0.09; max: 0.15}              [Dissolved oxygen]
+  yO2P     = 0.209 {units: atm;    category: Initial values}                                    [Atm headspace]
+  CYST     = 0     {units: mmol/L; category: Initial values}                                    [Cystamine]
+  VL       = 7.2   {units: L;      category: Initial values}                                    [Liquid volume]
+
+${CONTROL_EXPR.OUTPUT}:
+  t  
+  FFox     {caption: FFox(t)} 
+  KKox     {caption: KKox(t)}
+  FFred    {caption: FFred(t)}
+  KKred    {caption: KKred(t)}
+  Ffree    {caption: Ffree(t)}
+  Kfree    {caption: Kfree(t)}
+  FKred    {caption: FKred(t)}
+  FKox     {caption: FKox(t)}
+  MEAthiol {caption: MEAthiol(t)}
+  CO2      {caption: CO2(t)}
+  yO2P     {caption: yO2P(t)}
+  CYST     {caption: CYST(t)}
+  VL       {caption: VL(t)}
 
 ${CONTROL_EXPR.CONSTS}:
    VLinit = 7.2
@@ -390,7 +408,7 @@ ${CONTROL_EXPR.PARAMS}:
        yO2in = 0.21  {              caption: O2 fraction; category: Parameters;  min: 0.1; max: 0.9}            [Oxygen mole fraction]
            T =  300  {units: K;     caption: temperature; category: Parameters;  min: 250; max: 350}            [System temperature]
            P =    1  {units: atm;   caption: pressure;    category: Parameters;  min: 1;   max: 2}              [Headspace pressure]
-  switchTime =  135  {units: min;   caption: switch at;   category: Time;        min: 50;  max: 200; step: 10}  [Switch mode time]`;
+  switchTime =  135  {units: min;   caption: switch at;   category: Time;        min: 70;  max: 180; step: 10}  [Switch mode time]`;
 
 /** Initial value problem use cases */
 export enum USE_CASES {

@@ -6,11 +6,21 @@ import {ITooltipAndPanelParams} from '@datagrok-libraries/ml/src/viewers/activit
 import {convertMolNotation, getRdKitModule} from '../package';
 import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getMCS} from '../utils/most-common-subs';
+import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 
 const canvasWidth = 200;
 const canvasHeight = 100;
 
 const cashedData: DG.LruCache<String, any> = new DG.LruCache<string, string>();
+
+export type ActivityCliffsParams = {
+  molColName: string,
+  activityColName: string,
+  similarityMetric: BitArrayMetrics,
+  similarity: number,
+  options: any,
+  isDemo?: boolean,
+}
 
 export function findMcsAndUpdateDrawings(params: ITooltipAndPanelParams, hosts: HTMLElement[]) {
   const molecule1 = params.seqCol.get(params.points[0]);
@@ -37,7 +47,7 @@ function drawMolecules(params: ITooltipAndPanelParams, hosts: HTMLElement[], mol
       mcsMol = rdkit.get_qmol(cashedData.get(`${molecules[0]}_${molecules[1]}`));
     molecules.forEach((molecule: string, index: number) => {
       const imageHost = ui.canvas(canvasWidth, canvasHeight);
-      if (params.seqCol.tags[DG.TAGS.UNITS] === DG.chem.Notation.Smiles) {
+      if (params.seqCol.meta.units === DG.chem.Notation.Smiles) {
         //convert to molFile to draw in coordinates similar to dataframe cell
         molecule = convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
       }
@@ -121,7 +131,7 @@ function drawPropPanelElement(params: ITooltipAndPanelParams, element: HTMLDivEl
   const molHost = ui.div();
   if (params.df.currentRowIdx === molIdx)
     molHost.style.border = 'solid 1px lightgrey';
-//@ts-ignore
+
   ui.tooltip.bind(molHost, () => moleculeInfo(params.df, molIdx, params.seqCol.name));
   molHost.onclick = () => {
     const obj = grok.shell.o;

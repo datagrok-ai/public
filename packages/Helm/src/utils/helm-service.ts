@@ -2,25 +2,24 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import * as org from 'org';
-import * as scil from 'scil';
-import * as JSDraw2 from 'JSDraw2';
-
 import $ from 'cash-dom';
 import {Subject, Unsubscribable} from 'rxjs';
 
-import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
-import {HelmAux, HelmProps, HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
+import {HelmEditor} from '@datagrok-libraries/bio/src/helm/types';
 import {RenderTask} from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
+import {HelmAux, HelmProps, HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
 import {svgToImage} from '@datagrok-libraries/utils/src/svg';
 
+import {JSDraw2Module} from '../types';
+
 import {_package} from '../package';
-import {DummyWebEditorMonomer} from './dummy-monomer';
+
+declare const JSDraw2: JSDraw2Module;
 
 export class HelmService extends HelmServiceBase {
   private readonly hostDiv: HTMLDivElement;
 
-  private editor: JSDraw2.Editor | null = null;
+  private editor!: HelmEditor;
   private image: HTMLImageElement | null = null;
 
   constructor() {
@@ -57,46 +56,18 @@ export class HelmService extends HelmServiceBase {
     this.editor.options.height = task.props.height;
     this.editor.resize(task.props.width, task.props.height);
     const helmStr = task.props.helm;
-    let hasMissing: boolean = false;
     if (helmStr) {
-      const monomers = org.helm.webeditor.Monomers;
-      const originalGetMonomer = monomers.getMonomer;
-      const originalAlert = scil.Utils.alert;
-      try {
-        org.helm.webeditor.Monomers.getMonomer = (a: org.helm.IAtom | string, name: string): org.helm.IAtom | null => {
-          let resAtom: any = originalGetMonomer.bind(monomers)(a, name);
-
-          if (!resAtom) {
-            // Input logic
-            if (a == null && name == null)
-              return null;
-
-            let s: string;
-            let biotype: string;
-            if (name == null) {
-              biotype = (a as org.helm.IAtom).biotype();
-              s = (a as org.helm.IAtom).elem;
-            } else {
-              biotype = a as string;
-              s = org.helm.webeditor.IO.trimBracket(name);
-            }
-            resAtom = new DummyWebEditorMonomer(biotype, s);
-            //hasMissing = true;
-          }
-          return resAtom;
-        };
-        // Preventing alert message box for missing monomers with compressed Scilligence.JSDraw2.Lite.js
-        scil.Utils.alert = (s: string): void => {
-          this.logger.warning(`${logPrefix}, scil.Utils.alert() s = 's'.`);
-        };
-        this.logger.debug(`${logPrefix}, editor.setData( '${helmStr}' )`);
-        this.editor.setData(helmStr, 'helm');
-      } finally {
-        monomers.getMonomer = originalGetMonomer;
-        scil.Utils.alert = originalAlert;
-      }
+      // getMonomerOverrideAndLogAlert(
+      //   this.monomerLib,
+      //   getMonomerPatched,
+      //   () => {
+      //     this.logger.debug(`${logPrefix}, editor.setData( '${helmStr}' )`);
+      //     this.editor.setData(helmStr, 'helm');
+      //   }, this.logger);
+      this.logger.debug(`${logPrefix}, editor.setData( '${helmStr}' )`);
+      this.editor.setData(helmStr, 'helm');
     }
-    if (!helmStr || hasMissing)
+    if (!helmStr)
       this.editor.reset();
 
     const bBox = (this.editor.div.children[0] as SVGSVGElement).getBBox();
@@ -155,3 +126,4 @@ export class HelmService extends HelmServiceBase {
 
   async reset(): Promise<void> { }
 }
+

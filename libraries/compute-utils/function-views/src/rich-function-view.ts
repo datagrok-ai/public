@@ -3,22 +3,23 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import ExcelJS from 'exceljs';
-import html2canvas from 'html2canvas';
+import type ExcelJS from 'exceljs';
+import type html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
 import {Subject, BehaviorSubject, Observable, merge, from, of, combineLatest} from 'rxjs';
-import {debounceTime, delay, filter, groupBy, map, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
+import {debounceTime, delay, distinctUntilChanged, filter, groupBy, map, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
 import {UiUtils} from '../../shared-components';
-import {Validator, ValidationResult, nonNullValidator, isValidationPassed, getErrorMessage, makePendingValidationResult, mergeValidationResults} from '../../shared-utils/validation';
-import {getFuncRunLabel, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, plotToSheet, scalarsToSheet, isInputBase} from '../../shared-utils/utils';
+import {Validator, ValidationResult, nonNullValidator, isValidationPassed, getErrorMessage, makePendingValidationResult, mergeValidationResults, getValidationIcon} from '../../shared-utils/validation';
+import {getFuncRunLabel, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, plotToSheet, scalarsToSheet, isInputBase, updateOutputValidationSign, createPartialCopy} from '../../shared-utils/utils';
 import {EDIT_STATE_PATH, EXPERIMENTAL_TAG, INPUT_STATE, RESTRICTED_PATH, viewerTypesMapping} from '../../shared-utils/consts';
 import {FuncCallInput, FuncCallInputValidated, isFuncCallInputValidated, isInputLockable} from '../../shared-utils/input-wrappers';
 import '../css/rich-function-view.css';
 import {FunctionView} from './function-view';
 import {SensitivityAnalysisView as SensitivityAnalysis} from './sensitivity-analysis-view';
+import {FittingView as Optimization} from './fitting-view';
 import {HistoryInputBase} from '../../shared-components/src/history-input';
-import {deepCopy, getObservable, properUpdateIndicator} from './shared/utils';
+import {getDefaultValue, getObservable, properUpdateIndicator} from './shared/utils';
 import {historyUtils} from '../../history-utils';
 import {HistoricalRunsList} from '../../shared-components/src/history-list';
 
@@ -77,8 +78,10 @@ const getNoDataStub = () => ui.divText('[No data to display]', {style: {
  * - notifications for changing inputs, completion of computations, etc: {@link onInputChanged}
  * */
 export class RichFunctionView extends FunctionView {
-  private validationRequests = new Subject<ValidationRequestPayload>();
-  private validationUpdates = new Subject<null>();
+  private inputValidationRequests = new Subject<ValidationRequestPayload>();
+  private outputValidationRequests = new Subject<ValidationRequestPayload>();
+  private inputValidationUpdates = new Subject<null>();
+  private outputValidationUpdates = new Subject<null>();
   private runRequests = new Subject<null>();
 
   // stores the running state
@@ -89,18 +92,24 @@ export class RichFunctionView extends FunctionView {
 
   private inputsOverride: Record<string, FuncCallInput | FuncCallInputValidated> = {};
   private inputsMap: Record<string, FuncCallInput | FuncCallInputValidated> = {};
+  private outputValidationSigns: Record<string, readonly [HTMLElement, HTMLElement]> = {};
 
   // validators
-  private validators: Record<string, Validator> = {};
-  private validationState: Record<string, ValidationResult | undefined> = {};
+  private inputValidators: Record<string, Validator> = {};
+  private outputValidators: Record<string, Validator> = {};
+  private inputValidationState: Record<string, ValidationResult | undefined> = {};
+  private outputValidationState: Record<string, ValidationResult | undefined> = {};
 
   private externalValidatorsUpdates = new Subject<string>();
   private externalValidatorsState: Record<string, ValidationResult | undefined> = {};
 
-  public pendingValidations = this.validationUpdates.pipe(
+  public pendingInputValidations = this.inputValidationUpdates.pipe(
     startWith(null),
-    map(() => this.validationState),
+    map(() => this.inputValidationState),
   );
+
+  private _isOutputOutdated = new BehaviorSubject<boolean>(true);
+  public isOutputOutdated = this._isOutputOutdated.pipe(distinctUntilChanged());
 
   public blockRuns = new BehaviorSubject(false);
 
@@ -120,53 +129,77 @@ export class RichFunctionView extends FunctionView {
     super(initValue, options);
   }
 
-  protected async onFuncCallReady() {
+  public async onFuncCallReady() {
     await this.loadInputsOverrides();
-    await this.loadInputsValidators();
+    await this.loadValidators(SYNC_FIELD.INPUTS);
+    await this.loadValidators(SYNC_FIELD.OUTPUTS);
     await super.onFuncCallReady();
 
-    const fcReplacedSub = this.funcCallReplaced.subscribe(() => this.validationRequests.next({isRevalidation: false}));
+    const fcReplacedSub = this.funcCallReplaced.subscribe(() => {
+      this.inputValidationRequests.next({isRevalidation: false});
+      this.outputValidationRequests.next({isRevalidation: false});
+    });
     this.subs.push(fcReplacedSub);
 
-    const validationSub = this.validationRequests.pipe(
-      groupBy((payload) => payload.field),
-      mergeMap((fieldValidations$) => {
-        return fieldValidations$.pipe(
-          tap((payload) => this.setValidationPending(payload.field)),
-          switchMap((payload) => {
-            const controller = new AbortController();
-            const signal = controller.signal;
-            let done = false;
-            const obs$ = new Observable<Record<string, ValidationResult | undefined>>((observer) => {
-              const sub = from(this.runValidation({...payload}, signal)).subscribe((val) => {
-                done = true;
-                observer.next(val);
-              });
-              return () => {
-                if (!done)
-                  controller.abort();
-                sub.unsubscribe();
-              };
+    const mapValidations = (isInput: SyncFields) => mergeMap((fieldValidations$: Observable<ValidationRequestPayload>) => {
+      return fieldValidations$.pipe(
+        tap((payload) => {
+          if (isInput === SYNC_FIELD.INPUTS)
+            this.setInputValidationPending(payload.field);
+          else
+            this.setOutputValidationPending(payload.field);
+        }),
+        switchMap((payload) => {
+          const controller = new AbortController();
+          const signal = controller.signal;
+          let done = false;
+          const obs$ = new Observable<Record<string, ValidationResult | undefined>>((observer) => {
+            const sub = from(this.runValidation({...payload}, signal, isInput)).subscribe((val) => {
+              done = true;
+              observer.next(val);
             });
-            return obs$.pipe(
-              tap((results) => {
-                this.setValidationResults(results);
-                this.runRevalidations(payload, results);
-                this.validationUpdates.next(null);
-              }),
-              mapTo(payload),
-            );
-          }));
-      }),
+            return () => {
+              if (!done)
+                controller.abort();
+              sub.unsubscribe();
+            };
+          });
+          return obs$.pipe(
+            tap((results) => {
+              if (isInput === SYNC_FIELD.INPUTS)
+                this.setInputValidationResults(results);
+              else
+                this.setOutputValidationResults(results);
+              this.runRevalidations(payload, results, isInput);
+              if (isInput === SYNC_FIELD.INPUTS)
+                this.inputValidationUpdates.next(null);
+              else
+                this.outputValidationUpdates.next(null);
+            }),
+            mapTo(payload),
+          );
+        }));
+    });
+
+    const inputValidationSub = this.inputValidationRequests.pipe(
+      groupBy((payload) => payload.field),
+      mapValidations(SYNC_FIELD.INPUTS),
     ).subscribe((payload) => {
       if (payload.field && this.runningOnInput && this.isRunnable())
         this.doRun();
     });
 
-    this.subs.push(validationSub);
+    this.subs.push(inputValidationSub);
+
+    const outputValidationSub = this.outputValidationRequests.pipe(
+      groupBy((payload) => payload.field),
+      mapValidations(SYNC_FIELD.OUTPUTS),
+    ).subscribe();
+
+    this.subs.push(outputValidationSub);
 
     const externalValidationSub = this.externalValidatorsUpdates.subscribe((name) => {
-      this.updateInputValidationReuslts(name);
+      this.updateInputValidationResults(name);
     });
 
     this.subs.push(externalValidationSub);
@@ -178,7 +211,7 @@ export class RichFunctionView extends FunctionView {
           delay(RUN_WAIT_TIME),
           startWith(true),
         ))),
-      this.validationUpdates.pipe(debounceTime(0)),
+      this.inputValidationUpdates.pipe(debounceTime(0)),
     ]).pipe(
       filter(([needToRun]) => needToRun && this.isRunnable()),
     ).subscribe(() => this.doRun());
@@ -196,6 +229,9 @@ export class RichFunctionView extends FunctionView {
               input.notify = false;
               input.value = value;
               input.notify = true;
+              this.funcCall.inputs[key] = value;
+
+              this.inputValidationRequests.next({field: key, isRevalidation: false});
             }
 
             grok.shell.info(ui.divText('Change the loaded inputs to run computations'));
@@ -206,9 +242,9 @@ export class RichFunctionView extends FunctionView {
       // run validations on start
       const controller = new AbortController();
       const results = await this.runValidation({isRevalidation: false}, controller.signal);
-      this.setValidationResults(results);
+      this.setInputValidationResults(results);
       this.runRevalidations({isRevalidation: false}, results);
-      this.validationUpdates.next(null);
+      this.inputValidationUpdates.next(null);
 
       if (this.runningOnStart && this.isRunnable())
         await this.doRun();
@@ -232,7 +268,7 @@ export class RichFunctionView extends FunctionView {
    * @param runFunc
    */
   public override onAfterRun(): Promise<void> {
-    this.showOutputTabsElem();
+    this.showOutput();
     this.tabsElem.panes.forEach((tab) => {
       $(tab.header).show();
     });
@@ -259,7 +295,7 @@ export class RichFunctionView extends FunctionView {
 
   public getRunButton(name = 'Run') {
     const runButton = ui.bigButton(getFuncRunLabel(this.func) ?? name, async () => await this.doRun());
-    const validationSub = merge(this.validationUpdates, this.externalValidatorsUpdates, this.isRunning, this.blockRuns).subscribe(() => {
+    const validationSub = merge(this.inputValidationUpdates, this.externalValidatorsUpdates, this.isRunning, this.blockRuns).subscribe(() => {
       const isValid = this.isRunnable();
       runButton.disabled = !isValid;
     });
@@ -280,14 +316,17 @@ export class RichFunctionView extends FunctionView {
     }));
   }
 
-  public async loadInputsValidators() {
-    const inputParams = [...this.funcCall.inputParams.values()];
-    await Promise.all(inputParams.map(async (param) => {
+  public async loadValidators(isInput: SyncFields = SYNC_FIELD.INPUTS) {
+    const params = [...this.funcCall[syncParams[isInput]].values()];
+    await Promise.all(params.map(async (param) => {
       if (param.property.options.validatorFunc) {
         const func: DG.Func = await grok.functions.eval(param.property.options.validatorFunc);
         const call = func.prepare({params: JSON.parse(param.property.options.validatorFuncOptions || '{}')});
         await call.call();
-        this.validators[param.name] = call.outputs.validator;
+        if (isInput === SYNC_FIELD.INPUTS)
+          this.inputValidators[param.name] = call.outputs.validator;
+        else
+          this.outputValidators[param.name] = call.outputs.validator;
       }
     }));
   }
@@ -370,6 +409,8 @@ export class RichFunctionView extends FunctionView {
    */
   public setNavigationButtons(navBtns: HTMLElement[]) {
     this.navBtns = navBtns;
+
+    this.buildFormButtons();
   }
 
   /**
@@ -401,8 +442,8 @@ export class RichFunctionView extends FunctionView {
     const outputBlock = this.buildOutputBlock();
     outputBlock.style.height = '100%';
     outputBlock.style.width = '100%';
-    if (this.inputTabsLabels.length === 0)
-      $(this.tabsElem.root).hide();
+
+    this.hideOutput();
 
     const out = ui.splitH([inputBlock, ui.panel([outputBlock], {style: {'padding-top': '0px'}})], null, true);
     out.style.padding = '0 12px';
@@ -426,7 +467,7 @@ export class RichFunctionView extends FunctionView {
       'min-height': '50px',
     });
 
-    const experimentalDataSwitch = ui.switchInput('', this.isUploadMode.value, (v: boolean) => this.isUploadMode.next(v));
+    const experimentalDataSwitch = ui.input.toggle('', {value: this.isUploadMode.value, onValueChanged: () => this.isUploadMode.next(experimentalDataSwitch.value)});
     const uploadSub = this.isUploadMode.subscribe((newValue) => {
       experimentalDataSwitch.notify = false;
       experimentalDataSwitch.value = newValue,
@@ -616,8 +657,8 @@ export class RichFunctionView extends FunctionView {
 
     reviewDialog.addButton(simulateInputs, () => {
       properUpdateIndicator(uploadDialog.root, true);
-      Promise.all(uploadedFunccalls.map((call) => {
-        const simulatingCall = this.func.prepare(deepCopy(call).inputs);
+      Promise.all(uploadedFunccalls.map(async (call) => {
+        const simulatingCall = await createPartialCopy(call);
         return simulatingCall.call();
       })).then((calls)=> {
         simulatedFunccalls = calls;
@@ -661,7 +702,6 @@ export class RichFunctionView extends FunctionView {
       await this.saveExperimentalRun(this.funcCall);
       return;
     }
-
     await this.saveRun(this.funcCall);
   }
 
@@ -688,6 +728,8 @@ export class RichFunctionView extends FunctionView {
 
     const sensitivityAnalysis = ui.iconFA('analytics', async () => await this.onSALaunch(), 'Run sensitivity analysis');
 
+    const fitting = ui.iconFA('chart-line', async () => await this.onFittingLaunch(), 'Fit inputs');
+
     const contextHelpIcon = ui.iconFA('info', async () => {
       if (this.hasContextHelp) {
         grok.shell.windows.help.visible = true;
@@ -702,7 +744,8 @@ export class RichFunctionView extends FunctionView {
       ...this.runningOnInput || this.options.isTabbed ? []: [play],
       ...this.hasUploadMode ? [toggleUploadMode]: [],
       ...this.isSaEnabled ? [sensitivityAnalysis]: [],
-      ...this.hasContextHelp ? [contextHelpIcon]: [],
+      ...this.isFittingEnabled ? [fitting]: [],
+      ...!this.options.isTabbed && this.hasContextHelp ? [contextHelpIcon]: [],
     ]];
 
     this.setRibbonPanels(newRibbonPanels);
@@ -712,9 +755,13 @@ export class RichFunctionView extends FunctionView {
   // Main element of the output block. Stores all the tabs for the output and input
   private tabsElem = ui.tabControl();
 
-  private showOutputTabsElem() {
-    $(this.tabsElem.root).show();
-    $(this.tabsElem.root).css('display', 'flex');
+  private showOutput(): void {
+    ui.setDisplay(this.tabsElem.root, true);
+    this._isOutputOutdated.next(false);
+  }
+
+  public getViewers(propName: string): DG.Viewer[] {
+    return this.dfToViewerMapping[propName];
   }
 
   public buildOutputBlock(): HTMLElement {
@@ -724,7 +771,7 @@ export class RichFunctionView extends FunctionView {
       const [tabParams, isInputTab] = this.categoryToDfParamMap.outputs[tabLabel] ? [this.categoryToDfParamMap.outputs[tabLabel], false] : [this.categoryToDfParamMap.inputs[tabLabel], true];
 
       const tabDfProps = tabParams.filter((p) => p.propertyType === DG.TYPE.DATA_FRAME || p.propertyType === DG.TYPE.GRAPHICS);
-      const tabScalarProps = tabParams.filter((p) => p.propertyType !== DG.TYPE.DATA_FRAME && p.propertyType !== DG.TYPE.GRAPHICS);
+      const tabOutputScalarProps = tabParams.filter((p) => p.propertyType !== DG.TYPE.DATA_FRAME && p.propertyType !== DG.TYPE.GRAPHICS);
 
       const parsedTabDfProps = tabDfProps.map((dfProp) => getPropViewers(dfProp).config);
 
@@ -804,7 +851,7 @@ export class RichFunctionView extends FunctionView {
               return currentParam.onChanged;
             }),
           ).subscribe(() => {
-            this.showOutputTabsElem();
+            this.showOutput();
             this.inputTabsLabels.forEach((inputTabName) => {
               $(this.tabsElem.getPane(inputTabName).header).show();
             });
@@ -833,8 +880,16 @@ export class RichFunctionView extends FunctionView {
             'flex-grow': '1',
           });
 
+          const validationSign = getValidationIcon();
+          this.outputValidationSigns[dfProp.name] = validationSign;
+
           return ui.divV([
-            ui.h2(viewerIndex === 0 ? dfBlockTitle: ' ', {style: {'white-space': 'pre'}}),
+            ui.divH([
+              ui.h2(viewerIndex === 0 ? dfBlockTitle: ' ', {style: {'white-space': 'pre'}}),
+              ...viewerIndex === 0 ? [ui.div([
+                this.outputValidationSigns[dfProp.name][0],
+                this.outputValidationSigns[dfProp.name][1],
+              ], {style: {'margin': '10.79px'}})]:[]]),
             viewerWithStubRoot,
           ], {style: {...blockWidth ? {
             'width': `${blockWidth}%`,
@@ -889,9 +944,14 @@ export class RichFunctionView extends FunctionView {
         return acc;
       }, ui.divH([], {'style': {'flex-wrap': 'wrap', 'flex-grow': '1', 'max-height': '100%'}}));
 
+      tabOutputScalarProps.forEach((scalarProp) => {
+        const validationSign = getValidationIcon();
+        this.outputValidationSigns[scalarProp.name] = validationSign;
+      });
+
       const generateScalarsTable = () => {
         const table = DG.HtmlTable.create(
-          tabScalarProps,
+          tabOutputScalarProps,
           (scalarProp: DG.Property) => {
             const precision = scalarProp.options.precision;
 
@@ -904,6 +964,7 @@ export class RichFunctionView extends FunctionView {
             return [
               `${scalarProp.caption ?? scalarProp.name}${units}`,
               scalarValue ?? '[No value]',
+              ui.div([this.outputValidationSigns[scalarProp.name][0], this.outputValidationSigns[scalarProp.name][1]]),
             ];
           },
         ).root;
@@ -925,7 +986,7 @@ export class RichFunctionView extends FunctionView {
       this.tabsElem.addPane(tabLabel, () => {
         return ui.divV([
           ...tabDfProps.length ? [dfBlocks]: [],
-          ...tabScalarProps.length ? [scalarsTable]: [],
+          ...tabOutputScalarProps.length ? [scalarsTable]: [],
         ]);
       });
     });
@@ -937,10 +998,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   public async onAfterLoadRun(loadedRun: DG.FuncCall) {
-    this.showOutputTabsElem();
-    this.tabsElem.panes.forEach((tab) => {
-      $(tab.header).show();
-    });
+    this.showOutput();
   }
 
   // Stores mapping between DF and its' viewers
@@ -1003,18 +1061,18 @@ export class RichFunctionView extends FunctionView {
 
   private async saveLastInputs() {
     try {
-      const lastInputs = await wu(this.funcCall.inputParams.values()).reduce(async (acc, inputParam) => {
+      const lastInputs = wu(this.funcCall.inputParams.values()).reduce((acc, inputParam) => {
         const valueToSave = (inputParam.property.propertyType !== DG.TYPE.DATA_FRAME) ?
           this.funcCall.inputs[inputParam.name]:
-          await grok.dapi.tables.uploadDataFrame(this.funcCall.inputs[inputParam.name]);
+          Array.from((this.funcCall.inputs[inputParam.name] as DG.DataFrame).toByteArray());
 
         return {
-          ...(await acc),
-          [inputParam.name]: JSON.stringify(valueToSave),
+          ...acc,
+          [inputParam.name]: valueToSave,
         };
-      }, Promise.resolve({} as Record<string, any>));
+      }, {} as Record<string, any>);
 
-      return await grok.dapi.userDataStorage.put(this.inputsStorage, lastInputs);
+      return localStorage.setItem(this.inputsStorage, JSON.stringify(lastInputs));
     } catch (e: any) {
       grok.shell.error(e.toString());
     }
@@ -1022,20 +1080,20 @@ export class RichFunctionView extends FunctionView {
 
   private async loadLastInputs() {
     try {
-      const valuesFromStorage = await grok.dapi.userDataStorage.get(this.inputsStorage);
+      const valuesFromStorage = JSON.parse(localStorage.getItem(this.inputsStorage) ?? '{}');
 
       if (Object.keys(valuesFromStorage).length === 0) return null;
 
-      const lastInputs = await wu(this.funcCall.inputParams.values()).reduce(async (acc, inputParam) => {
+      const lastInputs = wu(this.funcCall.inputParams.values()).reduce((acc, inputParam) => {
         const valueToLoad = (inputParam.property.propertyType !== DG.TYPE.DATA_FRAME) ?
-          JSON.parse(valuesFromStorage[inputParam.name]):
-          await grok.dapi.tables.getTable(JSON.parse(valuesFromStorage[inputParam.name]));
+          valuesFromStorage[inputParam.name]:
+          DG.DataFrame.fromByteArray(new Uint8Array(valuesFromStorage[inputParam.name]));
 
         return {
-          ...(await acc),
+          ...acc,
           [inputParam.name]: valueToLoad,
         };
-      }, Promise.resolve({} as Record<string, any>));
+      }, {} as Record<string, any>);
 
       return lastInputs;
     } catch (e: any) {
@@ -1045,7 +1103,7 @@ export class RichFunctionView extends FunctionView {
 
   private async deleteLastInputs() {
     try {
-      return await grok.dapi.userDataStorage.put(this.inputsStorage, {});
+      return localStorage.removeItem(this.inputsStorage);
     } catch (e: any) {
       grok.shell.error(e.toString());
     }
@@ -1062,7 +1120,8 @@ export class RichFunctionView extends FunctionView {
       console.log(e);
     } finally {
       this.isRunning.next(false);
-      this.validationRequests.next({isRevalidation: false, isNewOutput: true});
+      this.inputValidationRequests.next({isRevalidation: false, isNewOutput: true});
+      this.outputValidationRequests.next({isRevalidation: false});
     }
   }
 
@@ -1122,12 +1181,14 @@ export class RichFunctionView extends FunctionView {
   }
 
   public getParamChanges<T = any>(name: string): Observable<T | null> {
-    const ptype = this.funcCall['inputParams'][name] ? 'inputParams' : 'outputParams';
     return this.funcCallReplaced.pipe(
       startWith(null),
       filter(() => !!this.funcCall),
-      switchMap(() => this.funcCall[ptype][name].onChanged.pipe(startWith(null))),
-      map(() => this.funcCall[ptype][name].value as T),
+      map(() => this.funcCall['inputParams'][name] ? 'inputParams' : 'outputParams'),
+      switchMap((ptype) => this.funcCall[ptype][name].onChanged.pipe(
+        startWith(null),
+        map(() => this.funcCall[ptype][name].value as T),
+      )),
     );
   }
 
@@ -1170,6 +1231,10 @@ export class RichFunctionView extends FunctionView {
 
   private async onSALaunch(): Promise<void> {
     await SensitivityAnalysis.fromEmpty(this.func);
+  }
+
+  private async onFittingLaunch(): Promise<void> {
+    await Optimization.fromEmpty(this.func);
   }
 
   private renderInputForm(): HTMLElement {
@@ -1270,7 +1335,7 @@ export class RichFunctionView extends FunctionView {
       const extractValue = (key: string) => funcCallInput.chosenRun?.inputs[key] ?? funcCallInput.chosenRun?.outputs[key] ?? funcCallInput.chosenRun?.options[key] ?? null;
       Object.entries(mapping).forEach(([input, key]) => this.setInput(
         input,
-        funcCallInput.chosenRun ? extractValue(key): this.funcCall.inputParams[input].property.defaultValue,
+        funcCallInput.chosenRun ? extractValue(key): getDefaultValue(this.funcCall.inputParams[input].property),
         funcCallInput.chosenRun ? 'restricted': 'user input',
       ));
     });
@@ -1282,12 +1347,15 @@ export class RichFunctionView extends FunctionView {
     if (this.inputsOverride[val.property.name])
       return this.inputsOverride[val.property.name];
 
-    if (prop.propertyType === DG.TYPE.STRING && prop.options.choices && !prop.options.propagateChoice)
-      return ui.choiceInput(prop.caption ?? prop.name, prop.defaultValue, JSON.parse(prop.options.choices));
+    if (prop.propertyType === DG.TYPE.STRING && prop.options.choices && !prop.options.propagateChoice) {
+      return ui.input.choice(prop.caption ?? prop.name, {
+        value: getDefaultValue(prop),
+        items: JSON.parse(prop.options.choices),
+        nullable: prop.nullable,
+      });
+    }
 
     switch (prop.propertyType as any) {
-    case DG.TYPE.DATA_FRAME:
-      return ui.tableInput(prop.caption ?? prop.name, null, grok.shell.tables);
     case FILE_INPUT_TYPE:
       return UiUtils.fileInput(prop.caption ?? prop.name, null, null, null);
     case DG.TYPE.FLOAT:
@@ -1384,8 +1452,8 @@ export class RichFunctionView extends FunctionView {
   private bindTooltips(param: DG.FuncCallParam, t: DG.InputBase) {
     const paramName = param.property.name;
 
-    ui.tooltip.bind(t.root, () => {
-      const desc = param.property.description ? `${param.property.description}.`: null;
+    const generateTooltip = () => {
+      const desc = `${param.property.description ?? param.property.caption ?? param.property.name}.`;
 
       const getExplanation = () => {
         if (this.getInputLockState(paramName) === 'disabled') return `Input is disabled to prevent inconsistency.`;
@@ -1401,7 +1469,9 @@ export class RichFunctionView extends FunctionView {
           ...desc ? [ui.divText(desc)]: [],
           ...exp ? [ui.divText(exp)]: [],
         ], {style: {'max-width': '300px'}}) : null;
-    });
+    };
+    ui.tooltip.bind(t.captionLabel, generateTooltip);
+    ui.tooltip.bind(t.input, generateTooltip);
   }
 
   private injectLockIcons(param: DG.FuncCallParam, t: FuncCallInput) {
@@ -1461,10 +1531,7 @@ export class RichFunctionView extends FunctionView {
 
     const sub1 = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
       const newParam = this.funcCall[syncParams[field]][name];
-      const defaultValue = newParam.property.propertyType === DG.TYPE.STRING && newParam.property.defaultValue?
-        (newParam.property.defaultValue as string).substring(1, newParam.property.defaultValue.length - 1):
-        newParam.property.defaultValue;
-      const newValue = this.funcCall[field][name] ?? defaultValue ?? null;
+      const newValue = this.funcCall[field][name] ?? getDefaultValue(newParam.property) ?? null;
       t.notify = false;
       t.value = newValue;
       t.notify = true;
@@ -1490,8 +1557,8 @@ export class RichFunctionView extends FunctionView {
       if (field === SYNC_FIELD.INPUTS) {
         this.isHistorical.next(false);
 
-        this.hideOutdatedOutput();
-        this.validationRequests.next({field: newParam.name, isRevalidation: false});
+        this.hideOutput();
+        this.inputValidationRequests.next({field: newParam.name, isRevalidation: false});
 
         const currentState = this.getInputLockState(newParam.name);
         if (currentState === 'restricted unlocked' || currentState === 'inconsistent') {
@@ -1515,7 +1582,10 @@ export class RichFunctionView extends FunctionView {
         (param) => param.value.onDataChanged.pipe(mapTo(param)),
       ),
     ).subscribe((param) => {
-      this.validationRequests.next({field: param.name, isRevalidation: false});
+      if (field === SYNC_FIELD.INPUTS)
+        this.inputValidationRequests.next({field: param.name, isRevalidation: false});
+      else
+        this.outputValidationRequests.next({field: param.name, isRevalidation: false});
     });
     this.subs.push(sub3);
 
@@ -1538,7 +1608,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   public isValid() {
-    for (const [_, v] of Object.entries(this.validationState)) {
+    for (const [_, v] of Object.entries(this.inputValidationState)) {
       if (!isValidationPassed(v))
         return false;
     }
@@ -1551,24 +1621,24 @@ export class RichFunctionView extends FunctionView {
   }
 
   public getValidationState() {
-    return this.validationState;
+    return this.inputValidationState;
   }
 
   public getValidationMessage() {
     const msgs: string[] = [];
-    for (const [name, v] of Object.entries(this.validationState)) {
+    for (const [name, v] of Object.entries(this.inputValidationState)) {
       if (!isValidationPassed(v))
         msgs.push(`${name}: ${getErrorMessage(v)}`);
     }
     return msgs.join('\n');
   }
 
-  private async runValidation(payload: ValidationRequestPayload, signal: AbortSignal) {
-    const inputName = payload.field;
-    const inputNames = this.getValidatedNames(inputName);
+  private async runValidation(payload: ValidationRequestPayload, signal: AbortSignal, isInput = SYNC_FIELD.INPUTS) {
+    const paramName = payload.field;
+    const paramNames = this.getValidatedNames(paramName, isInput);
 
-    const validationItems = await Promise.all(inputNames.map(async (name) => {
-      const v = this.funcCall.inputs[name];
+    const validationItems = await Promise.all(paramNames.map(async (name) => {
+      const v = isInput === SYNC_FIELD.INPUTS ? this.funcCall.inputs[name]: this.funcCall.outputs[name];
       // not allowing null anywhere
       const standardMsgs = await nonNullValidator(v, {
         param: name,
@@ -1580,7 +1650,7 @@ export class RichFunctionView extends FunctionView {
         view: this,
       });
       let customMsgs;
-      const customValidator = this.validators[name];
+      const customValidator = isInput === SYNC_FIELD.INPUTS ? this.inputValidators[name] : this.outputValidators[name];
       if (customValidator) {
         customMsgs = await customValidator(v, {
           param: name,
@@ -1593,53 +1663,88 @@ export class RichFunctionView extends FunctionView {
           view: this,
         });
       }
+      // output params could not be nulls, DG will complain
+      const isNullable = isInput === SYNC_FIELD.INPUTS && this.funcCall.inputParams[name].property.options.nullable;
       return [name, mergeValidationResults(
-        ...this.funcCall.inputParams[name].property.options.nullable ? []: [standardMsgs],
-        customMsgs),
-      ] as const;
+        ...isNullable ? []: [standardMsgs],
+        customMsgs,
+      )] as const;
     }));
     return Object.fromEntries(validationItems);
   }
 
-  private setValidationPending(inputName?: string) {
+  private setInputValidationPending(inputName?: string) {
     const inputNames = this.getValidatedNames(inputName);
     for (const name of inputNames) {
-      this.validationState[name] = makePendingValidationResult();
+      this.inputValidationState[name] = makePendingValidationResult();
       const input = this.inputsMap[name];
       if (isFuncCallInputValidated(input))
         input.setValidation(makePendingValidationResult());
     }
-    this.validationUpdates.next(null);
+    this.inputValidationUpdates.next(null);
   }
 
-  private setValidationResults(results: Record<string, ValidationResult | undefined>) {
+  private setOutputValidationPending(inputName?: string) {
+    const outputNames = this.getValidatedNames(inputName, SYNC_FIELD.OUTPUTS);
+    for (const name of outputNames) {
+      this.outputValidationState[name] = makePendingValidationResult();
+      const sign = this.outputValidationSigns[name];
+      if (sign) {
+        const newSign = getValidationIcon(makePendingValidationResult());
+        sign[0].replaceWith(newSign[0]);
+        sign[1].replaceWith(newSign[1]);
+        this.outputValidationSigns[name] = newSign;
+      }
+    }
+    this.outputValidationUpdates.next(null);
+  }
+
+  private setInputValidationResults(results: Record<string, ValidationResult | undefined>) {
     for (const [inputName, validationMessages] of Object.entries(results)) {
-      this.validationState[inputName] = validationMessages;
-      this.updateInputValidationReuslts(inputName);
+      this.inputValidationState[inputName] = validationMessages;
+      this.updateInputValidationResults(inputName);
     }
   }
 
-  private updateInputValidationReuslts(inputName: string) {
-    const results = mergeValidationResults(this.validationState[inputName], this.externalValidatorsState[inputName]);
+  private setOutputValidationResults(results: Record<string, ValidationResult | undefined>) {
+    for (const [outputName, validationMessages] of Object.entries(results)) {
+      this.outputValidationState[outputName] = validationMessages;
+      this.updateOutputValidationResults(outputName);
+    }
+  }
+
+  private updateOutputValidationResults(outputName: string) {
+    const results = this.outputValidationState[outputName];
+    const sign = this.outputValidationSigns[outputName];
+    if (sign)
+      this.outputValidationSigns[outputName] = updateOutputValidationSign(sign, results);
+  }
+
+  private updateInputValidationResults(inputName: string) {
+    const results = mergeValidationResults(this.inputValidationState[inputName], this.externalValidatorsState[inputName]);
     const input = this.inputsMap[inputName];
     if (isFuncCallInputValidated(input))
       input.setValidation(results);
   }
 
-  private runRevalidations(payload: ValidationRequestPayload, results: Record<string, ValidationResult | undefined>) {
+  private runRevalidations(payload: ValidationRequestPayload, results: Record<string, ValidationResult | undefined>, isInput = SYNC_FIELD.INPUTS) {
     // allow only 1 level of revalidations
     if (payload.isRevalidation)
       return;
     for (const [, result] of Object.entries(results)) {
       if (result?.revalidate) {
-        for (const field of result.revalidate)
-          this.validationRequests.next({field, context: result.context, isRevalidation: true});
+        for (const field of result.revalidate) {
+          if (isInput === SYNC_FIELD.INPUTS)
+            this.inputValidationRequests.next({field, context: result.context, isRevalidation: true});
+          else
+            this.outputValidationRequests.next({field, context: result.context, isRevalidation: true});
+        }
       }
     }
   }
 
-  private getValidatedNames(inputName?: string): string[] {
-    return (inputName ? [inputName]: [...this.funcCall.inputs.keys()]);
+  private getValidatedNames(inputName?: string, isInput = SYNC_FIELD.INPUTS): string[] {
+    return (inputName ? [inputName]: [...isInput === SYNC_FIELD.INPUTS ? this.funcCall.inputs.keys(): this.funcCall.outputs.keys()]);
   }
 
   private async getValidExpRun(expFuncCall: DG.FuncCall) {
@@ -1660,11 +1765,12 @@ export class RichFunctionView extends FunctionView {
     await this.saveRun(validExpRun);
   }
 
-  private hideOutdatedOutput() {
+  private hideOutput() {
+    this._isOutputOutdated.next(true);
     if (this.keepOutput())
       return;
 
-    this.outputTabsLabels.forEach((label) => $(this.tabsElem.getPane(label).header).hide());
+    this.outputTabsLabels.forEach((label) => $(this.tabsElem.getPane(label)?.header).hide());
 
     const firstInputTab = this.tabsElem.panes
       .find((tab) => this.inputTabsLabels.includes(tab.name));
@@ -1683,7 +1789,7 @@ export class RichFunctionView extends FunctionView {
     if (name.length > 31)
       name = `${name.slice(0, 31)}`;
     let i = 1;
-    while (wb.worksheets.some((sheet) => sheet.name === name)) {
+    while (wb.worksheets.some((sheet) => sheet.name.toLowerCase() === name.toLowerCase())) {
       let truncatedName = `${initialName}`;
       if (truncatedName.length > (31 - `-${i}`.length))
         truncatedName = `${initialName.slice(0, 31 - `-${i}`.length)}`;
@@ -1713,9 +1819,11 @@ export class RichFunctionView extends FunctionView {
 
         if (!this.func) throw new Error('The correspoding function is not specified');
 
-        DG.Utils.loadJsCss(['/js/common/exceljs.min.js']);
+        await DG.Utils.loadJsCss(['/js/common/exceljs.min.js']);
+        //@ts-ignore
+        const loadedExcelJS = window.ExcelJS as ExcelJS;
         const BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
-        const exportWorkbook = new ExcelJS.Workbook();
+        const exportWorkbook = new loadedExcelJS.Workbook() as ExcelJS.Workbook;
 
         const isScalarType = (type: DG.TYPE) => (DG.TYPES_SCALAR.has(type));
 
@@ -1853,7 +1961,9 @@ export class RichFunctionView extends FunctionView {
 
       const tabControl = this.tabsElem;
 
-      DG.Utils.loadJsCss(['/js/common/html2canvas.min.js']);
+      await DG.Utils.loadJsCss(['/js/common/html2canvas.min.js']);
+      //@ts-ignore
+      const loadedHtml2canvas: typeof html2canvas = window.html2canvas;
 
       for (const tabLabel of this.tabsLabels.filter((label) => this.inputTabsLabels.includes(label))) {
         for (const inputProp of this.categoryToDfParamMap.inputs[tabLabel].filter((prop) => isDataFrame(prop))) {
@@ -1867,7 +1977,7 @@ export class RichFunctionView extends FunctionView {
           await new Promise((r) => setTimeout(r, 100));
 
           for (const [i, viewer] of nonGridViewers.entries()) {
-            const dataUrl = (await html2canvas(viewer.root, {logging: false})).toDataURL();
+            const dataUrl = (await loadedHtml2canvas(viewer.root, {logging: false})).toDataURL();
 
             if (!jsonText[inputProp.name]) jsonText[inputProp.name] = {};
 
@@ -1888,7 +1998,7 @@ export class RichFunctionView extends FunctionView {
           await new Promise((r) => setTimeout(r, 100));
 
           for (const [i, viewer] of nonGridViewers.entries()) {
-            const dataUrl = (await html2canvas(viewer.root, {logging: false})).toDataURL();
+            const dataUrl = (await loadedHtml2canvas(viewer.root, {logging: false})).toDataURL();
 
             if (!jsonText[outputProp.name]) jsonText[outputProp.name] = {};
 

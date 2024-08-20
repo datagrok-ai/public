@@ -13,10 +13,11 @@ export interface IRenderer {
   awaitRendered(timeout?: number): Promise<void>;
 }
 
-export function isIRenderer(value: IRenderer): value is IRenderer {
-  return value.onRendered !== undefined && value.invalidate !== undefined && value.awaitRendered !== undefined;
+export function isRenderer(value: IRenderer): value is IRenderer {
+  return value && value.onRendered !== undefined &&
+    value.invalidate !== undefined && value.awaitRendered !== undefined;
 }
 
-export function asIRenderer(o: any): IRenderer | null {
-  return isIRenderer(o) ? o : null;
+export function asRenderer(o: any): IRenderer | null {
+  return isRenderer(o) ? o : null;
 }

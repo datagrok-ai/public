@@ -1,5 +1,129 @@
 # Compute changelog
 
+## 1.36.7 (2024-08-05)
+
+- RFV: Fixed navigation buttons render
+
+## 1.36.6 (2024-08-01)
+
+- RFV: Added spinning for async validation icon
+
+## 1.36.5 (2024-07-31)
+
+- RFV & Wizard: Historical runs load optimization
+
+## 1.36.4 (2024-07-30)
+
+- Deps update
+
+## 1.36.3 (2024-07-30)
+
+- Wizard: Fixed context info icon duplication
+
+## 1.36.2 (2024-07-23)
+
+- RFV: Added validation tooltip width and text-wrap
+
+## 1.36.1 (2024-07-22)
+
+- RFV: Last inputs are now saved locally
+
+## 1.36.0 (2024-07-10)
+
+- RFV: Added output validators support
+
+## 1.35.10 (2024-07-08)
+
+- CompositionPipeline: Exposed options to public interface
+
+## 1.35.8 (2024-07-03)
+
+- PLV: Fixed run loading to load author
+
+## 1.35.7 (2024-07-01)
+
+- HistoryList: Fixed bug on batch deletion
+- HistoryInput: Added skipDf option
+
+## 1.35.6 (2024-06-27)
+
+- Exposed mergeValidationResultsInst method
+
+## 1.35.5 (2024-06-26)
+
+- getParamChanges fixed empty FuncCall error
+
+## 1.35.4 (2024-06-25)
+
+- Inputs bugfixes
+
+## 1.35.3 (2024-06-25)
+
+- Changed inputs to use new API
+
+## 1.35.2 (2024-06-24)
+
+- RFV: Added getViewers method
+
+## 1.35.1 (2024-06-19)
+
+- Exposed testPipeline method
+
+## 1.35.0 (2024-06-12)
+
+- Exposed ComputeAPI
+
+## 1.34.3 (2024-05-21)
+
+### Bug fixes
+
+- RFV: Fixed single-tab output logic
+- Wizard: Fixed double-help case
+
+## 1.34.2 (2024-05-17)
+
+- RFV: Added HistoryPanel hide on view closing
+
+## 1.34.1 (2024-05-15)
+
+- Fixed imports
+
+## 1.34.0 (2024-05-14)
+
+### Features
+
+- RFV: Removed workaround for tableInput
+- RFV: Added tooltips for inputs
+- HistoryInput: Changed dates to local timezone
+- Added Fitting view
+
+## 1.33.5 (2024-05-09)
+
+### Features
+
+- RFV: Property default value getting both for 1.18.x and 1.19
+
+## 1.33.4 (2024-05-09)
+
+### Features
+
+- Heavyweight imports optimization
+
+## 1.33.3 (2024-05-08)
+
+### Features
+
+- Bundle size optimizations
+
+## 1.33.1 (2024-05-07)
+
+### Features
+
+- Rearranged CSS files
+- RFV: Added isOutdatedOutput subject
+- HistoryInput: Hides incomplete runs
+- HistoryPanel: Added completeness filter
+
 ## 1.33.0 (2024-05-06)
 
 - Added CompositionPipeline
@@ -221,7 +345,7 @@
 
 - RFV: Added input form adaptiveness
 - RFV: Renamed validator tag to `validatorFunc`
-- RFV: Added `nullable` tag for inputs 
+- RFV: Added `nullable` tag for inputs
 
 ## 1.17.3 (2023-11-22)
 

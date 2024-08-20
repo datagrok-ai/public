@@ -1,5 +1,73 @@
 # Datagrok-tools changelog
 
+
+## 4.13.13 (2024-08-09)
+
+### Features
+
+* Timeout update for test runs up to 1 hour
+
+## 4.13.12 (2024-08-09)
+
+### Features
+
+* Added stress test flag
+
+## 4.13.12 (2024-08-05)
+
+### Features
+
+* Puppeteer-screen-recorder version fixed to 3.0.3
+
+## 4.13.11 (2024-07-30)
+
+### Features
+
+* Added commit label to context panel for 'manually' published versions
+
+## 4.13.10 (2024-07-29)
+
+### Features
+
+* Added ability to select test by args variable 
+
+## 4.13.9 (2024-07-29)
+
+### Features
+
+* Added ability to select category by args variable 
+
+## 4.13.8 (2024-07-18)
+
+### Bug Fixes
+
+* Fixed path chacks for npmignore
+
+## 4.13.6 (2024-07-15)
+
+### Features
+
+* Splitted warnings and errors in grok check command
+
+## 4.13.4 (2024-06-25)
+
+### Bug Fixes
+
+* Check source maps fixes 
+
+## 4.13.3 (2024-06-21)
+
+### Features
+
+* Added check on source maps in grock check command
+
+## 4.13.1 (2024-06-04)
+
+### Features
+
+* Added argument `package`, which allows you to choose a package for the `test` command
+
+
 ## 4.12.13 (2023-08-17)
 
 ### Bug Fixes

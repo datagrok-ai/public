@@ -64,7 +64,7 @@ Project browser allows you to view previously created [projects](project.md), vi
 1. Open the "Shared with" tab in [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
 
 * "Shared with" tab is open
-* Display [users](../govern/user.md) and users [groups](../govern/group.md) which this [project](project.md) is
+* Display [users](../govern/access-control/users-and-groups#users) and users [groups](../govern/access-control/users-and-groups#groups) which this [project](project.md) is
   available for view or edit
 
 1. Open the "Resources" tab in [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
@@ -87,7 +87,7 @@ Project browser allows you to view previously created [projects](project.md), vi
 
 1. Open **View | Workspace**  ( ``` Alt + W ```)
 
-* In it there is a tree of the [project](project.md) "Test" and the default project "[Scratchpad](../datagrok/navigation/scratchpad.md)"
+* In it there is a tree of the [project](project.md) "Test" and the default project Scratchpad
 
 1. Test all elements of the context menu of the "Test" [project](project.md) in the  "Workspace"
    window

@@ -19,7 +19,7 @@ import {
   Package,
   UserSession,
   Property,
-  FileInfo, HistoryEntry, ProjectOpenOptions, Func
+  FileInfo, HistoryEntry, ProjectOpenOptions, Func, UserReport, UserReportsRule
 } from "./entities";
 import { DockerImage } from "./api/grok_shared.api.g";
 import {ViewLayout, ViewInfo} from "./views/view";
@@ -28,6 +28,7 @@ import {_propsToDart} from "./utils";
 import {FuncCall} from "./functions";
 import {IDartApi} from "./api/grok_api.g";
 import { StickyMeta } from "./sticky_meta";
+import {CsvImportOptions} from "./const";
 
 const api: IDartApi = <any>window;
 
@@ -177,6 +178,14 @@ export class Dapi {
    *  @type {FileSource} */
   get files(): FileSource {
     return new FileSource();
+  }
+
+  get reports(): UserReportsDataSource {
+    return new UserReportsDataSource(api.grok_Dapi_User_Reports());
+  }
+
+  get rules(): HttpDataSource<UserReportsRule> {
+    return new UserReportsRulesDataSource(api.grok_Dapi_User_Reports_Rules());
   }
 
   /** Proxies URL request via Datagrok server with same interface as "fetch".
@@ -950,6 +959,23 @@ export class DockerContainersDataSource extends HttpDataSource<DockerContainer> 
   }
 }
 
+export class UserReportsDataSource extends HttpDataSource<UserReport> {
+  constructor(s: any) {
+    super(s);
+  }
+
+
+  getReports(num?: number): Promise<DataFrame> {
+    return api.grok_Reports_Get(num);
+  }
+}
+
+export class UserReportsRulesDataSource extends HttpDataSource<UserReportsRule> {
+  constructor(s: any) {
+    super(s);
+  }
+}
+
 export class FileSource {
   private readonly root: string;
   constructor(root: string = '') {
@@ -1028,8 +1054,13 @@ export class FileSource {
     return api.grok_Dapi_UserFiles_ReadAsText(file);
   }
 
-  async readCsv(file: FileInfo | string): Promise<DataFrame> {
-    return DataFrame.fromCsv(await this.readAsText(file));
+  /** Reads CSV as DataFrame.
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
+   * @param {FileInfo | string} file
+   * @param {CsvImportOptions} options
+   * @returns {Promise<DataFrame>} */
+  async readCsv(file: FileInfo | string, options?: CsvImportOptions): Promise<DataFrame> {
+    return DataFrame.fromCsv(await this.readAsText(file), options);
   }
 
   /** Reads a file as bytes.
@@ -1062,8 +1093,10 @@ export class FileSource {
    * @param {FileInfo | string} file
    * @param {Array<number>} blob
    * @returns {Promise} */
-  write(file: FileInfo | string, blob: number[]): Promise<void> {
-    return api.grok_Dapi_UserFiles_Write(file, blob);
+  write(file: FileInfo | string, blob?: number[]): Promise<void> {
+    if (!blob && ((file instanceof FileInfo && !file.data) || typeof file === 'string'))
+      throw new Error('blob parameter should be presented');
+    return api.grok_Dapi_UserFiles_Write(toDart(file), blob ?? (file as FileInfo).data);
   }
 
   /** Writes a text file.

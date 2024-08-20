@@ -4,7 +4,6 @@ import * as ui from 'datagrok-api/ui';
 
 import {
   IFitChartData,
-  FIT_CELL_TYPE,
   IFitSeries,
   FitStatistics,
   fitChartDataProperties,
@@ -18,9 +17,7 @@ import {
   getChartBounds,
   getSeriesFitFunction,
   getCurve,
-  getColumnChartOptions,
   LogOptions,
-  getDataFrameChartOptions
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 
 import {convertXMLToIFitChartData} from './fit-parser';
@@ -160,11 +157,22 @@ export function getChartData(gridCell: DG.GridCell): IFitChartData {
   mergeProperties(fitChartDataProperties, columnChartOptions.chartOptions, cellChartData.chartOptions);
   mergeProperties(fitChartDataProperties, dfChartOptions.chartOptions, cellChartData.chartOptions);
   for (const series of cellChartData.series) {
+    mergeProperties(fitSeriesProperties, cellChartData.seriesOptions, series);
     mergeProperties(fitSeriesProperties, columnChartOptions.seriesOptions, series);
     mergeProperties(fitSeriesProperties, dfChartOptions.seriesOptions, series);
   }
 
   return cellChartData;
+}
+
+/** Returns existing, or creates new dataframe default chart options. */
+export function getDataFrameChartOptions(df: DG.DataFrame): IFitChartData {
+  return JSON.parse(df.tags[FitConstants.TAG_FIT] ??= JSON.stringify(createDefaultChartData()));
+}
+
+/** Returns existing, or creates new column default chart options. */
+export function getColumnChartOptions(column: DG.Column): IFitChartData {
+  return JSON.parse(column.tags[FitConstants.TAG_FIT] ??= JSON.stringify(createDefaultChartData()));
 }
 
 /** Performs a chart layout, returning [viewport, xAxis, yAxis] */
@@ -216,10 +224,15 @@ export function substituteZeroes(data: IFitChartData): void {
   }
 }
 
+@grok.decorators.cellRenderer({
+  name: 'Fit',
+  cellType: 'fit',
+  virtual: true,
+})
 export class FitChartCellRenderer extends DG.GridCellRenderer {
-  get name() { return FIT_CELL_TYPE; }
+  get name() { return FitConstants.FIT_CELL_TYPE; }
 
-  get cellType() { return FIT_CELL_TYPE; }
+  get cellType() { return FitConstants.FIT_CELL_TYPE; }
 
   getDefaultSize(gridColumn: DG.GridColumn): {width?: number | null, height?: number | null} {
     return {width: FitConstants.CELL_DEFAULT_WIDTH, height: FitConstants.CELL_DEFAULT_HEIGHT};
@@ -382,7 +395,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         else {
           const fitResult = fitSeries(series, fitFunc, chartLogOptions);
           curve = fitResult.fittedCurve;
-          series.parameters = fitResult.parameters;
+          const params = [...fitResult.parameters]
+          series.parameters = params;
           userParamsFlag = false;
         }
       }
@@ -394,8 +408,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         showAxesLabels: this.areAxesLabelsShown(screenBounds, data), screenBounds, curveFunc: curve!});
       renderConfidenceIntervals(g, series, {viewport, logOptions: chartLogOptions, showAxes: this.areAxesShown(screenBounds),
         showAxesLabels: this.areAxesLabelsShown(screenBounds, data), screenBounds, fitFunc, userParamsFlag});
-      renderDroplines(g, series, {viewport, ratio, showDroplines: this.areDroplinesShown(screenBounds),
-        xValue: series.parameters![2], dataBounds, curveFunc: curve!, logOptions: chartLogOptions});
+      if (series.parameters)
+        renderDroplines(g, series, {viewport, ratio, showDroplines: this.areDroplinesShown(screenBounds),
+          xValue: series.parameters![2], dataBounds, curveFunc: curve!, logOptions: chartLogOptions});
       renderStatistics(g, series, {statistics: data.chartOptions?.showStatistics, fitFunc,
         logOptions: chartLogOptions, dataBox});
     }
