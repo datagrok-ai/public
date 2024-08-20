@@ -12,7 +12,7 @@ import {rGroupAnalysis} from '../analysis/r-group-analysis';
 import {CLIFFS_DF_NAME, activityCliffsIdx} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
-import { ScaffoldTreeViewer } from '../widgets/scaffold-tree';
+import {ScaffoldTreeViewer} from '../widgets/scaffold-tree';
 
 export async function _demoChemOverview(): Promise<void> {
   const sketcherType = DG.chem.currentSketcherType;
@@ -191,13 +191,15 @@ export async function _demoSimilarityDiversitySearch(): Promise<void> {
 
 
 export async function _demoMMPA(): Promise<void> {
-  const tv = await openMoleculeDataset('demo_files/matched_molecular_pairs.csv');
-  mmpAnalysis(tv.dataFrame, tv.dataFrame.col('smiles')!,
-    tv.dataFrame.clone().columns.remove('smiles').remove('CMPD_CHEMBLID'), 0.3, true);
-  tv.dataFrame.currentRowIdx = 0;
-  grok.shell.windows.showHelp = true;
-  //@ts-ignore
-  //grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/#matched-molecular-pairs');
+  const tv = await openMoleculeDataset('demo_files/mmp_demo.csv');
+
+  _package.files.readAsText('demo_files/mmp_demo.layout').then(async (layoutString: string) => {
+    const layout = DG.ViewLayout.fromJson(layoutString);
+    tv.loadLayout(layout);
+
+    // grok.shell.windows.showHelp = true;
+    // grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/#matched-molecular-pairs');
+  });
 }
 
 
@@ -750,7 +752,7 @@ export async function _demoDatabases5(): Promise<void> {
 
 export async function _demoScaffoldTree(): Promise<void> {
   const tv = await openMoleculeDataset('mol1K.csv');
-  
+
   _package.files.readAsText('demo_files/mol1K.layout').then(async (layoutString: string) => {
     const layout = DG.ViewLayout.fromJson(layoutString);
     tv.loadLayout(layout);
@@ -765,7 +767,7 @@ export async function _demoScaffoldTree(): Promise<void> {
 
     tv.dockManager.dock(scaffoldTree.root, DG.DOCK_TYPE.LEFT, null, '', 0.45);
     await scaffoldTree.loadTreeStr(treeStr);
-     
+
     grok.shell.windows.showHelp = true;
     grok.shell.windows.help.showHelp('help/datagrok/solutions/domains/chem/chem#scaffold-tree-analysis');
   });

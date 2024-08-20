@@ -51,7 +51,7 @@ import {chemDiversitySearch, ChemDiversityViewer} from './analysis/chem-diversit
 import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {chemSpace, runChemSpace} from './analysis/chem-space';
 import {RGroupDecompRes, RGroupParams, rGroupAnalysis, rGroupDecomp, loadRGroupUserSettings} from './analysis/r-group-analysis';
-import {MatchedMolecularPairsViewer} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
+import {MatchedMolecularPairsViewer} from './analysis/molecular-matched-pairs/mmp-viewer';
 
 //file importers
 import {_importTripos} from './file-importers/mol2-importer';
