@@ -100,8 +100,6 @@ export class SunburstViewer extends EChartViewer {
   initEventListeners(): void {
     this.chart.on('click', (params: any) => {
       const selectedSectors: string[] = [];
-      if (!params.data.path)
-        return;
       const path: string[] = params.treePathInfo.slice(1).map((obj: any) => obj.name);
       const pathString: string = path.join('|');
       if (this.onClick === 'Filter') {
