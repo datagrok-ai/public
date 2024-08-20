@@ -91,12 +91,6 @@ export class SunburstViewer extends EChartViewer {
     };
   }
 
-  removeFiltering() {
-    if (this.dataFrame.filter.trueCount !== this.dataFrame.rowCount) {
-      this.dataFrame.filter.setAll(true);
-    }
-  }
-
   initEventListeners(): void {
     this.chart.on('click', (params: any) => {
       const selectedSectors: string[] = [];
@@ -169,15 +163,15 @@ export class SunburstViewer extends EChartViewer {
       const clickY = (event.clientY - rect.top) * scaleY;
       if (this.isCanvasEmpty(canvas!.getContext('2d'), clickX, clickY)) {
         this.render();
+        this.dataFrame.filter.setAll(true);
       }
-      this.removeFiltering();
     };
   }
 
   onContextMenuHandler(menu: DG.Menu): void {
     menu.item('Reset View', () => {
       this.render();
-      this.removeFiltering();
+      this.dataFrame.filter.setAll(true);
     });
   }
 
