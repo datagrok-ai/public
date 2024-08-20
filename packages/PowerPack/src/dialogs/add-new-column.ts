@@ -26,11 +26,11 @@ type PropInfo = {
 }
 
 const VALIDATION_TYPES_MAPPING: { [key: string]: string[] } = {
-  'num': ['number', 'int', 'double', 'float'],
-  'number': ['num', 'int', 'double', 'float'],
-  'double': ['int', 'float', 'number', 'num'],
-  'float': ['int'],
-  'int': ['num', 'number'],
+  'num': ['number', 'int', 'double', 'float', 'qnum'],
+  'number': ['num', 'int', 'double', 'float', 'qnum'],
+  'double': ['int', 'float', 'number', 'num', 'qnum'],
+  'float': ['int', 'qnum'],
+  'int': ['num', 'number', 'qnum'],
   'bool': ['boolean'],
   'boolean': ['bool']
 };
