@@ -14,8 +14,8 @@ import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/
 import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
 import {TEMPLATES, DEMO_TEMPLATE} from './templates';
 import {USE_CASES} from './use-cases';
-import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO,
-  WARNING, MISC, demoInfo, INPUT_TYPE, PATH, UI_TIME} from './ui-constants';
+import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, DOCK_RATIO,
+  WARNING, MISC, demoInfo, INPUT_TYPE, PATH, UI_TIME, MODEL_HINT} from './ui-constants';
 import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
   CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS} from './scripting-tools';
@@ -41,7 +41,7 @@ enum EDITOR_STATE {
   POLLUTION = 'pollution',
 };
 
-/** */
+/** Return path corresponding to state */
 function stateToPath(state: EDITOR_STATE): string {
   switch (state) {
   case EDITOR_STATE.FROM_FILE:
@@ -54,7 +54,7 @@ function stateToPath(state: EDITOR_STATE): string {
     return `/${TITLE.TEMPL}/${state}`;
 
   default:
-    return `/${TITLE.EXAM}/${state}`;
+    return `/${TITLE.EXAMP}/${state}`;
   }
 }
 
@@ -72,6 +72,38 @@ const MODEL_BY_STATE = new Map<EDITOR_STATE, TEMPLATES | USE_CASES>([
   [EDITOR_STATE.NIMOTUZUMAB, USE_CASES.NIMOTUZUMAB],
   [EDITOR_STATE.BIOREACTOR, USE_CASES.BIOREACTOR],
   [EDITOR_STATE.POLLUTION, USE_CASES.POLLUTION],
+]);
+
+/** */
+const MODEL_BY_TITLE = new Map<TITLE, TEMPLATES | USE_CASES>([
+  [TITLE.BASIC, TEMPLATES.BASIC],
+  [TITLE.ADV, TEMPLATES.ADVANCED],
+  [TITLE.EXT, TEMPLATES.EXTENDED],
+  [TITLE.CHEM, USE_CASES.CHEM_REACT],
+  [TITLE.ROB, USE_CASES.ROBERTSON],
+  [TITLE.FERM, USE_CASES.FERMENTATION],
+  [TITLE.PK, USE_CASES.PK],
+  [TITLE.PKPD, USE_CASES.PK_PD],
+  [TITLE.ACID, USE_CASES.ACID_PROD],
+  [TITLE.NIM, USE_CASES.NIMOTUZUMAB],
+  [TITLE.BIO, USE_CASES.BIOREACTOR],
+  [TITLE.POLL, USE_CASES.POLLUTION],
+]);
+
+/** */
+const STATE_BY_TITLE = new Map<TITLE, EDITOR_STATE>([
+  [TITLE.BASIC, EDITOR_STATE.BASIC_TEMPLATE],
+  [TITLE.ADV, EDITOR_STATE.ADVANCED_TEMPLATE],
+  [TITLE.EXT, EDITOR_STATE.EXTENDED_TEMPLATE],
+  [TITLE.CHEM, EDITOR_STATE.CHEM_REACT],
+  [TITLE.ROB, EDITOR_STATE.ROBERT],
+  [TITLE.FERM, EDITOR_STATE.FERM],
+  [TITLE.PK, EDITOR_STATE.PK],
+  [TITLE.PKPD, EDITOR_STATE.PKPD],
+  [TITLE.ACID, EDITOR_STATE.ACID_PROD],
+  [TITLE.NIM, EDITOR_STATE.NIMOTUZUMAB],
+  [TITLE.BIO, EDITOR_STATE.BIOREACTOR],
+  [TITLE.POLL, EDITOR_STATE.POLLUTION],
 ]);
 
 /** Models & templates */
@@ -191,7 +223,7 @@ export class DiffStudio {
     setTimeout(async () => {
     // routing
       if (content)
-        await this.runSolving(false);
+        await this.runSolving(true);
       else {
         const modelIdx = this.startingPath.lastIndexOf('/') + 1;
         //const modelIdx = this.startingPath.indexOf(PATH.MODEL);
@@ -370,7 +402,14 @@ export class DiffStudio {
     });
 
     const dockTabCtrl = () => {
-      const node = this.solverView.dockManager.dock(this.tabControl.root, DG.DOCK_TYPE.LEFT);
+      const node = this.solverView.dockManager.dock(
+        this.tabControl.root,
+        DG.DOCK_TYPE.LEFT,
+        null,
+        undefined,
+        DOCK_RATIO,
+      );
+
       if (node.container.dart.elementTitle)
         node.container.dart.elementTitle.hidden = true;
     };
@@ -394,7 +433,7 @@ export class DiffStudio {
       .item(TITLE.EXT, async () =>
         await this.overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT})
       .endGroup()
-      .group(TITLE.EXAM)
+      .group(TITLE.EXAMP)
       .item(TITLE.CHEM, async () => await this.overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM})
       .item(TITLE.ROB, async () => await this.overwrite(EDITOR_STATE.ROBERT), undefined, {description: HINT.ROB})
       .item(TITLE.FERM, async () => await this.overwrite(EDITOR_STATE.FERM), undefined, {description: HINT.FERM})
@@ -467,7 +506,7 @@ export class DiffStudio {
             await this.overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT},
           )
           .endGroup()
-          .group(TITLE.EXAM)
+          .group(TITLE.EXAMP)
           .item(TITLE.CHEM, async () =>
             await this.overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM},
           )
@@ -551,10 +590,6 @@ export class DiffStudio {
 
     // set path
     this.solverMainPath = stateToPath(state);
-    /*if (state === EDITOR_STATE.FROM_FILE)
-      this.solverMainPath = PATH.CUSTOM;
-    else
-      this.solverMainPath = `${PATH.MODEL}${state}`;*/
 
     switch (state) {
     case EDITOR_STATE.EMPTY:
@@ -676,8 +711,7 @@ export class DiffStudio {
         this.viewerDockNode = grok.shell.dockManager.dock(
           this.solutionViewer,
           DG.DOCK_TYPE.TOP,
-          this.solverView.dockManager.
-            findNode(this.solverView.grid.root),
+          this.solverView.dockManager.findNode(this.solverView.grid.root),
         );
       } else {
         this.solutionViewer.dataFrame = this.solutionTable;
@@ -1055,17 +1089,54 @@ export class DiffStudio {
     return this.performanceDlg;
   } // showPerformanceDlg
 
-  /** */
+  /** Browse tree */
   private createTree(): void {
-    if (grok.shell.view('Browse') === undefined)
+    if (grok.shell.view(TITLE.BROWSE) === undefined)
       grok.shell.v = DG.View.createByType('browse');
 
-    const browseView = grok.shell.view('Browse') as DG.BrowseView;
-    const appsGroup = browseView.mainTree.getOrCreateGroup('Apps', this.solverView, false);
-    const tree = appsGroup.getOrCreateGroup('Diff Studio');
+    const browseView = grok.shell.view(TITLE.BROWSE) as DG.BrowseView;
+    const appsGroup = browseView.mainTree.getOrCreateGroup(TITLE.APPS, null, false);
+    const appTree = appsGroup.getOrCreateGroup(TITLE.DIF_ST);
 
-    tree.getOrCreateGroup('Templates');
-    tree.getOrCreateGroup('Examples');
-    tree.getOrCreateGroup('Recent');
-  }
+    if (appTree.items.length === 0) {
+      const templatesFolder = appTree.getOrCreateGroup(TITLE.TEMPL, null, false);
+
+      [TITLE.BASIC, TITLE.ADV, TITLE.EXT].forEach((name) => {
+        const item = templatesFolder.item(name);
+        ui.tooltip.bind(item.root, MODEL_HINT.get(name) ?? '');
+
+        item.onSelected.subscribe(async () => {
+          const solver = new DiffStudio(false);
+          browseView.preview = await solver.runSolverApp(MODEL_BY_TITLE.get(name) ?? TEMPLATES.BASIC) as DG.View;
+
+          setTimeout(() => {
+            const paramsIdx = browseView.path.indexOf(PATH.PARAM);
+            const params = browseView.path.slice(paramsIdx);
+            browseView.path = `${PATH.APPS_DS}/${TITLE.EXAMP}/${STATE_BY_TITLE.get(name)}${params}`;
+          }, UI_TIME.BROWSING);
+        });
+      });
+
+      const examplesFolder = appTree.getOrCreateGroup(TITLE.EXAMP, null, false);
+
+      [TITLE.CHEM, TITLE.ROB, TITLE.FERM, TITLE.PK, TITLE.PKPD, TITLE.ACID, TITLE.NIM, TITLE.BIO, TITLE.POLL]
+        .forEach((name) => {
+          const item = examplesFolder.item(name);
+          ui.tooltip.bind(item.root, MODEL_HINT.get(name) ?? '');
+
+          item.onSelected.subscribe(async () => {
+            const solver = new DiffStudio(false);
+            browseView.preview = await solver.runSolverApp(MODEL_BY_TITLE.get(name) ?? TEMPLATES.BASIC) as DG.View;
+
+            setTimeout(() => {
+              const paramsIdx = browseView.path.indexOf(PATH.PARAM);
+              const params = browseView.path.slice(paramsIdx);
+              browseView.path = `${PATH.APPS_DS}/${TITLE.EXAMP}/${STATE_BY_TITLE.get(name)}${params}`;
+            }, UI_TIME.BROWSING);
+          });
+        });
+
+      const recentFolder = appTree.getOrCreateGroup(TITLE.RECENT, null, false);
+    }
+  } // createTree
 };

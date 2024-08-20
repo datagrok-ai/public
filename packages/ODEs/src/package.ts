@@ -40,7 +40,6 @@ export function solveEquations(problem: ODEs, options: Partial<SolverOptions>): 
 //tags: app
 //output: view v
 export async function runDiffStudio(): Promise<DG.ViewBase> {
-  //await runSolverApp();
   const solver = new DiffStudio(false);
   return await solver.runSolverApp();
 }

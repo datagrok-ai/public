@@ -13,9 +13,9 @@ export enum HINT {
   OPEN = 'Open model',
   SAVE_LOC = 'Save model to local file',
   LOAD = 'Load model from local file',
-  BASIC = 'Open basic template',
-  ADV = 'Open advanced template',
-  EXT = 'Open extended template',
+  BASIC = 'Basic template',
+  ADV = 'Advanced template',
+  EXT = 'Extended template',
   CHEM = 'Mass-action kinetics illustration',
   ROB = `Robertson's chemical reaction model`,
   FERM = 'Fermentation process simulation',
@@ -46,7 +46,8 @@ export enum TITLE {
   BASIC = 'Basic',
   ADV = 'Advanced',
   EXT = 'Extended',
-  EXAM = 'Examples',
+  EXAMP = 'Examples',
+  RECENT = 'Recent',
   CHEM = 'Chem reactions',
   ROB = `Robertson's model`,
   FERM = 'Fermentation',
@@ -67,7 +68,25 @@ export enum TITLE {
   OPEN = 'Open',
   BROWSE = 'Browse',
   SAVE = 'Save',
+  APPS = 'Apps',
+  DIF_ST = 'Diff Studio',
 };
+
+/** Models' tooltips map */
+export const MODEL_HINT = new Map([
+  [TITLE.BASIC, HINT.BASIC],
+  [TITLE.ADV, HINT.ADV],
+  [TITLE.EXT, HINT.EXT],
+  [TITLE.CHEM, HINT.CHEM],
+  [TITLE.ROB, HINT.ROB],
+  [TITLE.FERM, HINT.FERM],
+  [TITLE.PK, HINT.PK],
+  [TITLE.PKPD, HINT.PKPD],
+  [TITLE.ACID, HINT.ACID],
+  [TITLE.NIM, HINT.NIM],
+  [TITLE.BIO, HINT.BIO],
+  [TITLE.POLL, HINT.POLL],
+]);
 
 /** Help links */
 export enum LINK {
@@ -193,6 +212,7 @@ export enum UI_TIME {
   APP_RUN_SOLVING = 1100,
   SOLV_DEFAULT_TIME_SEC = 5,
   SOLV_TIME_MIN_SEC = 1,
+  BROWSING = APP_RUN_SOLVING + 1,
 };
 
 /** Numerical methods names */
@@ -201,3 +221,5 @@ export enum METHOD {
   ROS3PRw = 'ros3prw',
   ROS34PRw = 'ros34prw',
 };
+
+export const DOCK_RATIO = 0.3;
