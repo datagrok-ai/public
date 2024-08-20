@@ -110,7 +110,7 @@ export const History = defineComponent({
       const filters = <Viewer 
         type='Filters' 
         dataFrame={historicalRunsDf.value} 
-        style={{height: '100%', width: '100%', display: !showFilters.value ? 'none': null}}
+        style={{height: '100%', width: '100%', display: !showFilters.value ? 'none': 'block'}}
       />;
 
       return <div style={{height: '100%'}}>
