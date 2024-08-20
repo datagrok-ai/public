@@ -20,6 +20,52 @@ export class DGBigButton extends HTMLButtonElement {
 
 export interface DGBigButtonT extends DGBigButton {};
 
+export class DGToggleInput extends HTMLElement {
+  private _caption: string = 'Caption';
+
+  private innerEditor = null as null | DG.InputBase<boolean>;
+
+  constructor() {
+    super();
+  }
+
+  private render() {
+    ui.empty(this);
+    this.innerEditor = ui.input.toggle(this._caption);
+    this.appendChild(this.innerEditor.root);
+
+    this.innerEditor.onChanged(() =>
+      this.dispatchEvent(new CustomEvent('value-changed', {detail: this.innerEditor!.value})),
+    );
+  }
+
+  set caption(caption: string) {
+    if (!this.innerEditor) this.render();
+
+    this.innerEditor!.caption = caption;
+  }
+
+  set nullable(nullable: boolean) {
+    if (!this.innerEditor) this.render();
+
+    this.innerEditor!.nullable = nullable;
+  }
+
+  set value(value: boolean) {
+    if (!this.innerEditor) this.render();
+
+    this.innerEditor!.value = value;
+  }
+
+  set tooltip(tooltip: string) {
+    if (!this.innerEditor) this.render();
+
+    this.innerEditor!.setTooltip(tooltip);
+  }
+}
+
+export interface DGToggleInputT extends DGToggleInput {};
+
 export class DGIconFA extends HTMLElement {
   _name = 'edit';
   _cursor = 'pointer';

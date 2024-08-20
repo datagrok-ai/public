@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {defineComponent, PropType, ref, watch} from 'vue';
-import type {DGBigButtonT, DGButtonT, DGIconFAT, DGSplitH} from '@datagrok-libraries/webcomponents/src';
+import type {DGBigButtonT, DGButtonT, DGIconFAT, DGSplitH, DGToggleInputT} from '@datagrok-libraries/webcomponents/src';
 
 declare global {
   namespace JSX {
@@ -12,6 +12,7 @@ declare global {
       'dg-big-button': DGBigButtonT,
       'dg-split-h': DGSplitH,
       'dg-icon-fa': DGIconFAT,
+      'dg-toggle-input': DGToggleInputT
     }
   }
 }
@@ -89,3 +90,36 @@ export const IconFA = defineComponent({
     };
   },
 });
+
+export const ToggleInput = defineComponent({
+  name: 'IconFA',
+  props: {
+    caption: {
+      type: String,
+      required: true,
+    },
+    value: {
+      type: Boolean,
+      default: false,
+    },
+    nullable: {
+      type: Boolean,
+      default: false,
+    },
+    tooltip: {
+      type: String,
+    }
+  },
+  emits: {
+    'update:value': (value: boolean) => value,
+  },
+  setup(props, {emit, attrs}) {
+    return () => <dg-toggle-input 
+      caption={props.caption}
+      value={props.value}
+      nullable={props.nullable}
+      tooltip={props.tooltip}
+      onValueChanged={(event: any) => emit('update:value', event.detail)}
+    />
+  }
+})

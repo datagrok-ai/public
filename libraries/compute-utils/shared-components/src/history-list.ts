@@ -13,7 +13,7 @@ import {ACTIONS_COLUMN_NAME, AUTHOR_COLUMN_NAME,
   FAVORITE_COLUMN_NAME, HistoryOptions, STARTED_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME
   , storageName} from '../../shared-utils/consts';
 import {ID_COLUMN_NAME} from './history-input';
-import {camel2title, extractStringValue, getColumnName, getMainParams, getRunsDfFromList, getStartedOrNull, getVisibleProps} from '../../shared-utils/utils';
+import {camel2title, extractStringValue, getColumnName, getMainParams, getRunsDfFromList, getStartedOrNull, getVisibleProps, styleHistoryFilters, styleHistoryGrid} from '../../shared-utils/utils';
 import {getStarted} from '../../function-views/src/shared/utils';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
@@ -308,30 +308,6 @@ export class HistoricalRunsList extends DG.Widget {
     });
 
     this.subs.push(listChangedSub, compactModeSub, runDfChangedSub, filterSub);
-  }
-
-  private setGridColumnsRendering() {
-    const actionsCol = this._historyGrid.columns.byName(ACTIONS_COLUMN_NAME);
-    if (actionsCol) {
-      actionsCol.cellType = 'html';
-      actionsCol.width = 35;
-    }
-
-    const favCol = this._historyGrid.columns.byName(FAVORITE_COLUMN_NAME);
-    if (favCol) {
-      favCol.cellType = 'html';
-      favCol.width = 20;
-    }
-    const expCol = this._historyGrid.columns.byName(EXP_COLUMN_NAME)!;
-    expCol.cellType = 'html';
-    expCol.width = 20;
-
-    const tagsColumn = this._historyGrid.columns.byName(TAGS_COLUMN_NAME)!;
-    tagsColumn.cellType = 'html';
-    tagsColumn.width = 90;
-
-    this._historyGrid.columns.byName(STARTED_COLUMN_NAME)!.width = 110;
-    this._historyGrid.columns.byName(ID_COLUMN_NAME)!.cellType = 'html';
   }
 
   private isFavoriteByIndex(idx: number) {
@@ -678,61 +654,13 @@ export class HistoricalRunsList extends DG.Widget {
   }});
 
   private styleHistoryGrid() {
-    this._historyGrid.setOptions({
-      'showCurrentRowIndicator': true,
-      'showCurrentCellOutline': false,
-      'allowEdit': false,
-      'allowBlockSelection': false,
-      'showRowHeader': false,
-      'showColumnLabels': !this.compactMode,
-      'extendLastColumn': this.compactMode,
-    });
-
-    this._historyGrid.sort([STARTED_COLUMN_NAME], [false]);
-
-    for (let i = 0; i < this._historyGrid.columns.length; i++) {
-      const col = this._historyGrid.columns.byIndex(i);
-      if (col && col.column?.type === DG.TYPE.DATE_TIME)
-        col.format = 'MMM d, h:mm tt';
-    }
-
-    this.setGridColumnsRendering();
-
-    if (this.runs.size === 0) return;
-
-    if (this.compactMode) {
-      this._historyGrid.columns.setVisible([ID_COLUMN_NAME]);
-
-      this._historyGrid.props.rowHeight = 70;
-      this._historyGrid.invalidate();
-    } else {
-      this._historyGrid.props.rowHeight = 28;
-      const func = [...this.runs.values()][0].func;
-
-      const showMetadata = this.showMetadataIcon.value;
-
-      const tagCol = this.currentDf.getCol(TAGS_COLUMN_NAME);
-      this._historyGrid.columns.setVisible([
-        EXP_COLUMN_NAME,
-        FAVORITE_COLUMN_NAME,
-        ACTIONS_COLUMN_NAME,
-        ...showMetadata ? [STARTED_COLUMN_NAME]: [],
-        ...showMetadata ? [AUTHOR_COLUMN_NAME]: [],
-        ...showMetadata && tagCol.stats.missingValueCount < tagCol.length ? [TAGS_COLUMN_NAME]: [],
-        ...showMetadata ? [TITLE_COLUMN_NAME]: [],
-        ...showMetadata ? [DESC_COLUMN_NAME]: [],
-        ...this.showInputsIcon.value ? this.visibleProps(func)
-          .map((key) => {
-            const param = func.inputs.find((prop) => prop.name === key) ??
-            func.outputs.find((prop) => prop.name === key);
-
-            if (param)
-              return param.caption ?? getColumnName(param.name);
-            else
-              return getColumnName(key);
-          }): [],
-      ]);
-    }
+    styleHistoryGrid(
+      this._historyGrid,
+      this._compactMode.value,
+      this.showInputsIcon.value,
+      this.showMetadataIcon.value,
+      this.runs.values().next().value.func
+    )
   }
 
   private get currentDf() {
@@ -740,52 +668,21 @@ export class HistoricalRunsList extends DG.Widget {
   }
 
   private styleHistoryFilters() {
-    if (this.runs.size > 0) {
-      const func = this.runs.values().next().value.func as DG.Func;
+    const func = this.runs.values().next().value.func as DG.Func | undefined;
 
-      const tagCol = this.currentDf.getCol(TAGS_COLUMN_NAME);
-      const showMetadata = this.showMetadataIcon.value;
+    const hasValidFilters = styleHistoryFilters(
+      this._historyFilters,
+      this.showMetadataIcon.value,
+      this.showInputsIcon.value,
+      this.options?.isHistory ?? false,
+      func
+    )
 
-      const columnNames = [
-        ...showMetadata &&
-        this.currentDf.getCol(EXP_COLUMN_NAME).categories.length > 1 ? [EXP_COLUMN_NAME]: [],
-        ...showMetadata &&
-        (this.currentDf.col(FAVORITE_COLUMN_NAME)?.categories.length ?? 0) > 1 ?
-          [FAVORITE_COLUMN_NAME]: [],
-        ...showMetadata ? [STARTED_COLUMN_NAME, COMPLETE_COLUMN_NAME]:[],
-        ...showMetadata &&
-        this.currentDf.getCol(AUTHOR_COLUMN_NAME).categories.length > 1 ? [AUTHOR_COLUMN_NAME]: [],
-        ...showMetadata &&
-        tagCol.stats.missingValueCount < tagCol.length ? [TAGS_COLUMN_NAME]: [],
-        ...showMetadata &&
-        this.currentDf.getCol(TITLE_COLUMN_NAME).categories.length > 1 ? [TITLE_COLUMN_NAME]: [],
-        ...showMetadata &&
-        this.currentDf.getCol(DESC_COLUMN_NAME).categories.length > 1 ? [DESC_COLUMN_NAME]: [],
-        ...this.showInputsIcon.value ? this.visibleProps(func)
-          .map((key) => {
-            const param = func.inputs.find((prop) => prop.name === key) ??
-          func.outputs.find((prop) => prop.name === key);
-
-            if (param)
-              return param.caption ?? getColumnName(param.name);
-            else
-              return getColumnName(key);
-          })
-          .filter((columnName) => {
-            return !this.options?.isHistory ||
-            this.currentDf.getCol(columnName).categories.length > 1;
-          })
-          .map((columnName) => columnName): [],
-      ];
-      if (columnNames.length > 0) {
-        $(this.filterWithText).css({paddingTop: '10px'});
-        ui.setDisplay(this.defaultFiltersText, false);
-        ui.setDisplay(this._historyFilters.root, true);
-        this._historyFilters.setOptions({columnNames, 'showHeader': false, 'showBoolCombinedFitler': false});
-      } else {
-        ui.setDisplay(this.defaultFiltersText, true);
-        ui.setDisplay(this._historyFilters.root, false);
-      }
+    if (hasValidFilters) {
+      $(this.filterWithText).css({paddingTop: '10px'});
+      ui.setDisplay(this.defaultFiltersText, false);
+    } else {
+      ui.setDisplay(this.defaultFiltersText, true);
     }
   }
 

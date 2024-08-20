@@ -12,6 +12,140 @@ import {FunctionView, RichFunctionView} from '../function-views';
 import dayjs from 'dayjs';
 import { ID_COLUMN_NAME } from '../shared-components/src/history-input';
 
+const setGridColumnsRendering = (grid: DG.Grid) => {
+  const actionsCol = grid.columns.byName(ACTIONS_COLUMN_NAME);
+  if (actionsCol) {
+    actionsCol.cellType = 'html';
+    actionsCol.width = 35;
+  }
+
+  const favCol = grid.columns.byName(FAVORITE_COLUMN_NAME);
+  if (favCol) {
+    favCol.cellType = 'html';
+    favCol.width = 20;
+  }
+  const expCol = grid.columns.byName(EXP_COLUMN_NAME)!;
+  expCol.cellType = 'html';
+  expCol.width = 20;
+
+  const tagsColumn = grid.columns.byName(TAGS_COLUMN_NAME)!;
+  tagsColumn.cellType = 'html';
+  tagsColumn.width = 90;
+
+  grid.columns.byName(STARTED_COLUMN_NAME)!.width = 110;
+  grid.columns.byName(ID_COLUMN_NAME)!.cellType = 'html';
+}
+
+export const styleHistoryGrid = (
+  grid: DG.Grid, 
+  isCompactMode: boolean,
+  showInputsOnCards: boolean,
+  showMetadataOnCards: boolean,
+  func?: DG.Func, 
+) => {
+  grid.setOptions({
+    'showCurrentRowIndicator': true,
+    'showCurrentCellOutline': false,
+    'allowEdit': false,
+    'allowBlockSelection': false,
+    'showRowHeader': false,
+    'showColumnLabels': !isCompactMode,
+    'extendLastColumn': isCompactMode,
+  });
+
+  grid.sort([STARTED_COLUMN_NAME], [false]);
+
+  for (let i = 0; i < grid.columns.length; i++) {
+    const col = grid.columns.byIndex(i);
+    if (col && col.column?.type === DG.TYPE.DATE_TIME)
+      col.format = 'MMM d, h:mm tt';
+  }
+
+  setGridColumnsRendering(grid);
+
+  if (isCompactMode) {
+    grid.columns.setVisible([ID_COLUMN_NAME]);
+
+    grid.props.rowHeight = 70;
+    grid.invalidate();
+  } else {
+    grid.props.rowHeight = 28;
+
+    const tagCol = grid.dataFrame.getCol(TAGS_COLUMN_NAME);
+    grid.columns.setVisible([
+      EXP_COLUMN_NAME,
+      FAVORITE_COLUMN_NAME,
+      ACTIONS_COLUMN_NAME,
+      ...showMetadataOnCards ? [STARTED_COLUMN_NAME]: [],
+      ...showMetadataOnCards ? [AUTHOR_COLUMN_NAME]: [],
+      ...showMetadataOnCards && tagCol.stats.missingValueCount < tagCol.length ? [TAGS_COLUMN_NAME]: [],
+      ...showMetadataOnCards ? [TITLE_COLUMN_NAME]: [],
+      ...showMetadataOnCards ? [DESC_COLUMN_NAME]: [],
+      ...showInputsOnCards && func ? getVisibleProps(func)
+        .map((key) => {
+          const param = func.inputs.find((prop) => prop.name === key) ??
+          func.outputs.find((prop) => prop.name === key);
+
+          if (param)
+            return param.caption ?? getColumnName(param.name);
+          else
+            return getColumnName(key);
+        }): [],
+    ]);
+  }
+}
+
+export const styleHistoryFilters = (
+  filters: DG.Viewer<DG.IFiltersSettings>,
+  showMetadataColumns: boolean,
+  showInputColumns: boolean,
+  isHistory: boolean,
+  func?: DG.Func,
+) => {
+  const currentDf = filters.dataFrame;
+  const tagCol = currentDf.getCol(TAGS_COLUMN_NAME);
+
+  const columnNames = [
+    ...showMetadataColumns &&
+    currentDf.getCol(EXP_COLUMN_NAME).categories.length > 1 ? [EXP_COLUMN_NAME]: [],
+    ...showMetadataColumns &&
+    (currentDf.col(FAVORITE_COLUMN_NAME)?.categories.length ?? 0) > 1 ?
+      [FAVORITE_COLUMN_NAME]: [],
+    ...showMetadataColumns ? [STARTED_COLUMN_NAME, COMPLETE_COLUMN_NAME]:[],
+    ...showMetadataColumns &&
+    currentDf.getCol(AUTHOR_COLUMN_NAME).categories.length > 1 ? [AUTHOR_COLUMN_NAME]: [],
+    ...showMetadataColumns &&
+    tagCol.stats.missingValueCount < tagCol.length ? [TAGS_COLUMN_NAME]: [],
+    ...showMetadataColumns &&
+    currentDf.getCol(TITLE_COLUMN_NAME).categories.length > 1 ? [TITLE_COLUMN_NAME]: [],
+    ...showMetadataColumns &&
+    currentDf.getCol(DESC_COLUMN_NAME).categories.length > 1 ? [DESC_COLUMN_NAME]: [],
+    ...func && showInputColumns ? getVisibleProps(func)
+      .map((key) => {
+        const param = func.inputs.find((prop) => prop.name === key) ??
+      func.outputs.find((prop) => prop.name === key);
+
+        if (param)
+          return param.caption ?? getColumnName(param.name);
+        else
+          return getColumnName(key);
+      })
+      .filter((columnName) => {
+        return !isHistory ||
+        currentDf.getCol(columnName).categories.length > 1;
+      })
+      .map((columnName) => columnName): [],
+  ];
+  if (columnNames.length > 0) {
+    ui.setDisplay(filters.root, true);
+    filters.setOptions({columnNames, 'showHeader': false, 'showBoolCombinedFitler': false});
+  } else {
+    ui.setDisplay(filters.root, false);
+  }
+
+  return columnNames.length > 0;
+}
+
 export const getFavStorageName = (runs: Map<string, DG.FuncCall>) => {
   return `${storageName}_${[...runs.values()][0].func.name}_Fav`;
 }
