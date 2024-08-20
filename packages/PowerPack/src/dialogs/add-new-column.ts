@@ -144,13 +144,16 @@ export class AddNewColumnDialog {
       .add(await this.initUiLayout())
       .onOK(async () => {
         this.codeMirror?.destroy();
-        await this.addNewColumnAction()
+        await this.addNewColumnAction();
+      })
+      .onCancel(async () => {
+        this.codeMirror?.destroy();
       })
       .show({resizable: true, width: 750, height: 500});
 
     this.uiDialog.onClose.subscribe((_) => {
       this.mutationObserver?.disconnect(); 
-    })
+    });
 
     this.uiDialog.history(
       () => this.saveInputHistory(),
