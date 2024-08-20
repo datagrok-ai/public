@@ -46,7 +46,7 @@ export enum TITLE {
   BASIC = 'Basic',
   ADV = 'Advanced',
   EXT = 'Extended',
-  CASES = 'Examples',
+  EXAM = 'Examples',
   CHEM = 'Chem reactions',
   ROB = `Robertson's model`,
   FERM = 'Fermentation',

@@ -26,7 +26,7 @@ import './css/app-styles.css';
 /** State of IVP code editor */
 enum EDITOR_STATE {
   EMPTY = 'empty',
-  BASIC_TEMPLATE = 'template',
+  BASIC_TEMPLATE = 'basic',
   ADVANCED_TEMPLATE = 'advanced',
   FROM_FILE = 'from-file',
   EXTENDED_TEMPLATE = 'extended',
@@ -40,6 +40,23 @@ enum EDITOR_STATE {
   BIOREACTOR = 'bioreactor',
   POLLUTION = 'pollution',
 };
+
+/** */
+function stateToPath(state: EDITOR_STATE): string {
+  switch (state) {
+  case EDITOR_STATE.FROM_FILE:
+  case EDITOR_STATE.EMPTY:
+    return '';
+
+  case EDITOR_STATE.BASIC_TEMPLATE:
+  case EDITOR_STATE.ADVANCED_TEMPLATE:
+  case EDITOR_STATE.EXTENDED_TEMPLATE:
+    return `/${TITLE.TEMPL}/${state}`;
+
+  default:
+    return `/${TITLE.EXAM}/${state}`;
+  }
+}
 
 /** State-to-template/use-case map */
 const MODEL_BY_STATE = new Map<EDITOR_STATE, TEMPLATES | USE_CASES>([
@@ -175,13 +192,14 @@ export class DiffStudio {
     // routing
       if (content)
         await this.runSolving(false);
-      // dfdf
       else {
-        const modelIdx = this.startingPath.indexOf(PATH.MODEL);
+        const modelIdx = this.startingPath.lastIndexOf('/') + 1;
+        //const modelIdx = this.startingPath.indexOf(PATH.MODEL);
         const paramsIdx = this.startingPath.indexOf(PATH.PARAM);
 
         if (modelIdx > -1) {
-          const model = this.startingPath.slice(modelIdx + PATH.MODEL.length, (paramsIdx > -1) ? paramsIdx : undefined);
+        //const model = this.startingPath.slice(modelIdx + PATH.MODEL.length, (paramsIdx > -1) ? paramsIdx : undefined);
+          const model = this.startingPath.slice(modelIdx, (paramsIdx > -1) ? paramsIdx : undefined);
 
           if (MODELS.includes(model)) {
             this.startingInputs = new Map<string, number>();
@@ -329,7 +347,7 @@ export class DiffStudio {
 
   private inputsByCategories = new Map<string, DG.InputBase[]>();
 
-  constructor(toAddTableView: boolean = true) {
+  constructor(toAddTableView: boolean = true, toDockTabCtrl: boolean = true) {
     this.solverView = toAddTableView ?
       grok.shell.addTableView(this.solutionTable) :
       DG.TableView.create(this.solutionTable, false);
@@ -357,10 +375,12 @@ export class DiffStudio {
         node.container.dart.elementTitle.hidden = true;
     };
 
-    if (!toAddTableView)
-      setTimeout(dockTabCtrl, UI_TIME.PREVIEW_DOCK_EDITOR);
-    else
-      dockTabCtrl();
+    if (toDockTabCtrl) {
+      if (!toAddTableView)
+        setTimeout(dockTabCtrl, UI_TIME.PREVIEW_DOCK_EDITOR);
+      else
+        dockTabCtrl();
+    }
 
     this.openMenu = DG.Menu.popup()
       .item(TITLE.FROM_FILE, async () => await this.overwrite(), undefined, {description: HINT.LOAD})
@@ -374,7 +394,7 @@ export class DiffStudio {
       .item(TITLE.EXT, async () =>
         await this.overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT})
       .endGroup()
-      .group(TITLE.CASES)
+      .group(TITLE.EXAM)
       .item(TITLE.CHEM, async () => await this.overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM})
       .item(TITLE.ROB, async () => await this.overwrite(EDITOR_STATE.ROBERT), undefined, {description: HINT.ROB})
       .item(TITLE.FERM, async () => await this.overwrite(EDITOR_STATE.FERM), undefined, {description: HINT.FERM})
@@ -392,6 +412,8 @@ export class DiffStudio {
     this.exportButton = ui.bigButton(TITLE.TO_JS, async () => {await this.exportToJS();}, HINT.TO_JS);
     this.sensAnIcon = ui.iconFA('analytics', async () => {await this.runSensitivityAnalysis();}, HINT.SENS_AN);
     this.fittingIcon = ui.iconFA('chart-line', async () => {await this.runFitting();}, HINT.FITTING);
+
+    this.createTree();
   }; // constructor
 
   /** Create model editor */
@@ -445,7 +467,7 @@ export class DiffStudio {
             await this.overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT},
           )
           .endGroup()
-          .group(TITLE.CASES)
+          .group(TITLE.EXAM)
           .item(TITLE.CHEM, async () =>
             await this.overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM},
           )
@@ -528,10 +550,11 @@ export class DiffStudio {
     this.editorView!.setState(newState);
 
     // set path
-    if (state === EDITOR_STATE.FROM_FILE)
+    this.solverMainPath = stateToPath(state);
+    /*if (state === EDITOR_STATE.FROM_FILE)
       this.solverMainPath = PATH.CUSTOM;
     else
-      this.solverMainPath = `${PATH.MODEL}${state}`;
+      this.solverMainPath = `${PATH.MODEL}${state}`;*/
 
     switch (state) {
     case EDITOR_STATE.EMPTY:
@@ -1030,5 +1053,19 @@ export class DiffStudio {
     ui.tooltip.bind(this.performanceDlg.getButton('CANCEL'), HINT.ABORT);
 
     return this.performanceDlg;
+  } // showPerformanceDlg
+
+  /** */
+  private createTree(): void {
+    if (grok.shell.view('Browse') === undefined)
+      grok.shell.v = DG.View.createByType('browse');
+
+    const browseView = grok.shell.view('Browse') as DG.BrowseView;
+    const appsGroup = browseView.mainTree.getOrCreateGroup('Apps', this.solverView, false);
+    const tree = appsGroup.getOrCreateGroup('Diff Studio');
+
+    tree.getOrCreateGroup('Templates');
+    tree.getOrCreateGroup('Examples');
+    tree.getOrCreateGroup('Recent');
   }
 };

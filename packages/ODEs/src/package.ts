@@ -83,3 +83,9 @@ export async function previewIvp(file: DG.FileInfo): Promise<DG.View> {
   const solver = new DiffStudio(false);
   return solver.getFilePreview(file, path);
 }
+
+//input: dynamic treeNode
+//input: view browseView
+export async function runDiffStudioTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
+  new DiffStudio(false, false);
+}
