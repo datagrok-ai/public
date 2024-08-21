@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {computed, defineComponent, nextTick, onMounted, PropType, ref, shallowReactive, shallowRef, ShallowRef, toValue, watch, watchEffect} from 'vue';
+import {computed, defineComponent, nextTick, onMounted, PropType, ref, shallowReactive, shallowRef, ShallowRef, toValue, triggerRef, watch, watchEffect} from 'vue';
 import {IconFA, ToggleInput, Viewer} from '@datagrok-libraries/webcomponents-vue/src';
 import {historyUtils} from '@datagrok-libraries/compute-utils';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
@@ -49,24 +49,25 @@ export const History = defineComponent({
   setup(props) {
     const isLoading = ref(true);
 
-    const isFullMode = ref(false);
+    const isCompactMode = ref(true);
     const showFilters = ref(true);
     const showInputs = ref(true);
     const showMetadata = ref(true);
 
-    const historicalRuns = shallowReactive(new Map<string, DG.FuncCall>);
+    const historicalRuns = shallowRef(new Map<string, DG.FuncCall>);
 
     watch(() => props.func.name, () => {
       isLoading.value = true;
 
       historyUtils.pullRunsByName(props.func.name, [{author: grok.shell.user}], {}, ['session.user', 'options'])
         .then((newHistoricalRuns) => {
-          historicalRuns.clear();
+          historicalRuns.value.clear();
 
           newHistoricalRuns.reduce((acc, run) => {
             acc.set(run.id, run);
             return acc;
-          }, historicalRuns);
+          }, historicalRuns.value);
+          triggerRef(historicalRuns);
         })
         .catch((e) => grok.shell.error(e))
         .finally(() => isLoading.value = false);
@@ -89,7 +90,7 @@ export const History = defineComponent({
     const currentFilters = shallowRef(null as null | DG.FilterGroup);
 
     const getRunByIdx = (idx: number) => {
-      return historicalRuns.get(historicalRunsDf.value.get(ID_COLUMN_NAME, idx));
+      return historicalRuns.value.get(historicalRunsDf.value.get(ID_COLUMN_NAME, idx));
     };
 
     const isFavoriteByIndex = (idx: number) => {
@@ -97,7 +98,8 @@ export const History = defineComponent({
     };
 
     const updateRun = (updatedRun: DG.FuncCall) => {
-      historicalRuns.set(updatedRun.id, updatedRun);
+      historicalRuns.value.set(updatedRun.id, updatedRun);
+      triggerRef(historicalRuns);
     };
 
     const showEditDialog = (funcCall: DG.FuncCall, isFavorite: boolean) => {
@@ -156,8 +158,9 @@ export const History = defineComponent({
           ] as const;
         })
         .then(([, loadedRun]) => {
-          historicalRuns.delete(id);
-  
+          historicalRuns.value.delete(id);
+          triggerRef(historicalRuns);
+
           return loadedRun;
         })
         .then((loadedRun) => {
@@ -196,7 +199,7 @@ export const History = defineComponent({
     watch(currentGrid, () => {
       Utils.setGridCellRendering(
         currentGrid.value!,
-        historicalRuns,
+        historicalRuns.value,
         onEditClick,
         onDeleteClick,
         onFavoriteClick,
@@ -207,17 +210,17 @@ export const History = defineComponent({
 
     const historicalRunsDf = computedAsync(async () => {
       return await Utils.getRunsDfFromList(
-        historicalRuns, 
+        historicalRuns.value, 
         toValue(() => props),
       );
     }, defaultDf);
 
     const applyStyles = () => {
-      const func = historicalRuns.values().next().value.func as DG.Func | undefined;
+      const func = historicalRuns.value.values().next().value.func as DG.Func | undefined;
 
       Utils.styleHistoryGrid(
         currentGrid.value!, 
-        isFullMode.value,
+        isCompactMode.value,
         showInputs.value,
         showMetadata.value,
         func,
@@ -232,7 +235,7 @@ export const History = defineComponent({
       );
     };
 
-    watch([showInputs, showMetadata, isFullMode], () => {
+    watch([showInputs, showMetadata, isCompactMode], () => {
       applyStyles();
     });
 
@@ -248,9 +251,9 @@ export const History = defineComponent({
       const controls = <div style={{display: 'flex', justifyContent: 'space-between', padding: '0px 6px'}}>
         <div style={{'display': 'flex', 'padding': '6px 0px', 'gap': '6px'}}>
           <IconFA 
-            name={isFullMode.value ? 'compress-alt': 'expand-alt'} 
-            tooltip={isFullMode.value ? 'Switch to compact mode': 'Switch to full mode'}
-            onClick={() => isFullMode.value = !isFullMode.value}
+            name={isCompactMode.value ? 'expand-alt': 'compress-alt'} 
+            tooltip={isCompactMode.value ? 'Switch to full mode': 'Switch to compact mode'}
+            onClick={() => isCompactMode.value = !isCompactMode.value}
             style={{alignContent: 'center'}}
           />
           <IconFA 
@@ -293,7 +296,7 @@ export const History = defineComponent({
           <span> Loading... </span>: 
           <div style={{
             display: 'flex', 
-            flexDirection: isFullMode.value ? 'row': 'column', 
+            flexDirection: isCompactMode.value ? 'column': 'row', 
             height: '100%', width: '100%',
           }}> 
             <div style={{display: 'flex', flexDirection: 'column', height: '100%', width: '100%'}}>
