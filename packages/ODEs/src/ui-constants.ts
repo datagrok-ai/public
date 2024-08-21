@@ -203,6 +203,7 @@ export enum PATH {
   EQ = '=',
   AND = '&',
   PARAM = `?params:`,
+  BROWSE = 'browse',
 };
 
 /** UI time constants */

@@ -211,7 +211,7 @@ const strToVal = (s: string) => {
 /** Solver of differential equations */
 export class DiffStudio {
   /** Run Diff Studio application */
-  public async runSolverApp(content?: string): Promise<DG.ViewBase> {
+  public async runSolverApp(content?: string, state?: EDITOR_STATE): Promise<DG.ViewBase> {
     this.createEditorView(content, true);
     this.solverView.setRibbonPanels([
       [this.openIcon, this.saveIcon],
@@ -224,7 +224,10 @@ export class DiffStudio {
     // routing
       if (content)
         await this.runSolving(true);
-      else {
+      else if (state) {
+        this.inBrowsRun = true;
+        await this.setState(state);
+      } else {
         const modelIdx = this.startingPath.lastIndexOf('/') + 1;
         //const modelIdx = this.startingPath.indexOf(PATH.MODEL);
         const paramsIdx = this.startingPath.indexOf(PATH.PARAM);
@@ -376,6 +379,7 @@ export class DiffStudio {
   private sensAnIcon: HTMLElement;
   private fittingIcon: HTMLElement;
   private performanceDlg: DG.Dialog | null = null;
+  private inBrowsRun = false;
 
   private inputsByCategories = new Map<string, DG.InputBase[]>();
 
@@ -659,8 +663,15 @@ export class DiffStudio {
     const customSettings = (ivp.solverSettings !== DEFAULT_SOLVER_SETTINGS);
 
     try {
-      if (this.toChangePath)
+      if (this.toChangePath) {
         this.solverView.path = `${this.solverMainPath}${PATH.PARAM}${inputsPath}`;
+
+        if (this.inBrowsRun) {
+          const browseView = grok.shell.view(TITLE.BROWSE) as DG.BrowseView;
+          browseView.path = `/${PATH.BROWSE}${PATH.APPS_DS}${this.solverView.path}`;
+          //browseView.path = `/browse/apps/DiffStudio${this.solverView.path}`;
+        }
+      }
 
       const start = ivp.arg.initial.value;
       const finish = ivp.arg.final.value;
@@ -1107,13 +1118,19 @@ export class DiffStudio {
 
         item.onSelected.subscribe(async () => {
           const solver = new DiffStudio(false);
+          browseView.preview = await solver.runSolverApp(
+            undefined,
+            STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
+          ) as DG.View;
+
+          /*const solver = new DiffStudio(false);
           browseView.preview = await solver.runSolverApp(MODEL_BY_TITLE.get(name) ?? TEMPLATES.BASIC) as DG.View;
 
           setTimeout(() => {
             const paramsIdx = browseView.path.indexOf(PATH.PARAM);
             const params = browseView.path.slice(paramsIdx);
             browseView.path = `${PATH.APPS_DS}/${TITLE.EXAMP}/${STATE_BY_TITLE.get(name)}${params}`;
-          }, UI_TIME.BROWSING);
+          }, UI_TIME.BROWSING);*/
         });
       });
 
@@ -1126,13 +1143,18 @@ export class DiffStudio {
 
           item.onSelected.subscribe(async () => {
             const solver = new DiffStudio(false);
+            browseView.preview = await solver.runSolverApp(
+              undefined,
+              STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
+            ) as DG.View;
+            /*const solver = new DiffStudio(false);
             browseView.preview = await solver.runSolverApp(MODEL_BY_TITLE.get(name) ?? TEMPLATES.BASIC) as DG.View;
 
             setTimeout(() => {
               const paramsIdx = browseView.path.indexOf(PATH.PARAM);
               const params = browseView.path.slice(paramsIdx);
               browseView.path = `${PATH.APPS_DS}/${TITLE.EXAMP}/${STATE_BY_TITLE.get(name)}${params}`;
-            }, UI_TIME.BROWSING);
+            }, UI_TIME.BROWSING);*/
           });
         });
 
