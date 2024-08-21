@@ -66,5 +66,5 @@
 ---  
 {
   "order": 5
-  "datasets": ["System:DemoFiles/SPGI.csv"]
+  "datasets": ["System:DemoFiles/SPGI.csv","System:DemoFiles/SPGI-linked1.csv","System:DemoFiles/SPGI-linked2.csv"]
 }

@@ -1,4 +1,4 @@
-1. Open SPGI, SPGI-linked1, SPGI-linked2.
+1. Open SPGI, SPGI-linked1, SPGI-linked2 by pressing 'star' icon in TestTrack (with tooltip "Open test data").
 2. Go to **Tables > SPGI**.
 3. On the **Viewers tab**, click **Heatmap**.
 4. On the **heatmap** viewer, click the **Gear** icon. The **Property Pane** opens.
@@ -26,5 +26,5 @@
 ---
 {
   "order": 7
-  "datasets": ["System:DemoFiles/SPGI.csv"]
+  "datasets": ["System:DemoFiles/SPGI.csv","System:DemoFiles/SPGI-linked1.csv","System:DemoFiles/SPGI-linked2.csv"]
 }
