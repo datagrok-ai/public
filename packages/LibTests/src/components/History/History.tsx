@@ -216,7 +216,7 @@ export const History = defineComponent({
     }, defaultDf);
 
     const applyStyles = () => {
-      const func = historicalRuns.value.values().next().value.func as DG.Func | undefined;
+      const func = historicalRuns.value.values().next().value?.func as DG.Func | undefined;
 
       Utils.styleHistoryGrid(
         currentGrid.value!, 
