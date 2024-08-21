@@ -120,7 +120,7 @@ export const RichFunctionView = defineComponent({
             />
           </div>
           {
-            !formHidden.value && <div style={{padding: '8px'}}> 
+            <div style={{padding: '8px', display: formHidden.value ? 'none': 'block'}}> 
               <InputForm funcCall={currentCall.value}/>
               <div style={{display: 'flex', position: 'sticky', bottom: '0px'}}>
                 <BigButton onClick={runSimulation}> Run </BigButton>
