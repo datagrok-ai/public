@@ -2,13 +2,12 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {defineComponent, onMounted, PropType, ref, triggerRef, nextTick, computed, watch} from 'vue';
+import {defineComponent, onMounted, PropType, ref, triggerRef, nextTick, computed, watch, shallowRef} from 'vue';
 import {type ViewerT} from '@datagrok-libraries/webcomponents/src';
 import {Viewer, InputForm, BigButton, Button, TabHeaderStripe, Tabs, IconFA} from '@datagrok-libraries/webcomponents-vue/src';
-import {History} from '../History/History';
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
-import {getDefaultValue} from '@datagrok-libraries/compute-utils/function-views/src/shared/utils';
+import {History} from '../History/History';
 
 declare global {
   namespace JSX {
@@ -72,21 +71,15 @@ export const RichFunctionView = defineComponent({
   name: 'RichFunctionView',
   props: {
     funcCall: {
-      type: Object as PropType<DG.FuncCall | string>,
+      type: Object as PropType<DG.FuncCall>,
       required: true,
     },
   },
-  setup(props) {
-    const currentCall = computed(() => {
-      if (props.funcCall instanceof DG.FuncCall) 
-        return props.funcCall;
-
-      const func = DG.Func.byName(props.funcCall);
-      return func.prepare(func.inputs.reduce((acc, prop) => {
-        acc[prop.name] = getDefaultValue(prop);
-        return acc;
-      }, {} as Record<string, any>));
-    });
+  emits: {
+    funcCallChange: (call: DG.FuncCall) => call,
+  },
+  setup(props, {emit}) {
+    const currentCall = computed(() => props.funcCall);
 
     const categoryToDfParam = computed(() => Utils.categoryToDfParamMap(currentCall.value.func));
 
@@ -179,6 +172,7 @@ export const RichFunctionView = defineComponent({
           showBatchActions
           isHistory
           style={{display: historyHidden.value ? 'none': 'block', width: '30%'}}
+          onRunChosen={(chosenCall) => emit('funcCallChange', chosenCall)}
         />
       </div>
     );

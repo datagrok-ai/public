@@ -75,10 +75,10 @@ export const TreeWizardView = defineComponent({
         </Draggable>
         <div>
           {
-            isVisibleRfv.value && <RichFunctionView 
-              style={{height: '100%'}} 
-              funcCall={currentFuncCall.value}
-            /> 
+            // isVisibleRfv.value && <RichFunctionView 
+            //   style={{height: '100%'}} 
+            //   funcCall={currentFuncCall.value}
+            // /> 
           }
         </div>
       </SplitH>

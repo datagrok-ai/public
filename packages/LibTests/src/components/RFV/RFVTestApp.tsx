@@ -2,30 +2,29 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {computed, defineComponent, ref, shallowRef, triggerRef} from 'vue';
+import {computed, defineComponent, ref, shallowRef, triggerRef, watch} from 'vue';
 import {RichFunctionView} from './RichFunctionView';
 import {Button} from '@datagrok-libraries/webcomponents-vue/src';
 
 export const RFVTestApp = defineComponent({
   setup() {
-    const currentFuncCallName = ref('Compute:ObjectCooling');
+    const initialName = 'Compute:ObjectCooling';
 
-    const currentFuncCall = computed(() => {
-      return DG.Func.byName(currentFuncCallName.value).prepare();
-    });
+    const currentFuncCall = shallowRef(DG.Func.byName(initialName).prepare());
 
-    const changeFunccall = () => {
-      const nfc = currentFuncCallName.value === 'LibTests:SimpleInputs' ? 
+    const changeFunc = () => {
+      const nfc = currentFuncCall.value.func.name === 'LibTests:SimpleInputs' ? 
         'Compute:ObjectCooling':
         'LibTests:SimpleInputs';
-      currentFuncCallName.value = nfc;
+      currentFuncCall.value.func.name = nfc;
     };
 
     return () => (
       <div style={{width: '100%', height: '100%'}}>
-        <Button onClick={changeFunccall}> Change funccall </Button>
+        <Button onClick={changeFunc}> Change funccall </Button>
         <RichFunctionView 
           funcCall={currentFuncCall.value}
+          onFuncCallChange={(chosenCall) => currentFuncCall.value = chosenCall}
         />
       </div>
     );

@@ -12,6 +12,7 @@ import {EXP_COLUMN_NAME, FAVORITE_COLUMN_NAME, ACTIONS_COLUMN_NAME, COMPLETE_COL
 import {HistoricalRunEdit, HistoricalRunsDelete} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {take} from 'rxjs/operators';
 import wu from 'wu';
+import {useObservable, useSubscription, watchExtractedObservable} from '@vueuse/rxjs';
 
 export const History = defineComponent({
   props: {
@@ -41,12 +42,12 @@ export const History = defineComponent({
     }, 
   },
   emits: {
-    onRunChosen: (id: string) => id,
-    onComparison: (ids: string[]) => ids,
+    runChosen: (chosenCall: DG.FuncCall) => chosenCall,
+    compare: (ids: string[]) => ids,
     afterRunEdited: (editedCall: DG.FuncCall) => editedCall,
     afterRunDeleted: (deletedCall: DG.FuncCall) => deletedCall,
   },
-  setup(props) {
+  setup(props, {emit}) {
     const isLoading = ref(true);
 
     const isCompactMode = ref(true);
@@ -90,6 +91,8 @@ export const History = defineComponent({
     const currentFilters = shallowRef(null as null | DG.FilterGroup);
 
     const getRunByIdx = (idx: number) => {
+      if (idx < 0) return;
+
       return historicalRuns.value.get(historicalRunsDf.value.get(ID_COLUMN_NAME, idx));
     };
 
@@ -215,6 +218,12 @@ export const History = defineComponent({
       );
     }, defaultDf);
 
+    watchExtractedObservable(historicalRunsDf, (p) => p.onCurrentRowChanged, () => {
+      historicalRunsDf.value.rows.select(() => false);
+      const chosenRun = getRunByIdx(historicalRunsDf.value.currentRowIdx);
+      if (chosenRun) emit('runChosen', chosenRun);
+    });
+  
     const applyStyles = () => {
       const func = historicalRuns.value.values().next().value?.func as DG.Func | undefined;
 
@@ -281,7 +290,7 @@ export const History = defineComponent({
       const grid = <Viewer 
         type='Grid'
         dataFrame={historicalRunsDf.value} 
-        style={{height: '100%', width: '100%'}}
+        style={{height: '100%', width: '100%', minHeight: '300px'}}
         onViewerChanged={(viewer) => currentGrid.value = viewer as DG.Grid}
       />;
       const filters = <Viewer 
