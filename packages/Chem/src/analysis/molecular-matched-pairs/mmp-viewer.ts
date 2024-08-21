@@ -4,10 +4,10 @@ import * as DG from 'datagrok-api/dg';
 import {getRdKitModule} from '../../utils/chem-common-rdkit';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
-import {MMP_NAMES, MMP_CONSTRICTIONS, MMP_ERRORS} from './mmp-constants';
-import {MmpRules, MmpInput} from './mmp-constants';
+import {MMP_NAMES} from './mmp-constants';
+import {MmpRules} from './mmp-analysis/mmpa-misc';
 import {getInverseSubstructuresAndAlign, PaletteCodes, getPalette} from './mmp-mol-rendering';
-import {getMmpFrags, getMmpRules} from './mmp-fragments';
+import {getMmpFrags, getMmpRules} from './mmp-analysis/mmpa-fragments';
 import {getMmpActivityPairsAndTransforms} from './mmp-pairs-transforms';
 import {getMmpTrellisPlot} from './mmp-frag-vs-frag';
 import {getMmpScatterPlot, runMmpChemSpace} from './mmp-cliffs';
@@ -25,13 +25,19 @@ import $ from 'cash-dom';
 import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 import {getMmpFilters, MmpFilters} from './mmp-filters';
 import {Subject} from 'rxjs/internal/Subject';
-import {IMmpFragmentsResult} from '../../rdkit-service/rdkit-service-worker-substructure';
 
 import {fillPairInfo} from './mmp-cliffs';
 import {debounceTime} from 'rxjs/operators';
 
 import {getSigFigs} from '../../utils/chem-common';
+import {MMPA} from './mmp-analysis/mmpa';
 
+export type MmpInput = {
+  table: DG.DataFrame,
+  molecules: DG.Column,
+  activities: DG.ColumnList,
+  fragmentCutoff: number
+};
 
 export class MatchedMolecularPairsViewer extends DG.JsViewer {
   static TYPE: string = 'MMP';
@@ -47,9 +53,11 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   moleculesCol: DG.Column | null = null;
   activitiesCols: DG.ColumnList | null = null;
 
+  mmpa: MMPA | null;
+
   parentTable: DG.DataFrame | null = null;
   parentCol: DG.Column| null = null;
-  mmpRules: MmpRules | null = null;
+  //mmpRules: MmpRules | null = null;
   mmpView: DG.View | null = null;
   enableFilters: boolean = true;
   colorPalette: PaletteCodes | null = null;
@@ -393,7 +401,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     //Cliffs tab setup
     this.mmpFilters = mmpFilters;
     this.cutoffMasks = new Array<DG.BitSet>(mmpFilters.activitySliderInputs.length);
-    this.totalCutoffMask = DG.BitSet.create(this.parentTable.rowCount);
+    this.totalCutoffMask = DG.BitSet.create(this.parentTable!.rowCount);
     this.linesMask = new BitArray(linesIdxs.length);
     this.setupFilters(mmpFilters, linesActivityCorrespondance, tp);
     const cliffs = this.setupCliffsTab(sp, mmpFilters, linesEditor);
@@ -415,10 +423,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
       this.mmpView.append(tabs);
 
-      const propertiesColumnsNames = this.parentTable.columns.names()
+      const propertiesColumnsNames = this.parentTable!.columns.names()
         .filter((name) => !name.startsWith('~'));
       this.propPanelViewer = new FormsViewer();
-      this.propPanelViewer.dataframe = this.parentTable;
+      this.propPanelViewer.dataframe = this.parentTable!;
       this.propPanelViewer.columns = propertiesColumnsNames;
       this.propPanelViewer.inputClicked.subscribe(() => {
         setTimeout(() => {
@@ -439,28 +447,47 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const gpuCheck = await getGPUDevice();
     const gpu: boolean = !gpuCheck ? false : true;
 
-    if (!gpu && mmpInput.molecules.length > MMP_CONSTRICTIONS.CPU) {
-      grok.shell.error(MMP_ERRORS.FRAGMENTS_CPU);
-      throw new Error(MMP_ERRORS.FRAGMENTS_CPU);
-    } else if (mmpInput.molecules.length > MMP_CONSTRICTIONS.GPU) {
-      grok.shell.error(MMP_ERRORS.FRAGMENTS_GPU);
-      throw new Error(MMP_ERRORS.FRAGMENTS_GPU);
-    }
+    // if (!gpu && mmpInput.molecules.length > MMP_CONSTRICTIONS.CPU) {
+    //   grok.shell.error(MMP_ERRORS.FRAGMENTS_CPU);
+    //   throw new Error(MMP_ERRORS.FRAGMENTS_CPU);
+    // } else if (mmpInput.molecules.length > MMP_CONSTRICTIONS.GPU) {
+    //   grok.shell.error(MMP_ERRORS.FRAGMENTS_GPU);
+    //   throw new Error(MMP_ERRORS.FRAGMENTS_GPU);
+    // }
 
-    //initial calculations
-    let fragsOut: IMmpFragmentsResult;
-    let mmpRules: MmpRules;
-    let allCasesNumber: number;
+    // //initial calculations
+    // let fragsOut: IMmpFragmentsResult;
+    // let mmpRules: MmpRules;
+    // let allCasesNumber: number;
 
-    if (this.totalDataUpdated) {
-      const totalParsed = JSON.parse(this.totalData);
-      this.totalDataUpdated = false;
-      fragsOut = totalParsed['fragments'];
-      mmpRules = totalParsed['rules'];
-      allCasesNumber = totalParsed['cases'];
-    } else {
-      fragsOut = await getMmpFrags(moleculesArray);
-      [mmpRules, allCasesNumber] = await getMmpRules(fragsOut, mmpInput.fragmentCutoff, gpu);
+    // if (this.totalDataUpdated) {
+    //   const totalParsed = JSON.parse(this.totalData);
+    //   this.totalDataUpdated = false;
+    //   fragsOut = totalParsed['fragments'];
+    //   mmpRules = totalParsed['rules'];
+    //   allCasesNumber = totalParsed['cases'];
+    // } else {
+    //   fragsOut = await getMmpFrags(moleculesArray);
+    //   [mmpRules, allCasesNumber] = await getMmpRules(fragsOut, mmpInput.fragmentCutoff, gpu);
+    // }
+
+    let mmpa: MMPA;
+
+    try {
+      if (this.totalDataUpdated) {
+        mmpa = MMPA.fromData(this.totalData);
+        this.totalDataUpdated = false;
+        fragsOut = totalParsed['fragments'];
+        mmpRules = totalParsed['rules'];
+        allCasesNumber = totalParsed['cases'];
+      } else {
+        fragsOut = await getMmpFrags(moleculesArray);
+        [mmpRules, allCasesNumber] = await getMmpRules(fragsOut, mmpInput.fragmentCutoff, gpu);
+      }
+    } catch (err: any) {
+      const errMsg = err instanceof Error ? err.message : err.toString();
+      grok.shell.error(errMsg);
+      throw new Error(errMsg);
     }
 
 

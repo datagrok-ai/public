@@ -1,7 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import {ILineSeries} from '@datagrok-libraries/utils/src/render-lines-on-sp';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {MmpRules, MmpInput} from './mmp-constants';
+import {MmpRules} from './mmp-analysis/mmpa-misc';
+import {MmpInput} from './mmp-viewer';
 import {SUBSTRUCT_COL} from '../../constants';
 import {MMP_NAMES, columnsDescriptions} from './mmp-constants';
 import {PaletteCodes} from './mmp-mol-rendering';

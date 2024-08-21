@@ -1,12 +1,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {MMP_CONSTRICTIONS, MMP_ERRORS, MMP_NAMES, columnsDescriptions} from './mmp-constants';
-import {MmpInput} from './mmp-constants';
+import {MMP_NAMES, columnsDescriptions} from './mmp-constants';
+import {MmpInput} from './mmp-viewer';
 import {IMmpFragmentsResult} from '../../rdkit-service/rdkit-service-worker-substructure';
 import {getRdKitService} from '../../utils/chem-common-rdkit';
 //import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 import {generationsGPU} from '@datagrok-libraries/math/src/webGPU/mmp/webGPU-generations';
+import {MMP_CONSTRICTIONS, MMP_ERRORS} from './mmp-analysis/mmpa-misc';
 
 export async function getGenerations(mmpInput: MmpInput, moleculesArray: string[],
   fragsOut: IMmpFragmentsResult, meanDiffs: Float32Array[],
@@ -20,10 +21,6 @@ export async function getGenerations(mmpInput: MmpInput, moleculesArray: string[
   const rulesToCats = rulesColumns.byName(MMP_NAMES.TO).categories;
   const activityN = activityMeanNames.length;
 
-  //const structures = mmpInput.molecules.toList();
-  //const structuresN = structures.length;
-  // const structures = mmpInput.molecules.getRawData();
-  // const structuresCats = mmpInput.molecules.categories;
   const structuresN = mmpInput.molecules.length;
   const cores = new Array<string>(activityN *structuresN);
   const from = new Array<string>(activityN * structuresN);
