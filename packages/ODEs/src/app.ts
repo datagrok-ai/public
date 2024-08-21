@@ -213,11 +213,16 @@ export class DiffStudio {
   /** Run Diff Studio application */
   public async runSolverApp(content?: string, state?: EDITOR_STATE): Promise<DG.ViewBase> {
     this.createEditorView(content, true);
-    this.solverView.setRibbonPanels([
-      [this.openIcon, this.saveIcon],
-      [this.exportButton, this.sensAnIcon, this.fittingIcon],
-      [this.helpIcon],
-    ]);
+
+    const panels = (state === undefined) ?
+      [
+        [this.openIcon, this.saveIcon],
+        [this.exportButton, this.sensAnIcon, this.fittingIcon],
+        [this.helpIcon],
+      ] :
+      [[this.sensAnIcon, this.fittingIcon]];
+
+    this.solverView.setRibbonPanels(panels);
     this.toChangePath = true;
 
     setTimeout(async () => {
@@ -225,15 +230,13 @@ export class DiffStudio {
       if (content)
         await this.runSolving(true);
       else if (state) {
-        this.inBrowsRun = true;
+        this.inBrowseRun = true;
         await this.setState(state);
       } else {
         const modelIdx = this.startingPath.lastIndexOf('/') + 1;
-        //const modelIdx = this.startingPath.indexOf(PATH.MODEL);
         const paramsIdx = this.startingPath.indexOf(PATH.PARAM);
 
         if (modelIdx > -1) {
-        //const model = this.startingPath.slice(modelIdx + PATH.MODEL.length, (paramsIdx > -1) ? paramsIdx : undefined);
           const model = this.startingPath.slice(modelIdx, (paramsIdx > -1) ? paramsIdx : undefined);
 
           if (MODELS.includes(model)) {
@@ -379,7 +382,7 @@ export class DiffStudio {
   private sensAnIcon: HTMLElement;
   private fittingIcon: HTMLElement;
   private performanceDlg: DG.Dialog | null = null;
-  private inBrowsRun = false;
+  private inBrowseRun = false;
 
   private inputsByCategories = new Map<string, DG.InputBase[]>();
 
@@ -666,10 +669,9 @@ export class DiffStudio {
       if (this.toChangePath) {
         this.solverView.path = `${this.solverMainPath}${PATH.PARAM}${inputsPath}`;
 
-        if (this.inBrowsRun) {
+        if (this.inBrowseRun) {
           const browseView = grok.shell.view(TITLE.BROWSE) as DG.BrowseView;
           browseView.path = `/${PATH.BROWSE}${PATH.APPS_DS}${this.solverView.path}`;
-          //browseView.path = `/browse/apps/DiffStudio${this.solverView.path}`;
         }
       }
 
