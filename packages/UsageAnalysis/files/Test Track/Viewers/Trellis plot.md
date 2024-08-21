@@ -49,4 +49,5 @@ Expected Results:
 ---
 {
   "order": 13
+  "datasets": ["System:DemoFiles/demog.csv","System:DemoFiles/SPGI.csv"]
 }

@@ -1,6 +1,6 @@
 ### Correlation plot
 
-1. Open the **SPGI dataset**.
+1. Open the **SPGI dataset** by pressing 'star' icon in TestTrack (with tooltip "Open test data").
 2. On the **Viewers tab**, click **Correlation plot**. The viewer opens.
 3. Check Column Width Adjustment. Click and drag the edges of the column headers to resize column`s width.
   * Expected Result: The column width should adjust smoothly, and the data should be not overlap or disappear from the cell.

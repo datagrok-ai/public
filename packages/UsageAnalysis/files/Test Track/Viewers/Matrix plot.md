@@ -1,6 +1,6 @@
 ### Matrix plot
 
-1. Open the **SPGI dataset**.
+1. Open the **SPGI dataset** by pressing 'star' icon in TestTrack (tooltip "Open test data").
 2. On the **Viewers tab**, click **Matrix plot**. The viewer opens.
 3. Interact with all elements on the viewer. All changes should be reflected in the viewer without errors.  
 4. Clicking on the single data on the viewer should highlight same data line in the grid.

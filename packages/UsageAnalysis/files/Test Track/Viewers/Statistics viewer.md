@@ -18,4 +18,5 @@
 ---
 {
   "order": 24
+  "datasets": ["System:DemoFiles/demog.csv"]
 }

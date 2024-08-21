@@ -1,6 +1,6 @@
 ### Verify common Hidden Columns Behavior in the Filter Panel
 Ensure that columns are correctly shown or hidden in the filter panel based on their visibility settings.
-* Preconditions: SPGI dataset is loaded into the platform.
+* Preconditions: SPGI dataset is opened by pressing 'star' icon in TestTrack (with tooltip "Open test data").
 Test Steps:
 1. Check Initial Visible Columns: open the filter panel for the dataset and identify the currently visible columns in the filter panel (for e.g., 'Structure' colunm). 
 2. Hide one of the columns that is currently visible in the filter panel. (for e.g., 'Structure' colunm).

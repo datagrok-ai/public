@@ -26,3 +26,8 @@
 * Open the **demog** dataset. Apply saved layout
   * Expected results: The saved layout should retain the adjusted row height and column header height for the dataset and the **Grid viewer**. These settings should be applied consistently when the layout is reapplied.
 
+---
+{
+  "order": 26
+  "datasets": ["System:DemoFiles/demog.csv"]  
+}
