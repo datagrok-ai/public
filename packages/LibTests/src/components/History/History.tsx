@@ -218,10 +218,10 @@ export const History = defineComponent({
       );
     }, defaultDf);
 
-    watchExtractedObservable(historicalRunsDf, (p) => p.onCurrentRowChanged, () => {
+    watchExtractedObservable(historicalRunsDf, (p) => p.onCurrentRowChanged, async () => {
       historicalRunsDf.value.rows.select(() => false);
       const chosenRun = getRunByIdx(historicalRunsDf.value.currentRowIdx);
-      if (chosenRun) emit('runChosen', chosenRun);
+      if (chosenRun) emit('runChosen', await historyUtils.loadRun(chosenRun.id));
     });
   
     const applyStyles = () => {

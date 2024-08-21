@@ -33,7 +33,7 @@ export const Viewer = defineComponent({
         type={props.type}
         options={props.options}
         dataFrame={props.dataFrame}
-        viewer={props.viewer}
+        // viewer={props.viewer} // TODO: Fix this
         onViewerChanged={viewerChangedCb}
       >
       </dg-viewer>;
