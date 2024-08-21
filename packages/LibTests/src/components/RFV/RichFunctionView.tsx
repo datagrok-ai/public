@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {defineComponent, onMounted, PropType, ref, triggerRef, nextTick, computed, watch} from 'vue';
 import {type ViewerT} from '@datagrok-libraries/webcomponents/src';
 import {Viewer, InputForm, BigButton, Button, TabHeaderStripe, Tabs, IconFA} from '@datagrok-libraries/webcomponents-vue/src';
-import 'gridstack/dist/gridstack.min.css';
+import {History} from '../History/History';
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {getDefaultValue} from '@datagrok-libraries/compute-utils/function-views/src/shared/utils';
@@ -105,6 +105,7 @@ export const RichFunctionView = defineComponent({
     };
 
     const formHidden = ref(false);
+    const historyHidden = ref(true);
 
     const hasContextHelp = computed(() => Utils.hasContextHelp(currentCall.value.func));
           
@@ -158,13 +159,27 @@ export const RichFunctionView = defineComponent({
                     />
                   </div>, 
                 ),
-            stripePostfix: () => hasContextHelp.value && <IconFA 
-              name='info' 
-              tooltip='Open help panel' 
-              onClick={async () => Utils.showHelpWithDelay((await Utils.getContextHelp(currentCall.value.func))!)}
-            />,
+            stripePostfix: () => <div style={{display: 'flex', gap: '6px', padding: '0px 6px'}}>
+              { hasContextHelp.value && <IconFA 
+                name='info' 
+                tooltip='Open help panel' 
+                onClick={async () => Utils.showHelpWithDelay((await Utils.getContextHelp(currentCall.value.func))!)}
+              /> }
+              <IconFA 
+                name='history' 
+                tooltip='Open history panel' 
+                onClick={() => historyHidden.value = !historyHidden.value}
+              />
+            </div>,
           }}
         </Tabs>
+        <History 
+          func={currentCall.value.func}
+          showActions
+          showBatchActions
+          isHistory
+          style={{display: historyHidden.value ? 'none': 'block', width: '30%'}}
+        />
       </div>
     );
   },
