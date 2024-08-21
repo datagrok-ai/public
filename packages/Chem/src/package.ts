@@ -147,7 +147,6 @@ export async function initChem(): Promise<void> {
 
     DG.chem.currentSketcherType = DG.DEFAULT_SKETCHER;
   }
-  await loadRGroupUserSettings();
   _renderers = new Map();
 }
 
