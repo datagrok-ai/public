@@ -1,5 +1,11 @@
 # PowerPack changelog
 
+## 1.1.12 (2024-08-21)
+
+### Bug Fixes
+
+* [#2918](https://github.com/datagrok-ai/public/issues/2918): Typing $ in the calculated column dialog pops up the available column drop down also within a quoted field
+
 ## 1.1.11 (2024-08-20)
 
 ### Bug Fixes

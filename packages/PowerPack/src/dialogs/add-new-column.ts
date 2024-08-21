@@ -1004,13 +1004,16 @@ export class AddNewColumnDialog {
       let word = context.matchBefore(/[\w|:|$|${|$\[|'|"]*/);
       if (!word || word?.from === word?.to && !context.explicit)
         return null;
-      //check if word is inside quotes
-      const quoteSym = word.text.includes('\'') ? '\'' : word.text.includes('\"') ? '\"' : '';
+
+      //check if word is inside quotes and if yes - do not show autocomplete
+      const beforeWord = context.state.doc.toString().substring(0, word.to)
+      const quoteSym = beforeWord.includes('\'') ? '\'' : beforeWord.includes('\"') ? '\"' : '';
       if (quoteSym) {
-        const closingQuote = context.state.doc.length > word.text.length ? context.state.doc.toString().at(word.to) === quoteSym : false;
+        const closingQuote = context.state.doc.toString().substring(word.to).includes(quoteSym);
         if (closingQuote)
           return null;
       }
+
       let options: Completion[] = [];
       let index = word!.from;
       let filter = true;
