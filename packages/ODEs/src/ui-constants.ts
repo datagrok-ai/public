@@ -72,6 +72,13 @@ export enum TITLE {
   DIF_ST = 'Diff Studio',
 };
 
+/** Titles of template models */
+export const TEMPLATE_TITLES = [TITLE.BASIC, TITLE.ADV, TITLE.EXT];
+
+/** Titles of example models */
+export const EXAMPLE_TITLES = [TITLE.CHEM, TITLE.ROB, TITLE.FERM, TITLE.PK,
+  TITLE.PKPD, TITLE.ACID, TITLE.NIM, TITLE.BIO, TITLE.POLL];
+
 /** Models' tooltips map */
 export const MODEL_HINT = new Map([
   [TITLE.BASIC, HINT.BASIC],

@@ -14,7 +14,7 @@ import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/
 import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
 import {TEMPLATES, DEMO_TEMPLATE} from './templates';
 import {USE_CASES} from './use-cases';
-import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, DOCK_RATIO,
+import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, DOCK_RATIO, TEMPLATE_TITLES, EXAMPLE_TITLES,
   WARNING, MISC, demoInfo, INPUT_TYPE, PATH, UI_TIME, MODEL_HINT} from './ui-constants';
 import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
@@ -1111,34 +1111,11 @@ export class DiffStudio {
 
     if (appTree.items.length === 0) {
       const templatesFolder = appTree.getOrCreateGroup(TITLE.TEMPL, null, false);
-
-      [TITLE.BASIC, TITLE.ADV, TITLE.EXT].forEach((name) => {
-        const item = templatesFolder.item(name);
-        ui.tooltip.bind(item.root, MODEL_HINT.get(name) ?? '');
-
-        item.onSelected.subscribe(async () => {
-          const solver = new DiffStudio(false);
-          browseView.preview = await solver.runSolverApp(
-            undefined,
-            STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
-          ) as DG.View;
-
-          /*const solver = new DiffStudio(false);
-          browseView.preview = await solver.runSolverApp(MODEL_BY_TITLE.get(name) ?? TEMPLATES.BASIC) as DG.View;
-
-          setTimeout(() => {
-            const paramsIdx = browseView.path.indexOf(PATH.PARAM);
-            const params = browseView.path.slice(paramsIdx);
-            browseView.path = `${PATH.APPS_DS}/${TITLE.EXAMP}/${STATE_BY_TITLE.get(name)}${params}`;
-          }, UI_TIME.BROWSING);*/
-        });
-      });
-
       const examplesFolder = appTree.getOrCreateGroup(TITLE.EXAMP, null, false);
 
-      [TITLE.CHEM, TITLE.ROB, TITLE.FERM, TITLE.PK, TITLE.PKPD, TITLE.ACID, TITLE.NIM, TITLE.BIO, TITLE.POLL]
-        .forEach((name) => {
-          const item = examplesFolder.item(name);
+      const putModelsToFolder = (models: TITLE[], folder: DG.TreeViewGroup) => {
+        models.forEach((name) => {
+          const item = folder.item(name);
           ui.tooltip.bind(item.root, MODEL_HINT.get(name) ?? '');
 
           item.onSelected.subscribe(async () => {
@@ -1147,16 +1124,12 @@ export class DiffStudio {
               undefined,
               STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
             ) as DG.View;
-            /*const solver = new DiffStudio(false);
-            browseView.preview = await solver.runSolverApp(MODEL_BY_TITLE.get(name) ?? TEMPLATES.BASIC) as DG.View;
-
-            setTimeout(() => {
-              const paramsIdx = browseView.path.indexOf(PATH.PARAM);
-              const params = browseView.path.slice(paramsIdx);
-              browseView.path = `${PATH.APPS_DS}/${TITLE.EXAMP}/${STATE_BY_TITLE.get(name)}${params}`;
-            }, UI_TIME.BROWSING);*/
           });
         });
+      };
+
+      putModelsToFolder(TEMPLATE_TITLES, templatesFolder);
+      putModelsToFolder(EXAMPLE_TITLES, examplesFolder);
 
       const recentFolder = appTree.getOrCreateGroup(TITLE.RECENT, null, false);
     }
