@@ -13,15 +13,15 @@ export const RFVTestApp = defineComponent({
     const currentFuncCall = shallowRef(DG.Func.byName(initialName).prepare());
 
     const changeFunc = () => {
-      const nfc = currentFuncCall.value.func.name === 'LibTests:SimpleInputs' ? 
+      const nfc = currentFuncCall.value.func.nqName === 'LibTests:SimpleInputs' ? 
         'Compute:ObjectCooling':
         'LibTests:SimpleInputs';
-      currentFuncCall.value.func.name = nfc;
+      currentFuncCall.value = DG.Func.byName(nfc).prepare();
     };
 
     return () => (
       <div style={{width: '100%', height: '100%'}}>
-        <Button onClick={changeFunc}> Change funccall </Button>
+        <Button onClick={changeFunc}> Change func </Button>
         <RichFunctionView 
           funcCall={currentFuncCall.value}
           onFuncCallChange={(chosenCall) => currentFuncCall.value = chosenCall}
