@@ -1,43 +1,69 @@
 import {indexFromEnd} from '../utils';
-import {buildTraverseB, buildTraverseD} from './traversable';
+import {buildTraverseD} from './graph-traverse-utils';
 
-export type NodeAddressSegment = {
-  id: string,
-  idx?: number,
-} | {
-  id?: string,
-  idx: number
-};
-
-export type NodeAddress = NodeAddressSegment[];
-
-export type NodePath = {
+export type NodePathSegment = {
   id: string,
   idx: number,
-}[];
+};
+
+export type NodePath = NodePathSegment[];
 
 export class BaseTree<T> {
   protected root: TreeNode<T>;
 
   public traverse = buildTraverseD([] as NodePath, (item: TreeNode<T>, path: NodePath) => item.getChildren().map(({id, item}, idx) => [item, [...path, {id, idx}] as NodePath] as const));
 
+  public static isNodeAddressEqOrAfter(originNode: Readonly<NodePath>, currentNode: Readonly<NodePath>): boolean {
+    for (const [level, {idx}] of originNode.entries()) {
+      const idx2 = currentNode[level]?.idx;
+      if (idx2 == null)
+        return false; // currentNode is higher
+      if (idx !== idx2)
+        return (idx2 - idx) > 0; // currentNode is further/closer
+      // same path, continue
+    }
+    return true; // currentNode is nested or eq path
+  }
+
+  public static isNodeAddressEq(originNode: Readonly<NodePath>, currentNode: Readonly<NodePath>): boolean {
+    for (const [level, {idx}] of originNode.entries()) {
+      const idx2 = currentNode[level]?.idx;
+      if (idx !== idx2)
+        return false;
+    }
+    if (originNode.length !== currentNode.length)
+      return false;
+    return true;
+  }
+
+  public static isNodeAddressPrefix(originNode: Readonly<NodePath>, currentNode: Readonly<NodePath>, levels: number): boolean {
+    for (const [level, {idx}] of originNode.entries()) {
+      const idx2 = currentNode[level]?.idx;
+      if (idx !== idx2)
+        return false;
+      if (level === levels)
+        break;
+    }
+    return true;
+  }
+
   constructor(item: T) {
     this.root = new TreeNode(item);
   }
 
-  addItem(paddress: Readonly<NodeAddress>, item: T, id: string, idx?: number) {
+  addItem(paddress: Readonly<NodePath>, item: T, id: string, idx?: number) {
     const nodeSeq = this.getNodesFromAddress(paddress);
     const parent = indexFromEnd(nodeSeq)!;
     parent.addChild(item, id, idx);
     return item;
   }
 
-  getItem(address: Readonly<NodeAddress>) {
+  getItem(address: Readonly<NodePath>) {
     const node = this.getNode(address);
     return node.getItem();
   }
 
-  getNode(address: Readonly<NodeAddress>) {
+  getNode(address: Readonly<NodePath>) {
     const nodeSeq = this.getNodesFromAddress(address);
     const node = indexFromEnd(nodeSeq)!;
     return node;
@@ -47,23 +73,23 @@ export class BaseTree<T> {
     return this.root;
   }
 
-  attachBrunch(paddress: Readonly<NodeAddress>, node: TreeNode<T>, id: string, idx?: number) {
+  attachBrunch(paddress: Readonly<NodePath>, node: TreeNode<T>, id: string, idx?: number) {
     const nodeSeq = this.getNodesFromAddress(paddress);
     const parent = indexFromEnd(nodeSeq)!;
     parent.attachNode(node, id, idx);
     return node;
   }
 
-  removeBrunch(address: Readonly<NodeAddress>) {
+  removeBrunch(address: Readonly<NodePath>) {
     const nodeSeq = this.getNodesFromAddress(address);
     const parent = indexFromEnd(nodeSeq, 1)!;
     const segment = indexFromEnd(address)!;
     return parent.removeChild(segment);
   }
 
-  find(pred: (item: T) => boolean) {
+  find(pred: (item: T, path: NodePath) => boolean) {
     return this.traverse(this.root, ((acc, item, path, stop) => {
-      if (pred(item.getItem())) {
+      if (pred(item.getItem(), path)) {
         stop();
         return [item, path] as const;
       }
@@ -71,7 +97,7 @@ export class BaseTree<T> {
     }), undefined as Readonly<[TreeNode<T>, NodePath]> | undefined);
   }
 
-  private getNodesFromAddress(address: Readonly<NodeAddress>) {
+  private getNodesFromAddress(address: Readonly<NodePath>) {
     let current = this.root;
     const nodes = [current];
     for (const segment of address) {
@@ -90,11 +116,8 @@ export class TreeNode<T> {
 
   constructor(private item: T) {}
 
-  public getChild(segment: NodeAddressSegment) {
-    if (segment.idx != null)
-      return this.children.getItemByIndex(segment.idx);
-    else
-      return this.children.getLastItemById(segment.id!);
+  public getChild(segment: NodePathSegment) {
+    return this.children.getItemByIndex(segment.idx);
   }
 
   public getChildren() {
@@ -112,11 +135,8 @@ export class TreeNode<T> {
     return node;
   }
 
-  public removeChild(segment: NodeAddressSegment) {
-    if (segment.idx != null)
-      return this.children.removeItemByIndex(segment.idx);
-    else
-      return this.children.removeLastItemById(segment.id!);
+  public removeChild(segment: NodePathSegment) {
+    return this.children.removeItemByIndex(segment.idx);
   }
 
   public getItem() {

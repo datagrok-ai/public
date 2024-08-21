@@ -1,6 +1,6 @@
 import {Observable} from 'rxjs';
 import {IRuntimeController} from '../IRuntimeController';
-import {ItemId, NqName, FromSpec, ToSpec, RestrictionType} from '../data/common-types';
+import { ItemId, NqName, RestrictionType, LinkSpecString } from '../data/common-types';
 import {StepParallelInitialConfig, StepSequentialInitialConfig} from './PipelineInstance';
 
 //
@@ -34,42 +34,36 @@ export type PipelineProvider = HandlerBase<{ version?: string }, LoadedPipeline>
 
 // link-like
 
-export type PipelineLinkConfigurationBase<F, T> = {
-  from: F;
-  to: T;
+export type PipelineLinkConfigurationBase<P> = {
+  from: P;
+  to: P;
+  base?: P,
   dataFrameMutations?: boolean | string[] | Record<string, string>;
   inputState?: RestrictionType | RestrictionType[] | Record<string, RestrictionType>;
   handler?: Handler;
 }
 
-export type PipelineLinkConfiguration<F, T> = {
+export type PipelineLinkConfiguration<P> = {
   id: ItemId;
-} & PipelineLinkConfigurationBase<F, T>;
+} & PipelineLinkConfigurationBase<P>;
 
-export type PipelineDynamicLinkConfiguration<F, T> = {
-  // TODO: create spec
-  id: ItemId;
-} & PipelineLinkConfigurationBase<F, T>;
-
-export type PipelineHookConfiguration<F, T> = {
+export type PipelineHookConfiguration<P> = {
   id: ItemId;
   handler: Handler;
-} & Partial<PipelineLinkConfigurationBase<F, T>>;
+} & Partial<PipelineLinkConfigurationBase<P>>;
 
-export type PipelineActionConfiguraion<F, T> = {
+export type PipelineActionConfiguraion<P> = {
   id: ItemId;
-  path: F;
   friendlyName?: string;
   menuCategory?: string;
-} & PipelineLinkConfigurationBase<F, T>;
+} & PipelineLinkConfigurationBase<P>;
 
-export type StepActionConfiguraion<F, T> = {
+export type StepActionConfiguraion<P> = {
   id: ItemId;
-  path: F;
   position: ActionPositions;
   friendlyName?: string;
   menuCategory?: string;
-} & PipelineLinkConfigurationBase<F, T>;
+} & PipelineLinkConfigurationBase<P>;
 
 
 const actionPositions = ['buttons', 'menu', 'none'] as const;
@@ -77,69 +71,69 @@ export type ActionPositions = typeof actionPositions[number];
 
 // hooks config
 
-export type PipelineHooks<F, T> = {
-  onInit?: PipelineHookConfiguration<F, T>[];
-  beforeLoadFuncCall?: PipelineHookConfiguration<F, T>[];
-  afterLoadFuncCall?: PipelineHookConfiguration<F, T>[];
-  beforeInputFormRender?: PipelineHookConfiguration<F, T>[];
-  afterInputFormRender?: PipelineHookConfiguration<F, T>[];
-  beforeViewerRender?: PipelineHookConfiguration<F, T>[];
-  afterViewerRender?: PipelineHookConfiguration<F, T>[];
-  beforeLoadRun?: PipelineHookConfiguration<F, T>[];
-  afterLoadRun?: PipelineHookConfiguration<F, T>[];
-  beforeSaveRun?: PipelineHookConfiguration<F, T>[];
-  afterSaveRun?: PipelineHookConfiguration<F, T>[];
-  onClose?: PipelineHookConfiguration<F, T>[];
+export type PipelineHooks<P> = {
+  onInit?: PipelineHookConfiguration<P>[];
+  beforeLoadFuncCall?: PipelineHookConfiguration<P>[];
+  afterLoadFuncCall?: PipelineHookConfiguration<P>[];
+  beforeInputFormRender?: PipelineHookConfiguration<P>[];
+  afterInputFormRender?: PipelineHookConfiguration<P>[];
+  beforeViewerRender?: PipelineHookConfiguration<P>[];
+  afterViewerRender?: PipelineHookConfiguration<P>[];
+  beforeLoadRun?: PipelineHookConfiguration<P>[];
+  afterLoadRun?: PipelineHookConfiguration<P>[];
+  beforeSaveRun?: PipelineHookConfiguration<P>[];
+  afterSaveRun?: PipelineHookConfiguration<P>[];
+  onClose?: PipelineHookConfiguration<P>[];
 };
 
 // static steps config
 
-export type PipelineStepConfiguration<F, T, S> = {
+export type PipelineStepConfiguration<P, S> = {
   id: ItemId;
   nqName: NqName;
   friendlyName?: string;
   io?: S;
-  actions?: StepActionConfiguraion<F, T>[];
+  actions?: StepActionConfiguraion<P>[];
 };
 
-export type PipelineConfigurationBase<F, T> = {
+export type PipelineConfigurationBase<P> = {
   id: ItemId;
   nqName?: NqName;
   provider?: NqName;
   version?: string;
   friendlyName?: string;
-  hooks?: PipelineHooks<F, T>;
-  actions?: PipelineActionConfiguraion<F, T>[];
+  hooks?: PipelineHooks<P>;
+  actions?: PipelineActionConfiguraion<P>[];
   states?: StateItem[];
 };
 
 // fixed pipeline
 
-export type PipelineStaticItem<F, T, S, R> = {
+export type PipelineStaticItem<P, S, R> = {
   id: ItemId;
-} & (PipelineStepConfiguration<F, T, S> | AbstractPipelineConfiguration<F, T, S, R> | R);
+} & (PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | R);
 
-export type AbstractPipelineStaticConfiguration<F, T, S, R> = {
-  links?: PipelineLinkConfiguration<F, T>[];
-  steps: PipelineStaticItem<F, T, S, R>[];
+export type AbstractPipelineStaticConfiguration<P, S, R> = {
+  links?: PipelineLinkConfiguration<P>[];
+  steps: PipelineStaticItem<P, S, R>[];
   type: 'static';
-} & PipelineConfigurationBase<F, T>;
+} & PipelineConfigurationBase<P>;
 
 // parallel pipeline
 
-export type ParallelItemContext<F, T> = {
+export type ParallelItemContext<P> = {
   disableUIAdding?: boolean;
-  selectorPath?: F;
+  selectorPath?: P;
   selectorExtractor?: SelectorKeyExtractor;
 };
 
-export type PipelineParallelItem<F, T, S, R> = ((PipelineStepConfiguration<F, T, S> | AbstractPipelineConfiguration<F, T, S, R> | R) & ParallelItemContext<F, T>);
+export type PipelineParallelItem<P, S, R> = ((PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | R) & ParallelItemContext<P>);
 
-export type AbstractPipelineParallelConfiguration<F, T, S, R> = {
+export type AbstractPipelineParallelConfiguration<P, S, R> = {
   initialSteps?: StepParallelInitialConfig[];
-  stepTypes: PipelineParallelItem<F, T, S, R>[];
+  stepTypes: PipelineParallelItem<P, S, R>[];
   type: 'parallel';
-} & PipelineConfigurationBase<F, T>;
+} & PipelineConfigurationBase<P>;
 
 // sequential pipeline
 
@@ -147,24 +141,24 @@ export type SequentialItemContext = {
   disableUIAdding?: boolean;
 };
 
-export type PipelineSequentialItem<F, T, S, R> = ((PipelineStepConfiguration<F, T, S> | AbstractPipelineConfiguration<F, T, S, R> | R) & SequentialItemContext);
+export type PipelineSequentialItem<P, S, R> = ((PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | R) & SequentialItemContext);
 
 
 // SequentialItemContext;
 
-export type AbstractPipelineSequentialConfiguration<F, T, S, R> = {
+export type AbstractPipelineSequentialConfiguration<P, S, R> = {
   initialSteps?: StepSequentialInitialConfig[];
-  stepTypes: PipelineSequentialItem<F, T, S, R>[];
-  links?: PipelineDynamicLinkConfiguration<F, T>[];
+  stepTypes: PipelineSequentialItem<P, S, R>[];
+  links?: PipelineLinkConfiguration<P>[];
   type: 'sequential';
-} & PipelineConfigurationBase<F, T>;
+} & PipelineConfigurationBase<P>;
 
 // pipeline config
 
-export type AbstractPipelineConfiguration<F, T, S, R> =
-AbstractPipelineStaticConfiguration<F, T, S, R> |
-AbstractPipelineParallelConfiguration<F, T, S, R> |
-AbstractPipelineSequentialConfiguration<F, T, S, R>;
+export type AbstractPipelineConfiguration<P, S, R> =
+AbstractPipelineStaticConfiguration<P, S, R> |
+AbstractPipelineParallelConfiguration<P, S, R> |
+AbstractPipelineSequentialConfiguration<P, S, R>;
 
 export type PipelineRefInitial = {
   version?: string;
@@ -172,9 +166,9 @@ export type PipelineRefInitial = {
   type: 'ref';
 }
 
-export type PipelineConfigurationStaticInitial = AbstractPipelineStaticConfiguration<FromSpec, ToSpec, never, PipelineRefInitial>;
-export type PipelineConfigurationParallelInitial = AbstractPipelineParallelConfiguration<FromSpec, ToSpec, never, PipelineRefInitial>;
-export type PipelineConfigurationSequentialInitial = AbstractPipelineSequentialConfiguration<FromSpec, ToSpec, never, PipelineRefInitial>;
+export type PipelineConfigurationStaticInitial = AbstractPipelineStaticConfiguration<LinkSpecString, never, PipelineRefInitial>;
+export type PipelineConfigurationParallelInitial = AbstractPipelineParallelConfiguration<LinkSpecString, never, PipelineRefInitial>;
+export type PipelineConfigurationSequentialInitial = AbstractPipelineSequentialConfiguration<LinkSpecString, never, PipelineRefInitial>;
 
 export type PipelineConfigurationInitial = PipelineConfigurationStaticInitial | PipelineConfigurationParallelInitial | PipelineConfigurationSequentialInitial | PipelineRefInitial;
 

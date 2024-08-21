@@ -4,11 +4,11 @@ import {PipelineHooks} from '../config/PipelineConfiguration';
 import {callHandler} from '../utils';
 import {Observable, concat} from 'rxjs';
 import {ItemPathArray} from '../data/common-types';
-import {LinkInput, LinkOutput} from '../config/LinkSpec';
+import {LinkParsed} from '../config/LinkSpec';
 
 type HooksSpec = {
   path: ItemPathArray;
-  hooks: PipelineHooks<LinkInput[], LinkOutput[]>;
+  hooks: PipelineHooks<LinkParsed[]>;
 }
 
 export class HooksRunner {
@@ -63,7 +63,7 @@ export class HooksRunner {
     return this.execHooks('onClose');
   }
 
-  private execHooks(category: keyof PipelineHooks<LinkInput[], LinkOutput[]>, additionalParams: Record<string, any> = {}) {
+  private execHooks(category: keyof PipelineHooks<LinkParsed[]>, additionalParams: Record<string, any> = {}) {
     const observables: Observable<any>[] = [];
     for (const {hooks, path} of this.hooks!) {
       const items = hooks[category];

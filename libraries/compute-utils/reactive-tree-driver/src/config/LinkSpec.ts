@@ -1,24 +1,11 @@
-import { Grammars, IToken } from 'ebnf';
+import {Grammars, IToken} from 'ebnf';
 import {ItemId} from '../data/common-types';
 
-const fromGrammar = `
-From ::= (Name ':')? (Selector | Id) (SEPARATOR (Selector | Id))*
-Selector ::= ( SelectorType '(' WS* Id WS* ')' )
-SelectorType ::= "all" | "last" | "first"
-Id ::= IDENTIFIER
-Name ::= IDENTIFIER
-IDENTIFIER ::= [a-zA-Z][a-zA-Z_0-9]*
-SEPARATOR ::= '/'
-WS ::= ' '
-`;
-
-const fromParser = new Grammars.W3C.Parser(fromGrammar);
-
-const toGrammar = `
-To ::= (Name ':')? (Selector | Id) (SEPARATOR (Selector | Id))*
+const linkSpecGrammar = `
+To ::= Name ':' (Selector | Id) (SEPARATOR (Selector | Id))*
 Selector ::= ( SelectorType '(' WS* Id WS* (',' WS* '@' Ref WS*)? SelectorArgs* ')' )
 SelectorArgs ::= (',' WS* Arg WS*)*
-SelectorType ::= "nextUntil" | "next" | "adjacent" | "allUntil" | "all"
+SelectorType ::= "after+" | "after*" | "afterOrSame" | "after" | "before+" | "before*" | "beforeOrSame" | "before" | "same" | "first" | "last" | "all" | "any"
 Id ::= IDENTIFIER
 Name ::= IDENTIFIER
 Arg ::= IDENTIFIER
@@ -28,78 +15,86 @@ SEPARATOR ::= '/'
 WS ::= ' '
 `;
 
-const toParser = new Grammars.W3C.Parser(toGrammar);
+const linkParser = new Grammars.W3C.Parser(linkSpecGrammar);
 
-export type InputSelectors = 'last' | 'all' | 'first';
+export type LinkRefSelectors ="after+" | "after*" | "afterOrSame" | "after" | "before+" | "before*" | "beforeOrSame" | "before" | "same" ;
+export type LinkNonRefSelectors = "first" | "last" | "all" | "any";
+export type LinkSelectors = LinkRefSelectors | LinkNonRefSelectors;
 
-export type LinkInputSegment = {
+export type LinkSegment = {
   id: ItemId,
-  selector: InputSelectors,
-}
-
-export type LinkInput = {
-  name?: string;
-  segments: LinkInputSegment[];
-}
-
-export type OutputSelectors = 'next' | 'nextUntil' | 'adjacent' | 'all' | 'allUntil';
-
-export type LinkOutputSegment = {
-  id: ItemId,
-  selector: OutputSelectors,
+  selector: LinkSelectors,
   args?: string[],
   ref?: string | undefined,
 }
 
-export type LinkOutput = {
+export type LinkParsed = {
   name?: string;
-  segments: LinkOutputSegment[];
+  segments: LinkSegment[];
 }
 
+const nonRefSelectors = ['first', 'last', 'all', 'any'];
 
-export function parseLinkInput(input: string): LinkInput {
-  const ast = fromParser.getAST(input);
-  checkAST(input, ast);
-  const name = ast.children.find(cnode => cnode.type === 'Name')?.text;
-  const segments = ast.children.map((node) => {
-    if (node.type === 'Selector') {
-      const selector = node.children[0].text as InputSelectors;
-      const id = node.children[1].text;
-      return {id, selector};
-    } else if (node.type === 'Id') {
-      const id = node.text;
-      const selector = 'last' as const;
-      return {id, selector};
-    } else if (node.type === 'Name') {
-      return;
-    }
-    throw new Error(`Link input ${input}, unknown AST node type ${node.type}`);
-  }).filter(x => !!x);
-  return {name, segments};
+export function isNonRefSelector(sel: LinkSelectors): sel is LinkNonRefSelectors {
+  return nonRefSelectors.includes(sel);
 }
 
-export function parseLinkOutput(output: string): LinkOutput {
-  const ast = toParser.getAST(output);
-  checkAST(output, ast);
-  const name = ast.children.find(cnode => cnode.type === 'Name')?.text;
+export function isRefSelector(sel: LinkSelectors): sel is LinkRefSelectors {
+  return !nonRefSelectors.includes(sel);
+}
+
+export function refSelectorIncludesOrigin(sel: LinkRefSelectors) {
+  return sel.endsWith('Same') || sel.endsWith('same');
+}
+
+export function refSelectorAdjacent(sel: LinkRefSelectors) {
+  return sel.endsWith('+') ;
+}
+
+export function refSelectorAll(sel: LinkRefSelectors) {
+  return sel.endsWith('*') ;
+}
+
+export function refSelectorFindOne(sel: LinkRefSelectors) {
+  return sel === 'after' || sel === 'before';
+}
+
+export type SelectorDirection = 'before' | 'after' | 'none';
+
+export function refSelectorDirection(sel: LinkRefSelectors): SelectorDirection {
+  if (sel === 'same')
+    return 'none' as const;
+  return sel.startsWith('after') ? 'after' : 'before';
+}
+
+export function parseLinkIO(io: string, isBase: boolean, isInput: boolean): LinkParsed {
+  const ast = linkParser.getAST(io);
+  checkAST(io, ast);
+  const name = ast.children.find((cnode) => cnode.type === 'Name')?.text;
   const segments = ast.children.map((node) => {
     if (node.type === 'Selector') {
-      const selector = node.children[0].text as OutputSelectors;
+      const selector = node.children[0].text as LinkSelectors;
       const id = node.children[1].text;
       const refNode = node.children.find((cnode) => cnode.type === 'Ref');
       const argsNode = node.children.find((cnode) => cnode.type === 'SelectorArgs');
       const ref = refNode ? refNode.text : undefined;
+      if (ref && isNonRefSelector(selector))
+        throw new Error(`Link io ${io} is using non-ref selector with ref`);
+      if (isBase && !isNonRefSelector(selector))
+        throw new Error(`Link io ${io} is using ref selector in link base`);
+      if (!isBase && selector === 'any')
+        throw new Error(`Link io ${io} is using any selector in non-base`);
       const args = argsNode ? argsNode.children.map((cnode) => cnode.text) : [];
       return {id, selector, ref, args};
     } else if (node.type === 'Id') {
       const id = node.text;
-      const selector = 'next' as const;
+      const selector = isInput ? ('last' as const) : ('first' as const);
       return {id, selector};
-    } else if (node.type === 'Name') {
+    } else if (node.type === 'Name')
       return;
-    }
-    throw new Error(`Link output ${output}, unknown AST node type ${node.type}`);
-  }).filter(x => !!x);
+
+    throw new Error(`Link ${io}, unknown AST node type ${node.type}`);
+  }).filter((x) => !!x);
   return {name, segments};
 }
 
@@ -107,5 +102,5 @@ function checkAST(str: string, ast?: IToken) {
   if (ast == null)
     throw new Error(`Failed to parse link spec: ${str}`);
   if (ast.errors?.length)
-    throw new  Error(`Failed to parse link spec: ${str}, errors: ${ast.errors.map(e => e.message).join(',')}`);
+    throw new Error(`Failed to parse link spec: ${str}, errors: ${ast.errors.map((e) => e.message).join(',')}`);
 }

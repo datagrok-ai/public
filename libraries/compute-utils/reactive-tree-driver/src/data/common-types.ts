@@ -1,7 +1,6 @@
 
 export type ItemId = string;
-export type FromSpec = string | string[];
-export type ToSpec = string | string[];
+export type LinkSpecString = string | string[];
 export type ItemPathArray = string[];
 export type ItemAddress = string[];
 export type NqName = string;

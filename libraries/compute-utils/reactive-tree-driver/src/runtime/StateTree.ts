@@ -6,7 +6,7 @@ import {delay, finalize, map, mapTo, toArray, concatMap, filter, tap, takeUntil,
 import {NodePath, BaseTree, TreeNode} from '../data/BaseTree';
 import {PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {isFuncCallState, PipelineInstanceConfig, PipelineSerializedState, PipelineState} from '../config/PipelineInstance';
-import {buildTraverseD} from '../data/traversable';
+import {buildTraverseD} from '../data/graph-traverse-utils';
 import {buildRefMap, ConfigTraverseItem, getConfigByInstancePath, isPipelineParallelConfig, isPipelineSelfRef, isPipelineSequentialConfig, isPipelineStaticConfig, isPipelineStepConfig, PipelineStepConfigurationProcessed} from '../config/config-utils';
 import {FuncCallAdapter, FuncCallMockAdapter, IFuncCallAdapter} from './FuncCallAdapters';
 import {loadFuncCall, loadInstanceState, makeFuncCall, makeMetaCall, saveFuncCall, saveInstanceState} from './adapter-utils';
@@ -95,7 +95,7 @@ export class StateTree extends BaseTree<StateTreeNode> {
 
   public initAll() {
     return this.updateWithLock(() => {
-      return merge(StateTree.loadOrCreateCalls(this, this.mockMode), this.initMetaCall()).pipe(tap(() => console.log('asdf')), toArray(), mapTo(this));
+      return merge(StateTree.loadOrCreateCalls(this, this.mockMode), this.initMetaCall()).pipe(toArray(), mapTo(this));
     });
   }
 
