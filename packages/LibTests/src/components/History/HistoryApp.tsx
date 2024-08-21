@@ -13,6 +13,7 @@ export const HistoryApp = defineComponent({
       func={DG.Func.byName('Compute:ObjectCooling')}
       showActions={true}
       showBatchActions={true}
+      isHistory={true}
     />;
   },
 });

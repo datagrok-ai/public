@@ -11,6 +11,179 @@ import {ValidationResultBase, Validator, getValidationIcon, mergeValidationResul
 import {FunctionView, RichFunctionView} from '../function-views';
 import dayjs from 'dayjs';
 import { ID_COLUMN_NAME } from '../shared-components/src/history-input';
+import { getStarted } from '../function-views/src/shared/utils';
+
+export const saveIsFavorite = async (funcCall: DG.FuncCall, isFavorite: boolean) => {
+  const favStorageName = `${storageName}_${funcCall.func.name}_Fav`;
+
+  if (isFavorite)
+    return grok.dapi.userDataStorage.postValue(favStorageName, funcCall.id, '');
+  else
+    return grok.dapi.userDataStorage.remove(favStorageName, funcCall.id);
+}
+
+export const setGridCellRendering = (
+  grid: DG.Grid,
+  runs: Map<string, DG.FuncCall>,
+  onEditClick: (cell: DG.GridCell) => void,
+  onDeleteClick: (cell: DG.GridCell) => void,
+  onFavoriteClick: (cell: DG.GridCell) => void,
+  onUnfavoriteClick: (cell: DG.GridCell) => void,
+  showActions: boolean,
+) => {
+  const getRunByIdx = (idx: number) => {
+    return runs.get(grid.dataFrame.get(ID_COLUMN_NAME, idx));
+  }
+
+  const isFavoriteByIndex = (idx: number) => {
+    return grid.dataFrame.get(FAVORITE_COLUMN_NAME, idx);
+  }
+
+  grid.onCellPrepare((cell) => {
+    if (cell.isColHeader && cell.tableColumn?.name &&
+        [ACTIONS_COLUMN_NAME, EXP_COLUMN_NAME, FAVORITE_COLUMN_NAME].includes(cell.tableColumn.name))
+      cell.customText = '';
+
+    if (cell.isColHeader)
+      return;
+
+    if (cell.tableColumn?.name === ACTIONS_COLUMN_NAME) {
+      cell.customText = '';
+
+      cell.element = ui.divH([
+        ui.iconFA('trash', () => onDeleteClick(cell), 'Remove run from history'),
+        ui.iconFA(
+          'edit',
+          () => onEditClick(cell),
+          'Edit run metadata',
+        ),
+      ], {style: {'padding': '6px 0px', 'gap': '6px', 'justify-content': 'space-between'}});
+    }
+
+    if (cell.tableColumn?.name === FAVORITE_COLUMN_NAME) {
+      cell.customText = '';
+      const unfavoriteIcon =
+        ui.iconFA('star', () => onUnfavoriteClick(cell), 'Unfavorite');
+      $(unfavoriteIcon).addClass('fas');
+
+      cell.element = ui.div(
+        cell.cell.value ?
+          unfavoriteIcon :
+          ui.iconFA('star', () => onFavoriteClick(cell), 'Favorite'),
+        {style: {'padding': '5px 0px'}});
+    }
+
+    if (cell.tableColumn?.name === EXP_COLUMN_NAME) {
+      cell.customText = '';
+      const experimentalTag = ui.iconFA('flask', null, 'Experimental run');
+      $(experimentalTag).addClass('fad fa-sm');
+      $(experimentalTag).removeClass('fal');
+
+      cell.element = cell.cell.value && cell.cell.value === 'Experimental' ?
+        ui.div(experimentalTag, {style: {'padding': '5px'}}) : ui.div();
+    }
+
+    if (cell.tableColumn?.name === TAGS_COLUMN_NAME) {
+      cell.customText = '';
+      const tags = cell.cell.value.length > 0 ? ui.div((cell.cell.value as string | null)?.split(',').map(
+        (tag: string) => ui.span([tag], 'd4-tag')),
+      'd4-tag-editor') : ui.div();
+      $(tags).css({'padding': '3px', 'background-color': 'transparent'});
+      cell.element = tags;
+    }
+
+    if (cell.tableColumn?.name === ID_COLUMN_NAME) {
+      cell.customText = '';
+      const run = getRunByIdx(cell.tableRowIndex!);
+
+      if (!run) return;
+
+      const authorIcon = run.author.picture as HTMLElement;
+      $(authorIcon).css({'width': '25px', 'height': '25px', 'fontSize': '20px'});
+
+      ui.bind(run.author, authorIcon);
+
+      const experimentalTag = ui.iconFA('flask', null, 'Experimental run');
+      experimentalTag.classList.add('fad', 'fa-sm');
+      experimentalTag.classList.remove('fal');
+      experimentalTag.style.marginLeft = '3px';
+      const immutableTags = run.options['immutable_tags'] as string[] | undefined;
+      const cardLabel = ui.span([
+        ui.label(
+          run.options['title'] ??
+          run.author?.friendlyName ??
+          grok.shell.user.friendlyName, {style: {'color': 'var(--blue-1)'}},
+        ),
+        ...(immutableTags && immutableTags.includes(EXPERIMENTAL_TAG)) ?
+          [experimentalTag]:[],
+      ]);
+
+      const editIcon = ui.iconFA('edit', (ev) => {
+        ev.stopPropagation();
+        onEditClick(cell);
+      }, 'Edit run metadata');
+      editIcon.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
+
+      const deleteIcon = ui.iconFA('trash-alt', async (ev) => {
+        ev.stopPropagation();
+        onDeleteClick(cell);
+      }, 'Delete run');
+      deleteIcon.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
+
+      const unfavoriteIcon = ui.iconFA('star', (ev) => {
+        ev.stopPropagation();
+        onUnfavoriteClick(cell);
+      }, 'Unfavorite');
+      unfavoriteIcon.classList.add('fas', 'hp-funccall-card-icon');
+
+      const addToFavorites = ui.iconFA('star',
+        (ev) => {
+          ev.stopPropagation();
+          onFavoriteClick(cell);
+        }, 'Favorite');
+      addToFavorites.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
+
+      if (isFavoriteByIndex(cell.tableRowIndex!)) {
+        ui.setDisplay(addToFavorites, false);
+        ui.setDisplay(unfavoriteIcon, true);
+      } else {
+        ui.setDisplay(unfavoriteIcon, false);
+        ui.setDisplay(addToFavorites, true);
+      }
+
+      const dateStarted = getStarted(run);
+
+      const card = ui.divH([
+        ui.divH([
+          authorIcon,
+          ui.divV([
+            cardLabel,
+            ui.span([dateStarted]),
+            ...(run.options['tags'] && run.options['tags'].length > 0) ?
+              [ui.div(run.options['tags'].map((tag: string) => ui.span([tag], 'd4-tag')))]:[],
+          ], 'hp-card-content'),
+        ]),
+        ui.divH([
+          ...showActions ? [unfavoriteIcon, addToFavorites, editIcon, deleteIcon]: [],
+        ]),
+      ], 'hp-funccall-card');
+
+      const tableRowIndex = cell.tableRowIndex!;
+      card.addEventListener('mouseover', () => {
+        cell.grid.dataFrame.mouseOverRowIdx = tableRowIndex;
+      });
+      card.addEventListener('click', (e) => {
+        if (e.shiftKey)
+          cell.grid.dataFrame.selection.set(tableRowIndex, true);
+        else if (e.ctrlKey)
+          cell.grid.dataFrame.selection.set(tableRowIndex, false);
+        else
+          cell.grid.dataFrame.currentRowIdx = tableRowIndex;
+      });
+      cell.element = card;
+    }
+  });
+}
 
 const setGridColumnsRendering = (grid: DG.Grid) => {
   const actionsCol = grid.columns.byName(ACTIONS_COLUMN_NAME);

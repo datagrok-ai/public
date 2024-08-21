@@ -13,7 +13,7 @@ import {ACTIONS_COLUMN_NAME, AUTHOR_COLUMN_NAME,
   FAVORITE_COLUMN_NAME, HistoryOptions, STARTED_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME
   , storageName} from '../../shared-utils/consts';
 import {ID_COLUMN_NAME} from './history-input';
-import {camel2title, extractStringValue, getColumnName, getMainParams, getRunsDfFromList, getStartedOrNull, getVisibleProps, styleHistoryFilters, styleHistoryGrid} from '../../shared-utils/utils';
+import {camel2title, extractStringValue, getColumnName, getMainParams, getRunsDfFromList, getStartedOrNull, getVisibleProps, saveIsFavorite, setGridCellRendering, styleHistoryFilters, styleHistoryGrid} from '../../shared-utils/utils';
 import {getStarted} from '../../function-views/src/shared/utils';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
@@ -97,15 +97,6 @@ export class HistoricalRunsList extends DG.Widget {
     return this._onSelectedChanged.asObservable();
   }
 
-  private async saveIsFavorite(funcCall: DG.FuncCall, isFavorite: boolean) {
-    const favStorageName = `${storageName}_${funcCall.func.name}_Fav`;
-
-    if (isFavorite)
-      return grok.dapi.userDataStorage.postValue(favStorageName, funcCall.id, '');
-    else
-      return grok.dapi.userDataStorage.remove(favStorageName, funcCall.id);
-  }
-
   private getRunByIdx(idx: number) {
     return this.runs.get(this.currentDf.get(ID_COLUMN_NAME, idx));
   }
@@ -113,12 +104,12 @@ export class HistoricalRunsList extends DG.Widget {
   private showEditDialog(funcCall: DG.FuncCall, isFavorite: boolean) {
     const editDialog = new HistoricalRunEdit(funcCall, isFavorite);
 
-    const onEditSub = editDialog.onMetadataEdit.subscribe(async (editOptions) => {
+    editDialog.onMetadataEdit.pipe(take(1)).subscribe(async (editOptions) => {
       if (!this.options?.isHistory)
         this.updateRun(funcCall);
       else {
         return ((editOptions.favorite !== 'same') ?
-          this.saveIsFavorite(funcCall, (editOptions.favorite === 'favorited')) :
+          saveIsFavorite(funcCall, (editOptions.favorite === 'favorited')) :
           Promise.resolve())
           .then(() => historyUtils.loadRun(funcCall.id, false))
           .then((fullCall) => {
@@ -132,8 +123,6 @@ export class HistoricalRunsList extends DG.Widget {
             this.updateRun(fullCall);
 
             this.onMetadataEdit.next(fullCall);
-
-            onEditSub.unsubscribe();
           })
           .catch((err) => {
             grok.shell.error(err);
@@ -155,10 +144,6 @@ export class HistoricalRunsList extends DG.Widget {
     this.defaultFiltersText,
     this._historyFilters.root,
   ], 'ui-box');
-
-  private visibleProps(func: DG.Func) {
-    return getVisibleProps(func, this.options)
-  };
 
   constructor(
     private readonly initialRuns: DG.FuncCall[],
@@ -315,199 +300,56 @@ export class HistoricalRunsList extends DG.Widget {
   }
 
   private setGridCellRendering() {
-    this._historyGrid.onCellPrepare((cell) => {
-      if (cell.isColHeader && cell.tableColumn?.name &&
-          [ACTIONS_COLUMN_NAME, EXP_COLUMN_NAME, FAVORITE_COLUMN_NAME].includes(cell.tableColumn.name))
-        cell.customText = '';
+    const onEditClick = (cell: DG.GridCell) => {
+      const run = this.getRunByIdx(cell.tableRowIndex!)!;
+      this.showEditDialog(
+        run,
+        this.isFavoriteByIndex(cell.tableRowIndex!),
+      )};
 
-      if (cell.isColHeader)
-        return;
+    const onDeleteClick = (cell: DG.GridCell) => {
+      const setToDelete = new Set([this.getRunByIdx(cell.tableRowIndex!)!]);
+      const deleteDialog = new HistoricalRunsDelete(setToDelete);
 
-      if (cell.tableColumn?.name === ACTIONS_COLUMN_NAME) {
-        cell.customText = '';
-        const run = this.getRunByIdx(cell.tableRowIndex!)!;
+      deleteDialog.onFuncCallDelete.pipe(
+        take(1),
+      ).subscribe(async () => {
+        ui.setUpdateIndicator(this.root, true);
+        try {
+          await Promise.all(
+            wu(setToDelete.values()).map(async (funcCall) => {
+              await this.deleteRun(funcCall.id);
 
-        cell.element = ui.divH([
-          ui.iconFA('trash', () => {
-            const setToDelete = new Set([this.getRunByIdx(cell.tableRowIndex!)!]);
-            const deleteDialog = new HistoricalRunsDelete(setToDelete);
-
-            deleteDialog.onFuncCallDelete.pipe(
-              take(1),
-            ).subscribe(async () => {
-              ui.setUpdateIndicator(this.root, true);
-              try {
-                await Promise.all(
-                  wu(setToDelete.values()).map(async (funcCall) => {
-                    await this.deleteRun(funcCall.id);
-
-                    return Promise.resolve();
-                  }));
-              } catch (e: any) {
-                grok.shell.error(e);
-              } finally {
-                ui.setUpdateIndicator(this.root, false);
-              }
-            });
-            deleteDialog.show({center: true, width: 500});
-          }, 'Remove run from history'),
-          ui.iconFA(
-            'edit',
-            () => this.showEditDialog(
-              run,
-              this.isFavoriteByIndex(cell.tableRowIndex!),
-            ),
-            'Edit run metadata',
-          ),
-        ], {style: {'padding': '6px 0px', 'gap': '6px', 'justify-content': 'space-between'}});
-      }
-
-      if (cell.tableColumn?.name === FAVORITE_COLUMN_NAME) {
-        cell.customText = '';
-        const run = this.getRunByIdx(cell.tableRowIndex!)!;
-
-        const unfavoriteIcon =
-          ui.iconFA('star', () => this.saveIsFavorite(run, false).then(() => this.updateRun(run)), 'Unfavorite');
-        $(unfavoriteIcon).addClass('fas');
-
-        cell.element = ui.div(
-          cell.cell.value ?
-            unfavoriteIcon :
-            ui.iconFA('star', () => this.saveIsFavorite(run, true).then(() => this.updateRun(run)), 'Favorite'),
-          {style: {'padding': '5px 0px'}});
-      }
-
-      if (cell.tableColumn?.name === EXP_COLUMN_NAME) {
-        cell.customText = '';
-        const experimentalTag = ui.iconFA('flask', null, 'Experimental run');
-        $(experimentalTag).addClass('fad fa-sm');
-        $(experimentalTag).removeClass('fal');
-
-        cell.element = cell.cell.value && cell.cell.value === 'Experimental' ?
-          ui.div(experimentalTag, {style: {'padding': '5px'}}) : ui.div();
-      }
-
-      if (cell.tableColumn?.name === TAGS_COLUMN_NAME) {
-        cell.customText = '';
-        const tags = cell.cell.value.length > 0 ? ui.div((cell.cell.value as string | null)?.split(',').map(
-          (tag: string) => ui.span([tag], 'd4-tag')),
-        'd4-tag-editor') : ui.div();
-        $(tags).css({'padding': '3px', 'background-color': 'transparent'});
-        cell.element = tags;
-      }
-
-      if (cell.tableColumn?.name === ID_COLUMN_NAME) {
-        cell.customText = '';
-        const run = this.getRunByIdx(cell.tableRowIndex!);
-
-        if (!run) return;
-
-        const authorIcon = run.author.picture as HTMLElement;
-        $(authorIcon).css({'width': '25px', 'height': '25px', 'fontSize': '20px'});
-
-        ui.bind(run.author, authorIcon);
-
-        const experimentalTag = ui.iconFA('flask', null, 'Experimental run');
-        experimentalTag.classList.add('fad', 'fa-sm');
-        experimentalTag.classList.remove('fal');
-        experimentalTag.style.marginLeft = '3px';
-        const immutableTags = run.options['immutable_tags'] as string[] | undefined;
-        const cardLabel = ui.span([
-          ui.label(
-            run.options['title'] ??
-            run.author?.friendlyName ??
-            grok.shell.user.friendlyName, {style: {'color': 'var(--blue-1)'}},
-          ),
-          ...(immutableTags && immutableTags.includes(EXPERIMENTAL_TAG)) ?
-            [experimentalTag]:[],
-        ]);
-
-        const editIcon = ui.iconFA('edit', (ev) => {
-          ev.stopPropagation();
-          this.showEditDialog(run, this.isFavoriteByIndex(cell.tableRowIndex!));
-        }, 'Edit run metadata');
-        editIcon.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
-
-        const deleteIcon = ui.iconFA('trash-alt', async (ev) => {
-          ev.stopPropagation();
-          const setToDelete = new Set([this.getRunByIdx(cell.tableRowIndex!)!]);
-          const deleteDialog = new HistoricalRunsDelete(setToDelete);
-          deleteDialog.onFuncCallDelete.pipe(
-            take(1),
-          ) .subscribe(async () => {
-            ui.setUpdateIndicator(this.root, true);
-            try {
-              await Promise.all(
-                wu(setToDelete.values()).map(async (funcCall) => {
-                  await this.deleteRun(funcCall.id);
-
-                  return Promise.resolve();
-                }));
-            } catch (e: any) {
-              grok.shell.error(e);
-            } finally {
-              ui.setUpdateIndicator(this.root, false);
-            }
-          });
-          deleteDialog.show({center: true, width: 500});
-        }, 'Delete run');
-        deleteIcon.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
-
-
-        const unfavoriteIcon =
-        ui.iconFA('star', (ev) => {
-          ev.stopPropagation();
-          this.saveIsFavorite(run, false).then(() => this.updateRun(run));
-        }, 'Unfavorite');
-        unfavoriteIcon.classList.add('fas', 'hp-funccall-card-icon');
-
-        const addToFavorites = ui.iconFA('star',
-          (ev) => {
-            ev.stopPropagation();
-            this.saveIsFavorite(run, true).then(() => this.updateRun(run));
-          }, 'Favorite');
-        addToFavorites.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
-
-        if (this.isFavoriteByIndex(cell.tableRowIndex!)) {
-          ui.setDisplay(addToFavorites, false);
-          ui.setDisplay(unfavoriteIcon, true);
-        } else {
-          ui.setDisplay(unfavoriteIcon, false);
-          ui.setDisplay(addToFavorites, true);
+              return Promise.resolve();
+            }));
+        } catch (e: any) {
+          grok.shell.error(e);
+        } finally {
+          ui.setUpdateIndicator(this.root, false);
         }
+      });
+      deleteDialog.show({center: true, width: 500});
+    }
 
-        const dateStarted = getStarted(run);
+    const onFavoriteClick = (cell: DG.GridCell) => {
+      const run = this.getRunByIdx(cell.tableRowIndex!)!;
+      saveIsFavorite(run, true).then(() => this.updateRun(run));
+    }
 
-        const card = ui.divH([
-          ui.divH([
-            authorIcon,
-            ui.divV([
-              cardLabel,
-              ui.span([dateStarted]),
-              ...(run.options['tags'] && run.options['tags'].length > 0) ?
-                [ui.div(run.options['tags'].map((tag: string) => ui.span([tag], 'd4-tag')))]:[],
-            ], 'hp-card-content'),
-          ]),
-          ui.divH([
-            ...(this.options?.showActions) ? [unfavoriteIcon, addToFavorites, editIcon, deleteIcon]: [],
-          ]),
-        ], 'hp-funccall-card');
+    const onUnfavoriteClick = (cell: DG.GridCell) => {
+      const run = this.getRunByIdx(cell.tableRowIndex!)!;
+      saveIsFavorite(run, false).then(() => this.updateRun(run));
+    }
 
-        const tableRowIndex = cell.tableRowIndex!;
-        card.addEventListener('mouseover', () => {
-          cell.grid.dataFrame.mouseOverRowIdx = tableRowIndex;
-        });
-        card.addEventListener('click', (e) => {
-          if (e.shiftKey)
-            cell.grid.dataFrame.selection.set(tableRowIndex, true);
-          else if (e.ctrlKey)
-            cell.grid.dataFrame.selection.set(tableRowIndex, false);
-          else
-            cell.grid.dataFrame.currentRowIdx = tableRowIndex;
-        });
-        cell.element = card;
-      }
-    });
+    setGridCellRendering(
+      this._historyGrid,
+      this.runs,
+      onEditClick,
+      onDeleteClick,
+      onFavoriteClick,
+      onUnfavoriteClick,
+      this.options?.showActions ?? false
+    )
   }
 
   async deleteRun(id: string) {
@@ -526,7 +368,7 @@ export class HistoricalRunsList extends DG.Widget {
         return loadedRun;
       })
       .then((loadedRun) => {
-        this.saveIsFavorite(loadedRun, false);
+        saveIsFavorite(loadedRun, false);
       })
       .catch((e) => {
         grok.shell.error(e);
