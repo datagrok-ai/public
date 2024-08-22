@@ -31,7 +31,8 @@ const runSequentallly = async (children: AugmentedStat[]) => {
     await runByTree(child);
 };
 
-const runInParallel = async (children: AugmentedStat[]) => Promise.all(children.map(async (child) => runByTree(child as AugmentedStat)));
+const runInParallel = async (children: AugmentedStat[]) => 
+  Promise.all(children.map(async (child) => runByTree(child as AugmentedStat)));
 
 const updateNextStepAndParent = (currentStat: AugmentedStat) => {
   const parent = currentStat.parent;
@@ -53,7 +54,7 @@ const updateNextStepAndParent = (currentStat: AugmentedStat) => {
   if (nextSibling) 
     nextSibling.status = `didn't run`;
   else {
-    parent.status = currentStat.status;
+    parent.status = currentStat.data.status;
     const parentNextSibling = getNextSibling(parent);
     if (parentNextSibling)
       parentNextSibling.status = `didn't run`;
@@ -62,17 +63,17 @@ const updateNextStepAndParent = (currentStat: AugmentedStat) => {
 
 const runByTree = async (currentStat: AugmentedStat): Promise<Status> => {
   const nodeCall = currentStat.data.funcCall;
-  currentStat.status = 'running';
+  currentStat.data.status = 'running';
   if (nodeCall) {
     try {
       await getCall(nodeCall).call();
-      currentStat.status = 'succeeded';
+      currentStat.data.status = 'succeeded';
       
       updateNextStepAndParent(currentStat);
 
-      return Promise.resolve(currentStat.status);
+      return Promise.resolve(currentStat.data.status);
     } catch (e) {
-      currentStat.status = 'failed';
+      currentStat.data.status = 'failed';
 
       return Promise.reject(e);
     }
@@ -81,13 +82,13 @@ const runByTree = async (currentStat: AugmentedStat): Promise<Status> => {
       runInParallel(currentStat.children): 
       runSequentallly(currentStat.children)
     ).then(() => {
-      currentStat.status = 'succeeded';
+      currentStat.data.status = 'succeeded';
 
       updateNextStepAndParent(currentStat);
 
-      return Promise.resolve(currentStat.status);
+      return Promise.resolve(currentStat.data.status);
     }).catch((e) => {
-      currentStat.status = 'failed';
+      currentStat.data.status = 'failed';
 
       return Promise.reject(e);
     });                      
@@ -164,8 +165,8 @@ export const TreeNode = defineComponent({
     click: () => {},
   },
   setup(props, {emit}) {
-    if (!props.stat.status)  
-      props.stat.status = getInitialStatus(props.stat);
+    if (!props.stat.data.status)  
+      props.stat.data.status = getInitialStatus(props.stat);
     
     const runIcon = <IconFA 
       name='play'
@@ -201,26 +202,26 @@ export const TreeNode = defineComponent({
           padding: '4px 0px', 
           width: '100%',
         }}
-        onMouseover={() => props.stat.isHovered = true} 
-        onMouseleave={() => props.stat.isHovered = false} 
-        onDragstart={() => props.stat.isHovered = false}
+        onMouseover={() => props.stat.data.isHovered = true} 
+        onMouseleave={() => props.stat.data.isHovered = false} 
+        onDragstart={() => props.stat.data.isHovered = false}
         onClick={() => emit('click')}
-        class={props.stat.status === 'locked' ? 'd4-disabled': null}
+        class={props.stat.data.status === 'locked' ? 'd4-disabled': null}
       >
-        { progressIcon(props.stat.status) }
+        { progressIcon(props.stat.data.status) }
         { props.stat.children.length ? openIcon : null }
-        <span class="mtl-ml">{props.node.text}</span>
-        { props.isDraggable && props.stat.isHovered && props.stat.status !== 'running' ? <IconFA 
+        <span class="mtl-ml">{props.stat.data.text}</span>
+        { props.isDraggable && props.stat.data.isHovered && props.stat.data.status !== 'running' ? <IconFA 
           name='grip-vertical' 
           cursor='grab'
           style={{paddingLeft: '4px'}}
         />: null }
-        { props.isDeletable && props.stat.isHovered && props.stat.status !== 'running' ? <IconFA 
+        { props.isDeletable && props.stat.data.isHovered && props.stat.data.status !== 'running' ? <IconFA 
           name='times' 
           style={{paddingLeft: '4px'}}
           onClick={(e: Event) => {emit('removeNode'); e.stopPropagation();}}
         />: null }
-        { props.isDroppable && props.stat.isHovered && props.stat.status !== 'running' ? <IconFA 
+        { props.isDroppable && props.stat.data.isHovered && props.stat.data.status !== 'running' ? <IconFA 
           name='plus' 
           style={{paddingLeft: '4px'}}
           onClick={(e) => {
@@ -230,7 +231,7 @@ export const TreeNode = defineComponent({
             e.stopPropagation();
           }}
         />: null }
-        { props.stat.isHovered && props.stat.status !== 'running' ? runIcon: null }
+        { props.stat.data.isHovered && props.stat.data.status !== 'running' ? runIcon: null }
       </div>
     );    
   },

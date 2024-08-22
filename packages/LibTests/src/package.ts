@@ -283,7 +283,7 @@ export async function TestTreeWizardView() {
             text: 'Review phases (sequental + drag + adding)',
             order: 'sequental',
             children: [
-              {text: 'Filtering', funcCall: 'LibTests:AddMock'},
+              {text: 'Filtering', funcCall: 'LibTests:LongScript'},
               {text: 'Cleaning', funcCall: 'LibTests:LongScript'},
               {text: 'Post-filtering', funcCall: 'LibTests:LongScript'},
             ],
@@ -292,7 +292,7 @@ export async function TestTreeWizardView() {
             text: 'Step 2',
             order: 'sequental',
             children: [
-              {text: 'Step 2.1', funcCall: 'LibTests:AddMock'},
+              {text: 'Step 2.1', funcCall: 'LibTests:LongScript'},
               {
                 text: 'Review days (parallel + no drag + adding)', 
                 order: 'parallel',
@@ -300,7 +300,7 @@ export async function TestTreeWizardView() {
                   {text: 'Day 1', funcCall: 'LibTests:LongFailingScript'},
                   {text: 'Day 2', funcCall: 'LibTests:LongScript'},
                 ]},
-              {text: 'Step 2.3', funcCall: 'LibTests:AddMock'},
+              {text: 'Step 2.3', funcCall: 'LibTests:LongScript'},
             ],
           },
         ],
