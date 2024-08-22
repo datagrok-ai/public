@@ -18,7 +18,7 @@ dependencies:
   - Flask
   - chemprop=2.0.0
   - mkl=2024.0.0
-  - pytorch=*=*cuda11.3*
+  - pytorch>=2.1=*cuda11.3*
   - torchvision=*=*_cu*
   - torchaudio=*=*_cu*
   - cudatoolkit<=11.4
