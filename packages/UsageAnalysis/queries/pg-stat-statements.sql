@@ -1,4 +1,6 @@
-SELECT 
+--name: PgStatStatements
+--connection: System:Datagrok
+SELECT
     query, 
     calls, 
     total_time AS total_exec_time, 
