@@ -312,6 +312,7 @@ export async function TestTreeWizardView() {
   view.root.classList.remove('ui-panel');
 }
 
+//name: TestVueDriver
 export async function TestVueDriver() {
   // TODO: close view handling
   const view = new DG.ViewBase();
@@ -324,6 +325,7 @@ export async function TestVueDriver() {
 // pipeline driver testing
 
 
+//name: TestAdd2
 //input: double a
 //input: double b
 //output: double res
@@ -331,6 +333,8 @@ export async function TestAdd2(a: number, b: number) {
   return a + b;
 }
 
+
+//name: TestMul2
 //input: double a
 //input: double b
 //output: double res
@@ -341,6 +345,7 @@ export async function TestMul2(a: number, b: number) {
 //name: MockWrapper1
 export async function MockWrapper1() {}
 
+//name: MockProvider1
 //input: object params
 //output: object result
 export async function MockProvider1(params: any) {
@@ -360,11 +365,6 @@ export async function MockProvider1(params: any) {
         nqName: 'LibTests:TestMul2',
       },
     ],
-    links: [{
-      id: 'link1',
-      from: 'step1/res',
-      to: 'step2/a',
-    }],
   };
   return c;
 }
@@ -372,6 +372,8 @@ export async function MockProvider1(params: any) {
 //name: MockWrapper2
 export async function MockWrapper2() {}
 
+
+//name: MockProvider2
 //input: object params
 //output: object result
 export async function MockProvider2(params: any) {
@@ -409,6 +411,7 @@ export async function MockProvider2(params: any) {
 //name: MockWrapper3
 export async function MockWrapper3() {}
 
+//name: MockProvider3
 //input: object params
 //output: object result
 export async function MockProvider3(params: any) {
