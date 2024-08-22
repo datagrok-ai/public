@@ -16,10 +16,10 @@ dependencies:
   - boto3
   - gunicorn
   - Flask
-  - chemprop=2.0.0
+  - chemprop=2.0.4
   - mkl=2024.0.0
-  - pytorch>=2.1=*cuda11.3*
+  - pytorch>=2.1=*cuda*
   - torchvision=*=*_cu*
   - torchaudio=*=*_cu*
-  - cudatoolkit<=11.4
+  - cudatoolkit
   - cuDNN=8.3
