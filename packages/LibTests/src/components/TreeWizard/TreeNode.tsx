@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {defineComponent, PropType} from 'vue';
-import {AugmentedStat, Status, TreeNodeType} from './types';
+import {AugmentedStat, Status, StepConfig} from './types';
 import {IconFA} from '@datagrok-libraries/webcomponents-vue/src';
 import {OpenIcon} from '@he-tree/vue';
 
@@ -95,22 +95,6 @@ const runByTree = async (currentStat: AugmentedStat): Promise<Status> => {
   }
 };
 
-const getInitialStatus = (stat: AugmentedStat) => {
-  if (!stat.parent) return `didn't run`;
-  const parent = stat.parent;
-
-  if (parent.data.order === 'sequental') {
-    if (parent.status === 'didn\'t run' && parent.children.at(0) === stat) 
-      return `didn't run`;
-
-    return 'locked';
-  }
-
-  if (parent.data.order === 'parallel' && parent.status !== `locked`) return `didn\'t run`;
-
-  return `locked`;
-};
-
 const statusToIcon = {
   ['locked']: 'lock',
   [`didn't run`]: 'circle',
@@ -146,7 +130,7 @@ export const TreeNode = defineComponent({
       required: true,
     },
     node: {
-      type: Object as PropType<TreeNodeType>,
+      type: Object as PropType<StepConfig>,
       required: true,
     },
     isDraggable: {
@@ -165,9 +149,6 @@ export const TreeNode = defineComponent({
     click: () => {},
   },
   setup(props, {emit}) {
-    if (!props.stat.data.status)  
-      props.stat.data.status = getInitialStatus(props.stat);
-    
     const runIcon = <IconFA 
       name='play'
       onClick={() => runByTree(props.stat)}

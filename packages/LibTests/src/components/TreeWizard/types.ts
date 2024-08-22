@@ -3,9 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Stat} from '@he-tree/vue/types/src/components/TreeProcessorVue';
 
-export type TreeNodeType = {
+export type StepConfig = {
   text: string,
-  children: TreeNodeType[]
+  children: StepConfig[]
 }
 
 type NoStringIndex<T> = { [K in keyof T as string extends K ? never : K]: T[K] };
@@ -19,7 +19,6 @@ export type Data = {
   text: string,
   order?: Order,
 }
-
 
 type Order = 'sequental' | 'parallel';
 

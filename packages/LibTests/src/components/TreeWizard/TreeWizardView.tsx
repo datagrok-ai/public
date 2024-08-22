@@ -9,9 +9,23 @@ import '@he-tree/vue/style/material-design.css';
 import {RichFunctionView} from '../RFV/RichFunctionView';
 import {Stat} from '@he-tree/vue/types/src/components/TreeProcessorVue';
 import {TreeNode} from './TreeNode';
-import {TreeNodeType, HueTree, AugmentedStat, Data} from './types';
+import {StepConfig, HueTree, AugmentedStat, Data} from './types';
 
-const callsCache = {} as Record<string, DG.FuncCall>;
+const getInitialStatus = (stat: AugmentedStat) => {
+  if (!stat.parent) return `didn't run`;
+  const parent = stat.parent;
+
+  if (parent.data.order === 'sequental') {
+    if (parent.status === 'didn\'t run' && parent.children.at(0) === stat) 
+      return `didn't run`;
+
+    return 'locked';
+  }
+
+  if (parent.data.order === 'parallel' && parent.status !== `locked`) return `didn\'t run`;
+
+  return `locked`;
+};
 
 export const TreeWizardView = defineComponent({
   props: {
@@ -21,7 +35,7 @@ export const TreeWizardView = defineComponent({
     },
     treeData: {
       required: true,
-      type: Object as PropType<TreeNodeType>,
+      type: Object as PropType<StepConfig>,
     },
   },
   setup(props) {
@@ -33,29 +47,35 @@ export const TreeWizardView = defineComponent({
     const changeFunccall = (newCall: string) => {
       isVisibleRfv.value = true;
 
-      if (!callsCache[newCall]) 
-        callsCache[newCall] = DG.Func.byName(newCall).prepare();
-
-      currentFuncCall.value = callsCache[newCall] ?? newCall;
+      currentFuncCall.value = DG.Func.byName(newCall).prepare();
       triggerRef(currentFuncCall);
     };
 
     const isVisibleRfv = ref(true);
 
+    const freshStatHandler = (freshStat: AugmentedStat) => {
+      freshStat.data.status = getInitialStatus(freshStat);
+      
+      return freshStat; 
+    };
+
     return () => (
       <SplitH resize={true} style={{height: '100%', display: 'block', padding: '8px'}}>
         <Draggable 
           class="mtl-tree"
-          ref={tree} 
-          v-model={props.treeData} 
-          eachDraggable={(stat: Stat<Data>) => (stat.parent?.data.text.includes('phases') ?? false)}
-          eachDroppable={(stat: Stat<Data>) => (stat.data.text.includes('Review'))}
           rootDroppable={false}
           style={{paddingLeft: '20px'}}
           treeLine
+
+          ref={tree} 
+          v-model={props.treeData} 
+          
+          eachDraggable={(stat: Stat<Data>) => (stat.parent?.data.text.includes('phases') ?? false)}
+          eachDroppable={(stat: Stat<Data>) => (stat.data.text.includes('Review'))}
+          statHandler={freshStatHandler}
         > 
           { 
-            ({stat, node}: {stat: AugmentedStat, node: TreeNodeType}) =>  
+            ({stat, node}: {stat: AugmentedStat, node: StepConfig}) =>  
               (
                 <TreeNode 
                   stat={stat}
