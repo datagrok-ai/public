@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import { _package } from '../package-test';
 import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
 import '../css/admetox.css';
-import { PieChartCellRenderer } from '../../../PowerGrid/src/sparklines/piechart';
+//import { PieChartCellRenderer } from '../../../PowerGrid/src/sparklines/piechart';
 import { STORAGE_NAME, KEY, TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, Template } from './constants';
 
 export let DEFAULT_LOWER_VALUE = 0.8;
@@ -299,7 +299,7 @@ export function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, a
   addCustomTooltip(viewTable.name);
 }
 
-async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLElement> {
+/*async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLElement> {
   const view = grok.shell.tableView(semValue.cell.dataFrame.name);
   const gridCol = view.grid.col(semValue.cell.column.name);
   const gridCell = view.grid.cell(semValue.cell.column.name, semValue.cell.rowIndex);
@@ -324,7 +324,7 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
   pieChartRenderer.render(ctx!, 0, 0, canvas.width, canvas.height, gridCell, DG.GridCellStyle.create());
   container.appendChild(canvas);
   return container;
-}
+}*/
 
 export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue): Promise<DG.Accordion> {
   const acc = ui.accordion('ADME/Tox');
@@ -363,7 +363,7 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
   }
 
   const result = ui.div();
-  acc.addPane('Summary', () => {
+  /*acc.addPane('Summary', () => {
     result.append(ui.loader());
     try {
       createPieChartPane(semValue).then((canvas) => {
@@ -376,8 +376,7 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
       console.error(error);
     }
     return result;
-  }, false);
-
+  }, false);*/
 
   return acc;
 }
