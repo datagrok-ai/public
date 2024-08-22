@@ -12,11 +12,10 @@ import type {ViewerT, InputFormT} from '@datagrok-libraries/webcomponents/src';
 import {createApp, provide} from 'vue';
 import {VueViewerTestApp} from './components/VueViewerTestApp';
 import {VueFormTestApp} from './components/VueFormTestApp';
-import {VueElementsTestApp} from './components/VueElementsTestApp';
 import {TreeWizardView} from './components/TreeWizard/TreeWizardView';
 import {RFVTestApp} from './components/RFV/RFVTestApp';
 import {HistoryApp} from './components/History/HistoryApp';
-import {VueElementsTestApp} from './components/VueElelementsTestApp';
+import {VueElementsTestApp} from './components/VueElementsTestApp';
 import {VueDriverTestApp} from './components/VueDriverTestApp';
 
 export const _package = new DG.Package();

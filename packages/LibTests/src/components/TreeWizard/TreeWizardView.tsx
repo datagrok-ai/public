@@ -25,7 +25,9 @@ export const TreeWizardView = defineComponent({
     },
   },
   setup(props) {
-    const currentFuncCall = shallowRef<DG.FuncCall | string>(props.wrapperFunccall);
+    const initialName = 'Compute:ObjectCooling';
+    const currentFuncCall = shallowRef(DG.Func.byName(initialName).prepare());
+
     const tree = ref(null as HueTree | null);
 
     const changeFunccall = (newCall: string) => {
@@ -75,10 +77,11 @@ export const TreeWizardView = defineComponent({
         </Draggable>
         <div>
           {
-            // isVisibleRfv.value && <RichFunctionView 
-            //   style={{height: '100%'}} 
-            //   funcCall={currentFuncCall.value}
-            // /> 
+            isVisibleRfv.value && <RichFunctionView 
+              style={{height: '100%'}} 
+              funcCall={currentFuncCall.value}
+              onFuncCallChange={(chosenCall) => currentFuncCall.value=chosenCall}
+            /> 
           }
         </div>
       </SplitH>
