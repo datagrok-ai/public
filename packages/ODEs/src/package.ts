@@ -47,7 +47,7 @@ export async function runDiffStudio(): Promise<DG.ViewBase> {
 //name: Diff Studio Demo
 //description: Interactive solver of ordinary differential equations (ODE)
 //meta.demoPath: Compute | Diff Studio
-//test: demoEquaSleekX() //wait: 100
+//test: runDiffStudioDemo() //wait: 100
 export async function runDiffStudioDemo(): Promise<void> {
   const solver = new DiffStudio();
   await solver.runSolverDemoApp();
