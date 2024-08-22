@@ -57,7 +57,7 @@ export const History = defineComponent({
 
     const historicalRuns = shallowRef(new Map<string, DG.FuncCall>);
 
-    watch(() => props.func.name, () => {
+    watch(() => props.func.id, () => {
       isLoading.value = true;
 
       historyUtils.pullRunsByName(props.func.name, [{author: grok.shell.user}], {}, ['session.user', 'options'])
@@ -211,14 +211,15 @@ export const History = defineComponent({
       );
     });
 
-    const historicalRunsDf = computedAsync(async () => {
+    const historicalRunsDf = shallowRef(defaultDf);
+    watch(historicalRuns, async () => {
       const df = await Utils.getRunsDfFromList(
         historicalRuns.value, 
         props.func,
         toValue(() => props),
       );
-      return df;
-    }, defaultDf);
+      historicalRunsDf.value = df;
+    });
 
     watchExtractedObservable(historicalRunsDf, (p) => p.onCurrentRowChanged, async () => {
       historicalRunsDf.value.rows.select(() => false);
