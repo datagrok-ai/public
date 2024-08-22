@@ -1,0 +1,12 @@
+
+export type ItemId = string;
+export type LinkSpecString = string | string[];
+export type ItemPathArray = string[];
+export type ItemAddress = string[];
+export type NqName = string;
+export type TypeKey = string;
+export type RestrictionType = 'disabled' | 'restricted' | 'info' | 'none';
+export type StateType = 'input' | 'output' | 'state';
+export type Constructor = new (...args: any[]) => {};
+export type GConstructor<T = {}> = new (...args: any[]) => T;
+export type TraverseHandler<R, I, A> = (acc: R, item: I, pathAddress: A, stop: () => void) => R;

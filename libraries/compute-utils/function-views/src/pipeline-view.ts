@@ -821,7 +821,7 @@ export class PipelineView extends FunctionView {
         if (lastCall)
           res[stepId] = await fcToSerializable(lastCall, step.view);
       }
-      const data = serialize(res, 0);
+      const data = serialize(res);
       return data;
     }
   }
