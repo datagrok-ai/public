@@ -35,6 +35,8 @@ const VALIDATION_TYPES_MAPPING: { [key: string]: string[] } = {
   'boolean': ['bool']
 };
 
+const FLOATING_POINT_TYPES = ['float', 'double'];
+
 const COLUMN_FUNCTION_NAME = 'GetCurrentRowField';
 const GET_VAR_FUNCTION_NAME = 'GetVar';
 const RESERVED_FUNC_NAMES_AND_TYPES: {[key: string]: string} = {
@@ -311,8 +313,13 @@ export class AddNewColumnDialog {
       map: ({from, to}, change) => ({from: change.mapPos(from), to: change.mapPos(to)})
     });
 
-    //remove unmatched parentheses
+    //highlight unmatched parentheses
     const addUnmatchedParentheses = StateEffect.define<{ from: number, to: number }>({
+      map: ({ from, to }, change) => ({ from: change.mapPos(from), to: change.mapPos(to) })
+    });
+
+    //highlight text within quotes
+    const addTextWithinQuotes = StateEffect.define<{ from: number, to: number }>({
       map: ({ from, to }, change) => ({ from: change.mapPos(from), to: change.mapPos(to) })
     });
 
@@ -323,6 +330,7 @@ export class AddNewColumnDialog {
 
     const highlightMark = Decoration.mark({class: "cm-column-name"});
     const unmatchedParenthesesMark = Decoration.mark({class: "cm-unmatched-bracket"});
+    const withinQuotesMark = Decoration.mark({class: "cm-within-quotes"});
     const highlightTheme = EditorView.baseTheme({
       ".cm-column-name": { 
         'color': 'var(--blue-2)',
@@ -331,7 +339,10 @@ export class AddNewColumnDialog {
       ".cm-unmatched-bracket": {
         'color': 'red',
         'font-weight': 'bold' 
-      }
+      },
+      ".cm-within-quotes": {
+        'color': '#c27706',
+      },
     });
 
     const highlightField = StateField.define<DecorationSet>({
@@ -348,6 +359,10 @@ export class AddNewColumnDialog {
           else if (e.is(addUnmatchedParentheses))
             underlines = underlines.update({
               add: [unmatchedParenthesesMark.range(e.value.from, e.value.to)]
+            })
+          else if (e.is(addTextWithinQuotes))
+            underlines = underlines.update({
+              add: [withinQuotesMark.range(e.value.from, e.value.to)]
             })
           else if (e.is(removeHighlight))
             underlines = Decoration.none;
@@ -372,6 +387,19 @@ export class AddNewColumnDialog {
       navigator.clipboard.writeText(selectionContents);
       v.dispatch({ changes: { from: v.state.selection.main.from, to: v.state.selection.main.to, insert: '' } })
       return true;
+    }
+
+    const addRegexpSelection = (regexp: string, stateEffect: StateEffectType<{ from: number; to: number; }>) => {
+      const cursor = new RegExpCursor(cm.state.doc, regexp);
+
+      const selections = [];
+      while (!cursor.done) {
+        cursor.next();
+        if (cursor.value.from !== -1 && cursor.value.to !== -1)
+          selections.push({from: cursor.value.from, to: cursor.value.to});
+      }
+      if (selections.length)
+        setSelection(cm, selections, stateEffect);
     }
 
     //create code mirror
@@ -413,16 +441,10 @@ export class AddNewColumnDialog {
             setSelection(cm, [{from: 0, to: cmValue.length}], removeHighlight);
 
             //add column highlight
-            const cursor = new RegExpCursor(cm.state.doc, '\\$\\{(.+?)\\}|\\$\\[(.+?)\\]');
-
-            const colSelections = [];
-            while (!cursor.done) {
-              cursor.next();
-              if (cursor.value.from !== -1 && cursor.value.to !== -1)
-                colSelections.push({from: cursor.value.from, to: cursor.value.to});
-            }
-            if (colSelections.length)
-              setSelection(cm, colSelections, addColHighlight);
+            addRegexpSelection('\\$\\{(.+?)\\}|\\$\\[(.+?)\\]', addColHighlight);
+            
+            //add text in quotes highlight
+            addRegexpSelection(`".*?"|'.*?'`, addTextWithinQuotes);
 
             //add unmatched parentheses highlight
             const openBrackets: number[] = [];
@@ -826,6 +848,9 @@ export class AddNewColumnDialog {
     this.gridPreview!.col(colName)!.backColor = this.newColumnBgColor;
     this.resultColumnType = this.previwDf!.col(colName)!.type;
     this.previwDf!.columns.remove(colName);
+
+    if (FLOATING_POINT_TYPES.includes(this.resultColumnType))
+      this.gridPreview!.dataFrame.col(colName)!.tags[DG.TAGS.FORMAT] = '#.00000';
 
     this.setAutoType(); // Adding (or removing) the column auto-type caption to "Auto" item in the ChoiceBox.
   }
