@@ -567,7 +567,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const diffTo = this.transPairsGrid!.dataFrame.getCol(MMP_NAMES.TO);
 
     const [idxPairs, cases] = this.findSpecificRule(diffFromSubstrCol);
-    await this.recoverHighlights(cases, diffFrom, diffTo, diffFromSubstrCol, diffToSubstrCol, rdkitModule);
+    this.recoverHighlights(cases, diffFrom, diffTo, diffFromSubstrCol, diffToSubstrCol, rdkitModule);
 
     this.transPairsGrid!.dataFrame.filter.copyFrom(this.transPairsMask!);
 
