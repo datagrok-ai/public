@@ -304,12 +304,14 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         createGridDiv('Pairs', this.transPairsGrid!),
       ], {}, true);
     });
-    tabs.addPane(MMP_NAMES.TAB_FRAGMENTS, () => {
+    const fragmentsPane = tabs.addPane(MMP_NAMES.TAB_FRAGMENTS, () => {
       return tp.root;
     });
-    tabs.addPane(MMP_NAMES.TAB_CLIFFS, () => {
+    fragmentsPane.content.classList.add('mmpa-fragments-tab');
+    const cliffsTab = tabs.addPane(MMP_NAMES.TAB_CLIFFS, () => {
       return cliffs;
     });
+    cliffsTab.content.classList.add('mmpa-cliffs-tab');
     const genTab = tabs.addPane(MMP_NAMES.TAB_GENERATION, () => {
       return this.generationsGrid!.root;
     });
