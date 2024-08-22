@@ -23,6 +23,8 @@ import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools/solver-defs';
 
 import './css/app-styles.css';
 
+//let treeNodeY: number = 0;
+
 /** State of IVP code editor */
 enum EDITOR_STATE {
   EMPTY = 'empty',
@@ -74,23 +76,7 @@ const MODEL_BY_STATE = new Map<EDITOR_STATE, TEMPLATES | USE_CASES>([
   [EDITOR_STATE.POLLUTION, USE_CASES.POLLUTION],
 ]);
 
-/** */
-const MODEL_BY_TITLE = new Map<TITLE, TEMPLATES | USE_CASES>([
-  [TITLE.BASIC, TEMPLATES.BASIC],
-  [TITLE.ADV, TEMPLATES.ADVANCED],
-  [TITLE.EXT, TEMPLATES.EXTENDED],
-  [TITLE.CHEM, USE_CASES.CHEM_REACT],
-  [TITLE.ROB, USE_CASES.ROBERTSON],
-  [TITLE.FERM, USE_CASES.FERMENTATION],
-  [TITLE.PK, USE_CASES.PK],
-  [TITLE.PKPD, USE_CASES.PK_PD],
-  [TITLE.ACID, USE_CASES.ACID_PROD],
-  [TITLE.NIM, USE_CASES.NIMOTUZUMAB],
-  [TITLE.BIO, USE_CASES.BIOREACTOR],
-  [TITLE.POLL, USE_CASES.POLLUTION],
-]);
-
-/** */
+/** Model title-to-editor state map */
 const STATE_BY_TITLE = new Map<TITLE, EDITOR_STATE>([
   [TITLE.BASIC, EDITOR_STATE.BASIC_TEMPLATE],
   [TITLE.ADV, EDITOR_STATE.ADVANCED_TEMPLATE],
@@ -1121,11 +1107,19 @@ export class DiffStudio {
           ui.tooltip.bind(item.root, MODEL_HINT.get(name) ?? '');
 
           item.onSelected.subscribe(async () => {
+            const panelRoot = appTree.rootNode.root.parentElement!;
+            const treeNodeY = panelRoot.scrollTop!;
+
             const solver = new DiffStudio(false);
             browseView.preview = await solver.runSolverApp(
               undefined,
               STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
             ) as DG.View;
+
+            setTimeout(() => {
+              panelRoot.scrollTo(0, treeNodeY);
+              item.root.focus();
+            }, UI_TIME.BROWSING);
           });
         });
       };
