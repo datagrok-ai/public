@@ -11,14 +11,14 @@ declare global {
 const snapshotsPath = 'System:AppData/LibTests/snapshots/';
 
 export async function snapshotCompare(actual: any, snapshotName: string) {
-  if (globalThis.SNAPSHOTS_UPDATE_MODE) {
-    const data = serialize(actual, {useJsonDF: true, space: 2});
-    const name = snapshotName + '.json';
-    const blob = new Blob([data]);
-    DG.Utils.download(name, blob);
-  } else {
-    const data = await grok.dapi.files.readAsText(snapshotsPath + snapshotName + '.json');
-    const expected = deserialize(data);
-    expectDeepEqual(actual, expected);
-  }
+  // if (globalThis.SNAPSHOTS_UPDATE_MODE) {
+  //   const data = serialize(actual, {useJsonDF: true, space: 2});
+  //   const name = snapshotName + '.json';
+  //   const blob = new Blob([data]);
+  //   DG.Utils.download(name, blob);
+  // } else {
+  const data = await grok.dapi.files.readAsText(snapshotsPath + snapshotName + '.json');
+  const expected = deserialize(data);
+  expectDeepEqual(actual, expected);
+  // }
 }
