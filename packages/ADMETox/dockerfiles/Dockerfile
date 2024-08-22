@@ -2,8 +2,7 @@ FROM nvidia/cuda:11.8.0-runtime-ubuntu22.04
 
 SHELL ["/bin/bash","-c"]
 
-ENV MAMBA_ROOT_PREFIX=/opt/conda
-ENV MAMBA_EXE=/bin/micromamba
+
 
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
@@ -11,6 +10,8 @@ RUN apt-get update && \
         curl bzip2 ca-certificates ; \
      apt-get clean
 
+ENV MAMBA_EXE=/bin/micromamba
+ARG MAMBA_VERSION=1.5.3
 RUN set -ex ; \
     curl -L "https://micro.mamba.pm/api/micromamba/linux-64/${MAMBA_VERSION}" --output /tmp/micromamba.tar.bz2; \
     mkdir -p /tmp/micromamba ; \
@@ -24,14 +25,14 @@ ARG MAMBA_USER_GID=57439
 ENV MAMBA_USER=$MAMBA_USER
 ENV MAMBA_USER_ID=$MAMBA_USER_ID
 ENV MAMBA_USER_GID=$MAMBA_USER_GID
-
+ENV MAMBA_ROOT_PREFIX=/opt/conda
 COPY --from=mambaorg/micromamba:latest /usr/local/bin/_dockerfile_initialize_user_accounts.sh /usr/local/bin/_dockerfile_initialize_user_accounts.sh
 COPY --from=mambaorg/micromamba:latest /usr/local/bin/_dockerfile_setup_root_prefix.sh /usr/local/bin/_dockerfile_setup_root_prefix.sh
 RUN /usr/local/bin/_dockerfile_initialize_user_accounts.sh && /usr/local/bin/_dockerfile_setup_root_prefix.sh
 
-RUN mkdir /app && chown mambauser:mambauser /app
+RUN mkdir /app && chown $MAMBA_USER:$MAMBA_USER /app
 
-USER mambauser
+USER $MAMBA_USER
 
 WORKDIR /app
 
