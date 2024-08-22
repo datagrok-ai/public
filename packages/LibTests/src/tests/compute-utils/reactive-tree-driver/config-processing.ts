@@ -24,12 +24,12 @@ category('ComputeUtils: Driver config processing', async () => {
       ],
       links: [{
         id: 'link1',
-        from: 'step1/res',
-        to: 'step2/a',
+        from: 'in1:step1/res',
+        to: 'out1:step2/a',
       }],
     };
     const pconf = await getProcessedConfig(config);
-    await snapshotCompare(pconf, 'simple static config');
+    await snapshotCompare(pconf, 'Process simple static config');
   });
 
   test('Process static config with dynamic pipelines', async () => {
@@ -73,7 +73,7 @@ category('ComputeUtils: Driver config processing', async () => {
       ],
     };
     const pconf = await getProcessedConfig(config);
-    await snapshotCompare(pconf, 'static config with dynamic pipelines');
+    await snapshotCompare(pconf, 'Process static config with dynamic pipelines');
   });
 
   test('Process config with globalId ref', async () => {
@@ -94,6 +94,6 @@ category('ComputeUtils: Driver config processing', async () => {
       ],
     };
     const pconf = await getProcessedConfig(config);
-    await snapshotCompare(pconf, 'config with globalId ref');
+    await snapshotCompare(pconf, 'Process config with globalId ref');
   });
 });

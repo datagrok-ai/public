@@ -5,7 +5,7 @@ const linkSpecGrammar = `
 To ::= Name ':' (Selector | Id) (SEPARATOR (Selector | Id))*
 Selector ::= ( SelectorType '(' WS* Id WS* (',' WS* '@' Ref WS*)? SelectorArgs* ')' )
 SelectorArgs ::= (',' WS* Arg WS*)*
-SelectorType ::= "after+" | "after*" | "afterOrSame" | "after" | "before+" | "before*" | "beforeOrSame" | "before" | "same" | "first" | "last" | "all" | "any"
+SelectorType ::= "after+" | "after*" | "after" | "before+" | "before*" | "before" | "same" | "first" | "last" | "all" | "any"
 Id ::= IDENTIFIER
 Name ::= IDENTIFIER
 Arg ::= IDENTIFIER
@@ -17,8 +17,8 @@ WS ::= ' '
 
 const linkParser = new Grammars.W3C.Parser(linkSpecGrammar);
 
-export type LinkRefSelectors ="after+" | "after*" | "afterOrSame" | "after" | "before+" | "before*" | "beforeOrSame" | "before" | "same" ;
-export type LinkNonRefSelectors = "first" | "last" | "all" | "any";
+export type LinkRefSelectors = 'after+' | 'after*' | 'after' | 'before+' | 'before*' | 'before' | 'same';
+export type LinkNonRefSelectors = 'first' | 'last' | 'all' | 'any';
 export type LinkSelectors = LinkRefSelectors | LinkNonRefSelectors;
 
 export type LinkSegment = {
@@ -29,7 +29,7 @@ export type LinkSegment = {
 }
 
 export type LinkParsed = {
-  name?: string;
+  name: string;
   segments: LinkSegment[];
 }
 
@@ -43,34 +43,30 @@ export function isRefSelector(sel: LinkSelectors): sel is LinkRefSelectors {
   return !nonRefSelectors.includes(sel);
 }
 
-export function refSelectorIncludesOrigin(sel: LinkRefSelectors) {
-  return sel.endsWith('Same') || sel.endsWith('same');
-}
-
 export function refSelectorAdjacent(sel: LinkRefSelectors) {
-  return sel.endsWith('+') ;
+  return sel.endsWith('+');
 }
 
 export function refSelectorAll(sel: LinkRefSelectors) {
-  return sel.endsWith('*') ;
+  return sel.endsWith('*');
 }
 
 export function refSelectorFindOne(sel: LinkRefSelectors) {
   return sel === 'after' || sel === 'before';
 }
 
-export type SelectorDirection = 'before' | 'after' | 'none';
+export type SelectorDirection = 'before' | 'after' | 'same';
 
 export function refSelectorDirection(sel: LinkRefSelectors): SelectorDirection {
   if (sel === 'same')
-    return 'none' as const;
+    return 'same' as const;
   return sel.startsWith('after') ? 'after' : 'before';
 }
 
 export function parseLinkIO(io: string, isBase: boolean, isInput: boolean): LinkParsed {
   const ast = linkParser.getAST(io);
   checkAST(io, ast);
-  const name = ast.children.find((cnode) => cnode.type === 'Name')?.text;
+  const name = ast.children.find((cnode) => cnode.type === 'Name')!.text;
   const segments = ast.children.map((node) => {
     if (node.type === 'Selector') {
       const selector = node.children[0].text as LinkSelectors;
@@ -81,7 +77,9 @@ export function parseLinkIO(io: string, isBase: boolean, isInput: boolean): Link
       if (ref && isNonRefSelector(selector))
         throw new Error(`Link io ${io} is using non-ref selector with ref`);
       if (isBase && !isNonRefSelector(selector))
-        throw new Error(`Link io ${io} is using ref selector in link base`);
+        throw new Error(`Link io ${io} is using ref selector ${selector} in link base`);
+      if (isBase && selector === 'all')
+        throw new Error(`Link io ${io} is using all selector in link base`);
       if (!isBase && selector === 'any')
         throw new Error(`Link io ${io} is using any selector in non-base`);
       const args = argsNode ? argsNode.children.map((cnode) => cnode.text) : [];

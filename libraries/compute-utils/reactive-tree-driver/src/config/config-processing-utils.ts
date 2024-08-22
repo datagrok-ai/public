@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {AbstractPipelineParallelConfiguration, AbstractPipelineSequentialConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, PipelineActionConfiguraion, PipelineConfigurationInitial, PipelineConfigurationParallelInitial, PipelineConfigurationSequentialInitial, PipelineConfigurationStaticInitial, PipelineHooks, PipelineLinkConfigurationBase, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, StepActionConfiguraion} from './PipelineConfiguration';
-import { ItemId, LinkSpecString, NqName} from '../data/common-types';
+import {ItemId, LinkSpecString, NqName} from '../data/common-types';
 import {callHandler} from '../utils';
 import {LinkParsed, parseLinkIO} from './LinkSpec';
 
@@ -156,7 +156,7 @@ function processLinkData<L extends Partial<PipelineLinkConfigurationBase<LinkSpe
 
 function processLink(io: LinkSpecString, isBase: boolean, isInput: boolean) {
   if (Array.isArray(io))
-    return io.map(item => parseLinkIO(item, isBase, isInput));
+    return io.map((item) => parseLinkIO(item, isBase, isInput));
   else if (io)
     return [parseLinkIO(io, isBase, isInput)];
   else

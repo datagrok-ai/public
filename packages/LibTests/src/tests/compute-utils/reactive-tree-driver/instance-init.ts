@@ -25,14 +25,14 @@ category('ComputeUtils: Driver state tree init', async () => {
       ],
       links: [{
         id: 'link1',
-        from: 'step1/res',
-        to: 'step2/a',
+        from: 'in1:step1/res',
+        to: 'out1:step2/a',
       }],
     };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromConfig({config: pconf});
     const state = tree.toSerializedState({ disableNodesUUID: true });
-    await snapshotCompare(state, 'simple initial config');
+    await snapshotCompare(state, 'Process simple initial config');
   });
 
   test('Process initial config with dynamic pipelines', async () => {
@@ -106,7 +106,7 @@ category('ComputeUtils: Driver state tree init', async () => {
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromConfig({config: pconf});
     const state = tree.toSerializedState({ disableNodesUUID: true });
-    await snapshotCompare(state, 'initial config with dynamic pipelines');
+    await snapshotCompare(state, 'Process initial config with dynamic pipelines');
   });
 
   test('Process initial config with ref', async () => {
@@ -132,7 +132,7 @@ category('ComputeUtils: Driver state tree init', async () => {
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromConfig({config: pconf});
     const state = tree.toSerializedState({ disableNodesUUID: true });
-    await snapshotCompare(state, 'initial config with ref');
+    await snapshotCompare(state, 'Process initial config with ref');
   });
 });
 
@@ -153,8 +153,8 @@ category('ComputeUtils: Driver init calls', async () => {
       ],
       links: [{
         id: 'link1',
-        from: 'step1/res',
-        to: 'step2/a',
+        from: 'in1:step1/res',
+        to: 'out1:step2/a',
       }],
     };
     const pconf = await getProcessedConfig(config);
@@ -186,8 +186,8 @@ category('ComputeUtils: Driver init calls', async () => {
       ],
       links: [{
         id: 'link1',
-        from: 'step1/res',
-        to: 'step2/a',
+        from: 'in1:step1/res',
+        to: 'out1:step2/a',
       }],
     };
     const instanceConfig: PipelineInstanceConfig = {

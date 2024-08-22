@@ -1,6 +1,6 @@
 import {Observable} from 'rxjs';
 import {IRuntimeController} from '../IRuntimeController';
-import { ItemId, NqName, RestrictionType, LinkSpecString } from '../data/common-types';
+import {ItemId, NqName, RestrictionType, LinkSpecString} from '../data/common-types';
 import {StepParallelInitialConfig, StepSequentialInitialConfig} from './PipelineInstance';
 
 //

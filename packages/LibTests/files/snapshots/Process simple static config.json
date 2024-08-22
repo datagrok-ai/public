@@ -52,6 +52,7 @@
       "id": "link1",
       "from": [
         {
+          "name": "in1",
           "segments": [
             {
               "id": "step1",
@@ -66,18 +67,20 @@
       ],
       "to": [
         {
+          "name": "out1",
           "segments": [
             {
               "id": "step2",
-              "selector": "next"
+              "selector": "first"
             },
             {
               "id": "a",
-              "selector": "next"
+              "selector": "first"
             }
           ]
         }
-      ]
+      ],
+      "base": []
     }
   ],
   "actions": [],

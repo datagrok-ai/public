@@ -271,9 +271,24 @@ export async function TestAdd2(a: number, b: number) {
 //input: double a
 //input: double b
 //output: double res
+export async function TestSub2(a: number, b: number) {
+  return a - b;
+}
+
+//input: double a
+//input: double b
+//output: double res
 export async function TestMul2(a: number, b: number) {
   return a * b;
 }
+
+//input: double a
+//input: double b
+//output: double res
+export async function TestDiv2(a: number, b: number) {
+  return a / b;
+}
+
 
 //name: MockWrapper1
 export async function MockWrapper1() {}
@@ -299,8 +314,8 @@ export async function MockProvider1(params: any) {
     ],
     links: [{
       id: 'link1',
-      from: 'step1/res',
-      to: 'step2/a',
+      from: 'in1:step1/res',
+      to: 'out1:step2/a',
     }],
   };
   return c;
@@ -341,7 +356,6 @@ export async function MockProvider2(params: any) {
   };
   return c;
 }
-
 
 //name: MockWrapper3
 export async function MockWrapper3() {}

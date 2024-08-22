@@ -15,7 +15,7 @@ category('ComputeUtils: Driver state tree mutations', async () => {
     const puuid = root.uuid;
     await tree.addSubTree(puuid, 'stepAdd', 2, false).toPromise();
     const state = tree.toSerializedState({ disableNodesUUID: true });
-    await snapshotCompare(state, 'append step subtree');
+    await snapshotCompare(state, 'Pipeline append step subtree');
   });
 
   test('Pipeline append static pipeline subtree', async () => {
@@ -26,7 +26,7 @@ category('ComputeUtils: Driver state tree mutations', async () => {
     const puuid = root.uuid;
     await tree.addSubTree(puuid, 'pipeline1', 2, false).toPromise();
     const state = tree.toSerializedState({ disableNodesUUID: true });
-    await snapshotCompare(state, 'append static pipeline subtree');
+    await snapshotCompare(state, 'Pipeline append static pipeline subtree');
   });
 
   test('Pipeline append dynamic pipeline subtree', async () => {
@@ -37,7 +37,7 @@ category('ComputeUtils: Driver state tree mutations', async () => {
     const puuid = root.uuid;
     await tree.addSubTree(puuid, 'pipelinePar', 0, false).toPromise();
     const state = tree.toSerializedState({ disableNodesUUID: true });
-    await snapshotCompare(state, 'append dynamic pipeline subtree');
+    await snapshotCompare(state, 'Pipeline append dynamic pipeline subtree');
   });
 
   test('Pipeline insert subtree', async () => {
@@ -48,7 +48,7 @@ category('ComputeUtils: Driver state tree mutations', async () => {
     const puuid = root.uuid;
     await tree.addSubTree(puuid, 'pipeline1', 0, false).toPromise();
     const state = tree.toSerializedState({ disableNodesUUID: true });
-    await snapshotCompare(state, 'insert subtree');
+    await snapshotCompare(state, 'Pipeline insert subtree');
   });
 
   test('Pipeline remove subtree', async () => {
@@ -58,7 +58,7 @@ category('ComputeUtils: Driver state tree mutations', async () => {
     const pnode = tree.getItem([{idx: 0}]);
     await tree.removeSubtree(pnode.uuid).toPromise();
     const state = tree.toSerializedState({ disableNodesUUID: true });
-    await snapshotCompare(state, 'remove subtree');
+    await snapshotCompare(state, 'Pipeline remove subtree');
   });
 
   test('Pipeline move subtree', async () => {
@@ -68,6 +68,6 @@ category('ComputeUtils: Driver state tree mutations', async () => {
     const pnode = tree.getItem([{idx: 0}]);
     await tree.moveSubtree(pnode.uuid, 1).toPromise();
     const state = tree.toSerializedState({ disableNodesUUID: true });
-    await snapshotCompare(state, 'move subtree');
+    await snapshotCompare(state, 'Pipeline move subtree');
   });
 });
