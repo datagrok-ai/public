@@ -181,6 +181,7 @@ export class HistoricalRunsList extends DG.Widget {
       if (runs.size > 0) {
         const newRunsDf = await getRunsDfFromList(
           runs, 
+          runs.values().next().value,
           this.options
         );
         const func = runs.values().next().value.func as DG.Func;

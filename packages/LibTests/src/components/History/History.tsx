@@ -212,10 +212,12 @@ export const History = defineComponent({
     });
 
     const historicalRunsDf = computedAsync(async () => {
-      return await Utils.getRunsDfFromList(
+      const df = await Utils.getRunsDfFromList(
         historicalRuns.value, 
+        props.func,
         toValue(() => props),
       );
+      return df;
     }, defaultDf);
 
     watchExtractedObservable(historicalRunsDf, (p) => p.onCurrentRowChanged, async () => {

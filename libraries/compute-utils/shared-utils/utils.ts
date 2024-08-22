@@ -319,8 +319,8 @@ export const styleHistoryFilters = (
   return columnNames.length > 0;
 }
 
-export const getFavStorageName = (runs: Map<string, DG.FuncCall>) => {
-  return `${storageName}_${[...runs.values()][0].func.name}_Fav`;
+export const getFavStorageName = (func: DG.Func) => {
+  return `${storageName}_${func.name}_Fav`;
 }
 
 export const getColumnName = (key: string) => {
@@ -329,6 +329,7 @@ export const getColumnName = (key: string) => {
 
 export const getRunsDfFromList = async (
   runs: Map<string, DG.FuncCall>,
+  func: DG.Func,
   options?: HistoryOptions,
 ) => {
   const newRuns = [...runs.values()];
@@ -372,10 +373,8 @@ export const getRunsDfFromList = async (
     );
   };
 
-  const favoritesRecord: Record<string, string> = await grok.dapi.userDataStorage.get(getFavStorageName(runs)) ?? {};
+  const favoritesRecord: Record<string, string> = await grok.dapi.userDataStorage.get(getFavStorageName(func)) ?? {};
   const favorites = Object.keys(favoritesRecord);
-
-  const func = newRuns[0].func;
 
   const getColumn = (key: string) => {
     const prop =
