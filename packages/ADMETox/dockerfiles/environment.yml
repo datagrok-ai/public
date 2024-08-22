@@ -3,7 +3,7 @@ channels:
   - conda-forge
   - pytorch
 dependencies:
-  - python>=3
+  - python>=3.11
   - pip
   - pip:
     - -r requirements.txt 
@@ -16,7 +16,7 @@ dependencies:
   - boto3
   - gunicorn
   - Flask
-  - chemprop
+  - chemprop=2.0.0
   - mkl=2024.0.0
   - pytorch=*=*cuda11.3*
   - torchvision=*=*_cu*
