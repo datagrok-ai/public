@@ -5,7 +5,7 @@
     "name": "Maria Dolotova",
     "email": "maria.dolotova@softwarecountry.com"
   },
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Analysis of the clinical data represented in the [SDTM](https://www.cdisc.org/standards/foundational/sdtm) format.",
   "repository": {
     "type": "git",
