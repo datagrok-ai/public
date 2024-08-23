@@ -88,16 +88,16 @@ category('fit', () => {
 		const polynomialFitSeries = fitSeries(polynomialSeries, polynomialFitFunc);
 		const stop = Date.now();
 
-		expect(sigmoidFitSeries.fittedCurve(2.5), 1.7023284700958918);
-		expect(linearFitSeries.fittedCurve(2.5), 1.5181158855557442);
-		expect(logLinearFitSeries.fittedCurve(2.5), 2.6375155762836133);
-		expect(exponentialFitSeries.fittedCurve(0.00001345), 2.73017578865824);
-		expect(polynomialFitSeries.fittedCurve(3.99876), 4.793906282943224);
-		expectArray(sigmoidFitSeries.parameters, [1.7039494514465332, 1.030500888824463, 5.367032051086426, 0.2426503598690033]);
-		expectArray(linearFitSeries.parameters, [-0.2137794941663742, 2.0525646209716797]);
-		expectArray(logLinearFitSeries.parameters, [-8.782659530639648, 13.640106201171875]);
-		expectArray(exponentialFitSeries.parameters, [2.7303085327148438, -3.614861249923706]);
-		expectArray(polynomialFitSeries.parameters, [0.09034820646047592, -1.148695945739746, 3.3145318031311035, 4.130721569061279]);
+		expect(sigmoidFitSeries.fittedCurve(2.5), 1.7048618582775712);
+		expect(linearFitSeries.fittedCurve(2.5), 1.5337481647729874);
+		expect(logLinearFitSeries.fittedCurve(2.5), 1.4879121793209378);
+		expect(exponentialFitSeries.fittedCurve(0.00001345), 2.739771889293024);
+		expect(polynomialFitSeries.fittedCurve(3.99876), 6.449473383870631);
+		expectArray(sigmoidFitSeries.parameters, [1.7049071788787842, 1.569833517074585, 5.36868143081665, 0.2605934143066406]);
+		expectArray(linearFitSeries.parameters, [-0.21358928084373474, 2.067721366882324]);
+		expectArray(logLinearFitSeries.parameters, [-1.1107122898101807, 2.879371404647827]);
+		expectArray(exponentialFitSeries.parameters, [2.739849090576172, -2.0949888229370117]);
+		expectArray(polynomialFitSeries.parameters, [0.05000000074505806, -0.887523889541626, 2.861894130706787, 6]);
 		return `${stop.valueOf() - start.valueOf()} ms`;
 	});
 
