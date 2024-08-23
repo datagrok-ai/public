@@ -462,6 +462,7 @@ jobs:
             gpu_count=$(jq '.gpu' container.json)            
             if [ "$gpu_count" -gt 0 ]; then
               check_container=false
+            fi
           fi
           if [[ "${check_container}" == "true" ]] ; then
             if [[ "${{ steps.datagrok-image.outputs.alias }}" == "test" ]]; then
