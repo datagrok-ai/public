@@ -41,6 +41,9 @@ export interface IHelmHelper {
   revertOriginalMonomersFuncs(): MonomersFuncs;
 
   getHoveredAtom(x: number, y: number, mol: HelmMol, height: number): HelmAtom | null;
+
+  /** Gets pseudo molfiles with monomers as atoms */
+  getMolfiles(helmStrList: string[]): string[];
 }
 
 export async function getHelmHelper(): Promise<IHelmHelper> {

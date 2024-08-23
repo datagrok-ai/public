@@ -1,6 +1,12 @@
 # bio changelog
 
-## 5.42.9
+## 5.42.10 (2024-08-23)
+
+### Features
+
+* Add SeqHandler
+
+## 5.42.9 (2024-08-16)
 
 ### Features
 
