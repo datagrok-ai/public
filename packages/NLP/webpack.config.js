@@ -14,7 +14,7 @@ module.exports = {
     fallback: {
       util: require.resolve("util/")
     },
-    extensions: ['.wasm', '.mjs', '.js', '.json', '.ts', '.tsx'],
+    extensions: ['.wasm', '.mjs', '.ts', '.json', '.js', '.tsx'],
   },
   module: {
     rules: [

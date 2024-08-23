@@ -304,12 +304,14 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         createGridDiv('Pairs', this.transPairsGrid!),
       ], {}, true);
     });
-    tabs.addPane(MMP_NAMES.TAB_FRAGMENTS, () => {
+    const fragmentsPane = tabs.addPane(MMP_NAMES.TAB_FRAGMENTS, () => {
       return tp.root;
     });
-    tabs.addPane(MMP_NAMES.TAB_CLIFFS, () => {
+    fragmentsPane.content.classList.add('mmpa-fragments-tab');
+    const cliffsTab = tabs.addPane(MMP_NAMES.TAB_CLIFFS, () => {
       return cliffs;
     });
+    cliffsTab.content.classList.add('mmpa-cliffs-tab');
     const genTab = tabs.addPane(MMP_NAMES.TAB_GENERATION, () => {
       return this.generationsGrid!.root;
     });
@@ -565,7 +567,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const diffTo = this.transPairsGrid!.dataFrame.getCol(MMP_NAMES.TO);
 
     const [idxPairs, cases] = this.findSpecificRule(diffFromSubstrCol);
-    await this.recoverHighlights(cases, diffFrom, diffTo, diffFromSubstrCol, diffToSubstrCol, rdkitModule);
+    this.recoverHighlights(cases, diffFrom, diffTo, diffFromSubstrCol, diffToSubstrCol, rdkitModule);
 
     this.transPairsGrid!.dataFrame.filter.copyFrom(this.transPairsMask!);
 

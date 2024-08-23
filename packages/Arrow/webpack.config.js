@@ -18,7 +18,7 @@ module.exports = {
     },
   },
   resolve: {
-    extensions: ['.wasm', '.mjs', '.js', '.json', '.ts', '.tsx'],
+    extensions: ['.wasm', '.ts', '.mjs', '.js', '.json', '.tsx'],
   },
   module: {
     rules: [
