@@ -85,6 +85,10 @@ jobs:
 
               job_test_env=''
               runner='ubuntu-22.04'
+              if [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "ADMETox" ]] || \
+                 [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"ADMETox"* ]]; then
+                runner='ubuntu-latest-m'
+              fi
               if [ -n "$(jq  '. | select( has("test") == true )' <<< "$scripts")" ] && \
                   [[ "$(jq  -r '. | select( has("skipCI") == true ).skipCI' "${DIR}/package.json")" != "true" ]]; then
                 MATRIX_PUBLISH_JSON+=", \"test\": \"test\""
@@ -102,10 +106,6 @@ jobs:
                    [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"dendrogram"* ]] || \
                    [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"samples"* ]]; then
                   job_test_env+=',JKG'
-                  runner='ubuntu-latest-m'
-                fi
-                if [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "admetox" ]] || \
-                   [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"admetox"* ]]; then
                   runner='ubuntu-latest-m'
                 fi
                 if [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "chem" ]] || \
