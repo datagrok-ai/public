@@ -12,11 +12,12 @@ import type {ViewerT, InputFormT} from '@datagrok-libraries/webcomponents/src';
 import {createApp, provide} from 'vue';
 import {VueViewerTestApp} from './components/VueViewerTestApp';
 import {VueFormTestApp} from './components/VueFormTestApp';
-import {TreeWizardView} from './components/TreeWizard/TreeWizardView';
 import {RFVTestApp} from './components/RFV/RFVTestApp';
 import {HistoryApp} from './components/History/HistoryApp';
 import {VueElementsTestApp} from './components/VueElementsTestApp';
 import {VueDriverTestApp} from './components/VueDriverTestApp';
+import {PipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {VueDriverRFVApp} from './components/VueDriverRFVApp';
 
 export const _package = new DG.Package();
 
@@ -269,47 +270,13 @@ export async function TestVueHistory() {
   view.root.classList.remove('ui-panel');
 }
 
-//tags: test
-export async function TestTreeWizardView() {
+//name: TestVueRFVDriver
+export async function TestVueRFVDriver() {
+  // TODO: close view handling
   const view = new DG.ViewBase();
-  const app = createApp(TreeWizardView, {
-    wrapperFunccall: 'Compute:ObjectCooling',
-    treeData: [
-      {
-        text: 'Model name',
-        order: 'sequental', 
-        children: [
-          {
-            text: 'Review phases (sequental + drag + adding)',
-            order: 'sequental',
-            children: [
-              {text: 'Filtering', funcCall: 'LibTests:LongScript'},
-              {text: 'Cleaning', funcCall: 'LibTests:LongScript'},
-              {text: 'Post-filtering', funcCall: 'LibTests:LongScript'},
-            ],
-          }, 
-          {
-            text: 'Step 2',
-            order: 'sequental',
-            children: [
-              {text: 'Step 2.1', funcCall: 'LibTests:LongScript'},
-              {
-                text: 'Review days (parallel + no drag + adding)', 
-                order: 'parallel',
-                children: [
-                  {text: 'Day 1', funcCall: 'LibTests:LongFailingScript'},
-                  {text: 'Day 2', funcCall: 'LibTests:LongScript'},
-                ]},
-              {text: 'Step 2.3', funcCall: 'LibTests:LongScript'},
-            ],
-          },
-        ],
-      }],
-  });
+  const app = createApp(VueDriverRFVApp);
   app.mount(view.root);
   grok.shell.addView(view);
-  view.name = 'TreeWizard PoC';
-  view.root.classList.remove('ui-panel');
 }
 
 //name: TestVueDriver

@@ -2,25 +2,17 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Stat} from '@he-tree/vue/types/src/components/TreeProcessorVue';
-
-export type StepConfig = {
-  text: string,
-  children: StepConfig[]
-}
+import {PipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 
 type NoStringIndex<T> = { [K in keyof T as string extends K ? never : K]: T[K] };
 
 type RestrictedStat = NoStringIndex<Stat<Data>>
 
-export type Data = {
-  status: Status,
-  isHovered: boolean,
-  funcCall?: string,
-  text: string,
-  order?: Order,
-}
+type Data = RuntimeData & PipelineState
 
-type Order = 'sequental' | 'parallel';
+export type RuntimeData = {
+  isHovered: boolean,
+}
 
 export type AugmentedStat = RestrictedStat & {
   parent: AugmentedStat | null;

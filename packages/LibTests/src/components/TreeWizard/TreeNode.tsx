@@ -3,9 +3,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {defineComponent, PropType} from 'vue';
-import {AugmentedStat, Status, StepConfig} from './types';
+import {AugmentedStat, Status} from './types';
 import {IconFA} from '@datagrok-libraries/webcomponents-vue/src';
 import {OpenIcon} from '@he-tree/vue';
+import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
+import {isFuncCallState, isParallelPipelineState, PipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 
 const getCall = (funcCall: DG.FuncCall | string, params?: {
   a?: number,
@@ -31,7 +33,7 @@ const runSequentallly = async (children: AugmentedStat[]) => {
     await runByTree(child);
 };
 
-const runInParallel = async (children: AugmentedStat[]) => 
+const runInParallel = async (children: AugmentedStat[]): Promise<void[]> => 
   Promise.all(children.map(async (child) => runByTree(child as AugmentedStat)));
 
 const updateNextStepAndParent = (currentStat: AugmentedStat) => {
@@ -54,41 +56,43 @@ const updateNextStepAndParent = (currentStat: AugmentedStat) => {
   if (nextSibling) 
     nextSibling.status = `didn't run`;
   else {
-    parent.status = currentStat.data.status;
+    // parent.status = currentStat.data.status;
     const parentNextSibling = getNextSibling(parent);
     if (parentNextSibling)
       parentNextSibling.status = `didn't run`;
   }
 };
 
-const runByTree = async (currentStat: AugmentedStat): Promise<Status> => {
-  const nodeCall = currentStat.data.funcCall;
-  currentStat.data.status = 'running';
+const runByTree = async (currentStat: AugmentedStat) => {
+  const nodeCall = isFuncCallState(currentStat.data) ? currentStat.data.funcCall: null;
+  // currentStat.data.status = 'running';
   if (nodeCall) {
     try {
       await getCall(nodeCall).call();
-      currentStat.data.status = 'succeeded';
+      // currentStat.data.status = 'succeeded';
       
       updateNextStepAndParent(currentStat);
 
-      return Promise.resolve(currentStat.data.status);
+      // return Promise.resolve(currentStat.data.status);
+      return Promise.resolve();
     } catch (e) {
-      currentStat.data.status = 'failed';
+      // currentStat.data.status = 'failed';
 
       return Promise.reject(e);
     }
   } else {  
-    return (currentStat.data.order === `parallel` ? 
+    return (isParallelPipelineState(currentStat.data) ? 
       runInParallel(currentStat.children): 
       runSequentallly(currentStat.children)
     ).then(() => {
-      currentStat.data.status = 'succeeded';
+      // currentStat.data.status = 'succeeded';
 
       updateNextStepAndParent(currentStat);
 
-      return Promise.resolve(currentStat.data.status);
+      // return Promise.resolve(currentStat.data.status);
+      return Promise.resolve();
     }).catch((e) => {
-      currentStat.data.status = 'failed';
+      // currentStat.data.status = 'failed';
 
       return Promise.reject(e);
     });                      
@@ -129,10 +133,6 @@ export const TreeNode = defineComponent({
       type: Object as PropType<AugmentedStat>,
       required: true,
     },
-    node: {
-      type: Object as PropType<StepConfig>,
-      required: true,
-    },
     isDraggable: {
       type: Boolean,
     },
@@ -147,11 +147,12 @@ export const TreeNode = defineComponent({
     addNode: (text: String) => text,
     removeNode: () => {},
     click: () => {},
+    runNode: () => {},
   },
   setup(props, {emit}) {
     const runIcon = <IconFA 
       name='play'
-      onClick={() => runByTree(props.stat)}
+      onClick={(e) => {emit('runNode'); e.stopPropagation();}}
       style={{paddingLeft: '4px'}}
     />;
       
@@ -175,6 +176,18 @@ export const TreeNode = defineComponent({
         }} 
       />;
     };
+
+    const nodeLabel = (state: AugmentedStat) => {
+      const data = state.data;
+    
+      return data.friendlyName ?? data.configId;  
+    };
+
+    const isRunning = (state: AugmentedStat) => {
+      if (isFuncCallState(state.data) && state.data.isRunning) return true;
+
+      return false;
+    };
     
     return () => (
       <div 
@@ -187,22 +200,22 @@ export const TreeNode = defineComponent({
         onMouseleave={() => props.stat.data.isHovered = false} 
         onDragstart={() => props.stat.data.isHovered = false}
         onClick={() => emit('click')}
-        class={props.stat.data.status === 'locked' ? 'd4-disabled': null}
+        // class={props.stat.data.status === 'locked' ? 'd4-disabled': null}
       >
-        { progressIcon(props.stat.data.status) }
+        {/* { progressIcon(props.stat.data.status) } */}
         { props.stat.children.length ? openIcon : null }
-        <span class="mtl-ml">{props.stat.data.text}</span>
-        { props.isDraggable && props.stat.data.isHovered && props.stat.data.status !== 'running' ? <IconFA 
+        <span class="mtl-ml">{ nodeLabel(props.stat) }</span>
+        { /* { props.isDraggable && props.stat.data.isHovered && props.stat.data.status !== 'running' ? <IconFA 
           name='grip-vertical' 
           cursor='grab'
           style={{paddingLeft: '4px'}}
-        />: null }
-        { props.isDeletable && props.stat.data.isHovered && props.stat.data.status !== 'running' ? <IconFA 
+        />: null  } */ }
+        { props.isDeletable && props.stat.data.isHovered && !isRunning(props.stat) ? <IconFA 
           name='times' 
           style={{paddingLeft: '4px'}}
           onClick={(e: Event) => {emit('removeNode'); e.stopPropagation();}}
         />: null }
-        { props.isDroppable && props.stat.data.isHovered && props.stat.data.status !== 'running' ? <IconFA 
+        { /*  props.isDroppable && props.stat.data.isHovered && props.stat.data.status !== 'running' ? <IconFA 
           name='plus' 
           style={{paddingLeft: '4px'}}
           onClick={(e) => {
@@ -211,8 +224,8 @@ export const TreeNode = defineComponent({
             );
             e.stopPropagation();
           }}
-        />: null }
-        { props.stat.data.isHovered && props.stat.data.status !== 'running' ? runIcon: null }
+        />: null } */}
+        { props.stat.data.isHovered && !isRunning(props.stat) ? runIcon: null }
       </div>
     );    
   },
