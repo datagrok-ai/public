@@ -197,8 +197,9 @@ export class AddNewColumnDialog {
         this.packageFunctionsNames[packageName].push(func.name);
         this.packageFunctionsParams[`${packageName}:${func.name}`] = params;
       } catch { //in case of core functions calling func.package throws an exception
-        this.coreFunctionsNames.push(func.name);
-        this.coreFunctionsParams[func.name] = params;
+        const funcName = func.nqName.startsWith('core:') ? func.name : func.nqName;
+        this.coreFunctionsNames.push(funcName);
+        this.coreFunctionsParams[funcName] = params;
       }
     }
   }
@@ -426,10 +427,10 @@ export class AddNewColumnDialog {
 
             //update hint
             ui.empty(this.hintDiv);
-            let fullFuncName: string | undefined = '';
-            fullFuncName = this.getFunctionNameAtPosition(cm, cm.state.selection.main.head, -1,
-              this.packageFunctionsParams, this.coreFunctionsParams)?.funcName;
-            this.hintDiv.append(ui.divText(fullFuncName ?? DEFAULT_HINT));
+            const resFunc = this.getFunctionNameAtPosition(cm, cm.state.selection.main.head, -1,
+              this.packageFunctionsParams, this.coreFunctionsParams);
+            const fullFuncName = resFunc?.funcName;
+            this.hintDiv.append(ui.divText(resFunc?.signature ?? DEFAULT_HINT));
 
             //return in case formula hasn't been changed
             if (!e.docChanged)
@@ -633,7 +634,7 @@ export class AddNewColumnDialog {
 
   getFunctionNameAtPosition(view: EditorView, pos: number, side: number,
     packageFunctionsParams: { [key: string]: PropInfo[] }, coreFunctionsParams: { [key: string]: PropInfo[] },
-    withoutSignature?: boolean): { funcName: string, start: number, end: number } | null {
+    withoutSignature?: boolean): { funcName: string, signature?: string, start: number, end: number } | null {
     let { from, to, text } = view.state.doc.lineAt(pos);
     let start = pos, end = pos;
     while (start > from && /\w|:/.test(text[start - from - 1]))
@@ -654,7 +655,8 @@ export class AddNewColumnDialog {
     if (funcOutputs.length)
       funcOutputType = funcOutputs[0].propType;
     return {
-      funcName: `${funcName}${funcInputs.length ? `(${funcInputs.map((it) => `${it.propName}:${it.propType}`).join(', ')})` : ''}: ${funcOutputType}`,
+      signature: `${funcName}${funcInputs.length ? `(${funcInputs.map((it) => `${it.propName}:${it.propType}`).join(', ')})` : ''}: ${funcOutputType}`,
+      funcName: funcName,
       start: start,
       end: end
     }
@@ -672,7 +674,7 @@ export class AddNewColumnDialog {
         above: true,
         create(view) {
           let dom = document.createElement("div");          
-          dom.textContent = res.funcName;
+          dom.textContent = res.signature!;
           return {dom}
         }
       }
