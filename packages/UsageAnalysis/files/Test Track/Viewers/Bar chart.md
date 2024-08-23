@@ -34,7 +34,17 @@
 12. Tooltip
     1. Right-click the bar chart and check all options on the **Tooltip** tab.
     2. Save to Layout. Check
+13. Inverting axes:
+  * Precondition: opened Bar chart viewer on the SPGI dataset.
+  * Open the Bar Chart's Properties panel.
+  * Navigate to Misc > Orientation. Change the viewer's orientation to Auto, Horizontal, and Vertical.
+  * Expected result: The Bar Chart viewer should rotate the axes according to the applied settings. No errors or unexpected behavior should occur during the orientation changes.
+
+
+
+
 ---
 {
   "order": 3
+  "datasets": ["System:DemoFiles/SPGI.csv"]
 }

@@ -24,4 +24,5 @@
 ---
 {
   "order": 6
+  "datasets": ["System:DemoFiles/SPGI.csv"]
 }
