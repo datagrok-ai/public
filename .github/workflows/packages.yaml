@@ -104,6 +104,10 @@ jobs:
                   job_test_env+=',JKG'
                   runner='ubuntu-latest-m'
                 fi
+                if [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "admetox" ]] || \
+                   [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"admetox"* ]]; then
+                  runner='ubuntu-latest-m'
+                fi
                 if [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "chem" ]] || \
                    [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]]; then
                   job_test_env+=',Compute'
