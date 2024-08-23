@@ -3,11 +3,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {defineComponent, PropType} from 'vue';
-import {AugmentedStat, Status} from './types';
-import {IconFA} from '@datagrok-libraries/webcomponents-vue/src';
+import {AugmentedStat, Data, Status} from './types';
+import {ComboPopup, IconFA} from '@datagrok-libraries/webcomponents-vue/src';
 import {OpenIcon} from '@he-tree/vue';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
-import {isFuncCallState, isParallelPipelineState, PipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {isFuncCallState, isParallelPipelineState, isSequentialPipelineState, PipelineState, PipelineStateParallel, PipelineStateSequential} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 
 const getCall = (funcCall: DG.FuncCall | string, params?: {
   a?: number,
@@ -144,7 +144,7 @@ export const TreeNode = defineComponent({
     },
   },
   emits: {
-    addNode: (text: String) => text,
+    addNode: ({itemId, position}:{itemId: string, position: number}) => ({itemId, position}),
     removeNode: () => {},
     click: () => {},
     runNode: () => {},
@@ -188,13 +188,18 @@ export const TreeNode = defineComponent({
 
       return false;
     };
+
+    const hasAddButton = (data: PipelineState): data is (PipelineStateSequential | PipelineStateParallel) => 
+      (isParallelPipelineState(data) || isSequentialPipelineState(data)) && data.stepTypes.length > 0;
     
     return () => (
       <div 
         style={{
           display: 'flex', 
-          padding: '4px 0px', 
           width: '100%',
+          height: '30px',
+          alignItems: 'center',
+          borderBottom: '1px solid var(--steel-2)',
         }}
         onMouseover={() => props.stat.data.isHovered = true} 
         onMouseleave={() => props.stat.data.isHovered = false} 
@@ -215,16 +220,20 @@ export const TreeNode = defineComponent({
           style={{paddingLeft: '4px'}}
           onClick={(e: Event) => {emit('removeNode'); e.stopPropagation();}}
         />: null }
-        { /*  props.isDroppable && props.stat.data.isHovered && props.stat.data.status !== 'running' ? <IconFA 
-          name='plus' 
-          style={{paddingLeft: '4px'}}
-          onClick={(e) => {
-            emit('addNode', 
-              `${props.stat.data.text.includes('phase') ? 'Phase': 'Day'} ${((props.stat.children.length ?? 0) + 1)}`,
-            );
-            e.stopPropagation();
-          }}
-        />: null } */}
+        { hasAddButton(props.stat.data) && props.stat.data.isHovered? 
+          <ComboPopup 
+            caption={ui.iconFA('plus')}
+            items={props.stat.data.stepTypes
+              .map((stepType) => stepType.friendlyName ?? stepType.nqName ?? stepType.configId)
+            }
+            onSelected={({itemIdx}) => {
+              const data = props.stat.data as PipelineStateSequential | PipelineStateParallel;
+              emit('addNode', {
+                itemId: data.stepTypes[itemIdx].configId,
+                position: data.steps.length,
+              });
+            }}
+          />: null }
         { props.stat.data.isHovered && !isRunning(props.stat) ? runIcon: null }
       </div>
     );    

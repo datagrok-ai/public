@@ -47,52 +47,13 @@ export const VueDriverRFVApp = defineComponent({
     };
 
     const addStep = (parentUuid: string, itemId: string, position: number) => {
+      console.log(parentUuid, itemId, position);
       driver.sendCommand({event: 'addDynamicItem', parentUuid, itemId, position});
     };
 
     const removeStep = (uuid: string) => {
       driver.sendCommand({event: 'removeDynamicItem', uuid});
     };
-
-    // const getWidgetTree = (node: PipelineState, isParentDynamic = false) => {
-    //   if (isFuncCallState(node)) {
-    //     return node.funcCall ?
-    //       <div key={node.uuid} style={{border: 'solid black 1px', margin: '5px', padding: '5px'}}>
-    //         <div>
-    //           FuncCall: 
-    //           { node.configId } 
-    //           { isParentDynamic ? <Button onClick={() => removeStep(node.uuid)}>remove</Button> : null }</div>
-    //         <RichFunctionView 
-    //           funcCall={node.funcCall}
-    //         />
-    //       </div> :
-    //       <div style={{border: 'solid black 1px', margin: '5px'}}> LOADING </div>;
-    //   } else {
-    //     const isDynamic = (isParallelPipelineState(node) || isSequentialPipelineState(node));
-    //     return (
-    //       <div key={node.uuid} style={{border: 'solid black 3px', padding: '20px', margin: '5px'}}>
-    //         <div>
-    //           Pipeline: 
-    //           {node.configId} 
-    //           { isParentDynamic ? <Button onClick={() => removeStep(node.uuid)}>remove</Button> : null }
-    //         </div>
-    //         <div style={{display: 'flex', flexDirection: 'row'}}>
-    //           { node.steps.map((step) => getWidgetTree(step, isDynamic)) }
-    //         </div>
-    //         <div>
-    //           { isDynamic ? 
-    //             node.stepTypes.map((step) => (
-    //               <Button 
-    //                 onClick={() => addStep(node.uuid, step.configId, node.steps.length)}
-    //               >
-    //                 add {step.configId}
-    //               </Button>
-    //             )) : null }
-    //         </div>
-    //       </div>
-    //     );
-    //   }
-    // };
 
     return () => (
       <KeepAlive>
@@ -129,7 +90,9 @@ export const VueDriverRFVApp = defineComponent({
                       isDraggable={treeInstance.value?.isDraggable(stat)}
                       isDroppable={treeInstance.value?.isDroppable(stat)}
                       isDeletable={!!stat.parent && isParallelPipelineState(stat.parent.data)}
-                      // onAddNode={() => {if (stat.parent?.data.uuid) addStep(stat.parent.data.uuid, )}}
+                      onAddNode={({itemId, position}) => {
+                        addStep(stat.data.uuid, itemId, position);
+                      }}
                       onRemoveNode={() => removeStep(stat.data.uuid)}
                       onClick={() => {
                         if (isFuncCallState(stat.data) && stat.data.funcCall) 

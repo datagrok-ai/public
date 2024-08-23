@@ -8,7 +8,7 @@ type NoStringIndex<T> = { [K in keyof T as string extends K ? never : K]: T[K] }
 
 type RestrictedStat = NoStringIndex<Stat<Data>>
 
-type Data = RuntimeData & PipelineState
+export type Data = RuntimeData & PipelineState
 
 export type RuntimeData = {
   isHovered: boolean,

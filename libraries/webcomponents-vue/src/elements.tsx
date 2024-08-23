@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {defineComponent, PropType, ref, watch} from 'vue';
-import type {DGBigButtonT, DGButtonT, DGIconFAT, DGSplitH, DGToggleInputT} from '@datagrok-libraries/webcomponents/src';
+import type {DGBigButtonT, DGButtonT, DGComboPopupT, DGIconFAT, DGSplitH, DGToggleInputT} from '@datagrok-libraries/webcomponents/src';
 
 declare global {
   namespace JSX {
@@ -13,6 +13,7 @@ declare global {
       'dg-split-h': DGSplitH,
       'dg-icon-fa': DGIconFAT,
       'dg-toggle-input': DGToggleInputT
+      'dg-combo-popup': DGComboPopupT
     }
   }
 }
@@ -120,6 +121,30 @@ export const ToggleInput = defineComponent({
       nullable={props.nullable}
       tooltip={props.tooltip}
       onValueChanged={(event: any) => emit('update:value', event.detail)}
+    />
+  }
+})
+
+export const ComboPopup = defineComponent({
+  name: 'ComboPopup',
+  props: {
+    caption: { 
+      type: Object as PropType<String | HTMLElement>,
+      required: true,
+    },
+    items: {
+      type: Array<String>,
+      default: []
+    }
+  },
+  emits: {
+    'selected': (value: {item: string, itemIdx: number}) => value,
+  },
+  setup(props, { emit }){
+    return () => <dg-combo-popup 
+      caption={props.caption}
+      items={props.items}
+      onSelected={(e: any) => emit('selected', e.detail)}
     />
   }
 })

@@ -114,3 +114,37 @@ export class DGIconFA extends HTMLElement {
 }
 
 export interface DGIconFAT extends DGIconFA {};
+
+export class DGComboPopup extends HTMLElement {
+  private _caption: string | HTMLElement = 'Caption';
+  private _items = [] as string[];
+
+  constructor() {
+    super();
+  }
+
+  public set caption(val: string | HTMLElement) {
+    this._caption = val;
+    this.render();
+  }
+
+  public set items(val: string[]) {
+    this._items = val;
+    this.render();
+  }
+
+  private render() {
+    ui.empty(this);
+    const newPopup = ui.comboPopup(
+      this._caption,
+      this._items,
+      (item) => this.dispatchEvent(new CustomEvent(
+        'selected', {detail: {item, itemIdx: this._items.findIndex((i) => i === item)}}),
+      ),
+    );
+    newPopup.classList.add('d4-ribbon-item');
+    this.appendChild(newPopup);
+  }
+}
+
+export interface DGComboPopupT extends DGComboPopup {};

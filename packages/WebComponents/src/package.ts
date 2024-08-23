@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {InputForm, Viewer, DGBigButton, DGButton, DGSplitH, DGIconFA, DGToggleInput} from '@datagrok-libraries/webcomponents/src';
+import {InputForm, Viewer, DGBigButton, DGButton, DGSplitH, DGIconFA, DGToggleInput, DGComboPopup} from '@datagrok-libraries/webcomponents/src';
 
 export const _package = new DG.Package();
 
@@ -16,4 +16,5 @@ export function registerWebcomponents() {
   customElements.define('dg-split-h', DGSplitH);
   customElements.define('dg-icon-fa', DGIconFA);
   customElements.define('dg-toggle-input', DGToggleInput);
+  customElements.define('dg-combo-popup', DGComboPopup);
 }
