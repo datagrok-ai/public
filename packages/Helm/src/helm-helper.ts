@@ -2,6 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import $ from 'cash-dom';
+
 import {
   App, Atom, HelmType, GetMonomerFunc, GetMonomerResType, HelmString, HelmMol,
   MonomerExplorer, TabDescType, MonomersFuncs, MonomerSetType, HelmAtom, ISeqMonomer, PolymerType, MonomerType, type DojoType
@@ -312,5 +314,22 @@ export class HelmHelper implements IHelmHelper {
 
   public getHoveredAtom(x: number, y: number, mol: HelmMol, height: number): HelmAtom | null {
     return getHoveredMonomerFromEditorMol(x, y, mol, height);
+  }
+
+  public getMolfiles(helmStrList: string[]): string[] {
+    const host = ui.div([], {style: {width: '0', height: '0'}});
+    document.documentElement.appendChild(host);
+    try {
+      const editor = new JSDraw2.Editor(host, {viewonly: true});
+      const resList = helmStrList.map((helmStr, i) => {
+        editor.setHelm(helmStr);
+        const mol = editor.getMolfile();
+        return mol;
+      });
+      return resList;
+    } finally {
+      $(host).empty();
+      host.remove();
+    }
   }
 }
