@@ -1,5 +1,11 @@
 # Chem changelog
 
+## 1.11.5 (WIP)
+
+### Bug fixes
+
+* Add tableView to runChemSpace for reduce dimensionality ui options
+
 ## 1.11.4 (2024-08-23)
 
 ### Features
