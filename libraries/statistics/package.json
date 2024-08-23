@@ -7,7 +7,7 @@
   "version": "1.4.0",
   "description": "Statistics utilities",
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.2.11",
+    "@datagrok-libraries/utils": "^4.2.29",
     "cash-dom": "^8.0.0",
     "datagrok-api": "^1.20.0",
     "dayjs": "^1.11.7",

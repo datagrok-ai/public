@@ -12,7 +12,7 @@
   "description": "Machine learning supporting utilities",
   "dependencies": {
     "@datagrok-libraries/math": "^1.1.12",
-    "@datagrok-libraries/utils": "^4.2.20",
+    "@datagrok-libraries/utils": "^4.2.29",
     "@keckelt/tsne": "^1.0.2",
     "@types/seedrandom": "^3.0.8",
     "@webgpu/types": "^0.1.40",

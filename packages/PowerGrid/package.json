@@ -15,7 +15,7 @@
   "dependencies": {
     "datagrok-tools": "latest",
     "@datagrok-libraries/gridext": "^1.3.68",
-    "@datagrok-libraries/utils": "^4.2.13",
+    "@datagrok-libraries/utils": "^4.2.29",
     "@types/wu": "latest",
     "cash-dom": "latest",
     "datagrok-api": "../../js-api",
