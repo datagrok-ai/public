@@ -1,7 +1,13 @@
 # Datagrok-tools changelog
 
 
-## 4.13.15 (2024-08-09)
+## 4.13.16 (2024-08-23)
+
+### Features
+
+* Grok link fixes
+
+## 4.13.15 (2024-08-21)
 
 ### Features
 

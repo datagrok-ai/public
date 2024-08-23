@@ -41,17 +41,23 @@ function collectPackagesData(packagePath: string = curDir): string[] {
   const packageJsonPath = path.join(packagePath, 'package.json');
   const json = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
   let result: string[] = [];
-  let dependencies = json.dependencies;
+  result = result.concat(collectPacakgeDataFromJsonObject(json.dependencies));
   if (devMode)
-    dependencies = json.devDependencies;
-  for (let dependencyName of Object.keys(dependencies)) {
+    result = result.concat(collectPacakgeDataFromJsonObject(json.devDependencies));
+  console.log(JSON.stringify(result).toString())
+  return result;
+}
+
+function collectPacakgeDataFromJsonObject(object: any): string[] { 
+  let result: string[] = [];
+  for (let dependencyName of Object.keys(object)) {
     let nameSplitted = dependencyName.split('/');
     if (dependencyName === apiPackageName)
       result = result.concat(parsePackageDependencies(dependencyName, apiDir));
     else if (dependencyName.includes(libName))
       result = result.concat(parsePackageDependencies(dependencyName, path.join(libDir, nameSplitted[nameSplitted.length - 1])));
     else if (dependencyName.includes(packageName))
-      result = result.concat(parsePackageDependencies(dependencyName, path.join(packageDir, toCamelCase(nameSplitted[nameSplitted.length - 1]))));
+      result = result.concat(parsePackageDependencies(dependencyName, path.join(packageDir, toCamelCase(nameSplitted[nameSplitted.length - 1])))); 
   }
   return result;
 }
@@ -83,8 +89,7 @@ async function linkPackages() {
 
     for (let element of mapElements) {
       await runScript(`npm install`, element.packagePath);
-      for (let dependency of element.dependencies)
-        await runScript(`npm link ${dependency}`, element.packagePath);
+      await runScript(`npm link ${element.dependencies.join(' ')}`, element.packagePath);
       await runScript(`npm link`, element.packagePath);
       packagesToLink.delete(element.name);
       anyChanges = true;
@@ -96,9 +101,7 @@ async function linkPackages() {
 
   let names = localPackageDependencies.map(x => x.name);
   await runScript(`npm install`, curDir);
-  for (let name of names) {
-    await runScript(`npm link ${name}`, curDir);
-  }
+  await runScript(`npm link ${names.join(' ')}`, curDir);
 }
 
 async function runScript(script: string, path: string) {
