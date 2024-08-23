@@ -11,10 +11,7 @@ import {
 } from '@datagrok-libraries/bio/src/utils/const';
 import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
 
-
-import {
-  AmbiguousWebEditorMonomer, GapWebEditorMonomer, getRS, MissingWebEditorMonomer
-} from './get-monomer-dummy';
+import {AmbiguousWebEditorMonomer, GapWebEditorMonomer, getRS, MissingWebEditorMonomer} from './get-monomer-dummy';
 import {LibraryWebEditorMonomer} from './get-monomer-of-library';
 import {OrgHelmModule, ScilModule} from '../types';
 import {RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from '../constants';
@@ -59,6 +56,8 @@ export function getMonomerOverrideAndLogAlert(
 export function getMonomerHandleArgs(
   a: Atom<HelmType> | HelmType, name?: string
 ): [/** biotype */ HelmType, /** elem */ string] {
+  if (!a)
+    throw new Error(`Argument 'a' of type Atom or HelmType is mandatory.`);
   let biotype: HelmType;
   let elem: string;
   if ((a as Atom<HelmType>).T === 'ATOM') {

@@ -1,13 +1,25 @@
 # Datagrok-tools changelog
 
 
-## 4.13.13 (2024-08-09)
+## 4.13.16 (2024-08-23)
+
+### Features
+
+* Grok link fixes
+
+## 4.13.15 (2024-08-21)
+
+### Features
+
+* Grok link updated to link all dependent libs 
+
+## 4.13.14 (2024-08-09)
 
 ### Features
 
 * Timeout update for test runs up to 1 hour
 
-## 4.13.12 (2024-08-09)
+## 4.13.13 (2024-08-09)
 
 ### Features
 

@@ -21,9 +21,9 @@ import {_setPeptideColumn} from './polytool/utils';
 import {PolyToolCsvLibHandler} from './polytool/csv-to-json-monomer-lib-converter';
 import {ITranslationHelper} from './types';
 import {addContextMenuUI} from './utils/context-menu';
-import { NOTATION } from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 
-export const _package: OligoToolkitPackage = new OligoToolkitPackage();
+export const _package: OligoToolkitPackage = new OligoToolkitPackage(/*{debug: true}/**/);
 
 //name: Oligo Toolkit
 //meta.icon: img/icons/toolkit.png
@@ -169,7 +169,7 @@ export async function polyToolConvert(): Promise<void> {
 //name: polyToolEnumerateHelm
 //description: Perform cyclization of polymers
 export async function polyToolEnumerateHelm(): Promise<void> {
-  polyToolEnumerateHelmUI();
+  await polyToolEnumerateHelmUI();
 }
 
 //top-menu: Bio | Convert | PolyTool-Enumerate Chem
@@ -213,7 +213,7 @@ export function addContextMenu(event: DG.EventData): void {
 // export async function ptConverterApp(): Promise<void> {
 //   const view = grok.shell.v as DG.TableView;
 //   const table = view.dataFrame;
-//   const colNames = table.columns.names(); 
+//   const colNames = table.columns.names();
 //   let covertableName = '';
 
 //   for (let i = 0; i < colNames.length; i++) {
@@ -229,7 +229,7 @@ export function addContextMenu(event: DG.EventData): void {
 //   else {
 //     const dialog = await getPolyToolConversionDialog();
 //     dialog.show();
-//   }  
+//   }
 // }
 
 //name: PolyTool Enumerator Helm
@@ -237,7 +237,7 @@ export function addContextMenu(event: DG.EventData): void {
 //meta.browsePath: PolyTool
 //tags: app
 export async function ptEnumeratorHelmApp(): Promise<void> {
-  polyToolEnumerateHelmUI();
+  await polyToolEnumerateHelmUI();
 }
 
 //name: PolyTool Enumerator Chem

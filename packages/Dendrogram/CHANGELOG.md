@@ -1,5 +1,9 @@
 # Dendrogram changelog
 
+## 1.2.31 (2024-08-19)
+
+Fix Hierarchical clustering namings.
+
 ## 1.2.30 (2024-07-23)
 
 Bump dependencies versions, datagrok-api to 1.20.0

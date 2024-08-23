@@ -1,0 +1,29 @@
+{
+  "$schema": "../schemas/monomer-set-schema.json",
+  "description": "RNA sugar types",
+  "placeholders": {
+    "r:pentose": {
+      "description": "Five-carbon sugars in ribonucleic acids backbone",
+      "monomerType": "Backbone",
+      "polymerType": "RNA",
+      "set": [
+        {
+          "source": "HELMCoreLibrary.json",
+          "symbol": "r",
+          "notes": "ribose"
+        },
+        {
+          "source": "HELMCoreLibrary.json",
+          "symbol": "d",
+          "notes": "deoxyribose"
+        }
+      ]
+    },
+    "r:hexose": {
+      "description": "Six-carbon sugars in ribonucleic acids backbone",
+      "monomerType": "Backbone",
+      "polymerType": "RNA",
+      "set": []
+    }
+  }
+}

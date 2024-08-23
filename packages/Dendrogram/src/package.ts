@@ -273,21 +273,21 @@ export async function previewNewick(file: DG.FileInfo) {
 // -- Top menu --
 
 //top-menu: Bio | Analyze | Hierarchical Clustering...
-//name: Hierarchical Clustering
+//name: Hierarchical Clustering (Sequences)
 //description: Calculates hierarchical clustering on features and injects tree to grid
 export async function hierarchicalClusteringSequences(): Promise<void> {
   hierarchicalClusteringDialog();
 }
 
 //top-menu: Chem | Analyze | Hierarchical Clustering...
-//name: Hierarchical Clustering
+//name: Hierarchical Clustering (Molecules)
 //description: Calculates hierarchical clustering on features and injects tree to grid
 export async function hierarchicalClusteringMolecules(): Promise<void> {
   hierarchicalClusteringDialog();
 }
 
 //top-menu: ML | Cluster | Hierarchical Clustering...
-//name: Hierarchical Clustering
+//name: Hierarchical Clustering (All)
 //description: Calculates hierarchical clustering on features and injects tree to grid
 export async function hierarchicalClustering2(): Promise<void> {
   hierarchicalClusteringDialog();

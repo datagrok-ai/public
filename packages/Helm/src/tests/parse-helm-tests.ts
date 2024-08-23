@@ -11,11 +11,12 @@ import {
   getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 
-import {JSDraw2HelmModule} from '../types';
+import {JSDraw2Module} from '../types';
 import {initHelmMainPackage} from './utils';
+import {IHelmDrawOptions} from '@datagrok-libraries/helm-web-editor/src/types/org-helm';
 
 declare const org: OrgType;
-declare const JSDraw2: JSDraw2HelmModule;
+declare const JSDraw2: JSDraw2Module;
 
 type TestTgtType = { atomCount: number, bondCount: number };
 
@@ -47,12 +48,12 @@ category('parseHelm', () => {
     await setUserLibSettingsForTests();
     await timeout(async () => { await libHelper.awaitLoaded(); }, 5000,
       'await monomerLib to be loaded');
-    await libHelper.loadLibraries(true);
+    await libHelper.loadMonomerLib(true);
   });
 
   after(async () => {
     await setUserLibSettings(userLibSettings);
-    await libHelper.loadLibraries(true);
+    await libHelper.loadMonomerLib(true);
   });
 
   for (const [testName, {src, tgt}] of Object.entries(testData)) {
@@ -72,11 +73,11 @@ function _testParseHelmWithEditor(src: string, tgt: TestTgtType): void {
   const io = org.helm.webeditor.IO;
 
   const editorHost = ui.div();
-  const editor = new JSDraw2.Editor(editorHost, {viewonly: true});
+  const editor = new JSDraw2.Editor<HelmType, IHelmDrawOptions>(editorHost, {viewonly: true});
 
   const plugin = new org.helm.webeditor.Plugin(editor);
   const origin = new JSDraw2.Point(0, 0);
-  io.parseHelm(plugin, src, origin, null);
+  io.parseHelm(plugin, src, origin, undefined);
 
   const m: Mol<HelmType> = plugin.jsd.m;
   expect(m.atoms.length, tgt.atomCount);
@@ -86,11 +87,11 @@ function _testParseHelmWithEditor(src: string, tgt: TestTgtType): void {
 function _testParseHelmWithoutDOM(src: string, tgt: TestTgtType): void {
   const io = org.helm.webeditor.IO;
 
-  const molHandler = new JSDraw2.MolHandler();
+  const molHandler = new JSDraw2.MolHandler<HelmType>();
 
   const plugin = new org.helm.webeditor.Plugin(molHandler);
   const origin = new JSDraw2.Point(0, 0);
-  io.parseHelm(plugin, src, origin, null);
+  io.parseHelm(plugin, src, origin, undefined);
 
   const m: Mol<HelmType> = plugin.jsd.m;
   expect(m.atoms.length, tgt.atomCount);

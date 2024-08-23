@@ -34,6 +34,9 @@ import {getLinearRegressionParams, getPredictionByLinearRegression} from './regr
 import {PlsModel} from './pls/pls-ml';
 import {SoftmaxClassifier} from './softmax-classifier';
 
+import {initXgboost} from '../wasm/xgbooster';
+import {XGBooster} from './xgbooster';
+
 export const _package = new DG.Package();
 
 //name: info
@@ -44,6 +47,7 @@ export function info() {
 //tags: init
 export async function init(): Promise<void> {
   await _initEDAAPI();
+  await initXgboost();
 }
 
 //top-menu: ML | Cluster | DBSCAN...
@@ -258,6 +262,7 @@ export async function MCLInitializationFunction(sc: DG.ScatterPlotViewer) {
   const options: MCLSerializableOptions = JSON.parse(mclTag);
   const cols = options.cols.map((colName) => df.columns.byName(colName));
   const preprocessingFuncs = options.preprocessingFuncs.map((funcName) => funcName ? DG.Func.byName(funcName) : null);
+
   const res = await markovCluster(df, cols, options.metrics, options.weights,
     options.aggregationMethod, preprocessingFuncs, options.preprocessingFuncArgs, options.threshold,
     options.maxIterations, options.useWebGPU, options.inflate, options.minClusterSize, sc);
@@ -683,11 +688,12 @@ export function isInteractiveSoftmax(df: DG.DataFrame, predictColumn: DG.Column)
 export async function trainPLSRegression(df: DG.DataFrame, predictColumn: DG.Column, components: number): Promise<Uint8Array> {
   const features = df.columns;
 
-  if (components > features.length)
-    throw new Error('Number of components is greater than features count');
-
   const model = new PlsModel();
-  await model.fit(features, predictColumn, components);
+  await model.fit(
+    features,
+    predictColumn,
+    Math.min(components, features.length),
+  );
 
   return model.toBytes();
 }
@@ -736,4 +742,56 @@ export async function visualizePLSRegression(df: DG.DataFrame, targetColumn: DG.
 //output: bool result
 export function isInteractivePLSRegression(df: DG.DataFrame, predictColumn: DG.Column): boolean {
   return PlsModel.isInteractive(df.columns, predictColumn);
+}
+
+//name: trainXGBooster
+//meta.mlname: XGBoost
+//meta.mlrole: train
+//input: dataframe df
+//input: column predictColumn
+//input: int iterations = 20 {min: 1; max: 100} [Number of training iterations]
+//input: double eta = 0.3 {caption: Rate; min: 0; max: 1} [Learning rate]
+//input: int maxDepth = 6 {min: 0; max: 20} [Maximum depth of a tree]
+//input: double lambda = 1 {min: 0; max: 100} [L2 regularization term]
+//input: double alpha = 0 {min: 0; max: 100} [L1 regularization term]
+//output: dynamic model
+export async function trainXGBooster(df: DG.DataFrame, predictColumn: DG.Column,
+  iterations: number, eta: number, maxDepth: number, lambda: number, alpha: number): Promise<Uint8Array> {
+  const features = df.columns;
+
+  const booster = new XGBooster();
+  await booster.fit(features, predictColumn, iterations, eta, maxDepth, lambda, alpha);
+
+  return booster.toBytes();
+}
+
+//name: applyXGBooster
+//meta.mlname: XGBoost
+//meta.mlrole: apply
+//input: dataframe df
+//input: dynamic model
+//output: dataframe table
+export function applyXGBooster(df: DG.DataFrame, model: any): DG.DataFrame {
+  const unpackedModel = new XGBooster(model);
+  return DG.DataFrame.fromColumns([unpackedModel.predict(df.columns)]);
+}
+
+//name: isInteractiveXGBooster
+//meta.mlname: XGBoost
+//meta.mlrole: isInteractive
+//input: dataframe df
+//input: column predictColumn
+//output: bool result
+export function isInteractiveXGBooster(df: DG.DataFrame, predictColumn: DG.Column): boolean {
+  return XGBooster.isInteractive(df.columns, predictColumn);
+}
+
+//name: isApplicableXGBooster
+//meta.mlname: XGBoost
+//meta.mlrole: isApplicable
+//input: dataframe df
+//input: column predictColumn
+//output: bool result
+export function isApplicableXGBooster(df: DG.DataFrame, predictColumn: DG.Column): boolean {
+  return XGBooster.isApplicable(df.columns, predictColumn);
 }

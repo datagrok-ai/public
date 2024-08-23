@@ -40,7 +40,7 @@
     "link-api": "npm link datagrok-api",
     "link-all": "npm link datagrok-api",
     "build-math": "git clean -f -X -d ./src && tsc",
-    "build": "git clean -f -X -d ./src && tsc",
+    "build": "tsc",
     "lint": "eslint \"./src/**/*.ts\"",
     "lint-fix": "eslint \"./src/**/*.ts\" --fix"
   }

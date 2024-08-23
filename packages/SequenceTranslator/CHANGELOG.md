@@ -1,5 +1,21 @@
 # Sequence Translator changelog
 
+## 1.13.13 (2024-08-19)
+
+### Bug fixes
+
+* Fix PolyTool Enumerate dialog hanging on monomer click
+
+## 1.13.12 (2024-08-16)
+
+PolyTool Enumerator Single and Matrix, dialog, tests
+
+## Bug fixes
+
+* PolyTool Enumerator dialog grid input for placeholders, to atomic level option
+* PolyTool Enumerator dialog mouse interactivity, to atomic level, dialog size
+* PolyTool Enumerator dialog size and fit molecule input
+
 ## 1.3.11 (2024-07-31)
 
 ### Features

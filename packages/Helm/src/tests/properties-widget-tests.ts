@@ -85,12 +85,12 @@ category('properties-widget', () => {
     await setUserLibSettingsForTests();
     await timeout(async () => { await monomerLibHelper.awaitLoaded(); },
       5000, 'MonomerLibHelper.awaitLoaded() timeout');
-    await monomerLibHelper.loadLibraries(true); // load default libraries
+    await monomerLibHelper.loadMonomerLib(true); // load default libraries
   });
 
   after(async () => {
     await setUserLibSettings(userLibSettings);
-    await monomerLibHelper.loadLibraries(true); // load user settings libraries
+    await monomerLibHelper.loadMonomerLib(true); // load user settings libraries
   });
 
   for (const [testName, testData] of Object.entries(TestsData)) {

@@ -47,8 +47,17 @@ export class CruddyFilterCategorical extends CruddyFilter {
 
   constructor(entityType: DbEntityType, filter: IFilterDescription) {
     super(entityType, filter);
+    const tableColumn = filter.column.split('.');
+    const tableName = tableColumn.length == 1 ? entityType.table.name : tableColumn[0];
+
+    const sql =
+      `select ${filter.column}, count(${filter.column}) 
+from ${tableName} 
+group by ${filter.column}
+order by count(${filter.column}) desc`;
+
     entityType.crud
-      .query(`select ${filter.column}, count(${filter.column}) from ${entityType.table.name} group by ${filter.column}`)
+      .query(sql)
       //.read({}, { distinct: true, columnNames: [filter.column]})
       .then((df) => {
         this.choices = ui.input.multiChoice('values', {value: [], items: df.columns.byIndex(0).toList()});
