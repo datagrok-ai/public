@@ -55,12 +55,18 @@
           "name": "in1",
           "segments": [
             {
-              "id": "step1",
-              "selector": "last"
+              "ids": [
+                "step1"
+              ],
+              "selector": "first",
+              "stopIds": []
             },
             {
-              "id": "res",
-              "selector": "last"
+              "ids": [
+                "res"
+              ],
+              "selector": "first",
+              "stopIds": []
             }
           ]
         }
@@ -70,12 +76,18 @@
           "name": "out1",
           "segments": [
             {
-              "id": "step2",
-              "selector": "first"
+              "ids": [
+                "step2"
+              ],
+              "selector": "first",
+              "stopIds": []
             },
             {
-              "id": "a",
-              "selector": "first"
+              "ids": [
+                "a"
+              ],
+              "selector": "first",
+              "stopIds": []
             }
           ]
         }

@@ -19,24 +19,22 @@ export class BaseTree<T> {
 
   public traverse = buildTraverseD([] as NodePath, (item: TreeNode<T>, path: NodePath) => item.getChildren().map(({id, item}, idx) => [item, [...path, {id, idx}] as NodePath] as const));
 
-  public static isNodeAddressEq(originNode: Readonly<NodeAddress>, currentNode: Readonly<NodeAddress>): boolean {
-    for (const [level, {idx}] of originNode.entries()) {
-      const idx2 = currentNode[level]?.idx;
+  public static isNodeAddressEq(a1: Readonly<NodeAddress>, a2: Readonly<NodeAddress>): boolean {
+    for (const [level, {idx}] of a1.entries()) {
+      const idx2 = a2[level]?.idx;
       if (idx !== idx2)
         return false;
     }
-    if (originNode.length !== currentNode.length)
+    if (a1.length !== a2.length)
       return false;
     return true;
   }
 
-  public static isNodeAddressPrefix(originNode: Readonly<NodeAddress>, currentNode: Readonly<NodeAddress>, levels: number): boolean {
-    for (const [level, {idx}] of originNode.entries()) {
-      const idx2 = currentNode[level]?.idx;
+  public static isNodeChild(path: Readonly<NodeAddress>, nodeAddress: Readonly<NodeAddress>): boolean {
+    for (const [level, {idx}] of path.entries()) {
+      const idx2 = nodeAddress[level]?.idx;
       if (idx !== idx2)
         return false;
-      if (level === levels)
-        break;
     }
     return true;
   }
@@ -141,18 +139,6 @@ export class TreeNode<T> {
 class PositionedMap<T> {
   public data: {item: T, id: string}[] = [];
 
-  public getLastItemById(id: string) {
-    const idx = this.findLastIndex(id);
-    if (idx > 0)
-      return this.data[idx]?.item;
-  }
-
-  public getFirstItemById(id: string) {
-    const idx = this.findIndex(id);
-    if (idx > 0)
-      return this.data[idx]?.item;
-  }
-
   public getItemByIndex(idx: number) {
     return this.data[idx]?.item;
   }
@@ -167,32 +153,8 @@ class PositionedMap<T> {
     return item;
   }
 
-  public removeLastItemById(id: string) {
-    const currentIndex = this.findLastIndex(id);
-    if (currentIndex < 0)
-      throw new Error(`PositionedMap: Removing non-existent id: ${id}`);
-    const [removedItem] = this.data.splice(currentIndex, 1);
-    return removedItem.item!;
-  }
-
-  public removeFirstItemById(id: string) {
-    const currentIndex = this.findIndex(id);
-    if (currentIndex < 0)
-      throw new Error(`PositionedMap: Removing non-existent id: ${id}`);
-    const [removedItem] = this.data.splice(currentIndex, 1);
-    return removedItem.item!;
-  }
-
   public removeItemByIndex(idx: number) {
     const [removedItem] = this.data.splice(idx, 1);
     return removedItem?.item;
-  }
-
-  private findIndex(targetId: string) {
-    return this.data.findIndex(({id}) => id === targetId);
-  }
-
-  private findLastIndex(targetId: string) {
-    return this.data.findLastIndex(({id}) => id === targetId);
   }
 }

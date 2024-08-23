@@ -1,11 +1,11 @@
 import {isNonRefSelector, LinkNonRefSelectors, LinkParsed, LinkRefSelectors, refSelectorAdjacent, refSelectorAll, refSelectorDirection, refSelectorFindOne} from '../config/LinkSpec';
 import {PipelineLinkConfigurationBase} from '../config/PipelineConfiguration';
-import { isFuncCallState } from '../config/PipelineInstance';
+import {isFuncCallState} from '../config/PipelineInstance';
 import {BaseTree, NodePath, TreeNode} from '../data/BaseTree';
 import {buildTraverseD} from '../data/graph-traverse-utils';
 import {indexFromEnd} from '../utils';
 import {StateTree} from './StateTree';
-import { isFuncCallNode, StateTreeNode} from './StateTreeNodes';
+import {isFuncCallNode, StateTreeNode} from './StateTreeNodes';
 
 export type LinkSpec = PipelineLinkConfigurationBase<LinkParsed[]>;
 
@@ -65,8 +65,8 @@ function expandLinkBase(rnode: TreeNode<StateTreeNode>, baseLink: LinkParsed) {
     const segment = baseLink.segments[level!];
     if (!segment)
       return [] as const;
-    const {selector, id} = segment;
-    const nextNodes = matchNonRefSegment(pnode, id, selector as LinkNonRefSelectors);
+    const {selector, ids} = segment;
+    const nextNodes = matchNonRefSegment(pnode, ids, selector as LinkNonRefSelectors);
     return nextNodes.map(([idx, node]) => [node.item, [...path, {id: node.id, idx}], level!+1] as const);
   }, 0);
 
@@ -85,9 +85,9 @@ function matchLinkIO(rnode: TreeNode<StateTreeNode>, currentIO: Record<string, M
     const segment = parsedLink.segments[level!];
     if (!segment)
       return [] as const;
-    const {ref, selector, id, args} = segment;
+    const {ref, selector, ids, stopIds} = segment;
     if (isNonRefSelector(selector)) {
-      const nextNodes = matchNonRefSegment(pnode, id, selector);
+      const nextNodes = matchNonRefSegment(pnode, ids, selector);
       return nextNodes.map(([idx, node]) => [node.item, [...path, {id: node.id, idx}], level!+1] as const);
     } else {
       let originIdx = undefined;
@@ -97,12 +97,11 @@ function matchLinkIO(rnode: TreeNode<StateTreeNode>, currentIO: Record<string, M
         if (io == null)
           throw new Error(`Node ${rnode.getItem().config.id} referenced unknown io ${ref} in ${parsedLink.name}`);
         const refOrigin = selDirection === 'before' ? io[0] : indexFromEnd(io)!;
-        if (!BaseTree.isNodeAddressPrefix(refOrigin.path, path, level!))
-          throw new Error(`Node ${rnode.getItem().config.id} reference path ${JSON.stringify(refOrigin)} is different from current ${JSON.stringify(path)}`);
+        if (!BaseTree.isNodeChild(path, refOrigin.path))
+          throw new Error(`Node ${rnode.getItem().config.id} reference path ${JSON.stringify(refOrigin.path)} is different from current ${JSON.stringify(path)}`);
         originIdx = refOrigin.path[level!].idx;
       }
-      const stopIds = (args) ? new Set(segment.args) : undefined;
-      const nextNodes = matchRefSegment(pnode, segment.id, selector, originIdx, stopIds);
+      const nextNodes = matchRefSegment(pnode, ids, selector, originIdx, stopIds);
       return nextNodes.map(([idx, node]) => [node.item, [...path, {id: node.id, idx}], level!+1] as const);
     }
   }, 0);
@@ -110,11 +109,11 @@ function matchLinkIO(rnode: TreeNode<StateTreeNode>, currentIO: Record<string, M
   const paths = traverse(rnode, (acc, node, path) => {
     if (path.length === parsedLink.segments.length - 1) {
       const ioSegment = indexFromEnd(parsedLink.segments)!;
-      const ioName = ioSegment.id;
+      const ioName = ioSegment.ids[0];
       const item = node.getItem();
       if (isFuncCallNode(item)) {
         const io = item.config.io!;
-        const idx = io.findIndex(ioItem => ioItem.id === ioSegment.id);
+        const idx = io.findIndex((ioItem) => ioItem.id === ioSegment.ids[0]);
         if (idx >= 0)
           return [...acc, {path, ioName}] as const;
       }
@@ -125,11 +124,12 @@ function matchLinkIO(rnode: TreeNode<StateTreeNode>, currentIO: Record<string, M
   return paths;
 }
 
-function matchNonRefSegment(pnode: TreeNode<StateTreeNode>, id: string, selector: LinkNonRefSelectors) {
-  const matchingNodes = [...pnode.getChildren().entries()].filter(([, c]) => c.id === id);
+function matchNonRefSegment(pnode: TreeNode<StateTreeNode>, ids: string[], selector: LinkNonRefSelectors) {
+  const idsSet = new Set(ids);
+  const matchingNodes = [...pnode.getChildren().entries()].filter(([, c]) => idsSet.has(c.id));
   if (matchingNodes.length === 0)
     return [];
-  if (selector === 'all')
+  if (selector === 'all' || selector === 'expand')
     return matchingNodes;
   if (selector === 'first')
     return [matchingNodes[0]];
@@ -138,14 +138,16 @@ function matchNonRefSegment(pnode: TreeNode<StateTreeNode>, id: string, selector
   throw new Error(`Unknown segement mode ${selector}`);
 }
 
-function matchRefSegment(pnode: TreeNode<StateTreeNode>, id: string, selector: LinkRefSelectors, originIdx?: number, stopIds?: Set<string>) {
+function matchRefSegment(pnode: TreeNode<StateTreeNode>, ids: string[], selector: LinkRefSelectors, originIdx?: number, stopIds?: string[]) {
+  const idsSet = new Set(ids);
+  const stopSet = new Set(stopIds);
   const allNodeEntries = [...pnode.getChildren().entries()];
 
   if (selector === 'same') {
     if (originIdx == null)
       return [];
     const target = allNodeEntries[originIdx];
-    if (target[1].id === id)
+    if (idsSet.has(target[1].id))
       return [target];
     return [];
   }
@@ -156,18 +158,18 @@ function matchRefSegment(pnode: TreeNode<StateTreeNode>, id: string, selector: L
     allNodeEntries.filter(([idx]) => selDirection === 'before' ? idx < originIdx : idx > originIdx);
 
   let matchingNodes = partitionedByOrigin;
-  if (stopIds?.size) {
+  if (stopSet?.size) {
     if (selDirection === 'before') {
-      const startIdx = partitionedByOrigin.findLastIndex(([, node]) => stopIds.has(node.id));
+      const startIdx = partitionedByOrigin.findLastIndex(([, node]) => stopSet.has(node.id));
       if (startIdx >= 0)
         matchingNodes = partitionedByOrigin.slice(startIdx+1);
     } else {
-      const stopIdx = partitionedByOrigin.findIndex(([, node]) => stopIds.has(node.id));
+      const stopIdx = partitionedByOrigin.findIndex(([, node]) => stopSet.has(node.id));
       if (stopIdx >= 0)
         matchingNodes = partitionedByOrigin.slice(0, stopIdx);
     }
   }
-  matchingNodes = matchingNodes.filter(([, c]) => c.id === id);
+  matchingNodes = matchingNodes.filter(([, c]) => idsSet.has(c.id));
 
   if (matchingNodes.length === 0)
     return [];

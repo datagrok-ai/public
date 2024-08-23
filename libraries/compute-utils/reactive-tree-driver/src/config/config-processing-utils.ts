@@ -148,17 +148,17 @@ function processHooks(hooksInput: PipelineHooks<LinkSpecString>) {
 }
 
 function processLinkData<L extends Partial<PipelineLinkConfigurationBase<LinkSpecString>>>(link: L) {
-  const from = processLink(link.from ?? [], false, true);
-  const to = processLink(link.to ?? [], false, false);
-  const base = processLink(link.base ?? [], true, false);
+  const from = processLink(link.from ?? [], 'input');
+  const to = processLink(link.to ?? [], 'output');
+  const base = processLink(link.base ?? [], 'base');
   return {...link, from, to, base};
 }
 
-function processLink(io: LinkSpecString, isBase: boolean, isInput: boolean) {
+function processLink(io: LinkSpecString, ioType: 'input' | 'output' | 'base') {
   if (Array.isArray(io))
-    return io.map((item) => parseLinkIO(item, isBase, isInput));
+    return io.map((item) => parseLinkIO(item, ioType));
   else if (io)
-    return [parseLinkIO(io, isBase, isInput)];
+    return [parseLinkIO(io, ioType)];
   else
     return [];
 }

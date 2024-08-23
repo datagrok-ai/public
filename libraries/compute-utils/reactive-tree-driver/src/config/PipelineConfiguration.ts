@@ -1,5 +1,5 @@
 import {Observable} from 'rxjs';
-import {IRuntimeController} from '../IRuntimeController';
+import {IRuntimeLinkController, IRuntimePipelineController, IRuntimeValidatorController} from '../RuntimeControllers';
 import {ItemId, NqName, RestrictionType, LinkSpecString} from '../data/common-types';
 import {StepParallelInitialConfig, StepSequentialInitialConfig} from './PipelineInstance';
 
@@ -27,9 +27,9 @@ export type PipelineSelfRef = {
 
 export type LoadedPipeline = (PipelineConfigurationStaticInitial | PipelineConfigurationParallelInitial | PipelineConfigurationSequentialInitial) & LoadedPipelineToplevelNode;
 
+export type IRuntimeController = IRuntimeLinkController | IRuntimePipelineController | IRuntimeValidatorController;
 export type HandlerBase<P, R> = ((params: P) => Promise<R> | Observable<R>) | NqName;
 export type Handler = HandlerBase<{ controller: IRuntimeController }, void>;
-export type SelectorKeyExtractor = HandlerBase<{ controller: IRuntimeController }, string>;
 export type PipelineProvider = HandlerBase<{ version?: string }, LoadedPipeline>;
 
 // link-like
@@ -124,7 +124,6 @@ export type AbstractPipelineStaticConfiguration<P, S, R> = {
 export type ParallelItemContext<P> = {
   disableUIAdding?: boolean;
   selectorPath?: P;
-  selectorExtractor?: SelectorKeyExtractor;
 };
 
 export type PipelineParallelItem<P, S, R> = ((PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | R) & ParallelItemContext<P>);
