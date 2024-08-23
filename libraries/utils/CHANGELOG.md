@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.2.29 (2024-08-23)
+
+Fixed test reporting
+
 ## 4.2.28 (2024-08-21)
 
 Forms viewer: Fixed color coding bug (incorrect indexing if dataframe is filtered or sorted)
