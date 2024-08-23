@@ -60,6 +60,6 @@
    * log scale + invert axes + slider + Layout
 ---
 {
-  "order": 2
-    "datasets": ["System:DemoFiles/SPGI.csv"]
+  "order": 2,
+  "datasets": ["System:DemoFiles/SPGI.csv"]
 }

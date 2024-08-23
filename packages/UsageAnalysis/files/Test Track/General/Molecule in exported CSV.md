@@ -13,6 +13,6 @@
 * **Expected Results**: All selected columns are exported, and the 'Structure' column is correctly exported as SMILES.
 ---
 {
-  "order": 5
+  "order": 5,
   "datasets": ["System:DemoFiles/SPGI.csv"]
 }

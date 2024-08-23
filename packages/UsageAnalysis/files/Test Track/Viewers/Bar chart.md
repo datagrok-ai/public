@@ -45,6 +45,6 @@
 
 ---
 {
-  "order": 3
+  "order": 3,
   "datasets": ["System:DemoFiles/SPGI.csv"]
 }

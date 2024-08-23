@@ -48,6 +48,6 @@ Expected Results:
   * **Expected results**: number of selected columns in properties should be updated immediately on adding or removing a column.
 ---
 {
-  "order": 13
+  "order": 13,
   "datasets": ["System:DemoFiles/demog.csv","System:DemoFiles/SPGI.csv"]
 }

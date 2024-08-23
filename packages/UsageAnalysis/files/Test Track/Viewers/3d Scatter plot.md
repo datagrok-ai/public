@@ -11,6 +11,6 @@
 
 ---
 {
-  "order": 21
+  "order": 21,
   "datasets": ["System:DemoFiles/demog.csv"]
 }

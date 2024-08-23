@@ -13,6 +13,6 @@
 
 ---
 {
-  "order": 20
+  "order": 20,
   "datasets": ["System:DemoFiles/SPGI.csv"]
 }
