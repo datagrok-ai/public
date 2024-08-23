@@ -18,7 +18,7 @@ dependencies:
   - gunicorn
   - Flask
   - chemprop=2.0.4
-  - mkl=2024.0.0
+  - mkl
   - cuda-version=11.8
   - cudatoolkit=11.8
   - cuDNN
