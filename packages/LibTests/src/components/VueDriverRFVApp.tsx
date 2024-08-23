@@ -66,7 +66,6 @@ export const VueDriverRFVApp = defineComponent({
             <Draggable 
               class="mtl-tree"
               rootDroppable={false}
-              style={{paddingLeft: '20px'}}
               treeLine
               childrenKey='steps'
 
