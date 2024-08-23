@@ -11,7 +11,6 @@ export const TabArea = defineComponent({
     }
   },
   setup(props, {slots}){
-    console.log(slots.default?.(), ' in tabArea');
     return () => (
       <div class={'d4-tab-content ui-box'}>
         { slots.default?.().at(props.selectedIdx) ?? null }
