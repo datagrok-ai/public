@@ -11,7 +11,9 @@ const COMPUTATION_TIME_UNITS = 'sec';
 export enum HINT {
   HELP = 'Open help in a new tab',
   OPEN = 'Open model',
+  SAVE_MODEL = 'Save model',
   SAVE_LOC = 'Save model to local file',
+  SAVE_MY = 'Save model to My files',
   LOAD = 'Load model from local file',
   BASIC = 'Basic template',
   ADV = 'Advanced template',
@@ -35,13 +37,17 @@ export enum HINT {
   CONTINUE = 'Continue computations',
   ABORT = 'Abort computations',
   MAX_TIME = `Max computation time, ${COMPUTATION_TIME_UNITS}.`,
-};
+}; // HINT
 
 /** UI titles */
 export enum TITLE {
-  SAVE_DOTS = 'Save...',
   LOAD = 'Load...',
   FROM_FILE = 'From file...',
+  SAVE_TO = 'Save to',
+  LOCAL_FILE = 'Local file...',
+  MY_FILES = 'My files...',
+  TO_MY_FILES = 'Save to My Files...',
+  AS_LOCAL = 'Save as Local File...',
   TEMPL = 'Templates',
   BASIC = 'Basic',
   ADV = 'Advanced',
@@ -70,6 +76,8 @@ export enum TITLE {
   SAVE = 'Save',
   APPS = 'Apps',
   DIF_ST = 'Diff Studio',
+  NAME = 'Name',
+  TYPE = 'Type',
 };
 
 /** Titles of template models */
@@ -131,22 +139,25 @@ export enum ERROR_MSG {
   FITTING_FAILS = 'Fitting fails',
 };
 
+/** Other UI constants */
+export enum MISC {
+  VIEW_DEFAULT_NAME = 'Template',
+  IVP_EXT = 'ivp',
+  TXT_EXT = 'txt',
+  FILE_DEFAULT_NAME = `equations.${IVP_EXT}`,
+};
+
 /** Warning dialog lines */
 export enum WARNING {
   TITLE = 'WARNING',
   CHECK = 'Show this warning',
-  MES = 'Overwrite the current model?',
+  OVERWRITE_MODEL = 'Overwrite the current model?',
+  OVERWRITE_FILE = 'Overwrite existing file?',
   CONTINUE = 'Continue?',
   CHECK_PERF = 'Check time',
   TIME_LIM = 'Time limit',
   UNITS = COMPUTATION_TIME_UNITS,
-};
-
-/** Other UI constants */
-export enum MISC {
-  VIEW_DEFAULT_NAME = 'Template',
-  FILE_EXT = 'ivp',
-  FILE_DEFAULT_NAME = `equations.${FILE_EXT}`,
+  PREVIEW = `Model preview is unavailble for this type. Use "${MISC.IVP_EXT}" instead`,
 };
 
 /** Code completion infos */

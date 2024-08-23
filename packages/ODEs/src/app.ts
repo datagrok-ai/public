@@ -4,6 +4,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {_package} from './package';
+
 import {basicSetup, EditorView} from 'codemirror';
 import {EditorState} from '@codemirror/state';
 import {python} from '@codemirror/lang-python';
@@ -20,6 +22,7 @@ import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
   CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS} from './scripting-tools';
 import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools/solver-defs';
+import {unusedFileName} from './utils';
 
 import './css/app-styles.css';
 
@@ -361,6 +364,7 @@ export class DiffStudio {
   private runPane: DG.TabPane;
   private editorView: EditorView | undefined;
   private openMenu: DG.Menu;
+  private saveMenu: DG.Menu;
   private openIcon: HTMLElement;
   private saveIcon: HTMLElement;
   private helpIcon: HTMLElement;
@@ -414,32 +418,10 @@ export class DiffStudio {
         dockTabCtrl();
     }
 
-    this.openMenu = DG.Menu.popup()
-      .item(TITLE.FROM_FILE, async () => await this.overwrite(), undefined, {description: HINT.LOAD})
-      .group(TITLE.TEMPL)
-      .item(TITLE.BASIC, async () =>
-        await this.overwrite(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: HINT.BASIC},
-      )
-      .item(TITLE.ADV, async () =>
-        await this.overwrite(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: HINT.ADV},
-      )
-      .item(TITLE.EXT, async () =>
-        await this.overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT})
-      .endGroup()
-      .group(TITLE.EXAMP)
-      .item(TITLE.CHEM, async () => await this.overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM})
-      .item(TITLE.ROB, async () => await this.overwrite(EDITOR_STATE.ROBERT), undefined, {description: HINT.ROB})
-      .item(TITLE.FERM, async () => await this.overwrite(EDITOR_STATE.FERM), undefined, {description: HINT.FERM})
-      .item(TITLE.PK, async () => await this.overwrite(EDITOR_STATE.PK), undefined, {description: HINT.PK})
-      .item(TITLE.PKPD, async () => await this.overwrite(EDITOR_STATE.PKPD), undefined, {description: HINT.PKPD})
-      .item(TITLE.ACID, async () => await this.overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: HINT.ACID})
-      .item(TITLE.NIM, async () => await this.overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM})
-      .item(TITLE.BIO, async () => await this.overwrite(EDITOR_STATE.BIOREACTOR), undefined, {description: HINT.BIO})
-      .item(TITLE.POLL, async () => await this.overwrite(EDITOR_STATE.POLLUTION), undefined, {description: HINT.POLL})
-      .endGroup();
-
+    this.openMenu = this.getOpenMenu();
+    this.saveMenu = this.getSaveMenu();
     this.openIcon = ui.iconFA('folder-open', () => this.openMenu.show(), HINT.OPEN);
-    this.saveIcon = ui.iconFA('save', async () => {await this.saveFn();}, HINT.SAVE_LOC);
+    this.saveIcon = ui.iconFA('save', async () => this.saveMenu.show(), HINT.SAVE_MODEL);
     this.helpIcon = ui.iconFA('question', () => {window.open(LINK.DIF_STUDIO, '_blank');}, HINT.HELP);
     this.exportButton = ui.bigButton(TITLE.TO_JS, async () => {await this.exportToJS();}, HINT.TO_JS);
     this.sensAnIcon = ui.iconFA('analytics', async () => {await this.runSensitivityAnalysis();}, HINT.SENS_AN);
@@ -484,48 +466,90 @@ export class DiffStudio {
     if (toAddContextMenu) {
       this.editorView.dom.addEventListener<'contextmenu'>('contextmenu', (event) => {
         event.preventDefault();
-        DG.Menu.popup()
-          .item(TITLE.LOAD, async () => await this.overwrite(), undefined, {description: HINT.LOAD})
-          .item(TITLE.SAVE_DOTS, this.saveFn, undefined, {description: HINT.SAVE_LOC})
-          .separator()
-          .group(TITLE.TEMPL)
-          .item(TITLE.BASIC, async () =>
-            await this.overwrite(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: HINT.BASIC},
-          )
-          .item(TITLE.ADV, async () =>
-            await this.overwrite(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: HINT.ADV},
-          )
-          .item(TITLE.EXT, async () =>
-            await this.overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT},
-          )
-          .endGroup()
-          .group(TITLE.EXAMP)
-          .item(TITLE.CHEM, async () =>
-            await this.overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM},
-          )
-          .item(TITLE.ROB, async () => await this.overwrite(EDITOR_STATE.ROBERT), undefined, {description: HINT.ROB})
-          .item(TITLE.FERM, async () => await this.overwrite(EDITOR_STATE.FERM), undefined, {description: HINT.FERM})
-          .item(TITLE.PK, async () => await this.overwrite(EDITOR_STATE.PK), undefined, {description: HINT.PK})
-          .item(TITLE.PKPD, async () => await this.overwrite(EDITOR_STATE.PKPD), undefined, {description: HINT.PKPD})
-          .item(TITLE.ACID, async () =>
-            await this.overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: HINT.ACID},
-          )
-          .item(TITLE.NIM, async () =>
-            await this.overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM},
-          )
-          .item(TITLE.BIO, async () =>
-            await this.overwrite(EDITOR_STATE.BIOREACTOR), undefined, {description: HINT.BIO},
-          )
-          .item(TITLE.POLL, async () =>
-            await this.overwrite(EDITOR_STATE.POLLUTION), undefined, {description: HINT.POLL},
-          )
-          .endGroup()
-          .separator()
-          .item(TITLE.CLEAR, async () => await this.overwrite(EDITOR_STATE.EMPTY), undefined, {description: HINT.CLEAR})
-          .show();
+        this.showContextMenu();
       });
     }
   } // createEditorView
+
+  /** Return the open model menu */
+  private getOpenMenu(): DG.Menu {
+    return DG.Menu.popup()
+      .item(TITLE.FROM_FILE, async () => await this.overwrite(), undefined, {description: HINT.LOAD})
+      .group(TITLE.TEMPL)
+      .item(TITLE.BASIC, async () =>
+        await this.overwrite(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: HINT.BASIC},
+      )
+      .item(TITLE.ADV, async () =>
+        await this.overwrite(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: HINT.ADV},
+      )
+      .item(TITLE.EXT, async () =>
+        await this.overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT})
+      .endGroup()
+      .group(TITLE.EXAMP)
+      .item(TITLE.CHEM, async () => await this.overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM})
+      .item(TITLE.ROB, async () => await this.overwrite(EDITOR_STATE.ROBERT), undefined, {description: HINT.ROB})
+      .item(TITLE.FERM, async () => await this.overwrite(EDITOR_STATE.FERM), undefined, {description: HINT.FERM})
+      .item(TITLE.PK, async () => await this.overwrite(EDITOR_STATE.PK), undefined, {description: HINT.PK})
+      .item(TITLE.PKPD, async () => await this.overwrite(EDITOR_STATE.PKPD), undefined, {description: HINT.PKPD})
+      .item(TITLE.ACID, async () => await this.overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: HINT.ACID})
+      .item(TITLE.NIM, async () => await this.overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM})
+      .item(TITLE.BIO, async () => await this.overwrite(EDITOR_STATE.BIOREACTOR), undefined, {description: HINT.BIO})
+      .item(TITLE.POLL, async () => await this.overwrite(EDITOR_STATE.POLLUTION), undefined, {description: HINT.POLL})
+      .endGroup();
+  } // getOpenMenu
+
+  /** Return the save model menu */
+  private getSaveMenu(): DG.Menu {
+    return DG.Menu.popup()
+      .item(TITLE.TO_MY_FILES, async () => await this.saveToMyFiles(), undefined, {description: HINT.SAVE_MY})
+      .item(TITLE.AS_LOCAL, async () => await this.saveToLocalFile(), undefined, {description: HINT.SAVE_LOC});
+  } // getOpenMenu
+
+  /** Show context menu */
+  private showContextMenu(): void {
+    DG.Menu.popup()
+      .item(TITLE.LOAD, async () => await this.overwrite(), undefined, {description: HINT.LOAD})
+      .group(TITLE.SAVE_TO)
+      .item(TITLE.MY_FILES, async () => await this.saveToMyFiles(), undefined, {description: HINT.SAVE_MY})
+      .item(TITLE.LOCAL_FILE, async () => await this.saveToLocalFile(), undefined, {description: HINT.SAVE_LOC})
+      .endGroup()
+      .separator()
+      .group(TITLE.TEMPL)
+      .item(TITLE.BASIC, async () =>
+        await this.overwrite(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: HINT.BASIC},
+      )
+      .item(TITLE.ADV, async () =>
+        await this.overwrite(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: HINT.ADV},
+      )
+      .item(TITLE.EXT, async () =>
+        await this.overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT},
+      )
+      .endGroup()
+      .group(TITLE.EXAMP)
+      .item(TITLE.CHEM, async () =>
+        await this.overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM},
+      )
+      .item(TITLE.ROB, async () => await this.overwrite(EDITOR_STATE.ROBERT), undefined, {description: HINT.ROB})
+      .item(TITLE.FERM, async () => await this.overwrite(EDITOR_STATE.FERM), undefined, {description: HINT.FERM})
+      .item(TITLE.PK, async () => await this.overwrite(EDITOR_STATE.PK), undefined, {description: HINT.PK})
+      .item(TITLE.PKPD, async () => await this.overwrite(EDITOR_STATE.PKPD), undefined, {description: HINT.PKPD})
+      .item(TITLE.ACID, async () =>
+        await this.overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: HINT.ACID},
+      )
+      .item(TITLE.NIM, async () =>
+        await this.overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM},
+      )
+      .item(TITLE.BIO, async () =>
+        await this.overwrite(EDITOR_STATE.BIOREACTOR), undefined, {description: HINT.BIO},
+      )
+      .item(TITLE.POLL, async () =>
+        await this.overwrite(EDITOR_STATE.POLLUTION), undefined, {description: HINT.POLL},
+      )
+      .endGroup()
+      .separator()
+      .item(TITLE.CLEAR, async () => await this.overwrite(EDITOR_STATE.EMPTY), undefined, {description: HINT.CLEAR})
+      .show();
+  } // showContextMenu
 
   /** Load IVP from file */
   private async loadFn(): Promise<void> {
@@ -551,8 +575,8 @@ export class DiffStudio {
     fileInp.click();
   }; // loadFn
 
-  /** Save the current IVP to file */
-  private async saveFn(): Promise<void> {
+  /** Save the current IVP to local file */
+  private async saveToLocalFile(): Promise<void> {
     const link = document.createElement('a');
     const file = new Blob([this.editorView!.state.doc.toString()], {type: 'text/plain'});
     link.href = URL.createObjectURL(file);
@@ -560,6 +584,70 @@ export class DiffStudio {
     link.click();
     URL.revokeObjectURL(link.href);
   };
+
+  /** Save the current IVP to My files */
+  private async saveToMyFiles(): Promise<void> {
+    const modelCode = this.editorView!.state.doc.toString();
+    const modelName = getIVP(modelCode).name;
+    const folder = `${grok.shell.user.login}:Home/`;
+    const files = await grok.dapi.files.list(folder);
+
+    // get model file names in from the user's folder
+    const existingNames = files.filter((file) => file.extension === MISC.IVP_EXT).map((file) => file.name);
+
+    let fileName = unusedFileName(modelName, existingNames);
+    const nameInput = ui.input.string(TITLE.NAME, {
+      value: fileName,
+      nullable: false,
+      onValueChanged: () => {
+        if (nameInput.value !== null) {
+          fileName = nameInput.value;
+          dlg.getButton(TITLE.SAVE).disabled = false;
+        } else
+          dlg.getButton(TITLE.SAVE).disabled = true;
+      },
+    });
+
+    let extension = MISC.IVP_EXT;
+    const extInput = ui.input.choice<MISC>(TITLE.TYPE, {
+      value: extension,
+      items: [MISC.IVP_EXT, MISC.TXT_EXT],
+      nullable: false,
+      onValueChanged: () => {
+        extension = extInput.value;
+        if (extension !== MISC.IVP_EXT)
+          grok.shell.warning(WARNING.PREVIEW);
+      },
+    });
+
+    const save = async () => {
+      const path = `${folder}${fileName}.${MISC.IVP_EXT}`;
+
+      try {
+        await grok.dapi.files.writeAsText(path, modelCode);
+        grok.shell.info(`Model saved to ${path}`);
+      } catch (error) {
+        grok.shell.error(`Failed to save model: ${error instanceof Error ? error.message : 'platform issue'}`);
+      }
+
+      dlg.close();
+    };
+
+    const dlg = ui.dialog({title: TITLE.SAVE_TO})
+      .add(nameInput)
+      .add(extInput)
+      .addButton(TITLE.SAVE, async () => {
+        if (!existingNames.includes(`${fileName}.${extension}`))
+          await save();
+        else {
+          ui.dialog({title: WARNING.TITLE})
+            .add(ui.label(WARNING.OVERWRITE_FILE))
+            .onOK(async () => await save())
+            .show();
+        }
+      }, undefined, HINT.SAVE_MY)
+      .show();
+  }; // saveToMyFiles
 
   /** Set IVP code editor state */
   private async setState(state: EDITOR_STATE,
@@ -615,7 +703,7 @@ export class DiffStudio {
       const dlg = ui.dialog({title: WARNING.TITLE, helpUrl: LINK.DIF_STUDIO_REL});
       this.solverView.append(dlg);
 
-      dlg.add(ui.label(WARNING.MES))
+      dlg.add(ui.label(WARNING.OVERWRITE_MODEL))
         .add(boolInput.root)
         .onCancel(() => dlg.close())
         .onOK(async () => {
@@ -783,6 +871,7 @@ export class DiffStudio {
           }
         }
 
+        form.style.overflowY = 'hidden';
         this.prevInputsNode = this.inputsPanel.appendChild(form);
 
         if (!toShowInputsForm)
