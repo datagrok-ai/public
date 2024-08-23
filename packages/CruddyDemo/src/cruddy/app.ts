@@ -1,6 +1,6 @@
 import {DbEntity, DbEntityType} from "./entity";
 import * as DG from "datagrok-api/dg";
-import {DbQueryEntityCrud} from "./crud";
+import {DbQueryEntityCrud, IQueryOptions} from "./crud";
 import * as ui from "datagrok-api/ui";
 import {CruddyFilterHost} from "./filters";
 import {debounceTime} from "rxjs/operators";
@@ -21,11 +21,13 @@ export class CruddyEntityView<TEntity extends DbEntityType = DbEntityType> exten
   app: CruddyApp;
   entityType: DbEntityType;
   crud: DbQueryEntityCrud;
+  dataFrame?: DG.DataFrame;
   grid?: DG.Grid;
   mainViewer?: DG.Viewer;
   host: HTMLDivElement = ui.divH([]);
   filters: CruddyFilterHost = new CruddyFilterHost();
   ribbonPanel: HTMLDivElement = ui.ribbonPanel([]);
+  queryOptions: IQueryOptions = { offset: 0, limit: 100 };
 
   constructor(app: CruddyApp, entityType: DbEntityType) {
     super();
@@ -37,7 +39,7 @@ export class CruddyEntityView<TEntity extends DbEntityType = DbEntityType> exten
     this.root.classList.add('cruddy-view');
     this.setRibbonPanels([[this.ribbonPanel]]);
 
-    this.crud.read(undefined, {limit: 100}).then(async (df) => {
+    this.crud.read(undefined, this.queryOptions).then(async (df) => {
       this.grid = df.plot.grid();
       await grok.data.detectSemanticTypes(df);
       this.append(this.host);
@@ -53,19 +55,22 @@ export class CruddyEntityView<TEntity extends DbEntityType = DbEntityType> exten
     });
   }
 
+  async refresh(): Promise<DG.DataFrame> {
+    this.dataFrame = await this.crud.read(this.filters.getCondition(), this.queryOptions);
+    (this.mainViewer ?? this.grid)!.dataFrame = this.dataFrame;
+    return this.dataFrame;
+  }
+
   initFilters() {
     this.filters.init(this.entityType);
-    this.filters.onChanged.pipe(debounceTime(100)).subscribe((_) => {
-      this.crud.read(this.filters.getCondition()).then((df) => {
-        (this.mainViewer ?? this.grid)!.dataFrame = df;
-      });
-    });
+    this.filters.onChanged.pipe(debounceTime(100)).subscribe((_) => this.refresh());
   }
 
   initBehaviors() {
     CruddyViewFeature.contextDetails().attach(this);
     CruddyViewFeature.editable().attach(this);
     CruddyViewFeature.insertable().attach(this);
+    CruddyViewFeature.navigationBar().attach(this);
   }
 }
 
@@ -77,6 +82,25 @@ export class CruddyViewFeature {
   constructor(name: string, attach: (view: CruddyEntityView) => void) {
     this.name = name;
     this.attach = attach;
+  }
+
+  static navigationBar(): CruddyViewFeature {
+    return new CruddyViewFeature('navigationBar', (v) => {
+
+      let divRange = ui.divText(``);
+
+      function q(offset: number, limit?: number) {
+        v.queryOptions.offset = offset;
+        v.queryOptions.limit = limit ?? v.queryOptions.limit;
+        v.refresh().then((df) => {
+          divRange.innerHTML = `${v.queryOptions.offset! + 1} - ${v.queryOptions.offset! + df.rowCount}`;
+        });
+      }
+
+      v.ribbonPanel.appendChild(divRange);
+      v.ribbonPanel.appendChild(ui.iconFA('chevron-left', (_) => q(Math.max(0, v.queryOptions.offset! - v.queryOptions.limit!))));
+      v.ribbonPanel.appendChild(ui.iconFA('chevron-right', (_) => q(Math.max(0, v.queryOptions.offset! + v.queryOptions.limit!))));
+    });
   }
 
   /** Shows information for the referenced rows in the context panel.

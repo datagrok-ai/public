@@ -109,7 +109,7 @@ values (${entity.entityType.columns.map(c => this.sql(entity, c)).join(', ')})`;
       (joins.length == 0 ? '' : [...new Set(joins)].join('\n') + '\n')  +
       (filter && Object.keys(filter).length > 0 ? ` where ${this.getWhereSql(filter)}` : '') +
       (options?.limit ? ` limit ${options.limit}` : '') +
-      (options?.offset ? ` limit ${options.offset}` : '');
+      (options?.offset ? ` offset ${options.offset}` : '');
   }
 
   getDeleteSql(entity: TEntity) {
