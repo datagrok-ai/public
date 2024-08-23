@@ -45,11 +45,12 @@ enum EDITOR_STATE {
   BIOREACTOR = 'bioreactor',
   POLLUTION = 'pollution',
 };
-
 /** Return path corresponding to state */
 function stateToPath(state: EDITOR_STATE): string {
   switch (state) {
   case EDITOR_STATE.FROM_FILE:
+    return PATH.CUSTOM;
+
   case EDITOR_STATE.EMPTY:
     return '';
 
@@ -216,9 +217,11 @@ export class DiffStudio {
 
     setTimeout(async () => {
     // routing
-      if (content)
+      if (content) {
+        this.fromFileHandler = true;
+        this.solverMainPath = `${PATH.APPS_DS}${PATH.CUSTOM}`;
         await this.runSolving(true);
-      else if (state) {
+      } else if (state) {
         this.inBrowseRun = true;
         await this.setState(state);
       } else {
@@ -373,6 +376,7 @@ export class DiffStudio {
   private fittingIcon: HTMLElement;
   private performanceDlg: DG.Dialog | null = null;
   private inBrowseRun = false;
+  private fromFileHandler = false;
 
   private inputsByCategories = new Map<string, DG.InputBase[]>();
 
@@ -670,7 +674,7 @@ export class DiffStudio {
     this.editorView!.setState(newState);
 
     // set path
-    this.solverMainPath = stateToPath(state);
+    this.solverMainPath = `${(this.fromFileHandler) ? PATH.APPS_DS : ''}${stateToPath(state)}`;
 
     switch (state) {
     case EDITOR_STATE.EMPTY:
