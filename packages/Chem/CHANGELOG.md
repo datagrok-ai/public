@@ -1,5 +1,20 @@
 # Chem changelog
 
+## 1.11.4 (2024-08-23)
+
+### Features
+
+* Chem: MMPA: filter fragmnets by significance
+* Chem: MMPA: project and layout saving
+* Chem: MMPA: demo loaded not calculated
+* Chem: Removed r-groups settings download from init
+
+### Bug Fixes
+
+* Chem: MMPA: Fixed property panel on cliff line click
+* [#2983](https://github.com/datagrok-ai/public/issues/2983): Chem: fix tooltip styles for structure columns
+* GROK-16493: MMPA: Fixed Summary viewer doesn't show the values
+
 ## 1.11.3 (2024-08-12)
 
 ### Features
