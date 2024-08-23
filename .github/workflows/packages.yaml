@@ -85,8 +85,8 @@ jobs:
 
               job_test_env=''
               runner='ubuntu-22.04'
-              if [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "ADMETox" ]] || \
-                 [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"ADMETox"* ]]; then
+              if [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "admetox" ]] || \
+                 [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"admetox"* ]]; then
                 runner='ubuntu-latest-m'
               fi
               if [ -n "$(jq  '. | select( has("test") == true )' <<< "$scripts")" ] && \
