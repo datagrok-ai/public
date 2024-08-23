@@ -256,7 +256,7 @@ export class MonomerLibManager implements IMonomerLibHelper {
   // -- Instance singleton --
   public static async getInstance(): Promise<MonomerLibManager> {
     let res = window.$monomerLibHelperPromise;
-    if (res === undefined) {
+    if (res == undefined) {
       res = window.$monomerLibHelperPromise = (async () => {
         const instance = new MonomerLibManager(_package.logger);
         instance._eventManager = MonomerLibFileEventManager.getInstance();
