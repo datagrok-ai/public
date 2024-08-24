@@ -553,6 +553,16 @@ export interface IScatterPlotSettings {
 
   labelColorAsMarker: boolean;
 
+  /// Determines how to show marker labels.
+  showMarkerLabels: keyof typeof VisibilityMode;
+
+  /// Marker radius in which label is inscribed.
+  labelCircleRadius: number;
+
+  /// Shows text values by selected column under the main label.
+  extraLabels: string;
+  extraLabelsColumnName: string;
+
   /// Regression line visibility (toggle by pressing R)
   showRegressionLine: boolean;
 
@@ -1182,6 +1192,8 @@ export enum VerticalAlignType {
 }
 
 export interface IDensityPlotSettings {
+  binShape: string;
+
   /// Columns to be put on the X axis
   x: string;
   xColumnName: string;
@@ -1193,6 +1205,14 @@ export interface IDensityPlotSettings {
   autoLayout: boolean;
 
   axisFont: string;
+
+  showNumericalLegend: boolean;
+
+  invertColorScheme: boolean;
+
+  colorTransformType: keyof typeof AxisType;
+
+  linearColorScheme: Array<number>;
 
   showXAxis: boolean;
 
