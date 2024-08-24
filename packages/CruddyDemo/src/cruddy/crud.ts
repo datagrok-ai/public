@@ -23,6 +23,7 @@ export abstract class Crud<TEntity extends DbEntity = DbEntity> {
 }
 
 export interface IQueryOptions {
+  count?: boolean;
   distinct?: boolean;
   columnNames?: string[];
   limit?: number;
@@ -128,6 +129,15 @@ values (${entity.entityType.columns.map(c => this.sql(entity, c)).join(', ')})`;
 
   async read(filter?: TFilter, options?: IQueryOptions): Promise<DG.DataFrame> {
     return await this.query(this.getReadSql(filter, options));
+  }
+
+  async count(filter?: TFilter, options?: IQueryOptions): Promise<number> {
+    const optionsCopy = Object.assign({}, options);
+    optionsCopy.offset = undefined;
+    optionsCopy.limit = undefined;
+    const sql = `select count(*) from (${this.getReadSql(filter, optionsCopy)}) as count`;
+    const df = await this.query(sql);
+    return df.columns.byIndex(0).getNumber(0);
   }
 
   async readSingle(keyFilter?: { [name: string]: string }): Promise<{ [name: string]: any } | null> {

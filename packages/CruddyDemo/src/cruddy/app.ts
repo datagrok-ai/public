@@ -7,6 +7,7 @@ import {debounceTime} from "rxjs/operators";
 import {DbSchema, DbTable} from "./table";
 import * as grok from "datagrok-api/grok";
 import {Db} from "datagrok-api/dg";
+import {Subject} from "rxjs";
 
 export class CruddyViewConfig {
   entityType: DbEntityType;
@@ -28,6 +29,13 @@ export class CruddyEntityView<TEntity extends DbEntityType = DbEntityType> exten
   filters: CruddyFilterHost = new CruddyFilterHost();
   ribbonPanel: HTMLDivElement = ui.ribbonPanel([]);
   queryOptions: IQueryOptions = { offset: 0, limit: 100 };
+  totalRowCount?: number;
+
+  onInitialized: Subject<any> = new Subject<any>();
+  onQueryStarted: Subject<any> = new Subject<any>();
+  onQueryCompleted: Subject<any> = new Subject<any>();
+  onFilterRowsCounted: Subject<any> = new Subject<any>();
+  onFilterChanged: Subject<any> = new Subject<any>();
 
   constructor(app: CruddyApp, entityType: DbEntityType) {
     super();
@@ -39,38 +47,56 @@ export class CruddyEntityView<TEntity extends DbEntityType = DbEntityType> exten
     this.root.classList.add('cruddy-view');
     this.setRibbonPanels([[this.ribbonPanel]]);
 
-    this.crud.read(undefined, this.queryOptions).then(async (df) => {
-      this.grid = df.plot.grid();
-      await grok.data.detectSemanticTypes(df);
-      this.append(this.host);
-      this.host.appendChild(this.filters.root);
+    this.append(this.host);
+    this.host.appendChild(this.filters.root);
 
-      this.mainViewer = this.entityType.defaultView == 'cards' ? DG.Viewer.tile(df) : this.grid;
-      this.host.appendChild(this.mainViewer.root);
+    this.initBehaviors();
+    this.initFilters();
 
-      this.mainViewer.root.style.flexGrow = '1';
-      this.mainViewer.root.style.height = 'inherit';
-      this.initBehaviors();
-      this.initFilters();
-    });
+    this.refresh().then((_) => this.refreshCount());
   }
 
   async refresh(): Promise<DG.DataFrame> {
+    this.onQueryStarted.next(null);
     this.dataFrame = await this.crud.read(this.filters.getCondition(), this.queryOptions);
+    await grok.data.detectSemanticTypes(this.dataFrame);
+
+    if (!this.grid) {
+      this.grid = this.dataFrame.plot.grid();
+      this.mainViewer = this.entityType.defaultView == 'cards' ? DG.Viewer.tile(this.dataFrame) : this.grid;
+      this.mainViewer.root.style.flexGrow = '1';
+      this.mainViewer.root.style.height = 'inherit';
+
+      this.host.appendChild(this.mainViewer.root);
+      this.onInitialized.next(null);
+    }
+
     (this.mainViewer ?? this.grid)!.dataFrame = this.dataFrame;
+    this.onQueryCompleted.next(null);
     return this.dataFrame;
+  }
+
+  async refreshCount(): Promise<any> {
+    this.totalRowCount = await this.crud.count(this.filters.getCondition(), this.queryOptions);
+    this.onFilterRowsCounted.next(null);
   }
 
   initFilters() {
     this.filters.init(this.entityType);
-    this.filters.onChanged.pipe(debounceTime(100)).subscribe((_) => this.refresh());
+    this.filters.onChanged.pipe(debounceTime(100)).subscribe(async (_) => {
+      await this.refresh();
+      await this.refreshCount();
+    });
   }
 
   initBehaviors() {
-    CruddyViewFeature.contextDetails().attach(this);
-    CruddyViewFeature.editable().attach(this);
-    CruddyViewFeature.insertable().attach(this);
-    CruddyViewFeature.navigationBar().attach(this);
+    const features = [
+      CruddyViewFeature.contextDetails(),
+      CruddyViewFeature.editable(),
+      CruddyViewFeature.insertable(),
+      CruddyViewFeature.navigationBar()
+    ]
+    this.onInitialized.subscribe((_) => features.forEach((f) => f.attach(this)));
   }
 }
 
@@ -93,13 +119,15 @@ export class CruddyViewFeature {
         v.queryOptions.offset = offset;
         v.queryOptions.limit = limit ?? v.queryOptions.limit;
         v.refresh().then((df) => {
-          divRange.innerHTML = `${v.queryOptions.offset! + 1} - ${v.queryOptions.offset! + df.rowCount}`;
+          divRange.innerHTML = `${v.queryOptions.offset! + 1} - ${v.queryOptions.offset! + df.rowCount}${v.totalRowCount != null ? ` of ${v.totalRowCount}` : ''}`;
         });
       }
 
-      v.ribbonPanel.appendChild(divRange);
-      v.ribbonPanel.appendChild(ui.iconFA('chevron-left', (_) => q(Math.max(0, v.queryOptions.offset! - v.queryOptions.limit!))));
-      v.ribbonPanel.appendChild(ui.iconFA('chevron-right', (_) => q(Math.max(0, v.queryOptions.offset! + v.queryOptions.limit!))));
+      const left = ui.iconFA('chevron-left', (_) => q(Math.max(0, v.queryOptions.offset! - v.queryOptions.limit!)));
+      const right = ui.iconFA('chevron-right', (_) => q(Math.max(0, v.queryOptions.offset! + v.queryOptions.limit!)));
+      v.setRibbonPanels([...v.getRibbonPanels(), ...[[divRange, left, right]]]);
+
+      v.onQueryCompleted.subscribe()
     });
   }
 
