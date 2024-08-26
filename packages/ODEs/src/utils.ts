@@ -52,3 +52,16 @@ export function unusedFileName(name: string, files: string[]): string {
 
   return `${name}(${num})`;
 }
+
+/** Return dataframe with the specified number of last rows */
+export function getTableFromLastRows(df: DG.DataFrame, maxRows: number): DG.DataFrame {
+  if (df.rowCount <= maxRows)
+    return df;
+
+  const cols: DG.Column[] = [];
+
+  for (const col of df.columns)
+    cols.push(DG.Column.fromList(col.type, col.name, col.toList().slice(-maxRows)));
+
+  return DG.DataFrame.fromColumns(cols);
+}

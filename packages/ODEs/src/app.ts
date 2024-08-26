@@ -17,12 +17,12 @@ import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
 import {TEMPLATES, DEMO_TEMPLATE} from './templates';
 import {USE_CASES} from './use-cases';
 import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, DOCK_RATIO, TEMPLATE_TITLES, EXAMPLE_TITLES,
-  WARNING, MISC, demoInfo, INPUT_TYPE, PATH, UI_TIME, MODEL_HINT} from './ui-constants';
+  WARNING, MISC, demoInfo, INPUT_TYPE, PATH, UI_TIME, MODEL_HINT, MAX_RECENT_COUNT} from './ui-constants';
 import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
   CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS} from './scripting-tools';
 import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools/solver-defs';
-import {unusedFileName} from './utils';
+import {unusedFileName, getTableFromLastRows} from './utils';
 
 import './css/app-styles.css';
 
@@ -281,6 +281,7 @@ export class DiffStudio {
   public async getFilePreview(file: DG.FileInfo, path: string): Promise<DG.View> {
     const browseView = grok.shell.view(TITLE.BROWSE);
     const equations = await file.readAsString();
+    await this.saveModelToRecent(file.fullPath, true);
     this.createEditorView(equations, false);
     this.toChangePath = true;
     this.solverView.setRibbonPanels([]);
@@ -634,6 +635,8 @@ export class DiffStudio {
         grok.shell.error(`Failed to save model: ${error instanceof Error ? error.message : 'platform issue'}`);
       }
 
+      await this.saveModelToRecent(path, true);
+
       dlg.close();
     };
 
@@ -676,18 +679,29 @@ export class DiffStudio {
     // set path
     this.solverMainPath = `${(this.fromFileHandler) ? PATH.APPS_DS : ''}${stateToPath(state)}`;
 
+    // save model to recent
+
     switch (state) {
     case EDITOR_STATE.EMPTY:
       this.clearSolution();
       break;
 
+    case EDITOR_STATE.FROM_FILE:
+      await this.runSolving(true);
+      break;
+
     case EDITOR_STATE.BASIC_TEMPLATE:
+      await this.runSolving(this.isStartingRun);
+      break;
+
     case EDITOR_STATE.ADVANCED_TEMPLATE:
     case EDITOR_STATE.EXTENDED_TEMPLATE:
+      await this.saveModelToRecent(state, false);
       await this.runSolving(this.isStartingRun);
       break;
 
     default:
+      await this.saveModelToRecent(state, false);
       await this.runSolving(true);
       break;
     }
@@ -1223,4 +1237,31 @@ export class DiffStudio {
       const recentFolder = appTree.getOrCreateGroup(TITLE.RECENT, null, false);
     }
   } // createTree
+
+  /** Save model to recent models file */
+  private async saveModelToRecent(modelInfo: string, isCustom: boolean) {
+    const folder = `${grok.shell.user.login}:Home/`;
+    const files = await grok.dapi.files.list(folder);
+    const names = files.map((file) => file.name);
+
+    const dfToAdd = DG.DataFrame.fromColumns([
+      DG.Column.fromStrings(TITLE.INFO, [modelInfo]),
+      DG.Column.fromList(DG.COLUMN_TYPE.BOOL, TITLE.IS_CUST, [isCustom]),
+    ]);
+
+    try {
+      if (names.includes(PATH.RECENT)) {
+        const dfs = await grok.dapi.files.readBinaryDataFrames(`${folder}${PATH.RECENT}`);
+        const recentDf = dfs[0];
+        recentDf.append(dfToAdd, true);
+
+        await grok.dapi.files.writeBinaryDataFrames(`${folder}${PATH.RECENT}`, [
+          getTableFromLastRows(recentDf, MAX_RECENT_COUNT),
+        ]);
+      } else
+        await grok.dapi.files.writeBinaryDataFrames(`${folder}${PATH.RECENT}`, [dfToAdd]);
+    } catch (err) {
+      grok.shell.error(`Failed to save recent models: ${(err instanceof Error) ? err.message : 'platfrom issue'}`);
+    }
+  }
 };

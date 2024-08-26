@@ -78,6 +78,8 @@ export enum TITLE {
   DIF_ST = 'Diff Studio',
   NAME = 'Name',
   TYPE = 'Type',
+  INFO = 'Info',
+  IS_CUST = 'Custom model',
 };
 
 /** Titles of template models */
@@ -222,6 +224,7 @@ export enum PATH {
   AND = '&',
   PARAM = `?params:`,
   BROWSE = 'browse',
+  RECENT = 'diff-studio-recent.d42',
 };
 
 /** UI time constants */
@@ -242,3 +245,5 @@ export enum METHOD {
 };
 
 export const DOCK_RATIO = 0.3;
+
+export const MAX_RECENT_COUNT = 10;
