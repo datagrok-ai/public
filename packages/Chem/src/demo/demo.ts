@@ -196,7 +196,7 @@ export async function _demoMMPA(): Promise<void> {
   _package.files.readAsText('demo_files/mmp_demo.layout').then(async (layoutString: string) => {
     const layout = DG.ViewLayout.fromJson(layoutString);
     tv.loadLayout(layout);
-
+    tv.dataFrame.currentRowIdx = 0;
     // grok.shell.windows.showHelp = true;
     // grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/#matched-molecular-pairs');
   });
