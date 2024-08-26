@@ -148,6 +148,7 @@ export const TreeNode = defineComponent({
     removeNode: () => {},
     click: () => {},
     runNode: () => {},
+    toggleNode: () => {},
   },
   setup(props, {emit}) {
     const runIcon = <IconFA 
@@ -156,11 +157,11 @@ export const TreeNode = defineComponent({
       style={{paddingLeft: '4px'}}
     />;
       
-    const openIcon = <OpenIcon
+    const openIcon = () => <OpenIcon
       open={props.stat.open}
       class="mtl-mr"
       //@ts-ignore
-      onClick={(e) => {props.stat.open = !props.stat.open; e.stopPropagation();}}
+      onClick={(e) => {emit('toggleNode'); e.stopPropagation();}}
     />;
     
     const progressIcon = (status: Status) =>{ 
@@ -208,7 +209,7 @@ export const TreeNode = defineComponent({
         // class={props.stat.data.status === 'locked' ? 'd4-disabled': null}
       >
         {/* { progressIcon(props.stat.data.status) } */}
-        { props.stat.children.length ? openIcon : null }
+        { props.stat.children.length ? openIcon() : null }
         <span class="mtl-ml">{ nodeLabel(props.stat) }</span>
         { props.isDraggable && props.stat.data.isHovered && !isRunning(props.stat) ? <IconFA 
           name='grip-vertical' 

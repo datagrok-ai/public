@@ -107,6 +107,7 @@ export const VueDriverRFVApp = defineComponent({
                           isVisibleRfv.value = false;
                       }}
                       onRunNode={() => runStep(stat.data.uuid)}
+                      onToggleNode={() => stat.open = !stat.open}
                     />
                   )
               }
