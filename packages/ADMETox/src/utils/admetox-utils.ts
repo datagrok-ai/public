@@ -4,6 +4,8 @@ import * as DG from 'datagrok-api/dg';
 import { _package } from '../package-test';
 import '../css/admetox.css';
 import { TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, DEFAULT_LOWER_VALUE, DEFAULT_UPPER_VALUE } from './constants';
+import { PieChartCellRenderer } from '@datagrok/power-grid/src/sparklines/piechart';
+import { CellRenderViewer } from '@datagrok-libraries/utils/src/viewers/cell-render-viewer';
 
 export let properties: any;
 
@@ -300,4 +302,18 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
   }
 
   return acc;
+}
+
+async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLElement> {
+  const view = grok.shell.tableView(semValue.cell.dataFrame.name);
+  const gridCol = view.grid.col(semValue.cell.column.name);
+  const gridCell = view.grid.cell(semValue.cell.column.name, semValue.cell.rowIndex);
+  const params = await getQueryParams();
+  const result = await runAdmetox(`smiles\n${semValue.cell.value}`, 'Caco2,PPBR,VDss', 'false');
+  const pieSettings = createPieSettings(params.split(','), properties);
+  pieSettings.sectors.values = result!;
+  gridCol!.settings = pieSettings;
+  const pieChartRenderer = new PieChartCellRenderer();
+
+  return CellRenderViewer.fromGridCell(gridCell, pieChartRenderer).root;
 }
