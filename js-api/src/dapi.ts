@@ -612,6 +612,14 @@ export class DataConnectionsDataSource extends HttpDataSource<DataConnection> {
   async shareFolder(e: DataConnection, path: string): Promise<DataConnection> {
     return toJs(await api.grok_DataConnectionsDataSource_SubDir(this.dart, e.dart, path));
   }
+
+  async getSchemas(e: DataConnection): Promise<string[]> {
+    return toJs(await api.grok_DataConnectionsDataSource_Get_Schemas(this.dart, e.dart));
+  }
+
+  async getSchema(e: DataConnection, schemaName: string | null = null): Promise<TableInfo[]> {
+    return toJs(await api.grok_DataConnectionsDataSource_Get_Schema(this.dart, e.dart, schemaName ?? null));
+  }
 }
 
 /**
