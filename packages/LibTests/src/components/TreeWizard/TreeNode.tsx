@@ -210,11 +210,11 @@ export const TreeNode = defineComponent({
         {/* { progressIcon(props.stat.data.status) } */}
         { props.stat.children.length ? openIcon : null }
         <span class="mtl-ml">{ nodeLabel(props.stat) }</span>
-        { /* { props.isDraggable && props.stat.data.isHovered && props.stat.data.status !== 'running' ? <IconFA 
+        { props.isDraggable && props.stat.data.isHovered && !isRunning(props.stat) ? <IconFA 
           name='grip-vertical' 
           cursor='grab'
           style={{paddingLeft: '4px'}}
-        />: null  } */ }
+        />: null }
         { props.isDeletable && props.stat.data.isHovered && !isRunning(props.stat) ? <IconFA 
           name='times' 
           style={{paddingLeft: '4px'}}

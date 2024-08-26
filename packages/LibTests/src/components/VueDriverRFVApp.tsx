@@ -10,6 +10,7 @@ import {RichFunctionView} from './RFV/RichFunctionView';
 import {TreeNode} from './TreeWizard/TreeNode';
 import {Draggable} from '@he-tree/vue';
 import {AugmentedStat, HueTree} from './TreeWizard/types';
+import {dragContext} from '@he-tree/vue';
 import '@he-tree/vue/style/default.css';
 import '@he-tree/vue/style/material-design.css';
 
@@ -48,12 +49,15 @@ export const VueDriverRFVApp = defineComponent({
     };
 
     const addStep = (parentUuid: string, itemId: string, position: number) => {
-      console.log(parentUuid, itemId, position);
       driver.sendCommand({event: 'addDynamicItem', parentUuid, itemId, position});
     };
 
     const removeStep = (uuid: string) => {
       driver.sendCommand({event: 'removeDynamicItem', uuid});
+    };
+
+    const moveStep = (uuid: string, position: number) => {
+      driver.sendCommand({event: 'moveDynamicItem', uuid, position});
     };
 
     return () => (
@@ -67,9 +71,10 @@ export const VueDriverRFVApp = defineComponent({
               rootDroppable={false}
               treeLine
               childrenKey='steps'
+              nodeKey={(stat: AugmentedStat) => stat.data.uuid}
 
               ref={treeInstance} 
-              v-model={treeState.value} 
+              modelValue={[treeState.value]} 
           
               eachDraggable={(stat: AugmentedStat) =>
                 (stat.parent && 
@@ -77,8 +82,11 @@ export const VueDriverRFVApp = defineComponent({
                 ) ?? false
               }
               eachDroppable={(stat: AugmentedStat) => 
-                (isParallelPipelineState(stat.data) || isSequentialPipelineState(stat.data))
-              }
+                (isParallelPipelineState(stat.data) || isSequentialPipelineState(stat.data))}
+              onAfter-drop={() => {
+                const draggedStep = dragContext.startInfo.dragNode as AugmentedStat;
+                moveStep(draggedStep.data.uuid, dragContext.targetInfo.indexBeforeDrop);
+              }}
             > 
               { 
                 ({stat}: {stat: AugmentedStat}) =>  
