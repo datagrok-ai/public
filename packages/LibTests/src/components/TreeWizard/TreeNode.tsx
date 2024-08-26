@@ -206,7 +206,6 @@ export const TreeNode = defineComponent({
         onMouseleave={() => props.stat.data.isHovered = false} 
         onDragstart={() => props.stat.data.isHovered = false}
         onClick={() => emit('click')}
-        // class={props.stat.data.status === 'locked' ? 'd4-disabled': null}
       >
         {/* { progressIcon(props.stat.data.status) } */}
         { props.stat.children.length ? openIcon() : null }

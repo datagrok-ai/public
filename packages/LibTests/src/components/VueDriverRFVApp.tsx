@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BigButton, Button, InputForm, SplitH} from '@datagrok-libraries/webcomponents-vue/src';
-import {defineComponent, KeepAlive, onUnmounted, ref, shallowRef, triggerRef} from 'vue';
+import {defineComponent, KeepAlive, onUnmounted, ref, shallowRef, triggerRef, watch} from 'vue';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
 import {useSubscription} from '@vueuse/rxjs';
 import {isFuncCallState, isParallelPipelineState, isSequentialPipelineState, PipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
@@ -59,6 +59,12 @@ export const VueDriverRFVApp = defineComponent({
     const moveStep = (uuid: string, position: number) => {
       driver.sendCommand({event: 'moveDynamicItem', uuid, position});
     };
+
+    watch(isLocked, (newVal) => {
+      if (!treeInstance.value) return;
+
+      ui.setUpdateIndicator(treeInstance.value!.$el, newVal);
+    });
 
     return () => (
       <KeepAlive>
