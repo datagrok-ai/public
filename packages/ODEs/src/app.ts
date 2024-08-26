@@ -592,7 +592,7 @@ export class DiffStudio {
   /** Save the current IVP to My files */
   private async saveToMyFiles(): Promise<void> {
     const modelCode = this.editorView!.state.doc.toString();
-    const modelName = getIVP(modelCode).name;
+    const modelName = getIVP(modelCode).name.replaceAll(' ', '-');
     const folder = `${grok.shell.user.login}:Home/`;
     const files = await grok.dapi.files.list(folder);
 
