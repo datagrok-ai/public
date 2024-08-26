@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { getModelsSingle, addAllModelPredictions, addColorCoding, performChemicalPropertyPredictions, addSparklines } from './utils/admetox-utils';
+import { getModelsSingle, performChemicalPropertyPredictions, addSparklines } from './utils/admetox-utils';
 import { properties } from './utils/admetox-utils';
 import { AdmeticaBaseEditor } from './utils/admetox-editor';
 import { _demoAdmetox } from './demo/demo-admetox';
@@ -23,49 +23,6 @@ export async function admetWidget(semValue: DG.SemanticValue): Promise<DG.Widget
     {molecule: semValue.value, sourceNotation: DG.chem.Notation.Unknown, targetNotation: DG.chem.Notation.Smiles});
 
   return await getModelsSingle(smiles, semValue);
-}
-
-//name: admeFormEditor
-//tags: editor
-//input: funccall call
-export async function admeFormEditor(call: DG.FuncCall) {
-  const molColumns = grok.shell.tv.dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE);
-  if (molColumns.length === 1) {
-    call.func.prepare({molecules: molColumns[0]}).call(true);
-  } else {
-    const colInput = ui.input.column('Molecules', {
-      table: grok.shell.tv.dataFrame,
-      value: molColumns[0],
-      filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE
-    });
-    ui.dialog({title: 'Full profile'})
-    .add(colInput)
-    .onOK(async () => {
-      call.func.prepare({molecules: colInput.value}).call(true);
-    })
-    .show();
-  }
-}
-
-
-//top-menu: Chem | ADME/Tox | Full Profile
-//description: Calculates all properties and visualizes on the form
-//name: Full Profile...
-//input: column molecules {semType: Molecule}
-//editor: Admetox:admeFormEditor
-export async function addFormViewer(molecules: DG.Column) {
-  const df = grok.shell.tv.dataFrame;
-  const initialNames = df.columns.names();
-  await addAllModelPredictions(molecules, df);
-  const layout = await _package.files.readAsText('form-layout.json');
-  const tableName = df.name;
-  const modifiedLayout = layout.replaceAll("tableName", tableName).replaceAll("smilesColumn", molecules.name);
-  const view = grok.shell.tableView(df.name);
-  view.loadLayout(DG.ViewLayout.fromJson(modifiedLayout));
-  const finalNames = df.columns.names();
-  const difference = finalNames.filter(element => !initialNames.includes(element));
-  addColorCoding(df, difference);
-  view.grid.invalidate();
 }
 
 //name: getModels

@@ -61,6 +61,7 @@ export class AdmeticaBaseEditor {
     const properties = await this.getPropertiesFromTemplate();
     ui.empty(paramsForm);
     this.tree = ui.tree();
+    this.expanded = false;
     const treeControl = this.createTreeControl(properties);
     paramsForm.appendChild(treeControl);
     this.tree.currentItem = this.tree.items.find(item => item instanceof DG.TreeViewNode)!;

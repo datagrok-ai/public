@@ -107,16 +107,6 @@ function createConditionalColoringRules(coloring: ModelColoring): { [index: stri
   }, {} as { [index: string]: string | number });
 }
 
-
-export async function addAllModelPredictions(molCol: DG.Column, viewTable: DG.DataFrame) {
-  const queryParams = await getQueryParams();
-  try {
-    await performChemicalPropertyPredictions(molCol, viewTable, queryParams);
-  } catch (e) {
-    //grok.log.error(e);
-  }
-}
-
 export async function getQueryParams(): Promise<string> {
   await setProperties();
   return properties.subgroup.flatMap((subg: Subgroup) => subg.models)
