@@ -60,6 +60,7 @@ export class AdmeticaBaseEditor {
     ui.empty(paramsForm);
     const treeControl = this.createTreeControl(properties);
     paramsForm.appendChild(treeControl);
+    this.tree.currentItem = this.tree.items.find(item => item instanceof DG.TreeViewNode)!;
     return paramsForm;
   }
 
