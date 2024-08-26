@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { getModelsSingle, addAllModelPredictions, addColorCoding, performChemicalPropertyPredictions, addSparklines } from './utils/admetox-utils';
-import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
 import { properties } from './utils/admetox-utils';
 import { AdmeticaBaseEditor } from './utils/admetox-editor';
 import { _demoAdmetox } from './demo/demo-admetox';

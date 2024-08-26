@@ -124,9 +124,8 @@ export async function getQueryParams(): Promise<string> {
 }
 
 function generateNumber(): number {
-  return Math.round(Math.random() * 10) / 10;
+  return Math.random() * (1 - Number.MIN_VALUE) + Number.MIN_VALUE;
 }
-
 
 function createPieSettings(columnNames: string[], properties: any): any {
   const colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728'];
@@ -268,6 +267,7 @@ export function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, a
 export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue): Promise<DG.Accordion> {
   const acc = ui.accordion('ADME/Tox');
   await setProperties();
+
   const update = async (result: HTMLDivElement, modelName: string) => {
     const queryParams = properties.subgroup.find((subg: any) => subg.name === modelName)
       ['models'].map((model: any) => model.name);
@@ -301,19 +301,44 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
     }, false);
   }
 
+  acc.addPane('Summary', () => createSummaryPane(semValue), false);
+
   return acc;
 }
 
+function createSummaryPane(semValue: DG.SemanticValue): HTMLElement {
+  const result = ui.div();
+  result.append(ui.loader());
+
+  createPieChartPane(semValue).then((canvas) => {
+    ui.empty(result);
+    result.appendChild(canvas);
+  }).catch((error) => {
+    ui.empty(result);
+    result.appendChild(ui.divText('Error creating pie chart'));
+    console.error(error);
+  });
+
+  return result;
+}
+
 async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLElement> {
-  const view = grok.shell.tableView(semValue.cell.dataFrame.name);
-  const gridCol = view.grid.col(semValue.cell.column.name);
-  const gridCell = view.grid.cell(semValue.cell.column.name, semValue.cell.rowIndex);
+  const { cell } = semValue;
+  const { dataFrame, column, rowIndex, value } = cell;
+
+  const view = grok.shell.tableView(dataFrame.name);
+  const gridCol = view.grid.col(column.name);
+  const gridCell = view.grid.cell(column.name, rowIndex);
+
+  // Use params when containers will work on dev
   const params = await getQueryParams();
-  const result = await runAdmetox(`smiles\n${semValue.cell.value}`, 'Caco2,PPBR,VDss', 'false');
+  const query = `smiles\n${value}`;
+  const result = await runAdmetox(query, 'Caco2,PPBR,VDss,CL-Hepa,CL-Micro', 'false');
+
   const pieSettings = createPieSettings(params.split(','), properties);
   pieSettings.sectors.values = result!;
   gridCol!.settings = pieSettings;
-  const pieChartRenderer = new PieChartCellRenderer();
 
+  const pieChartRenderer = new PieChartCellRenderer();
   return CellRenderViewer.fromGridCell(gridCell, pieChartRenderer).root;
 }
