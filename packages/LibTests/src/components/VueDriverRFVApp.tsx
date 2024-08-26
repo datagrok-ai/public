@@ -33,7 +33,27 @@ export const VueDriverRFVApp = defineComponent({
 
     const isVisibleRfv = ref(true);
 
-    useSubscription((driver.currentState$).subscribe((s) => treeState.value = s));
+    let oldClosed = [] as string[];
+
+    useSubscription((driver.currentState$).subscribe((s) => {
+      if (treeInstance.value) {
+        console.log(treeInstance.value);
+        const oldStats = treeInstance.value!.statsFlat as AugmentedStat[];
+        oldClosed = oldStats.reduce((acc, stat) => {
+          if (!stat.open) 
+            acc.push(stat.data.uuid); 
+          return acc;
+        }, [] as string[]);
+      }
+      treeState.value = s;
+    }));
+
+    const restoreOpenedNodes = (stat: AugmentedStat) => {
+      if (oldClosed.includes(stat.data.uuid)) 
+        stat.open = false;
+      return stat;
+    };
+
     useSubscription((driver.stateLocked$).subscribe((l) => isLocked.value = l));
     onUnmounted(() => {
       driver.close();
@@ -78,6 +98,7 @@ export const VueDriverRFVApp = defineComponent({
               treeLine
               childrenKey='steps'
               nodeKey={(stat: AugmentedStat) => stat.data.uuid}
+              statHandler={restoreOpenedNodes}
 
               ref={treeInstance} 
               modelValue={[treeState.value]} 

@@ -27,5 +27,6 @@ export type HueTree = {
   remove: Function,
   isDraggable: Function,
   isDroppable: Function,
+  statsFlat: AugmentedStat[],
   $el: HTMLElement,
 };
