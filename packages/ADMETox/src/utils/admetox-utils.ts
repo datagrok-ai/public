@@ -51,7 +51,7 @@ export async function runAdmetox(csvString: string, queryParams: string, addProb
   //return await sendRequestToContainer(admetoxContainer.id, path, params);
 }
 
-async function setProperties(template?: string) {
+export async function setProperties(template?: string) {
   if (properties) return;
   const items = await grok.dapi.files.list(TEMPLATES_FOLDER);
   const fileName = template ? `${template}.json` : items[0].fileName;
