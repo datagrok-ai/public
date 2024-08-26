@@ -10,7 +10,8 @@ import {RichFunctionView} from './RFV/RichFunctionView';
 import {TreeNode} from './TreeWizard/TreeNode';
 import {Draggable} from '@he-tree/vue';
 import {AugmentedStat, HueTree} from './TreeWizard/types';
-import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
+import '@he-tree/vue/style/default.css';
+import '@he-tree/vue/style/material-design.css';
 
 export const VueDriverRFVApp = defineComponent({
   name: 'VueDriverRFVApp',
@@ -59,8 +60,6 @@ export const VueDriverRFVApp = defineComponent({
       <KeepAlive>
         <div style={{width: '100%', height: '100%'}}>
           <BigButton onClick={() => initPipeline('LibTests:MockProvider3')}>Init Pipeline</BigButton>
-          
-          <div>{ isLocked.value ? 'TREE LOCKED' : 'TREE UNLOCKED' }</div>
           
           { treeState.value ? <SplitH resize={true} style={{height: '100%', display: 'block', padding: '8px'}}>
             <Draggable 
