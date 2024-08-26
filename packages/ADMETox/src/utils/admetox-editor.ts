@@ -15,17 +15,19 @@ export class AdmeticaBaseEditor {
   tree: DG.TreeViewGroup = ui.tree();
 
   constructor() {
-    this.tableInput = ui.input.table('Table', {onValueChanged: () => this.onTableInputChanged()});
+    this.tableInput = ui.input.table('Table', {value: grok.shell.tv.dataFrame, onValueChanged: () => this.onTableInputChanged()});
     this.colInput = ui.input.column('Molecules', {
       table: grok.shell.tv.dataFrame,
       filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE,
       value: grok.shell.tv.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE)!
     });
     this.colInputRoot = this.colInput.root;
+    
     this.templatesInput = ui.input.choice('Template', {onValueChanged: async () =>  {
-      if(settingsOpened)
+      if (settingsOpened)
         await this.createModelsSettingsDiv(this.modelsSettingsDiv);
     }}) as DG.ChoiceInput<string>;
+
     this.modelsSettingsIcon = ui.icons.settings(async () => {
       settingsOpened = !settingsOpened;
       if (settingsOpened)
@@ -58,6 +60,7 @@ export class AdmeticaBaseEditor {
   private async createModelsSettingsDiv(paramsForm: HTMLElement): Promise<HTMLElement> {
     const properties = await this.getPropertiesFromTemplate();
     ui.empty(paramsForm);
+    this.tree = ui.tree();
     const treeControl = this.createTreeControl(properties);
     paramsForm.appendChild(treeControl);
     this.tree.currentItem = this.tree.items.find(item => item instanceof DG.TreeViewNode)!;
