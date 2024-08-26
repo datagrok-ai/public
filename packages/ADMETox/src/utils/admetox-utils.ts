@@ -2,14 +2,9 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { _package } from '../package-test';
-import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
 import '../css/admetox.css';
-//import { PieChartCellRenderer } from '../../../PowerGrid/src/sparklines/piechart';
-import { STORAGE_NAME, KEY, TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, Template } from './constants';
+import { TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, DEFAULT_LOWER_VALUE, DEFAULT_UPPER_VALUE } from './constants';
 
-export let DEFAULT_LOWER_VALUE = 0.8;
-export let DEFAULT_UPPER_VALUE = 1.0;
-export let DEFAULT_APPLICABILITY_VALUE = 0.41;
 export let properties: any;
 
 async function getAdmetoxContainer() {
@@ -33,11 +28,11 @@ async function sendRequestToContainer(containerId: string, path: string, params:
 }
 
 export async function runAdmetox(csvString: string, queryParams: string, addProbability: string): Promise<string | null> {
-  const admetoxContainer = await getAdmetoxContainer();
+  /*const admetoxContainer = await getAdmetoxContainer();
   if (!admetoxContainer || (admetoxContainer.status !== 'started' && admetoxContainer.status !== 'checking')) {
     await startAdmetoxContainer(admetoxContainer?.id);
     return null;
-  }
+  }*/
 
   const params: RequestInit = {
     method: 'POST',
@@ -48,8 +43,10 @@ export async function runAdmetox(csvString: string, queryParams: string, addProb
     body: csvString
   };
 
-  const path = `/df_upload?models=${queryParams}&probability=${addProbability}`;
-  return await sendRequestToContainer(admetoxContainer.id, path, params);
+  const path = `http://127.0.0.1:6678/df_upload?models=${queryParams}&probability=${addProbability}`;
+  const response = await fetch(path, params);
+  return await response.text();
+  //return await sendRequestToContainer(admetoxContainer.id, path, params);
 }
 
 async function setProperties(template?: string) {
@@ -68,17 +65,18 @@ export async function performChemicalPropertyPredictions(molColumn: DG.Column, v
   progressIndicator.update(10, 'Predicting...');
 
   try {
-    const admetoxResults = await runAdmetox(csvString, properties, 'true');
+    const admetoxResults = await runAdmetox(csvString, properties, 'false');
     progressIndicator.update(80, 'Results are ready');
     const table = admetoxResults ? DG.DataFrame.fromCsv(admetoxResults) : null;
     table ? addResultColumns(table, viewTable, addPiechart) : grok.log.warning('');
   } catch (e) {
-    //grok.log.error(e);
+    grok.log.error(e);
   } finally {
     progressIndicator.close();
   }
 }
 
+/** Move to the server side */
 async function extractSmilesColumn(molColumn: DG.Column): Promise<DG.Column> {
   const isSmiles = molColumn?.meta.units === DG.UNITS.Molecule.SMILES;
   const smilesList: string[] = new Array<string>(molColumn.length);
@@ -106,15 +104,10 @@ function applyColorCoding(col: DG.GridColumn, model: Model): void {
   if (!model.coloring) return;
   col.isTextColorCoded = true;
   const { type, min, max, colors } = model.coloring;
-  if (type === DG.COLOR_CODING_TYPE.LINEAR) {
-    col.column!.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.LINEAR;
-    col.column!.tags[DG.TAGS.COLOR_CODING_LINEAR] = colors;
-    col.column!.tags[DG.TAGS.COLOR_CODING_SCHEME_MIN] = min;
-    col.column!.tags[DG.TAGS.COLOR_CODING_SCHEME_MAX] = max;
-  } else if (type === 'Conditional') {
-    col.column!.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Conditional';
-    col.column!.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = createConditionalColoringString(model.coloring);
-  }
+  if (type === DG.COLOR_CODING_TYPE.LINEAR)
+    col!.column!.meta.colors.setLinear(JSON.parse(colors!), {min: min, max: max});
+  else if (type === 'Conditional')
+    col!.column!.meta.colors.setConditional(createConditionalColoringRules(model.coloring));
 }
 
 export function addColorCoding(table: DG.DataFrame, columnNames: string[]): void {
@@ -129,10 +122,14 @@ export function addColorCoding(table: DG.DataFrame, columnNames: string[]): void
   }
 }
 
-function createConditionalColoringString(coloring: ModelColoring): string {
+function createConditionalColoringRules(coloring: ModelColoring): { [index: string]: string | number } {
   const conditionalColors = Object.entries(coloring).slice(1);
-  return `{${conditionalColors.map(([range, color]) => `"${range}":"${color}"`).join(",")}}`;
+  return conditionalColors.reduce((acc, [range, color]) => {
+    acc[range] = color;
+    return acc;
+  }, {} as { [index: string]: string | number });
 }
+
 
 export async function addAllModelPredictions(molCol: DG.Column, viewTable: DG.DataFrame) {
   const queryParams = await getQueryParams();
@@ -154,7 +151,7 @@ function generateNumber(): number {
 }
 
 
-function createPieSettings(columnNames: string[], properties: any, probabilities: { [key: string]: number[] }): any {
+function createPieSettings(columnNames: string[], properties: any): any {
   const colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728'];
   let sectors: any[] = [];
   let sectorColorIndex = 0;
@@ -167,7 +164,6 @@ function createPieSettings(columnNames: string[], properties: any, probabilities
     
     for (const model of subgroup.models) {
       const modelName = columnNames.find((name: string) => name.includes(model.name));
-      let weightProperty;
       if (modelName) {
         let { min, max } = model;
         if (model.properties) {
@@ -181,10 +177,6 @@ function createPieSettings(columnNames: string[], properties: any, probabilities
           lowThreshold: min,
           highThreshold: max,
           weight: generateNumber(),
-          applicability: DEFAULT_APPLICABILITY_VALUE,
-          probabilities: Object.entries(probabilities)
-            .filter(([key, value]) => key.includes(modelName))
-            .reduce((acc, [key, value]) => acc.concat(value), [] as number[])
         });
       }
     }
@@ -205,13 +197,15 @@ function createPieSettings(columnNames: string[], properties: any, probabilities
   };
 }
 
-export function addSparklines(table: DG.DataFrame, columnNames: string[], probabilities: { [key: string]: number[] }): void {
+export function addSparklines(table: DG.DataFrame, columnNames: string[]): void {
   const tv = grok.shell.tableView(table.name);
   if (!tv) return;
 
   const pie = tv.grid.columns.add({ cellType: 'piechart' });
   pie.settings = { columnNames: columnNames };
-  pie.settings = createPieSettings(columnNames, properties, probabilities);
+  console.log('pie settings');
+  console.log(createPieSettings(columnNames, properties));
+  pie.settings = createPieSettings(columnNames, properties);
 }
 
 function getTooltipContent(model: any, value: any): string {
@@ -274,13 +268,8 @@ export function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, a
   const modelNames: string[] = table.columns.names();
   const updatedModelNames: string[] = [];
   const models = properties.subgroup.flatMap((subgroup: any) => subgroup.models.map((model: any) => model));
-  const probabilities: { [key: string]: number[] } = {};
 
   for (let i = 0; i < modelNames.length; ++i) {
-    if (modelNames[i].includes('probability')) {
-      probabilities[modelNames[i - 1]] = table.columns.byName(modelNames[i]).toList();
-      continue;
-    }
     let column: DG.Column = table.columns.byName(modelNames[i]);
     for (const model of models) {
       if (model.name === modelNames[i]) {
@@ -293,38 +282,11 @@ export function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, a
   }
 
   if (addPiechart)
-    addSparklines(viewTable, updatedModelNames, probabilities);
+    addSparklines(viewTable, updatedModelNames);
 
   addColorCoding(viewTable, updatedModelNames);
   addCustomTooltip(viewTable.name);
 }
-
-/*async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLElement> {
-  const view = grok.shell.tableView(semValue.cell.dataFrame.name);
-  const gridCol = view.grid.col(semValue.cell.column.name);
-  const gridCell = view.grid.cell(semValue.cell.column.name, semValue.cell.rowIndex);
-  const container = ui.div();
-  const params = await getQueryParams();
-  const result = await runAdmetox(`smiles\n${semValue.cell.value}`, params, 'true');
-  const probabilities: { [key: string]: number[] } = {};
-  const columns = Array.from(DG.DataFrame.fromCsv(result!).columns);
-  for (let i = 0; i < columns.length; ++i) {
-    if (columns[i].name.includes('probability'))
-      probabilities[columns[i].name] = columns[i].toList();
-  }
-  const pieSettings = createPieSettings(params.split(','), properties, probabilities);
-  pieSettings.sectors.values = result!;
-  gridCol!.settings = pieSettings;
-  const canvas = ui.canvas();
-  canvas.width = 300;
-  canvas.height = 200;
-  const ctx = canvas.getContext('2d');
-  const pieChartRenderer = new PieChartCellRenderer();
-
-  pieChartRenderer.render(ctx!, 0, 0, canvas.width, canvas.height, gridCell, DG.GridCellStyle.create());
-  container.appendChild(canvas);
-  return container;
-}*/
 
 export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue): Promise<DG.Accordion> {
   const acc = ui.accordion('ADME/Tox');
@@ -362,65 +324,5 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
     }, false);
   }
 
-  const result = ui.div();
-  /*acc.addPane('Summary', () => {
-    result.append(ui.loader());
-    try {
-      createPieChartPane(semValue).then((canvas) => {
-        ui.empty(result);
-        result.appendChild(canvas);
-      });
-    } catch (error) {
-      ui.empty(result);
-      result.appendChild(ui.divText('Error creating pie chart'));
-      console.error(error);
-    }
-    return result;
-  }, false);*/
-
   return acc;
-}
-
-export function createInputForProperty(property: any) {
-  if (property.property.skip) {
-   return; 
-  }
-  const object = property.property.inputType === DG.InputType.Map ? {} : property.object;
-  const prop = DG.Property.fromOptions(property.property);
-  const input = DG.InputBase.forProperty(prop, object);
-  if (!property.property.enable) {
-    input.root.style.pointerEvents = 'none';
-  }
-  const key = property.property.name as keyof typeof property.object;
-  input.value = property.object[key];
-  input.addCaption('');
-  input.onChanged(() => {
-    property.object[key] = input.value;
-  });
-  return input.root;
-}
-
-export function createConditionalInput(coloring: ModelColoring, model: Model) {
-  const conditionalColors = Object.entries(coloring).slice(1);
-  const conditionalColoring = `{${conditionalColors.map(([range, color]) => `"${range}":"${color}"`).join(",")}}`;
-  const patternsInp = ui.patternsInput(JSON.parse(conditionalColoring));
-  const inputs = patternsInp.querySelectorAll('.ui-input-editor');
-  const rangesProperty = model.properties.find((prop: any) => prop.property.name === 'ranges');
-  inputs.forEach((input, index) => input.addEventListener('mousemove', function(event) {
-    const mouseEvent = event as MouseEvent;
-    const key = conditionalColors[index][0];
-    let value = '';
-    if (rangesProperty)
-      value = rangesProperty.object.ranges[key];
-    ui.tooltip.show(value, mouseEvent.x, mouseEvent.y);
-  }));
-  return patternsInp;
-}
-
-export function createLinearInput(coloring: ModelColoring) {
-  const linearInput = ui.schemeInput(JSON.parse(coloring.colors!) as number[]);
-  linearInput.removeChild(linearInput.firstChild!);
-  const div = ui.divV([linearInput]);
-  linearInput.style.pointerEvents = 'none';
-  return div;
 }

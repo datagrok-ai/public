@@ -1,9 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { Model, Subgroup, Template, TEMPLATES_FOLDER } from './constants';
-import { createConditionalInput, createInputForProperty, createLinearInput } from './admetox-utils';
-import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
+import { Model, ModelColoring, Subgroup, Template, TEMPLATES_FOLDER } from './constants';
 
 export class AdmeticaBaseEditor {
   tableInput: DG.InputBase<DG.DataFrame | null>;
@@ -64,6 +62,50 @@ export class AdmeticaBaseEditor {
     paramsForm.appendChild(treeControl);
     return paramsForm;
   }
+
+  private createInputForProperty(property: any) {
+    if (property.property.skip) {
+     return; 
+    }
+    const object = property.property.inputType === DG.InputType.Map ? {} : property.object;
+    const prop = DG.Property.fromOptions(property.property);
+    const input = DG.InputBase.forProperty(prop, object);
+    if (!property.property.enable) {
+      input.root.style.pointerEvents = 'none';
+    }
+    const key = property.property.name as keyof typeof property.object;
+    input.value = property.object[key];
+    input.addCaption('');
+    input.onChanged(() => {
+      property.object[key] = input.value;
+    });
+    return input.root;
+  }
+  
+  private createConditionalInput(coloring: ModelColoring, model: Model) {
+    const conditionalColors = Object.entries(coloring).slice(1);
+    const conditionalColoring = `{${conditionalColors.map(([range, color]) => `"${range}":"${color}"`).join(",")}}`;
+    const patternsInp = ui.patternsInput(JSON.parse(conditionalColoring));
+    const inputs = patternsInp.querySelectorAll('.ui-input-editor');
+    const rangesProperty = model.properties.find((prop: any) => prop.property.name === 'ranges');
+    inputs.forEach((input, index) => input.addEventListener('mousemove', function(event) {
+      const mouseEvent = event as MouseEvent;
+      const key = conditionalColors[index][0];
+      let value = '';
+      if (rangesProperty)
+        value = rangesProperty.object.ranges[key];
+      ui.tooltip.show(value, mouseEvent.x, mouseEvent.y);
+    }));
+    return patternsInp;
+  }
+  
+  private createLinearInput(coloring: ModelColoring) {
+    const linearInput = ui.schemeInput(JSON.parse(coloring.colors!) as number[]);
+    linearInput.removeChild(linearInput.firstChild!);
+    const div = ui.divV([linearInput]);
+    linearInput.style.pointerEvents = 'none';
+    return div;
+  }
   
   private createInputsForCategories(group: Subgroup, inputs: HTMLElement): void{
     ui.empty(inputs);
@@ -77,15 +119,15 @@ export class AdmeticaBaseEditor {
     inputs.classList.add('admetox-input-form');
     inputs.appendChild(ui.divText(model.name, 'admetox-descriptor-name'));
     model.properties.forEach(p => {
-      const input = createInputForProperty(p);
+      const input = this.createInputForProperty(p);
       if (input) inputs.appendChild(input);
     });
     
     const coloring = model.coloring;
     if (coloring.type === 'Conditional')
-      inputs.appendChild(createConditionalInput(coloring, model));
+      inputs.appendChild(this.createConditionalInput(coloring, model));
     else if (coloring.type === DG.COLOR_CODING_TYPE.LINEAR)
-      inputs.appendChild(createLinearInput(coloring));
+      inputs.appendChild(this.createLinearInput(coloring));
   }
   
   private createTreeGroup(template: Template): void {

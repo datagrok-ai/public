@@ -25,8 +25,6 @@ export interface Subsector {
   low: number;
   high: number;
   weight: number;
-  applicability?: number;
-  probabilities?: number[];
 }
 
 export interface Sector {
@@ -128,7 +126,6 @@ function renderSubsector(
   let erroneous = false;
   if (subsectorCol) {
     value = subsectorCol.get(row);
-    //erroneous = subsector.probabilities![row] < subsector.applicability!; 
     const normalizedValue = value ? normalizeValue(value, subsector) : 1;
     r = normalizedValue * (Math.min(box.width, box.height) / 2);
     r = Math.max(r, minRadius);

@@ -20,8 +20,10 @@ from constants import mean_vectors
 from chemprop import data, featurizers, models
 from lightning import pytorch as pl
 from io import StringIO
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 logging_level = logging.DEBUG
 logging.basicConfig(level=logging_level)
@@ -162,4 +164,4 @@ def df_upload():
   return response
 
 if __name__ == '__main__':
-  app.run(host='0.0.0.0', port=8000, debug=False)
+  app.run(host='0.0.0.0', port=6678, debug=False)

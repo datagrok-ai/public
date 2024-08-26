@@ -1,6 +1,8 @@
-export let STORAGE_NAME = 'admet_models';
-export let KEY = 'selected';
-export let TEMPLATES_FOLDER = 'System:AppData/Admetox/templates';
+export const STORAGE_NAME = 'admet_models';
+export const KEY = 'selected';
+export const TEMPLATES_FOLDER = 'System:AppData/Admetox/templates';
+export let DEFAULT_LOWER_VALUE = 0.8;
+export let DEFAULT_UPPER_VALUE = 1.0;
 
 export interface ModelProperty {
   name: string;
