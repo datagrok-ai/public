@@ -44,9 +44,19 @@ def is_malformed(smiles):
     logging.error(f"Error validating SMILES '{smiles}': {str(e)}")
     return True
 
+def convert_to_smiles(molecule):
+  if "M  END" in molecule:
+    try:
+      mol = Chem.MolFromMolBlock(molecule)
+      return Chem.MolToSmiles(mol) if mol else ''
+    except Exception as e:
+      logging.error(f"Error converting molblock to SMILES: {str(e)}")
+      return None
+  return molecule
+
 def make_chemprop_predictions(df_test, checkpoint_path):
   mpnn = models.MPNN.load_from_checkpoint(checkpoint_path)
-  smis = df_test['smiles']
+  smis = df_test.iloc[:, 0]
 
   valid_smiles = [smi for smi in smis if not is_malformed(smi)]
   valid_indices = [i for i, smi in enumerate(smis) if not is_malformed(smi)]
@@ -95,7 +105,7 @@ def calculate_chemprop_probability(smiles_list, model):
 
 def make_euclia_predictions(df_test, checkpoint_path, add_probability):
   model = joblib.load(checkpoint_path)
-  smiles_list = df_test['smiles'].tolist()
+  smiles_list = df_test.iloc[:, 0].tolist()
   valid_smiles = [smile for smile in smiles_list if Chem.MolFromSmiles(smile)]
   molecules = [Chem.MolFromSmiles(smile) for smile in valid_smiles]
   model(molecules)
@@ -125,7 +135,7 @@ def handle_model(model, df_test, add_probability):
     logging.debug(f'Chemprop prediction for {model} took {time() - start}')
     df = pd.DataFrame(predictions, columns=[model])
     if add_probability:
-      probabilities = calculate_chemprop_probability(df_test['smiles'].tolist(), model)
+      probabilities = calculate_chemprop_probability(df_test.iloc[:, 0].tolist(), model)
       df[f'Y_{model}_probability'] = probabilities
   else:
     predictions, probabilities = make_euclia_predictions(df_test, test_model_name, add_probability)
@@ -140,6 +150,8 @@ def handle_uploaded_data(data, models, add_probability, batch_size=1000):
   result_dfs = []
 
   df_test = pd.read_csv(StringIO(data.decode('utf-8')))
+  df_test.iloc[:, 0] = df_test.iloc[:, 0].apply(convert_to_smiles)
+  print(df_test)
   for model in models_res:
     model_results = []
     for j in range(0, len(df_test), batch_size):

@@ -60,8 +60,7 @@ async function setProperties(template?: string) {
 export async function performChemicalPropertyPredictions(molColumn: DG.Column, viewTable: DG.DataFrame, properties: string, template?: string, addPiechart?: boolean) {
   await setProperties(template);
   const progressIndicator = DG.TaskBarProgressIndicator.create('Running ADMETox...');
-  const smilesColumn = await extractSmilesColumn(molColumn);
-  const csvString = DG.DataFrame.fromColumns([smilesColumn]).toCsv();
+  const csvString = DG.DataFrame.fromColumns([molColumn]).toCsv();
   progressIndicator.update(10, 'Predicting...');
 
   try {
@@ -74,30 +73,6 @@ export async function performChemicalPropertyPredictions(molColumn: DG.Column, v
   } finally {
     progressIndicator.close();
   }
-}
-
-/** Move to the server side */
-async function extractSmilesColumn(molColumn: DG.Column): Promise<DG.Column> {
-  const isSmiles = molColumn?.meta.units === DG.UNITS.Molecule.SMILES;
-  const smilesList: string[] = new Array<string>(molColumn.length);
-  for (let rowIndex = 0; rowIndex < molColumn.length; rowIndex++) {
-    let el: string = molColumn?.get(rowIndex);
-    if (!isSmiles) {
-      try {
-        el = await grok.functions.call('Chem:convertMolNotation', {
-          molecule: el,
-          sourceNotation: DG.chem.Notation.Unknown,
-          targetNotation: DG.chem.Notation.Smiles
-        });
-      } catch {
-        el = '';
-      }
-    }
-
-    smilesList[rowIndex] = el;
-  }
-  const smilesColumn: DG.Column = DG.Column.fromStrings('smiles', smilesList);
-  return smilesColumn;
 }
 
 function applyColorCoding(col: DG.GridColumn, model: Model): void {
