@@ -58,8 +58,8 @@ def make_chemprop_predictions(df_test, checkpoint_path):
   mpnn = models.MPNN.load_from_checkpoint(checkpoint_path)
   smis = df_test.iloc[:, 0]
 
-  valid_smiles = [smi for smi in smis if not is_malformed(smi)]
-  valid_indices = [i for i, smi in enumerate(smis) if not is_malformed(smi)]
+  valid_indices = [i for i, smi in enumerate(smis) if not is_malformed(smi) and smi != '']
+  valid_smiles = [smis[i] for i in valid_indices]
   invalid_indices = [i for i in range(len(smis)) if i not in valid_indices]
 
   if not valid_smiles:
@@ -149,9 +149,14 @@ def handle_uploaded_data(data, models, add_probability, batch_size=1000):
   models_res = models.split(",")
   result_dfs = []
 
-  df_test = pd.read_csv(StringIO(data.decode('utf-8')))
+  df_test = pd.read_csv(
+    StringIO(data.decode('utf-8')), 
+    skip_blank_lines=False, 
+    keep_default_na=False, 
+    na_values=['']
+  )
+  df_test = df_test.fillna('')
   df_test.iloc[:, 0] = df_test.iloc[:, 0].apply(convert_to_smiles)
-  print(df_test)
   for model in models_res:
     model_results = []
     for j in range(0, len(df_test), batch_size):
