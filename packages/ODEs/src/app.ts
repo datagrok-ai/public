@@ -96,6 +96,10 @@ const STATE_BY_TITLE = new Map<TITLE, EDITOR_STATE>([
   [TITLE.POLL, EDITOR_STATE.POLLUTION],
 ]);
 
+/** Model state-to-title map */
+const TITLE_BY_STATE = new Map();
+STATE_BY_TITLE.forEach((val, key) => TITLE_BY_STATE.set(val, key));
+
 /** Models & templates */
 const MODELS: string[] = [
   EDITOR_STATE.BASIC_TEMPLATE,
@@ -378,6 +382,9 @@ export class DiffStudio {
   private performanceDlg: DG.Dialog | null = null;
   private inBrowseRun = false;
   private fromFileHandler = false;
+  private appTree: DG.TreeViewGroup | null = null;
+  private recentFolder: DG.TreeViewGroup | null = null;
+  private browseView: DG.BrowseView | null = null;
 
   private inputsByCategories = new Map<string, DG.InputBase[]>();
 
@@ -1196,56 +1203,93 @@ export class DiffStudio {
   } // showPerformanceDlg
 
   /** Browse tree */
-  private createTree(): void {
+  private async createTree() {
     if (grok.shell.view(TITLE.BROWSE) === undefined)
       grok.shell.v = DG.View.createByType('browse');
 
-    const browseView = grok.shell.view(TITLE.BROWSE) as DG.BrowseView;
-    const appsGroup = browseView.mainTree.getOrCreateGroup(TITLE.APPS, null, false);
-    const appTree = appsGroup.getOrCreateGroup(TITLE.DIF_ST);
+    this.browseView = grok.shell.view(TITLE.BROWSE) as DG.BrowseView;
+    const appsGroup = this.browseView.mainTree.getOrCreateGroup(TITLE.APPS, null, false);
+    this.appTree = appsGroup.getOrCreateGroup(TITLE.DIF_ST);
 
-    if (appTree.items.length === 0) {
-      const templatesFolder = appTree.getOrCreateGroup(TITLE.TEMPL, null, false);
-      const examplesFolder = appTree.getOrCreateGroup(TITLE.EXAMP, null, false);
+    if (this.appTree.items.length > 0)
+      this.recentFolder = this.appTree.getOrCreateGroup(TITLE.RECENT, null, false);
+    else {
+      const templatesFolder = this.appTree.getOrCreateGroup(TITLE.TEMPL, null, false);
+      const examplesFolder = this.appTree.getOrCreateGroup(TITLE.EXAMP, null, false);
 
       const putModelsToFolder = (models: TITLE[], folder: DG.TreeViewGroup) => {
-        models.forEach((name) => {
-          const item = folder.item(name);
-          ui.tooltip.bind(item.root, MODEL_HINT.get(name) ?? '');
-
-          item.onSelected.subscribe(async () => {
-            const panelRoot = appTree.rootNode.root.parentElement!;
-            const treeNodeY = panelRoot.scrollTop!;
-
-            const solver = new DiffStudio(false);
-            browseView.preview = await solver.runSolverApp(
-              undefined,
-              STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
-            ) as DG.View;
-
-            setTimeout(() => {
-              panelRoot.scrollTo(0, treeNodeY);
-              item.root.focus();
-            }, UI_TIME.BROWSING);
-          });
-        });
+        models.forEach((name) => this.putBuiltInModelToFolder(name, folder));
       };
 
       putModelsToFolder(TEMPLATE_TITLES, templatesFolder);
       putModelsToFolder(EXAMPLE_TITLES, examplesFolder);
 
-      const recentFolder = appTree.getOrCreateGroup(TITLE.RECENT, null, false);
+      this.recentFolder = this.appTree.getOrCreateGroup(TITLE.RECENT, null, false);
+
+      // Add recent models to the Recent folder
+      try {
+        const folder = `${grok.shell.user.login}:Home/`;
+        const files = await grok.dapi.files.list(folder);
+        const names = files.map((file) => file.name);
+
+        if (names.includes(PATH.RECENT)) {
+          const dfs = await grok.dapi.files.readBinaryDataFrames(`${folder}${PATH.RECENT}`);
+          const recentDf = dfs[0];
+          const size = recentDf.rowCount;
+          const infoCol = recentDf.col(TITLE.INFO);
+          const isCustomCol = recentDf.col(TITLE.IS_CUST);
+
+          if ((infoCol === null) || (isCustomCol === null))
+            throw new Error('corrupted data file');
+
+          for (let i = 0; i < size; ++i) {
+            if (isCustomCol.get(i)) {
+              const path = infoCol.get(i);
+              const idx = path.lastIndexOf('/');
+              const name = path.slice(idx + 1, path.length);
+              const item = this.recentFolder.item(name);
+              ui.tooltip.bind(item.root, path);
+            } else
+              this.putBuiltInModelToFolder(infoCol.get(i), this.recentFolder);
+          }
+        }
+      } catch (err) {
+        grok.shell.warning(`Failed to open recents: ${(err instanceof Error) ? err.message : 'platfrom issue'}`);
+      };
     }
   } // createTree
 
+  /** Add template/example model to browse tree folder */
+  private putBuiltInModelToFolder(name: TITLE, folder: DG.TreeViewGroup): void {
+    const item = folder.item(name);
+    ui.tooltip.bind(item.root, MODEL_HINT.get(name) ?? '');
+
+    item.onSelected.subscribe(async () => {
+      const panelRoot = this.appTree.rootNode.root.parentElement!;
+      const treeNodeY = panelRoot.scrollTop!;
+
+      const solver = new DiffStudio(false);
+      this.browseView.preview = await solver.runSolverApp(
+        undefined,
+        STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
+      ) as DG.View;
+
+      setTimeout(() => {
+        panelRoot.scrollTo(0, treeNodeY);
+        item.root.focus();
+      }, UI_TIME.BROWSING);
+    });
+  }
+
   /** Save model to recent models file */
-  private async saveModelToRecent(modelInfo: string, isCustom: boolean) {
+  private async saveModelToRecent(modelSpecification: string, isCustom: boolean) {
     const folder = `${grok.shell.user.login}:Home/`;
     const files = await grok.dapi.files.list(folder);
     const names = files.map((file) => file.name);
+    const info = isCustom ? modelSpecification : TITLE_BY_STATE.get(modelSpecification);
 
     const dfToAdd = DG.DataFrame.fromColumns([
-      DG.Column.fromStrings(TITLE.INFO, [modelInfo]),
+      DG.Column.fromStrings(TITLE.INFO, [info]),
       DG.Column.fromList(DG.COLUMN_TYPE.BOOL, TITLE.IS_CUST, [isCustom]),
     ]);
 
@@ -1253,15 +1297,28 @@ export class DiffStudio {
       if (names.includes(PATH.RECENT)) {
         const dfs = await grok.dapi.files.readBinaryDataFrames(`${folder}${PATH.RECENT}`);
         const recentDf = dfs[0];
-        recentDf.append(dfToAdd, true);
 
-        await grok.dapi.files.writeBinaryDataFrames(`${folder}${PATH.RECENT}`, [
-          getTableFromLastRows(recentDf, MAX_RECENT_COUNT),
-        ]);
+        if (!recentDf.col(TITLE.INFO).toList().includes(info)) {
+          recentDf.append(dfToAdd, true);
+
+          await grok.dapi.files.writeBinaryDataFrames(`${folder}${PATH.RECENT}`, [
+            getTableFromLastRows(recentDf, MAX_RECENT_COUNT),
+          ]);
+
+          const items = this.recentFolder.items;
+
+          if (items.length >= MAX_RECENT_COUNT)
+            items[0].remove();
+
+          if (!isCustom) {
+            this.putBuiltInModelToFolder(info, this.recentFolder);
+            console.log('Template or Example');
+          }
+        }
       } else
         await grok.dapi.files.writeBinaryDataFrames(`${folder}${PATH.RECENT}`, [dfToAdd]);
     } catch (err) {
-      grok.shell.error(`Failed to save recent models: ${(err instanceof Error) ? err.message : 'platfrom issue'}`);
+      grok.shell.warning(`Failed to save recent models: ${(err instanceof Error) ? err.message : 'platfrom issue'}`);
     }
   }
 };
