@@ -406,6 +406,8 @@ export interface IDartApi {
   grok_ScatterPlotViewer_ScreenToWorld(s: any, x: Num, y: Num): any;
   grok_ScatterPlotViewer_Render(s: any, g: any): any;
   grok_ScatterPlotViewer_GetRowTooltip(s: any, rowIdx: Num): any;
+  grok_ScatterPlotViewer_GetMarkerSize(s: any, rowIdx: Num): any;
+  grok_ScatterPlotViewer_GetMarkerType(s: any, rowIdx: Num): any;
   grok_FormViewer_CreateDefault(table: any, columnNames: any): any;
   grok_FormViewer_Get_Form(form: any): any;
   grok_FormViewer_Get_Editable(form: any): any;
