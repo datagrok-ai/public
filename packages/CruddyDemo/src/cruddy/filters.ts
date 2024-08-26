@@ -77,6 +77,7 @@ order by count(${filter.column}) desc`;
   }
 
   getCondition(): TFilter {
+    if (!this.choices) return {};
     const choices = (this.choices!.value as Array<any>);
     if (choices.length == 0) return {};
 

@@ -62,7 +62,7 @@ export class SunburstViewer extends EChartViewer {
 
   handleDataframeSelection(path: string[], event: any) {
     this.dataFrame.selection.handleClick((index: number) => {
-      if (!this.filter.get(index)) {
+      if (!this.filter.get(index) && this.rowSource !== 'Selected') {
         return false;
       }
   

@@ -1,5 +1,10 @@
 # HitTriage changelog
 
+## 1.2.1 (2024-08-23)
+
+* Fix issues related to progress tracker
+* Fix layout grid related issues
+
 ## 1.2.0 (2024-07-30)
 
 Permission management and sharing of campaigns. Deleting templates. optimization of function loading

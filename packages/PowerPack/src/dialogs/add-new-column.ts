@@ -35,6 +35,8 @@ const VALIDATION_TYPES_MAPPING: { [key: string]: string[] } = {
   'boolean': ['bool']
 };
 
+const FLOATING_POINT_TYPES = ['float', 'double'];
+
 const COLUMN_FUNCTION_NAME = 'GetCurrentRowField';
 const GET_VAR_FUNCTION_NAME = 'GetVar';
 const RESERVED_FUNC_NAMES_AND_TYPES: {[key: string]: string} = {
@@ -195,8 +197,9 @@ export class AddNewColumnDialog {
         this.packageFunctionsNames[packageName].push(func.name);
         this.packageFunctionsParams[`${packageName}:${func.name}`] = params;
       } catch { //in case of core functions calling func.package throws an exception
-        this.coreFunctionsNames.push(func.name);
-        this.coreFunctionsParams[func.name] = params;
+        const funcName = func.nqName.startsWith('core:') ? func.name : func.nqName;
+        this.coreFunctionsNames.push(funcName);
+        this.coreFunctionsParams[funcName] = params;
       }
     }
   }
@@ -311,8 +314,13 @@ export class AddNewColumnDialog {
       map: ({from, to}, change) => ({from: change.mapPos(from), to: change.mapPos(to)})
     });
 
-    //remove unmatched parentheses
+    //highlight unmatched parentheses
     const addUnmatchedParentheses = StateEffect.define<{ from: number, to: number }>({
+      map: ({ from, to }, change) => ({ from: change.mapPos(from), to: change.mapPos(to) })
+    });
+
+    //highlight text within quotes
+    const addTextWithinQuotes = StateEffect.define<{ from: number, to: number }>({
       map: ({ from, to }, change) => ({ from: change.mapPos(from), to: change.mapPos(to) })
     });
 
@@ -323,6 +331,7 @@ export class AddNewColumnDialog {
 
     const highlightMark = Decoration.mark({class: "cm-column-name"});
     const unmatchedParenthesesMark = Decoration.mark({class: "cm-unmatched-bracket"});
+    const withinQuotesMark = Decoration.mark({class: "cm-within-quotes"});
     const highlightTheme = EditorView.baseTheme({
       ".cm-column-name": { 
         'color': 'var(--blue-2)',
@@ -331,7 +340,10 @@ export class AddNewColumnDialog {
       ".cm-unmatched-bracket": {
         'color': 'red',
         'font-weight': 'bold' 
-      }
+      },
+      ".cm-within-quotes": {
+        'color': '#c27706',
+      },
     });
 
     const highlightField = StateField.define<DecorationSet>({
@@ -348,6 +360,10 @@ export class AddNewColumnDialog {
           else if (e.is(addUnmatchedParentheses))
             underlines = underlines.update({
               add: [unmatchedParenthesesMark.range(e.value.from, e.value.to)]
+            })
+          else if (e.is(addTextWithinQuotes))
+            underlines = underlines.update({
+              add: [withinQuotesMark.range(e.value.from, e.value.to)]
             })
           else if (e.is(removeHighlight))
             underlines = Decoration.none;
@@ -374,6 +390,19 @@ export class AddNewColumnDialog {
       return true;
     }
 
+    const addRegexpSelection = (regexp: string, stateEffect: StateEffectType<{ from: number; to: number; }>) => {
+      const cursor = new RegExpCursor(cm.state.doc, regexp);
+
+      const selections = [];
+      while (!cursor.done) {
+        cursor.next();
+        if (cursor.value.from !== -1 && cursor.value.to !== -1)
+          selections.push({from: cursor.value.from, to: cursor.value.to});
+      }
+      if (selections.length)
+        setSelection(cm, selections, stateEffect);
+    }
+
     //create code mirror
     const cm = new EditorView({
       parent: this.codeMirrorDiv!,
@@ -398,10 +427,10 @@ export class AddNewColumnDialog {
 
             //update hint
             ui.empty(this.hintDiv);
-            let fullFuncName: string | undefined = '';
-            fullFuncName = this.getFunctionNameAtPosition(cm, cm.state.selection.main.head, -1,
-              this.packageFunctionsParams, this.coreFunctionsParams)?.funcName;
-            this.hintDiv.append(ui.divText(fullFuncName ?? DEFAULT_HINT));
+            const resFunc = this.getFunctionNameAtPosition(cm, cm.state.selection.main.head, -1,
+              this.packageFunctionsParams, this.coreFunctionsParams);
+            const fullFuncName = resFunc?.funcName;
+            this.hintDiv.append(ui.divText(resFunc?.signature ?? DEFAULT_HINT));
 
             //return in case formula hasn't been changed
             if (!e.docChanged)
@@ -413,16 +442,10 @@ export class AddNewColumnDialog {
             setSelection(cm, [{from: 0, to: cmValue.length}], removeHighlight);
 
             //add column highlight
-            const cursor = new RegExpCursor(cm.state.doc, '\\$\\{(.+?)\\}|\\$\\[(.+?)\\]');
-
-            const colSelections = [];
-            while (!cursor.done) {
-              cursor.next();
-              if (cursor.value.from !== -1 && cursor.value.to !== -1)
-                colSelections.push({from: cursor.value.from, to: cursor.value.to});
-            }
-            if (colSelections.length)
-              setSelection(cm, colSelections, addColHighlight);
+            addRegexpSelection('\\$\\{(.+?)\\}|\\$\\[(.+?)\\]', addColHighlight);
+            
+            //add text in quotes highlight
+            addRegexpSelection(`".*?"|'.*?'`, addTextWithinQuotes);
 
             //add unmatched parentheses highlight
             const openBrackets: number[] = [];
@@ -611,7 +634,7 @@ export class AddNewColumnDialog {
 
   getFunctionNameAtPosition(view: EditorView, pos: number, side: number,
     packageFunctionsParams: { [key: string]: PropInfo[] }, coreFunctionsParams: { [key: string]: PropInfo[] },
-    withoutSignature?: boolean): { funcName: string, start: number, end: number } | null {
+    withoutSignature?: boolean): { funcName: string, signature?: string, start: number, end: number } | null {
     let { from, to, text } = view.state.doc.lineAt(pos);
     let start = pos, end = pos;
     while (start > from && /\w|:/.test(text[start - from - 1]))
@@ -632,7 +655,8 @@ export class AddNewColumnDialog {
     if (funcOutputs.length)
       funcOutputType = funcOutputs[0].propType;
     return {
-      funcName: `${funcName}${funcInputs.length ? `(${funcInputs.map((it) => `${it.propName}:${it.propType}`).join(', ')})` : ''}: ${funcOutputType}`,
+      signature: `${funcName}${funcInputs.length ? `(${funcInputs.map((it) => `${it.propName}:${it.propType}`).join(', ')})` : ''}: ${funcOutputType}`,
+      funcName: funcName,
       start: start,
       end: end
     }
@@ -650,7 +674,7 @@ export class AddNewColumnDialog {
         above: true,
         create(view) {
           let dom = document.createElement("div");          
-          dom.textContent = res.funcName;
+          dom.textContent = res.signature!;
           return {dom}
         }
       }
@@ -826,6 +850,9 @@ export class AddNewColumnDialog {
     this.gridPreview!.col(colName)!.backColor = this.newColumnBgColor;
     this.resultColumnType = this.previwDf!.col(colName)!.type;
     this.previwDf!.columns.remove(colName);
+
+    if (FLOATING_POINT_TYPES.includes(this.resultColumnType))
+      this.gridPreview!.dataFrame.col(colName)!.tags[DG.TAGS.FORMAT] = '#.00000';
 
     this.setAutoType(); // Adding (or removing) the column auto-type caption to "Auto" item in the ChoiceBox.
   }

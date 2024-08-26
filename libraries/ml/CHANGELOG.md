@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.6.22 (2024-08-23)
+
+Add tableView for reduce dimensionality ui options
+
 ## 6.6.21 (2024-08-14)
 
 Fix Worker import

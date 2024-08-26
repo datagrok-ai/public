@@ -13,8 +13,6 @@ import {getMmpTrellisPlot} from './mmp-frag-vs-frag';
 import {getMmpScatterPlot, runMmpChemSpace} from './mmp-cliffs';
 import {getGenerations} from './mmp-generations';
 
-
-import {drawMoleculeLabels} from '../../rendering/molecule-label';
 import {ILineSeries, MouseOverLineEvent, ScatterPlotLinesRenderer}
   from '@datagrok-libraries/utils/src/render-lines-on-sp';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
@@ -304,12 +302,14 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         createGridDiv('Pairs', this.transPairsGrid!),
       ], {}, true);
     });
-    tabs.addPane(MMP_NAMES.TAB_FRAGMENTS, () => {
+    const fragmentsPane = tabs.addPane(MMP_NAMES.TAB_FRAGMENTS, () => {
       return tp.root;
     });
-    tabs.addPane(MMP_NAMES.TAB_CLIFFS, () => {
+    fragmentsPane.content.classList.add('mmpa-fragments-tab');
+    const cliffsTab = tabs.addPane(MMP_NAMES.TAB_CLIFFS, () => {
       return cliffs;
     });
+    cliffsTab.content.classList.add('mmpa-cliffs-tab');
     const genTab = tabs.addPane(MMP_NAMES.TAB_GENERATION, () => {
       return this.generationsGrid!.root;
     });
@@ -481,8 +481,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     const sp = getMmpScatterPlot(mmpInput, embedColsNames);
 
-    drawMoleculeLabels(mmpInput.table, mmpInput.molecules, sp as DG.ScatterPlotViewer, 20, 7, 100, 110);
-
     //running internal chemspace
     const linesEditor = runMmpChemSpace(mmpInput, sp, lines, linesIdxs, linesActivityCorrespondance,
       transPairsGrid.dataFrame, diffs, module, embedColsNames);
@@ -565,7 +563,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const diffTo = this.transPairsGrid!.dataFrame.getCol(MMP_NAMES.TO);
 
     const [idxPairs, cases] = this.findSpecificRule(diffFromSubstrCol);
-    await this.recoverHighlights(cases, diffFrom, diffTo, diffFromSubstrCol, diffToSubstrCol, rdkitModule);
+    this.recoverHighlights(cases, diffFrom, diffTo, diffFromSubstrCol, diffToSubstrCol, rdkitModule);
 
     this.transPairsGrid!.dataFrame.filter.copyFrom(this.transPairsMask!);
 

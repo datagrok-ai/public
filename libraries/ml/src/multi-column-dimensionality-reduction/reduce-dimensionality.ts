@@ -13,10 +13,11 @@ import {ITSNEOptions, IUMAPOptions} from './multi-column-dim-reducer';
 import {DimReductionMethods} from './types';
 
 export type DimRedUiOptions = {
-    [BYPASS_LARGE_DATA_WARNING]?: boolean,
-    [SHOW_SCATTERPLOT_PROGRESS]?: boolean,
-    fastRowCount?: number,
-    scatterPlotName?: string,
+  [BYPASS_LARGE_DATA_WARNING]?: boolean,
+  [SHOW_SCATTERPLOT_PROGRESS]?: boolean,
+  fastRowCount?: number,
+  scatterPlotName?: string,
+  tableView?: DG.TableView,
 }
 
 export function getEmbeddingColsNames(df: DG.DataFrame) {
@@ -36,7 +37,8 @@ export async function multiColReduceDimensionality(table: DG.DataFrame, columns:
   aggregationMethod: DistanceAggregationMethod, plotEmbeddings: boolean = true, clusterEmbeddings: boolean = false,
   dimRedOptions: (IUMAPOptions | ITSNEOptions) & Partial<IDBScanOptions> & {preprocessingFuncArgs: Options[]} &
     Options = {preprocessingFuncArgs: []},
-  uiOptions: DimRedUiOptions = {}, postProcessingFunc: DG.Func | null = null, postProcFuncArgs: Options = {}) {
+  uiOptions: DimRedUiOptions = {}, postProcessingFunc: DG.Func | null = null, postProcFuncArgs: Options = {}
+): Promise<DG.ScatterPlotViewer | undefined> {
   const scatterPlotProps = {
     showXAxis: false,
     showYAxis: false,
@@ -44,12 +46,12 @@ export async function multiColReduceDimensionality(table: DG.DataFrame, columns:
     showYSelector: false,
   };
   if (columns.length !== metrics.length || columns.length !== preprocessingFunctions.length ||
-        columns.length !== weights.length || columns.length !== dimRedOptions.preprocessingFuncArgs.length) {
+    columns.length !== weights.length || columns.length !== dimRedOptions.preprocessingFuncArgs.length) {
     throw new Error('columns, metrics and preprocessing functions, weights and function arguments' +
       'must have the same length');
   }
 
-  const tv = plotEmbeddings ? grok.shell.tableView(table.name) ?? grok.shell.addTableView(table) : null;
+  const tv = plotEmbeddings ? (uiOptions.tableView ?? grok.shell.tableView(table.name) ?? grok.shell.addTableView(table)) : null;
 
   const doReduce = async () => {
     const pg = DG.TaskBarProgressIndicator.create(
@@ -96,7 +98,7 @@ export async function multiColReduceDimensionality(table: DG.DataFrame, columns:
         const sub = grok.events.onViewerClosed.subscribe((args) => {
           const v = args.args.viewer as unknown as DG.Viewer<any>;
           if (v?.getOptions()?.look?.title && scatterPlot?.getOptions()?.look?.title &&
-                      v?.getOptions()?.look?.title === scatterPlot?.getOptions()?.look?.title) {
+            v?.getOptions()?.look?.title === scatterPlot?.getOptions()?.look?.title) {
             grok.events.fireCustomEvent(DIMENSIONALITY_REDUCER_TERMINATE_EVENT, {});
             sub.unsubscribe();
             resolveF?.();

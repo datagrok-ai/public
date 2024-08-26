@@ -393,6 +393,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
           curve = getCurve(series, fitFunc);
         }
         else {
+          // TODO: Stop refitting when we just rerender the same curve - use LruMap
           const fitResult = fitSeries(series, fitFunc, chartLogOptions);
           curve = fitResult.fittedCurve;
           const params = [...fitResult.parameters]

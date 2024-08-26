@@ -19,3 +19,7 @@ E-mail"** and **"Password"** fields.
 
 5. Check the possibility to log in using account from third-party services - use **Login with Google**.
 
+---
+{
+  "order": 1
+}

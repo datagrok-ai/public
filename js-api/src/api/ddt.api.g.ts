@@ -235,6 +235,9 @@ export class Tags {
   /// Specifies entity type that reference entity had
   static DbPropertyReferenceType = 'dbPropertyReferenceType';
 
+  /// Specifies if calculated columns are subscribed
+  static CalculatedColumnsSubscribed = '.calculatedColumnsSubscribed';
+
 }
 export class FuncOptions {
   /// Fully qualified name of the function that edits corresponding function calls

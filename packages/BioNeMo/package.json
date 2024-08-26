@@ -9,7 +9,7 @@
   },
   "description": "",
   "dependencies": {
-    "@datagrok-libraries/utils": "latest",
+    "@datagrok-libraries/utils": "^4.2.29",
     "axios": "^1.7.4",
     "cash-dom": "latest",
     "datagrok-api": "latest",

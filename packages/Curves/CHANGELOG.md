@@ -1,5 +1,11 @@
 # Curves changelog
 
+## 1.5.0 (2024-08-23)
+
+### Features
+
+* Improved fitting algorithm - didn't fit properly because was stuck in the bounds
+
 ## 1.4.6 (2024-08-13)
 
 ### Features

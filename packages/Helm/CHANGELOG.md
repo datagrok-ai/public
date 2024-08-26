@@ -1,5 +1,10 @@
 # Helm changelog
 
+## 2.4.3 (2024-08-23)
+
+Helm: Bump HWE dependencies versions
+Helm: Move getMolfiles to HelmHelper (highlight monomer at atomic level)
+
 ## 2.4.2 (2024-08-19)
 
 ### Bug fixes
