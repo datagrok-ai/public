@@ -36,6 +36,7 @@ const VALIDATION_TYPES_MAPPING: { [key: string]: string[] } = {
 };
 
 const FLOATING_POINT_TYPES = ['float', 'double'];
+const ALLOWED_OUTPUT_TYPES = ['dynamic', DG.TYPE.DATE_TIME, DG.TYPE.QNUM];
 
 const COLUMN_FUNCTION_NAME = 'GetCurrentRowField';
 const GET_VAR_FUNCTION_NAME = 'GetVar';
@@ -181,7 +182,7 @@ export class AddNewColumnDialog {
   prepareFunctionsListForAutocomplete() {
     //filter functions with one input (multiple inputs or functions returning void are not included)
     const allFunctionsList = DG.Func.find()
-      .filter((it) => it.outputs.length === 1 && (DG.TYPES_SCALAR.has(it.outputs[0].propertyType) || it.outputs[0].propertyType === 'dynamic' || it.outputs[0].propertyType === DG.TYPE.DATE_TIME));
+      .filter((it) => it.outputs.length === 1 && (DG.TYPES_SCALAR.has(it.outputs[0].propertyType) || ALLOWED_OUTPUT_TYPES.includes(it.outputs[0].propertyType)));
     for (const func of allFunctionsList) {
       const params: PropInfo[] = func.inputs.map((it) => {
         return {propName: it.name, propType: it.semType ?? it.propertyType};
