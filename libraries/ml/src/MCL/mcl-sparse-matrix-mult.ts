@@ -36,7 +36,7 @@ export async function multSparseMatrix(
 
 
   const workers: Worker[] = new Array(workersNum).fill(0)
-    .map(() => new Worker(new URL('./mcl-sparse-matrix-mult-worker.ts', import.meta.url)));
+    .map(() => new Worker(new URL('./mcl-sparse-matrix-mult-worker', import.meta.url)));
 
 
   const availableIndexes = new Set<number>();

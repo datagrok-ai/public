@@ -8,11 +8,11 @@
     "email": "drizhinashvili@datagrok.ai"
   },
   "friendlyName": "Datagrok ML library",
-  "version": "6.6.19",
+  "version": "6.6.22",
   "description": "Machine learning supporting utilities",
   "dependencies": {
     "@datagrok-libraries/math": "^1.1.12",
-    "@datagrok-libraries/utils": "^4.2.20",
+    "@datagrok-libraries/utils": "^4.2.29",
     "@keckelt/tsne": "^1.0.2",
     "@types/seedrandom": "^3.0.8",
     "@webgpu/types": "^0.1.40",
@@ -48,7 +48,7 @@
     "debug-ml": "grok publish",
     "release-ml": "grok publish --release",
     "build-ml": "git clean -f -X -d ./src && tsc",
-    "build": "git clean -f -X -d ./src && tsc",
+    "build": "tsc",
     "debug-ml-public": "grok publish public",
     "release-ml-public": "grok publish public --release",
     "debug-ml-local": "grok publish local",

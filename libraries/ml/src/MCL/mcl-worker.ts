@@ -3,15 +3,14 @@ import {SparseMatrixResult, SparseMatrixService} from '../distance-matrix/sparse
 import {DistanceAggregationMethod} from '../distance-matrix/types';
 import {KnownMetrics} from '../typed-metrics';
 import {MCLSparseReducer} from './markov-cluster';
-import { SparseMatrix } from '@datagrok-libraries/math';
 
 onmessage = async (event) => {
-  const {data, threshold, weights, aggregationMethod, distanceFnArgs, distanceFns, maxIterations, useWebGPU, inflate, presetMatrix}:
+  const {data, threshold, weights, aggregationMethod, distanceFnArgs, distanceFns, maxIterations, useWebGPU, inflate}:
    {
     data: any[][], threshold: number,
     weights: number[], aggregationMethod: DistanceAggregationMethod,
     distanceFns: KnownMetrics[], distanceFnArgs: any[], maxIterations: number,
-    useWebGPU?: boolean, inflate?: number, presetMatrix?: SparseMatrix // TODO: DONT FORGET TO REMOVE THIS PARAMETER
+    useWebGPU?: boolean, inflate?: number
   } = event.data;
 
   console.time('sparse matrix');
@@ -39,14 +38,14 @@ onmessage = async (event) => {
   let res: any = null;
   if (useWebGPU) {
     try {
-      res = await reducer.transformWebGPU(presetMatrix ?? sparse, data[0].length); // TODO: DONT FORGET TO REMOVE THIS PARAMETER
+      res = await reducer.transformWebGPU(sparse, data[0].length);
     } catch (e) {
       console.error('webGPU MCL failed, falling back to CPU implementation');
       console.error(e);
     }
   }
   if (!res)
-    res = await reducer.transform(presetMatrix ?? sparse, data[0].length); // TODO: DONT FORGET TO REMOVE THIS PARAMETER
+    res = await reducer.transform(sparse, data[0].length);
   console.timeEnd('MCL');
 
   postMessage({res});

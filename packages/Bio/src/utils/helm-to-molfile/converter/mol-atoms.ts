@@ -4,6 +4,8 @@ export abstract class MolfileAtoms {
   protected coordinates: {x: number, y: number}[] = [];
   protected rawAtomLines: string[] = [];
 
+  get count(): number { return this.coordinates.length; }
+
   get atomCoordinates(): {x: number, y: number}[] {
     return this.coordinates;
   }

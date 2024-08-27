@@ -26,7 +26,7 @@ import {RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
 import {getRS} from './utils/get-monomer-dummy';
 
 // Do not import anything than types from @datagrok/helm-web-editor/src/types
-import type {JSDraw2HelmModule, OrgHelmModule, ScilModule} from './types';
+import type {JSDraw2Module, OrgHelmModule, ScilModule} from './types';
 
 export const _package = new HelmPackage({debug: true});
 
@@ -40,7 +40,7 @@ export const _package = new HelmPackage({debug: true});
 
 declare const window: Window & HweWindow;
 declare const scil: ScilModule;
-declare const JSDraw2: JSDraw2HelmModule;
+declare const JSDraw2: JSDraw2Module;
 declare const org: OrgHelmModule;
 
 //tags: init
@@ -154,23 +154,11 @@ function openWebEditor(cell: DG.Cell, value?: string, units?: string) {
 //name: getMolfiles
 //input: column col {semType: Macromolecule}
 //output: column res
-export function getMolfiles(col: DG.Column): DG.Column {
-  const res = DG.Column.string('mols', col.length);
-
-  const host = ui.div([], {style: {width: '0', height: '0'}});
-  document.documentElement.appendChild(host);
-  try {
-    const editor = new JSDraw2.Editor(host, {viewonly: true});
-    res.init((i) => {
-      editor.setHelm(col.get(i));
-      const mol = editor.getMolfile();
-      return mol;
-    });
-    return res;
-  } finally {
-    $(host).empty();
-    host.remove();
-  }
+export function getMolfiles(col: DG.Column<string>): DG.Column<string> {
+  const helmStrList = col.toList();
+  const molfileList = _package.helmHelper.getMolfiles(helmStrList);
+  const molfileCol = DG.Column.fromStrings('mols', molfileList);
+  return molfileCol;
 }
 
 // -- Inputs --

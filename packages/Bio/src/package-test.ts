@@ -30,6 +30,7 @@ import './tests/seq-handler-tests';
 import './tests/seq-handler-splitted-tests';
 import './tests/seq-handler-get-region';
 import './tests/to-atomic-level-tests';
+import './tests/to-atomic-level-ui-tests';
 import './tests/mm-distance-tests';
 import './tests/activity-cliffs-tests';
 import './tests/sequence-space-test';

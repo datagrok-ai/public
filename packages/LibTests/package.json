@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/lib-tests",
   "friendlyName": "Lib Tests",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "author": {
     "name": "Aufar Zakiev",
     "email": "aufar.zakiev@softwarecountry.com"
@@ -11,7 +11,7 @@
   "dependencies": {
     "@datagrok-libraries/compute-api": "latest",
     "@datagrok-libraries/compute-utils": "latest",
-    "@datagrok-libraries/utils": "^4.2.13",
+    "@datagrok-libraries/utils": "^4.2.29",
     "@datagrok-libraries/webcomponents": "^0.0.2",
     "@datagrok-libraries/webcomponents-vue": "^0.0.2",
     "@vueuse/rxjs": "^10.9.0",

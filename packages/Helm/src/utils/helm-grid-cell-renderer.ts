@@ -15,7 +15,7 @@ import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {getGridCellRendererBack} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
 
-import {getHoveredMonomerFromEditorMol} from './get-hovered';
+import {getHoveredMonomerFromEditorMol, getSeqMonomerFromHelmAtom} from './get-hovered';
 
 import {_package} from '../package';
 
@@ -127,10 +127,10 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
       this.logger.warning(`${logPrefix}, editorMol of the cell not found.`);
       return; // The gridCell is not rendered yet
     }
-    const seqMonomer: ISeqMonomer | null =
-      getHoveredMonomerFromEditorMol(argsX, argsY, editorMol, gridCell.bounds.height);
+    const hoveredAtom = getHoveredMonomerFromEditorMol(argsX, argsY, editorMol, gridCell.bounds.height);
 
-    if (seqMonomer) {
+    if (hoveredAtom) {
+      const seqMonomer = getSeqMonomerFromHelmAtom(hoveredAtom);
       const monomerLib = _package.monomerLib;
       const tooltipEl = monomerLib ? monomerLib.getTooltip(seqMonomer.polymerType, seqMonomer.symbol) :
         ui.divText('Monomer library is not available');

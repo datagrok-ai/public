@@ -32,7 +32,7 @@ export class SunburstViewer extends EChartViewer {
     this.initCommonProperties();
     this.initEventListeners();
 
-    this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST);
+    this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST, null, {columnTypeFilter: DG.TYPE.CATEGORICAL});
     this.hierarchyLevel = 3;
     this.onClick = <onClickOptions>this.string('onClick', 'Select', { choices: ['Select', 'Filter'] });
     this.inheritFromGrid = this.bool('inheritFromGrid', true, { category: 'Color' });
@@ -44,6 +44,9 @@ export class SunburstViewer extends EChartViewer {
         {
           type: 'sunburst',
           nodeClick: false,
+          emphasis: {
+            focus: 'series',
+          },
           label: {
             rotate: 'radial',
             fontSize: 10,
@@ -62,7 +65,7 @@ export class SunburstViewer extends EChartViewer {
 
   handleDataframeSelection(path: string[], event: any) {
     this.dataFrame.selection.handleClick((index: number) => {
-      if (!this.filter.get(index)) {
+      if (!this.filter.get(index) && this.rowSource !== 'Selected') {
         return false;
       }
 
@@ -178,9 +181,8 @@ export class SunburstViewer extends EChartViewer {
   
       if (this.isCanvasEmpty(canvas.getContext('2d'), clickX, clickY)) {
         this.render();
+        this.dataFrame.filter.setAll(true);
       }
-  
-      this.removeFiltering();
     };
   
     this.chart.on('click', handleChartClick);
@@ -195,7 +197,7 @@ export class SunburstViewer extends EChartViewer {
   onContextMenuHandler(menu: DG.Menu): void {
     menu.item('Reset View', () => {
       this.render();
-      this.removeFiltering();
+      this.dataFrame.filter.setAll(true);
     });
   }
 

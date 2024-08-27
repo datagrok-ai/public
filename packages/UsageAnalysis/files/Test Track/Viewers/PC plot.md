@@ -19,5 +19,6 @@
     3. Save to Layout. Check
 ---
 {
-  "order": 8
+  "order": 8,
+  "datasets": ["System:DemoFiles/SPGI.csv"]
 }

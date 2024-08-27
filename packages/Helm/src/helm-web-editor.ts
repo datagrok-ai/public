@@ -6,19 +6,19 @@ import {Unsubscribable} from 'rxjs';
 
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {
-  App, Editor, HelmType, IHelmWebEditor
+  App, Editor, HelmType, IHelmWebEditor, HelmEditor, IHelmDrawOptions
 } from '@datagrok-libraries/bio/src/helm/types';
 
-import {JSDraw2HelmModule, OrgHelmModule, ScilModule} from './types';
+import {JSDraw2Module, OrgHelmModule, ScilModule} from './types';
 
 import {_package} from './package';
 
 declare const scil: ScilModule;
-declare const JSDraw2: JSDraw2HelmModule;
+declare const JSDraw2: JSDraw2Module;
 declare const org: OrgHelmModule;
 
 export class HelmWebEditor implements IHelmWebEditor {
-  editor: Editor<HelmType>;
+  editor: HelmEditor;
   host: HTMLDivElement;
 
   w = 200;
@@ -27,10 +27,19 @@ export class HelmWebEditor implements IHelmWebEditor {
 
   constructor(
     host?: HTMLDivElement,
+    drawOptions?: Partial<IHelmDrawOptions>,
     private logger: ILogger = _package.logger
   ) {
     this.host = host ?? ui.div([], {style: {width: `${this.w}px`, height: `${this.h}px`}});
-    this.editor = new JSDraw2.Editor(this.host, {width: this.w, height: this.h, viewonly: true});
+
+    const styleBackup = {width: this.host.style.width, height: this.host.style.height, overflow: this.host.style.overflow};
+    this.editor = new JSDraw2.Editor(this.host, {
+      width: this.w, height: this.h, viewonly: true,
+      drawOptions: drawOptions
+    });
+    this.host.style.width = styleBackup.width;
+    this.host.style.height = styleBackup.height;
+    this.host.style.overflow = styleBackup.overflow;
 
     this.subs = [];
     this.subs.push(ui.onSizeChanged(this.host).subscribe(this.hostOnSizeChanged.bind(this)));

@@ -283,6 +283,7 @@ export function injectTreeForGridUI2(
 
     renderer.selections = selections;
   }
+
   // Variable to track if filter is changed and prevent the sorting change event
   let filterChangeCounter = 0;
 
@@ -324,7 +325,12 @@ export function injectTreeForGridUI2(
     sortingSub.unsubscribe();
   }
 
+  function treeNeighborOnClosed() {
+    for (const sub of subs) { sub.unsubscribe(); }
+  }
+
   const subs: Unsubscribable[] = [];
+  subs.push(treeNb.onClosed.subscribe(treeNeighborOnClosed));
   subs.push(renderer.onCurrentChanged.subscribe(rendererOnCurrentChanged));
   subs.push(renderer.onMouseOverChanged.subscribe(rendererOnMouseOverChanged));
   subs.push(renderer.onSelectionChanged.subscribe(rendererOnSelectionChanged));

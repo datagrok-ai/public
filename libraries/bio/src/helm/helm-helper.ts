@@ -3,20 +3,33 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import type {App} from '@datagrok-libraries/helm-web-editor/helm/App';
-import {GetMonomerFunc, MonomersFuncs, HelmMol, HelmString, IHelmWebEditor} from './types';
+import {
+  GetMonomerFunc, MonomersFuncs, HelmMol, HelmString, IHelmWebEditor, HelmAtom, IHelmDrawOptions
+} from './types';
 import {IMonomerLib} from '../types/index';
+import {Observable} from 'rxjs';
 
-export type IHelmInputInitOptions = ui.input.IInputInitOptions<HelmString | HelmMol>;
+export type IHelmInputInitOptions = ui.input.IInputInitOptions<HelmString | HelmMol> & {
+  editable: boolean;
+};
 
 export abstract class HelmInputBase extends DG.JsInputBase<HelmString> {
   abstract get molValue(): HelmMol;
   abstract set molValue(value: HelmMol);
+
+  abstract get onMouseMove(): Observable<MouseEvent>;
+
+  abstract get onClick(): Observable<MouseEvent>;
+
+  abstract redraw(): void;
+
+  abstract showTooltip(content: HTMLElement | string, a: HelmAtom): void;
 }
 
 export interface IHelmHelper {
   createHelmInput(name: string, options?: IHelmInputInitOptions): HelmInputBase;
 
-  createHelmWebEditor(host?: HTMLElement): IHelmWebEditor;
+  createHelmWebEditor(host?: HTMLElement, drawOptions?: Partial<IHelmDrawOptions>): IHelmWebEditor;
 
   createWebEditorApp(host: HTMLDivElement, helm?: string): App;
 
@@ -26,6 +39,11 @@ export interface IHelmHelper {
 
   overrideMonomersFuncs(monomersFuncs: MonomersFuncs): MonomersFuncs;
   revertOriginalMonomersFuncs(): MonomersFuncs;
+
+  getHoveredAtom(x: number, y: number, mol: HelmMol, height: number): HelmAtom | null;
+
+  /** Gets pseudo molfiles with monomers as atoms */
+  getMolfiles(helmStrList: string[]): string[];
 }
 
 export async function getHelmHelper(): Promise<IHelmHelper> {

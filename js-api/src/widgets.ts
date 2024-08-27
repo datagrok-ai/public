@@ -1724,7 +1724,8 @@ export class TreeViewNode<T = any> {
   set checked(checked: boolean) { api.grok_TreeViewNode_Set_Checked(this.dart, checked); }
 
   /** Node text */
-  get text(): string { return api.grok_TreeViewNode_Text(this.dart); }
+  get text(): string { return api.grok_TreeViewNode_Get_Text(this.dart); }
+  set text(value: string) {api.grok_TreeViewNode_Set_Text(this.dart, value); }
 
   get tag(): any { return api.grok_TreeViewNode_Get_Tag(this.dart); }
   set tag(t : any) { api.grok_TreeViewNode_Set_Tag(this.dart, t); }
