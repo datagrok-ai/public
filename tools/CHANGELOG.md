@@ -1,6 +1,12 @@
 # Datagrok-tools changelog
 
 
+## 4.13.17 (2024-08-27)
+
+### Features
+
+* Added decorators for viewer functions
+
 ## 4.13.16 (2024-08-23)
 
 ### Features
