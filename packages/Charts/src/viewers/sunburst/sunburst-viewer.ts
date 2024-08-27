@@ -62,7 +62,7 @@ export class SunburstViewer extends EChartViewer {
 
   handleDataframeSelection(path: string[], event: any) {
     this.dataFrame.selection.handleClick((index: number) => {
-      if (!this.filter.get(index)) {
+      if (!this.filter.get(index) && this.rowSource !== 'Selected') {
         return false;
       }
   
@@ -91,17 +91,9 @@ export class SunburstViewer extends EChartViewer {
     };
   }
 
-  removeFiltering() {
-    if (this.dataFrame.filter.trueCount !== this.dataFrame.rowCount) {
-      this.dataFrame.filter.setAll(true);
-    }
-  }
-
   initEventListeners(): void {
     this.chart.on('click', (params: any) => {
       const selectedSectors: string[] = [];
-      if (!params.data.path)
-        return;
       const path: string[] = params.treePathInfo.slice(1).map((obj: any) => obj.name);
       const pathString: string = path.join('|');
       if (this.onClick === 'Filter') {
@@ -171,15 +163,15 @@ export class SunburstViewer extends EChartViewer {
       const clickY = (event.clientY - rect.top) * scaleY;
       if (this.isCanvasEmpty(canvas!.getContext('2d'), clickX, clickY)) {
         this.render();
+        this.dataFrame.filter.setAll(true);
       }
-      this.removeFiltering();
     };
   }
 
   onContextMenuHandler(menu: DG.Menu): void {
     menu.item('Reset View', () => {
       this.render();
-      this.removeFiltering();
+      this.dataFrame.filter.setAll(true);
     });
   }
 

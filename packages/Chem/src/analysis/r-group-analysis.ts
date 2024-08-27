@@ -86,7 +86,8 @@ export function convertToRDKit(smiles: string): string {
  * and initiate the R-Group Analysis for the specified column with molecules.
  * @param {DG.Column} col Column for which to perform R-Group Analysis with specified core
  */
-export function rGroupAnalysis(col: DG.Column, demo = false): void {
+export async function rGroupAnalysis(col: DG.Column, demo = false): Promise<void> {
+  await loadRGroupUserSettings();
   const sketcher = new DG.chem.Sketcher();
 
   //General fields

@@ -5,7 +5,7 @@
     "name": "Maria Dolotova",
     "email": "maria.dolotova@softwarecountry.com"
   },
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Analysis of the clinical data represented in the [SDTM](https://www.cdisc.org/standards/foundational/sdtm) format.",
   "repository": {
     "type": "git",
@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@datagrok-libraries/statistics": "^0.1.7",
-    "@datagrok-libraries/utils": "^4.2.13",
+    "@datagrok-libraries/utils": "^4.2.29",
     "@datagrok/charts": "^1.2.2",
     "@datagrok/multiplot": "^0.0.4",
     "cash-dom": "latest",

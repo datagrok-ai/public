@@ -4,11 +4,11 @@
     "access": "public"
   },
   "author": {
-    "name": "Anna Muzychyna",
-    "email": "amuzychyna@datagrok.ai"
+    "name": "Alexander Paramonov",
+    "email": "aparamonov@datagrok.ai"
   },
   "fullName": "Utils",
-  "version": "4.2.27",
+  "version": "4.2.29",
   "description": "Common utilities",
   "dependencies": {
     "cash-dom": "^8.1.1",

@@ -17,7 +17,7 @@
     "cash-dom": "latest",
     "dayjs": "latest",
     "openchemlib": "latest",
-    "@datagrok-libraries/utils": "^4.2.13"
+    "@datagrok-libraries/utils": "^4.2.29"
   },
   "devDependencies": {
     "ts-loader": "latest",

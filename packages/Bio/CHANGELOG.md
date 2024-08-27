@@ -1,5 +1,16 @@
 # Bio changelog
 
+## 2.14.2 (2024-08-23)
+
+### Features
+
+* Add highlighting monomer at atomic level
+
+### Bug fixes
+
+* Add tests for toAtomicLevel UI
+* Fix demo Helm, MSA, Sequence Space viewer adding
+
 ## 2.14.1 (2024-08-14)
 
 Fix monomer substitution matrix calculation

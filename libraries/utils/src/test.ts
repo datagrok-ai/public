@@ -399,7 +399,7 @@ export async function runTests(options?: TestExecutionOptions) {
   await initAutoTests(package_);
   const results: {
     category?: string, name?: string, success: boolean,
-    result: string, ms: number, skipped: boolean
+    result: string, ms: number, skipped: boolean, logs?: string
   }[] = [];
   console.log(`Running tests`);
   options ??= {};
@@ -413,6 +413,11 @@ export async function runTests(options?: TestExecutionOptions) {
   }
   else {
     await InvokeAllTests(tests, options);
+  }
+  for (let r of results) {
+    r.result = r.result.toString().replace(/"/g, '\'');
+    if (r.logs != undefined)
+      r.logs = r.logs!.toString().replace(/"/g, '\'');
   }
   return results;
 
@@ -499,9 +504,9 @@ export async function runTests(options?: TestExecutionOptions) {
         // grok.shell.closeAll();
         // DG.Balloon.closeAll();
         if (value.afterStatus)
-          data.push({ category: key, name: 'after', result: value.afterStatus, success: false, ms: 0, skipped: false });
+          data.push({ date: new Date().toISOString(), logs: '', category: key, name: 'after', result: value.afterStatus, success: false, ms: 0, skipped: false });
         if (value.beforeStatus)
-          data.push({ category: key, name: 'before', result: value.beforeStatus, success: false, ms: 0, skipped: false });
+          data.push({ date: new Date().toISOString(), logs: '', category: key, name: 'before', result: value.beforeStatus, success: false, ms: 0, skipped: false });
         results.push(...data);
       }
     } finally {

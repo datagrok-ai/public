@@ -476,7 +476,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     for (let n = 0; n < tableNames.length; ++n)
       tableNames[n] = this.molColumns[n][0].dataFrame.name;
 
-    const defaultTableName = tableNames.length > 0 ? tableNames[0] : '';
+    const currentName = grok.shell.tv.dataFrame.name;
+    const defaultTableName = tableNames.includes(currentName) ? currentName : (tableNames[0] || '');
     this.Table = this.addProperty('Table', DG.TYPE.DATA_FRAME, defaultTableName, {editor: 'table', category: 'Data'});
 
     this.tableIdx = tableNames.length > 0 ? tableNames.indexOf(this.Table) : -1;
@@ -1705,6 +1706,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       if (div !== null)
         div.innerHTML = this.MoleculeColumn;
       this.toggleTreeGenerationVisibility();
+      // set the DataFrame first to trigger onFrameAttached, which ensures correct filtering on the appropriate table
+      this.dataFrame = grok.shell.tables.find((df) => df.name === this.Table)!;
     } else if (p.name === 'MoleculeColumn') {
       for (let n = 0; n < this.molColumns[this.tableIdx].length; ++n) {
         if (this.molColumns[this.tableIdx][n].name === this.MoleculeColumn) {
@@ -1886,8 +1889,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       return;
     }
 
-    if (this.allowGenerate)
-      setTimeout(() => this.generateTree(), 1000);
     attached = true;
     scaffoldTreeId += 1;
   }

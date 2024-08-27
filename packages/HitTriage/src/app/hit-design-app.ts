@@ -11,7 +11,7 @@ import '../../css/hit-triage.css';
 import {_package} from '../package';
 import {addBreadCrumbsToRibbons, checkRibbonsHaveSubmit, modifyUrl, toFormatedDateString} from './utils';
 import {HitDesignSubmitView} from './hit-design-views/submit-view';
-import {HitDesignTilesView} from './hit-design-views/tiles-view';
+import {getTilesViewDialog} from './hit-design-views/tiles-view';
 import {HitAppBase} from './hit-app-base';
 import {HitBaseView} from './base-view';
 import {chemFunctionsDialog} from './dialogs/functions-dialog';
@@ -26,8 +26,6 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
   get infoView(): HitDesignInfoView {return this._infoView;}
   private _designView?: DG.TableView;
   public _submitView?: HitDesignSubmitView;
-  private _tilesView?: HitDesignTilesView;
-  private _tilesViewTab: DG.ViewBase | null = null;
   private _designViewName = 'Design';
   private _filePath = 'System.AppData/HitTriage/Hit Design/campaigns';
   private _campaignId?: string;
@@ -39,7 +37,6 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
   private _extraStageColsCount = 0;
 
   private currentDesignViewId?: string;
-  private currentTilesViewId?: string;
   public mainView: DG.ViewBase;
   private get version() {return this._campaign?.version ?? 0;};
 
@@ -58,22 +55,14 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
 
     grok.events.onCurrentViewChanged.subscribe(async () => {
       try {
-        if (grok.shell.v?.name === this.currentDesignViewId || grok.shell.v?.name === this.currentTilesViewId) {
+        if (grok.shell.v?.name === this.currentDesignViewId) {
           grok.shell.windows.showHelp = false;
 
           this.setBaseUrl();
           modifyUrl(CampaignIdKey, this._campaignId ?? this._campaign?.name ?? '');
-          if (this.currentTilesViewId && grok.shell.v?.name === this.currentTilesViewId)
-            await this._tilesView?.render();
-          else {
-            const sketchStateString = this._tilesView?.sketchStateString;
-            if (sketchStateString && sketchStateString != '' && this.campaign)
-              this.campaign.tilesViewerFormSketch = sketchStateString;
-          }
 
           const {sub} = addBreadCrumbsToRibbons(grok.shell.v, 'Hit Design', grok.shell.v?.name, () => {
             grok.shell.v = this.mainView;
-            this._tilesView?.close();
             this._designView?.close();
             this._infoView.init();
             sub.unsubscribe();
@@ -209,77 +198,74 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
           this.saveCampaign(undefined, false);
     };
 
-
-    setTimeout(async () => {
-      view._onAdded();
-      await new Promise((r) => setTimeout(r, 1000)); // needed for substruct filter
-
-      const layoutViewState = this._campaign?.layout ?? this.template?.layoutViewState;
-      if (layoutViewState) {
-        try {
-          const layout = DG.ViewLayout.fromViewState(layoutViewState);
-          view.loadLayout(layout);
-        } catch (e) {
-          console.error(e);
-        }
+    view._onAdded();
+    const layoutViewState = this._campaign?.layout ?? this.template?.layoutViewState;
+    if (layoutViewState) {
+      try {
+        const layout = DG.ViewLayout.fromViewState(layoutViewState);
+        view.loadLayout(layout);
+      } catch (e) {
+        grok.shell.error('Failed to apply layout. Falling back to default layout.');
+        console.error(e);
       }
+    }
 
-      if (isNew)
-        grok.functions.call('Chem:editMoleculeCell', {cell: view.grid.cell(this._molColName, 0)});
+    if (isNew)
+      grok.functions.call('Chem:editMoleculeCell', {cell: view.grid.cell(this._molColName, 0)});
 
-      subs.push(this.dataFrame!.onRowsAdded.pipe(filter(() => !this.isJoining))
-        .subscribe(() => { // TODO, insertion of rows in the middle
-          try {
-            this.processedValues = this.dataFrame!.getCol(this.molColName).toList();
-            if (this.template!.stages?.length > 0) {
-              for (let i = 0; i < this.dataFrame!.rowCount; i++) {
-                const colVal = this.dataFrame!.col(TileCategoriesColName)!.get(i);
-                if (!colVal || colVal === '' || this.dataFrame!.col(TileCategoriesColName)?.isNone(i))
-                this.dataFrame!.set(TileCategoriesColName, i, this.template!.stages[0]);
-              }
-            }
-            let lastAddedCell: DG.GridCell | null = null;
-            for (let i = 0; i < this.dataFrame!.rowCount; i++) {
-              const cell = view.grid.cell(this.molColName, i);
-              if (!cell)
-                continue;
-              if (cell.cell.value === '' || cell.cell.value === null)
-                lastAddedCell = cell;
-            }
-            if (lastAddedCell)
-              grok.functions.call('Chem:editMoleculeCell', {cell: lastAddedCell});
-          } catch (e) {
-            console.error(e);
-          }
-        //const lastCell = view.grid.cell(this.molColName, this.dataFrame!.rowCount - 1);
-        //view.grid.onCellValueEdited
-        }));
-      this.dataFrame && subs.push(this.dataFrame?.onRowsRemoved.subscribe(() => {
+    subs.push(this.dataFrame!.onRowsAdded.pipe(filter(() => !this.isJoining))
+      .subscribe(() => { // TODO, insertion of rows in the middle
         try {
           this.processedValues = this.dataFrame!.getCol(this.molColName).toList();
+          if (this.template!.stages?.length > 0) {
+            for (let i = 0; i < this.dataFrame!.rowCount; i++) {
+              const colVal = this.dataFrame!.col(TileCategoriesColName)!.get(i);
+              if (!colVal || colVal === '' || this.dataFrame!.col(TileCategoriesColName)?.isNone(i))
+                this.dataFrame!.set(TileCategoriesColName, i, this.template!.stages[0]);
+            }
+          }
+          let lastAddedCell: DG.GridCell | null = null;
+          for (let i = 0; i < this.dataFrame!.rowCount; i++) {
+            const cell = view.grid.cell(this.molColName, i);
+            if (!cell)
+              continue;
+            if (cell.cell.value === '' || cell.cell.value === null)
+              lastAddedCell = cell;
+          }
+          if (lastAddedCell)
+            grok.functions.call('Chem:editMoleculeCell', {cell: lastAddedCell});
         } catch (e) {
           console.error(e);
         }
+        //const lastCell = view.grid.cell(this.molColName, this.dataFrame!.rowCount - 1);
+        //view.grid.onCellValueEdited
       }));
-      subs.push(grok.events.onContextMenu.subscribe((args) => {
-        try {
-          const viewer: DG.Viewer = args?.args?.context;
-          if (!viewer)
-            return;
-          if (viewer?.type !== DG.VIEWER.GRID)
-            return;
-          if (!viewer.tableView || viewer.tableView.id !== view.id)
-            return;
-          if (args?.args?.item?.tableColumn?.name !== this.molColName || !args?.args?.item?.isTableCell)
-            return;
-          const menu: DG.Menu = args?.args?.menu;
-          if (!menu)
-            return;
-          menu.item('Add new row', () => {
+    this.dataFrame && subs.push(this.dataFrame?.onRowsRemoved.subscribe(() => {
+      try {
+        this.processedValues = this.dataFrame!.getCol(this.molColName).toList();
+      } catch (e) {
+        console.error(e);
+      }
+    }));
+    subs.push(grok.events.onContextMenu.subscribe((args) => {
+      try {
+        const viewer: DG.Viewer = args?.args?.context;
+        if (!viewer)
+          return;
+        if (viewer?.type !== DG.VIEWER.GRID)
+          return;
+        if (!viewer.tableView || viewer.tableView.id !== view.id)
+          return;
+        if (args?.args?.item?.tableColumn?.name !== this.molColName || !args?.args?.item?.isTableCell)
+          return;
+        const menu: DG.Menu = args?.args?.menu;
+        if (!menu)
+          return;
+        menu.item('Add new row', () => {
             this.dataFrame!.rows.addNew(null, true);
-          });
-          menu.item('Duplicate molecule', () => {
-            try {
+        });
+        menu.item('Duplicate molecule', () => {
+          try {
               this.dataFrame!.rows.addNew(null, true);
               let lastCell: DG.GridCell | null = null;
               for (let i = 0; i < this.dataFrame!.rowCount; i++) {
@@ -292,105 +278,109 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
               if (lastCell)
                 lastCell.cell.value = args?.args?.item?.cell?.value ?? '';
                 // grok.functions.call('Chem:editMoleculeCell', {cell: lastCell});
+          } catch (e) {
+            console.error(e);
+          }
+        });
+
+        const cellIndex = args?.args?.item?.tableRowIndex;
+        const cellValue = args?.args?.item?.cell?.value;
+        if (cellValue && (cellIndex ?? -1) > -1) {
+          menu.item('Re-Run Calculations', async () => {
+            try {
+              await performSingleCellCalculations(cellIndex, cellValue);
             } catch (e) {
               console.error(e);
             }
           });
-
-          const cellIndex = args?.args?.item?.tableRowIndex;
-          const cellValue = args?.args?.item?.cell?.value;
-          if (cellValue && (cellIndex ?? -1) > -1) {
-            menu.item('Re-Run Calculations', async () => {
-              try {
-                await performSingleCellCalculations(cellIndex, cellValue);
-              } catch (e) {
-                console.error(e);
-              }
-            });
-          }
-        } catch (e: any) {
-          grok.log.error(e);
         }
-      }));
-      subs.push(view.grid.onCellValueEdited.subscribe(async (gc) => {
-        try {
-          if (gc.tableColumn?.name === TileCategoriesColName) {
-            await this.saveCampaign(undefined, false);
-            return;
-          }
-          if (gc.tableColumn?.name !== this.molColName)
-            return;
-          const newValue = gc.cell.value;
-          const newValueIdx = gc.tableRowIndex!;
-          let newVid = this.dataFrame!.col(ViDColName)?.get(newValueIdx);
-          let foundMatch = false;
-          // try to find existing molecule
-          if (newValue) {
-            try {
-              const canonicals = gc.tableColumn.toList().map((cv) => {
-                try {
-                  return grok.chem.convert(cv, grok.chem.Notation.Unknown, grok.chem.Notation.Smiles);
-                } catch (e) {
-                  return '';
-                }
-              },
-              );
-              const canonicalNewValue =
+      } catch (e: any) {
+        grok.log.error(e);
+      }
+    }));
+
+    if (!view?.grid) {
+      grok.shell.error('Applied layout created view without grid. Resetting layout.');
+      view.resetLayout();
+    }
+    view?.grid && subs.push(view.grid.onCellValueEdited.subscribe(async (gc) => {
+      try {
+        if (gc.tableColumn?.name === TileCategoriesColName) {
+          await this.saveCampaign(undefined, false);
+          return;
+        }
+        if (gc.tableColumn?.name !== this.molColName)
+          return;
+        const newValue = gc.cell.value;
+        const newValueIdx = gc.tableRowIndex!;
+        let newVid = this.dataFrame!.col(ViDColName)?.get(newValueIdx);
+        let foundMatch = false;
+        // try to find existing molecule
+        if (newValue) {
+          try {
+            const canonicals = gc.tableColumn.toList().map((cv) => {
+              try {
+                return grok.chem.convert(cv, grok.chem.Notation.Unknown, grok.chem.Notation.Smiles);
+              } catch (e) {
+                return '';
+              }
+            },
+            );
+            const canonicalNewValue =
                 grok.chem.convert(newValue, grok.chem.Notation.Unknown, grok.chem.Notation.Smiles);
-              if (canonicals?.length === this.dataFrame!.rowCount) {
-                for (let i = 0; i < canonicals.length; i++) {
-                  if (canonicals[i] === canonicalNewValue &&
+            if (canonicals?.length === this.dataFrame!.rowCount) {
+              for (let i = 0; i < canonicals.length; i++) {
+                if (canonicals[i] === canonicalNewValue &&
                       i !== newValueIdx && this.dataFrame!.col(ViDColName)?.get(i)) {
-                    newVid = this.dataFrame!.col(ViDColName)?.get(i);
-                    foundMatch = true;
-                    break;
-                  }
+                  newVid = this.dataFrame!.col(ViDColName)?.get(i);
+                  foundMatch = true;
+                  break;
                 }
               }
-            } catch (e) {
-              console.error(e);
             }
+          } catch (e) {
+            console.error(e);
           }
-          // if the vid was duplicated, generate a new one
-          if (this.duplicateVidCache && !foundMatch &&
+        }
+        // if the vid was duplicated, generate a new one
+        if (this.duplicateVidCache && !foundMatch &&
             this.duplicateVidCache.valueCounts[this.duplicateVidCache.indexes[newValueIdx]] > 1)
-            newVid = null;
+          newVid = null;
 
-          if (!newVid || newVid === '')
-            newVid = getNewVid(this.dataFrame!.col(ViDColName)!);
+        if (!newVid || newVid === '')
+          newVid = getNewVid(this.dataFrame!.col(ViDColName)!);
 
           this.dataFrame!.col(ViDColName)!.set(newValueIdx, newVid, false);
 
           performSingleCellCalculations(newValueIdx, newValue);
-        } catch (e) {
-          console.error(e);
-        }
-      }));
+      } catch (e) {
+        console.error(e);
+      }
+    }));
 
-      subs.push(view.grid.onCellRender.subscribe((args) => {
-        try {
-          // color duplicate vid values
-          const cell = args.cell;
-          if (!cell || !cell.isTableCell || !cell.tableColumn || !this.duplicateVidCache ||
+    view?.grid && subs.push(view.grid.onCellRender.subscribe((args) => {
+      try {
+        // color duplicate vid values
+        const cell = args.cell;
+        if (!cell || !cell.isTableCell || !cell.tableColumn || !this.duplicateVidCache ||
             cell.tableColumn.name !== ViDColName || (cell.tableRowIndex ?? -1) < 0)
-            return;
+          return;
 
-          if (this.duplicateVidCache.valueCounts[this.duplicateVidCache.indexes[cell.tableRowIndex!]] > 1) {
-            args.cell.style.backColor =
+        if (this.duplicateVidCache.valueCounts[this.duplicateVidCache.indexes[cell.tableRowIndex!]] > 1) {
+          args.cell.style.backColor =
               DG.Color.setAlpha(DG.Color.getCategoricalColor(this.duplicateVidCache.indexes[cell.tableRowIndex!])
                 , 150);
-          }
-        } catch (e) {}
-      }));
-
-
-      const onRemoveSub = grok.events.onViewRemoved.subscribe((v) => {
-        if (v.id === view.id) {
-          subs.forEach((s) => s.unsubscribe());
-          onRemoveSub.unsubscribe();
         }
-      });
-    }, 300);
+      } catch (e) {}
+    }));
+
+
+    const onRemoveSub = grok.events.onViewRemoved.subscribe((v) => {
+      if (v.id === view?.id) {
+        subs.forEach((s) => s.unsubscribe());
+        onRemoveSub.unsubscribe();
+      }
+    });
     const ribbons = view?.getRibbonPanels();
     if (ribbons) {
       const hasSubmit = checkRibbonsHaveSubmit(ribbons);
@@ -487,16 +477,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
           });
         }, 'Edit campaign permissions');
         const tilesButton = ui.bigButton('Progress tracker', () => {
-          if (this.currentTilesViewId && grok.shell.view(this.currentTilesViewId))
-            grok.shell.view(this.currentTilesViewId)?.close();
-
-          this._tilesView = new HitDesignTilesView(this);
-          this._tilesView.parentCall = this.parentCall;
-          this._tilesViewTab = grok.shell.addView(this._tilesView);
-          this.currentTilesViewId = this._tilesViewTab.name;
-          this._tilesView.onActivated();
-
-          grok.shell.v = grok.shell.view(this.currentTilesViewId)!;
+          getTilesViewDialog(this, () => this._designView ?? null);
         });
 
         const submitButton = ui.bigButton('Submit', () => {
@@ -520,7 +501,10 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
           ribbonButtons.unshift(permissionsButton);
         ribbonButtons.unshift(calculateRibbon);
         ribbonButtons.unshift(addNewRowButton);
+
+
         ribbons.push(ribbonButtons);
+        // remove project save button from the ribbon
         view.setRibbonPanels(ribbons);
       }
     }
@@ -636,7 +620,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
     enrichedDf.columns.toList().forEach((col) => columnSemTypes[col.name] = col.semType);
     const colTypeMap: {[_: string]: string} = {};
     enrichedDf.columns.toList().forEach((col) => colTypeMap[col.name] = col.type);
-    const sketchStateString = this._tilesView?.sketchStateString ?? this.campaign?.tilesViewerFormSketch ?? undefined;
+    const sketchStateString = this.campaign?.tilesViewerFormSketch ?? undefined;
 
     // if its first time save author as current user, else keep the same
     const authorUserId = this.campaign?.authorUserId ?? grok.shell.user.id;

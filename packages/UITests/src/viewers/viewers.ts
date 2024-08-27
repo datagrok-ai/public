@@ -35,6 +35,10 @@ category('Viewers', ()=> {
     await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.GRID, {sortByColumnNames: ['age']});
     await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.GRID, {pinnedRowColumnNames: ['subj']});
     await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.PC_PLOT, {colorColumnName: 'started'});
+    await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.DENSITY_PLOT, {xColumnName: 'started'});
+    await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.BAR_CHART,
+      {splitColumnName: 'subj', axisType: DG.AxisType.logarithmic});
+    await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.BOX_PLOT, {rowSource: DG.RowSet.MouseOverRow});
   });
 });
 

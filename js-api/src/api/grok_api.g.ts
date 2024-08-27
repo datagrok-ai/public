@@ -100,6 +100,8 @@ export interface IDartApi {
   grok_ProjectsDataSource_Save(s: any, p: any, saveRelations: Bool): Promise<any>;
   grok_DataConnectionsDataSource_Save(s: any, c: any, saveCredentials: Bool): Promise<any>;
   grok_DataConnectionsDataSource_SubDir(s: any, c: any, dir: String): Promise<any>;
+  grok_DataConnectionsDataSource_Get_Schemas(s: any, c: any): Promise<any>;
+  grok_DataConnectionsDataSource_Get_Schema(s: any, c: any, schema: String): Promise<any>;
   grok_GroupsDataSource_Save(s: any, e: any): Promise<any>;
   grok_EntitiesDataSource_SaveProperties(s: any, props: any): Promise<any>;
   grok_EntitiesDataSource_GetProperties(s: any, e: any): Promise<any>;
@@ -404,6 +406,8 @@ export interface IDartApi {
   grok_ScatterPlotViewer_ScreenToWorld(s: any, x: Num, y: Num): any;
   grok_ScatterPlotViewer_Render(s: any, g: any): any;
   grok_ScatterPlotViewer_GetRowTooltip(s: any, rowIdx: Num): any;
+  grok_ScatterPlotViewer_GetMarkerSize(s: any, rowIdx: Num): any;
+  grok_ScatterPlotViewer_GetMarkerType(s: any, rowIdx: Num): any;
   grok_FormViewer_CreateDefault(table: any, columnNames: any): any;
   grok_FormViewer_Get_Form(form: any): any;
   grok_FormViewer_Get_Editable(form: any): any;
@@ -820,6 +824,7 @@ export interface IDartApi {
   grok_Property_Get_Set(p: any): any;
   grok_Property_Set_Set(p: any, x: any): any;
   grok_Property_Get_Caption(p: any): any;
+  grok_Property_Set_Caption(p: any, x: String): any;
   grok_Property_Get_Name(p: any): any;
   grok_Property_Set_Name(p: any, x: String): any;
   grok_Property_Get_Category(p: any): any;

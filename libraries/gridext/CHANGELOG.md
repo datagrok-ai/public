@@ -1,5 +1,9 @@
 # gridext changelog
 
+## 1.3.72 (2024-08-23)
+
+Add onClosed event to GridNeighbour 
+
 ## 1.3.71 (2024-03-06)
 
 Fix GridNeighbour resize observer

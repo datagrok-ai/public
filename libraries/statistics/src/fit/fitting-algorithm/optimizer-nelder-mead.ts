@@ -35,7 +35,7 @@ export const nelderMeadCaptions = new Map([
 ]);
 
 function getInitialParams(
-  objectiveFunc: (x: Float32Array) => number,
+  objectiveFunc: (x: Float32Array) => {likelihood: number, residuals: number[]},
   settings: NelderMeadSettings,
   paramsInitial: Float32Array,
   restrictionsBottom: Float32Array,
@@ -64,7 +64,7 @@ function getInitialParams(
           optParams[i][j] = restrictionsTop[j];
       }
     }
-    pointObjectives[i] = objectiveFunc(optParams[i]);
+    pointObjectives[i] = objectiveFunc(optParams[i]).likelihood;
   }
 
   return [optParams, pointObjectives];
@@ -99,7 +99,7 @@ function fillPoint(
 }
 
 export const optimizeNM: IOptimizer = function(
-  objectiveFunc: (x: Float32Array) => number,
+  objectiveFunc: (x: Float32Array) => {likelihood: number, residuals: number[]},
   paramsInitial: Float32Array,
   settings: NelderMeadSettings,
   restrictionsBottom: Float32Array,
@@ -166,14 +166,14 @@ export const optimizeNM: IOptimizer = function(
       // reflection
       fillPoint(centroid, reflectionPoint, indexes[lastIndex],
         optParams, scaleReflection, dimParams, restrictionsBottom, restrictionsTop);
-      const reflectionScore = objectiveFunc(reflectionPoint);
+      const reflectionScore = objectiveFunc(reflectionPoint).likelihood;
 
       // expansion
       if (reflectionScore < pointObjectives[indexes[lastIndex]]) {
         fillPoint(centroid, expansionPoint, indexes[lastIndex],
           optParams, scaleExpansion, dimParams, restrictionsBottom, restrictionsTop);
 
-        const expansionScore = objectiveFunc(expansionPoint);
+        const expansionScore = objectiveFunc(expansionPoint).likelihood;
 
         if (expansionScore < reflectionScore) {
           pointObjectives[indexes[lastIndex]] = expansionScore;
@@ -197,7 +197,7 @@ export const optimizeNM: IOptimizer = function(
       fillPoint(centroid, contractionPoint, indexes[lastIndex],
         optParams, scaleContraction, dimParams, restrictionsBottom, restrictionsTop);
 
-      const contractionScore = objectiveFunc(contractionPoint);
+      const contractionScore = objectiveFunc(contractionPoint).likelihood;
 
       if (contractionScore < pointObjectives[indexes[lastIndex]]) {
         pointObjectives[indexes[lastIndex]] = contractionScore;

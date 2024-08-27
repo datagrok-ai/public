@@ -51,7 +51,7 @@ import {chemDiversitySearch, ChemDiversityViewer} from './analysis/chem-diversit
 import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {chemSpace, runChemSpace} from './analysis/chem-space';
 import {RGroupDecompRes, RGroupParams, rGroupAnalysis, rGroupDecomp, loadRGroupUserSettings} from './analysis/r-group-analysis';
-import {MatchedMolecularPairsViewer} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
+import {MatchedMolecularPairsViewer} from './analysis/molecular-matched-pairs/mmp-viewer';
 
 //file importers
 import {_importTripos} from './file-importers/mol2-importer';
@@ -75,7 +75,6 @@ import {getEmbeddingColsNames}
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
 import {ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reducer';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
-import {drawMoleculeLabels} from './rendering/molecule-label';
 import {getMCS} from './utils/most-common-subs';
 import JSZip from 'jszip';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
@@ -147,7 +146,6 @@ export async function initChem(): Promise<void> {
 
     DG.chem.currentSketcherType = DG.DEFAULT_SKETCHER;
   }
-  await loadRGroupUserSettings();
   _renderers = new Map();
 }
 
@@ -159,6 +157,9 @@ export async function initChemAutostart(): Promise<void> { }
 //input: column col {semType: Molecule}
 //output: widget result
 export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined> {
+  const initialWidth = 255;
+  const initialHeight = 90;
+  const tooltipMaxWidth = 500;
   const version = col.version;
 
   for (let i = 0; i < col.length; ++i) {
@@ -167,14 +168,14 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
   }
 
   const divMain = ui.div();
-  divMain.append(ui.divText('Most diverse structures', {style: {'position': 'relative', 'left': '20px'}}));
+  divMain.append(ui.divText('Most diverse structures', 'chem-tooltip-text'));
   const divStructures = ui.div([ui.loader()]);
-  divStructures.classList.add('d4-flex-wrap');
+  divStructures.classList.add('chem-tooltip-structure-div');
 
   const getDiverseStructures = async (): Promise<void> => {
     if (col.temp['version'] !== version || col.temp['molIds'].length === 0) {
       const molIds = await chemDiversitySearch(
-        col, similarityMetric[BitArrayMetricsNames.Tanimoto], 7, Fingerprint.Morgan, DG.BitSet.create(col.length).setAll(true), true);
+        col, similarityMetric[BitArrayMetricsNames.Tanimoto], 6, Fingerprint.Morgan, DG.BitSet.create(col.length).setAll(true), true);
 
       Object.assign(col.temp, {
         'version': version,
@@ -189,7 +190,26 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
 
   divMain.append(divStructures);
   const widget = new DG.Widget(divMain);
-  widget.root.classList.add('chem-tooltip-widget');
+  
+  Object.assign(widget.root.style, {
+    position: 'relative',
+    width: `${initialWidth}px`,
+    height: `${initialHeight}px`,
+  });
+
+  const tooltip = document.querySelector('.d4-tooltip');
+  if (tooltip) {
+    const {width, height} = tooltip.getBoundingClientRect();
+    const isWideTooltip = width + initialWidth > tooltipMaxWidth;
+
+    Object.assign(widget.root.style, {
+      left: isWideTooltip ? '0' : `${width - widget.root.offsetWidth}px`,
+      top: isWideTooltip ? '0' : `${30 - height}px`,
+      width: `${isWideTooltip ? initialWidth : initialWidth + width}px`,
+      height: isWideTooltip ? `${initialHeight}px` : '0',
+    });
+  }
+
   setTimeout(() => getDiverseStructures(), 10);
   return widget;
 }
@@ -600,7 +620,6 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
     res = grok.shell.tv.scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical space'});
     if (clusterEmbeddings)
       res.props.colorColumnName = clusterColName;
-    drawMoleculeLabels(table, molecules, res as DG.ScatterPlotViewer, 20, -1, 100, 70);
   }
   return res;
 }
@@ -898,7 +917,6 @@ export async function activityCliffsInitFunction(sp: DG.ScatterPlotViewer): Prom
     actCliffsParams.similarity, actCliffsParams.similarityMetric, actCliffsParams.options, DG.SEMTYPE.MOLECULE,
     {'units': molCol.meta.units!}, createTooltipElement, createPropPanelElement, undefined, undefined, actCliffsParams.isDemo);
   const size = sp.getOptions().look['sizeColumnName'];
-  drawMoleculeLabels(sp.dataFrame, molCol, sp, 20, -1, 100, 105, size);
   //to draw the lines fro cliffs
   sp.render(sp.getInfo()['canvas'].getContext('2d'));
 }

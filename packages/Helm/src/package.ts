@@ -154,23 +154,11 @@ function openWebEditor(cell: DG.Cell, value?: string, units?: string) {
 //name: getMolfiles
 //input: column col {semType: Macromolecule}
 //output: column res
-export function getMolfiles(col: DG.Column): DG.Column {
-  const res = DG.Column.string('mols', col.length);
-
-  const host = ui.div([], {style: {width: '0', height: '0'}});
-  document.documentElement.appendChild(host);
-  try {
-    const editor = new JSDraw2.Editor(host, {viewonly: true});
-    res.init((i) => {
-      editor.setHelm(col.get(i));
-      const mol = editor.getMolfile();
-      return mol;
-    });
-    return res;
-  } finally {
-    $(host).empty();
-    host.remove();
-  }
+export function getMolfiles(col: DG.Column<string>): DG.Column<string> {
+  const helmStrList = col.toList();
+  const molfileList = _package.helmHelper.getMolfiles(helmStrList);
+  const molfileCol = DG.Column.fromStrings('mols', molfileList);
+  return molfileCol;
 }
 
 // -- Inputs --

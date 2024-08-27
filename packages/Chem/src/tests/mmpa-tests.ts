@@ -7,7 +7,7 @@ import {createTableView} from './utils';
 import {mmpViewer} from '../package';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {_package} from '../package-test';
-import {MatchedMolecularPairsViewer} from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
+import {MatchedMolecularPairsViewer} from '../analysis/molecular-matched-pairs/mmp-viewer';
 
 const pairsFromMolblock = `
      RDKit          2D

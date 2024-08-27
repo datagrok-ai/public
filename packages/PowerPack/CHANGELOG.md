@@ -1,5 +1,19 @@
 # PowerPack changelog
 
+## 1.1.12 (2024-08-21)
+
+### Bug Fixes
+
+* [#2918](https://github.com/datagrok-ai/public/issues/2918): Typing $ in the calculated column dialog pops up the available column drop down also within a quoted field
+
+## 1.1.11 (2024-08-20)
+
+### Bug Fixes
+
+* [#2993](https://github.com/datagrok-ai/public/issues/2993): Calculated columns dialog: Cannot type in any input after adding a calculated column
+* [#2988](https://github.com/datagrok-ai/public/issues/2988): Calculated columns dialog: Fixed qnum type validation
+* [#2981](https://github.com/datagrok-ai/public/issues/2981): Calculated columns dialog: Typing calculated formula: input is overwritten unexpectedly in some cases
+
 ## 1.1.10 (2024-08-07)
 
 ### Bug Fixes

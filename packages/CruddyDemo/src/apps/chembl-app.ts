@@ -102,6 +102,7 @@ export const chemblConfig = new CruddyConfig({
         'canonical_smiles', 'molecule_dictionary.chembl_id', 'drug_mechanism.action_type', 'drug_mechanism.mechanism_of_action'
       ],
       defaultView: 'cards',
+      //searchColumns: ['drug_mechanism.action_type'],
       filters: [
         { type: 'distinct', column: 'molecule_dictionary.molecule_type' },
         { type: 'distinct', column: 'drug_mechanism.action_type' },

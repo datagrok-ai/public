@@ -58,7 +58,11 @@ const waitForButtonAndClick = async (selector: string, timeout: number = 5000) =
 
 const leaveDiffDockPanelOnly = async () => {
   const container = document.querySelectorAll('.panel-content')[1] as HTMLElement;
-  const targetPanel = document.querySelector('div.d4-accordion-pane[d4-title="DiffDock"]');
+  const targetPanel = document.querySelector('div.d4-accordion-pane[d4-title="DiffDock"]') as HTMLElement;
+
+  const child = targetPanel.firstChild as HTMLElement;
+  if (!child.classList.contains('expanded'))
+    child.click();
 
   if (container && targetPanel) {
     ui.empty(container);
