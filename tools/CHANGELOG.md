@@ -1,6 +1,12 @@
 # Datagrok-tools changelog
 
 
+## 4.13.19 (2024-08-27)
+
+### Features
+
+* Package ts data insertation fixes
+
 ## 4.13.18 (2024-08-27)
 
 ### Features

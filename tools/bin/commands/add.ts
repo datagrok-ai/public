@@ -254,11 +254,6 @@ export function add(args: { _: string[] }) {
       'entity-template', 'viewer-class' + ext), 'utf8');
     fs.writeFileSync(viewerPath, insertName(name, viewerClass), 'utf8');
 
-
-    // Add a viewer function to package.js 
-    contents = insertName(name, `import {_#{NAME}} from './package.g';\n`);
-    contents += fs.readFileSync(packageEntry, 'utf8'); 
-    fs.writeFileSync(packageEntry, contents, 'utf8');
     console.log(help.viewer(name));
     break;
   case 'detector':
