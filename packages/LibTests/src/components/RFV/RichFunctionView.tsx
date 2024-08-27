@@ -109,15 +109,15 @@ export const RichFunctionView = defineComponent({
           
     return () => (
       <div style={{width: '100%', height: '100%', display: 'flex'}}>
-        <div style={{display: 'flex', flexDirection: 'column'}}>
-          <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'flex-end', padding: '0px 8px'}}>
+        <div style={{display: 'flex', flexDirection: 'column', padding: '8px'}}>
+          <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'flex-end'}}>
             <IconFA 
               name={formHidden.value ? 'chevron-double-right': 'chevron-double-left'} 
               tooltip={formHidden.value ? 'Show input form': 'Hide input form'}
               onClick={() => formHidden.value = !formHidden.value}
             />
           </div>
-          <div style={{padding: '8px', display: formHidden.value ? 'none': 'block'}}> 
+          <div style={{display: formHidden.value ? 'none': 'block'}}> 
             <InputForm funcCall={currentCall.value}/>
             <div style={{display: 'flex', position: 'sticky', bottom: '0px'}}>
               <BigButton onClick={run}> Run </BigButton>

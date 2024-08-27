@@ -275,6 +275,7 @@ export async function TestVueRFVDriver() {
   // TODO: close view handling
   const view = new DG.ViewBase();
   const app = createApp(VueDriverRFVApp);
+  view.root.classList.remove('ui-panel');
   app.mount(view.root);
   grok.shell.addView(view);
 }
