@@ -47,7 +47,7 @@ export async function app(): Promise<void> {
     onValueChanged: () => update(),
   }) as DG.InputBase<CATEGORY>;
   const filterForm = ui.form([mode, shipToCountry, category]);
-  const filtersHost = ui.div([molecule, filterForm], 'chemspace-controls,pure-form');
+  const filtersHost = ui.div([molecule, filterForm], 'chemspace-controls,ui-form');
 
   const emptyTable = DG.DataFrame.create();
   const view = grok.shell.addTableView(emptyTable);
