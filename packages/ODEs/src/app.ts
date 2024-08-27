@@ -1296,9 +1296,13 @@ export class DiffStudio {
         const solver = new DiffStudio(false);
         this.browseView.preview = await solver.getFilePreview(file, path);
 
-        setTimeout(() => {
+        setTimeout(async () => {
           panelRoot.scrollTo(0, treeNodeY);
           item.root.focus();
+
+          const idx = this.browseView.path.indexOf(PATH.PARAM);
+          const params = this.browseView.path.slice(idx);
+          this.browseView.path = `files/${file.fullPath.replace(':', '.')}${params}`;
         }, UI_TIME.BROWSING);
       });
 
