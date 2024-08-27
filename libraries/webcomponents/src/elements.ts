@@ -142,7 +142,8 @@ export class DGComboPopup extends HTMLElement {
         'selected', {detail: {item, itemIdx: this._items.findIndex((i) => i === item)}}),
       ),
     );
-    newPopup.classList.add('d4-ribbon-item');
+    newPopup.style.height = '24px';
+    newPopup.style.minWidth = '0px';
     this.appendChild(newPopup);
   }
 }

@@ -204,30 +204,35 @@ export const TreeNode = defineComponent({
         {/* { progressIcon(props.stat.data.status) } */}
         { props.stat.children.length ? openIcon() : null }
         <span class="mtl-ml">{ nodeLabel(props.stat) }</span>
-        { props.isDraggable && props.stat.data.isHovered && !isRunning(props.stat) ? <IconFA 
-          name='grip-vertical' 
-          cursor='grab'
-          style={{paddingLeft: '4px'}}
-        />: null }
-        { props.isDeletable && props.stat.data.isHovered && !isRunning(props.stat) ? <IconFA 
-          name='times' 
-          style={{paddingLeft: '4px'}}
-          onClick={(e: Event) => {emit('removeNode'); e.stopPropagation();}}
-        />: null }
-        { hasAddButton(props.stat.data) && props.stat.data.isHovered? 
-          <ComboPopup 
-            caption={ui.iconFA('plus')}
-            items={props.stat.data.stepTypes
-              .map((stepType) => stepType.friendlyName ?? stepType.nqName ?? stepType.configId)
-            }
-            onSelected={({itemIdx}) => {
-              const data = props.stat.data as PipelineStateSequential | PipelineStateParallel;
-              emit('addNode', {
-                itemId: data.stepTypes[itemIdx].configId,
-                position: data.steps.length,
-              });
-            }}
-          />: null }
+        { props.stat.data.isHovered ? 
+          <div style={{
+            gap: '6px', display: 'flex', padding: '0px 6px', 
+            alignItems: 'center', justifyContent: 'flex-end',
+            width: '100%',
+          }}>
+            { hasAddButton(props.stat.data) ? 
+              <ComboPopup 
+                caption={ui.iconFA('plus')}
+                items={props.stat.data.stepTypes
+                  .map((stepType) => stepType.friendlyName ?? stepType.nqName ?? stepType.configId)
+                }
+                onSelected={({itemIdx}) => {
+                  const data = props.stat.data as PipelineStateSequential | PipelineStateParallel;
+                  emit('addNode', {
+                    itemId: data.stepTypes[itemIdx].configId,
+                    position: data.steps.length,
+                  });
+                }}
+              />: null }
+            { props.isDraggable && !isRunning(props.stat) ? <IconFA 
+              name='grip-vertical' 
+              cursor='grab'
+            />: null }
+            { props.isDeletable && !isRunning(props.stat) ? <IconFA 
+              name='times' 
+              onClick={(e: Event) => {emit('removeNode'); e.stopPropagation();}}
+            />: null }
+          </div> : null }
       </div>
     );    
   },
