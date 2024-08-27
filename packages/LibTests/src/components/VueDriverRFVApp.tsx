@@ -37,7 +37,6 @@ export const VueDriverRFVApp = defineComponent({
 
     useSubscription((driver.currentState$).subscribe((s) => {
       if (treeInstance.value) {
-        console.log(treeInstance.value);
         const oldStats = treeInstance.value!.statsFlat as AugmentedStat[];
         oldClosed = oldStats.reduce((acc, stat) => {
           if (!stat.open) 
@@ -144,7 +143,7 @@ export const VueDriverRFVApp = defineComponent({
                 isVisibleRfv.value && currentFuncCall.value && <RichFunctionView 
                   style={{height: '100%'}} 
                   funcCall={currentFuncCall.value}
-                  onFuncCallChange={(chosenCall) => currentFuncCall.value=chosenCall}
+                  onUpdate:funcCall={(chosenCall) => currentFuncCall.value=chosenCall}
                 /> 
               }
             </div>

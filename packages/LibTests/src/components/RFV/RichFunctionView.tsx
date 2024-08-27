@@ -76,7 +76,7 @@ export const RichFunctionView = defineComponent({
     },
   },
   emits: {
-    funcCallChange: (call: DG.FuncCall) => call,
+    'update:funcCall': (call: DG.FuncCall) => call,
   },
   setup(props, {emit}) {
     const currentCall = computed(() => props.funcCall);
@@ -92,9 +92,10 @@ export const RichFunctionView = defineComponent({
 
     const selectedIdx = ref(0);
 
-    const runSimulation = async () => {
+    const run = async () => {
+      currentCall.value.newId();
       await currentCall.value.call();
-      triggerRef(currentCall);
+      emit('update:funcCall', currentCall.value);
     };
 
     const formHidden = ref(false);
@@ -112,14 +113,12 @@ export const RichFunctionView = defineComponent({
               onClick={() => formHidden.value = !formHidden.value}
             />
           </div>
-          {
-            <div style={{padding: '8px', display: formHidden.value ? 'none': 'block'}}> 
-              <InputForm funcCall={currentCall.value}/>
-              <div style={{display: 'flex', position: 'sticky', bottom: '0px'}}>
-                <BigButton onClick={runSimulation}> Run </BigButton>
-              </div>
+          <div style={{padding: '8px', display: formHidden.value ? 'none': 'block'}}> 
+            <InputForm funcCall={currentCall.value}/>
+            <div style={{display: 'flex', position: 'sticky', bottom: '0px'}}>
+              <BigButton onClick={run}> Run </BigButton>
             </div>
-          }
+          </div>
         </div>
         <Tabs 
           items={tabLabels.value.map((label) => ({label}))} 
@@ -128,30 +127,27 @@ export const RichFunctionView = defineComponent({
           style={{width: '100%'}}
         >
           {{
-            default: () =>
+            default: () => 
               tabLabels.value.map((tabLabel) => categoryToDfParam.value.inputs[tabLabel] ?? 
                 categoryToDfParam.value.outputs[tabLabel])            
                 .flatMap((tabProps) => tabProps.map((prop) => Utils.getPropViewers(prop)))
                 .map(({name, config: allConfigs}) => 
                   <div style={{display: 'flex', flexDirection: 'column'}}>
                     {
-                      allConfigs.map((options, idx) => 
-                        <div key={`${currentCall.value.id}_${idx}`} style={{height: '300px'}}>
-                          <Viewer
-                            type={options['type'] as string}
-                            options={options}
-                            dataFrame={currentCall.value.inputs[name] ?? currentCall.value.outputs[name]}
-                            style={{width: '100%'}} 
-                          /> 
-                        </div>,
+                      allConfigs.map((options) => 
+                        <Viewer
+                          type={options['type'] as string}
+                          options={options}
+                          dataFrame={currentCall.value.inputs[name] ?? currentCall.value.outputs[name]}
+                          style={{width: '100%', height: '300px'}} 
+                        />, 
                       )
                     }
                     <ScalarTable 
                       funcCall={currentCall.value} 
                       category={tabLabels.value[selectedIdx.value]}
                     />
-                  </div>, 
-                ),
+                  </div>),
             stripePostfix: () => <div style={{display: 'flex', gap: '6px', padding: '0px 6px'}}>
               { hasContextHelp.value && <IconFA 
                 name='info' 
@@ -172,7 +168,7 @@ export const RichFunctionView = defineComponent({
           showBatchActions
           isHistory
           style={{display: historyHidden.value ? 'none': 'block', width: '30%'}}
-          onRunChosen={(chosenCall) => emit('funcCallChange', chosenCall)}
+          onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
         />
       </div>
     );
