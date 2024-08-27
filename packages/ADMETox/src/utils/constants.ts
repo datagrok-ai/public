@@ -42,3 +42,11 @@ export interface Subgroup {
   description: string;
   models: Model[];
 }
+
+export const TAGS = {
+  SECTOR_COLOR: ".sectorColor",
+  LOW: ".low",
+  HIGH: ".high",
+  WEIGHT: ".weight",
+  GROUP_NAME: ".group-name"
+};

@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { _package } from '../package-test';
 import '../css/admetox.css';
-import { TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, DEFAULT_LOWER_VALUE, DEFAULT_UPPER_VALUE } from './constants';
+import { TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, DEFAULT_LOWER_VALUE, DEFAULT_UPPER_VALUE, TAGS } from './constants';
 import { PieChartCellRenderer } from '@datagrok/power-grid/src/sparklines/piechart';
 import { CellRenderViewer } from '@datagrok-libraries/utils/src/viewers/cell-render-viewer';
 
@@ -117,13 +117,14 @@ function generateNumber(): number {
   return Math.random() * (1 - Number.MIN_VALUE) + Number.MIN_VALUE;
 }
 
-function createPieSettings(columnNames: string[], properties: any): any {
+function createPieSettings(table: DG.DataFrame, columnNames: string[], properties: any): any {
   const colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728'];
   let sectors: any[] = [];
   let sectorColorIndex = 0;
 
   for (const subgroup of properties.subgroup) {
     const sector: any = {
+      name: subgroup.name,
       sectorColor: colors[sectorColorIndex],
       subsectors: []
     };
@@ -137,12 +138,27 @@ function createPieSettings(columnNames: string[], properties: any): any {
           if (directionProperty && directionProperty.object.direction === 'Lower is better')
             [min, max] = [max, min];
         }
+
+        const column = table.col(modelName);
+        let weight = Number(generateNumber().toFixed(2));
+
+        if (column) {
+          min = column.getTag(TAGS.LOW) ? Number(column.getTag(TAGS.LOW)) : min;
+          max = column.getTag(TAGS.HIGH) ? Number(column.getTag(TAGS.HIGH)) : max;
+          weight = column.getTag(TAGS.WEIGHT) ? Number(column.getTag(TAGS.WEIGHT)) : weight;
+          
+          column.setTag(TAGS.GROUP_NAME, subgroup.name);
+          column.setTag(TAGS.HIGH, max);
+          column.setTag(TAGS.LOW, min);
+          column.setTag(TAGS.WEIGHT, weight.toString());
+          column.setTag(TAGS.SECTOR_COLOR, colors[sectorColorIndex]);
+        }
           
         sector.subsectors.push({
           name: modelName,
-          lowThreshold: min,
-          highThreshold: max,
-          weight: generateNumber(),
+          low: min,
+          high: max,
+          weight: weight,
         });
       }
     }
@@ -169,9 +185,7 @@ export function addSparklines(table: DG.DataFrame, columnNames: string[]): void 
 
   const pie = tv.grid.columns.add({ cellType: 'piechart' });
   pie.settings = { columnNames: columnNames };
-  console.log('pie settings');
-  console.log(createPieSettings(columnNames, properties));
-  pie.settings = createPieSettings(columnNames, properties);
+  pie.settings = createPieSettings(table, columnNames, properties);
 }
 
 function getTooltipContent(model: any, value: any): string {
@@ -325,7 +339,7 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
   const query = `smiles\n${value}`;
   const result = await runAdmetox(query, 'Caco2,PPBR,VDss,CL-Hepa,CL-Micro', 'false');
 
-  const pieSettings = createPieSettings(params.split(','), properties);
+  const pieSettings = createPieSettings(dataFrame, params.split(','), properties);
   pieSettings.sectors.values = result!;
   gridCol!.settings = pieSettings;
 
