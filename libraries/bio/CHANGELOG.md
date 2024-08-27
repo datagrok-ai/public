@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.42.11 (2024-08-24)
+
+Bump HWE dependencies versions
+
 ## 5.42.10 (2024-08-23)
 
 ### Features

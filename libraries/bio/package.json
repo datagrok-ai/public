@@ -27,8 +27,8 @@
     "wu": "latest"
   },
   "devDependencies": {
-    "@datagrok-libraries/helm-web-editor": "^1.1.9",
-    "@datagrok-libraries/js-draw-lite": "^0.0.7",
+    "@datagrok-libraries/helm-web-editor": "^1.1.10",
+    "@datagrok-libraries/js-draw-lite": "^0.0.8",
     "@types/signals": "1.0.1",
     "@types/three": "^0.159.0",
     "@types/uuid": "^9.0.1",
