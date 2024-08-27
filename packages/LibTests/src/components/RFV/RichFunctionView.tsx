@@ -32,12 +32,16 @@ export const ScalarTable = defineComponent({
   setup(props) {
     const categoryScalars = computed(() => {
       return [
-        ...props.funcCall.func.inputs,
-        ...props.funcCall.func.outputs,
+        ...props.funcCall.func.inputs
+          .filter((prop) => prop.category === props.category),
+        ...props.funcCall.func.outputs
+          .filter((prop) => 
+            prop.category === props.category ||
+            (['Misc', 'Output'].includes(prop.category) && props.category === 'Output'),
+          ),
       ].filter((prop) => 
         prop.propertyType !== DG.TYPE.DATA_FRAME && 
-        prop.propertyType !== DG.TYPE.GRAPHICS &&
-        prop.category === props.category,
+        prop.propertyType !== DG.TYPE.GRAPHICS,
       );
     });
 
