@@ -6,6 +6,7 @@ import { ChemspacePricesTableItem, ChemspaceResult } from './model';
 
 const host = 'https://api.chem-space.com';
 let token: string | null = null;
+export const _package = new DG.Package();
 
 const WIDTH = 150;
 const HEIGHT = 75;
@@ -63,10 +64,12 @@ export async function app(): Promise<void> {
       view.dataFrame = t;
       ui.setUpdateIndicator(view.root, false);
     }
-
-    queryMultipart(`search/${modeToParam[mode.value]}`, token, {'SMILES': molecule.value},
-      {category: category.value, shipToCountry: COUNTRY_CODES[shipToCountry.value! as keyof typeof COUNTRY_CODES]})
-      .then((res) => setDataFrame(DG.DataFrame.fromJson(JSON.stringify(res))))
+    grok.functions.call(`${_package.name}:queryMultipart`, {
+      path: `search/${modeToParam[mode.value]}`,
+      token: token,
+      formParamsStr: JSON.stringify({'SMILES': molecule.value}),
+      paramsStr: JSON.stringify({category: category.value, shipToCountry: COUNTRY_CODES[shipToCountry.value! as keyof typeof COUNTRY_CODES]})
+    }).then((res) => setDataFrame(DG.DataFrame.fromJson(res)))
       .catch((_) => setDataFrame(emptyTable));
   }
 
@@ -145,8 +148,13 @@ shipToCountry: COUNTRY_CODES = COUNTRY_CODES['United States']): HTMLDivElement {
     'shipToCountry': shipToCountry,
     'categories': category
   };
-  queryMultipart(`search/${modeToParam[searchMode]}`, token!, {'SMILES': smiles}, queryParams)
-    .then(async (res: ChemspaceResult[]) => {
+  grok.functions.call(`${_package.name}:queryMultipart`, {
+    path: `search/${modeToParam[searchMode]}`,
+    token: token!,
+    formParamsStr: JSON.stringify({'SMILES': smiles}),
+    paramsStr: JSON.stringify(queryParams)
+  }).then(async (resStr: string) => {
+    const res: ChemspaceResult[] = JSON.parse(resStr);
       compsHost.firstChild?.remove();
       if (res.length === 0) {
         compsHost.appendChild(ui.divText('No matches'));
@@ -213,8 +221,13 @@ export async function pricesPanel(id: string): Promise<DG.Widget> {
     const cacheKey = getCategoryCacheKey(cat, shipToCountry);
     if (!categoryToData[cacheKey]) {
       resData.append(ui.loader());
-      queryMultipart(`search/${modeToParam[SEARCH_MODE.TEXT]}`, token!, {'query': id}, {'shipToCountry': shipToCountry, 'categories': cat})
-        .then(async (res: ChemspaceResult[]) => {
+      grok.functions.call(`${_package.name}:queryMultipart`, {
+        path: `search/${modeToParam[SEARCH_MODE.TEXT]}`,
+        token: token!,
+        formParamsStr: JSON.stringify({'query': id}),
+        paramsStr: JSON.stringify({'shipToCountry': shipToCountry, 'categories': cat})
+      }).then(async (resStr: string) => {
+          const res: ChemspaceResult[] = JSON.parse(resStr);
           ui.empty(resData);
           if (res.length === 0) {
             resData.appendChild(ui.divText('No matches'));
@@ -290,8 +303,17 @@ async function getApiToken(): Promise<string> {
 }
 
 //description: Perform query with multipart form data
-function queryMultipart(path: string, token: string,
-formParams: {[key: string]: string}, params?: {[key: string]: string | number}): Promise<ChemspaceResult[]> {
+//meta.cache: client
+//meta.invalidateOn: 0 0 1 * *
+//input: string path
+//input: string token
+//input: string formParamsStr
+//input: string paramsStr {optional: true}
+//output: string result
+export function queryMultipart(path: string, token: string,
+formParamsStr: string, paramsStr?: string): Promise<string> {
+  const formParams: {[key: string]: string} = JSON.parse(formParamsStr);
+  const params: {[key: string]: string | number} | undefined = paramsStr ? JSON.parse(paramsStr) : undefined;
   // TODO: Deprecate after WebQuery 'multipart/form-data' support
   return new Promise(function(resolve, reject) {
     const xhr = new XMLHttpRequest();
@@ -306,7 +328,7 @@ formParams: {[key: string]: string}, params?: {[key: string]: string | number}):
       if (this.status >= 200 && this.status < 300) {
         const list: ChemspaceResult[] = JSON.parse(xhr.responseText)['items'];
         if (list.length > 0)
-          resolve(list);
+          resolve(JSON.stringify(list));
         else
           reject(new Error('No matches'));
       } else
