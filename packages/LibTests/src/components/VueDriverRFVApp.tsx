@@ -13,6 +13,7 @@ import {AugmentedStat, HueTree} from './TreeWizard/types';
 import {dragContext} from '@he-tree/vue';
 import '@he-tree/vue/style/default.css';
 import '@he-tree/vue/style/material-design.css';
+import {deepCopy} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 
 export const VueDriverRFVApp = defineComponent({
   name: 'VueDriverRFVApp',
@@ -143,7 +144,7 @@ export const VueDriverRFVApp = defineComponent({
                 isVisibleRfv.value && currentFuncCall.value && <RichFunctionView 
                   style={{height: '100%'}} 
                   funcCall={currentFuncCall.value}
-                  onUpdate:funcCall={(chosenCall) => currentFuncCall.value=chosenCall}
+                  onUpdate:funcCall={(chosenCall) => currentFuncCall.value=deepCopy(chosenCall)}
                 /> 
               }
             </div>
