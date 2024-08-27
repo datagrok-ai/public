@@ -208,14 +208,6 @@ export class DiffStudio {
   public async runSolverApp(content?: string, state?: EDITOR_STATE, path?: string): Promise<DG.ViewBase> {
     this.createEditorView(content, true);
 
-    /*const panels = (state === undefined) ?
-      [
-        [this.openIcon, this.saveIcon],
-        [this.exportButton, this.sensAnIcon, this.fittingIcon],
-        [this.helpIcon],
-      ] :
-      [[this.sensAnIcon, this.fittingIcon]];*/
-
     const panels = ((state !== undefined) || (path !== undefined)) ?
       [[this.sensAnIcon, this.fittingIcon]] :
       [
@@ -1319,17 +1311,22 @@ export class DiffStudio {
         setTimeout(async () => {
           panelRoot.scrollTo(0, treeNodeY);
           item.root.focus();
-
-          /*const idx = this.browseView.path.indexOf(PATH.PARAM);
-          const params = this.browseView.path.slice(idx);
-          this.browseView.path = `files/${file.fullPath.replace(':', '.')}${params}`;*/
         }, UI_TIME.BROWSING);
       });
 
-      /*item.root.ondblclick = async () => {
-        const content = await file.readAsString();
+      item.root.addEventListener('dblclick', async (e) => {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+
+        const equations = await file.readAsString();
         const solver = new DiffStudio();
-        await solver.runSolverApp(content);
+        await solver.runSolverApp(equations);
+      });
+
+      /*item.root.ondblclick = async () => {
+        const equations = await file.readAsString();
+        const solver = new DiffStudio();
+        await solver.runSolverApp(equations);
       };*/
     } catch (e) {
       grok.shell.warning(`Failed to add ivp-file to recents: ${(e instanceof Error) ? e.message : 'platfrom issue'}`);
