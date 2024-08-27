@@ -1243,14 +1243,9 @@ export class DiffStudio {
             throw new Error('corrupted data file');
 
           for (let i = 0; i < size; ++i) {
-            if (isCustomCol.get(i)) {
-              /*const path = infoCol.get(i);
-              const idx = path.lastIndexOf('/');
-              const name = path.slice(idx + 1, path.length);
-              const item = this.recentFolder.item(name);
-              ui.tooltip.bind(item.root, path);*/
-              await this.putCustomModelToFolder(infoCol.get(i), this.recentFolder);
-            } else
+            if (isCustomCol.get(i))
+              await this.putCustomModelToRecents(infoCol.get(i));
+            else
               this.putBuiltInModelToFolder(infoCol.get(i), this.recentFolder);
           }
         }
@@ -1283,22 +1278,15 @@ export class DiffStudio {
   }
 
   /** Add model from ivp-file to browse tree folder */
-  private async putCustomModelToFolder(path: string, folder: DG.TreeViewGroup) {
+  private async putCustomModelToRecents(path: string) {
     try {
-      console.log(`Adding: ${path}`);
-
       const idx = path.lastIndexOf('/');
       const name = path.slice(idx + 1, path.length);
       const item = this.recentFolder.item(name);
       ui.tooltip.bind(item.root, path);
-      console.log(name);
 
       const folderPath = path.slice(0, idx + 1);
-      console.log(folderPath);
       const fileList = await grok.dapi.files.list(folderPath);
-      console.log(folderPath);
-      console.log(fileList);
-      console.log(name);
       const file = fileList.find((file) => file.nqName === path);
 
       item.onSelected.subscribe(async () => {
@@ -1313,10 +1301,16 @@ export class DiffStudio {
           item.root.focus();
         }, UI_TIME.BROWSING);
       });
+
+      /*item.root.ondblclick = async () => {
+        const content = await file.readAsString();
+        const solver = new DiffStudio();
+        await solver.runSolverApp(content);
+      };*/
     } catch (e) {
       grok.shell.warning(`Failed to add ivp-file to recents: ${(e instanceof Error) ? e.message : 'platfrom issue'}`);
     }
-  }
+  } // putCustomModelToRecents
 
   /** Save model to recent models file */
   private async saveModelToRecent(modelSpecification: string, isCustom: boolean) {
@@ -1350,12 +1344,12 @@ export class DiffStudio {
           if (!isCustom)
             this.putBuiltInModelToFolder(info, this.recentFolder);
           else
-            this.putCustomModelToFolder(info, this.recentFolder);
+            this.putCustomModelToRecents(info);
         }
       } else
         await grok.dapi.files.writeBinaryDataFrames(`${folder}${PATH.RECENT}`, [dfToAdd]);
     } catch (err) {
       grok.shell.warning(`Failed to save recent models: ${(err instanceof Error) ? err.message : 'platfrom issue'}`);
     }
-  }
+  } // saveModelToRecent
 };
