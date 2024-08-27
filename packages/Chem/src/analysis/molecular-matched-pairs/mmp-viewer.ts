@@ -481,9 +481,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const mmpFilters = getMmpFilters(mmpInput, maxActs, transFragmentsGrid.dataFrame.col(MMP_NAMES.PAIRS)!.stats.max);
     console.log(`created mmpa filters`);
 
-    const sp = getMmpScatterPlot(mmpInput, embedColsNames);
-
-    drawMoleculeLabels(mmpInput.table, mmpInput.molecules, sp as DG.ScatterPlotViewer, 20, 7, 100, 110);
+    const sp = getMmpScatterPlot(mmpInput, embedColsNames, mmpInput.molecules.name);
 
     //running internal chemspace
     const linesEditor = runMmpChemSpace(mmpInput, sp, lines, linesIdxs, linesActivityCorrespondance,
