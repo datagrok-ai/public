@@ -91,7 +91,7 @@ export const VueDriverRFVApp = defineComponent({
         <div style={{width: '100%', height: '100%'}}>
           <BigButton onClick={() => initPipeline('LibTests:MockProvider3')}>Init Pipeline</BigButton>
           
-          { treeState.value ? <SplitH resize={true} style={{height: '100%', display: 'block', padding: '8px'}}>
+          { treeState.value ? <SplitH resize={true} style={{height: '100%', display: 'block'}}>
             <Draggable 
               class="mtl-tree"
               rootDroppable={false}
@@ -99,6 +99,7 @@ export const VueDriverRFVApp = defineComponent({
               childrenKey='steps'
               nodeKey={(stat: AugmentedStat) => stat.data.uuid}
               statHandler={restoreOpenedNodes}
+              style={{padding: '8px'}}
 
               ref={treeInstance} 
               modelValue={[treeState.value]} 
