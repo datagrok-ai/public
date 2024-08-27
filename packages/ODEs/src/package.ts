@@ -80,7 +80,7 @@ export async function previewIvp(file: DG.FileInfo): Promise<DG.View> {
     path = window.location.href;
 
   const solver = new DiffStudio(false);
-  return solver.getFilePreview(file, path);
+  return await solver.getFilePreview(file, path);
 }
 
 //input: dynamic treeNode
