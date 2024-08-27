@@ -144,7 +144,7 @@ export const VueDriverRFVApp = defineComponent({
                 isVisibleRfv.value && currentFuncCall.value && <RichFunctionView 
                   style={{height: '100%'}} 
                   funcCall={currentFuncCall.value}
-                  onUpdate:funcCall={(chosenCall) => currentFuncCall.value=deepCopy(chosenCall)}
+                  onUpdate:funcCall={(chosenCall) => currentFuncCall.value = deepCopy(chosenCall)}
                 /> 
               }
             </div>

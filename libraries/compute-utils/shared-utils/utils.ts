@@ -12,6 +12,7 @@ import {FunctionView, RichFunctionView} from '../function-views';
 import dayjs from 'dayjs';
 import { ID_COLUMN_NAME } from '../shared-components/src/history-input';
 import { getStarted } from '../function-views/src/shared/utils';
+import cloneDeepWith from 'lodash.clonedeepwith';
 
 export const saveIsFavorite = async (funcCall: DG.FuncCall, isFavorite: boolean) => {
   const favStorageName = `${storageName}_${funcCall.func.name}_Fav`;
@@ -554,30 +555,32 @@ export function isInputBase(input: FuncCallInput): input is DG.InputBase {
 
 export const deepCopy = (call: DG.FuncCall) => {
   const previousId = call.id;
-  // FuncCall.clone() creates an ID for original (!) call if it was null.
-  // So we should control it and overwrite ID by null again if necessary.
-  const deepClone = call.clone();
+  const deepClone = DG.Func.byName(call.func.nqName).prepare();
 
   //@ts-ignore
   if (!previousId) deepClone.id = null;
 
-  call.options.forEach((key: string) => deepClone.options[key] = call.options[key]);
+  deepClone.options = cloneDeepWith(call.options);
 
-  const dfOutputs = wu(call.outputParams.values())
-    .filter((output) =>
-      output.property.propertyType === DG.TYPE.DATA_FRAME &&
-      !!call.outputs[output.name],
-    );
-  for (const output of dfOutputs)
-    deepClone.outputs[output.name] = call.outputs[output.name].clone();
+  const definedOutputs = wu(deepClone.outputParams.values())
+    .filter((output) => !!call.outputs[output.name]);
+  for (const output of definedOutputs) {
+    if (output.property.propertyType === DG.TYPE.DATA_FRAME) {
+      deepClone.outputs[output.name] = call.outputs[output.name].clone();
+    } else {
+      deepClone.outputs[output.name] = call.outputs[output.name];
+    }
+  }
 
-  const dfInputs = wu(call.inputParams.values())
-    .filter((input) =>
-      input.property.propertyType === DG.TYPE.DATA_FRAME &&
-      !!call.inputs[input.name],
-    );
-  for (const input of dfInputs)
-    deepClone.inputs[input.name] = call.inputs[input.name].clone();
+  const definedInputs = wu(deepClone.inputParams.values())
+    .filter((input) => !!call.inputs[input.name]);
+  for (const input of definedInputs) {
+    if (input.property.propertyType === DG.TYPE.DATA_FRAME) {
+      deepClone.inputs[input.name] = call.inputs[input.name].clone();
+    } else {
+      deepClone.inputs[input.name] = call.inputs[input.name]
+    }
+  }
 
   return deepClone;
 };

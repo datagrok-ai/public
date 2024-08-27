@@ -83,7 +83,7 @@ export const RichFunctionView = defineComponent({
     'update:funcCall': (call: DG.FuncCall) => call,
   },
   setup(props, {emit}) {
-    const currentCall = computed(() => props.funcCall);
+    const currentCall = computed(() => Utils.deepCopy(props.funcCall));
 
     const categoryToDfParam = computed(() => Utils.categoryToDfParamMap(currentCall.value.func));
 

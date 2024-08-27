@@ -25,7 +25,7 @@ export const RFVTestApp = defineComponent({
         <Button onClick={changeFunc}> Change func </Button>
         <RichFunctionView 
           funcCall={currentFuncCall.value}
-          onUpdate:funcCall={(chosenCall) => currentFuncCall.value = deepCopy(chosenCall)}
+          onUpdate:funcCall={(chosenCall) => currentFuncCall.value = chosenCall}
         />
       </div>
     );
