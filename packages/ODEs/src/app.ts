@@ -205,7 +205,7 @@ const strToVal = (s: string) => {
 /** Solver of differential equations */
 export class DiffStudio {
   /** Run Diff Studio application */
-  public async runSolverApp(content?: string, state?: EDITOR_STATE): Promise<DG.ViewBase> {
+  public async runSolverApp(content?: string, state?: EDITOR_STATE, path?: string): Promise<DG.ViewBase> {
     this.createEditorView(content, true);
 
     const panels = (state === undefined) ?
@@ -223,7 +223,12 @@ export class DiffStudio {
     // routing
       if (content) {
         this.fromFileHandler = true;
-        this.solverMainPath = `${PATH.APPS_DS}${PATH.CUSTOM}`;
+
+        if (path) {
+          this.isRecentRun = true;
+          this.solverMainPath = path;
+        } else
+          this.solverMainPath = `${PATH.APPS_DS}${PATH.CUSTOM}`;
         await this.runSolving(true);
       } else if (state) {
         this.inBrowseRun = true;
@@ -283,7 +288,6 @@ export class DiffStudio {
 
   /** Return file preview view */
   public async getFilePreview(file: DG.FileInfo, path: string): Promise<DG.View> {
-    const browseView = grok.shell.view(TITLE.BROWSE);
     const equations = await file.readAsString();
     await this.saveModelToRecent(file.fullPath, true);
     this.createEditorView(equations, false);
@@ -305,13 +309,13 @@ export class DiffStudio {
     saveBtn.hidden = true;
     let isSaveBtnAdded = false;
 
-    const ribbonPnls = browseView!.getRibbonPanels();
+    const ribbonPnls = this.browseView!.getRibbonPanels();
     ribbonPnls.push([this.sensAnIcon, this.fittingIcon]);
-    browseView!.setRibbonPanels(ribbonPnls);
+    this.browseView!.setRibbonPanels(ribbonPnls);
 
     const addSaveBtnToRibbon = () => {
       ribbonPnls.push([saveBtn]);
-      browseView!.setRibbonPanels(ribbonPnls);
+      this.browseView!.setRibbonPanels(ribbonPnls);
       isSaveBtnAdded = true;
     };
 
@@ -385,6 +389,7 @@ export class DiffStudio {
   private appTree: DG.TreeViewGroup | null = null;
   private recentFolder: DG.TreeViewGroup | null = null;
   private browseView: DG.BrowseView | null = null;
+  private isRecentRun = false;
 
   private inputsByCategories = new Map<string, DG.InputBase[]>();
 
@@ -768,10 +773,11 @@ export class DiffStudio {
       if (this.toChangePath) {
         this.solverView.path = `${this.solverMainPath}${PATH.PARAM}${inputsPath}`;
 
-        if (this.inBrowseRun) {
-          const browseView = grok.shell.view(TITLE.BROWSE) as DG.BrowseView;
-          browseView.path = `/${PATH.BROWSE}${PATH.APPS_DS}${this.solverView.path}`;
-        }
+        if (this.inBrowseRun)
+          this.browseView.path = `/${PATH.BROWSE}${PATH.APPS_DS}${this.solverView.path}`;
+
+        if (this.isRecentRun)
+          this.browseView.path = this.solverView.path;
       }
 
       const start = ivp.arg.initial.value;
@@ -1293,16 +1299,22 @@ export class DiffStudio {
         const panelRoot = this.appTree.rootNode.root.parentElement!;
         const treeNodeY = panelRoot.scrollTop!;
 
+        const equations = await file.readAsString();
+
         const solver = new DiffStudio(false);
-        this.browseView.preview = await solver.getFilePreview(file, path);
+        this.browseView.preview = await solver.runSolverApp(
+          equations,
+          undefined,
+          `files/${file.fullPath.replace(':', '.').toLowerCase()}`,
+        ) as DG.View;
 
         setTimeout(async () => {
           panelRoot.scrollTo(0, treeNodeY);
           item.root.focus();
 
-          const idx = this.browseView.path.indexOf(PATH.PARAM);
+          /*const idx = this.browseView.path.indexOf(PATH.PARAM);
           const params = this.browseView.path.slice(idx);
-          this.browseView.path = `files/${file.fullPath.replace(':', '.')}${params}`;
+          this.browseView.path = `files/${file.fullPath.replace(':', '.')}${params}`;*/
         }, UI_TIME.BROWSING);
       });
 
