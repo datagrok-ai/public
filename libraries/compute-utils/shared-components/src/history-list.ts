@@ -107,13 +107,13 @@ export class HistoricalRunsList extends DG.Widget {
     return this._onSelectedChanged.asObservable();
   }
 
-  private async saveIsFavorite(funcCall: DG.FuncCall, isFavorite: boolean) {
+  private saveIsFavorite(funcCall: DG.FuncCall, isFavorite: boolean) {
     const favStorageName = `${storageName}_${funcCall.func.name}_Fav`;
 
     if (isFavorite)
-      return grok.dapi.userDataStorage.postValue(favStorageName, funcCall.id, '');
+      return grok.userSettings.add(favStorageName, funcCall.id, '');
     else
-      return grok.dapi.userDataStorage.remove(favStorageName, funcCall.id);
+      return grok.userSettings.delete(favStorageName, funcCall.id);
   }
 
   private getRunByIdx(idx: number) {
@@ -261,8 +261,7 @@ export class HistoricalRunsList extends DG.Widget {
       };
 
       if (newRuns.length > 0) {
-        const favoritesRecord: Record<string, string> =
-          await grok.dapi.userDataStorage.get(this.storageName(runs)) ?? {};
+        const favoritesRecord: Record<string, string> = grok.userSettings.get(this.storageName(runs)) ?? {};
         const favorites = Object.keys(favoritesRecord);
 
         const func = newRuns[0].func;
@@ -494,13 +493,19 @@ export class HistoricalRunsList extends DG.Widget {
         const run = this.getRunByIdx(cell.tableRowIndex!)!;
 
         const unfavoriteIcon =
-          ui.iconFA('star', () => this.saveIsFavorite(run, false).then(() => this.updateRun(run)), 'Unfavorite');
+          ui.iconFA('star', () => {
+            this.saveIsFavorite(run, false);
+            this.updateRun(run);
+          }, 'Unfavorite');
         $(unfavoriteIcon).addClass('fas');
 
         cell.element = ui.div(
           cell.cell.value ?
             unfavoriteIcon :
-            ui.iconFA('star', () => this.saveIsFavorite(run, true).then(() => this.updateRun(run)), 'Favorite'),
+            ui.iconFA('star', () => {
+              this.saveIsFavorite(run, true);
+              this.updateRun(run);
+            }, 'Favorite'),
           {style: {'padding': '5px 0px'}});
       }
 
@@ -584,14 +589,16 @@ export class HistoricalRunsList extends DG.Widget {
         const unfavoriteIcon =
         ui.iconFA('star', (ev) => {
           ev.stopPropagation();
-          this.saveIsFavorite(run, false).then(() => this.updateRun(run));
+          this.saveIsFavorite(run, false);
+          this.updateRun(run);
         }, 'Unfavorite');
         unfavoriteIcon.classList.add('fas', 'hp-funccall-card-icon');
 
         const addToFavorites = ui.iconFA('star',
           (ev) => {
             ev.stopPropagation();
-            this.saveIsFavorite(run, true).then(() => this.updateRun(run));
+            this.saveIsFavorite(run, true);
+            this.updateRun(run);
           }, 'Favorite');
         addToFavorites.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
 

@@ -86,8 +86,8 @@ export function convertToRDKit(smiles: string): string {
  * and initiate the R-Group Analysis for the specified column with molecules.
  * @param {DG.Column} col Column for which to perform R-Group Analysis with specified core
  */
-export async function rGroupAnalysis(col: DG.Column, demo = false): Promise<void> {
-  await loadRGroupUserSettings();
+export function rGroupAnalysis(col: DG.Column, demo = false): void {
+  loadRGroupUserSettings();
   const sketcher = new DG.chem.Sketcher();
 
   //General fields
@@ -419,15 +419,14 @@ function removeLatestAnalysis(col: DG.Column) {
   delete latestAnalysisCols[col.dataFrame.name];
 }
 
-export async function loadRGroupUserSettings() {
+export function loadRGroupUserSettings() {
   if (!rGroupSettings) {
-    const settingsStr = await grok.dapi.userDataStorage.getValue(R_GROUP_PARAMS_STORAGE_NAME, R_GROUP_PARAMS_KEY, true);
+    const settingsStr = grok.userSettings.getValue(R_GROUP_PARAMS_STORAGE_NAME, R_GROUP_PARAMS_KEY);
     rGroupSettings = settingsStr ? JSON.parse(settingsStr) :
       { rGroupMatchingStrategy: RGroupMatchingStrategy.Greedy, onlyMatchAtRGroups: false };
   }
 }
 
 function saveRGroupUserSettings() {
-  grok.dapi.userDataStorage.postValue(R_GROUP_PARAMS_STORAGE_NAME, R_GROUP_PARAMS_KEY,
-    JSON.stringify(rGroupSettings), true);
+  grok.userSettings.add(R_GROUP_PARAMS_STORAGE_NAME, R_GROUP_PARAMS_KEY, JSON.stringify(rGroupSettings));
 }

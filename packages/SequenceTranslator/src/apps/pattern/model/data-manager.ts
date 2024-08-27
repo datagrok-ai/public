@@ -2,12 +2,20 @@
 import * as grok from 'datagrok-api/grok';
 
 import {
+  DATE_KEYS as D,
   EXAMPLE_PATTERN_CONFIG,
-  GRAPH_SETTINGS_KEY_LIST as GKL, LEGEND_SETTINGS_KEYS as L,
-  OTHER_USERS, PATTERN_RECORD_KEYS as R, STORAGE_NAME, DATE_KEYS as D
+  GRAPH_SETTINGS_KEY_LIST as GKL,
+  LEGEND_SETTINGS_KEYS as L,
+  OTHER_USERS,
+  PATTERN_RECORD_KEYS as R,
+  STORAGE_NAME
 } from './const';
 import {
-  PatternConfigRecord, PatternConfiguration, PatternExistsError, PatternNameExistsError, RawPatternRecords
+  PatternConfigRecord,
+  PatternConfiguration,
+  PatternExistsError,
+  PatternNameExistsError,
+  RawPatternRecords
 } from './types';
 
 import objectHash from 'object-hash';
@@ -33,7 +41,7 @@ export class DataManager {
     instance.currentUserName = await instance.fetchCurrentUserName();
     instance.currentUserId = await instance.fetchCurrentUserId();
 
-    const patternRecords = await instance.fetchPatterns();
+    const patternRecords = instance.fetchPatterns();
     await instance.initializePatternMaps(patternRecords);
 
     return instance;
@@ -77,22 +85,21 @@ export class DataManager {
     return patternHash;
   }
 
-  async getPatternRecordByHash(hash: string): Promise<PatternConfigRecord | null> {
+  getPatternRecordByHash(hash: string): PatternConfigRecord | null {
     if (hash === null || hash === '')
       return null;
     try {
-      const patternConfig = await grok.dapi.userDataStorage.getValue(STORAGE_NAME, hash, false);
-      const config = JSON.parse(patternConfig) as PatternConfigRecord;
-      return config;
+      const patternConfig = grok.userSettings.getValue(STORAGE_NAME, hash, false);
+      return patternConfig ? JSON.parse(patternConfig) as PatternConfigRecord : null;
     } catch {
       return null;
     }
   }
 
-  async getPatternConfig(hash: string | null): Promise<PatternConfiguration | null> {
+  getPatternConfig(hash: string | null): PatternConfiguration | null {
     if (hash === '' || hash === null)
       return null;
-    const record = await this.getPatternRecordByHash(hash);
+    const record = this.getPatternRecordByHash(hash);
     const config = record === null ? null : record[R.PATTERN_CONFIG] as PatternConfiguration;
     return config;
   }
@@ -181,7 +188,7 @@ export class DataManager {
         [D.MODIFY]: timestamp,
       };
       const record = JSON.stringify(recordObj);
-      await grok.dapi.userDataStorage.postValue(STORAGE_NAME, hash, record, false);
+      await grok.userSettings.add(STORAGE_NAME, hash, record, false);
       this.currentUserPatternNameToHash.set(patternName, hash);
 
       eventBus.selectAuthor(this.getCurrentUserAuthorshipCategory());
@@ -212,14 +219,14 @@ export class DataManager {
     newRecordObj[R.DATE] = {
       [D.MODIFY]: timestamp,
     };
-    const oldPattern = await grok.dapi.userDataStorage.getValue(STORAGE_NAME, oldHash, false);
+    const oldPattern = grok.userSettings.getValue(STORAGE_NAME, oldHash, false);
     const oldPatternsRecord = JSON.parse(oldPattern) as PatternConfigRecord;
     if (oldPatternsRecord[R.DATE] !== undefined && oldPatternsRecord[R.DATE][D.CREATE] != undefined)
       newRecordObj[R.DATE][D.CREATE] = oldPatternsRecord[R.DATE][D.CREATE];
 
     const newRecord = JSON.stringify(newRecordObj);
-    await grok.dapi.userDataStorage.postValue(STORAGE_NAME, newHash, newRecord, false);
-    await grok.dapi.userDataStorage.remove(STORAGE_NAME, oldHash, false);
+    grok.userSettings.add(STORAGE_NAME, newHash, newRecord, false);
+    grok.userSettings.delete(STORAGE_NAME, oldHash, false);
 
     this.currentUserPatternNameToHash.set(patternName, newHash);
     eventBus.requestPatternLoad(newHash);
@@ -237,7 +244,7 @@ export class DataManager {
     }
     if (hash === undefined)
       throw new Error(`Pattern with name ${patternName} not found`);
-    await grok.dapi.userDataStorage.remove(STORAGE_NAME, hash, false);
+    grok.userSettings.delete(STORAGE_NAME, hash, false);
     this.currentUserPatternNameToHash.delete(patternName);
     eventBus.updatePatternList();
 
@@ -264,8 +271,8 @@ export class DataManager {
     return (await grok.dapi.users.current()).id;
   }
 
-  private async fetchPatterns() {
-    const patternsRecord = await grok.dapi.userDataStorage.get(STORAGE_NAME, false) as RawPatternRecords;
+  private  fetchPatterns() {
+    const patternsRecord = grok.userSettings.get(STORAGE_NAME, false) as RawPatternRecords;
     return patternsRecord;
   }
 

@@ -115,6 +115,12 @@ export interface IDartApi {
   grok_Dapi_UserDataStorage_Get(name: String, currentUser: Bool): Promise<any>;
   grok_Dapi_UserDataStorage_GetValue(name: String, key: String, currentUser: Bool): Promise<any>;
   grok_Dapi_UserDataStorage_Delete(name: String, key: String, currentUser: Bool): Promise<any>;
+  grok_UserSettings_Add(name: String, key: String, value: String, isPrivate: Bool): any;
+  grok_UserSettings_AddAll(name: String, data: any, isPrivate: Bool): any;
+  grok_UserSettings_Put(name: String, data: any, isPrivate: Bool): any;
+  grok_UserSettings_Get(name: String, isPrivate: Bool): any;
+  grok_UserSettings_GetValue(name: String, key: String, isPrivate: Bool): any;
+  grok_UserSettings_Delete(name: String, key: String, isPrivate: Bool): any;
   grok_Dapi_Get_GroupUser(g: any): Promise<any>;
   grok_Dapi_Get_GroupsLookup(name: String): Promise<any>;
   grok_Dapi_Get_Permissions(e: any): Promise<any>;

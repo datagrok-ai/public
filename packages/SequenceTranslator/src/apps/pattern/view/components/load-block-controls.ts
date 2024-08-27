@@ -26,8 +26,8 @@ export class PatternLoadControlsManager {
     });
   }
 
-  private async handlePatternChoice(patternHash: string): Promise<void> {
-    let patternConfiguration = await this.dataManager.getPatternConfig(patternHash);
+  private handlePatternChoice(patternHash: string): void {
+    let patternConfiguration = this.dataManager.getPatternConfig(patternHash);
     if (patternConfiguration === null)
       patternConfiguration = this.dataManager.getDefaultPatternConfig();
 

@@ -28,7 +28,7 @@ async function getContent(): Promise<HTMLDivElement> {
   const dataManager = await DataManager.getInstance();
   const urlRouter = new URLRouter();
 
-  const initialPatternRecord = await getInitialPatternRecord(dataManager, urlRouter);
+  const initialPatternRecord = getInitialPatternRecord(dataManager, urlRouter);
   const eventBus = new EventBus(dataManager, initialPatternRecord);
   urlRouter.subscribeToObservables(eventBus);
 
@@ -45,17 +45,17 @@ async function getContent(): Promise<HTMLDivElement> {
   return layout;
 }
 
-async function getInitialPatternRecord(
+function getInitialPatternRecord(
   dataManager: DataManager,
   urlRouter: URLRouter
-): Promise<PatternConfigRecord> {
+): PatternConfigRecord {
   const patternHash = urlRouter.getPatternHash();
   if (!patternHash) {
     urlRouter.clearPatternURL();
     return dataManager.getDefaultPatternRecord();
   }
 
-  let initialPatternRecord = await dataManager.getPatternRecordByHash(patternHash);
+  let initialPatternRecord = dataManager.getPatternRecordByHash(patternHash);
   if (!initialPatternRecord) {
     urlRouter.clearPatternURL();
     initialPatternRecord = dataManager.getDefaultPatternRecord();
