@@ -150,13 +150,7 @@ export const TreeNode = defineComponent({
     runNode: () => {},
     toggleNode: () => {},
   },
-  setup(props, {emit}) {
-    const runIcon = <IconFA 
-      name='play'
-      onClick={(e) => {emit('runNode'); e.stopPropagation();}}
-      style={{paddingLeft: '4px'}}
-    />;
-      
+  setup(props, {emit}) {      
     const openIcon = () => <OpenIcon
       open={props.stat.open}
       class="mtl-mr"
@@ -234,7 +228,6 @@ export const TreeNode = defineComponent({
               });
             }}
           />: null }
-        { props.stat.data.isHovered && !isRunning(props.stat) ? runIcon: null }
       </div>
     );    
   },
