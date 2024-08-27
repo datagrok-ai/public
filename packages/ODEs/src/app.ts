@@ -208,13 +208,21 @@ export class DiffStudio {
   public async runSolverApp(content?: string, state?: EDITOR_STATE, path?: string): Promise<DG.ViewBase> {
     this.createEditorView(content, true);
 
-    const panels = (state === undefined) ?
+    /*const panels = (state === undefined) ?
       [
         [this.openIcon, this.saveIcon],
         [this.exportButton, this.sensAnIcon, this.fittingIcon],
         [this.helpIcon],
       ] :
-      [[this.sensAnIcon, this.fittingIcon]];
+      [[this.sensAnIcon, this.fittingIcon]];*/
+
+    const panels = ((state !== undefined) || (path !== undefined)) ?
+      [[this.sensAnIcon, this.fittingIcon]] :
+      [
+        [this.openIcon, this.saveIcon],
+        [this.exportButton, this.sensAnIcon, this.fittingIcon],
+        [this.helpIcon],
+      ];
 
     this.solverView.setRibbonPanels(panels);
     this.toChangePath = true;
