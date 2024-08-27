@@ -111,7 +111,7 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
   }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
-    if (gridCell.tableRowIndex === null) return;
+    if (gridCell.tableRowIndex === null || !this._auxList) return;
     const aux = this._auxList[gridCell.tableRowIndex];
     if (!aux) return;
 

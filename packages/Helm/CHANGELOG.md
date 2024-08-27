@@ -1,5 +1,11 @@
 # Helm changelog
 
+## 2.4.4 (2024-08-27)
+
+### Bug fixes 
+
+* Helm: Fix Helm grid cell renderer mouse move handling error
+
 ## 2.4.3 (2024-08-23)
 
 Helm: Bump HWE dependencies versions
