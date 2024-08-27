@@ -20,6 +20,19 @@ position: 6 # float position is supported
 See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.md)
+## 2024-08-27 1.20.2
+
+### Addressed Issues
+
+* GROK-16393: #2948: Colour picker in legend issues 
+* (Improvement) GROK-13701: Core: Column headers rendering (WIP)
+* GROK-16465: #2970: Molecule column is missing in exported CSV with options "molecules as smiles" + "selected columns only" 
+* (Bug) [#2976](https://github.com/datagrok-ai/public/issues/2976): #2976: Categorical colouring's properties ".color-coding-fallback-color" and ".color-coding-match-type" are not saved in the layout 
+* (Improvement) GROK-16484: #2982: Viewers: remove tooltip from the legend 
+* GROK-15881: Lightweight Predictive modeling improvements 
+* (Bug) GROK-16180: #2791: Fix duplicated table` renaming 
+
+
 ## 2024-08-05 1.20.1
 
 ### Addressed Issues
