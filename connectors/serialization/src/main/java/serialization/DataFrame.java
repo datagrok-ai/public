@@ -20,6 +20,12 @@ public class DataFrame {
     public DataFrame() {
     }
 
+    public static DataFrame fromColumns(Column<?>...columns) {
+        DataFrame df = new DataFrame();
+        df.addColumns(columns);
+        return df;
+    }
+
     @SuppressWarnings("unchecked")
     public void addRow(Object... objects) {
         if (objects.length != columns.size())
