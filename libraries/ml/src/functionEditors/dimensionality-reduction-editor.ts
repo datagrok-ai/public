@@ -127,9 +127,10 @@ export class DimReductionBaseEditor {
         };
       });
 
-      this.tableInput = ui.input.table('Table', {value: grok.shell.tv.dataFrame, items: grok.shell.tables, onValueChanged: () => {
-        this.onTableInputChanged();
-      }});
+      this.tableInput =
+        ui.input.table('Table', {value: grok.shell.tv.dataFrame, items: grok.shell.tables, onValueChanged: () => {
+          this.onTableInputChanged();
+        }});
       this.onTableInputChanged();
 
       this.regenerateColInput();
@@ -198,7 +199,8 @@ export class DimReductionBaseEditor {
       const firstSupportedColumn = this.tableInput.value?.columns.toList()
         .find((col) => !!this.columnFunctionsMap[col.name]) ?? null;
       const input = ui.input.column('Column', {table: this.tableInput.value!, value: firstSupportedColumn!,
-        onValueChanged: () => this.onColumnInputChanged(), filter: (col: DG.Column) => !!this.columnFunctionsMap[col.name]});
+        onValueChanged: () => this.onColumnInputChanged(),
+        filter: (col: DG.Column) => !!this.columnFunctionsMap[col.name]});
       if (!this.colInputRoot)
         this.colInputRoot = input.root;
       return input;
@@ -269,7 +271,8 @@ export class DimReductionBaseEditor {
       const fName = this.preprocessingFunctionInput.value!;
       const distanceFs = this.supportedFunctions[fName].distanceFunctions;
       this.availableMetrics = [...distanceFs];
-      this.similarityMetricInput = ui.input.choice('Similarity', {value: this.availableMetrics[0], items: this.availableMetrics});
+      this.similarityMetricInput =
+        ui.input.choice('Similarity', {value: this.availableMetrics[0], items: this.availableMetrics});
       this.similarityMetricInput.nullable = false;
       if (!this.similarityMetricInputRoot)
         this.similarityMetricInputRoot = this.similarityMetricInput.root;
@@ -363,5 +366,60 @@ export class DimReductionBaseEditor {
         options: {...this.algorithmOptions, ...this.dbScanOptions,
           preprocessingFuncArgs: (this.preprocessingFunctionSettings ?? {})}
       };
+    }
+
+    public getInput() {
+      return {
+        table: this.tableInput.value!.name,
+        col: this.colInput.value!.name,
+        methodName: this.methodInput.value!,
+        preprocessingFunction: this.preprocessingFunctionInput.value!,
+        similarityMetric: this.similarityMetricInput.value!,
+        plotEmbeddings: this.plotEmbeddingsInput.value!,
+        clusterEmbeddings: this.clusterEmbeddingsInput.value!,
+        options: {...this.algorithmOptions, ...this.dbScanOptions,
+          preprocessingFuncArgs: (this.preprocessingFunctionSettings ?? {})}
+      };
+    }
+
+    public getStringInput() {
+      return JSON.stringify(this.getInput());
+    }
+
+    public async applyStringInput(input: string) {
+      try {
+        const parsed = JSON.parse(input);
+        await this.applyInput(parsed);
+      } catch (e) {
+        grok.shell.error('Error applying input from history');
+        console.error(e);
+      }
+    }
+
+    public async applyInput(input: ReturnType<typeof this.getInput>) {
+      try {
+        const cols = this.tableInput.value?.col(input.col);
+        if (!cols)
+          throw new Error('Column not found');
+        this.colInput.value = cols;
+        this.preprocessingFunctionInput.value = input.preprocessingFunction;
+        this.similarityMetricInput.value = input.similarityMetric;
+        this.plotEmbeddingsInput.value = input.plotEmbeddings;
+        this.clusterEmbeddingsInput.value = input.clusterEmbeddings;
+        const ms = this.methodsParams[this.methodInput.value!];
+        Object.keys(ms).forEach((key) => {
+          if (input.options[key as keyof typeof input.options] != null) {
+            (this.methodsParams[input.methodName!][key as keyof typeof ms] as any).value =
+            input.options[key as keyof typeof input.options];
+          }
+        });
+        this.methodInput.value = input.methodName;
+        this.preprocessingFunctionSettings = input.options.preprocessingFuncArgs;
+        await this.createPreprocessingFuncParamsDiv(
+          this.preprocessingFuncSettingsDiv, this.supportedFunctions[this.preprocessingFunctionInput.value!].func);
+      } catch (e) {
+        grok.shell.error('Error applying input from history');
+        console.error(e);
+      }
     }
 }
