@@ -93,7 +93,6 @@ export const VueDriverRFVApp = defineComponent({
         <div style={{width: '100%', height: '100%'}}>
           <RibbonPanels>
             <BigButton onClick={() => initPipeline('LibTests:MockProvider3')}>Init Pipeline</BigButton>
-            <Button onClick={() => grok.shell.v.close()}>Close view</Button>
           </RibbonPanels>
           
           { treeState.value ? <SplitH resize={true} style={{height: '100%', display: 'block'}}>
