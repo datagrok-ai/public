@@ -337,7 +337,7 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
   // Use params when containers will work on dev
   const params = await getQueryParams();
   const query = `smiles\n${value}`;
-  const result = await runAdmetox(query, 'Caco2,PPBR,VDss,CL-Hepa,CL-Micro', 'false');
+  const result = await runAdmetox(query, params, 'false');
 
   const pieSettings = createPieSettings(dataFrame, params.split(','), properties);
   pieSettings.sectors.values = result!;

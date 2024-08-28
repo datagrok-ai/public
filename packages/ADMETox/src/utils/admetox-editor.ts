@@ -199,7 +199,7 @@ export class AdmeticaBaseEditor {
       table: this.tableInput.value!,
       col: this.colInput ? this.colInput.value! : null,
       templatesName: this.templatesInput.value,
-      models: this.tree?.items.filter((item) => item.checked).map((item) => item.text),
+      models: this.tree?.items.filter((item) => !(item instanceof DG.TreeViewGroup) && item.checked).map((item) => item.text),
       addPiechart: this.addPiechartInput.value
     };
   }
