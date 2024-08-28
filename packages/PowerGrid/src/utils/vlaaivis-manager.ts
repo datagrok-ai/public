@@ -307,6 +307,7 @@ class VlaaiVisManager {
         this.removeItemFromOriginalGroup(node.text);
         this.addItemToNewGroup(newGroup, node.text);
         this.makeItemDraggable(node);
+        this.gc.grid.invalidate();
       })
       .show(); 
   }
