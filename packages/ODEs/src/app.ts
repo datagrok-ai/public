@@ -606,7 +606,8 @@ export class DiffStudio {
   private async saveToMyFiles(): Promise<void> {
     const modelCode = this.editorView!.state.doc.toString();
     const modelName = getIVP(modelCode).name.replaceAll(' ', '-');
-    const folder = `${grok.shell.user.login}:Home/`;
+    const login = grok.shell.user.login;
+    const folder = login.charAt(0).toUpperCase() + login.slice(1) + ':Home/';
     const files = await grok.dapi.files.list(folder);
 
     // get model file names in from the user's folder
@@ -618,7 +619,7 @@ export class DiffStudio {
       nullable: false,
       onValueChanged: () => {
         if (nameInput.value !== null) {
-          fileName = nameInput.value;
+          fileName = nameInput.value.replaceAll(' ', '-');
           dlg.getButton(TITLE.SAVE).disabled = false;
         } else
           dlg.getButton(TITLE.SAVE).disabled = true;
@@ -642,12 +643,11 @@ export class DiffStudio {
 
       try {
         await grok.dapi.files.writeAsText(path, modelCode);
+        await this.saveModelToRecent(path, true);
         grok.shell.info(`Model saved to ${path}`);
       } catch (error) {
         grok.shell.error(`Failed to save model: ${error instanceof Error ? error.message : 'platform issue'}`);
       }
-
-      await this.saveModelToRecent(path, true);
 
       dlg.close();
     };
@@ -1367,10 +1367,10 @@ export class DiffStudio {
           if (items.length >= MAX_RECENT_COUNT)
             items[0].remove();
 
-          if (!isCustom)
-            this.putBuiltInModelToFolder(info, this.recentFolder);
-          else
+          if (isCustom)
             this.putCustomModelToRecents(info);
+          else
+            this.putBuiltInModelToFolder(info, this.recentFolder);
         }
       } else
         await grok.dapi.files.writeBinaryDataFrames(`${folder}${PATH.RECENT}`, [dfToAdd]);
