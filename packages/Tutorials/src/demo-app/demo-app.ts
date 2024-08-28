@@ -30,6 +30,7 @@ export class DemoView extends DG.ViewBase {
 
   constructor() {
     super();
+    this.browseView.showTree = true;
     this.tree = this.browseView.mainTree.getOrCreateGroup('Apps').getOrCreateGroup('Demo');
     this._initFunctions();
     if (this.tree.items.length === 0)
