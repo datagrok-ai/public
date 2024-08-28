@@ -34,7 +34,7 @@ export class SunburstViewer extends EChartViewer {
 
     this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST, null, {columnTypeFilter: DG.TYPE.CATEGORICAL});
     this.hierarchyLevel = 3;
-    this.onClick = <onClickOptions>this.string('onClick', 'Select', { choices: ['Select', 'Filter'] });
+    this.onClick = <onClickOptions>this.string('onClick', 'Select', { choices: ['Select', 'Filter']});
     this.inheritFromGrid = this.bool('inheritFromGrid', true, { category: 'Color' });
 
     this.option = {
@@ -188,6 +188,10 @@ export class SunburstViewer extends EChartViewer {
     this.chart.on('click', handleChartClick);
     this.chart.on('mouseout', () => ui.tooltip.hide());
     this.chart.getDom().ondblclick = handleCanvasDblClick;
+
+    this.subs.push(ui.onSizeChanged(this.root).subscribe((_) => {
+      requestAnimationFrame(() => this.chart?.resize());
+    }));
     
     fromEvent(this.chart, 'mouseover')
       .pipe(debounceTime(200))
@@ -325,6 +329,7 @@ export class SunburstViewer extends EChartViewer {
     if (this.chart) {
       this.chart.clear();
       this.chart.dispose();
+      this.detach();
       this.chart = null;
     }
 
