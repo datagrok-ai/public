@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { defineComponent, nextTick, onMounted, onUpdated, ref, SlotsType, Teleport, watch } from 'vue';
+import { defineComponent, nextTick, onMounted, onUpdated, reactive, ref, SlotsType, Teleport, watch } from 'vue';
 
 export const RibbonPanels = defineComponent({
   name: 'RibbonPanels',
@@ -9,20 +9,25 @@ export const RibbonPanels = defineComponent({
     default?: any,
   }>,
   setup(_, {slots}) {
-    const elements = ref(null as null | HTMLElement)
+    const elements = reactive([] as HTMLElement[])
 
-    watch(elements, (newVal) => {
-      if (!newVal) return;
+    onMounted(async () => {
+      await nextTick();
 
       const currentView = grok.shell.v;
       currentView.setRibbonPanels([
         currentView.getRibbonPanels().flat(),
-        Array.from(newVal.children) as HTMLElement[],
-      ])
-    })
+        elements,
+      ]);
+    })    
 
-    return () => <div ref={elements}>
-      { slots.default?.() }
-    </div>;
+    const addElement = (el: Element | null | any) => {
+      if (el)
+        elements.push(el)
+    }
+
+    return () => 
+      slots.default?.().map((slot: any) => <div ref={(el) => addElement(el)}> { slot } </div>) 
+    ;
   }
 });

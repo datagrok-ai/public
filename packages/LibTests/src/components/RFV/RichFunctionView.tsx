@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {defineComponent, onMounted, PropType, ref, triggerRef, nextTick, computed, watch, shallowRef} from 'vue';
 import {type ViewerT} from '@datagrok-libraries/webcomponents/src';
-import {Viewer, InputForm, BigButton, Button, TabHeaderStripe, Tabs, IconFA} from '@datagrok-libraries/webcomponents-vue/src';
+import {Viewer, InputForm, BigButton, Button, TabHeaderStripe, Tabs, IconFA, RibbonPanels} from '@datagrok-libraries/webcomponents-vue/src';
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
@@ -109,6 +109,18 @@ export const RichFunctionView = defineComponent({
           
     return () => (
       <div style={{width: '100%', height: '100%', display: 'flex'}}>
+        <RibbonPanels>
+          { hasContextHelp.value && <IconFA 
+            name='info' 
+            tooltip='Open help panel' 
+            onClick={async () => Utils.showHelpWithDelay((await Utils.getContextHelp(currentCall.value.func))!)}
+          /> }
+          <IconFA 
+            name='history' 
+            tooltip='Open history panel' 
+            onClick={() => historyHidden.value = !historyHidden.value}
+          />
+        </RibbonPanels>
         <div style={{display: 'flex', flexDirection: 'column', padding: '8px'}}>
           <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'flex-end'}}>
             <IconFA 
@@ -152,18 +164,6 @@ export const RichFunctionView = defineComponent({
                       category={tabLabels.value[selectedIdx.value]}
                     />
                   </div>),
-            stripePostfix: () => <div style={{display: 'flex', gap: '6px', padding: '0px 6px'}}>
-              { hasContextHelp.value && <IconFA 
-                name='info' 
-                tooltip='Open help panel' 
-                onClick={async () => Utils.showHelpWithDelay((await Utils.getContextHelp(currentCall.value.func))!)}
-              /> }
-              <IconFA 
-                name='history' 
-                tooltip='Open history panel' 
-                onClick={() => historyHidden.value = !historyHidden.value}
-              />
-            </div>,
           }}
         </Tabs>
         <History 
