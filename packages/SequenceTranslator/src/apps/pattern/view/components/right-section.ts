@@ -78,7 +78,7 @@ export class PatternAppRightSection {
     let modifyDate = DEFAULT_DATE;
     const hash = new URLSearchParams(window.location.search).get('pattern');
     if (hash !== null) {
-      const record = this.dataManager.getPatternRecordByHash(hash);
+      const record = await this.dataManager.getPatternRecordByHash(hash);
       if (record !== null) {
         const authorID = record[P.AUTHOR_ID];
         const userFriendlyName = (await grok.dapi.users.find(authorID)).friendlyName;
