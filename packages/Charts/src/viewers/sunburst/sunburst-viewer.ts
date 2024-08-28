@@ -26,12 +26,14 @@ export class SunburstViewer extends EChartViewer {
   onClick: onClickOptions;
   selectedOptions: string[] = ['Selected', 'SelectedOrCurrent', 'FilteredSelected'];
   inheritFromGrid: boolean;
+  title: string;
 
   constructor() {
     super();
     this.initCommonProperties();
     this.initEventListeners();
 
+    this.title = this.string('title', 'Sunburst', {category: 'Description'});
     this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST, null, {columnTypeFilter: DG.TYPE.CATEGORICAL});
     this.hierarchyLevel = 3;
     this.onClick = <onClickOptions>this.string('onClick', 'Select', { choices: ['Select', 'Filter']});
@@ -92,12 +94,6 @@ export class SunburstViewer extends EChartViewer {
         return formattedValue === expectedValue;
       });
     };
-  }
-
-  removeFiltering() {
-    if (this.dataFrame.filter.trueCount !== this.dataFrame.rowCount) {
-      this.dataFrame.filter.setAll(true);
-    }
   }
 
   private isRowMatch(rowIndex: number, targetName: string): boolean {
