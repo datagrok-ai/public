@@ -1286,27 +1286,35 @@ export class DiffStudio {
   /** Add model from ivp-file to browse tree folder */
   private async putCustomModelToRecents(path: string) {
     try {
+      const exist = await grok.dapi.files.exists(path);
       const idx = path.lastIndexOf('/');
       const name = path.slice(idx + 1, path.length);
       const item = this.recentFolder.item(name);
       ui.tooltip.bind(item.root, path);
 
       const folderPath = path.slice(0, idx + 1);
-      const fileList = await grok.dapi.files.list(folderPath);
-      const file = fileList.find((file) => file.nqName === path);
+      let file: DG.FileInfo;
+
+      if (exist) {
+        const fileList = await grok.dapi.files.list(folderPath);
+        file = fileList.find((file) => file.nqName === path);
+      }
 
       item.onSelected.subscribe(async () => {
         const panelRoot = this.appTree.rootNode.root.parentElement!;
         const treeNodeY = panelRoot.scrollTop!;
 
-        const equations = await file.readAsString();
+        if (exist) {
+          const equations = await file.readAsString();
 
-        const solver = new DiffStudio(false);
-        this.browseView.preview = await solver.runSolverApp(
-          equations,
-          undefined,
-          `files/${file.fullPath.replace(':', '.').toLowerCase()}`,
-        ) as DG.View;
+          const solver = new DiffStudio(false);
+          this.browseView.preview = await solver.runSolverApp(
+            equations,
+            undefined,
+            `files/${file.fullPath.replace(':', '.').toLowerCase()}`,
+          ) as DG.View;
+        } else
+          grok.shell.warning(`File not found: ${path}`);
 
         setTimeout(async () => {
           panelRoot.scrollTo(0, treeNodeY);
@@ -1318,16 +1326,13 @@ export class DiffStudio {
         e.stopImmediatePropagation();
         e.preventDefault();
 
-        const equations = await file.readAsString();
-        const solver = new DiffStudio();
-        await solver.runSolverApp(equations);
+        if (exist) {
+          const equations = await file.readAsString();
+          const solver = new DiffStudio();
+          await solver.runSolverApp(equations);
+        } else
+          grok.shell.warning(`File not found: ${path}`);
       });
-
-      /*item.root.ondblclick = async () => {
-        const equations = await file.readAsString();
-        const solver = new DiffStudio();
-        await solver.runSolverApp(equations);
-      };*/
     } catch (e) {
       grok.shell.warning(`Failed to add ivp-file to recents: ${(e instanceof Error) ? e.message : 'platfrom issue'}`);
     }
