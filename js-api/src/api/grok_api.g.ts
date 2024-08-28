@@ -1212,6 +1212,7 @@ export interface IDartApi {
   grok_FuncCall_Clone(call: any): any;
   grok_FuncCall_Get_AdHoc(f: any): any;
   grok_FuncCall_Set_AdHoc(f: any, adHoc: Bool): any;
+  grok_FuncCall_GetOutputViews(c: any): any;
   grok_FuncCallParam_Get_Aux(p: any): any;
   grok_FuncCallParam_Get_Param(p: any): any;
   grok_FuncCallParam_Get_Value(p: any): any;
