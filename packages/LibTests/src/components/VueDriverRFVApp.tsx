@@ -86,6 +86,8 @@ export const VueDriverRFVApp = defineComponent({
       ui.setUpdateIndicator(treeInstance.value!.$el, newVal);
     });
 
+    const chosenStepUuid = ref(null as string | null);
+
     return () => (
       <KeepAlive>
         <div style={{width: '100%', height: '100%'}}>
@@ -124,6 +126,7 @@ export const VueDriverRFVApp = defineComponent({
                   (
                     <TreeNode 
                       stat={stat}
+                      style={{'background-color': stat.data.uuid === chosenStepUuid.value ? '#f2f2f5' : null}}
                       isDraggable={treeInstance.value?.isDraggable(stat)}
                       isDroppable={treeInstance.value?.isDroppable(stat)}
                       isDeletable={!!stat.parent && isParallelPipelineState(stat.parent.data)}
@@ -132,6 +135,7 @@ export const VueDriverRFVApp = defineComponent({
                       }}
                       onRemoveNode={() => removeStep(stat.data.uuid)}
                       onClick={() => {
+                        chosenStepUuid.value = stat.data.uuid;
                         if (isFuncCallState(stat.data) && stat.data.funcCall) 
                           changeFunccall(stat.data.funcCall); 
                         else 
