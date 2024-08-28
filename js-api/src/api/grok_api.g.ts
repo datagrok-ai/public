@@ -837,6 +837,8 @@ export interface IDartApi {
   grok_Property_Set_Category(p: any, x: String): any;
   grok_Property_Get_PropertyType(p: any): any;
   grok_Property_Set_PropertyType(p: any, x: String): any;
+  grok_Property_Get_IncludeInLayout(p: any): any;
+  grok_Property_Set_IncludeInLayout(p: any, x: Bool): any;
   grok_Property_Get_SemType(p: any): any;
   grok_Property_Set_SemType(p: any, x: String): any;
   grok_Property_Get_Description(p: any): any;

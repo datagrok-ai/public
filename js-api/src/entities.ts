@@ -1252,6 +1252,10 @@ export class Property {
   get propertyType(): TYPE { return api.grok_Property_Get_PropertyType(this.dart); }
   set propertyType(s: TYPE) { api.grok_Property_Set_PropertyType(this.dart, s); }
 
+  /** Applies to viewers properties whether to include the property in the layout or not. */
+  get includeInLayout(): boolean { return api.grok_Property_Get_IncludeInLayout(this.dart); }
+  set includeInLayout(s: boolean) { api.grok_Property_Set_IncludeInLayout(this.dart, s); }
+
   /** Semantic type */
   get semType(): SemType | string { return api.grok_Property_Get_SemType(this.dart); }
   set semType(s: SemType | string) { api.grok_Property_Set_SemType(this.dart, s); }
