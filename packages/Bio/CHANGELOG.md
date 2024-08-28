@@ -1,5 +1,13 @@
 # Bio changelog
 
+## 2.14.3 (2024-08-27)
+
+### Bug fixes
+
+* Order Top menu
+* Fix to Atomic Level hide highlight column 
+* Fix to Atomic Level for column
+
 ## 2.14.2 (2024-08-23)
 
 ### Features

@@ -5,7 +5,7 @@
     "name": "Aleksandr Tanas",
     "email": "atanas@datagrok.ai"
   },
-  "version": "2.14.2",
+  "version": "2.14.3",
   "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
   "repository": {
     "type": "git",
@@ -58,8 +58,8 @@
     "wu": "latest"
   },
   "devDependencies": {
-    "@datagrok-libraries/helm-web-editor": "^1.1.8",
-    "@datagrok-libraries/js-draw-lite": "^0.0.6",
+    "@datagrok-libraries/helm-web-editor": "^1.1.10",
+    "@datagrok-libraries/js-draw-lite": "^0.0.8",
     "@datagrok/chem": "^1.9.2",
     "@datagrok/dendrogram": "^1.2.29",
     "@datagrok/helm": "^2.2.1",
@@ -141,6 +141,14 @@
           "Notation...": null,
           "SDF to JSON Library...": null,
           "To Atomic Level...": null
+        },
+        "Manage": {
+          "Monomer Libraries": null
+        },
+        "PolyTool": {
+          "Convert...": null,
+          "Enumerate Chem...": null,
+          "Enumerate HELM...": null
         }
       }
     }
