@@ -266,7 +266,7 @@ export function SplitToMonomersEditor(call: DG.FuncCall): void {
 //input: funccall call
 export function SequenceSpaceEditor(call: DG.FuncCall) {
   const funcEditor = new DimReductionBaseEditor({semtype: DG.SEMTYPE.MACROMOLECULE});
-  ui.dialog({title: 'Sequence Space'})
+  const dialog = ui.dialog({title: 'Sequence Space'})
     .add(funcEditor.getEditor())
     .onOK(async () => {
       const params = funcEditor.getParams();
@@ -280,8 +280,9 @@ export function SequenceSpaceEditor(call: DG.FuncCall) {
         preprocessingFunction: params.preprocessingFunction,
         clusterEmbeddings: params.clusterEmbeddings,
       }).call();
-    })
-    .show();
+    });
+    dialog.history(() => ({editorSettings: funcEditor.getStringInput()}), (x: any) => funcEditor.applyStringInput(x['editorSettings']));
+    dialog.show();
 }
 
 //name: SeqActivityCliffsEditor
@@ -289,7 +290,7 @@ export function SequenceSpaceEditor(call: DG.FuncCall) {
 //input: funccall call
 export function SeqActivityCliffsEditor(call: DG.FuncCall) {
   const funcEditor = new ActivityCliffsEditor({semtype: DG.SEMTYPE.MACROMOLECULE});
-  ui.dialog({title: 'Activity Cliffs'})
+  const dialog = ui.dialog({title: 'Activity Cliffs'})
     .add(funcEditor.getEditor())
     .onOK(async () => {
       const params = funcEditor.getParams();
@@ -303,7 +304,9 @@ export function SeqActivityCliffsEditor(call: DG.FuncCall) {
         preprocessingFunction: params.preprocessingFunction,
         options: params.options,
       }).call();
-    }).show();
+    });
+    dialog.history(() => ({editorSettings: funcEditor.getStringInput()}), (x: any) => funcEditor.applyStringInput(x['editorSettings']));
+    dialog.show();
 }
 
 // -- Package settings editor --
