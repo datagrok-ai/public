@@ -30,7 +30,7 @@ const modeToParam = {[SEARCH_MODE.SIMILAR]: 'sim', [SEARCH_MODE.SUBSTRUCTURE]: '
 //tags: app
 //name: Chemspace
 export async function app(): Promise<void> {
-  const token = await getApiToken();
+  await getApiToken();
 
   const molecule = ui.input.molecule('', {value: 'c1ccccc1O'});
   const mode = ui.input.choice('Mode', {
@@ -66,7 +66,6 @@ export async function app(): Promise<void> {
     }
     grok.functions.call(`${_package.name}:queryMultipart`, {
       path: `search/${modeToParam[mode.value]}`,
-      token: token,
       formParamsStr: JSON.stringify({'SMILES': molecule.value}),
       paramsStr: JSON.stringify({category: category.value, shipToCountry: COUNTRY_CODES[shipToCountry.value! as keyof typeof COUNTRY_CODES]})
     }).then((res) => setDataFrame(DG.DataFrame.fromJson(res)))
@@ -150,7 +149,6 @@ shipToCountry: COUNTRY_CODES = COUNTRY_CODES['United States']): HTMLDivElement {
   };
   grok.functions.call(`${_package.name}:queryMultipart`, {
     path: `search/${modeToParam[searchMode]}`,
-    token: token!,
     formParamsStr: JSON.stringify({'SMILES': smiles}),
     paramsStr: JSON.stringify(queryParams)
   }).then(async (resStr: string) => {
@@ -223,7 +221,6 @@ export async function pricesPanel(id: string): Promise<DG.Widget> {
       resData.append(ui.loader());
       grok.functions.call(`${_package.name}:queryMultipart`, {
         path: `search/${modeToParam[SEARCH_MODE.TEXT]}`,
-        token: token!,
         formParamsStr: JSON.stringify({'query': id}),
         paramsStr: JSON.stringify({'shipToCountry': shipToCountry, 'categories': cat})
       }).then(async (resStr: string) => {
@@ -294,24 +291,21 @@ export async function pricesPanel(id: string): Promise<DG.Widget> {
 }
 
 //description: Gets access token
-async function getApiToken(): Promise<string> {
+async function getApiToken(): Promise<void> {
   if (token === null) {
     const t = await grok.data.query('Chemspace:AuthToken', null, true);
     token = t.get('access_token', 0) as string;
   }
-  return token;
 }
 
 //description: Perform query with multipart form data
 //meta.cache: client
 //meta.invalidateOn: 0 0 1 * *
 //input: string path
-//input: string token
 //input: string formParamsStr
 //input: string paramsStr {optional: true}
 //output: string result
-export function queryMultipart(path: string, token: string,
-formParamsStr: string, paramsStr?: string): Promise<string> {
+export function queryMultipart(path: string, formParamsStr: string, paramsStr?: string): Promise<string> {
   const formParams: {[key: string]: string} = JSON.parse(formParamsStr);
   const params: {[key: string]: string | number} | undefined = paramsStr ? JSON.parse(paramsStr) : undefined;
   // TODO: Deprecate after WebQuery 'multipart/form-data' support
