@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {BigButton, Button, InputForm, RibbonPanels, SplitH} from '@datagrok-libraries/webcomponents-vue/src';
+import {BigButton, Button, InputForm, RibbonPanel, SplitH} from '@datagrok-libraries/webcomponents-vue/src';
 import {defineComponent, KeepAlive, onUnmounted, ref, shallowRef, triggerRef, watch} from 'vue';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
 import {useSubscription} from '@vueuse/rxjs';
@@ -91,9 +91,9 @@ export const VueDriverRFVApp = defineComponent({
     return () => (
       <KeepAlive>
         <div style={{width: '100%', height: '100%'}}>
-          <RibbonPanels>
+          <RibbonPanel>
             <BigButton onClick={() => initPipeline('LibTests:MockProvider3')}>Init Pipeline</BigButton>
-          </RibbonPanels>
+          </RibbonPanel>
           
           { treeState.value ? <SplitH resize={true} style={{height: '100%', display: 'block'}}>
             <Draggable 

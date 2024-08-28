@@ -3,8 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { defineComponent, h, nextTick, onMounted, onUnmounted, onUpdated, reactive, ref, SlotsType, Teleport, watch } from 'vue';
 
-export const RibbonPanels = defineComponent({
-  name: 'RibbonPanels',
+export const RibbonPanel = defineComponent({
+  name: 'RibbonPanel',
   slots: Object as SlotsType<{
     default?: any,
   }>,

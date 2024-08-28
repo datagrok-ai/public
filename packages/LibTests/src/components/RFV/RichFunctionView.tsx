@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {defineComponent, onMounted, PropType, ref, triggerRef, nextTick, computed, watch, shallowRef} from 'vue';
 import {type ViewerT} from '@datagrok-libraries/webcomponents/src';
-import {Viewer, InputForm, BigButton, Button, TabHeaderStripe, Tabs, IconFA, RibbonPanels} from '@datagrok-libraries/webcomponents-vue/src';
+import {Viewer, InputForm, BigButton, Button, TabHeaderStripe, Tabs, IconFA, RibbonPanel} from '@datagrok-libraries/webcomponents-vue/src';
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
@@ -109,7 +109,7 @@ export const RichFunctionView = defineComponent({
           
     return () => (
       <div style={{width: '100%', height: '100%', display: 'flex'}}>
-        <RibbonPanels>
+        <RibbonPanel>
           { hasContextHelp.value && <IconFA 
             name='info' 
             tooltip='Open help panel' 
@@ -120,7 +120,7 @@ export const RichFunctionView = defineComponent({
             tooltip='Open history panel' 
             onClick={() => historyHidden.value = !historyHidden.value}
           />
-        </RibbonPanels>
+        </RibbonPanel>
         <div style={{display: 'flex', flexDirection: 'column', padding: '8px'}}>
           <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'flex-end'}}>
             <IconFA 
