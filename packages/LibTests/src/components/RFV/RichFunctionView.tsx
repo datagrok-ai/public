@@ -121,7 +121,7 @@ export const RichFunctionView = defineComponent({
             onClick={() => historyHidden.value = !historyHidden.value}
           />
         </RibbonPanel>
-        <div class='flex-col p-8'>
+        <div class='flex-col p-2'>
           <div class='flex justify-end'>
             <IconFA 
               name={formHidden.value ? 'chevron-double-right': 'chevron-double-left'} 

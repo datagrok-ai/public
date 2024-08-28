@@ -97,7 +97,7 @@ export const VueDriverRFVApp = defineComponent({
           
           { treeState.value ? <SplitH resize={true} class='h-full block'>
             <Draggable 
-              class="mtl-tree p-8"
+              class="ui-div mtl-tree p-2"
               rootDroppable={false}
               treeLine
               childrenKey='steps'
