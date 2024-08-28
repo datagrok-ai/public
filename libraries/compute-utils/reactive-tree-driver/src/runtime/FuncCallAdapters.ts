@@ -1,9 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 import {v4 as uuidv4} from 'uuid';
-import {BehaviorSubject, Observable, from, defer, Subject, merge} from 'rxjs';
+import {BehaviorSubject, Observable, from, defer, Subject, merge, identity} from 'rxjs';
 import {ValidationResultBase} from '../../../shared-utils/validation';
 import {StateItem} from '../config/PipelineConfiguration';
-import {delay, map, mapTo, skip, startWith, takeUntil} from 'rxjs/operators';
+import {delay, map, mapTo, skip, startWith, switchMap, takeUntil} from 'rxjs/operators';
 import {RestrictionType} from '../data/common-types';
 
 
@@ -29,6 +29,7 @@ export interface IStateStore {
   getStateChanges<T = any>(name: string): Observable<T | undefined>;
   getState<T = any>(name: string): T | undefined;
   setState<T = any>(name: string, value: T | undefined, restrictionType?: RestrictionType): void;
+  getStateNames(): string[];
 }
 
 export interface IValidationStore {
@@ -92,6 +93,10 @@ export class FuncCallAdapter implements IFuncCallAdapter {
     this.inputRestrictions$.next({...currentRestrictions, [name]: restrictionState});
   }
 
+  getStateNames() {
+    return [...Object.keys(this.instance.inputs), ...Object.keys(this.instance.outputs)];
+  }
+
   setValidation(name: string, validatorId: string, validation: ValidationResultBase | undefined) {
     const allValidations = this.validations$.value;
     const validatorResults = allValidations[validatorId] ?? {};
@@ -132,8 +137,14 @@ export class MemoryStore implements IStateStore, IValidationStore {
     return this.states[id]?.state$?.value;
   }
 
-  getStateChanges<T = any>(id: string): Observable<T | undefined> {
-    return this.states[id]?.state$.asObservable();
+  getStateChanges<T = any>(id: string, includeDataFrameMutations = false): Observable<T | undefined> {
+    return this.states[id]?.state$.pipe(
+      includeDataFrameMutations ? switchMap((x) => x instanceof DG.DataFrame ? x.onDataChanged.pipe(mapTo(x)) : x) : identity,
+    );
+  }
+
+  getStateNames() {
+    return Object.keys(this.states);
   }
 
   setState<T = any>(name: string, value: T | undefined, restrictionType: RestrictionType = 'none') {

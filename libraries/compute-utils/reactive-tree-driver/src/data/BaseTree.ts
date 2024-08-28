@@ -19,6 +19,18 @@ export class BaseTree<T> {
 
   public traverse = buildTraverseD([] as NodePath, (item: TreeNode<T>, path: NodePath) => item.getChildren().map(({id, item}, idx) => [item, [...path, {id, idx}] as NodePath] as const));
 
+  public static isNodeAddressEqOrAfter(originNode: Readonly<NodePath>, currentNode: Readonly<NodePath>): boolean {
+    for (const [level, {idx}] of originNode.entries()) {
+      const idx2 = currentNode[level]?.idx;
+      if (idx2 == null)
+        return false; // currentNode is higher
+      if (idx !== idx2)
+        return (idx2 - idx) > 0; // currentNode is further/closer
+      // same path, continue
+    }
+    return true; // currentNode is nested or eq path
+  }
+
   public static isNodeAddressEq(a1: Readonly<NodeAddress>, a2: Readonly<NodeAddress>): boolean {
     for (const [level, {idx}] of a1.entries()) {
       const idx2 = a2[level]?.idx;
@@ -79,8 +91,8 @@ export class BaseTree<T> {
     return parent.removeChild(segment);
   }
 
-  find(pred: (item: T, path: NodePath) => boolean) {
-    return this.traverse(this.root, ((acc, item, path, stop) => {
+  find(pred: (item: T, path: NodePath) => boolean, root = this.root) {
+    return this.traverse(root, ((acc, item, path, stop) => {
       if (pred(item.getItem(), path)) {
         stop();
         return [item, path] as const;

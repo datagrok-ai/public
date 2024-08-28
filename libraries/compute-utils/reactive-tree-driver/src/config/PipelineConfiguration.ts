@@ -1,5 +1,5 @@
 import {Observable} from 'rxjs';
-import {IRuntimeLinkController, IRuntimePipelineController, IRuntimeValidatorController} from '../RuntimeControllers';
+import {IRuntimeLinkController, IRuntimeValidatorController} from '../RuntimeControllers';
 import {ItemId, NqName, RestrictionType, LinkSpecString} from '../data/common-types';
 import {StepParallelInitialConfig, StepSequentialInitialConfig} from './PipelineInstance';
 
@@ -27,44 +27,42 @@ export type PipelineSelfRef = {
 
 export type LoadedPipeline = (PipelineConfigurationStaticInitial | PipelineConfigurationParallelInitial | PipelineConfigurationSequentialInitial) & LoadedPipelineToplevelNode;
 
-export type IRuntimeController = IRuntimeLinkController | IRuntimePipelineController | IRuntimeValidatorController;
+export type IRuntimeController = IRuntimeLinkController | IRuntimeValidatorController;
 export type HandlerBase<P, R> = ((params: P) => Promise<R> | Observable<R>) | NqName;
-export type Handler = HandlerBase<{ controller: IRuntimeController }, void>;
+export type Handler<C extends IRuntimeController = IRuntimeController> = HandlerBase<{ controller: C }, void>;
 export type PipelineProvider = HandlerBase<{ version?: string }, LoadedPipeline>;
 
 // link-like
 
 export type PipelineLinkConfigurationBase<P> = {
+  id?: ItemId;
   from: P;
   to: P;
   base?: P,
-  dataFrameMutations?: boolean | string[] | Record<string, string>;
-  inputState?: RestrictionType | RestrictionType[] | Record<string, RestrictionType>;
+  isValidator?: boolean;
+  dataFrameMutations?: boolean | string[];
+  defaultRestrictions?: Record<string, RestrictionType>;
   handler?: Handler;
 }
 
 export type PipelineLinkConfiguration<P> = {
-  id: ItemId;
 } & PipelineLinkConfigurationBase<P>;
 
 export type PipelineHookConfiguration<P> = {
-  id: ItemId;
   handler: Handler;
 } & Partial<PipelineLinkConfigurationBase<P>>;
 
 export type PipelineActionConfiguraion<P> = {
-  id: ItemId;
-  friendlyName?: string;
-  menuCategory?: string;
-} & PipelineLinkConfigurationBase<P>;
-
-export type StepActionConfiguraion<P> = {
-  id: ItemId;
   position: ActionPositions;
   friendlyName?: string;
   menuCategory?: string;
 } & PipelineLinkConfigurationBase<P>;
 
+export type StepActionConfiguraion<P> = {
+  position: ActionPositions;
+  friendlyName?: string;
+  menuCategory?: string;
+} & PipelineLinkConfigurationBase<P>;
 
 const actionPositions = ['buttons', 'menu', 'none'] as const;
 export type ActionPositions = typeof actionPositions[number];
@@ -73,17 +71,6 @@ export type ActionPositions = typeof actionPositions[number];
 
 export type PipelineHooks<P> = {
   onInit?: PipelineHookConfiguration<P>[];
-  beforeLoadFuncCall?: PipelineHookConfiguration<P>[];
-  afterLoadFuncCall?: PipelineHookConfiguration<P>[];
-  beforeInputFormRender?: PipelineHookConfiguration<P>[];
-  afterInputFormRender?: PipelineHookConfiguration<P>[];
-  beforeViewerRender?: PipelineHookConfiguration<P>[];
-  afterViewerRender?: PipelineHookConfiguration<P>[];
-  beforeLoadRun?: PipelineHookConfiguration<P>[];
-  afterLoadRun?: PipelineHookConfiguration<P>[];
-  beforeSaveRun?: PipelineHookConfiguration<P>[];
-  afterSaveRun?: PipelineHookConfiguration<P>[];
-  onClose?: PipelineHookConfiguration<P>[];
 };
 
 // static steps config
@@ -141,9 +128,6 @@ export type SequentialItemContext = {
 };
 
 export type PipelineSequentialItem<P, S, R> = ((PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | R) & SequentialItemContext);
-
-
-// SequentialItemContext;
 
 export type AbstractPipelineSequentialConfiguration<P, S, R> = {
   initialSteps?: StepSequentialInitialConfig[];

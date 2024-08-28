@@ -22,7 +22,7 @@ export class FuncCallNode implements IStoreProvider {
   public uuid = uuidv4();
   public readonly nodeType = 'funccall';
 
-  public instancesWrapper = new FuncCallInstancesBridge();
+  public instancesWrapper = new FuncCallInstancesBridge(this.config.io!);
   public pendingId?: string;
 
   constructor(

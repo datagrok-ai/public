@@ -1,4 +1,4 @@
-import {isNonRefSelector, LinkNonRefSelectors, LinkParsed, LinkRefSelectors, refSelectorAdjacent, refSelectorAll, refSelectorDirection, refSelectorFindOne} from '../config/LinkSpec';
+import {isNonRefSelector, LinkNonRefSelectors, LinkIOParsed, LinkRefSelectors, refSelectorAdjacent, refSelectorAll, refSelectorDirection, refSelectorFindOne} from '../config/LinkSpec';
 import {PipelineLinkConfigurationBase} from '../config/PipelineConfiguration';
 import {isFuncCallState} from '../config/PipelineInstance';
 import {BaseTree, NodePath, TreeNode} from '../data/BaseTree';
@@ -7,7 +7,7 @@ import {indexFromEnd} from '../utils';
 import {StateTree} from './StateTree';
 import {isFuncCallNode, StateTreeNode} from './StateTreeNodes';
 
-export type LinkSpec = PipelineLinkConfigurationBase<LinkParsed[]>;
+export type LinkSpec = PipelineLinkConfigurationBase<LinkIOParsed[]>;
 
 type matchedIO = {
   path: Readonly<NodePath>;
@@ -17,6 +17,7 @@ type matchedIO = {
 type MatchedNodePaths = Readonly<Array<matchedIO>>;
 
 export type MatchInfo = {
+  spec: LinkSpec;
   basePath?: Readonly<NodePath>;
   inputs: Record<string, MatchedNodePaths>;
   outputs: Record<string, MatchedNodePaths>;
@@ -26,6 +27,10 @@ export function matchLink(state: StateTree, address: NodePath, spec: LinkSpec): 
   const [rnode] = state.find(((_node, path) => BaseTree.isNodeAddressEq(path, address))) ?? [];
   if (rnode == null)
     return;
+  return matchNodeLink(rnode, spec);
+}
+
+export function matchNodeLink(rnode: TreeNode<StateTreeNode>, spec: LinkSpec) {
   const basePaths = spec.base?.length ? expandLinkBase(rnode, spec.base[0]) : undefined;
   const baseName = spec.base?.length ? spec.base[0].name : undefined;
   if (basePaths == null) {
@@ -39,6 +44,7 @@ export function matchLink(state: StateTree, address: NodePath, spec: LinkSpec): 
 
 function matchLinkInstance(rnode: TreeNode<StateTreeNode>, spec: LinkSpec, base?: Readonly<matchedIO>, baseName?: string): MatchInfo | undefined {
   const matchInfo: MatchInfo = {
+    spec,
     basePath: base?.path,
     inputs: {},
     outputs: {},
@@ -60,7 +66,7 @@ function matchLinkInstance(rnode: TreeNode<StateTreeNode>, spec: LinkSpec, base?
   return matchInfo;
 }
 
-function expandLinkBase(rnode: TreeNode<StateTreeNode>, baseLink: LinkParsed) {
+function expandLinkBase(rnode: TreeNode<StateTreeNode>, baseLink: LinkIOParsed) {
   const traverse = buildTraverseD([] as Readonly<NodePath>, (pnode: TreeNode<StateTreeNode>, path, level?: number) => {
     const segment = baseLink.segments[level!];
     if (!segment)
@@ -79,8 +85,7 @@ function expandLinkBase(rnode: TreeNode<StateTreeNode>, baseLink: LinkParsed) {
   return basePaths;
 }
 
-
-function matchLinkIO(rnode: TreeNode<StateTreeNode>, currentIO: Record<string, MatchedNodePaths>, parsedLink: LinkParsed): MatchedNodePaths {
+function matchLinkIO(rnode: TreeNode<StateTreeNode>, currentIO: Record<string, MatchedNodePaths>, parsedLink: LinkIOParsed): MatchedNodePaths {
   const traverse = buildTraverseD([] as Readonly<NodePath>, (pnode: TreeNode<StateTreeNode>, path, level?: number) => {
     const segment = parsedLink.segments[level!];
     if (!segment)
@@ -111,12 +116,9 @@ function matchLinkIO(rnode: TreeNode<StateTreeNode>, currentIO: Record<string, M
       const ioSegment = indexFromEnd(parsedLink.segments)!;
       const ioName = ioSegment.ids[0];
       const item = node.getItem();
-      if (isFuncCallNode(item)) {
-        const io = item.config.io!;
-        const idx = io.findIndex((ioItem) => ioItem.id === ioSegment.ids[0]);
-        if (idx >= 0)
-          return [...acc, {path, ioName}] as const;
-      }
+      const state = item.getStateStore().getStateNames().find((name) => name === ioName);
+      if (state)
+        return [...acc, {path, ioName}] as const;
       return acc;
     }
     return acc;

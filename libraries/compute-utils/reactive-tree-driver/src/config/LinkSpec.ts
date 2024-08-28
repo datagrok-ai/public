@@ -32,7 +32,7 @@ export type LinkSegment = {
   ref?: string | undefined,
 }
 
-export type LinkParsed = {
+export type LinkIOParsed = {
   name: string;
   segments: LinkSegment[];
 }
@@ -67,7 +67,7 @@ export function refSelectorDirection(sel: LinkRefSelectors): SelectorDirection {
   return sel.startsWith('after') ? 'after' : 'before';
 }
 
-export function parseLinkIO(io: string, ioType: 'input' | 'output' | 'base'): LinkParsed {
+export function parseLinkIO(io: string, ioType: 'input' | 'output' | 'base'): LinkIOParsed {
   const ast = linkParser.getAST(io);
   checkAST(io, ast);
   const name = ast.children.find((cnode) => cnode.type === 'Name')!.text;

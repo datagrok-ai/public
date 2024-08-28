@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {AbstractPipelineParallelConfiguration, AbstractPipelineSequentialConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, PipelineActionConfiguraion, PipelineConfigurationInitial, PipelineConfigurationParallelInitial, PipelineConfigurationSequentialInitial, PipelineConfigurationStaticInitial, PipelineHooks, PipelineLinkConfigurationBase, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, StepActionConfiguraion} from './PipelineConfiguration';
 import {ItemId, LinkSpecString, NqName} from '../data/common-types';
 import {callHandler} from '../utils';
-import {LinkParsed, parseLinkIO} from './LinkSpec';
+import {LinkIOParsed, parseLinkIO} from './LinkSpec';
 
 //
 // Internal config processing
@@ -19,9 +19,9 @@ export type FuncallStateItem = {
 type PipelineStepConfigurationInitial = PipelineStepConfiguration<LinkSpecString, never>;
 type ConfigInitialTraverseItem = PipelineConfigurationInitial | PipelineStepConfigurationInitial;
 
-export type PipelineConfigurationStaticProcessed = AbstractPipelineStaticConfiguration<LinkParsed[], FuncallStateItem[], PipelineSelfRef>;
-export type PipelineConfigurationParallelProcessed = AbstractPipelineParallelConfiguration<LinkParsed[], FuncallStateItem[], PipelineSelfRef>;
-export type PipelineConfigurationSequentialProcessed = AbstractPipelineSequentialConfiguration<LinkParsed[], FuncallStateItem[], PipelineSelfRef>;
+export type PipelineConfigurationStaticProcessed = AbstractPipelineStaticConfiguration<LinkIOParsed[], FuncallStateItem[], PipelineSelfRef>;
+export type PipelineConfigurationParallelProcessed = AbstractPipelineParallelConfiguration<LinkIOParsed[], FuncallStateItem[], PipelineSelfRef>;
+export type PipelineConfigurationSequentialProcessed = AbstractPipelineSequentialConfiguration<LinkIOParsed[], FuncallStateItem[], PipelineSelfRef>;
 export type PipelineConfigurationProcessed = PipelineConfigurationStaticProcessed | PipelineConfigurationParallelProcessed | PipelineConfigurationSequentialProcessed;
 
 function isPipelineStaticInitial(c: ConfigInitialTraverseItem): c is PipelineConfigurationStaticInitial {
@@ -53,7 +53,7 @@ export async function getProcessedConfig(conf: PipelineConfigurationInitial): Pr
   return pconf as PipelineConfigurationProcessed;
 }
 
-async function configProcessing(conf: ConfigInitialTraverseItem, loadedPipelines: Set<string>): Promise<PipelineConfigurationProcessed | PipelineStepConfiguration<LinkParsed[], FuncallStateItem[]> | PipelineSelfRef> {
+async function configProcessing(conf: ConfigInitialTraverseItem, loadedPipelines: Set<string>): Promise<PipelineConfigurationProcessed | PipelineStepConfiguration<LinkIOParsed[], FuncallStateItem[]> | PipelineSelfRef> {
   if (isPipelineConfigInitial(conf) && !isPipelineRefInitial(conf) && conf.nqName)
     loadedPipelines.add(conf.nqName);
 

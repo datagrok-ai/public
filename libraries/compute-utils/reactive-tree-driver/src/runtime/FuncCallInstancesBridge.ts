@@ -3,6 +3,7 @@ import {switchMap, map, takeUntil, take, withLatestFrom} from 'rxjs/operators';
 import {ValidationResultBase} from '../../../shared-utils/validation';
 import {IStateStore, IValidationStore, IRunnableWrapper, IFuncCallAdapter} from './FuncCallAdapters';
 import {RestrictionType} from '../data/common-types';
+import {FuncallStateItem} from '../config/config-processing-utils';
 
 export class FuncCallInstancesBridge implements IStateStore, IValidationStore, IRunnableWrapper {
   private instance$ = new BehaviorSubject<IFuncCallAdapter | undefined>(undefined);
@@ -17,7 +18,7 @@ export class FuncCallInstancesBridge implements IStateStore, IValidationStore, I
 
   private closed$ = new Subject<true>();
 
-  constructor() {
+  constructor(private io: FuncallStateItem[]) {
     this.instance$.pipe(
       switchMap((instance) => instance ? instance.isRunning$ : of(false)),
       takeUntil(this.closed$),
@@ -107,6 +108,10 @@ export class FuncCallInstancesBridge implements IStateStore, IValidationStore, I
 
     else
       throw new Error(`Attempting to run an empty FuncCallInstancesBridge`);
+  }
+
+  getStateNames() {
+    return this.io.map((item) => item.id);
   }
 
   close() {
