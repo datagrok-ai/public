@@ -108,7 +108,7 @@ export const RichFunctionView = defineComponent({
     const hasContextHelp = computed(() => Utils.hasContextHelp(currentCall.value.func));
           
     return () => (
-      <div style={{width: '100%', height: '100%', display: 'flex'}}>
+      <div class='w-full h-full flex'>
         <RibbonPanel>
           { hasContextHelp.value && <IconFA 
             name='info' 
@@ -121,8 +121,8 @@ export const RichFunctionView = defineComponent({
             onClick={() => historyHidden.value = !historyHidden.value}
           />
         </RibbonPanel>
-        <div style={{display: 'flex', flexDirection: 'column', padding: '8px'}}>
-          <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'flex-end'}}>
+        <div class='flex-col p-8'>
+          <div class='flex justify-end'>
             <IconFA 
               name={formHidden.value ? 'chevron-double-right': 'chevron-double-left'} 
               tooltip={formHidden.value ? 'Show input form': 'Hide input form'}
@@ -131,7 +131,7 @@ export const RichFunctionView = defineComponent({
           </div>
           <div style={{display: formHidden.value ? 'none': 'block'}}> 
             <InputForm funcCall={currentCall.value}/>
-            <div style={{display: 'flex', position: 'sticky', bottom: '0px'}}>
+            <div class='flex sticky bottom-0'>
               <BigButton onClick={run}> Run </BigButton>
             </div>
           </div>
@@ -140,7 +140,7 @@ export const RichFunctionView = defineComponent({
           items={tabLabels.value.map((label) => ({label}))} 
           selected={selectedIdx.value} 
           onUpdate:selected={(v) => selectedIdx.value = v}
-          style={{width: '100%'}}
+          class='w-full'
         >
           {{
             default: () => 
@@ -148,14 +148,14 @@ export const RichFunctionView = defineComponent({
                 categoryToDfParam.value.outputs[tabLabel])            
                 .flatMap((tabProps) => tabProps.map((prop) => Utils.getPropViewers(prop)))
                 .map(({name, config: allConfigs}) => 
-                  <div style={{display: 'flex', flexDirection: 'column'}}>
+                  <div class='flex-column'>
                     {
                       allConfigs.map((options) => 
                         <Viewer
                           type={options['type'] as string}
                           options={options}
                           dataFrame={currentCall.value.inputs[name] ?? currentCall.value.outputs[name]}
-                          style={{width: '100%', height: '300px'}} 
+                          class='w-full h-300' 
                         />, 
                       )
                     }

@@ -90,20 +90,19 @@ export const VueDriverRFVApp = defineComponent({
 
     return () => (
       <KeepAlive>
-        <div style={{width: '100%', height: '100%'}}>
+        <div class='w-full h-full'>
           <RibbonPanel>
             <BigButton onClick={() => initPipeline('LibTests:MockProvider3')}>Init Pipeline</BigButton>
           </RibbonPanel>
           
-          { treeState.value ? <SplitH resize={true} style={{height: '100%', display: 'block'}}>
+          { treeState.value ? <SplitH resize={true} class='h-full block'>
             <Draggable 
-              class="mtl-tree"
+              class="mtl-tree p-8"
               rootDroppable={false}
               treeLine
               childrenKey='steps'
               nodeKey={(stat: AugmentedStat) => stat.data.uuid}
               statHandler={restoreOpenedNodes}
-              style={{padding: '8px'}}
 
               ref={treeInstance} 
               modelValue={[treeState.value]} 
@@ -149,7 +148,7 @@ export const VueDriverRFVApp = defineComponent({
             <div>
               {
                 isVisibleRfv.value && currentFuncCall.value && <RichFunctionView 
-                  style={{height: '100%'}} 
+                  class='h-full'
                   funcCall={currentFuncCall.value}
                   onUpdate:funcCall={(chosenCall) => currentFuncCall.value = deepCopy(chosenCall)}
                 /> 

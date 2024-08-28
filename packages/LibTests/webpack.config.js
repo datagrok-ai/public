@@ -17,7 +17,7 @@ module.exports = {
       {test: /\.tsx?$/, loader: 'ts-loader', options: {allowTsInNodeModules: true}},
       {
         test: /\.css$/,
-        use: ['style-loader', 'css-loader'],
+        use: ['style-loader', 'css-loader', 'postcss-loader'],
       },
       {
         test: /\.(js|mjs|jsx|ts|tsx)$/,

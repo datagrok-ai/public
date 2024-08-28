@@ -18,6 +18,7 @@ import {VueElementsTestApp} from './components/VueElementsTestApp';
 import {VueDriverTestApp} from './components/VueDriverTestApp';
 import {PipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {VueDriverRFVApp} from './components/VueDriverRFVApp';
+import './tailwind.css';
 
 export const _package = new DG.Package();
 
