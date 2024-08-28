@@ -216,6 +216,17 @@ export class SunburstViewer extends EChartViewer {
       super.onPropertyChanged(p, render);
   }
 
+  addSubs() {
+    this.subs.push(this.dataFrame.onMetadataChanged.subscribe((_) => this.render()));
+    this.subs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
+    this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((data) => {
+      const columnNamesToRemove = data.columns.map((column: DG.Column) => column.name);
+      this.hierarchyColumnNames = this.hierarchyColumnNames.filter((columnName) => !columnNamesToRemove.includes(columnName));
+      this.render();
+    }));
+    this.addSelectionOrDataSubs();
+  }
+
   onTableAttached(propertyChanged?: boolean): void {
     let categoricalColumns = [...this.dataFrame.columns.categorical].sort((col1, col2) =>
       col1.categories.length - col2.categories.length);
@@ -225,15 +236,7 @@ export class SunburstViewer extends EChartViewer {
       return;
 
     this.hierarchyColumnNames = categoricalColumns.slice(0, this.hierarchyLevel).map((col) => col.name);
-
-    this.subs.push(this.dataFrame.onMetadataChanged.subscribe((_) => { this.render() }));
-    this.subs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
-    this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((data) => {
-      const columnNamesToRemove = data.columns.map((column: DG.Column) => column.name);
-      this.hierarchyColumnNames = this.hierarchyColumnNames.filter((columnName) => !columnNamesToRemove.includes(columnName));
-      this.render();
-    }));
-    this.addSelectionOrDataSubs();
+    this.addSubs();
     this.render();
   }
 
@@ -335,6 +338,7 @@ export class SunburstViewer extends EChartViewer {
 
     this.chart = echarts.init(this.root);
     this.initEventListeners();
+    this.addSubs();
 
     Object.assign(this.option.series[0], {
       data,
