@@ -8,7 +8,7 @@ not comprehensive, and other third-party tools may be used along with the ones w
 ## Datagrok toolkit
 
 First of all, to work with your project, you need a utility to publish
-[packages](../develop.md#packages) to the platform — `datagrok-tools`. See its
+[packages](../../develop.md#packages) to the platform — `datagrok-tools`. See its
 [documentation](https://github.com/datagrok-ai/public/tree/master/tools#datagrok-tools)
 for installation instructions and usage examples. Upon completing package setup, you will see a set of default
 dependencies listed in the `package.json`
@@ -37,7 +37,7 @@ _Links:_
 ## TypeScript
 
 As we recommend [TypeScript](https://www.typescriptlang.org/) as a language for package development, there's an option
-to [create a package](../onboarding/getting-started.md)
+to [create a package](../../onboarding/getting-started.md)
 with a `--ts` flag. Among other things, it adds two new dependencies: `typescript` (provides the language support)
 and `ts-loader` (a file loader for `webpack`). Likely, these are not the only libraries you will use when writing in
 TypeScript. For example, if one of the libraries you want to work with has not been typed yet, check out the
@@ -52,15 +52,15 @@ _Links:_
 ## Visualization
 
 The platform comes with a diverse set of visualizations (see the
-[Viewers](../../visualize/viewers/viewers.md) article). Moreover, it is possible to
-[create a custom viewer](../how-to/develop-custom-viewer.md) using our API. For this task, you can use such libraries
+[Viewers](../../../visualize/viewers/viewers.md) article). Moreover, it is possible to
+[create a custom viewer](../../how-to/develop-custom-viewer.md) using our API. For this task, you can use such libraries
 as `d3`, `three.js`, or `echarts`. Datagrok's public repository contains packages with examples:
 [Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers)
 and [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts). For scientific applications, you may
 find useful such projects as
 [NGL](https://www.npmjs.com/package/ngl), [RDKit](https://www.npmjs.com/package/@rdkit/rdkit),
 and [OpenChemLib](https://www.npmjs.com/package/openchemlib), but first look at what solutions already exist to
-integrate with them (see the [Cheminformatics](../../datagrok/solutions/domains/chem/chem.md)
+integrate with them (see the [Cheminformatics](../../../datagrok/solutions/domains/chem/chem.md)
 page).
 
 _Links:_

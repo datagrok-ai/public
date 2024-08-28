@@ -1,5 +1,5 @@
 ---
-title: "Context actions"
+title: "Register context actions"
 ---
 
 To register a context-specific action that would get offered to a user when right-clicking
