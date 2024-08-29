@@ -578,14 +578,16 @@ export async function helmPreprocessingFunction(
 //input: func preprocessingFunction {optional: true}
 //input: object options {optional: true}
 //input: bool clusterEmbeddings = true { optional: true }
+//input: bool isDemo {optional: true}
 //output: viewer result
 //editor: Bio:SequenceSpaceEditor
 export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column,
   methodName: DimReductionMethods, similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames,
   plotEmbeddings: boolean, preprocessingFunction?: DG.Func, options?: (IUMAPOptions | ITSNEOptions) & Options,
-  clusterEmbeddings?: boolean
+  clusterEmbeddings?: boolean, isDemo?: boolean
 ): Promise<DG.ScatterPlotViewer | undefined> {
-  const tableView = grok.shell.tv.dataFrame == table ? grok.shell.tv : undefined;
+  const tableView = isDemo ? (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView :
+    grok.shell.tv.dataFrame == table ? grok.shell.tv : undefined;
   if (!checkInputColumnUI(molecules, 'Sequence Space'))
     return;
   if (!preprocessingFunction)
