@@ -69,7 +69,8 @@ export async function performChemicalPropertyPredictions(molColumn: DG.Column, v
     const admetoxResults = await runAdmetox(csvString, properties, 'false');
     progressIndicator.update(80, 'Results are ready');
     const table = admetoxResults ? DG.DataFrame.fromCsv(admetoxResults) : null;
-    table ? addResultColumns(table, viewTable, addPiechart) : grok.log.warning('');
+    const molColIdx = viewTable?.columns.names().findIndex((name) => name === molColumn.name);
+    table ? addResultColumns(table, viewTable, addPiechart, molColIdx!) : grok.log.warning('');
   } catch (e) {
     grok.log.error(e);
   } finally {
@@ -179,11 +180,11 @@ function createPieSettings(table: DG.DataFrame, columnNames: string[], propertie
   };
 }
 
-export function addSparklines(table: DG.DataFrame, columnNames: string[]): void {
+export function addSparklines(table: DG.DataFrame, columnNames: string[], molColIdx: number): void {
   const tv = grok.shell.tableView(table.name);
   if (!tv) return;
 
-  const pie = tv.grid.columns.add({ cellType: 'piechart' });
+  const pie = tv.grid.columns.add({ cellType: 'piechart', index: molColIdx + 1 });
   pie.settings = { columnNames: columnNames };
   pie.settings = createPieSettings(table, columnNames, properties);
 }
@@ -239,7 +240,7 @@ function updateColumnProperties(column: DG.Column, model: any, viewTable: DG.Dat
   column.meta.units = model.units;
 }
 
-export function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, addPiechart: boolean = true): void {
+export function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, addPiechart: boolean = true, molColIdx: number): void {
   if (table.columns.length === 0) return;
 
   if (table.rowCount > viewTable.rowCount)
@@ -262,7 +263,7 @@ export function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, a
   }
 
   if (addPiechart)
-    addSparklines(viewTable, updatedModelNames);
+    addSparklines(viewTable, updatedModelNames, molColIdx);
 
   addColorCoding(viewTable, updatedModelNames);
   addCustomTooltip(viewTable.name);
