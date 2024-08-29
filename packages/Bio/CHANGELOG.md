@@ -7,6 +7,7 @@
 * Order Top menu
 * Fix to Atomic Level hide highlight column 
 * Fix to Atomic Level for column
+* Bump dependencies version, fix tests
 
 ## 2.14.2 (2024-08-23)
 
