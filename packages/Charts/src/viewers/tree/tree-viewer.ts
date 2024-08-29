@@ -87,7 +87,7 @@ export class TreeViewer extends EChartViewer {
   }
 
   initChartEventListeners() {
-    this.chart.on('click', (params: {[key: string]: any}) => this.dataFrame.selection.handleClick((i) => {
+    this.chart?.on('click', (params: {[key: string]: any}) => this.dataFrame.selection.handleClick((i) => {
       if (params.componentType !== 'series')
         return false;
       if (params.data.path === null)
@@ -109,7 +109,7 @@ export class TreeViewer extends EChartViewer {
       this.getProperty('layout')?.set(this, 'orthogonal');
       this.option.series[0].layout = 'orthogonal';
       this.option.series[0].label.rotate = 0;
-      this.chart.clear();
+      this.chart?.clear();
     }
     if (p?.name === 'layout') {
       const layout: layoutType = p.get(this);
@@ -135,7 +135,7 @@ export class TreeViewer extends EChartViewer {
     if (p?.name === 'hierarchyColumnNames' || p?.name === 'sizeColumnName' ||
         p?.name === 'sizeAggrType' || p?.name === 'colorColumnName' || p?.name === 'colorAggrType') {
       if (p?.name === 'hierarchyColumnNames')
-        this.chart.clear();
+        this.chart?.clear();
       if (p?.name === 'colorColumnName' || p?.name === 'colorAggrType')
         this.applyColorAggr = this.shouldApplyAggregation(this.colorColumnName, this.colorAggrType);
       if (p?.name === 'sizeColumnName' || p?.name === 'sizeAggrType')
@@ -191,7 +191,7 @@ export class TreeViewer extends EChartViewer {
     setItemStyle(data);
   }
 
-  getSeriesData() {
+  async getSeriesData() {
     const aggregations = [];
 
     if (this.sizeColumnName && this.applySizeAggr)
@@ -202,7 +202,7 @@ export class TreeViewer extends EChartViewer {
       aggregations.push({ type: <DG.AggregationType> this.colorAggrType,
         columnName: this.colorColumnName, propertyName: 'color' });
 
-    return [TreeUtils.toTree(this.dataFrame, this.hierarchyColumnNames, this.filter, null, aggregations)];
+    return [await TreeUtils.toTree(this.dataFrame, this.hierarchyColumnNames, this.filter, null, aggregations)];
   }
 
   render() {
@@ -220,7 +220,7 @@ export class TreeViewer extends EChartViewer {
     if (this.colorColumnName && this.applyColorAggr)
       this.colorCodeTree(this.option.series[0].data[0]);
 
-    this.chart.setOption(this.option);
+    this.chart?.setOption(this.option);
   }
 }
 

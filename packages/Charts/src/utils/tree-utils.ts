@@ -5,9 +5,9 @@ import * as utils from './utils';
 
 export class TreeUtils {
 
-  static toTree(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet,
+  static async toTree(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet,
     visitNode: ((arg0: TreeDataType) => void) | null = null, aggregations:
-      AggregationInfo[] = [], linkSelection: boolean = true, selection?: boolean, inherit?: boolean): TreeDataType {
+      AggregationInfo[] = [], linkSelection: boolean = true, selection?: boolean, inherit?: boolean): Promise<TreeDataType> {
     const data: TreeDataType = {
       name: 'All',
       value: 0,
@@ -132,23 +132,19 @@ export class TreeUtils {
         }
 
         if (columns[colIdx].semType === DG.SEMTYPE.MOLECULE) {
-          let image: HTMLCanvasElement | null = ui.canvas();
-          image.width = 70;
-          image.height = 80;
-          grok.chem.canvasMol(0, 0, image.width, image.height, image, name).then(() => {
-            const img = new Image();
-            img.src = image!.toDataURL('image/png');
-            node.label = {
-              show: true,
-              formatter: '{b}',
-              color: 'rgba(0,0,0,0)',
-              height: '80',
-              width: '70',
-              backgroundColor: {
-                image: img.src,
-              },
-            }
-          })
+          const image = await TreeUtils.getMoleculeImage(name);
+          const img = new Image();
+          img.src = image!.toDataURL('image/png');
+          node.label = {
+            show: true,
+            formatter: '{b}',
+            color: 'rgba(0,0,0,0)',
+            height: '80',
+            width: '70',
+            backgroundColor: {
+              image: img.src,
+            },
+          }
         }
 
         if (colIdx === columns.length - 1)
@@ -176,9 +172,21 @@ export class TreeUtils {
     return data;
   }
 
-  static toForest(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet, selection: boolean = false, inherit: boolean = false) {
-    const tree = TreeUtils.toTree(dataFrame, splitByColumnNames, rowMask, (node) => node.value = 0, [], false, selection, inherit);
+  static async toForestAsync(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet, selection: boolean = false, inherit: boolean = false) {
+    const tree = await TreeUtils.toTree(dataFrame, splitByColumnNames, rowMask, (node) => node.value = 0, [], false, selection, inherit);
     return tree.children;
+  }
+
+  static toForest(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet, selection: boolean = false, inherit: boolean = false) {
+    return TreeUtils.toForestAsync(dataFrame, splitByColumnNames, rowMask, selection, inherit);
+  }
+
+  static async getMoleculeImage(name: string): Promise<HTMLCanvasElement> {
+    const image: HTMLCanvasElement = ui.canvas();
+    image.width = 70;
+    image.height = 80;
+    await grok.chem.canvasMol(0, 0, image.width, image.height, image, name);
+    return image;
   }
 
   static mapRowsToObjects(dataFrame: DG.DataFrame, columnNames: string[],

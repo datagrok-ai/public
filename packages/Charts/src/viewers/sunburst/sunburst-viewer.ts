@@ -163,6 +163,20 @@ export class SunburstViewer extends EChartViewer {
       const tooltipText = `${matchCount}\n${params.name}`;
   
       ui.tooltip.showRowGroup(this.dataFrame, (i) => this.isRowMatch(i, params.name), tooltipX, tooltipY);
+      if (params.data.semType === 'Molecule') {
+        const image = await TreeUtils.getMoleculeImage(params.name);
+        const { width, height } = image;
+      
+        if (width && height) {
+          const pixels = image!.getContext('2d')!.getImageData(0, 0, width, height).data;
+      
+          if (pixels.some((_, i) => i % 4 === 3 && pixels[i] !== 0)) {
+            ui.tooltip.root.appendChild(image);
+            return;
+          }
+        }
+      }
+      
       ui.tooltip.root.innerText = tooltipText;
     };
   
@@ -191,7 +205,7 @@ export class SunburstViewer extends EChartViewer {
     }));
     
     fromEvent(this.chart, 'mouseover')
-      .pipe(debounceTime(200))
+      .pipe(debounceTime(100))
       .subscribe((params: any) => handleChartMouseover(params));
   }
 
@@ -238,12 +252,12 @@ export class SunburstViewer extends EChartViewer {
     this.render();
   }
 
-  getSeriesData(): TreeDataType[] | undefined {
+  async getSeriesData(): Promise<TreeDataType[] | undefined> {
     const rowSource = this.selectedOptions.includes(this.rowSource!);
     const eligibleHierarchyColumns = this.hierarchyColumnNames.filter(
       (name) => this.dataFrame.getCol(name).categories.length <= CATEGORIES_NUMBER
     );    
-    return TreeUtils.toForest(this.dataFrame, eligibleHierarchyColumns, this.filter, rowSource, this.inheritFromGrid);
+    return await TreeUtils.toForest(this.dataFrame, eligibleHierarchyColumns, this.filter, rowSource, this.inheritFromGrid);
   }
 
   formatLabel(params: any) {
