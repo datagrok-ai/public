@@ -23,6 +23,7 @@ const CATEGORIES_NUMBER = 500;
 export class SunburstViewer extends EChartViewer {
   private renderQueue: Promise<void> = Promise.resolve();
   hierarchyColumnNames: string[];
+  eligibleHierarchyNames!: string[];
   hierarchyLevel: number;
   onClick: onClickOptions;
   selectedOptions: string[] = ['Selected', 'SelectedOrCurrent', 'FilteredSelected'];
@@ -73,7 +74,7 @@ export class SunburstViewer extends EChartViewer {
       }
 
       return path.every((segment, j) => {
-        const columnValue = this.dataFrame.getCol(this.hierarchyColumnNames[j]).get(index);
+        const columnValue = this.dataFrame.getCol(this.eligibleHierarchyNames[j]).get(index);
         return (columnValue && columnValue.toString() === segment) || (!columnValue && segment === '');
       });
     }, event);
@@ -87,8 +88,8 @@ export class SunburstViewer extends EChartViewer {
   buildFilterFunction(path: string[]): (row: any) => boolean {
     return (row) => {
       return path.every((expectedValue, i) => {
-        const column = this.dataFrame.getCol(this.hierarchyColumnNames[i]);
-        const columnValue = row.get(this.hierarchyColumnNames[i]);
+        const column = this.dataFrame.getCol(this.eligibleHierarchyNames[i]);
+        const columnValue = row.get(this.eligibleHierarchyNames[i]);
         const formattedValue = columnValue
           ? (column.type !== 'string' ? columnValue.toString() : columnValue)
           : '';
@@ -98,9 +99,9 @@ export class SunburstViewer extends EChartViewer {
   }
 
   private isRowMatch(rowIndex: number, targetName: string): boolean {
-    const { hierarchyColumnNames, dataFrame } = this;
+    const { eligibleHierarchyNames, dataFrame } = this;
   
-    return hierarchyColumnNames.some((colName, index) => {
+    return eligibleHierarchyNames.some((colName, index) => {
       const column = dataFrame.getCol(colName);
       const value = column.get(rowIndex);
       const formattedValue = this.formatColumnValue(column, value);
@@ -254,10 +255,10 @@ export class SunburstViewer extends EChartViewer {
 
   async getSeriesData(): Promise<TreeDataType[] | undefined> {
     const rowSource = this.selectedOptions.includes(this.rowSource!);
-    const eligibleHierarchyColumns = this.hierarchyColumnNames.filter(
+    this.eligibleHierarchyNames = this.hierarchyColumnNames.filter(
       (name) => this.dataFrame.getCol(name).categories.length <= CATEGORIES_NUMBER
     );    
-    return await TreeUtils.toForest(this.dataFrame, eligibleHierarchyColumns, this.filter, rowSource, this.inheritFromGrid);
+    return await TreeUtils.toForest(this.dataFrame,this.eligibleHierarchyNames, this.filter, rowSource, this.inheritFromGrid);
   }
 
   formatLabel(params: any) {
