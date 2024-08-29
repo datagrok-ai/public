@@ -6,6 +6,7 @@
 * Added tests & benchmarks and the Pollution model
 * Updated the basic template
 * Improved the main app start
+* Implemented float64 columns use
 
 ## 1.0.10 (2024-06-10)
 

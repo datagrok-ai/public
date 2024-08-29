@@ -715,7 +715,7 @@ function getCustomOutputLinesWithExpressions(ivp: IVP): string[] {
   // 2. Expressions raw data & variables
   ivp.exprs!.forEach((val, key) => {
     if (ivp.outputs!.has(key))
-      res.push(`const ${key}RawData = new Float32Array(len);`);
+      res.push(`const ${key}RawData = new Float64Array(len);`);
 
     res.push(`let ${key};`);
   });
@@ -743,7 +743,7 @@ function getCustomOutputLinesWithExpressions(ivp: IVP): string[] {
   res.push(`${DF_NAME} = DG.DataFrame.fromColumns([`);
   ivp.outputs!.forEach((val, key) => {
     if (!val.formula)
-      res.push(`${SCRIPT.SPACE2}DG.Column.fromFloat32Array('${val.caption}', ${key}RawData.slice(0, len)),`);
+      res.push(`${SCRIPT.SPACE2}DG.Column.fromFloat64Array('${val.caption}', ${key}RawData.slice(0, len)),`);
   });
 
   if (ivp.updates !== null)
@@ -947,7 +947,7 @@ function getScriptMainBodyLoopCase(ivp: IVP): string[] {
   const dfNames = getSolutionDfColsNames(ivp);
 
   res.push(`let ${DF_NAME} = DG.DataFrame.fromColumns([`);
-  dfNames.forEach((name) => res.push(`${SCRIPT.SPACE2}DG.Column.fromFloat32Array('${name}', []),`));
+  dfNames.forEach((name) => res.push(`${SCRIPT.SPACE2}DG.Column.fromFloat64Array('${name}', []),`));
   res.push(`]);`);
   res.push(`${DF_NAME}.name = '${ivp.name}';`);
   res.push('');
