@@ -38,6 +38,5 @@ export const RibbonPanel = defineComponent({
 
     return () => 
       slots.default?.().map((slot: any) => <div ref={(el) => addElement(el)}> { slot } </div>) 
-    ;
   }
 });
