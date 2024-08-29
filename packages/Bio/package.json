@@ -41,7 +41,7 @@
     "@datagrok-libraries/chem-meta": "^1.2.5",
     "@datagrok-libraries/math": "^1.1.12",
     "@datagrok-libraries/ml": "^6.6.23",
-    "@datagrok-libraries/tutorials": "^1.3.13",
+    "@datagrok-libraries/tutorials": "../../libraries/tutorials",
     "@datagrok-libraries/utils": "^4.2.29",
     "@webgpu/types": "^0.1.40",
     "ajv": "^8.12.0",
