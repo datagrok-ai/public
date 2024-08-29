@@ -726,7 +726,7 @@ export class AddNewColumnDialog {
     props.colHeaderFont = props.defaultCellFont;
 
     const previewRoot = this.gridPreview.root;
-    previewRoot.setAttribute('style', 'height: -webkit-fill-available !important;; min-height:225px;');
+    previewRoot.setAttribute('style', 'height: -webkit-fill-available !important;');
 
     const control = ui.div(previewRoot);
     control.append(this.gridPreview.root);
