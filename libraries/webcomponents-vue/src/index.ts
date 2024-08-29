@@ -5,3 +5,4 @@ export * from './elements';
 export * from './Tabs/TabHeaderStripe/TabHeaderStripe';
 export * from './Tabs/TabArea/TabArea';
 export * from './Tabs/Tabs';
+export * from './FoldableDialog/FoldableDialog';

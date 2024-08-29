@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {defineComponent, onMounted, PropType, ref, triggerRef, nextTick, computed, watch, shallowRef} from 'vue';
 import {type ViewerT} from '@datagrok-libraries/webcomponents/src';
-import {Viewer, InputForm, BigButton, Button, TabHeaderStripe, Tabs, IconFA, RibbonPanel} from '@datagrok-libraries/webcomponents-vue/src';
+import {Viewer, InputForm, BigButton, Button, TabHeaderStripe, Tabs, IconFA, RibbonPanel, FoldableDialog} from '@datagrok-libraries/webcomponents-vue/src';
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
@@ -120,22 +120,35 @@ export const RichFunctionView = defineComponent({
             tooltip='Open history panel' 
             onClick={() => historyHidden.value = !historyHidden.value}
           />
+          <IconFA 
+            name='file' 
+            tooltip={ formHidden.value ? 'Open form': 'Close form' }
+            onClick={() => formHidden.value = !formHidden.value}
+          />
         </RibbonPanel>
-        <div class='flex-col p-2'>
-          <div class='flex justify-end'>
-            <IconFA 
-              name={formHidden.value ? 'chevron-double-right': 'chevron-double-left'} 
-              tooltip={formHidden.value ? 'Show input form': 'Hide input form'}
-              onClick={() => formHidden.value = !formHidden.value}
-            />
+        <FoldableDialog 
+          title='Input form'
+          style={{display: formHidden.value ? 'none': null}}
+          onCloseClicked={() => formHidden.value = true}
+        >
+          <InputForm funcCall={currentCall.value}/>
+          <div class='flex sticky bottom-0'>
+            <BigButton onClick={run}> Run </BigButton>
           </div>
-          <div style={{display: formHidden.value ? 'none': 'block'}}> 
-            <InputForm funcCall={currentCall.value}/>
-            <div class='flex sticky bottom-0'>
-              <BigButton onClick={run}> Run </BigButton>
-            </div>
-          </div>
-        </div>
+        </FoldableDialog>
+        <FoldableDialog
+          title='History'
+          style={{display: historyHidden.value ? 'none': null}}
+          onCloseClicked={() => historyHidden.value = true}
+        >
+          <History 
+            func={currentCall.value.func}
+            showActions
+            showBatchActions
+            isHistory
+            onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
+          />
+        </FoldableDialog>
         <Tabs 
           items={tabLabels.value.map((label) => ({label}))} 
           selected={selectedIdx.value} 
@@ -166,14 +179,6 @@ export const RichFunctionView = defineComponent({
                   </div>),
           }}
         </Tabs>
-        <History 
-          func={currentCall.value.func}
-          showActions
-          showBatchActions
-          isHistory
-          style={{display: historyHidden.value ? 'none': 'block', width: '30%'}}
-          onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
-        />
       </div>
     );
   },

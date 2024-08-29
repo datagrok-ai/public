@@ -205,11 +205,7 @@ export const TreeNode = defineComponent({
         { props.stat.children.length ? openIcon() : null }
         <span class="mtl-ml">{ nodeLabel(props.stat) }</span>
         { props.stat.data.isHovered ? 
-          <div style={{
-            gap: '6px', display: 'flex', padding: '0px 6px', 
-            alignItems: 'center', justifyContent: 'flex-end',
-            width: '100%',
-          }}>
+          <div class='flex gap-2 items-center justify-end w-full px-2'>
             { hasAddButton(props.stat.data) ? 
               <ComboPopup 
                 caption={ui.iconFA('plus')}
