@@ -35,6 +35,7 @@ export const Viewer = defineComponent({
         dataFrame={props.dataFrame}
         // viewer={props.viewer} // TODO: Fix this
         onViewerChanged={viewerChangedCb}
+        style={{display: 'block', flexGrow: '1'}}
       >
       </dg-viewer>;
       return (

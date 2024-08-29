@@ -106,6 +106,8 @@ export const RichFunctionView = defineComponent({
     const historyHidden = ref(true);
 
     const hasContextHelp = computed(() => Utils.hasContextHelp(currentCall.value.func));
+
+    const dfBlockTitle = (dfProp: DG.Property) => dfProp.options['caption'] ?? dfProp.name ?? ' ';
           
     return () => (
       <div class='w-full h-full flex'>
@@ -159,24 +161,24 @@ export const RichFunctionView = defineComponent({
             default: () => 
               tabLabels.value.map((tabLabel) => categoryToDfParam.value.inputs[tabLabel] ?? 
                 categoryToDfParam.value.outputs[tabLabel])            
-                .flatMap((tabProps) => tabProps.map((prop) => Utils.getPropViewers(prop)))
-                .map(({name, config: allConfigs}) => 
-                  <div class='flex-column'>
-                    {
-                      allConfigs.map((options) => 
-                        <Viewer
-                          type={options['type'] as string}
-                          options={options}
-                          dataFrame={currentCall.value.inputs[name] ?? currentCall.value.outputs[name]}
-                          class='w-full h-300' 
-                        />, 
-                      )
-                    }
-                    <ScalarTable 
-                      funcCall={currentCall.value} 
-                      category={tabLabels.value[selectedIdx.value]}
-                    />
-                  </div>),
+                .flatMap((tabProps) => tabProps.map((prop) => ({prop, ...Utils.getPropViewers(prop)})))
+                .map(({prop, name, config: allConfigs}) => {
+                  return [allConfigs.map((options) => 
+                    <div class='flex flex-col h-1/2'>
+                      <h2> { dfBlockTitle(prop) } </h2>
+                      <Viewer
+                        type={options['type'] as string}
+                        options={options}
+                        dataFrame={currentCall.value.inputs[name] ?? currentCall.value.outputs[name]}
+                        class='w-full' 
+                      />
+                    </div>, 
+                  ),
+                  <ScalarTable 
+                    funcCall={currentCall.value} 
+                    category={tabLabels.value[selectedIdx.value]}
+                  />];
+                }),
           }}
         </Tabs>
       </div>

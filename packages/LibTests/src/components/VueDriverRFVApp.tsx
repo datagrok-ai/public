@@ -157,15 +157,13 @@ export const VueDriverRFVApp = defineComponent({
                 }
               </Draggable>
             </FoldableDialog> : null }
-          <div>
-            {
-              isVisibleRfv.value && currentFuncCall.value && <RichFunctionView 
-                class='h-full'
-                funcCall={currentFuncCall.value}
-                onUpdate:funcCall={(chosenCall) => currentFuncCall.value = deepCopy(chosenCall)}
-              /> 
-            }
-          </div>
+          {
+            isVisibleRfv.value && currentFuncCall.value && <RichFunctionView 
+              class='h-full'
+              funcCall={currentFuncCall.value}
+              onUpdate:funcCall={(chosenCall) => currentFuncCall.value = deepCopy(chosenCall)}
+            /> 
+          }
         </div>
       </KeepAlive>
     );

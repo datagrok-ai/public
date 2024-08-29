@@ -354,8 +354,8 @@ export async function MockProvider2(params: any) {
     type: 'parallel',
     stepTypes: [{
       id: 'stepAdd',
-      nqName: 'LibTests:TestAdd2',
-      friendlyName: 'add',
+      nqName: 'Compute:ObjectCooling',
+      friendlyName: 'cooling',
     }, {
       id: 'stepMul',
       nqName: 'LibTests:TestMul2',
