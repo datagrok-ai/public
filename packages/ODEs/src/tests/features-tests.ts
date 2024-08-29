@@ -7,7 +7,7 @@ import {_package} from '../package-test';
 
 import {category, expect, test, timeout} from '@datagrok-libraries/utils/src/test';
 
-import {TEMPLATES} from '../templates';
+import {TEMPLATES, ENERGY_N_CONTROL} from '../templates';
 import {USE_CASES} from '../use-cases';
 import {IVP, getIVP, getScriptLines, getScriptParams} from '../scripting-tools';
 import {DF_NAME} from '../constants';
@@ -55,4 +55,5 @@ category('Features', () => {
   testTeamplate('Cyclic process', USE_CASES.PK_PD);
   testTeamplate('Multistage model', USE_CASES.ACID_PROD);
   testTeamplate('Output control', USE_CASES.NIMOTUZUMAB);
+  testTeamplate('Output expressions & use of JS code in model', ENERGY_N_CONTROL);
 }); // Correctness
