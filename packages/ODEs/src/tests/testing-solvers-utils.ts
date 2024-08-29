@@ -40,6 +40,7 @@ const exactSolution = (t: number) => {
   };
 };
 
+/** Evaluate correctness of the method by solving stiff test example */
 export function evaluateMethod(method: (odes: ODEs) => DG.DataFrame): number {
   let error = 0;
 

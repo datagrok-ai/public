@@ -141,7 +141,7 @@ enum ERROR_MSG {
   SERVICE_START = `Variable names should not start with '${SERVICE}'`,
   REUSE_NAME = 'Variable reuse (case-insensitive): rename ',
   SOLVER = `Incorrect solver options. Check the '${CONTROL_EXPR.SOLVER}'-line`,
-}
+} // ERROR_MSG
 
 /** Datagrok annotations */
 enum ANNOT {
@@ -753,7 +753,7 @@ function getCustomOutputLinesWithExpressions(ivp: IVP): string[] {
   res.push(`${DF_NAME}.name = '${ivp.name}';`);
 
   return res;
-}
+} // getCustomOutputLinesWithExpressions
 
 /** Return custom output lines */
 function getCustomOutputLines(ivp: IVP): string[] {

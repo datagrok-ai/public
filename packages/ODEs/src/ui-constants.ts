@@ -80,7 +80,7 @@ export enum TITLE {
   TYPE = 'Type',
   INFO = 'Info',
   IS_CUST = 'Custom model',
-};
+}; // TITLE
 
 /** Titles of template models */
 export const TEMPLATE_TITLES = [TITLE.BASIC, TITLE.ADV, TITLE.EXT];

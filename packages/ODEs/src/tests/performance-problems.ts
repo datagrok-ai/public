@@ -44,7 +44,7 @@ const hires = {
   },
   tolerance: 1e-10,
   solutionColNames: ['y1', 'y2', 'y3', 'y4', 'y5', 'y6', 'y7', 'y8'],
-};
+}; // hires
 
 /** Van der Pol oscillator (see https://archimede.uniba.it/~testset/problems/vdpol.php) */
 const vanDerPol = {
@@ -109,7 +109,7 @@ const e5 = {
   solutionColNames: ['y1', 'y2', 'y3', 'y4'],
 };
 
-/** Kintetic constants for the E5 model */
+/** Kintetic constants for the Pollution model */
 enum POL {
   K1 = 0.35,
   K2 = 26.6,
@@ -136,7 +136,7 @@ enum POL {
   K23 = 0.0474,
   K24 = 1780,
   K25 = 3.12,
-};
+}; // POL
 
 /** The chemical reaction part of the air pollution model (https://archimede.uniba.it/~testset/report/pollu.pdf) */
 const pollution = {
@@ -218,7 +218,7 @@ const pollution = {
   tolerance: 1e-6,
   solutionColNames: ['y1', 'y2', 'y3', 'y4', 'y5', 'y6', 'y7', 'y8', 'y9', 'y10', 'y11',
     'y12', 'y13', 'y14', 'y15', 'y16', 'y17', 'y18', 'y19', 'y20'],
-};
+}; // pollution
 
 /** Problems for testing solvers' performance */
 export const problems = new Map([

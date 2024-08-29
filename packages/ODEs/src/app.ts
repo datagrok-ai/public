@@ -45,6 +45,7 @@ enum EDITOR_STATE {
   BIOREACTOR = 'bioreactor',
   POLLUTION = 'pollution',
 };
+
 /** Return path corresponding to state */
 function stateToPath(state: EDITOR_STATE): string {
   switch (state) {
