@@ -1,8 +1,12 @@
 # Helm changelog
 
+## 2.4.5 (2024-08-29)
+
+Fix getHelm for cyclic, bump HWE dependencies
+
 ## 2.4.4 (2024-08-27)
 
-### Bug fixes 
+### Bug fixes
 
 * Helm: Fix Helm grid cell renderer mouse move handling error
 
