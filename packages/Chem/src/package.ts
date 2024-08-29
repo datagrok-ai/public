@@ -131,8 +131,8 @@ export async function initChem(): Promise<void> {
   _rdRenderer = new RDKitCellRenderer(getRdKitModule());
   renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
   let storedSketcherType = grok.userSettings.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY);
-  if (PREVIOUS_SKETCHER_NAMES[storedSketcherType!])
-    storedSketcherType = PREVIOUS_SKETCHER_NAMES[storedSketcherType!];
+  if (PREVIOUS_SKETCHER_NAMES[storedSketcherType])
+    storedSketcherType = PREVIOUS_SKETCHER_NAMES[storedSketcherType];
   if (!storedSketcherType && _properties.Sketcher)
     storedSketcherType = SKETCHER_FUNCS_FRIENDLY_NAMES[_properties.Sketcher];
   const sketcherFunc = DG.Func.find({tags: ['moleculeSketcher']})
