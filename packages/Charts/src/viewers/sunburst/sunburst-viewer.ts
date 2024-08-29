@@ -11,6 +11,7 @@ import { debounceTime } from 'rxjs/operators';
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 
 type onClickOptions = 'Select' | 'Filter';
+const CATEGORIES_NUMBER = 500;
 
 /** Represents a sunburst viewer */
 @grok.decorators.viewer({
@@ -214,6 +215,7 @@ export class SunburstViewer extends EChartViewer {
 
   addSubs() {
     this.subs.push(this.dataFrame.onMetadataChanged.subscribe((_) => this.render()));
+    this.subs.push(grok.events.onEvent('d4-grid-color-coding-changed').subscribe(() => this.render()));
     this.subs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
     this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((data) => {
       const columnNamesToRemove = data.columns.map((column: DG.Column) => column.name);
@@ -238,7 +240,10 @@ export class SunburstViewer extends EChartViewer {
 
   getSeriesData(): TreeDataType[] | undefined {
     const rowSource = this.selectedOptions.includes(this.rowSource!);
-    return TreeUtils.toForest(this.dataFrame, this.hierarchyColumnNames, this.filter, rowSource, this.inheritFromGrid);
+    const eligibleHierarchyColumns = this.hierarchyColumnNames.filter(
+      (name) => this.dataFrame.getCol(name).categories.length <= CATEGORIES_NUMBER
+    );    
+    return TreeUtils.toForest(this.dataFrame, eligibleHierarchyColumns, this.filter, rowSource, this.inheritFromGrid);
   }
 
   formatLabel(params: any) {
