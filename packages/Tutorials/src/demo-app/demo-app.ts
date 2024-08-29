@@ -350,11 +350,11 @@ export class DemoView extends DG.ViewBase {
 
   private _createSearchInput(directionFuncs: DemoFunc[], tree: DG.TreeViewGroup): DG.InputBase<string> {
     const searchInput = ui.input.search('', {
-      onValueChanged: (input) => {
+      onValueChanged: (value) => {
         const foundFuncs = directionFuncs.filter((func) => {
-          return func.name.toLowerCase().includes(input.value.toLowerCase()) ||
-              func.func.description.toLowerCase().includes(input.value.toLowerCase()) ||
-              func.keywords.toLowerCase().includes(input.value.toLowerCase())
+          return func.name.toLowerCase().includes(value.toLowerCase()) ||
+              func.func.description.toLowerCase().includes(value.toLowerCase()) ||
+              func.keywords.toLowerCase().includes(value.toLowerCase())
         });
         const cards = tree.root.querySelectorAll('.d4-item-card.ui-div');
         for (let i = 0; i < cards.length; i++) {

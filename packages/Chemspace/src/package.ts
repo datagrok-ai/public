@@ -122,11 +122,11 @@ export async function samplesPanel(smiles: string): Promise<DG.Widget> {
     const shipToCountry = ui.input.choice('Ship to country', {
       value: 'United States',
       items: Object.keys(COUNTRY_CODES),
-      onValueChanged: () => updateSearchResults(acc, categoryToData, category.value, COUNTRY_CODES[shipToCountry.value! as keyof typeof COUNTRY_CODES]),
+      onValueChanged: (value) => updateSearchResults(acc, categoryToData, category.value, COUNTRY_CODES[value as keyof typeof COUNTRY_CODES]),
     }) as DG.InputBase<string>;
     const category = ui.input.choice('Category', {
       value: CATEGORY.CSCS, items: Object.values(CATEGORY),
-      onValueChanged: () => updateSearchResults(acc, categoryToData, category.value, COUNTRY_CODES[shipToCountry.value! as keyof typeof COUNTRY_CODES]),
+      onValueChanged: (value) => updateSearchResults(acc, categoryToData, value, COUNTRY_CODES[shipToCountry.value! as keyof typeof COUNTRY_CODES]),
     }) as DG.InputBase<CATEGORY>;
     category.fireChanged();
     panels = ui.divV([ui.form([shipToCountry, category]), acc.root]);
@@ -276,11 +276,11 @@ export async function pricesPanel(id: string): Promise<DG.Widget> {
     const shipToCountry = ui.input.choice('Ship to country', {
       value: 'United States',
       items: Object.keys(COUNTRY_CODES),
-      onValueChanged: () => updatePrices(categoryToData, category.value, COUNTRY_CODES[shipToCountry.value! as keyof typeof COUNTRY_CODES]),
+      onValueChanged: (value) => updatePrices(categoryToData, category.value, COUNTRY_CODES[value as keyof typeof COUNTRY_CODES]),
     }) as DG.InputBase<string>;
     const category = ui.input.choice('Category', {
       value: CATEGORY.CSCS, items: Object.values(CATEGORY),
-      onValueChanged: () => updatePrices(categoryToData, category.value, COUNTRY_CODES[shipToCountry.value! as keyof typeof COUNTRY_CODES]),
+      onValueChanged: (value) => updatePrices(categoryToData, value, COUNTRY_CODES[shipToCountry.value! as keyof typeof COUNTRY_CODES]),
     }) as DG.InputBase<CATEGORY>;
     category.fireChanged();
     prices = ui.divV([ui.form([shipToCountry, category]), resData]);

@@ -154,7 +154,7 @@ export function enamineStorePanel(smiles: string): DG.Widget {
   const acc = ui.accordion();
   const catalogToData: {[catalogType in CATALOG_TYPE]?: {[searchMode in SEARCH_MODE]?: HTMLDivElement}} = {};
   const catalog = ui.input.choice('Catalog', {value: CATALOG_TYPE.SCR, items: Object.values(CATALOG_TYPE),
-    onValueChanged: () => {
+    onValueChanged: (value) => {
       const exactPanel = acc.getPane(SEARCH_MODE.EXACT);
       const similarPanel = acc.getPane(SEARCH_MODE.SIMILAR);
       const substructurePanel = acc.getPane(SEARCH_MODE.SUBSTRUCTURE);
@@ -165,21 +165,21 @@ export function enamineStorePanel(smiles: string): DG.Widget {
         acc.removePane(pane);
 
       acc.addPane(SEARCH_MODE.EXACT, () => {
-        catalogToData[catalog.value] ??= {};
-        catalogToData[catalog.value]![SEARCH_MODE.EXACT] ??= createSearchPanel(SEARCH_MODE.EXACT, smiles, catalog.value);
-        return catalogToData[catalog.value]![SEARCH_MODE.EXACT]!;
+        catalogToData[value] ??= {};
+        catalogToData[value]![SEARCH_MODE.EXACT] ??= createSearchPanel(SEARCH_MODE.EXACT, smiles, value);
+        return catalogToData[value]![SEARCH_MODE.EXACT]!;
       }, exactExpanded);
       acc.addPane(SEARCH_MODE.SIMILAR, () => {
-        catalogToData[catalog.value] ??= {};
-        catalogToData[catalog.value]![SEARCH_MODE.SIMILAR] ??=
-          createSearchPanel(SEARCH_MODE.SIMILAR, smiles, catalog.value);
-        return catalogToData[catalog.value]![SEARCH_MODE.SIMILAR]!;
+        catalogToData[value] ??= {};
+        catalogToData[value]![SEARCH_MODE.SIMILAR] ??=
+          createSearchPanel(SEARCH_MODE.SIMILAR, smiles, value);
+        return catalogToData[value]![SEARCH_MODE.SIMILAR]!;
       }, similarExpanded);
       acc.addPane(SEARCH_MODE.SUBSTRUCTURE, () => {
-        catalogToData[catalog.value] ??= {};
-        catalogToData[catalog.value]![SEARCH_MODE.SUBSTRUCTURE] ??=
-          createSearchPanel(SEARCH_MODE.SUBSTRUCTURE, smiles, catalog.value);
-        return catalogToData[catalog.value]![SEARCH_MODE.SUBSTRUCTURE]!;
+        catalogToData[value] ??= {};
+        catalogToData[value]![SEARCH_MODE.SUBSTRUCTURE] ??=
+          createSearchPanel(SEARCH_MODE.SUBSTRUCTURE, smiles, value);
+        return catalogToData[value]![SEARCH_MODE.SUBSTRUCTURE]!;
       }, substructureExpanded);
     }}) as DG.InputBase<CATALOG_TYPE>;
   catalog.fireChanged();

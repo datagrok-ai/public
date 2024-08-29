@@ -64,8 +64,8 @@ export function getDistributionWidget(table: DG.DataFrame, options: Distribution
   for (let inputIdx = 0; inputIdx < inputsNames.length; inputIdx++) {
     const inputName = inputsNames[inputIdx].substring(8);
     inputsArray[inputIdx] = ui.input.bool(inputName,
-      {value: table.getTag(inputsNames[inputIdx]) === `${true}`, onValueChanged: () => {
-        table.setTag(inputsNames[inputIdx], `${inputsArray[inputIdx].value}`);
+      {value: table.getTag(inputsNames[inputIdx]) === `${true}`, onValueChanged: (value) => {
+        table.setTag(inputsNames[inputIdx], `${value}`);
         $(distributionCategoriesHost).empty();
         distributionCategoriesHost.append(getDistributionCategoreisHost());
       }}) as DG.InputBase<boolean>;

@@ -127,14 +127,14 @@ export function rGroupAnalysis(col: DG.Column, demo = false): void {
   //R groups fields
   const rGroupMatchingStrategy = ui.input.choice('Matching strategy', {
     value: rGroupSettings?.rGroupMatchingStrategy ?? RGroupMatchingStrategy.Greedy, items: matchingStrategies,
-    onValueChanged: () => {
-      rGroupSettings!.rGroupMatchingStrategy = rGroupMatchingStrategy.value!;
+    onValueChanged: (value) => {
+      rGroupSettings!.rGroupMatchingStrategy = value;
       saveRGroupUserSettings();
     }});
   rGroupMatchingStrategy.root.style.display = 'none';
   const onlyMatchAtRGroupsInput = ui.input.bool('Only match at R groups', {
-    value: rGroupSettings?.onlyMatchAtRGroups ?? false, onValueChanged: () => {
-      rGroupSettings!.onlyMatchAtRGroups = onlyMatchAtRGroupsInput.value!;
+    value: rGroupSettings?.onlyMatchAtRGroups ?? false, onValueChanged: (value) => {
+      rGroupSettings!.onlyMatchAtRGroups = value;
       saveRGroupUserSettings();
     }});
   onlyMatchAtRGroupsInput.root.style.display = 'none';

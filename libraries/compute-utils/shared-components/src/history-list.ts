@@ -761,11 +761,10 @@ export class HistoricalRunsList extends DG.Widget {
     this.styleHistoryFilters();
   }});
 
-  private showInputsIcon = ui.input.toggle('Params', {value: false, onValueChanged: async () => {
-    const newValue = this.showInputsIcon.value;
+  private showInputsIcon = ui.input.toggle('Params', {value: false, onValueChanged: async (value) => {
     if (this.runs.size === 0) return;
 
-    if (newValue && this.options?.isHistory) {
+    if (value && this.options?.isHistory) {
       const fullCalls = await Promise.all(
         [...this.runs.values()].map(async (run) => {
           if (runCache.has(run.id))

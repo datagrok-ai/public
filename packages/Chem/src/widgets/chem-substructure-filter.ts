@@ -135,8 +135,8 @@ export class SubstructureFilter extends DG.Filter {
     });
     this.searchTypeInput.root.classList.add('chem-filter-search-type');
 
-    this.fpInput = ui.input.choice('FP', {value: this.fp, items: this.fpsTypes, onValueChanged: () => {
-      this.fp = this.fpInput.value;
+    this.fpInput = ui.input.choice('FP', {value: this.fp, items: this.fpsTypes, onValueChanged: (value) => {
+      this.fp = value;
       !this.fpSync ? this.searchTypeChanged.next() : this.fpSync = false;
     }});
     this.fpInput.input.classList.add('chem-filter-fp-editor');

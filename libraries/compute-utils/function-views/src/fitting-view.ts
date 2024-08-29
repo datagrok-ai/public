@@ -67,7 +67,7 @@ export class FittingView {
     );
 
     const getSwitchElement = (defaultValue: boolean, f: (v: boolean) => any, isInput: boolean = true) => {
-      const input = ui.input.toggle(' ', {value: defaultValue, onValueChanged: () => f(input.value)});
+      const input = ui.input.toggle(' ', {value: defaultValue, onValueChanged: (value) => f(value)});
       $(input.root).addClass('sa-switch-input');
       $(input.captionLabel).hide();
 
@@ -108,8 +108,8 @@ export class FittingView {
           const: {
             input:
             (() => {
-              const inp = ui.input.float(caption, {value: defaultValue, onValueChanged: () => {
-                ref.const.value = inp.value!;
+              const inp = ui.input.float(caption, {value: defaultValue, onValueChanged: (value) => {
+                ref.const.value = value;
                 this.updateApplicabilityState();
               }});
               inp.root.insertBefore(isChangingInputConst.root, inp.captionLabel);
@@ -123,8 +123,8 @@ export class FittingView {
           min: {
             input:
               (() => {
-                const inp = ui.input.float(`${caption} (min)`, {value: getInputValue(inputProp, 'min'), onValueChanged: () => {
-                  (ref as FittingNumericStore).min.value = inp.value!;
+                const inp = ui.input.float(`${caption} (min)`, {value: getInputValue(inputProp, 'min'), onValueChanged: (value) => {
+                  (ref as FittingNumericStore).min.value = value;
                   this.updateApplicabilityState();
                 }});
                 inp.addValidator((s:string) => (Number(s) > temp.max.value) ? 'Greater than max': null);
@@ -138,8 +138,8 @@ export class FittingView {
           },
           max: {
             input: (() => {
-              const inp = ui.input.float(`${caption} (max)`, {value: getInputValue(inputProp, 'max'), onValueChanged: () => {
-                (ref as FittingNumericStore).max.value = inp.value!;
+              const inp = ui.input.float(`${caption} (max)`, {value: getInputValue(inputProp, 'max'), onValueChanged: (value) => {
+                (ref as FittingNumericStore).max.value = value;
                 this.updateApplicabilityState();
               }});
               inp.addValidator((s:string) => (Number(s) < temp.min.value) ? 'Smaller than min': null);
@@ -284,7 +284,7 @@ export class FittingView {
             return input;
           })(),
           colNameInput: (() => {
-            const input = ui.input.choice<string|null>('argument', {value: null, items: [null], onValueChanged: () => {temp.colName = input.value!;}});
+            const input = ui.input.choice<string|null>('argument', {value: null, items: [null], onValueChanged: (value) => {temp.colName = value!;}});
             input.setTooltip('Column with argument values');
             input.root.insertBefore(getSwitchMock(), input.captionLabel);
             input.root.hidden = outputProp.propertyType !== DG.TYPE.DATA_FRAME || !this.toSetSwitched;
@@ -351,8 +351,8 @@ export class FittingView {
     max: 1000,
   }));
   private loss = LOSS.RMSE;
-  private lossInput = ui.input.choice(TITLE.LOSS_LOW, {value: this.loss, items: [LOSS.MAD, LOSS.RMSE], onValueChanged: () => {
-    this.loss = this.lossInput.value!;
+  private lossInput = ui.input.choice(TITLE.LOSS_LOW, {value: this.loss, items: [LOSS.MAD, LOSS.RMSE], onValueChanged: (value) => {
+    this.loss = value;
     this.lossInput.setTooltip(lossTooltip.get(this.loss)!);
   }});
   private similarity = FITTING_UI.SIMILARITY_DEFAULT;
@@ -367,8 +367,8 @@ export class FittingView {
   private helpDN: DG.DockNode | undefined = undefined;
 
   private method = METHOD.NELDER_MEAD;
-  private methodInput = ui.input.choice(TITLE.METHOD, {value: this.method, items: [METHOD.NELDER_MEAD], onValueChanged: () => {
-    this.method = this.methodInput.value!;
+  private methodInput = ui.input.choice(TITLE.METHOD, {value: this.method, items: [METHOD.NELDER_MEAD], onValueChanged: (value) => {
+    this.method = value;
     this.showHideSettingInputs();
     this.methodInput.setTooltip(methodTooltip.get(this.method)!);
   }});

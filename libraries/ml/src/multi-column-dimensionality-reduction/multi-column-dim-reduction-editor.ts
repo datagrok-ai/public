@@ -146,9 +146,9 @@ export class MultiColumnDimReductionEditor {
       let settingsOpened = false;
 
       this.methodInput = ui.input.choice('Method', {value: DimReductionMethods.UMAP,
-        items: [DimReductionMethods.UMAP, DimReductionMethods.T_SNE], onValueChanged: () => {
+        items: [DimReductionMethods.UMAP, DimReductionMethods.T_SNE], onValueChanged: (value) => {
           if (settingsOpened)
-            this.createAlgorithmSettingsDiv(this.methodsParams[this.methodInput.value!]);
+            this.createAlgorithmSettingsDiv(this.methodsParams[value]);
         }});
       this.methodSettingsIcon = ui.icons.settings(()=> {
         settingsOpened = !settingsOpened;
@@ -192,21 +192,20 @@ export class MultiColumnDimReductionEditor {
         });
       });
       const supportedColNames = Object.keys(this.columnFunctionsMap);
-      const columnsInput = ui.input.columns('Columns', {table: table, onValueChanged: () => {
+      const columnsInput = ui.input.columns('Columns', {table: table, onValueChanged: (value) => {
         this.onColumnsChanged.next();
         ui.empty(this.columnOptEditorsRoot);
         ui.empty(this.weightsEditorRoot);
-        const cols = columnsInput.value;
-        if (!cols || cols?.length < 2)
+        if (!value || value?.length < 2)
           this.aggregationMethodInput.root.style.display = 'none';
         else
           this.aggregationMethodInput.root.style.display = 'flex';
-        if (!cols || cols.length === 0) {
+        if (!value || value.length === 0) {
           this.columnParamsEditorAccordion.root.style.display = 'none';
           return;
         }
 
-        this.columnOptEditors = cols.map((col) => {
+        this.columnOptEditors = value.map((col) => {
           const editorClass = new DimReductionColumnEditor(col, this.columnFunctionsMap[col.name].map((it) =>
             this.supportedFunctions[it]));
           return editorClass;
@@ -261,14 +260,14 @@ export class MultiColumnDimReductionEditor {
           (params as any)[it];
 
         const input = param.type === 'string' ?
-          ui.input.string(param.uiName, {value: param.value ?? '', onValueChanged: () => {
-            param.value = (input as DG.InputBase<string>).value;
+          ui.input.string(param.uiName, {value: param.value ?? '', onValueChanged: (value) => {
+            param.value = value;
           }}) : param.type === 'boolean' ?
-            ui.input.bool(param.uiName, {value: param.value ?? false, onValueChanged: () => {
-              param.value = (input as DG.InputBase<boolean>).value;
+            ui.input.bool(param.uiName, {value: param.value ?? false, onValueChanged: (value) => {
+              param.value = value;
             }}) :
-            ui.input.float(param.uiName, {value: param.value as any, onValueChanged: () => {
-              param.value = input.value;
+            ui.input.float(param.uiName, {value: param.value as any, onValueChanged: (value) => {
+              param.value = value;
             }});
         if (param.disable) {
           input.enabled = false;
@@ -420,7 +419,7 @@ class DimReductionColumnEditor {
     colOptEditors: HTMLElement[] = [];
     constructor(column: DG.Column, supportedFunctions: DimRedSupportedFunctions[]) {
       this.weightInput = ui.input.float('Weight',
-        {value: 1, onValueChanged: () => { this.weight = this.weightInput.value ?? 1; }});
+        {value: 1, onValueChanged: (value) => { this.weight = value ?? 1; }});
       this.column = column;
       // sort by specificity
       this.supportedFunctions = supportedFunctions.sort((a, b) => {
@@ -440,12 +439,11 @@ class DimReductionColumnEditor {
       this.preprocessingFunctionInput = ui.input.choice('Encoding function',
         {value: getFuncName(this.supportedFunctions[0].func),
           items: this.supportedFunctions.map((it) => getFuncName(it.func)),
-          onValueChanged: () => {
-            const val = this.preprocessingFunctionInput.value!;
-            const func = this.functionsMap[val];
+          onValueChanged: (value) => {
+            const func = this.functionsMap[value];
             this.preprocessingFunctionSettings = {};
             this.hasExtraSettings = func.inputs.length > 2;
-            const supF = this.supportedFunctions.find((it) => getFuncName(it.func) === val)!;
+            const supF = this.supportedFunctions.find((it) => getFuncName(it.func) === value)!;
             this.getSimilarityMetricInput(supF);
             ui.empty(this.preprocessingFuncSettingsDiv);
             settingsOpened = false;
