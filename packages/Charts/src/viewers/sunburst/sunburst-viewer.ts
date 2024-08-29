@@ -325,7 +325,7 @@ export class SunburstViewer extends EChartViewer {
       .then(() => this._render());
   }
   
-  private async _render() {
+  async _render() {
     if (!this.hierarchyColumnNames?.length)
       return;
   
