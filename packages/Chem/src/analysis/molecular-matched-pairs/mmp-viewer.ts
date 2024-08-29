@@ -87,7 +87,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.activities = this.stringList('activities');
     this.fragmentCutoff = this.float('fragmentCutoff');
 
-    this.totalData = this.string('totalData', 'null', {userEditable: false});
+    this.totalData = this.string('totalData', 'null', {userEditable: false, includeInLayout: false});
   }
 
   onTableAttached() {
@@ -579,6 +579,11 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.transPairsGrid!.setOptions({
         pinnedRowValues: [idxPairs.toString()],
         pinnedRowColumnNames: [MMP_NAMES.PAIRNUM],
+      });
+    } else {
+      this.transPairsGrid!.setOptions({
+        pinnedRowValues: [],
+        pinnedRowColumnNames: [],
       });
     }
 
