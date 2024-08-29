@@ -1,20 +1,7 @@
 1. Test tickets:
-   * [#1744](https://github.com/datagrok-ai/public/issues/1744)
-   * Check pick up/apply between different viewers [#2116](https://github.com/datagrok-ai/public/issues/2116)
-   * Check pick up/apply between different tables [#1887](https://github.com/datagrok-ai/public/issues/1887)
-   * [#2571](https://github.com/datagrok-ai/public/issues/2571)
-   * [#2479](https://github.com/datagrok-ai/public/issues/2479)
-   * [#2455](https://github.com/datagrok-ai/public/issues/2455) Viewers: Add the ability to choose several categories with ctrl click
-   * [#2456](https://github.com/datagrok-ai/public/issues/2456) Scatterplot: ignore negatives and zero values when switching to log scale
-   [#2467](https://github.com/datagrok-ai/public/issues/2467) Allow to set tab label for stacked viewers programmatically
-   * Line chart: unaggregated tooltip and hovered row do not match in some cases [#2395](https://github.com/datagrok-ai/public/issues/2395)
+  
+   * [#2467](https://github.com/datagrok-ai/public/issues/2467) Allow to set tab label for stacked viewers programmatically
    * [#2562](https://github.com/datagrok-ai/public/issues/2562) Bar chart: error when date column is used as category and split function is non-default
    * [#2639](https://github.com/datagrok-ai/public/issues/2639) Structure in filter is unexpectedly changed when there are two views in some cases
-   * [#2642](https://github.com/datagrok-ai/public/issues/2642) Filtering done using viewers is unexpectedly reset on applying other filters in some cases
    * [#2647](https://github.com/datagrok-ai/public/issues/2647) File refresh breaks structure filter
    
-
-1. Use https://ops.datagrok.ai/job/Tools/job/Generate-Release-notes/ to get the list of closed tickets, included in the release.Test them.
-
-2. Test bug fixes from Jira.
-3. Add important tickets from the current version to the list in the first item. 

@@ -46,6 +46,15 @@ Expected Results:
     * Add or remove X or Y column from the  Trellis plot itself.
     * Check the number of X or Y columns in the properties panel.
   * **Expected results**: number of selected columns in properties should be updated immediately on adding or removing a column.
+
+10. Verify Independence of Trellis Plot Configurations After Applying Settings ([#2116](https://github.com/datagrok-ai/public/issues/2116))
+* Test on the SPGI dataset with opened two new Trellis plot viewers:
+  * Right-click on the first Trellis plot. Select **Pick up/Apply > Pick up** to pick up the settings from the first Trellis plot.
+  * Right-click on the second Trellis plot. Select **Pick up/Apply > Apply** to apply the settings picked up from the first Trellis plot to the second one.
+  * Change the X or Y column on the first Trellis plot. Observe whether these changes affect the second Trellis plot.
+  * Adjust the zoom slider on the second Trellis plot. Observe whether these changes affect the first Trellis plot.
+  * **Expected Result**: After the initial settings transfer, the configurations of the two Trellis plots should be completely independent. Changes to the X or Y column on the first plot or adjustments to the zoom slider on the second plot should not affect the other plot.
+
 ---
 {
   "order": 13,
