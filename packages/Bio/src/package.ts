@@ -281,8 +281,8 @@ export function SequenceSpaceEditor(call: DG.FuncCall) {
         clusterEmbeddings: params.clusterEmbeddings,
       }).call();
     });
-    dialog.history(() => ({editorSettings: funcEditor.getStringInput()}), (x: any) => funcEditor.applyStringInput(x['editorSettings']));
-    dialog.show();
+  dialog.history(() => ({editorSettings: funcEditor.getStringInput()}), (x: any) => funcEditor.applyStringInput(x['editorSettings']));
+  dialog.show();
 }
 
 //name: SeqActivityCliffsEditor
@@ -305,8 +305,8 @@ export function SeqActivityCliffsEditor(call: DG.FuncCall) {
         options: params.options,
       }).call();
     });
-    dialog.history(() => ({editorSettings: funcEditor.getStringInput()}), (x: any) => funcEditor.applyStringInput(x['editorSettings']));
-    dialog.show();
+  dialog.history(() => ({editorSettings: funcEditor.getStringInput()}), (x: any) => funcEditor.applyStringInput(x['editorSettings']));
+  dialog.show();
 }
 
 // -- Package settings editor --
@@ -380,7 +380,7 @@ export function macromoleculeDifferenceCellRenderer(): MacromoleculeDifferenceCe
 //output: object res
 export function sequenceAlignment(alignType: string, alignTable: string, gap: number, seq1: string, seq2: string) {
   const toAlign = new SequenceAlignment(seq1, seq2, gap, alignTable);
-  const res = alignType == 'Local alignment' ? toAlign.smithWaterman() : toAlign.needlemanWunch();
+  const res = alignType == 'Local alignment' ? toAlign.smithWaterman() : toAlign.needlemanWunsch();
   return res;
 }
 
