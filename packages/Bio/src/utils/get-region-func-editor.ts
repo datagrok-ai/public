@@ -51,7 +51,7 @@ export class GetRegionFuncEditor {
 
     this.inputs.name = ui.input.string('Column name', {value: this.getDefaultName(),
       onValueChanged: this.nameInputChanged.bind(this), clearIcon: true});
-    this.inputs.name.onInput.subscribe(() => this.nameInputInput.bind(this)); // To catch clear event
+    this.inputs.name.onInput(this.nameInputInput.bind(this)); // To catch clear event
 
     // tooltips
     for (const paramName in this.call.inputParams) {
