@@ -6,45 +6,6 @@
       "description": "Absorption is the process by which drugs enter the bloodstream after administration. It is pivotal in pharmaceutical research, enabling enhanced bioavailability, precise dosing, formulation optimization, reduced variability among patient populations, and minimized side effects. In this part, we studied 3 absorption-related endpoints.",
       "models": [
         {
-          "name": "Pgp-Substrate",
-          "units": "-",
-          "min": 0,
-          "max": 1,
-          "properties": [
-            {
-              "property": {
-                "name": "description",
-                "inputType": "TextArea",
-                "enable": false
-              },
-              "object": {
-                "description": "A probability of being a substrate of P-glycoprotein which is responsible for cell membrane permeability. Compounds with high molecular mass and a large number of polar atoms are the most probable substrates. Binding the substrate leads to low cell permeability of substance."
-              }
-            },
-            {
-              "property": {
-                "name": "direction",
-                "inputType": "Radio",
-                "choices": [
-                  "Lower is better",
-                  "Higher is better"
-                ],
-                "enable": false
-              },
-              "object": {
-                "direction": "Lower is better"
-              }
-            }
-          ],
-          "coloring": {
-            "type": "Linear",
-            "min": "0",
-            "max": "1",
-            "enable": false,
-            "colors": "[4294901760, 4278255360]"
-          }
-        },
-        {
           "name": "Caco2",
           "units": "cm/s",
           "min": -6,

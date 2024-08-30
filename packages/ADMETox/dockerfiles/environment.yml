@@ -19,6 +19,7 @@ dependencies:
   - Flask
   - chemprop=2.0.4
   - mkl
+  - flask_cors
   - cuda-version=11.8
   - cudatoolkit=11.8
   - cuDNN

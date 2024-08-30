@@ -47,6 +47,11 @@
   font-weight: bold;
 }
 
+.admetox-save-button {
+  margin-left: 20px!important;
+  visibility: hidden;
+}
+
 .d4-flex-col.ui-div.admetox-input-form .ui-input-textarea.ui-input-root {
   height: 100%;
   resize: none;

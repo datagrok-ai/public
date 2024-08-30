@@ -3,16 +3,21 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { Model, ModelColoring, Subgroup, Template, TEMPLATES_FOLDER } from './constants';
 
+import '../css/admetox.css';
+
 export class AdmeticaBaseEditor {
   tableInput: DG.InputBase<DG.DataFrame | null>;
   colInput!: DG.InputBase<DG.Column | null>;
   colInputRoot: HTMLElement;
-  templatesInput: DG.ChoiceInput<string>; 
+  templatesInput: DG.ChoiceInput<string>;
+  saveButton: HTMLElement;
   addPiechartInput = ui.input.bool('Add piechart', {value: true});
   modelsSettingsDiv = ui.inputs([]);
   modelsSettingsIcon: HTMLElement;
   expanded: boolean = false;
   tree: DG.TreeViewGroup = ui.tree();
+  properties: Template | null = null;
+  updatedProperties: Template | null = null;
 
   constructor() {
     this.tableInput = ui.input.table('Table', {value: grok.shell.tv.dataFrame, onValueChanged: () => this.onTableInputChanged()});
@@ -22,7 +27,12 @@ export class AdmeticaBaseEditor {
       value: grok.shell.tv.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE)!
     });
     this.colInputRoot = this.colInput.root;
-    this.templatesInput = ui.input.choice('Template', {onValueChanged: async () => {
+    this.saveButton = ui.button('Save...', () => {
+      this.dialogForTemplateSave();
+    });
+    this.saveButton.classList.add('admetox-save-button');
+    
+    this.templatesInput = ui.input.choice('Template', {onValueChanged: async () =>  {
       if (settingsOpened)
         await this.createModelsSettingsDiv(this.modelsSettingsDiv);
     }}) as DG.ChoiceInput<string>;
@@ -55,13 +65,27 @@ export class AdmeticaBaseEditor {
     const propertiesJson = await grok.dapi.files.readAsText(`${TEMPLATES_FOLDER}/${fileName}`);
     return JSON.parse(propertiesJson);
   }
+
+  private async dialogForTemplateSave(): Promise<void> {
+    const templateNameInput = ui.input.string('Name');
+    ui.dialog({ title: 'Save template' })
+      .add(templateNameInput)
+      .onOK(async () => {
+        const templateName = templateNameInput.value;
+        await grok.dapi.files.writeAsText(`${TEMPLATES_FOLDER}/${templateName}.json`, JSON.stringify(this.updatedProperties));
+        grok.shell.info(`Template "${templateName}" has been successfully saved!`);
+        await this.initTemplates();
+      })
+      .show();
+  }
   
   private async createModelsSettingsDiv(paramsForm: HTMLElement): Promise<HTMLElement> {
-    const properties = await this.getPropertiesFromTemplate();
+    this.properties = await this.getPropertiesFromTemplate();
+    this.updatedProperties = JSON.parse(JSON.stringify(this.properties));
     ui.empty(paramsForm);
     this.tree = ui.tree();
     this.expanded = false;
-    const treeControl = this.createTreeControl(properties);
+    const treeControl = this.createTreeControl(this.updatedProperties!);
     paramsForm.appendChild(treeControl);
     this.tree.currentItem = this.tree.items.find(item => item instanceof DG.TreeViewNode)!;
     return paramsForm;
@@ -80,8 +104,10 @@ export class AdmeticaBaseEditor {
     const key = property.property.name as keyof typeof property.object;
     input.value = property.object[key];
     input.addCaption('');
-    input.onChanged(() => {
+    input.onChanged.subscribe(() => {
       property.object[key] = input.value;
+      const areEqual = JSON.stringify(this.properties) === JSON.stringify(this.updatedProperties);
+      this.saveButton.style.visibility = areEqual ? 'hidden' : 'visible';
     });
     return input.root;
   }
@@ -187,7 +213,7 @@ export class AdmeticaBaseEditor {
     return ui.div([
       this.tableInput,
       this.colInputRoot,
-      this.templatesInput,
+      ui.divH([this.templatesInput.root, this.saveButton]),
       this.modelsSettingsDiv,
       this.addPiechartInput.root,
     ], { style: { minWidth: '450px' }, classes: 'ui-form' });
