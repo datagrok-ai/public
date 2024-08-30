@@ -13,7 +13,7 @@ import {createApp, provide} from 'vue';
 import {VueViewerTestApp} from './components/VueViewerTestApp';
 import {VueFormTestApp} from './components/VueFormTestApp';
 import {VueElementsTestApp} from './components/VueElelementsTestApp';
-import { VueDriverTestApp } from './components/VueDriverTestApp';
+import {VueDriverTestApp} from './components/VueDriverTestApp';
 
 export const _package = new DG.Package();
 

@@ -2,20 +2,20 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {v4 as uuidv4} from 'uuid';
-import {PipelineLinkConfigurationBase} from '../config/PipelineConfiguration';
+import {Handler, HandlerBase, PipelineLinkConfigurationBase} from '../config/PipelineConfiguration';
 import {NodePath, TreeNode} from '../data/BaseTree';
 import {PipelineState} from '../config/PipelineInstance';
 import {PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {StateTree} from './StateTree';
 import {isSequentialPipelineNode, isStaticPipelineNode, StateTreeNode} from './StateTreeNodes';
 import {MatchInfo, matchNodeLink} from './link-matching';
-import {BehaviorSubject, combineLatest, defer, EMPTY, merge, Subject} from 'rxjs';
+import {BehaviorSubject, combineLatest, defer, EMPTY, merge, Subject, of} from 'rxjs';
 import {IRuntimeLinkController, IRuntimeValidatorController} from '../RuntimeControllers';
 import {RestrictionType} from '../data/common-types';
 import {map, filter, takeUntil, withLatestFrom, switchMap, catchError, mapTo, tap, finalize, debounceTime} from 'rxjs/operators';
 import {callHandler} from '../utils';
 import {defaultLinkHandler} from './default-handler';
-import {ActionItem, ValidationResultBase} from '../../../shared-utils/validation';
+import {ValidationResultBase} from '../../../shared-utils/validation';
 
 
 class ControllerCancelled extends Error { };
@@ -90,7 +90,6 @@ export class ValidatorController extends ControllerBase<ValidationResultBase | u
     return this.getAll<T>(name)?.[0];
   }
 
-  // TODO: needs links structure
   // getValidationAction(id: string, action: string): ActionItem | undefined {
   //   this.checkIsClosed();
   // }
@@ -123,7 +122,7 @@ export class Link {
     inputs$.pipe(
       debounceTime(0),
       switchMap((inputs) => this.runHandler(inputs, inputSet, outputSet, inputNames, outputNames, baseNode)),
-      tap((controller) => this.setHandlerResults(controller, state)),
+      map((controller) => this.setHandlerResults(controller, state)),
       takeUntil(this.destroyed$),
     ).subscribe();
   }
@@ -170,7 +169,6 @@ export class Link {
 
     const inputsChanges$ = merge(activeInputs$, inputsTriggered$).pipe(
       map((entries) => Object.fromEntries(entries)),
-      filter(() => this.isActive$.value),
     );
     return inputsChanges$;
   }
@@ -181,7 +179,7 @@ export class Link {
       new LinkController(inputs, inputSet, outputSet, this.matchInfo.spec.id);
 
     if (this.matchInfo.spec.handler) {
-      return callHandler(this.matchInfo.spec.handler, {controller}).pipe(
+      return callHandler(this.matchInfo.spec.handler as HandlerBase<any, void>, {controller}).pipe(
         catchError((e) => {
           if (e instanceof ControllerCancelled)
             return EMPTY;
@@ -191,7 +189,7 @@ export class Link {
         finalize(() => controller.close()),
       );
     } else if (!this.matchInfo.spec.isValidator)
-      return defer(() => defaultLinkHandler(controller as LinkController, inputNames, outputNames)).pipe(mapTo(controller));
+      return defer(() => of(defaultLinkHandler(controller as LinkController, inputNames, outputNames)).pipe(mapTo(controller)));
 
     throw Error(`Unable to run handler for link ${this.matchInfo.spec.id}`);
   }

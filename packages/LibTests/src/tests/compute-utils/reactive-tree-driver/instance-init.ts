@@ -31,7 +31,7 @@ category('ComputeUtils: Driver state tree init', async () => {
     };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromConfig({config: pconf});
-    const state = tree.toSerializedState({ disableNodesUUID: true });
+    const state = tree.toSerializedState({disableNodesUUID: true});
     await snapshotCompare(state, 'Process simple initial config');
   });
 
@@ -105,7 +105,7 @@ category('ComputeUtils: Driver state tree init', async () => {
     };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromConfig({config: pconf});
-    const state = tree.toSerializedState({ disableNodesUUID: true });
+    const state = tree.toSerializedState({disableNodesUUID: true});
     await snapshotCompare(state, 'Process initial config with dynamic pipelines');
   });
 
@@ -131,7 +131,7 @@ category('ComputeUtils: Driver state tree init', async () => {
     };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromConfig({config: pconf});
-    const state = tree.toSerializedState({ disableNodesUUID: true });
+    const state = tree.toSerializedState({disableNodesUUID: true});
     await snapshotCompare(state, 'Process initial config with ref');
   });
 });

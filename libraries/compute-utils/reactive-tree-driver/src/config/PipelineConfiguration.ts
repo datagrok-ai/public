@@ -28,25 +28,33 @@ export type PipelineSelfRef = {
 export type LoadedPipeline = (PipelineConfigurationStaticInitial | PipelineConfigurationParallelInitial | PipelineConfigurationSequentialInitial) & LoadedPipelineToplevelNode;
 
 export type IRuntimeController = IRuntimeLinkController | IRuntimeValidatorController;
-export type HandlerBase<P, R> = ((params: P) => Promise<R> | Observable<R>) | NqName;
-export type Handler<C extends IRuntimeController = IRuntimeController> = HandlerBase<{ controller: C }, void>;
+export type HandlerBase<P, R> = ((params: P) => Promise<R> | Observable<R> | R) | NqName;
+export type Handler = HandlerBase<{ controller: IRuntimeLinkController }, void>;
+export type Validator = HandlerBase<{ controller: IRuntimeValidatorController }, void>;
 export type PipelineProvider = HandlerBase<{ version?: string }, LoadedPipeline>;
 
 // link-like
 
 export type PipelineLinkConfigurationBase<P> = {
-  id?: ItemId;
+  id: ItemId;
   from: P;
   to: P;
   base?: P,
-  isValidator?: boolean;
   dataFrameMutations?: boolean | string[];
   defaultRestrictions?: Record<string, RestrictionType>;
-  handler?: Handler;
 }
 
-export type PipelineLinkConfiguration<P> = {
-} & PipelineLinkConfigurationBase<P>;
+export type PipelineHandlerConfiguration<P> = PipelineLinkConfigurationBase<P> & {
+  isValidator?: false;
+  handler?: Handler;
+};
+
+export type PipelineValidatorConfiguration<P> = PipelineLinkConfigurationBase<P> & {
+  isValidator: true;
+  handler: Validator;
+};
+
+export type PipelineLinkConfiguration<P> = PipelineHandlerConfiguration<P> | PipelineValidatorConfiguration<P>;
 
 export type PipelineHookConfiguration<P> = {
   handler: Handler;
@@ -56,12 +64,14 @@ export type PipelineActionConfiguraion<P> = {
   position: ActionPositions;
   friendlyName?: string;
   menuCategory?: string;
+  handler: Handler;
 } & PipelineLinkConfigurationBase<P>;
 
 export type StepActionConfiguraion<P> = {
   position: ActionPositions;
   friendlyName?: string;
   menuCategory?: string;
+  handler: Handler;
 } & PipelineLinkConfigurationBase<P>;
 
 const actionPositions = ['buttons', 'menu', 'none'] as const;

@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import cloneDeepWith from 'lodash.clonedeepwith';
-import {Observable, defer, from} from 'rxjs';
+import {Observable, defer, of} from 'rxjs';
 import {HandlerBase} from './config/PipelineConfiguration';
 
 export function callHandler<R, P = any>(handler: HandlerBase<P, R>, params: P): Observable<R> {
@@ -19,7 +19,7 @@ export function callHandler<R, P = any>(handler: HandlerBase<P, R>, params: P): 
       if (res instanceof Observable || res instanceof Promise)
         return res;
       else
-        return from([res]);
+        return of(res);
     });
   }
 }

@@ -1,13 +1,12 @@
 import {isNonRefSelector, LinkNonRefSelectors, LinkIOParsed, LinkRefSelectors, refSelectorAdjacent, refSelectorAll, refSelectorDirection, refSelectorFindOne} from '../config/LinkSpec';
-import {PipelineLinkConfigurationBase} from '../config/PipelineConfiguration';
-import {isFuncCallState} from '../config/PipelineInstance';
+import {PipelineLinkConfiguration} from '../config/PipelineConfiguration';
 import {BaseTree, NodePath, TreeNode} from '../data/BaseTree';
 import {buildTraverseD} from '../data/graph-traverse-utils';
 import {indexFromEnd} from '../utils';
 import {StateTree} from './StateTree';
-import {isFuncCallNode, StateTreeNode} from './StateTreeNodes';
+import {StateTreeNode} from './StateTreeNodes';
 
-export type LinkSpec = PipelineLinkConfigurationBase<LinkIOParsed[]>;
+export type LinkSpec = PipelineLinkConfiguration<LinkIOParsed[]>;
 
 type matchedIO = {
   path: Readonly<NodePath>;

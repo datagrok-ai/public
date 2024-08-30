@@ -28,46 +28,46 @@ export const VueDriverTestApp = defineComponent({
     });
 
     const initPipeline = (provider: string) => {
-      driver.sendCommand({ event: 'initPipeline', provider });
-    }
+      driver.sendCommand({event: 'initPipeline', provider});
+    };
 
     const runStep = (uuid: string) => {
-      driver.sendCommand({ event: 'runStep', uuid });
-    }
+      driver.sendCommand({event: 'runStep', uuid});
+    };
 
     const addStep = (parentUuid: string, itemId: string, position: number) => {
-      driver.sendCommand({ event: 'addDynamicItem', parentUuid, itemId, position });
-    }
+      driver.sendCommand({event: 'addDynamicItem', parentUuid, itemId, position});
+    };
 
     const removeStep = (uuid: string) => {
-      driver.sendCommand({ event: 'removeDynamicItem', uuid });
-    }
+      driver.sendCommand({event: 'removeDynamicItem', uuid});
+    };
 
     const getWidgetTree = (node: PipelineState, isParentDynamic = false) => {
       if (isFuncCallState(node)) {
         return node.funcCall ?
-          <div key={node.uuid} style={{border: "solid black 1px", margin: "5px", padding: "5px"}}>
+          <div key={node.uuid} style={{border: 'solid black 1px', margin: '5px', padding: '5px'}}>
             <div>FuncCall: {node.configId} { isParentDynamic ? <Button onClick={() => removeStep(node.uuid)}>remove</Button> : '' }</div>
             <InputForm funcCall={node.funcCall}></InputForm>
             <div>{node.isOuputOutdated ? 'OUTDATED' : 'ACTUAL'}</div>
             { Object.entries(node.funcCall.outputs).map(([name, val]) => <div>{ `${name}: ${val}`}</div>) }
             <Button onClick={() => runStep(node.uuid)}>run</Button></div> :
-          <div style={{border: "solid black 1px", margin: "5px"}}>LOADING</div>
+          <div style={{border: 'solid black 1px', margin: '5px'}}>LOADING</div>;
       } else {
         const isDynamic = (isParallelPipelineState(node) || isSequentialPipelineState(node));
         return (
-          <div key={node.uuid} style={{border: "solid black 3px", padding: "20px", margin: "5px"}}>
+          <div key={node.uuid} style={{border: 'solid black 3px', padding: '20px', margin: '5px'}}>
             <div>Pipeline: {node.configId} { isParentDynamic ? <Button onClick={() => removeStep(node.uuid)}>remove</Button> : '' }</div>
             <div style={{display: 'flex', flexDirection: 'row'}}>
-              { node.steps.map(step => getWidgetTree(step, isDynamic)) }
+              { node.steps.map((step) => getWidgetTree(step, isDynamic)) }
             </div>
             <div>
-              { isDynamic ? node.stepTypes.map(step => (<Button onClick={() => addStep(node.uuid, step.configId, node.steps.length)}>add {step.configId}</Button>)) : '' }
+              { isDynamic ? node.stepTypes.map((step) => (<Button onClick={() => addStep(node.uuid, step.configId, node.steps.length)}>add {step.configId}</Button>)) : '' }
             </div>
           </div>
         );
       }
-    }
+    };
 
     return () => (
       <KeepAlive>
@@ -78,5 +78,5 @@ export const VueDriverTestApp = defineComponent({
         </div>
       </KeepAlive>
     );
-  }
+  },
 });

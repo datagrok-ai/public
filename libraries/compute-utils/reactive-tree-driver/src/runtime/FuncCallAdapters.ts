@@ -3,7 +3,7 @@ import {v4 as uuidv4} from 'uuid';
 import {BehaviorSubject, Observable, from, defer, Subject, merge, identity} from 'rxjs';
 import {ValidationResultBase} from '../../../shared-utils/validation';
 import {StateItem} from '../config/PipelineConfiguration';
-import {delay, map, mapTo, skip, startWith, switchMap, takeUntil} from 'rxjs/operators';
+import {delay, map, mapTo, skip, startWith, switchMap, takeUntil, tap} from 'rxjs/operators';
 import {RestrictionType} from '../data/common-types';
 
 
@@ -139,7 +139,9 @@ export class MemoryStore implements IStateStore, IValidationStore {
 
   getStateChanges<T = any>(id: string, includeDataFrameMutations = false): Observable<T | undefined> {
     return this.states[id]?.state$.pipe(
-      includeDataFrameMutations ? switchMap((x) => x instanceof DG.DataFrame ? x.onDataChanged.pipe(mapTo(x)) : x) : identity,
+      (x) => (includeDataFrameMutations && x instanceof DG.DataFrame) ?
+        x.onDataChanged.pipe(startWith(null), mapTo(x)) :
+        x,
     );
   }
 

@@ -1,12 +1,12 @@
 import * as DG from 'datagrok-api/dg';
 import {category, test} from '@datagrok-libraries/utils/src/test';
-import { PipelineConfiguration } from '@datagrok-libraries/compute-utils';
-import { getProcessedConfig, PipelineConfigurationStaticProcessed } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
-import { StateTree } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
-import { matchLink } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/link-matching';
-import { PipelineLinkConfiguration } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
-import { LinkSpecString } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
-import { snapshotCompare } from '../../../test-utils';
+import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
+import {getProcessedConfig, PipelineConfigurationStaticProcessed} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
+import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
+import {matchLink} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/link-matching';
+import {PipelineLinkConfiguration} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
+import {LinkSpecString} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
+import {snapshotCompare} from '../../../test-utils';
 
 category('ComputeUtils: Driver links matching', async () => {
   test('Links match static pipeline', async () => {
@@ -49,8 +49,8 @@ category('ComputeUtils: Driver links matching', async () => {
             {
               id: 'step1',
               nqName: 'LibTests:TestAdd2',
-            }
-          ]
+            },
+          ],
         },
         {
           id: 'step2',
@@ -83,8 +83,8 @@ category('ComputeUtils: Driver links matching', async () => {
             {
               id: 'step1',
               nqName: 'LibTests:TestAdd2',
-            }
-          ]
+            },
+          ],
         },
         {
           id: 'step2',
@@ -129,18 +129,18 @@ category('ComputeUtils: Driver links matching', async () => {
           ],
           initialSteps: [
             {
-              id: 'stepAdd'
+              id: 'stepAdd',
             },
             {
-              id: 'stepMul'
+              id: 'stepMul',
             },
             {
-              id: 'stepMul'
+              id: 'stepMul',
             },
             {
-              id: 'stepAdd'
+              id: 'stepAdd',
             },
-          ]
+          ],
         },
         {
           id: 'step3',
@@ -154,14 +154,14 @@ category('ComputeUtils: Driver links matching', async () => {
       }, {
         id: 'link2',
         from: ['in1:pipelinePar/all(stepAdd)/res', 'in2:pipelinePar/all(stepMul)/res'],
-        to: 'out1:step3/a'
+        to: 'out1:step3/a',
       }],
     };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromConfig({config: pconf});
     await tree.initAll().toPromise();
     const links = (tree.getRoot().getItem().config as PipelineConfigurationStaticProcessed).links!;
-    const matchInfos = links.map(link => matchLink(tree, [], link));
+    const matchInfos = links.map((link) => matchLink(tree, [], link));
     await snapshotCompare(matchInfos, 'Links matching all parallel pipeline items');
   });
 
@@ -189,18 +189,18 @@ category('ComputeUtils: Driver links matching', async () => {
           ],
           initialSteps: [
             {
-              id: 'stepAdd'
+              id: 'stepAdd',
             },
             {
-              id: 'stepMul'
+              id: 'stepMul',
             },
             {
-              id: 'stepMul'
+              id: 'stepMul',
             },
             {
-              id: 'stepAdd'
+              id: 'stepAdd',
             },
-          ]
+          ],
         },
         {
           id: 'step3',
@@ -214,14 +214,14 @@ category('ComputeUtils: Driver links matching', async () => {
       }, {
         id: 'link2',
         from: ['in1:pipelinePar/all(stepAdd|stepMul)/res'],
-        to: 'out1:step3/a'
+        to: 'out1:step3/a',
       }],
     };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromConfig({config: pconf});
     await tree.initAll().toPromise();
     const links = (tree.getRoot().getItem().config as PipelineConfigurationStaticProcessed).links!;
-    const matchInfos = links.map(link => matchLink(tree, [], link));
+    const matchInfos = links.map((link) => matchLink(tree, [], link));
     await snapshotCompare(matchInfos, 'Links matching multiple ids');
   });
 
@@ -248,27 +248,27 @@ category('ComputeUtils: Driver links matching', async () => {
         },
       ],
       initialSteps: [
-        { id: 'stepAdd' },
-        { id: 'stepMul' },
-        { id: 'stepSub' },
-        { id: 'stepDiv' },
-        { id: 'stepAdd' },
-        { id: 'stepMul' },
-        { id: 'stepSub' },
-        { id: 'stepDiv' },
+        {id: 'stepAdd'},
+        {id: 'stepMul'},
+        {id: 'stepSub'},
+        {id: 'stepDiv'},
+        {id: 'stepAdd'},
+        {id: 'stepMul'},
+        {id: 'stepSub'},
+        {id: 'stepDiv'},
       ],
       links: [{
         id: 'link1',
         from: [],
         to: [],
-        base: 'base:expand(stepMul)'
-      }]
-    }
+        base: 'base:expand(stepMul)',
+      }],
+    };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromConfig({config: pconf});
     await tree.initAll().toPromise();
     const links = (tree.getRoot().getItem().config as PipelineConfigurationStaticProcessed).links!;
-    const matchInfos = links.map(link => matchLink(tree, [], link));
+    const matchInfos = links.map((link) => matchLink(tree, [], link));
     await snapshotCompare(matchInfos, 'Links expaning base path');
   });
 
@@ -295,27 +295,27 @@ category('ComputeUtils: Driver links matching', async () => {
         },
       ],
       initialSteps: [
-        { id: 'stepAdd' },
-        { id: 'stepMul' },
-        { id: 'stepSub' },
-        { id: 'stepDiv' },
-        { id: 'stepAdd' },
-        { id: 'stepMul' },
-        { id: 'stepSub' },
-        { id: 'stepDiv' },
+        {id: 'stepAdd'},
+        {id: 'stepMul'},
+        {id: 'stepSub'},
+        {id: 'stepDiv'},
+        {id: 'stepAdd'},
+        {id: 'stepMul'},
+        {id: 'stepSub'},
+        {id: 'stepDiv'},
       ],
       links: [{
         id: 'link1',
         from: 'in1:before+(@base,stepAdd)/res',
         to: 'out1:after+(@base,stepSub)/a',
-        base: 'base:expand(stepMul)'
-      }]
-    }
+        base: 'base:expand(stepMul)',
+      }],
+    };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromConfig({config: pconf});
     await tree.initAll().toPromise();
     const links = (tree.getRoot().getItem().config as PipelineConfigurationStaticProcessed).links!;
-    const matchInfos = links.map(link => matchLink(tree, [], link));
+    const matchInfos = links.map((link) => matchLink(tree, [], link));
     console.log(matchInfos);
     await snapshotCompare(matchInfos, 'Links referencing adjacent to base segment');
   });
@@ -343,29 +343,29 @@ category('ComputeUtils: Driver links matching', async () => {
         },
       ],
       initialSteps: [
-        { id: 'stepAdd' },
-        { id: 'stepSub' },
-        { id: 'stepMul' },
-        { id: 'stepSub' },
-        { id: 'stepDiv' },
-        { id: 'stepAdd' },
-        { id: 'stepSub' },
-        { id: 'stepMul' },
-        { id: 'stepSub' },
-        { id: 'stepDiv' },
+        {id: 'stepAdd'},
+        {id: 'stepSub'},
+        {id: 'stepMul'},
+        {id: 'stepSub'},
+        {id: 'stepDiv'},
+        {id: 'stepAdd'},
+        {id: 'stepSub'},
+        {id: 'stepMul'},
+        {id: 'stepSub'},
+        {id: 'stepDiv'},
       ],
       links: [{
         id: 'link1',
         from: 'in1:before(@base,stepAdd)/res',
         to: 'out1:after(@base,stepDiv)/a',
-        base: 'base:expand(stepMul)'
-      }]
-    }
+        base: 'base:expand(stepMul)',
+      }],
+    };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromConfig({config: pconf});
     await tree.initAll().toPromise();
     const links = (tree.getRoot().getItem().config as PipelineConfigurationStaticProcessed).links!;
-    const matchInfos = links.map(link => matchLink(tree, [], link));
+    const matchInfos = links.map((link) => matchLink(tree, [], link));
     console.log(matchInfos);
     await snapshotCompare(matchInfos, 'Links referencing remote from base path');
   });
@@ -393,35 +393,35 @@ category('ComputeUtils: Driver links matching', async () => {
         },
       ],
       initialSteps: [
-        { id: 'stepAdd' },
-        { id: 'stepSub' },
+        {id: 'stepAdd'},
+        {id: 'stepSub'},
 
-        { id: 'stepAdd' },
-        { id: 'stepAdd' },
-        { id: 'stepMul' },
-        { id: 'stepDiv' },
-        { id: 'stepDiv' },
+        {id: 'stepAdd'},
+        {id: 'stepAdd'},
+        {id: 'stepMul'},
+        {id: 'stepDiv'},
+        {id: 'stepDiv'},
 
-        { id: 'stepSub' },
+        {id: 'stepSub'},
 
-        { id: 'stepAdd' },
-        { id: 'stepAdd' },
-        { id: 'stepMul' },
-        { id: 'stepDiv' },
-        { id: 'stepDiv' },
+        {id: 'stepAdd'},
+        {id: 'stepAdd'},
+        {id: 'stepMul'},
+        {id: 'stepDiv'},
+        {id: 'stepDiv'},
       ],
       links: [{
         id: 'link1',
         from: 'in1:before*(@base,stepAdd,stepSub)/res',
         to: 'out1:after*(@base,stepDiv,stepSub)/a',
-        base: 'base:expand(stepMul)'
-      }]
-    }
+        base: 'base:expand(stepMul)',
+      }],
+    };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromConfig({config: pconf});
     await tree.initAll().toPromise();
     const links = (tree.getRoot().getItem().config as PipelineConfigurationStaticProcessed).links!;
-    const matchInfos = links.map(link => matchLink(tree, [], link));
+    const matchInfos = links.map((link) => matchLink(tree, [], link));
     console.log(matchInfos);
     await snapshotCompare(matchInfos, 'Links referencing all match limits');
   });
@@ -475,50 +475,50 @@ category('ComputeUtils: Driver links matching', async () => {
               },
             ],
             initialSteps: [
-              { id: 'stepAdd' },
-              { id: 'stepSub' },
+              {id: 'stepAdd'},
+              {id: 'stepSub'},
 
-              { id: 'stepAdd' },
-              { id: 'stepAdd' },
-              { id: 'stepMul' },
-              { id: 'stepDiv' },
-              { id: 'stepDiv' },
+              {id: 'stepAdd'},
+              {id: 'stepAdd'},
+              {id: 'stepMul'},
+              {id: 'stepDiv'},
+              {id: 'stepDiv'},
 
-              { id: 'stepSub' },
+              {id: 'stepSub'},
 
-              { id: 'stepAdd' },
-              { id: 'stepAdd' },
-              { id: 'stepMul' },
-              { id: 'stepDiv' },
-              { id: 'stepDiv' },
+              {id: 'stepAdd'},
+              {id: 'stepAdd'},
+              {id: 'stepMul'},
+              {id: 'stepDiv'},
+              {id: 'stepDiv'},
             ],
-          }
+          },
         ],
         initialSteps: [
-          { id: 'stepAdd' },
-          { id: 'stepMul' },
-          { id: 'pipeline1'},
-          { id: 'stepSub' },
-          { id: 'stepDiv' },
-          { id: 'stepAdd' },
-          { id: 'stepMul' },
-          { id: 'pipeline1'},
-          { id: 'stepSub' },
-          { id: 'stepDiv' },
-        ]
+          {id: 'stepAdd'},
+          {id: 'stepMul'},
+          {id: 'pipeline1'},
+          {id: 'stepSub'},
+          {id: 'stepDiv'},
+          {id: 'stepAdd'},
+          {id: 'stepMul'},
+          {id: 'pipeline1'},
+          {id: 'stepSub'},
+          {id: 'stepDiv'},
+        ],
       }],
       links: [{
         id: 'link1',
         from: [],
         to: [],
-        base: 'base:pipeline1/expand(pipeline1)/expand(stepMul)'
-      }]
-    }
+        base: 'base:pipeline1/expand(pipeline1)/expand(stepMul)',
+      }],
+    };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromConfig({config: pconf});
     await tree.initAll().toPromise();
     const links = (tree.getRoot().getItem().config as PipelineConfigurationStaticProcessed).links!;
-    const matchInfos = links.map(link => matchLink(tree, [], link));
+    const matchInfos = links.map((link) => matchLink(tree, [], link));
     console.log(matchInfos);
     await snapshotCompare(matchInfos, 'Links deep base matching');
   });
@@ -572,50 +572,50 @@ category('ComputeUtils: Driver links matching', async () => {
               },
             ],
             initialSteps: [
-              { id: 'stepAdd' },
-              { id: 'stepSub' },
+              {id: 'stepAdd'},
+              {id: 'stepSub'},
 
-              { id: 'stepAdd' },
-              { id: 'stepAdd' },
-              { id: 'stepMul' },
-              { id: 'stepDiv' },
-              { id: 'stepDiv' },
+              {id: 'stepAdd'},
+              {id: 'stepAdd'},
+              {id: 'stepMul'},
+              {id: 'stepDiv'},
+              {id: 'stepDiv'},
 
-              { id: 'stepSub' },
+              {id: 'stepSub'},
 
-              { id: 'stepAdd' },
-              { id: 'stepAdd' },
-              { id: 'stepMul' },
-              { id: 'stepDiv' },
-              { id: 'stepDiv' },
+              {id: 'stepAdd'},
+              {id: 'stepAdd'},
+              {id: 'stepMul'},
+              {id: 'stepDiv'},
+              {id: 'stepDiv'},
             ],
-          }
+          },
         ],
         initialSteps: [
-          { id: 'stepAdd' },
-          { id: 'stepMul' },
-          { id: 'pipeline1'},
-          { id: 'stepSub' },
-          { id: 'stepDiv' },
-          { id: 'stepAdd' },
-          { id: 'stepMul' },
-          { id: 'pipeline1'},
-          { id: 'stepSub' },
-          { id: 'stepDiv' },
-        ]
+          {id: 'stepAdd'},
+          {id: 'stepMul'},
+          {id: 'pipeline1'},
+          {id: 'stepSub'},
+          {id: 'stepDiv'},
+          {id: 'stepAdd'},
+          {id: 'stepMul'},
+          {id: 'pipeline1'},
+          {id: 'stepSub'},
+          {id: 'stepDiv'},
+        ],
       }],
       links: [{
         id: 'link1',
         from: 'in1:pipeline1/same(@base,pipeline1)/before*(@base,stepAdd,stepSub)/res',
         to: 'out1:pipeline1/same(@base,pipeline1)/after*(@base,stepDiv,stepSub)/a',
-        base: 'base:pipeline1/expand(pipeline1)/expand(stepMul)'
-      }]
-    }
+        base: 'base:pipeline1/expand(pipeline1)/expand(stepMul)',
+      }],
+    };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromConfig({config: pconf});
     await tree.initAll().toPromise();
     const links = (tree.getRoot().getItem().config as PipelineConfigurationStaticProcessed).links!;
-    const matchInfos = links.map(link => matchLink(tree, [], link));
+    const matchInfos = links.map((link) => matchLink(tree, [], link));
     console.log(matchInfos);
     await snapshotCompare(matchInfos, 'Links expanding deep base path');
   });

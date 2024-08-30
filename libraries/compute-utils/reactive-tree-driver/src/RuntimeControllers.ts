@@ -5,8 +5,8 @@ import {ItemId, RestrictionType} from './data/common-types';
 
 export interface IRuntimeLinkController {
   getAll<T = any>(name: string): T[] | undefined;
-  getFirst<T = any>(name: string, state: T, restriction?: RestrictionType): void;
-  setAll<T = any>(name: string, state: T, restriction: RestrictionType): void;
+  getFirst<T = any>(name: string): T | undefined;
+  setAll<T = any>(name: string, state: T, restriction?: RestrictionType): void;
   // updateOptions(name: string, options: string[], selected: string): void;
 }
 
