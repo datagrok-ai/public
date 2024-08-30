@@ -365,10 +365,8 @@ export class PipelineView extends FunctionView {
         const currentStep = this.findCurrentStep();
 
         if (currentStep && this.helpFiles[currentStep.func.nqName]) {
-          this.getHelpState().then((state) => {
-            if (state === 'opened')
-              this.showHelpWithDelay(currentStep);
-          });
+          if (this.getHelpState() === 'opened')
+            this.showHelpWithDelay(currentStep)
         }
       };
 
@@ -605,13 +603,13 @@ export class PipelineView extends FunctionView {
     return hb;
   }
 
-  private async getHelpState(): Promise<'closed' | 'opened'> {
-    const storedValue = await grok.dapi.userDataStorage.getValue(storageName, `${this.func.name}_help_state`);
+  private getHelpState(): 'closed' | 'opened' {
+    const storedValue = grok.userSettings.getValue(storageName, `${this.func.name}_help_state`);
     return storedValue === 'closed' ? 'closed' : 'opened';
   }
 
-  private async saveHelpState(state: 'closed' | 'opened') {
-    return grok.dapi.userDataStorage.postValue(storageName, `${this.func.name}_help_state`, state);
+  private saveHelpState(state: 'closed' | 'opened') {
+    grok.userSettings.add(storageName, `${this.func.name}_help_state`, state);
   }
 
   public override buildRibbonPanels(): HTMLElement[][] {

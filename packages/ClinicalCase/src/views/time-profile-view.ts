@@ -55,8 +55,8 @@ export class TimeProfileView extends ClinicalCaseViewBase {
     this.createLaboratoryDataframe();
 
     const domainChoices = ui.input.choice('', {value: this.selectedDomain, items: this.domains});
-    domainChoices.onChanged((v) => {
-      this.selectedDomain = domainChoices.value;
+    domainChoices.onChanged.subscribe((value) => {
+      this.selectedDomain = value;
       this.uniqueLabValues = Array.from(getUniqueValues(study.domains[this.selectedDomain], this.domainFields[this.selectedDomain]['test']));
       this.uniqueVisits = Array.from(getUniqueValues(study.domains[this.selectedDomain], VISIT_NAME));
       this.selectedLabValue = this.uniqueLabValues[0] as string;
@@ -72,8 +72,8 @@ export class TimeProfileView extends ClinicalCaseViewBase {
     });
 
     const typeChoices = ui.input.choice('', {value: this.selectedType, items: this.types});
-    typeChoices.onChanged((v) => {
-      this.selectedType = typeChoices.value;
+    typeChoices.onChanged.subscribe((value) => {
+      this.selectedType = value;
       this.updateTimeProfile();
     });
 
@@ -144,8 +144,8 @@ export class TimeProfileView extends ClinicalCaseViewBase {
 
   private createValuesChoices() {
     this.labChoices = ui.input.choice('', {value: this.selectedLabValue, items: this.uniqueLabValues});
-    this.labChoices.onChanged((v) => {
-      this.selectedLabValue = this.labChoices.value;
+    this.labChoices.onChanged.subscribe((value) => {
+      this.selectedLabValue = value;
       this.updateTimeProfile();
     });
     //@ts-ignore
@@ -155,8 +155,8 @@ export class TimeProfileView extends ClinicalCaseViewBase {
 
   private createBlChoices() {
     this.blVisitChoices = ui.input.choice('', {value: this.bl, items: this.uniqueVisits});
-    this.blVisitChoices.onChanged((v) => {
-      this.bl = this.blVisitChoices.value;
+    this.blVisitChoices.onChanged.subscribe((value) => {
+      this.bl = value;
       this.updateTimeProfile();
     });
     //@ts-ignore
@@ -166,8 +166,8 @@ export class TimeProfileView extends ClinicalCaseViewBase {
 
   private createEpChoices() {
     this.epVisitChoices = ui.input.choice('', {value: this.ep, items: this.uniqueVisits});
-    this.epVisitChoices.onChanged((v) => {
-      this.ep = this.epVisitChoices.value;
+    this.epVisitChoices.onChanged.subscribe((value) => {
+      this.ep = value;
       this.updateTimeProfile();
     });
     //@ts-ignore

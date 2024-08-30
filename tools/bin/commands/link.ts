@@ -6,14 +6,14 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 
 const execAsync = promisify(exec);
-const repositoryDirNameRegex = new RegExp('\\public$');
+const repositoryDirNameRegex = new RegExp(path.join('1', '2')[1] + 'public$');
+
 const curDir = process.cwd();
 let devMode = false;
 let repositoryDir = curDir;
 let localPackageDependencies: PackageData[];
 let packagesToLink: Set<string>;
-
-while (repositoryDir.length > 0) {
+while (path.dirname(repositoryDir) !== repositoryDir) {
   if (repositoryDirNameRegex.test(repositoryDir))
     break;
   repositoryDir = path.dirname(repositoryDir);
@@ -34,6 +34,8 @@ export async function link(args: LinkArgs) {
     devMode = args.dev;
   collectPackagesData(curDir);
   await linkPackages();
+  
+  console.log('Package linked')
   return true;
 }
 
@@ -44,7 +46,6 @@ function collectPackagesData(packagePath: string = curDir): string[] {
   result = result.concat(collectPacakgeDataFromJsonObject(json.dependencies));
   if (devMode)
     result = result.concat(collectPacakgeDataFromJsonObject(json.devDependencies));
-  console.log(JSON.stringify(result).toString())
   return result;
 }
 

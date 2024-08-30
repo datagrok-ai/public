@@ -2,6 +2,8 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
+import {Unsubscribable} from 'rxjs';
+
 import {PolyToolPlaceholders} from './types';
 
 export class PolyToolPlaceholdersInput extends DG.JsInputBase<DG.DataFrame> {
@@ -34,6 +36,8 @@ export class PolyToolPlaceholdersInput extends DG.JsInputBase<DG.DataFrame> {
   private readonly gridHost: HTMLDivElement;
   public readonly grid: DG.Grid;
 
+  private subs: Unsubscribable[] = [];
+
   protected constructor(name: string | undefined, grid: DG.Grid, heightRowCount?: number) {
     super();
 
@@ -41,7 +45,7 @@ export class PolyToolPlaceholdersInput extends DG.JsInputBase<DG.DataFrame> {
 
     this.gridHost = ui.div([], {
       classes: 'ui-input-editor',
-      style: {width: '100%', height: '100%', marginTop: '-8px'},
+      style: {width: '100%', height: '100%', marginTop: '-8px', marginBottom: '8px', paddingBottom: '4px'},
     });
 
     this.grid = grid;
@@ -51,25 +55,34 @@ export class PolyToolPlaceholdersInput extends DG.JsInputBase<DG.DataFrame> {
       this.updateGridHeight(heightRowCount + 0.7);
     } else {
       this.updateGridHeight(this.grid.dataFrame.rowCount + 0.6);
-      this.grid.dataFrame.onRowsAdded
-        .subscribe(() => { this.updateGridHeight(this.grid.dataFrame.rowCount + 0.6); });
+      this.subs.push(this.grid.dataFrame.onRowsAdded
+        .subscribe(() => { this.updateGridHeight(this.grid.dataFrame.rowCount + 0.6); }));
     }
     this.grid.root.style.width = `100%`;
 
-    ui.onSizeChanged(this.grid.root).subscribe(() => {
+    this.subs.push(this.grid.dataFrame.onDataChanged.subscribe(() => {
+      this.fireChanged();
+    }));
+
+    this.subs.push(ui.onSizeChanged(this.grid.root).subscribe(() => {
       this.grid.columns.byIndex(2)!.width = this.grid.root.clientWidth - this.grid.horzScroll.root.offsetWidth -
         this.grid.columns.byIndex(0)!.width - this.grid.columns.byIndex(1)!.width - 10;
-    });
+    }));
 
     this.root.classList.add('ui-input-polytool-pos-grid');
     this.root.append(this.gridHost);
   }
 
+  detach(): void {
+    for (const sub of this.subs) sub.unsubscribe();
+  }
+
   public static async create(
-    name?: string, value?: DG.DataFrame, options?: {}, heightRowCount?: number
+    name?: string, options?: {}, heightRowCount?: number
   ): Promise<PolyToolPlaceholdersInput> {
-    const df: DG.DataFrame = value ?? DG.DataFrame.create(0);
+    const df: DG.DataFrame = DG.DataFrame.fromObjects([{Position: '', Monomers: ''}])!;
     const grid = (await df.plot.fromType(DG.VIEWER.GRID, options)) as DG.Grid;
+    grid.sort(['Position']);
     return new PolyToolPlaceholdersInput(name, grid, heightRowCount);
   }
 
@@ -82,8 +95,9 @@ export class PolyToolPlaceholdersInput extends DG.JsInputBase<DG.DataFrame> {
 
   // -- Handle events --
 
-  private rootOnSizeChanged(): void {
-
+  private gridRootOnSizeChanged(): void {
+    this.grid.columns.byIndex(2)!.width = this.grid.root.clientWidth - this.grid.horzScroll.root.offsetWidth -
+      this.grid.columns.byIndex(0)!.width - this.grid.columns.byIndex(1)!.width - 10;
   }
 }
 

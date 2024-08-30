@@ -167,8 +167,9 @@ export class Dapi {
 
   docker = new DockerDataSource();
 
-  /** Users Data Storage API endpoint
-   *  @type {UserDataStorage} */
+  /**
+   * @deprecated The UserDataStorage should not be used. Use {@link UserSettingsStorage} instead
+   */
   get userDataStorage(): UserDataStorage {
     return new UserDataStorage();
   }
@@ -744,6 +745,7 @@ export class PermissionsDataSource {
 }
 
 /**
+ * @deprecated The UserDataStorage should not be used. Use {@link UserSettingsStorage} instead
  * Functionality for working with remote Users Data Storage
  * Remote storage allows to save key-value pairs on the Datagrok server for further use
  * */

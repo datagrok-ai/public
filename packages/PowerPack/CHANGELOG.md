@@ -1,5 +1,12 @@
 # PowerPack changelog
 
+## 1.1.13 (2024-08-27)
+
+### Bug Fixes
+
+* Fixed the PDB search (only showing existing proteins)
+* Add new column: Some validation fixes
+
 ## 1.1.12 (2024-08-21)
 
 ### Bug Fixes

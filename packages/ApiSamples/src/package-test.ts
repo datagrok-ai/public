@@ -50,6 +50,7 @@ export async function initTests() {
         //   grok.shell.lastError = '';
         //   throw new Error(err);
         // }
+        grok.shell.closeAll();
       }, skip.includes(script.friendlyName) ? {skipReason: 'skip'} : undefined);
     });
   }

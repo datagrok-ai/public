@@ -1,14 +1,14 @@
 # Caching function results
 
 Caching is a process that stores multiple copies of data or files in a temporary storage location so that future requests for that data are served up faster than accessing the original source. 
-Datagrok can cache the results of [functions](../datagrok/concepts/functions/functions.md) on both client and server sides. This feature can drastically enhance the user experience and increase network efficiency.
+Datagrok can cache the results of [functions](../../datagrok/concepts/functions/functions.md) on both client and server sides. This feature can drastically enhance the user experience and increase network efficiency.
 Caching is especially useful for functions that are immutable and produce the same output for the same input.
 
 ## Client-side cache
 
 Datagrok uses [IndexedDb](https://www.w3.org/TR/IndexedDB/) for client-side cache, and this type of cache has several limitations:
 
-* Function output parameters should be scalar (integer, float or string) or of the following types - [dataframe](../datagrok/concepts/table.md), [graphics or datetime](../datagrok/concepts/functions/func-params-annotation.md).
+* Function output parameters should be scalar (integer, float or string) or of the following types - [dataframe](../../datagrok/concepts/table.md), [graphics or datetime](../../datagrok/concepts/functions/func-params-annotation.md).
 * The function results have a cache limit of 100 MB. This means that the total size of the cached data for different input parameters of the same function cannot exceed 100 MB.
 * Maximum record count in the **Client-side cache** is 100000.
 
@@ -33,7 +33,7 @@ To enable Server-side cache:
 
 ## Using cache
 
-You can cache results of almost all types of functions. But it really shines with [DataQueries](../access/access.md#data-query) and [Scripts](../compute/scripting/scripting.mdx).
+You can cache results of almost all types of functions. But it really shines with [DataQueries](../../access/access.md#data-query) and [Scripts](../../compute/scripting/scripting.mdx).
 
 To cache results of a particular function:
 

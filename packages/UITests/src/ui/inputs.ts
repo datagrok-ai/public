@@ -145,7 +145,7 @@ category('UI: Inputs', () => {
 
     let changed = false;
     input.value = newVal;
-    input.onChanged(function() {
+    input.onChanged.subscribe(() => {
       changed = true;
     });
 

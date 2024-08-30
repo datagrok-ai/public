@@ -121,7 +121,7 @@ Additionally, we use manual tests, automatic tests, monitoring and logging
 systems, and our [community](https://community.datagrok.ai/) to gather feedback
 and identify issues.
 
-You can [report an issue](../../develop/how-to/report-tickets.md) directly in one of our issue
+You can [report an issue](report-tickets.md) directly in one of our issue
 tracking systems. We use [JIRA](https://reddata.atlassian.net/) for internal
 issues, integrated with BitBucket, and [GitHub
 Tracker](https://github.com/datagrok-ai/public/issues) for all externally

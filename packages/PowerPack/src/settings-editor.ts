@@ -15,11 +15,11 @@ export class PowerPackSettingsEditor extends DG.Widget {
     const disabledWidgets = ui.panel([
       ui.h2('Disabled widgets'),
       ui.wait(async function() {
-        const settings = await getSettings();
+        const settings = getSettings();
 
         async function enable(widgetName: string): Promise<void> {
           settings[widgetName].ignored = false;
-          await saveSettings();
+          saveSettings();
         }
 
         const items = Object.keys(settings)

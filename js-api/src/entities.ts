@@ -10,6 +10,7 @@ import {PackageLogger} from "./logger";
 import dayjs from "dayjs";
 import {IDartApi} from "./api/grok_api.g";
 import {DataSourceType} from "./api/grok_shared.api.g";
+import { Tags } from "../dg";
 
 declare var grok: any;
 const api: IDartApi = <any>window;
@@ -661,13 +662,22 @@ export class TableInfo extends Entity {
 /** @extends Entity
  * Represents Column metadata */
 export class ColumnInfo extends Entity {
-
+  public tags: {[key: string]: any};
   /** @constructs ColumnInfo */
   constructor(dart: any) {
     super(dart);
+    this.tags = new MapProxy(api.grok_ColumnInfo_Get_Tags(this.dart), 'tags');
   }
 
   get type(): string { return toJs(api.grok_ColumnInfo_Get_Type(this.dart)); }
+
+  /** Returns reference information if the column is referencing another column in another table */
+  get referenceInfo(): {table: string, column: string} | null {
+    return this.tags[Tags.ReferencesTable] && this.tags[Tags.ReferencesColumn] ? {
+      table: this.tags[Tags.ReferencesTable],
+      column: this.tags[Tags.ReferencesColumn]
+    } : null;
+  }
 }
 
 /** @extends Entity
@@ -1251,6 +1261,10 @@ export class Property {
   /** Property type */
   get propertyType(): TYPE { return api.grok_Property_Get_PropertyType(this.dart); }
   set propertyType(s: TYPE) { api.grok_Property_Set_PropertyType(this.dart, s); }
+
+  /** Applies to viewers properties whether to include the property in the layout or not. */
+  get includeInLayout(): boolean { return api.grok_Property_Get_IncludeInLayout(this.dart); }
+  set includeInLayout(s: boolean) { api.grok_Property_Set_IncludeInLayout(this.dart, s); }
 
   /** Semantic type */
   get semType(): SemType | string { return api.grok_Property_Get_SemType(this.dart); }

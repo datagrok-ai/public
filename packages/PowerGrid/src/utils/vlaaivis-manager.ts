@@ -121,8 +121,8 @@ class VlaaiVisManager {
     const value = this.getSectorProperty(name, property.property.name as keyof (Sector | Subsector));
     input.value = value !== undefined ? value : property.object[property.property.name];
     
-    input.onChanged(() => {
-      this.updateSectorProperty(name, property.property.name as keyof (Sector | Subsector), input.value);
+    input.onChanged.subscribe((value) => {
+      this.updateSectorProperty(name, property.property.name as keyof (Sector | Subsector), value);
       this.gc.grid.invalidate();
     });
 

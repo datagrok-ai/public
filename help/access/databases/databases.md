@@ -75,7 +75,7 @@ options).
 ### Caching data
 
 You can cache query results to improve query performance. To learn more, see
-[Caching function results](../../develop/function_results_cache.md)
+[Caching function results](../../develop/how-to/function_results_cache.md)
 
 ### Modifying connection
 

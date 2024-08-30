@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 
 import {after, before, category, delay, expect, test, expectArray, timeout} from '@datagrok-libraries/utils/src/test';
-import {HelmType, Mol, OrgType} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmType, IHelmDrawOptions, Mol, OrgType} from '@datagrok-libraries/bio/src/helm/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {
@@ -13,22 +13,31 @@ import {
 
 import {JSDraw2Module} from '../types';
 import {initHelmMainPackage} from './utils';
-import {IHelmDrawOptions} from '@datagrok-libraries/helm-web-editor/src/types/org-helm';
 
 declare const org: OrgType;
 declare const JSDraw2: JSDraw2Module;
 
-type TestTgtType = { atomCount: number, bondCount: number };
+type TestTgtType = { atomCount: number, bondCount: number, helm: string };
 
 category('parseHelm', () => {
   const testData: { [testName: string]: { src: string, tgt: TestTgtType } } = {
     'PT': {
       src: 'PEPTIDE1{[L-hArg(Et,Et)].E.F.G}|PEPTIDE2{C.E}$PEPTIDE1,PEPTIDE2,2:R3-1:R1$$$V2.0',
-      tgt: {atomCount: 6, bondCount: 5}
+      tgt: {
+        atomCount: 6, bondCount: 5,
+        helm: 'PEPTIDE1{[L-hArg(Et,Et)].E.F.G}|PEPTIDE2{C.E}$PEPTIDE1,PEPTIDE2,2:R3-1:R1$$$V2.0'
+      }
+    },
+    'PT-cycic': {
+      src: 'PEPTIDE1{[meI].C.[Aca].[Cys_SEt].T.C.[Thr_PO3H2].[Aca]}$PEPTIDE1,PEPTIDE1,8:R2-1:R1$$$V2.0',
+      tgt: {
+        atomCount: 8, bondCount: 8,
+        helm: 'PEPTIDE1{[meI].C.[Aca].[Cys_SEt].T.C.[Thr_PO3H2].[Aca]}$PEPTIDE1,PEPTIDE1,8:R2-1:R1$$$V2.0'
+      },
     },
     'RNA': {
       src: 'RNA1{[dhp]([m1A])p.r(T)p.r(T)p.r(G)p}$$$$V2.0',
-      tgt: {atomCount: 12, bondCount: 11}
+      tgt: {atomCount: 12, bondCount: 11, helm: 'RNA1{[dhp]([m1A])p.r(T)p.r(T)p.r(G)p}$$$$V2.0',}
     }
   };
 
@@ -94,6 +103,9 @@ function _testParseHelmWithoutDOM(src: string, tgt: TestTgtType): void {
   io.parseHelm(plugin, src, origin, undefined);
 
   const m: Mol<HelmType> = plugin.jsd.m;
+  debugger;
+  const resHelm = io.getHelm(m);
   expect(m.atoms.length, tgt.atomCount);
   expect(m.bonds.length, tgt.bondCount);
+  expect(resHelm, tgt.helm);
 }

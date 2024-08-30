@@ -115,6 +115,12 @@ export interface IDartApi {
   grok_Dapi_UserDataStorage_Get(name: String, currentUser: Bool): Promise<any>;
   grok_Dapi_UserDataStorage_GetValue(name: String, key: String, currentUser: Bool): Promise<any>;
   grok_Dapi_UserDataStorage_Delete(name: String, key: String, currentUser: Bool): Promise<any>;
+  grok_UserSettings_Add(name: String, key: String, value: String, isPrivate: Bool): any;
+  grok_UserSettings_AddAll(name: String, data: any, isPrivate: Bool): any;
+  grok_UserSettings_Put(name: String, data: any, isPrivate: Bool): any;
+  grok_UserSettings_Get(name: String, isPrivate: Bool): any;
+  grok_UserSettings_GetValue(name: String, key: String, isPrivate: Bool): any;
+  grok_UserSettings_Delete(name: String, key: String, isPrivate: Bool): any;
   grok_Dapi_Get_GroupUser(g: any): Promise<any>;
   grok_Dapi_Get_GroupsLookup(name: String): Promise<any>;
   grok_Dapi_Get_Permissions(e: any): Promise<any>;
@@ -831,6 +837,8 @@ export interface IDartApi {
   grok_Property_Set_Category(p: any, x: String): any;
   grok_Property_Get_PropertyType(p: any): any;
   grok_Property_Set_PropertyType(p: any, x: String): any;
+  grok_Property_Get_IncludeInLayout(p: any): any;
+  grok_Property_Set_IncludeInLayout(p: any, x: Bool): any;
   grok_Property_Get_SemType(p: any): any;
   grok_Property_Set_SemType(p: any, x: String): any;
   grok_Property_Get_Description(p: any): any;
@@ -946,6 +954,7 @@ export interface IDartApi {
   grok_ColumnInfo_Get_Type(ci: any): any;
   grok_ColumnInfo_Get_SemType(ci: any): any;
   grok_ColumnInfo_Get_LayoutColumnId(ci: any): any;
+  grok_ColumnInfo_Get_Tags(ci: any): any;
   grok_HistoryEntry_Get_Object(e: any): any;
   grok_HistoryEntry_Get_Time(e: any): any;
   grok_Entity_Get_Id(p: any): any;
@@ -1079,8 +1088,8 @@ export interface IDartApi {
   grok_InputBase_Set_ReadOnly(input: any, v: Bool): any;
   grok_InputBase_Get_Enabled(input: any): any;
   grok_InputBase_Set_Enabled(input: any, v: Bool): any;
-  grok_InputBase_OnChanged(input: any, handler: any): any;
-  grok_InputBase_OnInput(input: any, handler: any): any;
+  grok_InputBase_OnChanged(input: any): any;
+  grok_InputBase_OnInput(input: any): any;
   grok_InputBase_Save(input: any): any;
   grok_InputBase_Load(input: any, v: String): any;
   grok_InputBase_Init(input: any): any;
@@ -1206,6 +1215,7 @@ export interface IDartApi {
   grok_FuncCall_Clone(call: any): any;
   grok_FuncCall_Get_AdHoc(f: any): any;
   grok_FuncCall_Set_AdHoc(f: any, adHoc: Bool): any;
+  grok_FuncCall_GetOutputViews(c: any): any;
   grok_FuncCallParam_Get_Aux(p: any): any;
   grok_FuncCallParam_Get_Param(p: any): any;
   grok_FuncCallParam_Get_Value(p: any): any;
