@@ -128,16 +128,15 @@ export const RichFunctionView = defineComponent({
             onClick={() => formHidden.value = !formHidden.value}
           />
         </RibbonPanel>
-        <FoldableDialog 
-          title='Input form'
-          style={{display: formHidden.value ? 'none': null}}
-          onCloseClicked={() => formHidden.value = true}
+        <div 
+          style={{display: formHidden.value ? 'none': undefined}}
+          class='flex flex-col w-1/4 p-2'
         >
           <InputForm funcCall={currentCall.value}/>
           <div class='flex sticky bottom-0'>
             <BigButton onClick={run}> Run </BigButton>
           </div>
-        </FoldableDialog>
+        </div> 
         <FoldableDialog
           title='History'
           style={{display: historyHidden.value ? 'none': null}}
@@ -155,7 +154,7 @@ export const RichFunctionView = defineComponent({
           items={tabLabels.value.map((label) => ({label}))} 
           selected={selectedIdx.value} 
           onUpdate:selected={(v) => selectedIdx.value = v}
-          class='w-full'
+          class='w-fullp p-1'
         >
           {{
             default: () => 
