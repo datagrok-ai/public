@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.42.12 (2024-08-30)
+
+Add getHelm to SeqHandler and INotationProvider
+
 ## 5.42.11 (2024-08-24)
 
 ### Bug fixes
