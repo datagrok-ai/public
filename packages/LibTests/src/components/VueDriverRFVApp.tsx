@@ -106,6 +106,7 @@ export const VueDriverRFVApp = defineComponent({
             <FoldableDialog 
               title='Steps tree'
               style={{display: treeHidden.value ? 'none': null}}
+              onCloseClicked={() => treeHidden.value = true}
             >
               <Draggable 
                 class="ui-div mtl-tree p-2"

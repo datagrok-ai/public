@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {defineComponent, onMounted, PropType, ref, triggerRef, nextTick, computed, watch, shallowRef} from 'vue';
 import {type ViewerT} from '@datagrok-libraries/webcomponents/src';
-import {Viewer, InputForm, BigButton, Button, TabHeaderStripe, Tabs, IconFA, RibbonPanel, FoldableDialog} from '@datagrok-libraries/webcomponents-vue/src';
+import {Viewer, InputForm, BigButton, Button, TabHeaderStripe, Tabs, IconFA, RibbonPanel, FoldableDialog, DockedPanel} from '@datagrok-libraries/webcomponents-vue/src';
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
@@ -128,19 +128,18 @@ export const RichFunctionView = defineComponent({
             onClick={() => formHidden.value = !formHidden.value}
           />
         </RibbonPanel>
-        <div 
-          style={{display: formHidden.value ? 'none': undefined}}
-          class='flex flex-col w-1/4 p-2'
+        { !formHidden.value ? <DockedPanel
+          title='Input form'
+          class='p-2'
+          onClosed={() => formHidden.value = true}
         >
           <InputForm funcCall={currentCall.value}/>
           <div class='flex sticky bottom-0'>
             <BigButton onClick={run}> Run </BigButton>
           </div>
-        </div> 
-        <FoldableDialog
+        </DockedPanel> : null } 
+        { !historyHidden.value ? <DockedPanel
           title='History'
-          style={{display: historyHidden.value ? 'none': null}}
-          onCloseClicked={() => historyHidden.value = true}
         >
           <History 
             func={currentCall.value.func}
@@ -149,7 +148,7 @@ export const RichFunctionView = defineComponent({
             isHistory
             onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
           />
-        </FoldableDialog>
+        </DockedPanel>: null }
         <Tabs 
           items={tabLabels.value.map((label) => ({label}))} 
           selected={selectedIdx.value} 
