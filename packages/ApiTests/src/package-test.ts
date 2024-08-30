@@ -20,6 +20,7 @@ import './shell/shell';
 import './shell/ml';
 import './shell/settings';
 import './dapi/files';
+import './dapi/files-list';
 import './dapi/functions';
 import './dapi/fetch';
 import './dapi/groups';
