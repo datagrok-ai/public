@@ -1706,6 +1706,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       if (div !== null)
         div.innerHTML = this.MoleculeColumn;
       this.toggleTreeGenerationVisibility();
+      // set the DataFrame first to trigger onFrameAttached, which ensures correct filtering on the appropriate table
+      this.dataFrame = grok.shell.tables.find((df) => df.name === this.Table)!;
     } else if (p.name === 'MoleculeColumn') {
       for (let n = 0; n < this.molColumns[this.tableIdx].length; ++n) {
         if (this.molColumns[this.tableIdx][n].name === this.MoleculeColumn) {
@@ -1887,8 +1889,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       return;
     }
 
-    if (this.allowGenerate)
-      setTimeout(() => this.generateTree(), 1000);
     attached = true;
     scaffoldTreeId += 1;
   }
@@ -1965,7 +1965,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   render() {
     const thisViewer = this;
     this._bitOpInput = ui.input.choice('', {value: BitwiseOp.OR, items: Object.values(BitwiseOp), onValueChanged: v => {
-      thisViewer.bitOperation = v.stringValue;
+      thisViewer.bitOperation = v;
       thisViewer.updateFilters();
       this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
     }});

@@ -108,11 +108,6 @@ export class TestManager extends DG.ViewBase {
       pathSegments = pathSegments.map((it) => it ? it.replace(/%20/g, ' ') : undefined);
     }
 
-
-    this.verboseCheckBox.onChanged((e) => {
-
-    })
-
     // we need to init Compute package here, before loading any of
     // compute model packages, since theirs top level might implicitly
     // depend on Compute provided globals
@@ -123,8 +118,8 @@ export class TestManager extends DG.ViewBase {
     }
 
     let searchInvoked = false
-    this.searchInput.onChanged(async () => {
-      if (this.searchInput.value.length > 0) {
+    this.searchInput.onChanged.subscribe(async (value) => {
+      if (value.length > 0) {
         this.searchEvent();
         searchInvoked = true;
       }
@@ -358,8 +353,8 @@ export class TestManager extends DG.ViewBase {
     debugButton.classList.add('tm-button');
 
     const benchmarkButton = ui.input.bool('Benchmark', {
-      onValueChanged: () => {
-        DG.Test.isInBenchmark = benchmarkButton.value;
+      onValueChanged: (value) => {
+        DG.Test.isInBenchmark = value;
       }
     });
     benchmarkButton.classList.add('tm-button');

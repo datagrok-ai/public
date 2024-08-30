@@ -31,22 +31,20 @@ export function welcomeView(): DG.View | undefined {
   view.root.classList.add('power-pack-welcome-view');
 
   const widgetFunctions = DG.Func.find({tags: ['dashboard'], returnType: 'widget'});
-
-  getSettings().then((settings: UserWidgetsSettings) => {
-    for (const f of widgetFunctions) {
-      if (!settings[f.name] || settings[f.name].ignored) {
-        const widgetHeader = ui.div();
-        f.apply({'header': widgetHeader}).then(function(w: DG.Widget) {
-          if (!w)
-            return;
-          w.factory = f;
-          widgetsHost.appendChild(widgetHost(w, widgetHeader));
-        }).catch((e) => {
-          console.error(`Unable to execute function ${f.name}`, e);
-        });
-      }
+  const settings: UserWidgetsSettings = getSettings();
+  for (const f of widgetFunctions) {
+    if (!settings[f.name] || settings[f.name].ignored) {
+      const widgetHeader = ui.div();
+      f.apply({'header': widgetHeader}).then(function(w: DG.Widget) {
+        if (!w)
+          return;
+        w.factory = f;
+        widgetsHost.appendChild(widgetHost(w, widgetHeader));
+      }).catch((e) => {
+        console.error(`Unable to execute function ${f.name}`, e);
+      });
     }
-  });
+  }
 
   function doSearch(s: string) {
     input.value = s;

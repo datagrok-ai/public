@@ -2,7 +2,11 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {HelmType, JSDraw2ModuleType, OrgType, HelmAtom, HelmMol} from '@datagrok-libraries/bio/src/helm/types';
+import {
+  HelmType, HelmMol,
+  JSDraw2ModuleType, OrgType
+} from '@datagrok-libraries/bio/src/helm/types';
+
 
 import {Chain} from './pt-conversion';
 import {getAvailableMonomers} from './utils';
@@ -17,9 +21,14 @@ declare const org: OrgType;
 function polyToolEnumeratorCore(m: HelmMol, position: number, monomerList: string[]): HelmMol[] {
   const resMolList: HelmMol[] = new Array<HelmMol>(monomerList.length);
   for (let i = 0; i < monomerList.length; i++) {
-    const symbolName = monomerList[i];
-    const resM = resMolList[i] = m.clone();
-    resM.atoms[position].elem = symbolName;
+    const newSymbol = monomerList[i];
+    const resM = resMolList[i] = m.clone() as HelmMol;
+    const oldSymbol = resM.atoms[position].elem;
+    resM.atoms[position].elem = newSymbol;
+
+    const idOldSymbol = oldSymbol?.length > 1 ? `[${oldSymbol}]` : oldSymbol;
+    const idNewSymbol = newSymbol?.length > 1 ? `[${newSymbol}]` : newSymbol;
+    resM.name = `${m.name}-${idOldSymbol}${position + 1}${idNewSymbol}`;
   }
   return resMolList;
 }
@@ -29,46 +38,45 @@ function polyToolEnumeratorCore(m: HelmMol, position: number, monomerList: strin
  * @param  placeholders Placeholders by zero-based position key
  * @returns {string[]} List of enumerated molecules in Helm format
  */
-function getPtEnumeratorSingle(helm: string, placeholders: PolyToolPlaceholders): string[] {
-  const molHandler = new JSDraw2.MolHandler<HelmType>();
-  const plugin = new org.helm.webeditor.Plugin(molHandler);
-  const io = org.helm.webeditor.IO;
-
-  const origin = new JSDraw2.Point(0, 0);
-  io.parseHelm(plugin, helm, origin, undefined);
-
+function getPtEnumeratorSingle(m: HelmMol, placeholders: PolyToolPlaceholders): HelmMol[] {
   const coreResList: HelmMol[][] = Object.entries(placeholders)
-    .map(([p, monomerList]: [string, string[]]) => polyToolEnumeratorCore(molHandler.m, parseInt(p), monomerList));
+    .map(([p, monomerList]: [string, string[]]) => polyToolEnumeratorCore(m, parseInt(p), monomerList));
   const resMolList = coreResList.reduce((acc, posList) => acc.concat(posList), []);
-
-  const resHelmList = resMolList.map((m: HelmMol) => org.helm.webeditor.IO.getHelm(m)!);
-  return resHelmList;
+  return resMolList;
 }
 
-function getPtEnumeratorMatrix(helm: string, placeholders: PolyToolPlaceholders): string[] {
-  const molHandler = new JSDraw2.MolHandler<HelmType>();
-  const plugin = new org.helm.webeditor.Plugin(molHandler);
-  const io = org.helm.webeditor.IO;
-
-  const origin = new JSDraw2.Point(0, 0);
-  io.parseHelm(plugin, helm, origin, undefined);
-
-  let resMolList = [molHandler.m];
+function getPtEnumeratorMatrix(m: HelmMol, placeholders: PolyToolPlaceholders): HelmMol[] {
+  let resMolList = [m];
   for (const [p, monomerList] of Object.entries(placeholders)) {
     const pos: number = parseInt(p);
     const posResMolList: HelmMol[][] = resMolList.map((m: HelmMol) => polyToolEnumeratorCore(m, pos, monomerList));
     resMolList = posResMolList.reduce((acc, l) => acc.concat(l), []);
   }
-
-  const resHelmList = resMolList.map((m: HelmMol) => org.helm.webeditor.IO.getHelm(m)!);
-  return resHelmList;
+  return resMolList;
 }
 
-export function getPtEnumeratorHelm(helm: string, params: PolyToolEnumeratorParams): string[] {
+export function getPtEnumeratorHelm(helm: string, id: string, params: PolyToolEnumeratorParams): [string, string][] {
+  const molHandler = new JSDraw2.MolHandler<HelmType>();
+  const plugin = new org.helm.webeditor.Plugin(molHandler);
+  org.helm.webeditor.IO.parseHelm(plugin, helm, new JSDraw2.Point(0, 0), undefined);
+  const m = molHandler.m;
+  m.name = id;
+
+  let resMolList: HelmMol[];
   switch (params.type) {
-  case PolyToolEnumeratorTypes.Single:
-    return getPtEnumeratorSingle(helm, params.placeholders);
-  case PolyToolEnumeratorTypes.Matrix:
-    return getPtEnumeratorMatrix(helm, params.placeholders);
+  case PolyToolEnumeratorTypes.Single: {
+    resMolList = getPtEnumeratorSingle(molHandler.m, params.placeholders);
+    break;
   }
+  case PolyToolEnumeratorTypes.Matrix: {
+    resMolList = getPtEnumeratorMatrix(molHandler.m, params.placeholders);
+    break;
+  }
+  }
+
+  if (params.keepOriginal)
+    resMolList = [m, ...resMolList];
+
+  const resList = resMolList.map<[string, string]>((m: HelmMol) => { return [org.helm.webeditor.IO.getHelm(m)!, m.name!]; });
+  return resList;
 }

@@ -352,17 +352,17 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
       ui.input.columns('Сolumns', {
         value: gc.grid.dataFrame.columns.byNames(columnNames),
         table: gc.grid.dataFrame,
-        onValueChanged: (input) => {
-          settings.columnNames = names(input.value);
+        onValueChanged: (value) => {
+          settings.columnNames = names(value);
           gc.grid.invalidate();
         },
         available: names(gc.grid.dataFrame.columns.numerical)
       }),
       ui.input.choice('Style', {value: settings.style ?? PieChartStyle.Radius, items: [PieChartStyle.Angle, PieChartStyle.Radius, PieChartStyle.Vlaaivis],
-        onValueChanged: (input) => {
-          settings.style = input.value;
+        onValueChanged: (value) => {
+          settings.style = value;
           ui.empty(elementsDiv);
-          if (input.value === PieChartStyle.Vlaaivis)
+          if (value === PieChartStyle.Vlaaivis)
             elementsDiv.appendChild(new VlaaiVisManager(settings, gc).createTreeGroup());
           else {
             delete settings.sectors;

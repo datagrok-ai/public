@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/hit-triage",
   "friendlyName": "HitTriage",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "author": {
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"
@@ -20,7 +20,7 @@
     "@datagrok-libraries/utils": "^4.2.29",
     "cash-dom": "latest",
     "css-loader": "^6.5.1",
-    "datagrok-api": "^1.19.2",
+    "datagrok-api": "../../js-api",
     "source-map-loader": "^4.0.1",
     "style-loader": "^3.3.1",
     "ts-loader": "latest",

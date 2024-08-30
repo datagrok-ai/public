@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.6.23 (2024-08-28)
+
+Add History support and enable gpu by default if available
+
 ## 6.6.22 (2024-08-23)
 
 Add tableView for reduce dimensionality ui options

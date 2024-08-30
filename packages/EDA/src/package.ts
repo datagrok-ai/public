@@ -173,6 +173,7 @@ export async function reduceDimensionality(): Promise<void> {
     else
       okButton.classList.remove('disabled');
   };
+  dialog.history(() => ({editorSettings: editor.getStringInput()}), (x: any) => editor.applyStringInput(x['editorSettings']));
   editor.onColumnsChanged.subscribe(() => {
     try {
       validate();

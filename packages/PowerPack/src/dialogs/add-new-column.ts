@@ -36,6 +36,7 @@ const VALIDATION_TYPES_MAPPING: { [key: string]: string[] } = {
 };
 
 const FLOATING_POINT_TYPES = ['float', 'double'];
+const ALLOWED_OUTPUT_TYPES = ['dynamic', DG.TYPE.DATE_TIME, DG.TYPE.QNUM];
 
 const COLUMN_FUNCTION_NAME = 'GetCurrentRowField';
 const GET_VAR_FUNCTION_NAME = 'GetVar';
@@ -181,7 +182,7 @@ export class AddNewColumnDialog {
   prepareFunctionsListForAutocomplete() {
     //filter functions with one input (multiple inputs or functions returning void are not included)
     const allFunctionsList = DG.Func.find()
-      .filter((it) => it.outputs.length === 1 && (DG.TYPES_SCALAR.has(it.outputs[0].propertyType) || it.outputs[0].propertyType === 'dynamic' || it.outputs[0].propertyType === DG.TYPE.DATE_TIME));
+      .filter((it) => it.outputs.length === 1 && (DG.TYPES_SCALAR.has(it.outputs[0].propertyType) || ALLOWED_OUTPUT_TYPES.includes(it.outputs[0].propertyType)));
     for (const func of allFunctionsList) {
       const params: PropInfo[] = func.inputs.map((it) => {
         return {propName: it.name, propType: it.semType ?? it.propertyType};
@@ -240,7 +241,7 @@ export class AddNewColumnDialog {
   /** Creates and initializes the "Column Name" input field. */
   initInputName(): DG.InputBase {
     const control = ui.input.string('', {value: ''});
-    control.onInput(async () => await this.updatePreview(this.codeMirror!.state.doc.toString()));
+    control.onInput.subscribe(async () => await this.updatePreview(this.codeMirror!.state.doc.toString()));
     control.setTooltip(this.tooltips['name']);
 
     const input = control.input as HTMLInputElement;
@@ -260,7 +261,7 @@ export class AddNewColumnDialog {
 
     const control = ui.input.choice('', {value: this.call ?
       this.call.getParamValue('type') : defaultChoice, items: this.supportedTypes});
-    control.onInput(async () => await this.updatePreview(this.codeMirror!.state.doc.toString()));
+    control.onInput.subscribe(async () => await this.updatePreview(this.codeMirror!.state.doc.toString()));
     control.setTooltip(this.tooltips['type']);
 
     const input = control.input as HTMLInputElement;
@@ -725,7 +726,7 @@ export class AddNewColumnDialog {
     props.colHeaderFont = props.defaultCellFont;
 
     const previewRoot = this.gridPreview.root;
-    previewRoot.setAttribute('style', 'height: -webkit-fill-available !important;; min-height:225px;');
+    previewRoot.setAttribute('style', 'height: -webkit-fill-available !important;');
 
     const control = ui.div(previewRoot);
     control.append(this.gridPreview.root);

@@ -1,3 +1,7 @@
+---
+title: "Tests"
+---
+
 ## Testing viewers
 
 Each viewer should at least satisfy a number of well-known criteria. Some can (and should) be tested

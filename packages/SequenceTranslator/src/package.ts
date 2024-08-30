@@ -16,12 +16,12 @@ import {demoOligoPatternUI, demoOligoStructureUI, demoOligoTranslatorUI} from '.
 import {getExternalAppViewFactories} from './plugins/mermade';
 
 //polytool specific
-import {getPolyToolConversionDialog, polyToolEnumerateHelmUI, polyToolEnumerateChemUI} from './polytool/pt-dialog';
+import {getPolyToolConversionDialog, polyToolEnumerateChemUI} from './polytool/pt-dialog';
+import {polyToolEnumerateHelmUI} from './polytool/pt-enumeration-helm-dialog';
 import {_setPeptideColumn} from './polytool/utils';
 import {PolyToolCsvLibHandler} from './polytool/csv-to-json-monomer-lib-converter';
 import {ITranslationHelper} from './types';
 import {addContextMenuUI} from './utils/context-menu';
-import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 
 export const _package: OligoToolkitPackage = new OligoToolkitPackage(/*{debug: true}/**/);
 
@@ -152,7 +152,7 @@ async function getSpecifiedAppView(appName: string): Promise<DG.ViewBase> {
   return view;
 }
 
-//top-menu: Bio | Convert | PolyTool-Convert
+//top-menu: Bio | PolyTool | Convert...
 //name: polyToolConvert
 //description: Perform cyclization of polymers
 export async function polyToolConvert(): Promise<void> {
@@ -165,14 +165,14 @@ export async function polyToolConvert(): Promise<void> {
   }
 }
 
-//top-menu: Bio | Convert | PolyTool-Enumerate HELM
+//top-menu: Bio | PolyTool | Enumerate HELM...
 //name: polyToolEnumerateHelm
 //description: Perform cyclization of polymers
 export async function polyToolEnumerateHelm(): Promise<void> {
-  await polyToolEnumerateHelmUI();
+  await polyToolEnumerateHelmUI(grok.shell.tv?.dataFrame.currentCell);
 }
 
-//top-menu: Bio | Convert | PolyTool-Enumerate Chem
+//top-menu: Bio | PolyTool | Enumerate Chem...
 //name: polyToolEnumerateChem
 //description: Perform cyclization of polymers
 export async function polyToolEnumerateChem(): Promise<void> {

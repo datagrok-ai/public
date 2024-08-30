@@ -96,15 +96,15 @@ export class HelmToMolfileConverter {
         const helm = this.helmColumn.get(idx);
         if (!helm) return '';
 
-        let resMolfile: MolfileWithMap;
+        let resMolfileWithMap: MolfileWithMap;
         try {
-          resMolfile = this.getPolymerMolfile(helm, pseudoMolfile, rdKitModule, monomerLib);
+          resMolfileWithMap = this.getPolymerMolfile(helm, pseudoMolfile, rdKitModule, monomerLib);
         } catch (err: any) {
           const [errMsg, errStack] = errInfo(err);
           _package.logger.error(errMsg, undefined, errStack);
-          resMolfile = MolfileWithMap.empty();
+          resMolfileWithMap = MolfileWithMap.empty();
         }
-        return resMolfile;
+        return resMolfileWithMap.molfile;
       });
     const molfileColName = this.df.columns.getUnusedName(`molfileV2K(${this.helmColumn.name})`);
     const molfileColumn = DG.Column.fromList('string', molfileColName, molfileList);

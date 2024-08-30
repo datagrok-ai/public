@@ -54,7 +54,7 @@ JSON representation of the current viewer (viewer type, properties)
 
 # Markup
 
-Different kind of data bindings supported in the [Markup Viewer](../../visualize/viewers/markup.md),
+Different kind of data bindings supported in the [Markup Viewer](../../../visualize/viewers/markup.md),
 evaluated against the current table.
 
 ![](inspector-markup.png)

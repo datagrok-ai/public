@@ -1,7 +1,6 @@
 package grok_connect.providers;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 import grok_connect.managers.ColumnManager;
@@ -144,5 +143,33 @@ public class MySqlDataProvider extends JdbcDataProvider {
         Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
         defaultManagersMap.put(Types.BOOL, new MySqlMssqlBoolColumnManager());
         return DefaultResultSetManager.fromManagersMap(defaultManagersMap);
+    }
+
+    @Override
+    public DataFrame getForeignKeys(DataConnection conn, String schema) throws GrokConnectException {
+        try (Connection connection = getConnection(conn)) {
+            DatabaseMetaData meta = connection.getMetaData();
+            List<String> tables = new ArrayList<>();
+            try (ResultSet tablesRs = meta.getTables(conn.getDb(), null, null, new String[]{"TABLE", "VIEW"})) {
+                while (tablesRs.next())
+                    tables.add(tablesRs.getString("TABLE_NAME"));
+            }
+
+            DataFrame result = DataFrame.fromColumns(new StringColumn("table_schema"),
+                    new StringColumn("constraint_name"), new StringColumn("table_name"),
+                    new StringColumn("column_name"), new StringColumn("foreign_table_name"), new StringColumn("foreign_column_name"));
+            if (!tables.isEmpty()) {
+                for (String t : tables)
+                    try (ResultSet info = meta.getExportedKeys(conn.getDb(), null, t)) {
+                        while(info.next())
+                            result.addRow(info.getString("FKTABLE_SCHEM"), info.getString("FK_NAME"),
+                                    info.getString("FKTABLE_NAME"), info.getString("FKCOLUMN_NAME"),
+                                    info.getString("PKTABLE_NAME"), info.getString("PKCOLUMN_NAME"));
+                    }
+            }
+            return result;
+        } catch (SQLException e) {
+            throw new GrokConnectException(e);
+        }
     }
 }

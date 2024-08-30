@@ -1,5 +1,9 @@
 # HitTriage changelog
 
+## 1.2.2 (2024-08-26)
+
+* Fix progress tracker layout loading
+
 ## 1.2.1 (2024-08-23)
 
 * Fix issues related to progress tracker

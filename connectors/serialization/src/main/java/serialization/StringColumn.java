@@ -19,6 +19,11 @@ public class StringColumn extends Column<String> {
         data = new String[initColumnSize];
     }
 
+    public StringColumn(String name) {
+        this();
+        this.name = name;
+    }
+
     public StringColumn(int initColumnSize) {
         this.initColumnSize = initColumnSize;
         data = new String[initColumnSize];

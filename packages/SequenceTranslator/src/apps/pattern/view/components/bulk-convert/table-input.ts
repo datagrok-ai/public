@@ -64,11 +64,11 @@ export class TableInputManager {
     const currentlySelectedTable = this.eventBus.getTableSelection();
 
     const tableInput = ui.input.table('Tables', {value: currentlySelectedTable!, items: this.availableTables,
-      onValueChanged: (input) => {
+      onValueChanged: (value) => {
         // WARNING: non-null check necessary to prevent resetting columns to
         // null upon handling onTableAdded
-        if (input.value !== null)
-          this.eventBus.selectTable(input.value);
+        if (value !== null)
+          this.eventBus.selectTable(value);
       }});
     return tableInput;
   }

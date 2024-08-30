@@ -1,12 +1,20 @@
 # Sequence Translator changelog
 
-## 1.13.13 (2024-08-19)
+## 1.3.13 (2024-08-19)
+
+### Features
+
+* Improve PolyTool Enumerate Dialog
+  * Add check and warning for substituting missed monomers
+  * Add flag to keep the original molecule in the result
+  * Add choice to select a molecule id and generate derivative
 
 ### Bug fixes
 
 * Fix PolyTool Enumerate dialog hanging on monomer click
+* Fix user settings for publish
 
-## 1.13.12 (2024-08-16)
+## 1.3.12 (2024-08-16)
 
 PolyTool Enumerator Single and Matrix, dialog, tests
 

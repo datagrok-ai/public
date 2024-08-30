@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {Subject} from 'rxjs';
+import {Subject, Observable} from 'rxjs';
 
 export type ItemType = {[_:string]: any};
 export type ItemsGridOptions = {
@@ -20,7 +20,7 @@ export type InputType = {
     input?: HTMLElement,
     root: HTMLElement,
     value: any,
-    onChanged: (action: () => void) => void,
+    onChanged: Observable<any>,
     addOptions?: (el: HTMLElement) => void,
     addValidator: (validator: (value: string) => string | null) => void
 }
@@ -154,8 +154,8 @@ export class ItemsGrid {
       if (prop.propertyType !== DG.TYPE.BOOL && prop.name.toLowerCase() !== 'color')
         input.input && (input.input.style.width = '100%');
       inputsMap[prop.name] = input;
-      input.onChanged(() => {
-        item[prop.name] = input.value;
+      input.onChanged.subscribe((value) => {
+        item[prop.name] = value;
         isAdding ? this.onAddingItemChanged.next({item, fieldName: prop.name}) :
           this.onItemChanged.next({item, fieldName: prop.name});
       });

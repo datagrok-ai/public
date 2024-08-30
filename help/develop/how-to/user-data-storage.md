@@ -2,6 +2,12 @@
 title: "User storage"
 ---
 
+:::warning
+
+User storage will be soon deprecated. Use [User settings storage](./user_settings_storage.md) instead.
+
+:::
+
 It is often the case that certain settings or inputs/outputs need to be shared between different applications or
 different instances of the same application. This functionality is implemented in the form of user data storage — a
 virtual memory buffer which can be filled with new entries and from which these entries can later be retrieved.

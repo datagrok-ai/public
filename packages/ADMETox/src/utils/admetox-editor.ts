@@ -22,8 +22,7 @@ export class AdmeticaBaseEditor {
       value: grok.shell.tv.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE)!
     });
     this.colInputRoot = this.colInput.root;
-    
-    this.templatesInput = ui.input.choice('Template', {onValueChanged: async () =>  {
+    this.templatesInput = ui.input.choice('Template', {onValueChanged: async () => {
       if (settingsOpened)
         await this.createModelsSettingsDiv(this.modelsSettingsDiv);
     }}) as DG.ChoiceInput<string>;

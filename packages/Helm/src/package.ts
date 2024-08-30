@@ -4,7 +4,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
-import {Unsubscribable} from 'rxjs';
 
 import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
@@ -28,7 +27,7 @@ import {getRS} from './utils/get-monomer-dummy';
 // Do not import anything than types from @datagrok/helm-web-editor/src/types
 import type {JSDraw2Module, OrgHelmModule, ScilModule} from './types';
 
-export const _package = new HelmPackage({debug: true});
+export const _package = new HelmPackage(/*{debug: true}/**/);
 
 /*
   Loading modules:

@@ -9,8 +9,8 @@ export function getLayoutInput() {
   let layoutViewState: string | null = null;
   let error: string | null = null;
   dataFileInput.addValidator((_) => error);
-  dataFileInput.onChanged(async () => {
-    const f: DG.FileInfo = dataFileInput.value;
+  dataFileInput.onChanged.subscribe(async (value) => {
+    const f: DG.FileInfo = value;
     if (f) {
       try {
         const contentString = await f.readAsString();

@@ -455,11 +455,12 @@ jobs:
           done
         working-directory: packages/${{ matrix.package }}
       - name: Wait for published docker to become available
+        id: docker-wait
         if: matrix.docker != '' && steps.datagrok-image.outcome == 'success'
         env:
           DEV_TEST_DEV_KEY: ${{ secrets.DEV_TEST_DEV_KEY }}
           TEST_TEST_DEV_KEY: ${{ secrets.TEST_TEST_DEV_KEY }}
-        timeout-minutes: 5
+        timeout-minutes: 10
         run: |
           check_container=false
           for dockerfile in $(echo -e ${{ matrix.docker }}); do
@@ -522,7 +523,7 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
       - name: Create error notification
-        if: failure() && steps.test-package.outcome == 'failure'
+        if: failure() && (steps.test-package.outcome == 'failure' || steps.docker-wait.outcome == 'failure')
         run: |
           if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
             docker compose -p datagrok logs --no-color --timestamps

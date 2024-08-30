@@ -167,8 +167,9 @@ export class Dapi {
 
   docker = new DockerDataSource();
 
-  /** Users Data Storage API endpoint
-   *  @type {UserDataStorage} */
+  /**
+   * @deprecated The UserDataStorage should not be used. Use {@link UserSettingsStorage} instead
+   */
   get userDataStorage(): UserDataStorage {
     return new UserDataStorage();
   }
@@ -612,6 +613,14 @@ export class DataConnectionsDataSource extends HttpDataSource<DataConnection> {
   async shareFolder(e: DataConnection, path: string): Promise<DataConnection> {
     return toJs(await api.grok_DataConnectionsDataSource_SubDir(this.dart, e.dart, path));
   }
+
+  async getSchemas(e: DataConnection): Promise<string[]> {
+    return toJs(await api.grok_DataConnectionsDataSource_Get_Schemas(this.dart, e.dart));
+  }
+
+  async getSchema(e: DataConnection, schemaName: string | null = null): Promise<TableInfo[]> {
+    return toJs(await api.grok_DataConnectionsDataSource_Get_Schema(this.dart, e.dart, schemaName ?? null));
+  }
 }
 
 /**
@@ -736,6 +745,7 @@ export class PermissionsDataSource {
 }
 
 /**
+ * @deprecated The UserDataStorage should not be used. Use {@link UserSettingsStorage} instead
  * Functionality for working with remote Users Data Storage
  * Remote storage allows to save key-value pairs on the Datagrok server for further use
  * */

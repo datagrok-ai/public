@@ -23,6 +23,12 @@ export function getTilesViewDialog(app: HitDesignApp, getTableView: () => DG.Tab
       sketchState.elementStates = sketchState.elementStates.filter((elementState: any) =>
         elementState?.viewerSettings?.column && app.dataFrame!.col(elementState.viewerSettings.column),
       );
+      // similarly, because the table name can be duplicated or changed,
+      // we need to make sure that table name in all viewer settings corresponds to actual table name
+      sketchState.elementStates.forEach((elState: any) => {
+        if (elState?.viewerSettings?.table)
+          elState.viewerSettings.table = app.dataFrame!.name;
+      });
     }
   }
 
