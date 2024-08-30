@@ -30,11 +30,11 @@ async function sendRequestToContainer(containerId: string, path: string, params:
 }
 
 export async function runAdmetox(csvString: string, queryParams: string, addProbability: string): Promise<string | null> {
-  /*const admetoxContainer = await getAdmetoxContainer();
+  const admetoxContainer = await getAdmetoxContainer();
   if (!admetoxContainer || (admetoxContainer.status !== 'started' && admetoxContainer.status !== 'checking')) {
     await startAdmetoxContainer(admetoxContainer?.id);
     return null;
-  }*/
+  }
 
   const params: RequestInit = {
     method: 'POST',
@@ -45,10 +45,10 @@ export async function runAdmetox(csvString: string, queryParams: string, addProb
     body: csvString
   };
 
-  const path = `http://127.0.0.1:6678/df_upload?models=${queryParams}&probability=${addProbability}`;
-  const response = await fetch(path, params);
-  return await response.text();
-  //return await sendRequestToContainer(admetoxContainer.id, path, params);
+  const path = `/df_upload?models=${queryParams}&probability=${addProbability}`;
+  //const response = await fetch(path, params);
+  //return await response.text();
+  return await sendRequestToContainer(admetoxContainer.id, path, params);
 }
 
 export async function setProperties(template?: string) {

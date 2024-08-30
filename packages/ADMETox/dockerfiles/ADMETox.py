@@ -56,7 +56,7 @@ def convert_to_smiles(molecule):
 
 def make_chemprop_predictions(df_test, checkpoint_path):
   mpnn = models.MPNN.load_from_checkpoint(checkpoint_path)
-  smis = df_test.iloc[:, 0]
+  smis = df_test.iloc[:, 0].tolist()
 
   valid_indices = [i for i, smi in enumerate(smis) if not is_malformed(smi) and smi != '']
   valid_smiles = [smis[i] for i in valid_indices]
@@ -74,7 +74,7 @@ def make_chemprop_predictions(df_test, checkpoint_path):
     trainer = pl.Trainer(
       logger=True,
       enable_progress_bar=True,
-      accelerator="cpu",
+      accelerator="gpu",
       devices=1
     )
     test_preds = trainer.predict(mpnn, test_loader)
