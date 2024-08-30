@@ -179,7 +179,7 @@ export class GroupAnalysisViewer extends DG.JsViewer {
       columnTypeDiv.append(choiceInput.root);
     }
 
-    colTypeInput.onChanged.subscribe(() => {
+    colTypeInput.onChanged(() => {
       currentColType = colTypeInput.value!;
       ui.empty(columnTypeDiv);
       switch (colTypeInput.value) {
@@ -276,7 +276,7 @@ export class GroupAnalysisViewer extends DG.JsViewer {
       const selectedValue = selectedCols.length === i ? '' : selectedCols[i];
       const groupChoiceInput = ui.input.choice('', {value: selectedValue, items: this.totalColumns!});
       ui.tooltip.bind(groupChoiceInput.root, () => selectedValue);
-      groupChoiceInput.onChanged.subscribe(() => {
+      groupChoiceInput.onChanged(() => {
         if (groupChoiceInput.value === '')
           selectedCols.splice(i, 1);
         else {
