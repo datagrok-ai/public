@@ -493,13 +493,14 @@ export class TestManager extends DG.ViewBase {
     if (runSkipped) t.test.options.skipReason = skipReason;
     if (!this.testsResultsDf) {
       this.testsResultsDf = res;
+      this.testsResultsDf.changeColumnType('logs', DG.COLUMN_TYPE.STRING);
       this.addPackageInfo(this.testsResultsDf, t.packageName);
     } else {
       if (res.col('package') == null || this.verboseCheckBox.value)
         this.addPackageInfo(res, t.packageName);
       if (!this.verboseCheckBox.value)
         this.removeTestRow(t.packageName, t.test.category, t.test.name);
-      res.getCol('logs').convertTo(DG.COLUMN_TYPE.STRING);
+      res.changeColumnType('logs', DG.COLUMN_TYPE.STRING);
       this.testsResultsDf = this.testsResultsDf.append(res);
     }
     this.updateTestResultsIcon(t.resultDiv, testSucceeded, skipReason && !runSkipped);
