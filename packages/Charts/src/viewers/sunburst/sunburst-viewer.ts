@@ -12,6 +12,7 @@ import { debounceTime } from 'rxjs/operators';
 
 type onClickOptions = 'Select' | 'Filter';
 const CATEGORIES_NUMBER = 500;
+const ERROR_CLASS = 'd4-viewer-error';
 
 /** Represents a sunburst viewer */
 @grok.decorators.viewer({
@@ -91,7 +92,7 @@ export class SunburstViewer extends EChartViewer {
         const column = this.dataFrame.getCol(this.eligibleHierarchyNames[i]);
         const columnValue = row.get(this.eligibleHierarchyNames[i]);
         const formattedValue = columnValue
-          ? (column.type !== 'string' ? columnValue.toString() : columnValue)
+          ? (column.type !== DG.TYPE.STRING ? columnValue.toString() : columnValue)
           : '';
         return formattedValue === expectedValue;
       });
@@ -103,23 +104,10 @@ export class SunburstViewer extends EChartViewer {
   
     return eligibleHierarchyNames.some((colName, index) => {
       const column = dataFrame.getCol(colName);
-      const value = column.get(rowIndex);
-      const formattedValue = this.formatColumnValue(column, value);
+      const value = column.getString(rowIndex);
   
-      return formattedValue === targetName;
+      return value === targetName;
     });
-  }
-
-  private formatColumnValue(column: DG.Column, value: any): string {
-    if (column.type === DG.TYPE.DATE_TIME) return value?.toString() ?? '';
-  
-    const format = column.meta.format;
-    if (format && column.type !== 'string' && value != null) {
-      const decimalPlaces = format.split('.')[1]?.length || 0;
-      return value.toFixed(decimalPlaces);
-    }
-  
-    return value?.toString() ?? '';
   }
 
   initEventListeners(): void {
@@ -159,12 +147,12 @@ export class SunburstViewer extends EChartViewer {
       this.handleDataframeFiltering(path, matchDf);
       const matchCount = matchDf.filter.trueCount;
   
-      const tooltipX = params.event.event.x;
+      const tooltipX = params.event.event.x + 10;
       const tooltipY = params.event.event.y;
       const tooltipText = `${matchCount}\n${params.name}`;
-  
+
       ui.tooltip.showRowGroup(this.dataFrame, (i) => this.isRowMatch(i, params.name), tooltipX, tooltipY);
-      if (params.data.semType === 'Molecule') {
+      if (params.data.semType === DG.SEMTYPE.MOLECULE) {
         const image = await TreeUtils.getMoleculeImage(params.name);
         const { width, height } = image;
       
@@ -253,11 +241,20 @@ export class SunburstViewer extends EChartViewer {
     this.render();
   }
 
+  _showMessage(msg: string, className: string) {
+    const errorDiv = ui.divText(msg, className);
+    errorDiv.style.textAlign = 'center';
+    this.root.appendChild(errorDiv);
+  }
+
+  _removeMessage(className: string) {
+    const divTextElement = this.root.getElementsByClassName(className)[0];
+    if (divTextElement)
+      this.root.removeChild(divTextElement);
+  }
+
   async getSeriesData(): Promise<TreeDataType[] | undefined> {
     const rowSource = this.selectedOptions.includes(this.rowSource!);
-    this.eligibleHierarchyNames = this.hierarchyColumnNames.filter(
-      (name) => this.dataFrame.getCol(name).categories.length <= CATEGORIES_NUMBER
-    );    
     return await TreeUtils.toForest(this.dataFrame,this.eligibleHierarchyNames, this.filter, rowSource, this.inheritFromGrid);
   }
 
@@ -327,20 +324,16 @@ export class SunburstViewer extends EChartViewer {
   }
   
   async _render() {
-    if (!this.hierarchyColumnNames?.length)
-      return;
-  
-    const validColumnNames = this.dataFrame.columns.names();
-    const updatedHierarchyColumnNames = this.hierarchyColumnNames.filter(colName => validColumnNames.includes(colName));
-  
-    if (!updatedHierarchyColumnNames.length)
-      return;
-  
-    const areArraysEqual = this.hierarchyColumnNames.length === updatedHierarchyColumnNames.length &&
-      this.hierarchyColumnNames.every((val, index) => val === updatedHierarchyColumnNames[index]);
-  
-    if (!areArraysEqual)
-      this.hierarchyColumnNames = updatedHierarchyColumnNames;
+    this.eligibleHierarchyNames = this.hierarchyColumnNames.filter(
+      (name) => this.dataFrame.getCol(name).categories.length <= CATEGORIES_NUMBER
+    );
+
+    if (!this.eligibleHierarchyNames.length) {
+      this._showMessage('The Sunburst viewer requires at least one categorical column with fewer than 500 unique categories', ERROR_CLASS);
+        return;
+    }
+
+    this._removeMessage(ERROR_CLASS);
   
     const data = await this.getSeriesData();
   
