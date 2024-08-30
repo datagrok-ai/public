@@ -1049,6 +1049,8 @@ export class DiffStudio {
       //@ts-ignore
       options = getOptions(key, ivp.arg[key], CONTROL_EXPR.ARG);
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
+
+      //@ts-ignore
       input.onChanged.subscribe(async (value) => {
         if (value !== null) {
           //@ts-ignore
@@ -1064,6 +1066,8 @@ export class DiffStudio {
     ivp.inits.forEach((val, key) => {
       options = getOptions(key, val, CONTROL_EXPR.INITS);
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
+
+      //@ts-ignore
       input.onChanged.subscribe(async (value) => {
         if (value !== null) {
         ivp.inits.get(key)!.value = value;
@@ -1079,6 +1083,8 @@ export class DiffStudio {
       ivp.params.forEach((val, key) => {
         options = getOptions(key, val, CONTROL_EXPR.PARAMS);
         const input = ui.input.forProperty(DG.Property.fromOptions(options));
+
+        //@ts-ignore
         input.onChanged.subscribe(async (value) => {
           if (value !== null) {
             ivp.params!.get(key)!.value = value;
@@ -1096,6 +1102,8 @@ export class DiffStudio {
       options.inputType = INPUT_TYPE.INT; // since it's an integer
       options.type = DG.TYPE.INT; // since it's an integer
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
+
+      //@ts-ignore
       input.onChanged.subscribe(async (value) => {
         if (value !== null) {
           ivp.loop!.count.value = value;
@@ -1186,6 +1194,8 @@ export class DiffStudio {
       units: WARNING.UNITS,
     };
     const maxTimeInput = ui.input.forProperty(DG.Property.fromOptions(opts));
+
+    //@ts-ignore
     maxTimeInput.onInput.subscribe(() => {
       if (maxTimeInput.value >= UI_TIME.SOLV_TIME_MIN_SEC)
         this.secondsLimit = maxTimeInput.value;
