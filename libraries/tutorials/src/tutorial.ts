@@ -478,8 +478,8 @@ export abstract class Tutorial extends DG.Widget {
     await this.action(instructions,
       new Observable((subscriber: any) => {
         if (inp.stringValue === value) subscriber.next(inp.stringValue);
-        inp.onChanged(() => {
-          if (inp.stringValue === value) subscriber.next(inp.stringValue);
+        inp.onChanged.subscribe((inpValue) => {
+          if (inpValue === value) subscriber.next(inpValue);
         });
       }),
       historyHint ? this.getElement(dlg.root, 'i.fa-history.d4-command-bar-icon') : inp.root,

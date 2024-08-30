@@ -75,7 +75,7 @@ export class UaToolbox {
       });
       applyB.classList.add('ua-apply-button');
       applyB.disabled = true;
-      dateInput.onChanged(() => applyB.disabled = false);
+      dateInput.onChanged.subscribe(() => applyB.disabled = false);
       $(form).append(applyB);
       this.dateFromDD.readOnly = true;
       this.dateToDD.readOnly = true;

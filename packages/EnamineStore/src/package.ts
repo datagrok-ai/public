@@ -129,14 +129,14 @@ export function enamineStoreApp(): void {
 
   update();
 
-  molecule.onChanged(() => update());
-  searchMode.onChanged(() => {
-    similarity.enabled = searchMode.value === SEARCH_MODE.SIMILAR;
+  molecule.onChanged.subscribe(() => update());
+  searchMode.onChanged.subscribe((value) => {
+    similarity.enabled = value === SEARCH_MODE.SIMILAR;
     update();
   });
-  currency.onChanged(() => update());
-  similarity.onChanged(() => update());
-  catalog.onChanged(() => update());
+  currency.onChanged.subscribe(() => update());
+  similarity.onChanged.subscribe(() => update());
+  catalog.onChanged.subscribe(() => update());
 
   const acc = view.toolboxPage.accordion;
   acc.addPane('Enamine Store', () => filtersHost, true, acc.panes[0]);

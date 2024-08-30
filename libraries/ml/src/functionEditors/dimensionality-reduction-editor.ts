@@ -333,7 +333,7 @@ export class DimReductionBaseEditor {
         if (this.preprocessingFunctionSettings[fInput.name] !== null &&
           this.preprocessingFunctionSettings[fInput.name] !== undefined)
           input.value = this.preprocessingFunctionSettings[fInput.name];
-        input.onChanged(() => { this.preprocessingFunctionSettings[fInput.name] = input.value; });
+        input.onChanged.subscribe((value) => { this.preprocessingFunctionSettings[fInput.name] = value; });
         paramsForm.append(input.root);
       }
       return paramsForm;

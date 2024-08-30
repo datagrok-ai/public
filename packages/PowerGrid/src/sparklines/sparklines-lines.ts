@@ -165,14 +165,14 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
     });
 
     const normalizeInput = DG.InputBase.forProperty(globalScaleProp, settings);
-    normalizeInput.onChanged(() => gridColumn.grid.invalidate());
+    normalizeInput.onChanged.subscribe(() => gridColumn.grid.invalidate());
 
     const colorCodeScaleProp = DG.Property.js('colorCode', DG.TYPE.BOOL, {
       description: 'Activates color rendering'
     });
 
     const colorCodeNormalizeInput = DG.InputBase.forProperty(colorCodeScaleProp, settings);
-    colorCodeNormalizeInput.onChanged(() => { gridColumn.grid.invalidate(); });
+    colorCodeNormalizeInput.onChanged.subscribe(() => { gridColumn.grid.invalidate(); });
 
     const columnNames = settings?.columnNames ?? names(gridColumn.grid.dataFrame.columns.numerical);
     return ui.inputs([

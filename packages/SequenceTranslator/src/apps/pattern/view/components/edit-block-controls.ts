@@ -79,7 +79,7 @@ export class PatternEditControlsManager {
       {value: this.eventBus.isAntisenseStrandActive()}
     );
 
-    toggleAntisenseStrand.onInput(
+    toggleAntisenseStrand.onInput.subscribe(
       () => this.eventBus.toggleAntisenseStrand(toggleAntisenseStrand.value)
     );
 
@@ -97,7 +97,7 @@ export class PatternEditControlsManager {
       const sequenceLength = this.eventBus.getNucleotideSequences()[strand].length;
 
       const input = ui.input.int(`${STRAND_LABEL[strand]} length`, {value: sequenceLength});
-      input.onInput(() => updateStrandLengthInputs(strand, input));
+      input.onInput.subscribe(() => updateStrandLengthInputs(strand, input));
 
       this.eventBus.nucleotideSequencesChanged$.subscribe(() => {
         input.value = this.eventBus.getNucleotideSequences()[strand].length;
@@ -141,7 +141,7 @@ export class PatternEditControlsManager {
 
     const sequenceBaseInput = ui.input.choice('Sequence basis', {value: defaultNucleotideBase, items: availableNucleoBases});
 
-    sequenceBaseInput.onInput(() => this.eventBus.replaceSequenceBase(sequenceBaseInput.value!));
+    sequenceBaseInput.onInput.subscribe(() => this.eventBus.replaceSequenceBase(sequenceBaseInput.value!));
 
     this.eventBus.nucleotideSequencesChanged$.subscribe(() => {
       sequenceBaseInput.value = this.eventBus.getSequenceBase();
@@ -156,7 +156,7 @@ export class PatternEditControlsManager {
 
     $(patternCommentInput.root).addClass('st-pattern-text-input');
 
-    patternCommentInput.onInput(
+    patternCommentInput.onInput.subscribe(
       () => this.eventBus.updateComment(patternCommentInput.value!)
     );
 
@@ -172,7 +172,7 @@ export class PatternEditControlsManager {
 
     $(patternNameInput.root).addClass('st-pattern-text-input');
 
-    patternNameInput.onInput(
+    patternNameInput.onInput.subscribe(
       () => this.eventBus.updatePatternName(patternNameInput.value)
     );
     this.eventBus.patternLoaded$.subscribe(() => {

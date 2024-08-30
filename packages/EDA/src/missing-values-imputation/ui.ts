@@ -205,9 +205,9 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
     });
     const weightInput = ui.input.forProperty(prop);
     weightInput.value = settings.defaultWeight;
-    weightInput.onChanged(() => {
+    weightInput.onChanged.subscribe((value) => {
       const distInfo = featuresMetrics.get(name) ?? {weight: settings.defaultWeight, type: settings.defaultMetric};
-      distInfo.weight = weightInput.value ?? settings.defaultWeight;
+      distInfo.weight = value ?? settings.defaultWeight;
       featuresMetrics.set(name, distInfo);
     });
     weightInput.setTooltip(HINT.WEIGHT);

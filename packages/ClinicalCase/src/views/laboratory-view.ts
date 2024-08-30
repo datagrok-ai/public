@@ -164,24 +164,24 @@ export class LaboratoryView extends ClinicalCaseViewBase {
     const acclab = this.createAccWithTitle(this.name);
 
     const altChoices = ui.input.choice('ALT', {value: this.selectedALT, items: this.uniqueLabValues});
-    altChoices.onChanged((v) => {
-      this.selectedALT = altChoices.value;
+    altChoices.onChanged.subscribe((value) => {
+      this.selectedALT = value;
       this.updateHysLawScatterPlot();
     });
     //@ts-ignore
     altChoices.input.style.width = '150px';
 
     const astChoices = ui.input.choice('AST', {value: this.selectedAST, items: this.uniqueLabValues});
-    astChoices.onChanged((v) => {
-      this.selectedAST = astChoices.value;
+    astChoices.onChanged.subscribe((value) => {
+      this.selectedAST = value;
       this.updateHysLawScatterPlot();
     });
     //@ts-ignore
     astChoices.input.style.width = '150px';
 
     const blnChoices = ui.input.choice('BLN', {value: this.selectedBLN, items: this.uniqueLabValues});
-    blnChoices.onChanged((v) => {
-      this.selectedBLN = blnChoices.value;
+    blnChoices.onChanged.subscribe((value) => {
+      this.selectedBLN = value;
       this.updateHysLawScatterPlot();
     });
     //@ts-ignore
@@ -191,16 +191,16 @@ export class LaboratoryView extends ClinicalCaseViewBase {
     const labValueChoices = ui.input.choice('Value', {value: this.selectedLabBlEp, items: this.uniqueLabValues});
     const blVisitChoices = ui.input.choice('BL', {value: this.selectedBl, items: this.uniqueVisits});
     const epVisitChoices = ui.input.choice('EP', {value: this.selectedEp, items: this.uniqueVisits});
-    labValueChoices.onChanged((v) => {
-      this.selectedLabBlEp = labValueChoices.value;
+    labValueChoices.onChanged.subscribe((value) => {
+      this.selectedLabBlEp = value;
       this.updateBaselineEndpointPlot();
     });
-    blVisitChoices.onChanged((v) => {
-      this.selectedBl = blVisitChoices.value;
+    blVisitChoices.onChanged.subscribe((value) => {
+      this.selectedBl = value;
       this.updateBaselineEndpointPlot();
     });
-    epVisitChoices.onChanged((v) => {
-      this.selectedEp = epVisitChoices.value;
+    epVisitChoices.onChanged.subscribe((value) => {
+      this.selectedEp = value;
       this.updateBaselineEndpointPlot();
     });
     //@ts-ignore
@@ -210,12 +210,12 @@ export class LaboratoryView extends ClinicalCaseViewBase {
 
     const distrChoices = ui.input.choice('Value', {value: this.selectedLabDistr, items: this.uniqueLabValues});
     const treatmentArmsChoices = ui.input.choice('Treatment arm', {value: this.selectedArm, items: this.uniqueTreatmentArms});
-    distrChoices.onChanged((v) => {
-      this.selectedLabDistr = distrChoices.value;
+    distrChoices.onChanged.subscribe((value) => {
+      this.selectedLabDistr = value;
       this.updateDistributionPlot();
     });
-    treatmentArmsChoices.onChanged((v) => {
-      this.selectedArm = treatmentArmsChoices.value;
+    treatmentArmsChoices.onChanged.subscribe((value) => {
+      this.selectedArm = value;
       this.updateDistributionPlot();
     });
     //@ts-ignore

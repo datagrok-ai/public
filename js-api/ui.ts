@@ -671,12 +671,12 @@ export function makeDroppable<T>(e: Element,
   );
 }
 
-export function bindInputs(inputs: InputBase[]): StreamSubscription[] {
-  let s: StreamSubscription[] = [];
+export function bindInputs(inputs: InputBase[]): rxjs.Subscription[] {
+  let s: rxjs.Subscription[] = [];
   inputs.map((i) => {
     inputs.map((j) => {
       if (j != i)
-        s.push(j.onChanged(() => {
+        s.push(j.onChanged.subscribe(() => {
           i.notify = false;
           i.stringValue = j.stringValue;
           i.notify = true;
@@ -715,7 +715,7 @@ export namespace input {
     property: (input, x) => input.property = x,
     tooltipText: (input, x) => input.setTooltip(x),
     onCreated: (input, x) => x(input),
-    onValueChanged: (input, x) => input.onChanged(() => x(input.value)),
+    onValueChanged: (input, x) => input.onChanged.subscribe(() => x(input.value)),
     clearIcon: (input, x) => api.grok_StringInput_AddClearIcon(input.dart, x),
     escClears: (input, x) => api.grok_StringInput_AddEscClears(input.dart, x),
     size: (input, x) => api.grok_TextInput_SetSize(input.dart, x.width, x.height),
@@ -811,7 +811,7 @@ export namespace input {
     if (options?.onCreated)
       options.onCreated(input);
     if (options?.onValueChanged)
-      input.onChanged(() => options.onValueChanged!(input));
+      input.onChanged.subscribe(() => options.onValueChanged!(input));
     return input;
   }
 

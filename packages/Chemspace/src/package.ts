@@ -74,8 +74,8 @@ export async function app(): Promise<void> {
 
   update();
 
-  molecule.onChanged(() => update());
-  mode.onChanged(() => {
+  molecule.onChanged.subscribe(() => update());
+  mode.onChanged.subscribe(() => {
     update();
   });
 

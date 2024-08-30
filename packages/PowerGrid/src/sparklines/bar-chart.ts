@@ -111,14 +111,14 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
     });
 
     const normalizeInput = DG.InputBase.forProperty(globalScaleProp, settings);
-    normalizeInput.onChanged(() => gc.grid.invalidate());
+    normalizeInput.onChanged.subscribe(() => gc.grid.invalidate());
 
     const colorCodeScaleProp = DG.Property.js('colorCode', DG.TYPE.BOOL, {
       description: 'Activates color rendering'
     });
 
     const colorCodeNormalizeInput = DG.InputBase.forProperty(colorCodeScaleProp, settings);
-    colorCodeNormalizeInput.onChanged(() => { gc.grid.invalidate(); });
+    colorCodeNormalizeInput.onChanged.subscribe(() => { gc.grid.invalidate(); });
 
     const columnNames = settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical);
     return ui.inputs([

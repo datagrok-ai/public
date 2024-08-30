@@ -185,13 +185,13 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
   setupFilters(mmpFilters: MmpFilters, linesActivityCorrespondance: Uint32Array, tp: DG.Viewer): void {
-    for (let i = 0; i < mmpFilters.activitySliderInputs.length; i ++) {
-      mmpFilters.activityActiveInputs[i].onChanged(() => {
+    for (let i = 0; i < mmpFilters.activitySliderInputs.length; i++) {
+      mmpFilters.activityActiveInputs[i].onChanged.subscribe(() => {
         this.refilterCliffs(mmpFilters.activitySliderInputs.map((si) => si.value),
           mmpFilters.activityActiveInputs.map((ai) => ai.value), true);
       });
 
-      mmpFilters.activitySliderInputs[i].onChanged(() => {
+      mmpFilters.activitySliderInputs[i].onChanged.subscribe(() => {
         mmpFilters.activityValuesDivs[i].innerText = mmpFilters.activitySliderInputs[i].value === 0 ? '0' :
           getSigFigs(mmpFilters.activitySliderInputs[i].value, 4).toString();
         this.refilterCliffs(mmpFilters.activitySliderInputs.map((si) => si.value),
@@ -199,7 +199,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       });
 
       mmpFilters.activityColorInputs[i].value = this.colorPalette!.hex[i];
-      mmpFilters.activityColorInputs[i].onChanged(() => {
+      mmpFilters.activityColorInputs[i].onChanged.subscribe(() => {
         const progressRendering = DG.TaskBarProgressIndicator.create(`Changing colors...`);
 
         //refresh lines
@@ -240,9 +240,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.cutoffMasks![i].setAll(true);
     }
 
-    mmpFilters.pairsSliderInput.onChanged(() => {
-      mmpFilters.pairsValueDiv.innerText = mmpFilters.pairsSliderInput.value.toString();
-      const value = mmpFilters.pairsSliderInput.value;
+    mmpFilters.pairsSliderInput.onChanged.subscribe((value) => {
+      mmpFilters.pairsValueDiv.innerText = value.toString();
 
       this.fragmentsMask!.setAll(false);
 

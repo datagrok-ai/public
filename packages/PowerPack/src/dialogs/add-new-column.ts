@@ -241,7 +241,7 @@ export class AddNewColumnDialog {
   /** Creates and initializes the "Column Name" input field. */
   initInputName(): DG.InputBase {
     const control = ui.input.string('', {value: ''});
-    control.onInput(async () => await this.updatePreview(this.codeMirror!.state.doc.toString()));
+    control.onInput.subscribe(async () => await this.updatePreview(this.codeMirror!.state.doc.toString()));
     control.setTooltip(this.tooltips['name']);
 
     const input = control.input as HTMLInputElement;
@@ -261,7 +261,7 @@ export class AddNewColumnDialog {
 
     const control = ui.input.choice('', {value: this.call ?
       this.call.getParamValue('type') : defaultChoice, items: this.supportedTypes});
-    control.onInput(async () => await this.updatePreview(this.codeMirror!.state.doc.toString()));
+    control.onInput.subscribe(async () => await this.updatePreview(this.codeMirror!.state.doc.toString()));
     control.setTooltip(this.tooltips['type']);
 
     const input = control.input as HTMLInputElement;

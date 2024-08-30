@@ -1088,8 +1088,8 @@ export interface IDartApi {
   grok_InputBase_Set_ReadOnly(input: any, v: Bool): any;
   grok_InputBase_Get_Enabled(input: any): any;
   grok_InputBase_Set_Enabled(input: any, v: Bool): any;
-  grok_InputBase_OnChanged(input: any, handler: any): any;
-  grok_InputBase_OnInput(input: any, handler: any): any;
+  grok_InputBase_OnChanged(input: any): any;
+  grok_InputBase_OnInput(input: any): any;
   grok_InputBase_Save(input: any): any;
   grok_InputBase_Load(input: any, v: String): any;
   grok_InputBase_Init(input: any): any;

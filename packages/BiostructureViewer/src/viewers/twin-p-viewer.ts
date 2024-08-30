@@ -122,7 +122,7 @@ export class TwinPviewer {
       this.ngl.render(false, this.ligandSelection);
     });
 
-    this.repChoice.onChanged(async () => {
+    this.repChoice.onChanged.subscribe(async () => {
       this.ngl.repChoice = this.repChoice;
       reload(true);
     });

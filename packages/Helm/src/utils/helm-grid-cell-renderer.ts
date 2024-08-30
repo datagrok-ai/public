@@ -146,9 +146,8 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
     if (!this.monomerLib) {
       this.monomerLib = _package.monomerLib;
-      if (this.monomerLib) {
+      if (this.monomerLib)
         this.subs.push(this.monomerLib.onChanged.subscribe(this.monomerLibOnChanged.bind(this)));
-      }
     }
     super.render(g, x, y, w, h, gridCell, cellStyle);
   }

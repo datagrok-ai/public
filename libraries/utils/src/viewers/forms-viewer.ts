@@ -115,10 +115,10 @@ export class FormsViewer extends DG.JsViewer {
     this.splitColRight.style.width = `${rootWidth - w - 30 - 4}px`;
   }
 
-  getColumnWidth(el:HTMLElement){
+  getColumnWidth(el:HTMLElement) {
     return parseInt(el.style.width);
   }
-  
+
   onTableAttached() {
     if (this.fieldsColumnNames === null)
       this.setfieldsColumnNames(this.dataFrame.columns.names());

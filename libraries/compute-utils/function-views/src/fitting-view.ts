@@ -195,7 +195,7 @@ export class FittingView {
           input: (() => {
             const temp = ui.input.forProperty(inputProp);
             temp.caption = inputProp.caption ?? inputProp.name;
-            temp.onInput(() => {
+            temp.onInput.subscribe(() => {
               tempDefault.value = temp.value;
               this.updateApplicabilityState();
             });
@@ -238,8 +238,8 @@ export class FittingView {
             input.nullable = false;
             ui.tooltip.bind(input.captionLabel, (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Output dataframe' : 'Output scalar');
 
-            input.onChanged(() => {
-              temp.target = input.value;
+            input.onChanged.subscribe((value) => {
+              temp.target = value;
 
               if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
                 if (temp.target) {
@@ -478,14 +478,14 @@ export class FittingView {
     this.showFailsBtn.style.padding = '0px';
 
     this.samplesCountInput.addCaption(TITLE.SAMPLES);
-    this.samplesCountInput.onChanged(() => {
-      this.samplesCount = this.samplesCountInput.value;
+    this.samplesCountInput.onChanged.subscribe((value) => {
+      this.samplesCount = value;
       this.updateApplicabilityState();
     });
     this.samplesCountInput.setTooltip('Number of points to be found');
 
-    this.similarityInput.onChanged(() => {
-      this.similarity = this.similarityInput.value;
+    this.similarityInput.onChanged.subscribe((value) => {
+      this.similarity = value;
       this.updateApplicabilityState();
     });
     this.similarityInput.addCaption(TITLE.SIMILARITY);
@@ -523,8 +523,8 @@ export class FittingView {
       inp.addCaption(nelderMeadCaptions.get(key)!);
       inp.nullable = false;
 
-      inp.onChanged(() => {
-        this.nelderMeadSettings.set(key, inp.value);
+      inp.onChanged.subscribe((value) => {
+        this.nelderMeadSettings.set(key, value);
         this.updateApplicabilityState();
       });
 
@@ -555,7 +555,7 @@ export class FittingView {
       min: 1,
       max: 10000,
     }));
-    iterInp.onChanged(() => this.gradDescentSettings.iterCount = iterInp.value);
+    iterInp.onChanged.subscribe((value) => this.gradDescentSettings.iterCount = value);
 
     const learningRateInp = ui.input.forProperty(DG.Property.fromOptions({
       name: 'Learning rate',
@@ -564,7 +564,7 @@ export class FittingView {
       min: 1e-6,
       max: 1000,
     }));
-    learningRateInp.onChanged(() => this.gradDescentSettings.learningRate = learningRateInp.value);
+    learningRateInp.onChanged.subscribe((value) => this.gradDescentSettings.learningRate = value);
 
     this.settingsInputs.set(METHOD.GRAD_DESC, [iterInp, learningRateInp]);
   } // generateGradDescentSettingsInputs

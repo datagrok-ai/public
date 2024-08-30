@@ -188,10 +188,10 @@ export class TestTrack extends DG.ViewBase {
     let searchInvoked = false
 
     //searchInput
-    this.searchInput.onChanged(() => {
+    this.searchInput.onChanged.subscribe((value) => {
       // this._searchItem();
-      if (this.searchInput.value.length > 0) {
-        this.searchTreeItems(this.searchInput.value);
+      if (value.length > 0) {
+        this.searchTreeItems(value);
         searchInvoked = true;
       }
       else if (searchInvoked) {
@@ -731,13 +731,8 @@ export class TestTrack extends DG.ViewBase {
         createTicketBtn.disabled = false;
       });
     })
-    ticketSummary.onChanged(() => {
-      if (ticketSummary.value.length === 0) {
-        createTicketBtn.disabled = true;
-      }
-      else {
-        createTicketBtn.disabled = false;
-      }
+    ticketSummary.onChanged.subscribe((value) => {
+      createTicketBtn.disabled = value.length === 0;
     })
 
     createTicketBtn.classList.add('create-ticket-button');
@@ -745,9 +740,9 @@ export class TestTrack extends DG.ViewBase {
 
 
     if (errorSeverityLevels.includes(status)) {
-      errorTypeSelector.onChanged((e: any) => {
-        if (errorTypeSelector.value !== null)
-          status = errorTypeSelector.value;
+      errorTypeSelector.onChanged.subscribe((value) => {
+        if (value !== null)
+          status = value;
       });
       dialog.add(errorTypeSelector);
     }
@@ -906,9 +901,9 @@ export class TestTrack extends DG.ViewBase {
     const versionSelector = ui.input.choice('Available tests:', { value: testingToOpen[0], items: testingToOpen.map((e) => e.toString()), nullable: false });
     if (testingToOpen.length === 0)
       versionSelector.nullable = true;
-    check.onChanged(() => {
-      versionSelector.enabled = !check.value;
-      newNameInput.enabled = check.value;
+    check.onChanged.subscribe((value) => {
+      versionSelector.enabled = !value;
+      newNameInput.enabled = value;
     });
     newNameInput.enabled = false;
     dialog.add(check);

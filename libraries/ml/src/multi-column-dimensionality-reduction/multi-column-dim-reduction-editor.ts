@@ -543,7 +543,7 @@ class DimReductionColumnEditor {
         if (this.preprocessingFunctionSettings[fInput.name] !== null &&
             this.preprocessingFunctionSettings[fInput.name] !== undefined)
           input.value = this.preprocessingFunctionSettings[fInput.name];
-        input.onChanged(() => { this.preprocessingFunctionSettings[fInput.name] = input.value; });
+        input.onChanged.subscribe((value) => { this.preprocessingFunctionSettings[fInput.name] = value; });
         paramsForm.append(input.root);
       }
       paramsForm.style.marginBottom = '10px';
@@ -626,7 +626,7 @@ class PostProcessingFuncEditor {
         const input = inputs.find((inp) => inp.property.name === fInput.name);
         if (!input)
           continue;
-        input.onChanged(() => { this._postProcessingArgs[fInput.name] = input.value; });
+        input.onChanged.subscribe((value) => { this._postProcessingArgs[fInput.name] = value; });
         this._argsElement.append(input.root);
       }
     } catch (e) {

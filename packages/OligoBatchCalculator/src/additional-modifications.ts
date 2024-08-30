@@ -31,7 +31,7 @@ export async function addModification(modificationsDf: DG.DataFrame): Promise<vo
   ui.tooltip.bind(baseModification.root, TOOLTIPS.BASE_MODIFICATION);
 
   const extCoefficient = ui.input.string(ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT, {value: ''});
-  extCoefficient.onInput(() => {
+  extCoefficient.onInput.subscribe(() => {
     if (isNaN(Number(extCoefficient.value)))
       grok.shell.warning(MESSAGES.isNumericTypeValidation(ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT));
   });
