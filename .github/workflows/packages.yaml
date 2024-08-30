@@ -450,6 +450,19 @@ jobs:
             fi
           done
         working-directory: packages/${{ matrix.package }}
+
+      - name: Set required credentials
+        if: ${{ matrix.test == 'test' }}
+        env:
+          CHEMSPACE_APIKEY: ${{ secrets.CHEMSPACE_APIKEY }}
+        run: |
+          if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
+            if [[ "${{ matrix.package }}" == "Chemspace" ]]; then
+              token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/admin | jq -r .token)
+              curl -s -H 'Authorization: $token' -H "Content-Type": "application/json" '${{ steps.datagrok-image.outputs.apiUrl }}/credentials/for/Chemspace:Chemspace' -X POST -d "{'apiKey': '$CHEMSPACE_APIKEY'}"
+            fi
+          fi
+
       - name: Wait for published docker to become available
         id: docker-wait
         if: matrix.docker != '' && steps.datagrok-image.outcome == 'success'
