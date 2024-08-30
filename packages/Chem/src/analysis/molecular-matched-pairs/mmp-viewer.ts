@@ -95,7 +95,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.activities = this.stringList('activities');
     this.fragmentCutoff = this.float('fragmentCutoff');
 
-    this.totalData = this.string('totalData', 'null', {userEditable: false});
+    this.totalData = this.string('totalData', 'null', {userEditable: false, includeInLayout: false});
   }
 
   onTableAttached() {
@@ -193,13 +193,13 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
   setupFilters(mmpFilters: MmpFilters, linesActivityCorrespondance: Uint32Array, tp: DG.Viewer): void {
-    for (let i = 0; i < mmpFilters.activitySliderInputs.length; i ++) {
-      mmpFilters.activityActiveInputs[i].onChanged(() => {
+    for (let i = 0; i < mmpFilters.activitySliderInputs.length; i++) {
+      mmpFilters.activityActiveInputs[i].onChanged.subscribe(() => {
         this.refilterCliffs(mmpFilters.activitySliderInputs.map((si) => si.value),
           mmpFilters.activityActiveInputs.map((ai) => ai.value), true);
       });
 
-      mmpFilters.activitySliderInputs[i].onChanged(() => {
+      mmpFilters.activitySliderInputs[i].onChanged.subscribe(() => {
         mmpFilters.activityValuesDivs[i].innerText = mmpFilters.activitySliderInputs[i].value === 0 ? '0' :
           getSigFigs(mmpFilters.activitySliderInputs[i].value, 4).toString();
         this.refilterCliffs(mmpFilters.activitySliderInputs.map((si) => si.value),
@@ -207,7 +207,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       });
 
       mmpFilters.activityColorInputs[i].value = this.colorPalette!.hex[i];
-      mmpFilters.activityColorInputs[i].onChanged(() => {
+      mmpFilters.activityColorInputs[i].onChanged.subscribe(() => {
         const progressRendering = DG.TaskBarProgressIndicator.create(`Changing colors...`);
 
         //refresh lines
@@ -248,9 +248,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.cutoffMasks![i].setAll(true);
     }
 
-    mmpFilters.pairsSliderInput.onChanged(() => {
-      mmpFilters.pairsValueDiv.innerText = mmpFilters.pairsSliderInput.value.toString();
-      const value = mmpFilters.pairsSliderInput.value;
+    mmpFilters.pairsSliderInput.onChanged.subscribe((value) => {
+      mmpFilters.pairsValueDiv.innerText = value.toString();
 
       this.fragmentsMask!.setAll(false);
 
@@ -312,12 +311,14 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         createGridDiv('Pairs', this.transPairsGrid!),
       ], {}, true);
     });
-    tabs.addPane(MMP_NAMES.TAB_FRAGMENTS, () => {
+    const fragmentsPane = tabs.addPane(MMP_NAMES.TAB_FRAGMENTS, () => {
       return tp.root;
     });
-    tabs.addPane(MMP_NAMES.TAB_CLIFFS, () => {
+    fragmentsPane.content.classList.add('mmpa-fragments-tab');
+    const cliffsTab = tabs.addPane(MMP_NAMES.TAB_CLIFFS, () => {
       return cliffs;
     });
+    cliffsTab.content.classList.add('mmpa-cliffs-tab');
     const genTab = tabs.addPane(MMP_NAMES.TAB_GENERATION, () => {
       return this.generationsGrid!.root;
     });
@@ -592,7 +593,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const diffTo = this.transPairsGrid!.dataFrame.getCol(MMP_NAMES.TO);
 
     const [idxPairs, cases] = this.findSpecificRule(diffFromSubstrCol);
-    await this.recoverHighlights(cases, diffFrom, diffTo, diffFromSubstrCol, diffToSubstrCol, rdkitModule);
+    this.recoverHighlights(cases, diffFrom, diffTo, diffFromSubstrCol, diffToSubstrCol, rdkitModule);
 
     this.transPairsGrid!.dataFrame.filter.copyFrom(this.transPairsMask!);
 
@@ -604,6 +605,11 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.transPairsGrid!.setOptions({
         pinnedRowValues: [idxPairs.toString()],
         pinnedRowColumnNames: [MMP_NAMES.PAIRNUM],
+      });
+    } else {
+      this.transPairsGrid!.setOptions({
+        pinnedRowValues: [],
+        pinnedRowColumnNames: [],
       });
     }
 

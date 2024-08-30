@@ -116,14 +116,14 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
       acc.addPane(name, () => {
         //@ts-ignore
         const armChoices = ui.input.multiChoice('', {value: this[arm], items: this.treatmentArmOptions});
-        armChoices.onChanged((v) => {
-          if (this[armToCheck].filter(it => armChoices.value.includes(it)).length) {
+        armChoices.onChanged.subscribe((value) => {
+          if (this[armToCheck].filter(it => value.includes(it)).length) {
             grok.shell.error(`Some products are selected for both treatment arms. One product can be selected only for one treatment arm.`);
             this.incorrectTreatmentArms = true;
           } else {
             this.incorrectTreatmentArms = false;;
           }
-          this[arm] = armChoices.value;
+          this[arm] = value;
           this.createVolcanoPlotDiv();
         });
         return armChoices.root;
@@ -139,8 +139,8 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
 
     acc.addPane('Parameters', () => {
       const pValue = ui.input.string('Significance level', {value: this.pValueLimit.toString()});
-      pValue.onChanged((v) => {
-        this.pValueLimit = parseFloat(pValue.value);
+      pValue.onChanged.subscribe((value) => {
+        this.pValueLimit = parseFloat(value);
         if (!isNaN(this.pValueLimit)) {
           this.updateRiskAssessmentDataframe();
           this.updateVolcanoPlot();
@@ -148,9 +148,9 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
       });
       const sizeChoices = ui.input.choice('Marker size', {value: Object.keys(this.sizeOptions)[0],
         items: Object.keys(this.sizeOptions)});
-      sizeChoices.onChanged((v) => {
-        this.volcanoPlotMarkerSize = this.sizeOptions[sizeChoices.value];
-        this.volcanoPlot.setOptions({ size: this.volcanoPlotMarkerSize });
+      sizeChoices.onChanged.subscribe((value) => {
+        this.volcanoPlotMarkerSize = this.sizeOptions[value];
+        this.volcanoPlot.setOptions({size: this.volcanoPlotMarkerSize});
       });
       return ui.inputs([
         sizeChoices,

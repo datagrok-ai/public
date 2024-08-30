@@ -28,7 +28,7 @@ export async function hierarchicalClusteringDialog(): Promise<void> {
 
   const onTableInputChanged = (table: DG.DataFrame) => {
     const newColInput = ui.input.columns('Features', {table: table,
-      onValueChanged: (input) => onColNamesChange(input.value), available: availableColNames(table)});
+      onValueChanged: (value) => onColNamesChange(value), available: availableColNames(table)});
     ui.empty(columnsInputDiv);
     columnsInputDiv.appendChild(newColInput.root);
     currentTableView = table;
@@ -36,9 +36,9 @@ export async function hierarchicalClusteringDialog(): Promise<void> {
   };
 
   const tableInput = ui.input.table('Table', {value: currentTableView!, items: grok.shell.tables,
-    onValueChanged: (input) => onTableInputChanged(input.value)});
+    onValueChanged: (value) => onTableInputChanged(value)});
   const columnsInput = ui.input.columns('Features', {table: currentTableView!,
-    onValueChanged: (input) => onColNamesChange(input.value), available: availableColNames(currentTableView!)});
+    onValueChanged: (value) => onColNamesChange(value), available: availableColNames(currentTableView!)});
   const columnsInputDiv = ui.div([columnsInput]);
 
   const distanceInput = ui.input.choice('Distance', {value: DistanceMetric.Euclidean, items: Object.values(DistanceMetric)});

@@ -1,5 +1,29 @@
 # Chem changelog
 
+## 1.11.5 (2024-08-27)
+
+### Bug fixes
+
+* Add tableView to runChemSpace for reduce dimensionality ui options
+* [#3004](https://github.com/datagrok-ai/public/issues/3004): Chem: Scaffold tree is based on wrong table by default in some cases
+* GROK-15938: Chem | Scaffold Tree: Array length differ
+* Chem: MMPA: Fix demo
+
+## 1.11.4 (2024-08-23)
+
+### Features
+
+* Chem: MMPA: filter fragmnets by significance
+* Chem: MMPA: project and layout saving
+* Chem: MMPA: demo loaded not calculated
+* Chem: Removed r-groups settings download from init
+
+### Bug Fixes
+
+* Chem: MMPA: Fixed property panel on cliff line click
+* [#2983](https://github.com/datagrok-ai/public/issues/2983): Chem: fix tooltip styles for structure columns
+* GROK-16493: MMPA: Fixed Summary viewer doesn't show the values
+
 ## 1.11.3 (2024-08-12)
 
 ### Features

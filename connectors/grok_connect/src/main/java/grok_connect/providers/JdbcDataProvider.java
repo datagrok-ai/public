@@ -1,13 +1,6 @@
 package grok_connect.providers;
 
-import java.sql.Array;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -36,6 +29,7 @@ import org.apache.commons.lang.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import serialization.DataFrame;
+import serialization.StringColumn;
 import serialization.Types;
 
 public abstract class JdbcDataProvider extends DataProvider {
@@ -99,6 +93,22 @@ public abstract class JdbcDataProvider extends DataProvider {
         queryRun.func.connection = connection;
 
         return execute(queryRun);
+    }
+
+    public DataFrame getForeignKeys(DataConnection conn, String schema) throws GrokConnectException, QueryCancelledByUser {
+        try (Connection connection = getConnection(conn);
+             ResultSet rs = connection.getMetaData().getExportedKeys(null, schema, null)) {
+            DataFrame result = DataFrame.fromColumns(new StringColumn("table_schema"),
+                    new StringColumn("constraint_name"), new StringColumn("table_name"),
+                    new StringColumn("column_name"), new StringColumn("foreign_table_name"), new StringColumn("foreign_column_name"));
+            while(rs.next())
+                result.addRow(rs.getString("FKTABLE_SCHEM"), rs.getString("FK_NAME"), rs.getString("FKTABLE_NAME"),
+                        rs.getString("FKCOLUMN_NAME"), rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME"));
+            return result;
+
+        } catch (SQLException e) {
+            throw new GrokConnectException(e);
+        }
     }
 
     public String getSchemasSql(String db) {

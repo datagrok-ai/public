@@ -211,7 +211,7 @@ category('Widgets: InputForm API', () => {
   });
 
   test('source funccall replacement', async () => {
-    newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
+    newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest2')).prepare();
     form.source = newFuncCall;
     updateInputs();
 

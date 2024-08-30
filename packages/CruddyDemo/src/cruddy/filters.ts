@@ -61,7 +61,7 @@ order by count(${filter.column}) desc`;
       //.read({}, { distinct: true, columnNames: [filter.column]})
       .then((df) => {
         this.choices = ui.input.multiChoice('values', {value: [], items: df.columns.byIndex(0).toList()});
-        this.choices.onChanged(() => this.onChanged.next(this));
+        this.choices.onChanged.subscribe(() => this.onChanged.next(this));
         this.root.appendChild(ui.h2(filter.column));
         this.root.appendChild(this.choices.input);
 
@@ -77,6 +77,7 @@ order by count(${filter.column}) desc`;
   }
 
   getCondition(): TFilter {
+    if (!this.choices) return {};
     const choices = (this.choices!.value as Array<any>);
     if (choices.length == 0) return {};
 
@@ -96,7 +97,7 @@ export class CruddyFilterCombo extends CruddyFilter {
       .then((df) => {
         const items = df.columns.byIndex(0).toList();
         this.choices = ui.input.choice('values', {value: null, items: items, nullable: true});
-        this.choices.onChanged(() => this.onChanged.next(this));
+        this.choices.onChanged.subscribe(() => this.onChanged.next(this));
         this.root.appendChild(ui.h2(filter.column));
         this.root.appendChild(this.choices.input);
       });
@@ -124,12 +125,12 @@ export class CruddyFilterExpression extends CruddyFilter {
       this.operation.items = Exp.typeOperators[this.entityType.getColumn(this.colInput.value!).type];
     };
 
-    this.colInput.onChanged(() => {
+    this.colInput.onChanged.subscribe(() => {
       refresh();
       this.onChanged.next(this);
     });
-    this.operation.onChanged(() => this.onChanged.next(this));
-    this.input.onChanged(() => this.onChanged.next(this));
+    this.operation.onChanged.subscribe(() => this.onChanged.next(this));
+    this.input.onChanged.subscribe(() => this.onChanged.next(this));
 
     refresh();
   }

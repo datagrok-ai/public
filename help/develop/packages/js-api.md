@@ -205,7 +205,7 @@ Log" tab, and perform the action that you want to intercept. In the panel, you w
 on them to inspect event parameters. To simplify the development process, we also generate JavaScript code for handling
 this particular event, copy-paste it from the context panel into your code if needed.
 
-![inspector-events](../tools/inspector-events.png)
+![inspector-events](../dev-process/tools/inspector-events.png)
 
 ## User-defined types
 

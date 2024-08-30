@@ -7,3 +7,8 @@
 7. Rename folder to "Folder cache test1"
 8. Delete "Folder cache test1" folder. Make sure the folder is deleted.
 9. Check cache mappings, the mapping for created folder should be deleted also (Context menu, Cache...)
+
+---
+{
+  "order": 4
+}

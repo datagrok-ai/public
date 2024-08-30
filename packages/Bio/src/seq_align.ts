@@ -449,7 +449,7 @@ export class SequenceAlignment {
   }
 
 
-  public needlemanWunch():Aligned {
+  public needlemanWunsch():Aligned {
     this.dpGrid=[];
     for (let i:number = 0; i<this.len1+1; i++) {
       const row : Cell[] =[];

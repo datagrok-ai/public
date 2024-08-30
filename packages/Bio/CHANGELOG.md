@@ -1,5 +1,32 @@
 # Bio changelog
 
+## 2.14.4 (WIP)
+
+### Bug fixes
+
+* Fix tests benchmark
+* Fix typo Needleman-Wunsch
+
+## 2.14.3 (2024-08-27)
+
+### Bug fixes
+
+* Order Top menu
+* Fix to Atomic Level hide highlight column
+* Fix to Atomic Level for column
+* Bump dependencies version, fix tests
+
+## 2.14.2 (2024-08-23)
+
+### Features
+
+* Add highlighting monomer at atomic level
+
+### Bug fixes
+
+* Add tests for toAtomicLevel UI
+* Fix demo Helm, MSA, Sequence Space viewer adding
+
 ## 2.14.1 (2024-08-14)
 
 Fix monomer substitution matrix calculation

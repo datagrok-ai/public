@@ -317,8 +317,8 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
 
   // responce (to predict)
   let predict = numCols[numCols.length - 1];
-  const predictInput = ui.input.column(TITLE.PREDICT, {table: table, value: predict, onValueChanged: () => {
-    predict = predictInput.value!;
+  const predictInput = ui.input.column(TITLE.PREDICT, {table: table, value: predict, onValueChanged: (value) => {
+    predict = value;
     updateIputs();
   }, filter: (col: DG.Column) => isValidNumeric(col)},
   );
@@ -327,7 +327,7 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
   // predictors (features)
   let features: DG.Column[];
   const featuresInput = ui.input.columns(TITLE.USING, {table: table, available: numColNames});
-  featuresInput.onInput(() => updateIputs());
+  featuresInput.onInput.subscribe(() => updateIputs());
   featuresInput.setTooltip(HINT.FEATURES);
 
   // components count
@@ -340,7 +340,7 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
     showPlusMinus: true,
     min: COMPONENTS.MIN,
   }));
-  componentsInput.onInput(() => updateIputs());
+  componentsInput.onInput.subscribe(() => updateIputs());
   componentsInput.setTooltip(HINT.COMPONENTS);
 
   let dlgTitle: string;

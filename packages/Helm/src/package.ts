@@ -4,7 +4,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
-import {Unsubscribable} from 'rxjs';
 
 import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
@@ -28,7 +27,7 @@ import {getRS} from './utils/get-monomer-dummy';
 // Do not import anything than types from @datagrok/helm-web-editor/src/types
 import type {JSDraw2Module, OrgHelmModule, ScilModule} from './types';
 
-export const _package = new HelmPackage({debug: true});
+export const _package = new HelmPackage(/*{debug: true}/**/);
 
 /*
   Loading modules:
@@ -154,23 +153,11 @@ function openWebEditor(cell: DG.Cell, value?: string, units?: string) {
 //name: getMolfiles
 //input: column col {semType: Macromolecule}
 //output: column res
-export function getMolfiles(col: DG.Column): DG.Column {
-  const res = DG.Column.string('mols', col.length);
-
-  const host = ui.div([], {style: {width: '0', height: '0'}});
-  document.documentElement.appendChild(host);
-  try {
-    const editor = new JSDraw2.Editor(host, {viewonly: true});
-    res.init((i) => {
-      editor.setHelm(col.get(i));
-      const mol = editor.getMolfile();
-      return mol;
-    });
-    return res;
-  } finally {
-    $(host).empty();
-    host.remove();
-  }
+export function getMolfiles(col: DG.Column<string>): DG.Column<string> {
+  const helmStrList = col.toList();
+  const molfileList = _package.helmHelper.getMolfiles(helmStrList);
+  const molfileCol = DG.Column.fromStrings('mols', molfileList);
+  return molfileCol;
 }
 
 // -- Inputs --

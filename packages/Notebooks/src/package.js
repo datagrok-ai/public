@@ -165,9 +165,9 @@ class NotebookView extends DG.ViewBase {
     this.envs.push(...(await grok.dapi.environments.list()));
     let selected = this.envs.filter(e => e.name === this.notebook.name);
     selected = (selected.length === 0) ? this.envs[0].name : selected[0].name;
-    let environmentInput = ui.choiceInput('Environment:', selected, this.envs.map(e => e.name));
-    environmentInput.onChanged(async () => {
-      let environment = this.envs.filter(e => e.name === environmentInput.stringValue)[0];
+    let environmentInput = ui.input.choice('Environment:', {value: selected, items: this.envs.map(e => e.name)});
+    environmentInput.onChanged.subscribe(async (value) => {
+      let environment = this.envs.filter(e => e.name === value)[0];
       if (this.notebook.environment === 'python3' && environment.name === 'default')
         return;
       if (this.notebook.environment !== environment.name) {

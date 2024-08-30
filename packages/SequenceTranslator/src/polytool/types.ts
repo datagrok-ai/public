@@ -15,4 +15,6 @@ export type PolyToolEnumeratorParams = {
   type: PolyToolEnumeratorType;
   /** position key is zero-based */
   placeholders: PolyToolPlaceholders;
+  keepOriginal?: boolean;
+  trivialName?: boolean;
 }

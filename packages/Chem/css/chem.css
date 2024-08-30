@@ -683,12 +683,18 @@
   width: 8px;
 }
 
-.mmpa-filters-expand-icon {
-  transform-origin: center;
-  padding-top: 6px;
+.mmpa-fragments-tab .mmpa-pairs-slider{
+  display: flex;
 }
 
-.mmpa-filters-expand-icon-collapsed {
-  transform: rotate(-180deg);
-  padding-top: 0px;
+.mmpa-fragments-tab .mmpa-activity-filters{
+  display: none;
+}
+
+.mmpa-cliffs-tab .mmpa-activity-filters{
+  display: flex;
+}
+
+.mmpa-cliffs-tab .mmpa-pairs-slider{
+  display: none;
 }

@@ -16,11 +16,11 @@
   "dependencies": {
     "@datagrok-libraries/bio": "^5.39.29",
     "@datagrok-libraries/gridext": "^1.3.68",
-    "@datagrok-libraries/utils": "^4.2.13",
+    "@datagrok-libraries/utils": "^4.2.29",
     "@deck.gl/core": "8.8.12",
     "@phylocanvas/phylocanvas.gl": "1.44.0",
     "cash-dom": "latest",
-    "datagrok-api": "^1.19.0",
+    "datagrok-api": "../../js-api",
     "deck.gl": "8.8.12",
     "mjolnir.js": "^2.7.0",
     "rxjs": "^6.5.5",

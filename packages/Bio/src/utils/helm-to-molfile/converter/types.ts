@@ -10,3 +10,14 @@ export type PositionInBonds = {
   bondLineIdx: number,
   nodeIdx: number,
 }
+
+export type MonomerMap = { position: number, symbol: string, atoms: number[], bonds: number[] };
+
+export class MolfileWithMap {
+  constructor(
+    public readonly molfile: string,
+    public readonly monomers: MonomerMap[]
+  ) {}
+
+  static empty() { return new MolfileWithMap('', []); }
+}
