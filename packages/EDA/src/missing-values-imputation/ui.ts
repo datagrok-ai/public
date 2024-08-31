@@ -116,23 +116,32 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
 
   // Target columns components (cols with missing values to be imputed)
   let targetColNames = colsWithMissingVals.map((col) => col.name);
-  const targetColInput = ui.input.columns(TITLE.COLUMNS, {table: df, value: df.columns.byNames(availableTargetColsNames), onValueChanged: (value) => {
-    targetColNames = value.map((col) => col.name);
-    checkApplicability();
-  }, available: availableTargetColsNames});
+  const targetColInput = ui.input.columns(TITLE.COLUMNS, {
+    table: df,
+    value: df.columns.byNames(availableTargetColsNames),
+    onValueChanged: (value) => {
+      targetColNames = value.map((col) => col.name);
+      checkApplicability();
+    },
+    available: availableTargetColsNames,
+  });
   targetColInput.setTooltip(HINT.TARGET);
 
   // Feature columns components
   let selectedFeatureColNames = availableFeatureColsNames as string[];
-  const featuresInput = ui.input.columns(TITLE.FEATURES, {value: df.columns.byNames(availableFeatureColsNames), table: df, onValueChanged: (value) => {
-    selectedFeatureColNames = value.map((col) => col.name);
+  const featuresInput = ui.input.columns(TITLE.FEATURES, {
+    value: df.columns.byNames(availableFeatureColsNames),
+    table: df, onValueChanged: (value) => {
+      selectedFeatureColNames = value.map((col) => col.name);
 
-    if (selectedFeatureColNames.length > 0) {
-      checkApplicability();
-      metricInfoInputs.forEach((div, name) => div.hidden = !selectedFeatureColNames.includes(name));
-    } else
-      hideWidgets();
-  }, available: availableFeatureColsNames});
+      if (selectedFeatureColNames.length > 0) {
+        checkApplicability();
+        metricInfoInputs.forEach((div, name) => div.hidden = !selectedFeatureColNames.includes(name));
+      } else
+        hideWidgets();
+    },
+    available: availableFeatureColsNames,
+  });
   featuresInput.setTooltip(HINT.FEATURES);
 
   /** Hide widgets (use if run is not applicable) */
