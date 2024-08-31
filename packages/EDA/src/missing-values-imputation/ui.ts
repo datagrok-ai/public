@@ -96,14 +96,17 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
 
   // Neighbors components
   let neighbors = DEFAULT.NEIGHBORS;
-  const neighborsInput = ui.input.int(TITLE.NEIGHBORS, {value: neighbors, onValueChanged: (value) => {
-    if (value === null)
-      neighborsInput.value = neighbors;
-    else if (value >= MIN_NEIGHBORS)
-      neighbors = value;
-    else
-      neighborsInput.value = neighbors;
-  }});
+  const neighborsInput = ui.input.int(TITLE.NEIGHBORS, {
+    value: neighbors,
+    showPlusMinus: true,
+    min: MIN_NEIGHBORS,
+    nullable: false,
+    onValueChanged: (value) => {
+      if ((value !== null) && (value >= MIN_NEIGHBORS))
+        neighbors = value;
+      checkApplicability();
+    },
+  });
   neighborsInput.setTooltip(HINT.NEIGHBORS);
 
   // Distance components
@@ -156,7 +159,7 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
 
   /** Show widgets (use if run is applicable) */
   const showWidgets = () => {
-    dlg.getButton(TITLE.RUN).disabled = false;
+    dlg.getButton(TITLE.RUN).disabled = (neighborsInput.value === null) || (neighborsInput.value < MIN_NEIGHBORS);
     distDiv.hidden = false;
     inPlaceInput.root.hidden = false;
     neighborsInput.root.hidden = false;
@@ -176,6 +179,9 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
         }
       });
     }
+
+    if (targetColNames.length < 1)
+      hideWidgets();
   };
 
   // Metrics components
@@ -245,6 +251,28 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
     resolve = res;
     reject = rej;
   });
+
+  dlg.addButton(TITLE.RUN, () => {
+    okClicked = true;
+    dlg.close();
+    availableFeatureColsNames.filter((name) => !selectedFeatureColNames.includes(name))
+      .forEach((name) => featuresMetrics.delete(name));
+
+    try {
+      const failedToImpute = impute(df!, targetColNames, featuresMetrics, misValsInds, distType, neighbors, inPlace);
+
+      if (!keepEmpty)
+        imputeFailed(df!, failedToImpute);
+      resolve();
+    } catch (err) {
+      if (err instanceof Error)
+        grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${err.message}`);
+      else
+        grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
+      reject(err);
+    }
+  });
+
   dlg.add(targetColInput)
     .add(featuresInput)
     .add(distDiv)
@@ -252,27 +280,7 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
     .add(neighborsInput)
     .add(inPlaceInput)
     .add(keepEmptyInput)
-    .show()
-    .onOK(() => {
-      okClicked = true;
-      dlg.close();
-      availableFeatureColsNames.filter((name) => !selectedFeatureColNames.includes(name))
-        .forEach((name) => featuresMetrics.delete(name));
-
-      try {
-        const failedToImpute = impute(df!, targetColNames, featuresMetrics, misValsInds, distType, neighbors, inPlace);
-
-        if (!keepEmpty)
-          imputeFailed(df!, failedToImpute);
-        resolve();
-      } catch (err) {
-        if (err instanceof Error)
-          grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${err.message}`);
-        else
-          grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
-        reject(err);
-      }
-    }).onClose.subscribe(() => !okClicked && reject());
+    .show();//.onClose.subscribe(() => !okClicked && reject());
 
   return promise;
 } // runKNNImputer
