@@ -61,7 +61,7 @@
 * Precondition: Open a **Line chart** viewer with **multiple Y columns**. Properties panel should remain opened. 
 * Remove Y Columns. On the plot itself, click the 'x' buttons to remove some of the Y columns.
 * Expected Results: The number of Y columns in the properties panel should update immediately when columns are removed directly from the plot.
-
+18. Use Ctrl+click to select/deselect one more category in the legend. [#2455](https://github.com/datagrok-ai/public/issues/2455) 
 
 ---  
 {

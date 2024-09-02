@@ -26,6 +26,18 @@
 * Open the **demog** dataset. Apply saved layout
   * Expected results: The saved layout should retain the adjusted row height and column header height for the dataset and the **Grid viewer**. These settings should be applied consistently when the layout is reapplied.
 
+9. Check if the column property is retained when saving the project.
+  * Select any column in the dataset. Modify a property of the column.Ensure that the change is applied.
+  * Save the project. Close all. Reopen the project you saved.
+  * Verify that the column property you changed is still retained and has not reverted to its default setting.
+    * Expected Result: The column property should be retained after reopening saved project.
+
+10. Verify 'Pick Up / Apply To' Functionality for Style in Grid ([#1887](https://github.com/datagrok-ai/public/issues/1887))
+* Open two demog.csv datasets
+* In the first dataset set Color Coding properties for **Age** coumn as: **Linear** with modifyed **color scheme**. Verify that the color-coding is applied correctly.
+* After applying the color-coding, navigate to the Color Coding menu. Select **Pick Up Coloring** to capture the color-coding settings applied to the Age column.
+* Go to second dataset. Navigate to the Color Coding menu. Select **Apply Coloring** to apply the picked-up color-coding settings from the first dataset to the **Age** column in the second dataset. 
+* Expected Result: The color-coding applied to the Age column in the second dataset should be identical to the color-coding in the first dataset. Ensure that the color gradient and color scheme match exactly between the two datasets.
 ---
 {
   "order": 26,
