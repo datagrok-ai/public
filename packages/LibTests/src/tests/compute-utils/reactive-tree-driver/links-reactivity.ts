@@ -3,7 +3,7 @@ import {category, test, before} from '@datagrok-libraries/utils/src/test';
 import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
 import {LinksState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/LinksState';
-import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
+import {makeValidationResult, PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {of} from 'rxjs';
@@ -32,9 +32,35 @@ category('ComputeUtils: Driver links reactivity', async () => {
     }],
   };
 
+  const config2: PipelineConfiguration = {
+    id: 'pipeline1',
+    type: 'static',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:TestAdd2',
+      },
+      {
+        id: 'step2',
+        nqName: 'LibTests:TestMul2',
+      },
+    ],
+    links: [{
+      id: 'link1',
+      from: 'in1:step1/a',
+      to: 'out1:step1/a',
+      isValidator: true,
+      handler({controller}) {
+        controller.setValidation('out1', makeValidationResult({warnings: ['test warn']}));
+        return;
+      },
+    }],
+  };
+
   before(async () => {
     testScheduler = new TestScheduler((actual, expected) => {
       expectDeepEqual(actual, expected);
+      // console.log(actual, expected);
     });
   });
 
@@ -251,6 +277,252 @@ category('ComputeUtils: Driver links reactivity', async () => {
       });
       cold('50ms a').subscribe(() => {
         inNode.getItem().getStateStore().setState('b', 2);
+      });
+    });
+  });
+
+
+  test('Run validators with debounce', async () => {
+    const pconf = await getProcessedConfig(config2);
+
+    testScheduler.run((helpers) => {
+      const {cold, expectObservable} = helpers;
+      const tree = StateTree.fromConfig({config: pconf, mockMode: true});
+      tree.initAll().subscribe();
+      const ls = new LinksState();
+      const [link] = ls.createLinks(tree);
+      const inNode = tree.getNode([{idx: 0}]);
+      link.wire(tree);
+      expectObservable(link.isRunning$, '^ 1000ms !').toBe('a 250ms (bc)', {a: false, b: true, c: false});
+      cold('-a').subscribe(() => {
+        link.enable();
+        inNode.getItem().getStateStore().setState('a', 1);
+      });
+
+      cold('252ms a').subscribe(() => {
+        const validators = inNode.getItem().getStateStore().validations$.value;
+        const expected = {
+          'a': {
+            'warnings': [
+              {
+                'description': 'test warn',
+              },
+            ],
+          },
+        };
+        expectDeepEqual(validators[link.uuid], expected);
+      });
+    });
+  });
+
+  test('Run validators on trigger', async () => {
+    const pconf = await getProcessedConfig(config2);
+
+    testScheduler.run((helpers) => {
+      const {cold, expectObservable} = helpers;
+      const tree = StateTree.fromConfig({config: pconf, mockMode: true});
+      tree.initAll().subscribe();
+      const ls = new LinksState();
+      const [link] = ls.createLinks(tree);
+      const inNode = tree.getNode([{idx: 0}]);
+      link.wire(tree);
+      expectObservable(link.isRunning$, '^ 1000ms !').toBe('a (bc)', {a: false, b: true, c: false});
+      cold('-a').subscribe(() => {
+        link.trigger();
+      });
+
+      cold('--a').subscribe(() => {
+        const validators = inNode.getItem().getStateStore().validations$.value;
+        const expected = {
+          'a': {
+            'warnings': [
+              {
+                'description': 'test warn',
+              },
+            ],
+          },
+        };
+        expectDeepEqual(validators[link.uuid], expected);
+      });
+    });
+  });
+
+  test('Links propagate restriction info in a default handler', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:TestAdd2',
+        },
+        {
+          id: 'step2',
+          nqName: 'LibTests:TestMul2',
+        },
+      ],
+      links: [{
+        id: 'link1',
+        from: 'in1:step1/b',
+        to: 'out1:step2/a',
+        defaultRestrictions: {
+          out1: 'restricted',
+        },
+      }],
+    };
+    const pconf = await getProcessedConfig(config);
+
+    testScheduler.run((helpers) => {
+      const {expectObservable, cold} = helpers;
+      const tree = StateTree.fromConfig({config: pconf, mockMode: true});
+      tree.initAll().subscribe();
+      const ls = new LinksState();
+      const [link] = ls.createLinks(tree);
+      const inNode = tree.getNode([{idx: 0}]);
+      const outNode = tree.getNode([{idx: 1}]);
+      link.wire(tree);
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a b', {a: undefined, b: 1});
+      cold('-a').subscribe(() => {
+        inNode.getItem().getStateStore().setState('b', 1);
+        link.trigger();
+      });
+      cold('--a').subscribe(() => {
+        const restrictions = outNode.getItem().getStateStore().inputRestrictions$.value;
+        const expected = {
+          'a': {
+            'type': 'restricted',
+            'assignedValue': 1,
+          },
+        };
+        expectDeepEqual(restrictions, expected);
+      });
+    });
+  });
+
+  test('Links propagate restriction info in a custom handler', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:TestAdd2',
+        },
+        {
+          id: 'step2',
+          nqName: 'LibTests:TestMul2',
+        },
+      ],
+      links: [{
+        id: 'link1',
+        from: 'in1:step1/b',
+        to: 'out1:step2/a',
+        handler({controller}) {
+          const in1 = controller.getFirst('in1');
+          controller.setAll('out1', in1 + 1, 'restricted');
+        },
+      }],
+    };
+    const pconf = await getProcessedConfig(config);
+
+    testScheduler.run((helpers) => {
+      const {expectObservable, cold} = helpers;
+      const tree = StateTree.fromConfig({config: pconf, mockMode: true});
+      tree.initAll().subscribe();
+      const ls = new LinksState();
+      const [link] = ls.createLinks(tree);
+      const inNode = tree.getNode([{idx: 0}]);
+      const outNode = tree.getNode([{idx: 1}]);
+      link.wire(tree);
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a b', {a: undefined, b: 2});
+      cold('-a').subscribe(() => {
+        link.enable();
+        inNode.getItem().getStateStore().setState('b', 1);
+      });
+      cold('--a').subscribe(() => {
+        const restrictions = outNode.getItem().getStateStore().inputRestrictions$.value;
+        const expected = {
+          'a': {
+            'type': 'restricted',
+            'assignedValue': 2,
+          },
+        };
+        expectDeepEqual(restrictions, expected);
+      });
+    });
+  });
+
+  test('Links propagate multiple validators results', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:TestAdd2',
+        },
+        {
+          id: 'step2',
+          nqName: 'LibTests:TestMul2',
+        },
+      ],
+      links: [{
+        id: 'link1',
+        from: 'in1:step1/a',
+        to: 'out1:step1/a',
+        isValidator: true,
+        handler({controller}) {
+          controller.setValidation('out1', makeValidationResult({warnings: ['some warn']}));
+          return;
+        },
+      }, {
+        id: 'link2',
+        from: 'in1:step1/a',
+        to: 'out1:step1/a',
+        isValidator: true,
+        handler({controller}) {
+          controller.setValidation('out1', makeValidationResult({warnings: ['another warn']}));
+          return;
+        },
+      }],
+    };
+
+    const pconf = await getProcessedConfig(config);
+
+    testScheduler.run((helpers) => {
+      const {cold, expectObservable} = helpers;
+      const tree = StateTree.fromConfig({config: pconf, mockMode: true});
+      tree.initAll().subscribe();
+      const ls = new LinksState();
+      const [link1, link2] = ls.createLinks(tree);
+      const inNode = tree.getNode([{idx: 0}]);
+      link1.wire(tree);
+      link2.wire(tree);
+      expectObservable(link1.isRunning$, '^ 1000ms !').toBe('a (bc)', {a: false, b: true, c: false});
+      expectObservable(link2.isRunning$, '^ 1000ms !').toBe('a (bc)', {a: false, b: true, c: false});
+      cold('-a').subscribe(() => {
+        link1.trigger();
+        link2.trigger();
+      });
+
+      cold('--a').subscribe(() => {
+        const validators = inNode.getItem().getStateStore().validations$.value;
+        const expected = {
+          [link1.uuid]: {
+            a: {'warnings': [
+              {
+                'description': 'some warn',
+              }],
+            }},
+          [link2.uuid]: {
+            a: {'warnings': [
+              {
+                'description': 'another warn',
+              }],
+            },
+          },
+        };
+        expectDeepEqual(validators, expected);
       });
     });
   });

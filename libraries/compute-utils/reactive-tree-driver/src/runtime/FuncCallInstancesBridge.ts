@@ -1,7 +1,7 @@
 import {BehaviorSubject, of, combineLatest, Observable, from, defer, Subject} from 'rxjs';
 import {switchMap, map, takeUntil, take, withLatestFrom} from 'rxjs/operators';
 import {ValidationResultBase} from '../../../shared-utils/validation';
-import {IStateStore, IValidationStore, IRunnableWrapper, IFuncCallAdapter} from './FuncCallAdapters';
+import {IStateStore, IValidationStore, IRunnableWrapper, IFuncCallAdapter, RestrictionState} from './FuncCallAdapters';
 import {RestrictionType} from '../data/common-types';
 import {FuncallStateItem} from '../config/config-processing-utils';
 
@@ -12,8 +12,8 @@ export class FuncCallInstancesBridge implements IStateStore, IValidationStore, I
   public isRunable$ = new BehaviorSubject(false);
   public isOutputOutdated$ = new BehaviorSubject(false);
   public isCurrent$ = new BehaviorSubject(false);
-  public validations$ = new BehaviorSubject({});
-  public inputRestrictions$ = new BehaviorSubject({});
+  public validations$ = new BehaviorSubject<Record<string, Record<string, ValidationResultBase | undefined>>>({});
+  public inputRestrictions$ = new BehaviorSubject<Record<string, RestrictionState | undefined>>({});
   public initialValues: Record<string, any> = {};
 
   private closed$ = new Subject<true>();
@@ -35,6 +35,16 @@ export class FuncCallInstancesBridge implements IStateStore, IValidationStore, I
       }),
       takeUntil(this.closed$),
     ).subscribe(this.isRunable$);
+
+    this.instance$.pipe(
+      switchMap((instance) => instance ? instance.validations$ : of({})),
+      takeUntil(this.closed$),
+    ).subscribe(this.validations$);
+
+    this.instance$.pipe(
+      switchMap((instance) => instance ? instance.inputRestrictions$ : of({})),
+      takeUntil(this.closed$),
+    ).subscribe(this.inputRestrictions$);
 
     this.instance$.pipe(
       switchMap((instance) => instance ? instance.isOutputOutdated$ : of(false)),

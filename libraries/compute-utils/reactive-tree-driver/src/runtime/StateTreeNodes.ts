@@ -8,6 +8,7 @@ import {PipelineConfigurationParallelProcessed, PipelineConfigurationProcessed, 
 import {IFuncCallAdapter, IStateStore, MemoryStore} from './FuncCallAdapters';
 import {FuncCallInstancesBridge} from './FuncCallInstancesBridge';
 import {isPipelineConfig, PipelineStepConfigurationProcessed} from '../config/config-utils';
+import {mergeValidationResultsBase, ValidationResultBase} from '../../../shared-utils/validation';
 
 export type StateTreeSerializationOptions = {
   disableNodesUUID?: boolean,
@@ -41,7 +42,6 @@ export class FuncCallNode implements IStoreProvider {
     if (!isFuncCallState(state))
       throw new Error(`Wrong FuncCall node state ${JSON.stringify(state)}`);
     this.instancesWrapper.isOutputOutdated$.next(!!state.isOuputOutdated);
-    this.instancesWrapper.isCurrent$.next(!!state.isCurrent);
     this.pendingId = state.funcCallId;
     if (state.uuid)
       this.uuid = state.uuid;
@@ -53,18 +53,19 @@ export class FuncCallNode implements IStoreProvider {
   }
 
   toState(options: StateTreeSerializationOptions): StepFunCallState {
+    const instance = this.instancesWrapper.getInstance();
     const res: StepFunCallState = {
       type: 'funccall',
       uuid: this.uuid,
       nqName: this.config.nqName,
       configId: this.config.id,
       friendlyName: this.config.friendlyName,
-      funcCallId: this.instancesWrapper.getInstance()?.getFuncCall()?.id,
-      funcCall: this.instancesWrapper.getInstance()?.getFuncCall(),
+      funcCallId: instance?.getFuncCall()?.id,
+      funcCall: instance?.getFuncCall(),
       isRunning: this.instancesWrapper.isRunning$.value,
       isRunable: this.instancesWrapper.isRunable$.value,
       isOuputOutdated: this.instancesWrapper.isOutputOutdated$.value,
-      isCurrent: this.instancesWrapper.isCurrent$.value,
+      validations: this.compactValidations(this.instancesWrapper.validations$.value),
     };
     if (options.disableNodesUUID)
       res.uuid = '';
@@ -82,13 +83,30 @@ export class FuncCallNode implements IStoreProvider {
       friendlyName: this.config.friendlyName,
       funcCallId: this.instancesWrapper.id,
       isOuputOutdated: this.instancesWrapper.isOutputOutdated$.value,
-      isCurrent: this.instancesWrapper.isCurrent$.value,
+
     };
     if (options.disableNodesUUID)
       res.uuid = '';
     if (options.disableCallsUUID)
       res.funcCallId = '';
     return res;
+  }
+
+  private compactValidations(validationsIn: Record<string, Record<string, ValidationResultBase | undefined>>) {
+    const validationArrays = Object.values(validationsIn).reduce((acc, val) => {
+      for (const [k, v] of Object.entries(val)) {
+        if (v) {
+          if (acc[k])
+            acc[k].push(v);
+          else
+            acc[k] = [v];
+        }
+      }
+      return acc;
+    }, {} as Record<string, ValidationResultBase[]>);
+    const validationEntries = Object.entries(validationArrays).map(([k, validations]) => [k, mergeValidationResultsBase(...validations)] as const);
+    const validations = Object.fromEntries(validationEntries);
+    return validations;
   }
 }
 

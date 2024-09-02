@@ -88,10 +88,12 @@ export type StepAction = {
   position: ActionPositions,
 }
 
+export type RestrictionStatus = 'none' | 'changed' | 'inconsistent';
+
 export type StepFunCallState = {
   funcCall?: DG.FuncCall;
   validations?: Record<string, ValidationResultBase>;
-  inputRestrictions?: Record<string, RestrictionState | undefined>;
+  // restrictions: Record<string, RestrictionStatus | undefined>;
   isLoading?: boolean;
   isRunning?: boolean;
   isRunable?: boolean;

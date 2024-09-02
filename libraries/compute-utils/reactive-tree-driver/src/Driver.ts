@@ -35,8 +35,7 @@ export class Driver {
     this.states$.pipe(
       pairwise(),
       takeUntil(this.closed$),
-    ).subscribe(([oldval, cVal]) => {
-      console.log(cVal);
+    ).subscribe(([oldval]) => {
       if (oldval)
         oldval.close();
     });

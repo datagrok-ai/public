@@ -11,6 +11,8 @@ export interface IRuntimeLinkController {
 }
 
 export interface IRuntimeValidatorController {
-  // getValidationAction(name: string, action: string): ActionItem | undefined;
+  getAll<T = any>(name: string): T[] | undefined;
+  getFirst<T = any>(name: string): T | undefined;
   setValidation(name: string, validation?: ValidationResult | undefined): void;
+  // getValidationAction(name: string, action: string): ActionItem | undefined;
 }
