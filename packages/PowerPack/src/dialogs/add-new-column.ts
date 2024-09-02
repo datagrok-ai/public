@@ -424,7 +424,6 @@ export class AddNewColumnDialog {
             }
           ]),
           EditorView.updateListener.of(async (e: ViewUpdate) => {
-            this.setCodeMirrorFocus(cm);
 
             //update hint
             ui.empty(this.hintDiv);
@@ -436,6 +435,8 @@ export class AddNewColumnDialog {
             //return in case formula hasn't been changed
             if (!e.docChanged)
               return;
+
+            this.setCodeMirrorFocus(cm);
 
             const cmValue = cm.state.doc.toString();
 
@@ -540,12 +541,11 @@ export class AddNewColumnDialog {
   }
 
   validateFormula(formula: string): string {
-    //check unmatched columns
-    const matchesAll = [...formula.matchAll(this.colNamePattern)];
+    const matchesAll = formula.match(this.colNamePattern) as string[];
     const unmatchedCols: string[] = [];
-    if (matchesAll.length) {
+    if (matchesAll?.length) {
       for (const match of matchesAll) {
-        const matchCol = match[1] ?? match[2];
+        const matchCol = match.replace('${', '').replace('$[', '').replace('}', '').replace(']', '');
         if (!this.columnNamesLowerCase.includes(matchCol.toLowerCase()))
           unmatchedCols.push(matchCol);
       }
