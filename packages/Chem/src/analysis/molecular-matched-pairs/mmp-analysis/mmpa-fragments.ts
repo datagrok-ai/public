@@ -1,20 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {getRdKitService} from '../../utils/chem-common-rdkit';
+import {getRdKitService} from '../../../utils/chem-common-rdkit';
 import {webGPUMMP} from '@datagrok-libraries/math/src/webGPU/mmp/webGPU-mmp';
-//import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
-import {MmpRules, MMP_CONSTRICTIONS, MMP_ERRORS} from './mmp-constants';
-import {IMmpFragmentsResult} from '../../rdkit-service/rdkit-service-worker-substructure';
-
-
-type MolecularPair = {
-  first: number,
-  second: number,
-  core: string,
-  firstR: string,
-  secondR: string
-}
+import {IMmpFragmentsResult} from '../../../rdkit-service/rdkit-service-worker-substructure';
+import {MMP_CONSTRICTIONS, MMP_ERRORS, MmpRules, MolecularPair} from './mmpa-misc';
 
 /**
 * Runs paralled fragmentation for molecules

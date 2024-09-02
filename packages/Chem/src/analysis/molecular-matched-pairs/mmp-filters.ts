@@ -1,6 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {MmpInput} from './mmp-constants';
+import {MmpInput} from './mmp-viewer';
 
 export type MmpFilters = {
     activitySliderInputs: DG.InputBase[];
