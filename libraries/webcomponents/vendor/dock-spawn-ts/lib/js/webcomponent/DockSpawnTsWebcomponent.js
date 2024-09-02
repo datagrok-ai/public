@@ -103,22 +103,24 @@ const style1 = css`
 
 
 /**************************** Splitter *********************************/
-.splitter-container-horizontal {
-}
-
-.splitter-container-vertical {
-}
-
 .splitbar-horizontal {
 	background-color: #f2f2f5;
+    box-sizing: content-box;
+    height: 1px;
+    display: flex;
+    padding: 0 2px;
+    margin: 0 -2px;
+    background-clip: content-box;
+    width: 100% !important;
+    float: left;
+    z-index: 100;
+    cursor: ns-resize;
+    flex-shrink: 0;
+    max-height: 1px;
 }
 
 .splitbar-horizontal:hover {
 	background-color: #50A9C5;
-}
-
-.splitbar-horizontal:active {
-	background-color: #5b636c;
 }
 
 .splitbar-vertical {
@@ -213,6 +215,8 @@ const style2 = css`/************* Panel with title bar ************/
 	overflow: hidden;
 	height: 25px;
 	pointer-events: auto;
+	z-index: 1;
+	position: relative;
 }
 
 .panel-titlebar-icon {

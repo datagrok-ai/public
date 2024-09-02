@@ -123,20 +123,15 @@ export const RichFunctionView = defineComponent({
             onClick={() => historyHidden.value = !historyHidden.value}
           />
         </RibbonPanel>
-        { !historyHidden.value ? <DockedPanel
-          title='History'
-          dockType='right'
-          ratio={0.2}
-        >
-          <History 
-            func={currentCall.value.func}
-            showActions
-            showBatchActions
-            isHistory
-            onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
-          />
-        </DockedPanel>: null }
         <DockManager>
+          { !historyHidden.value ? 
+            <History 
+              func={currentCall.value.func}
+              showActions
+              showBatchActions
+              isHistory
+              onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
+            />: null }
           <div class='flex ui-div'>
             { !formHidden.value ?
               <div class='flex flex-col p-2 w-full'>
