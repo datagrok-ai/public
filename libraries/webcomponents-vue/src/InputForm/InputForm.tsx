@@ -77,14 +77,10 @@ export const InputForm = defineComponent({
         .forEach((input) => input.setValidation(results[input.property.name]));
     };
 
-    return () => {
-      const form = <dg-input-form
-        funcCall={props.funcCall}
-        onFormReplaced={formReplacedCb}
-        onInputChanged={inputChangedCb}>
-      </dg-input-form>;
-
-      return form;
-    };
+    return () => <dg-input-form
+      funcCall={props.funcCall}
+      onFormReplaced={formReplacedCb}
+      onInputChanged={inputChangedCb}>
+    </dg-input-form>;
   },
 });

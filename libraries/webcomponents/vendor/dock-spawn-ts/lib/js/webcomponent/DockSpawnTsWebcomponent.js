@@ -546,9 +546,9 @@ const style2 = css`/************* Panel with title bar ************/
 	float: right;
 	position: absolute;
 	right: 0;
-	content: 'x';
+	content: "\f00d";
 	font-weight: normal;
-	font-family: Verdana, Geneva, Tahoma, sans-serif;
+	font-family: "Font Awesome 5 Pro";
 	cursor: pointer;
 	display: flex;
 	height: 100%;
@@ -645,7 +645,6 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
         dockSpawnDiv.style.width = "100%";
         dockSpawnDiv.style.height = "100%";
         dockSpawnDiv.style.position = "relative";
-		dockSpawnDiv.style.zIndex = "100000";
         this.shadowRoot.appendChild(dockSpawnDiv);
         this.dockManager = new DockManager(dockSpawnDiv);
         this.dockManager.config.dialogRootElement = dockSpawnDiv;

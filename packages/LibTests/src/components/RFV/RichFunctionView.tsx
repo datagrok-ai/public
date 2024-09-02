@@ -110,7 +110,7 @@ export const RichFunctionView = defineComponent({
     const dfBlockTitle = (dfProp: DG.Property) => dfProp.options['caption'] ?? dfProp.name ?? ' ';
           
     return () => (
-      <div class='w-full h-full flex'>
+      <div class='w-full h-full flex absolute top-0'>
         <RibbonPanel>
           { hasContextHelp.value && <IconFA 
             name='info' 
