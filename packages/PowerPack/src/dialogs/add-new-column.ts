@@ -37,6 +37,8 @@ const VALIDATION_TYPES_MAPPING: { [key: string]: string[] } = {
 
 const FLOATING_POINT_TYPES = ['float', 'double'];
 const ALLOWED_OUTPUT_TYPES = ['dynamic', DG.TYPE.DATE_TIME, DG.TYPE.QNUM];
+const PACKAGES_TO_EXCLUDE = ['ApiTests', 'CvmTests'];
+const TAGS_TO_EXCLUDE = ['internal'];
 
 const COLUMN_FUNCTION_NAME = 'GetCurrentRowField';
 const GET_VAR_FUNCTION_NAME = 'GetVar';
@@ -182,7 +184,9 @@ export class AddNewColumnDialog {
   prepareFunctionsListForAutocomplete() {
     //filter functions with one input (multiple inputs or functions returning void are not included)
     const allFunctionsList = DG.Func.find()
-      .filter((it) => it.outputs.length === 1 && (DG.TYPES_SCALAR.has(it.outputs[0].propertyType) || ALLOWED_OUTPUT_TYPES.includes(it.outputs[0].propertyType)));
+      .filter((it) => TAGS_TO_EXCLUDE.every((tag) => !it.hasTag(tag)) &&it.outputs.length === 1 
+      && (DG.TYPES_SCALAR.has(it.outputs[0].propertyType) || ALLOWED_OUTPUT_TYPES.includes(it.outputs[0].propertyType))
+      && it.inputs.every((inp) => inp.propertyType !== DG.TYPE.DATA_FRAME && inp.propertyType !== DG.TYPE.COLUMN));
     for (const func of allFunctionsList) {
       const params: PropInfo[] = func.inputs.map((it) => {
         return {propName: it.name, propType: it.semType ?? it.propertyType};
@@ -191,6 +195,8 @@ export class AddNewColumnDialog {
       params.push({propName: FUNC_OUTPUT_TYPE, propType: func.outputs[0].semType ?? func.outputs[0].propertyType});
       try {
         const packageName = func.package.name;
+        if (PACKAGES_TO_EXCLUDE.includes(packageName))
+          continue;
         if (!this.packageFunctionsNames[packageName]) {
           this.packageNames.push(packageName);
           this.packageFunctionsNames[packageName] = [];
