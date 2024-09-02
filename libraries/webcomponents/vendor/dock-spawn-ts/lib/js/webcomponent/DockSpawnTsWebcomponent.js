@@ -14,13 +14,24 @@ const style1 = css`
 }
 
 .panel-titlebar {
-	background-color: #333;
-	pointer-events: auto;
+	flex-shrink: 0;
+    background-color: #ffffff;
+    height: 24px;
+    width: 100%;
+    overflow: hidden;
+    padding: 0 2px;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+.panel-titlebar:hover {
+	background-color: #f2f2f5;
+	color: #9497a0;
 }
 
 .panel-titlebar-text {
-	font-weight: bold;
-	color:#aaa;
+	color: #9497a0;
 }
 
 .panel-titlebar-button-close {
@@ -99,11 +110,11 @@ const style1 = css`
 }
 
 .splitbar-horizontal {
-	background-color: #000000;
+	background-color: #f2f2f5;
 }
 
 .splitbar-horizontal:hover {
-	background-color: #5b636c;
+	background-color: #50A9C5;
 }
 
 .splitbar-horizontal:active {
@@ -111,15 +122,23 @@ const style1 = css`
 }
 
 .splitbar-vertical {
-	background-color: #000000;
+	background-color: #f2f2f5;
+    box-sizing: content-box;
+    width: 1px;
+    display: flex;
+    padding: 0 2px;
+    margin: 0 -2px;
+    background-clip: content-box;
+    height: 100% !important;
+    float: left;
+    z-index: 100;
+    cursor: ew-resize;
+    flex-shrink: 0;
+    max-width: 1px;
 }
 
 .splitbar-vertical:hover {
-	background-color: #5b636c;
-}
-
-.splitbar-vertical:active {
-	background-color: #5b636c;
+	background-color: #50A9C5;
 }
 
 .splitbar-horizontal-ghoust{
@@ -148,24 +167,13 @@ const style1 = css`
 }*/
 
 .dockspan-tab-handle {
-	background-color: #808080;
-	color:#D5D5D5;
 	box-shadow: 0px 5px 20px #000;
+	background-color: #ffffff;
 }
 
 .dockspan-tab-handle:hover {
-    background-color: #006729;
-	color:#fff;
-}
-
-.dockspan-tab-handle-selected {
-    background-color: #333;
-	color:#fff;
-}
-
-.dockspan-tab-handle-selected:hover {
-    background-color: #008749;
-	color:#fff;
+	background-color: #f2f2f5;
+	color: #9497a0;
 }
 
 .dockspan-tab-handle-text {
@@ -189,17 +197,7 @@ const style1 = css`
 .dockspan-tab-handle-content-seperator-active {
 	background-color: #008749;
 }
-
-.dockspan-tab-handle-active {
-	background-color: #008749;
-}
-
-.dockspan-panel-active {
-	background-color: #008749;
-}
-.dockspan-panel-titlebar-text-active {
-	color: white;
-}`;
+`;
 
 const style2 = css`/************* Panel with title bar ************/
 .panel-base {
@@ -251,9 +249,9 @@ const style2 = css`/************* Panel with title bar ************/
 	float: right;
 	cursor: pointer;
 	padding-right: 8px;
-	content: 'x';
+	content: "\f00d";
 	font-weight: normal;
-	font-family: Verdana, Geneva, Tahoma, sans-serif;
+	font-family: "Font Awesome 5 Pro";
 	display: flex;
 	height: 100%;
 	align-items: center;
@@ -557,10 +555,6 @@ const style2 = css`/************* Panel with title bar ************/
 	align-items: center;
 }
 
-.dockspan-tab-handle-close-button:hover {
-	color: black;
-}
-
 .dockspan-tab-handle-list-container {
 	height: 22px;
 	overflow: hidden;
@@ -578,7 +572,7 @@ const style2 = css`/************* Panel with title bar ************/
 }
 
 .dockspan-tab-handle-content-seperator-visible {
-	display: block;
+	display: none;
 }
 
 .dockspan-tab-handle-content-seperator-selected {}
@@ -641,7 +635,7 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
         super();
         const shadowRoot = this.attachShadow({ mode: 'open' });
         
-        shadowRoot.adoptedStyleSheets = [DockSpawnTsWebcomponent.style, style1, style2];
+        shadowRoot.adoptedStyleSheets = [style1, style2];
         this.windowResizedBound = this.windowResized.bind(this);
         this.slotElementMap = new WeakMap();
     }
