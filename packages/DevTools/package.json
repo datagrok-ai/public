@@ -3,8 +3,8 @@
   "friendlyName": "DevTools",
   "version": "1.3.46",
   "author": {
-    "name": "Anna Muzychyna",
-    "email": "amuzychyna@datagrok.ai"
+    "name": "Savenko Stanislav",
+    "email": "ssavenko@datagrok.ai"
   },
   "description": "Tools for the Datagrok developers (TestManager, DevPanel).",
   "repository": {
