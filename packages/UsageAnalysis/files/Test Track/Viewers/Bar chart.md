@@ -34,7 +34,26 @@
 12. Tooltip
     1. Right-click the bar chart and check all options on the **Tooltip** tab.
     2. Save to Layout. Check
+13. Inverting axes:
+  * Precondition: opened Bar chart viewer on the SPGI dataset.
+  * Open the Bar Chart's Properties panel.
+  * Navigate to Misc > Orientation. Change the viewer's orientation to Auto, Horizontal, and Vertical.
+  * Expected result: The Bar Chart viewer should rotate the axes according to the applied settings. No errors or unexpected behavior should occur during the orientation changes.
+14. Bar Chart with Date Column as Category and Non-Default Split Function [#2562](https://github.com/datagrok-ai/public/issues/2562)
+* Open SPGI dataset. 
+* Change Column Type: Find the column named 'Whoole blood assay 1'. Change its type to Date.
+* Add a new bar chart. Set 'Whoole blood assay 1' as the Category.
+* Change the Split value to any other than the default. Ensure that the new split function is applied correctly.
+* Save the current layout with the bar chart configuration.
+* Reapply the saved layout. 
+* Expected Results: 
+  - The bar chart should render correctly when the saved layout is reapplied. No errors should occur related to the date column or split function.
+  - The new split function should be correctly applied to the bar chart. 
+
+
+
 ---
 {
-  "order": 3
+  "order": 3,
+  "datasets": ["System:DemoFiles/SPGI.csv"]
 }

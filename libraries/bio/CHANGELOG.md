@@ -1,5 +1,34 @@
 # bio changelog
 
+## 5.42.12 (2024-08-30)
+
+Add getHelm to SeqHandler and INotationProvider
+
+## 5.42.11 (2024-08-24)
+
+### Bug fixes
+
+* Bump HWE dependencies versions
+* Fix for user settings for publish
+
+## 5.42.10 (2024-08-23)
+
+### Features
+
+* Add SeqHandler
+
+## 5.42.9 (2024-08-16)
+
+### Features
+
+* HWE option for continuous monomer numbering
+* Add HelmInput mouse events redraw, showTooltip
+* Bump HWE dependencies versions
+
+## 5.42.8 (2024-08-14)
+
+Fix monomer substitution matrix calculation
+
 ## 5.42.7 (2024-08-12)
 
 ### Features

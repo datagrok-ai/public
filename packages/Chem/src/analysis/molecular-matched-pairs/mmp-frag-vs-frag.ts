@@ -7,6 +7,7 @@ export function getMmpTrellisPlot(allPairsGrid: DG.Grid, activityMeanNames: Arra
   const schemes = new Array<any>(activityMeanNames.length);
   for (let i = 0; i < activityMeanNames.length; i++)
     schemes[i] = [palette.numerical[i]];
+  const aggregations = activityMeanNames.map((_) => DG.STATS.MED);
 
   const tp = DG.Viewer.fromType(DG.VIEWER.TRELLIS_PLOT, allPairsGrid.table, {
     xColumnNames: [allPairsGrid.table.columns.byIndex(0).name],
@@ -14,9 +15,7 @@ export function getMmpTrellisPlot(allPairsGrid: DG.Grid, activityMeanNames: Arra
     viewerType: 'Summary',
     innerViewerLook: {
       columnNames: activityMeanNames,
-      aggrColumnName: '',
-      aggregation: DG.STATS.MED,
-      aggregations: [DG.STATS.MED, DG.STATS.MED, DG.STATS.MED],
+      aggregations: aggregations,
       visualizationType: 'bars',
       colorColumnName: MMP_NAMES.COLOR,
       colorAggrType: DG.STATS.MED,

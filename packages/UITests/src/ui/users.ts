@@ -70,16 +70,18 @@ category('UI: Users', () => {
   }, { skipReason: 'GROK-11318' });
 
   test('actions.addServiceUser', async () => {
+    const dialogsBefore = DG.Dialog.getOpenDialogs().length;
     await showDialog('Service User...');
-    await awaitCheck(() => DG.Dialog.getOpenDialogs().length === 1, 'Add Service User dialog was not shown', 1000);
+    await awaitCheck(() => DG.Dialog.getOpenDialogs().length ===  dialogsBefore + 1, 'Add Service User dialog was not shown', 1000);
     const diag = DG.Dialog.getOpenDialogs()[0];
     const cancel = diag.root.querySelector('[class="ui-btn ui-btn-ok"]') as HTMLElement;
     cancel.click();
   }, { timeout: 100000 });
 
   test('actions.inviteFriend', async () => {
+    const dialogsBefore = DG.Dialog.getOpenDialogs().length;
     await showDialog('Invite a Friend...');
-    await awaitCheck(() => DG.Dialog.getOpenDialogs().length === 1, 'Invite a friend dialog was not shown', 1000);
+    await awaitCheck(() => DG.Dialog.getOpenDialogs().length === dialogsBefore + 1, 'Invite a friend dialog was not shown', 1000);
     const diag = DG.Dialog.getOpenDialogs()[0];
     const cancel = diag.root.querySelector('[class="ui-btn ui-btn-ok"]') as HTMLElement;
     cancel.click();
@@ -94,8 +96,10 @@ category('UI: Users', () => {
     const user = document.querySelector('.grok-gallery-grid')!.children[0] as HTMLElement;
     grok.shell.windows.showProperties = true;
     const regex = new RegExp('Groups', 'g');
+    console.log('usr click')
+    user.click();
+    await delay(100);
     await awaitCheck(() => {
-      user.click();
       if (document.querySelector('.grok-entity-prop-panel') !== null)
         return regex.test((document.querySelector('.grok-entity-prop-panel') as HTMLElement).innerText);
       return false;
@@ -113,9 +117,25 @@ category('UI: Users', () => {
 
   async function showDialog(label: string) {
     const cng = Array.from(document.querySelectorAll('.ui-btn'))
-      .find((el) => el.textContent === 'New');
+      .find((el) => el.textContent === 'New'); 
     if (cng === undefined) throw new Error(`cannot find New User button`);
+    (cng as HTMLButtonElement).focus();
     (cng as HTMLButtonElement).click();
+    const rect = cng.getBoundingClientRect();
+
+    const pageX = window.pageXOffset + rect.left;
+    const pageY = window.pageYOffset + rect.top;
+ 
+    const mouseDown = new MouseEvent('mousedown', {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      detail: 1,
+      clientX: pageX,
+      clientY: pageY
+    });
+    cng.dispatchEvent(mouseDown);
+    await delay(1000);
     let optn: any;
     await awaitCheck(() => {
       optn = Array.from(document.querySelectorAll('.d4-menu-item-label'))

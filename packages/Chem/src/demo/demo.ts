@@ -12,7 +12,7 @@ import {rGroupAnalysis} from '../analysis/r-group-analysis';
 import {CLIFFS_DF_NAME, activityCliffsIdx} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
-import { ScaffoldTreeViewer } from '../widgets/scaffold-tree';
+import {ScaffoldTreeViewer} from '../widgets/scaffold-tree';
 
 export async function _demoChemOverview(): Promise<void> {
   const sketcherType = DG.chem.currentSketcherType;
@@ -59,14 +59,17 @@ export async function _demoChemOverview(): Promise<void> {
   let propPanel: Element;
   let canvas: HTMLCanvasElement;
   let filters: DG.FilterGroup;
-  demoScript
+  await demoScript
     .step('Load molecules', async () => {
       tv = await openMoleculeDataset('demo_files/demo_smiles.csv');
       tv.grid.columns.setOrder(firstCols.concat(lastCols));
       grok.shell.windows.showHelp = false;
+      grok.shell.windows.context.visible = true;  
       table = tv.dataFrame;
     }, {description: 'Load dataset with molecule columns', delay: 3000})
     .step('Calculate molecule properties', async () => {
+      const molColumnName = table.columns.bySemType(DG.SEMTYPE.MOLECULE)!.name;
+      table.currentCell = table.cell(0, molColumnName);
       await delay(1000);
       grok.shell.windows.showHelp = false; //for some reason help panel appears again, need to hide it
       propPanel = document.getElementsByClassName('grok-entity-prop-panel')[0];
@@ -117,13 +120,15 @@ export async function _demoChemOverview(): Promise<void> {
         .getElementsByClassName('grok-sketcher-input')[0]?.children[0] as HTMLInputElement;
 
       let dT = null;
-      try {dT = new DataTransfer();} catch (e) { }
+      try {
+        dT = new DataTransfer();
+      } catch (e) {}
       const evt = new ClipboardEvent('paste', {clipboardData: dT});
-            evt.clipboardData!.setData('text/plain', demoScaffold);
-            scaffoldSketcherInput.value = demoScaffold;
-            await delay(100);
-            scaffoldSketcherInput.dispatchEvent(evt);
-            Array.from(scaffoldSketcher!.getElementsByTagName('span')).find((el) => el.textContent === 'OK')?.click();
+        evt.clipboardData!.setData('text/plain', demoScaffold);
+        scaffoldSketcherInput.value = demoScaffold;
+        await delay(100);
+        scaffoldSketcherInput.dispatchEvent(evt);
+        Array.from(scaffoldSketcher!.getElementsByTagName('span')).find((el) => el.textContent === 'OK')?.click();
     }, {description: 'Aligning structures by scaffold', delay: 1000})
     .step('Add sparkline columns', async () => {
       tv.grid.columns.add({gridColumnName: `radar`, cellType: 'radar'});
@@ -132,13 +137,13 @@ export async function _demoChemOverview(): Promise<void> {
       tv.grid.scrollToCell('MolWt', 0);
     })
     .step('Add color coding', async () => {
-            table.col('MolWt')!.meta.colors.setLinear();
-            table.col('NOCount')!.meta.colors.setConditional({'0 - 6.25': '#73aff5', '6.25 - 12.50': '#ffa500', '12.50 - 18.75': '#ff5140', '18.75 - 25': '#50af28'});
-            table.col('RingCount')!.meta.colors.setConditional();
-            grok.shell.windows.showHelp = true;
-            //@ts-ignore
-            grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem');
-            DG.chem.currentSketcherType = sketcherType;
+      table.col('MolWt')!.meta.colors.setLinear();
+      table.col('NOCount')!.meta.colors.setConditional({'0 - 6.25': '#73aff5', '6.25 - 12.50': '#ffa500', '12.50 - 18.75': '#ff5140', '18.75 - 25': '#50af28'});
+      table.col('RingCount')!.meta.colors.setConditional();
+      grok.shell.windows.showHelp = true;
+      //@ts-ignore
+      grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem');
+      DG.chem.currentSketcherType = sketcherType;
     })
     .start();
 }
@@ -148,7 +153,7 @@ export async function _demoSimilaritySearch(): Promise<void> {
   const demoScript = new DemoScript('Demo', 'Searching for molecules most similar to target molecule');
   let table: DG.DataFrame;
   let tv: DG.TableView;
-  demoScript
+  await demoScript
     .step('Load data', async () => {
       tv = await openMoleculeDataset('smiles.csv');
       table = tv.dataFrame;
@@ -186,13 +191,15 @@ export async function _demoSimilarityDiversitySearch(): Promise<void> {
 
 
 export async function _demoMMPA(): Promise<void> {
-  let tv = await openMoleculeDataset('demo_files/matched_molecular_pairs.csv');
-  await mmpAnalysis(tv.dataFrame, tv.dataFrame.col('smiles')!,
-    tv.dataFrame.clone().columns.remove('smiles').remove('CMPD_CHEMBLID'), 0.3, true);
-  tv.dataFrame.currentRowIdx = 0;
-  grok.shell.windows.showHelp = true;
-  //@ts-ignore
-  //grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/#matched-molecular-pairs');
+  const tv = await openMoleculeDataset('demo_files/mmp_demo.csv');
+
+  _package.files.readAsText('demo_files/mmp_demo.layout').then(async (layoutString: string) => {
+    const layout = DG.ViewLayout.fromJson(layoutString);
+    tv.loadLayout(layout);
+    tv.dataFrame.currentRowIdx = 0;
+    // grok.shell.windows.showHelp = true;
+    // grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/#matched-molecular-pairs');
+  });
 }
 
 
@@ -200,7 +207,7 @@ export async function _demoMoleculesVisualizations(): Promise<void> {
   const demoScript = new DemoScript('Demo', 'Creating various viewers on molecule columns');
   let table: DG.DataFrame;
   let tv: DG.TableView;
-  demoScript
+  await demoScript
     .step('Loading table', async () => {
       tv = await openMoleculeDataset('r-groups.csv');
       table = tv.dataFrame;
@@ -242,7 +249,7 @@ export async function _demoRgroupAnalysis(): Promise<void> {
     return null;
   };
 
-  demoScript
+  await demoScript
     .step('Load data', async () => {
       tv = await openMoleculeDataset('demo_files/sar_small.csv');
       table = tv.dataFrame;
@@ -285,7 +292,7 @@ export async function _demoActivityCliffs(): Promise<void> {
   let table: DG.DataFrame;
   let tv: DG.TableView;
   let scatterPlot: DG.Viewer;
-  demoScript
+  await demoScript
     .step('Load data', async () => {
       tv = await openMoleculeDataset('demo_files/sar_small.csv');
       table = tv.dataFrame;
@@ -423,7 +430,7 @@ export async function _demoDatabases(): Promise<void> {
   };
 
   const demoScript = new DemoScript('Demo', 'Searching chemical databases');
-  demoScript
+  await demoScript
     .step('Performing search in databases', async () => {
       const view = grok.shell.addView(DG.View.create());
       view.root.append(totalDiv);
@@ -745,7 +752,7 @@ export async function _demoDatabases5(): Promise<void> {
 
 export async function _demoScaffoldTree(): Promise<void> {
   const tv = await openMoleculeDataset('mol1K.csv');
-  
+
   _package.files.readAsText('demo_files/mol1K.layout').then(async (layoutString: string) => {
     const layout = DG.ViewLayout.fromJson(layoutString);
     tv.loadLayout(layout);
@@ -760,7 +767,7 @@ export async function _demoScaffoldTree(): Promise<void> {
 
     tv.dockManager.dock(scaffoldTree.root, DG.DOCK_TYPE.LEFT, null, '', 0.45);
     await scaffoldTree.loadTreeStr(treeStr);
-     
+
     grok.shell.windows.showHelp = true;
     grok.shell.windows.help.showHelp('help/datagrok/solutions/domains/chem/chem#scaffold-tree-analysis');
   });

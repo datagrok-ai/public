@@ -1,3 +1,7 @@
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+
 import {GAP_SYMBOL, INotationProvider, ISeqSplitted, SeqSplittedBase, SplitterFunc}
   from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {getSplitterWithSeparator, StringListSeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
@@ -18,7 +22,22 @@ export class CyclizedNotationProvider implements INotationProvider {
   private _splitter(seq: string): ISeqSplitted {
     const baseSS: ISeqSplitted = this.separatorSplitter(seq);
     return new CyclizedSeqSplitted(baseSS.originals, GapOriginals[NOTATION.SEPARATOR]);
-  };
+  }
+
+  public async getHelm(seqCol: DG.Column<string>): Promise<DG.Column<string>> {
+    const polyToolPackageName: string = 'SequenceTranslator';
+
+    const funcList = DG.Func.find({package: polyToolPackageName, name: 'polyToolConvert2'});
+    if (funcList.length == 0)
+      throw new Error(`Package '${polyToolPackageName}' must be installed for Cyclized notation provider.`);
+    const func = funcList[0];
+
+    const ptConvertCall = await func.prepare({table: seqCol.dataFrame, seqCol: seqCol});
+
+    const editorFunc = DG.Func.find({package: polyToolPackageName, name: 'getPolyToolConvertEditor'})[0];
+    const resHelmCol = (await editorFunc.prepare({call: ptConvertCall}).call()).getOutputParamValue() as DG.Column<string>;
+    return resHelmCol;
+  }
 }
 
 /** Gets canonical monomers for original ones with cyclization marks */

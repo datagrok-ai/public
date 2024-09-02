@@ -20,6 +20,22 @@ import {
   createJsonMonomerLibFromSdf, IMonomerLibHelper
 } from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
+import {ActivityCliffsEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-function-editor';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import {BYPASS_LARGE_DATA_WARNING} from '@datagrok-libraries/ml/src/functionEditors/consts';
+import {
+  getEmbeddingColsNames, multiColReduceDimensionality
+} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
+import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
+import {
+  ITSNEOptions, IUMAPOptions
+} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reducer';
+import {generateLongSequence, generateLongSequence2} from '@datagrok-libraries/bio/src/utils/generator';
+import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
+import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
 import {getMacromoleculeColumns} from './utils/ui-utils';
 import {
@@ -63,23 +79,12 @@ import {GetRegionApp} from './apps/get-region-app';
 import {GetRegionFuncEditor} from './utils/get-region-func-editor';
 import {sequenceToMolfile} from './utils/sequence-to-mol';
 import {detectMacromoleculeProbeDo} from './utils/detect-macromolecule-probe';
-import {ActivityCliffsEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-function-editor';
-import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {BYPASS_LARGE_DATA_WARNING} from '@datagrok-libraries/ml/src/functionEditors/consts';
-import {
-  getEmbeddingColsNames, multiColReduceDimensionality
-} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
-import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
-import {
-  ITSNEOptions, IUMAPOptions
-} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reducer';
-import {generateLongSequence, generateLongSequence2} from '@datagrok-libraries/bio/src/utils/generator';
-
 import {CyclizedNotationProvider} from './utils/cyclized';
+import {DimerizedNotationProvider} from './utils/dimerized';
 import {getMolColumnFromHelm} from './utils/helm-to-molfile/utils';
-import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
-import { calculateScoresWithEmptyValues } from './utils/calculate-scores';
 import {MonomerManager} from './utils/monomer-lib/monomer-manager/monomer-manager';
+import {calculateScoresWithEmptyValues} from './utils/calculate-scores';
+import {SeqHelper} from './utils/seq-helper/seq-helper';
 
 export const _package = new BioPackage(/*{debug: true}/**/);
 
@@ -114,11 +119,12 @@ let monomerSets: IMonomerSet | null = null;
 export async function initBio() {
   const logPrefix = 'Bio: _package.initBio()';
   _package.logger.debug(`${logPrefix}, start`);
-  const module = await grok.functions.call('Chem:getRdKitModule');
+  let rdKitModule!: RDModule;
+  let monomerLibManager: MonomerLibManager;
   const t1: number = window.performance.now();
   await Promise.all([
     (async () => {
-      const monomerLibManager = await MonomerLibManager.getInstance();
+      monomerLibManager = await MonomerLibManager.getInstance();
       // Fix user lib settings for explicit stuck from a terminated test
       const libSettings = await getUserLibSettings();
       if (libSettings.explicit) {
@@ -134,11 +140,13 @@ export async function initBio() {
       const bioPkgProps = new BioPackageProperties(pkgProps);
       _package.properties = bioPkgProps;
     })(),
+    (async () => { rdKitModule = await getRdKitModule(); })(),
   ]).finally(() => {
-    _package.completeInit();
     const t2: number = window.performance.now();
     _package.logger.debug(`${logPrefix}, loading ET: ${t2 - t1} ms`);
   });
+
+  _package.completeInit(rdKitModule);
 
   const monomers: string[] = [];
   const logPs: number[] = [];
@@ -147,7 +155,7 @@ export async function initBio() {
   Object.keys(series).forEach((symbol) => {
     monomers.push(symbol);
     const block = series[symbol].replaceAll('#R', 'O ');
-    const mol = module.get_mol(block);
+    const mol = rdKitModule.get_mol(block);
     const logP = JSON.parse(mol.get_descriptors()).CrippenClogP;
     logPs.push(logP);
     mol?.delete();
@@ -260,7 +268,7 @@ export function SplitToMonomersEditor(call: DG.FuncCall): void {
 //input: funccall call
 export function SequenceSpaceEditor(call: DG.FuncCall) {
   const funcEditor = new DimReductionBaseEditor({semtype: DG.SEMTYPE.MACROMOLECULE});
-  ui.dialog({title: 'Sequence Space'})
+  const dialog = ui.dialog({title: 'Sequence Space'})
     .add(funcEditor.getEditor())
     .onOK(async () => {
       const params = funcEditor.getParams();
@@ -274,8 +282,9 @@ export function SequenceSpaceEditor(call: DG.FuncCall) {
         preprocessingFunction: params.preprocessingFunction,
         clusterEmbeddings: params.clusterEmbeddings,
       }).call();
-    })
-    .show();
+    });
+  dialog.history(() => ({editorSettings: funcEditor.getStringInput()}), (x: any) => funcEditor.applyStringInput(x['editorSettings']));
+  dialog.show();
 }
 
 //name: SeqActivityCliffsEditor
@@ -283,7 +292,7 @@ export function SequenceSpaceEditor(call: DG.FuncCall) {
 //input: funccall call
 export function SeqActivityCliffsEditor(call: DG.FuncCall) {
   const funcEditor = new ActivityCliffsEditor({semtype: DG.SEMTYPE.MACROMOLECULE});
-  ui.dialog({title: 'Activity Cliffs'})
+  const dialog = ui.dialog({title: 'Activity Cliffs'})
     .add(funcEditor.getEditor())
     .onOK(async () => {
       const params = funcEditor.getParams();
@@ -297,7 +306,9 @@ export function SeqActivityCliffsEditor(call: DG.FuncCall) {
         preprocessingFunction: params.preprocessingFunction,
         options: params.options,
       }).call();
-    }).show();
+    });
+  dialog.history(() => ({editorSettings: funcEditor.getStringInput()}), (x: any) => funcEditor.applyStringInput(x['editorSettings']));
+  dialog.show();
 }
 
 // -- Package settings editor --
@@ -371,7 +382,7 @@ export function macromoleculeDifferenceCellRenderer(): MacromoleculeDifferenceCe
 //output: object res
 export function sequenceAlignment(alignType: string, alignTable: string, gap: number, seq1: string, seq2: string) {
   const toAlign = new SequenceAlignment(seq1, seq2, gap, alignTable);
-  const res = alignType == 'Local alignment' ? toAlign.smithWaterman() : toAlign.needlemanWunch();
+  const res = alignType == 'Local alignment' ? toAlign.smithWaterman() : toAlign.needlemanWunsch();
   return res;
 }
 
@@ -577,13 +588,16 @@ export async function helmPreprocessingFunction(
 //input: func preprocessingFunction {optional: true}
 //input: object options {optional: true}
 //input: bool clusterEmbeddings = true { optional: true }
+//input: bool isDemo {optional: true}
 //output: viewer result
 //editor: Bio:SequenceSpaceEditor
 export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column,
   methodName: DimReductionMethods, similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames,
   plotEmbeddings: boolean, preprocessingFunction?: DG.Func, options?: (IUMAPOptions | ITSNEOptions) & Options,
-  clusterEmbeddings?: boolean
+  clusterEmbeddings?: boolean, isDemo?: boolean
 ): Promise<DG.ScatterPlotViewer | undefined> {
+  const tableView = isDemo ? (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView :
+    grok.shell.tv.dataFrame == table ? grok.shell.tv : undefined;
   if (!checkInputColumnUI(molecules, 'Sequence Space'))
     return;
   if (!preprocessingFunction)
@@ -592,10 +606,12 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Co
   const res = await multiColReduceDimensionality(table, [molecules], methodName,
     [similarityMetric as KnownMetrics], [1], [preprocessingFunction], 'MANHATTAN',
     plotEmbeddings, clusterEmbeddings ?? false,
-    {...options, preprocessingFuncArgs: [options.preprocessingFuncArgs ?? {}]}, {
+    /* dimRedOptions */ {...options, preprocessingFuncArgs: [options.preprocessingFuncArgs ?? {}]},
+    /* uiOptions */{
       fastRowCount: 10000,
       scatterPlotName: 'Sequence space',
       bypassLargeDataWarning: options?.[BYPASS_LARGE_DATA_WARNING],
+      tableView: tableView,
     });
   return res;
 }
@@ -604,8 +620,9 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Co
 //name: To Atomic Level
 //description: Converts sequences to molblocks
 //input: dataframe table [Input data table]
-//input: column macroMolecule {caption: Sequence; semType: Macromolecule}
-//input: bool nonlinear =false {description: Slower mode for cycling/branching HELM structures}
+//input: column seqCol {caption: Sequence; semType: Macromolecule}
+//input: bool nonlinear =false {caption: Non linear; description: Slower mode for cycling/branching HELM structures}
+//output:
 export async function toAtomicLevel(table: DG.DataFrame, seqCol: DG.Column, nonlinear: boolean): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('Converting to atomic level ...');
   try {
@@ -1090,13 +1107,19 @@ export async function detectMacromoleculeProbe(file: DG.FileInfo, colName: strin
   await detectMacromoleculeProbeDo(csv, colName, probeCount);
 }
 
+//name: getSeqHelper
+//output: object result
+export async function getSeqHelper(): Promise<ISeqHelper> {
+  return SeqHelper.getInstance();
+}
+
 //name: getMolFromHelm
 //input: dataframe df
 //input: column helmCol
-//input: bool chiralityEngine
+//input: bool chiralityEngine = true
 //output: column result
-export async function getMolFromHelm(
-  df: DG.DataFrame, helmCol: DG.Column<string>, chiralityEngine?: boolean
+export function getMolFromHelm(
+  df: DG.DataFrame, helmCol: DG.Column<string>, chiralityEngine: boolean
 ): Promise<DG.Column<string>> {
   return getMolColumnFromHelm(df, helmCol, chiralityEngine);
 }
@@ -1108,4 +1131,11 @@ export async function getMolFromHelm(
 //input: string separator
 export function applyNotationProviderForCyclized(col: DG.Column<string>, separator: string) {
   col.temp[SeqTemps.notationProvider] = new CyclizedNotationProvider(separator);
+}
+
+//name: applyNotationProviderForDimerized
+//input: column col
+//input: string separator
+export function applyNotationProviderForDimerized(col: DG.Column<string>, separator: string) {
+  col.temp[SeqTemps.notationProvider] = new DimerizedNotationProvider(separator);
 }

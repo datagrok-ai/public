@@ -92,13 +92,35 @@ export async function getPlsAnalysis(input: PlsInput): Promise<PlsOutput> {
   };
 }
 
+/** Return debiased predction by PLS regression */
+function debiasedPrediction(features: DG.ColumnList, params: DG.Column,
+  target: DG.Column, biasedPrediction: DG.Column): DG.Column {
+  const samples = target.length;
+  const dim = features.length;
+  const rawParams = params.getRawData();
+  const debiased = new Float32Array(samples);
+  const biased = biasedPrediction.getRawData();
+
+  // Compute bias
+  let bias = target.stats.avg;
+  for (let i = 0; i < dim; ++i)
+    bias -= rawParams[i] * features.byIndex(i).stats.avg;
+
+  // Compute debiased prediction
+  for (let i = 0; i < samples; ++i)
+    debiased[i] = bias + biased[i];
+
+  return DG.Column.fromFloat32Array('Debiased', debiased, samples);
+}
+
 /** Perform multivariate analysis using the PLS regression */
 async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<void> {
   const result = await getPlsAnalysis(input);
 
   const plsCols = result.tScores;
   const cols = input.table.columns;
-  const featuresNames = input.features.names();
+  const features = input.features;
+  const featuresNames = features.names();
   const prefix = (analysisType === PLS_ANALYSIS.COMPUTE_COMPONENTS) ? RESULT_NAMES.PREFIX : TITLE.XSCORE;
 
   // add PLS components to the table
@@ -129,7 +151,8 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   });
 
   // 1. Predicted vs Reference scatter plot
-  const pred = result.prediction;
+  // Debias prediction (since PLS center data)
+  const pred = debiasedPrediction(features, result.regressionCoefficients, input.predict, result.prediction);
   pred.name = cols.getUnusedName(`${input.predict.name} ${RESULT_NAMES.SUFFIX}`);
   cols.add(pred);
   const predictVsReferScatter = view.addViewer(DG.Viewer.scatterPlot(input.table, {
@@ -294,8 +317,8 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
 
   // responce (to predict)
   let predict = numCols[numCols.length - 1];
-  const predictInput = ui.input.column(TITLE.PREDICT, {table: table, value: predict, onValueChanged: () => {
-    predict = predictInput.value!;
+  const predictInput = ui.input.column(TITLE.PREDICT, {table: table, value: predict, onValueChanged: (value) => {
+    predict = value;
     updateIputs();
   }, filter: (col: DG.Column) => isValidNumeric(col)},
   );
@@ -304,7 +327,7 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
   // predictors (features)
   let features: DG.Column[];
   const featuresInput = ui.input.columns(TITLE.USING, {table: table, available: numColNames});
-  featuresInput.onInput(() => updateIputs());
+  featuresInput.onInput.subscribe(() => updateIputs());
   featuresInput.setTooltip(HINT.FEATURES);
 
   // components count
@@ -317,7 +340,7 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
     showPlusMinus: true,
     min: COMPONENTS.MIN,
   }));
-  componentsInput.onInput(() => updateIputs());
+  componentsInput.onInput.subscribe(() => updateIputs());
   componentsInput.setTooltip(HINT.COMPONENTS);
 
   let dlgTitle: string;

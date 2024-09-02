@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import * as jStat from 'jstat';
 import {performNelderMeadOptimization} from './fitting-algorithm/optimizer';
 import {NELDER_MEAD_DEFAULTS} from './fitting-algorithm/optimizer-nelder-mead';
+import {Extremum, OptimizationResult} from './fitting-algorithm/optimizer-misc';
 
 
 export const FitErrorModel = {
@@ -276,6 +277,27 @@ export class LogLinearFunction extends FitFunction {
   }
 }
 
+/** Class that implements the exponential function */
+export class ExponentialFunction extends FitFunction {
+  get name(): string {
+    return FIT_FUNCTION_EXPONENTIAL;
+  }
+
+  get parameterNames(): string[] {
+    return ['Mantissa', 'Power'];
+  }
+
+  y(params: Float32Array, x: number): number {
+    return exponential(params, x);
+  }
+
+  getInitialParameters(x: number[], y: number[]): Float32Array {
+    const params = new Float32Array(2);
+    params.set([100, -2]);
+    return params;
+  }
+}
+
 /** Class that implements user JS functions */
 export class JsFunction extends FitFunction {
   private _name: string;
@@ -314,6 +336,7 @@ export const fitFunctions: {[index: string]: FitFunction} = {
   'linear': new LinearFunction(),
   'sigmoid': new SigmoidFunction(),
   'log-linear': new LogLinearFunction(),
+  'exponential': new ExponentialFunction(),
 };
 
 /** Properties that describe {@link FitStatistics}. Useful for editing, initialization, transformations, etc. */
@@ -394,6 +417,7 @@ export const fitSeriesProperties: DG.Property[] = [
 export const FIT_FUNCTION_SIGMOID = 'sigmoid';
 export const FIT_FUNCTION_LINEAR = 'linear';
 export const FIT_FUNCTION_LOG_LINEAR = 'log-linear';
+export const FIT_FUNCTION_EXPONENTIAL = 'exponential';
 
 export const FIT_STATS_RSQUARED = 'rSquared';
 export const FIT_STATS_AUC = 'auc';
@@ -424,30 +448,92 @@ export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFuncti
   let paramValues = fitFunction.getInitialParameters(data.x, data.y);
 
   const of = objectiveFactory(curveFunction, data, errorModel);
-  let bottomParamBounds = new Float32Array(fitFunction.parameterNames.length);
-  let topParamBounds = new Float32Array(fitFunction.parameterNames.length);
+  const bottomParamBounds = new Float32Array(fitFunction.parameterNames.length);
+  const topParamBounds = new Float32Array(fitFunction.parameterNames.length);
   for (let i = 0; i < fitFunction.parameterNames.length; i++) {
     bottomParamBounds[i] = paramValues[i] === 0 ? -1 : paramValues[i] - Math.abs(paramValues[i] * 0.5);
     topParamBounds[i] = paramValues[i] === 0 ? 1 : paramValues[i] + Math.abs(paramValues[i] * 0.5);
   }
-  if (parameterBounds && parameterBounds.length !== 0) {
-    bottomParamBounds = new Float32Array(parameterBounds.length);
-    bottomParamBounds.set(parameterBounds.map((pb) => pb.min!));
-    topParamBounds = new Float32Array(parameterBounds.length);
-    topParamBounds.set(parameterBounds.map((pb) => pb.max!));
-  }
+  const parameterBoundsBitset: DG.BitSet = DG.BitSet.create(fitFunction.parameterNames.length * 2);
+  if (parameterBounds && parameterBounds.length !== 0)
+    for (let i = 0; i < parameterBounds.length; i++) {
+      if (parameterBounds[i].min !== undefined && parameterBounds[i].min !== null) {
+        bottomParamBounds[i] = parameterBounds[i].min!;
+        parameterBoundsBitset.set(i * 2, true);
+      }
+      if (parameterBounds[i].max !== undefined && parameterBounds[i].max !== null) {
+        topParamBounds[i] = parameterBounds[i].max!;
+        parameterBoundsBitset.set(i * 2 + 1, true);
+      }
+    }
 
-  const optimization = performNelderMeadOptimization(of, bottomParamBounds, topParamBounds, {
-    tolerance: NELDER_MEAD_DEFAULTS.TOLERANCE,
-    maxIter: NELDER_MEAD_DEFAULTS.MAX_ITER,
-    nonZeroParam: NELDER_MEAD_DEFAULTS.NON_ZERO_PARAM,
-    initialScale: NELDER_MEAD_DEFAULTS.INITIAL_SCALE,
-    scaleReflection: NELDER_MEAD_DEFAULTS.SCALE_REFLECTION,
-    scaleExpansion: NELDER_MEAD_DEFAULTS.SCALE_EXPANSION,
-    scaleContraction: NELDER_MEAD_DEFAULTS.SCALE_CONTRACTION,
-  }, 1, paramValues);
+  const getConsistency = (extremum: Extremum) => {
+    const residuals = of(extremum.point).residuals;
+    let q1q4 = 0;
+    let q2q3 = 0;
+    // TODO: rewrite quartiles to a better condition
+    for (let i = 0; i < residuals.length; i++) {
+      if (residuals.length / 4 > i)
+        q1q4 += Math.pow(residuals[i], 2);
+      else if (3 * residuals.length / 4 > i)
+        q2q3 += Math.pow(residuals[i], 2);
+      else
+        q1q4 += Math.pow(residuals[i], 2);
+    }
+    return q1q4 / q2q3;
+  };
 
-  paramValues = optimization.extremums[0].point;
+  let iter = -1;
+  let continueOptimization = 0;
+  let statistics: number | null = null;
+  let optimization: OptimizationResult;
+  let minIdx = 0;
+  do {
+    optimization = performNelderMeadOptimization(of, bottomParamBounds, topParamBounds, {
+      tolerance: NELDER_MEAD_DEFAULTS.TOLERANCE,
+      maxIter: NELDER_MEAD_DEFAULTS.MAX_ITER,
+      nonZeroParam: NELDER_MEAD_DEFAULTS.NON_ZERO_PARAM,
+      initialScale: NELDER_MEAD_DEFAULTS.INITIAL_SCALE,
+      scaleReflection: NELDER_MEAD_DEFAULTS.SCALE_REFLECTION,
+      scaleExpansion: NELDER_MEAD_DEFAULTS.SCALE_EXPANSION,
+      scaleContraction: NELDER_MEAD_DEFAULTS.SCALE_CONTRACTION,
+    }, 10, paramValues);
+
+    minIdx = 0;
+    for (let i = 1; i < optimization.extremums.length; i++)
+      if (optimization.extremums[i].cost < optimization.extremums[minIdx].cost)
+        minIdx = i;
+
+    const newStatistics = getConsistency(optimization.extremums[minIdx]);
+    if (statistics === null)
+      statistics = newStatistics;
+    else if (newStatistics < statistics) {
+      statistics = newStatistics;
+      continueOptimization = 0;
+    }
+    else
+      continueOptimization++;
+
+    if (iter === -1) {
+      if (statistics <= 2)
+        break;
+      iter++;
+    }
+
+    if (iter > 40)
+      break;
+    if (continueOptimization === 3)
+      break;
+
+    for (let i = 0; i < fitFunction.parameterNames.length; i++) {
+      if (!parameterBoundsBitset.get(i * 2))
+        bottomParamBounds[i] = paramValues[i] - Math.abs(optimization.extremums[minIdx].point[i] * (continueOptimization + 1.5));
+      if (!parameterBoundsBitset.get(i * 2 + 1))
+        topParamBounds[i] = paramValues[i] + Math.abs(optimization.extremums[minIdx].point[i] * (continueOptimization + 1.5));
+    }
+  } while (true);
+
+  paramValues = optimization.extremums[minIdx].point;
   const fittedCurve = getFittedCurve(curveFunction, paramValues);
 
   return {
@@ -560,6 +646,12 @@ export function logLinear(params: Float32Array, x: number): number {
   return A * Math.log(x + 1) + B;
 }
 
+export function exponential(params: Float32Array, x: number): number {
+  const A = params[0];
+  const B = params[1];
+  return A * Math.exp(x * B);
+}
+
 export function getAuc(fittedCurve: (x: number) => number, data: {x: number[], y: number[]}): number {
   let auc = 0;
   const min = Math.min(...data.x);
@@ -603,7 +695,8 @@ function getInvError(targetFunc: (y: number) => number, data: {y: number[], x: n
 }
 
 function objectiveFactory(targetFunc: (params: Float32Array, x: number) => number,
-  data: {y: number[], x: number[]}, errorModel: FitErrorModelType): (params: Float32Array) => number {
+  data: {y: number[], x: number[]}, errorModel: FitErrorModelType):
+    (params: Float32Array) => {likelihood: number, residuals: number[]} {
   return (params: Float32Array) => {
     let likelihood = 0;
     let sigmaA = 0;
@@ -632,7 +725,7 @@ function objectiveFactory(targetFunc: (params: Float32Array, x: number) => numbe
       likelihood += residuesSquares[i] / sigmaSqI[i] + Math.log(2 * Math.PI * sigmaSqI[i]);
     }
 
-    return likelihood;
+    return {likelihood, residuals};
   };
 }
 

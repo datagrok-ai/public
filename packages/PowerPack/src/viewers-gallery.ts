@@ -95,7 +95,7 @@ export function viewersDialog(currentView: DG.TableView, currentTable: DG.DataFr
       dlg.close();
     }
   })
-  search = ui.input.search('', {value: '', onValueChanged: (input) => findViewer(input.value)});
+  search = ui.input.search('', {value: '', onValueChanged: (value) => findViewer(value)});
   search.input.setAttribute('tabindex', '-1');
   search.input.setAttribute('placeholder', 'Search by name, keywords, description, tag, or package');
   

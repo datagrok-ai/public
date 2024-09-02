@@ -4,10 +4,9 @@ import * as grok from 'datagrok-api/grok';
 
 import {awaitCheck, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {createTableView} from './utils';
-import {mmpViewer} from '../package';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {_package} from '../package-test';
-import {MatchedMolecularPairsViewer} from '../analysis/molecular-matched-pairs/mmp-analysis';
+import {MatchedMolecularPairsViewer} from '../analysis/molecular-matched-pairs/mmp-viewer';
 
 const pairsFromMolblock = `
      RDKit          2D
@@ -214,8 +213,8 @@ category('mmpa', () => {
     //ensure embeddings columns have been calculated
     await awaitCheck(() => tv.dataFrame.col('~Embed_X_1')!.stats.missingValueCount === 0 &&
       tv.dataFrame.col('~Embed_Y_1')!.stats.missingValueCount === 0, 'Embeddings haven\'t been calculated', 10000);
-    expect(mmp.mmpRules!.rules.length, 40, `Incorrect rules`);
-    expect(mmp.mmpRules!.smilesFrags.length, 14, `Incorrect smilesFrags`);
+    expect(mmp.mmpa!.rules.rules.length, 40, `Incorrect rules`);
+    expect(mmp.mmpa!.rules!.smilesFrags.length, 14, `Incorrect smilesFrags`);
   });
 
   test('transformationsTab', async () => {

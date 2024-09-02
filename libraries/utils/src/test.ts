@@ -399,7 +399,7 @@ export async function runTests(options?: TestExecutionOptions) {
   await initAutoTests(package_);
   const results: {
     category?: string, name?: string, success: boolean,
-    result: string, ms: number, skipped: boolean
+    result: string, ms: number, skipped: boolean, logs?: string
   }[] = [];
   console.log(`Running tests`);
   options ??= {};
@@ -413,6 +413,11 @@ export async function runTests(options?: TestExecutionOptions) {
   }
   else {
     await InvokeAllTests(tests, options);
+  }
+  for (let r of results) {
+    r.result = r.result.toString().replace(/"/g, '\'');
+    if (r.logs != undefined)
+      r.logs = r.logs!.toString().replace(/"/g, '\'');
   }
   return results;
 
@@ -499,9 +504,9 @@ export async function runTests(options?: TestExecutionOptions) {
         // grok.shell.closeAll();
         // DG.Balloon.closeAll();
         if (value.afterStatus)
-          data.push({ category: key, name: 'after', result: value.afterStatus, success: false, ms: 0, skipped: false });
+          data.push({ date: new Date().toISOString(), logs: '', category: key, name: 'after', result: value.afterStatus, success: false, ms: 0, skipped: false });
         if (value.beforeStatus)
-          data.push({ category: key, name: 'before', result: value.beforeStatus, success: false, ms: 0, skipped: false });
+          data.push({ date: new Date().toISOString(), logs: '', category: key, name: 'before', result: value.beforeStatus, success: false, ms: 0, skipped: false });
         results.push(...data);
       }
     } finally {
@@ -511,6 +516,8 @@ export async function runTests(options?: TestExecutionOptions) {
       await delay(1000);
       const error = await grok.shell.lastError;
       const params = {
+        logs: '',
+        date: new Date().toISOString(),
         category: 'Unhandled exceptions',
         name: 'Exception',
         result: error ?? '', success: !error, ms: 0, skipped: false
@@ -537,7 +544,7 @@ async function getResult(x: any): Promise<string> {
 async function execTest(t: Test, predicate: string | undefined, logs: any[],
   categoryTimeout?: number, packageName?: string, verbose?: boolean): Promise<any> {
   logs.length = 0;
-  let r: { category?: string, name?: string, success: boolean, result: any, ms: number, skipped: boolean, logs?: string };
+  let r: { date: string, category?: string, name?: string, success: boolean, result: any, ms: number, skipped: boolean, logs?: string };
   let type: string = 'package';
   const filter = predicate != undefined && (t.name.toLowerCase() !== predicate.toLowerCase());
   let skip = t.options?.skipReason || filter;
@@ -553,16 +560,16 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
   const start = Date.now();
   try {
     if (skip)
-      r = { success: true, result: skipReason!, ms: 0, skipped: true };
+      r = { date: new Date().toISOString(), success: true, result: skipReason!, ms: 0, skipped: true };
     else {
       let timeout_ = t.options?.timeout === STANDART_TIMEOUT &&
         categoryTimeout ? categoryTimeout : t.options?.timeout!;
       timeout_ = (timeout_ === STANDART_TIMEOUT && DG.Test.isInBenchmark) ? BENCHMARK_TIMEOUT : timeout_;
-      r = { success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false };
+      r = { date: new Date().toISOString(), success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false };
     }
   } catch (x: any) {
     stdError(x);
-    r = { success: false, result: await getResult(x), ms: 0, skipped: false };
+    r = { date: new Date().toISOString(), success: false, result: await getResult(x), ms: 0, skipped: false };
   }
   if (t.options?.isAggregated && r.result.constructor === DG.DataFrame) {
     const col = r.result.col('success');
@@ -585,7 +592,7 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
   if (!filter) {
     let params = {
       'success': r.success, 'result': r.result, 'ms': r.ms,
-      'skipped': r.skipped, 'package': packageName, 'category': t.category, 'name': t.name, 'logs': r.logs
+      'skipped': r.skipped, 'package': packageName, 'category': t.category, 'name': t.name, 'logs': r.logs,
     };
     if (r.result.constructor == Object) {
       const res = Object.keys(r.result).reduce((acc, k) => ({ ...acc, ['result.' + k]: r.result[k] }), {});
@@ -696,7 +703,6 @@ export async function testViewer(v: string, df: DG.DataFrame, options?: {
   detectSemanticTypes?: boolean, readOnly?: boolean, arbitraryDfTest?: boolean,
   packageName?: string, awaitViewer?: (viewer: DG.Viewer) => Promise<void>
 }): Promise<void> {
-
   const packageName = options?.packageName ?? '';
   if (options?.detectSemanticTypes)
     await grok.data.detectSemanticTypes(df);

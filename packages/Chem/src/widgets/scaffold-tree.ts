@@ -64,7 +64,7 @@ interface ScaffoldLayout {
   scaffoldJson: string;
 }
 
-function value(node: TreeViewNode): ITreeNode {
+export function value(node: TreeViewNode): ITreeNode {
   return node.value as ITreeNode;
 }
 
@@ -284,7 +284,7 @@ async function updateLabelContent(labelDiv: HTMLElement, bitset: DG.BitSet, this
   labelDiv.onmouseleave = (e) => ui.tooltip.hide();
 }
 
-async function updateVisibleNodes(thisViewer: ScaffoldTreeViewer) {
+export async function updateVisibleNodes(thisViewer: ScaffoldTreeViewer) {
   const visibleNodes = getVisibleNodes(thisViewer);
 
   for (const group of visibleNodes) {
@@ -476,7 +476,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     for (let n = 0; n < tableNames.length; ++n)
       tableNames[n] = this.molColumns[n][0].dataFrame.name;
 
-    const defaultTableName = tableNames.length > 0 ? tableNames[0] : '';
+    const currentName = grok.shell.tv.dataFrame.name;
+    const defaultTableName = tableNames.includes(currentName) ? currentName : (tableNames[0] || '');
     this.Table = this.addProperty('Table', DG.TYPE.DATA_FRAME, defaultTableName, {editor: 'table', category: 'Data'});
 
     this.tableIdx = tableNames.length > 0 ? tableNames.indexOf(this.Table) : -1;
@@ -534,7 +535,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   addToFilters() {
     const summary = `${this.getFilterSum()} (viewer)`;
-    const { filters } = grok.shell.tv.dataFrame.rows;
+    const dataFrame = grok.shell.tv.dataFrame;
+    if (!dataFrame)
+      return;
+
+    const { filters } = dataFrame.rows;
     const checkedNodes = this.tree.items.filter((node) => node.checked);
   
     if (checkedNodes.length > 0) {
@@ -816,7 +821,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       (this.molColumns.length === 0 ? null : this.molColumns[this.tableIdx][this.molColumnIdx]);
   }
 
-  private openEditSketcher(group: TreeViewGroup) {
+  public openEditSketcher(group: TreeViewGroup) {
     if (this.wrapper !== null) {
       this.wrapper.node = group;
       return;
@@ -1701,6 +1706,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       if (div !== null)
         div.innerHTML = this.MoleculeColumn;
       this.toggleTreeGenerationVisibility();
+      // set the DataFrame first to trigger onFrameAttached, which ensures correct filtering on the appropriate table
+      this.dataFrame = grok.shell.tables.find((df) => df.name === this.Table)!;
     } else if (p.name === 'MoleculeColumn') {
       for (let n = 0; n < this.molColumns[this.tableIdx].length; ++n) {
         if (this.molColumns[this.tableIdx][n].name === this.MoleculeColumn) {
@@ -1882,8 +1889,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       return;
     }
 
-    if (this.allowGenerate)
-      setTimeout(() => this.generateTree(), 1000);
     attached = true;
     scaffoldTreeId += 1;
   }
@@ -1960,7 +1965,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   render() {
     const thisViewer = this;
     this._bitOpInput = ui.input.choice('', {value: BitwiseOp.OR, items: Object.values(BitwiseOp), onValueChanged: v => {
-      thisViewer.bitOperation = v.stringValue;
+      thisViewer.bitOperation = v;
       thisViewer.updateFilters();
       this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
     }});

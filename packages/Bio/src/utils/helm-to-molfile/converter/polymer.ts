@@ -2,8 +2,11 @@ import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {V3K_CONST} from '@datagrok-libraries/chem-meta/src/formats/molfile-const';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
 
+import wu from 'wu';
+
 import {Helm} from './helm';
 import {MonomerWrapper} from './monomer-wrapper';
+import {MolfileWithMap, MonomerMap} from './types';
 
 export class Polymer {
   constructor(
@@ -50,7 +53,7 @@ export class Polymer {
     });
   }
 
-  compileToMolfile(): string {
+  compileToMolfile(): MolfileWithMap {
     const atomLines: string[] = [];
     const bondLines: string[] = [];
 
@@ -61,10 +64,22 @@ export class Polymer {
 
     this.restoreBondsBetweenMonomers();
 
-    this.monomerWrappers.forEach((monomerWrapper) => {
-      atomLines.push(...monomerWrapper.getAtomLines());
-      bondLines.push(...monomerWrapper.getBondLines());
-    });
+    const monomers: MonomerMap[] = new Array<MonomerMap>(this.monomerWrappers.length);
+    for (const [mw, mwI] of wu.enumerate(this.monomerWrappers)) {
+      const mwAtomFirst = atomLines.length;
+      const mwBondFirst = bondLines.length;
+
+      atomLines.push(...mw.getAtomLines());
+      bondLines.push(...mw.getBondLines());
+
+      monomers[mwI] = {
+        position: mwI,
+        // TODO: PolymerType
+        symbol: mw.monomerSymbol,
+        atoms: wu.count(mwAtomFirst).take(mw.atomCount).toArray(),
+        bonds: wu.count(mwBondFirst).take(mw.bondCount).toArray(),
+      };
+    }
 
     const atomCount = atomLines.length;
     const bondCount = bondLines.length;
@@ -75,7 +90,7 @@ export class Polymer {
     const molfileEnd = V3K_CONST.END_CTAB + '\n' + V3K_CONST.END;
     const blockList = [header, atomBlock, bondBlock, molfileEnd];
     const molfile = blockList.join('\n');
-    return molfile;
+    return {molfile, monomers};
   }
 
   private getV3KHeader(atomCount: number, bondCount: number): string {

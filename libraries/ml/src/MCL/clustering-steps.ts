@@ -26,6 +26,9 @@ export function mclInflate(sparseMatrix: SparseMatrix, pow: number) {
 export function colwiseNormilize(
   sparseMatrix: SparseMatrix, nRows: number, pruneValue: number, doPrune?: boolean
 ): SparseMatrix {
+  if (doPrune)
+    sparseMatrix = prune(sparseMatrix, pruneValue);
+
   const colSums = new Float32Array(nRows);
   const d = sparseMatrix.distance;
   const js = sparseMatrix.j;
@@ -37,8 +40,6 @@ export function colwiseNormilize(
     if (sum !== 0)
       d[i] /= sum;
   }
-  if (doPrune)
-    return prune(sparseMatrix, pruneValue);
   return sparseMatrix;
 }
 

@@ -11,13 +11,13 @@ import {
   isSummarySettingsBase
 } from './shared';
 import {VlaaiVisManager} from '../utils/vlaaivis-manager';
-import { CONSTANTS } from '../utils/constants';
 
 let minRadius: number;
 
 enum PieChartStyle {
   Radius = 'Radius',
-  Angle = 'Angle'
+  Angle = 'Angle',
+  Vlaaivis = 'VlaaiVis'
 }
 
 export interface Subsector {
@@ -37,7 +37,7 @@ export interface Sector {
 
 export interface PieChartSettings extends SummarySettingsBase {
   radius: number;
-  style: PieChartStyle.Radius | PieChartStyle.Angle;
+  style: PieChartStyle.Radius | PieChartStyle.Angle | PieChartStyle.Vlaaivis;
   sectors?: {
       lowerBound: number;
       upperBound: number;
@@ -355,23 +355,28 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
       ui.input.columns('Сolumns', {
         value: gc.grid.dataFrame.columns.byNames(columnNames),
         table: gc.grid.dataFrame,
-        onValueChanged: (input) => {
-          settings.columnNames = names(input.value);
+        onValueChanged: (value) => {
+          settings.columnNames = names(value);
           gc.grid.invalidate();
         },
         available: names(gc.grid.dataFrame.columns.numerical)
       }),
-      ui.input.choice('Style', {value: PieChartStyle.Radius, items: [PieChartStyle.Angle, PieChartStyle.Radius, CONSTANTS.VLAAIVIS],
-        onValueChanged: (input) => {
-        ui.empty(elementsDiv);
-        if (input.value === CONSTANTS.VLAAIVIS)
-          elementsDiv.appendChild(new VlaaiVisManager(settings, gc).createTreeGroup());
-        else {
-          delete settings.sectors;
-          settings.style = input.value as PieChartStyle;
-          gc.grid.invalidate();
+      ui.input.choice('Style', {value: settings.style ?? PieChartStyle.Radius, items: [PieChartStyle.Angle, PieChartStyle.Radius, PieChartStyle.Vlaaivis],
+        onValueChanged: (value) => {
+          settings.style = value;
+          ui.empty(elementsDiv);
+          if (value === PieChartStyle.Vlaaivis)
+            elementsDiv.appendChild(new VlaaiVisManager(settings, gc).createTreeGroup());
+          else {
+            delete settings.sectors;
+            gc.grid.invalidate();
+          }
+        },
+        onCreated: (input) => {
+          if (input.value === PieChartStyle.Vlaaivis)
+            elementsDiv.appendChild(new VlaaiVisManager(settings, gc).createTreeGroup());
         }
-      }})
+      })
     ]);
 
     return ui.divV([inputs, elementsDiv]);

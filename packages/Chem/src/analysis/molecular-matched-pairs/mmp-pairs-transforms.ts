@@ -1,14 +1,14 @@
 import * as DG from 'datagrok-api/dg';
 import {ILineSeries} from '@datagrok-libraries/utils/src/render-lines-on-sp';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {MmpRules, MmpInput} from './mmp-constants';
+import {MmpInput} from './mmp-viewer';
 import {SUBSTRUCT_COL} from '../../constants';
 import {MMP_NAMES, columnsDescriptions} from './mmp-constants';
 import {PaletteCodes} from './mmp-mol-rendering';
 import {createColWithDescription} from './mmp-generations';
+import {MMPA} from './mmp-analysis/mmpa';
 
-function calculateActivityDiffs(mmpInput: MmpInput,
-  mmpRules: MmpRules, variates: number, allCasesNumber: number) :
+function calculateActivityDiffs(mmpInput: MmpInput, mmpa: MMPA, variates: number) :
   { maxActs: number [],
     fromFrag: string[],
     toFrag: string[],
@@ -28,40 +28,42 @@ function calculateActivityDiffs(mmpInput: MmpInput,
   const maxActs = new Array<number>(variates);
   for (let i = 0; i < variates; i++)
     maxActs[i] = 0;
-  const fromFrag = new Array<string>(mmpRules.rules.length);
-  const toFrag = new Array<string>(mmpRules.rules.length);
-  const occasions = new Int32Array(mmpRules.rules.length);
+
+  const allSize = mmpa.rules.rules.length;
+  const fromFrag = new Array<string>(allSize);
+  const toFrag = new Array<string>(allSize);
+  const occasions = new Int32Array(allSize);
   const meanDiffs = new Array<Float32Array>(variates);
   for (let i = 0; i < variates; i++)
-    meanDiffs[i] = new Float32Array(mmpRules.rules.length);
+    meanDiffs[i] = new Float32Array(allSize);
 
-  const molFrom = new Array<string>(allCasesNumber);
-  const molTo = new Array<string>(allCasesNumber);
-  const pairNum = new Int32Array(allCasesNumber);
-  const molNumFrom = new Int32Array(allCasesNumber);
-  const molNumTo = new Int32Array(allCasesNumber);
+  const molFrom = new Array<string>(mmpa.allCasesNumber);
+  const molTo = new Array<string>(mmpa.allCasesNumber);
+  const pairNum = new Int32Array(mmpa.allCasesNumber);
+  const molNumFrom = new Int32Array(mmpa.allCasesNumber);
+  const molNumTo = new Int32Array(mmpa.allCasesNumber);
   const diffs = new Array<Float32Array>(variates);
   for (let i = 0; i < variates; i++)
-    diffs[i] = new Float32Array(allCasesNumber);
+    diffs[i] = new Float32Array(mmpa.allCasesNumber);
 
-  const pairsFromSmiles = new Array<string>(allCasesNumber);
-  const pairsToSmiles = new Array<string>(allCasesNumber);
-  const ruleNum = new Int32Array(allCasesNumber);
+  const pairsFromSmiles = new Array<string>(mmpa.allCasesNumber);
+  const pairsToSmiles = new Array<string>(mmpa.allCasesNumber);
+  const ruleNum = new Int32Array(mmpa.allCasesNumber);
 
   const activityPairsIdxs = new Array<BitArray>(variates);
   for (let i = 0; i < variates; i++)
-    activityPairsIdxs[i] = new BitArray(allCasesNumber);
+    activityPairsIdxs[i] = new BitArray(mmpa.allCasesNumber);
 
   let pairIdx = 0;
-  for (let i = 0; i < mmpRules.rules.length; i++) {
-    fromFrag[i] = mmpRules.smilesFrags[mmpRules.rules[i].smilesRule1];
-    toFrag[i] = mmpRules.smilesFrags[mmpRules.rules[i].smilesRule2];
-    occasions[i] = mmpRules.rules[i].pairs.length;
+  for (let i = 0; i < allSize; i++) {
+    fromFrag[i] = mmpa.rules.smilesFrags[mmpa.rules.rules[i].smilesRule1];
+    toFrag[i] = mmpa.rules.smilesFrags[mmpa.rules.rules[i].smilesRule2];
+    occasions[i] = mmpa.rules.rules[i].pairs.length;
 
     const mean = new Float32Array(variates);
     for (let j = 0; j < occasions[i]; j++) {
-      const idx1 = mmpRules.rules[i].pairs[j].firstStructure;
-      const idx2 = mmpRules.rules[i].pairs[j].secondStructure;
+      const idx1 = mmpa.rules.rules[i].pairs[j].firstStructure;
+      const idx2 = mmpa.rules.rules[i].pairs[j].secondStructure;
 
       molFrom[pairIdx] = mmpInput.molecules.get(idx1);
       molTo[pairIdx] = mmpInput.molecules.get(idx2);
@@ -83,8 +85,8 @@ function calculateActivityDiffs(mmpInput: MmpInput,
       molNumFrom[pairIdx] = idx1;
       molNumTo[pairIdx] = idx2;
       pairNum[pairIdx] = pairIdx;
-      pairsFromSmiles[pairIdx] = mmpRules.smilesFrags[mmpRules.rules[i].smilesRule1];
-      pairsToSmiles[pairIdx] = mmpRules.smilesFrags[mmpRules.rules[i].smilesRule2];
+      pairsFromSmiles[pairIdx] = mmpa.rules.smilesFrags[mmpa.rules.rules[i].smilesRule1];
+      pairsToSmiles[pairIdx] = mmpa.rules.smilesFrags[mmpa.rules.rules[i].smilesRule2];
       ruleNum[pairIdx] = i;
 
       pairIdx++;
@@ -208,8 +210,7 @@ function getTransPairsGrid(variates: number, molFrom: string[], molTo: string[],
   return pairedTransformations.plot.grid();
 }
 
-export function getMmpActivityPairsAndTransforms(mmpInput: MmpInput, mmpRules: MmpRules,
-  allCasesNumber: number, palette: PaletteCodes): {
+export function getMmpActivityPairsAndTransforms(mmpInput: MmpInput, mmpa: MMPA, palette: PaletteCodes): {
   maxActs: number[],
   diffs: Array<Float32Array>,
   meanDiffs: Array<Float32Array>,
@@ -221,7 +222,7 @@ export function getMmpActivityPairsAndTransforms(mmpInput: MmpInput, mmpRules: M
   linesActivityCorrespondance: Uint32Array
 } {
   const variates = mmpInput.activities.length;
-  const activityDiffs = calculateActivityDiffs(mmpInput, mmpRules, variates, allCasesNumber);
+  const activityDiffs = calculateActivityDiffs(mmpInput, mmpa, variates);
 
   const [activityMeanNames, transFragmentsGrid] = getTransFragmetsGrid(variates, activityDiffs.fromFrag,
     activityDiffs.toFrag, activityDiffs.occasions, mmpInput.activities, activityDiffs.meanDiffs);

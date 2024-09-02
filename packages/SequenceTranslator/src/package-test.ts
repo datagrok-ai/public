@@ -8,6 +8,7 @@ import './tests/formats-to-helm';
 import './tests/helm-to-nucleotides';
 import './tests/formats-support';
 import './tests/files-tests';
+import './tests/polytool-enumerate-tests';
 
 import {OligoToolkitTestPackage} from './tests/utils';
 

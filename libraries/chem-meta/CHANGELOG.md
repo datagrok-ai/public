@@ -1,5 +1,9 @@
 # chem-meta changelog
 
+## 1.2.6 (2024-08-29)
+
+Exposing reaction runs
+
 ## 1.2.5 (2024-04-17)
 
 Port molfile-related constants to chem-meta

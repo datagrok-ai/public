@@ -402,12 +402,14 @@
   position: relative;
 }
 
-.chem-tooltip-widget {
+.chem-tooltip-structure-div {
+  display: grid;
+  grid-template-columns: repeat(3, 75px);
+}
+
+.chem-tooltip-text {
   position: relative;
-  top: -80px;
-  left: 120px;
-  width: 335px;
-  height: 0px;
+  left: 20px;
 }
 
 .chem-substructure-limit-error {
@@ -681,12 +683,18 @@
   width: 8px;
 }
 
-.mmpa-filters-expand-icon {
-  transform-origin: center;
-  padding-top: 6px;
+.mmpa-fragments-tab .mmpa-pairs-slider{
+  display: flex;
 }
 
-.mmpa-filters-expand-icon-collapsed {
-  transform: rotate(-180deg);
-  padding-top: 0px;
+.mmpa-fragments-tab .mmpa-activity-filters{
+  display: none;
+}
+
+.mmpa-cliffs-tab .mmpa-activity-filters{
+  display: flex;
+}
+
+.mmpa-cliffs-tab .mmpa-pairs-slider{
+  display: none;
 }

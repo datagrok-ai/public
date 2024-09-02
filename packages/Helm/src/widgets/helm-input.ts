@@ -3,14 +3,16 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
-import {fromEvent, Unsubscribable} from 'rxjs';
+import {fromEvent, Observable, Unsubscribable} from 'rxjs';
 
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
 import {HelmInputBase, IHelmHelper, IHelmInputInitOptions} from '@datagrok-libraries/bio/src/helm/helm-helper';
-import {HelmMol, HelmString, IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmAtom, HelmMol, HelmString, IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
 
 import {defaultErrorHandler} from '../utils/err-info';
-import {getHoveredMonomerFromEditorMol} from '../utils/get-hovered';
+import {getHoveredMonomerFromEditorMol, getSeqMonomerFromHelmAtom} from '../utils/get-hovered';
+
+import {MonomerNumberingTypes} from '@datagrok-libraries/bio/src/helm/consts';
 
 import {_package} from '../package';
 
@@ -55,6 +57,10 @@ export class HelmInput extends HelmInputBase {
     this.viewer.editor.setMol(value);
   }
 
+  get onMouseMove(): Observable<MouseEvent> { return fromEvent<MouseEvent>(this.viewer.host, 'mousemove'); }
+
+  get onClick(): Observable<MouseEvent> { return fromEvent<MouseEvent>(this.viewer.host, 'click'); }
+
   readonly viewerHost: HTMLDivElement;
   readonly viewer: IHelmWebEditor;
   readonly editHintDiv: HTMLDivElement;
@@ -68,6 +74,7 @@ export class HelmInput extends HelmInputBase {
     private readonly helmHelper: IHelmHelper,
     private readonly monomerLib: IMonomerLib,
     name?: string,
+    public readonly options?: IHelmInputInitOptions,
     private readonly logger = _package.logger,
   ) {
     super();
@@ -78,7 +85,9 @@ export class HelmInput extends HelmInputBase {
       classes: 'ui-input-editor',
       style: {width: '100%', height: '100%', overflow: 'hidden'},
     });
-    this.viewer = this.helmHelper.createHelmWebEditor(this.viewerHost);
+    this.viewer = this.helmHelper.createHelmWebEditor(this.viewerHost, {
+      monomerNumbering: MonomerNumberingTypes.continuous
+    });
 
     this.editHintDiv = ui.divH([
       ui.link('Click to edit', () => { this.viewer.host.click(); }, undefined, {}),
@@ -98,6 +107,20 @@ export class HelmInput extends HelmInputBase {
       .subscribe(this.viewerOnClick.bind(this));
     /* eslint-enable rxjs/no-ignored-subscription */
 
+    this.subs.push(ui.onSizeChanged(this.root).subscribe(() => {
+      const rootStyle = window.getComputedStyle(this.root);
+      const h = this.root.clientHeight - parseFloat(rootStyle.paddingTop) - parseFloat(rootStyle.paddingBottom);
+      this.input.style.height = `${h}px`;
+    }));
+
+    this.subs.push(ui.onSizeChanged(this.input).subscribe(() => {
+      const rootStyle = window.getComputedStyle(this.root);
+      const h = this.root.clientHeight - parseFloat(rootStyle.paddingTop) - parseFloat(rootStyle.paddingBottom);
+      this.input.style.height = `{h}px`;
+      const w = this.input.clientWidth;
+      this.viewer.editor.setSize(w, h);
+    }));
+
     this.root.classList.add('ui-input-helm');
     this.root.append(this.viewerHost, this.editHintDiv);
   }
@@ -115,7 +138,7 @@ export class HelmInput extends HelmInputBase {
   static create(helmHelper: IHelmHelper, monomerLib: IMonomerLib,
     name?: string, options?: IHelmInputInitOptions
   ): HelmInput {
-    const input = new HelmInput(helmHelper, monomerLib, name);
+    const input = new HelmInput(helmHelper, monomerLib, name, options);
     // TODO: Apply options
     const value: HelmMol | string | undefined = options?.value;
     if (value !== undefined) {
@@ -130,11 +153,74 @@ export class HelmInput extends HelmInputBase {
     return input;
   }
 
+  redraw(): void {
+    this.viewer.editor.redraw();
+  }
+
+  showTooltip(content: HTMLElement | string, a: HelmAtom): void {
+    /** Monomer sign offset for tooltip inspired by {@link org.helm.webeditor.drawMonomer()} */
+    const so = this.viewer.editor.getDrawOptions().fontsize * 1.2;
+    const bcr = this.input.getBoundingClientRect();
+    ui.tooltip.show(content, bcr.left + a.p.x + so, bcr.top + a.p.y + so);
+  }
+
   // -- Handle events --
 
   private viewerOnClick(_event: MouseEvent): void {
     ui.tooltip.hide();
 
+    if (this.options?.editable != false)
+      this.showEditorDialog();
+  }
+
+  private viewerOnMouseMove(event: MouseEvent): void {
+    const logPrefix = `${this.toLog()}.viewerOnMouseMove()`;
+
+    const argsX = event.offsetX;
+    const argsY = event.offsetY;
+    const mol = this.viewer.editor.m;
+    const hoveredAtom = getHoveredMonomerFromEditorMol(argsX, argsY, mol, this.viewer.editor.div.clientHeight);
+    if (hoveredAtom) {
+      const seqMonomer = getSeqMonomerFromHelmAtom(hoveredAtom);
+      const monomerLib = _package.monomerLib;
+      const tooltipEl = monomerLib ? monomerLib.getTooltip(seqMonomer.polymerType, seqMonomer.symbol) :
+        ui.divText('Monomer library is not available');
+      this.showTooltip(tooltipEl, hoveredAtom);
+      event.preventDefault();
+      event.stopPropagation();
+    } else
+      ui.tooltip.hide();
+
+    //this.logger.debug(`${logPrefix}, x = ${event.x}, y = ${event.y}`);
+  }
+
+  private viewerOnMouseEnter(_event: MouseEvent): void {
+    //this.logger.debug(`${this.toLog()}.viewerOnMouseEnter()`);
+    if (this.options?.editable != false)
+      this.showEditHint();
+  }
+
+  private viewerOnMouseLeave(event: MouseEvent): void {
+    if (this.editHintDiv.contains(event.relatedTarget as Node)) return; // prevents flickering
+
+    //this.logger.debug(`${this.toLog()}.viewerOnMouseLeave()`);
+    if (this.options?.editable != false)
+      this.hideEditHint();
+  }
+
+  // editHint
+
+  showEditHint(): void {
+    this.editHintDiv.style.removeProperty('display');
+  }
+
+  hideEditHint(): void {
+    this.editHintDiv.style.display = 'none';
+  }
+
+  // editor dialog
+
+  showEditorDialog(): void {
     const webEditorHost = ui.div();
     const webEditorApp = this.helmHelper.createWebEditorApp(webEditorHost, this.viewer.editor.getHelm());
 
@@ -171,37 +257,5 @@ export class HelmInput extends HelmInputBase {
         destroyEditorDialog();
       })
       .show({modal: true, fullScreen: true});
-  }
-
-  private viewerOnMouseMove(event: MouseEvent): void {
-    const logPrefix = `${this.toLog()}.viewerOnMouseMove()`;
-
-    const argsX = event.offsetX;
-    const argsY = event.offsetY;
-    const mol = this.viewer.editor.m;
-    const seqMonomer = getHoveredMonomerFromEditorMol(argsX, argsY, mol, this.viewer.editor.div.clientHeight);
-    if (seqMonomer) {
-      const monomerLib = _package.monomerLib;
-      const tooltipEl = monomerLib ? monomerLib.getTooltip(seqMonomer.polymerType, seqMonomer.symbol) :
-        ui.divText('Monomer library is not available');
-      ui.tooltip.show(tooltipEl, event.x + 16, event.y + 16);
-      event.preventDefault();
-      event.stopPropagation();
-    } else
-      ui.tooltip.hide();
-
-    //this.logger.debug(`${logPrefix}, x = ${event.x}, y = ${event.y}`);
-  }
-
-  private viewerOnMouseEnter(_event: MouseEvent): void {
-    //this.logger.debug(`${this.toLog()}.viewerOnMouseEnter()`);
-    this.editHintDiv.style.removeProperty('display');
-  }
-
-  private viewerOnMouseLeave(event: MouseEvent): void {
-    if (this.editHintDiv.contains(event.relatedTarget as Node)) return; // prevents flickering
-
-    //this.logger.debug(`${this.toLog()}.viewerOnMouseLeave()`);
-    this.editHintDiv.style.display = 'none';
   }
 }

@@ -1,5 +1,25 @@
 # utils changelog
 
+## 4.2.29 (2024-08-23)
+
+Fixed test reporting
+
+## 4.2.28 (2024-08-21)
+
+Forms viewer: Fixed color coding bug (incorrect indexing if dataframe is filtered or sorted)
+
+## 4.2.27 (2024-08-16)
+
+Invocation time refactoring
+
+## 4.2.26 (2024-08-15)
+
+Invocation time refactoring
+
+## 4.2.25 (2024-08-15)
+
+Added invocation time to tests 
+
 ## 4.2.24 (2024-08-09)
 
 Forms viewer: Don't use color coding with molecule columns

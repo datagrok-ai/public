@@ -14,7 +14,7 @@ import {chemSpace} from '../chem-space';
 import {debounceTime} from 'rxjs/operators';
 import {getInverseSubstructuresAndAlign} from './mmp-mol-rendering';
 import {MMP_NAMES} from './mmp-constants';
-import {MmpInput} from './mmp-constants';
+import {MmpInput} from './mmp-viewer';
 import $ from 'cash-dom';
 
 export function getMmpScatterPlot(

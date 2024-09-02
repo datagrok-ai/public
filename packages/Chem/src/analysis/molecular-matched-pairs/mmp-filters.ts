@@ -1,6 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {MmpInput} from './mmp-constants';
+import {MmpInput} from './mmp-viewer';
 
 export type MmpFilters = {
     activitySliderInputs: DG.InputBase[];
@@ -40,32 +40,18 @@ export function getMmpFilters(mmpInput: MmpInput, maxActs: number[], numPairs: n
   const pairsSliderInput = ui.input.slider('Pairs', {value: numPairs, min: 0, max: numPairs, step: 1});
   const pairsValueDiv = ui.divText(pairsSliderInput.stringValue, 'ui-input-description');
   pairsSliderInput.addOptions(pairsValueDiv);
-  pairsSliderInput.root.classList.add('mmpa-slider-input');
+  pairsSliderInput.root.classList.add('mmpa-slider-input', 'mmpa-pairs-slider');
   ui.tooltip.bind(pairsSliderInput.captionLabel, `Select cutoff by significant pairs`);
 
-  let expanded = true;
-  const expandActivities = ui.iconFA('chevron-up',
-    () => {
-      expanded = !expanded;
-      if (!expanded) {
-        activitiesDiv.style.visibility = 'hidden';
-        expandActivities.classList.add('mmpa-filters-expand-icon-collapsed');
-      } else {
-        activitiesDiv.style.visibility = 'visible';
-        expandActivities.classList.remove('mmpa-filters-expand-icon-collapsed');
-      }
-    });
-  expandActivities.classList.add('mmpa-filters-expand-icon');
-  ui.tooltip.bind(expandActivities, () => `${expanded ? 'Collapse' : 'Expand'} activity filters`);
   const activitiesRoots: HTMLDivElement[] = new Array<HTMLDivElement>(activitySliderInputs.length);
   for (let i = 0; i < activitySliderInputs.length; i ++) {
     activitiesRoots[i] =
         ui.divH([activityActiveInputs[i].root, activityColorInputs[i].root, activitySliderInputs[i].root],
           {style: {paddingRight: '20px', height: '20px'}});
   }
-  const activitiesDiv = ui.divV(activitiesRoots);
+  const activitiesDiv = ui.divV(activitiesRoots, 'mmpa-activity-filters');
   const filtersDiv = ui.divV([
-    ui.divH([expandActivities, pairsSliderInput.root], {style: {paddingLeft: '26px', height: '20px'}}),
+    pairsSliderInput.root,
     activitiesDiv,
   ], 'css-flex-wrap mmpa-slider-roots');
 

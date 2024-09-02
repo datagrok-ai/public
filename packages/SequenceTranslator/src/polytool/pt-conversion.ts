@@ -297,6 +297,7 @@ export async function addTransformedColumn(
     df.columns.add(targetHelmCol);
   }
 
+  // toAtomicLevel
   const molCol = await grok.functions.call('Bio:getMolFromHelm', {
     'df': df,
     'helmCol': targetHelmCol,

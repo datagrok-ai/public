@@ -1,5 +1,38 @@
 # Helm changelog
 
+## 2.4.5 (2024-08-29)
+
+Fix getHelm for cyclic, bump HWE dependencies
+
+## 2.4.4 (2024-08-27)
+
+### Bug fixes
+
+* Helm: Fix Helm grid cell renderer mouse move handling error
+
+## 2.4.3 (2024-08-23)
+
+Helm: Bump HWE dependencies versions
+Helm: Move getMolfiles to HelmHelper (highlight monomer at atomic level)
+
+## 2.4.2 (2024-08-19)
+
+### Bug fixes
+
+* Fix Helm editor default tab to Helm
+
+## 2.4.1 (2024-08-16)
+
+### Features
+
+* HWE option for continuous number, typing
+* Add HelmInput mouse events, redraw, showTooltip
+* Bump HWE dependencies versions
+
+### Bug fixes
+
+* Polish HelmInput size handling, tooltip
+
 ## 2.4.0 (2024-08-06)
 
 ### Features

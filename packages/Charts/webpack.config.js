@@ -12,7 +12,7 @@ module.exports = {
     package: './src/package.ts'
   },
   resolve: {
-    extensions: ['.js', '.json', '.ts'],
+    extensions: ['.ts', '.json', '.js'],
   },
   module: {
     rules: [

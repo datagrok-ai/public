@@ -8,8 +8,6 @@ onmessage = async (event) => {
       threshold: number, fnNames: KnownMetrics[], opts: any[], weights: number[],
       aggregationMethod: DistanceAggregationMethod} = event.data;
   try {
-    // if (startIdx != -1)
-    //   throw new Error('Error in sparse matrix worker'); // TODO: remove this line
     const i: number[] = [];
     const j: number[] = [];
     const distances: number[] = [];
