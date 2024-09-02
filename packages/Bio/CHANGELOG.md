@@ -11,13 +11,14 @@
 
 * Fix tests benchmark
 * Fix typo Needleman-Wunsch
+* Fix test flapping benchmark separatorDnaShorts50Few50
 
 ## 2.14.3 (2024-08-27)
 
 ### Bug fixes
 
 * Order Top menu
-* Fix to Atomic Level hide highlight column 
+* Fix to Atomic Level hide highlight column
 * Fix to Atomic Level for column
 * Bump dependencies version, fix tests
 
