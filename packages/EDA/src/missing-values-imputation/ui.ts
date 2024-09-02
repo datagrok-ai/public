@@ -14,7 +14,7 @@ type FeatureInputSettings = {
 };
 
 /** Return default setting of the feature metric inputs */
-function getFeatureInputSettings(type: DG.COLUMN_TYPE): FeatureInputSettings {
+export function getFeatureInputSettings(type: DG.COLUMN_TYPE): FeatureInputSettings {
   switch (type) {
   case DG.COLUMN_TYPE.STRING:
   case DG.COLUMN_TYPE.DATE_TIME:
@@ -280,7 +280,7 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
     .add(neighborsInput)
     .add(inPlaceInput)
     .add(keepEmptyInput)
-    .show();//.onClose.subscribe(() => !okClicked && reject());
+    .show();//.onClose.subscribe(() => !okClicked && reject()); // This produces an error, TODO: to fix
 
   return promise;
 } // runKNNImputer
