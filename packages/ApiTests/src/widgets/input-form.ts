@@ -215,7 +215,7 @@ category('Widgets: InputForm API', () => {
     form.source = newFuncCall;
     updateInputs();
 
-    expect(inputs['stringInput'].value, 'test');
+    expect(inputs['stringInput'].value, 'test2');
     expect(inputs['intInput'].value, 3);
     expect(inputs['doubleInput'].value, 3.14);
     expect(inputs['boolInput'].value, true);

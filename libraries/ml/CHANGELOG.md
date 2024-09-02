@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.6.24 (2024-09-02)
+
+Fix typos, publish 
+
 ## 6.6.23 (2024-08-28)
 
 Add History support and enable gpu by default if available

@@ -10,7 +10,7 @@ import { ViewHandler } from './view-handler';
 import { TestTrack } from './test-track/app';
 import { ReportsWidget } from "./widgets/reports-widget";
 import { ReportingApp } from "./reporting/reporting_app";
-import { TestAnalysisManager } from './test-analysis/testAnalysisManager'; 
+import { TestAnalysisManager } from './test-analysis/test-analysis-manager'; 
 import { getDate } from './utils';
 import dayjs from "dayjs";
 

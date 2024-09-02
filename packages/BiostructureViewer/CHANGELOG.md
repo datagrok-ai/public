@@ -1,8 +1,12 @@
 # BiostructureViewer changelog
 
-## 1.1.2 (2024-07-23)
+## 1.1.2 (2024-09-02)
 
-Bump dependencies versions, datagrok-api to 1.20.0
+### Bug fixes
+
+* MolstarViewer: Fixed styling issues when toggling the expanded viewport
+* MolstarViewer: Enabled fullscreen mode when toggling the expanded viewport
+* BiostructureViewer: Integrated the 3D structure panel into the context panel, replacing the previous docking to the view
 
 ## 1.1.1 (2024-06-10)
 

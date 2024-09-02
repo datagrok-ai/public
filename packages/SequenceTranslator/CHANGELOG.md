@@ -1,5 +1,9 @@
 # Sequence Translator changelog
 
+## 1.3.14 (2024-09-02)
+
+Fix remove CyclizedNotationProvider
+
 ## 1.3.13 (2024-08-19)
 
 ### Features

@@ -79,6 +79,7 @@ import {GetRegionFuncEditor} from './utils/get-region-func-editor';
 import {sequenceToMolfile} from './utils/sequence-to-mol';
 import {detectMacromoleculeProbeDo} from './utils/detect-macromolecule-probe';
 import {CyclizedNotationProvider} from './utils/cyclized';
+import {DimerizedNotationProvider} from './utils/dimerized';
 import {getMolColumnFromHelm} from './utils/helm-to-molfile/utils';
 import {PackageSettingsEditorWidget} from './widgets/package-settings-editor-widget';
 import {calculateScoresWithEmptyValues} from './utils/calculate-scores';
@@ -1116,4 +1117,11 @@ export function getMolFromHelm(
 //input: string separator
 export function applyNotationProviderForCyclized(col: DG.Column<string>, separator: string) {
   col.temp[SeqTemps.notationProvider] = new CyclizedNotationProvider(separator);
+}
+
+//name: applyNotationProviderForDimerized
+//input: column col
+//input: string separator
+export function applyNotationProviderForDimerized(col: DG.Column<string>, separator: string) {
+  col.temp[SeqTemps.notationProvider] = new DimerizedNotationProvider(separator);
 }

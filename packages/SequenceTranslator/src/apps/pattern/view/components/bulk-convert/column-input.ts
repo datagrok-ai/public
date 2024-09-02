@@ -54,7 +54,7 @@ export class ColumnInputManager {
       [];
     const strandColumnInput = Object.fromEntries(STRANDS.map((strand) => {
       const input = ui.input.choice(`${STRAND_LABEL[strand]} column`, {value: columns[0], items: columns,
-        onValueChanged: (value) => this.eventBus.selectStrandColumn(strand, value)}
+        onValueChanged: (input) => this.eventBus.selectStrandColumn(strand, input.value)}
       );
       this.eventBus.selectStrandColumn(strand, columns[0]);
       return [strand, input.root];
@@ -65,7 +65,7 @@ export class ColumnInputManager {
   private createIdColumnInput(): HTMLElement {
     const columns = this.selectedTable ? this.selectedTable.columns.names() : [];
     const idColumnInput = ui.input.choice('ID column', {value: columns[0], items: columns,
-      onValueChanged: (value) => this.eventBus.selectIdColumn(value)}
+      onValueChanged: (input) => this.eventBus.selectIdColumn(input.value)}
     );
     this.eventBus.selectIdColumn(columns[0]);
     return idColumnInput.root;

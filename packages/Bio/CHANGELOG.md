@@ -2,10 +2,16 @@
 
 ## 2.14.4 (WIP)
 
+### Features
+
+* Add getHelm for Cyclized notation provider
+* Add detector for Dimerized notation provider
+
 ### Bug fixes
 
 * Fix tests benchmark
 * Fix typo Needleman-Wunsch
+* Fix test flapping benchmark separatorDnaShorts50Few50
 
 ## 2.14.3 (2024-08-27)
 
