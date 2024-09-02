@@ -211,19 +211,23 @@ export class Dapi {
   /** Proxies URL request via Datagrok server with same interface as "fetch".
    * @param {String} url
    * @param {Object} params
+   * @param {number} maxAge - forces server to send Cache-Control in response with configured max-age directive
    * @returns `{Promise<Object>}` */
-  async fetchProxy(url: string, params?: RequestInit): Promise<Response> {
-    if (params == null)
-      params = {};
-    if (params.headers == null)
-      params.headers = {};
-    if (params.method == null)
-      params.method = 'GET';
+  async fetchProxy(url: string, params?: RequestInit, maxAge?: number): Promise<Response> {
+    params ??= {};
+    params.headers ??= {};
+    params.method ??= 'GET';
     // @ts-ignore
     params.headers['original-url'] = `${url}`;
     // @ts-ignore
     params.headers['original-method'] = params.method;
-    params.method = 'POST';
+    if (maxAge) {
+      // @ts-ignore
+      params.headers['dg-cache-control'] = `max-age=${maxAge}`;
+      params.cache = 'default';
+    }
+    if (params.method !== 'GET')
+      params.method = 'POST';
     return fetch(`${this.root}/connectors/proxy`, params);
   }
 
