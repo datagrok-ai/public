@@ -9,7 +9,7 @@
       "nqName": "LibTests:TestAdd2",
       "configId": "step1",
       "isOuputOutdated": false,
-      "isCurrent": false
+      "inputRestrictions": {}
     },
     {
       "type": "funccall",
@@ -17,7 +17,7 @@
       "nqName": "LibTests:TestMul2",
       "configId": "step2",
       "isOuputOutdated": false,
-      "isCurrent": false
+      "inputRestrictions": {}
     }
   ]
 }

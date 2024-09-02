@@ -65,7 +65,7 @@ export class FuncCallNode implements IStoreProvider {
       isRunning: this.instancesWrapper.isRunning$.value,
       isRunable: this.instancesWrapper.isRunable$.value,
       isOuputOutdated: this.instancesWrapper.isOutputOutdated$.value,
-      validations: this.compactValidations(this.instancesWrapper.validations$.value),
+      inputRestrictions: this.instancesWrapper.inputRestrictions$.value,
     };
     if (options.disableNodesUUID)
       res.uuid = '';
@@ -83,7 +83,7 @@ export class FuncCallNode implements IStoreProvider {
       friendlyName: this.config.friendlyName,
       funcCallId: this.instancesWrapper.id,
       isOuputOutdated: this.instancesWrapper.isOutputOutdated$.value,
-
+      inputRestrictions: this.instancesWrapper.inputRestrictions$.value,
     };
     if (options.disableNodesUUID)
       res.uuid = '';
@@ -92,7 +92,7 @@ export class FuncCallNode implements IStoreProvider {
     return res;
   }
 
-  private compactValidations(validationsIn: Record<string, Record<string, ValidationResultBase | undefined>>) {
+  public compactValidations(validationsIn: Record<string, Record<string, ValidationResultBase | undefined>>) {
     const validationArrays = Object.values(validationsIn).reduce((acc, val) => {
       for (const [k, v] of Object.entries(val)) {
         if (v) {

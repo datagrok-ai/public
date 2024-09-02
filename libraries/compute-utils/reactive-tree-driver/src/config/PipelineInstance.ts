@@ -79,7 +79,7 @@ export type StepFunCallSerializedState = {
   friendlyName?: string;
   funcCallId?: string;
   isOuputOutdated?: boolean;
-  isCurrent?: boolean;
+  inputRestrictions: Record<string, RestrictionState | undefined>;
 };
 
 export type StepAction = {
@@ -92,8 +92,6 @@ export type RestrictionStatus = 'none' | 'changed' | 'inconsistent';
 
 export type StepFunCallState = {
   funcCall?: DG.FuncCall;
-  validations?: Record<string, ValidationResultBase>;
-  // restrictions: Record<string, RestrictionStatus | undefined>;
   isLoading?: boolean;
   isRunning?: boolean;
   isRunable?: boolean;

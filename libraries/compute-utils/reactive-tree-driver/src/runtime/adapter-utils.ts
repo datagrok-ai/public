@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {historyUtils} from '../../../history-utils';
 import {PipelineSerializedState} from '../config/PipelineInstance';
 import {FuncCallAdapter, IFuncCallAdapter} from './FuncCallAdapters';
+import {serialize, deserialize} from '@datagrok-libraries/utils/src/json-serialization';
 
 const RESTRICTIONS_PATH = 'INPUT_RESTRICTIONS';
 const OUTPUT_OUTDATED_PATH = 'OUTPUT_OUTDATED';
@@ -19,19 +20,19 @@ export async function makeFuncCall(nqName: string) {
 
 export async function saveFuncCall(adapter: IFuncCallAdapter) {
   const fc = adapter.getFuncCall();
-  // TODO: DF restrictions handling (?)
+  // TODO: DF restrictions better handling
   const restrictions = adapter.inputRestrictions$.value;
   const outputState = adapter.isOutputOutdated$.value;
-  fc.options[RESTRICTIONS_PATH] = JSON.stringify(restrictions);
-  fc.options[OUTPUT_OUTDATED_PATH] = JSON.stringify(outputState);
+  fc.options[RESTRICTIONS_PATH] = serialize(restrictions, { useJsonDF: true });
+  fc.options[OUTPUT_OUTDATED_PATH] = serialize(outputState, { useJsonDF: true });
   fc.newId();
   return historyUtils.saveRun(fc);
 }
 
 export async function loadFuncCall(id: string): Promise<IFuncCallAdapter> {
   const fc = await historyUtils.loadRun(id, false);
-  const restrictions = JSON.parse(fc.options[RESTRICTIONS_PATH] ?? {});
-  const outputState = JSON.parse(fc.options[OUTPUT_OUTDATED_PATH] ?? false);
+  const restrictions = deserialize(fc.options[RESTRICTIONS_PATH] ?? '{}');
+  const outputState = deserialize(fc.options[OUTPUT_OUTDATED_PATH] ?? 'false');
   const adapter = new FuncCallAdapter(fc);
   adapter.inputRestrictions$.next(restrictions);
   adapter.isOutputOutdated$.next(outputState);
@@ -44,9 +45,9 @@ export async function makeMetaCall(nqName: string) {
   return metaCall;
 }
 
-export async function saveInstanceState(nqName: string, stateJson: string, currentMetaCall?: DG.FuncCall) {
+export async function saveInstanceState(nqName: string, state: any, currentMetaCall?: DG.FuncCall) {
   const metaCall = currentMetaCall ?? await makeMetaCall(nqName);
-  metaCall.options[CONFIG_PATH] = stateJson;
+  metaCall.options[CONFIG_PATH] = serialize(state, { useJsonDF: true });
   metaCall.newId();
   const fc = await historyUtils.saveRun(metaCall);
   return fc;
@@ -54,6 +55,6 @@ export async function saveInstanceState(nqName: string, stateJson: string, curre
 
 export async function loadInstanceState(id: string) {
   const metaCall = await historyUtils.loadRun(id, false);
-  const config: PipelineSerializedState = JSON.parse(metaCall.options[CONFIG_PATH] ?? {});
+  const config: PipelineSerializedState = deserialize(metaCall.options[CONFIG_PATH] ?? '{}');
   return [metaCall, config] as const;
 }

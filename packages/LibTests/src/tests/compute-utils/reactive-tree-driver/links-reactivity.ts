@@ -347,7 +347,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
     });
   });
 
-  test('Links propagate restriction info in a default handler', async () => {
+  test('Propagate restriction info in a default handler', async () => {
     const config: PipelineConfiguration = {
       id: 'pipeline1',
       type: 'static',
@@ -399,7 +399,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
     });
   });
 
-  test('Links propagate restriction info in a custom handler', async () => {
+  test('Propagate restriction info in a custom handler', async () => {
     const config: PipelineConfiguration = {
       id: 'pipeline1',
       type: 'static',

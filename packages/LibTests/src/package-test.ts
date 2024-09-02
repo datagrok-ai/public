@@ -11,6 +11,7 @@ import './tests/compute-utils/reactive-tree-driver/instance-persistence';
 import './tests/compute-utils/reactive-tree-driver/instance-mutations';
 import './tests/compute-utils/reactive-tree-driver/links-matching';
 import './tests/compute-utils/reactive-tree-driver/links-reactivity';
+import './tests/compute-utils/reactive-tree-driver/links-data';
 
 export const _package = new DG.Package();
 export {tests};

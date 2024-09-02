@@ -420,8 +420,7 @@ export class StateTree extends BaseTree<StateTreeNode> {
       if (this.mockMode || !nqName)
         return undefined;
       const state = StateTree.toStateRec(root, true, {disableNodesUUID: true});
-      const json = JSON.stringify(state);
-      return saveInstanceState(nqName, json, currentMetaCall);
+      return saveInstanceState(nqName, state, currentMetaCall);
     });
   }
 

@@ -11,7 +11,7 @@
       "configId": "stepMul",
       "friendlyName": "mul",
       "isOuputOutdated": false,
-      "isCurrent": false
+      "inputRestrictions": {}
     }
   ],
   "stepTypes": [

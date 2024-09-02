@@ -289,6 +289,12 @@ export async function TestDiv2(a: number, b: number) {
   return a / b;
 }
 
+//input: dataframe df
+//output: dataframe res
+export async function TestDF1(df: DG.DataFrame) {
+  return df;
+}
+
 
 //name: MockWrapper1
 export async function MockWrapper1() {}

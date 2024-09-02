@@ -15,7 +15,7 @@
           "configId": "stepMul",
           "friendlyName": "mul",
           "isOuputOutdated": false,
-          "isCurrent": false
+          "inputRestrictions": {}
         },
         {
           "type": "funccall",
@@ -24,7 +24,7 @@
           "configId": "stepAdd",
           "friendlyName": "add",
           "isOuputOutdated": false,
-          "isCurrent": false
+          "inputRestrictions": {}
         },
         {
           "type": "funccall",
@@ -33,7 +33,7 @@
           "configId": "stepMul",
           "friendlyName": "mul",
           "isOuputOutdated": false,
-          "isCurrent": false
+          "inputRestrictions": {}
         },
         {
           "type": "funccall",
@@ -42,7 +42,7 @@
           "configId": "stepAdd",
           "friendlyName": "add",
           "isOuputOutdated": false,
-          "isCurrent": false
+          "inputRestrictions": {}
         }
       ],
       "stepTypes": [
@@ -66,7 +66,7 @@
           "configId": "stepAdd",
           "friendlyName": "add",
           "isOuputOutdated": false,
-          "isCurrent": false
+          "inputRestrictions": {}
         },
         {
           "type": "funccall",
@@ -75,7 +75,7 @@
           "configId": "stepAdd",
           "friendlyName": "add",
           "isOuputOutdated": false,
-          "isCurrent": false
+          "inputRestrictions": {}
         },
         {
           "type": "funccall",
@@ -84,7 +84,7 @@
           "configId": "stepMul",
           "friendlyName": "mul",
           "isOuputOutdated": false,
-          "isCurrent": false
+          "inputRestrictions": {}
         },
         {
           "type": "funccall",
@@ -93,7 +93,7 @@
           "configId": "stepMul",
           "friendlyName": "mul",
           "isOuputOutdated": false,
-          "isCurrent": false
+          "inputRestrictions": {}
         }
       ],
       "stepTypes": [
