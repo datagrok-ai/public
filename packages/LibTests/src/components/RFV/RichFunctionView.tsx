@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {defineComponent, onMounted, PropType, ref, triggerRef, nextTick, computed, watch, shallowRef} from 'vue';
 import {type ViewerT} from '@datagrok-libraries/webcomponents/src';
-import {Viewer, InputForm, BigButton, Button, TabHeaderStripe, Tabs, IconFA, RibbonPanel, FoldableDialog, DockedPanel, SplitH, DockManager} from '@datagrok-libraries/webcomponents-vue/src';
+import {Viewer, InputForm, BigButton, Tabs, IconFA, RibbonPanel, DockManager, MarkDown} from '@datagrok-libraries/webcomponents-vue/src';
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
@@ -104,18 +104,26 @@ export const RichFunctionView = defineComponent({
 
     const formHidden = ref(false);
     const historyHidden = ref(true);
+    const helpHidden = ref(true);
 
     const hasContextHelp = computed(() => Utils.hasContextHelp(currentCall.value.func));
 
     const dfBlockTitle = (dfProp: DG.Property) => dfProp.options['caption'] ?? dfProp.name ?? ' ';
+
+    const helpText = ref(null as null | string);
+    watch(currentCall, async () => {
+      const loadedHelp = await Utils.getContextHelp(currentCall.value.func);
+
+      helpText.value = loadedHelp ?? null;
+    }, {immediate: true});
           
     return () => (
       <div class='w-full h-full flex absolute top-0'>
         <RibbonPanel>
           { hasContextHelp.value && <IconFA 
             name='info' 
-            tooltip='Open help panel' 
-            onClick={async () => Utils.showHelpWithDelay((await Utils.getContextHelp(currentCall.value.func))!)}
+            tooltip={ helpHidden.value ? 'Open help panel' : 'Close help panel' }
+            onClick={() => helpHidden.value = !helpHidden.value}
           /> }
           <IconFA 
             name='history' 
@@ -177,6 +185,7 @@ export const RichFunctionView = defineComponent({
                   }),
             }}
           </Tabs>
+          { !helpHidden.value && helpText.value ? <MarkDown markdown={helpText.value}/> : null }
         </DockManager>
       </div>
     );

@@ -8,5 +8,7 @@ export type {DGSplitHT} from './SplitH/SplitH';
 export {DockSpawnTsWebcomponent} from 'dock-spawn-ts/lib/js/webcomponent/DockSpawnTsWebcomponent';
 export type {DockSpawnTsWebcomponent as DockSpawnTsWebcomponentT}
   from 'dock-spawn-ts/lib/js/webcomponent/DockSpawnTsWebcomponent';
+export {DGMarkdown} from './Markdown/Markdown';
+export type {DGMarkdown as DGMarkdownT} from './Markdown/Markdown';
 export * from './elements';
 export type * from './elements';

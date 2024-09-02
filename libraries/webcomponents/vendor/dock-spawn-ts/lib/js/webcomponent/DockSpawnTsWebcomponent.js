@@ -169,7 +169,6 @@ const style1 = css`
 }*/
 
 .dockspan-tab-handle {
-	box-shadow: 0px 5px 20px #000;
 	background-color: #ffffff;
 }
 

@@ -8,3 +8,4 @@ export * from './Tabs/Tabs';
 export * from './FoldableDialog/FoldableDialog';
 export * from './DockedPanel/DockedPanel'
 export * from './DockManager/DockManager'
+export * from './MarkDown/MarkDown'
