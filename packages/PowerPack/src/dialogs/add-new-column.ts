@@ -1079,7 +1079,8 @@ export class AddNewColumnDialog {
             apply: idx < coreFunctionsNames.length ? `${name}(${coreFunctionsParams[name]
               .filter((it) => it.propName !== FUNC_OUTPUT_TYPE)
               .map((it)=> it.propType).join(',')})` : `${name}:`,
-            detail: idx < coreFunctionsNames.length ? '' : 'package'
+            detail: idx < coreFunctionsNames.length ? '' : 'package',
+            section: idx < coreFunctionsNames.length ? '' : 'packages'
           }));
       return {
         from: index,
