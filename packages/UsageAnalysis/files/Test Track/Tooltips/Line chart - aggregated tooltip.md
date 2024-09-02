@@ -17,6 +17,6 @@ To ensure that the aggregated tooltip is correctly displayed on the Line Chart e
 
 ---
 {
-"order": 7
+"order": 7,
 "datasets": ["System:DemoFiles/SPGI.csv"]
 }

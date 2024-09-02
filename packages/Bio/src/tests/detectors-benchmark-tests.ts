@@ -139,17 +139,27 @@ async function benchmark<TData, TRes>(
 ): Promise<number> {
   const data: TData = await prepare();
 
-  const t1: number = Date.now();
-  // console.profile();
-  const res: TRes = await test(data);
-  //console.profileEnd();
-  const t2: number = Date.now();
+  let outCount: number = 0;
+  let outResET: number = 0;
+  let resET: number = 0;
+  for (let i = 0; i < 20; ++i) {
+    const t1: number = Date.now();
+    // console.profile();
+    const res: TRes = await test(data);
+    //console.profileEnd();
+    const t2: number = Date.now();
 
-  check(res);
+    resET = t2 - t1;
+    if (resET > maxET) {
+      outCount++;
+      outResET = Math.max(outResET, resET);
+    }
 
-  const resET: number = t2 - t1;
-  if (resET > maxET) {
-    const errMsg = `ET ${resET} ms is more than max allowed ${maxET} ms.`;
+    check(res);
+  }
+
+  if (outCount > 1 /* 95% */) {
+    const errMsg = `ET ${outResET} ms is more than max allowed ${maxET} ms.`;
     console.error(errMsg);
     throw new Error(errMsg);
   } else

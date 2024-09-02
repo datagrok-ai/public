@@ -59,3 +59,80 @@ where r.stress_test and (r.batch_name = COALESCE(NULLIF(@batch_name, ''), (selec
 group by r.date_time, r.test_name, r.passed, r.duration, r.params ->> 'worker', r.params ->> 'totalWorkers'
 order by r.test_name, worker
 --end
+
+
+--name:  Benchmark Succsess Count
+--friendlyName:UA | Tests | Benchmark Succsess Count
+--connection: System:Datagrok
+with last_builds as (
+    select name  from builds order by build_date desc limit 10
+)
+
+select  r.build_name as build, count(r.test_name) as succsess_count 
+from test_runs r
+where r.benchmark = true
+and r.passed = true
+and r.skipped = false
+and r.build_name in (select name from last_builds) 
+and not r.test_name like '%Unhandled exceptions: Exception'
+group by r.build_name
+order by r.build_name desc
+--end
+
+--name:  LastBuildsCompare
+--friendlyName:UA | Tests | Last Builds Compare
+--connection: System:Datagrok
+with last_builds as (
+    select name  from builds order by build_date desc limit 2
+)
+select distinct on (b.name, t.name) 
+  b.name as build, 
+  t.name as test, 
+  t.type, 
+  t.package, 
+  r.date_time,
+  case when r.passed is null then 'did not run' when r.skipped then 'skipped' when r.passed then 'passed' when not r.passed then 'failed' else 'unknown' end as status,
+  r.result, 
+  r.duration, 
+  r.benchmark
+from tests t full join last_builds b on 1=1
+left join test_runs r on r.test_name = t.name and r.build_name = b.name 
+order by b.name desc, t.name, r.date_time desc
+--end
+
+
+--name:  LastversionsCompare
+--friendlyName:UA | Tests | Last versions Compare
+--connection: System:Datagrok
+with versions_builds as (
+  select distinct on ((regexp_matches(name, '\d{4}-\d{2}-\d{2}-(\d+\.\d+\.\d+)'))[1]) 
+  name, 
+  (regexp_matches(name, '\d{4}-\d{2}-\d{2}-(\d+\.\d+\.\d+)'))[1] as version, 
+  build_date 
+  from builds 
+  order by 
+  (regexp_matches(name, '\d{4}-\d{2}-\d{2}-(\d+\.\d+\.\d+)'))[1] desc, 
+  build_date desc
+),
+last_builds as (
+  select * 
+  from versions_builds 
+  order by build_date desc 
+  limit 2
+) 
+
+select distinct on (b.name, t.name) 
+  b.name as build, 
+  b.version as version, 
+  t.name as test, 
+  t.type, 
+  t.package, 
+  r.date_time,
+  case when r.passed is null then 'did not run' when r.skipped then 'skipped' when r.passed then 'passed' when not r.passed then 'failed' else 'unknown' end as status,
+  r.result, 
+  r.duration, 
+  r.benchmark
+from tests t full join last_builds b on 1=1
+left join test_runs r on r.test_name = t.name and r.build_name = b.name
+order by b.name desc, t.name, r.date_time desc
+--end

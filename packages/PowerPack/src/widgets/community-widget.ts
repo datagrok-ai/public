@@ -10,7 +10,7 @@ export class CommunityWidget extends DG.Widget {
   constructor() {
     super(ui.panel([], 'welcome-community-widget'));
 
-    grok.dapi.fetchProxy('https://community.datagrok.ai/latest.json')
+    grok.dapi.fetchProxy('https://community.datagrok.ai/latest.json', undefined, 48 * 60 * 60)
       .then((r) => r.json())
       .then((json) => {
         let links = json.topic_list.topics

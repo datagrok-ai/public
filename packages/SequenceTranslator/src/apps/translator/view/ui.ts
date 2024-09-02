@@ -47,8 +47,8 @@ class TranslatorAppLayout {
     this.moleculeImgDiv.style.marginTop = '12px';
 
     this.outputTableDiv = ui.div([]);
-    this.formatChoiceInput = ui.input.choice('', {value: DEFAULT_FORMATS.HELM, items: this.inputFormats, onValueChanged: async (value) => {
-      this.format = value;
+    this.formatChoiceInput = ui.input.choice('', {value: DEFAULT_FORMATS.HELM, items: this.inputFormats, onValueChanged: async () => {
+      this.format = this.formatChoiceInput.value;
       this.updateTable();
       await this.updateMolImg();
     }});
@@ -100,11 +100,11 @@ class TranslatorAppLayout {
     const tableControlsManager = new TableControlsManager(this.eventBus);
     const tableControls = tableControlsManager.createUIComponents();
     const inputFormats = ui.input.choice('Input format', {value: DEFAULT_FORMATS.AXOLABS,
-      items: this.inputFormats, onValueChanged: (value) => this.eventBus.selectInputFormat(value)}
+      items: this.inputFormats, onValueChanged: (input) => this.eventBus.selectInputFormat(input.value)}
     );
 
     const outputFormats = ui.input.choice('Output format', {value: NUCLEOTIDES_FORMAT,
-      items: getSupportedTargetFormats(this.th), onValueChanged: (value) => this.eventBus.selectOutputFormat(value)}
+      items: getSupportedTargetFormats(this.th), onValueChanged: (input) => this.eventBus.selectOutputFormat(input.value)}
     );
     const convertBulkButton = this.createConvertBulkButton();
 
@@ -375,11 +375,11 @@ class TableInputManager {
     const currentlySelectedTable = this.eventBus.getSelectedTable();
 
     const tableInput = ui.input.table('Table', {value: currentlySelectedTable!, items: this.availableTables,
-      onValueChanged: (value) => {
+      onValueChanged: (input) => {
         // WARNING: non-null check necessary to prevent resetting columns to
         // null upon handling onTableAdded
-        if (value !== null)
-          this.eventBus.selectTable(value);
+        if (input.value !== null)
+          this.eventBus.selectTable(input.value);
       }});
     return tableInput;
   }
@@ -450,7 +450,7 @@ class ColumnInputsManager {
     this.selectColumnIfTableNotNull(selectedTable, selectedColumnName, columnLabel);
 
     const input = ui.input.choice(`${columnLabel}`, {value: selectedColumnName, items: columnNames,
-      onValueChanged: (value) => this.selectColumnIfTableNotNull(selectedTable, value, columnLabel)}
+      onValueChanged: (input) => this.selectColumnIfTableNotNull(selectedTable, input.value, columnLabel)}
     );
 
     return input;

@@ -110,12 +110,12 @@ class StructureAppLayout {
     );
 
     STRANDS.forEach((strand, idx) => {
-      directionChoiceInput[strand].onChanged.subscribe((value) => {
-        let inputValue = value === DIRECTION.INVERSE;
+      directionChoiceInput[strand].onChanged(() => {
+        let value = directionChoiceInput[strand].value === DIRECTION.INVERSE;
         // warning: the next line is necessary
         // until the legacy notion of direction used in the molfile generation gets fixed
-        if (idx > 0) inputValue = !inputValue;
-        this.directionInversion[strand] = inputValue;
+        if (idx > 0) value = !value;
+        this.directionInversion[strand] = value;
         this.onInput.next();
       });
     });
