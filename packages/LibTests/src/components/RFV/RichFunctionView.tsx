@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {defineComponent, onMounted, PropType, ref, triggerRef, nextTick, computed, watch, shallowRef} from 'vue';
 import {type ViewerT} from '@datagrok-libraries/webcomponents/src';
-import {Viewer, InputForm, BigButton, Button, TabHeaderStripe, Tabs, IconFA, RibbonPanel, FoldableDialog, DockedPanel} from '@datagrok-libraries/webcomponents-vue/src';
+import {Viewer, InputForm, BigButton, Button, TabHeaderStripe, Tabs, IconFA, RibbonPanel, FoldableDialog, DockedPanel, SplitH} from '@datagrok-libraries/webcomponents-vue/src';
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
@@ -122,24 +122,11 @@ export const RichFunctionView = defineComponent({
             tooltip='Open history panel' 
             onClick={() => historyHidden.value = !historyHidden.value}
           />
-          <IconFA 
-            name='file' 
-            tooltip={ formHidden.value ? 'Open form': 'Close form' }
-            onClick={() => formHidden.value = !formHidden.value}
-          />
         </RibbonPanel>
-        { !formHidden.value ? <DockedPanel
-          title='Input form'
-          class='p-2'
-          onClosed={() => formHidden.value = true}
-        >
-          <InputForm funcCall={currentCall.value}/>
-          <div class='flex sticky bottom-0'>
-            <BigButton onClick={run}> Run </BigButton>
-          </div>
-        </DockedPanel> : null } 
         { !historyHidden.value ? <DockedPanel
           title='History'
+          dockType='right'
+          ratio={0.2}
         >
           <History 
             func={currentCall.value.func}
@@ -149,36 +136,53 @@ export const RichFunctionView = defineComponent({
             onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
           />
         </DockedPanel>: null }
-        <Tabs 
-          items={tabLabels.value.map((label) => ({label}))} 
-          selected={selectedIdx.value} 
-          onUpdate:selected={(v) => selectedIdx.value = v}
-          class='w-fullp p-1'
-        >
-          {{
-            default: () => 
-              tabLabels.value.map((tabLabel) => categoryToDfParam.value.inputs[tabLabel] ?? 
+        <SplitH resize={true}>
+          <div class='flex ui-div'>
+            { !formHidden.value ?
+              <div class='flex flex-col p-2 w-full'>
+                <InputForm funcCall={currentCall.value}/>
+                <div class='flex sticky bottom-0'>
+                  <BigButton onClick={run}> Run </BigButton>
+                </div>
+              </div>: null }
+            <IconFA 
+              name={ formHidden.value ? 'chevron-right' : 'chevron-left' }
+              tooltip={ formHidden.value ? 'Open form': 'Close form' }
+              onClick={() => formHidden.value = !formHidden.value} 
+              class='self-center p-2'
+            />
+          </div>
+          <Tabs 
+            items={tabLabels.value.map((label) => ({label}))} 
+            selected={selectedIdx.value} 
+            onUpdate:selected={(v) => selectedIdx.value = v}
+            class='w-fullp p-1'
+          >
+            {{
+              default: () => 
+                tabLabels.value.map((tabLabel) => categoryToDfParam.value.inputs[tabLabel] ?? 
                 categoryToDfParam.value.outputs[tabLabel])            
-                .flatMap((tabProps) => tabProps.map((prop) => ({prop, ...Utils.getPropViewers(prop)})))
-                .map(({prop, name, config: allConfigs}) => {
-                  return [allConfigs.map((options) => 
-                    <div class='flex flex-col h-1/2'>
-                      <h2> { dfBlockTitle(prop) } </h2>
-                      <Viewer
-                        type={options['type'] as string}
-                        options={options}
-                        dataFrame={currentCall.value.inputs[name] ?? currentCall.value.outputs[name]}
-                        class='w-full' 
-                      />
-                    </div>, 
-                  ),
-                  <ScalarTable 
-                    funcCall={currentCall.value} 
-                    category={tabLabels.value[selectedIdx.value]}
-                  />];
-                }),
-          }}
-        </Tabs>
+                  .flatMap((tabProps) => tabProps.map((prop) => ({prop, ...Utils.getPropViewers(prop)})))
+                  .map(({prop, name, config: allConfigs}) => {
+                    return [allConfigs.map((options) => 
+                      <div class='flex flex-col h-1/2'>
+                        <h2> { dfBlockTitle(prop) } </h2>
+                        <Viewer
+                          type={options['type'] as string}
+                          options={options}
+                          dataFrame={currentCall.value.inputs[name] ?? currentCall.value.outputs[name]}
+                          class='w-full' 
+                        />
+                      </div>, 
+                    ),
+                    <ScalarTable 
+                      funcCall={currentCall.value} 
+                      category={tabLabels.value[selectedIdx.value]}
+                    />];
+                  }),
+            }}
+          </Tabs>
+        </SplitH>
       </div>
     );
   },
