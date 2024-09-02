@@ -39,4 +39,8 @@ export class MMPA {
 
     return new MMPA(frags, rules, allCasesNumber);
   }
+
+  toJSON() {
+    return JSON.stringify({'fragments': this.frags, 'rules': this.rules, 'cases': this.allCasesNumber});
+  }
 }

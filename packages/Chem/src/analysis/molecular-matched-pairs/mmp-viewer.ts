@@ -5,9 +5,7 @@ import {getRdKitModule} from '../../utils/chem-common-rdkit';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 import {MMP_NAMES} from './mmp-constants';
-import {MmpRules} from './mmp-analysis/mmpa-misc';
 import {getInverseSubstructuresAndAlign, PaletteCodes, getPalette} from './mmp-mol-rendering';
-import {getMmpFrags, getMmpRules} from './mmp-analysis/mmpa-fragments';
 import {getMmpActivityPairsAndTransforms} from './mmp-pairs-transforms';
 import {getMmpTrellisPlot} from './mmp-frag-vs-frag';
 import {getMmpScatterPlot, runMmpChemSpace} from './mmp-cliffs';
@@ -53,7 +51,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   moleculesCol: DG.Column | null = null;
   activitiesCols: DG.ColumnList | null = null;
 
-  mmpa: MMPA | null;
+  mmpa: MMPA | null = null;
 
   parentTable: DG.DataFrame | null = null;
   parentCol: DG.Column| null = null;
@@ -368,7 +366,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
   fillAll(mmpInput: MmpInput, palette: PaletteCodes,
-    rules: MmpRules, diffs: Array<Float32Array>,
+    mmpa: MMPA, diffs: Array<Float32Array>,
     linesIdxs: Uint32Array, transFragmentsGrid: DG.Grid, transPairsGrid: DG.Grid, generationsGrid: DG.Grid,
     tp: DG.Viewer, sp: DG.Viewer, mmpFilters: MmpFilters,
     linesEditor: ScatterPlotLinesRenderer, lines: ILineSeries, linesActivityCorrespondance: Uint32Array,
@@ -378,7 +376,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.parentTable = mmpInput.table;
     this.parentCol = mmpInput.molecules;
     this.colorPalette = palette;
-    this.mmpRules = rules;
+    this.mmpa = mmpa;
 
     this.diffs = diffs;
     this.transFragmentsGrid = transFragmentsGrid;
@@ -448,43 +446,14 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const gpuCheck = await getGPUDevice();
     const gpu: boolean = !gpuCheck ? false : true;
 
-    // if (!gpu && mmpInput.molecules.length > MMP_CONSTRICTIONS.CPU) {
-    //   grok.shell.error(MMP_ERRORS.FRAGMENTS_CPU);
-    //   throw new Error(MMP_ERRORS.FRAGMENTS_CPU);
-    // } else if (mmpInput.molecules.length > MMP_CONSTRICTIONS.GPU) {
-    //   grok.shell.error(MMP_ERRORS.FRAGMENTS_GPU);
-    //   throw new Error(MMP_ERRORS.FRAGMENTS_GPU);
-    // }
-
-    // //initial calculations
-    // let fragsOut: IMmpFragmentsResult;
-    // let mmpRules: MmpRules;
-    // let allCasesNumber: number;
-
-    // if (this.totalDataUpdated) {
-    //   const totalParsed = JSON.parse(this.totalData);
-    //   this.totalDataUpdated = false;
-    //   fragsOut = totalParsed['fragments'];
-    //   mmpRules = totalParsed['rules'];
-    //   allCasesNumber = totalParsed['cases'];
-    // } else {
-    //   fragsOut = await getMmpFrags(moleculesArray);
-    //   [mmpRules, allCasesNumber] = await getMmpRules(fragsOut, mmpInput.fragmentCutoff, gpu);
-    // }
-
     let mmpa: MMPA;
 
     try {
       if (this.totalDataUpdated) {
-        mmpa = MMPA.fromData(this.totalData);
+        mmpa = await MMPA.fromData(this.totalData);
         this.totalDataUpdated = false;
-        fragsOut = totalParsed['fragments'];
-        mmpRules = totalParsed['rules'];
-        allCasesNumber = totalParsed['cases'];
-      } else {
-        fragsOut = await getMmpFrags(moleculesArray);
-        [mmpRules, allCasesNumber] = await getMmpRules(fragsOut, mmpInput.fragmentCutoff, gpu);
-      }
+      } else
+        mmpa = await MMPA.init(moleculesArray, mmpInput.fragmentCutoff);
     } catch (err: any) {
       const errMsg = err instanceof Error ? err.message : err.toString();
       grok.shell.error(errMsg);
@@ -496,7 +465,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     //Transformations tab
     const {maxActs, diffs, meanDiffs, activityMeanNames,
       linesIdxs, transFragmentsGrid, transPairsGrid, lines, linesActivityCorrespondance} =
-      getMmpActivityPairsAndTransforms(mmpInput, mmpRules, allCasesNumber, palette);
+      getMmpActivityPairsAndTransforms(mmpInput, mmpa, palette);
 
     //Fragments tab
     const tp = getMmpTrellisPlot(transFragmentsGrid, activityMeanNames, palette);
@@ -517,13 +486,13 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
 
     const generationsGrid: DG.Grid =
-      await getGenerations(mmpInput, moleculesArray, fragsOut, meanDiffs, transFragmentsGrid, activityMeanNames, gpu);
+      await getGenerations(mmpInput, moleculesArray, mmpa.frags, meanDiffs, transFragmentsGrid, activityMeanNames, gpu);
 
 
-    this.fillAll(mmpInput, palette, mmpRules, diffs, linesIdxs, transFragmentsGrid, transPairsGrid, generationsGrid,
+    this.fillAll(mmpInput, palette, mmpa, diffs, linesIdxs, transFragmentsGrid, transPairsGrid, generationsGrid,
       tp, sp, mmpFilters, linesEditor, lines, linesActivityCorrespondance, module, gpu);
 
-    this.totalData = JSON.stringify({'fragments': fragsOut, 'rules': mmpRules, 'cases': allCasesNumber});
+    this.totalData = mmpa.toJSON();
     //console.profileEnd('MMP');
   }
 
@@ -535,20 +504,20 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     if (idx !== -1) {
       const ruleSmi1 = this.transFragmentsGrid!.table.getCol(MMP_NAMES.FROM).get(idx);
       const ruleSmi2 = this.transFragmentsGrid!.table.getCol(MMP_NAMES.TO).get(idx);
-      const ruleSmiNum1 = this.mmpRules!.smilesFrags.indexOf(ruleSmi1);
-      const ruleSmiNum2 = this.mmpRules!.smilesFrags.indexOf(ruleSmi2);
+      const ruleSmiNum1 = this.mmpa!.rules.smilesFrags.indexOf(ruleSmi1);
+      const ruleSmiNum2 = this.mmpa!.rules.smilesFrags.indexOf(ruleSmi2);
 
       let counter = 0;
 
-      for (let i = 0; i < this.mmpRules!.rules.length; i++) {
-        const first = this.mmpRules!.rules[i].smilesRule1;
-        const second = this.mmpRules!.rules[i].smilesRule2;
-        for (let j = 0; j < this.mmpRules!.rules[i].pairs.length; j++) {
+      for (let i = 0; i < this.mmpa!.rules.rules.length; i++) {
+        const first = this.mmpa!.rules.rules[i].smilesRule1;
+        const second = this.mmpa!.rules.rules[i].smilesRule2;
+        for (let j = 0; j < this.mmpa!.rules.rules[i].pairs.length; j++) {
           if (ruleSmiNum1 == first && ruleSmiNum2 == second) {
             this.transPairsMask!.set(counter, true, false);
             if (diffFromSubstrCol.get(counter) === null)
               cases.push(counter);
-            if (this.mmpRules!.rules[i].pairs[j].firstStructure == idxParent)
+            if (this.mmpa!.rules.rules[i].pairs[j].firstStructure == idxParent)
               idxPairs = counter;
           }
           counter++;
@@ -630,9 +599,9 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       const idx = this.parentTable!.currentRowIdx;
       this.transFragmentsMask!.setAll(false);
 
-      for (let i = 0; i < this.mmpRules!.rules.length; i++) {
-        for (let j = 0; j < this.mmpRules!.rules[i].pairs.length; j++) {
-          const fs = this.mmpRules!.rules[i].pairs[j].firstStructure;
+      for (let i = 0; i < this.mmpa!.rules.rules.length; i++) {
+        for (let j = 0; j < this.mmpa!.rules.rules[i].pairs.length; j++) {
+          const fs = this.mmpa!.rules.rules[i].pairs[j].firstStructure;
           if (idx == fs) {
             if (idxTrue == -1)
               idxTrue = i;
