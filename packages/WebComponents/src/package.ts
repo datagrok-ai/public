@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {InputForm, Viewer, DGBigButton, DGButton, DGSplitH, DGIconFA, DGToggleInput, DGComboPopup} from '@datagrok-libraries/webcomponents/src';
+import {DockSpawnTsWebcomponent} from '@datagrok-libraries/webcomponents/vendor/dock-spawn-ts/lib/js/webcomponent/DockSpawnTsWebcomponent'
 
 export const _package = new DG.Package();
 
@@ -17,4 +18,5 @@ export function registerWebcomponents() {
   customElements.define('dg-icon-fa', DGIconFA);
   customElements.define('dg-toggle-input', DGToggleInput);
   customElements.define('dg-combo-popup', DGComboPopup);
+  if (!customElements.get('dock-spawn-ts')) customElements.define('dock-spawn-ts', DockSpawnTsWebcomponent);
 }

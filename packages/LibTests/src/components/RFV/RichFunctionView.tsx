@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {defineComponent, onMounted, PropType, ref, triggerRef, nextTick, computed, watch, shallowRef} from 'vue';
 import {type ViewerT} from '@datagrok-libraries/webcomponents/src';
-import {Viewer, InputForm, BigButton, Button, TabHeaderStripe, Tabs, IconFA, RibbonPanel, FoldableDialog, DockedPanel, SplitH} from '@datagrok-libraries/webcomponents-vue/src';
+import {Viewer, InputForm, BigButton, Button, TabHeaderStripe, Tabs, IconFA, RibbonPanel, FoldableDialog, DockedPanel, SplitH, DockManager} from '@datagrok-libraries/webcomponents-vue/src';
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
@@ -136,7 +136,7 @@ export const RichFunctionView = defineComponent({
             onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
           />
         </DockedPanel>: null }
-        <SplitH resize={true}>
+        <DockManager>
           <div class='flex ui-div'>
             { !formHidden.value ?
               <div class='flex flex-col p-2 w-full'>
@@ -156,7 +156,7 @@ export const RichFunctionView = defineComponent({
             items={tabLabels.value.map((label) => ({label}))} 
             selected={selectedIdx.value} 
             onUpdate:selected={(v) => selectedIdx.value = v}
-            class='w-fullp p-1'
+            class='w-full p-1'
           >
             {{
               default: () => 
@@ -182,7 +182,7 @@ export const RichFunctionView = defineComponent({
                   }),
             }}
           </Tabs>
-        </SplitH>
+        </DockManager>
       </div>
     );
   },
