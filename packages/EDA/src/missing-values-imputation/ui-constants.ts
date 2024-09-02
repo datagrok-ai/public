@@ -44,7 +44,7 @@ export enum TITLE {
 };
 
 /** Help links */
-export const KNN_IMPUTER = '/help/transform/missing-values-imputation';
+export const KNN_IMPUTER = '/help/explore/missing-values-imputation';
 
 /** Tooltips */ 
 export enum HINT {
