@@ -46,7 +46,7 @@ export class NumericLabelVisibilityControls {
     const initialValue = this.eventBus.getModificationsWithNumericLabels().includes(nucleotide);
     const input = ui.input.bool(nucleotide, {
       value: initialValue,
-      onValueChanged: (value) => this.handleNumericLabelToggle(nucleotide, value)
+      onValueChanged: (input) => this.handleNumericLabelToggle(nucleotide, input.value)
     });
     $(input.root).css('padding-right', '20px');
 
