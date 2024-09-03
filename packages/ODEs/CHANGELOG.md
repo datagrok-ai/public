@@ -3,8 +3,8 @@
 ## 1.0.11 (2024-08-09)
 
 * Improved browsing
-* Added tests & benchmarks and the Pollution model
-* Updated the basic template
+* Added tests & benchmarks
+* Updated templates and added the Pollution model
 * Improved the main app start
 * Implemented float64 columns use
 
