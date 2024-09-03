@@ -1,5 +1,9 @@
 # Sequence Translator changelog
 
+## 1.3.15 (WIP)
+
+Fix for datagrok-api changes
+
 ## 1.3.14 (2024-09-02)
 
 Fix remove CyclizedNotationProvider
@@ -22,7 +26,7 @@ Fix remove CyclizedNotationProvider
 
 PolyTool Enumerator Single and Matrix, dialog, tests
 
-## Bug fixes
+### Bug fixes
 
 * PolyTool Enumerator dialog grid input for placeholders, to atomic level option
 * PolyTool Enumerator dialog mouse interactivity, to atomic level, dialog size
