@@ -207,8 +207,6 @@ export class MonomerManager implements IMonomerManager {
     let ribbons = this.tv.getRibbonPanels();
     ribbons.forEach((ribbonAr, i) => {
       ribbons[i] = ribbonAr
-      //.filter((r) => (r.textContent ?? '').toLowerCase() !== 'save') // remove save button (project save)
-      //.filter((r) => r.getElementsByClassName('fa-arrow-to-bottom').length === 0); // remove canonical download button
         .filter((r) => r.getElementsByClassName('grok-icon-filter').length !== 0); // remove everything except filter
     });
     ribbons = ribbons.filter((r) => r.length > 0);
@@ -314,6 +312,8 @@ export class MonomerManager implements IMonomerManager {
       for (let i = 0; i < monomers.length; i++) {
         let molSmiles = getCorrectedSmiles(monomers[i].rgroups, monomers[i].smiles, monomers[i].molfile);
         molSmiles = fixRGroupsAsElementsSmiles(molSmiles);
+        // r-groups here might be broken, so need to make sure they are correct
+        monomers[i].rgroups = resolveRGroupInfo(monomers[i].rgroups);
         const rgroupSmiles = uniqueRgroupNames.map((rgName) => {
           const rgroup = monomers[i].rgroups.find((rg) => rg.label === rgName);
           return rgroup ? getCaseInvariantValue(rgroup, HELM_RGROUP_FIELDS.CAP_GROUP_SMILES) : '';
@@ -410,8 +410,8 @@ export const RGROUP_FIELDS = [
 ];
 
 // just utility that makes sure fields like smiles and SMILES are treated as the same for setting
-function assignObjectCaseInvariant(targetKeys: string[], source: {[key: string]: string}): {[key: string]: string} {
-  const target: {[key: string]: string} = {};
+function assignObjectCaseInvariant<T extends string>(targetKeys: T[], source: {[key: string]: string}): {[key in T]: string} {
+  const target= {} as {[key in T]: string};
   targetKeys.forEach((key) => {
     const sourceKey = Object.keys(source).find((k) => k.toLowerCase() === key.toLowerCase());
     if (sourceKey) target[key] = source[sourceKey];
@@ -424,6 +424,35 @@ function getCaseInvariantValue<T>(obj: {[key: string]: T}, key: string): T | und
   const caseInvariantKey = Object.keys(obj).find((k) => k.toLowerCase() === key.toLowerCase());
   if (!caseInvariantKey) return undefined;
   return obj[caseInvariantKey];
+}
+
+// some r groups for some monomers can lack smiles, or something else :D this function will try to fix that
+function resolveRGroupInfo(rgps: RGroup[]): RGroup[] {
+  return rgps.map((rg) => {
+    const cp = assignObjectCaseInvariant(RGROUP_FIELDS, rg);
+    const smi = getCaseInvariantValue(cp, HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE);
+    const altId = getCaseInvariantValue(cp, HELM_RGROUP_FIELDS.ALTERNATE_ID);
+    const capName = getCaseInvariantValue(cp, HELM_RGROUP_FIELDS.CAP_GROUP_NAME);
+    const label = getCaseInvariantValue(cp, HELM_RGROUP_FIELDS.LABEL) ?? 'R1'; // just in case...
+    // if all are present, everything is fine
+    if ((smi && altId && capName) || label.length < 2)
+      return cp;
+    // we assume that label is there.. is it too much to ask?
+    // from here on, we assume that only one field is present, and we will try to fix the rest
+    if (altId && altId.indexOf(`${label}-`) !== -1) {
+      const capAtoms = altId.replace(`${label}-`, '');
+      if (!capName)
+        cp[HELM_RGROUP_FIELDS.CAP_GROUP_NAME] = capAtoms;
+      if (!smi)
+        cp[HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE] = `[*:${label.substring(1)}][${capAtoms}]`;
+    } else if (capName) {
+      if (!smi)
+        cp[HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE] = `[*:${label.substring(1)}][${capName}]`;
+      if (!altId)
+        cp[HELM_RGROUP_FIELDS.ALTERNATE_ID] = `${label}-${capName}`;
+    }
+    return cp;
+  }) as RGroup[];
 }
 
 
@@ -569,14 +598,21 @@ class MonomerForm implements INewMonomerForm {
     this.monomerNameInput.value = monomer.name;
     this.monomerIdInput.value = monomer.id;
     this.monomerNaturalAnalogInput.value = monomer.naturalAnalog ?? null;
-    this.rgroupsGrid.items = monomer.rgroups.map((rg) => assignObjectCaseInvariant(RGROUP_FIELDS, rg));
+    this.rgroupsGrid.items = resolveRGroupInfo(monomer.rgroups);
     this.metaGrid.items = Object.entries(monomer.meta ?? {}).map(([k, v]) => {
       return {Property: k, Value: v};
     });
     this.rgroupsGrid.render();
     this.metaGrid.render();
     this.rgroupsGridRoot.style.display = 'flex';
+    
     this.onMonomerInputChanged();
+    if (!monomer.naturalAnalog) {
+      mostSimilarNaturalAnalog(capSmiles(monomer.smiles, this.rgroupsGrid.items as RGroup[]), monomer.polymerType).then((mostSimilar) => {
+        if (mostSimilar)
+          this.monomerNaturalAnalogInput.value = mostSimilar;
+      });
+    }
   }
 
   validateInputs(): string | null | undefined {

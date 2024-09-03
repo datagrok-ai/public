@@ -215,9 +215,9 @@ export class MonomerLib implements IMonomerLib {
   public updateLibs(libList: IMonomerLib[], reload: boolean = false): void {
     if (reload)
       this._monomers = {};
+    this._duplicateMonomers = {}; // Reset duplicates
     for (const lib of libList)
       if (!lib.error) this._updateLibInt(lib);
-    this._duplicateMonomers = {}; // Reset duplicates
     if (Object.entries(this.duplicateMonomers).length > 0) {
       getUserLibSettings().then((settings) => {
         this.assignDuplicatePreferances(settings);

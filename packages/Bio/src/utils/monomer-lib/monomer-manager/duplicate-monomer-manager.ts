@@ -96,7 +96,7 @@ export class DuplicateMonomerManager {
       DuplicateMonomerManager._instance = new DuplicateMonomerManager();
       await DuplicateMonomerManager._instance.refresh();
       const libManager = await MonomerLibManager.getInstance();
-      libManager.getBioLib().onChanged.subscribe(async () => await DuplicateMonomerManager._instance.refresh());
+      libManager.getMonomerLib().onChanged.subscribe(async () => await DuplicateMonomerManager._instance.refresh());
     }
     DuplicateMonomerManager._instance.refresh();
     return DuplicateMonomerManager._instance;
