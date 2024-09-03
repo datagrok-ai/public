@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {Observable} from 'rxjs';
 
 import {HelmType, IWebEditorMonomer, MonomerSetType, MonomerType, PolymerType} from '../helm/types';
+export {MonomerType, PolymerType};
 import {
   HELM_REQUIRED_FIELD as REQ,
   HELM_RGROUP_FIELDS as RGP, HELM_OPTIONAL_FIELDS as OPT, HELM_POLYMER_TYPE,
@@ -79,6 +80,7 @@ export interface IMonomerLib {
   getMonomerSymbolsByType(polymerType: PolymerType): string[];
   getPolymerTypes(): PolymerType[];
   update(lib: IMonomerLib): void;
+  toJSON(): Monomer[];
   get onChanged(): Observable<any>;
 
   /** Summary string with lib monomer count by type
