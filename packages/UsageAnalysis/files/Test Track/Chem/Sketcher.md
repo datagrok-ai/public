@@ -13,7 +13,7 @@
 
 Check:
 * [#1608](https://github.com/datagrok-ai/public/issues/1608): Chem: Render a structure in a tooltip for the sketch box in the filters panel if the depicted substructure is large. Use the following structure:
-CC[C@H](C)[C@@H](C(=O)N[C@H]1CSSC[C@H](NC(=O)[C@@H](NC(=O)[C@@H](NC(=O)[C@@H](NC(=O)CN(C(=O)[C@@H](NC(=O)[C@@H](NC(=O)[C@@H](NC(=O)[C@@H](NC(=O)[C@@H](NC1=O)C(C)C)CC2=CN(C3=CC=CC=C32)C)CCC(=O)N)CC(=O)O)CC4=CNC5=CC=CC=C54)C)C)CC6=CN=CN6)CCCNC(=N)N)C(=O)N(C)[C@@H]([C@@H](C)CC)C(=O)N)NC(=O)[C@@H](CC7=CC=C(C=C7)O)N
+`CC[C@H](C)[C@@H](C(=O)N[C@H]1CSSC[C@H](NC(=O)[C@@H](NC(=O)[C@@H](NC(=O)[C@@H](NC(=O)CN(C(=O)[C@@H](NC(=O)[C@@H](NC(=O)[C@@H](NC(=O)[C@@H](NC(=O)[C@@H](NC1=O)C(C)C)CC2=CN(C3=CC=CC=C32)C)CCC(=O)N)CC(=O)O)CC4=CNC5=CC=CC=C54)C)C)CC6=CN=CN6)CCCNC(=N)N)C(=O)N(C)[C@@H]([C@@H](C)CC)C(=O)N)NC(=O)[C@@H](CC7=CC=C(C=C7)O)N`
 *  [#2448](https://github.com/datagrok-ai/public/issues/2448): Some structures are displayed incorrectly when highlighted if they are in SMILES format:
    * Open SMILES_highlighted.csv dataset (TODO: Add to linked datasets)
    * Make these structures highlighted: either use scaffold tree to highlight or use structure filter on 'isosmiles' column
