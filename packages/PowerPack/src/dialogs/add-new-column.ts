@@ -693,11 +693,14 @@ export class AddNewColumnDialog {
       this.codeMirror!.state.doc.toString().indexOf('(', cursorPos);
     if (openParenthesis === -1)
       return;
-    const commaIdx = this.codeMirror!.state.doc.toString().indexOf(',', openParenthesis);
     const closeParenthesisIdx = this.codeMirror!.state.doc.toString().indexOf(')', openParenthesis);
+    if (closeParenthesisIdx === -1)
+      return;
+    const commaIdx = this.codeMirror!.state.doc.toString().indexOf(',', openParenthesis);
     let firstParamEnd = commaIdx;
     if (commaIdx === -1 || commaIdx > closeParenthesisIdx)
       firstParamEnd = closeParenthesisIdx;
+    this.codeMirror!.focus();
     this.codeMirror!.dispatch({
       selection: EditorSelection.create([
         EditorSelection.range(openParenthesis + 1, firstParamEnd),
