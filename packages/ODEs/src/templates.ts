@@ -29,7 +29,7 @@ ${CONTROL_EXPR.EXPR}:
 
 ${CONTROL_EXPR.ARG}: t
   start = 0
-  finish = 10
+  finish = 10 {min: 10; max: 100}
   step = 0.01
 
 ${CONTROL_EXPR.INITS}:
