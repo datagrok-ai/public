@@ -1,0 +1,66 @@
+.monomer-manager-root .grok-sketcher {
+    min-width: unset !important;
+}
+
+.monomer-manager-root {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.monomer-manager-sketcher .ketcher-host {
+    height: 100% !important;
+} 
+
+.monomer-manager-root > div:first-child {
+    flex-basis: 40% !important;
+}
+.monomer-manager-root > div:nth-child(2) {
+    flex-basis: 60% !important;
+}
+
+.monomer-manager-root > div:first-child > .ui-form {
+    max-width: unset !important;
+}
+
+.monomer-card-info-row {
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 10px;
+}
+
+.monomer-card-info-row > div:nth-child(2) {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.monomer-card-info-row > div:nth-child(1) {
+    font-weight: bold;
+    margin-right: 5px;
+    text-wrap: nowrap;
+}
+
+.duplicate-monomer-symbol-row {
+    visibility: visible !important;
+}
+
+.monomer-card-root {
+    border: 2px solid var(--grey-2);
+    border-radius: 5px;
+    padding: 5px;
+    margin: 5px;
+    overflow: hidden;
+    align-items: center;
+    cursor: pointer;
+    width: 200px;
+    height: 300px;
+    min-width: 200px;
+    min-height: 300px;
+}
+
+.duplicate-monomers-virtual-view {
+    width: 100% !important;
+    overflow-x: clip;
+    overflow-y: auto;
+}

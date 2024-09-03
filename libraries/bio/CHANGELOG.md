@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.42.13 (2024-09-02)
+
+* Add interfaces for monomer management
+
 ## 5.42.12 (2024-08-30)
 
 Add getHelm to SeqHandler and INotationProvider

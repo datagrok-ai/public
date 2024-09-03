@@ -63,7 +63,7 @@ export class MonomerLibFileManager implements IMonomerLibFileManager {
   }
 
   /** Add standard .json monomer library  */
-  async addLibraryFile(fileContent: string, fileName: string): Promise<void> {
+  async addLibraryFile(fileContent: string, fileName: string, reload = true): Promise<void> {
     try {
       const alreadyFileExists = await grok.dapi.files.exists(LIB_PATH + `${fileName}`);
       if (alreadyFileExists) {
