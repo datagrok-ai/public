@@ -295,7 +295,7 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
       cat = fullName.join(': ');
       if (moduleTests[cat] === undefined)
         moduleTests[cat] = { tests: [], clear: true };
-      moduleTests[cat].tests.push(new Test(cat, name, f.test, { isAggregated: false, timeout: STANDART_TIMEOUT }));
+      moduleTests[cat].tests.push(new Test(cat, name, f.test, { isAggregated: false, timeout: f.options?.timeout ?? STANDART_TIMEOUT, skipReason: f.options?.skipReason}));
     }
   }
   const moduleAutoTests = [];
@@ -335,13 +335,17 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
     if (demo) {
       const wait = f.options['demoWait'] ? parseInt(f.options['demoWait']) : undefined;
       const test = new Test(demoCatName, f.friendlyName, async () => {
+        grok.shell.isInDemo = true;
+        if (grok.shell.view(DG.View.BROWSE) === undefined)
+          grok.shell.v = DG.View.createByType(DG.View.BROWSE);
+        await delay(300);
         grok.shell.clearLastError();
         await f.apply();
         await delay(wait ? wait : 2000);
         const unhandled = await grok.shell.lastError;
         if (unhandled)
           throw new Error(unhandled);
-
+        grok.shell.isInDemo = false;
       }, { skipReason: f.options['demoSkip'] });
       moduleDemo.push(test);
     }

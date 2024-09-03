@@ -1658,7 +1658,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const isMolDataset = dataFrame ? dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE) !== null : false;
     if (this.allowGenerate && isMolDataset) {
       this._generateLink!.style.color = '';
-      this._generateLink!.onclick = (e) => this.generateTree();
     }
   }
 
