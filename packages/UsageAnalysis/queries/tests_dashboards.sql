@@ -61,22 +61,22 @@ order by r.test_name, worker
 --end
 
 
---name:  Benchmark Succsess Count
---friendlyName:UA | Tests | Benchmark Succsess Count
+--name:  LastBuildsBenchmarksCompare
+--friendlyName:UA | Tests |  Last Builds Benchmarks Compare
 --connection: System:Datagrok
 with last_builds as (
     select name  from builds order by build_date desc limit 10
-)
+) 
 
-select  r.build_name as build, count(r.test_name) as succsess_count 
+select CAST(min(r.duration) AS int)as duration, r.test_name as test, r.build_name
 from test_runs r
 where r.benchmark = true
 and r.passed = true
 and r.skipped = false
-and r.build_name in (select name from last_builds) 
 and not r.test_name like '%Unhandled exceptions: Exception'
-group by r.build_name
-order by r.build_name desc
+and r.build_name in (select name from last_builds)
+group by r.test_name, r.build_name
+order by r.build_name desc, r.test_name
 --end
 
 --name:  LastBuildsCompare
@@ -95,14 +95,14 @@ select distinct on (b.name, t.name)
   r.result, 
   r.duration, 
   r.benchmark
-from tests t full join last_builds b on 1=1
+from tests t full join last_builds b 
 left join test_runs r on r.test_name = t.name and r.build_name = b.name 
 order by b.name desc, t.name, r.date_time desc
 --end
 
 
---name:  LastversionsCompare
---friendlyName:UA | Tests | Last versions Compare
+--name:  LastVersionsCompare
+--friendlyName:UA | Tests | Last Versions Compare
 --connection: System:Datagrok
 with versions_builds as (
   select distinct on ((regexp_matches(name, '\d{4}-\d{2}-\d{2}-(\d+\.\d+\.\d+)'))[1]) 
