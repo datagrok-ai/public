@@ -13,7 +13,7 @@ import {UiUtils} from '../../shared-components';
 import {Validator, ValidationResult, nonNullValidator, isValidationPassed, getErrorMessage, makePendingValidationResult, mergeValidationResults, getValidationIcon} from '../../shared-utils/validation';
 import {getFuncRunLabel, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, plotToSheet, scalarsToSheet, isInputBase, updateOutputValidationSign, createPartialCopy} from '../../shared-utils/utils';
 import {EDIT_STATE_PATH, EXPERIMENTAL_TAG, INPUT_STATE, RESTRICTED_PATH, viewerTypesMapping} from '../../shared-utils/consts';
-import {FuncCallInput, FuncCallInputValidated, isFuncCallInputValidated, isInputLockable} from '../../shared-utils/input-wrappers';
+import {FuncCallInput, FuncCallInputValidated, isFuncCallInputValidated, isInputLockable, SubscriptionLike} from '../../shared-utils/input-wrappers';
 import '../css/rich-function-view.css';
 import {FunctionView} from './function-view';
 import {SensitivityAnalysisView as SensitivityAnalysis} from './sensitivity-analysis-view';
@@ -1589,7 +1589,11 @@ export class RichFunctionView extends FunctionView {
     });
     this.subs.push(sub3);
 
-    const sub4 = getObservable(t.onInput.bind(t)).pipe(debounceTime(VALIDATION_DEBOUNCE_TIME)).subscribe(() => {
+    const sub4 = (
+      isInputBase(t) ? 
+        t.onInput: 
+        getObservable((t.onInput as  ((cb: Function) => SubscriptionLike)).bind(t))
+      ).pipe(debounceTime(VALIDATION_DEBOUNCE_TIME)).subscribe(() => {
       try {
         stopUIUpdates = true;
         this.funcCall[field][val.name] = t.value;
