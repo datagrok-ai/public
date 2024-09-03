@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {BigButton, Button, FoldableDialog, IconFA, InputForm, RibbonPanel, SplitH} from '@datagrok-libraries/webcomponents-vue/src';
+import {BigButton, Button, DockManager, FoldableDialog, IconFA, InputForm, RibbonPanel, SplitH} from '@datagrok-libraries/webcomponents-vue/src';
 import {defineComponent, KeepAlive, onUnmounted, ref, shallowRef, triggerRef, watch} from 'vue';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
 import {useSubscription} from '@vueuse/rxjs';
@@ -91,73 +91,66 @@ export const VueDriverRFVApp = defineComponent({
     const treeHidden = ref(false);
 
     return () => (
-      <KeepAlive>
-        <div class='w-full h-full'>
-          <RibbonPanel>
-            <BigButton onClick={() => initPipeline('LibTests:MockProvider3')}>Init Pipeline</BigButton>
-            <IconFA 
-              name='folder-tree'
-              tooltip={treeHidden.value ? 'Show tree': 'Hide tree'}
-              onClick={() => treeHidden.value = !treeHidden.value } 
-            />
-          </RibbonPanel>
-          
-          { treeState.value ? 
-            <FoldableDialog 
-              title='Steps tree'
-              style={{display: treeHidden.value ? 'none': null}}
-              onCloseClicked={() => treeHidden.value = true}
-            >
-              <Draggable 
-                class="ui-div mtl-tree p-2"
-                rootDroppable={false}
-                treeLine
-                childrenKey='steps'
-                nodeKey={(stat: AugmentedStat) => stat.data.uuid}
-                statHandler={restoreOpenedNodes}
+      <div class='w-full h-full'>
+        <RibbonPanel>
+          <BigButton onClick={() => initPipeline('LibTests:MockProvider3')}>Init Pipeline</BigButton>
+          <IconFA 
+            name='folder-tree'
+            tooltip={treeHidden.value ? 'Show tree': 'Hide tree'}
+            onClick={() => treeHidden.value = !treeHidden.value } 
+          />
+        </RibbonPanel>
+        <DockManager class='block h-full'>
+          { treeState.value ? <Draggable 
+            class="ui-div mtl-tree p-2"
+            rootDroppable={false}
+            treeLine
+            childrenKey='steps'
+            nodeKey={(stat: AugmentedStat) => stat.data.uuid}
+            statHandler={restoreOpenedNodes}
 
-                ref={treeInstance} 
-                modelValue={[treeState.value]} 
+            ref={treeInstance} 
+            modelValue={[treeState.value]} 
         
-                eachDraggable={(stat: AugmentedStat) =>
-                  (stat.parent && 
+            eachDraggable={(stat: AugmentedStat) =>
+              (stat.parent && 
                 (isParallelPipelineState(stat.parent.data) || isSequentialPipelineState(stat.parent.data))
-                  ) ?? false
-                }
-                eachDroppable={(stat: AugmentedStat) => 
-                  (isParallelPipelineState(stat.data) || isSequentialPipelineState(stat.data))}
-                onAfter-drop={() => {
-                  const draggedStep = dragContext.startInfo.dragNode as AugmentedStat;
-                  moveStep(draggedStep.data.uuid, dragContext.targetInfo.indexBeforeDrop);
-                }}
-              > 
-                { 
-                  ({stat}: {stat: AugmentedStat}) =>  
-                    (
-                      <TreeNode 
-                        stat={stat}
-                        style={{'background-color': stat.data.uuid === chosenStepUuid.value ? '#f2f2f5' : null}}
-                        isDraggable={treeInstance.value?.isDraggable(stat)}
-                        isDroppable={treeInstance.value?.isDroppable(stat)}
-                        isDeletable={!!stat.parent && isParallelPipelineState(stat.parent.data)}
-                        onAddNode={({itemId, position}) => {
-                          addStep(stat.data.uuid, itemId, position);
-                        }}
-                        onRemoveNode={() => removeStep(stat.data.uuid)}
-                        onClick={() => {
-                          chosenStepUuid.value = stat.data.uuid;
-                          if (isFuncCallState(stat.data) && stat.data.funcCall) 
-                            changeFunccall(stat.data.funcCall); 
-                          else 
-                            isVisibleRfv.value = false;
-                        }}
-                        onRunNode={() => runStep(stat.data.uuid)}
-                        onToggleNode={() => stat.open = !stat.open}
-                      />
-                    )
-                }
-              </Draggable>
-            </FoldableDialog> : null }
+              ) ?? false
+            }
+            eachDroppable={(stat: AugmentedStat) => 
+              (isParallelPipelineState(stat.data) || isSequentialPipelineState(stat.data))}
+            onAfter-drop={() => {
+              const draggedStep = dragContext.startInfo.dragNode as AugmentedStat;
+              moveStep(draggedStep.data.uuid, dragContext.targetInfo.indexBeforeDrop);
+            }}
+          > 
+            { 
+              ({stat}: {stat: AugmentedStat}) =>  
+                (
+                  <TreeNode 
+                    stat={stat}
+                    style={{'background-color': stat.data.uuid === chosenStepUuid.value ? '#f2f2f5' : null}}
+                    isDraggable={treeInstance.value?.isDraggable(stat)}
+                    isDroppable={treeInstance.value?.isDroppable(stat)}
+                    isDeletable={!!stat.parent && isParallelPipelineState(stat.parent.data)}
+                    onAddNode={({itemId, position}) => {
+                      addStep(stat.data.uuid, itemId, position);
+                    }}
+                    onRemoveNode={() => removeStep(stat.data.uuid)}
+                    onClick={() => {
+                      chosenStepUuid.value = stat.data.uuid;
+                      if (isFuncCallState(stat.data) && stat.data.funcCall) 
+                        changeFunccall(stat.data.funcCall); 
+                      else 
+                        isVisibleRfv.value = false;
+                    }}
+                    onRunNode={() => runStep(stat.data.uuid)}
+                    onToggleNode={() => stat.open = !stat.open}
+                  />
+                )
+            }
+          </Draggable>: null }
+          
           {
             isVisibleRfv.value && currentFuncCall.value && <RichFunctionView 
               class='h-full'
@@ -165,8 +158,8 @@ export const VueDriverRFVApp = defineComponent({
               onUpdate:funcCall={(chosenCall) => currentFuncCall.value = deepCopy(chosenCall)}
             /> 
           }
-        </div>
-      </KeepAlive>
+        </DockManager>
+      </div>
     );
   },
 });

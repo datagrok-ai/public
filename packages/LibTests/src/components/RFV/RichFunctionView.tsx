@@ -118,7 +118,7 @@ export const RichFunctionView = defineComponent({
     }, {immediate: true});
           
     return () => (
-      <div class='w-full h-full flex absolute top-0'>
+      <div class='w-full h-full flex'>
         <RibbonPanel>
           { hasContextHelp.value && <IconFA 
             name='info' 
