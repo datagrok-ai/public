@@ -394,7 +394,7 @@ export class DiffStudio {
 
   private inputsByCategories = new Map<string, DG.InputBase[]>();
 
-  constructor(toAddTableView: boolean = true, toDockTabCtrl: boolean = true) {
+  constructor(toAddTableView: boolean = true, toDockTabCtrl: boolean = true, isFilePreview: boolean = false) {
     this.solverView = toAddTableView ?
       grok.shell.addTableView(this.solutionTable) :
       DG.TableView.create(this.solutionTable, false);
@@ -430,9 +430,10 @@ export class DiffStudio {
     };
 
     if (toDockTabCtrl) {
-      if (!toAddTableView)
-        setTimeout(dockTabCtrl, UI_TIME.PREVIEW_DOCK_EDITOR);
-      else
+      if (!toAddTableView) {
+        const timeout = isFilePreview ? UI_TIME.PREVIEW_DOCK_TIMEOUT : UI_TIME.DOCK_EDITOR_TIMEOUT;
+        setTimeout(dockTabCtrl, timeout);
+      } else
         dockTabCtrl();
     }
 
