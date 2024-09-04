@@ -146,7 +146,7 @@ export class MultiColumnDimReductionEditor {
       let settingsOpened = false;
 
       this.methodInput = ui.input.choice('Method', {value: DimReductionMethods.UMAP,
-        items: [DimReductionMethods.UMAP, DimReductionMethods.T_SNE], onValueChanged: (value) => {
+        items: [DimReductionMethods.UMAP, DimReductionMethods.T_SNE], onValueChanged: (inp, value) => {
           if (settingsOpened)
             this.createAlgorithmSettingsDiv(this.methodsParams[value]);
         }});
@@ -192,7 +192,7 @@ export class MultiColumnDimReductionEditor {
         });
       });
       const supportedColNames = Object.keys(this.columnFunctionsMap);
-      const columnsInput = ui.input.columns('Columns', {table: table, onValueChanged: (value) => {
+      const columnsInput = ui.input.columns('Columns', {table: table, onValueChanged: (inp, value) => {
         this.onColumnsChanged.next();
         ui.empty(this.columnOptEditorsRoot);
         ui.empty(this.weightsEditorRoot);
@@ -260,13 +260,13 @@ export class MultiColumnDimReductionEditor {
           (params as any)[it];
 
         const input = param.type === 'string' ?
-          ui.input.string(param.uiName, {value: param.value ?? '', onValueChanged: (value) => {
+          ui.input.string(param.uiName, {value: param.value ?? '', onValueChanged: (inp, value) => {
             param.value = value;
           }}) : param.type === 'boolean' ?
-            ui.input.bool(param.uiName, {value: param.value ?? false, onValueChanged: (value) => {
+            ui.input.bool(param.uiName, {value: param.value ?? false, onValueChanged: (inp, value) => {
               param.value = value;
             }}) :
-            ui.input.float(param.uiName, {value: param.value as any, onValueChanged: (value) => {
+            ui.input.float(param.uiName, {value: param.value as any, onValueChanged: (inp, value) => {
               param.value = value;
             }});
         if (param.disable) {
@@ -419,7 +419,7 @@ class DimReductionColumnEditor {
     colOptEditors: HTMLElement[] = [];
     constructor(column: DG.Column, supportedFunctions: DimRedSupportedFunctions[]) {
       this.weightInput = ui.input.float('Weight',
-        {value: 1, onValueChanged: (value) => { this.weight = value ?? 1; }});
+        {value: 1, onValueChanged: (inp, value) => { this.weight = value ?? 1; }});
       this.column = column;
       // sort by specificity
       this.supportedFunctions = supportedFunctions.sort((a, b) => {
@@ -439,7 +439,7 @@ class DimReductionColumnEditor {
       this.preprocessingFunctionInput = ui.input.choice('Encoding function',
         {value: getFuncName(this.supportedFunctions[0].func),
           items: this.supportedFunctions.map((it) => getFuncName(it.func)),
-          onValueChanged: (value) => {
+          onValueChanged: (inp, value) => {
             const func = this.functionsMap[value];
             this.preprocessingFunctionSettings = {};
             this.hasExtraSettings = func.inputs.length > 2;

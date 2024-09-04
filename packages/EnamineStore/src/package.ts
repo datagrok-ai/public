@@ -154,7 +154,7 @@ export function enamineStorePanel(smiles: string): DG.Widget {
   const acc = ui.accordion();
   const catalogToData: {[catalogType in CATALOG_TYPE]?: {[searchMode in SEARCH_MODE]?: HTMLDivElement}} = {};
   const catalog = ui.input.choice('Catalog', {value: CATALOG_TYPE.SCR, items: Object.values(CATALOG_TYPE),
-    onValueChanged: (value) => {
+    onValueChanged: (inp, value) => {
       const exactPanel = acc.getPane(SEARCH_MODE.EXACT);
       const similarPanel = acc.getPane(SEARCH_MODE.SIMILAR);
       const substructurePanel = acc.getPane(SEARCH_MODE.SUBSTRUCTURE);

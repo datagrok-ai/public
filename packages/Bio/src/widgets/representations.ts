@@ -37,7 +37,7 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
   const maxMonomerLengthInput = ui.input.int('Max Monomer Length', {
     value: maxMonomerLength!,
     nullable: true, min: 1, max: 50, step: 1,
-    onValueChanged: (value) => {
+    onValueChanged: (inp, value) => {
       if (value == 0)
         setTimeout(() => { maxMonomerLengthInput.value = null!; }, 0);
       else {
@@ -53,7 +53,7 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
 
   const gapLengthInput = ui.input.int('Monomer Margin', {
     value: col.temp[mmcrTemps.gapLength] ?? 0,
-    onValueChanged: (value) => {
+    onValueChanged: (inp, value) => {
       col.temp[mmcrTemps.gapLength] = value;
       col.temp[mmcrTemps.rendererSettingsChanged] = rendererSettingsChangedState.true;
       col.dataFrame.fireValuesChanged();
@@ -63,7 +63,7 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
 
   const colorCodeInput = ui.input.bool('Color Code', {
     value: (col?.temp['color-code'] != null) ? col.temp['color-code'] : true,
-    onValueChanged: (value) => {
+    onValueChanged: (inp, value) => {
       col.temp['color-code'] = value;
       col.dataFrame.fireValuesChanged();
     },
@@ -73,7 +73,7 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
   const referenceSequenceInput = ui.input.string('Reference Sequence', {
     value: (col?.temp['reference-sequence'] != null) ? col?.temp['reference-sequence'] : '',
     nullable: true,
-    onValueChanged: (value) => {
+    onValueChanged: (inp, value) => {
       col.temp['reference-sequence'] = value;
       col.dataFrame.fireValuesChanged();
     },
@@ -83,7 +83,7 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
 
   const compareWithCurrentInput = ui.input.bool('Compare with current', {
     value: (col?.temp['compare-with-current'] != null) ? col.temp['compare-with-current'] : true,
-    onValueChanged: (value) => {
+    onValueChanged: (inp, value) => {
       col.temp['compare-with-current'] = value;
       col.dataFrame.fireValuesChanged();
     },

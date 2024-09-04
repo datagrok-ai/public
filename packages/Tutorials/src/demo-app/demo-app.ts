@@ -350,7 +350,7 @@ export class DemoView extends DG.ViewBase {
 
   private _createSearchInput(directionFuncs: DemoFunc[], tree: DG.TreeViewGroup): DG.InputBase<string> {
     const searchInput = ui.input.search('', {
-      onValueChanged: (value) => {
+      onValueChanged: (inp, value) => {
         const foundFuncs = directionFuncs.filter((func) => {
           return func.name.toLowerCase().includes(value.toLowerCase()) ||
               func.func.description.toLowerCase().includes(value.toLowerCase()) ||

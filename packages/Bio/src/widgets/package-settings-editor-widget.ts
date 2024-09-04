@@ -24,7 +24,7 @@ export class PackageSettingsEditorWidget extends DG.Widget {
     const maxMonomerLengthInput = ui.input.int('Max Monomer Length', {
       value: _package.properties.maxMonomerLength!,
       nullable: true, min: 0,
-      onValueChanged: (value) => {
+      onValueChanged: (inp, value) => {
         // Handle user changed value
         _package.properties.maxMonomerLength = value ?? null;
       },
@@ -34,7 +34,7 @@ export class PackageSettingsEditorWidget extends DG.Widget {
     const tooltipWebLogoInput = ui.input.bool('Tooltip WebLogo', {
       value: _package.properties.tooltipWebLogo,
       nullable: false,
-      onValueChanged: (value) => {
+      onValueChanged: (inp, value) => {
         _package.properties.tooltipWebLogo = value;
       },
       tooltipText: this.tooltipWebLogo.description,
@@ -43,7 +43,7 @@ export class PackageSettingsEditorWidget extends DG.Widget {
     const defaultSeparatorInput = ui.input.choice('Default Separator', {
       value: _package.properties.defaultSeparator,
       items: ['.', '/', '-'],
-      onValueChanged: (value) => {
+      onValueChanged: (inp, value) => {
         _package.properties.defaultSeparator = value;
       },
       tooltipText: this.defaultSeparator.description,
