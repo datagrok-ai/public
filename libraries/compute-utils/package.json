@@ -11,7 +11,7 @@
     "@datagrok-libraries/utils": "^4.2.29",
     "@types/lodash.clonedeepwith": "^4.5.9",
     "cash-dom": "^8.1.4",
-    "datagrok-api": "^1.21.0-rc.6c7419cbeae.48f8c09aa0",
+    "datagrok-api": "../../js-api",
     "dayjs": "=1.11.10",
     "exceljs": "^4.3.0",
     "fflate": "^0.7.4",
