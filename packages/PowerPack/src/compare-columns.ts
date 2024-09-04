@@ -62,7 +62,7 @@ function addCols(t1: DG.InputBase, t2: DG.InputBase, outputs: HTMLDivElement) {
   let firstColumnAdded = false;
   let secondColumnAdded = false;
 
-  const c1 = ui.input.choice('Columns', {value: '', items: grok.shell.table(t1.value).columns.names(), onValueChanged: (value) => {
+  const c1 = ui.input.choice('Columns', {value: '', items: grok.shell.table(t1.value).columns.names(), onValueChanged: (inp, value) => {
     firstColumnAdded = true;
     if (secondColumnAdded)
       showOutputs(t1, t2, c1, c2, outputs);
@@ -72,7 +72,7 @@ function addCols(t1: DG.InputBase, t2: DG.InputBase, outputs: HTMLDivElement) {
     }
   }});
 
-  const c2 = ui.input.choice('', {value: '', items: grok.shell.table(t2.value).columns.names(), onValueChanged: (value) => {
+  const c2 = ui.input.choice('', {value: '', items: grok.shell.table(t2.value).columns.names(), onValueChanged: (inp, value) => {
     secondColumnAdded = true;
     if (firstColumnAdded)
       showOutputs(t1, t2, c1, c2, outputs);
@@ -93,7 +93,7 @@ export function compareColumns() {
   let firstTableAdded = false;
   let secondTableAdded = false;
 
-  const t1 = ui.input.choice('Tables', {value: '', items: tablesNames, onValueChanged: (value) => {
+  const t1 = ui.input.choice('Tables', {value: '', items: tablesNames, onValueChanged: (inp, value) => {
     firstTableAdded = true;
     if (secondTableAdded) {
       columnsInputs.innerHTML = '';
@@ -102,7 +102,7 @@ export function compareColumns() {
       t2.value = value;
   }});
 
-  const t2 = ui.input.choice('', {value: '', items: tablesNames, onValueChanged: (value) => {
+  const t2 = ui.input.choice('', {value: '', items: tablesNames, onValueChanged: (inp, value) => {
     secondTableAdded = true;
     if (firstTableAdded) {
       columnsInputs.innerHTML = '';

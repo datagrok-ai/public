@@ -127,7 +127,7 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
   // add checkboxes to each hader
   tc.panes.forEach((pane)=> {
     const functionCheck =
-      ui.input.bool('', {value: calculatedFunctions[funcNamesMap[pane.name]], onValueChanged: (value) => {
+      ui.input.bool('', {value: calculatedFunctions[funcNamesMap[pane.name]], onValueChanged: (inp, value) => {
         calculatedFunctions[funcNamesMap[pane.name]] = !!value;
         if (!value)
           $(pane.content).find('input').attr('disabled', 'true');

@@ -715,7 +715,7 @@ export namespace input {
     property: (input, x) => input.property = x,
     tooltipText: (input, x) => input.setTooltip(x),
     onCreated: (input, x) => x(input),
-    onValueChanged: (input, x) => input.onChanged.subscribe(() => x(input.value)),
+    onValueChanged: (input, x) => input.onChanged.subscribe(() => x(input, input.value)),
     clearIcon: (input, x) => api.grok_StringInput_AddClearIcon(input.dart, x),
     escClears: (input, x) => api.grok_StringInput_AddEscClears(input.dart, x),
     size: (input, x) => api.grok_TextInput_SetSize(input.dart, x.width, x.height),
@@ -763,7 +763,7 @@ export namespace input {
     elementOptions?: ElementOptions;
     tooltipText?: string;
     onCreated?: (input: InputBase<T>) => void;
-    onValueChanged?: (value: T) => void;
+    onValueChanged?: (input: InputBase<T>, value: T) => void;
   }
 
   export interface INumberInputInitOptions<T> extends IInputInitOptions<T> {
@@ -822,7 +822,7 @@ export namespace input {
     if (options?.onCreated)
       options.onCreated(input);
     if (options?.onValueChanged)
-      input.onChanged.subscribe(() => options.onValueChanged!(input));
+      input.onChanged.subscribe(() => options.onValueChanged!(input, input.value));
     return input;
   }
 

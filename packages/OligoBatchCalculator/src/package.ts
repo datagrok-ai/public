@@ -301,7 +301,7 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
     });
   }
 
-  const inputSequences = ui.input.textArea('', {value: DEFAULT_INPUT, onValueChanged: (value) => render(value)});
+  const inputSequences = ui.input.textArea('', {value: DEFAULT_INPUT, onValueChanged: (inp, value) => render(value)});
   const yieldAmount = ui.input.float('', {value: 1, onValueChanged: () => render(inputSequences.value)});
   const units = ui.input.choice('', {value: UNITS.OPTICAL_DENSITY, items: Object.values(UNITS), onValueChanged: () => render(inputSequences.value)});
 
@@ -370,7 +370,7 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
   view.box = true;
   view.path = '/apps/OligoBatchCalculator/';
   view.setRibbonPanels([[
-    ui.input.toggle('Show additional modifications', {value: true, onValueChanged: (value) => {
+    ui.input.toggle('Show additional modifications', {value: true, onValueChanged: (inp, value) => {
       (value) ? $(codesTablesDiv).show() : $(codesTablesDiv).hide();
     }}).root,
   ]]);

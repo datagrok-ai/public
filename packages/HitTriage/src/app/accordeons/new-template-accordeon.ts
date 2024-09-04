@@ -38,7 +38,7 @@ export async function createTemplateAccordeon(app: HitAppBase<any>,
 
   const keyErrorDiv = ui.divText('Template key is empty or already exists', {classes: 'hit-triage-error-div'});
 
-  const templateNameInput = ui.input.string('Name', {value: '', onValueChanged: (value) => {
+  const templateNameInput = ui.input.string('Name', {value: '', onValueChanged: (inp, value) => {
     if (value === '' || availableTemplates.includes(value)) {
       templateNameInput.root.style.borderBottom = '1px solid red';
       errorDiv.style.opacity = '100%';
@@ -47,7 +47,7 @@ export async function createTemplateAccordeon(app: HitAppBase<any>,
       errorDiv.style.opacity = '0%';
     }
   }});
-  const templateKeyInput = ui.input.string('Key', {value: '', onValueChanged: (value) => {
+  const templateKeyInput = ui.input.string('Key', {value: '', onValueChanged: (inp, value) => {
     if (value === '' || availableTemplateKeys.includes(value)) {
       templateKeyInput.root.style.borderBottom = '1px solid red';
       keyErrorDiv.style.opacity = '100%';
@@ -89,7 +89,7 @@ export async function createTemplateAccordeon(app: HitAppBase<any>,
   const dataSourceFunctionInput = ui.input.choice(
     C.i18n.dataSourceFunction, {value: combinedSourceNames[0], items: combinedSourceNames});
   const ingestTypeInput = ui.input.choice<IngestType>('Ingest using', {value: 'Query', items: ['Query', 'File'],
-    onValueChanged: (value) => {
+    onValueChanged: (inp, value) => {
       dataSourceFunctionInput.root.style.display = value === 'Query' ? 'block' : 'none';
     }});
 

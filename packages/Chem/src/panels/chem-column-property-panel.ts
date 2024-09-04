@@ -25,7 +25,7 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
   columnsSet.delete(col.name);
 
   const scaffoldColumnChoice = ui.input.choice('Scaffold column', {value: scaffoldColName, items: [NONE].concat([...columnsSet].sort()),
-    onValueChanged: (value) => {
+    onValueChanged: (inp, value) => {
       col.temp[SCAFFOLD_COL] = value === NONE ? null : value;
       col.dataFrame?.fireValuesChanged();
     }});
@@ -33,7 +33,7 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
 
   const highlightScaffoldsCheckbox = ui.input.bool('Highlight scaffold',
     {value: col?.temp && col.temp[HIGHLIGHT_BY_SCAFFOLD_COL] === 'true',
-      onValueChanged: (value) => {
+      onValueChanged: (inp, value) => {
         col.temp[HIGHLIGHT_BY_SCAFFOLD_COL] = value.toString();
         col.dataFrame?.fireValuesChanged();
       }});
@@ -41,7 +41,7 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
 
   const regenerateCoordsCheckbox = ui.input.bool('Regen coords',
     {value: col?.temp && col.temp[REGENERATE_COORDS] === 'true',
-      onValueChanged: (value) => {
+      onValueChanged: (inp, value) => {
         col.temp[REGENERATE_COORDS] = value.toString();
         col.dataFrame?.fireValuesChanged();
       }});
@@ -49,7 +49,7 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
 
   const moleculeFilteringChoice = ui.input.choice('Filter type',
     {value: col.tags[DG.TAGS.STRUCTURE_FILTER_TYPE] ?? StructureFilterType.Sketch, items: [StructureFilterType.Sketch, StructureFilterType.Categorical],
-      onValueChanged: (value) => {
+      onValueChanged: (inp, value) => {
         col.tags[DG.TAGS.STRUCTURE_FILTER_TYPE] = value;
         col.tags[DG.TAGS.IGNORE_CUSTOM_FILTER] = (value == StructureFilterType.Categorical).toString();
       }});
@@ -57,7 +57,7 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
 
   const showStructures = ui.input.bool('Structures',
     {value: col.tags[DG.TAGS.CELL_RENDERER] == DG.SEMTYPE.MOLECULE,
-      onValueChanged: (value) => col.tags[DG.TAGS.CELL_RENDERER] = value ? DG.SEMTYPE.MOLECULE : DG.TYPE.STRING});
+      onValueChanged: (inp, value) => col.tags[DG.TAGS.CELL_RENDERER] = value ? DG.SEMTYPE.MOLECULE : DG.TYPE.STRING});
 
   const rdKitInputs = ui.form([
     showStructures,
