@@ -587,7 +587,8 @@ export class AddNewColumnDialog {
         //treat $COLUMN_NAME as scalar
         if (funcCall.inputs[key].func.name !== COLUMN_FUNCTION_NAME)
           innerFuncCalls.push(key);
-        actualInputParamTypes[key] = funcCall.inputs[key].func.outputs[0].propertyType;
+        actualInputParamTypes[key] = funcCall.inputs[key].func.outputs.length ?
+          funcCall.inputs[key].func.outputs[0].propertyType : 'dynamic';
       } else
         actualInputParamTypes[key] = typeof funcCall.inputs[key];
     }
