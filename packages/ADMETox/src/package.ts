@@ -63,7 +63,8 @@ export function AdmeticaEditor(call: DG.FuncCall): void {
         molecules: params.col,
         templates: params.templatesName,
         models: params.models,
-        addPiechart: params.addPiechart
+        addPiechart: params.addPiechart,
+        addForm: params.addForm
       }).call(true);
     }).show();
 }
@@ -75,9 +76,10 @@ export function AdmeticaEditor(call: DG.FuncCall): void {
 //input: string templates
 //input: list<string> models
 //input: bool addPiechart
+//input: bool addForm
 //editor: Admetox: AdmeticaEditor
-export async function admetica(table: DG.DataFrame, molecules: DG.Column, templates: string, models: string[], addPiechart: boolean): Promise<void> {
-  await performChemicalPropertyPredictions(molecules, table, models.join(','), templates, addPiechart);
+export async function admetica(table: DG.DataFrame, molecules: DG.Column, templates: string, models: string[], addPiechart: boolean, addForm: boolean): Promise<void> {
+  await performChemicalPropertyPredictions(molecules, table, models.join(','), templates, addPiechart, addForm);
 }
 
 //name: Demo Admetox

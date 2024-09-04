@@ -46,7 +46,7 @@ function createCategoryHeader(left: number, top: number, categoryName: string) {
 }
   
 // Function to generate the form state with dynamic vertical placement
-export function generateFormState(table: string, categories: { [s: string]: string[]; }, maxHeight: number = 600) {
+export function generateFormState(table: string, categories: { [s: string]: string[]; }, molColName: string, addPiechart: boolean, maxHeight: number = 600) {
   const elementStates = [];
   const leftOffset = 10; // Starting left offset
   const colWidth = 300; // Width allocated for each category set
@@ -66,23 +66,25 @@ export function generateFormState(table: string, categories: { [s: string]: stri
       "height": 139,
       "type": "field",
       "viewerSettings": {
-        "table": "sar-small",
-        "column": "smiles",
+        "table": table,
+        "column": molColName,
         "format": null
       }
-    },
-    {
+    }
+  );
+
+  if (addPiechart)
+    elementStates.push({
       "left": 154,
       "top": 22,
       "width": 209,
       "height": 140,
       "type": "sparkline-cell",
       "viewerSettings": {
-        "table": "sar-small",
+        "table": table,
         "column": "piechart"
       }
-    }
-  );
+    });
   
   // Generate other elements below the "smiles" and "sparkline-cell"
   for (const [category, columns] of Object.entries(categories)) {

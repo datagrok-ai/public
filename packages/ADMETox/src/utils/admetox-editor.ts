@@ -12,6 +12,7 @@ export class AdmeticaBaseEditor {
   templatesInput: DG.ChoiceInput<string>;
   saveButton: HTMLElement;
   addPiechartInput = ui.input.bool('Add piechart', {value: true});
+  addFormInput = ui.input.bool('Add form', {value: true});
   modelsSettingsDiv = ui.inputs([]);
   modelsSettingsIcon: HTMLElement;
   expanded: boolean = false;
@@ -216,6 +217,7 @@ export class AdmeticaBaseEditor {
       ui.divH([this.templatesInput.root, this.saveButton]),
       this.modelsSettingsDiv,
       this.addPiechartInput.root,
+      this.addFormInput.root,
     ], { style: { minWidth: '450px' }, classes: 'ui-form' });
   }
   
@@ -225,7 +227,8 @@ export class AdmeticaBaseEditor {
       col: this.colInput ? this.colInput.value! : null,
       templatesName: this.templatesInput.value,
       models: this.tree?.items.filter((item) => !(item instanceof DG.TreeViewGroup) && item.checked).map((item) => item.text),
-      addPiechart: this.addPiechartInput.value
+      addPiechart: this.addPiechartInput.value,
+      addForm: this.addFormInput.value,
     };
   }
   

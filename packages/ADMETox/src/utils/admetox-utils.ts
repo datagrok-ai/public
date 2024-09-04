@@ -60,7 +60,7 @@ export async function setProperties(template?: string) {
   properties = JSON.parse(propertiesJson);
 }
 
-export async function performChemicalPropertyPredictions(molColumn: DG.Column, viewTable: DG.DataFrame, properties: string, template?: string, addPiechart?: boolean) {
+export async function performChemicalPropertyPredictions(molColumn: DG.Column, viewTable: DG.DataFrame, properties: string, template?: string, addPiechart?: boolean, addForm?: boolean) {
   await setProperties(template);
   const progressIndicator = DG.TaskBarProgressIndicator.create('Running ADMETox...');
   const csvString = DG.DataFrame.fromColumns([molColumn]).toCsv();
@@ -71,7 +71,7 @@ export async function performChemicalPropertyPredictions(molColumn: DG.Column, v
     progressIndicator.update(80, 'Results are ready');
     const table = admetoxResults ? DG.DataFrame.fromCsv(admetoxResults) : null;
     const molColIdx = viewTable?.columns.names().findIndex((name) => name === molColumn.name);
-    table ? addResultColumns(table, viewTable, addPiechart, molColIdx!) : grok.log.warning('');
+    table ? addResultColumns(table, viewTable, addPiechart, addForm, molColIdx!) : grok.log.warning('');
   } catch (e) {
     grok.log.error(e);
   } finally {
@@ -241,7 +241,7 @@ function updateColumnProperties(column: DG.Column, model: any, viewTable: DG.Dat
   column.meta.units = model.units;
 }
 
-export function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, addPiechart: boolean = true, molColIdx: number): void {
+export function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, addPiechart: boolean = true, addForm: boolean = true, molColIdx: number): void {
   if (table.columns.length === 0) return;
 
   if (table.rowCount > viewTable.rowCount)
@@ -268,7 +268,9 @@ export function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, a
 
   addColorCoding(viewTable, updatedModelNames);
   addCustomTooltip(viewTable.name);
-  createDynamicForm(viewTable, updatedModelNames);
+
+  if (addForm)
+    createDynamicForm(viewTable, updatedModelNames, viewTable.columns.names()[molColIdx], addPiechart);
 }
 
 export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue): Promise<DG.Accordion> {
@@ -350,10 +352,10 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
   return CellRenderViewer.fromGridCell(gridCell, pieChartRenderer).root;
 }
 
-function createDynamicForm(viewTable: DG.DataFrame, updatedModelNames: string[]) {
+function createDynamicForm(viewTable: DG.DataFrame, updatedModelNames: string[], molColName: string, addPiechart: boolean) {
   const form = DG.FormViewer.createDefault(viewTable, {columns: updatedModelNames});
   grok.shell.tv.dockManager.dock(form, DG.DOCK_TYPE.RIGHT, null, 'Form', 0.45);
   const map = createCategoryModelMapping(properties, updatedModelNames);
-  const formState = generateFormState(viewTable.name, map);
+  const formState = generateFormState(viewTable.name, map, molColName, addPiechart);
   form.form.state = JSON.stringify(formState);
 }
