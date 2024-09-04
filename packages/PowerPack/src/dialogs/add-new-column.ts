@@ -700,7 +700,7 @@ export class AddNewColumnDialog {
     let firstParamEnd = commaIdx;
     if (commaIdx === -1 || commaIdx > closeParenthesisIdx)
       firstParamEnd = closeParenthesisIdx;
-    this.codeMirror!.focus();
+    setTimeout(() => this.codeMirror!.focus(), 100);
     this.codeMirror!.dispatch({
       selection: EditorSelection.create([
         EditorSelection.range(openParenthesis + 1, firstParamEnd),
