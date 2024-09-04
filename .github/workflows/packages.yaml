@@ -334,23 +334,10 @@ jobs:
 
           echo "apiUrl=$apiUrl" >> $GITHUB_OUTPUT
           echo "alias=$alias" >> $GITHUB_OUTPUT
-      - name: js api dependency for unpublished dependencies
-        if: ${{ matrix.unpublished_deps != '' }}
-        run: |
-          npm install
-          npm run build
-        working-directory: ./js-api
-      - name: unpublished dependencies
-        if: ${{ matrix.unpublished_deps != '' }}
-        run: |
-          crnt=$(pwd)
-          for dep in $(echo -e ${{ matrix.unpublished_deps }}); do
-            cd $(awk -F'=' '{print $2}' <<<$dep)
-            echo "Install dependencies for $(awk -F'=' '{print $2}' <<<$dep)"
-            npm install
-            npm run build
-            cd $crnt
-          done
+      - id: datagrok-tools
+        run: npm install -g datagrok-tools@latest
+      - if: ${{ matrix.unpublished_deps != '' }}
+        run: grok link
         working-directory: packages/${{ matrix.package }}
       - name: webpack cache
         uses: actions/cache@v4
@@ -369,10 +356,6 @@ jobs:
             npm run build
           fi
         working-directory: packages/${{ matrix.package }}
-      - name: Install datagrok tools
-        id: datagrok-tools
-        run: |
-          npm install -g datagrok-tools@latest
       - name: Wait for Datagrok to become available
         if: ${{ matrix.test == 'test' }}
         timeout-minutes: 5

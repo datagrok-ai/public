@@ -222,7 +222,9 @@ jobs:
           grok config add --default --alias ${HOST} --server 'http://127.0.0.1:8080/api' --key admin
           cat /home/runner/.grok/config.yaml
       - name: Install ApiTests dependencies
-        run: npm install
+        run: |
+          npm install
+          grok link
         working-directory: ./packages/ApiTests
       - name: Build ApiTests
         run: npm run build
