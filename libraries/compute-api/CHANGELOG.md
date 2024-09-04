@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 0.1.0-rc (2024-09-04)
+
+- Preparing 1.21.0 release
+
 ## 0.0.8 (2024-07-01)
 
 - Exposed skipDf option for HistoryInput
