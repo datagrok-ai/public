@@ -1,32 +1,6 @@
-import * as DG from 'datagrok-api/dg';
 import {getRdKitService, getUncommonAtomsAndBonds} from '../../utils/chem-common-rdkit';
 import {ISubstruct} from '../../rendering/rdkit-cell-renderer';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-
-export type PaletteCodes = {
-  hex: string[],
-  rgb: string[],
-  rgbCut: string[],
-  numerical: number[]
-};
-
-export function getPalette(activityNum: number): PaletteCodes {
-  const standradPal = DG.Color.categoricalPalette;
-  const hex = Array<string>(activityNum);
-  const rgb = Array<string>(activityNum);
-  const rgbCut = Array<string>(activityNum);
-  const numerical = Array<number>(activityNum);
-
-  for (let i = 0; i < activityNum; i++) {
-    const modNum = i % standradPal.length;
-    hex[i] = DG.Color.toHtml(standradPal[modNum]);
-    rgb[i] = DG.Color.toRgb(standradPal[modNum]);
-    rgbCut[i] = rgb[i].replace('rgb(', '').replace(')', '');
-    numerical[i] = standradPal[modNum];
-  }
-
-  return {hex, rgb, rgbCut, numerical};
-}
 
 async function getMmpMcs(molecules1: string[], molecules2: string[]): Promise<string[]> {
   const service = await getRdKitService();

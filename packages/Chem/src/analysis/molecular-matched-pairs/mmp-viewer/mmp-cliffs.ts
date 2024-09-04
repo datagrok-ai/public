@@ -1,21 +1,21 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {ISubstruct} from '../../rendering/rdkit-cell-renderer';
+import {ISubstruct} from '../../../rendering/rdkit-cell-renderer';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {drawMoleculeToCanvas} from '../../utils/chem-common-rdkit';
-import {getSigFigs} from '../../utils/chem-common';
+import {drawMoleculeToCanvas} from '../../../utils/chem-common-rdkit';
+import {getSigFigs} from '../../../utils/chem-common';
 import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 import {ILineSeries, MouseOverLineEvent, ScatterPlotCurrentLineStyle, ScatterPlotLinesRenderer}
   from '@datagrok-libraries/utils/src/render-lines-on-sp';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
-import {chemSpace} from '../chem-space';
 import {debounceTime} from 'rxjs/operators';
-import {getInverseSubstructuresAndAlign} from './mmp-mol-rendering';
+import {getInverseSubstructuresAndAlign} from '../mmp-mol-rendering';
 import {MMP_NAMES} from './mmp-constants';
 import {MmpInput} from './mmp-viewer';
 import $ from 'cash-dom';
+import {MMPA} from '../mmp-analysis/mmpa';
 
 export function getMmpScatterPlot(
   mmpInput: MmpInput, axesColsNames: string[]) : DG.Viewer {
@@ -99,7 +99,7 @@ function getMoleculesPropertiesDiv(propPanelViewer: FormsViewer, idxs: number[])
 }
 
 export function runMmpChemSpace(mmpInput: MmpInput, sp: DG.Viewer, lines: ILineSeries,
-  linesIdxs: Uint32Array, linesActivityCorrespondance: Uint32Array, pairsDf: DG.DataFrame, diffs: Array<Float32Array>,
+  linesIdxs: Uint32Array, linesActivityCorrespondance: Uint32Array, pairsDf: DG.DataFrame, mmpa: MMPA,
   rdkitModule: RDModule, embedColsNames: string[]): ScatterPlotLinesRenderer {
   const chemSpaceParams = {
     seqCol: mmpInput.molecules,
@@ -115,12 +115,12 @@ export function runMmpChemSpace(mmpInput: MmpInput, sp: DG.Viewer, lines: ILineS
   spEditor.lineHover.pipe(debounceTime(500)).subscribe((event: MouseOverLineEvent) => {
     ui.tooltip.show(
       fillPairInfo(event.id, linesIdxs, linesActivityCorrespondance[event.id],
-        pairsDf, diffs, mmpInput.table, rdkitModule),
+        pairsDf, mmpa.allCasesBased.diffs, mmpInput.table, rdkitModule),
       event.x, event.y);
   });
 
   const progressBarSpace = DG.TaskBarProgressIndicator.create(`Running Chemical space...`);
-  chemSpace(chemSpaceParams).then((res) => {
+  mmpa.chemSpace(chemSpaceParams).then((res) => {
     const embeddings = res.coordinates;
     for (const col of embeddings)
       mmpInput.table.columns.replace(col.name, col);
