@@ -103,6 +103,7 @@ export const VueDriverRFVApp = defineComponent({
         <DockManager class='block h-full'>
           { treeState.value ? <Draggable 
             class="ui-div mtl-tree p-2"
+            {...{title: 'Steps'}}
             rootDroppable={false}
             treeLine
             childrenKey='steps'
@@ -153,9 +154,10 @@ export const VueDriverRFVApp = defineComponent({
           
           {
             isVisibleRfv.value && currentFuncCall.value && <RichFunctionView 
-              class='h-full'
+              class='overflow-auto'
               funcCall={currentFuncCall.value}
               onUpdate:funcCall={(chosenCall) => currentFuncCall.value = deepCopy(chosenCall)}
+              {...{title: 'Step review'}}
             /> 
           }
         </DockManager>

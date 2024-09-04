@@ -139,10 +139,15 @@ export const RichFunctionView = defineComponent({
               showBatchActions
               isHistory
               onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
+              dock-spawn-dock-type='right'
+              {...{title: 'History'}}
             />: null }
-          <div class='flex ui-div'>
+          <div class='flex ui-div' title='Inputs'>
             { !formHidden.value ?
-              <div class='flex flex-col p-2 w-full'>
+              <div 
+                class='flex flex-col p-2 w-full'
+                dock-spawn-dock-type='left'
+              >
                 <InputForm funcCall={currentCall.value}/>
                 <div class='flex sticky bottom-0'>
                   <BigButton onClick={run}> Run </BigButton>
@@ -155,19 +160,15 @@ export const RichFunctionView = defineComponent({
               class='self-center p-2'
             />
           </div>
-          <Tabs 
-            items={tabLabels.value.map((label) => ({label}))} 
-            selected={selectedIdx.value} 
-            onUpdate:selected={(v) => selectedIdx.value = v}
-            class='w-full p-1'
-          >
-            {{
-              default: () => 
-                tabLabels.value.map((tabLabel) => categoryToDfParam.value.inputs[tabLabel] ?? 
-                categoryToDfParam.value.outputs[tabLabel])            
-                  .flatMap((tabProps) => tabProps.map((prop) => ({prop, ...Utils.getPropViewers(prop)})))
-                  .map(({prop, name, config: allConfigs}) => {
-                    return [allConfigs.map((options) => 
+          { 
+            tabLabels.value
+              .map((tabLabel) => ({tabLabel, tabProps: categoryToDfParam.value.inputs[tabLabel] ?? 
+                categoryToDfParam.value.outputs[tabLabel]}))            
+              .flatMap(({tabLabel, tabProps}) => tabProps.map((prop) => ({tabLabel, prop, ...Utils.getPropViewers(prop)})))
+              .map(({tabLabel, prop, name, config: allConfigs}) => {
+                return <div class='flex flex-col' {...{title: tabLabel}}>
+                  {
+                    allConfigs.map((options) => 
                       <div class='flex flex-col h-1/2'>
                         <h2> { dfBlockTitle(prop) } </h2>
                         <Viewer
@@ -177,15 +178,20 @@ export const RichFunctionView = defineComponent({
                           class='w-full' 
                         />
                       </div>, 
-                    ),
-                    <ScalarTable 
-                      funcCall={currentCall.value} 
-                      category={tabLabels.value[selectedIdx.value]}
-                    />];
-                  }),
-            }}
-          </Tabs>
-          { !helpHidden.value && helpText.value ? <MarkDown markdown={helpText.value}/> : null }
+                    )},
+                  <ScalarTable 
+                    funcCall={currentCall.value} 
+                    category={tabLabels.value[selectedIdx.value]}
+                  />
+                </div>;
+              })
+          }
+          { !helpHidden.value && helpText.value ? 
+            <MarkDown 
+              markdown={helpText.value}
+              {...{title: 'Help'}}
+            /> : null 
+          }
         </DockManager>
       </div>
     );

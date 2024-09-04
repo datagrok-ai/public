@@ -16,6 +16,7 @@ const style1 = css`
 .panel-titlebar {
 	flex-shrink: 0;
     background-color: #ffffff;
+    color: #9497a0;
     height: 24px;
     width: 100%;
     overflow: hidden;
@@ -223,29 +224,13 @@ const style2 = css`/************* Panel with title bar ************/
 	margin-right: 3px;
 }
 
-.panel-titlebar-text {
-	float: left;
-	padding-left: 10px;
-	padding-top: 5px;
-	text-overflow: ellipsis;
-	overflow: hidden;
-	width: calc(100% - 30px);
-	white-space: nowrap;
-}
-
-.panel-titlebar-text > span {
-	vertical-align: top;
-}
-
 .panel-titlebar-button-close {
-	display: flex;
-    justify-content: flex-end;
+	margin-left: auto;
+    margin-right: 3px;
+    color: #9497a0;
+    display: flex;
+    justify-content: center;
     align-items: center;
-	width: 25px;
-    height: 25px;
-    position: absolute;
-    right: 0;
-    top: 0;
 }
 
 .panel-titlebar-button-close::after {
@@ -661,7 +646,9 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
                         this.removeChild(element);
                 }
             });
-            this.dockManager.resize(this.clientWidth, this.clientHeight);
+            this.onresize = () => {
+                this.dockManager.resize(this.clientWidth, this.clientHeight);
+            }
             for (let element of this.children) {
                 this.handleAddedChildNode(element);
             }
