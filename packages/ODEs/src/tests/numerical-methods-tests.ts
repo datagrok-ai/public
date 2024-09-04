@@ -16,6 +16,7 @@ import {problems} from './performance-problems';
 
 const TIMEOUT = 4000;
 const TINY = 0.1;
+const MIN_ROWS = 1000;
 
 const methods = new Map([
   ['MRT', mrt],
@@ -39,7 +40,14 @@ category('Correctness', () => {
 category('Performance', () => {
   methods.forEach((method, methodName) => {
     problems.forEach((odes, odesName) => {
-      test(`Method: ${methodName}, problem: ${odesName}`, async () => method(odes), {benchmark: true});
+      test(`Method: ${methodName}, problem: ${odesName}`, async () => {
+        const rows = method(odes).rowCount;
+        expect(
+          rows > MIN_ROWS,
+          true,
+          `The ${name} method failed, solution DF rows: ${rows}`,
+        );
+      }, {benchmark: true});
     });
   });
 }); // Performance
