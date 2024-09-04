@@ -94,8 +94,6 @@ export const RichFunctionView = defineComponent({
       ];
     });
 
-    const selectedIdx = ref(0);
-
     const run = async () => {
       currentCall.value.newId();
       await currentCall.value.call();
@@ -162,26 +160,29 @@ export const RichFunctionView = defineComponent({
           </div>
           { 
             tabLabels.value
-              .map((tabLabel) => ({tabLabel, tabProps: categoryToDfParam.value.inputs[tabLabel] ?? 
+              .map((tabLabel) => ({tabLabel, tabDfProps: categoryToDfParam.value.inputs[tabLabel] ?? 
                 categoryToDfParam.value.outputs[tabLabel]}))            
-              .flatMap(({tabLabel, tabProps}) => tabProps.map((prop) => ({tabLabel, prop, ...Utils.getPropViewers(prop)})))
-              .map(({tabLabel, prop, name, config: allConfigs}) => {
+              .map(({tabLabel, tabDfProps}) => {
                 return <div class='flex flex-col' {...{title: tabLabel}}>
-                  {
-                    allConfigs.map((options) => 
+                  { tabDfProps.map((tabProp) => {
+                    const allConfigs = Utils.getPropViewers(tabProp).config;
+
+                    return allConfigs.map((options) => (            
                       <div class='flex flex-col h-1/2'>
-                        <h2> { dfBlockTitle(prop) } </h2>
+                        <h2> { dfBlockTitle(tabProp) } </h2>
                         <Viewer
                           type={options['type'] as string}
                           options={options}
-                          dataFrame={currentCall.value.inputs[name] ?? currentCall.value.outputs[name]}
-                          class='w-full' 
+                          dataFrame={currentCall.value.inputs[tabProp.name] ?? currentCall.value.outputs[tabProp.name]}
+                          class='w-full'
+                          style={{'height': '300px'}} 
                         />
-                      </div>, 
-                    )},
+                      </div>));
+                  })
+                  }
                   <ScalarTable 
                     funcCall={currentCall.value} 
-                    category={tabLabels.value[selectedIdx.value]}
+                    category={tabLabel}
                   />
                 </div>;
               })
