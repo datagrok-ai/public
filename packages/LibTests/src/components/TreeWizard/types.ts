@@ -23,7 +23,7 @@ export type AugmentedStat = RestrictedStat & {
 
 export type Status = 'locked' | `didn't run` | 'running' | 'succeeded' | 'failed' | 'partially succeeded';
 
-export type HueTree = {
+export type HueTree = HTMLElement & {
   add: Function,
   remove: Function,
   isDraggable: Function,

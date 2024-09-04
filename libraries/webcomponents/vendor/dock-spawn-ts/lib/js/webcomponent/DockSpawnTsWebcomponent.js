@@ -642,8 +642,10 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
                 onClosePanel: (dockManager, dockNode) => {
                     let slot = dockNode.elementContent;
                     let element = this.slotElementMap.get(slot);
+                    
                     if (element)
-                        this.removeChild(element);
+                        this.dispatchEvent(new CustomEvent('close-click', {detail: element}))
+                        // this.removeChild(element);
                 }
             });
             this.onresize = () => {
@@ -707,9 +709,8 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
             element.style.display = 'block';
     }
     handleRemovedChildNode(element) {
-        let node = this.getDockNodeForElement(element);
-        if (node)
-            node.container.close();
+        const container = this.elementContainerMap.get(element);
+        if (container) container.close();
         this.elementContainerMap.delete(element);
     }
     connectedCallback() {

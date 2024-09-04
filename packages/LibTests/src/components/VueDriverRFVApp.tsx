@@ -89,6 +89,12 @@ export const VueDriverRFVApp = defineComponent({
     const chosenStepUuid = ref(null as string | null);
 
     const treeHidden = ref(false);
+    const rfvRef = ref(null as HTMLElement | null);
+
+    const processPanelsClosing = (element: HTMLElement) => {
+      if (treeInstance.value === element) treeHidden.value = true;
+      if (rfvRef.value === element) treeHidden.value = true;
+    };
 
     return () => (
       <div class='w-full h-full'>
@@ -100,7 +106,7 @@ export const VueDriverRFVApp = defineComponent({
             onClick={() => treeHidden.value = !treeHidden.value } 
           />
         </RibbonPanel>
-        <DockManager class='block h-full'>
+        <DockManager class='block h-full' onOnCloseClick={processPanelsClosing}>
           { treeState.value ? <Draggable 
             class="ui-div mtl-tree p-2"
             {...{title: 'Steps'}}
@@ -158,6 +164,9 @@ export const VueDriverRFVApp = defineComponent({
               funcCall={currentFuncCall.value}
               onUpdate:funcCall={(chosenCall) => currentFuncCall.value = deepCopy(chosenCall)}
               {...{title: 'Step review'}}
+              dock-spawn-dock-type='right'
+              dock-spawn-dock-ratio={0.8}
+              ref={rfvRef}
             /> 
           }
         </DockManager>
