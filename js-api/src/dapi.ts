@@ -221,14 +221,16 @@ export class Dapi {
     params.headers['original-url'] = `${url}`;
     // @ts-ignore
     params.headers['original-method'] = params.method;
-    if (maxAge) {
+    let proxyUrl = `${this.root}/connectors/proxy`;
+    if (maxAge && (params.method == 'GET' || params.method == 'HEAD')) {
       // @ts-ignore
       params.headers['dg-cache-control'] = `max-age=${maxAge}`;
       params.cache = 'default';
+      proxyUrl = `${proxyUrl}?url=${encodeURI(url)}`;
     }
     if (params.method !== 'GET')
       params.method = 'POST';
-    return fetch(`${this.root}/connectors/proxy`, params);
+    return fetch(proxyUrl, params);
   }
 
   /** Administering API endpoint
