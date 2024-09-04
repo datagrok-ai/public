@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.42.14 (2024-09-04)
+
+* Fix toAtomicLevel workers error DG is not defined
+
 ## 5.42.13 (2024-09-02)
 
 * Add interfaces for monomer management

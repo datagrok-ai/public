@@ -1,11 +1,8 @@
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {Observable} from 'rxjs';
 
 import {HelmType, IWebEditorMonomer, MonomerSetType, MonomerType, PolymerType} from '../helm/types';
-export {MonomerType, PolymerType};
 import {
   HELM_REQUIRED_FIELD as REQ,
   HELM_RGROUP_FIELDS as RGP, HELM_OPTIONAL_FIELDS as OPT, HELM_POLYMER_TYPE,

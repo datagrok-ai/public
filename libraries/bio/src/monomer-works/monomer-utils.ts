@@ -11,7 +11,7 @@ import {
   HELM_FIELDS, HELM_CORE_FIELDS, HELM_RGROUP_FIELDS, jsonSdfMonomerLibDict,
   MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME, HELM_REQUIRED_FIELD,
 } from '../utils/const';
-import {IMonomerLib, Monomer, IMonomerSet} from '../types/index';
+import {IMonomerLib, IMonomerSet} from '../types/index';
 import {GAP_SYMBOL, ISeqSplitted} from '../utils/macromolecule/types';
 import {SeqHandler} from '../utils/seq-handler';
 import {splitAlignedSequences} from '../utils/splitter';
@@ -156,33 +156,6 @@ export interface IMonomerLibFileManager {
   deleteLibraryFile(fileName: string): Promise<void>;
 
   loadLibraryFromFile(path: string, fileName: string): Promise<IMonomerLib>;
-}
-
-export interface INewMonomerForm {
-  get fieldInputs(): {[key: string ]: DG.InputBase<any> | grok.chem.Sketcher}
-  get form(): HTMLElement;
-  get rgroupInputs(): {[key: string]: DG.InputBase<any>}[];
-  get metaInputs(): {[key: string]: DG.InputBase<any>}[];
-  setMonomer(monomer: Monomer): void;
-}
-
-export interface IMonomerGallery {
-  get monomerGallery(): HTMLElement;
-  groupBy(by: string): void;
-  filterBySearch(search: string): void;
-}
-
-export interface IMonomerManager {
-
-  /** Creates new monomer library in correct folder and adds given monomers */
-  createNewMonomerLib(libName: string, monomers: Monomer[]): Promise<void>;
-
-  cloneMonomer(dfRow: DG.Row): Monomer;
-
-  getNewMonomerForm(): INewMonomerForm;
-
-  //getMonomerGallery(): IMonomerGallery;
-
 }
 
 export interface IMonomerLibHelper {
