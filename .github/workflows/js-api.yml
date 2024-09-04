@@ -162,6 +162,7 @@ jobs:
             ./.github
             ./docker
             ./packages/ApiTests
+            ./libraries
             ./docusaurus
       - name: Setup Node
         uses: actions/setup-node@v4
