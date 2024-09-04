@@ -316,7 +316,6 @@ category('ComputeUtils: Driver links matching', async () => {
     await tree.initAll().toPromise();
     const links = (tree.getRoot().getItem().config as PipelineConfigurationStaticProcessed).links!;
     const matchInfos = links.map((link) => matchLink(tree, [], link));
-    console.log(matchInfos);
     await snapshotCompare(matchInfos, 'Links referencing adjacent to base segment');
   });
 
@@ -366,7 +365,6 @@ category('ComputeUtils: Driver links matching', async () => {
     await tree.initAll().toPromise();
     const links = (tree.getRoot().getItem().config as PipelineConfigurationStaticProcessed).links!;
     const matchInfos = links.map((link) => matchLink(tree, [], link));
-    console.log(matchInfos);
     await snapshotCompare(matchInfos, 'Links referencing remote from base path');
   });
 
@@ -422,7 +420,6 @@ category('ComputeUtils: Driver links matching', async () => {
     await tree.initAll().toPromise();
     const links = (tree.getRoot().getItem().config as PipelineConfigurationStaticProcessed).links!;
     const matchInfos = links.map((link) => matchLink(tree, [], link));
-    console.log(matchInfos);
     await snapshotCompare(matchInfos, 'Links referencing all match limits');
   });
 
@@ -519,7 +516,6 @@ category('ComputeUtils: Driver links matching', async () => {
     await tree.initAll().toPromise();
     const links = (tree.getRoot().getItem().config as PipelineConfigurationStaticProcessed).links!;
     const matchInfos = links.map((link) => matchLink(tree, [], link));
-    console.log(matchInfos);
     await snapshotCompare(matchInfos, 'Links deep base matching');
   });
 
@@ -616,7 +612,6 @@ category('ComputeUtils: Driver links matching', async () => {
     await tree.initAll().toPromise();
     const links = (tree.getRoot().getItem().config as PipelineConfigurationStaticProcessed).links!;
     const matchInfos = links.map((link) => matchLink(tree, [], link));
-    console.log(matchInfos);
     await snapshotCompare(matchInfos, 'Links expanding deep base path');
   });
 });

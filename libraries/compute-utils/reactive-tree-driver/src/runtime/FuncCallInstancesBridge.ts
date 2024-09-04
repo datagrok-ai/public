@@ -6,19 +6,19 @@ import {RestrictionType} from '../data/common-types';
 import {FuncallStateItem} from '../config/config-processing-utils';
 
 export class FuncCallInstancesBridge implements IStateStore, IValidationStore, IRunnableWrapper {
-  private instance$ = new BehaviorSubject<IFuncCallAdapter | undefined>(undefined);
+  public instance$ = new BehaviorSubject<IFuncCallAdapter | undefined>(undefined);
   public isRunning$ = new BehaviorSubject(false);
   public isLoading$ = new BehaviorSubject(true);
   public isRunable$ = new BehaviorSubject(false);
   public isOutputOutdated$ = new BehaviorSubject(false);
-  public isCurrent$ = new BehaviorSubject(false);
   public validations$ = new BehaviorSubject<Record<string, Record<string, ValidationResultBase | undefined>>>({});
   public inputRestrictions$ = new BehaviorSubject<Record<string, RestrictionState | undefined>>({});
+  public inputRestrictionsUpdates$ = new Subject<[string, RestrictionState | undefined]>();
   public initialValues: Record<string, any> = {};
 
   private closed$ = new Subject<true>();
 
-  constructor(private io: FuncallStateItem[]) {
+  constructor(private io: FuncallStateItem[], public readonly isReadonly: boolean) {
     this.instance$.pipe(
       switchMap((instance) => instance ? instance.isRunning$ : of(false)),
       takeUntil(this.closed$),
@@ -97,6 +97,12 @@ export class FuncCallInstancesBridge implements IStateStore, IValidationStore, I
       currentInstance.setState(id, val, restrictionType);
   }
 
+  editState<T = any>(id: string, val: T | undefined) {
+    const currentInstance = this.instance$.value;
+    if (currentInstance)
+      currentInstance.editState(id, val);
+  }
+
   setInitialValues(values: Record<string, any>) {
     this.initialValues = values;
   }
@@ -115,7 +121,6 @@ export class FuncCallInstancesBridge implements IStateStore, IValidationStore, I
     const currentInstance = this.instance$.value;
     if (currentInstance)
       return from(defer(() => currentInstance.run(mockResults, mockDelay)));
-
     else
       throw new Error(`Attempting to run an empty FuncCallInstancesBridge`);
   }

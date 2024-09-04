@@ -16,7 +16,7 @@ export interface LoadDynamicItem {
   dbId: string;
   itemId: ItemId;
   position: number;
-  readonly?: boolean; // TODO
+  readonly?: boolean;
 }
 
 export interface SaveDynamicItem {
@@ -50,6 +50,7 @@ export interface LoadPipeline {
   event: 'loadPipeline';
   funcCallId: string;
   config?: PipelineConfigurationProcessed;
+  readonly?: boolean;
 }
 
 export interface InitPipeline {

@@ -14,7 +14,7 @@ category('ComputeUtils: Driver state tree persistence', async () => {
     await tree.initFuncCalls().toPromise();
     const sc = tree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});
     const metaCall = await tree.save().toPromise();
-    const loadedTree = await StateTree.load(metaCall.id, pconf).toPromise();
+    const loadedTree = await StateTree.load(metaCall!.id, pconf).toPromise();
     await loadedTree.initFuncCalls().toPromise();
     const lc = loadedTree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});
     expectDeepEqual(lc, sc);
@@ -27,7 +27,7 @@ category('ComputeUtils: Driver state tree persistence', async () => {
     await tree.initFuncCalls().toPromise();
     const sc = tree.toSerializedState();
     const metaCall = await tree.save().toPromise();
-    const loadedTree = await StateTree.load(metaCall.id, pconf).toPromise();
+    const loadedTree = await StateTree.load(metaCall!.id, pconf).toPromise();
     await loadedTree.initFuncCalls().toPromise();
     const lc = loadedTree.toSerializedState();
 
@@ -65,7 +65,7 @@ category('ComputeUtils: Driver state tree persistence', async () => {
     await outerTree.initFuncCalls().toPromise();
     // load nested tree into outer
     const root = outerTree.getItem([]);
-    await outerTree.loadSubTree(root.uuid, metaCall.id, 'pipelinePar', 1).toPromise();
+    await outerTree.loadSubTree(root.uuid, metaCall!.id, 'pipelinePar', 1, false).toPromise();
     const loadedTree = outerTree.getNode([{idx: 1}]);
     const lc = StateTree.toStateRec(loadedTree, true, {disableNodesUUID: true, disableCallsUUID: true});
     expectDeepEqual(lc, sc);
@@ -83,7 +83,7 @@ category('ComputeUtils: Driver state tree persistence', async () => {
     const metaCall = await outerTree.save(nestedRoot.getItem().uuid).toPromise();
     const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider2', {version: '1.0'}).toPromise();
     const pconf = await getProcessedConfig(config);
-    const loadedTree = await StateTree.load(metaCall.id, pconf).toPromise();
+    const loadedTree = await StateTree.load(metaCall!.id, pconf).toPromise();
     await loadedTree.initFuncCalls().toPromise();
     const lc = loadedTree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});
     expectDeepEqual(lc, sc);

@@ -1,8 +1,9 @@
 import * as DG from 'datagrok-api/dg';
-import {ItemId, NqName} from '../data/common-types';
+import {ItemId, NqName, RestrictionType} from '../data/common-types';
 import {ValidationResultBase} from '../../../shared-utils/validation';
 import {RestrictionState} from '../runtime/FuncCallAdapters';
 import {ActionPositions} from './PipelineConfiguration';
+import {BehaviorSubject, Observable} from 'rxjs';
 
 //
 // initial steps config for dynamic pipelines
@@ -76,11 +77,12 @@ export type StepFunCallSerializedState = {
   configId: string;
   uuid: string;
   nqName: string;
-  friendlyName?: string;
   funcCallId?: string;
+  friendlyName?: string;
   isOuputOutdated?: boolean;
+  isReadonly: boolean;
   inputRestrictions: Record<string, RestrictionState | undefined>;
-};
+}
 
 export type StepAction = {
   uuid: string,
@@ -88,7 +90,11 @@ export type StepAction = {
   position: ActionPositions,
 }
 
-export type RestrictionStatus = 'none' | 'changed' | 'inconsistent';
+export type ConsistencyInfo = {
+  restriction: RestrictionType,
+  inconsistent: boolean,
+  assignedValue: any,
+}
 
 export type StepFunCallState = {
   funcCall?: DG.FuncCall;
@@ -109,7 +115,7 @@ export type PipelineAction = {
 export type PipelineInstanceBase<S> = {
   uuid: string;
   configId: string;
-  isReadonly?: boolean;
+  isReadonly: boolean;
   friendlyName?: string;
   provider: NqName | undefined;
   version: string | undefined;

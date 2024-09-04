@@ -11,7 +11,7 @@ import {BehaviorSubject, combineLatest, defer, EMPTY, merge, Subject, of} from '
 import {map, filter, takeUntil, withLatestFrom, switchMap, catchError, mapTo, finalize, debounceTime, timestamp, distinctUntilChanged} from 'rxjs/operators';
 import {callHandler} from '../utils';
 import {defaultLinkHandler} from './default-handler';
-import {ControllerBase, ControllerCancelled, LinkController, ValidatorController} from './LinkControllers';
+import {ControllerCancelled, LinkController, ValidatorController} from './LinkControllers';
 
 const VALIDATOR_DEBOUNCE_TIME = 250;
 
@@ -22,8 +22,8 @@ export class Link {
 
   public uuid = uuidv4();
   public readonly isValidator = !!this.matchInfo.spec.isValidator;
-  public nextScheduled$ = new BehaviorSubject(-1);
-  public lastFinished$ = new BehaviorSubject(-1);
+  private nextScheduled$ = new BehaviorSubject(-1);
+  private lastFinished$ = new BehaviorSubject(-1);
   public isRunning$ = combineLatest([this.nextScheduled$, this.lastFinished$]).pipe(
     map(([next, last]) => next > last),
     distinctUntilChanged(),
