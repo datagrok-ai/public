@@ -74,7 +74,7 @@ export class AdmeticaBaseEditor {
         const templateName = templateNameInput.value;
         await grok.dapi.files.writeAsText(`${TEMPLATES_FOLDER}/${templateName}.json`, JSON.stringify(this.updatedProperties));
         grok.shell.info(`Template "${templateName}" has been successfully saved!`);
-        await this.initTemplates();
+        //await this.initTemplates();
       })
       .show();
   }

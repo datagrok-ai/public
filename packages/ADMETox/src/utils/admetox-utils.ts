@@ -6,6 +6,7 @@ import '../css/admetox.css';
 import { TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, DEFAULT_LOWER_VALUE, DEFAULT_UPPER_VALUE, TAGS } from './constants';
 import { PieChartCellRenderer } from '@datagrok/power-grid/src/sparklines/piechart';
 import { CellRenderViewer } from '@datagrok-libraries/utils/src/viewers/cell-render-viewer';
+import { createCategoryModelMapping, generateFormState } from './admetox-form';
 
 export let properties: any;
 
@@ -30,11 +31,11 @@ async function sendRequestToContainer(containerId: string, path: string, params:
 }
 
 export async function runAdmetox(csvString: string, queryParams: string, addProbability: string): Promise<string | null> {
-  const admetoxContainer = await getAdmetoxContainer();
+  /*const admetoxContainer = await getAdmetoxContainer();
   if (!admetoxContainer || (admetoxContainer.status !== 'started' && admetoxContainer.status !== 'checking')) {
     await startAdmetoxContainer(admetoxContainer?.id);
     return null;
-  }
+  }*/
 
   const params: RequestInit = {
     method: 'POST',
@@ -45,10 +46,10 @@ export async function runAdmetox(csvString: string, queryParams: string, addProb
     body: csvString
   };
 
-  const path = `/df_upload?models=${queryParams}&probability=${addProbability}`;
-  //const response = await fetch(path, params);
-  //return await response.text();
-  return await sendRequestToContainer(admetoxContainer.id, path, params);
+  const path = `http://127.0.0.1:6678/df_upload?models=${queryParams}&probability=${addProbability}`;
+  const response = await fetch(path, params);
+  return await response.text();
+  //return await sendRequestToContainer(admetoxContainer.id, path, params);
 }
 
 export async function setProperties(template?: string) {
@@ -267,6 +268,7 @@ export function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, a
 
   addColorCoding(viewTable, updatedModelNames);
   addCustomTooltip(viewTable.name);
+  createDynamicForm(viewTable, updatedModelNames);
 }
 
 export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue): Promise<DG.Accordion> {
@@ -346,4 +348,12 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
 
   const pieChartRenderer = new PieChartCellRenderer();
   return CellRenderViewer.fromGridCell(gridCell, pieChartRenderer).root;
+}
+
+function createDynamicForm(viewTable: DG.DataFrame, updatedModelNames: string[]) {
+  const form = DG.FormViewer.createDefault(viewTable, {columns: updatedModelNames});
+  grok.shell.tv.dockManager.dock(form, DG.DOCK_TYPE.RIGHT, null, 'Form', 0.45);
+  const map = createCategoryModelMapping(properties, updatedModelNames);
+  const formState = generateFormState(viewTable.name, map);
+  form.form.state = JSON.stringify(formState);
 }
