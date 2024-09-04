@@ -4,13 +4,17 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {IMonomerManager, INewMonomerForm} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {IMonomerLib, Monomer, MonomerType, PolymerType, RGroup} from '@datagrok-libraries/bio/src/types';
+
+import {IMonomerManager, INewMonomerForm} from '@datagrok-libraries/bio/src/utils/monomer-ui';
+import {IMonomerLib, Monomer, RGroup} from '@datagrok-libraries/bio/src/types';
 import {DUMMY_MONOMER, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
 import {LIB_PATH} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
-import {MonomerLibManager} from '../lib-manager';
 import {ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
 import {mostSimilarNaturalAnalog} from '@datagrok-libraries/bio/src/utils/macromolecule/monomers';
+import {PolymerType, MonomerType} from '@datagrok-libraries/bio/src/helm/types';
+
+import {MonomerLibManager} from '../lib-manager';
+
 import '../../../../css/monomer-manager.css';
 
 // columns of monomers dataframe, note that rgroups is hidden and will be displayed as separate columns
@@ -54,6 +58,7 @@ export class MonomerManager implements IMonomerManager {
   private libInput!: DG.InputBase<string | null>;
   private static instance: MonomerManager;
   private activeMonomerLib: IMonomerLib | null = null;
+
   protected constructor(public monomerLibManamger: MonomerLibManager) {
     this.monomerLib = monomerLibManamger.getBioLib();
     this._newMonomerForm = new MonomerForm(monomerLibManamger, () => this.activeMonomerLib, async () => {
@@ -144,38 +149,37 @@ export class MonomerManager implements IMonomerManager {
   private async getMonomersTableView(fileName?: string): Promise<DG.TableView> {
     const df = await this.getMonomersDf(fileName);
     this.tv = DG.TableView.create(df, true);
-      //const f = tv.filters();
-      this.tv.grid.col(MONOMER_DF_COLUMN_NAMES.NAME)!.width = 100;
-      this.tv.subs.push(
-        grok.events.onContextMenu.subscribe(({args}) => {
-          if (!args || !args.menu || !args.context || args.context.type !== DG.VIEWER.GRID || !args.context.tableView ||
-            args.context.tableView.id !== (this.tv!.id ?? '') || !args.item || !args.item.isTableCell || (args.item.tableRowIndex ?? -1) < 0)
-            return;
-          const rowIdx = args.item.tableRowIndex;
-          args.menu.item('Edit Monomer', () => {
-            this.cloneMonomer(this.tv!.dataFrame.rows.get(rowIdx));
+    //const f = tv.filters();
+    this.tv.grid.col(MONOMER_DF_COLUMN_NAMES.NAME)!.width = 100;
+    this.tv.subs.push(
+      grok.events.onContextMenu.subscribe(({args}) => {
+        if (!args || !args.menu || !args.context || args.context.type !== DG.VIEWER.GRID || !args.context.tableView ||
+          args.context.tableView.id !== (this.tv!.id ?? '') || !args.item || !args.item.isTableCell || (args.item.tableRowIndex ?? -1) < 0)
+          return;
+        const rowIdx = args.item.tableRowIndex;
+        args.menu.item('Edit Monomer', () => {
+          this.cloneMonomer(this.tv!.dataFrame.rows.get(rowIdx));
+        });
+        if (this.tv!.dataFrame.selection.trueCount > 0) {
+          args.menu.item('Remove Selected Monomers', () => {
+            const monomers = Array.from(this.tv!.dataFrame.selection.getSelectedIndexes())
+              .map((r) => monomerFromDfRow(this.tv!.dataFrame.rows.get(r)));
+            this._newMonomerForm.removeMonomers(monomers, this.libInput.value!);
           });
-          if (this.tv!.dataFrame.selection.trueCount > 0) {
-            args.menu.item('Remove Selected Monomers', () => {
-              const monomers = Array.from(this.tv!.dataFrame.selection.getSelectedIndexes())
-                .map((r) => monomerFromDfRow(this.tv!.dataFrame.rows.get(r)));
-              this._newMonomerForm.removeMonomers(monomers, this.libInput.value!);
-            });
-            args.menu.item('Selection To New Library', () => {
-              const monomers = Array.from(this.tv!.dataFrame.selection.getSelectedIndexes())
-                .map((r) => monomerFromDfRow(this.tv!.dataFrame.rows.get(r)));
-              this.createNewLibDialog(monomers);
-            });
-          } else {
-            args.menu.item('Remove Monomer', () => {
-              const monomer = monomerFromDfRow(this.tv!.dataFrame.rows.get(rowIdx));
-              this._newMonomerForm.removeMonomers([monomer], this.libInput.value!);
-            });
-          }
-        })
-
-      );
-      return this.tv;
+          args.menu.item('Selection To New Library', () => {
+            const monomers = Array.from(this.tv!.dataFrame.selection.getSelectedIndexes())
+              .map((r) => monomerFromDfRow(this.tv!.dataFrame.rows.get(r)));
+            this.createNewLibDialog(monomers);
+          });
+        } else {
+          args.menu.item('Remove Monomer', () => {
+            const monomer = monomerFromDfRow(this.tv!.dataFrame.rows.get(rowIdx));
+            this._newMonomerForm.removeMonomers([monomer], this.libInput.value!);
+          });
+        }
+      })
+    );
+    return this.tv;
   }
 
   private findActiveManagerView() {
@@ -196,8 +200,8 @@ export class MonomerManager implements IMonomerManager {
       libName && (this.libInput.value = libName);
       const df = await this.getMonomersDf(libName);
       this.tv.dataFrame = df;
-        this.tv.grid.col(MONOMER_DF_COLUMN_NAMES.NAME)!.width = 100;
-        return this.tv;
+      this.tv.grid.col(MONOMER_DF_COLUMN_NAMES.NAME)!.width = 100;
+      return this.tv;
     }
 
     libName ??= availableMonLibs[0];
@@ -255,12 +259,12 @@ export class MonomerManager implements IMonomerManager {
 
     this.tv.name = MonomerManager.VIEW_NAME;
     this.libInput = ui.input.choice('Monomer Library', {value: libName, items: availableMonLibs, nullable: false, onValueChanged: async () => {
-      try {
-        const df = await this.getMonomersDf(this.libInput.value!);
+        try {
+          const df = await this.getMonomersDf(this.libInput.value!);
           this.tv!.dataFrame = df;
-      } catch (e) {
-        console.error(e);
-      }
+        } catch (e) {
+          console.error(e);
+        }
     }});
     this.libInput.addOptions(ui.icons.add(() => { this.createNewLibDialog(); }, 'Create new monomer library...'));
     const monForm = this._newMonomerForm.form;
@@ -410,8 +414,8 @@ export const RGROUP_FIELDS = [
 ];
 
 // just utility that makes sure fields like smiles and SMILES are treated as the same for setting
-function assignObjectCaseInvariant<T extends string>(targetKeys: T[], source: {[key: string]: string}): {[key in T]: string} {
-  const target= {} as {[key in T]: string};
+function assignObjectCaseInvariant<T extends string>(targetKeys: T[], source: { [key: string]: string }): { [key in T]: string } {
+  const target = {} as { [key in T]: string };
   targetKeys.forEach((key) => {
     const sourceKey = Object.keys(source).find((k) => k.toLowerCase() === key.toLowerCase());
     if (sourceKey) target[key] = source[sourceKey];
@@ -420,7 +424,7 @@ function assignObjectCaseInvariant<T extends string>(targetKeys: T[], source: {[
 }
 
 // just utility that makes sure fields like smiles and SMILES are treated as the same for getting
-function getCaseInvariantValue<T>(obj: {[key: string]: T}, key: string): T | undefined {
+function getCaseInvariantValue<T>(obj: { [key: string]: T }, key: string): T | undefined {
   const caseInvariantKey = Object.keys(obj).find((k) => k.toLowerCase() === key.toLowerCase());
   if (!caseInvariantKey) return undefined;
   return obj[caseInvariantKey];
@@ -473,8 +477,8 @@ class MonomerForm implements INewMonomerForm {
   private saveValidationResult?: string | null = null;
   private triggerMolChange: boolean = true; // makes sure that change is not triggered by copying the molecule from grid
   constructor(public monomerLibManager: MonomerLibManager,
-      private getMonomerLib: () => IMonomerLib | null, private refreshTable: () => Promise<void>,
-      private getMonomersDataFrame: () => DG.DataFrame | undefined) {
+    private getMonomerLib: () => IMonomerLib | null, private refreshTable: () => Promise<void>,
+    private getMonomersDataFrame: () => DG.DataFrame | undefined) {
     const monomerTypes = ['PEPTIDE', 'RNA', 'CHEM', 'BLOB', 'G'];
     this.molSketcher = new DG.chem.Sketcher();
     this.molSketcher.root.classList.add('monomer-manager-sketcher');
@@ -583,7 +587,7 @@ class MonomerForm implements INewMonomerForm {
         this.saveButton.classList.remove('d4-disabled');
 
       const monomerExists = this.polymerTypeInput.value && this.polymerTypeInput.value &&
-          !!this.getMonomerLib()?.getMonomer(this.polymerTypeInput.value as PolymerType, this.monomerSymbolInput.value);
+        !!this.getMonomerLib()?.getMonomer(this.polymerTypeInput.value as PolymerType, this.monomerSymbolInput.value);
 
       this.saveButton.textContent = monomerExists ? 'Save Monomer' : 'Add Monomer';
     }, 200);
@@ -605,7 +609,7 @@ class MonomerForm implements INewMonomerForm {
     this.rgroupsGrid.render();
     this.metaGrid.render();
     this.rgroupsGridRoot.style.display = 'flex';
-    
+
     this.onMonomerInputChanged();
     if (!monomer.naturalAnalog) {
       mostSimilarNaturalAnalog(capSmiles(monomer.smiles, this.rgroupsGrid.items as RGroup[]), monomer.polymerType).then((mostSimilar) => {
@@ -863,7 +867,7 @@ function getCorrectedMolBlock(molBlock: string) {
   const molStartIdx = lines.findIndex((line) => line.includes('V2000') || line.includes('V3000'));
 
   const atomCount = Number.parseInt(lines[molStartIdx].trim().split(' ')[0]);
-  const rgroupLineNumbers: {[atomLine: number]: number} = {};
+  const rgroupLineNumbers: { [atomLine: number]: number } = {};
   for (let atomI = molStartIdx + 1; atomI < molStartIdx + 1 + atomCount; atomI++) {
     const rIdx = lines[atomI].indexOf('R ');
     if (rIdx === -1) continue;

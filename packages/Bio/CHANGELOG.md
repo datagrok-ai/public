@@ -1,6 +1,8 @@
 # Bio changelog
 
-## 2.14.4 (WIP)
+## 2.15.0 (2024-09-04)
+
+Monomer manager
 
 ### Features
 
@@ -14,6 +16,7 @@
 * Fix tests benchmark
 * Fix typo Needleman-Wunsch
 * Fix test flapping benchmark separatorDnaShorts50Few50
+* Fix toAtomicLevel workers error DG is not defined
 
 ## 2.14.3 (2024-08-27)
 
