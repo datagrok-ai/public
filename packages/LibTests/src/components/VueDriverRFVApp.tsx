@@ -91,11 +91,6 @@ export const VueDriverRFVApp = defineComponent({
     const treeHidden = ref(false);
     const rfvRef = ref(null as HTMLElement | null);
 
-    const processPanelsClosing = (element: HTMLElement) => {
-      if (treeInstance.value === element) treeHidden.value = true;
-      if (rfvRef.value === element) treeHidden.value = true;
-    };
-
     return () => (
       <div class='w-full h-full'>
         <RibbonPanel>
@@ -106,7 +101,7 @@ export const VueDriverRFVApp = defineComponent({
             onClick={() => treeHidden.value = !treeHidden.value } 
           />
         </RibbonPanel>
-        <DockManager class='block h-full' onOnCloseClick={processPanelsClosing}>
+        <DockManager class='block h-full'>
           { treeState.value ? <Draggable 
             class="ui-div mtl-tree p-2"
             {...{title: 'Steps'}}

@@ -144,7 +144,7 @@ export const RichFunctionView = defineComponent({
           
           { !formHidden.value ?
             <div 
-              class='flex flex-col p-2 w-full'
+              class='flex flex-col p-2'
               dock-spawn-dock-type='left'
               dock-spawn-dock-ratio={0.2}
               title='Inputs'
@@ -168,7 +168,7 @@ export const RichFunctionView = defineComponent({
                     const allConfigs = Utils.getPropViewers(tabProp).config;
 
                     return allConfigs.map((options) => (            
-                      <div class='flex flex-col h-1/2'>
+                      <div class='flex flex-col h-1/2 pl-2'>
                         <h2> { dfBlockTitle(tabProp) } </h2>
                         <Viewer
                           type={options['type'] as string}
