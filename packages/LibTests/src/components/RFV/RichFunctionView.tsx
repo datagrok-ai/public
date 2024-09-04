@@ -138,32 +138,32 @@ export const RichFunctionView = defineComponent({
               isHistory
               onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
               dock-spawn-dock-type='right'
+              dock-spawn-dock-ratio={0.2}
               {...{title: 'History'}}
             />: null }
-          <div class='flex ui-div' title='Inputs'>
-            { !formHidden.value ?
-              <div 
-                class='flex flex-col p-2 w-full'
-                dock-spawn-dock-type='left'
-              >
-                <InputForm funcCall={currentCall.value}/>
-                <div class='flex sticky bottom-0'>
-                  <BigButton onClick={run}> Run </BigButton>
-                </div>
-              </div>: null }
-            <IconFA 
-              name={ formHidden.value ? 'chevron-right' : 'chevron-left' }
-              tooltip={ formHidden.value ? 'Open form': 'Close form' }
-              onClick={() => formHidden.value = !formHidden.value} 
-              class='self-center p-2'
-            />
-          </div>
+          
+          { !formHidden.value ?
+            <div 
+              class='flex flex-col p-2 w-full'
+              dock-spawn-dock-type='left'
+              dock-spawn-dock-ratio={0.2}
+              title='Inputs'
+            >
+              <InputForm funcCall={currentCall.value}/>
+              <div class='flex sticky bottom-0'>
+                <BigButton onClick={run}> Run </BigButton>
+              </div>
+            </div>: null }
+          
           { 
             tabLabels.value
               .map((tabLabel) => ({tabLabel, tabDfProps: categoryToDfParam.value.inputs[tabLabel] ?? 
                 categoryToDfParam.value.outputs[tabLabel]}))            
               .map(({tabLabel, tabDfProps}) => {
-                return <div class='flex flex-col' {...{title: tabLabel}}>
+                return <div 
+                  class='flex flex-col'
+                  title={tabLabel}
+                >
                   { tabDfProps.map((tabProp) => {
                     const allConfigs = Utils.getPropViewers(tabProp).config;
 
@@ -191,6 +191,8 @@ export const RichFunctionView = defineComponent({
             <MarkDown 
               markdown={helpText.value}
               {...{title: 'Help'}}
+              dock-spawn-dock-type='right'
+              dock-spawn-dock-ratio={0.15}
             /> : null 
           }
         </DockManager>
