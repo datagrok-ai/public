@@ -587,7 +587,8 @@ export class AddNewColumnDialog {
         //treat $COLUMN_NAME as scalar
         if (funcCall.inputs[key].func.name !== COLUMN_FUNCTION_NAME)
           innerFuncCalls.push(key);
-        actualInputParamTypes[key] = funcCall.inputs[key].func.outputs[0].propertyType;
+        actualInputParamTypes[key] = funcCall.inputs[key].func.outputs.length ?
+          funcCall.inputs[key].func.outputs[0].propertyType : 'dynamic';
       } else
         actualInputParamTypes[key] = typeof funcCall.inputs[key];
     }
@@ -700,7 +701,7 @@ export class AddNewColumnDialog {
     let firstParamEnd = commaIdx;
     if (commaIdx === -1 || commaIdx > closeParenthesisIdx)
       firstParamEnd = closeParenthesisIdx;
-    this.codeMirror!.focus();
+    setTimeout(() => this.codeMirror!.focus(), 100);
     this.codeMirror!.dispatch({
       selection: EditorSelection.create([
         EditorSelection.range(openParenthesis + 1, firstParamEnd),
