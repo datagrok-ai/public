@@ -274,10 +274,10 @@ export class SeqHandler {
   }
 
   /** Any Macromolecule can be represented on Helm format. The reverse is not always possible. */
-  public async getHelm(rowIdx: number): Promise<string> {
+  public async getHelm(rowIdx: number, options?: any): Promise<string> {
     const seq: string = this.column.get(rowIdx);
     if (this.notationProvider) {
-      const helmCol = await this.notationProvider.getHelm(this.column);
+      const helmCol = await this.notationProvider.getHelm(this.column, options);
       return helmCol.get(rowIdx)!;
     } else
       return this.convertToHelm(seq);
@@ -797,6 +797,8 @@ export class SeqHandler {
   }
 
   private convertToHelm(src: string): string {
+    if (this.notation == NOTATION.HELM) return src;
+
     const wrappers = this.getHelmWrappers();
 
     const isDnaOrRna = src.startsWith('DNA') || src.startsWith('RNA');
