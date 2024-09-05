@@ -47,7 +47,7 @@ category('DataFrame: Calculated columns', () => {
   });
 
   test('Add new column dialog', () => new Promise(async (resolve, reject) => {
-    if ((await grok.dapi.packages.filter('PowerPack').list()).length > 0)
+    if ((await grok.dapi.packages.filter('PowerPack').list({pageSize: 5})).length > 0)
       resolve('Skipped because PowerPack is installed');
     else {
       let tv: DG.TableView;
@@ -71,7 +71,7 @@ category('DataFrame: Calculated columns', () => {
   }));
 
   test('Edit formula dialog', () => new Promise(async (resolve, reject) => {
-    if ((await grok.dapi.packages.filter('PowerPack').list()).length > 0)
+    if ((await grok.dapi.packages.filter('PowerPack').list({pageSize: 5})).length > 0)
       resolve('Skipped because PowerPack is installed');
     else {
       subs.push(grok.events.onDialogShown.subscribe((d) => {
