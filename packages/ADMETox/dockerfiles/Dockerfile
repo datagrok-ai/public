@@ -3,10 +3,10 @@ FROM nvidia/cuda:11.8.0-runtime-ubuntu22.04
 SHELL ["/bin/bash","-c"]
 
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
+RUN apt update && \
+    apt install -y --no-install-recommends \
         curl bzip2 ca-certificates ; \
-     apt-get clean
+     apt clean
 
 ENV MAMBA_EXE=/bin/micromamba
 ARG MAMBA_VERSION=1.5.3
