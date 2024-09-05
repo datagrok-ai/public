@@ -49,7 +49,7 @@
     "webpack-cli": "latest"
   },
   "scripts": {
-    "link-all": "npm link @datagrok-libraries/utils @datagrok-libraries/ml datagrok-api",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/compute-utils @datagrok-libraries/compute-api @datagrok-libraries/webcomponents @datagrok-libraries/webcomponents-vue",
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts,.tsx --fix",
     "debug-lib-tests": "webpack && grok publish",
@@ -60,7 +60,8 @@
     "release-lib-tests-dev": "webpack && grok publish dev --release",
     "debug-lib-tests-local": "webpack && grok publish local",
     "release-lib-tests-local": "webpack && grok publish local --release",
-    "test": "grok test"
+    "test": "grok test",
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/compute-utils run build && npm --prefix ./../../libraries/compute-api run build && npm --prefix ./../../libraries/webcomponents run build && npm --prefix ./../../libraries/webcomponents-vue run build && npm run build"
   },
   "canEdit": [
     "Developers"
