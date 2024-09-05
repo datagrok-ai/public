@@ -10,6 +10,7 @@ export class AdmeticaBaseEditor {
   colInput!: DG.InputBase<DG.Column | null>;
   colInputRoot: HTMLElement;
   templatesInput: DG.ChoiceInput<string>;
+  folderIcon: HTMLElement;
   saveButton: HTMLElement;
   addPiechartInput = ui.input.bool('Add piechart', {value: true});
   addFormInput = ui.input.bool('Add form', {value: true});
@@ -36,6 +37,15 @@ export class AdmeticaBaseEditor {
     this.templatesInput = ui.input.choice('Template', {
       onValueChanged: async () =>  await this.createModelsSettingsDiv(this.modelsSettingsDiv)
     }) as DG.ChoiceInput<string>;
+
+    this.folderIcon = ui.iconFA('folder', () => {
+      ui.dialog({title:'Manage files'})
+        .add(ui.fileBrowser({path: TEMPLATES_FOLDER}).root)
+        .onOK(() => {})
+        .show();
+    });
+    this.folderIcon.style.marginLeft = '10px';
+    this.templatesInput.root.append(this.folderIcon);
 
     this.initTemplates();
   }
