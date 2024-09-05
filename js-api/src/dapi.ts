@@ -222,10 +222,12 @@ export class Dapi {
     // @ts-ignore
     params.headers['original-method'] = params.method;
     let proxyUrl = `${this.root}/connectors/proxy`;
-    if (maxAge && (params.method == 'GET' || params.method == 'HEAD')) {
-      // @ts-ignore
-      params.headers['dg-cache-control'] = `max-age=${maxAge}`;
-      params.cache = 'default';
+    if (params.method == 'GET' || params.method == 'HEAD') {
+      if (maxAge) {
+        // @ts-ignore
+        params.headers['dg-cache-control'] = `max-age=${maxAge}`;
+        params.cache = 'default';
+      }
       proxyUrl = `${proxyUrl}?url=${encodeURI(url)}`;
     }
     if (params.method !== 'GET')
