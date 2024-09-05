@@ -49,7 +49,7 @@
     "webpack-cli": "latest"
   },
   "scripts": {
-    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/compute-utils @datagrok-libraries/compute-api @datagrok-libraries/webcomponents @datagrok-libraries/webcomponents-vue",
+    "link-all": "npm link vue datagrok-api @datagrok-libraries/utils @datagrok-libraries/compute-utils @datagrok-libraries/compute-api @datagrok-libraries/webcomponents @datagrok-libraries/webcomponents-vue",
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts,.tsx --fix",
     "debug-lib-tests": "webpack && grok publish",

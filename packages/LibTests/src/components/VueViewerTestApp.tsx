@@ -4,7 +4,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Viewer, SplitH} from '@datagrok-libraries/webcomponents-vue/src';
 import {defineComponent, shallowRef, ref} from 'vue';
-import {from, useSubscription} from '@vueuse/rxjs';
 
 export const VueViewerTestApp = defineComponent({
   name: 'VueViewerTestApp',
@@ -33,7 +32,6 @@ export const VueViewerTestApp = defineComponent({
       j++;
       j%=types.length;
     };
-    useSubscription(from(viewer).subscribe((v) => console.log('viewer', v)));
     return () => (
       <div style={{width: '100%', height: '100%'}}>
         <button onClick={changeData}>change data</button>
