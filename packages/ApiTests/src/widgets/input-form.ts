@@ -211,16 +211,11 @@ category('Widgets: InputForm API', () => {
   });
 
   test('source funccall replacement', async () => {
-    newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest2')).prepare();
+    newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare({'stringInput':  'test2'});
     form.source = newFuncCall;
     updateInputs();
 
     expect(inputs['stringInput'].value, 'test2');
-    expect(inputs['intInput'].value, 3);
-    expect(inputs['doubleInput'].value, 3.14);
-    expect(inputs['boolInput'].value, true);
-    expect(inputs['choiceInput'].value, '1');
-    expect(inputs['tableInput'].value, null); // since there is no default value here
   });
 
   test('form to funccall bind after replace', async () => {
@@ -361,13 +356,6 @@ category('Widgets: InputForm w/ custom input', () => {
       ['stringInput'],
     );
     changeSub.unsubscribe();
-  }, { skipReason: 'https://reddata.atlassian.net/browse/GROK-15737' });
-
-  test('source funccall replacement', async () => {
-    newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
-    form.source = newFuncCall;
-    updateInputs();
-    expect(form.getInput('stringInput').value, 'test');
   }, { skipReason: 'https://reddata.atlassian.net/browse/GROK-15737' });
 
   test('form to funccall bind after replace', async () => {

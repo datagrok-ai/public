@@ -272,7 +272,7 @@ category('Dapi: functions calls', async () => {
   test('list package script funccalls with package', async () => {
     const loadedCalls = await grok.dapi.functions.calls
       .allPackageVersions()
-      .include('func,func.package').filter(`func.name="dummyPackageScript"`).list();
+      .include('func,func.package').filter(`func.name="dummyPackageScript"`).list({pageSize: 5});
 
     expect(loadedCalls[0].func.package.toString().includes('ApiTests'), true);
   }, { timeout: 100000 });
@@ -280,7 +280,7 @@ category('Dapi: functions calls', async () => {
   test('list package function funccalls with package', async () => {
     const loadedCalls = await grok.dapi.functions.calls
       .allPackageVersions()
-      .include('func,func.package').filter(`func.name="dummyPackageFunction"`).list();
+      .include('func,func.package').filter(`func.name="dummyPackageFunction"`).list({pageSize: 5});
 
     expect(loadedCalls[0].func.package.toString().includes('ApiTests'), true);
   }, { timeout: 100000 });
@@ -289,14 +289,14 @@ category('Dapi: functions calls', async () => {
     // expect no-throw
     await grok.dapi.functions.calls
       .allPackageVersions()
-      .include('func,func.package').filter(`func.nqName="ApiTests:dummyPackageScript"`).list();
+      .include('func,func.package').filter(`func.nqName="ApiTests:dummyPackageScript"`).list({pageSize: 5});
   }, { skipReason: 'GROK-16229' });
 
   test('filter package function funcCalls by nqName', async () => {
     // expect no-throw
     await grok.dapi.functions.calls
       .allPackageVersions()
-      .include('func,func.package').filter(`func.nqName="ApiTests:dummyPackageFunction"`).list();
+      .include('func,func.package').filter(`func.nqName="ApiTests:dummyPackageFunction"`).list({pageSize: 5});
   }, { skipReason: 'GROK-16229' });
 
   test('find', async () => {
@@ -361,12 +361,12 @@ category('Dapi: functions', async () => {
   });
 
   test('Filter functions by nqName (script)', async () => {
-    const loadedFuncCalls = await GDF.filter(`nqName="ApiTests:dummyPackageFunction"`).list();
+    const loadedFuncCalls = await GDF.filter(`nqName="ApiTests:dummyPackageFunction"`).list({pageSize: 5});
     expect(loadedFuncCalls.length, 1);
   }, { skipReason: 'GROK-15175' });
 
   test('Filter functions by nqName (package function)', async () => {
-    const loadedFuncCalls = await GDF.filter(`nqName="ApiTests:dummyPackageScript"`).list();
+    const loadedFuncCalls = await GDF.filter(`nqName="ApiTests:dummyPackageScript"`).list({pageSize: 5});
     expect(loadedFuncCalls.length, 1);
   }, { skipReason: 'GROK-15175' });
 });
