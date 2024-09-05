@@ -17,6 +17,8 @@ Monomer manager
 * Fix typo Needleman-Wunsch
 * Fix test flapping benchmark separatorDnaShorts50Few50
 * Fix toAtomicLevel workers error DG is not defined
+* Fix biosubstructure filter
+* Fix SeqHandler.getHelm lost cycles, add tests
 
 ## 2.14.3 (2024-08-27)
 

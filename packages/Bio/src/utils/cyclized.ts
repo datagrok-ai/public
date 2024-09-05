@@ -24,7 +24,7 @@ export class CyclizedNotationProvider implements INotationProvider {
     return new CyclizedSeqSplitted(baseSS.originals, GapOriginals[NOTATION.SEPARATOR]);
   }
 
-  public async getHelm(seqCol: DG.Column<string>): Promise<DG.Column<string>> {
+  public async getHelm(seqCol: DG.Column<string>, options?: any): Promise<DG.Column<string>> {
     const polyToolPackageName: string = 'SequenceTranslator';
 
     const funcList = DG.Func.find({package: polyToolPackageName, name: 'polyToolConvert2'});
@@ -32,7 +32,7 @@ export class CyclizedNotationProvider implements INotationProvider {
       throw new Error(`Package '${polyToolPackageName}' must be installed for Cyclized notation provider.`);
     const func = funcList[0];
 
-    const ptConvertCall = await func.prepare({table: seqCol.dataFrame, seqCol: seqCol});
+    const ptConvertCall = await func.prepare({table: seqCol.dataFrame, seqCol: seqCol, ...options});
 
     const editorFunc = DG.Func.find({package: polyToolPackageName, name: 'getPolyToolConvertEditor'})[0];
     const resHelmCol = (await editorFunc.prepare({call: ptConvertCall}).call()).getOutputParamValue() as DG.Column<string>;

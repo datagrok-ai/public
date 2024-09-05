@@ -296,9 +296,11 @@ export class FastaBioFilter extends BioFilterBase<BioFilterProps> {
     super();
 
     this.substructureInput = ui.input.string('', {
-      value: '', onValueChanged: (inp, value) => {
-        this.props = new BioFilterProps(value);
-        if (!this._propsChanging) this.onChanged.next();
+      value: '', onValueChanged: (_input, value) => {
+        window.setTimeout(() => {
+          this.props = new BioFilterProps(value);
+          if (!this._propsChanging) this.onChanged.next();
+        }, 0 /* next event cycle */);
       }, placeholder: 'Substructure'
     });
   }
