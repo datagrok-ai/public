@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {MMP_NAMES} from './mmp-constants';
-import {PaletteCodes} from './mmp-mol-rendering';
+import {PaletteCodes} from './palette';
 
 export function getMmpTrellisPlot(allPairsGrid: DG.Grid, activityMeanNames: Array<string>,
   palette: PaletteCodes): DG.Viewer {

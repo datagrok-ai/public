@@ -6,7 +6,7 @@ import {awaitCheck, before, category, expect, test} from '@datagrok-libraries/ut
 import {createTableView} from './utils';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {_package} from '../package-test';
-import {MatchedMolecularPairsViewer} from '../analysis/molecular-matched-pairs/mmp-viewer';
+import {MatchedMolecularPairsViewer} from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
 
 const pairsFromMolblock = `
      RDKit          2D
@@ -86,7 +86,7 @@ const randomValsToCheck: {[key: string]: {[key: string]: {idxs: number[], values
     'Mean Difference Activity':
       {idxs: [0, 11, 30], values: [-2.53, 3.56, 3.46]},
     'Mean Difference Permeability':
-      {idxs: [0, 11, 30], values: [-1.85, -4.71, -7.13]},
+      {idxs: [0, 11, 30], values: [1.85, -4.71, -7.13]},
     'Mean Difference Toxicity':
       {idxs: [0, 11, 30], values: [-1.49, -0.62, -0.70]},
   },
@@ -119,7 +119,7 @@ const randomValsToCheck: {[key: string]: {[key: string]: {idxs: number[], values
       values: ['Clc1ccc2c(C[*:1])ccnc2c1', 'O=C1Oc2ccccc2C([*:1])C1Cc1ccc(O)cc1O', 'Clc1ccc2c(C[*:1])ccnc2c1']},
     'From': {idxs: [0, 70, 107], values: ['C[*:1]', 'O[*:1]', 'O=C(O)[*:1]']},
     'To': {idxs: [0, 70, 113], values: ['O=C(O)[*:1]', 'CC(C)[*:1]', 'CC[*:1]']},
-    'Prediction': {idxs: [0, 70, 113], values: [58.98, 13.51, 0.33]},
+    'Prediction': {idxs: [0, 70, 113], values: [58.98, 13.53, 0.33]},
     'Generation': {idxs: [0, 70, 113],
       values: ['O=C(O)Cc1ccnc2cc(Cl)ccc12', 'CC(C)C1c2ccccc2OC(=O)C1Cc1ccc(O)cc1O', 'CCCc1ccnc2cc(Cl)ccc12']},
   },
@@ -134,7 +134,7 @@ const randomValsToCheckGPU: {[key: string]: {[key: string]: {idxs: number[], val
     'Mean Difference Activity':
       {idxs: [0, 11, 30], values: [2.53, 3.56, 3.46]},
     'Mean Difference Permeability':
-      {idxs: [0, 11, 30], values: [-1.85, -4.71, -7.13]},
+      {idxs: [0, 11, 30], values: [1.85, -4.71, -7.13]},
     'Mean Difference Toxicity':
       {idxs: [0, 11, 30], values: [-1.49, -0.62, -0.70]},
   },

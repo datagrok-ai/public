@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 import {Monomer} from '@datagrok-libraries/bio/src/types';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
@@ -11,73 +12,73 @@ import {MonomerLibManager} from '../lib-manager';
 class MonomerCard {
   root: HTMLElement = ui.divV([], {classes: 'monomer-card-root'});
 
-    private _selected: boolean = false;
-    get selected(): boolean { return this._selected; }
-    set selected(value: boolean) {
-      this._selected = value;
-      this.root.style.border = value ? '2px solid var(--green-2)' : '2px solid var(--grey-2)';
+  private _selected: boolean = false;
+  get selected(): boolean { return this._selected; }
+  set selected(value: boolean) {
+    this._selected = value;
+    this.root.style.border = value ? '2px solid var(--green-2)' : '2px solid var(--grey-2)';
+  }
+
+  constructor(public monomer: Monomer) {}
+
+  render() {
+    ui.empty(this.root);
+    const monomerMolSvg = this.monomer.smiles && grok.chem.checkSmiles(this.monomer.smiles) ?
+      grok.chem.drawMolecule(this.monomer.smiles, 200, 200) : grok.chem.drawMolecule(this.monomer.molfile ?? '', 200, 200);
+    this.root.appendChild(monomerMolSvg);
+    const monomerName =
+      ui.divH([ui.divText('Monomer Name: '), ui.divText(this.monomer.name)], {classes: 'monomer-card-info-row'});
+
+    this.root.appendChild(monomerName);
+    ui.tooltip.bind(monomerName, this.monomer.name);
+    if (this.monomer.lib?.source) {
+      const monomerSource =
+        ui.divH([ui.divText('Source: '), ui.divText(this.monomer.lib.source)], {classes: 'monomer-card-info-row'});
+      this.root.appendChild(monomerSource);
+      ui.tooltip.bind(monomerSource, this.monomer.lib.source);
     }
+    const monomerType = ui.divH([ui.divText('Polymer Type: '), ui.divText(this.monomer.polymerType)], {classes: 'monomer-card-info-row'});
+    this.root.appendChild(monomerType);
+    ui.tooltip.bind(monomerType, this.monomer.polymerType);
 
-    constructor(public monomer: Monomer) {}
-
-    render() {
-      ui.empty(this.root);
-      const monomerMolSvg = this.monomer.smiles && grok.chem.checkSmiles(this.monomer.smiles) ?
-        grok.chem.drawMolecule(this.monomer.smiles, 200, 200) : grok.chem.drawMolecule(this.monomer.molfile ?? '', 200, 200);
-      this.root.appendChild(monomerMolSvg);
-      const monomerName =
-        ui.divH([ui.divText('Monomer Name: '), ui.divText(this.monomer.name)], {classes: 'monomer-card-info-row'});
-
-      this.root.appendChild(monomerName);
-      ui.tooltip.bind(monomerName, this.monomer.name);
-      if (this.monomer.lib?.source) {
-        const monomerSource =
-            ui.divH([ui.divText('Source: '), ui.divText(this.monomer.lib.source)], {classes: 'monomer-card-info-row'});
-        this.root.appendChild(monomerSource);
-        ui.tooltip.bind(monomerSource, this.monomer.lib.source);
-      }
-      const monomerType = ui.divH([ui.divText('Polymer Type: '), ui.divText(this.monomer.polymerType)], {classes: 'monomer-card-info-row'});
-      this.root.appendChild(monomerType);
-      ui.tooltip.bind(monomerType, this.monomer.polymerType);
-
-      ui.tooltip.bind(this.root, 'Select Monomer');
-    }
+    ui.tooltip.bind(this.root, 'Select Monomer');
+  }
 }
 
 class DuplicateSymbolRow {
-    root: HTMLElement = ui.divH([],
+  root: HTMLElement = ui.divH([],
       {style: {
         alignItems: 'center',
         width: '100%',
         overflow: 'hidden',
         visibility: 'visible',
       }, classes: 'duplicate-monomer-symbol-row'}
-    );
-    monomerCards: MonomerCard[];
-    constructor(
-        public monomerSymbol: string, private monomers: Monomer[],
-        selectedMonomer: Monomer | null, onMonomerSelected: (monomer: Monomer) => void) {
-      this.monomerCards = monomers.map((monomer) => new MonomerCard(monomer));
-      const monomerGallery = ui.divH([], {style: {overflowX: 'auto', width: '100%'}});
-      const monomerSymbolDiv = ui.h1(monomerSymbol, {style: {lineHeight: '2em', fontSize: '1.5em', marginRight: '20px', width: '100px', overflow: 'hidden', textOverflow: 'elipsis'}});
-      ui.tooltip.bind(monomerSymbolDiv, monomerSymbol);
-      this.root.appendChild(monomerSymbolDiv);
-      this.root.appendChild(monomerGallery);
-      this.monomerCards.forEach((card) => {
-        card.root.onclick = () => {
-          this.monomerCards.forEach((c) => c.selected = false);
-          card.selected = true;
-          onMonomerSelected(card.monomer);
-        };
-        if (selectedMonomer && card.monomer === selectedMonomer)
-          card.selected = true;
-        monomerGallery.appendChild(card.root);
-      });
-    }
+  );
+  monomerCards: MonomerCard[];
+  constructor(
+    public monomerSymbol: string, private monomers: Monomer[],
+    selectedMonomer: Monomer | null, onMonomerSelected: (monomer: Monomer) => void) {
+    this.monomerCards = monomers.map((monomer) => new MonomerCard(monomer));
+    const monomerGallery = ui.divH([], {style: {overflowX: 'auto', width: '100%'}});
+    const monomerSymbolDiv = ui.h1(monomerSymbol, {style: {lineHeight: '2em', fontSize: '1.5em', marginRight: '20px', width: '100px', overflow: 'hidden', textOverflow: 'elipsis'}});
+    ui.tooltip.bind(monomerSymbolDiv, monomerSymbol);
+    this.root.appendChild(monomerSymbolDiv);
+    this.root.appendChild(monomerGallery);
+    this.monomerCards.forEach((card) => {
+      card.root.onclick = () => {
+        this.monomerCards.forEach((c) => c.selected = false);
+        card.selected = true;
+        onMonomerSelected(card.monomer);
+      };
+      if (selectedMonomer && card.monomer === selectedMonomer)
+        card.selected = true;
+      monomerGallery.appendChild(card.root);
+    });
+  }
 
-    render() {
-      this.monomerCards.forEach((card) => card.render());
-    }
+  render() {
+    this.monomerCards.forEach((card) => card.render());
+  }
 }
 
 export class DuplicateMonomerManager {
@@ -85,7 +86,7 @@ export class DuplicateMonomerManager {
   private saveSettingsPromise: Promise<void> = Promise.resolve();
   private searchInput: DG.InputBase<string>;
   private _root: HTMLElement;
-  private monomers: { [polymerType: string]: { [monomerSymbol: string]: Monomer[] }};
+  private monomers: { [polymerType: string]: { [monomerSymbol: string]: Monomer[] } };
   private settings: UserLibSettings;
   private filteredMonomerRows: DuplicateSymbolRow[] = [];
   private static _instance: DuplicateMonomerManager;
@@ -123,7 +124,7 @@ export class DuplicateMonomerManager {
               this.settings.duplicateMonomerPreferences[polymerType] = this.settings.duplicateMonomerPreferences[polymerType] ?? {};
               this.settings.duplicateMonomerPreferences[polymerType][monomerSymbol] = monomer.lib.source;
               await setUserLibSettings(this.settings);
-              grok.shell.info(`Monomer ${monomer.name} selected for symbol ${monomerSymbol}`);
+              grok.shell.info(`Monomer '${monomer.name}' from source '${monomer.lib.source}' selected for symbol '${monomerSymbol}'.`);
               libManager.assignDuplicatePreferances(this.settings);
             });
           }));

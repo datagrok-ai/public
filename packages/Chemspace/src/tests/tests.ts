@@ -6,13 +6,13 @@ category('Chemspace', () => {
   const mol = 'Oc1ccccc1';
 
   test('Prices panel', async () => {
-    const widget = await pricesPanel('CSCS00102564062');
+    const widget = await grok.functions.call('Chemspace:pricesPanel', {'id': 'CSCS00102564062'});
     await awaitCheck(() => widget.root.getElementsByClassName('chemspace-prices-grid').length > 0,
       'prices panel hasn\'t been created', 30000);
   });
 
   test('Samples panel', async () => {
-    const widget = await samplesPanel(mol);
+    const widget = await grok.functions.call('Chemspace:samplesPanel', {'smiles': mol});
     const similarPaneHeader = widget.root.querySelector('[name="div-section--Similar"]') as HTMLElement;
     similarPaneHeader.click();
     const similarPane = widget.root.querySelector('[d4-title="Similar"]') as HTMLElement;
@@ -27,7 +27,7 @@ category('Chemspace', () => {
   }, { timeout: 60000});
 
   test('App', async () => {
-    app();
+    await grok.functions.call('Chemspace:App');
     await awaitCheck(() => grok.shell.tv.dataFrame.rowCount === 10,
     `Search hasn't been completed`, 30000);
   });

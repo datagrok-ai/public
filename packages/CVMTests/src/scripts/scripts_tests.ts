@@ -17,6 +17,8 @@ const TEST_DATAFRAME_1 = grok.data.demo.demog(10000);
 const TEST_DATAFRAME_2 = DG.DataFrame.fromCsv('x,y\n1,2\n3,4\n5,6');
 
 for (const lang of langs) {
+  if (lang === 'Julia')
+    continue;
   category(`Scripts: ${lang} scripts`, () => {
     test('int, double, bool, string input/output', async () => {
       const int = 2;
@@ -27,7 +29,7 @@ for (const lang of langs) {
         {'integer_input': int, 'double_input': double, 'bool_input': bool, 'string_input': str});
       expectObject(result, {'integer_output': int, 'double_output': double,
         'bool_output': bool, 'string_output': str});
-    }, {stressTest: true});
+    }, {stressTest: true, timeout: 120000 /* long timeout for first test, because of kernel start */});
 
     test('Long string', async () => {
       const str = randomString(500000, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');

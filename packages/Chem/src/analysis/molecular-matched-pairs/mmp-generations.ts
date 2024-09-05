@@ -1,16 +1,15 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {MMP_NAMES, columnsDescriptions} from './mmp-constants';
-import {MmpInput} from './mmp-viewer';
-import {IMmpFragmentsResult} from '../../rdkit-service/rdkit-service-worker-substructure';
+import {MMP_NAMES, columnsDescriptions} from './mmp-viewer/mmp-constants';
+import {MmpInput} from './mmp-viewer/mmp-viewer';
 import {getRdKitService} from '../../utils/chem-common-rdkit';
-//import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 import {generationsGPU} from '@datagrok-libraries/math/src/webGPU/mmp/webGPU-generations';
 import {MMP_CONSTRICTIONS, MMP_ERRORS} from './mmp-analysis/mmpa-misc';
+import {MMPA} from './mmp-analysis/mmpa';
 
 export async function getGenerations(mmpInput: MmpInput, moleculesArray: string[],
-  fragsOut: IMmpFragmentsResult, meanDiffs: Float32Array[],
+  mmpa: MMPA,
   allPairsGrid: DG.Grid, activityMeanNames: Array<string>, gpu: boolean):
   Promise<DG.Grid> {
   const rulesColumns = allPairsGrid.dataFrame.columns;
@@ -19,6 +18,8 @@ export async function getGenerations(mmpInput: MmpInput, moleculesArray: string[
   const rulesTo = rulesColumns.byName(MMP_NAMES.TO).getRawData();
   const rulesFromCats = rulesColumns.byName(MMP_NAMES.FROM).categories;
   const rulesToCats = rulesColumns.byName(MMP_NAMES.TO).categories;
+
+
   const activityN = activityMeanNames.length;
 
   const structuresN = mmpInput.molecules.length;
@@ -31,7 +32,7 @@ export async function getGenerations(mmpInput: MmpInput, moleculesArray: string[
   const activityName: Array<string> = Array(structuresN * activityN);
   const activities = new Array<Float32Array>(activityN);
   const activityNames = Array<string>(activityN);
-  console.time('generations');
+
   for (let i = 0; i < activityN; i++) {
     const name = activityMeanNames[i].replace('Mean Difference ', '');
     activities[i] = mmpInput.activities.byName(name).getRawData() as Float32Array;
@@ -40,26 +41,11 @@ export async function getGenerations(mmpInput: MmpInput, moleculesArray: string[
 
 
   await calculateGenerations(structuresN, activityN, moleculesArray, allStructures, allInitActivities,
-    activityName, activities, activityNames, fragsOut.frags, meanDiffs, prediction, cores, from, to,
+    activityName, activities, activityNames, mmpa.frags.frags, mmpa.rulesBased.meanDiffs,
+    prediction, cores, from, to,
     rulesFrom, rulesTo, rulesFromCats, rulesToCats, gpu);
 
-  // if (gpu) {
-  //   await generationsGPU(structuresN, activityN, moleculesArray, allStructures, allInitActivities,
-  //     activityName, activities, activityNames, fragsOut.frags, meanDiffs, prediction, cores, from, to,
-  //     rulesFrom, rulesTo, rulesFromCats, rulesToCats);
-  // }
-  // else {
-  //   await generationsCPU(structuresN, activityN, moleculesArray, allStructures, allInitActivities,
-  //     activityName, activities, activityNames, fragsOut.frags, meanDiffs, prediction, cores, from, to,
-  //     rulesFrom, rulesTo, rulesFromCats, rulesToCats);
-  // }
-
-  //console.timeEnd('generations');
-
-
-  //console.time('rdkitlinkfragments');
   const generation = await (await getRdKitService()).mmpLinkFragments(cores, to);
-  //console.timeEnd('rdkitlinkfragments');
   const cols = [];
   cols.push(createColWithDescription('string', 'Structure', allStructures, DG.SEMTYPE.MOLECULE));
   cols.push(createColWithDescription('double', `Initial value`, Array.from(allInitActivities)));
@@ -70,7 +56,7 @@ export async function getGenerations(mmpInput: MmpInput, moleculesArray: string[
   cols.push(createColWithDescription('double', `Prediction`, Array.from(prediction)));
   cols.push(createColWithDescription('string', `Generation`, generation, DG.SEMTYPE.MOLECULE));
   const grid = DG.DataFrame.fromColumns(cols).plot.grid();
-  createMolExistsCol(fragsOut.smiles, generation, grid);
+  createMolExistsCol(mmpa.frags.smiles, generation, grid);
   return grid;
 }
 
