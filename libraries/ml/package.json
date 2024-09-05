@@ -17,7 +17,7 @@
     "@types/seedrandom": "^3.0.8",
     "@webgpu/types": "^0.1.40",
     "cash-dom": "latest",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.21.0-rc.9512de7493.516691f76e",
     "dayjs": "latest",
     "fastest-levenshtein": "^1.0.12",
     "graphology": "^0.25.4",
