@@ -2,14 +2,14 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BigButton, Button, DockManager, FoldableDialog, IconFA, InputForm, RibbonPanel, SplitH} from '@datagrok-libraries/webcomponents-vue/src';
-import {defineComponent, KeepAlive, onUnmounted, ref, shallowRef, triggerRef, watch} from 'vue';
+import {defineComponent, KeepAlive, onUnmounted, ref, shallowRef, triggerRef, VNode, watch} from 'vue';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
 import {useSubscription} from '@vueuse/rxjs';
 import {isFuncCallState, isParallelPipelineState, isSequentialPipelineState, PipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {RichFunctionView} from './RFV/RichFunctionView';
 import {TreeNode} from './TreeWizard/TreeNode';
 import {Draggable} from '@he-tree/vue';
-import {AugmentedStat, HueTree} from './TreeWizard/types';
+import {AugmentedStat} from './TreeWizard/types';
 import {dragContext} from '@he-tree/vue';
 import '@he-tree/vue/style/default.css';
 import '@he-tree/vue/style/material-design.css';
@@ -24,7 +24,7 @@ export const VueDriverRFVApp = defineComponent({
 
     const currentFuncCall = shallowRef<DG.FuncCall | undefined>(undefined);
 
-    const treeInstance = ref(null as HueTree | null);
+    const treeInstance = ref(null as InstanceType<typeof Draggable> | null);
 
     const changeFunccall = (newCall: DG.FuncCall) => {
       isVisibleRfv.value = true;
@@ -38,6 +38,7 @@ export const VueDriverRFVApp = defineComponent({
 
     useSubscription((driver.currentState$).subscribe((s) => {
       if (treeInstance.value) {
+        //@ts-ignore
         const oldStats = treeInstance.value!.statsFlat as AugmentedStat[];
         oldClosed = oldStats.reduce((acc, stat) => {
           if (!stat.open) 
@@ -83,13 +84,18 @@ export const VueDriverRFVApp = defineComponent({
     watch(isLocked, (newVal) => {
       if (!treeInstance.value) return;
 
-      ui.setUpdateIndicator(treeInstance.value!.$el, newVal);
+      ui.setUpdateIndicator(treeInstance.value.$el, newVal);
     });
 
     const chosenStepUuid = ref(null as string | null);
 
     const treeHidden = ref(false);
-    const rfvRef = ref(null as HTMLElement | null);
+    const rfvRef = ref(null as InstanceType<typeof RichFunctionView> | null);
+
+    const handlePanelClose = (el: HTMLElement) => {
+      if (el === rfvRef.value?.$el) isVisibleRfv.value = false;
+      if (el === treeInstance.value?.$el) treeHidden.value = true;
+    };
 
     return () => (
       <div class='w-full h-full'>
@@ -101,7 +107,7 @@ export const VueDriverRFVApp = defineComponent({
             onClick={() => treeHidden.value = !treeHidden.value } 
           />
         </RibbonPanel>
-        <DockManager class='block h-full'>
+        <DockManager class='block h-full' onPanelClosed={handlePanelClose}>
           { treeState.value && !treeHidden.value ? <Draggable 
             class="ui-div mtl-tree p-2"
             {...{title: 'Steps'}}

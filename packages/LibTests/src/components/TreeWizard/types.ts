@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Stat} from '@he-tree/vue/types/src/components/TreeProcessorVue';
 import {PipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {VNode} from 'vue';
 
 
 export type RuntimeData = {
@@ -22,12 +23,3 @@ export type AugmentedStat = RestrictedStat & {
 
 
 export type Status = 'locked' | `didn't run` | 'running' | 'succeeded' | 'failed' | 'partially succeeded';
-
-export type HueTree = HTMLElement & {
-  add: Function,
-  remove: Function,
-  isDraggable: Function,
-  isDroppable: Function,
-  statsFlat: AugmentedStat[],
-  $el: HTMLElement,
-};

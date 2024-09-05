@@ -19,13 +19,13 @@ export const DockManager = defineComponent({
     default?: any,
   }>,
   emits: {
-    onCloseClick: (element: HTMLElement) => element,
+    panelClosed: (element: HTMLElement) => element,
   },
   setup(_, {slots, emit}) {
     return () => {
       return <dock-spawn-ts 
         style={{'width': '100%'}}
-        onCloseClick={(ev: {detail: any}) => emit('onCloseClick', ev.detail)}
+        onPanelClosed={(ev: {detail: any}) => emit('panelClosed', ev.detail)}
       >
         { slots.default?.() }
       </dock-spawn-ts>

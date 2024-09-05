@@ -32,8 +32,11 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
                 onClosePanel: (dockManager, dockNode) => {
                     const slot = dockNode.elementContent;
                     const element = this.slotElementMap.get(slot);
-                    if (element)
-                        this.removeChild(element);
+                    if (element) {
+                        if (this.contains(element))
+                            this.removeChild(element);
+                        this.dispatchEvent(new CustomEvent('panel-closed', { detail: element }));
+                    }
                 },
             });
             this.onresize = () => {
@@ -58,6 +61,8 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
         return this.slotElementMap.get(slot);
     }
     handleAddedChildNode(element) {
+        if (element instanceof Comment)
+            return;
         const slot = document.createElement('slot');
         const slotName = 'slot_' + this.slotId++;
         slot.name = slotName;

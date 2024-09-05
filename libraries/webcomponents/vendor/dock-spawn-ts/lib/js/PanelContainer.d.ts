@@ -1,14 +1,14 @@
-import { DockManager } from "./DockManager.js";
-import { UndockInitiator } from "./UndockInitiator.js";
-import { ContainerType } from "./ContainerType.js";
-import { EventHandler } from "./EventHandler.js";
-import { ISize } from "./interfaces/ISize.js";
-import { IDockContainerWithSize } from "./interfaces/IDockContainerWithSize.js";
-import { IState } from "./interfaces/IState.js";
-import { Point } from "./Point.js";
-import { IDockContainer } from "./interfaces/IDockContainer.js";
-import { PanelType } from "./enums/PanelType.js";
-import { Dialog } from "./Dialog.js";
+import { DockManager } from './DockManager.js';
+import { UndockInitiator } from './UndockInitiator.js';
+import { ContainerType } from './ContainerType.js';
+import { EventHandler } from './EventHandler.js';
+import { ISize } from './interfaces/ISize.js';
+import { IDockContainerWithSize } from './interfaces/IDockContainerWithSize.js';
+import { IState } from './interfaces/IState.js';
+import { Point } from './Point.js';
+import { IDockContainer } from './interfaces/IDockContainer.js';
+import { PanelType } from './enums/PanelType.js';
+import { Dialog } from './Dialog.js';
 import { TabPage } from './TabPage.js';
 /**
  * This dock container wraps the specified element on a panel frame with a title bar and close button
@@ -76,17 +76,17 @@ export declare class PanelContainer implements IDockContainerWithSize {
     hideCloseButton(state: boolean): void;
     destroy(): void;
     /**
-     * Undocks the panel and and converts it to a dialog box
-     */
+       * Undocks the panel and and converts it to a dialog box
+       */
     performUndockToDialog(e: any, dragOffset: Point): Dialog;
     /**
-    * Closes the panel
-    */
+      * Closes the panel
+      */
     private performClose;
     /**
-     * Undocks the container and from the layout hierarchy
-     * The container would be removed from the DOM
-     */
+       * Undocks the container and from the layout hierarchy
+       * The container would be removed from the DOM
+       */
     performUndock(): void;
     prepareForDocking(): void;
     get width(): number;

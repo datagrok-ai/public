@@ -1,17 +1,17 @@
-import { DockWheel } from "./DockWheel.js";
-import { Point } from "./Point.js";
-import { DockManagerContext } from "./DockManagerContext.js";
-import { DockNode } from "./DockNode.js";
-import { DockLayoutEngine } from "./DockLayoutEngine.js";
-import { EventHandler } from "./EventHandler.js";
-import { Dialog } from "./Dialog.js";
-import { IDockContainer } from "./interfaces/IDockContainer.js";
-import { TabPage } from "./TabPage.js";
-import { PanelContainer } from "./PanelContainer.js";
-import { ILayoutEventListener } from "./interfaces/ILayoutEventListener.js";
-import { DockModel } from "./DockModel.js";
-import { DockConfig } from "./DockConfig.js";
-import { IState } from "./interfaces/IState.js";
+import { DockWheel } from './DockWheel.js';
+import { Point } from './Point.js';
+import { DockManagerContext } from './DockManagerContext.js';
+import { DockNode } from './DockNode.js';
+import { DockLayoutEngine } from './DockLayoutEngine.js';
+import { EventHandler } from './EventHandler.js';
+import { Dialog } from './Dialog.js';
+import { IDockContainer } from './interfaces/IDockContainer.js';
+import { TabPage } from './TabPage.js';
+import { PanelContainer } from './PanelContainer.js';
+import { ILayoutEventListener } from './interfaces/ILayoutEventListener.js';
+import { DockModel } from './DockModel.js';
+import { DockConfig } from './DockConfig.js';
+import { IState } from './interfaces/IState.js';
 /**
  * Dock manager manages all the dock panels in a hierarchy, similar to visual studio.
  * It owns a Html Div element inside which all panels are docked
@@ -55,8 +55,8 @@ export declare class DockManager {
     invalidate(): void;
     resize(width: number, height: number): void;
     /**
-     * Reset the dock model . This happens when the state is loaded from json
-     */
+       * Reset the dock model . This happens when the state is loaded from json
+       */
     setModel(model: DockModel): void;
     loadResize(node: DockNode): void;
     setRootNode(node: DockNode): void;
@@ -64,11 +64,11 @@ export declare class DockManager {
     _onDialogDragEnded(sender: Dialog, e: any): void;
     private _onMouseMoved;
     /**
-     * Perform a DFS (DeepFirstSearch) on the dock model's tree to find the
-     * deepest level panel (i.e. the top-most non-overlapping panel)
-     * that is under the mouse cursor
-     * Retuns null if no node is found under this point
-     */
+       * Perform a DFS (DeepFirstSearch) on the dock model's tree to find the
+       * deepest level panel (i.e. the top-most non-overlapping panel)
+       * that is under the mouse cursor
+       * Retuns null if no node is found under this point
+       */
     private _findNodeOnPoint;
     /** Dock the [dialog] to the left of the [referenceNode] node */
     dockDialogLeft(referenceNode: DockNode, dialog: Dialog): DockNode;
@@ -96,27 +96,27 @@ export declare class DockManager {
     private _requestDockContainer;
     _requestTabReorder(container: IDockContainer, e: any): void;
     /**
-     * Undocks a panel and converts it into a floating dialog window
-     * It is assumed that only leaf nodes (panels) can be undocked
-     */
+       * Undocks a panel and converts it into a floating dialog window
+       * It is assumed that only leaf nodes (panels) can be undocked
+       */
     requestUndockToDialog(container: PanelContainer, event: any, dragOffset: Point): Dialog;
     /**
-    * closes a Panel
-    */
+      * closes a Panel
+      */
     requestClose(container: PanelContainer): void;
     /**
-     * Opens a Element in a Dialog
-     * It is assumed that only leaf nodes (panels) can be undocked
-     */
+       * Opens a Element in a Dialog
+       * It is assumed that only leaf nodes (panels) can be undocked
+       */
     openInDialog(container: PanelContainer, event: any, dragOffset: Point, disableResize?: boolean): Dialog;
     /** Undocks a panel and converts it into a floating dialog window
-     * It is assumed that only leaf nodes (panels) can be undocked
-     */
+       * It is assumed that only leaf nodes (panels) can be undocked
+       */
     requestUndock(container: PanelContainer): void;
     /**
-     * Removes a dock container from the dock layout hierarcy
-     * Returns the node that was removed from the dock tree
-     */
+       * Removes a dock container from the dock layout hierarcy
+       * Returns the node that was removed from the dock tree
+       */
     requestRemove(container: PanelContainer): DockNode;
     getNodeByElementId(id: string): DockNode;
     getNodeByElement(element: Element): DockNode;

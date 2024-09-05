@@ -1,11 +1,11 @@
-import { DockManager } from "./DockManager.js";
-import { DockNode } from "./DockNode.js";
-import { HorizontalDockContainer } from "./HorizontalDockContainer.js";
-import { VerticalDockContainer } from "./VerticalDockContainer.js";
-import { FillDockContainer } from "./FillDockContainer.js";
-import { IRectangle } from "./interfaces/IRectangle.js";
-import { IDockContainer } from "./interfaces/IDockContainer.js";
-import { TabHandle } from "./TabHandle.js";
+import { DockManager } from './DockManager.js';
+import { DockNode } from './DockNode.js';
+import { HorizontalDockContainer } from './HorizontalDockContainer.js';
+import { VerticalDockContainer } from './VerticalDockContainer.js';
+import { FillDockContainer } from './FillDockContainer.js';
+import { IRectangle } from './interfaces/IRectangle.js';
+import { IDockContainer } from './interfaces/IDockContainer.js';
+import { TabHandle } from './TabHandle.js';
 export declare class DockLayoutEngine {
     dockManager: DockManager;
     constructor(dockManager: DockManager);
@@ -26,10 +26,10 @@ export declare class DockLayoutEngine {
     _forceResizeCompositeContainer: (container: IDockContainer) => void;
     _createDockContainer(containerType: string, newNode: DockNode, referenceNode: DockNode): FillDockContainer | HorizontalDockContainer | VerticalDockContainer;
     /**
-     * Gets the bounds of the new node if it were to dock with the specified configuration
-     * The state is not modified in this function.  It is used for showing a preview of where
-     * the panel would be docked when hovered over a dock wheel button
-     */
+       * Gets the bounds of the new node if it were to dock with the specified configuration
+       * The state is not modified in this function.  It is used for showing a preview of where
+       * the panel would be docked when hovered over a dock wheel button
+       */
     getDockBounds(referenceNode: DockNode, containerToDock: IDockContainer, direction: string, insertBeforeReference: boolean): IRectangle;
     _getVaringDimension(container: IDockContainer, direction: string): number;
 }
