@@ -14,7 +14,6 @@ export class AdmeticaBaseEditor {
   addPiechartInput = ui.input.bool('Add piechart', {value: true});
   addFormInput = ui.input.bool('Add form', {value: true});
   modelsSettingsDiv = ui.inputs([]);
-  modelsSettingsIcon: HTMLElement;
   expanded: boolean = false;
   tree: DG.TreeViewGroup = ui.tree();
   properties: Template | null = null;
@@ -25,7 +24,8 @@ export class AdmeticaBaseEditor {
     this.colInput = ui.input.column('Molecules', {
       table: grok.shell.tv.dataFrame,
       filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE,
-      value: grok.shell.tv.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE)!
+      value: grok.shell.tv.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE)!,
+      nullable: false
     });
     this.colInputRoot = this.colInput.root;
     this.saveButton = ui.button('Save...', () => {
@@ -33,20 +33,10 @@ export class AdmeticaBaseEditor {
     });
     this.saveButton.classList.add('admetox-save-button');
     
-    this.templatesInput = ui.input.choice('Template', {onValueChanged: async () =>  {
-      if (settingsOpened)
-        await this.createModelsSettingsDiv(this.modelsSettingsDiv);
-    }}) as DG.ChoiceInput<string>;
+    this.templatesInput = ui.input.choice('Template', {
+      onValueChanged: async () =>  await this.createModelsSettingsDiv(this.modelsSettingsDiv)
+    }) as DG.ChoiceInput<string>;
 
-    this.modelsSettingsIcon = ui.icons.settings(async () => {
-      settingsOpened = !settingsOpened;
-      if (settingsOpened)
-        await this.createModelsSettingsDiv(this.modelsSettingsDiv);
-      else
-        ui.empty(this.modelsSettingsDiv);
-    }, 'Modify template parameters');
-    this.templatesInput.root.prepend(this.modelsSettingsIcon);
-    let settingsOpened = false;
     this.initTemplates();
   }
   
