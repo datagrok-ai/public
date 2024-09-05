@@ -18,8 +18,8 @@ import {
 function getGroupInput(codeMirror: CodeMirror.EditorFromTextArea, type: string): HTMLElement {
   const items = tags[type];
   const inp = ui.input.choice('See snippets:', {value: items.length ? items[0] : null, items: items,
-    onValueChanged: async (input) => {
-      const snippets = await loadSnippets(type, input.value);
+    onValueChanged: async (inp, value) => {
+      const snippets = await loadSnippets(type, value);
       const container = $('.dt-dev-pane-container > .dt-snippet-section');
       container.empty();
       container.append(formSnippetSection(codeMirror, snippets));

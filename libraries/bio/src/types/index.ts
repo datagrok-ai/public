@@ -1,5 +1,3 @@
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {Observable} from 'rxjs';
@@ -79,6 +77,7 @@ export interface IMonomerLib {
   getMonomerSymbolsByType(polymerType: PolymerType): string[];
   getPolymerTypes(): PolymerType[];
   update(lib: IMonomerLib): void;
+  toJSON(): Monomer[];
   get onChanged(): Observable<any>;
 
   /** Summary string with lib monomer count by type

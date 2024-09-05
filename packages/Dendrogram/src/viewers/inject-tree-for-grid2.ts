@@ -72,18 +72,18 @@ export function injectTreeForGridUI2(
 
     treeNb.root!.appendChild(cutSlider.root);
 
-    cutSlider.onChanged(() => {
+    cutSlider.onChanged.subscribe((value) => {
       // console.debug('Dendrogram: injectTreeToGrid() cutSlider.onChanged() ' + `${cutSlider!.value}`);
       // th.cutTreeToGrid(newickRoot, cutSlider!.value!, grid.dataFrame, leafColName, 'Cluster');
 
       const t1 = Date.now();
-      th.treeCutAsTree(treeRoot, cutSlider!.value!, true);
+      th.treeCutAsTree(treeRoot, value!, true);
       const t2 = Date.now();
       console.debug('Dendrogram: injectTreeForGrid() cutSlider.onChanged() treeCutAsTree() ' +
         `ET: ${((t2 - t1) / 1000).toString()}`);
 
       const newickRootCopy = JSON.parse(JSON.stringify(treeRoot));
-      const newickRootCutted = th.treeCutAsTree(newickRootCopy, cutSlider!.value!);
+      const newickRootCutted = th.treeCutAsTree(newickRootCopy, value!);
       th.markClusters(newickRootCutted as NodeCuttedType, cut.dataDf, leafColName ?? null, cut.clusterColName);
       th.buildClusters(newickRootCutted as NodeCuttedType, cut.clusterDf, cut.clusterColName, leafColName);
 

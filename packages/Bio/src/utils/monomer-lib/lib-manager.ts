@@ -83,6 +83,20 @@ export class MonomerLibManager implements IMonomerLibHelper {
     return this._monomerSets;
   }
 
+  /** Object containing symbols for each type of polymer where duplicate monomers are found in different libs (based on symbol as key) */
+  get duplicateMonomers() {
+    return this._monomerLib.duplicateMonomers;
+  }
+
+  /** Returns true if all duplicate monomers are assigned preferences (which library they are coming from) */
+  get duplicatesHandled() {
+    return this._monomerLib.duplicatesHandled;
+  }
+
+  assignDuplicatePreferances(settings: UserLibSettings) {
+    this._monomerLib.assignDuplicatePreferances(settings);
+  }
+
   /** Instance promise of {@link getFileManager} */
   private _fileManagerPromise?: Promise<MonomerLibFileManager>;
 

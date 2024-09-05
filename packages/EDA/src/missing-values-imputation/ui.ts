@@ -85,23 +85,22 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
   // In-place components
   let inPlace = DEFAULT.IN_PLACE > 0;
   const inPlaceInput = ui.input.bool(TITLE.IN_PLACE, {value: inPlace,
-    onValueChanged: () => {inPlace = inPlaceInput.value ?? false;}});
+    onValueChanged: (inp, value) => {inPlace = value ?? false;}});
   inPlaceInput.setTooltip(HINT.IN_PLACE);
 
   // Keep empty feature
   let keepEmpty = DEFAULT.KEEP_EMPTY > 0;
   const keepEmptyInput = ui.input.bool(TITLE.KEEP_EMPTY, {value: keepEmpty,
-    onValueChanged: () => {keepEmpty = keepEmptyInput.value ?? false;}});
+    onValueChanged: (inp, value) => {keepEmpty = value ?? false;}});
   keepEmptyInput.setTooltip(HINT.KEEP_EMPTY);
 
   // Neighbors components
   let neighbors = DEFAULT.NEIGHBORS;
-  const neighborsInput = ui.input.int(TITLE.NEIGHBORS, {value: neighbors, onValueChanged: () => {
-    const val = neighborsInput.value;
-    if (val === null)
+  const neighborsInput = ui.input.int(TITLE.NEIGHBORS, {value: neighbors, onValueChanged: (inp, value) => {
+    if (value === null)
       neighborsInput.value = neighbors;
-    else if (val >= MIN_NEIGHBORS)
-      neighbors = val;
+    else if (value >= MIN_NEIGHBORS)
+      neighbors = value;
     else
       neighborsInput.value = neighbors;
   }});
@@ -112,21 +111,21 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
   const distTypeInput: DG.ChoiceInput<DISTANCE_TYPE> = ui.input.choice(TITLE.DISTANCE, {
     value: distType,
     items: [DISTANCE_TYPE.EUCLIDEAN, DISTANCE_TYPE.MANHATTAN],
-    onValueChanged: () => distType = distTypeInput.value ?? DISTANCE_TYPE.EUCLIDEAN}) as DG.ChoiceInput<DISTANCE_TYPE>;
+    onValueChanged: (inp, value) => distType = value ?? DISTANCE_TYPE.EUCLIDEAN}) as DG.ChoiceInput<DISTANCE_TYPE>;
   distTypeInput.setTooltip(HINT.DISTANCE);
 
   // Target columns components (cols with missing values to be imputed)
   let targetColNames = colsWithMissingVals.map((col) => col.name);
-  const targetColInput = ui.input.columns(TITLE.COLUMNS, {table: df, value: df.columns.byNames(availableTargetColsNames), onValueChanged: () => {
-    targetColNames = targetColInput.value.map((col) => col.name);
+  const targetColInput = ui.input.columns(TITLE.COLUMNS, {table: df, value: df.columns.byNames(availableTargetColsNames), onValueChanged: (inp, value) => {
+    targetColNames = value.map((col) => col.name);
     checkApplicability();
   }, available: availableTargetColsNames});
   targetColInput.setTooltip(HINT.TARGET);
 
   // Feature columns components
   let selectedFeatureColNames = availableFeatureColsNames as string[];
-  const featuresInput = ui.input.columns(TITLE.FEATURES, {value: df.columns.byNames(availableFeatureColsNames), table: df, onValueChanged: () => {
-    selectedFeatureColNames = featuresInput.value.map((col) => col.name);
+  const featuresInput = ui.input.columns(TITLE.FEATURES, {value: df.columns.byNames(availableFeatureColsNames), table: df, onValueChanged: (inp, value) => {
+    selectedFeatureColNames = value.map((col) => col.name);
 
     if (selectedFeatureColNames.length > 0) {
       checkApplicability();
@@ -185,9 +184,9 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
 
     // distance input
     const distTypeInput = ui.input.choice(name, {value: settings.defaultMetric,
-      items: settings.availableMetrics, onValueChanged: () => {
+      items: settings.availableMetrics, onValueChanged: (inp, value) => {
         const distInfo = featuresMetrics.get(name) ?? {weight: settings.defaultWeight, type: settings.defaultMetric};
-        distInfo.type = distTypeInput.value ?? settings.defaultMetric;
+        distInfo.type = value ?? settings.defaultMetric;
         featuresMetrics.set(name, distInfo);
       }});
     distTypeInput.root.style.width = '50%';
@@ -206,9 +205,9 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
     });
     const weightInput = ui.input.forProperty(prop);
     weightInput.value = settings.defaultWeight;
-    weightInput.onChanged(() => {
+    weightInput.onChanged.subscribe((value) => {
       const distInfo = featuresMetrics.get(name) ?? {weight: settings.defaultWeight, type: settings.defaultMetric};
-      distInfo.weight = weightInput.value ?? settings.defaultWeight;
+      distInfo.weight = value ?? settings.defaultWeight;
       featuresMetrics.set(name, distInfo);
     });
     weightInput.setTooltip(HINT.WEIGHT);

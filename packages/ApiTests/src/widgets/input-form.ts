@@ -211,11 +211,11 @@ category('Widgets: InputForm API', () => {
   });
 
   test('source funccall replacement', async () => {
-    newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
+    newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest2')).prepare();
     form.source = newFuncCall;
     updateInputs();
 
-    expect(inputs['stringInput'].value, 'test');
+    expect(inputs['stringInput'].value, 'test2');
     expect(inputs['intInput'].value, 3);
     expect(inputs['doubleInput'].value, 3.14);
     expect(inputs['boolInput'].value, true);

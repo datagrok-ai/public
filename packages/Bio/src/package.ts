@@ -56,7 +56,8 @@ import {saveAsFastaUI} from './utils/save-as-fasta';
 import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 import {WebLogoViewer} from './viewers/web-logo-viewer';
 import {MonomerLibManager} from './utils/monomer-lib/lib-manager';
-import {getMonomerLibraryManagerLink, showManageLibrariesDialog} from './utils/monomer-lib/library-file-manager/ui';
+import {getMonomerLibraryManagerLink, showManageLibrariesDialog,
+  showManageLibrariesView} from './utils/monomer-lib/library-file-manager/ui';
 import {demoBio01UI} from './demo/bio01-similarity-diversity';
 import {demoBio01aUI} from './demo/bio01a-hierarchical-clustering-and-sequence-space';
 import {demoBio01bUI} from './demo/bio01b-hierarchical-clustering-and-activity-cliffs';
@@ -79,8 +80,9 @@ import {GetRegionFuncEditor} from './utils/get-region-func-editor';
 import {sequenceToMolfile} from './utils/sequence-to-mol';
 import {detectMacromoleculeProbeDo} from './utils/detect-macromolecule-probe';
 import {CyclizedNotationProvider} from './utils/cyclized';
+import {DimerizedNotationProvider} from './utils/dimerized';
 import {getMolColumnFromHelm} from './utils/helm-to-molfile/utils';
-import {PackageSettingsEditorWidget} from './widgets/package-settings-editor-widget';
+import {MonomerManager} from './utils/monomer-lib/monomer-manager/monomer-manager';
 import {calculateScoresWithEmptyValues} from './utils/calculate-scores';
 import {SeqHelper} from './utils/seq-helper/seq-helper';
 
@@ -266,7 +268,7 @@ export function SplitToMonomersEditor(call: DG.FuncCall): void {
 //input: funccall call
 export function SequenceSpaceEditor(call: DG.FuncCall) {
   const funcEditor = new DimReductionBaseEditor({semtype: DG.SEMTYPE.MACROMOLECULE});
-  ui.dialog({title: 'Sequence Space'})
+  const dialog = ui.dialog({title: 'Sequence Space'})
     .add(funcEditor.getEditor())
     .onOK(async () => {
       const params = funcEditor.getParams();
@@ -280,8 +282,9 @@ export function SequenceSpaceEditor(call: DG.FuncCall) {
         preprocessingFunction: params.preprocessingFunction,
         clusterEmbeddings: params.clusterEmbeddings,
       }).call();
-    })
-    .show();
+    });
+  dialog.history(() => ({editorSettings: funcEditor.getStringInput()}), (x: any) => funcEditor.applyStringInput(x['editorSettings']));
+  dialog.show();
 }
 
 //name: SeqActivityCliffsEditor
@@ -289,7 +292,7 @@ export function SequenceSpaceEditor(call: DG.FuncCall) {
 //input: funccall call
 export function SeqActivityCliffsEditor(call: DG.FuncCall) {
   const funcEditor = new ActivityCliffsEditor({semtype: DG.SEMTYPE.MACROMOLECULE});
-  ui.dialog({title: 'Activity Cliffs'})
+  const dialog = ui.dialog({title: 'Activity Cliffs'})
     .add(funcEditor.getEditor())
     .onOK(async () => {
       const params = funcEditor.getParams();
@@ -303,7 +306,9 @@ export function SeqActivityCliffsEditor(call: DG.FuncCall) {
         preprocessingFunction: params.preprocessingFunction,
         options: params.options,
       }).call();
-    }).show();
+    });
+  dialog.history(() => ({editorSettings: funcEditor.getStringInput()}), (x: any) => funcEditor.applyStringInput(x['editorSettings']));
+  dialog.show();
 }
 
 // -- Package settings editor --
@@ -377,7 +382,7 @@ export function macromoleculeDifferenceCellRenderer(): MacromoleculeDifferenceCe
 //output: object res
 export function sequenceAlignment(alignType: string, alignTable: string, gap: number, seq1: string, seq2: string) {
   const toAlign = new SequenceAlignment(seq1, seq2, gap, alignTable);
-  const res = alignType == 'Local alignment' ? toAlign.smithWaterman() : toAlign.needlemanWunch();
+  const res = alignType == 'Local alignment' ? toAlign.smithWaterman() : toAlign.needlemanWunsch();
   return res;
 }
 
@@ -416,6 +421,14 @@ export function getRegion(
 ): DG.Column<string> {
   return getRegionDo(sequence,
     start ?? null, end ?? null, name ?? null);
+}
+
+//top-menu: Bio | Manage | Monomers
+//name: manageMonomersView
+//description: Edit and create monomers
+export async function manageMonomersView() {
+  const monomerManager = await MonomerManager.getInstance();
+  await monomerManager.getViewRoot();
 }
 
 //top-menu: Bio | Convert | Get Region...
@@ -575,14 +588,16 @@ export async function helmPreprocessingFunction(
 //input: func preprocessingFunction {optional: true}
 //input: object options {optional: true}
 //input: bool clusterEmbeddings = true { optional: true }
+//input: bool isDemo {optional: true}
 //output: viewer result
 //editor: Bio:SequenceSpaceEditor
 export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column,
   methodName: DimReductionMethods, similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames,
   plotEmbeddings: boolean, preprocessingFunction?: DG.Func, options?: (IUMAPOptions | ITSNEOptions) & Options,
-  clusterEmbeddings?: boolean
+  clusterEmbeddings?: boolean, isDemo?: boolean
 ): Promise<DG.ScatterPlotViewer | undefined> {
-  const tableView = grok.shell.tv.dataFrame == table ? grok.shell.tv : undefined;
+  const tableView = isDemo ? (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView :
+    grok.shell.tv.dataFrame == table ? grok.shell.tv : undefined;
   if (!checkInputColumnUI(molecules, 'Sequence Space'))
     return;
   if (!preprocessingFunction)
@@ -904,11 +919,16 @@ export async function sequenceSimilarityScoring(
 }
 
 
-//top-menu: Bio | Manage | Monomer Libraries
 //name: Manage Monomer Libraries
 //description: Manage HELM monomer libraries
 export async function manageMonomerLibraries(): Promise<void> {
   showManageLibrariesDialog();
+}
+
+//top-menu: Bio | Manage | Monomer Libraries
+//name: Manage Monomer Libraries View
+export async function manageLibrariesView(): Promise<void> {
+  await showManageLibrariesView();
 }
 
 //name: saveAsFasta
@@ -1111,4 +1131,11 @@ export function getMolFromHelm(
 //input: string separator
 export function applyNotationProviderForCyclized(col: DG.Column<string>, separator: string) {
   col.temp[SeqTemps.notationProvider] = new CyclizedNotationProvider(separator);
+}
+
+//name: applyNotationProviderForDimerized
+//input: column col
+//input: string separator
+export function applyNotationProviderForDimerized(col: DG.Column<string>, separator: string) {
+  col.temp[SeqTemps.notationProvider] = new DimerizedNotationProvider(separator);
 }

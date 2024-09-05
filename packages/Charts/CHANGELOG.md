@@ -1,5 +1,11 @@
 # Charts changelog
 
+## 1.3.5 (2024-08-30)
+
+### Features
+
+* Charts: Sunburst: Speed up
+
 ## 1.3.4 (2024-08-23)
 
 ### Bug Fixes

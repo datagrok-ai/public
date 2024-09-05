@@ -395,8 +395,8 @@ export function createInputForProperty(property: any) {
   const key = property.property.name as keyof typeof property.object;
   input.value = property.object[key];
   input.addCaption('');
-  input.onChanged(() => {
-    property.object[key] = input.value;
+  input.onChanged.subscribe((value) => {
+    property.object[key] = value;
   });
   return input.root;
 }

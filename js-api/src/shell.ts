@@ -11,9 +11,10 @@ import { FuncCall } from "./functions";
 import { SettingsInterface } from './api/xamgle.api.g';
 import {IDartApi} from "./api/grok_api.g";
 import {ComponentBuildInfo, Dapi} from "./dapi";
+import {UserSettingsStorage} from "./user_settings_storage";
 
 declare let ui: any;
-declare let grok: { shell: Shell, dapi: Dapi };
+declare let grok: { shell: Shell, dapi: Dapi, userSettings:  UserSettingsStorage};
 const api: IDartApi = <any>window;
 
 class AppBuildInfo {

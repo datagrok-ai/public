@@ -88,7 +88,7 @@ jobs:
               MATRIX_PUBLISH_JSON+=", \"unpublished_deps\": \"$unpublished_deps\""
               if [[ "${{ github.event_name }}" != "pull_request" ]]; then
                 if [[ $npm_version != ${current_version} ]]; then
-                  if [[ $unpublished_deps == "" ]]; then
+                  if [[ $unpublished_deps == "" ]] && [[ ${{ github.ref }} == 'refs/heads/master' ]]; then
                     MATRIX_PUBLISH_JSON+=", \"publish\": \"publish\""
                     packages=$(grep -l "$name" packages/*/package.json | awk -F'/' '{printf ("%s ", $2)}' | sort -u)
                     MATRIX_PUBLISH_JSON+=", \"packages\": \"$packages\""
@@ -197,23 +197,21 @@ jobs:
         working-directory: libraries/${{ matrix.project }}
       - run: npm install
         working-directory: libraries/${{ matrix.project }}
-      - run: npm run test
-        working-directory: libraries/${{ matrix.project }}
-        if: ${{ matrix.test == 'test' }}
       - run: npm run build
         working-directory: libraries/${{ matrix.project }}
         if: ${{ matrix.build == 'build' }}
-      - name: Install datagrok tools
-        id: datagrok-tools
+      - id: datagrok-tools
         run: npm install -g datagrok-tools@latest
-      - name: grok check
-        run: grok check
+      - run: grok check
         id: grok_check
         working-directory: libraries/${{ matrix.project }}
+      - run: npm run test
+        working-directory: libraries/${{ matrix.project }}
+        if: ${{ matrix.test == 'test' }}
       - name: npm publish
         id: publish
         run: npm publish --access public
-        if: matrix.publish == 'publish' && github.ref == 'refs/heads/master'
+        if: matrix.publish == 'publish'
         working-directory: libraries/${{ matrix.project }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -3,12 +3,13 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 
-import { colors, CRITICALFAIL, MINORFAIL, BLOCKFAIL, getIcon, getStatusIcon, PASSED, SKIPPED, Status, errorSeverityLevels, errorSeverityLevelJiraNames } from './utils';
+import { colors, CRITICALFAIL, MINORFAIL, BLOCKFAIL, getIcon, getStatusIcon, PASSED, SKIPPED, Status, errorSeverityLevels, errorSeverityLevelJiraNames, TicketPriorityLevel as ticketPriorityLevel } from './utils';
 import { _package } from '../package';
 import { testViewer } from '@datagrok-libraries/utils/src/test';
 import { Subscription } from 'rxjs';
 
 const NEW_TESTING = 'New Testing';
+const BATCHNAME_STORAGE_KEY = 'Datagrok/UsageAnalysis/TestTrack/BatchName';
 
 interface TestCase extends Options {
   name: string;
@@ -89,7 +90,7 @@ export class TestTrack extends DG.ViewBase {
   constructor(testingName?: string) {
     super();
     this.name = 'Test Track';
-    this.testingName = testingName ?? '';
+    this.testingName = testingName ?? localStorage.getItem(BATCHNAME_STORAGE_KEY) ?? '';
     this.root.classList.add('test-track');
     this.path = '/TestTrack';
     this.tree = ui.tree();
@@ -188,10 +189,10 @@ export class TestTrack extends DG.ViewBase {
     let searchInvoked = false
 
     //searchInput
-    this.searchInput.onChanged(() => {
+    this.searchInput.onChanged.subscribe((value) => {
       // this._searchItem();
-      if (this.searchInput.value.length > 0) {
-        this.searchTreeItems(this.searchInput.value);
+      if (value.length > 0) {
+        this.searchTreeItems(value);
         searchInvoked = true;
       }
       else if (searchInvoked) {
@@ -226,8 +227,7 @@ export class TestTrack extends DG.ViewBase {
       }
       const reason: string = row.get('reason');
       const user = await grok.dapi.users.find(row.get('uid'));
-      const icon = status ? ui.div(getStatusIcon(status)) : ui.div();
-      let reasonTooltipValue = ui.div(this.getReason(reason ?? ''));
+      const icon = status ? ui.div(getStatusIcon(status)) : ui.div(); 
 
       let reasonList;
       if (this.hasAnyLink(reason || '')) {
@@ -245,7 +245,7 @@ export class TestTrack extends DG.ViewBase {
 
       this.map[path] = {
         name: '', path, text: ui.markdown(''), status, history: ui.divH([], 'tt-history'),
-        icon: icon, reason: ui.div((reason.includes("\n") ? reasonList : reasonTooltipValue), 'tt-reason'), fullReason: reason, datasets: [], projects: [], layouts: [],
+        icon: icon, reason: ui.div((reason.includes("\n") ? reasonList : ui.div(this.getReason(reason ?? ''))), 'tt-reason'), fullReason: reason, datasets: [], projects: [], layouts: [],
       };
       const map: StatusInfo = {
         'User': user,
@@ -254,7 +254,7 @@ export class TestTrack extends DG.ViewBase {
         'Batch': nameP.toString()
       };
       if (reason)
-        map['Reason'] = reasonTooltipValue;
+        map['Reason'] = ui.div(this.getReason(reason ?? ''));
       ui.tooltip.bind(icon, () => ui.tableFromMap(map));
     }
 
@@ -331,14 +331,12 @@ export class TestTrack extends DG.ViewBase {
     ec.classList.add('tt-ribbon-button');
     const refresh = ui.button(getIcon('sync-alt', { style: 'fas' }), async () => await this.refresh(), 'Refresh');
     refresh.classList.add('tt-ribbon-button');
-    ec.classList.add('tt-ribbon-button');
-    const start = ui.button(getIcon('plus', { style: 'fas' }), async () => await this.showStartNewTestingDialog(), 'Select testing');
-    start.classList.add('tt-ribbon-button');
+    ec.classList.add('tt-ribbon-button'); 
     this.testingName = (await nameP) ?? NEW_TESTING;
-    this.nameDiv.innerText = this.testingName;
-    this.nameDiv.oncontextmenu = (e) => {
-      this.showEditTestingNameDialog();
-      e.preventDefault();
+    this.nameDiv.innerText = this.testingName; 
+    this.nameDiv.classList.add('tt-ribbon-name-button');
+    this.nameDiv.onclick = async ()=>{
+      this.showStartNewTestingDialog();
     };
     this.pauseReportSync = ui.button(getIcon('pause', { style: 'fas' }), () => {
       this.runReportSync!.style.display = 'block';
@@ -358,7 +356,7 @@ export class TestTrack extends DG.ViewBase {
     this.pauseReportSync.style.display = 'none';
     this.isReporting = false;
 
-    const ribbon = ui.divH([gh, report, ec, refresh, loadBtn, start, this.pauseReportSync, this.runReportSync, this.nameDiv]);
+    const ribbon = ui.divH([gh, report, ec, refresh, loadBtn, this.pauseReportSync, this.runReportSync, this.nameDiv]);
     ribbon.style.flexGrow = '0';
 
     // Test case div
@@ -374,7 +372,7 @@ export class TestTrack extends DG.ViewBase {
     this.root.style.padding = '0';
     grok.shell.dockManager.dock(this.root, DG.DOCK_TYPE.LEFT, null, this.name, 0.3);
 
-    this.isInitializing = false;
+    this.isInitializing = false; 
   }
 
   private addOnTestTrackCaseSubscription() {
@@ -654,13 +652,14 @@ export class TestTrack extends DG.ViewBase {
 
   updateGroupStatus(group: DG.TreeViewGroup): void {
     group.value.icon.innerHTML = '';
-    const statuses = group.value.children.map((el: TestCase | Category) => el.status);
-    if (statuses.includes(null)) {
-      group.value.status = null;
-      return;
-    }
+    const statuses = group.value.children.map((el: TestCase | Category) => el.status); 
+
     const status = errorSeverityLevels.some((e) => statuses.includes(e)) ? CRITICALFAIL : statuses.includes(SKIPPED) ? SKIPPED : PASSED;
     group.value.status = status;
+    if(status === PASSED && statuses.some((e: any) => e == undefined)){
+      group.value.status = null;
+      return
+    }
     const icon = getStatusIcon(status);
     group.value.icon.append(icon);
   }
@@ -716,6 +715,9 @@ export class TestTrack extends DG.ViewBase {
               this.testingName.replaceAll(' ', '_'),
               this.version
             ],
+            'priority': {
+            'name': ticketPriorityLevel[errorTypeSelector.value]
+            }
           },
         }),
         'updateHistory': false,
@@ -731,13 +733,8 @@ export class TestTrack extends DG.ViewBase {
         createTicketBtn.disabled = false;
       });
     })
-    ticketSummary.onChanged(() => {
-      if (ticketSummary.value.length === 0) {
-        createTicketBtn.disabled = true;
-      }
-      else {
-        createTicketBtn.disabled = false;
-      }
+    ticketSummary.onChanged.subscribe((value) => {
+      createTicketBtn.disabled = value.length === 0;
     })
 
     createTicketBtn.classList.add('create-ticket-button');
@@ -745,9 +742,9 @@ export class TestTrack extends DG.ViewBase {
 
 
     if (errorSeverityLevels.includes(status)) {
-      errorTypeSelector.onChanged((e: any) => {
-        if (errorTypeSelector.value !== null)
-          status = errorTypeSelector.value;
+      errorTypeSelector.onChanged.subscribe((value) => {
+        if (value !== null)
+          status = value;
       });
       dialog.add(errorTypeSelector);
     }
@@ -906,9 +903,9 @@ export class TestTrack extends DG.ViewBase {
     const versionSelector = ui.input.choice('Available tests:', { value: testingToOpen[0], items: testingToOpen.map((e) => e.toString()), nullable: false });
     if (testingToOpen.length === 0)
       versionSelector.nullable = true;
-    check.onChanged(() => {
-      versionSelector.enabled = !check.value;
-      newNameInput.enabled = check.value;
+    check.onChanged.subscribe((value) => {
+      versionSelector.enabled = !value;
+      newNameInput.enabled = value;
     });
     newNameInput.enabled = false;
     dialog.add(check);
@@ -937,6 +934,7 @@ export class TestTrack extends DG.ViewBase {
       else {
         grok.shell.error('Testing Name is not valid');
       }
+      localStorage.setItem(BATCHNAME_STORAGE_KEY, this.testingName);
     });
     dialog.show();
     const okButton = dialog.root.getElementsByClassName("d4-dialog-footer")[0].getElementsByClassName('ui-btn-ok')[0];

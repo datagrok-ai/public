@@ -497,9 +497,9 @@ class Editor {
     const item = this.items[itemIdx];
 
     const ibFormula = ui.input.textArea('', {value: item.formula ?? '',
-      onValueChanged: (input) => {
+      onValueChanged: (inp, value) => {
         const oldFormula = item.formula!;
-        item.formula = input.value;
+        item.formula = value;
         const resultOk = this._onItemChangedAction(itemIdx);
         elFormula.classList.toggle('d4-forced-invalid', !resultOk);
         this._setTitleIfEmpty(oldFormula, item.formula);
@@ -520,8 +520,8 @@ class Editor {
     const item = this.items[itemIdx];
 
     const ibColor = ui.input.color('Color', {value: item.color ?? '#000000',
-      onValueChanged: (input) => {
-        item.color = input.value;
+      onValueChanged: (inp, value) => {
+        item.color = value;
         this._onItemChangedAction(itemIdx);
       }});
 
@@ -558,8 +558,8 @@ class Editor {
     const item = this.items[itemIdx];
 
     const ibStyle = ui.input.choice('Style', {value: item.style ?? 'solid',
-      items: ['solid', 'dotted', 'dashed', 'longdash', 'dotdash'], onValueChanged: (input) => {
-        item.style = input.value;
+      items: ['solid', 'dotted', 'dashed', 'longdash', 'dotdash'], onValueChanged: (inp, value) => {
+        item.style = value;
         this._onItemChangedAction(itemIdx);
       }});
 
@@ -567,8 +567,8 @@ class Editor {
     //elStyle.style.width = '135px';
 
     const ibWidth = ui.input.int('', {value: item.width ?? 1,
-      onValueChanged: (input) => {
-        item.width = input.value;
+      onValueChanged: (inp, value) => {
+        item.width = value;
         this._onItemChangedAction(itemIdx);
       }});
     ibWidth.addPostfix('px');
@@ -587,8 +587,8 @@ class Editor {
     const item = this.items[itemIdx];
 
     const ibMin = ui.input.string('Range', {value: `${item.min ?? ''}`,
-      onValueChanged: (input) => {
-        item.min = input.value.length === 0 ? undefined : Number(input.value);
+      onValueChanged: (inp, value) => {
+        item.min = value.length === 0 ? undefined : Number(value);
         this._onItemChangedAction(itemIdx);
       }});
 
@@ -597,8 +597,8 @@ class Editor {
     elMin.setAttribute('style', 'width: 98px;');
 
     const ibMax = ui.input.string('', {value: `${item.max ?? ''}`,
-      onValueChanged: (input) => {
-        item.max = input.value.length === 0 ? undefined : Number(input.value);
+      onValueChanged: (inp, value) => {
+        item.max = value.length === 0 ? undefined : Number(value);
         this._onItemChangedAction(itemIdx);
       }});
 
@@ -615,8 +615,8 @@ class Editor {
 
     const ibArrange = ui.input.choice('Arrange', {
       value: item.zIndex && item.zIndex > 0 ? 'above markers' : 'below markers', items: ['above markers', 'below markers'],
-      onValueChanged: (input) => {
-        item.zIndex = input.value === 'above markers' ? 100 : -100;
+      onValueChanged: (inp, value) => {
+        item.zIndex = value === 'above markers' ? 100 : -100;
         this._onItemChangedAction(itemIdx);
       }});
 
@@ -641,8 +641,8 @@ class Editor {
     }
 
     this._ibTitle = ui.input.string('Title', {value: item.title ?? '',
-      onValueChanged: (input) => {
-        item.title = formTitleValue(input.value);
+      onValueChanged: (inp, value) => {
+        item.title = formTitleValue(value);
         this._onItemChangedAction(itemIdx);
       }});
 
@@ -658,8 +658,8 @@ class Editor {
     const item = this.items[itemIdx];
 
     const iShowLabels = ui.input.bool('Show on plot', {value: item.showOnPlot ?? true,
-      onValueChanged: (input) => {
-        item.showOnPlot = input.value;
+      onValueChanged: (inp, value) => {
+        item.showOnPlot = value;
         this._onItemChangedAction(itemIdx);
       }});
 
@@ -672,8 +672,8 @@ class Editor {
     const item = this.items[itemIdx];
 
     const iShowLabels = ui.input.bool('Show on tooltip', {value: item.showOnTooltip ?? true,
-      onValueChanged: (input) => {
-        item.showOnTooltip = input.value;
+      onValueChanged: (inp, value) => {
+        item.showOnTooltip = value;
         this._onItemChangedAction(itemIdx);
       }});
 
@@ -686,8 +686,8 @@ class Editor {
     const item = this.items[itemIdx];
 
     const ibDescription = ui.input.textArea('Description', {value: item.description ?? '',
-      onValueChanged: (input) => {
-        item.description = input.value;
+      onValueChanged: (inp, value) => {
+        item.description = value;
         this._onItemChangedAction(itemIdx);
       }});
 
@@ -705,8 +705,8 @@ class Editor {
 
     //@ts-ignore
     const ibColumn2 = ui.input.column('Adjacent column', {table: this._dataFrame, value: item.column2 ? this._dataFrame.col(item.column2) : null,
-      onValueChanged: (input) => {
-        item.column2 = input.value.name;
+      onValueChanged: (inp, value) => {
+        item.column2 = value.name;
         this._onItemChangedAction(itemIdx);
       }});
 
@@ -722,9 +722,9 @@ class Editor {
 
     //@ts-ignore
     const ibColumn = ui.input.column('Column', {table: this._dataFrame, value: colName ? this._dataFrame.col(colName) : null,
-      onValueChanged: (input) => {
+      onValueChanged: (inp, value) => {
         const oldFormula = item.formula!;
-        item.formula = '${' + input.value + '} = ' + ibValue.value;
+        item.formula = '${' + value + '} = ' + ibValue.value;
         this._onItemChangedAction(itemIdx);
         this._setTitleIfEmpty(oldFormula, item.formula);
       }});
@@ -732,9 +732,9 @@ class Editor {
     const elColumn = ibColumn.input as HTMLInputElement;
     //elColumn.setAttribute('style', 'width: 204px; max-width: none; margin-right: -10px;');
 
-    const ibValue = ui.input.string('Value', {value: value, onValueChanged: (input) => {
+    const ibValue = ui.input.string('Value', {value: value, onValueChanged: (inp, value) => {
       const oldFormula = item.formula!;
-      item.formula = '${' + ibColumn.value + '} = ' + input.value;
+      item.formula = '${' + ibColumn.value + '} = ' + value;
       this._onItemChangedAction(itemIdx);
       this._setTitleIfEmpty(oldFormula, item.formula);
     }});

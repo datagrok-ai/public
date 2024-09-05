@@ -50,11 +50,11 @@ export class StudyConfigurationView extends ClinicalCaseViewBase {
 
         Object.keys(this.choices).forEach(field => {
             let fieldChoices = ui.input.choice(`${field}`, {value: this.choices[field][0], items: this.choices[field]});
-            fieldChoices.onChanged((v) => {
+            fieldChoices.onChanged.subscribe((value) => {
                 Object.keys(VIEWS_CONFIG).forEach(view => {
-                    this.globalStudyConfig[field] = fieldChoices.value;
+                    this.globalStudyConfig[field] = value;
                     if (VIEWS_CONFIG[view][field]) {
-                        VIEWS_CONFIG[view][field] = fieldChoices.value;
+                        VIEWS_CONFIG[view][field] = value;
                         let obj = grok.shell.view(view) as any;
                         if (obj) {
                             if (obj.hasOwnProperty('loaded')) {

@@ -4,13 +4,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
-import wu from 'wu';
-import {Unsubscribable} from 'rxjs';
 
-import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
-import {HelmAtom, HelmMol} from '@datagrok-libraries/bio/src/helm/types';
-// import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 
 import {RuleInputs, RULES_PATH, RULES_STORAGE_NAME} from './pt-rules';
 import {addTransformedColumn} from './pt-conversion';
@@ -18,75 +13,13 @@ import {addTransformedColumn} from './pt-conversion';
 import {handleError} from './utils';
 import {defaultErrorHandler} from '../utils/err-info';
 import {getLibrariesList} from './utils';
-import {getPtEnumeratorHelm, PT_HELM_EXAMPLE} from './pt-enumeration-helm';
 import {getEnumerationChem, PT_CHEM_EXAMPLE} from './pt-enumeration-chem';
 import {
-  PolyToolEnumeratorParams, PolyToolEnumeratorType, PolyToolEnumeratorTypes, PolyToolPlaceholders
-} from './types';
+  PT_ERROR_DATAFRAME, PT_UI_ADD_HELM, PT_UI_DIALOG_CONVERSION, PT_UI_DIALOG_ENUMERATION,
+  PT_UI_GET_HELM, PT_UI_RULES_USED, PT_UI_USE_CHIRALITY, PT_WARNING_COLUMN
+} from './const';
 
 import {_package} from '../package';
-import {PolyToolPlaceholdersInput} from './pt-placeholders-input';
-import {InputBase} from 'datagrok-api/dg';
-import {PT_ERROR_DATAFRAME, PT_UI_ADD_HELM, PT_UI_DIALOG_CONVERSION, PT_UI_DIALOG_ENUMERATION, PT_UI_GET_HELM, PT_UI_RULES_USED, PT_UI_USE_CHIRALITY, PT_WARNING_COLUMN} from './const';
-import {PolyToolEnumerateDialog} from './pt-enumeration-helm-dialog';
-
-export async function polyToolEnumerateHelmUI(cell?: DG.Cell): Promise<void> {
-  const maxWidth = window.innerWidth;
-  const maxHeight = window.innerHeight;
-
-  try {
-    const resizeInputs = () => {
-      const contentHeight = $(dialog.root).find('div.d4-dialog-contents').get(0)!.clientHeight;
-
-      const fitInputs: { [idx: number]: number } = {1: 1 /*, 3: 0.5*/};
-      const fitInputsSumHeight = Object.values(fitInputs).reduce((sum, h) => sum + h, 0);
-
-      const otherInputsHeight: number = dialog.inputs.filter((input, idx) => !(idx in fitInputs))
-        .map((input) => input.root.offsetHeight).reduce((sum, h) => sum + h, 0);
-      const remainFitHeight = contentHeight - otherInputsHeight - 38;
-      dialog.inputs.forEach((input, idx) => {
-        if (idx in fitInputs) {
-          const inputFitHeight = remainFitHeight * fitInputs[idx] / fitInputsSumHeight;
-          input.root.style.height = `${inputFitHeight}px`;
-        }
-      });
-    };
-    const [dialog, inputs] = await PolyToolEnumerateDialog.create2(cell, resizeInputs);
-
-    let isFirstShow = true;
-    ui.onSizeChanged(dialog.root).subscribe(() => {
-      if (isFirstShow) {
-        const dialogInputList = dialog.inputs;
-        const dialogRootCash = $(dialog.root);
-        const contentMaxHeight = maxHeight
-          - dialogRootCash.find('div.d4-dialog-header').get(0)!.offsetHeight
-          - dialogRootCash.find('div.d4-dialog-footer').get(0)!.offsetHeight;
-
-        // dialog.inputs2.macromolecule.root.style.backgroundColor = '#CCFFCC';
-
-        const dialogWidth = maxWidth * 0.7;
-        const dialogHeight = maxHeight * 0.7;
-
-        // Centered, but resizable dialog
-        dialog.root.style.width = `${Math.min(maxWidth, dialogWidth)}px`;
-        dialog.root.style.height = `${Math.min(maxHeight, dialogHeight)}px`;
-        dialog.root.style.left = `${Math.floor((maxWidth - dialog.root.offsetWidth) / 2)}px`;
-        dialog.root.style.top = `${Math.floor((maxHeight - dialog.root.offsetHeight) / 2)}px`;
-
-        isFirstShow = false;
-      }
-
-      resizeInputs();
-    });
-
-    _package.logger.debug('PolyToolEnumerateHelmUI: dialog before show');
-    const res = dialog.show({width: Math.max(350, maxWidth * 0.7), /* center: true,*/ resizable: true});
-    _package.logger.debug('PolyToolEnumerateHelmUI: dialog after show');
-    const k = 42;
-  } catch (_err: any) {
-    grok.shell.warning('To run PolyTool Enumeration, sketch the macromolecule and select monomers to vary');
-  }
-}
 
 export function polyToolEnumerateChemUI(cell?: DG.Cell): void {
   getPolyToolEnumerationChemDialog(cell)

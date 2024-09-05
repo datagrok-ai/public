@@ -476,8 +476,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     for (let n = 0; n < tableNames.length; ++n)
       tableNames[n] = this.molColumns[n][0].dataFrame.name;
 
-    const currentName = grok.shell.tv.dataFrame.name;
-    const defaultTableName = tableNames.includes(currentName) ? currentName : (tableNames[0] || '');
+    const currentName = grok.shell.tv.dataFrame?.name;
+    const defaultTableName = currentName && tableNames.includes(currentName) ? currentName : (tableNames[0] || '');
     this.Table = this.addProperty('Table', DG.TYPE.DATA_FRAME, defaultTableName, {editor: 'table', category: 'Data'});
 
     this.tableIdx = tableNames.length > 0 ? tableNames.indexOf(this.Table) : -1;
@@ -1658,7 +1658,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const isMolDataset = dataFrame ? dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE) !== null : false;
     if (this.allowGenerate && isMolDataset) {
       this._generateLink!.style.color = '';
-      this._generateLink!.onclick = (e) => this.generateTree();
     }
   }
 
@@ -1964,8 +1963,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   render() {
     const thisViewer = this;
-    this._bitOpInput = ui.input.choice('', {value: BitwiseOp.OR, items: Object.values(BitwiseOp), onValueChanged: v => {
-      thisViewer.bitOperation = v.stringValue;
+    this._bitOpInput = ui.input.choice('', {value: BitwiseOp.OR, items: Object.values(BitwiseOp), onValueChanged: (inp, v) => {
+      thisViewer.bitOperation = v;
       thisViewer.updateFilters();
       this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
     }});

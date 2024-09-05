@@ -55,23 +55,23 @@ export class QuestionnaiesView extends ClinicalCaseViewBase {
     this.updateQuestionGrid();
 
     this.categoriesChoice = ui.input.choice('Category', {value: this.selectedCategory, items: this.qsCategories});
-    this.categoriesChoice.onChanged((v) => {
-      this.selectedCategory = this.categoriesChoice.value;
+    this.categoriesChoice.onChanged.subscribe((value) => {
+      this.selectedCategory = value;
       this.updateSubCategoriesChoice();
       this.updateQuestionGrid();
     });
     this.categoriesChoice.input.style.width = '100px';
 
     this.graphTypesChoice = ui.input.choice('Graph type', {value: this.selectedGraphType, items: this.graphTypes});
-    this.graphTypesChoice.onChanged((v) => {
-      this.selectedGraphType = this.graphTypesChoice.value;
+    this.graphTypesChoice.onChanged.subscribe((value) => {
+      this.selectedGraphType = value;
       this.updateQuestionGrid();
     });
     this.categoriesChoice.input.style.width = '100px';
 
     this.splitByChoice = ui.input.choice('Split By', {value: this.selectedSplitBy, items: this.splitBy});
-    this.splitByChoice.onChanged((v) => {
-      this.selectedSplitBy = this.splitByChoice.value;
+    this.splitByChoice.onChanged.subscribe((value) => {
+      this.selectedSplitBy = value;
       this.updateQuestionGrid();
     });
     this.splitByChoice.input.style.width = '100px';
@@ -106,8 +106,8 @@ export class QuestionnaiesView extends ClinicalCaseViewBase {
     this.updateSubCategories();
     this.selectedSubCategory = this.qsSubCategories[0];
     this.subCategoriesChoice = ui.input.choice('Sub Category', {value: this.selectedSubCategory, items: this.qsSubCategories});
-    this.subCategoriesChoice.onChanged((v) => {
-      this.selectedSubCategory = this.subCategoriesChoice.value;
+    this.subCategoriesChoice.onChanged.subscribe((value) => {
+      this.selectedSubCategory = value;
       this.updateQuestionGrid();
     });
     this.subCategoriesChoice.input.style.width = '150px';

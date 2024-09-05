@@ -1072,7 +1072,7 @@ export class InputBase<T = any> {
   constructor(dart: any, onChanged: any = null) {
     this.dart = dart;
     if (onChanged != null)
-      this.onChanged((_: any) => onChanged(this.value));
+      this.onChanged.subscribe((_) => onChanged(this.value));
   }
 
   /** Creates input for the specified property, and optionally binds it to the specified object */
@@ -1144,14 +1144,10 @@ export class InputBase<T = any> {
   set enabled(v: boolean) { api.grok_InputBase_Set_Enabled(this.dart, v); }
 
   /** Occurs when [value] is changed, either by user or programmatically. */
-  onChanged(callback: Function): StreamSubscription {
-    return _sub(api.grok_InputBase_OnChanged(this.dart, callback));
-  }
+  get onChanged(): Observable<T> { return api.grok_InputBase_OnChanged(this.dart); }
 
   /** Occurs when [value] is changed by user. */
-  onInput(callback: Function): StreamSubscription {
-    return _sub(api.grok_InputBase_OnInput(this.dart, callback));
-  }
+  get onInput(): Observable<Event> { return api.grok_InputBase_OnInput(this.dart); }
 
   /** Saves the value. Used in dialog history. See also {@link load} */
   save(): any {
@@ -1240,7 +1236,7 @@ export class InputForm extends DartWrapper {
 
   getInput(propertyName: string): InputBase { return toJs(api.grok_InputForm_GetInput(this.dart, propertyName)); }
 
-  get source(): any { return api.grok_InputForm_Get_Source(this.dart); };
+  get source(): any { return toJs(api.grok_InputForm_Get_Source(this.dart)); };
 
   set source(source: any) { api.grok_InputForm_Set_Source(this.dart, toDart(source)); };
 

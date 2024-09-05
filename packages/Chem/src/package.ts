@@ -51,7 +51,7 @@ import {chemDiversitySearch, ChemDiversityViewer} from './analysis/chem-diversit
 import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {chemSpace, runChemSpace} from './analysis/chem-space';
 import {RGroupDecompRes, RGroupParams, rGroupAnalysis, rGroupDecomp, loadRGroupUserSettings} from './analysis/r-group-analysis';
-import {MatchedMolecularPairsViewer} from './analysis/molecular-matched-pairs/mmp-viewer';
+import {MatchedMolecularPairsViewer} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
 
 //file importers
 import {_importTripos} from './file-importers/mol2-importer';
@@ -130,7 +130,7 @@ export async function initChem(): Promise<void> {
   _properties = await _package.getProperties();
   _rdRenderer = new RDKitCellRenderer(getRdKitModule());
   renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
-  let storedSketcherType = await grok.dapi.userDataStorage.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY, true);
+  let storedSketcherType = grok.userSettings.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY) ?? '';
   if (PREVIOUS_SKETCHER_NAMES[storedSketcherType])
     storedSketcherType = PREVIOUS_SKETCHER_NAMES[storedSketcherType];
   if (!storedSketcherType && _properties.Sketcher)
@@ -191,7 +191,7 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
 
   divMain.append(divStructures);
   const widget = new DG.Widget(divMain);
-  
+
   Object.assign(widget.root.style, {
     position: 'relative',
     width: `${initialWidth}px`,
@@ -542,7 +542,7 @@ export function SubstructureSearchTopMenu(molecules: DG.Column): void {
 //input: funccall call
 export function ChemSpaceEditor(call: DG.FuncCall): void {
   const funcEditor = new DimReductionBaseEditor({semtype: DG.SEMTYPE.MOLECULE});
-  ui.dialog({title: 'Chemical space'})
+  const dialog = ui.dialog({title: 'Chemical space'})
     .add(funcEditor.getEditor())
     .onOK(async () => {
       const params = funcEditor.getParams();
@@ -556,8 +556,9 @@ export function ChemSpaceEditor(call: DG.FuncCall): void {
         preprocessingFunction: params.preprocessingFunction,
         clusterEmbeddings: params.clusterEmbeddings,
       }).call();
-    })
-    .show();
+    });
+  dialog.history(() => ({editorSettings: funcEditor.getStringInput()}), (x: any) => funcEditor.applyStringInput(x['editorSettings']));
+  dialog.show();
 }
 
 //name: Fingerprints
@@ -805,7 +806,7 @@ export async function rGroupDecomposition(df: DG.DataFrame, molColName: string, 
 //input: funccall call
 export function ActivityCliffsEditor(call: DG.FuncCall): void {
   const funcEditor = new ActivityCliffsFunctionEditor({semtype: DG.SEMTYPE.MOLECULE});
-  ui.dialog({title: 'Activity Cliffs'})
+  const dialog = ui.dialog({title: 'Activity Cliffs'})
     .add(funcEditor.getEditor())
     .onOK(async () => {
       const params = funcEditor.getParams();
@@ -822,7 +823,9 @@ export function ActivityCliffsEditor(call: DG.FuncCall): void {
         }).call(true);
       } else
         grok.shell.error(`Column with activities has not been selected. Table contains no numeric columns.`);
-    }).show();
+    });
+  dialog.history(() => ({editorSettings: funcEditor.getStringInput()}), (x: any) => funcEditor.applyStringInput(x['editorSettings']));
+  dialog.show();
 }
 
 //top-menu: Chem | Analyze | Activity Cliffs...
@@ -1845,7 +1848,7 @@ export async function trainChemprop(
   df: DG.DataFrame, predictColumn: DG.Column, dataset_type: string, metric: string, multiclass_num_classes: number, num_folds: number,
   data_seed: number, split_sizes: any, split_type: string, activation: string, atom_messages: boolean, message_bias: boolean, ensemble_size: number,
   message_hidden_dim: number, depth: number, dropout: number, ffn_hidden_dim: number, ffn_num_layers: number, epochs: number, batch_size: number,
-  warmup_epochs: number, init_lr: number, max_lr: number, final_lr: number, no_descriptor_scaling: boolean
+  warmup_epochs: number, init_lr: number, max_lr: number, final_lr: number, no_descriptor_scaling: boolean,
 ): Promise<Uint8Array> {
   const parameterValues = {
     'dataset_type': dataset_type,
@@ -1870,7 +1873,7 @@ export async function trainChemprop(
     'data_seed': data_seed,
     'split_sizes': split_sizes,
     'split_type': split_type,
-    'warmup_epochs': warmup_epochs
+    'warmup_epochs': warmup_epochs,
   };
   df.columns.add(predictColumn);
   const modelBlob = await trainModelChemprop(df.toCsv(), predictColumn.name, parameterValues);

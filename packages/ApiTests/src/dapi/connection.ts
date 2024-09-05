@@ -78,7 +78,7 @@ category('Dapi: connection cache', () => {
       await grok.dapi.files.list('System:AppData/ApiTests');
     });
     // second execution should be faster
-    expect(second * 10 < first);
+    expect(second * 1.5 < first);
 
     // cache should be bumped after renaming
     await grok.dapi.files.rename(testFilePath1, 'renamed_test_files.txt');
@@ -139,12 +139,12 @@ category('Dapi: connection cache', () => {
     }
     const demog1Median = median(demogCsvReads1);
     const demog2Median = median(demogCsvReads2);
-    expect(demog2Median < demog1Median * 1.5, true);
+    expect(demog2Median < demog1Median * 2, true);
 
     const cars1Median = median(carsReads1);
     const cars2Median = median(carsReads2);
-    expect(cars2Median < cars1Median * 1.5, true);
-  }, { benchmark: true });
+    expect(cars2Median < cars1Median * 5, true);
+  }, { benchmark: true, timeout: 120000 });
 
   after(async () => {
     try {

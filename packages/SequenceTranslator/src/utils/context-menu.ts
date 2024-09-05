@@ -2,11 +2,13 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {defaultErrorHandler} from './err-info';
-import {_package, addContextMenu} from '../package';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {polyToolEnumerateHelmUI} from '../polytool/pt-dialog';
+
+import {defaultErrorHandler} from './err-info';
+import {polyToolEnumerateHelmUI} from '../polytool/pt-enumeration-helm-dialog';
+
+import {_package} from '../package';
 
 export type SequenceTranslatorWindowType = Window & {
   $sequenceTranslator?: {

@@ -1,5 +1,32 @@
 # Bio changelog
 
+## 2.15.0 (2024-09-04)
+
+Monomer manager
+
+### Features
+
+* Add getHelm for Cyclized notation provider
+* Add detector for Dimerized notation provider
+* Add Monomer library manager view with duplicate preferences
+* Add Monomer manager for editing/adding/removing monomers
+
+### Bug fixes
+
+* Fix tests benchmark
+* Fix typo Needleman-Wunsch
+* Fix test flapping benchmark separatorDnaShorts50Few50
+* Fix toAtomicLevel workers error DG is not defined
+
+## 2.14.3 (2024-08-27)
+
+### Bug fixes
+
+* Order Top menu
+* Fix to Atomic Level hide highlight column
+* Fix to Atomic Level for column
+* Bump dependencies version, fix tests
+
 ## 2.14.2 (2024-08-23)
 
 ### Features

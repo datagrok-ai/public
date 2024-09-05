@@ -24,8 +24,8 @@ export class DemoScript {
 
   static currentObject: DemoScript | null = null;
 
-  private _isAutomatic: boolean = false;
-  private _autoStartFirstStep: boolean = false;
+  private readonly _isAutomatic: boolean = false;
+  private readonly _autoStartFirstStep: boolean = false;
   private _currentStep: number = 0;
   private _isStopped: boolean = false;
   private _isCancelled: boolean = false;
@@ -40,11 +40,12 @@ export class DemoScript {
   private _header: HTMLHeadingElement = ui.h2('');
   private _headerDiv: HTMLDivElement = ui.divH([], 'tutorials-root-header');
   private _stopStartBtn: HTMLButtonElement = ui.button(ui.iconFA('pause'),
-    () => this._changeStopState(), 'Play / pause');
-  private _restartBtn: HTMLButtonElement = ui.button(ui.iconFA('redo'), () => this._restartScript(), 'Restart');
-  private _nextStepBtn: HTMLButtonElement = ui.button(ui.iconFA('play'), () => {
+    async () => await this._changeStopState(), 'Play / pause');
+  private _restartBtn: HTMLButtonElement = ui.button(ui.iconFA('redo'),
+    async () => await this._restartScript(), 'Restart');
+  private _nextStepBtn: HTMLButtonElement = ui.button(ui.iconFA('play'), async () => {
     if (!this._isStepProcessed)
-      this._nextStep();
+      await this._nextStep();
   }, 'Next step');
 
   private _activity: HTMLDivElement = ui.panel([], 'tutorials-root-description');
@@ -288,7 +289,7 @@ export class DemoScript {
   }
 
   /** Changes the state of the demo script (stop/play) */
-  private _changeStopState(): void {
+  private async _changeStopState(): Promise<void> {
     const icon = this._stopStartBtn.getElementsByClassName('grok-icon');
     icon[0].className = 'grok-icon fas fa-play';
     this._isStopped = !this._isStopped;
@@ -296,17 +297,16 @@ export class DemoScript {
     if (!this._isStopped) {
       icon[0].className = 'grok-icon fal fa-pause';
       if (!this._isStepProcessed)
-        this._startScript();
+        await this._startScript();
     }
   }
 
   /** Restarts the script */
-  private _restartScript(): void {
+  private async _restartScript(): Promise<void> {
     grok.shell.dockManager.close(this._node!);
-    grok.shell.closeAll();
     this._clearRoot();
     this._setInitParams();
-    this.start();
+    await this.start();
   }
 
   /** Clears the root element */
@@ -373,7 +373,7 @@ export class DemoScript {
     grok.shell.newView(this.name);
 
     if (this._isAutomatic) {
-      this._startScript();
+      await this._startScript();
       return;
     }
 

@@ -1,5 +1,11 @@
 # DevTools changelog
 
+## 1.3.47 (2024-09-02)
+
+### Features
+
+* Update package according js-api updates
+
 ## 1.3.46 (2024-06-26)
 
 ### Bug Fixes

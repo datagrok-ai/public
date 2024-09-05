@@ -10,6 +10,7 @@ import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataProvider;
 import grok_connect.connectors_info.DataQueryRunResult;
 import grok_connect.connectors_info.FuncCall;
+import grok_connect.providers.JdbcDataProvider;
 import grok_connect.table_query.TableQuery;
 import grok_connect.utils.*;
 import org.slf4j.LoggerFactory;
@@ -155,6 +156,23 @@ public class GrokConnect {
                 buildExceptionResponse(response, printError(ex));
             }
             return query;
+        });
+
+        post("/foreign-keys", (request, response) -> {
+            BufferAccessor buffer;
+            DataQueryRunResult result = new DataQueryRunResult();
+            try {
+                DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
+                JdbcDataProvider provider = providerManager.getByName(connection.dataSource);
+                DataFrame dataFrame = provider.getForeignKeys(connection, connection.get("schema"));
+                buffer = packDataFrame(result, dataFrame);
+            } catch (QueryCancelledByUser | GrokConnectException ex) {
+                buffer = packException(result, ex.getClass().equals(GrokConnectException.class)
+                        ? (Exception) ex.getCause() : ex);
+                PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
+            }
+            prepareResponse(result, response, buffer);
+            return response;
         });
 
         post("/schemas", (request, response) -> {

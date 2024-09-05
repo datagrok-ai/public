@@ -1,10 +1,10 @@
 {
   "name": "@datagrok/dev-tools",
   "friendlyName": "DevTools",
-  "version": "1.3.46",
+  "version": "1.3.47",
   "author": {
-    "name": "Anna Muzychyna",
-    "email": "amuzychyna@datagrok.ai"
+    "name": "Savenko Stanislav",
+    "email": "ssavenko@datagrok.ai"
   },
   "description": "Tools for the Datagrok developers (TestManager, DevPanel).",
   "repository": {
@@ -16,7 +16,7 @@
     "@datagrok-libraries/compute-api": "^0.0.5",
     "@datagrok-libraries/utils": "^4.2.29",
     "codemirror": "^5.65.15",
-    "datagrok-api": "^1.20.0",
+    "datagrok-api": "../../js-api",
     "rxjs": "^6.5.5"
   },
   "devDependencies": {

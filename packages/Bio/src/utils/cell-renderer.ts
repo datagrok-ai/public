@@ -1,3 +1,6 @@
+/* eslint-disable max-lines */
+/* eslint-disable max-params */
+/* eslint-disable max-lines-per-function */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';

@@ -55,18 +55,18 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
     this.covariatesOptions = [ AGE, SEX, RACE, VIEWS_CONFIG[SURVIVAL_ANALYSIS_VIEW_NAME][TRT_ARM_FIELD] ].filter(it => study.domains.dm.columns.names().includes(it));
     this.endpoint = Object.keys(this.endpointOptions)[0];
     this.endpointChoices = ui.input.choice('Endpoint', {value: Object.keys(this.endpointOptions)[0], items: Object.keys(this.endpointOptions)});
-    this.endpointChoices.onChanged((v) => {
-      this.endpoint = this.endpointChoices.value;
+    this.endpointChoices.onChanged.subscribe((value) => {
+      this.endpoint = value;
     });
 
     this.covariatesChoices = ui.input.multiChoice('Covariates', {value: null, items: this.covariatesOptions});
-    this.covariatesChoices.onChanged((v) => {
-      this.covariates = this.covariatesChoices.value;
+    this.covariatesChoices.onChanged.subscribe((value) => {
+      this.covariates = value;
     });
 
     this.confIntChoices = ui.input.choice('Confidence', {value: this.confIntervals[0], items: this.confIntervals});
-    this.confIntChoices.onChanged((v) => {
-      this.confInterval = this.confIntChoices.value;
+    this.confIntChoices.onChanged.subscribe((value) => {
+      this.confInterval = value;
       this.updateSurvivalPlot();
     });
 
@@ -212,8 +212,8 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
 
   private updateStrataChoices(){
     this.strataChoices = ui.input.choice('Strata', {value: this.survivalOptions[0], items: this.survivalOptions});
-    this.strataChoices.onChanged((v) => {
-      this.strata = this.strataChoices.value;
+    this.strataChoices.onChanged.subscribe((value) => {
+      this.strata = value;
       this.updateSurvivalPlot();
     });
   }
@@ -223,16 +223,16 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
     this.covariates.forEach(it => {
       let covariateCheckbox = ui.input.bool(`${it}`, {value: false});
       this.plotCovariatesChoices.append(covariateCheckbox.root);
-      covariateCheckbox.onChanged((v) => {
-        covariateCheckbox.value ? 
+      covariateCheckbox.onChanged.subscribe((value) => {
+        value ? 
         this.plotCovariates.push(covariateCheckbox.caption) : 
         this.plotCovariates = this.plotCovariates.filter(it => it!== covariateCheckbox.caption);
         this.updateCovariatesPlot();
       });
     })
 /*     this.plotCovariatesChoices = ui.input.multiChoice(' ', {value: null, items: this.survivalColumns.filter(it => it !== 'time' && it !== 'status' && it !== SUBJECT_ID)});
-    this.plotCovariatesChoices.onChanged((v) => {
-      this.plotCovariates = this.plotCovariatesChoices.value;
+    this.plotCovariatesChoices.onChanged.subscribe((value) => {
+      this.plotCovariates = value;
       this.updateCovariatesPlot();
     }); */
   }

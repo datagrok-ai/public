@@ -104,10 +104,6 @@ jobs:
                   job_test_env+=',JKG'
                   runner='ubuntu-latest-m'
                 fi
-                if [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "chem" ]] || \
-                   [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]]; then
-                  job_test_env+=',Compute'
-                fi
                 if [ -d "${DIR}/dockerfiles" ]; then
                   job_test_env+=',Spawner'
                 fi
@@ -295,11 +291,6 @@ jobs:
             echo "Add Scripting as dependency for package ${{ matrix.package }}"
             profiles+=' --profile scripting'
           fi
-          if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] || \
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]]; then
-            echo "Add Grok Compute as dependency for package ${{ matrix.package }}"
-            profiles+=' --profile grok_compute'
-          fi
           echo "Check if Grok Spawner is required for the package"
           if [ -d "packages/${{ matrix.package }}/dockerfiles" ]; then
             profiles+=' --profile grok_spawner'
@@ -313,7 +304,7 @@ jobs:
           else
             DATAGROK_VERSION='bleeding-edge'
             export GROK_SPAWNER_VERSION='bleeding-edge'
-            export GROK_JUPYTER_KERNEL_GATEWAY_VERSION='bleeding-edge-cuda'
+            export GROK_JUPYTER_KERNEL_GATEWAY_VERSION='bleeding-edge'
           fi
           export DATAGROK_VERSION
 
@@ -334,23 +325,10 @@ jobs:
 
           echo "apiUrl=$apiUrl" >> $GITHUB_OUTPUT
           echo "alias=$alias" >> $GITHUB_OUTPUT
-      - name: js api dependency for unpublished dependencies
-        if: ${{ matrix.unpublished_deps != '' }}
-        run: |
-          npm install
-          npm run build
-        working-directory: ./js-api
-      - name: unpublished dependencies
-        if: ${{ matrix.unpublished_deps != '' }}
-        run: |
-          crnt=$(pwd)
-          for dep in $(echo -e ${{ matrix.unpublished_deps }}); do
-            cd $(awk -F'=' '{print $2}' <<<$dep)
-            echo "Install dependencies for $(awk -F'=' '{print $2}' <<<$dep)"
-            npm install
-            npm run build
-            cd $crnt
-          done
+      - id: datagrok-tools
+        run: npm install -g datagrok-tools@latest
+      - if: ${{ matrix.unpublished_deps != '' }}
+        run: grok link
         working-directory: packages/${{ matrix.package }}
       - name: webpack cache
         uses: actions/cache@v4
@@ -369,10 +347,6 @@ jobs:
             npm run build
           fi
         working-directory: packages/${{ matrix.package }}
-      - name: Install datagrok tools
-        id: datagrok-tools
-        run: |
-          npm install -g datagrok-tools@latest
       - name: Wait for Datagrok to become available
         if: ${{ matrix.test == 'test' }}
         timeout-minutes: 5
@@ -450,12 +424,26 @@ jobs:
             fi
           done
         working-directory: packages/${{ matrix.package }}
+
+      - name: Set required credentials
+        if: ${{ matrix.test == 'test' }}
+        env:
+          CHEMSPACE_APIKEY: ${{ secrets.CHEMSPACE_APIKEY }}
+        run: |
+          if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
+            if [[ "${{ matrix.package }}" == "Chemspace" ]]; then
+              token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/admin | jq -r .token)
+              curl -s -H "Authorization: $token" -H "Content-Type": "application/json" '${{ steps.datagrok-image.outputs.apiUrl }}/credentials/for/Chemspace:Chemspace' -X POST -d "{'apiKey': '$CHEMSPACE_APIKEY'}"
+            fi
+          fi
+
       - name: Wait for published docker to become available
+        id: docker-wait
         if: matrix.docker != '' && steps.datagrok-image.outcome == 'success'
         env:
           DEV_TEST_DEV_KEY: ${{ secrets.DEV_TEST_DEV_KEY }}
           TEST_TEST_DEV_KEY: ${{ secrets.TEST_TEST_DEV_KEY }}
-        timeout-minutes: 5
+        timeout-minutes: 10
         run: |
           check_container=false
           for dockerfile in $(echo -e ${{ matrix.docker }}); do
@@ -518,7 +506,7 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
       - name: Create error notification
-        if: failure() && steps.test-package.outcome == 'failure'
+        if: failure() && (steps.test-package.outcome == 'failure' || steps.docker-wait.outcome == 'failure')
         run: |
           if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
             docker compose -p datagrok logs --no-color --timestamps

@@ -111,7 +111,7 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
   }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
-    if (gridCell.tableRowIndex === null) return;
+    if (gridCell.tableRowIndex === null || !this._auxList) return;
     const aux = this._auxList[gridCell.tableRowIndex];
     if (!aux) return;
 
@@ -146,9 +146,8 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
     if (!this.monomerLib) {
       this.monomerLib = _package.monomerLib;
-      if (this.monomerLib) {
+      if (this.monomerLib)
         this.subs.push(this.monomerLib.onChanged.subscribe(this.monomerLibOnChanged.bind(this)));
-      }
     }
     super.render(g, x, y, w, h, gridCell, cellStyle);
   }

@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -18,12 +19,21 @@ import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/m
 import '../../../css/cell-renderer.css';
 
 import {_package} from '../../package';
+import {getUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 
 /** Wrapper for monomers obtained from different sources. For managing monomere
  * libraries, use MolfileHandler class instead */
 export class MonomerLib implements IMonomerLib {
   private _monomers: { [polymerType: string]: { [monomerSymbol: string]: Monomer } } = {};
   private _onChanged = new Subject<any>();
+  private _duplicateMonomers: { [polymerType: string]: { [monomerSymbol: string]: Monomer[] } } = {};
+  public get duplicateMonomers(): { [polymerType: string]: { [monomerSymbol: string]: Monomer[] } } {
+    return this._duplicateMonomers;
+  }
+  private _duplicatesHandled = true;
+  public get duplicatesHandled() { return this._duplicatesHandled; }
+  private duplicatesNotified: boolean = false;
 
   constructor(
     monomers: { [polymerType: string]: { [monomerSymbol: string]: Monomer } },
@@ -35,6 +45,15 @@ export class MonomerLib implements IMonomerLib {
       for (const [_monomerSymbol, monomer] of Object.entries(monomersOfType))
         monomer.lib = this;
     }
+  }
+
+  toJSON(): Monomer[] {
+    const resJSON: Monomer[] = [];
+    for (const set of Object.values(this._monomers)) {
+      for (const m of Object.values(set))
+        resJSON.push({...m, lib: undefined, wem: undefined});
+    }
+    return resJSON;
   }
 
   /** Creates missing {@link Monomer} */
@@ -92,7 +111,7 @@ export class MonomerLib implements IMonomerLib {
     if (!polymerType) {
       _package.logger.warning(`${logPrefix} symbol '${argMonomerSymbol}', polymerType not specified.`);
       // Assume any polymer type
-      for (const [polymerType, dict] of Object.entries(this._monomers)) {
+      for (const [_polymerType, dict] of Object.entries(this._monomers)) {
         res = dict[monomerSymbol];
         if (res) break;
       }
@@ -138,7 +157,7 @@ export class MonomerLib implements IMonomerLib {
   /** Get a list of monomers with specified element attached to specified
    * R-group
    * WARNING: RGroup numbering starts from 1, not 0*/
-  getMonomerSymbolsByRGroup(rGroupNumber: number, polymerType: PolymerType, element?: string): string[] {
+  getMonomerSymbolsByRGroup(rGroupNumber: number, polymerType: PolymerType, _element?: string): string[] {
     const monomerSymbols = this.getMonomerSymbolsByType(polymerType);
     let monomers = monomerSymbols.map((sym) => this.getMonomer(polymerType, sym));
     monomers = monomers.filter((el) => el !== null);
@@ -155,7 +174,7 @@ export class MonomerLib implements IMonomerLib {
         return false;
       let criterion = monomer?.rgroups.length >= rGroupNumber;
       const molfileHandler = MolfileHandler.getInstance(monomer.molfile);
-      const rGroupIndices = findAllIndices(molfileHandler.atomTypes, 'R#');
+      const _rGroupIndices = findAllIndices(molfileHandler.atomTypes, 'R#');
       criterion &&= true;
       return criterion;
     });
@@ -178,6 +197,11 @@ export class MonomerLib implements IMonomerLib {
 
       const monomers = lib.getMonomerSymbolsByType(type);
       monomers.forEach((monomerSymbol) => {
+        if (this._monomers[type][monomerSymbol]) {
+          this._duplicateMonomers[type] ??= {};
+          this._duplicateMonomers[type][monomerSymbol] ??= [this._monomers[type][monomerSymbol]];
+          this._duplicateMonomers[type][monomerSymbol].push(lib.getMonomer(type, monomerSymbol)!);
+        }
         this._monomers[type][monomerSymbol] = lib.getMonomer(type, monomerSymbol)!;
       });
     });
@@ -191,9 +215,38 @@ export class MonomerLib implements IMonomerLib {
   public updateLibs(libList: IMonomerLib[], reload: boolean = false): void {
     if (reload)
       this._monomers = {};
+    this._duplicateMonomers = {}; // Reset duplicates
     for (const lib of libList)
       if (!lib.error) this._updateLibInt(lib);
+    if (Object.entries(this.duplicateMonomers).length > 0) {
+      getUserLibSettings().then((settings) => {
+        this.assignDuplicatePreferances(settings);
+      });
+    } else
+      this._duplicatesHandled = true;
+
     this._onChanged.next();
+  }
+
+  /** Checks wether all duplicated monomers have set preferences in user settings. overwrites those which have. */
+  assignDuplicatePreferances(userSettings: UserLibSettings): boolean {
+    let res = true;
+    for (const polymerType in this.duplicateMonomers) {
+      for (const monomerSymbol in this.duplicateMonomers[polymerType]) {
+        if (!userSettings.duplicateMonomerPreferences?.[polymerType]?.[monomerSymbol])
+          res = false;
+        else {
+          const source = userSettings.duplicateMonomerPreferences[polymerType][monomerSymbol];
+          const monomer = this.duplicateMonomers[polymerType][monomerSymbol].find((m) => m.lib?.source === source);
+          if (!monomer)
+            res = false;
+          else
+            this._monomers[polymerType][monomerSymbol] = monomer;
+        }
+      }
+    }
+    this._duplicatesHandled = res;
+    return res;
   }
 
   public clear(): void {
@@ -250,7 +303,7 @@ export class MonomerLib implements IMonomerLib {
     if (monomer) {
       // Symbol & Name
       const symbol = monomer[REQ.SYMBOL];
-      const name = monomer[REQ.NAME];
+      const _name = monomer[REQ.NAME];
       res.append(ui.divH([
         ui.div([symbol], {style: {fontWeight: 'bolder', textWrap: 'nowrap', marginRight: '6px'}}),
         ui.div([monomer.name])
@@ -259,10 +312,9 @@ export class MonomerLib implements IMonomerLib {
       // Structure
       const chemOptions = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
       let structureEl: HTMLElement;
-      if (monomer.molfile) {
-        //
+      if (monomer.molfile)
         structureEl = grok.chem.svgMol(monomer.molfile, undefined, undefined, chemOptions);
-      } else if (monomer.smiles) {
+      else if (monomer.smiles) {
         structureEl = ui.divV([
           grok.chem.svgMol(monomer.smiles, undefined, undefined, chemOptions),
           ui.divText('from smiles', {style: {fontSize: 'smaller'}}),
@@ -276,20 +328,6 @@ export class MonomerLib implements IMonomerLib {
 
       // Source
       res.append(ui.divText(monomer.lib?.source ?? 'Missed in libraries'));
-
-      // const label = (s: string) => {
-      //   return ui.label(s /* span ? */, {classes: 'ui-input-label'});
-      // };
-      // res.append(ui.div([
-      //   label('Name'),
-      //   ui.divText(monomer.name, {classes: 'ui-input-text'})
-      // ], {classes: 'ui-input-root'}));
-      //
-      //
-      // res.append(ui.div([
-      //   label('Source'),
-      //   ui.divText(monomer.lib?.source ?? 'unknown', {classes: 'ui-input-text'}),
-      // ], {classes: 'ui-input-root'}));
     } else {
       res.append(ui.divV([
         ui.divText(`Monomer '${monomerSymbol}' of type '${polymerType}' not found.`),

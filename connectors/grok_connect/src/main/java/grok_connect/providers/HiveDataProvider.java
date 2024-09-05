@@ -90,19 +90,9 @@ public class HiveDataProvider extends JdbcDataProvider {
         try (Connection dbConnection = getConnection(connection);
              ResultSet columns = dbConnection.getMetaData().getColumns(null, schema, table,
                      null)) {
-            DataFrame result = new DataFrame();
-            Column tableSchema = new StringColumn();
-            tableSchema.name = "table_schema";
-            Column tableNameColumn = new StringColumn();
-            tableNameColumn.name = "table_name";
-            Column columnName = new StringColumn();
-            columnName.name = "column_name";
-            Column dataType = new StringColumn();
-            dataType.name = "data_type";
-            result.addColumn(tableSchema);
-            result.addColumn(tableNameColumn);
-            result.addColumn(columnName);
-            result.addColumn(dataType);
+            DataFrame result = DataFrame.fromColumns(new StringColumn("table_schema"),
+                    new StringColumn("table_name"), new StringColumn("column_name"),
+                    new StringColumn("data_type"));
             while (columns.next())
                 result.addRow(columns.getString(2), columns.getString(3),
                         columns.getString(4), columns.getString(6));

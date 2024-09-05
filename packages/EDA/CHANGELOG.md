@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.1.35 (2024-08-28)
+
+* Add History support and enable gpu by default if available for dim-red
+
 ## 1.1.34 (2024-08-09)
 
 * Updated multivariate analysis

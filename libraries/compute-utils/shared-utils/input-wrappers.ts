@@ -1,3 +1,4 @@
+import { Observable } from 'rxjs';
 import {ValidationResultBase} from './validation';
 
 export interface SubscriptionLike {
@@ -9,7 +10,7 @@ export interface FuncCallInput<T = any> {
   value: T | null | undefined;
   notify: boolean;
   enabled: boolean;
-  onInput: (cb: Function) => SubscriptionLike;
+  onInput: ((cb: Function) => SubscriptionLike) | Observable<T>;
 }
 
 export interface FuncCallInputValidated<T = any> extends FuncCallInput<T> {

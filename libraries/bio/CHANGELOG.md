@@ -1,5 +1,24 @@
 # bio changelog
 
+## 5.42.14 (2024-09-04)
+
+* Fix toAtomicLevel workers error DG is not defined
+
+## 5.42.13 (2024-09-02)
+
+* Add interfaces for monomer management
+
+## 5.42.12 (2024-08-30)
+
+Add getHelm to SeqHandler and INotationProvider
+
+## 5.42.11 (2024-08-24)
+
+### Bug fixes
+
+* Bump HWE dependencies versions
+* Fix for user settings for publish
+
 ## 5.42.10 (2024-08-23)
 
 ### Features

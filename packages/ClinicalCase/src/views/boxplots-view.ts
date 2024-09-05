@@ -98,14 +98,14 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
     this.updateBoxPlots(this.viewerTitle, this.viewerTitlePValue, this.selectedSplitBy);
 
     const blVisitChoices = ui.input.choice('Baseline', {value: this.bl, items: this.uniqueVisits});
-    blVisitChoices.onChanged((v) => {
-      this.bl = blVisitChoices.value;
+    blVisitChoices.onChanged.subscribe((value) => {
+      this.bl = value;
       this.updateBoxPlots(this.viewerTitle, this.viewerTitlePValue, this.selectedSplitBy);
     });
 
     const splitByChoices = ui.input.choice('Split by', {value: this.selectedSplitBy, items: this.splitBy});
-    splitByChoices.onChanged((v) => {
-      this.selectedSplitBy = splitByChoices.value;
+    splitByChoices.onChanged.subscribe((value) => {
+      this.selectedSplitBy = value;
       this.updateBoxPlots(this.viewerTitle, this.viewerTitlePValue, this.selectedSplitBy);
     });
 
@@ -114,8 +114,8 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
       this.domains.forEach((domain) => {
         const valuesMultiChoices = ui.input.multiChoice('', {value: this.selectedValuesByDomain[domain],
           items: this.uniqueValues[domain]});
-        valuesMultiChoices.onChanged((v) => {
-          this.selectedValuesByDomain[domain] = valuesMultiChoices.value;
+        valuesMultiChoices.onChanged.subscribe((value) => {
+          this.selectedValuesByDomain[domain] = value;
         });
         //@ts-ignore
         valuesMultiChoices.input.style.maxWidth = '100%';
