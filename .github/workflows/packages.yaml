@@ -226,7 +226,7 @@ jobs:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
           sparse-checkout: |
             ./libraries
-            ./packages/${{ matrix.package }}
+            ./packages
             ./js-api
             ./.github
             ./docker
