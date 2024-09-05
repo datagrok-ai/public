@@ -1,7 +1,7 @@
-import { DockManager } from "../DockManager.js";
-import { PanelContainer } from "../PanelContainer.js";
-import { PanelType } from "../enums/PanelType.js";
-import { DockNode } from "../DockNode.js";
+import { DockManager } from '../DockManager.js';
+import { PanelContainer } from '../PanelContainer.js';
+import { PanelType } from '../enums/PanelType.js';
+import { DockNode } from '../DockNode.js';
 export declare class DockSpawnTsWebcomponent extends HTMLElement {
     dockManager: DockManager;
     private slotId;

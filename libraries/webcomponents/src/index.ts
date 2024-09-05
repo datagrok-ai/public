@@ -5,9 +5,9 @@ export {InputForm} from './InputForm/InputForm';
 export type {InputFormT} from './InputForm/InputForm';
 export {DGSplitH} from './SplitH/SplitH';
 export type {DGSplitHT} from './SplitH/SplitH';
-export {DockSpawnTsWebcomponent} from 'dock-spawn-ts/lib/js/webcomponent/DockSpawnTsWebcomponent';
+export {DockSpawnTsWebcomponent} from '../vendor/dock-spawn-ts/lib/js/webcomponent/DockSpawnTsWebcomponent';
 export type {DockSpawnTsWebcomponent as DockSpawnTsWebcomponentT}
-  from 'dock-spawn-ts/lib/js/webcomponent/DockSpawnTsWebcomponent';
+  from '../vendor/dock-spawn-ts/lib/js/webcomponent/DockSpawnTsWebcomponent';
 export {DGMarkdown} from './Markdown/Markdown';
 export type {DGMarkdown as DGMarkdownT} from './Markdown/Markdown';
 export * from './elements';

@@ -1,12 +1,12 @@
-import { DockModel } from "./DockModel.js";
-import { DockNode } from "./DockNode.js";
-import { PanelContainer } from "./PanelContainer.js";
-import { HorizontalDockContainer } from "./HorizontalDockContainer.js";
-import { VerticalDockContainer } from "./VerticalDockContainer.js";
-import { DocumentManagerContainer } from "./DocumentManagerContainer.js";
-import { FillDockContainer } from "./FillDockContainer.js";
-import { Dialog } from "./Dialog.js";
-import { Utils } from "./Utils.js";
+import { DockModel } from './DockModel.js';
+import { DockNode } from './DockNode.js';
+import { PanelContainer } from './PanelContainer.js';
+import { HorizontalDockContainer } from './HorizontalDockContainer.js';
+import { VerticalDockContainer } from './VerticalDockContainer.js';
+import { DocumentManagerContainer } from './DocumentManagerContainer.js';
+import { FillDockContainer } from './FillDockContainer.js';
+import { Dialog } from './Dialog.js';
+import { Utils } from './Utils.js';
 /**
  * Deserializes the dock layout hierarchy from JSON and creates a dock hierarhcy graph
  */
@@ -17,49 +17,45 @@ export class DockGraphDeserializer {
         this.dockManager = dockManager;
     }
     async deserialize(_json) {
-        let info = JSON.parse(_json);
-        let model = new DockModel();
+        const info = JSON.parse(_json);
+        const model = new DockModel();
         model.rootNode = await this._buildGraph(info.graphInfo);
         model.dialogs = await this._buildDialogs(info.dialogsInfo);
         model.documentManagerNode = this.documentManagerNode;
         return model;
     }
     async _buildGraph(nodeInfo) {
-        let childrenInfo = nodeInfo.children;
-        let children = [];
-        for (let childInfo of childrenInfo) {
-            let childNode = await this._buildGraph(childInfo);
-            if (childNode !== null) {
+        const childrenInfo = nodeInfo.children;
+        const children = [];
+        for (const childInfo of childrenInfo) {
+            const childNode = await this._buildGraph(childInfo);
+            if (childNode !== null)
                 children.push(childNode);
-            }
         }
         ;
         // Build the container owned by this node
-        let container = await this._createContainer(nodeInfo, children);
-        if (container === null) {
+        const container = await this._createContainer(nodeInfo, children);
+        if (container === null)
             return null;
-        }
         // Build the node for this container and attach it's children
-        let node = new DockNode(container);
+        const node = new DockNode(container);
         if (container instanceof DocumentManagerContainer)
             this.documentManagerNode = node;
         node.children = children;
-        for (let childNode of node.children.reverse()) {
+        for (const childNode of node.children.reverse())
             childNode.parent = node;
-        }
         ;
         node.children.reverse();
         // node.container.setActiveChild(node.container);
         return node;
     }
     async _createContainer(nodeInfo, children) {
-        let containerType = nodeInfo.containerType;
-        let containerState = nodeInfo.state;
+        const containerType = nodeInfo.containerType;
+        const containerState = nodeInfo.state;
         let container;
-        let childContainers = [];
-        for (let childNode of children) {
+        const childContainers = [];
+        for (const childNode of children)
             childContainers.push(childNode.container);
-        }
         if (containerType === 'panel') {
             container = await PanelContainer.loadFromState(containerState, this.dockManager);
             if (!container.prepareForDocking)
@@ -75,7 +71,7 @@ export class DockGraphDeserializer {
             // Check if this is a document manager
             // TODO: Layout engine compares the string 'fill', so cannot create another subclass type
             // called document_manager and have to resort to this hack. use RTTI in layout engine
-            let typeDocumentManager = containerState.documentManager;
+            const typeDocumentManager = containerState.documentManager;
             if (typeDocumentManager)
                 container = new DocumentManagerContainer(this.dockManager);
             else
@@ -89,17 +85,17 @@ export class DockGraphDeserializer {
         return container;
     }
     async _buildDialogs(dialogsInfo) {
-        let dialogs = [];
-        for (let dialogInfo of dialogsInfo) {
-            let containerType = dialogInfo.containerType;
-            let containerState = dialogInfo.state;
+        const dialogs = [];
+        for (const dialogInfo of dialogsInfo) {
+            const containerType = dialogInfo.containerType;
+            const containerState = dialogInfo.state;
             let container;
             if (containerType === 'panel') {
                 container = await PanelContainer.loadFromState(containerState, this.dockManager);
                 if (container.prepareForDocking) {
                     Utils.removeNode(container.elementPanel);
                     container.isDialog = true;
-                    let dialog = new Dialog(container, this.dockManager);
+                    const dialog = new Dialog(container, this.dockManager);
                     if (dialogInfo.position.x > document.body.clientWidth ||
                         dialogInfo.position.y > document.body.clientHeight - 70) {
                         dialogInfo.position.x = 20;

@@ -1,10 +1,10 @@
-import { DockManager } from "./DockManager.js";
-import { Point } from "./Point.js";
-import { PanelContainer } from "./PanelContainer.js";
-import { DraggableContainer } from "./DraggableContainer.js";
-import { ResizableContainer } from "./ResizableContainer.js";
-import { EventHandler } from "./EventHandler.js";
-import { DockNode } from "./DockNode.js";
+import { DockManager } from './DockManager.js';
+import { Point } from './Point.js';
+import { PanelContainer } from './PanelContainer.js';
+import { DraggableContainer } from './DraggableContainer.js';
+import { ResizableContainer } from './ResizableContainer.js';
+import { EventHandler } from './EventHandler.js';
+import { DockNode } from './DockNode.js';
 export declare class Dialog {
     elementDialog: HTMLDivElement & {
         floatingDialog: Dialog;

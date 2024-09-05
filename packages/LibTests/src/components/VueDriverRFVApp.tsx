@@ -102,7 +102,7 @@ export const VueDriverRFVApp = defineComponent({
           />
         </RibbonPanel>
         <DockManager class='block h-full'>
-          { treeState.value ? <Draggable 
+          { treeState.value && !treeHidden.value ? <Draggable 
             class="ui-div mtl-tree p-2"
             {...{title: 'Steps'}}
             rootDroppable={false}

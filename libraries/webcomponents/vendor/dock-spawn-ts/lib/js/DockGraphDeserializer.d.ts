@@ -1,9 +1,9 @@
-import { DockManager } from "./DockManager.js";
-import { DockModel } from "./DockModel.js";
-import { DockNode } from "./DockNode.js";
-import { Dialog } from "./Dialog.js";
-import { IPanelInfo } from "./interfaces/IPanelInfo.js";
-import { INodeInfo } from "./interfaces/INodeInfo.js";
+import { DockManager } from './DockManager.js';
+import { DockModel } from './DockModel.js';
+import { DockNode } from './DockNode.js';
+import { Dialog } from './Dialog.js';
+import { IPanelInfo } from './interfaces/IPanelInfo.js';
+import { INodeInfo } from './interfaces/INodeInfo.js';
 /**
  * Deserializes the dock layout hierarchy from JSON and creates a dock hierarhcy graph
  */

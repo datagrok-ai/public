@@ -1,10 +1,10 @@
-import { Point } from "./Point.js";
-import { PanelContainer } from "./PanelContainer.js";
-import { DraggableContainer } from "./DraggableContainer.js";
-import { ResizableContainer } from "./ResizableContainer.js";
-import { EventHandler } from "./EventHandler.js";
-import { Utils } from "./Utils.js";
-import { Localizer } from "./i18n/Localizer.js";
+import { Point } from './Point.js';
+import { PanelContainer } from './PanelContainer.js';
+import { DraggableContainer } from './DraggableContainer.js';
+import { ResizableContainer } from './ResizableContainer.js';
+import { EventHandler } from './EventHandler.js';
+import { Utils } from './Utils.js';
+import { Localizer } from './i18n/Localizer.js';
 export class Dialog {
     elementDialog;
     draggable;
@@ -58,13 +58,12 @@ export class Dialog {
         this.contextmenuHandler = new EventHandler(this.panel.elementTitle, 'contextmenu', this.oncontextMenuClicked.bind(this));
         this.resize(this.panel.elementPanel.clientWidth, this.panel.elementPanel.clientHeight);
         this.isHidden = false;
-        if (this.grayoutParent != null) {
+        if (this.grayoutParent != null)
             this.grayoutParent.grayOut(true);
-        }
         this.bringToFront();
     }
     setPosition(x, y) {
-        let rect = this.dockManager.config.dialogRootElement.getBoundingClientRect();
+        const rect = this.dockManager.config.dialogRootElement.getBoundingClientRect();
         this.position = new Point(x - rect.left, y - rect.top);
         this.elementDialog.style.left = (x - rect.left) + 'px';
         this.elementDialog.style.top = (y - rect.top) + 'px';
@@ -105,9 +104,8 @@ export class Dialog {
         Utils.removeNode(this.panel.elementPanel);
         Utils.arrayRemove(this.dockManager.context.model.dialogs, this);
         delete this.panel.floatingDialog;
-        if (this.grayoutParent) {
+        if (this.grayoutParent)
             this.grayoutParent.grayOut(false);
-        }
     }
     resize(width, height) {
         this.resizable.resize(width, height);
@@ -131,9 +129,8 @@ export class Dialog {
             this.isHidden = true;
             this.dockManager.notifyOnHideDialog(this);
         }
-        if (this.grayoutParent) {
+        if (this.grayoutParent)
             this.grayoutParent.grayOut(false);
-        }
     }
     close() {
         this.hide();
@@ -154,11 +151,10 @@ export class Dialog {
         }
     }
     static createContextMenuContentCallback = (dialog, documentMangerNodes) => {
-        if (!dialog.panel._hideCloseButton) {
+        if (!dialog.panel._hideCloseButton)
             return [];
-        }
         const result = [];
-        let btnCloseDialog = document.createElement('div');
+        const btnCloseDialog = document.createElement('div');
         btnCloseDialog.innerText = Localizer.getString('CloseDialog');
         result.push(btnCloseDialog);
         btnCloseDialog.onclick = () => {
@@ -166,7 +162,7 @@ export class Dialog {
             dialog.closeContextMenu();
         };
         if (dialog.dockManager.config.enableBrowserWindows) {
-            let btnNewBrowserWindow = document.createElement('div');
+            const btnNewBrowserWindow = document.createElement('div');
             btnNewBrowserWindow.innerText = Localizer.getString('NewBrowserWindow');
             result.push(btnNewBrowserWindow);
             btnNewBrowserWindow.onclick = () => {
@@ -180,21 +176,19 @@ export class Dialog {
         e.preventDefault();
         if (!this._ctxMenu && Dialog.createContextMenuContentCallback) {
             const menuItems = Dialog.createContextMenuContentCallback(this, this.dockManager.context.model.documentManagerNode.children);
-            if (menuItems.length == 0) {
+            if (menuItems.length == 0)
                 return;
-            }
             this._ctxMenu = document.createElement('div');
             this._ctxMenu.className = 'dockspab-tab-handle-context-menu';
             this._ctxMenu.append(...menuItems);
-            this._ctxMenu.style.left = e.pageX + "px";
-            this._ctxMenu.style.top = e.pageY + "px";
+            this._ctxMenu.style.left = e.pageX + 'px';
+            this._ctxMenu.style.top = e.pageY + 'px';
             document.body.appendChild(this._ctxMenu);
             this._windowsContextMenuCloseBound = this.windowsContextMenuClose.bind(this);
             window.addEventListener('pointerup', this._windowsContextMenuCloseBound);
         }
-        else {
+        else
             this.closeContextMenu();
-        }
     }
     closeContextMenu() {
         if (this._ctxMenu) {
@@ -204,9 +198,9 @@ export class Dialog {
         }
     }
     windowsContextMenuClose(e) {
-        let cp = e.composedPath();
-        for (let i in cp) {
-            let el = cp[i];
+        const cp = e.composedPath();
+        for (const i in cp) {
+            const el = cp[i];
             if (el == this._ctxMenu)
                 return;
         }
