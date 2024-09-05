@@ -2,28 +2,7 @@ import {DockManager} from '../DockManager.js';
 import {PanelContainer} from '../PanelContainer.js';
 import {PanelType} from '../enums/PanelType.js';
 import {DockNode} from '../DockNode.js';
-//@ts-ignore
-import style1 from '../../../lib/css/dock-manager-style.css' with { type : 'css'};
-//@ts-ignore
-import style2 from '../../../lib/css/dock-manager.css' with { type : 'css'};
-
-function toParString(strings: TemplateStringsArray, values: any[]) {
-  if (strings.length === 1)
-    return strings.raw[0];
-  else {
-    let r = '';
-    for (let i = 0; i < strings.length; i++)
-      r += strings[i] + (values[i] ?? '');
-
-    return r;
-  }
-}
-
-const css = function(strings: TemplateStringsArray, ...values: any[]): CSSStyleSheet {
-  const cssStyleSheet = new CSSStyleSheet();
-  cssStyleSheet.replaceSync(toParString(strings, values));
-  return cssStyleSheet;
-};
+import {style, style1, style2} from './styles';
 
 export class DockSpawnTsWebcomponent extends HTMLElement {
   public dockManager: DockManager;
@@ -34,16 +13,11 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
   private initialized = false;
   private elementContainerMap: Map<HTMLElement, PanelContainer> = new Map();
 
-  static style = css`
-    :host {
-        display: block;
-    }`;
-
   constructor() {
     super();
 
     const shadowRoot = this.attachShadow({mode: 'open'});
-    shadowRoot.adoptedStyleSheets = [DockSpawnTsWebcomponent.style, style1, style2];
+    shadowRoot.adoptedStyleSheets = [style, style1, style2];
 
     this.windowResizedBound = this.windowResized.bind(this);
     this.slotElementMap = new WeakMap();
