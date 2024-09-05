@@ -2,8 +2,6 @@ FROM nvidia/cuda:11.8.0-runtime-ubuntu22.04
 
 SHELL ["/bin/bash","-c"]
 
-
-
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \

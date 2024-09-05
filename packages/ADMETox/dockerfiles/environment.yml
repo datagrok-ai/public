@@ -24,5 +24,6 @@ dependencies:
   - cudatoolkit=11.8
   - cuDNN
   - pytorch>=1.8.1=*cuda*
+  - pytorch-cuda=11.8
   - torchvision=*=*_cu*
   - torchaudio=*=*_cu*
