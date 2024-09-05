@@ -752,7 +752,6 @@ export async function _demoDatabases5(): Promise<void> {
 
 export async function _demoScaffoldTree(): Promise<void> {
   const tv = await openMoleculeDataset('mol1K.csv');
-
   _package.files.readAsText('demo_files/mol1K.layout').then(async (layoutString: string) => {
     const layout = DG.ViewLayout.fromJson(layoutString);
     tv.loadLayout(layout);
@@ -761,8 +760,10 @@ export async function _demoScaffoldTree(): Promise<void> {
     scaffoldTree.root.classList.add('d4-viewer', 'd4-scaffold-tree');
     const treeStr = await _package.files.readAsText('demo_files/scaffold-tree.json');
     const table: DG.DataFrame = tv.dataFrame;
-    scaffoldTree.dataFrame = table;
+    await grok.data.detectSemanticTypes(table);
+    
     scaffoldTree.molCol = table.columns.bySemType(DG.SEMTYPE.MOLECULE);
+    scaffoldTree.dataFrame = table;
     scaffoldTree.size = 'normal';
 
     tv.dockManager.dock(scaffoldTree.root, DG.DOCK_TYPE.LEFT, null, '', 0.45);
