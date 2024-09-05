@@ -115,28 +115,87 @@ export class AdmeticaBaseEditor {
     if (input.inputType === DG.InputType.Map) {
       const table = input.root.querySelector('.d4-item-table') as HTMLTableElement;
       Array.from(table!.rows).forEach(row => row.lastElementChild?.remove());
+      table.style.pointerEvents = 'none';
       return table;
     }
 
     return input.root;
   }
-  
+
   private createConditionalInput(coloring: ModelColoring, model: Model) {
     const conditionalColors = Object.entries(coloring).slice(1);
     const conditionalColoring = `{${conditionalColors.map(([range, color]) => `"${range}":"${color}"`).join(",")}}`;
     const patternsInp = ui.patternsInput(JSON.parse(conditionalColoring));
     const inputs = patternsInp.querySelectorAll('.ui-input-editor');
+    const colorBars = patternsInp.querySelectorAll('.d4-color-bar');
+    
     const rangesProperty = model.properties.find((prop: any) => prop.property.name === 'ranges');
-    inputs.forEach((input, index) => input.addEventListener('mousemove', function(event) {
-      const mouseEvent = event as MouseEvent;
+    const coloringProperty = (model.coloring as any);
+
+    console.log(colorBars);
+  
+    inputs.forEach((input, index) => {
+      let key = conditionalColors[index][0];
+      const inputElement = input as HTMLInputElement;
+  
+      inputElement.addEventListener('mousemove', (event) => {
+        const mouseEvent = event as MouseEvent;
+        const value = rangesProperty?.object.ranges[key] || '';
+        ui.tooltip.show(value, mouseEvent.x, mouseEvent.y);
+      });
+  
+      inputElement.addEventListener('input', () => {
+        const newValue = inputElement.value;
+  
+        if (rangesProperty) {
+          const ranges = rangesProperty.object.ranges;
+          const oldValue = ranges[key];
+          delete ranges[key];
+          ranges[newValue] = oldValue;
+        }
+  
+        if (coloringProperty) {
+          const oldColorValue = coloringProperty[key];
+          delete coloringProperty[key];
+          coloringProperty[newValue] = oldColorValue;
+        }
+
+        key = newValue;
+  
+        const areEqual = JSON.stringify(this.properties) === JSON.stringify(this.updatedProperties);
+        this.saveButton.style.visibility = areEqual ? 'hidden' : 'visible';
+      });
+    });
+
+    colorBars.forEach((colorBar, index) => {
       const key = conditionalColors[index][0];
-      let value = '';
-      if (rangesProperty)
-        value = rangesProperty.object.ranges[key];
-      ui.tooltip.show(value, mouseEvent.x, mouseEvent.y);
-    }));
+    
+      const handleColorChange = () => {
+        const newColor = window.getComputedStyle(colorBar).backgroundColor;
+    
+        if (coloringProperty) {
+          // this color is rgb
+          coloringProperty[key] = newColor;
+        }
+    
+        const areEqual = JSON.stringify(this.properties) === JSON.stringify(this.updatedProperties);
+        this.saveButton.style.visibility = areEqual ? 'hidden' : 'visible';
+      };
+    
+      const observer = new MutationObserver((mutationsList) => {
+        mutationsList.forEach((mutation) => {
+          if (mutation.attributeName === 'style') {
+            handleColorChange();
+          }
+        });
+      });
+    
+      // Start observing the 'style' attribute for changes
+      observer.observe(colorBar, { attributes: true, attributeFilter: ['style'] });
+    });    
+  
     return patternsInp;
-  }
+  }  
   
   private createLinearInput(coloring: ModelColoring) {
     const linearInput = ui.schemeInput(JSON.parse(coloring.colors!) as number[]);
