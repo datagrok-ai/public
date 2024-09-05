@@ -38,7 +38,7 @@
     }
   ],
   "dependencies": {
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.21.0-rc.9512de7493.516691f76e",
     "@datagrok-libraries/chem-meta": "^1.2.4",
     "@datagrok-libraries/ml": "^6.6.23",
     "@datagrok-libraries/math": "^1.1.10",
