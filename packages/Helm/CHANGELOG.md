@@ -1,5 +1,9 @@
 # Helm changelog
 
+## 2.4.6 (2024-09-05)
+
+Helm Web editor cell editing causing grid.onCellValueEdited event
+
 ## 2.4.5 (2024-08-29)
 
 Fix getHelm for cyclic, bump HWE dependencies
