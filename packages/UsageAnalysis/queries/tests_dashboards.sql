@@ -95,8 +95,9 @@ select distinct on (b.name, t.name)
   r.result, 
   r.duration, 
   r.benchmark
-from tests t full join last_builds b 
-left join test_runs r on r.test_name = t.name and r.build_name = b.name 
+from tests t 
+full join last_builds b  on 1=1
+left join test_runs r on r.test_name = t.name and r.build_name = b.name  
 order by b.name desc, t.name, r.date_time desc
 --end
 

@@ -1,3 +1,5 @@
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
+
 export enum MMP_CONSTRICTIONS {
     CPU = 1E4,
     GPU = 1E5
@@ -26,4 +28,42 @@ export type MolecularPair = {
   core: string,
   firstR: string,
   secondR: string
+};
+
+export type MmpInitData = {
+    molecules: string[];
+    activities: Float32Array [];
+    activitiesNames: string[];
+    activitiesCount: number;
+};
+
+export type MmpRulesBasedData = {
+    fromFrag: string[];
+    toFrag: string[];
+    occasions: Int32Array;
+    meanDiffs: Float32Array[];
+  };
+
+export type MmpAllCasesBasedData = {
+    maxActs: number [];
+    molFrom: string[];
+    molTo: string[];
+    pairNum: Int32Array;
+    molNumFrom: Int32Array;
+    molNumTo: Int32Array;
+    pairsFromSmiles: string[];
+    pairsToSmiles: string[];
+    ruleNum: Int32Array;
+    diffs: Float32Array[];
+    activityPairsIdxs: BitArray[];
+};
+
+export type MmpGeneration = {
+  allStructures: string [];
+  allInitActivities: Float32Array;
+  cores: string [];
+  from: string [];
+  to: string [];
+  prediction: Float32Array;
+  activityName: string [];
 };

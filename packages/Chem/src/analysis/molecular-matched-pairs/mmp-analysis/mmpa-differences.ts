@@ -1,39 +1,16 @@
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {MmpRules} from './mmpa-misc';
+import {MmpRules, MmpAllCasesBasedData, MmpInitData, MmpRulesBasedData} from './mmpa-misc';
 
-export type MmpRulesBasedData = {
-  fromFrag: string[];
-  toFrag: string[];
-  occasions: Int32Array;
-  meanDiffs: Float32Array[];
-};
-
-export type MmpAllCasesBasedData = {
-  variates: number;
-  maxActs: number [];
-  molFrom: string[];
-  molTo: string[];
-  pairNum: Int32Array;
-  molNumFrom: Int32Array;
-  molNumTo: Int32Array;
-  pairsFromSmiles: string[];
-  pairsToSmiles: string[];
-  ruleNum: Int32Array;
-  diffs: Float32Array[];
-  activityPairsIdxs: BitArray[];
-};
-
-export function getPlainData(rules: MmpRules, molecules: string[], activities: Float32Array[], allCasesNumber: number):
+export function getPlainData(rules: MmpRules, initData: MmpInitData, allCasesNumber: number):
 [MmpRulesBasedData, MmpAllCasesBasedData] {
   const [fromFrag, toFrag, occasions] = getAllRulesOcasions(rules); //rules n objects
   const [maxActs, meanDiffs, molFrom, molTo, pairNum,
     molNumFrom, molNumTo, pairsFromSmiles, pairsToSmiles,
     ruleNum, diffs, activityPairsIdxs] =
-    calculateActivityDiffs(molecules, activities, rules, allCasesNumber, occasions);
+    calculateActivityDiffs(initData.molecules, initData.activities, rules, allCasesNumber, occasions);
 
-  const variates = activities.length;
   const rulesBased: MmpRulesBasedData = {fromFrag, toFrag, occasions, meanDiffs};
-  const allCasesBased: MmpAllCasesBasedData = {variates, maxActs, molFrom, molTo, pairNum,
+  const allCasesBased: MmpAllCasesBasedData = {maxActs, molFrom, molTo, pairNum,
     molNumFrom, molNumTo, pairsFromSmiles, pairsToSmiles, ruleNum, diffs, activityPairsIdxs};
 
   return [rulesBased, allCasesBased];

@@ -11,11 +11,12 @@ import {ILineSeries, MouseOverLineEvent, ScatterPlotCurrentLineStyle, ScatterPlo
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {debounceTime} from 'rxjs/operators';
-import {getInverseSubstructuresAndAlign} from '../mmp-mol-rendering';
+import {getInverseSubstructuresAndAlign} from './mmp-mol-rendering';
 import {MMP_NAMES} from './mmp-constants';
 import {MmpInput} from './mmp-viewer';
 import $ from 'cash-dom';
 import {MMPA} from '../mmp-analysis/mmpa';
+import {ISequenceSpaceParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 
 export function getMmpScatterPlot(
   mmpInput: MmpInput, axesColsNames: string[]) : DG.Viewer {
@@ -100,7 +101,7 @@ function getMoleculesPropertiesDiv(propPanelViewer: FormsViewer, idxs: number[])
 
 export function runMmpChemSpace(mmpInput: MmpInput, sp: DG.Viewer, lines: ILineSeries,
   linesIdxs: Uint32Array, linesActivityCorrespondance: Uint32Array, pairsDf: DG.DataFrame, mmpa: MMPA,
-  rdkitModule: RDModule, embedColsNames: string[]): ScatterPlotLinesRenderer {
+  rdkitModule: RDModule, embedColsNames: string[]): [ScatterPlotLinesRenderer, ISequenceSpaceParams] {
   const chemSpaceParams = {
     seqCol: mmpInput.molecules,
     methodName: DimReductionMethods.UMAP,
@@ -119,13 +120,5 @@ export function runMmpChemSpace(mmpInput: MmpInput, sp: DG.Viewer, lines: ILineS
       event.x, event.y);
   });
 
-  const progressBarSpace = DG.TaskBarProgressIndicator.create(`Running Chemical space...`);
-  mmpa.chemSpace(chemSpaceParams).then((res) => {
-    const embeddings = res.coordinates;
-    for (const col of embeddings)
-      mmpInput.table.columns.replace(col.name, col);
-    progressBarSpace.close();
-  });
-
-  return spEditor;
+  return [spEditor, chemSpaceParams];
 }

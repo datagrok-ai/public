@@ -18,7 +18,7 @@
     "@datagrok-libraries/utils": "^4.2.29",
     "@types/wu": "latest",
     "cash-dom": "latest",
-    "datagrok-api": "^1.21.0",
+    "datagrok-api": "../../js-api",
     "dayjs": "latest",
     "wu": "latest"
   },

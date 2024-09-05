@@ -4,7 +4,7 @@ import {MmpInput} from './mmp-viewer';
 import {SUBSTRUCT_COL} from '../../../constants';
 import {MMP_NAMES, columnsDescriptions} from './mmp-constants';
 import {PaletteCodes} from './palette';
-import {createColWithDescription} from '../mmp-generations';
+import {createColWithDescription} from './mmp-generations';
 import {MMPA} from '../mmp-analysis/mmpa';
 
 function createLines(mmpa: MMPA, palette: PaletteCodes) : {
@@ -13,7 +13,7 @@ function createLines(mmpa: MMPA, palette: PaletteCodes) : {
     linesActivityCorrespondance: Uint32Array
   } {
   let allCount = 0;
-  for (let i = 0; i < mmpa.allCasesBased.variates; i++)
+  for (let i = 0; i < mmpa.initData.activitiesCount; i++)
     allCount += mmpa.allCasesBased.activityPairsIdxs[i].trueCount();
 
   const pointsFrom = new Uint32Array(allCount);
@@ -23,7 +23,7 @@ function createLines(mmpa: MMPA, palette: PaletteCodes) : {
   const linesActivityCorrespondance = new Uint32Array(allCount);
 
   let pairsCounter = 0;
-  for (let j = 0; j < mmpa.allCasesBased.variates; j++) {
+  for (let j = 0; j < mmpa.initData.activitiesCount; j++) {
     for (let i = -1; (i = mmpa.allCasesBased.activityPairsIdxs[j].findNext(i)) !== -1;) {
       pointsFrom[pairsCounter] = mmpa.allCasesBased.molNumFrom[i];
       pointsTo[pairsCounter] = mmpa.allCasesBased.molNumTo[i];
@@ -56,8 +56,8 @@ function getTransFragmetsGrid(activities: DG.ColumnList, mmpa: MMPA) : [string[]
   occasionsCol.semType = DG.TYPE.INT;
 
   const allPairsCols = [fromCol, toCol, occasionsCol];
-  const activityMeanNames = Array<string>(mmpa.allCasesBased.variates);
-  for (let i = 0; i < mmpa.allCasesBased.variates; i++) {
+  const activityMeanNames = Array<string>(mmpa.initData.activitiesCount);
+  for (let i = 0; i < mmpa.initData.activitiesCount; i++) {
     const name = MMP_NAMES.MEANDIFF + ' ' + activities.byIndex(i).name;
     activityMeanNames[i] = name;
     allPairsCols.push(DG.Column.fromFloat32Array(name, mmpa.rulesBased.meanDiffs[i]));
@@ -104,7 +104,7 @@ function getTransPairsGrid(activities: DG.ColumnList, mmpa: MMPA) : DG.Grid {
     pairNumberCol, pairNumberFromCol, pairNumberToCol,
     pairsFromSmilesCol, pairsToSmilesCol, ruleNumCol];
 
-  for (let i = 0; i < mmpa.allCasesBased.variates; i++) {
+  for (let i = 0; i < mmpa.initData.activitiesCount; i++) {
     const name = MMP_NAMES.DIFF + ' ' + activities.byIndex(i).name;
     allTransformationsCols.push(DG.Column.fromFloat32Array(name, mmpa.allCasesBased.diffs[i]));
   }

@@ -5,12 +5,12 @@ import {getRdKitModule} from '../../../utils/chem-common-rdkit';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 import {MMP_NAMES} from './mmp-constants';
-import {getInverseSubstructuresAndAlign} from '../mmp-mol-rendering';
+import {getInverseSubstructuresAndAlign} from './mmp-mol-rendering';
 import {PaletteCodes, getPalette} from './palette';
 import {getMmpActivityPairsAndTransforms} from './mmp-pairs-transforms';
 import {getMmpTrellisPlot} from './mmp-frag-vs-frag';
 import {getMmpScatterPlot, runMmpChemSpace, fillPairInfo} from './mmp-cliffs';
-import {getGenerations} from '../mmp-generations';
+import {getGenerations} from './mmp-generations';
 
 
 import {drawMoleculeLabels} from '../../../rendering/molecule-label';
@@ -444,8 +444,11 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const moleculesArray = mmpInput.molecules.toList();
     const variates = mmpInput.activities.length;
     const activitiesArrays = new Array<Float32Array>(variates);
-    for (let i = 0; i < variates; i++)
+    const activitiesNames = new Array<string>(variates);
+    for (let i = 0; i < variates; i++) {
       activitiesArrays[i] = mmpInput.activities.byIndex(i).asDoubleList();
+      activitiesNames[i] = mmpInput.activities.byIndex(i).name;
+    }
 
     const gpuCheck = await getGPUDevice();
     const gpu: boolean = !gpuCheck ? false : true;
@@ -454,10 +457,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     try {
       if (this.totalDataUpdated) {
-        mmpa = await MMPA.fromData(this.totalData, moleculesArray, activitiesArrays);
+        mmpa = await MMPA.fromData(this.totalData, moleculesArray, activitiesArrays, activitiesNames);
         this.totalDataUpdated = false;
       } else
-        mmpa = await MMPA.init(moleculesArray, mmpInput.fragmentCutoff, activitiesArrays);
+        mmpa = await MMPA.init(moleculesArray, mmpInput.fragmentCutoff, activitiesArrays, activitiesNames);
     } catch (err: any) {
       const errMsg = err instanceof Error ? err.message : err.toString();
       grok.shell.error(errMsg);
@@ -484,11 +487,20 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     drawMoleculeLabels(mmpInput.table, mmpInput.molecules, sp as DG.ScatterPlotViewer, 20, 7, 100, 110);
 
     //running internal chemspace
-    const linesEditor = runMmpChemSpace(mmpInput, sp, lines, linesIdxs, linesActivityCorrespondance,
+    const [linesEditor, chemSpaceParams] = runMmpChemSpace(mmpInput, sp, lines, linesIdxs, linesActivityCorrespondance,
       transPairsGrid.dataFrame, mmpa, module, embedColsNames);
 
-    const generationsGrid: DG.Grid = await getGenerations(mmpInput, moleculesArray,
-      mmpa, transFragmentsGrid, activityMeanNames, gpu);
+    const progressBarSpace = DG.TaskBarProgressIndicator.create(`Running Chemical space...`);
+    mmpa.chemSpace(chemSpaceParams).then((res) => {
+      const embeddings = res.coordinates;
+      for (const col of embeddings)
+        mmpInput.table.columns.replace(col.name, col);
+
+      this.totalData = mmpa.toJSON();
+      progressBarSpace.close();
+    });
+
+    const generationsGrid: DG.Grid = await getGenerations(mmpa, transFragmentsGrid);
 
     this.fillAll(mmpInput, palette, mmpa, mmpa.allCasesBased.diffs, linesIdxs, transFragmentsGrid, transPairsGrid,
       generationsGrid, tp, sp, mmpFilters, linesEditor, lines, linesActivityCorrespondance, module, gpu);
@@ -683,9 +695,11 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
   unPinPair(): void {
     const grid = grok.shell.tv.grid;
-    grid.setOptions({
-      pinnedRowValues: [],
-      pinnedRowColumnNames: [],
-    });
+    if (grid) {
+      grid.setOptions({
+        pinnedRowValues: [],
+        pinnedRowColumnNames: [],
+      });
+    }
   }
 }

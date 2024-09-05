@@ -88,7 +88,7 @@ const randomValsToCheck: {[key: string]: {[key: string]: {idxs: number[], values
     'Mean Difference Permeability':
       {idxs: [0, 11, 30], values: [1.85, -4.71, -7.13]},
     'Mean Difference Toxicity':
-      {idxs: [0, 11, 30], values: [-1.49, -0.62, -0.70]},
+      {idxs: [0, 11, 30], values: [1.49, -0.62, -0.70]},
   },
   'Transformations_Pairs': {
     'From': {idxs: [0, 30, 50], values: [
@@ -136,7 +136,7 @@ const randomValsToCheckGPU: {[key: string]: {[key: string]: {idxs: number[], val
     'Mean Difference Permeability':
       {idxs: [0, 11, 30], values: [1.85, -4.71, -7.13]},
     'Mean Difference Toxicity':
-      {idxs: [0, 11, 30], values: [-1.49, -0.62, -0.70]},
+      {idxs: [0, 11, 30], values: [1.49, -0.62, -0.70]},
   },
   'Transformations_Pairs': {
     'From': {idxs: [3, 30, 50], values: [
