@@ -89,9 +89,10 @@ export class AdmeticaBaseEditor {
     const object = property.property.inputType === DG.InputType.Map ? {} : property.object;
     const prop = DG.Property.fromOptions(property.property);
     const input = DG.InputBase.forProperty(prop, object);
-    if (!property.property.enable) {
+
+    if (!property.property.enable)
       input.root.style.pointerEvents = 'none';
-    }
+
     const key = property.property.name as keyof typeof property.object;
     input.value = property.object[key];
     input.addCaption('');
@@ -100,6 +101,13 @@ export class AdmeticaBaseEditor {
       const areEqual = JSON.stringify(this.properties) === JSON.stringify(this.updatedProperties);
       this.saveButton.style.visibility = areEqual ? 'hidden' : 'visible';
     });
+
+    if (input.inputType === DG.InputType.Map) {
+      const table = input.root.querySelector('.d4-item-table') as HTMLTableElement;
+      Array.from(table!.rows).forEach(row => row.lastElementChild?.remove());
+      return table;
+    }
+
     return input.root;
   }
   
@@ -122,8 +130,10 @@ export class AdmeticaBaseEditor {
   
   private createLinearInput(coloring: ModelColoring) {
     const linearInput = ui.schemeInput(JSON.parse(coloring.colors!) as number[]);
-    linearInput.removeChild(linearInput.firstChild!);
-    const div = ui.divV([linearInput]);
+    const canvas = linearInput.querySelector('canvas');
+    canvas!.style.width = '100px';
+    canvas!.style.height = '20px';
+    const div = ui.divV([canvas]);
     linearInput.style.pointerEvents = 'none';
     return div;
   }
