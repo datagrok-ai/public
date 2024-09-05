@@ -127,15 +127,28 @@ export const RichFunctionView = defineComponent({
     return () => (
       <div class='w-full h-full flex'>
         <RibbonPanel>
+          <IconFA
+            name='pen'
+            tooltip={formHidden.value ? 'Open inputs': 'Close inputs'}
+            onClick={() => formHidden.value = !formHidden.value} 
+            style={{'background-color': !formHidden.value ? 'var(--grey-1)': null}}
+          />
+          <IconFA
+            name='play'
+            tooltip='Run step'
+            onClick={run} 
+          />
           { hasContextHelp.value && <IconFA 
             name='info' 
             tooltip={ helpHidden.value ? 'Open help panel' : 'Close help panel' }
             onClick={() => helpHidden.value = !helpHidden.value}
+            style={{'background-color': !helpHidden.value ? 'var(--grey-1)': null}}
           /> }
           <IconFA 
             name='history' 
             tooltip='Open history panel' 
             onClick={() => historyHidden.value = !historyHidden.value}
+            style={{'background-color': !historyHidden.value ? 'var(--grey-1)': null}}
           />
         </RibbonPanel>
         <DockManager onPanelClosed={handlePanelClose}>
