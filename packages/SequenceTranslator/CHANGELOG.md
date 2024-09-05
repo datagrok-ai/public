@@ -1,8 +1,19 @@
 # Sequence Translator changelog
 
-## 1.3.15 (WIP)
+## 1.3.15 (2024-09-05)
 
-Fix for datagrok-api changes
+### Features
+
+* Add PolyTool Enumerator Chem dialog to context menu for Molecule
+
+### Bug fixes
+
+* Fixes for PolyTool Enumerator Helm dialog
+  * Trivial Name input Behavior
+  * Enable for any Macromolecule cell
+  * Example with monomers existing in default monomer lib
+* Fixes for datagrok-api changes
+* Add sample cyclized.csv for rules_examples.json
 
 ## 1.3.14 (2024-09-02)
 

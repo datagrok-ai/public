@@ -279,9 +279,10 @@ function getHelms(sequences: string[], rules: Rules): string[] {
   return helms;
 }
 
-export async function addTransformedColumn(
+/** Returns Helm column and molfile column */
+export async function doPolyToolConvert(
   sequencesCol: DG.Column<string>, addHelm: boolean, ruleFiles: string[], chiralityEngine?: boolean
-): Promise<void> {
+): Promise<[DG.Column<string>, DG.Column<string>]> {
   const df = sequencesCol.dataFrame;
 
   const rules = await getRules(ruleFiles);
@@ -303,10 +304,8 @@ export async function addTransformedColumn(
     'helmCol': targetHelmCol,
     'chiralityEngine': chiralityEngine
   });
-
-  molCol.name = df.columns.getUnusedName('molfile(' + sequencesCol.name + ')');
   molCol.semType = DG.SEMTYPE.MOLECULE;
-
-  df.columns.add(molCol, true);
   await grok.data.detectSemanticTypes(df);
+
+  return [targetHelmCol, molCol];
 }

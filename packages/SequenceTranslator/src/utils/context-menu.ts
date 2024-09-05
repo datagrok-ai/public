@@ -7,6 +7,7 @@ import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 import {defaultErrorHandler} from './err-info';
 import {polyToolEnumerateHelmUI} from '../polytool/pt-enumeration-helm-dialog';
+import {polyToolEnumerateChemUI} from '../polytool/pt-dialog';
 
 import {_package} from '../package';
 
@@ -39,19 +40,15 @@ function addContextMenuForCell(gridCell: DG.GridCell, menu: DG.Menu): boolean {
   const logPrefix: string = `ST: addContextMenuForCell()`;
   _package.logger.debug(`${logPrefix}, start`);
 
-  const polyToolEnumerate = () => {
-    polyToolEnumerateHelmUI(gridCell.cell);
-  };
-
   if (gridCell && gridCell.tableColumn) {
     switch (gridCell.tableColumn.semType) {
     case DG.SEMTYPE.MACROMOLECULE: {
-      const sh = SeqHandler.forColumn(gridCell.tableColumn);
-      if (sh.notation === NOTATION.HELM) {
-        menu
-          .item('PolyTool-Enumerate', polyToolEnumerate);
-        true;
-      }
+      menu.item('PolyTool-Enumerate', () => { polyToolEnumerateHelmUI(gridCell.cell); });
+      return true;
+    }
+    case DG.SEMTYPE.MOLECULE: {
+      menu.item('PolyTool-Enumerate', () => { polyToolEnumerateChemUI(gridCell.cell); });
+      return true;
     }
     }
   }
