@@ -115,6 +115,15 @@ export const RichFunctionView = defineComponent({
       helpText.value = loadedHelp ?? null;
     }, {immediate: true});
           
+    const historyRef = ref(null as InstanceType<typeof History> | null);
+    const helpRef = ref(null as InstanceType<typeof MarkDown> | null);
+    const formRef = ref(null as HTMLElement | null);
+    const handlePanelClose = (el: HTMLElement) => {
+      if (el === historyRef.value?.$el) historyHidden.value = true;
+      if (el === helpRef.value?.$el) helpHidden.value = true;
+      if (el === formRef.value) formHidden.value = true;
+    };
+
     return () => (
       <div class='w-full h-full flex'>
         <RibbonPanel>
@@ -129,7 +138,7 @@ export const RichFunctionView = defineComponent({
             onClick={() => historyHidden.value = !historyHidden.value}
           />
         </RibbonPanel>
-        <DockManager>
+        <DockManager onPanelClosed={handlePanelClose}>
           { !historyHidden.value ? 
             <History 
               func={currentCall.value.func}
@@ -140,6 +149,7 @@ export const RichFunctionView = defineComponent({
               dock-spawn-dock-type='right'
               dock-spawn-dock-ratio={0.2}
               {...{title: 'History'}}
+              ref={historyRef}
             />: null }
           
           { !formHidden.value ?
@@ -148,6 +158,7 @@ export const RichFunctionView = defineComponent({
               dock-spawn-dock-type='left'
               dock-spawn-dock-ratio={0.2}
               title='Inputs'
+              ref={formRef}
             >
               <InputForm funcCall={currentCall.value}/>
               <div class='flex sticky bottom-0'>
@@ -193,6 +204,7 @@ export const RichFunctionView = defineComponent({
               {...{title: 'Help'}}
               dock-spawn-dock-type='right'
               dock-spawn-dock-ratio={0.15}
+              ref={helpRef}
             /> : null 
           }
         </DockManager>
