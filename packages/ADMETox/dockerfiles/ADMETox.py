@@ -8,9 +8,9 @@ import numpy as np
 import logging
 from time import time
 from numpy.linalg import norm
-import jaqpotpy
-from jaqpotpy import jaqpot
-from jaqpotpy.models import MolecularModel
+# import jaqpotpy
+# from jaqpotpy import jaqpot
+# from jaqpotpy.models import MolecularModel
 import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import AllChem
@@ -36,6 +36,7 @@ models_extensions = [
   "CYP2D6-Inhibitor.ckpt", "CL-Hepa.ckpt", "CL-Micro.ckpt", "Half-Life.ckpt",
 ]
 
+
 def is_malformed(smiles):
   try:
     mol = Chem.MolFromSmiles(smiles)
@@ -43,6 +44,7 @@ def is_malformed(smiles):
   except Exception as e:
     logging.error(f"Error validating SMILES '{smiles}': {str(e)}")
     return True
+
 
 def convert_to_smiles(molecule):
   if "M  END" in molecule:
@@ -53,6 +55,7 @@ def convert_to_smiles(molecule):
       logging.error(f"Error converting molblock to SMILES: {str(e)}")
       return None
   return molecule
+
 
 def make_chemprop_predictions(df_test, checkpoint_path):
   mpnn = models.MPNN.load_from_checkpoint(checkpoint_path)
@@ -85,6 +88,7 @@ def make_chemprop_predictions(df_test, checkpoint_path):
 
   return np.array(test_preds, dtype=object)
 
+
 def generate_fingerprint(smiles):
   mol = Chem.MolFromSmiles(smiles)
   if mol:
@@ -92,8 +96,10 @@ def generate_fingerprint(smiles):
     return list(map(int, fingerprint))
   return None
 
+
 def calculate_similarity(mean_vector, fingerprint):
   return np.dot(mean_vector, fingerprint) / (norm(mean_vector) * norm(fingerprint))
+
 
 def calculate_chemprop_probability(smiles_list, model):
   mean_vector = mean_vectors[model]
@@ -102,6 +108,7 @@ def calculate_chemprop_probability(smiles_list, model):
     if generate_fingerprint(smiles) else 0.0
     for smiles in smiles_list
   ]
+
 
 def make_euclia_predictions(df_test, checkpoint_path, add_probability):
   model = joblib.load(checkpoint_path)
@@ -124,6 +131,7 @@ def make_euclia_predictions(df_test, checkpoint_path, add_probability):
 
   return predictions, probabilities
 
+
 def handle_model(model, df_test, add_probability):
   test_model_name = next((ext for ext in models_extensions if model in ext), None)
   if not test_model_name:
@@ -145,14 +153,15 @@ def handle_model(model, df_test, add_probability):
 
   return df
 
+
 def handle_uploaded_data(data, models, add_probability, batch_size=1000):
   models_res = models.split(",")
   result_dfs = []
 
   df_test = pd.read_csv(
-    StringIO(data.decode('utf-8')), 
-    skip_blank_lines=False, 
-    keep_default_na=False, 
+    StringIO(data.decode('utf-8')),
+    skip_blank_lines=False,
+    keep_default_na=False,
     na_values=['']
   )
   df_test = df_test.fillna('')
@@ -169,6 +178,7 @@ def handle_uploaded_data(data, models, add_probability, batch_size=1000):
   final_df = pd.concat(result_dfs, axis=1).loc[:, ~pd.concat(result_dfs, axis=1).columns.duplicated()]
   return final_df.to_csv(index=False)
 
+
 @app.route('/df_upload', methods=['POST'])
 def df_upload():
   raw_data = request.data
@@ -179,6 +189,7 @@ def df_upload():
   response = handle_uploaded_data(raw_data, models, add_probability)
   logging.debug(f'Time required: {time() - start}')
   return response
+
 
 if __name__ == '__main__':
   app.run(host='0.0.0.0', port=6678, debug=False)
