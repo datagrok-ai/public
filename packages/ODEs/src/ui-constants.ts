@@ -248,3 +248,21 @@ export enum METHOD {
 export const DOCK_RATIO = 0.3;
 
 export const MAX_RECENT_COUNT = 10;
+
+export const CUSTOM_MODEL_IMAGE_LINK = 'images/custom.png';
+
+/** Model image link */
+export const modelImageLink = new Map([
+  [TITLE.BASIC, 'images/basic.png'],
+  [TITLE.ADV, 'images/advanced.png'],
+  [TITLE.EXT, 'images/extended.png'],
+  [TITLE.CHEM, 'images/chem-react.png'],
+  [TITLE.ROB, 'images/robertson.png'],
+  [TITLE.FERM, 'images/fermentation.png'],
+  [TITLE.PK, 'images/pk.png'],
+  [TITLE.PKPD, 'images/pk-pd.png'],
+  [TITLE.ACID, 'images/ga-production.png'],
+  [TITLE.NIM, 'images/nimotuzumab.png'],
+  [TITLE.BIO, 'images/bioreactor.png'],
+  [TITLE.POLL, 'images/pollution.png'],
+]);

@@ -4,8 +4,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {_package} from './package';
-
 import {basicSetup, EditorView} from 'codemirror';
 import {EditorState} from '@codemirror/state';
 import {python} from '@codemirror/lang-python';
@@ -17,14 +15,18 @@ import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
 import {TEMPLATES, DEMO_TEMPLATE} from './templates';
 import {USE_CASES} from './use-cases';
 import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, DOCK_RATIO, TEMPLATE_TITLES, EXAMPLE_TITLES,
-  WARNING, MISC, demoInfo, INPUT_TYPE, PATH, UI_TIME, MODEL_HINT, MAX_RECENT_COUNT} from './ui-constants';
+  WARNING, MISC, demoInfo, INPUT_TYPE, PATH, UI_TIME, MODEL_HINT, MAX_RECENT_COUNT,
+  modelImageLink, CUSTOM_MODEL_IMAGE_LINK} from './ui-constants';
 import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
   CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS} from './scripting-tools';
 import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools/solver-defs';
 import {unusedFileName, getTableFromLastRows} from './utils';
 
-import './css/app-styles.css';
+import '../css/app-styles.css';
+import '../css/demo.css';
+
+import {_package} from './package';
 
 //let treeNodeY: number = 0;
 
@@ -1233,7 +1235,16 @@ export class DiffStudio {
       this.recentFolder = this.appTree.getOrCreateGroup(TITLE.RECENT, null, false);
     else {
       const templatesFolder = this.appTree.getOrCreateGroup(TITLE.TEMPL, null, false);
+      templatesFolder.onSelected.subscribe(() => {
+        this.browseView.preview = this.getBuiltInModelsCardsView(TEMPLATE_TITLES);
+        this.browseView.path = `browse/apps/DiffStudio/${TITLE.TEMPL}`;
+      });
+
       const examplesFolder = this.appTree.getOrCreateGroup(TITLE.EXAMP, null, false);
+      examplesFolder.onSelected.subscribe(() => {
+        this.browseView.preview = this.getBuiltInModelsCardsView(EXAMPLE_TITLES);
+        this.browseView.path = `browse/apps/DiffStudio/${TITLE.EXAMP}`;
+      });
 
       const putModelsToFolder = (models: TITLE[], folder: DG.TreeViewGroup) => {
         models.forEach((name) => this.putBuiltInModelToFolder(name, folder));
@@ -1390,4 +1401,92 @@ export class DiffStudio {
       grok.shell.warning(`Failed to save recent models: ${(err instanceof Error) ? err.message : 'platfrom issue'}`);
     }
   } // saveModelToRecent
+
+  /** Return view with model cards */
+  private getBuiltInModelsCardsView(models: TITLE[]): DG.View {
+    const view = DG.View.create();
+    const defaultLink = `${_package.webRoot}${CUSTOM_MODEL_IMAGE_LINK}`;
+    const root = ui.div([]);
+
+    for (const name of models) {
+      const img = ui.div([ui.wait(async () => {
+        const imgRoot = ui.div('', 'img');
+        imgRoot.className = 'ui-image';
+        await fetch(`${_package.webRoot}${modelImageLink.get(name)}`)
+          .then((response) => {
+            if (response.ok)
+              return Promise.resolve(response.url);
+            else if (response.status === 404)
+              return Promise.reject(defaultLink);
+          })
+          .then((data) => imgRoot.style.backgroundImage = `url(${data})`)
+          .catch((data) => imgRoot.style.backgroundImage = `url(${data})`);
+        return imgRoot;
+      }),
+      ]);
+
+      const item = ui.card(ui.divV([
+        img,
+        ui.div([name], 'tutorials-card-title'),
+        ui.div([MODEL_HINT.get(name) ?? ''], 'tutorials-card-description'),
+      ], 'demo-app-card'));
+
+      item.onclick = async () => {
+        const solver = new DiffStudio(false);
+        this.browseView.preview = await solver.runSolverApp(
+          undefined,
+          STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
+        ) as DG.View;
+      };
+
+      root.append(item);
+    }
+
+    root.classList.add('grok-gallery-grid');
+    view.root.append(root);
+
+    return view;
+  } // getBuiltInModelsCardsView
+
+  private onFolderWithBuiltInModelsAction(models: TITLE[], folderName: string): void {
+    this.browseView.preview = this.getBuiltInModelsCardsView(models);
+    this.browseView.path = `browse/apps/DiffStudio/${folderName}`;
+  }
 };
+
+export function getModelsCardsView(models: TITLE[]): DG.View {
+  const view = DG.View.create();
+  const defaultLink = `${_package.webRoot}${CUSTOM_MODEL_IMAGE_LINK}`;
+  const root = ui.div([]);
+
+  for (const model of models) {
+    const img = ui.div([ui.wait(async () => {
+      const imgRoot = ui.div('', 'img');
+      imgRoot.className = 'ui-image';
+      await fetch(`${_package.webRoot}${modelImageLink.get(model)}`)
+        .then((response) => {
+          if (response.ok)
+            return Promise.resolve(response.url);
+          else if (response.status === 404)
+            return Promise.reject(defaultLink);
+        })
+        .then((data) => imgRoot.style.backgroundImage = `url(${data})`)
+        .catch((data) => imgRoot.style.backgroundImage = `url(${data})`);
+      return imgRoot;
+    }),
+    ]);
+
+    const item = ui.card(ui.divV([
+      img,
+      ui.div([model], 'tutorials-card-title'),
+      ui.div([MODEL_HINT.get(model) ?? ''], 'tutorials-card-description'),
+    ], 'demo-app-card'));
+
+    root.append(item);
+  }
+
+  root.classList.add('grok-gallery-grid');
+  view.root.append(root);
+
+  return view;
+}
