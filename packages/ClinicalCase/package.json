@@ -18,7 +18,7 @@
     "@datagrok/charts": "^1.2.2",
     "@datagrok/multiplot": "^0.0.4",
     "cash-dom": "latest",
-    "datagrok-api": "^1.21.0-rc.9512de7493.516691f76e",
+    "datagrok-api": "../../js-api",
     "jstat": "^1.9.5",
     "moment": "^2.29.1"
   },
