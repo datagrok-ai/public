@@ -6,9 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {initMatrOperApi} from '../wasm/matrix-operations-api';
 import {solveDefault, solveIVP} from './solver';
 import {ODEs, SolverOptions} from './solver-tools/solver-defs';
-import {DiffStudio, getModelsCardsView} from './app';
-
-import {TEMPLATE_TITLES, EXAMPLE_TITLES} from './ui-constants';
+import {DiffStudio} from './app';
 
 export const _package = new DG.Package();
 
@@ -89,11 +87,4 @@ export async function previewIvp(file: DG.FileInfo): Promise<DG.View> {
 //input: view browseView
 export async function runDiffStudioTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
   new DiffStudio(false, false);
-}
-
-//top-menu: ML | Test view...
-//name: testView
-export function testView() {
-  const browseView = grok.shell.view('browse') as DG.BrowseView;
-  browseView.preview = getModelsCardsView(TEMPLATE_TITLES);
 }

@@ -1234,17 +1234,8 @@ export class DiffStudio {
     if (this.appTree.items.length > 0)
       this.recentFolder = this.appTree.getOrCreateGroup(TITLE.RECENT, null, false);
     else {
-      const templatesFolder = this.appTree.getOrCreateGroup(TITLE.TEMPL, null, false);
-      templatesFolder.onSelected.subscribe(() => {
-        this.browseView.preview = this.getBuiltInModelsCardsView(TEMPLATE_TITLES);
-        this.browseView.path = `browse/apps/DiffStudio/${TITLE.TEMPL}`;
-      });
-
-      const examplesFolder = this.appTree.getOrCreateGroup(TITLE.EXAMP, null, false);
-      examplesFolder.onSelected.subscribe(() => {
-        this.browseView.preview = this.getBuiltInModelsCardsView(EXAMPLE_TITLES);
-        this.browseView.path = `browse/apps/DiffStudio/${TITLE.EXAMP}`;
-      });
+      const templatesFolder = this.getFolderWithBultInModels(TEMPLATE_TITLES, TITLE.TEMPL);
+      const examplesFolder = this.getFolderWithBultInModels(EXAMPLE_TITLES, TITLE.EXAMP);
 
       const putModelsToFolder = (models: TITLE[], folder: DG.TreeViewGroup) => {
         models.forEach((name) => this.putBuiltInModelToFolder(name, folder));
@@ -1253,7 +1244,7 @@ export class DiffStudio {
       putModelsToFolder(TEMPLATE_TITLES, templatesFolder);
       putModelsToFolder(EXAMPLE_TITLES, examplesFolder);
 
-      this.recentFolder = this.appTree.getOrCreateGroup(TITLE.RECENT, null, false);
+      this.recentFolder = this.getFolderWithRecentModels();
 
       // Add recent models to the Recent folder
       try {
@@ -1405,42 +1396,10 @@ export class DiffStudio {
   /** Return view with model cards */
   private getBuiltInModelsCardsView(models: TITLE[]): DG.View {
     const view = DG.View.create();
-    const defaultLink = `${_package.webRoot}${CUSTOM_MODEL_IMAGE_LINK}`;
     const root = ui.div([]);
 
-    for (const name of models) {
-      const img = ui.div([ui.wait(async () => {
-        const imgRoot = ui.div('', 'img');
-        imgRoot.className = 'ui-image';
-        await fetch(`${_package.webRoot}${modelImageLink.get(name)}`)
-          .then((response) => {
-            if (response.ok)
-              return Promise.resolve(response.url);
-            else if (response.status === 404)
-              return Promise.reject(defaultLink);
-          })
-          .then((data) => imgRoot.style.backgroundImage = `url(${data})`)
-          .catch((data) => imgRoot.style.backgroundImage = `url(${data})`);
-        return imgRoot;
-      }),
-      ]);
-
-      const item = ui.card(ui.divV([
-        img,
-        ui.div([name], 'tutorials-card-title'),
-        ui.div([MODEL_HINT.get(name) ?? ''], 'tutorials-card-description'),
-      ], 'demo-app-card'));
-
-      item.onclick = async () => {
-        const solver = new DiffStudio(false);
-        this.browseView.preview = await solver.runSolverApp(
-          undefined,
-          STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
-        ) as DG.View;
-      };
-
-      root.append(item);
-    }
+    for (const name of models)
+      root.append(this.getCardWithBuiltInModel(name));
 
     root.classList.add('grok-gallery-grid');
     view.root.append(root);
@@ -1448,22 +1407,71 @@ export class DiffStudio {
     return view;
   } // getBuiltInModelsCardsView
 
-  private onFolderWithBuiltInModelsAction(models: TITLE[], folderName: string): void {
-    this.browseView.preview = this.getBuiltInModelsCardsView(models);
-    this.browseView.path = `browse/apps/DiffStudio/${folderName}`;
+  /** Return foldwer with built-in models (examples/templates) */
+  private getFolderWithBultInModels(models: TITLE[], title: string): DG.TreeViewGroup {
+    const folder = this.appTree.getOrCreateGroup(title, null, false);
+    folder.onSelected.subscribe(() => {
+      this.browseView.preview = this.getBuiltInModelsCardsView(models);
+      this.browseView.path = `browse/apps/DiffStudio/${title}`;
+    });
+
+    return folder;
   }
-};
 
-export function getModelsCardsView(models: TITLE[]): DG.View {
-  const view = DG.View.create();
-  const defaultLink = `${_package.webRoot}${CUSTOM_MODEL_IMAGE_LINK}`;
-  const root = ui.div([]);
+  /** Return folder with recent models */
+  private getFolderWithRecentModels(): DG.TreeViewGroup {
+    const folder = this.appTree.getOrCreateGroup(TITLE.RECENT, null, false);
 
-  for (const model of models) {
+    folder.onSelected.subscribe(async () => {
+      const view = DG.View.create();
+      this.browseView.path = `browse/apps/DiffStudio/${TITLE.RECENT}`;
+
+      try {
+        const folder = `${grok.shell.user.login}:Home/`;
+        const files = await grok.dapi.files.list(folder);
+        const names = files.map((file) => file.name);
+
+        if (names.includes(PATH.RECENT)) {
+          const root = ui.div([]);
+
+          const dfs = await grok.dapi.files.readBinaryDataFrames(`${folder}${PATH.RECENT}`);
+          const recentDf = dfs[0];
+          const size = recentDf.rowCount;
+          const infoCol = recentDf.col(TITLE.INFO);
+          const isCustomCol = recentDf.col(TITLE.IS_CUST);
+
+          if ((infoCol === null) || (isCustomCol === null))
+            throw new Error('corrupted data file');
+
+          for (let i = 0; i < size; ++i) {
+            if (isCustomCol.get(i))
+              root.append(await this.getCardWithCustomModel(infoCol.get(i)));
+            else
+              root.append(this.getCardWithBuiltInModel(infoCol.get(i)));
+          }
+
+          root.classList.add('grok-gallery-grid');
+          view.root.append(root);
+        } else
+          view.append(ui.h2('No recent models'));
+
+        this.browseView.preview = view;
+      } catch (err) {
+        grok.shell.warning(`Failed to open recents: ${(err instanceof Error) ? err.message : 'platfrom issue'}`);
+      };
+    });
+
+    return folder;
+  } // getFolderWithRecentModels
+
+  /** Return card with model */
+  private getCard(title: string, text: string, imgPath: string): HTMLDivElement {
+    const defaultLink = `${_package.webRoot}${CUSTOM_MODEL_IMAGE_LINK}`;
+
     const img = ui.div([ui.wait(async () => {
       const imgRoot = ui.div('', 'img');
       imgRoot.className = 'ui-image';
-      await fetch(`${_package.webRoot}${modelImageLink.get(model)}`)
+      await fetch(`${_package.webRoot}${imgPath}`)
         .then((response) => {
           if (response.ok)
             return Promise.resolve(response.url);
@@ -1476,17 +1484,70 @@ export function getModelsCardsView(models: TITLE[]): DG.View {
     }),
     ]);
 
-    const item = ui.card(ui.divV([
+    const card = ui.card(ui.divV([
       img,
-      ui.div([model], 'tutorials-card-title'),
-      ui.div([MODEL_HINT.get(model) ?? ''], 'tutorials-card-description'),
+      ui.div([title], 'tutorials-card-title'),
+      ui.div([text], 'tutorials-card-description'),
     ], 'demo-app-card'));
 
-    root.append(item);
-  }
+    return card;
+  } // getCard
 
-  root.classList.add('grok-gallery-grid');
-  view.root.append(root);
+  /** Return card with built-in model*/
+  private getCardWithBuiltInModel(name: TITLE): HTMLDivElement {
+    const card = this.getCard(name, MODEL_HINT.get(name) ?? '', modelImageLink.get(name));
 
-  return view;
-}
+    card.onclick = async () => {
+      const solver = new DiffStudio(false);
+      this.browseView.preview = await solver.runSolverApp(
+        undefined,
+        STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
+      ) as DG.View;
+    };
+
+    ui.tooltip.bind(card, HINT.CLICK_RUN);
+
+    return card;
+  } // getCardWithBuiltInModel
+
+  /** Return card with custom model*/
+  private async getCardWithCustomModel(path: string): Promise<HTMLDivElement> {
+    try {
+      const exist = await grok.dapi.files.exists(path);
+      const idx = path.lastIndexOf('/');
+      const name = path.slice(idx + 1, path.length);
+
+      const card = this.getCard(name, 'Custom model', CUSTOM_MODEL_IMAGE_LINK);
+      ui.tooltip.bind(card, () => ui.divV([
+        ui.divText(path),
+        ui.divText(HINT.CLICK_RUN),
+      ]));
+
+      const folderPath = path.slice(0, idx + 1);
+      let file: DG.FileInfo;
+
+      if (exist) {
+        const fileList = await grok.dapi.files.list(folderPath);
+        file = fileList.find((file) => file.nqName === path);
+      }
+
+      card.onclick = async () => {
+        if (exist) {
+          const equations = await file.readAsString();
+
+          const solver = new DiffStudio(false);
+          this.browseView.preview = await solver.runSolverApp(
+            equations,
+            undefined,
+            `files/${file.fullPath.replace(':', '.').toLowerCase()}`,
+          ) as DG.View;
+        } else
+          grok.shell.warning(`File not found: ${path}`);
+      };
+
+      return card;
+    } catch (e) {
+      grok.shell.warning(`Failed to add ivp-file to recents: ${(e instanceof Error) ? e.message : 'platfrom issue'}`);
+    }
+  } // getCardWithBuiltInModel
+};

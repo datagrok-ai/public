@@ -37,6 +37,7 @@ export enum HINT {
   CONTINUE = 'Continue computations',
   ABORT = 'Abort computations',
   MAX_TIME = `Max computation time, ${COMPUTATION_TIME_UNITS}.`,
+  CLICK_RUN = `Click to run`,
 }; // HINT
 
 /** UI titles */
