@@ -312,8 +312,8 @@ export class SunburstViewer extends EChartViewer {
   }
 
   render(): void {
-    this.renderQueue = this.renderQueue
-      .then(() => this._render());
+    if (this.dataFrame)
+      this.renderQueue = this.renderQueue.then(() => this._render());
   }
 
   async _render() {
