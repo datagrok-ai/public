@@ -256,8 +256,6 @@ export const History = defineComponent({
     });
 
     watch([historicalRuns, currentGrid, currentFilters], () => {
-      if (!currentGrid.value || !currentFilters.value) return;
-
       setTimeout(() => {
         applyStyles();
       }, 100);
