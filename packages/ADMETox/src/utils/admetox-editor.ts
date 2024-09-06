@@ -35,7 +35,8 @@ export class AdmeticaBaseEditor {
     this.saveButton.classList.add('admetox-save-button');
     
     this.templatesInput = ui.input.choice('Template', {
-      onValueChanged: async () =>  await this.createModelsSettingsDiv(this.modelsSettingsDiv)
+      onValueChanged: async () =>  await this.createModelsSettingsDiv(this.modelsSettingsDiv),
+      nullable: false
     }) as DG.ChoiceInput<string>;
 
     this.folderIcon = ui.iconFA('folder', () => {
@@ -50,10 +51,11 @@ export class AdmeticaBaseEditor {
     this.initTemplates();
   }
   
-  private async initTemplates() {
+  private async initTemplates(template?: string) {
     const templates = await this.getTemplates();
     this.templatesInput.items = templates;
-    this.templatesInput.value = templates[0];
+    if (template)
+      this.templatesInput.value = template;
   }
   
   private async getTemplates(): Promise<string[]> {
@@ -75,7 +77,7 @@ export class AdmeticaBaseEditor {
         const templateName = templateNameInput.value;
         await grok.dapi.files.writeAsText(`${TEMPLATES_FOLDER}/${templateName}.json`, JSON.stringify(this.updatedProperties));
         grok.shell.info(`Template "${templateName}" has been successfully saved!`);
-        //await this.initTemplates();
+        await this.initTemplates(templateName);
       })
       .show();
   }
