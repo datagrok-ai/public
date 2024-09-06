@@ -37,9 +37,10 @@ export class SunburstViewer extends EChartViewer {
     this.initEventListeners();
 
     this.title = this.string('title', 'Sunburst', {category: 'Description'});
-    this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST, null, {columnTypeFilter: DG.TYPE.CATEGORICAL});
+    this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST, null,
+      {columnTypeFilter: DG.TYPE.CATEGORICAL});
     this.hierarchyLevel = 3;
-    this.onClick = <onClickOptions>this.string('onClick', 'Select', { choices: ['Select', 'Filter']});
+    this.onClick = <onClickOptions> this.string('onClick', 'Select', { choices: ['Select', 'Filter']});
     this.inheritFromGrid = this.bool('inheritFromGrid', true, { category: 'Color' });
 
     this.option = {
@@ -55,7 +56,7 @@ export class SunburstViewer extends EChartViewer {
           label: {
             rotate: 'radial',
             fontSize: 10,
-          }
+          },
         },
       ],
     };
@@ -70,9 +71,8 @@ export class SunburstViewer extends EChartViewer {
 
   handleDataframeSelection(path: string[], event: any) {
     this.dataFrame.selection.handleClick((index: number) => {
-      if (!this.filter.get(index) && this.rowSource !== 'Selected') {
+      if (!this.filter.get(index) && this.rowSource !== 'Selected')
         return false;
-      }
 
       return path.every((segment, j) => {
         const columnValue = this.dataFrame.getCol(this.eligibleHierarchyNames[j]).get(index);
@@ -91,9 +91,8 @@ export class SunburstViewer extends EChartViewer {
       return path.every((expectedValue, i) => {
         const column = this.dataFrame.getCol(this.eligibleHierarchyNames[i]);
         const columnValue = row.get(this.eligibleHierarchyNames[i]);
-        const formattedValue = columnValue
-          ? (column.type !== DG.TYPE.STRING ? columnValue.toString() : columnValue)
-          : '';
+        const formattedValue = columnValue ?
+          (column.type !== DG.TYPE.STRING ? columnValue.toString() : columnValue) : '';
         return formattedValue === expectedValue;
       });
     };
@@ -101,11 +100,9 @@ export class SunburstViewer extends EChartViewer {
 
   private isRowMatch(rowIndex: number, targetName: string): boolean {
     const { eligibleHierarchyNames, dataFrame } = this;
-  
     return eligibleHierarchyNames.some((colName, index) => {
       const column = dataFrame.getCol(colName);
       const value = column.getString(rowIndex);
-  
       return value === targetName;
     });
   }
@@ -117,36 +114,32 @@ export class SunburstViewer extends EChartViewer {
     const handleChartClick = (params: any) => {
       const path = params.treePathInfo.slice(1).map((obj: any) => obj.name);
       const pathString = path.join('|');
-      let isSectorSelected = selectedSectors.includes(pathString);
-  
+      const isSectorSelected = selectedSectors.includes(pathString);
       if (this.onClick === 'Filter') {
         this.handleDataframeFiltering(path, this.dataFrame);
         return;
       }
-  
+
       const event = params.event.event;
       const isMultiSelect = event.shiftKey || event.ctrlKey || event.metaKey;
       const isMultiDeselect = (event.shiftKey && event.ctrlKey) || (event.shiftKey && event.metaKey);
-  
-      if (isMultiSelect && !isSectorSelected) {
+      if (isMultiSelect && !isSectorSelected)
         selectedSectors.push(pathString);
-      } else if (isMultiDeselect && isSectorSelected) {
-        selectedSectors = selectedSectors.filter(sector => sector !== pathString);
-      }
-  
+      else if (isMultiDeselect && isSectorSelected)
+        selectedSectors = selectedSectors.filter((sector) => sector !== pathString);
       this.handleDataframeSelection(path, event);
     };
-  
+
     const handleChartMouseover = async (params: any) => {
       const path = params.treePathInfo.slice(1).map((obj: any) => obj.name);
       const bitset = this.filter;
-  
+
       const matchDf = this.dataFrame.clone();
-      matchDf.rows.removeWhere(row => bitset && !bitset.get(row.idx));
-  
+      matchDf.rows.removeWhere((row) => bitset && !bitset.get(row.idx));
+
       this.handleDataframeFiltering(path, matchDf);
       const matchCount = matchDf.filter.trueCount;
-  
+
       const tooltipX = params.event.event.x + 10;
       const tooltipY = params.event.event.y;
       const tooltipText = `${matchCount}\n${params.name}`;
@@ -155,36 +148,36 @@ export class SunburstViewer extends EChartViewer {
       if (params.data.semType === DG.SEMTYPE.MOLECULE) {
         const image = await TreeUtils.getMoleculeImage(params.name);
         const { width, height } = image;
-      
+
         if (width && height) {
           const pixels = image!.getContext('2d')!.getImageData(0, 0, width, height).data;
-      
+
           if (pixels.some((_, i) => i % 4 === 3 && pixels[i] !== 0)) {
             ui.tooltip.root.appendChild(image);
             return;
           }
         }
       }
-      
+
       ui.tooltip.root.innerText = tooltipText;
     };
-  
+
     const handleCanvasDblClick = (event: MouseEvent) => {
       const canvas = this.chart?.getDom().querySelector('canvas');
       if (!canvas) return;
-  
+
       const { left, top, width, height } = canvas.getBoundingClientRect();
       const scaleX = canvas.width / width;
       const scaleY = canvas.height / height;
       const clickX = (event.clientX - left) * scaleX;
       const clickY = (event.clientY - top) * scaleY;
-  
+
       if (this.isCanvasEmpty(canvas.getContext('2d'), clickX, clickY)) {
         this.render();
         this.dataFrame.filter.setAll(true);
       }
     };
-  
+
     this.chart.on('click', handleChartClick);
     this.chart.on('mouseout', () => ui.tooltip.hide());
     this.chart.getDom().ondblclick = handleCanvasDblClick;
@@ -192,7 +185,7 @@ export class SunburstViewer extends EChartViewer {
     this.subs.push(ui.onSizeChanged(this.root).subscribe((_) => {
       requestAnimationFrame(() => this.chart?.resize());
     }));
-    
+
     fromEvent(this.chart, 'mouseover')
       .pipe(debounceTime(100))
       .subscribe((params: any) => handleChartMouseover(params));
@@ -211,18 +204,20 @@ export class SunburstViewer extends EChartViewer {
     if (p?.name === 'table') {
       this.updateTable();
       this.onTableAttached(true);
-    }
-    else
+    } else
       super.onPropertyChanged(p, render);
   }
 
   addSubs() {
+    if (this.dataFrame === null)
+      return;
     this.subs.push(this.dataFrame.onMetadataChanged.subscribe((_) => this.render()));
     this.subs.push(grok.events.onEvent('d4-grid-color-coding-changed').subscribe(() => this.render()));
     this.subs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
     this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((data) => {
       const columnNamesToRemove = data.columns.map((column: DG.Column) => column.name);
-      this.hierarchyColumnNames = this.hierarchyColumnNames.filter((columnName) => !columnNamesToRemove.includes(columnName));
+      this.hierarchyColumnNames = this.hierarchyColumnNames.filter((columnName) =>
+        !columnNamesToRemove.includes(columnName));
       this.render();
     }));
     this.addSelectionOrDataSubs();
@@ -231,7 +226,8 @@ export class SunburstViewer extends EChartViewer {
   onTableAttached(propertyChanged?: boolean): void {
     let categoricalColumns = [...this.dataFrame.columns.categorical].sort((col1, col2) =>
       col1.categories.length - col2.categories.length);
-    categoricalColumns = categoricalColumns.filter((col: DG.Column) => col.stats.missingValueCount != col.length && !col.name.startsWith('~'));
+    categoricalColumns = categoricalColumns.filter((col: DG.Column) => col.stats.missingValueCount != col.length &&
+      !col.name.startsWith('~'));
 
     if (categoricalColumns.length < 1)
       return;
@@ -255,7 +251,8 @@ export class SunburstViewer extends EChartViewer {
 
   async getSeriesData(): Promise<TreeDataType[] | undefined> {
     const rowSource = this.selectedOptions.includes(this.rowSource!);
-    return await TreeUtils.toForest(this.dataFrame,this.eligibleHierarchyNames, this.filter, rowSource, this.inheritFromGrid);
+    return await TreeUtils.toForest(this.dataFrame, this.eligibleHierarchyNames, this.filter,
+      rowSource, this.inheritFromGrid);
   }
 
   formatLabel(params: any) {
@@ -283,7 +280,7 @@ export class SunburstViewer extends EChartViewer {
     let result = '';
     let remainingHeight = maxHeightCharacters;
 
-    for (let line of lines) {
+    for (const line of lines) {
       if (line.length > maxLength || remainingHeight <= 0) {
         result = '';
         break;
@@ -309,34 +306,30 @@ export class SunburstViewer extends EChartViewer {
   }
 
   calculateRingDimensions(innerRadius: number, outerRadius: number, startAngle: number, endAngle: number) {
-    let width = outerRadius - innerRadius;
-    let height = Math.abs(endAngle - startAngle) * outerRadius;
+    const width = outerRadius - innerRadius;
+    const height = Math.abs(endAngle - startAngle) * outerRadius;
     return { height, width };
-  }
-
-  _testColumns() {
-    return this.dataFrame.columns.length >= 1;
   }
 
   render(): void {
     this.renderQueue = this.renderQueue
       .then(() => this._render());
   }
-  
+
   async _render() {
     this.eligibleHierarchyNames = this.hierarchyColumnNames.filter(
-      (name) => this.dataFrame.getCol(name).categories.length <= CATEGORIES_NUMBER
+      (name) => this.dataFrame.getCol(name).categories.length <= CATEGORIES_NUMBER,
     );
 
     if (!this.eligibleHierarchyNames.length) {
       this._showMessage('The Sunburst viewer requires at least one categorical column with fewer than 500 unique categories', ERROR_CLASS);
-        return;
+      return;
     }
 
     this._removeMessage(ERROR_CLASS);
-  
+
     const data = await this.getSeriesData();
-  
+
     // Reinitialize the chart (needed in order to prevent memory leak)
     if (this.chart) {
       this.chart.clear();
