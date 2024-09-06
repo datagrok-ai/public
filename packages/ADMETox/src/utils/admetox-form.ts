@@ -1,3 +1,6 @@
+import * as grok from 'datagrok-api/grok';
+import { piechartIndex } from './admetox-utils';
+
 // Function to create an element state for each column
 function createElementState(table: string, left: number, top: number, column: string) {
   return [
@@ -56,6 +59,8 @@ export function generateFormState(table: string, categories: { [s: string]: stri
   
   let currentTopOffset = 180;  // Starting top offset, under "smiles" and "sparkline-cell"
   let currentLeftOffset = leftOffset;
+
+  const grid = grok.shell.getTableView(table).grid;
   
   // Add the predefined "smiles" and "sparkline-cell" elements at their specific positions
   elementStates.push(
@@ -82,7 +87,7 @@ export function generateFormState(table: string, categories: { [s: string]: stri
       "type": "sparkline-cell",
       "viewerSettings": {
         "table": table,
-        "column": "piechart"
+        "column": piechartIndex === 1 ? "piechart" : `piechart (${piechartIndex})`
       }
     });
   

@@ -123,21 +123,19 @@ export class AdmeticaBaseEditor {
   }
 
   private createConditionalInput(coloring: ModelColoring, model: Model) {
-    const conditionalColors = Object.entries(coloring).slice(1);
+    let conditionalColors = Object.entries(coloring).slice(1);
     const conditionalColoring = `{${conditionalColors.map(([range, color]) => `"${range}":"${color}"`).join(",")}}`;
     const patternsInp = ui.patternsInput(JSON.parse(conditionalColoring));
     const inputs = patternsInp.querySelectorAll('.ui-input-editor');
     const colorBars = patternsInp.querySelectorAll('.d4-color-bar');
     
-    const rangesProperty = model.properties.find((prop: any) => prop.property.name === 'ranges');
-    const coloringProperty = (model.coloring as any);
-
-    console.log(colorBars);
-  
+    let rangesProperty = model.properties.find((prop: any) => prop.property.name === 'ranges');
+    let coloringProperty = model.coloring as any;
+    
     inputs.forEach((input, index) => {
       let key = conditionalColors[index][0];
       const inputElement = input as HTMLInputElement;
-  
+      
       inputElement.addEventListener('mousemove', (event) => {
         const mouseEvent = event as MouseEvent;
         const value = rangesProperty?.object.ranges[key] || '';
@@ -146,7 +144,7 @@ export class AdmeticaBaseEditor {
   
       inputElement.addEventListener('input', () => {
         const newValue = inputElement.value;
-  
+        
         if (rangesProperty) {
           const ranges = rangesProperty.object.ranges;
           const oldValue = ranges[key];
@@ -159,42 +157,49 @@ export class AdmeticaBaseEditor {
           delete coloringProperty[key];
           coloringProperty[newValue] = oldColorValue;
         }
-
-        key = newValue;
   
+        conditionalColors[index][0] = newValue;
+        key = newValue;
+
         const areEqual = JSON.stringify(this.properties) === JSON.stringify(this.updatedProperties);
         this.saveButton.style.visibility = areEqual ? 'hidden' : 'visible';
       });
     });
 
     colorBars.forEach((colorBar, index) => {
-      const key = conditionalColors[index][0];
-    
+  
       const handleColorChange = () => {
+        let key = conditionalColors[index][0];
         const newColor = window.getComputedStyle(colorBar).backgroundColor;
-    
+        const hexColor = this.rgbToHex(newColor);
+  
         if (coloringProperty) {
-          // this color is rgb
-          coloringProperty[key] = newColor;
+          coloringProperty[key] = hexColor;
         }
-    
+  
         const areEqual = JSON.stringify(this.properties) === JSON.stringify(this.updatedProperties);
         this.saveButton.style.visibility = areEqual ? 'hidden' : 'visible';
       };
-    
-      const observer = new MutationObserver((mutationsList) => {
-        mutationsList.forEach((mutation) => {
-          if (mutation.attributeName === 'style') {
-            handleColorChange();
-          }
-        });
+  
+      const observer = new MutationObserver(() => {
+        handleColorChange();
       });
-    
-      // Start observing the 'style' attribute for changes
+  
       observer.observe(colorBar, { attributes: true, attributeFilter: ['style'] });
-    });    
+    });
   
     return patternsInp;
+  }
+  
+  private rgbToHex(rgb: string): string {
+    const result = rgb.match(/\d+/g);
+    if (!result || result.length < 3) return '#000000';
+  
+    const r = parseInt(result[0]).toString(16).padStart(2, '0');
+    const g = parseInt(result[1]).toString(16).padStart(2, '0');
+    const b = parseInt(result[2]).toString(16).padStart(2, '0');
+  
+    return `#${r}${g}${b}`;
   }  
   
   private createLinearInput(coloring: ModelColoring) {
@@ -294,7 +299,7 @@ export class AdmeticaBaseEditor {
     return {
       table: this.tableInput.value!,
       col: this.colInput ? this.colInput.value! : null,
-      templatesName: this.templatesInput.value,
+      templateContent: JSON.stringify(this.updatedProperties),
       models: this.tree?.items.filter((item) => !(item instanceof DG.TreeViewGroup) && item.checked).map((item) => item.text),
       addPiechart: this.addPiechartInput.value,
       addForm: this.addFormInput.value,

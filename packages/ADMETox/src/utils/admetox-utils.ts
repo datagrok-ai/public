@@ -9,6 +9,7 @@ import { CellRenderViewer } from '@datagrok-libraries/utils/src/viewers/cell-ren
 import { createCategoryModelMapping, generateFormState } from './admetox-form';
 
 export let properties: any;
+export let piechartIndex = 0;
 
 async function getAdmetoxContainer() {
   const admetoxContainer = await grok.dapi.docker.dockerContainers.filter('admetox').first();
@@ -53,22 +54,22 @@ export async function runAdmetox(csvString: string, queryParams: string, addProb
   return await sendRequestToContainer(admetoxContainer.id, path, params);
 }
 
-export async function setProperties(template?: string) {
+export async function setProperties() {
   if (properties) return;
   const items = await grok.dapi.files.list(TEMPLATES_FOLDER);
-  const fileName = template ? `${template}.json` : items[0].fileName;
+  const fileName = items[0].fileName;
   const propertiesJson = await grok.dapi.files.readAsText(`${TEMPLATES_FOLDER}/${fileName}`);
   properties = JSON.parse(propertiesJson);
 }
 
-export async function performChemicalPropertyPredictions(molColumn: DG.Column, viewTable: DG.DataFrame, properties: string, template?: string, addPiechart?: boolean, addForm?: boolean) {
-  await setProperties(template);
+export async function performChemicalPropertyPredictions(molColumn: DG.Column, viewTable: DG.DataFrame, models: string, template?: string, addPiechart?: boolean, addForm?: boolean) {
+  properties = JSON.parse(template!);
   const progressIndicator = DG.TaskBarProgressIndicator.create('Running ADMETox...');
   const csvString = DG.DataFrame.fromColumns([molColumn]).toCsv();
   progressIndicator.update(10, 'Predicting...');
 
   try {
-    const admetoxResults = await runAdmetox(csvString, properties, 'false');
+    const admetoxResults = await runAdmetox(csvString, models, 'false');
     progressIndicator.update(80, 'Results are ready');
     const table = admetoxResults ? DG.DataFrame.fromCsv(admetoxResults) : null;
     const molColIdx = viewTable?.columns.names().findIndex((name) => name === molColumn.name);
@@ -187,6 +188,7 @@ export function addSparklines(table: DG.DataFrame, columnNames: string[], molCol
   if (!tv) return;
 
   const pie = tv.grid.columns.add({ cellType: 'piechart', index: molColIdx + 1 });
+  piechartIndex += 1;
   pie.settings = { columnNames: columnNames };
   pie.settings = createPieSettings(table, columnNames, properties);
 }
