@@ -10,6 +10,7 @@ Monomer manager
 * Add detector for Dimerized notation provider
 * Add Monomer library manager view with duplicate preferences
 * Add Monomer manager for editing/adding/removing monomers
+* Add monomer lib for PolyTool rules
 
 ### Bug fixes
 
