@@ -11,8 +11,8 @@
   "version": "6.6.25-rc",
   "description": "Machine learning supporting utilities",
   "dependencies": {
-    "@datagrok-libraries/math": "^1.1.12",
-    "@datagrok-libraries/utils": "^4.2.29",
+    "@datagrok-libraries/math": "^1.1.13",
+    "@datagrok-libraries/utils": "^4.2.30-rc",
     "@keckelt/tsne": "^1.0.2",
     "@types/seedrandom": "^3.0.8",
     "@webgpu/types": "^0.1.40",
