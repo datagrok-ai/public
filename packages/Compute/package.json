@@ -16,7 +16,7 @@
     "@datagrok-libraries/utils": "^4.2.29",
     "@datagrok-libraries/compute-utils": "^1.38.0-rc",
     "cash-dom": "latest",
-    "datagrok-api": "=1.21.1-rc.9611340ae5.984aeb5375",
+    "datagrok-api": ">=1.21.1-rc.9611340ae5.984aeb5375",
     "rxjs": "^6.6.7",
     "source-map-loader": "^4.0.1",
     "ts-loader": "latest",
