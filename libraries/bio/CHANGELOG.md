@@ -7,6 +7,7 @@
 * Fix toAtomicLevel workers error DG is not defined
 * Fix SeqHandler.getHelm lost cycles, add tests`
 * Add options for SeqHandler.getHelm
+* Fix default monomer libs for PolyTool rules
 
 ## 5.42.13 (2024-09-02)
 
