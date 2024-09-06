@@ -5,38 +5,49 @@ import {historyUtils} from '../../../history-utils';
 import {PipelineSerializedState} from '../config/PipelineInstance';
 import {FuncCallAdapter, IFuncCallAdapter} from './FuncCallAdapters';
 import {serialize, deserialize} from '@datagrok-libraries/utils/src/json-serialization';
+import {FuncCallInstancesBridge, RestrictionState} from './FuncCallInstancesBridge';
 
 const RESTRICTIONS_PATH = 'INPUT_RESTRICTIONS';
 const OUTPUT_OUTDATED_PATH = 'OUTPUT_OUTDATED';
 const CONFIG_PATH = 'PIPELINE_CONFIG';
 
-export async function makeFuncCall(nqName: string, isReadonly: boolean) {
+export async function makeFuncCall(nqName: string, isReadonly: boolean): Promise<[IFuncCallAdapter, Record<string, RestrictionState>, boolean]> {
   const func: DG.Func = await grok.functions.eval(nqName);
   const fc = func.prepare({});
   fc.newId();
-  const bridge = new FuncCallAdapter(fc, isReadonly);
-  return bridge;
+  const adapter = new FuncCallAdapter(fc, isReadonly);
+  return [adapter, {}, true];
 }
 
-export async function saveFuncCall(adapter: IFuncCallAdapter) {
-  const fc = adapter.getFuncCall();
+// export async function saveFuncCall(adapter: IFuncCallAdapter, restrictions: Record<string, RestrictionState | undefined>, outputState: boolean) {
+//   const fc = adapter.getFuncCall();
+//   // TODO: DF restrictions better handling
+//   fc.options[RESTRICTIONS_PATH] = serialize(restrictions, {useJsonDF: true});
+//   fc.options[OUTPUT_OUTDATED_PATH] = serialize(outputState, {useJsonDF: true});
+//   fc.newId();
+//   return historyUtils.saveRun(fc);
+// }
+
+export async function saveFuncCall(bridge: FuncCallInstancesBridge) {
+  const fc = bridge.getInstance()?.getFuncCall();
+  if (!fc)
+    throw new Error(`Attempting to save an empty FuncCall adapter`);
+  if (bridge.isRunning$.value)
+    throw new Error(`FuncCall node saving during being updated`);
+
   // TODO: DF restrictions better handling
-  const restrictions = adapter.inputRestrictions$.value;
-  const outputState = adapter.isOutputOutdated$.value;
-  fc.options[RESTRICTIONS_PATH] = serialize(restrictions, {useJsonDF: true});
-  fc.options[OUTPUT_OUTDATED_PATH] = serialize(outputState, {useJsonDF: true});
+  fc.options[RESTRICTIONS_PATH] = serialize(bridge.inputRestrictions$.value, {useJsonDF: true});
+  fc.options[OUTPUT_OUTDATED_PATH] = serialize(bridge.isOutputOutdated$.value, {useJsonDF: true});
   fc.newId();
   return historyUtils.saveRun(fc);
 }
 
-export async function loadFuncCall(id: string, isReadonly: boolean): Promise<IFuncCallAdapter> {
+export async function loadFuncCall(id: string, isReadonly: boolean): Promise<[IFuncCallAdapter, Record<string, RestrictionState | undefined>, boolean]> {
   const fc = await historyUtils.loadRun(id, false);
   const restrictions = deserialize(fc.options[RESTRICTIONS_PATH] ?? '{}');
   const outputState = deserialize(fc.options[OUTPUT_OUTDATED_PATH] ?? 'false');
   const adapter = new FuncCallAdapter(fc, isReadonly);
-  adapter.inputRestrictions$.next(restrictions);
-  adapter.isOutputOutdated$.next(outputState);
-  return adapter;
+  return [adapter, restrictions, outputState];
 }
 
 export async function makeMetaCall(nqName: string) {

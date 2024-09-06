@@ -1,9 +1,5 @@
 import * as DG from 'datagrok-api/dg';
 import {ItemId, NqName, RestrictionType} from '../data/common-types';
-import {ValidationResultBase} from '../../../shared-utils/validation';
-import {RestrictionState} from '../runtime/FuncCallAdapters';
-import {ActionPositions} from './PipelineConfiguration';
-import {BehaviorSubject, Observable} from 'rxjs';
 
 //
 // initial steps config for dynamic pipelines
@@ -22,7 +18,7 @@ export type StepSequentialInitialConfig = {
 export type StepFunCallInitialConfig = {
   id: ItemId;
   values?: Record<string, any>;
-  inputRestrictions?: Record<string, RestrictionState>;
+  inputRestrictions?: Record<string, RestrictionType>;
 }
 
 export type InstanceConfRec<C> = {
@@ -36,7 +32,6 @@ export type PipelineInstanceConfig = InstanceConfRec<StepParallelInitialConfig |
 // instance state for view/serialization
 //
 
-// TODO: save backref to pipeline provider when possible
 export interface PipelineInstanceState {
   provider: Function | NqName;
   version?: string;
@@ -45,8 +40,8 @@ export interface PipelineInstanceState {
 
 export type StateTypes = PipelineState['type'];
 
-export type PipelineState = PipelineStateStatic | PipelineStateSequential | PipelineStateParallel | StepFunCallState;
-export type PipelineSerializedState = PipelineStateStatic | PipelineStateSequential | PipelineStateParallel | StepFunCallSerializedState;
+export type PipelineState = PipelineStateRec<StepFunCallState>;
+export type PipelineSerializedState = PipelineStateRec<StepFunCallSerializedState>;
 
 export function isFuncCallState(state: PipelineState): state is StepFunCallState {
   return state.type === 'funccall';
@@ -56,63 +51,42 @@ export function isFuncCallSerializedState(state: PipelineSerializedState): state
 }
 
 
-export function isStaticPipelineState(state: PipelineState): state is PipelineStateStatic {
+export function isStaticPipelineState(state: PipelineState): state is PipelineStateStatic<StepFunCallState> {
   return state.type === 'static';
 }
-export function isParallelPipelineState(state: PipelineState): state is PipelineStateParallel {
+export function isParallelPipelineState(state: PipelineState): state is PipelineStateParallel<StepFunCallState> {
   return state.type === 'parallel';
 }
-export function isSequentialPipelineState(state: PipelineState): state is PipelineStateSequential {
+export function isSequentialPipelineState(state: PipelineState): state is PipelineStateSequential<StepFunCallState> {
   return state.type === 'sequential';
 }
 
-export const pipelineMenuCategories = ['export', 'mock', 'template'] as const;
-export type PipelineMenuCategories = typeof pipelineMenuCategories[number];
+export type PipelineStateRec<S> = PipelineStateStatic<S> | PipelineStateSequential<S> | PipelineStateParallel<S> | S;
 
 
 // funccall
 
-export type StepFunCallSerializedState = {
+export type StepFunCallStateBase = {
   type: 'funccall';
   configId: string;
   uuid: string;
+  friendlyName?: string;
+  isReadonly: boolean;
+}
+
+export type StepFunCallSerializedState = {
   nqName: string;
   funcCallId?: string;
-  friendlyName?: string;
-  isOuputOutdated?: boolean;
-  isReadonly: boolean;
-  inputRestrictions: Record<string, RestrictionState | undefined>;
-}
+} & StepFunCallStateBase;
 
-export type StepAction = {
-  uuid: string,
-  friendlyName?: string;
-  position: ActionPositions,
-}
-
-export type ConsistencyInfo = {
-  restriction: RestrictionType,
-  inconsistent: boolean,
-  assignedValue: any,
-}
 
 export type StepFunCallState = {
   funcCall?: DG.FuncCall;
-  isLoading?: boolean;
-  isRunning?: boolean;
-  isRunable?: boolean;
-  actions?: StepAction;
-} & StepFunCallSerializedState;
+} & StepFunCallStateBase;
 
 // pipeline base
 
-export type PipelineAction = {
-  uuid: string,
-  friendlyName?: string;
-  position: ActionPositions,
-}
-
-export type PipelineInstanceBase<S> = {
+export type PipelineInstanceBase<I> = {
   uuid: string;
   configId: string;
   isReadonly: boolean;
@@ -120,13 +94,13 @@ export type PipelineInstanceBase<S> = {
   provider: NqName | undefined;
   version: string | undefined;
   nqName: string | undefined;
-} & S;
+} & I;
 
 // static
 
-export type PipelineStateStatic = PipelineInstanceBase<{
+export type PipelineStateStatic<S> = PipelineInstanceBase<{
   type: 'static',
-  steps: PipelineState[];
+  steps: PipelineStateRec<S>[];
 }>;
 
 // sequential
@@ -138,11 +112,11 @@ export type StepSequentialDescription = {
   disableUIAdding?: boolean;
 };
 
-export type StepSequentialState = PipelineState & StepSequentialDescription;
+export type StepSequentialState<S> = PipelineStateRec<S> & StepSequentialDescription;
 
-export type PipelineStateSequential = PipelineInstanceBase<{
+export type PipelineStateSequential<S> = PipelineInstanceBase<{
   type: 'sequential';
-  steps: StepSequentialState[];
+  steps: StepSequentialState<S>[];
   stepTypes: StepSequentialDescription[];
 }>;
 
@@ -155,10 +129,10 @@ export type StepParallelDescription = {
   disableUIAdding?: boolean;
 };
 
-export type StepParallelState = PipelineState & StepParallelDescription;
+export type StepParallelState<S> = PipelineStateRec<S> & StepParallelDescription;
 
-export type PipelineStateParallel = PipelineInstanceBase<{
+export type PipelineStateParallel<S> = PipelineInstanceBase<{
   type: 'parallel';
-  steps: StepParallelState[];
+  steps: StepParallelState<S>[];
   stepTypes: StepParallelDescription[];
 }>;

@@ -12,6 +12,7 @@ import {map, filter, takeUntil, withLatestFrom, switchMap, catchError, mapTo, fi
 import {callHandler} from '../utils';
 import {defaultLinkHandler} from './default-handler';
 import {ControllerCancelled, LinkController, ValidatorController} from './LinkControllers';
+import {MemoryStore} from './FuncCallAdapters';
 
 const VALIDATOR_DEBOUNCE_TIME = 250;
 
@@ -139,9 +140,12 @@ export class Link {
       const nextData = controller.outputs[outputAlias];
       if (nextData) {
         for (const [ioName, node] of nodesData) {
-          if (controller instanceof ValidatorController)
-            node.getItem().getStateStore().setValidation(ioName, this.uuid, controller.outputs[outputAlias]);
-          else {
+          if (controller instanceof ValidatorController) {
+            const store = node.getItem().getStateStore();
+            if (store instanceof MemoryStore)
+              throw new Error(`Unable to set validations to raw memory store ${node.getItem().uuid}`);
+            store.setValidation(ioName, this.uuid, controller.outputs[outputAlias]);
+          } else {
             const [state, restriction] = controller.outputs[outputAlias];
             const nextValue = state instanceof DG.DataFrame ? state.clone() : state;
             node.getItem().getStateStore().setState(ioName, nextValue, restriction);

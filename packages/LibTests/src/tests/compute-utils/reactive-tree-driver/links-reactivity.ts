@@ -8,6 +8,7 @@ import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {of} from 'rxjs';
 import {delay, mapTo} from 'rxjs/operators';
+import {FuncCallInstancesBridge} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/FuncCallInstancesBridge';
 
 category('ComputeUtils: Driver links reactivity', async () => {
   let testScheduler: TestScheduler;
@@ -69,7 +70,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
 
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
-      const tree = StateTree.fromConfig({config: pconf, mockMode: true});
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.initAll().subscribe();
       const ls = new LinksState();
       const [link] = ls.createLinks(tree);
@@ -89,7 +90,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
 
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
-      const tree = StateTree.fromConfig({config: pconf, mockMode: true});
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.initAll().subscribe();
       const ls = new LinksState();
       const [link] = ls.createLinks(tree);
@@ -109,7 +110,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
 
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
-      const tree = StateTree.fromConfig({config: pconf, mockMode: true});
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.initAll().subscribe();
       const ls = new LinksState();
       const [link] = ls.createLinks(tree);
@@ -128,7 +129,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
 
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
-      const tree = StateTree.fromConfig({config: pconf, mockMode: true});
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.initAll().subscribe();
       const ls = new LinksState();
       const [link] = ls.createLinks(tree);
@@ -173,7 +174,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
 
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
-      const tree = StateTree.fromConfig({config: pconf, mockMode: true});
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.initAll().subscribe();
       const ls = new LinksState();
       const [link] = ls.createLinks(tree);
@@ -218,7 +219,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
 
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
-      const tree = StateTree.fromConfig({config: pconf, mockMode: true});
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.initAll().subscribe();
       const ls = new LinksState();
       const [link] = ls.createLinks(tree);
@@ -263,7 +264,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
 
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
-      const tree = StateTree.fromConfig({config: pconf, mockMode: true});
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.initAll().subscribe();
       const ls = new LinksState();
       const [link] = ls.createLinks(tree);
@@ -287,7 +288,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
 
     testScheduler.run((helpers) => {
       const {cold, expectObservable} = helpers;
-      const tree = StateTree.fromConfig({config: pconf, mockMode: true});
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.initAll().subscribe();
       const ls = new LinksState();
       const [link] = ls.createLinks(tree);
@@ -300,7 +301,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
       });
 
       cold('252ms a').subscribe(() => {
-        const validators = inNode.getItem().getStateStore().validations$.value;
+        const validators = (inNode.getItem().getStateStore() as FuncCallInstancesBridge).validations$.value;
         const expected = {
           'a': {
             'warnings': [
@@ -320,7 +321,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
 
     testScheduler.run((helpers) => {
       const {cold, expectObservable} = helpers;
-      const tree = StateTree.fromConfig({config: pconf, mockMode: true});
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.initAll().subscribe();
       const ls = new LinksState();
       const [link] = ls.createLinks(tree);
@@ -332,7 +333,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
       });
 
       cold('--a').subscribe(() => {
-        const validators = inNode.getItem().getStateStore().validations$.value;
+        const validators = (inNode.getItem().getStateStore() as FuncCallInstancesBridge).validations$.value;
         const expected = {
           'a': {
             'warnings': [
@@ -374,7 +375,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
 
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
-      const tree = StateTree.fromConfig({config: pconf, mockMode: true});
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.initAll().subscribe();
       const ls = new LinksState();
       const [link] = ls.createLinks(tree);
@@ -387,7 +388,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
         link.trigger();
       });
       cold('--a').subscribe(() => {
-        const restrictions = outNode.getItem().getStateStore().inputRestrictions$.value;
+        const restrictions = (outNode.getItem().getStateStore() as FuncCallInstancesBridge).inputRestrictions$.value;
         const expected = {
           'a': {
             'type': 'restricted',
@@ -427,7 +428,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
 
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
-      const tree = StateTree.fromConfig({config: pconf, mockMode: true});
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.initAll().subscribe();
       const ls = new LinksState();
       const [link] = ls.createLinks(tree);
@@ -440,7 +441,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
         inNode.getItem().getStateStore().setState('b', 1);
       });
       cold('--a').subscribe(() => {
-        const restrictions = outNode.getItem().getStateStore().inputRestrictions$.value;
+        const restrictions = (outNode.getItem().getStateStore() as FuncCallInstancesBridge).inputRestrictions$.value;
         const expected = {
           'a': {
             'type': 'restricted',
@@ -491,7 +492,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
 
     testScheduler.run((helpers) => {
       const {cold, expectObservable} = helpers;
-      const tree = StateTree.fromConfig({config: pconf, mockMode: true});
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.initAll().subscribe();
       const ls = new LinksState();
       const [link1, link2] = ls.createLinks(tree);
@@ -506,7 +507,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
       });
 
       cold('--a').subscribe(() => {
-        const validators = inNode.getItem().getStateStore().validations$.value;
+        const validators = (inNode.getItem().getStateStore() as FuncCallInstancesBridge).validations$.value;
         const expected = {
           [link1.uuid]: {
             a: {'warnings': [

@@ -13,6 +13,8 @@ import './tests/compute-utils/reactive-tree-driver/links-matching';
 import './tests/compute-utils/reactive-tree-driver/links-reactivity';
 import './tests/compute-utils/reactive-tree-driver/links-data';
 import './tests/compute-utils/reactive-tree-driver/instance-additional';
+import './tests/compute-utils/reactive-tree-driver/funcall-wrappers';
+import './tests/compute-utils/reactive-tree-driver/instance-bridge';
 
 export const _package = new DG.Package();
 export {tests};

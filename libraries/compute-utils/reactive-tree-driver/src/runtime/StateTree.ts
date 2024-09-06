@@ -1,16 +1,16 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Observable, defer, of, merge, Subject, BehaviorSubject} from 'rxjs';
-import {finalize, map, mapTo, toArray, concatMap, filter, tap, takeUntil, switchMap, skip, withLatestFrom} from 'rxjs/operators';
+import {Observable, defer, of, merge, Subject, BehaviorSubject, from} from 'rxjs';
+import {finalize, map, mapTo, toArray, concatMap, tap} from 'rxjs/operators';
 import {NodePath, BaseTree, TreeNode} from '../data/BaseTree';
 import {PipelineConfigurationProcessed} from '../config/config-processing-utils';
-import {ConsistencyInfo, isFuncCallSerializedState, PipelineInstanceConfig, PipelineSerializedState, PipelineState} from '../config/PipelineInstance';
+import {isFuncCallSerializedState, PipelineInstanceConfig, PipelineSerializedState, PipelineState} from '../config/PipelineInstance';
 import {buildTraverseD} from '../data/graph-traverse-utils';
 import {buildRefMap, ConfigTraverseItem, getConfigByInstancePath, isPipelineParallelConfig, isPipelineSelfRef, isPipelineSequentialConfig, isPipelineStaticConfig, isPipelineStepConfig, PipelineStepConfigurationProcessed} from '../config/config-utils';
-import {FuncCallMockAdapter, IFuncCallAdapter} from './FuncCallAdapters';
+import {FuncCallAdapter, FuncCallMockAdapter} from './FuncCallAdapters';
 import {loadFuncCall, loadInstanceState, makeFuncCall, makeMetaCall, saveFuncCall, saveInstanceState} from './adapter-utils';
-import {FuncCallNode, isFuncCallNode, ParallelPipelineNode, PipelineNodeBase, SequentialPipelineNode, StateTreeNode, StateTreeSerializationOptions, StaticPipelineNode} from './StateTreeNodes';
+import {ConsistencyInfo, FuncCallNode, FuncCallStateInfo, isFuncCallNode, ParallelPipelineNode, PipelineNodeBase, SequentialPipelineNode, StateTreeNode, StateTreeSerializationOptions, StaticPipelineNode} from './StateTreeNodes';
 import {indexFromEnd} from '../utils';
 import {ValidationResultBase} from '../../../shared-utils/validation';
 
@@ -21,31 +21,16 @@ export class StateTree extends BaseTree<StateTreeNode> {
   public metaCall$ = new BehaviorSubject<DG.FuncCall | undefined>(undefined);
   public isLocked$ = new BehaviorSubject(false);
 
-  private closed$ = new Subject<true>();
-  private funcallStatesWatchers$ = new Subject<Observable<true>>();
-
   constructor(
     item: StateTreeNode,
     private config: PipelineConfigurationProcessed,
     private mockMode = false,
   ) {
     super(item);
-
-    this.makeStateRequests$.pipe(
-      takeUntil(this.closed$),
-    ).subscribe(() => this.updateWatchers());
-
-    this.funcallStatesWatchers$.pipe(
-      switchMap((watchers$) => watchers$),
-      withLatestFrom(this.isLocked$),
-      filter(([, isLocked]) => !isLocked),
-      mapTo(true as const),
-      takeUntil(this.closed$),
-    ).subscribe(this.makeStateRequests$);
   }
 
   public toSerializedState(options: StateTreeSerializationOptions = {}): PipelineSerializedState {
-    return StateTree.toStateRec(this.getRoot(), true, options);
+    return StateTree.toStateRec(this.getRoot(), true, options) as PipelineSerializedState;
   }
 
   public toState(options: StateTreeSerializationOptions = {}): PipelineState {
@@ -74,6 +59,16 @@ export class StateTree extends BaseTree<StateTreeNode> {
     return Object.fromEntries(entries);
   }
 
+  public getFuncCallStates() {
+    const entries = this.traverse(this.getRoot(), (acc, node) => {
+      const item = node.getItem();
+      if (isFuncCallNode(item))
+        return [...acc, [item.uuid, item.funcCallState$] as const];
+      return acc;
+    }, [] as (readonly [string, BehaviorSubject<FuncCallStateInfo | undefined>])[]);
+    return Object.fromEntries(entries);
+  }
+
   public save(uuid?: string) {
     return this.updateWithTreeLock(() => {
       const [root, nqName] = StateTree.findPipelineNode(this, uuid);
@@ -88,17 +83,12 @@ export class StateTree extends BaseTree<StateTreeNode> {
       const pendingFuncCallSaves = this.traverse(root, (acc, node) => {
         const item = node.getItem();
         if (isFuncCallNode(item)) {
-          if (item.instancesWrapper.isRunning$.value || item.instancesWrapper.isLoading$.value)
-            throw new Error(`FuncCall node ${item.uuid} saving during being updated`);
-          const inst = item.instancesWrapper.getInstance();
-          if (inst == null)
-            throw new Error(`FuncCall node ${item.uuid} has no instance`);
-          item.instancesWrapper.isLoading$.next(true);
-          const obs$ = defer(() => saveFuncCall(inst)).pipe(map((nextCall) => {
-            const nadapter = inst.transferAdditionalState(nextCall);
-            item.instancesWrapper.setInstance(nadapter);
-            item.instancesWrapper.isLoading$.next(false);
-          }));
+          const obs$ = defer(() => saveFuncCall(item.instancesWrapper)).pipe(
+            map((nextCall) => {
+              const nadapter = new FuncCallAdapter(nextCall, item.isReadonly);
+              item.changeAdapter(nadapter);
+            }),
+          );
           return [...acc, obs$];
         }
         return acc;
@@ -132,7 +122,7 @@ export class StateTree extends BaseTree<StateTreeNode> {
       this.removeBrunch(path);
       const ppath = path.slice(0, -1);
       this.attachBrunch(ppath, node, node.getItem().config.id, pos);
-      return of(this);
+      return of(ppath);
     });
   }
 
@@ -143,7 +133,7 @@ export class StateTree extends BaseTree<StateTreeNode> {
         throw new Error(`Node uuid ${uuid} not found`);
       const [, path] = data;
       this.removeBrunch(path);
-      return of(this);
+      return of(path);
     });
   }
 
@@ -154,8 +144,8 @@ export class StateTree extends BaseTree<StateTreeNode> {
       if (isPipelineStepConfig(subConfig))
         this.attachBrunch(path, new TreeNode(new FuncCallNode(subConfig, false)), id, pos);
       else
-        StateTree.fromConfig({config: this.config, startNode: subConfig, startPath: [...path, {id, idx: pos}], startState: this, isReadonly: false, mockMode: this.mockMode});
-      return initCalls ? StateTree.loadOrCreateCalls(this, this.mockMode) : of(this);
+        StateTree.fromPipelineConfig({config: this.config, startNode: subConfig, startPath: [...path, {id, idx: pos}], startState: this, isReadonly: false, mockMode: this.mockMode});
+      return (initCalls ? StateTree.loadOrCreateCalls(this, this.mockMode) : of(this)).pipe(mapTo(path));
     });
   }
 
@@ -170,7 +160,7 @@ export class StateTree extends BaseTree<StateTreeNode> {
       ).pipe(
         map((tree) => this.attachBrunch(path, tree.root, id, pos)),
       );
-      return tree.pipe(mapTo(this));
+      return tree.pipe(mapTo(path));
     });
   }
 
@@ -201,12 +191,12 @@ export class StateTree extends BaseTree<StateTreeNode> {
   static load(dbId: string, config: PipelineConfigurationProcessed, {isReadonly = false, mockMode = false}: {isReadonly?: boolean, mockMode?: boolean } = {}): Observable<StateTree> {
     return defer(async () => {
       const [metaCall, state] = await loadInstanceState(dbId);
-      const tree = StateTree.fromState({state, config, metaCall, isReadonly, mockMode});
+      const tree = StateTree.fromInstanceState({state, config, metaCall, isReadonly, mockMode});
       return tree;
     });
   }
 
-  static fromConfig({config, startNode = config, startPath = [], startState, isReadonly = false, mockMode = false}: { config: PipelineConfigurationProcessed; startNode?: PipelineConfigurationProcessed; startPath?: Readonly<NodePath>; startState?: StateTree; isReadonly?: boolean, mockMode?: boolean; }): StateTree {
+  static fromPipelineConfig({config, startNode = config, startPath = [], startState, isReadonly = false, mockMode = false}: { config: PipelineConfigurationProcessed; startNode?: PipelineConfigurationProcessed; startPath?: Readonly<NodePath>; startState?: StateTree; isReadonly?: boolean, mockMode?: boolean; }): StateTree {
     const refMap = buildRefMap(config);
 
     // TODO: initial infinite cycles detection
@@ -250,7 +240,7 @@ export class StateTree extends BaseTree<StateTreeNode> {
     return tree!;
   }
 
-  static fromState({state, config, metaCall, isReadonly, mockMode = false}: { state: PipelineSerializedState; config: PipelineConfigurationProcessed; metaCall: DG.FuncCall; isReadonly: boolean, mockMode?: boolean }): StateTree {
+  static fromInstanceState({state, config, metaCall, isReadonly, mockMode = false}: { state: PipelineSerializedState; config: PipelineConfigurationProcessed; metaCall: DG.FuncCall; isReadonly: boolean, mockMode?: boolean }): StateTree {
     const refMap = buildRefMap(config);
 
     const traverse = buildTraverseD([] as Readonly<NodePath>, (item: PipelineSerializedState, path) => {
@@ -261,7 +251,7 @@ export class StateTree extends BaseTree<StateTreeNode> {
     });
 
     const tree = traverse(state, (acc, state, path) => {
-      const [node, ppath, idx] = StateTree.makeTreeNode(config, refMap, path, isReadonly);
+      const [node, ppath, idx] = StateTree.makeTreeNode(config, refMap, path, isReadonly || state.isReadonly);
       node.restoreState(state);
       return StateTree.addTreeNodeOrCreate(acc, config, node, ppath, idx, mockMode);
     }, undefined as StateTree | undefined);
@@ -314,34 +304,39 @@ export class StateTree extends BaseTree<StateTreeNode> {
       const pendingFuncCallLoads = tree.traverse(tree.root, (acc, node) => {
         const item = node.getItem();
         if (isFuncCallNode(item)) {
-          if (item.instancesWrapper.getInstance()?.getFuncCall())
-            return [...acc, of(null)];
+          if (item.instancesWrapper.getInstance())
+            return acc;
           else if (mockMode) {
-            const obs$ = of([item, new FuncCallMockAdapter(item.config.io!, item.isReadonly), false] as const);
-            return [...acc, obs$];
-          } else if (item.instancesWrapper.id == null) {
             const obs$ = defer(() => {
-              const savedId = item.pendingId;
-              if (savedId == null)
-                return makeFuncCall(item.config.nqName, false);
-              else {
-                item.pendingId = undefined;
-                return loadFuncCall(savedId, item.isReadonly);
-              }
-            }).pipe(
-              map((nitem) => [item, nitem, true] as const),
-            );
+              const adapter = new FuncCallMockAdapter(item.config.io!, item.isReadonly);
+              item.initAdapter(adapter, {}, true, true);
+              return of(undefined);
+            });
+            return [...acc, obs$];
+          } else if (item.instancesWrapper.id == null && item.pendingId == null) {
+            const obs$ = defer(() => {
+              return from(makeFuncCall(item.config.nqName, false)).pipe(
+                map(([adapter, restrictions, outputState]) => {
+                  item.initAdapter(adapter, restrictions, outputState, true);
+                }),
+              );
+            });
+            return [...acc, obs$];
+          } else if (item.instancesWrapper.id == null && item.pendingId) {
+            const savedId = item.pendingId;
+            const obs$ = defer(() => {
+              return from(loadFuncCall(savedId, item.isReadonly)).pipe(
+                map(([adapter, restrictions, outputState]) => {
+                  item.initAdapter(adapter, restrictions, outputState, false);
+                }),
+              );
+            });
             return [...acc, obs$];
           }
         }
         return acc;
-      }, [] as Array<Observable<Readonly<[FuncCallNode, IFuncCallAdapter, boolean]>> | Observable<null>>);
+      }, [] as Array<Observable<undefined | void>>);
       return merge(...pendingFuncCallLoads, MAX_CONCURENT_SAVES).pipe(
-        filter((x) => !!x),
-        map(([node, nAdapter, isNew]) => {
-          node.setAdapter(nAdapter, isNew);
-          node.instancesWrapper.isLoading$.next(false);
-        }),
         toArray(),
         mapTo(tree),
       );
@@ -363,40 +358,24 @@ export class StateTree extends BaseTree<StateTreeNode> {
 
   private updateWithTreeLock<R>(fn: () => Observable<R>) {
     return defer(() => {
-      this.globalStructureLock();
+      this.treeLock();
       return fn();
     }).pipe(finalize(() => {
-      this.globalStructureUnlock();
+      this.treeUnlock();
       this.makeStateRequests$.next(true);
     }));
   }
 
-  private globalStructureLock() {
+  private treeLock() {
     if (this.isLocked$.value)
       throw new Error(`Global structure double lock`);
     this.isLocked$.next(true);
   }
 
-  private globalStructureUnlock() {
+  private treeUnlock() {
     if (!this.isLocked$.value)
       throw new Error(`Global structure double unlock`);
     this.isLocked$.next(false);
-  }
-
-  private updateWatchers() {
-    const watchers = this.traverse(this.root, (acc, node) => {
-      const item = node.getItem();
-      if (isFuncCallNode(item)) {
-        const watcher = merge(
-          item.instancesWrapper.isOutputOutdated$.pipe(skip(1)),
-          item.instancesWrapper.isRunning$.pipe(skip(1)),
-          item.instancesWrapper.isRunable$.pipe(skip(1)),
-        ).pipe(mapTo(true as const));
-        return [...acc, watcher];
-      }
-      return acc;
-    }, [] as Observable<true>[]);
-    this.funcallStatesWatchers$.next(merge(...watchers));
   }
 
   private getSubConfig(path: NodePath, id: string) {

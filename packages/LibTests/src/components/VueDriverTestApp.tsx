@@ -4,8 +4,10 @@ import * as DG from 'datagrok-api/dg';
 import {BigButton, Button, InputForm} from '@datagrok-libraries/webcomponents-vue/src';
 import {defineComponent, KeepAlive, onUnmounted, ref, shallowRef} from 'vue';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
-import {useSubscription} from '@vueuse/rxjs';
+import {useObservable, useSubscription} from '@vueuse/rxjs';
 import {isFuncCallState, isParallelPipelineState, isSequentialPipelineState, PipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {map, switchMap} from 'rxjs/operators';
+import {combineLatest} from 'rxjs';
 
 export const VueDriverTestApp = defineComponent({
   name: 'VuewDriverTestApp',
@@ -17,11 +19,18 @@ export const VueDriverTestApp = defineComponent({
   },
   setup() {
     const driver = new Driver();
-    const isLocked = ref(false);
     const tree = shallowRef<PipelineState | undefined>(undefined);
 
     useSubscription((driver.currentState$).subscribe((s) => tree.value = s));
-    useSubscription((driver.stateLocked$).subscribe((l) => isLocked.value = l));
+    const isLocked = useObservable(driver.stateLocked$);
+
+    const callsState = useObservable(driver.currentCallsState$.pipe(
+      switchMap((data) => {
+        const entries = Object.entries(data).map(([name, state$]) => state$.pipe(map((s) => [name, s] as const)));
+        return combineLatest(entries).pipe(map((entries) => Object.fromEntries(entries)));
+      }),
+    ));
+
     onUnmounted(() => {
       driver.close();
       console.log('VuewDriverTestApp driver closed');
@@ -49,7 +58,7 @@ export const VueDriverTestApp = defineComponent({
           <div key={node.uuid} style={{border: 'solid black 1px', margin: '5px', padding: '5px'}}>
             <div>FuncCall: {node.configId} { isParentDynamic ? <Button onClick={() => removeStep(node.uuid)}>remove</Button> : '' }</div>
             <InputForm funcCall={node.funcCall}></InputForm>
-            <div>{node.isOuputOutdated ? 'OUTDATED' : 'ACTUAL'}</div>
+            <div>{callsState?.value?.[node.uuid]?.isOutputOutdated ? 'OUTDATED' : 'ACTUAL'}</div>
             { Object.entries(node.funcCall.outputs).map(([name, val]) => <div>{ `${name}: ${val}`}</div>) }
             <Button onClick={() => runStep(node.uuid)}>run</Button></div> :
           <div style={{border: 'solid black 1px', margin: '5px'}}>LOADING</div>;
