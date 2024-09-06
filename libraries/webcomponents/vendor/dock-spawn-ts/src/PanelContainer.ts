@@ -273,7 +273,10 @@ export class PanelContainer implements IDockContainerWithSize {
   }
 
   saveState(state: IState) {
-    state.element = this.elementContent.id;
+    state.element = this.elementContent.tagName === 'SLOT' ?
+      //@ts-ignore
+      this.elementContent.assignedElements()[0].title :
+      this.elementContent.id;
     state.width = this.width;
     state.height = this.height;
     state.canUndock = this._canUndock;

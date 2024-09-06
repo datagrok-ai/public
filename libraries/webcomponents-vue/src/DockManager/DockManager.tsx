@@ -2,8 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {defineComponent, KeepAlive, onMounted, PropType, ref, SlotsType} from 'vue';
+import {defineComponent, KeepAlive, onMounted, PropType, ref, SlotsType, VNode, watch} from 'vue';
 import {DockSpawnTsWebcomponent} from '@datagrok-libraries/webcomponents/src';
+import { IState } from '@datagrok-libraries/webcomponents/vendor/dock-spawn-ts/lib/js/interfaces/IState';
+import { whenever } from '@vueuse/core';
 
 declare global {
   namespace JSX {
@@ -16,7 +18,7 @@ declare global {
 export const DockManager = defineComponent({
   name: 'DockManager',
   slots: Object as SlotsType<{
-    default?: any,
+    default?: VNode[],
   }>,
   emits: {
     panelClosed: (element: HTMLElement) => element,
@@ -27,6 +29,19 @@ export const DockManager = defineComponent({
   },
   setup(_, {slots, emit, expose}) {
     let dockSpawnRef = ref(null as DockSpawnTsWebcomponent | null);
+
+    whenever(dockSpawnRef, () => {
+      dockSpawnRef.value!.dockManager.getElementCallback = async (state: IState) => {
+        const slotContent = dockSpawnRef.value!
+          .querySelector(`[title="${state.element}"]`) as HTMLElement;
+
+        return { 
+          element: slotContent,
+          title: slotContent.title,
+        }
+      };
+    }, {once: true})
+
     const saveLayout = () => {
       if (!dockSpawnRef.value) return;
 
@@ -38,7 +53,7 @@ export const DockManager = defineComponent({
 
       if (!dockSpawnRef.value || !savedLayout) return;
 
-      dockSpawnRef.value.loadLayout(savedLayout);
+      dockSpawnRef
     }
     expose({
       'saveLayout': saveLayout,

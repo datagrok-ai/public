@@ -3,35 +3,35 @@
  */
 export class DockGraphSerializer {
     serialize(model) {
-        let graphInfo = this._buildGraphInfo(model.rootNode);
-        let dialogs = this._buildDialogsInfo(model.dialogs.sort((x, y) => x.elementDialog.style.zIndex - y.elementDialog.style.zIndex));
+        const graphInfo = this._buildGraphInfo(model.rootNode);
+        const dialogs = this._buildDialogsInfo(model.dialogs.sort((x, y) => x.elementDialog.style.zIndex - y.elementDialog.style.zIndex));
         return JSON.stringify({ graphInfo: graphInfo, dialogsInfo: dialogs });
     }
     _buildGraphInfo(node) {
-        let nodeState = {};
+        const nodeState = {};
         node.container.saveState(nodeState);
-        let childrenInfo = [];
+        const childrenInfo = [];
         node.children.forEach((childNode) => {
             childrenInfo.push(this._buildGraphInfo(childNode));
         });
-        let nodeInfo = {
+        const nodeInfo = {
             containerType: node.container.containerType,
             state: nodeState,
-            children: childrenInfo
+            children: childrenInfo,
         };
         return nodeInfo;
     }
     _buildDialogsInfo(dialogs) {
-        let dialogsInfo = [];
+        const dialogsInfo = [];
         dialogs.forEach((dialog) => {
-            let panelState = {};
-            let panelContainer = dialog.panel;
+            const panelState = {};
+            const panelContainer = dialog.panel;
             panelContainer.saveState(panelState);
-            let panelInfo = {
+            const panelInfo = {
                 containerType: panelContainer.containerType,
                 state: panelState,
                 position: dialog.getPosition(),
-                isHidden: dialog.isHidden
+                isHidden: dialog.isHidden,
             };
             dialogsInfo.push(panelInfo);
         });

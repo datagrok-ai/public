@@ -58,7 +58,7 @@ export class DockGraphDeserializer {
             childContainers.push(childNode.container);
         if (containerType === 'panel') {
             container = await PanelContainer.loadFromState(containerState, this.dockManager);
-            if (!container.prepareForDocking)
+            if (!container?.prepareForDocking)
                 return null;
             container.prepareForDocking();
             Utils.removeNode(container.elementPanel);
