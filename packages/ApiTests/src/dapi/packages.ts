@@ -6,7 +6,7 @@ import {_package} from '../package-test';
 
 category('Dapi: packages', () => {
   test('list', async () => {
-    const list = (await grok.dapi.packages.list({pageSize: 5}));
+    const list = (await grok.dapi.packages.list());
     expect(list.some((pack) => pack.name === 'ApiTests'), true);
   }, {stressTest: true});
 
