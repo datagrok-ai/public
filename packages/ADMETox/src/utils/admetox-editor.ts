@@ -71,6 +71,8 @@ export class AdmeticaBaseEditor {
 
   private async dialogForTemplateSave(): Promise<void> {
     const templateNameInput = ui.input.string('Name');
+    templateNameInput.addValidator(
+      (template: string) => this.templatesInput.items.includes(template) ? 'Template with this name already exists' : null);
     ui.dialog({ title: 'Save template' })
       .add(templateNameInput)
       .onOK(async () => {
