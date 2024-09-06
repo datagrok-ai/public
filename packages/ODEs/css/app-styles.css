@@ -11,3 +11,10 @@
     overflow: auto;
     height: 100%;
 }
+
+.diff-studio-app-card .diff-studio-ui-image{
+	min-width: 100%;
+	min-height: 120px;
+	background-size: cover;
+	margin-bottom: 12px;
+}

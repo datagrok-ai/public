@@ -24,11 +24,8 @@ import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools/solver-defs';
 import {unusedFileName, getTableFromLastRows} from './utils';
 
 import '../css/app-styles.css';
-import '../css/demo.css';
 
 import {_package} from './package';
-
-//let treeNodeY: number = 0;
 
 /** State of IVP code editor */
 enum EDITOR_STATE {
@@ -1478,7 +1475,7 @@ export class DiffStudio {
 
     const img = ui.div([ui.wait(async () => {
       const imgRoot = ui.div('', 'img');
-      imgRoot.className = 'ui-image';
+      imgRoot.className = 'diff-studio-ui-image';
       await fetch(`${_package.webRoot}${imgPath}`)
         .then((response) => {
           if (response.ok)
@@ -1496,7 +1493,7 @@ export class DiffStudio {
       img,
       ui.div([title], 'tutorials-card-title'),
       ui.div([text], 'tutorials-card-description'),
-    ], 'demo-app-card'));
+    ], 'diff-studio-app-card'));
 
     return card;
   } // getCard
