@@ -121,8 +121,7 @@ export function dfToPlaceholders(df: DG.DataFrame): PolyToolPlaceholders {
     const pos = parseInt(df.get('Position', rowI));
     if (!isNaN(pos)) {
       const monomerSymbolList = parseMonomerSymbolList(df.get('Monomers', rowI));
-      if (monomerSymbolList.length > 0)
-        res[pos - 1] = monomerSymbolList;
+      res[pos - 1] = monomerSymbolList;
     }
   }
   return res;

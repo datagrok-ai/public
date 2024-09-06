@@ -12,7 +12,8 @@ import {Chain} from './pt-conversion';
 import {getAvailableMonomers} from './utils';
 import {PolyToolEnumeratorParams, PolyToolEnumeratorTypes, PolyToolPlaceholders} from './types';
 
-export const PT_HELM_EXAMPLE = 'PEPTIDE1{[R].[F].[T].[G].[H].[F].[G].[A].[A].[Y].[P].[E].[NH2]}$$$$';
+// For example keep monomers presented in HELMCoreLibrary.json only (not [NH2])
+export const PT_HELM_EXAMPLE = 'PEPTIDE1{R.[Aca].T.G.H.F.G.A.A.Y.P.E.[meI]}$$$$';
 
 /** Initialized by getHelmHelper via init Helm package */
 declare const JSDraw2: JSDraw2ModuleType;

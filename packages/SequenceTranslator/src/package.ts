@@ -14,6 +14,7 @@ import {SequenceToMolfileConverter} from './apps/structure/model/sequence-to-mol
 import {FormatConverter} from './apps/translator/model/format-converter';
 import {demoOligoPatternUI, demoOligoStructureUI, demoOligoTranslatorUI} from './demo/demo-st-ui';
 import {getExternalAppViewFactories} from './plugins/mermade';
+import {defaultErrorHandler} from './utils/err-info';
 
 //polytool specific
 import {getPolyToolConversionDialog, polyToolEnumerateChemUI} from './polytool/pt-dialog';
@@ -22,6 +23,8 @@ import {_setPeptideColumn} from './polytool/utils';
 import {PolyToolCsvLibHandler} from './polytool/csv-to-json-monomer-lib-converter';
 import {ITranslationHelper} from './types';
 import {addContextMenuUI} from './utils/context-menu';
+import {PolyToolConvertFuncEditor} from './polytool/pt-convert-editor';
+import {doPolyToolConvert} from './polytool/pt-conversion';
 
 export const _package: OligoToolkitPackage = new OligoToolkitPackage(/*{debug: true}/**/);
 
@@ -164,6 +167,31 @@ export async function polyToolConvert(): Promise<void> {
     grok.shell.warning('To run PolyTool Conversion, open a dataframe with macromolecules');
   }
 }
+
+//name: getPolyToolConvertEditor
+//tags: editor
+//input: funccall call
+//output: column resCol
+export async function getPolyToolConvertEditor(call: DG.FuncCall): Promise<DG.Column<string> | null> {
+  const funcEditor = await PolyToolConvertFuncEditor.create(call);
+  return await funcEditor.showDialog();
+}
+
+//name: polyToolConvert2
+//input: dataframe table
+//input: column seqCol { caption: Sequence }
+//input: bool generateHelm = true
+//input: bool chiralityEngine = true
+//input: object rules
+//output: column resCol
+//editor: SequenceTranslator:getPolyToolConvertEditor
+export async function polyToolConvert2(table: DG.DataFrame,
+  seqCol: DG.Column, generateHelm: boolean, chiralityEngine: boolean, rules: string[]
+): Promise<DG.Column<string>> {
+  const ptConvertRes = await doPolyToolConvert(seqCol, generateHelm, rules, chiralityEngine);
+  return ptConvertRes[0];
+}
+
 
 //top-menu: Bio | PolyTool | Enumerate HELM...
 //name: polyToolEnumerateHelm

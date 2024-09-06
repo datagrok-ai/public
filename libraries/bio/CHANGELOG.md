@@ -2,7 +2,11 @@
 
 ## 5.42.14 (2024-09-04)
 
+### Bug fixes
+
 * Fix toAtomicLevel workers error DG is not defined
+* Fix SeqHandler.getHelm lost cycles, add tests`
+* Add options for SeqHandler.getHelm
 
 ## 5.42.13 (2024-09-02)
 

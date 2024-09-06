@@ -8,9 +8,8 @@ import $ from 'cash-dom';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
 import {RuleInputs, RULES_PATH, RULES_STORAGE_NAME} from './pt-rules';
-import {addTransformedColumn} from './pt-conversion';
+import {doPolyToolConvert} from './pt-conversion';
 
-import {handleError} from './utils';
 import {defaultErrorHandler} from '../utils/err-info';
 import {getLibrariesList} from './utils';
 import {getEnumerationChem, PT_CHEM_EXAMPLE} from './pt-enumeration-chem';
@@ -63,25 +62,8 @@ export async function getPolyToolConversionDialog(targetCol?: DG.Column): Promis
   const dialog = ui.dialog(PT_UI_DIALOG_CONVERSION)
     .add(div)
     .onOK(async () => {
-      const pi = DG.TaskBarProgressIndicator.create('PolyTool converting');
-      try {
-        const sequencesCol = targetColumnInput.value;
-        if (!sequencesCol) {
-          grok.shell.warning(PT_WARNING_COLUMN);
-          return;
-        }
-
-        const files = await ruleInputs.getActive();
-
-        addTransformedColumn(sequencesCol!,
-          generateHelmChoiceInput.value!,
-          files,
-          chiralityEngineInput.value!);
-      } catch (err: any) {
-        handleError(err);
-      } finally {
-        pi.close();
-      }
+      const ruleFileList = await ruleInputs.getActive();
+      await polyToolConvertUI(targetColumnInput.value!, generateHelmChoiceInput.value!, chiralityEngineInput.value!, ruleFileList);
     });
 
   return dialog;
@@ -91,16 +73,25 @@ async function getPolyToolEnumerationChemDialog(cell?: DG.Cell): Promise<DG.Dial
   const [libList, helmHelper] = await Promise.all([
     getLibrariesList(), getHelmHelper()]);
 
-  let molValue = PT_CHEM_EXAMPLE;//cell ? cell.value : PT_CHEM_EXAMPLE;
+  const molStr = (cell && cell.rowIndex >= 0) ? cell.value : PT_CHEM_EXAMPLE;//cell ? cell.value : PT_CHEM_EXAMPLE;
+  let molfileValue: string = await (async (): Promise<string> => {
+    if (DG.chem.isMolBlock(molStr)) return molStr;
+    return (await grok.functions.call('Chem:convertMolNotation', {
+      molecule: molStr,
+      sourceNotation: cell?.column.getTag(DG.TAGS.UNITS) ?? DG.chem.Notation.Unknown,
+      targetNotation: DG.chem.Notation.MolBlock,
+    }));
+  })();
+
   const molInput = new DG.chem.Sketcher(DG.chem.SKETCHER_MODE.EXTERNAL);
   molInput.syncCurrentObject = false;
   // sketcher.setMolFile(col.tags[ALIGN_BY_SCAFFOLD_TAG]);
   molInput.onChanged.subscribe((_: any) => {
-    molValue = molInput.getMolFile();
+    molfileValue = molInput.getMolFile();
   });
   molInput.root.classList.add('ui-input-editor');
   molInput.root.style.marginTop = '3px';
-  molInput.setMolFile(molValue);
+  molInput.setMolFile(molfileValue);
 
   //const helmInput = helmHelper.createHelmInput('Macromolecule', {value: helmValue});
   const screenLibrary = ui.input.choice('Library to use', {value: null, items: libList});
@@ -148,4 +139,24 @@ async function getPolyToolEnumerationChemDialog(cell?: DG.Cell): Promise<DG.Dial
     });
 
   return dialog;
+}
+
+export async function polyToolConvertUI(
+  seqCol: DG.Column<string>, generateHelm: boolean, chiralityEngine: boolean, rules: string[]
+): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('PolyTool converting');
+  try {
+    const table = seqCol.dataFrame;
+
+    const [resHelmCol, resMolCol] = await doPolyToolConvert(seqCol,
+      generateHelm,
+      rules,
+      chiralityEngine);
+    resHelmCol.name = table.columns.getUnusedName(resHelmCol.name);
+    resMolCol.name = table.columns.getUnusedName(resMolCol.name);
+    table.columns.add(resHelmCol);
+    table.columns.add(resMolCol);
+  } finally {
+    pi.close();
+  }
 }

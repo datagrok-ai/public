@@ -28,7 +28,7 @@ export interface ISeqSplitted {
 export interface INotationProvider {
   get splitter(): SplitterFunc;
 
-  getHelm(seqCol: DG.Column<string>): Promise<DG.Column<string>>;
+  getHelm(seqCol: DG.Column<string>, options?: any): Promise<DG.Column<string>>;
 }
 
 export type SeqColStats = { freq: MonomerFreqs, sameLength: boolean }
