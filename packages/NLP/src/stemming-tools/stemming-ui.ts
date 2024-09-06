@@ -40,13 +40,13 @@ export function modifyMetric(df: DG.DataFrame): void {
     }
   };
 
-  const colsInput = ui.input.columns('Features', {value: df.columns.byNames(initCheckedCols), table: df, onValueChanged: (inp, value) => onColumnsChanged(value)});
+  const colsInput = ui.input.columns('Features', {value: df.columns.byNames(initCheckedCols), table: df, onValueChanged: (value) => onColumnsChanged(value)});
   colsInput.setTooltip('Features used in computing similarity measure.');
   dlg.add(ui.h3('Source'));
   dlg.add(colsInput);
 
   const distInput = ui.input.choice('Distance', {value: stemCash.aggrDistance, items: DIST_TYPES_ARR,
-    onValueChanged: (inp, value) => {stemCash.aggrDistance = value;}});
+    onValueChanged: (value) => {stemCash.aggrDistance = value;}});
 
   distInput.setTooltip('Type of distance between elements with the specified features.');
   dlg.add(distInput);
@@ -77,7 +77,7 @@ export function modifyMetric(df: DG.DataFrame): void {
 
     const choices = getMetricTypesChoicesList(col);
     const metricInput = ui.input.choice(`${name}:`, {value: colData.metric.type as string, items: choices,
-      onValueChanged: (inp, value) => {
+      onValueChanged: (value) => {
         const val = colsData.get(name);
         //@ts-ignore
         val?.metric.type = value;
@@ -86,7 +86,7 @@ export function modifyMetric(df: DG.DataFrame): void {
     metricInput.setTooltip(`Type of metric between the '${name}' feature values.`);
 
     const weightInput = ui.input.float('metric with the weight', {value: colData.metric.weight,
-      onValueChanged: (inp, value) => {
+      onValueChanged: (value) => {
         const val = colsData.get(name);
         //@ts-ignore
         val?.metric.weight = value;

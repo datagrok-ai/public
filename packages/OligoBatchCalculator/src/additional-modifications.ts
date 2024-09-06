@@ -16,14 +16,14 @@ export async function addModification(modificationsDf: DG.DataFrame): Promise<vo
   ui.tooltip.bind(abbreviation.root, TOOLTIPS.ABBREVIATIONS);
 
   const molecularWeight = ui.input.string(ADDITIONAL_MODS_COL_NAMES.MOLECULAR_WEIGHT, {value: '',
-    onValueChanged: (inp, value) => {
+    onValueChanged: (value) => {
       if (isNaN(Number(value)))
         grok.shell.warning(MESSAGES.isNumericTypeValidation(ADDITIONAL_MODS_COL_NAMES.MOLECULAR_WEIGHT));
     }});
   ui.tooltip.bind(molecularWeight.root, TOOLTIPS.MOL_WEIGHT);
 
   const baseModification = ui.input.choice(ADDITIONAL_MODS_COL_NAMES.BASE_MODIFICATION, {value: BASE_MODIFICATIONS.NO,
-    items: Object.values(BASE_MODIFICATIONS), onValueChanged: (inp, value) => {
+    items: Object.values(BASE_MODIFICATIONS), onValueChanged: (value) => {
       if (value != BASE_MODIFICATIONS.NO)
         extCoefficient.value = EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION;
       extCoefficient.enabled = (value == BASE_MODIFICATIONS.NO);

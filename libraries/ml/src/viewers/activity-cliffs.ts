@@ -190,7 +190,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
   /* in case several activity cliffs viewers are opened cliffs filtering can
   be applyed only to one of the viewers. When 'Show only cliffs' is switched on one of the viewers
   switch inputs on other viewers are disabled */
-  const filterCliffsButton = ui.input.toggle(`Show only cliffs`, {value: false, onValueChanged: (inp, value) => {
+  const filterCliffsButton = ui.input.toggle(`Show only cliffs`, {value: false, onValueChanged: (value) => {
     if (value) {
       sp.dataFrame.setTag(CLIFFS_FILTER_APPLIED, axesNames[0]);
       df.filter.and(cliffsBitSet);
@@ -441,7 +441,7 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
   /* in case several activity cliffs viewers are opened cliffs filtering can
   be applyed only to one of the viewers. When 'Show only cliffs' is switched on one of the viewers
   switch inputs on other viewers are disabled */
-  const filterCliffsButton = ui.input.toggle(`Show only cliffs`, {value: false, onValueChanged: (inp, value) => {
+  const filterCliffsButton = ui.input.toggle(`Show only cliffs`, {value: false, onValueChanged: (value) => {
     if (value) {
       sp.dataFrame.setTag(CLIFFS_FILTER_APPLIED, axesNames[0]);
       df.filter.and(cliffsMetrics.cliffsBitSet);

@@ -63,7 +63,7 @@ export class SubstructureSearchDialog {
 
   createUI(): void {
     const dataframe = grok.shell.tv.dataFrame;
-    this.columnsInput = ui.input.column('Column', {table: dataframe, value: this.col, onValueChanged: (inp, value) => {
+    this.columnsInput = ui.input.column('Column', {table: dataframe, value: this.col, onValueChanged: (value) => {
       this.col = value;
       this.updateNotationDiv();
       this.updateInputs();

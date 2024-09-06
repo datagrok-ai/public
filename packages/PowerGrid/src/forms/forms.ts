@@ -173,13 +173,13 @@ export class FormCellRenderer extends DG.GridCellRenderer {
     const columnNames = settings?.columnNames ?? names(gc.grid.dataFrame.columns);
     return ui.inputs([
       ui.input.columns('Сolumns', {value: gc.grid.dataFrame.columns.byNames(columnNames),
-        table: gc.grid.dataFrame, onValueChanged: (inp, value) => {
+        table: gc.grid.dataFrame, onValueChanged: (value) => {
           settings.columnNames = names(value);
           gc.grid.invalidate();
         }, available: names(gc.grid.dataFrame.columns)
       }),
       ui.input.choice('Show column names', {value: settings.showColumnNames ?? 'Auto', items: ['Auto', 'Always', 'Never'],
-        onValueChanged: (inp, value) => {
+        onValueChanged: (value) => {
           settings.showColumnNames = value as ColumnNamesVisibility;
           gc.grid.invalidate();
         }})

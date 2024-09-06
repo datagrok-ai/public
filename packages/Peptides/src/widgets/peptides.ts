@@ -36,7 +36,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
       grok.shell.info('Sequences column contains missing values. They will be ignored during analysis');
 
 
-    seqColInput = ui.input.column('Sequence', {table: df, value: potentialCol, onValueChanged: (inp, value) => {
+    seqColInput = ui.input.column('Sequence', {table: df, value: potentialCol, onValueChanged: (value) => {
       $(logoHost).empty().append(ui.wait(async () => {
         const viewer = await df.plot.fromType('WebLogo', {sequenceColumnName: value.name});
         viewer.root.style.setProperty('height', '130px');
@@ -78,7 +78,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
 
   const activityScalingMethod = ui.input.choice(
     'Scaling', {value: C.SCALING_METHODS.NONE, items: Object.values(C.SCALING_METHODS),
-      onValueChanged: async (inp, value): Promise<void> => {
+      onValueChanged: async (value): Promise<void> => {
         scaledCol = scaleActivity(activityColumnChoice.value!, value);
 
         const hist = DG.DataFrame.fromColumns([scaledCol]).plot.histogram({
@@ -99,7 +99,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
   const activityColumnChoice = ui.input.column('Activity', {table: df, value: defaultActivityColumn!,
     onValueChanged: activityScalingMethodState, filter: (col: DG.Column) => col.type === DG.TYPE.INT || col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.QNUM});
   activityColumnChoice.setTooltip('Numerical activity column');
-  const clustersColumnChoice = ui.input.column('Clusters', {table: df, onValueChanged: (inp, value) => {
+  const clustersColumnChoice = ui.input.column('Clusters', {table: df, onValueChanged: (value) => {
     if (value) {
       generateClustersInput.value = false;
       generateClustersInput.fireChanged();
@@ -108,7 +108,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
   clustersColumnChoice.setTooltip('Optional. Clusters column is used to create Logo Summary Table');
   clustersColumnChoice.nullable = true;
   // clustering input
-  const generateClustersInput = ui.input.bool('Generate clusters', {value: true, onValueChanged: (inp, value) => {
+  const generateClustersInput = ui.input.bool('Generate clusters', {value: true, onValueChanged: (value) => {
     if (value) {
       //@ts-ignore
       clustersColumnChoice.value = null;
@@ -128,23 +128,23 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
 
   // ### MCL INPUTS ###
   const similarityThresholdInput = ui.input.float(MCL_INPUTS.THRESHOLD, {
-    value: mclOptions.threshold, nullable: false, onValueChanged: (inp, value) => mclOptions.threshold = value ?? mclOptions.threshold,
+    value: mclOptions.threshold, nullable: false, onValueChanged: (value) => mclOptions.threshold = value ?? mclOptions.threshold,
   });
   similarityThresholdInput.setTooltip('Threshold for similarity between two sequences to create edges');
 
   const inflationInput = ui.input.float(MCL_INPUTS.INFLATION, {
-    value: mclOptions.inflation, nullable: false, onValueChanged: (inp, value) => mclOptions.inflation = value ?? mclOptions.inflation,
+    value: mclOptions.inflation, nullable: false, onValueChanged: (value) => mclOptions.inflation = value ?? mclOptions.inflation,
   });
   inflationInput.setTooltip('Inflation value for MCL algorithm');
 
   const maxIterationsInput = ui.input.int(MCL_INPUTS.MAX_ITERATIONS, {
-    value: mclOptions.maxIterations, nullable: false, onValueChanged: (inp, value) => mclOptions.maxIterations = value ?? mclOptions.maxIterations,
+    value: mclOptions.maxIterations, nullable: false, onValueChanged: (value) => mclOptions.maxIterations = value ?? mclOptions.maxIterations,
   });
   maxIterationsInput.setTooltip('Maximum iterations for MCL algorithm');
 
   // disable input if there is no gpu
   const useWebGPUInput = ui.input.bool(MCL_INPUTS.USE_WEBGPU, {
-    value: mclOptions.useWebGPU, onValueChanged: (inp, value) => mclOptions.useWebGPU = value,
+    value: mclOptions.useWebGPU, onValueChanged: (value) => mclOptions.useWebGPU = value,
   });
   useWebGPUInput.enabled = false;
   mclOptions.webGPUDescriptionPromise.then(() => {
@@ -159,21 +159,21 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
   });
 
   const minClusterSizeInput = ui.input.int(MCL_INPUTS.MIN_CLUSTER_SIZE, {
-    value: mclOptions.minClusterSize, nullable: false, onValueChanged: (inp, value) => mclOptions.minClusterSize = value ?? mclOptions.minClusterSize,
+    value: mclOptions.minClusterSize, nullable: false, onValueChanged: (value) => mclOptions.minClusterSize = value ?? mclOptions.minClusterSize,
   });
   minClusterSizeInput.setTooltip('Minimum cluster size for MCL algorithm');
 
   const mclDistanceFunctionInput= ui.input.choice(MCL_INPUTS.DISTANCE_FUNCTION,
     {value: mclOptions.distanceF, items: [MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH, MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE,
       MmDistanceFunctionsNames.HAMMING, MmDistanceFunctionsNames.LEVENSHTEIN], nullable: false,
-    onValueChanged: (inp, value) => mclOptions.distanceF = value}) as DG.ChoiceInput<MmDistanceFunctionsNames>;
+    onValueChanged: (value) => mclOptions.distanceF = value}) as DG.ChoiceInput<MmDistanceFunctionsNames>;
   const mclGapOpenInput = ui.input.float(MCL_INPUTS.GAP_OPEN, {value: mclOptions.gapOpen,
-    onValueChanged: (inp, value) => mclOptions.gapOpen = value ?? mclOptions.gapOpen});
+    onValueChanged: (value) => mclOptions.gapOpen = value ?? mclOptions.gapOpen});
   const mclGapExtendInput = ui.input.float(MCL_INPUTS.GAP_EXTEND, {value: mclOptions.gapExtend,
-    onValueChanged: (inp, value) => mclOptions.gapExtend = value ?? mclOptions.gapExtend});
+    onValueChanged: (value) => mclOptions.gapExtend = value ?? mclOptions.gapExtend});
   const mclFingerprintTypesInput: DG.ChoiceInput<string> = ui.input.choice(MCL_INPUTS.FINGERPRINT_TYPE, {value: mclOptions.fingerprintType,
     items: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'], nullable: false,
-    onValueChanged: (inp, value) => mclOptions.fingerprintType = value}) as DG.ChoiceInput<string>;
+    onValueChanged: (value) => mclOptions.fingerprintType = value}) as DG.ChoiceInput<string>;
 
 
   const mclInputs = [similarityThresholdInput, inflationInput, maxIterationsInput, minClusterSizeInput,

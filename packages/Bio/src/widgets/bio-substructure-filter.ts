@@ -296,9 +296,11 @@ export class FastaBioFilter extends BioFilterBase<BioFilterProps> {
     super();
 
     this.substructureInput = ui.input.string('', {
-      value: '', onValueChanged: (inp, value) => {
-        this.props = new BioFilterProps(value);
-        if (!this._propsChanging) this.onChanged.next();
+      value: '', onValueChanged: (value) => {
+        window.setTimeout(() => {
+          this.props = new BioFilterProps(value);
+          if (!this._propsChanging) this.onChanged.next();
+        }, 0 /* next event cycle */);
       }, placeholder: 'Substructure'
     });
   }
@@ -338,13 +340,13 @@ export class SeparatorBioFilter extends BioFilterBase<SeparatorFilterProps> {
     super();
 
     this.substructureInput = ui.input.string('', {
-      value: '', onValueChanged: (inp, value) => {
+      value: '', onValueChanged: (value) => {
         this.props = new SeparatorFilterProps(value, this.props.separator);
         if (!this._propsChanging) this.onChanged.next();
       }, placeholder: 'Substructure'
     });
     this.separatorInput = ui.input.string('', {
-      value: this.colSeparator = colSeparator, onValueChanged: (inp, value) => {
+      value: this.colSeparator = colSeparator, onValueChanged: (value) => {
         const separator: string | undefined = !!value ? value : undefined;
         this.props = new SeparatorFilterProps(this.props.substructure, separator);
         if (!this._propsChanging) this.onChanged.next();

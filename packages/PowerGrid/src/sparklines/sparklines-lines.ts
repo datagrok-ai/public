@@ -179,7 +179,7 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
       normalizeInput,
       ui.input.columns('Сolumns', {value: gridColumn.grid.dataFrame.columns.byNames(columnNames),
         table: gridColumn.grid.dataFrame,
-        onValueChanged: (inp, value) => {
+        onValueChanged: (value) => {
           settings.columnNames = names(value);
           gridColumn.grid.invalidate();
         }, available: names(gridColumn.grid.dataFrame.columns.numerical),
