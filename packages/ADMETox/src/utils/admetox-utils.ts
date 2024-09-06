@@ -9,7 +9,8 @@ import { CellRenderViewer } from '@datagrok-libraries/utils/src/viewers/cell-ren
 import { createCategoryModelMapping, generateFormState } from './admetox-form';
 
 export let properties: any;
-export let piechartIndex = 0;
+export const tablePieChartIndexMap: Map<string, number> = new Map();
+let piechartIndex = 0;
 
 async function getAdmetoxContainer() {
   const admetoxContainer = await grok.dapi.docker.dockerContainers.filter('admetox').first();
@@ -188,7 +189,15 @@ export function addSparklines(table: DG.DataFrame, columnNames: string[], molCol
   if (!tv) return;
 
   const pie = tv.grid.columns.add({ cellType: 'piechart', index: molColIdx + 1 });
-  piechartIndex += 1;
+  let pieChartIdx: number;
+  if (tablePieChartIndexMap.has(table.name)) {
+    pieChartIdx = tablePieChartIndexMap.get(table.name)!;
+    tablePieChartIndexMap.set(table.name, pieChartIdx + 1);
+  } else {
+    pieChartIdx = piechartIndex;
+    tablePieChartIndexMap.set(table.name, pieChartIdx + 1);
+  }
+
   pie.settings = { columnNames: columnNames };
   pie.settings = createPieSettings(table, columnNames, properties);
 }
