@@ -18,12 +18,12 @@ const commands = {
 
 const command = argv['_'][0];
 if (command in commands) {
-  try {
-    if (!commands[command](argv)) {
+  try { 
+    if (!commands[command](argv)) { 
       console.log(help[command]);
       exitWithCode(1);
     }
-  } catch (err) {
+  } catch (err) { 
     console.error(err);
     console.log(help[command]);
     exitWithCode(1);

@@ -1,7 +1,6 @@
 package grok_connect.providers;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,6 +18,7 @@ import grok_connect.resultset.ResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.GrokConnectException;
+import grok_connect.utils.GrokConnectUtil;
 import grok_connect.utils.Property;
 import grok_connect.utils.QueryCancelledByUser;
 import serialization.Types;
@@ -154,5 +154,35 @@ public class MsSqlDataProvider extends JdbcDataProvider {
         Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
         defaultManagersMap.put(Types.BOOL, new MySqlMssqlBoolColumnManager());
         return DefaultResultSetManager.fromManagersMap(defaultManagersMap);
+    }
+
+
+    @Override
+    public DataFrame getForeignKeys(DataConnection conn, String schema) throws GrokConnectException, QueryCancelledByUser {
+        FuncCall queryRun = new FuncCall();
+        queryRun.func = new DataQuery();
+        queryRun.func.query = "SELECT sch.name AS [table_schema], \n" +
+                "    obj.name AS [constraint_name],\n" +
+                "        tab1.name AS [table_name],\n" +
+                "        col1.name AS [column_name],\n" +
+                "        tab2.name AS [foreign_table_name],\n" +
+                "        col2.name AS [foreign_column_name]\n" +
+                "    FROM sys.foreign_key_columns fkc\n" +
+                "    INNER JOIN sys.objects obj\n" +
+                "        ON obj.object_id = fkc.constraint_object_id\n" +
+                "    INNER JOIN sys.tables tab1\n" +
+                "        ON tab1.object_id = fkc.parent_object_id\n" +
+                "    INNER JOIN sys.schemas sch\n" +
+                "        ON tab1.schema_id = sch.schema_id\n" +
+                "    INNER JOIN sys.columns col1\n" +
+                "        ON col1.column_id = parent_column_id AND col1.object_id = tab1.object_id\n" +
+                "    INNER JOIN sys.tables tab2\n" +
+                "        ON tab2.object_id = fkc.referenced_object_id\n" +
+                "    INNER JOIN sys.columns col2\n" +
+                "        ON col2.column_id = referenced_column_id AND col2.object_id = tab2.object_id";
+        if (GrokConnectUtil.isNotEmpty(schema))
+            queryRun.func.query += String.format("\n\t\tWHERE sch.name = '%s'", schema);
+        queryRun.func.connection = conn;
+        return execute(queryRun);
     }
 }

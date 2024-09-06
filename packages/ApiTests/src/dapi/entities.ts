@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 //@ts-ignore
-import {version} from '../../package.json';
+import { _package } from '../package-test';
 import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 
 category('Dapi: entities', () => { 
@@ -49,6 +49,6 @@ category('Dapi: entities: smart search', () => {
 
   test('packages', async () => {
     expect((await grok.dapi.packages.filter('name="Api Tests" & author.login="system"').list({pageSize: 3})).length, 3);
-    expect((await grok.dapi.packages.filter(`version = "${version}"`).list()).length > 0, true);
+    expect((await grok.dapi.packages.filter(`name="Api Tests" & version = "${_package.version}"`).list({pageSize: 5})).length > 0, true);
   }, {stressTest: true});
 });

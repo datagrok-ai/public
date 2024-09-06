@@ -105,8 +105,8 @@ export class AEBrowserHelper {
 
 
       const daysInput = ui.input.int('Prior AE', {value: this.daysPriorAe});
-      daysInput.onChanged((v) => {
-        this.daysPriorAe = daysInput.value;
+      daysInput.onChanged.subscribe((value) => {
+        this.daysPriorAe = value;
         this.updateDomains();
         updateAccordion();
       });

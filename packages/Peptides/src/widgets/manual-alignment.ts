@@ -14,7 +14,7 @@ import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
  * @return Widget for manual sequence alignment
  */
 export function manualAlignmentWidget(alignedSequenceCol: DG.Column<string>, currentDf: DG.DataFrame): DG.Widget {
-  const sequenceInput = ui.textInput('', alignedSequenceCol.get(currentDf.currentRowIdx)!);
+  const sequenceInput = ui.input.textArea('', {value: alignedSequenceCol.get(currentDf.currentRowIdx)!});
   $(sequenceInput.root).addClass('pep-textinput');
 
   const applyChangesBtn = ui.button('Apply', async () => {

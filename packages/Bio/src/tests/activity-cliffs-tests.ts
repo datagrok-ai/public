@@ -20,9 +20,6 @@ import {_package} from '../package-test';
 
 
 category('activityCliffs', async () => {
-  let viewList: DG.ViewBase[] = [];
-  let dfList: DG.DataFrame[] = [];
-
   let helmHelper: IHelmHelper;
   let monomerLibHelper: IMonomerLibHelper;
   /** Backup actual user's monomer libraries settings */
@@ -36,39 +33,29 @@ category('activityCliffs', async () => {
 
     // Test 'helm' requires default monomer library loaded
     await setUserLibSettingsForTests();
-    await monomerLibHelper.loadLibraries(true); // load default libraries
-
-    viewList = [];
-    dfList = [];
+    await monomerLibHelper.loadMonomerLib(true); // load default libraries
   });
 
   after(async () => {
-    // for (const df of dfList) grok.shell.closeTable(df);
-    // for (const view of viewList) view.close();
-
     // UserDataStorage.put() replaces existing data
     await setUserLibSettings(userLibSettings);
-    await monomerLibHelper.loadLibraries(true); // load user settings libraries
+    await monomerLibHelper.loadMonomerLib(true); // load user settings libraries
   });
 
   test('activityCliffsOpens', async () => {
-    const actCliffsDf = await readDataframe(
-      DG.Test.isInBenchmark ? 'test/peptides_motif-with-random_10000.csv' : 'tests/100_3_clustests.csv',
-    );
-    dfList.push(actCliffsDf);
+    const testData = !DG.Test.isInBenchmark ?
+      {fileName: 'tests/100_3_clustests.csv', tgt: {cliffCount: 3}} :
+      {fileName: 'tests/peptides_motif-with-random_10000.csv', tgt: {cliffCount: 53}};
+    const actCliffsDf = await readDataframe(testData.fileName);
     const actCliffsTableView = grok.shell.addTableView(actCliffsDf);
-    viewList.push(actCliffsTableView);
-    const cliffsNum = DG.Test.isInBenchmark ? 6 : 3;
 
     await _testActivityCliffsOpen(actCliffsDf, DimReductionMethods.UMAP,
-      'sequence', 'Activity', 90, cliffsNum, MmDistanceFunctionsNames.LEVENSHTEIN, seqEncodingFunc);
+      'sequence', 'Activity', 90, testData.tgt.cliffCount, MmDistanceFunctionsNames.LEVENSHTEIN, seqEncodingFunc);
   }, {benchmark: true});
 
   test('activityCliffsWithEmptyRows', async () => {
     const actCliffsDfWithEmptyRows = await readDataframe('tests/100_3_clustests_empty_vals.csv');
-    dfList.push(actCliffsDfWithEmptyRows);
     const actCliffsTableViewWithEmptyRows = grok.shell.addTableView(actCliffsDfWithEmptyRows);
-    viewList.push(actCliffsTableViewWithEmptyRows);
 
     await _testActivityCliffsOpen(actCliffsDfWithEmptyRows, DimReductionMethods.UMAP,
       'sequence', 'Activity', 90, 3, MmDistanceFunctionsNames.LEVENSHTEIN, seqEncodingFunc);

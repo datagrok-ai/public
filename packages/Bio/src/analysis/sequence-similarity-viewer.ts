@@ -30,12 +30,14 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   mmDistanceMatrix: Float32Array;
   knn?: KnnResult;
   kPrevNeighbors: number = 0;
+  demo?: boolean;
 
-  constructor() {
+  constructor(demo?: boolean) {
     super('similarity');
     this.cutoff = this.float('cutoff', 0.01, {min: 0, max: 1});
     this.hotSearch = this.bool('hotSearch', true);
     this.similarColumnLabel = this.string('similarColumnLabel', null);
+    this.demo = demo;
   }
 
   init(): void {
@@ -70,7 +72,8 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
         const targetMolRow = this.idxs?.getRawData().findIndex((it) => it == this.targetMoleculeIdx);
         const targetScoreCell = grid.cell('score', targetMolRow!);
         targetScoreCell.cell.value = null;
-        (grok.shell.v as DG.TableView).grid.root.addEventListener('click', (_event: MouseEvent) => {
+        const view = this.demo ? (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView : grok.shell.v as DG.TableView;
+        view.grid.root.addEventListener('click', (_event: MouseEvent) => {
           this.gridSelect = false;
         });
         updateDivInnerHTML(this.root, grid.root);

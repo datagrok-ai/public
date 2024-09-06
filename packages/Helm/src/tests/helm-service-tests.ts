@@ -41,8 +41,8 @@ category('HelmService', () => {
       await delay(1000); // for loading monomer libraries files
       // Test 'helm' requires default monomer library loaded
       await setUserLibSettingsForTests();
-      await monomerLibHelper.loadLibraries(true); // load default libraries
-      const libSummary = monomerLibHelper.getBioLib().getSummary();
+      await monomerLibHelper.loadMonomerLib(true); // load default libraries
+      const libSummary = monomerLibHelper.getMonomerLib().getSummaryObj();
 
       helmSvc = await getHelmService();
       await helmSvc.reset();
@@ -60,7 +60,7 @@ category('HelmService', () => {
     await helmSvc.reset();
 
     await setUserLibSettings(userLibSettings);
-    await monomerLibHelper.loadLibraries(true); // load user settings libraries
+    await monomerLibHelper.loadMonomerLib(true); // load user settings libraries
     _package.logger.debug(`${logPrefix}, end`);
   });
 

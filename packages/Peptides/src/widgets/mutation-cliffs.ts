@@ -124,8 +124,8 @@ function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOpti
   const pairsTable = DG.DataFrame.fromColumns([substCol, activityDeltaCol, hiddenSubstToAarCol, toIdxCol, fromIdxCol]);
   pairsTable.name = 'Mutation Cliff pairs';
 
-  const aminoToInput = ui.input.string('Mutated to:', {value: '', onValueChanged: () => {
-    const substitutedToAar = aminoToInput.stringValue;
+  const aminoToInput = ui.input.string('Mutated to:', {value: '', onValueChanged: (inp, value) => {
+    const substitutedToAar = value;
     if (substitutedToAar !== '')
       pairsTable.filter.init((idx) => hiddenSubstToAarCol.get(idx) === substitutedToAar);
     else

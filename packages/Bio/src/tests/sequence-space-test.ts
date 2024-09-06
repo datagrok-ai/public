@@ -14,9 +14,10 @@ category('sequenceSpace', async () => {
   let testHelmWithEmptyRowsTableView: DG.TableView;
 
   test('sequenceSpaceOpens', async () => {
-    testFastaDf = await readDataframe(
-      DG.Test.isInBenchmark ? 'test/peptides_motif-with-random_10000.csv' : 'tests/100_3_clustests.csv',
-    );
+    const testData = !DG.Test.isInBenchmark ?
+      {fileName: 'tests/100_3_clustests.csv'} :
+      {fileName: 'tests/peptides_motif-with-random_10000.csv'};
+    testFastaDf = await readDataframe(testData.fileName);
     testFastaTableView = grok.shell.addTableView(testFastaDf);
     await _testSequenceSpaceReturnsResult(testFastaDf, DimReductionMethods.UMAP, 'sequence');
     //grok.shell.closeTable(testFastaDf);

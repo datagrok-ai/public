@@ -65,7 +65,7 @@ export function convert(col?: DG.Column): void {
   };
 
   const targetColumnInput = ui.input.column('Column', {table: grok.shell.t, value: srcCol,
-    onValueChanged: (input) => toggleColumn(input.value)});
+    onValueChanged: (inp, value) => toggleColumn(value)});
 
   const separatorArray = ['-', '.', '/'];
   let filteredNotations = notations.filter((e) => e !== currentNotation);
@@ -85,7 +85,7 @@ export function convert(col?: DG.Column): void {
   // set correct visibility on init
   toggleSeparator();
 
-  targetNotationInput.onChanged(() => {
+  targetNotationInput.onChanged.subscribe(() => {
     toggleSeparator();
   });
 

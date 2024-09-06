@@ -6,8 +6,9 @@ import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
 import {_package} from '../package';
 
-export function defaultErrorHandler(err: any): void {
+export function defaultErrorHandler(err: any, shell: boolean = true): [string, string | undefined] {
   const [errMsg, errStack] = errInfo(err);
   _package.logger.error(errMsg, undefined, errStack);
-  grok.shell.error(errMsg);
+  if (shell) grok.shell.error(errMsg);
+  return [errMsg, errStack];
 }

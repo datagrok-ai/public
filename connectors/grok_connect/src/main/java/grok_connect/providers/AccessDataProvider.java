@@ -2,10 +2,13 @@ package grok_connect.providers;
 
 import java.io.File;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
@@ -14,8 +17,6 @@ import grok_connect.table_query.GroupAggregation;
 import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
-import grok_connect.utils.QueryCancelledByUser;
-import serialization.Column;
 import serialization.DataFrame;
 import serialization.StringColumn;
 import serialization.Types;
@@ -62,19 +63,9 @@ public class AccessDataProvider extends JdbcDataProvider {
     public DataFrame getSchema(DataConnection connection, String schema, String table) throws GrokConnectException {
         try (Connection dbConnection = getConnection(connection);
              ResultSet columns = dbConnection.getMetaData().getColumns(null, schema, table, null)) {
-            DataFrame result = new DataFrame();
-            Column tableSchema = new StringColumn();
-            tableSchema.name = "table_schema";
-            Column tableNameColumn = new StringColumn();
-            tableNameColumn.name = "table_name";
-            Column columnName = new StringColumn();
-            columnName.name = "column_name";
-            Column dataType = new StringColumn();
-            dataType.name = "data_type";
-            result.addColumn(tableSchema);
-            result.addColumn(tableNameColumn);
-            result.addColumn(columnName);
-            result.addColumn(dataType);
+            DataFrame result = DataFrame.fromColumns(new StringColumn("table_schema"),
+                    new StringColumn("table_name"), new StringColumn("column_name"),
+                    new StringColumn("data_type"));
             while (columns.next())
                 result.addRow(columns.getString(2), columns.getString(3),
                         columns.getString(4), columns.getString(6));
@@ -103,5 +94,33 @@ public class AccessDataProvider extends JdbcDataProvider {
             return String.format("%s AS [%s]", sql, sql);
         } else
             return null;
+    }
+
+    @Override
+    public DataFrame getForeignKeys(DataConnection conn, String schema) throws GrokConnectException {
+        try (Connection connection = getConnection(conn)) {
+            DatabaseMetaData meta = connection.getMetaData();
+            List<String> tables = new ArrayList<>();
+            try (ResultSet tablesRs = meta.getTables(conn.getDb(), null, null, null)) {
+                while (tablesRs.next())
+                    tables.add(tablesRs.getString("TABLE_NAME"));
+            }
+
+            DataFrame result = DataFrame.fromColumns(new StringColumn("table_schema"),
+                    new StringColumn("constraint_name"), new StringColumn("table_name"),
+                    new StringColumn("column_name"), new StringColumn("foreign_table_name"), new StringColumn("foreign_column_name"));
+            if (!tables.isEmpty()) {
+                for (String t : tables)
+                    try (ResultSet info = meta.getExportedKeys(conn.getDb(), null, t)) {
+                        while(info.next())
+                            result.addRow(info.getString("FKTABLE_SCHEM"), info.getString("FK_NAME"),
+                                    info.getString("FKTABLE_NAME"), info.getString("FKCOLUMN_NAME"),
+                                    info.getString("PKTABLE_NAME"), info.getString("PKCOLUMN_NAME"));
+                    }
+            }
+            return result;
+        } catch (SQLException e) {
+            throw new GrokConnectException(e);
+        }
     }
 }

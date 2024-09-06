@@ -1,6 +1,6 @@
 // noinspection JSUnusedGlobalSymbols
 
-import {ColumnType, FUNC_TYPES, ScriptLanguage, SemType, Type, TYPE, USER_STATUS} from "./const";
+import {ColumnType, ScriptLanguage, SemType, Type, TYPE, USER_STATUS} from "./const";
 import { FuncCall } from "./functions";
 import {toDart, toJs} from "./wrappers";
 import {FileSource} from "./dapi";
@@ -10,6 +10,7 @@ import {PackageLogger} from "./logger";
 import dayjs from "dayjs";
 import {IDartApi} from "./api/grok_api.g";
 import {DataSourceType} from "./api/grok_shared.api.g";
+import { Tags } from "../dg";
 
 declare var grok: any;
 const api: IDartApi = <any>window;
@@ -421,7 +422,7 @@ export class DataQuery extends Func {
 /** Represents a table query
  * @extends DataQuery */
 export class TableQuery extends DataQuery {
-  /** @constructs TableQeury */
+  /** @constructs TableQuery */
   constructor(dart: any) { super(dart); }
 
   /** Creates a TableQuery
@@ -661,13 +662,22 @@ export class TableInfo extends Entity {
 /** @extends Entity
  * Represents Column metadata */
 export class ColumnInfo extends Entity {
-
+  public tags: {[key: string]: any};
   /** @constructs ColumnInfo */
   constructor(dart: any) {
     super(dart);
+    this.tags = new MapProxy(api.grok_ColumnInfo_Get_Tags(this.dart), 'tags');
   }
 
   get type(): string { return toJs(api.grok_ColumnInfo_Get_Type(this.dart)); }
+
+  /** Returns reference information if the column is referencing another column in another table */
+  get referenceInfo(): {table: string, column: string} | null {
+    return this.tags[Tags.ReferencesTable] && this.tags[Tags.ReferencesColumn] ? {
+      table: this.tags[Tags.ReferencesTable],
+      column: this.tags[Tags.ReferencesColumn]
+    } : null;
+  }
 }
 
 /** @extends Entity
@@ -1191,8 +1201,12 @@ export interface PropertyOptions {
   /** List of value validators (functions that take a value and return error message or null) */
   valueValidators?: ValueValidator<any>[];
 
-  /** Custom field caption shown in [PropertyGrid] */
+  /** Custom field caption shown in [PropertyGrid]
+   * @deprecated The property will be removed soon. Use {@link friendlyName} instead */
   caption?: string;
+
+  /** Custom field friendly name shown in [PropertyGrid] */
+  friendlyName?: string;
 
   /** Field postfix shown in [PropertyGrid]. [units] take precedence over the [postfix] value. */
   postfix?: string;
@@ -1238,6 +1252,7 @@ export class Property {
   set name(s: string) { api.grok_Property_Set_Name(this.dart, s); }
 
   get caption(): string { return api.grok_Property_Get_Caption(this.dart); }
+  set caption(s: string) { api.grok_Property_Set_Caption(this.dart, s); }
 
   /** Property category */
   get category(): string { return api.grok_Property_Get_Category(this.dart); }
@@ -1246,6 +1261,10 @@ export class Property {
   /** Property type */
   get propertyType(): TYPE { return api.grok_Property_Get_PropertyType(this.dart); }
   set propertyType(s: TYPE) { api.grok_Property_Set_PropertyType(this.dart, s); }
+
+  /** Applies to viewers properties whether to include the property in the layout or not. */
+  get includeInLayout(): boolean { return api.grok_Property_Get_IncludeInLayout(this.dart); }
+  set includeInLayout(s: boolean) { api.grok_Property_Set_IncludeInLayout(this.dart, s); }
 
   /** Semantic type */
   get semType(): SemType | string { return api.grok_Property_Get_SemType(this.dart); }

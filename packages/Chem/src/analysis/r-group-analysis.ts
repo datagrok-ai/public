@@ -86,7 +86,8 @@ export function convertToRDKit(smiles: string): string {
  * and initiate the R-Group Analysis for the specified column with molecules.
  * @param {DG.Column} col Column for which to perform R-Group Analysis with specified core
  */
-export function rGroupAnalysis(col: DG.Column): void {
+export function rGroupAnalysis(col: DG.Column, demo = false): void {
+  loadRGroupUserSettings();
   const sketcher = new DG.chem.Sketcher();
 
   //General fields
@@ -126,14 +127,14 @@ export function rGroupAnalysis(col: DG.Column): void {
   //R groups fields
   const rGroupMatchingStrategy = ui.input.choice('Matching strategy', {
     value: rGroupSettings?.rGroupMatchingStrategy ?? RGroupMatchingStrategy.Greedy, items: matchingStrategies,
-    onValueChanged: () => {
-      rGroupSettings!.rGroupMatchingStrategy = rGroupMatchingStrategy.value!;
+    onValueChanged: (inp, value) => {
+      rGroupSettings!.rGroupMatchingStrategy = value;
       saveRGroupUserSettings();
     }});
   rGroupMatchingStrategy.root.style.display = 'none';
   const onlyMatchAtRGroupsInput = ui.input.bool('Only match at R groups', {
-    value: rGroupSettings?.onlyMatchAtRGroups ?? false, onValueChanged: () => {
-      rGroupSettings!.onlyMatchAtRGroups = onlyMatchAtRGroupsInput.value!;
+    value: rGroupSettings?.onlyMatchAtRGroups ?? false, onValueChanged: (inp, value) => {
+      rGroupSettings!.onlyMatchAtRGroups = value;
       saveRGroupUserSettings();
     }});
   onlyMatchAtRGroupsInput.root.style.display = 'none';
@@ -182,7 +183,7 @@ export function rGroupAnalysis(col: DG.Column): void {
         }).call(undefined, undefined, { processed: false });
         const res: RGroupDecompRes = funcCall.getOutputParamValue();
         if (res) {
-          const view = grok.shell.getTableView(col.dataFrame.name);
+          const view = demo ? (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView : grok.shell.getTableView(col.dataFrame.name);
           //make highlight column invisible
           if (res.highlightColName)
             view.grid.col(res.highlightColName)!.visible = false;
@@ -418,15 +419,14 @@ function removeLatestAnalysis(col: DG.Column) {
   delete latestAnalysisCols[col.dataFrame.name];
 }
 
-export async function loadRGroupUserSettings() {
+export function loadRGroupUserSettings() {
   if (!rGroupSettings) {
-    const settingsStr = await grok.dapi.userDataStorage.getValue(R_GROUP_PARAMS_STORAGE_NAME, R_GROUP_PARAMS_KEY, true);
+    const settingsStr = grok.userSettings.getValue(R_GROUP_PARAMS_STORAGE_NAME, R_GROUP_PARAMS_KEY);
     rGroupSettings = settingsStr ? JSON.parse(settingsStr) :
       { rGroupMatchingStrategy: RGroupMatchingStrategy.Greedy, onlyMatchAtRGroups: false };
   }
 }
 
 function saveRGroupUserSettings() {
-  grok.dapi.userDataStorage.postValue(R_GROUP_PARAMS_STORAGE_NAME, R_GROUP_PARAMS_KEY,
-    JSON.stringify(rGroupSettings), true);
+  grok.userSettings.add(R_GROUP_PARAMS_STORAGE_NAME, R_GROUP_PARAMS_KEY, JSON.stringify(rGroupSettings));
 }

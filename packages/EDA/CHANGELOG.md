@@ -1,5 +1,23 @@
 # EDA changelog
 
+## 1.1.35 (2024-08-28)
+
+* Add History support and enable gpu by default if available for dim-red
+
+## 1.1.34 (2024-08-09)
+
+* Updated multivariate analysis
+* Reduced bias in the PLS regression and Multivariate Analysis
+* Fixed linear regression fails
+
+## 1.1.33 (2024-08-14)
+
+Bump ml version to 6.6.21
+
+## 1.1.32 (2024-08-13)
+
+Add XGBoost to predictive modeling tools
+
 ## 1.1.31 (2024-08-06)
 
 Add MCL layout with force directed graph and atlas

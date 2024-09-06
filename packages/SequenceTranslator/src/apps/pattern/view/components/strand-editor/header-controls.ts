@@ -45,7 +45,7 @@ export class HeaderControls {
     const initialValue = this.areAllPtoLinkagesSet(flags);
     const allPtoActivationInput = ui.input.bool('All PTO', {value: initialValue});
 
-    allPtoActivationInput.onInput(() => {
+    allPtoActivationInput.onInput.subscribe(() => {
       const value = allPtoActivationInput.value!;
       this.eventBus.setAllPTOLinkages(value);
     });
@@ -81,7 +81,7 @@ export class HeaderControls {
       const initialValue = this.isFirstPtoActive(strand);
       const firstPtoInput = ui.input.bool(`First ${strand} PTO`, {value: initialValue});
 
-      firstPtoInput.onInput(() => {
+      firstPtoInput.onInput.subscribe(() => {
         const value = firstPtoInput.value!;
         this.eventBus.setPhosphorothioateLinkageFlag(strand, 0, value);
       });

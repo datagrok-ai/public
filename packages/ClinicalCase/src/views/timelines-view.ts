@@ -57,8 +57,8 @@ export class TimelinesView extends ClinicalCaseViewBase {
     this.selectedDataframes = [Object.values(this.multichoiceTableOptions)[0]];
     const multiChoiceOptions = ui.input.multiChoice('', {value: [this.selectedOptions[0]] as any,
       items: Object.keys(this.multichoiceTableOptions)});
-    multiChoiceOptions.onChanged((v) => {
-      this.selectedOptions = multiChoiceOptions.value;
+    multiChoiceOptions.onChanged.subscribe((value) => {
+      this.selectedOptions = value;
       this.updateSelectedDataframes(this.selectedOptions);
       this.updateTimelinesPlot();
       this.subscribeToSelection();

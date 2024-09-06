@@ -1,6 +1,53 @@
 # Datagrok-tools changelog
 
 
+## 4.13.20 (2024-08-28)
+
+### Features
+
+* Grok link command fixes 
+## 4.13.19 (2024-08-27)
+
+### Features
+
+* Package ts data insertation fixes
+
+## 4.13.18 (2024-08-27)
+
+### Features
+
+* Creation fixes
+
+## 4.13.17 (2024-08-27)
+
+### Features
+
+* Added decorators for viewer functions
+
+## 4.13.16 (2024-08-23)
+
+### Features
+
+* Grok link fixes
+
+## 4.13.15 (2024-08-21)
+
+### Features
+
+* Grok link updated to link all dependent libs 
+
+## 4.13.14 (2024-08-09)
+
+### Features
+
+* Timeout update for test runs up to 1 hour
+
+## 4.13.13 (2024-08-09)
+
+### Features
+
+* Added stress test flag
+
 ## 4.13.12 (2024-08-05)
 
 ### Features

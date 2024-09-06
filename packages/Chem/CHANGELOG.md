@@ -1,5 +1,52 @@
 # Chem changelog
 
+## 1.11.5 (2024-08-27)
+
+### Bug fixes
+
+* Add tableView to runChemSpace for reduce dimensionality ui options
+* [#3004](https://github.com/datagrok-ai/public/issues/3004): Chem: Scaffold tree is based on wrong table by default in some cases
+* GROK-15938: Chem | Scaffold Tree: Array length differ
+* Chem: MMPA: Fix demo
+
+## 1.11.4 (2024-08-23)
+
+### Features
+
+* Chem: MMPA: filter fragmnets by significance
+* Chem: MMPA: project and layout saving
+* Chem: MMPA: demo loaded not calculated
+* Chem: Removed r-groups settings download from init
+
+### Bug Fixes
+
+* Chem: MMPA: Fixed property panel on cliff line click
+* [#2983](https://github.com/datagrok-ai/public/issues/2983): Chem: fix tooltip styles for structure columns
+* GROK-16493: MMPA: Fixed Summary viewer doesn't show the values
+
+## 1.11.3 (2024-08-12)
+
+### Features
+
+* Chem: MMPA: Work with multucomponent entities
+
+## 1.11.2 (2024-08-12)
+
+### Features
+
+* Chem: Chemprop: Remove redundant calls in the core and move it fully to package
+* Chem: MMPA: Add meaningfull dataset for demo
+* Chem: MMPA: Restrictions and CPU fallback
+* Chem: MMPA: Compensate filtering by cutoff
+* Chem: MMPA: Add reflection for selection
+* Chem: MMPA: Add pairs filter, expose filters object so it can be used in any tab, minor improvements
+* Chem: Update demos in order to be shown in the Browse
+
+### Bug Fixes
+
+* Chem: MMPA: Fixes for cliffs tab and lines improvements
+* [#2964](https://github.com/datagrok-ai/public/issues/2964): Scaffold Tree: 'Selection to filter' reset immediately for some data if scaffold tree is present
+
 ## 1.11.1 (2024-07-25)
 
 ### Bug Fixes

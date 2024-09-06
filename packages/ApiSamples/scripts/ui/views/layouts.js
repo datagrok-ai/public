@@ -1,4 +1,4 @@
-// Layouts save, apply and serialization into user data storage
+// Layouts save, apply and serialization into user settings storage
 
 const STORAGE_NAME = 'layouts-demo';
 
@@ -9,28 +9,27 @@ let nameInput = ui.input.string('', {value: 'Default'});
 nameInput.captionLabel.style.width = '0';
 
 let save = ui.button('Save', () => {
-  grok.dapi.userDataStorage.postValue(STORAGE_NAME, nameInput.value, view.saveLayout().toJson());
+  grok.userSettings.add(STORAGE_NAME, nameInput.value, view.saveLayout().toJson());
 });
 
 let load = ui.iconFA('bars', () => {
-  grok.dapi.userDataStorage.get(STORAGE_NAME).then((layouts) => {
-    if (layouts !== null && Object.keys(layouts).length === 0)
-      grok.shell.info('Storage is empty. Save some layouts to the storage');
-    else {
-      let menu = DG.Menu.popup();
-      for (let layout of Object.keys(layouts)) {
-        menu.item(layout, () => {
-          view.loadLayout(DG.ViewLayout.fromJson(layouts[layout]));
-          nameInput.stringValue = layout;
-        });
-      }
-      menu.show();
+  let layouts = grok.userSettings.get(STORAGE_NAME);
+  if (layouts !== null && Object.keys(layouts).length === 0)
+    grok.shell.info('Storage is empty. Save some layouts to the storage');
+  else {
+    let menu = DG.Menu.popup();
+    for (let layout of Object.keys(layouts)) {
+      menu.item(layout, () => {
+        view.loadLayout(DG.ViewLayout.fromJson(layouts[layout]));
+        nameInput.stringValue = layout;
+      });
     }
-  });
+    menu.show();
+  }
 }, 'Select layout from storage');
 
 let clear = ui.iconFA('trash-alt', () => {
-  grok.dapi.userDataStorage.remove(STORAGE_NAME, null);
+  grok.userSettings.delete(STORAGE_NAME, null);
 }, 'Clear storage');
 
 let acc = view.toolboxPage.accordion;

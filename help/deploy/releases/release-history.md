@@ -21,6 +21,7 @@ See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.md)
 
+
 ## 2024-08-05 1.20.1
 
 ### Fixes:

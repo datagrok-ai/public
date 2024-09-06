@@ -23,7 +23,7 @@ export class ActiveFiles {
     if (this.settings)
       return this.settings;
 
-    const resStr: string = await grok.dapi.userDataStorage.getValue(this.userStorageName, 'Settings', true);
+    const resStr: string | undefined = grok.userSettings.getValue(this.userStorageName, 'Settings');
     const res = resStr ? JSON.parse(resStr) : {excluded: [], explicit: []};
 
     res.explicit = res.explicit instanceof Array ? res.explicit : [];
@@ -32,9 +32,9 @@ export class ActiveFiles {
     return this.settings = res;
   }
 
-  async setUserSettings(value: FilesSettings): Promise<void> {
+  setUserSettings(value: FilesSettings) {
     this.settings = value;
-    await grok.dapi.userDataStorage.postValue(this.userStorageName, 'Settings', JSON.stringify(value), true);
+    grok.userSettings.add(this.userStorageName, 'Settings', JSON.stringify(value));
   }
 
   protected async getAllAvailable(): Promise<string[]> {
@@ -57,7 +57,7 @@ export class ActiveFiles {
   protected createInput(available: string, isChecked: boolean): DG.InputBase<boolean> {
     const cb = ui.input.bool(available, {
       value: isChecked,
-      onValueChanged: (input) => this.updateSelectionStatus(available, input.value)
+      onValueChanged: (inp, value) => this.updateSelectionStatus(available, value)
     }) as DG.InputBase<boolean>;
     cb.addOptions(ui.button(ui.iconFA('trash'), () => {
       const remDialog = ui.dialog({title: 'Warning'}).add(ui.divText(`Delete file '${available}'?`)).onOK(() => {
@@ -121,11 +121,8 @@ export class ActiveFiles {
     const index = settings.excluded.indexOf(available);
     if (index > -1)
       settings.excluded.splice(index, 1);
-
-    await Promise.all([
-      this.setUserSettings(settings),
-      grok.dapi.files.delete(this.path + available)
-    ]);
+    this.setUserSettings(settings);
+    await grok.dapi.files.delete(this.path + available);
     grok.shell.info(`File ${available} successfully deleted`);
   }
 

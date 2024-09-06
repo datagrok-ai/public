@@ -1,23 +1,18 @@
-/* Do not change these import lines to match external modules in webpack configuration */
-import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
 
-import {HelmToMolfileConverter} from './converter';
-
-/** Translate HELM column into molfile column and append to the dataframe */
-export async function helm2mol(df: DG.DataFrame, helmCol: DG.Column<string>): Promise<void> {
-  const molCol = await getMolColumnFromHelm(df, helmCol);
-  df.columns.add(molCol, true);
-  await grok.data.detectSemanticTypes(df);
-}
+import {_package} from '../../package';
+import {SeqHelper} from '../seq-helper';
 
 
 /** Translate HELM column into molfile column and append to the dataframe */
 export async function getMolColumnFromHelm(
-  df: DG.DataFrame, helmCol: DG.Column<string>, chiralityEngine?: boolean
+  df: DG.DataFrame, helmCol: DG.Column<string>, chiralityEngine: boolean = true
 ): Promise<DG.Column<string>> {
-  const converter = new HelmToMolfileConverter(helmCol, df);
-  const molCol = await converter.convertToRdKitBeautifiedMolfileColumn(chiralityEngine);
+  const seqHelper = await SeqHelper.getInstance();
+  const converter = seqHelper.getHelmToMolfileConverter(df, helmCol);
+  const molCol = converter.convertToRdKitBeautifiedMolfileColumn(chiralityEngine, _package.rdKitModule);
   molCol.semType = DG.SEMTYPE.MOLECULE;
   return molCol;
 }
@@ -25,8 +20,9 @@ export async function getMolColumnFromHelm(
 export async function getSmilesColumnFromHelm(
   df: DG.DataFrame, helmCol: DG.Column<string>
 ): Promise<DG.Column<string>> {
-  const converter = new HelmToMolfileConverter(helmCol, df);
-  const smilesCol = await converter.convertToSmiles();
+  const seqHelper = await SeqHelper.getInstance();
+  const converter = seqHelper.getHelmToMolfileConverter(df, helmCol);
+  const smilesCol = converter.convertToSmiles(_package.rdKitModule);
   smilesCol.semType = DG.SEMTYPE.MOLECULE;
   return smilesCol;
 }

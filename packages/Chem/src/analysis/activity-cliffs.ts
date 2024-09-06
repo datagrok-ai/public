@@ -18,7 +18,8 @@ export type ActivityCliffsParams = {
   activityColName: string,
   similarityMetric: BitArrayMetrics,
   similarity: number,
-  options: any
+  options: any,
+  isDemo?: boolean,
 }
 
 export function findMcsAndUpdateDrawings(params: ITooltipAndPanelParams, hosts: HTMLElement[]) {

@@ -14,16 +14,19 @@ import {SequenceToMolfileConverter} from './apps/structure/model/sequence-to-mol
 import {FormatConverter} from './apps/translator/model/format-converter';
 import {demoOligoPatternUI, demoOligoStructureUI, demoOligoTranslatorUI} from './demo/demo-st-ui';
 import {getExternalAppViewFactories} from './plugins/mermade';
+import {defaultErrorHandler} from './utils/err-info';
 
 //polytool specific
-import {getPolyToolConversionDialog, polyToolEnumerateHelmUI, polyToolEnumerateChemUI} from './polytool/pt-dialog';
+import {getPolyToolConversionDialog, polyToolEnumerateChemUI} from './polytool/pt-dialog';
+import {polyToolEnumerateHelmUI} from './polytool/pt-enumeration-helm-dialog';
 import {_setPeptideColumn} from './polytool/utils';
 import {PolyToolCsvLibHandler} from './polytool/csv-to-json-monomer-lib-converter';
 import {ITranslationHelper} from './types';
 import {addContextMenuUI} from './utils/context-menu';
-import { NOTATION } from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {PolyToolConvertFuncEditor} from './polytool/pt-convert-editor';
+import {doPolyToolConvert} from './polytool/pt-conversion';
 
-export const _package: OligoToolkitPackage = new OligoToolkitPackage();
+export const _package: OligoToolkitPackage = new OligoToolkitPackage(/*{debug: true}/**/);
 
 //name: Oligo Toolkit
 //meta.icon: img/icons/toolkit.png
@@ -152,7 +155,7 @@ async function getSpecifiedAppView(appName: string): Promise<DG.ViewBase> {
   return view;
 }
 
-//top-menu: Bio | Convert | PolyTool-Convert
+//top-menu: Bio | PolyTool | Convert...
 //name: polyToolConvert
 //description: Perform cyclization of polymers
 export async function polyToolConvert(): Promise<void> {
@@ -165,14 +168,39 @@ export async function polyToolConvert(): Promise<void> {
   }
 }
 
-//top-menu: Bio | Convert | PolyTool-Enumerate HELM
+//name: getPolyToolConvertEditor
+//tags: editor
+//input: funccall call
+//output: column resCol
+export async function getPolyToolConvertEditor(call: DG.FuncCall): Promise<DG.Column<string> | null> {
+  const funcEditor = await PolyToolConvertFuncEditor.create(call);
+  return await funcEditor.showDialog();
+}
+
+//name: polyToolConvert2
+//input: dataframe table
+//input: column seqCol { caption: Sequence }
+//input: bool generateHelm = true
+//input: bool chiralityEngine = true
+//input: object rules
+//output: column resCol
+//editor: SequenceTranslator:getPolyToolConvertEditor
+export async function polyToolConvert2(table: DG.DataFrame,
+  seqCol: DG.Column, generateHelm: boolean, chiralityEngine: boolean, rules: string[]
+): Promise<DG.Column<string>> {
+  const ptConvertRes = await doPolyToolConvert(seqCol, generateHelm, rules, chiralityEngine);
+  return ptConvertRes[0];
+}
+
+
+//top-menu: Bio | PolyTool | Enumerate HELM...
 //name: polyToolEnumerateHelm
 //description: Perform cyclization of polymers
 export async function polyToolEnumerateHelm(): Promise<void> {
-  polyToolEnumerateHelmUI();
+  await polyToolEnumerateHelmUI(grok.shell.tv?.dataFrame.currentCell);
 }
 
-//top-menu: Bio | Convert | PolyTool-Enumerate Chem
+//top-menu: Bio | PolyTool | Enumerate Chem...
 //name: polyToolEnumerateChem
 //description: Perform cyclization of polymers
 export async function polyToolEnumerateChem(): Promise<void> {
@@ -213,7 +241,7 @@ export function addContextMenu(event: DG.EventData): void {
 // export async function ptConverterApp(): Promise<void> {
 //   const view = grok.shell.v as DG.TableView;
 //   const table = view.dataFrame;
-//   const colNames = table.columns.names(); 
+//   const colNames = table.columns.names();
 //   let covertableName = '';
 
 //   for (let i = 0; i < colNames.length; i++) {
@@ -229,7 +257,7 @@ export function addContextMenu(event: DG.EventData): void {
 //   else {
 //     const dialog = await getPolyToolConversionDialog();
 //     dialog.show();
-//   }  
+//   }
 // }
 
 //name: PolyTool Enumerator Helm
@@ -237,7 +265,7 @@ export function addContextMenu(event: DG.EventData): void {
 //meta.browsePath: PolyTool
 //tags: app
 export async function ptEnumeratorHelmApp(): Promise<void> {
-  polyToolEnumerateHelmUI();
+  await polyToolEnumerateHelmUI();
 }
 
 //name: PolyTool Enumerator Chem

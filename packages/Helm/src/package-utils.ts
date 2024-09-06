@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {Unsubscribable} from 'rxjs';
 
 import {delay, timeout} from '@datagrok-libraries/utils/src/test';
+import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {
   DojoType, DojoxType, HweWindow, IOrgHelmWebEditor, Monomers
@@ -13,7 +14,6 @@ import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service'
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {LoggerWrapper} from '@datagrok-libraries/bio/src/utils/logger';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 import {HelmHelper} from './helm-helper';
 import {HelmService} from './utils/helm-service';
@@ -31,7 +31,7 @@ type DojoConfigWindowType = {
   dojoConfig: {
     packages?: (string | { name: string, location: string })[],
     deps?: string[], callback: Function, has?: any, parseOnLoad?: boolean, async?: boolean | string, locale?: string,
-  };
+  },
 };
 type HelmWindowType = {
   $helmService?: HelmServiceBase,
@@ -51,7 +51,6 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
   /** get the text width in pixels */
   const pi = DG.TaskBarProgressIndicator.create('Loading Helm Web Editor ...');
   try {
-    await delay(2000);
     const requireBackup = window.require;
 
     // dojo.window','dojo.io.script','dojo.io.iframe','dojo.dom','dojox.gfx','dojox.gfx.svg','dojox.gfx.shape','dojox.charting'
@@ -107,9 +106,7 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
                 'dijit/form/DropDownButton', 'dijit/layout/AccordionContainer', 'dijit/form/ComboButton',
                 'dijit/layout/StackController', 'dijit/layout/StackContainer',
               ],
-              (...args: any[]) => {
-                resolve();
-              });
+              (...args: any[]) => { resolve(); });
           });
         } finally {
           // TODO: Check interference with NGL
@@ -180,9 +177,9 @@ export const helmJsonReplacer = (key: string, value: any): any => {
 };
 
 export class HelmPackage extends DG.Package {
-  public alertOriginal: (s: string) => void;
+  public alertOriginal: ((s: string) => void) | null = null;
   public readonly helmHelper: HelmHelper;
-  public libHelper: IMonomerLibHelper;
+  public libHelper!: IMonomerLibHelper;
 
   constructor(opts: { debug: boolean } = {debug: false}) {
     super();
@@ -206,6 +203,8 @@ export class HelmPackage extends DG.Package {
 
     // Alternatively load old bundles by package.json/sources
     _package.logger.debug(`${logPrefix}, HelmWebEditor awaiting …`);
+    // require('../helm/JSDraw/Scilligence.JSDraw2.Lite-uncompressed');
+    // require('../helm/JSDraw/Pistoia.HELM-uncompressed');
     require('../node_modules/@datagrok-libraries/helm-web-editor/dist/package.js');
     await window.helmWebEditor$.initPromise;
     _package.logger.debug(`${logPrefix}, HelmWebEditor loaded`);
@@ -234,7 +233,7 @@ export class HelmPackage extends DG.Package {
 
     this.logger.debug(`${logPrefix}, this.getMonomerOriginal stored`);
 
-    this.helmHelper.overrideGetMonomer(this.helmHelper.buildGetMonomerFromLib(this.monomerLib));
+    this.helmHelper.overrideMonomersFuncs(this.helmHelper.buildMonomersFuncsFromLib(this.monomerLib));
 
     // @ts-ignore, intercept with proxy to observe access and usage
     org.helm.webeditor.Monomers = new class {
@@ -281,20 +280,15 @@ export class HelmPackage extends DG.Package {
   public get monomerLib(): IMonomerLib {
     if (!this.libHelper)
       throw new Error(`Helm: _package.libHelper is not initialized yet`);
-    return this.libHelper.getBioLib();
+    return this.libHelper.getMonomerLib();
   }
 
-  private _monomerLibSub: Unsubscribable;
-
-  async initMonomerLibHelper(): Promise<void> {
-    if (!!this.libHelper)
-      throw new Error(`Helm: _package.libHelper is initialized already`);
-
-    this.libHelper = await getMonomerLibHelper();
-  }
+  private _monomerLibSub?: Unsubscribable;
 
   /** Requires both Bio & HELMWebEditor initialized */
-  async initMonomerLib(): Promise<void> {
+  initMonomerLib(libHelper: IMonomerLibHelper): void {
+    this.libHelper = libHelper;
+
     const lib = this.monomerLib;
     rewriteLibraries(lib); // initHelm()
     this._monomerLibSub = lib.onChanged
@@ -306,7 +300,7 @@ export class HelmPackage extends DG.Package {
   monomerLibOnChangedHandler(): void {
     const logPrefix = `Helm: _package.monomerLibOnChangedHandler()`;
     try {
-      const libSummary = this.monomerLib.getSummaryObj();
+      const libSummary = this.monomerLib!.getSummaryObj();
       const isLibEmpty = Object.keys(libSummary).length == 0;
       const libSummaryLog = isLibEmpty ? 'empty' : Object.entries(libSummary)
         .map(([pt, count]) => `${pt}: ${count}`)

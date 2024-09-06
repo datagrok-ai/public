@@ -690,7 +690,7 @@ export type CsvImportColumnOptions = {name: string, type?: string, semType?: str
 export type CsvImportOptions = {
   delimiter?: string, decimalSeparator?: string, thousandSeparator?: string, headerRow?: boolean,
   columnFilterNames?: string[], columnFilterRegexp?: string, mergeDelimiters?: boolean, maxRows?: number,
-  rowFilterTop?: number, rowFilterProb?: number, nullStrings?: string[], columnImportOptions?: CsvImportColumnOptions[]};
+  doublePrecision?: boolean, rowFilterTop?: number, rowFilterProb?: number, nullStrings?: string[], columnImportOptions?: CsvImportColumnOptions[]};
 export type IndexPredicate = (ind: number) => boolean;
 export type StringPredicate = (str: string) => boolean;
 export type ScriptLanguage = `${SCRIPT_LANGUAGE}`;

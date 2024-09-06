@@ -70,14 +70,14 @@ export async function multipleSequenceAlignmentUI(
 
     let prevSeqCol = seqCol;
     const colInput = ui.input.column(
-      'Sequence', {table: table, value: seqCol, onValueChanged: async (input: DG.InputBase<DG.Column<string>>): Promise<void> => {
-        if (!input.value || input.value.semType !== DG.SEMTYPE.MACROMOLECULE) {
+      'Sequence', {table: table, value: seqCol, onValueChanged: async (inp: DG.InputBase<DG.Column<string>>, value: DG.Column<any>) => {
+        if (!value || value.semType !== DG.SEMTYPE.MACROMOLECULE) {
           okBtn.disabled = true;
           await delay(0); // to
           colInput.value = prevSeqCol as DG.Column<string>;
           return;
         }
-        prevSeqCol = input.value;
+        prevSeqCol = value;
         okBtn.disabled = false;
         performAlignment = await onColInputChange(
           colInput.value, table, pepseaInputRootStyles, kalignInputRootStyles,
