@@ -317,7 +317,7 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
 
   // responce (to predict)
   let predict = numCols[numCols.length - 1];
-  const predictInput = ui.input.column(TITLE.PREDICT, {table: table, value: predict, onValueChanged: (inp, value) => {
+  const predictInput = ui.input.column(TITLE.PREDICT, {table: table, value: predict, onValueChanged: (value) => {
     predict = value;
     updateIputs();
   }, filter: (col: DG.Column) => isValidNumeric(col)},

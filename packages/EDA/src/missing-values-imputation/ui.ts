@@ -85,18 +85,18 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
   // In-place components
   let inPlace = DEFAULT.IN_PLACE > 0;
   const inPlaceInput = ui.input.bool(TITLE.IN_PLACE, {value: inPlace,
-    onValueChanged: (inp, value) => {inPlace = value ?? false;}});
+    onValueChanged: (value) => {inPlace = value ?? false;}});
   inPlaceInput.setTooltip(HINT.IN_PLACE);
 
   // Keep empty feature
   let keepEmpty = DEFAULT.KEEP_EMPTY > 0;
   const keepEmptyInput = ui.input.bool(TITLE.KEEP_EMPTY, {value: keepEmpty,
-    onValueChanged: (inp, value) => {keepEmpty = value ?? false;}});
+    onValueChanged: (value) => {keepEmpty = value ?? false;}});
   keepEmptyInput.setTooltip(HINT.KEEP_EMPTY);
 
   // Neighbors components
   let neighbors = DEFAULT.NEIGHBORS;
-  const neighborsInput = ui.input.int(TITLE.NEIGHBORS, {value: neighbors, onValueChanged: (inp, value) => {
+  const neighborsInput = ui.input.int(TITLE.NEIGHBORS, {value: neighbors, onValueChanged: (value) => {
     if (value === null)
       neighborsInput.value = neighbors;
     else if (value >= MIN_NEIGHBORS)
@@ -111,12 +111,12 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
   const distTypeInput: DG.ChoiceInput<DISTANCE_TYPE> = ui.input.choice(TITLE.DISTANCE, {
     value: distType,
     items: [DISTANCE_TYPE.EUCLIDEAN, DISTANCE_TYPE.MANHATTAN],
-    onValueChanged: (inp, value) => distType = value ?? DISTANCE_TYPE.EUCLIDEAN}) as DG.ChoiceInput<DISTANCE_TYPE>;
+    onValueChanged: (value) => distType = value ?? DISTANCE_TYPE.EUCLIDEAN}) as DG.ChoiceInput<DISTANCE_TYPE>;
   distTypeInput.setTooltip(HINT.DISTANCE);
 
   // Target columns components (cols with missing values to be imputed)
   let targetColNames = colsWithMissingVals.map((col) => col.name);
-  const targetColInput = ui.input.columns(TITLE.COLUMNS, {table: df, value: df.columns.byNames(availableTargetColsNames), onValueChanged: (inp, value) => {
+  const targetColInput = ui.input.columns(TITLE.COLUMNS, {table: df, value: df.columns.byNames(availableTargetColsNames), onValueChanged: (value) => {
     targetColNames = value.map((col) => col.name);
     checkApplicability();
   }, available: availableTargetColsNames});
@@ -124,7 +124,7 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
 
   // Feature columns components
   let selectedFeatureColNames = availableFeatureColsNames as string[];
-  const featuresInput = ui.input.columns(TITLE.FEATURES, {value: df.columns.byNames(availableFeatureColsNames), table: df, onValueChanged: (inp, value) => {
+  const featuresInput = ui.input.columns(TITLE.FEATURES, {value: df.columns.byNames(availableFeatureColsNames), table: df, onValueChanged: (value) => {
     selectedFeatureColNames = value.map((col) => col.name);
 
     if (selectedFeatureColNames.length > 0) {
@@ -184,7 +184,7 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
 
     // distance input
     const distTypeInput = ui.input.choice(name, {value: settings.defaultMetric,
-      items: settings.availableMetrics, onValueChanged: (inp, value) => {
+      items: settings.availableMetrics, onValueChanged: (value) => {
         const distInfo = featuresMetrics.get(name) ?? {weight: settings.defaultWeight, type: settings.defaultMetric};
         distInfo.type = value ?? settings.defaultMetric;
         featuresMetrics.set(name, distInfo);

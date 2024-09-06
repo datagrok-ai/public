@@ -138,7 +138,7 @@ export class DimReductionBaseEditor {
       let settingsOpened = false;
       let dbScanSettingsOpened = false;
       this.methodInput = ui.input.choice('Method', {value: DimReductionMethods.UMAP,
-        items: this.methods, onValueChanged: (inp, value) => {
+        items: this.methods, onValueChanged: (value) => {
           if (settingsOpened)
             this.createAlgorithmSettingsDiv(this.methodSettingsDiv, this.methodsParams[value]);
         }});
@@ -296,13 +296,13 @@ export class DimReductionBaseEditor {
           (params as any)[it];
 
         const input = param.type === 'string' ?
-          ui.input.string(param.uiName, {value: param.value ?? '', onValueChanged: (inp, value) => {
+          ui.input.string(param.uiName, {value: param.value ?? '', onValueChanged: (value) => {
             param.value = value;
           }}) : param.type === 'boolean' ?
-            ui.input.bool(param.uiName, {value: param.value ?? false, onValueChanged: (inp, value) => {
+            ui.input.bool(param.uiName, {value: param.value ?? false, onValueChanged: (value) => {
               param.value = value;
             }}) :
-            ui.input.float(param.uiName, {value: param.value as any, onValueChanged: (inp, value) => {
+            ui.input.float(param.uiName, {value: param.value as any, onValueChanged: (value) => {
               param.value = value;
             }});
         paramsForm.append(input.root);

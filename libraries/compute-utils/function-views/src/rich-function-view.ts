@@ -467,7 +467,7 @@ export class RichFunctionView extends FunctionView {
       'min-height': '50px',
     });
 
-    const experimentalDataSwitch = ui.input.toggle('', {value: this.isUploadMode.value, onValueChanged: (inp, value) => this.isUploadMode.next(value)});
+    const experimentalDataSwitch = ui.input.toggle('', {value: this.isUploadMode.value, onValueChanged: (value) => this.isUploadMode.next(value)});
     const uploadSub = this.isUploadMode.subscribe((newValue) => {
       experimentalDataSwitch.notify = false;
       experimentalDataSwitch.value = newValue,

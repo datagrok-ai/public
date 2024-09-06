@@ -65,7 +65,7 @@ export class TableInputManager {
 
     const tableInput = ui.input.table('Tables', {
       value: currentlySelectedTable!, items: this.availableTables,
-      onValueChanged: (input, value) => {
+      onValueChanged: (value) => {
         // WARNING: non-null check necessary to prevent resetting columns to
         // null upon handling onTableAdded
         if (value !== null)

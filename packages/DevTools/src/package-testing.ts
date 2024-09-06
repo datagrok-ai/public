@@ -353,7 +353,7 @@ export class TestManager extends DG.ViewBase {
     debugButton.classList.add('tm-button');
 
     const benchmarkButton = ui.input.bool('Benchmark', {
-      onValueChanged: (inp, value) => {
+      onValueChanged: (value) => {
         DG.Test.isInBenchmark = value;
       }
     });

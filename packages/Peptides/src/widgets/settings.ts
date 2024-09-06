@@ -90,13 +90,13 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   const mclParams = settings?.mclSettings ?? new type.MCLSettings();
   // General pane options
   const activityCol = ui.input.column(GENERAL_INPUTS.ACTIVITY, {table: model.df,
-    value: model.df.getCol(model.settings!.activityColumnName!), onValueChanged: (inp, value) => {result.activityColumnName = value!.name;},
+    value: model.df.getCol(model.settings!.activityColumnName!), onValueChanged: (value) => {result.activityColumnName = value!.name;},
     filter: (col: DG.Column) => (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) &&
       col.name !== C.COLUMNS_NAMES.ACTIVITY && col.stats.missingValueCount === 0});
   activityCol.setTooltip('Numeric activity column');
   const activityScaling =
     ui.input.choice(GENERAL_INPUTS.ACTIVITY_SCALING, {value: currentScaling, items: Object.values(C.SCALING_METHODS),
-      onValueChanged: (inp, value) => result.activityScaling = value as C.SCALING_METHODS}) as DG.InputBase<C.SCALING_METHODS>;
+      onValueChanged: (value) => result.activityScaling = value as C.SCALING_METHODS}) as DG.InputBase<C.SCALING_METHODS>;
   activityScaling.setTooltip('Activity column transformation method');
 
   accordion.addPane(SETTINGS_PANES.GENERAL, () => ui.inputs([activityCol, activityScaling]), true);
@@ -106,22 +106,22 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   /* FIXME: combinations of adding and deleting viewers are not working properly
   const isMPEnabled = wu(model.analysisView.viewers).some((v) => v.type === VIEWER_TYPE.MONOMER_POSITION);
   const monomerPosition = ui.input.bool(VIEWER_TYPE.MONOMER_POSITION, {value: isMPEnabled ?? false,
-    onValueChanged: (inp, value) => result.showMostPotentResidues = value});
+    onValueChanged: (value) => result.showMostPotentResidues = value});
   const isMPREnabled = wu(model.analysisView.viewers).some((v) => v.type === VIEWER_TYPE.MOST_POTENT_RESIDUES);
   const mostPotentResidues = ui.input.bool(VIEWER_TYPE.MOST_POTENT_RESIDUES, {value: isMPREnabled ?? false,
-    onValueChanged: (inp, value) => result.showMonomerPosition = value});
+    onValueChanged: (value) => result.showMonomerPosition = value});
   const isLSTEnabled = wu(model.analysisView.viewers).some((v) => v.type === VIEWER_TYPE.LOGO_SUMMARY_TABLE);
   const logoSummaryTable = ui.input.bool(VIEWER_TYPE.LOGO_SUMMARY_TABLE, {value: isLSTEnabled ?? false,
-    onValueChanged: (inp, value) => result.showLogoSummaryTable = value});
+    onValueChanged: (value) => result.showLogoSummaryTable = value});
   logoSummaryTable.enabled = typeof settings.clustersColumnName !== 'undefined';
   */
   const isDendrogramEnabled = wu(model.analysisView.viewers).some((v) => v.type === VIEWER_TYPE.DENDROGRAM);
   const dendrogram = ui.input.bool(VIEWER_TYPE.DENDROGRAM, {value: isDendrogramEnabled ?? false,
-    onValueChanged: (inp, value) => result.showDendrogram = value}) as DG.InputBase<boolean>;
+    onValueChanged: (value) => result.showDendrogram = value}) as DG.InputBase<boolean>;
   const clusterMaxActivity = ui.input.bool(VIEWER_TYPE.CLUSTER_MAX_ACTIVITY, {value: !!settings?.showClusterMaxActivity,
-    onValueChanged: (inp, value) => {result.showClusterMaxActivity = value ?? undefined;}});
+    onValueChanged: (value) => {result.showClusterMaxActivity = value ?? undefined;}});
   const showSeqSpace = ui.input.bool('Sequence space', {value: !!settings?.showSequenceSpace,
-    onValueChanged: (inp, value) => {
+    onValueChanged: (value) => {
       result.showSequenceSpace = value ?? undefined;
       if (value) {
         seqSpacePane.root.style.display = 'flex';
@@ -151,7 +151,7 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
 
 
     const isIncludedInput = ui.input.bool(COLUMNS_INPUTS.IS_INCLUDED, {value: typeof (currentColumns)[colName] !== 'undefined',
-      onValueChanged: (inp, value) => {
+      onValueChanged: (value) => {
         result.columns ??= {};
         if (value)
           result.columns[colName] = aggregationInput.value;
@@ -165,7 +165,7 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
       'Distribution panel');
 
     const aggregationInput = ui.input.choice(COLUMNS_INPUTS.AGGREGATION, {value: (currentColumns)[colName] ?? DG.AGG.AVG,
-      items: Object.values(DG.STATS), onValueChanged: (inp, value) => {
+      items: Object.values(DG.STATS), onValueChanged: (value) => {
         result.columns ??= {};
         if (isIncludedInput.value)
           // @ts-ignore
@@ -219,26 +219,26 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   // SEQ SPACE INPUTS
   const distanceFunctionInput: DG.ChoiceInput<MmDistanceFunctionsNames> = ui.input.choice(SEQUENCE_SPACE_INPUTS.DISTANCE_FUNCTION,
     {value: seqSpaceParams.distanceF, items: [distFNames.NEEDLEMANN_WUNSCH, distFNames.HAMMING, distFNames.LEVENSHTEIN, distFNames.MONOMER_CHEMICAL_DISTANCE],
-      onValueChanged: (inp, value) => onSeqSpaceParamsChange('distanceF', value)}) as DG.ChoiceInput<MmDistanceFunctionsNames>;
+      onValueChanged: (value) => onSeqSpaceParamsChange('distanceF', value)}) as DG.ChoiceInput<MmDistanceFunctionsNames>;
   distanceFunctionInput.setTooltip('Distance function for sequences');
   const gapOpenInput = ui.input.float(SEQUENCE_SPACE_INPUTS.GAP_OPEN, {value: seqSpaceParams.gapOpen,
-    onValueChanged: (inp, value) => onSeqSpaceParamsChange('gapOpen', value)});
+    onValueChanged: (value) => onSeqSpaceParamsChange('gapOpen', value)});
   const gapExtendInput = ui.input.float(SEQUENCE_SPACE_INPUTS.GAP_EXTEND, {value: seqSpaceParams.gapExtend,
-    onValueChanged: (inp, value) => onSeqSpaceParamsChange('gapExtend', value)});
+    onValueChanged: (value) => onSeqSpaceParamsChange('gapExtend', value)});
   const clusterEmbeddingsInput =
     ui.input.bool(SEQUENCE_SPACE_INPUTS.CLUSTER_EMBEDDINGS, {value: seqSpaceParams.clusterEmbeddings ?? false,
-      onValueChanged: (inp, value) => onSeqSpaceParamsChange('clusterEmbeddings', value)});
+      onValueChanged: (value) => onSeqSpaceParamsChange('clusterEmbeddings', value)});
   clusterEmbeddingsInput.setTooltip('Cluster embeddings using DBSCAN algorithm');
   const epsilonInput = ui.input.float(SEQUENCE_SPACE_INPUTS.EPSILON, {value: seqSpaceParams.epsilon,
-    onValueChanged: (inp, value) => onSeqSpaceParamsChange('epsilon', value)});
+    onValueChanged: (value) => onSeqSpaceParamsChange('epsilon', value)});
   epsilonInput.setTooltip(
     'Epsilon parameter for DBSCAN. Minimum distance between two points to be considered as a cluster');
   const minPtsInput = ui.input.int(SEQUENCE_SPACE_INPUTS.MIN_PTS, {value: seqSpaceParams.minPts,
-    onValueChanged: (inp, value) => onSeqSpaceParamsChange('minPts', value)});
+    onValueChanged: (value) => onSeqSpaceParamsChange('minPts', value)});
   minPtsInput.setTooltip('Minimum number of points in a cluster');
   const fingerprintTypesInput: DG.ChoiceInput<string> = ui.input.choice(SEQUENCE_SPACE_INPUTS.FINGERPRINT_TYPE, {value: seqSpaceParams.fingerprintType,
     items: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'],
-    onValueChanged: (inp, value) => onSeqSpaceParamsChange('fingerprintType', value)}) as DG.ChoiceInput<string>;
+    onValueChanged: (value) => onSeqSpaceParamsChange('fingerprintType', value)}) as DG.ChoiceInput<string>;
   function correctSeqSpaceInputs(): void {
     toggleInputs([gapOpenInput, gapExtendInput], distanceFunctionInput.value === distFNames.NEEDLEMANN_WUNSCH);
     toggleInputs([epsilonInput, minPtsInput], clusterEmbeddingsInput.value === true);
@@ -280,23 +280,23 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
 
   const mclDistanceFunctionInput: DG.ChoiceInput<MmDistanceFunctionsNames> = ui.input.choice(MCL_INPUTS.DISTANCE_FUNCTION,
     {value: mclParams.distanceF, items: [distFNames.NEEDLEMANN_WUNSCH, distFNames.MONOMER_CHEMICAL_DISTANCE, distFNames.HAMMING, distFNames.LEVENSHTEIN],
-      onValueChanged: (inp, value) => onMCLParamsChange('distanceF', value)}) as DG.ChoiceInput<MmDistanceFunctionsNames>;
+      onValueChanged: (value) => onMCLParamsChange('distanceF', value)}) as DG.ChoiceInput<MmDistanceFunctionsNames>;
   const mclGapOpenInput = ui.input.float(MCL_INPUTS.GAP_OPEN, {value: mclParams.gapOpen,
-    onValueChanged: (inp, value) => onMCLParamsChange('gapOpen', value)});
+    onValueChanged: (value) => onMCLParamsChange('gapOpen', value)});
   const mclGapExtendInput = ui.input.float(MCL_INPUTS.GAP_EXTEND, {value: mclParams.gapExtend,
-    onValueChanged: (inp, value) => onMCLParamsChange('gapExtend', value)});
+    onValueChanged: (value) => onMCLParamsChange('gapExtend', value)});
   const mclFingerprintTypesInput: DG.ChoiceInput<string> = ui.input.choice(MCL_INPUTS.FINGERPRINT_TYPE, {value: mclParams.fingerprintType,
     items: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'],
-    onValueChanged: (inp, value) => onMCLParamsChange('fingerprintType', value)}) as DG.ChoiceInput<string>;
+    onValueChanged: (value) => onMCLParamsChange('fingerprintType', value)}) as DG.ChoiceInput<string>;
   const mclThresholdInput = ui.input.int(MCL_INPUTS.THRESHOLD, {value: mclParams.threshold ?? 80,
-    onValueChanged: (inp, value) => onMCLParamsChange('threshold', value)});
+    onValueChanged: (value) => onMCLParamsChange('threshold', value)});
   const mclMaxIterationsInput = ui.input.int(MCL_INPUTS.MAX_ITERATIONS, {value: mclParams.maxIterations ?? 5,
-    onValueChanged: (inp, value) => onMCLParamsChange('maxIterations', value)});
+    onValueChanged: (value) => onMCLParamsChange('maxIterations', value)});
   const mclInflationInput = ui.input.float(MCL_INPUTS.INFLATION, {value: mclParams.inflation ?? 1.4,
-    onValueChanged: (inp, value) => {onMCLParamsChange('inflation', value);}});
+    onValueChanged: (value) => {onMCLParamsChange('inflation', value);}});
 
   const mclUseWebGPU = ui.input.bool(MCL_INPUTS.USE_WEBGPU, {value: mclParams.useWebGPU,
-    onValueChanged: (inp, value) => onMCLParamsChange('useWebGPU', value)});
+    onValueChanged: (value) => onMCLParamsChange('useWebGPU', value)});
   mclUseWebGPU.enabled = false;
   mclParams.webGPUDescriptionPromise.then(() => {
     if (mclParams.webGPUDescription !== type.webGPUNotSupported) {
@@ -310,7 +310,7 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   });
 
   const mclMinClusterSizeInput = ui.input.int(MCL_INPUTS.MIN_CLUSTER_SIZE, {value: mclParams.minClusterSize ?? 5,
-    onValueChanged: (inp, value) => onMCLParamsChange('minClusterSize', value)});
+    onValueChanged: (value) => onMCLParamsChange('minClusterSize', value)});
 
   correctMCLInputs();
 
