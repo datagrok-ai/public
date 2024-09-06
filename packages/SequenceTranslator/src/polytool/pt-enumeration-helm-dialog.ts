@@ -22,7 +22,7 @@ import {
   PolyToolEnumeratorParams, PolyToolEnumeratorType, PolyToolEnumeratorTypes
 } from './types';
 import {getLibrariesList} from './utils';
-import {getPtEnumeratorHelm, PT_HELM_EXAMPLE} from './pt-enumeration-helm';
+import {doPolyToolEnumerateHelm, PT_HELM_EXAMPLE} from './pt-enumeration-helm';
 import {PolyToolPlaceholdersInput} from './pt-placeholders-input';
 import {defaultErrorHandler} from '../utils/err-info';
 import {PT_UI_DIALOG_ENUMERATION} from './const';
@@ -107,10 +107,9 @@ export async function polyToolEnumerateHelmUI(cell?: DG.Cell): Promise<void> {
     _package.logger.debug('PolyToolEnumerateHelmUI: dialog before show');
     const res = dialog.show({width: Math.max(350, maxWidth * 0.7), /* center: true,*/ resizable: true});
     _package.logger.debug('PolyToolEnumerateHelmUI: dialog after show');
-    const k = 42;
   } catch (err: any) {
-    grok.shell.warning('To run PolyTool Enumeration, sketch the macromolecule and select monomers to vary');
     const [errMsg, errStack] = errInfo(err);
+    grok.shell.warning('To run PolyTool Enumeration, sketch the macromolecule and select monomers to vary');
     _package.logger.error(errMsg, undefined, errStack);
   }
 }
@@ -366,7 +365,7 @@ async function getPolyToolEnumerateDialog(
 
   await fillForCurrentCell(cell);
 
-  const execDialog = async (): Promise<void> => {
+  const exec = async (): Promise<void> => {
     try {
       const srcHelm = inputs.macromolecule.stringValue;
       const helmSelections: number[] = wu.enumerate<HelmAtom>(inputs.macromolecule.molValue.atoms)
@@ -387,7 +386,7 @@ async function getPolyToolEnumerateDialog(
           placeholders: inputs.placeholders.placeholdersValue,
           keepOriginal: inputs.keepOriginal.value,
         };
-        const enumeratorResDf = await enumerateHelm(srcHelm, srcId, params, inputs.toAtomicLevel.value, seqHelper);
+        const enumeratorResDf = await polyToolEnumerateHelm(srcHelm, srcId, params, inputs.toAtomicLevel.value, seqHelper);
         grok.shell.addTableView(enumeratorResDf);
       }
     } catch (err: any) {
@@ -409,10 +408,7 @@ async function getPolyToolEnumerateDialog(
     //   execDialog()
     //     .then(() => {});
     // }, 0, 'Keeps the dialog open')
-    .onOK(() => {
-      execDialog()
-        .then(() => {destroy();});
-    })
+    .onOK(() => { exec().finally(() => {destroy();}); })
     .onCancel(() => { destroy(); });
   dialog.history(
     /* getInput */ (): PolyToolEnumerateSerialized => {
@@ -436,30 +432,35 @@ async function getPolyToolEnumerateDialog(
   return dialog;
 }
 
-async function enumerateHelm(
+async function polyToolEnumerateHelm(
   srcHelm: string, srcId: { value: string, colName: string } | null, params: PolyToolEnumeratorParams,
   toAtomicLevel: boolean, seqHelper: ISeqHelper,
 ): Promise<DG.DataFrame> {
-  await getHelmHelper(); // initializes JSDraw and org
+  const pi = DG.TaskBarProgressIndicator.create('PolyTool enumerating...');
+  try {
+    await getHelmHelper(); // initializes JSDraw and org
 
-  const resList = getPtEnumeratorHelm(srcHelm, srcId?.value ?? '', params);
-  const enumHelmCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, 'Enumerated', resList.length)
-    .init((rowIdx: number) => resList[rowIdx][0]);
-  const enumeratorResDf = DG.DataFrame.fromColumns([enumHelmCol]);
+    const resList = doPolyToolEnumerateHelm(srcHelm, srcId?.value ?? '', params);
+    const enumHelmCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, 'Enumerated', resList.length)
+      .init((rowIdx: number) => resList[rowIdx][0]);
+    const enumeratorResDf = DG.DataFrame.fromColumns([enumHelmCol]);
 
-  if (toAtomicLevel) {
-    const seqHelper: ISeqHelper = await getSeqHelper();
-    const toAtomicLevelRes = await seqHelper.helmToAtomicLevel(enumHelmCol, true, true);
-    toAtomicLevelRes.molCol.semType = DG.SEMTYPE.MOLECULE;
-    enumeratorResDf.columns.add(toAtomicLevelRes.molCol, false);
-    enumeratorResDf.columns.add(toAtomicLevelRes.molHighlightCol, false);
+    if (toAtomicLevel) {
+      const seqHelper: ISeqHelper = await getSeqHelper();
+      const toAtomicLevelRes = await seqHelper.helmToAtomicLevel(enumHelmCol, true, true);
+      toAtomicLevelRes.molCol.semType = DG.SEMTYPE.MOLECULE;
+      enumeratorResDf.columns.add(toAtomicLevelRes.molCol, false);
+      enumeratorResDf.columns.add(toAtomicLevelRes.molHighlightCol, false);
+    }
+
+    if (srcId) {
+      const enumIdCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, srcId.colName, resList.length)
+        .init((rowIdx: number) => resList[rowIdx][1]);
+      enumeratorResDf.columns.add(enumIdCol);
+    }
+
+    return enumeratorResDf;
+  } finally {
+    pi.close();
   }
-
-  if (srcId) {
-    const enumIdCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, srcId.colName, resList.length)
-      .init((rowIdx: number) => resList[rowIdx][1]);
-    enumeratorResDf.columns.add(enumIdCol);
-  }
-
-  return enumeratorResDf;
 }

@@ -14,6 +14,8 @@
   * Example with monomers existing in default monomer lib
 * Fixes for datagrok-api changes
 * Add sample cyclized.csv for rules_examples.json
+* Fix PolyTool Convert, add tests cyclized
+* Fix PolyTool enumerate add progress indicator
 
 ## 1.3.14 (2024-09-02)
 

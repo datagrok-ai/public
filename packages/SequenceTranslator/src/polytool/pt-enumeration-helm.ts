@@ -56,7 +56,10 @@ function getPtEnumeratorMatrix(m: HelmMol, placeholders: PolyToolPlaceholders): 
   return resMolList;
 }
 
-export function getPtEnumeratorHelm(helm: string, id: string, params: PolyToolEnumeratorParams): [string, string][] {
+/** Returns list of Helm with id. Covered with tests. */
+export function doPolyToolEnumerateHelm(
+  helm: string, id: string, params: PolyToolEnumeratorParams
+): [ /* helm */ string, /* id */ string][] {
   const molHandler = new JSDraw2.MolHandler<HelmType>();
   const plugin = new org.helm.webeditor.Plugin(molHandler);
   org.helm.webeditor.IO.parseHelm(plugin, helm, new JSDraw2.Point(0, 0), undefined);

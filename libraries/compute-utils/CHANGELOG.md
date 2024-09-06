@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.38.0-rc (2024-09-06)
+
+- Preparing 1.21.1 release
+
 ## 1.37.0 (2024-09-05)
 
 - Release for 1.21.0
