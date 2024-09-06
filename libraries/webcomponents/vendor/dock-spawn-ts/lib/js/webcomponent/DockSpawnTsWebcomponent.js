@@ -17,6 +17,12 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
         this.windowResizedBound = this.windowResized.bind(this);
         this.slotElementMap = new WeakMap();
     }
+    saveLayout() {
+        return this.dockManager.saveState();
+    }
+    loadLayout(serializedState) {
+        this.dockManager.loadState(serializedState);
+    }
     initDockspawn() {
         const dockSpawnDiv = document.createElement('div');
         dockSpawnDiv.id = 'dockSpawnDiv';

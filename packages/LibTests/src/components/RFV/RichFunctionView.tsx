@@ -118,10 +118,23 @@ export const RichFunctionView = defineComponent({
     const historyRef = ref(null as InstanceType<typeof History> | null);
     const helpRef = ref(null as InstanceType<typeof MarkDown> | null);
     const formRef = ref(null as HTMLElement | null);
+    const dockRef = ref(null as InstanceType<typeof DockManager> | null);
     const handlePanelClose = (el: HTMLElement) => {
       if (el === historyRef.value?.$el) historyHidden.value = true;
       if (el === helpRef.value?.$el) helpHidden.value = true;
       if (el === formRef.value) formHidden.value = true;
+    };
+
+    const save = () => {
+      if (!dockRef.value) return;
+
+      dockRef.value.saveLayout();
+    };
+
+    const load = () => {
+      if (!dockRef.value) return;
+
+      dockRef.value.loadLayout();
     };
 
     return () => (
@@ -138,6 +151,16 @@ export const RichFunctionView = defineComponent({
             tooltip='Run step'
             onClick={run} 
           />
+          <IconFA
+            name='save'
+            tooltip='Save the layout'
+            onClick={save}
+          />
+          <IconFA
+            name='life-ring'
+            tooltip='Load the layout'
+            onClick={load}
+          />
           { hasContextHelp.value && <IconFA 
             name='info' 
             tooltip={ helpHidden.value ? 'Open help panel' : 'Close help panel' }
@@ -151,7 +174,7 @@ export const RichFunctionView = defineComponent({
             style={{'background-color': !historyHidden.value ? 'var(--grey-1)': null}}
           />
         </RibbonPanel>
-        <DockManager onPanelClosed={handlePanelClose}>
+        <DockManager onPanelClosed={handlePanelClose} ref={dockRef}>
           { !historyHidden.value ? 
             <History 
               func={currentCall.value.func}

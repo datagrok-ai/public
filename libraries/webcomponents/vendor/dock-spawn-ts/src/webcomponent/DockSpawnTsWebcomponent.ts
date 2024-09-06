@@ -23,6 +23,14 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
     this.slotElementMap = new WeakMap();
   }
 
+  public saveLayout() {
+    return this.dockManager.saveState();
+  }
+
+  public loadLayout(serializedState: string) {
+    this.dockManager.loadState(serializedState);
+  }
+
   private initDockspawn() {
     const dockSpawnDiv = document.createElement('div');
     dockSpawnDiv.id = 'dockSpawnDiv';
