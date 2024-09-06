@@ -186,11 +186,12 @@ export const RichFunctionView = defineComponent({
               dock-spawn-dock-ratio={0.2}
               {...{title: 'History'}}
               ref={historyRef}
+              class='overflow-scroll h-full'
             />: null }
           
           { !formHidden.value ?
             <div 
-              class='flex flex-col p-2'
+              class='flex flex-col p-2 overflow-scroll h-full'
               dock-spawn-dock-type='left'
               dock-spawn-dock-ratio={0.2}
               title='Inputs'
@@ -208,21 +209,20 @@ export const RichFunctionView = defineComponent({
                 categoryToDfParam.value.outputs[tabLabel]}))            
               .map(({tabLabel, tabDfProps}) => {
                 return <div 
-                  class='flex flex-col'
+                  class='flex flex-col overflow-scroll h-full'
                   title={tabLabel}
                 >
                   { tabDfProps.map((tabProp) => {
                     const allConfigs = Utils.getPropViewers(tabProp).config;
 
                     return allConfigs.map((options) => (            
-                      <div class='flex flex-col h-1/2 pl-2'>
+                      <div class='flex flex-col pl-2' style={{flex: 1}}>
                         <h2> { dfBlockTitle(tabProp) } </h2>
                         <Viewer
                           type={options['type'] as string}
                           options={options}
                           dataFrame={currentCall.value.inputs[tabProp.name] ?? currentCall.value.outputs[tabProp.name]}
                           class='w-full'
-                          style={{'height': '300px'}} 
                         />
                       </div>));
                   })

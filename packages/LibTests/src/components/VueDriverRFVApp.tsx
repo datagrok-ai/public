@@ -161,7 +161,7 @@ export const VueDriverRFVApp = defineComponent({
           
           {
             isVisibleRfv.value && currentFuncCall.value && <RichFunctionView 
-              class='overflow-auto'
+              class='overflow-hidden'
               funcCall={currentFuncCall.value}
               onUpdate:funcCall={(chosenCall) => currentFuncCall.value = deepCopy(chosenCall)}
               {...{title: 'Step review'}}
