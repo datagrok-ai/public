@@ -3,10 +3,13 @@
   "subgroup": [
     {
       "name": "Absorption",
+      "checked": false,
+      "expanded": true,
       "description": "Absorption is the process by which drugs enter the bloodstream after administration. It is pivotal in pharmaceutical research, enabling enhanced bioavailability, precise dosing, formulation optimization, reduced variability among patient populations, and minimized side effects. In this part, we studied 3 absorption-related endpoints.",
       "models": [
         {
           "name": "Caco2",
+          "checked": false,
           "units": "cm/s",
           "min": -6,
           "max": -5.5,
@@ -46,6 +49,7 @@
         },
         {
           "name": "Lipophilicity",
+          "checked": false,
           "units": "log-ratio",
           "min": 0,
           "max": 5,
@@ -87,6 +91,7 @@
         },
         {
           "name": "Solubility",
+          "checked": false,
           "units": "log mol/L",
           "min": -4.5,
           "max": -1,
@@ -128,10 +133,13 @@
     },
     {
       "name": "Distribution",
+      "expanded": false,
+      "checked": false,
       "description": "Distribution refers to the process of transporting a drug from its point of entry into the bloodstream to its target organs, tissues, or specific sites where it exerts its therapeutic effects, with factors such as drug properties and physiological characteristics influencing this process.",
       "models": [
         {
           "name": "PPBR",
+          "checked": false,
           "units": "%",
           "min": 40,
           "max": 90,
@@ -185,6 +193,7 @@
         },
         {
           "name": "VDss",
+          "checked": false,
           "units": "L/kg",
           "min": 1,
           "max": 2,
@@ -240,10 +249,13 @@
     },
     {
       "name": "Metabolism",
+      "expanded": false,
+      "checked": false,
       "description": "Metabolism is the intricate biochemical system responsible for managing energy and molecular processes within living organisms. It consists of two essential components: anabolism, where complex molecules are built, requiring energy like an investment, and catabolism, which breaks down substances to release energy, akin to a controlled chemical breakdown.",
       "models": [
         {
           "name": "CYP1A2-Inhibitor",
+          "checked": false,
           "units": "-",
           "min": 0,
           "max": 1,
@@ -283,6 +295,7 @@
         },
         {
           "name": "CYP2C19-Inhibitor",
+          "checked": false,
           "units": "-",
           "min": 0,
           "max": 1,
@@ -322,6 +335,7 @@
         },
         {
           "name": "CYP2C9-Inhibitor",
+          "checked": false,
           "units": "-",
           "min": 0,
           "max": 1,
@@ -361,6 +375,7 @@
         },
         {
           "name": "CYP2C9-Substrate",
+          "checked": false,
           "units": "-",
           "min": 0,
           "max": 1,
@@ -400,6 +415,7 @@
         },
         {
           "name": "CYP2D6-Inhibitor",
+          "checked": false,
           "units": "-",
           "min": 0,
           "max": 1,
@@ -439,6 +455,7 @@
         },
         {
           "name": "CYP2D6-Substrate",
+          "checked": false,
           "units": "-",
           "min": 0,
           "max": 1,
@@ -480,10 +497,13 @@
     },
     {
       "name": "Excretion",
+      "expanded": false,
+      "checked": false,
       "description": "Drug excretion is the removal of drugs from the body using various different routes of excretion, including urine, bile, sweat, saliva, tears, milk, and stool.",
       "models": [
         {
           "name": "CL-Hepa",
+          "checked": false,
           "units": "mL/min",
           "min": 10,
           "max": 100,
@@ -537,6 +557,7 @@
         },
         {
           "name": "CL-Micro",
+          "checked": false,
           "units": "μL/min/million",
           "min": 10,
           "max": 100,
@@ -590,6 +611,7 @@
         },
         {
           "name": "Half-Life",
+          "checked": false,
           "units": "hours",
           "min": 2,
           "max": 24,

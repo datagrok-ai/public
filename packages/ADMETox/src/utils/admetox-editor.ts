@@ -15,10 +15,10 @@ export class AdmeticaBaseEditor {
   addPiechartInput = ui.input.bool('Add piechart', {value: true});
   addFormInput = ui.input.bool('Add form', {value: true});
   modelsSettingsDiv = ui.inputs([]);
-  expanded: boolean = false;
   tree: DG.TreeViewGroup = ui.tree();
   properties: Template | null = null;
   updatedProperties: Template | null = null;
+  currentItem: DG.TreeViewNode | null = null;
 
   constructor() {
     this.tableInput = ui.input.table('Table', {value: grok.shell.tv.dataFrame, onValueChanged: () => this.onTableInputChanged()});
@@ -42,7 +42,7 @@ export class AdmeticaBaseEditor {
     this.folderIcon = ui.iconFA('folder', () => {
       ui.dialog({title:'Manage files'})
         .add(ui.fileBrowser({path: TEMPLATES_FOLDER}).root)
-        .onOK(() => {})
+        .onOK(async () => await this.initTemplates())
         .show();
     });
     this.folderIcon.style.marginLeft = '10px';
@@ -87,10 +87,9 @@ export class AdmeticaBaseEditor {
     this.updatedProperties = JSON.parse(JSON.stringify(this.properties));
     ui.empty(paramsForm);
     this.tree = ui.tree();
-    this.expanded = false;
     const treeControl = this.createTreeControl(this.updatedProperties!);
     paramsForm.appendChild(treeControl);
-    this.tree.currentItem = this.tree.items.find(item => item instanceof DG.TreeViewNode)!;
+    this.tree.currentItem = this.currentItem ?? this.tree.items.find(item => item instanceof DG.TreeViewNode)!;
     return paramsForm;
   }
 
@@ -240,14 +239,13 @@ export class AdmeticaBaseEditor {
   private createTreeGroup(template: Template): void {
     template.subgroup.forEach((subgroup: Subgroup) => {
       const groupNode = this.tree.group(subgroup.name);
-      groupNode.expanded = !this.expanded;
-      this.expanded = true;
-      groupNode.enableCheckBox(false);
+      groupNode.expanded = subgroup.expanded;
+      groupNode.enableCheckBox(subgroup.checked);
       
       subgroup.models.forEach((model: Model) => {
         const modelNode = groupNode.item(model.name);
-        modelNode.checked = false;
-        modelNode.enableCheckBox(false);
+        modelNode.checked = model.checked;
+        modelNode.enableCheckBox(model.checked);
       });
     });
   }
@@ -266,6 +264,7 @@ export class AdmeticaBaseEditor {
     const inputs = ui.divV([]);
     
     this.tree.onSelectedNodeChanged.subscribe((node: DG.TreeViewNode) => {
+      this.currentItem = node;
       const subgroup = template.subgroup.find(subgroup => subgroup.name === node.text);
       const model = this.getModel(template, node.text)
       if (subgroup)
@@ -279,6 +278,24 @@ export class AdmeticaBaseEditor {
       if (!model) return;
       node.root.onmouseenter = (e) => ui.tooltip.show(model.units, e.x, e.y);
       node.root.onmouseleave = (e) => ui.tooltip.hide();
+    });
+
+    this.tree.onChildNodeExpandedChanged.subscribe((node: DG.TreeViewGroup) => {
+      const subgroup = template.subgroup.find(subgroup => subgroup?.name === node.text);
+      subgroup!.expanded = node.expanded;
+    });
+
+    this.tree.onNodeCheckBoxToggled.subscribe((node) => {
+      if (node instanceof DG.TreeViewGroup) {
+        const subgroup = template.subgroup.find(subgroup => subgroup?.name === node.text);
+        subgroup!.checked = node.checked;
+        subgroup!.models.forEach((model: Model) => {
+          model.checked = node.checked;
+        })
+      } else {
+        const model = this.getModel(template, node.text);
+        model!.checked = node.checked;
+      }
     });
     
     const tabContent = ui.divH([this.tree.root, inputs]);

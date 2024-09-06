@@ -25,6 +25,7 @@ export interface ModelColoring {
 
 export interface Model {
   name: string;
+  checked: boolean;
   units: string;
   min: number | string;
   max: number | string;
@@ -39,6 +40,8 @@ export interface Template {
 
 export interface Subgroup {
   name: string;
+  expanded: boolean;
+  checked: boolean,
   description: string;
   models: Model[];
 }
