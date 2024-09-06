@@ -1,11 +1,12 @@
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import { piechartIndex } from './admetox-utils';
 
 // Function to create an element state for each column
 function createElementState(table: string, left: number, top: number, column: string) {
   return [
     {
-      "left": left + 89,  // Position the field to the right of the HTML input
+      "left": left + getTextWidth(column),  // Position the field to the right of the HTML input
       "top": top,
       "width": 100,
       "height": 20,
@@ -19,7 +20,7 @@ function createElementState(table: string, left: number, top: number, column: st
     {
       "left": left,
       "top": top,
-      "width": 69,
+      "width": getTextWidth(column),
       "height": 20,
       "type": "html",
       "viewerSettings": {
@@ -30,6 +31,15 @@ function createElementState(table: string, left: number, top: number, column: st
       }
     }
   ];
+}
+
+function getTextWidth(text: string) {
+  const canvas = ui.canvas();
+  const context = canvas.getContext('2d');
+  context!.font = '13px Roboto, sans-serif';
+  const width = context!.measureText(text).width;
+
+  return width + 26;
 }
   
 // Function to create a header element for a category
