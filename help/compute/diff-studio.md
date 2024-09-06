@@ -35,10 +35,28 @@ To run **Diff Studio**:
 
 ### Loading and saving data
 
-* **To save formulas** to a local file, click the <i class="fas fa-save"></i> **Save** icon on the ribbon, and find the *ivp*-file in Downloads. You can open and edit this file using any text editor.
+* **To save formulas**, click the <i class="fas fa-save"></i> **Save** icon on the ribbon. The context menu opens:
+  * Click `Save as Local File...` to save formulas to a local file. Find the *ivp*-file in Downloads. You can open and edit this file using any text editor.
+  * Click `Save to My Files...` to save model to your platform files (**Browse > Files > My files**).
 * **To load formulas** from a local file, click the <i class="fas fa-folder-open"></i> **Load...** on the ribbon, choose **From file...**
   option and choose a local file to upload.
 * **Drag-n-drop** your *ivp*-file to Datagrok. Diff Studio will open it and load formulas. You can open *ivp*-files stored in the platform.
+
+### Browse and share models
+
+Go to **Browse > Apps** and expand the **Diff Studio** group:
+
+* Check model templates from **Templates**. Use them as a backbone of your model.
+* Click **Examples** and explore built-in models. They cover all Diff Studio capabilities.
+* Find recently opened models in **Recent**.
+
+![Diff Studio Browsing](pics/diff-studio-browsing.gif)
+
+In **Browse**, click any *ivp*-file. Model preview opens. Modify inputs and check results. Use URL to share computations:
+
+![Diff Studio Sharing](pics/diff-studio-sharing-url.gif)
+
+You can apply URL to sharing runs of models from the **Templates**, **Examples** and **Recent** groups.
 
 ### Sensitivity analysis
 
