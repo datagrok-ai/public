@@ -51,7 +51,7 @@ export const History = defineComponent({
     const isLoading = ref(true);
 
     const isCompactMode = ref(true);
-    const showFilters = ref(true);
+    const showFilters = ref(false);
     const showInputs = ref(true);
     const showMetadata = ref(true);
 
@@ -230,21 +230,25 @@ export const History = defineComponent({
     const applyStyles = () => {
       const func = historicalRuns.value.values().next().value?.func as DG.Func | undefined;
 
-      Utils.styleHistoryGrid(
-        currentGrid.value!, 
-        isCompactMode.value,
-        showInputs.value,
-        showMetadata.value,
-        func,
-      );
+      if (currentGrid.value) {
+        Utils.styleHistoryGrid(
+          currentGrid.value, 
+          isCompactMode.value,
+          showInputs.value,
+          showMetadata.value,
+          func,
+        );
+      }
 
-      Utils.styleHistoryFilters(
-        currentFilters.value!,
-        showMetadata.value,
-        showInputs.value,
-        props.isHistory,
-        func,
-      );
+      if (currentFilters.value) {
+        Utils.styleHistoryFilters(
+          currentFilters.value,
+          showMetadata.value,
+          showInputs.value,
+          props.isHistory,
+          func,
+        );
+      }
     };
 
     watch([showInputs, showMetadata, isCompactMode], () => {
@@ -299,7 +303,7 @@ export const History = defineComponent({
       const filters = <Viewer 
         type='Filters' 
         dataFrame={historicalRunsDf.value} 
-        style={{height: '100%', width: '100%', display: !showFilters.value ? 'none': 'block'}}
+        style={{flex: '1', width: '100%'}}
         onViewerChanged={(viewer) => currentFilters.value = viewer as DG.FilterGroup}
       />;
 
@@ -311,11 +315,11 @@ export const History = defineComponent({
             flexDirection: isCompactMode.value ? 'column': 'row', 
             height: '100%', width: '100%',
           }}> 
-            <div style={{display: 'flex', flexDirection: 'column', height: '100%', width: '100%'}}>
+            <div style={{display: 'flex', flexDirection: 'column', flex: '1'}}>
               { controls }
               { grid }
             </div>
-            { filters }
+            { showFilters.value ? filters: null }
           </div>
         }
       </div>;
