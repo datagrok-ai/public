@@ -237,6 +237,7 @@ export enum UI_TIME {
   SOLV_DEFAULT_TIME_SEC = 5,
   SOLV_TIME_MIN_SEC = 1,
   BROWSING = APP_RUN_SOLVING + 300,
+  SWITCH_TO_FOLDER = 1,
 };
 
 /** Numerical methods names */

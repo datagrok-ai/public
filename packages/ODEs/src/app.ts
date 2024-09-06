@@ -240,7 +240,7 @@ export class DiffStudio {
         const modelIdx = this.startingPath.lastIndexOf('/') + 1;
         const paramsIdx = this.startingPath.indexOf(PATH.PARAM);
 
-        if (modelIdx > -1) {
+        if (paramsIdx > -1) {
           const model = this.startingPath.slice(modelIdx, (paramsIdx > -1) ? paramsIdx : undefined);
 
           if (MODELS.includes(model)) {
@@ -260,8 +260,16 @@ export class DiffStudio {
             await this.setState(model as EDITOR_STATE, false);
           } else
             await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
-        } else
-          await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
+        } else {
+          const folderName = this.startingPath.slice(modelIdx);
+          const node = this.appTree.items.find((node) => node.text === folderName);
+
+          if (node !== undefined) {
+            setTimeout(() => node.root.click(), UI_TIME.SWITCH_TO_FOLDER);
+            return DG.View.create();
+          } else
+            await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
+        }
       }
     },
     UI_TIME.APP_RUN_SOLVING);
