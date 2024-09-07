@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## 1.0.11-rc (2024-06-10)
+
+* Preparing 1.21.1 release
+
 ## 1.0.10 (2024-06-10)
 
 Implemented
