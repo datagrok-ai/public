@@ -16,6 +16,11 @@
 * Add sample cyclized.csv for rules_examples.json
 * Fix PolyTool Convert, add tests cyclized
 * Fix PolyTool enumerate add progress indicator
+* Fixes for api changes
+* Fix PT dialogs destroy on build fail
+* Fix rules_examples for NH2-D with R3 and syclized sample
+* Fix polyToolConvert to work without table
+* Add tests for polyToolConvert, ui
 
 ## 1.3.14 (2024-09-02)
 
