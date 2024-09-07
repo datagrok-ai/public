@@ -20,6 +20,7 @@ Monomer manager
 * Fix toAtomicLevel workers error DG is not defined
 * Fix biosubstructure filter
 * Fix SeqHandler.getHelm lost cycles, add tests
+* Fix SeqlHelper.helmToAtomicLevel to work without table
 
 ## 2.14.3 (2024-08-27)
 

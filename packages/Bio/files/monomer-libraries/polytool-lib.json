@@ -14,7 +14,7 @@
         "label": "R1"
       },
       {
-        "capGroupSMILES": "H[*:2]",
+        "capGroupSMILES": "[*:2][H]",
         "alternateId": "R2-H",
         "capGroupName": "H",
         "label": "R2"
