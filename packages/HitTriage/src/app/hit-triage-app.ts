@@ -40,7 +40,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
   private _pickViewPromise?: Promise<void> | null = null;
 
   constructor(c: DG.FuncCall) {
-    super(c);
+    super(c, 'Hit Triage');
     this._infoView = new InfoView(this);
     this.multiView = new DG.MultiView({viewFactories: {[this._infoView.name]: () => this._infoView}});
     this.multiView.tabs.onTabChanged.subscribe((_) => {
