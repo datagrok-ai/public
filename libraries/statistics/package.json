@@ -4,10 +4,10 @@
     "access": "public"
   },
   "friendlyName": "statistics",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Statistics utilities",
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.2.29",
+    "@datagrok-libraries/utils": "^4.3.0",
     "cash-dom": "^8.0.0",
     "datagrok-api": "^1.20.0",
     "dayjs": "^1.11.7",

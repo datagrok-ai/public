@@ -8,11 +8,11 @@
     "email": "aparamonov@datagrok.ai"
   },
   "fullName": "Utils",
-  "version": "4.2.30-rc",
+  "version": "4.3.0",
   "description": "Common utilities",
   "dependencies": {
     "cash-dom": "^8.1.1",
-    "datagrok-api": ">=1.21.1-rc.9611340ae5.984aeb5375",
+    "datagrok-api": "^1.21.1",
     "fast-sha256": "^1.3.0",
     "rxjs": "^6.5.5",
     "wu": "latest"
