@@ -13,7 +13,7 @@ In order to evaluate predictions for a single molecule, click on it, go to the C
 
 To calculate the properties for the whole column, go to the top-menu and select Chem | Admetica | Calculations… After that molecules with desired properties can be simply filtered using standard tools the platform provides. 
 
-![Predictions for the molecule column](../Admetica/vendor/admetica-column.mov)
+![Predictions for the molecule column](../Admetica/vendor/admetica-column.gif)
 
 See also: 
 * [Docker Containers](https://datagrok.ai/help/develop/how-to/docker_containers)
