@@ -26,7 +26,7 @@
     "@types/node": "^20.8.4",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
-    "@datagrok/compute": "^1.15.1",
+    "@datagrok/compute": "^1.39.0",
     "css-loader": "latest",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
