@@ -189,7 +189,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
           'assignedValue': 2,
         },
       };
-      expectObservable(consistency[outNode.getItem().uuid], '^ 1000ms !').toBe('ab', {a, b});
+      expectObservable(consistency[outNode.getItem().uuid], '^ 1000ms !').toBe('abb', {a, b});
     });
   });
 

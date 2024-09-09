@@ -1,11 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { category, test, before } from '@datagrok-libraries/utils/src/test';
-import { FuncCallAdapter, FuncCallMockAdapter } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/FuncCallAdapters';
-import { expectDeepEqual } from '@datagrok-libraries/utils/src/expect';
+import {category, test, before} from '@datagrok-libraries/utils/src/test';
+import {FuncCallAdapter, FuncCallMockAdapter} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/FuncCallAdapters';
+import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {TestScheduler} from 'rxjs/testing';
-import { map, take, takeUntil, toArray } from 'rxjs/operators';
-import { Subject } from 'rxjs';
+import {map, take, takeUntil, toArray} from 'rxjs/operators';
+import {Subject} from 'rxjs';
 
 category('ComputeUtils: Driver mock wrapper', async () => {
   let testScheduler: TestScheduler;
@@ -49,7 +49,7 @@ category('ComputeUtils: Driver mock wrapper', async () => {
         adapter.setState('state2', 2);
       });
       expectObservable(adapter.getStateChanges('state1'), '^ 1000ms !').toBe('ab', {a: undefined, b: 1});
-      expectObservable(adapter.getStateChanges('state2'), '^ 1000ms !').toBe('a-b', {a: undefined, b: 2})
+      expectObservable(adapter.getStateChanges('state2'), '^ 1000ms !').toBe('a-b', {a: undefined, b: 2});
     });
   });
 
@@ -82,20 +82,20 @@ category('ComputeUtils: Driver mock wrapper', async () => {
       null,
       [
         {
-          "col1": "val1"
+          'col1': 'val1',
         },
         {
-          "col1": "val2"
-        }
+          'col1': 'val2',
+        },
       ],
       [
         {
-          "col1": "val1"
+          'col1': 'val1',
         },
         {
-          "col1": "val3"
-        }
-      ]
+          'col1': 'val3',
+        },
+      ],
     ]);
   });
 
@@ -153,7 +153,7 @@ category('ComputeUtils: Driver FuncCall wrapper', async () => {
     expectDeepEqual(val, [
       null,
       1,
-      2
+      2,
     ]);
   });
 
@@ -191,20 +191,20 @@ category('ComputeUtils: Driver FuncCall wrapper', async () => {
       null,
       [
         {
-          "col1": "val1"
+          'col1': 'val1',
         },
         {
-          "col1": "val2"
-        }
+          'col1': 'val2',
+        },
       ],
       [
         {
-          "col1": "val1"
+          'col1': 'val1',
         },
         {
-          "col1": "val3"
-        }
-      ]
+          'col1': 'val3',
+        },
+      ],
     ]);
   });
 
@@ -224,7 +224,7 @@ category('ComputeUtils: Driver FuncCall wrapper', async () => {
       end$.next(true);
     }, 10);
     const val = await adapter.getStateChanges('res', true).pipe(takeUntil(end$), toArray()).toPromise();
-    expectDeepEqual(val, [null, 3])
+    expectDeepEqual(val, [null, 3]);
   });
 
 });

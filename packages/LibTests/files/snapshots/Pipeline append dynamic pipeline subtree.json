@@ -4,6 +4,7 @@
   "provider": "LibTests:MockProvider3",
   "version": "1.0",
   "nqName": "LibTests:MockWrapper3",
+  "isReadonly": false,
   "type": "parallel",
   "steps": [
     {
@@ -12,6 +13,7 @@
       "provider": "LibTests:MockProvider2",
       "version": "1.0",
       "nqName": "LibTests:MockWrapper2",
+      "isReadonly": false,
       "type": "parallel",
       "steps": [
         {
@@ -20,8 +22,7 @@
           "nqName": "LibTests:TestAdd2",
           "configId": "stepAdd",
           "friendlyName": "add",
-          "isOuputOutdated": false,
-          "inputRestrictions": {}
+          "isReadonly": false
         },
         {
           "configId": "pipeline1",
@@ -29,6 +30,7 @@
           "provider": "LibTests:MockProvider1",
           "version": "1.0",
           "nqName": "LibTests:MockWrapper1",
+          "isReadonly": false,
           "type": "static",
           "steps": [
             {
@@ -36,16 +38,14 @@
               "uuid": "",
               "nqName": "LibTests:TestAdd2",
               "configId": "step1",
-              "isOuputOutdated": false,
-              "inputRestrictions": {}
+              "isReadonly": false
             },
             {
               "type": "funccall",
               "uuid": "",
               "nqName": "LibTests:TestMul2",
               "configId": "step2",
-              "isOuputOutdated": false,
-              "inputRestrictions": {}
+              "isReadonly": false
             }
           ]
         }
@@ -69,6 +69,7 @@
       "provider": "LibTests:MockProvider2",
       "version": "1.0",
       "nqName": "LibTests:MockWrapper2",
+      "isReadonly": false,
       "type": "parallel",
       "steps": [
         {
@@ -77,8 +78,7 @@
           "nqName": "LibTests:TestAdd2",
           "configId": "stepAdd",
           "friendlyName": "add",
-          "isOuputOutdated": false,
-          "inputRestrictions": {}
+          "isReadonly": false
         },
         {
           "configId": "pipeline1",
@@ -86,6 +86,7 @@
           "provider": "LibTests:MockProvider1",
           "version": "1.0",
           "nqName": "LibTests:MockWrapper1",
+          "isReadonly": false,
           "type": "static",
           "steps": [
             {
@@ -93,16 +94,14 @@
               "uuid": "",
               "nqName": "LibTests:TestAdd2",
               "configId": "step1",
-              "isOuputOutdated": false,
-              "inputRestrictions": {}
+              "isReadonly": false
             },
             {
               "type": "funccall",
               "uuid": "",
               "nqName": "LibTests:TestMul2",
               "configId": "step2",
-              "isOuputOutdated": false,
-              "inputRestrictions": {}
+              "isReadonly": false
             }
           ]
         }

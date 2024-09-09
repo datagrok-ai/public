@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {v4 as uuidv4} from 'uuid';
 import {BehaviorSubject, Observable, defer, of} from 'rxjs';
 import {StateItem} from '../config/PipelineConfiguration';
-import { delay, map, mapTo, startWith, switchMap, tap } from 'rxjs/operators';
+import {delay, map, mapTo, startWith, switchMap, tap} from 'rxjs/operators';
 import {RestrictionType} from '../data/common-types';
 
 
@@ -60,8 +60,7 @@ export class FuncCallAdapter implements IFuncCallAdapter {
   }
 
   editState<T = any>(name: string, value: T | undefined) {
-    if (!this.isReadonly)
-      this.instance.inputs[name] = value;
+    this.instance.inputs[name] = value;
   }
 
   getStateNames() {
@@ -109,8 +108,7 @@ export class MemoryStore implements IStateStore {
   }
 
   editState<T = any>(name: string, value: T | undefined) {
-    if (!this.isReadonly)
-      this.states[name]?.next(value);
+    this.states[name]?.next(value);
   }
 }
 
@@ -129,7 +127,7 @@ export class FuncCallMockAdapter extends MemoryStore implements IFuncCallAdapter
       tap(() => {
         for (const [k, v] of Object.entries(outputs ?? {}))
           this.setState(k, v);
-      })
+      }),
     );
   }
 

@@ -1,11 +1,13 @@
 {
   "configId": "pipeline1",
   "uuid": "",
+  "isReadonly": false,
   "type": "static",
   "steps": [
     {
       "configId": "pipelineSeq",
       "uuid": "",
+      "isReadonly": false,
       "type": "sequential",
       "steps": [
         {
@@ -14,8 +16,7 @@
           "nqName": "LibTests:TestMul2",
           "configId": "stepMul",
           "friendlyName": "mul",
-          "isOuputOutdated": false,
-          "inputRestrictions": {}
+          "isReadonly": false
         },
         {
           "type": "funccall",
@@ -23,8 +24,7 @@
           "nqName": "LibTests:TestAdd2",
           "configId": "stepAdd",
           "friendlyName": "add",
-          "isOuputOutdated": false,
-          "inputRestrictions": {}
+          "isReadonly": false
         },
         {
           "type": "funccall",
@@ -32,8 +32,7 @@
           "nqName": "LibTests:TestMul2",
           "configId": "stepMul",
           "friendlyName": "mul",
-          "isOuputOutdated": false,
-          "inputRestrictions": {}
+          "isReadonly": false
         },
         {
           "type": "funccall",
@@ -41,8 +40,7 @@
           "nqName": "LibTests:TestAdd2",
           "configId": "stepAdd",
           "friendlyName": "add",
-          "isOuputOutdated": false,
-          "inputRestrictions": {}
+          "isReadonly": false
         }
       ],
       "stepTypes": [
@@ -57,6 +55,7 @@
     {
       "configId": "pipelinePar",
       "uuid": "",
+      "isReadonly": false,
       "type": "parallel",
       "steps": [
         {
@@ -65,8 +64,7 @@
           "nqName": "LibTests:TestAdd2",
           "configId": "stepAdd",
           "friendlyName": "add",
-          "isOuputOutdated": false,
-          "inputRestrictions": {}
+          "isReadonly": false
         },
         {
           "type": "funccall",
@@ -74,8 +72,7 @@
           "nqName": "LibTests:TestAdd2",
           "configId": "stepAdd",
           "friendlyName": "add",
-          "isOuputOutdated": false,
-          "inputRestrictions": {}
+          "isReadonly": false
         },
         {
           "type": "funccall",
@@ -83,8 +80,7 @@
           "nqName": "LibTests:TestMul2",
           "configId": "stepMul",
           "friendlyName": "mul",
-          "isOuputOutdated": false,
-          "inputRestrictions": {}
+          "isReadonly": false
         },
         {
           "type": "funccall",
@@ -92,8 +88,7 @@
           "nqName": "LibTests:TestMul2",
           "configId": "stepMul",
           "friendlyName": "mul",
-          "isOuputOutdated": false,
-          "inputRestrictions": {}
+          "isReadonly": false
         }
       ],
       "stepTypes": [

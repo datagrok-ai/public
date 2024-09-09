@@ -2,12 +2,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BigButton, Button, InputForm} from '@datagrok-libraries/webcomponents-vue/src';
-import {defineComponent, KeepAlive, onUnmounted, ref, shallowRef} from 'vue';
+import { defineComponent, KeepAlive, onUnmounted, reactive, ref, shallowRef} from 'vue';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
 import {useObservable, useSubscription} from '@vueuse/rxjs';
 import {isFuncCallState, isParallelPipelineState, isSequentialPipelineState, PipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {map, switchMap} from 'rxjs/operators';
-import {combineLatest} from 'rxjs';
+import {merge, Observable} from 'rxjs';
+import {FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
 export const VueDriverTestApp = defineComponent({
   name: 'VuewDriverTestApp',
@@ -20,16 +21,20 @@ export const VueDriverTestApp = defineComponent({
   setup() {
     const driver = new Driver();
     const tree = shallowRef<PipelineState | undefined>(undefined);
+    const state = reactive({callsInfo: {} as Record<string, FuncCallStateInfo | undefined>});
 
     useSubscription((driver.currentState$).subscribe((s) => tree.value = s));
     const isLocked = useObservable(driver.stateLocked$);
 
-    const callsState = useObservable(driver.currentCallsState$.pipe(
+    useSubscription(driver.currentCallsState$.pipe(
       switchMap((data) => {
+        state.callsInfo = {};
         const entries = Object.entries(data).map(([name, state$]) => state$.pipe(map((s) => [name, s] as const)));
-        return combineLatest(entries).pipe(map((entries) => Object.fromEntries(entries)));
+        return merge(...entries);
       }),
-    ));
+    ).subscribe(([k, val]) => {
+      state.callsInfo[k] = val;
+    }));
 
     onUnmounted(() => {
       driver.close();
@@ -58,7 +63,7 @@ export const VueDriverTestApp = defineComponent({
           <div key={node.uuid} style={{border: 'solid black 1px', margin: '5px', padding: '5px'}}>
             <div>FuncCall: {node.configId} { isParentDynamic ? <Button onClick={() => removeStep(node.uuid)}>remove</Button> : '' }</div>
             <InputForm funcCall={node.funcCall}></InputForm>
-            <div>{callsState?.value?.[node.uuid]?.isOutputOutdated ? 'OUTDATED' : 'ACTUAL'}</div>
+            <div>{state.callsInfo?.[node.uuid]?.isOutputOutdated ? 'OUTDATED' : 'ACTUAL'}</div>
             { Object.entries(node.funcCall.outputs).map(([name, val]) => <div>{ `${name}: ${val}`}</div>) }
             <Button onClick={() => runStep(node.uuid)}>run</Button></div> :
           <div style={{border: 'solid black 1px', margin: '5px'}}>LOADING</div>;

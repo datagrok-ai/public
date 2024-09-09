@@ -2,6 +2,7 @@
   "configId": "pipelineSeq",
   "uuid": "",
   "nqName": "mockNqName",
+  "isReadonly": false,
   "type": "sequential",
   "steps": [
     {
@@ -10,8 +11,7 @@
       "nqName": "LibTests:TestMul2",
       "configId": "stepMul",
       "friendlyName": "mul",
-      "isOuputOutdated": false,
-      "inputRestrictions": {}
+      "isReadonly": false
     }
   ],
   "stepTypes": [

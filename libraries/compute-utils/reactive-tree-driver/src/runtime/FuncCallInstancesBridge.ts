@@ -1,5 +1,5 @@
 import {BehaviorSubject, of, combineLatest, Observable, defer, Subject, merge} from 'rxjs';
-import { switchMap, map, takeUntil, finalize, mapTo, skip, distinctUntilChanged } from 'rxjs/operators';
+import {switchMap, map, takeUntil, finalize, mapTo, skip, distinctUntilChanged, withLatestFrom, filter} from 'rxjs/operators';
 import {ValidationResultBase} from '../../../shared-utils/validation';
 import {IFuncCallAdapter, IRunnableWrapper, IStateStore} from './FuncCallAdapters';
 import {RestrictionType} from '../data/common-types';
@@ -32,8 +32,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
 
   public isRunning$ = new BehaviorSubject(false);
   public isRunable$ = new BehaviorSubject(false);
-
-  public isOutputOutdated$ = new BehaviorSubject(false);
+  public isOutputOutdated$ = new BehaviorSubject(true);
 
   public validations$ = new BehaviorSubject<Record<string, Record<string, ValidationResultBase | undefined>>>({});
 
@@ -43,6 +42,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
   public initialValues: Record<string, any> = {};
 
   private closed$ = new Subject<true>();
+  public outdatedChanged$ = new BehaviorSubject(true);
 
   constructor(private io: FuncallStateItem[], public readonly isReadonly: boolean) {}
 
@@ -65,8 +65,9 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
         data.adapter.setState(key, val);
     }
 
-    this.inputRestrictions$.next({...this.inputRestrictions$.value,  ...data.restrictions});
+    this.inputRestrictions$.next({...this.inputRestrictions$.value, ...data.restrictions});
     this.instance$.next({adapter: data.adapter, isNew: true});
+    this.outdatedChanged$.next(data.isOutputOutdated);
 
     this.setupStateWatcher();
   }
@@ -91,7 +92,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
         if (data) {
           const changes$ = data.adapter.getStateChanges(id, includeDataFrameMutations);
           if (!data.isNew)
-            return changes$.pipe(skip(1))
+            return changes$.pipe(skip(1));
           return changes$;
         }
         return of(undefined);
@@ -101,8 +102,13 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
 
   setState<T = any>(id: string, val: T | undefined, restrictionType: RestrictionType = 'none') {
     const currentInstance = this.instance$.value?.adapter;
-    if (currentInstance)
+    if (currentInstance == null)
+      throw new Error(`Attempting to set an empty FuncCallInstancesBridge`);
+    this.inputRestrictions$.next({...this.inputRestrictions$.value, [id]: {assignedValue: val, type: restrictionType}});
+    if (!this.isReadonly)
       currentInstance.setState(id, val, restrictionType);
+    else
+      this.inputRestrictionsUpdates$.next([id, {assignedValue: val, type: restrictionType}] as const);
   }
 
   editState<T = any>(id: string, val: T | undefined) {
@@ -130,7 +136,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
       return currentInstance.run(mockResults, mockDelay).pipe(
         finalize(() => {
           this.isRunning$.next(false);
-          this.isOutputOutdated$.next(false);
+          this.outdatedChanged$.next(false);
         }),
       );
     });
@@ -152,7 +158,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
         return combineLatest([
           this.isRunning$,
           this.validations$.pipe(map((validations) => this.isRunnable(validations))),
-        ]).pipe(map((isRunning, isValid) => !isRunning && isValid));
+        ]).pipe(map(([isRunning, isValid]) => !isRunning && isValid));
       }),
       distinctUntilChanged(),
       takeUntil(this.closed$),
@@ -164,7 +170,13 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
     merge(...inputsChanges).pipe(
       mapTo(true),
       takeUntil(this.closed$),
-      distinctUntilChanged(),
+    ).subscribe(this.outdatedChanged$);
+
+    this.outdatedChanged$.pipe(
+      withLatestFrom(this.isOutputOutdated$),
+      filter(([next, current]) => next !== current),
+      map(([next]) => next),
+      takeUntil(this.closed$),
     ).subscribe(this.isOutputOutdated$);
   }
 

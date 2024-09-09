@@ -1,6 +1,7 @@
 {
   "configId": "pipeline1",
   "uuid": "",
+  "isReadonly": false,
   "type": "static",
   "steps": [
     {
@@ -8,16 +9,14 @@
       "uuid": "",
       "nqName": "LibTests:TestAdd2",
       "configId": "step1",
-      "isOuputOutdated": false,
-      "inputRestrictions": {}
+      "isReadonly": false
     },
     {
       "type": "funccall",
       "uuid": "",
       "nqName": "LibTests:TestMul2",
       "configId": "step2",
-      "isOuputOutdated": false,
-      "inputRestrictions": {}
+      "isReadonly": false
     }
   ]
 }

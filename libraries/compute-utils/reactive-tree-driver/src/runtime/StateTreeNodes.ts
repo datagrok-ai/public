@@ -95,7 +95,7 @@ export class FuncCallNode implements IStoreProvider {
         type: restrictionType,
       };
     }
-    this.instancesWrapper.setPreInitialData({ initialValues: initialConfig.values ?? {}, initialRestrictions });
+    this.instancesWrapper.setPreInitialData({initialValues: initialConfig.values ?? {}, initialRestrictions});
   }
 
   toState(options: StateTreeSerializationOptions): StepFunCallState {
