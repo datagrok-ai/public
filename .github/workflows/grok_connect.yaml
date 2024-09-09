@@ -182,12 +182,13 @@ jobs:
         run: |
           channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
           echo "::add-mask::$channel_id"
-          echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
 
           if [[ "${{ steps.bleeding-edge.outcome == 'success' }}" == "true" ]]; then
             SLACK_MESSAGE_HEADER="${SLACK_MESSAGE_HEADER}\n*Grok Connect* Docker Image version *bleeding-edge* is published to Docker Hub"
+            echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
           else
-            SLACK_MESSAGE_HEADER="*Grok Connect* Docker Image version *${{ needs.build.outputs.version }}* is published to Docker Hub"
+            SLACK_MESSAGE_HEADER="*Grok Connect* Docker Image version *${{ needs.build.outputs.version }}* is published to Docker Hub.\n <@$channel_id> FYI"
+            echo SLACK_CHANNEL='#build' >> $GITHUB_ENV
           fi
 
           echo SLACK_MESSAGE_HEADER=$SLACK_MESSAGE_HEADER >> $GITHUB_ENV

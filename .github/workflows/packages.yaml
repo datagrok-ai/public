@@ -189,14 +189,6 @@ jobs:
         run: |
           echo -e "matrix_publish: ${{ steps.generate-matrix.outputs.matrix_publish }}"
           echo -e "publish: ${{ steps.generate-matrix.outputs.publish }}"
-#      - name: Slack Failed Notification
-#        if: failure()
-#        uses: act10ns/slack@v2.1.0
-#        with:
-#          status: ${{ job.status }}
-#          steps: ${{ toJson(steps) }}
-#          config: ".github/config/slack.yml"
-#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
 
   publish:
     name: "${{ matrix.package }}: ${{ matrix.job_name }}"
@@ -592,9 +584,8 @@ jobs:
         run: |
           channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
           echo "::add-mask::$channel_id"
-          echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
 
-          header="Package *${{ matrix.package }}* version *${{ matrix.version }}* published to <https://www.npmjs.com/package/$(jq -r .name "packages/${{ matrix.package }}/package.json")/v/${{ matrix.version }}|NPM>"
+          header="Package *${{ matrix.package }}* version *${{ matrix.version }}* published to <https://www.npmjs.com/package/$(jq -r .name "packages/${{ matrix.package }}/package.json")/v/${{ matrix.version }}|NPM>\n<@$channel_id> FYI"
           echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
 
           context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1 | sed -e 's/"/\\"/g')>"
@@ -605,7 +596,7 @@ jobs:
         if: steps.slack-prepare.outcome == 'success'
         uses: slackapi/slack-github-action@v1.24.0
         with:
-          channel-id: ${{ env.SLACK_CHANNEL }}
+          channel-id: '#build'
           payload: |
             {
                 "blocks": [

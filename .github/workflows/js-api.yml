@@ -308,38 +308,7 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
 
-      #      - name: Install DBTests dependencies
-      #        run: npm install
-      #        working-directory: ./packages/DBTests
-      #      - name: Run DBTests
-      #        continue-on-error: true
-      #        timeout-minutes: 15
-      #        id: test-DBTests
-      #        run: |
-      #          test_result=$(npm run test -- --record --csv | grep 'Test result : ' || true)
-      #          if [ -z "$test_result" ]; then
-      #            echo "All tests finished successfully"
-      #          else
-      #            echo "Test failures"
-      #            echo -e "${test_result}"
-      #            echo -e "SLACK_MESSAGE_BODY=${SLACK_MESSAGE_BODY}*DBTests results:*\n${test_result}" | sed -e '$ ! s/$/\\n/' | tr -d '\n' >> $GITHUB_ENV
-      #            exit 1
-      #          fi
-      #        working-directory: packages/DBTests
-      #      - name: Upload DBTests results
-      #        if: steps.test-DBTests.outcome != 'skipped'
-      #        uses: actions/upload-artifact@v3
-      #        with:
-      #          name: DBTests.test-results
-      #          path: |
-      #            packages/DBTests/test-record.mp4
-      #            packages/DBTests/test-report.csv
-      #            packages/DBTests/test-console-output.log
-      #          retention-days: 14
-      #          if-no-files-found: warn
-
       - name: Prepare Slack Message
-        #        if: ${{ steps.test-ApiTests.outcome == 'failure' || steps.test-DBTests.outcome == 'failure' }}
         if: ${{ steps.test-ApiTests.outcome == 'failure' }}
         id: slack-prepare
         shell: bash
@@ -396,7 +365,7 @@ jobs:
             }
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
-#
+
       - name: npm publish
         id: publish
         run: |
@@ -409,10 +378,58 @@ jobs:
             tag="--tag release-candidate"
           fi
           npm publish ${tag}
+          echo "tag=${tag}" >> $GITHUB_OUTPUT
         working-directory: ./js-api
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         if: needs.version.outputs.changed_version == 'true'
+
+      - name: Prepare Slack Message
+        if: ${{ steps.publish.outcome == 'success' && !contains(matrix.package, 'Meta') }}
+        id: slack-prepare-build
+        shell: bash
+        env:
+          SLACK_ID: ${{ secrets.SLACK_ID }}
+        run: |
+          channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
+          echo "::add-mask::$channel_id"
+
+          header="*JS API* version *${{ needs.version.outputs.current_version }}* published to <https://www.npmjs.com/package/datagrok-api/v/${{ needs.version.outputs.current_version }}|NPM> with tag ${{ steps.publish.outputs.tag }}\n<@$channel_id> FYI"
+          echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
+
+          context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1 | sed -e 's/"/\\"/g')>"
+          echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
+
+      - name: Send to Slack
+        id: slack
+        if: steps.slack-prepare-build.outcome == 'success'
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: '#build'
+          payload: |
+            {
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "${{ env.SLACK_MESSAGE_HEADER }}"
+                        }
+                    },
+                    {
+                        "type": "context",
+                        "elements": [
+                            {
+                                "type": "mrkdwn",
+                                "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"
+                            }
+                        ]
+                    }
+                ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
+
       - name: Commit js-api version json for compatibility-tool
         if: ${{ steps.publish.outcome == 'success' }}
         working-directory: docusaurus
@@ -445,13 +462,6 @@ jobs:
               fi
             done
           fi
-#      - name: Slack Notification
-#        uses: act10ns/slack@v2.1.0
-#        with:
-#          status: ${{ steps.publish.outcome }}
-#          steps: ${{ toJson(steps) }}
-#          config: ".github/config/slack.yml"
-#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
 
       - name: Commit package-lock.json
         continue-on-error: true
@@ -481,23 +491,6 @@ jobs:
               fi
             done
           fi
-
-#      - name: Slack Notification
-#        uses: act10ns/slack@v2.1.0
-#        with:
-#          status: ${{ steps.publish.outcome }}
-#          steps: ${{ toJson(steps) }}
-#          config: ".github/config/slack.yml"
-#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
-
-#      - name: Slack Failed-Cancelled Notification
-#        if: failure() || cancelled()
-#        uses: act10ns/slack@v2.1.0
-#        with:
-#          status: ${{ job.status }}
-#          steps: ${{ toJson(steps) }}
-#          config: ".github/config/slack.yml"
-#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
 
   libraries:
     name: Check libraries
@@ -587,14 +580,6 @@ jobs:
           body: "Failed to update JS API dependency for library ${{ matrix.library }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           reply_to: monitoring@datagrok.ai
 
-#      - name: Slack Failed Notification
-#        if: failure()
-#        uses: act10ns/slack@v2.1.0
-#        with:
-#          status: ${{ job.status }}
-#          steps: ${{ toJson(steps) }}
-#          config: ".github/config/slack.yml"
-#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
   packages:
     name: Check packages
     runs-on: ubuntu-22.04
@@ -682,11 +667,3 @@ jobs:
           from: monitoring@grok.datagrok.ai
           body: "Failed to update JS API dependency for package ${{ matrix.package }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           reply_to: monitoring@datagrok.ai
-#      - name: Slack Failed Notification
-#        if: failure()
-#        uses: act10ns/slack@v2.1.0
-#        with:
-#          status: ${{ job.status }}
-#          steps: ${{ toJson(steps) }}
-#          config: ".github/config/slack.yml"
-#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
