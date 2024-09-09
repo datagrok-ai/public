@@ -1,17 +1,31 @@
 # Admetica
 
-The Admetica package provides an outstanding opportunity to evaluate such molecule properties as absorption, distribution, metabolism, excretion and toxicity, also known as ADMET. The main purpose of this package is to make it possible to filter molecules and select those that satisfy a specific criteria of the research.
+The Admetica package provides an outstanding opportunity to evaluate crucial molecular properties, such as absorption, distribution, metabolism, excretion, and toxicity (ADMET). The main objective of this package is to allow researchers to filter molecules and select those that satisfy a specific criteria of the research.
  
-With this package/tool you can:
-* Obtain predictions both for a single structure and for the column
-* Get a well designed and comfortably organized form for every structure of your dataset
-* Get a deeper understanding of what each of values mean with the help of our tooltips and color coding tools
+With this package you can:
+* Get predictions for both individual structures and entire columns in your dataset.
+* Obtain a well-designed form and a VlaaiVis pie chart for each structure of your dataset to visualize your data effectively.
+* Gain a deeper understanding of each value with the help of tooltips and color-coding features.
 
-In order to evaluate predictions for a single molecule, click on it, go to the Context Panel and expand the Admetica pane.
+To evaluate predictions for a single molecule:
+* Select the molecule of interest.
+* Navigate to **Context Pane > Admetica**.
+* Expand the relevant panes (Absorption, Distribution, Excretion, Toxicity, Summary) to view detailed results.
 
 ![Predictions for a single molecule](../Admetica/vendor/admetica-cell.gif)
 
-To calculate the properties for the whole column, go to the top-menu and select Chem | Admetica | Calculations… After that molecules with desired properties can be simply filtered using standard tools the platform provides. 
+To calculate the properties for the whole column:
+* Go to the **Top menu > Chem > Admetica > Calculate…**
+* In the dialog select:
+  - **Table**: Select the table you want to work with.
+  - **Molecules**: Select the column with molecules.
+  - **Template**: Select the template that defines how to interpret the results.
+  - **Properties**: Select the properties you want to calculate.
+  - **Add piechart**: Select to include a pie chart visualizing the data.
+  - **Add form**: Select to include a form.
+* Click **OK** to get the results
+
+After that molecules with desired properties can be simply filtered using standard tools the platform provides. 
 
 ![Predictions for the molecule column](../Admetica/vendor/admetica-column.gif)
 
