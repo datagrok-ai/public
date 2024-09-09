@@ -1,6 +1,5 @@
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import { tablePieChartIndexMap } from './admetox-utils';
+import { tablePieChartIndexMap } from './admetica-utils';
 
 // Function to create an element state for each column
 function createElementState(table: string, left: number, top: number, column: string) {

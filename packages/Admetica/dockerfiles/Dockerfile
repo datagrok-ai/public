@@ -51,4 +51,4 @@ SHELL ["micromamba","run","-n","myenv", "/bin/bash","-c"]
 
 EXPOSE 8000
 
-ENTRYPOINT ["micromamba", "run", "-n", "myenv", "gunicorn", "-w", "1", "-b", "0.0.0.0:8000", "--timeout", "3000", "ADMETox:app"]
+ENTRYPOINT ["micromamba", "run", "-n", "myenv", "gunicorn", "-w", "1", "-b", "0.0.0.0:8000", "--timeout", "3000", "Admetica:app"]

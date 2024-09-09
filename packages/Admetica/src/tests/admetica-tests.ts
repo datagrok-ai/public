@@ -2,9 +2,9 @@ import {awaitCheck, before, category, delay, expect, expectArray, test} from '@d
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { runAdmetox, performChemicalPropertyPredictions, getQueryParams, properties, setProperties } from '../utils/admetox-utils';
+import { runAdmetica, performChemicalPropertyPredictions, getQueryParams, properties, setProperties } from '../utils/admetica-utils';
 
-category('Admetox', () => {
+category('Admetica', () => {
   let v: DG.TableView;
   let molecules: DG.DataFrame;
   let smilesColumn: DG.Column;
@@ -16,14 +16,14 @@ category('Admetox', () => {
   });
     
   test('Container', async () => {
-    const admetDockerfile = await grok.dapi.docker.dockerContainers.filter('admetox').first();
+    const admetDockerfile = await grok.dapi.docker.dockerContainers.filter('admetica').first();
     expect(admetDockerfile != null, true);
   });
 
   test('Container. Post request', async () => {
     const smiles = `smiles
     O=C1Nc2ccccc2C(C2CCCCC2)=NC1`;
-    const bbbResults = await runAdmetox(smiles, 'PPBR,VDss', 'false');
+    const bbbResults = await runAdmetica(smiles, 'PPBR,VDss', 'false');
     expect(bbbResults != null, true);
   }, {timeout: 100000});
 
@@ -31,20 +31,20 @@ category('Admetox', () => {
     molecules = grok.data.demo.molecules(100);
     v = grok.shell.addTableView(molecules);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
-    grok.shell.topMenu.find('Chem').group('ADME/Tox').find('Сalculate...').click();
-    await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot open admetox dialog', 2000);
-    const admetoxDialog = returnDialog('ADME/Tox')?.root;
-    const settingsIcon = admetoxDialog?.querySelector('.grok-icon.grok-font-icon-settings') as HTMLElement;
+    grok.shell.topMenu.find('Chem').group('Admetica').find('Сalculate...').click();
+    await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot open Admetica dialog', 2000);
+    const admeticaDialog = returnDialog('Admetica')?.root;
+    const settingsIcon = admeticaDialog?.querySelector('.grok-icon.grok-font-icon-settings') as HTMLElement;
     settingsIcon.click();
-    await awaitCheck(() => admetoxDialog!.querySelectorAll('.d4-tree-view-group-host > .d4-tree-view-group').length === 4,
-      'properties number inside ADME/Tox dialog is different than expected', 5000);
-    const smilesColumn = admetoxDialog!.querySelector('.d4-column-selector-column') as HTMLElement;
+    await awaitCheck(() => admeticaDialog!.querySelectorAll('.d4-tree-view-group-host > .d4-tree-view-group').length === 4,
+      'properties number inside Admetica dialog is different than expected', 5000);
+    const smilesColumn = admeticaDialog!.querySelector('.d4-column-selector-column') as HTMLElement;
     await awaitCheck(() => smilesColumn!.innerText === 'smiles',
-      'column inside ADME/Tox dialog is different than expected', 5000);
+      'column inside Admetica dialog is different than expected', 5000);
     const models = properties.subgroup
       .flatMap((subgroup: any) => subgroup.models
       .map((model: any) => model.name));
-    expectArray(Array.from(admetoxDialog!.querySelectorAll('.d4-tree-view-item-label')).map((item) => item.innerHTML), models);
+    expectArray(Array.from(admeticaDialog!.querySelectorAll('.d4-tree-view-item-label')).map((item) => item.innerHTML), models);
     v.close();
     grok.shell.o = ui.div();
   });
@@ -71,7 +71,7 @@ category('Admetox', () => {
     table.currentCell = table.cell(0, 'smiles');
     await delay(1000);
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
-    await awaitPanel(pp, 'ADME/Tox', 6000);
+    await awaitPanel(pp, 'Admetica', 6000);
     (document.querySelector('.fa-chevron-square-down') as HTMLElement)?.click();
     const distribution = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Distribution') as HTMLElement;
@@ -86,17 +86,17 @@ category('Admetox', () => {
   }, {timeout: 100000});
 
   test('Calculate.Benchmark column', async () => {
-    const runAdmetoxBenchmark = async (moleculesCount: number) => {
+    const runAdmeticaBenchmark = async (moleculesCount: number) => {
         const molecules = grok.data.demo.molecules(moleculesCount);
         molecules.columns.remove('logD');
         const iterations = DG.Test.isInBenchmark ? 100 : 5;
         const args = [molecules.toCsv(), await getQueryParams(), 'false'];
-        return await runInLoop(iterations, runAdmetox, ...args);
+        return await runInLoop(iterations, runAdmetica, ...args);
     };
 
-    const mol1k = await runAdmetoxBenchmark(1000);
-    const mol5k = await runAdmetoxBenchmark(5000);
-    const mol10k = await runAdmetoxBenchmark(10000);
+    const mol1k = await runAdmeticaBenchmark(1000);
+    const mol5k = await runAdmeticaBenchmark(5000);
+    const mol10k = await runAdmeticaBenchmark(10000);
 
     return DG.toDart({"1k molecules": mol1k, "5k molecules": mol5k, "10k molecules": mol10k});
 }, {timeout: 10000000000, benchmark: true });
@@ -108,7 +108,7 @@ category('Admetox', () => {
     const distributionSubgroup = properties.subgroup.find((subgroup: any) => subgroup.name === "Distribution");
     const distributionModels = distributionSubgroup ? distributionSubgroup.models.map((model: any) => model.name) : [];
     const args = [smiles, distributionModels, 'false'];
-    const cellResults = await runInLoop(iterations, runAdmetox, ...args);
+    const cellResults = await runInLoop(iterations, runAdmetica, ...args);
     return DG.toDart({"results": cellResults});
   }, {timeout: 1000000, benchmark: true});
 });

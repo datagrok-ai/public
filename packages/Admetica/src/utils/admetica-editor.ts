@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { Model, ModelColoring, Subgroup, Template, TEMPLATES_FOLDER } from './constants';
 
-import '../css/admetox.css';
+import '../css/admetica.css';
 
 export class AdmeticaBaseEditor {
   tableInput: DG.InputBase<DG.DataFrame | null>;
@@ -32,7 +32,7 @@ export class AdmeticaBaseEditor {
     this.saveButton = ui.button('Save...', () => {
       this.dialogForTemplateSave();
     });
-    this.saveButton.classList.add('admetox-save-button');
+    this.saveButton.classList.add('admetica-save-button');
     
     this.templatesInput = ui.input.choice('Template', {
       onValueChanged: async () =>  await this.createModelsSettingsDiv(this.modelsSettingsDiv),
@@ -108,6 +108,10 @@ export class AdmeticaBaseEditor {
 
     const key = property.property.name as keyof typeof property.object;
     input.value = property.object[key];
+    
+    if (input.inputType === DG.InputType.TextArea)
+      input.root.style.height = `${this.getTextHeight(property.object[key])}px`;
+
     input.addCaption('');
     input.onChanged.subscribe(() => {
       property.object[key] = input.value;
@@ -217,15 +221,15 @@ export class AdmeticaBaseEditor {
   
   private createInputsForCategories(group: Subgroup, inputs: HTMLElement): void{
     ui.empty(inputs);
-    inputs.classList.add('admetox-input-form');
-    inputs.appendChild(ui.divText(group.name, 'admetox-descriptor-name'));
+    inputs.classList.add('admetica-input-form');
+    inputs.appendChild(ui.divText(group.name, 'admetica-descriptor-name'));
     inputs.appendChild(ui.input.textArea('', {size: {width: 100, height: 150}, value: group.description}).root);
   }
   
   private createInputsForModels(model: Model, inputs: HTMLElement): void {
     ui.empty(inputs);
-    inputs.classList.add('admetox-input-form');
-    inputs.appendChild(ui.divText(model.name, 'admetox-descriptor-name'));
+    inputs.classList.add('admetica-input-form');
+    inputs.appendChild(ui.divText(model.name, 'admetica-descriptor-name'));
     model.properties.forEach(p => {
       const input = this.createInputForProperty(p);
       if (input) inputs.appendChild(input);
@@ -262,7 +266,7 @@ export class AdmeticaBaseEditor {
   
   private createTreeControl(template: Template): HTMLDivElement {
     this.createTreeGroup(template);
-    this.tree.root.classList.add('admetox-tree');
+    this.tree.root.classList.add('admetica-tree');
     const inputs = ui.divV([]);
     
     this.tree.onSelectedNodeChanged.subscribe((node: DG.TreeViewNode) => {
@@ -301,7 +305,7 @@ export class AdmeticaBaseEditor {
     });
     
     const tabContent = ui.divH([this.tree.root, inputs]);
-    tabContent.classList.add('admetox-tab-content');
+    tabContent.classList.add('admetica-tab-content');
     return tabContent;
   }
   
@@ -325,6 +329,31 @@ export class AdmeticaBaseEditor {
       addPiechart: this.addPiechartInput.value,
       addForm: this.addFormInput.value,
     };
+  }
+
+  private getTextHeight(text: string) {
+    // Create a temporary container for off-screen rendering
+    const div = ui.div();
+    
+    div.style.position = 'absolute';
+    div.style.visibility = 'hidden'; // Ensure it's not visible
+    div.style.font = '13px Roboto';
+    div.style.width = '200px'; // Set the fixed width
+    div.style.whiteSpace = 'normal'; // Allow text wrapping
+    
+    // Set the text content
+    div.textContent = text;
+    
+    // Append the div to the body
+    document.body.appendChild(div);
+    
+    // Get the computed height of the text
+    const textHeight = div.clientHeight;
+    
+    // Remove the temporary div
+    document.body.removeChild(div);
+    
+    return textHeight;
   }
   
   onTableInputChanged(): void {

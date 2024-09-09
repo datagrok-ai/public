@@ -2,23 +2,25 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { _package } from '../package-test';
-import '../css/admetox.css';
 import { TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, DEFAULT_LOWER_VALUE, DEFAULT_UPPER_VALUE, TAGS } from './constants';
 import { PieChartCellRenderer } from '@datagrok/power-grid/src/sparklines/piechart';
 import { CellRenderViewer } from '@datagrok-libraries/utils/src/viewers/cell-render-viewer';
-import { createCategoryModelMapping, generateFormState } from './admetox-form';
+import { createCategoryModelMapping, generateFormState } from './admetica-form';
+
+import '../css/admetica.css';
 
 export let properties: any;
 export const tablePieChartIndexMap: Map<string, number> = new Map();
 let piechartIndex = 0;
 
-async function getAdmetoxContainer() {
-  const admetoxContainer = await grok.dapi.docker.dockerContainers.filter('admetox').first();
-  return admetoxContainer;
+async function getAdmeticaContainer() {
+  const admeticaContainer = await grok.dapi.docker.dockerContainers.filter('admetica').first();
+  return admeticaContainer;
 }
 
-async function startAdmetoxContainer(containerId: string) {
-  grok.shell.warning('ADMETox container has not started yet. Try again in a few seconds');
+// can be removed, need to add to container info
+async function startAdmeticaContainer(containerId: string) {
+  grok.shell.warning('Admetica container has not started yet. Try again in a few seconds');
   grok.dapi.docker.dockerContainers.run(containerId);
 }
 
@@ -32,10 +34,10 @@ async function sendRequestToContainer(containerId: string, path: string, params:
   }
 }
 
-export async function runAdmetox(csvString: string, queryParams: string, addProbability: string): Promise<string | null> {
-  const admetoxContainer = await getAdmetoxContainer();
-  if (!admetoxContainer || (admetoxContainer.status !== 'started' && admetoxContainer.status !== 'checking')) {
-    await startAdmetoxContainer(admetoxContainer?.id);
+export async function runAdmetica(csvString: string, queryParams: string, addProbability: string): Promise<string | null> {
+  const admeticaContainer = await getAdmeticaContainer();
+  if (!admeticaContainer || (admeticaContainer.status !== 'started' && admeticaContainer.status !== 'checking')) {
+    await startAdmeticaContainer(admeticaContainer?.id);
     return null;
   }
 
@@ -52,7 +54,7 @@ export async function runAdmetox(csvString: string, queryParams: string, addProb
   //const path = `http://127.0.0.1:6678/df_upload?models=${queryParams}&probability=${addProbability}`;
   //const response = await fetch(path, params);
   //return await response.text();
-  return await sendRequestToContainer(admetoxContainer.id, path, params);
+  return await sendRequestToContainer(admeticaContainer.id, path, params);
 }
 
 export async function setProperties() {
@@ -65,14 +67,14 @@ export async function setProperties() {
 
 export async function performChemicalPropertyPredictions(molColumn: DG.Column, viewTable: DG.DataFrame, models: string, template?: string, addPiechart?: boolean, addForm?: boolean) {
   properties = JSON.parse(template!);
-  const progressIndicator = DG.TaskBarProgressIndicator.create('Running ADMETox...');
+  const progressIndicator = DG.TaskBarProgressIndicator.create('Running Admetica...');
   const csvString = DG.DataFrame.fromColumns([molColumn]).toCsv();
   progressIndicator.update(10, 'Predicting...');
 
   try {
-    const admetoxResults = await runAdmetox(csvString, models, 'false');
+    const admeticaResults = await runAdmetica(csvString, models, 'false');
     progressIndicator.update(80, 'Results are ready');
-    const table = admetoxResults ? DG.DataFrame.fromCsv(admetoxResults) : null;
+    const table = admeticaResults ? DG.DataFrame.fromCsv(admeticaResults) : null;
     const molColIdx = viewTable?.columns.names().findIndex((name) => name === molColumn.name);
     table ? addResultColumns(table, viewTable, addPiechart, addForm, molColIdx!) : grok.log.warning('');
   } catch (e) {
@@ -300,7 +302,7 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
 
     result.appendChild(ui.loader());
     try {
-      const csvString = await runAdmetox(`smiles\n${smiles}`, queryParams.join(','), 'false');
+      const csvString = await runAdmetica(`smiles\n${smiles}`, queryParams.join(','), 'false');
       ui.empty(result);
       const table = DG.DataFrame.fromCsv(csvString!);
       const map: { [_: string]: any } = {};
@@ -354,7 +356,7 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
   // Use params when containers will work on dev
   const params = await getQueryParams();
   const query = `smiles\n${value}`;
-  const result = await runAdmetox(query, params, 'false');
+  const result = await runAdmetica(query, params, 'false');
 
   const pieSettings = createPieSettings(dataFrame, params.split(','), properties);
   pieSettings.sectors.values = result!;

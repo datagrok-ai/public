@@ -1,59 +1,58 @@
-.admetox-dialog-tree {
+.admetica-dialog-tree {
   max-height: 400px;
   width: 200px;
 }
 
-.admetox-dialog-select-all {
+.admetica-dialog-select-all {
   margin-left: 6px;
   margin-right: 12px;
 }
 
-.admetox-dialog-count {
+.admetica-dialog-count {
   margin-left: 24px;
   display: inline-flex;
 }
 
-.admetox-mol-input {
+.admetica-mol-input {
   margin-left: -70px;
 }
 
-.admetox-bool-input {
+.admetica-bool-input {
   margin-left: -55px;
 }
 
-.admetox-input-form {
+.admetica-input-form {
   display: flex;
   justify-content: flex-start;
   gap: 10px;
   width: 315px;
 }
 
-.admetox-pane-header {
+.admetica-pane-header {
   display: flex;
   align-items: center;
 }
 
-.admetox-tree {
+.admetica-tree {
   overflow: hidden;
   min-height: 250px;
 }
 
-.admetox-tab-content {
+.admetica-tab-content {
   gap: 10px;
 }
 
-.admetox-descriptor-name {
+.admetica-descriptor-name {
   text-align: center;
   font-weight: bold;
 }
 
-.admetox-save-button {
+.admetica-save-button {
   margin-left: 20px!important;
   visibility: hidden;
 }
 
-.d4-flex-col.ui-div.admetox-input-form .ui-input-textarea.ui-input-root {
-  height: 100%;
+.d4-flex-col.ui-div.admetica-input-form .ui-input-textarea.ui-input-root {
   resize: none;
   overflow: hidden;
   flex-shrink: unset!important;

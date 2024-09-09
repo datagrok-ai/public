@@ -7,11 +7,11 @@ async function openMoleculeDataset(name: string): Promise<DG.TableView> {
   return grok.shell.addTableView(table);
 }
 
-export async function _demoAdmetox(): Promise<void> {
-  let tv = await openMoleculeDataset('System:AppData/Admetox/demo_files/demo_dataset.csv');
+export async function _demoAdmetica(): Promise<void> {
+  let tv = await openMoleculeDataset('System:AppData/Admetica/demo_files/demo_dataset.csv');
   tv.dataFrame.name = 'Table';
 
-  const layoutString = await grok.dapi.files.readAsText('System:AppData/Admetox/demo_files/demo.layout');
+  const layoutString = await grok.dapi.files.readAsText('System:AppData/Admetica/demo_files/demo.layout');
   const layout = DG.ViewLayout.fromJson(layoutString);
   tv.loadLayout(layout);
   grok.shell.windows.showContextPanel = false;
