@@ -680,7 +680,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const idxToTo: number = columns!.byName(MMP_NAMES.PAIRNUM_TO).get(idx);
     const molFrom = this.parentTable!.columns.byName(this.molecules!).get(idxFrom);
     const molTo = this.parentTable!.columns.byName(this.molecules!).get(idxToTo);
-    const grid = grok.shell.tv.grid;
+    const grid = grok.shell.tv.grid ?? ((grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView).grid;
     const indexesPairs = this.transPairsMask?.getSelectedIndexes();
     const indexesAllFrom = indexesPairs?.map((ip) => columns!.byName(MMP_NAMES.PAIRNUM_FROM).get(ip));
     const indexesAllTo = indexesPairs?.map((ip) => columns!.byName(MMP_NAMES.PAIRNUM_TO).get(ip));
@@ -694,7 +694,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
   unPinPair(): void {
-    const grid = grok.shell.tv.grid;
+    const grid = grok.shell.tv.grid ?? ((grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView).grid;
     if (grid) {
       grid.setOptions({
         pinnedRowValues: [],
