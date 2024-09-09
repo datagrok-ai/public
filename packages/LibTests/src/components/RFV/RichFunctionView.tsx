@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {defineComponent, onMounted, PropType, ref, triggerRef, nextTick, computed, watch, shallowRef} from 'vue';
+import {defineComponent, onMounted, PropType, ref, triggerRef, nextTick, computed, watch, shallowRef, reactive} from 'vue';
 import {type ViewerT} from '@datagrok-libraries/webcomponents/src';
 import {Viewer, InputForm, BigButton, Tabs, IconFA, RibbonPanel, DockManager, MarkDown} from '@datagrok-libraries/webcomponents-vue/src';
 import './RichFunctionView.css';
@@ -119,10 +119,14 @@ export const RichFunctionView = defineComponent({
     const helpRef = ref(null as InstanceType<typeof MarkDown> | null);
     const formRef = ref(null as HTMLElement | null);
     const dockRef = ref(null as InstanceType<typeof DockManager> | null);
-    const handlePanelClose = (el: HTMLElement) => {
+    const handlePanelClose = async (el: HTMLElement) => {
       if (el === historyRef.value?.$el) historyHidden.value = true;
       if (el === helpRef.value?.$el) helpHidden.value = true;
       if (el === formRef.value) formHidden.value = true;
+
+      const tabIdx = visibleTabLabels.value.findIndex((label) => label === el.title);
+      if (tabIdx >= 0) 
+        visibleTabLabels.value.splice(tabIdx, 1);  
     };
 
     const save = () => {
@@ -137,6 +141,11 @@ export const RichFunctionView = defineComponent({
       dockRef.value.loadLayout();
     };
 
+    const visibleTabLabels = ref([] as string[]);
+    watch(tabLabels, () => {
+      visibleTabLabels.value = [...tabLabels.value];
+    }, {immediate: true});
+
     return () => (
       <div class='w-full h-full flex'>
         <RibbonPanel>
@@ -150,6 +159,11 @@ export const RichFunctionView = defineComponent({
             name='play'
             tooltip='Run step'
             onClick={run} 
+          />
+          <IconFA
+            name='chart-pie'
+            tooltip='Restore output tabs'
+            onClick={() => visibleTabLabels.value = [...tabLabels.value]} 
           />
           <IconFA
             name='save'
@@ -204,13 +218,14 @@ export const RichFunctionView = defineComponent({
             </div>: null }
           
           { 
-            tabLabels.value
+            visibleTabLabels.value
               .map((tabLabel) => ({tabLabel, tabDfProps: categoryToDfParam.value.inputs[tabLabel] ?? 
                 categoryToDfParam.value.outputs[tabLabel]}))            
               .map(({tabLabel, tabDfProps}) => {
                 return <div 
                   class='flex flex-col overflow-scroll h-full'
                   title={tabLabel}
+                  key={tabLabel}
                 >
                   { tabDfProps.map((tabProp) => {
                     const allConfigs = Utils.getPropViewers(tabProp).config;
