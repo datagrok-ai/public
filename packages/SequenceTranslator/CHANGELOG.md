@@ -1,6 +1,6 @@
 # Sequence Translator changelog
 
-## 1.3.15 (2024-09-05)
+## 1.4.0 (2024-09-10)
 
 ### Features
 
