@@ -5,9 +5,9 @@ import { _package } from '../package-test';
 import { TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, DEFAULT_LOWER_VALUE, DEFAULT_UPPER_VALUE, TAGS } from './constants';
 import { PieChartCellRenderer } from '@datagrok/power-grid/src/sparklines/piechart';
 import { CellRenderViewer } from '@datagrok-libraries/utils/src/viewers/cell-render-viewer';
-import { createCategoryModelMapping, generateFormState } from './admetica-form';
 
 import '../css/admetica.css';
+import { FormStateGenerator } from './admetica-form';
 
 export let properties: any;
 export const tablePieChartIndexMap: Map<string, number> = new Map();
@@ -35,11 +35,11 @@ async function sendRequestToContainer(containerId: string, path: string, params:
 }
 
 export async function runAdmetica(csvString: string, queryParams: string, addProbability: string): Promise<string | null> {
-  const admeticaContainer = await getAdmeticaContainer();
+  /*const admeticaContainer = await getAdmeticaContainer();
   if (!admeticaContainer || (admeticaContainer.status !== 'started' && admeticaContainer.status !== 'checking')) {
     await startAdmeticaContainer(admeticaContainer?.id);
     return null;
-  }
+  }*/
 
   const params: RequestInit = {
     method: 'POST',
@@ -50,11 +50,11 @@ export async function runAdmetica(csvString: string, queryParams: string, addPro
     body: csvString
   };
 
-  const path = `/df_upload?models=${queryParams}&probability=${addProbability}`;
-  //const path = `http://127.0.0.1:6678/df_upload?models=${queryParams}&probability=${addProbability}`;
-  //const response = await fetch(path, params);
-  //return await response.text();
-  return await sendRequestToContainer(admeticaContainer.id, path, params);
+  //const path = `/df_upload?models=${queryParams}&probability=${addProbability}`;
+  const path = `http://127.0.0.1:6678/df_upload?models=${queryParams}&probability=${addProbability}`;
+  const response = await fetch(path, params);
+  return await response.text();
+  //return await sendRequestToContainer(admeticaContainer.id, path, params);
 }
 
 export async function setProperties() {
@@ -369,7 +369,8 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
 function createDynamicForm(viewTable: DG.DataFrame, updatedModelNames: string[], molColName: string, addPiechart: boolean) {
   const form = DG.FormViewer.createDefault(viewTable, {columns: updatedModelNames});
   grok.shell.tv.dockManager.dock(form, DG.DOCK_TYPE.RIGHT, null, 'Form', 0.45);
-  const map = createCategoryModelMapping(properties, updatedModelNames);
-  const formState = generateFormState(viewTable.name, map, molColName, addPiechart);
+  const mapping = FormStateGenerator.createCategoryModelMapping(properties, updatedModelNames);
+  const generator = new FormStateGenerator(viewTable.name, mapping, molColName, addPiechart);
+  const formState = generator.generateFormState();
   form.form.state = JSON.stringify(formState);
 }

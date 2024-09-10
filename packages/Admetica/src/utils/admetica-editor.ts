@@ -332,25 +332,18 @@ export class AdmeticaBaseEditor {
   }
 
   private getTextHeight(text: string) {
-    // Create a temporary container for off-screen rendering
     const div = ui.div();
     
+    /**Move to admetica.css */
     div.style.position = 'absolute';
-    div.style.visibility = 'hidden'; // Ensure it's not visible
+    div.style.visibility = 'hidden';
     div.style.font = '13px Roboto';
-    div.style.width = '200px'; // Set the fixed width
-    div.style.whiteSpace = 'normal'; // Allow text wrapping
+    div.style.width = '200px';
+    div.style.whiteSpace = 'normal';
     
-    // Set the text content
     div.textContent = text;
-    
-    // Append the div to the body
     document.body.appendChild(div);
-    
-    // Get the computed height of the text
     const textHeight = div.clientHeight;
-    
-    // Remove the temporary div
     document.body.removeChild(div);
     
     return textHeight;
