@@ -2,11 +2,11 @@
 
 ## 1.1.1 (2024-09-11)
 
-* Improved browsing
-* Added tests & benchmarks
-* Updated templates and added the Pollution model
+* Browsing: Templates/Examples/Recent models integration to the browse tree
+* Added tests & benchmarks: solvers performance & correctness, models features (basic structure, loops, updates, etc.)
+* Templates/Examples: updated the basic template, added the Pollution model
+* Float64 columns usage implementation
 * Improved the main app start
-* Implemented float64 columns use
 
 ## 1.1.0 (2024-09-10)
 
