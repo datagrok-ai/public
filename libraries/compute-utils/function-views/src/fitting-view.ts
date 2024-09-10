@@ -239,7 +239,7 @@ export class FittingView {
             ui.tooltip.bind(input.captionLabel, (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Output dataframe' : 'Output scalar');
 
             input.onChanged.subscribe((value) => {
-              temp.target = value;
+              temp.target = input.value; // see this conversation https://datagrok.slack.com/archives/C04BF3YM6CF/p1725894953688529 
 
               if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
                 if (temp.target) {
