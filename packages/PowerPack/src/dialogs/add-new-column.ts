@@ -65,7 +65,7 @@ export class AddNewColumnDialog {
   maxAutoNameLength: number = 50;
   maxPreviewRowCount: number = 100;
   newColumnBgColor: number = 0xFFFDFFE7; // The same bg-color as the bg-color of tooltips.
-  colNamePattern: RegExp = /\${(.+?)}|\$\[(.+?)\]/g;
+  colNamePattern: RegExp = /\${(.+?)(?<!\\)}|\$\[(.+?)(?<!\\)\]/g;
   colNamePatternWithoutDollar: RegExp = /{(.+?)}|\[(.+?)\]/g;
   tooltips = {
     name: 'Сolumn name.',
@@ -450,7 +450,7 @@ export class AddNewColumnDialog {
             setSelection(cm, [{from: 0, to: cmValue.length}], removeHighlight);
 
             //add column highlight
-            addRegexpSelection('\\$\\{(.+?)\\}|\\$\\[(.+?)\\]', addColHighlight);
+            addRegexpSelection('\\$\\{(.+?)(?<!\\\\)\\}|\\$\\[(.+?)(?<!\\\\)\\]', addColHighlight);
             
             //add text in quotes highlight
             addRegexpSelection(`".*?"|'.*?'`, addTextWithinQuotes);
@@ -551,8 +551,9 @@ export class AddNewColumnDialog {
     const unmatchedCols: string[] = [];
     if (matchesAll?.length) {
       for (const match of matchesAll) {
-        const matchCol = match.replace('${', '').replace('$[', '').replace('}', '').replace(']', '');
-        if (!this.columnNamesLowerCase.includes(matchCol.toLowerCase()))
+        const matchCol = match.substring(2, match.length - 1);
+        const unescapedMatch = this.handleOuterBracketsInColName(matchCol, false);
+        if (!this.columnNamesLowerCase.includes(unescapedMatch.toLowerCase()))
           unmatchedCols.push(matchCol);
       }
     }
@@ -572,6 +573,38 @@ export class AddNewColumnDialog {
       return e.message;
     }
     return '';
+  }
+
+  handleOuterBracketsInColName(name: string, escape: boolean) {
+    var openCurlyBracket = name.indexOf(escape ? '\${' : '\$\\{');
+    var openSquareBracket = name.indexOf(escape ? '\$[' : '\$\\[');
+    var colInCurlyBracketsExists = openCurlyBracket != -1 && name.indexOf(escape ? '}' : '\\}') != -1;
+    var colInSquareBracketsExists = openSquareBracket != -1 && name.indexOf(escape ? ']' : '\\]') != -1;
+    var func = escape ? this.escapeBracketsForNestedColNames : this.unescapeBracketsForNestedColNames;
+    if (colInCurlyBracketsExists) {
+      if (colInSquareBracketsExists)
+        name = openCurlyBracket < openSquareBracket ? func(name, '{', '}') : func(name, '[', ']');
+      else
+        name = func(name, '{', '}');
+    } else if (colInSquareBracketsExists)
+      name = func(name, '[', ']');
+    return name;
+  }
+  
+  unescapeBracketsForNestedColNames(name: string, open: string, close: string): string {
+    name = name.replace(`$\\${open}`, `$${open}`);
+    var closingBracketIdx = name.lastIndexOf(`\\${close}`);
+    if (closingBracketIdx != -1)
+      name = name.substring(0, closingBracketIdx) + name.substring(closingBracketIdx + 1);
+    return name;
+  }
+  
+  escapeBracketsForNestedColNames(name: string, open: string, close: string): string {
+    name = name.replace(`$${open}`, `$\\${open}`);
+    var closingBracketIdx = name.lastIndexOf(close);
+    if (closingBracketIdx != -1)
+      name = name.substring(0, closingBracketIdx) + `\\${close}` + name.substring(closingBracketIdx + 1);
+    return name;
   }
 
   validateFuncCallTypes(funcCall: DG.FuncCall) {
@@ -898,14 +931,16 @@ export class AddNewColumnDialog {
       }
       const funcName = this.getFunctionNameAtPosition(cm, parenthesesPos, -1, this.packageFunctionsParams, this.coreFunctionsParams, true)?.funcName;
       const isAggr = funcName ? Object.values(DG.AGG).includes(funcName!.toLocaleLowerCase() as DG.AGG) : false;
-      snippet = isAggr ? `\$[${x.name}]` : `\${${x.name}}`;
+      const escapedColName = this.handleOuterBracketsInColName(x.name, true);
+      snippet = isAggr ? `\$[${escapedColName}]` : `\${${escapedColName}}`;
     }
     else if (this.typeOf(x, DG.Func)) {
       const params = (x as DG.Func).inputs.map((it) => it.semType ?? it.propertyType);
       const colPos = this.findColumnTypeMatchingParam(x);
       if (colPos !== -1) {
         const isAggr = Object.values(DG.AGG).includes((x as DG.Func).name.toLocaleLowerCase() as DG.AGG);
-        params[colPos] = isAggr ? `\$[${this.selectedColumn!.name}]` : `\${${this.selectedColumn!.name}}`;
+        const escapedColName = this.handleOuterBracketsInColName(this.selectedColumn!.name, true);
+        params[colPos] = isAggr ? `\$[${escapedColName}]` : `\${${escapedColName}}`;
       }
       const paramsStr = params.join(', ');
       const funcName = (x as DG.Func).nqName.startsWith('core:') ? (x as DG.Func).name : (x as DG.Func).nqName;
@@ -1073,7 +1108,10 @@ export class AddNewColumnDialog {
         const openingBracketIdx = word.text.indexOf(openingSym);
         const closingBracket = context.state.doc.length > word.text.length ? context.state.doc.toString().at(word.to) === openingSym : false;
         colNames.forEach((name: string) => options.push({ label: name, type: "variable",
-          apply: openingBracketIdx !== -1 ? closingBracket ? `${name}` : `${name}${closingSym}` :  closingBracket ? `${openingSym}${name}` : `${openingSym}${name}${closingSym}`}));
+          apply: openingBracketIdx !== -1 ? closingBracket ? `${this.handleOuterBracketsInColName(name, true)}` : 
+            `${this.handleOuterBracketsInColName(name, true)}${closingSym}` :
+              closingBracket ? `${openingSym}${this.handleOuterBracketsInColName(name, true)}` : 
+                `${openingSym}${this.handleOuterBracketsInColName(name, true)}${closingSym}`}));
         index = word!.from + (openingBracketIdx === -1 ? word.text.indexOf("$") + 1 : openingBracketIdx + 1);
         filter = !word.text.endsWith('$') && !word.text.endsWith(openingSym);
       } else
