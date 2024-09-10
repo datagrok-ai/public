@@ -132,27 +132,30 @@ export const RichFunctionView = defineComponent({
     const save = () => {
       if (!dockRef.value) return;
 
-      localStorage.setItem(`${currentCall.value.nqName}_panels`, JSON.stringify({
+      localStorage.setItem(`${currentCall.value.func.nqName}_panels`, JSON.stringify({
         historyHidden: historyHidden.value,
         helpHidden: helpHidden.value,
         formHidden: formHidden.value,
+        visibleTabLabels: visibleTabLabels.value,
       }));
       dockRef.value.saveLayout();
     };
 
     const load = async () => {
-      const panelsState = localStorage.getItem(`${currentCall.value.nqName}_panels`);
+      const panelsState = localStorage.getItem(`${currentCall.value.func.nqName}_panels`);
       if (!dockRef.value || !panelsState) return;
 
       const openedPanels = JSON.parse(panelsState) as {
         historyHidden: boolean,
         helpHidden: boolean,
         formHidden: boolean,
+        visibleTabLabels: string[],
       };
 
       historyHidden.value = openedPanels.historyHidden;
       helpHidden.value = openedPanels.helpHidden;
       formHidden.value = openedPanels.formHidden;
+      visibleTabLabels.value = openedPanels.visibleTabLabels;
 
       await nextTick();
 
@@ -207,7 +210,7 @@ export const RichFunctionView = defineComponent({
           />
         </RibbonPanel>
         <DockManager 
-          layoutStorageName={`${currentCall.value.nqName}_layout`}
+          layoutStorageName={`${currentCall.value.func.nqName}_layout`}
           onPanelClosed={handlePanelClose} 
           ref={dockRef}
         >
