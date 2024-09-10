@@ -14,8 +14,8 @@
     "directory": "packages/Chemspace"
   },
   "dependencies": {
-    "datagrok-api": "../../js-api",
-    "@datagrok-libraries/utils": "^4.2.29"
+    "datagrok-api": "^1.21.1",
+    "@datagrok-libraries/utils": "^4.3.0"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "latest",
@@ -54,7 +54,11 @@
   "sources": [
     "css/chemspace.css"
   ],
-  "canEdit": [ "Developers" ],
-  "canView": [ "All users" ],
-	"category": "Cheminformatics"
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "category": "Cheminformatics"
 }

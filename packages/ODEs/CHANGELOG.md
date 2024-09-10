@@ -1,12 +1,20 @@
 # Diff Studio changelog
 
-## 1.0.11 (2024-08-09)
+## 1.1.1 (2024-09-11)
 
 * Improved browsing
 * Added tests & benchmarks
 * Updated templates and added the Pollution model
 * Improved the main app start
 * Implemented float64 columns use
+
+## 1.1.0 (2024-09-10)
+
+* 1.21.1 release
+
+## 1.0.11-rc (2024-06-10)
+
+* Preparing 1.21.1 release
 
 ## 1.0.10 (2024-06-10)
 

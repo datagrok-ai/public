@@ -37,6 +37,8 @@ const VALIDATION_TYPES_MAPPING: { [key: string]: string[] } = {
 
 const FLOATING_POINT_TYPES = ['float', 'double'];
 const ALLOWED_OUTPUT_TYPES = ['dynamic', DG.TYPE.DATE_TIME, DG.TYPE.QNUM];
+const PACKAGES_TO_EXCLUDE = ['ApiTests', 'CvmTests'];
+const TAGS_TO_EXCLUDE = ['internal'];
 
 const COLUMN_FUNCTION_NAME = 'GetCurrentRowField';
 const GET_VAR_FUNCTION_NAME = 'GetVar';
@@ -182,7 +184,9 @@ export class AddNewColumnDialog {
   prepareFunctionsListForAutocomplete() {
     //filter functions with one input (multiple inputs or functions returning void are not included)
     const allFunctionsList = DG.Func.find()
-      .filter((it) => it.outputs.length === 1 && (DG.TYPES_SCALAR.has(it.outputs[0].propertyType) || ALLOWED_OUTPUT_TYPES.includes(it.outputs[0].propertyType)));
+      .filter((it) => TAGS_TO_EXCLUDE.every((tag) => !it.hasTag(tag)) &&it.outputs.length === 1 
+      && (DG.TYPES_SCALAR.has(it.outputs[0].propertyType) || ALLOWED_OUTPUT_TYPES.includes(it.outputs[0].propertyType))
+      && it.inputs.every((inp) => inp.propertyType !== DG.TYPE.DATA_FRAME && inp.propertyType !== DG.TYPE.COLUMN));
     for (const func of allFunctionsList) {
       const params: PropInfo[] = func.inputs.map((it) => {
         return {propName: it.name, propType: it.semType ?? it.propertyType};
@@ -191,6 +195,8 @@ export class AddNewColumnDialog {
       params.push({propName: FUNC_OUTPUT_TYPE, propType: func.outputs[0].semType ?? func.outputs[0].propertyType});
       try {
         const packageName = func.package.name;
+        if (PACKAGES_TO_EXCLUDE.includes(packageName))
+          continue;
         if (!this.packageFunctionsNames[packageName]) {
           this.packageNames.push(packageName);
           this.packageFunctionsNames[packageName] = [];
@@ -424,7 +430,6 @@ export class AddNewColumnDialog {
             }
           ]),
           EditorView.updateListener.of(async (e: ViewUpdate) => {
-            this.setCodeMirrorFocus(cm);
 
             //update hint
             ui.empty(this.hintDiv);
@@ -436,6 +441,8 @@ export class AddNewColumnDialog {
             //return in case formula hasn't been changed
             if (!e.docChanged)
               return;
+
+            this.setCodeMirrorFocus(cm);
 
             const cmValue = cm.state.doc.toString();
 
@@ -540,12 +547,11 @@ export class AddNewColumnDialog {
   }
 
   validateFormula(formula: string): string {
-    //check unmatched columns
-    const matchesAll = [...formula.matchAll(this.colNamePattern)];
+    const matchesAll = formula.match(this.colNamePattern) as string[];
     const unmatchedCols: string[] = [];
-    if (matchesAll.length) {
+    if (matchesAll?.length) {
       for (const match of matchesAll) {
-        const matchCol = match[1] ?? match[2];
+        const matchCol = match.replace('${', '').replace('$[', '').replace('}', '').replace(']', '');
         if (!this.columnNamesLowerCase.includes(matchCol.toLowerCase()))
           unmatchedCols.push(matchCol);
       }
@@ -581,7 +587,8 @@ export class AddNewColumnDialog {
         //treat $COLUMN_NAME as scalar
         if (funcCall.inputs[key].func.name !== COLUMN_FUNCTION_NAME)
           innerFuncCalls.push(key);
-        actualInputParamTypes[key] = funcCall.inputs[key].func.outputs[0].propertyType;
+        actualInputParamTypes[key] = funcCall.inputs[key].func.outputs.length ?
+          funcCall.inputs[key].func.outputs[0].propertyType : 'dynamic';
       } else
         actualInputParamTypes[key] = typeof funcCall.inputs[key];
     }
@@ -687,11 +694,14 @@ export class AddNewColumnDialog {
       this.codeMirror!.state.doc.toString().indexOf('(', cursorPos);
     if (openParenthesis === -1)
       return;
-    const commaIdx = this.codeMirror!.state.doc.toString().indexOf(',', openParenthesis);
     const closeParenthesisIdx = this.codeMirror!.state.doc.toString().indexOf(')', openParenthesis);
+    if (closeParenthesisIdx === -1)
+      return;
+    const commaIdx = this.codeMirror!.state.doc.toString().indexOf(',', openParenthesis);
     let firstParamEnd = commaIdx;
     if (commaIdx === -1 || commaIdx > closeParenthesisIdx)
       firstParamEnd = closeParenthesisIdx;
+    setTimeout(() => this.codeMirror!.focus(), 100);
     this.codeMirror!.dispatch({
       selection: EditorSelection.create([
         EditorSelection.range(openParenthesis + 1, firstParamEnd),
@@ -1073,7 +1083,8 @@ export class AddNewColumnDialog {
             apply: idx < coreFunctionsNames.length ? `${name}(${coreFunctionsParams[name]
               .filter((it) => it.propName !== FUNC_OUTPUT_TYPE)
               .map((it)=> it.propType).join(',')})` : `${name}:`,
-            detail: idx < coreFunctionsNames.length ? '' : 'package'
+            detail: idx < coreFunctionsNames.length ? '' : 'package',
+            section: idx < coreFunctionsNames.length ? '' : 'packages'
           }));
       return {
         from: index,

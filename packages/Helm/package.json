@@ -1,10 +1,10 @@
 {
   "name": "@datagrok/helm",
   "friendlyName": "Helm",
-  "version": "2.4.5",
+  "version": "2.5.0",
   "author": {
-    "name": "Oleksandra Serhiienko",
-    "email": "oserhiienko@datagrok.ai"
+    "name": "Aleksandr Tanas",
+    "email": "atanas@datagrok.ai"
   },
   "description": "Provides support for HELM notation (importing, detecting, rendering, conversion).",
   "sources-backup": [
@@ -16,11 +16,11 @@
     "css/helm.css"
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.42.11",
+    "@datagrok-libraries/bio": "^5.42.14",
     "@datagrok-libraries/chem-meta": "^1.2.5",
-    "@datagrok-libraries/utils": "^4.2.29",
+    "@datagrok-libraries/utils": "^4.3.0",
     "cash-dom": "^8.1.1",
-    "datagrok-api": "^1.20.0",
+    "datagrok-api": "^1.21.1",
     "dayjs": "^1.10.6",
     "rxjs": "^6.5.5",
     "wu": "latest"
@@ -28,8 +28,8 @@
   "devDependencies": {
     "@datagrok-libraries/helm-web-editor": "^1.1.11",
     "@datagrok-libraries/js-draw-lite": "^0.0.8",
-    "@datagrok/bio": "^2.14.1",
-    "@datagrok/chem": "^1.9.2",
+    "@datagrok/bio": "^2.15.0",
+    "@datagrok/chem": "^1.12.0",
     "@types/node": "17.0.45",
     "@types/wu": "latest",
     "@typescript-eslint/eslint-plugin": "^7.16.0",

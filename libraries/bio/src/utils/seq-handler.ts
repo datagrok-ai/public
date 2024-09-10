@@ -3,12 +3,12 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 
 import {
-  TAGS, ALIGNMENT, ALPHABET, NOTATION, candidateAlphabets, positionSeparator,
-  splitterAsFasta, getSplitterWithSeparator, splitterAsHelm,
+  ALIGNMENT, ALPHABET, candidateAlphabets, getSplitterWithSeparator, NOTATION,
+  positionSeparator, splitterAsFasta, splitterAsHelm, TAGS
 } from './macromolecule';
 import {
   GAP_SYMBOL,
-  ISeqSplitted, SeqColStats, SplitterFunc, INotationProvider,
+  INotationProvider, ISeqSplitted, SeqColStats, SplitterFunc,
 } from './macromolecule/types';
 import {detectAlphabet, splitterAsFastaSimple, StringListSeqSplitted} from './macromolecule/utils';
 import {
@@ -271,6 +271,16 @@ export class SeqHandler {
       }
       return resSS;
     }
+  }
+
+  /** Any Macromolecule can be represented on Helm format. The reverse is not always possible. */
+  public async getHelm(rowIdx: number, options?: any): Promise<string> {
+    const seq: string = this.column.get(rowIdx);
+    if (this.notationProvider) {
+      const helmCol = await this.notationProvider.getHelm(this.column, options);
+      return helmCol.get(rowIdx)!;
+    } else
+      return this.convertToHelm(seq);
   }
 
   private _stats: SeqColStats | null = null;
@@ -787,6 +797,8 @@ export class SeqHandler {
   }
 
   private convertToHelm(src: string): string {
+    if (this.notation == NOTATION.HELM) return src;
+
     const wrappers = this.getHelmWrappers();
 
     const isDnaOrRna = src.startsWith('DNA') || src.startsWith('RNA');

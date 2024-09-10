@@ -84,12 +84,12 @@ inner join users_sessions s on e.session_id = s.id
 inner join users u on u.id = s.user_id
 where e.event_time between to_timestamp(@time_start)
 and to_timestamp(@time_end)
-and u.id = any(@users)
+and u.id::varchar = any(@users)
 and et.name = any(@functions)
 )
 select res.package, res.run, res.function, res.time, res.rid, res.pid
 from res
-where res.pid = any(@packages)
+where res.pid::varchar = any(@packages)
 --end
 
 

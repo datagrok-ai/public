@@ -27,13 +27,6 @@ function addCommonTags(col: DG.Column<any>) {
   col.setTag('alphabet', ALPHABET.PT);
 }
 
-export function handleError(err: any): void {
-  const errMsg: string = err instanceof Error ? err.message : err.toString();
-  const stack: string | undefined = err instanceof Error ? err.stack : undefined;
-  grok.shell.error(errMsg);
-  _package.logger.error(err.message, undefined, stack);
-}
-
 export async function getAvailableMonomers(screenLibrary: string): Promise<string[]> {
   const monomerLibHelper: IMonomerLibHelper = await grok.functions.call('Bio:getMonomerLibHelper', {});
   const monomerLib = await monomerLibHelper.readLibrary(LIB_PATH, screenLibrary);

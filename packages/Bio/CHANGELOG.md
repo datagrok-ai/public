@@ -1,11 +1,33 @@
 # Bio changelog
 
+## 2.15.0 (2024-09-04)
+
+Monomer manager
+
+### Features
+
+* Add getHelm for Cyclized notation provider
+* Add detector for Dimerized notation provider
+* Add Monomer library manager view with duplicate preferences
+* Add Monomer manager for editing/adding/removing monomers
+* Add monomer lib for PolyTool rules
+
+### Bug fixes
+
+* Fix tests benchmark
+* Fix typo Needleman-Wunsch
+* Fix test flapping benchmark separatorDnaShorts50Few50
+* Fix toAtomicLevel workers error DG is not defined
+* Fix biosubstructure filter
+* Fix SeqHandler.getHelm lost cycles, add tests
+* Fix SeqlHelper.helmToAtomicLevel to work without table
+
 ## 2.14.3 (2024-08-27)
 
 ### Bug fixes
 
 * Order Top menu
-* Fix to Atomic Level hide highlight column 
+* Fix to Atomic Level hide highlight column
 * Fix to Atomic Level for column
 * Bump dependencies version, fix tests
 

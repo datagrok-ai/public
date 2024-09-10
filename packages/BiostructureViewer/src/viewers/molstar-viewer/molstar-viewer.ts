@@ -273,11 +273,17 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     this.subs.push(DG.debounce(this.setDataRequest, DebounceIntervals.setData)
       .subscribe(() => { this.onSetDataRequestDebounced(); }));
     this.viewSubs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
+    this._initButtonExpand();
     this._initMenu();
   }
 
   private static viewerCounter: number = -1;
   private readonly viewerId: number = ++MolstarViewer.viewerCounter;
+
+  private _initButtonExpand() {
+    const button = $('.msp-btn.msp-btn-icon.msp-btn-link-toggle-off');
+    button.on('click',  () => this.root.requestFullscreen());
+  }
 
   private viewerToLog(): string { return `MolstarViewer<${this.viewerId}>`; }
 

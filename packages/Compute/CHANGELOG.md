@@ -1,5 +1,21 @@
 # Compute changelog
 
+## 1.38.0-rc.2 (2024-09-09)
+
+- Fixed DF input processing with no viewers
+
+## 1.38.0-rc (2024-09-06)
+
+- Preparing 1.21.1 release
+
+## 1.37.0 (2024-09-05)
+
+- Release for 1.21.0
+
+## 1.37.0-rc (2024-09-04)
+
+- Preparing 1.21.0 release
+
 ## 1.36.7 (2024-08-05)
 
 - RFV: Fixed navigation buttons render

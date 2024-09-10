@@ -1,10 +1,11 @@
 import * as DG from 'datagrok-api/dg';
 
-export type AppName = 'Hit Triage' | 'Hit Design';
+export type AppName = 'Hit Triage' | 'Hit Design' | 'PeptiHit';
 
 export type CampaignsType = {
     'Hit Triage': HitTriageCampaign,
     'Hit Design': HitDesignCampaign,
+    'PeptiHit': HitDesignCampaign,
 }
 
 export type IDescriptorTree = {
@@ -144,6 +145,9 @@ export type HitDesignTemplate = Omit<HitTriageTemplate, 'dataSourceType' | 'quer
     {stages: string[]};
 
 export type HitDesignCampaign = Omit<HitTriageCampaign, 'filters' | 'ingest'> & {tilesViewerFormSketch?: string};
+
+// todo: probably add some more stuff
+export type PeptiHitTemplate = HitDesignTemplate & {toAtomiLevelProps?: {[key: string]: any}}
 
 export type ComputeFunctions = {
     functions: DG.Func[],

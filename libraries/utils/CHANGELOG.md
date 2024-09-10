@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.2.30 (2024-09-06)
+
+- Preparing 1.21.1 release
+
 ## 4.2.29 (2024-08-23)
 
 Fixed test reporting

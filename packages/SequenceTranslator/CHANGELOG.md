@@ -1,5 +1,31 @@
 # Sequence Translator changelog
 
+## 1.3.15 (2024-09-05)
+
+### Features
+
+* Add PolyTool Enumerator Chem dialog to context menu for Molecule
+
+### Bug fixes
+
+* Fixes for PolyTool Enumerator Helm dialog
+  * Trivial Name input Behavior
+  * Enable for any Macromolecule cell
+  * Example with monomers existing in default monomer lib
+* Fixes for datagrok-api changes
+* Add sample cyclized.csv for rules_examples.json
+* Fix PolyTool Convert, add tests cyclized
+* Fix PolyTool enumerate add progress indicator
+* Fixes for api changes
+* Fix PT dialogs destroy on build fail
+* Fix rules_examples for NH2-D with R3 and syclized sample
+* Fix polyToolConvert to work without table
+* Add tests for polyToolConvert, ui
+
+## 1.3.14 (2024-09-02)
+
+Fix remove CyclizedNotationProvider
+
 ## 1.3.13 (2024-08-19)
 
 ### Features
@@ -18,7 +44,7 @@
 
 PolyTool Enumerator Single and Matrix, dialog, tests
 
-## Bug fixes
+### Bug fixes
 
 * PolyTool Enumerator dialog grid input for placeholders, to atomic level option
 * PolyTool Enumerator dialog mouse interactivity, to atomic level, dialog size

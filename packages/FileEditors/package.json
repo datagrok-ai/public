@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/file-editors",
   "friendlyName": "File Editors",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": {
     "name": "Anna Muzychyna",
     "email": "amuzychyna@datagrok.ai"
@@ -11,7 +11,7 @@
     "datagrok-api": "^1.16.5",
     "cash-dom": "latest",
     "dayjs": "latest",
-    "@datagrok-libraries/utils": "^4.2.29",
+    "@datagrok-libraries/utils": "^4.3.0",
     "pdfjs-dist": "4.2.67",
     "docx-preview": "^0.1.18"
   },
