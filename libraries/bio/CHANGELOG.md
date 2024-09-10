@@ -1,5 +1,11 @@
 # bio changelog
 
+## 5.42.15 (2024-09-10)
+
+### Bug fixes
+
+* Fix default lib summary for tests
+
 ## 5.42.14 (2024-09-04)
 
 ### Bug fixes
