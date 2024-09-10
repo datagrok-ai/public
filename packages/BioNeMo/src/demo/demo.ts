@@ -60,14 +60,14 @@ const leaveDiffDockPanelOnly = async () => {
   const container = document.querySelectorAll('.panel-content')[1] as HTMLElement;
   const targetPanel = document.querySelector('div.d4-accordion-pane[d4-title="DiffDock"]') as HTMLElement;
 
+  if (!container && !targetPanel) return;
+  
   const child = targetPanel.firstChild as HTMLElement;
   if (!child.classList.contains('expanded'))
     child.click();
-
-  if (container && targetPanel) {
-    ui.empty(container);
-    container.appendChild(targetPanel);
+  
+  ui.empty(container);
+  container.appendChild(targetPanel);
     
-    await waitForButtonAndClick('button.ui-btn.ui-btn-ok[name="button-Run"]');
-  }
+  await waitForButtonAndClick('button.ui-btn.ui-btn-ok[name="button-Run"]');
 };
