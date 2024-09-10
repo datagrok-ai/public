@@ -42,7 +42,7 @@ category('monomerLibraries', () => {
     const currentMonomerLib = monomerLibHelper.getMonomerLib();
     // HELMCoreLibrary.json checks
     expect(currentMonomerLib.getPolymerTypes().length, 2);
-    expect(currentMonomerLib.getMonomerSymbolsByType('PEPTIDE').length, 322);
+    expect(currentMonomerLib.getMonomerSymbolsByType('PEPTIDE').length, 324);
     expect(currentMonomerLib.getMonomerSymbolsByType('RNA').length, 383);
   });
 

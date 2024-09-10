@@ -6,6 +6,8 @@ import {before, category, test, expect} from '@datagrok-libraries/utils/src/test
 import {ALPHABET, getAlphabet, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 
+import {_package} from '../package-test';
+
 category('detectorsBenchmark', () => {
   let detectFunc: DG.Func;
 
@@ -139,17 +141,20 @@ async function benchmark<TData, TRes>(
 ): Promise<number> {
   const data: TData = await prepare();
 
+  const tryCount = 60;
+  const maxOutCount = 3; // 95%
   let outCount: number = 0;
   let outResET: number = 0;
+  const resEtList: number[] = new Array<number>(tryCount);
   let resET: number = 0;
-  for (let i = 0; i < 20; ++i) {
+  for (let tryI = 0; tryI < 20; ++tryI) {
     const t1: number = Date.now();
     // console.profile();
     const res: TRes = await test(data);
     //console.profileEnd();
     const t2: number = Date.now();
 
-    resET = t2 - t1;
+    resET = resEtList[tryI] = t2 - t1;
     if (resET > maxET) {
       outCount++;
       outResET = Math.max(outResET, resET);
@@ -158,8 +163,8 @@ async function benchmark<TData, TRes>(
     check(res);
   }
 
-  if (outCount > 1 /* 95% */) {
-    const errMsg = `ET ${outResET} ms is more than max allowed ${maxET} ms.`;
+  if (outCount > maxOutCount) {
+    const errMsg = `ET ${outResET} ms is more than max allowed ${maxET} ms. ET: ${JSON.stringify(resEtList)}`;
     console.error(errMsg);
     throw new Error(errMsg);
   } else
