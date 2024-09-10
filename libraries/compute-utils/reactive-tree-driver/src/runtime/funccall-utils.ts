@@ -19,15 +19,6 @@ export async function makeFuncCall(nqName: string, isReadonly: boolean): Promise
   return [adapter, {}, true];
 }
 
-// export async function saveFuncCall(adapter: IFuncCallAdapter, restrictions: Record<string, RestrictionState | undefined>, outputState: boolean) {
-//   const fc = adapter.getFuncCall();
-//   // TODO: DF restrictions better handling
-//   fc.options[RESTRICTIONS_PATH] = serialize(restrictions, {useJsonDF: true});
-//   fc.options[OUTPUT_OUTDATED_PATH] = serialize(outputState, {useJsonDF: true});
-//   fc.newId();
-//   return historyUtils.saveRun(fc);
-// }
-
 export async function saveFuncCall(bridge: FuncCallInstancesBridge) {
   const fc = bridge.getInstance()?.getFuncCall();
   if (!fc)
@@ -56,8 +47,8 @@ export async function makeMetaCall(nqName: string) {
   return metaCall;
 }
 
-export async function saveInstanceState(nqName: string, state: any, currentMetaCall?: DG.FuncCall) {
-  const metaCall = currentMetaCall ?? await makeMetaCall(nqName);
+export async function saveInstanceState(nqName: string, state: any) {
+  const metaCall = await makeMetaCall(nqName);
   metaCall.options[CONFIG_PATH] = serialize(state, {useJsonDF: true});
   metaCall.newId();
   const fc = await historyUtils.saveRun(metaCall);

@@ -7,9 +7,10 @@ import {makeValidationResult, PipelineConfiguration} from '@datagrok-libraries/c
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {PipelineStateStatic, StepFunCallSerializedState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
-import {loadInstanceState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/adapter-utils';
+import {loadInstanceState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {callHandler} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {of} from 'rxjs';
+import { FuncCallNode } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
 const config1: PipelineConfiguration = {
   id: 'pipeline1',
@@ -163,6 +164,55 @@ category('ComputeUtils: Driver instance additional states', async () => {
     });
   });
 
+  test('Propagate funccalls state to view state', async () => {
+    const pconf = await getProcessedConfig(config1);
+
+    testScheduler.run((helpers) => {
+      const {cold, expectObservable} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.initAll().subscribe();
+      const node = tree.getNode([{idx: 0}]);
+      const states = tree.getFuncCallStates();
+      cold('-a').subscribe(() => {
+        const fcnode = node.getItem() as FuncCallNode;
+        fcnode.getStateStore().setState('a', 1);
+        fcnode.getStateStore().setState('b', 2);
+        fcnode.getStateStore().run({'res': 3}, 5).subscribe();
+      });
+      const a = {
+        "isRunning": false,
+        "isRunnable": true,
+        "isOutputOutdated": true
+      };
+      const b = {
+        "isRunning": true,
+        "isRunnable": true,
+        "isOutputOutdated": true
+      };
+      const c = {
+        "isRunning": true,
+        "isRunnable": false,
+        "isOutputOutdated": true
+      };
+      const d = {
+        "isRunning": false,
+        "isRunnable": false,
+        "isOutputOutdated": true
+      };
+      const e = {
+        "isRunning": false,
+        "isRunnable": true,
+        "isOutputOutdated": true
+      };
+      const f = {
+        "isRunning": false,
+        "isRunnable": true,
+        "isOutputOutdated": false
+      };
+      expectObservable(states[node.getItem().uuid], '^ 1000ms !').toBe('a(bc)-(def)', {a, b, c, d, e, f});
+    });
+  });
+
   test('Propagate consistency info to RO view state', async () => {
     const pconf = await getProcessedConfig(config1);
 
@@ -215,4 +265,25 @@ category('ComputeUtils: Driver instance additional states', async () => {
     });
   });
 
+  test('Restore saved outdated state', async () => {
+    const conf = await callHandler<PipelineConfiguration>('LibTests:MockProvider1', {version: '1.0'}).toPromise();
+    const pconf = await getProcessedConfig(conf);
+    const tree = StateTree.fromPipelineConfig({config: pconf});
+    await tree.initAll().toPromise();
+    const node = tree.getNode([{idx: 0}]);
+    const fcnode = node.getItem() as FuncCallNode;
+    fcnode.getStateStore().setState('a', 1);
+    fcnode.getStateStore().setState('b', 2);
+    await fcnode.getStateStore().run().toPromise();
+    const metaCallSaved = await tree.save().toPromise();
+    const loadedTree = await StateTree.load(metaCallSaved!.id, pconf, {isReadonly: false}).toPromise();
+    await loadedTree.initAll().toPromise();
+    const nodeLoaded = loadedTree.getNode([{idx: 0}]);
+    const states = loadedTree.getFuncCallStates();
+    expectDeepEqual(states[nodeLoaded.getItem().uuid]?.value, {
+      "isRunning": false,
+      "isRunnable": true,
+      "isOutputOutdated": false
+    });
+  });
 });

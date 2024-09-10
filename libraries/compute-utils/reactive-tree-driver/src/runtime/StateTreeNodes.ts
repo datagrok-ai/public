@@ -188,7 +188,7 @@ export class FuncCallNode implements IStoreProvider {
     else {
       const {assignedValue, type} = restriction;
       const currentVal = this.instancesWrapper.getState(inputName);
-      if (!this.deepEq(assignedValue, currentVal)) {
+      if (!this.deepEq(currentVal, assignedValue)) {
         return {
           restriction: type,
           inconsistent: true,
@@ -199,9 +199,10 @@ export class FuncCallNode implements IStoreProvider {
     }
   }
 
-  private deepEq(val1: any, val2: any) {
+  // TODO: checking for additional actual Object keys (?)
+  private deepEq(actual: any, expected: any) {
     try {
-      expectDeepEqual(val1, val2);
+      expectDeepEqual(actual, expected);
     } catch {
       return false;
     }

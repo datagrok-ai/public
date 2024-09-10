@@ -6,7 +6,7 @@ import {isFuncCallSerializedState, PipelineState} from './config/PipelineInstanc
 import {AddDynamicItem, InitPipeline, LoadDynamicItem, LoadPipeline, MoveDynamicItem, RemoveDynamicItem, RunStep, SaveDynamicItem, SavePipeline, ViewConfigCommands} from './view/ViewCommunication';
 import {pairwise, takeUntil, concatMap, catchError, switchMap, map, mapTo, startWith, withLatestFrom, tap} from 'rxjs/operators';
 import {StateTree} from './runtime/StateTree';
-import {loadInstanceState} from './runtime/adapter-utils';
+import {loadInstanceState} from './runtime/funccall-utils';
 import {callHandler} from './utils';
 import {PipelineConfiguration} from './config/PipelineConfiguration';
 import {getProcessedConfig} from './config/config-processing-utils';
