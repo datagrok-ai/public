@@ -18,3 +18,21 @@
 	background-size: cover;
 	margin-bottom: 12px;
 }
+
+.diff-studio-card-title {
+    font-weight: bold;
+    color: var(--grey-6);
+    margin: 0px 0px 5px 0px;
+}
+
+.diff-studio-card-description {
+    font-weight: normal;
+    color: var(--grey-4);
+    margin: 0px;
+    max-height: 50px;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }

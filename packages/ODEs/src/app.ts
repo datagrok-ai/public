@@ -1491,8 +1491,8 @@ export class DiffStudio {
 
     const card = ui.card(ui.divV([
       img,
-      ui.div([title], 'tutorials-card-title'),
-      ui.div([text], 'tutorials-card-description'),
+      ui.div([title], 'diff-studio-card-title'),
+      ui.div([text], 'diff-studio-card-description'),
     ], 'diff-studio-app-card'));
 
     return card;
