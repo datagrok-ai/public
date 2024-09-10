@@ -333,14 +333,7 @@ export class AdmeticaBaseEditor {
 
   private getTextHeight(text: string) {
     const div = ui.div();
-    
-    /**Move to admetica.css */
-    div.style.position = 'absolute';
-    div.style.visibility = 'hidden';
-    div.style.font = '13px Roboto';
-    div.style.width = '200px';
-    div.style.whiteSpace = 'normal';
-    
+    div.classList.add('admetica-div');
     div.textContent = text;
     document.body.appendChild(div);
     const textHeight = div.clientHeight;

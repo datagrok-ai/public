@@ -288,7 +288,7 @@ export function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, a
 }
 
 export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue): Promise<DG.Accordion> {
-  const acc = ui.accordion('ADME/Tox');
+  const acc = ui.accordion('Admetica');
   await setProperties();
 
   const update = async (result: HTMLDivElement, modelName: string) => {
@@ -353,7 +353,6 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
   const gridCol = view.grid.col(column.name);
   const gridCell = view.grid.cell(column.name, rowIndex);
 
-  // Use params when containers will work on dev
   const params = await getQueryParams();
   const query = `smiles\n${value}`;
   const result = await runAdmetica(query, params, 'false');

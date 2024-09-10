@@ -57,3 +57,11 @@
   overflow: hidden;
   flex-shrink: unset!important;
 }
+
+.admetica-div {
+  position: absolute;
+  visibility: hidden;
+  font: 13px Roboto;
+  width: 200px;
+  white-space: normal;
+}
