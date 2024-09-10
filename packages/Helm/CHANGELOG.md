@@ -1,10 +1,11 @@
 # Helm changelog
 
-## 2.4.7 (2024-09-07)
+## 2.5.0 (2024-09-10)
 
 ### Bug fixes
 
 * Fix init dojo loading NGL ahead
+* Bump dependencies versions
 
 ## 2.4.6 (2024-09-05)
 
