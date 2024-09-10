@@ -60,7 +60,7 @@ const leaveDiffDockPanelOnly = async () => {
   const container = document.querySelectorAll('.panel-content')[1] as HTMLElement;
   const targetPanel = document.querySelector('div.d4-accordion-pane[d4-title="DiffDock"]') as HTMLElement;
 
-  if (!container && !targetPanel) return;
+  if (!container || !targetPanel) return;
   
   const child = targetPanel.firstChild as HTMLElement;
   if (!child.classList.contains('expanded'))
