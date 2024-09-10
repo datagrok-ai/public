@@ -1,5 +1,12 @@
 # Bio changelog
 
+## 2.15.1 (2024-09-10)
+
+### Bug fixes
+
+* Fix benchmark tests to sync calls
+* Bump dependencies versions
+
 ## 2.15.0 (2024-09-04)
 
 Monomer manager
