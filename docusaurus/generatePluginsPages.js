@@ -25,7 +25,7 @@ async function fileContainsContent(filename, str) {
 }
 
 async function getChangelog(filename, version) {
-    const changelog = await fileContainsContent(filename, version);
+    const changelog = await fileContainsContent(filename, `## ${version}`);
     let summary = '';
     let changelogDate = '';
     if (changelog) {
