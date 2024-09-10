@@ -401,7 +401,7 @@ jobs:
           echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
 
       - name: Send to Slack
-        id: slack
+        id: slack-build
         if: steps.slack-prepare-build.outcome == 'success'
         uses: slackapi/slack-github-action@v1.24.0
         with:
