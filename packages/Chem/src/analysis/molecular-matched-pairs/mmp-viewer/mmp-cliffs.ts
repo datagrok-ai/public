@@ -28,9 +28,13 @@ export function getMmpScatterPlot(
     zoomAndFilter: 'no action',
     //color: activities.name,
     showXSelector: false,
+    showXAxis: false,
     showYSelector: false,
+    showYAxis: false,
+    showColorSelector: false,
+    showSizeSelector: false,
     markerDefaultSize: 7,
-    labels: labelsColName
+    labels: labelsColName,
   });
   return sp;
 }

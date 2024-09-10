@@ -13,7 +13,6 @@ import {getMmpScatterPlot, runMmpChemSpace, fillPairInfo} from './mmp-cliffs';
 import {getGenerations} from './mmp-generations';
 
 
-import {drawMoleculeLabels} from '../../../rendering/molecule-label';
 import {ILineSeries, MouseOverLineEvent, ScatterPlotLinesRenderer}
   from '@datagrok-libraries/utils/src/render-lines-on-sp';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';

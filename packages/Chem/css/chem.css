@@ -685,6 +685,7 @@
 
 .mmpa-fragments-tab .mmpa-pairs-slider{
   display: flex;
+  padding-right: 32px;
 }
 
 .mmpa-fragments-tab .mmpa-activity-filters{
