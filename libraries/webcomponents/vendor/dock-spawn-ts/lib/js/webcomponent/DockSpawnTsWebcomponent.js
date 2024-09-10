@@ -20,8 +20,14 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
     saveLayout() {
         return this.dockManager.saveState();
     }
-    loadLayout(serializedState) {
-        this.dockManager.loadState(serializedState);
+    async loadLayout(serializedState) {
+        this.observer.disconnect();
+        const oldPanels = this.dockManager.getPanels();
+        await this.dockManager.loadState(serializedState);
+        this.observer.observe(this, { childList: true });
+        oldPanels.forEach((panel) => panel.elementContentContainer.remove());
+        this.dockManager.element.firstChild.remove();
+        this.dockManager.invalidate();
     }
     initDockspawn() {
         const dockSpawnDiv = document.createElement('div');

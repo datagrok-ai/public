@@ -17,6 +17,9 @@ declare global {
 
 export const DockManager = defineComponent({
   name: 'DockManager',
+  props: {
+    layoutStorageName: Object as PropType<String>
+  },
   slots: Object as SlotsType<{
     default?: VNode[],
   }>,
@@ -27,33 +30,41 @@ export const DockManager = defineComponent({
     saveLayout: () => {},
     loadLayout: () => {}
   },
-  setup(_, {slots, emit, expose}) {
+  setup(props, {slots, emit, expose}) {
     let dockSpawnRef = ref(null as DockSpawnTsWebcomponent | null);
 
     whenever(dockSpawnRef, () => {
       dockSpawnRef.value!.dockManager.getElementCallback = async (state: IState) => {
-        const slotContent = dockSpawnRef.value!
-          .querySelector(`[title="${state.element}"]`) as HTMLElement;
+        let aimSlot = null as null | HTMLElement;
+
+        const slots = dockSpawnRef.value!.shadowRoot!
+          .querySelectorAll(`slot`);
+        slots.forEach((slot) => {
+          const content = (slot.assignedElements() as HTMLElement[]).find((el) => el.title && el.title === state.element); 
+          if (content) aimSlot = slot;
+        })
 
         return { 
-          element: slotContent,
-          title: slotContent.title,
+          element: aimSlot!,
+          title: state.element!,
         }
       };
     }, {once: true})
 
     const saveLayout = () => {
-      if (!dockSpawnRef.value) return;
+      if (!dockSpawnRef.value || !props.layoutStorageName) return;
 
-      localStorage.setItem('test-layout', dockSpawnRef.value.saveLayout())
+      localStorage.setItem(props.layoutStorageName.toString(), dockSpawnRef.value.saveLayout())
     }
 
-    const loadLayout = () => {
-      const savedLayout = localStorage.getItem('test-layout');
+    const loadLayout = async () => {
+      if (!dockSpawnRef.value || !props.layoutStorageName) return;
 
-      if (!dockSpawnRef.value || !savedLayout) return;
+      const savedLayout = localStorage.getItem(props.layoutStorageName.toString());
 
-      dockSpawnRef
+      if (!savedLayout) return;
+
+      await dockSpawnRef.value.loadLayout(savedLayout)
     }
     expose({
       'saveLayout': saveLayout,

@@ -132,11 +132,29 @@ export const RichFunctionView = defineComponent({
     const save = () => {
       if (!dockRef.value) return;
 
+      localStorage.setItem(`${currentCall.value.nqName}_panels`, JSON.stringify({
+        historyHidden: historyHidden.value,
+        helpHidden: helpHidden.value,
+        formHidden: formHidden.value,
+      }));
       dockRef.value.saveLayout();
     };
 
-    const load = () => {
-      if (!dockRef.value) return;
+    const load = async () => {
+      const panelsState = localStorage.getItem(`${currentCall.value.nqName}_panels`);
+      if (!dockRef.value || !panelsState) return;
+
+      const openedPanels = JSON.parse(panelsState) as {
+        historyHidden: boolean,
+        helpHidden: boolean,
+        formHidden: boolean,
+      };
+
+      historyHidden.value = openedPanels.historyHidden;
+      helpHidden.value = openedPanels.helpHidden;
+      formHidden.value = openedPanels.formHidden;
+
+      await nextTick();
 
       dockRef.value.loadLayout();
     };
@@ -188,7 +206,11 @@ export const RichFunctionView = defineComponent({
             style={{'background-color': !historyHidden.value ? 'var(--grey-1)': null}}
           />
         </RibbonPanel>
-        <DockManager onPanelClosed={handlePanelClose} ref={dockRef}>
+        <DockManager 
+          layoutStorageName={`${currentCall.value.nqName}_layout`}
+          onPanelClosed={handlePanelClose} 
+          ref={dockRef}
+        >
           { !historyHidden.value ? 
             <History 
               func={currentCall.value.func}

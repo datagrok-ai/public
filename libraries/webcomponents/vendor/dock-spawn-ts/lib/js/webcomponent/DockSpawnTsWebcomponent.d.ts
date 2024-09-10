@@ -12,7 +12,7 @@ export declare class DockSpawnTsWebcomponent extends HTMLElement {
     private elementContainerMap;
     constructor();
     saveLayout(): string;
-    loadLayout(serializedState: string): void;
+    loadLayout(serializedState: string): Promise<void>;
     private initDockspawn;
     getElementInSlot(slot: HTMLSlotElement): HTMLElement;
     private handleAddedChildNode;
