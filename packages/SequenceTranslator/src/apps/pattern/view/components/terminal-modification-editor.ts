@@ -109,7 +109,7 @@ class StrandTerminalModificationControls {
     const input = ui.input.textArea(terminus, {value: initialValue});
     this.applyStylingToInput(input);
 
-    input.onInput(() => {
+    input.onInput.subscribe(() => {
       const newValue = input.value;
       if (newValue === null)
         return;

@@ -5,7 +5,7 @@ import * as grok from 'datagrok-api/grok';
 
 category('Dapi: layouts', () => {
   test('get applicable', async () => {
-    grok.dapi.layouts.getApplicable(grok.data.demo.demog(10))
-      .then((res) => expect(res.length >= 0, true, 'error in Dapi: layouts - get applicable'));
-  });
+    const layouts = await grok.dapi.layouts.getApplicable(grok.data.demo.demog(10));
+    expect(layouts.length >= 0, true, 'error in Dapi: layouts - get applicable');
+  }, {stressTest: true});
 });

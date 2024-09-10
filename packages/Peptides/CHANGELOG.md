@@ -1,5 +1,19 @@
 # Peptides changelog
 
+## 1.17.29 (2024-08-14)
+
+Update MCL implementation
+
+## 1.17.28 (2024-08-08)
+
+* Downgrade API version
+
+## 1.17.27 (2024-08-08)
+
+* Selection viewer restoring original grid sorting
+* MCL viewer limiting max intercluster lines
+* fix bugs with selections context panel 
+
 ## 1.17.26 (2024-08-07)
 
 Rename monomer position viewer to sequence variability map

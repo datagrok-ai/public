@@ -24,14 +24,14 @@ category('helm-web-editor', async () => {
     userLibSettings = await getUserLibSettings();
     await setUserLibSettingsForTests();
     await monomerLibHelper.awaitLoaded();
-    await monomerLibHelper.loadLibraries(true);
+    await monomerLibHelper.loadMonomerLib(true);
 
     hh = await getHelmHelper();
   });
 
   after(async () => {
     await setUserLibSettings(userLibSettings);
-    await monomerLibHelper.loadLibraries(true);
+    await monomerLibHelper.loadMonomerLib(true);
   });
 
   test('helm-web-editor', async () => {

@@ -9,10 +9,10 @@
     "directory": "packages/ADMETox"
   },
   "dependencies": {
-    "datagrok-api": "^1.20.0",
+    "datagrok-api": "^1.21.1",
     "cash-dom": "latest",
     "dayjs": "latest",
-    "@datagrok-libraries/utils": "^4.2.13"
+    "@datagrok-libraries/utils": "^4.3.0"
   },
   "devDependencies": {
     "webpack": "latest",

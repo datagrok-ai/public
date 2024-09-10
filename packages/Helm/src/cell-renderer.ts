@@ -4,19 +4,19 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 
-import {HelmType, ISeqMonomer, Mol} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmMol, ISeqMonomer} from '@datagrok-libraries/bio/src/helm/types';
 
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {getGridCellRendererBack} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 
 import {findMonomers, parseHelm, removeGapsFromHelm} from './utils';
 import {HelmMonomerPlacer} from './helm-monomer-placer';
-import {getHoveredMonomerFallback, getHoveredMonomerFromEditorMol} from './utils/get-hovered';
-import {JSDraw2HelmModule} from './types';
+import {getHoveredMonomerFallback, getHoveredMonomerFromEditorMol, getSeqMonomerFromHelmAtom} from './utils/get-hovered';
+import {JSDraw2Module} from './types';
 
 import {_package} from './package';
 
-declare const JSDraw2: JSDraw2HelmModule;
+declare const JSDraw2: JSDraw2Module;
 
 const enum tempTAGS {
   helmSumMaxLengthWords = 'helm-sum-maxLengthWords',
@@ -50,12 +50,13 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       const argsY = e.offsetY - gcb.y;
 
       const monomerLib = _package.monomerLib;
-      const editorMol: Mol<HelmType> | null = helmPlacer.getEditorMol(gridCell.tableRowIndex!);
+      const editorMol: HelmMol | null = helmPlacer.getEditorMol(gridCell.tableRowIndex!);
       let seqMonomer: ISeqMonomer | null;
       let missedMonomers: Set<string> = new Set<string>(); // of .size = 0
-      if (editorMol)
-        seqMonomer = getHoveredMonomerFromEditorMol(argsX, argsY, editorMol, gridCell.bounds.height);
-      else {
+      if (editorMol) {
+        const hoveredAtom = getHoveredMonomerFromEditorMol(argsX, argsY, editorMol, gridCell.bounds.height);
+        seqMonomer = hoveredAtom ? getSeqMonomerFromHelmAtom(hoveredAtom) : null;
+      } else {
         const seq: string = !gridCell.cell.value ? '' : removeGapsFromHelm(gridCell.cell.value as string);
         const monomerList = parseHelm(seq);
         missedMonomers = findMonomers(monomerList, monomerLib);

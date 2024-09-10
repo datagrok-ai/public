@@ -36,14 +36,13 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
       grok.shell.info('Sequences column contains missing values. They will be ignored during analysis');
 
 
-    seqColInput = ui.input.column('Sequence', {table: df, value: potentialCol, onValueChanged: () => {
-      const seqCol = seqColInput!.value;
+    seqColInput = ui.input.column('Sequence', {table: df, value: potentialCol, onValueChanged: (value) => {
       $(logoHost).empty().append(ui.wait(async () => {
-        const viewer = await df.plot.fromType('WebLogo', {sequenceColumnName: seqCol.name});
+        const viewer = await df.plot.fromType('WebLogo', {sequenceColumnName: value.name});
         viewer.root.style.setProperty('height', '130px');
         return viewer.root;
       }));
-      if (seqCol.stats.missingValueCount !== 0)
+      if (value.stats.missingValueCount !== 0)
         grok.shell.info('Sequences column contains missing values. They will be ignored during analysis');
     }, filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE});
     seqColInput.setTooltip('Macromolecule column in FASTA, HELM or separated format');
@@ -79,8 +78,8 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
 
   const activityScalingMethod = ui.input.choice(
     'Scaling', {value: C.SCALING_METHODS.NONE, items: Object.values(C.SCALING_METHODS),
-      onValueChanged: async (input): Promise<void> => {
-        scaledCol = scaleActivity(activityColumnChoice.value!, input.value);
+      onValueChanged: async (value): Promise<void> => {
+        scaledCol = scaleActivity(activityColumnChoice.value!, value);
 
         const hist = DG.DataFrame.fromColumns([scaledCol]).plot.histogram({
           filteringEnabled: false, valueColumnName: C.COLUMNS_NAMES.ACTIVITY, legendVisibility: 'Never', showXAxis: true,
@@ -100,8 +99,8 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
   const activityColumnChoice = ui.input.column('Activity', {table: df, value: defaultActivityColumn!,
     onValueChanged: activityScalingMethodState, filter: (col: DG.Column) => col.type === DG.TYPE.INT || col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.QNUM});
   activityColumnChoice.setTooltip('Numerical activity column');
-  const clustersColumnChoice = ui.input.column('Clusters', {table: df, onValueChanged: () => {
-    if (clustersColumnChoice.value) {
+  const clustersColumnChoice = ui.input.column('Clusters', {table: df, onValueChanged: (value) => {
+    if (value) {
       generateClustersInput.value = false;
       generateClustersInput.fireChanged();
     }
@@ -109,8 +108,8 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
   clustersColumnChoice.setTooltip('Optional. Clusters column is used to create Logo Summary Table');
   clustersColumnChoice.nullable = true;
   // clustering input
-  const generateClustersInput = ui.input.bool('Generate clusters', {value: true, onValueChanged: () => {
-    if (generateClustersInput.value) {
+  const generateClustersInput = ui.input.bool('Generate clusters', {value: true, onValueChanged: (value) => {
+    if (value) {
       //@ts-ignore
       clustersColumnChoice.value = null;
       clustersColumnChoice.fireChanged();
@@ -129,23 +128,23 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
 
   // ### MCL INPUTS ###
   const similarityThresholdInput = ui.input.float(MCL_INPUTS.THRESHOLD, {
-    value: mclOptions.threshold, nullable: false, onValueChanged: () => mclOptions.threshold = similarityThresholdInput.value ?? mclOptions.threshold,
+    value: mclOptions.threshold, nullable: false, onValueChanged: (value) => mclOptions.threshold = value ?? mclOptions.threshold,
   });
   similarityThresholdInput.setTooltip('Threshold for similarity between two sequences to create edges');
 
   const inflationInput = ui.input.float(MCL_INPUTS.INFLATION, {
-    value: mclOptions.inflation, nullable: false, onValueChanged: () => mclOptions.inflation = inflationInput.value ?? mclOptions.inflation,
+    value: mclOptions.inflation, nullable: false, onValueChanged: (value) => mclOptions.inflation = value ?? mclOptions.inflation,
   });
   inflationInput.setTooltip('Inflation value for MCL algorithm');
 
   const maxIterationsInput = ui.input.int(MCL_INPUTS.MAX_ITERATIONS, {
-    value: mclOptions.maxIterations, nullable: false, onValueChanged: () => mclOptions.maxIterations = maxIterationsInput.value ?? mclOptions.maxIterations,
+    value: mclOptions.maxIterations, nullable: false, onValueChanged: (value) => mclOptions.maxIterations = value ?? mclOptions.maxIterations,
   });
   maxIterationsInput.setTooltip('Maximum iterations for MCL algorithm');
 
   // disable input if there is no gpu
   const useWebGPUInput = ui.input.bool(MCL_INPUTS.USE_WEBGPU, {
-    value: mclOptions.useWebGPU, onValueChanged: () => mclOptions.useWebGPU = useWebGPUInput.value,
+    value: mclOptions.useWebGPU, onValueChanged: (value) => mclOptions.useWebGPU = value,
   });
   useWebGPUInput.enabled = false;
   mclOptions.webGPUDescriptionPromise.then(() => {
@@ -160,21 +159,21 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
   });
 
   const minClusterSizeInput = ui.input.int(MCL_INPUTS.MIN_CLUSTER_SIZE, {
-    value: mclOptions.minClusterSize, nullable: false, onValueChanged: () => mclOptions.minClusterSize = minClusterSizeInput.value ?? mclOptions.minClusterSize,
+    value: mclOptions.minClusterSize, nullable: false, onValueChanged: (value) => mclOptions.minClusterSize = value ?? mclOptions.minClusterSize,
   });
   minClusterSizeInput.setTooltip('Minimum cluster size for MCL algorithm');
 
   const mclDistanceFunctionInput= ui.input.choice(MCL_INPUTS.DISTANCE_FUNCTION,
     {value: mclOptions.distanceF, items: [MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH, MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE,
       MmDistanceFunctionsNames.HAMMING, MmDistanceFunctionsNames.LEVENSHTEIN], nullable: false,
-    onValueChanged: () => mclOptions.distanceF = mclDistanceFunctionInput.value}) as DG.ChoiceInput<MmDistanceFunctionsNames>;
+    onValueChanged: (value) => mclOptions.distanceF = value}) as DG.ChoiceInput<MmDistanceFunctionsNames>;
   const mclGapOpenInput = ui.input.float(MCL_INPUTS.GAP_OPEN, {value: mclOptions.gapOpen,
-    onValueChanged: () => mclOptions.gapOpen = mclGapOpenInput.value ?? mclOptions.gapOpen});
+    onValueChanged: (value) => mclOptions.gapOpen = value ?? mclOptions.gapOpen});
   const mclGapExtendInput = ui.input.float(MCL_INPUTS.GAP_EXTEND, {value: mclOptions.gapExtend,
-    onValueChanged: () => mclOptions.gapExtend = mclGapExtendInput.value ?? mclOptions.gapExtend});
+    onValueChanged: (value) => mclOptions.gapExtend = value ?? mclOptions.gapExtend});
   const mclFingerprintTypesInput: DG.ChoiceInput<string> = ui.input.choice(MCL_INPUTS.FINGERPRINT_TYPE, {value: mclOptions.fingerprintType,
     items: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'], nullable: false,
-    onValueChanged: () => mclOptions.fingerprintType = mclFingerprintTypesInput.value}) as DG.ChoiceInput<string>;
+    onValueChanged: (value) => mclOptions.fingerprintType = value}) as DG.ChoiceInput<string>;
 
 
   const mclInputs = [similarityThresholdInput, inflationInput, maxIterationsInput, minClusterSizeInput,

@@ -8,8 +8,6 @@ onmessage = async (event) => {
       sampleLength: number, fnNames: KnownMetrics[], opts: any[],
       weights: number[], aggregationMethod: DistanceAggregationMethod} = event.data;
   try {
-    // if (startIdx != -1)
-    //   throw new Error('Error in sparse threshold worker'); // TODO: remove this line
     let distances: Float32Array = new Float32Array(sampleLength);
     const chunkSize = endIdx - startIdx;
     const aggregate = getAggregationFunction(aggregationMethod, weights);

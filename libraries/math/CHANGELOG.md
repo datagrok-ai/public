@@ -1,5 +1,9 @@
 # math changelog
 
+## 1.1.13 (2024-09-06)
+
+Bump Api version
+
 ## 1.1.12 (2024-08-07)
 
 Correct NW calculation on webGPU

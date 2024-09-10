@@ -4,7 +4,7 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 const mode = process.env.NODE_ENV ?? 'production';
 if (mode !== 'production')
-  console.warn(`Building Bio in '${mode}' mode.`);
+  console.warn(`Building 'BiostructureViewer' in '${mode}' mode.`);
 
 module.exports = {
   ...(mode === 'production' ? {cache: {type: 'filesystem'}} : {}),

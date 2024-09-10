@@ -122,19 +122,18 @@ export class ScatterPlotLinesRenderer {
   }
 
   renderLines(): void {
-    const spLook = this.sp.getOptions().look;
     const individualLineStyles = this.lines.colors || this.lines.widths || this.lines.opacities || this.lines.drawArrowsArr;
     if (!individualLineStyles) {
       this.ctx.lineWidth = this.lines.width ?? 1;
       this.ctx.strokeStyle = `rgba(${this.lines.color ?? '0,128,0'},${this.lines.opacity ?? 1})`;
     }
-    const markerSizeCol = spLook['sizeColumnName'] ? this.sp.dataFrame.col(spLook['sizeColumnName']) : null;
     const filter = this.sp.dataFrame.filter;
     const shortLineSquare = (this.lines.shortLineThreshold ?? 5) ** 2;
     for (let i = 0; i < this.lines.from.length; i++) {
       if (filter.get(this.lines.from[i]) && filter.get(this.lines.to[i]) && this.visibility.getBit(i)) {
         let lineLen = 0;
-        const {sizeFrom, sizeTo} = this.getMarkersSizes(spLook, markerSizeCol, i);
+        const sizeFrom = this.sp.getMarkerSize(this.lines.from[i]) / 2;
+        const sizeTo = this.sp.getMarkerSize(this.lines.to[i]) / 2;
         const pointFrom = this.sp.worldToScreen(this.xAxisCol.get(this.lines.from[i]), this.yAxisCol.get(this.lines.from[i]));
         let aX = pointFrom?.x;
         let aY = pointFrom?.y;
@@ -209,20 +208,6 @@ export class ScatterPlotLinesRenderer {
     }
   }
 
-  getMarkersSizes(spLook: any, markerSizeCol: DG.Column | null, i: number): MarkerSize {
-    let sizeFrom = 3;
-    let sizeTo = 3;
-    if (markerSizeCol) {
-      sizeFrom = (spLook.markerMinSize + (spLook.markerMaxSize - spLook.markerMinSize) * markerSizeCol.scale(this.lines.from[i])) / 2;
-      sizeTo = (spLook.markerMinSize + (spLook.markerMaxSize - spLook.markerMinSize) * markerSizeCol.scale(this.lines.to[i])) / 2;
-    } else if (spLook.markerDefaultSize) {
-      sizeFrom = spLook.markerDefaultSize / 2;
-      sizeTo = spLook.markerDefaultSize / 2;
-    }
-    return {sizeFrom, sizeTo};
-  }
-
-
   fillLeftBottomRect() {
     const rect = new Path2D();
     rect.rect(this.sp.yAxisBox.minX, this.sp.yAxisBox.maxY, this.sp.yAxisBox.width, this.sp.xAxisBox.height);
@@ -260,12 +245,11 @@ export class ScatterPlotLinesRenderer {
     let candidateIdx = -1;
     let minDist = null;
     let dist = null;
-    const spLook = this.sp.getOptions().look;
-    const markerSizeCol = spLook['sizeColumnName'] ? this.sp.dataFrame.col(spLook['sizeColumnName']) : null;
     const filter = this.sp.dataFrame.filter;
     for (let i = 0; i < this.lines.from.length; i++) {
       if (filter.get(this.lines.from[i]) && filter.get(this.lines.to[i]) && this.visibility.getBit(i)) {
-        const {sizeFrom, sizeTo} = this.getMarkersSizes(spLook, markerSizeCol, i);
+        const sizeFrom = this.sp.getMarkerSize(this.lines.from[i]) / 2;
+        const sizeTo = this.sp.getMarkerSize(this.lines.to[i]) / 2;
         const pFrom = this.sp.worldToScreen(this.xAxisCol.get(this.lines.from[i]), this.yAxisCol.get(this.lines.from[i]));
         const pTo = this.sp.worldToScreen(this.xAxisCol.get(this.lines.to[i]), this.yAxisCol.get(this.lines.to[i]));
         if (this.multipleLinesCounts[i]) {

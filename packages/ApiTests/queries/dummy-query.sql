@@ -1,5 +1,5 @@
 --name: dummyPackageQuery
 --connection: System:Datagrok
 --input: double x
-SELECT @x as res;
+SELECT id, description, @x as res from event_types;
 --end

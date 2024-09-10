@@ -79,7 +79,7 @@ export enum PROPERTY_CATEGORIES {
 }
 
 const MUTATION_CLIFFS_CELL_WIDTH = 40;
-const AAR_CELL_WIDTH = 30;
+const AAR_CELL_WIDTH = 40;
 
 export interface ISARViewer {
   sequenceColumnName: string;
@@ -648,10 +648,10 @@ export class MonomerPosition extends SARViewer {
       this.getProperty(`${MONOMER_POSITION_PROPERTIES.COLOR}${COLUMN_NAME}`)
         ?.set(this, this.activityColumnName);
       this.targetColumnInput = ui.input.column('Target', {value: undefined, nullable: true, table: this.dataFrame,
-        onValueChanged: () => {
+        onValueChanged: (value) => {
           const prop = this.getProperty(`${SAR_PROPERTIES.TARGET}${COLUMN_NAME}`);
-          if (prop && prop.get(this) !== this.targetColumnInput!.value?.name)
-            prop?.set(this, this.targetColumnInput!.value?.name ?? null);
+          if (prop && prop.get(this) !== value.name)
+            prop?.set(this, value.name ?? null);
         },
       });
     } else {

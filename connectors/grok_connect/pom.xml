@@ -421,7 +421,7 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.2.3</version>
+            <version>1.2.13</version>
         </dependency>
 
 
@@ -439,7 +439,7 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.5.3</version>
+            <version>42.5.5</version>
         </dependency>
         <dependency>
             <groupId>com.oracle.database.jdbc</groupId>
@@ -653,7 +653,7 @@
         <dependency> <!-- remediating vulnerability -->
             <groupId>com.nimbusds</groupId>
             <artifactId>nimbus-jose-jwt</artifactId>
-            <version>9.21.1</version>
+            <version>9.37.2</version>
         </dependency>
         <!--Hive1-->
         <dependency>
@@ -704,7 +704,7 @@
         <dependency>
             <groupId>com.amazon.redshift</groupId>
             <artifactId>redshift-jdbc42</artifactId>
-            <version>2.1.0.12</version>
+            <version>2.1.0.28</version>
         </dependency>
         <dependency>
             <groupId>com.ibm.db2.jcc</groupId>

@@ -35,12 +35,12 @@ const ProtIndexes: {[id:string]:number} = {
   'W': 17, 'Y': 18, 'V': 19, 'B': 20, 'Z': 21, 'X': 22, '*': 23
 };
 
-type NeedlemanWunchArgs = mmDistanceFunctionArgs & {
+type NeedlemanWunschArgs = mmDistanceFunctionArgs & {
   gapOpen: number;
   gapExtend: number;
 }
 
-const defaultArgs: NeedlemanWunchArgs = {
+const defaultArgs: NeedlemanWunschArgs = {
   gapOpen: 1,
   gapExtend: 0.6,
   scoringMatrix: BLOSUM62,
@@ -48,17 +48,17 @@ const defaultArgs: NeedlemanWunchArgs = {
 };
 
 /** Returns a function that calculates the distance between two sequences based on gap penalty and matrix
- * @param {Partial<NeedlemanWunchArgs>}args - arguments for Needleman-Wunch algorithm like gap penalty, Scoring matrix..
+ * @param {Partial<NeedlemanWunschArgs>}args - arguments for Needleman-Wunsch algorithm like gap penalty, Scoring matrix..
  * @return {mmDistanceFunctionType} - function that calculates the distance between two sequences
 */
-export function needlemanWunch(args: Partial<NeedlemanWunchArgs>): mmDistanceFunctionType {
+export function needlemanWunsch(args: Partial<NeedlemanWunschArgs>): mmDistanceFunctionType {
   const maxLen = 10000;
   const charCodeArray = new Uint16Array(0x10000);
 
   const {gapOpen, gapExtend, scoringMatrix, alphabetIndexes} = {...defaultArgs, ...args};
   Object.entries(alphabetIndexes).forEach(([k, v]) => charCodeArray[k.charCodeAt(0)] = v);
   // As we don't need traceback, no need to store the whole matrix
-  // Intead, we will store only the last two rows
+  // Instead, we will store only the last two rows
   const matrix: Array<Float32Array> = [
     new Float32Array(maxLen),
     new Float32Array(maxLen)

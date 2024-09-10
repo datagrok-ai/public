@@ -96,7 +96,7 @@ export class PatternLoadControlsManager {
     const authorChoiceInput = ui.input.choice(
       'Author', {value: this.eventBus.getSelectedAuthor(), items: possibleValues});
 
-    authorChoiceInput.onInput(() => {
+    authorChoiceInput.onInput.subscribe(() => {
       this.authorSelectedByUser = true;
       if (authorChoiceInput.value === null)
         throw new Error('author choice must be non-null');
@@ -142,7 +142,7 @@ export class PatternLoadControlsManager {
     });
 
     this.subscriptions.add(
-      choiceInput.onInput(
+      choiceInput.onInput.subscribe(
         () => {
           const patternHash = this.dataManager.getPatternHash(choiceInput.value!, this.isCurrentUserSelected());
           this.eventBus.requestPatternLoad(patternHash);
@@ -164,7 +164,11 @@ export class PatternLoadControlsManager {
 
   private getPatternName(patternList: string[]): string {
     return patternList.find(
-      (patternName) => patternName === this.eventBus.getPatternName()
+      (longPatternName) => {
+        // The pattern name can be followed by the author name in parenths
+        const shortPatternName = longPatternName.split(' (')[0];
+        return shortPatternName === this.eventBus.getPatternName();
+      }
     ) ?? patternList[0];
   }
 

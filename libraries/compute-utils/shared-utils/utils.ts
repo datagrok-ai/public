@@ -100,7 +100,7 @@ export const deepCopy = (call: DG.FuncCall) => {
 
 export const getPropViewers = (prop: DG.Property): {name: string, config: Record<string, string | boolean>[]} => {
   const viewersRawConfig = prop.options[VIEWER_PATH];
-  return (viewersRawConfig !== undefined) ?
+  return viewersRawConfig ?
   // true and false values are retrieved as string, so we parse them separately
     {name: prop.name, config: JSON.parse(viewersRawConfig, (k, v) => {
       if (v === 'true') return true;

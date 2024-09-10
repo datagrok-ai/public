@@ -1,10 +1,8 @@
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {Observable} from 'rxjs';
 
-import {IWebEditorMonomer, MonomerType, PolymerType} from '../helm/types';
+import {HelmType, IWebEditorMonomer, MonomerSetType, MonomerType, PolymerType} from '../helm/types';
 import {
   HELM_REQUIRED_FIELD as REQ,
   HELM_RGROUP_FIELDS as RGP, HELM_OPTIONAL_FIELDS as OPT, HELM_POLYMER_TYPE,
@@ -37,6 +35,34 @@ export type Monomer = {
   wem?: IWebEditorMonomer,
 };
 
+export interface IMonomerLinkData {
+  source: string;
+  symbol: string;
+  notes: string;
+}
+
+export interface IMonomerLink {
+  get lib(): IMonomerLib;
+  get symbol(): string;
+}
+
+export interface IMonomerSetPlaceholder {
+  get symbol(): string;
+  get polymerType(): PolymerType;
+  get monomerType(): MonomerType;
+  get monomerLinks(): IMonomerLinkData[];
+
+  get monomers(): Monomer[];
+}
+
+export interface IMonomerSet {
+  get source(): string | undefined;
+  get error(): string | undefined;
+
+  get description(): string;
+  get placeholders(): IMonomerSetPlaceholder[];
+}
+
 export type MonomerLibSummaryType = { [polymerType: string]: number };
 
 export interface IMonomerLib {
@@ -51,6 +77,7 @@ export interface IMonomerLib {
   getMonomerSymbolsByType(polymerType: PolymerType): string[];
   getPolymerTypes(): PolymerType[];
   update(lib: IMonomerLib): void;
+  toJSON(): Monomer[];
   get onChanged(): Observable<any>;
 
   /** Summary string with lib monomer count by type
@@ -64,6 +91,9 @@ export interface IMonomerLib {
   getSummaryDf(): DG.DataFrame;
 
   getTooltip(polymerType: PolymerType, monomerSymbol: string): HTMLElement;
+
+  // For monomer palettes
+  getMonomerSet(type: HelmType): MonomerSetType | null;
 }
 
 export const alphabetPolymerTypes = {

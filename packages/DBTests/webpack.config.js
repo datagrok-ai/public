@@ -11,11 +11,11 @@ module.exports = {
     package: './src/package.ts'
   },
   resolve: {
-    extensions: ['.wasm', '.mjs', '.js', '.json', '.ts', '.tsx'],
+    extensions: ['.wasm', '.mjs', '.ts', '.json', '.js', '.tsx'],
   },
   module: {
     rules: [
-      { test: /\.tsx?$/, loader: 'ts-loader' }
+      { test: /\.tsx?$/, loader: 'ts-loader', options: { allowTsInNodeModules: true } },
     ],
   },
   devtool: 'source-map',

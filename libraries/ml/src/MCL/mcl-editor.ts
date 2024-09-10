@@ -4,7 +4,7 @@ import {DimReductionEditorOptions} from '../functionEditors/dimensionality-reduc
 import {MultiColumnDimReductionEditor}
   from '../multi-column-dimensionality-reduction/multi-column-dim-reduction-editor';
 import {getGPUAdapterDescription} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
-import {defaultMCLOptions} from './marcov-cluster';
+import {defaultMCLOptions} from './markov-cluster';
 
 
 export class MCLEditor extends MultiColumnDimReductionEditor {
@@ -23,6 +23,7 @@ export class MCLEditor extends MultiColumnDimReductionEditor {
       getGPUAdapterDescription().then((desc) => {
         if (desc) {
           this.useWebGPUInput.setTooltip(`Use webGPU for MCL calculation (${desc})`);
+          this.useWebGPUInput.value = true;
         } else {
           this.useWebGPUInput.value = false;
           this.useWebGPUInput.setTooltip('WebGPU is not available');

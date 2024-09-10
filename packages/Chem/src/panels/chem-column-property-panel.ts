@@ -25,39 +25,39 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
   columnsSet.delete(col.name);
 
   const scaffoldColumnChoice = ui.input.choice('Scaffold column', {value: scaffoldColName, items: [NONE].concat([...columnsSet].sort()),
-    onValueChanged: (input) => {
-      col.temp[SCAFFOLD_COL] = input.value === NONE ? null : input.value;
+    onValueChanged: (value) => {
+      col.temp[SCAFFOLD_COL] = value === NONE ? null : value;
       col.dataFrame?.fireValuesChanged();
     }});
   scaffoldColumnChoice.setTooltip('Align structures to a scaffold defined in another column');
 
   const highlightScaffoldsCheckbox = ui.input.bool('Highlight scaffold',
     {value: col?.temp && col.temp[HIGHLIGHT_BY_SCAFFOLD_COL] === 'true',
-      onValueChanged: (input) => {
-        col.temp[HIGHLIGHT_BY_SCAFFOLD_COL] = input.value.toString();
+      onValueChanged: (value) => {
+        col.temp[HIGHLIGHT_BY_SCAFFOLD_COL] = value.toString();
         col.dataFrame?.fireValuesChanged();
       }});
   highlightScaffoldsCheckbox.setTooltip('Highlight scaffold defined above');
 
   const regenerateCoordsCheckbox = ui.input.bool('Regen coords',
     {value: col?.temp && col.temp[REGENERATE_COORDS] === 'true',
-      onValueChanged: (input) => {
-        col.temp[REGENERATE_COORDS] = input.value.toString();
+      onValueChanged: (value) => {
+        col.temp[REGENERATE_COORDS] = value.toString();
         col.dataFrame?.fireValuesChanged();
       }});
   regenerateCoordsCheckbox.setTooltip('Force regeneration of coordinates even for MOLBLOCKS');
 
   const moleculeFilteringChoice = ui.input.choice('Filter type',
     {value: col.tags[DG.TAGS.STRUCTURE_FILTER_TYPE] ?? StructureFilterType.Sketch, items: [StructureFilterType.Sketch, StructureFilterType.Categorical],
-      onValueChanged: (input) => {
-        col.tags[DG.TAGS.STRUCTURE_FILTER_TYPE] = input.value;
-        col.tags[DG.TAGS.IGNORE_CUSTOM_FILTER] = (input.value == StructureFilterType.Categorical).toString();
+      onValueChanged: (value) => {
+        col.tags[DG.TAGS.STRUCTURE_FILTER_TYPE] = value;
+        col.tags[DG.TAGS.IGNORE_CUSTOM_FILTER] = (value == StructureFilterType.Categorical).toString();
       }});
   moleculeFilteringChoice.setTooltip('Sketch a molecule, or use them as categories in a filter');
 
   const showStructures = ui.input.bool('Structures',
     {value: col.tags[DG.TAGS.CELL_RENDERER] == DG.SEMTYPE.MOLECULE,
-      onValueChanged: (input) => col.tags[DG.TAGS.CELL_RENDERER] = input.value ? DG.SEMTYPE.MOLECULE : DG.TYPE.STRING});
+      onValueChanged: (value) => col.tags[DG.TAGS.CELL_RENDERER] = value ? DG.SEMTYPE.MOLECULE : DG.TYPE.STRING});
 
   const rdKitInputs = ui.form([
     showStructures,

@@ -40,8 +40,8 @@ export class PatientProfileView extends ClinicalCaseViewBase {
     const patientIds = Array.from(getUniqueValues(study.domains.dm, SUBJECT_ID));
     this.selectedPatientId = patientIds[0];
     const patienIdBoxPlot = ui.input.choice('', {value: this.selectedPatientId, items: patientIds});
-    patienIdBoxPlot.onChanged((v) => {
-      this.selectedPatientId = patienIdBoxPlot.value;
+    patienIdBoxPlot.onChanged.subscribe((value) => {
+      this.selectedPatientId = value;
       this.updateMultiplot();
     });
     const labBaselineSelect = this.createLabBaselineVisitSelect();
@@ -107,8 +107,8 @@ export class PatientProfileView extends ClinicalCaseViewBase {
       this.bl = this.visitNamesAndDays[0].name;
       this.uniqueLabVisits = Array.from(getUniqueValues(study.domains.lb, VISIT_NAME));
       const blVisitChoices = ui.input.choice('Baseline', {value: this.bl, items: this.uniqueLabVisits});
-      blVisitChoices.onChanged((v) => {
-        this.bl = blVisitChoices.value;
+      blVisitChoices.onChanged.subscribe((value) => {
+        this.bl = value;
         this.updateMultiplot();
       });
       return blVisitChoices.root;

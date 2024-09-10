@@ -47,11 +47,14 @@ class TranslatorAppLayout {
     this.moleculeImgDiv.style.marginTop = '12px';
 
     this.outputTableDiv = ui.div([]);
-    this.formatChoiceInput = ui.input.choice('', {value: DEFAULT_FORMATS.HELM, items: this.inputFormats, onValueChanged: async () => {
-      this.format = this.formatChoiceInput.value;
-      this.updateTable();
-      await this.updateMolImg();
-    }});
+    this.formatChoiceInput = ui.input.choice('', {
+      value: DEFAULT_FORMATS.HELM, items: this.inputFormats,
+      onValueChanged: async (value, input) => {
+        this.format = value;
+        this.updateTable();
+        await this.updateMolImg();
+      }
+    });
     this.sequenceInputBase = ui.input.textArea('', {value: DEFAULT_AXOLABS_INPUT, onValueChanged: () => { this.onInput.next(); }});
 
     this.init();
@@ -99,13 +102,15 @@ class TranslatorAppLayout {
 
     const tableControlsManager = new TableControlsManager(this.eventBus);
     const tableControls = tableControlsManager.createUIComponents();
-    const inputFormats = ui.input.choice('Input format', {value: DEFAULT_FORMATS.AXOLABS,
-      items: this.inputFormats, onValueChanged: (input) => this.eventBus.selectInputFormat(input.value)}
-    );
+    const inputFormats = ui.input.choice('Input format', {
+      value: DEFAULT_FORMATS.AXOLABS,
+      items: this.inputFormats, onValueChanged: (value) => this.eventBus.selectInputFormat(value)
+    });
 
-    const outputFormats = ui.input.choice('Output format', {value: NUCLEOTIDES_FORMAT,
-      items: getSupportedTargetFormats(this.th), onValueChanged: (input) => this.eventBus.selectOutputFormat(input.value)}
-    );
+    const outputFormats = ui.input.choice('Output format', {
+      value: NUCLEOTIDES_FORMAT,
+      items: getSupportedTargetFormats(this.th), onValueChanged: (value) => this.eventBus.selectOutputFormat(value)
+    });
     const convertBulkButton = this.createConvertBulkButton();
 
     const tableControlsContainer = ui.div([
@@ -374,13 +379,15 @@ class TableInputManager {
   private createTableInput(): DG.InputBase<DG.DataFrame | null> {
     const currentlySelectedTable = this.eventBus.getSelectedTable();
 
-    const tableInput = ui.input.table('Table', {value: currentlySelectedTable!, items: this.availableTables,
-      onValueChanged: (input) => {
+    const tableInput = ui.input.table('Table', {
+      value: currentlySelectedTable!, items: this.availableTables,
+      onValueChanged: (value) => {
         // WARNING: non-null check necessary to prevent resetting columns to
         // null upon handling onTableAdded
-        if (input.value !== null)
-          this.eventBus.selectTable(input.value);
-      }});
+        if (value !== null)
+          this.eventBus.selectTable(value);
+      }
+    });
     return tableInput;
   }
 
@@ -449,8 +456,10 @@ class ColumnInputsManager {
     const selectedColumnName = matchingColumnName ? matchingColumnName : columnNames[0];
     this.selectColumnIfTableNotNull(selectedTable, selectedColumnName, columnLabel);
 
-    const input = ui.input.choice(`${columnLabel}`, {value: selectedColumnName, items: columnNames,
-      onValueChanged: (input) => this.selectColumnIfTableNotNull(selectedTable, input.value, columnLabel)}
+    const input = ui.input.choice(`${columnLabel}`, {
+        value: selectedColumnName, items: columnNames,
+        onValueChanged: (value) => this.selectColumnIfTableNotNull(selectedTable, value, columnLabel)
+      }
     );
 
     return input;

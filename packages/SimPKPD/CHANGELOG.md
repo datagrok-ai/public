@@ -1,5 +1,13 @@
 # SimPKPD changelog
 
+## 1.1.1 (2024-09-10)
+
+Fixed dev dependencies
+
+## 1.1.0 (2024-09-09)
+
+JS-API new release
+
 ## 1.0.12 (2024-07-29)
 
 Fixed demo application

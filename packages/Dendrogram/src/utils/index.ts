@@ -3,7 +3,12 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
+
 import '../css/injected-dendrogram.css';
+
+import {_package} from '../package';
+
+
 /** By Dimitri Petrov
  * Attach a div to a grid
  * @param {DG.Grid} grid
@@ -26,7 +31,7 @@ export function attachDivToGrid(grid: DG.Grid, neighborWidth: number = 100): Gri
   button.classList.add('dendrogram-close-bttn');
   eDiv.appendChild(button);
 
-  const neighbor: GridNeighbor = new GridNeighbor(eDiv, grid, neighborWidth);
+  const neighbor: GridNeighbor = new GridNeighbor(eDiv, grid, neighborWidth, _package.logger);
   neighbor.root && (neighbor.root.style.zIndex = '1');
   return neighbor;
 }
@@ -45,7 +50,7 @@ export function attachLoaderDivToGrid(grid: DG.Grid, neighborWidth: number = 100
   }, 'Remove Dendrogram');
   button.classList.add('dendrogram-close-bttn');
   loader.style.width = '40px';
-  const neighbor: GridNeighbor = new GridNeighbor(eDiv, grid, neighborWidth);
+  const neighbor: GridNeighbor = new GridNeighbor(eDiv, grid, neighborWidth, _package.logger);
   //trigger grid rerender
   grid.invalidate();
   return neighbor;
