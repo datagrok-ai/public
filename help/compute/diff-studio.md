@@ -370,7 +370,7 @@ The `Bioreactor` example models the [kinetic mechanism](https://doi.org/10.1074/
 
 ### Pollution
 
-The `Pollution` exmple describes a chemical reaction part of the air [pollution model](https://archimede.uniba.it/~testset/problems/pollu.php). It consists of 25 reaction and 20 reacting compounds. This example illustrates the capability of Diff Studio to solve large systems of [stiff equations](https://en.wikipedia.org/wiki/Stiff_equation).
+The `Pollution` example describes a chemical reaction part of the air [pollution model](https://archimede.uniba.it/~testset/problems/pollu.php). It consists of 25 reaction and 20 reacting compounds. This example illustrates the capability of Diff Studio to solve large systems of [stiff equations](https://en.wikipedia.org/wiki/Stiff_equation).
 
 ![add-to-workspace](pics/diff-studio-pollution.png)
 
