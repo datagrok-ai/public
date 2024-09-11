@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {defineComponent, PropType} from 'vue';
+import {defineComponent, PropType, ref, watch} from 'vue';
 import {AugmentedStat, Status} from './types';
 import {ComboPopup, IconFA} from '@datagrok-libraries/webcomponents-vue';
 import {OpenIcon} from '@he-tree/vue';
@@ -11,6 +11,7 @@ import {
   isSequentialPipelineState, PipelineState, 
   PipelineStateParallel, PipelineStateSequential,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {useElementHover} from '@vueuse/core';
 
 const getCall = (funcCall: DG.FuncCall | string, params?: {
   a?: number,
@@ -189,6 +190,11 @@ export const TreeNode = defineComponent({
 
     const hasAddButton = (data: PipelineState): data is (PipelineStateSequential | PipelineStateParallel) => 
       (isParallelPipelineState(data) || isSequentialPipelineState(data)) && data.stepTypes.length > 0;
+
+    const treeNodeRef = ref(null as null | HTMLElement);
+    watch(useElementHover(treeNodeRef), (isHovered) => {
+      props.stat.data.isHovered = isHovered;
+    });
     
     return () => (
       <div 
@@ -199,9 +205,7 @@ export const TreeNode = defineComponent({
           alignItems: 'center',
           borderBottom: '1px solid var(--steel-2)',
         }}
-        onMouseover={() => props.stat.data.isHovered = true} 
-        onMouseleave={() => props.stat.data.isHovered = false} 
-        onDragstart={() => props.stat.data.isHovered = false}
+        ref={treeNodeRef}
         onClick={() => emit('click')}
       >
         {/* { progressIcon(props.stat.data.status) } */}
