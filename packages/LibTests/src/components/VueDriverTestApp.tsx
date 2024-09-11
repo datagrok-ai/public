@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {BigButton, Button, InputForm} from '@datagrok-libraries/webcomponents-vue/src';
+import {BigButton, Button, InputForm} from '@datagrok-libraries/webcomponents-vue';
 import {defineComponent, KeepAlive, onUnmounted, ref, shallowRef} from 'vue';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
 import {useSubscription} from '@vueuse/rxjs';

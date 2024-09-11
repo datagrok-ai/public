@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {computed, defineComponent, ref, shallowRef, triggerRef, watch} from 'vue';
 import {RichFunctionView} from './RichFunctionView';
-import {Button} from '@datagrok-libraries/webcomponents-vue/src';
+import {Button} from '@datagrok-libraries/webcomponents-vue';
 import {deepCopy} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 
 export const RFVTestApp = defineComponent({

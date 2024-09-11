@@ -8,7 +8,7 @@ import {BehaviorSubject} from 'rxjs';
 import {distinctUntilChanged} from 'rxjs/operators';
 import equal from 'deep-equal';
 import {PipelineConfiguration, ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult} from '@datagrok-libraries/compute-utils';
-import type {ViewerT, InputFormT} from '@datagrok-libraries/webcomponents/src';
+import type {ViewerT, InputFormT} from '@datagrok-libraries/webcomponents';
 import {createApp, provide} from 'vue';
 import {VueViewerTestApp} from './components/VueViewerTestApp';
 import {VueFormTestApp} from './components/VueFormTestApp';

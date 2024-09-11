@@ -3,8 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {defineComponent, KeepAlive, onMounted, PropType, ref, SlotsType, VNode, watch} from 'vue';
-import {DockSpawnTsWebcomponent} from '@datagrok-libraries/webcomponents/src';
-import { IState } from '@datagrok-libraries/webcomponents/vendor/dock-spawn-ts/lib/js/interfaces/IState';
+import {DockSpawnTsWebcomponent} from '@datagrok-libraries/webcomponents';
+import { IState } from '@datagrok-libraries/webcomponents/vendor/dock-spawn-ts/lib/interfaces/IState';
 import { whenever } from '@vueuse/core';
 
 declare global {

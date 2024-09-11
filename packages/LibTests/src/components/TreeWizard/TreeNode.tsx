@@ -3,11 +3,14 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {defineComponent, PropType} from 'vue';
-import {AugmentedStat, Data, Status} from './types';
-import {ComboPopup, IconFA} from '@datagrok-libraries/webcomponents-vue/src';
+import {AugmentedStat, Status} from './types';
+import {ComboPopup, IconFA} from '@datagrok-libraries/webcomponents-vue';
 import {OpenIcon} from '@he-tree/vue';
-import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
-import {isFuncCallState, isParallelPipelineState, isSequentialPipelineState, PipelineState, PipelineStateParallel, PipelineStateSequential} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {
+  isFuncCallState, isParallelPipelineState, 
+  isSequentialPipelineState, PipelineState, 
+  PipelineStateParallel, PipelineStateSequential,
+} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 
 const getCall = (funcCall: DG.FuncCall | string, params?: {
   a?: number,

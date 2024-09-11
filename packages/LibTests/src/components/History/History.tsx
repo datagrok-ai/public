@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {computed, defineComponent, nextTick, onMounted, PropType, ref, shallowReactive, shallowRef, ShallowRef, toValue, triggerRef, watch, watchEffect} from 'vue';
-import {IconFA, ToggleInput, Viewer} from '@datagrok-libraries/webcomponents-vue/src';
+import {IconFA, ToggleInput, Viewer} from '@datagrok-libraries/webcomponents-vue';
 import {historyUtils} from '@datagrok-libraries/compute-utils';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {computedAsync} from '@vueuse/core';

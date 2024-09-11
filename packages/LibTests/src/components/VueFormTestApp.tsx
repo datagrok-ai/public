@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {InputForm} from '@datagrok-libraries/webcomponents-vue/src';
+import {InputForm} from '@datagrok-libraries/webcomponents-vue';
 import {defineComponent, shallowRef, onMounted, triggerRef, ref} from 'vue';
 
 export const VueFormTestApp = defineComponent({

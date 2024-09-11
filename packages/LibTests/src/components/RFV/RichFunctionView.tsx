@@ -2,9 +2,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {defineComponent, onMounted, PropType, ref, triggerRef, nextTick, computed, watch, shallowRef, reactive} from 'vue';
-import {type ViewerT} from '@datagrok-libraries/webcomponents/src';
-import {Viewer, InputForm, BigButton, Tabs, IconFA, RibbonPanel, DockManager, MarkDown} from '@datagrok-libraries/webcomponents-vue/src';
+import {defineComponent, PropType, ref, nextTick, computed, watch} from 'vue';
+import {type ViewerT} from '@datagrok-libraries/webcomponents';
+import {
+  Viewer, InputForm, 
+  BigButton, IconFA, 
+  RibbonPanel, DockManager, MarkDown,
+} from '@datagrok-libraries/webcomponents-vue';
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';

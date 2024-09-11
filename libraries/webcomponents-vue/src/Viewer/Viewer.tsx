@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {defineComponent, KeepAlive, PropType} from 'vue';
-import type {ViewerT} from '@datagrok-libraries/webcomponents/src';
+import type {ViewerT} from '@datagrok-libraries/webcomponents';
 
 declare global {
   namespace JSX {

@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Viewer, SplitH} from '@datagrok-libraries/webcomponents-vue/src';
+import {Viewer} from '@datagrok-libraries/webcomponents-vue';
 import {defineComponent, shallowRef, ref} from 'vue';
 
 export const VueViewerTestApp = defineComponent({

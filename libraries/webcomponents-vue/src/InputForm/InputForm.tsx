@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {defineComponent, PropType, watch} from 'vue';
-import type {InputFormT} from '@datagrok-libraries/webcomponents/src';
+import type {InputFormT} from '@datagrok-libraries/webcomponents';
 import {getValidators,
   injectInputBaseValidation,
   isInputBase,

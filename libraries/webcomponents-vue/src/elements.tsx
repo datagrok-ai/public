@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {defineComponent, PropType, ref, watch} from 'vue';
-import type {DGBigButtonT, DGButtonT, DGComboPopupT, DGIconFAT, DGSplitH, DGToggleInputT} from '@datagrok-libraries/webcomponents/src';
+import type {DGBigButtonT, DGButtonT, DGComboPopupT, DGIconFAT, DGSplitH, DGToggleInputT} from '@datagrok-libraries/webcomponents';
 
 declare global {
   namespace JSX {
