@@ -5,8 +5,8 @@ import * as DG from 'datagrok-api/dg';
 import {InputForm} from '@datagrok-libraries/webcomponents-vue';
 import {defineComponent, shallowRef, onMounted, triggerRef, ref} from 'vue';
 
-export const VueFormTestApp = defineComponent({
-  name: 'VueFormTestApp',
+export const FormApp = defineComponent({
+  name: 'FormApp',
   setup() {
     const fc = shallowRef<DG.FuncCall | undefined>(undefined);
 

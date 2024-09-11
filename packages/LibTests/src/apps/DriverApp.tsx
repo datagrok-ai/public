@@ -6,17 +6,17 @@ import {defineComponent, KeepAlive, onUnmounted, ref, shallowRef, triggerRef, VN
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
 import {useSubscription} from '@vueuse/rxjs';
 import {isFuncCallState, isParallelPipelineState, isSequentialPipelineState, PipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
-import {RichFunctionView} from './RFV/RichFunctionView';
-import {TreeNode} from './TreeWizard/TreeNode';
+import {RichFunctionView} from '../components/RFV/RichFunctionView';
+import {TreeNode} from '../components/TreeWizard/TreeNode';
 import {Draggable} from '@he-tree/vue';
-import {AugmentedStat} from './TreeWizard/types';
+import {AugmentedStat} from '../components/TreeWizard/types';
 import {dragContext} from '@he-tree/vue';
 import '@he-tree/vue/style/default.css';
 import '@he-tree/vue/style/material-design.css';
 import {deepCopy} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 
-export const VueDriverRFVApp = defineComponent({
-  name: 'VueDriverRFVApp',
+export const DriverApp = defineComponent({
+  name: 'DriverApp',
   setup() {
     const driver = new Driver();
     const isLocked = ref(false);

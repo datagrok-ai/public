@@ -5,14 +5,8 @@ import * as DG from 'datagrok-api/dg';
 import {Viewer} from '@datagrok-libraries/webcomponents-vue';
 import {defineComponent, shallowRef, ref} from 'vue';
 
-export const VueViewerTestApp = defineComponent({
-  name: 'VueViewerTestApp',
-  mounted() {
-    console.log('VueViewerTestApp mounted');
-  },
-  unmounted() {
-    console.log('VueViewerTestApp unmounted');
-  },
+export const ViewerApp = defineComponent({
+  name: 'ViewerApp',
   setup() {
     const df = shallowRef<DG.DataFrame | undefined>(undefined);
     const type = ref<string | undefined>(undefined);

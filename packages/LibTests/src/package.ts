@@ -7,17 +7,17 @@ import {FuncCallInput} from '@datagrok-libraries/compute-utils/shared-utils/inpu
 import {BehaviorSubject} from 'rxjs';
 import {distinctUntilChanged} from 'rxjs/operators';
 import equal from 'deep-equal';
-import {PipelineConfiguration, ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult} from '@datagrok-libraries/compute-utils';
+import {
+  PipelineConfiguration, ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult,
+} from '@datagrok-libraries/compute-utils';
 import type {ViewerT, InputFormT} from '@datagrok-libraries/webcomponents';
-import {createApp, provide} from 'vue';
-import {VueViewerTestApp} from './components/VueViewerTestApp';
-import {VueFormTestApp} from './components/VueFormTestApp';
-import {RFVTestApp} from './components/RFV/RFVTestApp';
-import {HistoryApp} from './components/History/HistoryApp';
-import {VueElementsTestApp} from './components/VueElementsTestApp';
-import {VueDriverTestApp} from './components/VueDriverTestApp';
-import {PipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
-import {VueDriverRFVApp} from './components/VueDriverRFVApp';
+import {createApp} from 'vue';
+import {ViewerApp as ViewerAppInstance} from './apps/ViewerApp';
+import {FormApp as FormAppInstance} from './apps/FormApp';
+import {RFVApp as RFVAppInstance} from './apps/RFVApp';
+import {HistoryApp as HistoryAppInstance} from './apps/HistoryApp';
+import {ElementsApp as ElementsAppInstance} from './apps/ElementsApp';
+import {DriverApp as DriverAppInstance} from './apps/DriverApp';
 import './tailwind.css';
 
 export const _package = new DG.Package();
@@ -228,68 +228,64 @@ export async function TestElements() {
   grok.shell.addView(view);
 }
 
-//tags: test
-export async function TestVueViewerComponent() {
+//tags: test, vue
+export async function ViewerApp() {
   const view = new DG.ViewBase();
-  const app = createApp(VueViewerTestApp);
+  const app = createApp(ViewerAppInstance);
   app.mount(view.root);
+  view.name = 'ViewerApp';
   grok.shell.addView(view);
 }
 
-//tags: test
-export async function TestVueFormComponent() {
+//tags: test, vue
+export async function FormApp() {
   const view = new DG.ViewBase();
-  const app = createApp(VueFormTestApp);
+  const app = createApp(FormAppInstance);
   app.mount(view.root);
+  view.name = 'FormAppInstance';
   grok.shell.addView(view);
 }
 
 
-//tags: test
-export async function TestVueElements() {
+//tags: test, vue
+export async function ElementsApp() {
   const view = new DG.ViewBase();
-  const app = createApp(VueElementsTestApp);
+  const app = createApp(ElementsAppInstance);
   app.mount(view.root);
+  view.name = 'ElementsAppInstance';
   grok.shell.addView(view);
 }
 
-//tags: test
-export async function TestVueRFV() {
+//tags: test, vue
+export async function RFVApp() {
   const view = new DG.ViewBase();
-  const app = createApp(RFVTestApp);
+  const app = createApp(RFVAppInstance);
   app.mount(view.root);
   grok.shell.addView(view);
+  view.name = 'RFVAppInstance';
   view.root.classList.remove('ui-panel');
 }
 
-//tags: test
-export async function TestVueHistory() {
+//tags: test, vue
+export async function HistoryApp() {
   const view = new DG.ViewBase();
-  const app = createApp(HistoryApp);
-  app.mount(view.root);
-  grok.shell.addView(view);
+  const app = createApp(HistoryAppInstance);
   view.root.classList.remove('ui-panel');
+  app.mount(view.root);
+  view.name = 'HistoryApp';
+  grok.shell.addView(view);
 }
 
-//name: TestVueRFVDriver
-export async function TestVueRFVDriver() {
+//tags: test, vue
+export async function DriverApp() {
   // TODO: close view handling
   const view = new DG.ViewBase();
-  const app = createApp(VueDriverRFVApp);
+  const app = createApp(DriverAppInstance);
   view.root.classList.remove('ui-panel');
   app.mount(view.root);
+  view.name = 'DriverApp';
   grok.shell.addView(view);
 }
-
-//name: TestVueDriver
-export async function TestVueDriver() {
-  // TODO: close view handling
-  const view = new DG.ViewBase();
-  const app = createApp(VueDriverTestApp);
-  app.mount(view.root);
-  grok.shell.addView(view);
-}
-
 
 // pipeline driver testing
 

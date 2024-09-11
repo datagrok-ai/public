@@ -4,8 +4,8 @@ import * as DG from 'datagrok-api/dg';
 import {BigButton, Button, IconFA, SplitH, TabArea, TabHeaderStripe, Tabs} from '@datagrok-libraries/webcomponents-vue';
 import {defineComponent, Fragment, ref} from 'vue';
 
-export const VueElementsTestApp = defineComponent({
-  name: 'VueElementsTestApp',
+export const ElementsApp = defineComponent({
+  name: 'ElementsApp',
   setup() {
     const resize = ref(true);
 
