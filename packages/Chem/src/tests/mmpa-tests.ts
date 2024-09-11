@@ -238,23 +238,23 @@ category('mmpa', () => {
     }, 'MMPA hasn\'t been initialized', 3000);
 
     //check Fragments Grid
-    await awaitCheck(() => mmp.transFragmentsGrid?.dataFrame != null, 'All pairs grid hasn\'t been created', 3000);
-    const fragsDf = mmp.transFragmentsGrid!.dataFrame;
+    await awaitCheck(() => mmp.fpGrid?.dataFrame != null, 'All pairs grid hasn\'t been created', 3000);
+    const fragsDf = mmp.fpGrid!.dataFrame;
     await awaitCheck(() => fragsDf.rowCount === 40 && fragsDf.columns.length === 7 &&
       fragsDf.filter.trueCount === 2 && fragsDf.filter.get(mmp.calculatedOnGPU ? 1 : 0) && fragsDf.filter.get(2),
     'Incorrect fragments grid', 3000);
     checkRandomValues(fragsDf, 'Transformations_Fragments', mmp.calculatedOnGPU!);
 
     //check Pairs Grid
-    const pairsDf = mmp.transPairsGrid!.dataFrame;
+    const pairsDf = mmp.mmpGrid!.dataFrame;
     await awaitCheck(() => pairsDf.rowCount === 54 && pairsDf.columns.length === 13 &&
     pairsDf.filter.trueCount === 3 && pairsDf.filter.get(mmp.calculatedOnGPU ? 3 : 0) &&
     pairsDf.filter.get(mmp.calculatedOnGPU ? 4 : 1) && pairsDf.filter.get(mmp.calculatedOnGPU ? 5 : 2),
     'Incorrect pairs grid', 3000);
-    checkRandomValues(mmp.transPairsGrid!.dataFrame, 'Transformations_Pairs', mmp.calculatedOnGPU!);
+    checkRandomValues(mmp.mmpGrid!.dataFrame, 'Transformations_Pairs', mmp.calculatedOnGPU!);
 
     //changing fragment
-    mmp.transFragmentsGrid!.dataFrame.currentRowIdx = 2;
+    mmp.fpGrid!.dataFrame.currentRowIdx = 2;
     await awaitCheck(() => pairsDf.filter.trueCount === 2 && pairsDf.filter.get(6) && pairsDf.filter.get(7),
       'Pairs haven\'t been changed after fragment change', 3000);
 

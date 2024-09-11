@@ -3,31 +3,31 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {getRdKitModule} from '../../../utils/chem-common-rdkit';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {Subject} from 'rxjs/internal/Subject';
+import $ from 'cash-dom';
+import {ILineSeries, MouseOverLineEvent, ScatterPlotLinesRenderer}
+  from '@datagrok-libraries/utils/src/render-lines-on-sp';
 
+import {MMPA} from '../mmp-analysis/mmpa';
 import {MMP_NAMES} from './mmp-constants';
+import {getMmpPairsGrids} from './mmp-pairs-grids';
+
 import {getInverseSubstructuresAndAlign} from './mmp-mol-rendering';
 import {PaletteCodes, getPalette} from './palette';
-import {getMmpActivityPairsAndTransforms} from './mmp-pairs-transforms';
 import {getMmpTrellisPlot} from './mmp-frag-vs-frag';
 import {getMmpScatterPlot, runMmpChemSpace, fillPairInfo} from './mmp-cliffs';
 import {getGenerations} from './mmp-generations';
 
 
-import {ILineSeries, MouseOverLineEvent, ScatterPlotLinesRenderer}
-  from '@datagrok-libraries/utils/src/render-lines-on-sp';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 import {getEmbeddingColsNames} from
   '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
-import $ from 'cash-dom';
-import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
+
 import {getMmpFilters, MmpFilters} from './mmp-filters';
-import {Subject} from 'rxjs/internal/Subject';
-
 import {debounceTime} from 'rxjs/operators';
-
 import {getSigFigs} from '../../../utils/chem-common';
-import {MMPA} from '../mmp-analysis/mmpa';
+import {createLines} from './mmp-lines';
 
 export type MmpInput = {
   table: DG.DataFrame,
@@ -44,12 +44,11 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   activities: string[] | null = null;
   fragmentCutoff: number | null;
   totalData: string;
-
   totalDataUpdated: boolean = false;
+  onPropertyChangedObs : Subject<DG.Property | null> = new Subject<DG.Property | null>();
 
   moleculesCol: DG.Column | null = null;
   activitiesCols: DG.ColumnList | null = null;
-
   mmpa: MMPA | null = null;
 
   parentTable: DG.DataFrame | null = null;
@@ -58,13 +57,15 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   mmpView: DG.View | null = null;
   enableFilters: boolean = true;
   colorPalette: PaletteCodes | null = null;
-  //transformations tab objects
-  transFragmentsGrid: DG.Grid | null = null;
-  transFragmentsMask: DG.BitSet | null = null;
-  transPairsGrid: DG.Grid | null = null;
-  transPairsMask: DG.BitSet | null = null;
-  //fragments tab objects
-  fragmentsMask: DG.BitSet | null = null;
+  //transformations tab objects and fragments tab objects
+  //fp for fragment pairs
+  fpGrid: DG.Grid | null = null; //transformations tab specific to molecules and fragments tab the whole
+  fpMaskByMolecule: DG.BitSet | null = null; //mask for a single molecule
+  fpMaskFilter: DG.BitSet | null = null; //mask for a number of cases filter
+  //mmp for matched molecula  pairs
+  mmpGrid: DG.Grid | null = null;
+  mmpMaskByFragment: DG.BitSet | null = null;
+
   //cliffs tab objects
   diffs: Array<Float32Array> | null = null;
   linesIdxs: Uint32Array | null = null;
@@ -76,12 +77,13 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   linesActivityCorrespondance: Uint32Array | null = null;
   //generations tab objects
   generationsGrid: DG.Grid | null = null;
-  //rdkit
+
   rdkitModule: RDModule | null = null;
   currentTab = '';
   lastSelectedPair: number | null = null;
   propPanelViewer: FormsViewer | null = null;
   mmpFilters: MmpFilters | null = null;
+
   calculatedOnGPU: boolean | null = null;
 
   constructor() {
@@ -93,10 +95,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.fragmentCutoff = this.float('fragmentCutoff');
 
     this.totalData = this.string('totalData', 'null', {userEditable: false, includeInLayout: false});
-  }
-
-  onTableAttached() {
-
   }
 
   onPropertyChangedDebounced() {
@@ -116,8 +114,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       return;
     }
   }
-
-  onPropertyChangedObs : Subject<DG.Property | null> = new Subject<DG.Property | null>();
 
   onPropertyChanged(property: DG.Property | null): void {
     console.log(property!.name);
@@ -158,7 +154,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
   //setup after calculation
   setupTransformationTab(): void {
-    this.transFragmentsMask!.setAll(true);
+    this.fpMaskByMolecule!.setAll(true);
     this.parentTable!.onCurrentRowChanged.pipe(debounceTime(1000)).subscribe(() => {
       if (this.parentTable!.currentRowIdx !== -1) {
         this.refilterAllFragments(true);
@@ -168,25 +164,25 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     this.refilterAllFragments(true);
 
-    this.transFragmentsGrid!.table.onCurrentRowChanged.subscribe(() => {
-      if (this.transFragmentsGrid!.table.currentRowIdx !== -1)
+    this.fpGrid!.table.onCurrentRowChanged.subscribe(() => {
+      if (this.fpGrid!.table.currentRowIdx !== -1)
         this.refreshPair(this.rdkitModule!);
     });
 
-    this.transPairsGrid!.table.onCurrentRowChanged.subscribe(() => {
-      if (this.transPairsGrid!.table.currentRowIdx !== -1)
-        this.pinPair(this.transPairsGrid!.table.currentRowIdx);
+    this.mmpGrid!.table.onCurrentRowChanged.subscribe(() => {
+      if (this.mmpGrid!.table.currentRowIdx !== -1)
+        this.pinPair(this.mmpGrid!.table.currentRowIdx);
     });
 
     this.mmpView!.name = MMP_NAMES.VIEW_NAME;
     this.mmpView!.box = true;
 
-    this.transPairsMask!.setAll(false);
+    this.mmpMaskByFragment!.setAll(false);
     this.refreshPair(this.rdkitModule!);
   }
 
   setupFragmentsTab(): void {
-    this.fragmentsMask!.setAll(true);
+    this.fpMaskFilter!.setAll(true);
   }
 
   setupFilters(mmpFilters: MmpFilters, linesActivityCorrespondance: Uint32Array, tp: DG.Viewer): void {
@@ -248,16 +244,16 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     mmpFilters.pairsSliderInput.onChanged.subscribe((value) => {
       mmpFilters.pairsValueDiv.innerText = value.toString();
 
-      this.fragmentsMask!.setAll(false);
+      this.fpMaskFilter!.setAll(false);
 
-      const casesCol = this.transFragmentsGrid!.dataFrame.columns.byName(MMP_NAMES.PAIRS);
+      const casesCol = this.fpGrid!.dataFrame.columns.byName(MMP_NAMES.PAIRS);
 
       for (let i = 0; i < casesCol.length; i++) {
         if (casesCol.get(i) >= value)
-          this.fragmentsMask!.set(i, true, false);
+          this.fpMaskFilter!.set(i, true, false);
       }
 
-      this.transFragmentsGrid!.dataFrame.filter.copyFrom(this.fragmentsMask!);
+      this.fpGrid!.dataFrame.filter.copyFrom(this.fpMaskFilter!);
     });
   }
 
@@ -304,8 +300,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       };
 
       return ui.splitV([
-        createGridDiv('Fragments', this.transFragmentsGrid!),
-        createGridDiv('Pairs', this.transPairsGrid!),
+        createGridDiv('Fragments', this.fpGrid!),
+        createGridDiv('Pairs', this.mmpGrid!),
       ], {}, true);
     });
     const fragmentsPane = tabs.addPane(MMP_NAMES.TAB_FRAGMENTS, () => {
@@ -345,7 +341,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
           setTimeout(() => {
             grok.shell.o = fillPairInfo(this.lastSelectedPair!, this.linesIdxs!,
               this.linesActivityCorrespondance![this.lastSelectedPair!],
-              this.transPairsGrid!.dataFrame, this.diffs!, this.parentTable!, this.rdkitModule!);
+              this.mmpGrid!.dataFrame, this.diffs!, this.parentTable!, this.rdkitModule!);
           }, 500);
         }
       }
@@ -366,10 +362,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
   fillAll(mmpInput: MmpInput, palette: PaletteCodes,
     mmpa: MMPA, diffs: Array<Float32Array>,
-    linesIdxs: Uint32Array, transFragmentsGrid: DG.Grid, transPairsGrid: DG.Grid, generationsGrid: DG.Grid,
+    linesIdxs: Uint32Array, fragmentsPairsGrid: DG.Grid, transPairsGrid: DG.Grid, generationsGrid: DG.Grid,
     tp: DG.Viewer, sp: DG.Viewer, mmpFilters: MmpFilters,
     linesEditor: ScatterPlotLinesRenderer, lines: ILineSeries, linesActivityCorrespondance: Uint32Array,
-    rdkitModule: RDModule, gpuUsed: boolean): void {
+    rdkitModule: RDModule): void {
     this.rdkitModule = rdkitModule;
 
     this.parentTable = mmpInput.table;
@@ -378,22 +374,21 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.mmpa = mmpa;
 
     this.diffs = diffs;
-    this.transFragmentsGrid = transFragmentsGrid;
-    this.transPairsGrid = transPairsGrid;
+    this.fpGrid = fragmentsPairsGrid;
+    this.mmpGrid = transPairsGrid;
     this.generationsGrid = generationsGrid;
     this.lines = lines;
     this.linesActivityCorrespondance = linesActivityCorrespondance;
     this.linesIdxs = linesIdxs;
-    this.calculatedOnGPU = gpuUsed;
 
     //transformations tab setup
-    this.transFragmentsMask = DG.BitSet.create(this.transFragmentsGrid.dataFrame.rowCount);
-    this.transPairsMask = DG.BitSet.create(this.transPairsGrid.dataFrame.rowCount);
+    this.fpMaskByMolecule = DG.BitSet.create(this.fpGrid.dataFrame.rowCount);
+    this.mmpMaskByFragment = DG.BitSet.create(this.mmpGrid.dataFrame.rowCount);
     this.mmpView = DG.View.create();
     this.setupTransformationTab();
 
     //fragments tab setup
-    this.fragmentsMask = DG.BitSet.create(this.transFragmentsGrid.dataFrame.rowCount);
+    this.fpMaskFilter = DG.BitSet.create(this.fpGrid.dataFrame.rowCount);
     this.setupFragmentsTab();
 
     //Cliffs tab setup
@@ -434,12 +429,12 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
           this.propPanelViewer!.fitHeaderToLabelWidth(100);
         }, 500);
       });
+
+      this.calculatedOnGPU = mmpa.gpu;
   }
 
   async runMMP(mmpInput: MmpInput) {
     //console.profile('MMP');
-
-    const module = getRdKitModule();
     const moleculesArray = mmpInput.molecules.toList();
     const variates = mmpInput.activities.length;
     const activitiesArrays = new Array<Float32Array>(variates);
@@ -448,9 +443,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       activitiesArrays[i] = mmpInput.activities.byIndex(i).asDoubleList();
       activitiesNames[i] = mmpInput.activities.byIndex(i).name;
     }
-
-    const gpuCheck = await getGPUDevice();
-    const gpu: boolean = !gpuCheck ? false : true;
 
     let mmpa: MMPA;
 
@@ -468,24 +460,26 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     const palette = getPalette(mmpInput.activities.length);
     //Transformations tab
-    const {activityMeanNames, linesIdxs, transFragmentsGrid, transPairsGrid, lines, linesActivityCorrespondance} =
-      getMmpActivityPairsAndTransforms(mmpInput, mmpa, palette);
+    const {activityMeanNames, fpGrid, mmpGrid} = getMmpPairsGrids(mmpa, palette);
 
     //Fragments tab
-    const tp = getMmpTrellisPlot(transFragmentsGrid, activityMeanNames, palette);
+    const tp = getMmpTrellisPlot(fpGrid, activityMeanNames, palette);
+    //tp.onEvent('d4-trellis-plot-inner-viewer-clicked').subscribe((cats) => grok.shell.info(cats));
 
     //Cliffs tab
+    const {linesIdxs, lines, linesActivityCorrespondance} = createLines(mmpa, palette);
     const embedColsNames = getEmbeddingColsNames(mmpInput.table).map((it) => `~${it}`);
 
     const mmpFilters = getMmpFilters(mmpInput, mmpa.allCasesBased.maxActs,
-      transFragmentsGrid.dataFrame.col(MMP_NAMES.PAIRS)!.stats.max);
+      fpGrid.dataFrame.col(MMP_NAMES.PAIRS)!.stats.max);
     console.log(`created mmpa filters`);
 
     const sp = getMmpScatterPlot(mmpInput, embedColsNames, mmpInput.molecules.name);
 
     //running internal chemspace
+    const module = getRdKitModule();
     const [linesEditor, chemSpaceParams] = runMmpChemSpace(mmpInput, sp, lines, linesIdxs, linesActivityCorrespondance,
-      transPairsGrid.dataFrame, mmpa, module, embedColsNames);
+      mmpGrid.dataFrame, mmpa, module, embedColsNames);
 
     const progressBarSpace = DG.TaskBarProgressIndicator.create(`Running Chemical space...`);
     mmpa.chemSpace(chemSpaceParams).then((res) => {
@@ -497,10 +491,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       progressBarSpace.close();
     });
 
-    const generationsGrid: DG.Grid = await getGenerations(mmpa, transFragmentsGrid);
+    const generationsGrid: DG.Grid = await getGenerations(mmpa, fpGrid);
 
-    this.fillAll(mmpInput, palette, mmpa, mmpa.allCasesBased.diffs, linesIdxs, transFragmentsGrid, transPairsGrid,
-      generationsGrid, tp, sp, mmpFilters, linesEditor, lines, linesActivityCorrespondance, module, gpu);
+    this.fillAll(mmpInput, palette, mmpa, mmpa.allCasesBased.diffs, linesIdxs, fpGrid, mmpGrid,
+      generationsGrid, tp, sp, mmpFilters, linesEditor, lines, linesActivityCorrespondance, module);
 
     this.totalData = mmpa.toJSON();
     //console.profileEnd('MMP');
@@ -510,10 +504,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const idxParent = this.parentTable!.currentRowIdx;
     let idxPairs = -1;
     const cases: number[] = [];
-    const idx = this.transFragmentsGrid!.table.currentRowIdx;
+    const idx = this.fpGrid!.table.currentRowIdx;
     if (idx !== -1) {
-      const ruleSmi1 = this.transFragmentsGrid!.table.getCol(MMP_NAMES.FROM).get(idx);
-      const ruleSmi2 = this.transFragmentsGrid!.table.getCol(MMP_NAMES.TO).get(idx);
+      const ruleSmi1 = this.fpGrid!.table.getCol(MMP_NAMES.FROM).get(idx);
+      const ruleSmi2 = this.fpGrid!.table.getCol(MMP_NAMES.TO).get(idx);
       const ruleSmiNum1 = this.mmpa!.rules.smilesFrags.indexOf(ruleSmi1);
       const ruleSmiNum2 = this.mmpa!.rules.smilesFrags.indexOf(ruleSmi2);
 
@@ -524,7 +518,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         const second = this.mmpa!.rules.rules[i].smilesRule2;
         for (let j = 0; j < this.mmpa!.rules.rules[i].pairs.length; j++) {
           if (ruleSmiNum1 == first && ruleSmiNum2 == second) {
-            this.transPairsMask!.set(counter, true, false);
+            this.mmpMaskByFragment!.set(counter, true, false);
             if (diffFromSubstrCol.get(counter) === null)
               cases.push(counter);
             if (this.mmpa!.rules.rules[i].pairs[j].firstStructure == idxParent)
@@ -565,26 +559,26 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   async refreshPair(rdkitModule: RDModule) : Promise<void> {
     const progressBarPairs = DG.TaskBarProgressIndicator.create(`Refreshing pairs...`);
 
-    this.transPairsMask!.setAll(false);
-    const diffFromSubstrCol = this.transPairsGrid!.dataFrame.getCol(MMP_NAMES.STRUCT_DIFF_FROM_NAME);
-    const diffToSubstrCol = this.transPairsGrid!.dataFrame.getCol(MMP_NAMES.STRUCT_DIFF_TO_NAME);
-    const diffFrom = this.transPairsGrid!.dataFrame.getCol(MMP_NAMES.FROM);
-    const diffTo = this.transPairsGrid!.dataFrame.getCol(MMP_NAMES.TO);
+    this.mmpMaskByFragment!.setAll(false);
+    const diffFromSubstrCol = this.mmpGrid!.dataFrame.getCol(MMP_NAMES.STRUCT_DIFF_FROM_NAME);
+    const diffToSubstrCol = this.mmpGrid!.dataFrame.getCol(MMP_NAMES.STRUCT_DIFF_TO_NAME);
+    const diffFrom = this.mmpGrid!.dataFrame.getCol(MMP_NAMES.FROM);
+    const diffTo = this.mmpGrid!.dataFrame.getCol(MMP_NAMES.TO);
 
     const [idxPairs, cases] = this.findSpecificRule(diffFromSubstrCol);
     this.recoverHighlights(cases, diffFrom, diffTo, diffFromSubstrCol, diffToSubstrCol, rdkitModule);
 
-    this.transPairsGrid!.dataFrame.filter.copyFrom(this.transPairsMask!);
+    this.mmpGrid!.dataFrame.filter.copyFrom(this.mmpMaskByFragment!);
 
     this.unPinPair();
 
     if (idxPairs >= 0) {
-      this.transPairsGrid!.setOptions({
+      this.mmpGrid!.setOptions({
         pinnedRowValues: [idxPairs.toString()],
         pinnedRowColumnNames: [MMP_NAMES.PAIRNUM],
       });
     } else {
-      this.transPairsGrid!.setOptions({
+      this.mmpGrid!.setOptions({
         pinnedRowValues: [],
         pinnedRowColumnNames: [],
       });
@@ -594,7 +588,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
   refreshFilterAllFragments(): void {
-    this.transFragmentsGrid!.dataFrame.filter.copyFrom(this.fragmentsMask!);
+    this.fpGrid!.dataFrame.filter.copyFrom(this.fpMaskFilter!);
   };
 
   /**
@@ -605,7 +599,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     let idxTrue = -1;
     if (rowChanged) {
       const idx = this.parentTable!.currentRowIdx;
-      this.transFragmentsMask!.setAll(false);
+      this.fpMaskByMolecule!.setAll(false);
 
       for (let i = 0; i < this.mmpa!.rules.rules.length; i++) {
         for (let j = 0; j < this.mmpa!.rules.rules[i].pairs.length; j++) {
@@ -613,7 +607,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
           if (idx == fs) {
             if (idxTrue == -1)
               idxTrue = i;
-            this.transFragmentsMask!.set(i, true, false);
+            this.fpMaskByMolecule!.set(i, true, false);
             break;
           }
         }
@@ -621,10 +615,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     }
 
     if (this.enableFilters) {
-      this.transFragmentsGrid!.dataFrame.filter.copyFrom(this.transFragmentsMask!);
-      this.transFragmentsGrid!.invalidate();
+      this.fpGrid!.dataFrame.filter.copyFrom(this.fpMaskByMolecule!);
+      this.fpGrid!.invalidate();
       if (rowChanged)
-        this.transFragmentsGrid!.table.currentRowIdx = idxTrue;
+        this.fpGrid!.table.currentRowIdx = idxTrue;
     }
   }
 
@@ -672,13 +666,13 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   * @param {number} idx index of pair
   */
   pinPair(idx: number): void {
-    const columns = this.transPairsGrid?.dataFrame.columns;
+    const columns = this.mmpGrid?.dataFrame.columns;
     const idxFrom: number = columns!.byName(MMP_NAMES.PAIRNUM_FROM).get(idx);
     const idxToTo: number = columns!.byName(MMP_NAMES.PAIRNUM_TO).get(idx);
     const molFrom = this.parentTable!.columns.byName(this.molecules!).get(idxFrom);
     const molTo = this.parentTable!.columns.byName(this.molecules!).get(idxToTo);
     const grid = grok.shell.tv.grid ?? ((grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView).grid;
-    const indexesPairs = this.transPairsMask?.getSelectedIndexes();
+    const indexesPairs = this.mmpMaskByFragment?.getSelectedIndexes();
     const indexesAllFrom = indexesPairs?.map((ip) => columns!.byName(MMP_NAMES.PAIRNUM_FROM).get(ip));
     const indexesAllTo = indexesPairs?.map((ip) => columns!.byName(MMP_NAMES.PAIRNUM_TO).get(ip));
     indexesAllFrom?.forEach((i) => grid.dataFrame.selection.set(i, true));
