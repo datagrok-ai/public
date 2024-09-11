@@ -12,6 +12,14 @@ import {
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
+import {useStorage} from '@vueuse/core';
+
+type PanelsState = {
+  historyHidden: boolean,
+  helpHidden: boolean,
+  formHidden: boolean,
+  visibleTabLabels: string[],
+};
 
 declare global {
   namespace JSX {
@@ -136,25 +144,26 @@ export const RichFunctionView = defineComponent({
     const save = () => {
       if (!dockRef.value) return;
 
-      localStorage.setItem(`${currentCall.value.func.nqName}_panels`, JSON.stringify({
+      panelsState.value = JSON.stringify({
         historyHidden: historyHidden.value,
         helpHidden: helpHidden.value,
         formHidden: formHidden.value,
         visibleTabLabels: visibleTabLabels.value,
-      }));
+      });
       dockRef.value.saveLayout();
     };
 
-    const load = async () => {
-      const panelsState = localStorage.getItem(`${currentCall.value.func.nqName}_panels`);
-      if (!dockRef.value || !panelsState) return;
+    const panelsStorageName = computed(() => `${currentCall.value.func.nqName}_panels`);
 
-      const openedPanels = JSON.parse(panelsState) as {
-        historyHidden: boolean,
-        helpHidden: boolean,
-        formHidden: boolean,
-        visibleTabLabels: string[],
-      };
+    const panelsState = useStorage(
+      panelsStorageName.value,
+      null as null | string,
+    );
+
+    const load = async () => {
+      if (!dockRef.value || !panelsState.value) return;
+
+      const openedPanels = JSON.parse(panelsState.value) as PanelsState;
 
       historyHidden.value = openedPanels.historyHidden;
       helpHidden.value = openedPanels.helpHidden;
@@ -195,11 +204,11 @@ export const RichFunctionView = defineComponent({
             tooltip='Save the layout'
             onClick={save}
           />
-          <IconFA
+          { panelsState.value && <IconFA
             name='life-ring'
             tooltip='Load the layout'
             onClick={load}
-          />
+          /> }
           { hasContextHelp.value && <IconFA 
             name='info' 
             tooltip={ helpHidden.value ? 'Open help panel' : 'Close help panel' }
