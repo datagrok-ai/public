@@ -12,8 +12,8 @@
     "datagrok-api": "../../js-api",
     "cash-dom": "latest",
     "dayjs": "latest",
-    "@datagrok-libraries/utils": "../../libraries/utils",
-    "@datagrok/power-grid": "../PowerGrid"
+    "@datagrok-libraries/utils": "^4.3.0",
+    "@datagrok/power-grid": "^1.4.0"
   },
   "devDependencies": {
     "webpack": "latest",
