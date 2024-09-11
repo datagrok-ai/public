@@ -31,6 +31,7 @@ export type MolecularPair = {
 };
 
 export type MmpInitData = {
+    molName: string;
     molecules: string[];
     activities: Float32Array [];
     activitiesNames: string[];

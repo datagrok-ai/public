@@ -41,9 +41,10 @@ export class MMPA {
     this.generationResult = generationResult;
   }
 
-  static async init(
-    molecules: string[], fragmentCutoff: number, activities: Float32Array[], activitiesNames: string[]): Promise<MMPA> {
-    const initData: MmpInitData = {molecules, activities, activitiesNames, activitiesCount: activitiesNames.length};
+  static async init(molName: string, molecules: string[], fragmentCutoff: number,
+    activities: Float32Array[], activitiesNames: string[]): Promise<MMPA> {
+    const initData: MmpInitData =
+    {molName, molecules, activities, activitiesNames, activitiesCount: activitiesNames.length};
 
     const gpuCheck = await getGPUDevice();
     const gpu: boolean = !gpuCheck ? false : true;
@@ -61,9 +62,10 @@ export class MMPA {
     return new MMPA(initData, frags, rules, allCasesNumber, rulesBased, allCasesBased, null, null, gpu);
   }
 
-  static async fromData(
-    data: string, molecules: string[], activities: Float32Array[], activitiesNames: string[]): Promise<MMPA> {
-    const initData: MmpInitData = {molecules, activities, activitiesNames, activitiesCount: activitiesNames.length};
+  static async fromData(data: string, molName: string, molecules: string[],
+    activities: Float32Array[], activitiesNames: string[]): Promise<MMPA> {
+    const initData: MmpInitData =
+    {molName, molecules, activities, activitiesNames, activitiesCount: activitiesNames.length};
 
     const gpuCheck = await getGPUDevice();
     const gpu: boolean = !gpuCheck ? false : true;
