@@ -22,6 +22,238 @@ See also:
 - [Docker-Compose](../docker-compose/docker-compose.md)
 
 
+## 2024-09-10 Datagrok 1.21.1 release 
+
+The Datagrok 1.21.1 release enhances platform stability and usability, streamlining workflows for a more intuitive user experience. 
+
+Database migrations are unrevertable in this version. You can't rollback to older DF version after first 1.21.0 run. If you still need to rollback - contact DG support for the assistance.
+
+### Input API  breaking change:
+  - The methods of `DG.InputBase` (such as `onInput` and `onChanged`) have been updated. They are now of the `Observable` type (previously they were `Stream`). To subscribe to these events, you will need to update your code from `input.onChanged(() => change());` to `input.onChanged.subscribe(() => change());` (same for `onInput`).
+  - Additionally, when creating an input via the `ui.input.xxx` namespace and passing the `onValueChanged` parameter in the options, the parameters for `onValueChanged` have changed. Previously, they were `(input: DG.InputBase<T>)`, but now they are `(value: T, input: DG.InputBase<T>)`. If you don't need the entire input object, you can simply use the `value` parameter in the method.
+
+### Main visualization and usability improvements:
+
+* Lightweight modeling: Interactive dashboard for training predictive models.
+  * Binary classification support: interactive prediction threshold, AUC-ROC.
+  * Model comparison tool.
+  * Automatic model choice.
+* JS-API: Support for Float64 Columns.
+* File caching updates (follow our [guideline](https://datagrok.ai/help/access/files/#caching-files-shares) to configure cache for your connection).
+* Browse updates: 
+   * The ability to move files between connections. 
+   * Refreshing browse ‘remembers’ preview. 
+   * Creating new folder refreshes browse tree. 
+
+### Viewers
+  
+  * Density plot: color palette is added to the viewer. 
+  * [#2982](https://github.com/datagrok-ai/public/issues/2982): Tooltip was removed from the legend.
+  * Fixes:
+    * [#3004](https://github.com/datagrok-ai/public/issues/3004): Two tables with molecules: scaffold tree is based on correct table by default.
+    * [#2771](https://github.com/datagrok-ai/public/issues/2771): Filter out legend with empty categories in the legend. 
+    * [#2945](https://github.com/datagrok-ai/public/issues/2945): Color picker HEX\RGB choice input in the dialog. 
+    * [#2927](https://github.com/datagrok-ai/public/issues/2927): Fixing a collapsed state of the Heatmap after applying saved layout if it was stacked with another viewer. 
+    * [#2964](https://github.com/datagrok-ai/public/issues/2964): 'Selection to filter' resets immediately for some data if scaffold tree is present in the view. 
+    * Pivot table: Changing columns (pviot, group by or aggregate) through property panel.
+    * Trellis plot: Fixed the error on redo command after reopening plot via undo.
+   
+### [Line Chart](../../visualize/viewers/line-chart.md)
+* Fixes:
+  * Segment coloring: all segments are displayed now.
+  * Multi axis mode works with splits.
+  * [#2950](https://github.com/datagrok-ai/public/issues/2950): Line chart with multiple axes: legend updates when Y column is changed using in-plot selector. 
+  * [#2951](https://github.com/datagrok-ai/public/issues/2951): Number of Y columns updates immediately in properties panel when columns are removed from the plot. 
+  * [#2944](https://github.com/datagrok-ai/public/issues/2944): Colors of the line and the legend do not differ when multiple splits are selected. 
+ 
+### Bar chart
+* Fixes: 
+  * Molecules are renderered correctly when bar chart is resizing. 
+  * Property "Show selected rows" affects the view. 
+
+### Box plot
+  * The ability to use two or more categories is added.
+  * Fix: 
+    * 'Show custom tooltip' functionality is fixed. 
+
+### [Scatterplot](../../visualize/viewers/scatter-plot.md)
+* [#2688](https://github.com/datagrok-ai/public/issues/2688): Structure labels: improved positions and sizes adjustment. 
+* Fix: 
+  * Formula Lines: View updates after deleting options. 
+
+### Enhancements in packages
+* Reset package touchedOn flag when selecting current package version is implemented.
+* Fix: 
+  * [#2978](https://github.com/datagrok-ai/public/issues/2978): Curves: Log-linear function: Fixing initial parameters calculation. 
+
+### [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts/CHANGELOG.md)
+  * Fixes:
+    * [#2992](https://github.com/datagrok-ai/public/issues/2992): Sunburst can select/filter on empty category.
+    * [#2954](https://github.com/datagrok-ai/public/issues/2954): Sunburst: unsupported columns are filtered out in column selector. 
+
+### [PowerPack](https://github.com/datagrok-ai/public/blob/master/packages/PowerPack/CHANGELOG.md)
+  * 'Add new column': Formula edit improvements.
+  * Fixes:
+    * [#2981](https://github.com/datagrok-ai/public/issues/2981): Typing calculated formula: input is not overwritten unexpectedly.
+    * [#3008](https://github.com/datagrok-ai/public/issues/3008): Qnum function is not missing from hints. 
+    * [#2949](https://github.com/datagrok-ai/public/issues/2949): Calculated columns dialog: no extra scroll bars. 
+    * [#2993](https://github.com/datagrok-ai/public/issues/2993): Fixing the unability to type in inputs after adding a calculated column. 
+    * [#2918](https://github.com/datagrok-ai/public/issues/2918): Fixing the behaviour when typing `$` in the calculated column dialog.
+    * [#2988](https://github.com/datagrok-ai/public/issues/2988): Calculated columns dialog: warnings and error messages are made more clear and consistent. 
+    * [#2798](https://github.com/datagrok-ai/public/issues/2798): Calculated column renaming is cascaded to the dependent columns for a saved project. 
+
+ ### [EDA](https://github.com/datagrok-ai/public/blob/master/packages/EDA/CHANGELOG.md)
+  * Added to predictive modeling kit:
+    * Softmax classifier
+    * XGBoost tools
+    * Partial least sqaures regression
+
+### [Chem](https://github.com/datagrok-ai/public/blob/master/packages/Chem/CHANGELOG.md)
+* Fixes:
+  * Chemical space: Reseting marker type to circles. 
+  * Activity cliffs: Sets activity default column of date type. 
+  * R-Group analysis: error updates when none R-groups were found. 
+  * [#2983](https://github.com/datagrok-ai/public/issues/2983): Fixing tooltip styles for structure columns. 
+
+ ### [Scripting](https://datagrok.ai/help/compute/scripting/)
+  * New ability to download the script as a file. 
+  * Default scripts creates without tags. 
+  * Fix: 
+    * Usage displays runs.
+
+### JS API:
+  * Ability to get Func result view using API is added. 
+  * Metadata set by .tags with column.meta.xxx is replaced.
+
+### Data Access
+  * Connections: the 'creating a connection' form is updated.
+  * Fix:
+    * Databases: New Run_query result creates with the name. 
+
+### Other bug-fixes
+* Table view: Form styles with refresh button is fixed.
+* [#2942](https://github.com/datagrok-ai/public/issues/2942): Export to CSV with 'Molecules As Smiles' works if there is some filtering. 
+* [#2943](https://github.com/datagrok-ai/public/issues/2943): Categorical filter in column header is not broken after removing the same column from filters panel. 
+* [#2985](https://github.com/datagrok-ai/public/issues/2985): Combined boolean filter can be removed from the project.
+
+
+
+
+
+
+
+
+### Addressed Issues
+* (Improvement) GROK-16241: Box Plot: ability to use two or more categories 
+* GROK-15881: Lightweight Predictive modeling improvements 
+* (Improvement) GROK-15759: PowerPack: 'Add new column': Formula edit improvements (WIP)
+* (Bug) GROK-16275: #2771: Viewers: filter out legend with empty categories in the legend 
+* (Bug) GROK-16320: Predictive modeling: interactive model saved without a name 
+* (Bug) GROK-16309: Set tooltip dialog looks bad 
+* GROK-15408: File caching 
+* (Improvement) GROK-11494: Widgets: events (WIP)
+* (Bug) GROK-16331: Core: Bar Chart: molecules are renderered incorrectly on resizing bar chart 
+* (Bug) GROK-16330: Core: Table view: Form styles with refresh button is broken 
+* (Improvement) GROK-15886: MlFlow registry integration 
+* (Bug) GROK-16336: Core | Scatterplot: Formula Lines: View is not updated when deleting options 
+* (Bug) GROK-16305: Core | Pivot table: Changing columns (pviot, group by or aggregate) through property panel throws error 
+* (Bug) GROK-16270: Box plot: 'Show custom tooltip' is not working 
+* (Bug) GROK-15232: Error with CodeMirror \- an exception error was got while opening scripts 
+* (Bug) GROK-16379: Bad state: Future already completed 
+* (Bug) GROK-16337: Bar Chart: Property "Show selected rows" doesn't affect view 
+* (Bug) GROK-16296: Notebooks: open table in notebook: error in logs 
+* (Bug) GROK-16371: Bad state: No element 
+* (Bug) GROK-15712: Viewers | LineChart: "segment coloring"\- not all segments are displayed 
+* (Bug) GROK-16338: Chem: Chemical space: Reseting marker type to circles 
+* (Bug) GROK-16333: Chem: Activity cliffs: Sets activity default column of date type 
+* (Bug) GROK-16329: Chem: R-Group analysis: Error when none r groups were found 
+* (Bug) GROK-16328: Chem: R-Group analysis: Broken styles 
+* (Bug) GROK-16284: Caret: fix performance / rocauc / confusion matrix  (WIP)
+* (Bug) GROK-15864: Scripts: default scripts should be created without tags 
+* (Bug) GROK-15211: Databases | New Run_query result creates without name 
+* (Improvement) GROK-15263: Scripting | Create an bility to download the script as a file 
+* (Improvement) GROK-15972: Connections | Updates for 'creating a connection' form 
+* (Improvement) GROK-15260: Save migration errors to db_ups 
+* (Bug) GROK-16325: Scripting | Usage: Usage does not display runs 
+* (Improvement) GROK-16400: Move functions to another tables set (WIP)
+* (Bug) GROK-14722: number inputs loose focus after changing selection in COLUMNS input 
+* (Bug) [#2949](https://github.com/datagrok-ai/public/issues/2949): #2949: Calculated columns dialog: extra scroll bars 
+* GROK-16393: #2948: Colour picker in legend issues 
+* GROK-16398: #2950: Line chart with multiple axes: legend is not updated when Y column is changed using in-plot selector 
+* (Bug) GROK-16385: #2945: Viewers: Color picker HEX\RGB choice input doesn't fit into dialog 
+* GROK-16001: EDA : SVM using libsvm 
+* GROK-16399: #2951: Line chart: number of Y columns is not updated immediately in properties panel when columns are removed from the plot 
+* GROK-16364: #2942: Export to CSV with 'Molecules As Smiles' fails if there is some filtering 
+* (Bug) [#2943](https://github.com/datagrok-ai/public/issues/2943): #2943: Categorical filter in column header is broken after removing the same column from filters panel 
+* (Bug) GROK-16404: Bioreactor: Demo app 
+* (Bug) GROK-14353: Demo | PK-PD modeling: runs with error 
+* GROK-16231: EDA: PLS predictive modeling 
+* (Bug) GROK-16383: #2944: Line chart: the color of the line and the legend differs when multiple splits are selected 
+* (Improvement) GROK-16165: #2688: Scatterplot | structure labels: improve positions and sizes adjustment 
+* (Bug) [#2927](https://github.com/datagrok-ai/public/issues/2927): #2927: Heatmap is in a collapsed state after applying saved layout if it was stacked with another viewer 
+* [#1759](https://github.com/datagrok-ai/public/issues/1759): GROK-12655 PowerPack: Add tests for "Add new column" dialog 
+* (Bug) GROK-16409: Line Chart: multi axis mode does not work with splits 
+* (Bug) GROK-16323: Enamine Store: pressing Run causes errors, App is not opening (WIP)
+* (Improvement) GROK-15008: Density plot: add functionality 
+* GROK-16239: #2927: Heatmap is in a collapsed state after applying saved layout if it was stacked with another viewer 
+* (Bug) GROK-16430: Filters: Exceptions when deleting columns in the table \- filters got broken 
+* (Bug) [#2954](https://github.com/datagrok-ai/public/issues/2954): #2954: Sunburst: unsupported columns are not filtered out in column selector 
+* (Bug) [#2964](https://github.com/datagrok-ai/public/issues/2964): #2964: 'Selection to filter' reset immediately for some data if scaffold tree is present in the view 
+* (Improvement) GROK-16240: JS API: Replace metadata set by .tags with column.meta.xxx 
+* (Improvement) GROK-16468: EDA: Multivariate analysis: Update demo 
+* (Improvement) GROK-13701: Core: Column headers rendering (WIP)
+* GROK-16465: #2970: Molecule column is missing in exported CSV with options "molecules as smiles" + "selected columns only" 
+* (Bug) GROK-16428: Models: an error occurs when using Caret on cars.csv 
+* (Bug) GROK-16347: Chem: Scaffold filter: icons 
+* (Improvement) GROK-16267: Chem| Tests: Tickets Automation 
+* (Improvement) GROK-14741: Core | Projects: Replace Tags.QueryJson with Tags.CreationScript 
+* (Improvement) GROK-16477: Do not create empty folders in AppData 
+* (Bug) [#2976](https://github.com/datagrok-ai/public/issues/2976): #2976: Categorical colouring's properties ".color-coding-fallback-color" and ".color-coding-match-type" are not saved in the layout 
+* GROK-16276: EDA : XGBoost 
+* [#2969](https://github.com/datagrok-ai/public/issues/2969): Bump @75lb/deep-merge from 1.1.1 to 1.1.2 in /packages/Arrow 
+* (Improvement) GROK-16484: #2982: Viewers: remove tooltip from the legend 
+* (Improvement) GROK-16486: DDT: Support float64 data columns 
+* GROK-16488: #2985: Combined boolean filter cannot be removed from a project 
+* GROK-892: Server stress-testing (WIP)
+* (Bug) GROK-16493: Trellis plot: Doesn't work correctly with filtered data 
+* (Bug) [#2983](https://github.com/datagrok-ai/public/issues/2983): #2983: Chem: fix tooltip styles for structure columns 
+* GROK-14047: Core | Viewers: Summary viewer 
+* GROK-16497: Density plot: Add color palette 
+* (Bug) [#2992](https://github.com/datagrok-ai/public/issues/2992): #2992: Sunburst does not select/filter on empty category 
+* (Bug) GROK-16180: #2791: Fix duplicated table` renaming 
+* (Bug) [#2993](https://github.com/datagrok-ai/public/issues/2993): #2993: Cannot type in any input after adding a calculated column 
+* (Bug) [#2918](https://github.com/datagrok-ai/public/issues/2918): #2918: Typing $ in the calculated column dialog pops up the available column drop down also within a quoted field (WIP)
+* (Bug) [#2988](https://github.com/datagrok-ai/public/issues/2988): #2988: Calculated columns dialog: make warnings and error messages more clear and consistent (WIP)
+* (Improvement) [#2981](https://github.com/datagrok-ai/public/issues/2981): #2981: Typing calculated formula: input is overwritten unexpectedly in some cases (WIP)
+* (Improvement) GROK-16502: Predictive modeling: Binary classification support (AUC-ROC, threshold adjustmend for predict proba) 
+* (Bug) GROK-16182: #2798: Calculated column renaming is not cascaded to the dependent columns for a saved project 
+* (Bug) GROK-16481: #2978: Curves: Log-linear function: Fix initial parameters calculation 
+* (Bug) GROK-15786: Bio: Hierarchical Clustering error on two columns of FASTA.csv (WIP)
+* (Bug) [#3004](https://github.com/datagrok-ai/public/issues/3004): #3004: Two tables with molecules: scaffold tree is based on wrong table by default in some cases 
+* (Bug) GROK-15938: Chem | Invalid argument(s): Array lengths differ. (WIP)
+* (Bug) [#3008](https://github.com/datagrok-ai/public/issues/3008): #3008: Qnum function is missing from hints (WIP)
+* (Improvement) GROK-16503: Predictive modeling: interactive model comparison (WIP)
+* (Improvement) GROK-16529: Ability to get Func result view 
+* (Improvement) GROK-16530: Moving files does not work 
+* (Improvement) GROK-16531: BrowseView: Refresh resets URL 
+* (Improvement) GROK-16543: New login generation (WIP)
+* (Bug) GROK-16454: Data: addTableViev: 1-million-columns script crashes the browser tab 
+* (Bug) GROK-16551: Browse: Refresh loses preview 
+* (Bug) GROK-16604: Browse: Create folder doesn't refresh tree 
+* (Bug) GROK-16601: Packages: Reset package touchedOn flag when selecting current package version 
+* (Bug) GROK-16560: Trellis plot: Error on redo command after reopening plot via undo (WIP)
+* (Bug) GROK-16629: Invisible columns cause exception waterfall 
+
+## 2024-08-27 1.20.2
+
+### Improvements and fixes:
+* GROK-13701: Column headers rendering updates. 
+* [#2982](https://github.com/datagrok-ai/public/issues/2982): Viewers: tooltip was removed from the legend. 
+* [#2948](https://github.com/datagrok-ai/public/issues/2948): Colour picker in legend issues. 
+* [#2970](https://github.com/datagrok-ai/public/issues/2970): Molecule column is missing in exported CSV with options "molecules as smiles" + "selected columns only". 
+* [#2976](https://github.com/datagrok-ai/public/issues/2976): Categorical colouring's properties ".color-coding-fallback-color" and ".color-coding-match-type" are not saved in the layout. 
+* [#2791](https://github.com/datagrok-ai/public/issues/2791): Fix duplicated table` renaming. 
+
 ## 2024-08-05 1.20.1
 
 ### Fixes:
