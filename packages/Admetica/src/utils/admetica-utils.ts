@@ -35,11 +35,11 @@ async function sendRequestToContainer(containerId: string, path: string, params:
 }
 
 export async function runAdmetica(csvString: string, queryParams: string, addProbability: string): Promise<string | null> {
-  /*const admeticaContainer = await getAdmeticaContainer();
+  const admeticaContainer = await getAdmeticaContainer();
   if (!admeticaContainer || (admeticaContainer.status !== 'started' && admeticaContainer.status !== 'checking')) {
     await startAdmeticaContainer(admeticaContainer?.id);
     return null;
-  }*/
+  }
 
   const params: RequestInit = {
     method: 'POST',
@@ -50,11 +50,8 @@ export async function runAdmetica(csvString: string, queryParams: string, addPro
     body: csvString
   };
 
-  //const path = `/df_upload?models=${queryParams}&probability=${addProbability}`;
-  const path = `http://127.0.0.1:6678/df_upload?models=${queryParams}&probability=${addProbability}`;
-  const response = await fetch(path, params);
-  return await response.text();
-  //return await sendRequestToContainer(admeticaContainer.id, path, params);
+  const path = `/df_upload?models=${queryParams}&probability=${addProbability}`;
+  return await sendRequestToContainer(admeticaContainer.id, path, params);
 }
 
 export async function setProperties() {
