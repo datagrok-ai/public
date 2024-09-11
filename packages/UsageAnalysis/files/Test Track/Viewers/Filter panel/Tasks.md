@@ -5,7 +5,10 @@
 * [#2344](https://github.com/datagrok-ai/public/issues/2344)
 * [#2358](https://github.com/datagrok-ai/public/issues/2358)
 * [#1460](https://github.com/datagrok-ai/public/issues/1460)
-* [#2185](https://github.com/datagrok-ai/public/issues/2185) Fuzzy filter enhancements
+* [#2185](https://github.com/datagrok-ai/public/issues/2185) 
+* [#2639](https://github.com/datagrok-ai/public/issues/2639) 
+* [#2647](https://github.com/datagrok-ai/public/issues/2647) 
+Fuzzy filter enhancements
 ---
 {
 "order": 8,

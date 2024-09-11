@@ -1,5 +1,13 @@
 # ml changelog
 
+## 6.6.25-rc (2024-09-06)
+
+Preparing 1.21.1 release
+
+## 6.6.24 (2024-09-02)
+
+Fix typos, publish
+
 ## 6.6.23 (2024-08-28)
 
 Add History support and enable gpu by default if available

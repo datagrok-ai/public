@@ -34,9 +34,14 @@ export class SeqHelper implements ISeqHelper {
   async helmToAtomicLevel(
     helmCol: DG.Column<string>, chiralityEngine?: boolean, highlight?: boolean
   ): Promise<ToAtomicLevelResType> {
+    const getUnusedName = (df: DG.DataFrame | undefined, colName: string): string => {
+      if (!df) return colName;
+      return df.columns.getUnusedName(colName);
+    };
+
     const df: DG.DataFrame = helmCol.dataFrame;
-    const molColName: string = df.columns.getUnusedName(`molfile(${helmCol})`);
-    const molHlColName: string = df.columns.getUnusedName(`~${molColName}-hl`);
+    const molColName: string = getUnusedName(df, `molfile(${helmCol})`);
+    const molHlColName: string = getUnusedName(df, `~${molColName}-hl`);
 
     const converter = this.getHelmToMolfileConverter(df, helmCol);
 

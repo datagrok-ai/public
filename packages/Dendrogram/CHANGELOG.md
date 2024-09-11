@@ -1,5 +1,9 @@
 # Dendrogram changelog
 
+## 1.2.33 (2024-09-02)
+
+Fix for dependency math lib version update
+
 ## 1.2.32 (2024-08-23)
 
 ### Bug fixes

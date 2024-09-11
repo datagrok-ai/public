@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.1.36-rc (2024-09-06)
+
+* Preparing 1.21.1 release
+
 ## 1.1.35 (2024-08-28)
 
 * Add History support and enable gpu by default if available for dim-red

@@ -255,9 +255,9 @@ export class FitGridCellHandler extends DG.ObjectHandler {
     const columnChartOptions = getColumnChartOptions(gridCell.cell.column);
     const dfChartOptions = getDataFrameChartOptions(gridCell.cell.dataFrame);
 
-    const seriesOptionsRefresh = {onValueChanged: (inputBase: DG.InputBase) => 
+    const seriesOptionsRefresh = {onValueChanged: (v: any, inputBase: DG.InputBase) => 
       changeCurvesOptions(gridCell, inputBase, SERIES_OPTIONS, switchLevelInput.value)};
-    const chartOptionsRefresh = {onValueChanged: (inputBase: DG.InputBase) =>
+    const chartOptionsRefresh = {onValueChanged: (v: any, inputBase: DG.InputBase) =>
       changeCurvesOptions(gridCell, inputBase, CHART_OPTIONS, switchLevelInput.value)};
 
     if (!isColorValid(dfChartOptions.seriesOptions?.pointColor) && !isColorValid(columnChartOptions.seriesOptions?.pointColor)) {
@@ -315,13 +315,13 @@ export class FitGridCellHandler extends DG.ObjectHandler {
     const seriesStatsProperty = DG.Property.js('series', DG.TYPE.STRING,
       {description: 'Controls whether to show series statistics or aggregated statistics',
         defaultValue: 'All', choices: ['all', 'aggregated'], nullable: false});
-    const seriesStatsInput = ui.input.forProperty(seriesStatsProperty, null, {onValueChanged(input) {
+    const seriesStatsInput = ui.input.forProperty(seriesStatsProperty, null, {onValueChanged: () => {
       acc.getPane('Fit').root.lastElementChild!.replaceChildren(createFitPane());
     }});
     const aggrTypeProperty = DG.Property.js('aggregation type', DG.TYPE.STRING,
       {description: 'Controls which aggregation to use on the series statistics',
         defaultValue: 'med', choices: Object.values(DG.STATS), nullable: false});
-    const aggrTypeInput = ui.input.forProperty(aggrTypeProperty, null, {onValueChanged(input) {
+    const aggrTypeInput = ui.input.forProperty(aggrTypeProperty, null, {onValueChanged: () => {
       acc.getPane('Fit').root.lastElementChild!.replaceChildren(createFitPane());
     }});
 

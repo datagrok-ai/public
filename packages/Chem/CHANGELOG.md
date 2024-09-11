@@ -13,7 +13,7 @@
 
 ### Features
 
-* Chem: MMPA: filter fragmnets by significance
+* Chem: MMPA: filter fragments by significance
 * Chem: MMPA: project and layout saving
 * Chem: MMPA: demo loaded not calculated
 * Chem: Removed r-groups settings download from init

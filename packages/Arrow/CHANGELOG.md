@@ -1,5 +1,13 @@
 # Arrow changelog
 
+## 1.1.1 (2024-09-11)
+
+* Fixes converting of null DG constants
+
+## 1.1.0 (2024-09-09)
+
+* Minor version bump
+
 ## 1.0.7 (2024-04-09)
 
 * Create int column instead of bigint when possible
@@ -23,7 +31,7 @@
 
 This is the initial package release.
 
-*Dependency: datagrok-api >= 1.11.1*
+* Dependency: datagrok-api >= 1.11.1*
 
 ### Features
 

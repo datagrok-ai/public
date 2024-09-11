@@ -40,7 +40,6 @@ export function solveEquations(problem: ODEs, options: Partial<SolverOptions>): 
 //tags: app
 //output: view v
 export async function runDiffStudio(): Promise<DG.ViewBase> {
-  //await runSolverApp();
   const solver = new DiffStudio(false);
   return await solver.runSolverApp();
 }
@@ -48,7 +47,7 @@ export async function runDiffStudio(): Promise<DG.ViewBase> {
 //name: Diff Studio Demo
 //description: Interactive solver of ordinary differential equations (ODE)
 //meta.demoPath: Compute | Diff Studio
-//test: demoEquaSleekX() //wait: 100
+//test: runDiffStudioDemo() //wait: 100
 export async function runDiffStudioDemo(): Promise<void> {
   const solver = new DiffStudio();
   await solver.runSolverDemoApp();
@@ -80,6 +79,12 @@ export async function previewIvp(file: DG.FileInfo): Promise<DG.View> {
   } else
     path = window.location.href;
 
-  const solver = new DiffStudio(false);
-  return solver.getFilePreview(file, path);
+  const solver = new DiffStudio(false, true, true);
+  return await solver.getFilePreview(file, path);
+}
+
+//input: dynamic treeNode
+//input: view browseView
+export async function runDiffStudioTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
+  new DiffStudio(false, false);
 }

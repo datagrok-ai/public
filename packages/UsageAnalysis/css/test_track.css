@@ -145,11 +145,16 @@
   align-self: center;
   margin-right: 8px;
   margin-left: auto;
-  color: var(--grey-3);
+  color: #2083d5;
+  font-weight: bold;
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
 } 
+
+#tt-name:hover{
+  cursor: pointer;
+}
 
 .tt-reason-dialog {
   min-width: 500px;

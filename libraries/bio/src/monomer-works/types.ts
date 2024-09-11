@@ -8,6 +8,8 @@ export interface ITypedArray {
 export type UserLibSettings = {
   exclude: string[],
   explicit: string[],
+  /** Libraries might contain different monomers for same symbol. Object for monomer symbol to library name of choice*/
+  duplicateMonomerPreferences: {[polymerType: string]: {[monomerSymbol: string]: string}}
 }
 
 /** Stores necessary data about atoms of a monomer parsed from Molfile */

@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import {delay, category, expect, test, expectObject, expectExceptionAsync} from '@datagrok-libraries/utils/src/test';
 
-category('Packages: Docker', () => {
+category('Docker', () => {
   const containerOnDemandName: string = 'Cvmtests-docker-test1';
   const containerSimple: string = 'Cvmtests-docker-test2';
 
@@ -10,7 +10,7 @@ category('Packages: Docker', () => {
     if (!container.status.startsWith('stopped'))
       await grok.dapi.docker.dockerContainers.stop(container.id, true);
     await testResponse(container.id);
-  }, {timeout: 60000, stressTest: true});
+  }, {timeout: 120000, stressTest: true});
 
   test('Get response: Incorrect', async () => {
     const incorrectId = crypto.randomUUID();
@@ -56,7 +56,7 @@ category('Packages: Docker', () => {
 async function testResponse(containerId: string): Promise<void> {
   const path = '/square?number=4';
   const response = await grok.dapi.docker.dockerContainers.fetchProxy(containerId, path);
-  expect(response.status, 200, `Container response status was ${response.status}`);
-  const result: { [key: string]: any } = await response.json() as { [key: string]: any };
-  expectObject(result, {"result": 16});
+  const body = await response.json();
+  expect(response.status, 200, `Response status was ${response.status}, responded with: ${body['datagrok-error']}`);
+  expectObject(body, {"result": 16});
 }

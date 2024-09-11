@@ -2,9 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import {UserLibSettings} from './types';
 
 // -- Monomer libraries --
-export const LIB_STORAGE_NAME: string = 'Libraries';
-export const LIB_PATH: string = 'System:AppData/Bio/monomer-libraries/';
-const LIB_SETTINGS_FOR_TESTS: UserLibSettings = {explicit: ['HELMCoreLibrary.json'], exclude: []};
+export const LIB_STORAGE_NAME = 'Libraries';
+export const LIB_PATH = 'System:AppData/Bio/monomer-libraries/';
+const LIB_SETTINGS_FOR_TESTS: UserLibSettings =
+  {explicit: ['HELMCoreLibrary.json', 'polytool-lib.json'], exclude: [], duplicateMonomerPreferences: {}};
 
 export const SETS_STORAGE_NAME: string = 'Monomer Sets';
 export const SETS_PATH: string = 'System:AppData/Bio/monomer-sets/';
@@ -15,11 +16,13 @@ export async function getUserLibSettings(): Promise<UserLibSettings> {
   let res: UserLibSettings;
   userLibSettingsPromise = userLibSettingsPromise.then(async () => {
     const resStr: string = await grok.dapi.userDataStorage.getValue(LIB_STORAGE_NAME, 'Settings', true);
-    res = resStr ? JSON.parse(resStr) : {exclude: [], explicit: []};
+    res = resStr ? JSON.parse(resStr) : {exclude: [], explicit: [], duplicateMonomerPreferences: {}};
 
     // Fix empty object returned in case there is no settings stored for user
     res.exclude = res.exclude instanceof Array ? res.exclude : [];
     res.explicit = res.explicit instanceof Array ? res.explicit : [];
+    res.duplicateMonomerPreferences = res.duplicateMonomerPreferences instanceof Object ?
+      res.duplicateMonomerPreferences : {};
     console.debug(`Bio: getUserLibSettings()\n${JSON.stringify(res, undefined, 2)}`);
   });
   await userLibSettingsPromise;

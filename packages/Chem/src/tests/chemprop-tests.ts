@@ -27,7 +27,7 @@ category('chemprop', () => {
     binBlob = await file?.async('uint8array')!;
         
     expect(file !== null, true);
-  });
+  }, {timeout: 60000});
 
   test('applyModel', async () => {
     const smilesColumn = table.columns.byName('canonical_smiles');

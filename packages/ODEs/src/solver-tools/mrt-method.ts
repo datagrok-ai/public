@@ -38,13 +38,13 @@ export function mrt(odes: ODEs, callback?: Callback): DG.DataFrame {
   const dimSquared = dim * dim;
 
   /** independent variable values */
-  const tArr = new Float32Array(rowCount);
+  const tArr = new Float64Array(rowCount);
 
   /** arrays of solution values */
-  const yArrs = Array<Float32Array>(dim);
+  const yArrs = Array<Float64Array>(dim);
 
   for (let i = 0; i < dim; ++i)
-    yArrs[i] = new Float32Array(rowCount);
+    yArrs[i] = new Float64Array(rowCount);
 
   // method routine
   let timeDataframe = t0 + hDataframe;
@@ -267,8 +267,11 @@ export function mrt(odes: ODEs, callback?: Callback): DG.DataFrame {
   memFree(wasmMemory.off1);
   memFree(wasmMemory.off2);
 
-  const solutionDf = DG.DataFrame.fromColumns([DG.Column.fromFloat32Array(odes.arg.name, tArr)]);
-  yArrs.forEach((arr, idx) => solutionDf.columns.add(DG.Column.fromFloat32Array(odes.solutionColNames[idx], arr)));
+  //@ts-ignore
+  const solutionDf = DG.DataFrame.fromColumns([DG.Column.fromFloat64Array(odes.arg.name, tArr)]);
+
+  //@ts-ignore
+  yArrs.forEach((arr, idx) => solutionDf.columns.add(DG.Column.fromFloat64Array(odes.solutionColNames[idx], arr)));
   solutionDf.name = odes.name;
 
   return solutionDf;

@@ -118,9 +118,10 @@ ATCGAATCGA`;
       {scoringMatrix, alphabetIndexes, gapOpen: 1, gapExtend: 1},
     );
     if (DG.Test.isInBenchmark) {
-      const seq1 = Array(10000).fill('FWRY').join('');
-      const seq2 = Array(10000).fill('FYWRRY').join('');
-      _testDistance(seq1, seq2, df, 0.667);
+      // max length 10000 for Needleman-Wunsch
+      const seq1 = /* length 3000 */ Array(1000).fill(prot5).join('');
+      const seq2 = /* length 7000 */Array(1000).fill(prot6).join('');
+      _testDistance(seq1, seq2, df, 1.333);
     } else
       _testDistance(prot5, prot6, df, 1.333);
   }, {benchmark: true});

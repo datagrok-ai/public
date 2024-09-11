@@ -39,6 +39,7 @@ export interface TestOptions {
   isAggregated?: boolean;
   benchmark?: boolean;
   stressTest?: boolean;
+  tags?: string[];
 }
 
 export interface CategoryOptions {
@@ -295,7 +296,7 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
       cat = fullName.join(': ');
       if (moduleTests[cat] === undefined)
         moduleTests[cat] = { tests: [], clear: true };
-      moduleTests[cat].tests.push(new Test(cat, name, f.test, { isAggregated: false, timeout: STANDART_TIMEOUT }));
+      moduleTests[cat].tests.push(new Test(cat, name, f.test, { isAggregated: false, timeout: f.options?.timeout ?? STANDART_TIMEOUT, skipReason: f.options?.skipReason }));
     }
   }
   const moduleAutoTests = [];
@@ -335,13 +336,17 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
     if (demo) {
       const wait = f.options['demoWait'] ? parseInt(f.options['demoWait']) : undefined;
       const test = new Test(demoCatName, f.friendlyName, async () => {
+        grok.shell.isInDemo = true;
+        if (grok.shell.view(DG.View.BROWSE) === undefined)
+          grok.shell.v = DG.View.createByType(DG.View.BROWSE);
+        await delay(300);
         grok.shell.clearLastError();
         await f.apply();
         await delay(wait ? wait : 2000);
         const unhandled = await grok.shell.lastError;
         if (unhandled)
           throw new Error(unhandled);
-
+        grok.shell.isInDemo = false;
       }, { skipReason: f.options['demoSkip'] });
       moduleDemo.push(test);
     }
@@ -436,28 +441,37 @@ export async function runTests(options?: TestExecutionOptions) {
   }
 
   async function InvokeStressTests(options: TestExecutionOptions) {
+    let testInvocationMap: any[] = [];
     for (const [key, value] of Object.entries(tests)) {
       let testsToInvoke = value.tests?.filter((test) => test.options?.stressTest);
       if (value.stressTests) {
         testsToInvoke = value.tests?.filter((test) => test.options?.stressTest === undefined || test.options?.stressTest === true)
       }
+
+
       const skipped = value.tests?.every((t) => t.options?.skipReason);
-      if (!skipped)
-        value.beforeStatus = await InvokeCategoryMethod(value.before, options.category ?? '');
+      if (skipped)
+        continue;
 
-      const res = [];
       for (let test of testsToInvoke ?? []) {
-        let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? value.benchmarkTimeout : value.timeout, package_.name, options.verbose);
-        if (testRun)
-          res.push(testRun);
-        console.log(`Test: ${test?.name}; result: ${testRun}`)
+        if (test.options?.skipReason == null) {
+          testInvocationMap.push({ test, value });
+        }
       }
-
-      if (!skipped)
-        value.afterStatus = await InvokeCategoryMethod(value.after, options.category ?? '');
-      const data = res.filter((d) => d.result != 'skipped');
-      results.push(...data);
     }
+    testInvocationMap = shuffle(testInvocationMap);
+
+    const res = [];
+    for (let testingObj of testInvocationMap) {
+      await InvokeCategoryMethod(testingObj.value.before, options.category ?? '')
+      let testRun = await execTest(testingObj.test, options?.test, logs, DG.Test.isInBenchmark ? testingObj.value.benchmarkTimeout : testingObj.value.timeout, package_.name, options.verbose);
+      if (testRun)
+        res.push(testRun);
+      console.log(`Test: ${test?.name}; result: ${testRun}`);
+      await InvokeCategoryMethod(testingObj.value.after, options.category ?? '')
+    }
+
+    results.push(...res);
   }
 
   async function InvokeAllTests(categoriesToInvoke: { [key: string]: Category }, options: TestExecutionOptions) {
@@ -614,6 +628,12 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
   }
   return r;
 }
+
+export function shuffle(array: any[]): any[] {
+  const newArr = array.slice();
+  newArr.sort(() => Math.random() - 0.5);
+  return newArr;
+};
 
 /* Waits [ms] milliseconds */
 export async function delay(ms: number) {

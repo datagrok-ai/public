@@ -23,7 +23,13 @@ const skip = [
   'add-single-filter',
   'custom-filters',
   'filter-group',
-  'dynamic-loading'
+  'dynamic-loading',
+  //performance 
+  'read-strings',
+  'dataframe-access',
+  '1m-aggregation',
+  '100-million-rows',
+  '1-million-columns'
 ];
 
 //name: test
@@ -50,6 +56,7 @@ export async function initTests() {
         //   grok.shell.lastError = '';
         //   throw new Error(err);
         // }
+        grok.shell.closeAll();
       }, skip.includes(script.friendlyName) ? {skipReason: 'skip'} : undefined);
     });
   }

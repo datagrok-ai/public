@@ -168,7 +168,7 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
           const df = createBaselineEndpointDataframe(this.distrDataframe.clone(this.distrDataframe.filter), study.domains.dm, [category], 'test', 'res', [], it, this.bl, '', VISIT_NAME, `${it}_BL`);
           this.getPValues(df, domain, it, category, `${it}_BL`);
           const plot = DG.Viewer.boxPlot(df, {
-            category: category,
+            categoryColumnNames: [category],
             value: `${it}_BL`,
             labelOrientation: DG.TextOrientation.Horz,
             markerColor: category,

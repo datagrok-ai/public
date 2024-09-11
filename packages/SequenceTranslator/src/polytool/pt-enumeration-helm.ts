@@ -12,7 +12,8 @@ import {Chain} from './pt-conversion';
 import {getAvailableMonomers} from './utils';
 import {PolyToolEnumeratorParams, PolyToolEnumeratorTypes, PolyToolPlaceholders} from './types';
 
-export const PT_HELM_EXAMPLE = 'PEPTIDE1{[R].[F].[T].[G].[H].[F].[G].[A].[A].[Y].[P].[E].[NH2]}$$$$';
+// For example keep monomers presented in HELMCoreLibrary.json only (not [NH2])
+export const PT_HELM_EXAMPLE = 'PEPTIDE1{R.[Aca].T.G.H.F.G.A.A.Y.P.E.[meI]}$$$$';
 
 /** Initialized by getHelmHelper via init Helm package */
 declare const JSDraw2: JSDraw2ModuleType;
@@ -55,7 +56,10 @@ function getPtEnumeratorMatrix(m: HelmMol, placeholders: PolyToolPlaceholders): 
   return resMolList;
 }
 
-export function getPtEnumeratorHelm(helm: string, id: string, params: PolyToolEnumeratorParams): [string, string][] {
+/** Returns list of Helm with id. Covered with tests. */
+export function doPolyToolEnumerateHelm(
+  helm: string, id: string, params: PolyToolEnumeratorParams
+): [ /* helm */ string, /* id */ string][] {
   const molHandler = new JSDraw2.MolHandler<HelmType>();
   const plugin = new org.helm.webeditor.Plugin(molHandler);
   org.helm.webeditor.IO.parseHelm(plugin, helm, new JSDraw2.Point(0, 0), undefined);

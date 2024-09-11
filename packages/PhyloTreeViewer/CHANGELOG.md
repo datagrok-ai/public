@@ -1,5 +1,9 @@
 # PhyloTreeViewer changelog
 
+## 1.2.12 (2024-09-02)
+
+Fix tests
+
 ## 1.2.11 (2024-03-07)
 
 ### Bug fixes

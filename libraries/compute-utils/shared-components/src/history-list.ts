@@ -111,9 +111,9 @@ export class HistoricalRunsList extends DG.Widget {
     const favStorageName = `${storageName}_${funcCall.func.name}_Fav`;
 
     if (isFavorite)
-      return grok.userSettings.add(favStorageName, funcCall.id, '');
+      grok.userSettings.add(favStorageName, funcCall.id, '');
     else
-      return grok.userSettings.delete(favStorageName, funcCall.id);
+      grok.userSettings.delete(favStorageName, funcCall.id);
   }
 
   private getRunByIdx(idx: number) {
@@ -127,10 +127,9 @@ export class HistoricalRunsList extends DG.Widget {
       if (!this.options?.isHistory)
         this.updateRun(funcCall);
       else {
-        return ((editOptions.favorite !== 'same') ?
-          this.saveIsFavorite(funcCall, (editOptions.favorite === 'favorited')) :
-          Promise.resolve())
-          .then(() => historyUtils.loadRun(funcCall.id, false))
+        if (editOptions.favorite !== 'same')
+          this.saveIsFavorite(funcCall, (editOptions.favorite === 'favorited'));
+        return historyUtils.loadRun(funcCall.id, false)
           .then((fullCall) => {
             if (editOptions.title) fullCall.options['title'] = editOptions.title;
             if (editOptions.description) fullCall.options['description'] = editOptions.description;

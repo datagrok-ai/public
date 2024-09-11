@@ -77,6 +77,7 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
   const df = ['Line chart', 'Network diagram', 'Correlation plot', 'Tile Viewer', 'Shape Map'].includes(viewerName) ?
     await grok.data.getDemoTable(VIEWER_TABLES_PATH[viewerName]) :
     await grok.data.loadTable(`${_package.webRoot}/${VIEWER_TABLES_PATH[viewerName]}`);
+  await grok.data.detectSemanticTypes(df);
 
   const tableView = grok.shell.addTableView(df);
 

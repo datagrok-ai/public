@@ -142,7 +142,7 @@ class StructureAppLayout {
 
     const sequenseInputs = ui.form([], 'st-structure-inputs');
     const clearButtons = ui.divV([], 'st-structure-clear-buttons');
-    const directionInputs = ui.form([], 'st-direction-inputs'); 
+    const directionInputs = ui.form([], 'st-direction-inputs');
 
     for (const strand of STRANDS) {
       sequenseInputs.append(this.inputBase[strand].root);

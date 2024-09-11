@@ -6,6 +6,8 @@ import {before, category, test, expect} from '@datagrok-libraries/utils/src/test
 import {ALPHABET, getAlphabet, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 
+import {_package} from '../package-test';
+
 category('detectorsBenchmark', () => {
   let detectFunc: DG.Func;
 
@@ -50,17 +52,17 @@ category('detectorsBenchmark', () => {
     maxET: number, notation: NOTATION, alphabet: ALPHABET, length: number, count: number, separator?: string,
   ): Promise<number> {
     return await benchmark<DG.FuncCall, DG.Column>(maxET,
-      async (): Promise<DG.FuncCall> => {
+      /* prepare */ async (): Promise<DG.FuncCall> => {
         const col: DG.Column = generate(notation, [...getAlphabet(alphabet)], length, count, separator);
         const funcCall: DG.FuncCall = detectFunc.prepare({col: col});
         // warm-up Bio
-        await testDetector(funcCall);
+        testDetector(funcCall);
         return funcCall;
       },
-      async (funcCall: DG.FuncCall): Promise<DG.Column> => {
+      /* test */ (funcCall: DG.FuncCall): DG.Column => { // sync call for stability
         return testDetector(funcCall);
       },
-      (col: DG.Column) => {
+      /* check */ (col: DG.Column) => {
         checkDetectorRes(col, {
           semType: DG.SEMTYPE.MACROMOLECULE,
           notation: notation,
@@ -113,9 +115,8 @@ category('detectorsBenchmark', () => {
 
   type TgtType = { semType: string, notation: NOTATION, alphabet: ALPHABET, separator?: string };
 
-  async function testDetector(funcCall: DG.FuncCall): Promise<DG.Column> {
-    //const semType: string = await grok.functions.call('Bio:detectMacromolecule', {col: col});
-    await funcCall.call();
+  function testDetector(funcCall: DG.FuncCall): DG.Column {
+    funcCall.callSync();
     const semType = funcCall.getOutputParamValue() as string;
 
     const col: DG.Column = funcCall.inputs.col as unknown as DG.Column;
@@ -135,19 +136,19 @@ category('detectorsBenchmark', () => {
 
 //Returns ET [ms] of test()
 async function benchmark<TData, TRes>(
-  maxET: number, prepare: () => Promise<TData>, test: (data: TData) => Promise<TRes>, check: (res: TRes) => void,
+  maxET: number, prepare: () => Promise<TData>, test: (data: TData) => TRes, check: (res: TRes) => void,
 ): Promise<number> {
   const data: TData = await prepare();
 
   const t1: number = Date.now();
   // console.profile();
-  const res: TRes = await test(data);
+  const res: TRes = test(data); // sync call for stability
   //console.profileEnd();
   const t2: number = Date.now();
 
   check(res);
 
-  const resET: number = t2 - t1;
+  const resET = t2 - t1;
   if (resET > maxET) {
     const errMsg = `ET ${resET} ms is more than max allowed ${maxET} ms.`;
     console.error(errMsg);

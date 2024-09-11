@@ -4,19 +4,35 @@ import * as DG from 'datagrok-api/dg';
 
 import {before, after, category, expect, test, expectArray} from '@datagrok-libraries/utils/src/test';
 import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
+import {
+  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
+} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 
 import {PolyToolEnumeratorParams, PolyToolEnumeratorTypes} from '../polytool/types';
-import {getPtEnumeratorHelm} from '../polytool/pt-enumeration-helm';
+import {doPolyToolEnumerateHelm} from '../polytool/pt-enumeration-helm';
 
-category('PolyTool', () => {
+import {_package} from '../package-test';
+
+category('PolyTool: Enumerate', () => {
   let helmHelper: IHelmHelper;
+  let monomerLibHelper: IMonomerLibHelper;
+  let userLibSettings: UserLibSettings; //backup
 
   before(async () => {
     helmHelper = await getHelmHelper(); // initialize JSDraw2 and org
+
+    monomerLibHelper = await getMonomerLibHelper();
+    userLibSettings = await getUserLibSettings();
+    // Clear settings to test default
+    await setUserLibSettingsForTests();
+    await monomerLibHelper.loadMonomerLib(true);
   });
 
   after(async () => {
-
+    await setUserLibSettings(userLibSettings);
+    await monomerLibHelper.loadMonomerLib(true);
   });
 
   const tests: {
@@ -87,8 +103,8 @@ category('PolyTool', () => {
   };
 
   for (const [testName, testData] of Object.entries(tests)) {
-    test(`enumerator-${testName}`, async () => {
-      const res = getPtEnumeratorHelm(testData.src, '', testData.params);
+    test(`${testName}`, async () => {
+      const res = doPolyToolEnumerateHelm(testData.src, '', testData.params);
       expectArray(res, testData.tgt);
     });
   }
