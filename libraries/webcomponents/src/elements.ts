@@ -144,6 +144,9 @@ export class DGComboPopup extends HTMLElement {
     );
     newPopup.style.height = '24px';
     newPopup.style.minWidth = '0px';
+    newPopup.onclick = (ev) => {
+      ev.stopPropagation();
+    };
     this.appendChild(newPopup);
   }
 }
