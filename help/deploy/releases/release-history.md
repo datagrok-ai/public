@@ -81,10 +81,25 @@ Database migrations are unrevertable in this version. You can't rollback to olde
 * Fix: 
   * Formula Lines: View updates after deleting options. 
 
+ ### [Scripting](https://datagrok.ai/help/compute/scripting/)
+  * New ability to download the script as a file. 
+  * Default scripts creates without tags. 
+  * Fix: 
+    * Usage displays runs.
+
+### JS API:
+  * Ability to get Func result view using API is added. 
+  * Metadata set by .tags with column.meta.xxx is replaced.
+
+### Data Access
+  * Connections: the 'creating a connection' form is updated.
+  * Fix:
+    * Databases: New Run_query result creates with the name. 
+    
 ### Enhancements in packages
-* Reset package touchedOn flag when selecting current package version is implemented.
+### [Curves](https://github.com/datagrok-ai/public/tree/master/packages/Curves/CHANGELOG.md)
 * Fix: 
-  * [#2978](https://github.com/datagrok-ai/public/issues/2978): Curves: Log-linear function: Fixing initial parameters calculation. 
+  * [#2978](https://github.com/datagrok-ai/public/issues/2978): Log-linear function: Fixing initial parameters calculation. 
 
 ### [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts/CHANGELOG.md)
   * Fixes:
@@ -115,22 +130,7 @@ Database migrations are unrevertable in this version. You can't rollback to olde
   * R-Group analysis: error updates when none R-groups were found. 
   * [#2983](https://github.com/datagrok-ai/public/issues/2983): Fixing tooltip styles for structure columns. 
 
- ### [Scripting](https://datagrok.ai/help/compute/scripting/)
-  * New ability to download the script as a file. 
-  * Default scripts creates without tags. 
-  * Fix: 
-    * Usage displays runs.
-
-### JS API:
-  * Ability to get Func result view using API is added. 
-  * Metadata set by .tags with column.meta.xxx is replaced.
-
-### Data Access
-  * Connections: the 'creating a connection' form is updated.
-  * Fix:
-    * Databases: New Run_query result creates with the name. 
-
-### Other bug-fixes
+### Other fixes
 * Table view: Form styles with refresh button is fixed.
 * [#2942](https://github.com/datagrok-ai/public/issues/2942): Export to CSV with 'Molecules As Smiles' works if there is some filtering. 
 * [#2943](https://github.com/datagrok-ai/public/issues/2943): Categorical filter in column header is not broken after removing the same column from filters panel. 
