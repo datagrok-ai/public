@@ -9,9 +9,9 @@
   "servicePackage": true,
   "description": "Automated UI tests",
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.2.29",
+    "@datagrok-libraries/utils": "^4.3.0",
     "cash-dom": "latest",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.21.1",
     "dayjs": "latest",
     "wu": "latest",
     "@types/wu": "^2.1.42"

@@ -455,8 +455,7 @@ export class TestTrack extends DG.ViewBase {
       this.tableViewReport?.dataFrame?.selection?.setAll(false);
       let foundRows = Array.from(this.tableViewReport?.dataFrame?.rows?.where((row: any) => `${this.tableViewReport?.dataFrame?.get('category', row)}: ${this.tableViewReport?.dataFrame?.get('name', row)}` === node.value.path) || '');
       if (foundRows.length === 1)
-        this.tableViewReport!.dataFrame.currentRowIdx = foundRows[0];
-      foundRows[0].index 
+        this.tableViewReport!.dataFrame.currentRowIdx = foundRows[0]; 
     }
   }
 

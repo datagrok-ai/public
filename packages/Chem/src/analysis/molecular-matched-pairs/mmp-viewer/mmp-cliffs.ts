@@ -19,7 +19,7 @@ import {MMPA} from '../mmp-analysis/mmpa';
 import {ISequenceSpaceParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 
 export function getMmpScatterPlot(
-  mmpInput: MmpInput, axesColsNames: string[]) : DG.Viewer {
+  mmpInput: MmpInput, axesColsNames: string[], labelsColName: string) : DG.Viewer {
   mmpInput.table.columns.addNewFloat(axesColsNames[0]);
   mmpInput.table.columns.addNewFloat(axesColsNames[1]);
   const sp = DG.Viewer.scatterPlot(mmpInput.table, {
@@ -28,8 +28,13 @@ export function getMmpScatterPlot(
     zoomAndFilter: 'no action',
     //color: activities.name,
     showXSelector: false,
+    showXAxis: false,
     showYSelector: false,
+    showYAxis: false,
+    showColorSelector: false,
+    showSizeSelector: false,
     markerDefaultSize: 7,
+    labels: labelsColName,
   });
   return sp;
 }

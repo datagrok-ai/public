@@ -96,10 +96,10 @@ export class PatternAppRightSection {
     }
 
     const message = ui.divV([
-      ui.divText(`Author: ${author}`),
       ui.divText(`Pattern Name: ${patternName}`),
-      ui.divText(`Created: ${new Date(createDate).toLocaleString()}`),
-      ui.divText(`Modified: ${new Date(modifyDate).toLocaleString()}`),
+      ui.divText(`Author: ${author}`),
+      ui.divText(`Created: ${getInfoTimestamp(new Date(createDate))}`),
+      ui.divText(`Modified: ${getInfoTimestamp(new Date(modifyDate))}`),
     ]);
     grok.shell.info(message);
   }
@@ -195,3 +195,6 @@ class OverwritePatternDialog {
   }
 }
 
+function getInfoTimestamp(date: Date): string {
+  return date.toLocaleString().split(':').slice(0, -1).join(':');
+}

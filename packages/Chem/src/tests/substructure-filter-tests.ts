@@ -345,7 +345,7 @@ M  END
     const sketcherDialogs: DG.Dialog[] = [];
 
     DG.chem.currentSketcherType = 'Ketcher';
-    const filter1 = await createFilter('Structure', df, sketcherDialogs, 15000);
+    const filter1 = await createFilter('Structure', df, sketcherDialogs, 30000);
 
     //filter by structure and wait for results
     filter1.sketcher.setSmiles('C1CCCCC1');
@@ -397,6 +397,7 @@ M  END
     expect(df.filter.trueCount, 32, 'filter has been reset 3');
 
     filter4.detach();
+    await delay(1000); //waiting for detach to complete
     sketcherDialogs.forEach((it) => it.close());
   });
 

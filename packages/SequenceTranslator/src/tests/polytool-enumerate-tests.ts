@@ -13,6 +13,8 @@ import {
 import {PolyToolEnumeratorParams, PolyToolEnumeratorTypes} from '../polytool/types';
 import {doPolyToolEnumerateHelm} from '../polytool/pt-enumeration-helm';
 
+import {_package} from '../package-test';
+
 category('PolyTool: Enumerate', () => {
   let helmHelper: IHelmHelper;
   let monomerLibHelper: IMonomerLibHelper;

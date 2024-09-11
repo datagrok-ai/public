@@ -14,9 +14,9 @@
     "directory": "packages/ApiTests"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "../../libraries/utils",
+    "@datagrok-libraries/utils": "^4.3.0",
     "cash-dom": "^8.1.1",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.21.1",
     "dayjs": "^1.11.10",
     "rxjs": "^6.6.7",
     "wu": "latest"

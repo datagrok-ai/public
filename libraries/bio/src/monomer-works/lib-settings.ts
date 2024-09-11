@@ -5,7 +5,7 @@ import {UserLibSettings} from './types';
 export const LIB_STORAGE_NAME = 'Libraries';
 export const LIB_PATH = 'System:AppData/Bio/monomer-libraries/';
 const LIB_SETTINGS_FOR_TESTS: UserLibSettings =
-  {explicit: ['HELMCoreLibrary.json', 'polytool-rules.json'], exclude: [], duplicateMonomerPreferences: {}};
+  {explicit: ['HELMCoreLibrary.json', 'polytool-lib.json'], exclude: [], duplicateMonomerPreferences: {}};
 
 export const SETS_STORAGE_NAME: string = 'Monomer Sets';
 export const SETS_PATH: string = 'System:AppData/Bio/monomer-sets/';

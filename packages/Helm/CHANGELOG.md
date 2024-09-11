@@ -1,5 +1,12 @@
 # Helm changelog
 
+## 2.5.0 (2024-09-10)
+
+### Bug fixes
+
+* Fix init dojo loading NGL ahead
+* Bump dependencies versions
+
 ## 2.4.6 (2024-09-05)
 
 Helm Web editor cell editing causing grid.onCellValueEdited event

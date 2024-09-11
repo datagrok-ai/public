@@ -120,19 +120,15 @@ export async function reportsAppTreeBrowser(treeNode: DG.TreeViewGroup, browseVi
 //output: widget result
 //tags: dashboard
 //test: usageWidget()
-export function usageWidget(): DG.Widget {
-  return new UsageWidget();
+export async function usageWidget(): Promise<DG.Widget | null> {
+  return await hasAccess() ? new UsageWidget() : null;
 }
 
 //output: widget result
 //tags: dashboard
 //test: reportsWidget()
 export async function reportsWidget(): Promise<DG.Widget | null> {
-  const userGroup = await grok.dapi.groups.find(DG.User.current().group.id);
-  if (userGroup.memberships.some((g) => g.friendlyName === 'Developers' || g.friendlyName === 'Administrators')
-    || userGroup.adminMemberships.some((g) => g.friendlyName === 'Developers' || g.friendlyName === 'Administrators'))
-    return new ReportsWidget();
-  return null;
+  return await hasAccess() ? new ReportsWidget() : null;
 }
 
 //name: packageUsageWidget
@@ -188,4 +184,10 @@ export function createJiraTicket(msg: string){
     grok.shell.info('Created');
     console.log(t);
   });  
+}
+
+async function hasAccess(): Promise<boolean> {
+  const userGroup = await grok.dapi.groups.find(DG.User.current().group.id);
+  return userGroup.memberships.some((g) => g.friendlyName === 'Developers' || g.friendlyName === 'Administrators')
+      || userGroup.adminMemberships.some((g) => g.friendlyName === 'Developers' || g.friendlyName === 'Administrators');
 }

@@ -619,10 +619,10 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
   let res = funcCall.getOutputParamValue();
 
   if (plotEmbeddings) {
-    res = grok.shell.tv.scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical space'});
+    res = grok.shell.tv.scatterPlot({x: embedColsNames[0], y: embedColsNames[1],
+      title: 'Chemical space', labels: molecules.name});
     if (clusterEmbeddings)
       res.props.colorColumnName = clusterColName;
-    drawMoleculeLabels(table, molecules, res as DG.ScatterPlotViewer, 20, -1, 100, 70);
   }
   return res;
 }
@@ -921,9 +921,8 @@ export async function activityCliffsInitFunction(sp: DG.ScatterPlotViewer): Prom
   await runActivityCliffs(sp, sp.dataFrame, molCol, encodedColWithOptions, actCol, axesNames,
     actCliffsParams.similarity, actCliffsParams.similarityMetric, actCliffsParams.options, DG.SEMTYPE.MOLECULE,
     {'units': molCol.meta.units!}, createTooltipElement, createPropPanelElement, undefined, undefined, actCliffsParams.isDemo);
-  const size = sp.getOptions().look['sizeColumnName'];
-  drawMoleculeLabels(sp.dataFrame, molCol, sp, 20, -1, 100, 105, size);
   //to draw the lines fro cliffs
+  sp.setOptions({labels: molCol.name});
   sp.render(sp.getInfo()['canvas'].getContext('2d'));
 }
 

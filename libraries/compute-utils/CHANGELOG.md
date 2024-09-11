@@ -1,5 +1,13 @@
 # compute-utils changelog
 
+## 1.39.1 (2024-09-10)
+
+- Fixed DF input in the Fitting view
+
+## 1.38.0-rc.2 (2024-09-09)
+
+- Fixed DF input processing with no viewers
+
 ## 1.38.0-rc (2024-09-06)
 
 - Preparing 1.21.1 release

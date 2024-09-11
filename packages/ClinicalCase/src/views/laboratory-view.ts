@@ -153,9 +153,10 @@ export class LaboratoryView extends ClinicalCaseViewBase {
         [DG.SYNC_TYPE.FILTER_TO_FILTER]);
     }
     this.distributionPlot = DG.Viewer.boxPlot(disributionDataframe, {
-      category: VISIT_DAY,
+      categoryColumnNames: [VISIT_DAY],
       value: labValueNumColumn,
     });
+    this.distributionPlot.setOptions({category: VISIT_DAY});
     updateDivInnerHTML(this.distributionDiv, this.distributionPlot.root);
   }
 

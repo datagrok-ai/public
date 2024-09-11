@@ -1,17 +1,18 @@
 import * as DG from 'datagrok-api/dg';
 import {MMP_NAMES} from './mmp-constants';
 import {PaletteCodes} from './palette';
+import * as grok from 'datagrok-api/grok';
 
-export function getMmpTrellisPlot(allPairsGrid: DG.Grid, activityMeanNames: Array<string>,
+export function getMmpTrellisPlot(fGrid: DG.Grid, activityMeanNames: Array<string>,
   palette: PaletteCodes): DG.Viewer {
   const schemes = new Array<any>(activityMeanNames.length);
   for (let i = 0; i < activityMeanNames.length; i++)
     schemes[i] = [palette.numerical[i]];
   const aggregations = activityMeanNames.map((_) => DG.STATS.MED);
 
-  const tp = DG.Viewer.fromType(DG.VIEWER.TRELLIS_PLOT, allPairsGrid.table, {
-    xColumnNames: [allPairsGrid.table.columns.byIndex(0).name],
-    yColumnNames: [allPairsGrid.table.columns.byIndex(1).name],
+  const tp = DG.Viewer.fromType(DG.VIEWER.TRELLIS_PLOT, fGrid.table, {
+    xColumnNames: [fGrid.table.columns.byIndex(0).name],
+    yColumnNames: [fGrid.table.columns.byIndex(1).name],
     viewerType: 'Summary',
     innerViewerLook: {
       columnNames: activityMeanNames,

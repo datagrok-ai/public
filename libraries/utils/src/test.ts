@@ -39,6 +39,7 @@ export interface TestOptions {
   isAggregated?: boolean;
   benchmark?: boolean;
   stressTest?: boolean;
+  tags?: string[];
 }
 
 export interface CategoryOptions {
