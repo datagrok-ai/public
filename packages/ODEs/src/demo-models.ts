@@ -5,6 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {ros34prw} from './solver-tools/ros34prw-method';
+import '../css/app-styles.css';
 
 enum PK_PD {
   INITIAL = 0,
@@ -108,7 +109,7 @@ export function getBioreactorSim(t0: number, t1: number, h: number, FFox: number
     },
     tolerance: 0.00005,
     solutionColNames: ['FFox(t)', 'KKox(t)', 'FFred(t)', 'KKred(t)', 'Ffree(t)', 'Kfree(t)', 'FKred(t)',
-      'FKox(t)', 'MEAthiol(t)', 'CO2(t)', 'yO2P(t)', 'CYST(t)', 'VL(t)'],
+      'FKox(t)', 'MEA(t)', 'CO2(t)', 'yO2P(t)', 'CYST(t)', 'VL(t)'],
   }; // odes
 
   return ros34prw(odes);
@@ -203,3 +204,55 @@ export function getPkPdSim(dose: number, count: number, interval: number, KA: nu
 
   return solution;
 } // getPkPdSim
+
+const bioreactorInfo = `# Try
+Vary inputs and check results
+# No-code
+Construction of complex phenomena simulators is provided by Diff Studio.
+# Model
+Only declarative equations description is required.
+# Essence
+Simulation of controlled fab-arm exchange kinetic mechanism is performed here.
+# Performance
+1000 times faster than the previous version.
+# Complexity
+Each time you change inputs, a system of 13 non-linear ordinary differential equations is solved.
+# Learn more
+* [Diff Studio](https://datagrok.ai/help/compute/diff-studio)
+* [Compute](https://datagrok.ai/help/compute/)`;
+
+function showHelpPanel(info: string): void {
+  grok.shell.windows.help.visible = true;
+  const helpMD = ui.markdown(info);
+  helpMD.classList.add('diff-studio-demo-app-div-md');
+  const divHelp = ui.div([helpMD], 'diff-studio-demo-app-div-help');
+  grok.shell.windows.help.showHelp(divHelp);
+  grok.shell.windows.context.visible = true;
+  grok.shell.windows.showContextPanel = false;
+  grok.shell.windows.showProperties = false;
+  grok.shell.windows.help.visible = true;
+}
+
+/** Show Bioreactor help panel */
+export function showBioHelpPanel() {
+  showHelpPanel(bioreactorInfo);
+}
+
+const pkpdInfo = `# Try
+Interactive results when changing inputs.
+# No-code
+Construction of complex phenomena simulators is provided by Diff Studio.
+# Model
+Only declarative equations description is required.
+# Essence
+Two-compartment pharmacokinetic-pharmacodynamic (PK-PD) modeling is performed.
+# Performance
+Nonlinear system of differential equations within a few milliseconds.
+# Learn more
+* [Diff Studio](https://datagrok.ai/help/compute/diff-studio)
+* [Compute](https://datagrok.ai/help/compute/)`;
+
+/** Show PK-PD help panel */
+export function showPkPdHelpPanel() {
+  showHelpPanel(pkpdInfo);
+}
