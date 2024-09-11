@@ -11,6 +11,7 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
   private slotElementMap: WeakMap<HTMLSlotElement, HTMLElement>;
   private observer: MutationObserver;
   private initialized = false;
+  private initFinished = false;
   private elementContainerMap: Map<HTMLElement, PanelContainer> = new Map();
 
   constructor() {
@@ -63,12 +64,11 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
       });
 
       this.onresize = () => {
-        this.dockManager.resize(this.clientWidth, this.clientHeight);
+        this.resize();
       };
 
       for (const element of this.children)
         this.handleAddedChildNode(element as HTMLElement);
-
 
       this.observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
@@ -81,6 +81,8 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
         });
       });
       this.observer.observe(this, {childList: true});
+
+      this.initFinished = true;
     }, 50);
   }
 
@@ -148,6 +150,7 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
     }
     window.addEventListener('resize', this.windowResizedBound);
     window.addEventListener('orientationchange', this.windowResizedBound);
+    if (this.initFinished) this.resize();
   }
 
   disconnectedCallback() {
@@ -201,5 +204,3 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
     dlg.resize(width, height);
   }
 }
-
-window.customElements.define('dock-spawn-ts', DockSpawnTsWebcomponent);

@@ -9,6 +9,7 @@ export declare class DockSpawnTsWebcomponent extends HTMLElement {
     private slotElementMap;
     private observer;
     private initialized;
+    private initFinished;
     private elementContainerMap;
     constructor();
     saveLayout(): string;

@@ -38,4 +38,4 @@ vendor/dock-spawn-ts/src/**/*.d.ts
 vendor/dock-spawn-ts/src/**/*.d.ts.map
 
 # build info
-./**/*.tsbuildinfo
+*.tsbuildinfo

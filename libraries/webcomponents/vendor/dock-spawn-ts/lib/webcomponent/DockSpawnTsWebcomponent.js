@@ -9,6 +9,7 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
     slotElementMap;
     observer;
     initialized = false;
+    initFinished = false;
     elementContainerMap = new Map();
     constructor() {
         super();
@@ -52,7 +53,7 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
                 },
             });
             this.onresize = () => {
-                this.dockManager.resize(this.clientWidth, this.clientHeight);
+                this.resize();
             };
             for (const element of this.children)
                 this.handleAddedChildNode(element);
@@ -67,6 +68,7 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
                 });
             });
             this.observer.observe(this, { childList: true });
+            this.initFinished = true;
         }, 50);
     }
     getElementInSlot(slot) {
@@ -125,6 +127,8 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
         }
         window.addEventListener('resize', this.windowResizedBound);
         window.addEventListener('orientationchange', this.windowResizedBound);
+        if (this.initFinished)
+            this.resize();
     }
     disconnectedCallback() {
         window.removeEventListener('resize', this.windowResizedBound);
@@ -168,4 +172,3 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
         dlg.resize(width, height);
     }
 }
-window.customElements.define('dock-spawn-ts', DockSpawnTsWebcomponent);

@@ -22,6 +22,6 @@ export function registerWebcomponents() {
   customElements.define('dg-icon-fa', DGIconFA);
   customElements.define('dg-toggle-input', DGToggleInput);
   customElements.define('dg-combo-popup', DGComboPopup);
-  if (!customElements.get('dock-spawn-ts')) customElements.define('dock-spawn-ts', DockSpawnTsWebcomponent);
+  customElements.define('dock-spawn-ts', DockSpawnTsWebcomponent);
   customElements.define('dg-markdown', DGMarkdown);
 }
