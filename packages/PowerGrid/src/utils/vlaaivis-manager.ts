@@ -15,6 +15,7 @@ class VlaaiVisManager {
     this.gc = gc;
     this.columns = grok.shell.tv.dataFrame.columns.byNames(settings.columnNames);
     this.tree = ui.tree();
+    this.tree.root.style.overflow = 'hidden';
 
     if (!this.settings.sectors) {
       this.settings.sectors = this.initializeSectors(settings.columnNames, grok.shell.tv.dataFrame);
@@ -146,6 +147,7 @@ class VlaaiVisManager {
         const itemText = draggedItem.text;
         this.removeItemFromOriginalGroup(itemText);
         this.addItemToNewGroup(groupNode, itemText);
+        this.gc.grid.invalidate();
       }
     });
   }
@@ -256,7 +258,6 @@ class VlaaiVisManager {
     });
 
     this.makeUntaggedColumnsDraggable(untaggedColumns);
-    this.makeGroupDroppable(this.tree);
 
     const generalInputs = ui.divV(generalProps.map(prop => this.createInputForProperty(prop, '')));
     const resultingDiv = this.createResultingDiv(inputs, generalInputs);
@@ -306,6 +307,7 @@ class VlaaiVisManager {
         this.removeItemFromOriginalGroup(node.text);
         this.addItemToNewGroup(newGroup, node.text);
         this.makeItemDraggable(node);
+        this.gc.grid.invalidate();
       })
       .show(); 
   }

@@ -85,6 +85,10 @@ jobs:
 
               job_test_env=''
               runner='ubuntu-22.04'
+              if [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "admetox" ]] || \
+                 [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"admetox"* ]]; then
+                runner='ubuntu-latest-m'
+              fi
               if [ -n "$(jq  '. | select( has("test") == true )' <<< "$scripts")" ] && \
                   [[ "$(jq  -r '. | select( has("skipCI") == true ).skipCI' "${DIR}/package.json")" != "true" ]]; then
                 MATRIX_PUBLISH_JSON+=", \"test\": \"test\""
@@ -210,7 +214,7 @@ jobs:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
           sparse-checkout: |
             ./libraries
-            ./packages/${{ matrix.package }}
+            ./packages
             ./js-api
             ./.github
             ./docker
