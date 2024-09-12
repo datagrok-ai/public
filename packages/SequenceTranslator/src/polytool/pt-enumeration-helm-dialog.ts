@@ -82,9 +82,9 @@ export async function polyToolEnumerateHelmUI(cell?: DG.Cell): Promise<void> {
       if (isFirstShow) {
         const dialogInputList = dialog.inputs;
         const dialogRootCash = $(dialog.root);
-        const contentMaxHeight = maxHeight
-          - dialogRootCash.find('div.d4-dialog-header').get(0)!.offsetHeight
-          - dialogRootCash.find('div.d4-dialog-footer').get(0)!.offsetHeight;
+        const contentMaxHeight = maxHeight -
+          dialogRootCash.find('div.d4-dialog-header').get(0)!.offsetHeight -
+          dialogRootCash.find('div.d4-dialog-footer').get(0)!.offsetHeight;
 
         // dialog.inputs2.macromolecule.root.style.backgroundColor = '#CCFFCC';
 
@@ -259,9 +259,9 @@ async function getPolyToolEnumerateDialog(
           let rowIdx = posList.indexOf(clickedAtomContIdxStr);
           if (rowIdx === -1) {
             rowIdx = posList.findIndex((v) => isNaN(v));
-            if (rowIdx === -1) {
+            if (rowIdx === -1)
               rowIdx = phDf.rows.addNew([clickedAtomContIdxStr, '']).idx;
-            }
+
             phDf.set('Position', rowIdx, clickedAtomContIdxStr);
             // const tgtCell = inputs.placeholders.grid.cell('Monomers', rowIdx);
           }

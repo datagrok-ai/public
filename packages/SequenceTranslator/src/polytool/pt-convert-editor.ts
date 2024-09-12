@@ -74,14 +74,14 @@ export class PolyToolConvertFuncEditor {
 
   public async showDialog(): Promise<DG.Column<string>> {
     const formDiv = ui.div([
-        this.inputs.table,
-        this.inputs.seqCol,
-        this.inputs.generateHelm,
-        this.inputs.chiralityEngine,
-        this.inputs.rules.header,
-        this.inputs.rules.form,
-      ],
-      {style: {minWidth: '320px'}});
+      this.inputs.table,
+      this.inputs.seqCol,
+      this.inputs.generateHelm,
+      this.inputs.chiralityEngine,
+      this.inputs.rules.header,
+      this.inputs.rules.form,
+    ],
+    {style: {minWidth: '320px'}});
 
     return new Promise((resolve, reject) => {
       ui.dialog({title: PT_UI_DIALOG_CONVERSION})

@@ -33,7 +33,15 @@ class StructureAppLayout {
     this.onInvalidInput = new rxjs.Subject<string>();
     this.inputBase = Object.fromEntries(
       STRANDS.map(
-        (key) => [key, ui.input.textArea(key.toUpperCase(), {value: '', onValueChanged: () => { this.onInput.next(); }})]
+        (key) => {
+          const input = ui.input.textArea(key.toUpperCase(), {value: '', onValueChanged: () => {
+            this.onInput.next();
+            // WARNING: this fine tuning is necessary to fix layout within ui.form
+            // js-api version ^1.21
+            $(input.root.getElementsByTagName('div')).css('padding-left', '38px');
+          }});
+          return [key, input];
+        }
       )
     );
     this.useChiralInput = ui.input.bool('Use chiral', {value: true});
@@ -165,11 +173,6 @@ class StructureAppLayout {
   }
 
   private getMolfile(ss: StrandData, as: StrandData, as2: StrandData): string {
-    // if (ss.strand === '' && (as.strand !== '' || as2.strand !== '')) {
-    //   this.onInvalidInput.next();
-    //   return '';
-    // }
-
     return getLinkedMolfile(ss, as, as2, this.useChiralInput.value!, this.th);
   }
 

@@ -269,9 +269,7 @@ export class Chain {
 export function doPolyToolConvert(sequences: string[], rules: Rules): string[] {
   const helms = new Array<string>(sequences.length);
   for (let i = 0; i < sequences.length; i++) {
-    if (sequences[i] === undefined)
-      helms[i] = '';
-    else {
+    if (sequences[i] === undefined) { helms[i] = ''; } else {
       const chain = Chain.fromNotation(sequences[i], rules);
       helms[i] = chain.getHelm();
     }

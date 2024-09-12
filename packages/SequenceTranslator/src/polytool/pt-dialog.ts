@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import $ from 'cash-dom';
 import {Unsubscribable} from 'rxjs';
 
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
@@ -110,7 +109,6 @@ async function getPolyToolEnumerationChemDialog(cell?: DG.Cell): Promise<DG.Dial
     for (const sub of subs) sub.unsubscribe();
   };
   try {
-
     const [libList, helmHelper] = await Promise.all([
       getLibrariesList(), getHelmHelper()]);
 
@@ -209,7 +207,7 @@ export async function polyToolConvert(
 
     const resHelmColName = getUnusedName(table, `transformed(${seqCol.name})`);
     const resHelmCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, resHelmColName, resList.length)
-      .init((rowIdx: number) => { return resList[rowIdx];});
+      .init((rowIdx: number) => { return resList[rowIdx]; });
     resHelmCol.semType = DG.SEMTYPE.MACROMOLECULE;
     resHelmCol.meta.units = NOTATION.HELM;
     resHelmCol.setTag(DG.TAGS.CELL_RENDERER, 'helm');

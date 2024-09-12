@@ -10,8 +10,6 @@ import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 import {DEFAULT_FORMATS} from '../../common/model/const';
 import {download} from '../../common/model/helpers';
-import {FormatDetector} from '../../common/model/parsing-validation/format-detector';
-import {SequenceValidator} from '../../common/model/parsing-validation/sequence-validator';
 import {ColoredTextInput} from '../../common/view/components/colored-input/colored-text-input';
 import {highlightInvalidSubsequence} from '../../common/view/components/colored-input/input-painters';
 import {MoleculeImage} from '../../common/view/components/molecule-img';
@@ -20,11 +18,11 @@ import {IsolatedAppUIBase} from '../../common/view/isolated-app-ui';
 import {MonomerLibViewer} from '../../common/view/monomer-lib-viewer';
 import {SequenceToMolfileConverter} from '../../structure/model/sequence-to-molfile';
 import {convert, getSupportedTargetFormats, getTranslatedSequences} from '../model/conversion-utils';
-import {FormatConverter} from '../model/format-converter';
 import {ITranslationHelper} from '../../../types';
 
 import {NUCLEOTIDES_FORMAT, SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG} from './const';
 import './style.css';
+import $ from 'cash-dom';
 import {_package} from '../../../package';
 
 const enum REQUIRED_COLUMN_LABEL {
@@ -55,7 +53,12 @@ class TranslatorAppLayout {
         await this.updateMolImg();
       }
     });
-    this.sequenceInputBase = ui.input.textArea('', {value: DEFAULT_AXOLABS_INPUT, onValueChanged: () => { this.onInput.next(); }});
+
+    $(this.formatChoiceInput.root.getElementsByTagName('select')[0]).css('width', '20%');
+
+    this.sequenceInputBase = ui.input.textArea(
+      '', {value: DEFAULT_AXOLABS_INPUT, onValueChanged: () => { this.onInput.next(); }}
+    );
 
     this.init();
 
@@ -457,9 +460,9 @@ class ColumnInputsManager {
     this.selectColumnIfTableNotNull(selectedTable, selectedColumnName, columnLabel);
 
     const input = ui.input.choice(`${columnLabel}`, {
-        value: selectedColumnName, items: columnNames,
-        onValueChanged: (value) => this.selectColumnIfTableNotNull(selectedTable, value, columnLabel)
-      }
+      value: selectedColumnName, items: columnNames,
+      onValueChanged: (value) => this.selectColumnIfTableNotNull(selectedTable, value, columnLabel)
+    }
     );
 
     return input;

@@ -19,7 +19,7 @@ export class ColoredTextInput {
     /** Resize, no scrolls  */
     resizeable: boolean = true
   ) {
-    $(this.root).addClass('colored-text-input');
+    $(this.root).addClass('st-colored-text-input');
     if (resizeable) {
       // make input field automatically resizeable
       this.textInputBase.onChanged.subscribe(

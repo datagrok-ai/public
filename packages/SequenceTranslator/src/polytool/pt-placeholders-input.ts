@@ -107,7 +107,7 @@ export function getPlaceholdersFromText(src: string): PolyToolPlaceholders {
     const lineM = /^\s*(?<pos>\d+)\s*:\s*(?<monomers>.+)$/.exec(line);
     if (lineM) {
       const pos: number = parseInt(lineM.groups!['pos']) - 1;
-      const monomerList: string[] = lineM.groups!['monomers'].split(',').map(m => m.trim());
+      const monomerList: string[] = lineM.groups!['monomers'].split(',').map((m) => m.trim());
       if (!(pos in res)) res[pos] = [];
       res[pos].push(...monomerList);
     }

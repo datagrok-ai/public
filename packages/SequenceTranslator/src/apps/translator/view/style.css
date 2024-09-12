@@ -24,10 +24,6 @@
   table-layout: fixed;
 }
 
-/* .st-translator-output-table table tbody tr td { */
-/*   max-width: 20%; */
-/* } */
-
 .st-translator-output-table td {
   padding-top: 6px;
   padding-bottom: 6px;
