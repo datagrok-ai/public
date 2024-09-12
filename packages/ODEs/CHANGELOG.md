@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## 1.1.2 (2024-09-16)
+
+Added the Bioreactor & SimPKPD models
+
 ## 1.1.1 (2024-09-11)
 
 * Browsing: Templates/Examples/Recent models integration to the browse tree
