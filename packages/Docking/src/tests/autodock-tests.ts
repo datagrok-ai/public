@@ -9,6 +9,7 @@ import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
 import {_package} from '../package-test';
 import {buildDefaultAutodockGpf} from '../utils/auto-dock-service';
+import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
 
 
 category('AutoDock', () => {
@@ -35,7 +36,7 @@ category('AutoDock', () => {
   test('clinfo', async () => {
     if (!adSvc) return;
 
-    const clinfoCount = await adSvc.checkOpenCl();
+    const clinfoCount = await fetchWrapper(() => adSvc!.checkOpenCl());
     expect(clinfoCount > 0, true, 'OpenCL platform not found.');
   });
 
@@ -51,7 +52,7 @@ category('AutoDock', () => {
     const ligandData: BiostructureData = {binary: false, ext: 'pdb', data: ligandPdb};
     const npts = new GridSize(20, 20, 20);
     const autodockGpf = buildDefaultAutodockGpf('1bdq', npts);
-    const posesDf = await adSvc.dockLigand(receptorData, ligandData, autodockGpf);
+    const posesDf = await fetchWrapper(() => adSvc!.dockLigand(receptorData, ligandData, autodockGpf));
     expect(posesDf.rowCount, 30);
   }, {timeout: 60000});
 

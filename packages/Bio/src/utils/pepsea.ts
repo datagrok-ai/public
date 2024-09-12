@@ -7,6 +7,7 @@ import {Subject} from 'rxjs';
 
 import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {NOTATION, TAGS as bioTAGS, ALIGNMENT, ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 
 import {checkForSingleSeqClusters} from './multiple-sequence-alignment';
@@ -79,7 +80,7 @@ export async function runPepsea(srcCol: DG.Column<string>, unUsedName: string,
 
   const alignedSequences: string[] = new Array(peptideCount);
   for (const body of bodies) { // getting aligned sequences for each cluster
-    const alignedObject = await requestAlignedObjects(pepseaContainer.id, body, method, gapOpen, gapExtend, logger);
+    const alignedObject = await fetchWrapper(() => requestAlignedObjects(pepseaContainer.id, body, method, gapOpen, gapExtend, logger));
     const alignments = alignedObject.Alignment;
 
     for (const alignment of alignments) { // filling alignedSequencesCol

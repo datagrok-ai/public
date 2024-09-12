@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { runAdmetica, performChemicalPropertyPredictions, getQueryParams, properties, setProperties } from '../utils/admetica-utils';
+import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
 
 category('Admetica', () => {
   let v: DG.TableView;
@@ -23,7 +24,7 @@ category('Admetica', () => {
   test('Container. Post request', async () => {
     const smiles = `smiles
     O=C1Nc2ccccc2C(C2CCCCC2)=NC1`;
-    const bbbResults = await runAdmetica(smiles, 'PPBR,VDss', 'false');
+    const bbbResults = await fetchWrapper(() => runAdmetica(smiles, 'PPBR,VDss', 'false'));
     expect(bbbResults != null, true);
   }, {timeout: 100000});
 
