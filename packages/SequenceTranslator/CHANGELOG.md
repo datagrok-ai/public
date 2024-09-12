@@ -1,5 +1,11 @@
 # Sequence Translator changelog
 
+## 1.4.1 (2024-09-12)
+
+### Bug fixes
+
+* Input style fixes
+
 ## 1.4.0 (2024-09-10)
 
 ### Features
