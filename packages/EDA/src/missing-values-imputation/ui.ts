@@ -61,9 +61,13 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
   df.columns.toList()
     .filter((col) => SUPPORTED_COLUMN_TYPES.includes(col.type))
     .forEach((col) => {
+      const misValsCount = col.stats.missingValueCount;
+      if (misValsCount === col.length)
+        return;
+
       availableFeatureColsNames.push(col.name);
 
-      if (col.stats.missingValueCount > 0) {
+      if (misValsCount > 0) {
         colsWithMissingVals.push(col);
         availableTargetColsNames.push(col.name);
       }
@@ -281,26 +285,7 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
     .add(inPlaceInput)
     .add(keepEmptyInput)
     .show()
-    .onOK(() => {
-      okClicked = true;
-      dlg.close();
-      availableFeatureColsNames.filter((name) => !selectedFeatureColNames.includes(name))
-        .forEach((name) => featuresMetrics.delete(name));
-
-      try {
-        const failedToImpute = impute(df!, targetColNames, featuresMetrics, misValsInds, distType, neighbors, inPlace);
-
-        if (!keepEmpty)
-          imputeFailed(df!, failedToImpute);
-        resolve();
-      } catch (err) {
-        if (err instanceof Error)
-          grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${err.message}`);
-        else
-          grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
-        reject(err);
-      }
-    }).onClose.subscribe(() => !okClicked && resolve());
+    .onClose.subscribe(() => !okClicked && resolve());
 
   return promise;
 } // runKNNImputer

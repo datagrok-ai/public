@@ -19,9 +19,10 @@ const STRING_COLS = 5;
 const MIS_VALS_COUNT = 5;
 const NEIGHBORS = 5;
 const TIMEOUT = 10000;
+const TOTAL_COLS = INT_COLS + FLOAT_COLS + STRING_COLS;
 
 const testKNN = (dist: DISTANCE_TYPE) => {
-  test(`${dist} distance, ${ROWS_K}K rows, ${INT_COLS + FLOAT_COLS + STRING_COLS} columns`, async () => {
+  test(`${dist} dist, ${ROWS_K}K rows, ${TOTAL_COLS} cols, ${MIS_VALS_COUNT * TOTAL_COLS} missing vals`, async () => {
     // Data
     const data = dataWithMissingVals(ROWS_K * K, INT_COLS, FLOAT_COLS, STRING_COLS, MIS_VALS_COUNT);
     const df = data.df;
