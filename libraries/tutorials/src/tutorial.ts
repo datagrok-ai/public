@@ -122,7 +122,14 @@ export abstract class Tutorial extends DG.Widget {
       grok.shell.addTableView(this._t);
     }
     this.closed = false;
-    await this._run();
+
+    try {
+      await this._run();
+    } catch (error) {
+      // If the tutorial was closed during execution, exit without error
+      if (!this.closed) return Promise.reject(error);
+    }    
+
     this.endSection();
 
     this.title('Congratulations!');
