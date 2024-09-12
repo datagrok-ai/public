@@ -205,6 +205,7 @@ export function getPkPdSim(dose: number, count: number, interval: number, KA: nu
   return solution;
 } // getPkPdSim
 
+/** Bioreactor demo app info for the Help panel */
 const bioreactorInfo = `# Try
 Vary inputs and check results
 # No-code
@@ -221,6 +222,7 @@ Each time you change inputs, a system of 13 non-linear ordinary differential equ
 * [Diff Studio](https://datagrok.ai/help/compute/diff-studio)
 * [Compute](https://datagrok.ai/help/compute/)`;
 
+/** Show info in the Help panel */
 function showHelpPanel(info: string): void {
   grok.shell.windows.help.visible = true;
   const helpMD = ui.markdown(info);
@@ -238,6 +240,7 @@ export function showBioHelpPanel() {
   showHelpPanel(bioreactorInfo);
 }
 
+/** PK-PD demo app info for the Help panel */
 const pkpdInfo = `# Try
 Interactive results when changing inputs.
 # No-code

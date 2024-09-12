@@ -171,7 +171,6 @@ export function pkPd(dose: number, count: number, interval: number, KA: number, 
 }
 
 //name: PK-PD demo
-//tags: model
 //description: Pharmacokinetic-pharmacodynamic (PK-PD) simulation: two-compartment model
 //input: double dose = 10000 {caption: dose; category: Dosing; min: 1000; max: 20000; step: 1000} [Dosage]
 //input: int count = 10 {caption: count; category: Dosing; min: 1; max: 15; step: 1} [Number of doses]
