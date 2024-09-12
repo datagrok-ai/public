@@ -1,5 +1,13 @@
 # EDA changelog
 
+## 1.2.1 (2024-09-12)
+
+* Add tests & benchmarks for missing values imputation using KNN
+
+## 1.2.0 (2024-09-10)
+
+* 1.21.1 release
+
 ## 1.1.36-rc (2024-09-06)
 
 * Preparing 1.21.1 release

@@ -6,6 +6,10 @@ const TRESHOLD = 0.5;
 const SHIFT = 1;
 const LIMIT = 2;
 
+const MAX_INT = 10;
+const MAX_FLOAT = 10;
+const CATEGORIES = ['Alpha', 'Beta', 'Gamma', 'Delta'];
+
 /** Check lengths of columns */
 function checkLen(target: DG.Column, prediction: DG.Column): void {
   if (target.length !== prediction.length)
@@ -119,3 +123,74 @@ export function accuracy(target: DG.Column, prediction: DG.Column): number {
 
   return correctPredictions / rows;
 }
+
+/** Return dataframe with missing values */
+export function dataWithMissingVals(rows: number, intCols: number, floatCols: number,
+  strCols: number, misValCount: number): {df: DG.DataFrame, misValsIds: Map<string, number[]>} {
+  const catsCount = CATEGORIES.length;
+  const cols = [];
+  let idx = 0;
+
+  const misValsIds = new Map<string, number[]>();
+
+  for (let j = 0; j < intCols; ++j) {
+    const arr = new Int32Array(rows);
+    const name = `int #${j + 1}`;
+    const indeces: number[] = [];
+
+    for (let i = 0; i < rows; ++i)
+      arr[i] = Math.floor(Math.random() * MAX_INT);
+
+    for (let k = 0; k < misValCount; ++k) {
+      idx = Math.floor(rows * Math.random());
+      arr[idx] = DG.INT_NULL;
+      indeces.push(idx);
+    }
+
+    cols.push(DG.Column.fromInt32Array(name, arr));
+    misValsIds.set(name, indeces);
+  }
+
+  for (let j = 0; j < floatCols; ++j) {
+    const arr = new Float32Array(rows);
+    const name = `float #${j + 1}`;
+    const indeces: number[] = [];
+
+    for (let i = 0; i < rows; ++i)
+      arr[i] = Math.random() * MAX_FLOAT;
+
+    for (let k = 0; k < misValCount; ++k) {
+      idx = Math.floor(rows * Math.random());
+      arr[idx] = DG.FLOAT_NULL;
+      indeces.push(idx);
+    }
+
+    cols.push(DG.Column.fromFloat32Array(name, arr));
+    misValsIds.set(name, indeces);
+  }
+
+  for (let j = 0; j < strCols; ++j) {
+    const arr = new Array<string>(rows);
+    const name = `str #${j + 1}`;
+    const indeces: number[] = [];
+
+    for (let i = 0; i < rows; ++i)
+      arr[i] = CATEGORIES[Math.floor(Math.random() * catsCount)];
+
+    const col = DG.Column.fromStrings(name, arr);
+
+    for (let k = 0; k < misValCount; ++k) {
+      idx = Math.floor(rows * Math.random());
+      col.set(idx, null);
+      indeces.push(idx);
+    }
+
+    cols.push(col);
+    misValsIds.set(name, indeces);
+  }
+
+  return {
+    df: DG.DataFrame.fromColumns(cols),
+    misValsIds: misValsIds,
+  };
+} // tableWithMissingVals

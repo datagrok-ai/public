@@ -14,7 +14,7 @@ type FeatureInputSettings = {
 };
 
 /** Return default setting of the feature metric inputs */
-function getFeatureInputSettings(type: DG.COLUMN_TYPE): FeatureInputSettings {
+export function getFeatureInputSettings(type: DG.COLUMN_TYPE): FeatureInputSettings {
   switch (type) {
   case DG.COLUMN_TYPE.STRING:
   case DG.COLUMN_TYPE.DATE_TIME:
@@ -61,9 +61,13 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
   df.columns.toList()
     .filter((col) => SUPPORTED_COLUMN_TYPES.includes(col.type))
     .forEach((col) => {
+      const misValsCount = col.stats.missingValueCount;
+      if (misValsCount === col.length)
+        return;
+
       availableFeatureColsNames.push(col.name);
 
-      if (col.stats.missingValueCount > 0) {
+      if (misValsCount > 0) {
         colsWithMissingVals.push(col);
         availableTargetColsNames.push(col.name);
       }
@@ -96,14 +100,17 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
 
   // Neighbors components
   let neighbors = DEFAULT.NEIGHBORS;
-  const neighborsInput = ui.input.int(TITLE.NEIGHBORS, {value: neighbors, onValueChanged: (value) => {
-    if (value === null)
-      neighborsInput.value = neighbors;
-    else if (value >= MIN_NEIGHBORS)
-      neighbors = value;
-    else
-      neighborsInput.value = neighbors;
-  }});
+  const neighborsInput = ui.input.int(TITLE.NEIGHBORS, {
+    value: neighbors,
+    showPlusMinus: true,
+    min: MIN_NEIGHBORS,
+    nullable: false,
+    onValueChanged: (value) => {
+      if ((value !== null) && (value >= MIN_NEIGHBORS))
+        neighbors = value;
+      checkApplicability();
+    },
+  });
   neighborsInput.setTooltip(HINT.NEIGHBORS);
 
   // Distance components
@@ -116,23 +123,32 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
 
   // Target columns components (cols with missing values to be imputed)
   let targetColNames = colsWithMissingVals.map((col) => col.name);
-  const targetColInput = ui.input.columns(TITLE.COLUMNS, {table: df, value: df.columns.byNames(availableTargetColsNames), onValueChanged: (value) => {
-    targetColNames = value.map((col) => col.name);
-    checkApplicability();
-  }, available: availableTargetColsNames});
+  const targetColInput = ui.input.columns(TITLE.COLUMNS, {
+    table: df,
+    value: df.columns.byNames(availableTargetColsNames),
+    onValueChanged: (value) => {
+      targetColNames = value.map((col) => col.name);
+      checkApplicability();
+    },
+    available: availableTargetColsNames,
+  });
   targetColInput.setTooltip(HINT.TARGET);
 
   // Feature columns components
   let selectedFeatureColNames = availableFeatureColsNames as string[];
-  const featuresInput = ui.input.columns(TITLE.FEATURES, {value: df.columns.byNames(availableFeatureColsNames), table: df, onValueChanged: (value) => {
-    selectedFeatureColNames = value.map((col) => col.name);
+  const featuresInput = ui.input.columns(TITLE.FEATURES, {
+    value: df.columns.byNames(availableFeatureColsNames),
+    table: df, onValueChanged: (value) => {
+      selectedFeatureColNames = value.map((col) => col.name);
 
-    if (selectedFeatureColNames.length > 0) {
-      checkApplicability();
-      metricInfoInputs.forEach((div, name) => div.hidden = !selectedFeatureColNames.includes(name));
-    } else
-      hideWidgets();
-  }, available: availableFeatureColsNames});
+      if (selectedFeatureColNames.length > 0) {
+        checkApplicability();
+        metricInfoInputs.forEach((div, name) => div.hidden = !selectedFeatureColNames.includes(name));
+      } else
+        hideWidgets();
+    },
+    available: availableFeatureColsNames,
+  });
   featuresInput.setTooltip(HINT.FEATURES);
 
   /** Hide widgets (use if run is not applicable) */
@@ -147,7 +163,7 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
 
   /** Show widgets (use if run is applicable) */
   const showWidgets = () => {
-    dlg.getButton(TITLE.RUN).disabled = false;
+    dlg.getButton(TITLE.RUN).disabled = (neighborsInput.value === null) || (neighborsInput.value < MIN_NEIGHBORS);
     distDiv.hidden = false;
     inPlaceInput.root.hidden = false;
     neighborsInput.root.hidden = false;
@@ -167,6 +183,9 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
         }
       });
     }
+
+    if (targetColNames.length < 1)
+      hideWidgets();
   };
 
   // Metrics components
@@ -236,6 +255,28 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
     resolve = res;
     reject = rej;
   });
+
+  dlg.addButton(TITLE.RUN, () => {
+    okClicked = true;
+    dlg.close();
+    availableFeatureColsNames.filter((name) => !selectedFeatureColNames.includes(name))
+      .forEach((name) => featuresMetrics.delete(name));
+
+    try {
+      const failedToImpute = impute(df!, targetColNames, featuresMetrics, misValsInds, distType, neighbors, inPlace);
+
+      if (!keepEmpty)
+        imputeFailed(df!, failedToImpute);
+      resolve();
+    } catch (err) {
+      if (err instanceof Error)
+        grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${err.message}`);
+      else
+        grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
+      reject(err);
+    }
+  });
+
   dlg.add(targetColInput)
     .add(featuresInput)
     .add(distDiv)
@@ -244,26 +285,7 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
     .add(inPlaceInput)
     .add(keepEmptyInput)
     .show()
-    .onOK(() => {
-      okClicked = true;
-      dlg.close();
-      availableFeatureColsNames.filter((name) => !selectedFeatureColNames.includes(name))
-        .forEach((name) => featuresMetrics.delete(name));
-
-      try {
-        const failedToImpute = impute(df!, targetColNames, featuresMetrics, misValsInds, distType, neighbors, inPlace);
-
-        if (!keepEmpty)
-          imputeFailed(df!, failedToImpute);
-        resolve();
-      } catch (err) {
-        if (err instanceof Error)
-          grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${err.message}`);
-        else
-          grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
-        reject(err);
-      }
-    }).onClose.subscribe(() => !okClicked && resolve());
+    .onClose.subscribe(() => !okClicked && resolve());
 
   return promise;
 } // runKNNImputer
