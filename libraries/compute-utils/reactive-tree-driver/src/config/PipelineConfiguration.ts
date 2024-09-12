@@ -1,5 +1,5 @@
 import {Observable} from 'rxjs';
-import {IRuntimeLinkController, IRuntimeValidatorController} from '../RuntimeControllers';
+import {IRuntimeLinkController, IRuntimeMetaController, IRuntimeValidatorController} from '../RuntimeControllers';
 import {ItemId, NqName, RestrictionType, LinkSpecString} from '../data/common-types';
 import {StepParallelInitialConfig, StepSequentialInitialConfig} from './PipelineInstance';
 
@@ -31,6 +31,7 @@ export type IRuntimeController = IRuntimeLinkController | IRuntimeValidatorContr
 export type HandlerBase<P, R> = ((params: P) => Promise<R> | Observable<R> | R) | NqName;
 export type Handler = HandlerBase<{ controller: IRuntimeLinkController }, void>;
 export type Validator = HandlerBase<{ controller: IRuntimeValidatorController }, void>;
+export type MetaHandler = HandlerBase<{ controller: IRuntimeMetaController }, void>;
 export type PipelineProvider = HandlerBase<{ version?: string }, LoadedPipeline>;
 
 // link-like
@@ -46,15 +47,23 @@ export type PipelineLinkConfigurationBase<P> = {
 
 export type PipelineHandlerConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   isValidator?: false;
+  isMeta?: false;
   handler?: Handler;
 };
 
 export type PipelineValidatorConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   isValidator: true;
+  isMeta?: false;
   handler: Validator;
 };
 
-export type PipelineLinkConfiguration<P> = PipelineHandlerConfiguration<P> | PipelineValidatorConfiguration<P>;
+export type PipelineMetaConfiguration<P> = PipelineLinkConfigurationBase<P> & {
+  isValidator?: false;
+  isMeta: true;
+  handler: Validator;
+};
+
+export type PipelineLinkConfiguration<P> = PipelineHandlerConfiguration<P> | PipelineValidatorConfiguration<P> | PipelineMetaConfiguration<P>;
 
 export type PipelineHookConfiguration<P> = {
   handler: Handler;

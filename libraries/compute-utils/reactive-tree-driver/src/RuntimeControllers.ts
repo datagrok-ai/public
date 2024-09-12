@@ -7,7 +7,6 @@ export interface IRuntimeLinkController {
   getAll<T = any>(name: string): T[] | undefined;
   getFirst<T = any>(name: string): T | undefined;
   setAll<T = any>(name: string, state: T, restriction?: RestrictionType): void;
-  // updateOptions(name: string, options: string[], selected: string): void;
 }
 
 export interface IRuntimeValidatorController {
@@ -15,4 +14,10 @@ export interface IRuntimeValidatorController {
   getFirst<T = any>(name: string): T | undefined;
   setValidation(name: string, validation?: ValidationResult | undefined): void;
   // getValidationAction(name: string, action: string): ActionItem | undefined;
+}
+
+export interface IRuntimeMetaController {
+  getAll<T = any>(name: string): T[] | undefined;
+  getFirst<T = any>(name: string): T | undefined;
+  setViewMeta(name: string, meta: any): void;
 }

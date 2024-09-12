@@ -5,7 +5,7 @@ import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tre
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
 import {callHandler} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import { PipelineStateStatic, StepFunCallStateBase } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {PipelineStateStatic, StepFunCallStateBase} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 
 category('ComputeUtils: Driver state tree readonly', async () => {
   test('Pipeline load readonly', async () => {
@@ -15,7 +15,7 @@ category('ComputeUtils: Driver state tree readonly', async () => {
     await tree.initFuncCalls().toPromise();
     const sc = tree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});
     const metaCall = await tree.save().toPromise();
-    const loadedTree = await StateTree.load(metaCall!.id, pconf, { isReadonly: true }).toPromise();
+    const loadedTree = await StateTree.load(metaCall!.id, pconf, {isReadonly: true}).toPromise();
     await loadedTree.initFuncCalls().toPromise();
     const lc = loadedTree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});
     sc.isReadonly = true;

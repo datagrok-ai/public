@@ -43,6 +43,7 @@ export class FuncCallNode implements IStoreProvider {
 
   public consistencyInfo$ = new BehaviorSubject<Record<string, ConsistencyInfo>>({});
   public validationInfo$ = new BehaviorSubject<Record<string, ValidationResultBase>>({});
+  public metaInfo$ = new BehaviorSubject<Record<string, BehaviorSubject<any | undefined>>>({});
   public funcCallState$ = new BehaviorSubject<FuncCallStateInfo | undefined>(undefined);
 
   private closed$ = new Subject<true>();
@@ -59,6 +60,10 @@ export class FuncCallNode implements IStoreProvider {
       map((validations) => this.convertValidations(validations)),
       takeUntil(this.closed$),
     ).subscribe(this.validationInfo$);
+
+    this.instancesWrapper.meta$.pipe(
+      takeUntil(this.closed$),
+    ).subscribe(this.metaInfo$);
 
     combineLatest([this.instancesWrapper.isRunning$, this.instancesWrapper.isRunable$, this.instancesWrapper.isOutputOutdated$]).pipe(
       map(([isRunning, isRunnable, isOutputOutdated]) => ({isRunning, isRunnable, isOutputOutdated})),

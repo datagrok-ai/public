@@ -10,7 +10,7 @@ import {PipelineStateStatic, StepFunCallSerializedState} from '@datagrok-librari
 import {loadInstanceState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {callHandler} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {of} from 'rxjs';
-import { FuncCallNode } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
+import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
 const config1: PipelineConfiguration = {
   id: 'pipeline1',
@@ -180,34 +180,34 @@ category('ComputeUtils: Driver instance additional states', async () => {
         fcnode.getStateStore().run({'res': 3}, 5).subscribe();
       });
       const a = {
-        "isRunning": false,
-        "isRunnable": true,
-        "isOutputOutdated": true
+        'isRunning': false,
+        'isRunnable': true,
+        'isOutputOutdated': true,
       };
       const b = {
-        "isRunning": true,
-        "isRunnable": true,
-        "isOutputOutdated": true
+        'isRunning': true,
+        'isRunnable': true,
+        'isOutputOutdated': true,
       };
       const c = {
-        "isRunning": true,
-        "isRunnable": false,
-        "isOutputOutdated": true
+        'isRunning': true,
+        'isRunnable': false,
+        'isOutputOutdated': true,
       };
       const d = {
-        "isRunning": false,
-        "isRunnable": false,
-        "isOutputOutdated": true
+        'isRunning': false,
+        'isRunnable': false,
+        'isOutputOutdated': true,
       };
       const e = {
-        "isRunning": false,
-        "isRunnable": true,
-        "isOutputOutdated": true
+        'isRunning': false,
+        'isRunnable': true,
+        'isOutputOutdated': true,
       };
       const f = {
-        "isRunning": false,
-        "isRunnable": true,
-        "isOutputOutdated": false
+        'isRunning': false,
+        'isRunnable': true,
+        'isOutputOutdated': false,
       };
       expectObservable(states[node.getItem().uuid], '^ 1000ms !').toBe('a(bc)-(def)', {a, b, c, d, e, f});
     });
@@ -281,9 +281,9 @@ category('ComputeUtils: Driver instance additional states', async () => {
     const nodeLoaded = loadedTree.getNode([{idx: 0}]);
     const states = loadedTree.getFuncCallStates();
     expectDeepEqual(states[nodeLoaded.getItem().uuid]?.value, {
-      "isRunning": false,
-      "isRunnable": true,
-      "isOutputOutdated": false
+      'isRunning': false,
+      'isRunnable': true,
+      'isOutputOutdated': false,
     });
   });
 });

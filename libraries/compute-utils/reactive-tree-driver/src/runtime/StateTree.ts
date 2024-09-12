@@ -13,6 +13,7 @@ import {loadFuncCall, loadInstanceState, makeFuncCall, makeMetaCall, saveFuncCal
 import {ConsistencyInfo, FuncCallNode, FuncCallStateInfo, isFuncCallNode, ParallelPipelineNode, PipelineNodeBase, SequentialPipelineNode, StateTreeNode, StateTreeSerializationOptions, StaticPipelineNode} from './StateTreeNodes';
 import {indexFromEnd} from '../utils';
 import {ValidationResultBase} from '../../../shared-utils/validation';
+import {LinksState} from './LinksState';
 
 const MAX_CONCURENT_SAVES = 5;
 
@@ -20,6 +21,7 @@ export class StateTree extends BaseTree<StateTreeNode> {
   public makeStateRequests$ = new Subject<true>();
   public metaCall$ = new BehaviorSubject<DG.FuncCall | undefined>(undefined);
   public isLocked$ = new BehaviorSubject(false);
+  public linksState = new LinksState();
 
   constructor(
     item: StateTreeNode,
@@ -56,6 +58,16 @@ export class StateTree extends BaseTree<StateTreeNode> {
 
       return acc;
     }, [] as (readonly [string, BehaviorSubject<Record<string, ConsistencyInfo>>])[]);
+    return Object.fromEntries(entries);
+  }
+
+  public getMeta() {
+    const entries = this.traverse(this.getRoot(), (acc, node) => {
+      const item = node.getItem();
+      if (isFuncCallNode(item))
+        return [...acc, [item.uuid, item.metaInfo$] as const];
+      return acc;
+    }, [] as (readonly [string, BehaviorSubject<Record<string, BehaviorSubject<any | undefined>>>])[]);
     return Object.fromEntries(entries);
   }
 

@@ -119,7 +119,7 @@ export class Driver {
     return state.loadSubTree(msg.parentUuid, msg.dbId, msg.itemId, msg.position, !!msg.readonly);
   }
 
-  private saveDynamicItem(msg: SaveDynamicItem, state?: StateTree) {
+  public saveDynamicItem(msg: SaveDynamicItem, state?: StateTree) {
     this.checkState(msg, state);
     return state.save(msg.uuid);
   }
@@ -139,7 +139,7 @@ export class Driver {
     return state.runStep(msg.uuid, msg.mockResults, msg.mockDelay);
   }
 
-  private savePipeline(msg: SavePipeline, state?: StateTree) {
+  public savePipeline(msg: SavePipeline, state?: StateTree) {
     this.checkState(msg, state);
     return state.save();
   }

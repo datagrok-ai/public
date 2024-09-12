@@ -35,6 +35,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
   public isOutputOutdated$ = new BehaviorSubject(true);
 
   public validations$ = new BehaviorSubject<Record<string, Record<string, ValidationResultBase | undefined>>>({});
+  public meta$ = new BehaviorSubject<Record<string, BehaviorSubject<any | undefined>>>({});
 
   public inputRestrictions$ = new BehaviorSubject<Record<string, RestrictionState | undefined>>({});
   public inputRestrictionsUpdates$ = new Subject<[string, RestrictionState | undefined]>();
@@ -123,6 +124,11 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
     this.validations$.next({...allValidations, [validatorId]: {...validatorResults, [id]: validation}});
   }
 
+  setMeta(id: string, meta: any | undefined) {
+    const allMeta = this.meta$.value;
+    allMeta[id].next(meta);
+  }
+
   run(mockResults?: Record<string, any>, mockDelay?: number) {
     return defer(() => {
       const currentInstance = this.instance$.value?.adapter;
@@ -178,6 +184,19 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
       map(([next]) => next),
       takeUntil(this.closed$),
     ).subscribe(this.isOutputOutdated$);
+
+    this.instance$.pipe(
+      map((instance) => {
+        if (instance == null)
+          return {};
+        const res: Record<string, BehaviorSubject<any | undefined>> = {};
+        for (const item of this.io) {
+          res[item.id] = new BehaviorSubject<any>(undefined);
+        }
+        return res;
+      }),
+      takeUntil(this.closed$),
+    ).subscribe(this.meta$);
   }
 
   private isRunnable(validations: Record<string, Record<string, ValidationResultBase | undefined>>) {
