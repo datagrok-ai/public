@@ -280,7 +280,27 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
     .add(neighborsInput)
     .add(inPlaceInput)
     .add(keepEmptyInput)
-    .show();//.onClose.subscribe(() => !okClicked && reject()); // This produces an error, TODO: to fix
+    .show()
+    .onOK(() => {
+      okClicked = true;
+      dlg.close();
+      availableFeatureColsNames.filter((name) => !selectedFeatureColNames.includes(name))
+        .forEach((name) => featuresMetrics.delete(name));
+
+      try {
+        const failedToImpute = impute(df!, targetColNames, featuresMetrics, misValsInds, distType, neighbors, inPlace);
+
+        if (!keepEmpty)
+          imputeFailed(df!, failedToImpute);
+        resolve();
+      } catch (err) {
+        if (err instanceof Error)
+          grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${err.message}`);
+        else
+          grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
+        reject(err);
+      }
+    }).onClose.subscribe(() => !okClicked && resolve());
 
   return promise;
 } // runKNNImputer

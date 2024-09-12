@@ -469,10 +469,7 @@ export class TestManager extends DG.ViewBase {
     
       this.updateTestResultsIcon(t.resultDiv, true, true);
       return;
-    }
-    else{
-      t.test.options.skipReason = undefined;
-    }
+    } 
     const skipReason = t.test.options?.skipReason;
     if ((force || this.runSkippedMode) && skipReason) {
       t.test.options.skipReason = undefined;

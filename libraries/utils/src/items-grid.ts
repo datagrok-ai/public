@@ -154,8 +154,8 @@ export class ItemsGrid {
       if (prop.propertyType !== DG.TYPE.BOOL && prop.name.toLowerCase() !== 'color')
         input.input && (input.input.style.width = '100%');
       inputsMap[prop.name] = input;
-      input.onChanged.subscribe((value) => {
-        item[prop.name] = value;
+      input.onChanged.subscribe(() => {
+        item[prop.name] = input.value;
         isAdding ? this.onAddingItemChanged.next({item, fieldName: prop.name}) :
           this.onItemChanged.next({item, fieldName: prop.name});
       });

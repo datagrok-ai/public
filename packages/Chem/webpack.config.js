@@ -39,7 +39,7 @@ module.exports = (_env, _options) => ({
   externals: [
     function({context, request}, callback) {
       if (context.includes('worker') && request.includes('openchemlib/full')) {
-        console.log({context, request});
+        //console.log({context, request});
         return callback();
       }
 

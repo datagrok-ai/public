@@ -1,5 +1,28 @@
 # bio changelog
 
+## 5.42.15 (2024-09-10)
+
+### Bug fixes
+
+* Fix default lib summary for tests
+
+## 5.42.14 (2024-09-04)
+
+### Bug fixes
+
+* Fix toAtomicLevel workers error DG is not defined
+* Fix SeqHandler.getHelm lost cycles, add tests`
+* Add options for SeqHandler.getHelm
+* Fix default monomer libs for PolyTool rules
+
+## 5.42.13 (2024-09-02)
+
+* Add interfaces for monomer management
+
+## 5.42.12 (2024-08-30)
+
+Add getHelm to SeqHandler and INotationProvider
+
 ## 5.42.11 (2024-08-24)
 
 ### Bug fixes

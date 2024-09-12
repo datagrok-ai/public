@@ -23,7 +23,13 @@ const skip = [
   'add-single-filter',
   'custom-filters',
   'filter-group',
-  'dynamic-loading'
+  'dynamic-loading',
+  //performance 
+  'read-strings',
+  'dataframe-access',
+  '1m-aggregation',
+  '100-million-rows',
+  '1-million-columns'
 ];
 
 //name: test

@@ -265,7 +265,8 @@ export class Chain {
   }
 }
 
-function getHelms(sequences: string[], rules: Rules): string[] {
+/** The main PolyTool convert engine. Returns list of Helms. Covered with tests. */
+export function doPolyToolConvert(sequences: string[], rules: Rules): string[] {
   const helms = new Array<string>(sequences.length);
   for (let i = 0; i < sequences.length; i++) {
     if (sequences[i] === undefined)
@@ -277,36 +278,4 @@ function getHelms(sequences: string[], rules: Rules): string[] {
   }
 
   return helms;
-}
-
-export async function addTransformedColumn(
-  sequencesCol: DG.Column<string>, addHelm: boolean, ruleFiles: string[], chiralityEngine?: boolean
-): Promise<void> {
-  const df = sequencesCol.dataFrame;
-
-  const rules = await getRules(ruleFiles);
-  const targetList = getHelms(sequencesCol.toList(), rules);
-  const helmColName = df.columns.getUnusedName('transformed(' + sequencesCol.name + ')');
-  const targetHelmCol = DG.Column.fromList('string', helmColName, targetList);
-
-  addCommonTags(targetHelmCol);
-  targetHelmCol.meta.units = NOTATION.HELM;
-
-  if (addHelm) {
-    targetHelmCol.setTag('cell.renderer', 'helm');
-    df.columns.add(targetHelmCol);
-  }
-
-  // toAtomicLevel
-  const molCol = await grok.functions.call('Bio:getMolFromHelm', {
-    'df': df,
-    'helmCol': targetHelmCol,
-    'chiralityEngine': chiralityEngine
-  });
-
-  molCol.name = df.columns.getUnusedName('molfile(' + sequencesCol.name + ')');
-  molCol.semType = DG.SEMTYPE.MOLECULE;
-
-  df.columns.add(molCol, true);
-  await grok.data.detectSemanticTypes(df);
 }

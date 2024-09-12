@@ -239,7 +239,7 @@ export class FittingView {
             ui.tooltip.bind(input.captionLabel, (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Output dataframe' : 'Output scalar');
 
             input.onChanged.subscribe((value) => {
-              temp.target = value;
+              temp.target = input.value; // fixing the bug https://reddata.atlassian.net/browse/GROK-16642 
 
               if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
                 if (temp.target) {

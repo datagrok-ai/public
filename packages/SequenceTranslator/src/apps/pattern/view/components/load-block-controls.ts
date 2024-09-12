@@ -164,7 +164,11 @@ export class PatternLoadControlsManager {
 
   private getPatternName(patternList: string[]): string {
     return patternList.find(
-      (patternName) => patternName === this.eventBus.getPatternName()
+      (longPatternName) => {
+        // The pattern name can be followed by the author name in parenths
+        const shortPatternName = longPatternName.split(' (')[0];
+        return shortPatternName === this.eventBus.getPatternName();
+      }
     ) ?? patternList[0];
   }
 

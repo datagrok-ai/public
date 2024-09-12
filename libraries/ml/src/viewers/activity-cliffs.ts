@@ -370,7 +370,7 @@ export async function getActivityCliffsEmbeddings(df: DG.DataFrame, seqCol: DG.C
 }
 
 
-export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFrame, seqCol: DG.Column, 
+export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFrame, seqCol: DG.Column,
   encodedColWithOptions: PreprocessFunctionReturnType, activities: DG.Column, axesNames: string[],
   similarity: number, similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames,
   seqSpaceOptions: any, semType: string, tags: {[index: string]: string},
@@ -378,10 +378,9 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
   propertyPanelFunc: (params: ITooltipAndPanelParams) => HTMLElement,
   linesGridFunc?: (df: DG.DataFrame, pairColNames: string[]) => DG.Grid,
   cliffsDockRatio?: number, demo?: boolean) : Promise<void> {
-
   activityCliffsIdx++;
   const similarityLimit = similarity / 100;
-    // eslint-disable-next-line prefer-const
+  // eslint-disable-next-line prefer-const
   let acc: DG.Accordion;
   let clickedSp = false;
   const view = demo ? (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView : grok.shell.getTableView(df.name);

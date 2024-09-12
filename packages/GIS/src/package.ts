@@ -160,6 +160,7 @@ export async function getCensusInfo() {
   //create dialog UI>>
   const colVintages = DG.Column.fromList('int', 'Vintage', [...mapVintages.keys()]);
   const dfVintages = DG.DataFrame.fromColumns([colVintages]);
+  //@ts-ignore until we fix it
   const gridVintages = DG.Viewer.grid(dfVintages, {'min-width': '70px', 'border': '1px green'});
   gridVintages.autoSize(68, 300);
   const col1 = gridVintages.columns.byName('Vintage');
@@ -169,9 +170,11 @@ export async function getCensusInfo() {
     gridVintages.columns.rowHeader.visible = false;
 
   const dfDatasets = DG.DataFrame.create(0);
+  //@ts-ignore
   const gridDatasets = DG.Viewer.grid(dfDatasets, {'min-width': '100%', 'border': 'solid 1px red'});
   gridDatasets.autoSize(400, 300, 400, 300);
   const dfVariables = DG.DataFrame.create(0);
+  //@ts-ignore
   const gridVariables = DG.Viewer.grid(dfVariables, {'min-width': '170px', 'border': 'solid 1px yellow'});
   gridVariables.autoSize(340, 300, 340, 300);
 

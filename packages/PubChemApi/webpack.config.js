@@ -29,7 +29,7 @@ module.exports = {
     ]
   },
   resolve: {
-    extensions: ['.mjs', '.'ts, '.json', '.js', '.tsx'],
+    extensions: ['.mjs', '.ts', '.json', '.js', '.tsx'],
   },
   externals: {
     'datagrok-api/dg': 'DG',

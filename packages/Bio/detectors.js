@@ -615,11 +615,16 @@ class BioPackageDetectors extends DG.Package {
 
 async function refineSeqSplitter(col, stats, separator) {
   let invalidateRequired = false;
-  const isCyclized = Object.keys(stats.freq).some((om) => om.match(/.+\(\d+\)/));
-  if (isCyclized) {
+  const isCyclized = Object.keys(stats.freq).some((om) => om.match(/^.+\(\d+\)$/));
+  const isDimerized = Object.keys(stats.freq).some((om) => om.match(/^\(#\d\).+$/));
+
+  if (isCyclized && !isDimerized) {
     await grok.functions.call('Bio:applyNotationProviderForCyclized', {col: col, separator: separator});
     // SeqHandler will be recreated and replaced with the next call .forColumn()
     // because of changing tags of the column
+    invalidateRequired = true;
+  } else if (isDimerized) {
+    await grok.functions.call('Bio: applyNotationProviderForDimerized', {col: col, separator: separator});
     invalidateRequired = true;
   }
 

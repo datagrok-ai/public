@@ -1,7 +1,3 @@
-import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
-import * as grok from 'datagrok-api/grok';
-
 import type {
   HelmType, PolymerType, MonomerType, IWebEditorMonomer, WebEditorRGroups, IMonomerColors, MonomerSetType
 } from '@datagrok-libraries/js-draw-lite/src/types/org';

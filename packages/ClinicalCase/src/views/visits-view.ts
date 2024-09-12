@@ -452,7 +452,7 @@ export class VisitsView extends ClinicalCaseViewBase {
               .aggregate();
             const plot = DG.Viewer.boxPlot(valueDf, {
               value: `${valCol}`,
-              category: `${catCol}`,
+              categoryColumnNames: [`${catCol}`],
               labelOrientation: DG.TextOrientation.Horz,
               showCategorySelector: false,
               showValueSelector: false,

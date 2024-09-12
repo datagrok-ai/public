@@ -58,7 +58,7 @@ export async function runChemSpace(table: DG.DataFrame, molecules: DG.Column, me
       fastRowCount: 10000,
       scatterPlotName: 'Chemical space',
       bypassLargeDataWarning: options?.[BYPASS_LARGE_DATA_WARNING],
-      tableView: tableView
+      tableView: tableView,
     });
   return res;
 }

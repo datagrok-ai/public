@@ -2,6 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as interfaces from "datagrok-api/src/interfaces/d4";
+import * as rx from "rxjs";
+import {delay} from 'rxjs/operators'
 
 export class ReportingApp {
   view?: DG.TableView;
@@ -108,9 +110,15 @@ export class ReportingApp {
         if (isAcknowledged.get(gc.cell.tableRowIndex ?? gc.cell.gridRow))
           gc.cell.style.textColor = 0xFFB8BAC0;
       });
-      grid.onCellClick.subscribe((_) => setTimeout(async () => await this.showPropertyPanel(table), 200));
 
-      table.onCurrentRowChanged.subscribe(async (_) => await this.showPropertyPanel(table));
+
+      rx.zip(grid.onCellClick, table.onCurrentRowChanged).pipe(delay(100))
+          .subscribe(async (_) => await this.showPropertyPanel(table));
+
+
+      // grid.onCellClick.subscribe((_) => setTimeout(async () => await this.showPropertyPanel(table), 200));
+
+      // table.onCurrentRowChanged.subscribe(async (_) => await this.showPropertyPanel(table));
       table.getCol('labels').meta.multiValueSeparator = ',';
       table.onValuesChanged.subscribe(async () => {
         grid.sort(['is_resolved', 'last_occurrence', 'errors_count'], [true, false, false]);
@@ -213,8 +221,8 @@ export class ReportingApp {
     const reportId = table.getCol('id').get(currentRow);
     this.updatePath(reportNumber);
     const report = await grok.dapi.reports.find(reportId);
-    if (report)
-      grok.shell.setCurrentObject(DG.ObjectHandler.forEntity(report)!.renderProperties(report.dart), false);
+    if (report && report !== grok.shell.o)
+      grok.shell.setCurrentObject(report, false);
   }
 
   updatePath(reportNumber: number): void {

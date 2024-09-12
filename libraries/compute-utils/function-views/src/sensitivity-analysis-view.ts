@@ -271,7 +271,7 @@ export class SensitivityAnalysisView {
 
         const tempDefault = {
           input: (() => {
-            const temp = ui.input.forProperty(inputProp, undefined, {onValueChanged: (v: DG.InputBase) => tempDefault.value = v.value});
+            const temp = ui.input.forProperty(inputProp, undefined, {onValueChanged: (value) => tempDefault.value = value});
             temp.root.insertBefore(switchMock, temp.captionLabel);
 
             temp.addPostfix(inputProp.options['units']);

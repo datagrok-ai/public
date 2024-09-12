@@ -11,7 +11,7 @@ limit 1000
 --name: _cbFindByMolregno
 --friendlyName: Misc | Find by Molregno
 --connection: Chembl
---input: int molregno
+--input: int molregno = 1234
 select
   compound_structures.canonical_smiles,
   compound_structures.molregno,

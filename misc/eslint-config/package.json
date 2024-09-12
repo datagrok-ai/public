@@ -1,5 +1,5 @@
 {
-  "name": "@datagrok/eslint-config",
+  "name": "@datagrok-misc/eslint-config",
   "version": "1.0.0",
   "description": "Common config for all Datagrok packages",
   "main": "index.js",

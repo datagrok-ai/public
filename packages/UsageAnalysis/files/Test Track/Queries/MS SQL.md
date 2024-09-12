@@ -20,14 +20,14 @@
 1. Refresh **Browse**.
 2. Go to **Browse** > **Databases** > **MS SQL** > **NorthwindTest**.
 3. Type `new_test` in the search field to search for the query from the previous step. 
-3. On the **Contest Panel**, check all tabs for the query.
+4. On the **Context Panel**, check all tabs for the query.
 
 ### Deleting
 1. Go to **Browse** > **Databases** > **MS SQL** > **NorthwindTest** and find query from the previous steps with name `new_test_query_ms_sql`.
-1. Delete it:
+2. Delete it:
     * Right-click the connection and select **Delete** from the context menu.
     * In the confirmation dialog, click DELETE.
-1.Reftesh Browse and check that query has been deleted and is no longer present.
+3. Refresh Browse and check that query has been deleted and is no longer present.
 
 ---
 {
