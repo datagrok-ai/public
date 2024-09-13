@@ -13,6 +13,7 @@ export async function fetchWrapper<T>(fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
   } catch (error) {
+    console.error('Promise rejected');
     throw new Error('Promise rejected');
   }
 }
