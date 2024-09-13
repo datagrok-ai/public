@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { after, awaitCheck, before, category, delay, expect, test } from '@datagrok-libraries/utils/src/test';
+import {after, awaitCheck, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
 // import $ from 'cash-dom';
 
 category('Layouts', () => {
@@ -52,17 +52,24 @@ category('Layouts', () => {
     }, '', 3000);
     const save = Array.from(tb.querySelectorAll('.ui-btn'))
       .find((el) => el.textContent === 'Save') as HTMLElement;
-    await delay(10000);
+    await delay(3000);
     let num = list!.children.length + 1;
     save.click();
-    await delay(10000);
+    await delay(6000);
     await awaitCheck(() => list!.children.length === num, 'Layout was not saved', 3000);
     num--;
-    try { 
+    try {
       (list!.firstElementChild as HTMLElement).focus();
       list!.firstElementChild!.dispatchEvent(new MouseEvent('contextmenu'));
       await delay(100);
-      await awaitCheck(() => document.querySelector('[d4-name="Delete"]') !== null, 'Cannot find context menu');
+      await awaitCheck(() => document.querySelector('[d4-name="Upload"]') !== null, 'Cannot find context menu', 3000);
+      (document.querySelector('[d4-name="Upload"]') as HTMLElement).click();
+      await delay(1000);
+
+      (list!.firstElementChild as HTMLElement).focus();
+      list!.firstElementChild!.dispatchEvent(new MouseEvent('contextmenu'));
+      await delay(100);
+      await awaitCheck(() => document.querySelector('[d4-name="Delete"]') !== null, 'Cannot find context menu', 3000);
       (document.querySelector('[d4-name="Delete"]') as HTMLElement).click();
       let d: DG.Dialog;
       await awaitCheck(() => {
@@ -72,7 +79,7 @@ category('Layouts', () => {
         return true;
       });
       const yes = Array.from(d!.root.querySelectorAll('.ui-btn'))
-        .find((el) => el.textContent === 'YES') as HTMLElement;
+        .find((el) => el.textContent === 'DELETE') as HTMLElement;
       yes.click();
       await awaitCheck(() => list!.children.length === num, 'Layout was not deleted', 6000);
     } catch (e) {
@@ -88,7 +95,7 @@ category('Layouts', () => {
   after(async () => {
     grok.shell.closeAll();
   });
-}, { clear: false });
+}, {clear: false});
 
 category('Layouts: Apply', () => {
   const df: DG.DataFrame = grok.data.demo.demog(100);
@@ -128,7 +135,7 @@ category('Layouts: Apply', () => {
       l.sort((a, b) => a.createdOn > b.createdOn ? -1 : 1);
       await grok.dapi.layouts.delete(l[0]);
     }
-  }, { timeout: 100000 });
+  }, {timeout: 100000});
 
   test('gallery', async () => {
     const tv = grok.shell.addTableView(df);
