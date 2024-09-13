@@ -3,12 +3,12 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {InputForm} from '@datagrok-libraries/webcomponents-vue';
-import {defineComponent, shallowRef, onMounted, triggerRef, ref} from 'vue';
+import * as Vue from 'vue';
 
-export const FormApp = defineComponent({
+export const FormApp = Vue.defineComponent({
   name: 'FormApp',
   setup() {
-    const fc = shallowRef<DG.FuncCall | undefined>(undefined);
+    const fc = Vue.shallowRef<DG.FuncCall | undefined>(undefined);
 
     const logFuncCall = () => {
       console.log(Object.entries(fc.value?.inputs ?? {}));
@@ -19,7 +19,7 @@ export const FormApp = defineComponent({
         DG.Func.byName('Compute:ObjectCooling').prepare():
         DG.Func.byName('LibTests:SimpleInputs').prepare();
       fc.value = nfc;
-      triggerRef(fc);
+      Vue.triggerRef(fc);
     };
 
     const removeFuncCall = () => {

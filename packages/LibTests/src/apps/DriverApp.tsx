@@ -1,11 +1,15 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {BigButton, Button, DockManager, FoldableDialog, IconFA, InputForm, RibbonPanel, SplitH} from '@datagrok-libraries/webcomponents-vue';
-import {defineComponent, KeepAlive, onUnmounted, ref, shallowRef, triggerRef, VNode, watch} from 'vue';
+import * as Vue from 'vue';
+
+import {BigButton, DockManager, IconFA, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
 import {useSubscription} from '@vueuse/rxjs';
-import {isFuncCallState, isParallelPipelineState, isSequentialPipelineState, PipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {
+  isFuncCallState, isParallelPipelineState, 
+  isSequentialPipelineState, PipelineState,
+} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {RichFunctionView} from '../components/RFV/RichFunctionView';
 import {TreeNode} from '../components/TreeWizard/TreeNode';
 import {Draggable} from '@he-tree/vue';
@@ -15,16 +19,16 @@ import '@he-tree/vue/style/default.css';
 import '@he-tree/vue/style/material-design.css';
 import {deepCopy} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 
-export const DriverApp = defineComponent({
+export const DriverApp = Vue.defineComponent({
   name: 'DriverApp',
   setup() {
     const driver = new Driver();
-    const isLocked = ref(false);
-    const treeState = shallowRef<PipelineState | undefined>(undefined);
+    const isLocked = Vue.ref(false);
+    const treeState = Vue.shallowRef<PipelineState | undefined>(undefined);
 
-    const currentFuncCall = shallowRef<DG.FuncCall | undefined>(undefined);
+    const currentFuncCall = Vue.shallowRef<DG.FuncCall | undefined>(undefined);
 
-    const treeInstance = ref(null as InstanceType<typeof Draggable> | null);
+    const treeInstance = Vue.ref(null as InstanceType<typeof Draggable> | null);
 
     const changeFunccall = (newCall: DG.FuncCall) => {
       isVisibleRfv.value = true;
@@ -32,7 +36,7 @@ export const DriverApp = defineComponent({
       currentFuncCall.value = newCall;
     };
 
-    const isVisibleRfv = ref(true);
+    const isVisibleRfv = Vue.ref(true);
 
     let oldClosed = [] as string[];
 
@@ -56,7 +60,7 @@ export const DriverApp = defineComponent({
     };
 
     useSubscription((driver.stateLocked$).subscribe((l) => isLocked.value = l));
-    onUnmounted(() => {
+    Vue.onUnmounted(() => {
       driver.close();
       console.log('VuewDriverTestApp driver closed');
     });
@@ -81,16 +85,16 @@ export const DriverApp = defineComponent({
       driver.sendCommand({event: 'moveDynamicItem', uuid, position});
     };
 
-    watch(isLocked, (newVal) => {
+    Vue.watch(isLocked, (newVal) => {
       if (!treeInstance.value) return;
 
       ui.setUpdateIndicator(treeInstance.value.$el, newVal);
     });
 
-    const chosenStepUuid = ref(null as string | null);
+    const chosenStepUuid = Vue.ref(null as string | null);
 
-    const treeHidden = ref(false);
-    const rfvRef = ref(null as InstanceType<typeof RichFunctionView> | null);
+    const treeHidden = Vue.ref(false);
+    const rfvRef = Vue.ref(null as InstanceType<typeof RichFunctionView> | null);
 
     const handlePanelClose = (el: HTMLElement) => {
       if (el === rfvRef.value?.$el) isVisibleRfv.value = false;

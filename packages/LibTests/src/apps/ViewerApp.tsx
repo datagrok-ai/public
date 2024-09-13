@@ -3,14 +3,14 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Viewer} from '@datagrok-libraries/webcomponents-vue';
-import {defineComponent, shallowRef, ref} from 'vue';
+import * as Vue from 'vue';
 
-export const ViewerApp = defineComponent({
+export const ViewerApp = Vue.defineComponent({
   name: 'ViewerApp',
   setup() {
-    const df = shallowRef<DG.DataFrame | undefined>(undefined);
-    const type = ref<string | undefined>(undefined);
-    const viewer = shallowRef<DG.Viewer | undefined>(undefined);
+    const df = Vue.shallowRef<DG.DataFrame | undefined>(undefined);
+    const type = Vue.ref<string | undefined>(undefined);
+    const viewer = Vue.shallowRef<DG.Viewer | undefined>(undefined);
 
     let i = 0;
     const datasets = [grok.data.demo.demog(), grok.data.demo.doseResponse(), grok.data.demo.geo()];

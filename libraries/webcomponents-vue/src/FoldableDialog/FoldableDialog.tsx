@@ -1,11 +1,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { computed, defineComponent, PropType, ref, SlotsType, watchEffect } from 'vue';
+import * as Vue from 'vue';
+
 import { IconFA } from '../elements';
 import { useDraggable } from '@vueuse/core'
 
-export const FoldableDialog = defineComponent({
+export const FoldableDialog = Vue.defineComponent({
   name: 'FoldableDialog',
   props: {
     title: {
@@ -13,11 +14,11 @@ export const FoldableDialog = defineComponent({
       required: true,
     },
     foldable: {
-      type: Object as PropType<true | false>,
+      type: Object as Vue.PropType<true | false>,
       default: true
     }
   },
-  slots: Object as SlotsType<{
+  slots: Object as Vue.SlotsType<{
     label?: any,
     default?: any,
   }>,
@@ -25,16 +26,16 @@ export const FoldableDialog = defineComponent({
     closeClicked: () => {}
   },
   setup(props, {slots, emit}) {
-    const isFolded = ref(false);
+    const isFolded = Vue.ref(false);
 
-    const dialogEl = ref<HTMLElement | null>(null)
+    const dialogEl = Vue.ref<HTMLElement | null>(null)
 
     // `style` will be a helper computed for `left: ?px; top: ?px;`
     const { x, y } = useDraggable(dialogEl, {
       initialValue: { x: 40, y: 40 },
     })
 
-    const constrainedPosition = computed(() => {
+    const constrainedPosition = Vue.computed(() => {
       if (!dialogEl.value) return {x: x.value, y: y.value};
 
       const parentElement = dialogEl.value.parentElement ?? document.body;

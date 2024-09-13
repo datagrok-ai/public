@@ -1,20 +1,19 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as Vue from 'vue';
 
-import {computed, defineComponent, nextTick, onMounted, PropType, ref, shallowReactive, shallowRef, ShallowRef, toValue, triggerRef, watch, watchEffect} from 'vue';
 import {IconFA, ToggleInput, Viewer} from '@datagrok-libraries/webcomponents-vue';
 import {historyUtils} from '@datagrok-libraries/compute-utils';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
-import {computedAsync} from '@vueuse/core';
 import {ID_COLUMN_NAME} from '@datagrok-libraries/compute-utils/shared-components/src/history-input';
 import {EXP_COLUMN_NAME, FAVORITE_COLUMN_NAME, ACTIONS_COLUMN_NAME, COMPLETE_COLUMN_NAME, STARTED_COLUMN_NAME, AUTHOR_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME, DESC_COLUMN_NAME} from '@datagrok-libraries/compute-utils/shared-utils/consts';
 import {HistoricalRunEdit, HistoricalRunsDelete} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {take} from 'rxjs/operators';
 import wu from 'wu';
-import {useObservable, useSubscription, watchExtractedObservable} from '@vueuse/rxjs';
+import {watchExtractedObservable} from '@vueuse/rxjs';
 
-export const History = defineComponent({
+export const History = Vue.defineComponent({
   props: {
     func: {
       type: DG.Func,
@@ -37,7 +36,7 @@ export const History = defineComponent({
       default: false,
     },
     propFuncs: {
-      type: Object as PropType<Record<string, (currentRun: DG.FuncCall) => string>>,
+      type: Object as Vue.PropType<Record<string, (currentRun: DG.FuncCall) => string>>,
       default: {},
     }, 
   },
@@ -48,16 +47,16 @@ export const History = defineComponent({
     afterRunDeleted: (deletedCall: DG.FuncCall) => deletedCall,
   },
   setup(props, {emit}) {
-    const isLoading = ref(true);
+    const isLoading = Vue.ref(true);
 
-    const isCompactMode = ref(true);
-    const showFilters = ref(false);
-    const showInputs = ref(true);
-    const showMetadata = ref(true);
+    const isCompactMode = Vue.ref(true);
+    const showFilters = Vue.ref(false);
+    const showInputs = Vue.ref(true);
+    const showMetadata = Vue.ref(true);
 
-    const historicalRuns = shallowRef(new Map<string, DG.FuncCall>);
+    const historicalRuns = Vue.shallowRef(new Map<string, DG.FuncCall>);
 
-    watch(() => props.func.id, () => {
+    Vue.watch(() => props.func.id, () => {
       isLoading.value = true;
 
       historyUtils.pullRunsByName(props.func.name, [{author: grok.shell.user}], {}, ['session.user', 'options'])
@@ -68,7 +67,7 @@ export const History = defineComponent({
             acc.set(run.id, run);
             return acc;
           }, historicalRuns.value);
-          triggerRef(historicalRuns);
+          Vue.triggerRef(historicalRuns);
         })
         .catch((e) => grok.shell.error(e))
         .finally(() => isLoading.value = false);
@@ -87,8 +86,8 @@ export const History = defineComponent({
       DG.Column.fromStrings(ID_COLUMN_NAME, []),
     ]);
 
-    const currentGrid = shallowRef(null as null | DG.Grid);
-    const currentFilters = shallowRef(null as null | DG.FilterGroup);
+    const currentGrid = Vue.shallowRef(null as null | DG.Grid);
+    const currentFilters = Vue.shallowRef(null as null | DG.FilterGroup);
 
     const getRunByIdx = (idx: number) => {
       if (idx < 0) return;
@@ -102,7 +101,7 @@ export const History = defineComponent({
 
     const updateRun = (updatedRun: DG.FuncCall) => {
       historicalRuns.value.set(updatedRun.id, updatedRun);
-      triggerRef(historicalRuns);
+      Vue.triggerRef(historicalRuns);
     };
 
     const showEditDialog = (funcCall: DG.FuncCall, isFavorite: boolean) => {
@@ -162,7 +161,7 @@ export const History = defineComponent({
         })
         .then(([, loadedRun]) => {
           historicalRuns.value.delete(id);
-          triggerRef(historicalRuns);
+          Vue.triggerRef(historicalRuns);
 
           return loadedRun;
         })
@@ -199,7 +198,7 @@ export const History = defineComponent({
       deleteDialog.show({center: true, width: 500});
     };
 
-    watch(currentGrid, () => {
+    Vue.watch(currentGrid, () => {
       Utils.setGridCellRendering(
         currentGrid.value!,
         historicalRuns.value,
@@ -211,12 +210,12 @@ export const History = defineComponent({
       );
     });
 
-    const historicalRunsDf = shallowRef(defaultDf);
-    watch(historicalRuns, async () => {
+    const historicalRunsDf = Vue.shallowRef(defaultDf);
+    Vue.watch(historicalRuns, async () => {
       const df = await Utils.getRunsDfFromList(
         historicalRuns.value, 
         props.func,
-        toValue(() => props),
+        Vue.toValue(() => props),
       );
       historicalRunsDf.value = df;
     });
@@ -251,11 +250,11 @@ export const History = defineComponent({
       }
     };
 
-    watch([showInputs, showMetadata, isCompactMode], () => {
+    Vue.watch([showInputs, showMetadata, isCompactMode], () => {
       applyStyles();
     });
 
-    watch([historicalRuns, currentGrid, currentFilters], () => {
+    Vue.watch([historicalRuns, currentGrid, currentFilters], () => {
       setTimeout(() => {
         applyStyles();
       }, 100);

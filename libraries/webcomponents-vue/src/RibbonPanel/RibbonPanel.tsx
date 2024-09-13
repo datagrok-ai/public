@@ -1,18 +1,18 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { defineComponent, h, nextTick, onMounted, onUnmounted, onUpdated, reactive, ref, SlotsType, Teleport, watch } from 'vue';
+import * as Vue from 'vue';
 
-export const RibbonPanel = defineComponent({
+export const RibbonPanel = Vue.defineComponent({
   name: 'RibbonPanel',
-  slots: Object as SlotsType<{
+  slots: Object as Vue.SlotsType<{
     default?: any,
   }>,
   setup(_, {slots}) {
-    const elements = reactive([] as HTMLElement[])
+    const elements = Vue.reactive([] as HTMLElement[])
 
-    onMounted(async () => {
-      await nextTick();
+    Vue.onMounted(async () => {
+      await Vue.nextTick();
 
       const currentView = grok.shell.v;
       currentView.setRibbonPanels([
@@ -26,7 +26,7 @@ export const RibbonPanel = defineComponent({
         elements.push(el)
     }
 
-    onUnmounted(() => {
+    Vue.onUnmounted(() => {
       const currentView = grok.shell.v;
 
       const filteredPanels = currentView

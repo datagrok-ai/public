@@ -1,8 +1,9 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
-// eslint-disable-next-line
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as Vue from 'vue';
+
 import {FuncCallInput} from '@datagrok-libraries/compute-utils/shared-utils/input-wrappers';
 import {BehaviorSubject} from 'rxjs';
 import {distinctUntilChanged} from 'rxjs/operators';
@@ -11,7 +12,6 @@ import {
   PipelineConfiguration, ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult,
 } from '@datagrok-libraries/compute-utils';
 import type {ViewerT, InputFormT} from '@datagrok-libraries/webcomponents';
-import {createApp} from 'vue';
 import {ViewerApp as ViewerAppInstance} from './apps/ViewerApp';
 import {FormApp as FormAppInstance} from './apps/FormApp';
 import {RFVApp as RFVAppInstance} from './apps/RFVApp';
@@ -21,7 +21,6 @@ import {DriverApp as DriverAppInstance} from './apps/DriverApp';
 import './tailwind.css';
 
 export const _package = new DG.Package();
-
 //
 // Validators manual testing
 //
@@ -231,7 +230,7 @@ export async function TestElements() {
 //tags: test, vue
 export async function ViewerApp() {
   const view = new DG.ViewBase();
-  const app = createApp(ViewerAppInstance);
+  const app = Vue.createApp(ViewerAppInstance);
   app.mount(view.root);
   view.name = 'ViewerApp';
   grok.shell.addView(view);
@@ -240,7 +239,7 @@ export async function ViewerApp() {
 //tags: test, vue
 export async function FormApp() {
   const view = new DG.ViewBase();
-  const app = createApp(FormAppInstance);
+  const app = Vue.createApp(FormAppInstance);
   app.mount(view.root);
   view.name = 'FormAppInstance';
   grok.shell.addView(view);
@@ -250,7 +249,7 @@ export async function FormApp() {
 //tags: test, vue
 export async function ElementsApp() {
   const view = new DG.ViewBase();
-  const app = createApp(ElementsAppInstance);
+  const app = Vue.createApp(ElementsAppInstance);
   app.mount(view.root);
   view.name = 'ElementsAppInstance';
   grok.shell.addView(view);
@@ -259,7 +258,7 @@ export async function ElementsApp() {
 //tags: test, vue
 export async function RFVApp() {
   const view = new DG.ViewBase();
-  const app = createApp(RFVAppInstance);
+  const app = Vue.createApp(RFVAppInstance);
   app.mount(view.root);
   grok.shell.addView(view);
   view.name = 'RFVAppInstance';
@@ -269,7 +268,7 @@ export async function RFVApp() {
 //tags: test, vue
 export async function HistoryApp() {
   const view = new DG.ViewBase();
-  const app = createApp(HistoryAppInstance);
+  const app = Vue.createApp(HistoryAppInstance);
   view.root.classList.remove('ui-panel');
   app.mount(view.root);
   view.name = 'HistoryApp';
@@ -278,9 +277,11 @@ export async function HistoryApp() {
 
 //tags: test, vue
 export async function DriverApp() {
+  await DG.Utils.loadJsCss(['/js/common/vue.js']);
+
   // TODO: close view handling
   const view = new DG.ViewBase();
-  const app = createApp(DriverAppInstance);
+  const app = Vue.createApp(DriverAppInstance);
   view.root.classList.remove('ui-panel');
   app.mount(view.root);
   view.name = 'DriverApp';

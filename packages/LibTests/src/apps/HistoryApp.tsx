@@ -2,10 +2,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {defineComponent} from 'vue';
+import * as Vue from 'vue';
 import {History} from '../components/History/History';
 
-export const HistoryApp = defineComponent({
+export const HistoryApp = Vue.defineComponent({
   name: 'HistoryApp',
   setup: () => {
     

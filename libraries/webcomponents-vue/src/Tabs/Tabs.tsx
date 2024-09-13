@@ -1,13 +1,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as Vue from 'vue';
 
-import { defineComponent, SlotsType } from "vue";
 import { TabHeaderStripe } from "./TabHeaderStripe/TabHeaderStripe";
 import { TabArea } from "./TabArea/TabArea";
 import { HeaderItem } from './shared';
 
-export const Tabs = defineComponent({
+export const Tabs = Vue.defineComponent({
   props: {
     items: {
       type: Array<HeaderItem>,
@@ -18,7 +18,7 @@ export const Tabs = defineComponent({
       default: 0
     },
   },
-  slots: Object as SlotsType<{
+  slots: Object as Vue.SlotsType<{
     default: any,
     header: HeaderItem,
     stripePrefix: any,

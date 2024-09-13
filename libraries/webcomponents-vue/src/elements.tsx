@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as Vue from 'vue';
 
-import {defineComponent, PropType, ref, watch} from 'vue';
 import type {DGBigButtonT, DGButtonT, DGComboPopupT, DGIconFAT, DGSplitH, DGToggleInputT} from '@datagrok-libraries/webcomponents';
 
 declare global {
@@ -18,7 +18,7 @@ declare global {
   }
 }
 
-export const Button = defineComponent({
+export const Button = Vue.defineComponent({
   name: 'Button',
   emits: ['click'],
   setup(_props, {slots, attrs, emit}) {
@@ -26,7 +26,7 @@ export const Button = defineComponent({
   },
 });
 
-export const BigButton = defineComponent({
+export const BigButton = Vue.defineComponent({
   name: 'BigButton',
   emits: ['click'],
   setup(_props, {slots, attrs, emit}) {
@@ -35,7 +35,7 @@ export const BigButton = defineComponent({
 });
 
 
-export const SplitH = defineComponent({
+export const SplitH = Vue.defineComponent({
   name: 'SplitH',
   props: {
     resize: Boolean,
@@ -53,7 +53,7 @@ export const SplitH = defineComponent({
   },
 });
 
-export const IconFA = defineComponent({
+export const IconFA = Vue.defineComponent({
   name: 'IconFA',
   props: {
     name: String,
@@ -62,15 +62,15 @@ export const IconFA = defineComponent({
       default: 'pointer',
     },
     animation: {
-      type: Object as PropType<'spin' | 'pulse' | null>,
+      type: Object as Vue.PropType<'spin' | 'pulse' | null>,
       default: null,
     },
     tooltip: {
-      type: String as PropType<string | null>,
+      type: String as Vue.PropType<string | null>,
       default: null,
     },
     faStyle: {
-      type: String as PropType<'fal' | 'fas' | 'far' | 'fad'>,
+      type: String as Vue.PropType<'fal' | 'fas' | 'far' | 'fad'>,
       default: 'fal'
     }
   },
@@ -92,7 +92,7 @@ export const IconFA = defineComponent({
   },
 });
 
-export const ToggleInput = defineComponent({
+export const ToggleInput = Vue.defineComponent({
   name: 'IconFA',
   props: {
     caption: {
@@ -125,11 +125,11 @@ export const ToggleInput = defineComponent({
   }
 })
 
-export const ComboPopup = defineComponent({
+export const ComboPopup = Vue.defineComponent({
   name: 'ComboPopup',
   props: {
     caption: { 
-      type: Object as PropType<String | HTMLElement>,
+      type: Object as Vue.PropType<String | HTMLElement>,
       required: true,
     },
     items: {

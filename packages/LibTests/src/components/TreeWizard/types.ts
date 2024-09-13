@@ -1,9 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Stat} from '@he-tree/vue/types/src/components/TreeProcessorVue';
 import {PipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
-import {VNode} from 'vue';
+import {Stat} from '@he-tree/vue/dist/v3/components/TreeProcessorVue';
 
 
 export type RuntimeData = {

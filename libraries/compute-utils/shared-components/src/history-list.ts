@@ -181,10 +181,10 @@ export class HistoricalRunsList extends DG.Widget {
       if (runs.size > 0) {
         const newRunsDf = await getRunsDfFromList(
           runs, 
-          runs.values().next().value,
+          runs.values().next().value!.func,
           this.options
         );
-        const func = runs.values().next().value.func as DG.Func;
+        const func = runs.values().next().value!.func as DG.Func;
 
         ui.setDisplayAll([this.defaultGridText, this.defaultFiltersText], false);
         ui.setDisplayAll([
@@ -502,7 +502,7 @@ export class HistoricalRunsList extends DG.Widget {
       this._compactMode.value,
       this.showInputsIcon.value,
       this.showMetadataIcon.value,
-      this.runs.values().next().value.func
+      this.runs.values().next().value?.func
     )
   }
 
@@ -511,7 +511,7 @@ export class HistoricalRunsList extends DG.Widget {
   }
 
   private styleHistoryFilters() {
-    const func = this.runs.values().next().value.func as DG.Func | undefined;
+    const func = this.runs.values().next().value?.func as DG.Func | undefined;
 
     const hasValidFilters = styleHistoryFilters(
       this._historyFilters,

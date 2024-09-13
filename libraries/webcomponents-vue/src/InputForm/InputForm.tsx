@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as Vue from 'vue';
 
-import {defineComponent, PropType, watch} from 'vue';
 import type {InputFormT} from '@datagrok-libraries/webcomponents';
 import {getValidators,
   injectInputBaseValidation,
@@ -21,11 +21,11 @@ declare global {
   }
 }
 
-export const InputForm = defineComponent({
+export const InputForm = Vue.defineComponent({
   name: 'InputForm',
   props: {
     funcCall: {
-      type: Object as PropType<DG.FuncCall>,
+      type: Object as Vue.PropType<DG.FuncCall>,
       required: true,
     },
   },
@@ -37,7 +37,7 @@ export const InputForm = defineComponent({
 
     let loadedValidators = computedAsync(() => getValidators(props.funcCall, SYNC_FIELD.INPUTS), {}, {shallow: true});
 
-    watch(loadedValidators, () => {
+    Vue.watch(loadedValidators, () => {
       runValidation();
     });
 

@@ -1,16 +1,16 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as Vue from 'vue';
 
-import {defineComponent, shallowRef} from 'vue';
 import {RichFunctionView} from '../components/RFV/RichFunctionView';
 import {Button} from '@datagrok-libraries/webcomponents-vue';
 
-export const RFVApp = defineComponent({
+export const RFVApp = Vue.defineComponent({
   setup() {
     const initialName = 'Compute:ObjectCooling';
 
-    const currentFuncCall = shallowRef(DG.Func.byName(initialName).prepare());
+    const currentFuncCall = Vue.shallowRef(DG.Func.byName(initialName).prepare());
 
     const changeFunc = () => {
       const nfc = currentFuncCall.value.func.nqName === 'LibTests:TestAdd2' ? 

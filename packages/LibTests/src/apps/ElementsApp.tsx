@@ -2,15 +2,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BigButton, Button, IconFA, SplitH, TabArea, TabHeaderStripe, Tabs} from '@datagrok-libraries/webcomponents-vue';
-import {defineComponent, Fragment, ref} from 'vue';
+import * as Vue from 'vue';
 
-export const ElementsApp = defineComponent({
+export const ElementsApp = Vue.defineComponent({
   name: 'ElementsApp',
   setup() {
-    const resize = ref(true);
+    const resize = Vue.ref(true);
 
-    const items = ref([{label: 'Tab 1'}, {label: 'Tab 2'}, {label: 'Tab 3'}]);
-    const selected = ref(1);
+    const items = Vue.ref([{label: 'Tab 1'}, {label: 'Tab 2'}, {label: 'Tab 3'}]);
+    const selected = Vue.ref(1);
 
     return () => (
       <keep-alive>

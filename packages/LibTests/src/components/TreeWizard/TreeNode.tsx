@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as Vue from 'vue';
 
-import {defineComponent, PropType, ref, watch} from 'vue';
 import {AugmentedStat, Status} from './types';
 import {ComboPopup, IconFA} from '@datagrok-libraries/webcomponents-vue';
 import {OpenIcon} from '@he-tree/vue';
@@ -131,10 +131,10 @@ const statusToTooltip = {
 } as Record<Status, string>;
 
 
-export const TreeNode = defineComponent({
+export const TreeNode = Vue.defineComponent({
   props: {
     stat: {
-      type: Object as PropType<AugmentedStat>,
+      type: Object as Vue.PropType<AugmentedStat>,
       required: true,
     },
     isDraggable: {
@@ -191,8 +191,8 @@ export const TreeNode = defineComponent({
     const hasAddButton = (data: PipelineState): data is (PipelineStateSequential | PipelineStateParallel) => 
       (isParallelPipelineState(data) || isSequentialPipelineState(data)) && data.stepTypes.length > 0;
 
-    const treeNodeRef = ref(null as null | HTMLElement);
-    watch(useElementHover(treeNodeRef), (isHovered) => {
+    const treeNodeRef = Vue.ref(null as null | HTMLElement);
+    Vue.watch(useElementHover(treeNodeRef), (isHovered) => {
       props.stat.data.isHovered = isHovered;
     });
     

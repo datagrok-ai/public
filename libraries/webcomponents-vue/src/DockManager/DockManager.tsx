@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as Vue from 'vue';
 
-import {defineComponent, KeepAlive, onMounted, PropType, ref, SlotsType, VNode, watch} from 'vue';
 import {DockSpawnTsWebcomponent} from '@datagrok-libraries/webcomponents';
 import { IState } from '@datagrok-libraries/webcomponents/vendor/dock-spawn-ts/lib/interfaces/IState';
 import { whenever } from '@vueuse/core';
@@ -15,13 +15,13 @@ declare global {
   }
 }
 
-export const DockManager = defineComponent({
+export const DockManager = Vue.defineComponent({
   name: 'DockManager',
   props: {
-    layoutStorageName: Object as PropType<String>
+    layoutStorageName: Object as Vue.PropType<String>
   },
-  slots: Object as SlotsType<{
-    default?: VNode[],
+  slots: Object as Vue.SlotsType<{
+    default?: Vue.VNode[],
   }>,
   emits: {
     panelClosed: (element: HTMLElement) => element,
@@ -31,7 +31,7 @@ export const DockManager = defineComponent({
     loadLayout: () => {}
   },
   setup(props, {slots, emit, expose}) {
-    let dockSpawnRef = ref(null as DockSpawnTsWebcomponent | null);
+    let dockSpawnRef = Vue.ref(null as DockSpawnTsWebcomponent | null);
 
     whenever(dockSpawnRef, () => {
       dockSpawnRef.value!.dockManager.getElementCallback = async (state: IState) => {

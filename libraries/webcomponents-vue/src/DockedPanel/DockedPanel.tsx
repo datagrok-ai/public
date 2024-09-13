@@ -1,14 +1,15 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { defineComponent, h, nextTick, onMounted, onUnmounted, onUpdated, PropType, reactive, ref, SlotsType, Teleport, watch } from 'vue';
+import * as Vue from 'vue';
+
 import {useObservable, useSubscription} from '@vueuse/rxjs'
 
-export const DockedPanel = defineComponent({
+export const DockedPanel = Vue.defineComponent({
   name: 'DockedPanel',
   props: {
     dockType: {
-      type: String as PropType<DG.DockType>,
+      type: String as Vue.PropType<DG.DockType>,
     },
     title: {
       type: String,
@@ -17,19 +18,19 @@ export const DockedPanel = defineComponent({
       type: Number
     }
   },
-  slots: Object as SlotsType<{
+  slots: Object as Vue.SlotsType<{
     default?: any,
   }>,
   emits: {
     closed: () => {}
   },
   setup(props, {slots, emit}) {
-    const element = ref(null as null | HTMLElement)
+    const element = Vue.ref(null as null | HTMLElement)
     let parentView = null as null | DG.ViewBase;
     let dockNode = null as null | DG.DockNode;
 
-    onMounted(async () => {
-      await nextTick();
+    Vue.onMounted(async () => {
+      await Vue.nextTick();
       parentView = grok.shell.v;
 
       if (!element.value) return;
@@ -38,14 +39,14 @@ export const DockedPanel = defineComponent({
     })
 
     const closedPanel = useObservable(grok.shell.dockManager.onClosed);
-    watch(closedPanel, (val) => {
+    Vue.watch(closedPanel, (val) => {
       if (val === element.value) {
         emit('closed')
       }
     })
 
     const changedView = useObservable(grok.events.onCurrentViewChanged);
-    watch(changedView, (newView) => {
+    Vue.watch(changedView, (newView) => {
       if (newView != parentView) {
         if (!dockNode) return;
 
@@ -58,7 +59,7 @@ export const DockedPanel = defineComponent({
       }
     })
 
-    onUnmounted(() => {
+    Vue.onUnmounted(() => {
       if (!dockNode) return;
 
       grok.shell.dockManager.close(dockNode);

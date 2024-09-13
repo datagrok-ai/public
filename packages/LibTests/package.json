@@ -67,8 +67,7 @@
     "Developers"
   ],
   "sources": [
-    "common/exceljs.min.js",
-    "common/html2canvas.min.js"
+    "common/vue.js"
   ],
   "canView": [
     "All users"

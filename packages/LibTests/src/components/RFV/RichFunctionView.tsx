@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as Vue from 'vue';
 
-import {defineComponent, PropType, ref, nextTick, computed, watch} from 'vue';
 import {type ViewerT} from '@datagrok-libraries/webcomponents';
 import {
   Viewer, InputForm, 
@@ -29,11 +29,11 @@ declare global {
   }
 }
 
-export const ScalarTable = defineComponent({
+export const ScalarTable = Vue.defineComponent({
   name: 'ScalarTable',
   props: {
     funcCall: {
-      type: Object as PropType<DG.FuncCall>,
+      type: Object as Vue.PropType<DG.FuncCall>,
       required: true,
     },
     category: {
@@ -42,7 +42,7 @@ export const ScalarTable = defineComponent({
     },
   },
   setup(props) {
-    const categoryScalars = computed(() => {
+    const categoryScalars = Vue.computed(() => {
       return [
         ...props.funcCall.func.inputs
           .filter((prop) => prop.category === props.category),
@@ -83,11 +83,11 @@ export const ScalarTable = defineComponent({
   },
 });
 
-export const RichFunctionView = defineComponent({
+export const RichFunctionView = Vue.defineComponent({
   name: 'RichFunctionView',
   props: {
     funcCall: {
-      type: Object as PropType<DG.FuncCall>,
+      type: Object as Vue.PropType<DG.FuncCall>,
       required: true,
     },
   },
@@ -95,11 +95,11 @@ export const RichFunctionView = defineComponent({
     'update:funcCall': (call: DG.FuncCall) => call,
   },
   setup(props, {emit}) {
-    const currentCall = computed(() => Utils.deepCopy(props.funcCall));
+    const currentCall = Vue.computed(() => Utils.deepCopy(props.funcCall));
 
-    const categoryToDfParam = computed(() => Utils.categoryToDfParamMap(currentCall.value.func));
+    const categoryToDfParam = Vue.computed(() => Utils.categoryToDfParamMap(currentCall.value.func));
 
-    const tabLabels = computed(() => {
+    const tabLabels = Vue.computed(() => {
       return [
         ...Object.keys(categoryToDfParam.value.inputs),
         ...Object.keys(categoryToDfParam.value.outputs),
@@ -112,25 +112,25 @@ export const RichFunctionView = defineComponent({
       emit('update:funcCall', currentCall.value);
     };
 
-    const formHidden = ref(false);
-    const historyHidden = ref(true);
-    const helpHidden = ref(true);
+    const formHidden = Vue.ref(false);
+    const historyHidden = Vue.ref(true);
+    const helpHidden = Vue.ref(true);
 
-    const hasContextHelp = computed(() => Utils.hasContextHelp(currentCall.value.func));
+    const hasContextHelp = Vue.computed(() => Utils.hasContextHelp(currentCall.value.func));
 
     const dfBlockTitle = (dfProp: DG.Property) => dfProp.options['caption'] ?? dfProp.name ?? ' ';
 
-    const helpText = ref(null as null | string);
-    watch(currentCall, async () => {
+    const helpText = Vue.ref(null as null | string);
+    Vue.watch(currentCall, async () => {
       const loadedHelp = await Utils.getContextHelp(currentCall.value.func);
 
       helpText.value = loadedHelp ?? null;
     }, {immediate: true});
           
-    const historyRef = ref(null as InstanceType<typeof History> | null);
-    const helpRef = ref(null as InstanceType<typeof MarkDown> | null);
-    const formRef = ref(null as HTMLElement | null);
-    const dockRef = ref(null as InstanceType<typeof DockManager> | null);
+    const historyRef = Vue.ref(null as InstanceType<typeof History> | null);
+    const helpRef = Vue.ref(null as InstanceType<typeof MarkDown> | null);
+    const formRef = Vue.ref(null as HTMLElement | null);
+    const dockRef = Vue.ref(null as InstanceType<typeof DockManager> | null);
     const handlePanelClose = async (el: HTMLElement) => {
       if (el === historyRef.value?.$el) historyHidden.value = true;
       if (el === helpRef.value?.$el) helpHidden.value = true;
@@ -153,7 +153,7 @@ export const RichFunctionView = defineComponent({
       dockRef.value.saveLayout();
     };
 
-    const panelsStorageName = computed(() => `${currentCall.value.func.nqName}_panels`);
+    const panelsStorageName = Vue.computed(() => `${currentCall.value.func.nqName}_panels`);
 
     const panelsState = useStorage(
       panelsStorageName.value,
@@ -170,13 +170,13 @@ export const RichFunctionView = defineComponent({
       formHidden.value = openedPanels.formHidden;
       visibleTabLabels.value = openedPanels.visibleTabLabels;
 
-      await nextTick();
+      await Vue.nextTick();
 
       dockRef.value.loadLayout();
     };
 
-    const visibleTabLabels = ref([] as string[]);
-    watch(tabLabels, () => {
+    const visibleTabLabels = Vue.ref([] as string[]);
+    Vue.watch(tabLabels, () => {
       visibleTabLabels.value = [...tabLabels.value];
     }, {immediate: true});
 

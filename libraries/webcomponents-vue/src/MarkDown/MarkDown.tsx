@@ -1,7 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { defineComponent } from 'vue';
+import * as Vue from 'vue';
+
 import type {DGMarkdownT} from '@datagrok-libraries/webcomponents';
 
 declare global {
@@ -12,7 +13,7 @@ declare global {
   }
 }
 
-export const MarkDown = defineComponent({
+export const MarkDown = Vue.defineComponent({
   name: 'MarkDown',
   props: {
     markdown: {
