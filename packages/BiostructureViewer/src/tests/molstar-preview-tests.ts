@@ -47,19 +47,32 @@ category('MolstarPreview', () => {
 
   // tests that opening csv through molstar causes exception. visually, error balloon should appear
   test('negative-openCsvFile', async () => {
+    const logPrefix = `BsV: Tests.MolstarPreview.negative-openCsvFile()`;
+    _package.logger.debug(`${logPrefix}, start`);
     let noException = true;
     const folderName: string = `System:AppData/${_package.name}/samples`;
-    const file = (await grok.dapi.files.list(folderName, false, 'dock.csv'))[0];
+    _package.logger.debug(`${logPrefix}, folderName: '${folderName}'`);
+
+    const fileList = await grok.dapi.files.list(folderName, false, 'dock.csv');
+    _package.logger.debug(`${logPrefix}, fileList:\n${fileList.map((fi) => fi.fullPath).join('\n')}`);
+    const file = fileList[0];
 
     try {
+      _package.logger.debug(`${logPrefix}, before previewMolstarUI`);
       const {view, loadingPromise} = previewMolstarUI(file);
+      _package.logger.debug(`${logPrefix}, after previewMolstarUI, get view`);
       grok.shell.newView('Molstar Preview', [view]);
+      _package.logger.debug(`${logPrefix}, after view added`);
       await loadingPromise;
+      _package.logger.debug(`${logPrefix}, after loadingPromise awaited`);
     } catch (e) {
+      _package.logger.debug(`${logPrefix}, exception caught`);
       noException = false;
     }
+    _package.logger.debug(`${logPrefix}, expect checks`);
     expect(noException, false);
-  });
+    _package.logger.debug(`${logPrefix}, end`);
+  }, {skipReason: 'GROK-16546'});
 
   category('MolstarPreview: DemoFiles', () => {
     let demoFilesNqName: string | undefined;

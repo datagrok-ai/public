@@ -20,7 +20,7 @@ import {
 import {defaultMonomerLibSummary, expectMonomerLib} from '@datagrok-libraries/bio/src/tests/monomer-lib-tests';
 
 import {getMonomerHandleArgs, rewriteLibraries} from '../utils/get-monomer';
-import {JSDraw2HelmModule, OrgHelmModule} from '../types';
+import {JSDraw2Module, OrgHelmModule} from '../types';
 
 import {HelmHelper} from '../helm-helper';
 import {RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from '../constants';
@@ -30,7 +30,7 @@ import {initHelmMainPackage} from './utils';
 import {_package} from '../package-test';
 
 declare const org: OrgHelmModule;
-declare const JSDraw2: JSDraw2HelmModule;
+declare const JSDraw2: JSDraw2Module;
 
 type TestDataType = { args: { a: any, name?: string }, tgt: any };
 

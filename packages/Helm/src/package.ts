@@ -4,7 +4,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
-import {Unsubscribable} from 'rxjs';
 
 import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
@@ -26,9 +25,9 @@ import {RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
 import {getRS} from './utils/get-monomer-dummy';
 
 // Do not import anything than types from @datagrok/helm-web-editor/src/types
-import type {JSDraw2HelmModule, OrgHelmModule, ScilModule} from './types';
+import type {JSDraw2Module, OrgHelmModule, ScilModule} from './types';
 
-export const _package = new HelmPackage({debug: true});
+export const _package = new HelmPackage(/*{debug: true}/**/);
 
 /*
   Loading modules:
@@ -40,7 +39,7 @@ export const _package = new HelmPackage({debug: true});
 
 declare const window: Window & HweWindow;
 declare const scil: ScilModule;
-declare const JSDraw2: JSDraw2HelmModule;
+declare const JSDraw2: JSDraw2Module;
 declare const org: OrgHelmModule;
 
 //tags: init
@@ -87,7 +86,7 @@ export function helmCellRenderer(): HelmCellRenderer {
   return new HelmGridCellRenderer(); // new
 }
 
-function checkMonomersAndOpenWebEditor(cell: DG.Cell, value?: string, units?: string) {
+function checkMonomersAndOpenWebEditor(cell: DG.GridCell, value?: string, units?: string) {
   openWebEditor(cell, value, units);
 }
 
@@ -96,7 +95,7 @@ function checkMonomersAndOpenWebEditor(cell: DG.Cell, value?: string, units?: st
 //input: grid_cell cell
 //meta.columnTags: quality=Macromolecule, units=helm
 export function editMoleculeCell(cell: DG.GridCell): void {
-  checkMonomersAndOpenWebEditor(cell.cell, undefined, undefined);
+  checkMonomersAndOpenWebEditor(cell, undefined, undefined);
 }
 
 //name: Open Helm Web Editor
@@ -108,11 +107,14 @@ export function openEditor(mol: string): void {
   const col = df.columns.bySemType('Macromolecule')! as DG.Column<string>;
   const colSh = SeqHandler.forColumn(col);
   const colUnits = col.meta.units;
+  if (df.currentRowIdx === -1)
+    return;
+  const gCell = DG.GridCell.fromColumnRow(grok.shell.tv.grid, col.name, df.currentRowIdx);
   if (colUnits === NOTATION.HELM)
-    checkMonomersAndOpenWebEditor(df.currentCell, undefined, undefined);
+    checkMonomersAndOpenWebEditor(gCell, undefined, undefined);
   const convert = colSh.getConverter(NOTATION.HELM);
   const helmMol = convert(mol);
-  checkMonomersAndOpenWebEditor(df.currentCell, helmMol, col.meta.units!);
+  checkMonomersAndOpenWebEditor(gCell, helmMol, col.meta.units!);
 }
 
 //name: Properties
@@ -123,14 +125,14 @@ export function propertiesWidget(sequence: DG.SemanticValue): DG.Widget {
   return getPropertiesWidget(sequence);
 }
 
-function openWebEditor(cell: DG.Cell, value?: string, units?: string) {
+function openWebEditor(cell: DG.GridCell, value?: string, units?: string) {
   const view = ui.div();
   // const df = grok.shell.tv.grid.dataFrame;
-  // const col = df.columns.bySemType('Macromolecule')!;
-  const col = cell.column as DG.Column<string>;
+  // const col = df.columns.bySemType('Macromolecule')!
+  const col = cell.cell.column as DG.Column<string>;
   const sh = SeqHandler.forColumn(col);
-  const rowIdx = cell.rowIndex;
-  const app: App = _package.helmHelper.createWebEditorApp(view, !!cell && units === undefined ? cell.value : value!);
+  const app: App =
+    _package.helmHelper.createWebEditorApp(view, !!cell && units === undefined ? cell.cell.value : value!);
   const dlg = ui.dialog({showHeader: false, showFooter: true});
   dlg.add(view)
     .onOK(() => {
@@ -138,10 +140,10 @@ function openWebEditor(cell: DG.Cell, value?: string, units?: string) {
         .replace(/<span style='background:#bbf;'>/g, '');
       if (!!cell) {
         if (units === undefined)
-          cell.value = helmValue;
+          cell.setValue(helmValue);
         else {
           const convertedRes = sh.convertHelmToFastaSeparator(helmValue, units!, sh.separator);
-          cell.value = convertedRes;
+          cell.setValue(convertedRes);
         }
       }
     }).show({modal: true, fullScreen: true});
@@ -154,23 +156,11 @@ function openWebEditor(cell: DG.Cell, value?: string, units?: string) {
 //name: getMolfiles
 //input: column col {semType: Macromolecule}
 //output: column res
-export function getMolfiles(col: DG.Column): DG.Column {
-  const res = DG.Column.string('mols', col.length);
-
-  const host = ui.div([], {style: {width: '0', height: '0'}});
-  document.documentElement.appendChild(host);
-  try {
-    const editor = new JSDraw2.Editor(host, {viewonly: true});
-    res.init((i) => {
-      editor.setHelm(col.get(i));
-      const mol = editor.getMolfile();
-      return mol;
-    });
-    return res;
-  } finally {
-    $(host).empty();
-    host.remove();
-  }
+export function getMolfiles(col: DG.Column<string>): DG.Column<string> {
+  const helmStrList = col.toList();
+  const molfileList = _package.helmHelper.getMolfiles(helmStrList);
+  const molfileCol = DG.Column.fromStrings('mols', molfileList);
+  return molfileCol;
 }
 
 // -- Inputs --

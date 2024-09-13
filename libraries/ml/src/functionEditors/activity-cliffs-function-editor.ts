@@ -72,4 +72,15 @@ export class ActivityCliffsEditor extends DimReductionBaseEditor {
         similarityThreshold: this.similarityInput.value!
       };
     }
+
+    public getInput() {
+      return {...super.getInput(),
+        activityCol: this.activitiesInput.value!.name, simThreshold: this.similarityInput.value};
+    }
+
+    public async applyInput(input: ReturnType<typeof this.getInput>) {
+      super.applyInput(input);
+      this.activitiesInput.value = this.tableInput.value!.col(input.activityCol);
+      this.similarityInput.value = input.simThreshold;
+    }
 }

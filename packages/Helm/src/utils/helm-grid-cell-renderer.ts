@@ -15,7 +15,7 @@ import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {getGridCellRendererBack} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
 
-import {getHoveredMonomerFromEditorMol} from './get-hovered';
+import {getHoveredMonomerFromEditorMol, getSeqMonomerFromHelmAtom} from './get-hovered';
 
 import {_package} from '../package';
 
@@ -111,7 +111,7 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
   }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
-    if (gridCell.tableRowIndex === null) return;
+    if (gridCell.tableRowIndex === null || !this._auxList) return;
     const aux = this._auxList[gridCell.tableRowIndex];
     if (!aux) return;
 
@@ -127,10 +127,10 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
       this.logger.warning(`${logPrefix}, editorMol of the cell not found.`);
       return; // The gridCell is not rendered yet
     }
-    const seqMonomer: ISeqMonomer | null =
-      getHoveredMonomerFromEditorMol(argsX, argsY, editorMol, gridCell.bounds.height);
+    const hoveredAtom = getHoveredMonomerFromEditorMol(argsX, argsY, editorMol, gridCell.bounds.height);
 
-    if (seqMonomer) {
+    if (hoveredAtom) {
+      const seqMonomer = getSeqMonomerFromHelmAtom(hoveredAtom);
       const monomerLib = _package.monomerLib;
       const tooltipEl = monomerLib ? monomerLib.getTooltip(seqMonomer.polymerType, seqMonomer.symbol) :
         ui.divText('Monomer library is not available');
@@ -146,9 +146,8 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
     if (!this.monomerLib) {
       this.monomerLib = _package.monomerLib;
-      if (this.monomerLib) {
+      if (this.monomerLib)
         this.subs.push(this.monomerLib.onChanged.subscribe(this.monomerLibOnChanged.bind(this)));
-      }
     }
     super.render(g, x, y, w, h, gridCell, cellStyle);
   }

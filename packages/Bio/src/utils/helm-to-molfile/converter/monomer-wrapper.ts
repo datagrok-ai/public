@@ -8,12 +8,12 @@ import {MolfileWrapper} from './mol-wrapper';
 import {MolfileWrapperFactory} from './mol-wrapper-factory';
 
 export class MonomerWrapper {
-  private molfileWrapper: MolfileWrapper;
+  private readonly molfileWrapper: MolfileWrapper;
   private capGroupElements: string[] = [];
 
   constructor(
-    private monomerSymbol: string,
-    private monomerIdx: number,
+    public readonly monomerSymbol: string,
+    public readonly monomerIdx: number,
     private helm: Helm,
     shift: { x: number, y: number },
     rdKitModule: RDModule,
@@ -34,6 +34,10 @@ export class MonomerWrapper {
 
     this.shiftCoordinates(shift);
   }
+
+  public get atomCount() { return this.molfileWrapper.atomCount; }
+
+  public get bondCount() { return this.molfileWrapper.bondCount; }
 
   private convertMolfileToV3KFormat(molfileV2K: string, monomerSymbol: string, rdKitModule: RDModule): string {
     let mol: RDMol | null = null;

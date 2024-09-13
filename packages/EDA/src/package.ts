@@ -173,6 +173,7 @@ export async function reduceDimensionality(): Promise<void> {
     else
       okButton.classList.remove('disabled');
   };
+  dialog.history(() => ({editorSettings: editor.getStringInput()}), (x: any) => editor.applyStringInput(x['editorSettings']));
   editor.onColumnsChanged.subscribe(() => {
     try {
       validate();
@@ -688,11 +689,12 @@ export function isInteractiveSoftmax(df: DG.DataFrame, predictColumn: DG.Column)
 export async function trainPLSRegression(df: DG.DataFrame, predictColumn: DG.Column, components: number): Promise<Uint8Array> {
   const features = df.columns;
 
-  if (components > features.length)
-    throw new Error('Number of components is greater than features count');
-
   const model = new PlsModel();
-  await model.fit(features, predictColumn, components);
+  await model.fit(
+    features,
+    predictColumn,
+    Math.min(components, features.length),
+  );
 
   return model.toBytes();
 }

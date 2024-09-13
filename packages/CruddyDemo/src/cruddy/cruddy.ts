@@ -2,6 +2,8 @@ import * as DG from 'datagrok-api/dg';
 
 export type TFilter = {[name: string]: string | null};
 
+
+
 export interface IFilterDescription {
   type: 'distinct' | 'combo' | 'radio' | 'search' | 'range' | 'expression';
   column: string;

@@ -1,5 +1,27 @@
 # EDA changelog
 
+## 1.2.1 (2024-09-12)
+
+* Add tests & benchmarks for missing values imputation using KNN
+
+## 1.2.0 (2024-09-10)
+
+* 1.21.1 release
+
+## 1.1.36-rc (2024-09-06)
+
+* Preparing 1.21.1 release
+
+## 1.1.35 (2024-08-28)
+
+* Add History support and enable gpu by default if available for dim-red
+
+## 1.1.34 (2024-08-09)
+
+* Updated multivariate analysis
+* Reduced bias in the PLS regression and Multivariate Analysis
+* Fixed linear regression fails
+
 ## 1.1.33 (2024-08-14)
 
 Bump ml version to 6.6.21

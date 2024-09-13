@@ -1,0 +1,26 @@
+name: myenv
+channels:
+  - conda-forge
+  - pytorch
+  - nvidia
+dependencies:
+  - python>=3.11
+  - rdkit
+  - joblib
+  - numpy
+  - pandas
+  - scikit-learn
+  - scipy
+  - boto3
+  - gunicorn
+  - Flask
+  - chemprop=2.0.4
+  - mkl
+  - flask_cors
+  - cuda-version=11.8
+  - cudatoolkit=11.8
+  - cuDNN
+  - pytorch>=1.8.1=*cuda*
+  - pytorch-cuda=11.8
+  - torchvision=*=*_cu*
+  - torchaudio=*=*_cu*

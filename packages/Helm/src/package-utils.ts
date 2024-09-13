@@ -79,8 +79,10 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
     };
 
     try {
-      await timeout(async () => {
+      // Preliminary loading BiostructureViewer package because of NGL and dojo interference
+      await initNgl();
 
+      await timeout(async () => {
         await new Promise<void>((resolve, reject) => {
           window.dojoConfig = {
             callback: () => { resolve(); },
@@ -203,6 +205,8 @@ export class HelmPackage extends DG.Package {
 
     // Alternatively load old bundles by package.json/sources
     _package.logger.debug(`${logPrefix}, HelmWebEditor awaiting …`);
+    // require('../helm/JSDraw/Scilligence.JSDraw2.Lite-uncompressed');
+    // require('../helm/JSDraw/Pistoia.HELM-uncompressed');
     require('../node_modules/@datagrok-libraries/helm-web-editor/dist/package.js');
     await window.helmWebEditor$.initPromise;
     _package.logger.debug(`${logPrefix}, HelmWebEditor loaded`);
@@ -320,4 +324,10 @@ export class HelmPackage extends DG.Package {
       // throw err; // Prevent disabling event handler
     }
   }
+}
+
+async function initNgl(): Promise<void> {
+  const funcList = DG.Func.find({package: 'BiostructureViewer', name: 'getNglGlService'});
+  if (funcList.length === 0) return; // Not mandatory if the BiostructureViewer package is not installed
+  await funcList[0].prepare().call();
 }

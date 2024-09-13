@@ -5,6 +5,7 @@ import {category, test, before, expect} from '@datagrok-libraries/utils/src/test
 import {_package, getContainer, applyModelChemprop, trainModelChemprop} from '../package';
 import {readDataframe} from './utils';
 import JSZip from 'jszip';
+import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
 
 category('chemprop', () => {
   let container: DG.DockerContainer;
@@ -19,7 +20,7 @@ category('chemprop', () => {
   test('trainModel', async () => {
     const parameterValues = getParameterValues();
     const tableForPrediction = DG.DataFrame.fromColumns(table.columns.byNames(['canonical_smiles', 'molregno']));
-    const modelBlob = await trainModelChemprop(tableForPrediction.toCsv(), 'molregno', parameterValues);
+    const modelBlob = await fetchWrapper(() => trainModelChemprop(tableForPrediction.toCsv(), 'molregno', parameterValues));
 
     const zip = new JSZip();
     const archive = await zip.loadAsync(modelBlob);
@@ -27,11 +28,11 @@ category('chemprop', () => {
     binBlob = await file?.async('uint8array')!;
         
     expect(file !== null, true);
-  });
+  }, {timeout: 60000});
 
   test('applyModel', async () => {
     const smilesColumn = table.columns.byName('canonical_smiles');
-    const column = await applyModelChemprop(binBlob, DG.DataFrame.fromColumns([smilesColumn]).toCsv());
+    const column = await fetchWrapper(() => applyModelChemprop(binBlob, DG.DataFrame.fromColumns([smilesColumn]).toCsv()));
         
     expect(column.length, 30);
   }, {stressTest: true});

@@ -4,20 +4,23 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 import wu from 'wu';
-import * as rxjs from 'rxjs';
-
 import {Unsubscribable} from 'rxjs';
-import {isLeaf, TAGS as treeTAGS} from '@datagrok-libraries/bio/src/trees';
-import {markupNode, MarkupNodeType} from './tree-renderers/markup';
-import {CanvasTreeRenderer} from './tree-renderers/canvas-tree-renderer';
-import {RectangleTreeHoverType, RectangleTreePlacer} from './tree-renderers/rectangle-tree-placer';
-import {TreeHelper} from '../utils/tree-helper';
+
 import {intToHtmlA, setAlpha} from '@datagrok-libraries/utils/src/color';
+import {isLeaf, TAGS as treeTAGS} from '@datagrok-libraries/bio/src/trees';
 import {TreeColorNames, TreeDefaultPalette} from '@datagrok-libraries/bio/src/trees';
-import {DendrogramColorCodingTreeStyler, DendrogramTreeStyler} from './tree-renderers/dendrogram-tree-styler';
 import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {NEWICK_EMPTY} from '@datagrok-libraries/bio/src/trees/consts';
+import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
+
+import {DendrogramColorCodingTreeStyler, DendrogramTreeStyler} from './tree-renderers/dendrogram-tree-styler';
+import {TreeHelper} from '../utils/tree-helper';
+import {markupNode, MarkupNodeType} from './tree-renderers/markup';
+import {CanvasTreeRenderer} from './tree-renderers/canvas-tree-renderer';
+import {RectangleTreeHoverType, RectangleTreePlacer} from './tree-renderers/rectangle-tree-placer';
+
+import {_package} from '../package';
 
 export const LINE_WIDTH = 2;
 export const NODE_SIZE = 4;
@@ -116,12 +119,13 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
   [PROPS.showTooltip]: boolean;
 
   mainStyler: DendrogramTreeStyler;
-  mainStylerOnTooltipShowSub?: rxjs.Unsubscribable;
+  mainStylerOnTooltipShowSub?: Unsubscribable;
 
   lightStyler: DendrogramTreeStyler;
   currentStyler: DendrogramTreeStyler;
   mouseOverStyler: DendrogramTreeStyler;
   selectionsStyler: DendrogramTreeStyler;
+  private logger: ILogger;
 
   constructor() {
     super();
@@ -169,6 +173,7 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
     this.showTooltip = this.bool(PROPS.showTooltip, false,
       {category: PROPS_CATS.BEHAVIOR});
 
+    this.logger = _package.logger;
 
     this.step = this.float(PROPS.step, 28,
       {category: PROPS_CATS.STYLE, editor: 'slider', min: 0, max: 64, step: 0.1});
@@ -192,6 +197,11 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
       intToHtmlA(setAlpha(this.selectionsColor, TRANS_ALPHA)));
   }
 
+  private static viewerCounter: number = -1;
+  private readonly viewerId: number = ++Dendrogram.viewerCounter;
+
+  private toLog(): string { return `Dendrogram<${this.viewerId}>`; }
+
   private _newick: string = '';
 
   // effective tree value (to plot)
@@ -199,7 +209,7 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
 
   override onTableAttached() {
     super.onTableAttached();
-    console.debug('Dendrogram: PhylocanvasGlViewer.onTableAttached() ' +
+    this.logger.debug('Dendrogram: PhylocanvasGlViewer.onTableAttached() ' +
       `this.dataFrame = ${!this.dataFrame ? 'null' : 'value'} )`);
 
     // -- Editors --
@@ -333,7 +343,7 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
   get renderer(): CanvasTreeRenderer<MarkupNodeType> { return this._renderer!; }
 
   private destroyView(): void {
-    console.debug('Dendrogram: Dendrogram.destroyView()');
+    this.logger.debug('Dendrogram: Dendrogram.destroyView()');
     try {
       this.mainStylerOnTooltipShowSub!.unsubscribe();
       for (const sub of this.viewSubs) sub.unsubscribe();
@@ -352,7 +362,7 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
   }
 
   private buildView(): void {
-    console.debug('Dendrogram: Dendrogram.buildView()');
+    this.logger.debug('Dendrogram: Dendrogram.buildView()');
 
     this.treeDiv = ui.div([], {
       style: {
@@ -399,7 +409,7 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
   // -- Handle controls events --
 
   private rootOnSizeChanged(): void {
-    console.debug('Dendrogram: Dendrogram.rootOnSizeChanged()');
+    this.logger.debug('Dendrogram: Dendrogram.rootOnSizeChanged()');
 
     this.treeDiv!.style.width = `${this.root.clientWidth}px`;
     this.treeDiv!.style.height = `${this.root.clientHeight}px`;
@@ -468,7 +478,7 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
             this._renderer.selectedNodes
               .map((sn) => th.getNodeList(sn).map((n) => n.name))
               .flat());
-          console.debug('Dendrogram: Dendrogram.rendererOnSelectionChanged(), ' +
+          this.logger.debug('Dendrogram: Dendrogram.rendererOnSelectionChanged(), ' +
             `nodeNameSet = ${JSON.stringify([...nodeNameSet])}`);
 
           this.dataFrame.selection.init(
@@ -571,41 +581,47 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
   }
 
   private dataFrameOnCurrentRowChanged(_value: any): void {
+    const logPrefix = `${this.toLog()}.dataFrameOnCurrentRowChanged()`;
     if (!this._renderer) return;
+    this.logger.debug(`${logPrefix}, nodeColumnName: ${this.nodeColumnName}, ` +
+      `currentRowIdx: ${this.dataFrame.currentRowIdx}`);
 
-    if (this.nodeColumnName) {
+    let current: RectangleTreeHoverType<MarkupNodeType> | null = null;
+    if (this.nodeColumnName && this.dataFrame.currentRowIdx >= 0) {
       const nodeCol: DG.Column = this.dataFrame.getCol(this.nodeColumnName);
       const currentNodeName = nodeCol.get(this.dataFrame.currentRowIdx);
 
       const th: ITreeHelper = new TreeHelper();
       const currentNode: MarkupNodeType | null = th.getNodeList(this._renderer.treeRoot)
         .find((node) => currentNodeName == node.name) ?? null;
-      const current: RectangleTreeHoverType<MarkupNodeType> | null = currentNode ? {
+      current = currentNode ? {
         node: currentNode,
         nodeHeight: this._placer!.getNodeHeight(this._renderer.treeRoot, currentNode)!,
       } : null;
-
-      this._renderer.current = current;
     }
+    this._renderer.current = current;
   }
 
   private dataFrameOnMouseOverRowChanged(_value: any): void {
+    const logPrefix = `${this.toLog()}.dataFrameOnMouseOverRowChanged()`;
     if (!this._renderer) return;
+    this.logger.debug(`${logPrefix}, nodeColumnName: ${this.nodeColumnName}, ` +
+      `mouseOverRowIdx: ${this.dataFrame.mouseOverRowIdx}`);
 
-    if (this.nodeColumnName) {
+    let mouseOver: RectangleTreeHoverType<MarkupNodeType> | null = null;
+    if (this.nodeColumnName && this.dataFrame.mouseOverRowIdx >= 0) {
       const nodeCol: DG.Column = this.dataFrame.getCol(this.nodeColumnName);
       const mouseOverNodeName: string = nodeCol.get(this.dataFrame.mouseOverRowIdx);
 
       const th: ITreeHelper = new TreeHelper();
       const mouseOverNode: MarkupNodeType | null = th.getNodeList(this._renderer.treeRoot)
         .find((node) => mouseOverNodeName == node.name) ?? null;
-      const mouseOver: RectangleTreeHoverType<MarkupNodeType> | null = mouseOverNode ? {
+      mouseOver = mouseOverNode ? {
         node: mouseOverNode,
         nodeHeight: this._placer!.getNodeHeight(this._renderer.treeRoot, mouseOverNode)!,
       } : null;
-
-      this._renderer.mouseOver = mouseOver;
     }
+    this._renderer.mouseOver = mouseOver;
   }
 
   private stylerOnTooltipShow({node, e}: { node: MarkupNodeType, e: MouseEvent }): void {

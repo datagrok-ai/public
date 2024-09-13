@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/notebooks",
   "fullName": "Notebooks",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "author": {
     "name": "Alexander Paramonov",
     "email": "aparamonov@datagrok.ai"
@@ -29,7 +29,7 @@
     "@lumino/commands": "^1.10.1",
     "@lumino/widgets": "^1.11.1",
     "bufferutil": "^4.0.1",
-    "datagrok-api": "^1.0.0",
+    "datagrok-api": "^1.21.1",
     "es6-promise": "~4.2.8",
     "utf-8-validate": "^5.0.2"
   },

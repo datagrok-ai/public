@@ -167,8 +167,8 @@ export class VisitsView extends ClinicalCaseViewBase {
 
   private createSwitchGridInput() {
     const switchGrid = ui.input.toggle('Grid', {value: true});
-    switchGrid.onChanged((v) => {
-      if (switchGrid.value) {
+    switchGrid.onChanged.subscribe((value) => {
+      if (value) {
         updateDivInnerHTML(this.div, this.visitsGrid.root);
         updateDivInnerHTML(this.ribbonDiv, this.gridRibbonDiv);
       } else {
@@ -183,8 +183,8 @@ export class VisitsView extends ClinicalCaseViewBase {
     this.selectedDomain = this.existingDomains[0];
 
     const domainChoices = ui.input.choice('Domain', {value: this.selectedDomain, items: this.existingDomains});
-    domainChoices.onChanged((v) => {
-      this.selectedDomain = domainChoices.value;
+    domainChoices.onChanged.subscribe((value) => {
+      this.selectedDomain = value;
       this.heatMap.dataFrame = this.createHeatMapDf();
     });
     this.heatMapdomainChoices = domainChoices;
@@ -452,7 +452,7 @@ export class VisitsView extends ClinicalCaseViewBase {
               .aggregate();
             const plot = DG.Viewer.boxPlot(valueDf, {
               value: `${valCol}`,
-              category: `${catCol}`,
+              categoryColumnNames: [`${catCol}`],
               labelOrientation: DG.TextOrientation.Horz,
               showCategorySelector: false,
               showValueSelector: false,

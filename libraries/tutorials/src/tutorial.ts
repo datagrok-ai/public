@@ -62,7 +62,7 @@ export abstract class Tutorial extends DG.Widget {
   };
 
   async updateStatus(): Promise<void> {
-    const info = await grok.dapi.userDataStorage.getValue(Tutorial.DATA_STORAGE_KEY, this.name);
+    const info = await grok.userSettings.getValue(Tutorial.DATA_STORAGE_KEY, this.name);
     this.status = !!info;
   }
 
@@ -122,13 +122,20 @@ export abstract class Tutorial extends DG.Widget {
       grok.shell.addTableView(this._t);
     }
     this.closed = false;
-    await this._run();
+
+    try {
+      await this._run();
+    } catch (error) {
+      // If the tutorial was closed during execution, exit without error
+      if (!this.closed) return Promise.reject(error);
+    }    
+
     this.endSection();
 
     this.title('Congratulations!');
     this.describe('You have successfully completed this tutorial.');
 
-    await grok.dapi.userDataStorage.postValue(Tutorial.DATA_STORAGE_KEY, this.name, new Date().toUTCString());
+    await grok.userSettings.add(Tutorial.DATA_STORAGE_KEY, this.name, new Date().toUTCString());
     const statusMap = await this.track?.updateStatus();
 
     function updateProgress(track:any) {
@@ -478,8 +485,8 @@ export abstract class Tutorial extends DG.Widget {
     await this.action(instructions,
       new Observable((subscriber: any) => {
         if (inp.stringValue === value) subscriber.next(inp.stringValue);
-        inp.onChanged(() => {
-          if (inp.stringValue === value) subscriber.next(inp.stringValue);
+        inp.onChanged.subscribe((inpValue) => {
+          if (inpValue === value) subscriber.next(inpValue);
         });
       }),
       historyHint ? this.getElement(dlg.root, 'i.fa-history.d4-command-bar-icon') : inp.root,

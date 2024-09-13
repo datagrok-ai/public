@@ -12,23 +12,24 @@ export interface ILogger {
 export class LoggerWrapper implements ILogger {
   constructor(
     private readonly target: ILogger,
-    private debugEnabled: boolean
+    private debugEnabled: boolean,
+    private prefix: string = '',
   ) {}
 
   error(message: any, params?: object | undefined, stackTrace?: string | undefined): void {
-    return this.target.error(message, params, stackTrace);
+    return this.target.error(this.prefix + message, params, stackTrace);
   }
 
   warning(message: string, params?: object | undefined): void {
-    return this.target.warning(message, params);
+    return this.target.warning(this.prefix + message, params);
   }
 
   info(message: string, params?: object | undefined): void {
-    return this.target.info(message, params);
+    return this.target.info(this.prefix + message, params);
   }
 
   debug(message: string, params?: object | undefined): void {
     if (this.debugEnabled)
-      return this.target.debug(message, params);
+      return this.target.debug(this.prefix + message, params);
   }
 }

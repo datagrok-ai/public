@@ -115,10 +115,10 @@ export class FormsViewer extends DG.JsViewer {
     this.splitColRight.style.width = `${rootWidth - w - 30 - 4}px`;
   }
 
-  getColumnWidth(el:HTMLElement){
+  getColumnWidth(el:HTMLElement) {
     return parseInt(el.style.width);
   }
-  
+
   onTableAttached() {
     if (this.fieldsColumnNames === null)
       this.setfieldsColumnNames(this.dataFrame.columns.names());
@@ -238,16 +238,19 @@ export class FormsViewer extends DG.JsViewer {
             input.value = this.dataFrame.get(name, row);
             input.readOnly = true;
 
-            if (this.colorCode && this.dataFrame.col(name)!.semType !== DG.SEMTYPE.MOLECULE) {
+            if (this.colorCode) {
               const grid = ((this.view ?? grok.shell.tv) as DG.TableView).grid;
               if (grid) {
-                const color = grid.cell(name, row).color;
-                if (grid.col(name)?.isTextColorCoded)
-                  input.input.setAttribute('style', `color:${DG.Color.toHtml(color)}!important;`);
-                else {
-                  input.input.setAttribute('style',
-                    `color:${DG.Color.toHtml(DG.Color.getContrastColor(color))}!important;`);
-                  input.input.style.backgroundColor = DG.Color.toHtml(color);
+                const gridCellIdx = grid.getRowOrder().indexOf(row);
+                if (gridCellIdx !== -1) {
+                  const color = grid.cell(name, gridCellIdx).color;
+                  if (grid.col(name)?.isTextColorCoded)
+                    input.input.setAttribute('style', `color:${DG.Color.toHtml(color)}!important;`);
+                  else {
+                    input.input.setAttribute('style',
+                      `color:${DG.Color.toHtml(DG.Color.getContrastColor(color))}!important;`);
+                    input.input.style.backgroundColor = DG.Color.toHtml(color);
+                  }
                 }
               }
             }

@@ -18,24 +18,24 @@ export const SUPPORTED_COLUMN_TYPES = [
 /** Return null value with respect to the column type */
 export function getNullValue(col: DG.Column): number {
   switch (col.type) {
-    case DG.COLUMN_TYPE.INT:        
-      return DG.INT_NULL;
+  case DG.COLUMN_TYPE.INT:
+    return DG.INT_NULL;
 
-    case DG.COLUMN_TYPE.FLOAT:
-      return DG.FLOAT_NULL;
-    
-    case DG.COLUMN_TYPE.QNUM:
-      return DG.FLOAT_NULL;
+  case DG.COLUMN_TYPE.FLOAT:
+    return DG.FLOAT_NULL;
 
-    case DG.COLUMN_TYPE.DATE_TIME:
-      return DG.FLOAT_NULL;
+  case DG.COLUMN_TYPE.QNUM:
+    return DG.FLOAT_NULL;
 
-    case DG.COLUMN_TYPE.STRING:
-      return col.max;
-  
-    default:
-      throw new Error(ERROR_MSG.UNSUPPORTED_COLUMN_TYPE);
-  }  
+  case DG.COLUMN_TYPE.DATE_TIME:
+    return DG.FLOAT_NULL;
+
+  case DG.COLUMN_TYPE.STRING:
+    return col.max;
+
+  default:
+    throw new Error(ERROR_MSG.UNSUPPORTED_COLUMN_TYPE);
+  }
 }
 
 /** Metric types (between column elements) */
@@ -76,8 +76,8 @@ type Item = {
 
 /** Impute missing values using the KNN method and returns an array of items for which an imputation fails */
 export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetrics: Map<string, MetricInfo>,
-  missingValsIndices: Map<string, number[]>, distance: DISTANCE_TYPE, neighbors: number, inPlace: boolean): Map<string, number[]>
-{
+  missingValsIndices: Map<string, number[]>, distance: DISTANCE_TYPE, neighbors: number,
+  inPlace: boolean): Map<string, number[]> {
   // 1. Check inputs completness
 
   if (neighbors < MIN_NEIGHBORS)
@@ -91,16 +91,17 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
 
   if (featuresMetrics.size === 0)
     throw new Error(ERROR_MSG.KNN_NO_FEATURE_COLUMNS);
-  
-  if (featuresMetrics.size === 1)
+
+  if (featuresMetrics.size === 1) {
     targetColNames.forEach((name) => {
       if (featuresMetrics.has(name))
         throw new Error(`${ERROR_MSG.KNN_NO_FEATURE_COLUMNS} can be used for the column '${name}'`);
-      });
+    });
+  }
 
   targetColNames.forEach((name) => {
     if (!missingValsIndices.has(name))
-      throw new Error(`${ERROR_MSG.KNN_FAILS}: ${ERROR_MSG.WRONG_PREDICTIONS}`);      
+      throw new Error(`${ERROR_MSG.KNN_FAILS}: ${ERROR_MSG.WRONG_PREDICTIONS}`);
   });
 
   const columns = df.columns;
@@ -140,21 +141,22 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
         const feature = columns.byName(name);
         featureSource.push(feature.getRawData());
         featureNullVal.push(getNullValue(feature));
-        
-        switch (metricInfo.type) {
-          case METRIC_TYPE.DIFFERENCE:
-            metricFunc.push((a: number, b: number) => metricInfo.weight * Math.abs(a - b));            
-            break;
 
-          case METRIC_TYPE.ONE_HOT:
-            metricFunc.push((a: number, b: number) => metricInfo.weight * ((a === b) ? 0 : 1));            
-            break;
-        
-          default:
-            break;
+        switch (metricInfo.type) {
+        case METRIC_TYPE.DIFFERENCE:
+          metricFunc.push((a: number, b: number) => metricInfo.weight * Math.abs(a - b));
+          break;
+
+        case METRIC_TYPE.ONE_HOT:
+          metricFunc.push((a: number, b: number) => metricInfo.weight * ((a === b) ? 0 : 1));
+          break;
+
+        default:
+          break;
         }
-    }});
-    
+      }
+    });
+
     const featuresCount = featureSource.length;
     const properIndices = new Uint32Array(featureSource.length);
     const bufferVector = new Float32Array(featureSource.length);
@@ -173,19 +175,20 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
     /** Obtain proper indices for KNN: features with missing vals are skipped */
     const getProperIndeces = (idx: number) => {
       properIndicesCount = 0;
-      
-      for (let i = 0; i < featuresCount; ++i)
+
+      for (let i = 0; i < featuresCount; ++i) {
         if (featureSource[i][idx] !== featureNullVal[i]) {
           properIndices[properIndicesCount] = i;
           ++properIndicesCount;
         }
+      }
     };
 
     /** Compute buffer vector */
     const computeBufferVector = (idx: number, cur: number) => {
       properIndices.forEach((properIndex, k) => {
         bufferVector[k] = metricFunc[properIndex](featureSource[properIndex][idx], featureSource[properIndex][cur]);
-      })
+      });
     };
 
     /** Euclidean distance function */
@@ -201,10 +204,10 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
     /** Manhattan distance function */
     const manhattanDistFunc = () => {
       let sum = 0;
-    
+
       for (let i = 0; i < properIndicesCount; ++i)
         sum += Math.abs(bufferVector[i]);
-    
+
       return Math.sqrt(sum);
     };
 
@@ -216,16 +219,17 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
       if (source[cur] === nullValue)
         return false;
 
-      for (let i = 0; i < properIndicesCount; ++i)        
+      for (let i = 0; i < properIndicesCount; ++i) {
         if (featureSource[properIndices[i]][cur] === featureNullVal[properIndices[i]])
           return false;
+      }
 
       return true;
     };
 
     /** Return the most frequent of the nearest items (for categorial data) */
     const mostFrequentOfTheNearestItems = () => {
-      frequencies.forEach((v, i,arr) => arr[i] = 0);
+      frequencies.forEach((v, i, arr) => arr[i] = 0);
       let i = 0;
 
       for (i = 0; i < nearestItemsCount; ++i)
@@ -233,7 +237,7 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
 
       let maxFreq = frequencies[0];
       let maxFreqIdx = 0;
-      
+
       frequencies.forEach((v, i) => {
         if (v > maxFreq) {
           maxFreq = v;
@@ -245,7 +249,7 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
     };
 
     /** Get imputation value */
-    const getFillValue = (idx: number) => {      
+    const getFillValue = (idx: number) => {
       getProperIndeces(idx);
 
       // check available features
@@ -255,9 +259,9 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
       nearestItemsCount = 0;
 
       // search for the closest items
-      for (let cur = 0; cur < len; ++cur)
+      for (let cur = 0; cur < len; ++cur) {
         if (canItemBeUsed(cur) && (cur !== idx)) {
-          // 1) compute distance between cur-th and idx-th items
+        // 1) compute distance between cur-th and idx-th items
           computeBufferVector(idx, cur);
           const curDist = dist();
 
@@ -265,24 +269,25 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
           if (nearestItemsCount < neighbors) {
             nearestItems[nearestItemsCount] = {index: cur, dist: curDist};
             ++nearestItemsCount;
-          }
-          else {
-            // 2.1) find the farest
+          } else {
+          // 2.1) find the farest
             maxInd = 0;
             maxDist = nearestItems[0].dist;
 
-            for(let i = 1; i < nearestItemsCount; ++i)
+            for (let i = 1; i < nearestItemsCount; ++i) {
               if (maxDist < nearestItems[i].dist) {
                 maxDist = nearestItems[i].dist;
                 maxInd = i;
               }
-            
+            }
+
             // 2.2) replace
             if (curDist < maxDist)
               nearestItems[maxInd] = {index: cur, dist: curDist};
           } // else
-        } // for cur
-      
+        }
+      } // for cur
+
       // check found nearest items
       if (nearestItemsCount === 0)
         throw new Error(`${ERROR_MSG.KNN_IMPOSSIBLE_IMPUTATION}: the column "${col.name}", row ${idx + 1}`);
@@ -293,35 +298,35 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
       // compute fill value
       sum = 0;
       for (let i = 0; i < nearestItemsCount; ++i)
-        sum += source[nearestItems[i].index];        
+        sum += source[nearestItems[i].index];
 
       fillValue = sum / nearestItemsCount;
 
       if (col.type === DG.COLUMN_TYPE.INT)
         return Math.round(fillValue);
 
-      return fillValue;      
+      return fillValue;
     }; // getFillValue
-    
+
     if (inPlace) {
       // use indices found previousely
-      for (const i of missingValsIndices.get(name)!)        
+      for (const i of missingValsIndices.get(name)!) {
         try {
           source[i] = getFillValue(i);
-        }  catch (err) {
-            failedToImputeIndices.push(i);
-              
-            if (!(err instanceof Error))
-              grok.shell.error(ERROR_MSG.CORE_ISSUE);
+        } catch (err) {
+          failedToImputeIndices.push(i);
+
+          if (!(err instanceof Error))
+            grok.shell.error(ERROR_MSG.CORE_ISSUE);
         }
-      
+      }
+
       if (failedToImputeIndices.length > 0)
         failedToImpute.set(name, failedToImputeIndices);
 
-      // to reset view      
+      // to reset view
       col.set(0, col.get(0));
-    } // if
-    else {
+    } else {
       //@ts-ignore
       const copy = col.clone();
 
@@ -335,19 +340,20 @@ export function impute(df: DG.DataFrame, targetColNames: string[], featuresMetri
       }
 
       copy.name = copyName;
-      
+
       const copySource = copy.getRawData();
 
       // use indices found previousely
-      for (const i of missingValsIndices.get(name)!)        
+      for (const i of missingValsIndices.get(name)!) {
         try {
           copySource[i] = getFillValue(i);
-        }  catch (err) {
-            failedToImputeIndices.push(i);              
-              
-            if (!(err instanceof Error))
-              grok.shell.error(ERROR_MSG.CORE_ISSUE);
+        } catch (err) {
+          failedToImputeIndices.push(i);
+
+          if (!(err instanceof Error))
+            grok.shell.error(ERROR_MSG.CORE_ISSUE);
         }
+      }
 
       if (failedToImputeIndices.length > 0)
         failedToImpute.set(copyName, failedToImputeIndices);
@@ -374,7 +380,7 @@ export function getMissingValsIndices(columns: DG.Column[]): Map<string, number[
 
     const indices = [] as number[];
     const nullValue = getNullValue(col);
-    
+
     col.getRawData().forEach((val, idx) => {
       if (val === nullValue)
         indices.push(idx);
@@ -387,11 +393,13 @@ export function getMissingValsIndices(columns: DG.Column[]): Map<string, number[
 }
 
 /** Predict existence of missing values imputation fails */
-export function areThereFails(targetColNames: string[], featureColNames: string[], misValsInds: Map<string, number[]>): boolean {
+export function areThereFails(targetColNames: string[], featureColNames: string[],
+  misValsInds: Map<string, number[]>): boolean {
   // check feature columns
-  for (const name of featureColNames)
+  for (const name of featureColNames) {
     if (!misValsInds.has(name))
       return false;
+  }
 
   // check target columns
   for (const target of targetColNames) {
@@ -399,7 +407,7 @@ export function areThereFails(targetColNames: string[], featureColNames: string[
 
     if (indices === undefined)
       throw new Error(ERROR_MSG.FAILS_TO_PREDICT_IMPUTATION_FAILS);
-    
+
     for (const idx of indices) {
       let failToImpute = true;
 
@@ -429,27 +437,28 @@ function getFirstNonNull<T>(col: DG.Column<T>): T {
   const raw = col.getRawData();
   const len = raw.length;
 
-  for (let i = 0; i < len; ++i)
+  for (let i = 0; i < len; ++i) {
     if (raw[i] !== nullValue)
       return col.get(i)!;
+  }
 
-  throw new Error(ERROR_MSG.EMPTY_COLUMN);  
+  throw new Error(ERROR_MSG.EMPTY_COLUMN);
 }
 
 /** Return default fill value with respect to the column type */
 function getDefaultFillValue<T>(col: DG.Column<T>): T {
   switch (col.type) {
-    case DG.COLUMN_TYPE.STRING:
-    case DG.COLUMN_TYPE.DATE_TIME:
-      return getFirstNonNull(col); // TODO: replace by most frequent
+  case DG.COLUMN_TYPE.STRING:
+  case DG.COLUMN_TYPE.DATE_TIME:
+    return getFirstNonNull(col); // TODO: replace by most frequent
 
-    case DG.COLUMN_TYPE.INT:
-    case DG.COLUMN_TYPE.FLOAT:
-    case DG.COLUMN_TYPE.QNUM:
-      return col.stats.avg as T;
+  case DG.COLUMN_TYPE.INT:
+  case DG.COLUMN_TYPE.FLOAT:
+  case DG.COLUMN_TYPE.QNUM:
+    return col.stats.avg as T;
 
-    default:
-      throw new Error(ERROR_MSG.UNSUPPORTED_COLUMN_TYPE);
+  default:
+    throw new Error(ERROR_MSG.UNSUPPORTED_COLUMN_TYPE);
   }
 }
 
@@ -459,7 +468,7 @@ export function imputeFailed(df: DG.DataFrame, failedToImpute: Map<string, numbe
     const col = df.col(colName);
     if (col !== null) {
       if (!SUPPORTED_COLUMN_TYPES.includes(col.type))
-        throw new Error(ERROR_MSG.UNSUPPORTED_COLUMN_TYPE);        
+        throw new Error(ERROR_MSG.UNSUPPORTED_COLUMN_TYPE);
 
       const fillVal = getDefaultFillValue(col);
       indices.forEach((idx) => col.set(idx, fillVal));

@@ -1,12 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
-
 import * as echarts from 'echarts';
 
-
 export class EChartViewer extends DG.JsViewer {
-  chart: echarts.ECharts;
+  private _chart: echarts.ECharts | null = null;
   option: any;
 
   top?: string;
@@ -29,11 +27,23 @@ export class EChartViewer extends DG.JsViewer {
     const warn = console.warn.bind(console);
     console.warn = () => {};
     try {
-      this.chart = echarts.init(chartDiv);
+      this._chart = echarts.init(chartDiv);
     } finally {
       console.warn = warn;
     }
     this.subs.push(ui.onSizeChanged(chartDiv).subscribe((_) => this.chart.resize()));
+  }
+
+  get chart(): echarts.ECharts {
+    if (this._chart === null) {
+      const chartDiv = this.root.children[0] as HTMLDivElement;
+      this._chart = echarts.init(chartDiv);
+    }
+    return this._chart;
+  }
+
+  set chart(value: echarts.ECharts | null) {
+    this._chart = value;
   }
 
   initCommonProperties() {

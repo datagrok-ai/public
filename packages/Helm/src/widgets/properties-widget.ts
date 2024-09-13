@@ -7,10 +7,10 @@ import $ from 'cash-dom';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
-import {JSDraw2HelmModule} from '../types';
+import {JSDraw2Module} from '../types';
 import {removeGapsFromHelm} from '../utils';
 
-declare const JSDraw2: JSDraw2HelmModule;
+declare const JSDraw2: JSDraw2Module;
 
 export class SeqPropertiesError extends Error {
   constructor(message?: string, options?: ErrorOptions) {

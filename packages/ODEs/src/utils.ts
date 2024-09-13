@@ -4,6 +4,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {MISC} from './ui-constants';
+
 /** Return max absolute deviation between the corresponding float values of 2 dataframes */
 export function error(df1: DG.DataFrame, df2: DG.DataFrame): number {
   let mad = 0;
@@ -37,3 +39,29 @@ export function error(df1: DG.DataFrame, df2: DG.DataFrame): number {
 
   return mad;
 } // error
+
+/** Return unused IVP-file name */
+export function unusedFileName(name: string, files: string[]): string {
+  if (!files.includes(`${name}.${MISC.IVP_EXT}`))
+    return name;
+
+  let num = 1;
+
+  while (files.includes(`${name}(${num}).${MISC.IVP_EXT}`))
+    ++num;
+
+  return `${name}(${num})`;
+}
+
+/** Return dataframe with the specified number of last rows */
+export function getTableFromLastRows(df: DG.DataFrame, maxRows: number): DG.DataFrame {
+  if (df.rowCount <= maxRows)
+    return df;
+
+  const cols: DG.Column[] = [];
+
+  for (const col of df.columns)
+    cols.push(DG.Column.fromList(col.type, col.name, col.toList().slice(-maxRows)));
+
+  return DG.DataFrame.fromColumns(cols);
+}

@@ -3,29 +3,34 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {getRdKitModule} from '../../../utils/chem-common-rdkit';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-
-import {MMP_NAMES, MMP_CONSTRICTIONS, MMP_ERRORS} from '../mmp-constants';
-import {MmpRules, MmpInput} from '../mmp-constants';
-import {getInverseSubstructuresAndAlign, PaletteCodes, getPalette} from '../mmp-mol-rendering';
-import {getMmpFrags, getMmpRules} from '../mmp-fragments';
-import {getMmpActivityPairsAndTransforms} from '../mmp-pairs-transforms';
-import {getMmpTrellisPlot} from '../mmp-frag-vs-frag';
-import {getMmpScatterPlot, runMmpChemSpace} from '../mmp-cliffs';
-import {getGenerations} from '../mmp-generations';
-
-
-import {drawMoleculeLabels} from '../../../rendering/molecule-label';
-import {ILineSeries, ScatterPlotLinesRenderer}
+import {Subject} from 'rxjs/internal/Subject';
+import $ from 'cash-dom';
+import {ILineSeries, MouseOverLineEvent, ScatterPlotLinesRenderer}
   from '@datagrok-libraries/utils/src/render-lines-on-sp';
+
+import {MMPA} from '../mmp-analysis/mmpa';
+import {MMP_NAMES} from './mmp-constants';
+
+import {PaletteCodes, getPalette} from './palette';
+import {getMmpTrellisPlot} from './mmp-frag-vs-frag';
+import {getMmpScatterPlot, runMmpChemSpace, fillPairInfo} from './mmp-cliffs';
+import {getGenerations} from './mmp-generations';
+
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 import {getEmbeddingColsNames} from
   '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
-import $ from 'cash-dom';
-import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
-import {getMmpFilters, MmpFilters} from '../mmp-filters';
-import {Subject} from 'rxjs/internal/Subject';
-import {IMmpFragmentsResult} from '../../../rdkit-service/rdkit-service-worker-substructure';
+import {getMmpFilters, MmpFilters} from './mmp-filters';
+import {getSigFigs} from '../../../utils/chem-common';
+import {createLines} from './mmp-lines';
+import {MmpPairedGrids} from './mmp-grids';
+
+export type MmpInput = {
+  table: DG.DataFrame,
+  molecules: DG.Column,
+  activities: DG.ColumnList,
+  fragmentCutoff: number
+};
 
 
 export class MatchedMolecularPairsViewer extends DG.JsViewer {
@@ -36,25 +41,21 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   activities: string[] | null = null;
   fragmentCutoff: number | null;
   totalData: string;
-
   totalDataUpdated: boolean = false;
+  onPropertyChangedObs : Subject<DG.Property | null> = new Subject<DG.Property | null>();
 
   moleculesCol: DG.Column | null = null;
   activitiesCols: DG.ColumnList | null = null;
+  mmpa: MMPA | null = null;
 
   parentTable: DG.DataFrame | null = null;
-  parentCol: DG.Column| null = null;
-  mmpRules: MmpRules | null = null;
+
+  //mmpRules: MmpRules | null = null;
   mmpView: DG.View | null = null;
-  enableFilters: boolean = true;
   colorPalette: PaletteCodes | null = null;
-  //transformations tab objects
-  transFragmentsGrid: DG.Grid | null = null;
-  transFragmentsMask: DG.BitSet | null = null;
-  transPairsGrid: DG.Grid | null = null;
-  transPairsMask: DG.BitSet | null = null;
-  //fragments tab objects
-  fragmentsMask: DG.BitSet | null = null;
+
+  pairedGrids: MmpPairedGrids | null = null;
+
   //cliffs tab objects
   diffs: Array<Float32Array> | null = null;
   linesIdxs: Uint32Array | null = null;
@@ -66,12 +67,13 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   linesActivityCorrespondance: Uint32Array | null = null;
   //generations tab objects
   generationsGrid: DG.Grid | null = null;
-  //rdkit
+
   rdkitModule: RDModule | null = null;
   currentTab = '';
   lastSelectedPair: number | null = null;
   propPanelViewer: FormsViewer | null = null;
   mmpFilters: MmpFilters | null = null;
+
   calculatedOnGPU: boolean | null = null;
 
   constructor() {
@@ -82,11 +84,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.activities = this.stringList('activities');
     this.fragmentCutoff = this.float('fragmentCutoff');
 
-    this.totalData = this.string('totalData', 'null', {userEditable: false});
-  }
-
-  onTableAttached() {
-
+    this.totalData = this.string('totalData', 'null', {userEditable: false, includeInLayout: false});
   }
 
   onPropertyChangedDebounced() {
@@ -106,8 +104,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       return;
     }
   }
-
-  onPropertyChangedObs : Subject<DG.Property | null> = new Subject<DG.Property | null>();
 
   onPropertyChanged(property: DG.Property | null): void {
     console.log(property!.name);
@@ -143,157 +139,361 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
           this.close();
         progressMMP.close();
       }
-
-      // let tableInfo = this.parentTable!.getTableInfo();
-      // await grok.dapi.tables.uploadDataFrame(this.parentTable!);
-      // await grok.dapi.tables.save(tableInfo);
-      // console.log(`${grok.dapi.root}/entities/${tableInfo.id}/token`);
-      // const response = await fetch(`${grok.dapi.root}/entities/${tableInfo.id}/token`, {method: "POST"});
-      //or without POST
-      // const respText = await response.text();
     }
   }
 
-  //setup after calculation
-  setupTransformationTab!: ()=> void;
-  setupFragmentsTab!: ()=> void;
-  setupFilters!: (mmpFilters: MmpFilters, linesActivityCorrespondance: Uint32Array, tp: DG.Viewer) => void;
-  setupCliffsTab!: (sp: DG.Viewer, mmpFilters: MmpFilters, linesEditor: ScatterPlotLinesRenderer) => HTMLDivElement;
-  getTabs!: (tp: DG.Viewer, mmpFilters: MmpFilters, cliffs: HTMLDivElement) => DG.TabControl;
-  fillAll!: (mmpInput: MmpInput, palette: PaletteCodes,
-    rules: MmpRules, diffs: Array<Float32Array>,
-    linesIdxs: Uint32Array, transFragmentsGrid: DG.Grid, transPairsGrid: DG.Grid, generationsGrid: DG.Grid,
+  setupFilters(mmpFilters: MmpFilters, linesActivityCorrespondance: Uint32Array, tp: DG.Viewer): void {
+    for (let i = 0; i < mmpFilters.activitySliderInputs.length; i++) {
+      mmpFilters.activityActiveInputs[i].onChanged.subscribe(() => {
+        this.refilterCliffs(mmpFilters.activitySliderInputs.map((si) => si.value),
+          mmpFilters.activityActiveInputs.map((ai) => ai.value), true);
+      });
+
+      mmpFilters.activitySliderInputs[i].onChanged.subscribe(() => {
+        mmpFilters.activityValuesDivs[i].innerText = mmpFilters.activitySliderInputs[i].value === 0 ? '0' :
+          getSigFigs(mmpFilters.activitySliderInputs[i].value, 4).toString();
+        this.refilterCliffs(mmpFilters.activitySliderInputs.map((si) => si.value),
+          mmpFilters.activityActiveInputs.map((ai) => ai.value), true);
+      });
+
+      mmpFilters.activityColorInputs[i].value = this.colorPalette!.hex[i];
+      mmpFilters.activityColorInputs[i].onChanged.subscribe(() => {
+        const progressRendering = DG.TaskBarProgressIndicator.create(`Changing colors...`);
+
+        //refresh lines
+        for (let i =0; i < mmpFilters.activityColorInputs.length; i++) {
+          this.colorPalette!.hex[i] = mmpFilters.activityColorInputs[i].value;
+          this.colorPalette!.numerical[i] = DG.Color.fromHtml(mmpFilters.activityColorInputs[i].value);
+          this.colorPalette!.rgb[i] = DG.Color.toRgb(this.colorPalette!.numerical[i]);
+          this.colorPalette!.rgbCut[i] = this.colorPalette!.rgb[i].replace('rgb(', '').replace(')', '');
+        }
+
+        const colors = this.lines!.colors;
+        for (let i = 0; i < colors!.length; i++)
+          colors![i] = this.colorPalette!.rgbCut[linesActivityCorrespondance[i]];
+
+        const lines: ILineSeries = {
+          from: this.lines!.from,
+          to: this.lines!.to,
+          drawArrows: true,
+          colors: colors,
+          arrowSize: 10,
+          skipMultiLineCalculation: true,
+          width: 0.5,
+        };
+
+        this.lines = lines;
+        this.linesRenderer!.linesToRender = lines;
+
+        //refresh trellis plot
+        const schemes = new Array<any>(mmpFilters.activityColorInputs.length);
+        for (let i = 0; i < mmpFilters.activityColorInputs.length; i++)
+          schemes[i] = [this.colorPalette!.numerical[i]];
+
+        tp.setOptions({'innerViewerLook': {'colorSchemes': schemes}});
+        progressRendering.close();
+      });
+
+      this.cutoffMasks![i] = DG.BitSet.create(this.parentTable!.rowCount);
+      this.cutoffMasks![i].setAll(true);
+    }
+
+    mmpFilters.pairsSliderInput.onChanged.subscribe((value) => {
+      mmpFilters.pairsValueDiv.innerText = value.toString();
+      this.pairedGrids!.refilterFragmentPairsByCases(value);
+    });
+  }
+
+  setupCliffsTab(sp: DG.Viewer, mmpFilters: MmpFilters, linesEditor: ScatterPlotLinesRenderer): HTMLDivElement {
+    sp.root.style.width = '100%';
+
+    this.totalCutoffMask!.setAll(true);
+    this.linesMask!.setAll(true);
+
+    this.linesRenderer = linesEditor;
+
+    this.refilterCliffs(mmpFilters.activitySliderInputs.map((si) => si.value),
+      mmpFilters.activityActiveInputs.map((ai) => ai.value), false);
+
+    return ui.box(sp.root);
+  }
+
+  getTabs(tp: DG.Viewer, mmpFilters: MmpFilters, cliffs: HTMLDivElement): DG.TabControl {
+    const tabs = ui.tabControl(null, false);
+
+    const addToWorkspaceButton = (table: DG.DataFrame, name: string, className: string) => {
+      const button = ui.iconFA('arrow-square-down', () => {
+        const clonedTable = table.clone();
+        clonedTable.name = name;
+        const tv = grok.shell.addTableView(clonedTable);
+        //without setTimeout tableView is not set as current view
+        setTimeout(() => grok.shell.v = tv, 10);
+      }, 'Add table to workspace');
+      button.classList.add(className);
+      return button;
+    };
+
+    tabs.addPane(MMP_NAMES.TAB_TRANSFORMATIONS, () => {
+      const createGridDiv = (name: string, grid: DG.Grid) => {
+        const header = ui.h1(name, 'chem-mmpa-transformation-tab-header');
+        grid.root.prepend(header);
+        return ui.splitV([
+          ui.box(
+            ui.divH([header, addToWorkspaceButton(grid.dataFrame, name, 'chem-mmpa-add-to-workspace-button')]),
+            {style: {maxHeight: '30px'}},
+          ),
+          grid.root,
+        ]);
+      };
+
+      return ui.splitV([
+        createGridDiv('Fragment Pairs', this.pairedGrids!.fpGrid),
+        createGridDiv('Matched Molecular Pairs', this.pairedGrids!.mmpGrid),
+      ], {}, true);
+    });
+    const fragmentsPane = tabs.addPane(MMP_NAMES.TAB_FRAGMENTS, () => {
+      return tp.root;
+    });
+    fragmentsPane.content.classList.add('mmpa-fragments-tab');
+    const cliffsTab = tabs.addPane(MMP_NAMES.TAB_CLIFFS, () => {
+      return cliffs;
+    });
+    cliffsTab.content.classList.add('mmpa-cliffs-tab');
+    const genTab = tabs.addPane(MMP_NAMES.TAB_GENERATION, () => {
+      return this.generationsGrid!.root;
+    });
+    genTab.header.append(addToWorkspaceButton(this.generationsGrid!.dataFrame,
+      'Generation', 'chem-mmpa-add-generation-to-workspace-button'));
+
+    let refilter = true;
+    tabs.onTabChanged.subscribe(() => {
+      this.currentTab = tabs.currentPane.name;
+      if (tabs.currentPane.name == MMP_NAMES.TAB_TRANSFORMATIONS) {
+        this.pairedGrids!.enableFilters = true;
+        this.pairedGrids!.refilterFragmentPairsByMolecule(false);
+      } else if (tabs.currentPane.name == MMP_NAMES.TAB_FRAGMENTS) {
+        tabs.currentPane.content.append(mmpFilters.filtersDiv);
+        this.pairedGrids!.refreshMaskFragmentPairsFilter();
+        this.pairedGrids!.enableFilters = false;
+        // this.pairedGrids!.mmpMaskByFragment.setAll(false);
+        // this.pairedGrids!.mmpGrid.dataFrame.filter.copyFrom(this.pairedGrids!.mmpMaskByFragment);
+        // grok.shell.o = this.pairedGrids!.mmpGrid.root;
+      } else if (tabs.currentPane.name == MMP_NAMES.TAB_CLIFFS) {
+        tabs.currentPane.content.append(mmpFilters.filtersDiv);
+
+        if (refilter)
+          grok.shell.warning('Cutoff filters were applied for all activities');
+
+        this.refilterCliffs(mmpFilters.activitySliderInputs.map((si) => si.value),
+          mmpFilters.activityActiveInputs.map((ai) => ai.value), refilter);
+        refilter = false;
+        if (this.lastSelectedPair) {
+          setTimeout(() => {
+            grok.shell.o = fillPairInfo(this.lastSelectedPair!, this.linesIdxs!,
+              this.linesActivityCorrespondance![this.lastSelectedPair!],
+              this.pairedGrids!.mmpGrid.dataFrame, this.diffs!, this.parentTable!, this.rdkitModule!);
+          }, 500);
+        }
+      }
+    });
+
+    const decript1 = 'Shows all fragmental substitutions for a given molecule';
+    const decript2 = 'Analysis of fragments versus explored value';
+    const decript3 = 'Cliffs analysis';
+    const decript4 = 'Genneration of molecules based on obtained rules';
+
+    ui.tooltip.bind(tabs.getPane(MMP_NAMES.TAB_TRANSFORMATIONS).header, decript1);
+    ui.tooltip.bind(tabs.getPane(MMP_NAMES.TAB_FRAGMENTS).header, decript2);
+    ui.tooltip.bind(tabs.getPane(MMP_NAMES.TAB_CLIFFS).header, decript3);
+    ui.tooltip.bind(tabs.getPane(MMP_NAMES.TAB_GENERATION).header, decript4);
+
+    return tabs;
+  }
+
+  fillAll(mmpInput: MmpInput, palette: PaletteCodes,
+    mmpa: MMPA, diffs: Array<Float32Array>,
+    linesIdxs: Uint32Array, pairedGrids: MmpPairedGrids, generationsGrid: DG.Grid,
     tp: DG.Viewer, sp: DG.Viewer, mmpFilters: MmpFilters,
     linesEditor: ScatterPlotLinesRenderer, lines: ILineSeries, linesActivityCorrespondance: Uint32Array,
-    rdkitModule: RDModule, gpuUsed: boolean) => void;
+    rdkitModule: RDModule): void {
+    this.rdkitModule = rdkitModule;
+
+    this.parentTable = mmpInput.table;
+
+    this.colorPalette = palette;
+    this.mmpa = mmpa;
+
+    this.mmpView = DG.View.create();
+    this.mmpView!.name = MMP_NAMES.VIEW_NAME;
+    this.mmpView!.box = true;
+
+    //main grids
+    this.pairedGrids = pairedGrids;
+    this.pairedGrids.setupGrids();
+
+    //Cliffs tab setup
+    this.diffs = diffs;
+    this.generationsGrid = generationsGrid;
+    this.lines = lines;
+    this.linesActivityCorrespondance = linesActivityCorrespondance;
+    this.linesIdxs = linesIdxs;
+    this.mmpFilters = mmpFilters;
+    this.cutoffMasks = new Array<DG.BitSet>(mmpFilters.activitySliderInputs.length);
+    this.totalCutoffMask = DG.BitSet.create(this.parentTable!.rowCount);
+    this.linesMask = new BitArray(linesIdxs.length);
+    this.setupFilters(mmpFilters, linesActivityCorrespondance, tp);
+    const cliffs = this.setupCliffsTab(sp, mmpFilters, linesEditor);
+
+    //tabs
+    const tabs = this.getTabs(tp, mmpFilters, cliffs);
+
+      this.linesRenderer!.lineClicked.subscribe((event: MouseOverLineEvent) => {
+        this.linesRenderer!.currentLineId = event.id;
+        if (event.id !== -1) {
+          setTimeout(() => {
+            grok.shell.o = fillPairInfo(event.id, linesIdxs, linesActivityCorrespondance[event.id],
+              pairedGrids.mmpGrid.dataFrame, diffs, mmpInput.table, rdkitModule, this.propPanelViewer!);
+            this.lastSelectedPair = event.id;
+            this.propPanelViewer!.fitHeaderToLabelWidth(100);
+          }, 500);
+        }
+      });
+
+      this.mmpView.append(tabs);
+
+      const propertiesColumnsNames = this.parentTable!.columns.names()
+        .filter((name) => !name.startsWith('~'));
+      this.propPanelViewer = new FormsViewer();
+      this.propPanelViewer.dataframe = this.parentTable!;
+      this.propPanelViewer.columns = propertiesColumnsNames;
+      this.propPanelViewer.inputClicked.subscribe(() => {
+        setTimeout(() => {
+          grok.shell.o = fillPairInfo(
+            this.lastSelectedPair!, linesIdxs, linesActivityCorrespondance[this.lastSelectedPair!],
+            pairedGrids.mmpGrid.dataFrame, diffs, mmpInput.table, rdkitModule, this.propPanelViewer!);
+          this.propPanelViewer!.fitHeaderToLabelWidth(100);
+        }, 500);
+      });
+
+      this.calculatedOnGPU = mmpa.gpu;
+  }
 
   async runMMP(mmpInput: MmpInput) {
     //console.profile('MMP');
-
-    const module = getRdKitModule();
     const moleculesArray = mmpInput.molecules.toList();
-
-    const gpuCheck = await getGPUDevice();
-    const gpu: boolean = !gpuCheck ? false : true;
-
-    if (!gpu && mmpInput.molecules.length > MMP_CONSTRICTIONS.CPU) {
-      grok.shell.error(MMP_ERRORS.FRAGMENTS_CPU);
-      throw new Error(MMP_ERRORS.FRAGMENTS_CPU);
-    } else if (mmpInput.molecules.length > MMP_CONSTRICTIONS.GPU) {
-      grok.shell.error(MMP_ERRORS.FRAGMENTS_GPU);
-      throw new Error(MMP_ERRORS.FRAGMENTS_GPU);
+    const variates = mmpInput.activities.length;
+    const activitiesArrays = new Array<Float32Array>(variates);
+    const activitiesNames = new Array<string>(variates);
+    for (let i = 0; i < variates; i++) {
+      activitiesArrays[i] = mmpInput.activities.byIndex(i).asDoubleList();
+      activitiesNames[i] = mmpInput.activities.byIndex(i).name;
     }
 
-    //initial calculations
-    let fragsOut: IMmpFragmentsResult;
-    let mmpRules: MmpRules;
-    let allCasesNumber: number;
+    let mmpa: MMPA;
 
-    if (this.totalDataUpdated) {
-      const totalParsed = JSON.parse(this.totalData);
-      this.totalDataUpdated = false;
-      fragsOut = totalParsed['fragments'];
-      mmpRules = totalParsed['rules'];
-      allCasesNumber = totalParsed['cases'];
-    } else {
-      fragsOut = await getMmpFrags(moleculesArray);
-      [mmpRules, allCasesNumber] = await getMmpRules(fragsOut, mmpInput.fragmentCutoff, gpu);
+    try {
+      if (this.totalDataUpdated) {
+        mmpa = await MMPA.fromData(
+          mmpInput.molecules.name, this.totalData, moleculesArray, activitiesArrays, activitiesNames);
+        this.totalDataUpdated = false;
+      } else {
+        mmpa = await MMPA.init(
+          mmpInput.molecules.name, moleculesArray, mmpInput.fragmentCutoff, activitiesArrays, activitiesNames);
+      }
+    } catch (err: any) {
+      const errMsg = err instanceof Error ? err.message : err.toString();
+      grok.shell.error(errMsg);
+      throw new Error(errMsg);
     }
-
 
     const palette = getPalette(mmpInput.activities.length);
+    const activityMeanNames = Array<string>(mmpa.initData.activitiesCount);
+    for (let i = 0; i < mmpa.initData.activitiesCount; i++) {
+      const name = MMP_NAMES.MEANDIFF + ' ' + mmpa.initData.activitiesNames[i];
+      activityMeanNames[i] = name;
+    }
+
     //Transformations tab
-    const {maxActs, diffs, meanDiffs, activityMeanNames,
-      linesIdxs, transFragmentsGrid, transPairsGrid, lines, linesActivityCorrespondance} =
-      getMmpActivityPairsAndTransforms(mmpInput, mmpRules, allCasesNumber, palette);
+    //const {activityMeanNames, fpGrid, mmpGrid} = getMmpPairsGrids(mmpa);
+    const pairedGrids = new MmpPairedGrids(mmpInput, mmpa, activityMeanNames);
 
     //Fragments tab
-    const tp = getMmpTrellisPlot(transFragmentsGrid, activityMeanNames, palette);
+    const tp = getMmpTrellisPlot(pairedGrids.fpGrid, activityMeanNames, palette);
+    tp.onEvent('d4-trellis-plot-inner-viewer-clicked').subscribe((cats) => {
+      //grok.shell.info(cats);
+      this.pairedGrids?.refilterMatchedPairsByFragments(cats);
+    });
 
     //Cliffs tab
+    const {linesIdxs, lines, linesActivityCorrespondance} = createLines(mmpa, palette);
     const embedColsNames = getEmbeddingColsNames(mmpInput.table).map((it) => `~${it}`);
 
-    const mmpFilters = getMmpFilters(mmpInput, maxActs, transFragmentsGrid.dataFrame.col(MMP_NAMES.PAIRS)!.stats.max);
+    const mmpFilters = getMmpFilters(mmpInput, mmpa.allCasesBased.maxActs,
+      pairedGrids.fpGrid.dataFrame.col(MMP_NAMES.PAIRS)!.stats.max);
     console.log(`created mmpa filters`);
 
-    const sp = getMmpScatterPlot(mmpInput, embedColsNames);
-
-    drawMoleculeLabels(mmpInput.table, mmpInput.molecules, sp as DG.ScatterPlotViewer, 20, 7, 100, 110);
+    const sp = getMmpScatterPlot(mmpInput, embedColsNames, mmpInput.molecules.name);
 
     //running internal chemspace
-    const linesEditor = runMmpChemSpace(mmpInput, sp, lines, linesIdxs, linesActivityCorrespondance,
-      transPairsGrid.dataFrame, diffs, module, embedColsNames);
+    const module = getRdKitModule();
+    const [linesEditor, chemSpaceParams] = runMmpChemSpace(mmpInput, sp, lines, linesIdxs, linesActivityCorrespondance,
+      pairedGrids.mmpGrid.dataFrame, mmpa, module, embedColsNames);
 
+    const progressBarSpace = DG.TaskBarProgressIndicator.create(`Running Chemical space...`);
+    mmpa.chemSpace(chemSpaceParams).then((res) => {
+      const embeddings = res.coordinates;
+      for (const col of embeddings)
+        mmpInput.table.columns.replace(col.name, col);
 
-    const generationsGrid: DG.Grid =
-      await getGenerations(mmpInput, moleculesArray, fragsOut, meanDiffs, transFragmentsGrid, activityMeanNames, gpu);
+      this.totalData = mmpa.toJSON();
+      progressBarSpace.close();
+    });
 
+    const generationsGrid: DG.Grid = await getGenerations(mmpa, pairedGrids.fpGrid);
 
-    this.fillAll(mmpInput, palette, mmpRules, diffs, linesIdxs, transFragmentsGrid, transPairsGrid, generationsGrid,
-      tp, sp, mmpFilters, linesEditor, lines, linesActivityCorrespondance, module, gpu);
+    this.fillAll(mmpInput, palette, mmpa, mmpa.allCasesBased.diffs, linesIdxs, pairedGrids,
+      generationsGrid, tp, sp, mmpFilters, linesEditor, lines, linesActivityCorrespondance, module);
 
-    this.totalData = JSON.stringify({'fragments': fragsOut, 'rules': mmpRules, 'cases': allCasesNumber});
+    this.totalData = mmpa.toJSON();
     //console.profileEnd('MMP');
   }
 
-  findSpecificRule(diffFromSubstrCol: DG.Column): [idxPairs: number, cases: number[]] {
-    const idxParent = this.parentTable!.currentRowIdx;
-    let idxPairs = -1;
-    const cases: number[] = [];
-    const idx = this.transFragmentsGrid!.table.currentRowIdx;
-    if (idx !== -1) {
-      const ruleSmi1 = this.transFragmentsGrid!.table.getCol(MMP_NAMES.FROM).get(idx);
-      const ruleSmi2 = this.transFragmentsGrid!.table.getCol(MMP_NAMES.TO).get(idx);
-      const ruleSmiNum1 = this.mmpRules!.smilesFrags.indexOf(ruleSmi1);
-      const ruleSmiNum2 = this.mmpRules!.smilesFrags.indexOf(ruleSmi2);
+  refilterCliffs(cutoffs: number[], isActiveVar: boolean[], refilter: boolean): void {
+    if (refilter) {
+      for (let i = 0; i < this.cutoffMasks!.length; i ++)
+      this.cutoffMasks![i].setAll(false);
 
-      let counter = 0;
+      this.totalCutoffMask!.setAll(false);
+      this.linesMask!.setAll(false);
 
-      for (let i = 0; i < this.mmpRules!.rules.length; i++) {
-        const first = this.mmpRules!.rules[i].smilesRule1;
-        const second = this.mmpRules!.rules[i].smilesRule2;
-        for (let j = 0; j < this.mmpRules!.rules[i].pairs.length; j++) {
-          if (ruleSmiNum1 == first && ruleSmiNum2 == second) {
-            this.transPairsMask!.set(counter, true, false);
-            if (diffFromSubstrCol.get(counter) === null)
-              cases.push(counter);
-            if (this.mmpRules!.rules[i].pairs[j].firstStructure == idxParent)
-              idxPairs = counter;
-          }
-          counter++;
+      //setting activity associated masks
+      for (let i = 0; i < this.lines!.from.length; i++) {
+        const activityNumber = this.linesActivityCorrespondance![i];
+        const line = this.linesIdxs![i];
+        //if 'isActive' checkbox for variable is unset
+        //setting line to invisible and continue, otherwise look at cutoff
+        if (!isActiveVar[activityNumber]) {
+          this.linesMask!.setBit(i, false, false);
+          continue;
+        }
+        if (this.diffs![activityNumber][line] >= cutoffs[activityNumber]) {
+          this.cutoffMasks![activityNumber].set(this.lines!.from[i], true, false);
+          this.cutoffMasks![activityNumber].set(this.lines!.to[i], true, false);
+          this.linesMask!.setBit(i, true, false);
         }
       }
-    }
-    return [idxPairs, cases];
-  }
 
-  async recoverHighlights(
-    cases: number[], diffFrom : DG.Column, diffTo: DG.Column,
-    diffFromSubstrCol: DG.Column, diffToSubstrCol: DG.Column, rdkitModule: RDModule) : Promise<void> {
-    const pairsFrom = Array<string>(cases.length);
-    const pairsTo = Array<string>(cases.length);
-    for (let i = 0; i < cases.length; i++) {
-      pairsFrom[i] = diffFrom.get(cases[i]);
-      pairsTo[i] = diffTo.get(cases[i]);
+      //setting resulting masks
+      //TODO: refine
+      for (let j = 0; j < this.totalCutoffMask!.length; j++) {
+        let res = false;
+        for (let i = 0; i < this.cutoffMasks!.length; i++)
+          res = res || this.cutoffMasks![i].get(j);
+        this.totalCutoffMask!.set(j, res, false);
+      }
     }
-    const {inverse1, inverse2, fromAligned, toAligned} =
-      await getInverseSubstructuresAndAlign(pairsFrom, pairsTo, rdkitModule);
-    for (let i = 0; i < cases.length; i++) {
-      diffFrom.set(cases[i], fromAligned[i]);
-      diffTo.set(cases[i], toAligned[i]);
-      diffFromSubstrCol.set(cases[i], inverse1[i]);
-      diffToSubstrCol.set(cases[i], inverse2[i]);
-    }
-  }
 
-  //interaction logics
-  refreshPair!: (rdkitModule: RDModule) => Promise<void>;
-  refreshFilterAllFragments!: () => void;
-  refilterAllFragments!: (rowChanged: boolean) => void;
-  refilterCliffs!: (cutoffs: number[], isActiveVar: boolean[], refilter: boolean) => void;
-  pinPair!: (idx: number) => void;
+    this.parentTable!.filter.copyFrom(this.totalCutoffMask!);
+    this.linesRenderer!.linesVisibility = this.linesMask!;
+  }
 }
-
-import(/* webpackMode: "eager" */ './mmp-viewer-setup');
-import(/* webpackMode: "eager" */ './mmp-viewer-transformation-related');
-import(/* webpackMode: "eager" */ './mmp-viewer-cliffs-related');
