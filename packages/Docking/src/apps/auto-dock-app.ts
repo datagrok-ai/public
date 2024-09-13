@@ -11,6 +11,7 @@ import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
 import {_package, CACHED_DOCKING, BINDING_ENERGY_COL, POSE_COL, ERROR_COL_NAME} from '../utils/constants';
 import {buildDefaultAutodockGpf} from '../utils/auto-dock-service';
+import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 
 export type AutoDockDataType = {
   ligandDf: DG.DataFrame,
@@ -175,8 +176,8 @@ async function runAutoDock(
 
     const npts: GridSize = {x: 40, y: 40, z: 40};
     const autodockGpf: string = buildDefaultAutodockGpf(receptorData.options!.name!, npts);
-    const posesDf = await adSvc.dockLigand(
-      receptorData, ligandData, gpfFile ?? autodockGpf, posesNum ?? 10, poseColName);
+    const posesDf = await fetchWrapper(() => adSvc.dockLigand(
+      receptorData, ligandData, gpfFile ?? autodockGpf, posesNum ?? 10, poseColName));
 
     if (posesDf.col(ERROR_COL_NAME)) {
       errorValues[errorValues.length] = {index: lRowI, value: posesDf.get(ERROR_COL_NAME, 0)};

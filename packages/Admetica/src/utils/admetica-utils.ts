@@ -5,6 +5,7 @@ import { _package } from '../package-test';
 import { TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, DEFAULT_LOWER_VALUE, DEFAULT_UPPER_VALUE, TAGS } from './constants';
 import { PieChartCellRenderer } from '@datagrok/power-grid/src/sparklines/piechart';
 import { CellRenderViewer } from '@datagrok-libraries/utils/src/viewers/cell-render-viewer';
+import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
 
 import '../css/admetica.css';
 import { FormStateGenerator } from './admetica-form';
@@ -51,7 +52,7 @@ export async function runAdmetica(csvString: string, queryParams: string, addPro
   };
 
   const path = `/df_upload?models=${queryParams}&probability=${addProbability}`;
-  return await sendRequestToContainer(admeticaContainer.id, path, params);
+  return await fetchWrapper(() => sendRequestToContainer(admeticaContainer.id, path, params));
 }
 
 export async function setProperties() {

@@ -80,6 +80,7 @@ import {getMCS} from './utils/most-common-subs';
 import JSZip from 'jszip';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
+import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -461,7 +462,7 @@ export async function descriptorsDocker(): Promise<void> {
 //name: chemDescriptorsTree
 //output: object descriptors
 export async function chemDescriptorsTree(): Promise<object> {
-  return await getDescriptorsTree();
+  return await fetchWrapper(() => getDescriptorsTree());
 }
 
 //top-menu: Chem | Calculate | Map Identifiers...
@@ -482,7 +483,7 @@ export async function freeTextToSmiles(molfile: string): Promise<string | null> 
 //input: column molecules
 //input: list<string> descriptors
 export async function chemDescriptors(table: DG.DataFrame, molecules: DG.Column, descriptors: string[]): Promise<void> {
-  await calculateDescriptors(table, molecules, descriptors);
+  await fetchWrapper(() => calculateDescriptors(table, molecules, descriptors));
 }
 
 //name: SearchSubstructureEditor
@@ -1876,7 +1877,7 @@ export async function trainChemprop(
     'warmup_epochs': warmup_epochs,
   };
   df.columns.add(predictColumn);
-  const modelBlob = await trainModelChemprop(df.toCsv(), predictColumn.name, parameterValues);
+  const modelBlob = await fetchWrapper(() => trainModelChemprop(df.toCsv(), predictColumn.name, parameterValues));
   const zip = new JSZip();
   const archive = await zip.loadAsync(modelBlob);
   const file = archive.file('blob.bin');
@@ -1891,7 +1892,7 @@ export async function trainChemprop(
 //input: dynamic model
 //output: dataframe data_out
 export async function applyChemprop(df: DG.DataFrame, model: Uint8Array) {
-  const column = await applyModelChemprop(model, df.toCsv());
+  const column = await fetchWrapper(() => applyModelChemprop(model, df.toCsv()));
   return DG.DataFrame.fromColumns([column]);
 }
 
