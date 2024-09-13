@@ -181,6 +181,7 @@ export enum INFO {
   OUTPUT = 'output specification',
   COMMENT = 'block with comments',
   SOLVER = 'solver options',
+  INPUS = 'path to table with inputs',
 };
 
 /** Demo app help info */
