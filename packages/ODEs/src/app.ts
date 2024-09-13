@@ -16,7 +16,7 @@ import {TEMPLATES, DEMO_TEMPLATE} from './templates';
 import {USE_CASES} from './use-cases';
 import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, DOCK_RATIO, TEMPLATE_TITLES, EXAMPLE_TITLES,
   WARNING, MISC, demoInfo, INPUT_TYPE, PATH, UI_TIME, MODEL_HINT, MAX_RECENT_COUNT,
-  modelImageLink, CUSTOM_MODEL_IMAGE_LINK} from './ui-constants';
+  modelImageLink, CUSTOM_MODEL_IMAGE_LINK, INPUTS_DF} from './ui-constants';
 import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
   CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS} from './scripting-tools';
@@ -401,6 +401,7 @@ export class DiffStudio {
   private isRecentRun = false;
 
   private inputsByCategories = new Map<string, DG.InputBase[]>();
+  private lookupChoiceInput: DG.InputBase | null = null;
 
   constructor(toAddTableView: boolean = true, toDockTabCtrl: boolean = true, isFilePreview: boolean = false) {
     this.solverView = toAddTableView ?
@@ -616,7 +617,7 @@ export class DiffStudio {
   private async saveToMyFiles(): Promise<void> {
     const modelCode = this.editorView!.state.doc.toString();
     const modelName = getIVP(modelCode).name.replaceAll(' ', '-');
-    const login = grok.shell.user.login;
+    const login = grok.shell.user.project.name;
     const folder = login.charAt(0).toUpperCase() + login.slice(1) + ':Home/';
     const files = await grok.dapi.files.list(folder);
 
@@ -892,6 +893,11 @@ export class DiffStudio {
 
         const form = ui.form([]);
 
+        if (this.lookupChoiceInput !== null) {
+          form.append(this.lookupChoiceInput.root);
+          this.lookupChoiceInput.input.classList.add('diff-studio-app-input-choice');
+        }
+
         if (this.inputsByCategories.size === 1)
           this.inputsByCategories.get(TITLE.MISC)!.forEach((input) => form.append(input.root));
         else {
@@ -1128,9 +1134,39 @@ export class DiffStudio {
 
     this.inputsByCategories = inputsByCategories;
 
+    this.lookupChoiceInput = null;
+
     if (ivp.inputsPath)
-      grok.shell.addTableView(await getInputsTable(ivp.inputsPath));
+      await this.setLookupChoiceInput(ivp.inputsPath);
   } // getInputsUI
+
+  /** */
+  private async setLookupChoiceInput(inputsPath: string) {
+    const inputsDf = await getInputsTable(inputsPath);
+
+    if (inputsDf === null)
+      return;
+
+    const cols = inputsDf.columns;
+    const rowCount = inputsDf.rowCount;
+
+    const inputNames = cols.byIndex(INPUTS_DF.INP_NAMES_IDX).toList() as string[];
+    const inputVals = new Map<string, Int32Array | Uint32Array | Float32Array | Float64Array>();
+
+    for (const col of cols) {
+      if (col.isNumerical)
+        inputVals.set(col.name, col.getRawData());
+    }
+
+    const choices = Array.from(inputVals.keys());
+
+    this.lookupChoiceInput = ui.input.choice<string>('', {
+      items: choices,
+      nullable: false,
+      value: choices[0],
+      tooltipText: `${HINT.INPUTS}: ${inputsPath}`,
+    });
+  } // setLookuoChoiceInput
 
   /** Run sensitivity analysis */
   private async runSensitivityAnalysis(): Promise<void> {
@@ -1257,7 +1293,7 @@ export class DiffStudio {
 
       // Add recent models to the Recent folder
       try {
-        const folder = `${grok.shell.user.login}:Home/`;
+        const folder = `${grok.shell.user.project.name}:Home/`;
         const files = await grok.dapi.files.list(folder);
         const names = files.map((file) => file.name);
 
@@ -1363,7 +1399,7 @@ export class DiffStudio {
 
   /** Save model to recent models file */
   private async saveModelToRecent(modelSpecification: string, isCustom: boolean) {
-    const folder = `${grok.shell.user.login}:Home/`;
+    const folder = `${grok.shell.user.project.name}:Home/`;
     const files = await grok.dapi.files.list(folder);
     const names = files.map((file) => file.name);
     const info = isCustom ? modelSpecification : TITLE_BY_STATE.get(modelSpecification);
@@ -1436,7 +1472,7 @@ export class DiffStudio {
       this.browseView.path = `browse/apps/DiffStudio/${TITLE.RECENT}`;
 
       try {
-        const folder = `${grok.shell.user.login}:Home/`;
+        const folder = `${grok.shell.user.project.name}:Home/`;
         const files = await grok.dapi.files.list(folder);
         const names = files.map((file) => file.name);
 

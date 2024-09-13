@@ -79,7 +79,7 @@ export async function getInputsTable(inputsPath: string): Promise<DG.DataFrame |
 
   // Create platform path
   if (inputsPath.includes(PATH.MY_FILES))
-    path = `${grok.shell.user.login}:${PATH.HOME}${inputsPath.slice(idx)}`;
+    path = `${grok.shell.user.project.name}:${PATH.HOME}${inputsPath.slice(idx)}`;
   else
     path = `${PATH.SYSTEM}:${inputsPath}`;
 
