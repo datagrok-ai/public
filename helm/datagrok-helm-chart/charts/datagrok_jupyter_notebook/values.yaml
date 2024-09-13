@@ -1,0 +1,38 @@
+enabled: false
+restartPolicy: Always
+labels:
+  service: h2o
+strategy_type: RollingUpdate
+container:
+  name: h2o
+  image: datagrok/h2o
+  tag: latest
+  ports:
+    http: 
+      name: http
+      port: 54321
+    helper: 
+      name: helper
+      port: 5005
+service:
+  type: ClusterIP
+livenessProbe:
+  httpGet:
+    path: /helper/info
+    port: 5005
+  failureThreshold: 3
+  timeoutSeconds: 10
+  periodSeconds: 20 # default
+readinessProbe:
+  httpGet:
+    path: /helper/info
+    port: 5005
+  failureThreshold: 3
+  timeoutSeconds: 10
+  periodSeconds: 20
+startupProbe:
+  httpGet:
+    path: /helper/info
+    port: 5005
+  failureThreshold: 90
+  periodSeconds: 30

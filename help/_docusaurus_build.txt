@@ -1,0 +1,112 @@
+
+> docusaurus@0.0.0 build
+> node generatePluginsPages.js && docusaurus build
+
+Added plugin Charts with all published versions
+Added plugin Chem with all published versions
+Added plugin Helm with all published versions
+Added plugin Compute with all published versions
+Added plugin Dendrogram with all published versions
+Added plugin EDA with all published versions
+Added plugin Bio with all published versions
+Added plugin PowerPack with all published versions
+Added plugin Clinical Case with all published versions
+Added plugin Samples with all published versions
+Added plugin HitTriage with all published versions
+Added plugin Chemspace with all published versions
+Added plugin Peptides with all published versions
+Added plugin ChemblAPI with all published versions
+Added plugin Chembl with all published versions
+Added plugin PowerGrid with all published versions
+Added plugin Diff Studio with all published versions
+Added plugin Tutorials with all published versions
+Added plugin Biostructure Viewer with all published versions
+Added plugin DevTools with all published versions
+Added plugin SimPKPD with all published versions
+Added plugin Marvin with all published versions
+Added plugin PubChem with all published versions
+Added plugin NLP with all published versions
+Added plugin DrugBank with all published versions
+Added plugin Arrow with all published versions
+Added plugin Oligo Batch Calculator with all published versions
+Added plugin Docking with all published versions
+Added plugin Curves with all published versions
+Added plugin Bioreactor with all published versions
+Added plugin Usage Analysis with all published versions
+Added plugin Ketcher Sketcher with all published versions
+Added plugin PhyloTreeViewer with all published versions
+Added plugin API Samples with all published versions
+Added plugin GIS with all published versions
+WARN: @datagrok/chem-draw-sketcher is skipped because of occurred error: TypeError: Cannot read properties of undefined (reading 'directory')
+Added plugin Sequence Translator with all published versions
+Added plugin File Editors with all published versions
+Added plugin Alation with all published versions
+Added plugin SQLite with all published versions
+Added plugin Notebooks with all published versions
+Added plugin Sunburst with all published versions
+Added plugin Diff Studio changelog to help
+Added plugin Docking changelog to help
+Added plugin Samples changelog to help
+Added plugin Ketcher Sketcher changelog to help
+Added plugin EDA changelog to help
+Added plugin Curves changelog to help
+Added plugin Bioreactor changelog to help
+Added plugin PhyloTreeViewer changelog to help
+Added plugin GIS changelog to help
+Added plugin Dendrogram changelog to help
+Added plugin Biostructure Viewer changelog to help
+Added plugin Alation changelog to help
+Added plugin Helm changelog to help
+Added plugin Arrow changelog to help
+Added plugin PowerGrid changelog to help
+Added plugin SQLite changelog to help
+Added plugin Sequence Translator changelog to help
+Added plugin Tutorials changelog to help
+Added plugin Oligo Batch Calculator changelog to help
+Added plugin Peptides changelog to help
+Added plugin Usage Analysis changelog to help
+Added plugin DevTools changelog to help
+Added plugin HitTriage changelog to help
+Added plugin Clinical Case changelog to help
+Added plugin DrugBank changelog to help
+Added plugin Compute changelog to help
+Added plugin ChemblAPI changelog to help
+Added plugin Bio changelog to help
+Added plugin Notebooks changelog to help
+Added plugin SimPKPD changelog to help
+Added plugin PubChem changelog to help
+Added plugin NLP changelog to help
+Added plugin File Editors changelog to help
+Added plugin Charts changelog to help
+Added plugin API Samples changelog to help
+Added plugin Chemspace changelog to help
+Added plugin PowerPack changelog to help
+Added plugin Chembl changelog to help
+Added plugin Chem changelog to help
+
+ ------------------------------------------------------------------------------                                                                                                          Update available 3.2.1 → 3.5.2                                                                                                                 To upgrade Docusaurus packages with the latest version, run the                                       following command:                                        `npm i @docusaurus/core@latest @docusaurus/preset-classic@latest                @docusaurus/logger@latest @docusaurus/module-type-aliases@latest                     @docusaurus/tsconfig@latest @docusaurus/types@latest`                                                                                               ------------------------------------------------------------------------------ 
+
+[INFO] [en] Creating an optimized production build...
+[96m[info][0m Loaded plugin typedoc-plugin-markdown
+[96m[info][0m Loaded plugin typedoc-plugin-replace-text
+[93m[warning][0m The signature grok.decorators.viewer has an @param with name "name", which was not used.
+[93m[warning][0m The signature grok.decorators.viewer has an @param with name "description", which was not used.
+[93m[warning][0m The signature grok.decorators.viewer has an @param with name "icon", which was not used.
+[93m[warning][0m The signature grok.decorators.viewer has an @param with name "toolbox", which was not used.
+[93m[warning][0m The signature grok.decorators.viewer has an @param with name "trellisable", which was not used.
+[93m[warning][0m The signature grok.decorators.viewer has an @param with name "viewerPath", which was not used.
+[93m[warning][0m The signature grok.decorators.filter has an @param with name "name", which was not used.
+[93m[warning][0m The signature grok.decorators.filter has an @param with name "description", which was not used.
+[93m[warning][0m The signature grok.decorators.filter has an @param with name "semType", which was not used.
+[93m[warning][0m The signature grok.decorators.cellRenderer has an @param with name "name", which was not used.
+[93m[warning][0m The signature grok.decorators.cellRenderer has an @param with name "description", which was not used.
+[93m[warning][0m The signature grok.decorators.cellRenderer has an @param with name "cellType", which was not used.
+[93m[warning][0m The signature grok.decorators.cellRenderer has an @param with name "columnTags", which was not used.
+[93m[warning][0m The signature grok.decorators.cellRenderer has an @param with name "virtual", which was not used.
+[96m[info][0m Documentation generated at ./js-api
+ℹ Compiling Client
+ℹ Compiling Server
+✔ Server: Compiled successfully in 5.77s
+✔ Client: Compiled successfully in 6.15s
+[SUCCESS] Generated static files in "build".
+[INFO] Use `npm run serve` command to test your build locally.
