@@ -415,8 +415,8 @@ export function loader(): any {
 /**
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/update-indicator}
  */
-export function setUpdateIndicator(element: HTMLElement, updating: boolean = true): void {
-  return api.grok_UI_SetUpdateIndicator(element, updating);
+export function setUpdateIndicator(element: HTMLElement, updating: boolean = true, message: string = 'Updating...'): void {
+  return api.grok_UI_SetUpdateIndicator(element, updating, message);
 }
 
 /**
