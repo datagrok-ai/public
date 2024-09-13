@@ -1,8 +1,7 @@
 import {BehaviorSubject, of, combineLatest, Observable, defer, Subject, merge} from 'rxjs';
 import {switchMap, map, takeUntil, finalize, mapTo, skip, distinctUntilChanged, withLatestFrom, filter} from 'rxjs/operators';
-import {ValidationResultBase} from '../../../shared-utils/validation';
 import {IFuncCallAdapter, IRunnableWrapper, IStateStore} from './FuncCallAdapters';
-import {RestrictionType} from '../data/common-types';
+import {RestrictionType, ValidationResult} from '../data/common-types';
 import {FuncallStateItem} from '../config/config-processing-utils';
 
 export interface RestrictionState {
@@ -34,7 +33,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
   public isRunable$ = new BehaviorSubject(false);
   public isOutputOutdated$ = new BehaviorSubject(true);
 
-  public validations$ = new BehaviorSubject<Record<string, Record<string, ValidationResultBase | undefined>>>({});
+  public validations$ = new BehaviorSubject<Record<string, Record<string, ValidationResult | undefined>>>({});
   public meta$ = new BehaviorSubject<Record<string, BehaviorSubject<any | undefined>>>({});
 
   public inputRestrictions$ = new BehaviorSubject<Record<string, RestrictionState | undefined>>({});
@@ -105,7 +104,10 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
     const currentInstance = this.instance$.value?.adapter;
     if (currentInstance == null)
       throw new Error(`Attempting to set an empty FuncCallInstancesBridge`);
-    this.inputRestrictions$.next({...this.inputRestrictions$.value, [id]: {assignedValue: val, type: restrictionType}});
+    this.inputRestrictions$.next({
+      ...this.inputRestrictions$.value,
+      [id]: {assignedValue: val, type: restrictionType},
+    });
     if (!this.isReadonly)
       currentInstance.setState(id, val, restrictionType);
     else
@@ -118,10 +120,13 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
       currentInstance.editState(id, val);
   }
 
-  setValidation(id: string, validatorId: string, validation: ValidationResultBase | undefined) {
+  setValidation(id: string, validatorId: string, validation: ValidationResult | undefined) {
     const allValidations = this.validations$.value;
     const validatorResults = allValidations[validatorId] ?? {};
-    this.validations$.next({...allValidations, [validatorId]: {...validatorResults, [id]: validation}});
+    this.validations$.next({
+      ...allValidations,
+      [validatorId]: {...validatorResults, [id]: validation},
+    });
   }
 
   setMeta(id: string, meta: any | undefined) {
@@ -170,9 +175,11 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
       takeUntil(this.closed$),
     ).subscribe(this.isRunable$);
 
-    const inputs = this.io.filter((item) => item.direction === 'input').map((item) => item.id);
+    const inputs = this.io.filter(
+      (item) => item.direction === 'input').map((item) => item.id);
 
-    const inputsChanges = inputs.map((inputName) => this.getStateChanges(inputName).pipe(skip(1)));
+    const inputsChanges = inputs.map(
+      (inputName) => this.getStateChanges(inputName).pipe(skip(1)));
     merge(...inputsChanges).pipe(
       mapTo(true),
       takeUntil(this.closed$),
@@ -190,16 +197,18 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
         if (instance == null)
           return {};
         const res: Record<string, BehaviorSubject<any | undefined>> = {};
-        for (const item of this.io) {
+        for (const item of this.io)
           res[item.id] = new BehaviorSubject<any>(undefined);
-        }
+
         return res;
       }),
       takeUntil(this.closed$),
     ).subscribe(this.meta$);
   }
 
-  private isRunnable(validations: Record<string, Record<string, ValidationResultBase | undefined>>) {
+  private isRunnable(
+    validations: Record<string, Record<string, ValidationResult | undefined>>,
+  ) {
     for (const validatorResults of Object.values(validations)) {
       for (const res of Object.values(validatorResults)) {
         if (res?.errors?.length)

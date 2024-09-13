@@ -42,6 +42,12 @@ export interface RunStep {
   mockDelay?: number;
 }
 
+export interface RunAction {
+  event: 'runAction';
+  uuid: string;
+}
+
+
 export interface SavePipeline {
   event: 'savePipeline';
 }
@@ -59,4 +65,4 @@ export interface InitPipeline {
   version?: number;
 }
 
-export type ViewConfigCommands = AddDynamicItem | LoadDynamicItem | SaveDynamicItem | RemoveDynamicItem | MoveDynamicItem | RunStep | SavePipeline | LoadPipeline | InitPipeline;
+export type ViewConfigCommands = AddDynamicItem | LoadDynamicItem | SaveDynamicItem | RemoveDynamicItem | MoveDynamicItem | RunStep | RunAction | SavePipeline | LoadPipeline | InitPipeline;

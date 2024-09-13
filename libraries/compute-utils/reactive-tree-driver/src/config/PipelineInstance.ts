@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {ItemId, NqName, RestrictionType} from '../data/common-types';
+import {Action} from '../runtime/Link';
 
 //
 // initial steps config for dynamic pipelines
@@ -82,6 +83,7 @@ export type StepFunCallSerializedState = {
 
 export type StepFunCallState = {
   funcCall?: DG.FuncCall;
+  actions?: Action[];
 } & StepFunCallStateBase;
 
 // pipeline base

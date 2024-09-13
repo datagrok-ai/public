@@ -8,7 +8,7 @@ import {map, take, takeUntil, toArray} from 'rxjs/operators';
 import {Subject} from 'rxjs';
 import {FuncallStateItem} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {FuncCallInstancesBridge} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/FuncCallInstancesBridge';
-import {makeValidationResult} from '@datagrok-libraries/compute-api';
+import { makeValidationResult } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 
 category('ComputeUtils: Driver instance bridge', async () => {
   let testScheduler: TestScheduler;

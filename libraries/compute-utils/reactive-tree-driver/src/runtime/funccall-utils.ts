@@ -11,7 +11,9 @@ const RESTRICTIONS_PATH = 'INPUT_RESTRICTIONS';
 const OUTPUT_OUTDATED_PATH = 'OUTPUT_OUTDATED';
 const CONFIG_PATH = 'PIPELINE_CONFIG';
 
-export async function makeFuncCall(nqName: string, isReadonly: boolean): Promise<[IFuncCallAdapter, Record<string, RestrictionState>, boolean]> {
+export async function makeFuncCall(
+  nqName: string, isReadonly: boolean,
+): Promise<[IFuncCallAdapter, Record<string, RestrictionState>, boolean]> {
   const func: DG.Func = await grok.functions.eval(nqName);
   const fc = func.prepare({});
   fc.newId();
@@ -33,7 +35,10 @@ export async function saveFuncCall(bridge: FuncCallInstancesBridge) {
   return historyUtils.saveRun(fc);
 }
 
-export async function loadFuncCall(id: string, isReadonly: boolean): Promise<[IFuncCallAdapter, Record<string, RestrictionState | undefined>, boolean]> {
+export async function loadFuncCall(
+  id: string,
+  isReadonly: boolean,
+): Promise<[IFuncCallAdapter, Record<string, RestrictionState | undefined>, boolean]> {
   const fc = await historyUtils.loadRun(id, false);
   const restrictions = deserialize(fc.options[RESTRICTIONS_PATH] ?? '{}');
   const outputState = deserialize(fc.options[OUTPUT_OUTDATED_PATH] ?? 'false');

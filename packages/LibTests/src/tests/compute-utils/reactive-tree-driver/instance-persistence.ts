@@ -64,9 +64,9 @@ category('ComputeUtils: Driver state tree persistence', async () => {
     const outerTree = StateTree.fromPipelineConfig({config: outerPconf});
     await outerTree.initFuncCalls().toPromise();
     // load nested tree into outer
-    const root = outerTree.getItem([]);
+    const root = outerTree.nodeTree.getItem([]);
     await outerTree.loadSubTree(root.uuid, metaCall!.id, 'pipelinePar', 1, false).toPromise();
-    const loadedTree = outerTree.getNode([{idx: 1}]);
+    const loadedTree = outerTree.nodeTree.getNode([{idx: 1}]);
     const lc = StateTree.toStateRec(loadedTree, true, {disableNodesUUID: true, disableCallsUUID: true});
     expectDeepEqual(lc, sc);
   });
@@ -77,7 +77,7 @@ category('ComputeUtils: Driver state tree persistence', async () => {
     const outerPconf = await getProcessedConfig(outerConfig);
     const outerTree = StateTree.fromPipelineConfig({config: outerPconf});
     await outerTree.initFuncCalls().toPromise();
-    const nestedRoot = outerTree.getNode([{idx: 0}]);
+    const nestedRoot = outerTree.nodeTree.getNode([{idx: 0}]);
     const sc = StateTree.toStateRec(nestedRoot, true, {disableNodesUUID: true, disableCallsUUID: true});
     // save nested pipeline
     const metaCall = await outerTree.save(nestedRoot.getItem().uuid).toPromise();

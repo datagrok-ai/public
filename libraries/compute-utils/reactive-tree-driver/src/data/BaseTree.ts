@@ -15,7 +15,7 @@ export type NodeAddressSegment = {
 export type NodeAddress = NodeAddressSegment[];
 
 export class BaseTree<T> {
-  protected root: TreeNode<T>;
+  public root: TreeNode<T>;
 
   public traverse = buildTraverseD([] as NodePath, (item: TreeNode<T>, path: NodePath) => item.getChildren().map(({id, item}, idx) => [item, [...path, {id, idx}] as NodePath] as const));
 
@@ -84,10 +84,6 @@ export class BaseTree<T> {
     return node;
   }
 
-  getRoot() {
-    return this.root;
-  }
-
   attachBrunch(paddress: Readonly<NodeAddress>, node: TreeNode<T>, id: string, idx?: number) {
     const nodeSeq = this.getNodesFromAddress(paddress);
     const parent = indexFromEnd(nodeSeq)!;
@@ -118,7 +114,7 @@ export class BaseTree<T> {
     for (const segment of address) {
       const node = current.getChild(segment);
       if (!node)
-        throw new Error(`NodeTree: Failed to get all nodes to: ${JSON.stringify(address)}`); ;
+        throw new Error(`NodeTree: Failed to get all nodes to: ${JSON.stringify(address)}`);
       current = node;
       nodes.push(node);
     }

@@ -10,3 +10,25 @@ export type StateType = 'input' | 'output' | 'state';
 export type Constructor = new (...args: any[]) => {};
 export type GConstructor<T = {}> = new (...args: any[]) => T;
 export type TraverseHandler<R, I, A> = (acc: R, item: I, pathAddress: A, stop: () => void) => R;
+
+export interface ActionItem {
+  actionName: string;
+  action: string;
+}
+
+export interface Advice {
+  description: string;
+  actions?: ActionItem[];
+}
+
+export interface ValidationResult {
+  errors?: Advice[];
+  warnings?: Advice[];
+  notifications?: Advice[];
+}
+
+export interface ValidationPayload {
+  errors?: (string | Advice)[],
+  warnings?: (string | Advice)[],
+  notifications?: (string | Advice)[],
+}

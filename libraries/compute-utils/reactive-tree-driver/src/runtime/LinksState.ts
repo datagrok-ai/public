@@ -4,9 +4,8 @@ import * as DG from 'datagrok-api/dg';
 import {BaseTree, NodeAddress, NodePath} from '../data/BaseTree';
 import {StateTree} from './StateTree';
 import {isFuncCallNode, isSequentialPipelineNode, isStaticPipelineNode} from './StateTreeNodes';
-import {matchNodeLink} from './link-matching';
-import {Link} from './Link';
-import {indexFromEnd} from '../utils';
+import {ActionSpec, isActionSpec, matchNodeLink} from './link-matching';
+import {Action, Link} from './Link';
 import {BehaviorSubject, merge, Subject} from 'rxjs';
 import {takeUntil, map, scan, switchMap} from 'rxjs/operators';
 
@@ -20,6 +19,8 @@ export class LinksState {
   private linksUpdates = new Subject<true>();
 
   public links: Map<string, Link> = new Map();
+  public actions: Map<string, Action> = new Map();
+  public baseNodeActions: Map<string, Action[]> = new Map();
   public deps: Map<string, DependenciesData> = new Map();
 
   public runningLinks$ = new BehaviorSubject<undefined | string[]>(undefined);
@@ -33,8 +34,10 @@ export class LinksState {
 
   public update(state: StateTree, mutationPath?: NodePath, childOffset?: number) {
     this.destroyLinks();
-    const links = this.createLinks(state);
+    const links = this.createAutoLinks(state);
     this.links = new Map(links.map((link) => [link.uuid, link] as const));
+    const tree = this.createActionLinksTree(state);
+    [this.actions, this.baseNodeActions] = tree;
     const deps = this.calculateDependencies(state, links);
     this.deps = deps;
     if (mutationPath) {
@@ -48,8 +51,8 @@ export class LinksState {
     return {};
   }
 
-  public createLinks(state: StateTree) {
-    const links = state.traverse(state.getRoot(), (acc, node, path) => {
+  public createAutoLinks(state: StateTree) {
+    const links = state.nodeTree.traverse(state.nodeTree.root, (acc, node, path) => {
       const item = node.getItem();
       if (isStaticPipelineNode(item) || isSequentialPipelineNode(item)) {
         const {config} = item;
@@ -65,24 +68,49 @@ export class LinksState {
     return links;
   }
 
+  public createActionLinksTree(state: StateTree) {
+    const links = state.nodeTree.traverse(state.nodeTree.root, (acc, node, path) => {
+      const item = node.getItem();
+      const {config} = item;
+      const matchedLinks = (config.actions ?? [])
+        .map((link) => matchNodeLink(node, link))
+        .filter((x) => !!x)
+        .flat();
+      const links = matchedLinks.map((minfo) => {
+        const spec = minfo.spec as ActionSpec;
+        return new Action(path, minfo, spec.position, spec.friendlyName, spec.menuCategory);
+      });
+      return [...acc, ...links];
+    }, [] as Action[]);
+    const actionsMap = new Map<string, Action[]>;
+    for (const link of links) {
+      if (link.matchInfo.basePath) {
+        const item = state.nodeTree.getItem(link.matchInfo.basePath);
+        const actions = actionsMap.get(item.uuid) ?? [];
+        actions.push(link);
+        actionsMap.set(item.uuid, actions);
+      }
+    }
+    const actions = new Map(links.map((link) => [link.uuid, link] as const));
+    return [actions, actionsMap] as const;
+  }
+
   // TODO: detection of cycles and double io deps, including self deps
   public calculateDependencies(state: StateTree, links: Link[]) {
     const deps: Map<string, DependenciesData> = new Map();
     for (const link of links) {
       for (const infosIn of Object.values(link.matchInfo.inputs)) {
         for (const infoIn of infosIn) {
-          const nodeIn = state.getNode(infoIn.path);
+          const nodeIn = state.nodeTree.getNode(infoIn.path);
           // pipeline memory state should be immutable and set in onInit
           if (!isFuncCallNode(nodeIn.getItem()))
             continue;
           for (const infosOut of Object.values(link.matchInfo.outputs)) {
             for (const infoOut of infosOut) {
-              // don't track FuncCall self dependencies
-              if (BaseTree.isNodeAddressEq(infoIn.path, infoOut.path))
-                continue;
-              const nodeOut = state.getNode(infoOut.path);
+              const nodeOut = state.nodeTree.getNode(infoOut.path);
               const depData = deps.get(nodeOut.getItem().uuid) ?? new DependenciesData();
-              depData.nodes.add(nodeIn.getItem().uuid);
+              if (!BaseTree.isNodeAddressEq(infoIn.path, infoOut.path))
+                depData.nodes.add(nodeIn.getItem().uuid);
               depData.links.add(link.uuid);
               deps.set(nodeOut.getItem().uuid, depData);
             }
@@ -99,15 +127,19 @@ export class LinksState {
       return false;
     for (const infosIn of Object.values(link.matchInfo.inputs)) {
       for (const infoIn of infosIn) {
-        const nodeIn = state.getNode(infoIn.path);
+        const nodeIn = state.nodeTree.getNode(infoIn.path);
         const item = nodeIn.getItem();
         if (!isFuncCallNode(item))
           continue;
-        if(item.instancesWrapper.isOutputOutdated$.value)
+        if (item.instancesWrapper.isOutputOutdated$.value)
           return false;
       }
     }
     return true;
+  }
+
+  public isMetaLink(link: Link) {
+    return !isActionSpec(link.matchInfo.spec) && (link.matchInfo.spec.isValidator || link.matchInfo.spec.isMeta);
   }
 
   public close() {
@@ -115,22 +147,26 @@ export class LinksState {
   }
 
   private getRunningLinks() {
-    const obs = [...this.links.values()].map((link) => link.isRunning$.pipe(map((isRunning) => [link.uuid, isRunning] as const)));
+    const obs = [...this.links.values(), ...[...this.baseNodeActions.values()].flat()].map(
+      (link) => link.isRunning$.pipe(map((isRunning) => [link.uuid, isRunning] as const)));
     return merge(...obs).pipe(
       scan((acc, [uuid, isRunning]) => {
         acc[uuid] = isRunning;
         return acc;
       }, {} as Record<string, boolean>),
-      map((data) => Object.entries(data).filter(([, isRunning]) => isRunning).map(([uuid]) => uuid)),
+      map((data) => Object.entries(data).filter(
+        ([, isRunning]) => isRunning).map(([uuid]) => uuid)),
     );
   }
 
   private isInbound(rootPath: Readonly<NodeAddress>, link: Link, childOffset?: number) {
-    return Object.entries(link.matchInfo.outputs).some(([, ios]) => ios.some((io) => BaseTree.isNodeChildOffseted(rootPath, io.path, childOffset)));
+    return Object.entries(link.matchInfo.outputs).some(
+      ([, ios]) => ios.some((io) => BaseTree.isNodeChildOffseted(rootPath, io.path, childOffset)));
   }
 
   private isOutgoing(rootPath: Readonly<NodeAddress>, link: Link, childOffset?: number) {
-    return Object.entries(link.matchInfo.inputs).some(([, ios]) => ios.some((io) => BaseTree.isNodeChildOffseted(rootPath, io.path, childOffset)));
+    return Object.entries(link.matchInfo.inputs).some(
+      ([, ios]) => ios.some((io) => BaseTree.isNodeChildOffseted(rootPath, io.path, childOffset)));
   }
 
   private checkDisjoint(inbound: Link[], outgoing: Link[], mutationPath: NodePath, childOffset?: number) {
@@ -145,12 +181,7 @@ export class LinksState {
   }
 
   private destroyLinks() {
-    for (const [,link] of this.links) {
+    for (const [, link] of this.links)
       link.destroy();
-    }
-  }
-
-  private isMetaLink(link: Link) {
-    return link.matchInfo.spec.isValidator || link.matchInfo.spec.isMeta;
   }
 }

@@ -1,17 +1,18 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {BehaviorSubject, combineLatest, merge, Observable, of, Subject} from 'rxjs';
+import {BehaviorSubject, combineLatest, merge, Observable, Subject} from 'rxjs';
 import {v4 as uuidv4} from 'uuid';
 import {PipelineStateParallel, PipelineStateSequential, PipelineStateStatic, StepFunCallInitialConfig, StepFunCallSerializedState, StepFunCallState, PipelineSerializedState, isFuncCallSerializedState} from '../config/PipelineInstance';
 import {PipelineConfigurationParallelProcessed, PipelineConfigurationProcessed, PipelineConfigurationSequentialProcessed, PipelineConfigurationStaticProcessed} from '../config/config-processing-utils';
 import {IFuncCallAdapter, IStateStore, MemoryStore} from './FuncCallAdapters';
 import {FuncCallInstancesBridge, RestrictionState} from './FuncCallInstancesBridge';
 import {isPipelineConfig, PipelineStepConfigurationProcessed} from '../config/config-utils';
-import {mergeValidationResultsBase, ValidationResultBase} from '../../../shared-utils/validation';
 import {map, mapTo, scan, skip, takeUntil, withLatestFrom} from 'rxjs/operators';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {RestrictionType} from '../data/common-types';
+import {RestrictionType, ValidationResult} from '../data/common-types';
+import {mergeValidationResults} from '../utils';
+import {Action} from './Link';
 
 export type StateTreeSerializationOptions = {
   disableNodesUUID?: boolean,
@@ -28,6 +29,7 @@ export type FuncCallStateInfo = {
   isRunning: boolean,
   isRunnable: boolean,
   isOutputOutdated: boolean,
+  pendingDependencies: string[],
 }
 
 export interface IStoreProvider {
@@ -42,9 +44,10 @@ export class FuncCallNode implements IStoreProvider {
   public pendingId?: string;
 
   public consistencyInfo$ = new BehaviorSubject<Record<string, ConsistencyInfo>>({});
-  public validationInfo$ = new BehaviorSubject<Record<string, ValidationResultBase>>({});
+  public validationInfo$ = new BehaviorSubject<Record<string, ValidationResult>>({});
   public metaInfo$ = new BehaviorSubject<Record<string, BehaviorSubject<any | undefined>>>({});
   public funcCallState$ = new BehaviorSubject<FuncCallStateInfo | undefined>(undefined);
+  public pendingDependencies$ = new BehaviorSubject<string[]>([]);
 
   private closed$ = new Subject<true>();
 
@@ -65,13 +68,24 @@ export class FuncCallNode implements IStoreProvider {
       takeUntil(this.closed$),
     ).subscribe(this.metaInfo$);
 
-    combineLatest([this.instancesWrapper.isRunning$, this.instancesWrapper.isRunable$, this.instancesWrapper.isOutputOutdated$]).pipe(
-      map(([isRunning, isRunnable, isOutputOutdated]) => ({isRunning, isRunnable, isOutputOutdated})),
+    combineLatest([
+      this.instancesWrapper.isRunning$,
+      this.instancesWrapper.isRunable$,
+      this.instancesWrapper.isOutputOutdated$,
+      this.pendingDependencies$,
+    ]).pipe(
+      map(([isRunning, isRunnable, isOutputOutdated, pendingDependencies]) =>
+        ({isRunning, isRunnable, isOutputOutdated, pendingDependencies})),
       takeUntil(this.closed$),
     ).subscribe(this.funcCallState$);
   }
 
-  initAdapter(adapter: IFuncCallAdapter, restrictions: Record<string, RestrictionState | undefined>, isOutputOutdated: boolean, initValues: boolean) {
+  initAdapter(
+    adapter: IFuncCallAdapter,
+    restrictions: Record<string, RestrictionState | undefined>,
+    isOutputOutdated: boolean,
+    initValues: boolean,
+  ) {
     this.instancesWrapper.init({adapter, restrictions, isOutputOutdated, initValues});
   }
 
@@ -100,10 +114,13 @@ export class FuncCallNode implements IStoreProvider {
         type: restrictionType,
       };
     }
-    this.instancesWrapper.setPreInitialData({initialValues: initialConfig.values ?? {}, initialRestrictions});
+    this.instancesWrapper.setPreInitialData({
+      initialValues: initialConfig.values ?? {},
+      initialRestrictions,
+    });
   }
 
-  toState(options: StateTreeSerializationOptions): StepFunCallState {
+  toState(options: StateTreeSerializationOptions, actions?: Action[]): StepFunCallState {
     const instance = this.instancesWrapper.getInstance();
     const res: StepFunCallState = {
       type: 'funccall',
@@ -112,6 +129,7 @@ export class FuncCallNode implements IStoreProvider {
       friendlyName: this.config.friendlyName,
       funcCall: instance?.getFuncCall(),
       isReadonly: this.isReadonly,
+      actions,
     };
     if (options.disableNodesUUID)
       res.uuid = '';
@@ -140,7 +158,9 @@ export class FuncCallNode implements IStoreProvider {
     this.closed$.next(true);
   }
 
-  private convertValidations(validationsIn: Record<string, Record<string, ValidationResultBase | undefined>>) {
+  private convertValidations(
+    validationsIn: Record<string, Record<string, ValidationResult | undefined>>,
+  ) {
     const validationArrays = Object.values(validationsIn).reduce((acc, val) => {
       for (const [k, v] of Object.entries(val)) {
         if (v) {
@@ -151,14 +171,16 @@ export class FuncCallNode implements IStoreProvider {
         }
       }
       return acc;
-    }, {} as Record<string, ValidationResultBase[]>);
-    const validationEntries = Object.entries(validationArrays).map(([k, validations]) => [k, mergeValidationResultsBase(...validations)] as const);
+    }, {} as Record<string, ValidationResult[]>);
+    const validationEntries = Object.entries(validationArrays).map(
+      ([k, validations]) => [k, mergeValidationResults(...validations)] as const);
     const validations = Object.fromEntries(validationEntries);
     return validations;
   }
 
   private getConsistencyChanges(): Observable<Record<string, ConsistencyInfo>> {
-    const valueUpdates = this.instancesWrapper.getStateNames().map((name) => this.instancesWrapper.getStateChanges(name).pipe(skip(1), mapTo(name)));
+    const valueUpdates = this.instancesWrapper.getStateNames().map(
+      (name) => this.instancesWrapper.getStateChanges(name).pipe(skip(1), mapTo(name)));
     const restrictionUpdates = this.instancesWrapper.inputRestrictionsUpdates$.pipe(map(([name]) => name));
     const inputUpdatesChecker$ = merge(...[...valueUpdates, restrictionUpdates]).pipe(
       withLatestFrom(this.instancesWrapper.inputRestrictions$),
@@ -176,7 +198,9 @@ export class FuncCallNode implements IStoreProvider {
     return state$;
   }
 
-  private initConsistencyStates(restrictions: Record<string, RestrictionState | undefined>) {
+  private initConsistencyStates(
+    restrictions: Record<string, RestrictionState | undefined>,
+  ) {
     const res: Record<string, ConsistencyInfo> = {};
     for (const name of this.instancesWrapper.getStateNames()) {
       const cinfo = this.getConsistencyState(name, restrictions);
@@ -186,7 +210,10 @@ export class FuncCallNode implements IStoreProvider {
     return res;
   }
 
-  private getConsistencyState(inputName: string, restrictions: Record<string, RestrictionState | undefined>): ConsistencyInfo | undefined {
+  private getConsistencyState(
+    inputName: string,
+    restrictions: Record<string, RestrictionState | undefined>,
+  ): ConsistencyInfo | undefined {
     const restriction = restrictions[inputName];
     if (!restriction)
       return undefined;
@@ -237,7 +264,12 @@ export class PipelineNodeBase implements IStoreProvider {
     return this.store;
   }
 
-  toState(options: StateTreeSerializationOptions) {
+  toState(options: StateTreeSerializationOptions, actions?: Action[]) {
+    const state = this.toSerializedState(options);
+    return {...state, actions};
+  }
+
+  toSerializedState(options: StateTreeSerializationOptions) {
     const res = {
       configId: this.config.id,
       uuid: this.uuid,
@@ -263,8 +295,8 @@ export class StaticPipelineNode extends PipelineNodeBase {
     super(config, isReadonly);
   }
 
-  toState(options: StateTreeSerializationOptions): PipelineStateStatic<StepFunCallState> {
-    const base = super.toState(options);
+  toSerializedState(options: StateTreeSerializationOptions): PipelineStateStatic<StepFunCallState> {
+    const base = super.toSerializedState(options);
     const res: PipelineStateStatic<StepFunCallState> = {
       ...base,
       nqName: this.config.nqName,
@@ -285,8 +317,8 @@ export class ParallelPipelineNode extends PipelineNodeBase {
     super(config, isReadonly);
   }
 
-  toState(options: StateTreeSerializationOptions): PipelineStateParallel<StepFunCallState> {
-    const base = super.toState(options);
+  toSerializedState(options: StateTreeSerializationOptions): PipelineStateParallel<StepFunCallState> {
+    const base = super.toSerializedState(options);
     const res: PipelineStateParallel<StepFunCallState> = {
       ...base,
       type: this.nodeType,
@@ -315,8 +347,8 @@ export class SequentialPipelineNode extends PipelineNodeBase {
     super(config, isReadonly);
   }
 
-  toState(options: StateTreeSerializationOptions) {
-    const base = super.toState(options);
+  toSerializedState(options: StateTreeSerializationOptions) {
+    const base = super.toSerializedState(options);
     const res: PipelineStateSequential<StepFunCallState> = {
       ...base,
       type: this.nodeType,

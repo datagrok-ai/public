@@ -37,15 +37,23 @@ export class FuncCallAdapter implements IFuncCallAdapter {
     return defer(() => this.instance.call());
   }
 
-  getStateChanges<T = any>(name: string, includeDataFrameMutations: boolean): Observable<T | undefined> {
+  getStateChanges<T = any>(
+    name: string,
+    includeDataFrameMutations: boolean,
+  ): Observable<T | undefined> {
     const ptype = this.getPtype(name);
     const param = this.instance[ptype][name];
     const changes$ = param.onChanged.pipe(
       startWith(null),
       map(() => param.value),
     );
-    if (includeDataFrameMutations)
-      return changes$.pipe(switchMap((x) => x instanceof DG.DataFrame ? x.onDataChanged.pipe(startWith(null), mapTo(x)) : of(x)));
+    if (includeDataFrameMutations) {
+      return changes$.pipe(
+        switchMap((x) => x instanceof DG.DataFrame ?
+          x.onDataChanged.pipe(startWith(null), mapTo(x)) :
+          of(x)),
+      );
+    }
     return changes$;
   }
 
@@ -93,8 +101,13 @@ export class MemoryStore implements IStateStore {
 
   getStateChanges<T = any>(id: string, includeDataFrameMutations = false): Observable<T | undefined> {
     const changes$ = this.states[id];
-    if (includeDataFrameMutations)
-      return changes$.pipe(switchMap((x) => x instanceof DG.DataFrame ? x.onDataChanged.pipe(startWith(null), mapTo(x)) : of(x)));
+    if (includeDataFrameMutations) {
+      return changes$.pipe(
+        switchMap((x) => x instanceof DG.DataFrame ?
+          x.onDataChanged.pipe(startWith(null), mapTo(x)) :
+          of(x)),
+      );
+    }
     return changes$;
   }
 

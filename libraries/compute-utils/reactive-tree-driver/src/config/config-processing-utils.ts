@@ -53,7 +53,10 @@ export async function getProcessedConfig(conf: PipelineConfigurationInitial): Pr
   return pconf as PipelineConfigurationProcessed;
 }
 
-async function configProcessing(conf: ConfigInitialTraverseItem, loadedPipelines: Set<string>): Promise<PipelineConfigurationProcessed | PipelineStepConfiguration<LinkIOParsed[], FuncallStateItem[]> | PipelineSelfRef> {
+async function configProcessing(
+  conf: ConfigInitialTraverseItem,
+  loadedPipelines: Set<string>,
+): Promise<PipelineConfigurationProcessed | PipelineStepConfiguration<LinkIOParsed[], FuncallStateItem[]> | PipelineSelfRef> {
   if (isPipelineConfigInitial(conf) && !isPipelineRefInitial(conf) && conf.nqName)
     loadedPipelines.add(conf.nqName);
 

@@ -1,5 +1,5 @@
 import {isNonRefSelector, LinkNonRefSelectors, LinkIOParsed, LinkRefSelectors, refSelectorAdjacent, refSelectorAll, refSelectorDirection, refSelectorFindOne} from '../config/LinkSpec';
-import {PipelineLinkConfiguration} from '../config/PipelineConfiguration';
+import {PipelineActionConfiguraion, PipelineLinkConfiguration, StepActionConfiguraion} from '../config/PipelineConfiguration';
 import {BaseTree, NodePath, TreeNode} from '../data/BaseTree';
 import {buildTraverseD} from '../data/graph-traverse-utils';
 import {indexFromEnd} from '../utils';
@@ -7,6 +7,7 @@ import {StateTree} from './StateTree';
 import {StateTreeNode} from './StateTreeNodes';
 
 export type LinkSpec = PipelineLinkConfiguration<LinkIOParsed[]>;
+export type ActionSpec = PipelineActionConfiguraion<LinkIOParsed[]> | StepActionConfiguraion<LinkIOParsed[]>;
 
 type matchedIO = {
   path: Readonly<NodePath>;
@@ -16,14 +17,18 @@ type matchedIO = {
 type MatchedNodePaths = Readonly<Array<matchedIO>>;
 
 export type MatchInfo = {
-  spec: LinkSpec;
+  spec: LinkSpec | ActionSpec;
   basePath?: Readonly<NodePath>;
   inputs: Record<string, MatchedNodePaths>;
   outputs: Record<string, MatchedNodePaths>;
 }
 
+export function isActionSpec(spec: LinkSpec | ActionSpec): spec is ActionSpec {
+  return !!(spec as ActionSpec).position;
+}
+
 export function matchLink(state: StateTree, address: NodePath, spec: LinkSpec): MatchInfo[] | undefined {
-  const [rnode] = state.find(((_node, path) => BaseTree.isNodeAddressEq(path, address))) ?? [];
+  const [rnode] = state.nodeTree.find(((_node, path) => BaseTree.isNodeAddressEq(path, address))) ?? [];
   if (rnode == null)
     return;
   return matchNodeLink(rnode, spec);
@@ -41,7 +46,12 @@ export function matchNodeLink(rnode: TreeNode<StateTreeNode>, spec: LinkSpec) {
   }
 }
 
-function matchLinkInstance(rnode: TreeNode<StateTreeNode>, spec: LinkSpec, base?: Readonly<matchedIO>, baseName?: string): MatchInfo | undefined {
+function matchLinkInstance(
+  rnode: TreeNode<StateTreeNode>,
+  spec: LinkSpec,
+  base?: Readonly<matchedIO>,
+  baseName?: string,
+): MatchInfo | undefined {
   const matchInfo: MatchInfo = {
     spec,
     basePath: base?.path,
@@ -65,7 +75,10 @@ function matchLinkInstance(rnode: TreeNode<StateTreeNode>, spec: LinkSpec, base?
   return matchInfo;
 }
 
-function expandLinkBase(rnode: TreeNode<StateTreeNode>, baseLink: LinkIOParsed) {
+function expandLinkBase(
+  rnode: TreeNode<StateTreeNode>,
+  baseLink: LinkIOParsed,
+) {
   const traverse = buildTraverseD([] as Readonly<NodePath>, (pnode: TreeNode<StateTreeNode>, path, level?: number) => {
     const segment = baseLink.segments[level!];
     if (!segment)
@@ -84,7 +97,11 @@ function expandLinkBase(rnode: TreeNode<StateTreeNode>, baseLink: LinkIOParsed) 
   return basePaths;
 }
 
-function matchLinkIO(rnode: TreeNode<StateTreeNode>, currentIO: Record<string, MatchedNodePaths>, parsedLink: LinkIOParsed): MatchedNodePaths {
+function matchLinkIO(
+  rnode: TreeNode<StateTreeNode>,
+  currentIO: Record<string, MatchedNodePaths>,
+  parsedLink: LinkIOParsed,
+): MatchedNodePaths {
   const traverse = buildTraverseD([] as Readonly<NodePath>, (pnode: TreeNode<StateTreeNode>, path, level?: number) => {
     const segment = parsedLink.segments[level!];
     if (!segment)
@@ -125,7 +142,11 @@ function matchLinkIO(rnode: TreeNode<StateTreeNode>, currentIO: Record<string, M
   return paths;
 }
 
-function matchNonRefSegment(pnode: TreeNode<StateTreeNode>, ids: string[], selector: LinkNonRefSelectors) {
+function matchNonRefSegment(
+  pnode: TreeNode<StateTreeNode>,
+  ids: string[],
+  selector: LinkNonRefSelectors,
+) {
   const idsSet = new Set(ids);
   const matchingNodes = [...pnode.getChildren().entries()].filter(([, c]) => idsSet.has(c.id));
   if (matchingNodes.length === 0)
@@ -139,7 +160,13 @@ function matchNonRefSegment(pnode: TreeNode<StateTreeNode>, ids: string[], selec
   throw new Error(`Unknown segement mode ${selector}`);
 }
 
-function matchRefSegment(pnode: TreeNode<StateTreeNode>, ids: string[], selector: LinkRefSelectors, originIdx?: number, stopIds?: string[]) {
+function matchRefSegment(
+  pnode: TreeNode<StateTreeNode>,
+  ids: string[],
+  selector: LinkRefSelectors,
+  originIdx?: number,
+  stopIds?: string[],
+) {
   const idsSet = new Set(ids);
   const stopSet = new Set(stopIds);
   const allNodeEntries = [...pnode.getChildren().entries()];

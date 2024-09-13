@@ -38,9 +38,9 @@ category('ComputeUtils: Driver state tree readonly', async () => {
     const outerTree = StateTree.fromPipelineConfig({config: outerPconf});
     await outerTree.initFuncCalls().toPromise();
     // load nested tree into outer
-    const root = outerTree.getItem([]);
+    const root = outerTree.nodeTree.getItem([]);
     await outerTree.loadSubTree(root.uuid, metaCall!.id, 'pipelinePar', 1, true).toPromise();
-    const loadedTree = outerTree.getNode([{idx: 1}]);
+    const loadedTree = outerTree.nodeTree.getNode([{idx: 1}]);
     const lc = StateTree.toStateRec(loadedTree, true, {disableNodesUUID: true, disableCallsUUID: true});
     sc.isReadonly = true;
     (sc as PipelineStateStatic<StepFunCallStateBase>).steps[0].isReadonly = true;
@@ -63,7 +63,7 @@ category('ComputeUtils: Driver state tree readonly', async () => {
     const outerTree = StateTree.fromPipelineConfig({config: outerPconf});
     await outerTree.initFuncCalls().toPromise();
     // load nested tree into outer
-    const root = outerTree.getItem([]);
+    const root = outerTree.nodeTree.getItem([]);
     await outerTree.loadSubTree(root.uuid, metaCall!.id, 'pipelinePar', 1, true).toPromise();
     const sc = outerTree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});
     // save outer with inner

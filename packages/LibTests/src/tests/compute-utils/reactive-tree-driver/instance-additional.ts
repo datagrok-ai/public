@@ -3,12 +3,12 @@ import {category, test, before, delay} from '@datagrok-libraries/utils/src/test'
 import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
 import {LinksState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/LinksState';
-import {makeValidationResult, PipelineConfiguration} from '@datagrok-libraries/compute-utils';
+import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {PipelineStateStatic, StepFunCallSerializedState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {loadInstanceState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
-import {callHandler} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
+import { callHandler, makeValidationResult } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {of} from 'rxjs';
 import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
@@ -87,10 +87,10 @@ category('ComputeUtils: Driver instance additional states', async () => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.initAll().subscribe();
       const ls = new LinksState();
-      const [link1, link2] = ls.createLinks(tree);
+      const [link1, link2] = ls.createAutoLinks(tree);
       link1.wire(tree);
       link2.wire(tree);
-      const inNode = tree.getNode([{idx: 0}]);
+      const inNode = tree.nodeTree.getNode([{idx: 0}]);
       const validations = tree.getValidations();
       cold('-a').subscribe(() => {
         link1.trigger();
@@ -141,9 +141,9 @@ category('ComputeUtils: Driver instance additional states', async () => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.initAll().subscribe();
       const ls = new LinksState();
-      const [link1] = ls.createLinks(tree);
+      const [link1] = ls.createAutoLinks(tree);
       link1.wire(tree);
-      const outNode = tree.getNode([{idx: 1}]);
+      const outNode = tree.nodeTree.getNode([{idx: 1}]);
       const consistency = tree.getConsistency();
       cold('-a').subscribe(() => {
         link1.trigger();
@@ -171,7 +171,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
       const {cold, expectObservable} = helpers;
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.initAll().subscribe();
-      const node = tree.getNode([{idx: 0}]);
+      const node = tree.nodeTree.getNode([{idx: 0}]);
       const states = tree.getFuncCallStates();
       cold('-a').subscribe(() => {
         const fcnode = node.getItem() as FuncCallNode;
@@ -221,9 +221,9 @@ category('ComputeUtils: Driver instance additional states', async () => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, isReadonly: true});
       tree.initAll().subscribe();
       const ls = new LinksState();
-      const [link1] = ls.createLinks(tree);
+      const [link1] = ls.createAutoLinks(tree);
       link1.wire(tree);
-      const outNode = tree.getNode([{idx: 1}]);
+      const outNode = tree.nodeTree.getNode([{idx: 1}]);
       const consistency = tree.getConsistency();
       cold('-a').subscribe(() => {
         link1.trigger();
@@ -248,12 +248,12 @@ category('ComputeUtils: Driver instance additional states', async () => {
     const pconf = await getProcessedConfig(conf);
     const tree = StateTree.fromPipelineConfig({config: pconf});
     await tree.initAll().toPromise();
-    const outNode = tree.getNode([{idx: 1}]);
+    const outNode = tree.nodeTree.getNode([{idx: 1}]);
     outNode.getItem().getStateStore().setState('a', 10, 'restricted');
     const metaCallSaved = await tree.save().toPromise();
     const loadedTree = await StateTree.load(metaCallSaved!.id, pconf, {isReadonly: false}).toPromise();
     await loadedTree.initAll().toPromise();
-    const outNodeLoaded = loadedTree.getNode([{idx: 1}]);
+    const outNodeLoaded = loadedTree.nodeTree.getNode([{idx: 1}]);
     outNodeLoaded.getItem().getStateStore().editState('a', 3);
     const consistency = loadedTree.getConsistency();
     expectDeepEqual(consistency[outNodeLoaded.getItem().uuid]?.value, {
@@ -270,7 +270,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
     const pconf = await getProcessedConfig(conf);
     const tree = StateTree.fromPipelineConfig({config: pconf});
     await tree.initAll().toPromise();
-    const node = tree.getNode([{idx: 0}]);
+    const node = tree.nodeTree.getNode([{idx: 0}]);
     const fcnode = node.getItem() as FuncCallNode;
     fcnode.getStateStore().setState('a', 1);
     fcnode.getStateStore().setState('b', 2);
@@ -278,7 +278,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
     const metaCallSaved = await tree.save().toPromise();
     const loadedTree = await StateTree.load(metaCallSaved!.id, pconf, {isReadonly: false}).toPromise();
     await loadedTree.initAll().toPromise();
-    const nodeLoaded = loadedTree.getNode([{idx: 0}]);
+    const nodeLoaded = loadedTree.nodeTree.getNode([{idx: 0}]);
     const states = loadedTree.getFuncCallStates();
     expectDeepEqual(states[nodeLoaded.getItem().uuid]?.value, {
       'isRunning': false,

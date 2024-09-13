@@ -3,19 +3,19 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, Observable, Subject, EMPTY, of, from} from 'rxjs';
 import {isFuncCallSerializedState, PipelineState} from './config/PipelineInstance';
-import {AddDynamicItem, InitPipeline, LoadDynamicItem, LoadPipeline, MoveDynamicItem, RemoveDynamicItem, RunStep, SaveDynamicItem, SavePipeline, ViewConfigCommands} from './view/ViewCommunication';
+import {AddDynamicItem, InitPipeline, LoadDynamicItem, LoadPipeline, MoveDynamicItem, RemoveDynamicItem, RunAction, RunStep, SaveDynamicItem, SavePipeline, ViewConfigCommands} from './view/ViewCommunication';
 import {pairwise, takeUntil, concatMap, catchError, switchMap, map, mapTo, startWith, withLatestFrom, tap} from 'rxjs/operators';
 import {StateTree} from './runtime/StateTree';
 import {loadInstanceState} from './runtime/funccall-utils';
 import {callHandler} from './utils';
 import {PipelineConfiguration} from './config/PipelineConfiguration';
 import {getProcessedConfig} from './config/config-processing-utils';
-import {ValidationResultBase} from '../../shared-utils/validation';
 import {ConsistencyInfo, FuncCallStateInfo} from './runtime/StateTreeNodes';
+import {ValidationResult} from './data/common-types';
 
 export class Driver {
   public currentState$ = new BehaviorSubject<PipelineState | undefined>(undefined);
-  public currentValidations$ = new BehaviorSubject<Record<string, BehaviorSubject<Record<string, ValidationResultBase>>>>({});
+  public currentValidations$ = new BehaviorSubject<Record<string, BehaviorSubject<Record<string, ValidationResult>>>>({});
   public currentConsistency$ = new BehaviorSubject<Record<string, BehaviorSubject<Record<string, ConsistencyInfo>>>>({});
   public currentCallsState$ = new BehaviorSubject<Record<string, BehaviorSubject<FuncCallStateInfo | undefined>>>({});
 
@@ -46,25 +46,33 @@ export class Driver {
     });
 
     this.states$.pipe(
-      switchMap((state) => state ? state.makeStateRequests$.pipe(startWith(null), mapTo(state)) : of(undefined)),
+      switchMap((state) => state ?
+        state.makeStateRequests$.pipe(startWith(null), mapTo(state)) :
+        of(undefined)),
       map((state) => state ? state.toState() : undefined),
       takeUntil(this.closed$),
     ).subscribe(this.currentState$);
 
     this.states$.pipe(
-      switchMap((state) => state ? state.makeStateRequests$.pipe(startWith(null), mapTo(state)) : of(undefined)),
+      switchMap((state) => state ?
+        state.makeStateRequests$.pipe(startWith(null), mapTo(state)) :
+        of(undefined)),
       map((state) => state ? state.getConsistency() : {}),
       takeUntil(this.closed$),
     ).subscribe(this.currentConsistency$);
 
     this.states$.pipe(
-      switchMap((state) => state ? state.makeStateRequests$.pipe(startWith(null), mapTo(state)) : of(undefined)),
+      switchMap((state) => state ?
+        state.makeStateRequests$.pipe(startWith(null), mapTo(state)) :
+        of(undefined)),
       map((state) => state ? state.getValidations() : {}),
       takeUntil(this.closed$),
     ).subscribe(this.currentValidations$);
 
     this.states$.pipe(
-      switchMap((state) => state ? state.makeStateRequests$.pipe(startWith(null), mapTo(state)) : of(undefined)),
+      switchMap((state) => state ?
+        state.makeStateRequests$.pipe(startWith(null), mapTo(state)) :
+        of(undefined)),
       map((state) => state ? state.getFuncCallStates() : {}),
       takeUntil(this.closed$),
     ).subscribe(this.currentCallsState$);
@@ -99,6 +107,8 @@ export class Driver {
       return this.moveDynamicItem(msg, state);
     case 'runStep':
       return this.runStep(msg, state);
+    case 'runAction':
+      return this.runAction(msg, state);
     case 'savePipeline':
       return this.savePipeline(msg, state);
     case 'loadPipeline':
@@ -139,6 +149,11 @@ export class Driver {
     return state.runStep(msg.uuid, msg.mockResults, msg.mockDelay);
   }
 
+  private runAction(msg: RunAction, state?: StateTree) {
+    this.checkState(msg, state);
+    return state.runAction(msg.uuid);
+  }
+
   public savePipeline(msg: SavePipeline, state?: StateTree) {
     this.checkState(msg, state);
     return state.save();
@@ -158,7 +173,8 @@ export class Driver {
           map((config) => [stateLoaded, config, metaCall] as const),
         );
       }),
-      map(([state, config, metaCall]) => StateTree.fromInstanceState({state, config, metaCall, isReadonly: !!msg.readonly, mockMode: this.mockMode})),
+      map(([state, config, metaCall]) =>
+        StateTree.fromInstanceState({state, config, metaCall, isReadonly: !!msg.readonly, mockMode: this.mockMode})),
       concatMap((state) => state.initFuncCalls()),
       tap((nextState) => this.states$.next(nextState)),
     );

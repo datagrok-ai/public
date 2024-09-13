@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {v4 as uuidv4} from 'uuid';
-import {HandlerBase} from '../config/PipelineConfiguration';
+import {ActionPositions, HandlerBase} from '../config/PipelineConfiguration';
 import {BaseTree, NodePath, TreeNode} from '../data/BaseTree';
 import {StateTree} from './StateTree';
 import {StateTreeNode} from './StateTreeNodes';
@@ -44,7 +44,9 @@ export class Link {
     const outputSet = new Set(outputNames);
 
     const inputsChanges$ = this.makeInputsChanges(state);
-    const baseNode = this.matchInfo.basePath ? state.getNode(([...this.prefix, ...this.matchInfo.basePath])) : undefined;
+    const baseNode = this.matchInfo.basePath ?
+      state.nodeTree.getNode(([...this.prefix, ...this.matchInfo.basePath])) :
+      undefined;
 
     inputsChanges$.pipe(
       timestamp(),
@@ -52,8 +54,15 @@ export class Link {
       takeUntil(this.destroyed$),
     ).subscribe(this.nextScheduled$);
 
+    const actions = ((this.isValidator && baseNode) &&
+      state.linksState.baseNodeActions.get(baseNode.getItem().uuid)) ||
+      [];
+
     inputsChanges$.pipe(
-      switchMap(([scope, inputs]) => this.runHandler(inputs, inputSet, outputSet, inputNames, outputNames, baseNode, scope)),
+      switchMap(
+        ([scope, inputs]) =>
+          this.runHandler(actions, inputs, inputSet, outputSet, inputNames, outputNames, baseNode, scope),
+      ),
       map((controller) => this.setHandlerResults(controller, state)),
       catchError((error) => {
         console.error(error);
@@ -66,12 +75,8 @@ export class Link {
     ).subscribe(this.lastFinished$);
   }
 
-  enable() {
+  setActive() {
     this.isActive$.next(true);
-  }
-
-  disable() {
-    this.isActive$.next(false);
   }
 
   trigger(scope?: NodePath, childOffset?: number) {
@@ -84,18 +89,26 @@ export class Link {
 
   private makeInputsChanges(state: StateTree) {
     const inputs = Object.entries(this.matchInfo.inputs).map(([inputAlias, inputItems]) => {
-      const nodes = inputItems.map((input) => [input.ioName!, state.getNode([...this.prefix, ...input.path])] as const);
+      const nodes = inputItems.map(
+        (input) => [
+          input.ioName!,
+          state.nodeTree.getNode([...this.prefix, ...input.path]),
+        ] as const,
+      );
       const inputStates = nodes.map(([ioName, node]) => {
         const item = node.getItem();
         const {dataFrameMutations} = this.matchInfo.spec;
-        const includeDFMutations = Array.isArray(dataFrameMutations) ? dataFrameMutations.includes(inputAlias) : !!dataFrameMutations;
+        const includeDFMutations = Array.isArray(dataFrameMutations) ?
+          dataFrameMutations.includes(inputAlias) :
+          !!dataFrameMutations;
         const state$ = item.getStateStore().getStateChanges(ioName, includeDFMutations);
         return state$;
       });
       return [inputAlias, combineLatest(inputStates)] as const;
     });
 
-    const inputEntries = inputs.map(([name, values$]) => values$.pipe(map((val) => [name, val] as const)));
+    const inputEntries = inputs.map(
+      ([name, values$]) => values$.pipe(map((val) => [name, val] as const)));
 
     const inputsEntries$ = combineLatest(inputEntries);
 
@@ -115,8 +128,17 @@ export class Link {
     return inputsChanges$;
   }
 
-  private runHandler(inputs: Record<string, any>, inputSet: Set<string>, outputSet: Set<string>, inputNames: string[], outputNames: string[], baseNode?: TreeNode<StateTreeNode>, scope?: ScopeInfo) {
-    const controller = this.getControllerInstance(inputs, inputSet, outputSet, baseNode, scope);
+  private runHandler(
+    actions: Action[],
+    inputs: Record<string, any>,
+    inputSet: Set<string>,
+    outputSet: Set<string>,
+    inputNames: string[],
+    outputNames: string[],
+    baseNode?: TreeNode<StateTreeNode>,
+    scope?: ScopeInfo,
+  ) {
+    const controller = this.getControllerInstance(actions, inputs, inputSet, outputSet, baseNode, scope);
 
     if (this.matchInfo.spec.handler) {
       return callHandler(this.matchInfo.spec.handler as HandlerBase<any, void>, {controller}).pipe(
@@ -128,15 +150,26 @@ export class Link {
         mapTo(controller),
         finalize(() => controller.close()),
       );
-    } else if (!this.isValidator && !this.isMeta)
-      return defer(() => of(defaultLinkHandler(controller as LinkController, inputNames, outputNames, this.matchInfo.spec.defaultRestrictions)).pipe(mapTo(controller)));
+    } else if (!this.isValidator && !this.isMeta) {
+      return defer(() => of(
+        defaultLinkHandler(controller as LinkController, inputNames, outputNames, this.matchInfo.spec.defaultRestrictions),
+      ).pipe(mapTo(controller)));
+    }
 
     throw Error(`Unable to run handler for link ${this.matchInfo.spec.id}`);
   }
 
-  private getControllerInstance(inputs: Record<string, any>, inputSet: Set<string>, outputSet: Set<string>, baseNode?: TreeNode<StateTreeNode>, scope?: ScopeInfo) {
+  private getControllerInstance(
+    actions: Action[],
+    inputs: Record<string, any>,
+    inputSet: Set<string>,
+    outputSet: Set<string>,
+    baseNode?: TreeNode<StateTreeNode>,
+    scope?: ScopeInfo,
+  ) {
     if (this.isValidator)
-      return new ValidatorController(inputs, inputSet, outputSet, this.matchInfo.spec.id, baseNode, scope);
+      return new ValidatorController(inputs, inputSet, outputSet, this.matchInfo.spec.id, actions, baseNode, scope);
+
     if (this.isMeta)
       return new MetaController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
     return new LinkController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
@@ -146,7 +179,7 @@ export class Link {
     const outputsEntries = Object.entries(this.matchInfo.outputs).map(([outputAlias, outputItems]) => {
       const nodes = outputItems.map((output) => {
         const path = [...this.prefix, ...output.path];
-        return [output.ioName!, path, state.getNode(path)] as const;
+        return [output.ioName!, path, state.nodeTree.getNode(path)] as const;
       });
       return [outputAlias, nodes] as const;
     });
@@ -154,7 +187,9 @@ export class Link {
       const nextData = controller.outputs[outputAlias];
       if (nextData) {
         for (const [ioName, nodePath, node] of nodesData) {
-          if (controller.scopeInfo?.scope && !BaseTree.isNodeChildOffseted(controller.scopeInfo.scope, nodePath, controller.scopeInfo.childOffset))
+          if (controller.scopeInfo?.scope &&
+            !BaseTree.isNodeChildOffseted(controller.scopeInfo.scope, nodePath, controller.scopeInfo.childOffset)
+          )
             continue;
 
           if (controller instanceof ValidatorController) {
@@ -175,5 +210,17 @@ export class Link {
         }
       }
     }
+  }
+}
+
+export class Action extends Link {
+  constructor(
+    public prefix: NodePath,
+    public matchInfo: MatchInfo,
+    public position: ActionPositions,
+    public friendlyName?: string,
+    public menuCategory?: string,
+  ) {
+    super(prefix, matchInfo);
   }
 }

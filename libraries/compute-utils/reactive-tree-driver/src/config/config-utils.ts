@@ -71,11 +71,20 @@ export function buildRefMap(config: PipelineConfigurationProcessed): Map<string,
   return refMap;
 }
 
-export function getConfigByInstancePath(instancePath: ItemPathArray, config: PipelineConfigurationProcessed, refMap: Map<string, PipelineConfigurationProcessed>) {
+export function getConfigByInstancePath(
+  instancePath: ItemPathArray,
+  config: PipelineConfigurationProcessed,
+  refMap: Map<string, PipelineConfigurationProcessed>,
+) {
   if (instancePath.length == 0)
     return config;
 
-  function findNextNode(items: ConfigTraverseItem[], targetSegment: string, currentPath: ItemPathArray, refMap: Map<string, PipelineConfigurationProcessed>) {
+  function findNextNode(
+    items: ConfigTraverseItem[],
+    targetSegment: string,
+    currentPath: ItemPathArray,
+    refMap: Map<string, PipelineConfigurationProcessed>,
+  ) {
     for (const item of items) {
       if (isPipelineSelfRef(item)) {
         const nitem = refMap.get(item.selfRef)!;

@@ -1,7 +1,4 @@
-import {ActionItem, ValidationResult} from '../../shared-utils/validation';
-import {PipelineState} from './config/PipelineInstance';
-import {ItemId, RestrictionType} from './data/common-types';
-
+import {RestrictionType, ValidationResult} from './data/common-types';
 
 export interface IRuntimeLinkController {
   getAll<T = any>(name: string): T[] | undefined;
@@ -13,7 +10,7 @@ export interface IRuntimeValidatorController {
   getAll<T = any>(name: string): T[] | undefined;
   getFirst<T = any>(name: string): T | undefined;
   setValidation(name: string, validation?: ValidationResult | undefined): void;
-  // getValidationAction(name: string, action: string): ActionItem | undefined;
+  getValidationAction(actionId: string): string | undefined;
 }
 
 export interface IRuntimeMetaController {

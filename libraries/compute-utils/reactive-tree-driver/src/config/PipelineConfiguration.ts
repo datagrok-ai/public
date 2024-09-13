@@ -74,14 +74,11 @@ export type PipelineActionConfiguraion<P> = {
   friendlyName?: string;
   menuCategory?: string;
   handler: Handler;
+  isValidator?: false;
+  isMeta?: false;
 } & PipelineLinkConfigurationBase<P>;
 
-export type StepActionConfiguraion<P> = {
-  position: ActionPositions;
-  friendlyName?: string;
-  menuCategory?: string;
-  handler: Handler;
-} & PipelineLinkConfigurationBase<P>;
+export type StepActionConfiguraion<P> = PipelineActionConfiguraion<P>;
 
 const actionPositions = ['buttons', 'menu', 'none'] as const;
 export type ActionPositions = typeof actionPositions[number];
