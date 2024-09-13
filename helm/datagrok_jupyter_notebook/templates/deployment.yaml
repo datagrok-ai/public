@@ -1,9 +1,9 @@
-{{- if  .Values.enabled -}}
+{{- if .Values.enabled -}}
 
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "base.fullname" . }}-{{ .Values.container.name }}-{{ .Values.container.tag | replace "." "-" }}
+  name: {{ include "base.fullname" . }}-{{ .Values.container.name }}
   namespace: {{ .Release.Namespace }}
   {{- with .Values.labels }}
   labels:

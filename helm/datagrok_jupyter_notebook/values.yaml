@@ -1,4 +1,6 @@
 enabled: true
+
+replicas: 1
 restartPolicy: Always
 labels:
   service: jupyter-notebook
@@ -8,10 +10,10 @@ container:
   image: datagrok/jupyter_notebook
   tag: latest
   ports:
-    notebook: 
+    notebook:
       name: notebook
       port: 8889
-    helper: 
+    helper:
       name: helper
       port: 5005
 service:

@@ -9,8 +9,8 @@ metadata:
   labels:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{ include "base.defaultLabels" . | nindent 4 }} 
-  
+  {{ include "base.defaultLabels" . | nindent 4 }}
+
 spec:
   replicas: {{ .Values.replicas }}
   selector:
@@ -47,7 +47,43 @@ spec:
           startupProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ .Release.Name }}-grok-spawner-configmap
+
           env:
+            - name: GROK_SPAWNER_ENVIRONMENT
+              value: {{ .Release.Namespace }}
+          {{- if not .Values.secrets.minio }}
+            - name: GROK_SPAWNER_MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-minio  # Secret name from values.yaml
+                  key: root-user
+            - name: GROK_SPAWNER_MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-minio  # Secret name from values.yaml
+                  key: root-password # Secret key from values.yaml
+            - name: GROK_SPAWNER_MINIO_ENDPOINT
+              value: {{ .Release.Name }}-minio:9000
+          {{- else }}
+            - name: GROK_SPAWNER_MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Namespace }}-minio  # Secret name from values.yaml
+                  key: accessKey
+            - name: GROK_SPAWNER_MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Namespace }}-minio # Secret name from values.yaml
+                  key: secretKey # Secret key from values.yaml
+            - name: GROK_SPAWNER_MINIO_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Namespace }}-minio  # Secret name from values.yaml
+                  key: minioApi # Secret key from values.yaml
+          {{- end }}
           {{- range $key, $value := .Values.env }}
             - name: {{ $key }}
               value: {{ $value }}
@@ -56,9 +92,22 @@ spec:
           name: {{ .Values.container.name }}
           ports:
             - containerPort: {{ .Values.container.port }}
+
+          volumeMounts:
+          {{- if .Values.secrets.certs }}
+            - name: spawner-certs
+              readOnly: true
+              mountPath: {{ .Values.certDir }}
+          {{- end }}
       restartPolicy: {{ .Values.restartPolicy }}
+      volumes:
+      {{- if .Values.secrets.certs }}
+        - name: spawner-certs
+          secret:
+            secretName: {{ .Release.Namespace }}-spawner-certs
+      {{- end }}
+        - name: configuration-yaml
+          configMap:
+            name: {{ .Release.Name }}-grok-spawner-configmap
 
- 
 {{- end }}
-
-    

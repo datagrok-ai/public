@@ -1,38 +1,40 @@
-enabled: false
+enabled: true
+
+replicas: 1
 restartPolicy: Always
 labels:
-  service: h2o
+  service: jupyter-notebook
 strategy_type: RollingUpdate
 container:
-  name: h2o
-  image: datagrok/h2o
+  name: jupyter-notebook
+  image: datagrok/jupyter_notebook
   tag: latest
   ports:
-    http: 
-      name: http
-      port: 54321
-    helper: 
+    notebook:
+      name: notebook
+      port: 8889
+    helper:
       name: helper
       port: 5005
 service:
   type: ClusterIP
 livenessProbe:
   httpGet:
-    path: /helper/info
+    path: /notebook/helper/info
     port: 5005
   failureThreshold: 3
   timeoutSeconds: 10
   periodSeconds: 20 # default
 readinessProbe:
   httpGet:
-    path: /helper/info
+    path: /notebook/helper/info
     port: 5005
   failureThreshold: 3
   timeoutSeconds: 10
   periodSeconds: 20
 startupProbe:
   httpGet:
-    path: /helper/info
+    path: /notebook/helper/info
     port: 5005
   failureThreshold: 90
   periodSeconds: 30
