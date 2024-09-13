@@ -140,6 +140,13 @@ export enum ERROR_MSG {
   INCORRECT_MODEL = 'Incorrect model',
   SENS_AN_FAILS = 'Sensitivity Analysis fails',
   FITTING_FAILS = 'Fitting fails',
+  INPUTS_PATH = `Incorrect inputs path: check `,
+  INPUT_TABLE = 'Failed to load table with inputs: check file and path in ',
+  INCORRECT_INPUT_DF = 'Incorrect table with inputs: check file ',
+  INPUT_DF_2_COLS = 'At least two columns are needed.',
+  INPUT_DF_1_COL = 'First column must contain names of inputs.',
+  INPUT_DF_MIS_VALS = 'Missing values are not allowed.',
+  NO_NUM_COLS = 'No numerical columns.',
 };
 
 /** Other UI constants */
@@ -227,6 +234,9 @@ export enum PATH {
   PARAM = `?params:`,
   BROWSE = 'browse',
   RECENT = 'diff-studio-recent.d42',
+  MY_FILES = 'Myfiles',
+  HOME = 'Home',
+  SYSTEM = 'System',
 };
 
 /** UI time constants */
@@ -269,3 +279,9 @@ export const modelImageLink = new Map([
   [TITLE.BIO, 'images/bioreactor.png'],
   [TITLE.POLL, 'images/pollution.png'],
 ]);
+
+/** Inputs table constants */
+export enum INPUTS_DF {
+  MIN_COLS_COUNT = 2,
+  INP_NAMES_IDX = 0,
+};

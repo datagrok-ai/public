@@ -552,7 +552,7 @@ export function getIVP(text: string): IVP {
     } else if (firstLine.startsWith(CONTROL_EXPR.OUTPUT)) { // the 'output' block
       outputs = getOutput(lines, block.begin + 1, block.end);
     } else if (firstLine.startsWith(CONTROL_EXPR.INPUTS)) { // the 'inputs' block
-      inputsPath = firstLine.slice(firstLine.indexOf(CONTROL_SEP) + 1).replaceAll(' ', '');
+      inputsPath = firstLine.slice(firstLine.indexOf(CONTROL_SEP) + 1).replace(/['"\s]/g, '');
     } else if (firstLine.startsWith(CONTROL_EXPR.COMMENT)) { // the 'comment' block
       // just skip it
     } else

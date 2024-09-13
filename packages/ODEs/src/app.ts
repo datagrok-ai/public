@@ -21,7 +21,7 @@ import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
   CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS} from './scripting-tools';
 import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools/solver-defs';
-import {unusedFileName, getTableFromLastRows} from './utils';
+import {unusedFileName, getTableFromLastRows, getInputsTable} from './utils';
 
 import '../css/app-styles.css';
 
@@ -1127,6 +1127,9 @@ export class DiffStudio {
       await this.solve(ivp, getInputsPath());
 
     this.inputsByCategories = inputsByCategories;
+
+    if (ivp.inputsPath)
+      grok.shell.addTableView(await getInputsTable(ivp.inputsPath));
   } // getInputsUI
 
   /** Run sensitivity analysis */
