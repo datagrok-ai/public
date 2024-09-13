@@ -413,7 +413,11 @@ export function loader(): any {
 }
 
 /**
+ * Sets an update indicator on the specified element.
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/update-indicator}
+ * @param {HTMLElement} element
+ * @param {boolean} updating - whether the indicator should be shown
+ * @param {string} message
  */
 export function setUpdateIndicator(element: HTMLElement, updating: boolean = true, message: string = 'Updating...'): void {
   return api.grok_UI_SetUpdateIndicator(element, updating, message);
