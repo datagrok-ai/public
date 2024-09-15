@@ -7,7 +7,7 @@
 * Move the slider for the Final at input.
 * Observe Changes: Verify that the table and line chart are modified in real-time as you move the slider.
 3. Save the Script:
-* Save the script after confirming that it runs correctly.
+* Add "//tags: model" to JS body. Save the script after confirming that it runs correctly.
 4. Access Model in Model Catalog:
 * Go to Apps > Run Model catalog > Open the saved model from the catalog.
 5. Interact with Model:
