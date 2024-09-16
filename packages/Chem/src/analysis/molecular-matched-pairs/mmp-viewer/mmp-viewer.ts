@@ -233,23 +233,27 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       return button;
     };
 
-    tabs.addPane(MMP_NAMES.TAB_TRANSFORMATIONS, () => {
-      const createGridDiv = (name: string, grid: DG.Grid) => {
-        const header = ui.h1(name, 'chem-mmpa-transformation-tab-header');
-        grid.root.prepend(header);
-        return ui.splitV([
-          ui.box(
-            ui.divH([header, addToWorkspaceButton(grid.dataFrame, name, 'chem-mmpa-add-to-workspace-button')]),
-            {style: {maxHeight: '30px'}},
-          ),
-          grid.root,
-        ]);
-      };
-
+    const createGridDiv = (name: string, grid: DG.Grid) => {
+      const header = ui.h1(name, 'chem-mmpa-transformation-tab-header');
+      grid.root.prepend(header);
       return ui.splitV([
-        createGridDiv('Fragment Pairs', this.pairedGrids!.fpGrid),
-        createGridDiv('Matched Molecular Pairs', this.pairedGrids!.mmpGrid),
-      ], {}, true);
+        ui.box(
+          ui.divH([header, addToWorkspaceButton(grid.dataFrame, name, 'chem-mmpa-add-to-workspace-button')]),
+          {style: {maxHeight: '30px'}},
+        ),
+        grid.root,
+      ], {style: {width: '100%', height: '100%'}});
+    };
+
+    //const mmPairsDiv = ui.div('', {style: {width: '100%', height: '100%'}});
+    const mmPairsRoot = createGridDiv('Matched Molecular Pairs', this.pairedGrids!.mmpGrid);
+    const gridsDiv = ui.splitV([
+      createGridDiv('Fragment Pairs', this.pairedGrids!.fpGrid),
+      mmPairsRoot,
+    ], {}, true);
+
+    tabs.addPane(MMP_NAMES.TAB_TRANSFORMATIONS, () => {
+      return gridsDiv;
     });
     const fragmentsPane = tabs.addPane(MMP_NAMES.TAB_FRAGMENTS, () => {
       return tp.root;
@@ -271,13 +275,15 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       if (tabs.currentPane.name == MMP_NAMES.TAB_TRANSFORMATIONS) {
         this.pairedGrids!.enableFilters = true;
         this.pairedGrids!.refilterFragmentPairsByMolecule(false);
+        gridsDiv.append(mmPairsRoot);
+        grok.shell.o = ui.div();
       } else if (tabs.currentPane.name == MMP_NAMES.TAB_FRAGMENTS) {
         tabs.currentPane.content.append(mmpFilters.filtersDiv);
         this.pairedGrids!.refreshMaskFragmentPairsFilter();
         this.pairedGrids!.enableFilters = false;
-        // this.pairedGrids!.mmpMaskByFragment.setAll(false);
-        // this.pairedGrids!.mmpGrid.dataFrame.filter.copyFrom(this.pairedGrids!.mmpMaskByFragment);
-        // grok.shell.o = this.pairedGrids!.mmpGrid.root;
+        this.pairedGrids!.mmpMaskByFragment.setAll(false);
+        this.pairedGrids!.mmpGrid.dataFrame.filter.copyFrom(this.pairedGrids!.mmpMaskByFragment);
+        grok.shell.o = mmPairsRoot;
       } else if (tabs.currentPane.name == MMP_NAMES.TAB_CLIFFS) {
         tabs.currentPane.content.append(mmpFilters.filtersDiv);
 

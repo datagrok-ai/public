@@ -215,21 +215,25 @@ export class MmpPairedGrids {
     return [idxPairs, cases];
   }
 
-  refilterMatchedPairsByFragments(cats: [string, string]): void {
+  refilterMatchedPairsByFragments(cats: [number, number]): void {
     this.mmpGrid.setOptions({
       pinnedRowValues: [],
       pinnedRowColumnNames: [],
     });
-    this.mmpMaskByFragment.setAll(true); //change to false
+    this.mmpMaskByFragment.setAll(false);
 
-    const idx = -1;
-    for (let i = 0; i < this.fpCatsFrom.length; i++) {
-      if (cats[0] == this.fpCatsFrom[i] && cats[1] == this.fpCatsTo[i]) {
-        idx == i;
+    let idx = -1;
+    const colFrom = this.fpGrid.dataFrame.columns.byName(MMP_NAMES.FROM);
+    const colTo = this.fpGrid.dataFrame.columns.byName(MMP_NAMES.TO);
+    const fFrom = this.fpCatsFrom[cats[0]];
+    const fTo = this.fpCatsTo[cats[1]];
+
+    for (let i = 0; i < this.fpGrid.dataFrame.rowCount; i++) {
+      if (colFrom.get(i) == fFrom && colTo.get(i) == fTo) {
+        idx = i;
         break;
       }
     }
-
 
     if (idx !== -1) {
       const ruleSmi1 = this.fpGrid!.table.getCol(MMP_NAMES.FROM).get(idx);
