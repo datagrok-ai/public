@@ -3,10 +3,6 @@ name: Deploy Jekyll with GitHub Pages dependencies preinstalled
 
 on:
   # Runs on pushes targeting the default branch
-  push:
-    branches: ["vhlushchenko/GROK-16669/deploy_helm_charts"]
-    paths:
-      - 'helm/artifactory/**'
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -35,6 +31,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Pulling changes
+        run: git pull
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Build with Jekyll
