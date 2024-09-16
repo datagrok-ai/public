@@ -5,7 +5,7 @@
   "parameters": {
     "server": "db.datagrok.ai",
     "db": "cdm_synthea",
-    "port": 8123
+    "port": 18123
   },
   "credentials": {
     "parameters": {

@@ -1,5 +1,63 @@
 # bio changelog
 
+## 5.42.15 (2024-09-10)
+
+### Bug fixes
+
+* Fix default lib summary for tests
+
+## 5.42.14 (2024-09-04)
+
+### Bug fixes
+
+* Fix toAtomicLevel workers error DG is not defined
+* Fix SeqHandler.getHelm lost cycles, add tests`
+* Add options for SeqHandler.getHelm
+* Fix default monomer libs for PolyTool rules
+
+## 5.42.13 (2024-09-02)
+
+* Add interfaces for monomer management
+
+## 5.42.12 (2024-08-30)
+
+Add getHelm to SeqHandler and INotationProvider
+
+## 5.42.11 (2024-08-24)
+
+### Bug fixes
+
+* Bump HWE dependencies versions
+* Fix for user settings for publish
+
+## 5.42.10 (2024-08-23)
+
+### Features
+
+* Add SeqHandler
+
+## 5.42.9 (2024-08-16)
+
+### Features
+
+* HWE option for continuous monomer numbering
+* Add HelmInput mouse events redraw, showTooltip
+* Bump HWE dependencies versions
+
+## 5.42.8 (2024-08-14)
+
+Fix monomer substitution matrix calculation
+
+## 5.42.7 (2024-08-12)
+
+### Features
+
+* Monomer sets defined with .json files
+
+### Bug fixes
+
+* Fix cell renderer base dirty flag and reset
+
 ## 5.42.6 (2024-07-29)
 
 ### Features

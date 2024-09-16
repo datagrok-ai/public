@@ -35,10 +35,28 @@ To run **Diff Studio**:
 
 ### Loading and saving data
 
-* **To save formulas** to a local file, click the <i class="fas fa-save"></i> **Save** icon on the ribbon, and find the *ivp*-file in Downloads. You can open and edit this file using any text editor.
-* **To load formulas** from a local file, click the <i class="fas fa-folder-open"></i> **Load...** on the ribbon, choose **From file...**
+* **To save model**, click the <i class="fas fa-save"></i> **Save** icon on the ribbon. The context menu opens:
+  * Click `Save as Local File...` to save formulas to a local file. Find the *ivp*-file in Downloads. You can open and edit this file using any text editor.
+  * Click `Save to My Files...` to save model to your platform files (**Browse > Files > My files**).
+* **To load model** from a local file, click the <i class="fas fa-folder-open"></i> **Load...** on the ribbon, choose **From file...**
   option and choose a local file to upload.
 * **Drag-n-drop** your *ivp*-file to Datagrok. Diff Studio will open it and load formulas. You can open *ivp*-files stored in the platform.
+
+### Browse and share models
+
+Go to **Browse > Apps** and expand the **Diff Studio** group:
+
+* Check model templates from **Templates**. Use them as a backbone of your model.
+* Click **Examples** and explore built-in models. They cover all Diff Studio capabilities.
+* Find recently opened models in **Recent**.
+
+![Diff Studio Browsing](pics/diff-studio-browsing.gif)
+
+In **Browse**, click any *ivp*-file. Model preview opens. Modify inputs and check results. Use URL to share computations:
+
+![Diff Studio Sharing](pics/diff-studio-sharing-url.gif)
+
+By using a URL, you can share model runs from the **Templates**, **Examples** and **Recent** groups.
 
 ### Sensitivity analysis
 
@@ -349,6 +367,12 @@ The `Nimotuzumab` example simulates population pharmacokinetic for [nimotuzumab]
 The `Bioreactor` example models the [kinetic mechanism](https://doi.org/10.1074/jbc.RA117.000303) of controlled Fab-arm exchange for the formation of bispecific immunoglobulin G1 antibodies.
 
 ![add-to-workspace](pics/diff-studio-bioreactor.png)
+
+### Pollution
+
+The `Pollution` example describes a chemical reaction part of the air [pollution model](https://archimede.uniba.it/~testset/problems/pollu.php). It consists of 25 reaction and 20 reacting compounds. This example illustrates the capability of Diff Studio to solve large systems of [stiff equations](https://en.wikipedia.org/wiki/Stiff_equation).
+
+![add-to-workspace](pics/diff-studio-pollution.png)
 
 Datagrok's ODEs suite has tools for solving both stiff and non-stiff equations. Combine Diff Studio
 with [viewers](../visualize/viewers/viewers.md) and [compute](compute.md) tools to explore complex models.

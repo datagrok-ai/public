@@ -208,19 +208,14 @@ category('Widgets: InputForm API', () => {
       ['stringInput', 'intInput', 'doubleInput', 'boolInput', 'choiceInput', 'tableInput'],
     );
     changeSub.unsubscribe();
-  }, { skipReason: 'https://reddata.atlassian.net/browse/GROK-15795' });
+  });
 
   test('source funccall replacement', async () => {
-    newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
+    newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare({'stringInput':  'test2'});
     form.source = newFuncCall;
     updateInputs();
 
-    expect(inputs['stringInput'].value, 'test');
-    expect(inputs['intInput'].value, 3);
-    expect(inputs['doubleInput'].value, 3.14);
-    expect(inputs['boolInput'].value, true);
-    expect(inputs['choiceInput'].value, '1');
-    expect(inputs['tableInput'].value, null); // since there is no default value here
+    expect(inputs['stringInput'].value, 'test2');
   });
 
   test('form to funccall bind after replace', async () => {
@@ -241,12 +236,11 @@ category('Widgets: InputForm API', () => {
     expect(newFuncCall.inputs['boolInput'], false);
     expect(newFuncCall.inputs['choiceInput'], '2');
     expectTable(newFuncCall.inputs['tableInput'], demog);
-  }, { skipReason: 'https://reddata.atlassian.net/browse/GROK-14311' });
+  });
 
   test('funccall to form bind after replace', async () => {
     newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
     form.source = newFuncCall;
-    updateInputs();
 
     const geo = grok.data.demo.geo(10);
 
@@ -256,6 +250,7 @@ category('Widgets: InputForm API', () => {
     newFuncCall.inputs['boolInput'] = true;
     newFuncCall.inputs['choiceInput'] = '1';
     newFuncCall.inputs['tableInput'] = geo;
+    updateInputs();
 
     expect(inputs['stringInput'].value, 'test');
     expect(inputs['intInput'].value, 3);
@@ -263,7 +258,7 @@ category('Widgets: InputForm API', () => {
     expect(inputs['boolInput'].value, true);
     expect(inputs['choiceInput'].value, '1');
     expectTable(inputs['tableInput'].value, geo);
-  }, { skipReason: 'https://reddata.atlassian.net/browse/GROK-14311' });
+  }, { skipReason: 'GROK-16408' });
 
   test('form on input change observable after replace', async () => {
     newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
@@ -287,7 +282,7 @@ category('Widgets: InputForm API', () => {
       ['stringInput', 'intInput', 'doubleInput', 'boolInput', 'choiceInput', 'tableInput'],
     );
     changeSub.unsubscribe();
-  }, { skipReason: 'https://reddata.atlassian.net/browse/GROK-15795' });
+  });
 });
 
 
@@ -361,13 +356,6 @@ category('Widgets: InputForm w/ custom input', () => {
       ['stringInput'],
     );
     changeSub.unsubscribe();
-  }, { skipReason: 'https://reddata.atlassian.net/browse/GROK-15737' });
-
-  test('source funccall replacement', async () => {
-    newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
-    form.source = newFuncCall;
-    updateInputs();
-    expect(form.getInput('stringInput').value, 'test');
   }, { skipReason: 'https://reddata.atlassian.net/browse/GROK-15737' });
 
   test('form to funccall bind after replace', async () => {

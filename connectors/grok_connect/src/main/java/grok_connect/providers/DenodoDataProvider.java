@@ -6,7 +6,7 @@ import grok_connect.connectors_info.*;
 
 public class DenodoDataProvider extends JdbcDataProvider {
     public DenodoDataProvider() {
-        driverClassName = "com.denodo.vdb.jdbcdriver.VDBJDBCDriver";
+        driverClassName = "com.denodo.vdp.jdbc.Driver";
 
         descriptor = new DataSource();
         descriptor.type = "Denodo";
@@ -16,6 +16,7 @@ public class DenodoDataProvider extends JdbcDataProvider {
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
     }
 
+    @Override
     public Properties getProperties(DataConnection conn) {
         java.util.Properties properties = defaultConnectionProperties(conn);
         if (!conn.hasCustomConnectionString() && conn.ssl())
@@ -23,8 +24,9 @@ public class DenodoDataProvider extends JdbcDataProvider {
         return properties;
     }
 
+    @Override
     public String getConnectionStringImpl(DataConnection conn) {
         String port = (conn.getPort() == null) ? "" : ":" + conn.getPort();
-        return "jdbc:vdb://" + conn.getServer() + port +  "/" + conn.getDb();
+        return "jdbc:denodo://" + conn.getServer() + port +  "/" + conn.getDb();
     }
 }

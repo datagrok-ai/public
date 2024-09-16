@@ -129,8 +129,8 @@ async function doTranslation() {
 //output: widget result
 //condition: isTextFile(textfile)
 export async function translationPanel(textfile: DG.FileInfo) {
-  sourceLangInput.onChanged(async (_: string) => doTranslation());
-  targetLangInput.onChanged(async (_: string) => doTranslation());
+  sourceLangInput.onChanged.subscribe(async (_) => doTranslation());
+  targetLangInput.onChanged.subscribe(async (_) => doTranslation());
 
   sourceText = await extractText(textfile);
   if (!sourceText) {

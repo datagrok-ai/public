@@ -10,7 +10,7 @@ import {CellRendererBackBase} from '@datagrok-libraries/bio/src/utils/cell-rende
 
 import {getParts, parseHelm} from './utils';
 
-import {_package, getMonomerLib} from './package';
+import {_package} from './package';
 
 export class HelmMonomerPlacer extends CellRendererBackBase<string> {
   private _allPartsList: (string[] | null)[];
@@ -73,7 +73,7 @@ export class HelmMonomerPlacer extends CellRendererBackBase<string> {
   // -- Handle events --
 
   private monomerLibOnChanged(_value: any): void {
-    this.reset();
+    this.dirty = true;
     this.invalidateGrid();
   }
 

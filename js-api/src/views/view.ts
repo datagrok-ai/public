@@ -1,4 +1,4 @@
-import {VIEW_TYPE, VIEWER, ViewerType} from '../const';
+import {VIEW_TYPE, VIEWER, ViewerType, ViewType} from '../const';
 import {DataFrame} from '../dataframe.js';
 import * as ui from '../../ui';
 import {FilterGroup, ScatterPlotViewer, Viewer} from '../viewer';
@@ -254,7 +254,7 @@ export class View extends ViewBase {
   }
 
   /** Creates one of the standard views based on the view type (such as 'functions') */
-  static createByType(viewType: string, options?: any): View {
+  static createByType(viewType: ViewType | string, options?: any): View {
     return new View(api.grok_View_CreateByType(viewType, options));
   }
 
@@ -357,12 +357,13 @@ export class View extends ViewBase {
   static readonly PACKAGES = 'packages';
   static readonly PACKAGE_REPOSITORIES = 'repositories';
   static readonly JS_EDITOR = 'js';
+  static readonly BROWSE = 'browse';
 
   static readonly ALL_VIEW_TYPES = [View.APPS, View.SETTINGS, View.WELCOME, View.SCRIPT, View.SKETCH,
     View.FORUM, View.PROJECTS, View.NOTEBOOKS, View.HELP, View.OPEN_TEXT, View.DATABASES,
     View.WEB_SERVICES, View.VIEW_LAYOUTS, View.FUNCTIONS, View.DATA_CONNECTIONS, View.DATA_JOB_RUNS,
     View.FILES, View.DATA_QUERY_RUNS, View.EMAILS, View.GROUPS, View.MODELS, View.QUERIES,
-    View.SCRIPTS, View.USERS, View.PACKAGES, View.PACKAGE_REPOSITORIES, View.JS_EDITOR];
+    View.SCRIPTS, View.USERS, View.PACKAGES, View.PACKAGE_REPOSITORIES, View.JS_EDITOR, View.BROWSE];
 }
 
 
@@ -674,6 +675,9 @@ export class BrowseView extends View {
   set preview(preview: View | null) { api.grok_BrowseView_Set_Preview(this.dart, preview?.dart); }
 
   get dockManager(): DockManager { return new DockManager(api.grok_BrowseView_Get_DockManager(this.dart)); }
+
+  get showTree(): boolean { return api.grok_BrowseView_Get_ShowTree(this.dart); }
+  set showTree(x: boolean) { api.grok_BrowseView_Set_ShowTree(this.dart, x); }
 }
 
 

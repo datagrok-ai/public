@@ -1,5 +1,5 @@
 1. Open:
-   * Linked datasets (should be tested on smiles, molV2000 and molV3000 formats)
+   * Linked datasets (should be tested on smiles (smiles), molV2000 (mol1K) and molV3000 (ApprovedDrugs2015) formats)
    * smiles_2_columns.csv (TODO: add to linked datasets)
 2. Run **Chem > Analyze > Activity cliffs**. A dialog opens.
 3. Click OK to run a function with default parameters
@@ -17,6 +17,7 @@
     "System:DemoFiles/SPGI.csv",
     "System:DemoFiles/chem/smiles.csv",
     "System:AppData/Chem/mol1K.sdf",
-    "System:DemoFiles/chem/sdf/ApprovedDrugs2015.sdf"
+    "System:DemoFiles/chem/sdf/ApprovedDrugs2015.sdf",
+    "System:AppData/UsageAnalysis/test_datasets/smiles_2_columns.csv"
   ]
 }

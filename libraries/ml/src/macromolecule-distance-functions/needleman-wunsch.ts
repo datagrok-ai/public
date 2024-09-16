@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import {mmDistanceFunctionArgs, mmDistanceFunctionType} from './types';
 
 // Blosum 62 matrix for protein sequences
@@ -34,12 +35,12 @@ const ProtIndexes: {[id:string]:number} = {
   'W': 17, 'Y': 18, 'V': 19, 'B': 20, 'Z': 21, 'X': 22, '*': 23
 };
 
-type NeedlemanWunchArgs = mmDistanceFunctionArgs & {
+type NeedlemanWunschArgs = mmDistanceFunctionArgs & {
   gapOpen: number;
   gapExtend: number;
 }
 
-const defaultArgs: NeedlemanWunchArgs = {
+const defaultArgs: NeedlemanWunschArgs = {
   gapOpen: 1,
   gapExtend: 0.6,
   scoringMatrix: BLOSUM62,
@@ -47,17 +48,17 @@ const defaultArgs: NeedlemanWunchArgs = {
 };
 
 /** Returns a function that calculates the distance between two sequences based on gap penalty and matrix
- * @param {Partial<NeedlemanWunchArgs>}args - arguments for Needleman-Wunch algorithm like gap penalty, Scoring matrix..
+ * @param {Partial<NeedlemanWunschArgs>}args - arguments for Needleman-Wunsch algorithm like gap penalty, Scoring matrix..
  * @return {mmDistanceFunctionType} - function that calculates the distance between two sequences
 */
-export function needlemanWunch(args: Partial<NeedlemanWunchArgs>): mmDistanceFunctionType {
+export function needlemanWunsch(args: Partial<NeedlemanWunschArgs>): mmDistanceFunctionType {
   const maxLen = 10000;
   const charCodeArray = new Uint16Array(0x10000);
 
   const {gapOpen, gapExtend, scoringMatrix, alphabetIndexes} = {...defaultArgs, ...args};
   Object.entries(alphabetIndexes).forEach(([k, v]) => charCodeArray[k.charCodeAt(0)] = v);
   // As we don't need traceback, no need to store the whole matrix
-  // Intead, we will store only the last two rows
+  // Instead, we will store only the last two rows
   const matrix: Array<Float32Array> = [
     new Float32Array(maxLen),
     new Float32Array(maxLen)
@@ -74,20 +75,20 @@ export function needlemanWunch(args: Partial<NeedlemanWunchArgs>): mmDistanceFun
     let currRow = 1;
     // Initialize first row
     for (let i = 1; i < seq1.length + 1; i++) {
-      matrix[0][i] = -gapOpen - (i - 1) * gapExtend;
+      matrix[0][i] = -gapExtend - (i - 1) * gapExtend;
       matrix[1][i] = 0;
     }
     matrix[0][0] = 0;
 
     // Calculate the rest of the matrix
     for (let i = 1; i < seq2.length + 1; i++) {
-      matrix[currRow][0] = -gapOpen - (i - 1) * gapExtend;
+      matrix[currRow][0] = -gapExtend - (i - 1) * gapExtend;
       for (let j = 1; j < seq1.length + 1; j++) {
         const diagonal =
           matrix[prevRow][j - 1] +
             scoringMatrix[charCodeArray[seq1.charCodeAt(j - 1)]][charCodeArray[seq2.charCodeAt(i - 1)]];
-        const top = matrix[prevRow][j] - (verticalGaps[j] ? gapExtend : gapOpen );
-        const left = matrix[currRow][j - 1] - (horizontalGaps[j - 1] ? gapExtend : gapOpen);
+        const top = matrix[prevRow][j] - (verticalGaps[j] || i === 1 || i === seq2.length ? gapExtend : gapOpen );
+        const left = matrix[currRow][j - 1] - (horizontalGaps[j - 1] || j === 1 || j === seq1.length ? gapExtend : gapOpen);
         matrix[currRow][j] = Math.max(
           diagonal, left, top
         );
@@ -114,7 +115,7 @@ export function needlemanWunch(args: Partial<NeedlemanWunchArgs>): mmDistanceFun
     // const perfectMatchSeq2 = seq2.split('').map((c) => scoringMatrix[alphabetIndexes[c]][alphabetIndexes[c]])
     //   .reduce((a, b) => a + b, 0);
     // const maxScore = Math.max(perfectMatchSeq1, perfectMatchSeq2);
-    const maxScore = Math.max(seq1.length, seq2.length);
+    const maxScore = Math.min(seq1.length, seq2.length);
     return (maxScore - matrix[prevRow][seq1.length]) / maxScore;
   };
 }

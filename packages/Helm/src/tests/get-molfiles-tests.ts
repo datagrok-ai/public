@@ -25,12 +25,12 @@ category('getMolfiles', () => {
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
     await setUserLibSettingsForTests();
-    await monomerLibHelper.loadLibraries(true);
+    await monomerLibHelper.loadMonomerLib(true);
   });
 
   after(async () => {
     await setUserLibSettings(userLibSettings);
-    await monomerLibHelper.loadLibraries(true);
+    await monomerLibHelper.loadMonomerLib(true);
   });
 
   const csv = `Helm, atoms, bonds

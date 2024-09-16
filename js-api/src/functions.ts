@@ -8,6 +8,7 @@ import {__obs, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
 import dayjs from "dayjs";
 import {IDartApi} from "./api/grok_api.g";
+import {ViewBase} from "./views/view";
 declare let grok: any;
 declare let DG: any;
 const api: IDartApi = <any>window;
@@ -310,10 +311,10 @@ export class FuncCall extends Entity {
 
   /** Function this call is associated with. */
   get func(): Func { return toJs(api.grok_FuncCall_Get_Func(this.dart)); }
-  set func(func: Func) { api.grok_FuncCall_Set_Func(this.dart, func.dart) }
+  set func(func: Func) { api.grok_FuncCall_Set_Func(this.dart, func.dart); }
 
   get parentCall(): FuncCall { return toJs(api.grok_FuncCall_Get_ParentCall(this.dart)); }
-  set parentCall(c: FuncCall) {api.grok_FuncCall_Set_ParentCall(this.dart, c.dart)}
+  set parentCall(c: FuncCall) { api.grok_FuncCall_Set_ParentCall(this.dart, c.dart); }
 
   get started(): dayjs.Dayjs { return dayjs(api.grok_FuncCall_Get_Started(this.dart)); }
 
@@ -383,6 +384,11 @@ export class FuncCall extends Entity {
 
   buildEditor(root: HTMLDivElement, options?: {condensed?: boolean, showTableSelectors?: boolean}): Promise<InputBase[]> {
     return api.grok_FuncCall_Build_Editor(this.dart, root, options?.condensed, options?.showTableSelectors);
+  }
+
+  /** Returns views with result. Should be called on succeeded FuncCall **/
+  getResultViews(): ViewBase[] {
+    return toJs(api.grok_FuncCall_GetOutputViews(this.dart));
   }
 
   /** Makes a shallow copy. */

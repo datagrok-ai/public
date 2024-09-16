@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
 import {OrgHelmModule, ScilModule} from '../types';
 
 import {
@@ -15,7 +16,6 @@ import {
   SDF_MONOMER_NAME
 } from '../constants';
 
-import {getMonomerLib} from '../package';
 
 declare const scil: ScilModule;
 declare const org: OrgHelmModule;
@@ -113,8 +113,7 @@ export function parseHelm(s: string): string[] {
 // }
 
 /** Searches monomers of helmString for missed. */
-export function findMonomers(seqMonomerSymbolList: string[]): Set<string> {
-  const monomerLib = getMonomerLib();
+export function findMonomers(seqMonomerSymbolList: string[], monomerLib: IMonomerLib): Set<string> {
   return new Set(seqMonomerSymbolList.filter((s) => monomerLib?.getMonomer(null, s)));
 }
 

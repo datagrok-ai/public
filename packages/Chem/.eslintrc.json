@@ -148,9 +148,9 @@
       2
     ],
     "max-len": ["error", 120],
-    "max-params": ["warn", 7],
-    "max-lines-per-function": ["warn", 100],
-    "max-lines": ["warn", 300],
+    "max-params": ["warn", 10],
+    "max-lines-per-function": ["warn", 200],
+    "max-lines": ["warn", 1000],
     "require-jsdoc": "off",
     "spaced-comment": "off",
     "linebreak-style": "off",

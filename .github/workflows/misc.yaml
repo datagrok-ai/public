@@ -1,0 +1,253 @@
+name: misc
+on:
+  workflow_dispatch:
+    inputs:
+      misc:
+        description: 'Enter short misc packages names separated by spaces (e.g. eslint-config bio)'
+        required: true
+        type: string
+  push:
+    paths:
+      - 'misc/**'
+  pull_request:
+    paths:
+      - 'misc/**'
+
+jobs:
+  common-check:
+    name: Common checks
+    uses: ./.github/workflows/common_check.yaml
+    with:
+      run_trigger: ${{ github.event_name }}
+
+  metadata:
+    name: Check changes
+    needs: common-check
+    runs-on: ubuntu-22.04
+    if: needs.common-check.outputs.continue == 'true'
+    outputs:
+      publish_matrix: ${{ steps.generate-matrix.outputs.publish_matrix }}
+      continue: ${{ steps.generate-matrix.outputs.continue }}
+    steps:
+      - name: Set git fetch depth
+        run: |
+          if [[ ${{ github.event_name }} != 'pull_request' ]]; then
+              echo "FETCH_DEPTH=2" >> "$GITHUB_ENV"
+          else
+              echo "FETCH_DEPTH=0" >> "$GITHUB_ENV"
+          fi
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: ${{ env.FETCH_DEPTH }}
+          sparse-checkout: |
+            ./misc
+      - name: Get changed files
+        uses: tj-actions/changed-files@v42
+        id: changed-files
+        with:
+          files: 'misc/**'
+          separator: "\n"
+          dir_names: true
+          dir_names_max_depth: 2
+          safe_output: false
+      - name: Generate matrix
+        id: generate-matrix
+        run: |
+          if [[ "${{ github.event.inputs.misc }}" == "" ]]; then
+            CHANGED_MISC="$(echo -e "${{ steps.changed-files.outputs.all_changed_files }}" | awk -F'/' '{print $2}' | sort -u)"
+          else
+            CHANGED_MISC="${{ github.event.inputs.misc }}"
+          fi
+
+          MATRIX_PUBLISH_JSON="["
+
+          for MISC in $(echo ${CHANGED_MISC} | sort -u); do
+            DIR="misc/$MISC"
+            if [ -f "${DIR}/package.json" ]; then
+              MATRIX_PUBLISH_JSON+="{\"project\": \"${MISC}\""
+              current_version="$(jq -r '.version' "${DIR}/package.json")"
+              MATRIX_PUBLISH_JSON+=", \"version\": \"${current_version}\""
+
+              scripts="$(jq  '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
+              dependencies="$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' "${DIR}/package.json")"
+
+              job_name='Check'
+              if [ ! -z "$(jq  '. | select( has("build") == true )' <<< "$scripts")" ]; then
+                MATRIX_PUBLISH_JSON+=", \"build\": \"build\""
+                job_name='Build'
+              fi
+              if [ ! -z "$(jq  '. | select( has("test") == true )' <<< "$scripts")" ]; then
+                MATRIX_PUBLISH_JSON+=", \"test\": \"test\""
+                job_name='Build, test'
+              fi
+
+              name="$(jq -r .name "${DIR}/package.json")"
+              npm_version="$(curl --retry 3 -s "https://registry.npmjs.org/${name}/${current_version}" | jq -r '.? | select( has("version") == true ).version')"
+              if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+                if [[ $npm_version != ${current_version} ]]; then
+                    MATRIX_PUBLISH_JSON+=", \"publish\": \"publish\""
+                    packages=$(grep -l "$name" packages/*/package.json | awk -F'/' '{printf ("%s ", $2)}' | sort -u)
+                    MATRIX_PUBLISH_JSON+=", \"packages\": \"$packages\""
+                    job_name+=' and publish to NPM'
+                else
+                  echo "$MISC version ${current_version} is already published"
+                  echo "::notice title=${MISC}::Version ${current_version} is already published"
+                fi
+              else
+                  echo "It is an actions for PR. Publish will be skipped."
+                  echo "::notice title=${MISC}::It is an actions for PR. Publish will be skipped."
+              fi
+
+              MATRIX_PUBLISH_JSON+=", \"job_name\": \"${job_name}\""
+              MATRIX_PUBLISH_JSON+="}"
+            fi
+          done
+
+          MATRIX_PUBLISH_JSON="${MATRIX_PUBLISH_JSON//\}\{/\}, \{}"
+          MATRIX_PUBLISH_JSON+="]"
+          PUBLISH_JSON="{\"include\": ${MATRIX_PUBLISH_JSON}}"
+
+          CONTINUE_JOB="no"
+          if [[ "${MATRIX_PUBLISH_JSON}" != "[]" ]]; then
+            CONTINUE_JOB="yes"
+          fi
+          echo "continue=${CONTINUE_JOB}" >> $GITHUB_OUTPUT
+          echo "publish_matrix=${PUBLISH_JSON}" >> $GITHUB_OUTPUT
+
+      - name: Output
+        run: |
+          echo -e "publish_matrix: ${{ steps.generate-matrix.outputs.publish_matrix }}"
+          echo -e "continue: ${{ steps.generate-matrix.outputs.continue }}"
+
+  publish:
+    name: "${{ matrix.project }}: ${{ matrix.job_name }}"
+    needs: [ metadata, common-check ]
+    if: needs.metadata.outputs.continue == 'yes' && needs.common-check.outputs.continue == 'true'
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.metadata.outputs.publish_matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.WRITE_TOKEN || github.token }}
+          sparse-checkout: |
+            ./misc
+      - name: Check properties
+        working-directory: misc/${{ matrix.project }}
+        run: |
+          if [[ "$(jq '.name' package.json | sed -E 's/(^"|"$)//g')" != "@datagrok-misc/"* ]]; then
+            echo "::error title=${{ matrix.project }}: failed properties check::Package should be in '@datagrok-misc' scope. Change name to '@datagrok-misc/<name>' in ${{ matrix.project }}/package.json"
+            exit 1
+          fi
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@datagrok-misc'
+          cache: 'npm'
+          cache-dependency-path: |
+            misc/${{ matrix.project }}/package-lock.json
+      - run: npm install -g npm@x
+      - run: npm version
+      - run: npm install
+        working-directory: misc/${{ matrix.project }}
+      - run: npm run build
+        working-directory: misc/${{ matrix.project }}
+        if: ${{ matrix.build == 'build' }}
+      - id: datagrok-tools
+        run: npm install -g datagrok-tools@latest
+      - run: grok check
+        id: grok_check
+        working-directory: misc/${{ matrix.project }}
+      - run: npm run test
+        working-directory: misc/${{ matrix.project }}
+        if: ${{ matrix.test == 'test' }}
+      - name: npm publish
+        id: publish
+        run: npm publish --access public
+        if: matrix.publish == 'publish' && github.ref == 'refs/heads/master'
+        working-directory: misc/${{ matrix.project }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Prepare Slack Message
+        if: steps.publish.outcome == 'success'
+        id: slack-user
+        shell: bash
+        env:
+          SLACK_ID: ${{ secrets.SLACK_ID }}
+        run: |
+          channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
+          echo "::add-mask::$channel_id"
+
+          header="*${{ matrix.project }}* version *${{ matrix.version }}* published to <https://www.npmjs.com/package/$(jq -r .name "misc/${{ matrix.project }}/package.json")/v/${{ matrix.version }}|NPM>\n<@$channel_id> FYI"
+          echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
+
+          context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1)>"
+          echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
+
+      - name: Send to Slack
+        id: slack
+        if: steps.slack-user.outcome == 'success'
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: '#build'
+          payload: |
+            {
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "${{ env.SLACK_MESSAGE_HEADER }}"
+                        }
+                    },
+                    {
+                        "type": "context",
+                        "elements": [
+                            {
+                                "type": "mrkdwn",
+                                "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"
+                            }
+                        ]
+                    }
+                ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
+
+      - name: Commit package-lock.json
+        continue-on-error: true
+        if: steps.publish.outcome == 'success' || steps.package-lock.outcome == 'success'
+        run: |
+          if [ -n "$(git status -s misc/${{ matrix.project }}/package-lock.json)" ]; then
+            git config --global user.name 'github-actions[bot]'
+            git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+            git pull
+            git add misc/${{ matrix.project }}/package-lock.json
+            skip_ci=""
+            if [ ${{ github.ref }} == 'refs/heads/master' ]; then
+              skip_ci="[skip ci]"
+            fi
+            git commit -m "GitHub Actions: Update misc/${{ matrix.project }}/package-lock.json $skip_ci
+
+            Workflow ${{ github.workflow }} ${{ github.run_number }}
+            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}"
+            count=0
+            retries=10
+            until git push; do
+              exit=$?
+              wait=$((2 ** count))
+              count=$((count + 1))
+              if [ $count -lt "$retries" ]; then
+                echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
+                sleep $wait
+                git pull --rebase
+              else
+                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
+                exit $exit
+              fi
+            done
+          fi

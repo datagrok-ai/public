@@ -86,7 +86,6 @@ export abstract class FunctionView extends DG.ViewBase {
    * Runs after an initial FuncCall loading done.
    */
   public async onFuncCallReady() {
-    await historyUtils.augmentCallWithFunc(this.funcCall, false);
     if (!this.options.isTabbed) {
       if (!this.name || this.name === 'New view') this.name = this.funcCall.func.friendlyName;
       try {
@@ -667,7 +666,7 @@ export abstract class FunctionView extends DG.ViewBase {
     let callCopy = deepCopy(callToSave);
     await this.onBeforeSaveRun(callCopy);
 
-    if (isIncomplete(callToSave)) {
+    if (isIncomplete(callCopy)) {
       // Used to reset 'started' field
       callCopy = await createPartialCopy(callToSave);
     }

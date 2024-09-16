@@ -11,15 +11,15 @@ import {Subject, BehaviorSubject, Observable, merge, from, of, combineLatest} fr
 import {debounceTime, delay, distinctUntilChanged, filter, groupBy, map, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
 import {UiUtils} from '../../shared-components';
 import {Validator, ValidationResult, nonNullValidator, isValidationPassed, getErrorMessage, makePendingValidationResult, mergeValidationResults, getValidationIcon} from '../../shared-utils/validation';
-import {getFuncRunLabel, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, plotToSheet, scalarsToSheet, isInputBase, updateOutputValidationSign} from '../../shared-utils/utils';
+import {getFuncRunLabel, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, scalarsToSheet, isInputBase, updateOutputValidationSign, createPartialCopy, updateIndicatorWithText} from '../../shared-utils/utils';
 import {EDIT_STATE_PATH, EXPERIMENTAL_TAG, INPUT_STATE, RESTRICTED_PATH, viewerTypesMapping} from '../../shared-utils/consts';
-import {FuncCallInput, FuncCallInputValidated, isFuncCallInputValidated, isInputLockable} from '../../shared-utils/input-wrappers';
+import {FuncCallInput, FuncCallInputValidated, isFuncCallInputValidated, isInputLockable, SubscriptionLike} from '../../shared-utils/input-wrappers';
 import '../css/rich-function-view.css';
 import {FunctionView} from './function-view';
 import {SensitivityAnalysisView as SensitivityAnalysis} from './sensitivity-analysis-view';
 import {FittingView as Optimization} from './fitting-view';
 import {HistoryInputBase} from '../../shared-components/src/history-input';
-import {deepCopy, getDefaultValue, getObservable, properUpdateIndicator} from './shared/utils';
+import {getDefaultValue, getObservable, properUpdateIndicator, delay as delayInms} from './shared/utils';
 import {historyUtils} from '../../history-utils';
 import {HistoricalRunsList} from '../../shared-components/src/history-list';
 
@@ -409,6 +409,8 @@ export class RichFunctionView extends FunctionView {
    */
   public setNavigationButtons(navBtns: HTMLElement[]) {
     this.navBtns = navBtns;
+
+    this.buildFormButtons();
   }
 
   /**
@@ -465,7 +467,7 @@ export class RichFunctionView extends FunctionView {
       'min-height': '50px',
     });
 
-    const experimentalDataSwitch = ui.input.toggle('', {value: this.isUploadMode.value, onValueChanged: () => this.isUploadMode.next(experimentalDataSwitch.value)});
+    const experimentalDataSwitch = ui.input.toggle('', {value: this.isUploadMode.value, onValueChanged: (value) => this.isUploadMode.next(value)});
     const uploadSub = this.isUploadMode.subscribe((newValue) => {
       experimentalDataSwitch.notify = false;
       experimentalDataSwitch.value = newValue,
@@ -655,8 +657,8 @@ export class RichFunctionView extends FunctionView {
 
     reviewDialog.addButton(simulateInputs, () => {
       properUpdateIndicator(uploadDialog.root, true);
-      Promise.all(uploadedFunccalls.map((call) => {
-        const simulatingCall = this.func.prepare(deepCopy(call).inputs);
+      Promise.all(uploadedFunccalls.map(async (call) => {
+        const simulatingCall = await createPartialCopy(call);
         return simulatingCall.call();
       })).then((calls)=> {
         simulatedFunccalls = calls;
@@ -700,7 +702,6 @@ export class RichFunctionView extends FunctionView {
       await this.saveExperimentalRun(this.funcCall);
       return;
     }
-
     await this.saveRun(this.funcCall);
   }
 
@@ -1588,7 +1589,11 @@ export class RichFunctionView extends FunctionView {
     });
     this.subs.push(sub3);
 
-    const sub4 = getObservable(t.onInput.bind(t)).pipe(debounceTime(VALIDATION_DEBOUNCE_TIME)).subscribe(() => {
+    const sub4 = (
+      isInputBase(t) ? 
+        t.onInput: 
+        getObservable((t.onInput as  ((cb: Function) => SubscriptionLike)).bind(t))
+      ).pipe(debounceTime(VALIDATION_DEBOUNCE_TIME)).subscribe(() => {
       try {
         stopUIUpdates = true;
         this.funcCall[field][val.name] = t.value;
@@ -1818,11 +1823,57 @@ export class RichFunctionView extends FunctionView {
 
         if (!this.func) throw new Error('The correspoding function is not specified');
 
-        await DG.Utils.loadJsCss(['/js/common/exceljs.min.js']);
+        await DG.Utils.loadJsCss(['/js/common/exceljs.min.js', '/js/common/html2canvas.min.js']);
         //@ts-ignore
         const loadedExcelJS = window.ExcelJS as ExcelJS;
+        //@ts-ignore
+        const loadedHtml2canvas: typeof html2canvas = window.html2canvas;
+
         const BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
         const exportWorkbook = new loadedExcelJS.Workbook() as ExcelJS.Workbook;
+
+        ui.setDisplay(this.root, false);
+        updateIndicatorWithText(this.root.parentElement!, true,
+        'Generating report. Please do not switch the browser tab...');
+
+        const plotToSheet = async (
+          sheet: ExcelJS.Worksheet,
+          viewer: DG.Viewer,
+          columnForImage: number, rowForImage = 0,
+          options?: { heightInCells?: number, widthInCells?: number, widthToRender: number, heightToRender: number},
+        ) => {
+          const newViewer = DG.Viewer.fromType(viewer.type, viewer.dataFrame.clone());
+          newViewer.copyViewersLook(viewer);
+        
+          const viewerBox = ui.div(newViewer.root, {style: {
+            height: `${options?.heightToRender ?? 800}px`,
+            width: `${options?.widthToRender ?? 800}px`,
+          }});
+          viewerBox.classList.add('ui-box');
+          viewerBox.classList.remove('ui-div');
+          this.root.insertAdjacentElement('afterend', viewerBox);
+        
+          await delayInms(1000);
+          const imageDataUrl = (await loadedHtml2canvas(viewerBox)).toDataURL();
+        
+          viewerBox.remove();
+        
+          const imageId = exportWorkbook.addImage({
+            base64: imageDataUrl,
+            extension: 'png',
+          });
+        
+          const ratio = (options?.heightInCells || options?.widthInCells) ?
+            Math.min(
+              (options?.heightInCells ?? Number.MAX_VALUE) / (800 / 20),
+              (options?.widthInCells ?? Number.MAX_VALUE) / (800 / 100),
+            ): 1;
+        
+          sheet.addImage(imageId, {
+            tl: {col: columnForImage, row: rowForImage},
+            ext: {width: 800 * ratio, height: 800 * ratio},
+          });
+        };
 
         const isScalarType = (type: DG.TYPE) => (DG.TYPES_SCALAR.has(type));
 
@@ -1872,8 +1923,6 @@ export class RichFunctionView extends FunctionView {
           })));
         }
 
-        const tabControl = this.tabsElem;
-
         for (const tabLabel of this.inputTabsLabels) {
           for (const inputProp of this.categoryToDfParamMap.inputs[tabLabel].filter((prop) => isDataFrame(prop))) {
             const nonGridViewers = this.dfToViewerMapping[inputProp.name]
@@ -1882,19 +1931,16 @@ export class RichFunctionView extends FunctionView {
 
             if (nonGridViewers.length === 0) continue;
 
-            tabControl.currentPane = tabControl.getPane(tabLabel);
-            await new Promise((r) => setTimeout(r, 100));
-
             const visibleTitle = inputProp.options.caption || inputProp.name;
             const currentDf = lastCall.inputs[inputProp.name];
 
             for (const [index, viewer] of nonGridViewers.entries()) {
               await plotToSheet(
-                exportWorkbook,
                 exportWorkbook.getWorksheet(this.getSheetName(visibleTitle, exportWorkbook))!,
-                viewer.root,
+                viewer,
                 currentDf.columns.length + 2,
-                (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0,
+                (index > 0) ? (index * 16) + 1 : 0,
+                {heightInCells: 16, heightToRender: 600, widthToRender: 600}
               );
             };
           }
@@ -1907,9 +1953,6 @@ export class RichFunctionView extends FunctionView {
               .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer.type));
 
             if (nonGridViewers.length === 0) continue;
-
-            tabControl.currentPane = tabControl.getPane(tabLabel);
-            await new Promise((r) => setTimeout(r, 100));
 
             const visibleTitle = outputProp.options.caption || outputProp.name;
             const currentDf = lastCall.outputs[outputProp.name];
@@ -1934,11 +1977,11 @@ export class RichFunctionView extends FunctionView {
                 );
               } else {
                 await plotToSheet(
-                  exportWorkbook,
                   exportWorkbook.getWorksheet(this.getSheetName(visibleTitle, exportWorkbook))!,
-                  viewer.root,
+                  viewer,
                   currentDf.columns.length + 2,
-                  (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0,
+                  (index > 0) ? (index * 16) + 1 : 0,
+                  {heightInCells: 16, heightToRender: 600, widthToRender: 600}
                 );
               }
             }
@@ -1950,75 +1993,22 @@ export class RichFunctionView extends FunctionView {
         return new Blob([buffer], {type: BLOB_TYPE});
       } catch (e) {
         console.log(e);
+      } finally {
+        ui.setDisplay(this.root, true);
+        updateIndicatorWithText(this.root.parentElement!, false);
       }
-    }
-
-    if (format === 'DataUrl images') {
-      const jsonText = {} as Record<string, Record<number, {dataUrl: string, width: number, height: number}>>;
-
-      const isDataFrame = (prop: DG.Property) => (prop.propertyType === DG.TYPE.DATA_FRAME);
-
-      const tabControl = this.tabsElem;
-
-      await DG.Utils.loadJsCss(['/js/common/html2canvas.min.js']);
-      //@ts-ignore
-      const loadedHtml2canvas: typeof html2canvas = window.html2canvas;
-
-      for (const tabLabel of this.tabsLabels.filter((label) => this.inputTabsLabels.includes(label))) {
-        for (const inputProp of this.categoryToDfParamMap.inputs[tabLabel].filter((prop) => isDataFrame(prop))) {
-          const nonGridViewers = this.dfToViewerMapping[inputProp.name]
-            .filter((viewer) => viewer.type !== DG.VIEWER.GRID && viewer.type !== DG.VIEWER.STATISTICS)
-            .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer.type));
-
-          if (nonGridViewers.length === 0) continue;
-
-          tabControl.currentPane = tabControl.getPane(tabLabel);
-          await new Promise((r) => setTimeout(r, 100));
-
-          for (const [i, viewer] of nonGridViewers.entries()) {
-            const dataUrl = (await loadedHtml2canvas(viewer.root, {logging: false})).toDataURL();
-
-            if (!jsonText[inputProp.name]) jsonText[inputProp.name] = {};
-
-            jsonText[inputProp.name][i] = {dataUrl, width: viewer.root.clientWidth, height: viewer.root.clientHeight};
-          }
-        }
-      }
-
-      for (const tabLabel of this.tabsLabels.filter((label) => this.outputTabsLabels.includes(label))) {
-        for (const outputProp of this.categoryToDfParamMap.outputs[tabLabel].filter((prop) => isDataFrame(prop))) {
-          const nonGridViewers = this.dfToViewerMapping[outputProp.name]
-            .filter((viewer) => viewer.type !== DG.VIEWER.GRID && viewer.type !== DG.VIEWER.STATISTICS)
-            .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer.type));
-
-          if (nonGridViewers.length === 0) continue;
-
-          tabControl.currentPane = tabControl.getPane(tabLabel);
-          await new Promise((r) => setTimeout(r, 100));
-
-          for (const [i, viewer] of nonGridViewers.entries()) {
-            const dataUrl = (await loadedHtml2canvas(viewer.root, {logging: false})).toDataURL();
-
-            if (!jsonText[outputProp.name]) jsonText[outputProp.name] = {};
-
-            jsonText[outputProp.name][i] = {dataUrl, width: viewer.root.clientWidth, height: viewer.root.clientHeight};
-          }
-        };
-      }
-      return new Blob([JSON.stringify(jsonText)], {type: 'text/plain'});
     }
 
     throw new Error('Format is not supported');
   };
 
   richFunctionViewSupportedFormats() {
-    return ['Excel', 'DataUrl images'];
+    return ['Excel'];
   }
 
   richFunctionViewExportExtensions() {
     return {
-      'Excel': 'xlsx',
-      'DataUrl images': 'txt',
+      'Excel': 'xlsx'
     };
   }
 

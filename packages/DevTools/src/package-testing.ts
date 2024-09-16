@@ -79,7 +79,6 @@ export class TestManager extends DG.ViewBase {
   selectedNode: DG.TreeViewGroup | DG.TreeViewNode;
   nodeDict: { [id: string]: any } = {};
   debugMode = false;
-  benchmarkMode = DG.Test.isInBenchmark;
   runSkippedMode = false;
   tree: DG.TreeViewGroup;
   ribbonPanelDiv = undefined;
@@ -109,11 +108,6 @@ export class TestManager extends DG.ViewBase {
       pathSegments = pathSegments.map((it) => it ? it.replace(/%20/g, ' ') : undefined);
     }
 
-
-    this.verboseCheckBox.onChanged((e) => {
-
-    })
-
     // we need to init Compute package here, before loading any of
     // compute model packages, since theirs top level might implicitly
     // depend on Compute provided globals
@@ -124,8 +118,8 @@ export class TestManager extends DG.ViewBase {
     }
 
     let searchInvoked = false
-    this.searchInput.onChanged(async () => {
-      if (this.searchInput.value.length > 0) {
+    this.searchInput.onChanged.subscribe(async (value) => {
+      if (value.length > 0) {
         this.searchEvent();
         searchInvoked = true;
       }
@@ -359,9 +353,8 @@ export class TestManager extends DG.ViewBase {
     debugButton.classList.add('tm-button');
 
     const benchmarkButton = ui.input.bool('Benchmark', {
-      value: this.benchmarkMode, onValueChanged: () => {
-        this.benchmarkMode = !this.benchmarkMode;
-        DG.Test.isInBenchmark = this.benchmarkMode;
+      onValueChanged: (value) => {
+        DG.Test.isInBenchmark = value;
       }
     });
     benchmarkButton.classList.add('tm-button');
@@ -476,7 +469,7 @@ export class TestManager extends DG.ViewBase {
     
       this.updateTestResultsIcon(t.resultDiv, true, true);
       return;
-    }
+    } 
     const skipReason = t.test.options?.skipReason;
     if ((force || this.runSkippedMode) && skipReason) {
       t.test.options.skipReason = undefined;
@@ -497,13 +490,14 @@ export class TestManager extends DG.ViewBase {
     if (runSkipped) t.test.options.skipReason = skipReason;
     if (!this.testsResultsDf) {
       this.testsResultsDf = res;
+      this.testsResultsDf.changeColumnType('logs', DG.COLUMN_TYPE.STRING);
       this.addPackageInfo(this.testsResultsDf, t.packageName);
     } else {
       if (res.col('package') == null || this.verboseCheckBox.value)
         this.addPackageInfo(res, t.packageName);
       if (!this.verboseCheckBox.value)
         this.removeTestRow(t.packageName, t.test.category, t.test.name);
-      res.getCol('logs').convertTo(DG.COLUMN_TYPE.STRING);
+      res.changeColumnType('logs', DG.COLUMN_TYPE.STRING);
       this.testsResultsDf = this.testsResultsDf.append(res);
     }
     this.updateTestResultsIcon(t.resultDiv, testSucceeded, skipReason && !runSkipped);

@@ -167,8 +167,9 @@ export class Dapi {
 
   docker = new DockerDataSource();
 
-  /** Users Data Storage API endpoint
-   *  @type {UserDataStorage} */
+  /**
+   * @deprecated The UserDataStorage should not be used. Use {@link UserSettingsStorage} instead
+   */
   get userDataStorage(): UserDataStorage {
     return new UserDataStorage();
   }
@@ -210,20 +211,28 @@ export class Dapi {
   /** Proxies URL request via Datagrok server with same interface as "fetch".
    * @param {String} url
    * @param {Object} params
+   * @param {number} maxAge - forces server to send Cache-Control in response with configured max-age directive
    * @returns `{Promise<Object>}` */
-  async fetchProxy(url: string, params?: RequestInit): Promise<Response> {
-    if (params == null)
-      params = {};
-    if (params.headers == null)
-      params.headers = {};
-    if (params.method == null)
-      params.method = 'GET';
+  async fetchProxy(url: string, params?: RequestInit, maxAge?: number): Promise<Response> {
+    params ??= {};
+    params.headers ??= {};
+    params.method ??= 'GET';
     // @ts-ignore
     params.headers['original-url'] = `${url}`;
     // @ts-ignore
     params.headers['original-method'] = params.method;
-    params.method = 'POST';
-    return fetch(`${this.root}/connectors/proxy`, params);
+    let proxyUrl = `${this.root}/connectors/proxy`;
+    if (params.method == 'GET' || params.method == 'HEAD') {
+      if (maxAge) {
+        // @ts-ignore
+        params.headers['dg-cache-control'] = `max-age=${maxAge}`;
+        params.cache = 'default';
+      }
+      proxyUrl = `${proxyUrl}?url=${encodeURI(url)}`;
+    }
+    if (params.method !== 'GET')
+      params.method = 'POST';
+    return fetch(proxyUrl, params);
   }
 
   /** Administering API endpoint
@@ -612,6 +621,14 @@ export class DataConnectionsDataSource extends HttpDataSource<DataConnection> {
   async shareFolder(e: DataConnection, path: string): Promise<DataConnection> {
     return toJs(await api.grok_DataConnectionsDataSource_SubDir(this.dart, e.dart, path));
   }
+
+  async getSchemas(e: DataConnection): Promise<string[]> {
+    return toJs(await api.grok_DataConnectionsDataSource_Get_Schemas(this.dart, e.dart));
+  }
+
+  async getSchema(e: DataConnection, schemaName: string | null = null): Promise<TableInfo[]> {
+    return toJs(await api.grok_DataConnectionsDataSource_Get_Schema(this.dart, e.dart, schemaName ?? null));
+  }
 }
 
 /**
@@ -736,6 +753,7 @@ export class PermissionsDataSource {
 }
 
 /**
+ * @deprecated The UserDataStorage should not be used. Use {@link UserSettingsStorage} instead
  * Functionality for working with remote Users Data Storage
  * Remote storage allows to save key-value pairs on the Datagrok server for further use
  * */
@@ -1093,8 +1111,10 @@ export class FileSource {
    * @param {FileInfo | string} file
    * @param {Array<number>} blob
    * @returns {Promise} */
-  write(file: FileInfo | string, blob: number[]): Promise<void> {
-    return api.grok_Dapi_UserFiles_Write(file, blob);
+  write(file: FileInfo | string, blob?: number[]): Promise<void> {
+    if (!blob && ((file instanceof FileInfo && !file.data) || typeof file === 'string'))
+      throw new Error('blob parameter should be presented');
+    return api.grok_Dapi_UserFiles_Write(toDart(file), blob ?? (file as FileInfo).data);
   }
 
   /** Writes a text file.

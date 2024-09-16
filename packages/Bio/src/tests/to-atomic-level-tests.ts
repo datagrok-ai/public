@@ -18,6 +18,7 @@ import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 
 import {toAtomicLevel} from '../package';
 import {_package} from '../package-test';
+import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 
 const appPath = 'System:AppData/Bio';
 const fileSource = new DG.FileSource(appPath);
@@ -64,7 +65,7 @@ category('toAtomicLevel', async () => {
     userLibSettings = await getUserLibSettings();
     // Clear settings to test default
     await setUserLibSettingsForTests();
-    await monomerLibHelper.loadLibraries(true);
+    await monomerLibHelper.loadMonomerLib(true);
 
     for (const [testName, testData] of Object.entries(TestsData)) {
       const inputPath = testData.inPath;
@@ -77,7 +78,7 @@ category('toAtomicLevel', async () => {
 
   after(async () => {
     await setUserLibSettings(userLibSettings);
-    await monomerLibHelper.loadLibraries(true);
+    await monomerLibHelper.loadMonomerLib(true);
   });
 
   async function getTestResult(source: DG.DataFrame, target: DG.DataFrame): Promise<void> {
@@ -216,8 +217,9 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr
 async function _testToAtomicLevel(
   df: DG.DataFrame, seqColName: string = 'seq', monomerLibHelper: IMonomerLibHelper
 ): Promise<DG.Column | null> {
+  const rdKitModule = await getRdKitModule();
   const seqCol: DG.Column<string> = df.getCol(seqColName);
-  const monomerLib: IMonomerLib = monomerLibHelper.getBioLib();
+  const monomerLib: IMonomerLib = monomerLibHelper.getMonomerLib();
   const res = await _toAtomicLevel(df, seqCol, monomerLib);
   if (res.warnings.length > 0)
     _package.logger.warning(`_toAtomicLevel() warnings ${res.warnings.join('\n')}`);

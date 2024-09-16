@@ -112,8 +112,8 @@ export function peptidesPanel(col: DG.Column): DG.Widget {
   return new DG.Widget(analyzeObject.host);
 }
 
-//name: Monomer-Position
-//description: Peptides Monomer-Position Viewer
+//name: Sequence Variability Map
+//description: Peptides Sequence Variability Map Viewer
 //tags: viewer
 //meta.icon: files/icons/peptide-sar-viewer.svg
 //output: viewer result
@@ -165,9 +165,8 @@ export function manualAlignment(_monomer: string): DG.Widget {
 //name: Macromolecule SAR Analysis
 //description: Macromolecule SAR Analysis demo on peptide sequences in FASTA format
 //meta.demoPath: Bioinformatics | Macromolecule SAR Analysis
-//meta.isDemoScript: False
 export async function macromoleculeSarFastaDemo(): Promise<void> {
-  return macromoleculeSarFastaDemoUI();
+  return await macromoleculeSarFastaDemoUI();
 }
 
 //name: LST Pie Chart

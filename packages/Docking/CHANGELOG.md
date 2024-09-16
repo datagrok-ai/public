@@ -1,5 +1,12 @@
 # Docking changelog
 
+## 1.0.4 (2024-08-23)
+
+### Features
+
+* Docking: Add demo
+* Docking: Ensure consistent naming and ordering of parameters
+
 ## 1.0.3 (2024-04-15)
 
 Add description to the Docking demo card.

@@ -324,8 +324,10 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
 
       let counter = 0;
       if (totalColsNum > 0) {
-        const atomsToHighlight = Array<Array<Uint32Array>>(totalColsNum - numOfNonRGroupCols).fill([]).map((u) => [] as Uint32Array[]);
-        const bondsToHighlight = Array<Array<Uint32Array>>(totalColsNum - numOfNonRGroupCols).fill([]).map((u) => [] as Uint32Array[]);
+        const atomsToHighlight = Array<Array<Uint32Array>>(totalColsNum - numOfNonRGroupCols)
+          .fill([]).map((u) => [] as Uint32Array[]);
+        const bondsToHighlight = Array<Array<Uint32Array>>(totalColsNum - numOfNonRGroupCols)
+          .fill([]).map((u) => [] as Uint32Array[]);
         for (let i = 0; i < totalColsNum; i++) {
           const isRGroupCol = colNames[i] !== coreColName;
           const col = Array<string>(molecules.length);
@@ -388,8 +390,50 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
             try {
               frag = res.sidechains.next();
               const split = frag.get_smiles().split('.');
-              const firstIsFirst = split[0].length >= split[1].length;
-              frags[i][j] = [firstIsFirst ? split[0] : split[1], firstIsFirst ? split[1] : split[0]];
+
+              //the following logic is for case when additional entities, like salts, present
+              let firstFragment = '';
+              let secondFragment = '';
+              let additionalFragments: string[];
+
+              if (split.length == 2) {
+                firstFragment = split[0];
+                secondFragment = split[1];
+                additionalFragments = [];
+              } else {
+                let oneFragmentReady = false;
+                additionalFragments = new Array<string>(split.length - 2);
+                let counter = 0;
+
+                for (let k = 0; k < split.length; k++) {
+                  if (split[k].includes('[*')) {
+                    if (oneFragmentReady)
+                      secondFragment = split[k];
+                    else {
+                      firstFragment = split[k];
+                      oneFragmentReady = true;
+                    }
+                  } else {
+                    additionalFragments[counter] = split[k];
+                    counter++;
+                  }
+                }
+              }
+
+              const firstIsFirst = firstFragment.length >= secondFragment.length;
+
+              //swap
+              if (!firstIsFirst) {
+                const temp = firstFragment;
+                firstFragment = secondFragment;
+                secondFragment = temp;
+              }
+
+              //add additional entities to smallest fragment
+              for (let k = 0; k < additionalFragments.length; k++)
+                secondFragment += '.' + additionalFragments[k];
+
+              frags[i][j] = [firstFragment, secondFragment];
             } catch (e: any) {
               frags[i][j] = ['', ''];
             } finally {

@@ -3,10 +3,12 @@ package grok_connect.providers;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
@@ -69,9 +71,7 @@ public class SQLiteDataProvider extends JdbcDataProvider {
     public DataFrame getSchemas(DataConnection connection) throws QueryCancelledByUser, GrokConnectException {
         StringColumn column = new StringColumn(new String[]{""});
         column.name = "TABLE_SCHEMA";
-        DataFrame dataFrame = new DataFrame();
-        dataFrame.addColumn(column);
-        return dataFrame;
+        return DataFrame.fromColumns(column);
     }
 
     @Override
@@ -79,19 +79,9 @@ public class SQLiteDataProvider extends JdbcDataProvider {
             GrokConnectException {
         try (Connection dbConnection = getConnection(connection);
              ResultSet columns = dbConnection.getMetaData().getColumns(null, schema, table, null)) {
-            DataFrame result = new DataFrame();
-            Column tableSchema = new StringColumn();
-            tableSchema.name = "table_schema";
-            Column tableNameColumn = new StringColumn();
-            tableNameColumn.name = "table_name";
-            Column columnName = new StringColumn();
-            columnName.name = "column_name";
-            Column dataType = new StringColumn();
-            dataType.name = "data_type";
-            result.addColumn(tableSchema);
-            result.addColumn(tableNameColumn);
-            result.addColumn(columnName);
-            result.addColumn(dataType);
+            DataFrame result = DataFrame.fromColumns(new StringColumn("table_schema"),
+                    new StringColumn("table_name"), new StringColumn("column_name"),
+                    new StringColumn("data_type"));
             while (columns.next())
                 result.addRow(columns.getString(2), columns.getString(3),
                         columns.getString(4), columns.getString(6));
@@ -107,5 +97,33 @@ public class SQLiteDataProvider extends JdbcDataProvider {
         defaultManagersMap.put(Types.DATE_TIME, new SQLiteDateTimeColumnManager());
         defaultManagersMap.put(Types.STRING, new SQLiteStringColumnManager());
         return DefaultResultSetManager.fromManagersMap(defaultManagersMap);
+    }
+
+    @Override
+    public DataFrame getForeignKeys(DataConnection conn, String schema) throws GrokConnectException {
+        try (Connection connection = getConnection(conn)) {
+            DatabaseMetaData meta = connection.getMetaData();
+            List<String> tables = new ArrayList<>();
+            try (ResultSet tablesRs = meta.getTables(conn.getDb(), null, null, new String[]{"TABLE", "VIEW"})) {
+                while (tablesRs.next())
+                    tables.add(tablesRs.getString("TABLE_NAME"));
+            }
+
+            DataFrame result = DataFrame.fromColumns(new StringColumn("table_schema"),
+                    new StringColumn("constraint_name"), new StringColumn("table_name"),
+                    new StringColumn("column_name"), new StringColumn("foreign_table_name"), new StringColumn("foreign_column_name"));
+            if (!tables.isEmpty()) {
+                for (String t : tables)
+                    try (ResultSet info = meta.getExportedKeys(conn.getDb(), null, t)) {
+                        while(info.next())
+                            result.addRow(info.getString("FKTABLE_SCHEM"), info.getString("FK_NAME"),
+                                    info.getString("FKTABLE_NAME"), info.getString("FKCOLUMN_NAME"),
+                                    info.getString("PKTABLE_NAME"), info.getString("PKCOLUMN_NAME"));
+                    }
+            }
+            return result;
+        } catch (SQLException e) {
+            throw new GrokConnectException(e);
+        }
     }
 }

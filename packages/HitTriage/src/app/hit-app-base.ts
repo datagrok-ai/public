@@ -2,19 +2,22 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {_package} from '../package';
-import {ComputeFunctions, HitDesignCampaign, HitTriageCampaign} from './types';
+import {AppName, ComputeFunctions, HitDesignCampaign, HitTriageCampaign} from './types';
 import {funcTypeNames, HitTriageComputeFunctionTag} from './consts';
 import {checkEditPermissions} from './utils';
 
-export class HitAppBase<T> {
+export abstract class HitAppBase<T> {
   public dataFrame?: DG.DataFrame;
   public template?: T;
   public baseUrl!: string;
   public computeFunctions: Promise<ComputeFunctions>;
   protected isJoining = false;
   protected hasEditPermission = false;
+  private _appName: AppName;
+  public get appName(): AppName {return this._appName;}
   // public layouts: Promise<DG.ViewLayout[]>;
-  constructor(public parentCall: DG.FuncCall) {
+  constructor(public parentCall: DG.FuncCall, appN: AppName) {
+    this._appName = appN;
     this.resetBaseUrl();
     this.computeFunctions = new Promise<ComputeFunctions>(async (resolve) => {
       const funcs = DG.Func.find({tags: [HitTriageComputeFunctionTag]});

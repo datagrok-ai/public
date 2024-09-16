@@ -3,4 +3,5 @@ export type mmDistanceFunctionArgs = {
     scoringMatrix: number[][];
     alphabetIndexes: {[id:string]:number};
     threshold?: number;
+    maxLength?: number;
 };

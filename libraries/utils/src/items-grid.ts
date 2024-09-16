@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {Subject} from 'rxjs';
+import {Subject, Observable} from 'rxjs';
 
 export type ItemType = {[_:string]: any};
 export type ItemsGridOptions = {
@@ -10,15 +10,19 @@ export type ItemsGridOptions = {
     allowAdd?: boolean,
     horizontalInputNames?: boolean,
     newItemFunction?: () => ItemType,
-    customInputs?: {[key: string]: (item: ItemType) => InputType}
+    customInputs?: {[key: string]: (item: ItemType) => InputType},
+    validators?: {[key: string]: (value: string) => string | null},
+    customLabels?: {[key: string]: string},
+    inputOptions?: {[key: string]: HTMLElement}
 };
 
 export type InputType = {
     input?: HTMLElement,
     root: HTMLElement,
     value: any,
-    onChanged: (action: () => void) => void,
-    addOptions?: (el: HTMLElement) => void
+    onChanged: Observable<any>,
+    addOptions?: (el: HTMLElement) => void,
+    addValidator: (validator: (value: string) => string | null) => void
 }
 
 /** Editor for predefined properties in a grid form. Supports adding, removing and editing of props. */
@@ -109,7 +113,10 @@ export class ItemsGrid {
     ui.empty(this._root);
     if (!this.options.horizontalInputNames) {
       for (const prop of this.properties) {
-        const header = ui.divText(prop.caption ?? prop.name);
+        let label = prop.caption ?? prop.name;
+        if (this.options.customLabels?.[prop.name])
+          label = this.options.customLabels[prop.name];
+        const header = ui.divText(label);
         header.style.fontWeight = 'bold';
         this._root.appendChild(header);
       }
@@ -139,11 +146,15 @@ export class ItemsGrid {
         item[prop.name] = null; // needed for date editor, it can not handle undefined
       const input = this.options.customInputs?.[prop.name] ? this.options.customInputs[prop.name](item) :
         ui.input.forProperty(prop, item);
+      const validator = this.options.validators?.[prop.name];
+      if (validator)
+        input.addValidator(validator);
+
       editors.push(this.options.horizontalInputNames ? input.root : this.hideLabel(input.root));
       if (prop.propertyType !== DG.TYPE.BOOL && prop.name.toLowerCase() !== 'color')
         input.input && (input.input.style.width = '100%');
       inputsMap[prop.name] = input;
-      input.onChanged(() => {
+      input.onChanged.subscribe(() => {
         item[prop.name] = input.value;
         isAdding ? this.onAddingItemChanged.next({item, fieldName: prop.name}) :
           this.onItemChanged.next({item, fieldName: prop.name});
@@ -184,6 +195,10 @@ export class ItemsGrid {
   private hideLabel(el: HTMLElement): HTMLElement {
     el.getElementsByTagName('label')[0] && el.removeChild(el.getElementsByTagName('label')[0]);
     return el;
+  }
+
+  hasErrors(): boolean {
+    return this._root.querySelectorAll('.d4-invalid').length > 0;
   }
 }
 

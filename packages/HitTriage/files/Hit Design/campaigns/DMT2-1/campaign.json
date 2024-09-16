@@ -1,1 +1,84 @@
-{"name":"DMT2-1","templateName":"Demo Template 2","status":"In Progress","createDate":"2023/11/11","campaignFields":{"Target protein":"Argonaut","Target MW":100},"columnSemTypes":{"Molecule":"Molecule","MolWt":null,"HeavyAtomMolWt":null,"NumValenceElectrons":null,"MaxPartialCharge":null,"fr_Ar_OH":null,"fr_COO":null,"fr_COO2":null,"fr_C_O":null,"fr_C_O_noCOO":null,"fr_C_S":null,"fr_HOCCN":null,"fr_Imine":null,"fr_NH2":null,"~Molecule.Pattern":null,"~Molecule.canonicalSmiles":null},"rowCount":6,"filteredRowCount":3}
+{
+  "name": "DMT2-1",
+  "templateName": "Demo Template 2",
+  "status": "In Progress",
+  "createDate": "2023/11/11",
+  "campaignFields": { "Target protein": "Argonaut", "Target MW": 100 },
+  "columnSemTypes": {
+    "Molecule": "Molecule",
+    "Stage": null,
+    "V-iD": null,
+    "MolWt": null,
+    "HeavyAtomMolWt": null,
+    "NumValenceElectrons": null,
+    "MaxPartialCharge": null,
+    "fr_Ar_OH": null,
+    "fr_COO": null,
+    "fr_COO2": null,
+    "fr_C_O": null,
+    "fr_C_O_noCOO": null,
+    "fr_C_S": null,
+    "fr_HOCCN": null,
+    "fr_Imine": null,
+    "fr_NH2": null
+  },
+  "rowCount": 6,
+  "filteredRowCount": 6,
+  "savePath": "System.AppData/HitTriage/Hit Design/campaigns/DMT2-1/enriched_table.csv",
+  "columnTypes": {
+    "Molecule": "string",
+    "Stage": "string",
+    "V-iD": "string",
+    "MolWt": "double",
+    "HeavyAtomMolWt": "double",
+    "NumValenceElectrons": "int",
+    "MaxPartialCharge": "double",
+    "fr_Ar_OH": "int",
+    "fr_COO": "int",
+    "fr_COO2": "int",
+    "fr_C_O": "int",
+    "fr_C_O_noCOO": "int",
+    "fr_C_S": "int",
+    "fr_HOCCN": "int",
+    "fr_Imine": "int",
+    "fr_NH2": "int"
+  },
+  "version": 1,
+  "authorUserId": "7a6a9f30-25d0-11ef-c943-0b65a97fa481",
+  "permissions": {
+    "view": ["a4b45840-9a50-11e6-9cc9-8546b8bf62e6"],
+    "edit": ["a4b45840-9a50-11e6-9cc9-8546b8bf62e6"]
+  },
+  "layout": "{\"containerType\":\"fill\",\"state\":{\"width\":1223,\"height\":889,\"documentManager\":true},\"children\":[{\"containerType\":\"panel\",\"state\":{\"width\":1223,\"height\":889,\"element\":{\"id\":\"30197250-4ce0-11ef-8764-99dce94d2cc4\",\"type\":\"Grid\",\"look\":{\"#type\":\"GridLook\",\"showAddNewRowIcon\":true,\"addNewRowOnLastRowEdit\":true,\"rowHeight\":100,\"topLevelDefaultMenu\":true,\"allowColumnMenu\":true,\"columns\":[{\"width\":20,\"backgroundColor\":4294440951,\"customName\":\"\",\"cellType\":\"row header\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":200,\"columnName\":\"Molecule\",\"cellType\":\"Molecule\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":64,\"columnName\":\"Stage\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":72,\"columnName\":\"V-iD\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":155,\"columnName\":\"MolWt\",\"cellType\":\"number\",\"format\":\"0.000000000000000\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":155,\"columnName\":\"HeavyAtomMolWt\",\"cellType\":\"number\",\"format\":\"0.000000000000000\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":154,\"columnName\":\"NumValenceElectrons\",\"cellType\":\"number\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":151,\"columnName\":\"MaxPartialCharge\",\"cellType\":\"number\",\"format\":\"0.0000000000000000\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":78,\"columnName\":\"fr_Ar_OH\",\"cellType\":\"number\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":67,\"columnName\":\"fr_COO\",\"cellType\":\"number\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":74,\"columnName\":\"fr_COO2\",\"cellType\":\"number\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":63,\"columnName\":\"fr_C_O\",\"cellType\":\"number\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":110,\"columnName\":\"fr_C_O_noCOO\",\"cellType\":\"number\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":63,\"columnName\":\"fr_C_S\",\"cellType\":\"number\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":85,\"columnName\":\"fr_HOCCN\",\"cellType\":\"number\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":73,\"columnName\":\"fr_Imine\",\"cellType\":\"number\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":66,\"columnName\":\"fr_NH2\",\"cellType\":\"number\",\"headerCellStyle\":{\"textWrap\":\"words\"}}]},\"title\":\"DMT2-1\",\"default\":true}},\"children\":[]}],\"floating\":[],\"tableId\":\"2ce8f2e0-4ce0-11ef-b980-c51c8afcfbb3\",\"tableName\":\"DMT2-1\"}",
+  "template": {
+    "name": "Demo Template 2",
+    "key": "DMT2",
+    "campaignFields": [
+      { "name": "Target protein", "type": "String", "required": true },
+      { "name": "Target MW", "type": "Number", "required": true }
+    ],
+    "stages": ["Stage 1", "Stage 2", "Stage 3", "Stage 4"],
+    "compute": {
+      "descriptors": {
+        "enabled": true,
+        "args": [
+          "MolWt",
+          "HeavyAtomMolWt",
+          "NumValenceElectrons",
+          "MaxPartialCharge",
+          "fr_Ar_OH",
+          "fr_COO",
+          "fr_COO2",
+          "fr_C_O",
+          "fr_C_O_noCOO",
+          "fr_C_S",
+          "fr_HOCCN",
+          "fr_Imine",
+          "fr_NH2"
+        ]
+      },
+      "functions": []
+    },
+    "submit": { "fName": "demoFileSubmit", "package": "HitTriage" }
+  }
+}

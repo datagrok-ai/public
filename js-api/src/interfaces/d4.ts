@@ -553,6 +553,16 @@ export interface IScatterPlotSettings {
 
   labelColorAsMarker: boolean;
 
+  /// Determines how to show marker labels.
+  showMarkerLabels: keyof typeof VisibilityMode;
+
+  /// Marker radius in which label is inscribed.
+  labelCircleRadius: number;
+
+  /// Shows text values by selected column under the main label.
+  extraLabels: string;
+  extraLabelsColumnName: string;
+
   /// Regression line visibility (toggle by pressing R)
   showRegressionLine: boolean;
 
@@ -1182,6 +1192,8 @@ export enum VerticalAlignType {
 }
 
 export interface IDensityPlotSettings {
+  binShape: string;
+
   /// Columns to be put on the X axis
   x: string;
   xColumnName: string;
@@ -1193,6 +1205,14 @@ export interface IDensityPlotSettings {
   autoLayout: boolean;
 
   axisFont: string;
+
+  showColorScale: boolean;
+
+  invertColorScheme: boolean;
+
+  colorTransformType: keyof typeof AxisType;
+
+  linearColorScheme: Array<number>;
 
   showXAxis: boolean;
 
@@ -1206,13 +1226,17 @@ export interface IDensityPlotSettings {
 
   invertYAxis: boolean;
 
+  showXSelector: boolean;
+
+  showYSelector: boolean;
+
+  bins: number;
+
   allowZoom: boolean;
 
   binToRange: boolean;
 
-  xBins: number;
-
-  yBins: number;
+  showBinSelector: boolean;
 
   backColor: number;
 
@@ -1256,16 +1280,18 @@ export interface IDensityPlotSettings {
 }
 
 export interface IBoxPlotSettings {
-  showStatistics: boolean;
+  categoryColumnNames: Array<string>;
 
-  category: string;
-  categoryColumnName: string;
+  showStatistics: boolean;
 
   showCategoryAxis: boolean;
 
   showCategorySelector: boolean;
 
   labelOrientation: keyof typeof TextOrientation;
+
+  /// Display subcategories - category combibations in the x axis table.
+  showMinorCategories: boolean;
 
   value: string;
   valueColumnName: string;
@@ -1277,6 +1303,9 @@ export interface IBoxPlotSettings {
   showValueAxis: boolean;
 
   showValueSelector: boolean;
+
+  /// Include plots, which are empty or have null values.
+  showEmptyCategories: boolean;
 
   /// Column to color-code boxes (Q2-Q3 region).
   /// See also *Bin Color Aggr Type*.
@@ -1310,6 +1339,7 @@ export interface IBoxPlotSettings {
 
   markerOpacity: number;
 
+  /// Points are not shown if the number of rows is greater than *Show Values Limit*.
   legendVisibility: keyof typeof VisibilityMode;
 
   legendPosition: keyof typeof FlexPosition;
@@ -1357,11 +1387,9 @@ export interface IBoxPlotSettings {
 
   whiskerWidthRatio: number;
 
-  maxBinWidth: number;
-
   axisUseColumnFormat: boolean;
 
-  /// Number of KDE bins to display a violin plot
+  /// Number of KDE bins to display a violin plot.
   bins: number;
 
   whiskerColor: number;
@@ -1478,6 +1506,8 @@ export interface IPieChartSettings {
   mouseOverOutlineColor: number;
 
   innerLabelColor: number;
+
+  missingValueColor: number;
 
   showInnerPercent: boolean;
 
@@ -1918,10 +1948,10 @@ export interface IGridSettings {
 
   marginBottom: number;
 
-  /// Heatmap horizontal scroll positions (minValue, maxValue)
+  /// Heatmap horizontal scroll positions (maxRangeValue, minValue, maxValue)
   heatmapHorzScroll: Array<number>;
 
-  /// Heatmap vertical scroll positions (minValue, maxValue)
+  /// Heatmap vertical scroll positions (maxRangeValue, minValue, maxValue)
   heatmapVertScroll: Array<number>;
 
   /// Determines whether newly added columns are added to the grid
@@ -2407,6 +2437,9 @@ export interface ICorrelationPlotSettings {
 
   /// Shows the tooltip with the corresponding scatter plot inside.
   showTooltip: boolean;
+
+  /// Ignores double click behavior on the grid cells.
+  ignoreDoubleClick: boolean;
 
   backColor: number;
 

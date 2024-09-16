@@ -41,10 +41,9 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     }));
   
     dlg.add(ui.input.columns('Using', {table: this.t!,
-      available: this.t!.columns.toList().filter((col) => 
+      value: [], available: this.t!.columns.toList().filter((col) =>
         (col.type === DG.COLUMN_TYPE.INT) || (col.type === DG.COLUMN_TYPE.FLOAT)
       ).map((col) => col.name),
-      checked: [],
     }));
   
     dlg.add(ui.input.int('Components'));

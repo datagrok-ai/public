@@ -29,8 +29,11 @@
 }
 
 .demo-app-tree-group {
-	margin-top: 12px;
   overflow: initial;
+}
+
+.tutorials-demo-container .demo-app-tree-group {
+  margin-top: 12px;
 }
 
 .demo-app-tree-group .d4-tree-view-group {
@@ -43,7 +46,7 @@
 
 .demo-app-tree-group .d4-tree-view-group-host .d4-tree-view-group-host {
 	padding-left: 10px;
-  margin-left: 0px;
+  	margin-left: 0;
 }
 
 .demo-app-tree-group .d4-tree-view-item {
@@ -70,7 +73,7 @@
 }
 
 .demo-app-tree-home-node .d4-tree-view-group-label {
-	margin: 0px;
+	margin: 0;
 }
 
 .demo-app-view-title {
@@ -213,7 +216,7 @@ div.demo-script-countdownnum {
 	color: var(--blue-1);
 	display: inline-block;
 	position:relative;
-	top:0px;
+	top:0;
 }
 
 div.demo-script-countdown svg {
@@ -227,7 +230,7 @@ div.demo-script-countdown svg {
 
 div.demo-script-countdown svg>circle {
 	stroke-dasharray: 40px;
-	stroke-dashoffset: 0px;
+	stroke-dashoffset: 0;
 	stroke-linecap: round;
 	stroke-width: 1.5px;
 	stroke: var(--blue-1);
@@ -237,7 +240,7 @@ div.demo-script-countdown svg>circle {
 
 @keyframes countdown {
 	from {
-		stroke-dashoffset: 0px;
+		stroke-dashoffset: 0;
 	}
 
 	to {
@@ -274,4 +277,10 @@ div.demo-script-countdown svg>circle {
 }
 .demo-app-widget .d4-tree-view-group {
 	width: 100%;
+}
+
+.demo-app-search-input {
+	width: 250px;
+	margin-bottom: 12px;
+	margin-left: 7px;
 }

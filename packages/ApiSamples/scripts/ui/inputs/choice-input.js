@@ -10,7 +10,7 @@ container.appendChild(inputs);
 let choicesNew = ui.input.choice('Value', {items: ['B', 'C', 'D'], value: 'B'});
 inputs.replaceChild(choicesNew.root, choices.root);
 choices = choicesNew;
-choices.onChanged((v) => {
+choices.onChanged.subscribe((v) => {
   grok.shell.info('The selected value is changed');
 });
 choices.value = 'C';

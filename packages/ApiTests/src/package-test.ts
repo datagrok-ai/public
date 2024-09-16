@@ -20,6 +20,7 @@ import './shell/shell';
 import './shell/ml';
 import './shell/settings';
 import './dapi/files';
+import './dapi/files-list';
 import './dapi/functions';
 import './dapi/fetch';
 import './dapi/groups';
@@ -31,7 +32,6 @@ import './dapi/packages';
 import './dapi/projects';
 import './dapi/tables';
 import './dapi/sticky_meta';
-import './dapi/user-data-storage';
 import './dapi/users';
 import './dapi/benchmarks';
 import './widgets/files-widget';
@@ -41,6 +41,7 @@ import './utils/color';
 // import './package/upload';
 import './packages/properties';
 import './packages/docker';
+import './packages/user-settings-storage';
 import './grid/grid';
 import './grid/color-coding';
 import './grid/multi-value-column';
@@ -59,9 +60,10 @@ export {tests};
 //input: string category {optional: true}
 //input: string test {optional: true}
 //input: object testContext {optional: true}
+//input: bool stressTest {optional: true}
 //output: dataframe result
-export async function test(category: string, test: string, testContext: TestContext): Promise<DG.DataFrame> {
-  const data = await runTests({category, test, testContext});
+export async function test(category: string, test: string, testContext: TestContext, stressTest?: boolean): Promise<DG.DataFrame> {
+  const data = await runTests({category, test, testContext, stressTest});
   return DG.DataFrame.fromObjects(data)!;
 }
 

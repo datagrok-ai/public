@@ -181,7 +181,7 @@ async function openFse(v: DG.View, functionCode: string) {
 
   const addFullWidthInput = (input: DG.InputBase, prop: DG.Property) => {
     (input.root.lastChild as HTMLElement).style.cssText += 'width: 400px; max-width: inherit;';
-    input.onInput(() => {
+    input.onInput.subscribe(() => {
       inputScriptCopy[prop.name] = input.stringValue;
       refreshPreview();
     });

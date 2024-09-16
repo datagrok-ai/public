@@ -53,12 +53,19 @@
     3. Select **Current value > Use as filter** from the context menu. Check the **Filter Panel** and the scatter plot.
     4. Change arbitrary settings on the **Filter Panel** and check the scatter plot interaction.
     5. Save to Layout. Check
+14. Verify Table Filtering Behavior with Empty Column on Log Scale Axis in Scatter Plot
+* Open a dataset that includes at least one numerical column with no values (e.g., all entries in the column are null or NaN). For example, use fruits_.csv for the test.
+* Add a scatter plot viewer to the dataset. Set the scatter plot’s zoom and filter setting to "Filter by zoom." Select the empty numerical column for one of the axes (X or Y). Change the axis to a log scale.
+* Check the scatter plot: Since the axis is set to log scale and the column has no values, the scatter plot should display no data points.
+* Check Table Filtering: Examine the table after configuring the scatter plot. 
+Expected Result: The scatter plot should display no data points, but the table should remain unfiltered, displaying all original data rows. 
+15. Verify that Scatterplot ignores negatives and zero values when switching to log scale ([#2456](https://github.com/datagrok-ai/public/issues/2456)):
+- Switch axes to the log scale
+- Try to set categorical axis to the X
 
-6. Use datasets: SPGI_v2, BrokenScatterPlots, OOMscatter.plot.small, scatter.plot.broken2, ForDG.csv:
-   * log scale + Layout
-   * invert axes + slider + Layout
-   * log scale + invert axes + slider + Layout
+
 ---
 {
-  "order": 2
+  "order": 2,
+  "datasets": ["System:DemoFiles/SPGI.csv"]
 }

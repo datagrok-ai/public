@@ -195,12 +195,12 @@
     max-width: 100%
 }
 
-.ui-grid-with-thin-scrollbars > .d4-grid-horz-scroll {
+.ui-grid-with-thin-scrollbars .d4-grid-horz-scroll {
     height: 8px !important;
     right: 6px !important;
 }
 
-.ui-grid-with-thin-scrollbars > .d4-grid-vert-scroll {
+.ui-grid-with-thin-scrollbars .d4-grid-vert-scroll {
     top: 0px !important;
     width: 6px !important;
     bottom: 15px !important;

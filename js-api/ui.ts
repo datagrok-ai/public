@@ -29,7 +29,7 @@ import {
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
 import $ from 'cash-dom';
-import {__obs, StreamSubscription} from './src/events';
+import {__obs} from './src/events';
 import {HtmlUtils, _isDartium, _options} from './src/utils';
 import * as rxjs from 'rxjs';
 import { CanvasRenderer, GridCellRenderer, SemanticValue } from './src/grid';
@@ -413,10 +413,14 @@ export function loader(): any {
 }
 
 /**
+ * Sets an update indicator on the specified element.
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/update-indicator}
+ * @param {HTMLElement} element
+ * @param {boolean} updating - whether the indicator should be shown
+ * @param {string} message
  */
-export function setUpdateIndicator(element: HTMLElement, updating: boolean = true): void {
-  return api.grok_UI_SetUpdateIndicator(element, updating);
+export function setUpdateIndicator(element: HTMLElement, updating: boolean = true, message: string = 'Updating...'): void {
+  return api.grok_UI_SetUpdateIndicator(element, updating, message);
 }
 
 /**
@@ -671,12 +675,12 @@ export function makeDroppable<T>(e: Element,
   );
 }
 
-export function bindInputs(inputs: InputBase[]): StreamSubscription[] {
-  let s: StreamSubscription[] = [];
+export function bindInputs(inputs: InputBase[]): rxjs.Subscription[] {
+  let s: rxjs.Subscription[] = [];
   inputs.map((i) => {
     inputs.map((j) => {
       if (j != i)
-        s.push(j.onChanged(() => {
+        s.push(j.onChanged.subscribe(() => {
           i.notify = false;
           i.stringValue = j.stringValue;
           i.notify = true;
@@ -709,23 +713,23 @@ export namespace input {
     width: number;
   }
 
-  const optionsMap: {[key: string]: (input: InputBase, inputType: d4.InputType, option: any) => void} = {
-    value: (input, inputType, x) => input.value = inputType === d4.InputType.File ? toDart(x) : x,
-    nullable: (input, inputType, x) => input.nullable = x, // finish it?
-    property: (input, inputType, x) => input.property = x,
-    tooltipText: (input, inputType, x) => input.setTooltip(x),
-    onCreated: (input, inputType, x) => x(input),
-    onValueChanged: (input, inputType, x) => input.onChanged(() => x(input)),
-    clearIcon: (input, inputType, x) => api.grok_StringInput_AddClearIcon(input.dart, x),
-    escClears: (input, inputType, x) => api.grok_StringInput_AddEscClears(input.dart, x),
-    size: (input, inputType, x) => api.grok_TextInput_SetSize(input.dart, x.width, x.height),
-    placeholder: (input, inputType, x) => (input.input as HTMLInputElement).placeholder = x,
-    items: (input, inputType, x) => inputType === d4.InputType.Choice ? (input as ChoiceInput<typeof x>).items = x :
-      inputType === d4.InputType.Table ? (input as ChoiceInput<typeof x>).items = x.map((elem: DataFrame) => toDart(elem)) :
-      inputType === d4.InputType.MultiChoice ? api.grok_MultiChoiceInput_Set_Items(input.dart, x) : api.grok_RadioInput_Set_Items(input.dart, x),
-    icon: (input, inputType, x) => api.grok_StringInput_AddIcon(input.dart, x),
-    available: (input, inputType, x) => api.grok_ColumnsInput_ChangeAvailableColumns(input.dart, x),
-    checked: (input, inputType, x) => api.grok_ColumnsInput_ChangeCheckedColumns(input.dart, x),
+  const optionsMap: {[key: string]: (input: InputBase, option: any) => void} = {
+    value: (input, x) => input.value = input.inputType === d4.InputType.File ? toDart(x) : x,
+    nullable: (input, x) => input.nullable = x, // finish it?
+    property: (input, x) => input.property = x,
+    tooltipText: (input, x) => input.setTooltip(x),
+    onCreated: (input, x) => x(input),
+    onValueChanged: (input, x) => input.onChanged.subscribe(() => x(input.value, input)),
+    clearIcon: (input, x) => api.grok_StringInput_AddClearIcon(input.dart, x),
+    escClears: (input, x) => api.grok_StringInput_AddEscClears(input.dart, x),
+    size: (input, x) => api.grok_TextInput_SetSize(input.dart, x.width, x.height),
+    placeholder: (input, x) => (input.input as HTMLInputElement).placeholder = x,
+    items: (input, x) => input.inputType === d4.InputType.Choice ? (input as ChoiceInput<typeof x>).items = x :
+      input.inputType === d4.InputType.Table ? (input as ChoiceInput<typeof x>).items = x.map((elem: DataFrame) => toDart(elem)) :
+        input.inputType === d4.InputType.MultiChoice ? api.grok_MultiChoiceInput_Set_Items(input.dart, x) : api.grok_RadioInput_Set_Items(input.dart, x),
+    icon: (input, x) => api.grok_StringInput_AddIcon(input.dart, x),
+    available: (input, x) => api.grok_ColumnsInput_ChangeAvailableColumns(input.dart, x),
+    checked: (input, x) => api.grok_ColumnsInput_ChangeCheckedColumns(input.dart, x),
   };
 
   function setInputOptions(input: InputBase, inputType: d4.InputType, options?: IInputInitOptions): void {
@@ -738,13 +742,12 @@ export namespace input {
       if (['min', 'max', 'step', 'format', 'showSlider', 'showPlusMinus'].includes(key))
         (options.property as IIndexable)[key] = (specificOptions as IIndexable)[key];
       if (key === 'table' && (specificOptions as IIndexable)[key] !== undefined) {
-        const filter = typeof (specificOptions as IIndexable)['filter'] === 'function' ?
-          (x: any) => (specificOptions as IIndexable)['filter']!(toJs(x)) : null;
-        inputType === d4.InputType.Column ? api.grok_ColumnInput_ChangeTable(input.dart, (specificOptions as IIndexable)[key].dart, filter) :
-          api.grok_ColumnsInput_ChangeTable(input.dart, (specificOptions as IIndexable)[key].dart, filter);
+        const filter = (specificOptions as IIndexable)['filter'];
+        inputType === d4.InputType.Column ? setColumnInputTable(input, (specificOptions as IIndexable)[key], filter) :
+          setColumnsInputTable(input, (specificOptions as IIndexable)[key], filter);
       }
       if (optionsMap[key] !== undefined)
-        optionsMap[key](input, inputType, (specificOptions as IIndexable)[key]);
+        optionsMap[key](input, (specificOptions as IIndexable)[key]);
     }
     const baseOptions = (({value, nullable, property, onCreated, onValueChanged}) => ({value, nullable, property, onCreated, onValueChanged}))(options);
     for (let key of Object.keys(baseOptions)) {
@@ -753,7 +756,7 @@ export namespace input {
       if (key === 'nullable' && baseOptions[key] !== undefined)
         options.property.nullable = baseOptions[key]!;
       if ((baseOptions as IIndexable)[key] !== undefined && optionsMap[key] !== undefined)
-        optionsMap[key](input, inputType, (baseOptions as IIndexable)[key]);
+        optionsMap[key](input, (baseOptions as IIndexable)[key]);
     }
   }
 
@@ -764,7 +767,7 @@ export namespace input {
     elementOptions?: ElementOptions;
     tooltipText?: string;
     onCreated?: (input: InputBase<T>) => void;
-    onValueChanged?: (input: InputBase<T>) => void;
+    onValueChanged?: (value: T, input: InputBase<T>) => void;
   }
 
   export interface INumberInputInitOptions<T> extends IInputInitOptions<T> {
@@ -805,13 +808,25 @@ export namespace input {
     checked?: string[];
   }
 
+  /** Set the table specifically for the column input */
+  export function setColumnInputTable(input: InputBase, table: DataFrame, filter?: Function) {
+    const columnsFilter = typeof filter === 'function' ? (x: any) => filter!(toJs(x)) : null;
+    api.grok_ColumnInput_ChangeTable(input.dart, table.dart, columnsFilter);
+  }
+
+  /** Set the table specifically for the columns input */
+  export function setColumnsInputTable(input: InputBase, table: DataFrame, filter?: Function) {
+    const columnsFilter = typeof filter === 'function' ? (x: any) => filter!(toJs(x)) : null;
+    api.grok_ColumnsInput_ChangeTable(input.dart, table.dart, columnsFilter);
+  }
+
   /** Creates input for the specified property, and optionally binds it to the specified object */
   export function forProperty(property: Property, source: any = null, options?: IInputInitOptions): InputBase {
     const input = InputBase.forProperty(property, source);
     if (options?.onCreated)
       options.onCreated(input);
     if (options?.onValueChanged)
-      input.onChanged(() => options.onValueChanged!(input));
+      input.onChanged.subscribe(() => options.onValueChanged!(input.value, input));
     return input;
   }
 
@@ -1182,20 +1197,20 @@ export class tools {
     }
   }
 
-  private static formLabelWidths: Map<string, number[]> = new Map<string, number[]>();
-  private static formMinInputWidths: Map<string, number> = new Map<string, number>();
-  private static formLabelMaxWidths: Map<string, number> = new Map<string, number>();
+  private static formLabelWidths: WeakMap<HTMLElement, number[]> = new WeakMap<HTMLElement, number[]>();
+  private static formMinInputWidths: WeakMap<HTMLElement, number> = new WeakMap<HTMLElement, number>();
+  private static formLabelMaxWidths: WeakMap<HTMLElement, number> = new WeakMap<HTMLElement, number>();
 
   private static calcWidths(form: HTMLElement): void {
-    this.formMinInputWidths.set(this.getFormId(form), 150);
-    this.formLabelMaxWidths.set(this.getFormId(form), 140);
+    this.formMinInputWidths.set(form, 150);
+    this.formLabelMaxWidths.set(form, 140);
     let widths = tools.getLabelsWidths(form);
     widths.sort();
-    this.formLabelWidths.set(this.getFormId(form), widths);
+    this.formLabelWidths.set(form, widths);
     const inputsMinWidths = tools.getInputsMinWidths(form);
 
-    this.formMinInputWidths.set(this.getFormId(form), Math.max(...inputsMinWidths));
-    this.formLabelMaxWidths.set(this.getFormId(form), Math.max(...this.formLabelWidths.get(form.dataset['num'] as string)!));
+    this.formMinInputWidths.set(form, Math.max(...inputsMinWidths));
+    this.formLabelMaxWidths.set(form, Math.max(...this.formLabelWidths.get(form)!));
   }
 
   private static handleFormResize(form: HTMLElement): boolean {
@@ -1207,25 +1222,25 @@ export class tools {
       parent = parent.parentElement;
     }
     window.requestAnimationFrame(() => {
-      let labelWidth = tools.formLabelMaxWidths.get(tools.getFormId(form))!;
-      if (form.clientWidth - labelWidth < tools.formMinInputWidths.get(tools.getFormId(form))!) {
+      let labelWidth = tools.formLabelMaxWidths.get(form)!;
+      if (form.clientWidth - labelWidth < tools.formMinInputWidths.get(form)!) {
         // try to shrink long labels if they are present
-        let labelsToShrink = Math.ceil(tools.formLabelWidths.get(tools.getFormId(form))!.length * 0.2); // find 20% longest labels
-        if (labelsToShrink > 0 && labelsToShrink < tools.formLabelWidths.get(tools.getFormId(form))!.length) {
-          let newWidth = Math.max(...tools.formLabelWidths.get(tools.getFormId(form))!.slice(labelsToShrink))
+        let labelsToShrink = Math.ceil(tools.formLabelWidths.get(form)!.length * 0.2); // find 20% longest labels
+        if (labelsToShrink > 0 && labelsToShrink < tools.formLabelWidths.get(form)!.length) {
+          let newWidth = Math.max(...tools.formLabelWidths.get(form)!.slice(labelsToShrink))
           if (newWidth < 0.8 * labelWidth) // worths it?
-            labelWidth = Math.max(newWidth, form.clientWidth - tools.formMinInputWidths.get(tools.getFormId(form))!);
+            labelWidth = Math.max(newWidth, form.clientWidth - tools.formMinInputWidths.get(form)!);
         }
       }
       if (form.classList.contains('d4-dialog-contents')) {
-        let dialogFormWidth = tools.formLabelMaxWidths.get(tools.getFormId(form))! + tools.formMinInputWidths.get(tools.getFormId(form))! + 40;
+        let dialogFormWidth = tools.formLabelMaxWidths.get(form)! + tools.formMinInputWidths.get(form)! + 40;
         if (form.style.minWidth != `${dialogFormWidth}px`)
           form.style.minWidth = `${dialogFormWidth}px`;
       } else {
-        if (form.clientWidth - labelWidth < tools.formMinInputWidths.get(tools.getFormId(form))!) {
+        if (form.clientWidth - labelWidth < tools.formMinInputWidths.get(form)!) {
           // switch form to tall view if inputs room is too small
           form.classList.add('ui-form-condensed');
-        } else if (form.clientWidth - labelWidth > tools.formMinInputWidths.get(tools.getFormId(form))! + 10) { // hysteresis
+        } else if (form.clientWidth - labelWidth > tools.formMinInputWidths.get(form)! + 10) { // hysteresis
           form.classList.remove('ui-form-condensed');
         }
       }
@@ -1241,14 +1256,12 @@ export class tools {
   private static formNumber: number = 0;
 
   static resizeFormLabels(form: HTMLElement): void {
-    //let labelWidths: number[] = []
-
     if (this.getFormId(form) == undefined)
       form.dataset['num'] = `${this.formNumber++}`;
 
     let formObserver = new MutationObserver((records) => {
       this.calcWidths(form);
-      this.setLabelsWidth(form, tools.formLabelMaxWidths.get(form.dataset['num'] as string)!);
+      this.setLabelsWidth(form, tools.formLabelMaxWidths.get(form)!);
     });
 
     formObserver.observe(form, {
@@ -1257,29 +1270,10 @@ export class tools {
     });
 
     this.calcWidths(form);
-    this.setLabelsWidth(form, tools.formMinInputWidths.get(this.getFormId(form))!);
+    this.setLabelsWidth(form, tools.formMinInputWidths.get(form)!);
     this.handleFormResize(form);
-    if (!_isDartium()) {
+    if (!_isDartium())
       this.formResizeObserver!.observe(form);
-    }
-
-    let tries = 0;
-    let interval = setInterval(() => {
-      if (!document.contains(form))
-        tries++;
-      else
-        tries = 0;
-      if (tries > 30) {
-        clearInterval(interval);
-        if (!_isDartium()) {
-          this.formResizeObserver!.unobserve(form);
-        }
-        formObserver.disconnect();
-        tools.formMinInputWidths.delete(tools.getFormId(form));
-        tools.formLabelWidths.delete(tools.getFormId(form));
-        tools.formLabelMaxWidths.delete(tools.getFormId(form));
-      }
-    }, 1000);
   }
 
   private static getInputsMinWidths(form: HTMLElement): number[] {
@@ -1668,7 +1662,7 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
       const rootHeight = b.getBoundingClientRect().height;
 
       for (let i = 0; i < b.children.length; i++){
-        if ($(b.childNodes[i]).hasClass('ui-split-v-divider') != true){
+        if (!$(b.childNodes[i]).hasClass('ui-split-v-divider')){
           let height = (h-rootHeight)/b.children.length+$(b.childNodes[i]).height();
           $(b.childNodes[i]).css('height', String(height)+'px');
           //$(b.childNodes[i]).attr('style', `height:${(h-rootHeight)/b.children.length+$(b.childNodes[i]).height()}px;`);
@@ -1735,7 +1729,7 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
       const rootWidth = b.getBoundingClientRect().width;
 
       for (let i = 0; i < b.children.length; i++){
-        if ($(b.childNodes[i]).hasClass('ui-split-h-divider') != true){
+        if (!$(b.childNodes[i]).hasClass('ui-split-h-divider')){
           let width = (w-rootWidth)/b.children.length+$(b.childNodes[i]).width();
           $(b.childNodes[i]).css('width', String(width)+'px');
         } else {
@@ -1929,18 +1923,15 @@ export namespace panels {
 export namespace forms {
 
   export function normal(children: InputBase[], options: {} | null = null){
-    let d = form(children, options, true);
-    return d;
+    return form(children, options, true);
   }
 
   export function condensed(children: InputBase[], options: {} | null = null){
-    let d = narrowForm(children, options);
-    return d;
+    return narrowForm(children, options);
   }
 
   export function wide(children: InputBase[], options: {} | null = null){
-    let d = wideForm(children, options);
-    return d;
+    return wideForm(children, options);
   }
 
   export function addButtons(form: HTMLElement, children: HTMLButtonElement[] = []) {

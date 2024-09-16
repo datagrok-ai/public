@@ -1,0 +1,11 @@
+.bionemo-combo-popup {
+    align-self: center;
+    margin-bottom: 10px;   
+}
+
+
+.bionemo-combo-popup .d4-combo-drop-down {
+    max-height: 100px;
+    width: max-content;
+    overflow-y: auto;
+}

@@ -168,7 +168,35 @@ export enum VIEWER_PROPERTY_TYPE {
 }
 
 export enum VIEW_TYPE {
-  TABLE_VIEW = 'TableView'
+  TABLE_VIEW = 'TableView',
+  APPS = 'apps',
+  SETTINGS = 'settings',
+  WELCOME = 'welcome',
+  SCRIPT = 'script',
+  SKETCH = 'sketch',
+  FORUM = 'forum',
+  PROJECTS = 'projects',
+  NOTEBOOKS = 'notebooks',
+  HELP = 'help',
+  OPEN_TEXT = 'text',
+  DATABASES = 'databases',
+  WEB_SERVICES = 'webservices',
+  VIEW_LAYOUTS = 'layouts',
+  FUNCTIONS = 'functions',
+  DATA_CONNECTIONS = 'connections',
+  DATA_JOB_RUNS = 'jobs',
+  FILES = 'files',
+  DATA_QUERY_RUNS = 'queryruns',
+  EMAILS = 'emails',
+  GROUPS = 'groups',
+  MODELS = 'models',
+  QUERIES = 'queries',
+  SCRIPTS = 'scripts',
+  USERS = 'users',
+  PACKAGES = 'packages',
+  PACKAGE_REPOSITORIES = 'repositories',
+  JS_EDITOR = 'js',
+  BROWSE = 'browse',
 }
 
 ///////
@@ -646,6 +674,7 @@ export type SyncType = `${SYNC_TYPE}`;
 export type JoinType = `${JOIN_TYPE}`;
 export type ColumnType = `${COLUMN_TYPE}`;
 export type ViewerType = `${VIEWER}` | string;
+export type ViewType = `${VIEW_TYPE}` | string;
 export type ObjectType = string;
 export type ViewerPropertyType = string;
 export type Type = `${TYPE}`;
@@ -661,7 +690,7 @@ export type CsvImportColumnOptions = {name: string, type?: string, semType?: str
 export type CsvImportOptions = {
   delimiter?: string, decimalSeparator?: string, thousandSeparator?: string, headerRow?: boolean,
   columnFilterNames?: string[], columnFilterRegexp?: string, mergeDelimiters?: boolean, maxRows?: number,
-  rowFilterTop?: number, rowFilterProb?: number, nullStrings?: string[], columnImportOptions?: CsvImportColumnOptions[]};
+  doublePrecision?: boolean, rowFilterTop?: number, rowFilterProb?: number, nullStrings?: string[], columnImportOptions?: CsvImportColumnOptions[]};
 export type IndexPredicate = (ind: number) => boolean;
 export type StringPredicate = (str: string) => boolean;
 export type ScriptLanguage = `${SCRIPT_LANGUAGE}`;

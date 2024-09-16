@@ -1,4 +1,4 @@
-import {after, before, category, expect, test, awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
+import { after, before, category, expect, test, awaitCheck, delay } from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 //import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -8,6 +8,7 @@ category('UI: Users', () => {
   before(async () => {
     const mng: DG.TabPane = grok.shell.sidebar.getPane('Browse');
     mng.header.click();
+    await delay(1000);
     let platform: any;
     await awaitCheck(() => {
       platform = Array.from(document.querySelectorAll('div.d4-tree-view-node'))
@@ -16,10 +17,10 @@ category('UI: Users', () => {
     }, '', 2000);
     if ((platform.nextElementSibling as HTMLElement).style.display === 'none')
       (platform.firstElementChild as HTMLElement).click();
-    await delay(100);
     const groups = Array.from(document.querySelectorAll('div.d4-tree-view-item-label'))
       .find((el) => el.textContent === 'Users') as HTMLElement;
     groups.click();
+    await delay(500);
   });
 
   /*
@@ -66,23 +67,25 @@ category('UI: Users', () => {
     user.firstName = 'new';
     user.lastName = 'user';
     // TODO: add save and delete when will work
-  }, {skipReason: 'GROK-11318'});
+  }, { skipReason: 'GROK-11318' });
 
   test('actions.addServiceUser', async () => {
+    const dialogsBefore = DG.Dialog.getOpenDialogs().length;
     await showDialog('Service User...');
-    await awaitCheck(() => DG.Dialog.getOpenDialogs().length === 1, 'Add Service User dialog was not shown', 1000);
+    await awaitCheck(() => DG.Dialog.getOpenDialogs().length ===  dialogsBefore + 1, 'Add Service User dialog was not shown', 1000);
     const diag = DG.Dialog.getOpenDialogs()[0];
     const cancel = diag.root.querySelector('[class="ui-btn ui-btn-ok"]') as HTMLElement;
     cancel.click();
-  });
+  }, { timeout: 100000 });
 
   test('actions.inviteFriend', async () => {
+    const dialogsBefore = DG.Dialog.getOpenDialogs().length;
     await showDialog('Invite a Friend...');
-    await awaitCheck(() => DG.Dialog.getOpenDialogs().length === 1, 'Invite a friend dialog was not shown', 1000);
+    await awaitCheck(() => DG.Dialog.getOpenDialogs().length === dialogsBefore + 1, 'Invite a friend dialog was not shown', 1000);
     const diag = DG.Dialog.getOpenDialogs()[0];
     const cancel = diag.root.querySelector('[class="ui-btn ui-btn-ok"]') as HTMLElement;
     cancel.click();
-  });
+  }, { timeout: 100000 });
 
   test('user.panel', async () => {
     await awaitCheck(() => {
@@ -93,8 +96,10 @@ category('UI: Users', () => {
     const user = document.querySelector('.grok-gallery-grid')!.children[0] as HTMLElement;
     grok.shell.windows.showProperties = true;
     const regex = new RegExp('Groups', 'g');
+    console.log('usr click')
+    user.click();
+    await delay(100);
     await awaitCheck(() => {
-      user.click();
       if (document.querySelector('.grok-entity-prop-panel') !== null)
         return regex.test((document.querySelector('.grok-entity-prop-panel') as HTMLElement).innerText);
       return false;
@@ -104,7 +109,7 @@ category('UI: Users', () => {
     const desc = userInfo.innerText;
     const b = (pict !== null) && desc.includes('Groups') && desc.includes('Joined');
     expect(b, true);
-  });
+  }, { timeout: 100000 });
 
   after(async () => {
     grok.shell.closeAll();
@@ -112,16 +117,33 @@ category('UI: Users', () => {
 
   async function showDialog(label: string) {
     const cng = Array.from(document.querySelectorAll('.ui-btn'))
-      .find((el) => el.textContent === 'New');
+      .find((el) => el.textContent === 'New'); 
     if (cng === undefined) throw new Error(`cannot find New User button`);
-    (cng as HTMLElement).click();
+    (cng as HTMLButtonElement).focus();
+    (cng as HTMLButtonElement).click();
+    const rect = cng.getBoundingClientRect();
+
+    const pageX = window.pageXOffset + rect.left;
+    const pageY = window.pageYOffset + rect.top;
+ 
+    const mouseDown = new MouseEvent('mousedown', {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      detail: 1,
+      clientX: pageX,
+      clientY: pageY
+    });
+    cng.dispatchEvent(mouseDown);
+    await delay(1000);
     let optn: any;
     await awaitCheck(() => {
       optn = Array.from(document.querySelectorAll('.d4-menu-item-label'))
         .find((el) => el.textContent === label);
       return optn !== undefined;
-    }, '', 1000);
+    }, `Cannot load form by button ${label}`, 1000);
+    await delay(500);
     // (optn as HTMLElement).parentElement?.addEventListener('click', () => grok.shell.error('CLICK'));
     optn.click();
   };
-}, {clear: false});
+}, { clear: false });

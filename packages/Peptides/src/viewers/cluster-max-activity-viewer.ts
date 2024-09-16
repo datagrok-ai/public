@@ -116,7 +116,7 @@ export class ClusterMaxActivityViewer extends DG.JsViewer implements IClusterMax
     const clusterSizeMap: {[key: number | string]: number} = {};
     for (let i = 0; i < this.dataFrame.rowCount; i++) {
       const cluster: string | number = clusterCol.get(i);
-      if (cluster == null)
+      if (cluster == null || cluster == '-1')//fyi -1 == '-1' (with double ==)
         continue;
       clusterSizeMap[cluster] = (clusterSizeMap[cluster] ?? 0) + 1;
     }

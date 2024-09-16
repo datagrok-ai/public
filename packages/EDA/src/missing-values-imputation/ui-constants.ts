@@ -44,9 +44,9 @@ export enum TITLE {
 };
 
 /** Help links */
-export const KNN_IMPUTER = '/help/transform/missing-values-imputation';
+export const KNN_IMPUTER = '/help/explore/missing-values-imputation';
 
-/** Tooltips */ 
+/** Tooltips */
 export enum HINT {
   TARGET = 'Columns with missing values that must be filled',
   FEATURES = "Columns with features to be used for determining the 'nearest' elements in the KNN method",

@@ -1,8 +1,45 @@
 # PowerPack changelog
 
+## 1.1.13 (2024-08-27)
+
+### Bug Fixes
+
+* Fixed the PDB search (only showing existing proteins)
+* Add new column: Some validation fixes
+
+## 1.1.12 (2024-08-21)
+
+### Bug Fixes
+
+* [#2918](https://github.com/datagrok-ai/public/issues/2918): Typing $ in the calculated column dialog pops up the available column drop down also within a quoted field
+
+## 1.1.11 (2024-08-20)
+
+### Bug Fixes
+
+* [#2993](https://github.com/datagrok-ai/public/issues/2993): Calculated columns dialog: Cannot type in any input after adding a calculated column
+* [#2988](https://github.com/datagrok-ai/public/issues/2988): Calculated columns dialog: Fixed qnum type validation
+* [#2981](https://github.com/datagrok-ai/public/issues/2981): Calculated columns dialog: Typing calculated formula: input is overwritten unexpectedly in some cases
+
+## 1.1.10 (2024-08-07)
+
+### Bug Fixes
+
+* Add new column: incorrect input parameters when autocomplete
+
+## 1.1.9 (2024-08-05)
+
+### Bug Fixes
+
+* [#2949](https://github.com/datagrok-ai/public/issues/2949): Calculated columns dialog: extra scroll bars
+
 ## 1.1.8 (2024-07-24)
 
 * Dependency: datagarok-api >= 1.20.0*
+
+### Features
+
+* Updated 'Add new column' dialog: autocomplete and hints, formula validation, sorting by column type
 
 ## 1.1.7 (2024-06-12)
 

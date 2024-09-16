@@ -10,6 +10,7 @@ import {SeqSplittedBase} from './macromolecule/types';
 import {CellRendererBackBase} from './cell-renderer-back-base';
 import {ILogger} from './logger';
 import {getMonomerLibHelper} from '../monomer-works/monomer-utils';
+import {errInfo} from './err-info';
 
 type MonomerPlacerProps = {
   seqHandler: SeqHandler,
@@ -72,9 +73,9 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
 
     getMonomerLibHelper().then((libHelper) => {
       if (this.destroyed) return;
-      const monomerLib = libHelper.getBioLib();
+      const monomerLib = libHelper.getMonomerLib();
       this.subs.push(monomerLib.onChanged.subscribe(() => {
-        this.reset();
+        this.dirty = true;
         this.gridCol?.grid?.invalidate();
       }));
     });
@@ -86,14 +87,22 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     this._monomerLengthList = null;
     this._monomerLengthMap = {};
     this._monomerStructureMap = {};
+    super.reset();
   }
 
   /** Returns monomers lengths of the {@link rowIdx} and cumulative sums for borders, monomer places */
   public getCellMonomerLengths(rowIdx: number, newWidth: number): [number[], number[]] {
     if (this.colWidth < newWidth) {
       this.colWidth = newWidth;
-      this.reset();
+      this.dirty = true;
     }
+    if (this.dirty) {
+      try { this.reset(); } catch (err) {
+        const [errMsg, errStack] = errInfo(err);
+        this.logger.error(errMsg, undefined, errStack);
+      }
+    }
+
     const res: number[] = this.props.seqHandler.isMsa() ? this.getCellMonomerLengthsForSeqMsa() :
       this.getCellMonomerLengthsForSeq(rowIdx);
 
@@ -198,12 +207,12 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
 
   public setMonomerLengthLimit(limit: number): void {
     this.monomerLengthLimit = limit;
-    this.reset();
+    this.dirty = true;
   }
 
   public setSeparatorWidth(width: number): void {
     this.props.separatorWidth = width;
-    this.reset();
+    this.dirty = true;
   }
 
   public isMsa(): boolean {

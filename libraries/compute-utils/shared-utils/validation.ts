@@ -122,8 +122,10 @@ export const nonNullValidator: Validator = async (value: any) => {
 export function getValidationIcon(messages?: ValidationResultBase) {
   let popover!: HTMLElement;
   let icon!: HTMLElement;
-  if (messages?.pending)
+  if (messages?.pending) {
     icon = ui.iconFA('spinner', () => {displayValidation(messages, icon, popover);});
+    icon.classList.add('fa-spin');
+  }
 
   if (messages?.errors && messages.errors.length) {
     icon = ui.iconFA('exclamation-circle', () => {displayValidation(messages, icon, popover);});

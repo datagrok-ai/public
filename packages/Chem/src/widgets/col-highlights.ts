@@ -5,7 +5,7 @@ import { HIGHLIGHT_BY_SCAFFOLD_TAG } from '../constants';
 import { IColoredScaffold } from '../rendering/rdkit-cell-renderer';
 import { isSmarts } from '../package';
 import { ItemType, ItemsGrid } from '@datagrok-libraries/utils/src/items-grid';
-import { Subscription } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
 
 export function getmolColumnHighlights(col: DG.Column): DG.Widget {
     return new HighlightWidget(col);
@@ -87,6 +87,7 @@ export class CustomSketcherInput {
     root: HTMLElement;
     onChangeFunc: Function = () => { };
     molecule: string | null = '';
+    onChanged: Subject<any> = new Subject<any>();
     constructor(molecule: string) {
         this.sketcher = new DG.chem.Sketcher(DG.chem.SKETCHER_MODE.EXTERNAL);
         this.sketcher.syncCurrentObject = false;
@@ -103,7 +104,7 @@ export class CustomSketcherInput {
         }, true);
         this.sketcher.onChanged.subscribe(async () => {
             this.molecule = isSmarts(this.molecule!) ? await this.sketcher.getSmarts() : this.sketcher.getMolFile();
-            this.onChangeFunc();
+            this.onChanged.next();
         });
     }
 
@@ -111,8 +112,6 @@ export class CustomSketcherInput {
         return this.molecule;
     }
 
-    onChanged(f: Function) {
-        this.onChangeFunc = f;
-    }
+    addValidator(f: Function) {}
 
 }

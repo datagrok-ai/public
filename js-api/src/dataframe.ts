@@ -657,6 +657,11 @@ export class Column<T = any> {
     return toJs(api.grok_Column_FromFloat32Array(name, array, length));
   }
 
+  /** [array] will be not be copied and will be used as column's storage */
+  static fromFloat64Array(name: string, array: Float64Array, length: number | null = null): Column<number> {
+    return toJs(api.grok_Column_FromFloat64Array(name, array, length));
+  }
+
   /** Creates BigIntColumn from BigInt64Array / BigUint64Array */
   static fromBigInt64Array(name: string, array: BigInt64Array | BigUint64Array) {
     return this.fromList(TYPE.BIG_INT as ColumnType, name, Array.from(array, (v: any, _) =>
@@ -878,7 +883,7 @@ export class Column<T = any> {
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/performance/access}
    * Return type depends on the column type:
    * {Int32Array} for ints, {@link INT_NULL} represents null.
-   * {Float32Array} for floats, {@link FLOAT_NULL} represents null.
+   * {Float32Array} or {Float64Array} for floats depending on doublePrecision parameter, {@link FLOAT_NULL} represents null.
    * {Float64Array} for qnums, {@link FLOAT_NULL} represents null.
    * {Float64Array} for datetime, in microseconds since epoch, {@link FLOAT_NULL} represents null.
    * {Int32Array} for strings indexes of {@link categories}.
@@ -1060,6 +1065,22 @@ export class Column<T = any> {
   aggregate(type: ColumnAggregationType): any {
     return api.grok_Column_Aggregate(this.dart, type);
   }
+
+  /** @returns {Float32Array} - typed array of float values representing the column.
+   * Does not guarantee to perform a copy of the underlying data. */
+  asDoubleList(): Float32Array {
+    return api.grok_Column_AsDoubleList(this.dart);
+  }
+}
+
+
+export class FloatColumn extends Column<number> {
+  get doublePrecision(): boolean {
+    return api.grok_FloatColumn_GetDoublePrecision(this.dart);
+  }
+  set doublePrecision(enableDoublePrecision: boolean) {
+    api.grok_FloatColumn_SetDoublePrecision(this.dart, enableDoublePrecision);
+  }
 }
 
 
@@ -1072,7 +1093,8 @@ export class BigIntColumn extends Column<BigInt> {
     if (v == null)
       return null;
 
-    return BigInt(v);
+    // @ts-ignore: fallback for the browsers that don't support BigInt, such as Dartium
+    return BigInt ? BigInt(v) : parseInt(v);
   }
 
   /**
@@ -1969,8 +1991,8 @@ export class GroupByBuilder {
 
   /** Performs the aggregation
    *  @returns {DataFrame} */
-  aggregate(): DataFrame {
-    return new DataFrame(api.grok_GroupByBuilder_Aggregate(this.dart));
+  aggregate(options?: {autoName?: boolean}): DataFrame {
+    return new DataFrame(api.grok_GroupByBuilder_Aggregate(this.dart, options?.autoName ?? false));
   }
 
   /**
@@ -2309,6 +2331,7 @@ export class DataFramePlotHelper {
 
   scatter(options: object | null = null): ScatterPlotViewer { return DG.Viewer.scatterPlot(this.df, options); }
   grid(options: object | null = null): Grid { return DG.Viewer.grid(this.df, options); }
+  tile(options: object | null = null): Grid { return DG.Viewer.tile(this.df, options); }
   form(options: object | null = null): FormViewer { return DG.Viewer.form(this.df, options); }
   histogram(options: object | null = null): Viewer { return DG.Viewer.histogram(this.df, options); }
   bar(options: object | null = null): Viewer { return DG.Viewer.barChart(this.df, options); }
