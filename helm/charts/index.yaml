@@ -3,7 +3,7 @@ entries:
   datagrok:
   - apiVersion: v2
     appVersion: 1.19.x
-    created: "2024-09-16T13:16:26.351691601Z"
+    created: "2024-09-16T13:25:48.252765243Z"
     dependencies:
     - name: datagrok_grok_connect
       repository: '@datagrok'
@@ -27,9 +27,9 @@ entries:
   datagrok_grok_connect:
   - apiVersion: v2
     appVersion: 1.16.0
-    created: "2024-09-16T13:16:26.35193201Z"
+    created: "2024-09-16T13:25:48.25299459Z"
     description: A Helm chart for Kubernetes
-    digest: 3fbcad74ac068131c868df887c5cd648ee1d359092e15740c21ae85ddf203f51
+    digest: 75e0fb36e42549b54253fec164d6052e82d99e7648852f69d6c9606f4f7e7923
     icon: https://awsmp-logos.s3.amazonaws.com/seller-rd56pvqdccmwk/d29ebfef5392118b01bee04677722cae.png
     name: datagrok_grok_connect
     type: application
@@ -39,13 +39,13 @@ entries:
   datagrok_grok_spawner:
   - apiVersion: v2
     appVersion: 1.16.0
-    created: "2024-09-16T13:16:26.355048542Z"
+    created: "2024-09-16T13:25:48.257737473Z"
     dependencies:
     - name: minio
       repository: ""
       version: 14.6.22
     description: A Helm chart for Kubernetes
-    digest: acb151604b61b827c7cda176e00ae2e99be283d4e25d1620b44a477c35fd2f39
+    digest: 286f512a4879b0407d818290b970d6b32f8d3f6e426c16b58715cdcc2f9e8bfa
     icon: https://awsmp-logos.s3.amazonaws.com/seller-rd56pvqdccmwk/d29ebfef5392118b01bee04677722cae.png
     name: datagrok_grok_spawner
     type: application
@@ -55,9 +55,9 @@ entries:
   datagrok_jkg:
   - apiVersion: v2
     appVersion: 1.16.0
-    created: "2024-09-16T13:16:26.35568944Z"
+    created: "2024-09-16T13:25:48.258051887Z"
     description: A Helm chart for Kubernetes
-    digest: 385cd4b618676d1fec9496a6216b6245a16093e3c15ddced19fa33d42ddc5b87
+    digest: e3b3ead5f5c6dc9345098748bd34f068a2f2b03575dafc4fe8912c92e0cd5b71
     icon: https://awsmp-logos.s3.amazonaws.com/seller-rd56pvqdccmwk/d29ebfef5392118b01bee04677722cae.png
     name: datagrok_jkg
     type: application
@@ -67,13 +67,13 @@ entries:
   datagrok_jupyter_notebook:
   - apiVersion: v2
     appVersion: 1.16.0
-    created: "2024-09-16T13:16:26.35625589Z"
+    created: "2024-09-16T13:25:48.258295009Z"
     description: A Helm chart for Kubernetes
-    digest: 26a6d01503468e2a8d536e94e573506cd93af4b33a7177c727f04e578785d501
+    digest: 0bba9d775b6e18dbcf4dc793fd26b00469551678afe82628a1f3226c40632694
     icon: https://awsmp-logos.s3.amazonaws.com/seller-rd56pvqdccmwk/d29ebfef5392118b01bee04677722cae.png
     name: datagrok_jupyter_notebook
     type: application
     urls:
     - datagrok_jupyter_notebook-1.0.0.tgz
     version: 1.0.0
-generated: "2024-09-16T13:16:26.346148747Z"
+generated: "2024-09-16T13:25:48.247681393Z"
