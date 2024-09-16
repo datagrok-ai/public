@@ -115,10 +115,15 @@ jobs:
           git commit -m "Bump version helm charts"
           git push 
       
+  services-pages-build:
+    needs: [helm-lint-deploy-packages]
+    name: Common checks
+    uses: ./.github/workflows/jekyll-gh-pages.yml
+
 
   helm-lint-deploy-datagrok:
     runs-on: ubuntu-latest
-    needs: [helm-lint-deploy-packages]
+    needs: [helm-lint-deploy-packages, services-pages-build]
     timeout-minutes: 30
     env:
       HELM_REPO_URL: https://datagrok-ai.github.io/public/charts
@@ -162,3 +167,7 @@ jobs:
           git add .
           git commit -m "Bump version datagrok helm charts"
           git push 
+  datagrok-pages-build:
+    needs: [ helm-lint-deploy-packages, helm-lint-deploy-datagrok ]
+    name: Common checks
+    uses: ./.github/workflows/jekyll-gh-pages.yml
