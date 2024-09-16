@@ -8,6 +8,7 @@ import {
   Viewer, InputForm, 
   BigButton, IconFA, 
   RibbonPanel, DockManager, MarkDown,
+  ComboPopup,
 } from '@datagrok-libraries/webcomponents-vue';
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
@@ -126,7 +127,8 @@ export const RichFunctionView = Vue.defineComponent({
 
       helpText.value = loadedHelp ?? null;
     }, {immediate: true});
-          
+    
+    const root = Vue.ref(null as HTMLElement | null);
     const historyRef = Vue.ref(null as InstanceType<typeof History> | null);
     const helpRef = Vue.ref(null as InstanceType<typeof MarkDown> | null);
     const formRef = Vue.ref(null as HTMLElement | null);
@@ -180,8 +182,43 @@ export const RichFunctionView = Vue.defineComponent({
       visibleTabLabels.value = [...tabLabels.value];
     }, {immediate: true});
 
+    const isDataFrame = (prop: DG.Property) => (prop.propertyType === DG.TYPE.DATA_FRAME);
+
+    const dfToViewerMapping = () => {
+      const func = currentCall.value.func;
+
+      const mapping = {} as Record<string, DG.Viewer[]>;
+      Promise.all(func.inputs
+        .filter((output) => isDataFrame(output))
+        .map(async (p) => {
+          mapping[p.name] = await Promise.all(Utils.getPropViewers(p).config
+            .map((config) => configToViewer(currentCall.value.inputs[p.name], config)));
+
+          return mapping[p.name];
+        }));
+
+      Promise.all(func.outputs
+        .filter((output) => isDataFrame(output))
+        .map(async (p) => {
+          mapping[p.name] = await Promise.all(Utils.getPropViewers(p).config
+            .map((config) => configToViewer(currentCall.value.outputs[p.name], config)));
+  
+          return mapping[p.name];
+        }));
+
+      return mapping;
+    };
+
+    const configToViewer = async (df: DG.DataFrame, config: Record<string, any>) => {
+      const type = config['type'];
+      const viewer = await df.plot.fromType(type) as DG.Viewer;
+      viewer.setOptions(config);
+    
+      return viewer; 
+    };
+
     return () => (
-      <div class='w-full h-full flex'>
+      <div class='w-full h-full flex' ref={root}>
         <RibbonPanel>
           <IconFA
             name='pen'
@@ -193,6 +230,30 @@ export const RichFunctionView = Vue.defineComponent({
             name='play'
             tooltip='Run step'
             onClick={run} 
+          />
+          {/* <ComboPopup 
+            caption={ui.iconFA('arrow-to-bottom')}
+            items={['Excel']}
+            onSelected={({item: format}) => {
+              Utils.richFunctionViewExport(
+                root.value!,
+                format,
+                currentCall.value.func,
+                currentCall.value,
+                dfToViewerMapping,
+              ).then((blob) => DG.Utils.download('Test name', blob));
+            }}
+          /> */}
+          <IconFA
+            name='arrow-to-bottom'
+            tooltip='Generate report'
+            onClick={() => Utils.richFunctionViewExport(
+              'Excel',
+              currentCall.value.func,
+              currentCall.value,
+              dfToViewerMapping(),
+            ).then((blob) => DG.Utils.download('Test name.xlsx', blob))
+            }
           />
           <IconFA
             name='chart-pie'

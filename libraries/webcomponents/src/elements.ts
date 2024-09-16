@@ -34,7 +34,7 @@ export class DGToggleInput extends HTMLElement {
     this.innerEditor = ui.input.toggle(this._caption);
     this.appendChild(this.innerEditor.root);
 
-    this.innerEditor.onChanged(() =>
+    this.innerEditor.onChanged.subscribe(() =>
       this.dispatchEvent(new CustomEvent('value-changed', {detail: this.innerEditor!.value})),
     );
   }
@@ -144,7 +144,7 @@ export class DGComboPopup extends HTMLElement {
     );
     newPopup.style.height = '24px';
     newPopup.style.minWidth = '0px';
-    newPopup.onclick = (ev) => {
+    (newPopup.querySelector('.d4-combo-drop-down-fixed')!.nextSibling! as HTMLElement).onclick = (ev) => {
       ev.stopPropagation();
     };
     this.appendChild(newPopup);

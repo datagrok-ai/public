@@ -11,8 +11,213 @@ import {ValidationResultBase, Validator, getValidationIcon, mergeValidationResul
 import {FunctionView, RichFunctionView} from '../function-views';
 import dayjs from 'dayjs';
 import { ID_COLUMN_NAME } from '../shared-components/src/history-input';
-import { getStarted } from '../function-views/src/shared/utils';
+import { delay, getStarted } from '../function-views/src/shared/utils';
 import cloneDeepWith from 'lodash.clonedeepwith';
+
+export const richFunctionViewExport = async (
+  format: string,
+  func: DG.Func,
+  lastCall: DG.FuncCall,
+  dfToViewerMapping: {[key: string]: DG.Viewer[]},
+) => {
+  const sheetNamesCache = {} as Record<string, string>;
+
+  const getSheetName = (initialName: string, wb: ExcelJS.Workbook) => {
+    if (sheetNamesCache[initialName]) return sheetNamesCache[initialName];
+
+    let name = `${initialName}`;
+    if (name.length > 31)
+      name = `${name.slice(0, 31)}`;
+    let i = 1;
+    while (wb.worksheets.some((sheet) => sheet.name.toLowerCase() === name.toLowerCase())) {
+      let truncatedName = `${initialName}`;
+      if (truncatedName.length > (31 - `-${i}`.length))
+        truncatedName = `${initialName.slice(0, 31 - `-${i}`.length)}`;
+      name = `${truncatedName}-${i}`;
+      i++;
+    }
+
+    sheetNamesCache[initialName] = name;
+
+    return name;
+  };
+
+  if (format === 'Excel') {
+    try {
+      await DG.Utils.loadJsCss(['/js/common/exceljs.min.js', '/js/common/html2canvas.min.js']);
+      //@ts-ignore
+      const loadedExcelJS = window.ExcelJS as ExcelJS;
+      //@ts-ignore
+      const loadedHtml2canvas: typeof html2canvas = window.html2canvas;
+
+      const BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
+      const exportWorkbook = new loadedExcelJS.Workbook() as ExcelJS.Workbook;
+
+      ui.setDisplay(grok.shell.v.root, false);
+      updateIndicatorWithText(grok.shell.v.root.parentElement!, true,
+      'Generating report. Please do not switch the browser tab...');
+
+      const plotToSheet = async (
+        sheet: ExcelJS.Worksheet,
+        viewer: DG.Viewer,
+        columnForImage: number, rowForImage = 0,
+        options?: { heightInCells?: number, widthInCells?: number, widthToRender: number, heightToRender: number},
+      ) => {
+        const newViewer = DG.Viewer.fromType(viewer.type, viewer.dataFrame.clone());
+        newViewer.copyViewersLook(viewer);
+      
+        const viewerBox = ui.div(newViewer.root, {style: {
+          height: `${options?.heightToRender ?? 800}px`,
+          width: `${options?.widthToRender ?? 800}px`,
+        }});
+        viewerBox.classList.add('ui-box');
+        viewerBox.classList.remove('ui-div');
+        grok.shell.v.root.insertAdjacentElement('afterend', viewerBox);
+      
+        await delay(1000);
+        const imageDataUrl = (await loadedHtml2canvas(viewerBox)).toDataURL();
+      
+        viewerBox.remove();
+      
+        const imageId = exportWorkbook.addImage({
+          base64: imageDataUrl,
+          extension: 'png',
+        });
+      
+        const ratio = (options?.heightInCells || options?.widthInCells) ?
+          Math.min(
+            (options?.heightInCells ?? Number.MAX_VALUE) / (800 / 20),
+            (options?.widthInCells ?? Number.MAX_VALUE) / (800 / 100),
+          ): 1;
+      
+        sheet.addImage(imageId, {
+          tl: {col: columnForImage, row: rowForImage},
+          ext: {width: 800 * ratio, height: 800 * ratio},
+        });
+      };
+
+      const isScalarType = (type: DG.TYPE) => (DG.TYPES_SCALAR.has(type));
+
+      const isDataFrame = (prop: DG.Property) => (prop.propertyType === DG.TYPE.DATA_FRAME);
+
+      const dfInputs = func.inputs.filter((input) => isDataFrame(input));
+      const scalarInputs = func.inputs.filter((input) => isScalarType(input.propertyType));
+      const dfOutputs = func.outputs.filter((output) => isDataFrame(output));
+      const scalarOutputs = func.outputs.filter((output) => isScalarType(output.propertyType));
+
+      dfInputs.forEach((dfInput) => {
+        const visibleTitle = dfInput.options.caption || dfInput.name;
+        const currentDfSheet =
+      exportWorkbook.worksheets.find((ws) => ws.name === getSheetName(visibleTitle, exportWorkbook)) ??
+      exportWorkbook.addWorksheet(getSheetName(visibleTitle, exportWorkbook));
+
+        const currentDf = lastCall.inputs[dfInput.name];
+        dfToSheet(currentDfSheet, currentDf);
+      });
+
+      if (scalarInputs.length) {
+        const inputScalarsSheet = exportWorkbook.addWorksheet('Input scalars');
+        scalarsToSheet(inputScalarsSheet, scalarInputs.map((scalarInput) => ({
+          caption: scalarInput.options['caption'] ?? scalarInput.name,
+          value: lastCall.inputs[scalarInput.name] ?? '',
+          units: scalarInput.options['units'] ?? '',
+        })));
+      }
+
+      dfOutputs.forEach((dfOutput) => {
+        const visibleTitle = dfOutput.options.caption || dfOutput.name;
+        const currentDfSheet =
+      exportWorkbook.worksheets.find((ws) => ws.name === getSheetName(visibleTitle, exportWorkbook)) ??
+      exportWorkbook.addWorksheet(getSheetName(visibleTitle, exportWorkbook));
+
+        const currentDf = lastCall.outputs[dfOutput.name];
+        dfToSheet(currentDfSheet, currentDf);
+      });
+
+
+      if (scalarOutputs.length) {
+        const outputScalarsSheet = exportWorkbook.addWorksheet('Output scalars');
+        scalarsToSheet(outputScalarsSheet, scalarOutputs.map((scalarOutput) => ({
+          caption: scalarOutput.options['caption'] ?? scalarOutput.name,
+          value: lastCall.outputs[scalarOutput.name] ?? '',
+          units: scalarOutput.options['units'] ?? '',
+        })));
+      }
+
+      for (const inputProp of func.inputs.filter((prop) => isDataFrame(prop))) {
+        const nonGridViewers = dfToViewerMapping[inputProp.name]
+          .filter((viewer) => viewer.type !== DG.VIEWER.GRID)
+          .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer.type));
+
+        if (nonGridViewers.length === 0) continue;
+
+        const visibleTitle = inputProp.options.caption || inputProp.name;
+        const currentDf = lastCall.inputs[inputProp.name];
+
+        for (const [index, viewer] of nonGridViewers.entries()) {
+          await plotToSheet(
+            exportWorkbook.getWorksheet(getSheetName(visibleTitle, exportWorkbook))!,
+            viewer,
+            currentDf.columns.length + 2,
+            (index > 0) ? (index * 16) + 1 : 0,
+            {heightInCells: 16, heightToRender: 600, widthToRender: 600}
+          );
+        };
+      }
+
+      for (const outputProp of func.outputs.filter((prop) => isDataFrame(prop))) {
+        const nonGridViewers = dfToViewerMapping[outputProp.name]
+          .filter((viewer) => viewer.type !== DG.VIEWER.GRID)
+          .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer.type));
+
+        if (nonGridViewers.length === 0) continue;
+
+        const visibleTitle = outputProp.options.caption || outputProp.name;
+        const currentDf = lastCall.outputs[outputProp.name];
+
+        for (const [index, viewer] of nonGridViewers.entries()) {
+          if (viewer.type === DG.VIEWER.STATISTICS) {
+            const length = currentDf.columns.length;
+            const stats = DG.DataFrame.fromColumns([
+              DG.Column.string('Name', length).init((i: number) => currentDf.columns.byIndex(i).name),
+              DG.Column.int('Values', length).init((i: number) => currentDf.columns.byIndex(i).stats.valueCount),
+              DG.Column.int('Nulls', length).init((i: number) => currentDf.columns.byIndex(i).stats.missingValueCount),
+              DG.Column.float('Min', length).init((i: number) => currentDf.columns.byIndex(i).stats.min),
+              DG.Column.float('Max', length).init((i: number) => currentDf.columns.byIndex(i).stats.max),
+              DG.Column.float('Avg', length).init((i: number) => currentDf.columns.byIndex(i).stats.avg),
+              DG.Column.float('Stdev', length).init((i: number) => currentDf.columns.byIndex(i).stats.stdev),
+            ]);
+            dfToSheet(
+              exportWorkbook.getWorksheet(getSheetName(visibleTitle, exportWorkbook))!,
+              stats,
+              currentDf.columns.length + 2,
+              (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0,
+            );
+          } else {
+            await plotToSheet(
+              exportWorkbook.getWorksheet(getSheetName(visibleTitle, exportWorkbook))!,
+              viewer,
+              currentDf.columns.length + 2,
+              (index > 0) ? (index * 16) + 1 : 0,
+              {heightInCells: 16, heightToRender: 600, widthToRender: 600}
+            );
+          }
+        }
+      }
+
+      const buffer = await exportWorkbook.xlsx.writeBuffer();
+
+      return new Blob([buffer], {type: BLOB_TYPE});
+    } catch (e) {
+      console.log(e);
+    } finally {
+      ui.setDisplay(grok.shell.v.root, true);
+      updateIndicatorWithText(grok.shell.v.root.parentElement!, false);
+    }
+  }
+
+  throw new Error('Format is not supported');
+}
 
 export const saveIsFavorite = async (funcCall: DG.FuncCall, isFavorite: boolean) => {
   const favStorageName = `${storageName}_${funcCall.func.name}_Fav`;

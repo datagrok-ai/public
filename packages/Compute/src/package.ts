@@ -8,7 +8,6 @@ import {
   ComputationView as ComputationViewInst,
   RichFunctionView as RichFunctionViewInst, 
   PipelineView as PipelineViewInst,
-  CompositionPipeline as CompositionPipelineViewInst,
   UiUtils, 
 } from "@datagrok-libraries/compute-utils";
 import { 
@@ -344,7 +343,6 @@ export const testPipeline = testPipelineInst;
 export const CompView = ComputationViewInst;
 export const RFV = RichFunctionViewInst;
 export const Pipeline = PipelineViewInst;
-export const CompositionPipeline = CompositionPipelineViewInst;
 export const makeValidationResult = makeValidationResultInst;
 export const makeAdvice = makeAdviceInst;
 export const makeRevalidation = makeRevalidationInst;
