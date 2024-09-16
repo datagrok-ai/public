@@ -3,7 +3,7 @@ name: Artifacthub Deploy
 on:
   push:
     branches:
-      - master
+      - vhlushchenko/GROK-16669/deploy_helm_charts
     paths:
       - 'helm/base/**'
   workflow_dispatch:
