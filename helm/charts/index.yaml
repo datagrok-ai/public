@@ -1,9 +1,33 @@
 apiVersion: v1
 entries:
+  datagrok:
+  - apiVersion: v2
+    appVersion: 1.19.x
+    created: "2024-09-16T13:16:26.351691601Z"
+    dependencies:
+    - name: datagrok_grok_connect
+      repository: '@datagrok'
+      version: 1.0.0
+    - name: datagrok_jkg
+      repository: '@datagrok'
+      version: 1.0.0
+    - name: datagrok_jupyter_notebook
+      repository: '@datagrok'
+      version: 1.0.0
+    - name: datagrok_grok_spawner
+      repository: ""
+      version: 1.0.0
+    description: A Helm chart for Kubernetes
+    digest: 80a3590d013fea557f641196e01542098f7c870666ef6ec460c361b22f31809f
+    name: datagrok
+    type: application
+    urls:
+    - datagrok-1.0.3.tgz
+    version: 1.0.3
   datagrok_grok_connect:
   - apiVersion: v2
     appVersion: 1.16.0
-    created: "2024-09-16T13:12:59.487148534Z"
+    created: "2024-09-16T13:16:26.35193201Z"
     description: A Helm chart for Kubernetes
     digest: 3fbcad74ac068131c868df887c5cd648ee1d359092e15740c21ae85ddf203f51
     icon: https://awsmp-logos.s3.amazonaws.com/seller-rd56pvqdccmwk/d29ebfef5392118b01bee04677722cae.png
@@ -15,7 +39,7 @@ entries:
   datagrok_grok_spawner:
   - apiVersion: v2
     appVersion: 1.16.0
-    created: "2024-09-16T13:12:59.49036255Z"
+    created: "2024-09-16T13:16:26.355048542Z"
     dependencies:
     - name: minio
       repository: ""
@@ -31,7 +55,7 @@ entries:
   datagrok_jkg:
   - apiVersion: v2
     appVersion: 1.16.0
-    created: "2024-09-16T13:12:59.490649025Z"
+    created: "2024-09-16T13:16:26.35568944Z"
     description: A Helm chart for Kubernetes
     digest: 385cd4b618676d1fec9496a6216b6245a16093e3c15ddced19fa33d42ddc5b87
     icon: https://awsmp-logos.s3.amazonaws.com/seller-rd56pvqdccmwk/d29ebfef5392118b01bee04677722cae.png
@@ -43,7 +67,7 @@ entries:
   datagrok_jupyter_notebook:
   - apiVersion: v2
     appVersion: 1.16.0
-    created: "2024-09-16T13:12:59.49089261Z"
+    created: "2024-09-16T13:16:26.35625589Z"
     description: A Helm chart for Kubernetes
     digest: 26a6d01503468e2a8d536e94e573506cd93af4b33a7177c727f04e578785d501
     icon: https://awsmp-logos.s3.amazonaws.com/seller-rd56pvqdccmwk/d29ebfef5392118b01bee04677722cae.png
@@ -52,4 +76,4 @@ entries:
     urls:
     - datagrok_jupyter_notebook-1.0.0.tgz
     version: 1.0.0
-generated: "2024-09-16T13:12:59.486786669Z"
+generated: "2024-09-16T13:16:26.346148747Z"
