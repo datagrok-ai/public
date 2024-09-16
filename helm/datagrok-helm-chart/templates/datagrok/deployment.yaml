@@ -29,6 +29,10 @@ spec:
       {{- end }}
       {{- include "base.selectorLabels" . | nindent 8 }}
     spec:
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+        - name: {{ .Values.imagePullSecrets }}
+      {{- end }}
       initContainers:
         - name: init-wait-for-db
           image: alpine
@@ -40,7 +44,7 @@ spec:
             - configMapRef:
                 name: {{ .Release.Name }}-grok-parameters-configmap             
           image: {{ .Values.image.name }}:{{ .Values.image.tag }}
-          imagePullPolicy: Always
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
           name: datagrok
           ports:
             - containerPort: {{ .Values.container.port_datagrok }}

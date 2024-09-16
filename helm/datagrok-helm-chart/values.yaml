@@ -18,9 +18,11 @@ data_pvc:
 replicas: 1
 revisionHistoryLimit: 10
 strategy_type: RollingUpdate
+imagePullSecrets: ""
+imagePullPolicy: Always
 image:
   name: datagrok/datagrok
-  tag: 1.21.1
+  tag: latest
 container:
   tag: latest
   name: datagrok

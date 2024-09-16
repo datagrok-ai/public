@@ -5,10 +5,10 @@ labels:
 strategy_type: RollingUpdate
 container:
   name: grok-spawner
-  image: docker-registry.datagrok.ai/datagrok/grok_spawner
-  tag: test-local
+  image: datagrok/grok_spawner
+  tag: latest
   port: 8000
-  imagePullPolicy: Never
+  imagePullPolicy: Always
 service:
   type: ClusterIP
 livenessProbe:
@@ -85,10 +85,7 @@ minio:
     nodePorts:
       api: ""
       console: ""
-  ingress:
-    enabled: true
-    ingressClassName: "nginx"
-    hostname: minio.datagrok.ai
+  ingress: {}
   persistence:
     enabled: true
     storageClass: "standard"

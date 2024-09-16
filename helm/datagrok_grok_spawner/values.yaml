@@ -85,10 +85,7 @@ minio:
     nodePorts:
       api: ""
       console: ""
-  ingress:
-    enabled: true
-    ingressClassName: "nginx"
-    hostname: minio.datagrok.ai
+  ingress: {}
   persistence:
     enabled: true
     storageClass: "standard"
