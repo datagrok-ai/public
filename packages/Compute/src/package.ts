@@ -6,14 +6,13 @@ import {filter} from 'rxjs/operators';
 import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-viewer';
 import {
   ComputationView as ComputationViewInst,
-  RichFunctionView as RichFunctionViewInst, 
+  RichFunctionView as RichFunctionViewInst,
   PipelineView as PipelineViewInst,
-  CompositionPipeline as CompositionPipelineViewInst,
-  UiUtils, 
+  UiUtils,
 } from "@datagrok-libraries/compute-utils";
-import { 
-  ValidationInfo, 
-  makeAdvice as makeAdviceInst, 
+import {
+  ValidationInfo,
+  makeAdvice as makeAdviceInst,
   makeValidationResult as makeValidationResultInst,
   makeRevalidation as makeRevalidationInst,
   mergeValidationResults as mergeValidationResultsInst,
@@ -111,7 +110,7 @@ export async function CustomDataUploader(func: DG.Func) {
     'heatTransferCoeff': 8.3,
     'simTime': 21600,
     }).call();
-    
+
   return [dummyFunccall]
 }
 
@@ -127,7 +126,7 @@ export async function CustomUploader(params: {func: DG.Func}) {
   const dummyWidget = DG.Widget.fromRoot(ui.panel([ui.divV([
     ui.label('This part of dialog comes from my custom data uploader'),
     ui.divH([uploadBtn], {style: {'justify-content': 'center'}})
-  ])]));  
+  ])]));
 
   const setLoadingSub = grok.functions.onBeforeRunAction.pipe(
     filter((call) => call.id === uploadFuncCall.id)
@@ -163,8 +162,8 @@ export function init() {
 
   if (!(DG.ObjectHandler.list().find((handler) => handler.type === "Model"))) {
     DG.ObjectHandler.register(new ModelHandler());
-  }  
-  
+  }
+
   grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
     const ent = acc.context;
     if (ent == null)
@@ -344,7 +343,6 @@ export const testPipeline = testPipelineInst;
 export const CompView = ComputationViewInst;
 export const RFV = RichFunctionViewInst;
 export const Pipeline = PipelineViewInst;
-export const CompositionPipeline = CompositionPipelineViewInst;
 export const makeValidationResult = makeValidationResultInst;
 export const makeAdvice = makeAdviceInst;
 export const makeRevalidation = makeRevalidationInst;
