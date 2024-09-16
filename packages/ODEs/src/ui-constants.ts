@@ -38,7 +38,8 @@ export enum HINT {
   ABORT = 'Abort computations',
   MAX_TIME = `Max computation time, ${COMPUTATION_TIME_UNITS}.`,
   CLICK_RUN = `Click to run`,
-  INPUTS = 'Inputs set',
+  DEFAULT_INPS = 'Default model inputs',
+  INPUT_TABLE = 'Inputs table: ',
 }; // HINT
 
 /** UI titles */
@@ -156,6 +157,7 @@ export enum MISC {
   IVP_EXT = 'ivp',
   TXT_EXT = 'txt',
   FILE_DEFAULT_NAME = `equations.${IVP_EXT}`,
+  DEFAULT = 'Default',
 };
 
 /** Warning dialog lines */

@@ -402,6 +402,7 @@ export class DiffStudio {
 
   private inputsByCategories = new Map<string, DG.InputBase[]>();
   private lookupChoiceInput: DG.InputBase | null = null;
+  private toPreventSolving = false;
 
   constructor(toAddTableView: boolean = true, toDockTabCtrl: boolean = true, isFilePreview: boolean = false) {
     this.solverView = toAddTableView ?
@@ -778,6 +779,9 @@ export class DiffStudio {
 
   /** Solve IVP */
   private async solve(ivp: IVP, inputsPath: string): Promise<void> {
+    if (this.toPreventSolving)
+      return;
+
     const customSettings = (ivp.solverSettings !== DEFAULT_SOLVER_SETTINGS);
 
     try {
@@ -1151,22 +1155,61 @@ export class DiffStudio {
     const rowCount = inputsDf.rowCount;
 
     const inputNames = cols.byIndex(INPUTS_DF.INP_NAMES_IDX).toList() as string[];
-    const inputVals = new Map<string, Int32Array | Uint32Array | Float32Array | Float64Array>();
+    const choices = [MISC.DEFAULT] as string[];
+
+    const defaultInputs = new Map<string, number>();
+    let firstInput: DG.InputBase | null = null;
+
+    this.inputsByCategories.forEach((inputs) => inputs.forEach((input) => {
+      if (firstInput === null)
+        firstInput = input;
+
+      defaultInputs.set(input.property.name, input.value);
+    }));
+
+    const tableInputs = new Map<string, Map<string, number>>();
 
     for (const col of cols) {
-      if (col.isNumerical)
-        inputVals.set(col.name, col.getRawData());
-    }
+      if (col.isNumerical) {
+        const colName = col.name;
+        choices.push(colName);
+        const inputs = new Map<string, number>();
+        const raw = col.getRawData();
 
-    const choices = Array.from(inputVals.keys());
+        for (let i = 0; i < rowCount; ++i)
+          inputs.set(inputNames[i], raw[i]);
+
+        tableInputs.set(colName, inputs);
+      }
+    }
 
     this.lookupChoiceInput = ui.input.choice<string>('', {
       items: choices,
       nullable: false,
       value: choices[0],
-      tooltipText: `${HINT.INPUTS}: ${inputsPath}`,
+      tooltipText: HINT.DEFAULT_INPS,
+      onValueChanged: (value, input) => {
+        this.toPreventSolving = true;
+
+        if (value === MISC.DEFAULT) {
+          input.setTooltip(HINT.DEFAULT_INPS);
+          this.inputsByCategories.forEach((inputs) => inputs.forEach((input) => {
+            input.value = defaultInputs.get(input.property.name);
+          }));
+        } else {
+          input.setTooltip(`${HINT.INPUT_TABLE}${inputsPath}`);
+          const colInputs = tableInputs.get(value);
+
+          this.inputsByCategories.forEach((inputs) => inputs.forEach((input) => {
+            input.value = colInputs.get(input.property.name) ?? input.value;
+          }));
+        }
+
+        this.toPreventSolving = false;
+        firstInput.value = firstInput.value;
+      },
     });
-  } // setLookuoChoiceInput
+  } // setLookupChoiceInput
 
   /** Run sensitivity analysis */
   private async runSensitivityAnalysis(): Promise<void> {
