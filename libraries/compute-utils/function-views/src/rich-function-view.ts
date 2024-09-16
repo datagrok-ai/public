@@ -1676,7 +1676,7 @@ export class RichFunctionView extends FunctionView {
   private async getValidExpRun(expFuncCall: DG.FuncCall) {
     // Dirty hack to set readonly 'started' field
     const tempCall = await(await grok.functions.eval('Sin')).prepare({x: 1}).call();
-    expFuncCall.dart.r2 = tempCall.dart.r2;
+    expFuncCall.dart.y2 = tempCall.dart.y2;
 
     const immutableTags = expFuncCall.options['immutable_tags'] || [];
     expFuncCall.options['immutable_tags'] = immutableTags.includes(EXPERIMENTAL_TAG) ? immutableTags: [...immutableTags, EXPERIMENTAL_TAG];

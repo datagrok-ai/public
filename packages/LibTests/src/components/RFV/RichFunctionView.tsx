@@ -217,6 +217,8 @@ export const RichFunctionView = Vue.defineComponent({
       return viewer; 
     };
 
+    const isIncomplete = Vue.computed(() => Utils.isIncomplete(currentCall.value));
+
     return () => (
       <div class='w-full h-full flex' ref={root}>
         <RibbonPanel>
@@ -244,7 +246,7 @@ export const RichFunctionView = Vue.defineComponent({
               ).then((blob) => DG.Utils.download('Test name', blob));
             }}
           /> */}
-          <IconFA
+          { !isIncomplete.value && <IconFA
             name='arrow-to-bottom'
             tooltip='Generate report'
             onClick={() => Utils.richFunctionViewExport(
@@ -254,7 +256,7 @@ export const RichFunctionView = Vue.defineComponent({
               dfToViewerMapping(),
             ).then((blob) => DG.Utils.download('Test name.xlsx', blob))
             }
-          />
+          /> }
           <IconFA
             name='chart-pie'
             tooltip='Restore output tabs'

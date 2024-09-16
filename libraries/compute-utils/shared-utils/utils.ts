@@ -795,6 +795,9 @@ export const deepCopy = (call: DG.FuncCall) => {
     }
   }
 
+  // Dirty hack to set readonly 'started' field
+  deepClone.dart.y2 = call.dart.y2;
+
   return deepClone;
 };
 
