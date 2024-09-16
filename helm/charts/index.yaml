@@ -3,13 +3,53 @@ entries:
   datagrok_grok_connect:
   - apiVersion: v2
     appVersion: 1.16.0
-    created: "2024-09-16T15:06:47.176084+03:00"
+    created: "2024-09-16T12:55:09.515138274Z"
     description: A Helm chart for Kubernetes
-    digest: 90a0e48672df51beae4fe5368771c24a9e10bae65269d60b451b663f0df46fac
+    digest: 574cbf1bd3f4b09c538dff3108e3f6b9e463e31d253f56868c547db6d0bb9f9d
     icon: https://awsmp-logos.s3.amazonaws.com/seller-rd56pvqdccmwk/d29ebfef5392118b01bee04677722cae.png
     name: datagrok_grok_connect
     type: application
     urls:
-    - https://datagrok-ai.github.io/public/helm/artifactory/datagrok_grok_connect-1.0.0.tgz
+    - datagrok_grok_connect-1.0.0.tgz
     version: 1.0.0
-generated: "2024-09-16T15:06:47.175596+03:00"
+  datagrok_grok_spawner:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2024-09-16T12:55:09.519051554Z"
+    dependencies:
+    - name: minio
+      repository: ""
+      version: 14.6.22
+    description: A Helm chart for Kubernetes
+    digest: 5de0c89325ffefa0df2a75af0a4358ba03e3cb64e38fa719189f27c4297fd7f7
+    icon: https://awsmp-logos.s3.amazonaws.com/seller-rd56pvqdccmwk/d29ebfef5392118b01bee04677722cae.png
+    name: datagrok_grok_spawner
+    type: application
+    urls:
+    - datagrok_grok_spawner-1.0.0.tgz
+    version: 1.0.0
+  datagrok_jkg:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2024-09-16T12:55:09.519370147Z"
+    description: A Helm chart for Kubernetes
+    digest: dd458891e06374b1d5775d91f3ac5b35d80e1dc3a08ca849c397bd628312c6a8
+    icon: https://awsmp-logos.s3.amazonaws.com/seller-rd56pvqdccmwk/d29ebfef5392118b01bee04677722cae.png
+    name: datagrok_jkg
+    type: application
+    urls:
+    - datagrok_jkg-1.0.0.tgz
+    version: 1.0.0
+  datagrok_jupyter_notebook:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2024-09-16T12:55:09.519608741Z"
+    description: A Helm chart for Kubernetes
+    digest: d1c96b15e13b876326a80b85104d7257cc4377aeeca72446acd2063fa5379e7c
+    icon: https://awsmp-logos.s3.amazonaws.com/seller-rd56pvqdccmwk/d29ebfef5392118b01bee04677722cae.png
+    name: datagrok_jupyter_notebook
+    type: application
+    urls:
+    - datagrok_jupyter_notebook-1.0.0.tgz
+    version: 1.0.0
+generated: "2024-09-16T12:55:09.514625209Z"
