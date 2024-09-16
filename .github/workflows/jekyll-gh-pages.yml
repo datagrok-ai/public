@@ -14,7 +14,6 @@ on:
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
-  pages: write
   id-token: write
 
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
@@ -35,7 +34,7 @@ jobs:
       - name: Build with Jekyll
         uses: actions/jekyll-build-pages@v1
         with:
-          source: ./helm
+          source: ./helm/artifactory
           destination: ./_site
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
