@@ -110,7 +110,7 @@ jobs:
       - name: Publish
         if: steps.chart_changes.outputs.jkg_publish == 'true' || steps.chart_changes.outputs.jn_publish == 'true' || steps.chart_changes.outputs.grok_connect_publish == 'true' || steps.chart_changes.outputs.grok_spawner_publish == 'true'
         run: |
-          helm repo index charts
+          helm repo index helm/charts
           git add .
           git commit -m "Bump version helm charts"
           git push 
