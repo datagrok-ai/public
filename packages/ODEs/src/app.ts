@@ -403,6 +403,7 @@ export class DiffStudio {
   private inputsByCategories = new Map<string, DG.InputBase[]>();
   private lookupChoiceInput: DG.InputBase | null = null;
   private toPreventSolving = false;
+  private inputByName: Map<string, DG.InputBase> | null = null;
 
   constructor(toAddTableView: boolean = true, toDockTabCtrl: boolean = true, isFilePreview: boolean = false) {
     this.solverView = toAddTableView ?
@@ -1030,6 +1031,8 @@ export class DiffStudio {
     }; // getOptions
 
     const inputsByCategories = new Map<string, DG.InputBase[]>();
+    const toSaveInputs = ivp.inputsPath !== null;
+    this.inputByName = toSaveInputs ? new Map<string, DG.InputBase>() : null;
     inputsByCategories.set(TITLE.MISC, []);
     let options: DG.PropertyOptions;
 
@@ -1045,6 +1048,12 @@ export class DiffStudio {
         inputsByCategories.set(category, [input]);
 
       input.setTooltip(options.description!);
+    };
+
+    /** Save input */
+    const saveInput = (name: string, input: DG.InputBase) => {
+      if (toSaveInputs)
+        this.inputByName.set(name, input);
     };
 
     /** Return line with inputs names & values */
@@ -1079,6 +1088,7 @@ export class DiffStudio {
       });
 
       categorizeInput(options, input);
+      saveInput(key, input);
     }
 
     // Inputs for initial values
@@ -1095,6 +1105,7 @@ export class DiffStudio {
       });
 
       categorizeInput(options, input);
+      saveInput(key, input);
     });
 
     // Inputs for parameters
@@ -1112,6 +1123,7 @@ export class DiffStudio {
         });
 
         categorizeInput(options, input);
+        saveInput(key, input);
       });
     }
 
@@ -1131,6 +1143,7 @@ export class DiffStudio {
       });
 
       categorizeInput(options, input);
+      saveInput(SCRIPTING.COUNT, input);
     }
 
     if (this.toRunWhenFormCreated)
@@ -1140,11 +1153,11 @@ export class DiffStudio {
 
     this.lookupChoiceInput = null;
 
-    if (ivp.inputsPath)
+    if (toSaveInputs)
       await this.setLookupChoiceInput(ivp.inputsPath);
   } // getInputsUI
 
-  /** */
+  /** Set behavior of the values lookup input */
   private async setLookupChoiceInput(inputsPath: string) {
     const inputsDf = await getInputsTable(inputsPath);
 
@@ -1160,12 +1173,12 @@ export class DiffStudio {
     const defaultInputs = new Map<string, number>();
     let firstInput: DG.InputBase | null = null;
 
-    this.inputsByCategories.forEach((inputs) => inputs.forEach((input) => {
+    this.inputByName.forEach((input, name) => {
       if (firstInput === null)
         firstInput = input;
 
-      defaultInputs.set(input.property.name, input.value);
-    }));
+      defaultInputs.set(name, input.value);
+    });
 
     const tableInputs = new Map<string, Map<string, number>>();
 
@@ -1193,16 +1206,12 @@ export class DiffStudio {
 
         if (value === MISC.DEFAULT) {
           input.setTooltip(HINT.DEFAULT_INPS);
-          this.inputsByCategories.forEach((inputs) => inputs.forEach((input) => {
-            input.value = defaultInputs.get(input.property.name);
-          }));
+          this.inputByName.forEach((input, name) => input.value = defaultInputs.get(name));
         } else {
           input.setTooltip(`${HINT.INPUT_TABLE}${inputsPath}`);
           const colInputs = tableInputs.get(value);
 
-          this.inputsByCategories.forEach((inputs) => inputs.forEach((input) => {
-            input.value = colInputs.get(input.property.name) ?? input.value;
-          }));
+          this.inputByName.forEach((input, name) => input.value = colInputs.get(name) ?? input.value);
         }
 
         this.toPreventSolving = false;
