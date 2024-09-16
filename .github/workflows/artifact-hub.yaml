@@ -118,8 +118,10 @@ jobs:
       
   services-pages-build:
     needs: [helm-lint-deploy-packages]
-    name: Common checks
+    name: Github pages
     uses: ./.github/workflows/jekyll-gh-pages.yml
+    with:
+      artifact_name: services_gh_pages
 
 
   helm-lint-deploy-datagrok:
@@ -170,5 +172,7 @@ jobs:
           git push 
   datagrok-pages-build:
     needs: [ helm-lint-deploy-packages, helm-lint-deploy-datagrok ]
-    name: Common checks
+    name: Github pages
     uses: ./.github/workflows/jekyll-gh-pages.yml
+    with:
+      artifact_name: datagrok_gh_pages
