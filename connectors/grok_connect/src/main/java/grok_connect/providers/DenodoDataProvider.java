@@ -20,7 +20,7 @@ public class DenodoDataProvider extends JdbcDataProvider {
         descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
         descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
-
+        descriptor.nameBrackets = "\"";
         descriptor.canBrowseSchema = true;
         descriptor.typesMap = new HashMap<String, String>() {{
             put("integer", Types.INT);
