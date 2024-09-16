@@ -126,8 +126,6 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.GH_TOKEN }}
       - name: Git pull changes
         run: git pull
       - name: Add helm repo
