@@ -7,20 +7,31 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 import {Observable, Subject} from 'rxjs';
 
-import {HelmType, MonomerSetType, MonomerType, PolymerType} from '@datagrok-libraries/bio/src/helm/types';
+import {
+  HelmType, HelmAtom,
+  MonomerSetType, MonomerType, PolymerType, IWebEditorMonomer,
+} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmTypes, PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {IMonomerLib, IMonomerSet, Monomer, MonomerLibSummaryType, RGroup} from '@datagrok-libraries/bio/src/types';
-import {HELM_REQUIRED_FIELD as REQ, HELM_RGROUP_FIELDS as RGP} from '@datagrok-libraries/bio/src/utils/const';
+import {HELM_OPTIONAL_FIELDS as OPT, HELM_REQUIRED_FIELD as REQ, HELM_RGROUP_FIELDS as RGP} from '@datagrok-libraries/bio/src/utils/const';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
-import {GapOriginals} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
+import {getUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
+import {getMonomerHandleArgs} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {GapOriginals} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+
+import {AmbiguousWebEditorMonomer, GapWebEditorMonomer, MissingWebEditorMonomer} from './web-editor-monomer-dummy';
+import {LibraryWebEditorMonomer} from './web-editor-monomer-of-library';
 
 import '../../../css/cell-renderer.css';
 
 import {_package} from '../../package';
-import {getUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
-import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
+
+const monomerRe = /[\w()]+/;
+//** Do not mess with monomer symbol with parenthesis enclosed in square brackets */
+const ambMonomerRe = RegExp(String.raw`\(${monomerRe}(,${monomerRe})+\)`);
 
 /** Wrapper for monomers obtained from different sources. For managing monomere
  * libraries, use MolfileHandler class instead */
@@ -31,8 +42,10 @@ export class MonomerLib implements IMonomerLib {
   public get duplicateMonomers(): { [polymerType: string]: { [monomerSymbol: string]: Monomer[] } } {
     return this._duplicateMonomers;
   }
+
   private _duplicatesHandled = true;
   public get duplicatesHandled() { return this._duplicatesHandled; }
+
   private duplicatesNotified: boolean = false;
 
   constructor(
@@ -285,19 +298,8 @@ export class MonomerLib implements IMonomerLib {
     return resStr;
   }
 
-  getTooltip(polymerType: PolymerType, monomerSymbol: string): HTMLElement {
-    // getTooltip(monomer: Monomer): HTMLElement;
-    // getTooltip(monomerOrPolymerType: string | Monomer, symbol?: string): HTMLElement {
-    //   let polymerType: string;
-    //   let monomerSymbol: string;
-    //   if (typeof monomerOrPolymerType === 'string' || monomerOrPolymerType instanceof String) {
-    //     polymerType = monomerOrPolymerType as string;
-    //     monomerSymbol = symbol!;
-    //   } else {
-    //     const m = monomerOrPolymerType as Monomer;
-    //     polymerType = m[HELM_REQUIRED_FIELD.POLYMER_TYPE];
-    //     monomerSymbol = m[HELM_REQUIRED_FIELD.SYMBOL];
-    //   }
+  getTooltip(biotype: HelmType, monomerSymbol: string): HTMLElement {
+    const polymerType = helmTypeToPolymerType(biotype);
     const res = ui.div([], {classes: 'ui-form ui-tooltip'});
     const monomer = this.getMonomer(polymerType, monomerSymbol);
     if (monomer) {
@@ -333,6 +335,70 @@ export class MonomerLib implements IMonomerLib {
         ui.divText(`Monomer '${monomerSymbol}' of type '${polymerType}' not found.`),
         ui.divText('Open the Context Panel, then expand Manage Libraries'),
       ]));
+    }
+    return res;
+  }
+
+  /** Substitutes {@link org.helm.webeditor.Monomers.getMonomer()} */
+  getWebEditorMonomer(a: HelmAtom | HelmType, argName?: string): IWebEditorMonomer | null {
+    const [biotype, elem] = getMonomerHandleArgs(a, argName);
+    const pt = helmTypeToPolymerType(biotype);
+
+    /** Get or create {@link Monomer} object (in case it is missing in monomer library current config) */
+    let m: Monomer | null = this.getMonomer(pt, elem);
+    if (m && biotype == HelmTypes.LINKER && m[REQ.RGROUPS].length != 2) {
+      // Web Editor expects null
+      return null;
+    }
+    if (m && biotype == HelmTypes.SUGAR && m[REQ.RGROUPS].length != 3) {
+      // Web Editor expects null
+      return null;
+    }
+    if (!m /* && biotype != HelmTypes.LINKER*/)
+      m = this.addMissingMonomer(pt, elem);
+
+    /** Get or create {@link org,helm.WebEditorMonomer} */
+    let resWem: IWebEditorMonomer | null = m.wem ?? null;
+    if (!resWem) {
+      if (elem === '*')
+        resWem = m.wem = new GapWebEditorMonomer(biotype, elem);
+      else if (
+        (biotype === 'HELM_NUCLETIDE' && elem === 'N') ||
+        (biotype === 'HELM_AA' && elem === 'X') ||
+        (biotype === 'HELM_CHEM' && false) || // TODO: Ambiguous monomer for CHEM
+        ambMonomerRe.test(elem) // e.g. (A,R,_)
+      )
+        resWem = m.wem = new AmbiguousWebEditorMonomer(biotype, elem);
+      else if (!m.lib)
+        resWem = m.wem = new MissingWebEditorMonomer(biotype, elem);
+
+      if (!resWem)
+        resWem = m.wem = LibraryWebEditorMonomer.fromMonomer(biotype, m, this);
+    }
+
+    return resWem!;
+  }
+
+  getRS(smiles: string): { [r: string]: string } {
+    const newS = smiles.match(/(?<=\[)[^\][]*(?=])/gm);
+    const res: { [name: string]: string } = {};
+    let el = '';
+    let digit;
+    if (!!newS) {
+      for (let i = 0; i < newS.length; i++) {
+        if (newS[i] != null) {
+          if (/\d/.test(newS[i])) {
+            digit = newS[i][newS[i].length - 1];
+            newS[i] = newS[i].replace(/[0-9]/g, '');
+            for (let j = 0; j < newS[i].length; j++) {
+              if (newS[i][j] != ':')
+                el += newS[i][j];
+            }
+            res['R' + digit] = el;
+            el = '';
+          }
+        }
+      }
     }
     return res;
   }

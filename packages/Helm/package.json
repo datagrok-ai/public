@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/helm",
   "friendlyName": "Helm",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "author": {
     "name": "Aleksandr Tanas",
     "email": "atanas@datagrok.ai"
@@ -16,11 +16,11 @@
     "css/helm.css"
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.42.15",
-    "@datagrok-libraries/chem-meta": "^1.2.5",
+    "@datagrok-libraries/bio": "../../libraries/bio",
+    "@datagrok-libraries/chem-meta": "1.2.6",
     "@datagrok-libraries/utils": "^4.3.0",
     "cash-dom": "^8.1.1",
-    "datagrok-api": "^1.21.1",
+    "datagrok-api": "1.21.1",
     "dayjs": "^1.10.6",
     "rxjs": "^6.5.5",
     "wu": "latest"

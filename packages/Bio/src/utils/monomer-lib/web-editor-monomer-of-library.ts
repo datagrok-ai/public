@@ -2,32 +2,12 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {
-  HelmType, IWebEditorMonomer, IMonomerColors, MonomerType, PolymerType, WebEditorRGroups
-} from '@datagrok-libraries/bio/src/helm/types';
-import {Monomer} from '@datagrok-libraries/bio/src/types';
-import {
-  HELM_OPTIONAL_FIELDS as OPT, HELM_REQUIRED_FIELD as REQ, HELM_RGROUP_FIELDS as RGP
-} from '@datagrok-libraries/bio/src/utils/const';
-import {BrokenWebEditorMonomer, getRS, MissingWebEditorMonomer} from './get-monomer-dummy';
+import {HelmType, IMonomerColors, IWebEditorMonomer, MonomerType, PolymerType, WebEditorRGroups} from '@datagrok-libraries/bio/src/helm/types';
+import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/index';
+import {HELM_OPTIONAL_FIELDS as OPT, HELM_REQUIRED_FIELD as REQ, HELM_RGROUP_FIELDS as RGP} from '@datagrok-libraries/bio/src/utils/const';
 
-function getMonomerColors(monomer: Monomer): IMonomerColors | null {
-  const currentMonomerSchema = 'default';
-  let monomerSchema: string = currentMonomerSchema;
-  if (!monomer.meta || !monomer.meta.colors) return null;
-
-  const monomerColors: { [colorSchemaName: string]: any } = monomer.meta.colors;
-
-  if (!(currentMonomerSchema in monomerColors)) monomerSchema = 'default';
-
-  const res = monomerColors[monomerSchema];
-
-  return !res ? null : {
-    textcolor: res.text ?? res.textColor,
-    linecolor: res.line ?? res.lineColor,
-    backgroundcolor: res.background ?? res.backgroundColor
-  } as IMonomerColors;
-}
+import {BrokenWebEditorMonomer, MissingWebEditorMonomer} from './web-editor-monomer-dummy';
+import {naturalMonomerColors} from './monomer-colors';
 
 export class LibraryWebEditorMonomer implements IWebEditorMonomer {
   public get rs(): number { return Object.keys(this.at).length; }
@@ -50,7 +30,7 @@ export class LibraryWebEditorMonomer implements IWebEditorMonomer {
     public readonly smiles?: string,
   ) /* eslint-enable max-params */ {}
 
-  static fromMonomer(biotype: HelmType, monomer: Monomer): IWebEditorMonomer {
+  static fromMonomer(biotype: HelmType, monomer: Monomer, monomerLib: IMonomerLib): IWebEditorMonomer {
     let at: WebEditorRGroups = {};
     const symbol = monomer[REQ.SYMBOL];
     const smiles = monomer[REQ.SMILES];
@@ -60,7 +40,7 @@ export class LibraryWebEditorMonomer implements IWebEditorMonomer {
       });
     } else if (smiles) {
       // Generate R-Groups from SMILES
-      at = getRS(smiles);
+      at = monomerLib.getRS(smiles);
     } else if (!monomer.lib) {
       // missing
       return new MissingWebEditorMonomer(biotype, symbol);
@@ -78,7 +58,7 @@ export class LibraryWebEditorMonomer implements IWebEditorMonomer {
       monomer[REQ.MONOMER_TYPE],
       at);
 
-    const colors = getMonomerColors(monomer);
+    const colors = getMonomerColors(biotype, monomer);
     if (colors) {
       res.textcolor = colors?.textcolor;
       res.linecolor = colors?.linecolor;
@@ -87,4 +67,31 @@ export class LibraryWebEditorMonomer implements IWebEditorMonomer {
 
     return res;
   }
+}
+
+function getMonomerColors(biotype: HelmType, monomer: Monomer): IMonomerColors | null {
+  const currentMonomerSchema = 'default';
+  let monomerSchema: string = currentMonomerSchema;
+  if (!monomer.meta || !monomer.meta.colors) return null;
+
+  const monomerColors: { [colorSchemaName: string]: any } = monomer.meta.colors;
+  if (!(currentMonomerSchema in monomerColors)) monomerSchema = 'default';
+  let res = monomerColors[monomerSchema];
+
+  const na = monomer[OPT.NATURAL_ANALOG];
+  if (!res && na) {
+    const biotypeColors: { [symbol: string]: string } | undefined = naturalMonomerColors[biotype];
+    const naColor = biotypeColors?.[monomer.symbol];
+    res = {
+      textColor: "#000000",
+      lineColor: "#000000",
+      backgroundColor: naColor ?? "#FFFFFF",
+    };
+  }
+
+  return !res ? null : {
+    textcolor: res.text ?? res.textColor,
+    linecolor: res.line ?? res.lineColor,
+    backgroundcolor: res.background ?? res.backgroundColor
+  } as IMonomerColors;
 }

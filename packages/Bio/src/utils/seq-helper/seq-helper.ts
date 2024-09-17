@@ -4,18 +4,20 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 
-import {ISeqHelper, ISubstruct, SUBSTRUCT_COL, ToAtomicLevelResType} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
+import {ISeqHelper, SUBSTRUCT_COL, ToAtomicLevelRes} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {MolfileWithMap} from '@datagrok-libraries/bio/src/monomer-works/types';
+import {getUnusedName, getMolColName, getMolHighlightColName} from '@datagrok-libraries/bio/src/monomer-works/utils';
+import {buildMonomerHoverLink} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 
 import {HelmToMolfileConverter} from '../helm-to-molfile/converter';
-import {Column, DataFrame} from 'datagrok-api/dg';
-import {MolfileWithMap, MonomerMap} from '../helm-to-molfile/converter/types';
+import {MonomerLibManager} from '../monomer-lib/lib-manager';
 
 import {_package, getMonomerLibHelper} from '../../package';
-import {MonomerLibManager} from '../monomer-lib/lib-manager';
 
 type SeqHelperWindowType = Window & { $seqHelperPromise?: Promise<SeqHelper> };
 declare const window: SeqHelperWindowType;
@@ -27,21 +29,18 @@ export class SeqHelper implements ISeqHelper {
     private readonly rdKitModule: RDModule
   ) {}
 
-  getHelmToMolfileConverter(df: DataFrame, helmCol: Column<string>) {
+  getHelmToMolfileConverter(df: DG.DataFrame, helmCol: DG.Column<string>) {
     return new HelmToMolfileConverter(helmCol, df, this.libHelper, this.helmHelper);
   }
 
   async helmToAtomicLevel(
     helmCol: DG.Column<string>, chiralityEngine?: boolean, highlight?: boolean
-  ): Promise<ToAtomicLevelResType> {
-    const getUnusedName = (df: DG.DataFrame | undefined, colName: string): string => {
-      if (!df) return colName;
-      return df.columns.getUnusedName(colName);
-    };
+  ): Promise<ToAtomicLevelRes> {
+    const monomerLib = this.libHelper.getMonomerLib();
 
     const df: DG.DataFrame = helmCol.dataFrame;
-    const molColName: string = getUnusedName(df, `molfile(${helmCol})`);
-    const molHlColName: string = getUnusedName(df, `~${molColName}-hl`);
+    const molColName: string = getMolColName(df, helmCol.name);
+    const molHlColName: string = getMolHighlightColName(df, molColName);
 
     const converter = this.getHelmToMolfileConverter(df, helmCol);
 
@@ -79,19 +78,17 @@ export class SeqHelper implements ISeqHelper {
     //#endregion From HelmToMolfileConverter
 
     const molHlList = molfilesV3K.map((item: MolfileWithMap) => {
-      const mmList: MonomerMap[] = item.monomers;
-
       const hlAtoms: { [key: number]: number[] } = {};
       const hlBonds: { [key: number]: number[] } = {};
 
-      for (const [mm, mmI] of wu.enumerate(mmList)) {
-        if (mmI >= 2) continue;
+      for (const [monomerPosIdx, monomerMapValue] of item.monomers.entries()) {
+        if (monomerPosIdx >= 2) continue;
 
         const mmColor = [Math.random(), Math.random(), Math.random(), 0.3]; // green color
-        for (const mAtom of mm.atoms) {
+        for (const mAtom of monomerMapValue.atoms) {
           hlAtoms[mAtom] = mmColor;
         }
-        for (const mBond of mm.bonds) {
+        for (const mBond of monomerMapValue.bonds) {
           hlBonds[mBond] = mmColor;
         }
       }
@@ -109,10 +106,20 @@ export class SeqHelper implements ISeqHelper {
     const molCol = DG.Column.fromStrings(molColName, molList);
     molCol.semType = 'Molecule';
     molCol.temp[SUBSTRUCT_COL] = molHlColName;
-    const molHlCol = DG.Column.fromList(DG.COLUMN_TYPE.OBJECT, molHlColName, molHlList);
-    molHlCol.semType = 'Molecule-substruct';
 
-    return {molCol: molCol, molHighlightCol: molHlCol};
+    const molHlCol = DG.Column.fromList(DG.COLUMN_TYPE.OBJECT, molHlColName, molHlList);
+    molHlCol.semType = `${DG.SEMTYPE.MOLECULE}-highlight`;
+
+    const monomerHoverLink = buildMonomerHoverLink(
+      helmCol, molCol, monomerLib, this.rdKitModule);
+
+    return {
+      mol: {
+        col: molCol, highlightCol: molHlCol,
+        monomerHoverLink: monomerHoverLink,
+      },
+      warnings: []
+    };
   }
 
   static getInstance(): Promise<SeqHelper> {

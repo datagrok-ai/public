@@ -10,7 +10,7 @@ import {Nucleotides, NucleotidesPalettes} from '@datagrok-libraries/bio/src/nucl
 import {AminoacidsPalettes} from '@datagrok-libraries/bio/src/aminoacids';
 import {UnknownSeqPalette} from '@datagrok-libraries/bio/src/unknown';
 import {getStatsForCol} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
-import {GAP_SYMBOL} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {GAP_SYMBOL} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 
 /** GAP_SYMBOL */
 const g: string = GAP_SYMBOL;

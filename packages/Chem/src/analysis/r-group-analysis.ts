@@ -10,10 +10,10 @@ import { _convertMolNotation } from '../utils/convert-notation-utils';
 import { SCAFFOLD_COL, SUBSTRUCT_COL } from '../constants';
 import { delay } from '@datagrok-libraries/utils/src/test';
 import { hexToPercentRgb } from '../utils/chem-common';
-import { ISubstruct } from '../rendering/rdkit-cell-renderer';
 import { getMolSafe, getQueryMolSafe } from '../utils/mol-creation_rdkit';
 import { MolfileHandler } from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 
 const R_GROUP_PARAMS_STORAGE_NAME = 'r-group-params';
 const R_GROUP_PARAMS_KEY = 'selected';

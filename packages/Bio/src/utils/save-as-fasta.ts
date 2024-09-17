@@ -105,7 +105,7 @@ export function wrapSequence(srcSS: ISeqSplitted, lineWidth: number = FASTA_LINE
   const seqLineList: string[] = [];
   while (seqPos < seqLength) {
     /* join sliced monomer into line */
-    const seqLine = wu(srcSS.originals).slice(seqPos, seqPos + lineWidth).toArray();
+    const seqLine = wu.count(seqPos).take(Math.min(srcSS.length - seqPos, lineWidth)).map((p) => srcSS.getOriginal(p)).toArray();
     const seqLineTxt: string = seqLine.map((om) => om.length > 1 ? `[${om}]` : om)
       .reduce((a, b) => a + b, '');
     seqLineList.push(seqLineTxt);

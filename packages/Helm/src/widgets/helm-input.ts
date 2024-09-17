@@ -183,7 +183,7 @@ export class HelmInput extends HelmInputBase {
     if (hoveredAtom) {
       const seqMonomer = getSeqMonomerFromHelmAtom(hoveredAtom);
       const monomerLib = _package.monomerLib;
-      const tooltipEl = monomerLib ? monomerLib.getTooltip(seqMonomer.polymerType, seqMonomer.symbol) :
+      const tooltipEl = monomerLib ? monomerLib.getTooltip(seqMonomer.biotype, seqMonomer.symbol) :
         ui.divText('Monomer library is not available');
       this.showTooltip(tooltipEl, hoveredAtom);
       event.preventDefault();
