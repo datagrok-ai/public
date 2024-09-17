@@ -14,7 +14,8 @@ category('ComputeUtils: Driver state tree readonly', async () => {
     const tree = StateTree.fromPipelineConfig({config: pconf});
     await tree.initFuncCalls().toPromise();
     const sc = tree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});
-    const metaCall = await tree.save().toPromise();
+    await tree.save().toPromise();
+    const metaCall = tree.metaCall$.value;
     const loadedTree = await StateTree.load(metaCall!.id, pconf, {isReadonly: true}).toPromise();
     await loadedTree.initFuncCalls().toPromise();
     const lc = loadedTree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});
@@ -31,7 +32,8 @@ category('ComputeUtils: Driver state tree readonly', async () => {
     const tree = StateTree.fromPipelineConfig({config: pconf});
     await tree.initFuncCalls().toPromise();
     const sc = tree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});
-    const metaCall = await tree.save().toPromise();
+    await tree.save().toPromise();
+    const metaCall = tree.metaCall$.value;
     // create outer pipeline
     const outerConfig = await callHandler<PipelineConfiguration>('LibTests:MockProvider3', {version: '1.0'}).toPromise();
     const outerPconf = await getProcessedConfig(outerConfig);
@@ -56,7 +58,8 @@ category('ComputeUtils: Driver state tree readonly', async () => {
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
     await tree.initFuncCalls().toPromise();
-    const metaCall = await tree.save().toPromise();
+    await tree.save().toPromise();
+    const metaCall = tree.metaCall$.value;
     // create outer pipeline
     const outerConfig = await callHandler<PipelineConfiguration>('LibTests:MockProvider3', {version: '1.0'}).toPromise();
     const outerPconf = await getProcessedConfig(outerConfig);
@@ -67,7 +70,8 @@ category('ComputeUtils: Driver state tree readonly', async () => {
     await outerTree.loadSubTree(root.uuid, metaCall!.id, 'pipelinePar', 1, true).toPromise();
     const sc = outerTree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});
     // save outer with inner
-    const metaCallOuter = await outerTree.save().toPromise();
+    await outerTree.save().toPromise();
+    const metaCallOuter =  outerTree.metaCall$.value
     // load outer with inner
     const loadedTree = await StateTree.load(metaCallOuter!.id, outerPconf).toPromise();
     const lc = loadedTree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});

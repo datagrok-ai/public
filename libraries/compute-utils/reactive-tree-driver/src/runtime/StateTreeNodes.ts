@@ -8,7 +8,7 @@ import {PipelineConfigurationParallelProcessed, PipelineConfigurationProcessed, 
 import {IFuncCallAdapter, IStateStore, MemoryStore} from './FuncCallAdapters';
 import {FuncCallInstancesBridge, RestrictionState} from './FuncCallInstancesBridge';
 import {isPipelineConfig, PipelineStepConfigurationProcessed} from '../config/config-utils';
-import {map, mapTo, scan, skip, takeUntil, withLatestFrom} from 'rxjs/operators';
+import {map, mapTo, scan, skip, switchMap, takeUntil, withLatestFrom} from 'rxjs/operators';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {RestrictionType, ValidationResult} from '../data/common-types';
 import {mergeValidationResults} from '../utils';
@@ -37,6 +37,8 @@ export interface IStoreProvider {
 }
 
 export class FuncCallNode implements IStoreProvider {
+  private depsData$ = new BehaviorSubject<(readonly [string, BehaviorSubject<boolean>])[]>([]);
+
   public uuid = uuidv4();
   public readonly nodeType = 'funccall';
 
@@ -78,6 +80,11 @@ export class FuncCallNode implements IStoreProvider {
         ({isRunning, isRunnable, isOutputOutdated, pendingDependencies})),
       takeUntil(this.closed$),
     ).subscribe(this.funcCallState$);
+
+    this.depsData$.pipe(
+      switchMap((deps) => this.getPendingDeps(deps)),
+      takeUntil(this.closed$)
+    ).subscribe(this.pendingDependencies$);
   }
 
   initAdapter(
@@ -91,6 +98,10 @@ export class FuncCallNode implements IStoreProvider {
 
   changeAdapter(adapter: IFuncCallAdapter) {
     this.instancesWrapper.change(adapter);
+  }
+
+  setDeps(deps: (readonly [string, BehaviorSubject<boolean>])[]) {
+    this.depsData$.next(deps);
   }
 
   getStateStore() {
@@ -229,6 +240,22 @@ export class FuncCallNode implements IStoreProvider {
       } else
         return undefined;
     }
+  }
+
+  private getPendingDeps(deps: (readonly [string, BehaviorSubject<boolean>])[]) {
+    const pendingStates = deps.map(([uuid, state$]) => state$.pipe(map((state) => [uuid, state] as const)));
+    const pending$ = merge(...pendingStates).pipe(
+      scan((acc, [uuid, isPending]) => {
+        if (isPending)  {
+          acc.add(uuid)
+        } else {
+          acc.delete(uuid)
+        }
+        return acc;
+      }, new Set<string>()),
+      map((s) => [...s])
+    );
+    return pending$;
   }
 
   // TODO: checking for additional actual Object keys (?)

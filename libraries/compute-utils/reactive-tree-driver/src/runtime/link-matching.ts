@@ -9,12 +9,12 @@ import {StateTreeNode} from './StateTreeNodes';
 export type LinkSpec = PipelineLinkConfiguration<LinkIOParsed[]>;
 export type ActionSpec = PipelineActionConfiguraion<LinkIOParsed[]> | StepActionConfiguraion<LinkIOParsed[]>;
 
-type matchedIO = {
+type MatchedIO = {
   path: Readonly<NodePath>;
   ioName?: string;
 }
 
-type MatchedNodePaths = Readonly<Array<matchedIO>>;
+export type MatchedNodePaths = Readonly<Array<MatchedIO>>;
 
 export type MatchInfo = {
   spec: LinkSpec | ActionSpec;
@@ -49,7 +49,7 @@ export function matchNodeLink(rnode: TreeNode<StateTreeNode>, spec: LinkSpec) {
 function matchLinkInstance(
   rnode: TreeNode<StateTreeNode>,
   spec: LinkSpec,
-  base?: Readonly<matchedIO>,
+  base?: Readonly<MatchedIO>,
   baseName?: string,
 ): MatchInfo | undefined {
   const matchInfo: MatchInfo = {

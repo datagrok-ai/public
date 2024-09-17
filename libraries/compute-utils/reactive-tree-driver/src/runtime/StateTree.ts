@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Observable, defer, of, merge, Subject, BehaviorSubject, from} from 'rxjs';
-import {finalize, map, mapTo, toArray, concatMap, tap} from 'rxjs/operators';
+import {finalize, map, mapTo, toArray, concatMap, tap, takeUntil} from 'rxjs/operators';
 import {NodePath, BaseTree, TreeNode} from '../data/BaseTree';
 import {PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {isFuncCallSerializedState, PipelineInstanceConfig, PipelineSerializedState, PipelineState} from '../config/PipelineInstance';
@@ -18,12 +18,16 @@ import {ValidationResult} from '../data/common-types';
 const MAX_CONCURENT_SAVES = 5;
 
 export class StateTree {
+  private closed$ = new Subject<true>();
+
   public nodeTree: BaseTree<StateTreeNode>;
+  public nodesMap: Map<string, StateTreeNode> = new Map();
   public linksState: LinksState;
 
   public makeStateRequests$ = new Subject<true>();
   public metaCall$ = new BehaviorSubject<DG.FuncCall | undefined>(undefined);
-  public isLocked$ = new BehaviorSubject(false);
+  public globalROLocked$ = new BehaviorSubject(false);
+  public treeMutationsLocked$ = new BehaviorSubject(false);
 
   constructor(
     item: StateTreeNode,
@@ -32,6 +36,11 @@ export class StateTree {
   ) {
     this.nodeTree = new BaseTree(item);
     this.linksState = new LinksState();
+
+    this.linksState.runningLinks$.pipe(
+      map((links) => !!links?.length),
+      takeUntil(this.closed$),
+    ).subscribe(this.treeMutationsLocked$);
   }
 
   public toSerializedState(options: StateTreeSerializationOptions = {}): PipelineSerializedState {
@@ -85,7 +94,7 @@ export class StateTree {
   }
 
   public save(uuid?: string) {
-    return this.updateWithTreeLock(() => {
+    return this.mutateTree(() => {
       const [root, nqName] = StateTree.findPipelineNode(this, uuid);
       if (this.mockMode)
         throw new Error(`Cannot save mock tree`);
@@ -112,51 +121,54 @@ export class StateTree {
         toArray(),
         concatMap(() => this.saveMetaCall(root, nqName, isRoot ? this.metaCall$.value : undefined)),
         tap((call) => isRoot ? this.metaCall$.next(call) : void(0)),
+        mapTo([])
       );
     });
   }
 
   public initAll() {
-    return this.updateWithTreeLock(() => {
+    return this.mutateTree(() => {
       return merge(
         StateTree.loadOrCreateCalls(this, this.mockMode),
         this.initMetaCall(),
-      ).pipe(toArray(), mapTo(this));
-    });
+      ).pipe(toArray(), mapTo([]));
+    }).pipe(mapTo(this));
   }
 
   public initFuncCalls() {
-    return this.updateWithTreeLock(() => {
-      return StateTree.loadOrCreateCalls(this, this.mockMode);
-    });
+    return this.mutateTree(() => {
+      return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(mapTo([]));
+    }).pipe(mapTo(this));
   }
 
-  public moveSubtree(uuid: string, pos: number) {
-    return this.updateWithTreeLock(() => {
+  public moveSubtree(uuid: string, newIdx: number) {
+    return this.mutateTree(() => {
       const data = this.nodeTree.find((item) => item.uuid === uuid);
       if (data == null)
         throw new Error(`Node uuid ${uuid} not found`);
       const [node, path] = data;
       this.nodeTree.removeBrunch(path);
-      const ppath = path.slice(0, -1);
-      this.nodeTree.attachBrunch(ppath, node, node.getItem().config.id, pos);
-      return of(ppath);
+      const [ppath, oldIdx] = this.getMutationPath(path);
+      this.nodeTree.attachBrunch(ppath, node, node.getItem().config.id, newIdx);
+      const minPos = Math.min(oldIdx, newIdx);
+      return of([ppath, minPos]);
     });
   }
 
   public removeSubtree(uuid: string) {
-    return this.updateWithTreeLock(() => {
+    return this.mutateTree(() => {
       const data = this.nodeTree.find((item) => item.uuid === uuid);
       if (data == null)
         throw new Error(`Node uuid ${uuid} not found`);
       const [, path] = data;
       this.nodeTree.removeBrunch(path);
-      return of(path);
+      const pdata = this.getMutationPath(path);
+      return of(pdata);
     });
   }
 
   public addSubTree(puuid: string, id: string, pos: number, initCalls = true) {
-    return this.updateWithTreeLock(() => {
+    return this.mutateTree(() => {
       const [_root, _nqName, path] = StateTree.findPipelineNode(this, puuid);
       const subConfig = this.getSubConfig(path, id);
       if (isPipelineStepConfig(subConfig))
@@ -171,12 +183,13 @@ export class StateTree {
           mockMode: this.mockMode,
         });
       }
-      return (initCalls ? StateTree.loadOrCreateCalls(this, this.mockMode) : of(this)).pipe(mapTo(path));
+      const pdata = this.getMutationPath(path);
+      return (initCalls ? StateTree.loadOrCreateCalls(this, this.mockMode) : of(this)).pipe(mapTo(pdata));
     });
   }
 
   public loadSubTree(puuid: string, dbId: string, id: string, pos: number, isReadonly: boolean) {
-    return this.updateWithTreeLock(() => {
+    return this.mutateTree(() => {
       const [_root, _nqName, path] = StateTree.findPipelineNode(this, puuid);
       const subConfig = this.getSubConfig(path, id);
       if (isPipelineStepConfig(subConfig))
@@ -186,12 +199,13 @@ export class StateTree {
       ).pipe(
         map((tree) => this.nodeTree.attachBrunch(path, tree.nodeTree.root, id, pos)),
       );
-      return tree.pipe(mapTo(path));
+      const pdata = this.getMutationPath(path);
+      return tree.pipe(mapTo(pdata));
     });
   }
 
   public runStep(uuid: string, mockResults?: Record<string, any>, mockDelay?: number) {
-    return this.updateWithTreeLock(() => {
+    return this.withTreeLock(() => {
       if (!this.mockMode && mockResults)
         throw new Error(`Mock results passed to runStep while mock mode is off`);
       const res = this.nodeTree.find((item) => item.uuid === uuid);
@@ -201,7 +215,7 @@ export class StateTree {
       const node = snode.getItem();
       if (!isFuncCallNode(node))
         throw new Error(`Step uuid ${uuid} is not FuncCall`);
-      return node.instancesWrapper.run(mockResults, mockDelay);
+      return node.instancesWrapper.run(mockResults, mockDelay).pipe(mapTo(undefined));
     });
   }
 
@@ -218,6 +232,7 @@ export class StateTree {
         item.close();
       return acc;
     }, undefined);
+    this.closed$.next(true);
   }
 
   static load(
@@ -434,26 +449,79 @@ export class StateTree {
     return [root, nqName, path] as const;
   }
 
-  private updateWithTreeLock<R>(fn: () => Observable<R>) {
+  private mutateTree(fn: () => Observable<readonly [NodePath?, number?] | undefined>) {
     return defer(() => {
       this.treeLock();
+      if (this.treeMutationsLocked$.value)
+        throw new Error(`Cannot mutate tree while links are running`);
+      this.linksState.destroyLinks();
       return fn();
-    }).pipe(finalize(() => {
-      this.treeUnlock();
-      this.makeStateRequests$.next(true);
-    }));
+    }).pipe(
+      tap(() => this.updateNodesMap()),
+      concatMap((data) => {
+        const [mutationPath, childOffset] = data ?? [];
+        return this.linksState.update(this.nodeTree, mutationPath, childOffset);
+      }),
+      tap(() => this.setDepsTracker()),
+      finalize(() => {
+        this.treeUnlock();
+        this.makeStateRequests$.next(true);
+      }),
+    );
+  }
+
+  private withTreeLock(fn: () => Observable<undefined>) {
+    return defer(() => {
+      this.treeLock();
+      if (this.treeMutationsLocked$.value)
+        throw new Error(`Cannot mutate tree while links are running`);
+      return fn();
+    }).pipe(
+      finalize(() => {
+        this.treeUnlock();
+        this.makeStateRequests$.next(true);
+      }),
+    );
+  }
+
+  private updateNodesMap() {
+    this.nodesMap = new Map();
+    this.nodeTree.traverse(this.nodeTree.root, (acc, node) => {
+      const item = node.getItem();
+      this.nodesMap.set(item.uuid, item);
+      return acc;
+    }, undefined);
+  }
+
+  private setDepsTracker() {
+    this.nodeTree.traverse(this.nodeTree.root, (acc, node) => {
+      const item = node.getItem();
+      if (!isFuncCallNode(item)) {
+        return acc;
+      }
+      const deps = this.linksState.deps.get(item.uuid);
+      const depsStates = [...(deps?.nodes ?? [])].filter((depId) => {
+        const depItem = this.nodesMap.get(depId);
+        return depItem && isFuncCallNode(depItem)
+      }).map((depId) => {
+        const depItem = this.nodesMap.get(depId)! as FuncCallNode;
+        return [depId, depItem.instancesWrapper.isOutputOutdated$] as const;
+      });
+      item.setDeps(depsStates);
+      return acc;
+    }, null)
   }
 
   private treeLock() {
-    if (this.isLocked$.value)
-      throw new Error(`Global structure double lock`);
-    this.isLocked$.next(true);
+    if (this.globalROLocked$.value)
+      throw new Error(`Changes double lock`);
+    this.globalROLocked$.next(true);
   }
 
   private treeUnlock() {
-    if (!this.isLocked$.value)
-      throw new Error(`Global structure double unlock`);
-    this.isLocked$.next(false);
+    if (!this.globalROLocked$.value)
+      throw new Error(`Changes double unlock`);
+    this.globalROLocked$.next(false);
   }
 
   private getSubConfig(path: NodePath, id: string) {
@@ -461,6 +529,15 @@ export class StateTree {
     const subConfPath = [...path.map((s) => s.id), id];
     const subConfig = getConfigByInstancePath(subConfPath, this.config, refMap);
     return subConfig;
+  }
+
+  private getMutationPath(path: NodePath) {
+    if (path.length === 0) {
+      return [path, 0] as const;
+    }
+    const ppath = path.slice(0, -1);
+    const endSegment = indexFromEnd(path)!;
+    return [ppath, endSegment.idx] as const;
   }
 
   private static makeNode(

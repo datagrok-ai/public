@@ -19,7 +19,8 @@ export class Driver {
   public currentConsistency$ = new BehaviorSubject<Record<string, BehaviorSubject<Record<string, ConsistencyInfo>>>>({});
   public currentCallsState$ = new BehaviorSubject<Record<string, BehaviorSubject<FuncCallStateInfo | undefined>>>({});
 
-  public stateLocked$ = new BehaviorSubject(false);
+  public globalROLocked$ = new BehaviorSubject(false);
+  public treeMutationsLocked$ = new BehaviorSubject(false);
 
   private states$ = new BehaviorSubject<StateTree | undefined>(undefined);
   private commands$ = new Subject<ViewConfigCommands>();
@@ -78,9 +79,14 @@ export class Driver {
     ).subscribe(this.currentCallsState$);
 
     this.states$.pipe(
-      switchMap((state) => state ? state.isLocked$ : of(false)),
+      switchMap((state) => state ? state.globalROLocked$ : of(false)),
       takeUntil(this.closed$),
-    ).subscribe(this.stateLocked$);
+    ).subscribe(this.globalROLocked$);
+
+    this.states$.pipe(
+      switchMap((state) => state ? state.treeMutationsLocked$ : of(false)),
+      takeUntil(this.closed$),
+    ).subscribe(this.treeMutationsLocked$);
   }
 
   public sendCommand(msg: ViewConfigCommands) {
@@ -176,7 +182,7 @@ export class Driver {
       map(([state, config, metaCall]) =>
         StateTree.fromInstanceState({state, config, metaCall, isReadonly: !!msg.readonly, mockMode: this.mockMode})),
       concatMap((state) => state.initFuncCalls()),
-      tap((nextState) => this.states$.next(nextState)),
+      tap((state) => this.states$.next(state)),
     );
   }
 
@@ -185,7 +191,7 @@ export class Driver {
       concatMap((conf) => from(getProcessedConfig(conf))),
       map((config) => StateTree.fromPipelineConfig({config, isReadonly: false, mockMode: this.mockMode})),
       concatMap((state) => state.initAll()),
-      tap((nextState) => this.states$.next(nextState)),
+      tap((state) => this.states$.next(state)),
     );
   }
 

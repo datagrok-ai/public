@@ -24,7 +24,8 @@ export const VueDriverTestApp = defineComponent({
     const state = reactive({callsInfo: {} as Record<string, FuncCallStateInfo | undefined>});
 
     useSubscription((driver.currentState$).subscribe((s) => tree.value = s));
-    const isLocked = useObservable(driver.stateLocked$);
+    const isLockedRO = useObservable(driver.globalROLocked$);
+    const isLockedMutations = useObservable(driver.treeMutationsLocked$);
 
     useSubscription(driver.currentCallsState$.pipe(
       switchMap((data) => {
@@ -87,7 +88,8 @@ export const VueDriverTestApp = defineComponent({
       <KeepAlive>
         <div style={{width: '100%', height: '100%'}}>
           <BigButton onClick={() => initPipeline('LibTests:MockProvider3')}>Init Pipeline</BigButton>
-          <div>{ isLocked.value ? 'TREE LOCKED' : 'TREE UNLOCKED' }</div>
+          <div>{ isLockedRO.value ? 'TREE RO LOCKED' : 'TREE RO UNLOCKED' }</div>
+          <div>{ isLockedMutations.value ? 'TREE MUTATIONS LOCKED' : 'TREE MUTATIONS UNLOCKED' }</div>
           {tree.value ? getWidgetTree(tree.value) : <div>NO TREE</div>}
         </div>
       </KeepAlive>
