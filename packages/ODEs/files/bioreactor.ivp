@@ -145,3 +145,5 @@
            T =  300  {units: K;     caption: temperature; category: Parameters;  min: 250; max: 350}            [System temperature]
            P =    1  {units: atm;   caption: pressure;    category: Parameters;  min: 1;   max: 2}              [Headspace pressure]
   switchTime =  135  {units: min;   caption: switch at;   category: Time;        min: 70;  max: 180; step: 10}  [Switch mode time]
+
+#meta.inputs: 'App Data/DiffStudio/bioreactor-inputs.csv'

@@ -1,0 +1,22 @@
+Input,Caption,Mode 1,Mode 2
+t0,Initial,0,0
+t1,Final,734,500
+h,Step,1,1
+FFox,FFox,0.163,0.24
+KKox,KKox,0.24,0.18
+FFred,FFred,0.11,0.089
+KKred,KKred,0.09,0.115
+Ffree,Ffree,0,0
+Kfree,Kfree,0,0
+FKred,FKred,0,0
+FKox,FKox,0,0
+MEAthiol,MEAthiol,10,15.5
+CO2,CO2,0.1,0.14
+yO2P,yO2P,0.209,0.209
+CYST,CYST,0,0
+VL,VL,7.2,7.2
+qin,Gas,0.5,1.5
+yO2in,O2 fraction,0.1,0.85
+T,Temperature,250,340
+P,Pressure,1,1.9
+switchTime,Switch at,70,175
