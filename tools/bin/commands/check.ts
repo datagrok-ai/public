@@ -8,6 +8,7 @@ import { PackageFile } from '../utils/interfaces';
 import * as testUtils from '../utils/test-utils';
 import { error } from 'console';
 
+const warns = ['Latest package version', 'Datagrok API version should contain'];
 
 export function check(args: CheckArgs): boolean {
   const nOptions = Object.keys(args).length - 1;
@@ -39,7 +40,11 @@ function runChecks(packagePath: string): boolean {
 
   const webpackConfigPath = path.join(packagePath, 'webpack.config.js');
   const isWebpack = fs.existsSync(webpackConfigPath);
+  let isReleaseCandidateVersion: boolean = false;
   let externals: { [key: string]: string } | null = null;
+
+  if (/\d+.\d+.\d+-rc(.[A-Za-z0-9]*.[A-Za-z0-9]*)?/.test(json.version))
+    isReleaseCandidateVersion = true;
   if (isWebpack) {
     const content = fs.readFileSync(webpackConfigPath, { encoding: 'utf-8' });
     externals = extractExternals(content);
@@ -50,13 +55,13 @@ function runChecks(packagePath: string): boolean {
   errors.push(...checkNpmIgnore(packagePath));
   warnings.push(...checkScriptNames(packagePath));
   errors.push(...checkFuncSignatures(packagePath, funcFiles));
-  errors.push(...checkPackageFile(packagePath, json, { isWebpack, externals }));
-  warnings.push(...checkChangelog(packagePath, json));
+  errors.push(...checkPackageFile(packagePath, json, { isWebpack, externals, isReleaseCandidateVersion }));
+  if (!isReleaseCandidateVersion)
+    warnings.push(...checkChangelog(packagePath, json));
 
   if (warnings.length) {
     console.log(`${path.basename(packagePath)} warnings`);
     warn(warnings);
-
   }
 
   if (errors.length) {
@@ -69,8 +74,6 @@ function runChecks(packagePath: string): boolean {
   console.log(`Checking package ${path.basename(packagePath)}...\t\t\t\u2713 OK`);
   return true;
 }
-
-const warns = ['Latest package version', 'Datagrok API version should contain'];
 
 function runChecksRec(dir: string): boolean {
   const files = fs.readdirSync(dir);
@@ -308,7 +311,7 @@ const sharedLibExternals: { [lib: string]: {} } = {
 
 export function checkPackageFile(packagePath: string, json: PackageFile, options?: {
   externals?:
-  { [key: string]: string } | null, isWebpack?: boolean
+  { [key: string]: string } | null, isWebpack?: boolean | null, isReleaseCandidateVersion?: boolean
 }): string[] {
   const warnings: string[] = [];
   const isPublicPackage = path.basename(path.dirname(packagePath)) === 'packages' &&
@@ -341,7 +344,7 @@ export function checkPackageFile(packagePath: string, json: PackageFile, options
   if (api) {
     if (api === '../../js-api') { } else if (api === 'latest')
       warnings.push('File "package.json": you should specify Datagrok API version constraint (for example ^1.16.0, >=1.16.0).');
-    else if (!/^(\^|>|<|~).+/.test(api))
+    else if (options?.isReleaseCandidateVersion === false && (!/^(\^|>|<|~).+/.test(api)))
       warnings.push('File "package.json": Datagrok API version should starts with > | >= | ~ | ^ | < | <=');
   }
 
@@ -382,6 +385,31 @@ export function checkPackageFile(packagePath: string, json: PackageFile, options
       if (!(fs.existsSync(path.join(packagePath, source))))
         warnings.push(`Source ${source} not found in the package.`);
     }
+  }
+
+  if (options?.isReleaseCandidateVersion === true) {
+    let hasRCDependency = false; 
+
+    for (let dependency of Object.keys(json.dependencies ?? {})) { 
+      if (/\d+.\d+.\d+-rc(.[A-Za-z0-9]*.[A-Za-z0-9]*)?/.test((json.dependencies ?? {})[dependency])) {
+        hasRCDependency = true;
+        break;
+      }
+    }
+
+    if (!hasRCDependency) {
+      for (let dependency of Object.keys(json.dependencies ?? {})) {
+        console.log(dependency);
+        console.log((json.dependencies ?? {})[dependency]);
+        if (/\d+.\d+.\d+-rc(.[A-Za-z0-9]*.[A-Za-z0-9]*)?/.test((json.devDependencies ?? {})[dependency])) {
+          hasRCDependency = true;
+          break;
+        }
+      }
+    }
+
+    if (!hasRCDependency)
+      warnings.push('Release candidate error: Current package doesnt have any dependencies from any release candidate package ');
   }
 
   return warnings;
@@ -503,6 +531,7 @@ function showError(errors: string[]): void {
 function warn(warnings: string[]): void {
   warnings.forEach((w) => color.warn(w));
 }
+
 function getFuncMetadata(script: string): FuncMetadata[] {
   const funcData: FuncMetadata[] = [];
   let isHeader = false;
