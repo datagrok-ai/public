@@ -1,7 +1,3 @@
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
-
 import {CandidateType} from './types';
 
 /** enum type to simplify setting "user-friendly" notation if necessary */
@@ -59,3 +55,14 @@ export const candidateAlphabets: CandidateType[] = [
   new CandidateType(ALPHABET.DNA, Alphabets.fasta.dna, 0.55),
   new CandidateType(ALPHABET.RNA, Alphabets.fasta.rna, 0.55),
 ];
+
+/** Canonical gap symbol */
+export const GAP_SYMBOL: string = '';
+
+export const GapOriginals: {
+  [units: string]: string
+} = {
+  [NOTATION.FASTA]: '-',
+  [NOTATION.SEPARATOR]: '',
+  [NOTATION.HELM]: '*',
+};

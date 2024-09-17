@@ -10,7 +10,7 @@ import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-v
 import {DockingRole, DockingTags} from '@datagrok-libraries/bio/src/viewers/molecule3d';
 import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {CellRendererBackAsyncBase, RenderServiceBase} from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
-import {getGridCellRendererBack} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
+import {getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 
 import {IPdbGridCellRenderer} from './types';
 import {_getNglGlService} from '../package-utils';
@@ -48,7 +48,7 @@ export class PdbGridCellRendererBack extends CellRendererBackAsyncBase<NglGlProp
         const currentViewer = wu(tview.viewers).find((v) => {
           return v.type === 'Biostructure' || v.type === 'NGL';
         }) as DG.Viewer & IBiostructureViewer;
-  
+
         if (!currentViewer) {
           tview.dockManager.dock(viewer.root, DG.DOCK_TYPE.RIGHT, null, 'Biostructure Viewer', 0.3);
         } else {
@@ -66,7 +66,7 @@ export class PdbGridCellRendererBack extends CellRendererBackAsyncBase<NglGlProp
       }
     });
   }
-  
+
   async createViewer(gridCell: DG.GridCell): Promise<{ tview: DG.TableView | undefined, viewer: any }> {
     const df: DG.DataFrame = gridCell.grid.dataFrame;
     const tableCol: DG.Column | null = gridCell.tableColumn;
@@ -75,21 +75,21 @@ export class PdbGridCellRendererBack extends CellRendererBackAsyncBase<NglGlProp
 
     const dockingRole: string = tableCol.getTag(DockingTags.dockingRole);
     const value: string = gridCell.cell.value;
-  
+
     const tview: DG.TableView | undefined = wu(grok.shell.tableViews)
       .find((tv) => tv.dataFrame.id === df.id);
 
     if (!tview)
       return { tview: undefined, viewer: null };
-  
+
     let viewer: (DG.Viewer & IBiostructureViewer) | undefined;
-  
+
     switch (dockingRole) {
       case DockingRole.ligand: {
         // Biostructure, NGL viewers track current, selected rows to display ligands
         break;
       }
-  
+
       case DockingRole.target:
       default: {
         viewer = await df.plot.fromType('Biostructure', { pdb: value }) as DG.Viewer & IBiostructureViewer;
@@ -105,14 +105,14 @@ export class PdbGridCellRendererBack extends CellRendererBackAsyncBase<NglGlProp
     }
 
     return { tview, viewer };
-  }  
+  }
 
   static getOrCreate(gridCell: DG.GridCell): PdbGridCellRendererBack {
     const [gridCol, tableCol, temp] =
-      getGridCellRendererBack<string, PdbGridCellRendererBack>(gridCell);
+      getGridCellColTemp<string, PdbGridCellRendererBack>(gridCell);
 
-    let res: PdbGridCellRendererBack = temp['rendererBack'];
-    if (!res) res = temp['rendererBack'] = new PdbGridCellRendererBack(gridCol, tableCol);
+    let res: PdbGridCellRendererBack = temp.rendererBack;
+    if (!res) res = temp.rendererBack = new PdbGridCellRendererBack(gridCol, tableCol);
     return res;
   }
 

@@ -6,6 +6,9 @@ import {HelmType, PolymerType, Atom, Mol, ISeqMonomer, HelmMol, HelmAtom} from '
 
 import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 
+import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
+import {GAP_SYMBOL, GapOriginals, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+
 import {HelmMonomerPlacer} from '../helm-monomer-placer';
 
 export function getHoveredMonomerFromEditorMol(
@@ -77,23 +80,33 @@ export function getHoveredMonomerFallback(
   }
   left = (argsX >= sumLengths[left]) ? left : left - 1; // correct left to between sumLengths
   if (left >= 0)
-    hoveredSeqMonomer = getSeqMonomerFromHelm(allParts[0], allParts[left]);
+    hoveredSeqMonomer = getSeqMonomerFromHelm(left, allParts[left], allParts[0]);
   return hoveredSeqMonomer;
 }
 
 export function getSeqMonomerFromHelmAtom(atom: HelmAtom): ISeqMonomer {
   const polymerType = helmTypeToPolymerType(atom.bio!.type);
-  return {symbol: atom.elem, polymerType: polymerType};
+  const canonicalSymbol = atom.elem === GapOriginals[NOTATION.HELM] ? GAP_SYMBOL : atom.elem;
+  return {position: parseInt(atom.bio!.continuousId as string) - 1, symbol: atom.elem, biotype: atom.bio!.type};
 }
 
-function getSeqMonomerFromHelm(
-  helmPrefix: string, symbol: string
-): ISeqMonomer {
+/** Linear
+ * @deprecated
+ */
+function getSeqMonomerFromHelm(pos: number, symbol: string, helmPrefix: string): ISeqMonomer {
   let resSeqMonomer: ISeqMonomer | undefined = undefined;
   const polymerTypeList: PolymerType[] = ['RNA', 'PEPTIDE', 'CHEM', 'BLOB', 'G'];
   for (const polymerType of polymerTypeList) {
-    if (helmPrefix.startsWith(polymerType))
-      resSeqMonomer = {symbol: symbol, polymerType: polymerType};
+    if (helmPrefix.startsWith(polymerType)) {
+      let helmType: HelmType = HelmTypes.AA;
+      if (polymerType == 'RNA')
+        helmType = HelmTypes.NUCLEOTIDE;
+      else if (polymerType == 'PEPTIDE')
+        helmType = HelmTypes.AA;
+      else if (polymerType == 'CHEM')
+        helmType = HelmTypes.CHEM;
+      resSeqMonomer = {position: pos, symbol: symbol, biotype: helmType};
+    }
   }
   if (!resSeqMonomer)
     throw new Error(`Monomer not found for symbol = '${symbol}' and helmPrefix = '${helmPrefix}'.`);

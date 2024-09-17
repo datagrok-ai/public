@@ -13,7 +13,7 @@ type GridCellRendererTemp<TBack> = {
   rendererBack: TBack;
 }
 
-export function getGridCellRendererBack<TValue, TBack extends CellRendererBackBase<TValue>>(
+export function getGridCellColTemp<TValue, TBack extends CellRendererBackBase<TValue>>(
   gridCell: DG.GridCell
 ): [DG.GridColumn | null, DG.Column<TValue>, GridCellRendererTemp<TBack>] {
   let temp: GridCellRendererTemp<TBack> | null = null;

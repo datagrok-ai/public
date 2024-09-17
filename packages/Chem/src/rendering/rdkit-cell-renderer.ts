@@ -1,9 +1,15 @@
 /**
  * RDKit-based molecule cell renderer.
  * */
-
-import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
+import {getMonomerHover} from '@datagrok-libraries/chem-meta/src/types';
+import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
+import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
+
 import {
   ALIGN_BY_SCAFFOLD_TAG, FILTER_SCAFFOLD_TAG, HIGHLIGHT_BY_SCAFFOLD_COL,
   HIGHLIGHT_BY_SCAFFOLD_TAG, MIN_MOL_IMAGE_SIZE, PARENT_MOL_COL,
@@ -12,14 +18,6 @@ import {
 import {hexToPercentRgb} from '../utils/chem-common';
 import {_rdKitModule, drawErrorCross, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
 import {IMolContext, getMolSafe} from '../utils/mol-creation_rdkit';
-import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
-
-export interface ISubstruct {
-  atoms?: number[],
-  bonds?: number[],
-  highlightAtomColors?: {[key: number]: number[] | null},
-  highlightBondColors?: {[key: number]: number[] | null}
-}
 
 interface IMolRenderingInfo {
   //mol: RDMol | null; // null when molString is invalid?
@@ -52,13 +50,13 @@ export function _addColorsToBondsAndAtoms(mainSubstr: ISubstruct, color?: string
       for (let j = 0; j < substrToTakeAtomsFrom.atoms.length; j++) {
         mainSubstr.highlightAtomColors ??= {};
         mainSubstr.highlightAtomColors[substrToTakeAtomsFrom.atoms[j]] = colorArr;
-      };
+      }
     }
     if (substrToTakeAtomsFrom.bonds) {
       for (let j = 0; j < substrToTakeAtomsFrom.bonds.length; j++) {
         mainSubstr.highlightBondColors ??= {};
         mainSubstr.highlightBondColors[substrToTakeAtomsFrom.bonds[j]] = colorArr;
-      };
+      }
     }
   }
 }
@@ -109,12 +107,12 @@ M  END
     this.rdKitModule = rdKitModule;
     this.canvasCounter = 0;
     this.canvasReused = new OffscreenCanvas(this.defaultWidth, this.defaultHeight);
-    this.molCache.onItemEvicted = function(obj: {[_ : string]: any}) {
+    this.molCache.onItemEvicted = function(obj: { [_: string]: any }) {
       obj.mol?.delete();
     };
   }
 
-  ensureCanvasSize(w: number, h: number) : OffscreenCanvas {
+  ensureCanvasSize(w: number, h: number): OffscreenCanvas {
     if (this.canvasReused.width < w || this.canvasReused.height < h)
       this.canvasReused = new OffscreenCanvas(Math.max(this.defaultWidth, w), Math.max(this.defaultHeight, h));
     return this.canvasReused;
@@ -125,7 +123,7 @@ M  END
   get defaultWidth(): number {return 200;}
   get defaultHeight(): number {return 100;}
 
-  getDefaultSize(): {width: number, height: number} {
+  getDefaultSize(): { width: number, height: number } {
     return {width: this.defaultWidth, height: this.defaultHeight};
   }
 
@@ -237,7 +235,7 @@ M  END
                   this._addAtomsOrBonds(matchedAtomsAndBonds[j].atoms!, substruct.atoms!);
                   this._addAtomsOrBonds(matchedAtomsAndBonds[j].bonds!, substruct.bonds!);
                   _addColorsToBondsAndAtoms(substruct, scaffolds[i].color, matchedAtomsAndBonds[j]);
-                };
+                }
               }
             }
           }
@@ -275,7 +273,7 @@ M  END
     for (let j = 0; j < fromAtomsOrBonds.length; j++) {
       if (!toAtomsOrBonds?.includes(fromAtomsOrBonds[j]))
         toAtomsOrBonds?.push(fromAtomsOrBonds[j]);
-    };
+    }
   }
 
   _fetchMol(molString: string, scaffolds: IColoredScaffold[], molRegenerateCoords: boolean,
@@ -345,7 +343,7 @@ M  END
     const name = width + ' || ' + height + ' || ' +
       molString + ' || ' + JSON.stringify(scaffolds) + ' || ' +
       molRegenerateCoords + ' || ' + scaffoldRegenerateCoords + ' || ' +
-      ((details as any).haveReferenceSmarts || false).toString() + ' || ' + JSON.stringify(substructureObj); ;
+      ((details as any).haveReferenceSmarts || false).toString() + ' || ' + JSON.stringify(substructureObj);
 
     return this.rendersCache.getOrCreate(name, (_: any) => this._rendererGetOrCreate(width, height,
       molString, scaffolds, molRegenerateCoords, scaffoldRegenerateCoords,
@@ -455,8 +453,14 @@ M  END
     const highlightInfo = this.getHighlightTagInfo(colTemp, gridCell);
 
     // TODO: make both filtering scaffold and single highlight scaffold appear
-
-    if (highlightInfo.scaffolds && highlightInfo.alighByFirstSubtruct) {
+    const mhData = getMonomerHover();
+    if (mhData && mhData.dataFrameId == gridCell.grid.dataFrame.id &&
+      mhData.gridRowIdx === gridCell.gridRow && mhData.molColName == gridCell.tableColumn?.name
+    ) {
+      const substruct = mhData.getSubstruct();
+      this._drawMolecule(x, y, w, h, g.canvas,
+        molString, [], false, false, cellStyle, false, undefined, substruct);
+    } else if (highlightInfo.scaffolds && highlightInfo.alighByFirstSubtruct) {
       this._drawMolecule(x, y, w, h, g.canvas,
         molString, highlightInfo.scaffolds, false, false, cellStyle, highlightInfo.alighByFirstSubtruct);
     } else

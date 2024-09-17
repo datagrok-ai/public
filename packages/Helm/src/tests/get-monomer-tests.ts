@@ -7,10 +7,10 @@ import wu from 'wu';
 import {
   after, before, category, delay, expect, test, expectArray, testEvent, expectFloat, timeout
 } from '@datagrok-libraries/utils/src/test';
-import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {getHelmHelper, getMonomerHandleArgs} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
-import {Atom, HelmType, IJsAtom, IWebEditorMonomer, GetMonomerFunc} from '@datagrok-libraries/bio/src/helm/types';
-import {IMonomerLib, Monomer, MonomerLibSummaryType} from '@datagrok-libraries/bio/src/types';
+import {Atom, HelmType, IJsAtom, GetMonomerFunc} from '@datagrok-libraries/bio/src/helm/types';
+import {MonomerLibSummaryType} from '@datagrok-libraries/bio/src/types';
 import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
@@ -19,12 +19,9 @@ import {
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {defaultMonomerLibSummary, expectMonomerLib} from '@datagrok-libraries/bio/src/tests/monomer-lib-tests';
 
-import {getMonomerHandleArgs, rewriteLibraries} from '../utils/get-monomer';
+import {rewriteLibraries} from '../utils/get-monomer';
 import {JSDraw2Module, OrgHelmModule} from '../types';
 
-import {HelmHelper} from '../helm-helper';
-import {RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from '../constants';
-import {getRS} from '../utils/get-monomer-dummy';
 import {initHelmMainPackage} from './utils';
 
 import {_package} from '../package-test';

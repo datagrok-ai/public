@@ -19,6 +19,7 @@ import './tests/get-monomer-tests';
 import './tests/parse-helm-tests';
 import './tests/helm-web-editor-tests';
 import './tests/helm-input-tests';
+import './tests/helm-helper-tests';
 
 export const _package = new DG.Package();
 export {tests};

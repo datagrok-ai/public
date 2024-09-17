@@ -2,18 +2,17 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {MonomerHoverLink} from '../monomer-works/utils';
+
 export const SUBSTRUCT_COL = 'substruct-col';
 
-export interface ISubstruct {
-  atoms?: number[],
-  bonds?: number[],
-  highlightAtomColors?: { [key: number]: number[] | null },
-  highlightBondColors?: { [key: number]: number[] | null }
-}
-
-export type ToAtomicLevelResType = {
-  molCol: DG.Column<string>;
-  molHighlightCol: DG.Column<object>;
+export type ToAtomicLevelRes = {
+  mol: {
+    col: DG.Column<string>,
+    highlightCol: DG.Column<object>,
+    monomerHoverLink: MonomerHoverLink,
+  } | null,
+  warnings: string[],
 }
 
 export interface ISeqHelper {
@@ -24,7 +23,7 @@ export interface ISeqHelper {
    **/
   helmToAtomicLevel(
     helmCol: DG.Column<string>, chiralityEngine?: boolean, highlight?: boolean
-  ): Promise<ToAtomicLevelResType>;
+  ): Promise<ToAtomicLevelRes>;
 }
 
 export async function getSeqHelper(): Promise<ISeqHelper> {

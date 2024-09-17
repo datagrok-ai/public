@@ -1,4 +1,8 @@
 // interface for typed arrays, like Float32Array and Uint32Array
+import {ALPHABET} from '../utils/macromolecule';
+import {HELM_POLYMER_TYPE} from '../utils/const';
+import {ISeqMonomer} from '../helm/types';
+
 export interface ITypedArray {
     length: number;
     [key: number]: any;
@@ -85,5 +89,37 @@ export type LoopConstants = {
 
 /** Helper structure to simulate pointer to number  */
 export type NumberWrapper = {
-    value: number | null // null if there is no branch attach node
+  value: number | null // null if there is no branch attach node
+}
+
+export type MonomerMapValue = { symbol: string, atoms: number[], bonds: number[] };
+
+export class MonomerMap extends Map<number, MonomerMapValue> {
+  constructor(entries?: [number, MonomerMapValue][] | null) {
+    super(entries);
+  }
+}
+
+/** @property monomers key - helm seq position, */
+export class MolfileWithMap {
+  constructor(
+    public readonly molfile: string,
+    public readonly monomers: MonomerMap,
+  ) {}
+
+  static createEmpty() { return new MolfileWithMap('', new MonomerMap(null)); }
+}
+
+export type SeqToMolfileWorkerData = {
+  canonicalSeqList: string[][],
+  monomersDict: Map<string, MolGraph>,
+  alphabet: ALPHABET,
+  polymerType: HELM_POLYMER_TYPE,
+  start: number,
+  end: number,
+}
+
+export type SeqToMolfileWorkerRes = {
+  molfiles: MolfileWithMap[];
+  warnings: string[]
 }

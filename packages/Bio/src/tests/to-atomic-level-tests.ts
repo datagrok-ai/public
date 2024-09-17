@@ -15,10 +15,9 @@ import {
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
-
-import {toAtomicLevel} from '../package';
-import {_package} from '../package-test';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
+
+import {_package} from '../package-test';
 
 const appPath = 'System:AppData/Bio';
 const fileSource = new DG.FileSource(appPath);
@@ -83,7 +82,8 @@ category('toAtomicLevel', async () => {
 
   async function getTestResult(source: DG.DataFrame, target: DG.DataFrame): Promise<void> {
     const inputCol = source.getCol(inputColName);
-    await toAtomicLevel(source, inputCol, false);
+    // await toAtomicLevel(source, inputCol, false);
+    await grok.functions.call('Bio:toAtomicLevel', {table: source, seqCol: inputCol, nonlinear: false});
     const obtainedCol = source.getCol(outputColName);
     const expectedCol = target.getCol(outputColName);
     const obtainedArray: string[] = wu(obtainedCol.values()).map((mol) => polishMolfile(mol)).toArray();
@@ -223,7 +223,7 @@ async function _testToAtomicLevel(
   const res = await _toAtomicLevel(df, seqCol, monomerLib);
   if (res.warnings.length > 0)
     _package.logger.warning(`_toAtomicLevel() warnings ${res.warnings.join('\n')}`);
-  return res.col;
+  return res.mol!.col;
 }
 
 function polishMolfile(mol: string): string {
