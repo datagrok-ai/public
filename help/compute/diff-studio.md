@@ -36,7 +36,7 @@ To run **Diff Studio**:
 ### Loading and saving data
 
 * **To save model**, click the <i class="fas fa-save"></i> **Save** icon on the ribbon. The context menu opens:
-  * Click `Save as Local File...` to save formulas to a local file. Find the *ivp*-file in Downloads. You can open and edit this file using any text editor.
+  * Click `Save as Local File...` to save model to a local file. Find the *ivp*-file in Downloads. You can open and edit this file using any text editor.
   * Click `Save to My Files...` to save model to your platform files (**Browse > Files > My files**).
 * **To load model** from a local file, click the <i class="fas fa-folder-open"></i> **Load...** on the ribbon, choose **From file...**
   option and choose a local file to upload.
@@ -364,7 +364,7 @@ The `Nimotuzumab` example simulates population pharmacokinetic for [nimotuzumab]
 
 ### Bioreactor
 
-The `Bioreactor` example models the [kinetic mechanism](https://doi.org/10.1074/jbc.RA117.000303) of controlled Fab-arm exchange for the formation of bispecific immunoglobulin G1 antibodies.
+The `Bioreactor` example models the [kinetic mechanism](https://doi.org/10.1074/jbc.RA117.000303) of controlled Fab-arm exchange for the formation of bispecific immunoglobulin G1 antibodies. It shows how to use the `meta.inputs` feature to specify a table with pre-defined model inputs.
 
 ![add-to-workspace](pics/diff-studio-bioreactor.png)
 
@@ -423,6 +423,25 @@ By default, Diff Studio uses ROS34PRw and alerts you if computations take too lo
 ```
 
 Set the maximum number of iterations to debug formulas in complex models.
+
+## Lookup tables
+
+Lookup tables let you initialize model inputs with a set of pre-defined values. These dataframes specify names of inputs in the first column and their values in other numerical columns:
+
+|Input|Set 1|Set 2|...|
+|-----|-----|-----|---|
+|x|1|2|...|
+|y|3|4|...|
+
+Specify *csv*-file with a lookup table in the `#meta.inputs`-line:
+
+```python
+#meta.inputs: 'My files/model-inputs.csv'
+```
+
+Select inputs and compare models runs:
+
+![table-lookups](pics/diff-studio-table-lookups.gif)
 
 See also
 
