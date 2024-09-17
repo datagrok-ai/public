@@ -33,7 +33,9 @@ export const DockManager = Vue.defineComponent({
   setup(props, {slots, emit, expose}) {
     let dockSpawnRef = Vue.ref(null as DockSpawnTsWebcomponent | null);
 
-    whenever(dockSpawnRef, () => {
+    whenever(dockSpawnRef, async () => {
+      if (!dockSpawnRef.value?.dockManager) await Vue.nextTick();
+
       dockSpawnRef.value!.dockManager.getElementCallback = async (state: IState) => {
         let aimSlot = null as null | HTMLElement;
 

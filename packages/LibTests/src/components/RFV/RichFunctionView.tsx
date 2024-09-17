@@ -233,30 +233,18 @@ export const RichFunctionView = Vue.defineComponent({
             tooltip='Run step'
             onClick={run} 
           />
-          {/* <ComboPopup 
+          { !isIncomplete.value && <ComboPopup 
             caption={ui.iconFA('arrow-to-bottom')}
             items={['Excel']}
             onSelected={({item: format}) => {
               Utils.richFunctionViewExport(
-                root.value!,
                 format,
                 currentCall.value.func,
                 currentCall.value,
-                dfToViewerMapping,
-              ).then((blob) => DG.Utils.download('Test name', blob));
+                dfToViewerMapping(),
+              ).then((blob) => DG.Utils.download('Test name.xlsx', blob));
             }}
-          /> */}
-          { !isIncomplete.value && <IconFA
-            name='arrow-to-bottom'
-            tooltip='Generate report'
-            onClick={() => Utils.richFunctionViewExport(
-              'Excel',
-              currentCall.value.func,
-              currentCall.value,
-              dfToViewerMapping(),
-            ).then((blob) => DG.Utils.download('Test name.xlsx', blob))
-            }
-          /> }
+          />}
           <IconFA
             name='chart-pie'
             tooltip='Restore output tabs'

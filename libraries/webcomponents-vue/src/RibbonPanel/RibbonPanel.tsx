@@ -9,7 +9,7 @@ export const RibbonPanel = Vue.defineComponent({
     default?: any,
   }>,
   setup(_, {slots}) {
-    const elements = Vue.reactive([] as HTMLElement[])
+    const elements = Vue.reactive(new Map<number, HTMLElement>)
 
     Vue.onMounted(async () => {
       await Vue.nextTick();
@@ -17,26 +17,30 @@ export const RibbonPanel = Vue.defineComponent({
       const currentView = grok.shell.v;
       currentView.setRibbonPanels([
         currentView.getRibbonPanels().flat(),
-        elements,
+        [...elements.values()],
       ]);
     })    
 
-    const addElement = (el: Element | null | any) => {
-      if (el)
-        elements.push(el)
+    const addElement = (el: Element | null | any, idx: number) => {
+      const content = el;
+      if (content)
+        elements.set(idx, content);
     }
 
     Vue.onUnmounted(() => {
       const currentView = grok.shell.v;
 
+      const elementsArray = [...elements.values()];
       const filteredPanels = currentView
         .getRibbonPanels()
-        .filter((panel) => !panel.some((ribbonItem, idx) => ribbonItem === elements[idx].parentElement))
+        .filter((panel) => !panel.some((ribbonItem) => elementsArray.includes(ribbonItem.children[0] as HTMLElement)))
 
       currentView.setRibbonPanels(filteredPanels);
     });
 
     return () => 
-      slots.default?.().map((slot: any) => <div ref={(el) => addElement(el)}> { slot } </div>) 
+      slots.default?.().filter((slot: any) => slot.type !== Symbol.for('v-cmt')).map((slot: any, idx: number) => 
+        <div slot-idx={`${idx}`} ref={(el) => addElement(el, idx)}> { slot } </div>
+      ) 
   }
 });
