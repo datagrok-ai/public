@@ -983,12 +983,12 @@ export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void 
 //input: bool bms {caption: BMS; default: false; description: "Bristol-Myers Squibb HTS Deck filters"}
 //input: bool sureChembl {caption: SureChEMBL; default: false; description: "MedChem unfriendly compounds from SureChEMBL"}
 //input: bool mlsmr {caption: MLSMR; default: false; description: "NIH MLSMR Excluded Functionality filters"}
-//input: bool dandee {caption: Dandee; default: false; description: "University of Dundee NTD Screening Library filters"}
+//input: bool dundee {caption: Dundee; default: false; description: "University of Dundee NTD Screening Library filters"}
 //input: bool inpharmatica {caption: Inpharmatica; default: false; description: "Inpharmatica filters"}
 //input: bool lint {caption: LINT; default: false; description: "Pfizer LINT filters"}
 //input: bool glaxo {caption: Glaxo; default: false; description: "Glaxo Wellcome Hard filters"}
 export async function structuralAlertsTopMenu(table: DG.DataFrame, molecules: DG.Column, pains: boolean, bms: boolean,
-  sureChembl: boolean, mlsmr: boolean, dandee: boolean, inpharmatica: boolean, lint: boolean, glaxo: boolean,
+  sureChembl: boolean, mlsmr: boolean, dundee: boolean, inpharmatica: boolean, lint: boolean, glaxo: boolean,
 ): Promise<DG.DataFrame | void> {
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
@@ -1002,7 +1002,7 @@ export async function structuralAlertsTopMenu(table: DG.DataFrame, molecules: DG
     bms: bms,
     sureChembl: sureChembl,
     mlsmr: mlsmr,
-    dandee: dandee,
+    dundee: dundee,
     inpharmatica: inpharmatica,
     lint: lint,
     glaxo: glaxo,
@@ -1019,18 +1019,18 @@ export async function structuralAlertsTopMenu(table: DG.DataFrame, molecules: DG
 //input: bool bms {caption: BMS; default: false; description: "Bristol-Myers Squibb HTS Deck filters"}
 //input: bool sureChembl {caption: SureChEMBL; default: false; description: "MedChem unfriendly compounds from SureChEMBL"}
 //input: bool mlsmr {caption: MLSMR; default: false; description: "NIH MLSMR Excluded Functionality filters"}
-//input: bool dandee {caption: Dandee; default: false; description: "University of Dundee NTD Screening Library filters"}
+//input: bool dundee {caption: Dundee; default: false; description: "University of Dundee NTD Screening Library filters"}
 //input: bool inpharmatica {caption: Inpharmatica; default: false; description: "Inpharmatica filters"}
 //input: bool lint {caption: LINT; default: false; description: "Pfizer LINT filters"}
 //input: bool glaxo {caption: Glaxo; default: false; description: "Glaxo Wellcome Hard filters"}
 export async function runStructuralAlerts(table: DG.DataFrame, molecules: DG.Column, pains: boolean, bms: boolean,
-  sureChembl: boolean, mlsmr: boolean, dandee: boolean, inpharmatica: boolean, lint: boolean, glaxo: boolean,
+  sureChembl: boolean, mlsmr: boolean, dundee: boolean, inpharmatica: boolean, lint: boolean, glaxo: boolean,
 ): Promise<DG.DataFrame | void> {
   if (table.rowCount > 1000)
     grok.shell.info('Structural Alerts detection will take a while to run');
 
   const ruleSet: RuleSet = {'PAINS': pains, 'BMS': bms, 'SureChEMBL': sureChembl, 'MLSMR': mlsmr,
-    'Dandee': dandee, 'Inpharmatica': inpharmatica, 'LINT': lint, 'Glaxo': glaxo};
+    'Dundee': dundee, 'Inpharmatica': inpharmatica, 'LINT': lint, 'Glaxo': glaxo};
   const rdkitService = await chemCommonRdKit.getRdKitService();
   const alertsDf = await grok.data.loadTable(chemCommonRdKit.getRdKitWebRoot() + 'files/alert-collection.csv');
 
