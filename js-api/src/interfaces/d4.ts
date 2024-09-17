@@ -1206,7 +1206,7 @@ export interface IDensityPlotSettings {
 
   axisFont: string;
 
-  showNumericalLegend: boolean;
+  showColorScale: boolean;
 
   invertColorScheme: boolean;
 
@@ -1226,13 +1226,17 @@ export interface IDensityPlotSettings {
 
   invertYAxis: boolean;
 
+  showXSelector: boolean;
+
+  showYSelector: boolean;
+
+  bins: number;
+
   allowZoom: boolean;
 
   binToRange: boolean;
 
-  xBins: number;
-
-  yBins: number;
+  showBinSelector: boolean;
 
   backColor: number;
 

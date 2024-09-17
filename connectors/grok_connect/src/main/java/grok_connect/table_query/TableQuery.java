@@ -64,7 +64,7 @@ public class TableQuery {
             sql.append("GROUP BY");
             sql.append(System.lineSeparator());
             sql.append(
-                    String.join(", ", groupByFields));
+                    groupByFields.stream().map(addBrackets::convert).collect(Collectors.joining(", ")));
         }
 
         if (!pivots.isEmpty()) {

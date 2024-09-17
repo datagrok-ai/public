@@ -199,6 +199,13 @@
             <systemPath>${project.basedir}/lib/AthenaJDBC42-2.0.35.1000.jar</systemPath>
         </dependency>
         <dependency>
+            <groupId>com.denodo</groupId>
+            <artifactId>denodo-vdp-jdbcdriver</artifactId>
+            <version>8.0.9</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/denodo-vdp-jdbcdriver-8.0-update-20240306.jar</systemPath>
+        </dependency>
+        <dependency>
             <groupId>software.amazon.neptune</groupId>
             <artifactId>amazon-neptune-jdbc-driver</artifactId>
             <version>3.0.0</version>
