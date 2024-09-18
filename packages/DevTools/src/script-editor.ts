@@ -28,6 +28,7 @@ export function initScriptEditor(view: DG.View): void {
         if (doc.getLine(i) == '//language: javascript') {
           setScriptRibbon(view, doc);
           editor.setCursor({line: 6, ch: 0});
+          break;
           //editor.setFocus();
         }
       }
