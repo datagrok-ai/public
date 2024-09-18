@@ -26,37 +26,37 @@ See also:
 
 The Datagrok 1.21.1 release enhances platform stability and usability, streamlining workflows for a more intuitive user experience. 
 
-Database migrations are unrevertable in this version. You can't rollback to older DF version after first 1.21.0 run. If you still need to rollback - contact DG support for the assistance.
+Database migrations are irreversible in this version. You cannot roll back to an older version of Datagrok after the first 1.21.0 run. If a rollback is necessary, please contact Datagrok support for assistance.
 
-### Input API  breaking change:
+### Input API breaking change:
   - The methods of `DG.InputBase` (such as `onInput` and `onChanged`) have been updated. They are now of the `Observable` type (previously they were `Stream`). To subscribe to these events, you will need to update your code from `input.onChanged(() => change());` to `input.onChanged.subscribe(() => change());` (same for `onInput`).
   - Additionally, when creating an input via the `ui.input.xxx` namespace and passing the `onValueChanged` parameter in the options, the parameters for `onValueChanged` have changed. Previously, they were `(input: DG.InputBase<T>)`, but now they are `(value: T, input: DG.InputBase<T>)`. If you don't need the entire input object, you can simply use the `value` parameter in the method.
 
-### Main visualization and usability improvements:
+### Main:
 
-* Lightweight modeling: Interactive dashboard for training predictive models.
+* Lightweight modeling improvements: Interactive dashboard for training predictive models.
   * Binary classification support: interactive prediction threshold, AUC-ROC.
   * Model comparison tool.
   * Automatic model choice.
-* JS-API: Support for Float64 Columns.
-* File caching updates (follow our [guideline](https://datagrok.ai/help/access/files/#caching-files-shares) to configure cache for your connection).
-* Browse updates: 
+* Browse improvements: 
    * The ability to move files between connections. 
    * Refreshing browse ‘remembers’ preview. 
    * Creating new folder refreshes browse tree. 
+* JS-API: Implemented support for Float64 columns.
+* File caching is now enabled by default: it works automatically without the need for configuration.
 
 ### Viewers
   
-  * Density plot: color palette is added to the viewer. 
+  * [Density plot](../../visualize/viewers/density-plot.md): color palette is added to the viewer. 
   * [#2982](https://github.com/datagrok-ai/public/issues/2982): Tooltip was removed from the legend.
   * Fixes:
-    * [#3004](https://github.com/datagrok-ai/public/issues/3004): Two tables with molecules: scaffold tree is based on correct table by default.
+    * [#3004](https://github.com/datagrok-ai/public/issues/3004): Two tables with molecules: [Scaffold tree](../../visualize/viewers/scaffold-tree.md) viewer is based on correct table by default.    
+    * [#2964](https://github.com/datagrok-ai/public/issues/2964): 'Selection to filter' resets immediately for some data if [Scaffold tree](../../visualize/viewers/scaffold-tree.md) viewer is present in the view. 
     * [#2771](https://github.com/datagrok-ai/public/issues/2771): Filter out legend with empty categories in the legend. 
     * [#2945](https://github.com/datagrok-ai/public/issues/2945): Color picker HEX\RGB choice input in the dialog. 
-    * [#2927](https://github.com/datagrok-ai/public/issues/2927): Fixing a collapsed state of the Heatmap after applying saved layout if it was stacked with another viewer. 
-    * [#2964](https://github.com/datagrok-ai/public/issues/2964): 'Selection to filter' resets immediately for some data if scaffold tree is present in the view. 
-    * Pivot table: Changing columns (pviot, group by or aggregate) through property panel.
-    * Trellis plot: Fixed the error on redo command after reopening plot via undo.
+    * [#2927](https://github.com/datagrok-ai/public/issues/2927): Fixing a collapsed state of the [Heatmap](../../visualize/viewers/heat-map.md) after applying saved layout if it was stacked with another viewer. 
+    * Pivot table: Changing columns (pviot, group by or aggregate) through context panel.
+    * [Trellis plot](../../visualize/viewers/trellis-plot.md): Fixed the error on redo command after reopening plot via undo.
    
 ### [Line Chart](../../visualize/viewers/line-chart.md)
 * Fixes:
@@ -66,12 +66,12 @@ Database migrations are unrevertable in this version. You can't rollback to olde
   * [#2951](https://github.com/datagrok-ai/public/issues/2951): Number of Y columns updates immediately in properties panel when columns are removed from the plot. 
   * [#2944](https://github.com/datagrok-ai/public/issues/2944): Colors of the line and the legend do not differ when multiple splits are selected. 
  
-### Bar chart
+### [Bar chart](../../visualize/viewers/bar-chart.md)
 * Fixes: 
   * Molecules are renderered correctly when bar chart is resizing. 
   * Property "Show selected rows" affects the view. 
 
-### Box plot
+### [Box plot](../../visualize/viewers/box-plot.md)
   * The ability to use two or more categories is added.
   * Fix: 
     * 'Show custom tooltip' functionality is fixed. 
@@ -87,7 +87,7 @@ Database migrations are unrevertable in this version. You can't rollback to olde
   * Fix: 
     * Usage displays runs.
 
-### JS API:
+### JS API
   * Ability to get Func result view using API is added. 
   * Metadata set by .tags with column.meta.xxx is replaced.
 
@@ -96,7 +96,7 @@ Database migrations are unrevertable in this version. You can't rollback to olde
   * Fix:
     * Databases: New Run_query result creates with the name. 
     
-### Enhancements in packages
+### Enhancements in packages: 
 ### [Curves](https://github.com/datagrok-ai/public/tree/master/packages/Curves/CHANGELOG.md)
 * Fix: 
   * [#2978](https://github.com/datagrok-ai/public/issues/2978): Log-linear function: Fixing initial parameters calculation. 
