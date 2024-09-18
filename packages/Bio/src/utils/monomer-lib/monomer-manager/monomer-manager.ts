@@ -907,6 +907,13 @@ function capSmiles(smiles: string, rgroups: RGroup[]) {
 }
 
 function monomerFromDfRow(dfRow: DG.Row): Monomer {
+  // hacky way for now, but meta object for now only supports key value pairs and not nested objects
+  const metaJSON = JSON.parse(dfRow.get(MONOMER_DF_COLUMN_NAMES.META) ?? '{}');
+  for (const key in metaJSON) {
+    if (typeof metaJSON[key] === 'object')
+      metaJSON[key] = JSON.stringify(metaJSON[key]);
+  }
+
   return {
     symbol: dfRow.get(MONOMER_DF_COLUMN_NAMES.SYMBOL),
     name: dfRow.get(MONOMER_DF_COLUMN_NAMES.NAME),
@@ -917,7 +924,7 @@ function monomerFromDfRow(dfRow: DG.Row): Monomer {
     naturalAnalog: dfRow.get(MONOMER_DF_COLUMN_NAMES.NATURAL_ANALOG),
     id: dfRow.get(MONOMER_DF_COLUMN_NAMES.ID),
     rgroups: JSON.parse(dfRow.get(MONOMER_DF_COLUMN_NAMES.R_GROUPS) ?? '[]'),
-    meta: JSON.parse(dfRow.get(MONOMER_DF_COLUMN_NAMES.META) ?? '{}'),
+    meta: metaJSON,
     author: dfRow.get(MONOMER_DF_COLUMN_NAMES.AUTHOR),
     createDate: dfRow.get(MONOMER_DF_COLUMN_NAMES.CREATE_DATE),
   };
