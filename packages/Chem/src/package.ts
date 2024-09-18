@@ -1565,6 +1565,11 @@ export function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
   activities: DG.ColumnList, fragmentCutoff: number = 0.4, demo = false): void {
   let view: DG.TableView;
 
+  if (activities.length < 1) {
+    grok.shell.warning('MMP analysis requires at least one activity');
+    return;
+  }
+
   if (demo) {
     const browseView = grok.shell.view('Browse') as DG.BrowseView;
     view = browseView ? (browseView.preview as DG.TableView) : grok.shell.getTableView(table.name) as DG.TableView;

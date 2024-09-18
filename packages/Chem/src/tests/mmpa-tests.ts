@@ -246,12 +246,12 @@ category('mmpa', () => {
     checkRandomValues(fragsDf, 'Transformations_Fragments', mmp.calculatedOnGPU!);
 
     //check Pairs Grid
-    const pairsDf = mmp.pairedGrids!.mmpGrid.dataFrame;
+    const pairsDf = mmp.pairedGrids!.mmpGridTrans.dataFrame;
     await awaitCheck(() => pairsDf.rowCount === 54 && pairsDf.columns.length === 13 &&
     pairsDf.filter.trueCount === 3 && pairsDf!.filter.get(mmp.calculatedOnGPU ? 3 : 0) &&
     pairsDf.filter.get(mmp.calculatedOnGPU ? 4 : 1) && pairsDf.filter.get(mmp.calculatedOnGPU ? 5 : 2),
     'Incorrect pairs grid', 3000);
-    checkRandomValues(mmp.pairedGrids!.mmpGrid.dataFrame, 'Transformations_Pairs', mmp.calculatedOnGPU!);
+    checkRandomValues(mmp.pairedGrids!.mmpGridTrans.dataFrame, 'Transformations_Pairs', mmp.calculatedOnGPU!);
 
     //changing fragment
     mmp.pairedGrids!.fpGrid.dataFrame.currentRowIdx = 2;
