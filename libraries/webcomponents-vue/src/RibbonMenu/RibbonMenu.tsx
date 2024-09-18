@@ -10,9 +10,6 @@ export const RibbonMenu = Vue.defineComponent({
       type: String,
       required: true,
     },
-    // isChecked: {
-    //   type: Object as Vue.PropType<(item: HTMLElement) => boolean>,
-    // },
   },
   slots: Object as Vue.SlotsType<{
     default?: any,

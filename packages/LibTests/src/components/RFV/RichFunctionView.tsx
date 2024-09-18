@@ -256,7 +256,9 @@ export const RichFunctionView = Vue.defineComponent({
                 currentCall.value.func,
                 currentCall.value,
                 dfToViewerMapping(),
-              ).then((blob) => DG.Utils.download('Test name.xlsx', blob));
+              ).then((blob) => 
+                DG.Utils.download(`${currentCall.value.func.nqName} - 
+                  ${Utils.getStartedOrNull(currentCall.value) ?? 'Not completed'}.xlsx`, blob));
             }}
           />}
           <IconFA
