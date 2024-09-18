@@ -85,8 +85,8 @@ category('ComputeUtils: Driver instance additional states', async () => {
       tree.init().subscribe();
       const ls = new LinksState();
       const [link1, link2] = ls.createAutoLinks(tree.nodeTree);
-      link1.wire(tree);
-      link2.wire(tree);
+      link1.wire(tree.nodeTree);
+      link2.wire(tree.nodeTree);
       const inNode = tree.nodeTree.getNode([{idx: 0}]);
       const validations = tree.getValidations();
       cold('-a').subscribe(() => {
@@ -139,7 +139,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
       tree.init().subscribe();
       const ls = new LinksState();
       const [link1] = ls.createAutoLinks(tree.nodeTree);
-      link1.wire(tree);
+      link1.wire(tree.nodeTree);
       const outNode = tree.nodeTree.getNode([{idx: 1}]);
       const consistency = tree.getConsistency();
       cold('-a').subscribe(() => {
@@ -219,7 +219,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
       tree.init().subscribe();
       const ls = new LinksState();
       const [link1] = ls.createAutoLinks(tree.nodeTree);
-      link1.wire(tree);
+      link1.wire(tree.nodeTree);
       const outNode = tree.nodeTree.getNode([{idx: 1}]);
       const consistency = tree.getConsistency();
       cold('-a').subscribe(() => {

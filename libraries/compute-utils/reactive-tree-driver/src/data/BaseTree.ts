@@ -19,19 +19,7 @@ export class BaseTree<T> {
 
   public traverse = buildTraverseD([] as NodePath, (item: TreeNode<T>, path: NodePath) => item.getChildren().map(({id, item}, idx) => [item, [...path, {id, idx}] as NodePath] as const));
 
-  public static isNodeAddressAfter(originNode: Readonly<NodePath>, currentNode: Readonly<NodePath>): boolean {
-    for (const [level, {idx}] of originNode.entries()) {
-      const idx2 = currentNode[level]?.idx;
-      if (idx2 == null)
-        return false; // currentNode is higher
-      if (idx !== idx2)
-        return (idx2 - idx) > 0; // currentNode is further or closer on the same level
-      // same path, continue
-    }
-    return false; // currentNode is nested or eq path
-  }
-
-  public static isNodeChild(path: Readonly<NodeAddress>, nodeAddress: Readonly<NodeAddress>): boolean {
+  public static isNodeChildOrEq(path: Readonly<NodeAddress>, nodeAddress: Readonly<NodeAddress>): boolean {
     for (const [level, {idx}] of path.entries()) {
       const idx2 = nodeAddress[level]?.idx;
       if (idx !== idx2)
@@ -42,8 +30,8 @@ export class BaseTree<T> {
 
   public static isNodeChildOffseted(path: Readonly<NodeAddress>, nodeAddress: Readonly<NodeAddress>, childOffset?: number): boolean {
     if (childOffset == null)
-      return this.isNodeChild(path, nodeAddress);
-    if (!this.isNodeChild(path, nodeAddress))
+      return this.isNodeChildOrEq(path, nodeAddress);
+    if (!this.isNodeChildOrEq(path, nodeAddress))
       return false;
     const nextSegment = nodeAddress[path.length];
     if (!nextSegment || nextSegment.idx < childOffset)

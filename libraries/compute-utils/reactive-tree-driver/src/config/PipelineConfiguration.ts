@@ -63,11 +63,15 @@ export type PipelineMetaConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   handler: Validator;
 };
 
-export type PipelineLinkConfiguration<P> = PipelineHandlerConfiguration<P> | PipelineValidatorConfiguration<P> | PipelineMetaConfiguration<P>;
-
-export type PipelineHookConfiguration<P> = {
+export type PipelineHookConfiguration<P> = PipelineLinkConfigurationBase<P> & {
+  isValidator?: false;
+  isMeta?: false;
+  base?: undefined,
   handler: Handler;
-} & Partial<PipelineLinkConfigurationBase<P>>;
+};
+
+export type PipelineLinkConfiguration<P> = PipelineHandlerConfiguration<P> | PipelineValidatorConfiguration<P> | PipelineMetaConfiguration<P> | PipelineHookConfiguration<P>;
+
 
 export type PipelineActionConfiguraion<P> = {
   position: ActionPositions;
@@ -82,12 +86,6 @@ export type StepActionConfiguraion<P> = PipelineActionConfiguraion<P>;
 
 const actionPositions = ['buttons', 'menu', 'none'] as const;
 export type ActionPositions = typeof actionPositions[number];
-
-// hooks config
-
-export type PipelineHooks<P> = {
-  onInit?: PipelineHookConfiguration<P>[];
-};
 
 // static steps config
 
@@ -105,7 +103,7 @@ export type PipelineConfigurationBase<P> = {
   provider?: NqName;
   version?: string;
   friendlyName?: string;
-  hooks?: PipelineHooks<P>;
+  onInit?: PipelineHookConfiguration<P>;
   actions?: PipelineActionConfiguraion<P>[];
   states?: StateItem[];
 };

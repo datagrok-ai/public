@@ -34,8 +34,8 @@ export function matchLink(state: StateTree, address: NodePath, spec: LinkSpec): 
   return matchNodeLink(rnode, spec);
 }
 
-export function matchNodeLink(rnode: TreeNode<StateTreeNode>, spec: LinkSpec) {
-  const basePaths = spec.base?.length ? expandLinkBase(rnode, spec.base[0]) : undefined;
+export function matchNodeLink(rnode: TreeNode<StateTreeNode>, spec: LinkSpec, basePath?: Readonly<NodePath>) {
+  const basePaths = basePath ? [{path: basePath}] : spec.base?.length ? expandLinkBase(rnode, spec.base[0]) : undefined;
   const baseName = spec.base?.length ? spec.base[0].name : undefined;
   if (basePaths == null) {
     const matchInfo = matchLinkInstance(rnode, spec);
@@ -118,7 +118,7 @@ function matchLinkIO(
         if (io == null)
           throw new Error(`Node ${rnode.getItem().config.id} referenced unknown io ${ref} in ${parsedLink.name}`);
         const refOrigin = selDirection === 'before' ? io[0] : indexFromEnd(io)!;
-        if (!BaseTree.isNodeChild(path, refOrigin.path))
+        if (!BaseTree.isNodeChildOrEq(path, refOrigin.path))
           throw new Error(`Node ${rnode.getItem().config.id} reference path ${JSON.stringify(refOrigin.path)} is different from current ${JSON.stringify(path)}`);
         originIdx = refOrigin.path[level!].idx;
       }

@@ -13,6 +13,7 @@ import {callHandler} from '../utils';
 import {defaultLinkHandler} from './default-handler';
 import {ControllerCancelled, LinkController, MetaController, ValidatorController} from './LinkControllers';
 import {MemoryStore} from './FuncCallAdapters';
+import {LinksState} from './LinksState';
 
 const VALIDATOR_DEBOUNCE_TIME = 250;
 
@@ -37,7 +38,7 @@ export class Link {
 
   constructor(public prefix: NodePath, public matchInfo: MatchInfo) {}
 
-  wire(state: StateTree) {
+  wire(state: BaseTree<StateTreeNode>, linksState?: LinksState) {
     const inputNames = Object.keys(this.matchInfo.inputs);
     const outputNames = Object.keys(this.matchInfo.outputs);
     const inputSet = new Set(inputNames);
@@ -45,7 +46,7 @@ export class Link {
 
     const inputsChanges$ = this.makeInputsChanges(state);
     const baseNode = this.matchInfo.basePath ?
-      state.nodeTree.getNode(([...this.prefix, ...this.matchInfo.basePath])) :
+      state.getNode(([...this.prefix, ...this.matchInfo.basePath])) :
       undefined;
 
     inputsChanges$.pipe(
@@ -54,8 +55,8 @@ export class Link {
       takeUntil(this.destroyed$),
     ).subscribe(this.nextScheduled$);
 
-    const actions = ((this.isValidator && baseNode) &&
-      state.linksState.baseNodeActions.get(baseNode.getItem().uuid)) ||
+    const actions = ((this.isValidator && baseNode && linksState) &&
+      linksState.baseNodeActions.get(baseNode.getItem().uuid)) ||
       [];
 
     inputsChanges$.pipe(
@@ -87,12 +88,12 @@ export class Link {
     this.destroyed$.next(true);
   }
 
-  private makeInputsChanges(state: StateTree) {
+  private makeInputsChanges(state: BaseTree<StateTreeNode>) {
     const inputs = Object.entries(this.matchInfo.inputs).map(([inputAlias, inputItems]) => {
       const nodes = inputItems.map(
         (input) => [
           input.ioName!,
-          state.nodeTree.getNode([...this.prefix, ...input.path]),
+          state.getNode([...this.prefix, ...input.path]),
         ] as const,
       );
       const inputStates = nodes.map(([ioName, node]) => {
@@ -175,11 +176,11 @@ export class Link {
     return new LinkController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
   }
 
-  private setHandlerResults(controller: LinkController | ValidatorController | MetaController, state: StateTree) {
+  private setHandlerResults(controller: LinkController | ValidatorController | MetaController, state: BaseTree<StateTreeNode>) {
     const outputsEntries = Object.entries(this.matchInfo.outputs).map(([outputAlias, outputItems]) => {
       const nodes = outputItems.map((output) => {
         const path = [...this.prefix, ...output.path];
-        return [output.ioName!, path, state.nodeTree.getNode(path)] as const;
+        return [output.ioName!, path, state.getNode(path)] as const;
       });
       return [outputAlias, nodes] as const;
     });

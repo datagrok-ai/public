@@ -9,7 +9,7 @@ import {isFuncCallSerializedState, PipelineInstanceConfig, PipelineSerializedSta
 import {buildTraverseD} from '../data/graph-traverse-utils';
 import {buildRefMap, ConfigTraverseItem, getConfigByInstancePath, isPipelineParallelConfig, isPipelineSelfRef, isPipelineSequentialConfig, isPipelineStaticConfig, isPipelineStepConfig, PipelineStepConfigurationProcessed} from '../config/config-utils';
 import {FuncCallAdapter, FuncCallMockAdapter} from './FuncCallAdapters';
-import {loadFuncCall, loadInstanceState, makeFuncCall, makeMetaCall, saveFuncCall, saveInstanceState} from './funccall-utils';
+import {loadFuncCall, loadInstanceState, makeFuncCall, saveFuncCall, saveInstanceState} from './funccall-utils';
 import {ConsistencyInfo, FuncCallNode, FuncCallStateInfo, isFuncCallNode, ParallelPipelineNode, PipelineNodeBase, SequentialPipelineNode, StateTreeNode, StateTreeSerializationOptions, StaticPipelineNode} from './StateTreeNodes';
 import {indexFromEnd} from '../utils';
 import {LinksState} from './LinksState';

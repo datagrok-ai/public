@@ -7,7 +7,7 @@ import {isFuncCallNode, isSequentialPipelineNode, isStaticPipelineNode, StateTre
 import {ActionSpec, isActionSpec, MatchedNodePaths, matchNodeLink} from './link-matching';
 import {Action, Link} from './Link';
 import {BehaviorSubject, concat, merge, Subject, of, Observable, defer} from 'rxjs';
-import {takeUntil, map, scan, switchMap, filter, mapTo, toArray} from 'rxjs/operators';
+import {takeUntil, map, scan, switchMap, filter, mapTo, toArray, take, tap} from 'rxjs/operators';
 
 export class DependenciesData {
   nodes: Set<string> = new Set();
@@ -17,6 +17,7 @@ export class DependenciesData {
 export class LinksState {
   private closed$ = new Subject<true>();
   private linksUpdates = new Subject<true>();
+  private runnedInit = new Set<string>();
 
   public links: Map<string, Link> = new Map();
   public actions: Map<string, Action> = new Map();
@@ -46,14 +47,15 @@ export class LinksState {
       this.checkDisjoint(inbound, outgoing, mutationPath, childOffset);
       this.linksUpdates.next(true);
       return concat(
+        this.runNewInits(state),
         this.runReadyInbound(state, mutationPath, childOffset),
         this.runReadyOutgoing(state, mutationPath, childOffset),
         this.runAffectedMetaLinks(state, mutationPath, childOffset),
-        this.activateLinks(),
+        this.wireLinks(state),
       ).pipe(toArray(), mapTo(undefined));
     } else {
       this.linksUpdates.next(true);
-      return this.activateLinks();
+      return this.wireLinks(state);
     }
   }
 
@@ -210,10 +212,37 @@ export class LinksState {
     return concat(...obs);
   }
 
-  public activateLinks() {
-    for (const [, link] of this.links)
-      link.setActive();
+  public runNewInits(state: BaseTree<StateTreeNode>) {
+    const obs = state.traverse(state.root, (acc, node, path) => {
+      const item = node.getItem();
+      if (!isFuncCallNode(item) && !this.runnedInit.has(item.uuid) && item.config.onInit) {
+        const minfo = matchNodeLink(node, item.config.onInit, path);
+        if (!minfo)
+          return acc;
+        const initLink = new Link(path, minfo[0]);
+        const obs$ = defer(() => {
+          initLink.wire(state, this);
+          this.runnedInit.add(item.uuid);
+          initLink.trigger();
+          return initLink.isRunning$.pipe(
+            filter((x) => !x),
+            take(1),
+            tap(() => initLink.destroy()),
+            mapTo(undefined),
+          );
+        });
+        return [...acc, obs$];
+      }
+      return acc;
+    }, [] as Observable<undefined>[]);
+    return concat(...obs);
+  }
 
+  public wireLinks(state: BaseTree<StateTreeNode>) {
+    for (const [, link] of this.links) {
+      link.wire(state, this);
+      link.setActive();
+    }
     return of(undefined);
   }
 
