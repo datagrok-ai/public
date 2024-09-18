@@ -1125,6 +1125,19 @@ export class Package extends Entity {
       this._files = new FileSource(`System:AppData/${this.name}`);
     return this._files;
   }
+
+  public async getTests(core: boolean = false) {
+    try {
+      await this.load({ file: 'package-test.js' });
+      let module = this.getModule('package-test.js');
+      if (core && module.initAutoTests)
+        module.initAutoTests();
+      return module.tests;
+    } catch (e: any) {
+      this.logger.error(e?.msg ?? 'get module error')
+      return undefined;
+    }
+  }
 }
 
 
