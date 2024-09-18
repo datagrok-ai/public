@@ -70,7 +70,7 @@ export async function testAll(args: TestArgs): Promise<boolean> {
     }
   });
 
-  let testsObj = await loadTestsList(packagesToRun);
+  let testsObj = await loadTestsList(packagesToRun, args.core);
   let filteredTests = await filterTests(testsObj, (args.tags ?? "").split(" "), args['stress-test'], args.benchmark);
   let workersOrder = await setWorkersOrder(filteredTests, getEnumOrder(args.order ?? ''), args.workersCount, args.testRepeat);
 
@@ -138,7 +138,7 @@ async function buildPackages(packages?: string, host?: string, skipPublish?: boo
   return packagesToRun;
 }
 
-async function loadTestsList(packages: string[]): Promise<Object[]> {
+async function loadTestsList(packages: string[], core: boolean = false): Promise<Object[]> {
   var packageTestsData = await testUtils.timeout(async () => {
     const params = Object.assign({}, testUtils.defaultLaunchParameters);
     // params['headless'] = false;
@@ -146,12 +146,24 @@ async function loadTestsList(packages: string[]): Promise<Object[]> {
     const browser: Browser = out.browser;
     const page: Page = out.page;
 
-    const r = await page.evaluate((packages): Promise<any> => {
+    const r = await page.evaluate((packages, coreTests): Promise<any> => {
       return new Promise<any>((resolve, reject) => {
         const promises: any[] = [];
         try {
-          packages.map((packageName: string) => {
-            promises.push((<any>window).grok.functions.call(`${packageName}:packageTestsList`).then((tests: any[]) => { return { packageName: packageName, tests: tests } }))
+          packages.map((packageName : string) => {
+            const p = (<any>window).DG.Func.find({ package: packageName, name: 'test' })[0]?.package;
+            if (p) {
+              try {
+                promises.push(p.getTests(coreTests).catch((e: any) => {
+                  console.error('something else went wrong with collecting package tests')
+                  console.error(e?.message)
+                })
+                .then((ts: any) => ({ packageName: packageName, tests: ts })))
+              } catch (e: any) {
+                console.error('something went wrong while adding test collection promise');
+                console.error(e.message);
+              }
+            }
           });
 
         } catch (err) {
@@ -169,7 +181,7 @@ async function loadTestsList(packages: string[]): Promise<Object[]> {
             });
           });
       });
-    }, packages);
+    }, packages, core);
 
     if (browser != null) {
       await browser.close();
@@ -253,7 +265,7 @@ async function runTests(workersOrder: any[][], workerOptions: WorkerOptions): Pr
   return resultObjects;
 }
 
-async function runWorker(workerCommands: any[], workerOptions: WorkerOptions): Promise<resultObject> {
+async function runWorker(testExecutionData: any[], workerOptions: WorkerOptions): Promise<resultObject> {
   return await testUtils.timeout(async () => {
     const params = Object.assign({}, testUtils.defaultLaunchParameters);
     if (workerOptions.gui)
@@ -279,12 +291,12 @@ async function runWorker(workerCommands: any[], workerOptions: WorkerOptions): P
       });
     }
 
-    let testingResults = await page.evaluate((testCommands, options): Promise<Object> => {
+    let testingResults = await page.evaluate((testData, options): Promise<Object> => {
       if (options.benchmark)
         (<any>window).DG.Test.isInBenchmark = true;
 
       return new Promise<Object>((resolve, reject) => {
-        (<any>window).DG.Utils.executeTests(testCommands)
+        (<any>window).DG.Utils.executeTests(testData)
           .then((results: any) => {
             resolve(results);
           })
@@ -300,7 +312,7 @@ async function runWorker(workerCommands: any[], workerOptions: WorkerOptions): P
             })
           });
       })
-    }, workerCommands, workerOptions);
+    }, testExecutionData, workerOptions);
 
     if (workerOptions.record) {
       await recorder.stop();
@@ -372,6 +384,7 @@ interface TestArgs {
   'skip-publish'?: boolean;
 
   catchUnhandled?: boolean,
+  core?: boolean,
   gui?: boolean;
   record?: boolean;
   report?: boolean;

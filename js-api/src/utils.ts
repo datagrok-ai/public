@@ -232,18 +232,24 @@ export class Utils {
     let countFailed = 0;
 
     for (let testParam of testsParams) {
-      let df: DataFrame = await grok.functions.call(testParam.package+':test', testParam.params);
-      
-      if(df.rowCount ===0){
-        
-        verboseFailed += `Test result : Invocation Fail : ${testParam.params.category}: ${testParam.params.name}\n`;
+      let df: DataFrame = await grok.functions.call(testParam.package + ':test', testParam.params);
+
+      if (df.rowCount === 0) {
+        verboseFailed += `Test result : Invocation Fail : ${testParam.params.category}: ${testParam.params.test}\n`;
         countFailed += 1;
         failed = true;
         continue;
       }
 
-      let row = df.rows.get(df.rowCount - 1);
-      
+      let row = df.rows.get(0);
+      if (df.rowCount > 1) { 
+        let unhandledErrorRow = df.rows.get(1);
+        if(!unhandledErrorRow.get("success")){
+          unhandledErrorRow["category"] =row.get("category");
+          unhandledErrorRow["name"] =row.get("name");
+          row = unhandledErrorRow;
+        }
+      }
 
       const category = row.get("category");
       const testName = row.get("name");
@@ -263,7 +269,6 @@ export class Utils {
         countFailed += 1;
         failed = true;
       }
-
     }
 
     return {
