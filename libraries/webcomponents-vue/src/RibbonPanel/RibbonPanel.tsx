@@ -11,14 +11,30 @@ export const RibbonPanel = Vue.defineComponent({
   setup(_, {slots}) {
     const elements = Vue.reactive(new Map<number, HTMLElement>)
 
-    Vue.onMounted(async () => {
+    Vue.watch(elements, async () => {
       await Vue.nextTick();
 
       const currentView = grok.shell.v;
+
+      const elementsArray = [...elements.values()];
+      const filteredPanels = currentView
+        .getRibbonPanels()
+        .filter((panel) => !panel.some((ribbonItem) => elementsArray.includes(ribbonItem.children[0] as HTMLElement)))
+      currentView.setRibbonPanels(filteredPanels);
+
       currentView.setRibbonPanels([
         currentView.getRibbonPanels().flat(),
-        [...elements.values()],
+        elementsArray,
       ]);
+
+      elementsArray.filter((elem) => {
+        const content = ((elem.firstChild?.nodeType !== Node.TEXT_NODE) ? elem.firstChild: elem.firstChild.nextSibling) as HTMLElement | null;
+
+        return content && content.classList.contains('d4-combo-popup')
+      }).forEach((elem) => {
+        elem.classList.add('d4-ribbon-item');
+        elem.parentElement?.classList.remove('d4-ribbon-item');
+      });
     })    
 
     const addElement = (el: Element | null | any, idx: number) => {
