@@ -203,6 +203,12 @@ const strToVal = (s: string) => {
   return !isNaN(num) ? num : s === 'true' ? true : s === 'false' ? false : s;
 };
 
+/** Browse properties */
+type Browsing = {
+  treeNode: DG.TreeViewGroup,
+  browseView: DG.BrowseView,
+};
+
 /** Solver of differential equations */
 export class DiffStudio {
   /** Run Diff Studio application */
@@ -405,7 +411,8 @@ export class DiffStudio {
   private toPreventSolving = false;
   private inputByName: Map<string, DG.InputBase> | null = null;
 
-  constructor(toAddTableView: boolean = true, toDockTabCtrl: boolean = true, isFilePreview: boolean = false) {
+  constructor(toAddTableView: boolean = true, toDockTabCtrl: boolean = true, isFilePreview: boolean = false,
+    browsing?: Browsing) {
     this.solverView = toAddTableView ?
       grok.shell.addTableView(this.solutionTable) :
       DG.TableView.create(this.solutionTable, false);
@@ -457,7 +464,7 @@ export class DiffStudio {
     this.sensAnIcon = ui.iconFA('analytics', async () => {await this.runSensitivityAnalysis();}, HINT.SENS_AN);
     this.fittingIcon = ui.iconFA('chart-line', async () => {await this.runFitting();}, HINT.FITTING);
 
-    this.createTree();
+    this.createTree(browsing);
   }; // constructor
 
   /** Create model editor */
@@ -1320,13 +1327,19 @@ export class DiffStudio {
   } // showPerformanceDlg
 
   /** Browse tree */
-  private async createTree() {
-    if (grok.shell.view(TITLE.BROWSE) === undefined)
-      grok.shell.v = DG.View.createByType('browse');
+  private async createTree(browsing?: Browsing) {
+    if (browsing) {
+      this.browseView = browsing.browseView;
+      this.appTree = browsing.treeNode;
+    } else {
+      if (grok.shell.view(TITLE.BROWSE) === undefined)
+        grok.shell.v = DG.View.createByType('browse');
 
-    this.browseView = grok.shell.view(TITLE.BROWSE) as DG.BrowseView;
-    const appsGroup = this.browseView.mainTree.getOrCreateGroup(TITLE.APPS, null, false);
-    this.appTree = appsGroup.getOrCreateGroup(TITLE.DIF_ST);
+      this.browseView = grok.shell.view(TITLE.BROWSE) as DG.BrowseView;
+      const appsGroup = this.browseView.mainTree.getOrCreateGroup(TITLE.APPS, null, false);
+      this.appTree = appsGroup.getOrCreateGroup(TITLE.DIF_ST);
+    }
+
 
     if (this.appTree.items.length > 0)
       this.recentFolder = this.appTree.getOrCreateGroup(TITLE.RECENT, null, false);
