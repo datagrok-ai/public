@@ -12,12 +12,11 @@ category('ComputeUtils: Driver state tree readonly', async () => {
     const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider1', {}).toPromise();
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
-    await tree.initFuncCalls().toPromise();
+    await tree.init().toPromise();
     const sc = tree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});
-    await tree.save().toPromise();
-    const metaCall = tree.metaCall$.value;
+    const metaCall = await tree.save().toPromise();
     const loadedTree = await StateTree.load(metaCall!.id, pconf, {isReadonly: true}).toPromise();
-    await loadedTree.initFuncCalls().toPromise();
+    await loadedTree.init().toPromise();
     const lc = loadedTree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});
     sc.isReadonly = true;
     (sc as PipelineStateStatic<StepFunCallStateBase>).steps[0].isReadonly = true;
@@ -30,15 +29,14 @@ category('ComputeUtils: Driver state tree readonly', async () => {
     const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider2', {version: '1.0'}).toPromise();
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
-    await tree.initFuncCalls().toPromise();
+    await tree.init().toPromise();
     const sc = tree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});
-    await tree.save().toPromise();
-    const metaCall = tree.metaCall$.value;
+    const metaCall = await tree.save().toPromise();
     // create outer pipeline
     const outerConfig = await callHandler<PipelineConfiguration>('LibTests:MockProvider3', {version: '1.0'}).toPromise();
     const outerPconf = await getProcessedConfig(outerConfig);
     const outerTree = StateTree.fromPipelineConfig({config: outerPconf});
-    await outerTree.initFuncCalls().toPromise();
+    await outerTree.init().toPromise();
     // load nested tree into outer
     const root = outerTree.nodeTree.getItem([]);
     await outerTree.loadSubTree(root.uuid, metaCall!.id, 'pipelinePar', 1, true).toPromise();
@@ -57,21 +55,19 @@ category('ComputeUtils: Driver state tree readonly', async () => {
     const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider2', {version: '1.0'}).toPromise();
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
-    await tree.initFuncCalls().toPromise();
-    await tree.save().toPromise();
-    const metaCall = tree.metaCall$.value;
+    await tree.init().toPromise();
+    const metaCall = await tree.save().toPromise();
     // create outer pipeline
     const outerConfig = await callHandler<PipelineConfiguration>('LibTests:MockProvider3', {version: '1.0'}).toPromise();
     const outerPconf = await getProcessedConfig(outerConfig);
     const outerTree = StateTree.fromPipelineConfig({config: outerPconf});
-    await outerTree.initFuncCalls().toPromise();
+    await outerTree.init().toPromise();
     // load nested tree into outer
     const root = outerTree.nodeTree.getItem([]);
     await outerTree.loadSubTree(root.uuid, metaCall!.id, 'pipelinePar', 1, true).toPromise();
     const sc = outerTree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});
     // save outer with inner
-    await outerTree.save().toPromise();
-    const metaCallOuter =  outerTree.metaCall$.value
+    const metaCallOuter = await outerTree.save().toPromise();
     // load outer with inner
     const loadedTree = await StateTree.load(metaCallOuter!.id, outerPconf).toPromise();
     const lc = loadedTree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});

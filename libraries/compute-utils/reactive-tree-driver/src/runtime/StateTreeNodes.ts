@@ -83,7 +83,7 @@ export class FuncCallNode implements IStoreProvider {
 
     this.depsData$.pipe(
       switchMap((deps) => this.getPendingDeps(deps)),
-      takeUntil(this.closed$)
+      takeUntil(this.closed$),
     ).subscribe(this.pendingDependencies$);
   }
 
@@ -246,14 +246,14 @@ export class FuncCallNode implements IStoreProvider {
     const pendingStates = deps.map(([uuid, state$]) => state$.pipe(map((state) => [uuid, state] as const)));
     const pending$ = merge(...pendingStates).pipe(
       scan((acc, [uuid, isPending]) => {
-        if (isPending)  {
-          acc.add(uuid)
-        } else {
-          acc.delete(uuid)
-        }
+        if (isPending)
+          acc.add(uuid);
+        else
+          acc.delete(uuid);
+
         return acc;
       }, new Set<string>()),
-      map((s) => [...s])
+      map((s) => [...s]),
     );
     return pending$;
   }

@@ -31,7 +31,7 @@ category('ComputeUtils: Driver links matching', async () => {
     };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
-    await tree.initAll().toPromise();
+    await tree.init().toPromise();
     const links = (tree.nodeTree.root.getItem().config as PipelineConfigurationStaticProcessed).links!;
     const matchInfo = matchLink(tree, [], links[0]);
     await snapshotCompare(matchInfo, 'Links match static pipeline');
@@ -65,7 +65,7 @@ category('ComputeUtils: Driver links matching', async () => {
     };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
-    await tree.initAll().toPromise();
+    await tree.init().toPromise();
     const links = (tree.nodeTree.root.getItem().config as PipelineConfigurationStaticProcessed).links!;
     const matchInfo = matchLink(tree, [], links[0]);
     await snapshotCompare(matchInfo, 'Links match nested static pipeline');
@@ -99,7 +99,7 @@ category('ComputeUtils: Driver links matching', async () => {
     };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
-    await tree.initAll().toPromise();
+    await tree.init().toPromise();
     const links = (tree.nodeTree.root.getItem().config as PipelineConfigurationStaticProcessed).links!;
     const matchInfo = matchLink(tree, [], links[0]);
     await snapshotCompare(matchInfo, 'Links with multiple io match nested static pipeline');
@@ -159,7 +159,7 @@ category('ComputeUtils: Driver links matching', async () => {
     };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
-    await tree.initAll().toPromise();
+    await tree.init().toPromise();
     const links = (tree.nodeTree.root.getItem().config as PipelineConfigurationStaticProcessed).links!;
     const matchInfos = links.map((link) => matchLink(tree, [], link));
     await snapshotCompare(matchInfos, 'Links matching all parallel pipeline items');
@@ -219,7 +219,7 @@ category('ComputeUtils: Driver links matching', async () => {
     };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
-    await tree.initAll().toPromise();
+    await tree.init().toPromise();
     const links = (tree.nodeTree.root.getItem().config as PipelineConfigurationStaticProcessed).links!;
     const matchInfos = links.map((link) => matchLink(tree, [], link));
     await snapshotCompare(matchInfos, 'Links matching multiple ids');
@@ -266,7 +266,7 @@ category('ComputeUtils: Driver links matching', async () => {
     };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
-    await tree.initAll().toPromise();
+    await tree.init().toPromise();
     const links = (tree.nodeTree.root.getItem().config as PipelineConfigurationStaticProcessed).links!;
     const matchInfos = links.map((link) => matchLink(tree, [], link));
     await snapshotCompare(matchInfos, 'Links expaning base path');
@@ -313,7 +313,7 @@ category('ComputeUtils: Driver links matching', async () => {
     };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
-    await tree.initAll().toPromise();
+    await tree.init().toPromise();
     const links = (tree.nodeTree.root.getItem().config as PipelineConfigurationStaticProcessed).links!;
     const matchInfos = links.map((link) => matchLink(tree, [], link));
     await snapshotCompare(matchInfos, 'Links referencing adjacent to base segment');
@@ -362,7 +362,7 @@ category('ComputeUtils: Driver links matching', async () => {
     };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
-    await tree.initAll().toPromise();
+    await tree.init().toPromise();
     const links = (tree.nodeTree.root.getItem().config as PipelineConfigurationStaticProcessed).links!;
     const matchInfos = links.map((link) => matchLink(tree, [], link));
     await snapshotCompare(matchInfos, 'Links referencing remote from base path');
@@ -417,7 +417,7 @@ category('ComputeUtils: Driver links matching', async () => {
     };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
-    await tree.initAll().toPromise();
+    await tree.init().toPromise();
     const links = (tree.nodeTree.root.getItem().config as PipelineConfigurationStaticProcessed).links!;
     const matchInfos = links.map((link) => matchLink(tree, [], link));
     await snapshotCompare(matchInfos, 'Links referencing all match limits');
@@ -513,7 +513,7 @@ category('ComputeUtils: Driver links matching', async () => {
     };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
-    await tree.initAll().toPromise();
+    await tree.init().toPromise();
     const links = (tree.nodeTree.root.getItem().config as PipelineConfigurationStaticProcessed).links!;
     const matchInfos = links.map((link) => matchLink(tree, [], link));
     await snapshotCompare(matchInfos, 'Links deep base matching');
@@ -609,7 +609,7 @@ category('ComputeUtils: Driver links matching', async () => {
     };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
-    await tree.initAll().toPromise();
+    await tree.init().toPromise();
     const links = (tree.nodeTree.root.getItem().config as PipelineConfigurationStaticProcessed).links!;
     const matchInfos = links.map((link) => matchLink(tree, [], link));
     await snapshotCompare(matchInfos, 'Links expanding deep base path');

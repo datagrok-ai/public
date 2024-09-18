@@ -15,14 +15,14 @@ module.exports = {
     extensions: ['.wasm', '.mjs', '.ts', '.tsx', '.js', '.json'],
     // Needed for rxjs test scheduler to work properly
     alias: {
-      rxjs: path.resolve('node_modules/rxjs'),
+      'rxjs': path.resolve('node_modules/rxjs'),
       'rxjs/operator': path.resolve('node_modules/rxjs/operator'),
     },
   },
   module: {
     rules: [
       {test: /\.tsx?$/, loader: 'babel-loader', options: {
-	'plugins': ['@vue/babel-plugin-jsx']
+        'plugins': ['@vue/babel-plugin-jsx'],
       }},
       {test: /\.tsx?$/, loader: 'ts-loader', options: {allowTsInNodeModules: true}},
       {

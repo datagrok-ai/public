@@ -67,7 +67,7 @@ export class LinksState {
           .filter((x) => !!x)
           .flat();
         const links = matchedLinks.map((minfo) => {
-          const link = new Link(path, minfo)
+          const link = new Link(path, minfo);
           return link;
         });
         return [...acc, ...links];
@@ -112,12 +112,16 @@ export class LinksState {
         for (const infoIn of infosIn) {
           const inPathFull = [...link.prefix, ...infoIn.path];
           const nodeIn = state.getNode(inPathFull);
+          // pipeline memory state should be immutable and set in
+          // onInit, so they are always ready
+          if (!isFuncCallNode(nodeIn.getItem()))
+            continue;
           for (const infosOut of Object.values(link.matchInfo.outputs)) {
             for (const infoOut of infosOut) {
               const outPathFull = [...link.prefix, ...infoOut.path];
               const nodeOut = state.getNode(outPathFull);
               const depData = deps.get(nodeOut.getItem().uuid) ?? new DependenciesData();
-              if (!BaseTree.isNodeAddressEq([], infoOut.path))
+              if (!BaseTree.isNodeAddressEq(inPathFull, outPathFull))
                 depData.nodes.add(nodeIn.getItem().uuid);
               depData.links.add(link.uuid);
               deps.set(nodeOut.getItem().uuid, depData);
@@ -135,7 +139,7 @@ export class LinksState {
       return false;
     for (const infosIn of Object.values(link.matchInfo.inputs)) {
       for (const infoIn of infosIn) {
-        const inPathFull = [...link.prefix, ...infoIn.path]
+        const inPathFull = [...link.prefix, ...infoIn.path];
         const nodeIn = state.getNode(inPathFull);
         const item = nodeIn.getItem();
         if (!isFuncCallNode(item))
@@ -160,7 +164,7 @@ export class LinksState {
       const linkRuns = [...(deps?.links ?? [])].filter((linkUUID) => {
         const link = this.links.get(linkUUID);
         return link && !processedLinks.has(linkUUID) && this.isInbound(mutationPath, link, childOffset) && this.isLinkReady(state, linkUUID);
-      }).map(linkUUID => {
+      }).map((linkUUID) => {
         processedLinks.add(linkUUID);
         return this.getLinkRunObs(linkUUID, mutationPath, childOffset);
       });
@@ -173,14 +177,14 @@ export class LinksState {
     const processedLinks = new Set<string>();
     const obs = state.traverse(state.root, (acc, node, currentPath) => {
       const item = node.getItem();
-      if (BaseTree.isNodeChildOffseted(mutationPath, currentPath, childOffset)) {
+      if (BaseTree.isNodeChildOffseted(mutationPath, currentPath, childOffset))
         return acc;
-      }
+
       const deps = this.deps.get(item.uuid);
       const linkRuns = [...(deps?.links ?? [])].filter((linkUUID) => {
         const link = this.links.get(linkUUID);
         return link && !processedLinks.has(linkUUID) && this.isOutgoing(mutationPath, link, childOffset) && this.isLinkReady(state, linkUUID);
-      }).map(linkUUID => {
+      }).map((linkUUID) => {
         processedLinks.add(linkUUID);
         return this.getLinkRunObs(linkUUID, mutationPath, childOffset);
       });
@@ -197,7 +201,7 @@ export class LinksState {
       const linkRuns = [...(deps?.links ?? [])].filter((linkUUID) => {
         const link = this.links.get(linkUUID);
         return link && !processedLinks.has(linkUUID) && this.isMetaLink(link) && this.isAffected(mutationPath, link, childOffset) && this.isLinkReady(state, linkUUID);
-      }).map(linkUUID => {
+      }).map((linkUUID) => {
         processedLinks.add(linkUUID);
         return this.getLinkRunObs(linkUUID, mutationPath, childOffset);
       });
@@ -207,9 +211,9 @@ export class LinksState {
   }
 
   public activateLinks() {
-    for (const [, link] of this.links) {
+    for (const [, link] of this.links)
       link.setActive();
-    }
+
     return of(undefined);
   }
 
@@ -252,12 +256,12 @@ export class LinksState {
 
   private hasNested(rootPath: Readonly<NodeAddress>, prefix: Readonly<NodeAddress>, minfos: Record<string, MatchedNodePaths>, childOffset?: number) {
     return Object.entries(minfos).some(
-      ([, minfo]) => {minfo.some((io) => BaseTree.isNodeChildOffseted(rootPath, [...prefix, ...io.path], childOffset))});
+      ([, minfo]) => {minfo.some((io) => BaseTree.isNodeChildOffseted(rootPath, [...prefix, ...io.path], childOffset));});
   }
 
   private hasNonNested(rootPath: Readonly<NodeAddress>, prefix: Readonly<NodeAddress>, minfos: Record<string, MatchedNodePaths>, childOffset?: number) {
     return Object.entries(minfos).some(
-      ([, minfo]) => {minfo.some((io) => !BaseTree.isNodeChildOffseted(rootPath, [...prefix, ...io.path], childOffset))});
+      ([, minfo]) => {minfo.some((io) => !BaseTree.isNodeChildOffseted(rootPath, [...prefix, ...io.path], childOffset));});
   }
 
   private checkDisjoint(inbound: Link[], outgoing: Link[], mutationPath: NodePath, childOffset?: number) {
@@ -275,7 +279,7 @@ export class LinksState {
     const link = this.links.get(linkUUID)!;
     const obs$ = defer(() => {
       link.trigger(mutationPath, childOffset);
-      return this.runningLinks$.pipe(filter(x => x?.length === 0), mapTo(true as const));
+      return this.runningLinks$.pipe(filter((x) => x?.length === 0), mapTo(true as const));
     });
     return obs$;
   }

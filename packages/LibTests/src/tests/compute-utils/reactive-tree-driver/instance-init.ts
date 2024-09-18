@@ -159,7 +159,7 @@ category('ComputeUtils: Driver init calls', async () => {
     };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
-    await tree.initFuncCalls().toPromise();
+    await tree.init().toPromise();
     const state = tree.toState();
     (state as PipelineStateStatic<any>).steps.map(
       (x) => {
@@ -210,7 +210,7 @@ category('ComputeUtils: Driver init calls', async () => {
     };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromInstanceConfig(instanceConfig, pconf);
-    await tree.initFuncCalls().toPromise();
+    await tree.init().toPromise();
     const state = tree.toState();
     const fc = ((state as PipelineStateStatic<any>).steps[1] as StepFunCallState).funcCall!;
     expectDeepEqual(fc.inputs.a, 1);

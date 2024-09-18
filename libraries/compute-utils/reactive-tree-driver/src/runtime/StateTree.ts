@@ -25,7 +25,6 @@ export class StateTree {
   public linksState: LinksState;
 
   public makeStateRequests$ = new Subject<true>();
-  public metaCall$ = new BehaviorSubject<DG.FuncCall | undefined>(undefined);
   public globalROLocked$ = new BehaviorSubject(false);
   public treeMutationsLocked$ = new BehaviorSubject(false);
 
@@ -103,7 +102,6 @@ export class StateTree {
       const rootItem = root.getItem() as PipelineNodeBase;
       if (rootItem.config.provider == null)
         throw new Error(`Attempting to save pipeline with no nqName provider`);
-      const isRoot = root === this.nodeTree.root;
       const pendingFuncCallSaves = this.nodeTree.traverse(root, (acc, node) => {
         const item = node.getItem();
         if (isFuncCallNode(item)) {
@@ -119,23 +117,13 @@ export class StateTree {
       }, [] as Array<Observable<void>>);
       return merge(...pendingFuncCallSaves, MAX_CONCURENT_SAVES).pipe(
         toArray(),
-        concatMap(() => this.saveMetaCall(root, nqName, isRoot ? this.metaCall$.value : undefined)),
-        tap((call) => isRoot ? this.metaCall$.next(call) : void(0)),
-        mapTo([])
+        concatMap(() => this.saveMetaCall(root, nqName)),
+        map((call) => [undefined, undefined, call]),
       );
     });
   }
 
-  public initAll() {
-    return this.mutateTree(() => {
-      return merge(
-        StateTree.loadOrCreateCalls(this, this.mockMode),
-        this.initMetaCall(),
-      ).pipe(toArray(), mapTo([]));
-    }).pipe(mapTo(this));
-  }
-
-  public initFuncCalls() {
+  public init() {
     return this.mutateTree(() => {
       return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(mapTo([]));
     }).pipe(mapTo(this));
@@ -151,7 +139,7 @@ export class StateTree {
       const [ppath, oldIdx] = this.getMutationPath(path);
       this.nodeTree.attachBrunch(ppath, node, node.getItem().config.id, newIdx);
       const minPos = Math.min(oldIdx, newIdx);
-      return of([ppath, minPos]);
+      return of([ppath, minPos] as const);
     });
   }
 
@@ -222,7 +210,7 @@ export class StateTree {
   public runAction(uuid: string) {
     const action = this.linksState.actions.get(uuid);
     action?.trigger();
-    return of(null);
+    return of(undefined);
   }
 
   public close() {
@@ -241,8 +229,8 @@ export class StateTree {
     {isReadonly = false, mockMode = false}: {isReadonly?: boolean, mockMode?: boolean } = {},
   ): Observable<StateTree> {
     return defer(async () => {
-      const [metaCall, state] = await loadInstanceState(dbId);
-      const tree = StateTree.fromInstanceState({state, config, metaCall, isReadonly, mockMode});
+      const state = await loadInstanceState(dbId);
+      const tree = StateTree.fromInstanceState({state, config, isReadonly, mockMode});
       return tree;
     });
   }
@@ -308,13 +296,11 @@ export class StateTree {
   static fromInstanceState({
     state,
     config,
-    metaCall,
     isReadonly,
     mockMode = false,
   } : {
     state: PipelineSerializedState;
     config: PipelineConfigurationProcessed;
-    metaCall: DG.FuncCall;
     isReadonly: boolean,
     mockMode?: boolean },
   ): StateTree {
@@ -332,7 +318,6 @@ export class StateTree {
       node.restoreState(state);
       return StateTree.addTreeNodeOrCreate(acc, config, node, ppath, idx, mockMode);
     }, undefined as StateTree | undefined);
-    tree!.metaCall$.next(metaCall);
     return tree!;
   }
 
@@ -449,7 +434,7 @@ export class StateTree {
     return [root, nqName, path] as const;
   }
 
-  private mutateTree(fn: () => Observable<readonly [NodePath?, number?] | undefined>) {
+  private mutateTree<R>(fn: () => Observable<readonly [NodePath?, number?, R?]>) {
     return defer(() => {
       this.treeLock();
       if (this.treeMutationsLocked$.value)
@@ -459,8 +444,8 @@ export class StateTree {
     }).pipe(
       tap(() => this.updateNodesMap()),
       concatMap((data) => {
-        const [mutationPath, childOffset] = data ?? [];
-        return this.linksState.update(this.nodeTree, mutationPath, childOffset);
+        const [mutationPath, childOffset, res] = data ?? [];
+        return this.linksState.update(this.nodeTree, mutationPath, childOffset).pipe(mapTo(res));
       }),
       tap(() => this.setDepsTracker()),
       finalize(() => {
@@ -496,20 +481,20 @@ export class StateTree {
   private setDepsTracker() {
     this.nodeTree.traverse(this.nodeTree.root, (acc, node) => {
       const item = node.getItem();
-      if (!isFuncCallNode(item)) {
+      if (!isFuncCallNode(item))
         return acc;
-      }
+
       const deps = this.linksState.deps.get(item.uuid);
       const depsStates = [...(deps?.nodes ?? [])].filter((depId) => {
         const depItem = this.nodesMap.get(depId);
-        return depItem && isFuncCallNode(depItem)
+        return depItem && isFuncCallNode(depItem);
       }).map((depId) => {
         const depItem = this.nodesMap.get(depId)! as FuncCallNode;
         return [depId, depItem.instancesWrapper.isOutputOutdated$] as const;
       });
       item.setDeps(depsStates);
       return acc;
-    }, null)
+    }, null);
   }
 
   private treeLock() {
@@ -532,9 +517,9 @@ export class StateTree {
   }
 
   private getMutationPath(path: NodePath) {
-    if (path.length === 0) {
+    if (path.length === 0)
       return [path, 0] as const;
-    }
+
     const ppath = path.slice(0, -1);
     const endSegment = indexFromEnd(path)!;
     return [ppath, endSegment.idx] as const;
@@ -556,28 +541,13 @@ export class StateTree {
     throw new Error(`Wrong node type ${nodeConf}`);
   }
 
-  private initMetaCall() {
-    return this.makeMetaCall().pipe(
-      tap((call) => this.metaCall$.next(call)),
-    );
-  }
-
-  private makeMetaCall() {
-    return defer(() => {
-      if (this.mockMode || !this.config.nqName)
-        return undefined;
-      return makeMetaCall(this.config.nqName);
-    });
-  }
-
   private saveMetaCall(
     root: TreeNode<StateTreeNode>,
     nqName: string,
-    currentMetaCall?: DG.FuncCall,
   ) {
     return defer(() => {
       if (this.mockMode)
-        return of(currentMetaCall?.clone());
+        return of(undefined);
       const state = StateTree.toStateRec(root, true, {disableNodesUUID: true});
       return saveInstanceState(nqName, state);
     });

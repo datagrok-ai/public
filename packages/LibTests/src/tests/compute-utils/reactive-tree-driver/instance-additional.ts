@@ -6,10 +6,7 @@ import {LinksState} from '@datagrok-libraries/compute-utils/reactive-tree-driver
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {PipelineStateStatic, StepFunCallSerializedState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
-import {loadInstanceState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
-import { callHandler, makeValidationResult } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
-import {of} from 'rxjs';
+import {callHandler, makeValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
 const config1: PipelineConfiguration = {
@@ -85,7 +82,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
     testScheduler.run((helpers) => {
       const {cold, expectObservable} = helpers;
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
-      tree.initAll().subscribe();
+      tree.init().subscribe();
       const ls = new LinksState();
       const [link1, link2] = ls.createAutoLinks(tree.nodeTree);
       link1.wire(tree);
@@ -139,7 +136,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
     testScheduler.run((helpers) => {
       const {cold, expectObservable} = helpers;
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
-      tree.initAll().subscribe();
+      tree.init().subscribe();
       const ls = new LinksState();
       const [link1] = ls.createAutoLinks(tree.nodeTree);
       link1.wire(tree);
@@ -170,7 +167,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
     testScheduler.run((helpers) => {
       const {cold, expectObservable} = helpers;
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
-      tree.initAll().subscribe();
+      tree.init().subscribe();
       const node = tree.nodeTree.getNode([{idx: 0}]);
       const states = tree.getFuncCallStates();
       cold('-a').subscribe(() => {
@@ -219,7 +216,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
     testScheduler.run((helpers) => {
       const {cold, expectObservable} = helpers;
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, isReadonly: true});
-      tree.initAll().subscribe();
+      tree.init().subscribe();
       const ls = new LinksState();
       const [link1] = ls.createAutoLinks(tree.nodeTree);
       link1.wire(tree);
@@ -247,13 +244,12 @@ category('ComputeUtils: Driver instance additional states', async () => {
     const conf = await callHandler<PipelineConfiguration>('LibTests:MockProvider1', {version: '1.0'}).toPromise();
     const pconf = await getProcessedConfig(conf);
     const tree = StateTree.fromPipelineConfig({config: pconf});
-    await tree.initAll().toPromise();
+    await tree.init().toPromise();
     const outNode = tree.nodeTree.getNode([{idx: 1}]);
     outNode.getItem().getStateStore().setState('a', 10, 'restricted');
-    await tree.save().toPromise();
-    const metaCallSaved = tree.metaCall$.value;
+    const metaCallSaved = await tree.save().toPromise();
     const loadedTree = await StateTree.load(metaCallSaved!.id, pconf, {isReadonly: false}).toPromise();
-    await loadedTree.initAll().toPromise();
+    await loadedTree.init().toPromise();
     const outNodeLoaded = loadedTree.nodeTree.getNode([{idx: 1}]);
     outNodeLoaded.getItem().getStateStore().editState('a', 3);
     const consistency = loadedTree.getConsistency();
@@ -270,16 +266,15 @@ category('ComputeUtils: Driver instance additional states', async () => {
     const conf = await callHandler<PipelineConfiguration>('LibTests:MockProvider1', {version: '1.0'}).toPromise();
     const pconf = await getProcessedConfig(conf);
     const tree = StateTree.fromPipelineConfig({config: pconf});
-    await tree.initAll().toPromise();
+    await tree.init().toPromise();
     const node = tree.nodeTree.getNode([{idx: 0}]);
     const fcnode = node.getItem() as FuncCallNode;
     fcnode.getStateStore().setState('a', 1);
     fcnode.getStateStore().setState('b', 2);
     await fcnode.getStateStore().run().toPromise();
-    await tree.save().toPromise();
-    const metaCallSaved = tree.metaCall$.value;
+    const metaCallSaved = await tree.save().toPromise();
     const loadedTree = await StateTree.load(metaCallSaved!.id, pconf, {isReadonly: false}).toPromise();
-    await loadedTree.initAll().toPromise();
+    await loadedTree.init().toPromise();
     const nodeLoaded = loadedTree.nodeTree.getNode([{idx: 0}]);
     const states = loadedTree.getFuncCallStates();
     expectDeepEqual(states[nodeLoaded.getItem().uuid]?.value, {

@@ -165,23 +165,23 @@ export class Driver {
     return state.save();
   }
 
-  private loadPipeline(msg: LoadPipeline) {
+  public loadPipeline(msg: LoadPipeline) {
     return from(loadInstanceState(msg.funcCallId)).pipe(
-      concatMap(([metaCall, stateLoaded]) => {
+      concatMap((stateLoaded) => {
         if (isFuncCallSerializedState(stateLoaded))
           throw new Error(`Wrong pipeline config in wrapper FuncCall ${msg.funcCallId}`);
         if (!stateLoaded.provider)
           throw new Error(`Pipeline config in wrapper FuncCall ${msg.funcCallId} missing provider`);
         if (msg.config)
-          return of([stateLoaded, msg.config, metaCall] as const);
+          return of([stateLoaded, msg.config] as const);
         return callHandler<PipelineConfiguration>(stateLoaded.provider, {version: stateLoaded.version}).pipe(
           concatMap((conf) => from(getProcessedConfig(conf))),
-          map((config) => [stateLoaded, config, metaCall] as const),
+          map((config) => [stateLoaded, config] as const),
         );
       }),
-      map(([state, config, metaCall]) =>
-        StateTree.fromInstanceState({state, config, metaCall, isReadonly: !!msg.readonly, mockMode: this.mockMode})),
-      concatMap((state) => state.initFuncCalls()),
+      map(([state, config]) =>
+        StateTree.fromInstanceState({state, config, isReadonly: !!msg.readonly, mockMode: this.mockMode})),
+      concatMap((state) => state.init()),
       tap((state) => this.states$.next(state)),
     );
   }
@@ -190,7 +190,7 @@ export class Driver {
     return callHandler<PipelineConfiguration>(msg.provider, {version: msg.version}).pipe(
       concatMap((conf) => from(getProcessedConfig(conf))),
       map((config) => StateTree.fromPipelineConfig({config, isReadonly: false, mockMode: this.mockMode})),
-      concatMap((state) => state.initAll()),
+      concatMap((state) => state.init()),
       tap((state) => this.states$.next(state)),
     );
   }

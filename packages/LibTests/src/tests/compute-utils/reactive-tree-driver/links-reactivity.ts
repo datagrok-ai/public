@@ -9,7 +9,7 @@ import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {of} from 'rxjs';
 import {delay, mapTo} from 'rxjs/operators';
 import {FuncCallInstancesBridge} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/FuncCallInstancesBridge';
-import { makeValidationResult } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
+import {makeValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 
 category('ComputeUtils: Driver links reactivity', async () => {
   let testScheduler: TestScheduler;
@@ -72,7 +72,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
-      tree.initAll().subscribe();
+      tree.init().subscribe();
       const ls = new LinksState();
       const [link] = ls.createAutoLinks(tree.nodeTree);
       const inNode = tree.nodeTree.getNode([{idx: 0}]);
@@ -92,7 +92,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
-      tree.initAll().subscribe();
+      tree.init().subscribe();
       const ls = new LinksState();
       const [link] = ls.createAutoLinks(tree.nodeTree);
       const inNode = tree.nodeTree.getNode([{idx: 0}]);
@@ -112,7 +112,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
-      tree.initAll().subscribe();
+      tree.init().subscribe();
       const ls = new LinksState();
       const [link] = ls.createAutoLinks(tree.nodeTree);
       const inNode = tree.nodeTree.getNode([{idx: 0}]);
@@ -131,7 +131,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
-      tree.initAll().subscribe();
+      tree.init().subscribe();
       const ls = new LinksState();
       const [link] = ls.createAutoLinks(tree.nodeTree);
       const inNode = tree.nodeTree.getNode([{idx: 0}]);
@@ -176,7 +176,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
-      tree.initAll().subscribe();
+      tree.init().subscribe();
       const ls = new LinksState();
       const [link] = ls.createAutoLinks(tree.nodeTree);
       const inNode = tree.nodeTree.getNode([{idx: 0}]);
@@ -221,7 +221,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
-      tree.initAll().subscribe();
+      tree.init().subscribe();
       const ls = new LinksState();
       const [link] = ls.createAutoLinks(tree.nodeTree);
       const inNode = tree.nodeTree.getNode([{idx: 0}]);
@@ -266,7 +266,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
-      tree.initAll().subscribe();
+      tree.init().subscribe();
       const ls = new LinksState();
       const [link] = ls.createAutoLinks(tree.nodeTree);
       const inNode = tree.nodeTree.getNode([{idx: 0}]);
@@ -290,7 +290,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
     testScheduler.run((helpers) => {
       const {cold, expectObservable} = helpers;
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
-      tree.initAll().subscribe();
+      tree.init().subscribe();
       const ls = new LinksState();
       const [link] = ls.createAutoLinks(tree.nodeTree);
       const inNode = tree.nodeTree.getNode([{idx: 0}]);
@@ -323,7 +323,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
     testScheduler.run((helpers) => {
       const {cold, expectObservable} = helpers;
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
-      tree.initAll().subscribe();
+      tree.init().subscribe();
       const ls = new LinksState();
       const [link] = ls.createAutoLinks(tree.nodeTree);
       const inNode = tree.nodeTree.getNode([{idx: 0}]);
@@ -377,7 +377,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
-      tree.initAll().subscribe();
+      tree.init().subscribe();
       const ls = new LinksState();
       const [link] = ls.createAutoLinks(tree.nodeTree);
       const inNode = tree.nodeTree.getNode([{idx: 0}]);
@@ -430,7 +430,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
-      tree.initAll().subscribe();
+      tree.init().subscribe();
       const ls = new LinksState();
       const [link] = ls.createAutoLinks(tree.nodeTree);
       const inNode = tree.nodeTree.getNode([{idx: 0}]);
@@ -494,7 +494,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
     testScheduler.run((helpers) => {
       const {cold, expectObservable} = helpers;
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
-      tree.initAll().subscribe();
+      tree.init().subscribe();
       const ls = new LinksState();
       const [link1, link2] = ls.createAutoLinks(tree.nodeTree);
       const inNode = tree.nodeTree.getNode([{idx: 0}]);

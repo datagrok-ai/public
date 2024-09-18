@@ -47,7 +47,6 @@ export interface RunAction {
   uuid: string;
 }
 
-
 export interface SavePipeline {
   event: 'savePipeline';
 }
