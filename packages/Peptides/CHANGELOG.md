@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.18.1
+
+Add monomer custom coloring
+
 ## 1.17.29 (2024-08-14)
 
 Update MCL implementation
