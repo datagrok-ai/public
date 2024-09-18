@@ -144,7 +144,7 @@ export class DGComboPopup extends HTMLElement {
     );
     newPopup.style.height = '24px';
     newPopup.style.minWidth = '0px';
-    (newPopup.querySelector('.d4-combo-drop-down-fixed')!.nextSibling! as HTMLElement).onclick = (ev) => {
+    newPopup.onclick = (ev) => {
       ev.stopPropagation();
     };
     this.appendChild(newPopup);
