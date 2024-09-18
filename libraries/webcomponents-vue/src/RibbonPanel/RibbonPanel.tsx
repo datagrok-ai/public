@@ -27,13 +27,14 @@ export const RibbonPanel = Vue.defineComponent({
         elementsArray,
       ]);
 
-      elementsArray.filter((elem) => {
+      // Workaround for ui.comboPopup elements. It doesn't work if it is not a direct child of '.d4-ribbon-item'
+      elementsArray.forEach((elem) => {
         const content = ((elem.firstChild?.nodeType !== Node.TEXT_NODE) ? elem.firstChild: elem.firstChild.nextSibling) as HTMLElement | null;
 
-        return content && content.classList.contains('d4-combo-popup')
-      }).forEach((elem) => {
-        elem.classList.add('d4-ribbon-item');
-        elem.parentElement?.classList.remove('d4-ribbon-item');
+        if (content && content.tagName.toLowerCase().includes('dg-combo-popup')) {
+          content.classList.add('d4-ribbon-item');
+          elem.parentElement?.classList.remove('d4-ribbon-item');
+        }
       });
     })    
 

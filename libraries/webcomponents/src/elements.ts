@@ -115,30 +115,12 @@ export class DGIconFA extends HTMLElement {
 
 export interface DGIconFAT extends DGIconFA {};
 
-// unwrap away from an element; super basic but makes it consistent across our apps
-function unwrap(el: HTMLElement) {
-  if (el && el.parentNode) {
-    // move all children out of the element
-    while (el.firstChild)
-      el.parentNode.insertBefore(el.firstChild, el);
-
-    // remove the empty element
-    el.remove();
-  }
-}
-
-export class DGComboPopup extends HTMLDivElement {
+export class DGComboPopup extends HTMLElement {
   private _caption: string | HTMLElement = 'Caption';
   private _items = [] as string[];
-  private _isExpanded: boolean = false;
 
   constructor() {
     super();
-
-    this.addEventListener('click', () => {
-      this._isExpanded = !this._isExpanded;
-      this.render();
-    });
   }
 
   public set caption(val: string | HTMLElement) {
@@ -153,33 +135,19 @@ export class DGComboPopup extends HTMLDivElement {
 
   private render() {
     ui.empty(this);
-    this.classList.add('d4-combo-popup');
-    this.classList.toggle('d4-combo-popup-expanded', this._isExpanded);
-
-    const list = this._items.map((item, itemIdx) => {
-      const itemLabel = ui.label(item, 'ui-label');
-      itemLabel.style.marginRight = '6px';
-
-      const listItem = ui.div(itemLabel, 'd4-list-item');
-
-      const listItemWrapper = ui.div(listItem);
-      listItemWrapper.setAttribute('name', `${item}-host`);
-
-      listItemWrapper.addEventListener('click', ()=> {
-        this.dispatchEvent(new CustomEvent(
-          'selected', {detail: {item, itemIdx}}),
-        );
-      });
-
-      return listItemWrapper;
-    });
-    const listWrapper = ui.div(list, 'd4-list show-hover');
-    listWrapper.setAttribute('data-widget', 'true');
-    const hideableDropdown = ui.div(listWrapper, 'd4-combo-drop-down');
-    hideableDropdown.style.visibility = this._isExpanded ? 'visible' : 'hidden';
-    const dropdown = ui.div(hideableDropdown, 'd4-combo-drop-down-fixed');
-    this.append(dropdown);
-    this.append(this._caption);
+    const newPopup = ui.comboPopup(
+      this._caption,
+      this._items,
+      (item) => this.dispatchEvent(new CustomEvent(
+        'selected', {detail: {item, itemIdx: this._items.findIndex((i) => i === item)}}),
+      ),
+    );
+    newPopup.style.height = '24px';
+    newPopup.style.minWidth = '0px';
+    (newPopup.querySelector('.d4-combo-drop-down-fixed')!.nextSibling! as HTMLElement).onclick = (ev) => {
+      ev.stopPropagation();
+    };
+    this.appendChild(newPopup);
   }
 }
 

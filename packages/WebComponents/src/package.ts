@@ -21,7 +21,7 @@ export function registerWebcomponents() {
   customElements.define('dg-split-h', DGSplitH);
   customElements.define('dg-icon-fa', DGIconFA);
   customElements.define('dg-toggle-input', DGToggleInput);
-  customElements.define('dg-combo-popup', DGComboPopup, {extends: 'div'});
+  customElements.define('dg-combo-popup', DGComboPopup);
   customElements.define('dock-spawn-ts', DockSpawnTsWebcomponent);
   customElements.define('dg-markdown', DGMarkdown);
 }

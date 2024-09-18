@@ -141,8 +141,7 @@ export const ComboPopup = Vue.defineComponent({
     'selected': (value: {item: string, itemIdx: number}) => value,
   },
   setup(props, { emit }){
-    return () => <div 
-      is='dg-combo-popup'
+    return () => <dg-combo-popup
       //@ts-ignore
       caption={props.caption}
       items={props.items}
