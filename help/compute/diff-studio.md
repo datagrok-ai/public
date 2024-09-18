@@ -426,20 +426,23 @@ Set the maximum number of iterations to debug formulas in complex models.
 
 ## Lookup tables
 
-Lookup tables let you initialize model inputs with a set of pre-defined values. These dataframes specify names of inputs in the first column and their values in other numerical columns:
+Lookup tables are pre-defined sets of model input values. They're organized as follows:
 
 |Input|Set 1|Set 2|...|
 |-----|-----|-----|---|
 |x|1|2|...|
 |y|3|4|...|
 
-Specify *csv*-file with a lookup table in the `#meta.inputs`-line:
+To use a lookup table:
+
+* Create a CSV file with your table and add it to your project
+* Add the `#meta.inputs`-line to your model and specify a CSV file with a lookup table:
 
 ```python
 #meta.inputs: 'My files/model-inputs.csv'
 ```
 
-Select inputs and compare models runs:
+Use the interface to select inputs and compare model runs:
 
 ![table-lookups](pics/diff-studio-table-lookups.gif)
 
