@@ -226,6 +226,7 @@ export const TreeNode = Vue.defineComponent({
                     position: data.steps.length,
                   });
                 }}
+                class='d4-ribbon-item'
               />: null }
             { props.isDraggable && !isRunning(props.stat) ? <IconFA 
               name='grip-vertical' 
