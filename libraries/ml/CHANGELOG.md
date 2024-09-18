@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.7.1 (2024-09-18)
+
+Fix ts compatibility
+
 ## 6.6.25-rc (2024-09-06)
 
 Preparing 1.21.1 release
