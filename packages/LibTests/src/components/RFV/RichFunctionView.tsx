@@ -9,6 +9,7 @@ import {
   BigButton, IconFA, 
   RibbonPanel, DockManager, MarkDown,
   ComboPopup,
+  RibbonMenu,
 } from '@datagrok-libraries/webcomponents-vue';
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
@@ -221,6 +222,10 @@ export const RichFunctionView = Vue.defineComponent({
 
     return () => (
       <div class='w-full h-full flex' ref={root}>
+        <RibbonMenu groupName='Custom 1'>
+          <span> Test 1</span>
+          <span> Test 2</span>
+        </RibbonMenu>
         <RibbonPanel>
           <IconFA
             name='pen'

@@ -1,6 +1,7 @@
 export * from './src/InputForm/InputForm';
 export * from './src/Viewer/Viewer';
 export * from './src/RibbonPanel/RibbonPanel';
+export * from './src/RibbonMenu/RibbonMenu';
 export * from './src/elements';
 export * from './src/Tabs/TabHeaderStripe/TabHeaderStripe';
 export * from './src/Tabs/TabArea/TabArea';
