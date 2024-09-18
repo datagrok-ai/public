@@ -144,7 +144,7 @@ export const RichFunctionView = Vue.defineComponent({
         visibleTabLabels.value.splice(tabIdx, 1);  
     };
 
-    const save = () => {
+    const saveLayout = () => {
       if (!dockRef.value) return;
 
       panelsState.value = JSON.stringify({
@@ -163,7 +163,7 @@ export const RichFunctionView = Vue.defineComponent({
       null as null | string,
     );
 
-    const load = async () => {
+    const loadLayout = async () => {
       if (!dockRef.value || !panelsState.value) return;
 
       const openedPanels = JSON.parse(panelsState.value) as PanelsState;
@@ -176,6 +176,10 @@ export const RichFunctionView = Vue.defineComponent({
       await Vue.nextTick();
 
       dockRef.value.loadLayout();
+    };
+
+    const eraseLayout = () => {
+      panelsState.value = null;
     };
 
     const visibleTabLabels = Vue.ref([] as string[]);
@@ -222,17 +226,22 @@ export const RichFunctionView = Vue.defineComponent({
 
     return () => (
       <div class='w-full h-full flex' ref={root}>
-        <RibbonMenu groupName='Custom 1'>
-          <span> Test 1</span>
-          <span> Test 2</span>
+        <RibbonMenu groupName='Layout'>
+          <span onClick={saveLayout}>
+            <IconFA name='save' style={{'padding-right': '3px'}}/>
+            <span> Save </span>
+          </span>
+          { panelsState.value && 
+          <span onClick={loadLayout}>
+            <IconFA name='life-ring' style={{'padding-right': '3px'}}/>
+            <span> Load </span>
+          </span> }
+          { panelsState.value && <span onClick={eraseLayout}>
+            <IconFA name='eraser' style={{'padding-right': '3px'}}/>
+            <span> Erase </span>
+          </span> }
         </RibbonMenu>
         <RibbonPanel>
-          <IconFA
-            name='pen'
-            tooltip={formHidden.value ? 'Open inputs': 'Close inputs'}
-            onClick={() => formHidden.value = !formHidden.value} 
-            style={{'background-color': !formHidden.value ? 'var(--grey-1)': null}}
-          />
           <IconFA
             name='play'
             tooltip='Run step'
@@ -251,20 +260,16 @@ export const RichFunctionView = Vue.defineComponent({
             }}
           />}
           <IconFA
+            name='pen'
+            tooltip={formHidden.value ? 'Open inputs': 'Close inputs'}
+            onClick={() => formHidden.value = !formHidden.value} 
+            style={{'background-color': !formHidden.value ? 'var(--grey-1)': null}}
+          />
+          <IconFA
             name='chart-pie'
             tooltip='Restore output tabs'
             onClick={() => visibleTabLabels.value = [...tabLabels.value]} 
           />
-          <IconFA
-            name='save'
-            tooltip='Save the layout'
-            onClick={save}
-          />
-          { panelsState.value && <IconFA
-            name='life-ring'
-            tooltip='Load the layout'
-            onClick={load}
-          /> }
           { hasContextHelp.value && <IconFA 
             name='info' 
             tooltip={ helpHidden.value ? 'Open help panel' : 'Close help panel' }

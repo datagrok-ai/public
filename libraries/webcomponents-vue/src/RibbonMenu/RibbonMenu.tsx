@@ -50,6 +50,10 @@ export const RibbonMenu = Vue.defineComponent({
       currentView.ribbonMenu.remove(props.groupName)
     });
 
+    Vue.onBeforeUpdate(() => {
+      elements.clear();
+    })
+
     return () => 
       slots.default?.().filter((slot: any) => slot.type !== Symbol.for('v-cmt')).map((slot: any, idx: number) => 
         <div slot-idx={`${idx}`} ref={(el) => addElement(el, idx)}> { slot } </div>
