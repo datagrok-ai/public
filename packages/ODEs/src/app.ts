@@ -357,7 +357,20 @@ export class DiffStudio {
 
     this.toRunWhenFormCreated = true;
 
-    setTimeout(() => this.runSolving(true), UI_TIME.PREVIEW_RUN_SOLVING);
+    setTimeout(() => {
+      const node = this.solverView.dockManager.dock(
+        this.tabControl.root,
+        DG.DOCK_TYPE.LEFT,
+        null,
+        undefined,
+        DOCK_RATIO,
+      );
+
+      if (node.container.dart.elementTitle)
+        node.container.dart.elementTitle.hidden = true;
+
+      this.runSolving(true);
+    }, UI_TIME.PREVIEW_RUN_SOLVING);
 
     return this.solverView;
   } // getFilePreview
@@ -447,11 +460,10 @@ export class DiffStudio {
         node.container.dart.elementTitle.hidden = true;
     };
 
-    if (toDockTabCtrl) {
-      if (!toAddTableView) {
-        const timeout = isFilePreview ? UI_TIME.PREVIEW_DOCK_TIMEOUT : UI_TIME.DOCK_EDITOR_TIMEOUT;
-        setTimeout(dockTabCtrl, timeout);
-      } else
+    if (toDockTabCtrl && !isFilePreview) {
+      if (!toAddTableView)
+        setTimeout(dockTabCtrl, UI_TIME.DOCK_EDITOR_TIMEOUT);
+      else
         dockTabCtrl();
     }
 
