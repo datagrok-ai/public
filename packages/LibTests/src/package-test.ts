@@ -15,6 +15,7 @@ import './tests/compute-utils/reactive-tree-driver/links-reactivity';
 import './tests/compute-utils/reactive-tree-driver/instance-additional';
 import './tests/compute-utils/reactive-tree-driver/funcall-wrappers';
 import './tests/compute-utils/reactive-tree-driver/instance-bridge';
+import './tests/compute-utils/reactive-tree-driver/links-additional-states-propagation';
 
 export const _package = new DG.Package();
 export {tests};

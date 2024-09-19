@@ -7,7 +7,7 @@ import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {of} from 'rxjs';
-import {delay, mapTo} from 'rxjs/operators';
+import {delay, mapTo, switchMap} from 'rxjs/operators';
 import {FuncCallInstancesBridge} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/FuncCallInstancesBridge';
 import {makeValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 
@@ -78,11 +78,11 @@ category('ComputeUtils: Driver links reactivity', async () => {
       const inNode = tree.nodeTree.getNode([{idx: 0}]);
       const outNode = tree.nodeTree.getNode([{idx: 1}]);
       link.wire(tree.nodeTree);
-      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a b', {a: undefined, b: 1});
       cold('-a').subscribe(() => {
         inNode.getItem().getStateStore().setState('b', 1);
         link.trigger();
       });
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a b', {a: undefined, b: 1});
     });
   });
 
@@ -95,10 +95,10 @@ category('ComputeUtils: Driver links reactivity', async () => {
       tree.init().subscribe();
       const inNode = tree.nodeTree.getNode([{idx: 0}]);
       const outNode = tree.nodeTree.getNode([{idx: 1}]);
-      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a b', {a: undefined, b: 1});
       cold('-a').subscribe(() => {
         inNode.getItem().getStateStore().setState('b', 1);
       });
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a b', {a: undefined, b: 1});
     });
   });
 
@@ -114,10 +114,10 @@ category('ComputeUtils: Driver links reactivity', async () => {
       const inNode = tree.nodeTree.getNode([{idx: 0}]);
       const outNode = tree.nodeTree.getNode([{idx: 1}]);
       link.wire(tree.nodeTree);
-      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a', {a: undefined});
       cold('-a').subscribe(() => {
         inNode.getItem().getStateStore().setState('b', 1);
       });
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a', {a: undefined});
     });
   });
 
@@ -130,11 +130,11 @@ category('ComputeUtils: Driver links reactivity', async () => {
       tree.init().subscribe();
       const inNode = tree.nodeTree.getNode([{idx: 0}]);
       const outNode = tree.nodeTree.getNode([{idx: 1}]);
-      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a b', {a: undefined, b: 2});
       cold('-a').subscribe(() => {
         inNode.getItem().getStateStore().setState('b', 1);
         inNode.getItem().getStateStore().setState('b', 2);
       });
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a b', {a: undefined, b: 2});
     });
   });
 
@@ -171,10 +171,10 @@ category('ComputeUtils: Driver links reactivity', async () => {
       tree.init().subscribe();
       const inNode = tree.nodeTree.getNode([{idx: 0}]);
       const outNode = tree.nodeTree.getNode([{idx: 1}]);
-      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a b', {a: undefined, b: 2});
       cold('-a').subscribe(() => {
         inNode.getItem().getStateStore().setState('b', 1);
       });
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a b', {a: undefined, b: 2});
     });
   });
 
@@ -212,10 +212,10 @@ category('ComputeUtils: Driver links reactivity', async () => {
       tree.init().subscribe();
       const inNode = tree.nodeTree.getNode([{idx: 0}]);
       const outNode = tree.nodeTree.getNode([{idx: 1}]);
-      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a 100ms b', {a: undefined, b: 2});
       cold('-a').subscribe(() => {
         inNode.getItem().getStateStore().setState('b', 1);
       });
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a 100ms b', {a: undefined, b: 2});
     });
   });
 
@@ -253,13 +253,13 @@ category('ComputeUtils: Driver links reactivity', async () => {
       tree.init().subscribe();
       const inNode = tree.nodeTree.getNode([{idx: 0}]);
       const outNode = tree.nodeTree.getNode([{idx: 1}]);
-      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a 149ms b', {a: undefined, b: 3});
       cold('-a').subscribe(() => {
         inNode.getItem().getStateStore().setState('b', 1);
       });
       cold('50ms a').subscribe(() => {
         inNode.getItem().getStateStore().setState('b', 2);
       });
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a 149ms b', {a: undefined, b: 3});
     });
   });
 
@@ -275,24 +275,24 @@ category('ComputeUtils: Driver links reactivity', async () => {
       const [link] = ls.createAutoLinks(tree.nodeTree);
       const inNode = tree.nodeTree.getNode([{idx: 0}]);
       link.wire(tree.nodeTree);
-      expectObservable(link.isRunning$, '^ 1000ms !').toBe('a 250ms (bc)', {a: false, b: true, c: false});
       cold('-a').subscribe(() => {
         link.setActive();
         inNode.getItem().getStateStore().setState('a', 1);
       });
-
-      cold('252ms a').subscribe(() => {
-        const validators = (inNode.getItem().getStateStore() as FuncCallInstancesBridge).validations$.value;
-        const expected = {
-          'a': {
-            'warnings': [
-              {
-                'description': 'test warn',
-              },
-            ],
-          },
-        };
-        expectDeepEqual(validators[link.uuid], expected);
+      expectObservable(link.isRunning$, '^ 1000ms !').toBe('a 250ms (bc)', {a: false, b: true, c: false});
+      expectObservable((inNode.getItem().getStateStore() as FuncCallInstancesBridge).validations$).toBe('a 250ms b', {
+        a: {},
+        b: {
+          [link.uuid]: {
+            'a': {
+              'warnings': [
+                {
+                  'description': 'test warn',
+                },
+              ],
+            },
+          }
+        }
       });
     });
   });
@@ -308,23 +308,23 @@ category('ComputeUtils: Driver links reactivity', async () => {
       const [link] = ls.createAutoLinks(tree.nodeTree);
       const inNode = tree.nodeTree.getNode([{idx: 0}]);
       link.wire(tree.nodeTree);
-      expectObservable(link.isRunning$, '^ 1000ms !').toBe('a (bc)', {a: false, b: true, c: false});
       cold('-a').subscribe(() => {
         link.trigger();
       });
-
-      cold('--a').subscribe(() => {
-        const validators = (inNode.getItem().getStateStore() as FuncCallInstancesBridge).validations$.value;
-        const expected = {
-          'a': {
-            'warnings': [
-              {
-                'description': 'test warn',
-              },
-            ],
-          },
-        };
-        expectDeepEqual(validators[link.uuid], expected);
+      expectObservable(link.isRunning$, '^ 1000ms !').toBe('a (bc)', {a: false, b: true, c: false});
+      expectObservable((inNode.getItem().getStateStore() as FuncCallInstancesBridge).validations$).toBe('a b', {
+        a: {},
+        b: {
+          [link.uuid] :{
+            'a': {
+              'warnings': [
+                {
+                  'description': 'test warn',
+                },
+              ],
+            },
+          }
+        }
       });
     });
   });
@@ -360,19 +360,18 @@ category('ComputeUtils: Driver links reactivity', async () => {
       tree.init().subscribe();
       const inNode = tree.nodeTree.getNode([{idx: 0}]);
       const outNode = tree.nodeTree.getNode([{idx: 1}]);
-      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a b', {a: undefined, b: 1});
       cold('-a').subscribe(() => {
         inNode.getItem().getStateStore().setState('b', 1);
       });
-      cold('--a').subscribe(() => {
-        const restrictions = (outNode.getItem().getStateStore() as FuncCallInstancesBridge).inputRestrictions$.value;
-        const expected = {
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a b', {a: undefined, b: 1});
+      expectObservable((outNode.getItem().getStateStore() as FuncCallInstancesBridge).inputRestrictions$).toBe('a b', {
+        a: {},
+        b: {
           'a': {
             'type': 'restricted',
             'assignedValue': 1,
           },
-        };
-        expectDeepEqual(restrictions, expected);
+        }
       });
     });
   });
@@ -409,19 +408,18 @@ category('ComputeUtils: Driver links reactivity', async () => {
       tree.init().subscribe();
       const inNode = tree.nodeTree.getNode([{idx: 0}]);
       const outNode = tree.nodeTree.getNode([{idx: 1}]);
-      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a b', {a: undefined, b: 2});
       cold('-a').subscribe(() => {
         inNode.getItem().getStateStore().setState('b', 1);
       });
-      cold('--a').subscribe(() => {
-        const restrictions = (outNode.getItem().getStateStore() as FuncCallInstancesBridge).inputRestrictions$.value;
-        const expected = {
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a b', {a: undefined, b: 2});
+      expectObservable((outNode.getItem().getStateStore() as FuncCallInstancesBridge).inputRestrictions$).toBe('a b', {
+        a: {},
+        b: {
           'a': {
             'type': 'restricted',
             'assignedValue': 2,
           },
-        };
-        expectDeepEqual(restrictions, expected);
+        }
       });
     });
   });
@@ -472,16 +470,23 @@ category('ComputeUtils: Driver links reactivity', async () => {
       const inNode = tree.nodeTree.getNode([{idx: 0}]);
       link1.wire(tree.nodeTree);
       link2.wire(tree.nodeTree);
-      expectObservable(link1.isRunning$, '^ 1000ms !').toBe('a (bc)', {a: false, b: true, c: false});
-      expectObservable(link2.isRunning$, '^ 1000ms !').toBe('a (bc)', {a: false, b: true, c: false});
       cold('-a').subscribe(() => {
         link1.trigger();
         link2.trigger();
       });
-
-      cold('--a').subscribe(() => {
-        const validators = (inNode.getItem().getStateStore() as FuncCallInstancesBridge).validations$.value;
-        const expected = {
+      expectObservable(link1.isRunning$, '^ 1000ms !').toBe('a (bc)', {a: false, b: true, c: false});
+      expectObservable(link2.isRunning$, '^ 1000ms !').toBe('a (bc)', {a: false, b: true, c: false});
+      expectObservable((inNode.getItem().getStateStore() as FuncCallInstancesBridge).validations$).toBe('a(bc)',{
+        a: {},
+        b: {
+          [link1.uuid]: {
+            a: {'warnings': [
+              {
+                'description': 'some warn',
+              }],
+            }},
+        },
+        c: {
           [link1.uuid]: {
             a: {'warnings': [
               {
@@ -495,11 +500,55 @@ category('ComputeUtils: Driver links reactivity', async () => {
               }],
             },
           },
-        };
-        expectDeepEqual(validators, expected);
-      });
+        }
+      })
     });
   });
 
+  test('Propagate meta info', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:TestAdd2',
+        },
+        {
+          id: 'step2',
+          nqName: 'LibTests:TestMul2',
+        },
+      ],
+      links: [{
+        id: 'link1',
+        from: 'in1:step1/b',
+        to: 'out1:step2/a',
+        isMeta: true,
+        handler({controller}) {
+          controller.setViewMeta('out1', {key: 'val'});
+        },
+      }],
+    };
+    const pconf = await getProcessedConfig(config);
+
+    testScheduler.run((helpers) => {
+      const {expectObservable, cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const inNode = tree.nodeTree.getNode([{idx: 0}]);
+      const outNode = tree.nodeTree.getNode([{idx: 1}]);
+      cold('-a').subscribe(() => {
+        inNode.getItem().getStateStore().setState('b', 1);
+      });
+      expectObservable((outNode.getItem().getStateStore() as FuncCallInstancesBridge).meta$.pipe(
+        switchMap(x => x.a)
+      )).toBe('ab', {
+        a: undefined,
+        b: {
+          'key': 'val',
+        }
+      });
+    });
+  });
 
 });

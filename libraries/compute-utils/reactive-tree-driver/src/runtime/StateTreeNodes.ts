@@ -231,14 +231,12 @@ export class FuncCallNode implements IStoreProvider {
     else {
       const {assignedValue, type} = restriction;
       const currentVal = this.instancesWrapper.getState(inputName);
-      if (!this.deepEq(currentVal, assignedValue)) {
-        return {
-          restriction: type,
-          inconsistent: true,
-          assignedValue,
-        };
-      } else
-        return undefined;
+      const inconsistent = !this.deepEq(currentVal, assignedValue);
+      return {
+        restriction: type,
+        inconsistent,
+        assignedValue,
+      };
     }
   }
 

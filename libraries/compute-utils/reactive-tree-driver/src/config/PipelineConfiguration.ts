@@ -60,7 +60,7 @@ export type PipelineValidatorConfiguration<P> = PipelineLinkConfigurationBase<P>
 export type PipelineMetaConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   isValidator?: false;
   isMeta: true;
-  handler: Validator;
+  handler: MetaHandler;
 };
 
 export type PipelineHookConfiguration<P> = PipelineLinkConfigurationBase<P> & {
