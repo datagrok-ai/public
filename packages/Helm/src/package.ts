@@ -220,3 +220,27 @@ export async function measureCellRenderer(): Promise<void> {
   }
   _package.logger.info(`measureCellRenderer(), avg ET: ${etSum / etCount} ms`);
 }
+
+// -- Test apps --
+
+//name: Highlight Monomers
+//tags: app
+//output: view result
+export async function highlightMonomers(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('Test app highlight monomers');
+  try {
+    const df = await _package.files.readCsv('tests/peptide.csv');
+    df.name = 'peptide.csv';
+    await initHelmPromise;
+
+    const seqCol = df.columns.byName('helm')!;
+    await grok.data.detectSemanticTypes(df);
+    await grok.functions.call('Bio:toAtomicLevel', {table: df, seqCol: seqCol, nonlinear: true, highlight: true});
+
+    // const resView = DG.TableView.create(df, false);
+    // return resView;
+    grok.shell.addTableView(df);
+  } finally {
+    pi.close();
+  }
+}

@@ -1,13 +1,15 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
+import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
 import { findRGroups, findRGroupsWithCore } from '../scripts-api';
 import { convertMolNotation, getRdKitModule } from '../package';
 import { getMCS } from '../utils/most-common-subs';
 import { IRGroupAnalysisResult } from '../rdkit-service/rdkit-service-worker-substructure';
 import { getRdKitService } from '../utils/chem-common-rdkit';
 import { _convertMolNotation } from '../utils/convert-notation-utils';
-import { SCAFFOLD_COL, SUBSTRUCT_COL } from '../constants';
+import { SCAFFOLD_COL } from '../constants';
 import { delay } from '@datagrok-libraries/utils/src/test';
 import { hexToPercentRgb } from '../utils/chem-common';
 import { getMolSafe, getQueryMolSafe } from '../utils/mol-creation_rdkit';
@@ -310,7 +312,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
       if (highlightCol) {
         col.dataFrame.columns.add(highlightCol);
         latestAnalysisCols[col.dataFrame.name].push(highlightCol.name);
-        col.temp[SUBSTRUCT_COL] = highlightCol.name;
+        col.temp[ChemTemps.SUBSTRUCT_COL] = highlightCol.name;
       }
       //create boolean column for match/non match
       const matchCol = DG.Column

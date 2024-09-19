@@ -1,11 +1,11 @@
 // interface for typed arrays, like Float32Array and Uint32Array
 import {ALPHABET} from '../utils/macromolecule';
 import {HELM_POLYMER_TYPE} from '../utils/const';
-import {ISeqMonomer} from '../helm/types';
+import {HelmType, ISeqMonomer} from '../helm/types';
 
 export interface ITypedArray {
-    length: number;
-    [key: number]: any;
+  length: number;
+  [key: number]: any;
 }
 
 /** Type for user settings of monomer library set to use. */
@@ -60,6 +60,31 @@ export type MolGraph = {
     stereoAtoms?: number[]
 }
 
+export type MonomerMolGraphMap = { [polymerType: string]: { [symbol: string]: MolGraph } };
+
+export type LibMonomerKey = { polymerType: string, symbol: string }
+
+export function getMolGraph(dict: MonomerMolGraphMap, libKey: LibMonomerKey): MolGraph | undefined {
+  return dict[libKey.polymerType]?.[libKey.symbol];
+}
+
+export function hasMolGraph(dict: MonomerMolGraphMap, libKey: LibMonomerKey): boolean {
+  return !!dict[libKey.polymerType]?.[libKey.symbol];
+}
+
+export function setMolGraph(dict: MonomerMolGraphMap, libKey: LibMonomerKey, value: MolGraph): void {
+  let pt = dict[libKey.polymerType];
+  if (!pt)
+    pt = dict[libKey.polymerType] = {};
+  pt[libKey.symbol] = value;
+}
+
+// export function getMolGraph(
+//   dict: MonomerMolGraphMap, polymerType: PolymerType, symbol: string
+// ): MolGraph | undefined {
+//   return dict[polymerType]?.[symbol];
+// }
+
 export type Point = {
     x: number,
     y: number
@@ -92,7 +117,7 @@ export type NumberWrapper = {
   value: number | null // null if there is no branch attach node
 }
 
-export type MonomerMapValue = { symbol: string, atoms: number[], bonds: number[] };
+export type MonomerMapValue = { biotype: HelmType, symbol: string, atoms: number[], bonds: number[] };
 
 export class MonomerMap extends Map<number, MonomerMapValue> {
   constructor(entries?: [number, MonomerMapValue][] | null) {
@@ -110,9 +135,10 @@ export class MolfileWithMap {
   static createEmpty() { return new MolfileWithMap('', new MonomerMap(null)); }
 }
 
+/** Only simple types allowed for worker data, avoid classes with methods */
 export type SeqToMolfileWorkerData = {
-  canonicalSeqList: string[][],
-  monomersDict: Map<string, MolGraph>,
+  seqList: ISeqMonomer[][],
+  monomersDict: MonomerMolGraphMap,
   alphabet: ALPHABET,
   polymerType: HELM_POLYMER_TYPE,
   start: number,

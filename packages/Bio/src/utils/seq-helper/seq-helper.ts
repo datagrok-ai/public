@@ -4,15 +4,14 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 
-import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
-import {ISeqHelper, SUBSTRUCT_COL, ToAtomicLevelRes} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {ISeqHelper, ToAtomicLevelRes} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {MolfileWithMap} from '@datagrok-libraries/bio/src/monomer-works/types';
-import {getUnusedName, getMolColName, getMolHighlightColName} from '@datagrok-libraries/bio/src/monomer-works/utils';
-import {buildMonomerHoverLink} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
-import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
+import {getMolColName, getMolHighlightColName, hexToPercentRgb} from '@datagrok-libraries/bio/src/monomer-works/utils';
+import {ChemTags} from '@datagrok-libraries/chem-meta/src/consts';
+import {getMolHighlight} from '@datagrok-libraries/bio/src/monomer-works/seq-to-molfile';
 
 import {HelmToMolfileConverter} from '../helm-to-molfile/converter';
 import {MonomerLibManager} from '../monomer-lib/lib-manager';
@@ -77,49 +76,17 @@ export class SeqHelper implements ISeqHelper {
 
     //#endregion From HelmToMolfileConverter
 
-    const molHlList = molfilesV3K.map((item: MolfileWithMap) => {
-      const hlAtoms: { [key: number]: number[] } = {};
-      const hlBonds: { [key: number]: number[] } = {};
-
-      for (const [monomerPosIdx, monomerMapValue] of item.monomers.entries()) {
-        if (monomerPosIdx >= 2) continue;
-
-        const mmColor = [Math.random(), Math.random(), Math.random(), 0.3]; // green color
-        for (const mAtom of monomerMapValue.atoms) {
-          hlAtoms[mAtom] = mmColor;
-        }
-        for (const mBond of monomerMapValue.bonds) {
-          hlBonds[mBond] = mmColor;
-        }
-      }
-
-      let resSubstruct: ISubstruct = {
-        atoms: Object.keys(hlAtoms).map((k) => parseInt(k)),
-        bonds: Object.keys(hlBonds).map((k) => parseInt(k)),
-        highlightAtomColors: hlAtoms,
-        highlightBondColors: hlBonds,
-      };
-
-      return resSubstruct;
-    });
+    const molHlList = molfilesV3K.map((item: MolfileWithMap) => getMolHighlight(item.monomers.values(), monomerLib));
 
     const molCol = DG.Column.fromStrings(molColName, molList);
-    molCol.semType = 'Molecule';
-    molCol.temp[SUBSTRUCT_COL] = molHlColName;
+    molCol.semType = DG.SEMTYPE.MOLECULE;
+    molCol.meta.units = DG.UNITS.Molecule.MOLBLOCK;
+    molCol.setTag(ChemTags.SEQUENCE_SRC_COL, helmCol.name);
 
     const molHlCol = DG.Column.fromList(DG.COLUMN_TYPE.OBJECT, molHlColName, molHlList);
     molHlCol.semType = `${DG.SEMTYPE.MOLECULE}-highlight`;
 
-    const monomerHoverLink = buildMonomerHoverLink(
-      helmCol, molCol, monomerLib, this.rdKitModule);
-
-    return {
-      mol: {
-        col: molCol, highlightCol: molHlCol,
-        monomerHoverLink: monomerHoverLink,
-      },
-      warnings: []
-    };
+    return {mol: {col: molCol, highlightCol: molHlCol,}, warnings: []};
   }
 
   static getInstance(): Promise<SeqHelper> {

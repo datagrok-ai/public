@@ -72,21 +72,26 @@ export class LibraryWebEditorMonomer implements IWebEditorMonomer {
 function getMonomerColors(biotype: HelmType, monomer: Monomer): IMonomerColors | null {
   const currentMonomerSchema = 'default';
   let monomerSchema: string = currentMonomerSchema;
-  if (!monomer.meta || !monomer.meta.colors) return null;
 
-  const monomerColors: { [colorSchemaName: string]: any } = monomer.meta.colors;
-  if (!(currentMonomerSchema in monomerColors)) monomerSchema = 'default';
-  let res = monomerColors[monomerSchema];
+  let res: any;
+  if (monomer.meta && monomer.meta.colors) {
+    const monomerColors: { [colorSchemaName: string]: any } = monomer.meta.colors;
+    if (!(currentMonomerSchema in monomerColors)) monomerSchema = 'default';
+    let res = monomerColors[monomerSchema];
+  }
+
+  if (!res) {
+    const biotypeColors: { [symbol: string]: string } | undefined = naturalMonomerColors[biotype];
+    const nColor = biotypeColors?.[monomer.symbol];
+    if (nColor)
+      res = {textColor: "#000000", lineColor: "#000000", backgroundColor: nColor};
+  }
 
   const na = monomer[OPT.NATURAL_ANALOG];
   if (!res && na) {
     const biotypeColors: { [symbol: string]: string } | undefined = naturalMonomerColors[biotype];
-    const naColor = biotypeColors?.[monomer.symbol];
-    res = {
-      textColor: "#000000",
-      lineColor: "#000000",
-      backgroundColor: naColor ?? "#FFFFFF",
-    };
+    const naColor = biotypeColors?.[na];
+    res = {textColor: "#000000", lineColor: "#000000", backgroundColor: naColor ?? "#FFFFFF",};
   }
 
   return !res ? null : {

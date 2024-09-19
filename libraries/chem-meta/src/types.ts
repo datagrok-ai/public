@@ -10,7 +10,6 @@ export type MonomerHoverData = {
   gridRowIdx: number,
   seqColName: string,
   seqPosition: number
-  molColName: string,
   gridCell: any | null,
   /** Contains color of the monomer, empty lists on monomer that does not exist in molecule. */
   getSubstruct(): ISubstruct | undefined;

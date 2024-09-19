@@ -9,13 +9,14 @@ import {getMonomerHover, ISubstruct, setMonomerHover} from '@datagrok-libraries/
 
 import {IMonomerLib} from '../types/index';
 import {ISeqMonomer} from '../helm/types';
+import {HelmTypes} from '../helm/consts';
 import {SeqHandler} from '../utils/seq-handler';
 import {ALPHABET} from '../utils/macromolecule';
 import {helmTypeToPolymerType} from './monomer-works';
 import {getMonomersDictFromLib} from './to-atomic-level';
 import {monomerSeqToMolfile} from './to-atomic-level-utils';
-import {getGridColByTableCol} from '../utils/grid';
 import {hexToPercentRgb, MonomerHoverLink} from './utils';
+import {getMolHighlight} from './seq-to-molfile';
 
 export const MonomerHoverLinksTemp = 'MonomerHoverLinks';
 
@@ -32,8 +33,7 @@ export function buildMonomerHoverLink(
 
       const prev = getMonomerHover();
       if (!prev || (prev && (prev.dataFrameId != seqCol.dataFrame.id || prev.gridRowIdx != gridRowIdx ||
-        prev.seqColName != seqCol.name || prev.seqPosition != seqMonomer?.position ||
-        prev.molColName != molCol.name))
+        prev.seqColName != seqCol.name || prev.seqPosition != seqMonomer?.position))
       ) {
         if (prev) {
           setMonomerHover(null);
@@ -50,37 +50,26 @@ export function buildMonomerHoverLink(
           gridRowIdx: gridRowIdx,
           seqColName: seqCol.name,
           seqPosition: seqMonomer ? seqMonomer.position : -1,
-          molColName: molCol.name,
           getSubstruct: (): ISubstruct | undefined => {
             if (!seqMonomer || seqMonomer.symbol === '*')
               return undefined;
 
             const seqSH = SeqHandler.forColumn(seqCol);
             const seqSS = seqSH.getSplitted(tableRowIdx);
-            const seqCMList = wu.count(0).take(seqSS.length).map((posIdx) => seqSS.getCanonical(posIdx)).toArray();
+            const biotype = seqSH.alphabet == ALPHABET.RNA || seqSH.alphabet == ALPHABET.DNA ? HelmTypes.NUCLEOTIDE : HelmTypes.AA;
+            const seqMList: ISeqMonomer[] = wu.count(0).take(seqSS.length)
+              .map((posIdx) => { return {position: posIdx, symbol: seqSS.getCanonical(posIdx), biotype: biotype} as ISeqMonomer; })
+              .toArray();
 
             const alphabet = seqSH.alphabet as ALPHABET;
             const polymerType = helmTypeToPolymerType(seqMonomer!.biotype);
-            const monomersDict = getMonomersDictFromLib([seqCMList], polymerType, alphabet, monomerLib, rdKitModule);
+            const monomersDict = getMonomersDictFromLib([seqMList], polymerType, alphabet, monomerLib, rdKitModule);
             // Call seq-to-molfile worker core directly
-            const molWM = monomerSeqToMolfile(seqCMList, monomersDict, alphabet, polymerType);
+            const molWM = monomerSeqToMolfile(seqMList, monomersDict, alphabet, polymerType);
             const monomerMap = molWM.monomers.get(seqMonomer!.position);
             if (!monomerMap) return {atoms: [], bonds: [], highlightAtomColors: [], highlightBondColors: []};
 
-            const hlAtoms: { [key: number]: number[] } = {};
-            const hlBonds: { [key: number]: number[] } = {};
-            const wem = monomerLib.getWebEditorMonomer(seqMonomer.biotype, seqMonomer.symbol)!;
-            const mColorStr = wem.backgroundcolor!;
-            const wemColorA = hexToPercentRgb(mColorStr ?? DG.Color.mouseOverRows) ?? [1.0, 0.0, 0.0, 0.7];
-            for (const mAtom of monomerMap.atoms) hlAtoms[mAtom] = wemColorA;
-            for (const mBond of monomerMap.bonds) hlBonds[mBond] = wemColorA;
-
-            const res: ISubstruct = {
-              atoms: monomerMap.atoms,
-              bonds: monomerMap.bonds,
-              highlightAtomColors: hlAtoms,
-              highlightBondColors: hlBonds,
-            };
+            const res: ISubstruct = getMolHighlight([monomerMap], monomerLib);
             return res;
           }
         });
@@ -97,6 +86,7 @@ export function buildMonomerHoverLink(
   if (!mhhList)
     mhhList = seqCol.temp[MonomerHoverLinksTemp] = [];
   mhhList.push(resLink);
+  seqCol.temp[MonomerHoverLinksTemp] = mhhList;
 
   return resLink;
 }
@@ -108,9 +98,12 @@ export function execMonomerHoverLinks(
   const mhlList = getMonomerHoverLinks(seqCol);
   for (let mhlI = mhlList.length - 1; mhlI >= 0; --mhlI) {
     const mhl = mhlList[mhlI];
-    const molGridCol = getGridColByTableCol(seqGridCell.grid, mhl.targetCol);
-    if (molGridCol)
-      if (!mhl.handler(seqGridCell, seqMonomer, molGridCol)) break;
+    const molGridCol = seqGridCell.grid.col(mhl.targetCol.name);
+    if (molGridCol) {
+      const handlerRes = mhl.handler(seqGridCell, seqMonomer, molGridCol);
+      if (!handlerRes)
+        break;
+    }
   }
 }
 

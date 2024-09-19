@@ -2,15 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {MonomerHoverLink} from '../monomer-works/utils';
-
-export const SUBSTRUCT_COL = 'substruct-col';
-
 export type ToAtomicLevelRes = {
   mol: {
     col: DG.Column<string>,
     highlightCol: DG.Column<object>,
-    monomerHoverLink: MonomerHoverLink,
   } | null,
   warnings: string[],
 }

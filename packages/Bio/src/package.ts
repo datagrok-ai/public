@@ -616,13 +616,17 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Co
 //description: Converts sequences to molblocks
 //input: dataframe table [Input data table]
 //input: column seqCol {caption: Sequence; semType: Macromolecule}
-//input: bool nonlinear =false {caption: Non linear; description: Slower mode for cycling/branching HELM structures}
+//input: bool nonlinear =false {caption: Non-linear; description: Slower mode for cycling/branching HELM structures}
+//input: bool highlight =false {caption: Highlight monomers; description: Highlight monomers' substructures of the molecule }
 //output:
-export async function toAtomicLevel(table: DG.DataFrame, seqCol: DG.Column, nonlinear: boolean): Promise<void> {
+export async function toAtomicLevel(
+  table: DG.DataFrame, seqCol: DG.Column, nonlinear: boolean, highlight: boolean = false
+): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('Converting to atomic level ...');
   try {
+    await initBioPromise;
     const monomerLib = (await getMonomerLibHelper()).getMonomerLib();
-    await sequenceToMolfile(table, seqCol, nonlinear, monomerLib);
+    await sequenceToMolfile(table, seqCol, nonlinear, highlight, monomerLib, _package.rdKitModule);
   } finally {
     pi.close();
   }
@@ -1106,7 +1110,8 @@ export async function seq2atomic(seq: string, chiralityEngine: boolean = true): 
     const seqHelper = await SeqHelper.getInstance();
     const seqColName = /* seqValue.cell?.column?.name ?? */ 'seq';
     const seqCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, `helm(${seqColName})`, [seq]);
-    await grok.functions.call('Bio:detectMacromolecule', {col: seqCol});
+    const semType = await grok.functions.call('Bio:detectMacromolecule', {col: seqCol});
+    if (semType) seqCol.semType = semType;
     const sh = SeqHandler.forColumn(seqCol);
     const helmCol = sh.notation === NOTATION.HELM ? seqCol : sh.convert(NOTATION.HELM);
     const talRes = await seqHelper.helmToAtomicLevel(helmCol, chiralityEngine, false);
@@ -1117,7 +1122,7 @@ export async function seq2atomic(seq: string, chiralityEngine: boolean = true): 
   } catch (err: any) {
     const [errMsg, errStack] = errInfo(err);
     _package.logger.error(errMsg, undefined, errStack);
-    return ''; // empty molfile
+    throw err;
   }
 }
 
