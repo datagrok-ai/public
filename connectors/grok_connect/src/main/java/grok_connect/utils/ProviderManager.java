@@ -34,7 +34,7 @@ public class ProviderManager {
             add(new Neo4jDataProvider());
             add(new OracleDataProvider());
             add(new PostgresDataProvider());
-            add(new PIDataProvider());
+//            add(new PIDataProvider());
             add(new RedshiftDataProvider());
             add(new SQLiteDataProvider());
             add(new TeradataDataProvider());
