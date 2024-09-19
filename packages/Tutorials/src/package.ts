@@ -17,7 +17,6 @@ import {DemoAppWidget} from './demo-app/widget';
 export const _package = new DG.Package();
 
 const tracks: Track[] = [];
-const PATH_START_INDEX: number = 5;
 
 //name: Tutorials
 //tags: app
@@ -106,20 +105,17 @@ export async function tutorialsInit() {
 //tags: app
 //description: Interactive demo of major Datagrok capabilities
 //meta.icon: images/icons/demoapp-icon.png
+//input: string path {meta.url: true; optional: true}
+//input: string filter {optional: true}
 //output: view v
-export function demoApp(): DG.ViewBase {
-  let pathSegments = window.location.pathname.split('/');
-  if (!pathSegments[pathSegments.length - 1])
-    pathSegments.splice(pathSegments.length - 1, 1);
-
+export function demoApp(path?: string, filter?: string): DG.ViewBase {
+  const pathSegments = (!path || path === '') ? [] : path.split('/');
   if (grok.shell.view('Browse') === undefined)
     grok.shell.v = DG.View.createByType('browse');
   const demoView = new DemoView();
-  if (pathSegments.length > PATH_START_INDEX) {
-    const pathElements = pathSegments.slice(PATH_START_INDEX, pathSegments.length)
-      .map((elem) => elem.replaceAll('%20', ' '));
+  if (pathSegments.length > 0) {
+    const pathElements = pathSegments.map((elem) => elem.replaceAll('%20', ' '));
     const path = pathElements.join('/');
-
     const func = DemoView.findDemoFunc(pathElements.join(' | '));
     setTimeout(() => {
       func ? demoView.startDemoFunc(func, pathElements.join(' | ')) : demoView.nodeView(pathElements[pathElements.length - 1], path);
