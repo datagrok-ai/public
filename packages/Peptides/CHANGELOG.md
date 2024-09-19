@@ -1,6 +1,6 @@
 # Peptides changelog
 
-## 1.18.1
+## 1.18.1 (2024-09-18)
 
 Add monomer custom coloring
 
