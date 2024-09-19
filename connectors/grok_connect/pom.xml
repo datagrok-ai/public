@@ -547,6 +547,10 @@
                     <groupId>org.junit.jupiter</groupId>
                     <artifactId>*</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>com.zaxxer</groupId>
+                    <artifactId>HikariCP</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency> <!-- remediating vulnerability -->

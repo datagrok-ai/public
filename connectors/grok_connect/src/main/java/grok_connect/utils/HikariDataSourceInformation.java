@@ -34,6 +34,8 @@ public class HikariDataSourceInformation {
         config.setMaximumPoolSize(SettingsManager.getInstance().getSettings().connectionPoolMaximumPoolSize);
         config.setMinimumIdle(0);
         config.setIdleTimeout(SettingsManager.getInstance().getSettings().connectionPoolIdleTimeout);
+        config.setConnectionTimeout(15000);
+        config.setInitializationFailTimeout(0);
         config.setRegisterMbeans(false);
 
         this.hikariDataSource = new HikariDataSource(config);
