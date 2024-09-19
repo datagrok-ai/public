@@ -2,7 +2,11 @@
   "name": "@datagrok/admetica",
   "friendlyName": "Admetica",
   "version": "1.0.0",
-  "description": "",
+  "author": {
+    "name": "Oleksandra Serhiienko",
+    "email": "oserhiienko@datagrok.ai"
+  },
+  "description": "Assessment of ADMET Properties",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
