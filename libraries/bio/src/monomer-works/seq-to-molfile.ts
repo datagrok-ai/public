@@ -5,17 +5,18 @@ import wu from 'wu';
 
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
-import {HELM_POLYMER_TYPE} from '../utils/const';
+import {ChemTags} from '@datagrok-libraries/chem-meta/src/consts';
 import {ALPHABET} from '../utils/macromolecule';
 import {
-  MolfileWithMap, MolGraph, MonomerMap, SeqToMolfileWorkerData, SeqToMolfileWorkerRes
+  MolfileWithMap, MolGraph, MonomerMap, MonomerMapValue, MonomerMolGraphMap, SeqToMolfileWorkerData, SeqToMolfileWorkerRes
 } from './types';
 import {ToAtomicLevelRes} from '../utils/seq-helper';
-import {getMolColName, getMolHighlightColName} from './utils';
+import {getMolColName, getMolHighlightColName, hexToPercentRgb} from './utils';
 import {SeqHandler} from '../utils/seq-handler';
 import {IMonomerLib} from '../types';
-import {PolymerType} from '../helm/types';
-import {buildMonomerHoverLink} from './monomer-hover';
+import {ISeqMonomer, PolymerType} from '../helm/types';
+import {HelmTypes, PolymerTypes} from '../helm/consts';
+import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 
 
 export type SeqToMolfileResult = {
@@ -26,7 +27,7 @@ export type SeqToMolfileResult = {
   warnings: string[]
 }
 
-export async function seqToMolFileWorker(seqCol: DG.Column<string>, monomersDict: Map<string, MolGraph>,
+export async function seqToMolFileWorker(seqCol: DG.Column<string>, monomersDict: MonomerMolGraphMap,
   alphabet: ALPHABET, polymerType: PolymerType, monomerLib: IMonomerLib, rdKitModule: RDModule
 ): Promise<ToAtomicLevelRes> {
   const srcColLength = seqCol.length;
@@ -37,9 +38,12 @@ export async function seqToMolFileWorker(seqCol: DG.Column<string>, monomersDict
   const chunkSize = srcColLength / threadCount;
   const promises = new Array<Promise<SeqToMolfileWorkerRes>>(threadCount);
   const seqSH = SeqHandler.forColumn(seqCol);
-  const canonicalSeqList: string[][] = wu.count(0).take(seqCol.length).map((rowIdx) => {
+  const biotype = polymerType == PolymerTypes.RNA ? HelmTypes.NUCLEOTIDE : HelmTypes.AA;
+  const seqList: ISeqMonomer[][] = wu.count(0).take(seqCol.length).map((rowIdx) => {
     const seqSS = seqSH.getSplitted(rowIdx);
-    return wu.count(0).take(seqSS.length).map((posIdx) => seqSS.getCanonical(posIdx)).toArray();
+    return wu.count(0).take(seqSS.length)
+      .map((posIdx) => { return {position: posIdx, symbol: seqSS.getCanonical(posIdx), biotype: biotype} as ISeqMonomer; })
+      .toArray();
   }).toArray();
   for (let i = 0; i < threadCount; i++) {
     const worker = workers[i];
@@ -50,17 +54,19 @@ export async function seqToMolFileWorker(seqCol: DG.Column<string>, monomersDict
         resolve(res.data);
       };
     });
-    worker.postMessage({canonicalSeqList, monomersDict, alphabet, polymerType, start, end} as SeqToMolfileWorkerData);
+    worker.postMessage({seqList, monomersDict, alphabet, polymerType, start, end} as SeqToMolfileWorkerData);
   }
 
   let molList: MolfileWithMap[] = [];
   let warnings: string[] = [];
   await Promise.all(promises).then((resArray: SeqToMolfileWorkerRes[]) => {
-    resArray.forEach((resItem) => {
-      molList = molList.concat(...resItem.molfiles);
-      warnings = warnings.concat(...resItem.warnings);
-    });
+    for (const resItem of resArray) {
+      molList.push(...resItem.molfiles);
+      warnings.push(...resItem.warnings);
+    }
   });
+
+  const molHlList = molList.map((item: MolfileWithMap) => getMolHighlight(item.monomers.values(), monomerLib));
 
   setTimeout(() => {
     workers.forEach((worker) => {
@@ -69,20 +75,37 @@ export async function seqToMolFileWorker(seqCol: DG.Column<string>, monomersDict
   }, 0);
   const molColName = getMolColName(df, seqCol.name);
   const molHlColName = getMolHighlightColName(df, molColName);
-  const molCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, molColName, molList.length)
+  const molCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, molColName, seqCol.length)
     .init((rowIdx) => molList[rowIdx].molfile);
-  const molHlCol = DG.Column.fromType(DG.COLUMN_TYPE.OBJECT, molHlColName)
-    .init((rowIdx) => null); // Highlight nothing
+  const molHlCol = DG.Column.fromType(DG.COLUMN_TYPE.OBJECT, molHlColName, seqCol.length)
+    .init((rowIdx) => molHlList[rowIdx]);
   molCol.semType = DG.SEMTYPE.MOLECULE;
   molCol.meta.units = DG.UNITS.Molecule.MOLBLOCK;
+  molCol.setTag(ChemTags.SEQUENCE_SRC_COL, seqCol.name);
 
-  const monomerHoverHandler = buildMonomerHoverLink(
-    seqCol, molCol, monomerLib, rdKitModule);
+  return {mol: {col: molCol, highlightCol: molHlCol}, warnings: warnings};
+}
 
-  return {
-    mol: {
-      col: molCol, highlightCol: molHlCol,
-      monomerHoverLink: monomerHoverHandler
-    }, warnings: warnings
+export function getMolHighlight(monomerMaps: Iterable<MonomerMapValue>, monomerLib: IMonomerLib): ISubstruct {
+  const hlAtoms: { [key: number]: number[] } = {};
+  const hlBonds: { [key: number]: number[] } = {};
+
+  for (const monomerMapValue of monomerMaps) {
+    const wem = monomerLib.getWebEditorMonomer(monomerMapValue.biotype, monomerMapValue.symbol)!;
+    const mColorStr = wem.backgroundcolor;
+    const mColorA = hexToPercentRgb(mColorStr ?? DG.Color.toRgb(DG.Color.mouseOverRows)) ?? [1.0, 0.0, 0.0, 0.7];
+    for (const mAtom of monomerMapValue.atoms)
+      hlAtoms[mAtom] = mColorA;
+    for (const mBond of monomerMapValue.bonds)
+      hlBonds[mBond] = mColorA;
+  }
+
+  let resSubstruct: ISubstruct = {
+    atoms: Object.keys(hlAtoms).map((k) => parseInt(k)),
+    bonds: Object.keys(hlBonds).map((k) => parseInt(k)),
+    highlightAtomColors: hlAtoms,
+    highlightBondColors: hlBonds,
   };
+
+  return resSubstruct;
 }

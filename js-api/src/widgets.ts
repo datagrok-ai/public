@@ -1486,6 +1486,19 @@ export class Color {
     return color === null ? '' : `rgb(${Color.r(color)},${Color.g(color)},${Color.b(color)})`;
   }
 
+  /** For RDKit molecule substruct highlight */
+  static hexToPercentRgb(hex: string): number[] | null {
+    const result = hex.length === 7 ? /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex) :
+      /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? [
+      parseInt(result[1], 16) / 256,
+      parseInt(result[2], 16) / 256,
+      parseInt(result[3], 16) / 256,
+      result.length > 4 ? parseInt(result[4], 16) / 256 : 0.3
+    ] : null;
+  }
+
+
   /** Returns the standard palette of the categorical colors used across all visualizations in Datagrok. */
   static get categoricalPalette(): number[] {
     return api.grok_Color_CategoricalPalette();
@@ -1806,7 +1819,7 @@ export class TreeViewGroup extends TreeViewNode {
   /** Indicates whether check or uncheck is applied to a node only or to all node's children */
   get autoCheckChildren(): boolean { return api.grok_TreeViewNode_GetAutoCheckChildren(this.dart); }
   set autoCheckChildren(auto: boolean) { api.grok_TreeViewNode_SetAutoCheckChildren(this.dart, auto); }
-  
+
   get currentItem(): TreeViewNode { return toJs(api.grok_TreeViewNode_Get_CurrentItem(this.dart)); }
   set currentItem(node: TreeViewNode) { api.grok_TreeViewNode_Set_CurrentItem(this.dart, toDart(node)); }
 

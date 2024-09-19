@@ -11,10 +11,7 @@ import {ISeqMonomer} from '../helm/types';
 import {HELM_POLYMER_TYPE} from '../utils/const';
 import {ALPHABET} from '../utils/macromolecule';
 
-
-
 declare const org: OrgType;
-
 
 export type MonomerHoverLink = {
   targetCol: DG.Column,
@@ -48,6 +45,7 @@ export function alphabetToPolymerType(alphabet: ALPHABET): PolymerType {
   return resPolymerType;
 }
 
+/** @deprecated Use DG.Color.hexToPercentRgb */
 export function hexToPercentRgb(hex: string): number[] | null {
   const result = hex.length === 7 ? /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex) :
     /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);

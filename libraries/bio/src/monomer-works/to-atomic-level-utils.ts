@@ -1,9 +1,10 @@
 import {monomerWorksConsts as C} from './consts';
-import {LoopConstants, LoopVariables, MolfileWithMap, MolGraph, MonomerMap} from './types';
+import {getMolGraph, LoopConstants, LoopVariables, MolfileWithMap, MolGraph, MonomerMap, MonomerMolGraphMap} from './types';
 import {HELM_FIELDS, HELM_CORE_FIELDS, HELM_POLYMER_TYPE, HELM_MONOMER_TYPE,} from '../utils/const';
 import {ALPHABET, GAP_SYMBOL} from '../utils/macromolecule/consts';
 import {IMonomerLib, Monomer} from '../types';
-import {PolymerType} from '../helm/types';
+import {ISeqMonomer, PolymerType} from '../helm/types';
+import {helmTypeToPolymerType} from './monomer-works';
 
 
 /** Get a mapping of peptide symbols to HELM monomer library objects with selected fields.
@@ -19,12 +20,12 @@ export function getFormattedMonomerLib(
     const it: Monomer = monomerLib.getMonomer(polymerType, monomerSymbol)!;
     if (
       polymerType === HELM_POLYMER_TYPE.RNA &&
-        (it[HELM_FIELDS.MONOMER_TYPE] === HELM_MONOMER_TYPE.BRANCH ||
-          alphabet === ALPHABET.DNA && it[HELM_FIELDS.SYMBOL] === C.DEOXYRIBOSE ||
-          alphabet === ALPHABET.RNA && it[HELM_FIELDS.SYMBOL] === C.RIBOSE ||
-          it[HELM_FIELDS.SYMBOL] === C.PHOSPHATE) ||
-        polymerType === HELM_POLYMER_TYPE.PEPTIDE &&
-        it[HELM_FIELDS.MONOMER_TYPE] !== HELM_MONOMER_TYPE.BRANCH
+      (it[HELM_FIELDS.MONOMER_TYPE] === HELM_MONOMER_TYPE.BRANCH ||
+        alphabet === ALPHABET.DNA && it[HELM_FIELDS.SYMBOL] === C.DEOXYRIBOSE.symbol ||
+        alphabet === ALPHABET.RNA && it[HELM_FIELDS.SYMBOL] === C.RIBOSE.symbol ||
+        it[HELM_FIELDS.SYMBOL] === C.PHOSPHATE.symbol) ||
+      polymerType === HELM_POLYMER_TYPE.PEPTIDE &&
+      it[HELM_FIELDS.MONOMER_TYPE] !== HELM_MONOMER_TYPE.BRANCH
     ) {
       const monomerObject: { [key: string]: any } = {};
       HELM_CORE_FIELDS.forEach((field) => {
@@ -44,7 +45,7 @@ export function getFormattedMonomerLib(
  * @param {PolymerType} polymerType - Polymer type
  * @return {string} - Molfile V3000*/
 export function monomerSeqToMolfile(
-  monomerSeq: string[], monomersDict: Map<string, MolGraph>,
+  monomerSeq: ISeqMonomer[], monomersDict: MonomerMolGraphMap,
   alphabet: ALPHABET, polymerType: PolymerType
 ): MolfileWithMap {
   if (monomerSeq.length === 0) {
@@ -69,8 +70,8 @@ export function monomerSeqToMolfile(
     addMonomerToMolblock = addAminoAcidToMolblock;
   } else { // nucleotides
     addMonomerToMolblock = addNucleotideToMolblock;
-    sugar = (alphabet === ALPHABET.DNA) ? monomersDict.get(C.DEOXYRIBOSE) : monomersDict.get(C.RIBOSE);
-    phosphate = monomersDict.get(C.PHOSPHATE);
+    sugar = (alphabet === ALPHABET.DNA) ? getMolGraph(monomersDict, C.DEOXYRIBOSE) : getMolGraph(monomersDict, C.RIBOSE);
+    phosphate = getMolGraph(monomersDict, C.PHOSPHATE);
   }
   const v: LoopVariables = {
     i: 0,
@@ -96,9 +97,9 @@ export function monomerSeqToMolfile(
   let nAtoms = 0;
 
   for (v.i = 0; v.i < LC.seqLength; ++v.i) {
-    const monomerSymbol = monomerSeq[v.i];
-    if (monomerSymbol === GAP_SYMBOL) continue;
-    const monomer = monomersDict.get(monomerSymbol)!;
+    const seqMonomer = monomerSeq[v.i];
+    if (seqMonomer.symbol === GAP_SYMBOL) continue;
+    const monomer = getMolGraph(monomersDict, {symbol: seqMonomer.symbol, polymerType: helmTypeToPolymerType(seqMonomer.biotype)})!;
 
     const mAtomFirst = v.nodeShift;
     const mBondFirst = v.bondShift;
@@ -115,7 +116,11 @@ export function monomerSeqToMolfile(
     const mBondList: number[] = new Array<number>(mBondCount);
     for (let mbI = 0; mbI < mBondCount; ++mbI) mBondList[mbI] = mBondFirst + mbI;
 
-    monomers.set(v.i, {symbol: monomerSymbol, atoms: mAtomList, bonds: mBondList});
+    monomers.set(v.i, {
+      biotype: seqMonomer.biotype,
+      symbol: seqMonomer.symbol,
+      atoms: mAtomList, bonds: mBondList
+    });
   }
 
   capResultingMolblock(molfileAtomBlock, molfileBondBlock, v, LC);
@@ -339,16 +344,18 @@ function fillBackboneToBranchBond(branchMonomer: MolGraph, molfileBondBlock: str
  * @param {HELM_POLYMER_TYPE}polymerType - the type of polymer
  * @return {{atomCount: number, bondCount: number}} - the atom/bond counts*/
 function getResultingAtomBondCounts(
-  monomerSeq: string[], monomersDict: Map<string, MolGraph>,
+  monomerSeq: ISeqMonomer[], monomersDict: MonomerMolGraphMap,
   alphabet: ALPHABET, polymerType: PolymerType
 ): { atomCount: number, bondCount: number } {
   let atomCount = 0;
   let bondCount = 0;
 
   // sum up all the atoms/nodes provided by the sequence
-  for (const monomerSymbol of monomerSeq) {
-    if (monomerSymbol === GAP_SYMBOL) continue; // Skip for gap/empty monomer in MSA
-    const monomer = monomersDict.get(monomerSymbol)!;
+  for (const seqMonomer of monomerSeq) {
+    if (seqMonomer.symbol === GAP_SYMBOL) continue; // Skip for gap/empty monomer in MSA
+    if (seqMonomer.symbol == '*')
+      throw new Error(`Gap canonical symbol is '', not '*`);
+    const monomer = getMolGraph(monomersDict, {symbol: seqMonomer.symbol, polymerType: helmTypeToPolymerType(seqMonomer.biotype)})!;
     atomCount += monomer.atoms.x.length;
     bondCount += monomer.bonds.bondTypes.length;
   }
@@ -361,8 +368,8 @@ function getResultingAtomBondCounts(
     bondCount += monomerSeq.length;
   } else { // nucleotides
     const sugar = (alphabet === ALPHABET.DNA) ?
-      monomersDict.get(C.DEOXYRIBOSE)! : monomersDict.get(C.RIBOSE)!;
-    const phosphate = monomersDict.get(C.PHOSPHATE)!;
+      getMolGraph(monomersDict, C.DEOXYRIBOSE)! : getMolGraph(monomersDict, C.RIBOSE)!;
+    const phosphate = getMolGraph(monomersDict, C.PHOSPHATE)!;
 
     // add phosphate per each pair of nucleobase symbols
     atomCount += (monomerSeq.length - 1) * phosphate.atoms.x.length;
@@ -396,3 +403,4 @@ function getResultingAtomBondCounts(
 export function keepPrecision(x: number): number {
   return Math.round(C.PRECISION_FACTOR * x) / C.PRECISION_FACTOR;
 }
+

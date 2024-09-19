@@ -12,12 +12,13 @@ import {IMonomerLib, Monomer} from '../types';
 import {SeqHandler} from '../utils/seq-handler';
 import {getFormattedMonomerLib, keepPrecision} from './to-atomic-level-utils';
 import {seqToMolFileWorker} from './seq-to-molfile';
-import {Atoms, Bonds, ITypedArray, MolGraph, MonomerMetadata, NumberWrapper, Point} from './types';
+import {Atoms, Bonds, hasMolGraph, ITypedArray, LibMonomerKey, MolGraph, MonomerMetadata, MonomerMolGraphMap, NumberWrapper, Point, setMolGraph} from './types';
 import {ToAtomicLevelRes} from '../utils/seq-helper';
 import {errInfo} from '../utils/err-info';
 import {alphabetToPolymerType} from './utils';
-import {PolymerType} from '../helm/types';
+import {HelmType, ISeqMonomer, PolymerType} from '../helm/types';
 import {monomerWorksConsts as C} from './consts';
+import {HelmTypes} from '../helm/consts';
 
 // todo: verify that all functions have return types
 
@@ -27,18 +28,8 @@ import {monomerWorksConsts as C} from './consts';
  * @param {IMonomerLib} monomerLib - Monomer library
  */
 export async function _toAtomicLevel(
-  df: DG.DataFrame, seqCol: DG.Column<string>, monomerLib: IMonomerLib
+  df: DG.DataFrame, seqCol: DG.Column<string>, monomerLib: IMonomerLib, rdKitModule: RDModule
 ): Promise<ToAtomicLevelRes> {
-  let rdKitModule: RDModule;
-  // todo: remove this from the library
-  const getRdKitModuleFuncList = DG.Func.find({package: 'Chem', name: 'getRdKitModule'});
-  if (getRdKitModuleFuncList.length === 1) {
-    rdKitModule = getRdKitModuleFuncList[0].prepare().callSync().getOutputParamValue();
-  } else {
-    const msg: string = 'Transformation to atomic level requires the package "Chem" installed.';
-    return {mol: null, warnings: [msg]};
-  }
-
   if (seqCol.semType !== DG.SEMTYPE.MACROMOLECULE) {
     const msg: string = `Only the ${DG.SEMTYPE.MACROMOLECULE} columns can be converted to atomic level, ` +
       `the chosen column has semType '${seqCol.semType}'`;
@@ -65,7 +56,7 @@ export async function _toAtomicLevel(
     return {mol: null, warnings: [errMsg]};
   }
 
-  const monomerSequencesArray: string[][] = getMonomerSequencesArray(srcCol);
+  const monomerSequencesArray: ISeqMonomer[][] = getMonomerSequencesArray(srcCol);
   const monomersDict = getMonomersDictFromLib(monomerSequencesArray, polymerType, alphabet, monomerLib, rdKitModule);
   const srcColLength = srcCol.length;
 
@@ -80,20 +71,21 @@ export async function _toAtomicLevel(
 /** Get jagged array of monomer symbols for the dataframe
  * @param {DG.Column} macroMolCol - Column with macro-molecules
  * @return {string[]} - Jagged array of monomer symbols for the dataframe */
-export function getMonomerSequencesArray(macroMolCol: DG.Column<string>): string[][] {
+export function getMonomerSequencesArray(macroMolCol: DG.Column<string>): ISeqMonomer[][] {
   const rowCount = macroMolCol.length;
-  const result: string[][] = new Array(rowCount);
+  const result: ISeqMonomer[][] = new Array(rowCount);
 
   // split the string into monomers
   const sh = SeqHandler.forColumn(macroMolCol);
 
   let containsEmptyValues = false;
+  const biotype: HelmType = sh.alphabet === ALPHABET.RNA || sh.alphabet === ALPHABET.DNA ? HelmTypes.NUCLEOTIDE : HelmTypes.AA;
 
   for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
     const seqSS = sh.getSplitted(rowIdx);
     containsEmptyValues ||= seqSS.length === 0;
-    result[rowIdx] = wu.count(0).take(seqSS.length)
-      .filter((posIdx) => !seqSS.isGap(posIdx)).map((posIdx) => seqSS.getCanonical(posIdx)).toArray();
+    result[rowIdx] = wu.count(0).take(seqSS.length).filter((posIdx) => !seqSS.isGap(posIdx))
+      .map((posIdx) => { return {position: posIdx, biotype: biotype, symbol: seqSS.getCanonical(posIdx)} as ISeqMonomer; }).toArray();
   }
 
   if (containsEmptyValues)
@@ -112,12 +104,12 @@ export function getMonomerSequencesArray(macroMolCol: DG.Column<string>): string
  * @param {ALPHABET} alphabet - Alphabet
  * @return {Map<string, MolGraph>} - Mapping of monomer symbols to MolGraph objects*/
 export function getMonomersDictFromLib(
-  monomerSequencesArray: string[][], polymerType: PolymerType, alphabet: ALPHABET,
+  monomerSequencesArray: ISeqMonomer[][], polymerType: PolymerType, alphabet: ALPHABET,
   monomerLib: IMonomerLib, rdKitModule: RDModule
-): Map<string, MolGraph> {
+): MonomerMolGraphMap {
   // todo: exception - no gaps, no empty string monomers
   const formattedMonomerLib = getFormattedMonomerLib(monomerLib, polymerType, alphabet);
-  const monomersDict = new Map<string, MolGraph>();
+  const monomersDict = {};
 
   const pointerToBranchAngle: NumberWrapper = {
     value: null
@@ -129,12 +121,13 @@ export function getMonomersDictFromLib(
     const symbols = (alphabet === ALPHABET.RNA) ?
       [C.RIBOSE, C.PHOSPHATE] : [C.DEOXYRIBOSE, C.PHOSPHATE];
     for (const sym of symbols)
-      addMonomerToDict(monomersDict, sym, formattedMonomerLib, rdKitModule, polymerType, pointerToBranchAngle);
+      addMonomerToDict(monomersDict, sym.symbol, formattedMonomerLib, rdKitModule, polymerType, pointerToBranchAngle);
   }
 
   for (let rowI = 0; rowI < monomerSequencesArray.length; ++rowI) {
-    const monomerSeq: string[] = monomerSequencesArray[rowI];
-    for (const sym of monomerSeq) {
+    const monomerSeq: ISeqMonomer[] = monomerSequencesArray[rowI];
+    for (const seqMonomer of monomerSeq) {
+      const sym = seqMonomer.symbol;
       if (sym === '') continue; // Skip gap/empty monomer for MSA
       try {
         addMonomerToDict(monomersDict, sym, formattedMonomerLib,
@@ -160,15 +153,16 @@ export function getMonomersDictFromLib(
  * @param {PolymerType} polymerType - Polymer type
  * @param {NumberWrapper} pointerToBranchAngle - Pointer to branch angle*/
 function addMonomerToDict(
-  monomersDict: Map<string, MolGraph>, sym: string,
+  monomersDict: MonomerMolGraphMap, sym: string,
   formattedMonomerLib: Map<string, any>, moduleRdkit: any,
   polymerType: PolymerType, pointerToBranchAngle: NumberWrapper
 ): void {
-  if (!monomersDict.has(sym)) {
+  const symKey: LibMonomerKey = {polymerType, symbol: sym};
+  if (!hasMolGraph(monomersDict, symKey)) {
     const monomerData: MolGraph | null =
       getMolGraph(sym, formattedMonomerLib, moduleRdkit, polymerType, pointerToBranchAngle);
     if (monomerData)
-      monomersDict.set(sym, monomerData);
+      setMolGraph(monomersDict, symKey, monomerData);
     else {
       // todo: handle exception
       throw new Error(`Monomer with symbol '${sym}' is absent the monomer library`);
@@ -210,9 +204,9 @@ function getMolGraph(
     if (polymerType === HELM_POLYMER_TYPE.PEPTIDE)
       adjustPeptideMonomerGraph(monomerGraph);
     else { // nucleotides
-      if (monomerSymbol === C.RIBOSE || monomerSymbol === C.DEOXYRIBOSE)
+      if (monomerSymbol === C.RIBOSE.symbol || monomerSymbol === C.DEOXYRIBOSE.symbol)
         adjustSugarMonomerGraph(monomerGraph, pointerToBranchAngle);
-      else if (monomerSymbol === C.PHOSPHATE)
+      else if (monomerSymbol === C.PHOSPHATE.symbol)
         adjustPhosphateMonomerGraph(monomerGraph);
       else
         adjustBaseMonomerGraph(monomerGraph, pointerToBranchAngle);
@@ -250,7 +244,7 @@ function setShiftsAndTerminalNodes(
     setShifts(monomerGraph, polymerType);
     removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[1]);
   } else { // nucleotides
-    if (monomerSymbol === C.RIBOSE || monomerSymbol === C.DEOXYRIBOSE) {
+    if (monomerSymbol === C.RIBOSE.symbol || monomerSymbol === C.DEOXYRIBOSE.symbol) {
       // remove R2
       removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[1]);
       // set terminalNode2 (oxygen) as new R2
@@ -263,7 +257,7 @@ function setShiftsAndTerminalNodes(
       removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[0]);
       // remove the branching r-group
       removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[2]);
-    } else if (monomerSymbol === C.PHOSPHATE) {
+    } else if (monomerSymbol === C.PHOSPHATE.symbol) {
       monomerGraph.meta.terminalNodes[0] = monomerGraph.meta.rNodes[0];
       shiftCoordinates(
         monomerGraph,

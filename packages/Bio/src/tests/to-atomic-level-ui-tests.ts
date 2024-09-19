@@ -25,18 +25,20 @@ category('toAtomicLevel-ui', () => {
 
   let monomerLibHelper: IMonomerLibHelper;
   let userLibSettings: UserLibSettings;
-  let helmHelper: IHelmHelper;
+  let monomerLib: IMonomerLib;
   let rdKitModule: RDModule;
 
   before(async () => {
     rdKitModule = await getRdKitModule();
-    helmHelper = await getHelmHelper(); // init Helm package
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
 
     // Test 'helm' requires default monomer library loaded
     await setUserLibSettingsForTests();
+    await monomerLibHelper.awaitLoaded();
     await monomerLibHelper.loadMonomerLib(true); // load default libraries
+
+    monomerLib = monomerLibHelper.getMonomerLib();
   });
 
   after(async () => {
@@ -98,7 +100,7 @@ category('toAtomicLevel-ui', () => {
   async function _testToAtomicLevelFunc(
     seqCol: DG.Column<string>, nonlinear: boolean, tgt: TestDataTargetType,
   ): Promise<void> {
-    const res = (await sequenceToMolfile(seqCol.dataFrame, seqCol, nonlinear, monomerLibHelper.getMonomerLib()))!;
+    const res = (await sequenceToMolfile(seqCol.dataFrame, seqCol, nonlinear, false, monomerLib, rdKitModule))!;
     const molCol = res.mol!.col;
     expect(molCol.semType, DG.SEMTYPE.MOLECULE);
     const resMolStr = molCol.get(0)!;

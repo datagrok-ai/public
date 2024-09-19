@@ -6,6 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {getMonomerHover} from '@datagrok-libraries/chem-meta/src/types';
+import {ChemTags, ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
@@ -13,7 +14,7 @@ import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 import {
   ALIGN_BY_SCAFFOLD_TAG, FILTER_SCAFFOLD_TAG, HIGHLIGHT_BY_SCAFFOLD_COL,
   HIGHLIGHT_BY_SCAFFOLD_TAG, MIN_MOL_IMAGE_SIZE, PARENT_MOL_COL,
-  REGENERATE_COORDS, SCAFFOLD_COL, SCAFFOLD_TREE_HIGHLIGHT, SUBSTRUCT_COL,
+  REGENERATE_COORDS, SCAFFOLD_COL, SCAFFOLD_TREE_HIGHLIGHT,
 } from '../constants';
 import {hexToPercentRgb} from '../utils/chem-common';
 import {_rdKitModule, drawErrorCross, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
@@ -454,8 +455,8 @@ M  END
 
     // TODO: make both filtering scaffold and single highlight scaffold appear
     const mhData = getMonomerHover();
-    if (mhData && mhData.dataFrameId == gridCell.grid.dataFrame.id &&
-      mhData.gridRowIdx === gridCell.gridRow && mhData.molColName == gridCell.tableColumn?.name
+    if (mhData && mhData.dataFrameId == gridCell.grid.dataFrame.id && mhData.gridRowIdx === gridCell.gridRow &&
+      mhData.seqColName === gridCell.tableColumn?.getTag(ChemTags.SEQUENCE_SRC_COL)
     ) {
       const substruct = mhData.getSubstruct();
       this._drawMolecule(x, y, w, h, g.canvas,
@@ -515,8 +516,8 @@ M  END
 
     //check for column with per-row ISubstruct objects for highlight
     let substructObj: ISubstruct | undefined = undefined;
-    if (colTemp[SUBSTRUCT_COL]) {
-      const rawSubstructCol = df.columns.byName(colTemp[SUBSTRUCT_COL]);
+    if (colTemp[ChemTemps.SUBSTRUCT_COL]) {
+      const rawSubstructCol = df.columns.byName(colTemp[ChemTemps.SUBSTRUCT_COL]);
       if (rawSubstructCol)
         substructObj = rawSubstructCol.get(idx!);
     }

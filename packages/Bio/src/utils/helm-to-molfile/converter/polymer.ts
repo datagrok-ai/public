@@ -2,6 +2,7 @@ import wu from 'wu';
 
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {V3K_CONST} from '@datagrok-libraries/chem-meta/src/formats/molfile-const';
+import {HelmTypes, PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {GapOriginals} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
@@ -77,8 +78,10 @@ export class Polymer {
       atomLines.push(...mw.getAtomLines());
       bondLines.push(...mw.getBondLines());
 
+      const polymerType = this.helm.getPolymerTypeByMonomerIdx(mwI);
+      const biotype = polymerType == PolymerTypes.RNA ? HelmTypes.NUCLEOTIDE : HelmTypes.AA;
       monomers.set(mwI, {
-        // TODO: PolymerType
+        biotype: biotype,
         symbol: mw.monomerSymbol,
         atoms: wu.count(mAtomFirst).take(mw.atomCount).toArray(),
         bonds: wu.count(mBondFirst).take(mw.bondCount).toArray(),
