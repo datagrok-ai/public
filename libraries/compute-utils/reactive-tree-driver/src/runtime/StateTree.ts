@@ -377,7 +377,7 @@ export class StateTree {
     return acc;
   }
 
-  private static loadOrCreateCalls(stateTree: StateTree, mockMode: boolean) {
+  public static loadOrCreateCalls(stateTree: StateTree, mockMode: boolean) {
     return defer(() => {
       const pendingFuncCallLoads = stateTree.nodeTree.traverse(stateTree.nodeTree.root, (acc, node) => {
         const item = node.getItem();

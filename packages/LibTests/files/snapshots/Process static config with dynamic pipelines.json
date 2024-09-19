@@ -53,8 +53,7 @@
           "actions": []
         }
       ],
-      "actions": [],
-      "hooks": {}
+      "actions": []
     },
     {
       "id": "pipelinePar",
@@ -107,10 +106,8 @@
           "actions": []
         }
       ],
-      "actions": [],
-      "hooks": {}
+      "actions": []
     }
   ],
-  "actions": [],
-  "hooks": {}
+  "actions": []
 }

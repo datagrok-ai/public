@@ -17,6 +17,7 @@ export class Driver {
   public currentState$ = new BehaviorSubject<PipelineState | undefined>(undefined);
   public currentValidations$ = new BehaviorSubject<Record<string, BehaviorSubject<Record<string, ValidationResult>>>>({});
   public currentConsistency$ = new BehaviorSubject<Record<string, BehaviorSubject<Record<string, ConsistencyInfo>>>>({});
+  public currentMeta$ = new BehaviorSubject<Record<string, BehaviorSubject<any | undefined>>>({});
   public currentCallsState$ = new BehaviorSubject<Record<string, BehaviorSubject<FuncCallStateInfo | undefined>>>({});
 
   public globalROLocked$ = new BehaviorSubject(false);
@@ -55,25 +56,21 @@ export class Driver {
     ).subscribe(this.currentState$);
 
     this.states$.pipe(
-      switchMap((state) => state ?
-        state.makeStateRequests$.pipe(startWith(null), mapTo(state)) :
-        of(undefined)),
       map((state) => state ? state.getConsistency() : {}),
       takeUntil(this.closed$),
     ).subscribe(this.currentConsistency$);
 
     this.states$.pipe(
-      switchMap((state) => state ?
-        state.makeStateRequests$.pipe(startWith(null), mapTo(state)) :
-        of(undefined)),
+      map((state) => state ? state.getMeta() : {}),
+      takeUntil(this.closed$),
+    ).subscribe(this.currentMeta$);
+
+    this.states$.pipe(
       map((state) => state ? state.getValidations() : {}),
       takeUntil(this.closed$),
     ).subscribe(this.currentValidations$);
 
     this.states$.pipe(
-      switchMap((state) => state ?
-        state.makeStateRequests$.pipe(startWith(null), mapTo(state)) :
-        of(undefined)),
       map((state) => state ? state.getFuncCallStates() : {}),
       takeUntil(this.closed$),
     ).subscribe(this.currentCallsState$);
