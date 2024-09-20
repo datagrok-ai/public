@@ -205,12 +205,12 @@ category('UI info panel', () => {
     await awaitCheck(() => (desc.nextSibling as HTMLElement).querySelector('table') !== null,
       'descriptors table hasn\'t been created', 20000);
     desc?.click(); await delay(100);
-  });
+  }, {skipReason: 'GROK-16714'});
 
   after(async () => {
     grok.shell.closeAll();
   });
-}, {skipReason: 'GROK-16714'});
+});
 
 async function awaitPanel(pp: HTMLElement, name: string, ms: number = 5000): Promise<void> {
   await awaitCheck(() => {
