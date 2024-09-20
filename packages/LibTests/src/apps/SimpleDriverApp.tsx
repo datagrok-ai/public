@@ -1,22 +1,24 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {BigButton, Button, InputForm} from '@datagrok-libraries/webcomponents-vue/src';
-import {defineComponent, KeepAlive, onUnmounted, reactive, ref, shallowRef} from 'vue';
+import {BigButton, Button, InputForm} from '@datagrok-libraries/webcomponents-vue';
+import {defineComponent, KeepAlive, onUnmounted, reactive, shallowRef} from 'vue';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
 import {useObservable, useSubscription} from '@vueuse/rxjs';
-import {isFuncCallState, isParallelPipelineState, isSequentialPipelineState, PipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {isFuncCallState, isParallelPipelineState, 
+  isSequentialPipelineState, PipelineState} from 
+  '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {map, switchMap} from 'rxjs/operators';
-import {merge, Observable} from 'rxjs';
+import {merge} from 'rxjs';
 import {FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
-export const VueDriverTestApp = defineComponent({
-  name: 'VuewDriverTestApp',
+export const SimpleDriverApp = defineComponent({
+  name: 'SimpleDriverApp',
   mounted() {
-    console.log('VuewDriverTestApp mounted');
+    console.log('SimpleDriverApp mounted');
   },
   unmounted() {
-    console.log('VuewDriverTestApp unmounted');
+    console.log('SimpleDriverApp unmounted');
   },
   setup() {
     const driver = new Driver();

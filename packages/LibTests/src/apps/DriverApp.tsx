@@ -61,7 +61,7 @@ export const DriverApp = Vue.defineComponent({
       return stat;
     };
 
-    useSubscription((driver.stateLocked$).subscribe((l) => isLocked.value = l));
+    useSubscription((driver.globalROLocked$).subscribe((l) => isLocked.value = l));
     Vue.onUnmounted(() => {
       driver.close();
       console.log('VuewDriverTestApp driver closed');

@@ -18,6 +18,7 @@ import {RFVApp as RFVAppInstance} from './apps/RFVApp';
 import {HistoryApp as HistoryAppInstance} from './apps/HistoryApp';
 import {ElementsApp as ElementsAppInstance} from './apps/ElementsApp';
 import {DriverApp as DriverAppInstance} from './apps/DriverApp';
+import {SimpleDriverApp as SimpleDriverAppInstance} from './apps/SimpleDriverApp';
 import './tailwind.css';
 
 export const _package = new DG.Package();
@@ -277,14 +278,23 @@ export async function HistoryApp() {
 
 //tags: test, vue
 export async function DriverApp() {
-  await DG.Utils.loadJsCss(['/js/common/vue.js']);
-
   // TODO: close view handling
   const view = new DG.ViewBase();
   const app = Vue.createApp(DriverAppInstance);
   view.root.classList.remove('ui-panel');
   app.mount(view.root);
   view.name = 'DriverApp';
+  grok.shell.addView(view);
+}
+
+//tags: test, vue
+export async function SimpleDriverApp() {
+  // TODO: close view handling
+  const view = new DG.ViewBase();
+  const app = Vue.createApp(SimpleDriverAppInstance);
+  view.root.classList.remove('ui-panel');
+  app.mount(view.root);
+  view.name = 'SimpleDriverApp';
   grok.shell.addView(view);
 }
 

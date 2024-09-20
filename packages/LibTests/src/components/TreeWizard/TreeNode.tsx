@@ -181,13 +181,7 @@ export const TreeNode = Vue.defineComponent({
       return data.friendlyName ?? data.configId;  
     };
 
-    const isRunning = (state: AugmentedStat) => {
-      if (isFuncCallState(state.data) && state.data.isRunning) return true;
-
-      return false;
-    };
-
-    const hasAddButton = (data: PipelineState): data is (PipelineStateSequential | PipelineStateParallel) => 
+    const hasAddButton = (data: PipelineState): data is (PipelineStateSequential<any> | PipelineStateParallel<any>) => 
       (isParallelPipelineState(data) || isSequentialPipelineState(data)) && data.stepTypes.length > 0;
 
     const treeNodeRef = Vue.ref(null as null | HTMLElement);
@@ -219,7 +213,7 @@ export const TreeNode = Vue.defineComponent({
                   .map((stepType) => stepType.friendlyName ?? stepType.nqName ?? stepType.configId)
                 }
                 onSelected={({itemIdx}) => {
-                  const data = props.stat.data as PipelineStateSequential | PipelineStateParallel;
+                  const data = props.stat.data as PipelineStateSequential<any> | PipelineStateParallel<any>;
                   emit('addNode', {
                     itemId: data.stepTypes[itemIdx].configId,
                     position: data.steps.length,
@@ -227,11 +221,11 @@ export const TreeNode = Vue.defineComponent({
                 }}
                 class='d4-ribbon-item'
               />: null }
-            { props.isDraggable && !isRunning(props.stat) ? <IconFA 
+            { props.isDraggable ? <IconFA 
               name='grip-vertical' 
               cursor='grab'
             />: null }
-            { props.isDeletable && !isRunning(props.stat) ? <IconFA 
+            { props.isDeletable ? <IconFA 
               name='times' 
               onClick={(e: Event) => {emit('removeNode'); e.stopPropagation();}}
             />: null }
