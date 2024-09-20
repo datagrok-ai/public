@@ -372,7 +372,7 @@ jobs:
       - name: Install datagrok tools
         id: datagrok-tools
         run: |
-          npm install -g datagrok-tools@latest
+          npm install -g datagrok-tools@4.13.21
       - name: Wait for Datagrok to become available
         if: ${{ matrix.test == 'test' }}
         timeout-minutes: 5
