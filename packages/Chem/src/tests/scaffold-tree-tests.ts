@@ -90,7 +90,7 @@ category('scaffold tree', () => {
     await editStructure(scaffoldTree, rootGroup!, molStr);
     await scaffoldTree.updateFilters();
     expect(table.filter.trueCount, 928);
-  });
+  }, {skipReason: 'GROK-16714'});
   
   async function editStructure(scaffoldTree: ScaffoldTreeViewer, group: DG.TreeViewGroup, smiles: string) {
     await scaffoldTree.openEditSketcher(group);

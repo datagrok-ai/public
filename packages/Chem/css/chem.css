@@ -424,6 +424,10 @@
   overflow: hidden!important;
 }
 
+.chem-scaffold-tree-loader {
+  margin-left: -40px;
+}
+
 .chem-drug-likeness-widget-score-div, .chem-toxicity-widget-risk-row {
   display: flex;
   align-items: center;
