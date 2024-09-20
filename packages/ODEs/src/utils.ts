@@ -91,9 +91,9 @@ export async function getInputsTable(inputsPath: string): Promise<DG.DataFrame |
 
     const msg = `${ERROR_MSG.INCORRECT_INPUT_DF} '${path}'.`;
 
-    // check columns count
-    if (cols.length < INPUTS_DF.MIN_COLS_COUNT) {
-      grok.shell.warning(`${msg} At least two columns are needed.`);
+    // check rows count
+    if (inputsDf.rowCount < INPUTS_DF.MIN_ROWS_COUNT) {
+      grok.shell.warning(`${msg} ${ERROR_MSG.INPUT_DF_1_ROW}.`);
       return null;
     }
 

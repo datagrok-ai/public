@@ -1186,8 +1186,8 @@ export class DiffStudio {
     const cols = inputsDf.columns;
     const rowCount = inputsDf.rowCount;
 
-    const inputNames = cols.byIndex(INPUTS_DF.INP_NAMES_IDX).toList() as string[];
-    const choices = [MISC.DEFAULT] as string[];
+    const inpSetsNames = cols.byIndex(INPUTS_DF.INPUT_SETS_COL_IDX).toList();
+    const choices = [MISC.DEFAULT as string].concat(inpSetsNames);
 
     const defaultInputs = new Map<string, number>();
     let firstInput: DG.InputBase | null = null;
@@ -1199,22 +1199,21 @@ export class DiffStudio {
       defaultInputs.set(name, input.value);
     });
 
-    const tableInputs = new Map<string, Map<string, number>>();
+    const tableInputs = new Map<string, Map<string, number>>(); // set <-> {(input <-> value)}
+    const colsRaw = new Map<string, Int32Array | Uint32Array | Float32Array | Float64Array>();
 
     for (const col of cols) {
-      if (col.isNumerical) {
-        const colName = col.name;
-        choices.push(colName);
-        const inputs = new Map<string, number>();
-        const raw = col.getRawData();
-
-        for (let i = 0; i < rowCount; ++i)
-          inputs.set(inputNames[i], raw[i]);
-
-        tableInputs.set(colName, inputs);
-      }
+      if (col.isNumerical)
+        colsRaw.set(col.name, col.getRawData());
     }
 
+    for (let row = 0; row < rowCount; ++row) {
+      const inputs = new Map<string, number>();
+      colsRaw.forEach((arr, name) => inputs.set(name, arr[row]));
+      tableInputs.set(inpSetsNames[row], inputs);
+    }
+
+    // create input for lookup table use
     this.lookupChoiceInput = ui.input.choice<string>('', {
       items: choices,
       nullable: false,

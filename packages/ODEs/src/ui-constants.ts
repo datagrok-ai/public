@@ -145,8 +145,8 @@ export enum ERROR_MSG {
   INPUTS_PATH = `Incorrect inputs path: check `,
   INPUT_TABLE = 'Failed to load table with inputs: check file and path in ',
   INCORRECT_INPUT_DF = 'Incorrect table with inputs: check file ',
-  INPUT_DF_2_COLS = 'At least two columns are needed.',
-  INPUT_DF_1_COL = 'First column must contain names of inputs.',
+  INPUT_DF_1_ROW = 'At least one row is needed.',
+  INPUT_DF_1_COL = 'First column must contain strings.',
   INPUT_DF_MIS_VALS = 'Missing values are not allowed.',
   NO_NUM_COLS = 'No numerical columns.',
 };
@@ -284,6 +284,7 @@ export const modelImageLink = new Map([
 
 /** Inputs table constants */
 export enum INPUTS_DF {
-  MIN_COLS_COUNT = 2,
+  MIN_ROWS_COUNT = 1,
   INP_NAMES_IDX = 0,
+  INPUT_SETS_COL_IDX = 0,
 };
