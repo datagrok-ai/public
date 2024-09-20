@@ -214,9 +214,11 @@
         </dependency>
 
         <dependency>
-            <groupId>com.orientechnologies</groupId>
-            <artifactId>orientdb-jdbc</artifactId>
-            <version>3.2.21</version>
+            <groupId>com.osisoft</groupId>
+            <artifactId>pi-jdbc</artifactId>
+            <version>1.7.21114</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/PIJDBCDriver.jar</systemPath>
         </dependency>
 
         <dependency>
