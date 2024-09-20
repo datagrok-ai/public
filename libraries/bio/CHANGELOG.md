@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.43.0
+
+Add coloring from monomer library to seaprator/fasta renderer
+
 ## 5.42.15 (2024-09-10)
 
 ### Bug fixes

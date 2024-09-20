@@ -7,6 +7,10 @@ import wu from 'wu';
 import {Observable} from 'rxjs';
 import {SubscriptionLike} from '../../../shared-utils/input-wrappers';
 
+export const delay = (delayInms: number) => {
+  return new Promise((resolve) => setTimeout(resolve, delayInms));
+};
+
 export const getDefaultValue = (prop: DG.Property) => {
   // Before 1.19 the default value was in .defaultValue. In 1.19 it was moved to options.default
   if (prop.options?.['default'])

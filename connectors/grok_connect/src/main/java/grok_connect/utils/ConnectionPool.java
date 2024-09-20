@@ -35,9 +35,9 @@ public class ConnectionPool {
             synchronized(this) {
                 if (!connectionPool.containsKey(key))
                     connectionPool.put(key, new HikariDataSourceInformation(url, properties, driverClassName));
-                HikariDataSource hikariDataSource = connectionPool.get(key).hikariDataSource;
-                return hikariDataSource.getConnection();
             }
+            HikariDataSource hikariDataSource = connectionPool.get(key).hikariDataSource;
+            return hikariDataSource.getConnection();
         } catch (SQLException e) {
             throw new GrokConnectException(e);
         } catch (HikariPool.PoolInitializationException e) {

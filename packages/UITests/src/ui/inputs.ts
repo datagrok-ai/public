@@ -57,7 +57,7 @@ category('UI: Inputs', () => {
       caption(key, value, v, '.ui-input-label');
   });
 
-  test('i ', async () => {
+  test('input.i', async () => {
     for (const [key, value] of Object.entries(inputs))
       stringValue(key, value, '.ui-input-editor', v);
   });

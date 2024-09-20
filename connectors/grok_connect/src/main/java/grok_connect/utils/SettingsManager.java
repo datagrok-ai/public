@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 
 public class SettingsManager {
     private static final int DEFAULT_CONNECTION_POOL_TIME_RATE = 60*1000;
-    private static final int DEFAULT_CONNECTION_POOL_MAXIMUM_SIZE = 50;
+    private static final int DEFAULT_CONNECTION_POOL_MAXIMUM_SIZE = 10;
     private static final int DEFAULT_CONNECTION_POOL_IDLE_TIMEOUT = 5*60*1000;
     private static final Logger LOGGER = LoggerFactory.getLogger(SettingsManager.class);
     private static volatile SettingsManager instance;

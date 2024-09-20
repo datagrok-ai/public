@@ -73,6 +73,7 @@ export async function TestAnalysisReportForCurrentDay(date: any) {
 //name: Usage Analysis
 //tags: app
 //meta.url: /
+//meta.browsePath: Admin
 //input: string path {isOptional: true; meta.url: true}
 //input: string date {isOptional: true}
 //input: string groups {isOptional: true}
@@ -88,6 +89,7 @@ export async function usageAnalysisApp(path?: string, date?: string, groups?: st
 //name: Test Track
 //tags: app
 //meta.url: /tests/manager
+//meta.browsePath: Admin
 //input: string path {isOptional: true; meta.url: true}
 //input: map params {isOptional: true}
 export function testTrackApp(): void {
@@ -100,6 +102,7 @@ export function testTrackApp(): void {
 //name: Reports
 //tags: app
 //meta.url: /reports
+//meta.browsePath: Admin
 //input: string path {isOptional: true; meta.url: true}
 //input: map params {isOptional: true}
 //output: view v

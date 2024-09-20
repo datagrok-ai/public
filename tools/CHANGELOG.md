@@ -1,11 +1,18 @@
 # Datagrok-tools changelog
 
 
+## 4.13.21 (2024-09-17)
+
+### Features
+
+* Grok check updated for release candidate versions
+
 ## 4.13.20 (2024-08-28)
 
 ### Features
 
 * Grok link command fixes 
+
 ## 4.13.19 (2024-08-27)
 
 ### Features

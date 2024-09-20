@@ -504,10 +504,10 @@ export class AddNewColumnDialog {
             }
             this.packageAutocomplete = false;
             this.functionAutocomplete = false;
-            await this.updatePreview(cmValue, this.error);
             ui.empty(this.errorDiv);
             if (this.error)
               this.errorDiv.append(ui.divText(this.error, 'cm-error-div'));
+            await this.updatePreview(cmValue, this.error);
           }),
         ],
       }),
@@ -884,12 +884,15 @@ export class AddNewColumnDialog {
     // Making the Preview Grid:
     const call = (DG.Func.find({name: 'AddNewColumn'})[0]).prepare({table: this.previwDf!,
       name: colName, expression: expression, type: type});
+    const time1 = Date.now();
+    ui.setUpdateIndicator(this.gridPreview!.root, true);
     await call.call(false, undefined, {processed: true, report: false});
     /*    await this.previwDf!.columns.addNewCalculated(
         colName,
         this.inputExpression!.value,
         ...this.getSelectedType()
     );*/
+    ui.setUpdateIndicator(this.gridPreview!.root, false);
     this.gridPreview!.dataFrame = this.previwDf!.clone(null, columnIds);
     this.gridPreview!.col(colName)!.backColor = this.newColumnBgColor;
     this.resultColumnType = this.previwDf!.col(colName)!.type;

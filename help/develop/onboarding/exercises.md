@@ -515,10 +515,10 @@ from our server.
    ```
 
    There are several methods you can use to open a table. For demo files, the simplest way is
-   [grok.data.getDemoTable](https://datagrok.ai/js-api/classes/dg.Data#getdemotable). For files outside of the
+   [grok.data.getDemoTable](https://datagrok.ai/js-api/dg/classes/Data#getdemotable). For files outside of the
    `Demo:Files` [file share](../../access/files/files.md), you can use
-   [grok.data.files.openTable](https://datagrok.ai/js-api/classes/dg.Data#opentable), or execute a command
-   `OpenServerFile` via [grok.functions.eval](https://datagrok.ai/js-api/classes/dg.Functions#eval) (to see how it
+   [grok.data.files.openTable](https://datagrok.ai/js-api/dg/classes/Files#opentable), or execute a command
+   `OpenServerFile` via [grok.functions.eval](https://datagrok.ai/js-api/dg/classes/Functions#eval) (to see how it
    works, open a file from the UI and find the last console command, it will look similar to
    `OpenServerFile("Demo:Files/bio/sars-cov-2.csv")`).
    

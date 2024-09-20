@@ -10,6 +10,14 @@ import {FuncCallInput, isInputLockable} from './input-wrappers';
 import {ValidationResultBase, getValidationIcon} from './validation';
 import {FunctionView, RichFunctionView} from '../function-views';
 
+export const updateIndicatorWithText = (element: HTMLElement, updating: boolean, text?: string) => {
+  ui.setUpdateIndicator(element, updating);
+  const updatingLabel = element.querySelector('.d4-update-shadow .ui-label');
+  if (updating && text && updatingLabel) {
+    updatingLabel.textContent = text;
+  }
+};
+
 export const createPartialCopy = async (call: DG.FuncCall) => {
   const previousId = call.id;
   // grok.functions.eval creates an ID.
@@ -255,27 +263,6 @@ export const dfToSheet = (sheet: ExcelJS.Worksheet, df: DG.DataFrame, column?: n
   });
   dfCounter++;
 };
-
-export const plotToSheet =
-  async (exportWb: ExcelJS.Workbook, sheet: ExcelJS.Worksheet, plot: HTMLElement,
-    columnForImage: number, rowForImage: number = 0) => {
-    await DG.Utils.loadJsCss(['/js/common/html2canvas.min.js']);
-    //@ts-ignore
-    const loadedHtml2canvas: typeof html2canvas = window.html2canvas;
-
-    const canvas = await loadedHtml2canvas(plot as HTMLElement, {logging: false});
-    const dataUrl = canvas.toDataURL('image/png');
-
-    const imageId = exportWb.addImage({
-      base64: dataUrl,
-      extension: 'png',
-    });
-    sheet.addImage(imageId, {
-      tl: {col: columnForImage, row: rowForImage},
-      ext: {width: canvas.width, height: canvas.height},
-    });
-  };
-
 
 // additional JSON converions, view is need for files
 export async function fcToSerializable(fc: DG.FuncCall, view: FunctionView | RichFunctionView) {
