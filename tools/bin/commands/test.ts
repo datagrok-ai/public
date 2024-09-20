@@ -201,44 +201,44 @@ export function test(args: TestArgs): boolean {
               params.skipCore = options.core ? false : true;
               params.verbose = options.verbose === true;
             }
-            (<any>window).grok.functions.call(`${targetPackage}:${options.platform ? 'testPlatform' : 'test'}`, params).then((df: any) => {
-              let failed = false;
-              let skipReport = '';
-              let passReport = '';
-              let failReport = '';
-              const countReport = { skip: 0, pass: 0 };
+              (<any>window).grok.functions.call(`${targetPackage}:${options.platform ? 'testPlatform' : 'test'}`, params).then((df: any) => {
+                let failed = false;
+                let skipReport = '';
+                let passReport = '';
+                let failReport = '';
+                const countReport = { skip: 0, pass: 0 };
 
-              if (df == null) {
-                failed = true;
-                failReport = `Fail reason: No package tests found${options.path ? ' for path "' + options.path + '"' : ''}`;
-                resolve({ failReport, skipReport, passReport, failed, countReport });
-                return;
-              }
-
-              const cStatus = df.columns.byName('success');
-              const cSkipped = df.columns.byName('skipped');
-              const cMessage = df.columns.byName('result');
-              const cCat = df.columns.byName('category');
-              const cName = df.columns.byName('name');
-              const cTime = df.columns.byName('ms');
-              for (let i = 0; i < df.rowCount; i++) {
-                if (cStatus.get(i)) {
-                  if (cSkipped.get(i)) {
-                    skipReport += `Test result : Skipped : ${cTime.get(i)} : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
-                    countReport.skip += 1;
-                  } else {
-                    passReport += `Test result : Success : ${cTime.get(i)} : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
-                    countReport.pass += 1;
-                  }
-                } else {
+                if (df == null) {
                   failed = true;
-                  failReport += `Test result : Failed : ${cTime.get(i)} : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
+                  failReport = `Fail reason: No package tests found${options.path ? ' for path "' + options.path + '"' : ''}`;
+                  resolve({ failReport, skipReport, passReport, failed, countReport });
+                  return;
                 }
-              }
-              if (!options.verbose)
-                df.rows.removeWhere((r: any) => r.get('success'));
-              const csv = df.toCsv();
-              resolve({ failReport, skipReport, passReport, failed, csv, countReport });
+
+                const cStatus = df.columns.byName('success');
+                const cSkipped = df.columns.byName('skipped');
+                const cMessage = df.columns.byName('result');
+                const cCat = df.columns.byName('category');
+                const cName = df.columns.byName('name');
+                const cTime = df.columns.byName('ms');
+                for (let i = 0; i < df.rowCount; i++) {
+                  if (cStatus.get(i)) {
+                    if (cSkipped.get(i)) {
+                      skipReport += `Test result : Skipped : ${cTime.get(i)} : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
+                      countReport.skip += 1;
+                    } else {
+                      passReport += `Test result : Success : ${cTime.get(i)} : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
+                      countReport.pass += 1;
+                    }
+                  } else {
+                    failed = true;
+                    failReport += `Test result : Failed : ${cTime.get(i)} : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
+                  }
+                }
+                if (!options.verbose)
+                  df.rows.removeWhere((r: any) => r.get('success'));
+                const csv = df.toCsv();
+                resolve({ failReport, skipReport, passReport, failed, csv, countReport });
             }).catch((e: any) => {
               const stack = ((<any>window).DG.Logger.translateStackTrace(e.stack)).then(() => {
                 resolve({
