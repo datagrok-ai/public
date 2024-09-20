@@ -81,6 +81,7 @@ import JSZip from 'jszip';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
 import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
+import {getChemClasses} from './analysis/chem-classes';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -1917,3 +1918,15 @@ export async function isApplicableNN(df: DG.DataFrame, predictColumn: DG.Column)
 }
 
 export {getMCS};
+
+//top-menu: Chem | Analyze | ChemClasses...
+//name: chemClasses
+//input: dataframe table [Input data table]
+//input: column molecules { semType: Molecule }
+export async function chemClasses(table: DG.DataFrame, molecules: DG.Column): Promise<void> {
+  const classes = await getChemClasses(molecules);
+  const classesCol = DG.Column.fromStrings('Classes', classes);
+  classesCol.semType = DG.SEMTYPE.MOLECULE;
+  table.columns.add(classesCol);
+  grok.shell.tv.grid.invalidate();
+}
