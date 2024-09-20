@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import '@datagrok-libraries/bio/src/types/ngl'; // To enable import from the NGL module declared in bio lib
-import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
+import {runTests, tests, TestContext, initAutoTests as initTests } from '@datagrok-libraries/utils/src/test';
 
 
 import './tests/pdb-helper-tests';
@@ -44,4 +44,9 @@ entry: {
 export async function test(category: string, test: string, testContext: TestContext): Promise<DG.DataFrame> {
   const data = await runTests({category, test, testContext});
   return DG.DataFrame.fromObjects(data)!;
+}
+
+//name: initAutoTests
+export async function initAutoTests() {
+  await initTests(_package, _package.getModule('package-test.js'));
 }
