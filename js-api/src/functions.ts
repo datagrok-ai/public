@@ -153,7 +153,7 @@ export class Functions {
   }
 
   handleOuterBracketsInColName(name: string, escape: boolean): string {
-    return api.grok_Handle_Outer_Brackets_In_Col_Name(name, escape);
+    return api.grok_ColumnName_HandleOuterBrackets(name, escape);
   }
 
  /** Returns a function with the specified name, or throws an error if

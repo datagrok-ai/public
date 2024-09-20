@@ -1491,7 +1491,7 @@ export interface IDartApi {
   grok_TreeViewGroup_Load_Sources(node: any, source: any): Promise<any>;
   grok_ReportsRule_Add_Dialog(): Promise<any>;
   grok_Parse_Command(command: String, safe: Bool): any;
-  grok_Handle_Outer_Brackets_In_Col_Name(name: String, escape: Bool): any;
+  grok_ColumnName_HandleOuterBrackets(name: String, escape: Bool): any;
   grok_Set_AutoReport_Options(options: any): any;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
