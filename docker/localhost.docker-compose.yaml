@@ -1,7 +1,7 @@
 services:
   datagrok:
     privileged: true
-    image: datagrok/datagrok:${DATAGROK_VERSION:-latest}
+    image: datagrok/datagrok:1.20.2
     environment:
       GROK_PARAMETERS: |
         {
