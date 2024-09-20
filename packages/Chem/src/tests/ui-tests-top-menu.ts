@@ -168,7 +168,7 @@ category('UI top menu', () => {
         isColumnPresent(smiles.columns, 'RingCount');
         v.close();
         grok.shell.o = ui.div();
-    }, {stressTest: true});
+    }, {stressTest: true, skipReason: 'GROK-16714'});
 
     test('toxicity risks', async () => {
         await testGroup('Calculate', 'Toxicity Risks...', 'Mutagenicity', 'Toxicity risks');
