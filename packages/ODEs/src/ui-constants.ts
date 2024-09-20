@@ -38,8 +38,6 @@ export enum HINT {
   ABORT = 'Abort computations',
   MAX_TIME = `Max computation time, ${COMPUTATION_TIME_UNITS}.`,
   CLICK_RUN = `Click to run`,
-  DEFAULT_INPS = 'Default model inputs',
-  INPUT_TABLE = 'Inputs table: ',
 }; // HINT
 
 /** UI titles */

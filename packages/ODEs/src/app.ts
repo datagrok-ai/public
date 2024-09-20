@@ -1172,16 +1172,19 @@ export class DiffStudio {
 
     this.lookupChoiceInput = null;
 
-    if (toSaveInputs) {
+    if (toSaveInputs)
       await this.setLookupChoiceInput(ivp.inputsLookup);
-      console.log(getLookupsInfo(ivp.inputsLookup));
-    }
   } // getInputsUI
 
   /** Set behavior of the values lookup input */
-  private async setLookupChoiceInput(inputsPath: string) {
-    const inputsDf = await getInputsTable('OpenFile("System:AppData/DiffStudio/examples/bioreactor-inputs.csv")');
-    //inputsPath);
+  private async setLookupChoiceInput(inputsLookup: string) {
+    const lookupInfo = getLookupsInfo(inputsLookup);
+
+    if (lookupInfo === null)
+      return;
+
+    const inputsDf = await getInputsTable(lookupInfo.choices);
+    //const inputsDf = await getInputsTable('OpenFile("System:AppData/DiffStudio/examples/bioreactor-inputs.csv")');
 
     if (inputsDf === null)
       return;
@@ -1217,21 +1220,18 @@ export class DiffStudio {
     }
 
     // create input for lookup table use
-    this.lookupChoiceInput = ui.input.choice<string>('', {
+    const lookupChoiceInput = ui.input.choice<string>(lookupInfo.caption, {
       items: choices,
       nullable: false,
       value: choices[0],
-      tooltipText: HINT.DEFAULT_INPS,
-      onValueChanged: (value, input) => {
+      tooltipText: lookupInfo.tooltip,
+      onValueChanged: (value) => {
         this.toPreventSolving = true;
 
-        if (value === MISC.DEFAULT) {
-          input.setTooltip(HINT.DEFAULT_INPS);
+        if (value === MISC.DEFAULT)
           this.inputByName.forEach((input, name) => input.value = defaultInputs.get(name));
-        } else {
-          input.setTooltip(`${HINT.INPUT_TABLE}${inputsPath}`);
+        else {
           const colInputs = tableInputs.get(value);
-
           this.inputByName.forEach((input, name) => input.value = colInputs.get(name) ?? input.value);
         }
 
@@ -1239,6 +1239,13 @@ export class DiffStudio {
         firstInput.value = firstInput.value;
       },
     });
+
+    const catorizedInputs = this.inputsByCategories.get(lookupInfo.category);
+
+    if (catorizedInputs !== undefined)
+      catorizedInputs.push(lookupChoiceInput);
+    else
+      this.inputsByCategories.set(lookupInfo.category, [lookupChoiceInput]);
   } // setLookupChoiceInput
 
   /** Run sensitivity analysis */
