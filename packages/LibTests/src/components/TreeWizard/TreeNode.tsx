@@ -151,7 +151,6 @@ export const TreeNode = Vue.defineComponent({
     addNode: ({itemId, position}:{itemId: string, position: number}) => ({itemId, position}),
     removeNode: () => {},
     click: () => {},
-    runNode: () => {},
     toggleNode: () => {},
   },
   setup(props, {emit}) {      

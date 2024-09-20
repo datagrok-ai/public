@@ -3,12 +3,14 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
-import {BigButton, DockManager, IconFA, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
+import {zipSync, Zippable} from 'fflate';
+import {BigButton, ComboPopup, DockManager, IconFA, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
 import {useSubscription} from '@vueuse/rxjs';
 import {
   isFuncCallState, isParallelPipelineState, 
   isSequentialPipelineState, PipelineState,
+  StepFunCallState,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {RichFunctionView} from '../components/RFV/RichFunctionView';
 import {TreeNode} from '../components/TreeWizard/TreeNode';
@@ -17,7 +19,7 @@ import {AugmentedStat} from '../components/TreeWizard/types';
 import {dragContext} from '@he-tree/vue';
 import '@he-tree/vue/style/default.css';
 import '@he-tree/vue/style/material-design.css';
-import {deepCopy} from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 
 export const DriverApp = Vue.defineComponent({
   name: 'DriverApp',
@@ -26,14 +28,14 @@ export const DriverApp = Vue.defineComponent({
     const isLocked = Vue.ref(false);
     const treeState = Vue.shallowRef<PipelineState | undefined>(undefined);
 
-    const currentFuncCall = Vue.shallowRef<DG.FuncCall | undefined>(undefined);
+    const chosenStepState = Vue.shallowRef<PipelineState | undefined>(undefined);
 
     const treeInstance = Vue.ref(null as InstanceType<typeof Draggable> | null);
 
-    const changeFunccall = (newCall: DG.FuncCall) => {
+    const changeCurrentState = (state: PipelineState) => {
       isVisibleRfv.value = true;
 
-      currentFuncCall.value = newCall;
+      chosenStepState.value = state;
     };
 
     const isVisibleRfv = Vue.ref(true);
@@ -69,8 +71,13 @@ export const DriverApp = Vue.defineComponent({
       driver.sendCommand({event: 'initPipeline', provider});
     };
 
-    const runStep = (uuid: string) => {
-      driver.sendCommand({event: 'runStep', uuid});
+    const runStep = async (uuid: string) => {
+      // driver.sendCommand({event: 'runStep', uuid});
+      if (chosenStepState.value && isFuncCallState(chosenStepState.value) && chosenStepState.value.funcCall) {
+        await chosenStepState.value.funcCall.call();
+        chosenStepState.value.funcCall = chosenStepState.value.funcCall;
+        Vue.triggerRef(chosenStepState);
+      }
     };
 
     const addStep = (parentUuid: string, itemId: string, position: number) => {
@@ -91,7 +98,9 @@ export const DriverApp = Vue.defineComponent({
       ui.setUpdateIndicator(treeInstance.value.$el, newVal);
     });
 
-    const chosenStepUuid = Vue.ref(null as string | null);
+    const chosenStepUuid = Vue.computed(() => 
+      chosenStepState.value && isFuncCallState(chosenStepState.value) ? chosenStepState.value.uuid: null,
+    );
 
     const treeHidden = Vue.ref(false);
     const rfvRef = Vue.ref(null as InstanceType<typeof RichFunctionView> | null);
@@ -110,6 +119,42 @@ export const DriverApp = Vue.defineComponent({
             tooltip={treeHidden.value ? 'Show tree': 'Hide tree'}
             onClick={() => treeHidden.value = !treeHidden.value } 
           />
+          {treeState.value && <IconFA 
+            name='arrow-to-bottom'
+            onClick={async () => {
+              if (treeState.value) {
+                const zipConfig = {} as Zippable;
+
+                const exportStep = async (previousPath: string, state: PipelineState) => {
+                  if (isFuncCallState(state) && state.funcCall) {
+                    const funccall = state.funcCall;
+
+                    const blob = await Utils.richFunctionViewExport(
+                      'Excel',
+                      funccall.func,
+                      funccall,
+                      Utils.dfToViewerMapping(funccall),
+                    );
+
+                    zipConfig[`${previousPath}/${Utils.getFuncCallDefaultFilename(funccall)}`] =
+                      [new Uint8Array(await blob.arrayBuffer()), {level: 0}];
+                  }
+
+                  if (isSequentialPipelineState(state) || isParallelPipelineState(state)) {
+                    const nestedPath = previousPath.length > 0 ? 
+                      `${previousPath}/${state.friendlyName ?? state.nqName}`: 
+                      `${state.friendlyName ?? state.nqName}`;
+                    for (const stepState of state.steps) 
+                      await exportStep(nestedPath, stepState);
+                  }
+                }; 
+                
+                await exportStep('', treeState.value);
+
+                DG.Utils.download('All steps.zip', new Blob([zipSync(zipConfig)]));
+              }
+            }}
+          /> }
         </RibbonPanel>
         <DockManager class='block h-full' onPanelClosed={handlePanelClose}>
           { treeState.value && !treeHidden.value ? <Draggable 
@@ -150,13 +195,11 @@ export const DriverApp = Vue.defineComponent({
                     }}
                     onRemoveNode={() => removeStep(stat.data.uuid)}
                     onClick={() => {
-                      chosenStepUuid.value = stat.data.uuid;
                       if (isFuncCallState(stat.data) && stat.data.funcCall) 
-                        changeFunccall(stat.data.funcCall); 
+                        changeCurrentState({...stat.data}); 
                       else 
                         isVisibleRfv.value = false;
                     }}
-                    onRunNode={() => runStep(stat.data.uuid)}
                     onToggleNode={() => stat.open = !stat.open}
                   />
                 )
@@ -164,10 +207,13 @@ export const DriverApp = Vue.defineComponent({
           </Draggable>: null }
           
           {
-            isVisibleRfv.value && currentFuncCall.value && <RichFunctionView 
+            isVisibleRfv.value && chosenStepState.value && 
+            isFuncCallState(chosenStepState.value) && chosenStepState.value.funcCall &&
+            <RichFunctionView 
               class='overflow-hidden'
-              funcCall={currentFuncCall.value}
-              onUpdate:funcCall={(chosenCall) => currentFuncCall.value = deepCopy(chosenCall)}
+              funcCall={Utils.deepCopy(chosenStepState.value.funcCall)}
+              onUpdate:funcCall={(call) => (chosenStepState.value as StepFunCallState).funcCall = call}
+              onRunClicked={() => runStep(chosenStepState.value!.uuid)}
               {...{title: 'Step review'}}
               dock-spawn-dock-type='right'
               dock-spawn-dock-ratio={0.8}

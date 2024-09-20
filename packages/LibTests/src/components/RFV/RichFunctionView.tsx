@@ -95,9 +95,10 @@ export const RichFunctionView = Vue.defineComponent({
   },
   emits: {
     'update:funcCall': (call: DG.FuncCall) => call,
+    'runClicked': () => {},
   },
   setup(props, {emit}) {
-    const currentCall = Vue.computed(() => Utils.deepCopy(props.funcCall));
+    const currentCall = Vue.computed(() => props.funcCall);
 
     const categoryToDfParam = Vue.computed(() => Utils.categoryToDfParamMap(currentCall.value.func));
 
@@ -109,9 +110,9 @@ export const RichFunctionView = Vue.defineComponent({
     });
 
     const run = async () => {
-      currentCall.value.newId();
-      await currentCall.value.call();
-      emit('update:funcCall', currentCall.value);
+      // currentCall.value.newId();
+      // await currentCall.value.call();
+      emit('runClicked');
     };
 
     const formHidden = Vue.ref(false);
@@ -123,7 +124,7 @@ export const RichFunctionView = Vue.defineComponent({
     const dfBlockTitle = (dfProp: DG.Property) => dfProp.options['caption'] ?? dfProp.name ?? ' ';
 
     const helpText = Vue.ref(null as null | string);
-    Vue.watch(currentCall, async () => {
+    Vue.watch(currentCall.value, async () => {
       const loadedHelp = await Utils.getContextHelp(currentCall.value.func);
 
       helpText.value = loadedHelp ?? null;
@@ -187,41 +188,6 @@ export const RichFunctionView = Vue.defineComponent({
       visibleTabLabels.value = [...tabLabels.value];
     }, {immediate: true});
 
-    const isDataFrame = (prop: DG.Property) => (prop.propertyType === DG.TYPE.DATA_FRAME);
-
-    const dfToViewerMapping = () => {
-      const func = currentCall.value.func;
-
-      const mapping = {} as Record<string, DG.Viewer[]>;
-      Promise.all(func.inputs
-        .filter((output) => isDataFrame(output))
-        .map(async (p) => {
-          mapping[p.name] = await Promise.all(Utils.getPropViewers(p).config
-            .map((config) => configToViewer(currentCall.value.inputs[p.name], config)));
-
-          return mapping[p.name];
-        }));
-
-      Promise.all(func.outputs
-        .filter((output) => isDataFrame(output))
-        .map(async (p) => {
-          mapping[p.name] = await Promise.all(Utils.getPropViewers(p).config
-            .map((config) => configToViewer(currentCall.value.outputs[p.name], config)));
-  
-          return mapping[p.name];
-        }));
-
-      return mapping;
-    };
-
-    const configToViewer = async (df: DG.DataFrame, config: Record<string, any>) => {
-      const type = config['type'];
-      const viewer = await df.plot.fromType(type) as DG.Viewer;
-      viewer.setOptions(config);
-    
-      return viewer; 
-    };
-
     const isIncomplete = Vue.computed(() => Utils.isIncomplete(currentCall.value));
 
     return () => (
@@ -255,7 +221,7 @@ export const RichFunctionView = Vue.defineComponent({
                 format,
                 currentCall.value.func,
                 currentCall.value,
-                dfToViewerMapping(),
+                Utils.dfToViewerMapping(currentCall.value),
               ).then((blob) => 
                 DG.Utils.download(`${currentCall.value.func.nqName} - 
                   ${Utils.getStartedOrNull(currentCall.value) ?? 'Not completed'}.xlsx`, blob));
@@ -312,7 +278,10 @@ export const RichFunctionView = Vue.defineComponent({
               title='Inputs'
               ref={formRef}
             >
-              <InputForm funcCall={currentCall.value}/>
+              <InputForm 
+                funcCall={currentCall.value}
+                onUpdate:funcCall={(call) => emit('update:funcCall', call)}
+              />
               <div class='flex sticky bottom-0'>
                 <BigButton onClick={run}> Run </BigButton>
               </div>

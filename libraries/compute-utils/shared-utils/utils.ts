@@ -1051,3 +1051,42 @@ export async function fcInputFromSerializable(propertyType: string, value: any) 
 
   return value;
 }
+
+export const getFuncCallDefaultFilename = (funcCall: DG.FuncCall) => {
+  return `${funcCall.func.nqName} - ${getStartedOrNull(funcCall) ?? 'Not completed'}.xlsx`
+}
+
+const isDataFrame = (prop: DG.Property) => (prop.propertyType === DG.TYPE.DATA_FRAME);
+
+export const dfToViewerMapping = (funcCall: DG.FuncCall) => {
+  const func = funcCall.func;
+
+  const mapping = {} as Record<string, DG.Viewer[]>;
+  Promise.all(func.inputs
+    .filter((output) => isDataFrame(output))
+    .map(async (p) => {
+      mapping[p.name] = await Promise.all(getPropViewers(p).config
+        .map((config) => configToViewer(funcCall.inputs[p.name], config)));
+
+      return mapping[p.name];
+    }));
+
+  Promise.all(func.outputs
+    .filter((output) => isDataFrame(output))
+    .map(async (p) => {
+      mapping[p.name] = await Promise.all(getPropViewers(p).config
+        .map((config) => configToViewer(funcCall.outputs[p.name], config)));
+
+      return mapping[p.name];
+    }));
+
+  return mapping;
+};
+
+const configToViewer = async (df: DG.DataFrame, config: Record<string, any>) => {
+  const type = config['type'];
+  const viewer = await df.plot.fromType(type) as DG.Viewer;
+  viewer.setOptions(config);
+
+  return viewer; 
+};

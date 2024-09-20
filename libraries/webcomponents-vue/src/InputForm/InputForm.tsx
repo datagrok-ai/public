@@ -4,14 +4,10 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
 import type {InputFormT} from '@datagrok-libraries/webcomponents';
-import {getValidators,
+import {
   injectInputBaseValidation,
   isInputBase,
-  validate,
 } from '@datagrok-libraries/compute-utils/shared-utils/utils';
-import {SYNC_FIELD} from '@datagrok-libraries/compute-utils/shared-utils/consts';
-import {isFuncCallInputValidated} from '@datagrok-libraries/compute-utils/shared-utils/input-wrappers';
-import { computedAsync } from '@vueuse/core'
 
 declare global {
   namespace JSX {
@@ -31,55 +27,18 @@ export const InputForm = Vue.defineComponent({
   },
   emits: {
     formReplaced: (a: DG.InputForm | undefined) => a,
+    'update:funcCall': (call: DG.FuncCall) => call,
   },
   setup(props, {emit}) {
-    let currentForm = undefined as undefined | DG.InputForm;
+    const currentCall = Vue.computed(() => props.funcCall);
 
-    let loadedValidators = computedAsync(() => getValidators(props.funcCall, SYNC_FIELD.INPUTS), {}, {shallow: true});
-
-    Vue.watch(loadedValidators, () => {
-      runValidation();
-    });
-
-    const allParams = (funcCall: DG.FuncCall) =>
-      [...funcCall.inputParams.values() ?? []].map((param) => param.name);
-
-    const formReplacedCb = async (event: {detail?: DG.InputForm}) => {
-      emit('formReplaced', event.detail);
-      currentForm = event.detail;
-      if (!currentForm) return;
-
-      allParams(props.funcCall)
-        .map((param) => currentForm!.getInput(param))
-        .filter((input) => isInputBase(input))
-        .forEach((input) => injectInputBaseValidation(input));
-    };
-
-    const inputChangedCb = (event: {detail: DG.EventData<DG.InputArgs>}) => {
-      runValidation([event.detail.args.input.property.name]);
-    };
-
-    const runValidation = async (paramNames?: string[]) => {
-      if (!currentForm) return;
-
-      const paramsToValidate = paramNames ?? allParams(props.funcCall);
-
-      const controller = new AbortController();
-
-      const results = await validate({isRevalidation: false},
-        paramsToValidate, controller.signal, SYNC_FIELD.INPUTS, {
-          funcCall: props.funcCall,
-        }, loadedValidators.value);
-
-      Object.keys(results)
-        .map((paramName) => currentForm!.getInput(paramName))
-        .filter((input) => isFuncCallInputValidated(input))
-        .forEach((input) => input.setValidation(results[input.property.name]));
+    const inputChangedCb = async (event: {detail: DG.EventData<DG.InputArgs>}) => {
+      currentCall.value.inputs[event.detail.args.input.property.name] = event.detail.args.input.value;
+      emit('update:funcCall', currentCall.value)
     };
 
     return () => <dg-input-form
-      funcCall={props.funcCall}
-      onFormReplaced={formReplacedCb}
+      funcCall={currentCall.value}
       onInputChanged={inputChangedCb}>
     </dg-input-form>;
   },
