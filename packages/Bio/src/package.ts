@@ -1115,10 +1115,10 @@ export async function seq2atomic(seq: string, chiralityEngine: boolean = true): 
     const sh = SeqHandler.forColumn(seqCol);
     const helmCol = sh.notation === NOTATION.HELM ? seqCol : sh.convert(NOTATION.HELM);
     const talRes = await seqHelper.helmToAtomicLevel(helmCol, chiralityEngine, false);
-    const resMolCol = talRes.mol!.col;
+    const resMolCol = talRes.molCol;
     // const resMolValue = DG.SemanticValue.fromValueType(resMolCol.get(0), DG.SEMTYPE.MOLECULE, resMolCol.meta.units ?? undefined);
     // return resMolValue;
-    return resMolCol.get(0)!;
+    return resMolCol!.get(0)!;
   } catch (err: any) {
     const [errMsg, errStack] = errInfo(err);
     _package.logger.error(errMsg, undefined, errStack);

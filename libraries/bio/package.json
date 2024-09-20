@@ -21,6 +21,7 @@
     "dayjs": "latest",
     "fastest-levenshtein": "^1.0.16",
     "js-base64": "^3.7.5",
+    "lru-cache": "^11.0.1",
     "mjolnir.js": "^2.7.0",
     "rxjs": "^6.5.5",
     "uuid": "^9.0.1",

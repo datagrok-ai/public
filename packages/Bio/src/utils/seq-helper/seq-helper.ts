@@ -9,7 +9,7 @@ import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {MolfileWithMap} from '@datagrok-libraries/bio/src/monomer-works/types';
-import {getMolColName, getMolHighlightColName, hexToPercentRgb} from '@datagrok-libraries/bio/src/monomer-works/utils';
+import {getMolColName, hexToPercentRgb} from '@datagrok-libraries/bio/src/monomer-works/utils';
 import {ChemTags} from '@datagrok-libraries/chem-meta/src/consts';
 import {getMolHighlight} from '@datagrok-libraries/bio/src/monomer-works/seq-to-molfile';
 
@@ -39,7 +39,6 @@ export class SeqHelper implements ISeqHelper {
 
     const df: DG.DataFrame = helmCol.dataFrame;
     const molColName: string = getMolColName(df, helmCol.name);
-    const molHlColName: string = getMolHighlightColName(df, molColName);
 
     const converter = this.getHelmToMolfileConverter(df, helmCol);
 
@@ -83,10 +82,7 @@ export class SeqHelper implements ISeqHelper {
     molCol.meta.units = DG.UNITS.Molecule.MOLBLOCK;
     molCol.setTag(ChemTags.SEQUENCE_SRC_COL, helmCol.name);
 
-    const molHlCol = DG.Column.fromList(DG.COLUMN_TYPE.OBJECT, molHlColName, molHlList);
-    molHlCol.semType = `${DG.SEMTYPE.MOLECULE}-highlight`;
-
-    return {mol: {col: molCol, highlightCol: molHlCol,}, warnings: []};
+    return {molCol: molCol, warnings: []};
   }
 
   static getInstance(): Promise<SeqHelper> {

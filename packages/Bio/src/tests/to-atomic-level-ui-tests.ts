@@ -101,9 +101,8 @@ category('toAtomicLevel-ui', () => {
     seqCol: DG.Column<string>, nonlinear: boolean, tgt: TestDataTargetType,
   ): Promise<void> {
     const res = (await sequenceToMolfile(seqCol.dataFrame, seqCol, nonlinear, false, monomerLib, rdKitModule))!;
-    const molCol = res.mol!.col;
-    expect(molCol.semType, DG.SEMTYPE.MOLECULE);
-    const resMolStr = molCol.get(0)!;
+    expect(res.molCol!.semType, DG.SEMTYPE.MOLECULE);
+    const resMolStr = res.molCol!.get(0)!;
     const resRdMol = rdKitModule.get_mol(resMolStr);
     try {
       const resAtomCount = resRdMol.get_num_atoms();
