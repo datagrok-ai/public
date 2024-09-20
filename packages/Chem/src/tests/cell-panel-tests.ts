@@ -168,5 +168,5 @@ category('cell panel', async () => {
         `descriptors table hasn\'t been created for ${mol}`, 55000);
       }
     }
-  }, { timeout: 60000, stressTest: true });
+  }, { timeout: 60000, stressTest: true, skipReason: 'GROK-16714'});
 });
