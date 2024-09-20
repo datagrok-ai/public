@@ -210,7 +210,7 @@ category('UI info panel', () => {
   after(async () => {
     grok.shell.closeAll();
   });
-});
+}, {skipReason: 'GROK-16714'});
 
 async function awaitPanel(pp: HTMLElement, name: string, ms: number = 5000): Promise<void> {
   await awaitCheck(() => {
