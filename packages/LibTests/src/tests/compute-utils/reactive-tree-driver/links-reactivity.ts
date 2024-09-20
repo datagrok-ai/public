@@ -6,7 +6,7 @@ import {LinksState} from '@datagrok-libraries/compute-utils/reactive-tree-driver
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import { of, Subject } from 'rxjs';
+import {of, Subject} from 'rxjs';
 import {delay, mapTo, switchMap} from 'rxjs/operators';
 import {FuncCallInstancesBridge} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/FuncCallInstancesBridge';
 import {makeValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';

@@ -269,29 +269,29 @@ export class LinksState {
     );
   }
 
-  private isAffected(rootPath: Readonly<NodeAddress>, link: Link, childOffset?: number) {
+  public isAffected(rootPath: Readonly<NodeAddress>, link: Link, childOffset?: number) {
     return this.hasNested(rootPath, link.prefix, link.matchInfo.inputs, childOffset) ||
       this.hasNested(rootPath, link.prefix, link.matchInfo.outputs, childOffset);
   }
 
-  private isInbound(rootPath: Readonly<NodeAddress>, link: Link, childOffset?: number) {
-    return this.hasNested(rootPath, link.prefix, link.matchInfo.inputs, childOffset) &&
-      this.hasNonNested(rootPath, link.prefix, link.matchInfo.outputs, childOffset);
-  }
-
-  private isOutgoing(rootPath: Readonly<NodeAddress>, link: Link, childOffset?: number) {
+  public isInbound(rootPath: Readonly<NodeAddress>, link: Link, childOffset?: number) {
     return this.hasNested(rootPath, link.prefix, link.matchInfo.outputs, childOffset) &&
       this.hasNonNested(rootPath, link.prefix, link.matchInfo.inputs, childOffset);
   }
 
+  public isOutgoing(rootPath: Readonly<NodeAddress>, link: Link, childOffset?: number) {
+    return this.hasNested(rootPath, link.prefix, link.matchInfo.inputs, childOffset) &&
+      this.hasNonNested(rootPath, link.prefix, link.matchInfo.outputs, childOffset);
+  }
+
   private hasNested(rootPath: Readonly<NodeAddress>, prefix: Readonly<NodeAddress>, minfos: Record<string, MatchedNodePaths>, childOffset?: number) {
     return Object.entries(minfos).some(
-      ([, minfo]) => {minfo.some((io) => BaseTree.isNodeChildOffseted(rootPath, [...prefix, ...io.path], childOffset));});
+      ([, minfo]) => minfo.some((io) => BaseTree.isNodeChildOffseted(rootPath, [...prefix, ...io.path], childOffset)));
   }
 
   private hasNonNested(rootPath: Readonly<NodeAddress>, prefix: Readonly<NodeAddress>, minfos: Record<string, MatchedNodePaths>, childOffset?: number) {
     return Object.entries(minfos).some(
-      ([, minfo]) => {minfo.some((io) => !BaseTree.isNodeChildOffseted(rootPath, [...prefix, ...io.path], childOffset));});
+      ([, minfo]) => minfo.some((io) => !BaseTree.isNodeChildOffseted(rootPath, [...prefix, ...io.path], childOffset)));
   }
 
   private checkDisjoint(inbound: Link[], outgoing: Link[], mutationPath: NodePath, childOffset?: number) {
