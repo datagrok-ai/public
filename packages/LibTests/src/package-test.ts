@@ -9,6 +9,13 @@ import './tests/compute-utils/reactive-tree-driver/config-processing';
 import './tests/compute-utils/reactive-tree-driver/instance-init';
 import './tests/compute-utils/reactive-tree-driver/instance-persistence';
 import './tests/compute-utils/reactive-tree-driver/instance-mutations';
+import './tests/compute-utils/reactive-tree-driver/instance-readonly';
+import './tests/compute-utils/reactive-tree-driver/links-matching';
+import './tests/compute-utils/reactive-tree-driver/links-reactivity';
+import './tests/compute-utils/reactive-tree-driver/instance-additional';
+import './tests/compute-utils/reactive-tree-driver/funcall-wrappers';
+import './tests/compute-utils/reactive-tree-driver/instance-bridge';
+import './tests/compute-utils/reactive-tree-driver/links-additional-states-propagation';
 
 export const _package = new DG.Package();
 export {tests};

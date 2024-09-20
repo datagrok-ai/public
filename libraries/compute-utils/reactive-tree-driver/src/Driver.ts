@@ -3,18 +3,25 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, Observable, Subject, EMPTY, of, from} from 'rxjs';
 import {isFuncCallSerializedState, PipelineState} from './config/PipelineInstance';
-import {AddDynamicItem, InitPipeline, LoadDynamicItem, LoadPipeline, MoveDynamicItem, RemoveDynamicItem, RunStep, SaveDynamicItem, SavePipeline, ViewConfigCommands} from './view/ViewCommunication';
+import {AddDynamicItem, InitPipeline, LoadDynamicItem, LoadPipeline, MoveDynamicItem, RemoveDynamicItem, RunAction, RunStep, SaveDynamicItem, SavePipeline, ViewConfigCommands} from './view/ViewCommunication';
 import {pairwise, takeUntil, concatMap, catchError, switchMap, map, mapTo, startWith, withLatestFrom, tap} from 'rxjs/operators';
 import {StateTree} from './runtime/StateTree';
-import {loadInstanceState} from './runtime/adapter-utils';
+import {loadInstanceState} from './runtime/funccall-utils';
 import {callHandler} from './utils';
 import {PipelineConfiguration} from './config/PipelineConfiguration';
 import {getProcessedConfig} from './config/config-processing-utils';
+import {ConsistencyInfo, FuncCallStateInfo} from './runtime/StateTreeNodes';
+import {ValidationResult} from './data/common-types';
 
 export class Driver {
   public currentState$ = new BehaviorSubject<PipelineState | undefined>(undefined);
-  public stateLocked$ = new BehaviorSubject(false);
-  public currentMetaCall$ = new BehaviorSubject<DG.FuncCall | undefined>(undefined);
+  public currentValidations$ = new BehaviorSubject<Record<string, BehaviorSubject<Record<string, ValidationResult>>>>({});
+  public currentConsistency$ = new BehaviorSubject<Record<string, BehaviorSubject<Record<string, ConsistencyInfo>>>>({});
+  public currentMeta$ = new BehaviorSubject<Record<string, BehaviorSubject<any | undefined>>>({});
+  public currentCallsState$ = new BehaviorSubject<Record<string, BehaviorSubject<FuncCallStateInfo | undefined>>>({});
+
+  public globalROLocked$ = new BehaviorSubject(false);
+  public treeMutationsLocked$ = new BehaviorSubject(false);
 
   private states$ = new BehaviorSubject<StateTree | undefined>(undefined);
   private commands$ = new Subject<ViewConfigCommands>();
@@ -35,27 +42,48 @@ export class Driver {
     this.states$.pipe(
       pairwise(),
       takeUntil(this.closed$),
-    ).subscribe(([oldval, cVal]) => {
-      console.log(cVal);
+    ).subscribe(([oldval]) => {
       if (oldval)
         oldval.close();
     });
 
     this.states$.pipe(
-      switchMap((state) => state ? state.makeStateRequests$.pipe(startWith(null), mapTo(state)) : of(undefined)),
+      switchMap((state) => state ?
+        state.makeStateRequests$.pipe(startWith(null), mapTo(state)) :
+        of(undefined)),
       map((state) => state ? state.toState() : undefined),
       takeUntil(this.closed$),
     ).subscribe(this.currentState$);
 
     this.states$.pipe(
-      switchMap((state) => state ? state.metaCall$: of(undefined)),
+      map((state) => state ? state.getConsistency() : {}),
       takeUntil(this.closed$),
-    ).subscribe(this.currentMetaCall$);
+    ).subscribe(this.currentConsistency$);
 
     this.states$.pipe(
-      switchMap((state) => state ? state.isLocked$ : of(false)),
+      map((state) => state ? state.getMeta() : {}),
       takeUntil(this.closed$),
-    ).subscribe(this.stateLocked$);
+    ).subscribe(this.currentMeta$);
+
+    this.states$.pipe(
+      map((state) => state ? state.getValidations() : {}),
+      takeUntil(this.closed$),
+    ).subscribe(this.currentValidations$);
+
+    this.states$.pipe(
+      map((state) => state ? state.getFuncCallStates() : {}),
+      takeUntil(this.closed$),
+    ).subscribe(this.currentCallsState$);
+
+    this.states$.pipe(
+      switchMap((state) => state ? state.globalROLocked$ : of(false)),
+      takeUntil(this.closed$),
+    ).subscribe(this.globalROLocked$);
+
+    this.states$.pipe(
+      switchMap((state) => state ? state.treeMutationsLocked$ : of(false)),
+      takeUntil(this.closed$),
+    ).subscribe(this.treeMutationsLocked$);
   }
 
   public sendCommand(msg: ViewConfigCommands) {
@@ -82,6 +110,8 @@ export class Driver {
       return this.moveDynamicItem(msg, state);
     case 'runStep':
       return this.runStep(msg, state);
+    case 'runAction':
+      return this.runAction(msg, state);
     case 'savePipeline':
       return this.savePipeline(msg, state);
     case 'loadPipeline':
@@ -99,10 +129,10 @@ export class Driver {
 
   private loadDynamicItem(msg: LoadDynamicItem, state?: StateTree) {
     this.checkState(msg, state);
-    return state.loadSubTree(msg.parentUuid, msg.dbId, msg.itemId, msg.position);
+    return state.loadSubTree(msg.parentUuid, msg.dbId, msg.itemId, msg.position, !!msg.readonly);
   }
 
-  private saveDynamicItem(msg: SaveDynamicItem, state?: StateTree) {
+  public saveDynamicItem(msg: SaveDynamicItem, state?: StateTree) {
     this.checkState(msg, state);
     return state.save(msg.uuid);
   }
@@ -122,37 +152,43 @@ export class Driver {
     return state.runStep(msg.uuid, msg.mockResults, msg.mockDelay);
   }
 
-  private savePipeline(msg: SavePipeline, state?: StateTree) {
+  private runAction(msg: RunAction, state?: StateTree) {
+    this.checkState(msg, state);
+    return state.runAction(msg.uuid);
+  }
+
+  public savePipeline(msg: SavePipeline, state?: StateTree) {
     this.checkState(msg, state);
     return state.save();
   }
 
-  private loadPipeline(msg: LoadPipeline) {
+  public loadPipeline(msg: LoadPipeline) {
     return from(loadInstanceState(msg.funcCallId)).pipe(
-      concatMap(([metaCall, stateLoaded]) => {
+      concatMap((stateLoaded) => {
         if (isFuncCallSerializedState(stateLoaded))
           throw new Error(`Wrong pipeline config in wrapper FuncCall ${msg.funcCallId}`);
         if (!stateLoaded.provider)
           throw new Error(`Pipeline config in wrapper FuncCall ${msg.funcCallId} missing provider`);
         if (msg.config)
-          return of([stateLoaded, msg.config, metaCall] as const);
+          return of([stateLoaded, msg.config] as const);
         return callHandler<PipelineConfiguration>(stateLoaded.provider, {version: stateLoaded.version}).pipe(
           concatMap((conf) => from(getProcessedConfig(conf))),
-          map((config) => [stateLoaded, config, metaCall] as const),
+          map((config) => [stateLoaded, config] as const),
         );
       }),
-      map(([state, config, metaCall]) => StateTree.fromState({state, config, metaCall, mockMode: this.mockMode})),
-      concatMap((state) => state.initFuncCalls()),
-      tap((nextState) => this.states$.next(nextState)),
+      map(([state, config]) =>
+        StateTree.fromInstanceState({state, config, isReadonly: !!msg.readonly, mockMode: this.mockMode})),
+      concatMap((state) => state.init()),
+      tap((state) => this.states$.next(state)),
     );
   }
 
   private initPipeline(msg: InitPipeline) {
     return callHandler<PipelineConfiguration>(msg.provider, {version: msg.version}).pipe(
       concatMap((conf) => from(getProcessedConfig(conf))),
-      map((config) => StateTree.fromConfig({config, mockMode: this.mockMode})),
-      concatMap((state) => state.initAll()),
-      tap((nextState) => this.states$.next(nextState)),
+      map((config) => StateTree.fromPipelineConfig({config, isReadonly: false, mockMode: this.mockMode})),
+      concatMap((state) => state.init()),
+      tap((state) => this.states$.next(state)),
     );
   }
 

@@ -1,75 +1,149 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {BehaviorSubject} from 'rxjs';
+import {BehaviorSubject, combineLatest, merge, Observable, Subject} from 'rxjs';
 import {v4 as uuidv4} from 'uuid';
-import {isFuncCallState, PipelineState, PipelineStateParallel, PipelineStateSequential, PipelineStateStatic, StepFunCallInitialConfig, StepFunCallSerializedState, StepFunCallState} from '../config/PipelineInstance';
+import {PipelineStateParallel, PipelineStateSequential, PipelineStateStatic, StepFunCallInitialConfig, StepFunCallSerializedState, StepFunCallState, PipelineSerializedState, isFuncCallSerializedState} from '../config/PipelineInstance';
 import {PipelineConfigurationParallelProcessed, PipelineConfigurationProcessed, PipelineConfigurationSequentialProcessed, PipelineConfigurationStaticProcessed} from '../config/config-processing-utils';
 import {IFuncCallAdapter, IStateStore, MemoryStore} from './FuncCallAdapters';
-import {FuncCallInstancesBridge} from './FuncCallInstancesBridge';
+import {FuncCallInstancesBridge, RestrictionState} from './FuncCallInstancesBridge';
 import {isPipelineConfig, PipelineStepConfigurationProcessed} from '../config/config-utils';
+import {map, mapTo, scan, skip, switchMap, takeUntil, withLatestFrom} from 'rxjs/operators';
+import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
+import {RestrictionType, ValidationResult} from '../data/common-types';
+import {mergeValidationResults} from '../utils';
+import {Action} from './Link';
 
 export type StateTreeSerializationOptions = {
   disableNodesUUID?: boolean,
   disableCallsUUID?: boolean,
 };
 
+export type ConsistencyInfo = {
+  restriction: RestrictionType,
+  inconsistent: boolean,
+  assignedValue: any,
+}
+
+export type FuncCallStateInfo = {
+  isRunning: boolean,
+  isRunnable: boolean,
+  isOutputOutdated: boolean,
+  pendingDependencies: string[],
+}
+
 export interface IStoreProvider {
   getStateStore(): IStateStore;
 }
 
 export class FuncCallNode implements IStoreProvider {
+  private depsData$ = new BehaviorSubject<(readonly [string, BehaviorSubject<boolean>])[]>([]);
+
   public uuid = uuidv4();
   public readonly nodeType = 'funccall';
 
-  public instancesWrapper = new FuncCallInstancesBridge();
+  public instancesWrapper = new FuncCallInstancesBridge(this.config.io!, this.isReadonly);
   public pendingId?: string;
+
+  public consistencyInfo$ = new BehaviorSubject<Record<string, ConsistencyInfo>>({});
+  public validationInfo$ = new BehaviorSubject<Record<string, ValidationResult>>({});
+  public metaInfo$ = new BehaviorSubject<Record<string, BehaviorSubject<any | undefined>>>({});
+  public funcCallState$ = new BehaviorSubject<FuncCallStateInfo | undefined>(undefined);
+  public pendingDependencies$ = new BehaviorSubject<string[]>([]);
+
+  private closed$ = new Subject<true>();
 
   constructor(
     public readonly config: PipelineStepConfigurationProcessed,
-  ) {}
+    public isReadonly: boolean,
+  ) {
+    this.getConsistencyChanges().pipe(
+      takeUntil(this.closed$),
+    ).subscribe(this.consistencyInfo$);
 
-  setAdapter(fc?: IFuncCallAdapter, initValues = false) {
-    this.instancesWrapper.setInstance(fc, initValues);
+    this.instancesWrapper.validations$.pipe(
+      map((validations) => this.convertValidations(validations)),
+      takeUntil(this.closed$),
+    ).subscribe(this.validationInfo$);
+
+    this.instancesWrapper.meta$.pipe(
+      takeUntil(this.closed$),
+    ).subscribe(this.metaInfo$);
+
+    combineLatest([
+      this.instancesWrapper.isRunning$,
+      this.instancesWrapper.isRunable$,
+      this.instancesWrapper.isOutputOutdated$,
+      this.pendingDependencies$,
+    ]).pipe(
+      map(([isRunning, isRunnable, isOutputOutdated, pendingDependencies]) =>
+        ({isRunning, isRunnable, isOutputOutdated, pendingDependencies})),
+      takeUntil(this.closed$),
+    ).subscribe(this.funcCallState$);
+
+    this.depsData$.pipe(
+      switchMap((deps) => this.getPendingDeps(deps)),
+      takeUntil(this.closed$),
+    ).subscribe(this.pendingDependencies$);
+  }
+
+  initAdapter(
+    adapter: IFuncCallAdapter,
+    restrictions: Record<string, RestrictionState | undefined>,
+    isOutputOutdated: boolean,
+    initValues: boolean,
+  ) {
+    this.instancesWrapper.init({adapter, restrictions, isOutputOutdated, initValues});
+  }
+
+  changeAdapter(adapter: IFuncCallAdapter) {
+    this.instancesWrapper.change(adapter);
+  }
+
+  setDeps(deps: (readonly [string, BehaviorSubject<boolean>])[]) {
+    this.depsData$.next(deps);
   }
 
   getStateStore() {
     return this.instancesWrapper;
   }
 
-  restoreState(state: PipelineState) {
-    if (!isFuncCallState(state))
+  restoreState(state: PipelineSerializedState) {
+    if (!isFuncCallSerializedState(state))
       throw new Error(`Wrong FuncCall node state ${JSON.stringify(state)}`);
-    this.instancesWrapper.isOutputOutdated$.next(!!state.isOuputOutdated);
-    this.instancesWrapper.isCurrent$.next(!!state.isCurrent);
     this.pendingId = state.funcCallId;
     if (state.uuid)
       this.uuid = state.uuid;
   }
 
   initState(initialConfig: StepFunCallInitialConfig) {
-    this.instancesWrapper.inputRestrictions$.next(initialConfig.inputRestrictions ?? {});
-    this.instancesWrapper.initialValues = initialConfig.values ?? {};
+    const initialRestrictions: Record<string, RestrictionState> = {};
+    for (const [k, restrictionType] of Object.entries(initialConfig.inputRestrictions ?? {})) {
+      const initalVal = (initialConfig.values ?? {})[k];
+      initialRestrictions[k] = {
+        assignedValue: initalVal,
+        type: restrictionType,
+      };
+    }
+    this.instancesWrapper.setPreInitialData({
+      initialValues: initialConfig.values ?? {},
+      initialRestrictions,
+    });
   }
 
-  toState(options: StateTreeSerializationOptions): StepFunCallState {
+  toState(options: StateTreeSerializationOptions, actions?: Action[]): StepFunCallState {
+    const instance = this.instancesWrapper.getInstance();
     const res: StepFunCallState = {
       type: 'funccall',
       uuid: this.uuid,
-      nqName: this.config.nqName,
       configId: this.config.id,
       friendlyName: this.config.friendlyName,
-      funcCallId: this.instancesWrapper.getInstance()?.getFuncCall()?.id,
-      funcCall: this.instancesWrapper.getInstance()?.getFuncCall(),
-      isRunning: this.instancesWrapper.isRunning$.value,
-      isRunable: this.instancesWrapper.isRunable$.value,
-      isOuputOutdated: this.instancesWrapper.isOutputOutdated$.value,
-      isCurrent: this.instancesWrapper.isCurrent$.value,
+      funcCall: instance?.getFuncCall(),
+      isReadonly: this.isReadonly,
+      actions,
     };
     if (options.disableNodesUUID)
       res.uuid = '';
-    if (options.disableCallsUUID)
-      res.funcCallId = '';
     return res;
   }
 
@@ -81,8 +155,7 @@ export class FuncCallNode implements IStoreProvider {
       configId: this.config.id,
       friendlyName: this.config.friendlyName,
       funcCallId: this.instancesWrapper.id,
-      isOuputOutdated: this.instancesWrapper.isOutputOutdated$.value,
-      isCurrent: this.instancesWrapper.isCurrent$.value,
+      isReadonly: this.isReadonly,
     };
     if (options.disableNodesUUID)
       res.uuid = '';
@@ -90,22 +163,123 @@ export class FuncCallNode implements IStoreProvider {
       res.funcCallId = '';
     return res;
   }
+
+  close() {
+    this.instancesWrapper.close();
+    this.closed$.next(true);
+  }
+
+  private convertValidations(
+    validationsIn: Record<string, Record<string, ValidationResult | undefined>>,
+  ) {
+    const validationArrays = Object.values(validationsIn).reduce((acc, val) => {
+      for (const [k, v] of Object.entries(val)) {
+        if (v) {
+          if (acc[k])
+            acc[k].push(v);
+          else
+            acc[k] = [v];
+        }
+      }
+      return acc;
+    }, {} as Record<string, ValidationResult[]>);
+    const validationEntries = Object.entries(validationArrays).map(
+      ([k, validations]) => [k, mergeValidationResults(...validations)] as const);
+    const validations = Object.fromEntries(validationEntries);
+    return validations;
+  }
+
+  private getConsistencyChanges(): Observable<Record<string, ConsistencyInfo>> {
+    const valueUpdates = this.instancesWrapper.getStateNames().map(
+      (name) => this.instancesWrapper.getStateChanges(name).pipe(skip(1), mapTo(name)));
+    const restrictionUpdates = this.instancesWrapper.inputRestrictionsUpdates$.pipe(map(([name]) => name));
+    const inputUpdatesChecker$ = merge(...[...valueUpdates, restrictionUpdates]).pipe(
+      withLatestFrom(this.instancesWrapper.inputRestrictions$),
+      map(([name, restrictions]) => [name, this.getConsistencyState(name, restrictions)] as const),
+    );
+    const state$ = inputUpdatesChecker$.pipe(
+      scan((acc, [name, info]) => {
+        if (!info) {
+          const {[name]: omitted, ...rest} = acc;
+          return rest;
+        } else
+          return {...acc, [name]: info};
+      }, this.initConsistencyStates(this.instancesWrapper.inputRestrictions$.value)),
+    );
+    return state$;
+  }
+
+  private initConsistencyStates(
+    restrictions: Record<string, RestrictionState | undefined>,
+  ) {
+    const res: Record<string, ConsistencyInfo> = {};
+    for (const name of this.instancesWrapper.getStateNames()) {
+      const cinfo = this.getConsistencyState(name, restrictions);
+      if (cinfo)
+        res[name] = cinfo;
+    }
+    return res;
+  }
+
+  private getConsistencyState(
+    inputName: string,
+    restrictions: Record<string, RestrictionState | undefined>,
+  ): ConsistencyInfo | undefined {
+    const restriction = restrictions[inputName];
+    if (!restriction)
+      return undefined;
+    else {
+      const {assignedValue, type} = restriction;
+      const currentVal = this.instancesWrapper.getState(inputName);
+      const inconsistent = !this.deepEq(currentVal, assignedValue);
+      return {
+        restriction: type,
+        inconsistent,
+        assignedValue,
+      };
+    }
+  }
+
+  private getPendingDeps(deps: (readonly [string, BehaviorSubject<boolean>])[]) {
+    const pendingStates = deps.map(([uuid, state$]) => state$.pipe(map((state) => [uuid, state] as const)));
+    const pending$ = merge(...pendingStates).pipe(
+      scan((acc, [uuid, isPending]) => {
+        if (isPending)
+          acc.add(uuid);
+        else
+          acc.delete(uuid);
+
+        return acc;
+      }, new Set<string>()),
+      map((s) => [...s]),
+    );
+    return pending$;
+  }
+
+  // TODO: checking for additional actual Object keys (?)
+  private deepEq(actual: any, expected: any) {
+    try {
+      expectDeepEqual(actual, expected, { maxErrorsReport: 1 });
+    } catch {
+      return false;
+    }
+    return true;
+  }
 }
 
 export class PipelineNodeBase implements IStoreProvider {
   public uuid = uuidv4();
   private store: MemoryStore;
 
-  public isReadonly$ = new BehaviorSubject(false);
-
   constructor(
     public readonly config: PipelineConfigurationProcessed,
+    public readonly isReadonly: boolean,
   ) {
-    this.store = new MemoryStore(config.states ?? []);
+    this.store = new MemoryStore(config.states ?? [], false);
   }
 
-  restoreState(state: PipelineState) {
-    if (isFuncCallState(state))
+  restoreState(state: PipelineSerializedState) {
+    if (isFuncCallSerializedState(state))
       throw new Error(`Wrong pipeline node state ${JSON.stringify(state)}`);
     if (state.uuid)
       this.uuid = state.uuid;
@@ -115,13 +289,19 @@ export class PipelineNodeBase implements IStoreProvider {
     return this.store;
   }
 
-  toState(options: StateTreeSerializationOptions) {
+  toState(options: StateTreeSerializationOptions, actions?: Action[]) {
+    const state = this.toSerializedState(options);
+    return {...state, actions};
+  }
+
+  toSerializedState(options: StateTreeSerializationOptions) {
     const res = {
       configId: this.config.id,
       uuid: this.uuid,
       provider: this.config.provider,
       version: this.config.version,
       nqName: this.config.nqName,
+      isReadonly: this.isReadonly,
     };
     if (options.disableNodesUUID)
       res.uuid = '';
@@ -135,13 +315,14 @@ export class StaticPipelineNode extends PipelineNodeBase {
 
   constructor(
     public readonly config: PipelineConfigurationStaticProcessed,
+    public readonly isReadonly: boolean,
   ) {
-    super(config);
+    super(config, isReadonly);
   }
 
-  toState(options: StateTreeSerializationOptions): PipelineStateStatic {
-    const base = super.toState(options);
-    const res: PipelineStateStatic = {
+  toSerializedState(options: StateTreeSerializationOptions): PipelineStateStatic<StepFunCallState> {
+    const base = super.toSerializedState(options);
+    const res: PipelineStateStatic<StepFunCallState> = {
       ...base,
       nqName: this.config.nqName,
       type: this.nodeType,
@@ -156,13 +337,14 @@ export class ParallelPipelineNode extends PipelineNodeBase {
 
   constructor(
     public readonly config: PipelineConfigurationParallelProcessed,
+    public readonly isReadonly: boolean,
   ) {
-    super(config);
+    super(config, isReadonly);
   }
 
-  toState(options: StateTreeSerializationOptions): PipelineStateParallel {
-    const base = super.toState(options);
-    const res: PipelineStateParallel = {
+  toSerializedState(options: StateTreeSerializationOptions): PipelineStateParallel<StepFunCallState> {
+    const base = super.toSerializedState(options);
+    const res: PipelineStateParallel<StepFunCallState> = {
       ...base,
       type: this.nodeType,
       steps: [],
@@ -185,13 +367,14 @@ export class SequentialPipelineNode extends PipelineNodeBase {
 
   constructor(
     public readonly config: PipelineConfigurationSequentialProcessed,
+    public readonly isReadonly: boolean,
   ) {
-    super(config);
+    super(config, isReadonly);
   }
 
-  toState(options: StateTreeSerializationOptions) {
-    const base = super.toState(options);
-    const res: PipelineStateSequential = {
+  toSerializedState(options: StateTreeSerializationOptions) {
+    const base = super.toSerializedState(options);
+    const res: PipelineStateSequential<StepFunCallState> = {
       ...base,
       type: this.nodeType,
       steps: [],

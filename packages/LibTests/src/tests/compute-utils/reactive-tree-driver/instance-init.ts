@@ -25,14 +25,14 @@ category('ComputeUtils: Driver state tree init', async () => {
       ],
       links: [{
         id: 'link1',
-        from: 'step1/res',
-        to: 'step2/a',
+        from: 'in1:step1/res',
+        to: 'out1:step2/a',
       }],
     };
     const pconf = await getProcessedConfig(config);
-    const tree = StateTree.fromConfig({config: pconf});
-    const state = tree.toSerializedState({ disableNodesUUID: true });
-    await snapshotCompare(state, 'simple initial config');
+    const tree = StateTree.fromPipelineConfig({config: pconf});
+    const state = tree.toSerializedState({disableNodesUUID: true});
+    await snapshotCompare(state, 'Process simple initial config');
   });
 
   test('Process initial config with dynamic pipelines', async () => {
@@ -104,9 +104,9 @@ category('ComputeUtils: Driver state tree init', async () => {
       ],
     };
     const pconf = await getProcessedConfig(config);
-    const tree = StateTree.fromConfig({config: pconf});
-    const state = tree.toSerializedState({ disableNodesUUID: true });
-    await snapshotCompare(state, 'initial config with dynamic pipelines');
+    const tree = StateTree.fromPipelineConfig({config: pconf});
+    const state = tree.toSerializedState({disableNodesUUID: true});
+    await snapshotCompare(state, 'Process initial config with dynamic pipelines');
   });
 
   test('Process initial config with ref', async () => {
@@ -130,9 +130,9 @@ category('ComputeUtils: Driver state tree init', async () => {
       }],
     };
     const pconf = await getProcessedConfig(config);
-    const tree = StateTree.fromConfig({config: pconf});
-    const state = tree.toSerializedState({ disableNodesUUID: true });
-    await snapshotCompare(state, 'initial config with ref');
+    const tree = StateTree.fromPipelineConfig({config: pconf});
+    const state = tree.toSerializedState({disableNodesUUID: true});
+    await snapshotCompare(state, 'Process initial config with ref');
   });
 });
 
@@ -153,15 +153,15 @@ category('ComputeUtils: Driver init calls', async () => {
       ],
       links: [{
         id: 'link1',
-        from: 'step1/res',
-        to: 'step2/a',
+        from: 'in1:step1/res',
+        to: 'out1:step2/a',
       }],
     };
     const pconf = await getProcessedConfig(config);
-    const tree = StateTree.fromConfig({config: pconf});
-    await tree.initFuncCalls().toPromise();
+    const tree = StateTree.fromPipelineConfig({config: pconf});
+    await tree.init().toPromise();
     const state = tree.toState();
-    (state as PipelineStateStatic).steps.map(
+    (state as PipelineStateStatic<any>).steps.map(
       (x) => {
         if (!((x as StepFunCallState).funcCall instanceof DG.FuncCall))
           throw new Error(`funcCall is not an instance of DG.FuncCall`);
@@ -186,8 +186,8 @@ category('ComputeUtils: Driver init calls', async () => {
       ],
       links: [{
         id: 'link1',
-        from: 'step1/res',
-        to: 'step2/a',
+        from: 'in1:step1/res',
+        to: 'out1:step2/a',
       }],
     };
     const instanceConfig: PipelineInstanceConfig = {
@@ -203,19 +203,16 @@ category('ComputeUtils: Driver init calls', async () => {
             'b': 2,
           },
           inputRestrictions: {
-            'a': {
-              assignedValue: 2,
-              type: 'disabled',
-            },
+            'a': 'disabled',
           },
         },
       ],
     };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromInstanceConfig(instanceConfig, pconf);
-    await tree.initFuncCalls().toPromise();
+    await tree.init().toPromise();
     const state = tree.toState();
-    const fc = ((state as PipelineStateStatic).steps[1] as StepFunCallState).funcCall!;
+    const fc = ((state as PipelineStateStatic<any>).steps[1] as StepFunCallState).funcCall!;
     expectDeepEqual(fc.inputs.a, 1);
     expectDeepEqual(fc.inputs.b, 2);
   });

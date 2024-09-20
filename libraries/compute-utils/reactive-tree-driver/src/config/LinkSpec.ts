@@ -1,39 +1,43 @@
-import {Grammars, IToken} from 'ebnf';
+import {Grammars, Parser, IToken} from 'ebnf';
 import {ItemId} from '../data/common-types';
+import {indexFromEnd} from '../utils';
 
 const linkSpecGrammar = `
-To ::= Name ':' (Selector | Id) (SEPARATOR (Selector | Id))*
-Selector ::= ( SelectorType '(' WS* Id WS* (',' WS* '@' Ref WS*)? SelectorArgs* ')' )
-SelectorArgs ::= (',' WS* Arg WS*)*
-SelectorType ::= "after+" | "after*" | "afterOrSame" | "after" | "before+" | "before*" | "beforeOrSame" | "before" | "same" | "first" | "last" | "all" | "any"
+Link ::= Name (':' Segment)? ('/' Segment)*
+Segment ::=  WS* (Selector | TargetIds) WS* {fragment=true}
+Selector ::= SelectorType '(' SelectorArgs ')'
+SelectorArgs ::= ((RefArg ',' TargetIds) | TargetIds) (',' StopIds)? {fragment=true}
+SelectorType ::= "after+" | "after*" | "after" | "before+" | "before*" | "before" | "same" | "first" | "last" | "all" | "expand"
+TargetIds ::= ListArg
+StopIds ::= ListArg
+ListArg ::= WS* Id WS* ('|' WS* Id WS*)* {fragment=true}
+RefArg ::= WS* '@' Ref WS* {fragment=true}
+Ref ::= IDENTIFIER
 Id ::= IDENTIFIER
 Name ::= IDENTIFIER
-Arg ::= IDENTIFIER
-Ref ::= IDENTIFIER
 IDENTIFIER ::= [a-zA-Z][a-zA-Z_0-9]*
-SEPARATOR ::= '/'
 WS ::= ' '
 `;
 
-const linkParser = new Grammars.W3C.Parser(linkSpecGrammar);
+const linkParser = new Parser(Grammars.Custom.getRules(linkSpecGrammar));
 
-export type LinkRefSelectors ="after+" | "after*" | "afterOrSame" | "after" | "before+" | "before*" | "beforeOrSame" | "before" | "same" ;
-export type LinkNonRefSelectors = "first" | "last" | "all" | "any";
+export type LinkRefSelectors = 'after+' | 'after*' | 'after' | 'before+' | 'before*' | 'before' | 'same';
+export type LinkNonRefSelectors = 'first' | 'last' | 'all' | 'expand';
 export type LinkSelectors = LinkRefSelectors | LinkNonRefSelectors;
 
 export type LinkSegment = {
-  id: ItemId,
   selector: LinkSelectors,
-  args?: string[],
+  ids: ItemId[],
+  stopIds: ItemId[],
   ref?: string | undefined,
 }
 
-export type LinkParsed = {
-  name?: string;
+export type LinkIOParsed = {
+  name: string;
   segments: LinkSegment[];
 }
 
-const nonRefSelectors = ['first', 'last', 'all', 'any'];
+const nonRefSelectors = ['first', 'last', 'all', 'expand'];
 
 export function isNonRefSelector(sel: LinkSelectors): sel is LinkNonRefSelectors {
   return nonRefSelectors.includes(sel);
@@ -43,58 +47,60 @@ export function isRefSelector(sel: LinkSelectors): sel is LinkRefSelectors {
   return !nonRefSelectors.includes(sel);
 }
 
-export function refSelectorIncludesOrigin(sel: LinkRefSelectors) {
-  return sel.endsWith('Same') || sel.endsWith('same');
-}
-
 export function refSelectorAdjacent(sel: LinkRefSelectors) {
-  return sel.endsWith('+') ;
+  return sel.endsWith('+');
 }
 
 export function refSelectorAll(sel: LinkRefSelectors) {
-  return sel.endsWith('*') ;
+  return sel.endsWith('*');
 }
 
 export function refSelectorFindOne(sel: LinkRefSelectors) {
   return sel === 'after' || sel === 'before';
 }
 
-export type SelectorDirection = 'before' | 'after' | 'none';
+export type SelectorDirection = 'before' | 'after' | 'same';
 
 export function refSelectorDirection(sel: LinkRefSelectors): SelectorDirection {
   if (sel === 'same')
-    return 'none' as const;
+    return 'same' as const;
   return sel.startsWith('after') ? 'after' : 'before';
 }
 
-export function parseLinkIO(io: string, isBase: boolean, isInput: boolean): LinkParsed {
+export function parseLinkIO(io: string, ioType: 'input' | 'output' | 'base' | 'actions'): LinkIOParsed {
   const ast = linkParser.getAST(io);
   checkAST(io, ast);
-  const name = ast.children.find((cnode) => cnode.type === 'Name')?.text;
+  const name = ast.children.find((cnode) => cnode.type === 'Name')!.text;
+  const isBase = ioType === 'base';
   const segments = ast.children.map((node) => {
     if (node.type === 'Selector') {
       const selector = node.children[0].text as LinkSelectors;
-      const id = node.children[1].text;
       const refNode = node.children.find((cnode) => cnode.type === 'Ref');
-      const argsNode = node.children.find((cnode) => cnode.type === 'SelectorArgs');
+      const targetIdsNode = node.children.find((cnode) => cnode.type === 'TargetIds');
+      const stopIdsNode = node.children.find((cnode) => cnode.type === 'StopIds');
       const ref = refNode ? refNode.text : undefined;
       if (ref && isNonRefSelector(selector))
         throw new Error(`Link io ${io} is using non-ref selector with ref`);
       if (isBase && !isNonRefSelector(selector))
-        throw new Error(`Link io ${io} is using ref selector in link base`);
-      if (!isBase && selector === 'any')
-        throw new Error(`Link io ${io} is using any selector in non-base`);
-      const args = argsNode ? argsNode.children.map((cnode) => cnode.text) : [];
-      return {id, selector, ref, args};
-    } else if (node.type === 'Id') {
-      const id = node.text;
-      const selector = isInput ? ('last' as const) : ('first' as const);
-      return {id, selector};
+        throw new Error(`Link io ${io} is using ref selector ${selector} in link base`);
+      if (isBase && selector === 'all')
+        throw new Error(`Link io ${io} is using all selector in link base`);
+      if (!isBase && selector === 'expand')
+        throw new Error(`Link io ${io} is using expand selector in non-base`);
+      const ids = targetIdsNode!.children.map((cnode) => cnode.text);
+      const stopIds = stopIdsNode ? stopIdsNode.children.map((cnode) => cnode.text) : [];
+      return {selector, ids, stopIds, ref};
+    } else if (node.type === 'TargetIds') {
+      const selector = 'first' as const;
+      const ids = node.children.map((cnode) => cnode.text);
+      return {ids, selector, stopIds: []};
     } else if (node.type === 'Name')
       return;
-
     throw new Error(`Link ${io}, unknown AST node type ${node.type}`);
   }).filter((x) => !!x);
+  const lastSegment = indexFromEnd(segments);
+  if (lastSegment && ioType !== 'base' && (lastSegment.selector !== 'first'))
+    throw new Error(`Link io ${io} ending with input/output selector`);
   return {name, segments};
 }
 

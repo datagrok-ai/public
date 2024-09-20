@@ -1,7 +1,7 @@
 {
   "name": "@datagrok-libraries/webcomponents-vue",
   "sideEffects": false,
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Datagrok web components vue wrappers",
   "dependencies": {
     "@datagrok-libraries/webcomponents": "^0.0.2",

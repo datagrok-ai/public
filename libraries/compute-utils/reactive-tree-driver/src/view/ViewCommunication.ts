@@ -16,7 +16,7 @@ export interface LoadDynamicItem {
   dbId: string;
   itemId: ItemId;
   position: number;
-  readonly?: boolean; // TODO
+  readonly?: boolean;
 }
 
 export interface SaveDynamicItem {
@@ -42,6 +42,11 @@ export interface RunStep {
   mockDelay?: number;
 }
 
+export interface RunAction {
+  event: 'runAction';
+  uuid: string;
+}
+
 export interface SavePipeline {
   event: 'savePipeline';
 }
@@ -50,6 +55,7 @@ export interface LoadPipeline {
   event: 'loadPipeline';
   funcCallId: string;
   config?: PipelineConfigurationProcessed;
+  readonly?: boolean;
 }
 
 export interface InitPipeline {
@@ -58,4 +64,4 @@ export interface InitPipeline {
   version?: number;
 }
 
-export type ViewConfigCommands = AddDynamicItem | LoadDynamicItem | SaveDynamicItem | RemoveDynamicItem | MoveDynamicItem | RunStep | SavePipeline | LoadPipeline | InitPipeline;
+export type ViewConfigCommands = AddDynamicItem | LoadDynamicItem | SaveDynamicItem | RemoveDynamicItem | MoveDynamicItem | RunStep | RunAction | SavePipeline | LoadPipeline | InitPipeline;

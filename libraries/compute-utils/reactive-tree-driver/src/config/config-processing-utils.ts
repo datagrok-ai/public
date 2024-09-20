@@ -1,10 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {AbstractPipelineParallelConfiguration, AbstractPipelineSequentialConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, PipelineActionConfiguraion, PipelineConfigurationInitial, PipelineConfigurationParallelInitial, PipelineConfigurationSequentialInitial, PipelineConfigurationStaticInitial, PipelineHooks, PipelineLinkConfigurationBase, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, StepActionConfiguraion} from './PipelineConfiguration';
-import { ItemId, LinkSpecString, NqName} from '../data/common-types';
+import {AbstractPipelineParallelConfiguration, AbstractPipelineSequentialConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, PipelineActionConfiguraion, PipelineConfigurationInitial, PipelineConfigurationParallelInitial, PipelineConfigurationSequentialInitial, PipelineConfigurationStaticInitial, PipelineHookConfiguration, PipelineLinkConfigurationBase, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, StepActionConfiguraion} from './PipelineConfiguration';
+import {ItemId, LinkSpecString, NqName} from '../data/common-types';
 import {callHandler} from '../utils';
-import {LinkParsed, parseLinkIO} from './LinkSpec';
+import {LinkIOParsed, parseLinkIO} from './LinkSpec';
 
 //
 // Internal config processing
@@ -19,9 +19,9 @@ export type FuncallStateItem = {
 type PipelineStepConfigurationInitial = PipelineStepConfiguration<LinkSpecString, never>;
 type ConfigInitialTraverseItem = PipelineConfigurationInitial | PipelineStepConfigurationInitial;
 
-export type PipelineConfigurationStaticProcessed = AbstractPipelineStaticConfiguration<LinkParsed[], FuncallStateItem[], PipelineSelfRef>;
-export type PipelineConfigurationParallelProcessed = AbstractPipelineParallelConfiguration<LinkParsed[], FuncallStateItem[], PipelineSelfRef>;
-export type PipelineConfigurationSequentialProcessed = AbstractPipelineSequentialConfiguration<LinkParsed[], FuncallStateItem[], PipelineSelfRef>;
+export type PipelineConfigurationStaticProcessed = AbstractPipelineStaticConfiguration<LinkIOParsed[], FuncallStateItem[], PipelineSelfRef>;
+export type PipelineConfigurationParallelProcessed = AbstractPipelineParallelConfiguration<LinkIOParsed[], FuncallStateItem[], PipelineSelfRef>;
+export type PipelineConfigurationSequentialProcessed = AbstractPipelineSequentialConfiguration<LinkIOParsed[], FuncallStateItem[], PipelineSelfRef>;
 export type PipelineConfigurationProcessed = PipelineConfigurationStaticProcessed | PipelineConfigurationParallelProcessed | PipelineConfigurationSequentialProcessed;
 
 function isPipelineStaticInitial(c: ConfigInitialTraverseItem): c is PipelineConfigurationStaticInitial {
@@ -53,7 +53,10 @@ export async function getProcessedConfig(conf: PipelineConfigurationInitial): Pr
   return pconf as PipelineConfigurationProcessed;
 }
 
-async function configProcessing(conf: ConfigInitialTraverseItem, loadedPipelines: Set<string>): Promise<PipelineConfigurationProcessed | PipelineStepConfiguration<LinkParsed[], FuncallStateItem[]> | PipelineSelfRef> {
+async function configProcessing(
+  conf: ConfigInitialTraverseItem,
+  loadedPipelines: Set<string>,
+): Promise<PipelineConfigurationProcessed | PipelineStepConfiguration<LinkIOParsed[], FuncallStateItem[]> | PipelineSelfRef> {
   if (isPipelineConfigInitial(conf) && !isPipelineRefInitial(conf) && conf.nqName)
     loadedPipelines.add(conf.nqName);
 
@@ -94,21 +97,21 @@ async function configProcessing(conf: ConfigInitialTraverseItem, loadedPipelines
 function processStaticConfig(conf: PipelineConfigurationStaticInitial) {
   const links = conf.links?.map((link) => processLinkData(link));
   const actions = processPipelineActions(conf.actions ?? []);
-  const hooks = processHooks(conf.hooks ?? {});
-  return {...conf, links, actions, hooks};
+  const onInit = processHook(conf.onInit);
+  return {...conf, links, actions, onInit};
 }
 
 function processParallelConfig(conf: PipelineConfigurationParallelInitial) {
   const actions = processPipelineActions(conf.actions ?? []);
-  const hooks = processHooks(conf.hooks ?? {});
-  return {...conf, actions, hooks, stepTypes: []};
+  const onInit = processHook(conf.onInit);
+  return {...conf, actions, onInit, stepTypes: []};
 }
 
 function processSequentialConfig(conf: PipelineConfigurationSequentialInitial) {
   const links = conf.links?.map((link) => processLinkData(link));
   const actions = processPipelineActions(conf.actions ?? []);
-  const hooks = processHooks(conf.hooks ?? {});
-  return {...conf, links, actions, hooks};
+  const onInit = processHook(conf.onInit);
+  return {...conf, links, actions, onInit};
 }
 
 async function processStepConfig(conf: PipelineStepConfiguration<LinkSpecString, never>) {
@@ -135,30 +138,23 @@ function processStepActions(actionsInput: StepActionConfiguraion<LinkSpecString>
   return actions;
 }
 
-function processHooks(hooksInput: PipelineHooks<LinkSpecString>) {
-  const hooks = Object.fromEntries(
-    Object.entries(hooksInput ?? {})?.map(
-      ([name, hooks]) => [
-        name,
-        hooks.map((link) => ({link, ...processLinkData(link)})),
-      ] as const,
-    ),
-  );
-  return hooks;
+function processHook(hooksInput?: PipelineHookConfiguration<LinkSpecString>) {
+  return hooksInput ? processLinkData(hooksInput) : undefined;
 }
 
 function processLinkData<L extends Partial<PipelineLinkConfigurationBase<LinkSpecString>>>(link: L) {
-  const from = processLink(link.from ?? [], false, true);
-  const to = processLink(link.to ?? [], false, false);
-  const base = processLink(link.base ?? [], true, false);
-  return {...link, from, to, base};
+  const from = processLink(link.from ?? [], 'input');
+  const to = processLink(link.to ?? [], 'output');
+  const base = processLink(link.base ?? [], 'base');
+  const actions = processLink(link.actions ?? [], 'actions');
+  return {...link, from, to, base, actions};
 }
 
-function processLink(io: LinkSpecString, isBase: boolean, isInput: boolean) {
+function processLink(io: LinkSpecString, ioType: 'input' | 'output' | 'base' | 'actions') {
   if (Array.isArray(io))
-    return io.map(item => parseLinkIO(item, isBase, isInput));
+    return io.map((item) => parseLinkIO(item, ioType));
   else if (io)
-    return [parseLinkIO(io, isBase, isInput)];
+    return [parseLinkIO(io, ioType)];
   else
     return [];
 }

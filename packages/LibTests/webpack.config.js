@@ -13,6 +13,11 @@ module.exports = {
   },
   resolve: {
     extensions: ['.wasm', '.mjs', '.ts', '.tsx', '.js', '.json'],
+    // Needed for rxjs test scheduler to work properly
+    alias: {
+      'rxjs': path.resolve('node_modules/rxjs'),
+      'rxjs/operator': path.resolve('node_modules/rxjs/operator'),
+    },
   },
   module: {
     rules: [

@@ -1,0 +1,36 @@
+{
+  "id": "pipelineSeq",
+  "nqName": "mockNqName",
+  "type": "sequential",
+  "stepTypes": [
+    {
+      "id": "stepMul",
+      "nqName": "LibTests:TestMul2",
+      "friendlyName": "mul",
+      "io": [
+        {
+          "id": "a",
+          "type": "double",
+          "direction": "input"
+        },
+        {
+          "id": "b",
+          "type": "double",
+          "direction": "input"
+        },
+        {
+          "id": "res",
+          "type": "double",
+          "direction": "output"
+        }
+      ],
+      "actions": []
+    },
+    {
+      "type": "selfRef",
+      "id": "pipelineSeq",
+      "selfRef": "mockNqName"
+    }
+  ],
+  "actions": []
+}

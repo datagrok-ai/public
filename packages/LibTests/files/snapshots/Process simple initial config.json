@@ -1,0 +1,22 @@
+{
+  "configId": "pipeline1",
+  "uuid": "",
+  "isReadonly": false,
+  "type": "static",
+  "steps": [
+    {
+      "type": "funccall",
+      "uuid": "",
+      "nqName": "LibTests:TestAdd2",
+      "configId": "step1",
+      "isReadonly": false
+    },
+    {
+      "type": "funccall",
+      "uuid": "",
+      "nqName": "LibTests:TestMul2",
+      "configId": "step2",
+      "isReadonly": false
+    }
+  ]
+}

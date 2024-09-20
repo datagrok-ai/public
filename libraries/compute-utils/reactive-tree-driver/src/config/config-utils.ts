@@ -1,11 +1,11 @@
 import {ItemPathArray} from '../data/common-types';
 import {buildTraverseD} from '../data/graph-traverse-utils';
 import {FuncallStateItem, PipelineConfigurationParallelProcessed, PipelineConfigurationProcessed, PipelineConfigurationSequentialProcessed, PipelineConfigurationStaticProcessed} from './config-processing-utils';
-import {LinkParsed} from './LinkSpec';
+import {LinkIOParsed} from './LinkSpec';
 import {PipelineSelfRef, PipelineStepConfiguration} from './PipelineConfiguration';
 
 
-export type PipelineStepConfigurationProcessed = PipelineStepConfiguration<LinkParsed[], FuncallStateItem[]>;
+export type PipelineStepConfigurationProcessed = PipelineStepConfiguration<LinkIOParsed[], FuncallStateItem[]>;
 export type ConfigTraverseItem = PipelineConfigurationProcessed | PipelineStepConfigurationProcessed | PipelineSelfRef;
 
 export type ConfigItem = PipelineConfigurationProcessed | PipelineStepConfigurationProcessed;
@@ -71,11 +71,20 @@ export function buildRefMap(config: PipelineConfigurationProcessed): Map<string,
   return refMap;
 }
 
-export function getConfigByInstancePath(instancePath: ItemPathArray, config: PipelineConfigurationProcessed, refMap: Map<string, PipelineConfigurationProcessed>) {
+export function getConfigByInstancePath(
+  instancePath: ItemPathArray,
+  config: PipelineConfigurationProcessed,
+  refMap: Map<string, PipelineConfigurationProcessed>,
+) {
   if (instancePath.length == 0)
     return config;
 
-  function findNextNode(items: ConfigTraverseItem[], targetSegment: string, currentPath: ItemPathArray, refMap: Map<string, PipelineConfigurationProcessed>) {
+  function findNextNode(
+    items: ConfigTraverseItem[],
+    targetSegment: string,
+    currentPath: ItemPathArray,
+    refMap: Map<string, PipelineConfigurationProcessed>,
+  ) {
     for (const item of items) {
       if (isPipelineSelfRef(item)) {
         const nitem = refMap.get(item.selfRef)!;

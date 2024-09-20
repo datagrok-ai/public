@@ -1,0 +1,104 @@
+{
+  "configId": "pipeline1",
+  "uuid": "",
+  "isReadonly": false,
+  "type": "static",
+  "steps": [
+    {
+      "configId": "pipelineSeq",
+      "uuid": "",
+      "isReadonly": false,
+      "type": "sequential",
+      "steps": [
+        {
+          "type": "funccall",
+          "uuid": "",
+          "nqName": "LibTests:TestMul2",
+          "configId": "stepMul",
+          "friendlyName": "mul",
+          "isReadonly": false
+        },
+        {
+          "type": "funccall",
+          "uuid": "",
+          "nqName": "LibTests:TestAdd2",
+          "configId": "stepAdd",
+          "friendlyName": "add",
+          "isReadonly": false
+        },
+        {
+          "type": "funccall",
+          "uuid": "",
+          "nqName": "LibTests:TestMul2",
+          "configId": "stepMul",
+          "friendlyName": "mul",
+          "isReadonly": false
+        },
+        {
+          "type": "funccall",
+          "uuid": "",
+          "nqName": "LibTests:TestAdd2",
+          "configId": "stepAdd",
+          "friendlyName": "add",
+          "isReadonly": false
+        }
+      ],
+      "stepTypes": [
+        {
+          "configId": "stepMul"
+        },
+        {
+          "configId": "stepAdd"
+        }
+      ]
+    },
+    {
+      "configId": "pipelinePar",
+      "uuid": "",
+      "isReadonly": false,
+      "type": "parallel",
+      "steps": [
+        {
+          "type": "funccall",
+          "uuid": "",
+          "nqName": "LibTests:TestAdd2",
+          "configId": "stepAdd",
+          "friendlyName": "add",
+          "isReadonly": false
+        },
+        {
+          "type": "funccall",
+          "uuid": "",
+          "nqName": "LibTests:TestAdd2",
+          "configId": "stepAdd",
+          "friendlyName": "add",
+          "isReadonly": false
+        },
+        {
+          "type": "funccall",
+          "uuid": "",
+          "nqName": "LibTests:TestMul2",
+          "configId": "stepMul",
+          "friendlyName": "mul",
+          "isReadonly": false
+        },
+        {
+          "type": "funccall",
+          "uuid": "",
+          "nqName": "LibTests:TestMul2",
+          "configId": "stepMul",
+          "friendlyName": "mul",
+          "isReadonly": false
+        }
+      ],
+      "stepTypes": [
+        {
+          "configId": "stepMul"
+        },
+        {
+          "configId": "stepAdd"
+        }
+      ]
+    }
+  ]
+}
