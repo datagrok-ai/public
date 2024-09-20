@@ -3,7 +3,7 @@ import {ItemId} from '../data/common-types';
 import {indexFromEnd} from '../utils';
 
 const linkSpecGrammar = `
-Link ::= Name ':' Segment ('/' Segment)*
+Link ::= Name (':' Segment)? ('/' Segment)*
 Segment ::=  WS* (Selector | TargetIds) WS* {fragment=true}
 Selector ::= SelectorType '(' SelectorArgs ')'
 SelectorArgs ::= ((RefArg ',' TargetIds) | TargetIds) (',' StopIds)? {fragment=true}
@@ -67,7 +67,7 @@ export function refSelectorDirection(sel: LinkRefSelectors): SelectorDirection {
   return sel.startsWith('after') ? 'after' : 'before';
 }
 
-export function parseLinkIO(io: string, ioType: 'input' | 'output' | 'base'): LinkIOParsed {
+export function parseLinkIO(io: string, ioType: 'input' | 'output' | 'base' | 'actions'): LinkIOParsed {
   const ast = linkParser.getAST(io);
   checkAST(io, ast);
   const name = ast.children.find((cnode) => cnode.type === 'Name')!.text;
@@ -98,8 +98,8 @@ export function parseLinkIO(io: string, ioType: 'input' | 'output' | 'base'): Li
       return;
     throw new Error(`Link ${io}, unknown AST node type ${node.type}`);
   }).filter((x) => !!x);
-  const lastSegment = indexFromEnd(segments)!;
-  if (ioType !== 'base' && (lastSegment.selector !== 'first'))
+  const lastSegment = indexFromEnd(segments);
+  if (lastSegment && ioType !== 'base' && (lastSegment.selector !== 'first'))
     throw new Error(`Link io ${io} ending with input/output selector`);
   return {name, segments};
 }

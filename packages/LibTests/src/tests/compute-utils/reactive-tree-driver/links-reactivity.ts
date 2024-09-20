@@ -6,7 +6,7 @@ import {LinksState} from '@datagrok-libraries/compute-utils/reactive-tree-driver
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {of} from 'rxjs';
+import { of, Subject } from 'rxjs';
 import {delay, mapTo, switchMap} from 'rxjs/operators';
 import {FuncCallInstancesBridge} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/FuncCallInstancesBridge';
 import {makeValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
@@ -551,4 +551,125 @@ category('ComputeUtils: Driver links reactivity', async () => {
     });
   });
 
+  test('Get and run pipeline validation actions', async () => {
+    const s = new Subject<string>();
+    const config3: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:TestAdd2',
+        },
+        {
+          id: 'step2',
+          nqName: 'LibTests:TestMul2',
+        },
+      ],
+      links: [{
+        id: 'link1',
+        from: 'in1:step1/a',
+        to: 'out1:step1/a',
+        actions: 'actions',
+        isValidator: true,
+        handler({controller}) {
+          const v = controller.getFirst('in1');
+          if (v === 1) {
+            const action = controller.getValidationAction('actions', 'action1');
+            s.next(action);
+          }
+          return;
+        },
+      }],
+      actions: [{
+        id: 'action1',
+        from: 'in1:step1/a',
+        to: 'out1:step1/a',
+        position: 'none',
+        handler({controller}) {
+          controller.setAll('out1', 10);
+          return;
+        },
+      }],
+    };
+
+    const pconf = await getProcessedConfig(config3);
+
+    testScheduler.run((helpers) => {
+      const {cold, expectObservable} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const inNode = tree.nodeTree.getNode([{idx: 0}]);
+      cold('-a').subscribe(() => {
+        inNode.getItem().getStateStore().setState('a', 1);
+      });
+      s.pipe(
+        delay(1),
+      ).subscribe((uuid) => {
+        tree.runAction(uuid);
+      });
+      expectObservable(inNode.getItem().getStateStore().getStateChanges('a')).toBe('ab 250ms c', { a: undefined, b: 1, c: 10 });
+    });
+  });
+
+  test('Get and run funcall validation actions', async () => {
+    const s = new Subject<string>();
+    const config3: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:TestAdd2',
+          actions: [{
+            id: 'action1',
+            from: 'in1:a',
+            to: 'out1:a',
+            position: 'none',
+            handler({controller}) {
+              controller.setAll('out1', 10);
+              return;
+            },
+          }],
+        },
+        {
+          id: 'step2',
+          nqName: 'LibTests:TestMul2',
+        },
+      ],
+      links: [{
+        id: 'link1',
+        from: 'in1:step1/a',
+        to: 'out1:step1/a',
+        actions: 'actions:step1',
+        isValidator: true,
+        handler({controller}) {
+          const v = controller.getFirst('in1');
+          if (v === 1) {
+            const action = controller.getValidationAction('actions', 'action1');
+            s.next(action);
+          }
+          return;
+        },
+      }],
+    };
+
+    const pconf = await getProcessedConfig(config3);
+
+    testScheduler.run((helpers) => {
+      const {cold, expectObservable} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const inNode = tree.nodeTree.getNode([{idx: 0}]);
+      cold('-a').subscribe(() => {
+        inNode.getItem().getStateStore().setState('a', 1);
+      });
+      s.pipe(
+        delay(1),
+      ).subscribe((uuid) => {
+        tree.runAction(uuid);
+      });
+      expectObservable(inNode.getItem().getStateStore().getStateChanges('a')).toBe('ab 250ms c', { a: undefined, b: 1, c: 10 });
+    });
+  });
 });

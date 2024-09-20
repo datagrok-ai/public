@@ -10,7 +10,7 @@ export interface IRuntimeValidatorController {
   getAll<T = any>(name: string): T[] | undefined;
   getFirst<T = any>(name: string): T | undefined;
   setValidation(name: string, validation?: ValidationResult | undefined): void;
-  getValidationAction(actionId: string): string | undefined;
+  getValidationAction(name: string, actionId: string): string | undefined;
 }
 
 export interface IRuntimeMetaController {

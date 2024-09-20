@@ -146,10 +146,11 @@ function processLinkData<L extends Partial<PipelineLinkConfigurationBase<LinkSpe
   const from = processLink(link.from ?? [], 'input');
   const to = processLink(link.to ?? [], 'output');
   const base = processLink(link.base ?? [], 'base');
-  return {...link, from, to, base};
+  const actions = processLink(link.actions ?? [], 'actions');
+  return {...link, from, to, base, actions};
 }
 
-function processLink(io: LinkSpecString, ioType: 'input' | 'output' | 'base') {
+function processLink(io: LinkSpecString, ioType: 'input' | 'output' | 'base' | 'actions') {
   if (Array.isArray(io))
     return io.map((item) => parseLinkIO(item, ioType));
   else if (io)

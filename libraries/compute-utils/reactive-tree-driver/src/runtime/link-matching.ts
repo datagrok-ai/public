@@ -19,6 +19,7 @@ export type MatchedNodePaths = Readonly<Array<MatchedIO>>;
 export type MatchInfo = {
   spec: LinkSpec | ActionSpec;
   basePath?: Readonly<NodePath>;
+  actions: Record<string, MatchedNodePaths>;
   inputs: Record<string, MatchedNodePaths>;
   outputs: Record<string, MatchedNodePaths>;
 }
@@ -34,7 +35,7 @@ export function matchLink(state: StateTree, address: NodePath, spec: LinkSpec): 
   return matchNodeLink(rnode, spec);
 }
 
-export function matchNodeLink(rnode: TreeNode<StateTreeNode>, spec: LinkSpec, basePath?: Readonly<NodePath>) {
+export function matchNodeLink(rnode: TreeNode<StateTreeNode>, spec: LinkSpec | ActionSpec, basePath?: Readonly<NodePath>) {
   const basePaths = basePath ? [{path: basePath}] : spec.base?.length ? expandLinkBase(rnode, spec.base[0]) : undefined;
   const baseName = spec.base?.length ? spec.base[0].name : undefined;
   if (basePaths == null) {
@@ -48,13 +49,15 @@ export function matchNodeLink(rnode: TreeNode<StateTreeNode>, spec: LinkSpec, ba
 
 function matchLinkInstance(
   rnode: TreeNode<StateTreeNode>,
-  spec: LinkSpec,
+  spec: LinkSpec | ActionSpec,
   base?: Readonly<MatchedIO>,
   baseName?: string,
 ): MatchInfo | undefined {
+  const actions: Record<string, MatchedNodePaths> = {};
   const matchInfo: MatchInfo = {
     spec,
     basePath: base?.path,
+    actions,
     inputs: {},
     outputs: {},
   };
@@ -62,9 +65,14 @@ function matchLinkInstance(
   if (base && baseName)
     currentIO[baseName] = [base];
 
+  for (const action of spec.actions ?? []) {
+    const parsed = matchLinkIO(rnode, currentIO, action, true);
+    actions[action.name] = parsed;
+  }
+
   const ioData = [...spec.from.map((item) => ['inputs', item] as const), ...spec.to.map((item) => ['outputs', item] as const)];
   for (const [kind, io] of ioData) {
-    const paths = matchLinkIO(rnode, currentIO, io);
+    const paths = matchLinkIO(rnode, currentIO, io, false);
     if (paths.length == 0)
       return;
     if (currentIO[io.name] != null)
@@ -101,6 +109,7 @@ function matchLinkIO(
   rnode: TreeNode<StateTreeNode>,
   currentIO: Record<string, MatchedNodePaths>,
   parsedLink: LinkIOParsed,
+  skipIO: boolean,
 ): MatchedNodePaths {
   const traverse = buildTraverseD([] as Readonly<NodePath>, (pnode: TreeNode<StateTreeNode>, path, level?: number) => {
     const segment = parsedLink.segments[level!];
@@ -128,7 +137,7 @@ function matchLinkIO(
   }, 0);
 
   const paths = traverse(rnode, (acc, node, path) => {
-    if (path.length === parsedLink.segments.length - 1) {
+    if (path.length === parsedLink.segments.length - 1 && !skipIO) {
       const ioSegment = indexFromEnd(parsedLink.segments)!;
       const ioName = ioSegment.ids[0];
       const item = node.getItem();
@@ -136,6 +145,9 @@ function matchLinkIO(
       if (state)
         return [...acc, {path, ioName}] as const;
       return acc;
+    } else if (path.length === parsedLink.segments.length && skipIO) {
+      const p = {path};
+      return [...acc, p] as const;
     }
     return acc;
   }, [] as MatchedNodePaths);

@@ -6,6 +6,7 @@ import {IRuntimeLinkController, IRuntimeMetaController, IRuntimeValidatorControl
 import {RestrictionType, ValidationResult} from '../data/common-types';
 import {StateTreeNode} from './StateTreeNodes';
 import {Action, ScopeInfo} from './Link';
+import {MatchedNodePaths} from './link-matching';
 
 export class ControllerCancelled extends Error { };
 
@@ -82,7 +83,7 @@ export class ValidatorController extends ControllerBase<ValidationResult | undef
     public inputsSet: Set<string>,
     public outputsSet: Set<string>,
     public id: string,
-    public actions: Action[],
+    public actions: Record<string, Map<string, string>>,
     public baseNode?: TreeNode<StateTreeNode>,
     public scopeInfo?: ScopeInfo,
   ) {
@@ -99,12 +100,11 @@ export class ValidatorController extends ControllerBase<ValidationResult | undef
     return this.getAll<T>(name)?.[0];
   }
 
-  getValidationAction(actionId: string): string | undefined {
+  getValidationAction(name: string, actionId: string): string | undefined {
     this.checkIsClosed();
-    if (!this.baseNode)
-      return undefined;
-    const action = this.actions.find((a) => a.matchInfo.spec.id === actionId);
-    return action?.uuid;
+    const actions = this.actions[name];
+    const actionUUID = actions?.get(actionId);
+    return actionUUID;
   }
 
   setValidation(name: string, validation?: ValidationResult | undefined) {

@@ -41,6 +41,7 @@ export type PipelineLinkConfigurationBase<P> = {
   from: P;
   to: P;
   base?: P,
+  actions?: P;
   dataFrameMutations?: boolean | string[];
   defaultRestrictions?: Record<string, RestrictionType>;
 }
@@ -48,6 +49,7 @@ export type PipelineLinkConfigurationBase<P> = {
 export type PipelineHandlerConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   isValidator?: false;
   isMeta?: false;
+  actions?: undefined;
   handler?: Handler;
 };
 
@@ -60,6 +62,7 @@ export type PipelineValidatorConfiguration<P> = PipelineLinkConfigurationBase<P>
 export type PipelineMetaConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   isValidator?: false;
   isMeta: true;
+  actions?: undefined;
   handler: MetaHandler;
 };
 
@@ -67,11 +70,11 @@ export type PipelineHookConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   isValidator?: false;
   isMeta?: false;
   base?: undefined,
+  actions?: undefined;
   handler: Handler;
 };
 
 export type PipelineLinkConfiguration<P> = PipelineHandlerConfiguration<P> | PipelineValidatorConfiguration<P> | PipelineMetaConfiguration<P> | PipelineHookConfiguration<P>;
-
 
 export type PipelineActionConfiguraion<P> = {
   position: ActionPositions;

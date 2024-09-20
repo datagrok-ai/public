@@ -560,7 +560,7 @@ export class StateTree {
     linksState?: LinksState,
   ): PipelineState | PipelineSerializedState {
     const item = node.getItem();
-    const actions = linksState ? linksState.baseNodeActions.get(item.uuid) : undefined;
+    const actions = linksState ? linksState.nodesActions.get(item.uuid) : undefined;
     if (isFuncCallNode(item))
       return isSerialized ? item.toSerializedState(options) : item.toState(options, actions);
     const state = isSerialized ? item.toSerializedState(options) : item.toState(options, actions);

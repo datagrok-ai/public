@@ -21,7 +21,7 @@ export class LinksState {
 
   public links: Map<string, Link> = new Map();
   public actions: Map<string, Action> = new Map();
-  public baseNodeActions: Map<string, Action[]> = new Map();
+  public nodesActions: Map<string, Action[]> = new Map();
   public deps: Map<string, DependenciesData> = new Map();
 
   public runningLinks$ = new BehaviorSubject<undefined | string[]>(undefined);
@@ -38,7 +38,7 @@ export class LinksState {
     this.destroyLinks();
     const links = this.createAutoLinks(state);
     this.links = new Map(links.map((link) => [link.uuid, link] as const));
-    [this.actions, this.baseNodeActions] = this.createActionLinksTree(state);
+    [this.actions, this.nodesActions] = this.createActionLinks(state);
     const deps = this.calculateDependencies(state, links);
     this.deps = deps;
     if (mutationPath) {
@@ -79,8 +79,8 @@ export class LinksState {
     return links;
   }
 
-  public createActionLinksTree(state: BaseTree<StateTreeNode>) {
-    const links = state.traverse(state.root, (acc, node, path) => {
+  public createActionLinks(state: BaseTree<StateTreeNode>) {
+    const actionEntries = state.traverse(state.root, (acc, node, path) => {
       const item = node.getItem();
       const {config} = item;
       const matchedLinks = (config.actions ?? [])
@@ -89,21 +89,19 @@ export class LinksState {
         .flat();
       const links = matchedLinks.map((minfo) => {
         const spec = minfo.spec as ActionSpec;
-        return new Action(path, minfo, spec.position, spec.friendlyName, spec.menuCategory);
+        const action = new Action(path, minfo, spec.position, spec.friendlyName, spec.menuCategory);
+        return [item.uuid, action] as const;
       });
       return [...acc, ...links];
-    }, [] as Action[]);
-    const actionsMap = new Map<string, Action[]>;
-    for (const link of links) {
-      if (link.matchInfo.basePath) {
-        const item = state.getItem(link.matchInfo.basePath);
-        const actions = actionsMap.get(item.uuid) ?? [];
-        actions.push(link);
-        actionsMap.set(item.uuid, actions);
-      }
+    }, [] as (readonly [string, Action])[]);
+    const nodeActions = new Map<string, Action[]>;
+    for (const [uuid, action] of actionEntries) {
+      const acts = nodeActions.get(uuid) ?? [];
+      acts.push(action);
+      nodeActions.set(uuid, acts);
     }
-    const actions = new Map(links.map((link) => [link.uuid, link] as const));
-    return [actions, actionsMap] as const;
+    const actionsMap = new Map(actionEntries.map(([,action]) => [action.uuid, action]));
+    return [actionsMap, nodeActions] as const;
   }
 
   // TODO: detection of cycles and double io deps, including self deps
@@ -243,6 +241,9 @@ export class LinksState {
       link.wire(state, this);
       link.setActive();
     }
+    for (const [, action] of this.actions) {
+      action.wire(state, this);
+    }
     return of(undefined);
   }
 
@@ -256,7 +257,7 @@ export class LinksState {
   }
 
   private getRunningLinks() {
-    const obs = [...this.links.values(), ...[...this.baseNodeActions.values()].flat()].map(
+    const obs = [...this.links.values(), ...[...this.nodesActions.values()].flat()].map(
       (link) => link.isRunning$.pipe(map((isRunning) => [link.uuid, isRunning] as const)));
     return merge(...obs).pipe(
       scan((acc, [uuid, isRunning]) => {
