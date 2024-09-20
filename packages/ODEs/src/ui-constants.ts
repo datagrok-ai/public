@@ -143,12 +143,23 @@ export enum ERROR_MSG {
   SENS_AN_FAILS = 'Sensitivity Analysis fails',
   FITTING_FAILS = 'Fitting fails',
   INPUTS_PATH = `Incorrect inputs path: check `,
-  INPUT_TABLE = 'Failed to load table with inputs: check file and path in ',
+  INPUT_TABLE = 'Failed to load lookup table. with inputs: check file and path in ',
   INCORRECT_INPUT_DF = 'Incorrect table with inputs: check file ',
-  INPUT_DF_1_ROW = 'At least one row is needed.',
-  INPUT_DF_1_COL = 'First column must contain strings.',
-  INPUT_DF_MIS_VALS = 'Missing values are not allowed.',
-  NO_NUM_COLS = 'No numerical columns.',
+  PLATFORM_ISSUE = 'Platform issue',
+};
+
+/** Lookup table fails */
+export enum LOOKUP_DF_FAIL {
+  LOAD = 'Failed to load lookup table: ',
+  PLATFORM = 'the platform issue',
+  COMMAND = 'check command',
+  FUNCTION = 'incorrect function',
+  NO_DF = 'no dataframe',
+  INCORRECT = 'incorrect dataframe, ',
+  ROWS = 'at least one row is needed.',
+  NULLS = 'missing values are not allowed.',
+  NUMS = 'no numerical columns.',
+  CHOICES = 'first column must contain strings.',
 };
 
 /** Other UI constants */

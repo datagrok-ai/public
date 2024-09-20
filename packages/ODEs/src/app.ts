@@ -1178,7 +1178,8 @@ export class DiffStudio {
 
   /** Set behavior of the values lookup input */
   private async setLookupChoiceInput(inputsPath: string) {
-    const inputsDf = await getInputsTable(inputsPath);
+    const inputsDf = await getInputsTable('OpenFile("System:AppData/DiffStudio/examples/bioreactor-inputs.csv")');
+    //inputsPath);
 
     if (inputsDf === null)
       return;

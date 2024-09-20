@@ -4,8 +4,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {MISC, PATH, ERROR_MSG, INPUTS_DF} from './ui-constants';
+import {MISC, PATH, ERROR_MSG, INPUTS_DF, LOOKUP_DF_FAIL} from './ui-constants';
 import {CONTROL_EXPR} from './constants';
+
+const ERR_POSTFIX = `${LOOKUP_DF_FAIL.COMMAND} in ${CONTROL_EXPR.INPUTS}'-line`;
 
 /** Return max absolute deviation between the corresponding float values of 2 dataframes */
 export function error(df1: DG.DataFrame, df2: DG.DataFrame): number {
@@ -67,64 +69,76 @@ export function getTableFromLastRows(df: DG.DataFrame, maxRows: number): DG.Data
   return DG.DataFrame.fromColumns(cols);
 }
 
-/** Return table with inputs */
-export async function getInputsTable(inputsPath: string): Promise<DG.DataFrame | null> {
-  const idx = inputsPath.indexOf('/');
-  let path: string;
+/** Load dataframe using the command */
+async function loadTable(command: string): Promise<DG.DataFrame | null> {
+  const funcCall = grok.functions.parse(command);
 
-  if (idx < 0) {
-    grok.shell.warning(`${ERROR_MSG.INPUTS_PATH}'${CONTROL_EXPR.INPUTS}'-line`);
+  if (!(funcCall instanceof DG.FuncCall)) {
+    grok.shell.warning(`${LOOKUP_DF_FAIL.LOAD}, ${LOOKUP_DF_FAIL.FUNCTION}, ${ERR_POSTFIX}`);
     return null;
   }
 
-  // Create platform path
-  if (inputsPath.includes(PATH.MY_FILES))
-    path = `${grok.shell.user.project.name}:${PATH.HOME}${inputsPath.slice(idx)}`;
-  else
-    path = `${PATH.SYSTEM}:${inputsPath}`;
+  const calledFuncCall = await funcCall.call();
+  const output = calledFuncCall.getOutputParamValue();
 
-  // Load table with inputs
+  if (!(output instanceof DG.DataFrame)) {
+    grok.shell.warning(`${LOOKUP_DF_FAIL.LOAD}, ${LOOKUP_DF_FAIL.NO_DF}, ${ERR_POSTFIX}`);
+    return null;
+  }
+
+  return output;
+}
+
+/** Check correctness of lookup table */
+function isLookupTableCorrect(table: DG.DataFrame | null): boolean {
+  if (table === null)
+    return false;
+
+  const cols = table.columns;
+
+  // check rows count
+  if (table.rowCount < INPUTS_DF.MIN_ROWS_COUNT) {
+    grok.shell.warning(`${LOOKUP_DF_FAIL.LOAD}${LOOKUP_DF_FAIL.INCORRECT}${LOOKUP_DF_FAIL.ROWS}`);
+    return false;
+  }
+
+  // check nulls & numerical cols
+  let numColsCount = 0;
+
+  for (const col of cols) {
+    if (col.stats.missingValueCount > 0) {
+      grok.shell.warning(`${LOOKUP_DF_FAIL.LOAD}${LOOKUP_DF_FAIL.INCORRECT}${LOOKUP_DF_FAIL.NULLS}`);
+      return false;
+    }
+
+    if (col.isNumerical)
+      ++numColsCount;
+  }
+
+  if (numColsCount === 0) {
+    grok.shell.warning(`${LOOKUP_DF_FAIL.LOAD}${LOOKUP_DF_FAIL.INCORRECT}${LOOKUP_DF_FAIL.NUMS}`);
+    return false;
+  }
+
+  // check column with names of inputs
+  if (cols.byIndex(INPUTS_DF.INP_NAMES_IDX).type !== DG.COLUMN_TYPE.STRING) {
+    grok.shell.warning(`${LOOKUP_DF_FAIL.LOAD}${LOOKUP_DF_FAIL.INCORRECT}${LOOKUP_DF_FAIL.CHOICES}`);
+    return false;
+  }
+
+  return true;
+} // isLookupTableCorrect
+
+/** Return table with inputs */
+export async function getInputsTable(command: string): Promise<DG.DataFrame | null> {
   try {
-    const dfs = await grok.dapi.files.readBinaryDataFrames(path);
-    const inputsDf = dfs[0];
-    const cols = inputsDf.columns;
+    const table = await loadTable(command);
 
-    const msg = `${ERROR_MSG.INCORRECT_INPUT_DF} '${path}'.`;
-
-    // check rows count
-    if (inputsDf.rowCount < INPUTS_DF.MIN_ROWS_COUNT) {
-      grok.shell.warning(`${msg} ${ERROR_MSG.INPUT_DF_1_ROW}.`);
-      return null;
-    }
-
-    // check nulls & numerical cols
-    let numColsCount = 0;
-
-    for (const col of cols) {
-      if (col.stats.missingValueCount > 0) {
-        grok.shell.warning(`${msg} ${ERROR_MSG.INPUT_DF_MIS_VALS}`);
-        return null;
-      }
-
-      if (col.isNumerical)
-        ++numColsCount;
-    }
-
-    if (numColsCount === 0) {
-      grok.shell.warning(`${msg} ${ERROR_MSG.NO_NUM_COLS}`);
-      return null;
-    }
-
-    // check column with names of inputs
-    if (cols.byIndex(INPUTS_DF.INP_NAMES_IDX).type !== DG.COLUMN_TYPE.STRING) {
-      grok.shell.warning(`${msg} ${ERROR_MSG.INPUT_DF_1_COL}`);
-      return null;
-    }
-
-    return inputsDf;
+    if (isLookupTableCorrect(table))
+      return table;
   } catch (err) {
-    grok.shell.warning(`${ERROR_MSG.INPUT_TABLE}'${CONTROL_EXPR.INPUTS}'-line`);
+    grok.shell.warning(`${LOOKUP_DF_FAIL.LOAD} ${(err instanceof Error) ? err.message : LOOKUP_DF_FAIL.PLATFORM}`);
   }
 
   return null;
-} // getInputsTable
+}
