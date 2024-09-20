@@ -4,10 +4,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {MISC, PATH, ERROR_MSG, INPUTS_DF, LOOKUP_DF_FAIL} from './ui-constants';
+import {MISC, INPUTS_DF, LOOKUP_DF_FAIL, LOOKUP_EXPR_FAIL, TITLE} from './ui-constants';
 import {CONTROL_EXPR} from './constants';
+import {CONTROL_SEP, BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR} from './scripting-tools';
 
-const ERR_POSTFIX = `${LOOKUP_DF_FAIL.COMMAND} in ${CONTROL_EXPR.INPUTS}'-line`;
+const ERR_POSTFIX = `check ${CONTROL_EXPR.INPUTS}'-line.`;
 
 /** Return max absolute deviation between the corresponding float values of 2 dataframes */
 export function error(df1: DG.DataFrame, df2: DG.DataFrame): number {
@@ -142,3 +143,65 @@ export async function getInputsTable(command: string): Promise<DG.DataFrame | nu
 
   return null;
 }
+
+/** Return specification of lookup table input */
+export function getLookupsInfo(inputsLookup: string) {
+  const info = new Map<string, string>();
+
+  const braceOpenIdx = inputsLookup.indexOf(BRACE_OPEN);
+  const braceCloseIdx = inputsLookup.indexOf(BRACE_CLOSE);
+
+  if (braceOpenIdx < 0) {
+    grok.shell.warning(`${LOOKUP_EXPR_FAIL.MISSING}"${BRACE_OPEN}", ${ERR_POSTFIX}`);
+    return null;
+  }
+
+  if (braceCloseIdx < 0) {
+    grok.shell.warning(`${LOOKUP_EXPR_FAIL.MISSING}"${BRACE_OPEN}", ${ERR_POSTFIX}`);
+    return null;
+  }
+
+  // extract name
+  info.set('name', inputsLookup.slice(0, braceOpenIdx).replaceAll(' ', ''));
+
+  // extract features
+  const options = inputsLookup.slice(braceOpenIdx + 1, braceCloseIdx).split(ANNOT_SEPAR);
+  let sepIdx: number;
+
+  for (const opt of options) {
+    sepIdx = opt.indexOf(CONTROL_SEP);
+
+    if (sepIdx < 0) {
+      grok.shell.warning(`${LOOKUP_EXPR_FAIL.MISSING}"${CONTROL_SEP}", ${ERR_POSTFIX}`);
+      return null;
+    }
+
+    info.set(opt.slice(0, sepIdx).trim(), opt.slice(sepIdx + 1).trim());
+  }
+
+  // extract tooltip
+  const bracketOpenIdx = inputsLookup.indexOf(BRACKET_OPEN);
+  if (bracketOpenIdx > 0) {
+    const bracketCloseIdx = inputsLookup.indexOf(BRACKET_CLOSE);
+
+    if (bracketCloseIdx < 0) {
+      grok.shell.warning(`${LOOKUP_EXPR_FAIL.MISSING}"${BRACKET_CLOSE}", ${ERR_POSTFIX}`);
+      return null;
+    }
+
+    info.set(MISC.TOOLTIP, inputsLookup.slice(bracketOpenIdx + 1, bracketCloseIdx));
+  }
+
+  if (info.get(MISC.CHOICES) === undefined) {
+    grok.shell.warning(`${LOOKUP_EXPR_FAIL.MISSING}"${MISC.CHOICES}"-expression, ${ERR_POSTFIX}`);
+    return null;
+  }
+
+  return {
+    name: info.get(MISC.NAME) ?? '',
+    caption: info.get(MISC.CAPTION) ?? (info.get(MISC.NAME) ?? ''),
+    category: info.get(MISC.CATEGORY) ?? TITLE.MISC,
+    tooltip: info.get(MISC.TOOLTIP) ?? '',
+    choices: info.get(MISC.CHOICES),
+  };
+} // getLookupsInfo

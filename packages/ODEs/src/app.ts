@@ -21,7 +21,7 @@ import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
   CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS} from './scripting-tools';
 import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools/solver-defs';
-import {unusedFileName, getTableFromLastRows, getInputsTable} from './utils';
+import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo} from './utils';
 
 import '../css/app-styles.css';
 
@@ -1050,7 +1050,7 @@ export class DiffStudio {
     }; // getOptions
 
     const inputsByCategories = new Map<string, DG.InputBase[]>();
-    const toSaveInputs = ivp.inputsPath !== null;
+    const toSaveInputs = ivp.inputsLookup !== null;
     this.inputByName = toSaveInputs ? new Map<string, DG.InputBase>() : null;
     inputsByCategories.set(TITLE.MISC, []);
     let options: DG.PropertyOptions;
@@ -1172,8 +1172,10 @@ export class DiffStudio {
 
     this.lookupChoiceInput = null;
 
-    if (toSaveInputs)
-      await this.setLookupChoiceInput(ivp.inputsPath);
+    if (toSaveInputs) {
+      await this.setLookupChoiceInput(ivp.inputsLookup);
+      console.log(getLookupsInfo(ivp.inputsLookup));
+    }
   } // getInputsUI
 
   /** Set behavior of the values lookup input */

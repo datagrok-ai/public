@@ -142,9 +142,6 @@ export enum ERROR_MSG {
   INCORRECT_MODEL = 'Incorrect model',
   SENS_AN_FAILS = 'Sensitivity Analysis fails',
   FITTING_FAILS = 'Fitting fails',
-  INPUTS_PATH = `Incorrect inputs path: check `,
-  INPUT_TABLE = 'Failed to load lookup table. with inputs: check file and path in ',
-  INCORRECT_INPUT_DF = 'Incorrect table with inputs: check file ',
   PLATFORM_ISSUE = 'Platform issue',
 };
 
@@ -152,7 +149,6 @@ export enum ERROR_MSG {
 export enum LOOKUP_DF_FAIL {
   LOAD = 'Failed to load lookup table: ',
   PLATFORM = 'the platform issue',
-  COMMAND = 'check command',
   FUNCTION = 'incorrect function',
   NO_DF = 'no dataframe',
   INCORRECT = 'incorrect dataframe, ',
@@ -162,6 +158,11 @@ export enum LOOKUP_DF_FAIL {
   CHOICES = 'first column must contain strings.',
 };
 
+/** Lookup table specification fails */
+export enum LOOKUP_EXPR_FAIL {
+  MISSING = 'Incorrect input: missing ',
+};
+
 /** Other UI constants */
 export enum MISC {
   VIEW_DEFAULT_NAME = 'Template',
@@ -169,6 +170,11 @@ export enum MISC {
   TXT_EXT = 'txt',
   FILE_DEFAULT_NAME = `equations.${IVP_EXT}`,
   DEFAULT = 'Default',
+  CHOICES = 'choices',
+  NAME = 'name',
+  CATEGORY = 'category',
+  CAPTION = 'caption',
+  TOOLTIP = 'tooltip',
 };
 
 /** Warning dialog lines */
