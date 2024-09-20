@@ -11,7 +11,7 @@ import {
   MolfileWithMap, MolGraph, MonomerMap, MonomerMapValue, MonomerMolGraphMap, SeqToMolfileWorkerData, SeqToMolfileWorkerRes
 } from './types';
 import {ToAtomicLevelRes} from '../utils/seq-helper';
-import {getMolColName, getMolHighlightColName, hexToPercentRgb} from './utils';
+import {getMolColName, hexToPercentRgb} from './utils';
 import {SeqHandler} from '../utils/seq-handler';
 import {IMonomerLib} from '../types';
 import {ISeqMonomer, PolymerType} from '../helm/types';
@@ -74,16 +74,13 @@ export async function seqToMolFileWorker(seqCol: DG.Column<string>, monomersDict
     });
   }, 0);
   const molColName = getMolColName(df, seqCol.name);
-  const molHlColName = getMolHighlightColName(df, molColName);
   const molCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, molColName, seqCol.length)
     .init((rowIdx) => molList[rowIdx].molfile);
-  const molHlCol = DG.Column.fromType(DG.COLUMN_TYPE.OBJECT, molHlColName, seqCol.length)
-    .init((rowIdx) => molHlList[rowIdx]);
   molCol.semType = DG.SEMTYPE.MOLECULE;
   molCol.meta.units = DG.UNITS.Molecule.MOLBLOCK;
   molCol.setTag(ChemTags.SEQUENCE_SRC_COL, seqCol.name);
 
-  return {mol: {col: molCol, highlightCol: molHlCol}, warnings: warnings};
+  return {molCol: molCol, warnings: warnings};
 }
 
 export function getMolHighlight(monomerMaps: Iterable<MonomerMapValue>, monomerLib: IMonomerLib): ISubstruct {

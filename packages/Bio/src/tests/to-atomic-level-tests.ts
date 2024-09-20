@@ -228,7 +228,7 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr
     const res = await _toAtomicLevel(df, seqCol, monomerLib, rdKitModule);
     if (res.warnings.length > 0)
       _package.logger.warning(`_toAtomicLevel() warnings ${res.warnings.join('\n')}`);
-    return res.mol!.col;
+    return res.molCol;
   }
 });
 

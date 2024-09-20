@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 
+import {ISubstructProvider} from '@datagrok-libraries/chem-meta/src/types';
 import {PolymerType} from '@datagrok-libraries/js-draw-lite/src/types/org';
 
 import {OrgType} from '../helm/types';
@@ -16,7 +17,7 @@ declare const org: OrgType;
 export type MonomerHoverLink = {
   targetCol: DG.Column,
   handler(seqGridCell: DG.GridCell, monomer: ISeqMonomer | null, targetGridCol: DG.GridColumn): boolean;
-};
+} & ISubstructProvider;
 
 export function getUnusedName(df: DG.DataFrame | undefined, colName: string): string {
   if (!df) return colName;
@@ -25,10 +26,6 @@ export function getUnusedName(df: DG.DataFrame | undefined, colName: string): st
 
 export function getMolColName(df: DG.DataFrame | undefined, seqColName: string): string {
   return getUnusedName(df, `molfile(${seqColName})`);
-}
-
-export function getMolHighlightColName(df: DG.DataFrame | undefined, molColName: string): string {
-  return getUnusedName(df, `~${molColName}-monomer-hl`);
 }
 
 export function alphabetToPolymerType(alphabet: ALPHABET): PolymerType {

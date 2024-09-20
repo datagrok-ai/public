@@ -8,11 +8,11 @@ import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getSeqHelper, ToAtomicLevelRes} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
+import {ChemTags, ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
 import {buildMonomerHoverLink} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
 
 import {checkInputColumnUI} from './check-input-column';
-import {getMolColName, getMolHighlightColName} from '@datagrok-libraries/bio/src/monomer-works/utils';
+import {getMolColName} from '@datagrok-libraries/bio/src/monomer-works/utils';
 
 export async function sequenceToMolfile(
   df: DG.DataFrame, macroMolecule: DG.Column, nonlinear: boolean, highlight: boolean,
@@ -44,24 +44,18 @@ export async function sequenceToMolfile(
     }
   } else { // linear
     if (!checkInputColumnUI(macroMolecule, 'To Atomic Level'))
-      return {mol: null, warnings: ['Column is not suitable']};
+      return {molCol: null, warnings: ['Column is not suitable']};
 
     res = await _toAtomicLevel(df, macroMolecule, monomerLib, rdKitModule);
   }
 
-
-  if (res.mol) {
+  if (res.molCol) {
     const molColName = getMolColName(df, macroMolecule.name);
-    const molHlColName = getMolHighlightColName(df, molColName);
-    res.mol.col.name = molColName;
-    df.columns.add(res.mol!.col, true);
+    res.molCol.name = molColName;
+    df.columns.add(res.molCol, true);
 
-    if (highlight) {
-      res.mol.highlightCol.name = molHlColName;
-      df.columns.add(res.mol.highlightCol);
-      res.mol!.col.temp[ChemTemps.SUBSTRUCT_COL] = molHlColName;
-    }
-    buildMonomerHoverLink(macroMolecule, res.mol!.col, monomerLib, rdKitModule);
+    buildMonomerHoverLink(macroMolecule, res.molCol, monomerLib, rdKitModule);
+    res.molCol.setTag(ChemTags.SEQUENCE_SRC_HL_MONOMERS, String(highlight));
     await grok.data.detectSemanticTypes(df);
   }
   return res;

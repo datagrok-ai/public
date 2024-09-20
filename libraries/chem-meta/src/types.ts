@@ -1,8 +1,15 @@
+import {ChemTemps} from './consts';
+
 export interface ISubstruct {
   atoms?: number[],
   bonds?: number[],
   highlightAtomColors?: { [key: number]: number[] | null },
   highlightBondColors?: { [key: number]: number[] | null }
+}
+
+export interface ISubstructProvider {
+  /** To highlight */
+  getSubstruct(tableRowIndex: number | null): ISubstruct | undefined;
 }
 
 export type MonomerHoverData = {
@@ -28,4 +35,17 @@ export function getMonomerHover(): MonomerHoverData | null {
 
 export function setMonomerHover(value: MonomerHoverData | null): void {
   window.$monomerHover = value;
+}
+
+export function addSubstructProvider(colTemp: any, substructProvider: ISubstructProvider): void {
+  let list = colTemp[ChemTemps.SUBSTRUCT_PROVIDERS];
+  if (!list)
+    list = colTemp[ChemTemps.SUBSTRUCT_PROVIDERS] = [];
+  list.push(substructProvider);
+  colTemp[ChemTemps.SUBSTRUCT_PROVIDERS] = list;
+}
+
+export function getSubstructProviders(colTemp: any): ISubstructProvider[] {
+  if (!colTemp) return [];
+  return colTemp[ChemTemps.SUBSTRUCT_PROVIDERS];
 }

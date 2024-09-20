@@ -5,7 +5,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {getMonomerHover} from '@datagrok-libraries/chem-meta/src/types';
+import {getMonomerHover, getSubstructProviders} from '@datagrok-libraries/chem-meta/src/types';
 import {ChemTags, ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
@@ -73,9 +73,11 @@ export class GridCellRendererProxy extends DG.GridCellRenderer {
   }
 
   get defaultWidth(): number | null {return this.renderer.defaultWidth;}
+
   get defaultHeight(): number | null {return this.renderer.defaultHeight;}
 
   get name(): string {return this.renderer.name;}
+
   get cellType(): string {return this._cellType;}
 
   render(
@@ -120,8 +122,11 @@ M  END
   }
 
   get name(): string {return 'RDKit cell renderer';}
+
   get cellType(): DG.SemType {return DG.SEMTYPE.MOLECULE;}
+
   get defaultWidth(): number {return 200;}
+
   get defaultHeight(): number {return 100;}
 
   getDefaultSize(): { width: number, height: number } {
@@ -441,8 +446,10 @@ M  END
       return;
 
     const r = window.devicePixelRatio;
-    x = r * x; y = r * y;
-    w = r * w; h = r * h;
+    x = r * x;
+    y = r * y;
+    w = r * w;
+    h = r * h;
 
     // value-based drawing (coming from HtmlCellRenderer.renderValue)
     if (gridCell.cell.column == null) {
@@ -520,6 +527,10 @@ M  END
       const rawSubstructCol = df.columns.byName(colTemp[ChemTemps.SUBSTRUCT_COL]);
       if (rawSubstructCol)
         substructObj = rawSubstructCol.get(idx!);
+    } else {
+      const substructList = getSubstructProviders(gridCell.tableColumn?.temp)
+        .map((p) => p.getSubstruct(gridCell.tableRowIndex));
+      substructObj = mergeSubstructs(substructList);
     }
 
     if (rowScaffoldCol == null || rowScaffoldCol.name === gridCell.cell.column.name) {
@@ -578,4 +589,15 @@ function hasNonZeroZCoords(molfile: string, numAtoms: number): boolean {
     }
   }
   return false;
+}
+
+function mergeSubstructs(substructList: (ISubstruct | undefined)[]): ISubstruct | undefined {
+  if (substructList.length === 0)
+    return undefined;
+  else if (substructList.length === 1)
+    return substructList[0];
+  else {
+    throw new Error('Multiple substruct providers are not supported.');
+    // TODO: Average colors for atoms and bonds (or just merge lists)
+  }
 }

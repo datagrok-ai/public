@@ -33,7 +33,7 @@ export async function _toAtomicLevel(
   if (seqCol.semType !== DG.SEMTYPE.MACROMOLECULE) {
     const msg: string = `Only the ${DG.SEMTYPE.MACROMOLECULE} columns can be converted to atomic level, ` +
       `the chosen column has semType '${seqCol.semType}'`;
-    return {mol: null, warnings: [msg]};
+    return {molCol: null, warnings: [msg]};
   }
 
   let srcCol: DG.Column<string> = seqCol;
@@ -53,7 +53,7 @@ export async function _toAtomicLevel(
     polymerType = alphabetToPolymerType(alphabet);
   } catch (err: any) {
     const [errMsg, _errStack] = errInfo(err);
-    return {mol: null, warnings: [errMsg]};
+    return {molCol: null, warnings: [errMsg]};
   }
 
   const monomerSequencesArray: ISeqMonomer[][] = getMonomerSequencesArray(srcCol);

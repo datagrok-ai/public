@@ -38,6 +38,7 @@ import {
 import * as C from './constants';
 
 import {_package, getMonomerLib} from '../package';
+import {GridCell} from 'datagrok-api/dg';
 
 type TempType = { [tagName: string]: any };
 
@@ -89,7 +90,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     gridCell.grid.invalidate();
   }
 
-  onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
+  override onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
     if (gridCell.tableRowIndex == null) return;
 
     // if (gridCell.cell.column.getTag(bioTAGS.aligned) !== ALIGNMENT.SEQ_MSA)
@@ -136,7 +137,12 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     } else {
       //
       ui.tooltip.hide();
+      execMonomerHoverLinks(gridCell, null);
     }
+  }
+
+  override onMouseLeave(gridCell: GridCell, e: MouseEvent) {
+    execMonomerHoverLinks(gridCell, null);
   }
 
   /**

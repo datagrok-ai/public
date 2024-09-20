@@ -3,10 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 export type ToAtomicLevelRes = {
-  mol: {
-    col: DG.Column<string>,
-    highlightCol: DG.Column<object>,
-  } | null,
+  molCol: DG.Column<string> | null,
   warnings: string[],
 }
 

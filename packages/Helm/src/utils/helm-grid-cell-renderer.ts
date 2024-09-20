@@ -145,6 +145,10 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
     execMonomerHoverLinks(gridCell, seqMonomer);
   }
 
+  onMouseLeave(gridCell: DG.GridCell, e: MouseEvent): void {
+    execMonomerHoverLinks(gridCell, null);
+  }
+
   public override render(g: CanvasRenderingContext2D,
     x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
@@ -186,6 +190,19 @@ export class HelmGridCellRenderer extends DG.GridCellRenderer {
     const logPrefix = `Helm: HelmGridCellRenderer.onMouseMove()`;
     try {
       HelmGridCellRendererBack.getOrCreate(gridCell).onMouseMove(gridCell, e);
+    } catch (err: any) {
+      const [errMsg, errStack] = errInfo(err);
+      _package.logger.error(errMsg, undefined, errStack);
+    } finally {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }
+
+  override onMouseLeave(gridCell: DG.GridCell, e: MouseEvent) {
+    const logPrefix = `Helm: HelmGridCellRenderer.onMouseLeave()`;
+    try {
+      HelmGridCellRendererBack.getOrCreate(gridCell).onMouseLeave(gridCell, e);
     } catch (err: any) {
       const [errMsg, errStack] = errInfo(err);
       _package.logger.error(errMsg, undefined, errStack);
