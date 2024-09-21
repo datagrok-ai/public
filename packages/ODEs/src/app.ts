@@ -420,9 +420,9 @@ export class DiffStudio {
   private isRecentRun = false;
 
   private inputsByCategories = new Map<string, DG.InputBase[]>();
-  private lookupChoiceInput: DG.InputBase | null = null;
   private toPreventSolving = false;
   private inputByName: Map<string, DG.InputBase> | null = null;
+  private topCategory: string | null = null;
 
   constructor(toAddTableView: boolean = true, toDockTabCtrl: boolean = true, isFilePreview: boolean = false,
     browsing?: Browsing) {
@@ -916,17 +916,20 @@ export class DiffStudio {
           this.inputsPanel.removeChild(this.prevInputsNode);
 
         const form = ui.form([]);
-
-        if (this.lookupChoiceInput !== null) {
-          form.append(this.lookupChoiceInput.root);
-          this.lookupChoiceInput.input.classList.add('diff-studio-app-input-choice');
-        }
+        const miscInputs = this.inputsByCategories.get(TITLE.MISC);
 
         if (this.inputsByCategories.size === 1)
-          this.inputsByCategories.get(TITLE.MISC)!.forEach((input) => form.append(input.root));
+          miscInputs.forEach((input) => form.append(input.root));
         else {
+          if (this.topCategory !== null) {
+            form.append(ui.h2(this.topCategory));
+            this.inputsByCategories.get(this.topCategory).forEach((inp) => {
+              form.append(inp.root);
+            });
+          }
+
           this.inputsByCategories.forEach((inputs, category) => {
-            if (category !== TITLE.MISC) {
+            if ((category !== TITLE.MISC) && (category !== this.topCategory)) {
               form.append(ui.h2(category));
               inputs.forEach((inp) => {
                 form.append(inp.root);
@@ -934,11 +937,11 @@ export class DiffStudio {
             }
           });
 
-          if (this.inputsByCategories.get(TITLE.MISC)!.length > 0) {
+          if ((miscInputs.length > 0) && (this.topCategory !== TITLE.MISC)) {
             form.append(ui.h2(TITLE.MISC));
-              this.inputsByCategories.get(TITLE.MISC)!.forEach((inp) => {
-                form.append(inp.root);
-              });
+            miscInputs.forEach((inp) => {
+              form.append(inp.root);
+            });
           }
         }
 
@@ -1051,6 +1054,7 @@ export class DiffStudio {
 
     const inputsByCategories = new Map<string, DG.InputBase[]>();
     const toSaveInputs = ivp.inputsLookup !== null;
+    this.topCategory = null;
     this.inputByName = toSaveInputs ? new Map<string, DG.InputBase>() : null;
     inputsByCategories.set(TITLE.MISC, []);
     let options: DG.PropertyOptions;
@@ -1170,8 +1174,6 @@ export class DiffStudio {
 
     this.inputsByCategories = inputsByCategories;
 
-    this.lookupChoiceInput = null;
-
     if (toSaveInputs)
       await this.setLookupChoiceInput(ivp.inputsLookup);
   } // getInputsUI
@@ -1240,10 +1242,11 @@ export class DiffStudio {
       },
     });
 
+    this.topCategory = lookupInfo.category;
     const catorizedInputs = this.inputsByCategories.get(lookupInfo.category);
 
     if (catorizedInputs !== undefined)
-      catorizedInputs.push(lookupChoiceInput);
+      this.inputsByCategories.set(lookupInfo.category, [lookupChoiceInput as DG.InputBase].concat(catorizedInputs));
     else
       this.inputsByCategories.set(lookupInfo.category, [lookupChoiceInput]);
   } // setLookupChoiceInput
