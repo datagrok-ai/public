@@ -110,8 +110,6 @@ export const RichFunctionView = Vue.defineComponent({
     });
 
     const run = async () => {
-      // currentCall.value.newId();
-      // await currentCall.value.call();
       emit('runClicked');
     };
 

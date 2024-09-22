@@ -242,7 +242,7 @@ export async function FormApp() {
   const view = new DG.ViewBase();
   const app = Vue.createApp(FormAppInstance);
   app.mount(view.root);
-  view.name = 'FormAppInstance';
+  view.name = 'FormApp';
   grok.shell.addView(view);
 }
 
@@ -252,7 +252,7 @@ export async function ElementsApp() {
   const view = new DG.ViewBase();
   const app = Vue.createApp(ElementsAppInstance);
   app.mount(view.root);
-  view.name = 'ElementsAppInstance';
+  view.name = 'ElementsApp';
   grok.shell.addView(view);
 }
 
@@ -262,7 +262,7 @@ export async function RFVApp() {
   const app = Vue.createApp(RFVAppInstance);
   app.mount(view.root);
   grok.shell.addView(view);
-  view.name = 'RFVAppInstance';
+  view.name = 'RFVApp';
   view.root.classList.remove('ui-panel');
 }
 

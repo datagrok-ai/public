@@ -9,7 +9,7 @@ import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src
 import {useSubscription} from '@vueuse/rxjs';
 import {
   isFuncCallState, isParallelPipelineState, 
-  isSequentialPipelineState, PipelineState,
+  isSequentialPipelineState, isStaticPipelineState, PipelineState,
   StepFunCallState,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {RichFunctionView} from '../components/RFV/RichFunctionView';
@@ -20,6 +20,29 @@ import {dragContext} from '@he-tree/vue';
 import '@he-tree/vue/style/default.css';
 import '@he-tree/vue/style/material-design.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
+import {BehaviorSubject} from 'rxjs';
+
+const findTreeNode = (uuid: string, state: PipelineState): PipelineState | undefined => {
+  let foundState = undefined as PipelineState | undefined;
+  const notVisitedStates = [state];
+  
+  while (notVisitedStates.length > 0 && !foundState) {
+    const currentState = notVisitedStates.pop()!;
+    if (
+      isParallelPipelineState(currentState) ||
+      isSequentialPipelineState(currentState) || 
+      isStaticPipelineState(currentState)
+    ) 
+      notVisitedStates.push(...currentState.steps);
+    else {
+      if (currentState.uuid === uuid) 
+        foundState = currentState;
+    }
+  }
+
+  return foundState;
+};
 
 export const DriverApp = Vue.defineComponent({
   name: 'DriverApp',
@@ -27,16 +50,17 @@ export const DriverApp = Vue.defineComponent({
     const driver = new Driver();
     const isLocked = Vue.ref(false);
     const treeState = Vue.shallowRef<PipelineState | undefined>(undefined);
+    const callsInfo = Vue
+      .shallowRef<Record<string, BehaviorSubject<FuncCallStateInfo | undefined>> | undefined>(undefined);
+    const chosenStepUuid = Vue.ref<string | undefined>(undefined);
 
-    const chosenStepState = Vue.shallowRef<PipelineState | undefined>(undefined);
+    const chosenStepState = Vue.computed(() => {
+      if (!chosenStepUuid.value || !treeState.value) return null;
+
+      return findTreeNode(chosenStepUuid.value, treeState.value);
+    });
 
     const treeInstance = Vue.ref(null as InstanceType<typeof Draggable> | null);
-
-    const changeCurrentState = (state: PipelineState) => {
-      isVisibleRfv.value = true;
-
-      chosenStepState.value = state;
-    };
 
     const isVisibleRfv = Vue.ref(true);
 
@@ -55,6 +79,8 @@ export const DriverApp = Vue.defineComponent({
       treeState.value = s;
     }));
 
+    useSubscription((driver.currentCallsState$).subscribe((s) => callsInfo.value = s));
+
     const restoreOpenedNodes = (stat: AugmentedStat) => {
       if (oldClosed.includes(stat.data.uuid)) 
         stat.open = false;
@@ -72,12 +98,7 @@ export const DriverApp = Vue.defineComponent({
     };
 
     const runStep = async (uuid: string) => {
-      // driver.sendCommand({event: 'runStep', uuid});
-      if (chosenStepState.value && isFuncCallState(chosenStepState.value) && chosenStepState.value.funcCall) {
-        await chosenStepState.value.funcCall.call();
-        chosenStepState.value.funcCall = chosenStepState.value.funcCall;
-        Vue.triggerRef(chosenStepState);
-      }
+      driver.sendCommand({event: 'runStep', uuid});
     };
 
     const addStep = (parentUuid: string, itemId: string, position: number) => {
@@ -97,10 +118,6 @@ export const DriverApp = Vue.defineComponent({
 
       ui.setUpdateIndicator(treeInstance.value.$el, newVal);
     });
-
-    const chosenStepUuid = Vue.computed(() => 
-      chosenStepState.value && isFuncCallState(chosenStepState.value) ? chosenStepState.value.uuid: null,
-    );
 
     const treeHidden = Vue.ref(false);
     const rfvRef = Vue.ref(null as InstanceType<typeof RichFunctionView> | null);
@@ -140,7 +157,11 @@ export const DriverApp = Vue.defineComponent({
                       [new Uint8Array(await blob.arrayBuffer()), {level: 0}];
                   }
 
-                  if (isSequentialPipelineState(state) || isParallelPipelineState(state)) {
+                  if (
+                    isSequentialPipelineState(state) || 
+                    isParallelPipelineState(state) || 
+                    isStaticPipelineState(state)
+                  ) {
                     const nestedPath = previousPath.length > 0 ? 
                       `${previousPath}/${state.friendlyName ?? state.nqName}`: 
                       `${state.friendlyName ?? state.nqName}`;
@@ -196,7 +217,7 @@ export const DriverApp = Vue.defineComponent({
                     onRemoveNode={() => removeStep(stat.data.uuid)}
                     onClick={() => {
                       if (isFuncCallState(stat.data) && stat.data.funcCall) 
-                        changeCurrentState({...stat.data}); 
+                        chosenStepUuid.value = stat.data.uuid;
                       else 
                         isVisibleRfv.value = false;
                     }}
@@ -211,7 +232,8 @@ export const DriverApp = Vue.defineComponent({
             isFuncCallState(chosenStepState.value) && chosenStepState.value.funcCall &&
             <RichFunctionView 
               class='overflow-hidden'
-              funcCall={Utils.deepCopy(chosenStepState.value.funcCall)}
+              funcCall={chosenStepState.value.funcCall}
+              key={ `${callsInfo.value?.[chosenStepUuid.value!]?.value?.isOutputOutdated}` }
               onUpdate:funcCall={(call) => (chosenStepState.value as StepFunCallState).funcCall = call}
               onRunClicked={() => runStep(chosenStepState.value!.uuid)}
               {...{title: 'Step review'}}
