@@ -142,7 +142,7 @@ export const DriverApp = Vue.defineComponent({
               if (treeState.value) {
                 const zipConfig = {} as Zippable;
 
-                const reportStep = async (previousPath: string, state: PipelineState) => {
+                const reportStep = async (idx: number, previousPath: string, state: PipelineState) => {
                   if (isFuncCallState(state) && state.funcCall) {
                     const funccall = state.funcCall;
 
@@ -153,7 +153,9 @@ export const DriverApp = Vue.defineComponent({
                       Utils.dfToViewerMapping(funccall),
                     );
 
-                    zipConfig[`${previousPath}/${Utils.getFuncCallDefaultFilename(funccall)}`] =
+                    zipConfig[
+                      `${previousPath}/${String(idx).padStart(3, '0')}_${Utils.getFuncCallDefaultFilename(funccall)}`
+                    ] =
                       [new Uint8Array(await blob.arrayBuffer()), {level: 0}];
                   }
 
@@ -163,17 +165,17 @@ export const DriverApp = Vue.defineComponent({
                     isStaticPipelineState(state)
                   ) {
                     const nestedPath = previousPath.length > 0 ? 
-                      `${previousPath}/${state.friendlyName ?? state.nqName}`: 
-                      `${state.friendlyName ?? state.nqName}`;
-                    for (const stepState of state.steps) 
-                      await reportStep(nestedPath, stepState);
+                      `${previousPath}/${String(idx).padStart(3, '0')}_${state.friendlyName ?? state.nqName}`: 
+                      `${String(idx).padStart(3, '0')}_${state.friendlyName ?? state.nqName}`;
+                    for (const [idx, stepState] of state.steps.entries()) 
+                      await reportStep(idx + 1, nestedPath, stepState);
                   }
                 }; 
                 
-                await reportStep('', treeState.value);
+                await reportStep(1, '', treeState.value);
 
                 DG.Utils.download(
-                  `${treeState.value.friendlyName ?? treeState.value.configId}.xlsx`, 
+                  `${treeState.value.friendlyName ?? treeState.value.configId}.zip`, 
                   new Blob([zipSync(zipConfig)]),
                 );
               }
