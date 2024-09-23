@@ -2,10 +2,8 @@
 /* eslint-disable valid-jsdoc */
 import fs from 'fs';
 import path from 'path';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { runScript } from '../utils/utils';
 
-const execAsync = promisify(exec);
 const repositoryDirNameRegex = new RegExp(path.join('1', '2')[1] + 'public$');
 
 const curDir = process.cwd();
@@ -103,19 +101,6 @@ async function linkPackages() {
   let names = localPackageDependencies.map(x => x.name);
   await runScript(`npm install`, curDir);
   await runScript(`npm link ${names.join(' ')}`, curDir);
-}
-
-async function runScript(script: string, path: string) {
-  try {
-    const { stdout, stderr } = await execAsync(script, { cwd: path });
-    if (stderr) {
-      console.error(`Error: ${stderr}`);
-    } else {
-      // console.log(`Output: ${stdout}`);
-    }
-  } catch (error: any) {
-    console.error(`Execution failed: ${error.message}`);
-  }
 }
 
 class PackageData {

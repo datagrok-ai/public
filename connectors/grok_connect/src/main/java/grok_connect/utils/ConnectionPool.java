@@ -1,69 +1,66 @@
 package grok_connect.utils;
 
+import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.pool.HikariPool;
+import grok_connect.connectors_info.DbCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Collections;
-import java.util.HashMap;
+import java.sql.SQLTransientConnectionException;
 import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ConnectionPool {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionPool.class);
-    private static volatile ConnectionPool instance;
-    private final Map<String, HikariDataSourceInformation> connectionPool;
+    private static final Map<String, HikariDataSource> connectionPool = new ConcurrentHashMap<>();
 
-    private ConnectionPool() {
-        connectionPool = Collections.synchronizedMap(new HashMap<>());
-    }
-
-    public static synchronized ConnectionPool getInstance() {
-        if (instance == null)
-            instance = new ConnectionPool();
-        return instance;
-    }
-
-    public Connection getConnection(String url, java.util.Properties properties, String driverClassName)
+    public static Connection getConnection(String url, java.util.Properties properties, String driverClassName)
             throws GrokConnectException {
         try {
             LOGGER.debug("getConnection was called for driver {} with url {}", driverClassName, url);
-            if (url == null || properties == null || driverClassName == null)
+            if (GrokConnectUtil.isEmpty(url) || properties == null || GrokConnectUtil.isEmpty(driverClassName))
                 throw new GrokConnectException("Connection parameters are null");
             String key = url + properties + driverClassName;
-            synchronized(this) {
-                if (!connectionPool.containsKey(key))
-                    connectionPool.put(key, new HikariDataSourceInformation(url, properties, driverClassName));
-                HikariDataSource hikariDataSource = connectionPool.get(key).hikariDataSource;
-                return hikariDataSource.getConnection();
-            }
+            HikariDataSource ds = connectionPool.computeIfAbsent(key, k -> getDataSource(url, properties, driverClassName));
+            return ds.getConnection();
+        } catch (HikariPool.PoolInitializationException | SQLTransientConnectionException e) {
+            Throwable cause = e.getCause();
+            throw new GrokConnectException(cause != null ? cause : e);
         } catch (SQLException e) {
             throw new GrokConnectException(e);
-        } catch (HikariPool.PoolInitializationException e) {
-            throw new GrokConnectException(e.getCause());
         }
     }
 
-    public Map<String, Connection> nativeConnectionsConnectionPool = Collections.synchronizedMap(new HashMap<>());
+    private static HikariDataSource getDataSource(String url, Properties properties, String driverClassName) {
+        LOGGER.info("Initializing pool for driver {} with url {}", driverClassName, url);
+        Properties propertiesWithoutPass = new Properties();
+        propertiesWithoutPass.putAll(properties);
+        propertiesWithoutPass.remove(DbCredentials.LOGIN);
+        propertiesWithoutPass.remove(DbCredentials.PASSWORD);
+        propertiesWithoutPass.remove(DbCredentials.ACCESS_KEY);
+        propertiesWithoutPass.remove(DbCredentials.SECRET_KEY);
+        propertiesWithoutPass.remove(DbCredentials.ACCOUNT_LOCATOR);
+        propertiesWithoutPass.remove(DbCredentials.UID);
+        propertiesWithoutPass.remove(DbCredentials.PWD);
 
-    Connection getNativeConnection(String url, java.util.Properties info, String driverClassName) {
-        LOGGER.debug("getNativeConnection was called for driver {} with url {}", driverClassName, url);
-        String key = url + info + driverClassName;
-        if (url != null && info != null && driverClassName != null && nativeConnectionsConnectionPool.containsKey(key)) {
-            Connection conn = nativeConnectionsConnectionPool.get(key);
-            try {
-                if (!conn.isClosed())
-                    return nativeConnectionsConnectionPool.get(key);
-            } catch (SQLException throwables) {
-                LOGGER.warn("An exception was thrown", throwables);
-            }
-        }
-        return null;
-    }
-
-    void putNativeConnection(Connection conn, String url, java.util.Properties info, String driverClassName) {
-        if (url != null && info != null && driverClassName != null)
-            nativeConnectionsConnectionPool.put(url + info + driverClassName, conn);
+        String alphanumeric = "[^A-Za-z\\d./|=]";
+        String poolName = "Host - " + url.replaceAll("[:=]", "|").replaceAll(alphanumeric, "") +
+                " . Properties - " + propertiesWithoutPass.toString().replaceAll("[:=]", "|").replaceAll(alphanumeric, "") +
+                " . Driver - " + driverClassName.replaceAll("[:=]", "|").replaceAll(alphanumeric, "");
+        LOGGER.debug("Pool name: {}", poolName);
+        HikariConfig config = new HikariConfig();
+        config.setPoolName(poolName);
+        config.setJdbcUrl(url);
+        config.setDriverClassName(driverClassName);
+        config.setDataSourceProperties(properties);
+        config.setMaximumPoolSize(SettingsManager.getInstance().getSettings().connectionPoolMaximumPoolSize);
+        config.setMinimumIdle(0);
+        config.setIdleTimeout(SettingsManager.getInstance().getSettings().connectionPoolIdleTimeout);
+        config.setInitializationFailTimeout(0);
+        config.setLeakDetectionThreshold(60 * 1000);
+        return new HikariDataSource(config);
     }
 }

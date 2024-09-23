@@ -136,7 +136,7 @@ export class SparseMatrixService {
         knnIndexes: new Array(values[0].length).fill(null).map((_, i) => new Array<number>(knnSizes[i]))};
       for (const res of results) {
         for (let i = 0; i < values[0].length; ++i) {
-          for (let j = 0; j < res.knnDistances[i]?.length ?? 0; ++j) {
+          for (let j = 0; j < (res.knnDistances[i]?.length ?? 0); ++j) {
             knnRes.knnDistances[i][knnSizes[i] - 1] = res.knnDistances[i][j];
             knnRes.knnIndexes[i][knnSizes[i] - 1] = res.knnIndexes[i][j];
             knnSizes[i] -= 1;
@@ -187,7 +187,7 @@ export class SparseMatrixService {
         knnIndexes: new Array(values[0].length).fill(null).map(() => new Array<number>(nNeighbours).fill(-1))};
       for (const res of results) {
         for (let i = 0; i < values[0].length; ++i) {
-          for (let j = 0; j < res.knnDistances[i]?.length ?? 0; ++j)
+          for (let j = 0; j < (res.knnDistances[i]?.length ?? 0); ++j)
             insertSmaller(knnRes.knnDistances[i], knnRes.knnIndexes[i], res.knnDistances[i][j], res.knnIndexes[i][j]);
         }
       }

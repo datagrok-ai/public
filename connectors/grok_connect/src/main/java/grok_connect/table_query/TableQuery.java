@@ -35,7 +35,8 @@ public class TableQuery {
             table = table.substring(idx + 1);
         }
         table = addBrackets.convert(table);
-        table = schema != null && !schema.isEmpty() && !connection.dataSource.equals("SQLite") ? addBrackets.convert(schema) + "." + table : table;
+        table = schema != null && !schema.isEmpty() && !connection.dataSource.equals("SQLite")  && !connection.dataSource.equals("Databricks")
+                ? addBrackets.convert(schema) + "." + table : table;
         sql.append("SELECT");
         sql.append(System.lineSeparator());
         if (limit != null && !limitAtEnd) {
@@ -64,7 +65,7 @@ public class TableQuery {
             sql.append("GROUP BY");
             sql.append(System.lineSeparator());
             sql.append(
-                    String.join(", ", groupByFields));
+                    groupByFields.stream().map(addBrackets::convert).collect(Collectors.joining(", ")));
         }
 
         if (!pivots.isEmpty()) {

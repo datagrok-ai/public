@@ -1,12 +1,14 @@
 package grok_connect.providers;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 import grok_connect.utils.*;
 import grok_connect.connectors_info.*;
 import serialization.DataFrame;
+import serialization.IntColumn;
 import serialization.StringColumn;
 import serialization.Types;
 
@@ -73,14 +75,27 @@ public class DenodoDataProvider extends JdbcDataProvider {
     @Override
     public DataFrame getSchema(DataConnection connection, String schema, String table) throws
             QueryCancelledByUser, GrokConnectException {
-        try (Connection dbConnection = getConnection(connection);
-             ResultSet columns = dbConnection.getMetaData().getColumns(schema, null, table, null)) {
+        try (Connection dbConnection = getConnection(connection)) {
+            IntColumn isView = new IntColumn("is_view");
             DataFrame result = DataFrame.fromColumns(new StringColumn("table_schema"),
                     new StringColumn("table_name"), new StringColumn("column_name"),
-                    new StringColumn("data_type"));
-            while (columns.next())
-                result.addRow(columns.getString(1), columns.getString(3),
-                        columns.getString(4), columns.getString(6));
+                    new StringColumn("data_type"), isView);
+            Map<String, Integer> tableIndexes = new HashMap<>();
+            DatabaseMetaData metaData = dbConnection.getMetaData();
+            try (ResultSet columns = metaData.getColumns(schema, null, table, null)) {
+                while (columns.next()) {
+                    tableIndexes.put(columns.getString(3), result.rowCount);
+                    result.addRow(columns.getString(1), columns.getString(3),
+                            columns.getString(4), columns.getString(6), null);
+                }
+            }
+
+            try (ResultSet tables = metaData.getTables(schema, null, table, null)) {
+                while (tables.next()) {
+                    Integer index = tableIndexes.get(tables.getString("TABLE_NAME"));
+                    isView.set(index,  "VIEW".equals(tables.getString("TABLE_TYPE")) ? 1 : 0);
+                }
+            }
             return result;
         } catch (SQLException e) {
             throw new GrokConnectException(e);

@@ -40,10 +40,10 @@ public class QueryManager {
     private ResultSet resultSet;
     private Connection connection;
     private boolean changedFetchSize;
-    private boolean supportTransactions;
     private String initMessage;
     private int columnCount;
     public boolean isFinished = false;
+    public boolean supportsFetchSize = true;
 
     public QueryManager(String message, QueryLogger queryLogger) {
         this.logger = queryLogger.getLogger();
@@ -67,7 +67,6 @@ public class QueryManager {
         logger.debug(EventType.CONNECTION_RECEIVE.getMarker(EventType.Stage.END), "Received connection to {} database", provider.descriptor.type);
         resultSet = provider.getResultSet(query, connection, logger, initFetchSize);
         if (resultSet == null) return;
-        supportTransactions = connection.getMetaData().supportsTransactions();
         ResultSetMetaData metaData = resultSet.getMetaData();
         logger.debug("Initializing ResultSet manager...");
         resultSetManager.init(metaData, currentFetchSize);
@@ -82,10 +81,8 @@ public class QueryManager {
         query.setParamValues();
         initResultSet(query);
         queryLogger.writeLog(!skipColumnFillingLog);
-        if (supportTransactions && changedFetchSize) {
-            resultSet.setFetchSize(currentFetchSize);
-            queryLogger.getLogger().debug("Fetch size of {} will be used for dry run", currentFetchSize);
-        }
+        if (changedFetchSize)
+            tryFetchSize(currentFetchSize);
         provider.getResultSetSubDf(query, resultSet, provider.getResultSetManager(), -1, columnCount, logger, 1, true);
         queryLogger.writeLog(false);
         close();
@@ -98,9 +95,9 @@ public class QueryManager {
             if (dfNumber != 1) resultSetManager.empty();
             int rowsNumber = dfNumber == 1 ? initFetchSize : currentFetchSize;
             df =  provider.getResultSetSubDf(query, resultSet, resultSetManager, rowsNumber, columnCount, logger, dfNumber, false);
-            if (df.rowCount == rowsNumber) {
-                if (dfNumber == 1 && supportTransactions && changedFetchSize)
-                    resultSet.setFetchSize(currentFetchSize);
+            if (df.rowCount == rowsNumber && supportsFetchSize) {
+                if (dfNumber == 1 && changedFetchSize)
+                    tryFetchSize(currentFetchSize);
                 else if (!changedFetchSize)
                     changeFetchSize(df);
             }
@@ -136,12 +133,11 @@ public class QueryManager {
         return query;
     }
 
-    private void changeFetchSize(DataFrame df) throws SQLException {
-        if (supportTransactions && !provider.descriptor.type.equals("Virtuoso")) {
+    private void changeFetchSize(DataFrame df) {
+        if (!provider.descriptor.type.equals("Virtuoso")) {
             logger.debug("Calculating dynamically next fetch size...");
             currentFetchSize = getFetchSize(df);
-            resultSet.setFetchSize(currentFetchSize);
-            logger.info("Calculated new fetch size. Fetch size was set to {}", currentFetchSize);
+            tryFetchSize(currentFetchSize);
         }
     }
 
@@ -181,5 +177,15 @@ public class QueryManager {
         }
         initFetchSize = Double.valueOf(optionValue).intValue();
         logger.info("Init fetch size was set to {}", initFetchSize);
+    }
+
+    private void tryFetchSize(int fetchSize) {
+        try {
+            resultSet.setFetchSize(fetchSize);
+            logger.info("Fetch size was set to {}", currentFetchSize);
+        } catch (SQLException e) {
+            logger.info("Provider {} doesn't support fetch size change", provider.descriptor.type);
+            supportsFetchSize = false;
+        }
     }
 }

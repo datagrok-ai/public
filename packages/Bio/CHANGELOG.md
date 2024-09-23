@@ -1,5 +1,13 @@
 # Bio changelog
 
+## 2.15.3 (2024-09-22)
+
+Add monomer background coloring
+
+## 2.15.2 (2024-09-18)
+
+Add monomer coloring for fasta/separator from monomer library
+
 ## 2.15.1 (2024-09-10)
 
 ### Bug fixes

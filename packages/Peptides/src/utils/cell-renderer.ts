@@ -12,6 +12,7 @@ import {showTooltipAt, TooltipOptions} from './tooltips';
 import {MonomerPositionStats, MonomerPositionStatsCache, PositionStats} from './statistics';
 import {CLUSTER_TYPE} from '../viewers/logo-summary';
 import {MonomerPosition, MostPotentResidues, SARViewer} from '../viewers/sar-viewer';
+import {MONOMER_RENDERER_TAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 
 /**
  * Renders cell selection border.
@@ -29,10 +30,12 @@ export function renderCellSelection(canvasContext: CanvasRenderingContext2D, bou
  * @param col - Column to set renderer to.
  * @param alphabet - Sequence alphabet.
  */
-export function setMonomerRenderer(col: DG.Column, alphabet: string): void {
+export function setMonomerRenderer(col: DG.Column, alphabet: string, colorBackground?: boolean): void {
   col.semType = C.SEM_TYPES.MONOMER;
   col.setTag(DG.TAGS.CELL_RENDERER, C.SEM_TYPES.MONOMER);
   col.setTag(C.TAGS.ALPHABET, alphabet);
+  if (colorBackground)
+    col.setTag(MONOMER_RENDERER_TAGS.applyToBackground, 'true');
 }
 
 /**

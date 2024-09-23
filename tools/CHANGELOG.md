@@ -1,11 +1,30 @@
 # Datagrok-tools changelog
 
 
+## 4.13.23 (2024-09-23)
+
+### Features
+
+* Test bug all fixes
+
+## 4.13.22 (2024-09-20)
+
+### Features
+
+* Implemented mechanism which allows to test few packages by one function
+
+## 4.13.21 (2024-09-17)
+
+### Features
+
+* Grok check updated for release candidate versions
+
 ## 4.13.20 (2024-08-28)
 
 ### Features
 
 * Grok link command fixes 
+
 ## 4.13.19 (2024-08-27)
 
 ### Features

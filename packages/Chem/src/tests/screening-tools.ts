@@ -99,7 +99,7 @@ category('screening tools: benchmarks', () => {
     const sarSmall = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_200K.zip') :
       DG.DataFrame.fromCsv(await _package.files.readAsText('tests/smi10K.csv'));
     const smilesCol = sarSmall.getCol('smiles');
-    const ruleSet: RuleSet = {'BMS': true, 'Dandee': true, 'Glaxo': true, 'Inpharmatica': true, 'LINT': true,
+    const ruleSet: RuleSet = {'BMS': true, 'Dundee': true, 'Glaxo': true, 'Inpharmatica': true, 'LINT': true,
       'MLSMR': true, 'PAINS': true, 'SureChEMBL': true};
 
     await DG.timeAsync('Structural Alerts', async () => {
