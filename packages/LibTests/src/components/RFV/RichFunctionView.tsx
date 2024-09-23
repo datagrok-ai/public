@@ -129,10 +129,10 @@ export const RichFunctionView = Vue.defineComponent({
     }, {immediate: true});
     
     const root = Vue.ref(null as HTMLElement | null);
-    const historyRef = Vue.ref(null as InstanceType<typeof History> | null);
-    const helpRef = Vue.ref(null as InstanceType<typeof MarkDown> | null);
-    const formRef = Vue.ref(null as HTMLElement | null);
-    const dockRef = Vue.ref(null as InstanceType<typeof DockManager> | null);
+    const historyRef = Vue.shallowRef(null as InstanceType<typeof History> | null);
+    const helpRef = Vue.shallowRef(null as InstanceType<typeof MarkDown> | null);
+    const formRef = Vue.shallowRef(null as HTMLElement | null);
+    const dockRef = Vue.shallowRef(null as InstanceType<typeof DockManager> | null);
     const handlePanelClose = async (el: HTMLElement) => {
       if (el === historyRef.value?.$el) historyHidden.value = true;
       if (el === helpRef.value?.$el) helpHidden.value = true;

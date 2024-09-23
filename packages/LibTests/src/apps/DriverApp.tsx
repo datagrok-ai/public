@@ -22,6 +22,7 @@ import '@he-tree/vue/style/material-design.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {BehaviorSubject} from 'rxjs';
+import {ParentFunccallView} from '../components/ParentFunccallView/ParentFunccallView';
 
 const findTreeNode = (uuid: string, state: PipelineState): PipelineState | undefined => {
   let foundState = undefined as PipelineState | undefined;
@@ -29,16 +30,16 @@ const findTreeNode = (uuid: string, state: PipelineState): PipelineState | undef
   
   while (notVisitedStates.length > 0 && !foundState) {
     const currentState = notVisitedStates.pop()!;
+
+    if (currentState.uuid === uuid) 
+      foundState = currentState;
+
     if (
       isParallelPipelineState(currentState) ||
       isSequentialPipelineState(currentState) || 
       isStaticPipelineState(currentState)
     ) 
       notVisitedStates.push(...currentState.steps);
-    else {
-      if (currentState.uuid === uuid) 
-        foundState = currentState;
-    }
   }
 
   return foundState;
@@ -61,8 +62,6 @@ export const DriverApp = Vue.defineComponent({
     });
 
     const treeInstance = Vue.ref(null as InstanceType<typeof Draggable> | null);
-
-    const isVisibleRfv = Vue.ref(true);
 
     let oldClosed = [] as string[];
 
@@ -123,14 +122,12 @@ export const DriverApp = Vue.defineComponent({
     const rfvRef = Vue.ref(null as InstanceType<typeof RichFunctionView> | null);
 
     const handlePanelClose = (el: HTMLElement) => {
-      if (el === rfvRef.value?.$el) isVisibleRfv.value = false;
       if (el === treeInstance.value?.$el) treeHidden.value = true;
     };
 
     return () => (
       <div class='w-full h-full'>
         <RibbonPanel>
-          <BigButton onClick={() => initPipeline('LibTests:MockProvider3')}>Init Pipeline</BigButton>
           <IconFA 
             name='folder-tree'
             tooltip={treeHidden.value ? 'Show tree': 'Hide tree'}
@@ -191,6 +188,8 @@ export const DriverApp = Vue.defineComponent({
           { treeState.value && !treeHidden.value ? <Draggable 
             class="ui-div mtl-tree p-2"
             {...{title: 'Steps'}}
+            dock-spawn-dock-type='left'
+            dock-spawn-dock-ratio={0.2}
             rootDroppable={false}
             treeLine
             childrenKey='steps'
@@ -226,10 +225,7 @@ export const DriverApp = Vue.defineComponent({
                     }}
                     onRemoveNode={() => removeStep(stat.data.uuid)}
                     onClick={() => {
-                      if (isFuncCallState(stat.data) && stat.data.funcCall) 
-                        chosenStepUuid.value = stat.data.uuid;
-                      else 
-                        isVisibleRfv.value = false;
+                      chosenStepUuid.value = stat.data.uuid;
                     }}
                     onToggleNode={() => stat.open = !stat.open}
                   />
@@ -238,19 +234,29 @@ export const DriverApp = Vue.defineComponent({
           </Draggable>: null }
           
           {
-            isVisibleRfv.value && chosenStepState.value && 
+            chosenStepState.value && 
             isFuncCallState(chosenStepState.value) && chosenStepState.value.funcCall &&
-            <RichFunctionView 
-              class='overflow-hidden'
-              funcCall={chosenStepState.value.funcCall}
-              key={ `${callsInfo.value?.[chosenStepUuid.value!]?.value?.isOutputOutdated}` }
-              onUpdate:funcCall={(call) => (chosenStepState.value as StepFunCallState).funcCall = call}
-              onRunClicked={() => runStep(chosenStepState.value!.uuid)}
-              {...{title: 'Step review'}}
-              dock-spawn-dock-type='right'
-              dock-spawn-dock-ratio={0.8}
-              ref={rfvRef}
-            /> 
+              <RichFunctionView 
+                class='overflow-hidden'
+                funcCall={chosenStepState.value.funcCall!}
+                key={ `${callsInfo.value?.[chosenStepUuid.value!]?.value?.isOutputOutdated}` }
+                onUpdate:funcCall={(call) => (chosenStepState.value as StepFunCallState).funcCall = call}
+                onRunClicked={() => runStep(chosenStepState.value!.uuid)}
+                {...{title: 'Step review'}}
+                ref={rfvRef}
+              />
+          }
+          {
+            chosenStepState.value && 
+            !isFuncCallState(chosenStepState.value) && chosenStepState.value.provider && 
+            <ParentFunccallView 
+              funcCall={DG.Func.byName(chosenStepState.value.nqName!).prepare()}
+              {...{title: 'Step sequence review'}}
+            />
+          }
+          {
+            !treeState.value &&
+            <BigButton onClick={() => initPipeline('LibTests:MockProvider3')}>Init Pipeline</BigButton>
           }
         </DockManager>
       </div>
