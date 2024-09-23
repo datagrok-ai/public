@@ -6,7 +6,8 @@ import wu from 'wu';
 
 import {getHelmMonomers} from '../package';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
-import {GAP_SYMBOL, ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {GAP_SYMBOL} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 
 const V2000_ATOM_NAME_POS = 31;
 

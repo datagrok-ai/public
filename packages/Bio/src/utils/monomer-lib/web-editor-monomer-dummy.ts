@@ -3,40 +3,12 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {
-  HelmType, IWebEditorMonomer, MonomerType, PolymerType, WebEditorRGroups
+  HelmType, PolymerType, MonomerType,
+  IWebEditorMonomer, WebEditorRGroups
 } from '@datagrok-libraries/bio/src/helm/types';
 
-import {Monomer} from '@datagrok-libraries/bio/src/types/index';
-import {
-  HELM_REQUIRED_FIELD as REQ, HELM_OPTIONAL_FIELDS as OPT, HELM_RGROUP_FIELDS as RGP,
-} from '@datagrok-libraries/bio/src/utils/const';
-
-export function getRS(smiles: string) {
-  const newS = smiles.match(/(?<=\[)[^\][]*(?=])/gm);
-  const res: { [name: string]: string } = {};
-  let el = '';
-  let digit;
-  if (!!newS) {
-    for (let i = 0; i < newS.length; i++) {
-      if (newS[i] != null) {
-        if (/\d/.test(newS[i])) {
-          digit = newS[i][newS[i].length - 1];
-          newS[i] = newS[i].replace(/[0-9]/g, '');
-          for (let j = 0; j < newS[i].length; j++) {
-            if (newS[i][j] != ':')
-              el += newS[i][j];
-          }
-          res['R' + digit] = el;
-          el = '';
-        }
-      }
-    }
-  }
-  return res;
-}
-
 /* eslint-disable camelcase */
-export abstract class DummyWebEditorMonomer implements IWebEditorMonomer {
+export abstract class WebEditorMonomerDummy implements IWebEditorMonomer {
   //@formatter:off
   public abstract get backgroundcolor(): string | undefined;
   public abstract get linecolor(): string | undefined;
@@ -99,16 +71,16 @@ export abstract class DummyWebEditorMonomer implements IWebEditorMonomer {
   }
 
   private static objCounter: number = -1;
-  private readonly objId: number = ++DummyWebEditorMonomer.objCounter;
+  private readonly objId: number = ++WebEditorMonomerDummy.objCounter;
 
-  private readonly className: string = 'DummyWebEditorMonomer';
+  private readonly className: string = 'WebEditorMonomerDummy';
 
   protected toLog(): string {
     return `Helm: ${this.className}<${this.objId}>`;
   }
 }
 
-export class GapWebEditorMonomer extends DummyWebEditorMonomer {
+export class GapWebEditorMonomer extends WebEditorMonomerDummy {
   public readonly backgroundcolor: string = '#FFFFFF';
   public readonly linecolor: string = '#808080';
   public readonly textcolor: string = '#808080';
@@ -118,7 +90,7 @@ export class GapWebEditorMonomer extends DummyWebEditorMonomer {
   }
 }
 
-export class AmbiguousWebEditorMonomer extends DummyWebEditorMonomer {
+export class AmbiguousWebEditorMonomer extends WebEditorMonomerDummy {
   public readonly backgroundcolor: string = '#808080';
   public readonly linecolor: string = '#000000';
   public readonly textcolor: string = '#000000';
@@ -128,7 +100,7 @@ export class AmbiguousWebEditorMonomer extends DummyWebEditorMonomer {
   }
 }
 
-export class MissingWebEditorMonomer extends DummyWebEditorMonomer {
+export class MissingWebEditorMonomer extends WebEditorMonomerDummy {
   public readonly backgroundcolor: string = '#FF4444';
   public readonly linecolor: string = '#800000';
   public readonly textcolor: string = '#FFFFFF';
@@ -138,7 +110,7 @@ export class MissingWebEditorMonomer extends DummyWebEditorMonomer {
   }
 }
 
-export class BrokenWebEditorMonomer extends DummyWebEditorMonomer {
+export class BrokenWebEditorMonomer extends WebEditorMonomerDummy {
   public readonly backgroundcolor: string = '#FFFF44';
   public readonly linecolor: string = '#800000';
   public readonly textcolor: string = '#000000';

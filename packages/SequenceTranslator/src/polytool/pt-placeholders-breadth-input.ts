@@ -3,11 +3,11 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {Unsubscribable} from 'rxjs';
+import {PolyToolPlaceholders, PolyToolPlaceholdersBreadth} from './types';
+import {parseMonomerSymbolList} from './pt-placeholders-input';
 
-import {PolyToolPlaceholders} from './types';
-
-export class PolyToolPlaceholdersInput extends DG.JsInputBase<DG.DataFrame> {
-  get inputType(): string { return 'Positions'; }
+export class PolyToolPlaceholdersBreadthInput extends DG.JsInputBase<DG.DataFrame> {
+  get inputType(): string { return 'Breadth'; }
 
   get dataType(): string { return DG.TYPE.DATA_FRAME; }
 
@@ -21,8 +21,8 @@ export class PolyToolPlaceholdersInput extends DG.JsInputBase<DG.DataFrame> {
 
   setStringValue(str: string): void { this.grid.dataFrame = DG.DataFrame.fromCsv(str); }
 
-  get placeholdersValue(): PolyToolPlaceholders {
-    return dfToPlaceholders(this.grid.dataFrame);
+  get placeholdersBreadthValue(): PolyToolPlaceholdersBreadth {
+    return dfToPlaceholdersBreadth(this.grid.dataFrame);
   }
 
   private readonly gridHost: HTMLDivElement;
@@ -57,8 +57,8 @@ export class PolyToolPlaceholdersInput extends DG.JsInputBase<DG.DataFrame> {
     }));
 
     this.subs.push(ui.onSizeChanged(this.grid.root).subscribe(() => {
-      this.grid.columns.byIndex(2)!.width = this.grid.root.clientWidth - this.grid.horzScroll.root.offsetWidth -
-        this.grid.columns.byIndex(0)!.width - this.grid.columns.byIndex(1)!.width - 10;
+      this.grid.columns.byIndex(3)!.width = this.grid.root.clientWidth - this.grid.horzScroll.root.offsetWidth -
+        this.grid.columns.byIndex(0)!.width - this.grid.columns.byIndex(1)!.width - this.grid.columns.byIndex(2)!.width - 10;
     }));
 
     this.root.classList.add('ui-input-polytool-pos-grid');
@@ -71,13 +71,15 @@ export class PolyToolPlaceholdersInput extends DG.JsInputBase<DG.DataFrame> {
 
   public static async create(
     name?: string, options?: {}, heightRowCount?: number
-  ): Promise<PolyToolPlaceholdersInput> {
+  ): Promise<PolyToolPlaceholdersBreadthInput> {
     const df: DG.DataFrame = DG.DataFrame.fromColumns([
-      DG.Column.fromType(DG.COLUMN_TYPE.INT, 'Position', 0),
-      DG.Column.fromType(DG.COLUMN_TYPE.STRING, 'Monomers', 0),])!;
+      DG.Column.fromType(DG.COLUMN_TYPE.INT, 'Start', 0),
+      DG.Column.fromType(DG.COLUMN_TYPE.INT, 'End', 0),
+      DG.Column.fromType(DG.COLUMN_TYPE.STRING, 'Monomers', 0),
+    ])!;
     const grid = (await df.plot.fromType(DG.VIEWER.GRID, options)) as DG.Grid;
-    grid.sort(['Position']);
-    return new PolyToolPlaceholdersInput(name, grid, heightRowCount);
+    grid.sort(['Start', 'End']);
+    return new PolyToolPlaceholdersBreadthInput(name, grid, heightRowCount);
   }
 
   // -- Update view --
@@ -90,44 +92,20 @@ export class PolyToolPlaceholdersInput extends DG.JsInputBase<DG.DataFrame> {
   // -- Handle events --
 
   private gridRootOnSizeChanged(): void {
-    this.grid.columns.byIndex(2)!.width = this.grid.root.clientWidth - this.grid.horzScroll.root.offsetWidth -
-      this.grid.columns.byIndex(0)!.width - this.grid.columns.byIndex(1)!.width - 10;
+    this.grid.columns.byIndex(3)!.width = this.grid.root.clientWidth - this.grid.horzScroll.root.offsetWidth -
+      this.grid.columns.byIndex(0)!.width - this.grid.columns.byIndex(1)!.width - this.grid.columns.byIndex(2)!.width - 10;
   }
 }
 
-export function getPlaceholdersFromText(src: string): PolyToolPlaceholders {
-  const res: PolyToolPlaceholders = [];
-  for (const line of src.split('\n')) {
-    const lineM = /^\s*(?<pos>\d+)\s*:\s*(?<monomers>.+)$/.exec(line);
-    if (lineM) {
-      const pos: number = parseInt(lineM.groups!['pos']) - 1;
-      const monomerList: string[] = lineM.groups!['monomers'].split(',').map((m) => m.trim());
-      res.push({position: pos, monomers: monomerList});
-    }
-  }
-  return res;
-}
-
-export function dfToPlaceholders(df: DG.DataFrame): PolyToolPlaceholders {
-  const res: PolyToolPlaceholders = [];
+export function dfToPlaceholdersBreadth(df: DG.DataFrame): PolyToolPlaceholdersBreadth {
+  const res: PolyToolPlaceholdersBreadth = [];
   for (let rowI = 0; rowI < df.rowCount; rowI++) {
-    const pos = parseInt(df.get('Position', rowI));
-    if (!isNaN(pos)) {
+    const startPos = parseInt(df.get('Start', rowI));
+    const endPos = parseInt(df.get('End', rowI));
+    if (!isNaN(startPos) && !isNaN(endPos)) {
       const monomerSymbolList = parseMonomerSymbolList(df.get('Monomers', rowI));
-      res.push({position: pos, monomers: monomerSymbolList});
+      res.push({start: startPos, end: endPos, monomers: monomerSymbolList});
     }
   }
   return res;
-}
-
-export function parseMonomerSymbolList(src: string): string[] {
-  // L, L-hArg(Et,Et), "hArg(Et,Et)"
-  return src.split(/,(?![^(]*\))/)
-    .map((s) => {
-      s = s.trim();
-      if (s.slice(0, 1) === `"` && s.slice(-1) === `"`) s = s.slice(1, -1);
-      if (s.slice(0, 1) === `'` && s.slice(-1) === `'`) s = s.slice(1, -1);
-      return s.trim();
-    })
-    .filter((s) => !!s);
 }

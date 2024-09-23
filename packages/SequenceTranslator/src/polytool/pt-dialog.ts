@@ -23,6 +23,16 @@ import {
 
 import {_package} from '../package';
 
+type PolyToolConvertSerialized = {
+  generateHelm: boolean;
+  chiralityEngine: boolean;
+};
+
+type PolyToolEnumerateChemSerialized = {
+  mol: string;
+  screenLibrary: string | null;
+}
+
 export function polyToolEnumerateChemUI(cell?: DG.Cell): void {
   getPolyToolEnumerationChemDialog(cell)
     .then((dialog) => {
@@ -79,7 +89,6 @@ export async function getPolyToolConvertDialog(targetCol?: DG.Column): Promise<D
       rulesForm
     ]);
 
-
     const exec = async (): Promise<void> => {
       try {
         const ruleFileList = await ruleInputs.getActive();
@@ -95,7 +104,17 @@ export async function getPolyToolConvertDialog(targetCol?: DG.Column): Promise<D
     subs.push(dialog.onClose.subscribe(() => {
       destroy();
     }));
-
+    dialog.history(
+      /* getInput */ (): PolyToolConvertSerialized => {
+        return {
+          generateHelm: generateHelmChoiceInput.value,
+          chiralityEngine: chiralityEngineInput.value,
+        };
+      },
+      /* applyInput */ (x: PolyToolConvertSerialized): void => {
+        generateHelmChoiceInput.value = x.generateHelm;
+        chiralityEngineInput.value = x.chiralityEngine;
+      });
     return dialog;
   } catch (err: any) {
     destroy(); // on failing to build a dialog
@@ -133,15 +152,15 @@ async function getPolyToolEnumerationChemDialog(cell?: DG.Cell): Promise<DG.Dial
     molInput.setMolFile(molfileValue);
 
     //const helmInput = helmHelper.createHelmInput('Macromolecule', {value: helmValue});
-    const screenLibrary = ui.input.choice('Library to use', {value: null, items: libList});
+    const screenLibraryInput = ui.input.choice('Library to use', {value: null, items: libList});
 
     molInput.root.setAttribute('style', `min-width:250px!important;`);
     molInput.root.setAttribute('style', `max-width:250px!important;`);
-    screenLibrary.input.setAttribute('style', `min-width:250px!important;`);
+    screenLibraryInput.input.setAttribute('style', `min-width:250px!important;`);
 
     const div = ui.div([
       molInput.root,
-      screenLibrary.root
+      screenLibraryInput.root
     ]);
 
     subs.push(grok.events.onCurrentCellChanged.subscribe(() => {
@@ -160,7 +179,7 @@ async function getPolyToolEnumerationChemDialog(cell?: DG.Cell): Promise<DG.Dial
         } else if (!molString.includes('R#')) {
           grok.shell.warning('PolyTool: no R group was provided');
         } else {
-          const molecules = await getEnumerationChem(molString, screenLibrary.value!);
+          const molecules = await getEnumerationChem(molString, screenLibraryInput.value!);
           const molCol = DG.Column.fromStrings('Enumerated', molecules);
           const df = DG.DataFrame.fromColumns([molCol]);
           grok.shell.addTableView(df);
@@ -182,6 +201,17 @@ async function getPolyToolEnumerationChemDialog(cell?: DG.Cell): Promise<DG.Dial
     subs.push(dialog.onClose.subscribe(() => {
       destroy();
     }));
+    dialog.history(
+      /* getInput */ (): PolyToolEnumerateChemSerialized => {
+        return {
+          mol: molInput.getMolFile(),
+          screenLibrary: screenLibraryInput.value,
+        };
+      },
+      /* applyInput */ (x: PolyToolEnumerateChemSerialized): void => {
+        molInput.setMolFile(x.mol);
+        screenLibraryInput.value = x.screenLibrary;
+      });
     return dialog;
   } catch (err: any) {
     destroy();

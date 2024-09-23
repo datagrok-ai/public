@@ -2,18 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {ALPHABET, NOTATION} from './consts';
-import {SeqHandler} from '../seq-handler';
-
-/** Canonical gap symbol */
-export const GAP_SYMBOL: string = '';
-
 export type SeqSplittedBase = ArrayLike<string> & Iterable<string>;
 
 export interface ISeqSplitted {
-  get canonicals(): SeqSplittedBase;
-  get originals(): SeqSplittedBase;
-
   isGap(posIdx: number): boolean;
 
   /** */

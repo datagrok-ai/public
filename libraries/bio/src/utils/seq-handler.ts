@@ -2,35 +2,20 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 
-import {
-  ALIGNMENT, ALPHABET, candidateAlphabets, getSplitterWithSeparator, NOTATION,
-  positionSeparator, splitterAsFasta, splitterAsHelm, TAGS
-} from './macromolecule';
-import {
-  GAP_SYMBOL,
-  INotationProvider, ISeqSplitted, SeqColStats, SplitterFunc,
-} from './macromolecule/types';
+import {ALIGNMENT, ALPHABET, candidateAlphabets, getSplitterWithSeparator, NOTATION, positionSeparator, splitterAsFasta, splitterAsHelm, TAGS} from './macromolecule';
+import {INotationProvider, ISeqSplitted, SeqColStats, SplitterFunc,} from './macromolecule/types';
 import {detectAlphabet, splitterAsFastaSimple, StringListSeqSplitted} from './macromolecule/utils';
-import {
-  mmDistanceFunctions, MmDistanceFunctionsNames
-} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {mmDistanceFunctions, MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {mmDistanceFunctionType} from '@datagrok-libraries/ml/src/macromolecule-distance-functions/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '../monomer-works/monomer-utils';
 import {HELM_POLYMER_TYPE, HELM_WRAPPERS_REGEXP, PHOSPHATE_SYMBOL} from './const';
+import {GAP_SYMBOL, GapOriginals} from './macromolecule/consts';
 
 export const SeqTemps = new class {
   /** Column's temp slot name for a SeqHandler object */
   seqHandler = `seq-handler`;
   notationProvider = `seq-handler.notation-provider`;
 }();
-
-export const GapOriginals: {
-  [units: string]: string
-} = {
-  [NOTATION.FASTA]: '-',
-  [NOTATION.SEPARATOR]: '',
-  [NOTATION.HELM]: '*',
-};
 
 export type ConvertFunc = (src: string) => string;
 export type JoinerFunc = (src: ISeqSplitted) => string;
@@ -299,7 +284,8 @@ export class SeqHandler {
         else if (mSeq.length !== firstLength)
           sameLength = false;
 
-        for (const cm of mSeq.canonicals) {
+        for (let posIdx = 0; posIdx < mSeq.length; ++posIdx) {
+          const cm = mSeq.getCanonical(posIdx);
           if (!(cm in freq))
             freq[cm] = 0;
           freq[cm] += 1;
@@ -398,7 +384,7 @@ export class SeqHandler {
   ): DG.Column<string> {
     const col = this.column;
     const name = tgtNotation.toLowerCase() + '(' + col.name + ')';
-    const newColName = colName ?? col.dataFrame.columns.getUnusedName(name);
+    const newColName = colName ?? col.dataFrame?.columns.getUnusedName(name) ?? name;
     const newColumn = DG.Column.fromList('string', newColName, data ?? new Array(this.column.length).fill(''));
     newColumn.semType = DG.SEMTYPE.MACROMOLECULE;
     newColumn.meta.units = tgtNotation;
@@ -567,8 +553,9 @@ export class SeqHandler {
       const catI = colRawData[rowIdx];
       if (!(catI in catIdxSet)) {
         catIdxSet.add(catI);
-        const monomers = this.getSplitted(rowIdx);
-        for (const cm of monomers.canonicals) {
+        const seqSS = this.getSplitted(rowIdx);
+        for (let posIdx = 0; posIdx < seqSS.length; ++posIdx) {
+          const cm = seqSS.getCanonical(posIdx);
           if (!peptidesSet.has(cm)) {
             this.column.setTag(TAGS.isHelmCompatible, 'false');
             return false;

@@ -7,10 +7,10 @@ import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
 import {IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {MolfileWithMap, MonomerMap} from '@datagrok-libraries/bio/src/monomer-works/types';
 
 import {Polymer} from './polymer';
 import {GlobalMonomerPositionHandler} from './position-handler';
-import {MolfileWithMap, MonomerMap} from './types';
 
 import {_package} from '../../../package';
 
@@ -102,7 +102,7 @@ export class HelmToMolfileConverter {
         } catch (err: any) {
           const [errMsg, errStack] = errInfo(err);
           _package.logger.error(errMsg, undefined, errStack);
-          resMolfileWithMap = MolfileWithMap.empty();
+          resMolfileWithMap = MolfileWithMap.createEmpty();
         }
         return resMolfileWithMap.molfile;
       });
@@ -111,24 +111,30 @@ export class HelmToMolfileConverter {
     return molfileColumn;
   }
 
+  /** Gets list of monomer molfiles */
   public convertToMolfileV3K(rdKitModule: RDModule): MolfileWithMap[] {
     const polymerGraphColumn: DG.Column<string> = this.getPolymerGraphColumn();
     const monomerLib: IMonomerLib = this.libHelper.getMonomerLib();
-    const resList: MolfileWithMap[] = polymerGraphColumn.toList().map(
-      (pseudoMolfile: string, idx: number): MolfileWithMap => {
-        const helm = this.helmColumn.get(idx);
-        if (!helm) return {molfile: '', monomers: []};
+    const rowCount = this.helmColumn.length;
+    const resList: MolfileWithMap[] = new Array<MolfileWithMap>(rowCount);
+    for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
+      const helm = this.helmColumn.get(rowIdx);
+      if (!helm) {
+        resList[rowIdx] = MolfileWithMap.createEmpty();
+        continue;
+      }
 
-        let resMolfile: MolfileWithMap;
-        try {
-          resMolfile = this.getPolymerMolfile(helm, pseudoMolfile, rdKitModule, monomerLib);
-        } catch (err: any) {
-          const [errMsg, errStack] = errInfo(err);
-          _package.logger.error(errMsg, undefined, errStack);
-          resMolfile = MolfileWithMap.empty();
-        }
-        return resMolfile;
-      });
+      const pseudoMolfile = polymerGraphColumn.get(rowIdx)!;
+      let resMolfile: MolfileWithMap;
+      try {
+        resMolfile = this.getPolymerMolfile(helm, pseudoMolfile, rdKitModule, monomerLib);
+      } catch (err: any) {
+        const [errMsg, errStack] = errInfo(err);
+        _package.logger.error(errMsg, undefined, errStack);
+        resMolfile = MolfileWithMap.createEmpty();
+      }
+      resList[rowIdx] = resMolfile;
+    }
     return resList;
   }
 
@@ -145,14 +151,25 @@ export class HelmToMolfileConverter {
     rdKitModule: RDModule,
     monomerLib: IMonomerLib
   ): MolfileWithMap {
+    const woGapsRes = this.helmHelper.removeGaps(helm);
+    const woGapsHelm = woGapsRes.resHelm;
+    const woGapsReverseMap = new Map<number, number>();
+    for (const [orgPosIdx, woGapsPosIdx] of (woGapsRes.monomerMap?.entries() ?? [])) {
+      woGapsReverseMap.set(woGapsPosIdx, orgPosIdx);
+    }
     const globalPositionHandler = new GlobalMonomerPositionHandler(polymerGraph);
-    const polymer = new Polymer(helm, rdKitModule, monomerLib);
+    const woGapsPolymer = new Polymer(woGapsHelm, rdKitModule, monomerLib);
     globalPositionHandler.monomerSymbols.forEach((monomerSymbol: string, monomerIdx: number) => {
       const shift = globalPositionHandler.getMonomerShifts(monomerIdx);
-      polymer.addMonomer(monomerSymbol, monomerIdx, shift);
+      woGapsPolymer.addMonomer(monomerSymbol, monomerIdx, shift);
     });
-    const polymerMolfile: MolfileWithMap = polymer.compileToMolfile();
-    return polymerMolfile;
+    const woGapsMolfile: MolfileWithMap = woGapsPolymer.compileToMolfile();
+    const orgMonomerMap = new MonomerMap();
+    for (const [woGapsPosIdx, m] of woGapsMolfile.monomers.entries()) {
+      const orgPosIdx = woGapsReverseMap.get(woGapsPosIdx)!;
+      orgMonomerMap.set(orgPosIdx, m);
+    }
+
+    return new MolfileWithMap(woGapsMolfile.molfile, orgMonomerMap);
   }
 }
-

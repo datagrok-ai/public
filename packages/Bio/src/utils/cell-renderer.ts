@@ -20,12 +20,16 @@ import {
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
-import {GapOriginals, SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
-import {ISeqSplitted, SeqSplittedBase} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
-import {alphabetPolymerTypes, IMonomerLib} from '@datagrok-libraries/bio/src/types';
-import {getGridCellRendererBack} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
+import {GapOriginals} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {ISeqMonomer} from '@datagrok-libraries/bio/src/helm/types';
+import {execMonomerHoverLinks} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
+import {getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
+import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
 
 import {
   Temps as mmcrTemps,
@@ -34,6 +38,7 @@ import {
 import * as C from './constants';
 
 import {_package, getMonomerLib} from '../package';
+import {GridCell} from 'datagrok-api/dg';
 
 type TempType = { [tagName: string]: any };
 
@@ -85,13 +90,15 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     gridCell.grid.invalidate();
   }
 
-  onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
+  override onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
+    if (gridCell.tableRowIndex == null) return;
+
     // if (gridCell.cell.column.getTag(bioTAGS.aligned) !== ALIGNMENT.SEQ_MSA)
     //   return;
 
     const [_gridCol, tableCol, temp] =
-      getGridCellRendererBack<string, MonomerPlacer>(gridCell);
-    const seqColTemp: MonomerPlacer = temp['rendererBack'];
+      getGridCellColTemp<string, MonomerPlacer>(gridCell);
+    const seqColTemp: MonomerPlacer = temp.rendererBack;
     if (!seqColTemp) return; // Can do nothing without precalculated data
 
     const gridCellBounds: DG.Rect = gridCell.bounds;
@@ -105,28 +112,37 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const argsX = e.offsetX - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCellBounds.x);
     const left: number | null = seqColTemp.getPosition(gridCell.tableRowIndex!, argsX, gridCellBounds.width);
 
-    const seqCList: SeqSplittedBase = SeqHandler.forColumn(tableCol)
-      .getSplitted(gridCell.tableRowIndex!).canonicals;
-    if (left !== null && left < seqCList.length) {
-      const monomerSymbol: string = seqCList[left];
+    const seqSS = SeqHandler.forColumn(tableCol)
+      .getSplitted(gridCell.tableRowIndex!);
+    if (left !== null && left < seqSS.length) {
+      const sh = SeqHandler.forColumn(tableCol);
+      const alphabet = sh.alphabet ?? ALPHABET.UN;
+      const seqMonomer = {
+        position: left,
+        biotype: alphabet === ALPHABET.RNA || alphabet === ALPHABET.DNA ? HelmTypes.NUCLEOTIDE : HelmTypes.AA,
+        symbol: seqSS.getCanonical(left),
+      } as ISeqMonomer;
       const tooltipElements: HTMLElement[] = [];
-      let monomerDiv = seqColTemp._monomerStructureMap[monomerSymbol];
+      let monomerDiv = seqColTemp._monomerStructureMap[seqMonomer.symbol];
       if (!monomerDiv || true) {
-        monomerDiv = seqColTemp._monomerStructureMap[monomerSymbol] = (() => {
-          const sh = SeqHandler.forColumn(tableCol);
-          const alphabet = sh.alphabet ?? ALPHABET.UN;
-          const polymerType = alphabetPolymerTypes[alphabet as ALPHABET];
-
+        monomerDiv = seqColTemp._monomerStructureMap[seqMonomer.symbol] = (() => {
           const lib: IMonomerLib | null = getMonomerLib();
-          return lib ? lib.getTooltip(polymerType, monomerSymbol) : ui.divText('Monomer library is not available');
+          return lib ? lib.getTooltip(seqMonomer.biotype, seqMonomer.symbol) : ui.divText('Monomer library is not available');
         })();
       }
       tooltipElements.push(monomerDiv);
       ui.tooltip.show(ui.divV(tooltipElements), e.x + 16, e.y + 16);
+
+      execMonomerHoverLinks(gridCell, seqMonomer);
     } else {
       //
       ui.tooltip.hide();
+      execMonomerHoverLinks(gridCell, null);
     }
+  }
+
+  override onMouseLeave(gridCell: GridCell, e: MouseEvent) {
+    execMonomerHoverLinks(gridCell, null);
   }
 
   /**
@@ -149,7 +165,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
     const dpr = window.devicePixelRatio;
     const [gridCol, tableCol, _temp] =
-      getGridCellRendererBack<string, MonomerPlacer>(gridCell);
+      getGridCellColTemp<string, MonomerPlacer>(gridCell);
     if (!tableCol) return;
     const tableColTemp: TempType = tableCol.temp;
 
@@ -168,7 +184,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     }
 
     const [_gc, _tc, temp] =
-      getGridCellRendererBack<string, MonomerPlacer>(gridCell);
+      getGridCellColTemp<string, MonomerPlacer>(gridCell);
     let seqColTemp: MonomerPlacer = temp.rendererBack;
     if (!seqColTemp) {
       seqColTemp = temp.rendererBack = new MonomerPlacer(gridCol, tableCol, _package.logger, maxLengthOfMonomer,
@@ -230,9 +246,10 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       const referenceSequence: string[] = (() => {
         // @ts-ignore
         const splitterFunc: SplitterFunc = sh.getSplitter(splitLimit);
-        return wu(splitterFunc(
+        const seqSS = splitterFunc(
           ((tempReferenceSequence != null) && (tempReferenceSequence != '')) ?
-            tempReferenceSequence : tempCurrentWord ?? '').originals).toArray();
+            tempReferenceSequence : tempCurrentWord ?? '');
+        return wu.count(0).take(seqSS.length).map((posIdx) => seqSS.getOriginal(posIdx)).toArray();
       })();
 
       const subParts: ISeqSplitted = sh.getSplitted(rowIdx);
@@ -306,8 +323,10 @@ export class MacromoleculeDifferenceCellRenderer extends DG.GridCellRenderer {
     //TODO: can this be replaced/merged with splitSequence?
     const [s1, s2] = s.split('#');
     const splitter = getSplitter(units, separator);
-    const subParts1 = wu(splitter(s1).canonicals).toArray();
-    const subParts2 = wu(splitter(s2).canonicals).toArray();
+    const s1SS = splitter(s1);
+    const s2SS = splitter(s2);
+    const subParts1 = wu.count(0).take(s1SS.length).map((posIdx) => s1SS.getCanonical(posIdx)).toArray();
+    const subParts2 = wu.count(0).take(s2SS.length).map((posIdx) => s2SS.getCanonical(posIdx)).toArray();
     drawMoleculeDifferenceOnCanvas(g, x, y, w, h, subParts1, subParts2, units);
   }
 }

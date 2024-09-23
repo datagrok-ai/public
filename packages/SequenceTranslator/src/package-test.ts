@@ -10,6 +10,7 @@ import './tests/formats-support';
 import './tests/files-tests';
 import './tests/polytool-convert-tests';
 import './tests/polytool-enumerate-tests';
+import './tests/polytool-enumerate-breadth-tests';
 
 import {OligoToolkitTestPackage} from './tests/utils';
 
