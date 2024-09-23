@@ -41,8 +41,9 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
 
   public initialValues: Record<string, any> = {};
 
-  private closed$ = new Subject<true>();
   public outdatedChanged$ = new BehaviorSubject(true);
+  private closed$ = new Subject<true>();
+  private initialData?: BridgePreInitData;
 
   constructor(private io: FuncallStateItem[], public readonly isReadonly: boolean) {}
 
@@ -51,6 +52,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
   }
 
   setPreInitialData(data: BridgePreInitData) {
+    this.initialData = data;
     this.initialValues = data.initialValues;
     this.inputRestrictions$.next(data.initialRestrictions);
   }
@@ -116,8 +118,21 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
 
   editState<T = any>(id: string, val: T | undefined) {
     const currentInstance = this.instance$.value?.adapter;
-    if (currentInstance)
-      currentInstance.editState(id, val);
+    if (currentInstance == null)
+      throw new Error(`Attempting to set an empty FuncCallInstancesBridge`);
+    currentInstance.editState(id, val);
+  }
+
+  removeRestriction(id: string): void {
+    const currentInstance = this.instance$.value?.adapter;
+    if (currentInstance == null)
+      throw new Error(`Attempting to set an empty FuncCallInstancesBridge`);
+    const defaulRestriction = this.initialData?.initialRestrictions[id];
+    this.inputRestrictions$.next({
+      ...this.inputRestrictions$.value,
+      [id]: defaulRestriction,
+    });
+    this.inputRestrictionsUpdates$.next([id, undefined] as const);
   }
 
   setValidation(id: string, validatorId: string, validation: ValidationResult | undefined) {

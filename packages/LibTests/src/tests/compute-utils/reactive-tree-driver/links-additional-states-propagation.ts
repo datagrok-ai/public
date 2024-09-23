@@ -8,7 +8,7 @@ import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {TestScheduler} from 'rxjs/testing';
 import {makeValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
-import { switchMap } from 'rxjs/operators';
+import {switchMap} from 'rxjs/operators';
 
 category('ComputeUtils: Driver links additional states propagation', async () => {
   let testScheduler: TestScheduler;
@@ -69,7 +69,7 @@ category('ComputeUtils: Driver links additional states propagation', async () =>
             'errors': [],
             'notifications': [],
           },
-        }
+        },
       });
     });
   });
@@ -112,12 +112,12 @@ category('ComputeUtils: Driver links additional states propagation', async () =>
       });
       const meta$ = tree.getMeta()[outNode.getItem().uuid];
       expectObservable(meta$.pipe(
-        switchMap(x => x.a)
+        switchMap((x) => x.a),
       )).toBe('ab', {
         a: undefined,
         b: {
           'key': 'val',
-        }
+        },
       });
     });
   });
@@ -165,18 +165,18 @@ category('ComputeUtils: Driver links additional states propagation', async () =>
       expectObservable(consistency$).toBe('a bc', {
         a: {},
         b: {
-          "a": {
-            "restriction": "restricted",
-            "inconsistent": false,
-            "assignedValue": 2
-          }
+          'a': {
+            'restriction': 'restricted',
+            'inconsistent': false,
+            'assignedValue': 2,
+          },
         },
         c: {
-          "a": {
-            "restriction": "restricted",
-            "inconsistent": true,
-            "assignedValue": 2
-          }
+          'a': {
+            'restriction': 'restricted',
+            'inconsistent': true,
+            'assignedValue': 2,
+          },
         },
       });
     });

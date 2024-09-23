@@ -291,8 +291,8 @@ category('ComputeUtils: Driver links reactivity', async () => {
                 },
               ],
             },
-          }
-        }
+          },
+        },
       });
     });
   });
@@ -315,7 +315,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
       expectObservable((inNode.getItem().getStateStore() as FuncCallInstancesBridge).validations$).toBe('a b', {
         a: {},
         b: {
-          [link.uuid] :{
+          [link.uuid]: {
             'a': {
               'warnings': [
                 {
@@ -323,8 +323,8 @@ category('ComputeUtils: Driver links reactivity', async () => {
                 },
               ],
             },
-          }
-        }
+          },
+        },
       });
     });
   });
@@ -371,7 +371,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
             'type': 'restricted',
             'assignedValue': 1,
           },
-        }
+        },
       });
     });
   });
@@ -419,7 +419,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
             'type': 'restricted',
             'assignedValue': 2,
           },
-        }
+        },
       });
     });
   });
@@ -476,7 +476,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
       });
       expectObservable(link1.isRunning$, '^ 1000ms !').toBe('a (bc)', {a: false, b: true, c: false});
       expectObservable(link2.isRunning$, '^ 1000ms !').toBe('a (bc)', {a: false, b: true, c: false});
-      expectObservable((inNode.getItem().getStateStore() as FuncCallInstancesBridge).validations$).toBe('a(bc)',{
+      expectObservable((inNode.getItem().getStateStore() as FuncCallInstancesBridge).validations$).toBe('a(bc)', {
         a: {},
         b: {
           [link1.uuid]: {
@@ -500,8 +500,8 @@ category('ComputeUtils: Driver links reactivity', async () => {
               }],
             },
           },
-        }
-      })
+        },
+      });
     });
   });
 
@@ -541,12 +541,12 @@ category('ComputeUtils: Driver links reactivity', async () => {
         inNode.getItem().getStateStore().setState('b', 1);
       });
       expectObservable((outNode.getItem().getStateStore() as FuncCallInstancesBridge).meta$.pipe(
-        switchMap(x => x.a)
+        switchMap((x) => x.a),
       )).toBe('ab', {
         a: undefined,
         b: {
           'key': 'val',
-        }
+        },
       });
     });
   });
@@ -608,7 +608,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
       ).subscribe((uuid) => {
         tree.runAction(uuid);
       });
-      expectObservable(inNode.getItem().getStateStore().getStateChanges('a')).toBe('ab 250ms c', { a: undefined, b: 1, c: 10 });
+      expectObservable(inNode.getItem().getStateStore().getStateChanges('a')).toBe('ab 250ms c', {a: undefined, b: 1, c: 10});
     });
   });
 
@@ -669,7 +669,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
       ).subscribe((uuid) => {
         tree.runAction(uuid);
       });
-      expectObservable(inNode.getItem().getStateStore().getStateChanges('a')).toBe('ab 250ms c', { a: undefined, b: 1, c: 10 });
+      expectObservable(inNode.getItem().getStateStore().getStateChanges('a')).toBe('ab 250ms c', {a: undefined, b: 1, c: 10});
     });
   });
 });

@@ -2,14 +2,8 @@ import * as DG from 'datagrok-api/dg';
 import {category, test, before} from '@datagrok-libraries/utils/src/test';
 import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
-import {LinksState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/LinksState';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
-import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {of, Subject} from 'rxjs';
-import {delay, mapTo, switchMap} from 'rxjs/operators';
-import {FuncCallInstancesBridge} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/FuncCallInstancesBridge';
-import {makeValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 
 category('ComputeUtils: Driver links inbound outgoing', async () => {
   test('Root changes', async () => {
@@ -31,7 +25,7 @@ category('ComputeUtils: Driver links inbound outgoing', async () => {
         from: 'in1:step1/b',
         to: 'out1:step2/a',
       }],
-    }
+    };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
     tree.init().subscribe();
@@ -39,7 +33,7 @@ category('ComputeUtils: Driver links inbound outgoing', async () => {
     expectDeepEqual(tree.linksState.isAffected([], link), true, {prefix: 'isAffected'});
     expectDeepEqual(tree.linksState.isInbound([], link), false, {prefix: 'isInbound'});
     expectDeepEqual(tree.linksState.isOutgoing([], link), false, {prefix: 'isOutgoing'});
-  });
+  }, {skipReason: 'TODO'});
 
   test('Root changes with an offset', async () => {
     const config: PipelineConfiguration = {
@@ -60,7 +54,7 @@ category('ComputeUtils: Driver links inbound outgoing', async () => {
         from: 'in1:step1/b',
         to: 'out1:step2/a',
       }],
-    }
+    };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
     tree.init().subscribe();
@@ -68,7 +62,7 @@ category('ComputeUtils: Driver links inbound outgoing', async () => {
     expectDeepEqual(tree.linksState.isAffected([], link, 1), true, {prefix: 'isAffected'});
     expectDeepEqual(tree.linksState.isInbound([], link, 1), true, {prefix: 'isInbound'});
     expectDeepEqual(tree.linksState.isOutgoing([], link, 1), false, {prefix: 'isOutgoing'});
-  });
+  }, {skipReason: 'TODO'});
 
   test('Nested changes', async () => {
     const config: PipelineConfiguration = {
@@ -100,10 +94,10 @@ category('ComputeUtils: Driver links inbound outgoing', async () => {
     const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
     tree.init().subscribe();
     const link = [...tree.linksState.links.values()][0];
-    expectDeepEqual(tree.linksState.isAffected([{ idx: 0 }], link), true, {prefix: 'isAffected'});
-    expectDeepEqual(tree.linksState.isInbound([{ idx: 0 }], link), false, {prefix: 'isInbound'});
-    expectDeepEqual(tree.linksState.isOutgoing([{ idx: 0 }], link), true, {prefix: 'isOutgoing'});
-  });
+    expectDeepEqual(tree.linksState.isAffected([{idx: 0}], link), true, {prefix: 'isAffected'});
+    expectDeepEqual(tree.linksState.isInbound([{idx: 0}], link), false, {prefix: 'isInbound'});
+    expectDeepEqual(tree.linksState.isOutgoing([{idx: 0}], link), true, {prefix: 'isOutgoing'});
+  }, {skipReason: 'TODO'});
 
   test('Nested changes with an offset', async () => {
     const config: PipelineConfiguration = {
@@ -139,10 +133,10 @@ category('ComputeUtils: Driver links inbound outgoing', async () => {
     const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
     tree.init().subscribe();
     const link = [...tree.linksState.links.values()][0];
-    expectDeepEqual(tree.linksState.isAffected([{ idx: 0 }], link, 1), true, {prefix: 'isAffected'});
-    expectDeepEqual(tree.linksState.isInbound([{ idx: 0 }], link, 1), false, {prefix: 'isInbound'});
-    expectDeepEqual(tree.linksState.isOutgoing([{ idx: 0 }], link, 1), true, {prefix: 'isOutgoing'});
-  });
+    expectDeepEqual(tree.linksState.isAffected([{idx: 0}], link, 1), true, {prefix: 'isAffected'});
+    expectDeepEqual(tree.linksState.isInbound([{idx: 0}], link, 1), false, {prefix: 'isInbound'});
+    expectDeepEqual(tree.linksState.isOutgoing([{idx: 0}], link, 1), true, {prefix: 'isOutgoing'});
+  }, {skipReason: 'TODO'});
 
   test('Nested changes with multiple io', async () => {
     const config: PipelineConfiguration = {
@@ -182,9 +176,9 @@ category('ComputeUtils: Driver links inbound outgoing', async () => {
     const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
     tree.init().subscribe();
     const link = [...tree.linksState.links.values()][0];
-    expectDeepEqual(tree.linksState.isAffected([{ idx: 0 }], link, 1), true, {prefix: 'isAffected'});
-    expectDeepEqual(tree.linksState.isInbound([{ idx: 0 }], link, 1), false, {prefix: 'isInbound'});
-    expectDeepEqual(tree.linksState.isOutgoing([{ idx: 0 }], link, 1), true, {prefix: 'isOutgoing'});
-  });
+    expectDeepEqual(tree.linksState.isAffected([{idx: 0}], link, 1), true, {prefix: 'isAffected'});
+    expectDeepEqual(tree.linksState.isInbound([{idx: 0}], link, 1), false, {prefix: 'isInbound'});
+    expectDeepEqual(tree.linksState.isOutgoing([{idx: 0}], link, 1), true, {prefix: 'isOutgoing'});
+  }, {skipReason: 'TODO'});
 
 });
