@@ -14,6 +14,10 @@ module.exports = {
     rules: [
       {test: /\.tsx?$/, loader: 'ts-loader', options: {allowTsInNodeModules: true}},
       {
+        test: /\.css$/,
+        use: ['style-loader', 'css-loader'],
+      },
+      {
         test: /\.(js|mjs|jsx|ts|tsx)$/,
         enforce: 'pre',
         use: ['source-map-loader'],

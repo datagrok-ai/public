@@ -6,5 +6,4 @@ export {
   makeValidationResult, makeAdvice, makeRevalidation, mergeValidationResults,
   ValidationInfo,
 } from './shared-utils/validation';
-export {CompositionPipeline, PipelineConfiguration, PipelineCompositionConfiguration,
-  RuntimeController, path} from './composition-pipeline';
+export * from './reactive-tree-driver/index';

@@ -17,10 +17,6 @@ declare global {
       CompView: ConstructorTypeOf<ComputationView>,
       RFV: ConstructorTypeOf<RichFunctionView>,
       Pipeline: ConstructorTypeOf<PipelineView>,
-      CompositionPipeline: {
-        new (...args:any[]): CompositionPipeline,
-        compose: typeof composeCompositionPipeline
-      }
 
       makeValidationResult: typeof makeValidationResult,
       makeAdvice: typeof makeAdvice,
@@ -46,14 +42,12 @@ export {
 };
 
 import {
-  ComputationView, RichFunctionView, PipelineView, CompositionPipeline,
-  createCompView, createRFV, createPipeline, createCompositionPipeline, composeCompositionPipeline,
-  PipelineCompositionConfiguration, PipelineConfiguration,
+  ComputationView, RichFunctionView, PipelineView,
+  createCompView, createRFV, createPipeline
 } from './src/views';
 export {
-  ComputationView, RichFunctionView, PipelineView, CompositionPipeline,
-  createCompView, createRFV, createPipeline, createCompositionPipeline, composeCompositionPipeline,
-  PipelineCompositionConfiguration, PipelineConfiguration,
+  ComputationView, RichFunctionView, PipelineView,
+  createCompView, createRFV, createPipeline
 };
 
 export async function initComputeApi() {
