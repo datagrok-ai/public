@@ -9,6 +9,10 @@
 2. Draw another structure and click **Add filter**.
 2. Remove the structure filter from the Filter Panel.
 2. Drag'n'drop the Structure column's header to the Filter Panel - filter should be added to the top of the Filter Panel.
+
+3. Check the filtering of chemical columns with any other filter.
+
+4. Changes in the sketcher through the hamburger menu modify the filter, and it applies the filtering. **In the filter and the sketcherr we always should observe the same structure.**
 ---
 {
   "order": 11,

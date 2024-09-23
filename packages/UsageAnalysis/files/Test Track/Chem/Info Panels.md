@@ -5,6 +5,10 @@
   1. for testing panel Chemistry -> Rendering use chembl_scaffolds.cvs
   2. Choose 'Scaffold' as a Scaffold column and check 'Highlight scaffold'.
   3. Molecules in "Smiles" column should be aligned by scaffold and scaffold should be highlighted 
+  4. Chemistry -> Hightlight. Add the structure to Hightlight and choose the color different from Scaffold hightlightnings. Both of the hightlightnings should be visible on Smiles column.
+5. Click the first molecule in the canonical_smiles column.
+- Context Panel switches to molecule data. 
+- Expand all tabs on molecule Context Panel. No errors should appear.
 
 ***
 

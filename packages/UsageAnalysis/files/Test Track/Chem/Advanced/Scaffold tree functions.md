@@ -4,7 +4,3 @@
 4. On the top of the viewer, check the toolbox of the scaffold tree viewer.
 5. Go to the scaffold tree viewer properties (on the Context Panel) and check them.
 
----
-{
-"order": 12
-}
