@@ -141,17 +141,17 @@ category('cell panel', async () => {
   //   expect(df.filter.trueCount, 700);
   // });
 
-  test('gasteiger-partion-charges.smiles', async () => {
+  test('gasteiger-partial-charges.smiles', async () => {
     const parameters = {mol: molStr, contours: 10};
     await grok.functions.call('Chem:ChemistryGasteigerPartialCharges', parameters);
   }, {stressTest: true});
 
-  test('gasteiger-partion-charges.molV2000', async () => {
+  test('gasteiger-partial-charges.molV2000', async () => {
     const parameters = {mol: molV2000, contours: 10};
     await grok.functions.call('Chem:ChemistryGasteigerPartialCharges', parameters);
   }, {stressTest: true});
 
-  test('gasteiger-partion-charges.molV3000', async () => {
+  test('gasteiger-partial-charges.molV3000', async () => {
     const parameters = {mol: molV3000, contours: 10};
     await grok.functions.call('Chem:ChemistryGasteigerPartialCharges', parameters);
   }, {stressTest: true});

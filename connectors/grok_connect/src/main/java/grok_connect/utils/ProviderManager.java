@@ -47,7 +47,7 @@ public class ProviderManager {
             add(new NeptuneDataProvider());
             add(new DynamoDBDataProvider());
             add(new SapHanaDataProvider());
-//            add(new OrientDbJdbcProvider());
+            add(new DatabricksProvider());
         }};
         providersMap = providersList.stream()
                 .collect(Collectors.toMap(provider -> provider.descriptor.type,

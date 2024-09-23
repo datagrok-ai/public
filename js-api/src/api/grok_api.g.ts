@@ -1311,7 +1311,7 @@ export interface IDartApi {
   grok_Color_GetRowColor(column: any, row: Num): any;
   grok_UI_Span(x: any): any;
   grok_UI_Loader(): any;
-  grok_UI_SetUpdateIndicator(e: any, u: any): any;
+  grok_UI_SetUpdateIndicator(e: any, u: Bool, m: String): any;
   grok_UI_Render(x: any): any;
   grok_UI_RenderCard(x: any): any;
   grok_UI_Div(elements: any, className: String): any;

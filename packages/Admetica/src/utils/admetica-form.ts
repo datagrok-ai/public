@@ -16,10 +16,10 @@ export class FormStateGenerator {
     this.maxHeight = maxHeight;
   }
 
-  private createElementState(table: string, left: number, top: number, column: string) {
+  private createElementState(table: string, left: number, top: number, width: number, column: string) {
     return [
       {
-        "left": left + this.getTextWidth(column),
+        "left": left + width,
         "top": top,
         "width": 100,
         "height": 20,
@@ -33,7 +33,7 @@ export class FormStateGenerator {
       {
         "left": left,
         "top": top,
-        "width": this.getTextWidth(column),
+        "width": width,
         "height": 20,
         "type": "html",
         "viewerSettings": {
@@ -110,6 +110,10 @@ export class FormStateGenerator {
         }
       });
 
+    const allColumns = Object.values(this.categories).flat();
+    const longestColumnName = allColumns.reduce((longest, columnName) => columnName.length > longest.length ? columnName : longest, '');
+    const textWidth = this.getTextWidth(longestColumnName);
+
     for (const [category, columns] of Object.entries(this.categories)) {
       const categoryHeight = headerHeight + columns.length * rowHeight;
 
@@ -123,7 +127,8 @@ export class FormStateGenerator {
       currentTopOffset += headerHeight;
 
       columns.forEach((column: string, index: number) => {
-        const elementState = this.createElementState(this.table, currentLeftOffset, currentTopOffset + index * rowHeight, column);
+        const elementState = 
+          this.createElementState(this.table, currentLeftOffset, currentTopOffset + index * rowHeight, textWidth, column);
         elementStates.push(...elementState);
       });
 

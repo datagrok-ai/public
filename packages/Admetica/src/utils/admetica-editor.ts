@@ -44,7 +44,7 @@ export class AdmeticaBaseEditor {
         .add(ui.fileBrowser({path: TEMPLATES_FOLDER}).root)
         .onOK(async () => await this.initTemplates())
         .show();
-    });
+    }, 'Manage templates (rename/delete)');
     this.folderIcon.style.marginLeft = '10px';
     this.templatesInput.root.append(this.folderIcon);
 

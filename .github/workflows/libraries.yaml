@@ -193,7 +193,7 @@ jobs:
         working-directory: libraries/${{ matrix.project }}
         if: ${{ matrix.build == 'build' }}
       - id: datagrok-tools
-        run: npm install -g datagrok-tools@latest
+        run: npm install -g datagrok-tools@4.13.21
       - run: grok check
         id: grok_check
         working-directory: libraries/${{ matrix.project }}

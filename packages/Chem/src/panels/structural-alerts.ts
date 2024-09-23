@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {RdKitService} from '../rdkit-service/rdkit-service';
 
-export type RuleId = 'PAINS' | 'BMS' | 'SureChEMBL' | 'MLSMR' | 'Dandee' | 'Inpharmatica' | 'LINT' | 'Glaxo';
+export type RuleId = 'PAINS' | 'BMS' | 'SureChEMBL' | 'MLSMR' | 'Dundee' | 'Inpharmatica' | 'LINT' | 'Glaxo';
 export type RuleSet = {[rule in RuleId]: boolean};
 
 export async function runStructuralAlertsDetection(moleculeCol: DG.Column<string>, ruleSet: RuleSet,

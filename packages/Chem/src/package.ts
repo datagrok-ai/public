@@ -80,6 +80,7 @@ import {getMCS} from './utils/most-common-subs';
 import JSZip from 'jszip';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
+import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -461,7 +462,7 @@ export async function descriptorsDocker(): Promise<void> {
 //name: chemDescriptorsTree
 //output: object descriptors
 export async function chemDescriptorsTree(): Promise<object> {
-  return await getDescriptorsTree();
+  return await fetchWrapper(() => getDescriptorsTree());
 }
 
 //top-menu: Chem | Calculate | Map Identifiers...
@@ -482,7 +483,7 @@ export async function freeTextToSmiles(molfile: string): Promise<string | null> 
 //input: column molecules
 //input: list<string> descriptors
 export async function chemDescriptors(table: DG.DataFrame, molecules: DG.Column, descriptors: string[]): Promise<void> {
-  await calculateDescriptors(table, molecules, descriptors);
+  await fetchWrapper(() => calculateDescriptors(table, molecules, descriptors));
 }
 
 //name: SearchSubstructureEditor
@@ -982,12 +983,12 @@ export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void 
 //input: bool bms {caption: BMS; default: false; description: "Bristol-Myers Squibb HTS Deck filters"}
 //input: bool sureChembl {caption: SureChEMBL; default: false; description: "MedChem unfriendly compounds from SureChEMBL"}
 //input: bool mlsmr {caption: MLSMR; default: false; description: "NIH MLSMR Excluded Functionality filters"}
-//input: bool dandee {caption: Dandee; default: false; description: "University of Dundee NTD Screening Library filters"}
+//input: bool dundee {caption: Dundee; default: false; description: "University of Dundee NTD Screening Library filters"}
 //input: bool inpharmatica {caption: Inpharmatica; default: false; description: "Inpharmatica filters"}
 //input: bool lint {caption: LINT; default: false; description: "Pfizer LINT filters"}
 //input: bool glaxo {caption: Glaxo; default: false; description: "Glaxo Wellcome Hard filters"}
 export async function structuralAlertsTopMenu(table: DG.DataFrame, molecules: DG.Column, pains: boolean, bms: boolean,
-  sureChembl: boolean, mlsmr: boolean, dandee: boolean, inpharmatica: boolean, lint: boolean, glaxo: boolean,
+  sureChembl: boolean, mlsmr: boolean, dundee: boolean, inpharmatica: boolean, lint: boolean, glaxo: boolean,
 ): Promise<DG.DataFrame | void> {
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
@@ -1001,7 +1002,7 @@ export async function structuralAlertsTopMenu(table: DG.DataFrame, molecules: DG
     bms: bms,
     sureChembl: sureChembl,
     mlsmr: mlsmr,
-    dandee: dandee,
+    dundee: dundee,
     inpharmatica: inpharmatica,
     lint: lint,
     glaxo: glaxo,
@@ -1018,18 +1019,18 @@ export async function structuralAlertsTopMenu(table: DG.DataFrame, molecules: DG
 //input: bool bms {caption: BMS; default: false; description: "Bristol-Myers Squibb HTS Deck filters"}
 //input: bool sureChembl {caption: SureChEMBL; default: false; description: "MedChem unfriendly compounds from SureChEMBL"}
 //input: bool mlsmr {caption: MLSMR; default: false; description: "NIH MLSMR Excluded Functionality filters"}
-//input: bool dandee {caption: Dandee; default: false; description: "University of Dundee NTD Screening Library filters"}
+//input: bool dundee {caption: Dundee; default: false; description: "University of Dundee NTD Screening Library filters"}
 //input: bool inpharmatica {caption: Inpharmatica; default: false; description: "Inpharmatica filters"}
 //input: bool lint {caption: LINT; default: false; description: "Pfizer LINT filters"}
 //input: bool glaxo {caption: Glaxo; default: false; description: "Glaxo Wellcome Hard filters"}
 export async function runStructuralAlerts(table: DG.DataFrame, molecules: DG.Column, pains: boolean, bms: boolean,
-  sureChembl: boolean, mlsmr: boolean, dandee: boolean, inpharmatica: boolean, lint: boolean, glaxo: boolean,
+  sureChembl: boolean, mlsmr: boolean, dundee: boolean, inpharmatica: boolean, lint: boolean, glaxo: boolean,
 ): Promise<DG.DataFrame | void> {
   if (table.rowCount > 1000)
     grok.shell.info('Structural Alerts detection will take a while to run');
 
   const ruleSet: RuleSet = {'PAINS': pains, 'BMS': bms, 'SureChEMBL': sureChembl, 'MLSMR': mlsmr,
-    'Dandee': dandee, 'Inpharmatica': inpharmatica, 'LINT': lint, 'Glaxo': glaxo};
+    'Dundee': dundee, 'Inpharmatica': inpharmatica, 'LINT': lint, 'Glaxo': glaxo};
   const rdkitService = await chemCommonRdKit.getRdKitService();
   const alertsDf = await grok.data.loadTable(chemCommonRdKit.getRdKitWebRoot() + 'files/alert-collection.csv');
 
@@ -1487,8 +1488,7 @@ export async function callChemDiversitySearch(
 
 //top-menu: Chem | Calculate | Properties...
 //name: Chemical Properties
-//tags: HitTriageFunction
-//tags: Transform
+//tags: HitTriageFunction,Transform
 //input: dataframe table [Input data table]
 //input: column molecules {semType: Molecule}
 //input: bool MW = true
@@ -1519,8 +1519,7 @@ export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: D
 
 //top-menu: Chem | Calculate | Toxicity Risks...
 //name: Toxicity risks
-//tags: HitTriageFunction
-//tags: Transform
+//tags: HitTriageFunction,Transform
 //input: dataframe table [Input data table]
 //input: column molecules {semType: Molecule}
 //input: bool mutagenicity = true
@@ -1876,7 +1875,7 @@ export async function trainChemprop(
     'warmup_epochs': warmup_epochs,
   };
   df.columns.add(predictColumn);
-  const modelBlob = await trainModelChemprop(df.toCsv(), predictColumn.name, parameterValues);
+  const modelBlob = await fetchWrapper(() => trainModelChemprop(df.toCsv(), predictColumn.name, parameterValues));
   const zip = new JSZip();
   const archive = await zip.loadAsync(modelBlob);
   const file = archive.file('blob.bin');
@@ -1891,7 +1890,7 @@ export async function trainChemprop(
 //input: dynamic model
 //output: dataframe data_out
 export async function applyChemprop(df: DG.DataFrame, model: Uint8Array) {
-  const column = await applyModelChemprop(model, df.toCsv());
+  const column = await fetchWrapper(() => applyModelChemprop(model, df.toCsv()));
   return DG.DataFrame.fromColumns([column]);
 }
 
