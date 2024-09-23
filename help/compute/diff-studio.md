@@ -428,10 +428,10 @@ Set the maximum number of iterations to debug formulas in complex models.
 
 Lookup tables are pre-defined sets of model input values. They're organized as follows:
 
-|Input|Set 1|Set 2|...|
+||x|y|...|
 |-----|-----|-----|---|
-|x|1|2|...|
-|y|3|4|...|
+|Set 1|1|2|...|
+|Set 2|3|4|...|
 
 To use a lookup table:
 
@@ -439,7 +439,13 @@ To use a lookup table:
 * Add the `#meta.inputs`-line to your model and specify a CSV file with a lookup table:
 
 ```python
-#meta.inputs: 'My files/model-inputs.csv'
+#meta.inputs: table {choices: OpenFile("System:AppData/DiffStudio/inputs.csv")}
+```
+
+* To improve usability, define `caption`, `category` and a tooltip:
+
+```python
+#meta.inputs: table {choices: OpenFile("System:AppData/DiffStudio/inputs.csv"); caption: Mode; category: Settings} [Hint]
 ```
 
 Use the interface to select inputs and compare model runs:
