@@ -809,7 +809,7 @@ export class MonomerPosition extends SARViewer {
     const positionColumns = this.positionColumns.map((col) => col.name);
     grid.columns.setOrder([C.COLUMNS_NAMES.MONOMER, ...positionColumns]);
     const monomerCol = monomerPositionDf.getCol(C.COLUMNS_NAMES.MONOMER);
-    CR.setMonomerRenderer(monomerCol, this.alphabet);
+    CR.setMonomerRenderer(monomerCol, this.alphabet, true);
     this.cacheInvariantMapColors();
 
     grid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => renderCell(args, this,
@@ -1211,7 +1211,7 @@ export class MostPotentResidues extends SARViewer {
     const monomerCol = mprDf.getCol(C.COLUMNS_NAMES.MONOMER);
 
     // Setting Monomer column renderer
-    CR.setMonomerRenderer(monomerCol, this.alphabet);
+    CR.setMonomerRenderer(monomerCol, this.alphabet, true);
     grid.onCellRender.subscribe(
       (args: DG.GridCellRenderArgs) => renderCell(args, this, false, undefined, undefined));
 
