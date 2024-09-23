@@ -528,7 +528,7 @@ M  END
       if (rawSubstructCol)
         substructObj = rawSubstructCol.get(idx!);
     } else {
-      const substructList = getSubstructProviders(gridCell.tableColumn?.temp)
+      const substructList = (getSubstructProviders(gridCell.tableColumn?.temp) ?? [])
         .map((p) => p.getSubstruct(gridCell.tableRowIndex));
       substructObj = mergeSubstructs(substructList);
     }
