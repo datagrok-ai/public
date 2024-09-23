@@ -142,7 +142,7 @@ export const DriverApp = Vue.defineComponent({
               if (treeState.value) {
                 const zipConfig = {} as Zippable;
 
-                const reportStep = async (idx: number, previousPath: string, state: PipelineState) => {
+                const reportStep = async (state: PipelineState, previousPath: string = '', idx: number = 1) => {
                   if (isFuncCallState(state) && state.funcCall) {
                     const funccall = state.funcCall;
 
@@ -153,9 +153,12 @@ export const DriverApp = Vue.defineComponent({
                       Utils.dfToViewerMapping(funccall),
                     );
 
-                    zipConfig[
-                      `${previousPath}/${String(idx).padStart(3, '0')}_${Utils.getFuncCallDefaultFilename(funccall)}`
-                    ] =
+                    const validatedFilename = Utils.replaceForWindowsPath(
+                      `${String(idx).padStart(3, '0')}_${Utils.getFuncCallDefaultFilename(funccall)}`,
+                    );
+                    const validatedFilenameWithPath = `${previousPath}/${validatedFilename}`;
+
+                    zipConfig[validatedFilenameWithPath] =
                       [new Uint8Array(await blob.arrayBuffer()), {level: 0}];
                   }
 
@@ -164,15 +167,17 @@ export const DriverApp = Vue.defineComponent({
                     isParallelPipelineState(state) || 
                     isStaticPipelineState(state)
                   ) {
-                    const nestedPath = previousPath.length > 0 ? 
-                      `${previousPath}/${String(idx).padStart(3, '0')}_${state.friendlyName ?? state.nqName}`: 
-                      `${String(idx).padStart(3, '0')}_${state.friendlyName ?? state.nqName}`;
+                    const nestedPath = `${String(idx).padStart(3, '0')}_${state.friendlyName ?? state.nqName}`;
+                    let validatedNestedPath = Utils.replaceForWindowsPath(nestedPath);
+
+                    if (previousPath.length > 0) validatedNestedPath = `${previousPath}/${validatedNestedPath}`;
+
                     for (const [idx, stepState] of state.steps.entries()) 
-                      await reportStep(idx + 1, nestedPath, stepState);
+                      await reportStep(stepState, validatedNestedPath, idx + 1);
                   }
                 }; 
                 
-                await reportStep(1, '', treeState.value);
+                await reportStep(treeState.value);
 
                 DG.Utils.download(
                   `${treeState.value.friendlyName ?? treeState.value.configId}.zip`, 

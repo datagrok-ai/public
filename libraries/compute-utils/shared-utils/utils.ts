@@ -14,6 +14,12 @@ import { ID_COLUMN_NAME } from '../shared-components/src/history-input';
 import { delay, getStarted } from '../function-views/src/shared/utils';
 import cloneDeepWith from 'lodash.clonedeepwith';
 
+export const replaceForWindowsPath = (rawName: string, stringToInsert?: string) => {
+  const regExpForWindowsPath = /(\/|\\|\:|\*|\?|\"|\<|\>|\|)/g;
+
+  return rawName.replaceAll(regExpForWindowsPath, stringToInsert ?? '_')
+}
+
 export const richFunctionViewReport = async (
   format: string,
   func: DG.Func,
