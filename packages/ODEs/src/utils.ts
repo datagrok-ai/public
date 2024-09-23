@@ -138,7 +138,8 @@ export async function getInputsTable(command: string): Promise<DG.DataFrame | nu
     if (isLookupTableCorrect(table))
       return table;
   } catch (err) {
-    grok.shell.warning(`${LOOKUP_DF_FAIL.LOAD} ${(err instanceof Error) ? err.message : LOOKUP_DF_FAIL.PLATFORM}`);
+    const msg = (err instanceof Error) ? err.message : `check ${command}`;
+    grok.shell.warning(`${LOOKUP_DF_FAIL.LOAD} ${msg}`);
   }
 
   return null;
