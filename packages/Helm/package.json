@@ -17,10 +17,10 @@
   ],
   "dependencies": {
     "@datagrok-libraries/bio": "../../libraries/bio",
-    "@datagrok-libraries/chem-meta": "1.2.6",
+    "@datagrok-libraries/chem-meta": "../../libraries/chem-meta",
     "@datagrok-libraries/utils": "^4.3.0",
     "cash-dom": "^8.1.1",
-    "datagrok-api": "1.21.1",
+    "datagrok-api": "^1.21.1",
     "dayjs": "^1.10.6",
     "rxjs": "^6.5.5",
     "wu": "latest"
