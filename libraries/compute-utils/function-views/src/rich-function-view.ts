@@ -11,7 +11,7 @@ import {Subject, BehaviorSubject, Observable, merge, from, of, combineLatest} fr
 import {debounceTime, delay, distinctUntilChanged, filter, groupBy, map, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
 import {UiUtils} from '../../shared-components';
 import {Validator, ValidationResult, nonNullValidator, isValidationPassed, getErrorMessage, makePendingValidationResult, mergeValidationResults, getValidationIcon} from '../../shared-utils/validation';
-import {getFuncRunLabel, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, scalarsToSheet, isInputBase, updateOutputValidationSign, createPartialCopy, updateIndicatorWithText, richFunctionViewExport, getValidators, validate, categoryToDfParamMap} from '../../shared-utils/utils';
+import {getFuncRunLabel, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, scalarsToSheet, isInputBase, updateOutputValidationSign, createPartialCopy, updateIndicatorWithText, richFunctionViewReport, getValidators, validate, categoryToDfParamMap} from '../../shared-utils/utils';
 import {EDIT_STATE_PATH, EXPERIMENTAL_TAG, INPUT_STATE, RESTRICTED_PATH, SYNC_FIELD, SyncFields, syncParams, ValidationRequestPayload, viewerTypesMapping} from '../../shared-utils/consts';
 import {FuncCallInput, FuncCallInputValidated, isFuncCallInputValidated, isInputLockable, SubscriptionLike} from '../../shared-utils/input-wrappers';
 import '../css/rich-function-view.css';
@@ -1719,7 +1719,7 @@ export class RichFunctionView extends FunctionView {
 
     if (!this.func) throw new Error('The correspoding function is not specified');
 
-    return richFunctionViewExport(
+    return richFunctionViewReport(
       format,
       this.func,
       this.lastCall,

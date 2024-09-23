@@ -420,6 +420,7 @@ export async function MockProvider3(params: any) {
     id: 'pipelinePar',
     nqName: 'LibTests:MockWrapper3',
     provider: 'LibTests:MockProvider3',
+    friendlyName: 'Tree wizard model',
     version: '1.0',
     type: 'parallel',
     stepTypes: [{

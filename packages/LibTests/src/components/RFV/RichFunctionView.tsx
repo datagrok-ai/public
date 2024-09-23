@@ -215,7 +215,7 @@ export const RichFunctionView = Vue.defineComponent({
             caption={ui.iconFA('arrow-to-bottom')}
             items={['Excel']}
             onSelected={({item: format}) => {
-              Utils.richFunctionViewExport(
+              Utils.richFunctionViewReport(
                 format,
                 currentCall.value.func,
                 currentCall.value,

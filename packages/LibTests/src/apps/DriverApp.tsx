@@ -142,11 +142,11 @@ export const DriverApp = Vue.defineComponent({
               if (treeState.value) {
                 const zipConfig = {} as Zippable;
 
-                const exportStep = async (previousPath: string, state: PipelineState) => {
+                const reportStep = async (previousPath: string, state: PipelineState) => {
                   if (isFuncCallState(state) && state.funcCall) {
                     const funccall = state.funcCall;
 
-                    const blob = await Utils.richFunctionViewExport(
+                    const blob = await Utils.richFunctionViewReport(
                       'Excel',
                       funccall.func,
                       funccall,
@@ -166,13 +166,16 @@ export const DriverApp = Vue.defineComponent({
                       `${previousPath}/${state.friendlyName ?? state.nqName}`: 
                       `${state.friendlyName ?? state.nqName}`;
                     for (const stepState of state.steps) 
-                      await exportStep(nestedPath, stepState);
+                      await reportStep(nestedPath, stepState);
                   }
                 }; 
                 
-                await exportStep('', treeState.value);
+                await reportStep('', treeState.value);
 
-                DG.Utils.download('All steps.zip', new Blob([zipSync(zipConfig)]));
+                DG.Utils.download(
+                  `${treeState.value.friendlyName ?? treeState.value.configId}.xlsx`, 
+                  new Blob([zipSync(zipConfig)]),
+                );
               }
             }}
           /> }

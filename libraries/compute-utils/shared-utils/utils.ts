@@ -14,7 +14,7 @@ import { ID_COLUMN_NAME } from '../shared-components/src/history-input';
 import { delay, getStarted } from '../function-views/src/shared/utils';
 import cloneDeepWith from 'lodash.clonedeepwith';
 
-export const richFunctionViewExport = async (
+export const richFunctionViewReport = async (
   format: string,
   func: DG.Func,
   lastCall: DG.FuncCall,
