@@ -39,67 +39,73 @@ category('PolyTool: Enumerate', () => {
   const tests: {
     [testName: string]: { src: string, params: PolyToolEnumeratorParams, tgt: { seq: string, name: string }[] }
   } = {
-    'single1': {
+    'breadth1': {
       src: 'PEPTIDE1{[Ac(1)].F.W.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0',
       params: {
         type: PolyToolEnumeratorTypes.Single,
-        placeholders: [
-          {position: 4, monomers: ['K', 'P', 'F4COO']},
-          {position: 6, monomers: ['Y', 'T']},
+        placeholdersBreadth: [
+          {start: 2, end: 4, monomers: ['K']},
         ],
       },
       tgt: [
+        {seq: 'PEPTIDE1{[Ac(1)].F.K.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: '-W3K'},
+        {seq: 'PEPTIDE1{[Ac(1)].F.W.K.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: '-G4K'},
         {seq: 'PEPTIDE1{[Ac(1)].F.W.G.K.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: '-P5K'},
-        {seq: 'PEPTIDE1{[Ac(1)].F.W.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: '-P5P'},
-        {seq: 'PEPTIDE1{[Ac(1)].F.W.G.[F4COO].L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: '-P5[F4COO]'},
-        {seq: 'PEPTIDE1{[Ac(1)].F.W.G.P.L.Y.[C(1)].G.[NH2]}$$$$V2.0', name: '-[Tic]7Y'},
-        {seq: 'PEPTIDE1{[Ac(1)].F.W.G.P.L.T.[C(1)].G.[NH2]}$$$$V2.0', name: '-[Tic]7T'},
-      ]
+      ],
     },
-    'single-with-original': {
+    'breadth1-with-original': {
       src: 'PEPTIDE1{[Ac(1)].F.W.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0',
       params: {
         type: PolyToolEnumeratorTypes.Single,
-        placeholders: [
-          {position: 4, monomers: ['K', 'P', 'F4COO']},
-          {position: 6, monomers: ['Y', 'T']},
+        placeholdersBreadth: [
+          {start: 2, end: 4, monomers: ['K']},
         ],
         keepOriginal: true,
       },
       tgt: [
         {seq: 'PEPTIDE1{[Ac(1)].F.W.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: ''},
+        {seq: 'PEPTIDE1{[Ac(1)].F.K.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: '-W3K'},
+        {seq: 'PEPTIDE1{[Ac(1)].F.W.K.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: '-G4K'},
         {seq: 'PEPTIDE1{[Ac(1)].F.W.G.K.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: '-P5K'},
-        {seq: 'PEPTIDE1{[Ac(1)].F.W.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: '-P5P'},
-        {seq: 'PEPTIDE1{[Ac(1)].F.W.G.[F4COO].L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: '-P5[F4COO]'},
-        {seq: 'PEPTIDE1{[Ac(1)].F.W.G.P.L.Y.[C(1)].G.[NH2]}$$$$V2.0', name: '-[Tic]7Y'},
-        {seq: 'PEPTIDE1{[Ac(1)].F.W.G.P.L.T.[C(1)].G.[NH2]}$$$$V2.0', name: '-[Tic]7T'},
-      ]
-    },
-    'matrix1': {
-      src: 'PEPTIDE1{[Ac(1)].F.W.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0',
-      params:
-        {
-          type: PolyToolEnumeratorTypes.Matrix,
-          placeholders: [
-            {position: 1, monomers: ['D', 'L']},
-            {position: 4, monomers: ['K', 'P', 'F4COO']},
-            {position: 6, monomers: ['Y', 'T']},
-          ]
-        },
-      tgt: [
-        {seq: 'PEPTIDE1{[Ac(1)].D.W.G.K.L.Y.[C(1)].G.[NH2]}$$$$V2.0', name: '-F2D-P5K-[Tic]7Y'},
-        {seq: 'PEPTIDE1{[Ac(1)].D.W.G.K.L.T.[C(1)].G.[NH2]}$$$$V2.0', name: '-F2D-P5K-[Tic]7T'},
-        {seq: 'PEPTIDE1{[Ac(1)].D.W.G.P.L.Y.[C(1)].G.[NH2]}$$$$V2.0', name: '-F2D-P5P-[Tic]7Y'},
-        {seq: 'PEPTIDE1{[Ac(1)].D.W.G.P.L.T.[C(1)].G.[NH2]}$$$$V2.0', name: '-F2D-P5P-[Tic]7T'},
-        {seq: 'PEPTIDE1{[Ac(1)].D.W.G.[F4COO].L.Y.[C(1)].G.[NH2]}$$$$V2.0', name: '-F2D-P5[F4COO]-[Tic]7Y'},
-        {seq: 'PEPTIDE1{[Ac(1)].D.W.G.[F4COO].L.T.[C(1)].G.[NH2]}$$$$V2.0', name: '-F2D-P5[F4COO]-[Tic]7T'},
-        {seq: 'PEPTIDE1{[Ac(1)].L.W.G.K.L.Y.[C(1)].G.[NH2]}$$$$V2.0', name: '-F2L-P5K-[Tic]7Y'},
-        {seq: 'PEPTIDE1{[Ac(1)].L.W.G.K.L.T.[C(1)].G.[NH2]}$$$$V2.0', name: '-F2L-P5K-[Tic]7T'},
-        {seq: 'PEPTIDE1{[Ac(1)].L.W.G.P.L.Y.[C(1)].G.[NH2]}$$$$V2.0', name: '-F2L-P5P-[Tic]7Y'},
-        {seq: 'PEPTIDE1{[Ac(1)].L.W.G.P.L.T.[C(1)].G.[NH2]}$$$$V2.0', name: '-F2L-P5P-[Tic]7T'},
-        {seq: 'PEPTIDE1{[Ac(1)].L.W.G.[F4COO].L.Y.[C(1)].G.[NH2]}$$$$V2.0', name: '-F2L-P5[F4COO]-[Tic]7Y'},
-        {seq: 'PEPTIDE1{[Ac(1)].L.W.G.[F4COO].L.T.[C(1)].G.[NH2]}$$$$V2.0', name: '-F2L-P5[F4COO]-[Tic]7T'},
       ],
+    },
+    'breadth2': {
+      src: 'PEPTIDE1{[Ac(1)].F.W.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0',
+      params: {
+        type: PolyToolEnumeratorTypes.Single,
+        placeholdersBreadth: [
+          {start: 2, end: 4, monomers: ['K', 'Y']},
+        ],
+      },
+      tgt: [
+        {seq: 'PEPTIDE1{[Ac(1)].F.K.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: '-W3K'},
+        {seq: 'PEPTIDE1{[Ac(1)].F.W.K.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: '-G4K'},
+        {seq: 'PEPTIDE1{[Ac(1)].F.W.G.K.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: '-P5K'},
+        {seq: 'PEPTIDE1{[Ac(1)].F.Y.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: '-W3Y'},
+        {seq: 'PEPTIDE1{[Ac(1)].F.W.Y.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: '-G4Y'},
+        {seq: 'PEPTIDE1{[Ac(1)].F.W.G.Y.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: '-P5Y'},
+      ],
+    },
+    'breadth-double': {
+      src: 'PEPTIDE1{[Ac(1)].F.W.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0',
+      params: {
+        type: PolyToolEnumeratorTypes.Single,
+        placeholdersBreadth: [
+          {start: 2, end: 4, monomers: ['K']},
+          {start: 2, end: 4, monomers: ['Y']},
+        ],
+      },
+      tgt: [
+        {seq: "PEPTIDE1{[Ac(1)].F.Y.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0", name: "-W3K-K3Y"},
+        {seq: "PEPTIDE1{[Ac(1)].F.K.Y.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0", name: "-W3K-G4Y"},
+        {seq: "PEPTIDE1{[Ac(1)].F.K.G.Y.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0", name: "-W3K-P5Y"},
+        {seq: "PEPTIDE1{[Ac(1)].F.Y.K.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0", name: "-G4K-W3Y"},
+        {seq: "PEPTIDE1{[Ac(1)].F.W.Y.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0", name: "-G4K-K4Y"},
+        {seq: "PEPTIDE1{[Ac(1)].F.W.K.Y.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0", name: "-G4K-P5Y"},
+        {seq: "PEPTIDE1{[Ac(1)].F.Y.G.K.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0", name: "-P5K-W3Y"},
+        {seq: "PEPTIDE1{[Ac(1)].F.W.Y.K.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0", name: "-P5K-G4Y"},
+        {seq: "PEPTIDE1{[Ac(1)].F.W.G.Y.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0", name: "-P5K-K5Y"}
+      ]
     }
   };
 

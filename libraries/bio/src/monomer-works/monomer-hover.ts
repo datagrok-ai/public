@@ -134,7 +134,9 @@ export function buildMonomerHoverLink(
 export function execMonomerHoverLinks(
   seqGridCell: DG.GridCell, seqMonomer: ISeqMonomer | null
 ): void {
-  const seqCol = seqGridCell.tableColumn!;
+  const seqCol = seqGridCell.tableColumn;
+  if (!seqCol) return;
+
   const mhlList = getMonomerHoverLinks(seqCol);
   for (let mhlI = mhlList.length - 1; mhlI >= 0; --mhlI) {
     const mhl = mhlList[mhlI];

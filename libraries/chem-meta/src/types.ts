@@ -46,6 +46,5 @@ export function addSubstructProvider(colTemp: any, substructProvider: ISubstruct
 }
 
 export function getSubstructProviders(colTemp: any): ISubstructProvider[] {
-  if (!colTemp) return [];
-  return colTemp[ChemTemps.SUBSTRUCT_PROVIDERS];
+  return colTemp?.[ChemTemps.SUBSTRUCT_PROVIDERS] ?? [];
 }
