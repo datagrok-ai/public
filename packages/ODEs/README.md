@@ -193,6 +193,25 @@ Diff Studio alerts you if computations take too long. The default time limit is 
 #meta.solver: {method: 'mrt'; maxTimeMs: 50}
 ```
 
+## Lookup tables
+
+Lookup tables are pre-defined sets of model input values. They're organized as follows:
+
+||x|y|...|
+|-----|-----|-----|---|
+|Set 1|1|2|...|
+|Set 2|3|4|...|
+
+To use a lookup table:
+
+* Create a CSV file with your table and add it to your project
+* Add the `#meta.inputs`-line to your model and specify a CSV file with a lookup table
+* To improve usability, define `caption`, `category` and a tooltip:
+
+```python
+#meta.inputs: table {choices: OpenFile("System:AppData/DiffStudio/inputs.csv"); caption: Mode; category: Settings} [Hint]
+```
+
 ## Performance
 
 Diff Studio solvers ensure fast **in-browser** intergration of ODEs. The following [classic problems](https://archimede.uniba.it/~testset/testsetivpsolvers/?page_id=26#ODE) illustrate their efficiency:
