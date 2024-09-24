@@ -19,7 +19,7 @@ The box plot shows the distribution of values by categories:
 
 ![anova-box-plot.png](anova-box-plot.png)
 
-The ANOVA summary table presents results of computations:
+The `Analysis` tab presents a table with ANOVA computations:
 
 ![anova-summary-table.png](anova-summary-table.png)
 
