@@ -25,7 +25,7 @@ import {identifiersWidget, openMapIdentifiersDialog, textToSmiles} from './widge
 //widget imports
 import {SubstructureFilter} from './widgets/chem-substructure-filter';
 import {drugLikenessWidget} from './widgets/drug-likeness';
-import {addPropertiesAsColumns, getChemPropertyFunc, propertiesWidget} from './widgets/properties';
+import {addPropertiesAsColumns, getChemPropertyFunc, getPropertyForMolecule, propertiesWidget} from './widgets/properties';
 import {structuralAlertsWidget} from './widgets/structural-alerts';
 import {structure2dWidget} from './widgets/structure2d';
 import {addRisksAsColumns, toxicityWidget} from './widgets/toxicity';
@@ -1909,6 +1909,14 @@ export async function isApplicableNN(df: DG.DataFrame, predictColumn: DG.Column)
   if (!predictColumn.matches('numerical'))
     return false;
   return true;
+}
+
+//name: addProperty
+//input: string molecule {semType: Molecule}
+//input: string prop {choices:["MV", "HBA", "HBD", "LogP", "LogS", "PSA", "Rotatable bonds", "Stereo centers", "Molecule charge"]}
+//output: string propValue
+export async function addProperty(molecule: string, prop: string): Promise<any> {
+  return await getPropertyForMolecule(molecule, prop);
 }
 
 export {getMCS};

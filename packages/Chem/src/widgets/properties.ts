@@ -96,3 +96,11 @@ export async function addPropertiesAsColumns(df: DG.DataFrame, smilesCol: DG.Col
     df.columns.add(col);
   });
 }
+
+export async function getPropertyForMolecule(molecule: string, prop: string) {  
+  const smiles = _convertMolNotation(molecule, DG.chem.Notation.Unknown,
+      DG.chem.Notation.Smiles, getRdKitModule());
+  const oclMolObj = oclMol(smiles);
+  const res = PROP_MAP[prop].valueFunc(oclMolObj);
+  return res;
+}
