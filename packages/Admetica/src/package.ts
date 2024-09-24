@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { getModelsSingle, performChemicalPropertyPredictions, addSparklines } from './utils/admetica-utils';
+import { getModelsSingle, performChemicalPropertyPredictions, addSparklines, runAdmetica } from './utils/admetica-utils';
 import { properties } from './utils/admetica-utils';
 import { AdmeticaBaseEditor } from './utils/admetica-editor';
 import { _demoAdmetica } from './demo/demo-admetica';
@@ -89,4 +89,14 @@ export async function admeticaMenu(
 //meta.demoPath: Cheminformatics | Admetica
 export async function demoAdmetica(): Promise<void> {
   await _demoAdmetica();
+}
+
+
+//name: addAdmeProperty
+//input: string molecule {semType: Molecule}
+//input: string prop {choices:["Caco2", "Solubility", "Lipophilicity", "PPBR", "VDss"]}
+//output: string propValue
+export async function addAdmeProp(molecule: string, prop: string): Promise<any> {
+  const csvString = await runAdmetica(`smiles\n${molecule}`, prop, 'false');
+  return DG.DataFrame.fromCsv(csvString!).get(prop, 0);
 }
