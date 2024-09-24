@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.SQLTransientConnectionException;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,10 +26,11 @@ public class ConnectionPool {
             String key = url + properties + driverClassName;
             HikariDataSource ds = connectionPool.computeIfAbsent(key, k -> getDataSource(url, properties, driverClassName));
             return ds.getConnection();
+        } catch (HikariPool.PoolInitializationException | SQLTransientConnectionException e) {
+            Throwable cause = e.getCause();
+            throw new GrokConnectException(cause != null ? cause : e);
         } catch (SQLException e) {
             throw new GrokConnectException(e);
-        } catch (HikariPool.PoolInitializationException e) {
-            throw new GrokConnectException(e.getCause());
         }
     }
 
@@ -41,6 +43,8 @@ public class ConnectionPool {
         propertiesWithoutPass.remove(DbCredentials.ACCESS_KEY);
         propertiesWithoutPass.remove(DbCredentials.SECRET_KEY);
         propertiesWithoutPass.remove(DbCredentials.ACCOUNT_LOCATOR);
+        propertiesWithoutPass.remove(DbCredentials.UID);
+        propertiesWithoutPass.remove(DbCredentials.PWD);
 
         String alphanumeric = "[^A-Za-z\\d./|=]";
         String poolName = "Host - " + url.replaceAll("[:=]", "|").replaceAll(alphanumeric, "") +

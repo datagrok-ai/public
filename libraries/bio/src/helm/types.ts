@@ -2,6 +2,7 @@ import type {
   HelmType, PolymerType, MonomerType, IWebEditorMonomer, WebEditorRGroups, IMonomerColors, MonomerSetType
 } from '@datagrok-libraries/js-draw-lite/src/types/org';
 
+import type {Point} from '@datagrok-libraries/js-draw-lite/src/Point';
 import type {Atom} from '@datagrok-libraries/js-draw-lite/src/Atom';
 import type {IJsAtom} from '@datagrok-libraries/js-draw-lite/src/types/jsdraw2';
 import type {Bond} from '@datagrok-libraries/js-draw-lite/src/Bond';
@@ -25,7 +26,7 @@ import type {Monomers} from '@datagrok-libraries/helm-web-editor/helm/Monomers';
 import type {DojoType, DojoxType} from '@datagrok-libraries/js-draw-lite/src/types/dojo';
 
 export {HelmType, PolymerType, MonomerType, WebEditorRGroups};
-export {Atom, IJsAtom, Bond, Mol, Editor, MonomerExplorer};
+export {Point, Atom, IJsAtom, Bond, Mol, Editor, MonomerExplorer};
 
 export {HelmAtom, HelmBond, HelmMol, HelmEditor, HelmString};
 
@@ -39,7 +40,8 @@ export {HweWindow, ScilModuleType, JSDraw2ModuleType, OrgType};
 
 
 export interface ISeqMonomer {
-  polymerType: PolymerType;
+  position: number;
+  biotype: HelmType;
   symbol: string;
 }
 

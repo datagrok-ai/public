@@ -141,11 +141,11 @@ function encodeFragments(fragsOut: IMmpFragmentsResult): [[number, number][][], 
   const fragmentMap: Record<string, number> = {};
   for (let i = 0; i < fragsOut.frags.length; i++) {
     for (let j = 0; j < fragsOut.frags[i].length; j++) {
-      if (!fragmentMap[fragsOut.frags[i][j][0]]) {
+      if (fragmentMap[fragsOut.frags[i][j][0]] == undefined) {
         fragmentMap[fragsOut.frags[i][j][0]] = fragmetnCounter;
         fragmetnCounter++;
       }
-      if (!fragmentMap[fragsOut.frags[i][j][1]]) {
+      if (fragmentMap[fragsOut.frags[i][j][1]] == undefined) {
         fragmentMap[fragsOut.frags[i][j][1]] = fragmetnCounter;
         fragmetnCounter++;
       }

@@ -34,7 +34,7 @@ export class MonomerLibManager implements IMonomerLibHelper {
 
   public get eventManager(): IMonomerLibFileEventManager { return this._eventManager; }
 
-  public async awaitLoaded(timeout: number = 3000): Promise<void> {
+  public async awaitLoaded(timeout: number = 5000): Promise<void> {
     return await Promise.race([
       (async () => {
         const fileManager = await this.getFileManager();
@@ -47,7 +47,7 @@ export class MonomerLibManager implements IMonomerLibHelper {
       })(),
     ]).then((res) => {
       if (!res)
-        throw new Error(`Loading monomer libraries is timeout ${timeout} ms.`);
+        throw new Error(`Loading monomer libraries timeout ${timeout} ms.`);
     });
   }
 

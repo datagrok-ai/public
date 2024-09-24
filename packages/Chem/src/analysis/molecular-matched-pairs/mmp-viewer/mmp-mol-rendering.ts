@@ -1,6 +1,7 @@
-import {getRdKitService, getUncommonAtomsAndBonds} from '../../../utils/chem-common-rdkit';
-import {ISubstruct} from '../../../rendering/rdkit-cell-renderer';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
+
+import {getRdKitService, getUncommonAtomsAndBonds} from '../../../utils/chem-common-rdkit';
 
 async function getMmpMcs(molecules1: string[], molecules2: string[]): Promise<string[]> {
   const service = await getRdKitService();

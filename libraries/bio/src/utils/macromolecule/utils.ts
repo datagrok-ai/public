@@ -3,14 +3,13 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 import {
   CandidateSimType,
-  CandidateType, GAP_SYMBOL,
-  ISeqSplitted,
+  CandidateType, ISeqSplitted,
   MonomerFreqs,
   SeqColStats, SeqSplittedBase,
   SplitterFunc
 } from './types';
-import {ALPHABET, Alphabets, candidateAlphabets, monomerRe, NOTATION} from './consts';
-import {GapOriginals, SeqHandler} from '../seq-handler';
+import {ALPHABET, Alphabets, candidateAlphabets, GAP_SYMBOL, GapOriginals, monomerRe, NOTATION} from './consts';
+import {SeqHandler} from '../seq-handler';
 import {Vector} from '@datagrok-libraries/utils/src/type-declarations';
 import {vectorDotProduct, vectorLength} from '@datagrok-libraries/utils/src/vector-operations';
 import {SeqPalette} from '../../seq-palettes';
@@ -21,10 +20,6 @@ import {UnknownSeqPalettes} from '../../unknown';
 export class StringListSeqSplitted implements ISeqSplitted {
   get length(): number { return this.mList.length; }
 
-  get canonicals() { return this.mList; }
-
-  get originals() { return this.mList; }
-
   isGap(posIdx: number): boolean {
     return this.getOriginal(posIdx) === this.gapOriginalMonomer;
   }
@@ -32,7 +27,8 @@ export class StringListSeqSplitted implements ISeqSplitted {
   getCanonical(posIdx: number): string {
     if (this.length <= posIdx)
       throw new Error('Index out of bounds');
-    return this.mList[posIdx];
+    const om = this.mList[posIdx];
+    return om !== this.gapOriginalMonomer ? om : GAP_SYMBOL;
   }
 
   getOriginal(posIdx: number): string {
@@ -49,10 +45,6 @@ export class StringListSeqSplitted implements ISeqSplitted {
 
 export class FastaSimpleSeqSplitted implements ISeqSplitted {
   get length(): number { return this.seqS.length; }
-
-  get canonicals() { return this.seqS; }
-
-  get originals() { return this.seqS; }
 
   isGap(posIdx: number): boolean {
     return this.getOriginal(posIdx) === GapOriginals[NOTATION.FASTA];
@@ -95,14 +87,15 @@ function getStats(splitted: Iterable<ISeqSplitted>, minLength: number): SeqColSt
   let sameLength = true;
   let firstLength = null;
 
-  for (const mSeq of splitted) {
+  for (const seqSS of splitted) {
     if (firstLength == null)
-      firstLength = mSeq.length;
-    else if (mSeq.length !== firstLength)
+      firstLength = seqSS.length;
+    else if (seqSS.length !== firstLength)
       sameLength = false;
 
-    if (mSeq.length >= minLength) {
-      for (const cm of mSeq.canonicals) {
+    if (seqSS.length >= minLength) {
+      for (let posIdx = 0; posIdx < seqSS.length; ++posIdx) {
+        const cm = seqSS.getCanonical(posIdx);
         if (!(cm in freq))
           freq[cm] = 0;
         freq[cm] += 1;

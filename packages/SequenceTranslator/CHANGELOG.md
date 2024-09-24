@@ -1,5 +1,11 @@
 # Sequence Translator changelog
 
+## 1.4.2 (2024-09-24)
+
+### New features
+
+* Add PolyTool breadth enumerator
+
 ## 1.4.1 (2024-09-12)
 
 ### Bug fixes

@@ -2,11 +2,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {GAP_SYMBOL, INotationProvider, ISeqSplitted, SeqSplittedBase, SplitterFunc}
+import wu from 'wu';
+
+import {INotationProvider, ISeqSplitted, SeqSplittedBase, SplitterFunc}
   from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {getSplitterWithSeparator, StringListSeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
-import {GapOriginals} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {GAP_SYMBOL, GapOriginals} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 
 export class CyclizedNotationProvider implements INotationProvider {
   private readonly separatorSplitter: SplitterFunc;
@@ -21,7 +23,9 @@ export class CyclizedNotationProvider implements INotationProvider {
 
   private _splitter(seq: string): ISeqSplitted {
     const baseSS: ISeqSplitted = this.separatorSplitter(seq);
-    return new CyclizedSeqSplitted(baseSS.originals, GapOriginals[NOTATION.SEPARATOR]);
+    return new CyclizedSeqSplitted(
+      wu.count(0).take(baseSS.length).map((p) => baseSS.getOriginal(p)).toArray(),
+      GapOriginals[NOTATION.SEPARATOR]);
   }
 
   public async getHelm(seqCol: DG.Column<string>, options?: any): Promise<DG.Column<string>> {
@@ -43,17 +47,6 @@ export class CyclizedNotationProvider implements INotationProvider {
 /** Gets canonical monomers for original ones with cyclization marks */
 export class CyclizedSeqSplitted extends StringListSeqSplitted {
   private readonly seqCList: (string | null)[];
-
-  private _canonicals: string[] | null = null;
-  override get canonicals(): SeqSplittedBase {
-    if (!this._canonicals) {
-      const len = this.length;
-      this._canonicals = new Array<string>(len);
-      for (let posIdx = 0; posIdx < len; ++posIdx)
-        this._canonicals[posIdx] = this.getCanonical(posIdx);
-    }
-    return this._canonicals;
-  }
 
   override getCanonical(posIdx: number): string {
     if (this.isGap(posIdx)) return GAP_SYMBOL;

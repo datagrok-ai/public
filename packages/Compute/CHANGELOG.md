@@ -1,5 +1,9 @@
 # Compute changelog
 
+## 1.39.3 (2024-09-23)
+
+- ModelCatalog: Added info notification on group membership request
+
 ## 1.39.2 (2024-09-13)
 
 - RFV: Export generation is now independent of UI state

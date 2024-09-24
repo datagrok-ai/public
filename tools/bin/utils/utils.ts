@@ -246,3 +246,18 @@ export async function runScript(script: string, path: string, verbose: boolean =
     throw new Error("Cant run script");
   }
 }
+
+export function setHost(host: any, configFile: any) {
+  if (host) {
+    if (host in configFile.servers) {
+      process.env.HOST = host;
+      console.log('Environment variable `HOST` is set to', host);
+    } else {
+      console.error(`Unknown server alias. Please add it to Config File`);
+      return false;
+    }
+  } else if (configFile.default) {
+    process.env.HOST = configFile.default;
+    console.log('Environment variable `HOST` is set to', configFile.default);
+  }
+}

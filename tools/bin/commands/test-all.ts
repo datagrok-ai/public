@@ -1,7 +1,7 @@
 /* eslint-disable max-len */
 import fs from 'fs';
 import os from 'os';
-import path, { resolve } from 'path';
+import path from 'path';
 import puppeteer from 'puppeteer';
 import { Browser, Page } from 'puppeteer';
 import { PuppeteerScreenRecorder } from 'puppeteer-screen-recorder';
@@ -9,10 +9,8 @@ import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
 import * as testUtils from '../utils/test-utils';
-import { runScript, isPackageDir } from '../utils/utils';
 import { setRandomOrder, setAlphabeticalOrder, setPackageRandomOrder, setPackageAlphabeticalOrder } from '../utils/order-functions';
-import { promises } from 'dns';
-import { test } from './test';
+
 enum order {
   random = 0,
   alphabetical = 1,
@@ -42,14 +40,15 @@ function getEnumOrder(orderStr: string): order {
   return order.random;
 }
 
-const grokDir = path.join(os.homedir(), '.grok');
-const confPath = path.join(grokDir, 'config.yaml');
-const config = yaml.load(fs.readFileSync(confPath, { encoding: 'utf-8' })) as utils.Config;
 
 const curDir = process.cwd();
+const grokDir = path.join(os.homedir(), '.grok');
+const confPath = path.join(grokDir, 'config.yaml');
+
+const csvReportDir = path.join(curDir, 'test-report.csv');
 
 const testCollectionTimeout = 100000;
-const testInvocationTimeout = 3600000;
+const testInvocationTimeout = 7200000;
 
 const orderingFunctions: Map<order, (tests: any, workersAmount: number, testRepeats: number) => any[][]> = new Map<order, (tests: any, workersAmount: number, testRepeats: number) => any[][]>([
   [order.random, setRandomOrder],
@@ -60,29 +59,23 @@ const orderingFunctions: Map<order, (tests: any, workersAmount: number, testRepe
 let workersStarted: number = 0;
 
 export async function testAll(args: TestArgs): Promise<boolean> {
-  setHost(args);
-  let builtPackages = await buildPackages(args.packages, args.host, args['skip-publish'], args['skip-build']);
-  let packagesToRun: string[] = [];
+  const config = yaml.load(fs.readFileSync(confPath, { encoding: 'utf-8' })) as utils.Config;
 
-  builtPackages.forEach((value, key) => {
-    if (value) {
-      packagesToRun.push(key);
-    }
-  });
+  utils.setHost(args.host, config);
+  let packagesToRun = await testUtils.loadPackages(curDir, args.packages, args.host, args['skip-publish'], args['skip-build']);
 
   let testsObj = await loadTestsList(packagesToRun, args.core);
   let filteredTests = await filterTests(testsObj, (args.tags ?? "").split(" "), args['stress-test'], args.benchmark);
   let workersOrder = await setWorkersOrder(filteredTests, getEnumOrder(args.order ?? ''), args.workersCount, args.testRepeat);
 
-  console.log(filteredTests);
   let testsResults = await runTests(workersOrder, {
     benchmark: args.benchmark ?? false,
-    catchUnhandled:  args.catchUnhandled ?? false,
+    catchUnhandled: args.catchUnhandled ?? false,
     gui: args.gui ?? false,
     record: args.record ?? false,
     report: args.report ?? false,
     verbose: args.verbose ?? false
-});
+  });
 
   let i = 0;
   for (let result of testsResults) {
@@ -90,52 +83,11 @@ export async function testAll(args: TestArgs): Promise<boolean> {
     printWorkersResult(result, args.verbose);
   }
 
+  if (args.csv) {
+    saveCsvResults(testsResults.map(result => result.csv));
+  }
+
   return !(testsResults.map((test) => test.failed)).some(failStatus => failStatus === true);
-}
-
-function setHost(args: any) {
-  if (args.host) {
-    if (args.host in config.servers) {
-      process.env.HOST = args.host;
-      console.log('Environment variable `HOST` is set to', args.host);
-    } else {
-      color.error(`Unknown server alias. Please add it to ${confPath}`);
-      return false;
-    }
-  } else if (config.default) {
-    process.env.HOST = config.default;
-    console.log('Environment variable `HOST` is set to', config.default);
-  }
-}
-
-async function buildPackages(packages?: string, host?: string, skipPublish?: boolean, skipBuild?: boolean, linkPackage?: boolean): Promise<Map<string, boolean>> {
-  let packagesToRun = new Map<string, boolean>();
-  let hostString = host === undefined ? `` : `${host}`;
-  if (packages !== "all") {
-    for (let pacakgeName of (packages ?? "").split(' ')) {
-      packagesToRun.set(pacakgeName, false);
-    }
-  }
-
-  for (let dirName of fs.readdirSync(curDir)) {
-    let packageDir = path.join(curDir, dirName);
-    if (!fs.lstatSync(packageDir).isFile()) {
-      if (isPackageDir(packageDir) && (packagesToRun.get(dirName) !== undefined || packages === "all")) {
-        if (skipPublish != true) {
-          await runScript(`npm install`, packageDir);
-          if (linkPackage)
-            await runScript(`grok link`, packageDir);
-          if (skipBuild != true)
-            await runScript(`npm run build`, packageDir);
-          await runScript(`grok publish ${hostString}`, packageDir);
-        }
-        packagesToRun.set(dirName, true);
-        console.log(`Package published ${dirName}`);
-      }
-    }
-  }
-  console.log();
-  return packagesToRun;
 }
 
 async function loadTestsList(packages: string[], core: boolean = false): Promise<Object[]> {
@@ -150,7 +102,7 @@ async function loadTestsList(packages: string[], core: boolean = false): Promise
       return new Promise<any>((resolve, reject) => {
         const promises: any[] = [];
         try {
-          packages.map((packageName : string) => {
+          packages.map((packageName: string) => {
             const p = (<any>window).DG.Func.find({ package: packageName, name: 'test' })[0]?.package;
             if (p) {
               try {
@@ -158,7 +110,7 @@ async function loadTestsList(packages: string[], core: boolean = false): Promise
                   console.error('something else went wrong with collecting package tests')
                   console.error(e?.message)
                 })
-                .then((ts: any) => ({ packageName: packageName, tests: ts })))
+                  .then((ts: any) => ({ packageName: packageName, tests: ts })))
               } catch (e: any) {
                 console.error('something went wrong while adding test collection promise');
                 console.error(e.message);
@@ -291,11 +243,11 @@ async function runWorker(testExecutionData: any[], workerOptions: WorkerOptions)
       });
     }
 
-    let testingResults = await page.evaluate((testData, options): Promise<Object> => {
+    let testingResults = await page.evaluate((testData, options): Promise<any> => {
       if (options.benchmark)
         (<any>window).DG.Test.isInBenchmark = true;
 
-      return new Promise<Object>((resolve, reject) => {
+      return new Promise<any>((resolve, reject) => {
         (<any>window).DG.Utils.executeTests(testData)
           .then((results: any) => {
             resolve(results);
@@ -308,7 +260,9 @@ async function runWorker(testExecutionData: any[], workerOptions: WorkerOptions)
               verboseFailed: "Tests execution failed",
               passedAmount: 0,
               skippedAmount: 0,
-              failedAmount: 1
+              failedAmount: 1,
+              csv: "",
+              df: undefined
             })
           });
       })
@@ -331,29 +285,39 @@ function addLogsToFile(filePath: string, stringToSave: any) {
 
 function printWorkersResult(workerResult: resultObject, verbose: boolean = false) {
   if (verbose) {
-    if (workerResult.passedAmount > 0 && workerResult.verbosePassed.length > 0) {
+    if ((workerResult.passedAmount ?? 0) > 0 && (workerResult.verbosePassed ?? []).length > 0) {
       console.log("Passed: ");
       console.log(workerResult.verbosePassed);
     }
-    if (workerResult.skippedAmount > 0 && workerResult.verboseSkipped.length > 0) {
+    if ((workerResult.skippedAmount ?? 0) > 0 && (workerResult.verboseSkipped ?? []).length > 0) {
       console.log("Skipped: ");
       console.log(workerResult.verboseSkipped);
     }
   }
 
-  if (workerResult.failedAmount > 0 && workerResult.verboseFailed.length > 0) {
+  if ((workerResult.failedAmount ?? 0) > 0 && (workerResult.verboseFailed ?? []).length > 0) {
     console.log("Failed: ");
     console.log(workerResult.verboseFailed);
   }
-  console.log("Passed amount:  " + workerResult.passedAmount);
-  console.log("Skipped amount: " + workerResult.skippedAmount);
-  console.log("Failed amount:  " + workerResult.failedAmount);
+  console.log("Passed amount:  " + workerResult?.passedAmount);
+  console.log("Skipped amount: " + workerResult?.skippedAmount);
+  console.log("Failed amount:  " + workerResult?.failedAmount);
 
   if (workerResult.failed) {
     color.fail('Tests failed.');
   } else {
     color.success('Tests passed.');
   }
+}
+
+function saveCsvResults(stringToSave: string[]) { 
+  const modifiedStrings = stringToSave.map((str, index) => {
+    if (index === 0) return str;
+    return str.split('\n').slice(1).join('\n');
+  }); 
+  
+  fs.writeFileSync(csvReportDir, modifiedStrings.join('\n'), 'utf8'); 
+  color.info('Saved `test-report.csv`\n');
 }
 
 type WorkerOptions = {
@@ -372,7 +336,9 @@ type resultObject = {
   verboseFailed: string,
   passedAmount: number,
   skippedAmount: number,
-  failedAmount: number
+  failedAmount: number,
+  csv: string,
+  df: any
 };
 
 interface TestArgs {
@@ -385,6 +351,7 @@ interface TestArgs {
 
   catchUnhandled?: boolean,
   core?: boolean,
+  csv?: boolean;
   gui?: boolean;
   record?: boolean;
   report?: boolean;

@@ -1,9 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
+import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
 import {MMP_NAMES, columnsDescriptions} from './mmp-constants';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {SUBSTRUCT_COL} from '../../../constants';
 import {MMPA} from '../mmp-analysis/mmpa';
 import {getRdKitModule} from '../../../utils/chem-common-rdkit';
 import {createColWithDescription} from './mmp-generations';
@@ -319,8 +320,8 @@ function getMatchedPairsGrid(mmpa: MMPA) : DG.Grid {
   pairsToSmilesCol.semType = DG.SEMTYPE.MOLECULE;
   pairsFromCol.semType = DG.SEMTYPE.MOLECULE;
   pairsToCol.semType = DG.SEMTYPE.MOLECULE;
-  pairsFromCol.temp[SUBSTRUCT_COL] = MMP_NAMES.STRUCT_DIFF_FROM_NAME;
-  pairsToCol.temp[SUBSTRUCT_COL] = MMP_NAMES.STRUCT_DIFF_TO_NAME;
+  pairsFromCol.temp[ChemTemps.SUBSTRUCT_COL] = MMP_NAMES.STRUCT_DIFF_FROM_NAME;
+  pairsToCol.temp[ChemTemps.SUBSTRUCT_COL] = MMP_NAMES.STRUCT_DIFF_TO_NAME;
 
   const allTransformationsCols = [pairsFromCol, pairsToCol,
     structureDiffFromCol, structureDiffToCol,

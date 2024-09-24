@@ -1,6 +1,7 @@
+import wu from 'wu';
+
 import {ISeqSplitted} from './types';
-import {GapOriginals} from '../seq-handler';
-import {NOTATION} from './consts';
+import {GapOriginals, NOTATION} from './consts';
 import {StringListSeqSplitted} from './utils';
 
 export type AlignmentOptions = {
@@ -78,10 +79,10 @@ export function alignSequencePair(template: ISeqSplitted, seq: ISeqSplitted,
       }
     }
   }
-  alignedTemplate = [...Array.from(template.canonicals).splice(0, i), ...alignedTemplate.reverse(),
-    ...(options.localAlignment ? Array.from(template.canonicals).splice(index[0], templateLen) : [])];
-  alignedSeq = [...Array.from(seq.canonicals).splice(0, j), ...alignedSeq.reverse(),
-    ...(options.localAlignment ? Array.from(seq.canonicals).splice(index[1], seqLen) : [])];
+  alignedTemplate = [...wu.count(0).take(i).map((pos) => template.getCanonical(pos)), ...alignedTemplate.reverse(),
+    ...(options.localAlignment ? wu.count(index[0]).take(templateLen).map((pos) => template.getCanonical(pos)) : [])];
+  alignedSeq = [...wu.count(0).take(j).map((pos) => seq.getCanonical(pos)), ...alignedSeq.reverse(),
+    ...(options.localAlignment ? wu.count(index[1]).take(seqLen).map((pos) => seq.getCanonical(pos)) : [])];
 
   const templateStart = i;
   const seqStart = j;

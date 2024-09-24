@@ -28,7 +28,7 @@ category('parseHelm', () => {
         helm: 'PEPTIDE1{[L-hArg(Et,Et)].E.F.G}|PEPTIDE2{C.E}$PEPTIDE1,PEPTIDE2,2:R3-1:R1$$$V2.0'
       }
     },
-    'PT-cycic': {
+    'PT-cyclic': {
       src: 'PEPTIDE1{[meI].C.[Aca].[Cys_SEt].T.C.[Thr_PO3H2].[Aca]}$PEPTIDE1,PEPTIDE1,8:R2-1:R1$$$V2.0',
       tgt: {
         atomCount: 8, bondCount: 8,
@@ -55,8 +55,7 @@ category('parseHelm', () => {
 
     // parseHelm is dependent on monomers RGroups available, test requires default monomer library
     await setUserLibSettingsForTests();
-    await timeout(async () => { await libHelper.awaitLoaded(); }, 5000,
-      'await monomerLib to be loaded');
+    await libHelper.awaitLoaded();
     await libHelper.loadMonomerLib(true);
   });
 
@@ -74,7 +73,7 @@ category('parseHelm', () => {
   for (const [testName, {src, tgt}] of Object.entries(testData)) {
     test(`woDOM-${testName}`, async () => {
       _testParseHelmWithoutDOM(src, tgt);
-    });
+    }, testName == 'RNA' ? {skipReason: 'GROK-16721'} : undefined);
   }
 });
 
@@ -103,7 +102,6 @@ function _testParseHelmWithoutDOM(src: string, tgt: TestTgtType): void {
   io.parseHelm(plugin, src, origin, undefined);
 
   const m: Mol<HelmType> = plugin.jsd.m;
-  debugger;
   const resHelm = io.getHelm(m);
   expect(m.atoms.length, tgt.atomCount);
   expect(m.bonds.length, tgt.bondCount);

@@ -1,5 +1,13 @@
 # Helm changelog
 
+## 2.5.1 (2024-09-24)
+
+### New features
+
+* Add HelmHelper parse and removeGaps methods, add tests
+* Add monomer hover handling for substruct
+* Add dojo bundled loading (fix freezing the browser)
+
 ## 2.5.0 (2024-09-10)
 
 ### Bug fixes
