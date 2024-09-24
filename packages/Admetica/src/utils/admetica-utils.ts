@@ -345,7 +345,7 @@ function createSummaryPane(semValue: DG.SemanticValue): HTMLElement {
 
 async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLElement> {
   const { cell } = semValue;
-  const { dataFrame, column, rowIndex, value } = cell;
+  const { dataFrame, column, rowIndex, value } = cell ?? grok.shell.tv.dataFrame.currentCell;
 
   const view = grok.shell.tableView(dataFrame.name);
   const gridCol = view.grid.col(column.name);
