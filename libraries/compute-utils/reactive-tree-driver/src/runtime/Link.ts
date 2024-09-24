@@ -206,12 +206,12 @@ export class Link {
           if (controller instanceof ValidatorController) {
             const store = node.getItem().getStateStore();
             if (store instanceof MemoryStore)
-              throw new Error(`Unable to set validations to raw memory store ${node.getItem().uuid}`);
+              throw new Error(`Unable to set validations to a raw memory store ${node.getItem().uuid}`);
             store.setValidation(ioName, this.uuid, controller.outputs[outputAlias]);
           } else if (controller instanceof MetaController) {
             const store = node.getItem().getStateStore();
             if (store instanceof MemoryStore)
-              throw new Error(`Unable to set meta to raw memory store ${node.getItem().uuid}`);
+              throw new Error(`Unable to set meta to a raw memory store ${node.getItem().uuid}`);
             store.setMeta(ioName, controller.outputs[outputAlias]);
           } else {
             const [state, restriction] = controller.outputs[outputAlias];

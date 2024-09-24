@@ -50,7 +50,7 @@ export class LinksState {
 
   public update(state: BaseTree<StateTreeNode>, nestedMutationData?: NestedMutationData) {
     this.destroyLinks();
-    const links = this.createAutoLinks(state);
+    const links = this.createLinks(state);
     this.links = new Map(links.map((link) => [link.uuid, link] as const));
     [this.actions, this.nodesActions] = this.createActions(state);
     this.stepsDependencies = this.calculateStepsDependencies(state, links);
@@ -59,10 +59,10 @@ export class LinksState {
     if (nestedMutationData) {
       const {mutationRootPath, addIdx, removeIdx} = nestedMutationData;
       const bound = this.getLowerBound(addIdx, removeIdx);
-      const inbound = links.filter((link) =>  this.isInbound(mutationRootPath, link, addIdx, removeIdx))
+      const inbound = links.filter((link) => this.isInbound(mutationRootPath, link, addIdx, removeIdx));
       const outgoing = links.filter((link) => this.isOutgoing(mutationRootPath, link, addIdx));
       const affectedMeta = links
-        .filter(link => this.isMetaLink(link))
+        .filter((link) => this.isMetaLink(link))
         .filter((link) => this.isAffected(mutationRootPath, link, addIdx, removeIdx));
       const inboundMap = new Map(inbound.map((link) => [link.uuid, link]));
       const outgoingMap = new Map(outgoing.map((link) => [link.uuid, link]));
@@ -80,7 +80,7 @@ export class LinksState {
     }
   }
 
-  public createAutoLinks(state: BaseTree<StateTreeNode>) {
+  public createLinks(state: BaseTree<StateTreeNode>) {
     const links = state.traverse(state.root, (acc, node, path) => {
       const item = node.getItem();
       if (isStaticPipelineNode(item) || isSequentialPipelineNode(item)) {
@@ -168,9 +168,9 @@ export class LinksState {
           if (depsData[ioName] == null)
             depsData[ioName] = {};
           if (depType === 'meta' || depType === 'data') {
-            if (depsData[depType]) {
-              grok.shell.warning(`Duplicate deps path ${JSON.stringify(stepPath)} io ${ioName} $`)
-            }
+            if (depsData[depType])
+              grok.shell.warning(`Duplicate deps path ${JSON.stringify(stepPath)} io ${ioName} $`);
+
             depsData[ioName][depType] = linkId;
           } else {
             const currentDeps = depsData[ioName]['validation'] ?? [];
@@ -289,7 +289,7 @@ export class LinksState {
 
   public isInbound(rootPath: Readonly<NodeAddress>, link: Link, addIdx?: number, removeIdx?: number) {
     if (addIdx != null) {
-      const addedNodePath = [...rootPath, { idx: addIdx }];
+      const addedNodePath = [...rootPath, {idx: addIdx}];
       const isNodeInbound = (this.hasNested(addedNodePath, link.prefix, link.matchInfo.outputs) &&
         this.hasNonNested(addedNodePath, link.prefix, link.matchInfo.inputs));
       if (isNodeInbound)
@@ -304,7 +304,7 @@ export class LinksState {
   public isOutgoing(rootPath: Readonly<NodeAddress>, link: Link, addIdx?: number) {
     if (addIdx == null)
       return false;
-    const addedNodePath = [...rootPath, { idx: addIdx }];
+    const addedNodePath = [...rootPath, {idx: addIdx}];
     return this.hasNested(addedNodePath, link.prefix, link.matchInfo.inputs) &&
       this.hasNonNested(addedNodePath, link.prefix, link.matchInfo.outputs);
   }

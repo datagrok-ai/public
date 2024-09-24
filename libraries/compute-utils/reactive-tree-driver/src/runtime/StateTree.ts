@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { Observable, defer, of, merge, Subject, BehaviorSubject, from, combineLatest } from 'rxjs';
+import {Observable, defer, of, merge, Subject, BehaviorSubject, from, combineLatest} from 'rxjs';
 import {finalize, map, mapTo, toArray, concatMap, tap, takeUntil, filter, debounceTime, take} from 'rxjs/operators';
 import {NodePath, BaseTree, TreeNode} from '../data/BaseTree';
 import {PipelineConfigurationProcessed} from '../config/config-processing-utils';
@@ -123,8 +123,8 @@ export class StateTree {
   //
 
   public init() {
-    return this.mutateTree(() => {
-      return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(mapTo([]));
+    return this.initTree(() => {
+      return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(mapTo(undefined));
     }).pipe(mapTo(this));
   }
 
@@ -188,7 +188,7 @@ export class StateTree {
       const mutationData: NestedMutationData = {
         mutationRootPath,
         removeIdx,
-      }
+      };
       return of([mutationData]);
     });
   }
@@ -213,7 +213,7 @@ export class StateTree {
       const mutationData: NestedMutationData = {
         mutationRootPath,
         addIdx,
-      }
+      };
       return (initCalls ? StateTree.loadOrCreateCalls(this, this.mockMode) : of(this)).pipe(mapTo([mutationData]));
     });
   }
@@ -233,7 +233,7 @@ export class StateTree {
       const mutationData: NestedMutationData = {
         mutationRootPath,
         addIdx,
-      }
+      };
       return tree.pipe(mapTo([mutationData]));
     });
   }
@@ -515,12 +515,32 @@ export class StateTree {
   // locking, tree mutation and deps tracking
   //
 
+  private initTree(fn: () => Observable<undefined>) {
+    return defer(() => {
+      this.treeLock();
+      return fn();
+    }).pipe(
+      tap(() => this.updateNodesMap()),
+      concatMap(() => {
+        return this.linksState.update(this.nodeTree);
+      }),
+      tap(() => {
+        this.linksState.wireLinks(this.nodeTree);
+        this.setDepsTracker();
+      }),
+      finalize(() => {
+        this.treeUnlock();
+        this.makeStateRequests$.next(true);
+      }),
+    );
+  }
+
   private mutateTree<R>(fn: () => Observable<readonly [NestedMutationData?, R?]>) {
     return defer(() => {
       this.treeLock();
       return this.waitForLinks().pipe(
         tap(() => this.linksState.destroyLinks()),
-        concatMap(() => fn())
+        concatMap(() => fn()),
       );
     }).pipe(
       tap(() => this.updateNodesMap()),
@@ -533,7 +553,6 @@ export class StateTree {
         this.linksState.wireLinks(this.nodeTree);
         this.setDepsTracker();
       }),
-      tap(() => this.setDepsTracker()),
       finalize(() => {
         this.treeUnlock();
         this.makeStateRequests$.next(true);
@@ -554,9 +573,9 @@ export class StateTree {
 
   private waitForLinks() {
     return this.linksState.runningLinks$.pipe(
-      filter(links => links == null || links?.length === 0),
+      filter((links) => links == null || links?.length === 0),
       debounceTime(0),
-      take(1)
+      take(1),
     );
   }
 
@@ -585,7 +604,7 @@ export class StateTree {
           item.clearIORestriction(ioName);
         if (!deps.meta)
           item.clearIOMeta(ioName);
-        item.clearOldValidations(new Set(deps.validation))
+        item.clearOldValidations(new Set(deps.validation));
       }
       return acc;
     }, null);
@@ -606,9 +625,9 @@ export class StateTree {
         const hasPending$ = combineLatest([
           depItem.instancesWrapper.isOutputOutdated$,
           depItem.pendingDependencies$.pipe(
-            map((d) => d.length === 0)
-          )
-        ]).pipe(map(([isOutdated, hasPending]) => !isOutdated && !hasPending))
+            map((d) => d.length === 0),
+          ),
+        ]).pipe(map(([isOutdated, hasPending]) => !isOutdated && !hasPending));
         return [depId, hasPending$] as const;
       });
       item.setDeps(depsStates);
@@ -650,5 +669,4 @@ export class StateTree {
       return saveInstanceState(nqName, state);
     });
   }
-
 }

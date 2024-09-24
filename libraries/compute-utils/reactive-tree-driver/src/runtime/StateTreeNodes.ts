@@ -178,9 +178,8 @@ export class FuncCallNode implements IStoreProvider {
     const cval = this.instancesWrapper.validations$.value;
     const nval: Record<string, Record<string, ValidationResult | undefined>> = {};
     for (const [k, v] of Object.entries(cval)) {
-      if (currentIds.has(k)) {
+      if (currentIds.has(k))
         nval[k] = v;
-      }
     }
     this.instancesWrapper.validations$.next(nval);
   }
