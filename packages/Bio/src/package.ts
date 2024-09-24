@@ -71,7 +71,6 @@ import {getMolColumnFromHelm} from './utils/helm-to-molfile/utils';
 import {MonomerManager} from './utils/monomer-lib/monomer-manager/monomer-manager';
 import {calculateScoresWithEmptyValues} from './utils/calculate-scores';
 import {SeqHelper} from './utils/seq-helper/seq-helper';
-import { _toAtomicLevel } from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
 
 export const _package = new BioPackage(/*{debug: true}/**/);
 
@@ -1137,9 +1136,54 @@ export async function seq2atomic(seq: string, nonlinear: boolean): Promise<strin
     const df = DG.DataFrame.fromColumns([seqCol]);
     const semType = await grok.functions.call('Bio:detectMacromolecule', {col: seqCol});
     if (semType) seqCol.semType = semType;
+
     const monomerLib = (await getMonomerLibHelper()).getMonomerLib();
     const res = (await sequenceToMolfile(df, seqCol, nonlinear, false, monomerLib, _package.rdKitModule))?.molCol?.get(0);
     return res ?? undefined;
+  } catch (err: any) {
+    const [errMsg, errStack] = errInfo(err);
+    _package.logger.error(errMsg, undefined, errStack);
+    throw err;
+  }
+}
+
+// //description: Gets similarity to a reference sequence
+// //input: string seq { semType: Macromolecule }
+// //input: string ref { semType: Macromolecule }
+// //output: double result
+// export async function seqSimilarity(seq: string, ref: string): Promise<number> {
+//   // if (!(seq.trim())) return null;
+//   try {
+//     const seqCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, `seq`, [seq]);
+//     const df = DG.DataFrame.fromColumns([seqCol]);
+//     const semType = await grok.functions.call('Bio:detectMacromolecule', {col: seqCol});
+//     if (semType) seqCol.semType = semType;
+//
+//     const resCol = await calculateScoresWithEmptyValues(df, seqCol, ref, SCORE.SIMILARITY);
+//     return resCol.get(0)!;
+//   } catch (err: any) {
+//     const [errMsg, errStack] = errInfo(err);
+//     _package.logger.error(errMsg, undefined, errStack);
+//     throw err;
+//   }
+// }
+
+//name: seqIdentity
+//friendlyName: seqIdentity
+//description: Gets identity to a reference sequence
+//input: string seq { semType: Macromolecule }
+//input: string ref { semType: Macromolecule }
+//output: double result
+export async function seqIdentity(seq: string, ref: string): Promise<number | null> {
+  if (!(seq.trim())) return null;
+  try {
+    const seqCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, `seq`, [seq]);
+    const df = DG.DataFrame.fromColumns([seqCol]);
+    const semType = await grok.functions.call('Bio:detectMacromolecule', {col: seqCol});
+    if (!semType) throw new Error('Macromolecule required');
+
+    const resCol = await calculateScoresWithEmptyValues(df, seqCol, ref, SCORE.IDENTITY);
+    return resCol.get(0);
   } catch (err: any) {
     const [errMsg, errStack] = errInfo(err);
     _package.logger.error(errMsg, undefined, errStack);
