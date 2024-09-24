@@ -84,7 +84,7 @@ export const ScalarsPanel = Vue.defineComponent({
             return <div 
               class='flex flex-col p-2 items-center gap-4 flex-nowrap'
             > 
-              <div class='text-center'> { prop.caption ?? prop.name } </div>
+              <div class='text-center' style={{color: 'var(--grey-4)'}}> { prop.caption ?? prop.name } </div>
               <span style={{fontSize: 'var(--font-size-large)'}}> {scalarValue} {units} </span>
             </div>;
           })}
