@@ -498,8 +498,8 @@ export class AddNewColumnDialog {
               if (this.packageAutocomplete)
                 setTimeout(() => {
                   startCompletion(cm);
-              }, 100);
-              else if(fullFuncName?.includes(':')) {
+                }, 100);
+              else if (fullFuncName?.includes(':')) {
                 const packAndFuncNames = fullFuncName.split(':');
                 if (!this.packageNames.includes(packAndFuncNames[0]))
                   this.error = `Package ${packAndFuncNames[0]} not found`;
@@ -508,31 +508,31 @@ export class AddNewColumnDialog {
                 else if (!this.packageFunctionsNames[packAndFuncNames[0]].includes(packAndFuncNames[1]))
                   this.error = `Function ${packAndFuncNames[1]} not found in ${packAndFuncNames[0]} package`;
                 else
-                  validateAndUpdateEvent.next(cmValue);
+                  this.error = this.validateFormula(cmValue);
               } else {
                 if (this.functionAutocomplete)
                   this.setSelection(cm.state.selection.main.head, true);
-                validateAndUpdateEvent.next(cmValue);
+                this.error = this.validateFormula(cmValue);
               }
             }
+            this.packageAutocomplete = false;
+            this.functionAutocomplete = false;
+            ui.empty(this.errorDiv);
+            if (this.error)
+              this.errorDiv.append(ui.divText(this.error, 'cm-error-div'));
+            updatePreviewEvent.next(cmValue);
           }),
         ],
       }),
     });
     
-    const validateAndUpdatePreview = async (cmValue: string) => {
-      this.error = this.validateFormula(cmValue);
-      this.packageAutocomplete = false;
-      this.functionAutocomplete = false;
-      ui.empty(this.errorDiv);
-      if (this.error)
-        this.errorDiv.append(ui.divText(this.error, 'cm-error-div'));
+    const updatePreview = async (cmValue: string) => {
       await this.updatePreview(cmValue, this.error);
     }
 
-    const validateAndUpdateEvent = new Subject<string>();
+    const updatePreviewEvent = new Subject<string>();
 
-    DG.debounce(validateAndUpdateEvent, 1000).subscribe((cmVal) => validateAndUpdatePreview(cmVal));
+    DG.debounce(updatePreviewEvent, 1000).subscribe((cmVal) => updatePreview(cmVal));
 
     //remove error in case autocomplete is open
     this.mutationObserver = new MutationObserver((mutationsList, observer) => {
