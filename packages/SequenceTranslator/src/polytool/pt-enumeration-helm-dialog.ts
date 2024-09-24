@@ -10,7 +10,7 @@ import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {HelmAtom, HelmMol} from '@datagrok-libraries/helm-web-editor/src/types/org-helm';
 import {getHelmHelper, HelmInputBase} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {HelmType, ISeqMonomer} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmType, PolymerType} from '@datagrok-libraries/bio/src/helm/types';
 import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {getSeqHelper, ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import '@datagrok-libraries/bio/src/types/input';
@@ -190,7 +190,7 @@ async function getPolyToolEnumerateDialog(
     inputs.placeholders.addValidator((value: string): string | null => {
       const errors: string[] = [];
       try {
-        const missedMonomerList: ISeqMonomer[] = [];
+        const missedMonomerList: { polymerType: PolymerType, symbol: string }[] = [];
         for (const ph of inputs.placeholders.placeholdersValue) {
           const pos = ph.position;
           if (pos >= inputs.macromolecule.molValue.atoms.length) {
@@ -469,9 +469,8 @@ async function polyToolEnumerateHelm(
     if (toAtomicLevel) {
       const seqHelper: ISeqHelper = await getSeqHelper();
       const toAtomicLevelRes = await seqHelper.helmToAtomicLevel(enumHelmCol, true, true);
-      toAtomicLevelRes.molCol.semType = DG.SEMTYPE.MOLECULE;
-      enumeratorResDf.columns.add(toAtomicLevelRes.molCol, false);
-      enumeratorResDf.columns.add(toAtomicLevelRes.molHighlightCol, false);
+      toAtomicLevelRes.molCol!.semType = DG.SEMTYPE.MOLECULE;
+      enumeratorResDf.columns.add(toAtomicLevelRes.molCol!, false);
     }
 
     if (srcId) {
