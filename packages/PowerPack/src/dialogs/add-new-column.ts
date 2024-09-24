@@ -498,8 +498,8 @@ export class AddNewColumnDialog {
               if (this.packageAutocomplete)
                 setTimeout(() => {
                   startCompletion(cm);
-              }, 100);
-              else if(fullFuncName?.includes(':')) {
+                }, 100);
+              else if (fullFuncName?.includes(':')) {
                 const packAndFuncNames = fullFuncName.split(':');
                 if (!this.packageNames.includes(packAndFuncNames[0]))
                   this.error = `Package ${packAndFuncNames[0]} not found`;
@@ -508,31 +508,31 @@ export class AddNewColumnDialog {
                 else if (!this.packageFunctionsNames[packAndFuncNames[0]].includes(packAndFuncNames[1]))
                   this.error = `Function ${packAndFuncNames[1]} not found in ${packAndFuncNames[0]} package`;
                 else
-                  validateAndUpdateEvent.next(cmValue);
+                  this.error = this.validateFormula(cmValue);
               } else {
                 if (this.functionAutocomplete)
                   this.setSelection(cm.state.selection.main.head, true);
-                validateAndUpdateEvent.next(cmValue);
+                this.error = this.validateFormula(cmValue);
               }
             }
+            this.packageAutocomplete = false;
+            this.functionAutocomplete = false;
+            ui.empty(this.errorDiv);
+            if (this.error)
+              this.errorDiv.append(ui.divText(this.error, 'cm-error-div'));
+            updatePreviewEvent.next(cmValue);
           }),
         ],
       }),
     });
     
-    const validateAndUpdatePreview = async (cmValue: string) => {
-      this.error = this.validateFormula(cmValue);
-      this.packageAutocomplete = false;
-      this.functionAutocomplete = false;
-      ui.empty(this.errorDiv);
-      if (this.error)
-        this.errorDiv.append(ui.divText(this.error, 'cm-error-div'));
+    const updatePreview = async (cmValue: string) => {
       await this.updatePreview(cmValue, this.error);
     }
 
-    const validateAndUpdateEvent = new Subject<string>();
+    const updatePreviewEvent = new Subject<string>();
 
-    DG.debounce(validateAndUpdateEvent, 1000).subscribe((cmVal) => validateAndUpdatePreview(cmVal));
+    DG.debounce(updatePreviewEvent, 1000).subscribe((cmVal) => updatePreview(cmVal));
 
     //remove error in case autocomplete is open
     this.mutationObserver = new MutationObserver((mutationsList, observer) => {
@@ -573,7 +573,7 @@ export class AddNewColumnDialog {
     if (matchesAll?.length) {
       for (const match of matchesAll) {
         const matchCol = match.substring(2, match.length - 1);
-        const unescapedMatch = this.handleOuterBracketsInColName(matchCol, false);
+        const unescapedMatch = grok.functions.handleOuterBracketsInColName(matchCol, false);
         if (!this.columnNamesLowerCase.includes(unescapedMatch.toLowerCase()))
           unmatchedCols.push(matchCol);
       }
@@ -596,37 +596,6 @@ export class AddNewColumnDialog {
     return '';
   }
 
-  handleOuterBracketsInColName(name: string, escape: boolean) {
-    var openCurlyBracket = name.indexOf(escape ? '\${' : '\$\\{');
-    var openSquareBracket = name.indexOf(escape ? '\$[' : '\$\\[');
-    var colInCurlyBracketsExists = openCurlyBracket != -1 && name.indexOf(escape ? '}' : '\\}') != -1;
-    var colInSquareBracketsExists = openSquareBracket != -1 && name.indexOf(escape ? ']' : '\\]') != -1;
-    var func = escape ? this.escapeBracketsForNestedColNames : this.unescapeBracketsForNestedColNames;
-    if (colInCurlyBracketsExists) {
-      if (colInSquareBracketsExists)
-        name = openCurlyBracket < openSquareBracket ? func(name, '{', '}') : func(name, '[', ']');
-      else
-        name = func(name, '{', '}');
-    } else if (colInSquareBracketsExists)
-      name = func(name, '[', ']');
-    return name;
-  }
-  
-  unescapeBracketsForNestedColNames(name: string, open: string, close: string): string {
-    name = name.replace(`$\\${open}`, `$${open}`);
-    var closingBracketIdx = name.lastIndexOf(`\\${close}`);
-    if (closingBracketIdx != -1)
-      name = name.substring(0, closingBracketIdx) + name.substring(closingBracketIdx + 1);
-    return name;
-  }
-  
-  escapeBracketsForNestedColNames(name: string, open: string, close: string): string {
-    name = name.replace(`$${open}`, `$\\${open}`);
-    var closingBracketIdx = name.lastIndexOf(close);
-    if (closingBracketIdx != -1)
-      name = name.substring(0, closingBracketIdx) + `\\${close}` + name.substring(closingBracketIdx + 1);
-    return name;
-  }
 
   validateFuncCallTypes(funcCall: DG.FuncCall) {
     const innerFuncCalls: string[] = [];
@@ -958,7 +927,7 @@ export class AddNewColumnDialog {
       }
       const funcName = this.getFunctionNameAtPosition(cm, parenthesesPos, -1, this.packageFunctionsParams, this.coreFunctionsParams, true)?.funcName;
       const isAggr = funcName ? Object.values(DG.AGG).includes(funcName!.toLocaleLowerCase() as DG.AGG) : false;
-      const escapedColName = this.handleOuterBracketsInColName(x.name, true);
+      const escapedColName = grok.functions.handleOuterBracketsInColName(x.name, true);
       snippet = isAggr ? `\$[${escapedColName}]` : `\${${escapedColName}}`;
     }
     else if (this.typeOf(x, DG.Func)) {
@@ -966,7 +935,7 @@ export class AddNewColumnDialog {
       const colPos = this.findColumnTypeMatchingParam(x);
       if (colPos !== -1) {
         const isAggr = Object.values(DG.AGG).includes((x as DG.Func).name.toLocaleLowerCase() as DG.AGG);
-        const escapedColName = this.handleOuterBracketsInColName(this.selectedColumn!.name, true);
+        const escapedColName = grok.functions.handleOuterBracketsInColName(this.selectedColumn!.name, true);
         params[colPos] = isAggr ? `\$[${escapedColName}]` : `\${${escapedColName}}`;
       }
       const paramsStr = params.join(', ');
@@ -1138,10 +1107,10 @@ export class AddNewColumnDialog {
         const openingBracketIdx = word.text.indexOf(openingSym);
         const closingBracket = context.state.doc.length > word.text.length ? context.state.doc.toString().at(word.to) === openingSym : false;
         colNames.forEach((name: string) => options.push({ label: name, type: "variable",
-          apply: openingBracketIdx !== -1 ? closingBracket ? `${this.handleOuterBracketsInColName(name, true)}` : 
-            `${this.handleOuterBracketsInColName(name, true)}${closingSym}` :
-              closingBracket ? `${openingSym}${this.handleOuterBracketsInColName(name, true)}` : 
-                `${openingSym}${this.handleOuterBracketsInColName(name, true)}${closingSym}`}));
+          apply: openingBracketIdx !== -1 ? closingBracket ? `${grok.functions.handleOuterBracketsInColName(name, true)}` : 
+            `${grok.functions.handleOuterBracketsInColName(name, true)}${closingSym}` :
+              closingBracket ? `${openingSym}${grok.functions.handleOuterBracketsInColName(name, true)}` : 
+                `${openingSym}${grok.functions.handleOuterBracketsInColName(name, true)}${closingSym}`}));
         index = word!.from + (openingBracketIdx === -1 ? word.text.indexOf("$") + 1 : openingBracketIdx + 1);
         filter = !word.text.endsWith('$') && !word.text.endsWith(openingSym);
       } else

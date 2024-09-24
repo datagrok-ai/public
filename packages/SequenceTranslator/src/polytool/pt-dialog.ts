@@ -245,7 +245,7 @@ export async function polyToolConvert(
 
     const seqHelper: ISeqHelper = await getSeqHelper();
     const toAtomicLevelRes = await seqHelper.helmToAtomicLevel(resHelmCol, chiralityEngine, /* highlight */ generateHelm);
-    const resMolCol = toAtomicLevelRes.molCol;
+    const resMolCol = toAtomicLevelRes.molCol!;
     resMolCol.name = getUnusedName(table, `molfile(${seqCol.name})`);
     resMolCol.semType = DG.SEMTYPE.MOLECULE;
     if (table) {

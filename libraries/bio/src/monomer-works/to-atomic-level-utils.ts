@@ -350,6 +350,7 @@ function getResultingAtomBondCounts(
   let atomCount = 0;
   let bondCount = 0;
 
+  let monomerCount: number = 0;
   // sum up all the atoms/nodes provided by the sequence
   for (const seqMonomer of monomerSeq) {
     if (seqMonomer.symbol === GAP_SYMBOL) continue; // Skip for gap/empty monomer in MSA
@@ -358,6 +359,7 @@ function getResultingAtomBondCounts(
     const monomer = getMolGraph(monomersDict, {symbol: seqMonomer.symbol, polymerType: helmTypeToPolymerType(seqMonomer.biotype)})!;
     atomCount += monomer.atoms.x.length;
     bondCount += monomer.bonds.bondTypes.length;
+    monomerCount++;
   }
 
   // add extra values depending on the polymer type
@@ -365,7 +367,7 @@ function getResultingAtomBondCounts(
     // add the rightmost/terminating cap group 'OH' (i.e. 'O')
     atomCount += 1;
     // add chain-extending bonds (C-NH per each monomer pair and terminal C-OH)
-    bondCount += monomerSeq.length;
+    bondCount += monomerCount;
   } else { // nucleotides
     const sugar = (alphabet === ALPHABET.DNA) ?
       getMolGraph(monomersDict, C.DEOXYRIBOSE)! : getMolGraph(monomersDict, C.RIBOSE)!;

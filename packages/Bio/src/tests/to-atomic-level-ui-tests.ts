@@ -104,6 +104,7 @@ category('toAtomicLevel-ui', () => {
     expect(res.molCol!.semType, DG.SEMTYPE.MOLECULE);
     const resMolStr = res.molCol!.get(0)!;
     const resRdMol = rdKitModule.get_mol(resMolStr);
+    expect(resRdMol != null, true, 'No molecule generated');
     try {
       const resAtomCount = resRdMol.get_num_atoms();
       const resBondCount = resRdMol.get_num_bonds();

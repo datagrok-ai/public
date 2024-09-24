@@ -1,5 +1,22 @@
 # Bio changelog
 
+## 2.15.4 (2024-09-24)
+
+### New features
+
+* Add monomer hover handling for substruct
+* Add highlight param for toAtomicLevel
+* Add HelmHelper parse and removeGaps methods
+* Add naturalMonomerColors for monomers of MonomerLib
+* Add MonomerLib.getWebEditorMonomer (for color)
+* Add function Identity for Add new Column
+
+### Bug fixes
+
+* Fix toAtomicLevel for sequences with gaps
+* Fix ISeqSplitted remove .canonicals and .originals
+* Fix toAtomicLevel tests for linear with gaps
+
 ## 2.15.3 (2024-09-22)
 
 Add monomer background coloring
