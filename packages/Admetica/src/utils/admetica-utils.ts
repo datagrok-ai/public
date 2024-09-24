@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { _package } from '../package-test';
-import { TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, DEFAULT_LOWER_VALUE, DEFAULT_UPPER_VALUE, TAGS } from './constants';
+import { TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, DEFAULT_LOWER_VALUE, DEFAULT_UPPER_VALUE, TAGS, DEFAULT_TABLE_NAME } from './constants';
 import { PieChartCellRenderer } from '@datagrok/power-grid/src/sparklines/piechart';
 import { CellRenderViewer } from '@datagrok-libraries/utils/src/viewers/cell-render-viewer';
 import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
@@ -82,27 +82,37 @@ export async function performChemicalPropertyPredictions(molColumn: DG.Column, v
   }
 }
 
-function applyColorCoding(col: DG.GridColumn, model: Model): void {
-  if (!model.coloring) return;
-  col.isTextColorCoded = true;
+function applyColumnColorCoding(column: DG.Column, model: Model): void {
   const { type, min, max, colors } = model.coloring;
+
   if (type === DG.COLOR_CODING_TYPE.LINEAR)
-    col!.column!.meta.colors.setLinear(JSON.parse(colors!), {min: min, max: max});
+    column.meta.colors.setLinear(JSON.parse(colors!), { min, max });
   else if (type === 'Conditional')
-    col!.column!.meta.colors.setConditional(createConditionalColoringRules(model.coloring));
+    column.meta.colors.setConditional(createConditionalColoringRules(model.coloring));
 }
 
-export function addColorCoding(table: DG.DataFrame, columnNames: string[]): void {
-  const tv = grok.shell.tableView(table.name);
-  if (!tv) return;
+export function addColorCoding(table: DG.DataFrame, columnNames: string[], showInPanel: boolean = false): void {
+  const tableView = grok.shell.tableView(table.name);
+  if (!tableView && !showInPanel) return;
 
   for (const columnName of columnNames) {
-    const col = tv.grid.col(columnName);
-    const model = properties.subgroup.flatMap((subg: Subgroup) => subg.models)
+    if (tableView) {
+      const gridColumn = tableView.grid.col(columnName);
+      if (gridColumn)
+        gridColumn.isTextColorCoded = true;
+    }
+
+    const column = table.getCol(columnName);
+    const matchingModel = properties.subgroup
+      .flatMap((subgroup: Subgroup) => subgroup.models)
       .find((model: Model) => columnName.includes(model.name));
-    if (model) applyColorCoding(col!, model);
+
+    if (!matchingModel || !matchingModel.coloring) continue;
+
+    applyColumnColorCoding(column, matchingModel);
   }
 }
+
 
 function createConditionalColoringRules(coloring: ModelColoring): { [index: string]: string | number } {
   const conditionalColors = Object.entries(coloring).slice(1);
@@ -302,10 +312,17 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
     try {
       const csvString = await runAdmetica(`smiles\n${smiles}`, queryParams.join(','), 'false');
       ui.empty(result);
+
       const table = DG.DataFrame.fromCsv(csvString!);
+      table.name = DEFAULT_TABLE_NAME;
+      addColorCoding(table, queryParams, true);
+
       const map: { [_: string]: any } = {};
       for (const model of queryParams) {
-        map[model] = Number(table.col(model)?.get(0)).toFixed(2);
+        const column = table.getCol(model);
+        map[model] = ui.divText(column.convertTo(DG.TYPE.STRING, '0.00').get(0), {
+          style: { color: DG.Color.toHtml(column.meta.colors.getColor(0)!) }
+        });
       }
       result.appendChild(ui.tableFromMap(map));
     } catch (e) {
