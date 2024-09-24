@@ -41,6 +41,7 @@ function addVizualization(df: DG.DataFrame, factorsName: string, featuresName: s
     showPValue: false,
     showStatistics: false,
     description: shortConclusion,
+    showColorSelector: false,
   });
   const boxPlotNode = view.dockManager.dock(boxPlot.root, DG.DOCK_TYPE.RIGHT, null, 'ANOVA');
 
@@ -212,7 +213,7 @@ export function runOneWayAnova(): void {
   });
 
   let significance = SIGNIFICANCE.DEFAULT;
-  const signInput = ui.input.float('alpha', {
+  const signInput = ui.input.float('Alpha', {
     min: SIGNIFICANCE.MIN,
     max: SIGNIFICANCE.MAX,
     value: significance,
