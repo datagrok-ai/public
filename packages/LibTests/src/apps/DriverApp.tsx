@@ -240,6 +240,7 @@ export const DriverApp = Vue.defineComponent({
               <RichFunctionView 
                 class='overflow-hidden'
                 funcCall={chosenStepState.value.funcCall!}
+                callState={callsState.value?.[chosenStepState.value.uuid]?.value}
                 key={ `${callsState.value?.[chosenStepUuid.value!]?.value?.isOutputOutdated}` }
                 onUpdate:funcCall={(call) => (chosenStepState.value as StepFunCallState).funcCall = call}
                 onRunClicked={() => runStep(chosenStepState.value!.uuid)}

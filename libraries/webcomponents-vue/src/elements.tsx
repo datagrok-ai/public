@@ -29,9 +29,22 @@ export const Button = Vue.defineComponent({
 
 export const BigButton = Vue.defineComponent({
   name: 'BigButton',
+  props: {
+    isDisabled: {
+      type: Boolean,
+      default: false,
+    }
+  },
   emits: ['click'],
   setup(_props, {slots, attrs, emit}) {
-    return () => (<button v-bind={attrs} onClick={(p) => emit('click', p)} is="dg-big-button">{slots.default ? slots.default() : ''}</button>);
+    return () => (<button 
+      v-bind={attrs} 
+      onClick={(p) => emit('click', p)} 
+      // class={{..._props.isDisabled ? ['d4-disabled']: []}}
+      is="dg-big-button"
+    >
+      {slots.default ? slots.default() : ''}
+    </button>);
   },
 });
 

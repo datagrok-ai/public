@@ -15,6 +15,7 @@ import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
 import {useStorage} from '@vueuse/core';
+import {FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
 type PanelsState = {
   historyHidden: boolean,
@@ -114,6 +115,9 @@ export const RichFunctionView = Vue.defineComponent({
     funcCall: {
       type: Object as Vue.PropType<DG.FuncCall>,
       required: true,
+    },
+    callState: {
+      type: Object as Vue.PropType<FuncCallStateInfo>,
     },
   },
   emits: {
@@ -303,8 +307,12 @@ export const RichFunctionView = Vue.defineComponent({
                 funcCall={currentCall.value}
                 onUpdate:funcCall={(call) => emit('update:funcCall', call)}
               />
-              <div class='flex sticky bottom-0'>
-                <BigButton onClick={run}> Run </BigButton>
+              <div class='flex sticky bottom-0 justify-end'>
+                <BigButton 
+                  isDisabled={!props.callState?.isRunnable || props.callState?.isRunning} 
+                  onClick={run}> 
+                  Run 
+                </BigButton>
               </div>
             </div>: null }
           
