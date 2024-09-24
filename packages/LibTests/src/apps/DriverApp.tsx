@@ -252,6 +252,10 @@ export const DriverApp = Vue.defineComponent({
             <ParentFunccallView 
               funcCall={DG.Func.byName(chosenStepState.value.nqName!).prepare()}
               {...{title: 'Step sequence review'}}
+              onProceedClicked={() => {
+                if (chosenStepState.value && !isFuncCallState(chosenStepState.value)) 
+                  chosenStepUuid.value = chosenStepState.value.steps[0].uuid;
+              }}
             />
           }
           {

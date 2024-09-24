@@ -205,7 +205,7 @@ export const TreeNode = Vue.defineComponent({
         { props.stat.children.length ? openIcon() : null }
         <span class="mtl-ml">{ nodeLabel(props.stat) }</span>
         { props.stat.data.isHovered ? 
-          <div class='flex gap-2 items-center justify-end w-full px-2'>
+          <div class='flex items-center justify-end w-full px-2'>
             { hasAddButton(props.stat.data) ? 
               <ComboPopup 
                 caption={ui.iconFA('plus')}
@@ -224,10 +224,12 @@ export const TreeNode = Vue.defineComponent({
             { props.isDraggable ? <IconFA 
               name='grip-vertical' 
               cursor='grab'
+              class='d4-ribbon-item'
             />: null }
             { props.isDeletable ? <IconFA 
               name='times' 
               onClick={(e: Event) => {emit('removeNode'); e.stopPropagation();}}
+              class='d4-ribbon-item'
             />: null }
           </div> : null }
       </div>
