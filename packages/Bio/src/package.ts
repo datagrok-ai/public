@@ -71,6 +71,7 @@ import {getMolColumnFromHelm} from './utils/helm-to-molfile/utils';
 import {MonomerManager} from './utils/monomer-lib/monomer-manager/monomer-manager';
 import {calculateScoresWithEmptyValues} from './utils/calculate-scores';
 import {SeqHelper} from './utils/seq-helper/seq-helper';
+import { _toAtomicLevel } from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
 
 export const _package = new BioPackage(/*{debug: true}/**/);
 
@@ -750,6 +751,31 @@ export function convertDialog() {
   convert(col);
 }
 
+//top-menu: Bio | Convert | TestConvert
+//name: convertSeqNotation
+//description: RDKit-based conversion for SMILES, SMARTS, InChi, Molfile V2000 and Molfile V3000
+//input: string sequence {semType: Macromolecule}
+//input: string targetNotation
+//input: string separator
+//output: string result
+export async function convertSeqNotation(sequence: string, targetNotation: NOTATION, separator?: string): Promise<string | undefined | null> {
+  try {
+    const col = DG.Column.fromStrings('sequence', [sequence]);
+    const df = DG.DataFrame.fromColumns([col]);
+    const semType = await grok.functions.call('Bio:detectMacromolecule', {col: col});
+    if (semType)
+      col.semType = semType;
+    const converterSh = SeqHandler.forColumn(col);
+    const newColumn = converterSh.convert(targetNotation, separator);
+    return newColumn.get(0);
+  } catch (err: any) {
+    const [errMsg, errStack] = errInfo(err);
+    _package.logger.error(errMsg, undefined, errStack);
+    throw err;
+  }
+}
+
+
 //name: monomerCellRenderer
 //tags: cellRenderer
 //meta.cellType: Monomer
@@ -1101,24 +1127,19 @@ export async function sdfToJsonLib(table: DG.DataFrame) {
 //friendlyName: seq2atomic
 //description: Converts a `Macromolecule` sequence to its atomic level `Molecule` representation
 //input: string seq { semType: Macromolecule }
-//input: bool chiralityEngine = true
+//input: bool nonlinear
 //output: string molfile { semType: Molecule }
 //meta.role: converter
-export async function seq2atomic(seq: string, chiralityEngine: boolean = true): Promise<string> {
+export async function seq2atomic(seq: string, nonlinear: boolean): Promise<string | undefined> {
   if (!(seq.trim())) return '';
   try {
-    const seqHelper = await SeqHelper.getInstance();
-    const seqColName = /* seqValue.cell?.column?.name ?? */ 'seq';
-    const seqCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, `helm(${seqColName})`, [seq]);
+    const seqCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, `helm`, [seq]);
+    const df = DG.DataFrame.fromColumns([seqCol]);
     const semType = await grok.functions.call('Bio:detectMacromolecule', {col: seqCol});
     if (semType) seqCol.semType = semType;
-    const sh = SeqHandler.forColumn(seqCol);
-    const helmCol = sh.notation === NOTATION.HELM ? seqCol : sh.convert(NOTATION.HELM);
-    const talRes = await seqHelper.helmToAtomicLevel(helmCol, chiralityEngine, false);
-    const resMolCol = talRes.molCol;
-    // const resMolValue = DG.SemanticValue.fromValueType(resMolCol.get(0), DG.SEMTYPE.MOLECULE, resMolCol.meta.units ?? undefined);
-    // return resMolValue;
-    return resMolCol!.get(0)!;
+    const monomerLib = (await getMonomerLibHelper()).getMonomerLib();
+    const res = (await sequenceToMolfile(df, seqCol, nonlinear, false, monomerLib, _package.rdKitModule))?.molCol?.get(0);
+    return res ?? undefined;
   } catch (err: any) {
     const [errMsg, errStack] = errInfo(err);
     _package.logger.error(errMsg, undefined, errStack);
