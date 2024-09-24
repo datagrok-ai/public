@@ -1504,8 +1504,9 @@ export class Color {
     return api.grok_Color_CategoricalPalette();
   }
 
-  static get categoricalPalettes(): Array<number[]> {
-    return api.grok_Color_GetCategoricalPalettes();
+  /** Returns the map of existing palettes used in Datagrok. */
+  static get categoricalPalettes(): {[key: string]: any} {
+    return new MapProxy(api.grok_Color_GetCategoricalPalettes());
   }
 
   static scaleColor(x: number, min: number, max: number, alpha?: number, colorScheme?: number[]): number {
