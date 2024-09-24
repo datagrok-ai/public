@@ -123,9 +123,9 @@ export class StateTree {
   //
 
   public init() {
-    return this.initTree(() => {
-      return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(mapTo(undefined));
-    }).pipe(mapTo(this));
+    return this.mutateTree(() => {
+      return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(mapTo([]));
+    }, false).pipe(mapTo(this));
   }
 
   public save(uuid?: string) {
@@ -515,30 +515,10 @@ export class StateTree {
   // locking, tree mutation and deps tracking
   //
 
-  private initTree(fn: () => Observable<undefined>) {
+  private mutateTree<R>(fn: () => Observable<readonly [NestedMutationData?, R?]>, waitForLinks = true) {
     return defer(() => {
       this.treeLock();
-      return fn();
-    }).pipe(
-      tap(() => this.updateNodesMap()),
-      concatMap(() => {
-        return this.linksState.update(this.nodeTree);
-      }),
-      tap(() => {
-        this.linksState.wireLinks(this.nodeTree);
-        this.setDepsTracker();
-      }),
-      finalize(() => {
-        this.treeUnlock();
-        this.makeStateRequests$.next(true);
-      }),
-    );
-  }
-
-  private mutateTree<R>(fn: () => Observable<readonly [NestedMutationData?, R?]>) {
-    return defer(() => {
-      this.treeLock();
-      return this.waitForLinks().pipe(
+      return (waitForLinks ? this.waitForLinks() : of(undefined)).pipe(
         tap(() => this.linksState.destroyLinks()),
         concatMap(() => fn()),
       );
