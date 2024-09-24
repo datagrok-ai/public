@@ -1,5 +1,9 @@
 # Chembl changelog
 
+## 1.1.1 (2024-09-25)
+
+Database explorer for ChEMBL database.
+
 ## 1.0.38 (2024-07-22)
 
 * Fixed 'Pattern Similarity With Threshold' query name

@@ -1,18 +1,19 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import $ from 'cash-dom';
-import {ChemblIdHandler} from "./handlers";
+import {registerChemblIdHandler} from './handlers';
 
 export const _package = new DG.Package();
 
 const WIDTH = 200;
 const HEIGHT = 100;
 
-//tags: init
+//tags: init,autostart
 export function init() {
   //Register handlers
-  DG.ObjectHandler.register(new ChemblIdHandler());
+  // DG.ObjectHandler.register(new ChemblIdHandler());
+  registerChemblIdHandler(_package);
 }
 
 export async function chemblSubstructureSearch(molecule: string): Promise<DG.DataFrame | null> {
@@ -164,6 +165,6 @@ export async function chemblMolregno(table: DG.DataFrame, molecules: DG.Column):
 export async function chemblIdToSmilesTs(id: string): Promise<string> {
   // this function won't be needed once we include queries to functions in the startupData
   // damn, it returns null instead of the actual molecule
-  return await grok.functions.call('Chembl:chemblIdToSmiles', {id: id})
+  return await grok.functions.call('Chembl:chemblIdToSmiles', {id: id});
   //return 'CN(C)CCc1c[nH]c2ccc(C[C@H]3COC(=O)N3)cc12';
 }

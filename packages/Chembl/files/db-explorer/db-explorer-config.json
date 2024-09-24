@@ -1,0 +1,63 @@
+{
+  "connectionName": "CHEMBL",
+  "schemaName": "public",
+  "entryPoints": {
+    "CHEMBL_ID": {
+      "table": "molecule_dictionary",
+      "column": "chembl_id"
+    },
+    "molregno": {
+      "table": "molecule_dictionary",
+      "column": "molregno"
+    }
+  },
+  "joinOptions": [
+    {
+      "fromTable": "molecule_dictionary",
+      "columnName": "molregno",
+      "tableName": "compound_structures",
+      "onColumn": "molregno",
+      "select": ["canonical_smiles", "standard_inchi"]
+    },
+    {
+      "fromTable": "compound_structural_alerts",
+      "columnName": "alert_id",
+      "tableName": "structural_alerts",
+      "onColumn": "alert_id",
+      "select": ["alert_name"]
+    }
+  ],
+  "headerNames": {
+    "action_type": "action_type",
+    "activities": "type",
+    "activity_properties": "standard_type",
+    "assays": "tid",
+    "chembl_id_lookup": "chembl_id",
+    "drug_indication": "efo_term",
+    "drug_mechanism": "action_type",
+    "drug_warning": "warning_type",
+    "frac_classification": "active_ingredient",
+    "molecule_synonyms": "synonyms",
+    "compound_records": "record_id",
+    "compound_structural_alerts": "alert_name"
+  },
+  "uniqueColumns": {
+    "activities": "activity_id",
+    "compound_records": "record_id",
+    "molecule_synonyms": "molsyn_id"
+  },
+  "customSelectedColumns": {
+    "molecule_dictionary": [
+      "canonical_smiles",
+      "standard_inchi",
+      "molregno",
+      "pref_name",
+      "chembl_id",
+      "structure_type",
+      "molecule_type",
+      "first_approval",
+      "indication_class",
+      "chirality"
+    ]
+  }
+}
