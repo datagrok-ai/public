@@ -355,11 +355,11 @@ export async function MockProvider1(params: any) {
     steps: [
       {
         id: 'step1',
-        nqName: 'LibTests:TestAdd2',
+        nqName: 'LibTests:LongScript',
       },
       {
         id: 'step2',
-        nqName: 'LibTests:TestMul2',
+        nqName: 'LibTests:LongFailingScript',
       },
     ],
     links: [{

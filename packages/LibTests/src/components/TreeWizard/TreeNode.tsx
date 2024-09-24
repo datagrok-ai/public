@@ -12,6 +12,7 @@ import {
   PipelineStateParallel, PipelineStateSequential,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {useElementHover} from '@vueuse/core';
+import {FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
 const getCall = (funcCall: DG.FuncCall | string, params?: {
   a?: number,
@@ -114,10 +115,10 @@ const statusToIcon = {
 
 const statusToColor = {
   ['locked']: 'black',
-  [`didn't run`]: 'yellow',
+  [`didn't run`]: 'blue',
   ['running']: 'blue',
   ['succeeded']: 'green',
-  ['partially succeeded']: 'green',
+  ['partially succeeded']: 'red',
   ['failed']: 'red',
 } as Record<Status, string>;
 
@@ -130,12 +131,21 @@ const statusToTooltip = {
   ['failed']: 'Run failed',
 } as Record<Status, string>;
 
+const callStateToStatus = (callState: FuncCallStateInfo): Status => {
+  if (callState.isRunning) return 'running';
+  if (!callState.isOutputOutdated) return 'succeeded';
+  
+  return 'didn\'t run';
+};
 
 export const TreeNode = Vue.defineComponent({
   props: {
     stat: {
       type: Object as Vue.PropType<AugmentedStat>,
       required: true,
+    },
+    callState: {
+      type: Object as Vue.PropType<FuncCallStateInfo>,
     },
     isDraggable: {
       type: Boolean,
@@ -169,7 +179,7 @@ export const TreeNode = Vue.defineComponent({
         style={{
           color: statusToColor[status],
           alignSelf: 'center',
-          left: '-16px',
+          left: '-20px',
           position: 'absolute',
         }} 
       />;
@@ -201,7 +211,7 @@ export const TreeNode = Vue.defineComponent({
         ref={treeNodeRef}
         onClick={() => emit('click')}
       >
-        {/* { progressIcon(props.stat.data.status) } */}
+        { progressIcon(props.callState ? callStateToStatus(props.callState): 'didn\'t run') }
         { props.stat.children.length ? openIcon() : null }
         <span class="mtl-ml">{ nodeLabel(props.stat) }</span>
         { props.stat.data.isHovered ? 

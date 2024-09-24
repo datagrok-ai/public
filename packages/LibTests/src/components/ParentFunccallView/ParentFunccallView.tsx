@@ -68,6 +68,7 @@ export const ParentFunccallView = Vue.defineComponent({
             dock-spawn-dock-ratio={0.35}
             {...{title: 'Actions', mode: 'Card'}}
             class={'p-2'}
+            style={{minWidth: '200px'}}
           >
             <span>
             This is a sequence of steps. You may:

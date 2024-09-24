@@ -51,7 +51,7 @@ export const DriverApp = Vue.defineComponent({
     const driver = new Driver();
     const isLocked = Vue.ref(false);
     const treeState = Vue.shallowRef<PipelineState | undefined>(undefined);
-    const callsInfo = Vue
+    const callsState = Vue
       .shallowRef<Record<string, BehaviorSubject<FuncCallStateInfo | undefined>> | undefined>(undefined);
     const chosenStepUuid = Vue.ref<string | undefined>(undefined);
 
@@ -78,7 +78,7 @@ export const DriverApp = Vue.defineComponent({
       treeState.value = s;
     }));
 
-    useSubscription((driver.currentCallsState$).subscribe((s) => callsInfo.value = s));
+    useSubscription((driver.currentCallsState$).subscribe((s) => callsState.value = s));
 
     const restoreOpenedNodes = (stat: AugmentedStat) => {
       if (oldClosed.includes(stat.data.uuid)) 
@@ -89,7 +89,6 @@ export const DriverApp = Vue.defineComponent({
     useSubscription((driver.globalROLocked$).subscribe((l) => isLocked.value = l));
     Vue.onUnmounted(() => {
       driver.close();
-      console.log('VuewDriverTestApp driver closed');
     });
 
     const initPipeline = (provider: string) => {
@@ -186,10 +185,11 @@ export const DriverApp = Vue.defineComponent({
         </RibbonPanel>
         <DockManager class='block h-full' onPanelClosed={handlePanelClose}>
           { treeState.value && !treeHidden.value ? <Draggable 
-            class="ui-div mtl-tree p-2"
+            class="ui-div mtl-tree p-2 overflow-scroll"
+            style={{paddingLeft: '25px'}}
             {...{title: 'Steps'}}
             dock-spawn-dock-type='left'
-            dock-spawn-dock-ratio={0.2}
+            dock-spawn-dock-ratio={0.3}
             rootDroppable={false}
             treeLine
             childrenKey='steps'
@@ -216,6 +216,7 @@ export const DriverApp = Vue.defineComponent({
                 (
                   <TreeNode 
                     stat={stat}
+                    callState={callsState.value?.[stat.data.uuid]?.value}
                     style={{'background-color': stat.data.uuid === chosenStepUuid.value ? '#f2f2f5' : null}}
                     isDraggable={treeInstance.value?.isDraggable(stat)}
                     isDroppable={treeInstance.value?.isDroppable(stat)}
@@ -239,7 +240,7 @@ export const DriverApp = Vue.defineComponent({
               <RichFunctionView 
                 class='overflow-hidden'
                 funcCall={chosenStepState.value.funcCall!}
-                key={ `${callsInfo.value?.[chosenStepUuid.value!]?.value?.isOutputOutdated}` }
+                key={ `${callsState.value?.[chosenStepUuid.value!]?.value?.isOutputOutdated}` }
                 onUpdate:funcCall={(call) => (chosenStepState.value as StepFunCallState).funcCall = call}
                 onRunClicked={() => runStep(chosenStepState.value!.uuid)}
                 {...{title: 'Step review'}}
