@@ -573,7 +573,7 @@ export class AddNewColumnDialog {
     if (matchesAll?.length) {
       for (const match of matchesAll) {
         const matchCol = match.substring(2, match.length - 1);
-        const unescapedMatch = this.handleOuterBracketsInColName(matchCol, false);
+        const unescapedMatch = grok.functions.handleOuterBracketsInColName(matchCol, false);
         if (!this.columnNamesLowerCase.includes(unescapedMatch.toLowerCase()))
           unmatchedCols.push(matchCol);
       }
@@ -596,37 +596,6 @@ export class AddNewColumnDialog {
     return '';
   }
 
-  handleOuterBracketsInColName(name: string, escape: boolean) {
-    var openCurlyBracket = name.indexOf(escape ? '\${' : '\$\\{');
-    var openSquareBracket = name.indexOf(escape ? '\$[' : '\$\\[');
-    var colInCurlyBracketsExists = openCurlyBracket != -1 && name.indexOf(escape ? '}' : '\\}') != -1;
-    var colInSquareBracketsExists = openSquareBracket != -1 && name.indexOf(escape ? ']' : '\\]') != -1;
-    var func = escape ? this.escapeBracketsForNestedColNames : this.unescapeBracketsForNestedColNames;
-    if (colInCurlyBracketsExists) {
-      if (colInSquareBracketsExists)
-        name = openCurlyBracket < openSquareBracket ? func(name, '{', '}') : func(name, '[', ']');
-      else
-        name = func(name, '{', '}');
-    } else if (colInSquareBracketsExists)
-      name = func(name, '[', ']');
-    return name;
-  }
-  
-  unescapeBracketsForNestedColNames(name: string, open: string, close: string): string {
-    name = name.replace(`$\\${open}`, `$${open}`);
-    var closingBracketIdx = name.lastIndexOf(`\\${close}`);
-    if (closingBracketIdx != -1)
-      name = name.substring(0, closingBracketIdx) + name.substring(closingBracketIdx + 1);
-    return name;
-  }
-  
-  escapeBracketsForNestedColNames(name: string, open: string, close: string): string {
-    name = name.replace(`$${open}`, `$\\${open}`);
-    var closingBracketIdx = name.lastIndexOf(close);
-    if (closingBracketIdx != -1)
-      name = name.substring(0, closingBracketIdx) + `\\${close}` + name.substring(closingBracketIdx + 1);
-    return name;
-  }
 
   validateFuncCallTypes(funcCall: DG.FuncCall) {
     const innerFuncCalls: string[] = [];
@@ -958,7 +927,7 @@ export class AddNewColumnDialog {
       }
       const funcName = this.getFunctionNameAtPosition(cm, parenthesesPos, -1, this.packageFunctionsParams, this.coreFunctionsParams, true)?.funcName;
       const isAggr = funcName ? Object.values(DG.AGG).includes(funcName!.toLocaleLowerCase() as DG.AGG) : false;
-      const escapedColName = this.handleOuterBracketsInColName(x.name, true);
+      const escapedColName = grok.functions.handleOuterBracketsInColName(x.name, true);
       snippet = isAggr ? `\$[${escapedColName}]` : `\${${escapedColName}}`;
     }
     else if (this.typeOf(x, DG.Func)) {
@@ -966,7 +935,7 @@ export class AddNewColumnDialog {
       const colPos = this.findColumnTypeMatchingParam(x);
       if (colPos !== -1) {
         const isAggr = Object.values(DG.AGG).includes((x as DG.Func).name.toLocaleLowerCase() as DG.AGG);
-        const escapedColName = this.handleOuterBracketsInColName(this.selectedColumn!.name, true);
+        const escapedColName = grok.functions.handleOuterBracketsInColName(this.selectedColumn!.name, true);
         params[colPos] = isAggr ? `\$[${escapedColName}]` : `\${${escapedColName}}`;
       }
       const paramsStr = params.join(', ');
@@ -1138,10 +1107,10 @@ export class AddNewColumnDialog {
         const openingBracketIdx = word.text.indexOf(openingSym);
         const closingBracket = context.state.doc.length > word.text.length ? context.state.doc.toString().at(word.to) === openingSym : false;
         colNames.forEach((name: string) => options.push({ label: name, type: "variable",
-          apply: openingBracketIdx !== -1 ? closingBracket ? `${this.handleOuterBracketsInColName(name, true)}` : 
-            `${this.handleOuterBracketsInColName(name, true)}${closingSym}` :
-              closingBracket ? `${openingSym}${this.handleOuterBracketsInColName(name, true)}` : 
-                `${openingSym}${this.handleOuterBracketsInColName(name, true)}${closingSym}`}));
+          apply: openingBracketIdx !== -1 ? closingBracket ? `${grok.functions.handleOuterBracketsInColName(name, true)}` : 
+            `${grok.functions.handleOuterBracketsInColName(name, true)}${closingSym}` :
+              closingBracket ? `${openingSym}${grok.functions.handleOuterBracketsInColName(name, true)}` : 
+                `${openingSym}${grok.functions.handleOuterBracketsInColName(name, true)}${closingSym}`}));
         index = word!.from + (openingBracketIdx === -1 ? word.text.indexOf("$") + 1 : openingBracketIdx + 1);
         filter = !word.text.endsWith('$') && !word.text.endsWith(openingSym);
       } else
