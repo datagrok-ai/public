@@ -31,8 +31,8 @@ declare global {
   }
 }
 
-export const ScalarTable = Vue.defineComponent({
-  name: 'ScalarTable',
+export const ScalarsPanel = Vue.defineComponent({
+  name: 'ScalarsPanel',
   props: {
     funcCall: {
       type: Object as Vue.PropType<DG.FuncCall>,
@@ -59,29 +59,52 @@ export const ScalarTable = Vue.defineComponent({
       );
     });
 
-    return () => 
-      <table>
-        { 
-          categoryScalars.value.map((prop) => {
-            const precision = prop.options.precision;
+    const getContent = (prop: DG.Property) => {
+      const precision = prop.options.precision;
 
-            const scalarValue = precision && 
+      const scalarValue = precision && 
                 prop.propertyType === DG.TYPE.FLOAT && props.funcCall.outputs[prop.name] ?
-              props.funcCall.outputs[prop.name].toPrecision(precision):
-              props.funcCall.outputs[prop.name];
-            const units = prop.options['units'] ? ` [${prop.options['units']}]`: ``;
+        props.funcCall.outputs[prop.name].toPrecision(precision):
+        props.funcCall.outputs[prop.name];
+      const units = prop.options['units'] ? ` [${prop.options['units']}]`: ``;
+
+      return [scalarValue, units];
+    };
+
+    return () => 
+      categoryScalars.value.length <= 3 ?
+        <div 
+          class='flex flex-wrap justify-around' 
+          dock-spawn-dock-type='down'
+          dock-spawn-dock-ratio={0.15}
+        >
+          { categoryScalars.value.map((prop) => {
+            const [scalarValue, units] = getContent(prop);
+
+            return <div 
+              class='flex flex-col p-2 items-center gap-4 flex-nowrap'
+            > 
+              <div class='text-center'> { prop.caption ?? prop.name } </div>
+              <span style={{fontSize: 'var(--font-size-large)'}}> {scalarValue} {units} </span>
+            </div>;
+          })}
+        </div> :
+        <table>
+          { 
+            categoryScalars.value.map((prop) => {
+              const [scalarValue, units] = getContent(prop);
             
-            return <tr> 
-              <td>
-                { prop.caption ?? prop.name }{units}
-              </td> 
-              <td>
-                { scalarValue ?? '[No value]' }
-              </td> 
-            </tr>;
-          }) 
-        }
-      </table>;
+              return <tr> 
+                <td>
+                  { prop.caption ?? prop.name }{units}
+                </td> 
+                <td>
+                  { scalarValue ?? '[No value]' }
+                </td> 
+              </tr>;
+            }) 
+          }
+        </table>;
   },
 });
 
@@ -290,17 +313,15 @@ export const RichFunctionView = Vue.defineComponent({
               .map((tabLabel) => ({tabLabel, tabDfProps: categoryToDfParam.value.inputs[tabLabel] ?? 
                 categoryToDfParam.value.outputs[tabLabel]}))            
               .map(({tabLabel, tabDfProps}) => {
-                return <div 
-                  class='flex flex-col overflow-scroll h-full'
-                  title={tabLabel}
-                  key={tabLabel}
-                >
-                  { tabDfProps.map((tabProp) => {
+                return [
+                  tabDfProps.flatMap((tabProp) => {
                     const allConfigs = Utils.getPropViewers(tabProp).config;
 
                     return allConfigs.map((options) => (            
-                      <div class='flex flex-col pl-2' style={{flex: 1}}>
-                        <h2> { dfBlockTitle(tabProp) } </h2>
+                      <div 
+                        class='flex flex-col pl-2 h-full w-full'
+                        {...{'title': `${dfBlockTitle(tabProp)} / ${options['type']}`}}
+                      >
                         <Viewer
                           type={options['type'] as string}
                           options={options}
@@ -308,13 +329,12 @@ export const RichFunctionView = Vue.defineComponent({
                           class='w-full'
                         />
                       </div>));
-                  })
-                  }
-                  <ScalarTable 
+                  }),
+                  <ScalarsPanel 
                     funcCall={currentCall.value} 
                     category={tabLabel}
-                  />
-                </div>;
+                    {...{title: tabLabel}}
+                  />];
               })
           }
           { !helpHidden.value && helpText.value ? 

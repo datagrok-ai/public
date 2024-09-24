@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
-import type {DGBigButtonT, DGButtonT, DGComboPopupT, DGIconFAT, DGSplitH, DGToggleInputT} from '@datagrok-libraries/webcomponents';
+import type {DGBigButtonT, DGButtonT, DGComboPopupT, DGIconFAT, DGIconT, DGSplitH, DGToggleInputT} from '@datagrok-libraries/webcomponents';
 
 declare global {
   namespace JSX {
@@ -12,6 +12,7 @@ declare global {
       'dg-big-button': DGBigButtonT,
       'dg-split-h': DGSplitH,
       'dg-icon-fa': DGIconFAT,
+      'dg-icon': DGIconT,
       'dg-toggle-input': DGToggleInputT
       'dg-combo-popup': DGComboPopupT
     }
@@ -149,3 +150,32 @@ export const ComboPopup = Vue.defineComponent({
     />
   }
 })
+
+export const Icon = Vue.defineComponent({
+  name: 'Icon',
+  props: {
+    name: String,
+    cursor: {
+      type: String,
+      default: 'pointer',
+    },
+    tooltip: {
+      type: String as Vue.PropType<string | null>,
+      default: null,
+    },
+  },
+  emits: [
+    'click',
+  ],
+  setup(props, {emit}) {
+    return () => {
+      return (<dg-icon
+        name={props.name}
+        cursor={props.cursor}
+        tooltip={props.tooltip}
+        onClick={(e: Event) => emit('click', e)}
+      >
+      </dg-icon>);
+    };
+  },
+});
