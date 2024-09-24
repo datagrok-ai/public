@@ -147,19 +147,16 @@ export function runOneWayAnova(): void {
   const featureColNames = [] as string[];
 
   for (const col of columns) {
-    if (col.stats.missingValueCount < 1) {
-      if (FEATURE_TYPES.includes(col.type))
-        featureColNames.push(col.name);
-      else if (FACTOR_TYPES.includes(col.type))
-        factorColNames.push(col.name);
-    }
+    if (FEATURE_TYPES.includes(col.type))
+      featureColNames.push(col.name);
+    else if (FACTOR_TYPES.includes(col.type))
+      factorColNames.push(col.name);
   }
 
   const factorColsCount = factorColNames.length;
   if (factorColsCount < 1) {
     grok.shell.warning(ui.markdown(`No acceptable factor columns:
 
-    - no missing values
     - type: ${FACTOR_TYPES.join(', ')} 
     - at least two categories`,
     ));
@@ -187,7 +184,6 @@ export function runOneWayAnova(): void {
   if (featureColNames.length < 1) {
     grok.shell.warning(ui.markdown(`No acceptable feature columns:
     
-    - no missing values
     - type: ${FEATURE_TYPES.join(', ')}`,
     ));
     return;

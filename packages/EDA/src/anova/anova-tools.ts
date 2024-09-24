@@ -19,6 +19,8 @@ import * as DG from 'datagrok-api/dg';
 //@ts-ignore: no types
 import * as jStat from 'jstat';
 
+import {getNullValue} from '../missing-values-imputation/knn-imputer';
+
 enum ERROR_MSG {
   NON_EQUAL_FACTORS_VALUES_SIZE = 'non-equal sizes of factor and values arrays',
   INCORRECT_SIGNIFICANCE_LEVEL = 'incorrect significance level',
@@ -115,6 +117,7 @@ export class FactorizedData {
   private subSampleSizes!: Int32Array;
   private size!: number;
   private catCount!: number;
+  private nullsCount = 0;
 
   constructor(categories: CatCol, values: NumCol, uniqueCount: number) {
     if (categories.length !== values.length)
@@ -168,7 +171,7 @@ export class FactorizedData {
     if (K === 1)
       throw new Error(ERROR_MSG.SINGLE_FACTOR);
 
-    const N = this.size;
+    const N = this.size - this.nullsCount;
     if (N === K)
       throw new Error(ERROR_MSG.CATS_EQUAL_SIZE);
 
@@ -203,9 +206,10 @@ export class FactorizedData {
   } // getOneWayAnova
 
   /** Compute sum & sums of squares with respect to factor levels. */
-  private setStats(categories: CatCol, values: NumCol, uniqueCount: number): void {
-    const type = values.type;
-    const size = values.length;
+  private setStats(categories: CatCol, features: NumCol, uniqueCount: number): void {
+    const type = features.type;
+    const size = features.length;
+    const featuresNull = getNullValue(features);
 
     switch (type) {
     case DG.COLUMN_TYPE.INT:
@@ -214,7 +218,7 @@ export class FactorizedData {
       this.catCount = catCount;
       this.size = size;
 
-      const vals = values.getRawData();
+      const vals = features.getRawData();
       const cats = categories.getRawData();
 
       const sums = new Float64Array(catCount).fill(0);
@@ -231,9 +235,15 @@ export class FactorizedData {
 
         for (let i = 0; i < size; ++i) {
           cat = 1 & (packed >> shift);
-          sums[cat] += vals[i];
-          sumsOfSquares[cat] += vals[i] ** 2;
-          ++subSampleSizes[cat];
+
+          if (vals[i] !== featuresNull) {
+            sums[cat] += vals[i];
+            sumsOfSquares[cat] += vals[i] ** 2;
+            ++subSampleSizes[cat];
+          } else
+            ++this.nullsCount;
+
+
           ++shift;
 
           if (shift > MAX_SHIFT) {
@@ -243,8 +253,16 @@ export class FactorizedData {
           }
         }
       } else {
+        const categoriesNull = categories.stats.missingValueCount > 0 ? getNullValue(categories) : -1;
+
         for (let i = 0; i < size; ++i) {
           cat = cats[i];
+
+          if ((cat === categoriesNull) || (vals[i] === featuresNull)) {
+            ++this.nullsCount;
+            continue;
+          }
+
           sums[cat] += vals[i];
           sumsOfSquares[cat] += vals[i] ** 2;
           ++subSampleSizes[cat];
@@ -254,6 +272,10 @@ export class FactorizedData {
       this.sums = sums;
       this.sumsOfSquares = sumsOfSquares;
       this.subSampleSizes = subSampleSizes;
+
+      console.log(sums);
+      console.log(sumsOfSquares);
+      console.log(subSampleSizes);
 
       break;
 
