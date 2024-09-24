@@ -195,6 +195,7 @@ export function runOneWayAnova(): void {
     tooltipText: 'Column with factor values',
     onValueChanged: (col) => factor = col,
     filter: (col: DG.Column) => factorColNames.includes(col.name),
+    nullable: false,
   });
 
   let feature = df.col(DEFAULT.FEATURE);
@@ -207,6 +208,7 @@ export function runOneWayAnova(): void {
     tooltipText: 'Column with feature values',
     onValueChanged: (col) => feature = col,
     filter: (col: DG.Column) => featureColNames.includes(col.name),
+    nullable: false,
   });
 
   let significance = SIGNIFICANCE.DEFAULT;
