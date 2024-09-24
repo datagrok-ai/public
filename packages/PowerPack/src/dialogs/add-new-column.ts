@@ -10,6 +10,7 @@ import {StateEffect, StateField} from "@codemirror/state"
 import {Decoration} from "@codemirror/view"
 import { minimalSetup } from 'codemirror';
 import {bracketMatching} from "@codemirror/language"
+import { Subject } from 'rxjs';
 
 /**
  * Class AddNewColumnDialog is a useful method to add a new column to the table
@@ -63,7 +64,7 @@ export class AddNewColumnDialog {
   placeholderType: string = 'Type'; // Used only for uniformity when saving inputs history.
   placeholderExpression: string = 'Expression';
   maxAutoNameLength: number = 50;
-  maxPreviewRowCount: number = 100;
+  maxPreviewRowCount: number = 20;
   newColumnBgColor: number = 0xFFFDFFE7; // The same bg-color as the bg-color of tooltips.
   colNamePattern: RegExp = /\${(.+?)(?<!\\)}|\$\[(.+?)(?<!\\)\]/g;
   colNamePatternWithoutDollar: RegExp = /{(.+?)}|\[(.+?)\]/g;
@@ -109,6 +110,7 @@ export class AddNewColumnDialog {
   selectedColumn: DG.Column | null = null;
   error = '';
   mutationObserver: MutationObserver | null = null;
+  mouseDownOnCm = false;
 
   constructor(call: DG.FuncCall | null = null) {
     const table = call?.getParamValue('table');
@@ -281,6 +283,17 @@ export class AddNewColumnDialog {
 
   initCodeMirror(): EditorView {
     this.codeMirrorDiv!.onclick = () => {
+      cm.focus();
+    };
+
+    this.codeMirrorDiv!.onmousedown = () => {
+      this.mouseDownOnCm = true;
+    };
+
+    this.uiDialog!.root.onmouseleave = () => {
+      if(this.mouseDownOnCm) {
+        this.mouseDownOnCm = false;
+      }
       cm.focus();
     };
 
@@ -495,23 +508,31 @@ export class AddNewColumnDialog {
                 else if (!this.packageFunctionsNames[packAndFuncNames[0]].includes(packAndFuncNames[1]))
                   this.error = `Function ${packAndFuncNames[1]} not found in ${packAndFuncNames[0]} package`;
                 else
-                this.error = this.validateFormula(cmValue);
+                  validateAndUpdateEvent.next(cmValue);
               } else {
                 if (this.functionAutocomplete)
                   this.setSelection(cm.state.selection.main.head, true);
-                this.error = this.validateFormula(cmValue);
+                validateAndUpdateEvent.next(cmValue);
               }
             }
-            this.packageAutocomplete = false;
-            this.functionAutocomplete = false;
-            ui.empty(this.errorDiv);
-            if (this.error)
-              this.errorDiv.append(ui.divText(this.error, 'cm-error-div'));
-            await this.updatePreview(cmValue, this.error);
           }),
         ],
       }),
-    });  
+    });
+    
+    const validateAndUpdatePreview = async (cmValue: string) => {
+      this.error = this.validateFormula(cmValue);
+      this.packageAutocomplete = false;
+      this.functionAutocomplete = false;
+      ui.empty(this.errorDiv);
+      if (this.error)
+        this.errorDiv.append(ui.divText(this.error, 'cm-error-div'));
+      await this.updatePreview(cmValue, this.error);
+    }
+
+    const validateAndUpdateEvent = new Subject<string>();
+
+    DG.debounce(validateAndUpdateEvent, 1000).subscribe((cmVal) => validateAndUpdatePreview(cmVal));
 
     //remove error in case autocomplete is open
     this.mutationObserver = new MutationObserver((mutationsList, observer) => {
@@ -570,7 +591,7 @@ export class AddNewColumnDialog {
       const funcCall = grok.functions.parse(formula, false);
       this.validateFuncCallTypes(funcCall);
     } catch (e: any) {
-      return e.message;
+      return e.message.endsWith(': end of input expected]') ? 'Syntax error' : e.message;
     }
     return '';
   }
@@ -893,6 +914,9 @@ export class AddNewColumnDialog {
         ...this.getSelectedType()
     );*/
     ui.setUpdateIndicator(this.gridPreview!.root, false);
+    //temporary fix to activate macromolecule cell renderer
+    await grok.functions.call('Bio:detectMacromolecule', {col: this.previwDf!.col(colName)});
+
     this.gridPreview!.dataFrame = this.previwDf!.clone(null, columnIds);
     this.gridPreview!.col(colName)!.backColor = this.newColumnBgColor;
     this.resultColumnType = this.previwDf!.col(colName)!.type;
@@ -1055,11 +1079,14 @@ export class AddNewColumnDialog {
       this.call!.setParamValue('treatAsString', this.getSelectedType()[1]);
       await this.call!.call();
     } else {
+      const name = this.getResultColumnName();
       await this.sourceDf!.columns.addNewCalculated(
-        this.getResultColumnName(),
+        name,
           this.codeMirror!.state.doc.toString().trim(),
           ...this.getSelectedType(),
       );
+      //temporary fix to activate macromolecule cell renderer
+      await grok.functions.call('Bio:detectMacromolecule', {col: this.sourceDf?.col(name)});
     }
   }
 
