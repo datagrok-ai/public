@@ -641,7 +641,13 @@
               }
             }
           ],
-          "coloring": ""
+          "coloring": {
+            "type": "Linear",
+            "enable": false,
+            "min": "2",
+            "max": "24",
+            "colors": "[4278255615, 4294902015]"
+          }
         }
       ]
     }
