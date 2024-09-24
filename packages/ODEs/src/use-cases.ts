@@ -408,7 +408,9 @@ ${CONTROL_EXPR.PARAMS}:
        yO2in = 0.21  {              caption: O2 fraction; category: Parameters;  min: 0.1; max: 0.9}            [Oxygen mole fraction]
            T =  300  {units: K;     caption: temperature; category: Parameters;  min: 250; max: 350}            [System temperature]
            P =    1  {units: atm;   caption: pressure;    category: Parameters;  min: 1;   max: 2}              [Headspace pressure]
-  switchTime =  135  {units: min;   caption: switch at;   category: Time;        min: 70;  max: 180; step: 10}  [Switch mode time]`;
+  switchTime =  135  {units: min;   caption: switch at;   category: Time;        min: 70;  max: 180; step: 10}  [Switch mode time]
+  
+${CONTROL_EXPR.INPUTS}: mode {caption: Process mode; category: Process parameters; choices: OpenFile("System:AppData/DiffStudio/examples/bioreactor-inputs.csv")} [Reactions flow mode]`;
 
 /** Pollution model */
 const POLLUTION_MODEL = `${CONTROL_EXPR.NAME}: Pollution

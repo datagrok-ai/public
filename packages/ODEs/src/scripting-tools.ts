@@ -113,6 +113,7 @@ export type IVP = {
   metas: string[],
   outputs: Map<string, Output> | null,
   solverSettings: string,
+  inputsLookup: string | null,
 };
 
 /** Specific error messages */
@@ -502,6 +503,7 @@ export function getIVP(text: string): IVP {
   const metas = [] as string[];
   let outputs: Map<string, Output> | null = null;
   let solverSettings = DEFAULT_SOLVER_SETTINGS;
+  let inputsLookup: string | null = null;
 
   // 0. Split text into lines & remove comments
   const lines = text.replaceAll('\t', ' ').split('\n')
@@ -542,13 +544,15 @@ export function getIVP(text: string): IVP {
     } else if (firstLine.startsWith(CONTROL_EXPR.TOL)) { // the 'tolerance' block
       tolerance = firstLine.slice( firstLine.indexOf(CONTROL_SEP) + 1).trim();
     } else if (firstLine.startsWith(CONTROL_EXPR.SOLVER)) { // the 'solver settings' block
-      solverSettings = firstLine.slice( firstLine.indexOf(CONTROL_SEP) + 1).trim();
+      solverSettings = firstLine.slice(firstLine.indexOf(CONTROL_SEP) + 1).trim();
     } else if (firstLine.startsWith(CONTROL_EXPR.LOOP)) { // the 'loop' block
       loop = getLoop(lines, block.begin + 1, block.end);
     } else if (firstLine.startsWith(CONTROL_EXPR.UPDATE)) { // the 'update' block
       updates.push(getUpdate(lines, block.begin, block.end));
     } else if (firstLine.startsWith(CONTROL_EXPR.OUTPUT)) { // the 'output' block
       outputs = getOutput(lines, block.begin + 1, block.end);
+    } else if (firstLine.startsWith(CONTROL_EXPR.INPUTS)) { // the 'inputs' block
+      inputsLookup = firstLine.slice(firstLine.indexOf(CONTROL_SEP) + 1).trim();
     } else if (firstLine.startsWith(CONTROL_EXPR.COMMENT)) { // the 'comment' block
       // just skip it
     } else
@@ -578,6 +582,7 @@ export function getIVP(text: string): IVP {
     metas: metas,
     outputs: outputs,
     solverSettings: solverSettings,
+    inputsLookup: inputsLookup,
   };
 
   checkCorrectness(ivp);

@@ -23,9 +23,10 @@ Datagrok provides intuitive tools for the rapid solving ODEs.
   * Click on the "Open" icon <i class="fas fa-folder-open"></i> on the top panel
   * Select **Templates > Advanced...**
   * Modify formulas and press **F5**
-* Save formulas in a local file:
-  * Click on the "Save" icon <i class="fas fa-save"></i> on the top panel  
-  * Find the *ivp*-file in Downloads, modify it using any text editor
+* Save model in a local file:
+  * Click on the "Save" icon <i class="fas fa-save"></i> on the top panel
+  * Click `Save as Local File...` to save model to a local file. Find the ivp-file in Downloads. You can open and edit this file using any text editor
+  * Click `Save to My Files...` to save model to your platform files (**Browse > Files > My files**)
 * Drag-n-drop:
   * Drag *ivp*-file with equations right into the browser
 * Load equations from a local file:
@@ -80,7 +81,7 @@ The solver has built-in use cases. Get access to them via the context menu. You 
   * demonstrates the `output` feature
 * `Bioreactor`
   * simulates the bioreactor [processes](https://doi.org/10.1074/jbc.RA117.000303)
-  * illustrates the capability of modeling complex processes described by a large number of equations
+  * shows how to use `meta.inputs` to specify a table with pre-defined model inputs
 * `Pollution`
   * describes a chemical reaction part of the air pollution [model](https://archimede.uniba.it/~testset/report/pollu.pdf) consisting of 25 reaction and 20 reacting compounds
   * demonstrates the simulation of processes described by a stiff system of ODEs
@@ -121,6 +122,7 @@ Use the following sections to specify various problems:
 |```#description```|Defines description of the model|
 |```#comment```|Specifies comments block|
 |```#meta.solver```|Defines the solver settings|
+|```#meta.inputs```|Path to the table with pre-defined model inputs|
 
 ## Annotations
 
@@ -189,6 +191,25 @@ Diff Studio alerts you if computations take too long. The default time limit is 
 
 ```python
 #meta.solver: {method: 'mrt'; maxTimeMs: 50}
+```
+
+## Lookup tables
+
+Lookup tables are pre-defined sets of model input values. They're organized as follows:
+
+||x|y|...|
+|-----|-----|-----|---|
+|Set 1|1|2|...|
+|Set 2|3|4|...|
+
+To use a lookup table:
+
+* Create a CSV file with your table and add it to your project
+* Add the `#meta.inputs`-line to your model and specify a CSV file with a lookup table
+* To improve usability, define `caption`, `category` and a tooltip:
+
+```python
+#meta.inputs: table {choices: OpenFile("System:AppData/DiffStudio/inputs.csv"); caption: Mode; category: Settings} [Hint]
 ```
 
 ## Performance

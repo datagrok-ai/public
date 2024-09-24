@@ -55,5 +55,6 @@ category('Features', () => {
   testTeamplate('Cyclic process', USE_CASES.PK_PD);
   testTeamplate('Multistage model', USE_CASES.ACID_PROD);
   testTeamplate('Output control', USE_CASES.NIMOTUZUMAB);
+  testTeamplate('Value lookups', USE_CASES.NIMOTUZUMAB);
   testTeamplate('Output expressions & use of JS code in model', ENERGY_N_CONTROL);
 }); // Correctness
