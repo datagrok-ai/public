@@ -1,5 +1,9 @@
 # math changelog
 
+## 1.2.1 (2024-09-25)
+
+* Expect navigator.gpu to be undefined in some browsers
+
 ## 1.1.13 (2024-09-06)
 
 Bump Api version
