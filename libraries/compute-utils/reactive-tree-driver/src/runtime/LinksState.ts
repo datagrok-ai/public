@@ -177,6 +177,7 @@ export class LinksState {
             currentDeps.push(linkId);
             depsData[ioName]['validation'] = currentDeps;
           }
+          deps.set(stepNode.getItem().uuid, depsData);
         }
       }
     }
@@ -282,9 +283,10 @@ export class LinksState {
   }
 
   public isAffected(rootPath: Readonly<NodeAddress>, link: Link, addIdx?: number, removeIdx?: number) {
-    const bound = this.getLowerBound(addIdx, removeIdx) ?? 0;
-    return this.hasNested(rootPath, link.prefix, link.matchInfo.inputs, bound) ||
-      this.hasNested(rootPath, link.prefix, link.matchInfo.outputs, bound);
+    const bound = this.getLowerBound(addIdx, removeIdx);
+    const startPath = bound != null ? [...rootPath, { idx: bound }] : rootPath;
+    return this.hasAfter(startPath, link.prefix, link.matchInfo.inputs) ||
+      this.hasAfter(startPath, link.prefix, link.matchInfo.outputs);
   }
 
   public isInbound(rootPath: Readonly<NodeAddress>, link: Link, addIdx?: number, removeIdx?: number) {
@@ -296,7 +298,7 @@ export class LinksState {
         return isNodeInbound;
     }
 
-    const bound = this.getLowerBound(addIdx, removeIdx) ?? 0;
+    const bound = this.getLowerBound(addIdx, removeIdx);
     return (this.hasNested(rootPath, link.prefix, link.matchInfo.outputs, bound) &&
       this.hasNonNested(rootPath, link.prefix, link.matchInfo.inputs, bound));
   }
@@ -328,6 +330,11 @@ export class LinksState {
   private hasNonNested(rootPath: Readonly<NodeAddress>, prefix: Readonly<NodeAddress>, minfos: Record<string, MatchedNodePaths>, childOffset?: number) {
     return Object.entries(minfos).some(
       ([, minfo]) => minfo.some((io) => !BaseTree.isNodeChildOffseted(rootPath, [...prefix, ...io.path], childOffset)));
+  }
+
+  private hasAfter(rootPath: Readonly<NodeAddress>, prefix: Readonly<NodeAddress>, minfos: Record<string, MatchedNodePaths>) {
+    return Object.entries(minfos).some(
+      ([, minfo]) => minfo.some((io) => BaseTree.isNodeAddressAfterOrEq(rootPath, [...prefix, ...io.path])));
   }
 
   private getLinkRunObs(linkUUID: string, mutationPath?: NodeAddress, childOffset?: number) {

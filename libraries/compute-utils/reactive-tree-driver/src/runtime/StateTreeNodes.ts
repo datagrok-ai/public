@@ -166,7 +166,7 @@ export class FuncCallNode implements IStoreProvider {
 
   clearIOMeta(name: string) {
     const s = this.metaInfo$.value?.[name];
-    if (s)
+    if (s?.value != null)
       s.next(undefined);
   }
 
@@ -177,11 +177,15 @@ export class FuncCallNode implements IStoreProvider {
   clearOldValidations(currentIds: Set<string>) {
     const cval = this.instancesWrapper.validations$.value;
     const nval: Record<string, Record<string, ValidationResult | undefined>> = {};
+    let needsUpdate = false;
     for (const [k, v] of Object.entries(cval)) {
       if (currentIds.has(k))
         nval[k] = v;
+      else
+        needsUpdate = true;
     }
-    this.instancesWrapper.validations$.next(nval);
+    if (needsUpdate)
+      this.instancesWrapper.validations$.next(nval);
   }
 
   close() {

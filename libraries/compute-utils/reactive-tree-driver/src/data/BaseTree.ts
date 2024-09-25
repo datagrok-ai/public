@@ -50,6 +50,17 @@ export class BaseTree<T> {
     return true;
   }
 
+  public static isNodeAddressAfterOrEq(path: Readonly<NodeAddress>, nodeAddress: Readonly<NodeAddress>): boolean {
+    for (const [level, {idx}] of path.entries()) {
+      const idxNode = nodeAddress[level]?.idx;
+      if (idxNode == null || idxNode < idx)
+        return false;
+      if (idxNode > idx)
+        return true;
+    }
+    return true;
+  }
+
   constructor(item: T) {
     this.root = new TreeNode(item);
   }

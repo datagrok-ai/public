@@ -106,14 +106,15 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
     const currentInstance = this.instance$.value?.adapter;
     if (currentInstance == null)
       throw new Error(`Attempting to set an empty FuncCallInstancesBridge`);
+    const restrictionPayload = restrictionType === 'none' ? undefined : {assignedValue: val, type: restrictionType};
     this.inputRestrictions$.next({
       ...this.inputRestrictions$.value,
-      [id]: {assignedValue: val, type: restrictionType},
+      [id]: restrictionPayload,
     });
     if (!this.isReadonly)
       currentInstance.setState(id, val, restrictionType);
     else
-      this.inputRestrictionsUpdates$.next([id, {assignedValue: val, type: restrictionType}] as const);
+      this.inputRestrictionsUpdates$.next([id, restrictionPayload] as const);
   }
 
   editState<T = any>(id: string, val: T | undefined) {
@@ -127,12 +128,15 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
     const currentInstance = this.instance$.value?.adapter;
     if (currentInstance == null)
       throw new Error(`Attempting to set an empty FuncCallInstancesBridge`);
+    const currentRestriction = this.inputRestrictions$.value?.[id];
+    if (currentRestriction == null)
+      return;
     const defaulRestriction = this.initialData?.initialRestrictions[id];
     this.inputRestrictions$.next({
       ...this.inputRestrictions$.value,
       [id]: defaulRestriction,
     });
-    this.inputRestrictionsUpdates$.next([id, undefined] as const);
+    this.inputRestrictionsUpdates$.next([id, defaulRestriction] as const);
   }
 
   setValidation(id: string, validatorId: string, validation: ValidationResult | undefined) {

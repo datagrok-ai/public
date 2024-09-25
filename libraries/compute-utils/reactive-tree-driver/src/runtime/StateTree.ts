@@ -128,6 +128,11 @@ export class StateTree {
     }, false).pipe(mapTo(this));
   }
 
+  // for testing
+  public runMutateTree() {
+    return this.mutateTree(() => of([]));
+  }
+
   public save(uuid?: string) {
     return this.mutateTree(() => {
       const [root, nqName] = StateTree.findPipelineNode(this, uuid);
@@ -580,11 +585,11 @@ export class StateTree {
 
       for (const ioName of item.instancesWrapper.getStateNames()) {
         const deps = ioDeps[ioName];
-        if (!deps.data)
+        if (!deps?.data)
           item.clearIORestriction(ioName);
-        if (!deps.meta)
+        if (!deps?.meta)
           item.clearIOMeta(ioName);
-        item.clearOldValidations(new Set(deps.validation));
+        item.clearOldValidations(new Set(deps?.validation ?? []));
       }
       return acc;
     }, null);
@@ -605,9 +610,9 @@ export class StateTree {
         const hasPending$ = combineLatest([
           depItem.instancesWrapper.isOutputOutdated$,
           depItem.pendingDependencies$.pipe(
-            map((d) => d.length === 0),
+            map((d) => d.length !== 0),
           ),
-        ]).pipe(map(([isOutdated, hasPending]) => !isOutdated && !hasPending));
+        ]).pipe(map(([isOutdated, hasPending]) => isOutdated || hasPending));
         return [depId, hasPending$] as const;
       });
       item.setDeps(depsStates);

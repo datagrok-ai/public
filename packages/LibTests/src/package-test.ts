@@ -18,6 +18,7 @@ import './tests/compute-utils/reactive-tree-driver/instance-bridge';
 import './tests/compute-utils/reactive-tree-driver/links-additional-states-propagation';
 import './tests/compute-utils/reactive-tree-driver/links-inbound-outgoing';
 import './tests/compute-utils/reactive-tree-driver/step-deps-tracking';
+import './tests/compute-utils/reactive-tree-driver/obsolete-meta';
 
 export const _package = new DG.Package();
 export {tests};
