@@ -273,10 +273,6 @@ export class FactorizedData {
       this.sumsOfSquares = sumsOfSquares;
       this.subSampleSizes = subSampleSizes;
 
-      console.log(sums);
-      console.log(sumsOfSquares);
-      console.log(subSampleSizes);
-
       break;
 
     default:
