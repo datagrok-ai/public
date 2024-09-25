@@ -3,10 +3,10 @@
 //input: double a
 //input: double b
 //output: double res {category: Main result}
-//output: double res2 {category: Additional info; precision: 2; units: cm}
-//output: double res3 {category: Additional info; precision: 2; units: L}
-//output: double res4 {category: Additional info}
-//output: double res5 {category: Additional info; precision: 6; units: 1/F}
+//output: double res2 {category: Additional data; precision: 2; units: cm}
+//output: double res3 {category: Additional data; precision: 2; units: L}
+//output: double res4 {category: Additional data}
+//output: double res5 {category: Additional data; precision: 6; units: 1/F}
 //output: dataframe df {viewer: ScatterPlot()}
 
 const delay = (delayInms) => {
