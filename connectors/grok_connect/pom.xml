@@ -551,7 +551,7 @@
         <dependency> <!-- remediating vulnerability -->
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
-            <version>3.3.6</version>
+            <version>3.4.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.logging.log4j</groupId>
