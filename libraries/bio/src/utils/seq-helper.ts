@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {IMonomerLibBase} from '../types';
 
 export type ToAtomicLevelRes = {
   molCol: DG.Column<string> | null,
@@ -12,9 +13,10 @@ export interface ISeqHelper {
    * @param helmCol {DG.Column<string>} Macromolecules in Helm format
    * @param chiralityEngine {boolean} [true] Use chirality engine for molecule visualization
    * @param highlight {boolean} [true] Generates molHighlightCol of result
+   * @param overrideMonomerLib {IMonomerLibBase} [null] Override monomer library for monomers from reactions
    **/
   helmToAtomicLevel(
-    helmCol: DG.Column<string>, chiralityEngine?: boolean, highlight?: boolean
+    helmCol: DG.Column<string>, chiralityEngine?: boolean, highlight?: boolean, overrideMonomerLib?: IMonomerLibBase
   ): Promise<ToAtomicLevelRes>;
 }
 

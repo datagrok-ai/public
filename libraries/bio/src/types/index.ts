@@ -68,20 +68,30 @@ export interface IMonomerSet {
 
 export type MonomerLibSummaryType = { [polymerType: string]: number };
 
-export interface IMonomerLib {
-  get source(): string | undefined;
-  get error(): string | undefined;
+export interface IMonomerLibBase {
+  get onChanged(): Observable<any>;
 
   /* Gets library monomer for sequence monomer */
   addMissingMonomer(polymerType: PolymerType, monomerSymbol: string): Monomer;
+
   getMonomer(polymerType: PolymerType | null, monomerSymbol: string): Monomer | null;
+
+  /** HELMWebEditor expects null for HelmTypes.LINKER and R-Group count != 2 */
+  getWebEditorMonomer(a: HelmAtom | HelmType, symbol?: string): IWebEditorMonomer | null;
+
+  getRS(smiles: string): { [r: string]: string };
+}
+
+export interface IMonomerLib extends IMonomerLibBase {
+  get source(): string | undefined;
+  get error(): string | undefined;
+
   getMonomerMolsByPolymerType(polymerType: PolymerType): { [monomerSymbol: string]: string } | null;
   getMonomerSymbolsByRGroup(rGroupNumber: number, polymerType: PolymerType, element?: string): string[];
   getMonomerSymbolsByType(polymerType: PolymerType): string[];
   getPolymerTypes(): PolymerType[];
   update(lib: IMonomerLib): void;
   toJSON(): Monomer[];
-  get onChanged(): Observable<any>;
 
   /** Summary string with lib monomer count by type
    * @deprecated Keep for backward compatibility */
@@ -97,9 +107,4 @@ export interface IMonomerLib {
 
   // For monomer palettes
   getMonomerSet(biotype: HelmType): MonomerSetType | null;
-
-  /** HELMWebEditor expects null for HelmTypes.LINKER and R-Group count != 2 */
-  getWebEditorMonomer(a: HelmAtom | HelmType, symbol?: string): IWebEditorMonomer | null;
-
-  getRS(smiles: string): { [r: string]: string };
 }

@@ -2,6 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {CellRendererBackBase} from '../cell-renderer-back-base';
+
 export type SeqSplittedBase = ArrayLike<string> & Iterable<string>;
 
 export interface ISeqSplitted {
@@ -20,6 +22,8 @@ export interface INotationProvider {
   get splitter(): SplitterFunc;
 
   getHelm(seqCol: DG.Column<string>, options?: any): Promise<DG.Column<string>>;
+
+  createCellRendererBack(gridCol: DG.GridColumn | null, tableCol: DG.Column<string>): CellRendererBackBase<string>;
 }
 
 export type SeqColStats = { freq: MonomerFreqs, sameLength: boolean }

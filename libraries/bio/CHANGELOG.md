@@ -1,5 +1,12 @@
 # bio changelog
 
+## 5.44.1 (2024-09-25)
+
+### New features
+
+* Add IMonomerLibBase interface for overriding libraries
+* Add custom notation for sequences
+
 ## 5.44.0 (2024-09-24)
 
 ### New features

@@ -13,7 +13,7 @@ import {
 import {ToAtomicLevelRes} from '../utils/seq-helper';
 import {getMolColName, hexToPercentRgb} from './utils';
 import {SeqHandler} from '../utils/seq-handler';
-import {IMonomerLib} from '../types';
+import {IMonomerLib, IMonomerLibBase} from '../types';
 import {ISeqMonomer, PolymerType} from '../helm/types';
 import {HelmTypes, PolymerTypes} from '../helm/consts';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
@@ -83,7 +83,7 @@ export async function seqToMolFileWorker(seqCol: DG.Column<string>, monomersDict
   return {molCol: molCol, warnings: warnings};
 }
 
-export function getMolHighlight(monomerMaps: Iterable<MonomerMapValue>, monomerLib: IMonomerLib): ISubstruct {
+export function getMolHighlight(monomerMaps: Iterable<MonomerMapValue>, monomerLib: IMonomerLibBase): ISubstruct {
   const hlAtoms: { [key: number]: number[] } = {};
   const hlBonds: { [key: number]: number[] } = {};
 

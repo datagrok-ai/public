@@ -5,18 +5,22 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 
 import {SeqHandler} from './seq-handler';
-import {MonomerToShortFunc} from './macromolecule';
+import {getPaletteByType, MonomerToShortFunc, NOTATION, SplitterFunc, TAGS as bioTAGS} from './macromolecule';
 import {ISeqSplitted} from './macromolecule/types';
 import {CellRendererBackBase} from './cell-renderer-back-base';
 import {ILogger} from './logger';
 import {getMonomerLibHelper} from '../monomer-works/monomer-utils';
 import {errInfo} from './err-info';
+import {DrawStyle, printLeftOrCentered, TAGS as mmcrTAGS} from './cell-renderer';
+import {rendererSettingsChangedState, MmcrTemps, tempTAGS} from './cell-renderer-consts';
 
 type MonomerPlacerProps = {
   seqHandler: SeqHandler,
   monomerCharWidth: number, separatorWidth: number,
   monomerToShort: MonomerToShortFunc
 };
+
+export const undefinedColor = 'rgb(100,100,100)';
 
 export function hitBounds(bounds: number[], x: number): number | null {
   let iterationCount: number = 100;
@@ -205,17 +209,137 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     return hitBounds(monomerMaxLengthSumList, x);
   }
 
-  public setMonomerLengthLimit(limit: number): void {
-    this.monomerLengthLimit = limit;
-    this.dirty = true;
+  public setMonomerLengthLimit(value: number): void {
+    if (this.monomerLengthLimit != value) {
+      this.monomerLengthLimit = value;
+      this.dirty = true;
+    }
   }
 
-  public setSeparatorWidth(width: number): void {
-    this.props.separatorWidth = width;
-    this.dirty = true;
+  public setSeparatorWidth(value: number): void {
+    if (this.separatorWidth != value) {
+      this.props.separatorWidth = value;
+      this.dirty = true;
+    }
   }
 
   public isMsa(): boolean {
     return this.props.seqHandler.isMsa();
   }
+
+  private padding: number = 5;
+
+  render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, _cellStyle: DG.GridCellStyle
+  ) {
+    const gridCol = this.gridCol;
+    const tableCol = this.tableCol;
+    const dpr = window.devicePixelRatio;
+    let separatorWidth = this.props.separatorWidth;
+
+    // Cell renderer settings
+    let maxLengthOfMonomer: number = this.monomerLengthLimit;
+    if (mmcrTAGS.maxMonomerLength in tableCol.tags) {
+      const v = parseInt(tableCol.getTag(mmcrTAGS.maxMonomerLength));
+      maxLengthOfMonomer = !isNaN(v) && v ? v : 50;
+    }
+    if (MmcrTemps.maxMonomerLength in tableCol.temp) {
+      const v = tableCol.temp[MmcrTemps.maxMonomerLength];
+      maxLengthOfMonomer = !isNaN(v) && v ? v : 50;
+    }
+
+    g.save();
+    try {
+      // if (
+      //   tableCol.temp[MmcrTemps.rendererSettingsChanged] === rendererSettingsChangedState.true ||
+      //   this.monomerLengthLimit != maxLengthOfMonomer
+      // ) {
+      //   gapLength = tableCol.temp[MmcrTemps.gapLength] as number ?? gapLength;
+      //   // this event means that the mm renderer settings have changed,
+      //   // particularly monomer representation and max width.
+      //   this.setMonomerLengthLimit(maxLengthOfMonomer);
+      //   this.setSeparatorWidth(this.isMsa() ? msaGapLength : gapLength);
+      //   tableCol.temp[MmcrTemps.rendererSettingsChanged] = rendererSettingsChangedState.false;
+      // }
+
+
+      const [maxLengthWords, maxLengthWordsSum]: [number[], number[]] =
+        this.getCellMonomerLengths(gridCell.tableRowIndex!, w);
+      const _maxIndex = maxLengthWords.length;
+
+      const value: any = gridCell.cell.value;
+      const rowIdx = gridCell.cell.rowIndex;
+      const paletteType = tableCol.getTag(bioTAGS.alphabet);
+      const minDistanceRenderer = 50;
+      w = getUpdatedWidth(gridCol?.grid, g, x, w, dpr);
+      g.beginPath();
+      g.rect(x + this.padding, y + this.padding, w - this.padding - 1, h - this.padding * 2);
+      g.clip();
+      g.font = '12px monospace';
+      g.textBaseline = 'top';
+
+      //TODO: can this be replaced/merged with splitSequence?
+      const units = tableCol.meta.units;
+      const aligned: string = tableCol.getTag(bioTAGS.aligned);
+
+      const palette = getPaletteByType(paletteType);
+
+      const separator = tableCol.getTag(bioTAGS.separator) ?? '';
+      const minMonWidth = this.props.separatorWidth + 1 * this.props.monomerCharWidth;
+      const splitLimit = Math.ceil(w / minMonWidth);
+      const sh = SeqHandler.forColumn(tableCol);
+
+      const tempReferenceSequence: string | null = tableCol.temp[tempTAGS.referenceSequence];
+      const tempCurrentWord: string | null = this.tableCol.temp[tempTAGS.currentWord];
+      if (tempCurrentWord && tableCol?.dataFrame?.currentRowIdx === -1)
+        this.tableCol.temp[tempTAGS.currentWord] = null;
+
+      const referenceSequence: string[] = (() => {
+        // @ts-ignore
+        const splitterFunc: SplitterFunc = sh.getSplitter(splitLimit);
+        const seqSS = splitterFunc(
+          ((tempReferenceSequence != null) && (tempReferenceSequence != '')) ?
+            tempReferenceSequence : tempCurrentWord ?? '');
+        return wu.count(0).take(seqSS.length).map((posIdx) => seqSS.getOriginal(posIdx)).toArray();
+      })();
+
+      const subParts: ISeqSplitted = sh.getSplitted(rowIdx);
+      /* let x1 = x; */
+      let color = undefinedColor;
+      let drawStyle = DrawStyle.classic;
+
+      if (aligned && aligned.includes('MSA') && units == NOTATION.SEPARATOR)
+        drawStyle = DrawStyle.MSA;
+
+      const visibleSeqLength = Math.min(subParts.length, splitLimit);
+      for (let posIdx: number = 0; posIdx < visibleSeqLength; ++posIdx) {
+        const amino: string = subParts.getOriginal(posIdx);
+        color = palette.get(amino);
+        g.fillStyle = undefinedColor;
+        const last = posIdx === subParts.length - 1;
+        /*x1 = */
+        const opts = {
+          color: color, pivot: 0, left: true, transparencyRate: 1.0, separator: separator, last: last,
+          drawStyle: drawStyle, maxWord: maxLengthWordsSum, wordIdx: posIdx, gridCell: gridCell,
+          referenceSequence: referenceSequence, maxLengthOfMonomer: maxLengthOfMonomer,
+          monomerTextSizeMap: this._monomerLengthMap, logger: this.logger
+        };
+        printLeftOrCentered(g, amino, x + this.padding, y, w, h, opts);
+        if (minDistanceRenderer > w) break;
+      }
+    } catch (err: any) {
+      const [errMsg, errStack] = errInfo(err);
+      this.logger.error(errMsg, undefined, errStack);
+      this.errors.push(err);
+      //throw err; // Do not throw to prevent disabling renderer
+    } finally {
+      g.restore();
+    }
+  }
+}
+
+export function getUpdatedWidth(
+  grid: DG.Grid | null | undefined, g: CanvasRenderingContext2D, x: number, w: number, dpr: number
+): number {
+  return !!grid ? Math.max(Math.min(grid.canvas.width / dpr - x, w)) : Math.max(g.canvas.width / dpr - x, 0);
 }

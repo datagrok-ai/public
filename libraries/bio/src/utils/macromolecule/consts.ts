@@ -5,6 +5,7 @@ export enum NOTATION {
   FASTA = 'fasta',
   SEPARATOR = 'separator',
   HELM = 'helm',
+  /* Requires notation handler */ CUSTOM = 'custom',
 }
 
 export const enum ALIGNMENT {

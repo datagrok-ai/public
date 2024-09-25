@@ -19,13 +19,13 @@ export type MonomerHoverLink = {
   handler(seqGridCell: DG.GridCell, monomer: ISeqMonomer | null, targetGridCol: DG.GridColumn): boolean;
 } & ISubstructProvider;
 
-export function getUnusedName(df: DG.DataFrame | undefined, colName: string): string {
+export function getUnusedColName(df: DG.DataFrame | undefined, colName: string): string {
   if (!df) return colName;
   return df.columns.getUnusedName(colName);
 }
 
 export function getMolColName(df: DG.DataFrame | undefined, seqColName: string): string {
-  return getUnusedName(df, `molfile(${seqColName})`);
+  return getUnusedColName(df, `molfile(${seqColName})`);
 }
 
 export function alphabetToPolymerType(alphabet: ALPHABET): PolymerType {

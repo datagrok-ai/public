@@ -10,6 +10,7 @@ import {mmDistanceFunctionType} from '@datagrok-libraries/ml/src/macromolecule-d
 import {getMonomerLibHelper, IMonomerLibHelper} from '../monomer-works/monomer-utils';
 import {HELM_POLYMER_TYPE, HELM_WRAPPERS_REGEXP, PHOSPHATE_SYMBOL} from './const';
 import {GAP_SYMBOL, GapOriginals} from './macromolecule/consts';
+import {GridCellRendererTemp, CellRendererBackBase} from './cell-renderer-back-base';
 
 export const SeqTemps = new class {
   /** Column's temp slot name for a SeqHandler object */
@@ -28,7 +29,7 @@ export class SeqHandler {
   protected readonly _units: string; // units, of the form fasta, separator
   protected readonly _notation: NOTATION; // current notation (without :SEQ:NT, etc.)
   protected readonly _defaultGapOriginal: string;
-  protected readonly notationProvider: INotationProvider | null;
+  protected readonly notationProvider: INotationProvider | null = null;
 
   private _splitter: SplitterFunc | null = null;
 
@@ -80,7 +81,10 @@ export class SeqHandler {
       }
     }
 
-    this.notationProvider = this.column.temp[SeqTemps.notationProvider] ?? null;
+    if (this.column.meta.units === NOTATION.CUSTOM) {
+      // this.column.temp[SeqTemps.notationProvider] must be set at detector stage
+      this.notationProvider = this.column.temp[SeqTemps.notationProvider] ?? null;
+    }
     this.columnVersion = this.column.version;
   }
 
@@ -350,6 +354,8 @@ export class SeqHandler {
       return NOTATION.SEPARATOR;
     else if (this.units.toLowerCase().startsWith(NOTATION.HELM))
       return NOTATION.HELM;
+    else if (this.units.toLowerCase().startsWith(NOTATION.CUSTOM))
+      return NOTATION.CUSTOM;
     else
       throw new Error(`Column '${this.column.name}' has unexpected notation '${this.units}'.`);
   }
@@ -808,6 +814,16 @@ export class SeqHandler {
       tgtMList[posIdx] = om ? om : null;
     }
     return new StringListSeqSplitted(tgtMList.filter((om) => !!om) as string[], GapOriginals[NOTATION.HELM]);
+  }
+
+  // Custom notation provider
+
+  getRendererBack(gridCol: DG.GridColumn | null, tableCol: DG.Column<string>): CellRendererBackBase<string> {
+    const temp = this.column.temp as GridCellRendererTemp<any>;
+    let res = temp.rendererBack;
+    if (!res)
+      res = temp.rendererBack = this.notationProvider!.createCellRendererBack(gridCol, tableCol);
+    return res;
   }
 }
 
