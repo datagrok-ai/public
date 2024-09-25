@@ -34,6 +34,12 @@ export class ChemblIdHandler extends DG.ObjectHandler {
 }
 
 export async function registerChemblIdHandler(_package: DG.Package) {
+  // chech if chembl connection is available
+  const chembl = await grok.dapi.connections.filter('name="CHEMBL"').first();
+  if (!chembl) {
+    console.warn('CHEMBL connection not found. CHEMBL object handlers not registered');
+    return;
+  }
   const exp = await DBExplorer.initFromConfigPath(_package);
   if (!exp) {
     grok.shell.error('Failed to load db-explorer config');

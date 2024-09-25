@@ -1,5 +1,9 @@
 # Chembl changelog
 
+## 1.1.2 (2024-09-25)
+
+Handle missing chembl connection.
+
 ## 1.1.1 (2024-09-25)
 
 Database explorer for ChEMBL database.
