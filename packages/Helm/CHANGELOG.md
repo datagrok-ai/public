@@ -1,5 +1,9 @@
 # Helm changelog
 
+## 2.5.2 (2024-09-25)
+
+Bump dependencies, bio lib
+
 ## 2.5.1 (2024-09-24)
 
 ### New features

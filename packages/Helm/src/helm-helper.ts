@@ -16,7 +16,7 @@ import {
   HelmConvertRes, HelmInputBase, HelmNotSupportedError, IHelmHelper, IHelmInputInitOptions
 } from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
-import {IMonomerLib, IMonomerLinkData, IMonomerSetPlaceholder} from '@datagrok-libraries/bio/src/types/index';
+import {IMonomerLib, IMonomerLibBase, IMonomerLinkData, IMonomerSetPlaceholder} from '@datagrok-libraries/bio/src/types/index';
 import {HelmTabKeys, IHelmDrawOptions} from '@datagrok-libraries/helm-web-editor/src/types/org-helm';
 import {GAP_SYMBOL, GapOriginals, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 
@@ -47,7 +47,7 @@ export class HelmHelper implements IHelmHelper {
 
   createHelmInput(name?: string, options?: IHelmInputInitOptions): HelmInputBase {
     try {
-      const monomerLib: IMonomerLib = _package.libHelper!.getMonomerLib();
+      const monomerLib: IMonomerLibBase = _package.libHelper!.getMonomerLib();
       return HelmInput.create(this, monomerLib, name, options);
     } catch (err: any) {
       const [errMsg, errStack] = errInfo(err);
