@@ -26,6 +26,11 @@ type PropInfo = {
   propType: string
 }
 
+type UpdatePreviewParams = {
+  expression: string,
+  changeName: boolean,
+}
+
 const VALIDATION_TYPES_MAPPING: { [key: string]: string[] } = {
   'num': ['number', 'int', 'double', 'float', 'qnum'],
   'number': ['num', 'int', 'double', 'float', 'qnum'],
@@ -86,6 +91,7 @@ export class AddNewColumnDialog {
   dialogTitle: string = '';
   call: DG.FuncCall | null = null;
   edit: boolean = false;
+  currentCalculatedColName = '';
 
   inputName?: DG.InputBase;
   inputType?: DG.InputBase;
@@ -111,9 +117,14 @@ export class AddNewColumnDialog {
   error = '';
   mutationObserver: MutationObserver | null = null;
   mouseDownOnCm = false;
+  updatePreviewEvent = new Subject<UpdatePreviewParams>();
 
   constructor(call: DG.FuncCall | null = null) {
     const table = call?.getParamValue('table');
+
+    DG.debounce(this.updatePreviewEvent, 1000).subscribe(async (params: UpdatePreviewParams) => {
+      await this.updatePreview(params.expression, params.changeName);
+    });
 
     if (table) {
       this.call = call;
@@ -179,7 +190,7 @@ export class AddNewColumnDialog {
 
     this.prepareForSeleniumTests();
     if (!this.call)
-      await this.updatePreview(this.codeMirror!.state.doc.toString());
+      await this.updatePreview(this.codeMirror!.state.doc.toString(), false);
     this.prepareFunctionsListForAutocomplete();
   }
 
@@ -249,7 +260,7 @@ export class AddNewColumnDialog {
   /** Creates and initializes the "Column Name" input field. */
   initInputName(): DG.InputBase {
     const control = ui.input.string('', {value: ''});
-    control.onInput.subscribe(async () => await this.updatePreview(this.codeMirror!.state.doc.toString()));
+    control.onInput.subscribe(async () => await this.updatePreview(this.codeMirror!.state.doc.toString(), true));
     control.setTooltip(this.tooltips['name']);
 
     const input = control.input as HTMLInputElement;
@@ -269,7 +280,7 @@ export class AddNewColumnDialog {
 
     const control = ui.input.choice('', {value: this.call ?
       this.call.getParamValue('type') : defaultChoice, items: this.supportedTypes});
-    control.onInput.subscribe(async () => await this.updatePreview(this.codeMirror!.state.doc.toString()));
+    control.onInput.subscribe(async () => await this.updatePreview(this.codeMirror!.state.doc.toString(), false));
     control.setTooltip(this.tooltips['type']);
 
     const input = control.input as HTMLInputElement;
@@ -520,19 +531,11 @@ export class AddNewColumnDialog {
             ui.empty(this.errorDiv);
             if (this.error)
               this.errorDiv.append(ui.divText(this.error, 'cm-error-div'));
-            updatePreviewEvent.next(cmValue);
+            this.updatePreviewEvent.next({expression: cmValue, changeName: false});
           }),
         ],
       }),
     });
-    
-    const updatePreview = async (cmValue: string) => {
-      await this.updatePreview(cmValue, this.error);
-    }
-
-    const updatePreviewEvent = new Subject<string>();
-
-    DG.debounce(updatePreviewEvent, 1000).subscribe((cmVal) => updatePreview(cmVal));
 
     //remove error in case autocomplete is open
     this.mutationObserver = new MutationObserver((mutationsList, observer) => {
@@ -856,10 +859,19 @@ export class AddNewColumnDialog {
   }
 
   /** Updates the Preview Grid. Executed every time the controls are changed. */
-  async updatePreview(expression: string, error?: string): Promise<void> {
+  async updatePreview(expression: string, changeName: boolean): Promise<void> {
     //get result column name
     const colName = this.getResultColumnName();
 
+    //in case name was changed in nameInput, do not recalculate preview
+    if (changeName) {
+      this.gridPreview!.dataFrame.col(this.currentCalculatedColName)!.name = colName;
+      this.gridPreview!.invalidate();
+      this.currentCalculatedColName = colName;
+      return;
+    }
+
+    this.currentCalculatedColName = colName;
     // Making the Column List for the Preview Grid:
     const columnIds = this.findUniqueColumnNamesInExpression(expression);
     columnIds.push(colName);
@@ -868,7 +880,6 @@ export class AddNewColumnDialog {
     // Making the Preview Grid:
     const call = (DG.Func.find({name: 'AddNewColumn'})[0]).prepare({table: this.previwDf!,
       name: colName, expression: expression, type: type});
-    const time1 = Date.now();
     ui.setUpdateIndicator(this.gridPreview!.root, true);
     await call.call(false, undefined, {processed: true, report: false});
     /*    await this.previwDf!.columns.addNewCalculated(
@@ -1049,7 +1060,9 @@ export class AddNewColumnDialog {
           ...this.getSelectedType(),
       );
       //temporary fix to activate macromolecule cell renderer
-      await grok.functions.call('Bio:detectMacromolecule', {col: this.sourceDf?.col(name)});
+      const semType = await grok.functions.call('Bio:detectMacromolecule', {col: this.sourceDf?.col(name)});
+      if (semType)
+        this.sourceDf!.col(name)!.semType = semType;
     }
   }
 
