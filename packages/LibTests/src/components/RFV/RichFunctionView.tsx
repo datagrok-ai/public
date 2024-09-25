@@ -90,22 +90,32 @@ export const ScalarsPanel = Vue.defineComponent({
             </div>;
           })}
         </div> :
-        <table>
+        <div 
+          class='flex flex-col border-t-1 border-[#f2f2f5]' 
+          dock-spawn-dock-type='fill'
+        >
           { 
             categoryScalars.value.map((prop) => {
               const [scalarValue, units] = getContent(prop);
             
-              return <tr> 
-                <td>
-                  { prop.caption ?? prop.name }{units}
-                </td> 
-                <td>
-                  { scalarValue ?? '[No value]' }
-                </td> 
-              </tr>;
+              return <div class='
+                flex justify-between items-center h-8 px-2 
+                hover:bg-[#f2f2f5]'
+              style={{borderBottom: 'solid #f2f2f5'}}
+              > 
+                <div class='flex flex-col'>
+                  { prop.caption ?? prop.name }
+                  <span style={{color: 'var(--grey-4)'}}> { prop.description && prop.description } </span>
+                </div> 
+                <div>
+                  <span> 
+                    { scalarValue ?? '[No value]' } {units} 
+                  </span>
+                </div> 
+              </div>;
             }) 
           }
-        </table>;
+        </div>;
   },
 });
 
@@ -319,7 +329,7 @@ export const RichFunctionView = Vue.defineComponent({
           { 
             visibleTabLabels.value
               .map((tabLabel) => ({tabLabel, tabDfProps: categoryToDfParam.value.inputs[tabLabel] ?? 
-                categoryToDfParam.value.outputs[tabLabel]}))            
+                categoryToDfParam.value.outputs[tabLabel]}))
               .map(({tabLabel, tabDfProps}) => {
                 return [
                   tabDfProps.flatMap((tabProp) => {

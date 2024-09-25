@@ -10,15 +10,15 @@ import {FuncCallInput, isInputLockable} from './input-wrappers';
 import {ValidationResultBase, Validator, getValidationIcon, mergeValidationResults, nonNullValidator} from './validation';
 import {FunctionView, RichFunctionView} from '../function-views';
 import dayjs from 'dayjs';
-import { ID_COLUMN_NAME } from '../shared-components/src/history-input';
-import { delay, getStarted } from '../function-views/src/shared/utils';
+import {ID_COLUMN_NAME} from '../shared-components/src/history-input';
+import {delay, getStarted} from '../function-views/src/shared/utils';
 import cloneDeepWith from 'lodash.clonedeepwith';
 
 export const replaceForWindowsPath = (rawName: string, stringToInsert?: string) => {
   const regExpForWindowsPath = /(\/|\\|\:|\*|\?|\"|\<|\>|\|)/g;
 
-  return rawName.replaceAll(regExpForWindowsPath, stringToInsert ?? '_')
-}
+  return rawName.replaceAll(regExpForWindowsPath, stringToInsert ?? '_');
+};
 
 export const richFunctionViewReport = async (
   format: string,
@@ -61,7 +61,7 @@ export const richFunctionViewReport = async (
 
       ui.setDisplay(grok.shell.v.root, false);
       updateIndicatorWithText(grok.shell.v.root.parentElement!, true,
-      'Generating report. Please do not switch the browser tab...');
+        'Generating report. Please do not switch the browser tab...');
 
       const plotToSheet = async (
         sheet: ExcelJS.Worksheet,
@@ -71,7 +71,7 @@ export const richFunctionViewReport = async (
       ) => {
         const newViewer = DG.Viewer.fromType(viewer.type, viewer.dataFrame.clone());
         newViewer.copyViewersLook(viewer);
-      
+
         const viewerBox = ui.div(newViewer.root, {style: {
           height: `${options?.heightToRender ?? 800}px`,
           width: `${options?.widthToRender ?? 800}px`,
@@ -79,23 +79,23 @@ export const richFunctionViewReport = async (
         viewerBox.classList.add('ui-box');
         viewerBox.classList.remove('ui-div');
         grok.shell.v.root.insertAdjacentElement('afterend', viewerBox);
-      
+
         await delay(1000);
         const imageDataUrl = (await loadedHtml2canvas(viewerBox)).toDataURL();
-      
+
         viewerBox.remove();
-      
+
         const imageId = exportWorkbook.addImage({
           base64: imageDataUrl,
           extension: 'png',
         });
-      
+
         const ratio = (options?.heightInCells || options?.widthInCells) ?
           Math.min(
             (options?.heightInCells ?? Number.MAX_VALUE) / (800 / 20),
             (options?.widthInCells ?? Number.MAX_VALUE) / (800 / 100),
           ): 1;
-      
+
         sheet.addImage(imageId, {
           tl: {col: columnForImage, row: rowForImage},
           ext: {width: 800 * ratio, height: 800 * ratio},
@@ -166,7 +166,7 @@ export const richFunctionViewReport = async (
             viewer,
             currentDf.columns.length + 2,
             (index > 0) ? (index * 16) + 1 : 0,
-            {heightInCells: 16, heightToRender: 600, widthToRender: 600}
+            {heightInCells: 16, heightToRender: 600, widthToRender: 600},
           );
         };
       }
@@ -205,7 +205,7 @@ export const richFunctionViewReport = async (
               viewer,
               currentDf.columns.length + 2,
               (index > 0) ? (index * 16) + 1 : 0,
-              {heightInCells: 16, heightToRender: 600, widthToRender: 600}
+              {heightInCells: 16, heightToRender: 600, widthToRender: 600},
             );
           }
         }
@@ -223,7 +223,7 @@ export const richFunctionViewReport = async (
   }
 
   throw new Error('Format is not supported');
-}
+};
 
 export const saveIsFavorite = async (funcCall: DG.FuncCall, isFavorite: boolean) => {
   const favStorageName = `${storageName}_${funcCall.func.name}_Fav`;
@@ -232,7 +232,7 @@ export const saveIsFavorite = async (funcCall: DG.FuncCall, isFavorite: boolean)
     return grok.dapi.userDataStorage.postValue(favStorageName, funcCall.id, '');
   else
     return grok.dapi.userDataStorage.remove(favStorageName, funcCall.id);
-}
+};
 
 export const setGridCellRendering = (
   grid: DG.Grid,
@@ -245,11 +245,11 @@ export const setGridCellRendering = (
 ) => {
   const getRunByIdx = (idx: number) => {
     return runs.get(grid.dataFrame.get(ID_COLUMN_NAME, idx));
-  }
+  };
 
   const isFavoriteByIndex = (idx: number) => {
     return grid.dataFrame.get(FAVORITE_COLUMN_NAME, idx);
-  }
+  };
 
   grid.onCellPrepare((cell) => {
     if (cell.isColHeader && cell.tableColumn?.name &&
@@ -395,7 +395,7 @@ export const setGridCellRendering = (
       cell.element = card;
     }
   });
-}
+};
 
 const setGridColumnsRendering = (grid: DG.Grid) => {
   const actionsCol = grid.columns.byName(ACTIONS_COLUMN_NAME);
@@ -419,14 +419,14 @@ const setGridColumnsRendering = (grid: DG.Grid) => {
 
   grid.columns.byName(STARTED_COLUMN_NAME)!.width = 110;
   grid.columns.byName(ID_COLUMN_NAME)!.cellType = 'html';
-}
+};
 
 export const styleHistoryGrid = (
-  grid: DG.Grid, 
+  grid: DG.Grid,
   isCompactMode: boolean,
   showInputsOnCards: boolean,
   showMetadataOnCards: boolean,
-  func?: DG.Func, 
+  func?: DG.Func,
 ) => {
   grid.setOptions({
     'showCurrentRowIndicator': true,
@@ -478,7 +478,7 @@ export const styleHistoryGrid = (
         }): [],
     ]);
   }
-}
+};
 
 export const styleHistoryFilters = (
   filters: DG.Viewer<DG.IFiltersSettings>,
@@ -524,16 +524,16 @@ export const styleHistoryFilters = (
   if (columnNames.length > 0) {
     ui.setDisplay(filters.root, true);
     filters.setOptions({columnNames, 'showHeader': false, 'showBoolCombinedFitler': false});
-  } else {
+  } else
     ui.setDisplay(filters.root, false);
-  }
+
 
   return columnNames.length > 0;
-}
+};
 
 export const getFavStorageName = (func: DG.Func) => {
   return `${storageName}_${func.name}_Fav`;
-}
+};
 
 export const getColumnName = (key: string) => {
   return camel2title(key);
@@ -625,14 +625,14 @@ export const getRunsDfFromList = async (
   newRunsGridDf.columns.add(DG.Column.fromStrings(ID_COLUMN_NAME, newRuns.map((newRun) => newRun.id)));
 
   return newRunsGridDf;
-}
+};
 
-export const showHelpWithDelay = async(helpContent: string) => {
+export const showHelpWithDelay = async (helpContent: string) => {
   grok.shell.windows.help.visible = true;
   // Workaround to deal with help panel bug
   await new Promise((resolve) => setTimeout(resolve, 100));
   grok.shell.windows.help.showHelp(ui.markdown(helpContent));
-}
+};
 
 const helpCache = new DG.LruCache<string, string>();
 
@@ -658,11 +658,11 @@ export const getContextHelp = async (func: DG.Func) => {
   }
 
   return null;
-}
+};
 
 export const hasContextHelp = (func: DG.Func) => {
   return !!(func.options['help'] as string | undefined);
-}; 
+};
 
 export const categoryToDfParamMap = (func: DG.Func) => {
   const map = {
@@ -698,14 +698,13 @@ export const categoryToDfParamMap = (func: DG.Func) => {
     });
 
   return map;
-}
+};
 
 export const updateIndicatorWithText = (element: HTMLElement, updating: boolean, text?: string) => {
   ui.setUpdateIndicator(element, updating);
   const updatingLabel = element.querySelector('.d4-update-shadow .ui-label');
-  if (updating && text && updatingLabel) {
+  if (updating && text && updatingLabel)
     updatingLabel.textContent = text;
-  }
 };
 
 export const createPartialCopy = async (call: DG.FuncCall) => {
@@ -758,9 +757,9 @@ export const getMainParams = (func: DG.Func): string[] | null => {
 
 export const getVisibleProps = (func: DG.Func, options?: HistoryOptions): string[] => {
   return options?.visibleProps ?? getMainParams(func) ?? func.inputs
-      .filter((input) => HISTORY_SUPPORTED_COL_TYPES.includes(input.propertyType as any))
-      .map((prop) => prop.name);
-}
+    .filter((input) => HISTORY_SUPPORTED_COL_TYPES.includes(input.propertyType as any))
+    .map((prop) => prop.name);
+};
 
 export const camel2title = (camelCase: string) => camelCase
   .replace(/([A-Z])/g, (match) => ` ${match.toLowerCase()}`)
@@ -784,21 +783,19 @@ export const deepCopy = (call: DG.FuncCall) => {
   const definedOutputs = wu(deepClone.outputParams.values())
     .filter((output) => !!call.outputs[output.name]);
   for (const output of definedOutputs) {
-    if (output.property.propertyType === DG.TYPE.DATA_FRAME) {
+    if (output.property.propertyType === DG.TYPE.DATA_FRAME)
       deepClone.outputs[output.name] = call.outputs[output.name].clone();
-    } else {
+    else
       deepClone.outputs[output.name] = call.outputs[output.name];
-    }
   }
 
   const definedInputs = wu(deepClone.inputParams.values())
     .filter((input) => !!call.inputs[input.name]);
   for (const input of definedInputs) {
-    if (input.property.propertyType === DG.TYPE.DATA_FRAME) {
+    if (input.property.propertyType === DG.TYPE.DATA_FRAME)
       deepClone.inputs[input.name] = call.inputs[input.name].clone();
-    } else {
-      deepClone.inputs[input.name] = call.inputs[input.name]
-    }
+    else
+      deepClone.inputs[input.name] = call.inputs[input.name];
   }
 
   // Dirty hack to set readonly 'started' field
@@ -895,19 +892,19 @@ export const getValidators = async (funcCall: DG.FuncCall, isInput: SyncFields =
   const resolvedValidators = await Promise.all(
     params
       .filter((param) => !!param.property.options.validatorFunc)
-      .map(async (param) => {    
+      .map(async (param) => {
         const func: DG.Func = await grok.functions.eval(param.property.options.validatorFunc);
         const call = func.prepare({params: JSON.parse(param.property.options.validatorFuncOptions || '{}')});
         await call.call();
 
         return [param.name, call.outputs.validator as Validator] as const;
-  }));
+      }));
 
   return resolvedValidators.reduce((acc, [name, validator]) => {
     acc[name] = validator;
     return acc;
-  }, {} as Record<string, Validator>)
-}
+  }, {} as Record<string, Validator>);
+};
 
 export const updateOutputValidationSign = (
   sign: readonly [HTMLElement, HTMLElement],
@@ -922,11 +919,11 @@ export const updateOutputValidationSign = (
 
 export const validate = async (
   payload: ValidationRequestPayload,
-  paramNames: string[], 
-  signal: AbortSignal, 
+  paramNames: string[],
+  signal: AbortSignal,
   isInput: SyncFields,
   context: {view?: RichFunctionView, funcCall: DG.FuncCall, lastCall?: DG.FuncCall},
-  validarors: Record<string, Validator> 
+  validarors: Record<string, Validator>,
 ) => {
   const {view, funcCall, lastCall} = context;
 
@@ -964,7 +961,7 @@ export const validate = async (
     )] as const;
   }));
   return Object.fromEntries(validationItems);
-}
+};
 
 export const injectInputBaseValidation = (t: DG.InputBase) => {
   const validationIndicator = ui.element('i');
@@ -1059,8 +1056,8 @@ export async function fcInputFromSerializable(propertyType: string, value: any) 
 }
 
 export const getFuncCallDefaultFilename = (funcCall: DG.FuncCall) => {
-  return `${funcCall.func.nqName} - ${getStartedOrNull(funcCall) ?? 'Not completed'}.xlsx`
-}
+  return `${funcCall.func.nqName} - ${getStartedOrNull(funcCall) ?? 'Not completed'}.xlsx`;
+};
 
 const isDataFrame = (prop: DG.Property) => (prop.propertyType === DG.TYPE.DATA_FRAME);
 
@@ -1094,5 +1091,5 @@ const configToViewer = async (df: DG.DataFrame, config: Record<string, any>) => 
   const viewer = await df.plot.fromType(type) as DG.Viewer;
   viewer.setOptions(config);
 
-  return viewer; 
+  return viewer;
 };
