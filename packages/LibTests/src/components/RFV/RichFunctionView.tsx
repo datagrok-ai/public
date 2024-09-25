@@ -32,6 +32,57 @@ declare global {
   }
 }
 
+const dfBlockTitle = (dfProp: DG.Property) => dfProp.options['caption'] ?? dfProp.name ?? ' ';
+
+type TabContent = Record<string, 
+  {type: 'dataframe', dfProp: DG.Property, config: Record<string, string | boolean> } | 
+  {type: 'scalars', scalarProps: DG.Property[]}
+>;
+
+const tabToProperties = (func: DG.Func) => {
+  const map = {
+    inputs: {} as TabContent,
+    outputs: {} as TabContent,
+  };
+
+  const processDf = (dfProp: DG.Property) => {
+    const dfViewers = Utils.getPropViewers(dfProp).config;
+    if (dfViewers.length === 0) return;
+
+    dfViewers.forEach((dfViewer) => {
+      const dfNameWithViewer = `${dfBlockTitle(dfProp)} / ${dfViewer['type']}`;
+
+      const tabLabel = dfProp.category === 'Misc' ? 
+        dfNameWithViewer: `${dfProp.category}: ${dfNameWithViewer}`;
+
+      map.inputs[tabLabel] = {type: 'dataframe', dfProp: dfProp, config: dfViewer};
+    });
+    return;
+  };
+
+  func.inputs
+    .forEach((inputProp) => {
+      if (inputProp.propertyType === DG.TYPE.DATA_FRAME) processDf(inputProp);
+    });
+
+  func.outputs
+    .forEach((outputProp) => {
+      if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
+        processDf(outputProp);
+        return;
+      }
+      
+      const category = outputProp.category === 'Misc' ? 'Output': outputProp.category;
+
+      if (map.outputs[category] && map.outputs[category].type === 'scalars')
+        map.outputs[category].scalarProps.push(outputProp);
+      else
+        map.outputs[category] = {type: 'scalars', scalarProps: [outputProp]};
+    });
+
+  return map;
+};
+
 export const ScalarsPanel = Vue.defineComponent({
   name: 'ScalarsPanel',
   props: {
@@ -39,27 +90,12 @@ export const ScalarsPanel = Vue.defineComponent({
       type: Object as Vue.PropType<DG.FuncCall>,
       required: true,
     },
-    category: {
-      type: String,
+    categoryScalars: {
+      type: Array as Vue.PropType<DG.Property[]>,
       required: true,
     },
   },
   setup(props) {
-    const categoryScalars = Vue.computed(() => {
-      return [
-        ...props.funcCall.func.inputs
-          .filter((prop) => prop.category === props.category),
-        ...props.funcCall.func.outputs
-          .filter((prop) => 
-            prop.category === props.category ||
-            (['Misc', 'Output'].includes(prop.category) && props.category === 'Output'),
-          ),
-      ].filter((prop) => 
-        prop.propertyType !== DG.TYPE.DATA_FRAME && 
-        prop.propertyType !== DG.TYPE.GRAPHICS,
-      );
-    });
-
     const getContent = (prop: DG.Property) => {
       const precision = prop.options.precision;
 
@@ -73,13 +109,13 @@ export const ScalarsPanel = Vue.defineComponent({
     };
 
     return () => 
-      categoryScalars.value.length <= 3 ?
+      props.categoryScalars.length <= 3 ?
         <div 
           class='flex flex-wrap justify-around' 
           dock-spawn-dock-type='down'
           dock-spawn-dock-ratio={0.15}
         >
-          { categoryScalars.value.map((prop) => {
+          { props.categoryScalars.map((prop) => {
             const [scalarValue, units] = getContent(prop);
 
             return <div 
@@ -95,7 +131,7 @@ export const ScalarsPanel = Vue.defineComponent({
           dock-spawn-dock-type='fill'
         >
           { 
-            categoryScalars.value.map((prop) => {
+            props.categoryScalars.map((prop) => {
               const [scalarValue, units] = getContent(prop);
             
               return <div class='
@@ -137,12 +173,12 @@ export const RichFunctionView = Vue.defineComponent({
   setup(props, {emit}) {
     const currentCall = Vue.computed(() => props.funcCall);
 
-    const categoryToDfParam = Vue.computed(() => Utils.categoryToDfParamMap(currentCall.value.func));
+    const tabToPropertiesMap = Vue.computed(() => tabToProperties(currentCall.value.func));
 
     const tabLabels = Vue.computed(() => {
       return [
-        ...Object.keys(categoryToDfParam.value.inputs),
-        ...Object.keys(categoryToDfParam.value.outputs),
+        ...Object.keys(tabToPropertiesMap.value.inputs),
+        ...Object.keys(tabToPropertiesMap.value.outputs),
       ];
     });
 
@@ -155,8 +191,6 @@ export const RichFunctionView = Vue.defineComponent({
     const helpHidden = Vue.ref(true);
 
     const hasContextHelp = Vue.computed(() => Utils.hasContextHelp(currentCall.value.func));
-
-    const dfBlockTitle = (dfProp: DG.Property) => dfProp.options['caption'] ?? dfProp.name ?? ' ';
 
     const helpText = Vue.ref(null as null | string);
     Vue.watch(currentCall.value, async () => {
@@ -328,31 +362,32 @@ export const RichFunctionView = Vue.defineComponent({
           
           { 
             visibleTabLabels.value
-              .map((tabLabel) => ({tabLabel, tabDfProps: categoryToDfParam.value.inputs[tabLabel] ?? 
-                categoryToDfParam.value.outputs[tabLabel]}))
-              .map(({tabLabel, tabDfProps}) => {
-                return [
-                  tabDfProps.flatMap((tabProp) => {
-                    const allConfigs = Utils.getPropViewers(tabProp).config;
+              .map((tabLabel) => ({tabLabel, tabContent: tabToPropertiesMap.value.inputs[tabLabel] ?? 
+                tabToPropertiesMap.value.outputs[tabLabel]}))
+              .map(({tabLabel, tabContent}) => {
+                if (tabContent.type === 'dataframe') {
+                  const options = tabContent.config;
+                  const dfProp = tabContent.dfProp;
+                  return <div 
+                    class='flex flex-col pl-2 h-full w-full'
+                    {...{'title': `${tabLabel}`}}
+                  >
+                    <Viewer
+                      type={options['type'] as string}
+                      options={options}
+                      dataFrame={currentCall.value.inputs[dfProp.name] ?? currentCall.value.outputs[dfProp.name]}
+                      class='w-full'
+                    />
+                  </div>;
+                }
 
-                    return allConfigs.map((options) => (            
-                      <div 
-                        class='flex flex-col pl-2 h-full w-full'
-                        {...{'title': `${dfBlockTitle(tabProp)} / ${options['type']}`}}
-                      >
-                        <Viewer
-                          type={options['type'] as string}
-                          options={options}
-                          dataFrame={currentCall.value.inputs[tabProp.name] ?? currentCall.value.outputs[tabProp.name]}
-                          class='w-full'
-                        />
-                      </div>));
-                  }),
-                  <ScalarsPanel 
-                    funcCall={currentCall.value} 
-                    category={tabLabel}
-                    {...{title: tabLabel}}
-                  />];
+                if (tabContent.type === 'scalars') {
+                  return <ScalarsPanel 
+                    categoryScalars={tabContent.scalarProps}
+                    funcCall={currentCall.value}
+                    {...{'title': tabLabel}}
+                  />;
+                }
               })
           }
           { !helpHidden.value && helpText.value ? 
