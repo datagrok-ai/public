@@ -650,6 +650,114 @@
           }
         }
       ]
+    },
+    {
+      "name": "Toxicity",
+      "expanded": false,
+      "checked": false,
+      "description": "Toxicity measures how much damage a drug could cause to organisms.",
+      "models": [
+        {
+          "name": "hERG",
+          "checked": false,
+          "units": "-",
+          "min": 0,
+          "max": 1,
+          "properties": [
+            {
+              "property": {
+                "name": "description",
+                "inputType": "TextArea",
+                "enable": false
+              },
+              "object": {
+                "description": "Inhibition of the hERG (human Ether-à-go-go-Related Gene) current causes QT interval prolongation and lead to life threatening arrhythmia. Inhibition of hERG is considered as precaution."
+              }
+            },
+            {
+              "property": {
+                "name": "direction",
+                "inputType": "Radio",
+                "choices": [
+                  "Lower is better",
+                  "Higher is better"
+                ],
+                "enable": false
+              },
+              "object": {
+                "direction": "Lower is better"
+              }
+            }
+          ],
+          "coloring": {
+            "type": "Linear",
+            "enable": false,
+            "min": "0",
+            "max": "1",
+            "colors": "[4278255360, 4294901760]"
+          }
+        },
+        {
+          "name": "LD50",
+          "checked": false,
+          "units": "mg/kg",
+          "min": 1,
+          "max": 5000,
+          "properties": [
+            {
+              "property": {
+                "name": "description",
+                "inputType": "TextArea",
+                "enable": false
+              },
+              "object": {
+                "description": "Median lethal dose of a substance is the dose required to kill half the members of a tested population after a specified test duration which is a common characteristic of accute toxicity. It is usually classifies substances to 6 toxicological classes - I - most hazardous, VI - most safe."
+              }
+            },
+            {
+              "property": {
+                "name": "direction",
+                "inputType": "Radio",
+                "choices": [
+                  "Lower is better",
+                  "Higher is better"
+                ],
+                "enable": false
+              },
+              "object": {
+                "direction": "Higher is better"
+              }
+            },
+            {
+              "property": {
+                "name": "ranges",
+                "inputType": "Map",
+                "enable": false,
+                "skip": true
+              },
+              "object": {
+                "ranges": {
+                  "<= 5": "Fatal is swallowed",
+                  "5 - 50": "Fatal is swallowed",
+                  "50 - 300": "Toxic is swallowed",
+                  "300 - 2000": "Harmful if swallowed",
+                  "2000 - 5000": "May be harmful if swallowed",
+                  "> 5000": "Non-toxic"
+                }
+              }
+            }
+          ],
+          "coloring": {
+            "type": "Conditional",
+            "<= 5": "#ff030b",
+            "5 - 50": "#e35f63",
+            "50 - 300": "#ff7803",
+            "300 - 2000": "#f2a05a",
+            "2000 - 5000": "#fad902",
+            "> 5000": "#11d92c"
+          }
+        }
+      ]
     }
   ]
 }
