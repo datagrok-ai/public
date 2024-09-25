@@ -591,7 +591,7 @@ export class AddNewColumnDialog {
       const funcCall = grok.functions.parse(formula, false);
       this.validateFuncCallTypes(funcCall);
     } catch (e: any) {
-      return e.message.endsWith(': end of input expected]') ? 'Syntax error' : e.message;
+      return e.message.endsWith(': end of input expected]') ? 'Possible syntax error' : e.message;
     }
     return '';
   }
@@ -859,13 +859,7 @@ export class AddNewColumnDialog {
   async updatePreview(expression: string, error?: string): Promise<void> {
     //get result column name
     const colName = this.getResultColumnName();
-    //clearing preview df
-    if (error) {
-      const rowCount = this.gridPreview!.dataFrame.rowCount;
-      this.gridPreview!.dataFrame = DG.DataFrame.fromColumns([DG.Column.string(colName, rowCount)]);
-      this.gridPreview!.col(colName)!.backColor = this.newColumnBgColor;
-      return;
-    }
+
     // Making the Column List for the Preview Grid:
     const columnIds = this.findUniqueColumnNamesInExpression(expression);
     columnIds.push(colName);
