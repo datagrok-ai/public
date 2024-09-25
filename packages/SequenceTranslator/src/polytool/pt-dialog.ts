@@ -22,6 +22,7 @@ import {
 } from './const';
 
 import {_package} from '../package';
+import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 type PolyToolConvertSerialized = {
   generateHelm: boolean;
@@ -245,7 +246,31 @@ export async function polyToolConvert(
 
     const seqHelper: ISeqHelper = await getSeqHelper();
     const toAtomicLevelRes = await seqHelper.helmToAtomicLevel(resHelmCol, chiralityEngine, /* highlight */ generateHelm);
+<<<<<<< Updated upstream
     const resMolCol = toAtomicLevelRes.molCol!;
+=======
+    const resMolCol = toAtomicLevelRes.molCol;
+
+    // const rdkit = await grok.functions.call('Chem:getRdKitModule');
+    // for (let i = 0; i < rules.reactionRules.length; i++) {
+    //   const reacSmarts = rules.reactionRules[i].reaction;
+    //   const rxn = rdkit.get_rxn(reacSmarts);
+
+    //   for (let j = 0; j < resMolCol.length; j++) {
+    //     const mols = new rdkit.MolList();
+    //     const mol = rdkit.get_mol(resMolCol.get(j));
+    //     mols.append(mol!);
+    //     const rctns = rxn.run_reactants(mols, 1);
+    //     const size = rctns.size();
+    //     const element = rctns.get(0);
+    //     let molP: RDMol | null = null;
+    //     molP = element.next();
+    //     const molBlock = molP?.get_v3Kmolblock();
+    //     resMolCol.set(j, molBlock!);
+    //   }
+    // }
+
+>>>>>>> Stashed changes
     resMolCol.name = getUnusedName(table, `molfile(${seqCol.name})`);
     resMolCol.semType = DG.SEMTYPE.MOLECULE;
     if (table) {
