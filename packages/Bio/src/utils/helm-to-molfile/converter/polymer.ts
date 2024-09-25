@@ -3,7 +3,7 @@ import wu from 'wu';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {V3K_CONST} from '@datagrok-libraries/chem-meta/src/formats/molfile-const';
 import {HelmTypes, PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
-import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
+import {IMonomerLib, IMonomerLibBase} from '@datagrok-libraries/bio/src/types/index';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {GapOriginals} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {MolfileWithMap, MonomerMap} from '@datagrok-libraries/bio/src/monomer-works/types';
@@ -15,7 +15,7 @@ export class Polymer {
   constructor(
     helmString: string,
     private readonly rdKitModule: RDModule,
-    private readonly monomerLib: IMonomerLib
+    private readonly monomerLib: IMonomerLibBase
   ) {
     this.helm = new Helm(helmString);
   }

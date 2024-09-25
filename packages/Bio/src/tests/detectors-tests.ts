@@ -147,16 +147,16 @@ YN[Re]VYNR[Ac]WYV
     },
     'sepSameLength': {
       csv: `seq
-Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2
-Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2
-Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2`,
+Aca-A-A-A-A-A-A-A-A-A-A-A-A-A-C-G-NH2
+Aca-A-A-A-A-A-A-A-A-A-A-A-A-A-C-G-NH2
+Aca-A-A-A-A-A-A-A-A-A-A-A-A-A-C-G-NH2`,
       pos: {'seq': new PosCol(NOTATION.SEPARATOR, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 5, true, '-')}
     },
     'sepMsaSameLength': {
       csv: `seq
-Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2
-Ac(1)-A-A(2)-A-A-A-C(2)-A-A-A-A-C(1)-G-NH2
-Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2`,
+Aca-A-A-A-A-A-A-A-A-A-A-A-A-A-Aca-G-NH2
+Aca-A-Aca-A-A-A-meI-A-A-A-A-A-Aca-G-NH2
+Aca-A-A-A-A-A-A-A-A-A-A-A-A-A-Aca-G-NH2`,
       pos: {'seq': new PosCol(NOTATION.SEPARATOR, ALIGNMENT.SEQ, ALPHABET.UN, 5, true, '-')}
     },
     'helmSameLength': {
@@ -237,9 +237,9 @@ m1-mon2-m3-mon4-mon5-Num--MON8-N9-m1-mon2-m3-mon4-mon5-Num--MON8-N9
 
 mon1-M-mon3-mon4-mon5---MON8-N9-mon1-M-mon3-mon4-mon5---MON8-N9`;
     [csvTests.sepComplex]: string = `seq
-Ac(1)-F-K(AEEA-AEEA-R-Ac)-L-mF-V-Y-mNle-D-W-N-mF-C(1)-G-NH2
-Ac(1)-F-K(AEEA-ARRA-W-Ac)-L-mF-V-Y-mNle-D-W-N-mF-C(1)-G-NH2
-Ac(1)-F-K(AEEA-AEEA-Ac)-L-mF-V-Y-mNle-D-W-N-mF-C(1)-G-NH2`;
+Aca-F-K(AEEA-AEEA-R-Ac)-L-mF-V-Y-mNle-D-W-N-mF-Aca-G-NH2
+Aca-F-K(AEEA-ARRA-W-Ac)-L-mF-V-Y-mNle-D-W-N-mF-Aca-G-NH2
+Aca-F-K(AEEA-AEEA-Ac)-L-mF-V-Y-mNle-D-W-N-mF-Aca-G-NH2`;
     [csvTests.fastaMsaDna1]: string = `seq
 AC-GT-CTAC-GT-CT
 CAC-T-GTCAC-T-GT
@@ -406,7 +406,7 @@ MWRSWY-CKHPMWRSWY-CKHP`;
 
   test('SepComplex', async () => {
     await _testPos(readCsv(csvTests.sepComplex), 'seq',
-      NOTATION.SEPARATOR, ALIGNMENT.SEQ, ALPHABET.UN, 18, true);
+      NOTATION.SEPARATOR, ALIGNMENT.SEQ, ALPHABET.UN, 17, true);
   });
 
   test('samplesFastaCsv', async () => {

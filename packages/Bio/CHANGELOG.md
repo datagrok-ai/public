@@ -1,5 +1,16 @@
 # Bio changelog
 
+## 2.15.5 (2024-09-25)
+
+### New features
+
+* Add custom notation, fix tests
+* Add overriding monomer library for toAtomicLevel
+
+### Bug fixes
+
+* Fix skipping tests depending on new Helm
+
 ## 2.15.4 (2024-09-24)
 
 ### New features

@@ -12,6 +12,7 @@ import {MolfileWithMap} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {getMolColName, hexToPercentRgb} from '@datagrok-libraries/bio/src/monomer-works/utils';
 import {ChemTags} from '@datagrok-libraries/chem-meta/src/consts';
 import {getMolHighlight} from '@datagrok-libraries/bio/src/monomer-works/seq-to-molfile';
+import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/index';
 
 import {HelmToMolfileConverter} from '../helm-to-molfile/converter';
 import {MonomerLibManager} from '../monomer-lib/lib-manager';
@@ -28,23 +29,23 @@ export class SeqHelper implements ISeqHelper {
     private readonly rdKitModule: RDModule
   ) {}
 
-  getHelmToMolfileConverter(df: DG.DataFrame, helmCol: DG.Column<string>) {
-    return new HelmToMolfileConverter(helmCol, df, this.libHelper, this.helmHelper);
+  getHelmToMolfileConverter(monomerLib: IMonomerLibBase): HelmToMolfileConverter {
+    return new HelmToMolfileConverter(this.helmHelper, this.rdKitModule, monomerLib);
   }
 
   async helmToAtomicLevel(
-    helmCol: DG.Column<string>, chiralityEngine?: boolean, highlight?: boolean
+    helmCol: DG.Column<string>, chiralityEngine?: boolean, highlight?: boolean, overrideMonomerLib?: IMonomerLibBase
   ): Promise<ToAtomicLevelRes> {
-    const monomerLib = this.libHelper.getMonomerLib();
+    const monomerLib: IMonomerLibBase = overrideMonomerLib ?? this.libHelper.getMonomerLib();
 
     const df: DG.DataFrame = helmCol.dataFrame;
     const molColName: string = getMolColName(df, helmCol.name);
 
-    const converter = this.getHelmToMolfileConverter(df, helmCol);
+    const converter = this.getHelmToMolfileConverter(monomerLib);
 
     //#region From HelmToMolfileConverter.convertToRdKitBeautifiedMolfileColumn
 
-    const molfilesV3K = converter.convertToMolfileV3K(this.rdKitModule);
+    const molfilesV3K = converter.convertToMolfileV3K(helmCol, this.rdKitModule, monomerLib);
 
     const beautifiedMolList: (RDMol | null)[] = molfilesV3K.map((item) => {
       const molfile = item.molfile;

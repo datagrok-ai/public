@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {HelmType, IMonomerColors, IWebEditorMonomer, MonomerType, PolymerType, WebEditorRGroups} from '@datagrok-libraries/bio/src/helm/types';
-import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/index';
+import {IMonomerLibBase, Monomer} from '@datagrok-libraries/bio/src/types/index';
 import {HELM_OPTIONAL_FIELDS as OPT, HELM_REQUIRED_FIELD as REQ, HELM_RGROUP_FIELDS as RGP} from '@datagrok-libraries/bio/src/utils/const';
 
 import {BrokenWebEditorMonomer, MissingWebEditorMonomer} from './web-editor-monomer-dummy';
@@ -30,7 +30,7 @@ export class LibraryWebEditorMonomer implements IWebEditorMonomer {
     public readonly smiles?: string,
   ) /* eslint-enable max-params */ {}
 
-  static fromMonomer(biotype: HelmType, monomer: Monomer, monomerLib: IMonomerLib): IWebEditorMonomer {
+  static fromMonomer(biotype: HelmType, monomer: Monomer, monomerLib: IMonomerLibBase): IWebEditorMonomer {
     let at: WebEditorRGroups = {};
     const symbol = monomer[REQ.SYMBOL];
     const smiles = monomer[REQ.SMILES];

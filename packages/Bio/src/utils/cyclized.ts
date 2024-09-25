@@ -8,7 +8,14 @@ import {INotationProvider, ISeqSplitted, SeqSplittedBase, SplitterFunc}
   from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {getSplitterWithSeparator, StringListSeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {CellRendererBackBase} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 import {GAP_SYMBOL, GapOriginals} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {MonomerPlacer} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+
+import {monomerToShortFunction} from './cell-renderer';
+
+import {_package} from '../package';
 
 export class CyclizedNotationProvider implements INotationProvider {
   private readonly separatorSplitter: SplitterFunc;
@@ -41,6 +48,20 @@ export class CyclizedNotationProvider implements INotationProvider {
     const editorFunc = DG.Func.find({package: polyToolPackageName, name: 'getPolyToolConvertEditor'})[0];
     const resHelmCol = (await editorFunc.prepare({call: ptConvertCall}).call()).getOutputParamValue() as DG.Column<string>;
     return resHelmCol;
+  }
+
+  public createCellRendererBack(gridCol: DG.GridColumn | null, tableCol: DG.Column<string>): CellRendererBackBase<string> {
+    let maxLengthOfMonomer: number = (_package.properties ? _package.properties.maxMonomerLength : 4) ?? 50;
+    return new MonomerPlacer(gridCol, tableCol, _package.logger, maxLengthOfMonomer,
+      () => {
+        const sh = SeqHandler.forColumn(tableCol);
+        return {
+          seqHandler: sh,
+          monomerCharWidth: 7,
+          separatorWidth: 11,
+          monomerToShort: monomerToShortFunction,
+        };
+      });
   }
 }
 

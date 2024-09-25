@@ -30,6 +30,7 @@ import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 
 import {getMacromoleculeColumns} from './utils/ui-utils';
 import {MacromoleculeDifferenceCellRenderer, MacromoleculeSequenceCellRenderer,} from './utils/cell-renderer';
+import {MacromoleculeCustomCellRenderer} from './utils/cell-renderer-custom';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {SequenceAlignment} from './seq_align';
 import {getEncodedSeqSpaceCol} from './analysis/sequence-space';
@@ -190,7 +191,7 @@ export function getBioLib(): IMonomerLib {
 }
 
 // For sync internal use, on initialized package
-export function getMonomerLib(): IMonomerLib | null {
+export function getMonomerLib(): IMonomerLib {
   return monomerLib!;
 }
 
@@ -321,12 +322,30 @@ export function SeqActivityCliffsEditor(call: DG.FuncCall) {
 
 // -- Cell renderers --
 
+//name: customSequenceCellRenderer
+//tags: cellRenderer
+//meta.cellType: sequence
+//meta.columnTags: quality=Macromolecule, units=custom
+//output: grid_cell_renderer result
+export function customSequenceCellRenderer(): DG.GridCellRenderer {
+  return new MacromoleculeCustomCellRenderer();
+}
+
 //name: fastaSequenceCellRenderer
 //tags: cellRenderer
 //meta.cellType: sequence
 //meta.columnTags: quality=Macromolecule, units=fasta
 //output: grid_cell_renderer result
 export function fastaSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
+  return new MacromoleculeSequenceCellRenderer();
+}
+
+//name: separatorSequenceCellRenderer
+//tags: cellRenderer
+//meta.cellType: sequence
+//meta.columnTags: quality=Macromolecule, units=separator
+//output: grid_cell_renderer result
+export function separatorSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
   return new MacromoleculeSequenceCellRenderer();
 }
 
@@ -346,15 +365,6 @@ export function macroMolColumnPropertyPanel(molColumn: DG.Column): DG.Widget {
 //output: widget result
 export function compositionAnalysisWidget(sequence: DG.SemanticValue): DG.Widget {
   return getCompositionAnalysisWidget(sequence);
-}
-
-//name: separatorSequenceCellRenderer
-//tags: cellRenderer
-//meta.cellType: sequence
-//meta.columnTags: quality=Macromolecule, units=separator
-//output: grid_cell_renderer result
-export function separatorSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
-  return new MacromoleculeSequenceCellRenderer();
 }
 
 //name: MacromoleculeDifferenceCellRenderer
@@ -1215,7 +1225,7 @@ export async function getSeqHelper(): Promise<ISeqHelper> {
 export function getMolFromHelm(
   df: DG.DataFrame, helmCol: DG.Column<string>, chiralityEngine: boolean
 ): Promise<DG.Column<string>> {
-  return getMolColumnFromHelm(df, helmCol, chiralityEngine);
+  return getMolColumnFromHelm(df, helmCol, chiralityEngine, getMonomerLib());
 }
 
 // -- Custom notation providers --
@@ -1224,6 +1234,7 @@ export function getMolFromHelm(
 //input: column col
 //input: string separator
 export function applyNotationProviderForCyclized(col: DG.Column<string>, separator: string) {
+  col.meta.units = NOTATION.CUSTOM;
   col.temp[SeqTemps.notationProvider] = new CyclizedNotationProvider(separator);
 }
 
@@ -1231,6 +1242,7 @@ export function applyNotationProviderForCyclized(col: DG.Column<string>, separat
 //input: column col
 //input: string separator
 export function applyNotationProviderForDimerized(col: DG.Column<string>, separator: string) {
+  col.meta.units = NOTATION.CUSTOM;
   col.temp[SeqTemps.notationProvider] = new DimerizedNotationProvider(separator);
 }
 

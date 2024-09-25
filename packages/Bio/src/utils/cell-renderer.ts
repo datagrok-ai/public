@@ -8,7 +8,7 @@ import * as ui from 'datagrok-api/ui';
 import wu from 'wu';
 
 import {printLeftOrCentered, DrawStyle, TAGS as mmcrTAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
-import {MonomerPlacer} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
+import {getUpdatedWidth, MonomerPlacer} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 import {
   getPaletteByType,
   monomerToShort,
@@ -30,26 +30,15 @@ import {ISeqMonomer} from '@datagrok-libraries/bio/src/helm/types';
 import {execMonomerHoverLinks} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
 import {getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
-
-import {
-  Temps as mmcrTemps,
-  tempTAGS, rendererSettingsChangedState, Temps
-} from '../utils/cell-renderer-consts';
+import {MmcrTemps, rendererSettingsChangedState, tempTAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
 import * as C from './constants';
 
 import {_package, getMonomerLib} from '../package';
-import {GridCell} from 'datagrok-api/dg';
+import {max} from 'rxjs/operators';
 
 type TempType = { [tagName: string]: any };
 
-const undefinedColor = 'rgb(100,100,100)';
-const monomerToShortFunction: MonomerToShortFunc = monomerToShort;
-
-function getUpdatedWidth(
-  grid: DG.Grid | null | undefined, g: CanvasRenderingContext2D, x: number, w: number, dpr: number
-): number {
-  return !!grid ? Math.max(Math.min(grid.canvas.width / dpr - x, w)) : Math.max(g.canvas.width / dpr - x, 0);
-}
+export const monomerToShortFunction: MonomerToShortFunc = monomerToShort;
 
 export function processSequence(subParts: string[]): [string[], boolean] {
   const simplified = !wu.enumerate(subParts).some(([amino, index]) =>
@@ -70,12 +59,10 @@ export function processSequence(subParts: string[]): [string[], boolean] {
 }
 
 type RendererGridCellTemp = {
-  [mmcrTemps.monomerPlacer]: MonomerPlacer
+  [MmcrTemps.monomerPlacer]: MonomerPlacer
 }
 
 export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
-  private padding: number = 5;
-
   get name(): string { return 'sequence'; }
 
   get cellType(): string { return 'sequence'; }
@@ -141,7 +128,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     }
   }
 
-  override onMouseLeave(gridCell: GridCell, e: MouseEvent) {
+  override onMouseLeave(gridCell: DG.GridCell, e: MouseEvent) {
     execMonomerHoverLinks(gridCell, null);
   }
 
@@ -163,7 +150,6 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   ): void {
     const logPrefix: string = 'MacromoleculeSequenceCellRenderer.render()';
 
-    const dpr = window.devicePixelRatio;
     const [gridCol, tableCol, _temp] =
       getGridCellColTemp<string, MonomerPlacer>(gridCell);
     if (!tableCol) return;
@@ -178,8 +164,8 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       const v = parseInt(tableCol.getTag(mmcrTAGS.maxMonomerLength));
       maxLengthOfMonomer = !isNaN(v) && v ? v : 50;
     }
-    if (Temps.maxMonomerLength in tableColTemp) {
-      const v = tableColTemp[Temps.maxMonomerLength];
+    if (MmcrTemps.maxMonomerLength in tableColTemp) {
+      const v = tableColTemp[MmcrTemps.maxMonomerLength];
       maxLengthOfMonomer = !isNaN(v) && v ? v : 50;
     }
 
@@ -198,92 +184,19 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
         });
     }
 
-    g.save();
-    try {
-      if (
-        tableCol.temp[Temps.rendererSettingsChanged] === rendererSettingsChangedState.true ||
-        seqColTemp.monomerLengthLimit != maxLengthOfMonomer
-      ) {
-        gapLength = tableColTemp[mmcrTemps.gapLength] as number ?? gapLength;
-        // this event means that the mm renderer settings have changed,
-        // particularly monomer representation and max width.
-        seqColTemp.setMonomerLengthLimit(maxLengthOfMonomer);
-        seqColTemp.setSeparatorWidth(seqColTemp.isMsa() ? msaGapLength : gapLength);
-        tableCol.temp[Temps.rendererSettingsChanged] = rendererSettingsChangedState.false;
-      }
-
-      const [maxLengthWords, maxLengthWordsSum]: [number[], number[]] =
-        seqColTemp.getCellMonomerLengths(gridCell.tableRowIndex!, w);
-      const _maxIndex = maxLengthWords.length;
-
-      const value: any = gridCell.cell.value;
-      const rowIdx = gridCell.cell.rowIndex;
-      const paletteType = tableCol.getTag(bioTAGS.alphabet);
-      const minDistanceRenderer = 50;
-      w = getUpdatedWidth(gridCol?.grid, g, x, w, dpr);
-      g.beginPath();
-      g.rect(x + this.padding, y + this.padding, w - this.padding - 1, h - this.padding * 2);
-      g.clip();
-      g.font = '12px monospace';
-      g.textBaseline = 'top';
-
-      //TODO: can this be replaced/merged with splitSequence?
-      const units = tableCol.meta.units;
-      const aligned: string = tableCol.getTag(bioTAGS.aligned);
-
-      const palette = getPaletteByType(paletteType);
-
-      const separator = tableCol.getTag(bioTAGS.separator) ?? '';
-      const minMonWidth = seqColTemp.props.separatorWidth + 1 * seqColTemp.props.monomerCharWidth;
-      const splitLimit = Math.ceil(w / minMonWidth);
-      const sh = SeqHandler.forColumn(tableCol);
-
-      const tempReferenceSequence: string | null = tableColTemp[tempTAGS.referenceSequence];
-      const tempCurrentWord: string | null = tableColTemp[tempTAGS.currentWord];
-      if (tempCurrentWord && tableCol?.dataFrame?.currentRowIdx === -1)
-        tableColTemp[tempTAGS.currentWord] = null;
-
-      const referenceSequence: string[] = (() => {
-        // @ts-ignore
-        const splitterFunc: SplitterFunc = sh.getSplitter(splitLimit);
-        const seqSS = splitterFunc(
-          ((tempReferenceSequence != null) && (tempReferenceSequence != '')) ?
-            tempReferenceSequence : tempCurrentWord ?? '');
-        return wu.count(0).take(seqSS.length).map((posIdx) => seqSS.getOriginal(posIdx)).toArray();
-      })();
-
-      const subParts: ISeqSplitted = sh.getSplitted(rowIdx);
-      /* let x1 = x; */
-      let color = undefinedColor;
-      let drawStyle = DrawStyle.classic;
-
-      if (aligned && aligned.includes('MSA') && units == NOTATION.SEPARATOR)
-        drawStyle = DrawStyle.MSA;
-
-      const visibleSeqLength = Math.min(subParts.length, splitLimit);
-      for (let posIdx: number = 0; posIdx < visibleSeqLength; ++posIdx) {
-        const amino: string = subParts.getOriginal(posIdx);
-        color = palette.get(amino);
-        g.fillStyle = undefinedColor;
-        const last = posIdx === subParts.length - 1;
-        /*x1 = */
-        const opts = {
-          color: color, pivot: 0, left: true, transparencyRate: 1.0, separator: separator, last: last,
-          drawStyle: drawStyle, maxWord: maxLengthWordsSum, wordIdx: posIdx, gridCell: gridCell,
-          referenceSequence: referenceSequence, maxLengthOfMonomer: maxLengthOfMonomer,
-          monomerTextSizeMap: seqColTemp._monomerLengthMap, logger: _package.logger
-        };
-        printLeftOrCentered(g, amino, x + this.padding, y, w, h, opts);
-        if (minDistanceRenderer > w) break;
-      }
-    } catch (err: any) {
-      const [errMsg, errStack] = errInfo(err);
-      seqColTemp.logger.error(errMsg, undefined, errStack);
-      seqColTemp.errors.push(err);
-      //throw err; // Do not throw to prevent disabling renderer
-    } finally {
-      g.restore();
+    if (
+      tableCol.temp[MmcrTemps.rendererSettingsChanged] === rendererSettingsChangedState.true ||
+      seqColTemp.monomerLengthLimit != maxLengthOfMonomer
+    ) {
+      gapLength = tableColTemp[MmcrTemps.gapLength] as number ?? gapLength;
+      // this event means that the mm renderer settings have changed,
+      // particularly monomer representation and max width.
+      seqColTemp.setMonomerLengthLimit(maxLengthOfMonomer);
+      seqColTemp.setSeparatorWidth(seqColTemp.isMsa() ? msaGapLength : gapLength);
+      tableCol.temp[MmcrTemps.rendererSettingsChanged] = rendererSettingsChangedState.false;
     }
+
+    seqColTemp.render(g, x, y, w, h, gridCell, _cellStyle);
   }
 }
 

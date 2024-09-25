@@ -27,7 +27,7 @@ category('monomerLibraries', () => {
   test('default', async () => {
     // Clear settings to test default
     await setUserLibSettings({exclude: [], explicit: [], duplicateMonomerPreferences: {}});
-    await monomerLibHelper.loadLibraries(true); // test defaultLib
+    await monomerLibHelper.loadMonomerLib(true); // test defaultLib
 
     // Currently default monomer lib set is of all files at LIB_PATH (at least HELMCoreLibrary.json)
     const currentMonomerLib = monomerLibHelper.getMonomerLib();
