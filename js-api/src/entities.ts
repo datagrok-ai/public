@@ -1108,7 +1108,7 @@ export class Package extends Entity {
   }
 
   /** Returns settings for a package. */
-  getSettings(): Promise<any> {
+  getSettings(): Promise<Map<string, any>> {
     return api.grok_Package_Get_Settings(this.name);
   }
 
