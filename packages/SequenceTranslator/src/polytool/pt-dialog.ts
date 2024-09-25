@@ -9,6 +9,7 @@ import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getSeqHelper, ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 
 import {getRules, RuleInputs, RULES_PATH, RULES_STORAGE_NAME} from './pt-rules';
 import {doPolyToolConvert} from './pt-conversion';
@@ -22,11 +23,11 @@ import {
 } from './const';
 
 import {_package} from '../package';
-import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 type PolyToolConvertSerialized = {
   generateHelm: boolean;
   chiralityEngine: boolean;
+  rules: string[];
 };
 
 type PolyToolEnumerateChemSerialized = {
@@ -56,35 +57,43 @@ export async function polyToolConvertUI(): Promise<void> {
   }
 }
 
-export async function getPolyToolConvertDialog(targetCol?: DG.Column): Promise<DG.Dialog> {
+export async function getPolyToolConvertDialog(srcCol?: DG.Column): Promise<DG.Dialog> {
   const subs: Unsubscribable[] = [];
   const destroy = () => {
     for (const sub of subs) sub.unsubscribe();
   };
   try {
-    const targetColumns = grok.shell.t.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE);
-    if (!targetColumns)
-      throw new Error(PT_ERROR_DATAFRAME);
-
-    const targetColumnInput = ui.input.column('Column', {
-      table: grok.shell.t, value: targetColumns[0],
-      filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE
+    let srcColVal: DG.Column<string> | undefined = srcCol;
+    if (!srcColVal) {
+      const srcColList = grok.shell.t.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE);
+      if (srcColList.length < 1)
+        throw new Error(PT_ERROR_DATAFRAME);
+      srcColVal = srcColList[0];
+    }
+    const srcColInput = ui.input.column('Column', {
+      table: srcColVal.dataFrame, value: srcColVal,
+      filter: (col: DG.Column) => {
+        if (col.semType !== DG.SEMTYPE.MACROMOLECULE) return false;
+        const sh = SeqHandler.forColumn(col);
+        return sh.notation === NOTATION.CUSTOM;
+      }
     });
 
-    targetColumnInput.value = targetCol ? targetCol : targetColumnInput.value;
-
-    const generateHelmChoiceInput = ui.input.bool(PT_UI_GET_HELM, {value: true});
-    ui.tooltip.bind(generateHelmChoiceInput.root, PT_UI_ADD_HELM);
+    const generateHelmInput = ui.input.bool(PT_UI_GET_HELM, {value: true});
+    ui.tooltip.bind(generateHelmInput.root, PT_UI_ADD_HELM);
 
     const chiralityEngineInput = ui.input.bool(PT_UI_USE_CHIRALITY, {value: false});
-    const ruleInputs = new RuleInputs(RULES_PATH, RULES_STORAGE_NAME, '.json');
+    let ruleFileList: string[];
+    const ruleInputs = new RuleInputs(RULES_PATH, RULES_STORAGE_NAME, '.json', {
+      onValueChanged: (value: string[]) => { ruleFileList = value;}
+    });
     const rulesHeader = ui.inlineText([PT_UI_RULES_USED]);
     ui.tooltip.bind(rulesHeader, 'Add or specify rules to use');
     const rulesForm = await ruleInputs.getForm();
 
-    const div = ui.div([
-      targetColumnInput,
-      generateHelmChoiceInput,
+    const div = ui.divV([
+      srcColInput,
+      generateHelmInput,
       chiralityEngineInput,
       rulesHeader,
       rulesForm
@@ -93,7 +102,7 @@ export async function getPolyToolConvertDialog(targetCol?: DG.Column): Promise<D
     const exec = async (): Promise<void> => {
       try {
         const ruleFileList = await ruleInputs.getActive();
-        await polyToolConvert(targetColumnInput.value!, generateHelmChoiceInput.value!, chiralityEngineInput.value!, ruleFileList);
+        await polyToolConvert(srcColInput.value!, generateHelmInput.value!, chiralityEngineInput.value!, ruleFileList);
       } catch (err: any) {
         defaultErrorHandler(err);
       }
@@ -108,13 +117,15 @@ export async function getPolyToolConvertDialog(targetCol?: DG.Column): Promise<D
     dialog.history(
       /* getInput */ (): PolyToolConvertSerialized => {
         return {
-          generateHelm: generateHelmChoiceInput.value,
+          generateHelm: generateHelmInput.value,
           chiralityEngine: chiralityEngineInput.value,
+          rules: ruleFileList,
         };
       },
       /* applyInput */ (x: PolyToolConvertSerialized): void => {
-        generateHelmChoiceInput.value = x.generateHelm;
+        generateHelmInput.value = x.generateHelm;
         chiralityEngineInput.value = x.chiralityEngine;
+        ruleInputs.setActive(ruleFileList);
       });
     return dialog;
   } catch (err: any) {
@@ -246,10 +257,7 @@ export async function polyToolConvert(
 
     const seqHelper: ISeqHelper = await getSeqHelper();
     const toAtomicLevelRes = await seqHelper.helmToAtomicLevel(resHelmCol, chiralityEngine, /* highlight */ generateHelm);
-<<<<<<< Updated upstream
     const resMolCol = toAtomicLevelRes.molCol!;
-=======
-    const resMolCol = toAtomicLevelRes.molCol;
 
     // const rdkit = await grok.functions.call('Chem:getRdKitModule');
     // for (let i = 0; i < rules.reactionRules.length; i++) {
@@ -270,7 +278,6 @@ export async function polyToolConvert(
     //   }
     // }
 
->>>>>>> Stashed changes
     resMolCol.name = getUnusedName(table, `molfile(${seqCol.name})`);
     resMolCol.semType = DG.SEMTYPE.MOLECULE;
     if (table) {

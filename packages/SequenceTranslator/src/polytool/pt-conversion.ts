@@ -16,12 +16,12 @@ export const RULES_HETERODIMER = '($2)';
 // }
 
 export class Chain {
-  linkages: {fChain: number, sChain: number, fMonomer:number, sMonomer:number, fR:number, sR:number}[];
+  linkages: { fChain: number, sChain: number, fMonomer: number, sMonomer: number, fR: number, sR: number }[];
   monomers: string[][];
 
   constructor(
     monomers: string[][],
-    linkages: {fChain: number, sChain: number, fMonomer:number, sMonomer:number, fR:number, sR:number}[]) {
+    linkages: { fChain: number, sChain: number, fMonomer: number, sMonomer: number, fR: number, sR: number }[]) {
     this.linkages = linkages;
     this.monomers = monomers;
   }
@@ -32,7 +32,7 @@ export class Chain {
     const rawLinkages = fragmentation[1].split('|');
 
     const monomers = new Array<Array<string>>(rawFragments.length);
-    const linkages: {fChain: number, sChain: number, fMonomer:number, sMonomer:number, fR:number, sR:number}[] = [];
+    const linkages: { fChain: number, sChain: number, fMonomer: number, sMonomer: number, fR: number, sR: number }[] = [];
 
     //HELM parsing
     for (let i = 0; i < rawFragments.length; i++) {
@@ -66,15 +66,15 @@ export class Chain {
     return new Chain(monomers, linkages);
   }
 
-  static fromNotation(sequence: string, rules: Rules) {
+  static fromNotation(sequence: string, rules: Rules): Chain {
     const heterodimerCode = rules.heterodimerCode;
     const homodimerCode = rules.homodimerCode;
     const mainFragments: string[] = [];
 
-    const linkages: {fChain: number, sChain: number, fMonomer:number, sMonomer:number, fR:number, sR:number}[] = [];
+    const linkages: { fChain: number, sChain: number, fMonomer: number, sMonomer: number, fR: number, sR: number }[] = [];
 
     //NOTICE: this works only with simple single heterodimers
-    const heterodimeric = heterodimerCode !== null? sequence.split(`(${rules.heterodimerCode!})`) : '';
+    const heterodimeric = heterodimerCode !== null ? sequence.split(`(${rules.heterodimerCode!})`) : '';
     if (heterodimerCode !== null && heterodimeric.length > 1) {
       linkages.push({fChain: 0, sChain: 1, fMonomer: 1, sMonomer: 1, fR: 1, sR: 1});
       mainFragments.push(heterodimeric[1].replaceAll('{', '').replaceAll('}', ''));
@@ -120,7 +120,7 @@ export class Chain {
       const rawMonomers = mainFragments[i].split('-');
       const linkedPositions = this.getLinkedPositions(rawMonomers, rules.linkRules);
       const [monomersCycled, allPos1, allPos2, allAttaches1, allAttaches2] =
-      this.getAllCycles(rules.linkRules, rawMonomers, linkedPositions);
+        this.getAllCycles(rules.linkRules, rawMonomers, linkedPositions);
 
       const monomersReady = new Array<string>(monomersCycled.length);
       // for (let j = 0; j < monomersCycled.length; j++)
@@ -140,12 +140,12 @@ export class Chain {
       monomers[i] = monomersCycled;
     }
 
-    const monomersAll:string[][] = [];
+    const monomersAll: string[][] = [];
 
     for (let i = 0; i < monomers.length; i++) {
       const linkedPositions = this.getLinkedPositions(monomers[i], rules.reactionRules);
       const [monomersCycled, allPos1, allPos2, ruleN] =
-      this.getAllReactants(rules.reactionRules, monomers[i], linkedPositions);
+        this.getAllReactants(rules.reactionRules, monomers[i], linkedPositions);
 
       if (allPos1.length >= 1) {
         const ch1 = new Array<string>(allPos2[0] - 1);
@@ -211,17 +211,17 @@ export class Chain {
     let idx1 = 0;
     let idx2 = 0;
     loop1:
-    for (let i = 0; i < this.monomers.length; i++) {
-      loop2:
-      for (let j = 0; j < this.monomers[i].length; j++) {
-        if (counter == changeNumber) {
-          idx1 = i;
-          idx2 = j;
-          break loop1;
-        }
-        counter++;
+      for (let i = 0; i < this.monomers.length; i++) {
+        loop2:
+          for (let j = 0; j < this.monomers[i].length; j++) {
+            if (counter == changeNumber) {
+              idx1 = i;
+              idx2 = j;
+              break loop1;
+            }
+            counter++;
+          }
       }
-    }
 
     const previous = this.monomers[idx1][idx2];
 
@@ -260,6 +260,10 @@ export class Chain {
 
     helm += '$$$';
     return helm;
+  }
+
+  getNotation(rules: Rules): string {
+    return 'not implemented';
   }
 
   protected static getLinkedPositions(monomers: string[], rules: RuleLink[] | RuleReaction []):
@@ -315,7 +319,7 @@ export class Chain {
   }
 
   protected static getAllCycles(rules: RuleLink[], monomers: string [], positions: [number, number, number][]):
-  [string [], number [], number [], number [], number []] {
+    [string [], number [], number [], number [], number []] {
     const allPos1: number [] = [];
     const allPos2: number [] = [];
     const allAttaches1: number [] = [];
@@ -341,7 +345,7 @@ export class Chain {
   }
 
   protected static getAllReactants(rules: RuleReaction[], monomers: string [], positions: [number, number, number][]):
-  [string [], number [], number [], number []] {
+    [string [], number [], number [], number []] {
     const allPos1: number [] = [];
     const allPos2: number [] = [];
     const rule: number [] = [];
@@ -369,11 +373,10 @@ export class Chain {
 export function doPolyToolConvert(sequences: string[], rules: Rules): string[] {
   const helms = new Array<string>(sequences.length);
   for (let i = 0; i < sequences.length; i++) {
-    if (sequences[i] === undefined) { helms[i] = ''; } else {
+    if (sequences[i] == null) { helms[i] = ''; } else {
       const chain = Chain.fromNotation(sequences[i], rules);
       helms[i] = chain.getHelm();
     }
   }
-
   return helms;
 }

@@ -1,5 +1,9 @@
 # Sequence Translator changelog
 
+## 1.4.3 (WIP)
+
+Add PolyTool convert reverse
+
 ## 1.4.2 (2024-09-24)
 
 ### New features

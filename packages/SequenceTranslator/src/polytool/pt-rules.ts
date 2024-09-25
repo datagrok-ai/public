@@ -10,8 +10,11 @@ export const RULES_TYPE_HOMODIMER = 'fragmentDuplication';
 export const RULES_TYPE_HETERODIMER = 'differentFragments';
 
 export class RuleInputs extends ActiveFiles {
-  constructor(path: string, userStorageName: string, ext: string ) {
-    super(path, userStorageName, ext);
+  constructor(
+    path: string, userStorageName: string, ext: string,
+    options?: { onValueChanged: (value: string[]) => void }
+  ) {
+    super(path, userStorageName, ext, options);
   }
 }
 

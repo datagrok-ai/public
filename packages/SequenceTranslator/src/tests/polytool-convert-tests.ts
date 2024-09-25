@@ -43,11 +43,11 @@ category('PolyTool: Convert', () => {
         'R-F-D(2)-T-G-H-F-Y-P-NH2(2)',
       ],
       tgt: [
-        'PEPTIDE1{[R].[F].[C].[T].[G].[H].[F].[Y].[P].[C].[meI]}$PEPTIDE1,PEPTIDE1,3:R3-10:R3$$$',
-        'PEPTIDE1{[C].[T].[G].[H].[F].[Y].[P].[C].[meI]}$PEPTIDE1,PEPTIDE1,1:R3-8:R3$$$',
-        'PEPTIDE1{[R].[F].[C].[T].[G].[H].[F].[Y].[P].[C]}$PEPTIDE1,PEPTIDE1,3:R3-10:R3$$$',
-        'PEPTIDE1{[C].[T].[G].[H].[F].[H].[P].[C]}$PEPTIDE1,PEPTIDE1,1:R3-8:R3$$$',
-        'PEPTIDE1{[R].[F].[D].[T].[G].[H].[F].[Y].[P].[NH2]}$PEPTIDE1,PEPTIDE1,10:R2-3:R3$$$',
+        'PEPTIDE1{R.F.C.T.G.H.F.Y.P.C.[meI]}$PEPTIDE1,PEPTIDE1,3:R3-10:R3$$$',
+        'PEPTIDE1{C.T.G.H.F.Y.P.C.[meI]}$PEPTIDE1,PEPTIDE1,1:R3-8:R3$$$',
+        'PEPTIDE1{R.F.C.T.G.H.F.Y.P.C}$PEPTIDE1,PEPTIDE1,3:R3-10:R3$$$',
+        'PEPTIDE1{C.T.G.H.F.H.P.C}$PEPTIDE1,PEPTIDE1,1:R3-8:R3$$$',
+        'PEPTIDE1{R.F.D.T.G.H.F.Y.P.[NH2]}$PEPTIDE1,PEPTIDE1,10:R2-3:R3$$$',
       ]
     }
   };
