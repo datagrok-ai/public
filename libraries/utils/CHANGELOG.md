@@ -1,5 +1,11 @@
 # utils changelog
 
+## 4.3.4 (2024-09-25)
+
+### New features
+
+* utils lib: Add setActive and onValueChanged for ActiveFiles for dialog history
+
 ## 4.2.30 (2024-09-06)
 
 - Preparing 1.21.1 release
@@ -22,7 +28,7 @@ Invocation time refactoring
 
 ## 4.2.25 (2024-08-15)
 
-Added invocation time to tests 
+Added invocation time to tests
 
 ## 4.2.24 (2024-08-09)
 
@@ -46,8 +52,7 @@ Optimize linesrenderer for short lines and no mouseover checking conditions. add
 
 ## 4.2.19 (2024-08-02)
 
-Fix benchmark timeout 
-
+Fix benchmark timeout
 
 ## 4.2.18 (2024-08-02)
 
@@ -63,7 +68,7 @@ Fixed core tests output to the Test Manager app
 
 ## 4.2.15 (2024-07-30)
 
-Removed Unhadled exception test for benchmarks 
+Removed Unhadled exception test for benchmarks
 
 ## 4.2.14 (2024-07-29)
 
@@ -151,7 +156,8 @@ Fix the lastError problem in the test engine.
 
 ### Features
 
-* [#2687](https://github.com/datagrok-ai/public/issues/2687): Forms viewer: Added an option to adjust the size of the molecule.
+* [#2687](https://github.com/datagrok-ai/public/issues/2687): Forms viewer: Added an option to adjust the size of the
+  molecule.
 * Lowered line threshold for scatterplot lines renderer.
 
 ## 4.1.43 (2024-02-15)
@@ -175,7 +181,7 @@ Fix the lastError problem in the test engine.
 
 * Added to testViewer support options.awaitViewer
 
-### Bug fixes 
+### Bug fixes
 
 * Fixed testViewer for element selector
 
