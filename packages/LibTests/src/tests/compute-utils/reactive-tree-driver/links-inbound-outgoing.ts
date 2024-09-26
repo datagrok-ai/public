@@ -43,7 +43,7 @@ category('ComputeUtils: Driver links inbound outgoing', async () => {
           id: 'link5',
           from: 'in1:step2/res',
           to: 'out1:step3/a',
-        }]
+        }],
       },
       {
         id: 'step4',
@@ -207,11 +207,11 @@ category('ComputeUtils: Driver links inbound outgoing', async () => {
     const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
     tree.init().subscribe();
     const [link1, link2] = [...tree.linksState.links.values()];
-    expectDeepEqual(tree.linksState.isAffected([], link1, 1 , 2), true, {prefix: 'link1 isAffected'});
-    expectDeepEqual(tree.linksState.isInbound([], link1, 1 , 2), true, {prefix: 'link1 isInbound'});
+    expectDeepEqual(tree.linksState.isAffected([], link1, 1, 2), true, {prefix: 'link1 isAffected'});
+    expectDeepEqual(tree.linksState.isInbound([], link1, 1, 2), true, {prefix: 'link1 isInbound'});
     expectDeepEqual(tree.linksState.isOutgoing([], link1, 1), false, {prefix: 'link1 isOutgoing'});
-    expectDeepEqual(tree.linksState.isAffected([], link2, 1 , 2), true, {prefix: 'link2 isAffected'});
-    expectDeepEqual(tree.linksState.isInbound([], link2, 1 , 2), false, {prefix: 'link2 isInbound'});
+    expectDeepEqual(tree.linksState.isAffected([], link2, 1, 2), true, {prefix: 'link2 isAffected'});
+    expectDeepEqual(tree.linksState.isInbound([], link2, 1, 2), false, {prefix: 'link2 isInbound'});
     expectDeepEqual(tree.linksState.isOutgoing([], link2, 1), true, {prefix: 'link2 isOutgoing'});
   });
 
@@ -221,21 +221,21 @@ category('ComputeUtils: Driver links inbound outgoing', async () => {
     const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
     tree.init().subscribe();
     const [link1, link2, link3, link4, link5] = [...tree.linksState.links.values()];
-    expectDeepEqual(tree.linksState.isAffected([{idx :2}], link1, 1), false, {prefix: 'link1 isAffected'});
-    expectDeepEqual(tree.linksState.isInbound([{idx :2}], link1, 1), false, {prefix: 'link1 isInbound'});
-    expectDeepEqual(tree.linksState.isOutgoing([{idx :2}], link1, 1), false, {prefix: 'link1 isOutgoing'});
-    expectDeepEqual(tree.linksState.isAffected([{idx :2}], link2, 1), true, {prefix: 'link2 isAffected'});
-    expectDeepEqual(tree.linksState.isInbound([{idx :2}], link2, 1), false, {prefix: 'link2 isInbound'});
-    expectDeepEqual(tree.linksState.isOutgoing([{idx :2}], link2, 1), false, {prefix: 'link2 isOutgoing'});
-    expectDeepEqual(tree.linksState.isAffected([{idx :2}], link3, 1), true, {prefix: 'link3 isAffected'});
-    expectDeepEqual(tree.linksState.isInbound([{idx :2}], link3, 1), false, {prefix: 'link3 isInbound'});
-    expectDeepEqual(tree.linksState.isOutgoing([{idx :2}], link3, 1), false, {prefix: 'link3 isOutgoing'});
-    expectDeepEqual(tree.linksState.isAffected([{idx :2}], link4, 1), true, {prefix: 'link4 isAffected'});
-    expectDeepEqual(tree.linksState.isInbound([{idx :2}], link4, 1), false, {prefix: 'link4 isInbound'});
-    expectDeepEqual(tree.linksState.isOutgoing([{idx :2}], link4, 1), false, {prefix: 'link4 isOutgoing'});
-    expectDeepEqual(tree.linksState.isAffected([{idx :2}], link5, 1), true, {prefix: 'link5 isAffected'});
-    expectDeepEqual(tree.linksState.isInbound([{idx :2}], link5, 1), false, {prefix: 'link5 isInbound'});
-    expectDeepEqual(tree.linksState.isOutgoing([{idx :2}], link5, 1), true, {prefix: 'link5 isOutgoing'});
+    expectDeepEqual(tree.linksState.isAffected([{idx: 2}], link1, 1), false, {prefix: 'link1 isAffected'});
+    expectDeepEqual(tree.linksState.isInbound([{idx: 2}], link1, 1), false, {prefix: 'link1 isInbound'});
+    expectDeepEqual(tree.linksState.isOutgoing([{idx: 2}], link1, 1), false, {prefix: 'link1 isOutgoing'});
+    expectDeepEqual(tree.linksState.isAffected([{idx: 2}], link2, 1), true, {prefix: 'link2 isAffected'});
+    expectDeepEqual(tree.linksState.isInbound([{idx: 2}], link2, 1), false, {prefix: 'link2 isInbound'});
+    expectDeepEqual(tree.linksState.isOutgoing([{idx: 2}], link2, 1), false, {prefix: 'link2 isOutgoing'});
+    expectDeepEqual(tree.linksState.isAffected([{idx: 2}], link3, 1), true, {prefix: 'link3 isAffected'});
+    expectDeepEqual(tree.linksState.isInbound([{idx: 2}], link3, 1), false, {prefix: 'link3 isInbound'});
+    expectDeepEqual(tree.linksState.isOutgoing([{idx: 2}], link3, 1), false, {prefix: 'link3 isOutgoing'});
+    expectDeepEqual(tree.linksState.isAffected([{idx: 2}], link4, 1), true, {prefix: 'link4 isAffected'});
+    expectDeepEqual(tree.linksState.isInbound([{idx: 2}], link4, 1), false, {prefix: 'link4 isInbound'});
+    expectDeepEqual(tree.linksState.isOutgoing([{idx: 2}], link4, 1), false, {prefix: 'link4 isOutgoing'});
+    expectDeepEqual(tree.linksState.isAffected([{idx: 2}], link5, 1), true, {prefix: 'link5 isAffected'});
+    expectDeepEqual(tree.linksState.isInbound([{idx: 2}], link5, 1), false, {prefix: 'link5 isInbound'});
+    expectDeepEqual(tree.linksState.isOutgoing([{idx: 2}], link5, 1), true, {prefix: 'link5 isOutgoing'});
   });
 
   test('Nested remove item', async () => {

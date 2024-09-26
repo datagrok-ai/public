@@ -37,15 +37,15 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
       to: 'out1:step3/a',
       handler({controller}) {
         controller.setAll('out1', 10, 'info');
-      }
+      },
     }, {
       id: 'link2',
       from: 'in1:step1/res',
       to: 'out1:step3/a',
       isValidator: true,
       handler({controller}) {
-        controller.setValidation('out1', makeValidationResult({ warnings: ['test warning']}));
-      }
+        controller.setValidation('out1', makeValidationResult({warnings: ['test warning']}));
+      },
     }, {
       id: 'link3',
       from: 'in1:step1/res',
@@ -53,7 +53,7 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
       isMeta: true,
       handler({controller}) {
         controller.setViewMeta('out1', {key: 'val'});
-      }
+      },
     }],
   };
 
@@ -87,31 +87,31 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
       expectObservable(tree.getConsistency()[outNode.getItem().uuid], '^ 1000ms !').toBe('a (bc)d', {
         a: {},
         b: {
-          "b": {
-            "restriction": "restricted",
-            "inconsistent": false,
-            "assignedValue": 1
-          }
+          'b': {
+            'restriction': 'restricted',
+            'inconsistent': false,
+            'assignedValue': 1,
+          },
         },
         c: {
-          "b": {
-            "restriction": "restricted",
-            "inconsistent": false,
-            "assignedValue": 1
+          'b': {
+            'restriction': 'restricted',
+            'inconsistent': false,
+            'assignedValue': 1,
           },
-          "a": {
-            "restriction": "info",
-            "inconsistent": false,
-            "assignedValue": 10
-          }
+          'a': {
+            'restriction': 'info',
+            'inconsistent': false,
+            'assignedValue': 10,
+          },
         },
         d: {
-          "a": {
-            "restriction": "info",
-            "inconsistent": false,
-            "assignedValue": 10
-          }
-        }
+          'a': {
+            'restriction': 'info',
+            'inconsistent': false,
+            'assignedValue': 10,
+          },
+        },
       });
     });
   });
@@ -124,7 +124,7 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.init().subscribe();
       const outNode = tree.nodeTree.getNode([{idx: 2}]);
-      const [,,link3] = tree.linksState.links.values();
+      const [,, link3] = tree.linksState.links.values();
 
       cold('-a').subscribe(() => {
         (outNode.getItem() as FuncCallNode).instancesWrapper.setMeta('b', {key: 'val2'});
@@ -134,17 +134,17 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
         tree.runMutateTree().subscribe();
       });
       const aMeta$ = (outNode.getItem() as FuncCallNode).metaInfo$.pipe(
-        switchMap(x => x.a)
+        switchMap((x) => x.a),
       );
       const bMeta$ = (outNode.getItem() as FuncCallNode).metaInfo$.pipe(
-        switchMap(x => x.b)
+        switchMap((x) => x.b),
       );
       const outA$ = tree.getMeta()[outNode.getItem().uuid].pipe(
-        switchMap(x => x.a)
-      )
+        switchMap((x) => x.a),
+      );
       const outB$ = tree.getMeta()[outNode.getItem().uuid].pipe(
-        switchMap(x => x.b)
-      )
+        switchMap((x) => x.b),
+      );
       expectObservable(aMeta$, '^ 1000ms !').toBe('ab', {a: undefined, b: {key: 'val'}});
       expectObservable(bMeta$, '^ 1000ms !').toBe('ab---c', {a: undefined, b: {key: 'val2'}, c: undefined});
       expectObservable(outA$, '^ 1000ms !').toBe('ab', {
@@ -154,7 +154,7 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
       expectObservable(outB$, '^ 1000ms !').toBe('ab---c', {
         a: undefined,
         b: {key: 'val2'},
-        c: undefined
+        c: undefined,
       });
 
     });
@@ -168,7 +168,7 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.init().subscribe();
       const outNode = tree.nodeTree.getNode([{idx: 2}]);
-      const [,link2] = tree.linksState.links.values();
+      const [, link2] = tree.linksState.links.values();
 
       cold('-a').subscribe(() => {
         (outNode.getItem() as FuncCallNode).instancesWrapper.setValidation('a', 'asdf', makeValidationResult({warnings: ['test warning2']}));
@@ -180,43 +180,43 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
       expectObservable(tree.getValidations()[outNode.getItem().uuid], '^ 1000ms !').toBe('a (bc)d', {
         a: {},
         b: {
-          "a": {
-            "errors": [],
-            "warnings": [
+          'a': {
+            'errors': [],
+            'warnings': [
               {
-                "description": "test warning2"
-              }
+                'description': 'test warning2',
+              },
             ],
-            "notifications": []
-          }
+            'notifications': [],
+          },
         },
         c: {
-          "a": {
-            "errors": [],
-            "warnings": [
+          'a': {
+            'errors': [],
+            'warnings': [
               {
-                "description": "test warning2"
+                'description': 'test warning2',
               },
               {
-                "description": "test warning"
-              }
+                'description': 'test warning',
+              },
             ],
-            "notifications": []
-          }
+            'notifications': [],
+          },
         },
         d: {
-          "a": {
-            "errors": [],
-            "warnings": [
+          'a': {
+            'errors': [],
+            'warnings': [
               {
-                "description": "test warning"
-              }
+                'description': 'test warning',
+              },
             ],
-            "notifications": []
-          }
-        }
+            'notifications': [],
+          },
+        },
       });
     });
-  }, { skipReason: 'TODO' });
+  }, {skipReason: 'TODO'});
 
 });

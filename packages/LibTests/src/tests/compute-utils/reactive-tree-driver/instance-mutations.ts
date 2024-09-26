@@ -14,7 +14,7 @@ category('ComputeUtils: Driver state tree mutations', async () => {
     await tree.init().toPromise();
     const root = tree.nodeTree.getItem([]);
     const puuid = root.uuid;
-    await tree.addSubTree(puuid, 'stepAdd', 2, false).toPromise();
+    await tree.addSubTree(puuid, 'stepAdd', 2).toPromise();
     const state = tree.toSerializedState({disableNodesUUID: true});
     await snapshotCompare(state, 'Pipeline append step subtree');
   });
@@ -26,7 +26,7 @@ category('ComputeUtils: Driver state tree mutations', async () => {
     await tree.init().toPromise();
     const root = tree.nodeTree.getItem([]);
     const puuid = root.uuid;
-    await tree.addSubTree(puuid, 'pipeline1', 2, true).toPromise();
+    await tree.addSubTree(puuid, 'pipeline1', 2).toPromise();
     const state = tree.toSerializedState({disableNodesUUID: true});
     await snapshotCompare(state, 'Pipeline append static pipeline subtree');
   });
@@ -38,7 +38,7 @@ category('ComputeUtils: Driver state tree mutations', async () => {
     await tree.init().toPromise();
     const root = tree.nodeTree.getItem([]);
     const puuid = root.uuid;
-    await tree.addSubTree(puuid, 'pipelinePar', 0, true).toPromise();
+    await tree.addSubTree(puuid, 'pipelinePar', 0).toPromise();
     const state = tree.toSerializedState({disableNodesUUID: true});
     await snapshotCompare(state, 'Pipeline append dynamic pipeline subtree');
   });
@@ -50,7 +50,7 @@ category('ComputeUtils: Driver state tree mutations', async () => {
     await tree.init().toPromise();
     const root = tree.nodeTree.getItem([]);
     const puuid = root.uuid;
-    await tree.addSubTree(puuid, 'pipeline1', 0, true).toPromise();
+    await tree.addSubTree(puuid, 'pipeline1', 0).toPromise();
     const state = tree.toSerializedState({disableNodesUUID: true});
     await snapshotCompare(state, 'Pipeline insert subtree');
   });

@@ -198,7 +198,7 @@ export class StateTree {
     });
   }
 
-  public addSubTree(puuid: string, id: string, pos: number, initCalls = true) {
+  public addSubTree(puuid: string, id: string, pos: number) {
     return this.mutateTree(() => {
       const [_root, _nqName, path] = StateTree.findPipelineNode(this, puuid);
       const subConfig = StateTree.getSubConfig(this.config, path, id);
@@ -219,7 +219,7 @@ export class StateTree {
         mutationRootPath,
         addIdx,
       };
-      return (initCalls ? StateTree.loadOrCreateCalls(this, this.mockMode) : of(this)).pipe(mapTo([mutationData]));
+      return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(mapTo([mutationData]));
     });
   }
 
@@ -535,7 +535,6 @@ export class StateTree {
       }),
       tap(() => {
         this.removeOrphanedIOMetadata();
-        this.linksState.wireLinks(this.nodeTree);
         this.setDepsTracker();
       }),
       finalize(() => {

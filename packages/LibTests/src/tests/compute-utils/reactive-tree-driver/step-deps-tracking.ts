@@ -91,160 +91,160 @@ category('ComputeUtils: Driver steps dependencies tracking', async () => {
 
       expectObservable(state1$).toBe('a(bcdef)', {
         a: {
-          "isRunning": false,
-          "isRunnable": true,
-          "isOutputOutdated": true,
-          "pendingDependencies": []
+          'isRunning': false,
+          'isRunnable': true,
+          'isOutputOutdated': true,
+          'pendingDependencies': [],
         },
         b: {
-          "isRunning": true,
-          "isRunnable": true,
-          "isOutputOutdated": true,
-          "pendingDependencies": []
+          'isRunning': true,
+          'isRunnable': true,
+          'isOutputOutdated': true,
+          'pendingDependencies': [],
         },
         c: {
-          "isRunning": true,
-          "isRunnable": false,
-          "isOutputOutdated": true,
-          "pendingDependencies": []
+          'isRunning': true,
+          'isRunnable': false,
+          'isOutputOutdated': true,
+          'pendingDependencies': [],
         },
         d: {
-          "isRunning": false,
-          "isRunnable": false,
-          "isOutputOutdated": true,
-          "pendingDependencies": []
+          'isRunning': false,
+          'isRunnable': false,
+          'isOutputOutdated': true,
+          'pendingDependencies': [],
         },
         e: {
-          "isRunning": false,
-          "isRunnable": true,
-          "isOutputOutdated": true,
-          "pendingDependencies": []
+          'isRunning': false,
+          'isRunnable': true,
+          'isOutputOutdated': true,
+          'pendingDependencies': [],
         },
         f: {
-          "isRunning": false,
-          "isRunnable": true,
-          "isOutputOutdated": false,
-          "pendingDependencies": []
-        }
+          'isRunning': false,
+          'isRunnable': true,
+          'isOutputOutdated': false,
+          'pendingDependencies': [],
+        },
       });
       expectObservable(state2$).toBe('ax-(bcdef)', {
         a: {
-          "isRunning": false,
-          "isRunnable": true,
-          "isOutputOutdated": true,
-          "pendingDependencies": [node1.getItem().uuid]
+          'isRunning': false,
+          'isRunnable': true,
+          'isOutputOutdated': true,
+          'pendingDependencies': [node1.getItem().uuid],
         },
         x: {
-          "isRunning": false,
-          "isRunnable": true,
-          "isOutputOutdated": true,
-          "pendingDependencies": []
+          'isRunning': false,
+          'isRunnable': true,
+          'isOutputOutdated': true,
+          'pendingDependencies': [],
         },
         b: {
-          "isRunning": true,
-          "isRunnable": true,
-          "isOutputOutdated": true,
-          "pendingDependencies": []
+          'isRunning': true,
+          'isRunnable': true,
+          'isOutputOutdated': true,
+          'pendingDependencies': [],
         },
         c: {
-          "isRunning": true,
-          "isRunnable": false,
-          "isOutputOutdated": true,
-          "pendingDependencies": []
+          'isRunning': true,
+          'isRunnable': false,
+          'isOutputOutdated': true,
+          'pendingDependencies': [],
         },
         d: {
-          "isRunning": false,
-          "isRunnable": false,
-          "isOutputOutdated": true,
-          "pendingDependencies": []
+          'isRunning': false,
+          'isRunnable': false,
+          'isOutputOutdated': true,
+          'pendingDependencies': [],
         },
         e: {
-          "isRunning": false,
-          "isRunnable": true,
-          "isOutputOutdated": true,
-          "pendingDependencies": []
+          'isRunning': false,
+          'isRunnable': true,
+          'isOutputOutdated': true,
+          'pendingDependencies': [],
         },
         f: {
-          "isRunning": false,
-          "isRunnable": true,
-          "isOutputOutdated": false,
-          "pendingDependencies": []
-        }
+          'isRunning': false,
+          'isRunnable': true,
+          'isOutputOutdated': false,
+          'pendingDependencies': [],
+        },
       });
       expectObservable(state3$).toBe('ax-y-(bcdef)', {
         a: {
-          "isRunning": false,
-          "isRunnable": true,
-          "isOutputOutdated": true,
-          "pendingDependencies": [node2.getItem().uuid]
+          'isRunning': false,
+          'isRunnable': true,
+          'isOutputOutdated': true,
+          'pendingDependencies': [node2.getItem().uuid],
         },
         x: {
-          "isRunning": false,
-          "isRunnable": true,
-          "isOutputOutdated": true,
-          "pendingDependencies": [node2.getItem().uuid]
+          'isRunning': false,
+          'isRunnable': true,
+          'isOutputOutdated': true,
+          'pendingDependencies': [node2.getItem().uuid],
         },
         y: {
-          "isRunning": false,
-          "isRunnable": true,
-          "isOutputOutdated": true,
-          "pendingDependencies": []
+          'isRunning': false,
+          'isRunnable': true,
+          'isOutputOutdated': true,
+          'pendingDependencies': [],
         },
         b: {
-          "isRunning": true,
-          "isRunnable": true,
-          "isOutputOutdated": true,
-          "pendingDependencies": []
+          'isRunning': true,
+          'isRunnable': true,
+          'isOutputOutdated': true,
+          'pendingDependencies': [],
         },
         c: {
-          "isRunning": true,
-          "isRunnable": false,
-          "isOutputOutdated": true,
-          "pendingDependencies": []
+          'isRunning': true,
+          'isRunnable': false,
+          'isOutputOutdated': true,
+          'pendingDependencies': [],
         },
         d: {
-          "isRunning": false,
-          "isRunnable": false,
-          "isOutputOutdated": true,
-          "pendingDependencies": []
+          'isRunning': false,
+          'isRunnable': false,
+          'isOutputOutdated': true,
+          'pendingDependencies': [],
         },
         e: {
-          "isRunning": false,
-          "isRunnable": true,
-          "isOutputOutdated": true,
-          "pendingDependencies": []
+          'isRunning': false,
+          'isRunnable': true,
+          'isOutputOutdated': true,
+          'pendingDependencies': [],
         },
         f: {
-          "isRunning": false,
-          "isRunnable": true,
-          "isOutputOutdated": false,
-          "pendingDependencies": []
-        }
+          'isRunning': false,
+          'isRunnable': true,
+          'isOutputOutdated': false,
+          'pendingDependencies': [],
+        },
       });
       expectObservable(state4$).toBe('ax-y-z', {
         a: {
-          "isRunning": false,
-          "isRunnable": true,
-          "isOutputOutdated": true,
-          "pendingDependencies": [node3.getItem().uuid]
+          'isRunning': false,
+          'isRunnable': true,
+          'isOutputOutdated': true,
+          'pendingDependencies': [node3.getItem().uuid],
         },
         x: {
-          "isRunning": false,
-          "isRunnable": true,
-          "isOutputOutdated": true,
-          "pendingDependencies": [node3.getItem().uuid]
+          'isRunning': false,
+          'isRunnable': true,
+          'isOutputOutdated': true,
+          'pendingDependencies': [node3.getItem().uuid],
         },
         y: {
-          "isRunning": false,
-          "isRunnable": true,
-          "isOutputOutdated": true,
-          "pendingDependencies": [node3.getItem().uuid]
+          'isRunning': false,
+          'isRunnable': true,
+          'isOutputOutdated': true,
+          'pendingDependencies': [node3.getItem().uuid],
         },
         z: {
-          "isRunning": false,
-          "isRunnable": true,
-          "isOutputOutdated": true,
-          "pendingDependencies": []
+          'isRunning': false,
+          'isRunnable': true,
+          'isOutputOutdated': true,
+          'pendingDependencies': [],
         },
       });
     });
@@ -277,34 +277,34 @@ category('ComputeUtils: Driver steps dependencies tracking', async () => {
       });
       expectObservable(state4$).toBe('ax-y-z-b', {
         a: {
-          "isRunning": false,
-          "isRunnable": true,
-          "isOutputOutdated": true,
-          "pendingDependencies": [node3.getItem().uuid]
+          'isRunning': false,
+          'isRunnable': true,
+          'isOutputOutdated': true,
+          'pendingDependencies': [node3.getItem().uuid],
         },
         x: {
-          "isRunning": false,
-          "isRunnable": true,
-          "isOutputOutdated": true,
-          "pendingDependencies": [node3.getItem().uuid]
+          'isRunning': false,
+          'isRunnable': true,
+          'isOutputOutdated': true,
+          'pendingDependencies': [node3.getItem().uuid],
         },
         y: {
-          "isRunning": false,
-          "isRunnable": true,
-          "isOutputOutdated": true,
-          "pendingDependencies": [node3.getItem().uuid]
+          'isRunning': false,
+          'isRunnable': true,
+          'isOutputOutdated': true,
+          'pendingDependencies': [node3.getItem().uuid],
         },
         z: {
-          "isRunning": false,
-          "isRunnable": true,
-          "isOutputOutdated": true,
-          "pendingDependencies": []
+          'isRunning': false,
+          'isRunnable': true,
+          'isOutputOutdated': true,
+          'pendingDependencies': [],
         },
         b: {
-          "isRunning": false,
-          "isRunnable": true,
-          "isOutputOutdated": true,
-          "pendingDependencies": [node3.getItem().uuid]
+          'isRunning': false,
+          'isRunnable': true,
+          'isOutputOutdated': true,
+          'pendingDependencies': [node3.getItem().uuid],
         },
 
       });
