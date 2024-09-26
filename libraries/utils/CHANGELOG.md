@@ -1,14 +1,16 @@
 # utils changelog
 
-## 4.3.4 (2024-09-25)
+## 4.3.4 (2024-09-25) 
 
-### New features
+utils lib: Add setActive and onValueChanged for ActiveFiles for dialog history
 
-* utils lib: Add setActive and onValueChanged for ActiveFiles for dialog history
+## 4.3.5 (2024-09-26) 
+
+utils lib: Add setActive and onValueChanged for ActiveFiles for dialog history
 
 ## 4.2.30 (2024-09-06)
 
-- Preparing 1.21.1 release
+Preparing 1.21.1 release
 
 ## 4.2.29 (2024-08-23)
 

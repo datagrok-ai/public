@@ -351,13 +351,25 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
       moduleDemo.push(test);
     }
     if (f.hasTag('semTypeDetector')) {
+      let detectorsTestData = testData;
+      if (f.options['testData']) {
+        detectorsTestData= await grok.data.files.openTable(`System:AppData/${package_.nqName}/${f.options['testData']}`);      
+      }
+
       const test = new Test(detectorsCatName, f.friendlyName, async () => {
         const arr = [];
-        for (const col of testData.clone().columns) {
+        console.log(`System:AppData/${package_.nqName}/${f.options['testData']}`);                                                                                                                                                      
+
+        for (const col of detectorsTestData.clone().columns) {
           const res = await f.apply([col]);
           arr.push(res || col.semType);
         }
-        expect(arr.filter((i) => i).length, 1);
+        const resArr = arr.filter((i) => i);
+        expect(resArr.length, 1); 
+        
+        if(f.options['testDataColumnName'])
+          expect(resArr[0],f.options['testDataColumnName']); 
+          
       }, { skipReason: f.options['skipTest'] });
       moduleDetectors.push(test);
     }
