@@ -28,6 +28,12 @@ export class HelmMonomerPlacer extends CellRendererBackBase<string> {
     super(gridCol, tableCol, _package.logger);
   }
 
+  render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
+  ) {
+    throw new Error('Not implemented');
+  }
+
   protected override reset(): void {
     this._allPartsList = new Array<string[] | null>(this.tableCol.length).fill(null);
     this._lengthsList = new Array<number[] | null>(this.tableCol.length).fill(null);

@@ -68,9 +68,7 @@ const tests: { [testName: string]: TestDataType } = {
 };
 
 category('getMonomer', ()=>{
-  let libHelper: IMonomerLibHelper;
   let helmHelper: IHelmHelper;
-
   let monomerLibHelper: IMonomerLibHelper;
   /** Backup actual user's monomer libraries settings */
   let userLibSettings: UserLibSettings;
@@ -78,20 +76,12 @@ category('getMonomer', ()=>{
   before(async ()=>{
     await initHelmMainPackage();
 
-    [libHelper, helmHelper] = await Promise.all([getMonomerLibHelper(), getHelmHelper()]);
+    [monomerLibHelper, helmHelper, userLibSettings] = await Promise.all(
+      [getMonomerLibHelper(), getHelmHelper(), getUserLibSettings()]);
 
-    await timeout(async () => { monomerLibHelper = await getMonomerLibHelper(); }, 5000,
-      'get monomerLibHelper');
-    await timeout(async () => { userLibSettings = await getUserLibSettings(); }, 5000,
-      'get user lib settings for backup');
-
-    // Tests 'findMonomers' requires default monomer library loaded
-    await timeout(async () => { await setUserLibSettingsForTests(); }, 5000,
-      'set user lib settings for tests');
-    await timeout(async ()=> { await monomerLibHelper.awaitLoaded(); }, 5000,
-      'await monomerLib to be loaded');
-    await timeout(async () => { await monomerLibHelper.loadMonomerLib(true); }, 5000,
-      'reload monomerLib with settings for tests'); // load default libraries for tests
+    await setUserLibSettingsForTests();
+    await monomerLibHelper.awaitLoaded();
+    await monomerLibHelper.loadMonomerLib(true); // load default libraries for tests
   });
 
   after(async ()=>{
@@ -100,7 +90,7 @@ category('getMonomer', ()=>{
   });
 
   test('original', async () =>{
-    const monomerLib = libHelper.getMonomerLib();
+    const monomerLib = monomerLibHelper.getMonomerLib();
     rewriteLibraries(monomerLib);
 
     // const overriddenMonomersFuncs = helmHelper.revertOriginalMonomersFuncs();
