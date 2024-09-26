@@ -40,6 +40,16 @@ export const style1 = css `
 .panel-titlebar-text {
   color: #9497a0;
 }
+.dockspan-tab-handle:only-child .dockspan-tab-handle-text {
+  color: #9497a0;
+}
+.dockspan-tab-handle:only-child {
+  border-right: none;
+}
+.dockspan-tab-handle:only-child .dockspan-tab-handle-text {
+  margin-left: 2px;
+  font-weight: normal;
+}
 .panel-titlebar-button-close {
   color:#aaa;
 }
@@ -177,7 +187,7 @@ export const style2 = css `/************* Panel with title bar ************/
 .panel-base:focus {
   outline: 0;
 }
-.panel-titlebar {
+.panel-titlebar, .dockspan-tab-handle:only-child{
   width: 100%;
   overflow: hidden;
   height: 25px;
@@ -198,10 +208,33 @@ export const style2 = css `/************* Panel with title bar ************/
   justify-content: center;
   align-items: center;
 }
+.dockspan-tab-handle:only-child::after .dockspan-tab-handle-close-button {
+  visibility: hidden;
+  margin-left: auto;
+  margin-right: 3px;
+  color: #9497a0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 .panel-titlebar:hover .panel-titlebar-button-close {
   visibility: visible;
 }
+.dockspan-tab-handle:hover:only-child::after .dockspan-tab-handle-close-button {
+   visibility: visible;
+}
 .panel-titlebar-button-close::after {
+  float: right;
+  cursor: pointer;
+  content: "\e900";
+  font-weight: normal;
+  font-size: 18px;
+  font-family: "icomoon";
+  display: flex;
+  height: 100%;
+  align-items: center;
+}
+.dockspan-tab-handle:only-child .dockspan-tab-handle-close-button::after {
   float: right;
   cursor: pointer;
   content: "\e900";
