@@ -19,6 +19,7 @@ import {
 import {hexToPercentRgb} from '../utils/chem-common';
 import {_rdKitModule, drawErrorCross, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
 import {IMolContext, getMolSafe} from '../utils/mol-creation_rdkit';
+import {getGridCellColTemp} from '../utils/ui-utils';
 
 interface IMolRenderingInfo {
   //mol: RDMol | null; // null when molString is invalid?
@@ -528,7 +529,8 @@ M  END
       if (rawSubstructCol)
         substructObj = rawSubstructCol.get(idx!);
     } else {
-      const substructList = (getSubstructProviders(gridCell.tableColumn?.temp) ?? [])
+      const [_gridCol, tableCol, _temp] = getGridCellColTemp(gridCell);
+      const substructList = (getSubstructProviders(tableCol?.temp) ?? [])
         .map((p) => p.getSubstruct(gridCell.tableRowIndex));
       substructObj = mergeSubstructs(substructList);
     }
