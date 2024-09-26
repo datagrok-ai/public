@@ -16,7 +16,7 @@ import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {DOCK_RATIO, ROW_HEIGHT, STARTING_HELP} from './variance-based-analysis/constants';
 
-import {getInputsTable, getLookupsInfo} from './shared/lookup-tools';
+import {getInputsTable, getLookupsInfo, INPUTS_DF, LOOKUP} from './shared/lookup-tools';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedInputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATA_FRAME];
@@ -587,11 +587,59 @@ export class SensitivityAnalysisView {
 
     const inputsDf = await getInputsTable(info.choices);
 
-    const input = ui.input.choice(info.caption ?? info.name);
-    input.root.insertBefore(getSwitchMock(), input.captionLabel);
+    if (inputsDf === null)
+      return null;
+
+    const cols = inputsDf.columns;
+    const rowCount = inputsDf.rowCount;
+
+    const inpSetsNames = cols.byIndex(INPUTS_DF.INPUT_SETS_COL_IDX).toList();
+    const choices = [LOOKUP.DEFAULT as string].concat(inpSetsNames);
+
+    const defaultInputs = new Map<string, any>();
+    const inputNames = Object.keys(this.store.inputs);
+
+    inputNames.forEach((name) => {
+      defaultInputs.set(name, this.store.inputs[name].const.value);
+    });
+
+    const tableInputs = new Map<string, Map<string, number>>(); // set <-> {(input <-> value)}
+    const colsRaw = new Map<string, Int32Array | Uint32Array | Float32Array | Float64Array>();
+
+    for (const col of cols) {
+      if (col.isNumerical)
+        colsRaw.set(col.name, col.getRawData());
+    }
+
+    for (let row = 0; row < rowCount; ++row) {
+      const inputs = new Map<string, number>();
+      colsRaw.forEach((arr, name) => inputs.set(name, arr[row]));
+      tableInputs.set(inpSetsNames[row], inputs);
+    }
+
+    // create input for lookup table use
+    const lookupChoiceInput = ui.input.choice<string>(info.caption, {
+      items: choices,
+      nullable: false,
+      value: choices[0],
+      tooltipText: info.tooltip,
+      onValueChanged: (value) => {
+        if (value === LOOKUP.DEFAULT)
+          inputNames.forEach((name) => this.store.inputs[name].constForm[0].value = defaultInputs.get(name));
+        else {
+          const colInputs = tableInputs.get(value);
+          inputNames.forEach((name) => {
+            const input = this.store.inputs[name].constForm[0]
+            input.value = colInputs!.get(name) ?? input.value;
+          });
+        }
+      },
+    });
+
+    lookupChoiceInput.root.insertBefore(getSwitchMock(), lookupChoiceInput.captionLabel);
     
     return {
-      input: input,
+      input: lookupChoiceInput,
       category: info.category ?? 'Misc',
     };
   }
