@@ -16,6 +16,8 @@ import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {DOCK_RATIO, ROW_HEIGHT, STARTING_HELP} from './variance-based-analysis/constants';
 
+import {getInputsTable, getLookupsInfo} from './shared/lookup-tools';
+
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedInputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATA_FRAME];
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATA_FRAME];
@@ -406,16 +408,18 @@ export class SensitivityAnalysisView {
   private gridSubscription: any = null;
 
   store = this.generateInputFields(this.func);
-  comparisonView: DG.TableView;
+  comparisonView!: DG.TableView;
 
   static async fromEmpty(
     func: DG.Func,
     options: {
       parentView?: DG.View,
       parentCall?: DG.FuncCall,
+      inputsLookup?: string,
     } = {
       parentView: undefined,
       parentCall: undefined,
+      inputsLookup: undefined,
     },
   ) {
     const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE);
@@ -441,10 +445,12 @@ export class SensitivityAnalysisView {
       parentView?: DG.View,
       parentCall?: DG.FuncCall,
       configFunc?: undefined,
+      inputsLookup?: string,
     } = {
       parentView: undefined,
       parentCall: undefined,
       configFunc: undefined,
+      inputsLookup: undefined,
     },
   ) {
     this.runButton = ui.bigButton('Run', async () => await this.runAnalysis());
@@ -457,34 +463,33 @@ export class SensitivityAnalysisView {
       window.open('https://datagrok.ai/help/compute.md#sensitivity-analysis', '_blank');
     }, 'Open help in a new tab');
 
-    const form = this.buildFormWithBtn();
-    this.runButton.disabled = !this.canEvaluationBeRun();
-    this.runIcon.hidden = this.runButton.disabled;
-    this.addTooltips();
-    this.comparisonView = baseView;
+    this.buildFormWithBtn(options.inputsLookup).then((form) => {
+      this.runButton.disabled = !this.canEvaluationBeRun();
+      this.runIcon.hidden = this.runButton.disabled;
+      this.addTooltips();
+      this.comparisonView = baseView;
 
-    this.comparisonView.dockManager.dock(
-      form,
-      DG.DOCK_TYPE.LEFT,
-      null,
-      `${this.func.name} - Sensitivity Analysis`,
-      0.25,
-    );
-    /*saDock.container.containerElement.style.minWidth = '220px';
-    saDock.container.containerElement.style.maxWidth = '390px';*/
+      this.comparisonView.dockManager.dock(
+        form,
+        DG.DOCK_TYPE.LEFT,
+        null,
+        `${this.func.name} - Sensitivity Analysis`,
+        0.25,
+      );
 
-    this.comparisonView.grid.columns.byName(RUN_NAME_COL_LABEL)!.visible = false;
+      this.comparisonView.grid.columns.byName(RUN_NAME_COL_LABEL)!.visible = false;
 
-    const rbnPanels = this.comparisonView.getRibbonPanels();
-    rbnPanels.push([this.helpIcon, this.runIcon]);
-    this.comparisonView.setRibbonPanels(rbnPanels);
+      const rbnPanels = this.comparisonView.getRibbonPanels();
+      rbnPanels.push([this.helpIcon, this.runIcon]);
+      this.comparisonView.setRibbonPanels(rbnPanels);
 
-    this.comparisonView.helpUrl = 'https://datagrok.ai/help/compute.md#sensitivity-analysis';
-    this.tableDockNode = this.comparisonView.dockManager.findNode(this.comparisonView.grid.root);
-    const helpMD = ui.markdown(STARTING_HELP);
-    helpMD.style.padding = '10px';
-    helpMD.style.overflow = 'auto';
-    this.helpMdNode = this.comparisonView.dockManager.dock(helpMD, DG.DOCK_TYPE.FILL, this.tableDockNode, 'About');
+      this.comparisonView.helpUrl = 'https://datagrok.ai/help/compute.md#sensitivity-analysis';
+      this.tableDockNode = this.comparisonView.dockManager.findNode(this.comparisonView.grid.root);
+      const helpMD = ui.markdown(STARTING_HELP);
+      helpMD.style.padding = '10px';
+      helpMD.style.overflow = 'auto';
+      this.helpMdNode = this.comparisonView.dockManager.dock(helpMD, DG.DOCK_TYPE.FILL, this.tableDockNode, 'About');
+    });
   }
 
   private closeOpenedViewers() {
@@ -571,9 +576,46 @@ export class SensitivityAnalysisView {
     this.runIcon.hidden = this.runButton.disabled;
   }
 
-  private buildFormWithBtn() {
-    let prevCategory = 'Misc';
-    const form = Object.values(this.store.inputs)
+  private async getLookupChoiceInput(inputsLookup?: string) {
+    if (inputsLookup === undefined)
+      return null;
+
+    const info = getLookupsInfo(inputsLookup);
+
+    if ((info === null) || (info.choices === undefined))
+      return null;
+
+    const inputsDf = await getInputsTable(info.choices);
+
+    const input = ui.input.choice(info.caption ?? info.name);
+    input.root.insertBefore(getSwitchMock(), input.captionLabel);
+    
+    return {
+      input: input,
+      category: info.category ?? 'Misc',
+    };
+  }
+
+  private async buildFormWithBtn(inputsLookup?: string) {
+    const lookupElement = await this.getLookupChoiceInput(inputsLookup);
+    
+    let prevCategory: string;
+
+    const form = ui.div([
+      this.store.analysisInputs.analysisType.input,
+      this.store.analysisInputs.samplesCount.input,
+    ], {style: {'overflow-y': 'scroll', 'width': '100%'}});
+
+    if (lookupElement !== null) {
+      prevCategory = lookupElement.category;
+      form.append(ui.h2(prevCategory));
+      form.append(lookupElement.input.root);
+      $(form).addClass('ui-form');
+    } else {
+      prevCategory = 'Misc';
+    }
+      
+    Object.values(this.store.inputs)
       .reduce((container, inputConfig) => {
         const prop = inputConfig.prop;
         if (prop.category !== prevCategory) {
@@ -587,10 +629,7 @@ export class SensitivityAnalysisView {
         );
 
         return container;
-      }, ui.div([
-        this.store.analysisInputs.analysisType.input,
-        this.store.analysisInputs.samplesCount.input,
-      ], {style: {'overflow-y': 'scroll', 'width': '100%'}}));
+      }, form);
 
     $(form).addClass('ui-form');
 

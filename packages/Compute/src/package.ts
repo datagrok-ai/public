@@ -353,3 +353,35 @@ export const fileInput = UiUtils.fileInput;
 export const historyInput = UiUtils.historyInput;
 export const historyInputJSON = UiUtils.historyInputJSON;
 export const historyPanel = UiUtils.historyPanel;
+
+import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
+import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
+
+//top-menu: ML | SA lookups...
+//name: testSAlookups
+//description: For testing, TO BE DELETED!
+export async function testSAlookups() {
+  const lines = [
+    '//name: lookupTables',
+    '//description: Test for optimization: multiple scalars output',
+    '//language: javascript',
+    '//input: double x1 = 1 {caption: param1; min: -3; max: 3}',
+    '//input: double x2 = -1 {caption: param2; min: -3; max: 3}',
+    '//output: int int',
+    '//output: double float',
+    '//editor: Compute:RichFunctionViewEditor',
+    '//meta.features: {"fitting": true, "sens-analysis": true}',
+    '//meta.runOnOpen: true',
+    '//meta.runOnInput: true',
+    ' ',
+    'const int = x1**3 * (x1 - 1) * x2**3 * (x2 - 1);',
+    'const float = (x2 - 1)**2 + (x1 - 1)**2;',
+  ];
+  
+  const scriptText = lines.join('\n');
+  const script = DG.Script.create(scriptText);
+  //@ts-ignore
+  await SensitivityAnalysisView.fromEmpty(script, {
+    inputsLookup: 'mode {choices: OpenFile("Vmakarichev:Home/sa-fit-inputs.csv"); caption: Process mode; category: Process parameters} [Reactions flow mode]',
+  });  
+}
