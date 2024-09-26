@@ -196,20 +196,24 @@ export const style2 = css`/************* Panel with title bar ************/
   margin-right: 3px;
 }
 .panel-titlebar-button-close {
+  visibility: hidden;
   margin-left: auto;
-    margin-right: 3px;
-    color: #9497a0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  margin-right: 3px;
+  color: #9497a0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.panel-titlebar:hover .panel-titlebar-button-close {
+  visibility: visible;
 }
 .panel-titlebar-button-close::after {
   float: right;
   cursor: pointer;
-  padding-right: 8px;
-  content: "\f00d";
+  content: "\e900";
   font-weight: normal;
-  font-family: "Font Awesome 5 Pro";
+  font-size: 18px;
+  font-family: "icomoon";
   display: flex;
   height: 100%;
   align-items: center;
@@ -416,10 +420,14 @@ export const style2 = css`/************* Panel with title bar ************/
   cursor: pointer;
   padding-right: 16px;
 }
-.dockspan-tab-handle:hover {
+.dockspan-tab-handle:hover .dockspan-tab-handle-close-button {
   cursor: pointer;
+  visibility: visible;
 }
-.dockspan-tab-handle-selected {}
+.dockspan-tab-handle-selected .dockspan-tab-handle-text {
+  font-weight: bold;
+  color: var(--grey-6)
+}
 .dockspan-tab-handle-text {
   margin-top: 3px;
   margin-left: 6px;
@@ -430,19 +438,21 @@ export const style2 = css`/************* Panel with title bar ************/
   text-overflow: ellipsis;
   width: calc(100% - 3px);
   display: block;
+  color: #9497a0
 }
 .dockspan-tab-handle-text > span {
   vertical-align: top;
 }
-.dockspan-tab-handle-close-button {}
+.dockspan-tab-handle-close-button {
+  visibility: hidden;
+}
 .dockspan-tab-handle-close-button::after {
-  margin-right: 5px;
   float: right;
   position: absolute;
-  right: 0;
-  content: "\f00d";
+  right: 5px;
+  content: "\e900";
   font-weight: normal;
-  font-family: "Font Awesome 5 Pro";
+  font-family: "icomoon";
   cursor: pointer;
   display: flex;
   height: 100%;
