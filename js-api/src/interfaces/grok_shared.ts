@@ -20,7 +20,6 @@ export interface IUserReport {
   number: number;
 
   /** Property description. It will be shown in the UI where possible. */
-  /** Property description. It will be shown in the UI where possible. */
   /// Model description
   /** Property description. It will be shown in the UI where possible. */
   /// Free-text description.
@@ -40,14 +39,13 @@ export interface IUserReport {
   labels: Array<string>;
 
   /// Options.
-  /// Options.
   options: {[index: string]: any};
 
   data: any;
 
+  /// Used as display name in UI.
   friendlyName: any;
 
-  /** Property name. */
   /// Name;
   /** Property name. */
   /** Property name. */
@@ -88,6 +86,10 @@ export interface IUserReport {
   /// True is this object was deleted.
   /// True is this object was deleted.
   isDeleted: boolean;
+
+  bindId: string;
+
+  bid: string;
 
   namespace: string;
 

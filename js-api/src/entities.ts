@@ -834,6 +834,9 @@ export class Script extends Func {
   get script(): string { return api.grok_Script_GetScript(this.dart); }
   set script(s: string) { api.grok_Script_SetScript(this.dart, s); }
 
+  /** Script */
+  get clientCode(): string { return api.grok_Script_ClientCode(this.dart); }
+
   /** Script language. See also: https://datagrok.ai/help/datagrok/functions/func-params-annotation */
   get language(): ScriptLanguage { return api.grok_Script_GetLanguage(this.dart); }
   set language(s: ScriptLanguage) { api.grok_Script_SetLanguage(this.dart, s); }

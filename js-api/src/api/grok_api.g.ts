@@ -1281,6 +1281,7 @@ export interface IDartApi {
   grok_Script_Create(script: String): any;
   grok_Script_GetScript(script: any): any;
   grok_Script_SetScript(script: any, s: String): any;
+  grok_Script_ClientCode(script: any): any;
   grok_Script_GetLanguage(script: any): any;
   grok_Script_SetLanguage(script: any, s: String): any;
   grok_Script_Get_Environment(script: any): any;

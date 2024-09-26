@@ -98,6 +98,7 @@ export enum TYPE {
   COLUMN_LIST = 'column_list',
   GRAPHICS = 'graphics',
   FILE = 'file',
+  BLOB = 'blob',
   ROW_FILTER = 'tablerowfiltercall',
   COLUMN_FILTER = 'colfiltercall',
   BIT_SET = 'bitset',

@@ -2,22 +2,21 @@
   "name": "pyodide",
   "friendlyName": "Pyodide",
   "version": "0.0.1",
-  "description": "",
-  "sources": [
-    "https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"
-  ],
+  "description": "Pyodide package for Datagrok to run python code directly in browser",
   "dependencies": {
-    "datagrok-api": "latest",
+    "@datagrok-libraries/utils": "latest",
     "cash-dom": "latest",
+    "datagrok-api": "../../js-api",
     "dayjs": "latest",
-    "@datagrok-libraries/utils": "latest"
+    "uuid": "^10.0.0"
   },
   "devDependencies": {
+    "@types/uuid": "^10.0.0",
     "datagrok-tools": "latest",
-    "webpack": "latest",
-    "webpack-cli": "latest",
     "ts-loader": "latest",
-    "typescript": "latest"
+    "typescript": "latest",
+    "webpack": "latest",
+    "webpack-cli": "latest"
   },
   "scripts": {
     "link-all": "grok link",
