@@ -183,13 +183,13 @@ export async function loadPackages(packagesDir: string, packagesToLoad?: string,
             console.log(`Package published ${dirName}`);
           }
           catch (e: any) {
-            console.log(`Package didnt publishded  ${dirName}`);
+            console.log(`Package wasn't published ${dirName}`);
           }
         }
       }
       catch (e: any) {
         if (utils.isPackageDir(packageDir) && (packagesToRun.get(spaceToCamelCase(dirName).toLocaleLowerCase()) !== undefined || packagesToLoad === "all"))
-          console.log(`Couldnt read package.json  ${dirName}`);
+          console.log(`Couldn't read package.json  ${dirName}`);
       }
     }
   }
@@ -197,4 +197,10 @@ export async function loadPackages(packagesDir: string, packagesToLoad?: string,
   return Array.from(packagesToRun)
     .filter(([key, value]) => value === true)
     .map(([key]) => key);;
+}
+
+export interface WorkerOptions {
+  path?: string, catchUnhandled?: boolean, core?: boolean,
+  report?: boolean, record?: boolean, verbose?: boolean, benchmark?: boolean, platform?: boolean, category?: string, test?: string,
+  stressTest?: boolean, gui?:boolean
 }

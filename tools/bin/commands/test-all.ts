@@ -10,6 +10,7 @@ import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
 import * as testUtils from '../utils/test-utils';
 import { setRandomOrder, setAlphabeticalOrder, setPackageRandomOrder, setPackageAlphabeticalOrder } from '../utils/order-functions';
+import { WorkerOptions } from '../utils/test-utils';
 
 enum order {
   random = 0,
@@ -39,7 +40,6 @@ function getEnumOrder(orderStr: string): order {
   }
   return order.random;
 }
-
 
 const curDir = process.cwd();
 const grokDir = path.join(os.homedir(), '.grok');
@@ -191,7 +191,7 @@ async function setWorkersOrder(tests: any[], invocationOrder: order = 0, countOf
   return resultOrder;
 }
 
-async function runTests(workersOrder: any[][], workerOptions: WorkerOptions): Promise<resultObject[]> {
+async function runTests(workersOrder: any[][], workerOptions: WorkerOptions): Promise<ResultObject[]> {
   let workersCommands: any[][] = [];
 
   for (let workerOrder of workersOrder)
@@ -207,7 +207,7 @@ async function runTests(workersOrder: any[][], workerOptions: WorkerOptions): Pr
       }
     })))
 
-  let workersPromises: Promise<resultObject>[] = [];
+  let workersPromises: Promise<ResultObject>[] = [];
 
   for (let workerCommands of workersCommands) {
     workersPromises.push(runWorker(workerCommands, workerOptions));
@@ -217,7 +217,7 @@ async function runTests(workersOrder: any[][], workerOptions: WorkerOptions): Pr
   return resultObjects;
 }
 
-async function runWorker(testExecutionData: any[], workerOptions: WorkerOptions): Promise<resultObject> {
+async function runWorker(testExecutionData: any[], workerOptions: WorkerOptions): Promise<ResultObject> {
   return await testUtils.timeout(async () => {
     const params = Object.assign({}, testUtils.defaultLaunchParameters);
     if (workerOptions.gui)
@@ -283,7 +283,7 @@ function addLogsToFile(filePath: string, stringToSave: any) {
   fs.appendFileSync(filePath, `${stringToSave}`);
 }
 
-function printWorkersResult(workerResult: resultObject, verbose: boolean = false) {
+function printWorkersResult(workerResult: ResultObject, verbose: boolean = false) {
   if (verbose) {
     if ((workerResult.passedAmount ?? 0) > 0 && (workerResult.verbosePassed ?? []).length > 0) {
       console.log("Passed: ");
@@ -318,18 +318,9 @@ function saveCsvResults(stringToSave: string[]) {
   
   fs.writeFileSync(csvReportDir, modifiedStrings.join('\n'), 'utf8'); 
   color.info('Saved `test-report.csv`\n');
-}
+} 
 
-type WorkerOptions = {
-  benchmark: boolean,
-  catchUnhandled: boolean,
-  gui: boolean,
-  record: boolean,
-  report: boolean,
-  verbose: boolean
-}
-
-type resultObject = {
+type ResultObject = {
   failed: boolean,
   verbosePassed: string,
   verboseSkipped: string,
