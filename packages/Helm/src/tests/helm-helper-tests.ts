@@ -5,7 +5,8 @@ import * as DG from 'datagrok-api/dg';
 import {after, before, category, delay, expect, expectArray, test, testEvent} from '@datagrok-libraries/utils/src/test';
 import {HelmNotSupportedError, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
-import {Test} from 'datagrok-api/dg';
+
+import {_package} from '../package-test';
 
 type TestSrcType = { helm: string };
 type TestTgtType = { helm: string | null, map: [number, number][] };
@@ -76,6 +77,16 @@ category('HelmHelper: removeGaps', () => {
       } catch (err: any) {
         resErr = err;
       }
+
+      if (testData.tgt.helm === null) { // err expected, for debug on GitHub CI
+        expect(resErr != null, true, 'Error expected');
+        const isErrorInstance = resErr instanceof HelmNotSupportedError;
+        const errCtorName = resErr.constructor.name;
+        const isErrorCtor = errCtorName === 'HelmNotSupportedError';
+        _package.logger.debug(`Check error object. ` +
+          `isErrorInstance: ${isErrorInstance}, isErrorCtor: ${isErrorCtor}, errCtorName: ${errCtorName}`);
+      }
+
       expect((resErr instanceof HelmNotSupportedError) || resErr?.constructor.name === 'HelmNotSupportedError',
         testData.tgt.helm === null, 'HelmNotSupportedError thrown expected');
     });
