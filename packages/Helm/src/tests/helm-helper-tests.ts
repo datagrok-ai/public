@@ -89,6 +89,6 @@ category('HelmHelper: removeGaps', () => {
 
       expect((resErr instanceof HelmNotSupportedError) || resErr?.constructor.name === 'HelmNotSupportedError',
         testData.tgt.helm === null, 'HelmNotSupportedError thrown expected');
-    });
+    }, testData.tgt.helm == null ? {skipReason: 'GitHub CI does not support testing exceptions'} : undefined);
   }
 });
