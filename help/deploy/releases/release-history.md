@@ -20,6 +20,13 @@ position: 6 # float position is supported
 See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.md)
+## 2024-09-26 1.20.3
+
+### Addressed Issues
+
+* GROK-16646: #3032: Page is freezing for a while when colour by column is applied in some cases (large number of categories + "starts with") 
+
+
 ## 2024-08-27 1.20.2
 
 ### Addressed Issues
