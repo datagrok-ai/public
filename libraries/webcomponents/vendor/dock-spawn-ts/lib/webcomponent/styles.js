@@ -413,6 +413,7 @@ export const style2 = css `/************* Panel with title bar ************/
   overflow: hidden;
   cursor: pointer;
   padding-right: 16px;
+  border-right: 1px solid var(--grey-2)
 }
 .dockspan-tab-handle:hover .dockspan-tab-handle-close-button {
   cursor: pointer;
