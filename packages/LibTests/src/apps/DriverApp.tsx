@@ -127,6 +127,7 @@ export const DriverApp = Vue.defineComponent({
     return () => (
       <div class='w-full h-full'>
         <RibbonPanel>
+          <BigButton onClick={() => initPipeline('LibTests:MockProvider3')}>Init Pipeline</BigButton>
           <IconFA 
             name='folder-tree'
             tooltip={treeHidden.value ? 'Show tree': 'Hide tree'}
@@ -262,7 +263,7 @@ export const DriverApp = Vue.defineComponent({
           }
           {
             !treeState.value &&
-            <BigButton onClick={() => initPipeline('LibTests:MockProvider3')}>Init Pipeline</BigButton>
+            <div></div>
           }
         </DockManager>
       </div>
