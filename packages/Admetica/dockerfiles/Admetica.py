@@ -31,7 +31,7 @@ models_extensions = [
   "Solubility.ckpt", "PPBR.ckpt", "VDss.ckpt", "CYP1A2-Inhibitor.ckpt", "CYP1A2-Substrate.ckpt",
   "CYP3A4-Inhibitor.pkl", "CYP3A4-Substrate.pkl", "CYP2C19-Inhibitor.ckpt", "CYP2C19-Substrate.ckpt",
   "CYP2C9-Inhibitor.ckpt", "CYP2C9-Substrate.ckpt", "CYP2D6-Substrate.ckpt",
-  "CYP2D6-Inhibitor.ckpt", "CL-Hepa.ckpt", "CL-Micro.ckpt", "Half-Life.ckpt", "hERG", "LD50"
+  "CYP2D6-Inhibitor.ckpt", "CL-Hepa.ckpt", "CL-Micro.ckpt", "Half-Life.ckpt", "hERG.ckpt", "LD50.ckpt"
 ]
 
 def is_malformed(smiles):
