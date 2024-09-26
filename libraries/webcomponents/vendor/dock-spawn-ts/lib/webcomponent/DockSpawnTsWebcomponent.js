@@ -8,6 +8,7 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
     windowResizedBound;
     slotElementMap;
     observer;
+    resizeObserver;
     initialized = false;
     initFinished = false;
     elementContainerMap = new Map();
@@ -52,9 +53,6 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
                     }
                 },
             });
-            this.onresize = () => {
-                this.resize();
-            };
             for (const element of this.children)
                 this.handleAddedChildNode(element);
             this.observer = new MutationObserver((mutations) => {
@@ -68,6 +66,10 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
                 });
             });
             this.observer.observe(this, { childList: true });
+            this.resizeObserver = new ResizeObserver(() => {
+                this.resize();
+            });
+            this.resizeObserver.observe(this);
             this.initFinished = true;
         }, 50);
     }
