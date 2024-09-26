@@ -258,7 +258,7 @@ export function addCustomTooltip(table: string): void {
 function updateColumnProperties(column: DG.Column, model: any, viewTable: DG.DataFrame): void {
   const newColumnName = viewTable.columns.getUnusedName(column.name);
   column.name = newColumnName;
-  column.meta.format = '0.00';
+  column.meta.format = '0.000';
   column.setTag(DG.TAGS.DESCRIPTION, model.properties.find((prop: any) => prop.property.name === 'description').object.description);
   column.meta.units = model.units;
 }
@@ -320,7 +320,7 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
       const map: { [_: string]: any } = {};
       for (const model of queryParams) {
         const column = table.getCol(model);
-        map[model] = ui.divText(column.convertTo(DG.TYPE.STRING, '0.00').get(0), {
+        map[model] = ui.divText(column.convertTo(DG.TYPE.STRING, '0.000').get(0), {
           style: { color: DG.Color.toHtml(column.meta.colors.getColor(0)!) }
         });
       }
