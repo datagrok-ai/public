@@ -1934,7 +1934,7 @@ export async function isApplicableNN(df: DG.DataFrame, predictColumn: DG.Column)
 
 //name: getProperty
 //input: string molecule {semType: Molecule}
-//input: string prop {choices:["MV", "HBA", "HBD", "LogP", "LogS", "PSA", "Rotatable bonds", "Stereo centers", "Molecule charge"]}
+//input: string prop {choices:["MW", "HBA", "HBD", "LogP", "LogS", "PSA", "Rotatable bonds", "Stereo centers", "Molecule charge"]}
 //output: string propValue
 export async function getProperty(molecule: string, prop: string): Promise<any> {
   return await getPropertyForMolecule(molecule, prop);
