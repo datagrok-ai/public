@@ -455,6 +455,10 @@ To run the sensitivity analysis
 
 ![run-sens-analysis](pics/sens-analysis-run.gif)
 
+Learn more
+
+* [Sensitivity analysis](function-analysis.md#sensitivity-analysis)
+
 ### Input parameter optimization
 
 Solve an inverse problem: find input conditions leading to specified output constraints. It computes inputs minimizing deviation measured by [loss function](https://en.wikipedia.org/wiki/Loss_function).
