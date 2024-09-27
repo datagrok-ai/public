@@ -64,9 +64,9 @@ Explore the relationship between inputs and outputs of your model using the [Sen
 
 * Click <i class="fas fa-analytics"></i> **Run sensitivity analysis** icon
 * Apply one of the following methods:
-  * [Monte Carlo](compute.md#monte-carlo)
-  * [Sobol](compute.md#sobol)
-  * [Grid](compute.md#grid)
+  * [Monte Carlo](function-analysis.md#monte-carlo)
+  * [Sobol](function-analysis.md#sobol)
+  * [Grid](function-analysis.md#grid)
 * Analyze model evaluations
 
 ![Run Sens Analysis](pics/diff-studio-run-sens-analysis.gif)
