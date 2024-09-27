@@ -52,7 +52,30 @@ export async function runAdmetica(csvString: string, queryParams: string, addPro
   };
 
   const path = `/df_upload?models=${queryParams}&probability=${addProbability}`;
-  return await fetchWrapper(() => sendRequestToContainer(admeticaContainer.id, path, params));
+  const response = await fetchWrapper(() => sendRequestToContainer(admeticaContainer.id, path, params));
+  return await convertLD50(response!, DG.Column.fromStrings('smiles', csvString.split('\n').slice(1)));
+}
+
+export async function convertLD50(response: string, smilesCol: DG.Column): Promise<string> {
+  const df = DG.DataFrame.fromCsv(response);
+  if (!df.columns.names().includes('LD50')) return response;
+
+  const ldCol = df.getCol('LD50');
+  const rowCount = df.rowCount;
+
+  const molWeights = await Promise.all(
+    Array.from({ length: rowCount }, (_, i) => 
+      grok.functions.call('Chem:getProperty', { molecule: smilesCol.get(i), prop: "MW" })
+    )
+  );
+
+  ldCol.init((i) => {
+    const molPerKg = Math.pow(10, -ldCol.get(i));
+    const mgPerKg = molPerKg * molWeights[i] * 1000;
+    return mgPerKg;
+  });
+  
+  return df.toCsv();
 }
 
 export async function setProperties() {
@@ -133,7 +156,7 @@ function generateNumber(): number {
 }
 
 function createPieSettings(table: DG.DataFrame, columnNames: string[], properties: any): any {
-  const colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728'];
+  const colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd'];
   let sectors: any[] = [];
   let sectorColorIndex = 0;
 
