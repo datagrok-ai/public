@@ -1,10 +1,10 @@
-// import * as grok from 'datagrok-api/grok';
-// import * as DG from 'datagrok-api/dg';
-
-
-//import {ALIGNMENT, ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
-
+import {PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {Rules, RuleLink, RuleReaction} from './pt-rules';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {IMonomerLib, IMonomerLibBase, Monomer, MonomerLibData, RGroup} from '@datagrok-libraries/bio/src/types';
+import {RDModule, RDMol, RDReaction, MolList, RDReactionResult} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import * as grok from 'datagrok-api/grok';
+import {HELM_REQUIRED_FIELD, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
 
 export const RULES_DIMER = '(#2)';
 export const RULES_HETERODIMER = '($2)';
@@ -32,7 +32,12 @@ export class Chain {
     const rawLinkages = fragmentation[1].split('|');
 
     const monomers = new Array<Array<string>>(rawFragments.length);
-    const linkages: { fChain: number, sChain: number, fMonomer: number, sMonomer: number, fR: number, sR: number }[] = [];
+    const linkages: { fChain: number,
+                      sChain: number,
+                      fMonomer: number,
+                      sMonomer: number,
+                      fR: number,
+                      sR: number }[] = [];
 
     //HELM parsing
     for (let i = 0; i < rawFragments.length; i++) {
@@ -71,7 +76,12 @@ export class Chain {
     const homodimerCode = rules.homodimerCode;
     const mainFragments: string[] = [];
 
-    const linkages: { fChain: number, sChain: number, fMonomer: number, sMonomer: number, fR: number, sR: number }[] = [];
+    const linkages: { fChain: number,
+                      sChain: number,
+                      fMonomer: number,
+                      sMonomer: number,
+                      fR: number,
+                      sR: number }[] = [];
 
     //NOTICE: this works only with simple single heterodimers
     const heterodimeric = heterodimerCode !== null ? sequence.split(`(${rules.heterodimerCode!})`) : '';
@@ -211,17 +221,17 @@ export class Chain {
     let idx1 = 0;
     let idx2 = 0;
     loop1:
-      for (let i = 0; i < this.monomers.length; i++) {
-        loop2:
-          for (let j = 0; j < this.monomers[i].length; j++) {
-            if (counter == changeNumber) {
-              idx1 = i;
-              idx2 = j;
-              break loop1;
-            }
-            counter++;
-          }
+    for (let i = 0; i < this.monomers.length; i++) {
+      loop2:
+      for (let j = 0; j < this.monomers[i].length; j++) {
+        if (counter == changeNumber) {
+          idx1 = i;
+          idx2 = j;
+          break loop1;
+        }
+        counter++;
       }
+    }
 
     const previous = this.monomers[idx1][idx2];
 
@@ -380,4 +390,140 @@ export function doPolyToolConvert(sequences: string[], rules: Rules): string[] {
     }
   }
   return helms;
+}
+
+function getMonomersMolBlocks(monomer1: Monomer, monomer2: Monomer): [string, string] {
+  const mb1 = monomer1.molfile;
+  let mb2 = monomer2.molfile;
+  const addGroups = monomer1.rgroups.length;
+
+  //mol v2000 monomer
+  const rgpIdx = mb2.indexOf('M  RGP');
+  if (rgpIdx !== -1) {
+    const groupsCountStr = mb2.substring(rgpIdx + 6, rgpIdx + 9);
+    const groupsCount = Number(groupsCountStr);
+
+    for (let i = 0; i < groupsCount; i ++) {
+      const start = rgpIdx + 9 + 4 + i*8;
+      const end = rgpIdx + 9 + 8 + i*8;
+      const rGroupSpecifier = mb2.substring(start, end);
+      const groupPosition = Number(rGroupSpecifier) + addGroups;
+      const digits = Math.floor(Math.log10(groupPosition) + 1);
+      const newSpecifier = ' '.repeat(4 - digits) + String(groupPosition);
+      mb2 = mb2.substring(0, start) + newSpecifier + mb2.substring(end, mb2.length);
+    }
+  }
+
+  //TODO: same for v3000 monomer
+
+  return [mb1, mb2];
+}
+
+function getSyntheticMolBlock(rdkit: RDModule, reaction: string,
+  mb1: string, mb2: string, monomerName: string): string {
+  let rxn: RDReaction | null = null;
+  let mols: MolList | null = null;
+  let mol1: RDMol | null = null;
+  let mol2: RDMol | null = null;
+  let rctns: RDReactionResult | null = null;
+  let molP: RDMol | null = null;
+  let molBlock = '';
+
+  try {
+    rxn = rdkit.get_rxn(reaction);
+    mols = new rdkit.MolList();
+    mol1 = rdkit.get_mol(mb1!);
+    mol2 = rdkit.get_mol(mb2!);
+    mols.append(mol1!);
+    mols.append(mol2!);
+
+    rctns = rxn.run_reactants(mols, 1);
+    //const size = rctns.size();
+    const element = rctns.get(0);
+
+    molP = element.next();
+    molBlock = molP?.get_molblock();//molP?.get_v3Kmolblock();//
+  } catch (e: any) {
+    const errMsg = e instanceof Error ? e.message : e.toString();
+    grok.shell.error(`${monomerName} was not assembled by rule reaction`);
+    throw errMsg;
+  } finally {
+    rxn?.delete();
+    mols?.delete();
+    mol1?.delete();
+    mol2?.delete();
+    rctns?.delete();
+    molP?.delete();
+  }
+
+  return molBlock;
+}
+
+function getNewGroups(monomer1: Monomer, monomer2: Monomer): RGroup[] {
+  const groups =new Array<RGroup>(monomer1?.rgroups.length! + monomer2?.rgroups.length!);
+  const length1 = monomer1?.rgroups.length!;
+  const length2 = monomer2?.rgroups.length!;
+
+  for (let i = 0; i < length1; i++)
+    groups[i] = monomer1?.rgroups[i]!;
+
+  for (let i = 0; i < length2; i++) {
+    const rGroupSpecifier =  monomer2?.rgroups[i]!.label.replace('R', '');
+    const groupPosition = Number(rGroupSpecifier) + length1;
+    const group: RGroup = {
+      //@ts-ignore
+      [HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE]: monomer2?.rgroups[i].capGroupSMILES.replace(rGroupSpecifier, String(groupPosition)),
+      [HELM_RGROUP_FIELDS.ALTERNATE_ID]: monomer2?.rgroups[i].alternateId.replace(rGroupSpecifier, String(groupPosition)),
+      [HELM_RGROUP_FIELDS.CAP_GROUP_NAME]: monomer2?.rgroups[i].capGroupName,
+      [HELM_RGROUP_FIELDS.LABEL]: monomer2?.rgroups[i].label.replace(rGroupSpecifier, String(groupPosition)),
+    };
+
+    groups[i + length1] = group;
+  }
+
+  return groups;
+}
+
+function getNewMonomer(rdkit: RDModule, mLib: IMonomerLib, rule: RuleReaction): [string, Monomer] {
+  const reacSmarts = rule.reaction;
+  const monomerName = rule.name;
+
+  const monomer1 = mLib.getMonomer('PEPTIDE', rule.firstMonomer);
+  const monomer2 = mLib.getMonomer('PEPTIDE', rule.secondMonomer);
+
+  const [mb1, mb2] = getMonomersMolBlocks(monomer1!, monomer2!);
+  const molBlock = getSyntheticMolBlock(rdkit, reacSmarts, mb1, mb2, monomerName);
+  const groups: RGroup[] = getNewGroups(monomer1!, monomer2!);
+
+  const resMonomer: Monomer = {
+    [HELM_REQUIRED_FIELD.SYMBOL]: monomerName,
+    [HELM_REQUIRED_FIELD.NAME]: monomerName,
+    [HELM_REQUIRED_FIELD.MOLFILE]: molBlock,
+    [HELM_REQUIRED_FIELD.AUTHOR]: '',
+    [HELM_REQUIRED_FIELD.ID]: 0,
+    [HELM_REQUIRED_FIELD.RGROUPS]: groups,
+    [HELM_REQUIRED_FIELD.SMILES]: '',
+    [HELM_REQUIRED_FIELD.POLYMER_TYPE]: 'PEPTIDE',
+    [HELM_REQUIRED_FIELD.MONOMER_TYPE]: 'Backbone',
+    [HELM_REQUIRED_FIELD.CREATE_DATE]: null,
+  };
+
+  return [monomerName, resMonomer];
+}
+
+export async function getOverridenLibrary(rules: Rules): Promise<IMonomerLibBase> {
+  const monomerLibHelper = await getMonomerLibHelper();
+  const systemMonomerLib = monomerLibHelper.getMonomerLib();
+
+  const rdkit = await grok.functions.call('Chem:getRdKitModule');
+  const argLib: {[symbol: string]: Monomer} = {};
+
+  for (let i = 0; i < rules.reactionRules.length; i++) {
+    const [name, monomer] = getNewMonomer(rdkit, systemMonomerLib, rules.reactionRules[i]);
+    argLib[name] = monomer;
+  }
+
+  const overrideMonomerLibData: MonomerLibData = {[PolymerTypes.PEPTIDE]: argLib};
+  const overriddenMonomerLib = systemMonomerLib.override(overrideMonomerLibData);
+  return overriddenMonomerLib;
 }
