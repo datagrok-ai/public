@@ -6,7 +6,7 @@ import {after, before, category, expect, expectObject, test, timeout} from '@dat
 import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {
-  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
+  getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {generateLongSequence} from '@datagrok-libraries/bio/src/utils/generator';
@@ -82,10 +82,7 @@ category('properties-widget', () => {
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = getUserLibSettings();
 
-    await setUserLibSettingsForTests();
-    await timeout(async () => { await monomerLibHelper.awaitLoaded(); },
-      5000, 'MonomerLibHelper.awaitLoaded() timeout');
-    await monomerLibHelper.loadMonomerLib(true); // load default libraries
+    await monomerLibHelper.loadMonomerLibForTests(); // load default libraries
   });
 
   after(async () => {

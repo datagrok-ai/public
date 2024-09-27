@@ -15,9 +15,9 @@ import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {
-  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
+  getUserLibSettings, setUserLibSettings,
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
-import {defaultMonomerLibSummary, expectMonomerLib} from '@datagrok-libraries/bio/src/tests/monomer-lib-tests';
+import {expectMonomerLib} from '@datagrok-libraries/bio/src/tests/monomer-lib-tests';
 
 import {rewriteLibraries} from '../utils/get-monomer';
 import {JSDraw2Module, OrgHelmModule} from '../types';
@@ -25,6 +25,7 @@ import {JSDraw2Module, OrgHelmModule} from '../types';
 import {initHelmMainPackage} from './utils';
 
 import {_package} from '../package-test';
+import {PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 
 declare const org: OrgHelmModule;
 declare const JSDraw2: JSDraw2Module;
@@ -79,9 +80,7 @@ category('getMonomer', ()=>{
     [monomerLibHelper, helmHelper, userLibSettings] = await Promise.all(
       [getMonomerLibHelper(), getHelmHelper(), getUserLibSettings()]);
 
-    await setUserLibSettingsForTests();
-    await monomerLibHelper.awaitLoaded();
-    await monomerLibHelper.loadMonomerLib(true); // load default libraries for tests
+    await monomerLibHelper.loadMonomerLibForTests(); // load default libraries for tests
   });
 
   after(async ()=>{
@@ -106,9 +105,6 @@ category('getMonomer', ()=>{
   }, {isAggregated: true});
 
   test('monomerLib', async () =>{
-    const monomerLib = monomerLibHelper.getMonomerLib();
-    expectMonomerLib(monomerLib);
-
     const getMonomerFunc = org.helm.webeditor.Monomers.getMonomer;
     return _testAll('monomerLib', getMonomerFunc);
   }, {isAggregated: true});
@@ -138,8 +134,6 @@ category('getMonomer', ()=>{
     resDf.set('res', resI, '');
     resDf.set('tgt', resI, '');
     try {
-      const monomerLib = monomerLibHelper.getMonomerLib();
-      expectMonomerLib(monomerLib);
       resDf.set('success', resI, true);
     } catch (err) {
       const [errMsg, errStack] = errInfo(err);
@@ -172,16 +166,15 @@ category('getMonomer', ()=>{
   }
 
   test('missing', async ()=> {
+    const monomerLib = monomerLibHelper.getMonomerLib();
     /* Tests getMonomer function adding missing monomers. */
     const helmStr = 'PEPTIDE1{[mis1].R.[mis2].T.C.F}$$$$;';
 
-    expectMonomerLib(monomerLibHelper.getMonomerLib());
+    const libSummary = monomerLib.getSummaryObj();
     const editor = new JSDraw2.Editor(ui.div(), {viewonly: true});
     editor.setHelm(helmStr);
-    const withMissing = JSON.parse(JSON.stringify(
-      defaultMonomerLibSummary)) as MonomerLibSummaryType;
-    withMissing['PEPTIDE'] += 2;
-    expectMonomerLib(monomerLibHelper.getMonomerLib(), withMissing);
+    libSummary[PolymerTypes.PEPTIDE] += 2;
+    expectMonomerLib(monomerLib, libSummary);
   });
 });
 

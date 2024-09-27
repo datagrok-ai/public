@@ -12,7 +12,7 @@ import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {
-  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
+  getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 
 import {awaitGrid, initHelmMainPackage} from './utils';
@@ -32,8 +32,7 @@ category('renderers', () => {
     userLibSettings = await getUserLibSettings();
 
     // Test 'helm' requires default monomer library loaded
-    await setUserLibSettingsForTests();
-    await monomerLibHelper.loadMonomerLib(true); // load default libraries
+    await monomerLibHelper.loadMonomerLibForTests(); // load default libraries
   });
 
   after(async () => {

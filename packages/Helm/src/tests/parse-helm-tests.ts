@@ -8,7 +8,7 @@ import {HelmType, IHelmDrawOptions, Mol, OrgType} from '@datagrok-libraries/bio/
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {
-  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
+  getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 
 import {JSDraw2Module} from '../types';
@@ -54,9 +54,7 @@ category('parseHelm', () => {
       'get user lib settings for backup');
 
     // parseHelm is dependent on monomers RGroups available, test requires default monomer library
-    await setUserLibSettingsForTests();
-    await libHelper.awaitLoaded();
-    await libHelper.loadMonomerLib(true);
+    await libHelper.loadMonomerLibForTests();
   });
 
   after(async () => {

@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {after, before, category, delay, expect, expectArray, test, testEvent} from '@datagrok-libraries/utils/src/test';
-import {HelmNotSupportedError, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {HelmNotSupportedError, HelmNotSupportedErrorType, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
 import {_package} from '../package-test';
@@ -69,7 +69,7 @@ category('HelmHelper: removeGaps', () => {
 
   for (const [testName, testData] of Object.entries(tests)) {
     test(`${testName}`, async () => {
-      let resErr: any = null;
+      let resErr: HelmNotSupportedError | null = null;
       try {
         const res = helmHelper.removeGaps(testData.src.helm);
         expect(res.resHelm, testData.tgt.helm);
@@ -78,17 +78,8 @@ category('HelmHelper: removeGaps', () => {
         resErr = err;
       }
 
-      if (testData.tgt.helm === null) { // err expected, for debug on GitHub CI
-        expect(resErr != null, true, 'Error expected');
-        const isErrorInstance = resErr instanceof HelmNotSupportedError;
-        const errCtorName = resErr.constructor.name;
-        const isErrorCtor = errCtorName === 'HelmNotSupportedError';
-        _package.logger.debug(`Check error object. ` +
-          `isErrorInstance: ${isErrorInstance}, isErrorCtor: ${isErrorCtor}, errCtorName: ${errCtorName}`);
-      }
-
-      expect((resErr instanceof HelmNotSupportedError) || resErr?.constructor.name === 'HelmNotSupportedError',
-        testData.tgt.helm === null, 'HelmNotSupportedError thrown expected');
-    }, testData.tgt.helm == null ? {skipReason: 'GitHub CI does not support testing exceptions'} : undefined);
+      expect(resErr?.type == HelmNotSupportedErrorType, testData.tgt.helm === null,
+        'HelmNotSupportedError thrown expected');
+    });
   }
 });
