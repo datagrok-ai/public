@@ -148,6 +148,7 @@ export interface IDartApi {
   grok_View(): any;
   grok_View_OnAdded(x: any): any;
   grok_View_ForObject(x: any): any;
+  grok_View_FromViewAsync(jsugetViewAsync: any, ribbon: Bool): any;
   grok_View_Close(v: any): any;
   grok_View_Get_Name(v: any): any;
   grok_View_Set_Name(v: any, s: String): any;

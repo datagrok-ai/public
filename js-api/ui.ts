@@ -1489,7 +1489,7 @@ export class ObjectHandler {
   }
 
   /** Renders preview list for the item. */
-  async renderPreview(x: any, context: any = null): Promise<View> {
+  renderPreview(x: any, context: any = null): View {
     return View.create();
   }
 
