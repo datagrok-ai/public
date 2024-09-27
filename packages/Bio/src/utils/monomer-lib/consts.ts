@@ -14,5 +14,5 @@ export const LIB_SETTINGS_FOR_TESTS: UserLibSettings =
   {explicit: ['HELMCoreLibrary.json', 'polytool-lib.json'], exclude: [], duplicateMonomerPreferences: {}};
 
 /** Summary for settings {@link LIB_SETTINGS_FOR_TESTS} */
-export const monomerLibForTestsSummary: MonomerLibSummaryType = {'PEPTIDE': 324, 'RNA': 383, 'CHEM': 0};
+export const monomerLibForTestsSummary: MonomerLibSummaryType = {'PEPTIDE': 326, 'RNA': 383, 'CHEM': 0};
 

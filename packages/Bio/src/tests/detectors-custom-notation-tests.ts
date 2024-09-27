@@ -4,8 +4,8 @@ import * as DG from 'datagrok-api/dg';
 
 import {category, test} from '@datagrok-libraries/utils/src/test';
 import {ALIGNMENT, ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {DetectorTestData, DfReaderFunc, PosCol} from './utils/detectors-utils';
-import {_testNeg, _testPos} from './detectors-tests';
+
+import {_testNeg, _testPos, DetectorTestData, DfReaderFunc, PosCol} from './utils/detectors-utils';
 
 category('detectors: custom', () => {
   const tests: DetectorTestData = {
