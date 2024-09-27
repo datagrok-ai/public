@@ -189,18 +189,22 @@ export class ModelHandler extends DG.ObjectHandler {
     return ui.iconImage(func.package.name, iconUrl);
   }
 
-  override async renderPreview(x: DG.Func) {
+  override renderPreview(x: DG.Func): DG.View {
     const editorName = x.options.editor ?? 'Compute:RichFunctionViewEditor';
-    const editor = await grok.functions.find(editorName);
-    if (editor !== null && editor instanceof DG.Func) {
-      const viewCall = editor.prepare({'call': x.prepare()});
-      await viewCall.call(false, undefined, {processed: true});
-      const view = viewCall.getOutputParamValue();
-      if (view instanceof DG.View)
-        return view;
-    }
     //@ts-ignore
-    return super.renderPreview(x);
+    return DG.View.fromViewAsync(async () => {
+      const editor = await grok.functions.find(editorName);
+      if (editor !== null && editor instanceof DG.Func) {
+        const viewCall = editor.prepare({'call': x.prepare()});
+        await viewCall.call(false, undefined, {processed: true});
+        const view = viewCall.getOutputParamValue();
+        //@ts-ignore
+        if (view instanceof DG.View || view instanceof DG.ViewBase)
+          //@ts-ignore
+          return view;
+      }
+      return super.renderPreview(x);
+    });
   }
 
   override renderProperties(func: DG.Func) {

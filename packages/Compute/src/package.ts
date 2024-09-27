@@ -338,6 +338,12 @@ export function ObjectCoolingSelector(params: any) {
   );
 }
 
+//input: dynamic treeNode
+//input: view browseView
+export async function modelCatalogTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
+  await treeNode.loadSources(grok.dapi.functions.filter('#model'));
+}
+
 //// Compute-utils API section
 
 export const testPipeline = testPipelineInst;
