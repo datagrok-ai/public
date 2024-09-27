@@ -94,7 +94,7 @@ decomposes output variance into fractions, which can be attributed to inputs
 To run the sensitivity analysis, click the **Run sensitivity analysis** (<i class="grok-icon fal fa-analytics"></i>) icon on the top panel,
 choose a method, specify inputs and outputs, and click **RUN**.
 
-#### Monte Carlo
+### Monte Carlo
 
 Once you've chosen it in `Method`
 
@@ -124,7 +124,7 @@ When exploring complex models, some evaluations may be of particular interest. T
 
 ![sens-analysis-current-run.gif](sens-analysis-current-run.gif)
 
-#### Sobol
+### Sobol
 
 This method performs
 [variance-based sensitivity analysis](https://en.wikipedia.org/wiki/Variance-based_sensitivity_analysis) and decomposes the output variance into fractions, which can be attributed to inputs. It provides the same visualizations
@@ -137,7 +137,7 @@ Sobol' indices:
 
 ![sobol-analysis.png](sobol-analysis.png)
 
-#### Grid
+### Grid
 
 This method evaluates a function at the points of uniform grid within the specified ranges. It provides the same visualizations
 as **Monte Carlo**:
