@@ -357,10 +357,10 @@ export const historyPanel = UiUtils.historyPanel;
 import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 
-//top-menu: ML | SA lookups...
-//name: testSAlookups
+//top-menu: Lookups | SA | Simple...
+//name: testSAlookupsSimple
 //description: For testing, TO BE DELETED!
-export async function testSAlookups() {
+export async function testSAlookupsSimple() {
   const lines = [
     '//name: lookupTables',
     '//description: Test for optimization: multiple scalars output',
@@ -383,5 +383,16 @@ export async function testSAlookups() {
   //@ts-ignore
   await SensitivityAnalysisView.fromEmpty(script, {
     inputsLookup: 'mode {choices: OpenFile("Vmakarichev:Home/sa-fit-inputs.csv"); caption: Process mode; category: Process parameters} [Reactions flow mode]',
+  });  
+}
+
+//top-menu: Lookups | SA | Bioreactor...
+//name: testSAlookupsBioreactor
+//description: For testing, TO BE DELETED!
+export async function testSAlookupsBioreactor() {
+  const func: DG.Func = await grok.functions.eval('DiffStudio:Bioreactor');
+  //@ts-ignore
+  await SensitivityAnalysisView.fromEmpty(func, {
+    inputsLookup: 'mode {caption: Process mode; category: Process parameters; choices: OpenFile("System:AppData/DiffStudio/examples/bioreactor-inputs.csv")} [Reactions flow mode]',
   });  
 }

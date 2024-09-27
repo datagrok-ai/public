@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 /** Lookup table string consts */
-export enum LOOKUP {
+enum LOOKUP {
   LOAD = 'Failed to load lookup table: ',
   PLATFORM = 'the platform issue',
   FUNCTION = 'incorrect function',
@@ -17,7 +17,7 @@ export enum LOOKUP {
 };
 
 /** Inputs table constants */
-export enum INPUTS_DF {
+enum INPUTS_DF {
   MIN_ROWS_COUNT = 1,
   INP_NAMES_IDX = 0,
   INPUT_SETS_COL_IDX = 0,
@@ -94,7 +94,7 @@ function isLookupTableCorrect(table: DG.DataFrame | null): boolean {
   } // isLookupTableCorrect
   
 /** Return table with inputs */
-export async function getInputsTable(command: string): Promise<DG.DataFrame | null> {
+async function getInputsTable(command: string): Promise<DG.DataFrame | null> {
   try {
     const table = await loadTable(command);
 
@@ -109,7 +109,7 @@ export async function getInputsTable(command: string): Promise<DG.DataFrame | nu
 }
   
 /** Return specification of lookup table input */
-export function getLookupsInfo(inputsLookup: string) {
+function getLookupsInfo(inputsLookup: string) {
   const info = new Map<string, string>();
 
   const braceOpenIdx = inputsLookup.indexOf('{');
@@ -169,3 +169,65 @@ export function getLookupsInfo(inputsLookup: string) {
     choices: info.get(ANNOT.CHOICES),
   };
 } // getLookupsInfo
+
+/** Return values lookup choice input */
+export async function getLookupChoiceInput(inputsLookup: string, constIputs: Map<string, DG.InputBase>) {
+
+  if (inputsLookup === undefined)
+    return null;
+
+  const info = getLookupsInfo(inputsLookup);
+
+  if ((info === null) || (info.choices === undefined))
+    return null;
+
+  const inputsDf = await getInputsTable(info.choices);
+
+  if (inputsDf === null)
+    return null;
+
+  const cols = inputsDf.columns;
+  const rowCount = inputsDf.rowCount;
+
+  const inpSetsNames = cols.byIndex(INPUTS_DF.INPUT_SETS_COL_IDX).toList();
+  const choices = [LOOKUP.DEFAULT as string].concat(inpSetsNames);
+
+  const defaultInputs = new Map<string, any>();
+
+  constIputs.forEach((input, name) => defaultInputs.set(name, input.value));
+
+  const tableInputs = new Map<string, Map<string, number>>(); // set <-> {(input <-> value)}
+  const colsRaw = new Map<string, Int32Array | Uint32Array | Float32Array | Float64Array>();
+
+  for (const col of cols) {
+    if (col.isNumerical)
+      colsRaw.set(col.name, col.getRawData());
+  }
+
+  for (let row = 0; row < rowCount; ++row) {
+    const inputs = new Map<string, number>();
+    colsRaw.forEach((arr, name) => inputs.set(name, arr[row]));
+    tableInputs.set(inpSetsNames[row], inputs);
+  }
+
+  // create input for lookup table use
+  const lookupChoiceInput = ui.input.choice<string>(info.caption, {
+    items: choices,
+    nullable: false,
+    value: choices[0],
+    tooltipText: info.tooltip,
+    onValueChanged: (value) => {
+      if (value === LOOKUP.DEFAULT)
+        constIputs.forEach((input, name) => input.value = defaultInputs.get(name));
+      else {
+        const colInputs = tableInputs.get(value);
+        constIputs.forEach((input, name) => input.value = colInputs!.get(name) ?? input.value);
+      }
+    },
+  });
+  
+  return {
+    input: lookupChoiceInput,
+    category: info.category ?? 'Misc',
+  };
+}
