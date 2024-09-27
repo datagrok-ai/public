@@ -1,5 +1,9 @@
 # Chembl changelog
 
+## 1.1.3 (2024-09-27)
+
+PowerSearch features
+
 ## 1.1.2 (2024-09-25)
 
 Handle missing chembl connection.
