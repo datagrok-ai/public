@@ -591,45 +591,69 @@ export class SensitivityAnalysisView {
   }
 
   private async buildFormWithBtn(inputsLookup?: string) {
-    const lookupElement = await this.getLookupElement(inputsLookup);
-    
-    let prevCategory: string;
+    // inputs grouped by categories
+    const inputsByCategories = new Map<string, HTMLElement[]>([['Misc', []]]);
 
+    // group inputs by categories
+    Object.values(this.store.inputs).forEach((inputConfig) => {
+      const category = inputConfig.prop.category;
+      const roots = [...inputConfig.constForm.map((input) => input.root), ...inputConfig.saForm.map((input) => input.root)];
+
+      if (inputsByCategories.has(category))
+        inputsByCategories.get(category)!.push(...roots);
+      else
+        inputsByCategories.set(category, roots);
+    });
+
+    // the main form
     const form = ui.div([
       this.store.analysisInputs.analysisType.input,
       this.store.analysisInputs.samplesCount.input,
     ], {style: {'overflow-y': 'scroll', 'width': '100%'}});
 
+    const lookupElement = await this.getLookupElement(inputsLookup);
+    let topCategory: string | null = null;
+
     if (lookupElement !== null) {
-      prevCategory = lookupElement.category;
-      form.append(ui.h2(prevCategory));
-      form.append(lookupElement.input.root);
-      $(form).addClass('ui-form');
-    } else {
-      prevCategory = 'Misc';
+      const inputs = inputsByCategories.get(lookupElement.category);
+      topCategory = lookupElement.category;
+
+      if (inputs !== undefined)
+        inputsByCategories.set(topCategory, [lookupElement.input.root].concat(inputs));
+      else 
+        inputsByCategories.set(topCategory, [lookupElement.input.root]);
     }
-      
-    Object.values(this.store.inputs)
-      .reduce((container, inputConfig) => {
-        const prop = inputConfig.prop;
-        if (prop.category !== prevCategory) {
-          container.append(ui.h2(prop.category));
-          prevCategory = prop.category;
+
+    // add inputs to the main form (grouped by categories)
+    if (inputsByCategories.size > 1) {
+      if (topCategory !== null) {
+        form.append(ui.h2(topCategory));
+        form.append(...inputsByCategories.get(topCategory)!);
+      }
+
+      inputsByCategories.forEach((roots, category) => {
+        if ((category !== 'Misc') && (category !== topCategory)) {
+          form.append(ui.h2(category));
+          form.append(...roots);
         }
+      });
 
-        container.append(
-          ...inputConfig.constForm.map((input) => input.root),
-          ...inputConfig.saForm.map((input) => input.root),
-        );
+      if (topCategory !== 'Misc') {
+        const miscRoots = inputsByCategories.get('Misc');
 
-        return container;
-      }, form);
+        if (miscRoots!.length > 0) {
+          form.append(ui.h2('Misc'));
+          form.append(...inputsByCategories.get('Misc')!);
+        }
+      }
+    } else
+      form.append(...inputsByCategories.get('Misc')!);
 
     $(form).addClass('ui-form');
 
     const outputsTitle = ui.h2('Outputs');
     form.appendChild(outputsTitle);
-    prevCategory = 'Misc';
+    let prevCategory = 'Misc';
 
     const outputForm = Object.values(this.store.outputs)
       .reduce((container, outputConfig) => {
