@@ -2,7 +2,15 @@
 
 ## 1.4.3 (WIP)
 
-Add PolyTool convert reverse
+### Features
+
+* Add PolyTool convert reverse
+
+### Bug fixes
+
+* Add sample reaction rule aG + azG = GGaz, test data
+* Fix using MonomerLibHelper.loadMonomerLibForTests
+* Add test toAtomicLevel with overridden monomer lib
 
 ## 1.4.2 (2024-09-24)
 
