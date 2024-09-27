@@ -4,9 +4,11 @@ import * as DG from 'datagrok-api/dg';
 
 import {category, test, expect} from '@datagrok-libraries/utils/src/test';
 
-import {importFasta} from '../package';
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+
+import {DetectorTestData, DfReaderFunc, PosCol} from './utils/detectors-utils';
+import {importFasta} from '../package';
 
 /*
 // snippet to list df columns of semType='Macromolecule' (false positive)
@@ -18,20 +20,6 @@ for (let i = 0; i < df.columns.length; i++) {
   }
 }
  */
-
-type DfReaderFunc = () => Promise<DG.DataFrame>;
-
-
-class PosCol {
-  constructor(
-    public readonly units: string,
-    public readonly aligned: string | null,
-    public readonly alphabet: string | null,
-    public readonly alphabetSize: number,
-    public readonly alphabetIsMultichar?: boolean,
-    public readonly separator?: string,
-  ) { };
-}
 
 category('detectors', () => {
   const enum csvTests {
@@ -57,7 +45,7 @@ category('detectors', () => {
     helmSameLength = 'helmSameLength',
   }
 
-  const csvData2: { [testName: string]: { csv: string, neg?: string[], pos?: { [colName: string]: PosCol } } } = {
+  const csvData2: DetectorTestData = {
     'negEmpty': {
       csv: `id,col1
 1,
