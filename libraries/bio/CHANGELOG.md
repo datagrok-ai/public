@@ -1,5 +1,17 @@
 # bio changelog
 
+## 5.44.2 (2024-09-27)
+
+### New features
+
+* Add IMonomer .override method
+* Add IMonomerLibHelper .loadMonomerLibForTests method
+
+### Bug fixes
+
+* Fix cell renderer monomer placer to handle currentRow reset
+* Fix test Helm HelmHelper.removeGaps
+
 ## 5.44.1 (2024-09-25)
 
 ### New features

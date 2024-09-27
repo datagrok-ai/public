@@ -36,7 +36,11 @@ export type HelmConvertRes = {
   monomerMap: Map<number, number> | null;
 }
 
+export const HelmNotSupportedErrorType = 'HelmNotSupportedError';
+
 export class HelmNotSupportedError extends Error {
+  public readonly type = HelmNotSupportedErrorType;
+
   constructor(message?: string) {
     super(message);
   }

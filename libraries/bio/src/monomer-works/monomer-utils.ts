@@ -192,6 +192,11 @@ export interface IMonomerLibHelper {
 
   /** Reads library from file shares, handles .json and .sdf */
   readLibrary(path: string, fileName: string): Promise<IMonomerLib>;
+
+  // -- Settings --
+
+  /** Changes user lib settings. */
+  loadMonomerLibForTests(): Promise<void>;
 }
 
 export async function getMonomerLibHelper(): Promise<IMonomerLibHelper> {

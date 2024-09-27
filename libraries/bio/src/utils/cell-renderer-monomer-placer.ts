@@ -75,6 +75,18 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
       }));
     }
 
+    if (this.tableCol && this.gridCol) {
+      this.subs.push(this.tableCol.dataFrame.onCurrentRowChanged.subscribe(() => {
+        const df = this.tableCol.dataFrame;
+        const grid = this.gridCol!.grid;
+        if (df.currentRowIdx === -1) {
+          this.tableCol.temp[tempTAGS.referenceSequence] = null;
+          this.tableCol.temp[tempTAGS.currentWord] = null;
+          grid.invalidate();
+        }
+      }));
+    }
+
     getMonomerLibHelper().then((libHelper) => {
       if (this.destroyed) return;
       const monomerLib = libHelper.getMonomerLib();
@@ -261,7 +273,6 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
       //   this.setSeparatorWidth(this.isMsa() ? msaGapLength : gapLength);
       //   tableCol.temp[MmcrTemps.rendererSettingsChanged] = rendererSettingsChangedState.false;
       // }
-
 
       const [maxLengthWords, maxLengthWordsSum]: [number[], number[]] =
         this.getCellMonomerLengths(gridCell.tableRowIndex!, w);

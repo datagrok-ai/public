@@ -68,6 +68,8 @@ export interface IMonomerSet {
 
 export type MonomerLibSummaryType = { [polymerType: string]: number };
 
+export type MonomerLibData = { [polymerType: string]: { [symbol: string]: Monomer } };
+
 export interface IMonomerLibBase {
   get onChanged(): Observable<any>;
 
@@ -107,4 +109,6 @@ export interface IMonomerLib extends IMonomerLibBase {
 
   // For monomer palettes
   getMonomerSet(biotype: HelmType): MonomerSetType | null;
+
+  override(overrideData: MonomerLibData): IMonomerLibBase;
 }
