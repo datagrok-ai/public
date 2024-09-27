@@ -1,6 +1,6 @@
 # Bio changelog
 
-## 2.15.6 (WIP)
+## 2.15.6 (2024-09-27)
 
 ### Bug fixes
 
