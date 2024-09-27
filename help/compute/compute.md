@@ -447,71 +447,13 @@ at randomly taken points
 decomposes output variance into fractions, which can be attributed to inputs
 * **Grid** studies a function at the points of a grid with the specified step
 
-To run the sensitivity analysis, click the **Run sensitivity analysis** (<i class="grok-icon fal fa-analytics"></i>) icon on the top panel,
-choose a method, specify inputs and outputs, and click **RUN**.
+To run the sensitivity analysis
 
-#### Monte Carlo
+1. Click the **Run sensitivity analysis** (<i class="grok-icon fal fa-analytics"></i>) icon on the top panel. A view opens.
+2. In the view, choose a method, specify inputs and outputs.
+3. Click **RUN** or <i class="fas fa-play"></i> on the top panel. The following analysis appears:
 
-Once you've chosen it in `Method`
-
-* Set in `Samples` the number of random points
-* Use switchers to specify varied inputs and outputs to be analyzed
-* Press **RUN** or <i class="fas fa-play"></i> on the top panel. You will get
-  * [Correlation plot](../visualize/viewers/correlation-plot.md) for exploring
-correlations between varied inputs and the specified outputs
-  * [PC plot](../visualize/viewers/pc-plot.md) visualizing multivariate data
-and providing variations of the selected inputs & outputs
-  * [Line chart](../visualize/viewers/line-chart.md) or
-[Scatterplot](../visualize/viewers/scatter-plot.md) (dependently on the varied
-inputs count) showing a behavior of each output separately
-  * [Grid](../visualize/viewers/grid.md) containing inputs and outputs values
-of each function evaluation
-
-![add-to-workspace](sensitivity-analysis.gif)
-
-Use the sliders in the [PC plot](../visualize/viewers/pc-plot.md) to filter the model evaluations:
-
-![sens-analysis-pc-plot.gif](sens-analysis-pc-plot.gif)
-
-When exploring complex models, some evaluations may be of particular interest. To get them:
-
-* Click on grid row with the required input and output values
-* Open `Context Panel` (F4). You will get the function run corresponding to the selected row
-
-![sens-analysis-current-run.gif](sens-analysis-current-run.gif)
-
-#### Sobol
-
-This method performs
-[variance-based sensitivity analysis](https://en.wikipedia.org/wiki/Variance-based_sensitivity_analysis) and decomposes the output variance into fractions, which can be attributed to inputs. It provides the same visualizations
-as **Monte Carlo** and [bar charts](../visualize/viewers/bar-chart.md) showing
-Sobol' indices:
-
-* First-order indices indicate the contribution to the output variance of varying each input alone
-* Total-order indices measure the contribution to the output variance of each input,
- including all variance caused by its interactions with any other inputs
-
-![sobol-analysis.png](sobol-analysis.png)
-
-#### Grid
-
-This method evaluates a function at the points of uniform grid within the specified ranges. It provides the same visualizations
-as **Monte Carlo**:
-
-![bioreactor-analysis.png](grid-analysis.png)
-
-Sensitivity Analysis can be applied to any function with the [RichFunctionView](scripting/advanced-scripting/advanced-scripting.mdx) editor. Add `meta.features: {"sens-analysis": true}` to enable it:
-
-```javascript
-//name: Test
-//language: javascript
-//input: double x
-//output: double y
-//editor: Compute:RichFunctionViewEditor
-//meta.features: {"sens-analysis": true}
-
-let y = x + 3;
-```
+![run-sens-analysis](pics/sens-analysis-run.gif)
 
 ### Input parameter optimization
 
@@ -534,7 +476,7 @@ Solve an inverse problem: find input conditions leading to specified output cons
 
 Learn more
 
-* [Parameter optimization](optimization.md)
+* [Parameter optimization](function-analysis.md#parameter-optimization)
 * [Nelder-Mead method](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method)
 
 ### Miscellaneous
