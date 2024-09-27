@@ -460,7 +460,7 @@ export class SensitivityAnalysisView {
     this.runIcon.classList.add('fas');
 
     this.helpIcon = ui.iconFA('question', () => {
-      window.open('https://datagrok.ai/help/compute.md#sensitivity-analysis', '_blank');
+      window.open('https://datagrok.ai/help/compute/function-analysis#sensitivity-analysis', '_blank');
     }, 'Open help in a new tab');
 
     this.buildFormWithBtn(options.inputsLookup).then((form) => {
@@ -483,7 +483,7 @@ export class SensitivityAnalysisView {
       rbnPanels.push([this.helpIcon, this.runIcon]);
       this.comparisonView.setRibbonPanels(rbnPanels);
 
-      this.comparisonView.helpUrl = 'https://datagrok.ai/help/compute.md#sensitivity-analysis';
+      this.comparisonView.helpUrl = '/help/function-analysis.md#sensitivity-analysis';
       this.tableDockNode = this.comparisonView.dockManager.findNode(this.comparisonView.grid.root);
       const helpMD = ui.markdown(STARTING_HELP);
       helpMD.style.padding = '10px';

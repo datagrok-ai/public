@@ -11,7 +11,6 @@ export enum DOCK_RATIO {
 /** Size constants */
 export const ROW_HEIGHT = 25;
 
-/** */
 enum HELP_ITEMS {
   METHOD = '`Method`',
   SAMPLES = '`Samples`',
@@ -25,13 +24,13 @@ and analyzes the relationship between inputs and outputs.
 
 Use one of the following methods:
 
-* [Monte Carlo](https://en.wikipedia.org/wiki/Monte_Carlo_method) explores a function 
+* [Monte Carlo](https://datagrok.ai/help/compute/function-analysis#monte-carlo) explores a function 
 at randomly taken points
 
-* [Sobol](https://en.wikipedia.org/wiki/Variance-based_sensitivity_analysis)
+* [Sobol](https://datagrok.ai/help/compute/function-analysis#sobol)
 decomposes output variance into fractions, which can be attributed to inputs
 
-* **Grid** studies a function at the points of a grid with the specified step
+* [Grid](https://datagrok.ai/help/compute/function-analysis#grid) studies a function at the points of a grid with the specified step
 
 ## Monte Carlo
 
@@ -57,7 +56,7 @@ inputs count) showing a behavior of each output separately
 of each function evaluation
 
 * Press <i class="grok-icon fal fa-question"></i> on the top panel to learn more about 
-[Sensitivity Analysis](https://datagrok.ai/help/compute/#sensitivity-analysis)
+[Sensitivity Analysis](https://datagrok.ai/help/compute/function-analysis#sensitivity-analysis)
 
 ## Sobol
 

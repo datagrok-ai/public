@@ -321,7 +321,7 @@ export class FittingView {
   });
 
   private helpIcon = ui.iconFA('question', () => {
-    window.open('https://datagrok.ai/help/compute/#input-parameter-optimization', '_blank');
+    window.open('https://datagrok.ai/help/compute/function-analysis#parameter-optimization', '_blank');
   }, 'Open help in a new tab');
 
   private showFailsBtn = ui.button('Issues', () => {
@@ -460,7 +460,7 @@ export class FittingView {
     this.fittingSettingsDiv.hidden = true;
 
     this.comparisonView.name = this.comparisonView.name.replace('comparison', 'fitting');
-    this.comparisonView.helpUrl = 'https://datagrok.ai/help/compute/#input-parameter-optimization';
+    this.comparisonView.helpUrl = '/help/compute/function-analysis#parameter-optimization';
     const helpMD = ui.markdown(STARTING_HELP);
     helpMD.style.padding = '10px';
     helpMD.style.overflow = 'auto';
