@@ -89,7 +89,7 @@ category('toAtomicLevel-ui', () => {
     test(`${testName}-nonlinear`, async () => {
       const seqCol = await getSeqCol(testData);
       await _testToAtomicLevelFunc(seqCol, true, testData.tgt);
-    }, {skipReason: 'To publish HelmHelper.removeGaps dependency'});
+    });
   }
 
   async function _testToAtomicLevelFunc(

@@ -9,6 +9,7 @@
 * Fix cell renderer to reset reference sequence on reset current row
 * GROK-16699: Fix PepSeA container return meaningful error messages, unskip test
 * Fix test data monomers add aG, azG
+* Fix unskip toAtomicLevel tests depending on HelmHelper
 
 ## 2.15.5 (2024-09-25)
 
