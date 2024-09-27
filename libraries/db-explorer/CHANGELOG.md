@@ -1,5 +1,9 @@
 # db-explorer changelog
 
+## 1.1.2 (2024-09-27)
+
+Fix value conversion in search results
+
 ## 1.1.1 (2024-09-27)
 
 Add pane replacing options
