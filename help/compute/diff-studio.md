@@ -60,20 +60,20 @@ By using a URL, you can share model runs from the **Templates**, **Examples** an
 
 ### Sensitivity analysis
 
-Explore the relationship between inputs and outputs of your model using the [Sensitivity Analysis](compute.md#sensitivity-analysis) feature. Run it directly from Diff Studio:
+Explore the relationship between inputs and outputs of your model using the [Sensitivity Analysis](function-analysis.md#sensitivity-analysis) feature. Run it directly from Diff Studio:
 
 * Click <i class="fas fa-analytics"></i> **Run sensitivity analysis** icon
 * Apply one of the following methods:
-  * [Monte Carlo](compute.md#monte-carlo)
-  * [Sobol](compute.md#sobol)
-  * [Grid](compute.md#grid)
+  * [Monte Carlo](function-analysis.md#monte-carlo)
+  * [Sobol](function-analysis.md#sobol)
+  * [Grid](function-analysis.md#grid)
 * Analyze model evaluations
 
 ![Run Sens Analysis](pics/diff-studio-run-sens-analysis.gif)
 
 ### Parameter Optimization
 
-Find input conditions leading to the specified output constraints using the [Parameter Optimization](compute.md#input-parameter-optimization) feature. It finds input values that minimize deviation measured by [loss function](https://en.wikipedia.org/wiki/Loss_function). Run it directly from Diff Studio:
+Find input conditions leading to the specified output constraints using the [Parameter Optimization](function-analysis.md#parameter-optimization) feature. It finds input values that minimize deviation measured by [loss function](https://en.wikipedia.org/wiki/Loss_function). Run it directly from Diff Studio:
 
 * Click <i class="fas fa-chart-line"></i> **Run fitting inputs** icon
 * In the `Fit` block, use switchers to specify inputs to be found:
