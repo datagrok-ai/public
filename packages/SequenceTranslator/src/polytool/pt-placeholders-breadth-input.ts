@@ -100,8 +100,8 @@ export class PolyToolPlaceholdersBreadthInput extends DG.JsInputBase<DG.DataFram
 export function dfToPlaceholdersBreadth(df: DG.DataFrame): PolyToolPlaceholdersBreadth {
   const res: PolyToolPlaceholdersBreadth = [];
   for (let rowI = 0; rowI < df.rowCount; rowI++) {
-    const startPos = parseInt(df.get('Start', rowI));
-    const endPos = parseInt(df.get('End', rowI));
+    const startPos = parseInt(df.get('Start', rowI)) - 1;
+    const endPos = parseInt(df.get('End', rowI)) - 1;
     if (!isNaN(startPos) && !isNaN(endPos)) {
       const monomerSymbolList = parseMonomerSymbolList(df.get('Monomers', rowI));
       res.push({start: startPos, end: endPos, monomers: monomerSymbolList});

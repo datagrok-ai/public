@@ -57,11 +57,6 @@ category('toAtomicLevel', () => {
     const molfile = talRes.molCol!.get(0)!;
     expect(!!molfile, true, 'Molfile is empty');
 
-    const df = DG.DataFrame.fromColumns([helmCol, talRes.molCol!]);
-    grok.shell.addTableView(df);
-
-    delay(2000);
-
     const mol = rdKitModule.get_mol(molfile);
     try {
       const molInchi = mol.get_inchi();

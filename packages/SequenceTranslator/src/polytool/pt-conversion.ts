@@ -243,7 +243,8 @@ export class Chain {
       for (let j = 0; j < this.monomers[i].length; j++) {
         if (j > 0)
           helm += '.';
-        helm += this.monomers[i][j];
+        const symbol = this.monomers[i][j];
+        helm += symbol.length > 1 ? `[${symbol}]` : symbol;
       }
       helm += `}`;
     }

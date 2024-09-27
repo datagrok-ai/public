@@ -1,6 +1,6 @@
 # Sequence Translator changelog
 
-## 1.4.3 (WIP)
+## 1.4.3 (2024-09-27)
 
 ### Features
 
@@ -11,6 +11,8 @@
 * Add sample reaction rule aG + azG = GGaz, test data
 * Fix using MonomerLibHelper.loadMonomerLibForTests
 * Add test toAtomicLevel with overridden monomer lib
+* Fix PolyTool Enumerate for zero-based monomer position
+* Fix Chain.getHelm square brackets for multi char symbols
 
 ## 1.4.2 (2024-09-24)
 
