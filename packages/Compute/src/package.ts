@@ -341,7 +341,34 @@ export function ObjectCoolingSelector(params: any) {
 //input: dynamic treeNode
 //input: view browseView
 export async function modelCatalogTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
-  await treeNode.loadSources(grok.dapi.functions.filter('#model'));
+  const modelSource = grok.dapi.functions.filter('(#model)');
+  const modelList = await modelSource.list();
+  const departments = modelList.reduce((acc, model) => {
+    if (model.options.department) acc.add(model.options.department)
+    return acc;
+  }, new Set([] as string[]));
+  
+  const hlProcesses = modelList.reduce((acc, model) => {
+    if (model.options.HL_process) acc.add(model.options.HL_process)
+    return acc;
+  }, new Set([] as string[]));
+
+  const processes = modelList.reduce((acc, model) => {
+    if (model.options.process) acc.add(model.options.process)
+    return acc;
+  }, new Set([] as string[]));
+  
+  for (const department of departments) {
+    const depNode = treeNode.group(department)
+    for (const hlProcess of hlProcesses) {
+      const hlNode = depNode.group(hlProcess);
+      for (const process of processes) {
+        hlNode.group(process).loadSources(modelSource.filter(
+          `((options.department in ("${department}")) and (options.HL_process in ("${hlProcess}")) and (options.process in ("${process}")))`
+        ));
+      }
+    }
+  }
 }
 
 //// Compute-utils API section
