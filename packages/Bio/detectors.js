@@ -397,6 +397,10 @@ class BioPackageDetectors extends DG.Package {
         if (this.forbiddenMulticharMiddle.includes(c))
           return symbol;
       }
+      if (symbol.match(/\d+\W+.*/))
+        // symbols like '2,...' are forbidden
+        // we require an alphabet character just after the leading digit(s)
+        return symbol;
     }
     return null;
   }

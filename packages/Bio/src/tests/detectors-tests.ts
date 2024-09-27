@@ -166,6 +166,12 @@ PEPTIDE1{Ab(1).Y.V.K.H.P.F.W.R.W.Y.A.A.A.C(1).G.NH2}$$$$
 PEPTIDE1{Ad(1).S.W.Y.C.K.H.P.M.W.A.A.A.A.C(1)-G-NH2}$$$$`,
       pos: {'seq': new PosCol(NOTATION.HELM, null, null, 19, undefined, undefined)}
     },
+    'fastaNonDigitAlphabet': {
+      csv: `flagC
+"NMe-pyridazineH"
+"Pyrrolo[2,3-c]pyridazineH"`,
+      neg: ['flagC']
+    }
   };
 
   const readCsv2: (key: keyof typeof csvData2) => DfReaderFunc = (key: keyof typeof csvData2) => {

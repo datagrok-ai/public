@@ -5,7 +5,7 @@ import {after, before, category, expect, expectArray, test} from '@datagrok-libr
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {sequenceToMolfile} from '../utils/sequence-to-mol';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
@@ -31,9 +31,7 @@ category('toAtomicLevel-ui', () => {
     userLibSettings = await getUserLibSettings();
 
     // Test 'helm' requires default monomer library loaded
-    await setUserLibSettingsForTests();
-    await monomerLibHelper.awaitLoaded();
-    await monomerLibHelper.loadMonomerLib(true); // load default libraries
+    await monomerLibHelper.loadMonomerLibForTests(); // load default libraries
 
     monomerLib = monomerLibHelper.getMonomerLib();
   });

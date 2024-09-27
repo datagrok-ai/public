@@ -63,5 +63,5 @@ category('PepSeA', () => {
       logger.error(errMsg, undefined, errStack);
     }
     expect(logger.errorList[0].message, pepseaErrorError);
-  },{skipReason: 'GROK-16699'});
+  });
 });

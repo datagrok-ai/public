@@ -12,7 +12,7 @@ import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {
-  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
+  getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
@@ -68,9 +68,7 @@ category('toAtomicLevel', async () => {
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
     // Clear settings to test default
-    await setUserLibSettingsForTests();
-    await monomerLibHelper.awaitLoaded();
-    await monomerLibHelper.loadMonomerLib(true);
+    await monomerLibHelper.loadMonomerLibForTests();
 
     monomerLib = monomerLibHelper.getMonomerLib();
 

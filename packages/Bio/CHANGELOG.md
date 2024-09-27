@@ -1,5 +1,15 @@
 # Bio changelog
 
+## 2.15.6 (WIP)
+
+### Bug fixes
+
+* Fix detectMacromolecule forbidding monomers '2,...', add test
+* Fix using IMonomerLibHelper.loadMonomerLibForTests
+* Fix cell renderer to reset reference sequence on reset current row
+* GROK-16699: Fix PepSeA container return meaningful error messages, unskip test
+* Fix test data monomers add aG, azG
+
 ## 2.15.5 (2024-09-25)
 
 ### New features

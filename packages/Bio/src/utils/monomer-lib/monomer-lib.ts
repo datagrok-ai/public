@@ -11,22 +11,18 @@ import {
   HelmType, HelmAtom,
   MonomerSetType, MonomerType, PolymerType, IWebEditorMonomer,
 } from '@datagrok-libraries/bio/src/helm/types';
-import {HelmTypes, PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
-import {IMonomerLib, IMonomerSet, Monomer, MonomerLibSummaryType, RGroup} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLibBase, IMonomerLib, IMonomerSet, Monomer, MonomerLibData, MonomerLibSummaryType, RGroup} from '@datagrok-libraries/bio/src/types';
 import {HELM_OPTIONAL_FIELDS as OPT, HELM_REQUIRED_FIELD as REQ, HELM_RGROUP_FIELDS as RGP} from '@datagrok-libraries/bio/src/utils/const';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
-import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
-import {getUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
-import {GapOriginals} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 
 import {MonomerLibBase, MonomerLibDataType} from './monomer-lib-base';
 
-import '../../../css/cell-renderer.css';
-
 import {_package} from '../../package';
 
+import '../../../css/cell-renderer.css';
 
 /** Wrapper for monomers obtained from different sources. For managing monomere
  * libraries, use MolfileHandler class instead */
@@ -83,7 +79,7 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
       }
     } else {
       const dict = this._monomers[polymerType];
-      res = dict ? dict[monomerSymbol] : null;
+      res = dict?.[monomerSymbol] ?? null;
     }
     return res;
   }
@@ -286,5 +282,30 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
       ]));
     }
     return res;
+  }
+
+  override(data: MonomerLibData): IMonomerLibBase {
+    return new OverriddenMonomerLib(data, this);
+  }
+}
+
+class OverriddenMonomerLib extends MonomerLibBase {
+  constructor(
+    private readonly data: MonomerLibData,
+    private readonly base: MonomerLibBase
+  ) {
+    super(data);
+  }
+
+  get onChanged(): Observable<any> { return this.base.onChanged; }
+
+  addMissingMonomer(polymerType: PolymerType, monomerSymbol: string): Monomer {
+    return this.base.addMissingMonomer(polymerType, monomerSymbol);
+  }
+
+  getMonomer(polymerType: PolymerType | null, monomerSymbol: string): Monomer | null {
+    const dataMonomer = this.data[polymerType as string]?.[monomerSymbol];
+    const resMonomer = dataMonomer ?? this.base.getMonomer(polymerType, monomerSymbol);
+    return resMonomer;
   }
 }
