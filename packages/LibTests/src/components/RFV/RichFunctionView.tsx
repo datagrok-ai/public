@@ -126,31 +126,21 @@ export const ScalarsPanel = Vue.defineComponent({
             </div>;
           })}
         </div> :
-        <div 
-          class='flex flex-col border-t-1 border-[#f2f2f5]' 
-          dock-spawn-dock-type='fill'
-        >
-          { 
-            props.categoryScalars.map((prop) => {
-              const [scalarValue, units] = getContent(prop);
-            
-              return <div class='
-                flex justify-between items-center h-8 px-2 
-                hover:bg-[#f2f2f5]'
-              style={{borderBottom: 'solid #f2f2f5'}}
-              > 
-                <div class='flex flex-col'>
-                  { prop.caption ?? prop.name }
-                  <span style={{color: 'var(--grey-4)'}}> { prop.description && prop.description } </span>
-                </div> 
-                <div>
-                  <span> 
-                    { scalarValue ?? '[No value]' } {units} 
-                  </span>
-                </div> 
-              </div>;
-            }) 
-          }
+        <div class='h-full overflow-scroll'>
+          <table class='d4-table d4-item-table d4-info-table rfv-scalar-table'> 
+            <tbody>
+              { 
+                props.categoryScalars.map((prop) => { 
+                  const [scalarValue, units] = getContent(prop);
+                  return <tr>
+                    <td> <span> { prop.caption ?? prop.name } </span></td>
+                    <td> <span> { scalarValue } </span></td>
+                    <td> <span> { units } </span></td>
+                  </tr>;
+                })
+              }
+            </tbody>
+          </table>
         </div>;
   },
 });
