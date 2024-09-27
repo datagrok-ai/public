@@ -30,6 +30,11 @@ export class DBExplorerObjectHandler extends DG.ObjectHandler {
     this.renderer.addCustomRenderer(check, renderer);
   }
 
+  addDefaultHeaderReplacerColumns(columns: string[]) {
+    this.renderer.addDefaultHeaderReplacerColumns(columns);
+    return this;
+  }
+
   addCustomSelectedColumns(columns: {[tableName: string]: string[]}) {
     this.renderer.addCustomSelectedColumns(columns);
   }

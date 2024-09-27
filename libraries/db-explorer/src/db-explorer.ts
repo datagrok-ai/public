@@ -13,6 +13,7 @@ export class DBExplorer {
   private referencedBy: ReferencedByObject = {};
   private _dbLoadPromise: Promise<void>;
   private objHandlers: DBExplorerObjectHandler[] = [];
+  private entryPointObjectHandlers: SemValueObjectHandler[] = [];
   constructor(
     private connectionName: string,
     private schemaName: string
@@ -94,6 +95,7 @@ export class DBExplorer {
     );
     DG.ObjectHandler.register(handler);
     this.objHandlers.push(handler);
+    this.entryPointObjectHandlers.push(handler);
     return this;
   }
 
@@ -112,6 +114,16 @@ export class DBExplorer {
 
   public addHeaderReplacers(replacers: {[tableName: string]: string}) {
     this.objHandlers.forEach((handler) => handler.addHeaderReplacers(replacers));
+    return this;
+  }
+
+  public addEntryPointValueConverter(func: (a: string | number) => string | number) {
+    this.entryPointObjectHandlers.forEach((handler) => handler.options.valueConverter = func);
+    return this;
+  }
+
+  public addDefaultHeaderReplacerColumns(columns: string[]) {
+    this.objHandlers.forEach((handler) => handler.addDefaultHeaderReplacerColumns(columns));
     return this;
   }
 
