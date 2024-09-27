@@ -62,7 +62,7 @@
     "@datagrok-libraries/js-draw-lite": "^0.0.8",
     "@datagrok/chem": "^1.12.1",
     "@datagrok/dendrogram": "^1.2.33",
-    "@datagrok/helm": "^2.5.0",
+    "@datagrok/helm": "^2.5.2",
     "@types/node": "^17.0.24",
     "@types/wu": "latest",
     "@typescript-eslint/eslint-plugin": "latest",
