@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import { Model, ModelColoring, Subgroup, Template, TEMPLATES_FOLDER } from './constants';
 
 import '../css/admetica.css';
+import { getTemplates } from './admetica-utils';
 
 export class AdmeticaBaseEditor {
   tableInput: DG.InputBase<DG.DataFrame | null>;
@@ -52,15 +53,10 @@ export class AdmeticaBaseEditor {
   }
   
   private async initTemplates(template?: string) {
-    const templates = await this.getTemplates();
+    const templates = await getTemplates();
     this.templatesInput.items = templates;
     if (template)
       this.templatesInput.value = template;
-  }
-  
-  private async getTemplates(): Promise<string[]> {
-    const files = await grok.dapi.files.list(TEMPLATES_FOLDER);
-    return files.map((file) => file.fileName.split('.')[0]);
   }
   
   private async getPropertiesFromTemplate() {

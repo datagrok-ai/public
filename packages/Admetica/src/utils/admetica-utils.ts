@@ -114,7 +114,7 @@ function applyColumnColorCoding(column: DG.Column, model: Model): void {
     column.meta.colors.setConditional(createConditionalColoringRules(model.coloring));
 }
 
-export function addColorCoding(table: DG.DataFrame, columnNames: string[], showInPanel: boolean = false): void {
+export function addColorCoding(table: DG.DataFrame, columnNames: string[], showInPanel: boolean = false, props?: string): void {
   const tableView = grok.shell.tableView(table.name);
   if (!tableView && !showInPanel) return;
 
@@ -126,7 +126,7 @@ export function addColorCoding(table: DG.DataFrame, columnNames: string[], showI
     }
 
     const column = table.getCol(columnName);
-    const matchingModel = properties.subgroup
+    const matchingModel = (props ?? properties).subgroup
       .flatMap((subgroup: Subgroup) => subgroup.models)
       .find((model: Model) => columnName.includes(model.name));
 
@@ -322,6 +322,27 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
   const acc = ui.accordion('Admetica');
   await setProperties();
 
+  const templates = await getTemplates();
+  let props: string;
+  
+  const handleTemplateChange = async (value: string) => {
+    props = JSON.parse(await grok.dapi.files.readAsText(`${TEMPLATES_FOLDER}/${value}.json`));
+    
+    for (const subgroup of properties.subgroup) {
+      const pane = acc.getPane(subgroup.name);
+      const container = pane.root.children.item(1) as HTMLDivElement;
+      ui.empty(container);
+      update(container, subgroup.name);
+    }
+  };
+  
+  const templatesInput = ui.input.choice('Template', {
+    value: templates[0],
+    items: templates,
+    onValueChanged: handleTemplateChange,
+  });
+  acc.root.appendChild(templatesInput.root);
+
   const update = async (result: HTMLDivElement, modelName: string) => {
     const queryParams = properties.subgroup.find((subg: any) => subg.name === modelName)
       ['models'].map((model: any) => model.name);
@@ -338,7 +359,7 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
 
       const table = DG.DataFrame.fromCsv(csvString!);
       table.name = DEFAULT_TABLE_NAME;
-      addColorCoding(table, queryParams, true);
+      addColorCoding(table, queryParams, true, props);
 
       const map: { [_: string]: any } = {};
       for (const model of queryParams) {
@@ -410,4 +431,9 @@ function createDynamicForm(viewTable: DG.DataFrame, updatedModelNames: string[],
   const generator = new FormStateGenerator(viewTable.name, mapping, molColName, addPiechart);
   const formState = generator.generateFormState();
   form.form.state = JSON.stringify(formState);
+}
+
+export async function getTemplates(): Promise<string[]> {
+  const files = await grok.dapi.files.list(TEMPLATES_FOLDER);
+  return files.map((file) => file.fileName.split('.')[0]);
 }
