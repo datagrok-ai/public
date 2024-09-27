@@ -45,8 +45,8 @@ const findTreeNode = (uuid: string, state: PipelineState): PipelineState | undef
   return foundState;
 };
 
-export const DriverApp = Vue.defineComponent({
-  name: 'DriverApp',
+export const TreeWizardApp = Vue.defineComponent({
+  name: 'TreeWizardApp',
   setup() {
     const driver = new Driver();
     const isLocked = Vue.ref(false);

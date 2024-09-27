@@ -17,7 +17,7 @@ import {FormApp as FormAppInstance} from './apps/FormApp';
 import {RFVApp as RFVAppInstance} from './apps/RFVApp';
 import {HistoryApp as HistoryAppInstance} from './apps/HistoryApp';
 import {ElementsApp as ElementsAppInstance} from './apps/ElementsApp';
-import {DriverApp as DriverAppInstance} from './apps/DriverApp';
+import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
 import {SimpleDriverApp as SimpleDriverAppInstance} from './apps/SimpleDriverApp';
 import './tailwind.css';
 
@@ -276,15 +276,19 @@ export async function HistoryApp() {
   grok.shell.addView(view);
 }
 
-//tags: test, vue
-export async function DriverApp() {
-  // TODO: close view handling
-  const view = new DG.ViewBase();
-  const app = Vue.createApp(DriverAppInstance);
-  view.root.classList.remove('ui-panel');
-  app.mount(view.root);
-  view.name = 'DriverApp';
-  grok.shell.addView(view);
+//name: Tree Wizard
+//tags: test, vue, model
+//meta.icon: icons/tree-wizard.png
+export async function TreeWizardApp() {
+  customElements.whenDefined('dg-markdown').then(() => {
+    // TODO: close view handling
+    const view = new DG.ViewBase();
+    const app = Vue.createApp(TreeWizardAppInstance);
+    view.root.classList.remove('ui-panel');
+    app.mount(view.root);
+    view.name = 'DriverApp';
+    grok.shell.addView(view);
+  });
 }
 
 //tags: test, vue
