@@ -396,3 +396,43 @@ export async function testSAlookupsBioreactor() {
     inputsLookup: 'mode {caption: Process mode; category: Process parameters; choices: OpenFile("System:AppData/DiffStudio/examples/bioreactor-inputs.csv")} [Reactions flow mode]',
   });  
 }
+
+//top-menu: Lookups | Fitting | Simple...
+//name: testFitlookupsSimple
+//description: For testing, TO BE DELETED!
+export async function testFitlookupsSimple() {
+  const lines = [
+    '//name: lookupTables',
+    '//description: Test for optimization: multiple scalars output',
+    '//language: javascript',
+    '//input: double x1 = 1 {caption: param1; min: -3; max: 3}',
+    '//input: double x2 = -1 {caption: param2; min: -3; max: 3}',
+    '//output: int int',
+    '//output: double float',
+    '//editor: Compute:RichFunctionViewEditor',
+    '//meta.features: {"fitting": true, "sens-analysis": true}',
+    '//meta.runOnOpen: true',
+    '//meta.runOnInput: true',
+    ' ',
+    'const int = x1**3 * (x1 - 1) * x2**3 * (x2 - 1);',
+    'const float = (x2 - 1)**2 + (x1 - 1)**2;',
+  ];
+  
+  const scriptText = lines.join('\n');
+  const script = DG.Script.create(scriptText);
+  //@ts-ignore
+  await FittingView.fromEmpty(script, {
+    inputsLookup: 'mode {choices: OpenFile("Vmakarichev:Home/sa-fit-inputs.csv"); caption: Process mode; category: Process parameters} [Reactions flow mode]',
+  });  
+}
+
+//top-menu: Lookups | Fitting | Bioreactor...
+//name: testFitlookupsBioreactor
+//description: For testing, TO BE DELETED!
+export async function estFitlookupsBioreactor() {
+  const func: DG.Func = await grok.functions.eval('DiffStudio:Bioreactor');
+  //@ts-ignore
+  await FittingView.fromEmpty(func, {
+    inputsLookup: 'mode {caption: Process mode; category: Process parameters; choices: OpenFile("System:AppData/DiffStudio/examples/bioreactor-inputs.csv")} [Reactions flow mode]',
+  });  
+}

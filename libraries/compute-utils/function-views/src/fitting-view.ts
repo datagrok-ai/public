@@ -17,6 +17,7 @@ import {performNelderMeadOptimization} from './fitting/optimizer';
 import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
 import {getErrors} from './fitting/fitting-utils';
 import {OptimizationResult, Extremum, distance} from './fitting/optimizer-misc';
+import {getLookupChoiceInput} from './shared/lookup-tools';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.DATA_FRAME];
@@ -399,9 +400,11 @@ export class FittingView {
     options: {
       parentView?: DG.View,
       parentCall?: DG.FuncCall,
+      inputsLookup?: string,
     } = {
       parentView: undefined,
       parentCall: undefined,
+      inputsLookup: undefined,
     },
   ) {
     const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE);
@@ -427,10 +430,12 @@ export class FittingView {
       parentView?: DG.View,
       parentCall?: DG.FuncCall,
       configFunc?: undefined,
+      inputsLookup?: string,
     } = {
       parentView: undefined,
       parentCall: undefined,
       configFunc: undefined,
+      inputsLookup: undefined,
     },
   ) {
     if (!this.isOptimizationApplicable(func)) {
@@ -439,62 +444,63 @@ export class FittingView {
       return;
     }
 
-    const form = this.buildForm();
-    this.comparisonView = baseView;
+    this.buildForm(options.inputsLookup).then((form) => {
+      this.comparisonView = baseView;
 
-    this.comparisonView.dockManager.dock(
-      form,
-      DG.DOCK_TYPE.LEFT,
-      null,
-      `${this.func.name} - Fitting`,
-      0.25,
-    );
+      this.comparisonView.dockManager.dock(
+        form,
+        DG.DOCK_TYPE.LEFT,
+        null,
+        `${this.func.name} - Fitting`,
+       0.25,
+      );
 
-    this.comparisonView.grid.columns.byName(RUN_NAME_COL_LABEL)!.visible = false;
+      this.comparisonView.grid.columns.byName(RUN_NAME_COL_LABEL)!.visible = false;
 
-    nelderMeadSettingsVals.forEach((vals, key) => this.nelderMeadSettings.set(key, vals.default));
+      nelderMeadSettingsVals.forEach((vals, key) => this.nelderMeadSettings.set(key, vals.default));
 
-    const rbnPanels = this.comparisonView.getRibbonPanels();
-    rbnPanels.push([this.helpIcon, this.runIcon]);
-    this.comparisonView.setRibbonPanels(rbnPanels);
-    this.fittingSettingsDiv.hidden = true;
+      const rbnPanels = this.comparisonView.getRibbonPanels();
+      rbnPanels.push([this.helpIcon, this.runIcon]);
+      this.comparisonView.setRibbonPanels(rbnPanels);
+      this.fittingSettingsDiv.hidden = true;
 
-    this.comparisonView.name = this.comparisonView.name.replace('comparison', 'fitting');
-    this.comparisonView.helpUrl = '/help/compute/function-analysis#parameter-optimization';
-    const helpMD = ui.markdown(STARTING_HELP);
-    helpMD.style.padding = '10px';
-    helpMD.style.overflow = 'auto';
-    this.helpDN = this.comparisonView.dockManager.dock(
-      helpMD,
-      DG.DOCK_TYPE.FILL,
-      this.comparisonView.dockManager.findNode(this.comparisonView.grid.root),
-      'About',
-    );
-    this.methodInput.setTooltip(methodTooltip.get(this.method)!);
-    ui.tooltip.bind(this.methodInput.captionLabel, 'Method for minimizing the loss function');
-    this.lossInput.setTooltip(lossTooltip.get(this.loss)!);
-    ui.tooltip.bind(this.lossInput.captionLabel, 'Loss function type');
+      this.comparisonView.name = this.comparisonView.name.replace('comparison', 'fitting');
+      this.comparisonView.helpUrl = '/help/compute/function-analysis#parameter-optimization';
+      const helpMD = ui.markdown(STARTING_HELP);
+      helpMD.style.padding = '10px';
+      helpMD.style.overflow = 'auto';
+      this.helpDN = this.comparisonView.dockManager.dock(
+        helpMD,
+        DG.DOCK_TYPE.FILL,
+        this.comparisonView.dockManager.findNode(this.comparisonView.grid.root),
+        'About',
+      );
+      this.methodInput.setTooltip(methodTooltip.get(this.method)!);
+      ui.tooltip.bind(this.methodInput.captionLabel, 'Method for minimizing the loss function');
+      this.lossInput.setTooltip(lossTooltip.get(this.loss)!);
+      ui.tooltip.bind(this.lossInput.captionLabel, 'Loss function type');
 
-    this.showFailsBtn.style.padding = '0px';
+      this.showFailsBtn.style.padding = '0px';
 
-    this.samplesCountInput.addCaption(TITLE.SAMPLES);
-    this.samplesCountInput.onChanged.subscribe((value) => {
-      this.samplesCount = value;
-      this.updateApplicabilityState();
+      this.samplesCountInput.addCaption(TITLE.SAMPLES);
+      this.samplesCountInput.onChanged.subscribe((value) => {
+        this.samplesCount = value;
+        this.updateApplicabilityState();
+      });
+      this.samplesCountInput.setTooltip('Number of points to be found');
+
+      this.similarityInput.onChanged.subscribe((value) => {
+        this.similarity = value;
+        this.updateApplicabilityState();
+      });
+      this.similarityInput.addCaption(TITLE.SIMILARITY);
+      this.similarityInput.setTooltip('The higher the value, the fewer points will be found');
+      ui.tooltip.bind(this.similarityInput.captionLabel, `Max scaled deviation between similar fitted points`);
+
+      this.updateRunIconStyle();
+      this.updateRunIconDisabledTooltip('Select inputs for fitting');
+      this.runIcon.classList.add('fas');
     });
-    this.samplesCountInput.setTooltip('Number of points to be found');
-
-    this.similarityInput.onChanged.subscribe((value) => {
-      this.similarity = value;
-      this.updateApplicabilityState();
-    });
-    this.similarityInput.addCaption(TITLE.SIMILARITY);
-    this.similarityInput.setTooltip('The higher the value, the fewer points will be found');
-    ui.tooltip.bind(this.similarityInput.captionLabel, `Max scaled deviation between similar fitted points`);
-
-    this.updateRunIconStyle();
-    this.updateRunIconDisabledTooltip('Select inputs for fitting');
-    this.runIcon.classList.add('fas');
   } // constructor
 
   /** Check fiiting applicability to the function */
@@ -599,8 +605,23 @@ export class FittingView {
     this.settingsInputs.forEach((inputsArray, method) => inputsArray.forEach((input) => input.root.hidden = method !== this.method));
   }
 
+  private async getLookupElement(inputsLookup?: string) {
+    if (inputsLookup === undefined)
+      return null;
+
+    const constIputs = new Map<string, DG.InputBase>();
+    Object.keys(this.store.inputs).forEach((name) => constIputs.set(name, this.store.inputs[name].constForm[0]));
+
+    const lookupElement = await getLookupChoiceInput(inputsLookup, constIputs);
+
+    if (lookupElement !== null)
+      lookupElement.input.root.insertBefore(getSwitchMock(), lookupElement.input.captionLabel);
+
+    return lookupElement;
+  }
+
   /** Build form with inputs */
-  private buildForm() {
+  private async buildForm(inputsLookup?: string) {
     //1. Inputs of the function
     const fitHeader = ui.h1(TITLE.FIT);
     ui.tooltip.bind(fitHeader, 'Select inputs to be fitted');
@@ -622,20 +643,40 @@ export class FittingView {
     // the main form
     const form = ui.div([fitHeader], {style: {'overflow-y': 'scroll', 'width': '100%'}});
 
+    const lookupElement = await this.getLookupElement(inputsLookup);
+    let topCategory: string | null = null;
+
+    if (lookupElement !== null) {
+      const inputs = inputsByCategories.get(lookupElement.category);
+      topCategory = lookupElement.category;
+
+      if (inputs !== undefined)
+        inputsByCategories.set(topCategory, [lookupElement.input.root].concat(inputs));
+      else 
+        inputsByCategories.set(topCategory, [lookupElement.input.root]);
+    }
+
     // add inputs to the main form (grouped by categories)
     if (inputsByCategories.size > 1) {
+      if (topCategory !== null) {
+        form.append(ui.h3(topCategory));
+        form.append(...inputsByCategories.get(topCategory)!);
+      }
+
       inputsByCategories.forEach((roots, category) => {
-        if (category !== 'Misc') {
+        if ((category !== 'Misc') && (category !== topCategory)) {
           form.append(ui.h3(category));
           form.append(...roots);
         }
       });
 
-      const miscRoots = inputsByCategories.get('Misc');
+      if (topCategory !== 'Misc') {
+        const miscRoots = inputsByCategories.get('Misc');
 
-      if (miscRoots!.length > 0) {
-        form.append(ui.h3('Misc'));
-        form.append(...inputsByCategories.get('Misc')!);
+        if (miscRoots!.length > 0) {
+          form.append(ui.h3('Misc'));
+          form.append(...inputsByCategories.get('Misc')!);
+        }
       }
     } else
       form.append(...inputsByCategories.get('Misc')!);
