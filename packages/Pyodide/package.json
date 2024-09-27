@@ -1,13 +1,17 @@
 {
   "name": "pyodide",
   "friendlyName": "Pyodide",
-  "version": "0.0.1",
-  "description": "Pyodide package for Datagrok to run python code directly in browser",
+  "version": "1.0.0",
+  "description": "Provides support package of python scripting directly in browser using pyodide",
+  "author": {
+    "name": "Pavlo Polovyi",
+    "email": "ppolovyi@datagrok.ai"
+  },
   "dependencies": {
     "@datagrok-libraries/utils": "latest",
     "cash-dom": "latest",
     "datagrok-api": "../../js-api",
-    "dayjs": "latest",
+    "dayjs": "^1.11.10",
     "uuid": "^10.0.0"
   },
   "devDependencies": {
@@ -35,6 +39,13 @@
   "canView": [
     "All users"
   ],
+  "category": "Scripting",
+  "meta": {
+    "dartium": false,
+    "browserFeatures": [
+      "wasm"
+    ]
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",

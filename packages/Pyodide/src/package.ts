@@ -2,13 +2,20 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import { v4 as uuidv4 } from 'uuid';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
 
 export const _package = new DG.Package();
 
 let pyodideWorker: Worker;
-let convertDataFrame: (df: DG.DataFrame) => Promise<string | Uint8Array>;
 let supportsArrow: boolean = false;
 const currentExecutions: {[key: string]: Function} = {};
+const currentCalls: {[key: string]: DG.FuncCall} = {};
+
+interface StdoutMessage {
+  id: string;
+  message: string;
+}
 
 interface WorkerRequest {
   id: string;
@@ -28,29 +35,27 @@ export async function initPyodide() {
   pyodideWorker = new Worker(new URL('worker.js', import.meta.url));
 
   pyodideWorker.onmessage = (event) => {
-    const result: WorkerResponse = event.data;
-    const onSuccess = currentExecutions[result.id];
-    delete currentExecutions[result.id];
-    onSuccess(result);
+    if (Object.hasOwn(event.data, 'message')) {
+      const result: StdoutMessage = event.data;
+      currentCalls[result.id]?.debugLogger?.debug(result.message, {'IS_SERVICE_LOG': true});
+    }
+    else {
+      const result: WorkerResponse = event.data;
+      const onSuccess = currentExecutions[result.id];
+      delete currentExecutions[result.id];
+      delete currentCalls[result.id];
+      onSuccess(result);
+    }
   };
-  const f: DG.Func[] = DG.Func.find({package: 'Arrow', name: 'toFeather'});
-  supportsArrow = false /* f.length > 0 */;
-  if (supportsArrow) {
-    const toArrow: DG.Func = f[0];
-    convertDataFrame = async (df: DG.DataFrame) => (await toArrow.apply({'table': df, 'asStream': true})) as Uint8Array;
-  }
-  else
-    convertDataFrame = async (df: DG.DataFrame) => df.toCsv();
+  supportsArrow = false /* DG.Func.find({package: 'Arrow', name: 'toFeather'}).length > 0 */;
 }
 
-
-async function prepareRequest(scriptCall: DG.FuncCall): Promise<WorkerRequest> {
-  let code = '';
-  // refactor
-  // @ts-ignore
-  if (Object.values(scriptCall.inputParams).some((p: DG.FuncCallParam) => p.property.propertyType === DG.TYPE.DATA_FRAME)
-      // @ts-ignore
-      || Object.values(scriptCall.outputParams).some((p: DG.FuncCallParam) => p.property.propertyType === DG.TYPE.DATA_FRAME)) {
+function makeCodeHeader(scriptCall: DG.FuncCall): string {
+  let code: string = '';
+  const inputParamsTypes: string[] = (Object.values(scriptCall.inputParams) as DG.FuncCallParam[]).map((p) =>  p.property.propertyType);
+  const outputParamsTypes: string[] = (Object.values(scriptCall.outputParams) as DG.FuncCallParam[]).map((p) =>  p.property.propertyType);
+  if (inputParamsTypes.some((type) => type === DG.TYPE.DATA_FRAME)
+      || outputParamsTypes.some((type) => type === DG.TYPE.DATA_FRAME)) {
     if (supportsArrow)
       code += 'import pyarrow as pa\n';
     else {
@@ -58,44 +63,125 @@ async function prepareRequest(scriptCall: DG.FuncCall): Promise<WorkerRequest> {
       code += 'import io\n';
     }
   }
-  const namespace: {[key: string]: any} = {};
+  if (outputParamsTypes.some((type) => type === DG.TYPE.GRAPHICS)) {
+    code += 'import base64\n';
+    code += 'import js\n';
+    code += 'import io\n';
+    code += 'import matplotlib\n';
+    code += 'matplotlib.rcParams[\'figure.figsize\'] = (8.0, 8.0)\n';
+    code += `class DomPatch__PlotLib:
+\t\tdef __init__(self, *args, **kwargs):
+\t\t\t\treturn
+\t\tdef __getattr__(self, __name: str):
+\t\t\t\treturn DomPatch__PlotLib
+\t\tdef removeChild(self, *args, **kwargs):
+\t\t\t\treturn\n`;
+    code += 'js.document = DomPatch__PlotLib()\n';
+  }
+  if (inputParamsTypes.some((type) => type === DG.TYPE.DATE_TIME) || outputParamsTypes.some((type) => type === DG.TYPE.DATE_TIME)) {
+    code += 'from datetime import datetime\n';
+    code += 'from js import Date\n';
+  }
+  return code;
+}
+
+async function prepareInputs(scriptCall: DG.FuncCall, namespace: { [key: string]: any }): Promise<string> {
+  let code: string = '';
   for (const paramName of Object.keys(scriptCall.inputParams)) {
     const value = scriptCall.inputs[paramName];
     const type: string = scriptCall.inputParams[paramName].property.propertyType;
-    if (type === DG.TYPE.DATA_FRAME) {
-      namespace[paramName] = await convertDataFrame(value);
-      if (supportsArrow) {
-        code += `${paramName} = pa.ipc.open_stream(${paramName})\n`;
-        code += `${paramName} = ${paramName}.read_pandas()\n`;
-      }
-      else
-        code += `${paramName} = pd.read_csv(io.StringIO(${paramName}), sep=",")\n`;
-    }
-    else if (type === DG.TYPE.FILE || type === DG.TYPE.BLOB) {
-      if (value instanceof DG.FileInfo)
-        namespace[paramName] = value.data;
-      else
+    switch (type) {
+      case DG.TYPE.DATA_FRAME:
+        if (supportsArrow) {
+          namespace[paramName] = await grok.functions.call('Arrow:toFeather', {'table': value, 'asStream': true});
+          code += `${paramName} = pa.ipc.open_stream(${paramName})\n`;
+          code += `${paramName} = ${paramName}.read_pandas()\n`;
+        }
+        else {
+          namespace[paramName] = (value as DG.DataFrame)?.toCsv();
+          code += `${paramName} = pd.read_csv(io.StringIO(${paramName}), sep=",")\n`;
+        }
+        break;
+      case DG.TYPE.FILE:
+      case DG.TYPE.GRAPHICS:
+        throw new Error(`Parameter of type '${type}' is not supported as input`);
+      case DG.TYPE.BLOB:
+        namespace[paramName] = value instanceof DG.FileInfo ? await value?.readAsBytes() : value;
+        break;
+      case DG.TYPE.DATE_TIME:
+        if (value)
+          code += `${paramName} = datetime.fromtimestamp(${value.unix()})\n`;
+        else
+          code += `${paramName} = None\n`;
+        break;
+      case DG.TYPE.COLUMN:
+        namespace[paramName] = (value as DG.Column)?.name;
+        break;
+      case DG.TYPE.COLUMN_LIST:
+        namespace[paramName] = (value as DG.ColumnList)?.toList()?.map((c) => c.name);
+        break;
+      default:
         namespace[paramName] = value;
     }
-    else
-      namespace[paramName] = value;
   }
-  code += (scriptCall.func as DG.Script).clientCode;
+  return code;
+}
+
+function prepareOutputs(scriptCall: DG.FuncCall, outputs: string[]): string {
+  let code: string = '';
   for (const paramName of Object.keys(scriptCall.outputParams)) {
     const type: string = scriptCall.outputParams[paramName].property.propertyType;
-    if (type === DG.TYPE.DATA_FRAME) {
-      if (supportsArrow) {
-        code += `batch__${paramName} = pa.record_batch(${paramName})\n`;
-        code += `sink__${paramName} = pa.BufferOutputStream()\n`;
-        code += `with pa.ipc.new_stream(sink__${paramName}, batch__${paramName}.schema) as writer:\n`;
-        code += `\twriter.write_batch(batch__${paramName})\n`;
-        code += `${paramName} = sink__${paramName}.getvalue()\n`;
-      }
-      else
-        code += `${paramName} = ${paramName}.to_csv(index=False)\n`;
+    switch (type) {
+      case DG.TYPE.DATA_FRAME:
+        if (supportsArrow) {
+          code += `batch__${paramName} = pa.record_batch(${paramName})\n`;
+          code += `sink__${paramName} = pa.BufferOutputStream()\n`;
+          code += `with pa.ipc.new_stream(sink__${paramName}, batch__${paramName}.schema) as writer:\n`;
+          code += `\twriter.write_batch(batch__${paramName})\n`;
+          code += `${paramName} = sink__${paramName}.getvalue()\n`;
+        }
+        else
+          code += `${paramName} = ${paramName}.to_csv(index=False)\n`;
+        outputs.push(paramName);
+        break;
+      case DG.TYPE.DATE_TIME:
+        code += `${paramName} = None if ${paramName} is None else Date.new(${paramName}.timestamp() * 1000)\n`;
+        outputs.push(paramName);
+        break;
+      case DG.TYPE.GRAPHICS:
+        code += `try:
+\timport matplotlib.pyplot as plt__${paramName}__
+\t${paramName}__io = io.BytesIO()    
+\tplt__${paramName}__.savefig(${paramName}__io, format='png')
+\t${paramName}__io.seek(0)
+\t${paramName} = base64.b64encode(${paramName}__io.read()).decode()
+except:
+\t${paramName} = None
+finally:
+\tplt__${paramName}__.close()
+\tif ${paramName}__io is not None:
+\t\t${paramName}__io.close()\n`;
+        outputs.push(paramName);
+        break;
+      case DG.TYPE.FILE:
+      case DG.TYPE.COLUMN:
+      case DG.TYPE.COLUMN_LIST:
+        throw new Error(`Parameter of type '${type}' is not supported as output`);
+      default:
+        outputs.push(paramName);
     }
   }
-  return {id: uuidv4(), script: code, namespace: namespace, outputs: Object.keys(scriptCall.outputParams)};
+  return code;
+}
+
+async function prepareRequest(scriptCall: DG.FuncCall): Promise<WorkerRequest> {
+  let code = makeCodeHeader(scriptCall);
+  const namespace: { [key: string]: any } = {};
+  code += await prepareInputs(scriptCall, namespace);
+  code += (scriptCall.func as DG.Script).clientCode;
+  const outputs: string[] = [];
+  code += prepareOutputs(scriptCall, outputs);
+  return {id: uuidv4(), script: code, namespace: namespace, outputs: outputs};
 }
 
 async function sendRequest(req: WorkerRequest): Promise<WorkerResponse> {
@@ -105,36 +191,52 @@ async function sendRequest(req: WorkerRequest): Promise<WorkerResponse> {
   });
 }
 
+async function setOutputs(scriptCall: DG.FuncCall, response: WorkerResponse): Promise<void> {
+  if (response.result) {
+    for (const paramName of Object.keys(scriptCall.outputParams)) {
+      const type: string = scriptCall.outputParams[paramName].property.propertyType;
+      const value = response.result[paramName];
+      if (value !== undefined && value !== null) {
+        switch (type) {
+          case DG.TYPE.DATA_FRAME:
+            if (supportsArrow)
+              scriptCall.setParamValue(paramName, await grok.functions.call('Arrow:fromFeather', {'bytes': value}));
+            else
+              scriptCall.setParamValue(paramName, DG.DataFrame.fromCsv(value));
+            break;
+          case DG.TYPE.FILE:
+          case DG.TYPE.BLOB:
+            scriptCall.setParamValue(paramName, DG.FileInfo.fromBytes(paramName, value));
+            break;
+          case DG.TYPE.DATE_TIME:
+            scriptCall.setParamValue(paramName, dayjs.utc(value));
+            break;
+          case DG.TYPE.GRAPHICS:
+            scriptCall.aux.set(paramName, 'image/png');
+            scriptCall.setParamValue(paramName, value);
+            break;
+          default:
+            scriptCall.setParamValue(paramName, value);
+        }
+      }
+    }
+  }
+}
+
 //tags: scriptHandler
 //meta.scriptHandler.language: pyodide
 //meta.scriptHandler.extensions: py
 //meta.scriptHandler.commentStart: #
-//meta.scriptHandler.templateScript: #name: Template\n#description: Calculates number of cells in the table\n#language: pyodide\n#input: dataframe table [Data table]\n#output: int count [Number of cells in table]\n\ncount = table.shape[0] * table.shape[1]
+//meta.scriptHandler.templateScript: #name: Template\n#description: Calculates number of cells in the table\n#language: pyodide\n#sample: cars.csv\n#input: dataframe table [Data table]\n#output: int count [Number of cells in table]\n\ncount = table.shape[0] * table.shape[1]
 //meta.scriptHandler.codeEditorMode: python
 //meta.icon: files/pyodide.png
 //input: funccall scriptCall
 export async function pyodideLanguageHandler(scriptCall: DG.FuncCall): Promise<void> {
   const req: WorkerRequest = await prepareRequest(scriptCall);
-  console.log(req.script);
-  const response: WorkerResponse = await sendRequest(req); // spawn new worker if the current is busy?
+  currentCalls[req.id] = scriptCall;
+  scriptCall.debugLogger?.debug(`Final code:\n${req.script}`);
+  const response: WorkerResponse = await sendRequest(req); // spawn new worker if current is busy?
   if (response.error)
     throw new Error(response.error);
-
-  if (response.result) {
-    for (const paramName of Object.keys(scriptCall.outputParams)) {
-
-      const type: string = scriptCall.outputParams[paramName].property.propertyType;
-      const value = response.result[paramName]!;
-      if (value) {
-        if (type == DG.TYPE.DATA_FRAME) {
-          if (supportsArrow)
-            scriptCall.setParamValue(paramName, await grok.functions.call('Arrow:fromFeather', {'bytes': value}));
-          else
-            scriptCall.setParamValue(paramName, DG.DataFrame.fromCsv(value));
-        }
-        else
-          scriptCall.setParamValue(paramName, value);
-      }
-    }
-  }
+  await setOutputs(scriptCall, response);
 }
