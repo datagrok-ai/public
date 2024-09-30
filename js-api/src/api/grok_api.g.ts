@@ -148,6 +148,7 @@ export interface IDartApi {
   grok_View(): any;
   grok_View_OnAdded(x: any): any;
   grok_View_ForObject(x: any): any;
+  grok_View_FromViewAsync(jsugetViewAsync: any, ribbon: Bool): any;
   grok_View_Close(v: any): any;
   grok_View_Get_Name(v: any): any;
   grok_View_Set_Name(v: any, s: String): any;
@@ -691,6 +692,7 @@ export interface IDartApi {
   grok_GridCell_Set_Element(gridCell: any, e: any): any;
   grok_GridCell_Get_Renderer(gridCell: any): any;
   grok_GridCell_SetValue(gridCell: any, value: any, notify: Bool): any;
+  grok_GridCell_Render(gridCell: any, g: any, bounds: any): any;
   grok_GridCellStyle_Create(): any;
   grok_GridCellStyle_Get_Font(gcs: any): any;
   grok_GridCellStyle_Set_Font(gcs: any, x: any): any;
@@ -1491,6 +1493,7 @@ export interface IDartApi {
   grok_TreeViewGroup_Load_Sources(node: any, source: any): Promise<any>;
   grok_ReportsRule_Add_Dialog(): Promise<any>;
   grok_Parse_Command(command: String, safe: Bool): any;
+  grok_ColumnName_HandleOuterBrackets(name: String, escape: Bool): any;
   grok_Set_AutoReport_Options(options: any): any;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart

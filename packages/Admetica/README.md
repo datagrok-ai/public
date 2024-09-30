@@ -1,6 +1,6 @@
 # Admetica
 
-The Admetica package provides an outstanding opportunity to evaluate crucial molecular properties, such as absorption, distribution, metabolism, excretion, and toxicity (ADMET). The main objective of this package is to allow researchers to filter molecules and select those that satisfy a specific criteria of the research.
+The Admetica package integrates [Admetica](https://github.com/datagrok-ai/admetica), an open-source tool that provides an outstanding opportunity to evaluate ADMET properties. The main objective of this package is to allow researchers to filter molecules and select those that satisfy a specific criteria of the research.
  
 With this package you can:
 * Get predictions for both individual structures and entire columns in your dataset.

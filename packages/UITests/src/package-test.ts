@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
+import {runTests, tests, TestContext, initAutoTests as initTests } from '@datagrok-libraries/utils/src/test';
 
 import './ui/inputs';
 import './ui/input-for-property';
@@ -61,4 +61,9 @@ export async function test(category: string, test: string, testContext: TestCont
   testContext = new TestContext(false, false);
   const data = await runTests({category, test, testContext});
   return DG.DataFrame.fromObjects(data)!;
+}
+
+//name: initAutoTests
+export async function initAutoTests() {
+  await initTests(_package, _package.getModule('package-test.js'));
 }

@@ -9,8 +9,8 @@ import initRDKitModule from '../RDKit_minimal.js';
 import {hexToPercentRgb, isMolBlock} from './chem-common';
 import $ from 'cash-dom';
 import {RDModule, RDMol, RDReaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 import {IMolContext, getMolSafe} from './mol-creation_rdkit';
-import { ISubstruct } from '../rendering/rdkit-cell-renderer';
 
 export let _rdKitModule: RDModule;
 export let _rdKitService: RdKitService;
@@ -277,7 +277,7 @@ export function getUncommonAtomsAndBonds(molecule: string, mcsMol: RDMol | null,
               uncommonAtomsSingle = getArraysDifference(uncommonAtomsSingle, matchedAtomsAndBondsList[i].atoms!.sort((a, b) => { return a - b; }));
             if (matchedAtomsAndBondsList[i].bonds)
               uncommonBondsSingle = getArraysDifference(uncommonBondsSingle, matchedAtomsAndBondsList[i].bonds!.sort((a, b) => { return a - b; }));
-  
+
             let errorRate = 0;
             for (let j = 0; j < uncommonBondsSingle.length - 1; j++) {
               if (Math.abs(uncommonBondsSingle[j] - uncommonBondsSingle[j + 1]) > 1)

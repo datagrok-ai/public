@@ -8,8 +8,10 @@ import {StreamSubscription} from './events';
 import {DataFrame} from './dataframe';
 import {TableView} from './views/view';
 
-const api: IDartApi = <any>window;
+declare let DG: any;
+declare let grok: any;
 
+const api: IDartApi = <any>window;
 
 declare global {
   interface CanvasRenderingContext2D {
@@ -218,6 +220,86 @@ export class Utils {
         new StreamSubscription(dart).cancel();
       }
     );
+  }
+
+  static async executeTests(testsParams: { package: any, params: any }[]): Promise<any> {
+    let failed = false;
+    let csv = "";
+    let verbosePassed = "";
+    let verboseSkipped = "";
+    let verboseFailed = "";
+    let countPassed = 0;
+    let countSkipped = 0;
+    let countFailed = 0;
+    let resultDF: DataFrame | undefined = undefined;
+
+    for (let testParam of testsParams) {
+      let df: DataFrame = await grok.functions.call(testParam.package + ':test', testParam.params);
+
+      if (df.rowCount === 0) {
+        verboseFailed += `Test result : Invocation Fail : ${testParam.params.category}: ${testParam.params.test}\n`;
+        countFailed += 1;
+        failed = true;
+        continue;
+      }
+
+      let row = df.rows.get(0);
+      if (df.rowCount > 1) {
+        let unhandledErrorRow = df.rows.get(1);
+        if (!unhandledErrorRow.get("success")) {
+          unhandledErrorRow["category"] = row.get("category");
+          unhandledErrorRow["name"] = row.get("name");
+          row = unhandledErrorRow;
+        }
+      }
+      const category = row.get("category");
+      const testName = row.get("name");
+      const time = row.get("ms");
+      const result = row.get("result");
+
+      if (resultDF === undefined)
+        resultDF = df;
+      else
+        resultDF = resultDF.append(df);
+
+      if (row["skipped"]) {
+        verboseSkipped += `Test result : Skipped : ${time} : ${category}: ${testName} :  ${result}\n`;
+        countSkipped += 1;
+      }
+      else if (row["success"]) {
+        verbosePassed += `Test result : Success : ${time} : ${category}: ${testName} :  ${result}\n`;
+        countPassed += 1;
+      }
+      else {
+        verboseFailed += `Test result : Failed : ${time} : ${category}: ${testName} :  ${result}\n`;
+        countFailed += 1;
+        failed = true;
+      }
+    }
+
+    if (resultDF) {
+      const bs = DG.BitSet.create(resultDF.rowCount)
+      bs.setAll(true);
+      for(let i = 0; i < resultDF.rowCount; i++){
+        if(resultDF.rows.get(i).get('category') === 'Unhandled exceptions'){
+          bs.set(i, false);
+        }
+      }
+      resultDF =  resultDF.clone(bs);
+      csv = resultDF.toCsv()       
+    }
+
+    return {
+      failed: failed,
+      verbosePassed: verbosePassed,
+      verboseSkipped: verboseSkipped,
+      verboseFailed: verboseFailed,
+      passedAmount: countPassed,
+      skippedAmount: countSkipped,
+      failedAmount: countFailed,
+      csv: csv
+      // df: resultDF?.toJson()
+    };
   }
 }
 

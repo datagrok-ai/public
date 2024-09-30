@@ -7,7 +7,7 @@ import {IHelmHelper, getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {
-  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
+  getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 
 import {initHelmMainPackage} from './utils';
@@ -22,9 +22,8 @@ category('helm-web-editor', async () => {
     await initHelmMainPackage();
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
-    await setUserLibSettingsForTests();
-    await monomerLibHelper.awaitLoaded();
-    await monomerLibHelper.loadMonomerLib(true);
+
+    await monomerLibHelper.loadMonomerLibForTests();
 
     hh = await getHelmHelper();
   });

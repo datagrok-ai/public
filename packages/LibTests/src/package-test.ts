@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {TestContext, runTests, tests} from '@datagrok-libraries/utils/src/test';
+import {TestContext, runTests, tests, initAutoTests as initTests } from '@datagrok-libraries/utils/src/test';
 
 import './tests/compute-api/rich-function-view-tests';
 import './tests/compute-api/composition-pipeline-tests';
@@ -19,4 +19,9 @@ export {tests};
 export async function test(category: string, test: string, testContext: TestContext): Promise<DG.DataFrame> {
   const data = await runTests({category, test, testContext});
   return DG.DataFrame.fromObjects(data)!;
+}
+
+//name: initAutoTests
+export async function initAutoTests() {
+  await initTests(_package, _package.getModule('package-test.js'));
 }

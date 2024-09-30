@@ -1,5 +1,24 @@
 # PowerPack changelog
 
+## 1.20.1 (2024-09-27)
+
+Datagrok DB explorer
+
+## 1.2.0 (2024-09-09)
+
+### Features
+
+* Add new column autocomplete: show packages in the separate section in the bottom of list
+* Add new column: Filter out irrelevant functions for autocomplete
+
+### Bug Fixes
+
+* GROK-16608: Add new column: Function 'if(true, "yes", error("Error"))' leads to validation error
+* Add new column: Code mirror focus is removed after autocomplete
+* [#3009](https://github.com/datagrok-ai/public/issues/3009): Calculated column hints break with round bracket + curly bracket
+* Add new column: Fixed preview grid styles
+* [#3008](https://github.com/datagrok-ai/public/issues/3008): Qnum function is missing from hints
+
 ## 1.1.13 (2024-08-27)
 
 ### Bug Fixes

@@ -3,6 +3,7 @@ export const KEY = 'selected';
 export const TEMPLATES_FOLDER = 'System:AppData/Admetica/templates';
 export let DEFAULT_LOWER_VALUE = 0.8;
 export let DEFAULT_UPPER_VALUE = 1.0;
+export let DEFAULT_TABLE_NAME = 'table';
 
 export interface ModelProperty {
   name: string;

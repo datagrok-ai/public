@@ -25,6 +25,7 @@ import {PolyToolCsvLibHandler} from './polytool/csv-to-json-monomer-lib-converte
 import {ITranslationHelper} from './types';
 import {addContextMenuUI} from './utils/context-menu';
 import {PolyToolConvertFuncEditor} from './polytool/pt-convert-editor';
+import {polyToolUnruleUI} from './polytool/pt-unrule';
 
 export const _package: OligoToolkitPackage = new OligoToolkitPackage({debug: true}/**/);
 
@@ -161,6 +162,13 @@ async function getSpecifiedAppView(appName: string): Promise<DG.ViewBase> {
 export async function polyToolConvertTopMenu(): Promise<void> {
   await polyToolConvertUI();
 }
+
+// //top-menu: Bio | PolyTool | Unrule...
+// //name: polyToolUnrule
+// //description: Perform uncyclization of polymers by rules
+// export async function polyToolUnruleTopMenu(): Promise<void> {
+//   await polyToolUnruleUI();
+// }
 
 //name: getPolyToolConvertEditor
 //tags: editor

@@ -12,8 +12,9 @@ import {HelmAux, HelmProps} from '@datagrok-libraries/bio/src/viewers/helm-servi
 import {_getHelmService} from '../package-utils';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
-import {getGridCellRendererBack} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
+import {getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
+import {execMonomerHoverLinks} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
 
 import {getHoveredMonomerFromEditorMol, getSeqMonomerFromHelmAtom} from './get-hovered';
 
@@ -129,16 +130,23 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
     }
     const hoveredAtom = getHoveredMonomerFromEditorMol(argsX, argsY, editorMol, gridCell.bounds.height);
 
+    let seqMonomer: ISeqMonomer | null = null;
     if (hoveredAtom) {
-      const seqMonomer = getSeqMonomerFromHelmAtom(hoveredAtom);
+      seqMonomer = getSeqMonomerFromHelmAtom(hoveredAtom);
       const monomerLib = _package.monomerLib;
-      const tooltipEl = monomerLib ? monomerLib.getTooltip(seqMonomer.polymerType, seqMonomer.symbol) :
+      const tooltipEl = monomerLib ? monomerLib.getTooltip(seqMonomer.biotype, seqMonomer.symbol) :
         ui.divText('Monomer library is not available');
       ui.tooltip.show(tooltipEl, e.x + 16, e.y + 16);
     } else {
       // Tooltip for missing monomers
       ui.tooltip.hide();
     }
+
+    execMonomerHoverLinks(gridCell, seqMonomer);
+  }
+
+  onMouseLeave(gridCell: DG.GridCell, e: MouseEvent): void {
+    execMonomerHoverLinks(gridCell, null);
   }
 
   public override render(g: CanvasRenderingContext2D,
@@ -161,10 +169,10 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
 
   static getOrCreate(gridCell: DG.GridCell): HelmGridCellRendererBack {
     const [gridCol, tableCol, temp] =
-      getGridCellRendererBack<string, HelmGridCellRendererBack>(gridCell);
+      getGridCellColTemp<string, HelmGridCellRendererBack>(gridCell);
 
-    let res: HelmGridCellRendererBack = temp['rendererBack'];
-    if (!res) res = temp['rendererBack'] = new HelmGridCellRendererBack(gridCol, tableCol);
+    let res: HelmGridCellRendererBack = temp.rendererBack;
+    if (!res) res = temp.rendererBack = new HelmGridCellRendererBack(gridCol, tableCol);
     return res;
   }
 }
@@ -182,6 +190,19 @@ export class HelmGridCellRenderer extends DG.GridCellRenderer {
     const logPrefix = `Helm: HelmGridCellRenderer.onMouseMove()`;
     try {
       HelmGridCellRendererBack.getOrCreate(gridCell).onMouseMove(gridCell, e);
+    } catch (err: any) {
+      const [errMsg, errStack] = errInfo(err);
+      _package.logger.error(errMsg, undefined, errStack);
+    } finally {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }
+
+  override onMouseLeave(gridCell: DG.GridCell, e: MouseEvent) {
+    const logPrefix = `Helm: HelmGridCellRenderer.onMouseLeave()`;
+    try {
+      HelmGridCellRendererBack.getOrCreate(gridCell).onMouseLeave(gridCell, e);
     } catch (err: any) {
       const [errMsg, errStack] = errInfo(err);
       _package.logger.error(errMsg, undefined, errStack);

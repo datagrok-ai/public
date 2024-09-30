@@ -2,12 +2,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {runTests, TestContext, tests} from '@datagrok-libraries/utils/src/test';
+import {runTests, TestContext, tests, initAutoTests as initTests} from '@datagrok-libraries/utils/src/test';
 
 import './tests/_first-tests';
 import './tests/Palettes-test';
 import './tests/detectors-tests';
 import './tests/detectors-weak-and-likely-tests';
+import './tests/detectors-custom-notation-tests';
 import './tests/detectors-benchmark-tests';
 import './tests/msa-tests';
 import './tests/splitters-test';
@@ -51,4 +52,9 @@ export {tests};
 export async function test(category: string, test: string, testContext: TestContext, stressTest?: boolean): Promise<DG.DataFrame> {
   const data = await runTests({category, test, testContext, stressTest});
   return DG.DataFrame.fromObjects(data)!;
+}
+
+//name: initAutoTests
+export async function initAutoTests() {
+  await initTests(_package, _package.getModule('package-test.js'));
 }

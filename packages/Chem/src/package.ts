@@ -25,13 +25,13 @@ import {identifiersWidget, openMapIdentifiersDialog, textToSmiles} from './widge
 //widget imports
 import {SubstructureFilter} from './widgets/chem-substructure-filter';
 import {drugLikenessWidget} from './widgets/drug-likeness';
-import {addPropertiesAsColumns, getChemPropertyFunc, propertiesWidget} from './widgets/properties';
+import {addPropertiesAsColumns, getChemPropertyFunc, getPropertyForMolecule, propertiesWidget} from './widgets/properties';
 import {structuralAlertsWidget} from './widgets/structural-alerts';
 import {structure2dWidget} from './widgets/structure2d';
 import {addRisksAsColumns, toxicityWidget} from './widgets/toxicity';
 
 //panels imports
-import {addInchiKeys, addInchis} from './panels/inchi';
+import {getInchiKeys, getInchis} from './panels/inchi';
 import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
 import {ScaffoldTreeViewer} from './widgets/scaffold-tree';
 import {ScaffoldTreeFilter} from './widgets/scaffold-tree-filter';
@@ -339,6 +339,7 @@ export function getMorganFingerprint(molString: string): DG.BitSet {
   const bitArray = chemSearches.chemGetFingerprint(molString, Fingerprint.Morgan);
   return DG.BitSet.fromBytes(bitArray.getRawData().buffer, bitArray.length);
 }
+
 
 //name: getSimilarities
 //input: column molStringsColumn
@@ -961,7 +962,17 @@ export async function activityCliffsTransform(table: DG.DataFrame, molecules: DG
 //input: dataframe table [Input data table]
 //input: column molecules {semType: Molecule}
 export function addInchisTopMenu(table: DG.DataFrame, col: DG.Column): void {
-  addInchis(table, col);
+  const inchiCol = getInchis(col);
+  inchiCol.name = table.columns.getUnusedName(inchiCol.name);
+  table.columns.add(inchiCol);
+}
+
+//name: getInchi
+//input: string molecule {semType: Molecule}
+//output: string res
+export async function getInchi(molecule: string): Promise<string> {
+  const resCol = getInchis(DG.Column.fromStrings('molecules', [molecule]));
+  return resCol.get(0);
 }
 
 //top-menu: Chem | Calculate | To InchI Keys...
@@ -970,7 +981,17 @@ export function addInchisTopMenu(table: DG.DataFrame, col: DG.Column): void {
 //input: dataframe table [Input data table]
 //input: column molecules {semType: Molecule}
 export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void {
-  addInchiKeys(table, col);
+  const inchiKeyCol = getInchiKeys(col);
+  inchiKeyCol.name = table.columns.getUnusedName(inchiKeyCol.name);
+  table.columns.add(inchiKeyCol);
+}
+
+//name: getInchiKey
+//input: string molecule {semType: Molecule}
+//output: string res
+export async function getInchiKey(molecule: string): Promise<string> {
+  const resCol = getInchiKeys(DG.Column.fromStrings('molecules', [molecule]));
+  return resCol.get(0);
 }
 
 //top-menu: Chem | Analyze | Structural Alerts...
@@ -1909,6 +1930,14 @@ export async function isApplicableNN(df: DG.DataFrame, predictColumn: DG.Column)
   if (!predictColumn.matches('numerical'))
     return false;
   return true;
+}
+
+//name: getProperty
+//input: string molecule {semType: Molecule}
+//input: string prop {choices:["MW", "HBA", "HBD", "LogP", "LogS", "PSA", "Rotatable bonds", "Stereo centers", "Molecule charge"]}
+//output: string propValue
+export async function getProperty(molecule: string, prop: string): Promise<any> {
+  return await getPropertyForMolecule(molecule, prop);
 }
 
 export {getMCS};

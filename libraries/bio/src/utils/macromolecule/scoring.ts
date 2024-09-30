@@ -1,9 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 
 import {sequenceChemSimilarity} from '../../monomer-works/monomer-utils';
-import {GAP_SYMBOL, ISeqSplitted} from '../../utils/macromolecule/types';
+import {ISeqSplitted} from '../../utils/macromolecule/types';
 import {splitAlignedSequences} from '../splitter';
 import {SeqHandler} from '../seq-handler';
+import {GAP_SYMBOL} from './consts';
 
 export enum SCORE {
   IDENTITY = 'identity',

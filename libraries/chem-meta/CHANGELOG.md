@@ -1,5 +1,14 @@
 # chem-meta changelog
 
+## 1.2.7 (2024-09-24)
+
+### New features
+
+* Add ChemTemps and ChemTags constants
+* Expose ISubstruct, ISubstructProvider
+* Add ISubstructProvider and methods for column temp
+* Add global monomer hover object
+
 ## 1.2.6 (2024-08-29)
 
 Exposing reaction runs

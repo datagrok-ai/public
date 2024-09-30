@@ -8,12 +8,12 @@ import * as DG from 'datagrok-api/dg';
 import {IMonomerManager, INewMonomerForm} from '@datagrok-libraries/bio/src/utils/monomer-ui';
 import {IMonomerLib, Monomer, RGroup} from '@datagrok-libraries/bio/src/types';
 import {DUMMY_MONOMER, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
-import {LIB_PATH} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
 import {mostSimilarNaturalAnalog} from '@datagrok-libraries/bio/src/utils/macromolecule/monomers';
 import {PolymerType, MonomerType} from '@datagrok-libraries/bio/src/helm/types';
 
 import {MonomerLibManager} from '../lib-manager';
+import {LIB_PATH} from '../consts';
 
 import '../../../../css/monomer-manager.css';
 

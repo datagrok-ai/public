@@ -23,7 +23,7 @@ FROM target_dictionary td
   JOIN molecule_dictionary md ON act.molregno = md.molregno
   JOIN compound_structures cs ON md.molregno   = cs.molregno
   JOIN organism_class oc ON td.tax_id = oc.tax_id
-    AND td.organism = @organism
+    AND td.organism ILIKE @organism
     AND oc.L1 = 'Bacteria';
 --end
 
@@ -96,7 +96,7 @@ FROM source s
   JOIN assays a ON act.assay_id = a.assay_id
   JOIN assay_parameters ap ON a.assay_id = ap.assay_id
                               AND s.src_description = 'Curated Drug Pharmacokinetic Data'
-                              AND cr.compound_name = @drug
+                              AND cr.compound_name ILIKE @drug
 GROUP BY d.title, a.assay_id, a.description, cr.molregno, cr.compound_name, act.activity_id, act.toid,
   act.standard_type, act.standard_relation, act.standard_value, act.standard_units, act.activity_comment
 ORDER BY cr.compound_name, act.toid, act.standard_type;
@@ -163,7 +163,7 @@ AND r.record_id      = act.record_id
 AND r.doc_id         = d.doc_id
 AND act.assay_id     = a.assay_id
 AND a.tid            = t.tid
-AND t.chembl_id      = @target;
+AND t.chembl_id      ILIKE @target;
 --end
 
 

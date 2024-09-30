@@ -3,6 +3,10 @@ let gpuDevice: GPUDevice | null = null;
 
 
 export async function getGPUDevice() {
+  if (!navigator.gpu) {
+    console.error('WebGPU is not supported in this browser');
+    return null;
+  }
   if (!gpuAdapter) {
     //reason: only here we get the gpuAdapter
     // eslint-disable-next-line no-restricted-syntax
@@ -39,6 +43,10 @@ export async function getGPUDevice() {
 }
 
 export async function getGPUAdapterDescription() {
+  if (!navigator.gpu) {
+    console.error('WebGPU is not supported in this browser');
+    return null;
+  }
   if (!gpuAdapter) {
     // reason: only here we get the gpuAdapter
     // eslint-disable-next-line no-restricted-syntax

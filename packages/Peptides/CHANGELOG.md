@@ -1,6 +1,10 @@
 # Peptides changelog
 
-## 1.18.1
+## 1.18.2 (2024-09-22)
+
+Color monomer background in invariant map
+
+## 1.18.1 (2024-09-18)
 
 Add monomer custom coloring
 

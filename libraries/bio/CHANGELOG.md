@@ -1,8 +1,48 @@
 # bio changelog
 
-## 5.43.0
+## 5.44.2 (2024-09-27)
 
-Add coloring from monomer library to seaprator/fasta renderer
+### New features
+
+* Add IMonomer .override method
+* Add IMonomerLibHelper .loadMonomerLibForTests method
+
+### Bug fixes
+
+* Fix cell renderer monomer placer to handle currentRow reset
+* Fix test Helm HelmHelper.removeGaps
+
+## 5.44.1 (2024-09-25)
+
+### New features
+
+* Add IMonomerLibBase interface for overriding libraries
+* Add custom notation for sequences
+
+## 5.44.0 (2024-09-24)
+
+### New features
+
+* Add monomer hover link
+* Add getMolHighlight to build ISubstruct from monomer map
+* Add HelmHelper parse and removeGaps methods
+
+### Bug fixes
+
+* Fix toAtomicLevel for sequences with gaps
+* Fix toAtomicLevel for polymerType of sequence monomer
+* Fix ISeqMonomer for biotype and add position
+* Fix ISeqSplitted remove .canonicals and .originals
+* Fix IMonomerLib .getTooltip for biotype of HelmType
+* Fix toAtomicLevel linear for sequences with gaps
+
+## 5.43.1 (2024-09-22)
+
+Add monomer background coloring
+
+## 5.43.0 (2024-09-18)
+
+Add coloring from monomer library to separator/fasta renderer
 
 ## 5.42.15 (2024-09-10)
 

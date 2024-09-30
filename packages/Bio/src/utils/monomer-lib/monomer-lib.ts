@@ -7,40 +7,42 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 import {Observable, Subject} from 'rxjs';
 
-import {HelmType, MonomerSetType, MonomerType, PolymerType} from '@datagrok-libraries/bio/src/helm/types';
-import {IMonomerLib, IMonomerSet, Monomer, MonomerLibSummaryType, RGroup} from '@datagrok-libraries/bio/src/types';
-import {HELM_REQUIRED_FIELD as REQ, HELM_RGROUP_FIELDS as RGP} from '@datagrok-libraries/bio/src/utils/const';
+import {
+  HelmType, HelmAtom,
+  MonomerSetType, MonomerType, PolymerType, IWebEditorMonomer,
+} from '@datagrok-libraries/bio/src/helm/types';
+import {IMonomerLibBase, IMonomerLib, IMonomerSet, Monomer, MonomerLibData, MonomerLibSummaryType, RGroup} from '@datagrok-libraries/bio/src/types';
+import {HELM_OPTIONAL_FIELDS as OPT, HELM_REQUIRED_FIELD as REQ, HELM_RGROUP_FIELDS as RGP} from '@datagrok-libraries/bio/src/utils/const';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
-import {GapOriginals} from '@datagrok-libraries/bio/src/utils/seq-handler';
-import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
+import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
+
+import {MonomerLibBase, MonomerLibDataType} from './monomer-lib-base';
+
+import {_package} from '../../package';
 
 import '../../../css/cell-renderer.css';
 
-import {_package} from '../../package';
-import {getUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
-import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
-
 /** Wrapper for monomers obtained from different sources. For managing monomere
  * libraries, use MolfileHandler class instead */
-export class MonomerLib implements IMonomerLib {
-  private _monomers: { [polymerType: string]: { [monomerSymbol: string]: Monomer } } = {};
-  private _onChanged = new Subject<any>();
+export class MonomerLib extends MonomerLibBase implements IMonomerLib {
   private _duplicateMonomers: { [polymerType: string]: { [monomerSymbol: string]: Monomer[] } } = {};
   public get duplicateMonomers(): { [polymerType: string]: { [monomerSymbol: string]: Monomer[] } } {
     return this._duplicateMonomers;
   }
+
   private _duplicatesHandled = true;
   public get duplicatesHandled() { return this._duplicatesHandled; }
+
   private duplicatesNotified: boolean = false;
 
   constructor(
-    monomers: { [polymerType: string]: { [monomerSymbol: string]: Monomer } },
+    monomers: MonomerLibDataType,
     public readonly source: string | undefined = undefined,
     public readonly error: string | undefined = undefined,
   ) {
-    this._monomers = monomers;
+    super(monomers);
     for (const [_monomerType, monomersOfType] of Object.entries(this._monomers)) {
       for (const [_monomerSymbol, monomer] of Object.entries(monomersOfType))
         monomer.lib = this;
@@ -54,46 +56,6 @@ export class MonomerLib implements IMonomerLib {
         resJSON.push({...m, lib: undefined, wem: undefined});
     }
     return resJSON;
-  }
-
-  /** Creates missing {@link Monomer} */
-  addMissingMonomer(polymerType: PolymerType, monomerSymbol: string): Monomer {
-    let mSet = this._monomers[polymerType];
-    if (!mSet)
-      mSet = this._monomers[polymerType] = {};
-
-    let monomerName: string = monomerSymbol;
-    if (monomerSymbol === GapOriginals[NOTATION.HELM])
-      monomerName = 'Gap';
-    else if (polymerType === PolymerTypes.PEPTIDE && monomerSymbol === 'X')
-      monomerName = 'Any';
-    else if (polymerType === PolymerTypes.RNA && monomerSymbol === 'N')
-      monomerName = 'Any';
-
-    const m = mSet[monomerSymbol] = {
-      [REQ.SYMBOL]: monomerSymbol,
-      [REQ.NAME]: monomerName,
-      [REQ.MOLFILE]: '',
-      [REQ.AUTHOR]: 'MISSING',
-      [REQ.ID]: -1,
-      [REQ.RGROUPS]:
-        wu.count(1).take(9).map((i) => {
-          return {
-            /* eslint-disable no-multi-spaces */
-            // Samples                        //  PEPTIDE     RNA
-            [RGP.CAP_GROUP_SMILES]: '',       // '[*:1][H]'  '[*:1][H]'
-            [RGP.ALTERNATE_ID]: '',           // 'R1-H'      'R1-H'
-            [RGP.CAP_GROUP_NAME]: '',         // 'H'         'H'
-            [RGP.LABEL]: `R${i.toString()}`,  // 'R1'        'R1'
-            /* eslint-enable no-multi-spaces */
-          } as RGroup;
-        }).toArray(),
-      [REQ.SMILES]: '',
-      [REQ.POLYMER_TYPE]: polymerType,
-      [REQ.MONOMER_TYPE]: undefined as unknown as MonomerType, // TODO: Can we get monomerType from atom of POM
-      [REQ.CREATE_DATE]: null,
-    } as Monomer;
-    return m;
   }
 
   getMonomer(polymerType: PolymerType | null, argMonomerSymbol: string): Monomer | null {
@@ -117,7 +79,7 @@ export class MonomerLib implements IMonomerLib {
       }
     } else {
       const dict = this._monomers[polymerType];
-      res = dict ? dict[monomerSymbol] : null;
+      res = dict?.[monomerSymbol] ?? null;
     }
     return res;
   }
@@ -179,10 +141,6 @@ export class MonomerLib implements IMonomerLib {
       return criterion;
     });
     return monomers.map((monomer) => monomer?.symbol!);
-  }
-
-  get onChanged(): Observable<any> {
-    return this._onChanged;
   }
 
   private _updateLibInt(lib: IMonomerLib): void {
@@ -285,19 +243,8 @@ export class MonomerLib implements IMonomerLib {
     return resStr;
   }
 
-  getTooltip(polymerType: PolymerType, monomerSymbol: string): HTMLElement {
-    // getTooltip(monomer: Monomer): HTMLElement;
-    // getTooltip(monomerOrPolymerType: string | Monomer, symbol?: string): HTMLElement {
-    //   let polymerType: string;
-    //   let monomerSymbol: string;
-    //   if (typeof monomerOrPolymerType === 'string' || monomerOrPolymerType instanceof String) {
-    //     polymerType = monomerOrPolymerType as string;
-    //     monomerSymbol = symbol!;
-    //   } else {
-    //     const m = monomerOrPolymerType as Monomer;
-    //     polymerType = m[HELM_REQUIRED_FIELD.POLYMER_TYPE];
-    //     monomerSymbol = m[HELM_REQUIRED_FIELD.SYMBOL];
-    //   }
+  getTooltip(biotype: HelmType, monomerSymbol: string): HTMLElement {
+    const polymerType = helmTypeToPolymerType(biotype);
     const res = ui.div([], {classes: 'ui-form ui-tooltip'});
     const monomer = this.getMonomer(polymerType, monomerSymbol);
     if (monomer) {
@@ -335,5 +282,30 @@ export class MonomerLib implements IMonomerLib {
       ]));
     }
     return res;
+  }
+
+  override(data: MonomerLibData): IMonomerLibBase {
+    return new OverriddenMonomerLib(data, this);
+  }
+}
+
+class OverriddenMonomerLib extends MonomerLibBase {
+  constructor(
+    private readonly data: MonomerLibData,
+    private readonly base: MonomerLibBase
+  ) {
+    super(data);
+  }
+
+  get onChanged(): Observable<any> { return this.base.onChanged; }
+
+  addMissingMonomer(polymerType: PolymerType, monomerSymbol: string): Monomer {
+    return this.base.addMissingMonomer(polymerType, monomerSymbol);
+  }
+
+  getMonomer(polymerType: PolymerType | null, monomerSymbol: string): Monomer | null {
+    const dataMonomer = this.data[polymerType as string]?.[monomerSymbol];
+    const resMonomer = dataMonomer ?? this.base.getMonomer(polymerType, monomerSymbol);
+    return resMonomer;
   }
 }

@@ -1,18 +1,21 @@
+import wu from 'wu';
+
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {V3K_CONST} from '@datagrok-libraries/chem-meta/src/formats/molfile-const';
-import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
-
-import wu from 'wu';
+import {HelmTypes, PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
+import {IMonomerLib, IMonomerLibBase} from '@datagrok-libraries/bio/src/types/index';
+import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {GapOriginals} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {MolfileWithMap, MonomerMap} from '@datagrok-libraries/bio/src/monomer-works/types';
 
 import {Helm} from './helm';
 import {MonomerWrapper} from './monomer-wrapper';
-import {MolfileWithMap, MonomerMap} from './types';
 
 export class Polymer {
   constructor(
     helmString: string,
     private readonly rdKitModule: RDModule,
-    private readonly monomerLib: IMonomerLib
+    private readonly monomerLib: IMonomerLibBase
   ) {
     this.helm = new Helm(helmString);
   }
@@ -22,11 +25,14 @@ export class Polymer {
 
   addMonomer(
     monomerSymbol: string,
-    monomerIdx: number,
+    helmMonomerIdx: number,
     shift: { x: number, y: number },
   ): void {
+    if (monomerSymbol === GapOriginals[NOTATION.HELM]) return;
+
+    const molMonomerIdx: number = this.monomerWrappers.length;
     const monomerWrapper = new MonomerWrapper(
-      monomerSymbol, monomerIdx, this.helm, shift, this.rdKitModule, this.monomerLib);
+      monomerSymbol, molMonomerIdx, this.helm, shift, this.rdKitModule, this.monomerLib);
 
     this.monomerWrappers.push(monomerWrapper);
   }
@@ -64,21 +70,22 @@ export class Polymer {
 
     this.restoreBondsBetweenMonomers();
 
-    const monomers: MonomerMap[] = new Array<MonomerMap>(this.monomerWrappers.length);
+    const monomers: MonomerMap = new MonomerMap();
     for (const [mw, mwI] of wu.enumerate(this.monomerWrappers)) {
-      const mwAtomFirst = atomLines.length;
-      const mwBondFirst = bondLines.length;
+      const mAtomFirst = atomLines.length;
+      const mBondFirst = bondLines.length;
 
       atomLines.push(...mw.getAtomLines());
       bondLines.push(...mw.getBondLines());
 
-      monomers[mwI] = {
-        position: mwI,
-        // TODO: PolymerType
+      const polymerType = this.helm.getPolymerTypeByMonomerIdx(mwI);
+      const biotype = polymerType == PolymerTypes.RNA ? HelmTypes.NUCLEOTIDE : HelmTypes.AA;
+      monomers.set(mwI, {
+        biotype: biotype,
         symbol: mw.monomerSymbol,
-        atoms: wu.count(mwAtomFirst).take(mw.atomCount).toArray(),
-        bonds: wu.count(mwBondFirst).take(mw.bondCount).toArray(),
-      };
+        atoms: wu.count(mAtomFirst).take(mw.atomCount).toArray(),
+        bonds: wu.count(mBondFirst).take(mw.bondCount).toArray(),
+      });
     }
 
     const atomCount = atomLines.length;

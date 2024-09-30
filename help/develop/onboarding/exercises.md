@@ -8,7 +8,7 @@ organized as progressive steps, with tasks of increasing complexity built on top
 
 During this course, we will be building support for handling DNA nucleotide sequences. Let that not scare you, think of
 them as regular strings that can only contain characters `G`, `A`, `C`, and `T` (and now you know the origins of the
-"Gattaca" movie name). We will start with writing standalone functions, then automatically recognizing nucleotide
+"Gattaca" movie name) and the 'fasta: ' prefix to avoid conflicts. We will start with writing standalone functions, then automatically recognizing nucleotide
 sequences in the imported data, and then going all the way to custom visualizations, relational databases querying,
 predictive models, integration with the external utilities, data augmentation, and custom applications.
 
@@ -147,9 +147,9 @@ You will learn: how to write semantic type detectors, how to develop context-spe
 
    ```
    sequence, id
-   GATTACA, 1997
-   ATTCGGA, 1984
-   TTTAGGC, 2021
+   fasta: GATTACA, 1997
+   fasta: ATTCGGA, 1984
+   fasta: TTTAGGC, 2021
    ```
 
    Hover over the `sequence` column header after the data is imported — if everything is done correctly, you will see
@@ -265,19 +265,19 @@ repeat what we've achieved in the last point of the previous exercise, now with 
     <table>
     <tr><td>
 
-   | GenBank    | ID         |
-   |------------|------------|
-   | MT079845.1 | ctacaagaga |
-   | MT079851.1 | attaaaggtt |
-   | MT326187.1 | gttctctaaa |
+   | GenBank    | ID                |
+   |------------|-------------------|
+   | MT079845.1 | fasta: ctacaagaga |
+   | MT079851.1 | fasta: attaaaggtt |
+   | MT326187.1 | fasta: gttctctaaa |
 
     </td><td>
 
-   | GenBank    | ID         | N(acc) |
-   |------------|------------|--------|
-   | MT079845.1 | ctaccagaga | 1      |
-   | MT079851.1 | attaaaggtt | 0      |
-   | MT326187.1 | gttctctacc | 1      |
+   | GenBank    | ID                | N(acc) |
+   |------------|-------------------|--------|
+   | MT079845.1 | fasta: ctaccagaga | 1      |
+   | MT079851.1 | fasta: attaaaggtt | 0      |
+   | MT326187.1 | fasta: gttctctacc | 1      |
 
     </td></tr>
     </table>
@@ -342,7 +342,7 @@ functions.
 1. Publish your package and try calling your script from the console:
 
    ```sh
-   <PackageName>:CountSubsequencePython("gttctctacc", "acc")
+   <PackageName>:CountSubsequencePython("fasta: gttctctacc", "acc")
    ```
 
    :::note
@@ -363,7 +363,7 @@ functions.
    This expression can be used to call any function (including commands you see in the platform console, scripts,
    queries, functions from external packages, and so on). The first argument is a fully-qualified function name (in your
    case, a namespace corresponds to a package name); the next argument is an object with parameters (make sure that they
-   correspond to the input names in the script annotation, e.g., `{ sequence: 'gttctctacc', subsequence: 'acc' }`). You
+   correspond to the input names in the script annotation, e.g., `{ sequence: 'fasta: gttctctacc', subsequence: 'acc' }`). You
    can also control the progress indicator during the call (see the API reference for
    [call](https://datagrok.ai/js-api/dg/classes/Functions#call)).
 
@@ -515,10 +515,10 @@ from our server.
    ```
 
    There are several methods you can use to open a table. For demo files, the simplest way is
-   [grok.data.getDemoTable](https://datagrok.ai/js-api/classes/dg.Data#getdemotable). For files outside of the
+   [grok.data.getDemoTable](https://datagrok.ai/js-api/dg/classes/Data#getdemotable). For files outside of the
    `Demo:Files` [file share](../../access/files/files.md), you can use
-   [grok.data.files.openTable](https://datagrok.ai/js-api/classes/dg.Data#opentable), or execute a command
-   `OpenServerFile` via [grok.functions.eval](https://datagrok.ai/js-api/classes/dg.Functions#eval) (to see how it
+   [grok.data.files.openTable](https://datagrok.ai/js-api/dg/classes/Files#opentable), or execute a command
+   `OpenServerFile` via [grok.functions.eval](https://datagrok.ai/js-api/dg/classes/Functions#eval) (to see how it
    works, open a file from the UI and find the last console command, it will look similar to
    `OpenServerFile("Demo:Files/bio/sars-cov-2.csv")`).
    
@@ -613,7 +613,7 @@ We don't know at which starting point each nucleotide sequence was cut: it could
 or one-third or two-third of a triplet. Therefore, we'd count in our statistics for all three possible cuts, starting
 the reading frame off at offsets 0, 1, and 2 from the beginning of the nucleotide sequence.
 
-Say, we are given a sequence `TTTAATTACAGACCTGAA`. We start to count triplets *without overlap* from an offset 0 first,
+Say, we are given a sequence `fasta: TTTAATTACAGACCTGAA`. We start to count triplets *without overlap* from an offset 0 first,
 getting: `TTT`, `AAT`, `TAC`, `...`, `GAA`. Then we move to the offset 1, getting: `TTA`, `...`, `CTG`. Lastly, we move
 to the offset 2 and get: `TAA`, `...`, `TGA`. In the histogram we'd count for all these triplets.
 

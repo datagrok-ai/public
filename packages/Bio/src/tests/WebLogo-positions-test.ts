@@ -4,7 +4,6 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, expectArray, test, testEvent} from '@datagrok-libraries/utils/src/test';
 import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
-import {GAP_SYMBOL} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 import {
   countForMonomerAtPosition,
@@ -12,6 +11,7 @@ import {
   PositionMonomerInfo as PMI,
   WebLogoViewer,
 } from '../viewers/web-logo-viewer';
+import {GAP_SYMBOL} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 
 const g: string = GAP_SYMBOL;
 

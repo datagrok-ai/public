@@ -402,8 +402,8 @@ const ToolMarkup = () => {
                 return showBreakingChanges;
             }
 
-            const oldKeys = Object.keys(oldParams);
-            const newKeys = Object.keys(newParams);
+            const oldKeys = Object.keys(oldParams).filter(str => str !== "");
+            const newKeys = Object.keys(newParams).filter(str => str !== "");
             let outOfAllFunctions = false;
             for (let i = 0; i < newKeys.length; i++) {
                 if (oldKeys.length <= i)

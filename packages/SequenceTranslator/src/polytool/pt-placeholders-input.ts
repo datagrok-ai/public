@@ -13,23 +13,15 @@ export class PolyToolPlaceholdersInput extends DG.JsInputBase<DG.DataFrame> {
 
   getInput(): HTMLElement { return this.gridHost; }
 
-  getValue(): DG.DataFrame {
-    return this.grid.dataFrame;
-  }
+  getValue(): DG.DataFrame { return this.grid.dataFrame; }
 
-  setValue(value: DG.DataFrame): void {
-    this.grid.dataFrame = value;
-  }
+  setValue(value: DG.DataFrame): void { this.grid.dataFrame = value; }
 
-  getStringValue(): string {
-    return this.grid.dataFrame.toCsv();
-  }
+  getStringValue(): string { return this.grid.dataFrame.toCsv(); }
 
-  setStringValue(str: string): void {
-    this.grid.dataFrame = DG.DataFrame.fromCsv(str);
-  }
+  setStringValue(str: string): void { this.grid.dataFrame = DG.DataFrame.fromCsv(str); }
 
-  get placeholdersValue() {
+  get placeholdersValue(): PolyToolPlaceholders {
     return dfToPlaceholders(this.grid.dataFrame);
   }
 
@@ -80,7 +72,9 @@ export class PolyToolPlaceholdersInput extends DG.JsInputBase<DG.DataFrame> {
   public static async create(
     name?: string, options?: {}, heightRowCount?: number
   ): Promise<PolyToolPlaceholdersInput> {
-    const df: DG.DataFrame = DG.DataFrame.fromObjects([{Position: '', Monomers: ''}])!;
+    const df: DG.DataFrame = DG.DataFrame.fromColumns([
+      DG.Column.fromType(DG.COLUMN_TYPE.INT, 'Position', 0),
+      DG.Column.fromType(DG.COLUMN_TYPE.STRING, 'Monomers', 0),])!;
     const grid = (await df.plot.fromType(DG.VIEWER.GRID, options)) as DG.Grid;
     grid.sort(['Position']);
     return new PolyToolPlaceholdersInput(name, grid, heightRowCount);
@@ -102,26 +96,25 @@ export class PolyToolPlaceholdersInput extends DG.JsInputBase<DG.DataFrame> {
 }
 
 export function getPlaceholdersFromText(src: string): PolyToolPlaceholders {
-  const res: PolyToolPlaceholders = {};
+  const res: PolyToolPlaceholders = [];
   for (const line of src.split('\n')) {
     const lineM = /^\s*(?<pos>\d+)\s*:\s*(?<monomers>.+)$/.exec(line);
     if (lineM) {
       const pos: number = parseInt(lineM.groups!['pos']) - 1;
       const monomerList: string[] = lineM.groups!['monomers'].split(',').map((m) => m.trim());
-      if (!(pos in res)) res[pos] = [];
-      res[pos].push(...monomerList);
+      res.push({position: pos, monomers: monomerList});
     }
   }
   return res;
 }
 
 export function dfToPlaceholders(df: DG.DataFrame): PolyToolPlaceholders {
-  const res: PolyToolPlaceholders = {};
+  const res: PolyToolPlaceholders = [];
   for (let rowI = 0; rowI < df.rowCount; rowI++) {
-    const pos = parseInt(df.get('Position', rowI));
+    const pos = parseInt(df.get('Position', rowI)) - 1;
     if (!isNaN(pos)) {
       const monomerSymbolList = parseMonomerSymbolList(df.get('Monomers', rowI));
-      res[pos - 1] = monomerSymbolList;
+      res.push({position: pos, monomers: monomerSymbolList});
     }
   }
   return res;

@@ -4,8 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
-import {DimReductionBaseEditor, PreprocessFunctionReturnType}
-  from '@datagrok-libraries/ml/src/functionEditors/dimensionality-reduction-editor';
+import {DimReductionBaseEditor, PreprocessFunctionReturnType} from '@datagrok-libraries/ml/src/functionEditors/dimensionality-reduction-editor';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {BitArrayMetrics, KnownMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
@@ -14,50 +13,38 @@ import {SeqHandler, SeqTemps} from '@datagrok-libraries/bio/src/utils/seq-handle
 import {IMonomerLib, IMonomerSet} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
-import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
-import {SCORE, calculateScores} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
-import {
-  createJsonMonomerLibFromSdf, IMonomerLibHelper
-} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {SCORE} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
+import {createJsonMonomerLibFromSdf, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {ActivityCliffsEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-function-editor';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {BYPASS_LARGE_DATA_WARNING} from '@datagrok-libraries/ml/src/functionEditors/consts';
-import {
-  getEmbeddingColsNames, multiColReduceDimensionality
-} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
+import {getEmbeddingColsNames, multiColReduceDimensionality} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
-import {
-  ITSNEOptions, IUMAPOptions
-} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reducer';
+import {ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reducer';
 import {generateLongSequence, generateLongSequence2} from '@datagrok-libraries/bio/src/utils/generator';
 import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
-import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
 import {getMacromoleculeColumns} from './utils/ui-utils';
-import {
-  MacromoleculeDifferenceCellRenderer, MacromoleculeSequenceCellRenderer,
-} from './utils/cell-renderer';
+import {MacromoleculeDifferenceCellRenderer, MacromoleculeSequenceCellRenderer,} from './utils/cell-renderer';
+import {MacromoleculeCustomCellRenderer} from './utils/cell-renderer-custom';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {SequenceAlignment} from './seq_align';
 import {getEncodedSeqSpaceCol} from './analysis/sequence-space';
-import {
-  createLinesGrid, createPropPanelElement, createTooltipElement,
-} from './analysis/sequence-activity-cliffs';
+import {createLinesGrid, createPropPanelElement, createTooltipElement,} from './analysis/sequence-activity-cliffs';
 import {SequenceSimilarityViewer} from './analysis/sequence-similarity-viewer';
 import {SequenceDiversityViewer} from './analysis/sequence-diversity-viewer';
-import {MONOMERIC_COL_TAGS, SubstructureSearchDialog, invalidateMols} from './substructure-search/substructure-search';
+import {invalidateMols, MONOMERIC_COL_TAGS, SubstructureSearchDialog} from './substructure-search/substructure-search';
 import {convert} from './utils/convert';
 import {getMacromoleculeColumnPropertyPanel} from './widgets/representations';
 import {saveAsFastaUI} from './utils/save-as-fasta';
 import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 import {WebLogoViewer} from './viewers/web-logo-viewer';
 import {MonomerLibManager} from './utils/monomer-lib/lib-manager';
-import {getMonomerLibraryManagerLink, showManageLibrariesDialog,
-  showManageLibrariesView} from './utils/monomer-lib/library-file-manager/ui';
+import {getMonomerLibraryManagerLink, showManageLibrariesDialog, showManageLibrariesView} from './utils/monomer-lib/library-file-manager/ui';
 import {demoBio01UI} from './demo/bio01-similarity-diversity';
 import {demoBio01aUI} from './demo/bio01a-hierarchical-clustering-and-sequence-space';
 import {demoBio01bUI} from './demo/bio01b-hierarchical-clustering-and-activity-cliffs';
@@ -115,8 +102,17 @@ export class SeqPaletteCustom implements SeqPalette {
 let monomerLib: IMonomerLib | null = null;
 let monomerSets: IMonomerSet | null = null;
 
+let initBioPromise: Promise<void> | null = null;
+
 //tags: init
-export async function initBio() {
+export async function initBio(): Promise<void> {
+  if (initBioPromise === null) {
+    initBioPromise = initBioInt();
+  }
+  await initBioPromise;
+}
+
+async function initBioInt() {
   const logPrefix = 'Bio: _package.initBio()';
   _package.logger.debug(`${logPrefix}, start`);
   let rdKitModule!: RDModule;
@@ -195,7 +191,7 @@ export function getBioLib(): IMonomerLib {
 }
 
 // For sync internal use, on initialized package
-export function getMonomerLib(): IMonomerLib | null {
+export function getMonomerLib(): IMonomerLib {
   return monomerLib!;
 }
 
@@ -326,12 +322,30 @@ export function SeqActivityCliffsEditor(call: DG.FuncCall) {
 
 // -- Cell renderers --
 
+//name: customSequenceCellRenderer
+//tags: cellRenderer
+//meta.cellType: sequence
+//meta.columnTags: quality=Macromolecule, units=custom
+//output: grid_cell_renderer result
+export function customSequenceCellRenderer(): DG.GridCellRenderer {
+  return new MacromoleculeCustomCellRenderer();
+}
+
 //name: fastaSequenceCellRenderer
 //tags: cellRenderer
 //meta.cellType: sequence
 //meta.columnTags: quality=Macromolecule, units=fasta
 //output: grid_cell_renderer result
 export function fastaSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
+  return new MacromoleculeSequenceCellRenderer();
+}
+
+//name: separatorSequenceCellRenderer
+//tags: cellRenderer
+//meta.cellType: sequence
+//meta.columnTags: quality=Macromolecule, units=separator
+//output: grid_cell_renderer result
+export function separatorSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
   return new MacromoleculeSequenceCellRenderer();
 }
 
@@ -351,15 +365,6 @@ export function macroMolColumnPropertyPanel(molColumn: DG.Column): DG.Widget {
 //output: widget result
 export function compositionAnalysisWidget(sequence: DG.SemanticValue): DG.Widget {
   return getCompositionAnalysisWidget(sequence);
-}
-
-//name: separatorSequenceCellRenderer
-//tags: cellRenderer
-//meta.cellType: sequence
-//meta.columnTags: quality=Macromolecule, units=separator
-//output: grid_cell_renderer result
-export function separatorSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
-  return new MacromoleculeSequenceCellRenderer();
 }
 
 //name: MacromoleculeDifferenceCellRenderer
@@ -621,13 +626,17 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Co
 //description: Converts sequences to molblocks
 //input: dataframe table [Input data table]
 //input: column seqCol {caption: Sequence; semType: Macromolecule}
-//input: bool nonlinear =false {caption: Non linear; description: Slower mode for cycling/branching HELM structures}
+//input: bool nonlinear =false {caption: Non-linear; description: Slower mode for cycling/branching HELM structures}
+//input: bool highlight =false {caption: Highlight monomers; description: Highlight monomers' substructures of the molecule }
 //output:
-export async function toAtomicLevel(table: DG.DataFrame, seqCol: DG.Column, nonlinear: boolean): Promise<void> {
+export async function toAtomicLevel(
+  table: DG.DataFrame, seqCol: DG.Column, nonlinear: boolean, highlight: boolean = false
+): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('Converting to atomic level ...');
   try {
+    await initBioPromise;
     const monomerLib = (await getMonomerLibHelper()).getMonomerLib();
-    await sequenceToMolfile(table, seqCol, nonlinear, monomerLib);
+    await sequenceToMolfile(table, seqCol, nonlinear, highlight, monomerLib, _package.rdKitModule);
   } finally {
     pi.close();
   }
@@ -750,6 +759,31 @@ export function convertDialog() {
   const col = getMacromoleculeColumns()[0];
   convert(col);
 }
+
+//top-menu: Bio | Convert | TestConvert
+//name: convertSeqNotation
+//description: RDKit-based conversion for SMILES, SMARTS, InChi, Molfile V2000 and Molfile V3000
+//input: string sequence {semType: Macromolecule}
+//input: string targetNotation
+//input: string separator
+//output: string result
+export async function convertSeqNotation(sequence: string, targetNotation: NOTATION, separator?: string): Promise<string | undefined | null> {
+  try {
+    const col = DG.Column.fromStrings('sequence', [sequence]);
+    const df = DG.DataFrame.fromColumns([col]);
+    const semType = await grok.functions.call('Bio:detectMacromolecule', {col: col});
+    if (semType)
+      col.semType = semType;
+    const converterSh = SeqHandler.forColumn(col);
+    const newColumn = converterSh.convert(targetNotation, separator);
+    return newColumn.get(0);
+  } catch (err: any) {
+    const [errMsg, errStack] = errInfo(err);
+    _package.logger.error(errMsg, undefined, errStack);
+    throw err;
+  }
+}
+
 
 //name: monomerCellRenderer
 //tags: cellRenderer
@@ -1098,6 +1132,76 @@ export async function sdfToJsonLib(table: DG.DataFrame) {
 
 // -- Utils --
 
+//name: seq2atomic
+//friendlyName: seq2atomic
+//description: Converts a `Macromolecule` sequence to its atomic level `Molecule` representation
+//input: string seq { semType: Macromolecule }
+//input: bool nonlinear
+//output: string molfile { semType: Molecule }
+//meta.role: converter
+export async function seq2atomic(seq: string, nonlinear: boolean): Promise<string | undefined> {
+  if (!(seq.trim())) return '';
+  try {
+    const seqCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, `helm`, [seq]);
+    const df = DG.DataFrame.fromColumns([seqCol]);
+    const semType = await grok.functions.call('Bio:detectMacromolecule', {col: seqCol});
+    if (semType) seqCol.semType = semType;
+
+    const monomerLib = (await getMonomerLibHelper()).getMonomerLib();
+    const res = (await sequenceToMolfile(df, seqCol, nonlinear, false, monomerLib, _package.rdKitModule))?.molCol?.get(0);
+    return res ?? undefined;
+  } catch (err: any) {
+    const [errMsg, errStack] = errInfo(err);
+    _package.logger.error(errMsg, undefined, errStack);
+    throw err;
+  }
+}
+
+// //description: Gets similarity to a reference sequence
+// //input: string seq { semType: Macromolecule }
+// //input: string ref { semType: Macromolecule }
+// //output: double result
+// export async function seqSimilarity(seq: string, ref: string): Promise<number> {
+//   // if (!(seq.trim())) return null;
+//   try {
+//     const seqCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, `seq`, [seq]);
+//     const df = DG.DataFrame.fromColumns([seqCol]);
+//     const semType = await grok.functions.call('Bio:detectMacromolecule', {col: seqCol});
+//     if (semType) seqCol.semType = semType;
+//
+//     const resCol = await calculateScoresWithEmptyValues(df, seqCol, ref, SCORE.SIMILARITY);
+//     return resCol.get(0)!;
+//   } catch (err: any) {
+//     const [errMsg, errStack] = errInfo(err);
+//     _package.logger.error(errMsg, undefined, errStack);
+//     throw err;
+//   }
+// }
+
+//name: seqIdentity
+//friendlyName: seqIdentity
+//description: Gets identity to a reference sequence
+//input: string seq { semType: Macromolecule }
+//input: string ref { semType: Macromolecule }
+//output: double result
+export async function seqIdentity(seq: string, ref: string): Promise<number | null> {
+  if (!(seq.trim())) return null;
+  try {
+    const seqCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, `seq`, [seq]);
+    const df = DG.DataFrame.fromColumns([seqCol]);
+    const semType = await grok.functions.call('Bio:detectMacromolecule', {col: seqCol});
+    if (!semType) throw new Error('Macromolecule required');
+
+    const resCol = await calculateScoresWithEmptyValues(df, seqCol, ref, SCORE.IDENTITY);
+    return resCol.get(0);
+  } catch (err: any) {
+    const [errMsg, errStack] = errInfo(err);
+    _package.logger.error(errMsg, undefined, errStack);
+    throw err;
+  }
+}
+
+
 //name: detectMacromoleculeProbe
 //input: file file
 //input: string colName = ''
@@ -1121,7 +1225,7 @@ export async function getSeqHelper(): Promise<ISeqHelper> {
 export function getMolFromHelm(
   df: DG.DataFrame, helmCol: DG.Column<string>, chiralityEngine: boolean
 ): Promise<DG.Column<string>> {
-  return getMolColumnFromHelm(df, helmCol, chiralityEngine);
+  return getMolColumnFromHelm(df, helmCol, chiralityEngine, getMonomerLib());
 }
 
 // -- Custom notation providers --
@@ -1130,6 +1234,7 @@ export function getMolFromHelm(
 //input: column col
 //input: string separator
 export function applyNotationProviderForCyclized(col: DG.Column<string>, separator: string) {
+  col.meta.units = NOTATION.CUSTOM;
   col.temp[SeqTemps.notationProvider] = new CyclizedNotationProvider(separator);
 }
 
@@ -1137,5 +1242,13 @@ export function applyNotationProviderForCyclized(col: DG.Column<string>, separat
 //input: column col
 //input: string separator
 export function applyNotationProviderForDimerized(col: DG.Column<string>, separator: string) {
+  col.meta.units = NOTATION.CUSTOM;
   col.temp[SeqTemps.notationProvider] = new DimerizedNotationProvider(separator);
+}
+
+//name: test1
+//output: object result
+export function test1(): any {
+  _package.logger.debug('Bio:test1() function');
+  return {value: 'value1'};
 }

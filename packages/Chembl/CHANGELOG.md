@@ -1,5 +1,17 @@
 # Chembl changelog
 
+## 1.1.3 (2024-09-27)
+
+PowerSearch features
+
+## 1.1.2 (2024-09-25)
+
+Handle missing chembl connection.
+
+## 1.1.1 (2024-09-25)
+
+Database explorer for ChEMBL database.
+
 ## 1.0.38 (2024-07-22)
 
 * Fixed 'Pattern Similarity With Threshold' query name

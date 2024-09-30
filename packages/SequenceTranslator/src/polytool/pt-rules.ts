@@ -5,19 +5,24 @@ import {ActiveFiles} from '@datagrok-libraries/utils/src/settings/active-files-b
 export const RULES_PATH = 'System:AppData/SequenceTranslator/polytool-rules/';
 export const RULES_STORAGE_NAME = 'Polytool';
 export const RULES_TYPE_LINK = 'link';
+export const RULES_TYPE_REACTION = 'reaction';
 export const RULES_TYPE_HOMODIMER = 'fragmentDuplication';
 export const RULES_TYPE_HETERODIMER = 'differentFragments';
 
 export class RuleInputs extends ActiveFiles {
-  constructor(path: string, userStorageName: string, ext: string ) {
-    super(path, userStorageName, ext);
+  constructor(
+    path: string, userStorageName: string, ext: string,
+    options?: { onValueChanged: (value: string[]) => void }
+  ) {
+    super(path, userStorageName, ext, options);
   }
 }
 
 export type Rules = {
   homodimerCode: string | null,
   heterodimerCode: string | null,
-  linkRules: RuleLink[]
+  linkRules: RuleLink[],
+  reactionRules: RuleReaction[]
 }
 
 export type RuleLink = {
@@ -30,10 +35,19 @@ export type RuleLink = {
   secondLinkingGroup: number
 }
 
+export type RuleReaction = {
+  code: number,
+  firstMonomer: string,
+  secondMonomer: string,
+  reaction: string,
+  name: string
+}
+
 export async function getRules(ruleFiles: string[]): Promise<Rules> {
   const fileSource = new DG.FileSource(RULES_PATH);
   const linkRules: RuleLink[] = [];
-  const rules: Rules = {homodimerCode: null, heterodimerCode: null, linkRules: linkRules};
+  const reactionRules: RuleReaction[] = [];
+  const rules: Rules = {homodimerCode: null, heterodimerCode: null, linkRules: linkRules, reactionRules: reactionRules};
 
   for (let i = 0; i < ruleFiles.length; i++) {
     const rulesRaw = await fileSource.readAsText(ruleFiles[i].replace(RULES_PATH, ''));
@@ -45,6 +59,12 @@ export async function getRules(ruleFiles: string[]): Promise<Rules> {
           const rule = ruleSingle[j].monomericSubstitution;
           rule['code'] = ruleSingle[j].code;
           linkRules.push(rule);
+          break;
+        }
+        case RULES_TYPE_REACTION: {
+          const rule = ruleSingle[j].monomericSubstitution;
+          rule['code'] = ruleSingle[j].code;
+          reactionRules.push(rule);
           break;
         }
         case RULES_TYPE_HOMODIMER: {

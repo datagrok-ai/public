@@ -183,6 +183,7 @@ class BioPackageDetectors extends DG.Package {
         // col.setTag(SeqHandler.TAGS.alphabetSize, alphabetSize.toString());
         col.setTag(SeqHandler.TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
 
+        col.setTag(DG.TAGS.CELL_RENDERER, 'helm');
         return DG.SEMTYPE.MACROMOLECULE;
       }
 
@@ -262,6 +263,7 @@ class BioPackageDetectors extends DG.Package {
           const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);
           col.setTag(SeqHandler.TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
         }
+        col.setTag(DG.TAGS.CELL_RENDERER, 'sequence');
         return DG.SEMTYPE.MACROMOLECULE;
       } else {
         const stats = this.getStats(categoriesSample, seqMinLength, splitter);
@@ -300,7 +302,7 @@ class BioPackageDetectors extends DG.Package {
         }
 
         refineSeqSplitter(col, stats, separator).then(() => { });
-
+        col.setTag(DG.TAGS.CELL_RENDERER, 'sequence');
         return DG.SEMTYPE.MACROMOLECULE;
       }
     } catch (err) {
@@ -383,7 +385,8 @@ class BioPackageDetectors extends DG.Package {
    */
   checkBadMultichar(freq) /* : string | null */ {
     for (const symbol of Object.keys(freq)) {
-      if (symbol && !isNaN(symbol)) return symbol; // performance evaluated better with RegExp
+      if (symbol && !isNaN(symbol))
+        return symbol; // performance evaluated better with RegExp
 
       const symbolLen = symbol.length;
       if (this.forbiddenMulticharFirst.includes(symbol[0]))
@@ -395,6 +398,10 @@ class BioPackageDetectors extends DG.Package {
         if (this.forbiddenMulticharMiddle.includes(c))
           return symbol;
       }
+      if (symbol.match(/^\d+\W+.*/))
+        // symbols like '2,...' are forbidden
+        // we require an alphabet character just after the leading digit(s)
+        return symbol;
     }
     return null;
   }

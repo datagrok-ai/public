@@ -62,7 +62,7 @@ export class MMPA {
     return new MMPA(initData, frags, rules, allCasesNumber, rulesBased, allCasesBased, null, null, gpu);
   }
 
-  static async fromData(data: string, molName: string, molecules: string[],
+  static async fromData(molName: string, data: string, molecules: string[],
     activities: Float32Array[], activitiesNames: string[]): Promise<MMPA> {
     const initData: MmpInitData =
     {molName, molecules, activities, activitiesNames, activitiesCount: activitiesNames.length};
