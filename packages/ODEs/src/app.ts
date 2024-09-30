@@ -1258,8 +1258,9 @@ export class DiffStudio {
       await this.tryToSolve(ivp);
       const scriptText = getScriptLines(ivp, true, true).join('\n');
       const script = DG.Script.create(scriptText);
-      //@ts-ignore
-      await SensitivityAnalysisView.fromEmpty(script);
+      await SensitivityAnalysisView.fromEmpty(script, {
+        inputsLookup: ivp.inputsLookup !== null ? ivp.inputsLookup : undefined,
+      });
     } catch (err) {
       this.clearSolution();
       grok.shell.error(`${ERROR_MSG.SENS_AN_FAILS}:
@@ -1274,8 +1275,9 @@ export class DiffStudio {
       await this.tryToSolve(ivp);
       const scriptText = getScriptLines(ivp, true, true).join('\n');
       const script = DG.Script.create(scriptText);
-      //@ts-ignore
-      await FittingView.fromEmpty(script);
+      await FittingView.fromEmpty(script, {
+        inputsLookup: ivp.inputsLookup !== null ? ivp.inputsLookup : undefined,
+      });
     } catch (err) {
       this.clearSolution();
       grok.shell.error(`${ERROR_MSG.SENS_AN_FAILS}:
