@@ -298,7 +298,7 @@ export class DiffStudio {
     grok.shell.windows.showContextPanel = false;
     grok.shell.windows.showProperties = false;
     grok.shell.windows.help.visible = true;
-    await this.runSolving(false);
+    await this.runSolving(true);
   } // runSolverDemoApp
 
   /** Return file preview view */
