@@ -14,7 +14,7 @@ import {
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
-import {useStorage} from '@vueuse/core';
+import {useElementHover, useStorage} from '@vueuse/core';
 import {FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
 type PanelsState = {
@@ -108,6 +108,13 @@ export const ScalarsPanel = Vue.defineComponent({
       return [scalarValue, units];
     };
 
+    const copyToClipboard = async (text: string) => {
+      await navigator.clipboard.writeText(text);
+      grok.shell.info('Value is copied to clipboard');
+    };
+
+    const hoveredIdx = Vue.ref(null as null | number);
+    
     return () => 
       props.categoryScalars.length <= 3 ?
         <div 
@@ -115,14 +122,25 @@ export const ScalarsPanel = Vue.defineComponent({
           dock-spawn-dock-type='down'
           dock-spawn-dock-ratio={0.15}
         >
-          { props.categoryScalars.map((prop) => {
+          { props.categoryScalars.map((prop, idx) => {
             const [scalarValue, units] = getContent(prop);
 
             return <div 
               class='flex flex-col p-2 items-center gap-4 flex-nowrap'
+              onMouseenter={() => hoveredIdx.value = idx}
+              onMouseleave={() => hoveredIdx.value = null}
             > 
               <div class='text-center' style={{color: 'var(--grey-4)'}}> { prop.caption ?? prop.name } </div>
-              <span style={{fontSize: 'var(--font-size-large)'}}> {scalarValue} {units} </span>
+              <span style={{fontSize: 'var(--font-size-large)'}}> 
+                { scalarValue } { units } 
+                <span style={{color: 'var(--grey-3)', paddingLeft: '3px'}} class='absolute'> 
+                  { hoveredIdx.value === idx && <IconFA 
+                    name='copy' 
+                    tooltip="Copy caption & value" 
+                    onClick={() => copyToClipboard(`${ prop.caption ?? prop.name } ${ scalarValue } ${ units } `)}
+                  /> }
+                </span>
+              </span>
             </div>;
           })}
         </div> :
@@ -130,12 +148,24 @@ export const ScalarsPanel = Vue.defineComponent({
           <table class='d4-table d4-item-table d4-info-table rfv-scalar-table'> 
             <tbody>
               { 
-                props.categoryScalars.map((prop) => { 
+                props.categoryScalars.map((prop, idx) => { 
                   const [scalarValue, units] = getContent(prop);
-                  return <tr>
+
+                  return <tr
+                    onMouseenter={() => hoveredIdx.value = idx}
+                    onMouseleave={() => hoveredIdx.value = null}
+                  >
                     <td> <span> { prop.caption ?? prop.name } </span></td>
-                    <td> <span> { scalarValue } </span></td>
                     <td> <span> { units } </span></td>
+                    <td> <span> { scalarValue } </span></td>
+                    <td> 
+                      { hoveredIdx.value === idx && <IconFA 
+                        style={{color: 'var(--grey-3)'}}
+                        name='copy' 
+                        tooltip="Copy caption & value" 
+                        onClick={() => copyToClipboard(`${ prop.caption ?? prop.name } ${ scalarValue } ${ units } `)}
+                      /> }
+                    </td>
                   </tr>;
                 })
               }
