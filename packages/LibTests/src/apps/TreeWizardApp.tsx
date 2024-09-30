@@ -188,7 +188,7 @@ export const TreeWizardApp = Vue.defineComponent({
           { treeState.value && !treeHidden.value ? <Draggable 
             class="ui-div mtl-tree p-2 overflow-scroll"
             style={{paddingLeft: '25px'}}
-            {...{title: 'Steps'}}
+            dock-spawn-title='Steps'
             dock-spawn-dock-type='left'
             dock-spawn-dock-ratio={0.3}
             rootDroppable={false}
@@ -245,7 +245,7 @@ export const TreeWizardApp = Vue.defineComponent({
                 key={ `${callsState.value?.[chosenStepUuid.value!]?.value?.isOutputOutdated}` }
                 onUpdate:funcCall={(call) => (chosenStepState.value as StepFunCallState).funcCall = call}
                 onRunClicked={() => runStep(chosenStepState.value!.uuid)}
-                {...{title: 'Step review'}}
+                dock-spawn-title='Step review'
                 ref={rfvRef}
               />
           }
@@ -254,7 +254,7 @@ export const TreeWizardApp = Vue.defineComponent({
             !isFuncCallState(chosenStepState.value) && chosenStepState.value.provider && 
             <ParentFunccallView 
               funcCall={DG.Func.byName(chosenStepState.value.nqName!).prepare()}
-              {...{title: 'Step sequence review'}}
+              dock-spawn-title='Step sequence review'
               onProceedClicked={() => {
                 if (chosenStepState.value && !isFuncCallState(chosenStepState.value)) 
                   chosenStepUuid.value = chosenStepState.value.steps[0].uuid;

@@ -104,7 +104,8 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
     if (dockPanelTypeAttribute)
       dockPanelType = <PanelType><any>dockPanelTypeAttribute;
     const hideCloseButton = element.hasAttribute('dock-spawn-hide-close-button');
-    const container = new PanelContainer(slot, this.dockManager, element.title, dockPanelType, hideCloseButton);
+    const title = element.getAttribute('dock-spawn-title');
+    const container = new PanelContainer(slot, this.dockManager, title, dockPanelType, hideCloseButton);
     element.slot = slotName;
     this.slotElementMap.set(slot, (<HTMLElement>element));
     this.elementContainerMap.set(element, container);

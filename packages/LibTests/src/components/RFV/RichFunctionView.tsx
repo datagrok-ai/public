@@ -324,7 +324,7 @@ export const RichFunctionView = Vue.defineComponent({
               onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
               dock-spawn-dock-type='right'
               dock-spawn-dock-ratio={0.2}
-              {...{title: 'History'}}
+              dock-spawn-title='History'
               ref={historyRef}
               class='overflow-scroll h-full'
             />: null }
@@ -334,7 +334,7 @@ export const RichFunctionView = Vue.defineComponent({
               class='flex flex-col p-2 overflow-scroll h-full'
               dock-spawn-dock-type='left'
               dock-spawn-dock-ratio={0.2}
-              title='Inputs'
+              dock-spawn-title='Inputs'
               ref={formRef}
             >
               <InputForm 
@@ -360,7 +360,7 @@ export const RichFunctionView = Vue.defineComponent({
                   const dfProp = tabContent.dfProp;
                   return <div 
                     class='flex flex-col pl-2 h-full w-full'
-                    {...{'title': `${tabLabel}`}}
+                    dock-spawn-title={tabLabel}
                   >
                     <Viewer
                       type={options['type'] as string}
@@ -375,7 +375,7 @@ export const RichFunctionView = Vue.defineComponent({
                   return <ScalarsPanel 
                     categoryScalars={tabContent.scalarProps}
                     funcCall={currentCall.value}
-                    {...{'title': tabLabel}}
+                    dock-spawn-title={tabLabel}
                   />;
                 }
               })
@@ -383,7 +383,7 @@ export const RichFunctionView = Vue.defineComponent({
           { !helpHidden.value && helpText.value ? 
             <MarkDown 
               markdown={helpText.value}
-              {...{title: 'Help'}}
+              dock-spawn-title='Help'
               dock-spawn-dock-type='right'
               dock-spawn-dock-ratio={0.15}
               ref={helpRef}
