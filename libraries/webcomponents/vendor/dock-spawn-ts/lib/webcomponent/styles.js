@@ -144,9 +144,6 @@ export const style1 = css `
   background-color: #ffcc00;
 }
 /*************************** Tab Host ********************************/
-.dockspan-tab-host {
-  background-color: #fff;
-}
 .dockspan-tab-content {
   background-color: #fff;
 }
@@ -431,6 +428,8 @@ export const style2 = css `/************* Panel with title bar ************/
 .dockspan-tab-host {
   display: inline-block;
   position: absolute;
+  background-color: #fff;
+  left: 0px;
 }
 .dockspan-tab-content {
   position: relative;
