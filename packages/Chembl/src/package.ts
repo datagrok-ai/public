@@ -186,10 +186,3 @@ export async function chemblPKForDrugSearchWidget(s: string) {
   return await chemblPKForDrugSearch(s);
 }
 
-//name: chemblActivityDetailsForTargetSearchWidget
-//tags: search
-//input: string s
-//output: widget w
-export async function chemblActivityDetailsForTargetSearchWidget(s: string) {
-  return await activityDetailsForTarget(s);
-}
