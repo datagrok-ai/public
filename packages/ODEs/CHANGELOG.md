@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## 1.1.4 (2024-09-30)
+
+Added the use of lookup tables in the Sensitivity Analysis & Fitting features
+
 ## 1.1.3 (2024-09-18)
 
 Added the use of lookup tables
