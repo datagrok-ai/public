@@ -1108,7 +1108,7 @@ export class Package extends Entity {
   }
 
   /** Returns settings for a package. */
-  getSettings(): Promise<any> {
+  getSettings(): Promise<Map<string, any>> {
     return api.grok_Package_Get_Settings(this.name);
   }
 
@@ -1124,6 +1124,19 @@ export class Package extends Entity {
     if (this._files == null)
       this._files = new FileSource(`System:AppData/${this.name}`);
     return this._files;
+  }
+
+  public async getTests(core: boolean = false) {
+    try {
+      await this.load({ file: 'package-test.js' });
+      let module = this.getModule('package-test.js');
+      if (core && module.initAutoTests)
+        module.initAutoTests();
+      return module.tests;
+    } catch (e: any) {
+      this.logger.error(e?.msg ?? 'get module error')
+      return undefined;
+    }
   }
 }
 

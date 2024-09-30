@@ -18,6 +18,7 @@ import {Matrix} from '@datagrok-libraries/utils/src/type-declarations';
 import {MCLMethodName, createMCLWorker} from '../MCL';
 import {multiColWebGPUSparseMatrix} from '@datagrok-libraries/math/src/webGPU/sparse-matrix/webGPU-sparse-matrix';
 import {WEBGSLAGGREGATION} from '@datagrok-libraries/math/src/webGPU/multi-col-distances/webGPU-aggregation';
+import wu from 'wu';
 
 export let activityCliffsIdx = 0;
 
@@ -180,7 +181,8 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
   df.temp[TEMPS.cliffsDfGrid] = linesDfGrid;
 
   const listCliffsLink = ui.button(`${linesRes.linesDf.rowCount} cliffs`, () => {
-    if (demo) //for grid viewer to be visible in demo app
+    const viewerExists = wu(view.viewers).some((v) => v.type === DG.VIEWER.GRID);
+    if (demo && !viewerExists) // Ensure the grid viewer is added only once if not already present in the demo app
       view.addViewer(linesDfGrid);
     view.dockManager.dock(linesDfGrid, 'down', null, 'Activity cliffs', cliffsDockRatio ?? 0.2);
   });
@@ -431,7 +433,8 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
   df.temp[TEMPS.cliffsDfGrid] = linesDfGrid;
 
   const listCliffsLink = ui.button(`${linesRes.linesDf.rowCount} cliffs`, () => {
-    if (demo) //for grid viewer to be visible in demo app
+    const viewerExists = wu(view.viewers).some((v) => v.type === DG.VIEWER.GRID);
+    if (demo && !viewerExists) // Ensure the grid viewer is added only once if not already present in the demo app
       view.addViewer(linesDfGrid);
     view.dockManager.dock(linesDfGrid, 'down', undefined, 'Activity cliffs', cliffsDockRatio ?? 0.2);
   });

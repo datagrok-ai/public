@@ -5,28 +5,34 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 
 import {
-  App, Atom, HelmType, GetMonomerFunc, GetMonomerResType, HelmString, HelmMol,
-  MonomerExplorer, TabDescType, MonomersFuncs, MonomerSetType, HelmAtom, ISeqMonomer, PolymerType, MonomerType, type DojoType
+  App, Point, HelmAtom, HelmBond, HelmMol, HelmType, GetMonomerFunc, GetMonomerResType,
+  MonomerExplorer, TabDescType, MonomersFuncs, MonomerSetType, ISeqMonomer, PolymerType, MonomerType,
+  DojoType, JSDraw2ModuleType,
 } from '@datagrok-libraries/bio/src/helm/types';
 import {HelmTypes, MonomerTypes, PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
-import {HelmInputBase, IHelmHelper, IHelmInputInitOptions} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {
+  HelmConvertRes, HelmInputBase, HelmNotSupportedError, IHelmHelper, IHelmInputInitOptions
+} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
-import {IMonomerLib, IMonomerLinkData, IMonomerSetPlaceholder} from '@datagrok-libraries/bio/src/types/index';
+import {IMonomerLib, IMonomerLibBase, IMonomerLinkData, IMonomerSetPlaceholder} from '@datagrok-libraries/bio/src/types/index';
 import {HelmTabKeys, IHelmDrawOptions} from '@datagrok-libraries/helm-web-editor/src/types/org-helm';
+import {GAP_SYMBOL, GapOriginals, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 
 import {HelmWebEditor} from './helm-web-editor';
 import {OrgHelmModule, ScilModule} from './types';
-import {getWebEditorMonomer} from './utils/get-monomer';
 import {HelmInput} from './widgets/helm-input';
 import {getHoveredMonomerFromEditorMol} from './utils/get-hovered';
 
 import {_package} from './package';
 
 declare const dojo: DojoType;
+declare const JSDraw2: JSDraw2ModuleType;
 declare const scil: ScilModule;
 declare const org: OrgHelmModule;
+
+const HELM_GAP_SYMBOL: string = GapOriginals[NOTATION.HELM];
 
 export class HelmHelper implements IHelmHelper {
   private static instanceCount: number = 0;
@@ -41,7 +47,7 @@ export class HelmHelper implements IHelmHelper {
 
   createHelmInput(name?: string, options?: IHelmInputInitOptions): HelmInputBase {
     try {
-      const monomerLib: IMonomerLib = _package.libHelper!.getMonomerLib();
+      const monomerLib: IMonomerLibBase = _package.libHelper!.getMonomerLib();
       return HelmInput.create(this, monomerLib, name, options);
     } catch (err: any) {
       const [errMsg, errStack] = errInfo(err);
@@ -256,7 +262,7 @@ export class HelmHelper implements IHelmHelper {
           // logger.debug(`${logPrefixInt}, a: ${JSON.stringify(a, helmJsonReplacer)}, name: '${name}'`);
 
           // Creates monomers in lib
-          const dgWem = getWebEditorMonomer(monomerLib, a, name);
+          const dgWem = monomerLib.getWebEditorMonomer(a, name);
 
           return dgWem; //dgWem;
         } catch (err) {
@@ -331,5 +337,70 @@ export class HelmHelper implements IHelmHelper {
       $(host).empty();
       host.remove();
     }
+  }
+
+  public parse(helm: string, origin?: Point): HelmMol {
+    const molHandler = new JSDraw2.MolHandler<HelmType>();
+    const plugin = new org.helm.webeditor.Plugin(molHandler);
+    org.helm.webeditor.IO.parseHelm(plugin, helm, origin ?? new JSDraw2.Point(0, 0));
+    return plugin.jsd.m;
+  }
+
+  removeGaps(srcHelm: string): HelmConvertRes {
+    const monomerMap = new Map<number, number>();
+    const mol: HelmMol = this.parse(srcHelm);
+    for (let aI: number = mol.atoms.length - 1; aI >= 0; --aI) {
+      const a = mol.atoms[aI];
+      if (a.elem === HELM_GAP_SYMBOL /* '*' - original */) {
+        const leftBondList: { aI: number, bI: number }[] = [];
+        const rightBondList: { aI: number, bI: number }[] = [];
+        for (let bI: number = mol.bonds.length - 1; bI >= 0; --bI) {
+          const b = mol.bonds[bI];
+          if (b.a1 !== a && b.a2 === a) leftBondList.push({aI, bI});
+          if (b.a1 === a && b.a2 !== a) rightBondList.push({aI, bI});
+        }
+        if (leftBondList.length > 1 || rightBondList.length > 1)
+          throw new HelmNotSupportedError(`Removing a gap monomer #${aI} with more than two bonds is unsupported.`);
+
+        const lb = leftBondList[0];
+        const rb = rightBondList[0];
+        if (lb && !rb) {
+          mol.bonds.splice(lb.bI, 1);
+          mol.atoms.splice(lb.aI, 1);
+        } else if (!lb && rb) {
+          const rb = rightBondList[0];
+          mol.bonds.splice(rb.bI, 1);
+          mol.atoms.splice(rb.aI, 1);
+        } else {
+          if (lb.aI !== rb.aI)
+            throw new Error('Something is really wrong here.');
+
+          // is not enough, breaks the simple polymer
+          //mol.delAtom(a, true);
+
+          const leftBond = mol.bonds[lb.bI];
+          const rightBond = mol.bonds[rb.bI];
+          const a2 = leftBond.a2 = rightBond.a2; // right atom
+          leftBond.r2 = rightBond.r2;
+          leftBond.apo2 = rightBond.apo2;
+
+          if (a2.bonds)
+            throw new Error('Bond list of the atom is not corrected.');
+          // a2.bonds!.splice(a2.bonds!.indexOf(rightBond), 1); // remove the right bond from links of the right atom
+          // a2.bonds!.push(leftBond); // put the left bond to links of the right atom
+
+          mol.bonds.splice(rb.bI, 1); // remove right bond
+          mol.atoms.splice(lb.aI, 1);
+        }
+      }
+    }
+
+    for (let aI: number = 0; aI < mol.atoms.length; ++aI) {
+      const a: HelmAtom = mol.atoms[aI];
+      monomerMap.set(parseInt(a.bio!.continuousId as string) - 1, aI);
+    }
+
+    const resHelm = org.helm.webeditor.IO.getHelm(mol)!;
+    return {srcHelm, resHelm, monomerMap};
   }
 }

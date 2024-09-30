@@ -5,7 +5,7 @@ import * as grok from 'datagrok-api/grok';
 // import {JSDraw2ModuleType} from '@datagrok/js-draw-lite/src/types/jsdraw2';
 // import {HelmType, OrgHelmModuleType} from '@datagrok/helm-web-editor/src/types/org-helm';
 
-import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
+import {runTests, tests, TestContext, initAutoTests as initTests } from '@datagrok-libraries/utils/src/test';
 
 import './tests/_first-tests';
 import './tests/helm-tests';
@@ -19,6 +19,7 @@ import './tests/get-monomer-tests';
 import './tests/parse-helm-tests';
 import './tests/helm-web-editor-tests';
 import './tests/helm-input-tests';
+import './tests/helm-helper-tests';
 
 export const _package = new DG.Package();
 export {tests};
@@ -32,4 +33,9 @@ export async function test(category: string, test: string, testContext: TestCont
   // verbose: true - for tests returning dataframe
   const data = await runTests({category, test, testContext, verbose: true});
   return DG.DataFrame.fromObjects(data)!;
+}
+
+//name: initAutoTests
+export async function initAutoTests() {
+  await initTests(_package, _package.getModule('package-test.js'));
 }

@@ -1,0 +1,43 @@
+#name: Nimotuzumab
+#tags: model
+#description: Nimotuzumab disposition model
+#comment: Source: https://www.mdpi.com/1999-4923/12/12/1147
+#equations:
+  dA1/dt = (-(CL * A3 / V1 + Q / V1) * A1 + Q / V2 * A2 - kint * Rtot * A1 / (Kss + A1 / V1)) 
+           / (1 + Rtot * Kss / (Kss + A1 / V1)**2)
+
+  dA2/dt = (Q / V1 * A1 - Q / V2 * A2) / (1 + Rtotp * Kss / (Kss + A2 / V2)**2)
+
+  dA3/dt = Kin * (1 + Smax * A1**gamma / (S50**gamma + A1**gamma)) - Kout * A3
+
+#argument: t
+  start = 0 {caption: Initial; category: Time; min: 0; max: 10} [Initial time of simulation]
+  finish = 70 {caption: Final; category: Time; min: 50; max: 100} [Final time of simulation]
+  step = 0.01 {caption: Step; category: Time; min: 0.01; max: 1} [Time step of simlulation]
+
+#inits:
+  A1 = 0.43 {category: Initials; min: 0.2; max: 0.6} [Central]
+  A2 = 0.55 {category: Initials; min: 0.3; max: 0.8} [Periferal]
+  A3 = 10.32 {category: Initials; min: 5; max: 15} [Mediator]
+
+#output:
+  t {caption: Time, h}
+  A1 {caption: Central}
+  A2 {caption: Periferal}
+
+#parameters:
+  CL = 9.64E-3 {category: Parameters; min: 0.005; max: 0.015} [Non-specific clearance]
+  V1 = 2.63 {category: Parameters; min: 0.7; max: 3} [Apparent volume of distribution of the central compartment]
+  Q = 2.88E-2 {category: Parameters; min: 0.015; max: 0.035} [Distribution clearance of free nimotuzumab between the central and peripheral compartment]
+  V2 = 9.92E-3 {category: Parameters; min: 0.0067; max: 0.0265} [Apparent volume of distribution of the peripheral compartment]
+  Kss = 15.5 {category: Parameters; min: 10; max: 45} [Quasi steady state constant for the EGFR]
+  kint = 1E-2 {category: Parameters; min: 0.01; max: 0.05} [Internalization rate for nimotuzumab-EGFR]
+  Rtot = 1.05E-2 {category: Parameters; min: 0.007; max: 0.032} [EGFR in the central compartment]
+  Rtotp = 956 {category: Parameters; min: 120; max: 3500} [EGFR in the peripheral compartment]
+  Kin = 1.33E-2 {category: Parameters; min: 0.01; max: 0.05} [Zero-order synthesis rate constant]
+  Kout = 1.33E-2 {category: Parameters; min: 0.001; max: 0.02} [First-order elimination rate constant]
+  S50 =	8.57 {category: Parameters; min: 5; max: 12} [Concentration of free nimotuzumab in the central compartment that achieves the half of Smax]
+  Smax = 3.18 {category: Parameters; min: 1; max: 5} [Maximal effect of the stimulation]
+  gamma = 0.5 {category: Parameters; min: 0.1; max: 1} [Hill coefficient of the sigmoid function]
+
+#tolerance: 1E-7

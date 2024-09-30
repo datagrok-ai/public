@@ -5,34 +5,27 @@ sidebar_position: 6
 
 Analysis of variance ([ANOVA](https://en.wikipedia.org/wiki/Analysis_of_variance)) determines whether the examined factor has a significant impact on the studied feature.
 
-## Perform ANOVA
-
-* Open a table
-* Run **Top Menu > ML > Analyze > ANOVA...**
-* Select the source table
-* Select `Factor` and `Feature` columns
-* Set `Significance` and `Validate` check option
-* Press **OK**
-
-The following analysis appears:
+1. Open a table
+2. Run **Top Menu > ML > Analyze > ANOVA...**. A dialog opens.
+3. In the dialog, specify
+   * the column with factor values (in the `Category` field)
+   * the column with features values (in the `Feature` field)
+   * the significance level (in the `Alpha` field)
+4. Click `Run` to execute. The following analysis appears:
 
 ![add-to-workspace](anova.gif)
-
-## Outputs
-
-### Box plot
 
 The box plot shows the distribution of values by categories:
 
 ![anova-box-plot.png](anova-box-plot.png)
 
-### Summary
-
-The ANOVA summary table presents results of computations:
+The `Analysis` tab presents a table with ANOVA computations:
 
 ![anova-summary-table.png](anova-summary-table.png)
 
-The null hypothesis is rejected if the p-value is smaller than the specified significance.
+Click the `F-test` tab and explore the null hypothesis testing:
+
+![add-to-workspace](anova-f-test.gif)
 
 See also:
 

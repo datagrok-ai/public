@@ -544,6 +544,13 @@ export interface IScatterPlotSettings {
 
   markerMaxSize: number;
 
+  /// When defined, a line would be drawn for each series (defined by the categorical color column)
+  /// using the order specified by "Lines Order"
+  linesOrder: string;
+  linesOrderColumnName: string;
+
+  linesWidth: number;
+
   /// Labels to show next to the markers.
   labels: string;
   labelsColumnName: string;

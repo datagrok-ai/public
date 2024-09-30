@@ -42,8 +42,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     public Connection getConnection(DataConnection conn) throws SQLException, GrokConnectException {
         prepareProvider();
-        return ConnectionPool.getInstance().getConnection(getConnectionString(conn),
-                getProperties(conn), driverClassName);
+        return ConnectionPool.getConnection(getConnectionString(conn), getProperties(conn), driverClassName);
     }
 
     public Properties getProperties(DataConnection conn) {
@@ -560,8 +559,8 @@ public abstract class JdbcDataProvider extends DataProvider {
             }
         }
         if (funcInfo != null) {
-            String sql = funcInfo.dbFunctionName.replaceAll("#", aggr.colName);
-            return sql + " as " + addBrackets(sql);
+            String sql = funcInfo.dbFunctionName.replaceAll("#", addBrackets(aggr.colName));
+            return sql + " as " + addBrackets(funcInfo.dbFunctionName.replaceAll("#", aggr.colName));
         }
         else
             return null;

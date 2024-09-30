@@ -4,9 +4,11 @@ import * as DG from 'datagrok-api/dg';
 
 import {category, test, expect} from '@datagrok-libraries/utils/src/test';
 
-import {importFasta} from '../package';
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+
+import {_testNeg, _testPos, DetectorTestData, DfReaderFunc, PosCol} from './utils/detectors-utils';
+import {importFasta} from '../package';
 
 /*
 // snippet to list df columns of semType='Macromolecule' (false positive)
@@ -18,20 +20,6 @@ for (let i = 0; i < df.columns.length; i++) {
   }
 }
  */
-
-type DfReaderFunc = () => Promise<DG.DataFrame>;
-
-
-class PosCol {
-  constructor(
-    public readonly units: string,
-    public readonly aligned: string | null,
-    public readonly alphabet: string | null,
-    public readonly alphabetSize: number,
-    public readonly alphabetIsMultichar?: boolean,
-    public readonly separator?: string,
-  ) { };
-}
 
 category('detectors', () => {
   const enum csvTests {
@@ -57,7 +45,7 @@ category('detectors', () => {
     helmSameLength = 'helmSameLength',
   }
 
-  const csvData2: { [testName: string]: { csv: string, neg?: string[], pos?: { [colName: string]: PosCol } } } = {
+  const csvData2: DetectorTestData = {
     'negEmpty': {
       csv: `id,col1
 1,
@@ -147,16 +135,16 @@ YN[Re]VYNR[Ac]WYV
     },
     'sepSameLength': {
       csv: `seq
-Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2
-Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2
-Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2`,
+Aca-A-A-A-A-A-A-A-A-A-A-A-A-A-C-G-NH2
+Aca-A-A-A-A-A-A-A-A-A-A-A-A-A-C-G-NH2
+Aca-A-A-A-A-A-A-A-A-A-A-A-A-A-C-G-NH2`,
       pos: {'seq': new PosCol(NOTATION.SEPARATOR, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 5, true, '-')}
     },
     'sepMsaSameLength': {
       csv: `seq
-Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2
-Ac(1)-A-A(2)-A-A-A-C(2)-A-A-A-A-C(1)-G-NH2
-Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2`,
+Aca-A-A-A-A-A-A-A-A-A-A-A-A-A-Aca-G-NH2
+Aca-A-Aca-A-A-A-meI-A-A-A-A-A-Aca-G-NH2
+Aca-A-A-A-A-A-A-A-A-A-A-A-A-A-Aca-G-NH2`,
       pos: {'seq': new PosCol(NOTATION.SEPARATOR, ALIGNMENT.SEQ, ALPHABET.UN, 5, true, '-')}
     },
     'helmSameLength': {
@@ -166,6 +154,12 @@ PEPTIDE1{Ab(1).Y.V.K.H.P.F.W.R.W.Y.A.A.A.C(1).G.NH2}$$$$
 PEPTIDE1{Ad(1).S.W.Y.C.K.H.P.M.W.A.A.A.A.C(1)-G-NH2}$$$$`,
       pos: {'seq': new PosCol(NOTATION.HELM, null, null, 19, undefined, undefined)}
     },
+    'fastaNonDigitAlphabet': {
+      csv: `flagC
+"NMe-pyridazineH"
+"Pyrrolo[2,3-c]pyridazineH"`,
+      neg: ['flagC']
+    }
   };
 
   const readCsv2: (key: keyof typeof csvData2) => DfReaderFunc = (key: keyof typeof csvData2) => {
@@ -237,9 +231,9 @@ m1-mon2-m3-mon4-mon5-Num--MON8-N9-m1-mon2-m3-mon4-mon5-Num--MON8-N9
 
 mon1-M-mon3-mon4-mon5---MON8-N9-mon1-M-mon3-mon4-mon5---MON8-N9`;
     [csvTests.sepComplex]: string = `seq
-Ac(1)-F-K(AEEA-AEEA-R-Ac)-L-mF-V-Y-mNle-D-W-N-mF-C(1)-G-NH2
-Ac(1)-F-K(AEEA-ARRA-W-Ac)-L-mF-V-Y-mNle-D-W-N-mF-C(1)-G-NH2
-Ac(1)-F-K(AEEA-AEEA-Ac)-L-mF-V-Y-mNle-D-W-N-mF-C(1)-G-NH2`;
+Aca-F-K(AEEA-AEEA-R-Ac)-L-mF-V-Y-mNle-D-W-N-mF-Aca-G-NH2
+Aca-F-K(AEEA-ARRA-W-Ac)-L-mF-V-Y-mNle-D-W-N-mF-Aca-G-NH2
+Aca-F-K(AEEA-AEEA-Ac)-L-mF-V-Y-mNle-D-W-N-mF-Aca-G-NH2`;
     [csvTests.fastaMsaDna1]: string = `seq
 AC-GT-CTAC-GT-CT
 CAC-T-GTCAC-T-GT
@@ -406,7 +400,7 @@ MWRSWY-CKHPMWRSWY-CKHP`;
 
   test('SepComplex', async () => {
     await _testPos(readCsv(csvTests.sepComplex), 'seq',
-      NOTATION.SEPARATOR, ALIGNMENT.SEQ, ALPHABET.UN, 18, true);
+      NOTATION.SEPARATOR, ALIGNMENT.SEQ, ALPHABET.UN, 17, true);
   });
 
   test('samplesFastaCsv', async () => {
@@ -517,20 +511,6 @@ export async function _testNegList(list: string[]): Promise<void> {
   }
 }
 
-export async function _testNeg(readDf: DfReaderFunc, colName: string) {
-  const df: DG.DataFrame = await readDf();
-  const col: DG.Column = df.getCol(colName)!;
-  const semType: string = await grok.functions
-    .call('Bio:detectMacromolecule', {col: col}) as unknown as string;
-  if (semType)
-    col.semType = semType;
-
-  if (col.semType === DG.SEMTYPE.MACROMOLECULE) {
-    const msg = `Negative test detected semType='${col.semType}', units='${col.meta.units}'.`;
-    throw new Error(msg);
-  }
-}
-
 export async function _testPosList(list: string[], units: NOTATION,
   aligned: ALIGNMENT, alphabet: ALPHABET, alphabetSize: number, alphabetIsMultichar: boolean,
   separator: string | null = null
@@ -555,35 +535,6 @@ export async function _testPosList(list: string[], units: NOTATION,
     expect(sh.alphabet, alphabet);
   }
 }
-
-export async function _testPos(
-  readDf: DfReaderFunc, colName: string, units: string, aligned: string | null,
-  alphabet: string | null, alphabetSize: number, alphabetIsMultichar?: boolean,
-  separator: string | null = null,
-) {
-  const df: DG.DataFrame = await readDf();
-  const col: DG.Column = df.col(colName)!;
-  const semType: string = await grok.functions
-    .call('Bio:detectMacromolecule', {col: col}) as unknown as string;
-  if (semType)
-    col.semType = semType;
-
-  expect(col.semType, DG.SEMTYPE.MACROMOLECULE);
-  expect(col.meta.units, units);
-  expect(col.getTag(bioTAGS.aligned), aligned);
-  expect(col.getTag(bioTAGS.alphabet), alphabet);
-  if (separator)
-    expect(col.getTag(bioTAGS.separator), separator);
-
-  const sh = SeqHandler.forColumn(col);
-  expect(sh.getAlphabetSize(), alphabetSize);
-  expect(sh.getAlphabetIsMultichar(), alphabetIsMultichar);
-  if (!sh.isHelm()) {
-    expect(sh.aligned, aligned);
-    expect(sh.alphabet, alphabet);
-  }
-}
-
 
 export async function _testDf(readDf: DfReaderFunc, posCols: { [colName: string]: PosCol }): Promise<void> {
   const df: DG.DataFrame = await readDf();

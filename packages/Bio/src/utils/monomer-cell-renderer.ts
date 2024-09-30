@@ -4,7 +4,8 @@ import * as ui from 'datagrok-api/ui';
 
 import {PolymerType} from '@datagrok-libraries/bio/src/helm/types';
 import {ALPHABET, getPaletteByType, monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {TAGS as bioTAGS, } from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {MONOMER_RENDERER_TAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 
 import * as C from './constants';
@@ -92,7 +93,7 @@ export class MonomerCellRenderer extends DG.GridCellRenderer {
   ): void {
     if (gridCell.gridRow < 0) return;
     MonomerTooltipHandler.getOrCreate(gridCell.gridColumn);
-
+    const applyToBackground = gridCell.cell?.column && gridCell.cell.column.getTag(MONOMER_RENDERER_TAGS.applyToBackground) === 'true';
 
     g.font = `12px monospace`;
     g.textBaseline = 'middle';
@@ -103,11 +104,14 @@ export class MonomerCellRenderer extends DG.GridCellRenderer {
     if (!s)
       return;
     const color = palette.get(s);
-
-    g.fillStyle = color;
     //cell width of monomer should dictate how many characters can be displayed
     // for width 40, 6 characters can be displayed (0.15 is 6 / 40)
     const maxChars = Math.max(2, Math.floor(w * 0.15));
+    g.fillStyle = color;
+    if (applyToBackground) {
+      g.fillRect(x, y, w, h);
+      g.fillStyle = DG.Color.toHtml(DG.Color.getContrastColor(DG.Color.fromHtml(color)));
+    }
     g.fillText(monomerToShort(s, maxChars), x + (w / 2), y + (h / 2), w);
   }
 }

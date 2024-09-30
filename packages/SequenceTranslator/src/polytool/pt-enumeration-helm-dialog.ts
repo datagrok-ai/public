@@ -10,7 +10,7 @@ import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {HelmAtom, HelmMol} from '@datagrok-libraries/helm-web-editor/src/types/org-helm';
 import {getHelmHelper, HelmInputBase} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {HelmType, ISeqMonomer} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmType, PolymerType} from '@datagrok-libraries/bio/src/helm/types';
 import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {getSeqHelper, ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import '@datagrok-libraries/bio/src/types/input';
@@ -25,6 +25,7 @@ import {getLibrariesList} from './utils';
 import {doPolyToolEnumerateHelm, PT_HELM_EXAMPLE} from './pt-enumeration-helm';
 import {PolyToolPlaceholdersInput} from './pt-placeholders-input';
 import {defaultErrorHandler} from '../utils/err-info';
+import {PolyToolPlaceholdersBreadthInput} from './pt-placeholders-breadth-input';
 import {PT_UI_DIALOG_ENUMERATION} from './const';
 
 import {_package} from '../package';
@@ -32,15 +33,17 @@ import {_package} from '../package';
 type PolyToolEnumerateInputs = {
   macromolecule: HelmInputBase;
   placeholders: PolyToolPlaceholdersInput;
+  placeholdersBreadth: PolyToolPlaceholdersBreadthInput;
   enumeratorType: DG.ChoiceInput<PolyToolEnumeratorType>
   trivialNameCol: InputColumnBase,
   toAtomicLevel: DG.InputBase<boolean>;
   keepOriginal: DG.InputBase<boolean>;
 };
 
-type PolyToolEnumerateSerialized = {
+type PolyToolEnumerateHelmSerialized = {
   macromolecule: string;
   placeholders: string;
+  placeholdersBreadth: string;
   enumeratorType: PolyToolEnumeratorType;
   trivialNameCol: string;
   toAtomicLevel: boolean;
@@ -136,11 +139,6 @@ async function getPolyToolEnumerateDialog(
     const trivialNameSampleDiv = ui.divText('', {style: {marginLeft: '8px', marginTop: '2px'}});
     const warningsTextDiv = ui.divText('', {style: {color: 'red'}});
     inputs = {
-      enumeratorType: ui.input.choice<PolyToolEnumeratorType>(
-        'Enumerator type', {
-          value: PolyToolEnumeratorTypes.Single,
-          items: Object.values(PolyToolEnumeratorTypes)
-        }) as DG.ChoiceInput<PolyToolEnumeratorType>,
       macromolecule: helmHelper.createHelmInput(
         'Macromolecule', {editable: false}),
       placeholders: await PolyToolPlaceholdersInput.create(
@@ -149,7 +147,19 @@ async function getPolyToolEnumerateDialog(
           showRemoveRowIcon: true,
           showRowHeader: false,
           showCellTooltip: false,
-        }/*, 2/**/),
+        }),
+      enumeratorType: ui.input.choice<PolyToolEnumeratorType>(
+        'Enumerator type', {
+          value: PolyToolEnumeratorTypes.Single,
+          items: Object.values(PolyToolEnumeratorTypes)
+        }) as DG.ChoiceInput<PolyToolEnumeratorType>,
+      placeholdersBreadth: await PolyToolPlaceholdersBreadthInput.create(
+        'Breadth', {
+          showAddNewRowIcon: true,
+          showRemoveRowIcon: true,
+          showRowHeader: false,
+          showCellTooltip: false,
+        }),
       toAtomicLevel: ui.input.bool(
         'To atomic level', {value: false}),
       keepOriginal: ui.input.bool(
@@ -180,9 +190,9 @@ async function getPolyToolEnumerateDialog(
     inputs.placeholders.addValidator((value: string): string | null => {
       const errors: string[] = [];
       try {
-        const missedMonomerList: ISeqMonomer[] = [];
-        for (const [posVal, monomerSymbolList] of Object.entries(inputs.placeholders.placeholdersValue)) {
-          const pos = parseInt(posVal);
+        const missedMonomerList: { polymerType: PolymerType, symbol: string }[] = [];
+        for (const ph of inputs.placeholders.placeholdersValue) {
+          const pos = ph.position;
           if (pos >= inputs.macromolecule.molValue.atoms.length) {
             errors.push(`There is no monomer at position ${pos + 1}.`);
             continue;
@@ -190,7 +200,7 @@ async function getPolyToolEnumerateDialog(
           const a = inputs.macromolecule.molValue.atoms[pos];
           const helmType: HelmType = a.biotype()!;
           const polymerType = helmTypeToPolymerType(helmType);
-          for (const symbol of monomerSymbolList) {
+          for (const symbol of ph.monomers) {
             const substituteMonomer = monomerLib.getMonomer(polymerType, symbol)!;
             // TODO: Check substitution monomer is presented in the library
             if (!substituteMonomer || !substituteMonomer.lib)
@@ -228,8 +238,8 @@ async function getPolyToolEnumerateDialog(
         const hoveredAtom = helmHelper.getHoveredAtom(argsX, argsY, mol, inputs.macromolecule.root.clientHeight);
         if (hoveredAtom) {
           const hoveredAtomContIdx = hoveredAtom._parent.atoms.indexOf(hoveredAtom);
-          const hoveredAtomContIdxStr = (hoveredAtomContIdx + 1).toString();
-          const substitutingMonomers = inputs.placeholders.placeholdersValue[hoveredAtomContIdx];
+          const substitutingMonomers = inputs.placeholders.placeholdersValue
+            .find((ph) => ph.position === hoveredAtomContIdx)?.monomers;
 
           if (substitutingMonomers) {
             const cnt = ui.divText(substitutingMonomers.join(', '));
@@ -377,14 +387,17 @@ async function getPolyToolEnumerateDialog(
         } else /* if (helmSelections === undefined || helmSelections.length < 1) {
           grok.shell.warning('PolyTool: no selection was provided');
         } else /**/ {
-          if (Object.keys(inputs.placeholders.placeholdersValue).length === 0) {
+          if (Object.keys(inputs.placeholders.placeholdersValue).length === 0 &&
+            Object.keys(inputs.placeholdersBreadth.placeholdersBreadthValue).length === 0
+          ) {
             grok.shell.warning(`${PT_UI_DIALOG_ENUMERATION}: placeholders are empty`);
             return;
           }
           await getHelmHelper(); // initializes JSDraw and org
           const params: PolyToolEnumeratorParams = {
-            type: inputs.enumeratorType.value!,
             placeholders: inputs.placeholders.placeholdersValue,
+            type: inputs.enumeratorType.value!,
+            placeholdersBreadth: inputs.placeholdersBreadth.placeholdersBreadthValue,
             keepOriginal: inputs.keepOriginal.value,
           };
           const enumeratorResDf = await polyToolEnumerateHelm(srcHelm, srcId, params, inputs.toAtomicLevel.value, seqHelper);
@@ -399,6 +412,7 @@ async function getPolyToolEnumerateDialog(
       .add(inputs.macromolecule)
       .add(inputs.placeholders)
       .add(inputs.enumeratorType)
+      .add(inputs.placeholdersBreadth)
       .add(inputs.trivialNameCol)
       .add(inputs.toAtomicLevel)
       .add(inputs.keepOriginal)
@@ -412,20 +426,22 @@ async function getPolyToolEnumerateDialog(
       destroy();
     }));
     dialog.history(
-      /* getInput */ (): PolyToolEnumerateSerialized => {
+      /* getInput */ (): PolyToolEnumerateHelmSerialized => {
         return {
           macromolecule: inputs.macromolecule.stringValue,
           placeholders: inputs.placeholders.stringValue,
           enumeratorType: inputs.enumeratorType.value,
+          placeholdersBreadth: inputs.placeholdersBreadth.stringValue,
           trivialNameCol: inputs.trivialNameCol.stringValue,
           toAtomicLevel: inputs.toAtomicLevel.value,
           keepOriginal: inputs.keepOriginal.value,
         };
       },
-      /* applyInput */ (x: PolyToolEnumerateSerialized): void => {
+      /* applyInput */ (x: PolyToolEnumerateHelmSerialized): void => {
         inputs.macromolecule.stringValue = x.macromolecule;
         inputs.placeholders.stringValue = x.placeholders;
         inputs.enumeratorType.value = x.enumeratorType;
+        inputs.placeholdersBreadth.stringValue = x.placeholdersBreadth;
         inputs.trivialNameCol.stringValue = x.trivialNameCol;
         inputs.toAtomicLevel.value = x.toAtomicLevel;
         inputs.keepOriginal.value = x.keepOriginal;
@@ -453,9 +469,8 @@ async function polyToolEnumerateHelm(
     if (toAtomicLevel) {
       const seqHelper: ISeqHelper = await getSeqHelper();
       const toAtomicLevelRes = await seqHelper.helmToAtomicLevel(enumHelmCol, true, true);
-      toAtomicLevelRes.molCol.semType = DG.SEMTYPE.MOLECULE;
-      enumeratorResDf.columns.add(toAtomicLevelRes.molCol, false);
-      enumeratorResDf.columns.add(toAtomicLevelRes.molHighlightCol, false);
+      toAtomicLevelRes.molCol!.semType = DG.SEMTYPE.MOLECULE;
+      enumeratorResDf.columns.add(toAtomicLevelRes.molCol!, false);
     }
 
     if (srcId) {

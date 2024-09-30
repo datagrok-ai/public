@@ -586,6 +586,10 @@ export class GridCell {
     return api.grok_GridCell_Get_Renderer(this.dart);
   }
 
+  render(options?: { context?: CanvasRenderingContext2D, bounds?: Rect}) {
+    api.grok_GridCell_Render(this.dart, options?.context, options?.bounds?.toDart());
+  }
+
   /** Gets or sets HTML element for this grid cell. */
   get element(): HTMLElement { return api.grok_GridCell_Get_Element(this.dart); }
   set element(e: HTMLElement) { api.grok_GridCell_Set_Element(this.dart, e); }

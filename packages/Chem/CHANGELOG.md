@@ -1,5 +1,18 @@
 # Chem changelog
 
+## 1.12.2 (WIP)
+
+### Bug fixes
+
+* Fix rdkit cell renderer error in scatter plot tooltip, add test
+
+## 1.12.1 (2024-09-25)
+
+### Bug fixes
+
+* Expect GPU to be unavailable on some browsers
+* Fix MMPa crushing without errors
+
 ## 1.11.5 (2024-08-27)
 
 ### Bug fixes

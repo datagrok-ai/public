@@ -1,5 +1,12 @@
 # EDA changelog
 
+## 1.2.2 (2024-09-12)
+
+Updated ANOVA:
+
+* Add tests & benchmarks
+* Fixed the incorrect feature column type bug
+
 ## 1.2.1 (2024-09-12)
 
 * Add tests & benchmarks for missing values imputation using KNN

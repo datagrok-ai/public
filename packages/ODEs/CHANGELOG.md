@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## 1.1.3 (2024-09-18)
+
+Added the use of lookup tables
+
 ## 1.1.2 (2024-09-16)
 
 Added the Bioreactor & SimPKPD models

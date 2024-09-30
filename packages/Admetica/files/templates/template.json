@@ -44,7 +44,7 @@
             "enable": false,
             "min": "-6",
             "max": "-5.5",
-            "colors": "[4294901760, 4278255360]"
+            "colors": "[4292224808, 4281114668]"
           }
         },
         {
@@ -86,7 +86,7 @@
             "enable": false,
             "min": "0",
             "max": "5",
-            "colors": "[4294901760, 4278255360]"
+            "colors": "[4292224808, 4281114668]"
           }
         },
         {
@@ -126,7 +126,7 @@
             "enable": false,
             "min": "-4.5",
             "max": "-1",
-            "colors": "[4294901760, 4278255360]"
+            "colors": "[4292224808, 4281114668]"
           }
         }
       ]
@@ -186,9 +186,9 @@
           ],
           "coloring": {
             "type": "Conditional",
-            "> 90": "#00ffff",
-            "40 - 90": "#800000",
-            "< 40": "#ffff00"
+            "> 90": "#1f77b4",
+            "40 - 90": "#8c564b",
+            "< 40": "#bcbd22"
           }
         },
         {
@@ -240,9 +240,9 @@
           ],
           "coloring": {
             "type": "Conditional",
-            "> 2": "#00ffff",
-            "1 - 2": "#800000",
-            "< 1": "#ffff00"
+            "> 2": "#1f77b4",
+            "1 - 2": "#8c564b",
+            "< 1": "#bcbd22"
           }
         }
       ]
@@ -290,7 +290,7 @@
             "enable": false,
             "min": "0",
             "max": "1",
-            "colors": "[4294901760, 4278255360]"
+            "colors": "[4292224808, 4281114668]"
           }
         },
         {
@@ -330,7 +330,7 @@
             "enable": false,
             "min": "0",
             "max": "1",
-            "colors": "[4294901760, 4278255360]"
+            "colors": "[4292224808, 4281114668]"
           }
         },
         {
@@ -370,7 +370,7 @@
             "enable": false,
             "min": "0",
             "max": "1",
-            "colors": "[4294901760, 4278255360]"
+            "colors": "[4292224808, 4281114668]"
           }
         },
         {
@@ -410,7 +410,7 @@
             "enable": false,
             "min": "0",
             "max": "1",
-            "colors": "[4294901760, 4278255360]"
+            "colors": "[4292224808, 4281114668]"
           }
         },
         {
@@ -450,7 +450,7 @@
             "enable": false,
             "min": "0",
             "max": "1",
-            "colors": "[4294901760, 4278255360]"
+            "colors": "[4292224808, 4281114668]"
           }
         },
         {
@@ -490,7 +490,7 @@
             "enable": false,
             "min": "0",
             "max": "1",
-            "colors": "[4294901760, 4278255360]"
+            "colors": "[4292224808, 4281114668]"
           }
         }
       ]
@@ -552,7 +552,7 @@
             "enable": false,
             "min": "10",
             "max": "100",
-            "colors": "[4278255360, 4294901760]"
+            "colors": "[4281114668, 4292224808]"
           }
         },
         {
@@ -606,7 +606,7 @@
             "enable": false,
             "min": "10",
             "max": "100",
-            "colors": "[4278255360, 4294901760]"
+            "colors": "[4281114668, 4292224808]"
           }
         },
         {
@@ -641,7 +641,121 @@
               }
             }
           ],
-          "coloring": ""
+          "coloring": {
+            "type": "Linear",
+            "enable": false,
+            "min": "2",
+            "max": "24",
+            "colors": "[4279746255, 4287915965]"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Toxicity",
+      "expanded": false,
+      "checked": false,
+      "description": "Toxicity measures how much damage a drug could cause to organisms.",
+      "models": [
+        {
+          "name": "hERG",
+          "checked": false,
+          "units": "-",
+          "min": 0,
+          "max": 1,
+          "properties": [
+            {
+              "property": {
+                "name": "description",
+                "inputType": "TextArea",
+                "enable": false
+              },
+              "object": {
+                "description": "Inhibition of the hERG (human Ether-à-go-go-Related Gene) current causes QT interval prolongation and lead to life threatening arrhythmia. Inhibition of hERG is considered as precaution."
+              }
+            },
+            {
+              "property": {
+                "name": "direction",
+                "inputType": "Radio",
+                "choices": [
+                  "Lower is better",
+                  "Higher is better"
+                ],
+                "enable": false
+              },
+              "object": {
+                "direction": "Lower is better"
+              }
+            }
+          ],
+          "coloring": {
+            "type": "Linear",
+            "enable": false,
+            "min": "0",
+            "max": "1",
+            "colors": "[4281114668, 4292224808]"
+          }
+        },
+        {
+          "name": "LD50",
+          "checked": false,
+          "units": "mg/kg",
+          "min": 1,
+          "max": 5000,
+          "properties": [
+            {
+              "property": {
+                "name": "description",
+                "inputType": "TextArea",
+                "enable": false
+              },
+              "object": {
+                "description": "Median lethal dose of a substance is the dose required to kill half the members of a tested population after a specified test duration which is a common characteristic of accute toxicity. It is usually classifies substances to 6 toxicological classes - I - most hazardous, VI - most safe."
+              }
+            },
+            {
+              "property": {
+                "name": "direction",
+                "inputType": "Radio",
+                "choices": [
+                  "Lower is better",
+                  "Higher is better"
+                ],
+                "enable": false
+              },
+              "object": {
+                "direction": "Higher is better"
+              }
+            },
+            {
+              "property": {
+                "name": "ranges",
+                "inputType": "Map",
+                "enable": false,
+                "skip": true
+              },
+              "object": {
+                "ranges": {
+                  "<= 5": "Fatal is swallowed",
+                  "5 - 50": "Fatal is swallowed",
+                  "50 - 300": "Toxic is swallowed",
+                  "300 - 2000": "Harmful if swallowed",
+                  "2000 - 5000": "May be harmful if swallowed",
+                  "> 5000": "Non-toxic"
+                }
+              }
+            }
+          ],
+          "coloring": {
+            "type": "Conditional",
+            "<= 5": "#d62728",
+            "5 - 50": "#ff9896",
+            "50 - 300": "#ffbb78",
+            "300 - 2000": "#bcbd22",
+            "2000 - 5000": "#98df8a",
+            "> 5000": "#2ca02c"
+          }
         }
       ]
     }

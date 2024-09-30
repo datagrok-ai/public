@@ -8,12 +8,12 @@ import * as DG from 'datagrok-api/dg';
 import {IMonomerManager, INewMonomerForm} from '@datagrok-libraries/bio/src/utils/monomer-ui';
 import {IMonomerLib, Monomer, RGroup} from '@datagrok-libraries/bio/src/types';
 import {DUMMY_MONOMER, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
-import {LIB_PATH} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
 import {mostSimilarNaturalAnalog} from '@datagrok-libraries/bio/src/utils/macromolecule/monomers';
 import {PolymerType, MonomerType} from '@datagrok-libraries/bio/src/helm/types';
 
 import {MonomerLibManager} from '../lib-manager';
+import {LIB_PATH} from '../consts';
 
 import '../../../../css/monomer-manager.css';
 
@@ -907,6 +907,13 @@ function capSmiles(smiles: string, rgroups: RGroup[]) {
 }
 
 function monomerFromDfRow(dfRow: DG.Row): Monomer {
+  // hacky way for now, but meta object for now only supports key value pairs and not nested objects
+  const metaJSON = JSON.parse(dfRow.get(MONOMER_DF_COLUMN_NAMES.META) ?? '{}');
+  for (const key in metaJSON) {
+    if (typeof metaJSON[key] === 'object')
+      metaJSON[key] = JSON.stringify(metaJSON[key]);
+  }
+
   return {
     symbol: dfRow.get(MONOMER_DF_COLUMN_NAMES.SYMBOL),
     name: dfRow.get(MONOMER_DF_COLUMN_NAMES.NAME),
@@ -917,7 +924,7 @@ function monomerFromDfRow(dfRow: DG.Row): Monomer {
     naturalAnalog: dfRow.get(MONOMER_DF_COLUMN_NAMES.NATURAL_ANALOG),
     id: dfRow.get(MONOMER_DF_COLUMN_NAMES.ID),
     rgroups: JSON.parse(dfRow.get(MONOMER_DF_COLUMN_NAMES.R_GROUPS) ?? '[]'),
-    meta: JSON.parse(dfRow.get(MONOMER_DF_COLUMN_NAMES.META) ?? '{}'),
+    meta: metaJSON,
     author: dfRow.get(MONOMER_DF_COLUMN_NAMES.AUTHOR),
     createDate: dfRow.get(MONOMER_DF_COLUMN_NAMES.CREATE_DATE),
   };

@@ -6,7 +6,7 @@ import {before, after, category, expect, test, expectArray, testEvent, delay} fr
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {
-  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
+  getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
@@ -23,9 +23,8 @@ category('PolyTool: Convert', () => {
   before(async () => {
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
-    // Clear settings to test default
-    await setUserLibSettingsForTests();
-    await monomerLibHelper.loadMonomerLib(true);
+
+    await monomerLibHelper.loadMonomerLibForTests();
   });
 
   after(async () => {
@@ -43,11 +42,11 @@ category('PolyTool: Convert', () => {
         'R-F-D(2)-T-G-H-F-Y-P-NH2(2)',
       ],
       tgt: [
-        'PEPTIDE1{[R].[F].[C].[T].[G].[H].[F].[Y].[P].[C].[meI]}$PEPTIDE1,PEPTIDE1,3:R3-10:R3$$$',
-        'PEPTIDE1{[C].[T].[G].[H].[F].[Y].[P].[C].[meI]}$PEPTIDE1,PEPTIDE1,1:R3-8:R3$$$',
-        'PEPTIDE1{[R].[F].[C].[T].[G].[H].[F].[Y].[P].[C]}$PEPTIDE1,PEPTIDE1,3:R3-10:R3$$$',
-        'PEPTIDE1{[C].[T].[G].[H].[F].[H].[P].[C]}$PEPTIDE1,PEPTIDE1,1:R3-8:R3$$$',
-        'PEPTIDE1{[R].[F].[D].[T].[G].[H].[F].[Y].[P].[NH2]}$PEPTIDE1,PEPTIDE1,10:R2-3:R3$$$',
+        'PEPTIDE1{R.F.C.T.G.H.F.Y.P.C.[meI]}$PEPTIDE1,PEPTIDE1,3:R3-10:R3$$$',
+        'PEPTIDE1{C.T.G.H.F.Y.P.C.[meI]}$PEPTIDE1,PEPTIDE1,1:R3-8:R3$$$',
+        'PEPTIDE1{R.F.C.T.G.H.F.Y.P.C}$PEPTIDE1,PEPTIDE1,3:R3-10:R3$$$',
+        'PEPTIDE1{C.T.G.H.F.H.P.C}$PEPTIDE1,PEPTIDE1,1:R3-8:R3$$$',
+        'PEPTIDE1{R.F.D.T.G.H.F.Y.P.[NH2]}$PEPTIDE1,PEPTIDE1,10:R2-3:R3$$$',
       ]
     }
   };

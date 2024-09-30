@@ -1,5 +1,24 @@
 # Helm changelog
 
+## 2.5.3 (WIP)
+
+### Bug fixes
+
+* Fix test Helm HelmHelper.removeGaps
+* Fix using IMonomerLibHelper.loadMonomerLibForTests
+
+## 2.5.2 (2024-09-25)
+
+Bump dependencies, bio lib
+
+## 2.5.1 (2024-09-24)
+
+### New features
+
+* Add HelmHelper parse and removeGaps methods, add tests
+* Add monomer hover handling for substruct
+* Add dojo bundled loading (fix freezing the browser)
+
 ## 2.5.0 (2024-09-10)
 
 ### Bug fixes

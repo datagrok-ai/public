@@ -3,9 +3,10 @@ import os from 'os';
 import path from 'path';
 import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
-import {PuppeteerNode} from 'puppeteer';
-const fetch = require('node-fetch');
+import { PuppeteerNode } from 'puppeteer';
+import { spaceToCamelCase } from '../utils/utils';
 
+const fetch = require('node-fetch');
 
 const grokDir = path.join(os.homedir(), '.grok');
 const confPath = path.join(grokDir, 'config.yaml');
@@ -22,7 +23,7 @@ export const defaultLaunchParameters: utils.Indexable = {
 };
 
 export async function getToken(url: string, key: string) {
-  const response = await fetch(`${url}/users/login/dev/${key}`, {method: 'POST'});
+  const response = await fetch(`${url}/users/login/dev/${key}`, { method: 'POST' });
   const json = await response.json();
   if (json.isSuccess == true)
     return json.token;
@@ -31,12 +32,12 @@ export async function getToken(url: string, key: string) {
 }
 
 export async function getWebUrl(url: string, token: string) {
-  const response = await fetch(`${url}/admin/plugins/admin/settings`, {headers: {Authorization: token}});
+  const response = await fetch(`${url}/admin/plugins/admin/settings`, { headers: { Authorization: token } });
   const json = await response.json();
   return json.settings.webRoot;
 }
 
-export function getDevKey(hostKey: string): {url: string, key: string} {
+export function getDevKey(hostKey: string): { url: string, key: string } {
   const config = yaml.load(fs.readFileSync(confPath, 'utf8')) as utils.Config;
   let host = hostKey == '' ? config.default : hostKey;
   host = host.trim();
@@ -53,10 +54,10 @@ export function getDevKey(hostKey: string): {url: string, key: string} {
     url = config['servers'][host]['url'];
     key = config['servers'][host]['key'];
   }
-  return {url, key};
+  return { url, key };
 }
 
-export async function getBrowserPage(puppeteer: PuppeteerNode, params: {} = defaultLaunchParameters): Promise<{browser: any, page: any}> {
+export async function getBrowserPage(puppeteer: PuppeteerNode, params: {} = defaultLaunchParameters): Promise<{ browser: any, page: any }> {
   let url: string = process.env.HOST ?? '';
   const cfg = getDevKey(url);
   url = cfg.url;
@@ -75,18 +76,18 @@ export async function getBrowserPage(puppeteer: PuppeteerNode, params: {} = defa
   });
   page.setDefaultNavigationTimeout(0);
   await page.goto(`${url}/oauth/`);
-  await page.setCookie({name: 'auth', value: token});
+  await page.setCookie({ name: 'auth', value: token });
   await page.evaluate((token: string) => {
     window.localStorage.setItem('auth', token);
   }, token);
   await page.goto(url);
   try {
     //    await page.waitForSelector('.grok-preloader', { timeout: 1800000 });
-    await page.waitForFunction(() => document.querySelector('.grok-preloader') == null, {timeout: 3600000});
+    await page.waitForFunction(() => document.querySelector('.grok-preloader') == null, { timeout: 3600000 });
   } catch (error) {
     throw error;
   }
-  return {browser, page};
+  return { browser, page };
 }
 
 export function runWithTimeout(timeout: number, f: () => any): Promise<any> {
@@ -116,7 +117,7 @@ export async function timeout(func: () => Promise<any>, testTimeout: number, tim
     if (timeout)
       clearTimeout(timeout);
   }
-} 
+}
 
 export function exitWithCode(code: number): void {
   console.log(`Exiting with code ${code}`);
@@ -150,3 +151,56 @@ export const recorderConfig = {
   },
   // aspectRatio: '16:9',
 };
+
+export async function loadPackages(packagesDir: string, packagesToLoad?: string, host?: string, skipPublish?: boolean, skipBuild?: boolean, linkPackage?: boolean): Promise<string[]> {
+  let packagesToRun = new Map<string, boolean>();
+  let hostString = host === undefined ? `` : `${host}`;
+  if (packagesToLoad !== "all") {
+    for (let pacakgeName of (packagesToLoad ?? "").split(' ')) {
+      packagesToRun.set(spaceToCamelCase(pacakgeName).toLocaleLowerCase(), false);
+    }
+  }
+
+  for (let dirName of fs.readdirSync(packagesDir)) {
+    let packageDir = path.join(packagesDir, dirName);
+    if (!fs.lstatSync(packageDir).isFile()) {
+
+      try {
+        const packageJsonData = JSON.parse(fs.readFileSync(path.join(packageDir, 'package.json'), { encoding: 'utf-8' }));
+        const packageFriendlyName = packagesToRun.get(spaceToCamelCase(packageJsonData["friendlyName"] ?? packageJsonData["name"].split("/")[1]).toLocaleLowerCase() ?? "");
+
+        if (utils.isPackageDir(packageDir) && (packageFriendlyName !== undefined || packagesToLoad === "all")) {
+          try {
+            if (skipPublish != true) {
+              await utils.runScript(`npm install`, packageDir);
+              if (linkPackage)
+                await utils.runScript(`grok link`, packageDir);
+              if (skipBuild != true)
+                await utils.runScript(`npm run build`, packageDir);
+              await utils.runScript(`grok publish ${hostString}`, packageDir);
+            }
+            packagesToRun.set(dirName, true);
+            console.log(`Package published ${dirName}`);
+          }
+          catch (e: any) {
+            console.log(`Package wasn't published ${dirName}`);
+          }
+        }
+      }
+      catch (e: any) {
+        if (utils.isPackageDir(packageDir) && (packagesToRun.get(spaceToCamelCase(dirName).toLocaleLowerCase()) !== undefined || packagesToLoad === "all"))
+          console.log(`Couldn't read package.json  ${dirName}`);
+      }
+    }
+  }
+  console.log();
+  return Array.from(packagesToRun)
+    .filter(([key, value]) => value === true)
+    .map(([key]) => key);;
+}
+
+export interface WorkerOptions {
+  path?: string, catchUnhandled?: boolean, core?: boolean,
+  report?: boolean, record?: boolean, verbose?: boolean, benchmark?: boolean, platform?: boolean, category?: string, test?: string,
+  stressTest?: boolean, gui?:boolean
+}

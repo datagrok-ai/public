@@ -130,7 +130,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
             fragmentCutoff: this.fragmentCutoff!,
           });
       } catch (e: any) {
-
+        const errMsg = e instanceof Error ? e.message : e.toString();
+        grok.shell.error(errMsg);
       } finally {
         $(this.root).empty();
         if (this.mmpView)

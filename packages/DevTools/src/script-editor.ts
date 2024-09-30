@@ -14,7 +14,6 @@ export function initScriptEditor(view: DG.View): void {
   });
 
   const check = () => {
-    console.log('CALLED');
     if (new Date().getTime() - startTime >= 1500) {
       sub.unsubscribe();
       return;
@@ -24,11 +23,14 @@ export function initScriptEditor(view: DG.View): void {
       // @ts-ignore
       const editor = codeMirror.CodeMirror;
       const doc = editor.getDoc();
-      if (doc.getLine(2) == '//language: javascript') {
-        setScriptRibbon(view, doc);
-        editor.setCursor({line: 6, ch: 0});
-        console.log('ADDED');
-        //editor.setFocus();
+      const lineCount = doc.lineCount();
+      for (let i = 0; i < lineCount; i++) {
+        if (doc.getLine(i) == '//language: javascript') {
+          setScriptRibbon(view, doc);
+          editor.setCursor({line: 6, ch: 0});
+          break;
+          //editor.setFocus();
+        }
       }
       sub.unsubscribe();
       return;

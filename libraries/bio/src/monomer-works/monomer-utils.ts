@@ -12,9 +12,10 @@ import {
   MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME, HELM_REQUIRED_FIELD,
 } from '../utils/const';
 import {IMonomerLib, IMonomerSet} from '../types/index';
-import {GAP_SYMBOL, ISeqSplitted} from '../utils/macromolecule/types';
+import {ISeqSplitted} from '../utils/macromolecule/types';
 import {SeqHandler} from '../utils/seq-handler';
 import {splitAlignedSequences} from '../utils/splitter';
+import {GAP_SYMBOL} from '../utils/macromolecule/consts';
 
 export function encodeMonomers(col: DG.Column): DG.Column | null {
   let encodeSymbol = MONOMER_ENCODE_MIN;
@@ -25,7 +26,8 @@ export function encodeMonomers(col: DG.Column): DG.Column | null {
   for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
     let encodedMonomerStr = '';
     const monomers = sh.getSplitted(rowIdx);
-    for (const cm of monomers.canonicals) {
+    for (let posIdx = 0; posIdx < monomers.length; ++posIdx) {
+      const cm = monomers.getCanonical(posIdx);
       if (!monomerSymbolDict[cm]) {
         if (encodeSymbol > MONOMER_ENCODE_MAX) {
           grok.shell.error(`Not enough symbols to encode monomers`);
@@ -190,6 +192,11 @@ export interface IMonomerLibHelper {
 
   /** Reads library from file shares, handles .json and .sdf */
   readLibrary(path: string, fileName: string): Promise<IMonomerLib>;
+
+  // -- Settings --
+
+  /** Changes user lib settings. */
+  loadMonomerLibForTests(): Promise<void>;
 }
 
 export async function getMonomerLibHelper(): Promise<IMonomerLibHelper> {

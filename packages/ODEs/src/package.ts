@@ -89,7 +89,8 @@ export async function previewIvp(file: DG.FileInfo): Promise<DG.View> {
 //input: dynamic treeNode
 //input: view browseView
 export async function runDiffStudioTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
-  new DiffStudio(false, false);
+  //console.log(treeNode);
+  new DiffStudio(false, false, false, {treeNode: treeNode, browseView: browseView});
 }
 
 //name: Bioreactor

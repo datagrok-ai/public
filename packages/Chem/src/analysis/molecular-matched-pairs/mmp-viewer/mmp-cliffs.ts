@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {ISubstruct} from '../../../rendering/rdkit-cell-renderer';
+import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {drawMoleculeToCanvas} from '../../../utils/chem-common-rdkit';
 import {getSigFigs} from '../../../utils/chem-common';

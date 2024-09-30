@@ -1,19 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {IMonomerLibBase} from '../types';
 
-export const SUBSTRUCT_COL = 'substruct-col';
-
-export interface ISubstruct {
-  atoms?: number[],
-  bonds?: number[],
-  highlightAtomColors?: { [key: number]: number[] | null },
-  highlightBondColors?: { [key: number]: number[] | null }
-}
-
-export type ToAtomicLevelResType = {
-  molCol: DG.Column<string>;
-  molHighlightCol: DG.Column<object>;
+export type ToAtomicLevelRes = {
+  molCol: DG.Column<string> | null,
+  warnings: string[],
 }
 
 export interface ISeqHelper {
@@ -21,10 +13,11 @@ export interface ISeqHelper {
    * @param helmCol {DG.Column<string>} Macromolecules in Helm format
    * @param chiralityEngine {boolean} [true] Use chirality engine for molecule visualization
    * @param highlight {boolean} [true] Generates molHighlightCol of result
+   * @param overrideMonomerLib {IMonomerLibBase} [null] Override monomer library for monomers from reactions
    **/
   helmToAtomicLevel(
-    helmCol: DG.Column<string>, chiralityEngine?: boolean, highlight?: boolean
-  ): Promise<ToAtomicLevelResType>;
+    helmCol: DG.Column<string>, chiralityEngine?: boolean, highlight?: boolean, overrideMonomerLib?: IMonomerLibBase
+  ): Promise<ToAtomicLevelRes>;
 }
 
 export async function getSeqHelper(): Promise<ISeqHelper> {

@@ -46,23 +46,19 @@ public class GrokConnect {
     public static Properties properties;
 
     public static void main(String[] args) {
-        try {
-            properties = getInfo();
-            setGlobalLogLevel();
-            PARENT_LOGGER.info(String.format("%s - version: %s", properties.get(NAME), properties.get(VERSION)));
-            PARENT_LOGGER.info("Grok Connect initializing");
-            PARENT_LOGGER.info(getStringLogMemory());
-            PARENT_LOGGER.trace("HELLO FROM TRACE");
+        properties = getInfo();
+        setGlobalLogLevel();
+        PARENT_LOGGER.info(String.format("%s - version: %s", properties.get(NAME), properties.get(VERSION)));
+        PARENT_LOGGER.info("Grok Connect initializing");
+        PARENT_LOGGER.info(getStringLogMemory());
+        PARENT_LOGGER.trace("HELLO FROM TRACE");
 
-            providerManager = new ProviderManager();
-            port(DEFAULT_PORT);
-            connectorsModule();
-            PARENT_LOGGER.info("grok_connect with Hikari pool");
-            PARENT_LOGGER.info("grok_connect: Running on {}", DEFAULT_URI);
-            PARENT_LOGGER.info("grok_connect: Connectors: {}", providerManager.getAllProvidersTypes());
-        } catch (Throwable ex) {
-            PARENT_LOGGER.error(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
-        }
+        providerManager = new ProviderManager();
+        port(DEFAULT_PORT);
+        connectorsModule();
+        PARENT_LOGGER.info("grok_connect with Hikari pool");
+        PARENT_LOGGER.info("grok_connect: Running on {}", DEFAULT_URI);
+        PARENT_LOGGER.info("grok_connect: Connectors: {}", providerManager.getAllProvidersTypes());
     }
 
     private static void connectorsModule() {

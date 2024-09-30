@@ -1,6 +1,12 @@
 # Grok Connect changelog
 
-# 2.1.19 (2024-08-01) WIP
+# 2.1.20 (2024-09-17) WIP
+
+* Foreign keys retrieval support
+* Denodo provider fixes and schema browsing support
+* Dependencies bump
+
+# 2.1.19 (2024-08-01)
 
 * Bug fixes in parameters parsing
 * Bug fixes in TableQuery

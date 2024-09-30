@@ -1,5 +1,53 @@
 # Bio changelog
 
+## 2.15.6 (2024-09-27)
+
+### Bug fixes
+
+* Fix detectMacromolecule forbidding monomers '2,...', add test
+* Fix using IMonomerLibHelper.loadMonomerLibForTests
+* Fix cell renderer to reset reference sequence on reset current row
+* GROK-16699: Fix PepSeA container return meaningful error messages, unskip test
+* Fix test data monomers add aG, azG
+* Fix unskip toAtomicLevel tests depending on HelmHelper
+* Fix detectMacromolecule for harmonized sequences, add test
+
+## 2.15.5 (2024-09-25)
+
+### New features
+
+* Add custom notation, fix tests
+* Add overriding monomer library for toAtomicLevel
+
+### Bug fixes
+
+* Fix skipping tests depending on new Helm
+
+## 2.15.4 (2024-09-24)
+
+### New features
+
+* Add monomer hover handling for substruct
+* Add highlight param for toAtomicLevel
+* Add HelmHelper parse and removeGaps methods
+* Add naturalMonomerColors for monomers of MonomerLib
+* Add MonomerLib.getWebEditorMonomer (for color)
+* Add function Identity for Add new Column
+
+### Bug fixes
+
+* Fix toAtomicLevel for sequences with gaps
+* Fix ISeqSplitted remove .canonicals and .originals
+* Fix toAtomicLevel tests for linear with gaps
+
+## 2.15.3 (2024-09-22)
+
+Add monomer background coloring
+
+## 2.15.2 (2024-09-18)
+
+Add monomer coloring for fasta/separator from monomer library
+
 ## 2.15.1 (2024-09-10)
 
 ### Bug fixes

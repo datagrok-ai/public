@@ -564,8 +564,7 @@
 }
 
 .grok-chem-filter-options {
-  bottom: 455px!important;
-  left: 360px!important;
+  position: unset;
 }
 
 .dlg-chem-descriptors {

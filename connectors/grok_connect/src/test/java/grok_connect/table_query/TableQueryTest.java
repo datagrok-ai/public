@@ -101,7 +101,7 @@ class TableQueryTest {
         aggregationTest.groupByFields = groupByFields;
         String sqlQuery = postgres.queryTableSql(aggregationTest.connection, aggregationTest);
         String[] expected = new String[] {"SELECT",  "\"country\",", "\"region\",", "count(*) as \"count(*)\"", "FROM", "\"public\".\"users\"",
-                "GROUP BY", "country, region"};
+                "GROUP BY", "\"country\", \"region\""};
         Assertions.assertEquals(getExpectedQuery(expected), sqlQuery);
     }
 
@@ -110,7 +110,7 @@ class TableQueryTest {
         prepareComplexQuery(postgres.descriptor.type);
         String sqlQuery = postgres.queryTableSql(aggregationTest.connection, aggregationTest);
         String[] expected = new String[] {"SELECT", "\"country\",", "\"region\",", "count(*) as \"count(*)\"", "FROM", "\"public\".\"users\"",
-                "GROUP BY", "country, region", "HAVING", "\t((LOWER(country) IN ('spain','ukraine','brazil')))", "limit 50"};
+                "GROUP BY", "\"country\", \"region\"", "HAVING", "\t((LOWER(country) IN ('spain','ukraine','brazil')))", "limit 50"};
         Assertions.assertEquals(getExpectedQuery(expected), sqlQuery);
     }
 
@@ -119,7 +119,7 @@ class TableQueryTest {
         prepareComplexQuery(mssql.descriptor.type);
         String sqlQuery = mssql.queryTableSql(aggregationTest.connection, aggregationTest);
         String[] expected = new String[] {"SELECT", "top 50", "[country],", "[region],", "count(*) as [count(*)]", "FROM", "[public].[users]",
-                "GROUP BY", "country, region", "HAVING", "\t((LOWER(country) IN ('spain','ukraine','brazil')))"};
+                "GROUP BY", "[country], [region]", "HAVING", "\t((LOWER(country) IN ('spain','ukraine','brazil')))"};
         Assertions.assertEquals(getExpectedQuery(expected), sqlQuery);
     }
 

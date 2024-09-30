@@ -7,14 +7,14 @@ import * as DG from 'datagrok-api/dg';
 
 import {_initEDAAPI} from '../wasm/EDAAPI';
 import {computePCA} from './eda-tools';
-import {addPrefixToEachColumnName, addOneWayAnovaVizualization} from './eda-ui';
+import {addPrefixToEachColumnName} from './eda-ui';
 import {LINEAR, RBF, POLYNOMIAL, SIGMOID,
   getTrainedModel, getPrediction, isApplicableSVM, isInteractiveSVM, showTrainReport, getPackedModel} from './svm';
 
 import {PLS_ANALYSIS} from './pls/pls-constants';
 import {runMVA, runDemoMVA, getPlsAnalysis, PlsOutput} from './pls/pls-tools';
+import {runOneWayAnova} from './anova/anova-ui';
 
-import {oneWayAnova} from './stat-tools';
 import {getDbscanWorker} from '@datagrok-libraries/math';
 
 import {DistanceAggregationMethod, DistanceAggregationMethods} from '@datagrok-libraries/ml/src/distance-matrix/types';
@@ -547,15 +547,9 @@ export async function visualizeSigmoidKernelSVM(df: DG.DataFrame, targetColumn: 
 
 //top-menu: ML | Analyze | ANOVA...
 //name: ANOVA
-//description: One-way analysis of variances (ANOVA) determines whether the examined factor has a significant impact on the studied feature.
-//input: dataframe table
-//input: column factor {type: categorical}
-//input: column feature {type: numerical}
-//input: double significance = 0.05 [The significance level is a value from the interval (0, 1) specifying the criterion used for rejecting the null hypothesis.]
-//input: bool validate = false [Indicates whether the normality of distribution and an eqaulity of varainces should be checked.]
-export function anova(table: DG.DataFrame, factor: DG.Column, feature: DG.Column, significance: number, validate: boolean) {
-  const res = oneWayAnova(factor, feature, significance, validate);
-  addOneWayAnovaVizualization(table, factor, feature, res);
+//description: One-way analysis of variances (ANOVA) determines whether the examined factor has a significant impact on the explored feature.
+export function anova(): void {
+  runOneWayAnova();
 }
 
 //top-menu: ML | Missing Values Imputation ...

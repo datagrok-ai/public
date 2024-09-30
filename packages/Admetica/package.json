@@ -1,15 +1,19 @@
 {
   "name": "@datagrok/admetica",
   "friendlyName": "Admetica",
-  "version": "0.0.3",
-  "description": "",
+  "version": "1.0.0",
+  "author": {
+    "name": "Oleksandra Serhiienko",
+    "email": "oserhiienko@datagrok.ai"
+  },
+  "description": "Assessment of ADMET Properties",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/Admetica"
   },
   "dependencies": {
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.21.1",
     "cash-dom": "latest",
     "dayjs": "latest",
     "@datagrok-libraries/utils": "^4.3.3",

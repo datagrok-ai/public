@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {runTests, tests, TestContext, category, test as _test, delay} from '@datagrok-libraries/utils/src/test';
+import {runTests, tests, TestContext, category, test as _test, delay, initAutoTests as initCoreTests } from '@datagrok-libraries/utils/src/test';
 export const _package = new DG.Package();
 export {tests};
 
@@ -60,4 +60,9 @@ export async function initTests() {
       }, skip.includes(script.friendlyName) ? {skipReason: 'skip'} : undefined);
     });
   }
+}
+
+//name: initAutoTests
+export async function initAutoTests() {
+  await initCoreTests(_package, _package.getModule('package-test.js'));
 }

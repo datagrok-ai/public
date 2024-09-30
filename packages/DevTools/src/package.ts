@@ -73,6 +73,7 @@ export function _IconTool(): void {
 
 //name: Test Manager
 //top-menu: Tools | Dev | Test Manager
+//meta.browsePath: Admin
 //tags: app
 export async function testManager(): Promise<void> {
   c = grok.functions.getCurrentCall();

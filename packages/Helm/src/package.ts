@@ -6,23 +6,17 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 
 import {testEvent} from '@datagrok-libraries/utils/src/test';
-import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
-import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {App, Editor, HelmMol, HelmType, HweWindow} from '@datagrok-libraries/bio/src/helm/types';
 import {HelmInputBase, IHelmHelper, IHelmInputInitOptions} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
-import {HelmCellRenderer} from './cell-renderer';
-import {HelmHelper} from './helm-helper';
 import {getPropertiesWidget} from './widgets/properties-widget';
 import {HelmGridCellRenderer, HelmGridCellRendererBack} from './utils/helm-grid-cell-renderer';
 import {_getHelmService, HelmPackage, initHelmLoadAndPatchDojo} from './package-utils';
-import {RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
-import {getRS} from './utils/get-monomer-dummy';
 
 // Do not import anything than types from @datagrok/helm-web-editor/src/types
 import type {JSDraw2Module, OrgHelmModule, ScilModule} from './types';
@@ -42,8 +36,17 @@ declare const scil: ScilModule;
 declare const JSDraw2: JSDraw2Module;
 declare const org: OrgHelmModule;
 
+let initHelmPromise: Promise<void> | null = null;
+
 //tags: init
 export async function initHelm(): Promise<void> {
+  if (initHelmPromise === null) {
+    initHelmPromise = initHelmInt();
+  }
+  await initHelmPromise;
+}
+
+async function initHelmInt(): Promise<void> {
   const logPrefix: string = 'Helm: _package.initHelm()';
   _package.logger.debug(`${logPrefix}, start`);
 
@@ -79,7 +82,7 @@ export function getHelmService(): HelmServiceBase {
 //meta.cellType: helm
 //meta.columnTags: quality=Macromolecule, units=helm
 //output: grid_cell_renderer result
-export function helmCellRenderer(): HelmCellRenderer {
+export function helmCellRenderer(): DG.GridCellRenderer {
   const logPrefix = `Helm: _package.getHelmCellRenderer()`;
   _package.logger.debug(`${logPrefix}, start`);
   // return new HelmCellRenderer(); // old
@@ -189,7 +192,7 @@ export async function getHelmHelper(): Promise<IHelmHelper> {
 export async function measureCellRenderer(): Promise<void> {
   const grid = grok.shell.tv.grid;
   const gridCol = grid.columns.byName('sequence')!;
-  const back = gridCol.temp['rendererBack'] as HelmGridCellRendererBack;
+  const back = gridCol.temp.rendererBack as HelmGridCellRendererBack;
 
   let etSum: number = 0;
   let etCount: number = 0;
@@ -216,4 +219,28 @@ export async function measureCellRenderer(): Promise<void> {
     etCount++;
   }
   _package.logger.info(`measureCellRenderer(), avg ET: ${etSum / etCount} ms`);
+}
+
+// -- Test apps --
+
+//name: Highlight Monomers
+//tags: app
+//output: view result
+export async function highlightMonomers(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('Test app highlight monomers');
+  try {
+    const df = await _package.files.readCsv('tests/peptide.csv');
+    df.name = 'peptide.csv';
+    await initHelmPromise;
+
+    const seqCol = df.columns.byName('helm')!;
+    await grok.data.detectSemanticTypes(df);
+    await grok.functions.call('Bio:toAtomicLevel', {table: df, seqCol: seqCol, nonlinear: true, highlight: true});
+
+    // const resView = DG.TableView.create(df, false);
+    // return resView;
+    grok.shell.addTableView(df);
+  } finally {
+    pi.close();
+  }
 }

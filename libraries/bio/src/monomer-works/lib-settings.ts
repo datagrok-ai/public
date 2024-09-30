@@ -3,12 +3,7 @@ import {UserLibSettings} from './types';
 
 // -- Monomer libraries --
 export const LIB_STORAGE_NAME = 'Libraries';
-export const LIB_PATH = 'System:AppData/Bio/monomer-libraries/';
-const LIB_SETTINGS_FOR_TESTS: UserLibSettings =
-  {explicit: ['HELMCoreLibrary.json', 'polytool-lib.json'], exclude: [], duplicateMonomerPreferences: {}};
-
 export const SETS_STORAGE_NAME: string = 'Monomer Sets';
-export const SETS_PATH: string = 'System:AppData/Bio/monomer-sets/';
 
 let userLibSettingsPromise: Promise<void> = Promise.resolve();
 
@@ -35,9 +30,4 @@ export async function setUserLibSettings(value: UserLibSettings): Promise<void> 
     await grok.dapi.userDataStorage.postValue(LIB_STORAGE_NAME, 'Settings', JSON.stringify(value), true);
   });
   await userLibSettingsPromise;
-}
-
-/** Set only HELMCoreLibrary.json */
-export async function setUserLibSettingsForTests(): Promise<void> {
-  await setUserLibSettings(LIB_SETTINGS_FOR_TESTS);
 }

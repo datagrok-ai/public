@@ -7,7 +7,7 @@ import {delay} from '@datagrok-libraries/utils/src/test';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {IMonomerLib, IMonomerSet} from '@datagrok-libraries/bio/src/types';
 import {
-  getUserLibSettings, setUserLibSettings, LIB_PATH, SETS_PATH
+  getUserLibSettings, setUserLibSettings,
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {
@@ -18,6 +18,7 @@ import {MonomerLib} from './monomer-lib';
 import {MonomerSet} from './monomer-set';
 import {MonomerLibFileManager} from './library-file-manager/file-manager';
 import {MonomerLibFileEventManager} from './library-file-manager/event-manager';
+import {LIB_PATH, LIB_SETTINGS_FOR_TESTS, SETS_PATH} from './consts';
 
 import {_package} from '../../package';
 
@@ -34,7 +35,7 @@ export class MonomerLibManager implements IMonomerLibHelper {
 
   public get eventManager(): IMonomerLibFileEventManager { return this._eventManager; }
 
-  public async awaitLoaded(timeout: number = 3000): Promise<void> {
+  public async awaitLoaded(timeout: number = 5000): Promise<void> {
     return await Promise.race([
       (async () => {
         const fileManager = await this.getFileManager();
@@ -47,7 +48,7 @@ export class MonomerLibManager implements IMonomerLibHelper {
       })(),
     ]).then((res) => {
       if (!res)
-        throw new Error(`Loading monomer libraries is timeout ${timeout} ms.`);
+        throw new Error(`Loading monomer libraries timeout ${timeout} ms.`);
     });
   }
 
@@ -265,6 +266,15 @@ export class MonomerLibManager implements IMonomerLibHelper {
     const availableFileNames = (await this.getFileManager()).getValidLibraryPaths();
     const invalidNames = libFileNameList.filter((fileName) => !availableFileNames.includes(fileName));
     return invalidNames;
+  }
+
+  // -- Settings --
+
+  /** Changes userLibSettings set only HELMCoreLibrary.json, polytool-lib.json */
+  async loadMonomerLibForTests(): Promise<void> {
+    await setUserLibSettings(LIB_SETTINGS_FOR_TESTS);
+    await this.awaitLoaded();
+    await this.loadMonomerLib(true); // load default libraries
   }
 
   // -- Instance singleton --

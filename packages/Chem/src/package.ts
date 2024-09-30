@@ -25,7 +25,7 @@ import {identifiersWidget, openMapIdentifiersDialog, textToSmiles} from './widge
 //widget imports
 import {SubstructureFilter} from './widgets/chem-substructure-filter';
 import {drugLikenessWidget} from './widgets/drug-likeness';
-import {addPropertiesAsColumns, getChemPropertyFunc, propertiesWidget} from './widgets/properties';
+import {addPropertiesAsColumns, getChemPropertyFunc, getPropertyForMolecule, propertiesWidget} from './widgets/properties';
 import {structuralAlertsWidget} from './widgets/structural-alerts';
 import {structure2dWidget} from './widgets/structure2d';
 import {addRisksAsColumns, toxicityWidget} from './widgets/toxicity';
@@ -347,6 +347,7 @@ export function getMorganFingerprint(molString: string): DG.BitSet {
   const bitArray = chemSearches.chemGetFingerprint(molString, Fingerprint.Morgan);
   return DG.BitSet.fromBytes(bitArray.getRawData().buffer, bitArray.length);
 }
+
 
 //name: getSimilarities
 //input: column molStringsColumn
@@ -1008,6 +1009,14 @@ export async function getInchisVector(molecules: DG.Column): Promise<DG.Column> 
 export async function getInchisScalar(molecules: string): Promise<string> {
   const resCol = getInchis(DG.Column.fromStrings('molecules', [molecules]));
   return resCol.get(0);
+
+}
+//name: getInchi
+//input: string molecule {semType: Molecule}
+//output: string res
+export async function getInchi(molecule: string): Promise<string> {
+  const resCol = getInchis(DG.Column.fromStrings('molecules', [molecule]));
+  return resCol.get(0);
 }
 
 //top-menu: Chem | Calculate | To InchI Keys...
@@ -1034,6 +1043,14 @@ export async function getInchiKeysVector(molecules: DG.Column): Promise<DG.Colum
 //output: string res
 export async function getInchiKeysScalar(molecules: string): Promise<string> {
   const resCol = getInchiKeys(DG.Column.fromStrings('molecules', [molecules]));
+  return resCol.get(0);
+}
+
+//name: getInchiKey
+//input: string molecule {semType: Molecule}
+//output: string res
+export async function getInchiKey(molecule: string): Promise<string> {
+  const resCol = getInchiKeys(DG.Column.fromStrings('molecules', [molecule]));
   return resCol.get(0);
 }
 
@@ -2005,6 +2022,14 @@ export async function isApplicableNN(df: DG.DataFrame, predictColumn: DG.Column)
   if (!predictColumn.matches('numerical'))
     return false;
   return true;
+}
+
+//name: getProperty
+//input: string molecule {semType: Molecule}
+//input: string prop {choices:["MW", "HBA", "HBD", "LogP", "LogS", "PSA", "Rotatable bonds", "Stereo centers", "Molecule charge"]}
+//output: string propValue
+export async function getProperty(molecule: string, prop: string): Promise<any> {
+  return await getPropertyForMolecule(molecule, prop);
 }
 
 export {getMCS};

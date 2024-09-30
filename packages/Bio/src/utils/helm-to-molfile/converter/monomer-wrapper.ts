@@ -1,4 +1,4 @@
-import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLib, IMonomerLibBase, Monomer} from '@datagrok-libraries/bio/src/types';
 import {HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
@@ -17,7 +17,7 @@ export class MonomerWrapper {
     private helm: Helm,
     shift: { x: number, y: number },
     rdKitModule: RDModule,
-    private readonly monomerLib: IMonomerLib
+    private readonly monomerLib: IMonomerLibBase
   ) {
     const libraryMonomerObject = this.getLibraryMonomerObject();
 

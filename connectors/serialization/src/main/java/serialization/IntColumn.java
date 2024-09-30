@@ -11,6 +11,11 @@ public class IntColumn extends Column<Integer> {
         data = new int[initColumnSize];
     }
 
+    public IntColumn(String name) {
+        this();
+        this.name = name;
+    }
+
     public IntColumn(int initColumnSize) {
         this.initColumnSize = initColumnSize;
         data = new int[initColumnSize];

@@ -4,7 +4,7 @@
   "sources": [
     "css/power-pack.css"
   ],
-  "version": "1.2.0",
+  "version": "1.2.1",
   "author": {
     "name": "Andrew Skalkin",
     "email": "askalkin@datagrok.ai"
@@ -18,7 +18,7 @@
   "dependencies": {
     "@datagrok-libraries/utils": "^4.3.0",
     "cash-dom": "latest",
-    "datagrok-api": "^1.21.1",
+    "datagrok-api": "../../js-api",
     "dayjs": "^1.11.7",
     "fuse.js": "^6.6.2",
     "rxjs": "^6.5.5",
@@ -28,7 +28,8 @@
     "@codemirror/lang-javascript": "^6.2.2",
     "@codemirror/autocomplete": "^6.16.0",
     "@codemirror/search": "^6.5.6",
-    "@codemirror/language": "^6.10.2"
+    "@codemirror/language": "^6.10.2",
+    "@datagrok-libraries/db-explorer": "1.1.2"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.32.0",
@@ -81,5 +82,18 @@
   "canView": [
     "All users"
   ],
-  "category": "General"
+  "category": "General",
+  "meta": {
+    "semanticTypes": [
+      {
+        "semType": "DG_USER_LOGIN",
+        "description": "Datagrok User Login",
+        "parsers": [
+          {
+            "regexp": "DGUSER-[^\\s]+"
+          }
+        ]
+      }
+    ]
+  }
 }

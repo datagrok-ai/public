@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {fromEvent, Observable, Unsubscribable} from 'rxjs';
 
-import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
+import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/index';
 import {HelmInputBase, IHelmHelper, IHelmInputInitOptions} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {HelmAtom, HelmMol, HelmString, IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
 
@@ -72,7 +72,7 @@ export class HelmInput extends HelmInputBase {
 
   protected constructor(
     private readonly helmHelper: IHelmHelper,
-    private readonly monomerLib: IMonomerLib,
+    private readonly monomerLib: IMonomerLibBase,
     name?: string,
     public readonly options?: IHelmInputInitOptions,
     private readonly logger = _package.logger,
@@ -135,7 +135,7 @@ export class HelmInput extends HelmInputBase {
   }
 
   /** Inspired by {@link DG.MarkdownInput}, {@link ui._create} */
-  static create(helmHelper: IHelmHelper, monomerLib: IMonomerLib,
+  static create(helmHelper: IHelmHelper, monomerLib: IMonomerLibBase,
     name?: string, options?: IHelmInputInitOptions
   ): HelmInput {
     const input = new HelmInput(helmHelper, monomerLib, name, options);
@@ -183,7 +183,7 @@ export class HelmInput extends HelmInputBase {
     if (hoveredAtom) {
       const seqMonomer = getSeqMonomerFromHelmAtom(hoveredAtom);
       const monomerLib = _package.monomerLib;
-      const tooltipEl = monomerLib ? monomerLib.getTooltip(seqMonomer.polymerType, seqMonomer.symbol) :
+      const tooltipEl = monomerLib ? monomerLib.getTooltip(seqMonomer.biotype, seqMonomer.symbol) :
         ui.divText('Monomer library is not available');
       this.showTooltip(tooltipEl, hoveredAtom);
       event.preventDefault();
