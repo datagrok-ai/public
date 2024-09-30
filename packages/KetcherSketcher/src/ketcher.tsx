@@ -29,7 +29,6 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   componentPolymerKetcher;
   togglerComponent;
   ketcherModeSub: Subscription;
-  switchedMode = false;
   compRoot;
 
   constructor() {
@@ -38,7 +37,6 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
 
     this.togglerComponent = React.createElement(ToggleControl);
     this.ketcherModeSub = ketcherMacromoleculeMode.subscribe((value: boolean) => {
-      this.switchedMode = true;
       value ? this.compRoot.render(this.componentPolymerKetcher) : this.compRoot.render(this.componentKetcher);
     })
 
@@ -86,12 +84,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   resize() {
-    if (this.switchedMode) {
-      this.switchedMode = false;
-      return;
-    }
-    if (!this.ketcherHost.classList.contains('ketcher-resizing'))
-      this.ketcherHost.classList.add('ketcher-resizing');
+    this.ketcherHost.classList.add('ketcher-resizing');
   }
 
   async init(host: chem.Sketcher) {
