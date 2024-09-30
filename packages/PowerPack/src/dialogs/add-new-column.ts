@@ -192,6 +192,8 @@ export class AddNewColumnDialog {
     if (!this.call)
       await this.updatePreview(this.codeMirror!.state.doc.toString(), false);
     this.prepareFunctionsListForAutocomplete();
+    //set initial focus on code mirror
+    ui.tools.waitForElementInDom(this.codeMirrorDiv).then(() => setTimeout(() => this.codeMirror?.focus(), 50));
   }
 
   prepareFunctionsListForAutocomplete() {
@@ -304,8 +306,8 @@ export class AddNewColumnDialog {
     this.uiDialog!.root.onmouseleave = () => {
       if(this.mouseDownOnCm) {
         this.mouseDownOnCm = false;
+        cm.focus();
       }
-      cm.focus();
     };
 
     this.uiDialog!.root.onclick = () => {
@@ -683,6 +685,8 @@ export class AddNewColumnDialog {
     if (withoutSignature)
       return {funcName: funcName, start: start, end: end};
     const funcParams = funcName.includes(':') ? packageFunctionsParams[funcName] : coreFunctionsParams[funcName];
+    if (!funcParams)
+      return null;
     const funcInputs = funcParams.filter((it) => it.propName !== FUNC_OUTPUT_TYPE);
     const funcOutputs = funcParams.filter((it) => it.propName === FUNC_OUTPUT_TYPE);
     let funcOutputType = '';
