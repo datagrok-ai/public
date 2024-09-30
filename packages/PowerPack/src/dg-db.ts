@@ -7,9 +7,9 @@ import {matchAndParseQuery} from '@datagrok-libraries/db-explorer/src/search/sea
 import {powerSearchQueryTable} from '@datagrok-libraries/db-explorer/src/search/search-widget-utils';
 
 export async function registerDGUserHandler(_package: DG.Package) {
-  // chech if chembl connection is available
-  const chembl = await grok.dapi.connections.filter('name="Datagrok"').first();
-  if (!chembl) {
+  // chech if datagrok connection is available
+  const dgConn = await grok.dapi.connections.filter('name="Datagrok"').first();
+  if (!dgConn) {
     console.warn('Datagrok connection not found. Datagrok user object handlers not registered');
     return;
   }
