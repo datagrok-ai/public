@@ -1,6 +1,12 @@
 # Datagrok-tools changelog
 
 
+## 4.13.25 (2024-09-30)
+
+### Features
+
+* Test command package publishing fix 
+
 ## 4.13.24 (2024-09-26)
 
 ### Features
