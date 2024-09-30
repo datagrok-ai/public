@@ -869,6 +869,8 @@ export interface IDartApi {
   grok_Property_Get_ColumnTypeFilter(p: any): any;
   grok_Property_Options(p: any, options: any): any;
   grok_Property_RegisterAttachedProperty(typeName: String, p: any): any;
+  grok_Property_Get_isVectorizable(p: any): any;
+  grok_Property_Get_VectorName(p: any): any;
   grok_SemanticValue(value: any, semType: String): any;
   grok_SemanticValue_Get_Value(v: any): any;
   grok_SemanticValue_Set_Value(v: any, x: any): any;

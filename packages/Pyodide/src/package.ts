@@ -202,7 +202,7 @@ async function setOutputs(scriptCall: DG.FuncCall, response: WorkerResponse): Pr
             if (supportsArrow)
               scriptCall.setParamValue(paramName, await grok.functions.call('Arrow:fromFeather', {'bytes': value}));
             else
-              scriptCall.setParamValue(paramName, DG.DataFrame.fromCsv(value));
+              scriptCall.setParamValue(paramName, DG.DataFrame.fromCsv(value.trim()));
             break;
           case DG.TYPE.FILE:
           case DG.TYPE.BLOB:
@@ -223,12 +223,34 @@ async function setOutputs(scriptCall: DG.FuncCall, response: WorkerResponse): Pr
   }
 }
 
+//name: makeVectorCode
+//input: script script
+//output: string code
+export function makeVectorCode(script: DG.Script): string {
+  const inputTable = DG.Script.vecInputTableName;
+  let code: string = `input_table_length = len(${inputTable}.index)\n`;
+  for (const param of script.inputs.filter((p) => p.isVectorizable))
+    code += `${param.vectorName} = ${inputTable}["${param.name}"]\n`;
+  for (const param of script.outputs.filter((p) => p.isVectorizable))
+    code += `${param.vectorName} = [None] * input_table_length\n`;
+  code += 'for vec_loop_idx in range(0, input_table_length):\n';
+
+  for (const param of script.inputs.filter((p) => p.isVectorizable))
+    code += `\t${param.name} = ${param.vectorName}[vec_loop_idx]\n`;
+  code += `${script.clientCode.split('\n').map((l) => l.trim()).filter((l) => l.length > 0).map((l) => `\t${l}`).join('\n')}\n`;
+  for (const param of script.outputs.filter((p) => p.isVectorizable))
+    code += `\t${param.vectorName}[vec_loop_idx] = ${param.name}\n`;
+  code += `${DG.Script.vecOutputTableName} = pd.DataFrame({${script.outputs.filter((p) => p.isVectorizable).map((p) => `"${p.vectorName}": ${p.vectorName}`).join(', ')}})\n`;
+  return code;
+}
+
 //tags: scriptHandler
 //meta.scriptHandler.language: pyodide
 //meta.scriptHandler.extensions: py
 //meta.scriptHandler.commentStart: #
 //meta.scriptHandler.templateScript: #name: Template\n#description: Calculates number of cells in the table\n#language: pyodide\n#sample: cars.csv\n#input: dataframe table [Data table]\n#output: int count [Number of cells in table]\n\ncount = table.shape[0] * table.shape[1]
 //meta.scriptHandler.codeEditorMode: python
+//meta.scriptHandler.vectorizationFunction: Pyodide:makeVectorCode
 //meta.icon: files/pyodide.png
 //input: funccall scriptCall
 export async function pyodideLanguageHandler(scriptCall: DG.FuncCall): Promise<void> {

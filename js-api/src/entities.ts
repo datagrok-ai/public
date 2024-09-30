@@ -823,6 +823,9 @@ export class Group extends Entity {
  * Represents a Script
  * */
 export class Script extends Func {
+  public static readonly vecInputTableName = 'in_vec_table';
+  public static readonly vecOutputTableName = 'out_vec_table';
+
   /** @constructs Script */
   constructor(dart: any) {
     super(dart);
@@ -1330,6 +1333,10 @@ export class Property {
    *  @returns {Array<string>} */
   get choices(): string[] { return api.grok_Property_Get_Choices(this.dart); }
   set choices(x: string[]) { api.grok_Property_Set_Choices(this.dart, x); }
+
+  get isVectorizable(): boolean { return api.grok_Property_Get_isVectorizable(this.dart); }
+
+  get vectorName(): string { return api.grok_Property_Get_VectorName(this.dart); }
 
   /** Column type filter */
   get columnFilter(): ColumnType | 'numerical' | 'categorical' | null {
