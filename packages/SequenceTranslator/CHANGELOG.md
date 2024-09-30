@@ -1,5 +1,18 @@
 # Sequence Translator changelog
 
+## 1.4.4 (2024-09-30)
+
+### New features
+
+* Add convert with reaction rules
+
+### Bug fixes
+
+* Fix sample reaction rule and monomer order
+* Fix isolate PolyTool convert error on row
+* Fix adding test for Chain .fromNotation
+* Fix adding test toAtomicLevel getNewMonomer
+
 ## 1.4.3 (2024-09-27)
 
 ### Features

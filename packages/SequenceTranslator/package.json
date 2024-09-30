@@ -1,9 +1,9 @@
 {
   "name": "@datagrok/sequence-translator",
   "friendlyName": "Sequence Translator",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "author": {
-    "name": "Alexey Choposky",
+    "name": "Alexey Chopovsky",
     "email": "achopovsky@datagrok.ai"
   },
   "description": "SequenceTranslator translates [oligonucleotide](https://en.wikipedia.org/wiki/Oligonucleotide) sequences between [different representations](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#sequence-representations).",
