@@ -1,8 +1,8 @@
 {
-  "name": "pyodide",
+  "name": "@datagrok/pyodide",
   "friendlyName": "Pyodide",
   "version": "1.0.0",
-  "description": "Provides support package of python scripting directly in browser using pyodide",
+  "description": "Provides support of python scripting directly in browser using Pyodide (https://pyodide.org/)",
   "author": {
     "name": "Pavlo Polovyi",
     "email": "ppolovyi@datagrok.ai"
