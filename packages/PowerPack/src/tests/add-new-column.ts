@@ -98,11 +98,11 @@ category('Add new column', () => {
     await clear();
     //check function is added on click and selected column with matching type is added automatically
     dlg.columnsDf!.currentRowIdx = 3;
-    await awaitCheck(() => dlg.selectedColumn!.name === 'age', 'expression has\'t been set');
+    await awaitCheck(() => dlg.selectedColumn!.name === 'age', 'column has\'t been set');
     absFuncLink.click();
-    await awaitCheck(() => dlg.codeMirror!.state.doc.toString() === 'Abs(${age})', 'expression has\'t been set');
-    await awaitCheck(() => dlg.gridPreview!.dataFrame.get('Abs(${age})', 0) === 61, 'incorrect preview data');
-    await awaitCheck(() => dlg.gridPreview!.dataFrame.get('Abs(${age})', 9) === 26, 'incorrect preview data');
+    await awaitCheck(() => dlg.codeMirror!.state.doc.toString() === 'Abs(${age})', 'expression has\'t been set', 3000);
+    await awaitCheck(() => dlg.gridPreview!.dataFrame.col('Abs(${age})') ? dlg.gridPreview!.dataFrame.get('Abs(${age})', 0) === 61 : false, 'incorrect preview data', 3000);
+    await awaitCheck(() => dlg.gridPreview!.dataFrame.get('Abs(${age})', 9) === 26, 'incorrect preview data', 1000);
   });
 
   after(async () => {
