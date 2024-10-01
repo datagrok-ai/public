@@ -278,7 +278,7 @@ export const RichFunctionView = Vue.defineComponent({
     const isIncomplete = Vue.computed(() => Utils.isIncomplete(currentCall.value));
 
     return () => {
-      let lastCardId = null as string | null;
+      let lastCardLabel = null as string | null;
       let scalarCardCount = 0;
 
       return (
@@ -393,6 +393,7 @@ export const RichFunctionView = Vue.defineComponent({
                     return <div 
                       class='flex flex-col pl-2 h-full w-full'
                       dock-spawn-title={tabLabel}
+                      key={tabLabel}
                     >
                       <Viewer
                         type={options['type'] as string}
@@ -408,26 +409,26 @@ export const RichFunctionView = Vue.defineComponent({
                     
                     const panel = <ScalarsPanel
                       class='h-full overflow-scroll'
-                      {...{id: tabLabel}}
                       categoryScalars={categoryProps}
                       funcCall={currentCall.value}
+                      key={tabLabel}
                       dock-spawn-title={tabLabel}
-                      dock-spawn-dock-to={lastCardId && scalarCardCount < 3 ? lastCardId: null}
-                      dock-spawn-dock-type={lastCardId ? 
+                      dock-spawn-dock-to={lastCardLabel && scalarCardCount < 3 ? lastCardLabel: null}
+                      dock-spawn-dock-type={lastCardLabel ? 
                         (categoryProps.length > 3 ? 
                           'fill': (scalarCardCount < 3 ? 'right': 'down')
                         ): 'down' 
                       }
-                      dock-spawn-dock-ratio={lastCardId && scalarCardCount < 3 ? 0.5: 0.15}
+                      dock-spawn-dock-ratio={lastCardLabel && scalarCardCount < 3 ? 0.5: 0.15}
                     />;
 
                     if (categoryProps.length < 3) {
                       scalarCardCount += categoryProps.length;     
-                      lastCardId = tabLabel;
+                      lastCardLabel = tabLabel;
                     }
-                    if (scalarCardCount === 2) {
+                    if (scalarCardCount >= 2) {
                       scalarCardCount = 0;
-                      lastCardId = null;
+                      lastCardLabel = null;
                     }
 
                     return panel;
