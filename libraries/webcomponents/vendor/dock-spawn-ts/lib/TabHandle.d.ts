@@ -1,7 +1,7 @@
-import { TabPage } from "./TabPage.js";
-import { UndockInitiator } from "./UndockInitiator.js";
-import { EventHandler } from "./EventHandler.js";
-import { DockNode } from "./DockNode.js";
+import { TabPage } from './TabPage.js';
+import { UndockInitiator } from './UndockInitiator.js';
+import { EventHandler } from './EventHandler.js';
+import { DockNode } from './DockNode.js';
 /**
  * A tab handle represents the tab button on the tab strip
  */

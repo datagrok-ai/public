@@ -275,7 +275,7 @@ export class PanelContainer implements IDockContainerWithSize {
   saveState(state: IState) {
     state.element = this.elementContent.tagName === 'SLOT' ?
       //@ts-ignore
-      this.elementContent.assignedElements()[0].title :
+      this.elementContent.assignedElements()[0].getAttribute('dock-spawn-title') :
       this.elementContent.id;
     state.width = this.width;
     state.height = this.height;

@@ -42,7 +42,8 @@ export const DockManager = Vue.defineComponent({
         const slots = dockSpawnRef.value!.shadowRoot!
           .querySelectorAll(`slot`);
         slots.forEach((slot) => {
-          const content = (slot.assignedElements() as HTMLElement[]).find((el) => el.title && el.title === state.element); 
+          const content = (slot.assignedElements() as HTMLElement[])
+            .find((el) => el.getAttribute('dock-spawn-title') && el.getAttribute('dock-spawn-title') === state.element); 
           if (content) aimSlot = slot;
         })
 

@@ -119,8 +119,6 @@ export const ScalarsPanel = Vue.defineComponent({
       props.categoryScalars.length <= 3 ?
         <div 
           class='flex flex-wrap justify-around' 
-          dock-spawn-dock-type='down'
-          dock-spawn-dock-ratio={0.15}
         >
           { props.categoryScalars.map((prop, idx) => {
             const [scalarValue, units] = getContent(prop);
@@ -279,148 +277,175 @@ export const RichFunctionView = Vue.defineComponent({
 
     const isIncomplete = Vue.computed(() => Utils.isIncomplete(currentCall.value));
 
-    return () => (
-      <div class='w-full h-full flex' ref={root}>
-        <RibbonMenu groupName='Layout'>
-          <span onClick={saveLayout}>
-            <IconFA name='save' style={{'padding-right': '3px'}}/>
-            <span> Save </span>
-          </span>
-          { panelsState.value && 
+    return () => {
+      let lastCardId = null as string | null;
+      let scalarCardCount = 0;
+
+      return (
+        <div class='w-full h-full flex' ref={root}>
+          <RibbonMenu groupName='Layout'>
+            <span onClick={saveLayout}>
+              <IconFA name='save' style={{'padding-right': '3px'}}/>
+              <span> Save </span>
+            </span>
+            { panelsState.value && 
           <span onClick={loadLayout}>
             <IconFA name='life-ring' style={{'padding-right': '3px'}}/>
             <span> Load </span>
           </span> }
-          { panelsState.value && <span onClick={eraseLayout}>
-            <IconFA name='eraser' style={{'padding-right': '3px'}}/>
-            <span> Erase </span>
-          </span> }
-        </RibbonMenu>
-        <RibbonPanel>
-          <IconFA
-            name='play'
-            tooltip='Run step'
-            onClick={run} 
-          />
-          { !isIncomplete.value && <ComboPopup 
-            caption={ui.iconFA('arrow-to-bottom')}
-            items={['Excel']}
-            onSelected={({item: format}) => {
-              Utils.richFunctionViewReport(
-                format,
-                currentCall.value.func,
-                currentCall.value,
-                Utils.dfToViewerMapping(currentCall.value),
-              ).then((blob) => 
-                DG.Utils.download(`${currentCall.value.func.nqName} - 
+            { panelsState.value && <span onClick={eraseLayout}>
+              <IconFA name='eraser' style={{'padding-right': '3px'}}/>
+              <span> Erase </span>
+            </span> }
+          </RibbonMenu>
+          <RibbonPanel>
+            <IconFA
+              name='play'
+              tooltip='Run step'
+              onClick={run} 
+            />
+            { !isIncomplete.value && <ComboPopup 
+              caption={ui.iconFA('arrow-to-bottom')}
+              items={['Excel']}
+              onSelected={({item: format}) => {
+                Utils.richFunctionViewReport(
+                  format,
+                  currentCall.value.func,
+                  currentCall.value,
+                  Utils.dfToViewerMapping(currentCall.value),
+                ).then((blob) => 
+                  DG.Utils.download(`${currentCall.value.func.nqName} - 
                   ${Utils.getStartedOrNull(currentCall.value) ?? 'Not completed'}.xlsx`, blob));
-            }}
-          />}
-          <IconFA
-            name='pen'
-            tooltip={formHidden.value ? 'Open inputs': 'Close inputs'}
-            onClick={() => formHidden.value = !formHidden.value} 
-            style={{'background-color': !formHidden.value ? 'var(--grey-1)': null}}
-          />
-          <IconFA
-            name='chart-pie'
-            tooltip='Restore output tabs'
-            onClick={() => visibleTabLabels.value = [...tabLabels.value]} 
-          />
-          { hasContextHelp.value && <IconFA 
-            name='info' 
-            tooltip={ helpHidden.value ? 'Open help panel' : 'Close help panel' }
-            onClick={() => helpHidden.value = !helpHidden.value}
-            style={{'background-color': !helpHidden.value ? 'var(--grey-1)': null}}
-          /> }
-          <IconFA 
-            name='history' 
-            tooltip='Open history panel' 
-            onClick={() => historyHidden.value = !historyHidden.value}
-            style={{'background-color': !historyHidden.value ? 'var(--grey-1)': null}}
-          />
-        </RibbonPanel>
-        <DockManager 
-          layoutStorageName={`${currentCall.value.func.nqName}_layout`}
-          onPanelClosed={handlePanelClose} 
-          ref={dockRef}
-        >
-          { !historyHidden.value ? 
-            <History 
-              func={currentCall.value.func}
-              showActions
-              showBatchActions
-              isHistory
-              onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
-              dock-spawn-dock-type='right'
-              dock-spawn-dock-ratio={0.2}
-              dock-spawn-title='History'
-              ref={historyRef}
-              class='overflow-scroll h-full'
-            />: null }
+              }}
+            />}
+            <IconFA
+              name='pen'
+              tooltip={formHidden.value ? 'Open inputs': 'Close inputs'}
+              onClick={() => formHidden.value = !formHidden.value} 
+              style={{'background-color': !formHidden.value ? 'var(--grey-1)': null}}
+            />
+            <IconFA
+              name='chart-pie'
+              tooltip='Restore output tabs'
+              onClick={() => visibleTabLabels.value = [...tabLabels.value]} 
+            />
+            { hasContextHelp.value && <IconFA 
+              name='info' 
+              tooltip={ helpHidden.value ? 'Open help panel' : 'Close help panel' }
+              onClick={() => helpHidden.value = !helpHidden.value}
+              style={{'background-color': !helpHidden.value ? 'var(--grey-1)': null}}
+            /> }
+            <IconFA 
+              name='history' 
+              tooltip='Open history panel' 
+              onClick={() => historyHidden.value = !historyHidden.value}
+              style={{'background-color': !historyHidden.value ? 'var(--grey-1)': null}}
+            />
+          </RibbonPanel>
+          <DockManager 
+            layoutStorageName={`${currentCall.value.func.nqName}_layout`}
+            onPanelClosed={handlePanelClose} 
+            ref={dockRef}
+          >
+            { !historyHidden.value ? 
+              <History 
+                func={currentCall.value.func}
+                showActions
+                showBatchActions
+                isHistory
+                onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
+                dock-spawn-dock-type='right'
+                dock-spawn-dock-ratio={0.2}
+                dock-spawn-title='History'
+                ref={historyRef}
+                class='overflow-scroll h-full'
+              />: null }
           
-          { !formHidden.value ?
-            <div 
-              class='flex flex-col p-2 overflow-scroll h-full'
-              dock-spawn-dock-type='left'
-              dock-spawn-dock-ratio={0.2}
-              dock-spawn-title='Inputs'
-              ref={formRef}
-            >
-              <InputForm 
-                funcCall={currentCall.value}
-                onUpdate:funcCall={(call) => emit('update:funcCall', call)}
-              />
-              <div class='flex sticky bottom-0 justify-end'>
-                <BigButton 
-                  isDisabled={!props.callState?.isRunnable || props.callState?.isRunning} 
-                  onClick={run}> 
+            { !formHidden.value ?
+              <div 
+                class='flex flex-col p-2 overflow-scroll h-full'
+                dock-spawn-dock-type='left'
+                dock-spawn-dock-ratio={0.2}
+                dock-spawn-title='Inputs'
+                ref={formRef}
+              >
+                <InputForm 
+                  funcCall={currentCall.value}
+                  onUpdate:funcCall={(call) => emit('update:funcCall', call)}
+                />
+                <div class='flex sticky bottom-0 justify-end'>
+                  <BigButton 
+                    isDisabled={!props.callState?.isRunnable || props.callState?.isRunning} 
+                    onClick={run}> 
                   Run 
-                </BigButton>
-              </div>
-            </div>: null }
-          
-          { 
-            visibleTabLabels.value
-              .map((tabLabel) => ({tabLabel, tabContent: tabToPropertiesMap.value.inputs[tabLabel] ?? 
-                tabToPropertiesMap.value.outputs[tabLabel]}))
-              .map(({tabLabel, tabContent}) => {
-                if (tabContent.type === 'dataframe') {
-                  const options = tabContent.config;
-                  const dfProp = tabContent.dfProp;
-                  return <div 
-                    class='flex flex-col pl-2 h-full w-full'
-                    dock-spawn-title={tabLabel}
-                  >
-                    <Viewer
-                      type={options['type'] as string}
-                      options={options}
-                      dataFrame={currentCall.value.inputs[dfProp.name] ?? currentCall.value.outputs[dfProp.name]}
-                      class='w-full'
-                    />
-                  </div>;
-                }
+                  </BigButton>
+                </div>
+              </div>: null }
 
-                if (tabContent.type === 'scalars') {
-                  return <ScalarsPanel 
-                    categoryScalars={tabContent.scalarProps}
-                    funcCall={currentCall.value}
-                    dock-spawn-title={tabLabel}
-                  />;
-                }
-              })
-          }
-          { !helpHidden.value && helpText.value ? 
-            <MarkDown 
-              markdown={helpText.value}
-              dock-spawn-title='Help'
-              dock-spawn-dock-type='right'
-              dock-spawn-dock-ratio={0.15}
-              ref={helpRef}
-            /> : null 
-          }
-        </DockManager>
-      </div>
-    );
+            {          
+              visibleTabLabels.value
+                .map((tabLabel) => ({tabLabel, tabContent: tabToPropertiesMap.value.inputs[tabLabel] ?? 
+                tabToPropertiesMap.value.outputs[tabLabel]}))
+                .map(({tabLabel, tabContent}) => {
+                  if (tabContent.type === 'dataframe') {
+                    const options = tabContent.config;
+                    const dfProp = tabContent.dfProp;
+                    return <div 
+                      class='flex flex-col pl-2 h-full w-full'
+                      dock-spawn-title={tabLabel}
+                    >
+                      <Viewer
+                        type={options['type'] as string}
+                        options={options}
+                        dataFrame={currentCall.value.inputs[dfProp.name] ?? currentCall.value.outputs[dfProp.name]}
+                        class='w-full'
+                      />
+                    </div>;
+                  }
+
+                  if (tabContent.type === 'scalars') {
+                    const categoryProps = tabContent.scalarProps;
+                    
+                    const panel = <ScalarsPanel
+                      class='h-full overflow-scroll'
+                      {...{id: tabLabel}}
+                      categoryScalars={categoryProps}
+                      funcCall={currentCall.value}
+                      dock-spawn-title={tabLabel}
+                      dock-spawn-dock-to={lastCardId && scalarCardCount < 3 ? lastCardId: null}
+                      dock-spawn-dock-type={lastCardId ? 
+                        (categoryProps.length > 3 ? 
+                          'fill': (scalarCardCount < 3 ? 'right': 'down')
+                        ): 'down' 
+                      }
+                      dock-spawn-dock-ratio={lastCardId && scalarCardCount < 3 ? 0.5: 0.15}
+                    />;
+
+                    if (categoryProps.length < 3) {
+                      scalarCardCount += categoryProps.length;     
+                      lastCardId = tabLabel;
+                    }
+                    if (scalarCardCount === 2) {
+                      scalarCardCount = 0;
+                      lastCardId = null;
+                    }
+
+                    return panel;
+                  }
+                })
+            }
+            { !helpHidden.value && helpText.value ? 
+              <MarkDown 
+                markdown={helpText.value}
+                dock-spawn-title='Help'
+                dock-spawn-dock-type='right'
+                dock-spawn-dock-ratio={0.15}
+                ref={helpRef}
+              /> : null 
+            }
+          </DockManager>
+        </div>
+      );
+    };
   },
 });
