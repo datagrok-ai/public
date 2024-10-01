@@ -39,7 +39,7 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
 
   public tags: any;
   private _meta: ViewerMetaHelper | undefined;
-  filter: BitSet = BitSet.create(0);
+  private _filter: BitSet | null = null;
 
   /** @constructs Viewer */
   constructor(dart: any, root?: HTMLElement) {
@@ -47,6 +47,13 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     this.initDartObject(dart);
   }
 
+  /** combined filter of the viewer */
+  get filter(): BitSet { 
+    return this._filter ??= this.dart ? toJs(api.grok_Viewer_Get_Filter(this.dart)) : BitSet.create(0); 
+  }
+  set filter(f: BitSet) {
+    this._filter = f;
+  }
   get onDataEvent(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event'); }
   get onTooltipCreated(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-tooltip')); }
   get onDataSelected(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-select')); }
