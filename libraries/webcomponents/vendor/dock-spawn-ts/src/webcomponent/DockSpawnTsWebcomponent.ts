@@ -3,6 +3,20 @@ import {PanelContainer} from '../PanelContainer.js';
 import {PanelType} from '../enums/PanelType.js';
 import {DockNode} from '../DockNode.js';
 import {style, style1, style2} from './styles';
+import {Observable, Subscriber, Subscription} from 'rxjs';
+import {debounceTime} from 'rxjs/operators';
+
+const elementResized = (elem: Element) => {
+  return new Observable((subscriber: Subscriber<ResizeObserverEntry[]>) => {
+    const resizeObserver = new ResizeObserver(
+      (entries: ResizeObserverEntry[]) => subscriber.next(entries),
+    );
+
+    resizeObserver.observe(elem);
+
+    return () => resizeObserver.disconnect();
+  });
+};
 
 export class DockSpawnTsWebcomponent extends HTMLElement {
   public dockManager: DockManager;
@@ -10,7 +24,7 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
   private windowResizedBound;
   private slotElementMap: WeakMap<HTMLSlotElement, HTMLElement>;
   private observer: MutationObserver;
-  private resizeObserver: ResizeObserver;
+  private resizeSub: Subscription;
   private initialized = false;
   private initFinished = false;
   private elementContainerMap: Map<HTMLElement, PanelContainer> = new Map();
@@ -79,10 +93,7 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
       });
       this.observer.observe(this, {childList: true});
 
-      this.resizeObserver = new ResizeObserver(() => {
-        this.resize();
-      });
-      this.resizeObserver.observe(this);
+      this.resizeSub = elementResized(this).pipe(debounceTime(50)).subscribe(() => this.resize());
 
       this.initFinished = true;
     }, 50);
@@ -151,13 +162,12 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
       this.initDockspawn();
       this.initialized = true;
     }
-    window.addEventListener('resize', this.windowResizedBound);
     window.addEventListener('orientationchange', this.windowResizedBound);
     if (this.initFinished) this.resize();
   }
 
   disconnectedCallback() {
-    window.removeEventListener('resize', this.windowResizedBound);
+    this.resizeSub.unsubscribe();
     window.removeEventListener('orientationchange', this.windowResizedBound);
   }
 

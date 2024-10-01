@@ -2,13 +2,22 @@ import { DockManager } from '../DockManager.js';
 import { PanelContainer } from '../PanelContainer.js';
 import { PanelType } from '../enums/PanelType.js';
 import { style, style1, style2 } from './styles';
+import { Observable } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
+const elementResized = (elem) => {
+    return new Observable((subscriber) => {
+        const resizeObserver = new ResizeObserver((entries) => subscriber.next(entries));
+        resizeObserver.observe(elem);
+        return () => resizeObserver.disconnect();
+    });
+};
 export class DockSpawnTsWebcomponent extends HTMLElement {
     dockManager;
     slotId = 0;
     windowResizedBound;
     slotElementMap;
     observer;
-    resizeObserver;
+    resizeSub;
     initialized = false;
     initFinished = false;
     elementContainerMap = new Map();
@@ -66,10 +75,7 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
                 });
             });
             this.observer.observe(this, { childList: true });
-            this.resizeObserver = new ResizeObserver(() => {
-                this.resize();
-            });
-            this.resizeObserver.observe(this);
+            this.resizeSub = elementResized(this).pipe(debounceTime(50)).subscribe(() => this.resize());
             this.initFinished = true;
         }, 50);
     }
@@ -128,13 +134,12 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
             this.initDockspawn();
             this.initialized = true;
         }
-        window.addEventListener('resize', this.windowResizedBound);
         window.addEventListener('orientationchange', this.windowResizedBound);
         if (this.initFinished)
             this.resize();
     }
     disconnectedCallback() {
-        window.removeEventListener('resize', this.windowResizedBound);
+        this.resizeSub.unsubscribe();
         window.removeEventListener('orientationchange', this.windowResizedBound);
     }
     windowResized() {
