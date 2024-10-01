@@ -278,17 +278,25 @@ export async function HistoryApp() {
 
 //name: Tree Wizard
 //tags: test, vue, model
+//sidebar: @compute
 //meta.icon: icons/tree-wizard.png
 export async function TreeWizardApp() {
-  customElements.whenDefined('dg-markdown').then(() => {
-    // TODO: close view handling
-    const view = new DG.ViewBase();
-    const app = Vue.createApp(TreeWizardAppInstance, {providerFunc: 'LibTests:MockProvider3'});
-    view.root.classList.remove('ui-panel');
-    app.mount(view.root);
-    view.name = 'DriverApp';
-    grok.shell.addView(view);
-  });
+  const thisCall = grok.functions.getCurrentCall();
+
+  await customElements.whenDefined('dg-markdown');
+
+  // const modelCatalogCall = (await DG.Func.byName('Compute:ModelCatalog').prepare().call());
+  // thisCall.parentCall = modelCatalogCall;
+
+  const view = new DG.ViewBase();
+  const app = Vue.createApp(TreeWizardAppInstance, {providerFunc: 'LibTests:MockProvider3'});
+  view.root.classList.remove('ui-panel');
+  app.mount(view.root);
+  view.name = 'DriverApp';
+  view.parentCall = thisCall;
+  view.parentView = thisCall.parentCall.aux['view'];
+  view.basePath = '/TreeWizard';
+  grok.shell.addView(view);
 }
 
 //tags: test, vue
