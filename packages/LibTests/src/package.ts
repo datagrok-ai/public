@@ -285,9 +285,6 @@ export async function TreeWizardApp() {
 
   await customElements.whenDefined('dg-markdown');
 
-  // const modelCatalogCall = (await DG.Func.byName('Compute:ModelCatalog').prepare().call());
-  // thisCall.parentCall = modelCatalogCall;
-
   const view = new DG.ViewBase();
   const app = Vue.createApp(TreeWizardAppInstance, {providerFunc: 'LibTests:MockProvider3'});
   view.root.classList.remove('ui-panel');
@@ -295,7 +292,7 @@ export async function TreeWizardApp() {
   view.name = 'DriverApp';
   view.parentCall = thisCall;
   view.parentView = thisCall.parentCall.aux['view'];
-  view.basePath = '/TreeWizard';
+  view.basePath = `/${thisCall.func.name}`;
   grok.shell.addView(view);
 }
 
