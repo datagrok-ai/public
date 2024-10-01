@@ -187,7 +187,7 @@ export const TreeWizardApp = Vue.defineComponent({
             }}
           /> }
         </RibbonPanel>
-        <DockManager class='block h-full' onPanelClosed={handlePanelClose}>
+        {treeState.value && <DockManager class='block h-full' onPanelClosed={handlePanelClose}>
           { treeState.value && !treeHidden.value ? <Draggable 
             class="ui-div mtl-tree p-2 overflow-scroll"
             style={{paddingLeft: '25px'}}
@@ -264,11 +264,7 @@ export const TreeWizardApp = Vue.defineComponent({
               }}
             />
           }
-          {
-            !treeState.value &&
-            <div></div>
-          }
-        </DockManager>
+        </DockManager> }
       </div>
     );
   },

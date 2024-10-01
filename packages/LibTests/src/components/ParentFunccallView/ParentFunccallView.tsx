@@ -61,7 +61,6 @@ export const ParentFunccallView = Vue.defineComponent({
               ref={helpRef}
             /> : null 
           }
-          { historyHidden.value && helpText.value && <div/> }
           <div 
             dock-spawn-hide-close-button
             dock-spawn-dock-type='left'
