@@ -19,10 +19,10 @@ export class Logger {
   private readonly dart: any;
   private static consoleLogs: object[] = [];
 
-  constructor(putCallback?: LoggerPutCallback, options?: {staticLogger?: boolean, params?: object}) {
+  constructor(putCallback?: LoggerPutCallback, options?: {staticLogger?: boolean, params?: object, dartLogger?: any}) {
     this.putCallback = putCallback;
     if (options?.staticLogger != true)
-      this.dart = api.grok_GetLogger(toDart(options?.params));
+      this.dart = options?.dartLogger ?? api.grok_GetLogger(toDart(options?.params));
   }
 
   static create(options?: {params: object}) {

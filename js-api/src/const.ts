@@ -98,6 +98,7 @@ export enum TYPE {
   COLUMN_LIST = 'column_list',
   GRAPHICS = 'graphics',
   FILE = 'file',
+  BLOB = 'blob',
   ROW_FILTER = 'tablerowfiltercall',
   COLUMN_FILTER = 'colfiltercall',
   BIT_SET = 'bitset',
@@ -594,6 +595,7 @@ export enum SCRIPT_LANGUAGE {
   R = 'r',
   NODE = 'nodejs',
   GROK = 'grok',
+  PYODIDE = 'pyodide'
 }
 
 export enum NAMED_VALIDATORS {
@@ -694,7 +696,7 @@ export type CsvImportOptions = {
   doublePrecision?: boolean, rowFilterTop?: number, rowFilterProb?: number, nullStrings?: string[], columnImportOptions?: CsvImportColumnOptions[]};
 export type IndexPredicate = (ind: number) => boolean;
 export type StringPredicate = (str: string) => boolean;
-export type ScriptLanguage = `${SCRIPT_LANGUAGE}`;
+export type ScriptingLanguage = `${SCRIPT_LANGUAGE}`;
 
 export type ElementOptions = {
   id?: string;
