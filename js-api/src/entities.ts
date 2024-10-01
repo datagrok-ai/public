@@ -1334,7 +1334,7 @@ export class Property {
   get choices(): string[] { return api.grok_Property_Get_Choices(this.dart); }
   set choices(x: string[]) { api.grok_Property_Set_Choices(this.dart, x); }
 
-  get isVectorizable(): boolean { return api.grok_Property_Get_isVectorizable(this.dart); }
+  get isVectorizable(): boolean { return api.grok_Property_Get_IsVectorizable(this.dart); }
 
   get vectorName(): string { return api.grok_Property_Get_VectorName(this.dart); }
 
