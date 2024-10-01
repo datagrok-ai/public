@@ -14,15 +14,15 @@ import {
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {RichFunctionView} from '../components/RFV/RichFunctionView';
 import {TreeNode} from '../components/TreeWizard/TreeNode';
-import {Draggable} from '@he-tree/vue';
+import {Draggable, dragContext} from '@he-tree/vue';
 import {AugmentedStat} from '../components/TreeWizard/types';
-import {dragContext} from '@he-tree/vue';
 import '@he-tree/vue/style/default.css';
 import '@he-tree/vue/style/material-design.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {BehaviorSubject} from 'rxjs';
 import {ParentFunccallView} from '../components/ParentFunccallView/ParentFunccallView';
+import {BrowserLocationState, useBrowserLocation, useUrlSearchParams} from '@vueuse/core';
 
 const findTreeNode = (uuid: string, state: PipelineState): PipelineState | undefined => {
   let foundState = undefined as PipelineState | undefined;
@@ -58,10 +58,17 @@ export const TreeWizardApp = Vue.defineComponent({
       .shallowRef<Record<string, BehaviorSubject<FuncCallStateInfo | undefined>> | undefined>(undefined);
     const chosenStepUuid = Vue.ref<string | undefined>(undefined);
 
+    const searchParams = useUrlSearchParams('history');
+
     const chosenStepState = Vue.computed(() => {
       if (!chosenStepUuid.value || !treeState.value) return null;
 
       return findTreeNode(chosenStepUuid.value, treeState.value);
+    });
+
+    Vue.watch(chosenStepUuid, (newStepId) => {
+      if (newStepId)
+        searchParams['stepId'] = newStepId;
     });
 
     const treeInstance = Vue.ref(null as InstanceType<typeof Draggable> | null);
