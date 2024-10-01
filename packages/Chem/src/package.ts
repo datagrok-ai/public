@@ -497,6 +497,7 @@ export async function chemDescriptors(table: DG.DataFrame, molecules: DG.Column,
 }
 
 //name: chemDescriptorsVector
+//meta.vectorFunc: true
 //input: column molecules
 //input: string descriptor
 //output: column res
@@ -1031,6 +1032,7 @@ export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void 
 }
 
 //name: getInchiKeysVector
+//meta.vectorFunc: true
 //input: column molecules
 //output: column res
 export async function getInchiKeysVector(molecules: DG.Column): Promise<DG.Column> {
