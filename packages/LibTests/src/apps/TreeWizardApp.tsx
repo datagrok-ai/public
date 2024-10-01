@@ -47,7 +47,10 @@ const findTreeNode = (uuid: string, state: PipelineState): PipelineState | undef
 
 export const TreeWizardApp = Vue.defineComponent({
   name: 'TreeWizardApp',
-  setup() {
+  props: {
+    providerFunc: {type: String, required: true},
+  },
+  setup(props) {
     const driver = new Driver();
     const isLocked = Vue.ref(false);
     const treeState = Vue.shallowRef<PipelineState | undefined>(undefined);
@@ -127,7 +130,7 @@ export const TreeWizardApp = Vue.defineComponent({
     return () => (
       <div class='w-full h-full'>
         <RibbonPanel>
-          <BigButton onClick={() => initPipeline('LibTests:MockProvider3')}>Init Pipeline</BigButton>
+          <BigButton onClick={() => initPipeline(props.providerFunc)}>Init Pipeline</BigButton>
           <IconFA 
             name='folder-tree'
             tooltip={treeHidden.value ? 'Show tree': 'Hide tree'}

@@ -283,7 +283,7 @@ export async function TreeWizardApp() {
   customElements.whenDefined('dg-markdown').then(() => {
     // TODO: close view handling
     const view = new DG.ViewBase();
-    const app = Vue.createApp(TreeWizardAppInstance);
+    const app = Vue.createApp(TreeWizardAppInstance, {providerFunc: 'LibTests:MockProvider3'});
     view.root.classList.remove('ui-panel');
     app.mount(view.root);
     view.name = 'DriverApp';
