@@ -631,6 +631,12 @@ export class CorrelationPlot extends Viewer<interfaces.ICorrelationPlotSettings>
   get onCorrCellClicked(): rxjs.Observable<EventData<CorrPlotCellArgs>> { return this.onEvent('d4-correlation-plot-corr-cell-click'); }
 }
 
+export class ConfusionMatrix extends Viewer<interfaces.IConfusionMatrixSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+}
+
 
 export class CalendarViewer extends Viewer<interfaces.ICalendarSettings> {
   constructor(dart: any) {
