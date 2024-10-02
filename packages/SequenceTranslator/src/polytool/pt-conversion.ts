@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
+import {HelmTypes, PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {IMonomerLib, IMonomerLibBase, Monomer, MonomerLibData, RGroup} from '@datagrok-libraries/bio/src/types';
 import {RDModule, RDMol, RDReaction, MolList, RDReactionResult} from '@datagrok-libraries/chem-meta/src/rdkit-api';
@@ -14,24 +14,23 @@ import {InvalidReactionError, MonomerNotFoundError} from './types';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {_package} from '../package';
 
-export const RULES_DIMER = '(#2)';
-export const RULES_HETERODIMER = '($2)';
+import {HelmMol, HelmType, JSDraw2ModuleType} from '@datagrok-libraries/bio/src/helm/types';
+import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+declare const JSDraw2: JSDraw2ModuleType;
 
-// function addCommonTags(col: DG.Column): void {
-//   col.semType = DG.SEMTYPE.MACROMOLECULE;
-//   col.setTag('aligned', ALIGNMENT.SEQ);
-//   col.setTag('alphabet', ALPHABET.PT);
-// }
 
 export class Chain {
   linkages: { fChain: number, sChain: number, fMonomer: number, sMonomer: number, fR: number, sR: number }[];
   monomers: string[][];
+  mol: HelmMol | null;
 
   constructor(
     monomers: string[][],
-    linkages: { fChain: number, sChain: number, fMonomer: number, sMonomer: number, fR: number, sR: number }[]) {
+    linkages: { fChain: number, sChain: number, fMonomer: number, sMonomer: number, fR: number, sR: number }[],
+    mol: HelmMol | null) {
     this.linkages = linkages;
     this.monomers = monomers;
+    this.mol = mol;
   }
 
   static fromHelm(helm: string) {
@@ -78,7 +77,7 @@ export class Chain {
       }
     }
 
-    return new Chain(monomers, linkages);
+    return new Chain(monomers, linkages, null);
   }
 
   static fromNotation(sequence: string, rules: Rules): Chain {
@@ -223,7 +222,90 @@ export class Chain {
       }
     }
 
-    const chain = new Chain(monomersAll, linkages);
+    const chain = new Chain(monomersAll, linkages, null);
+    return chain;
+  }
+
+  static async parseNotation(sequence: string): Promise<Chain> {
+    const mainFragments: string[][] = [];
+
+    const linkages: {
+      fChain: number,
+      sChain: number,
+      fMonomer: number,
+      sMonomer: number,
+      fR: number,
+      sR: number
+    }[] = [];
+
+    const mol: HelmMol = new JSDraw2.Mol<HelmType>();
+
+    // const hh = await getHelmHelper();
+    // const h = 
+    // const moll = hh.parse(h);
+
+    const rxp = /(\(.\d+\))?\{[^\}]*\}/g;
+    const seqs:string []= [];
+    seqs.push(sequence.replaceAll(rxp, ''));
+
+    //const l = (rxpRes?.length) ?? -1;
+
+    const matches = sequence.matchAll(rxp);
+    //const rxpRes = rxp.exec(sequence);
+    for (const m of matches) {
+      const str = m![0];
+      if (str)
+        seqs.push(str);
+    }
+
+    let counter = 0;
+    for (let i = 0; i < seqs.length; i ++) {
+      const splMonomers = seqs[i].split('-');
+      const monomers: string [] = new Array<string>(splMonomers.length);
+      for (let j = 0; j < splMonomers.length; j++) {
+        const monomer = splMonomers[j].replace('{', '').replace('}', '');
+        if (monomer !== '') {
+          monomers[j] = monomer;
+          counter++;
+        } else {
+          linkages.push({fChain: i, sChain: i + 1, fMonomer: counter, sMonomer: counter + 1, fR: 1, sR: 1});
+        }
+      }
+
+      mainFragments.push(monomers);
+    }
+
+    counter = 0;
+    for (let i = 0; i < mainFragments.length; i++) {
+      for (let j = 0; j < mainFragments[i].length; j++) {
+        if (mainFragments[i][j] ! == '') {
+          const atom = new JSDraw2.Atom<HelmType>(null, mainFragments[i][j]);
+          //@ts-ignore
+          atom.bio = {type: HelmTypes.AA, i: i, j: j};
+          mol.addAtom(atom);
+
+          if (j !== 0) {
+            const atom1 = mol.atoms[counter - 1];
+            const atom2 = mol.atoms[counter];
+            const bond = new JSDraw2.Bond<HelmType>(atom1, atom2);
+            mol.addBond(bond);
+          }
+
+          counter++;
+        }
+      }
+    }
+
+    for (let i = 0; i < linkages.length; i ++) {
+      const atom1 = mol.atoms[linkages[i].fMonomer];
+      const atom2 = mol.atoms[linkages[i].sMonomer];
+      const bond = new JSDraw2.Bond<HelmType>(atom1, atom2);
+      bond.r1 = linkages[i].fR;
+      bond.r2 = linkages[i].sR;
+      mol.addBond(bond);
+    }
+
+    const chain = new Chain(mainFragments, linkages, mol);
     return chain;
   }
 
@@ -233,17 +315,17 @@ export class Chain {
     let idx1 = 0;
     let idx2 = 0;
     loop1:
-      for (let i = 0; i < this.monomers.length; i++) {
-        loop2:
-          for (let j = 0; j < this.monomers[i].length; j++) {
-            if (counter == changeNumber) {
-              idx1 = i;
-              idx2 = j;
-              break loop1;
-            }
-            counter++;
-          }
+    for (let i = 0; i < this.monomers.length; i++) {
+      loop2:
+      for (let j = 0; j < this.monomers[i].length; j++) {
+        if (counter == changeNumber) {
+          idx1 = i;
+          idx2 = j;
+          break loop1;
+        }
+        counter++;
       }
+    }
 
     const previous = this.monomers[idx1][idx2];
 
@@ -252,6 +334,10 @@ export class Chain {
     this.monomers[idx1][idx2] = previous;
 
     return res;
+  }
+
+  getNotationHelm() : string {
+    return this.getHelm();
   }
 
   getHelm(): string {
