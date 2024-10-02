@@ -49,6 +49,7 @@ export class SunburstViewer extends EChartViewer {
       series: [
         {
           type: 'sunburst',
+          radius: '98%',
           nodeClick: false,
           emphasis: {
             focus: 'series',
