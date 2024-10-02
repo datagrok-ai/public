@@ -41,8 +41,9 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
 
   public initialValues: Record<string, any> = {};
 
-  private closed$ = new Subject<true>();
   public outdatedChanged$ = new BehaviorSubject(true);
+  private closed$ = new Subject<true>();
+  private initialData?: BridgePreInitData;
 
   constructor(private io: FuncallStateItem[], public readonly isReadonly: boolean) {}
 
@@ -51,6 +52,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
   }
 
   setPreInitialData(data: BridgePreInitData) {
+    this.initialData = data;
     this.initialValues = data.initialValues;
     this.inputRestrictions$.next(data.initialRestrictions);
   }
@@ -104,20 +106,37 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
     const currentInstance = this.instance$.value?.adapter;
     if (currentInstance == null)
       throw new Error(`Attempting to set an empty FuncCallInstancesBridge`);
+    const restrictionPayload = restrictionType === 'none' ? undefined : {assignedValue: val, type: restrictionType};
     this.inputRestrictions$.next({
       ...this.inputRestrictions$.value,
-      [id]: {assignedValue: val, type: restrictionType},
+      [id]: restrictionPayload,
     });
     if (!this.isReadonly)
       currentInstance.setState(id, val, restrictionType);
     else
-      this.inputRestrictionsUpdates$.next([id, {assignedValue: val, type: restrictionType}] as const);
+      this.inputRestrictionsUpdates$.next([id, restrictionPayload] as const);
   }
 
   editState<T = any>(id: string, val: T | undefined) {
     const currentInstance = this.instance$.value?.adapter;
-    if (currentInstance)
-      currentInstance.editState(id, val);
+    if (currentInstance == null)
+      throw new Error(`Attempting to set an empty FuncCallInstancesBridge`);
+    currentInstance.editState(id, val);
+  }
+
+  removeRestriction(id: string): void {
+    const currentInstance = this.instance$.value?.adapter;
+    if (currentInstance == null)
+      throw new Error(`Attempting to set an empty FuncCallInstancesBridge`);
+    const currentRestriction = this.inputRestrictions$.value?.[id];
+    if (currentRestriction == null)
+      return;
+    const defaulRestriction = this.initialData?.initialRestrictions[id];
+    this.inputRestrictions$.next({
+      ...this.inputRestrictions$.value,
+      [id]: defaulRestriction,
+    });
+    this.inputRestrictionsUpdates$.next([id, defaulRestriction] as const);
   }
 
   setValidation(id: string, validatorId: string, validation: ValidationResult | undefined) {

@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {v4 as uuidv4} from 'uuid';
 import {ActionPositions, HandlerBase} from '../config/PipelineConfiguration';
-import {BaseTree, NodePath, TreeNode} from '../data/BaseTree';
+import {BaseTree, NodeAddress, NodePath, TreeNode} from '../data/BaseTree';
 import {StateTreeNode} from './StateTreeNodes';
 import {MatchInfo} from './link-matching';
 import {BehaviorSubject, combineLatest, defer, EMPTY, merge, Subject, of} from 'rxjs';
@@ -17,7 +17,7 @@ import {LinksState} from './LinksState';
 const VALIDATOR_DEBOUNCE_TIME = 250;
 
 export type ScopeInfo = {
-  scope?: NodePath, childOffset?: number
+  scope?: NodeAddress, childOffset?: number
 }
 
 export class Link {
@@ -54,10 +54,10 @@ export class Link {
       for (const [name, minfos] of Object.entries(this.matchInfo.actions)) {
         if (minfos.length > 1)
           grok.shell.warning(`Node ${this.matchInfo.spec.id} prefix ${this.prefix} multiple action nodes with the same name ${name}`);
-        const nodeActions = minfos.map(minfo => {
+        const nodeActions = minfos.map((minfo) => {
           const node = state.getNode(minfo.path);
           const actions = linksState.nodesActions.get(node.getItem().uuid) ?? [];
-          return new Map(actions.map(action => [action.matchInfo.spec.id, action.uuid]));
+          return new Map(actions.map((action) => [action.matchInfo.spec.id, action.uuid]));
         })[0];
         actions[name] = nodeActions;
       }
@@ -90,7 +90,7 @@ export class Link {
     this.isActive$.next(true);
   }
 
-  trigger(scope?: NodePath, childOffset?: number) {
+  trigger(scope?: NodeAddress, childOffset?: number) {
     this.trigger$.next({scope, childOffset});
   }
 
@@ -174,7 +174,7 @@ export class Link {
     inputs: Record<string, any>,
     inputSet: Set<string>,
     outputSet: Set<string>,
-    actions:  Record<string, Map<string, string>>,
+    actions: Record<string, Map<string, string>>,
     baseNode?: TreeNode<StateTreeNode>,
     scope?: ScopeInfo,
   ) {
@@ -206,12 +206,12 @@ export class Link {
           if (controller instanceof ValidatorController) {
             const store = node.getItem().getStateStore();
             if (store instanceof MemoryStore)
-              throw new Error(`Unable to set validations to raw memory store ${node.getItem().uuid}`);
+              throw new Error(`Unable to set validations to a raw memory store ${node.getItem().uuid}`);
             store.setValidation(ioName, this.uuid, controller.outputs[outputAlias]);
           } else if (controller instanceof MetaController) {
             const store = node.getItem().getStateStore();
             if (store instanceof MemoryStore)
-              throw new Error(`Unable to set meta to raw memory store ${node.getItem().uuid}`);
+              throw new Error(`Unable to set meta to a raw memory store ${node.getItem().uuid}`);
             store.setMeta(ioName, controller.outputs[outputAlias]);
           } else {
             const [state, restriction] = controller.outputs[outputAlias];

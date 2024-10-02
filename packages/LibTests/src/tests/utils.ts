@@ -21,4 +21,3 @@ export function removeObservables<T>(config: T): T {
       return 'function';
   });
 }
-

@@ -37,7 +37,7 @@ export interface IStoreProvider {
 }
 
 export class FuncCallNode implements IStoreProvider {
-  private depsData$ = new BehaviorSubject<(readonly [string, BehaviorSubject<boolean>])[]>([]);
+  private depsData$ = new BehaviorSubject<(readonly [string, Observable<boolean>])[]>([]);
 
   public uuid = uuidv4();
   public readonly nodeType = 'funccall';
@@ -100,7 +100,7 @@ export class FuncCallNode implements IStoreProvider {
     this.instancesWrapper.change(adapter);
   }
 
-  setDeps(deps: (readonly [string, BehaviorSubject<boolean>])[]) {
+  setDeps(deps: (readonly [string, Observable<boolean>])[]) {
     this.depsData$.next(deps);
   }
 
@@ -162,6 +162,30 @@ export class FuncCallNode implements IStoreProvider {
     if (options.disableCallsUUID)
       res.funcCallId = '';
     return res;
+  }
+
+  clearIOMeta(name: string) {
+    const s = this.metaInfo$.value?.[name];
+    if (s?.value != null)
+      s.next(undefined);
+  }
+
+  clearIORestriction(name: string) {
+    this.instancesWrapper.removeRestriction(name);
+  }
+
+  clearOldValidations(currentIds: Set<string>) {
+    const cval = this.instancesWrapper.validations$.value;
+    const nval: Record<string, Record<string, ValidationResult | undefined>> = {};
+    let needsUpdate = false;
+    for (const [k, v] of Object.entries(cval)) {
+      if (currentIds.has(k))
+        nval[k] = v;
+      else
+        needsUpdate = true;
+    }
+    if (needsUpdate)
+      this.instancesWrapper.validations$.next(nval);
   }
 
   close() {
@@ -240,7 +264,7 @@ export class FuncCallNode implements IStoreProvider {
     }
   }
 
-  private getPendingDeps(deps: (readonly [string, BehaviorSubject<boolean>])[]) {
+  private getPendingDeps(deps: (readonly [string, Observable<boolean>])[]) {
     const pendingStates = deps.map(([uuid, state$]) => state$.pipe(map((state) => [uuid, state] as const)));
     const pending$ = merge(...pendingStates).pipe(
       scan((acc, [uuid, isPending]) => {
@@ -259,7 +283,7 @@ export class FuncCallNode implements IStoreProvider {
   // TODO: checking for additional actual Object keys (?)
   private deepEq(actual: any, expected: any) {
     try {
-      expectDeepEqual(actual, expected, { maxErrorsReport: 1 });
+      expectDeepEqual(actual, expected, {maxErrorsReport: 1});
     } catch {
       return false;
     }

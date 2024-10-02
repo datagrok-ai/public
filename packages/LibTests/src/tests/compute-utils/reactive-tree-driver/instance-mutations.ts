@@ -11,9 +11,10 @@ category('ComputeUtils: Driver state tree mutations', async () => {
     const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider2', {}).toPromise();
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
+    await tree.init().toPromise();
     const root = tree.nodeTree.getItem([]);
     const puuid = root.uuid;
-    await tree.addSubTree(puuid, 'stepAdd', 2, false).toPromise();
+    await tree.addSubTree(puuid, 'stepAdd', 2).toPromise();
     const state = tree.toSerializedState({disableNodesUUID: true});
     await snapshotCompare(state, 'Pipeline append step subtree');
   });
@@ -22,9 +23,10 @@ category('ComputeUtils: Driver state tree mutations', async () => {
     const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider2', {}).toPromise();
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
+    await tree.init().toPromise();
     const root = tree.nodeTree.getItem([]);
     const puuid = root.uuid;
-    await tree.addSubTree(puuid, 'pipeline1', 2, false).toPromise();
+    await tree.addSubTree(puuid, 'pipeline1', 2).toPromise();
     const state = tree.toSerializedState({disableNodesUUID: true});
     await snapshotCompare(state, 'Pipeline append static pipeline subtree');
   });
@@ -33,9 +35,10 @@ category('ComputeUtils: Driver state tree mutations', async () => {
     const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider3', {}).toPromise();
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
+    await tree.init().toPromise();
     const root = tree.nodeTree.getItem([]);
     const puuid = root.uuid;
-    await tree.addSubTree(puuid, 'pipelinePar', 0, false).toPromise();
+    await tree.addSubTree(puuid, 'pipelinePar', 0).toPromise();
     const state = tree.toSerializedState({disableNodesUUID: true});
     await snapshotCompare(state, 'Pipeline append dynamic pipeline subtree');
   });
@@ -44,9 +47,10 @@ category('ComputeUtils: Driver state tree mutations', async () => {
     const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider2', {}).toPromise();
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
+    await tree.init().toPromise();
     const root = tree.nodeTree.getItem([]);
     const puuid = root.uuid;
-    await tree.addSubTree(puuid, 'pipeline1', 0, false).toPromise();
+    await tree.addSubTree(puuid, 'pipeline1', 0).toPromise();
     const state = tree.toSerializedState({disableNodesUUID: true});
     await snapshotCompare(state, 'Pipeline insert subtree');
   });
@@ -55,6 +59,7 @@ category('ComputeUtils: Driver state tree mutations', async () => {
     const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider2', {}).toPromise();
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
+    await tree.init().toPromise();
     const pnode = tree.nodeTree.getItem([{idx: 0}]);
     await tree.removeSubtree(pnode.uuid).toPromise();
     const state = tree.toSerializedState({disableNodesUUID: true});
@@ -65,6 +70,7 @@ category('ComputeUtils: Driver state tree mutations', async () => {
     const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider2', {}).toPromise();
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
+    await tree.init().toPromise();
     const pnode = tree.nodeTree.getItem([{idx: 0}]);
     await tree.moveSubtree(pnode.uuid, 1).toPromise();
     const state = tree.toSerializedState({disableNodesUUID: true});
