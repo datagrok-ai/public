@@ -224,8 +224,8 @@ class SingleStrandBlock extends SVGBlockBase {
           index === 0 ? TERMINUS.FIVE_PRIME : TERMINUS.THREE_PRIME :
           index === 0 ? TERMINUS.THREE_PRIME : TERMINUS.FIVE_PRIME;
         const initialValue = this.eventBus.getTerminalModifications()[this.strand][terminus];
-        const terminalsInput = ui.stringInput(terminus, initialValue);
-        terminalsInput.onInput(() => {
+        const terminalsInput = ui.input.string(terminus, {value: initialValue});
+        terminalsInput.onInput.subscribe(() => {
           removeTooltip();
           const newValue = terminalsInput.value;
           if (newValue === null)

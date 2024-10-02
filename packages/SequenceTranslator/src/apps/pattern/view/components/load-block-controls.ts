@@ -93,7 +93,7 @@ export class PatternLoadControlsManager {
       },
       debounceRemote: 100
     });
-    typeAhead.onChanged(() => {
+    typeAhead.onChanged.subscribe(() => {
       if(typeAhead.value === '')
         df.filter.setAll(true);
     })

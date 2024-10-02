@@ -80,7 +80,7 @@ export class PatternAppRightSection {
       const sequenceLength = this.eventBus.getNucleotideSequences()[strand].length;
       //@ts-ignore
       const input = ui.input.int('', {value: sequenceLength, showPlusMinus: true, min: 0, max: MAX_SEQUENCE_LENGTH});
-      input.onInput(() => {
+      input.onInput.subscribe(() => {
         const length = input.value;
         if (length === null) return;
 
@@ -141,7 +141,8 @@ export class PatternAppRightSection {
   }
 
   private createPatternNameInput(): HTMLElement {
-    const patternNameInput = ui.stringInput( 'Pattern', this.eventBus.getPatternName(), () => {
+    const patternNameInput = ui.input.string('Pattern', {value: this.eventBus.getPatternName()});
+    patternNameInput.onChanged.subscribe(() => {
       this.eventBus.updatePatternName(patternNameInput.value);
     });
     $(patternNameInput.root).addClass('st-pattern-text-input');
@@ -229,8 +230,8 @@ export class PatternAppRightSection {
 
     const flags = this.eventBus.getPatternConfig().phosphorothioateLinkageFlags;
     const initialValue = areAllPtoLinkagesSet(flags);
-    const allPtoActivationInput = ui.boolInput('All PTO', initialValue);
-    allPtoActivationInput.onInput(() => {
+    const allPtoActivationInput = ui.input.bool('All PTO', {value: initialValue});
+    allPtoActivationInput.onInput.subscribe(() => {
       this.eventBus.setAllPTOLinkages(allPtoActivationInput.value!);
     });
     this.eventBus.phosphorothioateLingeFlagsChanged$.subscribe(() => {
@@ -248,9 +249,9 @@ export class PatternAppRightSection {
 
   private createModificationLabelsToggle(): HTMLElement {
     const initialValue = !!this.eventBus.getNucleotidesWithModificationLabels().length;
-    const modificationLabels = ui.boolInput('Modification labels', initialValue);
+    const modificationLabels = ui.input.bool('Modification labels', {value: initialValue});
 
-    modificationLabels.onInput(() => {
+    modificationLabels.onInput.subscribe(() => {
       this.eventBus.setAllModificationLabels(modificationLabels.value!);
     });
 

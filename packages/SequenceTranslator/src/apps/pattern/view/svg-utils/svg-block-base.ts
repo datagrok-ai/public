@@ -23,8 +23,9 @@ export abstract class SVGBlockBase {
       else {
         const points = element.getAttribute('points');
         if (points) {
-          const starCoords = points.split(',').map((it) => parseFloat(it));
-          element.setAttribute('points', `${starCoords[0] + shift.x}, ${starCoords[1]}`);
+          const starCoords = points.split(' ').map((point) => point.split(',').map((it) => parseFloat(it)));
+          const newCoords = starCoords.map((p) => `${p[0] + shift.x}, ${p[1]}`).join(' ');
+          element.setAttribute('points', newCoords);
         }
       }
     });
