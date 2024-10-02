@@ -15,29 +15,7 @@ category('Dialogs', () => {
     df = grok.data.demo.demog(2);
     grok.shell.addTableView(df);
   });
-
-  test('AddNewColumn', async () => {
-    const dlg = new AddNewColumnDialog();
-    await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
-    const funcs = Object.keys(FUNC_TESTS).map((name) => DG.Func.find({name: name})[0]);
-
-    for (const f of funcs) {
-      for (const [expression, result] of Object.entries(FUNC_TESTS[f.name])) {
-        const columnName = df.columns.getUnusedName(expression);
-        dlg.inputName!.value = columnName;
-        dlg.inputExpression!.value = expression;
-        dlg.uiDialog!.getButton('OK').click();
-        try {
-          await awaitCheck(() => df.columns.contains(columnName));
-          const column = df.col(columnName)!;
-          expectTyped(column.get(0), result == null && column.type === DG.TYPE.STRING ? '' : result);
-        } catch (e) {
-          throw new Error(`Expression: ${expression}: ${(e as Error).message}`);
-        }
-      }
-    }
-  });
-
+  
   test('FormulaLines', async () => {
     const dlg = new FormulaLinesDialog(df);
     await awaitCheck(() => isDialogPresent(dlg.dialog.title));
@@ -49,7 +27,7 @@ category('Dialogs', () => {
   });
 }, {clear: false});
 
-function expectTyped(actual: any, expected: any) {
+export function expectTyped(actual: any, expected: any) {
   if (expected == null)
     expect(actual == expected, true);
   if (Array.isArray(expected))

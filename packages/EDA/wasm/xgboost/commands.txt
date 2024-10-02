@@ -1,0 +1,12 @@
+git clone --recursive https://github.com/dmlc/xgboost
+
+mkdir build
+
+cd build
+
+emcmake cmake ..
+
+cmake --build . --target XGBoost
+
+
+This creates XGBoostAPI.js and XGBoostAPI.wasm

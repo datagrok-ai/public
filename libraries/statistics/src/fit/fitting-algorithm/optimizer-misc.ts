@@ -15,7 +15,7 @@ export type OptimizationResult = {
 };
 
 export interface IOptimizer {
-  (objectiveFunc: (x: Float32Array) => number,
+  (objectiveFunc: (x: Float32Array) => {likelihood: number, residuals: number[]},
   paramsInitial: Float32Array,
   settings: any,
   restrictionsBottom: Float32Array,

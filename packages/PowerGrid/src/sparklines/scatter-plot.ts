@@ -1,5 +1,11 @@
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 
+@grok.decorators.cellRenderer({
+  name: 'Scatter Plot',
+  cellType: 'scatterplot',
+  virtual: true,
+})
 export class ScatterPlotCellRenderer extends DG.GridCellRenderer {
   get name() : string { return 'scatterplot'; }
   get cellType() : string { return 'scatterplot'; }

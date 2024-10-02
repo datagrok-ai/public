@@ -5,8 +5,8 @@ import { ClinicalCaseViewBase } from "../model/ClinicalCaseViewBase";
 import { AE_END_DAY_FIELD, AE_START_DAY_FIELD, AE_TERM_FIELD, CON_MED_END_DAY_FIELD, CON_MED_NAME_FIELD, CON_MED_START_DAY_FIELD, INV_DRUG_END_DAY_FIELD, INV_DRUG_NAME_FIELD, INV_DRUG_START_DAY_FIELD, MH_TERM_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from "../views-config";
 import { ACT_TRT_ARM, AE_DECOD_TERM, AE_END_DAY, AE_END_DAY_CALCULATED, AE_START_DAY, AE_START_DAY_CALCULATED, AE_TERM, CON_MED_DECOD, CON_MED_END_DAY, CON_MED_END_DAY_CALCULATED, CON_MED_START_DAY, CON_MED_START_DAY_CALCULATED, CON_MED_TRT, INV_DRUG_END_DAY, INV_DRUG_END_DAY_CALCULATED, INV_DRUG_ID, INV_DRUG_NAME, INV_DRUG_START_DAY, INV_DRUG_START_DAY_CALCULATED, MH_DECOD_TERM, MH_TERM, PLANNED_TRT_ARM } from "../constants/columns-constants";
 import { updateDivInnerHTML } from "../utils/utils";
-import { VIEWS } from "../constants/constants";
 import { addView, createTableView, getTableViewsParams } from "../utils/views-creation-utils";
+import { VIEWS } from "../package";
 
 export class StudyConfigurationView extends ClinicalCaseViewBase {
 
@@ -49,12 +49,12 @@ export class StudyConfigurationView extends ClinicalCaseViewBase {
         let inputs = ui.inputs([]);
 
         Object.keys(this.choices).forEach(field => {
-            let fieldChoices = ui.choiceInput(`${field}`, this.choices[field][0], this.choices[field]);
-            fieldChoices.onChanged((v) => {
+            let fieldChoices = ui.input.choice(`${field}`, {value: this.choices[field][0], items: this.choices[field]});
+            fieldChoices.onChanged.subscribe((value) => {
                 Object.keys(VIEWS_CONFIG).forEach(view => {
-                    this.globalStudyConfig[field] = fieldChoices.value;
+                    this.globalStudyConfig[field] = value;
                     if (VIEWS_CONFIG[view][field]) {
-                        VIEWS_CONFIG[view][field] = fieldChoices.value;
+                        VIEWS_CONFIG[view][field] = value;
                         let obj = grok.shell.view(view) as any;
                         if (obj) {
                             if (obj.hasOwnProperty('loaded')) {

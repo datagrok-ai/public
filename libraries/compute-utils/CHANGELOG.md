@@ -1,5 +1,77 @@
 # compute-utils changelog
 
+## 1.39.4 (2024-09-30)
+
+- Sensitivity Analysis & Fitting: Added the use of lookup tables
+
+## 1.39.3 (2024-09-23)
+
+- ModelCatalog: Added info notification on group membership request
+
+## 1.39.2 (2024-09-13)
+
+- RFV: Export generation is now independent of UI state
+
+## 1.39.1 (2024-09-10)
+
+- Fixed DF input in the Fitting view
+
+## 1.38.0-rc.2 (2024-09-09)
+
+- Fixed DF input processing with no viewers
+
+## 1.38.0-rc (2024-09-06)
+
+- Preparing 1.21.1 release
+
+## 1.37.0 (2024-09-05)
+
+- Release for 1.21.0
+
+## 1.37.0-rc (2024-09-04)
+
+- Preparing 1.21.0 release
+
+## 1.36.7 (2024-08-05)
+
+- RFV: Fixed navigation buttons render
+
+## 1.36.6 (2024-08-01)
+
+- RFV: Added spinning for async validation icon
+
+## 1.36.5 (2024-07-31)
+
+- RFV & Wizard: Historical runs load optimization
+
+## 1.36.3 (2024-07-30)
+
+- Wizard: Fixed context info icon duplication
+
+## 1.36.2 (2024-07-23)
+
+- RFV: Added validation tooltip width and text-wrap
+
+## 1.36.1 (2024-07-22)
+
+- RFV: Last inputs are now saved locally
+
+## 1.36.0 (2024-07-10)
+
+- RFV: Added output validators support
+
+## 1.35.10 (2024-07-08)
+
+- CompositionPipeline: Exposed options to public interface
+
+## 1.35.9 (2024-07-08)
+
+- PLV: Fixed names conflict in single excel export
+
+## 1.35.8 (2024-07-03)
+
+- PLV: Fixed run loading to load author
+
 ## 1.35.7 (2024-07-01)
 
 - HistoryList: Fixed bug on batch deletion

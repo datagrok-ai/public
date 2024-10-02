@@ -12,7 +12,7 @@ export interface SeqPalette {
   /** Monomer color
    * @param {string} m Monomer
    */
-  get(m: string): string;
+  get(m: string, polymerType?: string): string;
 }
 
 export class SeqPaletteBase implements SeqPalette {
@@ -62,7 +62,7 @@ export class SeqPaletteBase implements SeqPalette {
     this._palette = palette;
   }
 
-  public get(m: string): string {
+  public get(m: string, polymerType?: string): string {
     return this._palette[m];
   }
 }

@@ -4,8 +4,9 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 
 import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
-import {GapOriginals, SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {GapOriginals} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 
 enum Tests {
   fasta = 'fasta',
@@ -135,7 +136,10 @@ PEPTIDE1{meI.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.T.dK.Thr_PO3H2}$$$$`
       expect(sh.separator === testData.tgt.separator, true);
 
       const resSplitted: string[][] = wu.count(0).take(sh.length)
-        .map((rowIdx) => wu(sh.getSplitted(rowIdx).originals).toArray()).toArray();
+        .map((rowIdx) => {
+          const seqSS = sh.getSplitted(rowIdx);
+          return wu.count(0).take(seqSS.length).map((posIdx) => seqSS.getOriginal(posIdx)).toArray();
+        }).toArray();
       expectArray(resSplitted, testData.tgt.splitted);
     });
   }

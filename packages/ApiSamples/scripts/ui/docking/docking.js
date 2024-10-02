@@ -10,4 +10,7 @@ let node2 = grok.shell.dockManager.dock(ui.divText('second'), 'down', node1, 'Se
 let node3 = grok.shell.dockManager.dock(ui.divText('third'), 'fill', node2, 'Third');
 
 // to the bottom of the current document
-grok.shell.dockManager.dock(ui.divText('bottom'), 'down', grok.shell.v?.dockNode, 'Bottom');
+grok.shell.dockManager.dock(ui.divText('bottom'), 'down', grok.shell.v.dockNode, 'Bottom');
+
+// handling events
+grok.shell.dockManager.onClosed.subscribe((e) => grok.shell.info(e));

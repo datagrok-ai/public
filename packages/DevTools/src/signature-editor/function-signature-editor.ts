@@ -129,20 +129,19 @@ async function openFse(v: DG.View, functionCode: string) {
   const functionPropsInput = (prop: DG.Property) => {
     switch (prop.name) {
       case FUNC_PROPS_FIELD.LANGUAGE:
-        return ui.choiceInput(
+        return ui.input.choice(
           functionPropsLabels[prop.name as FUNC_PROPS_FIELD],
-          prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name],
-          prop.choices,
-        );
+          {value: prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name],
+          items: prop.choices});
       // case FUNC_PROPS_FIELDS.TAGS:
-      //   return ui.multiChoiceInput(
+      //   return ui.input.multiChoice(
       //     functionPropsLabels(prop.name as FUNC_PROPS_FIELDS),
-      //     prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name],
-      //     prop.choices,
+      //     {value: prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name],
+      //     items: prop.choices}
       //   );
       default:
-        return ui.stringInput(functionPropsLabels[prop.name as FUNC_PROPS_FIELD],
-          prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name]);
+        return ui.input.string(functionPropsLabels[prop.name as FUNC_PROPS_FIELD],
+          {value: prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name]});
     }
   };
 
@@ -182,7 +181,7 @@ async function openFse(v: DG.View, functionCode: string) {
 
   const addFullWidthInput = (input: DG.InputBase, prop: DG.Property) => {
     (input.root.lastChild as HTMLElement).style.cssText += 'width: 400px; max-width: inherit;';
-    input.onInput(() => {
+    input.onInput.subscribe(() => {
       inputScriptCopy[prop.name] = input.stringValue;
       refreshPreview();
     });
@@ -330,11 +329,11 @@ async function openFse(v: DG.View, functionCode: string) {
 
   const paramsGrid = DG.Grid.create(paramsDF);
   paramsGrid.root.style.width = '100%';
-  paramsGrid.dataFrame?.getCol(functionParamsMapping[FUNC_PARAM_FIELDS.TYPE as keyof typeof functionParamsMapping])
-    .setTag(DG.TAGS.CHOICES, `["${funcParamTypes.join(`", "`)}"]`);
-  paramsGrid.dataFrame?.getCol(functionParamsMapping[FUNC_PARAM_FIELDS.DIRECTION as keyof typeof functionParamsMapping])
-    .setTag(DG.TAGS.CHOICES, `["${[DIRECTION.INPUT, DIRECTION.OUTPUT].join(`", "`)}"]`);
-  paramsGrid.setOptions({ 'showColumnGridlines': false });
+  paramsGrid.dataFrame.getCol(functionParamsMapping[FUNC_PARAM_FIELDS.TYPE as keyof typeof functionParamsMapping])
+    .meta.choices = funcParamTypes;
+  paramsGrid.dataFrame.getCol(functionParamsMapping[FUNC_PARAM_FIELDS.DIRECTION as keyof typeof functionParamsMapping])
+    .meta.choices = [DIRECTION.INPUT, DIRECTION.OUTPUT];
+  paramsGrid.setOptions({'showColumnGridlines': false});
 
   const col = paramsGrid.columns.byName('+');
   col.cellType = 'html';
@@ -367,7 +366,7 @@ async function openFse(v: DG.View, functionCode: string) {
       gc.customText = '';
   });
 
-  const codeArea = ui.textInput('', '');
+  const codeArea = ui.input.textArea('', {value: ''});
   const myCM = CodeMirror.fromTextArea((codeArea.input as HTMLTextAreaElement), { mode: highlightModeByLang[language] });
   const uiArea = await inputScriptCopy.prepare().getEditor();
   const codePanel = ui.panel([codeArea.root]);

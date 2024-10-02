@@ -65,8 +65,7 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
 
   updateRiskAssessmentDataframe() {
     this.riskAssessmentDataframe = createAERiskAssessmentDataframe(this.aeDf.clone(this.aeDf.filter), study.domains.dm.clone(), VIEWS_CONFIG[this.name][TRT_ARM_FIELD], VIEWS_CONFIG[this.name][AE_TERM_FIELD], this.placeboArm, this.activeArm, this.pValueLimit);
-    this.riskAssessmentDataframe.col(this.volcanoPlotXAxis).tags[DG.TAGS.COLOR_CODING_TYPE] = 'Conditional';
-    this.riskAssessmentDataframe.col(this.volcanoPlotXAxis).tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = `{"-100-0":"#0000FF","0-100":"#FF0000"}`;
+    this.riskAssessmentDataframe.col(this.volcanoPlotXAxis).meta.colors.setConditional({'-100-0': '#0000FF', '0-100': '#FF0000'});
     this.updateRiskAssessmentDfOnPropPanel();
   }
 
@@ -116,15 +115,15 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
     const treatmentArmPane = (arm, armToCheck, name) => {
       acc.addPane(name, () => {
         //@ts-ignore
-        const armChoices = ui.multiChoiceInput('', this[arm], this.treatmentArmOptions);
-        armChoices.onChanged((v) => {
-          if (this[armToCheck].filter(it => armChoices.value.includes(it)).length) {
+        const armChoices = ui.input.multiChoice('', {value: this[arm], items: this.treatmentArmOptions});
+        armChoices.onChanged.subscribe((value) => {
+          if (this[armToCheck].filter(it => value.includes(it)).length) {
             grok.shell.error(`Some products are selected for both treatment arms. One product can be selected only for one treatment arm.`);
             this.incorrectTreatmentArms = true;
           } else {
             this.incorrectTreatmentArms = false;;
           }
-          this[arm] = armChoices.value;
+          this[arm] = value;
           this.createVolcanoPlotDiv();
         });
         return armChoices.root;
@@ -139,18 +138,19 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
     });
 
     acc.addPane('Parameters', () => {
-      let pValue = ui.stringInput('Significance level', this.pValueLimit.toString());
-      pValue.onChanged((v) => {
-        this.pValueLimit = parseFloat(pValue.value);
+      const pValue = ui.input.string('Significance level', {value: this.pValueLimit.toString()});
+      pValue.onChanged.subscribe((value) => {
+        this.pValueLimit = parseFloat(value);
         if (!isNaN(this.pValueLimit)) {
           this.updateRiskAssessmentDataframe();
           this.updateVolcanoPlot();
         }
       });
-      let sizeChoices = ui.choiceInput('Marker size', Object.keys(this.sizeOptions)[0], Object.keys(this.sizeOptions));
-      sizeChoices.onChanged((v) => {
-        this.volcanoPlotMarkerSize = this.sizeOptions[sizeChoices.value];
-        this.volcanoPlot.setOptions({ size: this.volcanoPlotMarkerSize });
+      const sizeChoices = ui.input.choice('Marker size', {value: Object.keys(this.sizeOptions)[0],
+        items: Object.keys(this.sizeOptions)});
+      sizeChoices.onChanged.subscribe((value) => {
+        this.volcanoPlotMarkerSize = this.sizeOptions[value];
+        this.volcanoPlot.setOptions({size: this.volcanoPlotMarkerSize});
       });
       return ui.inputs([
         sizeChoices,

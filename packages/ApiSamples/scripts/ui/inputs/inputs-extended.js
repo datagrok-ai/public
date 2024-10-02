@@ -24,8 +24,8 @@ for (let n = 0; n < inputs.length; n++) {
   let label = ui.divText('');
   label.style.margin = '10px';
   content.appendChild(label);
-  input.onChanged(function () {
-    label.innerText = `${input.caption}: ${input.stringValue}`;
+  input.onChanged.subscribe((value) => {
+    label.innerText = `${input.caption}: ${value}`;
   });
 }
 

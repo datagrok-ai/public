@@ -8,7 +8,7 @@ export const HitTriageSubmitTag = 'HitTriageSubmitFunction';
 export const HitSelectionColName = 'Selected hits';
 export const TileCategoriesColName = 'Stage';
 export const HitDesignMolColName = 'Molecule';
-export const EmptyStageCellValue = 'StageDefiningRow'; // Kostilj, for a while
+export const PeptiHitHelmColName = 'Helm';
 export const ViDColName = 'V-iD';
 export const ViDColFormat = 'V######';
 export const HTcampaignName = 'HTcampaignName';
@@ -29,4 +29,10 @@ export const i18n = {
   continueCampaigns: 'Continue a campaign',
   createNewCampaignHeader: 'New campaign',
   selectTemplate: 'Template',
+} as const;
+
+export const funcTypeNames = {
+  script: 'script',
+  function: 'function-package',
+  query: 'data-query',
 } as const;

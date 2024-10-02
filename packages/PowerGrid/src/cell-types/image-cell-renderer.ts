@@ -1,11 +1,16 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 
 
 const MAX_IMG_PX_WIDTH = 600;
 const MAX_IMG_PX_HEIGHT = 600;
 const DLG_WINDOW_PADDING_PX = 24;
 
+@grok.decorators.cellRenderer({
+  name: 'imageUrlCellRenderer',
+  cellType: 'ImageUrl',
+})
 export class ImageCellRenderer extends DG.GridCellRenderer {
   get name() { return 'ImageUrl'; }
 

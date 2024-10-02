@@ -6,6 +6,7 @@ export type MCLOptions = {
     maxIterations: number,
     inflateFactor: number,
     multFactor: number,
+    pruneValue: number,
 }
 
 export type SparseMatrixObject = {[_: number]: {[_: number]: number}};
@@ -23,6 +24,7 @@ export type MCLSerializableOptions = {
     maxIterations: number;
     useWebGPU: boolean;
     inflate: number;
+    minClusterSize: number;
 }
 
 export const MCL_OPTIONS_TAG = 'MCL_OPTIONS';

@@ -694,13 +694,13 @@ export class GisViewer extends DG.JsViewer {
   refreshColorCodingStyle(colColor: DG.Column): void {
     this.ol.useColorField = true;
     this.ol.colorCodingData = '';
-    if (colColor.colors.getType() === DG.COLOR_CODING_TYPE.LINEAR) {
+    if (colColor.meta.colors.getType() === DG.COLOR_CODING_TYPE.LINEAR) {
       this.ol.colorCodingType = DG.COLOR_CODING_TYPE.LINEAR;
       this.ol.colorCodingData = colColor.getTag(DG.TAGS.COLOR_CODING_LINEAR);
-    } else if (colColor.colors.getType() === DG.COLOR_CODING_TYPE.CATEGORICAL) {
+    } else if (colColor.meta.colors.getType() === DG.COLOR_CODING_TYPE.CATEGORICAL) {
       this.ol.colorCodingType = DG.COLOR_CODING_TYPE.CATEGORICAL;
       this.ol.colorCodingData = colColor.getTag(DG.TAGS.COLOR_CODING_CATEGORICAL);
-    } else if (colColor.colors.getType() === DG.COLOR_CODING_TYPE.CONDITIONAL) {
+    } else if (colColor.meta.colors.getType() === DG.COLOR_CODING_TYPE.CONDITIONAL) {
       this.ol.colorCodingType = DG.COLOR_CODING_TYPE.CONDITIONAL;
       this.ol.colorCodingData = colColor.getTag(DG.TAGS.COLOR_CODING_CONDITIONAL);
     } else if ((colColor.type != DG.COLUMN_TYPE.BIG_INT) && (colColor.type != DG.COLUMN_TYPE.INT) &&

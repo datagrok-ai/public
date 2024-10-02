@@ -24,7 +24,6 @@ const WARNING_CLASS = 'radar-warning';
 export class RadarViewer extends EChartViewer {
   get type(): string {return 'RadarViewer';}
 
-  chart: echarts.ECharts;
   min: MinimalIndicator;
   max: MaximumIndicator;
   showCurrentRow: boolean;

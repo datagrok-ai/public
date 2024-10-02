@@ -9,9 +9,20 @@ import {AUTHOR_COLUMN_NAME, VIEWER_PATH, viewerTypesMapping} from './consts';
 import {FuncCallInput, isInputLockable} from './input-wrappers';
 import {ValidationResultBase, getValidationIcon} from './validation';
 import {FunctionView, RichFunctionView} from '../function-views';
-import {getStarted} from '../function-views/src/shared/utils';
+
+export const updateIndicatorWithText = (element: HTMLElement, updating: boolean, text?: string) => {
+  ui.setUpdateIndicator(element, updating);
+  const updatingLabel = element.querySelector('.d4-update-shadow .ui-label');
+  if (updating && text && updatingLabel) {
+    updatingLabel.textContent = text;
+  }
+};
 
 export const createPartialCopy = async (call: DG.FuncCall) => {
+  const previousId = call.id;
+  // grok.functions.eval creates an ID.
+  // So we should control it and overwrite ID by null again if necessary.
+
   const callCopy: DG.FuncCall = (await grok.functions.eval(call.func.nqName))
     //@ts-ignore
     .prepare([...call.inputs].reduce((acc, [key, val]) => {
@@ -19,6 +30,9 @@ export const createPartialCopy = async (call: DG.FuncCall) => {
       return acc;
     }, {} as Record<string, any>));
   call.options.forEach((key: string) => callCopy.options[key] = call.options[key]);
+
+  //@ts-ignore
+  if (!previousId) callCopy.id = null;
 
   return callCopy;
 };
@@ -63,7 +77,13 @@ export function isInputBase(input: FuncCallInput): input is DG.InputBase {
 }
 
 export const deepCopy = (call: DG.FuncCall) => {
+  const previousId = call.id;
+  // FuncCall.clone() creates an ID for original (!) call if it was null.
+  // So we should control it and overwrite ID by null again if necessary.
   const deepClone = call.clone();
+
+  //@ts-ignore
+  if (!previousId) deepClone.id = null;
 
   call.options.forEach((key: string) => deepClone.options[key] = call.options[key]);
 
@@ -88,7 +108,7 @@ export const deepCopy = (call: DG.FuncCall) => {
 
 export const getPropViewers = (prop: DG.Property): {name: string, config: Record<string, string | boolean>[]} => {
   const viewersRawConfig = prop.options[VIEWER_PATH];
-  return (viewersRawConfig !== undefined) ?
+  return viewersRawConfig ?
   // true and false values are retrieved as string, so we parse them separately
     {name: prop.name, config: JSON.parse(viewersRawConfig, (k, v) => {
       if (v === 'true') return true;
@@ -169,6 +189,17 @@ export const inputBaseAdditionalRenderHandler = (val: DG.FuncCallParam, t: DG.In
   });
 };
 
+export const updateOutputValidationSign = (
+  sign: readonly [HTMLElement, HTMLElement],
+  messages: ValidationResultBase | undefined,
+):readonly [HTMLElement, HTMLElement] => {
+  const newSign = getValidationIcon(messages);
+  sign[0].replaceWith(newSign[0]);
+  sign[1].replaceWith(newSign[1]);
+
+  return newSign;
+};
+
 export const injectInputBaseValidation = (t: DG.InputBase) => {
   const validationIndicator = ui.element('i');
   t.addOptions(validationIndicator);
@@ -232,27 +263,6 @@ export const dfToSheet = (sheet: ExcelJS.Worksheet, df: DG.DataFrame, column?: n
   });
   dfCounter++;
 };
-
-export const plotToSheet =
-  async (exportWb: ExcelJS.Workbook, sheet: ExcelJS.Worksheet, plot: HTMLElement,
-    columnForImage: number, rowForImage: number = 0) => {
-    await DG.Utils.loadJsCss(['/js/common/html2canvas.min.js']);
-    //@ts-ignore
-    const loadedHtml2canvas: typeof html2canvas = window.html2canvas;
-
-    const canvas = await loadedHtml2canvas(plot as HTMLElement, {logging: false});
-    const dataUrl = canvas.toDataURL('image/png');
-
-    const imageId = exportWb.addImage({
-      base64: dataUrl,
-      extension: 'png',
-    });
-    sheet.addImage(imageId, {
-      tl: {col: columnForImage, row: rowForImage},
-      ext: {width: canvas.width, height: canvas.height},
-    });
-  };
-
 
 // additional JSON converions, view is need for files
 export async function fcToSerializable(fc: DG.FuncCall, view: FunctionView | RichFunctionView) {

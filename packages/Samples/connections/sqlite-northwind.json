@@ -3,6 +3,8 @@
   "name": "SQLiteNorthwind",
   "friendlyName": "Northwind",
   "parameters": {
+    "cacheResults": true,
+    "cacheSchema": true,
     "server": "",
     "db": "/home/grok/northwind/Northwind.sl3",
     "port": 0

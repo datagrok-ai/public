@@ -181,7 +181,7 @@ export class AutoDockService implements IAutoDockService {
     //   .map((ma) => ma[0]).toArray();
     // const posesCol = DG.Column.fromStrings(poseColName ?? 'pdbqt_model', modelList);
     // // posesCol.semType = DG.SEMTYPE.MOLECULE3D;
-    // // posesCol.setTag(DG.TAGS.UNITS, 'pdbqt');
+    // // posesCol.meta.units = 'pdbqt';
     // const posesDf = DG.DataFrame.fromColumns([posesCol]);
 
     const posesDf: DG.DataFrame = poses 

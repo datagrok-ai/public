@@ -28,7 +28,7 @@ export class TableInputManager {
   }
 
   private getTableFromEventData(eventData: any): DG.DataFrame {
-    if (! eventData && eventData.args && eventData.args.dataFrame instanceof DG.DataFrame)
+    if (!eventData && eventData.args && eventData.args.dataFrame instanceof DG.DataFrame)
       throw new Error(`EventData does not contain a dataframe`, eventData);
 
     return eventData.args.dataFrame as DG.DataFrame;
@@ -63,16 +63,15 @@ export class TableInputManager {
   private createTableInput(): DG.InputBase<DG.DataFrame | null> {
     const currentlySelectedTable = this.eventBus.getTableSelection();
 
-    const tableInput = ui.tableInput(
-      'Tables',
-      currentlySelectedTable,
-      this.availableTables,
-      (table: DG.DataFrame) => {
+    const tableInput = ui.input.table('Tables', {
+      value: currentlySelectedTable!, items: this.availableTables,
+      onValueChanged: (value) => {
         // WARNING: non-null check necessary to prevent resetting columns to
         // null upon handling onTableAdded
-        if (table !== null && table instanceof DG.DataFrame)
-          this.eventBus.selectTable(table);
-      });
+        if (value !== null)
+          this.eventBus.selectTable(value);
+      }
+    });
     return tableInput;
   }
 

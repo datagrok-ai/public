@@ -61,7 +61,7 @@ export class FastaFileHandler {
     const descriptionsArrayCol = DG.Column.fromStrings('description', this.descriptionsArray);
     const sequenceCol = DG.Column.fromStrings('sequence', this.sequencesArray);
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    sequenceCol.meta.units = NOTATION.FASTA;
 
     // here should go the code from units handler
     const sh = SeqHandler.forColumn(sequenceCol);

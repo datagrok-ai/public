@@ -17,7 +17,13 @@
         <appender-ref ref="ASYNC" />
     </root>
 
+    <logger name="com.zaxxer.hikari" level="ALL" additivity="false">
+        <appender-ref ref="ASYNC" />
+    </logger>
+
     <logger name="spark" level="warn" />
     <logger name="org.eclipse.jetty" level="warn" />
     <logger name="com.wisecoders.dbschema" level="warn" />
+    <logger name="org.neo4j" level="warn" />
+    <logger name="org.mariadb.jdbc" level="warn" />
 </configuration>

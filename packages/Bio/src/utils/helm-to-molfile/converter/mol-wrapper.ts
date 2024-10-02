@@ -9,6 +9,10 @@ export abstract class MolfileWrapper {
   protected bonds: MolfileBonds;
   protected rGroups: RGroupHandler;
 
+  public get atomCount(): number { return this.atoms.count; }
+
+  public get bondCount(): number { return this.bonds.count; }
+
   protected shiftR1GroupToOrigin(): void {
     const r1Idx = this.rGroups.getAtomicIdx(1);
     if (r1Idx === null)
@@ -40,7 +44,7 @@ export abstract class MolfileWrapper {
     this.rGroups.deleteBondLineWithSpecifiedRGroup(rGroupId);
   }
 
-  shiftCoordinates(shift: {x: number, y: number}): void {
+  shiftCoordinates(shift: { x: number, y: number }): void {
     this.atoms.shift(shift);
   }
 

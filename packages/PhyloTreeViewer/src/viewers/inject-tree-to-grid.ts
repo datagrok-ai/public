@@ -68,7 +68,7 @@ export async function injectTreeToGridUI(
     // TODO: Get max from tree height
     //@ts-ignore
     const treeHeight: number = pcViewer.props.source.data.totalSubtreeLength;
-    cutSlider = ui.sliderInput('', 0, 0, treeHeight);
+    cutSlider = ui.input.slider('', {value: 0, min: 0, max: treeHeight});
     $(cutSlider.root).find('input').each((_, el) => {
       el.setAttribute('step', '0.01');
       el.style.width = '100%';
@@ -80,9 +80,9 @@ export async function injectTreeToGridUI(
 
     treeRoot.appendChild(cutSlider.root);
 
-    subs.push(cutSlider.onChanged(() => {
-      console.debug('PhyloTreeViewer: injectTreeToGrid() cutSlider.onChanged() ' + `${cutSlider!.value}`);
-      th.cutTreeToGrid(newickRoot, cutSlider!.value!, grid.dataFrame, leafColName, 'Cluster');
+    subs.push(cutSlider.onChanged.subscribe((value) => {
+      console.debug('PhyloTreeViewer: injectTreeToGrid() cutSlider.onChanged() ' + `${value}`);
+      th.cutTreeToGrid(newickRoot, value!, grid.dataFrame, leafColName, 'Cluster');
     }));
   }
 

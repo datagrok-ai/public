@@ -9,11 +9,11 @@ import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {ILogger} from './logger';
 import {IRenderer} from '../types/renderer';
 
-type GridCellRendererTemp<TBack> = {
+export type GridCellRendererTemp<TBack> = {
   rendererBack: TBack;
 }
 
-export function getGridCellRendererBack<TValue, TBack extends CellRendererBackBase<TValue>>(
+export function getGridCellColTemp<TValue, TBack extends CellRendererBackBase<TValue>>(
   gridCell: DG.GridCell
 ): [DG.GridColumn | null, DG.Column<TValue>, GridCellRendererTemp<TBack>] {
   let temp: GridCellRendererTemp<TBack> | null = null;
@@ -31,8 +31,25 @@ export function getGridCellRendererBack<TValue, TBack extends CellRendererBackBa
   return [gridCol, tableCol, temp];
 }
 
-export abstract class CellRendererBackBase<TValue> implements IRenderer {
+//@formatter:off
+export abstract class CellRendererBackStub {
+  abstract render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle): void;
+  onKeyDown(gridCell: DG.GridCell, e: KeyboardEvent): void {}
+  onKeyPress(gridCell: DG.GridCell, e: KeyboardEvent): void {}
+  onMouseEnter(gridCell: DG.GridCell, e: MouseEvent): void {}
+  onMouseLeave(gridCell: DG.GridCell, e: MouseEvent): void {}
+  onMouseDown(gridCell: DG.GridCell, e: MouseEvent): void {}
+  onMouseUp(gridCell: DG.GridCell, e: MouseEvent): void {}
+  onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {}
+  onClick(gridCell: DG.GridCell, e: MouseEvent): void {}
+  onDoubleClick(gridCell: DG.GridCell, e: MouseEvent): void {}
+}
+//@formatter:on
+
+export abstract class CellRendererBackBase<TValue> extends CellRendererBackStub implements IRenderer {
   protected subs: Unsubscribable[] = [];
+  protected dirty: boolean = true;
   protected destroyed: boolean = false;
 
   /** Overriding care to trigger {@link onRendered} event. */
@@ -42,10 +59,10 @@ export abstract class CellRendererBackBase<TValue> implements IRenderer {
     protected readonly tableCol: DG.Column<TValue>,
     public readonly logger: ILogger,
   ) {
-    this.reset();
+    super();
     if (this.tableCol && this.tableCol.dataFrame) {
       this.subs.push(this.tableCol.dataFrame.onDataChanged.subscribe(() => {
-        try { this.reset(); } catch (err) { this.logger.error(err); }
+        this.dirty = true;
       }));
     }
 
@@ -90,7 +107,9 @@ export abstract class CellRendererBackBase<TValue> implements IRenderer {
     if (this.gridCol && this.gridCol.dart) this.gridCol.grid?.invalidate();
   }
 
-  protected abstract reset(): void;
+  protected reset(): void {
+    this.dirty = false;
+  }
 
   // -- IRenderer --
 

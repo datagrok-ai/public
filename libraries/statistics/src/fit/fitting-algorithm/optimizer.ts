@@ -6,7 +6,7 @@ import {sampleParams} from './optimizer-sampler';
 
 
 export function performNelderMeadOptimization(
-  objectiveFunc: (x: Float32Array) => number,
+  objectiveFunc: (x: Float32Array) => {likelihood: number, residuals: number[]},
   paramsBottom: Float32Array,
   paramsTop: Float32Array,
   settings: NelderMeadSettings,
@@ -15,8 +15,6 @@ export function performNelderMeadOptimization(
   infiniteFirst: boolean = true,
 ): OptimizationResult {
   const params = sampleParams(samplesCount, paramsTop, paramsBottom);
-  if (initialValues !== null)
-    params[0] = initialValues;
 
   const extremums: Extremum[] = [];
   const warnings: string[] = [];

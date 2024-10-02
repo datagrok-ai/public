@@ -1,39 +1,47 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as DG from 'datagrok-api/dg';
-import * as grok from 'datagrok-api/grok';
 import * as OCL from 'openchemlib/full';
 
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
+import {IMonomerLib, IMonomerLibBase} from '@datagrok-libraries/bio/src/types/index';
+import {IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {MolfileWithMap, MonomerMap} from '@datagrok-libraries/bio/src/monomer-works/types';
 
 import {Polymer} from './polymer';
 import {GlobalMonomerPositionHandler} from './position-handler';
 
-import {_package, getMonomerLibHelper} from '../../../package';
+import {_package} from '../../../package';
+import {getUnusedColName} from '@datagrok-libraries/bio/src/monomer-works/utils';
+
 
 export class HelmToMolfileConverter {
-  constructor(private helmColumn: DG.Column<string>, private df: DG.DataFrame) {
-    this.helmColumn = helmColumn;
-  }
+  constructor(
+    private readonly helmHelper: IHelmHelper,
+    private readonly rdKitModule: RDModule,
+    private readonly monomerLib: IMonomerLibBase
+  ) { }
 
-  async convertToSmiles(): Promise<DG.Column<string>> {
-    const smiles = await this.getSmilesList();
-    const columnName = this.df.columns.getUnusedName(`smiles(${this.helmColumn.name})`);
-    return DG.Column.fromStrings(columnName, smiles.map((molecule) => {
+  convertToSmiles(helmCol: DG.Column<string>): DG.Column<string> {
+    const df = helmCol.dataFrame;
+    const smiles = this.getSmilesList(helmCol);
+    const smilesColName = `smiles(${helmCol.name})`;
+    const smilesColNameU = df ? df.columns.getUnusedName(smilesColName) : smilesColName;
+    return DG.Column.fromStrings(smilesColNameU, smiles.map((molecule) => {
       if (molecule === null)
         return '';
       return molecule;
     }));
   }
 
-  private async getSmilesList(): Promise<string[]> {
-    const molfilesV2K = (await this.convertToMolfileV3KColumn()).toList();
+  private getSmilesList(helmCol: DG.Column<string>): string[] {
+    const molfilesV2K = this.convertToMolfileV3KColumn(helmCol).toList();
     const smiles = molfilesV2K.map((mol) => DG.chem.convert(mol, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles));
     return smiles;
   }
 
-  private async getMolV3000ViaOCL(beautifiedMols: (RDMol | null)[], columnName: string) {
+  public getMolV3000ViaOCL(beautifiedMols: (RDMol | null)[], columnName: string): DG.Column<string> {
     const beautifiedMolV2000 = beautifiedMols.map((mol) => {
       if (mol === null)
         return '';
@@ -54,9 +62,12 @@ export class HelmToMolfileConverter {
     return DG.Column.fromStrings(columnName, molv3000Arr);
   }
 
-  async convertToRdKitBeautifiedMolfileColumn(chiralityEngine?: boolean): Promise<DG.Column<string>> {
-    const molfilesV3K = (await this.convertToMolfileV3KColumn()).toList();
-    const rdKitModule: RDModule = await grok.functions.call('Chem:getRdKitModule');
+  // @deprecated Use SeqHelper.helmToAtomicLevel
+  convertToRdKitBeautifiedMolfileColumn(
+    helmCol: DG.Column<string>, chiralityEngine: boolean, rdKitModule: RDModule, monomerLib: IMonomerLibBase
+  ): DG.Column<string> {
+    const df = helmCol.dataFrame;
+    const molfilesV3K = this.convertToMolfileV3KColumn(helmCol).toList();
     const beautifiedMols = molfilesV3K.map((item) => {
       if (item === '')
         return null;
@@ -68,11 +79,12 @@ export class HelmToMolfileConverter {
       mol.straighten_depiction(true);
       return mol;
     });
-    const columnName = this.df.columns.getUnusedName(`molfile(${this.helmColumn.name})`);
+    const molColName = `molfile(${helmCol.name})`;
+    const molColNameU = df ? df.columns.getUnusedName(molColName) : molColName;
 
     if (chiralityEngine)
-      return await this.getMolV3000ViaOCL(beautifiedMols, columnName);
-    return DG.Column.fromStrings(columnName, beautifiedMols.map((mol) => {
+      return this.getMolV3000ViaOCL(beautifiedMols, molColNameU);
+    return DG.Column.fromStrings(molColNameU, beautifiedMols.map((mol) => {
       if (mol === null)
         return '';
       const molBlock = mol.get_v3Kmolblock();
@@ -81,50 +93,87 @@ export class HelmToMolfileConverter {
     }));
   }
 
-  private async convertToMolfileV3KColumn(): Promise<DG.Column<string>> {
-    const polymerGraphColumn: DG.Column<string> = await this.getPolymerGraphColumn();
-    const rdKitModule = await grok.functions.call('Chem:getRdKitModule');
-    const monomerLib: IMonomerLib = (await getMonomerLibHelper()).getBioLib();
+
+  public convertToMolfileV3KColumn(
+    helmCol: DG.Column<string>
+  ): DG.Column<string> {
+    const df = helmCol.dataFrame;
+    const polymerGraphColumn: DG.Column<string> = this.getPolymerGraphColumn(helmCol);
     const molfileList = polymerGraphColumn.toList().map(
       (pseudoMolfile: string, idx: number) => {
-        const helm = this.helmColumn.get(idx);
-        if (!helm)
-          return '';
-        let result = '';
+        const helm = helmCol.get(idx);
+        if (!helm) return '';
+
+        let resMolfileWithMap: MolfileWithMap;
         try {
-          result = this.getPolymerMolfile(helm, pseudoMolfile, rdKitModule, monomerLib);
+          resMolfileWithMap = this.getPolymerMolfile(helm, pseudoMolfile);
         } catch (err: any) {
           const [errMsg, errStack] = errInfo(err);
           _package.logger.error(errMsg, undefined, errStack);
-        } finally {
-          return result;
+          resMolfileWithMap = MolfileWithMap.createEmpty();
         }
+        return resMolfileWithMap.molfile;
       });
-    const molfileColName = this.df.columns.getUnusedName(`molfileV2K(${this.helmColumn.name})`);
-    const molfileColumn = DG.Column.fromList('string', molfileColName, molfileList);
+    const molColName = getUnusedColName(df, `molfileV2K(${helmCol.name})`);
+    const molfileColumn = DG.Column.fromList('string', molColName, molfileList);
     return molfileColumn;
   }
 
-  private async getPolymerGraphColumn(): Promise<DG.Column<string>> {
-    const polymerGraphColumn: DG.Column<string> =
-      await grok.functions.call('HELM:getMolfiles', {col: this.helmColumn});
-    return polymerGraphColumn;
+  /** Gets list of monomer molfiles */
+  public convertToMolfileV3K(helmCol: DG.Column<string>, rdKitModule: RDModule, monomerLib: IMonomerLibBase): MolfileWithMap[] {
+    const polymerGraphColumn: DG.Column<string> = this.getPolymerGraphColumn(helmCol);
+    const rowCount = helmCol.length;
+    const resList: MolfileWithMap[] = new Array<MolfileWithMap>(rowCount);
+    for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
+      const helm = helmCol.get(rowIdx);
+      if (!helm) {
+        resList[rowIdx] = MolfileWithMap.createEmpty();
+        continue;
+      }
+
+      const pseudoMolfile = polymerGraphColumn.get(rowIdx)!;
+      let resMolfile: MolfileWithMap;
+      try {
+        resMolfile = this.getPolymerMolfile(helm, pseudoMolfile);
+      } catch (err: any) {
+        const [errMsg, errStack] = errInfo(err);
+        _package.logger.error(errMsg, undefined, errStack);
+        resMolfile = MolfileWithMap.createEmpty();
+      }
+      resList[rowIdx] = resMolfile;
+    }
+    return resList;
+  }
+
+  private getPolymerGraphColumn(helmCol: DG.Column<string>): DG.Column<string> {
+    const helmStrList = helmCol.toList();
+    const molfileList = this.helmHelper.getMolfiles(helmStrList);
+    const molfileCol = DG.Column.fromStrings('mols', molfileList);
+    return molfileCol;
   }
 
   private getPolymerMolfile(
-    helm: string,
-    polymerGraph: string,
-    rdKitModule: RDModule,
-    monomerLib: IMonomerLib
-  ): string {
+    helm: string, polymerGraph: string
+  ): MolfileWithMap {
+    const woGapsRes = this.helmHelper.removeGaps(helm);
+    const woGapsHelm = woGapsRes.resHelm;
+    const woGapsReverseMap = new Map<number, number>();
+    for (const [orgPosIdx, woGapsPosIdx] of (woGapsRes.monomerMap?.entries() ?? [])) {
+      woGapsReverseMap.set(woGapsPosIdx, orgPosIdx);
+    }
     const globalPositionHandler = new GlobalMonomerPositionHandler(polymerGraph);
-    const polymer = new Polymer(helm, rdKitModule, monomerLib);
+    const woGapsPolymer = new Polymer(woGapsHelm, this.rdKitModule, this.monomerLib);
     globalPositionHandler.monomerSymbols.forEach((monomerSymbol: string, monomerIdx: number) => {
       const shift = globalPositionHandler.getMonomerShifts(monomerIdx);
-      polymer.addMonomer(monomerSymbol, monomerIdx, shift);
+      woGapsPolymer.addMonomer(monomerSymbol, monomerIdx, shift);
     });
-    const polymerMolfile = polymer.compileToMolfile();
-    return polymerMolfile;
+    const woGapsMolfile: MolfileWithMap = woGapsPolymer.compileToMolfile();
+    const orgMonomerMap = new MonomerMap();
+    for (const [woGapsPosIdx, m] of woGapsMolfile.monomers.entries()) {
+      const orgPosIdx = woGapsReverseMap.get(woGapsPosIdx)!;
+      orgMonomerMap.set(orgPosIdx, m);
+    }
+
+    return new MolfileWithMap(woGapsMolfile.molfile, orgMonomerMap);
   }
 }
-

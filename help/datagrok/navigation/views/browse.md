@@ -277,7 +277,7 @@ a widget or adjust its settings using the [Context Panel](../panels/panels.md#co
 
 :::note developers
 
-You can customize the **Home Page** programmatically.
+You can [build custom widgets](../../../develop/how-to/home-page-widgets.md) to show up on the Home page.
 
 :::
 

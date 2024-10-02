@@ -28,7 +28,7 @@ class InputMock implements FuncCallInput {
   enabled = true;
   root = ui.div('', {style: {width: '100%'}});
   // fake input
-  input = ui.switchInput('test', true);
+  input = ui.input.toggle('test', {value: true});
 
   constructor() {
     this.root.append(this.input.root);

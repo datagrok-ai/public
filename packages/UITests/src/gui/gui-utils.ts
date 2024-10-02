@@ -179,7 +179,7 @@ export async function testApp(app: DG.Func, TM: DG.DockNode): Promise<void> {
     await app.apply();
     await delay(1000);
     if (grok.shell.lastError)
-      throw new Error(grok.shell.lastError);
+      throw new Error(await grok.shell.lastError);
     const nodes = [...grok.shell.dockManager.rootNode.children];
     if ([...grok.shell.views].length === views && nodes[nodes.length - 1].dart.a.a === 'fill')
       throw new Error('App did not load');

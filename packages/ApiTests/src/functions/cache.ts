@@ -39,74 +39,18 @@ category('Benchmarks: Client-side cache', () => {
   test('Tiny scalar calls no cache', async () => {
     const iterations = DG.Test.isInBenchmark ? 100000 : 100;
     return DG.toDart(await runLoop(false, tiny, getTinyGenerator(true, iterations)));
-  }, {timeout: 400000});
+  }, {timeout: 400000, benchmark: true});
 
   test('Tiny scalar calls with cache', async () => {
     await tiny.apply({'x': 1});
     const iterations = DG.Test.isInBenchmark ? 100000 : 100;
     return DG.toDart(await runLoop(true, tiny, getTinyGenerator(true, iterations)));
-  }, {timeout: 400000});
+  }, {timeout: 400000, benchmark: true});
 
   test('Cached dataframe', async () => {
     const type = DG.Test.isInBenchmark ? 'h' : 'l';
     return DG.toDart(await runLoop(true, demog, getHeavyGenerator(10, type)));
-  }, {timeout: 180000});
-
-  test('Records limit, tiny', async () => {
-    await grok.functions.clientCache.clear();
-    await demog.apply({'type': 'h'});
-
-    const emptyCache = await runLoop(true, demog, getHeavyGenerator());
-
-    await runLoop(true, tiny, getTinyGenerator(false, 100000));// populate with 100k records
-    const after100k = await runLoop(true, demog, getHeavyGenerator());
-
-    await runLoop(true, tiny, getTinyGenerator(false, 150000));// populate with 100 + 150k records
-    const after250k = await runLoop(true, demog, getHeavyGenerator());
-
-    await runLoop(true, tiny, getTinyGenerator(false, 250000));// populate with 250 + 250k records
-    const after500k = await runLoop(true, demog, getHeavyGenerator());
-
-    await runLoop(true, tiny, getTinyGenerator(false, 500000));// populate with 500 + 500k records
-    const after1kk = await runLoop(true, demog, getHeavyGenerator());
-
-    await runLoop(true, tiny, getTinyGenerator(false, 1000000));// populate with 1kk + 1kk records
-    const after2kk = await runLoop(true, demog, getHeavyGenerator());
-
-    return DG.toDart({"empty": emptyCache, "100k": after100k, "250k": after250k, "500k": after500k, "1kk": after1kk, "2kk": after2kk});
-  }, {timeout: 10000000000000, skipReason: 'Just for test purposes'});
-
-  test('Records random stress test', async () => {
-    await grok.functions.clientCache.clear();
-    await demog.apply({'type': 'h'});
-    let tiny = registerFunc('double tiny(int x)',
-        (x: number) => Math.random() * x, false, '*/5 * * * *'); // every 5 minutes
-
-    let otherDemog = registerFunc('dataframe test_demog(string type)', (type: string) => {
-      return demogLite;
-    }, false); //every minute invalidate
-
-    const emptyCache = await runLoop(true, demog, getHeavyGenerator());
-    await runLoop(true, otherDemog, getHeavyGenerator(5));
-    await runLoop(true, tiny, getTinyGenerator(false, 100000));// populate with 100k records
-    const after100k = await runLoop(true, demog, getHeavyGenerator());
-
-    tiny = registerFunc('double tiny(int x)',
-        (x: number) => Math.random() * x, false, '* * * * *'); // every 1 minute
-    await runLoop(true, tiny, getTinyGenerator(false, 150000));// populate with 100 + 150k records
-    const after250k = await runLoop(true, demog, getHeavyGenerator());
-
-    await runLoop(true, tiny, getTinyGenerator(false, 250000));// populate with 250 + 250k records
-    const after500k = await runLoop(true, otherDemog, getHeavyGenerator());
-
-    await runLoop(true, tiny, getTinyGenerator(false, 500000));// populate with 500 + 500k records
-    const after1kk = await runLoop(true, demog, getHeavyGenerator());
-
-    await runLoop(true, tiny, getTinyGenerator(false, 1000000));// populate with 1kk + 1kk records
-    const after2kk = await runLoop(true, otherDemog, getHeavyGenerator());
-
-    return DG.toDart({"empty": emptyCache, "100k": after100k, "250k": after250k, "500k": after500k, "1kk": after1kk, "2kk": after2kk});
-  }, {timeout: 10000000000000, skipReason: 'Just for test purposes'});
+  }, {timeout: 180000, benchmark: true});
 });
 
 category('Functions: Client-side cache', () => {

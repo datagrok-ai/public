@@ -1,0 +1,67 @@
+.admetica-dialog-tree {
+  max-height: 400px;
+  width: 200px;
+}
+
+.admetica-dialog-select-all {
+  margin-left: 6px;
+  margin-right: 12px;
+}
+
+.admetica-dialog-count {
+  margin-left: 24px;
+  display: inline-flex;
+}
+
+.admetica-mol-input {
+  margin-left: -70px;
+}
+
+.admetica-bool-input {
+  margin-left: -55px;
+}
+
+.admetica-input-form {
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 315px;
+}
+
+.admetica-pane-header {
+  display: flex;
+  align-items: center;
+}
+
+.admetica-tree {
+  overflow: hidden;
+  min-height: 250px;
+}
+
+.admetica-tab-content {
+  gap: 10px;
+}
+
+.admetica-descriptor-name {
+  text-align: center;
+  font-weight: bold;
+}
+
+.admetica-save-button {
+  margin-left: 20px!important;
+  visibility: hidden;
+}
+
+.d4-flex-col.ui-div.admetica-input-form .ui-input-textarea.ui-input-root {
+  resize: none;
+  overflow: hidden;
+  flex-shrink: unset!important;
+}
+
+.admetica-div {
+  position: absolute;
+  visibility: hidden;
+  font: 13px Roboto;
+  width: 200px;
+  white-space: normal;
+}

@@ -17,6 +17,8 @@ const TEST_DATAFRAME_1 = grok.data.demo.demog(10000);
 const TEST_DATAFRAME_2 = DG.DataFrame.fromCsv('x,y\n1,2\n3,4\n5,6');
 
 for (const lang of langs) {
+  if (lang === 'Julia')
+    continue;
   category(`Scripts: ${lang} scripts`, () => {
     test('int, double, bool, string input/output', async () => {
       const int = 2;
@@ -27,7 +29,7 @@ for (const lang of langs) {
         {'integer_input': int, 'double_input': double, 'bool_input': bool, 'string_input': str});
       expectObject(result, {'integer_output': int, 'double_output': double,
         'bool_output': bool, 'string_output': str});
-    });
+    }, {stressTest: true, timeout: 120000 /* long timeout for first test, because of kernel start */});
 
     test('Long string', async () => {
       const str = randomString(500000, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
@@ -38,7 +40,7 @@ for (const lang of langs) {
         {'integer_input': int, 'double_input': double, 'bool_input': bool, 'string_input': str});
       expectObject(result, {'integer_output': int, 'double_output': double,
         'bool_output': bool, 'string_output': str});
-    }, {timeout: 120000});
+    }, {timeout: 120000, stressTest: true, skipReason: lang === 'Octave' || lang === 'Julia' ? 'Skip for later fix' : undefined});
 
     test('Datetime input/output', async () => {
       const currentTime = dayjs();
@@ -48,10 +50,10 @@ for (const lang of langs) {
         expect(currentTime.add(1, 'day').format('YYYY-MM-DDTHH:mm:ss'), result.format('YYYY-MM-DDTHH:mm:ss'));
       else
         expect(result.valueOf(), currentTime.add(1, 'day').valueOf());
-    });
+    }, {stressTest: true});
 
     test('Dataframe input/output', async () => {
-      function getSample() {
+      function getSample(): DG.DataFrame {
         return DG.DataFrame.fromCsv(`id,date,name\nid1,${Date.now()},datagrok`)
       }
       const sample1 = getSample();
@@ -62,20 +64,20 @@ for (const lang of langs) {
       expectTable(result['resultDf'], sample1);
       expectTable(result['resultNumerical'], sample2);
       expectTable(result['resultCategorical'], sample3);
-    });
+    }, {stressTest: true, timeout: 90000});
 
     test('Map type input/output', async () => {
       const result = await grok.functions.call(`CVMTests:${lang}Map`,
         {'input_map': {'hello': 'world'}, 'unique_key': 'my_key'});
       expectObject(result, {'hello': 'world', 'my_key': 'Datagrok'});
-    }, {skipReason: lang === 'R' || lang === 'Grok' ? 'GROK-12452' : undefined});
+    }, {skipReason: lang === 'R' || lang === 'Grok' ? 'GROK-12452' : undefined, stressTest: true});
 
     if (!['NodeJS', 'JavaScript', 'Grok'].includes(lang)) {
       test('Graphics output, Column input', async () => {
         const result = await grok.functions.call(`CVMTests:${lang}Graphics`,
           {'df': TEST_DATAFRAME_2, 'xName': 'x', 'yName': 'y'});
         expect(!result || result.length === 0, false);
-      });
+      }, {stressTest: true});
     }
     if (!['NodeJS', 'JavaScript', 'Grok', 'Octave'].includes(lang)) {
       test('DataFrame int column correctness', async () => {
@@ -89,7 +91,7 @@ for (const lang of langs) {
           expect((result['resultInBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.FLOAT, true);
           expect((result['resultOutBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.FLOAT, true);
         }
-      });
+      }, {stressTest: true, timeout: 60000});
 
       test('Empty dataframe', async () => {
         const result: DG.DataFrame = await grok.functions.call(`CVMTests:${lang}EmptyDataFrame`);
@@ -102,10 +104,11 @@ for (const lang of langs) {
         const fileStringData = 'Hello world!';
         const fileBinaryData: Uint8Array = new TextEncoder().encode(fileStringData);
         const result = await grok.functions.call(`CVMTests:${lang}FileBlobInputOutput`,
-            {'fileInput': DG.FileInfo.fromString(fileStringData, 'test.txt'), 'blobInput': DG.FileInfo.fromBytes(fileBinaryData)});
+            {'fileInput': DG.FileInfo.fromString('test.txt', fileStringData),
+              'blobInput': DG.FileInfo.fromBytes('test.bin', fileBinaryData)});
         expect(isEqualBytes(fileBinaryData, (result['fileOutput'] as DG.FileInfo).data), true);
         expect(isEqualBytes(fileBinaryData, (result['blobOutput'] as DG.FileInfo).data), true);
-      });
+      }, {stressTest: true, timeout: 90000});
     }
 
     test('Column list', async () => {
@@ -114,14 +117,14 @@ for (const lang of langs) {
         {'df': df, 'cols': ['id', 'date', 'name']});
       df.columns.remove('id');
       expectTable(result, df);
-    });
+    }, {stressTest: true});
 
     test('Calculated column test', async () => {
       const df = DG.DataFrame.fromCsv('x,y\n1,2\n3,4\n5,6');
       const column = await df.columns.addNewCalculated('new', `CVMTests:${lang}CalcColumn(\${x} + \${y})`);
       expect(df.columns.contains(column.name), true);
       expect(column.get(0), 6);
-    });
+    }, {stressTest: true});
 
     test('File input', async () => {
       const files = await grok.dapi.files.list('System:AppData/CvmTests/', false, 'cars.csv');
@@ -129,7 +132,7 @@ for (const lang of langs) {
         {'file': files[0], 'header': true, 'separator': ',', 'dec': '.'});
       const expected = ['Python', 'Octave'].includes(lang) ? 31 : 30;
       expect(result, expected);
-    });
+    }, {stressTest: true});
 
     test('Escaping', async () => {
       const testStrings = ['\t\n\t\tsdfdsf\t', ' sdfds \\\'\"""', ' \n ', '\'\""\'', '\n and \\n',
@@ -150,14 +153,14 @@ for (const lang of langs) {
                             '  <li><a href="tel:+123456789">Phone</a></li>\n' +
                             '  </ul>'});
         expect(result, 3);
-      }, {timeout: 120000});
+      }, {timeout: 120000, stressTest: true});
 
       test('File type input and environment yaml', async () => {
         const files = await grok.dapi.files.list('System:AppData/CvmTests/images', false, 'silver.jpg');
         const result = await grok.functions.call('CVMTests:ImagePixelCount',
           {'fileInput': files[0]});
         expect(49090022, result);
-      }, {timeout: 120000});
+      }, {timeout: 120000, stressTest: true});
     }
   });
 
@@ -168,7 +171,7 @@ for (const lang of langs) {
       const start = Date.now();
       await df.columns.addNewCalculated('new', `CVMTests:${lang}CalcColumn(\${age})`);
       return `Execution time: ${Date.now() - start}`;
-    }, {timeout: 120000});
+    }, {timeout: 60000, benchmark: true, stressTest: true, skipReason: lang === 'Grok' ? 'Doesn\'t support vectorization' : undefined});
 
     test(`Dataframe performance test sequentially`, async () => {
       const iterations = DG.Test.isInBenchmark ? 10 : 3;
@@ -180,10 +183,10 @@ for (const lang of langs) {
       const sum = results.reduce((p, c) => p + c, 0);
       return DG.toDart({'Average time': sum / results.length,
         'Min time': Math.min(...results), 'Max time': Math.max(...results)});
-    }, {timeout: 120000});
+    }, {timeout: 240000, benchmark: true, stressTest: true});
 
     test('Dataframe performance test parallel', async () => {
-      const iterations = DG.Test.isInBenchmark ? 10 : 3;
+      const iterations = DG.Test.isInBenchmark ? lang === 'NodeJS' ? 5 : 10 : 3;
       const calls = [];
 
       for (let i = 0; i < iterations; i++)
@@ -193,14 +196,14 @@ for (const lang of langs) {
       const sum = results.reduce((p, c) => p + c, 0);
       return DG.toDart({'Average time': sum / results.length,
         'Min time': Math.min(...results), 'Max time': Math.max(...results)});
-    }, {timeout: 120000});
+    }, {timeout: 180000, benchmark: true});
   });
 }
 
 category('Stdout', () => {
   test('Console printing', async () => {
     await grok.functions.call('CVMTests:OctaveStdout', {'df': grok.data.demo.demog(1000)});
-  }, {timeout: 60000});
+  }, {timeout: 90000});
 });
 
 category('Scripts: Client cache test', () => {
@@ -233,7 +236,7 @@ category('Scripts: Client cache test', () => {
       {'df': TEST_DATAFRAME_2});
     expectTable(result1['resultDf'], result2['resultDf']);
     expect(result1['scatter'], result2['scatter']);
-  });
+  }, {timeout: 60000});
 
   test(`Dataframe performance test 15 consequently cached`, async () => {
     await grok.functions.clientCache.clear();

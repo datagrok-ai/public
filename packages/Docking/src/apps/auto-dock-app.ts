@@ -11,13 +11,14 @@ import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
 import {_package, CACHED_DOCKING, BINDING_ENERGY_COL, POSE_COL, ERROR_COL_NAME} from '../utils/constants';
 import {buildDefaultAutodockGpf} from '../utils/auto-dock-service';
+import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 
 export type AutoDockDataType = {
   ligandDf: DG.DataFrame,
   ligandMolColName: string,
   receptor: BiostructureData,
   gpfFile?: string,
-  confirmationNum?: number,
+  posesNum?: number,
   ligandDfString?: string;
 };
 
@@ -115,7 +116,7 @@ export class AutoDockApp {
     const pi = DG.TaskBarProgressIndicator.create('AutoDock running...');
     try {
       const ligandCol = this.data.ligandDf.getCol(this.data.ligandMolColName);
-      const result = await runAutoDock(this.data.receptor, ligandCol, this.data.gpfFile!, this.data.confirmationNum!, this.poseColName, pi);
+      const result = await runAutoDock(this.data.receptor, ligandCol, this.data.gpfFile!, this.data.posesNum!, this.poseColName, pi);
       const posesAllDf = result?.posesAllDf;
       const errorValues = result?.errorValues;
       if (posesAllDf !== undefined) {
@@ -148,7 +149,7 @@ export class AutoDockApp {
 
 // -- Routines --
 async function runAutoDock(
-  receptorData: BiostructureData, ligandCol: DG.Column<string>, gpfFile: string, confirmationNum: number, poseColName: string, pi: DG.ProgressIndicator
+  receptorData: BiostructureData, ligandCol: DG.Column<string>, gpfFile: string, posesNum: number, poseColName: string, pi: DG.ProgressIndicator
 ) {
   let adSvc!: IAutoDockService;
   try {
@@ -175,8 +176,8 @@ async function runAutoDock(
 
     const npts: GridSize = {x: 40, y: 40, z: 40};
     const autodockGpf: string = buildDefaultAutodockGpf(receptorData.options!.name!, npts);
-    const posesDf = await adSvc.dockLigand(
-      receptorData, ligandData, gpfFile ?? autodockGpf, confirmationNum ?? 10, poseColName);
+    const posesDf = await fetchWrapper(() => adSvc.dockLigand(
+      receptorData, ligandData, gpfFile ?? autodockGpf, posesNum ?? 10, poseColName));
 
     if (posesDf.col(ERROR_COL_NAME)) {
       errorValues[errorValues.length] = {index: lRowI, value: posesDf.get(ERROR_COL_NAME, 0)};

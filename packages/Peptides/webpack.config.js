@@ -34,7 +34,7 @@ module.exports = {
   resolve: {
     extensions: ['.mjs', '.ts', '.js', '.json', '.tsx'],
   },
-  devtool: 'inline-source-map',
+  devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',

@@ -8,6 +8,9 @@ import 'echarts-wordcloud';
 import $ from 'cash-dom';
 
 
+const MAX_UNIQUE_CATEGORIES_NUMBER = 500;
+const ERROR_CLASS = 'd4-viewer-error';
+
 @grok.decorators.viewer({
   name: 'Word cloud',
   description: 'Creates a word cloud viewer',
@@ -33,7 +36,7 @@ export class WordCloudViewer extends DG.JsViewer {
   constructor() {
     super();
 
-    this.strColumnName = this.string('columnColumnName');
+    this.strColumnName = this.string('columnColumnName', '', { columnTypeFilter: DG.COLUMN_TYPE.STRING });
 
     this.shape = this.string('shape', 'circle', {
       choices: ['circle', 'diamond', 'triangle-forward', 'triangle', 'pentagon', 'star'],
@@ -44,7 +47,7 @@ export class WordCloudViewer extends DG.JsViewer {
 
     this.minRotationDegree = this.int('minRotationDegree', -30);
     this.maxRotationDegree = this.int('maxRotationDegree', 30);
-    this.rotationStep = this.int('rotationStep', 5);
+    this.rotationStep = this.int('rotationStep', 5, { min: 1 });
 
     this.gridSize = this.int('gridSize', 8);
 
@@ -100,9 +103,20 @@ export class WordCloudViewer extends DG.JsViewer {
     this.subs.forEach((sub) => sub.unsubscribe());
   }
 
+  _showMessage(msg: string, className: string) {
+    const errorDiv = ui.divText(msg, className);
+    errorDiv.style.textAlign = 'center';
+    this.root.appendChild(errorDiv);
+  }
+
   render() {
     if (!this._testColumns()) {
-      this.root.innerText = 'Not enough data to produce the result.';
+      this._showMessage('Not enough data to produce the result.', ERROR_CLASS);
+      return;
+    }
+    if (this.strColumnName === null || this.strColumnName === '' ||
+      this.dataFrame.getCol(this.strColumnName).categories.length > MAX_UNIQUE_CATEGORIES_NUMBER) {
+      this._showMessage('The Word cloud viewer requires categorical column with 500 or fewer unique categories', ERROR_CLASS);
       return;
     }
 

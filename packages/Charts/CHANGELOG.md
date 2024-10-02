@@ -1,5 +1,30 @@
 # Charts changelog
 
+## 1.3.5 (2024-08-30)
+
+### Features
+
+* Charts: Sunburst: Speed up
+
+## 1.3.4 (2024-08-23)
+
+### Bug Fixes
+
+* [#2994](https://github.com/datagrok-ai/public/issues/2994): Charts | Sunburst: Double click on the viewer resets the view
+* [#2992](https://github.com/datagrok-ai/public/issues/2992): Charts: Sunburst does not select/filter on empty category
+* Charts: Sunburst: Update emphasis in order not to fade out other data
+* Charts: Sunburst: Use only categorical columns for building the hierarchy
+* [#2979](https://github.com/datagrok-ai/public/issues/2979): Charts: Sunburst is showing default columns instead of selected ones after applying layaout in some cases
+* Charts: Demo: Fix globe viewer doesn't show points
+
+## 1.3.3 (2024-08-08)
+
+### Bug Fixes
+
+* [#2954](https://github.com/datagrok-ai/public/issues/2954): Sunburst: Unsupported columns are not filtered out in column selector
+
+## 1.3.2 (2024-07-24)
+
 ## 1.3.1 (2024-07-02)
 
 ### Features

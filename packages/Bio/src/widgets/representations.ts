@@ -5,9 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {getMolfilesFromSingleSeq} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {TAGS as mmcrTAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 
-import {
-  Temps as mmcrTemps, rendererSettingsChangedState, Temps
-} from '../utils/cell-renderer-consts';
+import {MmcrTemps, rendererSettingsChangedState} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
 
 import {_package} from '../package';
 import {max} from 'rxjs/operators';
@@ -30,21 +28,21 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
     const v = parseInt(col.getTag(mmcrTAGS.maxMonomerLength));
     maxMonomerLength = !isNaN(v) ? v : maxMonomerLength;
   }
-  if (Temps.maxMonomerLength in col.temp) {
-    const v = parseInt(col.temp[Temps.maxMonomerLength]);
+  if (MmcrTemps.maxMonomerLength in col.temp) {
+    const v = parseInt(col.temp[MmcrTemps.maxMonomerLength]);
     maxMonomerLength = !isNaN(v) ? v : maxMonomerLength;
   }
   const maxMonomerLengthInput = ui.input.int('Max Monomer Length', {
     value: maxMonomerLength!,
     nullable: true, min: 1, max: 50, step: 1,
-    onValueChanged: () => {
-      if (maxMonomerLengthInput.value == 0)
+    onValueChanged: (value) => {
+      if (value == 0)
         setTimeout(() => { maxMonomerLengthInput.value = null!; }, 0);
       else {
-        const value = maxMonomerLengthInput.value ?? '';
-        const tagValue = value == null ? '' : value.toString();
-        col.temp[Temps.maxMonomerLength] = tagValue;
-        col.temp[Temps.rendererSettingsChanged] = rendererSettingsChangedState.true;
+        const newValue = value ?? '';
+        const tagValue = newValue == null ? '' : newValue.toString();
+        col.temp[MmcrTemps.maxMonomerLength] = tagValue;
+        col.temp[MmcrTemps.rendererSettingsChanged] = rendererSettingsChangedState.true;
         col.dataFrame.fireValuesChanged();
       }
     },
@@ -52,10 +50,10 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
   });
 
   const gapLengthInput = ui.input.int('Monomer Margin', {
-    value: col.temp[mmcrTemps.gapLength] ?? 0,
-    onValueChanged: () => {
-      col.temp[mmcrTemps.gapLength] = gapLengthInput.value;
-      col.temp[mmcrTemps.rendererSettingsChanged] = rendererSettingsChangedState.true;
+    value: col.temp[MmcrTemps.gapLength] ?? 0,
+    onValueChanged: (value) => {
+      col.temp[MmcrTemps.gapLength] = value;
+      col.temp[MmcrTemps.rendererSettingsChanged] = rendererSettingsChangedState.true;
       col.dataFrame.fireValuesChanged();
     },
     tooltipText: 'The size of margin between monomers (in pixels)'
@@ -63,8 +61,8 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
 
   const colorCodeInput = ui.input.bool('Color Code', {
     value: (col?.temp['color-code'] != null) ? col.temp['color-code'] : true,
-    onValueChanged: () => {
-      col.temp['color-code'] = colorCodeInput.value;
+    onValueChanged: (value) => {
+      col.temp['color-code'] = value;
       col.dataFrame.fireValuesChanged();
     },
     tooltipText: 'Color code'
@@ -73,8 +71,8 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
   const referenceSequenceInput = ui.input.string('Reference Sequence', {
     value: (col?.temp['reference-sequence'] != null) ? col?.temp['reference-sequence'] : '',
     nullable: true,
-    onValueChanged: () => {
-      col.temp['reference-sequence'] = referenceSequenceInput.value;
+    onValueChanged: (value) => {
+      col.temp['reference-sequence'] = value;
       col.dataFrame.fireValuesChanged();
     },
     tooltipText: 'Reference sequence is not empty, then the sequence will be render ' + '\n' +
@@ -83,8 +81,8 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
 
   const compareWithCurrentInput = ui.input.bool('Compare with current', {
     value: (col?.temp['compare-with-current'] != null) ? col.temp['compare-with-current'] : true,
-    onValueChanged: () => {
-      col.temp['compare-with-current'] = compareWithCurrentInput.value;
+    onValueChanged: (value) => {
+      col.temp['compare-with-current'] = value;
       col.dataFrame.fireValuesChanged();
     },
     tooltipText: 'When on, all sequences get rendered in the "diff" mode'

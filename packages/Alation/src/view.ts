@@ -219,8 +219,8 @@ function connectToDbDialog(
     ui.link('Data Connection', 'https://datagrok.ai/help/access/access#data-connection'), ' in Datagrok.']);
   const helpHost = ui.div(helpText, 'alation-help-host');
   $(helpHost).width(500);
-  const usernameField = ui.stringInput('Login', '');
-  const passwordField = ui.stringInput('Password', '');
+  const usernameField = ui.input.string('Login', {value: ''});
+  const passwordField = ui.input.string('Password', {value: ''});
   $(passwordField.root as HTMLInputElement).children('.ui-input-editor').attr('type', 'password');
 
   const connectionName = dataSource.title || dataSource.qualified_name || dataSource.dbname;

@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/gis",
   "friendlyName": "GIS",
-  "version": "1.1.5",
+  "version": "1.2.0",
   "category": "Visualizations",
   "author": {
     "name": "Dmytro Kovalyov",
@@ -9,8 +9,8 @@
   },
   "description": "GIS (geographic information system) functionality, such as maps and geocoding.",
   "dependencies": {
-    "datagrok-api": "^1.17.0",
-    "@datagrok-libraries/utils": "^4.2.11",
+    "datagrok-api": "^1.19.0",
+    "@datagrok-libraries/utils": "^4.3.0",
     "cash-dom": "latest",
     "dayjs": "latest",
     "jszip": "^3.10.1",

@@ -4,15 +4,15 @@
     "access": "public"
   },
   "author": {
-    "name": "Anna Muzychyna",
-    "email": "amuzychyna@datagrok.ai"
+    "name": "Alexander Paramonov",
+    "email": "aparamonov@datagrok.ai"
   },
   "fullName": "Utils",
-  "version": "4.2.11",
+  "version": "4.3.5",
   "description": "Common utilities",
-  "dependencies": { 
+  "dependencies": {
     "cash-dom": "^8.1.1",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.21.1",
     "fast-sha256": "^1.3.0",
     "rxjs": "^6.5.5",
     "wu": "latest"
@@ -31,7 +31,8 @@
     "link": "npm link",
     "link-api": "npm link datagrok-api",
     "link-all": "npm link datagrok-api",
-    "build": "git clean -f -X -d ./src && tsc",
+    "build": "tsc",
+    "build-utils": "git clean -f -X -d ./src  && tsc",
     "lint": "eslint \"./src/**/*.ts\"",
     "lint-fix": "eslint \"./src/**/*.ts\" --fix",
     "build-all": "npm --prefix ./../../js-api run build && npm run build"

@@ -7,29 +7,11 @@ import {HitDesignApp} from './app/hit-design-app';
 import {GasteigerPngRenderer} from './pngRenderers';
 import {loadCampaigns} from './app/utils';
 import {AppName} from './app';
+import {PeptiHitApp} from './app/pepti-hit-app';
+import {PeptiHitHelmColName} from './app/consts';
 // import {loadCampaigns} from './app/utils';
 
 export const _package = new DG.Package();
-
-//input: dynamic treeNode
-//input: view browseView
-export async function hitTriageAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: any) {// TODO: DG.BrowseView
-  await hitAppTB(treeNode, browseView, 'Hit Triage');
-}
-
-//tags: app
-//name: Hit Triage
-//output: view v
-export async function hitTriageApp(): Promise<DG.ViewBase> {
-  const c = grok.functions.getCurrentCall();
-  return new HitTriageApp(c).multiView;
-}
-
-//input: dynamic treeNode
-//input: view browseView
-export async function hitDesignAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: any) {// TODO: DG.BrowseView
-  await hitAppTB(treeNode, browseView, 'Hit Design');
-}
 
 async function hitAppTB(treeNode: DG.TreeViewGroup, browseView: any, name: AppName) {// TODO: DG.BrowseView
   const camps = await loadCampaigns(name, []);
@@ -38,7 +20,8 @@ async function hitAppTB(treeNode: DG.TreeViewGroup, browseView: any, name: AppNa
     const savePath = 'ingest' in camp ? camp.ingest.query : camp.savePath;
     if (!savePath || await grok.dapi.files.exists(savePath) === false)
       continue;
-    treeNode.item(camp.name).onSelected.subscribe(async (_) => {
+    const node = treeNode.item(camp.name);
+    node.onSelected.subscribe(async (_) => {
       try {
         const df = await grok.dapi.files.readCsv(savePath);
         if (!df)
@@ -47,8 +30,14 @@ async function hitAppTB(treeNode: DG.TreeViewGroup, browseView: any, name: AppNa
         if (semtypeInfo) {
           for (const [colName, semType] of Object.entries(semtypeInfo)) {
             const col = df.columns.byName(colName);
-            if (col)
+            if (col) {
               col.semType = semType;
+              if (semType === DG.SEMTYPE.MACROMOLECULE && colName === PeptiHitHelmColName) {
+                col.setTag('units', 'helm');
+                col.setTag('.alphabetIsMultichar', 'true');
+                col.setTag('cell.renderer', 'helm');
+              }
+            }
           }
         }
         const tv = DG.TableView.create(df, false);
@@ -63,6 +52,32 @@ async function hitAppTB(treeNode: DG.TreeViewGroup, browseView: any, name: AppNa
   }
 }
 
+//input: dynamic treeNode
+//input: view browseView
+export async function hitTriageAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: any) {// TODO: DG.BrowseView
+  await hitAppTB(treeNode, browseView, 'Hit Triage');
+}
+
+//input: dynamic treeNode
+//input: view browseView
+export async function hitDesignAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: any) {// TODO: DG.BrowseView
+  await hitAppTB(treeNode, browseView, 'Hit Design');
+}
+
+//input: dynamic treeNode
+//input: view browseView
+export async function peptiHitAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: any) {// TODO: DG.BrowseView
+  await hitAppTB(treeNode, browseView, 'PeptiHit');
+}
+
+//tags: app
+//name: Hit Triage
+//output: view v
+export async function hitTriageApp(): Promise<DG.ViewBase> {
+  const c = grok.functions.getCurrentCall();
+  return new HitTriageApp(c).multiView;
+}
+
 //tags: app
 //name: Hit Design
 //meta.icon: images/icons/hit-design-icon.png
@@ -70,6 +85,16 @@ async function hitAppTB(treeNode: DG.TreeViewGroup, browseView: any, name: AppNa
 export async function hitDesignApp(): Promise<DG.ViewBase> {
   const c = grok.functions.getCurrentCall();
   return new HitDesignApp(c).multiView;
+}
+
+//tags: app
+//name: PeptiHit
+//meta.icon: images/icons/pepti-hit-icon.png
+//output: view v
+export async function peptiHitApp(): Promise<DG.ViewBase> {
+  const c = grok.functions.getCurrentCall();
+  await grok.functions.call('Bio:initBio', {});
+  return new PeptiHitApp(c).multiView;
 }
 
 //name: Demo Molecules 100

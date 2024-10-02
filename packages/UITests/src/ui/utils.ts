@@ -128,6 +128,8 @@ export function stringValue(name: string, input: DG.InputBase, selector: string,
     case 'multiChoiceInput':
       const node = v.root.querySelectorAll('.ui-input-multi-choice-checks>div');
       value = (<HTMLInputElement>v.root.querySelector('.ui-input-label')).innerText;
+      if (value === '')
+        value = '[]';
       for (let i = 0; i < node.length; i++) {
         const input = (<HTMLInputElement>node[i].querySelector('input'));
         if (input.checked)

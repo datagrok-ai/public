@@ -6,7 +6,8 @@ if (mode !== 'production')
   console.warn(`Building '${packageName}' in '${mode}' mode.`);
 
 module.exports = {
-  ...(mode !== 'production' ? {} : {cache: {type: 'filesystem'}}),
+  // ...(mode !== 'production' ? {} : {cache: {type: 'filesystem'}}),
+  cache: {type: 'filesystem'},
   mode: mode,
   entry: {
     package: './src/package.ts',
@@ -14,6 +15,11 @@ module.exports = {
       filename: 'package-test.js',
       library: {type: 'var', name: `${packageName}_test`},
       import: './src/package-test.ts',
+    },
+    dojo: {
+      filename: 'package-dojo.js',
+      library: {type: 'var', name: `${packageName}_dojo`},
+      import: './helm/dojo/package.ts',
     },
   },
   resolve: {
@@ -28,14 +34,16 @@ module.exports = {
   devServer: {
     contentBase: './dist',
   },
+  // amd: {toUrlUndefined: true},
   module: {
+    noParse: /vendor/,
     rules: [
-      {test: /\.js$/, enforce: 'pre', use: ['source-map-loader'], exclude: [/node_modules/, /vendor/]},
-      {test: /\.ts(x?)$/, use: 'ts-loader', exclude: [/node_modules/, /vendor/]},
-      {test: /\.css$/, use: ['style-loader', 'css-loader'], exclude: [/node_modules/, /vendor/]},
+      {test: /\.js$/, enforce: 'pre', use: ['source-map-loader'], exclude: [/node_modules/]},
+      {test: /\.ts(x?)$/, use: 'ts-loader', exclude: [/node_modules/]},
+      {test: /\.css$/, use: ['style-loader', 'css-loader'], exclude: [/node_modules/]},
     ],
   },
-  devtool: mode !== 'production' ? 'inline-source-map' : 'source-map',
+  devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',

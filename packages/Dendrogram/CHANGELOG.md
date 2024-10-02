@@ -1,5 +1,25 @@
 # Dendrogram changelog
 
+## 1.2.33 (2024-09-02)
+
+Fix for dependency math lib version update
+
+## 1.2.32 (2024-08-23)
+
+### Bug fixes
+
+* GROK-15949:Fix open GridWithTree: error
+* Fix error on second Hierarchical Clustering
+* Fix error on mouse hover and current row changed
+
+## 1.2.31 (2024-08-19)
+
+Fix Hierarchical clustering namings.
+
+## 1.2.30 (2024-07-23)
+
+Bump dependencies versions, datagrok-api to 1.20.0
+
 ## 1.2.29 (2024-04-23)
 
 Bump dependencies versions, datagrok-api to 1.18.0, gridext to 1.3.71

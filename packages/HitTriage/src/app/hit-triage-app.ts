@@ -16,6 +16,7 @@ import {HitAppBase} from './hit-app-base';
 import {HitBaseView} from './base-view';
 import {saveCampaignDialog} from './dialogs/save-campaign-dialog';
 import {calculateColumns} from './utils/calculate-single-cell';
+import {defaultPermissions, PermissionsDialog} from './dialogs/permissions-dialog';
 
 export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
   multiView: DG.MultiView;
@@ -39,7 +40,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
   private _pickViewPromise?: Promise<void> | null = null;
 
   constructor(c: DG.FuncCall) {
-    super(c);
+    super(c, 'Hit Triage');
     this._infoView = new InfoView(this);
     this.multiView = new DG.MultiView({viewFactories: {[this._infoView.name]: () => this._infoView}});
     this.multiView.tabs.onTabChanged.subscribe((_) => {
@@ -126,6 +127,12 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
         externals: funcs, scripts, queries,
       }, this.dataFrame!, this._molColName!);
     };
+
+    if (this.campaign)
+      await this.setCanEdit(this.campaign);
+    else
+      this.hasEditPermission = true; // if the campaign is new, obviously the user can edit it
+
     const curView = grok.shell.v;
     const pickV = grok.shell.addView(this.pickView);
     this.currentPickViewId = pickV.name;
@@ -270,9 +277,18 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
         dlg.show();
       }
     });
+    const permissionsButton = ui.iconFA('share', async () => {
+      await (new PermissionsDialog(this.campaign?.permissions)).show((res) => {
+        this.campaign!.permissions = res;
+        this.saveCampaign(undefined, true);
+      });
+    }, 'Edit permissions');
     submitButton.classList.add('hit-design-submit-button');
     const hasSubmit = checkRibbonsHaveSubmit(ribbons);
-    ribbons.push([calculateRibbon, ...(hasSubmit ? [] : [submitButton])]);
+    ribbons.push([
+      calculateRibbon,
+      ...(this.hasEditPermission ? [permissionsButton] : []),
+      ...(hasSubmit ? [] : [submitButton])]);
     view.setRibbonPanels(ribbons);
     view.name = this._filterViewName;
     setTimeout(async () => {
@@ -335,6 +351,11 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     const colTypeMap: {[_: string]: string} = {};
     enrichedDf.columns.toList().forEach((col) => colTypeMap[col.name] = col.type);
 
+    // if its first time save author as current user, else keep the same
+    const authorUserId = this.campaign?.authorUserId ?? grok.shell.user.id;
+    const permissions = this.campaign?.permissions ?? defaultPermissions;
+
+
     const campaign: HitTriageCampaign = {
       name: campaignName,
       templateName,
@@ -352,9 +373,15 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
       filteredRowCount: enrichedDf.filter.trueCount,
       template: this.template as HitDesignTemplate | undefined,
       columnTypes: colTypeMap,
+      authorUserId,
+      permissions,
     };
-    this.campaign = campaign;
 
+    this.campaign = campaign;
+    if (!this.hasEditPermission) {
+      grok.shell.error('You do not have permission to modify this campaign');
+      return campaign;
+    }
     const csvDf = DG.DataFrame.fromColumns(
       enrichedDf.columns.toList().filter((col) => !col.name.startsWith('~')),
     ).toCsv();
@@ -367,5 +394,6 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     await _package.files.writeAsText(`Hit Triage/campaigns/${campaignId}/${CampaignJsonName}`,
       JSON.stringify(campaign));
     notify && grok.shell.info('Campaign saved successfully.');
+    return campaign;
   }
 }

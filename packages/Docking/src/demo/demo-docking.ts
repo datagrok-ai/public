@@ -14,7 +14,9 @@ async function openMoleculeDataset(name: string): Promise<DG.TableView> {
 }
 
 export async function _demoDocking(): Promise<void> {
-  const tv = await openMoleculeDataset('System:AppData/Docking/demo_files/demo_dataset_small.csv');
+  let tv = await openMoleculeDataset('System:AppData/Docking/demo_files/demo_dataset_small.csv');
+  tv = (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView;
+  grok.shell.tv.dataFrame = tv.dataFrame;
   const grid = tv.grid;
   const table = tv.dataFrame;
   const desirableHeight = 100;

@@ -17,13 +17,22 @@ export interface UserWidgetsSettings {
 
 export let settings: UserWidgetsSettings;
 
-export async function getSettings(): Promise<UserWidgetsSettings> {
-  return settings ?? (settings = (await grok.dapi.userDataStorage.get(WIDGETS_STORAGE)));
+export function getSettings(): UserWidgetsSettings {
+  if (!settings) {
+    const savedSettings: {[key: string]: any} = grok.userSettings.get(WIDGETS_STORAGE) ?? {};
+    for (const key of Object.keys(savedSettings))
+      savedSettings[key] = JSON.parse(savedSettings[key]);
+    settings = savedSettings;
+  }
+  return settings;
 }
 
-export function saveSettings(): Promise<void> {
+export function saveSettings(): void {
   console.log(settings);
-  return grok.dapi.userDataStorage.post(WIDGETS_STORAGE, settings);
+  let s: {[key: string]: any} = {};
+  for (const key of Object.keys(settings))
+    s[key] = JSON.stringify(settings[key]);
+  grok.userSettings.addAll(WIDGETS_STORAGE, s);
 }
 
 export function widgetHost(w: DG.Widget, widgetHeader?: HTMLDivElement): HTMLElement {
@@ -34,8 +43,8 @@ export function widgetHost(w: DG.Widget, widgetHeader?: HTMLDivElement): HTMLEle
     if (w.factory?.name) {
       const widgetSettings = settings[w.factory.name] ?? (settings[w.factory.name] = { });
       widgetSettings.ignored = true;
-      saveSettings()
-        .then((_) => grok.shell.info('To control widget visibility, go to Tools | Widgets'));
+      saveSettings();
+      grok.shell.info('To control widget visibility, go to Tools | Widgets');
     }
   }
 

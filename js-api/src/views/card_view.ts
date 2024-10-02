@@ -18,7 +18,7 @@ export enum RENDER_MODE {
  *
  */
 export class CardView extends View {
-  dart: any;
+  declare dart: any;
 
   constructor(dart: any) {
     super(dart);

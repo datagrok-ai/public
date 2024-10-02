@@ -41,7 +41,7 @@ jobs:
         with:
           fetch-depth: ${{ env.FETCH_DEPTH }}
           sparse-checkout: |
-            libraries
+            ./libraries
       - name: Get changed files
         uses: tj-actions/changed-files@v42
         id: changed-files
@@ -88,7 +88,7 @@ jobs:
               MATRIX_PUBLISH_JSON+=", \"unpublished_deps\": \"$unpublished_deps\""
               if [[ "${{ github.event_name }}" != "pull_request" ]]; then
                 if [[ $npm_version != ${current_version} ]]; then
-                  if [[ $unpublished_deps == "" ]]; then
+                  if [[ $unpublished_deps == "" ]] && [[ ${{ github.ref }} == 'refs/heads/master' ]]; then
                     MATRIX_PUBLISH_JSON+=", \"publish\": \"publish\""
                     packages=$(grep -l "$name" packages/*/package.json | awk -F'/' '{printf ("%s ", $2)}' | sort -u)
                     MATRIX_PUBLISH_JSON+=", \"packages\": \"$packages\""
@@ -126,14 +126,6 @@ jobs:
         run: |
           echo -e "publish_matrix: ${{ steps.generate-matrix.outputs.publish_matrix }}"
           echo -e "continue: ${{ steps.generate-matrix.outputs.continue }}"
-      - name: Slack Failed Notification
-        if: failure()
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"        
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
 
   publish:
     name: "${{ matrix.project }}: ${{ matrix.job_name }}"
@@ -148,8 +140,8 @@ jobs:
         with:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
           sparse-checkout: |
-            libraries
-            js-api
+            ./libraries
+            ./js-api
       - name: Check library properties
         working-directory: libraries/${{ matrix.project }}
         run: |
@@ -197,33 +189,24 @@ jobs:
         working-directory: libraries/${{ matrix.project }}
       - run: npm install
         working-directory: libraries/${{ matrix.project }}
-      - run: npm run test
-        working-directory: libraries/${{ matrix.project }}
-        if: ${{ matrix.test == 'test' }}
       - run: npm run build
         working-directory: libraries/${{ matrix.project }}
         if: ${{ matrix.build == 'build' }}
-      - name: Install datagrok tools
-        id: datagrok-tools
-        run: npm install -g datagrok-tools@latest
-      - name: grok check
-        run: grok check
+      - id: datagrok-tools
+        run: npm install -g datagrok-tools@4.13.21
+      - run: grok check
         id: grok_check
         working-directory: libraries/${{ matrix.project }}
+      - run: npm run test
+        working-directory: libraries/${{ matrix.project }}
+        if: ${{ matrix.test == 'test' }}
       - name: npm publish
         id: publish
         run: npm publish --access public
-        if: matrix.publish == 'publish' && github.ref == 'refs/heads/master'
+        if: matrix.publish == 'publish'
         working-directory: libraries/${{ matrix.project }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - name: Slack Notification
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ steps.publish.outcome }}
-          steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"        
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
 
       - name: Prepare Slack Message
         if: steps.publish.outcome == 'success'
@@ -234,9 +217,8 @@ jobs:
         run: |
           channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
           echo "::add-mask::$channel_id"
-          echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
 
-          header="Library *${{ matrix.project }}* version *${{ matrix.version }}* published to <https://www.npmjs.com/package/$(jq -r .name "libraries/${{ matrix.project }}/package.json")/v/${{ matrix.version }}|NPM>"
+          header="Library *${{ matrix.project }}* version *${{ matrix.version }}* published to <https://www.npmjs.com/package/$(jq -r .name "libraries/${{ matrix.project }}/package.json")/v/${{ matrix.version }}|NPM>\n<@$channel_id> FYI"
           echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
 
           context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1)>"
@@ -247,7 +229,7 @@ jobs:
         if: steps.slack-user.outcome == 'success'
         uses: slackapi/slack-github-action@v1.24.0
         with:
-          channel-id: ${{ env.SLACK_CHANNEL }}
+          channel-id: '#build'
           payload: |
             {
                 "blocks": [
@@ -364,11 +346,11 @@ jobs:
           from: monitoring@grok.datagrok.ai
           body: "Failed to update library ${{ matrix.project }} (${{ steps.commit.outputs.name }}) for packages ${{ steps.commit.outputs.changed }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           reply_to: monitoring@datagrok.ai
-      - name: Slack Failed Notification
-        if: failure()
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"        
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+#      - name: Slack Failed Notification
+#        if: failure()
+#        uses: act10ns/slack@v2.1.0
+#        with:
+#          status: ${{ job.status }}
+#          steps: ${{ toJson(steps) }}
+#          config: ".github/config/slack.yml"
+#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}

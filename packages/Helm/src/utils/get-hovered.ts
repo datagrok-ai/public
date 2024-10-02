@@ -2,17 +2,18 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {HelmType, PolymerType, Atom, Mol} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmType, PolymerType, Atom, Mol, ISeqMonomer, HelmMol, HelmAtom} from '@datagrok-libraries/bio/src/helm/types';
 
 import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 
-import {HelmMonomerPlacer, ISeqMonomer} from '../helm-monomer-placer';
+import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
+import {GAP_SYMBOL, GapOriginals, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+
+import {HelmMonomerPlacer} from '../helm-monomer-placer';
 
 export function getHoveredMonomerFromEditorMol(
-  argsX: number, argsY: number, gridCell: DG.GridCell, mol: Mol<HelmType>
-): ISeqMonomer | null {
-  let hoveredSeqMonomer: ISeqMonomer | null = null;
-
+  argsX: number, argsY: number, mol: HelmMol, cellHeight?: number
+): HelmAtom | null {
   /** @return {[number, number]} [atom, distance] */
   function getNearest(excluded: (number | undefined)[]): [number | undefined, number | undefined] {
     let atom: number | undefined = undefined;
@@ -34,18 +35,18 @@ export function getHoveredMonomerFromEditorMol(
   const [firstAtomI, firstDistance] = getNearest([]);
   const [secondAtomI, secondDistance] = getNearest([firstAtomI]);
 
+  let resAtom: HelmAtom | null = null;
   if (firstAtomI !== undefined && firstDistance !== undefined) {
     const firstAtom = mol.atoms[firstAtomI];
-    const firstSeqMonomer = getSeqMonomerFromHelmAtom(firstAtom);
     if (secondAtomI !== undefined && secondDistance !== undefined) {
       if (firstDistance < secondDistance * 0.45)
-        hoveredSeqMonomer = firstSeqMonomer;
+        resAtom = firstAtom;
     } else {
-      if (firstDistance < 0.35 * gridCell.bounds.height)
-        hoveredSeqMonomer = firstSeqMonomer;
+      if (cellHeight && firstDistance < 0.35 * cellHeight)
+        resAtom = firstAtom;
     }
   }
-  return hoveredSeqMonomer;
+  return resAtom;
 }
 
 export function getHoveredMonomerFallback(
@@ -79,23 +80,33 @@ export function getHoveredMonomerFallback(
   }
   left = (argsX >= sumLengths[left]) ? left : left - 1; // correct left to between sumLengths
   if (left >= 0)
-    hoveredSeqMonomer = getSeqMonomerFromHelm(allParts[0], allParts[left]);
+    hoveredSeqMonomer = getSeqMonomerFromHelm(left, allParts[left], allParts[0]);
   return hoveredSeqMonomer;
 }
 
-function getSeqMonomerFromHelmAtom(atom: Atom<HelmType>): ISeqMonomer {
-  const polymerType = helmTypeToPolymerType(atom.bio.type);
-  return {symbol: atom.elem, polymerType: polymerType};
+export function getSeqMonomerFromHelmAtom(atom: HelmAtom): ISeqMonomer {
+  const polymerType = helmTypeToPolymerType(atom.bio!.type);
+  const canonicalSymbol = atom.elem === GapOriginals[NOTATION.HELM] ? GAP_SYMBOL : atom.elem;
+  return {position: parseInt(atom.bio!.continuousId as string) - 1, symbol: atom.elem, biotype: atom.bio!.type};
 }
 
-function getSeqMonomerFromHelm(
-  helmPrefix: string, symbol: string
-): ISeqMonomer {
+/** Linear
+ * @deprecated
+ */
+function getSeqMonomerFromHelm(pos: number, symbol: string, helmPrefix: string): ISeqMonomer {
   let resSeqMonomer: ISeqMonomer | undefined = undefined;
   const polymerTypeList: PolymerType[] = ['RNA', 'PEPTIDE', 'CHEM', 'BLOB', 'G'];
   for (const polymerType of polymerTypeList) {
-    if (helmPrefix.startsWith(polymerType))
-      resSeqMonomer = {symbol: symbol, polymerType: polymerType};
+    if (helmPrefix.startsWith(polymerType)) {
+      let helmType: HelmType = HelmTypes.AA;
+      if (polymerType == 'RNA')
+        helmType = HelmTypes.NUCLEOTIDE;
+      else if (polymerType == 'PEPTIDE')
+        helmType = HelmTypes.AA;
+      else if (polymerType == 'CHEM')
+        helmType = HelmTypes.CHEM;
+      resSeqMonomer = {position: pos, symbol: symbol, biotype: helmType};
+    }
   }
   if (!resSeqMonomer)
     throw new Error(`Monomer not found for symbol = '${symbol}' and helmPrefix = '${helmPrefix}'.`);

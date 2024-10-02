@@ -67,8 +67,7 @@ export class OutliersSelectionViewer extends DG.JsViewer {
     const confirmOutliers =  () => {
       if (!groupsListGrid.dataFrame) return;
 
-      //@ts-ignore
-      inputData.col(IS_OUTLIER_COL_LABEL)?.markers.assign('true', DG.MARKER_TYPE.OUTLIER);
+      inputData.col(IS_OUTLIER_COL_LABEL)?.meta.markers.assign('true', DG.MARKER_TYPE.OUTLIER);
 
       const newRationale =
         groupsListGrid.dataFrame?.cell(groupsListGrid.dataFrame.rowCount-1, OUTLIER_RATIONALE_COL_LABEL).value;

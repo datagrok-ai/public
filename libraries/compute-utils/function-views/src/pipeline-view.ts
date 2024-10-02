@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {zipSync, Zippable} from 'fflate';
 import {Subject, BehaviorSubject, combineLatest, merge, Observable} from 'rxjs';
-import {debounceTime, filter, map, mapTo, startWith, switchMap, tap, withLatestFrom} from 'rxjs/operators';
+import {debounceTime, filter, map, mapTo, startWith, switchMap, take, tap, withLatestFrom} from 'rxjs/operators';
 import $ from 'cash-dom';
 import type ExcelJS from 'exceljs';
 import {historyUtils} from '../../history-utils';
@@ -14,9 +14,8 @@ import {FunctionView} from './function-view';
 import {RunComparisonView} from './run-comparison-view';
 import '../css/pipeline-view.css';
 import {serialize} from '@datagrok-libraries/utils/src/json-serialization';
-import {createPartialCopy, fcToSerializable, getStartedOrNull, isIncomplete} from '../../shared-utils/utils';
+import {createPartialCopy, deepCopy, fcToSerializable, getStartedOrNull, isIncomplete} from '../../shared-utils/utils';
 import {testPipeline} from '../../shared-utils/function-views-testing';
-import {deepCopy} from './shared/utils';
 
 export type StepState = {
   func: DG.Func,
@@ -117,11 +116,11 @@ export class PipelineView extends FunctionView {
         let name = `${getVisibleStepName(step)}>${initialName}`;
         if (name.length > 31)
           name = `${name.slice(0, 31)}`;
-        let i = 1;
-        while (wb.worksheets.some((sheet) => sheet.name === name)) {
+        let i = 2;
+        while (wb.worksheets.some((sheet) => sheet.name.toLowerCase() === name.toLowerCase())) {
           let truncatedName = `${getVisibleStepName(step)}>${initialName}`;
           if (truncatedName.length > (31 - `-${i}`.length))
-            truncatedName = `${initialName.slice(0, 31 - `-${i}`.length)}`;
+            truncatedName = `${truncatedName.slice(0, 31 - `-${i}`.length)}`;
           name = `${truncatedName}-${i}`;
           i++;
         }
@@ -254,6 +253,8 @@ export class PipelineView extends FunctionView {
       await this.onBeforeStepFuncCallApply(scriptWithId.stepScript.nqName, scriptCall, editorFunc);
       const view = await editorFunc.apply({'call': scriptCall}) as RichFunctionView;
 
+      await view.isReady.pipe(filter((v) => !!v), take(1)).toPromise();
+
       const backBtn = ui.button('Back', () => {}, 'Go to the previous step');
       $(backBtn).addClass('ui-btn-nav');
 
@@ -353,7 +354,6 @@ export class PipelineView extends FunctionView {
     });
     this.subs.push(blockedSub);
 
-
     await this.onFuncCallReady();
 
     this.isReady.next(true);
@@ -365,10 +365,8 @@ export class PipelineView extends FunctionView {
         const currentStep = this.findCurrentStep();
 
         if (currentStep && this.helpFiles[currentStep.func.nqName]) {
-          this.getHelpState().then((state) => {
-            if (state === 'opened')
-              this.showHelpWithDelay(currentStep);
-          });
+          if (this.getHelpState() === 'opened')
+            this.showHelpWithDelay(currentStep)
         }
       };
 
@@ -605,13 +603,13 @@ export class PipelineView extends FunctionView {
     return hb;
   }
 
-  private async getHelpState(): Promise<'closed' | 'opened'> {
-    const storedValue = await grok.dapi.userDataStorage.getValue(storageName, `${this.func.name}_help_state`);
+  private getHelpState(): 'closed' | 'opened' {
+    const storedValue = grok.userSettings.getValue(storageName, `${this.func.name}_help_state`);
     return storedValue === 'closed' ? 'closed' : 'opened';
   }
 
-  private async saveHelpState(state: 'closed' | 'opened') {
-    return grok.dapi.userDataStorage.postValue(storageName, `${this.func.name}_help_state`, state);
+  private saveHelpState(state: 'closed' | 'opened') {
+    grok.userSettings.add(storageName, `${this.func.name}_help_state`, state);
   }
 
   public override buildRibbonPanels(): HTMLElement[][] {
@@ -622,29 +620,22 @@ export class PipelineView extends FunctionView {
         await this.showHelpWithDelay(currentStep);
         this.saveHelpState('opened');
       }
-    });
+    }, 'Show help for this step');
 
     const updateInfoIconAndRibbons = () => {
       const currentStep = this.findCurrentStep();
-
-      const newRibbonPanels = [
-        [
-          ...super.buildRibbonPanels().flat(),
-          ...currentStep && this.steps[
-            currentStep.options?.customId ?? currentStep.func.nqName
-          ].options?.helpUrl ? [infoIcon]: [],
-        ],
-        ...currentStep ? currentStep.view.buildRibbonPanels(): [],
-      ];
-
-      this.setRibbonPanels(newRibbonPanels);
+      ui.setDisplay(infoIcon, !!(currentStep && this.helpFiles[currentStep.func.nqName]));
 
       if (currentStep && this.helpFiles[currentStep.func.nqName]) {
         if (grok.shell.windows.help.visible)
           this.showHelpWithDelay(currentStep);
       }
 
-      return newRibbonPanels;
+      this.setRibbonPanels([
+        ...this.getRibbonPanels().slice(0, 1),
+        ...currentStep ? currentStep.view.buildRibbonPanels(): [],
+        ...this.getRibbonPanels().length > 2 ? this.getRibbonPanels().slice(-1): [],
+      ]);
     };
 
     if (!this.isReady.value) {
@@ -674,7 +665,16 @@ export class PipelineView extends FunctionView {
       this.subs.push(tabSub, helpSub);
     }
 
-    const newRibbonPanels = updateInfoIconAndRibbons();
+    const currentStep = this.findCurrentStep();
+    const newRibbonPanels = [
+      [
+        ...super.buildRibbonPanels().flat(),
+        infoIcon,
+      ],
+      ...currentStep ? currentStep.view.buildRibbonPanels(): [],
+    ];
+    this.setRibbonPanels(newRibbonPanels);
+    updateInfoIconAndRibbons();
 
     return newRibbonPanels;
   }
@@ -683,7 +683,7 @@ export class PipelineView extends FunctionView {
     let callCopy = deepCopy(callToSave);
     await this.onBeforeSaveRun(callCopy);
 
-    if (isIncomplete(callToSave)) {
+    if (isIncomplete(callCopy)) {
       // Used to reset 'started' field
       callCopy = await createPartialCopy(callToSave);
     }

@@ -56,7 +56,8 @@ export async function getEncodedSeqSpaceCol(
       monomerHashToMatrixMap[charCodeMap.get(key)!] = value;
     });
     // sets distance function args in place.
-    options = {scoringMatrix: monomerRes.scoringMatrix, alphabetIndexes: monomerHashToMatrixMap};
+    const maxLength = encList.reduce((acc, val) => Math.max(acc, val.length), 0);
+    options = {scoringMatrix: monomerRes.scoringMatrix, alphabetIndexes: monomerHashToMatrixMap, maxLength};
   }
   return {seqList: encList, options};
 }

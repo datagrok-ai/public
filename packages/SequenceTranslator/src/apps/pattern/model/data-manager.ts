@@ -3,7 +3,8 @@ import * as grok from 'datagrok-api/grok';
 
 import {
   EXAMPLE_PATTERN_CONFIG,
-  GRAPH_SETTINGS_KEY_LIST as GKL, LEGEND_SETTINGS_KEYS as L, OTHER_USERS, PATTERN_RECORD_KEYS as R, STORAGE_NAME
+  GRAPH_SETTINGS_KEY_LIST as GKL, LEGEND_SETTINGS_KEYS as L,
+  OTHER_USERS, PATTERN_RECORD_KEYS as R, STORAGE_NAME, DATE_KEYS as D
 } from './const';
 import {
   PatternConfigRecord, PatternConfiguration, PatternExistsError, PatternNameExistsError, RawPatternRecords
@@ -76,7 +77,7 @@ export class DataManager {
     return patternHash;
   }
 
-  async getPatternRecord(hash: string): Promise<PatternConfigRecord | null> {
+  async getPatternRecordByHash(hash: string): Promise<PatternConfigRecord | null> {
     if (hash === null || hash === '')
       return null;
     try {
@@ -91,7 +92,7 @@ export class DataManager {
   async getPatternConfig(hash: string | null): Promise<PatternConfiguration | null> {
     if (hash === '' || hash === null)
       return null;
-    const record = await this.getPatternRecord(hash);
+    const record = await this.getPatternRecordByHash(hash);
     const config = record === null ? null : record[R.PATTERN_CONFIG] as PatternConfiguration;
     //WARNING! Next two rows is to keep compatibility with previous versions of config (with missing NUCLEOTIDES_WITH_MODIFICATION_LABELS)
     if (config && !config[L.NUCLEOTIDES_WITH_MODIFICATION_LABELS])
@@ -147,13 +148,13 @@ export class DataManager {
     return hash;
   }
 
-  private async getRecordFromPattern(patternConfig: PatternConfiguration): Promise<string> {
-    const record = {
+  private async getRecordFromPattern(
+    patternConfig: PatternConfiguration
+  ): Promise<PatternConfigRecord> {
+    return {
       [R.PATTERN_CONFIG]: patternConfig,
       [R.AUTHOR_ID]: await grok.dapi.users.current().then((u) => u.id),
     };
-    const stringifiedRecord = JSON.stringify(record);
-    return stringifiedRecord;
   }
 
   private getHash(patternConfig: PatternConfiguration): string {
@@ -176,13 +177,21 @@ export class DataManager {
       const patternName = patternConfig[L.PATTERN_NAME];
       this.validatePatternNameUniqueness(patternName);
 
-      const record = await this.getRecordFromPattern(patternConfig);
+      const recordObj = await this.getRecordFromPattern(patternConfig);
+      const timestamp = new Date().toISOString();
+      recordObj[R.DATE] = {
+        [D.CREATE]: timestamp,
+        [D.MODIFY]: timestamp,
+      };
+      const record = JSON.stringify(recordObj);
       await grok.dapi.userDataStorage.postValue(STORAGE_NAME, hash, record, false);
       this.currentUserPatternNameToHash.set(patternName, hash);
 
       eventBus.selectAuthor(this.getCurrentUserAuthorshipCategory());
 
       eventBus.updatePatternList();
+      eventBus.requestPatternLoad(hash);
+      eventBus.updateUrlState(hash);
     } catch (e) {
       if (e instanceof PatternNameExistsError || e instanceof PatternExistsError)
         throw e;
@@ -191,17 +200,33 @@ export class DataManager {
     }
   }
 
-  async overwritePatternInUserStorage(
+  async overwriteExistingPatternInUserStorage(
     eventBus: EventBus
   ): Promise<void> {
     const patternConfig = eventBus.getPatternConfig();
-    const hash = this.getHash(patternConfig);
     const patternName = patternConfig[L.PATTERN_NAME];
-    const record = await this.getRecordFromPattern(patternConfig);
-    await grok.dapi.userDataStorage.postValue(STORAGE_NAME, hash, record, false);
-    this.currentUserPatternNameToHash.set(patternName, hash);
-    // eventBus.selectUser(this.getCurrentUserAuthorshipCategory());
-    eventBus.updatePatternList();
+    const oldHash = this.currentUserPatternNameToHash.get(patternName);
+
+    if (oldHash === undefined)
+      throw new Error(`Old hash is undefined`);
+    const newHash = this.getHash(patternConfig);
+    const newRecordObj = await this.getRecordFromPattern(patternConfig);
+    const timestamp = new Date().toISOString();
+    newRecordObj[R.DATE] = {
+      [D.MODIFY]: timestamp,
+    };
+    const oldPattern = await grok.dapi.userDataStorage.getValue(STORAGE_NAME, oldHash, false);
+    const oldPatternsRecord = JSON.parse(oldPattern) as PatternConfigRecord;
+    if (oldPatternsRecord[R.DATE] !== undefined && oldPatternsRecord[R.DATE][D.CREATE] != undefined)
+      newRecordObj[R.DATE][D.CREATE] = oldPatternsRecord[R.DATE][D.CREATE];
+
+    const newRecord = JSON.stringify(newRecordObj);
+    await grok.dapi.userDataStorage.postValue(STORAGE_NAME, newHash, newRecord, false);
+    await grok.dapi.userDataStorage.remove(STORAGE_NAME, oldHash, false);
+
+    this.currentUserPatternNameToHash.set(patternName, newHash);
+    eventBus.requestPatternLoad(newHash);
+    eventBus.updateUrlState(newHash);
   }
 
   async deletePattern(

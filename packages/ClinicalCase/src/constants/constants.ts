@@ -1,7 +1,5 @@
 import * as DG from "datagrok-api/dg";
 
-export const VIEWS = [];
-
 export const ALT = 'ALT';
 export const AST = 'AST';
 export const BILIRUBIN = 'BLN';

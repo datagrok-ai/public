@@ -2,7 +2,7 @@ const path = require('path');
 
 module.exports = {
   mode: 'development',
-  entry: {'grok': './grok.ts', 'ui': './ui.ts', 'DG': './dg.ts'},
+  entry: {'DG': './dg.ts'},
   devtool: 'source-map',
   resolve: {
     extensions: ['.ts', '.tsx', '.js']
@@ -57,19 +57,8 @@ module.exports = {
   },
   externals: {'openchemlib/full.js': 'OCL', 'rxjs': 'rxjs', 'rxjs/operators': 'rxjs.operators'},
   plugins: [],
-  optimization: {
-    splitChunks: {
-      cacheGroups: {
-        api: {
-          chunks: 'initial',
-          name: 'common',
-          enforce: true
-        }
-      }
-    }
-  },
   output: {
-    filename: 'js-api-[name].js',
+    filename: 'js-api.js',
     library: '[name]',
     libraryTarget: 'var',
     path: path.resolve(__dirname, '../../xamgle/web/js/api'),

@@ -5,6 +5,7 @@ import { study } from "../clinical-study";
 import { ValidationHelper } from "../helpers/validation-helper";
 import { updateDivInnerHTML } from "../utils/utils";
 import { createValidationErrorsDiv, getRequiredColumnsByView } from "../utils/views-validation-utils";
+import { VIEWS } from "../package";
 
 export class ClinicalCaseViewBase extends DG.ViewBase {
 
@@ -45,6 +46,14 @@ export class ClinicalCaseViewBase extends DG.ViewBase {
     accIcon.className = 'grok-icon svg-icon svg-view-layout';
     acc.addTitle(ui.span([accIcon, ui.label(`${title ?? panelName}`)]));
     return acc;
+  }
+
+  detach(): void {
+    super.detach();
+    const index = VIEWS.findIndex((it) => it.name === this.name);
+    if (index > -1) {
+      VIEWS.splice(index, 1);
+    }
   }
 
 }

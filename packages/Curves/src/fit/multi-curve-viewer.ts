@@ -1,7 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 
-import {CellRenderViewer} from './cell-render-viewer';
+import {CellRenderViewer} from '@datagrok-libraries/utils/src/viewers/cell-render-viewer';
 import {FitChartCellRenderer, mergeChartOptions, mergeSeries} from './fit-renderer';
 import {getChartData, mergeProperties} from './fit-renderer';
 import {FitChartData, fitChartDataProperties, IFitChartData, IFitChartOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
@@ -13,6 +14,11 @@ import {FitConstants} from './const';
 
 const ERROR_CLASS = 'd4-viewer-error';
 
+@grok.decorators.viewer({
+  name: 'MultiCurveViewer',
+  description: 'A viewer that superimposes multiple in-cell curves on one chart',
+  icon: 'icons/multi-curve-viewer.png',
+})
 export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
   [index: string]: any;
   curvesColumnNames?: string[] = [];

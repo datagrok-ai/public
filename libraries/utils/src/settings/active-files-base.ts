@@ -2,6 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import wu from 'wu';
+
 export type FilesSettings = {
   excluded: string[],
   explicit: string[]
@@ -13,7 +15,8 @@ export class ActiveFiles {
   protected constructor(
     public readonly path: string,
     public readonly userStorageName: string,
-    /**file extension to filter files in file open dialog*/public readonly ext: string = '.csv'
+    /**file extension to filter files in file open dialog*/ public readonly ext: string = '.csv',
+    protected readonly options?: { onValueChanged: (value: string[]) => void }
   ) {
     if ('/' !== this.path[this.path.length - 1]) this.path += '/';
     if ('.' !== this.ext[0]) this.ext = '.' + this.ext;
@@ -23,7 +26,7 @@ export class ActiveFiles {
     if (this.settings)
       return this.settings;
 
-    const resStr: string = await grok.dapi.userDataStorage.getValue(this.userStorageName, 'Settings', true);
+    const resStr: string | undefined = grok.userSettings.getValue(this.userStorageName, 'Settings');
     const res = resStr ? JSON.parse(resStr) : {excluded: [], explicit: []};
 
     res.explicit = res.explicit instanceof Array ? res.explicit : [];
@@ -32,9 +35,9 @@ export class ActiveFiles {
     return this.settings = res;
   }
 
-  async setUserSettings(value: FilesSettings): Promise<void> {
+  setUserSettings(value: FilesSettings) {
     this.settings = value;
-    await grok.dapi.userDataStorage.postValue(this.userStorageName, 'Settings', JSON.stringify(value), true);
+    grok.userSettings.add(this.userStorageName, 'Settings', JSON.stringify(value));
   }
 
   protected async getAllAvailable(): Promise<string[]> {
@@ -54,12 +57,18 @@ export class ActiveFiles {
     return (await this.getAllAvailable()).filter((available) => !settings.excluded.includes(available));
   }
 
+  public setActive(value: string[]): void {
+    const valueSet = new Set(value);
+    for (const [file, input] of this.inputs!.entries()) {
+      input.value = valueSet.has(file);
+    }
+  }
+
   protected createInput(available: string, isChecked: boolean): DG.InputBase<boolean> {
-    const cb = ui.boolInput(
-      available,
-      isChecked,
-      (isChecked: boolean) => this.updateSelectionStatus(available, isChecked)
-    ) as DG.InputBase<boolean>;
+    const cb = ui.input.bool(available, {
+      value: isChecked,
+      onValueChanged: (value) => this.updateSelectionStatus(available, value)
+    }) as DG.InputBase<boolean>;
     cb.addOptions(ui.button(ui.iconFA('trash'), () => {
       const remDialog = ui.dialog({title: 'Warning'}).add(ui.divText(`Delete file '${available}'?`)).onOK(() => {
         cb.root.remove();
@@ -73,6 +82,7 @@ export class ActiveFiles {
   }
 
   protected async getInputs(): Promise<DG.InputBase<boolean>[]> {
+    this.inputs = new Map<string, DG.InputBase<boolean>>();
     const all = await this.getAllAvailable();
     const active = await this.getActive();
     const inputs: DG.InputBase<boolean>[] = new Array<DG.InputBase<boolean>>(all.length);
@@ -80,53 +90,66 @@ export class ActiveFiles {
     for (let i = 0; i < all.length; i++) {
       const isChecked = active.includes(all[i]);
       inputs[i] = this.createInput(all[i], isChecked);
+      this.inputs.set(all[i], inputs[i]);
     }
 
+    this.fireOnValueChanged();
     return inputs;
   }
 
   public async getForm(): Promise<HTMLDivElement> {
     const inputs = await this.getInputs();
     const inputsDiv = ui.divV(inputs);
-    const formDiv = ui.divV( [
+    const formDiv = ui.divV([
       inputsDiv,
       ui.button('ADD', async () => {
         let newAvailable: string = '';
         newAvailable = await this.getNewAvailable();
-        if (newAvailable !== '')
-          inputsDiv.append(this.createInput(newAvailable, true).root);
+        if (newAvailable !== '') {
+          const newInput = this.createInput(newAvailable, true);
+          inputsDiv.append(newInput.root);
+          this.inputs!.set(newAvailable, newInput);
+          this.fireOnValueChanged();
+        }
       })
     ]);
 
     return formDiv;
   }
 
-  private async updateSelectionStatus(available: string, newisChecked: boolean): Promise<void> {
+  protected inputs: Map<string, DG.InputBase<boolean>> | null = null;
+
+  protected fireOnValueChanged(): void {
+    this.options?.onValueChanged(
+      wu(this.inputs!.entries()).filter(([_, i]) => i.value).map(([a, _]) => a).toArray());
+  }
+
+  private async updateSelectionStatus(available: string, newIsChecked: boolean): Promise<void> {
     const settings = await this.getUserSettings();
-    const oldisChecked = !settings.excluded.includes(available);
-    if (oldisChecked === newisChecked)
+    const oldIsChecked = !settings.excluded.includes(available);
+    if (oldIsChecked === newIsChecked)
       return;
 
-    if (newisChecked) {
+    if (newIsChecked) {
       const index = settings.excluded.indexOf(available);
       if (index > -1)
         settings.excluded.splice(index, 1);
     } else
       settings.excluded.push(available);
+    this.fireOnValueChanged();
 
     this.setUserSettings(settings);
   }
 
   private async availableRemove(available: string): Promise<void> {
+    this.inputs!.delete(available);
+    this.fireOnValueChanged();
     const settings = await this.getUserSettings();
     const index = settings.excluded.indexOf(available);
     if (index > -1)
       settings.excluded.splice(index, 1);
-
-    await Promise.all([
-      this.setUserSettings(settings),
-      grok.dapi.files.delete(this.path + available)
-    ]);
+    this.setUserSettings(settings);
+    await grok.dapi.files.delete(this.path + available);
     grok.shell.info(`File ${available} successfully deleted`);
   }
 

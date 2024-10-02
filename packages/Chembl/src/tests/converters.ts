@@ -29,7 +29,7 @@ category('Converting queries', () => {
 
     const smiles3 = await grok.functions.call(`${_package.name}:chemblIdToSmiles`, {'id': 'CHEMBL6365'});
     expect(smiles3, 'O=c1oc2ccccc2c2cc(O)c(O)cc12');
-  });
+  }, {stressTest: true});
 
   test('converter Molregno to Smiles', async () => {
     const smiles = await grok.functions.call(`${_package.name}:molregnoToSmiles`, {'molregno': '1824756'});
@@ -40,7 +40,7 @@ category('Converting queries', () => {
 
     const smiles3 = await grok.functions.call(`${_package.name}:molregnoToSmiles`, {'molregno': '1824758'});
     expect(smiles3, 'CCCCCCCCCOc1ccc2c(c1F)C(=O)NCCN2');
-  });
+  }, {stressTest: true});
 
   test('converter Name to Smiles', async () => {
     const smiles = await grok.functions.call(`${_package.name}:nameToSmiles`,
@@ -54,7 +54,7 @@ category('Converting queries', () => {
     const smiles3 = await grok.functions.call(`${_package.name}:nameToSmiles`,
       {'compoundName': '2-{4-[(4-Chloro-phenyl)-hydroxy-methyl]-3,5-dimethyl-phenyl}-2H-[1,2,4]triazine-3,5-dione'});
     expect(smiles3, 'Cc1cc(-n2ncc(=O)[nH]c2=O)cc(C)c1C(O)c1ccc(Cl)cc1');
-  });
+  }, {stressTest: true});
 
   test('converter InchiKey to Chembl', async () => {
     const csvDf1 = `key,order
@@ -65,7 +65,7 @@ category('Converting queries', () => {
     const expectArr = ['CHEMBL6329', 'CHEMBL265667', 'CHEMBL6328', 'CHEMBL6362'];
 
     await compare(csvDf1, expectArr, `${_package.name}:inchiKeyToChembl`, 'chembl_id');
-  });
+  }, {stressTest: true});
 
   test('converter InchiKey to Smiles', async () => {
     const csvDf1 = `key,order
@@ -78,7 +78,7 @@ category('Converting queries', () => {
       'Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccc(C#N)cc1', 'Cc1ccc(C(=O)c2ccc(-n3ncc(=O)[nH]c3=O)cc2)cc1'];
 
     await compare(csvDf1, expectArr, `${_package.name}:inchiKeyToSmiles`, 'canonical_smiles');
-  });
+  }, {stressTest: true});
 
   test('converter InchiKey to Inchi', async () => {
     const csvDf1 = `key,order
@@ -92,7 +92,7 @@ category('Converting queries', () => {
     'InChI=1S/C17H13N3O3/c1-11-2-4-12(5-3-11)16(22)13-6-8-14(9-7-13)20-17(23)19-15(21)10-18-20/h2-10H,1H3,(H,19,21,23)'];
 
     await compare(csvDf1, expectArr, `${_package.name}:inchiKeyToInchi`, 'standard_inchi');
-  });
+  }, {stressTest: true});
 
   test('converter Chembl to Smiles', async () => {
     const csvDf1 = `key, order
@@ -109,7 +109,7 @@ category('Converting queries', () => {
       'Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccc(Cl)cc1'];
 
     await compare(csvDf1, expectArr, `${_package.name}:chemblToSmiles`, 'canonical_smiles');
-  });
+  }, {stressTest: true});
 
   test('converter Chembl to Inchi', async () => {
     const csvDf1 = `key, order
@@ -126,7 +126,7 @@ category('Converting queries', () => {
       'InChI=1S/C17H12ClN3O3/c1-10-8-13(21-17(24)20-15(22)9-19-21)6-7-14(10)16(23)11-2-4-12(18)5-3-11/h2-9H,1H3,(H,20,22,24)'];
 
     await compare(csvDf1, expectArr, `${_package.name}:chemblToInchi`, 'standard_inchi');
-  });
+  }, {stressTest: true});
   test('converter Chembl to InchiKey', async () => {
     const csvDf1 = `key, order
                   CHEMBL6329,1
@@ -139,7 +139,7 @@ category('Converting queries', () => {
 
 
     await compare(csvDf1, expectArr, `${_package.name}:chemblToInchiKey`, 'standard_inchi_key');
-  });
+  }, {stressTest: true});
 
   test('chemblIdToSmiles', async () => {
     const query = 'Chembl:ChemblIdToSmiles';
@@ -149,7 +149,7 @@ category('Converting queries', () => {
       'CC(C)(CCCOc1ccc(OCCCC(C)(C)C(=O)O)c(-c2ccccc2Cl)c1)C(=O)O');
     expect(await grok.functions.call(`${query}`, {'id': 'CHEMBL6781'}), 'CCOC(=O)c1cc2ccccn2c(=O)n1');
     expect(await grok.functions.call(`${query}`, {'id': 'CHEMBL9812'}), 'COCCOC1(C2=NCCN2)COc2ccccc2O1');
-  });
+  }, {stressTest: true});
 
   test('molregnoToSmiles', async () => {
     const query = 'Chembl:molregnoToSmiles';
@@ -160,5 +160,5 @@ category('Converting queries', () => {
     expect(await grok.functions.call(`${query}`, {'molregno': 6190}),
       'Cc1nn(CCCN2CCN(c3cccc(Cl)c3)CC2)c(=O)c2noc(C)c12');
     expect(await grok.functions.call(`${query}`, {'molregno': 5872}), 'N[C@@H](Cc1ccccc1)C(O)[C@@H](N)Cc1ccccc1');
-  });
+  }, {stressTest: true});
 });

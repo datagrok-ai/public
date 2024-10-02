@@ -10,35 +10,22 @@ import { ViewHandler } from './view-handler';
 import { TestTrack } from './test-track/app';
 import { ReportsWidget } from "./widgets/reports-widget";
 import { ReportingApp } from "./reporting/reporting_app";
-import { TestAnalysesManager } from './test-analysis/testAnalysesManager';
-import { TestAnalysisApp } from './test-analysis/app';
-
+import { TestAnalysisManager } from './test-analysis/test-analysis-manager'; 
 import { getDate } from './utils';
 import dayjs from "dayjs";
 
 
 export const _package = new DG.Package();
 
-
-//name: Test Analysis
-//tags: app
-//meta.url: /tests/analysis
-//output: view v
-export async function TestAnalysis(): Promise<DG.ViewBase| null > { 
-  const handler = new TestAnalysisApp();
-  await handler.init();
-  return handler.view; 
-}
-
 //name: TestsList 
 //meta.url: /tests/list
 //output: dataframe df
 export async function TestsList(): Promise<DG.DataFrame| undefined> { 
-  const pacakageTests = await TestAnalysesManager.collectPackageTests();
+  const pacakageTests = await TestAnalysisManager.collectPackageTests();
   const packageTestsListMapped = pacakageTests.map((elem) => {
     return { 'name':  "test-package " + elem.packageName + ": " + elem.test.category + ": " + elem.test.name };
   });
-  const manualTest = await TestAnalysesManager.collectManualTestNames();
+  const manualTest = await TestAnalysisManager.collectManualTestNames();
   const manualTestsListMapped = manualTest.map((elem) => {
     return { 'name':  "test-manual " + elem };
   });
@@ -51,41 +38,22 @@ export async function TestsList(): Promise<DG.DataFrame| undefined> {
 //output: dataframe df
 export async function TestsListJoined(): Promise<DG.DataFrame| undefined> { 
   
-  const pacakageTests = await TestAnalysesManager.collectPackageTests();
+  const pacakageTests = await TestAnalysisManager.collectPackageTests();
   const packageTestsListMapped = pacakageTests.map((elem) => {
-    return { 'name':  "test-package " + elem.packageName + ": " + elem.test.category + ": " + elem.test.name };
+    return { 'type':  "package ", 'test': elem.packageName + ": " + elem.test.category + ": " + elem.test.name };
   });
-  const manualTest = await TestAnalysesManager.collectManualTestNames();
+  const manualTest = await TestAnalysisManager.collectManualTestNames();
   const manualTestsListMapped = manualTest.map((elem) => {
-    return { 'name':  "test-manual " + elem };
+    return { 'type':  "manual ", 'test': 'Unknown: ' + elem };
   });
   const resultTestsList = DG.DataFrame.fromObjects(manualTestsListMapped.concat(packageTestsListMapped));
 
-  const builds: DG.DataFrame = await grok.functions.call('UsageAnalysis:Builds'); 
-  const id = builds.get('id', 0); 
+  // const builds: DG.DataFrame = await grok.functions.call('UsageAnalysis:Builds'); 
+  // const id = builds.get('name', 0); 
 
-  const tests = await grok.functions.call('UsageAnalysis:getTestStatusesAcordingDF', { 'buildId': id, 'testslist': resultTestsList });
-  return tests;
-}
-
-
-//name: BuildTests
-//meta.runOnOpen: false
-//meta.runOnInput: false
-//input: string build {choices: UsageAnalysis:Builds}
-//output: dataframe df
-export async function BuildTests(build: any) {
-  const builds: DG.DataFrame = await grok.functions.call('UsageAnalysis:Builds');
-  let date = dayjs();
-  let next = dayjs();
-  for (let i = 0; i < builds.rowCount; i++) {
-    if (builds.get('text', i) == build) {
-      date = builds.get('build', i);
-      next = builds.get('next', i);
-      break;
-    }
-  }
-  return await grok.functions.call('UsageAnalysis:BuildTestsData', {'dateStart': date, 'dateEnd': next});
+  // const tests = await grok.functions.call('UsageAnalysis:getTestStatusesAcordingDF', { 'buildId': id, 'testslist': resultTestsList });
+  grok.shell.addTableView(resultTestsList!);
+  return resultTestsList;
 }
 
 
@@ -93,7 +61,7 @@ export async function BuildTests(build: any) {
 //input: datetime date 
 //output: dataframe df
 export async function TestAnalysisReportForCurrentDay(date: any) {
-  const tests = await TestAnalysesManager.collectPackageTests();
+  const tests = await TestAnalysisManager.collectPackageTests();
   const testsListMapped = tests.map((elem) => {
     return { 'name':  "test-package " + elem.packageName + ": " + elem.test.category + ": " + elem.test.name };
   });
@@ -105,6 +73,7 @@ export async function TestAnalysisReportForCurrentDay(date: any) {
 //name: Usage Analysis
 //tags: app
 //meta.url: /
+//meta.browsePath: Admin
 //input: string path {isOptional: true; meta.url: true}
 //input: string date {isOptional: true}
 //input: string groups {isOptional: true}
@@ -120,16 +89,20 @@ export async function usageAnalysisApp(path?: string, date?: string, groups?: st
 //name: Test Track
 //tags: app
 //meta.url: /tests/manager
+//meta.browsePath: Admin
 //input: string path {isOptional: true; meta.url: true}
 //input: map params {isOptional: true}
 export function testTrackApp(): void {
   if (!grok.shell.dockManager.findNode(TestTrack.getInstance().root))
     TestTrack.getInstance().init();
+  else
+    TestTrack.getInstance().reopen(); 
 }
 
 //name: Reports
 //tags: app
 //meta.url: /reports
+//meta.browsePath: Admin
 //input: string path {isOptional: true; meta.url: true}
 //input: map params {isOptional: true}
 //output: view v
@@ -150,18 +123,15 @@ export async function reportsAppTreeBrowser(treeNode: DG.TreeViewGroup, browseVi
 //output: widget result
 //tags: dashboard
 //test: usageWidget()
-export function usageWidget(): DG.Widget {
-  return new UsageWidget();
+export async function usageWidget(): Promise<DG.Widget | null> {
+  return await hasAccess() ? new UsageWidget() : null;
 }
 
 //output: widget result
 //tags: dashboard
 //test: reportsWidget()
 export async function reportsWidget(): Promise<DG.Widget | null> {
-  const userGroup = await grok.dapi.groups.find(DG.User.current().group.id);
-  if (userGroup.memberships.some((g) => g.friendlyName === 'Developers' || g.friendlyName === 'Administrators'))
-    return new ReportsWidget();
-  return null;
+  return await hasAccess() ? new ReportsWidget() : null;
 }
 
 //name: packageUsageWidget
@@ -197,40 +167,30 @@ export function describeCurrentObj(): void {
 }
 
 //name: Create JIRA ticket
-//description: Creates JIRA ticket using current error log
-//tags: panel, widgets
-//input: string msg {semType: ErrorMessage}
-//output: widget result
-//condition: true
-export function createJiraTicket(msg: string): DG.Widget {
-  const root = ui.div();
-
-  const summary = ui.stringInput('Summary', '');
-  const description = ui.stringInput('Description', msg);
-
-  const button = ui.bigButton('CREATE', () => {
-    grok.data.query('Vnerozin:JiraCreateIssue', {
-      'createRequest': JSON.stringify({
-        'fields': {
-          'project': {
-            'key': 'GROK',
-          },
-          'summary': summary.value,
-          'description': description.value,
-          'issuetype': {
-            'name': 'Bug',
-          },
+//description: Creates JIRA ticket using current error log  
+export function createJiraTicket(msg: string){ 
+  grok.data.query('JiraCreateIssue', {
+    'createRequest': JSON.stringify({
+      'fields': {
+        'project': {
+          'key': 'GROK',
         },
-      }),
-      'updateHistory': false,
-    }).then((t) => {
-      grok.shell.info('Created');
-    });
-  });
-  button.style.marginTop = '12px';
+        'summary': 'test',
+        'description':'',
+        'issuetype': {
+          'name': 'Bug',
+        },
+      },
+    }),
+    'updateHistory': false,
+  }).then((t) => {
+    grok.shell.info('Created');
+    console.log(t);
+  });  
+}
 
-  root.appendChild(ui.inputs([summary, description]));
-  root.appendChild(button);
-
-  return new DG.Widget(root);
+async function hasAccess(): Promise<boolean> {
+  const userGroup = await grok.dapi.groups.find(DG.User.current().group.id);
+  return userGroup.memberships.some((g) => g.friendlyName === 'Developers' || g.friendlyName === 'Administrators')
+      || userGroup.adminMemberships.some((g) => g.friendlyName === 'Developers' || g.friendlyName === 'Administrators');
 }

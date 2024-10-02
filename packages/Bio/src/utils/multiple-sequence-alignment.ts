@@ -103,13 +103,13 @@ export async function runKalign(srcCol: DG.Column<string>, isAligned: boolean = 
   }
 
   // units
-  const srcUnits = srcCol.getTag(DG.TAGS.UNITS);
+  const srcUnits = srcCol.meta.units;
   //aligned
   const tgtAligned = ALIGNMENT.SEQ_MSA;
   //alphabet
   const srcAlphabet = srcCol.getTag(bioTAGS.alphabet);
 
-  tgtCol.setTag(DG.TAGS.UNITS, srcUnits);
+  tgtCol.meta.units = srcUnits;
   tgtCol.setTag(bioTAGS.aligned, tgtAligned);
   tgtCol.setTag(bioTAGS.alphabet, srcAlphabet);
   tgtCol.semType = DG.SEMTYPE.MACROMOLECULE;

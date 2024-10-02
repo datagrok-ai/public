@@ -5,7 +5,6 @@
 5. On **Actions** tab on **Toolbox**, click **Run query…** .
 6. On the top toolbar, click the **Save** button.
 
-* Repeat scenarios for queries to different DB sources (Oracle, MariaDB, MySQLm MS SQL)
 ---
 {
   "order": 2

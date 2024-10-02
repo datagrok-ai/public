@@ -57,7 +57,7 @@ import {ClusterMaxActivityViewer, IClusterMaxActivity} from './viewers/cluster-m
 import {MCL_OPTIONS_TAG, MCLSerializableOptions} from '@datagrok-libraries/ml/src/MCL';
 
 export enum VIEWER_TYPE {
-  MONOMER_POSITION = 'Monomer-Position',
+  SEQUENCE_VARIABILITY_MAP = 'Sequence Variability Map',
   MOST_POTENT_RESIDUES = 'Most Potent Residues',
   LOGO_SUMMARY_TABLE = 'Logo Summary Table',
   DENDROGRAM = 'Dendrogram',
@@ -147,7 +147,7 @@ export class PeptidesModel {
         this._analysisView = grok.shell.addTableView(this.df);
     }
 
-    if (this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1' && !this._layoutEventInitialized)
+    if (this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1' && !this._layoutEventInitialized && !grok.shell.isInDemo)
       grok.shell.v = this._analysisView;
 
 
@@ -266,7 +266,7 @@ export class PeptidesModel {
         break;
       case 'monomerPosition':
         this.settings!.showMonomerPosition ? this.addMonomerPosition() :
-          this.closeViewer(VIEWER_TYPE.MONOMER_POSITION);
+          this.closeViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP);
         break;
       case 'mostPotentResidues':
         this.settings!.showMostPotentResidues ? this.addMostPotentResidues() :
@@ -422,11 +422,11 @@ export class PeptidesModel {
     }
 
     // Monomer-Position viewer selection overview
-    const trueMPViewer = trueModel.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
+    const trueMPViewer = trueModel.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition | null;
     const selectedMonomerPositions = getSelectionString(trueMPViewer?.invariantMapSelection ?? {});
     const selectedMutationCliffs = getSelectionString(trueMPViewer?.mutationCliffsSelection ?? {});
     if (selectedMonomerPositions.length !== 0 || selectedMutationCliffs.length !== 0)
-      selectionDescription.push(ui.h1('Monomer-Position viewer selection'));
+      selectionDescription.push(ui.h1('Sequence Variabily Map viewer selection'));
 
 
     if (selectedMonomerPositions.length !== 0)
@@ -775,7 +775,7 @@ export class PeptidesModel {
     };
 
     addInvariantMapSelection(this.webLogoSelection, this.monomerPositionStats);
-    const mpViewer = this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
+    const mpViewer = this.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition | null;
     addInvariantMapSelection(mpViewer?.invariantMapSelection ?? {}, mpViewer?.monomerPositionStats ?? null);
 
     // Mutation cliffs selection
@@ -1159,12 +1159,12 @@ export class PeptidesModel {
       activityTarget: C.ACTIVITY_TARGET.HIGH,
     };
     const monomerPosition = await this.df.plot
-      .fromType(VIEWER_TYPE.MONOMER_POSITION, viewerProperties) as MonomerPosition;
+      .fromType(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP, viewerProperties) as MonomerPosition;
     const mostPotentResidues = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
     const dm = this.analysisView.dockManager;
     const [dockType, refNode, ratio] = mostPotentResidues === null ? [DG.DOCK_TYPE.DOWN, null, undefined] :
       [DG.DOCK_TYPE.LEFT, this.findViewerNode(VIEWER_TYPE.MOST_POTENT_RESIDUES), 0.7];
-    dm.dock(monomerPosition, dockType, refNode, VIEWER_TYPE.MONOMER_POSITION, ratio);
+    dm.dock(monomerPosition, dockType, refNode, VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP, ratio);
   }
 
   /**
@@ -1182,10 +1182,10 @@ export class PeptidesModel {
     };
     const mostPotentResidues =
       await this.df.plot.fromType(VIEWER_TYPE.MOST_POTENT_RESIDUES, viewerProperties) as MostPotentResidues;
-    const monomerPosition = this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
+    const monomerPosition = this.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition | null;
     const dm = this.analysisView.dockManager;
     const [dockType, refNode, ratio] = monomerPosition === null ? [DG.DOCK_TYPE.DOWN, null, undefined] :
-      [DG.DOCK_TYPE.RIGHT, this.findViewerNode(VIEWER_TYPE.MONOMER_POSITION), 0.3];
+      [DG.DOCK_TYPE.RIGHT, this.findViewerNode(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP), 0.3];
     dm.dock(mostPotentResidues, dockType, refNode, VIEWER_TYPE.MOST_POTENT_RESIDUES, ratio);
   }
 
@@ -1260,7 +1260,7 @@ export class PeptidesModel {
     this._mclCols = [];
     const seqCol = this.df.getCol(this.settings!.sequenceColumnName!);
     this.settings!.mclSettings ??= new type.MCLSettings();
-    const mclParams = this.settings?.mclSettings;
+    const mclParams = this.settings!.mclSettings;
     let counter = 0;
     const addedColCount = 5; // embedx, embedy, cluster, cluster size and connectivity count
     const columnAddedSub = this.df.onColumnsAdded.subscribe((colArgs: DG.ColumnsArgs) => {
@@ -1303,9 +1303,22 @@ export class PeptidesModel {
       DistanceAggregationMethods.MANHATTAN, [bioPreprocessingFunc], [{
         gapOpen: mclParams!.gapOpen, gapExtend: mclParams!.gapExtend,
         fingerprintType: mclParams!.fingerprintType,
-      }], mclParams!.threshold, mclParams!.maxIterations, false/** TODO, add webgpu controll */, mclParams!.inflation,
+      }],
+      mclParams!.threshold, mclParams!.maxIterations, mclParams.useWebGPU,
+      mclParams!.inflation, mclParams.minClusterSize,
     );
     mclAdditionSub.unsubscribe();
+
+    // find logo summery viewer and make it rerender
+    const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
+    if (lstViewer) { // beware, this is accessing private things
+      lstViewer._clusterStats = null;
+      lstViewer._clusterSelection = null;
+      lstViewer._viewerGrid = null;
+      lstViewer._logoSummaryTable = null;
+      lstViewer.render();
+    }
+
     if (mclViewer?.sc) {
       const serializedOptions: string = JSON.stringify({
         cols: [seqCol].map((col) => col.name),
@@ -1319,8 +1332,9 @@ export class PeptidesModel {
         }],
         threshold: mclParams!.threshold,
         maxIterations: mclParams!.maxIterations,
-        useWebGPU: false,
+        useWebGPU: mclParams.useWebGPU,
         inflate: mclParams!.inflation,
+        minClusterSize: mclParams.minClusterSize,
       } satisfies MCLSerializableOptions);
       this.df.setTag(MCL_OPTIONS_TAG, serializedOptions);
 

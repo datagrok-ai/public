@@ -90,19 +90,9 @@ public class HiveDataProvider extends JdbcDataProvider {
         try (Connection dbConnection = getConnection(connection);
              ResultSet columns = dbConnection.getMetaData().getColumns(null, schema, table,
                      null)) {
-            DataFrame result = new DataFrame();
-            Column tableSchema = new StringColumn();
-            tableSchema.name = "table_schema";
-            Column tableNameColumn = new StringColumn();
-            tableNameColumn.name = "table_name";
-            Column columnName = new StringColumn();
-            columnName.name = "column_name";
-            Column dataType = new StringColumn();
-            dataType.name = "data_type";
-            result.addColumn(tableSchema);
-            result.addColumn(tableNameColumn);
-            result.addColumn(columnName);
-            result.addColumn(dataType);
+            DataFrame result = DataFrame.fromColumns(new StringColumn("table_schema"),
+                    new StringColumn("table_name"), new StringColumn("column_name"),
+                    new StringColumn("data_type"));
             while (columns.next())
                 result.addRow(columns.getString(2), columns.getString(3),
                         columns.getString(4), columns.getString(6));
@@ -144,14 +134,9 @@ public class HiveDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public void setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) {
+    public void setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) throws SQLException {
         Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)funcParam.value);
         Timestamp ts = new Timestamp(calendar.getTime().getTime());
-        try {
-            statement.setTimestamp(parameterIndex, ts);
-        } catch (SQLException e) {
-            throw new RuntimeException(String.format("Something went wrong when setting datetime parameter at %s index",
-                    parameterIndex), e);
-        }
+        statement.setTimestamp(parameterIndex, ts);
     }
 }

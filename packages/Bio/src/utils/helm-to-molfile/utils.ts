@@ -1,32 +1,31 @@
-/* Do not change these import lines to match external modules in webpack configuration */
-import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
 
-import {HelmToMolfileConverter} from './converter';
+import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types';
 
-/** Translate HELM column into molfile column and append to the dataframe */
-export async function helm2mol(df: DG.DataFrame, helmCol: DG.Column<string>): Promise<void> {
-  const molCol = await getMolColumnFromHelm(df, helmCol);
-  df.columns.add(molCol, true);
-  await grok.data.detectSemanticTypes(df);
-}
+import {SeqHelper} from '../seq-helper';
 
+import {_package, getMonomerLib} from '../../package';
 
 /** Translate HELM column into molfile column and append to the dataframe */
 export async function getMolColumnFromHelm(
-  df: DG.DataFrame, helmCol: DG.Column<string>, chiralityEngine?: boolean
+  df: DG.DataFrame, helmCol: DG.Column<string>, chiralityEngine: boolean = true, monomerLib: IMonomerLibBase
 ): Promise<DG.Column<string>> {
-  const converter = new HelmToMolfileConverter(helmCol, df);
-  const molCol = await converter.convertToRdKitBeautifiedMolfileColumn(chiralityEngine);
+  const seqHelper = await SeqHelper.getInstance();
+  const converter = seqHelper.getHelmToMolfileConverter(monomerLib);
+  const molCol = converter.convertToRdKitBeautifiedMolfileColumn(helmCol, chiralityEngine, _package.rdKitModule, monomerLib);
   molCol.semType = DG.SEMTYPE.MOLECULE;
   return molCol;
 }
 
 export async function getSmilesColumnFromHelm(
-  df: DG.DataFrame, helmCol: DG.Column<string>
+  helmCol: DG.Column<string>
 ): Promise<DG.Column<string>> {
-  const converter = new HelmToMolfileConverter(helmCol, df);
-  const smilesCol = await converter.convertToSmiles();
+  const seqHelper = await SeqHelper.getInstance();
+  const monomerLib = getMonomerLib();
+  const converter = seqHelper.getHelmToMolfileConverter(monomerLib);
+  const smilesCol = converter.convertToSmiles(helmCol);
   smilesCol.semType = DG.SEMTYPE.MOLECULE;
   return smilesCol;
 }

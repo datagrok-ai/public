@@ -2,25 +2,28 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {_package} from '../package';
-import {ComputeFunctions} from './types';
-import {HitTriageComputeFunctionTag} from './consts';
+import {AppName, ComputeFunctions, HitDesignCampaign, HitTriageCampaign} from './types';
+import {funcTypeNames, HitTriageComputeFunctionTag} from './consts';
+import {checkEditPermissions} from './utils';
 
-export class HitAppBase<T> {
+export abstract class HitAppBase<T> {
   public dataFrame?: DG.DataFrame;
   public template?: T;
   public baseUrl!: string;
   public computeFunctions: Promise<ComputeFunctions>;
   protected isJoining = false;
+  protected hasEditPermission = false;
+  private _appName: AppName;
+  public get appName(): AppName {return this._appName;}
   // public layouts: Promise<DG.ViewLayout[]>;
-  constructor(public parentCall: DG.FuncCall) {
+  constructor(public parentCall: DG.FuncCall, appN: AppName) {
+    this._appName = appN;
     this.resetBaseUrl();
     this.computeFunctions = new Promise<ComputeFunctions>(async (resolve) => {
-      const functions = DG.Func.find({tags: [HitTriageComputeFunctionTag]})
-      //TODO: remove this when everyone is upgraded to support DG.FUNC.FIND returning all functions, queries and scripts
-        .filter((f) => f.type === 'function-package');
-      const scripts = await grok.dapi.scripts.include('params').filter(`#${HitTriageComputeFunctionTag}`).list();
-      const queries = await grok.dapi.queries.include('params,connection')
-        .filter(`#${HitTriageComputeFunctionTag}`).list();
+      const funcs = DG.Func.find({tags: [HitTriageComputeFunctionTag]});
+      const functions = funcs.filter((f) => f.type === funcTypeNames.function);
+      const scripts = funcs.filter((f) => f.type === funcTypeNames.script) as DG.Script[];
+      const queries = funcs.filter((f) => f.type === funcTypeNames.query) as DG.DataQuery[];
       resolve({functions, scripts, queries});
     });
 
@@ -29,6 +32,14 @@ export class HitAppBase<T> {
     //   const layouts = await grok.dapi.layouts.list();
     //   resolve(layouts);
     // });
+  }
+
+  protected async setCanEdit(campaign: HitTriageCampaign | HitDesignCampaign) {
+    if (!campaign.authorUserId || !campaign.permissions) {
+      this.hasEditPermission = true; // if there is no author, then it is a new campaign
+      return;
+    }
+    this.hasEditPermission = await checkEditPermissions(campaign.authorUserId, campaign.permissions);
   }
 
   public resetBaseUrl() {
@@ -67,7 +78,7 @@ export class HitAppBase<T> {
     return templateKey + '-' + ((postFixes[postFixes.length - 1] + 1).toString());
   }
 
-  protected setBaseUrl() {
+  public setBaseUrl() {
     const title = document.title;
     if (history.replaceState) {
       const obj = {

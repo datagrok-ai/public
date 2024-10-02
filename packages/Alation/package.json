@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/alation",
   "friendlyName": "Alation",
-  "version": "1.1.6",
+  "version": "1.2.0",
   "category": "Data Access",
   "author": {
     "name": "Volodymyr Dyma",
@@ -20,10 +20,10 @@
     "directory": "packages/Alation"
   },
   "dependencies": {
-    "datagrok-api": "^1.12.0",
+    "datagrok-api": "^1.21.1",
     "cash-dom": "latest",
     "dayjs": "latest",
-    "@datagrok-libraries/utils": "^4.2.11",
+    "@datagrok-libraries/utils": "^4.3.0",
     "rxjs": "^6.5.5"
   },
   "devDependencies": {

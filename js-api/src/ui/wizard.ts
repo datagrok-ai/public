@@ -79,7 +79,9 @@ export class Wizard extends Dialog {
 
   /** Activates the previous page */
   next() {
-    this.currentPage = this.pages[this.pageIndex + 1];
-    this._updateButtonStates();
+    if (this.pageIndex + 1 < this.pages.length) {
+      this.currentPage = this.pages[this.pageIndex + 1];
+      this._updateButtonStates();
+    }
   }
 }

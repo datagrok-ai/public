@@ -55,7 +55,7 @@ category('rendering', () => {
     const tv = grok.shell.addTableView(df);
     const canvas = tv.grid.root.getElementsByTagName('canvas')[2];
     await scrollTable(canvas, scrollDelta, scrollCycles, 5);
-  });
+  }, {benchmark: true});
 
   test('rdkit grid cell renderer', async () => {
     const df = DG.Test.isInBenchmark ? await readDataframe('tests/smi10K.csv') : await readDataframe('mol1K.csv');
@@ -74,7 +74,7 @@ category('rendering', () => {
     }
     console.log(`rendering of ${rowCount} molecules without highlight took ${performance.now() - start} milliseconds`);
     
-  }, {timeout: 180000});
+  }, {timeout: 180000, benchmark: true});
 
   test('rdkit grid cell renderer with highlights', async () => {
     const df = DG.Test.isInBenchmark ? await readDataframe('tests/smi10K.csv') : await readDataframe('mol1K.csv');
@@ -111,7 +111,7 @@ category('rendering', () => {
     }
     console.log(`rendering of ${rowCount} molecules with highlight took ${performance.now() - start} milliseconds`);
     
-  }, {timeout: 180000});
+  }, {timeout: 180000, benchmark: true});
 
   test('stereochemistry', async () => {
     const df = await readDataframe('tests/stereochemistry.csv');

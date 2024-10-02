@@ -1,5 +1,21 @@
 # math changelog
 
+## 1.2.1 (2024-09-25)
+
+* Expect navigator.gpu to be undefined in some browsers
+
+## 1.1.13 (2024-09-06)
+
+Bump Api version
+
+## 1.1.12 (2024-08-07)
+
+Correct NW calculation on webGPU
+
+## 1.1.11 (2024-08-06)
+
+Modify MCL and NW calculations on webGPU
+
 ## 1.1.10 (2024-06-07)
 
 MMP generations on webGPU

@@ -35,6 +35,8 @@ public class DbCredentials
     public static final String SECRET_KEY = "secretKey";
     public static final String VPC_ENDPOINT = "VPCEndpoint";
     public static final String ROLE = "role";
+    public static final String UID = "UID";
+    public static final String PWD = "PWD";
 
     public String server;
     public String port;
@@ -59,9 +61,6 @@ public class DbCredentials
         add(new Property(Property.STRING_TYPE, DbCredentials.DB, DbCredentials.DB_DESCRIPTION));
         add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
                 DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
-        add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_SCHEMA));
-        add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_RESULTS));
-        add(new Property(Property.STRING_TYPE, DbCredentials.CACHE_INVALIDATE_SCHEDULE));
     }};
 
     public static List<Property> dbCredentialsTemplate = new ArrayList<Property>() {{

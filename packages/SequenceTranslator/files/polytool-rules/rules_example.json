@@ -1,34 +1,44 @@
-[ 
-	{
-		"type": "link",
-		"code": "1",
-		"monomericSubstitution": {
-		    "firstMonomer": "C",
-		    "secondMonomer": "C",
-		    "firstLinkingGroup":"3",
-		    "secondLinkingGroup":"3",
-		    "firstSubstitution": "C",
-		    "secondSubstitution": "C"
-		}
-	},
-	{
-		"type": "link",
-		"code": "2",
-		"monomericSubstitution": {
-		    "firstMonomer": "NH2",
-		    "secondMonomer": "L",
-		    "firstLinkingGroup":"2",
-		    "secondLinkingGroup":"3",
-		    "firstSubstitution": "NH2",
-		    "secondSubstitution": "L"
-		}
-	},
-	{
-		"type": "fragmentDuplication",
-		"code": "#3"
-	},
-	{
-		"type": "differentFragments",
-		"code": "$4"
-	}
+[
+  {
+    "type": "link",
+    "code": "1",
+    "monomericSubstitution": {
+      "firstMonomer": "C",
+      "secondMonomer": "C",
+      "firstLinkingGroup": "3",
+      "secondLinkingGroup": "3",
+      "firstSubstitution": "C",
+      "secondSubstitution": "C"
+    }
+  },
+  {
+    "type": "link",
+    "code": "2",
+    "monomericSubstitution": {
+      "firstMonomer": "NH2",
+      "secondMonomer": "D",
+      "firstLinkingGroup": "2",
+      "secondLinkingGroup": "3",
+      "firstSubstitution": "NH2",
+      "secondSubstitution": "D"
+    }
+  },
+  {
+    "type": "reaction",
+    "code": "3",
+    "monomericSubstitution": {
+      "firstMonomer": "azG",
+      "secondMonomer": "aG",
+      "reaction": "[C:1]N=[N+]=[N-].[C:2]C#C>>[C:1]N1-N=NC=C1[C:2]",
+      "name": "GGaz"
+    }
+  },
+  {
+    "type": "fragmentDuplication",
+    "code": "#3"
+  },
+  {
+    "type": "differentFragments",
+    "code": "$4"
+  }
 ]

@@ -1,7 +1,7 @@
 import {Property} from "./entities";
 import {FLOAT_NULL, TYPE, TYPES_SCALAR} from "./const";
-import {TypedEventArgs} from "./viewer";
 import dayjs from "dayjs";
+import { TypedEventArgs } from "./widgets";
 
 /** Converts list of Dart objects to JavaScript objects by calling {@link toJs}
  * @param {object[]} params

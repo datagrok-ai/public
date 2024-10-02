@@ -55,8 +55,8 @@ class TableQueryTest {
     public void testLimitAtEnd() {
         limitTest.connection.dataSource = postgres.descriptor.type;
         String sqlQuery = postgres.queryTableSql(limitTest.connection, limitTest);
-        String[] expected = new String[] {"SELECT", "first_name,", "last_name,", "email,", "address", "FROM",
-                "public.users", "limit 50"};
+        String[] expected = new String[] {"SELECT", "\"first_name\",", "\"last_name\",", "\"email\",", "\"address\"", "FROM",
+                "\"public\".\"users\"", "limit 50"};
         Assertions.assertEquals(Arrays.stream(expected).collect(Collectors.joining(System.lineSeparator())),
                 sqlQuery);
     }
@@ -65,8 +65,8 @@ class TableQueryTest {
     public void testLimitAtStart() {
         limitTest.connection.dataSource = mssql.descriptor.type;
         String sqlQuery = mssql.queryTableSql(limitTest.connection, limitTest);
-        String[] expected = new String[] {"SELECT", "top 50", "first_name,", "last_name,", "email,", "address", "FROM",
-                "public.users"};
+        String[] expected = new String[] {"SELECT", "top 50", "[first_name],", "[last_name],", "[email],", "[address]", "FROM",
+                "[public].[users]"};
         Assertions.assertEquals(getExpectedQuery(expected),
                 sqlQuery);
     }
@@ -81,7 +81,7 @@ class TableQueryTest {
         connection.dataSource = postgres.descriptor.type;
         aggregationTest.connection = connection;
         String sqlQuery = postgres.queryTableSql(connection, aggregationTest);
-        String[] expected = new String[] {"SELECT", "count(*) as \"count(*)\"", "FROM", "public.users"};
+        String[] expected = new String[] {"SELECT", "count(*) as \"count(*)\"", "FROM", "\"public\".\"users\""};
         Assertions.assertEquals(getExpectedQuery(expected), sqlQuery);
     }
 
@@ -100,8 +100,8 @@ class TableQueryTest {
         groupByFields.add("region");
         aggregationTest.groupByFields = groupByFields;
         String sqlQuery = postgres.queryTableSql(aggregationTest.connection, aggregationTest);
-        String[] expected = new String[] {"SELECT", "country,", "region,", "count(*) as \"count(*)\"", "FROM", "public.users",
-                "GROUP BY", "country, region"};
+        String[] expected = new String[] {"SELECT",  "\"country\",", "\"region\",", "count(*) as \"count(*)\"", "FROM", "\"public\".\"users\"",
+                "GROUP BY", "\"country\", \"region\""};
         Assertions.assertEquals(getExpectedQuery(expected), sqlQuery);
     }
 
@@ -109,8 +109,8 @@ class TableQueryTest {
     public void testAggregationAndGroupByAndHavingLimitAtEnd() {
         prepareComplexQuery(postgres.descriptor.type);
         String sqlQuery = postgres.queryTableSql(aggregationTest.connection, aggregationTest);
-        String[] expected = new String[] {"SELECT", "country,", "region,", "count(*) as \"count(*)\"", "FROM", "public.users",
-                "GROUP BY", "country, region", "HAVING", "\t((LOWER(country) IN ('spain','ukraine','brazil')))", "limit 50"};
+        String[] expected = new String[] {"SELECT", "\"country\",", "\"region\",", "count(*) as \"count(*)\"", "FROM", "\"public\".\"users\"",
+                "GROUP BY", "\"country\", \"region\"", "HAVING", "\t((LOWER(country) IN ('spain','ukraine','brazil')))", "limit 50"};
         Assertions.assertEquals(getExpectedQuery(expected), sqlQuery);
     }
 
@@ -118,8 +118,8 @@ class TableQueryTest {
     public void testAggregationAndGroupByAndHavingLimitAtStart() {
         prepareComplexQuery(mssql.descriptor.type);
         String sqlQuery = mssql.queryTableSql(aggregationTest.connection, aggregationTest);
-        String[] expected = new String[] {"SELECT", "top 50", "country,", "region,", "count(*) as \"count(*)\"", "FROM", "public.users",
-                "GROUP BY", "country, region", "HAVING", "\t((LOWER(country) IN ('spain','ukraine','brazil')))"};
+        String[] expected = new String[] {"SELECT", "top 50", "[country],", "[region],", "count(*) as [count(*)]", "FROM", "[public].[users]",
+                "GROUP BY", "[country], [region]", "HAVING", "\t((LOWER(country) IN ('spain','ukraine','brazil')))"};
         Assertions.assertEquals(getExpectedQuery(expected), sqlQuery);
     }
 

@@ -92,8 +92,8 @@ export class OverviewView extends UaView {
         let skipEvent: boolean = false;
         viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe(async (args) => {
           skipEvent = true;
-          packagesSelection.init((i) => viewer.dataFrame.get('package', i) == args.args.categories[0]);
-          userStatsViewer.viewer!.props.title = getUsersViewerName(args.args.categories[0]);
+          packagesSelection.init((i) => viewer.dataFrame.get('package', i) === args.args.options.categories[0]);
+          userStatsViewer.viewer!.props.title = getUsersViewerName(args.args.options.categories[0]);
           userStatsViewer.viewer!.props.rowSource = DG.RowSet.Filtered;
           viewer.dataFrame.filter.copyFrom(usersSelection).and(packagesSelection);
           PackagesView.showSelectionContextPanel(viewer.dataFrame, this.uaToolbox, 'Overview', {showDates: false});
@@ -150,8 +150,8 @@ export class OverviewView extends UaView {
         let skipEvent: boolean = false;
         viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe(async (args) => {
           skipEvent = true;
-          usersSelection.init((i) => viewer.dataFrame.get('user', i) == args.args.categories[0]);
-          packageStatsViewer.viewer!.props.title = getPackagesViewerName(args.args.categories[0]);
+          usersSelection.init((i) => viewer.dataFrame.get('user', i) == args.args.options.categories[0]);
+          packageStatsViewer.viewer!.props.title = getPackagesViewerName(args.args.options.categories[0]);
           packageStatsViewer.viewer!.props.rowSource = DG.RowSet.Filtered;
           viewer.dataFrame.filter.copyFrom(usersSelection).and(packagesSelection);
           viewer.dataFrame.selection.copyFrom(viewer.dataFrame.filter);

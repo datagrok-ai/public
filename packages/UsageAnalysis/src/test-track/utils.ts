@@ -8,15 +8,32 @@ import {colors} from '../utils';
 export {colors};
 export const FILENAME = 'test-cases.csv';
 export const PASSED = 'passed';
-export const FAILED = 'failed';
+export const CRITICALFAIL = 'failed';
+export const MINORFAIL = 'minor';
+export const BLOCKFAIL = 'blocker';
 export const SKIPPED = 'skipped';
-export type Status = typeof PASSED | typeof FAILED | typeof SKIPPED;
+export type Status = typeof PASSED | typeof MINORFAIL | typeof CRITICALFAIL | typeof BLOCKFAIL | typeof SKIPPED;
 
 const map = {
   [PASSED]: {name: 'check', color: 'var(--green-2)'},
-  [FAILED]: {name: 'times', color: 'var(--red-3)'},
+  [MINORFAIL]: {name: 'times', color: 'var(--orange-2)'},
+  [CRITICALFAIL]: {name: 'times', color: 'var(--red-3)'},
+  [BLOCKFAIL]: {name: 'lock', color: 'var(--red-3)'},
   [SKIPPED]: {name: 'forward', color: 'var(--orange-2)'},
 };
+
+
+export const errorSeverityLevels : any[] = [MINORFAIL, CRITICALFAIL, BLOCKFAIL];
+export const errorSeverityLevelJiraNames : { [id: string]: string; } = {
+  [MINORFAIL]: 'MinorError',
+  [CRITICALFAIL]: 'CriticalError',
+  [BLOCKFAIL]: 'Blocker'
+}
+export const TicketPriorityLevel : { [id: string]: string; } = {
+  [MINORFAIL]: 'Low',
+  [CRITICALFAIL]: 'Medium',
+  [BLOCKFAIL]: 'Highest'
+}
 
 export async function loadFileAsText(name: string): Promise<string> {
   return await _package.files.readAsText(name);
@@ -45,7 +62,9 @@ export function getIcon(name: string, options?: {style?: string, class?: string[
   return icon;
 }
 
-export function getStatusIcon(status: typeof PASSED | typeof FAILED | typeof SKIPPED): HTMLElement {
+export function getStatusIcon(status: typeof PASSED | typeof MINORFAIL | typeof CRITICALFAIL | typeof BLOCKFAIL | typeof SKIPPED): HTMLElement {
   const obj = map[status];
-  return getIcon(obj.name, {class: ['tt-status-icon'], color: obj.color});
+  if(obj?.name)
+    return getIcon(obj.name, {class: ['tt-status-icon'], color: obj.color});
+  return ui.div();
 }

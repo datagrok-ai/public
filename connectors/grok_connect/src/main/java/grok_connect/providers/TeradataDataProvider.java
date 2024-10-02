@@ -163,13 +163,6 @@ public class TeradataDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public String addBrackets(String name) {
-        String brackets = descriptor.nameBrackets;
-        return name.startsWith(brackets.substring(0, 1)) ? name :
-                brackets.charAt(0) + name + brackets.substring(brackets.length() - 1);
-    }
-
-    @Override
     protected String getRegexQuery(String columnName, String regexExpression) {
         return String.format("(REGEXP_SIMILAR(%s, '%s') = 1)", columnName, regexExpression);
     }

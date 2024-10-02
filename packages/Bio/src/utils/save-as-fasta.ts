@@ -20,8 +20,8 @@ export function saveAsFastaUI() {
     .find((gcol: DG.GridColumn) => gcol.name.toLowerCase().indexOf('id') !== -1);
   const idDefaultValue = defaultIdGCol ? [defaultIdGCol.name] : [];
 
-  const idGColListInput = ui.multiChoiceInput('Seq id columns', idDefaultValue,
-    idGColList.map((gcol: DG.GridColumn) => gcol.name));
+  const idGColListInput = ui.input.multiChoice('Seq id columns', {value: idDefaultValue,
+    items: idGColList.map((gcol: DG.GridColumn) => gcol.name)});
 
   const seqGColList: DG.GridColumn[] = wu.count(0).take(grid.columns.length)/* range rom 0 to grid.columns.length */
     .map((colI: number) => grid.columns.byIndex(colI)!)
@@ -35,10 +35,10 @@ export function saveAsFastaUI() {
     }).toArray();
 
   const seqDefaultValue = seqGColList.length > 0 ? seqGColList[0].name : [];
-  const seqColInput = ui.choiceInput('Seq column', seqDefaultValue,
-    seqGColList.map((gCol: DG.GridColumn) => gCol.name));
+  const seqColInput = ui.input.choice('Seq column', {value: seqDefaultValue,
+    items: seqGColList.map((gCol: DG.GridColumn) => gCol.name)});
 
-  const lineWidthInput = ui.intInput('FASTA line width', FASTA_LINE_WIDTH);
+  const lineWidthInput = ui.input.int('FASTA line width', {value: FASTA_LINE_WIDTH});
 
   ui.dialog({title: 'Save as FASTA'})
     .add(ui.inputs([
@@ -105,7 +105,7 @@ export function wrapSequence(srcSS: ISeqSplitted, lineWidth: number = FASTA_LINE
   const seqLineList: string[] = [];
   while (seqPos < seqLength) {
     /* join sliced monomer into line */
-    const seqLine = wu(srcSS.originals).slice(seqPos, seqPos + lineWidth).toArray();
+    const seqLine = wu.count(seqPos).take(Math.min(srcSS.length - seqPos, lineWidth)).map((p) => srcSS.getOriginal(p)).toArray();
     const seqLineTxt: string = seqLine.map((om) => om.length > 1 ? `[${om}]` : om)
       .reduce((a, b) => a + b, '');
     seqLineList.push(seqLineTxt);

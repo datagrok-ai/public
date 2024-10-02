@@ -17,6 +17,7 @@ import {performNelderMeadOptimization} from './fitting/optimizer';
 import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
 import {getErrors} from './fitting/fitting-utils';
 import {OptimizationResult, Extremum, distance} from './fitting/optimizer-misc';
+import {getLookupChoiceInput} from './shared/lookup-tools';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.DATA_FRAME];
@@ -67,7 +68,7 @@ export class FittingView {
     );
 
     const getSwitchElement = (defaultValue: boolean, f: (v: boolean) => any, isInput: boolean = true) => {
-      const input = ui.input.toggle(' ', {value: defaultValue, onValueChanged: () => f(input.value)});
+      const input = ui.input.toggle(' ', {value: defaultValue, onValueChanged: (value) => f(value)});
       $(input.root).addClass('sa-switch-input');
       $(input.captionLabel).hide();
 
@@ -108,8 +109,8 @@ export class FittingView {
           const: {
             input:
             (() => {
-              const inp = ui.input.float(caption, {value: defaultValue, onValueChanged: () => {
-                ref.const.value = inp.value;
+              const inp = ui.input.float(caption, {value: defaultValue, onValueChanged: (value) => {
+                ref.const.value = value;
                 this.updateApplicabilityState();
               }});
               inp.root.insertBefore(isChangingInputConst.root, inp.captionLabel);
@@ -123,8 +124,8 @@ export class FittingView {
           min: {
             input:
               (() => {
-                const inp = ui.input.float(`${caption} (min)`, {value: getInputValue(inputProp, 'min'), onValueChanged: () => {
-                  (ref as FittingNumericStore).min.value = inp.value;
+                const inp = ui.input.float(`${caption} (min)`, {value: getInputValue(inputProp, 'min'), onValueChanged: (value) => {
+                  (ref as FittingNumericStore).min.value = value;
                   this.updateApplicabilityState();
                 }});
                 inp.addValidator((s:string) => (Number(s) > temp.max.value) ? 'Greater than max': null);
@@ -138,8 +139,8 @@ export class FittingView {
           },
           max: {
             input: (() => {
-              const inp = ui.input.float(`${caption} (max)`, {value: getInputValue(inputProp, 'max'), onValueChanged: () => {
-                (ref as FittingNumericStore).max.value = inp.value;
+              const inp = ui.input.float(`${caption} (max)`, {value: getInputValue(inputProp, 'max'), onValueChanged: (value) => {
+                (ref as FittingNumericStore).max.value = value;
                 this.updateApplicabilityState();
               }});
               inp.addValidator((s:string) => (Number(s) < temp.min.value) ? 'Smaller than min': null);
@@ -195,7 +196,7 @@ export class FittingView {
           input: (() => {
             const temp = ui.input.forProperty(inputProp);
             temp.caption = inputProp.caption ?? inputProp.name;
-            temp.onInput(() => {
+            temp.onInput.subscribe(() => {
               tempDefault.value = temp.value;
               this.updateApplicabilityState();
             });
@@ -238,8 +239,8 @@ export class FittingView {
             input.nullable = false;
             ui.tooltip.bind(input.captionLabel, (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Output dataframe' : 'Output scalar');
 
-            input.onChanged(() => {
-              temp.target = input.value;
+            input.onChanged.subscribe((value) => {
+              temp.target = input.value; // fixing the bug https://reddata.atlassian.net/browse/GROK-16642 
 
               if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
                 if (temp.target) {
@@ -284,7 +285,7 @@ export class FittingView {
             return input;
           })(),
           colNameInput: (() => {
-            const input = ui.input.choice<string|null>('argument', {value: null, items: [null], onValueChanged: () => {temp.colName = input.value!;}});
+            const input = ui.input.choice<string|null>('argument', {value: null, items: [null], onValueChanged: (value) => {temp.colName = value!;}});
             input.setTooltip('Column with argument values');
             input.root.insertBefore(getSwitchMock(), input.captionLabel);
             input.root.hidden = outputProp.propertyType !== DG.TYPE.DATA_FRAME || !this.toSetSwitched;
@@ -321,7 +322,7 @@ export class FittingView {
   });
 
   private helpIcon = ui.iconFA('question', () => {
-    window.open('https://datagrok.ai/help/compute/#input-parameter-optimization', '_blank');
+    window.open('https://datagrok.ai/help/compute/function-analysis#parameter-optimization', '_blank');
   }, 'Open help in a new tab');
 
   private showFailsBtn = ui.button('Issues', () => {
@@ -351,8 +352,8 @@ export class FittingView {
     max: 1000,
   }));
   private loss = LOSS.RMSE;
-  private lossInput = ui.input.choice(TITLE.LOSS_LOW, {value: this.loss, items: [LOSS.MAD, LOSS.RMSE], onValueChanged: () => {
-    this.loss = this.lossInput.value!;
+  private lossInput = ui.input.choice(TITLE.LOSS_LOW, {value: this.loss, items: [LOSS.MAD, LOSS.RMSE], onValueChanged: (value) => {
+    this.loss = value;
     this.lossInput.setTooltip(lossTooltip.get(this.loss)!);
   }});
   private similarity = FITTING_UI.SIMILARITY_DEFAULT;
@@ -367,8 +368,8 @@ export class FittingView {
   private helpDN: DG.DockNode | undefined = undefined;
 
   private method = METHOD.NELDER_MEAD;
-  private methodInput = ui.input.choice(TITLE.METHOD, {value: this.method, items: [METHOD.NELDER_MEAD], onValueChanged: () => {
-    this.method = this.methodInput.value!;
+  private methodInput = ui.input.choice(TITLE.METHOD, {value: this.method, items: [METHOD.NELDER_MEAD], onValueChanged: (value) => {
+    this.method = value;
     this.showHideSettingInputs();
     this.methodInput.setTooltip(methodTooltip.get(this.method)!);
   }});
@@ -399,9 +400,11 @@ export class FittingView {
     options: {
       parentView?: DG.View,
       parentCall?: DG.FuncCall,
+      inputsLookup?: string,
     } = {
       parentView: undefined,
       parentCall: undefined,
+      inputsLookup: undefined,
     },
   ) {
     const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE);
@@ -427,10 +430,12 @@ export class FittingView {
       parentView?: DG.View,
       parentCall?: DG.FuncCall,
       configFunc?: undefined,
+      inputsLookup?: string,
     } = {
       parentView: undefined,
       parentCall: undefined,
       configFunc: undefined,
+      inputsLookup: undefined,
     },
   ) {
     if (!this.isOptimizationApplicable(func)) {
@@ -439,62 +444,63 @@ export class FittingView {
       return;
     }
 
-    const form = this.buildForm();
-    this.comparisonView = baseView;
+    this.buildForm(options.inputsLookup).then((form) => {
+      this.comparisonView = baseView;
 
-    this.comparisonView.dockManager.dock(
-      form,
-      DG.DOCK_TYPE.LEFT,
-      null,
-      `${this.func.name} - Fitting`,
-      0.25,
-    );
+      this.comparisonView.dockManager.dock(
+        form,
+        DG.DOCK_TYPE.LEFT,
+        null,
+        `${this.func.name} - Fitting`,
+       0.25,
+      );
 
-    this.comparisonView.grid.columns.byName(RUN_NAME_COL_LABEL)!.visible = false;
+      this.comparisonView.grid.columns.byName(RUN_NAME_COL_LABEL)!.visible = false;
 
-    nelderMeadSettingsVals.forEach((vals, key) => this.nelderMeadSettings.set(key, vals.default));
+      nelderMeadSettingsVals.forEach((vals, key) => this.nelderMeadSettings.set(key, vals.default));
 
-    const rbnPanels = this.comparisonView.getRibbonPanels();
-    rbnPanels.push([this.helpIcon, this.runIcon]);
-    this.comparisonView.setRibbonPanels(rbnPanels);
-    this.fittingSettingsDiv.hidden = true;
+      const rbnPanels = this.comparisonView.getRibbonPanels();
+      rbnPanels.push([this.helpIcon, this.runIcon]);
+      this.comparisonView.setRibbonPanels(rbnPanels);
+      this.fittingSettingsDiv.hidden = true;
 
-    this.comparisonView.name = this.comparisonView.name.replace('comparison', 'fitting');
-    this.comparisonView.helpUrl = 'https://datagrok.ai/help/compute/#input-parameter-optimization';
-    const helpMD = ui.markdown(STARTING_HELP);
-    helpMD.style.padding = '10px';
-    helpMD.style.overflow = 'auto';
-    this.helpDN = this.comparisonView.dockManager.dock(
-      helpMD,
-      DG.DOCK_TYPE.FILL,
-      this.comparisonView.dockManager.findNode(this.comparisonView.grid.root),
-      'About',
-    );
-    this.methodInput.setTooltip(methodTooltip.get(this.method)!);
-    ui.tooltip.bind(this.methodInput.captionLabel, 'Method for minimizing the loss function');
-    this.lossInput.setTooltip(lossTooltip.get(this.loss)!);
-    ui.tooltip.bind(this.lossInput.captionLabel, 'Loss function type');
+      this.comparisonView.name = this.comparisonView.name.replace('comparison', 'fitting');
+      this.comparisonView.helpUrl = '/help/compute/function-analysis#parameter-optimization';
+      const helpMD = ui.markdown(STARTING_HELP);
+      helpMD.style.padding = '10px';
+      helpMD.style.overflow = 'auto';
+      this.helpDN = this.comparisonView.dockManager.dock(
+        helpMD,
+        DG.DOCK_TYPE.FILL,
+        this.comparisonView.dockManager.findNode(this.comparisonView.grid.root),
+        'About',
+      );
+      this.methodInput.setTooltip(methodTooltip.get(this.method)!);
+      ui.tooltip.bind(this.methodInput.captionLabel, 'Method for minimizing the loss function');
+      this.lossInput.setTooltip(lossTooltip.get(this.loss)!);
+      ui.tooltip.bind(this.lossInput.captionLabel, 'Loss function type');
 
-    this.showFailsBtn.style.padding = '0px';
+      this.showFailsBtn.style.padding = '0px';
 
-    this.samplesCountInput.addCaption(TITLE.SAMPLES);
-    this.samplesCountInput.onChanged(() => {
-      this.samplesCount = this.samplesCountInput.value;
-      this.updateApplicabilityState();
+      this.samplesCountInput.addCaption(TITLE.SAMPLES);
+      this.samplesCountInput.onChanged.subscribe((value) => {
+        this.samplesCount = value;
+        this.updateApplicabilityState();
+      });
+      this.samplesCountInput.setTooltip('Number of points to be found');
+
+      this.similarityInput.onChanged.subscribe((value) => {
+        this.similarity = value;
+        this.updateApplicabilityState();
+      });
+      this.similarityInput.addCaption(TITLE.SIMILARITY);
+      this.similarityInput.setTooltip('The higher the value, the fewer points will be found');
+      ui.tooltip.bind(this.similarityInput.captionLabel, `Max scaled deviation between similar fitted points`);
+
+      this.updateRunIconStyle();
+      this.updateRunIconDisabledTooltip('Select inputs for fitting');
+      this.runIcon.classList.add('fas');
     });
-    this.samplesCountInput.setTooltip('Number of points to be found');
-
-    this.similarityInput.onChanged(() => {
-      this.similarity = this.similarityInput.value;
-      this.updateApplicabilityState();
-    });
-    this.similarityInput.addCaption(TITLE.SIMILARITY);
-    this.similarityInput.setTooltip('The higher the value, the fewer points will be found');
-    ui.tooltip.bind(this.similarityInput.captionLabel, `Max scaled deviation between similar fitted points`);
-
-    this.updateRunIconStyle();
-    this.updateRunIconDisabledTooltip('Select inputs for fitting');
-    this.runIcon.classList.add('fas');
   } // constructor
 
   /** Check fiiting applicability to the function */
@@ -523,8 +529,8 @@ export class FittingView {
       inp.addCaption(nelderMeadCaptions.get(key)!);
       inp.nullable = false;
 
-      inp.onChanged(() => {
-        this.nelderMeadSettings.set(key, inp.value);
+      inp.onChanged.subscribe((value) => {
+        this.nelderMeadSettings.set(key, value);
         this.updateApplicabilityState();
       });
 
@@ -555,7 +561,7 @@ export class FittingView {
       min: 1,
       max: 10000,
     }));
-    iterInp.onChanged(() => this.gradDescentSettings.iterCount = iterInp.value);
+    iterInp.onChanged.subscribe((value) => this.gradDescentSettings.iterCount = value);
 
     const learningRateInp = ui.input.forProperty(DG.Property.fromOptions({
       name: 'Learning rate',
@@ -564,7 +570,7 @@ export class FittingView {
       min: 1e-6,
       max: 1000,
     }));
-    learningRateInp.onChanged(() => this.gradDescentSettings.learningRate = learningRateInp.value);
+    learningRateInp.onChanged.subscribe((value) => this.gradDescentSettings.learningRate = value);
 
     this.settingsInputs.set(METHOD.GRAD_DESC, [iterInp, learningRateInp]);
   } // generateGradDescentSettingsInputs
@@ -599,8 +605,23 @@ export class FittingView {
     this.settingsInputs.forEach((inputsArray, method) => inputsArray.forEach((input) => input.root.hidden = method !== this.method));
   }
 
+  private async getLookupElement(inputsLookup?: string) {
+    if (inputsLookup === undefined)
+      return null;
+
+    const constIputs = new Map<string, DG.InputBase>();
+    Object.keys(this.store.inputs).forEach((name) => constIputs.set(name, this.store.inputs[name].constForm[0]));
+
+    const lookupElement = await getLookupChoiceInput(inputsLookup, constIputs);
+
+    if (lookupElement !== null)
+      lookupElement.input.root.insertBefore(getSwitchMock(), lookupElement.input.captionLabel);
+
+    return lookupElement;
+  }
+
   /** Build form with inputs */
-  private buildForm() {
+  private async buildForm(inputsLookup?: string) {
     //1. Inputs of the function
     const fitHeader = ui.h1(TITLE.FIT);
     ui.tooltip.bind(fitHeader, 'Select inputs to be fitted');
@@ -622,20 +643,40 @@ export class FittingView {
     // the main form
     const form = ui.div([fitHeader], {style: {'overflow-y': 'scroll', 'width': '100%'}});
 
+    const lookupElement = await this.getLookupElement(inputsLookup);
+    let topCategory: string | null = null;
+
+    if (lookupElement !== null) {
+      const inputs = inputsByCategories.get(lookupElement.category);
+      topCategory = lookupElement.category;
+
+      if (inputs !== undefined)
+        inputsByCategories.set(topCategory, [lookupElement.input.root].concat(inputs));
+      else 
+        inputsByCategories.set(topCategory, [lookupElement.input.root]);
+    }
+
     // add inputs to the main form (grouped by categories)
     if (inputsByCategories.size > 1) {
+      if (topCategory !== null) {
+        form.append(ui.h3(topCategory));
+        form.append(...inputsByCategories.get(topCategory)!);
+      }
+
       inputsByCategories.forEach((roots, category) => {
-        if (category !== 'Misc') {
+        if ((category !== 'Misc') && (category !== topCategory)) {
           form.append(ui.h3(category));
           form.append(...roots);
         }
       });
 
-      const miscRoots = inputsByCategories.get('Misc');
+      if (topCategory !== 'Misc') {
+        const miscRoots = inputsByCategories.get('Misc');
 
-      if (miscRoots!.length > 0) {
-        form.append(ui.h3('Misc'));
-        form.append(...inputsByCategories.get('Misc')!);
+        if (miscRoots!.length > 0) {
+          form.append(ui.h3('Misc'));
+          form.append(...inputsByCategories.get('Misc')!);
+        }
       }
     } else
       form.append(...inputsByCategories.get('Misc')!);
@@ -886,8 +927,8 @@ export class FittingView {
       // set varied inputs specification
       variedInputs.forEach((name, idx) => {
         const propConfig = this.store.inputs[name] as FittingNumericStore;
-        minVals[idx] = propConfig.min.value;
-        maxVals[idx] = propConfig.max.value;
+        minVals[idx] = propConfig.min.value ?? 0;
+        maxVals[idx] = propConfig.max.value ?? 0;
         variedInputNames.push(name);
         variedInputsCaptions[idx] = propConfig.prop.caption ?? propConfig.prop.name;
       });

@@ -7,7 +7,8 @@ if (mode !== 'production')
   console.warn(`Building Bio in '${mode}' mode.`);
 
 module.exports = {
-  ...(mode === 'production' ? {cache: {type: 'filesystem'}} : {}),
+  // ...(mode === 'production' ? {cache: {type: 'filesystem'}} : {}),
+  cache: {type: 'filesystem'},
   mode: mode,
   entry: {
     package: ['./src/package.ts'],
@@ -19,7 +20,7 @@ module.exports = {
   },
   resolve: {
     fallback: {'url': false},
-    extensions: ['.wasm', '.mjs', '.ts', '.tsx', '.js', '.json'],
+    extensions: ['.ts', '.tsx', '.wasm', '.mjs', '.js', '.json'],
   },
   module: {
     rules: [
@@ -31,7 +32,7 @@ module.exports = {
   plugins: [
     new FuncGeneratorPlugin({outputPath: './src/package.g.ts'}),
   ],
-  devtool: mode !== 'production' ? 'source-map' : 'source-map',
+  devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',

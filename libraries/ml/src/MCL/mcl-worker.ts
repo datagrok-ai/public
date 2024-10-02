@@ -2,7 +2,7 @@ import {multiColWebGPUSparseMatrix} from '@datagrok-libraries/math/src/webGPU/sp
 import {SparseMatrixResult, SparseMatrixService} from '../distance-matrix/sparse-matrix-service';
 import {DistanceAggregationMethod} from '../distance-matrix/types';
 import {KnownMetrics} from '../typed-metrics';
-import {MCLSparseReducer} from './marcov-cluster';
+import {MCLSparseReducer} from './markov-cluster';
 
 onmessage = async (event) => {
   const {data, threshold, weights, aggregationMethod, distanceFnArgs, distanceFns, maxIterations, useWebGPU, inflate}:

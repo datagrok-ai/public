@@ -17,7 +17,7 @@ export function saveAsSdfDialog() {
     const sdfDialog = ui.dialog({title: 'Save as SDF'});
     sdfDialog.root.style.width = '250px';
     const colsChoiceDF = DG.DataFrame.fromColumns(cols);
-    const colsInput = ui.columnInput('Molecules', colsChoiceDF, cols[0]);
+    const colsInput = ui.input.column('Molecules', {table: colsChoiceDF, value: cols[0]});
 
     sdfDialog.add(colsInput)
       .onOK(() => {

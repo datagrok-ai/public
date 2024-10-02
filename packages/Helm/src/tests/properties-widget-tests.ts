@@ -6,7 +6,7 @@ import {after, before, category, expect, expectObject, test, timeout} from '@dat
 import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {
-  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
+  getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {generateLongSequence} from '@datagrok-libraries/bio/src/utils/generator';
@@ -82,15 +82,12 @@ category('properties-widget', () => {
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = getUserLibSettings();
 
-    await setUserLibSettingsForTests();
-    await timeout(async () => { await monomerLibHelper.awaitLoaded(); },
-      5000, 'MonomerLibHelper.awaitLoaded() timeout');
-    await monomerLibHelper.loadLibraries(true); // load default libraries
+    await monomerLibHelper.loadMonomerLibForTests(); // load default libraries
   });
 
   after(async () => {
     await setUserLibSettings(userLibSettings);
-    await monomerLibHelper.loadLibraries(true); // load user settings libraries
+    await monomerLibHelper.loadMonomerLib(true); // load user settings libraries
   });
 
   for (const [testName, testData] of Object.entries(TestsData)) {
@@ -121,7 +118,7 @@ function testPropertiesDict(
 ) {
   const col = DG.Column.fromStrings('seq', [seq]) as DG.Column<string>;
   col.semType = DG.SEMTYPE.MACROMOLECULE;
-  col.setTag(DG.TAGS.UNITS, units);
+  col.meta.units = units;
   if (separator) col.setTag(bioTAGS.separator, separator);
   if (alphabet) col.setTag(bioTAGS.alphabet, alphabet);
   const sh = SeqHandler.forColumn(col);

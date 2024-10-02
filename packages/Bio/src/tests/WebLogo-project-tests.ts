@@ -51,13 +51,12 @@ export async function uploadProject(projectName: string, tableInfo: DG.TableInfo
   const project = DG.Project.create();
   const viewLayout = view.saveLayout();
 
-  await grok.dapi.layouts.save(view.saveLayout());
-  await grok.dapi.tables.uploadDataFrame(df);
-  await grok.dapi.tables.save(tableInfo);
-
   project.name = projectName;
   project.addChild(tableInfo);
   project.addChild(viewLayout); // cause error
 
+  await grok.dapi.layouts.save(view.saveLayout());
+  await grok.dapi.tables.uploadDataFrame(df);
+  await grok.dapi.tables.save(tableInfo);
   await grok.dapi.projects.save(project);
 }

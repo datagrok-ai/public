@@ -75,9 +75,7 @@ export function dummyPackageFunction(a: number, b: number) {
 //output: int count 
 //output: dataframe tableOut
 export function dummyDataFrameFunction(table: DG.DataFrame) {
-  const count = table.rowCount;
-  const tableOut = table;
-  return {tableOut, count};
+  return {'tableOut': table, 'count': table.rowCount};
 }
 
 //name: testStringAsync
@@ -91,7 +89,7 @@ export async function testIntAsync(a: number): Promise<number> {
 //input: object params
 //output: object input
 export function CustomStringInput(params: any) {
-  const defaultInput = ui.stringInput('Custom input', '');
+  const defaultInput = ui.input.string('Custom input', {value: ''});
   defaultInput.root.style.backgroundColor = 'aqua';
   defaultInput.input.style.backgroundColor = 'aqua';
   return defaultInput;

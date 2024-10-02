@@ -18,7 +18,7 @@ seq4`;
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
     const col: DG.Column = df.getCol('seq');
     col.semType = DG.SEMTYPE.MACROMOLECULE;
-    col.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    col.meta.units = NOTATION.FASTA;
     col.setTag(bioTAGS.alphabet, ALPHABET.DNA);
     col.setTag(bioTAGS.aligned, 'SEQ');
 
@@ -33,7 +33,7 @@ seq4`;
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
     const col: DG.Column = df.getCol('seq');
     col.semType = DG.SEMTYPE.MACROMOLECULE;
-    col.setTag(DG.TAGS.UNITS, NOTATION.HELM);
+    col.meta.units = NOTATION.HELM;
     // col.setTag(bio.TAGS.alphabetSize, '11');
     col.setTag(bioTAGS.alphabetIsMultichar, 'true');
 
@@ -48,7 +48,7 @@ seq4`;
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
     const col: DG.Column = df.getCol('seq');
     col.semType = DG.SEMTYPE.MACROMOLECULE;
-    col.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    col.meta.units = NOTATION.FASTA;
     col.setTag(bioTAGS.alphabet, 'UN');
     col.setTag(bioTAGS.alphabetSize, '11');
     col.setTag(bioTAGS.alphabetIsMultichar, 'true');

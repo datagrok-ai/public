@@ -144,13 +144,13 @@ PEPTIDE1{hHis.Aca.Cys_SEt}$$$,5.72388
 });
 
 export async function _testFastaSplitter(src: string, tgt: string[]) {
-  const res: ISeqSplitted = splitterAsFasta(src);
-  console.debug(`Bio: tests: splitters: src=${JSON.stringify(src)}, res=${JSON.stringify(res)} .`);
-  expectArray(wu(res.originals).toArray(), tgt);
+  const resSS: ISeqSplitted = splitterAsFasta(src);
+  console.debug(`Bio: tests: splitters: src=${JSON.stringify(src)}, res=${JSON.stringify(resSS)} .`);
+  expectArray(wu.count(0).take(resSS.length).map((p) => resSS.getOriginal(p)).toArray(), tgt);
 }
 
 export async function _testHelmSplitter(src: string, tgt: string[]) {
-  const res: ISeqSplitted = splitterAsHelm(src);
-  console.debug(`Bio: tests: splitters: src=${JSON.stringify(src)}, res=${JSON.stringify(res)} .`);
-  expectArray(wu(res.originals).toArray(), tgt);
+  const resSS: ISeqSplitted = splitterAsHelm(src);
+  console.debug(`Bio: tests: splitters: src=${JSON.stringify(src)}, res=${JSON.stringify(resSS)} .`);
+  expectArray(wu.count(0).take(resSS.length).map((p) => resSS.getOriginal(p)).toArray(), tgt);
 }

@@ -107,13 +107,13 @@ export class HistoricalRunsList extends DG.Widget {
     return this._onSelectedChanged.asObservable();
   }
 
-  private async saveIsFavorite(funcCall: DG.FuncCall, isFavorite: boolean) {
+  private saveIsFavorite(funcCall: DG.FuncCall, isFavorite: boolean) {
     const favStorageName = `${storageName}_${funcCall.func.name}_Fav`;
 
     if (isFavorite)
-      return grok.dapi.userDataStorage.postValue(favStorageName, funcCall.id, '');
+      grok.userSettings.add(favStorageName, funcCall.id, '');
     else
-      return grok.dapi.userDataStorage.remove(favStorageName, funcCall.id);
+      grok.userSettings.delete(favStorageName, funcCall.id);
   }
 
   private getRunByIdx(idx: number) {
@@ -127,10 +127,9 @@ export class HistoricalRunsList extends DG.Widget {
       if (!this.options?.isHistory)
         this.updateRun(funcCall);
       else {
-        return ((editOptions.favorite !== 'same') ?
-          this.saveIsFavorite(funcCall, (editOptions.favorite === 'favorited')) :
-          Promise.resolve())
-          .then(() => historyUtils.loadRun(funcCall.id, false))
+        if (editOptions.favorite !== 'same')
+          this.saveIsFavorite(funcCall, (editOptions.favorite === 'favorited'));
+        return historyUtils.loadRun(funcCall.id, false)
           .then((fullCall) => {
             if (editOptions.title) fullCall.options['title'] = editOptions.title;
             if (editOptions.description) fullCall.options['description'] = editOptions.description;
@@ -260,10 +259,8 @@ export class HistoricalRunsList extends DG.Widget {
         );
       };
 
-      console.log(newRuns);
       if (newRuns.length > 0) {
-        const favoritesRecord: Record<string, string> =
-          await grok.dapi.userDataStorage.get(this.storageName(runs)) ?? {};
+        const favoritesRecord: Record<string, string> = grok.userSettings.get(this.storageName(runs)) ?? {};
         const favorites = Object.keys(favoritesRecord);
 
         const func = newRuns[0].func;
@@ -336,7 +333,7 @@ export class HistoricalRunsList extends DG.Widget {
       this._historyFilters.dataFrame = newRunsGridDf;
       this._historyGrid.dataFrame = newRunsGridDf;
 
-      this.currentDf.getCol(TAGS_COLUMN_NAME).setTag(DG.TAGS.MULTI_VALUE_SEPARATOR, ',');
+      this.currentDf.getCol(TAGS_COLUMN_NAME).meta.multiValueSeparator = ',';
 
       this.styleHistoryGrid();
       this.styleHistoryFilters();
@@ -495,13 +492,19 @@ export class HistoricalRunsList extends DG.Widget {
         const run = this.getRunByIdx(cell.tableRowIndex!)!;
 
         const unfavoriteIcon =
-          ui.iconFA('star', () => this.saveIsFavorite(run, false).then(() => this.updateRun(run)), 'Unfavorite');
+          ui.iconFA('star', () => {
+            this.saveIsFavorite(run, false);
+            this.updateRun(run);
+          }, 'Unfavorite');
         $(unfavoriteIcon).addClass('fas');
 
         cell.element = ui.div(
           cell.cell.value ?
             unfavoriteIcon :
-            ui.iconFA('star', () => this.saveIsFavorite(run, true).then(() => this.updateRun(run)), 'Favorite'),
+            ui.iconFA('star', () => {
+              this.saveIsFavorite(run, true);
+              this.updateRun(run);
+            }, 'Favorite'),
           {style: {'padding': '5px 0px'}});
       }
 
@@ -585,14 +588,16 @@ export class HistoricalRunsList extends DG.Widget {
         const unfavoriteIcon =
         ui.iconFA('star', (ev) => {
           ev.stopPropagation();
-          this.saveIsFavorite(run, false).then(() => this.updateRun(run));
+          this.saveIsFavorite(run, false);
+          this.updateRun(run);
         }, 'Unfavorite');
         unfavoriteIcon.classList.add('fas', 'hp-funccall-card-icon');
 
         const addToFavorites = ui.iconFA('star',
           (ev) => {
             ev.stopPropagation();
-            this.saveIsFavorite(run, true).then(() => this.updateRun(run));
+            this.saveIsFavorite(run, true);
+            this.updateRun(run);
           }, 'Favorite');
         addToFavorites.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
 
@@ -755,11 +760,10 @@ export class HistoricalRunsList extends DG.Widget {
     this.styleHistoryFilters();
   }});
 
-  private showInputsIcon = ui.input.toggle('Params', {value: false, onValueChanged: async () => {
-    const newValue = this.showInputsIcon.value;
+  private showInputsIcon = ui.input.toggle('Params', {value: false, onValueChanged: async (value) => {
     if (this.runs.size === 0) return;
 
-    if (newValue && this.options?.isHistory) {
+    if (value && this.options?.isHistory) {
       const fullCalls = await Promise.all(
         [...this.runs.values()].map(async (run) => {
           if (runCache.has(run.id))

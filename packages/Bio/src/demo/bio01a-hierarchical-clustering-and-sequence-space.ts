@@ -23,9 +23,9 @@ export async function demoBio01aUI() {
   const activityColName = 'activity';
 
   try {
-    const demoScript = new DemoScript(
-      'Sequence Space',
-      'Exploring sequence space of Macromolecules, comparison with hierarchical clustering results');
+    const demoScript = new DemoScript('Sequence Space',
+      'Exploring sequence space of Macromolecules, comparison with hierarchical clustering results',
+      false, {autoStartFirstStep: true});
     await demoScript
       .step(`Load DNA sequences`, async () => {
         [df, treeHelper, dendrogramSvc] = await Promise.all([

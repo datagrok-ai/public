@@ -30,7 +30,7 @@ category('Core', () => {
       simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol, C.SCALING_METHODS.MINUS_LG);
     expect(model instanceof PeptidesModel, true, 'Model is null');
 
-    const MPViewer = model!.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
+    const MPViewer = model!.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition | null;
     MPViewer!.mutationCliffsSelection = {'11': ['D']};
     await delay(3000);
   });
@@ -51,7 +51,7 @@ category('Core', () => {
       complexActivityCol, complexAlignedSeqCol, null, complexTable, complexScaledCol, C.SCALING_METHODS.MINUS_LG);
     expect(model instanceof PeptidesModel, true, 'Model is null');
 
-    const MPViewer = model!.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
+    const MPViewer = model!.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition | null;
     MPViewer!.mutationCliffsSelection = {'13': ['-']};
     await delay(3000);
   });

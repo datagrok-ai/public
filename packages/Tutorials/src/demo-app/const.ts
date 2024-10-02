@@ -4,13 +4,13 @@ export const DEMO_APP_HIERARCHY = {
 			name: 'Cheminformatics',
 			children: [
 				{
-					name: 'Proteins',
+					name: 'ADMETox',
 				},
 				{
 					name: 'Chemical Databases',
 				},
 				{
-					name: 'Docking Conformations',
+					name: 'Matched Molecular Pairs',
 				},
 				{
 					name: 'Molecule Activity Cliffs',
@@ -33,16 +33,45 @@ export const DEMO_APP_HIERARCHY = {
 			name: 'Bioinformatics',
 			children: [
 				{
-					name: 'Atomic Level',
+					name: 'Oligo Toolkit',
+					children: [
+						{
+							name: 'Translator',
+						},
+						{
+							name: 'Structure',
+						},
+						{
+							name: 'Pattern',
+						},
+					]
 				},
 				{
 					name: 'Activity Cliffs',
+				},
+				{
+					name: 'Atomic Level',
+				},
+				{
+					name: 'DiffDock',
+				},
+				{
+					name: 'Docking',
+				},
+				{
+					name: 'Docking Conformations',
+				},
+				{
+					name: 'Folding',
 				},
 				{
 					name: 'Helm, MSA, Sequence Space',
 				},
 				{
 					name: 'Macromolecule SAR Analysis',
+				},
+				{
+					name: 'Proteins',
 				},
 				{
 					name: 'Sequence Space',
@@ -161,10 +190,7 @@ export const DEMO_APP_HIERARCHY = {
 						},
 						{
 							name: 'Map',
-						},
-						{
-							name: 'Shape Map',
-						},
+						}
 					]
 				},
 				{

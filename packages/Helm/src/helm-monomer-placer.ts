@@ -10,12 +10,7 @@ import {CellRendererBackBase} from '@datagrok-libraries/bio/src/utils/cell-rende
 
 import {getParts, parseHelm} from './utils';
 
-import {_package, getMonomerLib} from './package';
-
-export interface ISeqMonomer {
-  polymerType: PolymerType;
-  symbol: string;
-}
+import {_package} from './package';
 
 export class HelmMonomerPlacer extends CellRendererBackBase<string> {
   private _allPartsList: (string[] | null)[];
@@ -31,6 +26,12 @@ export class HelmMonomerPlacer extends CellRendererBackBase<string> {
     tableCol: DG.Column<string>
   ) {
     super(gridCol, tableCol, _package.logger);
+  }
+
+  render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
+  ) {
+    throw new Error('Not implemented');
   }
 
   protected override reset(): void {
@@ -78,7 +79,7 @@ export class HelmMonomerPlacer extends CellRendererBackBase<string> {
   // -- Handle events --
 
   private monomerLibOnChanged(_value: any): void {
-    this.reset();
+    this.dirty = true;
     this.invalidateGrid();
   }
 

@@ -3,6 +3,8 @@
   "name": "MySQLNorthwind",
   "friendlyName": "Northwind",
   "parameters": {
+    "cacheResults": true,
+    "cacheSchema": true,
     "server": "db.datagrok.ai",
     "port": 33064,
     "db": "northwind"

@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {runTests, tests, TestContext, category, test as _test, delay} from '@datagrok-libraries/utils/src/test';
+import {runTests, tests, TestContext, category, test as _test, delay, initAutoTests as initCoreTests } from '@datagrok-libraries/utils/src/test';
 export const _package = new DG.Package();
 export {tests};
 
@@ -23,7 +23,13 @@ const skip = [
   'add-single-filter',
   'custom-filters',
   'filter-group',
-  'dynamic-loading'
+  'dynamic-loading',
+  //performance 
+  'read-strings',
+  'dataframe-access',
+  '1m-aggregation',
+  '100-million-rows',
+  '1-million-columns'
 ];
 
 //name: test
@@ -50,7 +56,13 @@ export async function initTests() {
         //   grok.shell.lastError = '';
         //   throw new Error(err);
         // }
+        grok.shell.closeAll();
       }, skip.includes(script.friendlyName) ? {skipReason: 'skip'} : undefined);
     });
   }
+}
+
+//name: initAutoTests
+export async function initAutoTests() {
+  await initCoreTests(_package, _package.getModule('package-test.js'));
 }

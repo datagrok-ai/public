@@ -3,54 +3,54 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 category('Benchmarks', () => {
-  test('Sequential 100', async () => {
-    const dataConnection = await grok.dapi.connections.filter(`name = "PostgreSQLDBTests"`).first();
-    const times = [];
-    for (let i = 0; i < 100; i++) {
-      const dataQuery = await dataConnection.query('test', 'SELECT 1');
-      const funcCall = dataQuery.prepare();
-      funcCall.adHoc = true;
-      times.push(await getCallTime(funcCall));
-    }
-    return getTestResult(times, times.length);
-  }, {timeout: 120000});
+  test('Sequential select 1', async () => {
+    const count = DG.Test.isInBenchmark ? 100 : 25;
+    return await benchmarkQuery('SimpleSelect', count);
+  }, {timeout: 120000, benchmark: true, stressTest: true});
 
-  test('Parallel 200', async () => {
-    const callCount: number = 200;
-    const dataConnection = await grok.dapi.connections.filter(`name = "PostgreSQLDBTests"`).first();
+  test('Parallel select 1', async () => {
+    const count = DG.Test.isInBenchmark ? 200 : 30;
     const calls = [];
-    for (let i = 0; i < callCount; i++) {
-      const dataQuery = await dataConnection.query('test', 'SELECT 1');
-      const funcCall = dataQuery.prepare();
-      funcCall.adHoc = true;
-      calls.push(getCallTime(funcCall));
-    }
+    for (let i = 0; i < count; i++)
+      calls.push(getDataQueryTime('SimpleSelect'));
     const times: number[] = [];
     const results = await Promise.allSettled(calls);
     results.forEach((result) => {
       if (result.status == 'fulfilled')
         times.push(result.value);
     });
-    return getTestResult(times, callCount);
-  });
+    return getTestResult(times, count);
+  }, {benchmark: true});
 
-  test('TestNormal', async () => {
-    return `Execution time: ${await getDataQueryTime('PostgresqlPerfTestTableNormal')}`;
-  });
+  test('Performance: TestNormal', async () => {
+    const count = DG.Test.isInBenchmark ? 5 : 1;
+    return await benchmarkQuery('PostgresqlTableNormal', count);
+  }, {timeout: 120000, benchmark: true, stressTest: true});
 
-  test('TestWide', async () => {
-    return `Execution time: ${await getDataQueryTime('PostgresqlPerfTestTableWide')}`;
-  }, {timeout: 120000});
+  test('Performance: TestWide', async () => {
+    const count = DG.Test.isInBenchmark ? 5 : 1;
+    return await benchmarkQuery('PostgresqlTableWide', count);
+  }, {timeout: 120000, benchmark: true, stressTest: true});
 
-  test('TestLong', async () => {
-    return `Execution time: ${await getDataQueryTime('PostgresqlPerfTestTableLong')}`;
-  }, {timeout: 120000});
+  test('Performance: TestWide client cached', async () => {
+    const count = DG.Test.isInBenchmark ? 5 : 2;
+    return await benchmarkQuery('PostgresqlTableWideCachedClient', count);
+  }, {benchmark: true, stressTest: true});
+
+  test('Performance: TestWide server cached', async () => {
+    const count = DG.Test.isInBenchmark ? 5 : 2;
+    return await benchmarkQuery('PostgresqlTableWideCachedServer', count);
+  }, {timeout: 120000, benchmark: true, stressTest: true});
+
+  test('Performance: TestLong', async () => {
+    return `Execution time: ${await getDataQueryTime('PostgresqlTableLong')}`;
+  }, {timeout: 120000, benchmark: true, stressTest: true});
 
   test('Compression int', async () => {
     const compressionOnTime = await getDataQueryTime('PostgresqlCompressionIntOn');
     const compressionOffTime = await getDataQueryTime('PostgresqlCompressionIntOff');
     expect(compressionOnTime < compressionOffTime * 2, true);
-  }, {skipReason: 'Feature of compression in development'});
+  }, {skipReason: 'Feature of compression in development', benchmark: true});
 });
 
 function getTestResult(times: number[], expectedCount: number): object {
@@ -64,16 +64,19 @@ function getTestResult(times: number[], expectedCount: number): object {
   };
 }
 
-export async function getCallTime(call: DG.FuncCall): Promise<number> {
-  const start = Date.now();
-  await call.call();
-  return Date.now() - start;
+async function benchmarkQuery(query: string, count: number): Promise<object> {
+  const times = [];
+  for (let i = 0; i < count; i++)
+    times.push(await getDataQueryTime(query));
+  if (count >= 2) {
+    times.shift();
+    count--;
+  }
+  return getTestResult(times, count);
 }
 
-async function getDataQueryTime(dataQueryName: string): Promise<number> {
+export async function getDataQueryTime(dataQueryName: string): Promise<number> {
   const startTime = Date.now();
-  const func: DG.Func = await grok.functions.eval('Dbtests:' + dataQueryName);
-  const call: DG.FuncCall = func.prepare();
-  await call.call();
+  await grok.functions.call('Dbtests:' + dataQueryName);
   return Date.now() - startTime;
 }

@@ -38,18 +38,18 @@ export async function multipleSequenceAlignmentUI(
     }
 
     // UI for PepSea alignment
-    const methodInput = ui.choiceInput('Method', options.pepsea.method, pepseaMethods);
+    const methodInput = ui.input.choice('Method', {value: options.pepsea.method, items: pepseaMethods});
     methodInput.setTooltip('Alignment method');
 
     // UI for Kalign alignment
-    const terminalGapInput = ui.floatInput('Terminal gap', options?.kalign?.terminalGap ?? null);
+    const terminalGapInput = ui.input.float('Terminal gap', {value: options?.kalign?.terminalGap});
     terminalGapInput.setTooltip('Penalty for opening a gap at the beginning or end of the sequence');
     const kalignVersionDiv = ui.p(`Kalign version: ${kalignVersion}`, 'kalign-version');
 
     // shared UI
-    const gapOpenInput = ui.floatInput('Gap open', options.pepsea.gapOpen);
+    const gapOpenInput = ui.input.float('Gap open', {value: options.pepsea.gapOpen});
     gapOpenInput.setTooltip('Gap opening penalty at group-to-group alignment');
-    const gapExtendInput = ui.floatInput('Gap extend', options.pepsea.gapExtend);
+    const gapExtendInput = ui.input.float('Gap extend', {value: options.pepsea.gapExtend});
     gapExtendInput.setTooltip('Gap extension penalty to skip the alignment');
 
     const msaParamsDiv = ui.inputs([gapOpenInput, gapExtendInput, terminalGapInput]);
@@ -69,25 +69,24 @@ export async function multipleSequenceAlignmentUI(
     let performAlignment: (() => Promise<DG.Column<string> | null>) | undefined;
 
     let prevSeqCol = seqCol;
-    const colInput = ui.columnInput(
-      'Sequence', table, seqCol,
-      async (valueCol: DG.Column) => {
-        if (!valueCol || valueCol.semType !== DG.SEMTYPE.MACROMOLECULE) {
+    const colInput = ui.input.column(
+      'Sequence', {table: table, value: seqCol, onValueChanged: async (value: DG.Column<any>) => {
+        if (!value || value.semType !== DG.SEMTYPE.MACROMOLECULE) {
           okBtn.disabled = true;
           await delay(0); // to
           colInput.value = prevSeqCol as DG.Column<string>;
           return;
         }
-        prevSeqCol = valueCol;
+        prevSeqCol = value;
         okBtn.disabled = false;
         performAlignment = await onColInputChange(
           colInput.value, table, pepseaInputRootStyles, kalignInputRootStyles,
           methodInput, clustersColInput, gapOpenInput, gapExtendInput, terminalGapInput,
         );
-      }, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE} as ColumnInputOptions
+      }, filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE} as ColumnInputOptions
     ) as DG.InputBase<DG.Column<string>>;
     colInput.setTooltip('Sequences column to use for alignment');
-    const clustersColInput = ui.columnInput('Clusters', table, options.clustersCol);
+    const clustersColInput = ui.input.column('Clusters', {table: table, value: options.clustersCol!});
     clustersColInput.nullable = true;
 
     const dlg = ui.dialog('MSA')

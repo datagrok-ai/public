@@ -1,10 +1,10 @@
 import * as DG from 'datagrok-api/dg';
-import {AppName, HitDesignTemplate, HitTriageTemplate} from './types';
+import {AppName, HitDesignTemplate, HitTriageTemplate, PeptiHitTemplate} from './types';
 import {HitDesignApp} from './hit-design-app';
 import {HitTriageApp} from './hit-triage-app';
 import {_package} from '../package';
 
-export class HitBaseView<Ttemplate extends HitDesignTemplate | HitTriageTemplate,
+export class HitBaseView<Ttemplate extends HitDesignTemplate | HitTriageTemplate | PeptiHitTemplate,
     Tapp extends HitDesignApp | HitTriageApp> extends DG.ViewBase {
   app: Tapp;
   protected deletedCampaigns: string[] = [];

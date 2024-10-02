@@ -13,7 +13,7 @@ type RegularizationOptions = {
 
 export async function prepareAndTrainNN(
     dataframe: DG.DataFrame,
-    predict_column: string,
+    predictColumn: DG.Column,
     activationFunc: activations = 'relu',
     hiddenLayersSizes: string = '128,128',
     initializer: string = 'randomUniform',
@@ -64,9 +64,8 @@ export async function prepareAndTrainNN(
   // }
 
   // Encode categorical data
-  const dfColumns: string[] = dataframe.columns.names();
-  const trainX_df = dataframe.clone(null, dfColumns.filter((col: string) => col !== predict_column));
-  const trainY_df = dataframe.getCol(predict_column);
+  const trainX_df = dataframe;
+  const trainY_df = predictColumn;
 
   let trainX: tf.Tensor2D = processFeatures(trainX_df);
   let trainY: tf.Tensor2D = processLables(trainY_df!);

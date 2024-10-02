@@ -114,8 +114,8 @@ export class Logger {
     console.error = intercept(console.error);
   }
 
-  static set reportPrefix(prefix: string) {
-    api.grok_Set_AutoReports_Prefix(prefix);
+  static set autoReportOptions(options: {[key: string]: any}) {
+    api.grok_Set_AutoReport_Options(toDart(options));
   }
 }
 

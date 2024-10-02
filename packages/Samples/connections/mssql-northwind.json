@@ -3,6 +3,8 @@
   "name": "MSSQLNorthwind",
   "friendlyName": "Northwind",
   "parameters": {
+    "cacheResults": true,
+    "cacheSchema": true,
     "server": "db.datagrok.ai",
     "port": 14331,
     "db": "northwind"

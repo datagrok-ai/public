@@ -1,20 +1,45 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import $ from 'cash-dom';
+import {Subscription} from "rxjs";
+import {first} from "rxjs/operators";
 
-export function scriptEditor(view: DG.View) {
-  setTimeout(function() {
-    // @ts-ignore
-    const editor = view.root.querySelector(".CodeMirror").CodeMirror;
-    const doc = editor.getDoc();
+export function initScriptEditor(view: DG.View): void {
+  const startTime = new Date().getTime();
+  let timeoutId: number | undefined;
 
-    if (doc.getLine(2) == '//language: javascript') {
-      setScriptRibbon(view, doc);
-      editor.setCursor({line: 6, ch: 0});
-      //editor.setFocus();
+  const sub: Subscription = grok.events.onViewChanged.pipe(first()).subscribe((_) => {
+    if (timeoutId)
+      clearTimeout(timeoutId);
+  });
+
+  const check = () => {
+    if (new Date().getTime() - startTime >= 1500) {
+      sub.unsubscribe();
+      return;
     }
-  }, 300);
+    const codeMirror = view.root.querySelector(".CodeMirror");
+    if (codeMirror) {
+      // @ts-ignore
+      const editor = codeMirror.CodeMirror;
+      const doc = editor.getDoc();
+      const lineCount = doc.lineCount();
+      for (let i = 0; i < lineCount; i++) {
+        if (doc.getLine(i) == '//language: javascript') {
+          setScriptRibbon(view, doc);
+          editor.setCursor({line: 6, ch: 0});
+          break;
+          //editor.setFocus();
+        }
+      }
+      sub.unsubscribe();
+      return;
+    }
+
+    timeoutId = window.setTimeout(check, 100);
+  };
+
+  check();
 }
 
 function setScriptRibbon(v: DG.View, doc: any) {
@@ -207,40 +232,40 @@ function setScriptRibbon(v: DG.View, doc: any) {
       const cursor = doc.getCursor();
       switch (item) {
       case 'Int':
-        doc.replaceRange('ui.intInput(\'Label\',0, (value)=>{})\n', cursor);
+        doc.replaceRange('ui.input.int(\'Label\', {value: 0})\n', cursor);
         break;
       case 'String':
-        doc.replaceRange('ui.stringInput(\'Label\',\'Value\', (value)=>{})\n', cursor);
+        doc.replaceRange('ui.input.string(\'Label\', {value: \'Value\'})\n', cursor);
         break;
       case 'Date':
-        doc.replaceRange('ui.dateInput(\'Label\', dayjs(\'1970-05-10\'), (value)=>{})\n', cursor);
+        doc.replaceRange('ui.input.date(\'Label\', {value: dayjs(\'1970-05-10\')})\n', cursor);
         break;
       case 'Bool':
-        doc.replaceRange('ui.boolInput(\'Label\',true, (value)=>{})\n', cursor);
+        doc.replaceRange('ui.input.bool(\'Label\', {value: true})\n', cursor);
         break;
       case 'Choice':
-        doc.replaceRange('ui.choiceInput(\'Label\',\'Val 1\', [\'Val 1\', \'Val 2\', \'Val 3\'], (value)=>{})\n', cursor);
+        doc.replaceRange('ui.input.choice(\'Label\', {value: \'Val 1\', items: [\'Val 1\', \'Val 2\', \'Val 3\']})\n', cursor);
         break;
       case 'Multi Choice':
-        doc.replaceRange('ui.multiChoiceInput(\'Label\', [\'Val 1\', \'Val 2\'], [\'Val 1\', \'Val 2\', \'Val 3\'], (value)=>{})\n', cursor);
+        doc.replaceRange('ui.input.multiChoice(\'Label\', {value: [\'Val 1\', \'Val 2\'], items: [\'Val 1\', \'Val 2\', \'Val 3\']})\n', cursor);
         break;
       case 'Text Area':
-        doc.replaceRange('ui.textInput(\'Label\', \'Value\', (value)=>{})\n', cursor);
+        doc.replaceRange('ui.input.textArea(\'Label\', {value: \'Value\'})\n', cursor);
         break;
       case 'Switch':
-        doc.replaceRange('ui.switchInput(\'demo\', false, ()=>{})\n', cursor);
+        doc.replaceRange('ui.input.toggle(\'demo\', {value: false})\n', cursor);
         break;
       case 'Column':
-        doc.replaceRange('ui.columnInput(\'Label\', table, table.col(\'age\'))\n', cursor);
+        doc.replaceRange('ui.input.column(\'Label\', {table: table, value: table.col(\'age\')})\n', cursor);
         break;
       case 'Columns':
-        doc.replaceRange('ui.columnsInput(\'Lable\', table)\n', cursor);
+        doc.replaceRange('ui.input.columns(\'Label\', {table: table})\n', cursor);
         break;
       case 'Table':
-        doc.replaceRange('ui.tableInput(\'Label\', tables[0], tables, (t) => grok.shell.info(t.name))\n', cursor);
+        doc.replaceRange('ui.input.table(\'Label\', {value: tables[0], items: tables, onValueChanged: (value) => grok.shell.info(value.name))\n', cursor);
         break;
       case 'Molecule':
-        doc.replaceRange('ui.moleculeInput(\'Label\', \'CN1CCC(O)(CC1)c2ccccc2\')\n', cursor);
+        doc.replaceRange('ui.input.molecule(\'Label\', {value: \'CN1CCC(O)(CC1)c2ccccc2\'})\n', cursor);
         break;
       }
     };

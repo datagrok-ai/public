@@ -1,6 +1,6 @@
 --name: UniqueUsers
 --input: string date { pattern: datetime }
---input: list users
+--input: list<string> users
 --connection: System:Datagrok
 select t.date::date, count(t.id) as user_count from (
 	select distinct on (date(e.event_time), u.id) u.id, e.event_time as date
@@ -8,7 +8,7 @@ select t.date::date, count(t.id) as user_count from (
 	inner join users_sessions s on e.session_id = s.id
 	inner join users u on u.id = s.user_id
 	where @date(e.event_time)
-	and (u.login = any(@users) or @users = ARRAY['all'])
+	and (u.login = any(@users) or @users = ARRAY['all']::varchar[])
 ) t
 group by t.date::date
 order by t.date::date;
@@ -16,7 +16,7 @@ order by t.date::date;
 
 --name: UniqueSessions
 --input: string date { pattern: datetime }
---input: list users
+--input: list<string> users
 --connection: System:Datagrok
 select t.date::date, count(t.id) as user_count from (
 	select distinct on (date(e.event_time), u.id) u.id, e.event_time as date
@@ -24,27 +24,27 @@ select t.date::date, count(t.id) as user_count from (
 	join users_sessions s on e.session_id = s.id
 	left join users u on u.id = s.user_id
 	where @date(e.event_time)
-	and (u.login = any(@users) or @users = ARRAY['all'])
+	and (u.login = any(@users) or @users = ARRAY['all']::varchar[])
 ) t
 group by t.date::date;
 --end
 
 --name: Usage
 --input: string date { pattern: datetime }
---input: list users
+--input: list<string> users
 --connection: System:Datagrok
 select u.login as user, u.id as user_id, t.name, t.source, e.id as event_id, e.event_time, e.description from events e
 inner join event_types t on e.event_type_id = t.id
 inner join users_sessions s on e.session_id = s.id
 inner join users u on u.id = s.user_id
 where @date(e.event_time)
-and (u.login = any(@users) or @users = ARRAY['all'])
+and (u.login = any(@users) or @users = ARRAY['all']::varchar[])
 order by e.event_time desc
 --end
 
 --name: TopPackagesByUsers
 --input: string date { pattern: datetime }
---input: list users
+--input: list<string> users
 --connection: System:Datagrok
 select t.name, count(t.id) from (
 	select pp.name, u.id from event_types et
@@ -61,7 +61,7 @@ select t.name, count(t.id) from (
 		and t.tag = 'autostart'
 	)
 	and @date(e.event_time)
-    and (u.login = any(@users) or @users = ARRAY['all'])
+    and (u.login = any(@users) or @users = ARRAY['all']::varchar[])
 	group by pp.name, u.id
 ) t
 group by t.name
@@ -71,7 +71,7 @@ limit 50;
 
 --name: TopUsers
 --input: string date { pattern: datetime }
---input: list users
+--input: list<string> users
 --connection: System:Datagrok
 select u.login, count(1) from events e
 inner join event_types t on e.event_type_id = t.id
@@ -79,6 +79,6 @@ inner join users_sessions s on e.session_id = s.id
 inner join users u on u.id = s.user_id
 where
 @date(e.event_time)
-and (u.login = any(@users) or @users = ARRAY['all'])
+and (u.login = any(@users) or @users = ARRAY['all']::varchar[])
 group by u.login
 --end

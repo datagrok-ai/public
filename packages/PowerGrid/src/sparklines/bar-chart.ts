@@ -111,23 +111,23 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
     });
 
     const normalizeInput = DG.InputBase.forProperty(globalScaleProp, settings);
-    normalizeInput.onChanged(() => gc.grid.invalidate());
+    normalizeInput.onChanged.subscribe(() => gc.grid.invalidate());
 
     const colorCodeScaleProp = DG.Property.js('colorCode', DG.TYPE.BOOL, {
       description: 'Activates color rendering'
     });
 
     const colorCodeNormalizeInput = DG.InputBase.forProperty(colorCodeScaleProp, settings);
-    colorCodeNormalizeInput.onChanged(() => { gc.grid.invalidate(); });
+    colorCodeNormalizeInput.onChanged.subscribe(() => { gc.grid.invalidate(); });
 
+    const columnNames = settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical);
     return ui.inputs([
       normalizeInput,
-      ui.columnsInput('Columns', gc.grid.dataFrame, (columns) => {
-        settings.columnNames = names(columns);
-        gc.grid.invalidate();
-      }, {
-        available: names(gc.grid.dataFrame.columns.numerical),
-        checked: settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical),
+      ui.input.columns('Columns', {value: gc.grid.dataFrame.columns.byNames(columnNames),
+        table: gc.grid.dataFrame, onValueChanged: (value) => {
+          settings.columnNames = names(value);
+          gc.grid.invalidate();
+        }, available: names(gc.grid.dataFrame.columns.numerical),
       }),
       colorCodeNormalizeInput
     ]);

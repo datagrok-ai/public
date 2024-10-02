@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
 import {CampaignJsonName, ComputeQueryMolColName} from './consts';
-import {AppName, CampaignsType} from './types';
+import {AppName, CampaignsType, TriagePermissions} from './types';
 import {_package} from '../package';
 
 export const toFormatedDateString = (d: Date): string => {
@@ -123,10 +123,44 @@ export async function loadCampaigns<T extends AppName>(
     try {
       const campaignJson: CampaignsType[T] = JSON.parse(await _package.files
         .readAsText(`${appName}/campaigns/${folder.name}/${CampaignJsonName}`));
+      if (campaignJson.authorUserId && campaignJson.permissions &&
+        !await checkViewPermissions(campaignJson.authorUserId, campaignJson.permissions)
+      )
+        continue;
       campaignNamesMap[campaignJson.name] = campaignJson;
     } catch (e) {
       continue;
     }
   }
   return campaignNamesMap;
+}
+
+async function checkPermissions(authorId: string, groupIdList: string[]): Promise<boolean> {
+  const userId = DG.User.current().id;
+  const userGroupId = DG.User.current().group?.id;
+  if (authorId === userId)
+    return true;
+  const dapiGroups = grok.dapi.groups;
+  for (const groupId of groupIdList) {
+    const group = await dapiGroups.find(groupId);
+    if (!group)
+      continue;
+    if (group.personal) {
+      const user = await dapiGroups.getUser(group);
+      if (user?.id === userId)
+        return true;
+    } else if (userGroupId && group.members.length > 0) {
+      if (group.members.some((memberGroup) => memberGroup.id === userGroupId))
+        return true;
+    }
+  }
+  return false;
+}
+
+export async function checkEditPermissions(authorId: string, permissions: TriagePermissions): Promise<boolean> {
+  return checkPermissions(authorId, permissions.edit);
+}
+
+export async function checkViewPermissions(authorId: string, permissions: TriagePermissions): Promise<boolean> {
+  return checkPermissions(authorId, Array.from(new Set([...permissions.view, ...permissions.edit])));
 }

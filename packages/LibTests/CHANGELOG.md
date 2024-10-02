@@ -1,5 +1,13 @@
 # LibTests changelog
 
+## 1.3.0 (2024-09-05)
+
+- Release for 1.21.0
+
+## 1.3.0-rc (2024-09-04)
+
+- Preparing 1.21.0 release
+
 ## 1.2.0 (2024-06-12)
 
 - Added tests for ComputeAPI

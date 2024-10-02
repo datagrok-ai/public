@@ -1,0 +1,1 @@
+{"name":"Peptide hits Demo","key":"PHD","campaignFields":[{"name":"Chemist","type":"String","required":true}],"stages":["Design","Consideration","Synthesis","Testing"],"compute":{"descriptors":{"enabled":true,"args":["MolWt","HeavyAtomMolWt","FractionCSP3"]},"functions":[],"scripts":[],"queries":[]}}

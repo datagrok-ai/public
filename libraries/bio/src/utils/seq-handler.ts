@@ -2,35 +2,21 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 
-import {
-  TAGS, ALIGNMENT, ALPHABET, NOTATION, candidateAlphabets, positionSeparator,
-  splitterAsFasta, getSplitterWithSeparator, splitterAsHelm,
-} from './macromolecule';
-import {
-  GAP_SYMBOL,
-  ISeqSplitted, SeqColStats, SplitterFunc, INotationProvider,
-} from './macromolecule/types';
+import {ALIGNMENT, ALPHABET, candidateAlphabets, getSplitterWithSeparator, NOTATION, positionSeparator, splitterAsFasta, splitterAsHelm, TAGS} from './macromolecule';
+import {INotationProvider, ISeqSplitted, SeqColStats, SplitterFunc,} from './macromolecule/types';
 import {detectAlphabet, splitterAsFastaSimple, StringListSeqSplitted} from './macromolecule/utils';
-import {
-  mmDistanceFunctions, MmDistanceFunctionsNames
-} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {mmDistanceFunctions, MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {mmDistanceFunctionType} from '@datagrok-libraries/ml/src/macromolecule-distance-functions/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '../monomer-works/monomer-utils';
 import {HELM_POLYMER_TYPE, HELM_WRAPPERS_REGEXP, PHOSPHATE_SYMBOL} from './const';
+import {GAP_SYMBOL, GapOriginals} from './macromolecule/consts';
+import {GridCellRendererTemp, CellRendererBackBase} from './cell-renderer-back-base';
 
 export const SeqTemps = new class {
   /** Column's temp slot name for a SeqHandler object */
   seqHandler = `seq-handler`;
   notationProvider = `seq-handler.notation-provider`;
 }();
-
-export const GapOriginals: {
-  [units: string]: string
-} = {
-  [NOTATION.FASTA]: '-',
-  [NOTATION.SEPARATOR]: '',
-  [NOTATION.HELM]: '*',
-};
 
 export type ConvertFunc = (src: string) => string;
 export type JoinerFunc = (src: ISeqSplitted) => string;
@@ -43,7 +29,7 @@ export class SeqHandler {
   protected readonly _units: string; // units, of the form fasta, separator
   protected readonly _notation: NOTATION; // current notation (without :SEQ:NT, etc.)
   protected readonly _defaultGapOriginal: string;
-  protected readonly notationProvider: INotationProvider | null;
+  protected readonly notationProvider: INotationProvider | null = null;
 
   private _splitter: SplitterFunc | null = null;
 
@@ -51,7 +37,7 @@ export class SeqHandler {
     if (col.type !== DG.TYPE.STRING)
       throw new Error(`Unexpected column type '${col.type}', must be '${DG.TYPE.STRING}'.`);
     this._column = col;
-    const units = this._column.getTag(DG.TAGS.UNITS);
+    const units = this._column.meta.units;
     if (units !== null && units !== undefined)
       this._units = units;
     else
@@ -74,7 +60,7 @@ export class SeqHandler {
       } else if (this.isHelm())
         SeqHandler.setUnitsToHelmColumn(this);
       else
-        throw new Error(`Unexpected units '${this.column.getTag(DG.TAGS.UNITS)}'.`);
+        throw new Error(`Unexpected units '${this.column.meta.units}'.`);
     }
 
     // if (!this.column.tags.has(TAGS.alphabetSize)) {
@@ -95,25 +81,28 @@ export class SeqHandler {
       }
     }
 
-    this.notationProvider = this.column.temp[SeqTemps.notationProvider] ?? null;
+    if (this.column.meta.units === NOTATION.CUSTOM) {
+      // this.column.temp[SeqTemps.notationProvider] must be set at detector stage
+      this.notationProvider = this.column.temp[SeqTemps.notationProvider] ?? null;
+    }
     this.columnVersion = this.column.version;
   }
 
   public static setUnitsToFastaColumn(uh: SeqHandler) {
-    if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE || uh.column.getTag(DG.TAGS.UNITS) !== NOTATION.FASTA)
+    if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE || uh.column.meta.units !== NOTATION.FASTA)
       throw new Error(`The column of notation '${NOTATION.FASTA}' must be '${DG.SEMTYPE.MACROMOLECULE}'.`);
 
-    uh.column.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    uh.column.meta.units = NOTATION.FASTA;
     SeqHandler.setTags(uh);
   }
 
   public static setUnitsToSeparatorColumn(uh: SeqHandler, separator?: string) {
-    if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE || uh.column.getTag(DG.TAGS.UNITS) !== NOTATION.SEPARATOR)
+    if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE || uh.column.meta.units !== NOTATION.SEPARATOR)
       throw new Error(`The column of notation '${NOTATION.SEPARATOR}' must be '${DG.SEMTYPE.MACROMOLECULE}'.`);
     if (!separator)
       throw new Error(`The column of notation '${NOTATION.SEPARATOR}' must have the separator tag.`);
 
-    uh.column.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
+    uh.column.meta.units = NOTATION.SEPARATOR;
     uh.column.setTag(TAGS.separator, separator);
     SeqHandler.setTags(uh);
   }
@@ -122,13 +111,13 @@ export class SeqHandler {
     if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE)
       throw new Error(`The column of notation '${NOTATION.HELM}' must be '${DG.SEMTYPE.MACROMOLECULE}'`);
 
-    uh.column.setTag(DG.TAGS.UNITS, NOTATION.HELM);
+    uh.column.meta.units = NOTATION.HELM;
     SeqHandler.setTags(uh);
   }
 
   /** From detectMacromolecule */
   public static setTags(uh: SeqHandler): void {
-    const units = uh.column.getTag(DG.TAGS.UNITS) as NOTATION;
+    const units = uh.column.meta.units as NOTATION;
 
     if ([NOTATION.FASTA, NOTATION.SEPARATOR].includes(units)) {
       // Empty monomer alphabet is allowed, only if alphabet tag is annotated
@@ -273,6 +262,16 @@ export class SeqHandler {
     }
   }
 
+  /** Any Macromolecule can be represented on Helm format. The reverse is not always possible. */
+  public async getHelm(rowIdx: number, options?: any): Promise<string> {
+    const seq: string = this.column.get(rowIdx);
+    if (this.notationProvider) {
+      const helmCol = await this.notationProvider.getHelm(this.column, options);
+      return helmCol.get(rowIdx)!;
+    } else
+      return this.convertToHelm(seq);
+  }
+
   private _stats: SeqColStats | null = null;
 
   public get stats(): SeqColStats {
@@ -289,7 +288,8 @@ export class SeqHandler {
         else if (mSeq.length !== firstLength)
           sameLength = false;
 
-        for (const cm of mSeq.canonicals) {
+        for (let posIdx = 0; posIdx < mSeq.length; ++posIdx) {
+          const cm = mSeq.getCanonical(posIdx);
           if (!(cm in freq))
             freq[cm] = 0;
           freq[cm] += 1;
@@ -354,6 +354,8 @@ export class SeqHandler {
       return NOTATION.SEPARATOR;
     else if (this.units.toLowerCase().startsWith(NOTATION.HELM))
       return NOTATION.HELM;
+    else if (this.units.toLowerCase().startsWith(NOTATION.CUSTOM))
+      return NOTATION.CUSTOM;
     else
       throw new Error(`Column '${this.column.name}' has unexpected notation '${this.units}'.`);
   }
@@ -388,10 +390,10 @@ export class SeqHandler {
   ): DG.Column<string> {
     const col = this.column;
     const name = tgtNotation.toLowerCase() + '(' + col.name + ')';
-    const newColName = colName ?? col.dataFrame.columns.getUnusedName(name);
+    const newColName = colName ?? col.dataFrame?.columns.getUnusedName(name) ?? name;
     const newColumn = DG.Column.fromList('string', newColName, data ?? new Array(this.column.length).fill(''));
     newColumn.semType = DG.SEMTYPE.MACROMOLECULE;
-    newColumn.setTag(DG.TAGS.UNITS, tgtNotation);
+    newColumn.meta.units = tgtNotation;
     if (tgtNotation === NOTATION.SEPARATOR) {
       if (!tgtSeparator) throw new Error(`Notation \'${NOTATION.SEPARATOR}\' requires separator value.`);
       newColumn.setTag(TAGS.separator, tgtSeparator);
@@ -478,7 +480,7 @@ export class SeqHandler {
       throw new Error('Invalid format of \'units\' parameter');
     const newColumn = DG.Column.fromList('string', name, new Array(len).fill(''));
     newColumn.semType = DG.SEMTYPE.MACROMOLECULE;
-    newColumn.setTag(DG.TAGS.UNITS, units);
+    newColumn.meta.units = units;
     return newColumn;
   }
 
@@ -540,7 +542,7 @@ export class SeqHandler {
 
     // get the monomer lib and check against the column
     const monomerLibHelper: IMonomerLibHelper = await getMonomerLibHelper();
-    const bioLib = monomerLibHelper.getBioLib();
+    const bioLib = monomerLibHelper.getMonomerLib();
     // retrieve peptides
     const peptides = bioLib.getMonomerSymbolsByType(HELM_POLYMER_TYPE.PEPTIDE);
     // convert the peptides list to a set for faster lookup
@@ -557,8 +559,9 @@ export class SeqHandler {
       const catI = colRawData[rowIdx];
       if (!(catI in catIdxSet)) {
         catIdxSet.add(catI);
-        const monomers = this.getSplitted(rowIdx);
-        for (const cm of monomers.canonicals) {
+        const seqSS = this.getSplitted(rowIdx);
+        for (let posIdx = 0; posIdx < seqSS.length; ++posIdx) {
+          const cm = seqSS.getCanonical(posIdx);
           if (!peptidesSet.has(cm)) {
             this.column.setTag(TAGS.isHelmCompatible, 'false');
             return false;
@@ -787,6 +790,8 @@ export class SeqHandler {
   }
 
   private convertToHelm(src: string): string {
+    if (this.notation == NOTATION.HELM) return src;
+
     const wrappers = this.getHelmWrappers();
 
     const isDnaOrRna = src.startsWith('DNA') || src.startsWith('RNA');
@@ -809,6 +814,16 @@ export class SeqHandler {
       tgtMList[posIdx] = om ? om : null;
     }
     return new StringListSeqSplitted(tgtMList.filter((om) => !!om) as string[], GapOriginals[NOTATION.HELM]);
+  }
+
+  // Custom notation provider
+
+  getRendererBack(gridCol: DG.GridColumn | null, tableCol: DG.Column<string>): CellRendererBackBase<string> {
+    const temp = this.column.temp as GridCellRendererTemp<any>;
+    let res = temp.rendererBack;
+    if (!res)
+      res = temp.rendererBack = this.notationProvider!.createCellRendererBack(gridCol, tableCol);
+    return res;
   }
 }
 

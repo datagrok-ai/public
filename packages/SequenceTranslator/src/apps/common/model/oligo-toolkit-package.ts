@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
+import {LoggerWrapper} from '@datagrok-libraries/bio/src/utils/logger';
 
 import {APP_NAME} from '../view/const';
 import {DEFAULT_LIB_FILENAME, FALLBACK_LIB_PATH} from './data-loader/const';
@@ -12,7 +13,6 @@ import {ITranslationHelper} from '../../../types';
 import {SequenceValidator} from './parsing-validation/sequence-validator';
 import {JsonData, loadJsonData} from './data-loader/json-loader';
 import {MonomerLibWrapper} from './monomer-lib/lib-wrapper';
-import {_package} from '../../../package';
 import {FormatConverter} from '../../translator/model/format-converter';
 import {FormatDetector} from './parsing-validation/format-detector';
 import {highlightInvalidSubsequence} from '../view/components/colored-input/input-painters';
@@ -39,8 +39,10 @@ export class OligoToolkitPackage extends DG.Package implements ITranslationHelpe
     return this._monomerLibWrapper;
   }
 
-  constructor() {
+  constructor(opts: { debug: boolean } = {debug: false}) {
     super();
+    // @ts-ignore
+    super._logger = new LoggerWrapper(super.logger, opts.debug);
   }
 
   private initPromise?: Promise<void>;
@@ -51,7 +53,7 @@ export class OligoToolkitPackage extends DG.Package implements ITranslationHelpe
         const packageSettings = await this.getSettings();
         let monomersPath: string = packageSettings['MonomersPath'];
         if (!monomersPath || !(await grok.dapi.files.exists(monomersPath))) {
-          _package.logger.warning(`Monomers path '${monomersPath}' not found. ` +
+          this.logger.warning(`Monomers path '${monomersPath}' not found. ` +
             `Fallback to monomers sample path '${FALLBACK_LIB_PATH}'.`);
           monomersPath = FALLBACK_LIB_PATH;
         }

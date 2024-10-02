@@ -5,10 +5,10 @@
 #tags: demo, hide-suggestions
 #sample: TSLA.csv
 #input: dataframe data [Input data table]
-#input: column x {type:numerical, allowNulls:false} [X axis column name]
-#input: column y {type:numerical, allowNulls:false} [Y axis column name]
+#input: column x {type:numerical} [X axis column name]
+#input: column y {type:numerical} [Y axis column name]
 #output: double pValue [P-value of t-statistics]
 
 using HypothesisTests
 
-pValue = pvalue(UnequalVarianceTTest(disallowmissing(data[x]), disallowmissing(data[y])));
+pValue = pvalue(UnequalVarianceTTest(disallowmissing(data[!, x]), disallowmissing(data[!, y])));

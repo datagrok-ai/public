@@ -11,11 +11,11 @@
     "css/cruddy.css"
   ],
   "dependencies": {
-    "datagrok-api": "latest",
+    "datagrok-api": "^1.21.1",
     "cash-dom": "latest",
     "dayjs": "latest",
     "rxjs": "^6.5.5",
-    "@datagrok-libraries/utils": "^4.2.11"
+    "@datagrok-libraries/utils": "^4.3.0"
   },
   "devDependencies": {
     "datagrok-tools": "latest",

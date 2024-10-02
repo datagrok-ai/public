@@ -15,12 +15,6 @@ All fucntions should be tested on sample_FASTA.csv, sample_HELM.csv, and sample_
 2. In the dialog, set Features to the sequence column. Click Ok.
 3. Run the **Hierarchical Clustering** once more with arbitrary changed parameters.
 
-***
-
-1. Open sample_FASTA_cluster.csv (sample_HELM_cluster.csv)
-1. On the menu ribbon, open **Bio** > **Analyze**> **MSA**. A dialog opens.
-1. Set Clusters to the Cluster column. Click OK.
-1. Check a new column. 
 ---
 {
   "order": 1

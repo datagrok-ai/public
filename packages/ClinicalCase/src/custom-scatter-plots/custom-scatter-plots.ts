@@ -6,7 +6,7 @@ export function createHysLawScatterPlot(dataframe, xColumn, yColumn, colorColumn
     x: xColumn,
     y: yColumn,
     color: dataframe.col(colorColumn) ? colorColumn : '',
-    legendPosition: 'Right'
+    legendPosition: DG.FlexPosition.Right,
   });
 
   sp.onAfterDrawScene.subscribe(_ => HysLawRenderLines(sp, 3, 1, 2, APColumnName));
@@ -19,7 +19,7 @@ export function createBaselineEndpointScatterPlot(dataframe, xColumn, yColumn, c
     x: xColumn,
     y: yColumn,
     color: dataframe.col(colorColumn) ? colorColumn : '',
-    legendPosition: 'Right'
+    legendPosition: DG.FlexPosition.Right,
   });
 
   sp.onAfterDrawScene.subscribe(_ => BaselineEndpointRenderLines(sp, lowLimit, highLimit));

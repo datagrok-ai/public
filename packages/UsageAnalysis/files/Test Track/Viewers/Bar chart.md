@@ -6,7 +6,7 @@
     1. Go to the **Category** info panel.
     2. Set Split to `Series`, `Primary Scaffold Name`
     3. Check/uncheck the checkboxes
-    4. Go to the grid. Right-click the Primary Scaffold and select **Color coding > Categorical, Edit.**
+    4. Go to the grid. Right-click the Primary Scaffold Name column and select **Color coding > Categorical, Edit.**
     5. Edit the color scheme. Check the bar chart coloring.
     6. Save to Layout. Check
 6. Check aggregation functions
@@ -22,7 +22,7 @@
     2. **Row Source** with different options
     3. Set **Filter** to `${CAST Idea ID} < 636500`, set color coding by Chemical Space Y, and arbitrarily change other options.
     4. Save to Layout. Check
-    5. Set **On click** to **Filter**. Check filtering (to cancel filtering click the bar chart)
+    5. Set **On click** to **Filter**. Check filtering (to reset filtering, simply click on any empty space around the bar chart)
 10. Title, Description:
     1. Add a title and a description.
     2. Change their position
@@ -32,9 +32,15 @@
     1. Change the vertical range slider and use it to scroll
     2. Set **Value** to CAST Idea ID. Scroll
 12. Tooltip
-    1. Right-click the bar chart and check all options on the **Tooltip** tab.
+    1. Right-click on the bar chart and verify that all options under the **Tooltip** tab are functioning correctly.
     2. Save to Layout. Check
+13. Inverting axes:
+  * Precondition: opened Bar chart viewer on the SPGI dataset.
+  * Open the Bar Chart's Properties panel.
+  * Navigate to Misc > Orientation. Change the viewer's orientation to Auto, Horizontal, and Vertical.
+  * Expected result: The Bar Chart viewer should rotate the axes according to the applied settings. No errors or unexpected behavior should occur during the orientation changes.
 ---
 {
-  "order": 3
+  "order": 3,
+  "datasets": ["System:DemoFiles/SPGI.csv"]
 }

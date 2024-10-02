@@ -27,17 +27,18 @@ jobs:
       job_name: ${{ steps.check-version.outputs.job_name }}
       packages_matrix: ${{ steps.packages.outputs.matrix }}
       libraries_matrix: ${{ steps.libraries.outputs.matrix }}
-      latest: ${{ steps.check-version.outputs.latest }}
+      release_tag: ${{ steps.check-version.outputs.release_tag }}
       replace_pack_dep: ${{ steps.packages.outputs.replace_pack_dep }}
       replace_lib_dep: ${{ steps.libraries.outputs.replace_lib_dep }}
+      replace_version: ${{ steps.replace_ver.outputs.replace_version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           sparse-checkout: |
-            js-api
-            packages
-            libraries
+            ./js-api
+            ./packages
+            ./libraries
       - name: Check version was changed
         id: check-version
         working-directory: ./js-api
@@ -55,15 +56,32 @@ jobs:
             if [[ ${{ github.ref }} == 'refs/heads/master' ]] || [[ ${{ github.ref }} == "refs/heads/release/"* ]]; then
               changed_version='true'
               job_name="Build and publish to NPM"
+          
+              prerelease_tag=''
+              if [[ "$current_version" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-([0-9A-Za-z\.-]+)$ ]]; then
+                base_version="${BASH_REMATCH[1]}"
+                prerelease_tag="${BASH_REMATCH[2]}"
+                # Remove any build info after the prerelease tag (if present)
+                prerelease_tag=$(echo "$prerelease_tag" | sed 's/\+.*//')
+              fi
+          
               latest_pushed=$(curl --retry 3 -LsS https://registry.npmjs.org/${name} | jq -r '.time | with_entries(select(.key | test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))) | keys | sort_by( values | split(".") | map(tonumber)) | last')
               newest_version=$(echo -e "$latest_pushed\n$current_version" | sort -V | tail -n1)
               if [[ "${newest_version}" == "${current_version}" ]]; then
-                echo "latest=true" >> $GITHUB_OUTPUT
+                if [ -n "$prerelease_tag" ]; then
+                  echo "release_tag=$prerelease_tag" >> $GITHUB_OUTPUT
+                else
+                  echo "release_tag=latest" >> $GITHUB_OUTPUT
+                fi
                 if [[ "$(awk -F. '{print $2}' <<<$latest_pushed)" -lt "$(awk -F. '{print $2}' <<<$current_version)" ]] || [[ "$(awk -F. '{print $1}' <<<$latest_pushed)" -lt "$(awk -F. '{print $1}' <<<$current_version)" ]]; then
                   echo "replace_dep=true" >> $GITHUB_OUTPUT
                 fi
               else
-                echo "latest=false" >> $GITHUB_OUTPUT
+                if [ -n "$prerelease_tag" ]; then
+                  echo "release_tag=$prerelease_tag" >> $GITHUB_OUTPUT
+                else
+                  echo "release_tag=patch" >> $GITHUB_OUTPUT
+                fi
               fi
             else
                 echo "It is an actions for development branch. Publish will be skipped"
@@ -135,6 +153,17 @@ jobs:
           JSON="{\"include\": ${MATRIX_JSON}}"
           echo "matrix=${JSON}" >> $GITHUB_OUTPUT
 
+      - name: Set version for dependencies
+        if: steps.check-version.outputs.replace_dep == 'true'
+        id: replace_ver
+        run: |
+          if [[ "${{ steps.check-version.outputs.release_tag }}" == 'patch' ]] || [[ "${{ steps.check-version.outputs.release_tag }}" == 'latest' ]]; then
+            replace_version=${{ steps.check-version.outputs.current_version }}
+          else
+            replace_version=$(echo "${{ steps.check-version.outputs.current_version }}" | sed -E 's/^([0-9]+\.[0-9]+\.[0-9]+)(-master|rc).*/\1\2/')
+          fi
+          echo "replace_version=$replace_version" >> $GITHUB_OUTPUT
+
       - name: Output
         run: |
           echo -e "changed_version: ${{ steps.check-version.outputs.changed_version }}"
@@ -142,8 +171,9 @@ jobs:
           echo -e "name: ${{ steps.check-version.outputs.name }}"
           echo -e "packages_matrix: ${{ steps.packages.outputs.matrix }}"
           echo -e "libraries_matrix: ${{ steps.libraries.outputs.matrix }}"
-          echo -e "latest: ${{ steps.check-version.outputs.latest }}"
+          echo -e "release_tag: ${{ steps.check-version.outputs.release_tag }}"
           echo -e "replace_dep: ${{ steps.check-version.outputs.replace_dep }}"
+          echo -e "replace_version: ${{ steps.replace_version.outputs.replace_version }}"
 
   build:
     name: ${{ needs.version.outputs.job_name || 'Deploy' }}
@@ -158,11 +188,12 @@ jobs:
         with:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
           sparse-checkout: |
-            js-api
-            .github
-            docker
-            packages/ApiTests
-            docusaurus
+            ./js-api
+            ./.github
+            ./docker
+            ./packages/ApiTests
+            ./libraries
+            ./docusaurus
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -222,7 +253,9 @@ jobs:
           grok config add --default --alias ${HOST} --server 'http://127.0.0.1:8080/api' --key admin
           cat /home/runner/.grok/config.yaml
       - name: Install ApiTests dependencies
-        run: npm install
+        run: |
+          npm install
+          grok link
         working-directory: ./packages/ApiTests
       - name: Build ApiTests
         run: npm run build
@@ -275,38 +308,7 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
 
-      #      - name: Install DBTests dependencies
-      #        run: npm install
-      #        working-directory: ./packages/DBTests
-      #      - name: Run DBTests
-      #        continue-on-error: true
-      #        timeout-minutes: 15
-      #        id: test-DBTests
-      #        run: |
-      #          test_result=$(npm run test -- --record --csv | grep 'Test result : ' || true)
-      #          if [ -z "$test_result" ]; then
-      #            echo "All tests finished successfully"
-      #          else
-      #            echo "Test failures"
-      #            echo -e "${test_result}"
-      #            echo -e "SLACK_MESSAGE_BODY=${SLACK_MESSAGE_BODY}*DBTests results:*\n${test_result}" | sed -e '$ ! s/$/\\n/' | tr -d '\n' >> $GITHUB_ENV
-      #            exit 1
-      #          fi
-      #        working-directory: packages/DBTests
-      #      - name: Upload DBTests results
-      #        if: steps.test-DBTests.outcome != 'skipped'
-      #        uses: actions/upload-artifact@v3
-      #        with:
-      #          name: DBTests.test-results
-      #          path: |
-      #            packages/DBTests/test-record.mp4
-      #            packages/DBTests/test-report.csv
-      #            packages/DBTests/test-console-output.log
-      #          retention-days: 14
-      #          if-no-files-found: warn
-
       - name: Prepare Slack Message
-        #        if: ${{ steps.test-ApiTests.outcome == 'failure' || steps.test-DBTests.outcome == 'failure' }}
         if: ${{ steps.test-ApiTests.outcome == 'failure' }}
         id: slack-prepare
         shell: bash
@@ -363,26 +365,79 @@ jobs:
             }
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
-#
+
       - name: npm publish
         id: publish
         run: |
           tag=""
-          if [[ "${{ needs.version.outputs.latest }}" != 'true' ]]; then
+          if [[ "${{ needs.version.outputs.release_tag }}" == 'patch' ]]; then
             tag="--tag patch"
+          elif [[ "${{ needs.version.outputs.release_tag }}" == *'master'* ]]; then
+            tag="--tag bleeding-edge"
+          elif [[ "${{ needs.version.outputs.release_tag }}" == *'rc'* ]]; then
+            tag="--tag release-candidate"
           fi
           npm publish ${tag}
+          echo "tag=${tag}" >> $GITHUB_OUTPUT
         working-directory: ./js-api
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         if: needs.version.outputs.changed_version == 'true'
+
+      - name: Prepare Slack Message
+        if: ${{ steps.publish.outcome == 'success' && !contains(matrix.package, 'Meta') }}
+        id: slack-prepare-build
+        shell: bash
+        env:
+          SLACK_ID: ${{ secrets.SLACK_ID }}
+        run: |
+          channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
+          echo "::add-mask::$channel_id"
+
+          header="*JS API* version *${{ needs.version.outputs.current_version }}* published to <https://www.npmjs.com/package/datagrok-api/v/${{ needs.version.outputs.current_version }}|NPM> with tag ${{ steps.publish.outputs.tag }}\n<@$channel_id> FYI"
+          echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
+
+          context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1 | sed -e 's/"/\\"/g')>"
+          echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
+
+      - name: Send to Slack
+        id: slack-build
+        if: steps.slack-prepare-build.outcome == 'success'
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: '#build'
+          payload: |
+            {
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "${{ env.SLACK_MESSAGE_HEADER }}"
+                        }
+                    },
+                    {
+                        "type": "context",
+                        "elements": [
+                            {
+                                "type": "mrkdwn",
+                                "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"
+                            }
+                        ]
+                    }
+                ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
+
       - name: Commit js-api version json for compatibility-tool
         if: ${{ steps.publish.outcome == 'success' }}
         working-directory: docusaurus
         run: |
           npm install
-          version=${{ needs.version.outputs.current_version }}
-          npx ts-node parser.ts $version         
+          if [[ "${{ needs.version.outputs.release_tag }}" == 'patch' ]] || [[ "${{ needs.version.outputs.release_tag }}" == 'latest' ]]; then
+            npx ts-node parser.ts ${{ needs.version.outputs.current_version }}
+          fi
           if [ -n "$(git status -s static/versions)" ]; then
             git config --global user.name 'github-actions[bot]'
             git config --global user.email 'github-actions[bot]@users.noreply.github.com'
@@ -407,13 +462,6 @@ jobs:
               fi
             done
           fi
-      - name: Slack Notification
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ steps.publish.outcome }}
-          steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
 
       - name: Commit package-lock.json
         continue-on-error: true
@@ -444,23 +492,6 @@ jobs:
             done
           fi
 
-      - name: Slack Notification
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ steps.publish.outcome }}
-          steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
-
-      - name: Slack Failed-Cancelled Notification
-        if: failure() || cancelled()
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
-
   libraries:
     name: Check libraries
     runs-on: ubuntu-22.04
@@ -479,9 +510,9 @@ jobs:
         with:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
           sparse-checkout: |
-            js-api
-            .github
-            libraries/${{ matrix.library }}
+            ./js-api
+            ./.github
+            ./libraries/${{ matrix.library }}
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -499,7 +530,7 @@ jobs:
         id: deps
         if: ${{ matrix.unpublished_dep == 'true' }}
         run: |
-          sed -i -e 's#"${{ needs.version.outputs.name }}": "../../js-api"#"${{ needs.version.outputs.name }}": "^${{ needs.version.outputs.current_version }}"#g' package.json
+          sed -i -e 's#"${{ needs.version.outputs.name }}": "../../js-api"#"${{ needs.version.outputs.name }}": "^${{ needs.version.outputs.replace_version }}"#g' package.json
         working-directory: libraries/${{ matrix.library }}
       - name: npm install
         run: rm -rf package-lock.json && npm install
@@ -549,14 +580,6 @@ jobs:
           body: "Failed to update JS API dependency for library ${{ matrix.library }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           reply_to: monitoring@datagrok.ai
 
-      - name: Slack Failed Notification
-        if: failure()
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
   packages:
     name: Check packages
     runs-on: ubuntu-22.04
@@ -575,10 +598,10 @@ jobs:
         with:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
           sparse-checkout: |
-            js-api
-            .github
-            libraries
-            packages/${{ matrix.package }}
+            ./js-api
+            ./.github
+            ./libraries
+            ./packages/${{ matrix.package }}
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -596,7 +619,7 @@ jobs:
         id: deps
         if: ${{ matrix.unpublished_dep == 'true' }}
         run: |
-          sed -i -e 's#"${{ needs.version.outputs.name }}": "../../js-api"#"${{ needs.version.outputs.name }}": "^${{ needs.version.outputs.current_version }}"#g' package.json
+          sed -i -e 's#"${{ needs.version.outputs.name }}": "../../js-api"#"${{ needs.version.outputs.name }}": "^${{ needs.version.outputs.replace_version }}"#g' package.json
         working-directory: packages/${{ matrix.package }}
       - name: npm install
         run: rm -rf package-lock.json && npm install
@@ -644,11 +667,3 @@ jobs:
           from: monitoring@grok.datagrok.ai
           body: "Failed to update JS API dependency for package ${{ matrix.package }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           reply_to: monitoring@datagrok.ai
-      - name: Slack Failed Notification
-        if: failure()
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}

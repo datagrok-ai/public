@@ -38,10 +38,15 @@ export * from './src/ml';
 export * from './src/utils';
 export * from './src/ui/tree-view';
 
+import * as grok from './grok';
+import * as ui from './ui';
+
 $(function () {
   (<any>window).$ = $;
   (<any>window).dayjs = dayjs;
   (<any>window).wu = wu;
+  (<any>window).grok = grok;
+  (<any>window).ui = ui;
 
   window.addEventListener("error", function (e) {
     if (e.error?.message == '[object ProgressEvent]')

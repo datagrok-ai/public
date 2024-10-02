@@ -18,10 +18,10 @@ let translate: AWS.Translate;
 //let comprehendMedical;
 
 // UI components for the `Translation` panel
-const sourceLangInput = ui.choiceInput('', 'Undetermined', [...Object.keys(lang2code), 'Undetermined', 'Other']);
-const targetLangInput = ui.choiceInput('', 'English', [...Object.keys(lang2code), 'Choose...']);
+const sourceLangInput = ui.input.choice('', {value: 'Undetermined', items: [...Object.keys(lang2code), 'Undetermined', 'Other']});
+const targetLangInput = ui.input.choice('', {value: 'English', items: [...Object.keys(lang2code), 'Choose...']});
 const headerDiv = ui.divH([sourceLangInput.root, targetLangInput.root], 'nlp-header-div');
-const translationArea = ui.textInput('', '');
+const translationArea = ui.input.textArea('', {value: ''});
 translationArea.input.classList.add('nlp-translation-area');
 const mainDiv = ui.divV([headerDiv, translationArea.root], 'nlp-main-div');
 const mainWidget = new DG.Widget(mainDiv);
@@ -129,8 +129,8 @@ async function doTranslation() {
 //output: widget result
 //condition: isTextFile(textfile)
 export async function translationPanel(textfile: DG.FileInfo) {
-  sourceLangInput.onChanged(async (_: string) => doTranslation());
-  targetLangInput.onChanged(async (_: string) => doTranslation());
+  sourceLangInput.onChanged.subscribe(async (_) => doTranslation());
+  targetLangInput.onChanged.subscribe(async (_) => doTranslation());
 
   sourceText = await extractText(textfile);
   if (!sourceText) {

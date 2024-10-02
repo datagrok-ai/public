@@ -15,6 +15,7 @@ plot.setOptions({
 showRegressionLine: true, markerType: 'square'
 });
 ```
+
 ---
 {
   "order": 18

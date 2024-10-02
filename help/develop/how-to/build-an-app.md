@@ -675,7 +675,7 @@ along with a target of high performance and low latency of the UI, we've built o
 relying on one of the existing frameworks.
 
 For most HTML elements such as buttons or dropdowns, our library is very lightweight, our classes such as
-`ui.button` or `ui.choiceInput` are just tiny wrappers around regular DOM elements. In fact, you can always access an
+`ui.button` or `ui.input.choice` are just tiny wrappers around regular DOM elements. In fact, you can always access an
 underlying DOM object of our UI element with the `.root` property. There are also more advanced controls not available
 in browsers out of the box, such as panes, accordions and dock views.
 

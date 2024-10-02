@@ -1,0 +1,59 @@
+{
+  "name": "@datagrok/bionemo",
+  "friendlyName": "BioNeMo",
+  "fullName": "BioNeMo",
+  "version": "0.0.1",
+  "author": {
+    "name": "Oleksandra Serhiienko",
+    "email": "oserhiienko@datagrok.ai"
+  },
+  "description": "",
+  "dependencies": {
+    "@datagrok-libraries/utils": "^4.3.0",
+    "axios": "^1.7.4",
+    "cash-dom": "latest",
+    "datagrok-api": "latest",
+    "dayjs": "latest",
+    "@datagrok-libraries/bio": "^5.42.14"
+  },
+  "devDependencies": {
+    "datagrok-tools": "latest",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "webpack": "latest",
+    "webpack-cli": "latest",
+    "css-loader": "latest",
+    "style-loader": "latest"
+  },
+  "scripts": {
+    "link-all": "",
+    "debug-bionemo": "webpack && grok publish",
+    "release-bionemo": "webpack && grok publish --release",
+    "build-bionemo": "webpack",
+    "build": "webpack",
+    "debug-bionemo-dev": "webpack && grok publish dev",
+    "release-bionemo-dev": "webpack && grok publish dev --release",
+    "debug-bionemo-local": "webpack && grok publish local",
+    "release-bionemo-local": "webpack && grok publish local --release",
+    "debug-bionemo-release.datagrok.ai": "webpack && grok publish release.datagrok.ai",
+    "release-bionemo-release.datagrok.ai": "webpack && grok publish release.datagrok.ai --release",
+    "debug-bionemo-localhost": "webpack && grok publish localhost",
+    "release-bionemo-localhost": "webpack && grok publish localhost --release",
+    "debug-bionemo-test.datagrok.ai": "webpack && grok publish test.datagrok.ai",
+    "release-bionemo-test.datagrok.ai": "webpack && grok publish test.datagrok.ai --release",
+    "debug-bionemo-release-ec2.datagrok.ai": "webpack && grok publish release-ec2.datagrok.ai",
+    "release-bionemo-release-ec2.datagrok.ai": "webpack && grok publish release-ec2.datagrok.ai --release",
+    "test": "grok test"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/BioNeMo"
+  }
+}

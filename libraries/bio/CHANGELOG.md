@@ -1,5 +1,123 @@
 # bio changelog
 
+## 5.44.2 (2024-09-27)
+
+### New features
+
+* Add IMonomer .override method
+* Add IMonomerLibHelper .loadMonomerLibForTests method
+
+### Bug fixes
+
+* Fix cell renderer monomer placer to handle currentRow reset
+* Fix test Helm HelmHelper.removeGaps
+
+## 5.44.1 (2024-09-25)
+
+### New features
+
+* Add IMonomerLibBase interface for overriding libraries
+* Add custom notation for sequences
+
+## 5.44.0 (2024-09-24)
+
+### New features
+
+* Add monomer hover link
+* Add getMolHighlight to build ISubstruct from monomer map
+* Add HelmHelper parse and removeGaps methods
+
+### Bug fixes
+
+* Fix toAtomicLevel for sequences with gaps
+* Fix toAtomicLevel for polymerType of sequence monomer
+* Fix ISeqMonomer for biotype and add position
+* Fix ISeqSplitted remove .canonicals and .originals
+* Fix IMonomerLib .getTooltip for biotype of HelmType
+* Fix toAtomicLevel linear for sequences with gaps
+
+## 5.43.1 (2024-09-22)
+
+Add monomer background coloring
+
+## 5.43.0 (2024-09-18)
+
+Add coloring from monomer library to separator/fasta renderer
+
+## 5.42.15 (2024-09-10)
+
+### Bug fixes
+
+* Fix default lib summary for tests
+
+## 5.42.14 (2024-09-04)
+
+### Bug fixes
+
+* Fix toAtomicLevel workers error DG is not defined
+* Fix SeqHandler.getHelm lost cycles, add tests`
+* Add options for SeqHandler.getHelm
+* Fix default monomer libs for PolyTool rules
+
+## 5.42.13 (2024-09-02)
+
+* Add interfaces for monomer management
+
+## 5.42.12 (2024-08-30)
+
+Add getHelm to SeqHandler and INotationProvider
+
+## 5.42.11 (2024-08-24)
+
+### Bug fixes
+
+* Bump HWE dependencies versions
+* Fix for user settings for publish
+
+## 5.42.10 (2024-08-23)
+
+### Features
+
+* Add SeqHandler
+
+## 5.42.9 (2024-08-16)
+
+### Features
+
+* HWE option for continuous monomer numbering
+* Add HelmInput mouse events redraw, showTooltip
+* Bump HWE dependencies versions
+
+## 5.42.8 (2024-08-14)
+
+Fix monomer substitution matrix calculation
+
+## 5.42.7 (2024-08-12)
+
+### Features
+
+* Monomer sets defined with .json files
+
+### Bug fixes
+
+* Fix cell renderer base dirty flag and reset
+
+## 5.42.6 (2024-07-29)
+
+### Features
+
+* sequenceChemSimilarity: warning in case reference monomer not found in monomer library
+
+## 5.42.5 (2024-07-23)
+
+### Features
+
+* Add IHelmHelper.createHelmInput, ui.input.helmAsync
+
+### Bug fixes
+
+* Fix identity scoring for seqs of different lengths
+
 ## 5.42.4 (2024-07-02)
 
 Fix types ISeqMonomer from Helm

@@ -6,7 +6,9 @@ import * as color from '../utils/color-utils';
 import { FuncMetadata, FuncParam, FuncValidator, ValidationResult } from '../utils/interfaces';
 import { PackageFile } from '../utils/interfaces';
 import * as testUtils from '../utils/test-utils';
+import { error } from 'console';
 
+const warns = ['Latest package version', 'Datagrok API version should contain'];
 
 export function check(args: CheckArgs): boolean {
   const nOptions = Object.keys(args).length - 1;
@@ -31,36 +33,47 @@ function runChecks(packagePath: string): boolean {
   const packageFiles = ['src/package.ts', 'src/detectors.ts', 'src/package.js', 'src/detectors.js',
     'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js'];
   const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f));
+  const errors: string[] = [];
   const warnings: string[] = [];
   const packageFilePath = path.join(packagePath, 'package.json');
   const json: PackageFile = JSON.parse(fs.readFileSync(packageFilePath, { encoding: 'utf-8' }));
 
   const webpackConfigPath = path.join(packagePath, 'webpack.config.js');
   const isWebpack = fs.existsSync(webpackConfigPath);
+  let isReleaseCandidateVersion: boolean = false;
   let externals: { [key: string]: string } | null = null;
+
+  if (/\d+.\d+.\d+-rc(.[A-Za-z0-9]*.[A-Za-z0-9]*)?/.test(json.version))
+    isReleaseCandidateVersion = true;
   if (isWebpack) {
     const content = fs.readFileSync(webpackConfigPath, { encoding: 'utf-8' });
     externals = extractExternals(content);
     if (externals)
-      warnings.push(...checkImportStatements(packagePath, jsTsFiles, externals));
+      errors.push(...checkImportStatements(packagePath, jsTsFiles, externals));
   }
-  warnings.push(...checkSourceMap(packagePath));
-  warnings.push(...checkFuncSignatures(packagePath, funcFiles));
-  warnings.push(...checkPackageFile(packagePath, json, { isWebpack, externals }));
-  warnings.push(...checkChangelog(packagePath, json));
+  errors.push(...checkSourceMap(packagePath));
+  errors.push(...checkNpmIgnore(packagePath));
+  warnings.push(...checkScriptNames(packagePath));
+  errors.push(...checkFuncSignatures(packagePath, funcFiles));
+  errors.push(...checkPackageFile(packagePath, json, { isWebpack, externals, isReleaseCandidateVersion }));
+  if (!isReleaseCandidateVersion)
+    warnings.push(...checkChangelog(packagePath, json));
 
   if (warnings.length) {
-    console.log(`Checking package ${path.basename(packagePath)}...`);
+    console.log(`${path.basename(packagePath)} warnings`);
     warn(warnings);
-    if (json.version.startsWith('0') || (warnings.every((w) => warns.some((ww) => w.includes(ww)))))
+  }
+
+  if (errors.length) {
+    console.log(`Checking package ${path.basename(packagePath)}...`);
+    showError(errors);
+    if (json.version.startsWith('0') || (errors.every((w) => warns.some((ww) => w.includes(ww)))))
       return true;
     testUtils.exitWithCode(1);
   }
   console.log(`Checking package ${path.basename(packagePath)}...\t\t\t\u2713 OK`);
   return true;
 }
-
-const warns = ['Latest package version', 'Datagrok API version should contain'];
 
 function runChecksRec(dir: string): boolean {
   const files = fs.readdirSync(dir);
@@ -298,7 +311,7 @@ const sharedLibExternals: { [lib: string]: {} } = {
 
 export function checkPackageFile(packagePath: string, json: PackageFile, options?: {
   externals?:
-  { [key: string]: string } | null, isWebpack?: boolean
+  { [key: string]: string } | null, isWebpack?: boolean | null, isReleaseCandidateVersion?: boolean
 }): string[] {
   const warnings: string[] = [];
   const isPublicPackage = path.basename(path.dirname(packagePath)) === 'packages' &&
@@ -331,7 +344,7 @@ export function checkPackageFile(packagePath: string, json: PackageFile, options
   if (api) {
     if (api === '../../js-api') { } else if (api === 'latest')
       warnings.push('File "package.json": you should specify Datagrok API version constraint (for example ^1.16.0, >=1.16.0).');
-    else if (!/^(\^|>|<|~).+/.test(api))
+    else if (options?.isReleaseCandidateVersion === false && (!/^(\^|>|<|~).+/.test(api)))
       warnings.push('File "package.json": Datagrok API version should starts with > | >= | ~ | ^ | < | <=');
   }
 
@@ -372,6 +385,31 @@ export function checkPackageFile(packagePath: string, json: PackageFile, options
       if (!(fs.existsSync(path.join(packagePath, source))))
         warnings.push(`Source ${source} not found in the package.`);
     }
+  }
+
+  if (options?.isReleaseCandidateVersion === true) {
+    let hasRCDependency = false; 
+
+    for (let dependency of Object.keys(json.dependencies ?? {})) { 
+      if (/\d+.\d+.\d+-rc(.[A-Za-z0-9]*.[A-Za-z0-9]*)?/.test((json.dependencies ?? {})[dependency])) {
+        hasRCDependency = true;
+        break;
+      }
+    }
+
+    if (!hasRCDependency) {
+      for (let dependency of Object.keys(json.dependencies ?? {})) {
+        console.log(dependency);
+        console.log((json.dependencies ?? {})[dependency]);
+        if (/\d+.\d+.\d+-rc(.[A-Za-z0-9]*.[A-Za-z0-9]*)?/.test((json.devDependencies ?? {})[dependency])) {
+          hasRCDependency = true;
+          break;
+        }
+      }
+    }
+
+    if (!hasRCDependency)
+      warnings.push('Release candidate error: Current package doesnt have any dependencies from any release candidate package ');
   }
 
   return warnings;
@@ -430,6 +468,64 @@ export function checkSourceMap(packagePath: string): string[] {
 
   }
   return warnings;
+}
+
+
+export function checkNpmIgnore(packagePath: string): string[] {
+  const warnings: string[] = [];
+  if (path.join(...[packagePath, '.npmignore'])) {
+    const npmIgnoreContent: string = fs.readFileSync(path.join(...[packagePath, '.npmignore']), { encoding: 'utf-8' });
+    for (const row of npmIgnoreContent.split('\n')) {
+      if ((row.match(new RegExp('\\s*dist\\/?\\s*$'))?.length || -1) > 0) {
+        warnings.push('there is dist directory in .npmignore')
+        break;
+      }
+    }
+  }
+  else
+    warnings.push('.npmignore doesnt exists')
+
+  return warnings;
+}
+
+function checkScriptNames(packagePath: string): string[] {
+  const warnings: string[] = [];
+
+  try {
+    if (fs.existsSync(packagePath)) {
+      const filesInDirectory = getAllFilesInDirectory(packagePath);
+      for (const fileName of filesInDirectory) {
+        if (fileName.match(new RegExp('^[A-Za-z0-9._-]*$'))?.length !== 1)
+          warnings.push(`${fileName}: file name contains inappropriate symbols`);
+      }
+    }
+  } catch (err) {
+  }
+  return warnings;
+}
+
+
+function getAllFilesInDirectory(directoryPath: string): string[] {
+  const excludedFilesToCheck: string[] = ['node_modules', 'dist'];
+
+  let fileNames: string[] = [];
+  const entries = fs.readdirSync(directoryPath);
+  entries.forEach(entry => {
+    const entryPath = path.join(directoryPath, entry);
+    const stat = fs.statSync(entryPath);
+
+    if (stat.isFile()) {
+      fileNames.push(entry);
+    } else if (stat.isDirectory() && !excludedFilesToCheck.includes(entry)) {
+      const subDirectoryFiles = getAllFilesInDirectory(entryPath);
+      fileNames = fileNames.concat(subDirectoryFiles);
+    }
+  });
+  return fileNames;
+}
+
+function showError(errors: string[]): void {
+  errors.forEach((w) => color.error(w));
 }
 
 function warn(warnings: string[]): void {

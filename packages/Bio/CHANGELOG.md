@@ -1,5 +1,140 @@
 # Bio changelog
 
+## 2.15.6 (2024-09-27)
+
+### Bug fixes
+
+* Fix detectMacromolecule forbidding monomers '2,...', add test
+* Fix using IMonomerLibHelper.loadMonomerLibForTests
+* Fix cell renderer to reset reference sequence on reset current row
+* GROK-16699: Fix PepSeA container return meaningful error messages, unskip test
+* Fix test data monomers add aG, azG
+* Fix unskip toAtomicLevel tests depending on HelmHelper
+* Fix detectMacromolecule for harmonized sequences, add test
+
+## 2.15.5 (2024-09-25)
+
+### New features
+
+* Add custom notation, fix tests
+* Add overriding monomer library for toAtomicLevel
+
+### Bug fixes
+
+* Fix skipping tests depending on new Helm
+
+## 2.15.4 (2024-09-24)
+
+### New features
+
+* Add monomer hover handling for substruct
+* Add highlight param for toAtomicLevel
+* Add HelmHelper parse and removeGaps methods
+* Add naturalMonomerColors for monomers of MonomerLib
+* Add MonomerLib.getWebEditorMonomer (for color)
+* Add function Identity for Add new Column
+
+### Bug fixes
+
+* Fix toAtomicLevel for sequences with gaps
+* Fix ISeqSplitted remove .canonicals and .originals
+* Fix toAtomicLevel tests for linear with gaps
+
+## 2.15.3 (2024-09-22)
+
+Add monomer background coloring
+
+## 2.15.2 (2024-09-18)
+
+Add monomer coloring for fasta/separator from monomer library
+
+## 2.15.1 (2024-09-10)
+
+### Bug fixes
+
+* Fix benchmark tests to sync calls
+* Bump dependencies versions
+
+## 2.15.0 (2024-09-04)
+
+Monomer manager
+
+### Features
+
+* Add getHelm for Cyclized notation provider
+* Add detector for Dimerized notation provider
+* Add Monomer library manager view with duplicate preferences
+* Add Monomer manager for editing/adding/removing monomers
+* Add monomer lib for PolyTool rules
+
+### Bug fixes
+
+* Fix tests benchmark
+* Fix typo Needleman-Wunsch
+* Fix test flapping benchmark separatorDnaShorts50Few50
+* Fix toAtomicLevel workers error DG is not defined
+* Fix biosubstructure filter
+* Fix SeqHandler.getHelm lost cycles, add tests
+* Fix SeqlHelper.helmToAtomicLevel to work without table
+
+## 2.14.3 (2024-08-27)
+
+### Bug fixes
+
+* Order Top menu
+* Fix to Atomic Level hide highlight column
+* Fix to Atomic Level for column
+* Bump dependencies version, fix tests
+
+## 2.14.2 (2024-08-23)
+
+### Features
+
+* Add highlighting monomer at atomic level
+
+### Bug fixes
+
+* Add tests for toAtomicLevel UI
+* Fix demo Helm, MSA, Sequence Space viewer adding
+
+## 2.14.1 (2024-08-14)
+
+Fix monomer substitution matrix calculation
+
+## 2.14.0 (2024-08-06)
+
+### Features
+
+* Add loading monomer sets from .json files
+
+### Bug fixes
+
+* Fix cell renderer dirty flag and reset
+
+## 2.13.8 (2024-08-08)
+
+* Downgrade API version
+
+## 2.13.7 (2024-08-08)
+
+* Adjust monomer max lengths for monomer renderer
+
+## 2.13.6 (2024-07-29)
+
+* SequenceChemSimilarity: warning in case reference monomer not found in monomer library
+
+## 2.13.5 (2024-07-23)
+
+### Bug fixes
+
+* Fix tests for Helm package init wait
+* Add detectMacromolecule tests for fasta single char unknown alphabet
+* Fix detectMacromolecule checkBadMultichar wo RegExp and fail early
+* Fix use allowUnionTypes to allow union types in JSON schema
+* GROK-15793: Fix Calculate Identity, Similarity error Index out of bounds
+* Add progress indicator for loading monomer libraries
+* Fix detectMacromolecule to reject FASTA with numeric monomer
+
 ## 2.13.4 (2024-07-02)
 
 ### Bug fixes

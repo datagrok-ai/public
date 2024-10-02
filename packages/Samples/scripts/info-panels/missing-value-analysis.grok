@@ -2,8 +2,9 @@
 #description: Shows number of missing values, if any
 #language: grok
 #tags: demo, panel
+#sample: demog.csv
+#input: dataframe table
 #input: column signal {type:numerical}
-#condition: t != null && t.name == "demog" && t.rowCount < 100000 && signal.stats.nulls > 0
 #output: int missingValueCount
 #test1: MissingValues(ApiTests:getColumn(ApiTests:getTable('demog'), 'height')) == 751
 

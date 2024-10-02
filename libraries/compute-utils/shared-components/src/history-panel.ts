@@ -7,7 +7,6 @@ import {historyUtils} from '../../history-utils';
 import '../css/history-panel.css';
 import {HistoricalRunsList} from './history-list';
 import {filter} from 'rxjs/operators';
-import {getStartedOrNull} from '../../shared-utils/utils';
 
 export class HistoryPanel extends DG.Widget {
   // Emitted when FuncCall should is chosen. Contains FuncCall ID

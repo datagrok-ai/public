@@ -1,3 +1,4 @@
+// Deprecated. Use UserSettingsStorage.
 // User data storage demo: Saving values to storage
 
 const STORAGE_NAME = 'user-data-storage-demo';

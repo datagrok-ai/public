@@ -61,6 +61,10 @@ String matching is case-insensitive. If the input does not match above-mentioned
 | last week              |                                               |
 | last month             |                                               |
 | last year              |                                               |
+| september              | specific month of any year                    |
+| jun-aug                | range of months in any year                   |
+| mon                    | specific weekday of any year and month        |
+| wednesday-friday       | range of weekdays                             |
 
 ## Provider compatibility
 

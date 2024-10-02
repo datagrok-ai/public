@@ -1,6 +1,7 @@
-Open SPGI.csv
+Open linked datasets
 
 Scaffold tree highlighting issue
+
 1. Add a scaffold with coloring
 2. Add a SF (Structure Filter) with a substructure that intersects with the scaffold
 3. Disable the scaffold tree filter - its highlighting should not be displayed
@@ -36,6 +37,7 @@ Scaffold tree highlighting issue
 ***
 
 [#2526](https://github.com/datagrok-ai/public/issues/2526) Scaffold tree shouldn't reorient molecules in the grid:
+
 1. Open chembl-scaffolds.csv dataset, click the **Smiles** column's header.
 2. Go to the context panel > Chemistry > Rendering.
 3. Select **Scaffold** in Scaffolds column dropdown - each molecule in dataset is reoriented by corresponding scaffold.
@@ -48,7 +50,7 @@ Expected result: benzene is highlighted with corresponding color but molecules a
 
 [#2626](https://github.com/datagrok-ai/public/issues/2626):
 
-1. Open SPGI.
+1. Open linked datasets.
 2. Add a scaffold tree filter.
 3. Draw some structure containing H atoms ([H]N).
 4. Add a child node.
@@ -57,7 +59,7 @@ Expected result: benzene is highlighted with corresponding color but molecules a
 
 [#2139](https://github.com/datagrok-ai/public/issues/2139):
 
-1. Open SPGI.
+1. Open linked datasets.
 2. Add a scaffold tree filter.
 3. Add a new root structure.
 4. Draw an invalid structure.
@@ -71,3 +73,9 @@ Expected result: benzene is highlighted with corresponding color but molecules a
 3. Add scaffold tree viewer.
 3. On the Filter Panel hover over the question mark.
 
+---
+{
+"datasets": [
+"System:DemoFiles/chem/SPGI.csv"
+]
+}

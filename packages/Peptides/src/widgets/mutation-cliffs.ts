@@ -124,13 +124,13 @@ function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOpti
   const pairsTable = DG.DataFrame.fromColumns([substCol, activityDeltaCol, hiddenSubstToAarCol, toIdxCol, fromIdxCol]);
   pairsTable.name = 'Mutation Cliff pairs';
 
-  const aminoToInput = ui.stringInput('Mutated to:', '', () => {
-    const substitutedToAar = aminoToInput.stringValue;
+  const aminoToInput = ui.input.string('Mutated to:', {value: '', onValueChanged: (value) => {
+    const substitutedToAar = value;
     if (substitutedToAar !== '')
       pairsTable.filter.init((idx) => hiddenSubstToAarCol.get(idx) === substitutedToAar);
     else
       pairsTable.filter.setAll(true);
-  });
+  }});
   aminoToInput.setTooltip('Filter the rows by the monomer that the mutation was substituted to');
 
   const pairsGrid = pairsTable.plot.grid();
@@ -243,6 +243,9 @@ function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOpti
     pairsGrid.root.style.setProperty('width', '100%');
     uniqueSequencesGrid.root.style.removeProperty('width');
     uniqueSequencesGrid.root.style.setProperty('width', '100%');
+    pairsGrid.root.style.minHeight = '250px';
+    uniqueSequencesGrid.root.style.minHeight = '250px';
   }, 200);
+
   return {pairsGrid, uniqueSequencesGrid, aminoToInput};
 }

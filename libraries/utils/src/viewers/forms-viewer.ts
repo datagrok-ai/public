@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
-import {Observable} from 'rxjs';
+import {Observable, Subject} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import '../../css/forms.css';
 
@@ -23,6 +23,9 @@ export class FormsViewer extends DG.JsViewer {
   columnLabelWidth: number = 0;
   currentRowIndicator = ui.div('', 'd4-multi-form-form-indicator d4-multi-form-form-indicator-current-row');
   mouseOverRowIndicator = ui.div('', 'd4-multi-form-form-indicator d4-multi-form-form-indicator-mouse-over-row');
+  splitColLeft: HTMLElement;
+  splitColRight: HTMLElement;
+  inputClicked: Subject<string> = new Subject();
 
   set dataframe(df: DG.DataFrame) {
     this.dataFrame = df;
@@ -67,8 +70,8 @@ export class FormsViewer extends DG.JsViewer {
     const formWithHeaderDiv = ui.splitH([columnHeadersBox, this.virtualView.root], null, true);
     this.root.appendChild(formWithHeaderDiv);
 
-    const splitColLeft = formWithHeaderDiv.firstElementChild as HTMLElement;
-    const splitColRight = formWithHeaderDiv.lastElementChild as HTMLElement;
+    this.splitColLeft = formWithHeaderDiv.firstElementChild as HTMLElement;
+    this.splitColRight = formWithHeaderDiv.lastElementChild as HTMLElement;
 
     ui.tooltip.bind(this.currentRowIndicator, 'Current row');
     ui.tooltip.bind(this.mouseOverRowIndicator, 'Mouse over row');
@@ -79,7 +82,7 @@ export class FormsViewer extends DG.JsViewer {
         min-width: 150px;
         flex-shrink: 0;
       `;
-      splitColLeft.style.cssText = `
+      this.splitColLeft.style.cssText = `
         overflow: hidden!important;
       `;
       columnHeadersBox.style.cssText = `
@@ -101,17 +104,21 @@ export class FormsViewer extends DG.JsViewer {
     });
 
     ui.tools.waitForElementInDom(this.virtualView.root).then((_) => {
-      const rootWidth = this.root.getBoundingClientRect().width;
-      splitColLeft.style.width = `${this.columnLabelWidth+30}px`;
-      splitColRight.style.width = `${rootWidth-this.columnLabelWidth-30-4}px`;
-    });
-    
+      this.fitHeaderToLabelWidth();
+    });  
   }
 
-  getColumnWidth(el:HTMLElement){
+  fitHeaderToLabelWidth(width?: number) {
+    const w = width ?? this.columnLabelWidth;
+    const rootWidth = this.root.getBoundingClientRect().width;
+    this.splitColLeft.style.width = `${w + 30}px`;
+    this.splitColRight.style.width = `${rootWidth - w - 30 - 4}px`;
+  }
+
+  getColumnWidth(el:HTMLElement) {
     return parseInt(el.style.width);
   }
-  
+
   onTableAttached() {
     if (this.fieldsColumnNames === null)
       this.setfieldsColumnNames(this.dataFrame.columns.names());
@@ -234,18 +241,22 @@ export class FormsViewer extends DG.JsViewer {
             if (this.colorCode) {
               const grid = ((this.view ?? grok.shell.tv) as DG.TableView).grid;
               if (grid) {
-                const color = grid.cell(name, row).color;
-                if (grid.col(name)?.isTextColorCoded)
-                  input.input.setAttribute('style', `color:${DG.Color.toHtml(color)}!important;`);
-                else {
-                  input.input.setAttribute('style',
-                    `color:${DG.Color.toHtml(DG.Color.getContrastColor(color))}!important;`);
-                  input.input.style.backgroundColor = DG.Color.toHtml(color);
+                const gridCellIdx = grid.getRowOrder().indexOf(row);
+                if (gridCellIdx !== -1) {
+                  const color = grid.cell(name, gridCellIdx).color;
+                  if (grid.col(name)?.isTextColorCoded)
+                    input.input.setAttribute('style', `color:${DG.Color.toHtml(color)}!important;`);
+                  else {
+                    input.input.setAttribute('style',
+                      `color:${DG.Color.toHtml(DG.Color.getContrastColor(color))}!important;`);
+                    input.input.style.backgroundColor = DG.Color.toHtml(color);
+                  }
                 }
               }
             }
             input.input.onclick = (e: MouseEvent) => {
               this.dataFrame.currentCell = this.dataFrame.cell(row, name);
+              this.inputClicked.next(name);
             };
             ui.tooltip.bind(input.input, name);
 

@@ -15,7 +15,7 @@ export class DashboardTutorial extends Tutorial {
     return 'Creation of interactive dashboards';
   }
   get steps(): number {
-    return 25;
+    return 28;
   }
 
   demoTable: string = '';
@@ -80,9 +80,14 @@ export class DashboardTutorial extends Tutorial {
 
     await this.buttonClickAction($('.d4-ribbon')[0]!, 'Save the query', 'SAVE');
 
-    const paramEditorDlg = await this.openDialog('Hit the "Run query..." under "Actions" on toolbox',
-      queryName, $('.d4-link-action').filter((_, el) => $(el).text() === 'Run query...')[0]);
-    
+    const browseSidebar = grok.shell.sidebar.getPane('Browse').header;
+    await this.action(
+        'Find Browse on the sidebar and click',
+        waitForElementClick(browseSidebar), browseSidebar);
+
+    const paramEditorDlg = await this.openDialog('Find the created query in the browse view, right-click it and hit Run',
+      queryName, $('div.d4-tree-view-item-label').filter((idx, el) => (el.textContent ?? '')?.includes(queryName))[0]!);
+
     await this.dlgInputAction(paramEditorDlg, 'Set state to "NY"', 'State', 'NY');
 
     const resultRowCount = 645;
@@ -93,9 +98,6 @@ export class DashboardTutorial extends Tutorial {
     })), $(paramEditorDlg.root).find('button.ui-btn.ui-btn-ok')[0]);
 
     this.title('Create a dashboard');
-
-    await this.openViewByType('Add query results to the workspace',
-      DG.VIEW_TYPE.TABLE_VIEW, $('div.d4-ribbon-item').has('i.fa-plus')[0]);
 
     await this.openPlot('bar chart', (x) => x.type === DG.VIEWER.BAR_CHART);
 
@@ -115,7 +117,7 @@ export class DashboardTutorial extends Tutorial {
 
     await this.action('Enable Data sync', new Observable((subscriber: any) => {
       $(projectDlg.root).find('.ui-input-switch').one('click', () => subscriber.next(true));
-    }), $(projectDlg.root).find('.ui-input-switch')[0]);
+    }), $(projectDlg.root).find('.ui-input-switch')[1]);
 
     const sharingDescription = 'You can share a newly created project with other users of the platform. Also, ' +
       'there is a link your project will be available at. Copy it, if you prefer this way of sharing.';
@@ -123,14 +125,13 @@ export class DashboardTutorial extends Tutorial {
       $(projectDlg.root).find('button.ui-btn.ui-btn-ok')[0]);
     await this.action('Skip the sharing step', shareDlg.onClose, null, sharingDescription);
 
-    const browseSidebar = grok.shell.sidebar.getPane('Browse').header;
-    await this.action(
-      'Find Browse on the sidebar and click', 
-      waitForElementClick(browseSidebar), browseSidebar);
+    const closeProjectDescription = 'You can close the project by right-clicking on the sidebar and clicking "Close all"';
+    await this.action('Close the project', grok.events.onProjectClosed.pipe(filter((p: DG.Project) => p.friendlyName === projectName)), null, closeProjectDescription);
 
+    await delay(1000);
     const dashboardsLabel = $('div.d4-tree-view-item-label').filter((idx, el) => (el.textContent ?? '')?.startsWith('Dashboards'))[0]!;
 
-    await this.action('Open the project gallery', waitForElementClick(dashboardsLabel), dashboardsLabel);
+    await this.action('Open browse and click on Dashboards', waitForElementClick(dashboardsLabel), dashboardsLabel);
 
     await this.action('Find and open your project',
       grok.events.onProjectOpened.pipe(filter((p: DG.Project) => p.friendlyName === projectName)));

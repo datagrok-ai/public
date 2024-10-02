@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import {_package} from '../../package';
 import * as C from '../consts';
 import '../../../css/hit-triage.css';
-import {HitDesignTemplate, IComputeDialogResult, INewTemplateResult} from '../types';
+import {IComputeDialogResult, INewTemplateResult, PeptiHitTemplate} from '../types';
 import {chemFunctionsDialog} from '../dialogs/functions-dialog';
 import {getCampaignFieldEditors} from './new-template-accordeon';
 import {ItemType, ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
@@ -12,8 +12,8 @@ import {HitAppBase} from '../hit-app-base';
 import {getLayoutInput} from './layout-input';
 
 export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
-  preset?: HitDesignTemplate): Promise<INewTemplateResult<HitDesignTemplate>> {
-  const availableTemplates = (await _package.files.list('Hit Design/templates'));
+  preset?: PeptiHitTemplate): Promise<INewTemplateResult<PeptiHitTemplate>> {
+  const availableTemplates = (await _package.files.list(`${app.appName}/templates`));
   let hasNameError = false;
   let hasKeyError = false;
   // Remove .json from end
@@ -22,7 +22,7 @@ export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
 
   for (const file of availableTemplates) {
     try {
-      const t: HitDesignTemplate = JSON.parse(await _package.files.readAsText(file));
+      const t: PeptiHitTemplate = JSON.parse(await _package.files.readAsText(file));
       availableTemplateKeys.push(t.key);
     } catch (e) {
       console.error(e);
@@ -33,7 +33,8 @@ export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
   availableSubmitFunctions.forEach((func) => {
     submitFunctionsMap[func.friendlyName ?? func.name] = func;
   });
-  const submitFunctionInput = ui.choiceInput('Submit function', null, [null, ...Object.keys(submitFunctionsMap)]);
+  const submitFunctionInput = ui.input.choice('Submit function',
+    {value: null, items: [null, ...Object.keys(submitFunctionsMap)]});
   submitFunctionInput.nullable = true;
   submitFunctionInput.value = preset?.submit?.fName ?? null;
   submitFunctionInput.setTooltip('Select function to be called upon submitting');
@@ -58,7 +59,7 @@ export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
       hasNameError = false;
     }
   }
-  const templateNameInput = ui.stringInput('Name', preset?.name ?? '', onTemplateNameChanged);
+  const templateNameInput = ui.input.string('Name', {value: preset?.name ?? '', onValueChanged: onTemplateNameChanged});
 
   // ######### TEMPLATE KEY INPUT #########
   function onTemplateKeyChange() {
@@ -79,7 +80,7 @@ export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
     }
   }
 
-  const templateKeyInput = ui.stringInput('Key', preset?.key ?? '', onTemplateKeyChange);
+  const templateKeyInput = ui.input.string('Key', {value: preset?.key ?? '', onValueChanged: onTemplateKeyChange});
   templateKeyInput.setTooltip('Template key used for campaign prefix');
   templateNameInput.setTooltip('Template name');
   templateNameInput.root.style.borderBottom = 'none';
@@ -97,7 +98,7 @@ export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
       },
       functions: preset?.compute?.functions ?? [],
     },
-  } as unknown as HitDesignTemplate;
+  } as unknown as PeptiHitTemplate;
   const funcInput = await chemFunctionsDialog(app, (res) => {funcDialogRes = res;}, () => null,
     dummyTemplate, false);
   funcInput.root.classList.add('hit-triage-new-template-functions-input');
@@ -131,7 +132,7 @@ export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
     const cancelButton = ui.button(C.i18n.cancel, () => resolve());
     buttonsContainerDiv.appendChild(cancelButton);
   });
-  const promise = new Promise<HitDesignTemplate>((resolve) => {
+  const promise = new Promise<PeptiHitTemplate>((resolve) => {
     async function onOkProxy() {
       onTemplateNameChanged();
       onTemplateKeyChange();
@@ -146,7 +147,7 @@ export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
       }
 
       const submitFunction = submitFunctionInput.value ? submitFunctionsMap[submitFunctionInput.value] : undefined;
-      const out: HitDesignTemplate = {
+      const out: PeptiHitTemplate = {
         name: templateNameInput.value,
         key: templateKeyInput.value,
         campaignFields: fieldsEditor.getFields(),
@@ -188,7 +189,7 @@ export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
         },
         ...(submitFunction ? {submit: {fName: submitFunction.name, package: submitFunction.package.name}} : {}),
       };
-      saveHitDesignTemplate(out);
+      saveHitDesignTemplate(out, app.appName);
       grok.shell.info('Template created successfully');
       resolve(out);
     }
@@ -199,8 +200,8 @@ export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
   return {root: form, template: promise, cancelPromise};
 }
 
-export function saveHitDesignTemplate(template: HitDesignTemplate) {
-  _package.files.writeAsText(`Hit Design/templates/${template.name}.json`, JSON.stringify(template));
+function saveHitDesignTemplate(template: PeptiHitTemplate, appName: string) {
+  _package.files.writeAsText(`${appName}/templates/${template.name}.json`, JSON.stringify(template));
 }
 
 

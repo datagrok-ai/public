@@ -85,7 +85,7 @@ export class StudySummaryView extends ClinicalCaseViewBase {
     checkColumnsAndCreateViewer(
       study.domains.dm,
       [VIEWS_CONFIG[this.name][TRT_ARM_FIELD]],
-      this.armChart, () => {
+      this.armChart, () => {//@ts-ignore
         let arm = DG.Viewer.barChart(study.domains.dm, { split: VIEWS_CONFIG[this.name][TRT_ARM_FIELD], style: 'dashboard', barColor: DG.Color.lightBlue });
         arm.root.prepend(ui.divText('Treatment arm', this.viewerTitle));
         updateDivInnerHTML(this.armChart, arm.root);
@@ -95,7 +95,7 @@ export class StudySummaryView extends ClinicalCaseViewBase {
     checkColumnsAndCreateViewer(
       study.domains.dm,
       [SEX],
-      this.sexChart, () => {
+      this.sexChart, () => {//@ts-ignore
         let sex = DG.Viewer.barChart(study.domains.dm, { split: SEX, style: 'dashboard' });
         sex.root.prepend(ui.divText('Sex', this.viewerTitle));
         updateDivInnerHTML(this.sexChart, sex.root);
@@ -105,7 +105,7 @@ export class StudySummaryView extends ClinicalCaseViewBase {
     checkColumnsAndCreateViewer(
       study.domains.dm,
       [RACE],
-      this.raceChart, () => {
+      this.raceChart, () => {//@ts-ignore
         let race = DG.Viewer.barChart(study.domains.dm, { split: RACE, style: 'dashboard' });
         race.root.prepend(ui.divText('Race', this.viewerTitle));
         updateDivInnerHTML(this.raceChart, race.root);
@@ -115,7 +115,7 @@ export class StudySummaryView extends ClinicalCaseViewBase {
     checkColumnsAndCreateViewer(
       study.domains.dm,
       [AGE],
-      this.ageChart, () => {
+      this.ageChart, () => { //@ts-ignore
         let age = DG.Viewer.histogram(study.domains.dm, { value: AGE, style: 'dashboard' });
         age.root.prepend(ui.divText('Age', this.viewerTitle));
         updateDivInnerHTML(this.ageChart, age.root);
@@ -192,8 +192,8 @@ export class StudySummaryView extends ClinicalCaseViewBase {
 
   override async propertyPanel() {
     const httpService = new HttpService();
-    //let clinTrialsGovInfo = await httpService.getStudyData('R01NS050536', Object.keys(CLINICAL_TRIAL_GOV_FIELDS));
-    let clinTrialsGovInfo = await httpService.getStudyData(this.studyId, Object.keys(CLINICAL_TRIAL_GOV_FIELDS));
+    let clinTrialsGovInfo = await httpService.getStudyData('R01NS050536', Object.keys(CLINICAL_TRIAL_GOV_FIELDS));
+    //let clinTrialsGovInfo = await httpService.getStudyData(this.studyId, Object.keys(CLINICAL_TRIAL_GOV_FIELDS));
 
     let acc = this.createAccWithTitle(this.studyId)
 

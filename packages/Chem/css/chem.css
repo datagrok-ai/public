@@ -129,13 +129,17 @@
   height: 30px !important;
 }
 
+.chem-scaffold-tree-progress {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
 .chem-scaffold-tree-cancel-hint {
   text-align: center;
-  position: absolute;
-  top: 55%;
   font-size: 13px;
-  width: 100% !important;
-  height: 30px !important;
 }
 
 .chem-scaffold-tree-generate-message-hint {
@@ -157,6 +161,10 @@
   color: var(--blue-1);
   display: flex;
   align-items: center;
+}
+
+.chem-scaffold-tree-toolbar .ui-input-choice.ui-input-root {
+  width: 50px;
 }
 
 .chem-scaffold-tree-toolbar .d4-flex-row .grok-icon.fal.fa-angle-double-down,
@@ -383,10 +391,6 @@
   margin-left: 0px!important;
 }
 
-.chem-mcs-settings-label {
-  width: 98px!important;
-}
-
 .chem-viewer-grid {
   margin: 6px 0;
   gap: 6px;
@@ -398,12 +402,14 @@
   position: relative;
 }
 
-.chem-tooltip-widget {
+.chem-tooltip-structure-div {
+  display: grid;
+  grid-template-columns: repeat(3, 75px);
+}
+
+.chem-tooltip-text {
   position: relative;
-  top: -80px;
-  left: 120px;
-  width: 335px;
-  height: 0px;
+  left: 20px;
 }
 
 .chem-substructure-limit-error {
@@ -462,7 +468,7 @@
 }
 
 .chem-filter-fp-editor {
-  width: 82px;
+  width: 82px!important;
 }
 
 .chem-filter-fp-label {
@@ -475,7 +481,11 @@
 }
 
 .chem-filter-sim-cutoff-editor {
-  width: 94px;
+  width: 94px!important;
+}
+
+.chem-filter-search-type .ui-input-editor {
+  width: auto!important;
 }
 
 .chem-search-options-icon {
@@ -549,19 +559,12 @@
   top: 546px;
 }
 
-.chem-rgroup-replace-latest {
-  position: absolute!important;
-  top: 540px;
-  left: 148px;
-}
-
-.chem-rgroup-settings-div > .ui-input-root {
+.chem-rgroup-settings-div .ui-input-root {
   padding: 0px!important;
 }
 
 .grok-chem-filter-options {
-  bottom: 455px!important;
-  left: 360px!important;
+  position: unset;
 }
 
 .dlg-chem-descriptors {
@@ -677,4 +680,21 @@
 .mmpa-slider-input > input[type="range"]::-moz-range-thumb {
   height: 8px;
   width: 8px;
+}
+
+.mmpa-fragments-tab .mmpa-pairs-slider{
+  display: flex;
+  padding-right: 32px;
+}
+
+.mmpa-fragments-tab .mmpa-activity-filters{
+  display: none;
+}
+
+.mmpa-cliffs-tab .mmpa-activity-filters{
+  display: flex;
+}
+
+.mmpa-cliffs-tab .mmpa-pairs-slider{
+  display: none;
 }

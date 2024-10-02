@@ -13,7 +13,7 @@ import {getLayoutInput} from './layout-input';
 
 
 export async function createTemplateAccordeon(app: HitAppBase<any>,
-  dataSourceFunctionMap: { [key: string]: DG.Func | DG.DataQuery },
+  dataSourceFunctionMap: { [key: string]: DG.Func | DG.DataQuery | DG.Script },
 ): Promise<INewTemplateResult<HitTriageTemplate>> {
   const availableTemplates = (await _package.files.list('Hit Triage/templates')).map((file) => file.name.slice(0, -5));
   const availableTemplateKeys: string[] = [];
@@ -27,7 +27,8 @@ export async function createTemplateAccordeon(app: HitAppBase<any>,
   availableSubmitFunctions.forEach((func) => {
     submitFunctionsMap[func.friendlyName ?? func.name] = func;
   });
-  const submitFunctionInput = ui.choiceInput('Submit function', null, [null, ...Object.keys(submitFunctionsMap)]);
+  const submitFunctionInput =
+    ui.input.choice('Submit function', {value: null, items: [null, ...Object.keys(submitFunctionsMap)]});
   submitFunctionInput.value = null;
   submitFunctionInput.nullable = true;
   submitFunctionInput.fireChanged();
@@ -37,24 +38,24 @@ export async function createTemplateAccordeon(app: HitAppBase<any>,
 
   const keyErrorDiv = ui.divText('Template key is empty or already exists', {classes: 'hit-triage-error-div'});
 
-  const templateNameInput = ui.stringInput('Name', '', () => {
-    if (templateNameInput.value === '' || availableTemplates.includes(templateNameInput.value)) {
+  const templateNameInput = ui.input.string('Name', {value: '', onValueChanged: (value) => {
+    if (value === '' || availableTemplates.includes(value)) {
       templateNameInput.root.style.borderBottom = '1px solid red';
       errorDiv.style.opacity = '100%';
     } else {
       templateNameInput.root.style.borderBottom = 'none';
       errorDiv.style.opacity = '0%';
     }
-  });
-  const templateKeyInput = ui.stringInput('Key', '', () => {
-    if (templateKeyInput.value === '' || availableTemplateKeys.includes(templateKeyInput.value)) {
+  }});
+  const templateKeyInput = ui.input.string('Key', {value: '', onValueChanged: (value) => {
+    if (value === '' || availableTemplateKeys.includes(value)) {
       templateKeyInput.root.style.borderBottom = '1px solid red';
       keyErrorDiv.style.opacity = '100%';
     } else {
       templateKeyInput.root.style.borderBottom = 'none';
       keyErrorDiv.style.opacity = '0%';
     }
-  });
+  }});
 
   templateKeyInput.setTooltip('Template key used for campaign prefix');
   templateNameInput.setTooltip('Template name');
@@ -80,26 +81,17 @@ export async function createTemplateAccordeon(app: HitAppBase<any>,
   if (Object.entries(dataSourceFunctionMap).length === 0) {
   // functions that have special tag and are applicable for data source. they should return a dataframe with molecules
     const dataSourceFunctions = DG.Func.find({tags: [C.HitTriageDataSourceTag]});
-    const dataSourceQueries = await grok.dapi.queries.include('params,connection')
-      .filter(`#${C.HitTriageDataSourceTag}`).list();
-    // DG.Script.create
     dataSourceFunctions.forEach((func) => {
       dataSourceFunctionMap[func.friendlyName ?? func.name] = func;
     });
-    dataSourceQueries.forEach((query) => {
-      dataSourceFunctionMap[query.friendlyName ?? query.name] = query;
-    });
   }
   const combinedSourceNames = Object.keys(dataSourceFunctionMap);
-  const dataSourceFunctionInput = ui.choiceInput(
-    C.i18n.dataSourceFunction, combinedSourceNames[0],
-    combinedSourceNames);
-  const ingestTypeInput = ui.choiceInput<IngestType>('Ingest using', 'Query', ['Query', 'File'], () => {
-    if (ingestTypeInput.value !== 'Query')
-      dataSourceFunctionInput.root.style.display = 'none';
-    else
-      dataSourceFunctionInput.root.style.display = 'block';
-  });
+  const dataSourceFunctionInput = ui.input.choice(
+    C.i18n.dataSourceFunction, {value: combinedSourceNames[0], items: combinedSourceNames});
+  const ingestTypeInput = ui.input.choice<IngestType>('Ingest using', {value: 'Query', items: ['Query', 'File'],
+    onValueChanged: (value) => {
+      dataSourceFunctionInput.root.style.display = value === 'Query' ? 'block' : 'none';
+    }});
 
   const fieldsEditor = getCampaignFieldEditors();
 

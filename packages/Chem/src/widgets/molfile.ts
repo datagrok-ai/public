@@ -9,7 +9,7 @@ import {getRdKitModule} from '../utils/chem-common-rdkit';
 export function getPanelElements(molStr: string): [HTMLButtonElement, HTMLButtonElement, DG.InputBase] {
   const molfileStr = DG.chem.isMolBlock(molStr) ? molStr : oclMol(molStr).toMolfile();
 
-  const molfileInput = ui.textInput('', molfileStr);
+  const molfileInput = ui.input.textArea('', {value: molfileStr});
   molfileInput.input.style.height = '300px';
   molfileInput.input.style.overflow = 'hidden';
 

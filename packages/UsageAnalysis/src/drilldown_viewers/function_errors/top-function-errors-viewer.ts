@@ -45,8 +45,8 @@ export class TopFunctionErrorsViewer extends UaFilterableQueryViewer {
             `Errors: ${args.args.categories[0]}`,
             'Errors');
 
-          const isError = ui.boolInput('Is error', eventInfo.get('is_error', 0));
-          const comment = ui.stringInput('Comment', eventInfo.get('comment', 0));
+          const isError = ui.input.bool('Is error', {value: eventInfo.get('is_error', 0)});
+            const comment = ui.input.string('Comment', {value: eventInfo.get('comment', 0)});
           const acc = DG.Accordion.create('ErrorInfo');
 
           acc.addPane('Error details', () => {

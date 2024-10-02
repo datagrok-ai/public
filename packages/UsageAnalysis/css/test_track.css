@@ -65,16 +65,21 @@
 }
 
 .tt-history i:nth-child(1) {
+  filter: blur(0.5px);
+  opacity: 0.8;
+}
+
+.tt-history i:nth-child(2) {
   filter: blur(0.7px);
   opacity: 0.7;
 }
 
-.tt-history i:nth-child(2) {
+.tt-history i:nth-child(3) {
   filter: blur(0.9px);
   opacity: 0.5;
 }
 
-.tt-history i:nth-child(3) {
+.tt-history i:nth-child(4) {
   filter: blur(1.1px);
   opacity: 0.3;
 }
@@ -125,6 +130,11 @@
   text-overflow: ellipsis;
   overflow: hidden;
   color: var(--grey-4);
+  
+}
+
+.tt-dialog .d4-dialog-contents{
+  overflow: hidden;
 }
 
 .tt-reason br {
@@ -135,16 +145,15 @@
   align-self: center;
   margin-right: 8px;
   margin-left: auto;
-  color: var(--grey-3);
+  color: #2083d5;
+  font-weight: bold;
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
-}
+} 
 
-.tt-dialog .ui-input-label {
-  width: unset !important;
-  min-width: unset !important;
-  max-width: unset !important;
+#tt-name:hover{
+  cursor: pointer;
 }
 
 .tt-reason-dialog {
@@ -153,4 +162,46 @@
 
 .tt-dialog .ui-input-textarea {
   height: 100%;
+}
+
+.tt-dialog .ui-input-textarea{ 
+  display: inline-block;
+}
+
+.tt-dialog .ui-input-textarea textarea{
+  vertical-align: bottom;
+  resize: vertical;
+  width: 65%;
+}
+
+.tt-dialog .ui-input-reason textarea{
+  height: 100px;
+  min-width: 74%;
+  max-width: 80%; 
+  resize: none;
+}
+
+.tt-dialog .ui-input-reason label{
+  height: 100px;
+  vertical-align: top;
+  justify-content:flex-start;
+  min-width: 74%;
+  max-width: 80%;
+}
+
+.tt-dialog .create-ticket-button{
+  align-self: end;
+}
+
+.tt-dialog .d4-pane-jira_tickets .d4-flex-col{
+  width: 75%;
+}
+
+.tt-dialog .skipped-textarea textarea{ 
+  min-width: 85%;
+  max-width: 100%;
+}
+
+.no-after::after{
+  display: none !important;
 }

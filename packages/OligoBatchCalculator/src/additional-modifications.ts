@@ -9,32 +9,29 @@ import {STORAGE_NAME, CURRENT_USER, ADDITIONAL_MODS_COL_NAMES, BASE_MODIFICATION
 export async function addModification(modificationsDf: DG.DataFrame): Promise<void> {
   if (!await isCurrentUserAppAdmin()) return grok.shell.warning(MESSAGES.USER_IS_NOT_ADMIN);
 
-  const longName = ui.textInput(ADDITIONAL_MODS_COL_NAMES.LONG_NAMES, '');
+  const longName = ui.input.textArea(ADDITIONAL_MODS_COL_NAMES.LONG_NAMES, {value: ''});
   ui.tooltip.bind(longName.root, TOOLTIPS.LONG_NAME);
 
-  const abbreviation = ui.textInput(ADDITIONAL_MODS_COL_NAMES.ABBREVIATION, '');
+  const abbreviation = ui.input.textArea(ADDITIONAL_MODS_COL_NAMES.ABBREVIATION, {value: ''});
   ui.tooltip.bind(abbreviation.root, TOOLTIPS.ABBREVIATIONS);
 
-  const molecularWeight = ui.stringInput(ADDITIONAL_MODS_COL_NAMES.MOLECULAR_WEIGHT, '', (v: string) => {
-    if (isNaN(Number(v)))
-      grok.shell.warning(MESSAGES.isNumericTypeValidation(ADDITIONAL_MODS_COL_NAMES.MOLECULAR_WEIGHT));
-  });
+  const molecularWeight = ui.input.string(ADDITIONAL_MODS_COL_NAMES.MOLECULAR_WEIGHT, {value: '',
+    onValueChanged: (value) => {
+      if (isNaN(Number(value)))
+        grok.shell.warning(MESSAGES.isNumericTypeValidation(ADDITIONAL_MODS_COL_NAMES.MOLECULAR_WEIGHT));
+    }});
   ui.tooltip.bind(molecularWeight.root, TOOLTIPS.MOL_WEIGHT);
 
-  const baseModification = ui.choiceInput(
-    ADDITIONAL_MODS_COL_NAMES.BASE_MODIFICATION,
-    BASE_MODIFICATIONS.NO,
-    Object.values(BASE_MODIFICATIONS),
-    (v: string) => {
-      if (v != BASE_MODIFICATIONS.NO)
+  const baseModification = ui.input.choice(ADDITIONAL_MODS_COL_NAMES.BASE_MODIFICATION, {value: BASE_MODIFICATIONS.NO,
+    items: Object.values(BASE_MODIFICATIONS), onValueChanged: (value) => {
+      if (value != BASE_MODIFICATIONS.NO)
         extCoefficient.value = EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION;
-      extCoefficient.enabled = (v == BASE_MODIFICATIONS.NO);
-    },
-  );
+      extCoefficient.enabled = (value == BASE_MODIFICATIONS.NO);
+    }});
   ui.tooltip.bind(baseModification.root, TOOLTIPS.BASE_MODIFICATION);
 
-  const extCoefficient = ui.stringInput(ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT, '');
-  extCoefficient.onInput(() => {
+  const extCoefficient = ui.input.string(ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT, {value: ''});
+  extCoefficient.onInput.subscribe(() => {
     if (isNaN(Number(extCoefficient.value)))
       grok.shell.warning(MESSAGES.isNumericTypeValidation(ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT));
   });
@@ -117,7 +114,7 @@ export async function editModification(additionalModsDf: DG.DataFrame, additiona
 
   // Set dropdown list for values in BASE_MODIFICATION columns
   additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.BASE_MODIFICATION)
-    .setTag(DG.TAGS.CHOICES, stringify(Object.values(BASE_MODIFICATIONS)));
+    .meta.choices = Object.values(BASE_MODIFICATIONS);
 
   // Add trash icons to 'Action' column
   const col = additionaModifsGrid.col(ADDITIONAL_MODS_COL_NAMES.ACTION)!;
@@ -172,7 +169,7 @@ export async function editModification(additionalModsDf: DG.DataFrame, additiona
 
     if (colName == ADDITIONAL_MODS_COL_NAMES.BASE_MODIFICATION) {
       if (value == BASE_MODIFICATIONS.NO) {
-        const extCoefChoiceInput = ui.floatInput('', 0);
+        const extCoefChoiceInput = ui.input.float('', {value: 0});
         ui.dialog('Enter Extinction Coefficient Value')
           .add(extCoefChoiceInput)
           .onOK(async () => {

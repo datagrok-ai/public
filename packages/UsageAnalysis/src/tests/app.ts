@@ -4,8 +4,8 @@ import { before, after, category, test, expect, awaitCheck } from '@datagrok-lib
 
 
 category('App', () => {
-  const tabs = ['Overview', 'Packages', 'Functions', 'Events', 'Log', 'Tests'];
-  const num = [4, 4, 5, 4, 3, 5];
+  const tabs = ['Overview', 'Packages', 'Functions', 'Events', 'Log'];
+  const num = [4, 4, 5, 4, 3];
   let view: DG.MultiView;
 
   before(async () => {
@@ -17,7 +17,7 @@ category('App', () => {
     expect(grok.shell.v.name === 'Usage Analysis', true, 'cannot find Usage Analysis view');
   });
 
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < tabs.length; i++) {
     test(tabs[i], async () => {
       view.tabs.currentPane = view.tabs.getPane(tabs[i]);
       let err: any = undefined;
@@ -31,7 +31,7 @@ category('App', () => {
         `expected ${num[i]}, got ${document.querySelectorAll(s).length}`, 45000);
       if (err)
         throw new Error(err);
-    });
+    }, {stressTest: true});
   }
 
   after(async () => {

@@ -1,0 +1,44 @@
+{
+  "name": "pyodide",
+  "friendlyName": "Pyodide",
+  "version": "0.0.1",
+  "description": "",
+  "sources": [
+    "https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"
+  ],
+  "dependencies": {
+    "datagrok-api": "latest",
+    "cash-dom": "latest",
+    "dayjs": "latest",
+    "@datagrok-libraries/utils": "latest"
+  },
+  "devDependencies": {
+    "datagrok-tools": "latest",
+    "webpack": "latest",
+    "webpack-cli": "latest",
+    "ts-loader": "latest",
+    "typescript": "latest"
+  },
+  "scripts": {
+    "link-all": "grok link",
+    "debug-pyodide": "webpack && grok publish",
+    "release-pyodide": "webpack && grok publish --release",
+    "build-pyodide": "webpack",
+    "build": "webpack",
+    "debug-pyodide-dev": "webpack && grok publish dev",
+    "release-pyodide-dev": "webpack && grok publish dev --release",
+    "debug-pyodide-public": "webpack && grok publish public",
+    "release-pyodide-public": "webpack && grok publish public --release"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Pyodide"
+  }
+}

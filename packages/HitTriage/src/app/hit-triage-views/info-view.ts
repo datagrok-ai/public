@@ -7,12 +7,14 @@ import {HitTriageTemplate} from '../types';
 import {CampaignIdKey, CampaignJsonName, i18n} from '../consts';
 import {HitTriageCampaign} from '../types';
 import '../../../css/hit-triage.css';
-import {addBreadCrumbsToRibbons, loadCampaigns, modifyUrl, popRibbonPannels} from '../utils';
+import {addBreadCrumbsToRibbons, checkEditPermissions, checkViewPermissions,
+  loadCampaigns, modifyUrl, popRibbonPannels} from '../utils';
 import {newCampaignAccordeon} from '../accordeons/new-campaign-accordeon';
 import $ from 'cash-dom';
 import {createTemplateAccordeon} from '../accordeons/new-template-accordeon';
 import {HitBaseView} from '../base-view';
 import {u2} from '@datagrok-libraries/utils/src/u2';
+import {defaultPermissions} from '../dialogs/permissions-dialog';
 
 export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
   public readmePath = _package.webRoot + 'README_HT.md';
@@ -86,10 +88,11 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
       containerDiv.appendChild(newCampaignAccordeon);
     };
 
-    const templatesInput = ui.choiceInput(i18n.selectTemplate, presetTemplate?.name ?? templates[0], templates,
-      async () => {
-        await onTemmplateChange();
-      });
+    const templatesInput =
+      ui.input.choice(i18n.selectTemplate, {value: presetTemplate?.name ?? templates[0], items: templates,
+        onValueChanged: async () => {
+          await onTemmplateChange();
+        }});
     const createNewtemplateButton = ui.icons.add(async () => {
       ui.setUpdateIndicator(this.root, true);
       await this.createNewTemplate();
@@ -113,6 +116,17 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
       return;
     const campaign: HitTriageCampaign =
       JSON.parse(await _package.files.readAsText(`Hit Triage/campaigns/${campaignId}/${CampaignJsonName}`));
+
+    if (campaign) {
+      // in case if the link was opened and user has no permissions to view the campaign
+      if (campaign.authorUserId && campaign.permissions &&
+          !await checkViewPermissions(campaign.authorUserId, campaign.permissions)
+      ) {
+        this.app.setBaseUrl();
+        return;
+      }
+      this.app.campaign = campaign;
+    }
     // Load the template and modify it
     const template: HitTriageTemplate = JSON.parse(
       await _package.files.readAsText(`Hit Triage/templates/${campaign.templateName}.json`),
@@ -129,22 +143,32 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
   private async getCampaignsTable() {
     const campaignNamesMap = await loadCampaigns('Hit Triage', this.deletedCampaigns);
 
-    const campaignsInfo = Object.values(campaignNamesMap).map((campaign) =>
-      ({name: campaign.name, createDate: campaign.createDate,
-        rowCount: campaign.rowCount, filtered: campaign.filteredRowCount, status: campaign.status}));
+    const deleteCampaignIcon = (info: HitTriageCampaign) => {
+      const icon = ui.icons.delete(async () => {
+        ui.dialog('Delete campaign')
+          .add(ui.divText(`Are you sure you want to delete campaign ${info.name}?`))
+          .onOK(async () => {
+            await this.deleteCampaign('Hit Triage', info.name);
+            this.deletedCampaigns.push(info.name);
+            await this.init();
+          })
+          .show();
+      }, 'Delete campaign');
+      icon.style.display = 'none';
+      const authorId = info.authorUserId ?? DG.User.current().id;
+      const perms = info.permissions ?? defaultPermissions;
+      checkEditPermissions(authorId, perms).then((canEdit) => {
+        if (canEdit)
+          icon.style.display = 'inline-block';
+      });
+      return icon;
+    };
+
+    const campaignsInfo = Object.values(campaignNamesMap);
     const table = ui.table(campaignsInfo, (info) =>
       ([ui.link(info.name, () => this.setCampaign(info.name), '', ''),
-        info.createDate, info.rowCount, info.filtered, info.status,
-        ui.icons.delete(async () => {
-          ui.dialog('Delete campaign')
-            .add(ui.divText(`Are you sure you want to delete campaign ${info.name}?`))
-            .onOK(async () => {
-              await this.deleteCampaign('Hit Triage', info.name);
-              this.deletedCampaigns.push(info.name);
-              await this.init();
-            })
-            .show();
-        }, 'Delete campaign'),
+        info.createDate, info.rowCount, info.filteredRowCount, info.status,
+        deleteCampaignIcon(info),
       ]),
     ['Name', 'Created', 'Total', 'Selected', 'Status', '']);
     table.style.color = 'var(--grey-5)';
@@ -178,9 +202,6 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
 
   private async createNewTemplate() {
     const newTemplateAccordeon = await createTemplateAccordeon(this.app, this.dataSourceFunctionsMap);
-    // hideComponents(toRemove);
-    // $(containerDiv).empty();
-    // $(templateInputDiv).empty();
 
     const newView = new DG.ViewBase();
     const curView = grok.shell.v;
@@ -194,8 +215,6 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
       grok.shell.v = curView;
       newView.close();
     });
-    //this.root.prepend(breadcrumbs.root);
-    //containerDiv.appendChild(newTemplateAccordeon.root);
 
     newTemplateAccordeon.template.then(async (t) => {
       await this.init(t);

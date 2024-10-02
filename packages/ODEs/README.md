@@ -23,9 +23,10 @@ Datagrok provides intuitive tools for the rapid solving ODEs.
   * Click on the "Open" icon <i class="fas fa-folder-open"></i> on the top panel
   * Select **Templates > Advanced...**
   * Modify formulas and press **F5**
-* Save formulas in a local file:
-  * Click on the "Save" icon <i class="fas fa-save"></i> on the top panel  
-  * Find the *ivp*-file in Downloads, modify it using any text editor
+* Save model in a local file:
+  * Click on the "Save" icon <i class="fas fa-save"></i> on the top panel
+  * Click `Save as Local File...` to save model to a local file. Find the ivp-file in Downloads. You can open and edit this file using any text editor
+  * Click `Save to My Files...` to save model to your platform files (**Browse > Files > My files**)
 * Drag-n-drop:
   * Drag *ivp*-file with equations right into the browser
 * Load equations from a local file:
@@ -35,9 +36,9 @@ Datagrok provides intuitive tools for the rapid solving ODEs.
 * Explore model:
   * Click on the "Run sensitivity analysis" icon <i class="fas fa-analytics"></i>
   * Analyze the relationship between inputs and outputs using one of the following methods:
-    * [Monte Carlo](https://datagrok.ai/help/compute#monte-carlo)
-    * [Sobol](https://datagrok.ai/help/compute#sobol)
-    * [Grid](https://datagrok.ai/help/compute#grid)
+    * [Monte Carlo](https://datagrok.ai/help/compute/function-analysis#monte-carlo)
+    * [Sobol](https://datagrok.ai/help/compute/function-analysis#sobol)
+    * [Grid](https://datagrok.ai/help/compute/function-analysis#grid)
 * Fit parameters:
   * Click on the "Fit inputs" icon <i class="grok-icon fas fa-chart-line"></i>
   * Find input conditions leading to specified output constraints
@@ -80,7 +81,10 @@ The solver has built-in use cases. Get access to them via the context menu. You 
   * demonstrates the `output` feature
 * `Bioreactor`
   * simulates the bioreactor [processes](https://doi.org/10.1074/jbc.RA117.000303)
-  * illustrates the capability of modeling complex processes described by a large number of equations
+  * shows how to use `meta.inputs` to specify a table with pre-defined model inputs
+* `Pollution`
+  * describes a chemical reaction part of the air pollution [model](https://archimede.uniba.it/~testset/report/pollu.pdf) consisting of 25 reaction and 20 reacting compounds
+  * demonstrates the simulation of processes described by a stiff system of ODEs
 
 Datagrok's ODEs suite has tools for solving both [stiff](https://en.wikipedia.org/wiki/Stiff_equation) and non-stiff equations. It provides a [numerical solution](https://en.wikipedia.org/wiki/Numerical_methods_for_ordinary_differential_equations).
 
@@ -118,6 +122,7 @@ Use the following sections to specify various problems:
 |```#description```|Defines description of the model|
 |```#comment```|Specifies comments block|
 |```#meta.solver```|Defines the solver settings|
+|```#meta.inputs```|Path to the table with pre-defined model inputs|
 
 ## Annotations
 
@@ -166,7 +171,7 @@ Diff Studio implements the following [Rosenbrock–Wanner](https://doi.org/10.10
 
 |Method|Value|
 |-------------|--------|
-|the modified Rosenbrock triple|`'mrt'`|
+|the modified Rosenbrock triple (MRT)|`'mrt'`|
 |the ROS3PRw method|`'ros3prw'`|
 |the ROS34PRw method|`'ros34prw'`|
 
@@ -187,6 +192,61 @@ Diff Studio alerts you if computations take too long. The default time limit is 
 ```python
 #meta.solver: {method: 'mrt'; maxTimeMs: 50}
 ```
+
+## Lookup tables
+
+Lookup tables are pre-defined sets of model input values. They're organized as follows:
+
+||x|y|...|
+|-----|-----|-----|---|
+|Set 1|1|2|...|
+|Set 2|3|4|...|
+
+To use a lookup table:
+
+* Create a CSV file with your table and add it to your project
+* Add the `#meta.inputs`-line to your model and specify a CSV file with a lookup table
+* To improve usability, define `caption`, `category` and a tooltip:
+
+```python
+#meta.inputs: table {choices: OpenFile("System:AppData/DiffStudio/inputs.csv"); caption: Mode; category: Settings} [Hint]
+```
+
+## Performance
+
+Diff Studio solvers ensure fast **in-browser** intergration of ODEs. The following [classic problems](https://archimede.uniba.it/~testset/testsetivpsolvers/?page_id=26#ODE) illustrate their efficiency:
+
+* [Rober](https://archimede.uniba.it/~testset/report/rober.pdf)
+  * a stiff system of 3 nonlinear ODEs
+  * describes the kinetics of an autocatalytic reaction given by Robertson
+* [HIRES](https://archimede.uniba.it/~testset/report/hires.pdf)
+  * a stiff system of 8 non-linear equations
+  * explains the `High Irradiance Responses' (HIRES) of photomorphogenesis on the basis of phytochrome, by means of a chemical reaction involving eight reactants
+* [VDPOL](https://archimede.uniba.it/~testset/report/vdpol.pdf)
+  * a system of 2 ODEs proposed by B. van der Pol
+  * describes the behaviour of nonlinear vacuum tube circuits
+* [OREGO](https://archimede.uniba.it/~testset/report/orego.pdf)
+  * a stiff system of 3 non-linear equations
+  * simulates Belousov-Zhabotinskii reaction
+* [E5](https://archimede.uniba.it/~testset/report/e5.pdf)
+  * a stiff system of 4 non-linear ODEs
+  * represents a chemical pyrolysis model
+* [Pollution](https://archimede.uniba.it/~testset/report/pollu.pdf)
+  * a stiff system of 20 non-linear equations
+  * describes a chemical reaction part of the air pollution model designed at The Dutch National Institute of Public Health and Environmental Protection
+
+The MRT, ROS3PRw and ROS34PRw methods demonstrate the following time performance (AMD Ryzen 5 5600H 3.30 GHz CPU):
+
+|Problem|Segment|Points|Tolerance|MRT, ms|ROS3PRw, ms|ROS34PRw, ms|
+|-|-|-|-|-|-|-|
+|[Rober](https://archimede.uniba.it/~testset/report/rober.pdf)|[0, 10E+11]|40K|1E-7|125|1066|507|
+|[HIRES](https://archimede.uniba.it/~testset/report/hires.pdf)|[0, 321.8122]|32K|1E-10|626|931|489|
+|[VDPOL](https://archimede.uniba.it/~testset/report/vdpol.pdf)|[0, 2000]|20K|1E-12|1124|2884|904|
+|[OREGO](https://archimede.uniba.it/~testset/report/orego.pdf)|[0, 360]|36K|1E-8|947|1131|440|
+|[E5](https://archimede.uniba.it/~testset/report/e5.pdf)|[0, 10E+13]|40K|1E-6|24|52|18|
+|[Pollution](https://archimede.uniba.it/~testset/report/pollu.pdf)|[0, 60]|30K|1E-6|71|139|32|
+
+This table compares the efficiency of the methods when solving each test problem on a fixed segment and providing solutions at a specified number of points with a given tolerance.
 
 ## Export to JavaScript script
 
@@ -213,6 +273,6 @@ Find more features in Diff Studio [docs](https://datagrok.ai/help/compute/diff-s
 
 See also
 
-* [Sensitivity analysis](https://datagrok.ai/help/compute/#sensitivity-analysis)
-* [Parameter optimization](https://datagrok.ai/help/compute/#input-parameter-optimization)
+* [Sensitivity analysis](https://datagrok.ai/help/compute/function-analysis#sensitivity-analysis)
+* [Parameter optimization](https://datagrok.ai/help/compute/function-analysis#parameter-optimization)
 * [Scripting](https://datagrok.ai/help/compute/scripting)

@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
@@ -11,6 +12,7 @@ import {showTooltipAt, TooltipOptions} from './tooltips';
 import {MonomerPositionStats, MonomerPositionStatsCache, PositionStats} from './statistics';
 import {CLUSTER_TYPE} from '../viewers/logo-summary';
 import {MonomerPosition, MostPotentResidues, SARViewer} from '../viewers/sar-viewer';
+import {MONOMER_RENDERER_TAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 
 /**
  * Renders cell selection border.
@@ -28,10 +30,12 @@ export function renderCellSelection(canvasContext: CanvasRenderingContext2D, bou
  * @param col - Column to set renderer to.
  * @param alphabet - Sequence alphabet.
  */
-export function setMonomerRenderer(col: DG.Column, alphabet: string): void {
+export function setMonomerRenderer(col: DG.Column, alphabet: string, colorBackground?: boolean): void {
   col.semType = C.SEM_TYPES.MONOMER;
   col.setTag(DG.TAGS.CELL_RENDERER, C.SEM_TYPES.MONOMER);
   col.setTag(C.TAGS.ALPHABET, alphabet);
+  if (colorBackground)
+    col.setTag(MONOMER_RENDERER_TAGS.applyToBackground, 'true');
 }
 
 /**
@@ -145,13 +149,21 @@ export function renderInvariantMapCell(canvasContext: CanvasRenderingContext2D, 
   // 255 and its contrast color would be black, which is not visible on blue (color code) background. The full number
   // is actually 4278190335.
   color = DG.Color.fromHtml(DG.Color.toHtml(setAlpha(color, 255)));
+  let renderedValue = cellValue.toFixed(2);
+  if (renderedValue.endsWith('.00'))
+    renderedValue = cellValue.toFixed(0);
+  if (renderedValue.endsWith('0') && renderedValue.includes('.'))
+    renderedValue = cellValue.toFixed(1);
+
+  const fontSize = Math.min(13, Math.floor(bounds.width / 40 / renderedValue.length * 6 * 13));
+
   canvasContext.fillStyle = DG.Color.toHtml(color);
   canvasContext.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
-  canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
+  canvasContext.font = `${fontSize}px Roboto, Roboto Local, sans-serif`;
   canvasContext.textAlign = 'center';
   canvasContext.textBaseline = 'middle';
   canvasContext.fillStyle = DG.Color.toHtml(DG.Color.getContrastColor(color));
-  canvasContext.fillText(cellValue.toString(), bounds.x + (bounds.width / 2), bounds.y + (bounds.height / 2),
+  canvasContext.fillText(renderedValue, bounds.x + (bounds.width / 2), bounds.y + (bounds.height / 2),
     bounds.width);
 
   const monomerSelection = invariantMapSelection[currentPosition];
@@ -438,4 +450,191 @@ function findWebLogoMonomerPosition(cell: DG.GridCell, ev: MouseEvent, webLogoBo
   }
 
   return null;
+}
+
+
+/**
+ * Renderer for LST pie chart cell
+ *
+ */
+
+export class LSTPieChartRenderer extends DG.GridCellRenderer {
+  get name(): string {return 'LST Pie Chart';}
+
+  get cellType(): string {return 'lst-pie-chart';}
+
+  get defaultWidth(): number | null {return 80;}
+
+  get defaultHeight(): number | null {return 80;}
+
+  colorCacheKey = 'lst-pie-chart-color-cache'; // key for temp storage of category number cache
+  categoryNumberCache(col: DG.Column): {[_: string]: number} {
+    if (!col.temp[this.colorCacheKey])
+      col.temp[this.colorCacheKey] = {};
+    return col.temp[this.colorCacheKey] as {[_: string]: number};
+  };
+
+  HoverTempKey = 'lst-pie-chart-hovered-sector'; // key for temp storage of hovered sector
+  hoverSeparator = ',,,,,'; // separator for hovered sector
+
+  getPrevHoveredSector(col: DG.Column): string | null {
+    return col.temp[this.HoverTempKey] as string;
+  }
+
+  onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
+    const prev = this.getPrevHoveredSector(gridCell.cell.column);
+    const beforeReturn = (): void => {
+      gridCell.cell.column.temp[this.HoverTempKey] = null;
+      ui.tooltip.hide();
+
+      if (prev !== null)
+        gridCell.grid.invalidate();
+    };
+
+    const value = gridCell.cell.value;
+    if (!value) {
+      beforeReturn();
+      return;
+    }
+    const vectorX = e.offsetX - gridCell.bounds.midX;
+    const vectorY = e.offsetY - gridCell.bounds.midY;
+    const distance = Math.sqrt(vectorX * vectorX + vectorY * vectorY);
+    const atan2 = Math.atan2(vectorY, vectorX);
+    const angle = atan2 < 0 ? atan2 + 2 * Math.PI : atan2;
+    if (distance > Math.min(gridCell.bounds.width, gridCell.bounds.height) / 2 - 2) {
+      beforeReturn();
+      return;
+    }
+
+    let JSONData: {[_: string]: number};
+    try {
+      JSONData = JSON.parse(value);
+    } catch (e) {
+      beforeReturn();
+      return;
+    }
+
+    const angles = new Float64Array(Object.keys(JSONData).length + 1);
+    const totalCount = Object.values(JSONData).reduce((a, b) => a + b, 0);
+    angles[Object.keys(JSONData).length] = Math.PI * 2;
+    let angleAccum = 0;
+    let i = 0;
+    for (const val of Object.values(JSONData)) {
+      angles[i++] = angleAccum;
+      const angleAdd = 2 * Math.PI * val / totalCount;
+      angleAccum += angleAdd;
+    }
+
+    let hitCategory = -1;
+    for (let i = 0; i < angles.length - 1; i++) {
+      if (angle >= angles[i] && angle < angles[i + 1]) {
+        hitCategory = i;
+        break;
+      }
+    }
+    if (hitCategory === -1) {
+      beforeReturn();
+      return;
+    }
+    const hitCategoryName = Object.keys(JSONData)[hitCategory];
+    const hitCategoryValue = JSONData[hitCategoryName];
+    const percentage = (hitCategoryValue / totalCount * 100).toFixed(2);
+    ui.tooltip.show(ui.h1(`${hitCategoryName}: ${hitCategoryValue} (${percentage}%)`), e.x + 16, e.y +
+      16);
+    const hoverTemp = gridCell.cell.rowIndex.toString() + this.hoverSeparator + hitCategoryName;
+    gridCell.cell.column.temp[this.HoverTempKey] = hoverTemp;
+    if (prev !== hoverTemp)
+      gridCell.grid.invalidate();
+  }
+
+  render(
+    g: CanvasRenderingContext2D,
+    x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, _cellStyle: DG.GridCellStyle,
+  ): void {
+    const df = gridCell.cell.dataFrame;
+    const box = new DG.Rect(x, y, w, h).fitSquare().inflate(-2, -2);
+    if (w < 5 || h < 5 || !df) return;
+    const value = gridCell.cell.value;
+    g.clearRect(x, y, w, h);
+    if (!value) return;
+
+    let JSONData: {[_: string]: number};
+    try {
+      JSONData = JSON.parse(value);
+    } catch (e) {
+      return;
+    }
+
+    const totalCount = Object.values(JSONData).reduce((a, b) => a + b, 0);
+
+    let angleAccum = 0;
+
+    const alphas = Object.fromEntries(Object.keys(JSONData).map((key) => [key, 255]));
+
+    const hoverTemp = gridCell.cell.column.temp[this.HoverTempKey] as string;
+    if (hoverTemp && hoverTemp.split(this.hoverSeparator).length === 2) {
+      const [rowIdx, category] = hoverTemp.split(this.hoverSeparator);
+      if (rowIdx === gridCell.cell.rowIndex.toString()) {
+        for (const [key, _] of Object.entries(JSONData))
+          alphas[key] = 100;
+        alphas[category] = 255;
+      }
+    }
+
+    const radius = Math.min(w, h) / 2.2;
+
+    for (const [key, val] of Object.entries(JSONData)) {
+      const angle = 2 * Math.PI * val / totalCount;
+      g.beginPath();
+      g.moveTo(box.midX, box.midY);
+      g.arc(box.midX, box.midY, radius, angleAccum, angleAccum + angle);
+      angleAccum += angle;
+      const colorCache = this.categoryNumberCache(gridCell.cell.column);
+      if (!colorCache[key]) {
+        colorCache[key] = Object.keys(colorCache).length; // cache category number keys, so that colors are consistent
+        gridCell.cell.column.temp[this.colorCacheKey] = colorCache;
+      }
+      g.fillStyle = DG.Color.toHtml(
+        DG.Color.setAlpha(DG.Color.getCategoricalColor(colorCache[key]), alphas[key]),
+      );
+      g.fill();
+      g.strokeStyle = DG.Color.toRgb(DG.Color.lightGray);
+      g.stroke();
+
+
+      // text rendering
+      const text = key;
+      // g.font = '10px Arial'; // Adjust font size and family as needed
+      g.fillStyle = DG.Color.toRgb(DG.Color.white);
+      g.font = '9px Arial';
+      const textWidth = g.measureText(text).width;
+
+      const middleAngle = angleAccum - (angle / 2);
+
+      // get the best position for the text
+      for (let textRadiusMult = 0.8; textRadiusMult >= 0.4; textRadiusMult -= 0.05) {
+        const textRadius = radius * textRadiusMult;
+        const textX = box.midX + Math.cos(middleAngle) * textRadius;
+        const textY = box.midY + Math.sin(middleAngle) * textRadius;
+
+        // perform pseudo hit test to check if text fits in the pie slice
+        const leftPart = textX - textWidth / 2 - 2;
+        const rightPart = textX + textWidth / 2 + 2;
+
+        const isTextInside = [[leftPart, textY], [rightPart, textY]]
+          .every((point) => {
+            const d = Math.sqrt((point[0] - box.midX) ** 2 + (point[1] - box.midY) ** 2);
+            const at = Math.atan2(point[1] - box.midY, point[0] - box.midX);
+            const a = at < 0 ? at + 2 * Math.PI : at;
+            return d < radius - 2 && a > angleAccum - angle && a < angleAccum;
+          });
+
+        if (isTextInside) {
+          g.fillText(text, textX, textY);
+          break;
+        }
+      }
+    }
+  }
 }

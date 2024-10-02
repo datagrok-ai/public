@@ -1,4 +1,4 @@
-Open SPGI.csv
+Open linked datasets
 
 1. Add a structure filter (draw or current value > use as filter).
 2. Disable the structure filter.
@@ -56,10 +56,17 @@ Expected result: search is terminated.
 
 ***
 
-1. Open SPGI.
+1. Open linked datasets.
 2. Open filters and make sure some structure column is added to the filter panel.
 3. Add another view with the same table (e.g. clone current view).
 4. Open filters and make sure same structure column is added to the filter panel in the 2nd view.
 4. Right-click some structure > Current value > Use as filter.
 
 Expected result: filter is applied, filters are synchronized in two open views.
+
+---
+{
+  "datasets": [
+    "System:DemoFiles/chem/SPGI.csv"
+  ]
+}

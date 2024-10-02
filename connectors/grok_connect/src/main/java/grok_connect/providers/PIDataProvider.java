@@ -17,7 +17,6 @@ import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
 import grok_connect.utils.QueryCancelledByUser;
-import serialization.Column;
 import serialization.DataFrame;
 import serialization.StringColumn;
 import serialization.Types;
@@ -42,9 +41,6 @@ public class PIDataProvider extends JdbcDataProvider {
                     + "pilog, pimodule, pipoint, pisystem or piuser"));
             add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
                     DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
-            add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_SCHEMA));
-            add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_RESULTS));
-            add(new Property(Property.STRING_TYPE, DbCredentials.CACHE_INVALIDATE_SCHEDULE));
         }};
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.nameBrackets = "\"";
@@ -103,10 +99,7 @@ public class PIDataProvider extends JdbcDataProvider {
     public DataFrame getSchemas(DataConnection connection) throws QueryCancelledByUser, GrokConnectException {
         try (Connection dbConnection = getConnection(connection);
              ResultSet catalogs = dbConnection.getMetaData().getCatalogs()) {
-            DataFrame result = new DataFrame();
-            Column tableSchema = new StringColumn();
-            tableSchema.name = "table_schema";
-            result.addColumn(tableSchema);
+            DataFrame result = DataFrame.fromColumns(new StringColumn("table_schema"));
             while (catalogs .next())
                 result.addRow(catalogs.getString(CATALOG_NAME_INDEX));
             return result;
@@ -120,19 +113,9 @@ public class PIDataProvider extends JdbcDataProvider {
             QueryCancelledByUser, GrokConnectException {
         try (Connection dbConnection = getConnection(connection);
              ResultSet columns = dbConnection.getMetaData().getColumns(schema, null, table, null)) {
-            DataFrame result = new DataFrame();
-            Column tableSchema = new StringColumn();
-            tableSchema.name = "table_schema";
-            Column tableNameColumn = new StringColumn();
-            tableNameColumn.name = "table_name";
-            Column columnName = new StringColumn();
-            columnName.name = "column_name";
-            Column dataType = new StringColumn();
-            dataType.name = "data_type";
-            result.addColumn(tableSchema);
-            result.addColumn(tableNameColumn);
-            result.addColumn(columnName);
-            result.addColumn(dataType);
+            DataFrame result = DataFrame.fromColumns(new StringColumn("table_schema"),
+                    new StringColumn("table_name"), new StringColumn("column_name"),
+                    new StringColumn("data_type"));
             while (columns.next())
                 result.addRow(columns.getString(CATALOG_NAME_INDEX), columns.getString(TABLE_NAME_INDEX),
                         columns.getString(COLUMN_NAME_INDEX), columns.getString(DATA_TYPE_NAME_INDEX));

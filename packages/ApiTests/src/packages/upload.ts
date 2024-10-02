@@ -38,7 +38,7 @@ category('Packages', () => {
     await publish(true);
     expectTable(await query.apply(), DG.DataFrame.fromCsv(test1));
     expect((await grok.dapi.scripts.filter('package.name = "Test"').list()).length, 1);
-    expect((await grok.dapi.scripts.filter('package.name = "Test"').allPackageVersions().list()).length, 2);
+    expect((await grok.dapi.scripts.filter('package.name = "Test"').allPackageVersions().list({pageSize: 5})).length, 2);
     for (let i = 0; i < 2; i++) {
       await publish(false);
       expectTable(await query.apply(), DG.DataFrame.fromCsv(test2));

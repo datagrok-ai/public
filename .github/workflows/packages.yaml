@@ -43,7 +43,7 @@ jobs:
         with:
           fetch-depth: ${{ env.FETCH_DEPTH }}
           sparse-checkout: |
-            packages
+            ./packages
       - name: Get changed files
         uses: tj-actions/changed-files@v42
         id: changed-files
@@ -85,6 +85,10 @@ jobs:
 
               job_test_env=''
               runner='ubuntu-22.04'
+              if [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "admetica" ]] || \
+                 [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"admetica"* ]]; then
+                runner='ubuntu-latest-m'
+              fi
               if [ -n "$(jq  '. | select( has("test") == true )' <<< "$scripts")" ] && \
                   [[ "$(jq  -r '. | select( has("skipCI") == true ).skipCI' "${DIR}/package.json")" != "true" ]]; then
                 MATRIX_PUBLISH_JSON+=", \"test\": \"test\""
@@ -103,10 +107,6 @@ jobs:
                    [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"samples"* ]]; then
                   job_test_env+=',JKG'
                   runner='ubuntu-latest-m'
-                fi
-                if [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "chem" ]] || \
-                   [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]]; then
-                  job_test_env+=',Compute'
                 fi
                 if [ -d "${DIR}/dockerfiles" ]; then
                   job_test_env+=',Spawner'
@@ -193,14 +193,6 @@ jobs:
         run: |
           echo -e "matrix_publish: ${{ steps.generate-matrix.outputs.matrix_publish }}"
           echo -e "publish: ${{ steps.generate-matrix.outputs.publish }}"
-      - name: Slack Failed Notification
-        if: failure()
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
 
   publish:
     name: "${{ matrix.package }}: ${{ matrix.job_name }}"
@@ -221,11 +213,11 @@ jobs:
         with:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
           sparse-checkout: |
-            libraries
-            packages/${{ matrix.package }}
-            js-api
-            .github
-            docker
+            ./libraries
+            ./packages
+            ./js-api
+            ./.github
+            ./docker
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -277,7 +269,8 @@ jobs:
 
           profiles='--profile datagrok --profile db'
           echo "Check if Grok Connect is required for the package"
-          if [ -d "packages/${{ matrix.package }}/connections" ] || [[ -n $(find packages/${{ matrix.package }}/node_modules/@datagrok -type d -name connections) ]]; then
+          if [ -d "packages/${{ matrix.package }}/connections" ] || [[ -n $(find packages/${{ matrix.package }}/node_modules/@datagrok -type d -name connections) ]] || \
+             [ -d "packages/${{ matrix.package }}/queries" ] || [[ -n $(find packages/${{ matrix.package }}/node_modules/@datagrok -type d -name queries) ]]; then
             profiles+=' --profile grok_connect'
           fi
           echo "Check if CVM is required for the package"
@@ -294,11 +287,6 @@ jobs:
             echo "Add Scripting as dependency for package ${{ matrix.package }}"
             profiles+=' --profile scripting'
           fi
-          if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] || \
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]]; then
-            echo "Add Grok Compute as dependency for package ${{ matrix.package }}"
-            profiles+=' --profile grok_compute'
-          fi
           echo "Check if Grok Spawner is required for the package"
           if [ -d "packages/${{ matrix.package }}/dockerfiles" ]; then
             profiles+=' --profile grok_spawner'
@@ -310,16 +298,6 @@ jobs:
           if [[ "${{ matrix.unpublished_deps }}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != *"tests"* ]]; then
             DATAGROK_VERSION='latest'
           else
-            DATAGROK_VERSION='bleeding-edge'
-            export GROK_SPAWNER_VERSION='bleeding-edge'
-            export GROK_JUPYTER_KERNEL_GATEWAY_VERSION='bleeding-edge'
-          fi
-       
-          if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "bio" ]] || \
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "helm" ]] || \
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "sequencetranslator" ]] || \
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "charts" ]] || \
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "curves" ]]; then
             DATAGROK_VERSION='bleeding-edge'
             export GROK_SPAWNER_VERSION='bleeding-edge'
             export GROK_JUPYTER_KERNEL_GATEWAY_VERSION='bleeding-edge'
@@ -343,23 +321,10 @@ jobs:
 
           echo "apiUrl=$apiUrl" >> $GITHUB_OUTPUT
           echo "alias=$alias" >> $GITHUB_OUTPUT
-      - name: js api dependency for unpublished dependencies
-        if: ${{ matrix.unpublished_deps != '' }}
-        run: |
-          npm install
-          npm run build
-        working-directory: ./js-api
-      - name: unpublished dependencies
-        if: ${{ matrix.unpublished_deps != '' }}
-        run: |
-          crnt=$(pwd)
-          for dep in $(echo -e ${{ matrix.unpublished_deps }}); do
-            cd $(awk -F'=' '{print $2}' <<<$dep)
-            echo "Install dependencies for $(awk -F'=' '{print $2}' <<<$dep)"
-            npm install
-            npm run build
-            cd $crnt
-          done
+      - id: datagrok-tools
+        run: npm install -g datagrok-tools@4.13.21
+      - if: ${{ matrix.unpublished_deps != '' }}
+        run: grok link
         working-directory: packages/${{ matrix.package }}
       - name: webpack cache
         uses: actions/cache@v4
@@ -378,10 +343,6 @@ jobs:
             npm run build
           fi
         working-directory: packages/${{ matrix.package }}
-      - name: Install datagrok tools
-        id: datagrok-tools
-        run: |
-          npm install -g datagrok-tools@4.12.27
       - name: Wait for Datagrok to become available
         if: ${{ matrix.test == 'test' }}
         timeout-minutes: 5
@@ -390,7 +351,7 @@ jobs:
           do
             sleep 1
             if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
-              docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+              docker compose -p datagrok logs --no-color --timestamps datagrok
             fi
             echo -e "\nRetrying..."
           done
@@ -446,7 +407,7 @@ jobs:
           until grok publish ${{ steps.datagrok-image.outputs.alias }}; do
             exit=$?
             if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
-              docker logs --timestamps --tail 100 $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+              docker compose -p datagrok logs --no-color --timestamps datagrok
             fi
             wait=$((2 ** count))
             count=$((count + 1))
@@ -459,38 +420,72 @@ jobs:
             fi
           done
         working-directory: packages/${{ matrix.package }}
+
+      - name: Set required credentials
+        if: ${{ matrix.test == 'test' }}
+        env:
+          CHEMSPACE_APIKEY: ${{ secrets.CHEMSPACE_APIKEY }}
+        run: |
+          if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
+            if [[ "${{ matrix.package }}" == "Chemspace" ]]; then
+              token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/admin | jq -r .token)
+              curl -s -H "Authorization: $token" -H "Content-Type": "application/json" '${{ steps.datagrok-image.outputs.apiUrl }}/credentials/for/Chemspace:Chemspace' -X POST -d "{'apiKey': '$CHEMSPACE_APIKEY'}"
+            fi
+          fi
+
       - name: Wait for published docker to become available
+        id: docker-wait
         if: matrix.docker != '' && steps.datagrok-image.outcome == 'success'
         env:
           DEV_TEST_DEV_KEY: ${{ secrets.DEV_TEST_DEV_KEY }}
           TEST_TEST_DEV_KEY: ${{ secrets.TEST_TEST_DEV_KEY }}
-        timeout-minutes: 5
+        timeout-minutes: 10
         run: |
-          if [[ "${{ steps.datagrok-image.outputs.alias }}" == "test" ]]; then
-            key="$TEST_TEST_DEV_KEY"
-          elif [[ "${{ steps.datagrok-image.outputs.alias }}" == "dev" ]]; then
-            key="$DEV_TEST_DEV_KEY"
-          else
-            key='admin'
-          fi
-          token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/$key | jq -r .token)
-          until .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}'
-          do
-            sleep 1
-            echo -e "\nContainer for ${{ matrix.package }} did not start yet..."
-            echo -e "\nRetrying '/api/docker/containers'..."
+          check_container=false
+          for dockerfile in $(echo -e ${{ matrix.docker }}); do
+            docker_config_file="$(dirname $dockerfile)/container.json"
+            if [ -f "${docker_config_file}" ]; then
+              gpu_count=$(jq '.gpu' ${docker_config_file})
+              if [ "$gpu_count" -gt 0 ]; then
+                check_container=false
+              else
+                check_container=true
+                break
+              fi
+            else
+              check_container=true
+              break
+            fi
           done
-          if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
-            until .github/scripts/check-output.sh "docker ps" '${{ matrix.package }}'
+          if [[ "${check_container}" == "true" ]] ; then
+            if [[ "${{ steps.datagrok-image.outputs.alias }}" == "test" ]]; then
+              key="$TEST_TEST_DEV_KEY"
+            elif [[ "${{ steps.datagrok-image.outputs.alias }}" == "dev" ]]; then
+              key="$DEV_TEST_DEV_KEY"
+            else
+              key='admin'
+            fi
+            token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/$key | jq -r .token)
+            until .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}'
             do
               sleep 1
               echo -e "\nContainer for ${{ matrix.package }} did not start yet..."
-              echo -e "\nRetrying 'docker ps'..."
+              echo -e "\nRetrying '/api/docker/containers'..."
             done
+            if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
+              until .github/scripts/check-output.sh "docker ps" '${{ matrix.package }}'
+              do
+                sleep 1
+                echo -e "\nContainer for ${{ matrix.package }} did not start yet..."
+                echo -e "\nRetrying 'docker ps'..."
+              done
+            fi
+          else
+            echo "GPU is not available, skipping container wait"
           fi
       - name: Test Package
         if: ${{ matrix.test == 'test' }}
-        continue-on-error: ${{ contains(matrix.package, 'Tests') }}
+        continue-on-error: ${{ contains(matrix.package, 'Tests') || matrix.package == 'Chemspace' }}
         timeout-minutes: 30
         id: test-package
         run: npm run test -- --skip-build --skip-publish --record --csv --host ${{ steps.datagrok-image.outputs.alias }}
@@ -507,10 +502,10 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
       - name: Create error notification
-        if: failure() && steps.test-package.outcome == 'failure'
+        if: failure() && (steps.test-package.outcome == 'failure' || steps.docker-wait.outcome == 'failure')
         run: |
           if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
-            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+            docker compose -p datagrok logs --no-color --timestamps
           else
             echo 'Check dev logs'
           fi
@@ -582,7 +577,7 @@ jobs:
         working-directory: packages/${{ matrix.package }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        if: matrix.publish == 'publish' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.gen_checks.outcome == 'success' && (steps.check.outcome == 'success' || steps.check.outcome == 'skipped') && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || contains(matrix.package, 'Tests'))
+        if: matrix.publish == 'publish' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.gen_checks.outcome == 'success' && (steps.check.outcome == 'success' || steps.check.outcome == 'skipped') && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || (contains(matrix.package, 'Tests') || matrix.package == 'Chemspace'))
 
       - name: Prepare Slack Message
         if: ${{ steps.publish.outcome == 'success' && !contains(matrix.package, 'Meta') }}
@@ -593,9 +588,8 @@ jobs:
         run: |
           channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
           echo "::add-mask::$channel_id"
-          echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
 
-          header="Package *${{ matrix.package }}* version *${{ matrix.version }}* published to <https://www.npmjs.com/package/$(jq -r .name "packages/${{ matrix.package }}/package.json")/v/${{ matrix.version }}|NPM>"
+          header="Package *${{ matrix.package }}* version *${{ matrix.version }}* published to <https://www.npmjs.com/package/$(jq -r .name "packages/${{ matrix.package }}/package.json")/v/${{ matrix.version }}|NPM>\n<@$channel_id> FYI"
           echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
 
           context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1 | sed -e 's/"/\\"/g')>"
@@ -606,7 +600,7 @@ jobs:
         if: steps.slack-prepare.outcome == 'success'
         uses: slackapi/slack-github-action@v1.24.0
         with:
-          channel-id: ${{ env.SLACK_CHANNEL }}
+          channel-id: '#build'
           payload: |
             {
                 "blocks": [
@@ -699,19 +693,19 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-      - name: Slack Notification
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ steps.publish.outcome }}
-          steps: ${{ toJson(steps) }}
-          matrix: ${{ toJson(matrix) }}
-          config: ".github/config/slack.yml"
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
-      - name: Slack Failed-Cancelled Notification
-        if: failure() || cancelled()
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+#      - name: Slack Notification
+#        uses: act10ns/slack@v2.1.0
+#        with:
+#          status: ${{ steps.publish.outcome }}
+#          steps: ${{ toJson(steps) }}
+#          matrix: ${{ toJson(matrix) }}
+#          config: ".github/config/slack.yml"
+#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+#      - name: Slack Failed-Cancelled Notification
+#        if: failure() || cancelled()
+#        uses: act10ns/slack@v2.1.0
+#        with:
+#          status: ${{ job.status }}
+#          steps: ${{ toJson(steps) }}
+#          config: ".github/config/slack.yml"
+#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}

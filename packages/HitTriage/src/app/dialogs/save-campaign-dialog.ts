@@ -5,7 +5,7 @@ import {_package} from '../../package';
 
 export async function saveCampaignDialog(id: string): Promise<string> {
   return new Promise<string>(async (resolve) => {
-    const campaignNameInput = ui.stringInput('Campaign name', '');
+    const campaignNameInput = ui.input.string('Campaign name', {value: ''});
 
     function onOkProxy() {
       if (!campaignNameInput.value || campaignNameInput.value === '')

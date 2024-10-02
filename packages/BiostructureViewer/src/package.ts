@@ -697,3 +697,21 @@ export function biostructureDataToJson(
 ): string {
   return BiostructureDataJson.fromData({binary, data, ext, options});
 }
+
+//name: 3D Structure
+//tags: panel, bio, widgets
+//input: semantic_value molecule { semType: Molecule3D }
+//output: widget result
+export function structure3D(molecule: DG.SemanticValue): DG.Widget {
+  const widget = new DG.Widget(ui.div([]));
+  const { dataFrame, column, rowIndex } = molecule.cell;
+  const gridCell = grok.shell.getTableView(dataFrame.name)?.grid.cell(column.name, rowIndex);
+  const renderer = new PdbGridCellRendererBack(null, column);
+
+  renderer.createViewer(gridCell).then(async ({ tview, viewer }) => {
+    if (tview && viewer) {
+      widget.root.appendChild(viewer.root);
+    }
+  });
+  return widget;
+}

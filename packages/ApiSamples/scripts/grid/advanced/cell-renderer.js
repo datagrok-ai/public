@@ -1,7 +1,7 @@
 // Reusing core grid renderers
 
 let view = grok.shell.addTableView(grok.data.demo.molecules());
-view.dataFrame.col('logD').colors.setLinear();
+view.dataFrame.col('logD').meta.colors.setLinear();
 let canvas = ui.canvas(300, 200);
 
 view.grid.onCurrentCellChanged.subscribe((gridCell) =>

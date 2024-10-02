@@ -2,7 +2,7 @@
 title: "Stress testing results"
 ---
 
-Stress testing is an important part of the [Quality Assurance](quality-assurance.md#automated-testing)
+Stress testing is an important part of the [Quality Assurance](../../../develop/qa/quality-assurance.md#automated-testing)
 process. To make sure the platform is stable under heavy load (either many users working simultaneously, or executing
 CPU-intensive computations), we perform automated stress testing regularly, as part of our continuous integration
 process.

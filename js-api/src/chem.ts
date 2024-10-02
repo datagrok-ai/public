@@ -344,22 +344,19 @@ export namespace chem {
       if (validationFunc)
         this._validationFunc = validationFunc;
       this.alighInput = this.createAlignHighlightInputs(CHEM_FILTER_ALIGN, 'Align', () => {
-        grok.dapi.userDataStorage.postValue(FILTER_KEY, CHEM_FILTER_ALIGN, this.alighInput!.value ? 'true' : 'false', true);
+        grok.userSettings.add(FILTER_KEY, CHEM_FILTER_ALIGN, this.alighInput!.value ? 'true' : 'false');
         this.onAlignedChanged.next(this.alighInput!.value);
       });
       this.highlightInput = this.createAlignHighlightInputs(CHEM_FILTER_HIGHLIGHT, 'Highlight', () => {
-        grok.dapi.userDataStorage.postValue(FILTER_KEY, CHEM_FILTER_HIGHLIGHT, this.highlightInput!.value ? 'true' : 'false', true);
+        grok.userSettings.add(FILTER_KEY, CHEM_FILTER_HIGHLIGHT, this.highlightInput!.value ? 'true' : 'false');
         this.onHighlightChanged.next(this.highlightInput!.value);
       });
       setTimeout(() => this.createSketcher(), 100);
     }
 
     createAlignHighlightInputs(key: string, inputName: string, callback: () => void) {
-      grok.dapi.userDataStorage.getValue(FILTER_KEY, key, true).then((value: string) => {
-        input.value = !value || value === 'true' ? true : false;
-      });
-      const input = ui.boolInput(inputName, true, callback);
-      return input;
+      const value: string = grok.userSettings.getValue(FILTER_KEY, key);
+      return ui.input.bool(inputName, {value: !value || value === 'true', onValueChanged: callback});
     }
 
     /** In case sketcher is opened in filter panel use EXTERNAL mode*/
@@ -547,7 +544,7 @@ export namespace chem {
             if (currentSketcherType === friendlyName)
               return;
             currentSketcherType = friendlyName;
-            grok.dapi.userDataStorage.postValue(STORAGE_NAME, KEY, friendlyName, true);
+            grok.userSettings.add(STORAGE_NAME, KEY, friendlyName);
             this.sketcherType = currentSketcherType;
             if (!this.resized)
               this._autoResized = true;

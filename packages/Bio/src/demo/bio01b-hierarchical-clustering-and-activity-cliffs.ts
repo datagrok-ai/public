@@ -27,9 +27,8 @@ export async function demoBio01bUI() {
   const dimRedMethod: DimReductionMethods = DimReductionMethods.UMAP;
 
   try {
-    const demoScript = new DemoScript(
-      'Activity Cliffs',
-      'Activity Cliffs analysis on Macromolecules data');
+    const demoScript = new DemoScript('Activity Cliffs', 'Activity Cliffs analysis on Macromolecules data', false,
+      {autoStartFirstStep: true});
     await demoScript
       .step(`Load DNA sequences`, async () => {
         grok.shell.windows.showContextPanel = false;
@@ -54,7 +53,7 @@ export async function demoBio01bUI() {
         const seqEncodingFunc = DG.Func.find({name: 'macromoleculePreprocessingFunction', package: 'Bio'})[0];
         activityCliffsViewer = (await activityCliffs(
           df, df.getCol('Sequence'), df.getCol('Activity'),
-          80, dimRedMethod, MmDistanceFunctionsNames.LEVENSHTEIN, seqEncodingFunc, {})) as DG.ScatterPlotViewer;
+          80, dimRedMethod, MmDistanceFunctionsNames.LEVENSHTEIN, seqEncodingFunc, {}, true)) as DG.ScatterPlotViewer;
         view.dockManager.dock(activityCliffsViewer, DG.DOCK_TYPE.RIGHT, null, 'Activity Cliffs', 0.35);
 
         // Show grid viewer with the cliffs

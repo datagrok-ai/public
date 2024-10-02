@@ -1,17 +1,21 @@
 // import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-// import * as grok from 'datagrok-api/grok';
+import * as grok from 'datagrok-api/grok';
 import {GridColumn} from 'datagrok-api/dg';
 
 export function getChoices(column: DG.Column): string[] | null {
-  const choicesStr = column?.getTag(DG.TAGS.CHOICES);
-  if (!choicesStr)
+  const choices = column?.meta.choices;
+  if (!choices || choices.length === 0)
     return null;
 
-  return JSON.parse(choicesStr);
+  return choices;
 }
 
 
+@grok.decorators.cellRenderer({
+  name: 'Multi Choice',
+  cellType: 'MultiChoice',
+})
 /**
  * Renders a comma-separated string value as checkboxes with options retrieved
  * from the column's `.choices` tag.

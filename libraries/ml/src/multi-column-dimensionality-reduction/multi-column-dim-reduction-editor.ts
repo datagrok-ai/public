@@ -35,12 +35,13 @@ export class UMAPOptions {
   used with spread to control the clumped/dispersed nature of the embedding`};
   randomSeed: IDimReductionParam<string> = {uiName: 'Random seed', value: null, tooltip: 'Random seed', type: 'string'};
   useWebGPU: IDimReductionParam<boolean> =
-    {uiName: 'Use WebGPU', value: false, tooltip: 'Use WebGPU for KNN computations', type: 'boolean',
+    {uiName: 'Use WebGPU', value: false, tooltip: 'Use WebGPU for Distance and UMAP computations', type: 'boolean',
       disableTooltip: 'WebGPU is not available'};
   constructor() {
     getGPUAdapterDescription().then((desc) => {
       if (desc) {
         this.useWebGPU.tooltip += ` (${desc})`;
+        this.useWebGPU.value = true; // enable by default
       } else {
         this.useWebGPU.value = false;
         this.useWebGPU.disable = true;
@@ -100,10 +101,10 @@ export class MultiColumnDimReductionEditor {
     methodInput: DG.InputBase<string | null>;
     methodSettingsIcon: HTMLElement;
     methodSettingsAnchor: HTMLElement = ui.div();
-    plotEmbeddingsInput = ui.boolInput('Plot embeddings', true);
+    plotEmbeddingsInput = ui.input.bool('Plot embeddings', {value: true});
     postProcessingEditor: PostProcessingFuncEditor;
-    aggregationMethodInput = ui.choiceInput('Aggregation', DistanceAggregationMethods.EUCLIDEAN,
-      [DistanceAggregationMethods.EUCLIDEAN, DistanceAggregationMethods.MANHATTAN]);
+    aggregationMethodInput = ui.input.choice('Aggregation', {value: DistanceAggregationMethods.EUCLIDEAN,
+      items: [DistanceAggregationMethods.EUCLIDEAN, DistanceAggregationMethods.MANHATTAN]});
 
     onColumnsChanged: Subject<void>;
     constructor(editorSettings: DimReductionEditorOptions = {}) {
@@ -136,17 +137,19 @@ export class MultiColumnDimReductionEditor {
 
       this.postProcessingEditor = new PostProcessingFuncEditor();
 
-      this.tableInput = ui.tableInput('Table', grok.shell.tv.dataFrame, grok.shell.tables, () => {
-        this.onTableInputChanged();
+      this.tableInput = ui.input.table('Table', {value: grok.shell.tv.dataFrame, items: grok.shell.tables,
+        onValueChanged: () => {
+          this.onTableInputChanged();
+        }
       });
       this.onTableInputChanged();
       let settingsOpened = false;
 
-      this.methodInput = ui.choiceInput('Method', DimReductionMethods.UMAP,
-        [DimReductionMethods.UMAP, DimReductionMethods.T_SNE], () => {
+      this.methodInput = ui.input.choice('Method', {value: DimReductionMethods.UMAP,
+        items: [DimReductionMethods.UMAP, DimReductionMethods.T_SNE], onValueChanged: (value) => {
           if (settingsOpened)
-            this.createAlgorithmSettingsDiv(this.methodsParams[this.methodInput.value!]);
-        });
+            this.createAlgorithmSettingsDiv(this.methodsParams[value]);
+        }});
       this.methodSettingsIcon = ui.icons.settings(()=> {
         settingsOpened = !settingsOpened;
         if (!settingsOpened) {
@@ -180,7 +183,7 @@ export class MultiColumnDimReductionEditor {
           const semTypeSupported = !semTypes.length || (col.semType && semTypes.includes(col.semType));
           const typeSuported = !types.length || types.includes(col.type);
           const unitsSupported = !units.length ||
-            (col.getTag(DG.TAGS.UNITS) && units.includes(col.getTag(DG.TAGS.UNITS)));
+            (col.meta.units && units.includes(col.meta.units));
           if (semTypeSupported && typeSuported && unitsSupported) {
             if (!this.columnFunctionsMap[col.name])
               this.columnFunctionsMap[col.name] = [];
@@ -189,21 +192,20 @@ export class MultiColumnDimReductionEditor {
         });
       });
       const supportedColNames = Object.keys(this.columnFunctionsMap);
-      const columnsInput = ui.columnsInput('Columns', table, () => {
+      const columnsInput = ui.input.columns('Columns', {table: table, onValueChanged: (value) => {
         this.onColumnsChanged.next();
         ui.empty(this.columnOptEditorsRoot);
         ui.empty(this.weightsEditorRoot);
-        const cols = columnsInput.value;
-        if (!cols || cols?.length < 2)
+        if (!value || value?.length < 2)
           this.aggregationMethodInput.root.style.display = 'none';
         else
           this.aggregationMethodInput.root.style.display = 'flex';
-        if (!cols || cols.length === 0) {
+        if (!value || value.length === 0) {
           this.columnParamsEditorAccordion.root.style.display = 'none';
           return;
         }
 
-        this.columnOptEditors = cols.map((col) => {
+        this.columnOptEditors = value.map((col) => {
           const editorClass = new DimReductionColumnEditor(col, this.columnFunctionsMap[col.name].map((it) =>
             this.supportedFunctions[it]));
           return editorClass;
@@ -233,7 +235,7 @@ export class MultiColumnDimReductionEditor {
           this.columnParamsEditorAccordion.root.style.display = 'flex';
         table.classList.add('ml-dim-reduction-column-editor-table-root');
         this.columnOptEditorsRoot.appendChild(table);
-      }, {available: supportedColNames});
+      }, available: supportedColNames});
       columnsInput.fireChanged();
       if (!this.columnsInputRoot) {
         this.columnsInputRoot = columnsInput.root;
@@ -258,15 +260,15 @@ export class MultiColumnDimReductionEditor {
           (params as any)[it];
 
         const input = param.type === 'string' ?
-          ui.stringInput(param.uiName, param.value ?? '', () => {
-            param.value = (input as DG.InputBase<string>).value;
-          }) : param.type === 'boolean' ?
-            ui.boolInput(param.uiName, param.value ?? false, () => {
-              param.value = (input as DG.InputBase<boolean>).value;
-            }) :
-            ui.floatInput(param.uiName, param.value as any, () => {
-              param.value = input.value;
-            });
+          ui.input.string(param.uiName, {value: param.value ?? '', onValueChanged: (value) => {
+            param.value = value;
+          }}) : param.type === 'boolean' ?
+            ui.input.bool(param.uiName, {value: param.value ?? false, onValueChanged: (value) => {
+              param.value = value;
+            }}) :
+            ui.input.float(param.uiName, {value: param.value as any, onValueChanged: (value) => {
+              param.value = value;
+            }});
         if (param.disable) {
           input.enabled = false;
           ui.tooltip.bind(input.input ?? input.root, param.disableTooltip ?? '');
@@ -324,6 +326,77 @@ export class MultiColumnDimReductionEditor {
         aggreaggregationMethod: this.aggregationMethodInput.value
       };
     }
+
+    // used by history
+    public getInput() {
+      return {
+        columns: this.columnsInput.value.map((it) => it.name),
+        method: this.methodInput.value,
+        preprocessingFunctions: this.columnOptEditors.map((it) => it.preprocessingFunctionInput.value),
+        distanceMetrics: this.columnOptEditors.map((it) => it.similarityMetricInput.value!),
+        weights: this.columnOptEditors.map((it) => it.weight ?? 1),
+        options: {...this.algorithmOptions, ...this.dbScanOptions,
+          preprocessingFuncArgs: this.columnOptEditors.map((it) => it.preprocessingFunctionSettings)},
+        plotEmbeddings: this.plotEmbeddingsInput.value,
+        postProcessingFunction: this.postProcessingEditor.postProcessingFunctionInput.value ?? null,
+        postProcessingFunctionArgs: this.postProcessingEditor.args,
+        aggreaggregationMethod: this.aggregationMethodInput.value
+      };
+    }
+
+    public getStringInput() {
+      return JSON.stringify(this.getInput());
+    }
+
+    public async applyStringInput(input: string) {
+      try {
+        const parsed = JSON.parse(input);
+        await this.applyInput(parsed);
+      } catch (e) {
+        grok.shell.error('Error applying input from history');
+        console.error(e);
+      }
+    }
+
+    public async applyInput(input: ReturnType<typeof this.getInput>) {
+      try {
+        const cols = input.columns.map((it) => this.tableInput.value!.col(it));
+        if (cols.some((it) => !it))
+          throw new Error('Some columns are not found');
+        this.columnsInput.value = cols as DG.Column[];
+        this.columnsInput.fireChanged();
+        this.methodInput.value = input.method;
+        this.columnOptEditors.forEach((it, i) => {
+          it.preprocessingFunctionInput.value = input.preprocessingFunctions[i];
+          it.similarityMetricInput.value = input.distanceMetrics[i];
+          it.weightInput.value = input.weights[i];
+          it.preprocessingFunctionSettings = input.options.preprocessingFuncArgs[i];
+        });
+        this.plotEmbeddingsInput.value = input.plotEmbeddings;
+        this.postProcessingEditor.postProcessingFunctionInput.value = input.postProcessingFunction;
+        await this.postProcessingEditor._prevChangePromise;
+        this.postProcessingEditor._postProcessingArgs = input.postProcessingFunctionArgs;
+        this.aggregationMethodInput.value = input.aggreaggregationMethod;
+        const copiedAlgoOptions: Options = {};
+        Object.keys(this.methodsParams[input.method!]).forEach((key) => {
+          copiedAlgoOptions[key] = input.options[key as keyof typeof input.options];
+        });
+        Object.keys(this.methodsParams[input.method!]).forEach((key) => {
+          ((this.methodsParams[input.method!] as any)[key]).value = copiedAlgoOptions[key];
+        });
+        const wasSettingsOpened = this.methodSettingsDivs.length > 0;
+        this.createAlgorithmSettingsDiv(this.methodsParams[input.method!]);
+        if (!wasSettingsOpened) {
+          this.methodSettingsDivs.forEach((it) => it.remove());
+          this.methodSettingsDivs = [];
+        }
+
+        await this.postProcessingEditor.onFunctionChanged(input.postProcessingFunctionArgs);
+      } catch (e) {
+        grok.shell.error('Error applying input from history');
+        console.error(e);
+      }
+    }
 }
 
 
@@ -345,7 +418,8 @@ class DimReductionColumnEditor {
     weight: number = 1;
     colOptEditors: HTMLElement[] = [];
     constructor(column: DG.Column, supportedFunctions: DimRedSupportedFunctions[]) {
-      this.weightInput = ui.floatInput('Weight', 1, () => { this.weight = this.weightInput.value ?? 1; });
+      this.weightInput = ui.input.float('Weight',
+        {value: 1, onValueChanged: (value) => { this.weight = value ?? 1; }});
       this.column = column;
       // sort by specificity
       this.supportedFunctions = supportedFunctions.sort((a, b) => {
@@ -362,23 +436,22 @@ class DimReductionColumnEditor {
       this.supportedFunctions.forEach((f) => {
         this.functionsMap[getFuncName(f.func)] = f.func;
       });
-      this.preprocessingFunctionInput = ui.choiceInput('Encoding function',
-        getFuncName(this.supportedFunctions[0].func), this.supportedFunctions.map((it) => getFuncName(it.func)),
-        () => {
-          const val = this.preprocessingFunctionInput.value!;
-          const func = this.functionsMap[val];
-          this.preprocessingFunctionSettings = {};
-          this.hasExtraSettings = func.inputs.length > 2;
-          const supF = this.supportedFunctions.find((it) => getFuncName(it.func) === val)!;
-          this.getSimilarityMetricInput(supF);
-          ui.empty(this.preprocessingFuncSettingsDiv);
-          settingsOpened = false;
-          if (!this.hasExtraSettings)
-            this.preprocessingFuncSettingsIcon.style.display = 'none';
-          else
-            this.preprocessingFuncSettingsIcon.style.display = 'flex';
-        }
-      );
+      this.preprocessingFunctionInput = ui.input.choice('Encoding function',
+        {value: getFuncName(this.supportedFunctions[0].func),
+          items: this.supportedFunctions.map((it) => getFuncName(it.func)),
+          onValueChanged: (value) => {
+            const func = this.functionsMap[value];
+            this.preprocessingFunctionSettings = {};
+            this.hasExtraSettings = func.inputs.length > 2;
+            const supF = this.supportedFunctions.find((it) => getFuncName(it.func) === value)!;
+            this.getSimilarityMetricInput(supF);
+            ui.empty(this.preprocessingFuncSettingsDiv);
+            settingsOpened = false;
+            if (!this.hasExtraSettings)
+              this.preprocessingFuncSettingsIcon.style.display = 'none';
+            else
+              this.preprocessingFuncSettingsIcon.style.display = 'flex';
+          }});
       this.preprocessingFunctionInput.root.style.display = 'flex';
 
       this.createSettingsDiv(this.preprocessingFuncSettingsDiv, this.supportedFunctions[0].func)
@@ -435,7 +508,8 @@ class DimReductionColumnEditor {
     }
 
     getSimilarityMetricInput(preFunc: DimRedSupportedFunctions) {
-      const input = ui.choiceInput('Similarity metric', preFunc.distanceFunctions[0], preFunc.distanceFunctions);
+      const input =
+        ui.input.choice('Similarity metric', {value: preFunc.distanceFunctions[0], items: preFunc.distanceFunctions});
       if (!this.similarityMetricInputRoot) {
         this.similarityMetricInputRoot = input.root;
         this.similarityMetricInput = input;
@@ -469,7 +543,7 @@ class DimReductionColumnEditor {
         if (this.preprocessingFunctionSettings[fInput.name] !== null &&
             this.preprocessingFunctionSettings[fInput.name] !== undefined)
           input.value = this.preprocessingFunctionSettings[fInput.name];
-        input.onChanged(() => { this.preprocessingFunctionSettings[fInput.name] = input.value; });
+        input.onChanged.subscribe((value) => { this.preprocessingFunctionSettings[fInput.name] = value; });
         paramsForm.append(input.root);
       }
       paramsForm.style.marginBottom = '10px';
@@ -485,10 +559,11 @@ class PostProcessingFuncEditor {
   postProcessingFunctionsMap: {[key: string]: DG.Func | null} = {};
   postProcessingFunctionInput: DG.ChoiceInput<string | null>;
   private _root: HTMLElement = ui.div([]);
-  private _postProcessingArgs: Options = {};
+  public _postProcessingArgs: Options = {};
   private _argsElement: HTMLElement = ui.div([]);
   private _settingsIcon: HTMLElement;
   private _settingsOpened: boolean = false;
+  public _prevChangePromise: Promise<void> = Promise.resolve();
   constructor() {
     this._settingsIcon = ui.icons.settings(async () => {
       this._settingsOpened = !this._settingsOpened;
@@ -510,9 +585,10 @@ class PostProcessingFuncEditor {
     const defaultPostProcessingFunc = Object.keys(this.postProcessingFunctionsMap).find((it) =>
       !!this.postProcessingFunctionsMap[it]?.options?.[DIM_RED_DEFAULT_POSTPROCESSING_FUNCTION_META]) ?? 'None';
     this.postProcessingFunctionInput =
-      ui.choiceInput('Postprocessing', defaultPostProcessingFunc,
-        Object.keys(this.postProcessingFunctionsMap), async () => { await this.onFunctionChanged(); },
-        {nullable: false});
+      ui.input.choice('Postprocessing', {value: defaultPostProcessingFunc,
+        items: Object.keys(this.postProcessingFunctionsMap),
+        onValueChanged: async () => { await this.onFunctionChanged(); },
+        nullable: false});
     this.onFunctionChanged();
     this.postProcessingFunctionInput.nullable = false;
     this.postProcessingFunctionInput.classList.add('ml-dim-reduction-settings-input');
@@ -526,28 +602,38 @@ class PostProcessingFuncEditor {
       this.postProcessingFunctionsMap[this.postProcessingFunctionInput.value] : null;
   }
 
-  async onFunctionChanged() {
-    const func = this.postProcessingFunction;
-    ui.empty(this._argsElement);
-    this._postProcessingArgs = {};
-    if (!func || func.inputs.length < 3) {
-      this._settingsIcon.style.display = 'none';
-      return;
-    };
-    this._settingsIcon.style.display = 'flex';
-    const fc = func.prepare();
-    const inputs = await fc.buildEditor(ui.div());
-    for (let i = 2; i < func.inputs.length; i++) {
-      const fInput = func.inputs[i];
-      const val = this._postProcessingArgs[fInput.name] ||
-        fc.inputParams[func.inputs[i].name].value || fInput.defaultValue;
-      if (val)
-        this._postProcessingArgs[fInput.name] = val;
-      const input = inputs.find((inp) => inp.property.name === fInput.name);
-      if (!input)
-        continue;
-      input.onChanged(() => { this._postProcessingArgs[fInput.name] = input.value; });
-      this._argsElement.append(input.root);
+  async onFunctionChanged(presetArgs: Options = {}) {
+    await this._prevChangePromise;
+    let resolve: () => void;
+    this._prevChangePromise = new Promise<void>((res) => resolve = res);
+    try {
+      const func = this.postProcessingFunction;
+      ui.empty(this._argsElement);
+      this._postProcessingArgs = {};
+      if (!func || func.inputs.length < 3) {
+        this._settingsIcon.style.display = 'none';
+        return;
+      };
+      this._settingsIcon.style.display = 'flex';
+      const fc = func.prepare(presetArgs);
+      const inputs = await fc.buildEditor(ui.div());
+      for (let i = 2; i < func.inputs.length; i++) {
+        const fInput = func.inputs[i];
+        const val = this._postProcessingArgs[fInput.name] ||
+          fc.inputParams[func.inputs[i].name].value || fInput.defaultValue;
+        if (val)
+          this._postProcessingArgs[fInput.name] = val;
+        const input = inputs.find((inp) => inp.property.name === fInput.name);
+        if (!input)
+          continue;
+        input.onChanged.subscribe((value) => { this._postProcessingArgs[fInput.name] = value; });
+        this._argsElement.append(input.root);
+      }
+    } catch (e) {
+      grok.shell.error('Error applying postprocessing function');
+      console.error(e);
+    } finally {
+      resolve!();
     }
   }
 

@@ -175,6 +175,8 @@ export class Events {
 
   get onPackageLoaded(): rxjs.Observable<Package> { return __obs('d4-package-loaded'); }
 
+  get onFileImportRequest(): rxjs.Observable<FileImportArgs> { return __obs('d4-file-import-request'); }
+
   get onGridCellLinkClicked(): rxjs.Observable<EventData<GridCellArgs>> {return __obs('d4-grid-cell-link-clicked-global'); }
 
   get onBrowseNodeCreated(): rxjs.Observable<TreeViewNode> {
@@ -313,6 +315,12 @@ export interface MapChangeArgs<K, V> {
 
 export interface ViewerArgs {
   viewer: Viewer;
+}
+
+export type FileImportArgs = {
+  file: File,
+  tables: DataFrame[]
+  preventDefault: () => void
 }
 
 export interface ViewArgs {

@@ -12,7 +12,7 @@ import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {
-  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
+  getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 
 import {awaitGrid, initHelmMainPackage} from './utils';
@@ -32,14 +32,13 @@ category('renderers', () => {
     userLibSettings = await getUserLibSettings();
 
     // Test 'helm' requires default monomer library loaded
-    await setUserLibSettingsForTests();
-    await monomerLibHelper.loadLibraries(true); // load default libraries
+    await monomerLibHelper.loadMonomerLibForTests(); // load default libraries
   });
 
   after(async () => {
     // UserDataStorage.put() replaces existing data
     await setUserLibSettings(userLibSettings);
-    await monomerLibHelper.loadLibraries(true); // load user settings libraries
+    await monomerLibHelper.loadMonomerLib(true); // load user settings libraries
   });
 
 
@@ -57,7 +56,7 @@ category('renderers', () => {
     }, 'Table view canvas not found', 100);
 
     expect(helmCol.semType, DG.SEMTYPE.MACROMOLECULE);
-    expect(helmCol.getTag(DG.TAGS.UNITS), NOTATION.HELM);
+    expect(helmCol.meta.units, NOTATION.HELM);
     expect(helmCol.getTag(DG.TAGS.CELL_RENDERER), 'helm');
 
     const cellRendererErrorJson: string = helmCol.getTag(helmTAGS.cellRendererRenderError);
@@ -102,11 +101,6 @@ RNA1{d(A)p.d(C)p.d(G)p.d(U)p}|PEPTIDE1{I.H.A.N.T.Thr_PO3H2}$$$$,0,1
     }, 500);
     // TODO: Any error occurred become 'Cannot read properties of null (reading 'get$columns')' because of scatter plot
     //await testEvent(sp.onAfterDrawScene, () => {}, () => { sp.invalidateCanvas(); }, 200);
-    await awaitGrid(view.grid, 500);
+    await awaitGrid(view.grid, 1000);
   }
 });
-
-
-
-
-

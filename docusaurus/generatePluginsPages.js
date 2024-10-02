@@ -37,16 +37,16 @@ async function getChangelog(filename, version) {
             const versionMatcher = new RegExp(`## ${version} \\((?:\\d{4}-\\d{2}-\\d{2}|WIP)\\)(?<text>[\\S\\s]*?)(?:$|## \\d+\\.\\d+\\.\\d+)`, "g");
             const versionMatch = Array.from(content.matchAll(versionMatcher), x => x[1].trim())[0];
             let linkRegex = /([\S ]*\[[\S ]+\]\(\S+\)[\S ]*)/g;
-            matches = Array.from(versionMatch.matchAll(linkRegex), x => x[1].trim());
+            matches = Array.from((versionMatch??"").matchAll(linkRegex), x => x[1].trim());
             summary = matches.join('\n');
             if (!summary) {
                 const featuresRegex = /### Features:?(?<text>[\S\s]*?)(?:$|### (?:Features|Bug|Fixed|Breaking)|##|\*? ?Dependency)/g;
-                matches = Array.from(versionMatch.matchAll(featuresRegex), x => x[1].trim());
+                matches = Array.from((versionMatch??"").matchAll(featuresRegex), x => x[1].trim());
                 summary = matches.join('\n');
             }
             if (!summary) {
                 const bugsRegex = /### Bug Fixes:?(?<text>[\S\s]*?)(?:$|### (?:Features|Bug|Fixed|Breaking)|##|\*? ?Dependency)/g;
-                matches = Array.from(versionMatch.matchAll(bugsRegex), x => x[1].trim());
+                matches = Array.from((versionMatch??"").matchAll(bugsRegex), x => x[1].trim());
                 summary = matches.join('\n');
             }
         }

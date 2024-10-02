@@ -8,24 +8,24 @@ module.exports = {
   mode: 'development',
   entry: {
     package: './src/package.ts',
-    test: {filename: 'package-test.js', library: {type: 'var', name:`${packageName}_test`}, import: './src/package-test.ts'},
+    test: {filename: 'package-test.js', library: {type: 'var', name: `${packageName}_test`}, import: './src/package-test.ts'},
   },
   resolve: {
-    extensions: ['.js', '.json', '.ts'],
+    extensions: ['.ts', '.json', '.js'],
   },
   module: {
     rules: [
-      { test: /\.ts$/, loader: 'ts-loader' }
+      {test: /\.ts$/, loader: 'ts-loader'},
     ],
   },
-  devtool: 'inline-source-map',
+  devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',
     'datagrok-api/ui': 'ui',
-    "openchemlib/full.js": "OCL",
-    "rxjs": "rxjs",
-    "rxjs/operators": "rxjs.operators",
+    'openchemlib/full.js': 'OCL',
+    'rxjs': 'rxjs',
+    'rxjs/operators': 'rxjs.operators',
     'cash-dom': '$',
     'dayjs': 'dayjs',
   },

@@ -9,7 +9,7 @@ const HEIGHT = 100;
 
 const BASE_URL = 'https://www.ebi.ac.uk/chembl/api/data';
 
-enum SEARCH_TYPE {
+export enum SEARCH_TYPE {
   SUBSTRUCTURE = 'substructure',
   SIMILARITY = 'similarity',
 }
@@ -21,7 +21,7 @@ enum ELEMENTS {
   SIMILARITY = 'similarity',
 }
 
-function getData(searchType: SEARCH_TYPE, smiles: string, score: number | null = null): DG.DataFrame | null {
+export function getData(searchType: SEARCH_TYPE, smiles: string, score: number | null = null): DG.DataFrame | null {
   const xmlhttp = new XMLHttpRequest();
   xmlhttp.open("GET", `${BASE_URL}/${searchType}/${smiles}${searchType === SEARCH_TYPE.SUBSTRUCTURE ? '' : `/${score}`}`, false);
   xmlhttp.send();

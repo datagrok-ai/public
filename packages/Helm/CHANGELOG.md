@@ -1,5 +1,108 @@
 # Helm changelog
 
+## 2.5.3 (WIP)
+
+### Bug fixes
+
+* Fix test Helm HelmHelper.removeGaps
+* Fix using IMonomerLibHelper.loadMonomerLibForTests
+
+## 2.5.2 (2024-09-25)
+
+Bump dependencies, bio lib
+
+## 2.5.1 (2024-09-24)
+
+### New features
+
+* Add HelmHelper parse and removeGaps methods, add tests
+* Add monomer hover handling for substruct
+* Add dojo bundled loading (fix freezing the browser)
+
+## 2.5.0 (2024-09-10)
+
+### Bug fixes
+
+* Fix init dojo loading NGL ahead
+* Bump dependencies versions
+
+## 2.4.6 (2024-09-05)
+
+Helm Web editor cell editing causing grid.onCellValueEdited event
+
+## 2.4.5 (2024-08-29)
+
+Fix getHelm for cyclic, bump HWE dependencies
+
+## 2.4.4 (2024-08-27)
+
+### Bug fixes
+
+* Helm: Fix Helm grid cell renderer mouse move handling error
+
+## 2.4.3 (2024-08-23)
+
+Helm: Bump HWE dependencies versions
+Helm: Move getMolfiles to HelmHelper (highlight monomer at atomic level)
+
+## 2.4.2 (2024-08-19)
+
+### Bug fixes
+
+* Fix Helm editor default tab to Helm
+
+## 2.4.1 (2024-08-16)
+
+### Features
+
+* HWE option for continuous number, typing
+* Add HelmInput mouse events, redraw, showTooltip
+* Bump HWE dependencies versions
+
+### Bug fixes
+
+* Polish HelmInput size handling, tooltip
+
+## 2.4.0 (2024-08-06)
+
+### Features
+
+* Add monomer placeholders to HELMWebEditor palette
+
+### Bug fixes
+
+## 2.3.4 (2024-08-06)
+
+### Bug fixes
+
+* Fix HelmInput/tooltip flapping test
+* Fix dojo dijit locale to en-us
+* Fix HELMWebEditor and Bio init order to handle monomer lib
+
+## 2.3.3 (2024-08-05)
+
+### Features
+
+* Load dojo without CDN
+
+### Bug fixes
+
+* Fix monomers palette filling of HWE
+* Fix init dojo require
+* Fix test findMonomers
+
+## 2.3.2 (2024-07-23)
+
+### Features
+
+* Add HelmInput
+
+### Bug fixes
+
+* Add tooltip to HelmInput showing monomer of lib, test
+* Fix HelmInput to redraw on monomer lib changed
+* Fix HelmInput to handle dialog resize
+
 ## 2.3.1 (2024-06-28)
 
 Fix cell renderer error before package initialized

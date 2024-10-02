@@ -1,4 +1,4 @@
-.colored-text-input > textarea {
+.st-colored-text-input > textarea {
   width: 100%;
   -webkit-text-fill-color: transparent;
   background-color: transparent;
@@ -8,7 +8,7 @@
   height: 22px; /* Fine tuned value to avoid "jumping" of the textarea upon autoresize */
 }
 
-.colored-text-input > div {
+.st-colored-text-input > div {
   /* The values here are fine tuned to those of the ui.input textarea in order
    * to achieve precise overlap */
   overflow: auto;

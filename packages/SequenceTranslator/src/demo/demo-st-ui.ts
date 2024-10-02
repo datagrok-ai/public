@@ -24,7 +24,7 @@ export async function demoOligoStructureUI() {
   await tryCatch(async () => {
     async function setInputValue(idx: number, sequence: string): Promise<void> {
       await delay(500);
-      const textInputs: NodeListOf<HTMLTextAreaElement> = document.querySelectorAll('.colored-text-input > textarea');
+      const textInputs: NodeListOf<HTMLTextAreaElement> = document.querySelectorAll('.st-colored-text-input > textarea');
       const textarea = textInputs[idx];
       textarea.value = sequence;
       const event = new Event('input');

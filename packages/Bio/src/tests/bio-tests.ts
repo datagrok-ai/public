@@ -10,7 +10,7 @@ import {Nucleotides, NucleotidesPalettes} from '@datagrok-libraries/bio/src/nucl
 import {AminoacidsPalettes} from '@datagrok-libraries/bio/src/aminoacids';
 import {UnknownSeqPalette} from '@datagrok-libraries/bio/src/unknown';
 import {getStatsForCol} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
-import {GAP_SYMBOL} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {GAP_SYMBOL} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 
 /** GAP_SYMBOL */
 const g: string = GAP_SYMBOL;
@@ -58,7 +58,7 @@ PEPTIDE1{meI}$$$$`;
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
     const seqCol: DG.Column = df.getCol('seq')!;
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    seqCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
+    seqCol.meta.units = NOTATION.HELM;
     const stats = getStatsForCol(seqCol, 1, splitterAsHelm);
 
     expectObject(stats.freq, {
@@ -129,7 +129,7 @@ export async function _testGetStats(csvDfN1: string) {
   const dfN1: DG.DataFrame = DG.DataFrame.fromCsv(csvDfN1);
   const seqCol: DG.Column = dfN1.col('seq')!;
   seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
-  seqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+  seqCol.meta.units = NOTATION.FASTA;
   const stats = getStatsForCol(seqCol, 5, splitterAsFasta);
 
   expectObject(stats.freq, {
@@ -159,7 +159,7 @@ export async function _testPickupPaletteN1(csvDfN1: string) {
   const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDfN1);
   const col: DG.Column = df.col('seq')!;
   col.semType = DG.SEMTYPE.MACROMOLECULE;
-  col.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+  col.meta.units = NOTATION.FASTA;
   const cp = pickUpPalette(col);
 
   expect(cp instanceof NucleotidesPalettes, true);
@@ -169,7 +169,7 @@ export async function _testPickupPaletteN1e(csvDfN1e: string) {
   const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDfN1e);
   const col: DG.Column = df.col('seq')!;
   col.semType = DG.SEMTYPE.MACROMOLECULE;
-  col.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+  col.meta.units = NOTATION.FASTA;
   const cp = pickUpPalette(col);
 
   expect(cp instanceof NucleotidesPalettes, true);
@@ -179,7 +179,7 @@ export async function _testPickupPaletteAA1(csvDfAA1: string) {
   const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDfAA1);
   const col: DG.Column = df.col('seq')!;
   col.semType = DG.SEMTYPE.MACROMOLECULE;
-  col.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+  col.meta.units = NOTATION.FASTA;
   const cp = pickUpPalette(col);
 
   expect(cp instanceof AminoacidsPalettes, true);
@@ -189,7 +189,7 @@ export async function _testPickupPaletteX(csvDfX: string) {
   const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDfX);
   const col: DG.Column = df.col('seq')!;
   col.semType = DG.SEMTYPE.MACROMOLECULE;
-  col.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+  col.meta.units = NOTATION.FASTA;
   const cp = pickUpPalette(col);
 
   expect(cp instanceof UnknownSeqPalette, true);

@@ -13,7 +13,7 @@ limit @maxRows
 --end
 
 --name: patternSimilaritySearchWithThreshold
---friendlyName: Search | Pattern Similarity
+--friendlyName: Search | Pattern Similarity With Threshold
 --connection: Chembl
 --meta.batchMode: true
 --input: string pattern {semType: Molecule}

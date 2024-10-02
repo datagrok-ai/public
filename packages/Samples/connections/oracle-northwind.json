@@ -3,6 +3,8 @@
   "name": "OracleNorthwind",
   "friendlyName": "Northwind",
   "parameters": {
+    "cacheResults": true,
+    "cacheSchema": true,
     "server": "db.datagrok.ai",
     "port": 15211,
     "db": "XEPDB1"

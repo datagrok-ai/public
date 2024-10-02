@@ -45,10 +45,10 @@ export class BioStructureViewer {
       if (gc.isTableCell && gc.gridColumn.name === 'ligand') {
         //debugger;
         gc.style.element = ui.divV([
-          ui.boolInput('', false, () => {
+          ui.input.bool('', {value: false, onValueChanged: () => {
             this.ligandSelection[gc.cell.value][0] = !this.ligandSelection[gc.cell.value][0];
             this.twinPviewer.changeLigands(this.bsView, this.ligandSelection);
-          })
+          }})
         ]);
       }
     });

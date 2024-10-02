@@ -6,17 +6,18 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 
 import {before, after, category, test, expectArray, expect} from '@datagrok-libraries/utils/src/test';
+import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {
-  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
+  getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 
-import {toAtomicLevel} from '../package';
 import {_package} from '../package-test';
 
 const appPath = 'System:AppData/Bio';
@@ -59,12 +60,17 @@ category('toAtomicLevel', async () => {
   /** Backup actual user's monomer libraries settings */
   let userLibSettings: UserLibSettings;
 
+  let monomerLib: IMonomerLib;
+  let rdKitModule: RDModule;
+
   before(async () => {
+    rdKitModule = await getRdKitModule();
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
     // Clear settings to test default
-    await setUserLibSettingsForTests();
-    await monomerLibHelper.loadLibraries(true);
+    await monomerLibHelper.loadMonomerLibForTests();
+
+    monomerLib = monomerLibHelper.getMonomerLib();
 
     for (const [testName, testData] of Object.entries(TestsData)) {
       const inputPath = testData.inPath;
@@ -77,12 +83,13 @@ category('toAtomicLevel', async () => {
 
   after(async () => {
     await setUserLibSettings(userLibSettings);
-    await monomerLibHelper.loadLibraries(true);
+    await monomerLibHelper.loadMonomerLib(true);
   });
 
   async function getTestResult(source: DG.DataFrame, target: DG.DataFrame): Promise<void> {
     const inputCol = source.getCol(inputColName);
-    await toAtomicLevel(source, inputCol, false);
+    // await toAtomicLevel(source, inputCol, false);
+    await grok.functions.call('Bio:toAtomicLevel', {table: source, seqCol: inputCol, nonlinear: false});
     const obtainedCol = source.getCol(outputColName);
     const expectedCol = target.getCol(outputColName);
     const obtainedArray: string[] = wu(obtainedCol.values()).map((mol) => polishMolfile(mol)).toArray();
@@ -205,24 +212,24 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr
     const srcDf = DG.DataFrame.fromCsv(srcCsv);
     const seqCol = srcDf.getCol('seq');
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    seqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    seqCol.meta.units = NOTATION.FASTA;
     seqCol.setTag(bioTAGS.alphabet, ALPHABET.PT);
     const sh = SeqHandler.forColumn(seqCol);
     const resCol = (await _testToAtomicLevel(srcDf, 'seq', monomerLibHelper))!;
     expect(polishMolfile(resCol.get(0)), polishMolfile(tgtMol));
   });
+
+  async function _testToAtomicLevel(
+    df: DG.DataFrame, seqColName: string = 'seq', monomerLibHelper: IMonomerLibHelper
+  ): Promise<DG.Column | null> {
+    const seqCol: DG.Column<string> = df.getCol(seqColName);
+    const res = await _toAtomicLevel(df, seqCol, monomerLib, rdKitModule);
+    if (res.warnings.length > 0)
+      _package.logger.warning(`_toAtomicLevel() warnings ${res.warnings.join('\n')}`);
+    return res.molCol;
+  }
 });
 
-async function _testToAtomicLevel(
-  df: DG.DataFrame, seqColName: string = 'seq', monomerLibHelper: IMonomerLibHelper
-): Promise<DG.Column | null> {
-  const seqCol: DG.Column<string> = df.getCol(seqColName);
-  const monomerLib: IMonomerLib = monomerLibHelper.getBioLib();
-  const res = await _toAtomicLevel(df, seqCol, monomerLib);
-  if (res.warnings.length > 0)
-    _package.logger.warning(`_toAtomicLevel() warnings ${res.warnings.join('\n')}`);
-  return res.col;
-}
 
 function polishMolfile(mol: string): string {
   return mol.replaceAll('\r\n', '\n')

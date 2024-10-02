@@ -38,15 +38,15 @@ category('top menu similarity/diversity', () => {
 
   test('findSimilar.chem.smiles', async () => {
     await _testFindSimilar(findSimilar);
-  });
+  }, {benchmark: true});
 
   test('findSimilar.chem.molV2000', async () => {
     await _testFindSimilar(findSimilar, molV2000, 'V2000');
-  });
+  }, {benchmark: true});
 
   test('findSimilar.chem.molV3000', async () => {
     await _testFindSimilar(findSimilar, molV3000, 'V3000');
-  });
+  }, {benchmark: true});
 
   test('getSimilarities.chem.molecules', async () => {
     await _testGetSimilarities(getSimilarities, molecules);
@@ -128,13 +128,13 @@ category('top menu similarity/diversity', () => {
     const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Samples:Files/chem/smiles_1M.zip') : molecules;
     await chemSimilaritySearch(df, df.getCol('smiles'), df.get('smiles', 0),
       BitArrayMetricsNames.Tanimoto, 10, 0.01, Fingerprint.Morgan, DG.BitSet.create(df.rowCount).setAll(true));
-  });
+  }, {benchmark: true});
 
   test('testDiversitySearch.smiles', async () => {
     const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Samples:Files/chem/smiles_1M.zip') : molecules;
     await chemDiversitySearch(df.getCol('smiles'), tanimotoSimilarity, 10, 'Morgan' as Fingerprint,
       DG.BitSet.create(df.rowCount).setAll(true));
-  });
+  }, {benchmark: true});
 
   test('testDiversitySearch.molV2000', async () => {
     await chemDiversitySearch(spgi100.getCol('Structure'), tanimotoSimilarity, 10, Fingerprint.Morgan as Fingerprint,

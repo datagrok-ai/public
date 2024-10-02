@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {caption, checkHTMLElement, customCaption, stringValue, units} from './utils';
 
 category('UI: Inputs for property', () => {
-  const dummyInput = ui.intInput('dummy', 3);
+  const dummyInput = ui.input.int('dummy', {value: 3});
   const props = {
     'stringInput': DG.Property.fromOptions(
       {name: 'stringInput', caption: 'stringCaption', defaultValue: 'defaultString', type: 'string'},
@@ -25,8 +25,8 @@ category('UI: Inputs for property', () => {
     'tableInput': DG.Property.fromOptions(
       {name: 'tableInput', caption: 'dataframeCaption', defaultValue: null, type: 'dataframe'},
     ),
-    // 'columnInput': ui.columnInput('', t, t.col('age')),
-    // 'columnsInput': ui.columnsInput('', t, () => null),
+    // 'columnInput': ui.input.column('', {table: t, value: t.col('age')}),
+    // 'columnsInput': ui.input.columns('', {table: t}),
   } as Record<string, DG.Property>;
   let inputs = {} as Record<string, DG.InputBase>;
   let v: DG.View;

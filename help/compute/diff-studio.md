@@ -35,27 +35,45 @@ To run **Diff Studio**:
 
 ### Loading and saving data
 
-* **To save formulas** to a local file, click the <i class="fas fa-save"></i> **Save** icon on the ribbon, and find the *ivp*-file in Downloads. You can open and edit this file using any text editor.
-* **To load formulas** from a local file, click the <i class="fas fa-folder-open"></i> **Load...** on the ribbon, choose **From file...**
+* **To save model**, click the <i class="fas fa-save"></i> **Save** icon on the ribbon. The context menu opens:
+  * Click `Save as Local File...` to save model to a local file. Find the *ivp*-file in Downloads. You can open and edit this file using any text editor.
+  * Click `Save to My Files...` to save model to your platform files (**Browse > Files > My files**).
+* **To load model** from a local file, click the <i class="fas fa-folder-open"></i> **Load...** on the ribbon, choose **From file...**
   option and choose a local file to upload.
 * **Drag-n-drop** your *ivp*-file to Datagrok. Diff Studio will open it and load formulas. You can open *ivp*-files stored in the platform.
 
+### Browse and share models
+
+Go to **Browse > Apps** and expand the **Diff Studio** group:
+
+* Check model templates from **Templates**. Use them as a backbone of your model.
+* Click **Examples** and explore built-in models. They cover all Diff Studio capabilities.
+* Find recently opened models in **Recent**.
+
+![Diff Studio Browsing](pics/diff-studio-browsing.gif)
+
+In **Browse**, click any *ivp*-file. Model preview opens. Modify inputs and check results. Use URL to share computations:
+
+![Diff Studio Sharing](pics/diff-studio-sharing-url.gif)
+
+By using a URL, you can share model runs from the **Templates**, **Examples** and **Recent** groups.
+
 ### Sensitivity analysis
 
-Explore the relationship between inputs and outputs of your model using the [Sensitivity Analysis](compute.md#sensitivity-analysis) feature. Run it directly from Diff Studio:
+Explore the relationship between inputs and outputs of your model using the [Sensitivity Analysis](function-analysis.md#sensitivity-analysis) feature. Run it directly from Diff Studio:
 
 * Click <i class="fas fa-analytics"></i> **Run sensitivity analysis** icon
 * Apply one of the following methods:
-  * [Monte Carlo](compute.md#monte-carlo)
-  * [Sobol](compute.md#sobol)
-  * [Grid](compute.md#grid)
+  * [Monte Carlo](function-analysis.md#monte-carlo)
+  * [Sobol](function-analysis.md#sobol)
+  * [Grid](function-analysis.md#grid)
 * Analyze model evaluations
 
 ![Run Sens Analysis](pics/diff-studio-run-sens-analysis.gif)
 
 ### Parameter Optimization
 
-Find input conditions leading to the specified output constraints using the [Parameter Optimization](compute.md#input-parameter-optimization) feature. It finds input values that minimize deviation measured by [loss function](https://en.wikipedia.org/wiki/Loss_function). Run it directly from Diff Studio:
+Find input conditions leading to the specified output constraints using the [Parameter Optimization](function-analysis.md#parameter-optimization) feature. It finds input values that minimize deviation measured by [loss function](https://en.wikipedia.org/wiki/Loss_function). Run it directly from Diff Studio:
 
 * Click <i class="fas fa-chart-line"></i> **Run fitting inputs** icon
 * In the `Fit` block, use switchers to specify inputs to be found:
@@ -346,9 +364,15 @@ The `Nimotuzumab` example simulates population pharmacokinetic for [nimotuzumab]
 
 ### Bioreactor
 
-The `Bioreactor` example models the [kinetic mechanism](https://doi.org/10.1074/jbc.RA117.000303) of controlled Fab-arm exchange for the formation of bispecific immunoglobulin G1 antibodies.
+The `Bioreactor` example models the [kinetic mechanism](https://doi.org/10.1074/jbc.RA117.000303) of controlled Fab-arm exchange for the formation of bispecific immunoglobulin G1 antibodies. It shows how to use the `meta.inputs` feature to specify a table with pre-defined model inputs.
 
 ![add-to-workspace](pics/diff-studio-bioreactor.png)
+
+### Pollution
+
+The `Pollution` example describes a chemical reaction part of the air [pollution model](https://archimede.uniba.it/~testset/problems/pollu.php). It consists of 25 reaction and 20 reacting compounds. This example illustrates the capability of Diff Studio to solve large systems of [stiff equations](https://en.wikipedia.org/wiki/Stiff_equation).
+
+![add-to-workspace](pics/diff-studio-pollution.png)
 
 Datagrok's ODEs suite has tools for solving both stiff and non-stiff equations. Combine Diff Studio
 with [viewers](../visualize/viewers/viewers.md) and [compute](compute.md) tools to explore complex models.
@@ -399,6 +423,34 @@ By default, Diff Studio uses ROS34PRw and alerts you if computations take too lo
 ```
 
 Set the maximum number of iterations to debug formulas in complex models.
+
+## Lookup tables
+
+Lookup tables are pre-defined sets of model input values. They're organized as follows:
+
+||x|y|...|
+|-----|-----|-----|---|
+|Set 1|1|2|...|
+|Set 2|3|4|...|
+
+To use a lookup table:
+
+* Create a CSV file with your table and add it to your project
+* Add the `#meta.inputs`-line to your model and specify a CSV file with a lookup table:
+
+```python
+#meta.inputs: table {choices: OpenFile("System:AppData/DiffStudio/inputs.csv")}
+```
+
+* To improve usability, define `caption`, `category` and a tooltip:
+
+```python
+#meta.inputs: table {choices: OpenFile("System:AppData/DiffStudio/inputs.csv"); caption: Mode; category: Settings} [Hint]
+```
+
+Use the interface to select inputs and compare model runs:
+
+![table-lookups](pics/diff-studio-table-lookups.gif)
 
 See also
 

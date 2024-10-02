@@ -49,7 +49,7 @@ category('converters', async () => {
         _convertMolNotation(df.get('smiles', i), DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock, rdkitModule);
     } else
       _testConvert(DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
-  });
+  }, {benchmark: true});
 
   test('SMILES to SMARTS', async () => {
     _testConvert(DG.chem.Notation.Smiles, DG.chem.Notation.Smarts);
@@ -120,6 +120,6 @@ category('converters', async () => {
       await testColumnAdded('smiles_v3Kmolblock', DG.chem.Notation.V3KMolBlock, DG.chem.Notation.Smarts);
       expect(df.get('smiles_v3Kmolblock_smarts', 0) === '[#6]-[#6](-[#6](=[#8])-[#8]-[#6]-[#6]-[#6]-[#6]1:[#6]:[#6]:[#6]:[#7]:[#6]:1)-[#6]1:[#6]:[#6]:[#6]:[#6](:[#6]:1)-[#6](=[#8])-[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1');
     }
-  });
+  }, {benchmark: true});
   
 });

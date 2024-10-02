@@ -71,14 +71,16 @@ category('Viewers: Filters: Collaborative filtering', () => {
   });
 
   test('Scatter plot', async () => {
+    await delay(1000);
     await addScatterPlot();
+    await delay(1000);
     await addScaffoldFilter(47);
     await addSubscructureFilter(17);
     await addCategoricalFilter(9);
     await addHistogtramFilter(6);
     tv.resetLayout();
-    await delay(100);
-  });
+    await delay(1000);
+  }, {skipReason: 'GROK-16405'});
 
   after(async () => {
     grok.shell.closeAll();

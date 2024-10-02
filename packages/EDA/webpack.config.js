@@ -1,11 +1,12 @@
 const path = require('path');
-const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
+const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, ''); 
+const mode = 'development';
 
 module.exports = {
   cache: {
     type: 'filesystem',
   },
-  mode: 'development',
+  mode: mode,
   entry: {
     test: {filename: 'package-test.js', library: {type: 'var', name:`${packageName}_test`}, import: './src/package-test.ts'},
     package: './src/package.ts'
@@ -23,7 +24,7 @@ module.exports = {
       },
     ],
   },
-  devtool: 'inline-source-map',
+  devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',

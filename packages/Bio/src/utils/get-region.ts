@@ -8,11 +8,11 @@ import {TaskBarProgressIndicator} from 'datagrok-api/dg';
 export function getRegionUI(col: DG.Column<string>): void {
   const sh = SeqHandler.forColumn(col);
 
-  const nameInput = ui.stringInput('Name', '');
-  const startPositionInput = ui.choiceInput('Start Position', sh.posList[0], sh.posList,
-    () => { /* TODO: update name placeholder with getDefaultName() */ });
-  const endPositionInput = ui.choiceInput('End Position', sh.posList[sh.posList.length], sh.posList,
-    () => { /* TODO: update name placeholder with getDefaultName() */ });
+  const nameInput = ui.input.string('Name', {value: ''});
+  const startPositionInput = ui.input.choice('Start Position', {value: sh.posList[0], items: sh.posList,
+    onValueChanged: () => { /* TODO: update name placeholder with getDefaultName() */ }});
+  const endPositionInput = ui.input.choice('End Position', {value: sh.posList[sh.posList.length], items: sh.posList,
+    onValueChanged: () => { /* TODO: update name placeholder with getDefaultName() */ }});
 
   const getDefaultName = (): string => {
     return `${col.name}:${startPositionInput.value}-${endPositionInput.value}`;

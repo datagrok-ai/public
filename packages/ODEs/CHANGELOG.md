@@ -1,5 +1,33 @@
 # Diff Studio changelog
 
+## 1.1.4 (2024-09-30)
+
+Added the use of lookup tables in the Sensitivity Analysis & Fitting features
+
+## 1.1.3 (2024-09-18)
+
+Added the use of lookup tables
+
+## 1.1.2 (2024-09-16)
+
+Added the Bioreactor & SimPKPD models
+
+## 1.1.1 (2024-09-11)
+
+* Browsing: Templates/Examples/Recent models integration to the browse tree
+* Added tests & benchmarks: solvers performance & correctness, models features (basic structure, loops, updates, etc.)
+* Templates/Examples: updated the basic template, added the Pollution model
+* Float64 columns usage implementation
+* Improved the main app start
+
+## 1.1.0 (2024-09-10)
+
+* 1.21.1 release
+
+## 1.0.11-rc (2024-06-10)
+
+* Preparing 1.21.1 release
+
 ## 1.0.10 (2024-06-10)
 
 Implemented

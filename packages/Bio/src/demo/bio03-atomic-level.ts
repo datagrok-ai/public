@@ -15,10 +15,7 @@ export async function demoBio03UI(): Promise<void> {
   let dlg: DG.Dialog;
 
   try {
-    await new DemoScript(
-      'Atomic Level',
-      'Atomic level structure of Macromolecules',
-    )
+    await new DemoScript('Atomic Level', 'Atomic level structure of Macromolecules', false, {autoStartFirstStep: true})
       .step(`Loading Macromolecules notation 'Helm'`, async () => {
         grok.shell.windows.showContextPanel = false;
         grok.shell.windows.showProperties = false;
@@ -35,7 +32,7 @@ export async function demoBio03UI(): Promise<void> {
       })
       .step('To atomic level', async () => {
         const seqCol = df.getCol(seqColName);
-        await toAtomicLevel(df, seqCol, false);
+        await toAtomicLevel(df, seqCol, false, false);
       }, {
         description: 'Get atomic level structures of Macromolecules.',
         delay: 2000,

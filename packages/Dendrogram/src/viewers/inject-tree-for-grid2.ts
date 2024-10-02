@@ -60,7 +60,7 @@ export function injectTreeForGridUI2(
     // TODO: Get max from tree height
     //@ts-ignore
     const treeHeight: number = (treeRoot as MarkupNodeType).subtreeLength;
-    cutSlider = ui.sliderInput('', 0, 0, treeHeight);
+    cutSlider = ui.input.slider('', {value: 0, min: 0, max: treeHeight});
     $(cutSlider.root).find('input').each((_, el) => {
       el.setAttribute('step', '0.01');
       el.style.width = '100%';
@@ -72,18 +72,18 @@ export function injectTreeForGridUI2(
 
     treeNb.root!.appendChild(cutSlider.root);
 
-    cutSlider.onChanged(() => {
+    cutSlider.onChanged.subscribe((value) => {
       // console.debug('Dendrogram: injectTreeToGrid() cutSlider.onChanged() ' + `${cutSlider!.value}`);
       // th.cutTreeToGrid(newickRoot, cutSlider!.value!, grid.dataFrame, leafColName, 'Cluster');
 
       const t1 = Date.now();
-      th.treeCutAsTree(treeRoot, cutSlider!.value!, true);
+      th.treeCutAsTree(treeRoot, value!, true);
       const t2 = Date.now();
       console.debug('Dendrogram: injectTreeForGrid() cutSlider.onChanged() treeCutAsTree() ' +
         `ET: ${((t2 - t1) / 1000).toString()}`);
 
       const newickRootCopy = JSON.parse(JSON.stringify(treeRoot));
-      const newickRootCutted = th.treeCutAsTree(newickRootCopy, cutSlider!.value!);
+      const newickRootCutted = th.treeCutAsTree(newickRootCopy, value!);
       th.markClusters(newickRootCutted as NodeCuttedType, cut.dataDf, leafColName ?? null, cut.clusterColName);
       th.buildClusters(newickRootCutted as NodeCuttedType, cut.clusterDf, cut.clusterColName, leafColName);
 
@@ -283,6 +283,7 @@ export function injectTreeForGridUI2(
 
     renderer.selections = selections;
   }
+
   // Variable to track if filter is changed and prevent the sorting change event
   let filterChangeCounter = 0;
 
@@ -324,7 +325,12 @@ export function injectTreeForGridUI2(
     sortingSub.unsubscribe();
   }
 
+  function treeNeighborOnClosed() {
+    for (const sub of subs) { sub.unsubscribe(); }
+  }
+
   const subs: Unsubscribable[] = [];
+  subs.push(treeNb.onClosed.subscribe(treeNeighborOnClosed));
   subs.push(renderer.onCurrentChanged.subscribe(rendererOnCurrentChanged));
   subs.push(renderer.onMouseOverChanged.subscribe(rendererOnMouseOverChanged));
   subs.push(renderer.onSelectionChanged.subscribe(rendererOnSelectionChanged));

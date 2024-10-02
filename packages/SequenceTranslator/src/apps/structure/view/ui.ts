@@ -33,11 +33,19 @@ class StructureAppLayout {
     this.onInvalidInput = new rxjs.Subject<string>();
     this.inputBase = Object.fromEntries(
       STRANDS.map(
-        (key) => [key, ui.textInput('', '', () => { this.onInput.next(); })]
+        (key) => {
+          const input = ui.input.textArea(key.toUpperCase(), {value: '', onValueChanged: () => {
+            this.onInput.next();
+            // WARNING: this fine tuning is necessary to fix layout within ui.form
+            // js-api version ^1.21
+            $(input.root.getElementsByTagName('div')).css('padding-left', '38px');
+          }});
+          return [key, input];
+        }
       )
     );
-    this.useChiralInput = ui.boolInput('Use chiral', true);
-    this.saveAllStrandsInput = ui.boolInput('Save as one entity', true);
+    this.useChiralInput = ui.input.bool('Use chiral', {value: true});
+    this.saveAllStrandsInput = ui.input.bool('Save as one entity', {value: true});
     ui.tooltip.bind(this.saveAllStrandsInput.root, 'Save SDF with all strands in one molfile');
     this.directionInversion = Object.fromEntries(
       STRANDS.map((key) => [key, false])
@@ -91,7 +99,7 @@ class StructureAppLayout {
     return boolInputsAndButton;
   }
 
-  private getTableInput(th: ITranslationHelper): HTMLTableElement {
+  private getTableInput(th: ITranslationHelper): HTMLElement {
     const coloredInput = Object.fromEntries(
       STRANDS.map(
         (key) => [key, new ColoredTextInput(this.inputBase[key], th.highlightInvalidSubsequence)]
@@ -102,20 +110,20 @@ class StructureAppLayout {
       STRANDS.map(
         (key, idx) => {
           const selected = (idx === 0) ? DIRECTION.STRAIGHT : DIRECTION.INVERSE;
-          return [key, ui.choiceInput(
-            `${key.toUpperCase()} direction`, selected, [DIRECTION.STRAIGHT, DIRECTION.INVERSE]
+          return [key, ui.input.choice(
+            `${key.toUpperCase()} direction`, {value: selected, items: [DIRECTION.STRAIGHT, DIRECTION.INVERSE]}
           )];
         }
       )
     );
 
     STRANDS.forEach((strand, idx) => {
-      directionChoiceInput[strand].onChanged(() => {
-        let value = directionChoiceInput[strand].value === DIRECTION.INVERSE;
+      directionChoiceInput[strand].onChanged.subscribe((value) => {
+        let inputValue = value === DIRECTION.INVERSE;
         // warning: the next line is necessary
         // until the legacy notion of direction used in the molfile generation gets fixed
-        if (idx > 0) value = !value;
-        this.directionInversion[strand] = value;
+        if (idx > 0) inputValue = !inputValue;
+        this.directionInversion[strand] = inputValue;
         this.onInput.next();
       });
     });
@@ -140,32 +148,16 @@ class StructureAppLayout {
         }
       ));
 
-    const tableRows = STRANDS.map((strand) => {
-      return {
-        label: label[strand],
-        textInput: coloredInput[strand].root,
-        clear: clearBlock[strand],
-        choiceInput: directionChoiceInput[strand].root,
-      };
-    });
-    const tableLayout = ui.table(
-      tableRows, (item) => [item.label, item.textInput, item.clear, item.choiceInput]);
-    $(tableLayout).css('margin-top', '10px');
+    const sequenseInputs = ui.form([], 'st-structure-inputs');
+    const clearButtons = ui.divV([], 'st-structure-clear-buttons');
+    const directionInputs = ui.form([], 'st-direction-inputs');
 
     for (const strand of STRANDS) {
-      let element = label[strand].parentElement!;
-      element.classList.add('st-structure-input-form');
-      // the following line is necessary because otherwise overridden by
-      // d4-item-table class
-      $(element).css('padding-top', '3px');
-
-      element = directionChoiceInput[strand].root.parentElement!;
-      element.classList.add('st-structure-input-form', 'st-structure-direction-choice');
-
-      element = this.inputBase[strand].root.parentElement!;
-      element.classList.add('st-structure-text-input-td');
+      sequenseInputs.append(this.inputBase[strand].root);
+      clearButtons.append(clearBlock[strand]);
+      directionInputs.append(directionChoiceInput[strand].root);
     }
-    return tableLayout;
+    return ui.divH([sequenseInputs, clearButtons, directionInputs]);
   }
 
   private getStrandData() {
@@ -181,11 +173,6 @@ class StructureAppLayout {
   }
 
   private getMolfile(ss: StrandData, as: StrandData, as2: StrandData): string {
-    // if (ss.strand === '' && (as.strand !== '' || as2.strand !== '')) {
-    //   this.onInvalidInput.next();
-    //   return '';
-    // }
-
     return getLinkedMolfile(ss, as, as2, this.useChiralInput.value!, this.th);
   }
 

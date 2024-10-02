@@ -1,0 +1,7 @@
+[
+  {
+    "path": "/monomer-libraries",
+    "invalidateOn": "0 0 * * *",
+    "preflight": true
+  }
+]

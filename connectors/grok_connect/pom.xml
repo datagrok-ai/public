@@ -5,13 +5,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>grok_connect</artifactId>
-    <version>2.1.17</version>
+    <version>2.1.23</version>
     <packaging>jar</packaging>
 
     <parent>
         <groupId>connectors</groupId>
         <artifactId>build</artifactId>
-        <version>2.1.17</version>
+        <version>2.1.23</version>
     </parent>
 
     <properties>
@@ -199,24 +199,26 @@
             <systemPath>${project.basedir}/lib/AthenaJDBC42-2.0.35.1000.jar</systemPath>
         </dependency>
         <dependency>
+            <groupId>com.denodo</groupId>
+            <artifactId>denodo-vdp-jdbcdriver</artifactId>
+            <version>8.0.9</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/denodo-vdp-jdbcdriver-8.0-update-20240306.jar</systemPath>
+        </dependency>
+        <dependency>
             <groupId>software.amazon.neptune</groupId>
             <artifactId>amazon-neptune-jdbc-driver</artifactId>
             <version>3.0.0</version>
             <scope>system</scope>
             <systemPath>${project.basedir}/lib/amazon-neptune-jdbc-driver-3.0.0-all.jar</systemPath>
         </dependency>
+
         <dependency>
             <groupId>com.osisoft</groupId>
             <artifactId>pi-jdbc</artifactId>
             <version>1.7.21114</version>
             <scope>system</scope>
             <systemPath>${project.basedir}/lib/PIJDBCDriver.jar</systemPath>
-        </dependency>
-
-        <dependency>
-            <groupId>com.orientechnologies</groupId>
-            <artifactId>orientdb-jdbc</artifactId>
-            <version>3.2.21</version>
         </dependency>
 
         <dependency>
@@ -421,7 +423,7 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.2.3</version>
+            <version>1.2.13</version>
         </dependency>
 
 
@@ -439,7 +441,7 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.5.3</version>
+            <version>42.5.5</version>
         </dependency>
         <dependency>
             <groupId>com.oracle.database.jdbc</groupId>
@@ -502,7 +504,7 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-jdbc-driver</artifactId>
-            <version>4.0.9</version>
+            <version>4.0.10</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -539,6 +541,10 @@
                 <exclusion>
                     <groupId>org.junit.jupiter</groupId>
                     <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.zaxxer</groupId>
+                    <artifactId>HikariCP</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -653,7 +659,7 @@
         <dependency> <!-- remediating vulnerability -->
             <groupId>com.nimbusds</groupId>
             <artifactId>nimbus-jose-jwt</artifactId>
-            <version>9.21.1</version>
+            <version>9.37.2</version>
         </dependency>
         <!--Hive1-->
         <dependency>
@@ -704,7 +710,7 @@
         <dependency>
             <groupId>com.amazon.redshift</groupId>
             <artifactId>redshift-jdbc42</artifactId>
-            <version>2.1.0.12</version>
+            <version>2.1.0.28</version>
         </dependency>
         <dependency>
             <groupId>com.ibm.db2.jcc</groupId>
@@ -734,7 +740,7 @@
         <dependency>
             <groupId>utils</groupId>
             <artifactId>serialization</artifactId>
-            <version>1.0.4</version>
+            <version>1.0.5</version>
             <scope>compile</scope>
             <exclusions>
                 <exclusion>

@@ -7,7 +7,7 @@
 #input: dataframe data [Input data table]
 #input: column x {type:numerical} [X axis column name]
 #input: column y {type:numerical} [Y axis column name]
-#input: bool interceptZero = FALSE [Force fit intercept zero]
+#input: bool interceptZero = false [Force fit intercept zero]
 #output: double k [Slope]
 #output: double b [Intercept]
 

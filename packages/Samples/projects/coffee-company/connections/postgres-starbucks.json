@@ -5,7 +5,9 @@
   "parameters": {
     "server": "db.datagrok.ai",
     "port": 54324,
-    "db": "starbucks"
+    "db": "starbucks",
+    "cacheResults": true,
+    "cacheSchema": true
   },
   "credentials" : {
     "parameters" : {

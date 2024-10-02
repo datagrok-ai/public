@@ -68,7 +68,7 @@ Hit design campaign consists of two views, a main design view and a tiles view. 
 
 HitDesign allows users to define custom compute and submit functions, and these functions can be written in any Datagrok package that is installed in the environment. 
 
-### Compute functions
+### Compute Functions
 
 Compute functions are used to calculate molecular properties. For example, mass, solubility, mutagenicity, partial charges, toxicity risks, etc. By default, Hit design will include compute functions from `Chem` package, which are molecular descriptors, Structural alerts, Toxicity risks and Chemical properties. Users can add additional compute functions by tagging them with `HitDesignFunction` tag and writing them in normal datagrok style. The First two inputs of these functions should be `Dataframe` `table` and `Column` `molecule`, and rest can be any other input. Function should perform a certain task, modify the dataframe in desired way and return the modified dataframe. For example, we can create a function that retrieves the `Chembl` mol registration number by smiles string:
 
@@ -175,7 +175,7 @@ from unnest(@molecules) as molecules
 where is_valid_smiles(Cast(molecules as cstring))
 ```
 
-### Submit functions
+### Submit Functions
 
 Submit functions are used to save or submit the filtered and computed dataset. This could include saving to a private database or additional calculations. Submit functions are defined in the same way as compute functions, but they are tagged with `HitTriageSubmitFunction` tag. The function should accept only two inputs, `Dataframe` `df` and `String` `molecules`, which are the resulting dataframe and name of molecules column respectively. For example, we can create a function that saves the filtered and computed dataset to a database:
 
@@ -189,3 +189,15 @@ export async function demoFileSubmit(df: DG.DataFrame, molecules: string): Promi
     myCustomDatabase.add(smiles) // template function which could for example save the smiles to a database
 }
 ```
+
+## Permission Management
+
+Hit Design allows users to manage permissions for campaigns, granting `view` or `edit` access to specific `users` or `groups`.
+
+By default, any new campaign will be shared with all users. To manage who can view or edit the campaign, click on the `share` icon located in the campaigns table, or open the campaign and click on the `share` button in the ribbon menu. If all users are removed from `edit` permissions, only the creator of the campaign will be able to edit it. Users who do not have edit permission but can view the campaign, will be able to see the campaign but not make any changes or delete it.
+
+![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-permissions.gif?raw=true)
+
+Similarly, users can manage view permissions, which will restrict access to viewing the campaign or accessing it directly via link. If all users are removed from `view` permissions, only the creator of the campaign will be able to view it.
+
+![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-view-permissions.gif?raw=true)

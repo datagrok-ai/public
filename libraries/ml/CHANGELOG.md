@@ -1,5 +1,69 @@
 # ml changelog
 
+## 6.7.3 (2024-10-01)
+
+GROK-16730: Demo: Activity cliffs: Fixed 'Cannot read properties of null'
+
+## 6.7.2 (2024-09-19)
+
+Activity cliffs: Resolve issue where multiple empty panels appear when clicking on cliffs link in demo
+
+## 6.7.1 (2024-09-18)
+
+Fix ts compatibility
+
+## 6.6.25-rc (2024-09-06)
+
+Preparing 1.21.1 release
+
+## 6.6.24 (2024-09-02)
+
+Fix typos, publish
+
+## 6.6.23 (2024-08-28)
+
+Add History support and enable gpu by default if available
+
+## 6.6.22 (2024-08-23)
+
+Add tableView for reduce dimensionality ui options
+
+## 6.6.21 (2024-08-14)
+
+Fix Worker import
+
+## 6.6.20 (2024-08-14)
+
+MCL Optimization: Remove use of extra column major map sparse matrix.
+
+## 6.6.19 (2024-08-09)
+
+Activity cliffs: make docked grid available in browse view for demo purposes
+
+## 6.6.18 (2024-08-09)
+
+Activity cliffs: ability to run as demo in Browse view
+
+## 6.6.17 (2024-08-08)
+
+Add limit to intercluster connections in mcl
+
+## 6.6.16 (2024-08-07)
+
+Correct NW Calculation on webGPU on CPU
+
+## 6.6.15 (2024-08-06)
+
+MCL layout with force directed graph and atlas
+
+## 6.6.14 (2024-07-09)
+
+Use only numeric columns without datetime for Activities in activity cliffs editor
+
+## 6.6.13 (2024-07-09)
+
+Reverse order of MCL Clusters
+
 ## 6.6.12 (2024-06-24)
 
 Fix activity cliffs styles

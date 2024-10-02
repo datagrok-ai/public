@@ -2,6 +2,12 @@
 title: "User storage"
 ---
 
+:::warning
+
+User storage will be soon deprecated. Use [User settings storage](./user_settings_storage.md) instead.
+
+:::
+
 It is often the case that certain settings or inputs/outputs need to be shared between different applications or
 different instances of the same application. This functionality is implemented in the form of user data storage — a
 virtual memory buffer which can be filled with new entries and from which these entries can later be retrieved.
@@ -120,7 +126,7 @@ const STORAGE_NAME = 'user-data-storage-demo';
 let v = grok.shell.newView('demo: user data storage');
 let age = ui.input.int('Age', {value: 30});
 let sex = ui.input.choice('Sex', {value: 'Male', items: ['Male', 'Female']});
-let music = ui.multiChoiceInput('Music genres', {value: null, items: ['Classic', 'Rock', 'Pop', 'Jazz']});
+let music = ui.input.multiChoice('Music genres', {value: null, items: ['Classic', 'Rock', 'Pop', 'Jazz']});
 let inputs = [age, sex, music];
 v.append(ui.inputs(inputs));
 

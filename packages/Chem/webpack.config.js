@@ -1,7 +1,10 @@
 const path = require('path');
 const rdkitLibVersion = require('./src/rdkit_lib_version.js');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
-const mode = 'production';
+
+const mode = process.env.NODE_ENV ?? 'production';
+if (mode !== 'production')
+  console.warn(`Building Chem in '${mode}' mode.`);
 
 const externalLibs = {
   'datagrok-api/dg': 'DG',
@@ -17,9 +20,7 @@ const externalLibs = {
 };
 
 module.exports = (_env, _options) => ({
-  cache: {
-    type: 'filesystem',
-  },
+  cache: {type: 'filesystem'},
   stats: {
     children: true,
   },
@@ -32,14 +33,14 @@ module.exports = (_env, _options) => ({
     },
     package: [`./src/${rdkitLibVersion}.wasm`, './src/package.ts'],
   },
-  devtool: mode !== 'production' ? 'inline-source-map' : 'source-map',
+  devtool: 'source-map',
   devServer: {
     contentBase: './dist',
   },
   externals: [
     function({context, request}, callback) {
       if (context.includes('worker') && request.includes('openchemlib/full')) {
-        console.log({context, request});
+        //console.log({context, request});
         return callback();
       }
 

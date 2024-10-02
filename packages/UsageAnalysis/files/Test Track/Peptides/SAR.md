@@ -1,11 +1,12 @@
-1. Open peptides.csv table (Browse > Files > Demo Files/bio/peptides.csv).
+1. Open linked datasets
 2. Click the peptides column title.
 3. On the **Context Panel**, expand **Peptides** panel.
 4. Click the **Launch SAR** button.
-5. Three viewers should appear:
-    - Mutation Cliffs/Invariant Map (Peptides analysis view)
-    - Most Potent Residues (Peptides analysis view)
-    - Peptide Space (as separate view)
+5. Four viewers should appear:
+  -Mutation Cliffs/Invariant Map (Peptides analysis view)
+  -Most Potent Residues (Peptides analysis view)
+  -MCL Viewer(Can take some time)
+  -Logo summary table viewer
 6. Click the **settings** button (at the top).
 7. Change all parameters arbitrarily.
 8. Click **OK**.
@@ -16,5 +17,8 @@
 13. Change parameters on the Distribution panel arbitrarily.
 ---
 {
-  "order": 3
+  "order": 3,
+  "datasets": [
+    "System:DemoFiles/bio/peptides.csv"
+  ]
 }

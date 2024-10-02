@@ -1,10 +1,10 @@
 {
   "name": "@datagrok/tutorials",
   "friendlyName": "Tutorials",
-  "version": "1.3.26",
+  "version": "1.5.1",
   "author": {
-    "name": "Anna Muzychyna",
-    "email": "amuzychyna@datagrok.ai"
+    "name": "Dmytro Kovalyov",
+    "email": "dkovalyov@datagrok.ai"
   },
   "description": "Learn and explore Datagrok through interactive tutorials and a demo app",
   "repository": {
@@ -13,10 +13,10 @@
     "directory": "packages/Tutorials"
   },
   "dependencies": {
-    "@datagrok-libraries/tutorials": "^1.3.12",
-    "@datagrok-libraries/utils": "^4.2.11",
+    "@datagrok-libraries/tutorials": "^1.4.1",
+    "@datagrok-libraries/utils": "^4.3.0",
     "cash-dom": "^8.1.0",
-    "datagrok-api": "^1.16.7",
+    "datagrok-api": "^1.21.1",
     "dayjs": "^1.10.6",
     "rxjs": "6.6.7",
     "wu": "^2.1.0"
@@ -45,7 +45,7 @@
     "build-ts": "tsc",
     "check-code-style": "eslint ./src/*.ts",
     "fix-style-errors": "eslint ./src/*.ts --fix",
-    "debug-tutorials-public": "grok publish public",
+    "debug-tutorials-public": "webpack && grok publish release-ec2 --release",
     "release-tutorials-public": "grok publish public --release",
     "debug-tutorials-local": "grok publish local",
     "release-tutorials-local": "grok publish local --release",

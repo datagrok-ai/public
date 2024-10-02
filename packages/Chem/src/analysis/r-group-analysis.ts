@@ -1,19 +1,21 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
+import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
 import { findRGroups, findRGroupsWithCore } from '../scripts-api';
 import { convertMolNotation, getRdKitModule } from '../package';
 import { getMCS } from '../utils/most-common-subs';
 import { IRGroupAnalysisResult } from '../rdkit-service/rdkit-service-worker-substructure';
 import { getRdKitService } from '../utils/chem-common-rdkit';
 import { _convertMolNotation } from '../utils/convert-notation-utils';
-import { SCAFFOLD_COL, SUBSTRUCT_COL } from '../constants';
+import { SCAFFOLD_COL } from '../constants';
 import { delay } from '@datagrok-libraries/utils/src/test';
 import { hexToPercentRgb } from '../utils/chem-common';
-import { ISubstruct } from '../rendering/rdkit-cell-renderer';
 import { getMolSafe, getQueryMolSafe } from '../utils/mol-creation_rdkit';
 import { MolfileHandler } from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 
 const R_GROUP_PARAMS_STORAGE_NAME = 'r-group-params';
 const R_GROUP_PARAMS_KEY = 'selected';
@@ -86,18 +88,18 @@ export function convertToRDKit(smiles: string): string {
  * and initiate the R-Group Analysis for the specified column with molecules.
  * @param {DG.Column} col Column for which to perform R-Group Analysis with specified core
  */
-export function rGroupAnalysis(col: DG.Column): void {
+export function rGroupAnalysis(col: DG.Column, demo = false): void {
+  loadRGroupUserSettings();
   const sketcher = new DG.chem.Sketcher();
 
   //General fields
   const molColNames = col.dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE).map((c) => c.name);
-  const columnInput = ui.choiceInput('Molecules', col.name, molColNames);
-  const columnPrefixInput = ui.stringInput('Column prefix', 'R');
+  const columnInput = ui.input.choice('Molecules', {value: col.name, items: molColNames});
+  const columnPrefixInput = ui.input.string('Column prefix', {value: 'R'});
   ui.tooltip.bind(columnPrefixInput.captionLabel, 'Prefix for R Group columns');
-  const visualAnalysisCheck = ui.boolInput('Visual analysis', true);
+  const visualAnalysisCheck = ui.input.bool('Visual analysis', {value: true});
   ui.tooltip.bind(visualAnalysisCheck.captionLabel, 'Add trellis plot after analysis is completed');
-  const replaceLatest = ui.boolInput('Replace latest', true);
-  replaceLatest.root.classList.add('chem-rgroup-replace-latest');
+  const replaceLatest = ui.input.bool('Replace latest', {value: true});
   ui.tooltip.bind(replaceLatest.captionLabel, 'Overwrite latest analysis results by new one');
 
   //MCS fields
@@ -121,52 +123,50 @@ export function rGroupAnalysis(col: DG.Column): void {
   });
   ui.tooltip.bind(mcsButton, 'Calculate Most Common Substructure');
   mcsButton.classList.add('chem-mcs-button');
-  const mcsExactAtomsCheck = ui.boolInput('Exact atoms', true);
-  const mcsExactBondsCheck = ui.boolInput('Exact bonds', true);
-  mcsExactBondsCheck.captionLabel.classList.add('chem-mcs-settings-label');
+  const mcsExactAtomsCheck = ui.input.bool('Exact atoms', {value: true});
+  const mcsExactBondsCheck = ui.input.bool('Exact bonds', {value: true});
 
   //R groups fields
-  const rGroupMatchingStrategy = ui.choiceInput('Matching strategy',
-    rGroupSettings?.rGroupMatchingStrategy ?? RGroupMatchingStrategy.Greedy, matchingStrategies,
-    () => {
-      rGroupSettings!.rGroupMatchingStrategy = rGroupMatchingStrategy.value!;
+  const rGroupMatchingStrategy = ui.input.choice('Matching strategy', {
+    value: rGroupSettings?.rGroupMatchingStrategy ?? RGroupMatchingStrategy.Greedy, items: matchingStrategies,
+    onValueChanged: (value) => {
+      rGroupSettings!.rGroupMatchingStrategy = value;
       saveRGroupUserSettings();
-    });
-  const onlyMatchAtRGroupsInput = ui.boolInput('Only match at R groups',
-    rGroupSettings?.onlyMatchAtRGroups ?? false, () => {
-      rGroupSettings!.onlyMatchAtRGroups = onlyMatchAtRGroupsInput.value!;
+    }});
+  rGroupMatchingStrategy.root.style.display = 'none';
+  const onlyMatchAtRGroupsInput = ui.input.bool('Only match at R groups', {
+    value: rGroupSettings?.onlyMatchAtRGroups ?? false, onValueChanged: (value) => {
+      rGroupSettings!.onlyMatchAtRGroups = value;
       saveRGroupUserSettings();
-    });
+    }});
+  onlyMatchAtRGroupsInput.root.style.display = 'none';
   ui.tooltip.bind(onlyMatchAtRGroupsInput.captionLabel, 'Return matches only for labelled R groups');
 
   //settings button to adjust mcs and r-groups settings
   const rGroupsSettingsIcon = ui.iconFA('cog', () => {
     rGroupSettinsOpened = !rGroupSettinsOpened;
-    if (!rGroupSettinsOpened)
-      ui.empty(rGroupSettingsDiv);
-    else {
-      rGroupSettingsDiv.append(rGroupMatchingStrategy.root);
-      rGroupSettingsDiv.append(onlyMatchAtRGroupsInput.root);
-    }
+    const display = !rGroupSettinsOpened ? 'none' : 'flex';
+    rGroupMatchingStrategy.root.style.display = display;
+    onlyMatchAtRGroupsInput.root.style.display = display;
   }, 'R group analysis settings');
   rGroupsSettingsIcon.classList.add('chem-rgroup-settings-icon');
-  const rGroupSettingsDiv = ui.inputs([], 'chem-rgroup-settings-div');
   let rGroupSettinsOpened = false;
-
 
   const dlg = ui.dialog({
     title: 'R-Groups Analysis',
     helpUrl: '/help/datagrok/solutions/domains/chem/chem.md#r-groups-analysis',
   })
-    .add(ui.divV([
+    .add(ui.div([
       sketcher,
-      ui.divH([mcsButton, mcsExactAtomsCheck.root, mcsExactBondsCheck.root], { style: { paddingLeft: '108px' } }),
-      columnInput,
-      columnPrefixInput,
-      visualAnalysisCheck.root,
-      rGroupsSettingsIcon,
-      latestAnalysisCols[col.dataFrame.name]?.length ? replaceLatest.root : null,
-      rGroupSettingsDiv,
+      ui.div([
+        ui.divH([mcsButton, mcsExactAtomsCheck.root, mcsExactBondsCheck.root], { style: { paddingLeft: '108px' } }),
+        columnInput,
+        columnPrefixInput,
+        ui.divH([visualAnalysisCheck.root, latestAnalysisCols[col.dataFrame.name]?.length ? replaceLatest.root : null]),
+        rGroupsSettingsIcon,
+        rGroupMatchingStrategy,
+        onlyMatchAtRGroupsInput
+      ], 'chem-rgroup-settings-div')
     ]))
     .onOK(async () => {
       try {
@@ -185,12 +185,14 @@ export function rGroupAnalysis(col: DG.Column): void {
         }).call(undefined, undefined, { processed: false });
         const res: RGroupDecompRes = funcCall.getOutputParamValue();
         if (res) {
-          const view = grok.shell.getTableView(col.dataFrame.name);
+          const view = demo ? (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView : grok.shell.getTableView(col.dataFrame.name);
           //make highlight column invisible
           if (res.highlightColName)
             view.grid.col(res.highlightColName)!.visible = false;
           if (visualAnalysisCheck.value! && view) {
-            if (!res.yAxisColName || !res.xAxisColName)
+            if (!res.yAxisColName && !res.xAxisColName)
+              grok.shell.error('None R-Groups were found');
+            else if (!res.yAxisColName || !res.xAxisColName)
               grok.shell.warning(`Not enough R group columns to create trellis plot`);
             else
               latestTrellisPlot[col.dataFrame.name] = view.trellisPlot({
@@ -302,7 +304,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
         resCol.name = rColName;
         const rCol = DG.Column.fromStrings(rColName, molsArray);
         rCol.semType = DG.SEMTYPE.MOLECULE;
-        rCol.setTag(DG.TAGS.UNITS, DG.chem.Notation.MolBlock);
+        rCol.meta.units = DG.chem.Notation.MolBlock;
         col.dataFrame.columns.add(rCol);
         latestAnalysisCols[col.dataFrame.name].push(rColName);
       }
@@ -310,7 +312,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
       if (highlightCol) {
         col.dataFrame.columns.add(highlightCol);
         latestAnalysisCols[col.dataFrame.name].push(highlightCol.name);
-        col.temp[SUBSTRUCT_COL] = highlightCol.name;
+        col.temp[ChemTemps.SUBSTRUCT_COL] = highlightCol.name;
       }
       //create boolean column for match/non match
       const matchCol = DG.Column
@@ -322,14 +324,13 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
       //filter out unmatched values
       const filterUnmatched = DG.BitSet.create(rGroups[0].length).init((i) => matchCol.get(i));
       col.dataFrame.filter.copyFrom(filterUnmatched);
-    } else
-      grok.shell.error('None R-Groups were found');
+    }
     progressBar.close();
 
     return {
       xAxisColName: rGroups.length > 1 ? rGroups[1].name : '',  //rGroups[0] column is Core column
       yAxisColName: rGroups.length > 2 ? rGroups[2].name : '',
-      highlightColName: highlightCol?.name
+      highlightColName: rGroups.length ? highlightCol?.name : undefined,
     };
 
   } catch (e: any) {
@@ -405,7 +406,7 @@ export async function rGroupsPython(col: DG.Column<string>, core: string, prefix
       }
       const rCol = DG.Column.fromStrings(resCol.name, molsArray);
       rCol.semType = DG.SEMTYPE.MOLECULE;
-      rCol.setTag(DG.TAGS.UNITS, DG.chem.Notation.MolBlock);
+      rCol.meta.units = DG.chem.Notation.MolBlock;
       resCols.push(rCol);
     }
   }
@@ -420,15 +421,14 @@ function removeLatestAnalysis(col: DG.Column) {
   delete latestAnalysisCols[col.dataFrame.name];
 }
 
-export async function loadRGroupUserSettings() {
+export function loadRGroupUserSettings() {
   if (!rGroupSettings) {
-    const settingsStr = await grok.dapi.userDataStorage.getValue(R_GROUP_PARAMS_STORAGE_NAME, R_GROUP_PARAMS_KEY, true);
+    const settingsStr = grok.userSettings.getValue(R_GROUP_PARAMS_STORAGE_NAME, R_GROUP_PARAMS_KEY);
     rGroupSettings = settingsStr ? JSON.parse(settingsStr) :
       { rGroupMatchingStrategy: RGroupMatchingStrategy.Greedy, onlyMatchAtRGroups: false };
   }
 }
 
 function saveRGroupUserSettings() {
-  grok.dapi.userDataStorage.postValue(R_GROUP_PARAMS_STORAGE_NAME, R_GROUP_PARAMS_KEY,
-    JSON.stringify(rGroupSettings), true);
+  grok.userSettings.add(R_GROUP_PARAMS_STORAGE_NAME, R_GROUP_PARAMS_KEY, JSON.stringify(rGroupSettings));
 }

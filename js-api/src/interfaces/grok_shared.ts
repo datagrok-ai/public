@@ -39,6 +39,10 @@ export interface IUserReport {
 
   labels: Array<string>;
 
+  /// Options.
+  /// Options.
+  options: {[index: string]: any};
+
   data: any;
 
   friendlyName: any;

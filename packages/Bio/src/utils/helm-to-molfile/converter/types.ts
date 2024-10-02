@@ -10,3 +10,4 @@ export type PositionInBonds = {
   bondLineIdx: number,
   nodeIdx: number,
 }
+

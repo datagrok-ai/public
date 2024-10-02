@@ -6,6 +6,7 @@ import {Observable, Subject} from 'rxjs';
 
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {LoggerWrapper} from '@datagrok-libraries/bio/src/utils/logger';
+import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 /** Names of package properties/settings declared in properties section of {@link './package.json'} */
 export const enum BioPackagePropertiesNames {
@@ -58,6 +59,10 @@ export class BioPackageProperties extends Map<string, any> {
 
 export class BioPackage extends DG.Package {
   private _properties: BioPackageProperties;
+
+  private _rdKitModule: RDModule;
+  public get rdKitModule(): RDModule { return this._rdKitModule;};
+
   /** Package properties/settings declared in properties section of {@link './package.json'} */
   public get properties(): BioPackageProperties { return this._properties; };
 
@@ -73,7 +78,10 @@ export class BioPackage extends DG.Package {
     super._logger = new LoggerWrapper(super.logger, opts.debug);
   }
 
-  public completeInit(): void { this._initialized = true; }
+  public completeInit(rdKitModule: RDModule): void {
+    this._rdKitModule = rdKitModule;
+    this._initialized = true;
+  }
 
   handleErrorUI(err: any) {
     const [errMsg, errStack] = errInfo(err);

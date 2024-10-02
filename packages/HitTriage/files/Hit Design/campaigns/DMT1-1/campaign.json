@@ -18,5 +18,73 @@
   },
   "rowCount": 8,
   "filteredRowCount": 8,
-  "layout": "{\"containerType\":\"horizontal\",\"state\":{\"width\":1406,\"height\":841},\"children\":[{\"containerType\":\"vertical\",\"state\":{\"width\":238,\"height\":841},\"children\":[{\"containerType\":\"panel\",\"state\":{\"width\":238,\"height\":558,\"element\":{\"id\":\"1a2cc3b0-6280-11ee-e2f5-6d4bdc9a7a09\",\"type\":\"Filters\",\"look\":{\"#type\":\"FiltersLook\",\"filters\":[{\"type\":\"Chem:substructureFilter\",\"column\":\"Molecule\",\"active\":true,\"columnName\":\"Molecule\",\"molBlock\":\"\\n     RDKit          2D\\n\\n  0  0  0  0  0  0  0  0  0  0999 V2000\\nM  END\\n\",\"searchType\":\"Contains\",\"simCutOff\":0.8,\"fp\":\"Morgan\",\"boolInput\":null},{\"type\":\"categorical\",\"column\":\"Mutagenicity\",\"active\":true,\"boolInput\":null},{\"type\":\"categorical\",\"column\":\"Tumorigenicity\",\"active\":true,\"boolInput\":null},{\"type\":\"categorical\",\"column\":\"Stage\",\"active\":true,\"boolInput\":null},{\"type\":\"categorical\",\"column\":\"V-iD\",\"active\":true,\"boolInput\":null},{\"type\":\"histogram\",\"column\":\"MolWt\",\"active\":true,\"filterOutMissingValues\":false,\"showMissingValuesOnly\":false,\"showHistogram\":true,\"showSlider\":true,\"showMinMax\":false,\"boolInput\":null},{\"type\":\"histogram\",\"column\":\"MolWt\",\"active\":true,\"filterOutMissingValues\":false,\"showMissingValuesOnly\":false,\"showHistogram\":true,\"showSlider\":true,\"showMinMax\":false,\"boolInput\":null}]},\"title\":\"Filters\"}},\"children\":[]},{\"containerType\":\"panel\",\"state\":{\"width\":238,\"height\":282,\"element\":{\"id\":\"1a2f5bc0-6280-11ee-e4b4-9b33b2886623\",\"type\":\"Bar chart\",\"look\":{\"#type\":\"BarChartLook\",\"valueColumnName\":\"MolWt\",\"valueAggrType\":\"count\",\"barSortType\":\"by value\",\"barSortOrder\":\"desc\",\"splitColumnName\":\"Molecule\"},\"title\":\"Bar chart\"}},\"children\":[]}]},{\"containerType\":\"vertical\",\"state\":{\"width\":1167,\"height\":841},\"children\":[{\"containerType\":\"fill\",\"state\":{\"width\":1167,\"height\":417,\"documentManager\":true},\"children\":[{\"containerType\":\"panel\",\"state\":{\"width\":1167,\"height\":417,\"element\":{\"id\":\"1a2fd0f0-6280-11ee-a9a7-63a6fe964276\",\"type\":\"Grid\",\"look\":{\"#type\":\"GridLook\",\"showAddNewRowIcon\":true,\"addNewRowOnLastRowEdit\":true,\"rowHeight\":100,\"topLevelDefaultMenu\":true,\"allowColumnMenu\":true,\"columns\":[{\"width\":20,\"backgroundColor\":4294440951,\"customName\":\"\",\"cellType\":\"row header\",\"settings\":{}},{\"width\":200,\"columnName\":\"Molecule\",\"cellType\":\"Molecule\",\"settings\":{}},{\"isColorCoded\":true,\"width\":140,\"columnName\":\"Stage\",\"colorCodingType\":\"Categorical\",\"colorCodingCategorical\":{},\"settings\":{}},{\"width\":72,\"columnName\":\"V-iD\",\"settings\":{}},{\"width\":96,\"columnName\":\"MolWt\",\"customFormat\":\"0.0000000\",\"cellType\":\"number\",\"format\":\"0.0000000\",\"settings\":{}},{\"width\":111,\"columnName\":\"Stereo centers\",\"cellType\":\"number\",\"settings\":{}},{\"isColorCoded\":true,\"width\":101,\"columnName\":\"Mutagenicity\",\"colorCodingType\":\"Categorical\",\"colorCodingCategorical\":{},\"settings\":{}},{\"isColorCoded\":true,\"width\":113,\"columnName\":\"Tumorigenicity\",\"colorCodingType\":\"Categorical\",\"colorCodingCategorical\":{},\"settings\":{}},{\"width\":136,\"columnName\":\"CHEMBL molregno\",\"cellType\":\"number\",\"settings\":{}},{\"columnName\":\"~Molecule.Pattern\",\"settings\":{}},{\"columnName\":\"~Molecule.canonicalSmiles\",\"settings\":{}}]},\"title\":\"Molecules\",\"default\":true}},\"children\":[]}]},{\"containerType\":\"horizontal\",\"state\":{\"width\":1167,\"height\":423},\"children\":[{\"containerType\":\"panel\",\"state\":{\"width\":384,\"height\":423,\"element\":{\"id\":\"1a301f10-6280-11ee-b1d5-2d16e8f0db42\",\"type\":\"Bar chart\",\"look\":{\"#type\":\"BarChartLook\",\"valueColumnName\":\"MolWt\",\"valueAggrType\":\"count\",\"barSortType\":\"by value\",\"barSortOrder\":\"desc\",\"splitColumnName\":\"Mutagenicity\"},\"title\":\"Bar chart\"}},\"children\":[]},{\"containerType\":\"panel\",\"state\":{\"width\":386,\"height\":423,\"element\":{\"id\":\"1a304620-6280-11ee-abd0-552c00e996d0\",\"type\":\"Bar chart\",\"look\":{\"#type\":\"BarChartLook\",\"valueColumnName\":\"MolWt\",\"valueAggrType\":\"count\",\"barSortType\":\"by value\",\"barSortOrder\":\"desc\",\"splitColumnName\":\"Tumorigenicity\"},\"title\":\"Bar chart\"}},\"children\":[]},{\"containerType\":\"panel\",\"state\":{\"width\":395,\"height\":423,\"element\":{\"id\":\"1a304620-6280-11ee-cab3-d3344815cd96\",\"type\":\"Bar chart\",\"look\":{\"#type\":\"BarChartLook\",\"valueColumnName\":\"MolWt\",\"valueAggrType\":\"count\",\"barSortType\":\"by value\",\"barSortOrder\":\"desc\",\"splitColumnName\":\"Stage\"},\"title\":\"Bar chart\"}},\"children\":[]}]}]}],\"floating\":[],\"tableId\":null,\"tableName\":\"Molecules\"}"
+  "savePath": "System.AppData/HitTriage/Hit Design/campaigns/DMT1-1/enriched_table.csv",
+  "columnTypes": {
+    "Molecule": "string",
+    "Stage": "string",
+    "V-iD": "string",
+    "MolWt": "double",
+    "Stereo centers": "int",
+    "Mutagenicity": "string",
+    "Tumorigenicity": "string",
+    "CHEMBL molregno": "int",
+    "~Molecule.Pattern": "byte_array",
+    "~Molecule.canonicalSmiles": "string"
+  },
+  "version": 1,
+  "authorUserId": "7a6a9f30-25d0-11ef-c943-0b65a97fa481",
+  "permissions": {
+    "view": ["a4b45840-9a50-11e6-9cc9-8546b8bf62e6"],
+    "edit": ["a4b45840-9a50-11e6-9cc9-8546b8bf62e6"]
+  },
+  "layout": "{\"containerType\":\"horizontal\",\"state\":{\"width\":1223,\"height\":889},\"children\":[{\"containerType\":\"vertical\",\"state\":{\"width\":207,\"height\":889},\"children\":[{\"containerType\":\"panel\",\"state\":{\"width\":207,\"height\":589,\"element\":{\"id\":\"27131d00-4ce0-11ef-9a76-7376886b6923\",\"type\":\"Filters\",\"look\":{\"#type\":\"FiltersLook\",\"filters\":[{\"type\":\"Chem:substructureFilter\",\"column\":\"Molecule\",\"active\":true,\"columnName\":\"Molecule\",\"molBlock\":\"\\n     RDKit          2D\\n\\n  0  0  0  0  0  0  0  0  0  0999 V2000\\nM  END\\n\",\"searchType\":\"Contains\",\"simCutOff\":0.8,\"fp\":\"Morgan\",\"boolInput\":null},{\"type\":\"categorical\",\"column\":\"Mutagenicity\",\"active\":true,\"boolInput\":null},{\"type\":\"categorical\",\"column\":\"Tumorigenicity\",\"active\":true,\"boolInput\":null},{\"type\":\"categorical\",\"column\":\"Stage\",\"active\":true,\"boolInput\":null},{\"type\":\"categorical\",\"column\":\"V-iD\",\"active\":true,\"boolInput\":null},{\"type\":\"histogram\",\"column\":\"MolWt\",\"active\":true,\"filterOutMissingValues\":false,\"showMissingValuesOnly\":false,\"showHistogram\":true,\"showSlider\":true,\"showMinMax\":false,\"boolInput\":null},{\"type\":\"histogram\",\"column\":\"MolWt\",\"active\":true,\"filterOutMissingValues\":false,\"showMissingValuesOnly\":false,\"showHistogram\":true,\"showSlider\":true,\"showMinMax\":false,\"boolInput\":null}]},\"title\":\"Filters\"}},\"children\":[]},{\"containerType\":\"panel\",\"state\":{\"width\":207,\"height\":299,\"element\":{\"id\":\"27131d00-4ce0-11ef-ec85-ad160b08bb80\",\"type\":\"Bar chart\",\"look\":{\"#type\":\"BarChartLook\",\"valueColumnName\":\"MolWt\",\"valueAggrType\":\"count\",\"barSortType\":\"by value\",\"barSortOrder\":\"desc\",\"splitColumnName\":\"Molecule\"},\"title\":\"Bar chart\"}},\"children\":[]}]},{\"containerType\":\"vertical\",\"state\":{\"width\":1015,\"height\":889},\"children\":[{\"containerType\":\"fill\",\"state\":{\"width\":1015,\"height\":440,\"documentManager\":true},\"children\":[{\"containerType\":\"panel\",\"state\":{\"width\":1015,\"height\":440,\"element\":{\"id\":\"27136b20-4ce0-11ef-cb98-cd1d78d0d258\",\"type\":\"Grid\",\"look\":{\"#type\":\"GridLook\",\"showAddNewRowIcon\":true,\"addNewRowOnLastRowEdit\":true,\"rowHeight\":100,\"topLevelDefaultMenu\":true,\"allowColumnMenu\":true,\"columns\":[{\"width\":20,\"backgroundColor\":4294440951,\"customName\":\"\",\"cellType\":\"row header\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":200,\"columnName\":\"Molecule\",\"cellType\":\"Molecule\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"isColorCoded\":true,\"width\":140,\"columnName\":\"Stage\",\"colorCodingType\":\"Categorical\",\"colorCodingCategorical\":{},\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":72,\"columnName\":\"V-iD\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":96,\"columnName\":\"MolWt\",\"customFormat\":\"0.0000000\",\"cellType\":\"number\",\"format\":\"0.0000000\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":111,\"columnName\":\"Stereo centers\",\"cellType\":\"number\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"isColorCoded\":true,\"width\":101,\"columnName\":\"Mutagenicity\",\"colorCodingType\":\"Categorical\",\"colorCodingCategorical\":{},\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"isColorCoded\":true,\"width\":113,\"columnName\":\"Tumorigenicity\",\"colorCodingType\":\"Categorical\",\"colorCodingCategorical\":{},\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":136,\"columnName\":\"CHEMBL molregno\",\"cellType\":\"number\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"columnName\":\"~Molecule.Pattern\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"columnName\":\"~Molecule.canonicalSmiles\",\"headerCellStyle\":{\"textWrap\":\"words\"}}]},\"title\":\"Molecules\",\"default\":true}},\"children\":[]}]},{\"containerType\":\"horizontal\",\"state\":{\"width\":1015,\"height\":448},\"children\":[{\"containerType\":\"panel\",\"state\":{\"width\":334,\"height\":448,\"element\":{\"id\":\"27136b20-4ce0-11ef-bacc-2786973237cb\",\"type\":\"Bar chart\",\"look\":{\"#type\":\"BarChartLook\",\"valueColumnName\":\"MolWt\",\"valueAggrType\":\"count\",\"barSortType\":\"by value\",\"barSortOrder\":\"desc\",\"splitColumnName\":\"Mutagenicity\"},\"title\":\"Bar chart\"}},\"children\":[]},{\"containerType\":\"panel\",\"state\":{\"width\":335,\"height\":448,\"element\":{\"id\":\"27136b20-4ce0-11ef-dcc4-7d8f969313b9\",\"type\":\"Bar chart\",\"look\":{\"#type\":\"BarChartLook\",\"valueColumnName\":\"MolWt\",\"valueAggrType\":\"count\",\"barSortType\":\"by value\",\"barSortOrder\":\"desc\",\"splitColumnName\":\"Tumorigenicity\"},\"title\":\"Bar chart\"}},\"children\":[]},{\"containerType\":\"panel\",\"state\":{\"width\":344,\"height\":448,\"element\":{\"id\":\"27136b20-4ce0-11ef-abdd-6b5e095b1e2c\",\"type\":\"Bar chart\",\"look\":{\"#type\":\"BarChartLook\",\"valueColumnName\":\"MolWt\",\"valueAggrType\":\"count\",\"barSortType\":\"by value\",\"barSortOrder\":\"desc\",\"splitColumnName\":\"Stage\"},\"title\":\"Bar chart\"}},\"children\":[]}]}]}],\"floating\":[],\"tableId\":\"234fac60-4ce0-11ef-84ed-1d98d738d676\",\"tableName\":\"DMT1-1\"}",
+  "template": {
+    "name": "Demo Template 1",
+    "key": "DMT1",
+    "campaignFields": [
+      { "name": "Chemist", "type": "String", "required": true },
+      { "name": "Supervisor", "type": "String", "required": true },
+      { "name": "Target molecules", "type": "Number", "required": true },
+      { "name": "Deadline", "type": "Date", "required": true }
+    ],
+    "stages": [
+      "Consideration",
+      "Processing",
+      "Synthesis",
+      "Testing",
+      "Ready for production"
+    ],
+    "compute": {
+      "descriptors": { "enabled": true, "args": ["MolWt"] },
+      "functions": [
+        {
+          "name": "addChemPropertiesColumns",
+          "package": "Chem",
+          "args": {
+            "MW": false,
+            "HBA": false,
+            "HBD": false,
+            "logP": false,
+            "logS": false,
+            "PSA": false,
+            "rotatableBonds": false,
+            "stereoCenters": true,
+            "moleculeCharge": false
+          }
+        },
+        {
+          "name": "addChemRisksColumns",
+          "package": "Chem",
+          "args": {
+            "mutagenicity": true,
+            "tumorigenicity": true,
+            "irritatingEffects": false,
+            "reproductiveEffects": false
+          }
+        },
+        { "name": "chemblMolregno", "package": "Chembl", "args": {} }
+      ]
+    },
+    "submit": { "fName": "demoFileSubmit1", "package": "HitTriage" }
+  }
 }

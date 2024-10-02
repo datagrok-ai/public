@@ -4,6 +4,7 @@ import {sequenceChemSimilarity} from '../../monomer-works/monomer-utils';
 import {ISeqSplitted} from '../../utils/macromolecule/types';
 import {splitAlignedSequences} from '../splitter';
 import {SeqHandler} from '../seq-handler';
+import {GAP_SYMBOL} from './consts';
 
 export enum SCORE {
   IDENTITY = 'identity',
@@ -28,7 +29,7 @@ export async function calculateScores(
   const scoresCol = scoring === SCORE.IDENTITY ? calculateIdentity(refSplitted, splitSeqDf) :
     scoring === SCORE.SIMILARITY ? await calculateSimilarity(refSplitted, splitSeqDf) : null;
   if (scoresCol === null)
-    throw new Error(`In bio library: Unkown sequence scoring method: ${scoring}`);
+    throw new Error(`In bio library: Unknown sequence scoring method: ${scoring}`);
   scoresCol.name = table.columns.getUnusedName(scoresCol.name);
   table.columns.add(scoresCol);
   return scoresCol;
@@ -48,7 +49,8 @@ export function calculateIdentity(reference: ISeqSplitted, positionsDf: DG.DataF
     const posCol = positionsDf.columns.byIndex(posIdx);
     positionCols[posIdx] = posCol.getRawData() as Uint32Array;
     positionEmptyCategories[posIdx] = posCol.categories.indexOf('');
-    categoryIndexesTemplate[posIdx] = posCol.categories.indexOf(reference.getOriginal(posIdx) ?? '');
+    const refM = posIdx < reference.length ? reference.getOriginal(posIdx) : GAP_SYMBOL;
+    categoryIndexesTemplate[posIdx] = posCol.categories.indexOf(refM);
   }
 
   const identityScoresCol = DG.Column.float('Identity', positionsDf.rowCount);
@@ -56,7 +58,8 @@ export function calculateIdentity(reference: ISeqSplitted, positionsDf: DG.DataF
   for (let rowIndex = 0; rowIndex < positionsDf.rowCount; ++rowIndex) {
     identityScoresData[rowIndex] = 0;
     for (let posIdx = 0; posIdx < reference.length; ++posIdx) {
-      const categoryIndex = positionCols[posIdx][rowIndex];
+      const positionCol = positionCols[posIdx];
+      const categoryIndex: number = positionCol ? positionCols[posIdx][rowIndex] : 0;
       if (categoryIndex === categoryIndexesTemplate[posIdx])
         ++identityScoresData[rowIndex];
     }

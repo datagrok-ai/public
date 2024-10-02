@@ -17,12 +17,13 @@ import {
 
 function getGroupInput(codeMirror: CodeMirror.EditorFromTextArea, type: string): HTMLElement {
   const items = tags[type];
-  const inp = ui.choiceInput('See snippets:', items.length ? items[0] : null, items, async (tag: string) => {
-    const snippets = await loadSnippets(type, tag);
-    const container = $('.dt-dev-pane-container > .dt-snippet-section');
-    container.empty();
-    container.append(formSnippetSection(codeMirror, snippets));
-  });
+  const inp = ui.input.choice('See snippets:', {value: items.length ? items[0] : null, items: items,
+    onValueChanged: async (value) => {
+      const snippets = await loadSnippets(type, value);
+      const container = $('.dt-dev-pane-container > .dt-snippet-section');
+      container.empty();
+      container.append(formSnippetSection(codeMirror, snippets));
+    }});
   return inp.root;
 }
 
@@ -102,7 +103,7 @@ export async function _renderDevPanel(ent: EntityType, minifiedClassNameMap: {})
     Object.keys(links[key]).map((title) => ui.link(title, links[key][title], 'Open wiki reference')) :
     ui.link(`${type} ${key}`, links[key], `Open ${key} reference`));
 
-  const editor = ui.textInput('', template);
+  const editor = ui.input.textArea('', {value: template});
   const codeMirror = CodeMirror.fromTextArea(editor.input as HTMLTextAreaElement, {
     mode: 'javascript',
     readOnly: false,

@@ -508,6 +508,8 @@ export class EventBus {
   }
 
   selectAuthor(username: string) {
+    if (typeof username !== 'string')
+      throw new Error('Selected user must be defined');
     this._patternAuthorSelection$.next(username);
   }
 

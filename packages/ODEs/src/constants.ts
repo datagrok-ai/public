@@ -24,6 +24,7 @@ export enum CONTROL_EXPR {
     OUTPUT = `${CONTROL_TAG}output`,
     COMMENT = `${CONTROL_TAG}comment`,
     SOLVER = `${META}.solver`,
+    INPUTS = `${META}.inputs`,
 };
 
 /** Loop consts */

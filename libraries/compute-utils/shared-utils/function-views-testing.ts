@@ -102,7 +102,7 @@ export async function testFunctionView(
   const waitForValidators = async () => {
     if (view instanceof RichFunctionView) {
       const validatorsWaitTimeout = options.validatorsWaitTimeout ?? defaultValidatorsTimeout;
-      const pendingValidators = await view.pendingValidations.pipe(
+      const pendingValidators = await view.pendingInputValidations.pipe(
         map((vals) => Object.keys(vals)),
         debounceTime(100),
         takeUntil(of(null).pipe(delay(validatorsWaitTimeout))),

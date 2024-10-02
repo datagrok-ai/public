@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {checkHTMLElement, customCaption, stringValue, units} from './utils';
 
 category('UI: Inputs via InputForm', () => {
-  const dummyInput = ui.intInput('dummy', 3);
+  const dummyInput = ui.input.int('dummy', {value: 3});
   let inputs = {} as Record<string, DG.InputBase>;
   let funcCall: DG.FuncCall;
   let form: DG.InputForm;
@@ -28,8 +28,8 @@ category('UI: Inputs via InputForm', () => {
       'boolInput': form.getInput('boolInput') ?? null,
       'choiceInput': form.getInput('choiceInput') ?? null,
       'tableInput': form.getInput('tableInput') ?? null,
-      // 'columnInput': ui.columnInput('', t, t.col('age')),
-      // 'columnsInput': ui.columnsInput('', t, () => null),
+      // 'columnInput': ui.input.column('', {table: t, value: t.col('age')}),
+      // 'columnsInput': ui.input.columns('', {table: t}),
     };
     v = grok.shell.newView('');
   });

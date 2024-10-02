@@ -11,14 +11,14 @@ module.exports = {
     package: './src/package.ts',
   },
   resolve: {
-    extensions: ['.js', '.json', '.ts'],
+    extensions: ['.ts', '.json', '.js'],
   },
   module: {
     rules: [
       { test: /\.tsx?$/, loader: 'ts-loader' }
     ],
   },
-  devtool: 'inline-source-map',
+  devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',

@@ -44,11 +44,10 @@ export class NumericLabelVisibilityControls {
 
   private createSingleInput(nucleotide: string): BooleanInput {
     const initialValue = this.eventBus.getModificationsWithNumericLabels().includes(nucleotide);
-    const input = ui.boolInput(
-      nucleotide,
-      initialValue,
-      (value: boolean) => this.handleNumericLabelToggle(nucleotide, value)
-    );
+    const input = ui.input.bool(nucleotide, {
+      value: initialValue,
+      onValueChanged: (value) => this.handleNumericLabelToggle(nucleotide, value)
+    });
     $(input.root).css('padding-right', '20px');
 
     input.setTooltip(`Show numeric labels for ${nucleotide}`);

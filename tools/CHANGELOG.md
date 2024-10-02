@@ -1,6 +1,120 @@
 # Datagrok-tools changelog
 
 
+## 4.13.25 (2024-09-30)
+
+### Features
+
+* Test command package publishing fix 
+
+## 4.13.24 (2024-09-26)
+
+### Features
+
+* Test command fixes update
+
+## 4.13.23 (2024-09-23)
+
+### Features
+
+* Test all bug fixes
+
+## 4.13.22 (2024-09-20)
+
+### Features
+
+* Implemented mechanism which allows to test few packages by one function
+
+## 4.13.21 (2024-09-17)
+
+### Features
+
+* Grok check updated for release candidate versions
+
+## 4.13.20 (2024-08-28)
+
+### Features
+
+* Grok link command fixes 
+
+## 4.13.19 (2024-08-27)
+
+### Features
+
+* Package ts data insertation fixes
+
+## 4.13.18 (2024-08-27)
+
+### Features
+
+* Creation fixes
+
+## 4.13.17 (2024-08-27)
+
+### Features
+
+* Added decorators for viewer functions
+
+## 4.13.16 (2024-08-23)
+
+### Features
+
+* Grok link fixes
+
+## 4.13.15 (2024-08-21)
+
+### Features
+
+* Grok link updated to link all dependent libs 
+
+## 4.13.14 (2024-08-09)
+
+### Features
+
+* Timeout update for test runs up to 1 hour
+
+## 4.13.13 (2024-08-09)
+
+### Features
+
+* Added stress test flag
+
+## 4.13.12 (2024-08-05)
+
+### Features
+
+* Puppeteer-screen-recorder version fixed to 3.0.3
+
+## 4.13.11 (2024-07-30)
+
+### Features
+
+* Added commit label to context panel for 'manually' published versions
+
+## 4.13.10 (2024-07-29)
+
+### Features
+
+* Added ability to select test by args variable 
+
+## 4.13.9 (2024-07-29)
+
+### Features
+
+* Added ability to select category by args variable 
+
+## 4.13.8 (2024-07-18)
+
+### Bug Fixes
+
+* Fixed path chacks for npmignore
+
+## 4.13.6 (2024-07-15)
+
+### Features
+
+* Splitted warnings and errors in grok check command
+
 ## 4.13.4 (2024-06-25)
 
 ### Bug Fixes

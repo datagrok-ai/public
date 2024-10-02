@@ -170,19 +170,19 @@ export class FormCellRenderer extends DG.GridCellRenderer {
     const settings: FormSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
       gc.settings[SparklineType.Form] ??= getSettings(gc);
 
+    const columnNames = settings?.columnNames ?? names(gc.grid.dataFrame.columns);
     return ui.inputs([
-      ui.columnsInput('Сolumns', gc.grid.dataFrame, (columns) => {
-        settings.columnNames = names(columns);
-        gc.grid.invalidate();
-      }, {
-        available: names(gc.grid.dataFrame.columns),
-        checked: settings?.columnNames ?? names(gc.grid.dataFrame.columns),
-      }),
-      ui.choiceInput('Show column names', settings.showColumnNames ?? 'Auto',
-        ['Auto', 'Always', 'Never'], (x: ColumnNamesVisibility) => {
-          settings.showColumnNames = x;
+      ui.input.columns('Сolumns', {value: gc.grid.dataFrame.columns.byNames(columnNames),
+        table: gc.grid.dataFrame, onValueChanged: (value) => {
+          settings.columnNames = names(value);
           gc.grid.invalidate();
-        })
+        }, available: names(gc.grid.dataFrame.columns)
+      }),
+      ui.input.choice('Show column names', {value: settings.showColumnNames ?? 'Auto', items: ['Auto', 'Always', 'Never'],
+        onValueChanged: (value) => {
+          settings.showColumnNames = value as ColumnNamesVisibility;
+          gc.grid.invalidate();
+        }})
     ]);
   }
 }

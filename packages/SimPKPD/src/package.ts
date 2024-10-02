@@ -3,9 +3,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import { initSolvers } from '../wasm/solving-tools';
-import { showHelpPanel } from '../wasm/help-panel';
-import { simPKPD } from './pk-pd-tools';
+import {initSolvers} from '../wasm/solving-tools';
+import {showHelpPanel} from '../wasm/help-panel';
+import {simPKPD} from './pk-pd-tools';
 
 export const _package = new DG.Package();
 
@@ -31,6 +31,7 @@ export async function init(): Promise<void> {
 //editor: Compute:RichFunctionViewEditor
 //meta.runOnOpen: true
 //meta.runOnInput: true
+//meta.keepOutput: true
 //meta.features: {"sens-analysis": true, "fitting": true}
 export async function simulatePKPD(dose: number, dosesCount: number, doseInterval: number, KA: number, CL: number, V2: number, Q: number, V3: number, eff: number, EC50: number): Promise<DG.DataFrame> {
   return await simPKPD('2 compartment PK', dose, dosesCount, doseInterval, KA, CL, V2, Q, V3, eff, eff, EC50);
@@ -60,13 +61,13 @@ export async function simulatePkPdDemo(dose: number, dosesCount: number, doseInt
 //description: In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation
 //meta.demoPath: Compute | PK-PD modeling
 //test: demoSimPKPD() //wait: 100
-export async function demoSimPKPD(): Promise<any>  {
+export async function demoSimPKPD(): Promise<any> {
   const doeSimpleFunc: DG.Func = await grok.functions.eval('SimPKPD:simulatePkPdDemo');
   const doeSimpleFuncCall = doeSimpleFunc.prepare();
-    
+
   const openModelFunc: DG.Func = await grok.functions.eval('Compute:openModelFromFuncall');
   const openModelFuncCall = openModelFunc.prepare({'funccall': doeSimpleFuncCall});
-  openModelFuncCall.call();
+  await openModelFuncCall.call();
 
   showHelpPanel();
 }

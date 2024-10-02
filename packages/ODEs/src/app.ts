@@ -14,19 +14,23 @@ import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/
 import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
 import {TEMPLATES, DEMO_TEMPLATE} from './templates';
 import {USE_CASES} from './use-cases';
-import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO,
-  WARNING, MISC, demoInfo, INPUT_TYPE, PATH, UI_TIME} from './ui-constants';
+import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, DOCK_RATIO, TEMPLATE_TITLES, EXAMPLE_TITLES,
+  WARNING, MISC, demoInfo, INPUT_TYPE, PATH, UI_TIME, MODEL_HINT, MAX_RECENT_COUNT,
+  modelImageLink, CUSTOM_MODEL_IMAGE_LINK, INPUTS_DF} from './ui-constants';
 import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
   CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS} from './scripting-tools';
 import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools/solver-defs';
+import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo} from './utils';
 
-import './css/app-styles.css';
+import '../css/app-styles.css';
+
+import {_package} from './package';
 
 /** State of IVP code editor */
 enum EDITOR_STATE {
   EMPTY = 'empty',
-  BASIC_TEMPLATE = 'template',
+  BASIC_TEMPLATE = 'basic',
   ADVANCED_TEMPLATE = 'advanced',
   FROM_FILE = 'from-file',
   EXTENDED_TEMPLATE = 'extended',
@@ -38,7 +42,27 @@ enum EDITOR_STATE {
   ACID_PROD = 'ga-production',
   NIMOTUZUMAB = 'nimotuzumab',
   BIOREACTOR = 'bioreactor',
+  POLLUTION = 'pollution',
 };
+
+/** Return path corresponding to state */
+function stateToPath(state: EDITOR_STATE): string {
+  switch (state) {
+  case EDITOR_STATE.FROM_FILE:
+    return PATH.CUSTOM;
+
+  case EDITOR_STATE.EMPTY:
+    return '';
+
+  case EDITOR_STATE.BASIC_TEMPLATE:
+  case EDITOR_STATE.ADVANCED_TEMPLATE:
+  case EDITOR_STATE.EXTENDED_TEMPLATE:
+    return `/${TITLE.TEMPL}/${state}`;
+
+  default:
+    return `/${TITLE.EXAMP}/${state}`;
+  }
+}
 
 /** State-to-template/use-case map */
 const MODEL_BY_STATE = new Map<EDITOR_STATE, TEMPLATES | USE_CASES>([
@@ -53,10 +77,32 @@ const MODEL_BY_STATE = new Map<EDITOR_STATE, TEMPLATES | USE_CASES>([
   [EDITOR_STATE.ACID_PROD, USE_CASES.ACID_PROD],
   [EDITOR_STATE.NIMOTUZUMAB, USE_CASES.NIMOTUZUMAB],
   [EDITOR_STATE.BIOREACTOR, USE_CASES.BIOREACTOR],
+  [EDITOR_STATE.POLLUTION, USE_CASES.POLLUTION],
 ]);
 
+/** Model title-to-editor state map */
+const STATE_BY_TITLE = new Map<TITLE, EDITOR_STATE>([
+  [TITLE.BASIC, EDITOR_STATE.BASIC_TEMPLATE],
+  [TITLE.ADV, EDITOR_STATE.ADVANCED_TEMPLATE],
+  [TITLE.EXT, EDITOR_STATE.EXTENDED_TEMPLATE],
+  [TITLE.CHEM, EDITOR_STATE.CHEM_REACT],
+  [TITLE.ROB, EDITOR_STATE.ROBERT],
+  [TITLE.FERM, EDITOR_STATE.FERM],
+  [TITLE.PK, EDITOR_STATE.PK],
+  [TITLE.PKPD, EDITOR_STATE.PKPD],
+  [TITLE.ACID, EDITOR_STATE.ACID_PROD],
+  [TITLE.NIM, EDITOR_STATE.NIMOTUZUMAB],
+  [TITLE.BIO, EDITOR_STATE.BIOREACTOR],
+  [TITLE.POLL, EDITOR_STATE.POLLUTION],
+]);
+
+/** Model state-to-title map */
+const TITLE_BY_STATE = new Map();
+STATE_BY_TITLE.forEach((val, key) => TITLE_BY_STATE.set(val, key));
+
 /** Models & templates */
-const MODELS: string[] = [EDITOR_STATE.BASIC_TEMPLATE,
+const MODELS: string[] = [
+  EDITOR_STATE.BASIC_TEMPLATE,
   EDITOR_STATE.ADVANCED_TEMPLATE,
   EDITOR_STATE.EXTENDED_TEMPLATE,
   EDITOR_STATE.CHEM_REACT,
@@ -67,6 +113,7 @@ const MODELS: string[] = [EDITOR_STATE.BASIC_TEMPLATE,
   EDITOR_STATE.ACID_PROD,
   EDITOR_STATE.NIMOTUZUMAB,
   EDITOR_STATE.BIOREACTOR,
+  EDITOR_STATE.POLLUTION,
 ];
 
 /** Return help link with respect to IVP editor state */
@@ -96,6 +143,9 @@ function getLink(state: EDITOR_STATE): string {
   case EDITOR_STATE.BIOREACTOR:
     return LINK.BIOREACTOR;
 
+  case EDITOR_STATE.POLLUTION:
+    return LINK.POLLUTION;
+
   default:
     return LINK.DIF_STUDIO_REL;
   }
@@ -118,6 +168,7 @@ const completions = [
   {label: `${CONTROL_EXPR.UPDATE}:  `, type: 'keyword', info: INFO.UPDATE},
   {label: `${CONTROL_EXPR.OUTPUT}:\n  `, type: 'keyword', info: INFO.OUTPUT},
   {label: `${CONTROL_EXPR.COMMENT}: `, type: 'keyword', info: INFO.COMMENT},
+  {label: `${CONTROL_EXPR.INPUTS}: `, type: 'keyword', info: INFO.INPUS},
 ];
 
 /** Control expressions completion utilite */
@@ -133,15 +184,14 @@ function contrCompletions(context: any) {
 }
 
 /** Return options of line chart */
-function getLineChartOptions(colNames: string[]): Partial<DG.ILineChartLookSettings> {
+function getLineChartOptions(colNames: string[]): Partial<DG.ILineChartSettings> {
   const count = colNames.length;
   return {
     xColumnName: colNames[0],
     yColumnNames: (count > 1) ? colNames.slice(1).filter((name) => name !== STAGE_COL_NAME) : [colNames[0]],
     showTitle: true,
     multiAxis: count > MAX_LINE_CHART,
-    // @ts-ignore
-    multiAxisLegendPosition: 'RightTop',
+    multiAxisLegendPosition: DG.FlexExtendedPosition.RightTop,
     segmentColumnName: colNames.includes(STAGE_COL_NAME) ? STAGE_COL_NAME: undefined,
     showAggrSelectors: false,
   };
@@ -153,29 +203,49 @@ const strToVal = (s: string) => {
   return !isNaN(num) ? num : s === 'true' ? true : s === 'false' ? false : s;
 };
 
+/** Browse properties */
+type Browsing = {
+  treeNode: DG.TreeViewGroup,
+  browseView: DG.BrowseView,
+};
+
 /** Solver of differential equations */
 export class DiffStudio {
   /** Run Diff Studio application */
-  public async runSolverApp(content?: string): Promise<DG.ViewBase> {
+  public async runSolverApp(content?: string, state?: EDITOR_STATE, path?: string): Promise<DG.ViewBase> {
     this.createEditorView(content, true);
-    this.solverView.setRibbonPanels([
-      [this.openIcon, this.saveIcon],
-      [this.exportButton, this.sensAnIcon, this.fittingIcon],
-      [this.helpIcon],
-    ]);
+
+    const panels = ((state !== undefined) || (path !== undefined)) ?
+      [[this.sensAnIcon, this.fittingIcon]] :
+      [
+        [this.openIcon, this.saveIcon],
+        [this.exportButton, this.sensAnIcon, this.fittingIcon],
+        [this.helpIcon],
+      ];
+
+    this.solverView.setRibbonPanels(panels);
     this.toChangePath = true;
 
     setTimeout(async () => {
     // routing
-      if (content)
-        await this.runSolving(false);
-      // dfdf
-      else {
-        const modelIdx = this.startingPath.indexOf(PATH.MODEL);
+      if (content) {
+        this.fromFileHandler = true;
+
+        if (path) {
+          this.isRecentRun = true;
+          this.solverMainPath = path;
+        } else
+          this.solverMainPath = `${PATH.APPS_DS}${PATH.CUSTOM}`;
+        await this.runSolving(true);
+      } else if (state) {
+        this.inBrowseRun = true;
+        await this.setState(state);
+      } else {
+        const modelIdx = this.startingPath.lastIndexOf('/') + 1;
         const paramsIdx = this.startingPath.indexOf(PATH.PARAM);
 
-        if (modelIdx > -1) {
-          const model = this.startingPath.slice(modelIdx + PATH.MODEL.length, (paramsIdx > -1) ? paramsIdx : undefined);
+        if (paramsIdx > -1) {
+          const model = this.startingPath.slice(modelIdx, (paramsIdx > -1) ? paramsIdx : undefined);
 
           if (MODELS.includes(model)) {
             this.startingInputs = new Map<string, number>();
@@ -194,8 +264,16 @@ export class DiffStudio {
             await this.setState(model as EDITOR_STATE, false);
           } else
             await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
-        } else
-          await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
+        } else {
+          const folderName = this.startingPath.slice(modelIdx);
+          const node = this.appTree.items.find((node) => node.text === folderName);
+
+          if (node !== undefined) {
+            setTimeout(() => node.root.click(), UI_TIME.SWITCH_TO_FOLDER);
+            return DG.View.create();
+          } else
+            await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
+        }
       }
     },
     UI_TIME.APP_RUN_SOLVING);
@@ -215,15 +293,18 @@ export class DiffStudio {
     const helpMD = ui.markdown(demoInfo);
     helpMD.classList.add('diff-studio-demo-app-div-md');
     const divHelp = ui.div([helpMD], 'diff-studio-demo-app-div-help');
-    this.solverView.dockManager.dock(divHelp, DG.DOCK_TYPE.RIGHT, undefined, undefined, 0.3);
-    await this.runSolving(false);
-    // dfdf
+    grok.shell.windows.help.showHelp(divHelp);
+    grok.shell.windows.context.visible = true;
+    grok.shell.windows.showContextPanel = false;
+    grok.shell.windows.showProperties = false;
+    grok.shell.windows.help.visible = true;
+    await this.runSolving(true);
   } // runSolverDemoApp
 
   /** Return file preview view */
   public async getFilePreview(file: DG.FileInfo, path: string): Promise<DG.View> {
-    const browseView = grok.shell.view(TITLE.BROWSE);
     const equations = await file.readAsString();
+    await this.saveModelToRecent(file.fullPath, true);
     this.createEditorView(equations, false);
     this.toChangePath = true;
     this.solverView.setRibbonPanels([]);
@@ -243,13 +324,13 @@ export class DiffStudio {
     saveBtn.hidden = true;
     let isSaveBtnAdded = false;
 
-    const ribbonPnls = browseView!.getRibbonPanels();
+    const ribbonPnls = this.browseView!.getRibbonPanels();
     ribbonPnls.push([this.sensAnIcon, this.fittingIcon]);
-    browseView!.setRibbonPanels(ribbonPnls);
+    this.browseView!.setRibbonPanels(ribbonPnls);
 
     const addSaveBtnToRibbon = () => {
       ribbonPnls.push([saveBtn]);
-      browseView!.setRibbonPanels(ribbonPnls);
+      this.browseView!.setRibbonPanels(ribbonPnls);
       isSaveBtnAdded = true;
     };
 
@@ -276,7 +357,20 @@ export class DiffStudio {
 
     this.toRunWhenFormCreated = true;
 
-    setTimeout(() => this.runSolving(true), UI_TIME.PREVIEW_RUN_SOLVING);
+    setTimeout(() => {
+      const node = this.solverView.dockManager.dock(
+        this.tabControl.root,
+        DG.DOCK_TYPE.LEFT,
+        null,
+        undefined,
+        DOCK_RATIO,
+      );
+
+      if (node.container.dart.elementTitle)
+        node.container.dart.elementTitle.hidden = true;
+
+      this.runSolving(true);
+    }, UI_TIME.PREVIEW_RUN_SOLVING);
 
     return this.solverView;
   } // getFilePreview
@@ -304,11 +398,13 @@ export class DiffStudio {
   private toRunWhenFormCreated = true;
   private toCheckPerformance = true;
   private toShowPerformanceDlg = true;
+  private isStartingRun = true;
   private secondsLimit = UI_TIME.SOLV_DEFAULT_TIME_SEC;
   private modelPane: DG.TabPane;
   private runPane: DG.TabPane;
   private editorView: EditorView | undefined;
   private openMenu: DG.Menu;
+  private saveMenu: DG.Menu;
   private openIcon: HTMLElement;
   private saveIcon: HTMLElement;
   private helpIcon: HTMLElement;
@@ -316,10 +412,20 @@ export class DiffStudio {
   private sensAnIcon: HTMLElement;
   private fittingIcon: HTMLElement;
   private performanceDlg: DG.Dialog | null = null;
+  private inBrowseRun = false;
+  private fromFileHandler = false;
+  private appTree: DG.TreeViewGroup | null = null;
+  private recentFolder: DG.TreeViewGroup | null = null;
+  private browseView: DG.BrowseView | null = null;
+  private isRecentRun = false;
 
   private inputsByCategories = new Map<string, DG.InputBase[]>();
+  private toPreventSolving = false;
+  private inputByName: Map<string, DG.InputBase> | null = null;
+  private topCategory: string | null = null;
 
-  constructor(toAddTableView: boolean = true) {
+  constructor(toAddTableView: boolean = true, toDockTabCtrl: boolean = true, isFilePreview: boolean = false,
+    browsing?: Browsing) {
     this.solverView = toAddTableView ?
       grok.shell.addTableView(this.solutionTable) :
       DG.TableView.create(this.solutionTable, false);
@@ -342,45 +448,35 @@ export class DiffStudio {
     });
 
     const dockTabCtrl = () => {
-      const node = this.solverView.dockManager.dock(this.tabControl.root, DG.DOCK_TYPE.LEFT);
+      const node = this.solverView.dockManager.dock(
+        this.tabControl.root,
+        DG.DOCK_TYPE.LEFT,
+        null,
+        undefined,
+        DOCK_RATIO,
+      );
+
       if (node.container.dart.elementTitle)
         node.container.dart.elementTitle.hidden = true;
     };
 
-    if (!toAddTableView)
-      setTimeout(dockTabCtrl, UI_TIME.PREVIEW_DOCK_EDITOR);
-    else
-      dockTabCtrl();
+    if (toDockTabCtrl && !isFilePreview) {
+      if (!toAddTableView)
+        setTimeout(dockTabCtrl, UI_TIME.DOCK_EDITOR_TIMEOUT);
+      else
+        dockTabCtrl();
+    }
 
-    this.openMenu = DG.Menu.popup()
-      .item(TITLE.FROM_FILE, async () => await this.overwrite(), undefined, {description: HINT.LOAD})
-      .group(TITLE.TEMPL)
-      .item(TITLE.BASIC, async () =>
-        await this.overwrite(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: HINT.BASIC},
-      )
-      .item(TITLE.ADV, async () =>
-        await this.overwrite(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: HINT.ADV},
-      )
-      .item(TITLE.EXT, async () =>
-        await this.overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT})
-      .endGroup()
-      .group(TITLE.CASES)
-      .item(TITLE.CHEM, async () => await this.overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM})
-      .item(TITLE.ROB, async () => await this.overwrite(EDITOR_STATE.ROBERT), undefined, {description: HINT.ROB})
-      .item(TITLE.FERM, async () => await this.overwrite(EDITOR_STATE.FERM), undefined, {description: HINT.FERM})
-      .item(TITLE.PK, async () => await this.overwrite(EDITOR_STATE.PK), undefined, {description: HINT.PK})
-      .item(TITLE.PKPD, async () => await this.overwrite(EDITOR_STATE.PKPD), undefined, {description: HINT.PKPD})
-      .item(TITLE.ACID, async () => await this.overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: HINT.ACID})
-      .item(TITLE.NIM, async () => await this.overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM})
-      .item(TITLE.BIO, async () => await this.overwrite(EDITOR_STATE.BIOREACTOR), undefined, {description: HINT.BIO})
-      .endGroup();
-
+    this.openMenu = this.getOpenMenu();
+    this.saveMenu = this.getSaveMenu();
     this.openIcon = ui.iconFA('folder-open', () => this.openMenu.show(), HINT.OPEN);
-    this.saveIcon = ui.iconFA('save', async () => {await this.saveFn();}, HINT.SAVE_LOC);
+    this.saveIcon = ui.iconFA('save', async () => this.saveMenu.show(), HINT.SAVE_MODEL);
     this.helpIcon = ui.iconFA('question', () => {window.open(LINK.DIF_STUDIO, '_blank');}, HINT.HELP);
     this.exportButton = ui.bigButton(TITLE.TO_JS, async () => {await this.exportToJS();}, HINT.TO_JS);
     this.sensAnIcon = ui.iconFA('analytics', async () => {await this.runSensitivityAnalysis();}, HINT.SENS_AN);
     this.fittingIcon = ui.iconFA('chart-line', async () => {await this.runFitting();}, HINT.FITTING);
+
+    this.createTree(browsing);
   }; // constructor
 
   /** Create model editor */
@@ -419,45 +515,90 @@ export class DiffStudio {
     if (toAddContextMenu) {
       this.editorView.dom.addEventListener<'contextmenu'>('contextmenu', (event) => {
         event.preventDefault();
-        DG.Menu.popup()
-          .item(TITLE.LOAD, async () => await this.overwrite(), undefined, {description: HINT.LOAD})
-          .item(TITLE.SAVE_DOTS, this.saveFn, undefined, {description: HINT.SAVE_LOC})
-          .separator()
-          .group(TITLE.TEMPL)
-          .item(TITLE.BASIC, async () =>
-            await this.overwrite(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: HINT.BASIC},
-          )
-          .item(TITLE.ADV, async () =>
-            await this.overwrite(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: HINT.ADV},
-          )
-          .item(TITLE.EXT, async () =>
-            await this.overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT},
-          )
-          .endGroup()
-          .group(TITLE.CASES)
-          .item(TITLE.CHEM, async () =>
-            await this.overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM},
-          )
-          .item(TITLE.ROB, async () => await this.overwrite(EDITOR_STATE.ROBERT), undefined, {description: HINT.ROB})
-          .item(TITLE.FERM, async () => await this.overwrite(EDITOR_STATE.FERM), undefined, {description: HINT.FERM})
-          .item(TITLE.PK, async () => await this.overwrite(EDITOR_STATE.PK), undefined, {description: HINT.PK})
-          .item(TITLE.PKPD, async () => await this.overwrite(EDITOR_STATE.PKPD), undefined, {description: HINT.PKPD})
-          .item(TITLE.ACID, async () =>
-            await this.overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: HINT.ACID},
-          )
-          .item(TITLE.NIM, async () =>
-            await this.overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM},
-          )
-          .item(TITLE.BIO, async () =>
-            await this.overwrite(EDITOR_STATE.BIOREACTOR), undefined, {description: HINT.BIO},
-          )
-          .endGroup()
-          .separator()
-          .item(TITLE.CLEAR, async () => await this.overwrite(EDITOR_STATE.EMPTY), undefined, {description: HINT.CLEAR})
-          .show();
+        this.showContextMenu();
       });
     }
   } // createEditorView
+
+  /** Return the open model menu */
+  private getOpenMenu(): DG.Menu {
+    return DG.Menu.popup()
+      .item(TITLE.FROM_FILE, async () => await this.overwrite(), undefined, {description: HINT.LOAD})
+      .group(TITLE.TEMPL)
+      .item(TITLE.BASIC, async () =>
+        await this.overwrite(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: HINT.BASIC},
+      )
+      .item(TITLE.ADV, async () =>
+        await this.overwrite(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: HINT.ADV},
+      )
+      .item(TITLE.EXT, async () =>
+        await this.overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT})
+      .endGroup()
+      .group(TITLE.EXAMP)
+      .item(TITLE.CHEM, async () => await this.overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM})
+      .item(TITLE.ROB, async () => await this.overwrite(EDITOR_STATE.ROBERT), undefined, {description: HINT.ROB})
+      .item(TITLE.FERM, async () => await this.overwrite(EDITOR_STATE.FERM), undefined, {description: HINT.FERM})
+      .item(TITLE.PK, async () => await this.overwrite(EDITOR_STATE.PK), undefined, {description: HINT.PK})
+      .item(TITLE.PKPD, async () => await this.overwrite(EDITOR_STATE.PKPD), undefined, {description: HINT.PKPD})
+      .item(TITLE.ACID, async () => await this.overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: HINT.ACID})
+      .item(TITLE.NIM, async () => await this.overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM})
+      .item(TITLE.BIO, async () => await this.overwrite(EDITOR_STATE.BIOREACTOR), undefined, {description: HINT.BIO})
+      .item(TITLE.POLL, async () => await this.overwrite(EDITOR_STATE.POLLUTION), undefined, {description: HINT.POLL})
+      .endGroup();
+  } // getOpenMenu
+
+  /** Return the save model menu */
+  private getSaveMenu(): DG.Menu {
+    return DG.Menu.popup()
+      .item(TITLE.TO_MY_FILES, async () => await this.saveToMyFiles(), undefined, {description: HINT.SAVE_MY})
+      .item(TITLE.AS_LOCAL, async () => await this.saveToLocalFile(), undefined, {description: HINT.SAVE_LOC});
+  } // getOpenMenu
+
+  /** Show context menu */
+  private showContextMenu(): void {
+    DG.Menu.popup()
+      .item(TITLE.LOAD, async () => await this.overwrite(), undefined, {description: HINT.LOAD})
+      .group(TITLE.SAVE_TO)
+      .item(TITLE.MY_FILES, async () => await this.saveToMyFiles(), undefined, {description: HINT.SAVE_MY})
+      .item(TITLE.LOCAL_FILE, async () => await this.saveToLocalFile(), undefined, {description: HINT.SAVE_LOC})
+      .endGroup()
+      .separator()
+      .group(TITLE.TEMPL)
+      .item(TITLE.BASIC, async () =>
+        await this.overwrite(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: HINT.BASIC},
+      )
+      .item(TITLE.ADV, async () =>
+        await this.overwrite(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: HINT.ADV},
+      )
+      .item(TITLE.EXT, async () =>
+        await this.overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT},
+      )
+      .endGroup()
+      .group(TITLE.EXAMP)
+      .item(TITLE.CHEM, async () =>
+        await this.overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM},
+      )
+      .item(TITLE.ROB, async () => await this.overwrite(EDITOR_STATE.ROBERT), undefined, {description: HINT.ROB})
+      .item(TITLE.FERM, async () => await this.overwrite(EDITOR_STATE.FERM), undefined, {description: HINT.FERM})
+      .item(TITLE.PK, async () => await this.overwrite(EDITOR_STATE.PK), undefined, {description: HINT.PK})
+      .item(TITLE.PKPD, async () => await this.overwrite(EDITOR_STATE.PKPD), undefined, {description: HINT.PKPD})
+      .item(TITLE.ACID, async () =>
+        await this.overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: HINT.ACID},
+      )
+      .item(TITLE.NIM, async () =>
+        await this.overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM},
+      )
+      .item(TITLE.BIO, async () =>
+        await this.overwrite(EDITOR_STATE.BIOREACTOR), undefined, {description: HINT.BIO},
+      )
+      .item(TITLE.POLL, async () =>
+        await this.overwrite(EDITOR_STATE.POLLUTION), undefined, {description: HINT.POLL},
+      )
+      .endGroup()
+      .separator()
+      .item(TITLE.CLEAR, async () => await this.overwrite(EDITOR_STATE.EMPTY), undefined, {description: HINT.CLEAR})
+      .show();
+  } // showContextMenu
 
   /** Load IVP from file */
   private async loadFn(): Promise<void> {
@@ -483,8 +624,8 @@ export class DiffStudio {
     fileInp.click();
   }; // loadFn
 
-  /** Save the current IVP to file */
-  private async saveFn(): Promise<void> {
+  /** Save the current IVP to local file */
+  private async saveToLocalFile(): Promise<void> {
     const link = document.createElement('a');
     const file = new Blob([this.editorView!.state.doc.toString()], {type: 'text/plain'});
     link.href = URL.createObjectURL(file);
@@ -492,6 +633,72 @@ export class DiffStudio {
     link.click();
     URL.revokeObjectURL(link.href);
   };
+
+  /** Save the current IVP to My files */
+  private async saveToMyFiles(): Promise<void> {
+    const modelCode = this.editorView!.state.doc.toString();
+    const modelName = getIVP(modelCode).name.replaceAll(' ', '-');
+    const login = grok.shell.user.project.name;
+    const folder = login.charAt(0).toUpperCase() + login.slice(1) + ':Home/';
+    const files = await grok.dapi.files.list(folder);
+
+    // get model file names in from the user's folder
+    const existingNames = files.filter((file) => file.extension === MISC.IVP_EXT).map((file) => file.name);
+
+    let fileName = unusedFileName(modelName, existingNames);
+    const nameInput = ui.input.string(TITLE.NAME, {
+      value: fileName,
+      nullable: false,
+      onValueChanged: () => {
+        if (nameInput.value !== null) {
+          fileName = nameInput.value.replaceAll(' ', '-');
+          dlg.getButton(TITLE.SAVE).disabled = false;
+        } else
+          dlg.getButton(TITLE.SAVE).disabled = true;
+      },
+    });
+
+    let extension = MISC.IVP_EXT;
+    const extInput = ui.input.choice<MISC>(TITLE.TYPE, {
+      value: extension,
+      items: [MISC.IVP_EXT, MISC.TXT_EXT],
+      nullable: false,
+      onValueChanged: () => {
+        extension = extInput.value;
+        if (extension !== MISC.IVP_EXT)
+          grok.shell.warning(WARNING.PREVIEW);
+      },
+    });
+
+    const save = async () => {
+      const path = `${folder}${fileName}.${MISC.IVP_EXT}`;
+
+      try {
+        await grok.dapi.files.writeAsText(path, modelCode);
+        await this.saveModelToRecent(path, true);
+        grok.shell.info(`Model saved to ${path}`);
+      } catch (error) {
+        grok.shell.error(`Failed to save model: ${error instanceof Error ? error.message : 'platform issue'}`);
+      }
+
+      dlg.close();
+    };
+
+    const dlg = ui.dialog({title: TITLE.SAVE_TO})
+      .add(nameInput)
+      .add(extInput)
+      .addButton(TITLE.SAVE, async () => {
+        if (!existingNames.includes(`${fileName}.${extension}`))
+          await save();
+        else {
+          ui.dialog({title: WARNING.TITLE})
+            .add(ui.label(WARNING.OVERWRITE_FILE))
+            .onOK(async () => await save())
+            .show();
+        }
+      }, undefined, HINT.SAVE_MY)
+      .show();
+  }; // saveToMyFiles
 
   /** Set IVP code editor state */
   private async setState(state: EDITOR_STATE,
@@ -514,37 +721,51 @@ export class DiffStudio {
     this.editorView!.setState(newState);
 
     // set path
-    if (state === EDITOR_STATE.FROM_FILE)
-      this.solverMainPath = PATH.CUSTOM;
-    else
-      this.solverMainPath = `${PATH.MODEL}${state}`;
+    this.solverMainPath = `${(this.fromFileHandler) ? PATH.APPS_DS : ''}${stateToPath(state)}`;
+
+    // save model to recent
 
     switch (state) {
     case EDITOR_STATE.EMPTY:
       this.clearSolution();
       break;
 
+    case EDITOR_STATE.FROM_FILE:
+      await this.runSolving(true);
+      break;
+
     case EDITOR_STATE.BASIC_TEMPLATE:
+      await this.runSolving(this.isStartingRun);
+      break;
+
     case EDITOR_STATE.ADVANCED_TEMPLATE:
     case EDITOR_STATE.EXTENDED_TEMPLATE:
-      await this.runSolving(false);
-      // dfdf
+      await this.saveModelToRecent(state, false);
+      await this.runSolving(this.isStartingRun);
       break;
 
     default:
+      await this.saveModelToRecent(state, false);
       await this.runSolving(true);
       break;
     }
+
+    this.isStartingRun = false;
   }; // setState
 
   /** Overwrite the editor content */
   private async overwrite(state?: EDITOR_STATE): Promise<void> {
     if (this.toShowWarning && this.isModelChanged) {
-      const boolInput = ui.boolInput(WARNING.CHECK, true, () => this.toShowWarning = !this.toShowWarning);
+      const boolInput = ui.input.bool(
+        WARNING.CHECK, {
+          value: true,
+          onValueChanged: () => this.toShowWarning = !this.toShowWarning,
+        },
+      );
       const dlg = ui.dialog({title: WARNING.TITLE, helpUrl: LINK.DIF_STUDIO_REL});
       this.solverView.append(dlg);
 
-      dlg.add(ui.label(WARNING.MES))
+      dlg.add(ui.label(WARNING.OVERWRITE_MODEL))
         .add(boolInput.root)
         .onCancel(() => dlg.close())
         .onOK(async () => {
@@ -578,11 +799,21 @@ export class DiffStudio {
 
   /** Solve IVP */
   private async solve(ivp: IVP, inputsPath: string): Promise<void> {
+    if (this.toPreventSolving)
+      return;
+
     const customSettings = (ivp.solverSettings !== DEFAULT_SOLVER_SETTINGS);
 
     try {
-      if (this.toChangePath)
+      if (this.toChangePath) {
         this.solverView.path = `${this.solverMainPath}${PATH.PARAM}${inputsPath}`;
+
+        if (this.inBrowseRun)
+          this.browseView.path = `/${PATH.BROWSE}${PATH.APPS_DS}${this.solverView.path}`;
+
+        if (this.isRecentRun)
+          this.browseView.path = this.solverView.path;
+      }
 
       const start = ivp.arg.initial.value;
       const finish = ivp.arg.final.value;
@@ -633,8 +864,7 @@ export class DiffStudio {
         this.viewerDockNode = grok.shell.dockManager.dock(
           this.solutionViewer,
           DG.DOCK_TYPE.TOP,
-          this.solverView.dockManager.
-            findNode(this.solverView.grid.root),
+          this.solverView.dockManager.findNode(this.solverView.grid.root),
         );
       } else {
         this.solutionViewer.dataFrame = this.solutionTable;
@@ -686,12 +916,20 @@ export class DiffStudio {
           this.inputsPanel.removeChild(this.prevInputsNode);
 
         const form = ui.form([]);
+        const miscInputs = this.inputsByCategories.get(TITLE.MISC);
 
         if (this.inputsByCategories.size === 1)
-          this.inputsByCategories.get(TITLE.MISC)!.forEach((input) => form.append(input.root));
+          miscInputs.forEach((input) => form.append(input.root));
         else {
+          if (this.topCategory !== null) {
+            form.append(ui.h2(this.topCategory));
+            this.inputsByCategories.get(this.topCategory).forEach((inp) => {
+              form.append(inp.root);
+            });
+          }
+
           this.inputsByCategories.forEach((inputs, category) => {
-            if (category !== TITLE.MISC) {
+            if ((category !== TITLE.MISC) && (category !== this.topCategory)) {
               form.append(ui.h2(category));
               inputs.forEach((inp) => {
                 form.append(inp.root);
@@ -699,14 +937,15 @@ export class DiffStudio {
             }
           });
 
-          if (this.inputsByCategories.get(TITLE.MISC)!.length > 0) {
+          if ((miscInputs.length > 0) && (this.topCategory !== TITLE.MISC)) {
             form.append(ui.h2(TITLE.MISC));
-              this.inputsByCategories.get(TITLE.MISC)!.forEach((inp) => {
-                form.append(inp.root);
-              });
+            miscInputs.forEach((inp) => {
+              form.append(inp.root);
+            });
           }
         }
 
+        form.style.overflowY = 'hidden';
         this.prevInputsNode = this.inputsPanel.appendChild(form);
 
         if (!toShowInputsForm)
@@ -814,6 +1053,9 @@ export class DiffStudio {
     }; // getOptions
 
     const inputsByCategories = new Map<string, DG.InputBase[]>();
+    const toSaveInputs = ivp.inputsLookup !== null;
+    this.topCategory = null;
+    this.inputByName = toSaveInputs ? new Map<string, DG.InputBase>() : null;
     inputsByCategories.set(TITLE.MISC, []);
     let options: DG.PropertyOptions;
 
@@ -829,6 +1071,12 @@ export class DiffStudio {
         inputsByCategories.set(category, [input]);
 
       input.setTooltip(options.description!);
+    };
+
+    /** Save input */
+    const saveInput = (name: string, input: DG.InputBase) => {
+      if (toSaveInputs)
+        this.inputByName.set(name, input);
     };
 
     /** Return line with inputs names & values */
@@ -852,29 +1100,35 @@ export class DiffStudio {
       //@ts-ignore
       options = getOptions(key, ivp.arg[key], CONTROL_EXPR.ARG);
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
-      input.onChanged(async () => {
-        if (input.value !== null) {
+
+      //@ts-ignore
+      input.onChanged.subscribe(async (value) => {
+        if (value !== null) {
           //@ts-ignore
-          ivp.arg[key].value = input.value;
+          ivp.arg[key].value = value;
           await this.solve(ivp, getInputsPath());
         }
       });
 
       categorizeInput(options, input);
+      saveInput(key, input);
     }
 
     // Inputs for initial values
     ivp.inits.forEach((val, key) => {
       options = getOptions(key, val, CONTROL_EXPR.INITS);
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
-      input.onChanged(async () => {
-        if (input.value !== null) {
-        ivp.inits.get(key)!.value = input.value;
+
+      //@ts-ignore
+      input.onChanged.subscribe(async (value) => {
+        if (value !== null) {
+        ivp.inits.get(key)!.value = value;
         await this.solve(ivp, getInputsPath());
         }
       });
 
       categorizeInput(options, input);
+      saveInput(key, input);
     });
 
     // Inputs for parameters
@@ -882,14 +1136,17 @@ export class DiffStudio {
       ivp.params.forEach((val, key) => {
         options = getOptions(key, val, CONTROL_EXPR.PARAMS);
         const input = ui.input.forProperty(DG.Property.fromOptions(options));
-        input.onChanged(async () => {
-          if (input.value !== null) {
-            ivp.params!.get(key)!.value = input.value;
+
+        //@ts-ignore
+        input.onChanged.subscribe(async (value) => {
+          if (value !== null) {
+            ivp.params!.get(key)!.value = value;
             await this.solve(ivp, getInputsPath());
           }
         });
 
         categorizeInput(options, input);
+        saveInput(key, input);
       });
     }
 
@@ -899,21 +1156,100 @@ export class DiffStudio {
       options.inputType = INPUT_TYPE.INT; // since it's an integer
       options.type = DG.TYPE.INT; // since it's an integer
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
-      input.onChanged(async () => {
-        if (input.value !== null) {
-          ivp.loop!.count.value = input.value;
+
+      //@ts-ignore
+      input.onChanged.subscribe(async (value) => {
+        if (value !== null) {
+          ivp.loop!.count.value = value;
           await this.solve(ivp, getInputsPath());
         }
       });
 
       categorizeInput(options, input);
+      saveInput(SCRIPTING.COUNT, input);
     }
 
     if (this.toRunWhenFormCreated)
       await this.solve(ivp, getInputsPath());
 
     this.inputsByCategories = inputsByCategories;
+
+    if (toSaveInputs)
+      await this.setLookupChoiceInput(ivp.inputsLookup);
   } // getInputsUI
+
+  /** Set behavior of the values lookup input */
+  private async setLookupChoiceInput(inputsLookup: string) {
+    const lookupInfo = getLookupsInfo(inputsLookup);
+
+    if (lookupInfo === null)
+      return;
+
+    const inputsDf = await getInputsTable(lookupInfo.choices);
+    //const inputsDf = await getInputsTable('OpenFile("System:AppData/DiffStudio/examples/bioreactor-inputs.csv")');
+
+    if (inputsDf === null)
+      return;
+
+    const cols = inputsDf.columns;
+    const rowCount = inputsDf.rowCount;
+
+    const inpSetsNames = cols.byIndex(INPUTS_DF.INPUT_SETS_COL_IDX).toList();
+    const choices = [MISC.DEFAULT as string].concat(inpSetsNames);
+
+    const defaultInputs = new Map<string, number>();
+    let firstInput: DG.InputBase | null = null;
+
+    this.inputByName.forEach((input, name) => {
+      if (firstInput === null)
+        firstInput = input;
+
+      defaultInputs.set(name, input.value);
+    });
+
+    const tableInputs = new Map<string, Map<string, number>>(); // set <-> {(input <-> value)}
+    const colsRaw = new Map<string, Int32Array | Uint32Array | Float32Array | Float64Array>();
+
+    for (const col of cols) {
+      if (col.isNumerical)
+        colsRaw.set(col.name, col.getRawData());
+    }
+
+    for (let row = 0; row < rowCount; ++row) {
+      const inputs = new Map<string, number>();
+      colsRaw.forEach((arr, name) => inputs.set(name, arr[row]));
+      tableInputs.set(inpSetsNames[row], inputs);
+    }
+
+    // create input for lookup table use
+    const lookupChoiceInput = ui.input.choice<string>(lookupInfo.caption, {
+      items: choices,
+      nullable: false,
+      value: choices[0],
+      tooltipText: lookupInfo.tooltip,
+      onValueChanged: (value) => {
+        this.toPreventSolving = true;
+
+        if (value === MISC.DEFAULT)
+          this.inputByName.forEach((input, name) => input.value = defaultInputs.get(name));
+        else {
+          const colInputs = tableInputs.get(value);
+          this.inputByName.forEach((input, name) => input.value = colInputs.get(name) ?? input.value);
+        }
+
+        this.toPreventSolving = false;
+        firstInput.value = firstInput.value;
+      },
+    });
+
+    this.topCategory = lookupInfo.category;
+    const catorizedInputs = this.inputsByCategories.get(lookupInfo.category);
+
+    if (catorizedInputs !== undefined)
+      this.inputsByCategories.set(lookupInfo.category, [lookupChoiceInput as DG.InputBase].concat(catorizedInputs));
+    else
+      this.inputsByCategories.set(lookupInfo.category, [lookupChoiceInput]);
+  } // setLookupChoiceInput
 
   /** Run sensitivity analysis */
   private async runSensitivityAnalysis(): Promise<void> {
@@ -922,8 +1258,9 @@ export class DiffStudio {
       await this.tryToSolve(ivp);
       const scriptText = getScriptLines(ivp, true, true).join('\n');
       const script = DG.Script.create(scriptText);
-      //@ts-ignore
-      await SensitivityAnalysisView.fromEmpty(script);
+      await SensitivityAnalysisView.fromEmpty(script, {
+        inputsLookup: ivp.inputsLookup !== null ? ivp.inputsLookup : undefined,
+      });
     } catch (err) {
       this.clearSolution();
       grok.shell.error(`${ERROR_MSG.SENS_AN_FAILS}:
@@ -938,8 +1275,9 @@ export class DiffStudio {
       await this.tryToSolve(ivp);
       const scriptText = getScriptLines(ivp, true, true).join('\n');
       const script = DG.Script.create(scriptText);
-      //@ts-ignore
-      await FittingView.fromEmpty(script);
+      await FittingView.fromEmpty(script, {
+        inputsLookup: ivp.inputsLookup !== null ? ivp.inputsLookup : undefined,
+      });
     } catch (err) {
       this.clearSolution();
       grok.shell.error(`${ERROR_MSG.SENS_AN_FAILS}:
@@ -989,17 +1327,19 @@ export class DiffStudio {
       units: WARNING.UNITS,
     };
     const maxTimeInput = ui.input.forProperty(DG.Property.fromOptions(opts));
-    maxTimeInput.onInput(() => {
+
+    //@ts-ignore
+    maxTimeInput.onInput.subscribe(() => {
       if (maxTimeInput.value >= UI_TIME.SOLV_TIME_MIN_SEC)
         this.secondsLimit = maxTimeInput.value;
       else maxTimeInput.value = this.secondsLimit;
     });
 
     this.performanceDlg.add(ui.label(`Max time exceeded (${this.secondsLimit} sec.). ${WARNING.CONTINUE}`))
-      .onCancel(() => this.performanceDlg.close())
+      .onCancel(() => this.performanceDlg!.close())
       .onOK(async () => {
         ivp.solverSettings = DEFAULT_SOLVER_SETTINGS;
-        this.performanceDlg.close();
+        this.performanceDlg!.close();
         setTimeout(async () => await this.solve(ivp, inputsPath), 20);
         ;
       })
@@ -1010,5 +1350,340 @@ export class DiffStudio {
     ui.tooltip.bind(this.performanceDlg.getButton('CANCEL'), HINT.ABORT);
 
     return this.performanceDlg;
+  } // showPerformanceDlg
+
+  /** Browse tree */
+  private async createTree(browsing?: Browsing) {
+    if (browsing) {
+      this.browseView = browsing.browseView;
+      this.appTree = browsing.treeNode;
+    } else {
+      if (grok.shell.view(TITLE.BROWSE) === undefined)
+        grok.shell.v = DG.View.createByType('browse');
+
+      this.browseView = grok.shell.view(TITLE.BROWSE) as DG.BrowseView;
+      const appsGroup = this.browseView.mainTree.getOrCreateGroup(TITLE.APPS, null, false);
+      this.appTree = appsGroup.getOrCreateGroup(TITLE.DIF_ST);
+    }
+
+
+    if (this.appTree.items.length > 0)
+      this.recentFolder = this.appTree.getOrCreateGroup(TITLE.RECENT, null, false);
+    else {
+      const templatesFolder = this.getFolderWithBultInModels(TEMPLATE_TITLES, TITLE.TEMPL);
+      const examplesFolder = this.getFolderWithBultInModels(EXAMPLE_TITLES, TITLE.EXAMP);
+
+      const putModelsToFolder = (models: TITLE[], folder: DG.TreeViewGroup) => {
+        models.forEach((name) => this.putBuiltInModelToFolder(name, folder));
+      };
+
+      putModelsToFolder(TEMPLATE_TITLES, templatesFolder);
+      putModelsToFolder(EXAMPLE_TITLES, examplesFolder);
+
+      this.recentFolder = this.getFolderWithRecentModels();
+
+      // Add recent models to the Recent folder
+      try {
+        const folder = `${grok.shell.user.project.name}:Home/`;
+        const files = await grok.dapi.files.list(folder);
+        const names = files.map((file) => file.name);
+
+        if (names.includes(PATH.RECENT)) {
+          const dfs = await grok.dapi.files.readBinaryDataFrames(`${folder}${PATH.RECENT}`);
+          const recentDf = dfs[0];
+          const size = recentDf.rowCount;
+          const infoCol = recentDf.col(TITLE.INFO);
+          const isCustomCol = recentDf.col(TITLE.IS_CUST);
+
+          if ((infoCol === null) || (isCustomCol === null))
+            throw new Error('corrupted data file');
+
+          for (let i = 0; i < size; ++i) {
+            if (isCustomCol.get(i))
+              await this.putCustomModelToRecents(infoCol.get(i));
+            else
+              this.putBuiltInModelToFolder(infoCol.get(i), this.recentFolder);
+          }
+        }
+      } catch (err) {
+        grok.shell.warning(`Failed to open recents: ${(err instanceof Error) ? err.message : 'platfrom issue'}`);
+      };
+    }
+  } // createTree
+
+  /** Add template/example model to browse tree folder */
+  private putBuiltInModelToFolder(name: TITLE, folder: DG.TreeViewGroup): void {
+    const item = folder.item(name);
+    ui.tooltip.bind(item.root, MODEL_HINT.get(name) ?? '');
+
+    item.onSelected.subscribe(async () => {
+      const panelRoot = this.appTree.rootNode.root.parentElement!;
+      const treeNodeY = panelRoot.scrollTop!;
+
+      const solver = new DiffStudio(false);
+      this.browseView.preview = await solver.runSolverApp(
+        undefined,
+        STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
+      ) as DG.View;
+
+      setTimeout(() => {
+        panelRoot.scrollTo(0, treeNodeY);
+        item.root.focus();
+      }, UI_TIME.BROWSING);
+    });
   }
+
+  /** Add model from ivp-file to browse tree folder */
+  private async putCustomModelToRecents(path: string) {
+    try {
+      const exist = await grok.dapi.files.exists(path);
+      const idx = path.lastIndexOf('/');
+      const name = path.slice(idx + 1, path.length);
+      const item = this.recentFolder.item(name);
+      ui.tooltip.bind(item.root, path);
+
+      const folderPath = path.slice(0, idx + 1);
+      let file: DG.FileInfo;
+
+      if (exist) {
+        const fileList = await grok.dapi.files.list(folderPath);
+        file = fileList.find((file) => file.nqName === path);
+      }
+
+      item.onSelected.subscribe(async () => {
+        const panelRoot = this.appTree.rootNode.root.parentElement!;
+        const treeNodeY = panelRoot.scrollTop!;
+
+        if (exist) {
+          const equations = await file.readAsString();
+
+          const solver = new DiffStudio(false);
+          this.browseView.preview = await solver.runSolverApp(
+            equations,
+            undefined,
+            `files/${file.fullPath.replace(':', '.').toLowerCase()}`,
+          ) as DG.View;
+        } else
+          grok.shell.warning(`File not found: ${path}`);
+
+        setTimeout(async () => {
+          panelRoot.scrollTo(0, treeNodeY);
+          item.root.focus();
+        }, UI_TIME.BROWSING);
+      });
+
+      item.root.addEventListener('dblclick', async (e) => {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+
+        if (exist) {
+          const equations = await file.readAsString();
+          const solver = new DiffStudio();
+          await solver.runSolverApp(equations);
+        } else
+          grok.shell.warning(`File not found: ${path}`);
+      });
+    } catch (e) {
+      grok.shell.warning(`Failed to add ivp-file to recents: ${(e instanceof Error) ? e.message : 'platfrom issue'}`);
+    }
+  } // putCustomModelToRecents
+
+  /** Save model to recent models file */
+  private async saveModelToRecent(modelSpecification: string, isCustom: boolean) {
+    const folder = `${grok.shell.user.project.name}:Home/`;
+    const files = await grok.dapi.files.list(folder);
+    const names = files.map((file) => file.name);
+    const info = isCustom ? modelSpecification : TITLE_BY_STATE.get(modelSpecification);
+
+    const dfToAdd = DG.DataFrame.fromColumns([
+      DG.Column.fromStrings(TITLE.INFO, [info]),
+      DG.Column.fromList(DG.COLUMN_TYPE.BOOL, TITLE.IS_CUST, [isCustom]),
+    ]);
+
+    try {
+      if (names.includes(PATH.RECENT)) {
+        const dfs = await grok.dapi.files.readBinaryDataFrames(`${folder}${PATH.RECENT}`);
+        const recentDf = dfs[0];
+
+        if (!recentDf.col(TITLE.INFO).toList().includes(info)) {
+          recentDf.append(dfToAdd, true);
+
+          await grok.dapi.files.writeBinaryDataFrames(`${folder}${PATH.RECENT}`, [
+            getTableFromLastRows(recentDf, MAX_RECENT_COUNT),
+          ]);
+
+          const items = this.recentFolder.items;
+
+          if (items.length >= MAX_RECENT_COUNT)
+            items[0].remove();
+
+          if (isCustom)
+            this.putCustomModelToRecents(info);
+          else
+            this.putBuiltInModelToFolder(info, this.recentFolder);
+        }
+      } else
+        await grok.dapi.files.writeBinaryDataFrames(`${folder}${PATH.RECENT}`, [dfToAdd]);
+    } catch (err) {
+      grok.shell.warning(`Failed to save recent models: ${(err instanceof Error) ? err.message : 'platfrom issue'}`);
+    }
+  } // saveModelToRecent
+
+  /** Return view with model cards */
+  private getBuiltInModelsCardsView(models: TITLE[]): DG.View {
+    const view = DG.View.create();
+    const root = ui.div([]);
+
+    for (const name of models)
+      root.append(this.getCardWithBuiltInModel(name));
+
+    root.classList.add('grok-gallery-grid');
+    view.root.append(root);
+
+    return view;
+  } // getBuiltInModelsCardsView
+
+  /** Return foldwer with built-in models (examples/templates) */
+  private getFolderWithBultInModels(models: TITLE[], title: string): DG.TreeViewGroup {
+    const folder = this.appTree.getOrCreateGroup(title, null, false);
+    folder.onSelected.subscribe(() => {
+      this.browseView.preview = this.getBuiltInModelsCardsView(models);
+      this.browseView.path = `browse/apps/DiffStudio/${title}`;
+    });
+
+    return folder;
+  }
+
+  /** Return folder with recent models */
+  private getFolderWithRecentModels(): DG.TreeViewGroup {
+    const folder = this.appTree.getOrCreateGroup(TITLE.RECENT, null, false);
+
+    folder.onSelected.subscribe(async () => {
+      const view = DG.View.create();
+      this.browseView.path = `browse/apps/DiffStudio/${TITLE.RECENT}`;
+
+      try {
+        const folder = `${grok.shell.user.project.name}:Home/`;
+        const files = await grok.dapi.files.list(folder);
+        const names = files.map((file) => file.name);
+
+        if (names.includes(PATH.RECENT)) {
+          const root = ui.div([]);
+
+          const dfs = await grok.dapi.files.readBinaryDataFrames(`${folder}${PATH.RECENT}`);
+          const recentDf = dfs[0];
+          const size = recentDf.rowCount;
+          const infoCol = recentDf.col(TITLE.INFO);
+          const isCustomCol = recentDf.col(TITLE.IS_CUST);
+
+          if ((infoCol === null) || (isCustomCol === null))
+            throw new Error('corrupted data file');
+
+          for (let i = 0; i < size; ++i) {
+            if (isCustomCol.get(i))
+              root.append(await this.getCardWithCustomModel(infoCol.get(i)));
+            else
+              root.append(this.getCardWithBuiltInModel(infoCol.get(i)));
+          }
+
+          root.classList.add('grok-gallery-grid');
+          view.root.append(root);
+        } else
+          view.append(ui.h2('No recent models'));
+
+        this.browseView.preview = view;
+      } catch (err) {
+        grok.shell.warning(`Failed to open recents: ${(err instanceof Error) ? err.message : 'platfrom issue'}`);
+      };
+    });
+
+    return folder;
+  } // getFolderWithRecentModels
+
+  /** Return card with model */
+  private getCard(title: string, text: string, imgPath: string): HTMLDivElement {
+    const defaultLink = `${_package.webRoot}${CUSTOM_MODEL_IMAGE_LINK}`;
+
+    const img = ui.div([ui.wait(async () => {
+      const imgRoot = ui.div('', 'img');
+      imgRoot.className = 'diff-studio-ui-image';
+      await fetch(`${_package.webRoot}${imgPath}`)
+        .then((response) => {
+          if (response.ok)
+            return Promise.resolve(response.url);
+          else if (response.status === 404)
+            return Promise.reject(defaultLink);
+        })
+        .then((data) => imgRoot.style.backgroundImage = `url(${data})`)
+        .catch((data) => imgRoot.style.backgroundImage = `url(${data})`);
+      return imgRoot;
+    }),
+    ]);
+
+    const card = ui.card(ui.divV([
+      img,
+      ui.div([title], 'diff-studio-card-title'),
+      ui.div([text], 'diff-studio-card-description'),
+    ], 'diff-studio-app-card'));
+
+    return card;
+  } // getCard
+
+  /** Return card with built-in model*/
+  private getCardWithBuiltInModel(name: TITLE): HTMLDivElement {
+    const card = this.getCard(name, MODEL_HINT.get(name) ?? '', modelImageLink.get(name));
+
+    card.onclick = async () => {
+      const solver = new DiffStudio(false);
+      this.browseView.preview = await solver.runSolverApp(
+        undefined,
+        STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
+      ) as DG.View;
+    };
+
+    ui.tooltip.bind(card, HINT.CLICK_RUN);
+
+    return card;
+  } // getCardWithBuiltInModel
+
+  /** Return card with custom model*/
+  private async getCardWithCustomModel(path: string): Promise<HTMLDivElement> {
+    try {
+      const exist = await grok.dapi.files.exists(path);
+      const idx = path.lastIndexOf('/');
+      const name = path.slice(idx + 1, path.length);
+
+      const card = this.getCard(name, 'Custom model', CUSTOM_MODEL_IMAGE_LINK);
+      ui.tooltip.bind(card, () => ui.divV([
+        ui.divText(path),
+        ui.divText(HINT.CLICK_RUN),
+      ]));
+
+      const folderPath = path.slice(0, idx + 1);
+      let file: DG.FileInfo;
+
+      if (exist) {
+        const fileList = await grok.dapi.files.list(folderPath);
+        file = fileList.find((file) => file.nqName === path);
+      }
+
+      card.onclick = async () => {
+        if (exist) {
+          const equations = await file.readAsString();
+
+          const solver = new DiffStudio(false);
+          this.browseView.preview = await solver.runSolverApp(
+            equations,
+            undefined,
+            `files/${file.fullPath.replace(':', '.').toLowerCase()}`,
+          ) as DG.View;
+        } else
+          grok.shell.warning(`File not found: ${path}`);
+      };
+
+      return card;
+    } catch (e) {
+      grok.shell.warning(`Failed to add ivp-file to recents: ${(e instanceof Error) ? e.message : 'platfrom issue'}`);
+    }
+  } // getCardWithBuiltInModel
 };

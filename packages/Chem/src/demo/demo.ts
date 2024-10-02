@@ -7,14 +7,12 @@ import {closeAllAccordionPanes, demoScaffold, getAccordionPane, openMoleculeData
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 import {awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
 import {_importSdf} from '../open-chem/sdf-importer';
-import {_package, mmpAnalysis} from '../package';
+import {_package, activityCliffs, mmpAnalysis} from '../package';
 import {rGroupAnalysis} from '../analysis/r-group-analysis';
-import {CLIFFS_DF_NAME, activityCliffsIdx, getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import {createPropPanelElement, createTooltipElement} from '../analysis/activity-cliffs';
+import {CLIFFS_DF_NAME, activityCliffsIdx} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
-import {getEmbeddingColsNames} from
-  '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
+import {ScaffoldTreeViewer} from '../widgets/scaffold-tree';
 
 export async function _demoChemOverview(): Promise<void> {
   const sketcherType = DG.chem.currentSketcherType;
@@ -61,14 +59,17 @@ export async function _demoChemOverview(): Promise<void> {
   let propPanel: Element;
   let canvas: HTMLCanvasElement;
   let filters: DG.FilterGroup;
-  demoScript
+  await demoScript
     .step('Load molecules', async () => {
       tv = await openMoleculeDataset('demo_files/demo_smiles.csv');
       tv.grid.columns.setOrder(firstCols.concat(lastCols));
       grok.shell.windows.showHelp = false;
+      grok.shell.windows.context.visible = true;  
       table = tv.dataFrame;
     }, {description: 'Load dataset with molecule columns', delay: 3000})
     .step('Calculate molecule properties', async () => {
+      const molColumnName = table.columns.bySemType(DG.SEMTYPE.MOLECULE)!.name;
+      table.currentCell = table.cell(0, molColumnName);
       await delay(1000);
       grok.shell.windows.showHelp = false; //for some reason help panel appears again, need to hide it
       propPanel = document.getElementsByClassName('grok-entity-prop-panel')[0];
@@ -96,8 +97,11 @@ export async function _demoChemOverview(): Promise<void> {
       const sketcherDlg = await openSketcher(filters.root, 'sketch-link');
       const sketcherInput = sketcherDlg!
         .getElementsByClassName('grok-sketcher-input')[0]?.children[0] as HTMLInputElement;
+      await delay(2000);
       sketcherInput.value = 'C1CCCCC1';
-      await delay(1000);
+      const progressBar = DG.TaskBarProgressIndicator.create(`Sketcher initialization in progress...`);
+      await delay(3000);
+      progressBar.close();
       sketcherInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
       Array.from(sketcherDlg!.getElementsByTagName('span')).find((el) => el.textContent === 'OK')?.click();
     }, {description: 'Filtering dataset by substructure', delay: 2000})
@@ -116,13 +120,15 @@ export async function _demoChemOverview(): Promise<void> {
         .getElementsByClassName('grok-sketcher-input')[0]?.children[0] as HTMLInputElement;
 
       let dT = null;
-      try {dT = new DataTransfer();} catch (e) { }
+      try {
+        dT = new DataTransfer();
+      } catch (e) {}
       const evt = new ClipboardEvent('paste', {clipboardData: dT});
-            evt.clipboardData!.setData('text/plain', demoScaffold);
-            scaffoldSketcherInput.value = demoScaffold;
-            await delay(100);
-            scaffoldSketcherInput.dispatchEvent(evt);
-            Array.from(scaffoldSketcher!.getElementsByTagName('span')).find((el) => el.textContent === 'OK')?.click();
+        evt.clipboardData!.setData('text/plain', demoScaffold);
+        scaffoldSketcherInput.value = demoScaffold;
+        await delay(100);
+        scaffoldSketcherInput.dispatchEvent(evt);
+        Array.from(scaffoldSketcher!.getElementsByTagName('span')).find((el) => el.textContent === 'OK')?.click();
     }, {description: 'Aligning structures by scaffold', delay: 1000})
     .step('Add sparkline columns', async () => {
       tv.grid.columns.add({gridColumnName: `radar`, cellType: 'radar'});
@@ -131,15 +137,13 @@ export async function _demoChemOverview(): Promise<void> {
       tv.grid.scrollToCell('MolWt', 0);
     })
     .step('Add color coding', async () => {
-            table.col('MolWt')!.setTag(DG.TAGS.COLOR_CODING_TYPE, DG.COLOR_CODING_TYPE.LINEAR);
-            table.col('NOCount')!.setTag(DG.TAGS.COLOR_CODING_TYPE, DG.COLOR_CODING_TYPE.CONDITIONAL);
-            table.col('NOCount')!.setTag(DG.TAGS.COLOR_CODING_CONDITIONAL,
-              '{"0 - 6.25":"#73aff5","6.25 - 12.50":"#ffa500","12.50 - 18.75":"#ff5140","18.75 - 25":"#50af28"}');
-            table.col('RingCount')!.setTag(DG.TAGS.COLOR_CODING_TYPE, DG.COLOR_CODING_TYPE.CONDITIONAL);
-            grok.shell.windows.showHelp = true;
-            //@ts-ignore
-            grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem');
-            DG.chem.currentSketcherType = sketcherType;
+      table.col('MolWt')!.meta.colors.setLinear();
+      table.col('NOCount')!.meta.colors.setConditional({'0 - 6.25': '#73aff5', '6.25 - 12.50': '#ffa500', '12.50 - 18.75': '#ff5140', '18.75 - 25': '#50af28'});
+      table.col('RingCount')!.meta.colors.setConditional();
+      grok.shell.windows.showHelp = true;
+      //@ts-ignore
+      grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem');
+      DG.chem.currentSketcherType = sketcherType;
     })
     .start();
 }
@@ -149,7 +153,7 @@ export async function _demoSimilaritySearch(): Promise<void> {
   const demoScript = new DemoScript('Demo', 'Searching for molecules most similar to target molecule');
   let table: DG.DataFrame;
   let tv: DG.TableView;
-  demoScript
+  await demoScript
     .step('Load data', async () => {
       tv = await openMoleculeDataset('smiles.csv');
       table = tv.dataFrame;
@@ -187,12 +191,15 @@ export async function _demoSimilarityDiversitySearch(): Promise<void> {
 
 
 export async function _demoMMPA(): Promise<void> {
-  const tv = await openMoleculeDataset('demo_files/mmp_20k.csv');
-  await mmpAnalysis(tv.dataFrame, tv.dataFrame.col('smiles')!,
-    tv.dataFrame.clone().columns.remove('smiles'), 0.9);
-  grok.shell.windows.showHelp = true;
-  //@ts-ignore
-  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#matched-molecular-pairs');
+  const tv = await openMoleculeDataset('demo_files/mmp_demo.csv');
+
+  _package.files.readAsText('demo_files/mmp_demo.layout').then(async (layoutString: string) => {
+    const layout = DG.ViewLayout.fromJson(layoutString);
+    tv.loadLayout(layout);
+    tv.dataFrame.currentRowIdx = 0;
+    // grok.shell.windows.showHelp = true;
+    // grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/#matched-molecular-pairs');
+  });
 }
 
 
@@ -200,7 +207,7 @@ export async function _demoMoleculesVisualizations(): Promise<void> {
   const demoScript = new DemoScript('Demo', 'Creating various viewers on molecule columns');
   let table: DG.DataFrame;
   let tv: DG.TableView;
-  demoScript
+  await demoScript
     .step('Loading table', async () => {
       tv = await openMoleculeDataset('r-groups.csv');
       table = tv.dataFrame;
@@ -242,7 +249,7 @@ export async function _demoRgroupAnalysis(): Promise<void> {
     return null;
   };
 
-  demoScript
+  await demoScript
     .step('Load data', async () => {
       tv = await openMoleculeDataset('demo_files/sar_small.csv');
       table = tv.dataFrame;
@@ -251,11 +258,14 @@ export async function _demoRgroupAnalysis(): Promise<void> {
     }, {description: 'Load dataset with molecule columns', delay: 2000})
     .step('Specify scaffold', async () => {
       await delay(1000);
-      rGroupAnalysis(table.col('smiles')!);
-      await delay(2000);
+      rGroupAnalysis(table.col('smiles')!, true);
+      await delay(3000);
       sketcher = document.getElementsByClassName('d4-dialog')[0];
       sketcherInput = sketcher!.getElementsByClassName('grok-sketcher-input')[0]?.children[0] as HTMLInputElement;
       sketcherInput.value = 'O=C1CN=C(c2ccccc2N1)C3CCCCC3';
+      const progressBar = DG.TaskBarProgressIndicator.create(`Sketcher initialization in progress...`);
+      await delay(3000);
+      progressBar.close();
       sketcherInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
     }, {description: 'Open R Group Analysis viewer and enter scaffold structure', delay: 2000})
     .step('Analyse R Groups', async () => {
@@ -282,21 +292,28 @@ export async function _demoActivityCliffs(): Promise<void> {
   let table: DG.DataFrame;
   let tv: DG.TableView;
   let scatterPlot: DG.Viewer;
-  demoScript
+  await demoScript
     .step('Load data', async () => {
       tv = await openMoleculeDataset('demo_files/sar_small.csv');
       table = tv.dataFrame;
     }, {description: 'Load dataset with molecule and activity columns.', delay: 2000})
     .step('Find activity cliffs', async () => {
       const molecules = table.col('smiles')!;
-      const progressBar = DG.TaskBarProgressIndicator.create(`Activity cliffs running...`);
-      const axesNames = getEmbeddingColsNames(table);
-      const encodingFunc = DG.Func.find({name: 'getFingerprints', package: 'Chem'})[0];
-      scatterPlot = await getActivityCliffs(table, molecules, axesNames, 'Activity cliffs',
-        table.col('In-vivo Activity')!, 78, BitArrayMetricsNames.Tanimoto, DimReductionMethods.T_SNE, {},
-        DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, encodingFunc,
-        createTooltipElement, createPropPanelElement, undefined, 0.5);
-      progressBar.close();
+
+      const preprocessing = DG.Func.find({name: 'getFingerprints', package: 'Chem'})[0];
+      await activityCliffs(table, molecules, table.col('In-vivo Activity')!,
+        78, DimReductionMethods.T_SNE, BitArrayMetricsNames.Tanimoto,
+        preprocessing, {}, true);
+      tv = (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView;
+      awaitCheck(() => {
+        for (const v of tv.viewers) {
+          if (v.type === DG.VIEWER.SCATTER_PLOT) {
+            scatterPlot = v;
+            return true;
+          }
+        }
+        return false;
+      }, '', 10000)
       await delay(1000);
     }, {description: `Results are shown on a scatter plot. Each point on a scatter plot corresponds to a molecule from a dataset.
     Pairs of molecules with similarity higher than specified cutoff, are connected by lines. Marker color corresponds to molecule activity.
@@ -316,11 +333,11 @@ export async function _demoActivityCliffs(): Promise<void> {
         if (i.dataFrame.name === `${CLIFFS_DF_NAME}${activityCliffsIdx}`)
           cliffsGrid = i;
       }
-            cliffsGrid!.dataFrame.currentRowIdx = 35;
-            await delay(3000);
-            cliffsGrid!.dataFrame.currentRowIdx = 6;
-            await delay(3000);
-            cliffsGrid!.dataFrame.currentRowIdx = 5;
+      cliffsGrid!.dataFrame.currentRowIdx = 35;
+      await delay(3000);
+      cliffsGrid!.dataFrame.currentRowIdx = 6;
+      await delay(3000);
+      cliffsGrid!.dataFrame.currentRowIdx = 5;
     }, {description: `To zoom scatter plot to exact cliff, click on a row in the cliffs table. 
     Additional information about molecule pair is on the context panel. Non common fragments are highlighted in molecules.`, delay: 3000})
     .start();
@@ -413,7 +430,7 @@ export async function _demoDatabases(): Promise<void> {
   };
 
   const demoScript = new DemoScript('Demo', 'Searching chemical databases');
-  demoScript
+  await demoScript
     .step('Performing search in databases', async () => {
       const view = grok.shell.addView(DG.View.create());
       view.root.append(totalDiv);
@@ -494,7 +511,7 @@ export async function _demoDatabases3(): Promise<void> {
 
   const loadNewQuery = (id: string) => {
     ui.empty(queryPanel);
-    const queryDiv = ui.textInput(`Compound activity details for target = ${id}`, query.replace(`~id~`, id));
+    const queryDiv = ui.input.textArea(`Compound activity details for target = ${id}`, {value: query.replace(`~id~`, id)});
     queryDiv.input.style.height = '100%';
     queryPanel.append(queryDiv.root);
     const dBQuery = connection!.query('', query.replace(`~id~`, id));
@@ -572,7 +589,7 @@ LIMIT 50
   runButton.style.width = '150px';
   runButton.style.marginLeft = '80px';
 
-  const queryPanel = ui.textInput('', query);
+  const queryPanel = ui.input.textArea('', {value: query});
   queryPanel.input.style.width = '100%';
   queryPanel.input.style.minHeight = '350px';
   const gridDiv = ui.div('', {style: {position: 'relative', height: '100%'}});
@@ -734,11 +751,25 @@ export async function _demoDatabases5(): Promise<void> {
 }
 
 export async function _demoScaffoldTree(): Promise<void> {
-  const tv: DG.TableView = await openMoleculeDataset('mol1K.csv');
-  _package.files.readAsText('demo_files/scaffold_tree.layout').then((layoutString: string) => {
+  const tv = await openMoleculeDataset('mol1K.csv');
+  _package.files.readAsText('demo_files/mol1K.layout').then(async (layoutString: string) => {
     const layout = DG.ViewLayout.fromJson(layoutString);
     tv.loadLayout(layout);
+
+    const scaffoldTree = new ScaffoldTreeViewer();
+    scaffoldTree.root.classList.add('d4-viewer', 'd4-scaffold-tree');
+    const treeStr = await _package.files.readAsText('demo_files/scaffold-tree.json');
+    const table: DG.DataFrame = tv.dataFrame;
+    await grok.data.detectSemanticTypes(table);
+    
+    scaffoldTree.molCol = table.columns.bySemType(DG.SEMTYPE.MOLECULE);
+    scaffoldTree.dataFrame = table;
+    scaffoldTree.size = 'normal';
+
+    tv.dockManager.dock(scaffoldTree.root, DG.DOCK_TYPE.LEFT, null, '', 0.45);
+    await scaffoldTree.loadTreeStr(treeStr);
+
+    grok.shell.windows.showHelp = true;
+    grok.shell.windows.help.showHelp('help/datagrok/solutions/domains/chem/chem#scaffold-tree-analysis');
   });
-  grok.shell.windows.showHelp = true;
-  grok.shell.windows.help.showHelp('help/datagrok/solutions/domains/chem/chem#scaffold-tree-analysis');
 }

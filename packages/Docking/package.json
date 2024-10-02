@@ -2,23 +2,23 @@
   "name": "@datagrok/docking",
   "friendlyName": "Docking",
   "fullName": "Docking",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "author": {
     "name": "Oleksandra Serhiienko",
     "email": "oserhiienko@datagrok.ai"
   },
   "description": "Integrates Datagrok with molecular docking algorithms and tools.",
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.39.13",
-    "@datagrok-libraries/utils": "^4.2.11",
-    "datagrok-api": "^1.19.0",
+    "@datagrok-libraries/bio": "^5.42.14",
+    "@datagrok-libraries/utils": "^4.3.3",
+    "datagrok-api": "^1.20.0",
     "cash-dom": "latest",
     "dayjs": "^1.11.4",
     "rxjs": "^6.5.5",
     "wu": "latest"
   },
   "devDependencies": {
-    "@datagrok/biostructure-viewer": "^1.0.26",
+    "@datagrok/biostructure-viewer": "^1.2.0",
     "@types/wu": "latest",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4",
@@ -43,6 +43,9 @@
     "release-docking-test.datagrok.ai": "grok publish test.datagrok.ai --rebuild --release",
     "debug-docking-sandbox": "grok publish sandbox --rebuild",
     "release-docking-sandbox": "grok publish sandbox --rebuild --release",
+    "test": "grok test",
+    "test-dev": "grok test --host dev",
+    "test-local": "grok test --host localhost",
     "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/bio run build && npm run build"
   },
   "canEdit": [
@@ -51,6 +54,7 @@
   "canView": [
     "All users"
   ],
+  "skipCI": "true",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",

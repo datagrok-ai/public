@@ -30,10 +30,7 @@ You can use a radar viewer as a standalone chart or as an [inline viewer in summ
 > Developers: To add the viewer from the console, use:
  `grok.shell.tv.addViewer('Radar');` 
 
-Initially, a radar viewer picks up the first 20 numerical columns in the
-corresponding table. For each column, it forms an axis and calculates the min
-and max percentiles (5th and 95th). As row values, percentiles are also
-connected across axes forming two color-filled areas.
+Initially, a radar viewer selects the first 20 numerical columns from the corresponding table and displays up to 1000 rows, along with the current row. Percentiles (5th and 95th) can be toggled on or off and are represented as color-filled areas across the axes. Both the colors and values of these percentiles can be configured for better visualization.
 
 ## Configuring a radar viewer
 
@@ -42,13 +39,12 @@ use the **Misc** and **Color** info panels on the **Context Pane**.
 
 For example, you can:
 
-* Set the min and max percentiles by choosing their values from the dropdown
-  lists in **Min** and **Max**.
-* Toggle the display of percentiles using the **Show Min** and **Show Max**
-  checkboxes.
-* Set the background color for the percentiles' areas using the **Background Min
-  Color** and **Background Max Color** settings.
-* Toggle value labels using the **Show values** checkbox.
+- Set the min and max percentiles by selecting their values from the **Min** and **Max** dropdown lists.
+- Toggle the display of percentiles using the **Show Min** and **Show Max** checkboxes.
+- Set the background color for the percentiles' areas using the **Background Min Color** and **Background Max Color** options.
+- Toggle value labels on or off with the **Show values** checkbox.
+- Configure the color for the current row using the **Current Row Color** setting, as well as **Mouse Over Row Color** for highlighting rows under the cursor.
+- Control the visibility of key elements with the **Show Current Row**, **Show Mouse Over Row**, and **Show Mouse Over Row Group** options.
 
 ## Interaction with other viewers
 

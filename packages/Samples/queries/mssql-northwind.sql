@@ -6,7 +6,7 @@ select * from orders;
 
 --name: MSSQLByInt
 --connection: MSSQLNorthwind
---input: int orderid = 10330
+--input: int orderid = 10
 --meta.testExpectedRows: 1
 select * from orders where orderid = @orderid;
 --end
@@ -41,8 +41,8 @@ SELECT * FROM orders WHERE @shipCity(shipCity);
 
 --name: MSSQLByDatetime
 --connection: MSSQLNorthwind
---input: datetime requiredDate
-SELECT * FROM orders WHERE requiredDate >= @requiredDate;
+--input: string requiredDate = "after 7/1/1997" {pattern: datetime}
+SELECT * FROM orders WHERE @requiredDate(requiredDate);
 --end
 
 --name: MSSQLByStringPatternDatetime
@@ -54,23 +54,23 @@ SELECT * FROM orders WHERE @orderDate(orderDate);
 --name: MSSQLOrders
 --friendlyName: Orders
 --connection: MSSQLNorthwind
---input: int employeeId = 5
+--input: int employeeId = 1
 --input: string shipVia = "=3" {pattern: int}
---input: double freight = 10.0
---input: string shipCountry = "France" {choices: Query("SELECT DISTINCT shipCountry FROM Orders")}
---input: string shipCity = "starts with r" {pattern: string}
+--input: string freight = ">115.0" {pattern: double}
+--input: string shipCountry = "USA" {choices: Query("SELECT DISTINCT shipCountry FROM Orders")}
+--input: string shipCity = "starts with A" {pattern: string}
 --input: bool freightLess1000 = true
---input: datetime requiredDate = "1/1/1995"
+--input: string requiredDate = "before 1/1/1997" {pattern: datetime}
 --input: string orderDate = "after 1/1/1995" {pattern: datetime}
 
-SELECT * FROM Orders WHERE (employeeId = @employeeId)
-    AND (freight >= @freight)
+SELECT * FROM Orders where (employeeId = @employeeId)
+                       AND @freight(freight)
     AND @shipVia(shipVia)
-    AND ((freight < 1000) OR @freightLess1000 = 0)
-    AND (shipCountry = @shipCountry)
+   	AND ((freight < 1000) OR @freightLess1000 = 0)
+    AND shipCountry = @shipCountry
     AND @shipCity(shipCity)
     AND @orderDate(orderDate)
-    AND (requiredDate >= @requiredDate)
+    AND @requiredDate(requiredDate)
 --end
 
 --name: MSSQLProducts

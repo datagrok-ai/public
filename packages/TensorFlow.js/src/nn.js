@@ -1,6 +1,6 @@
 import * as tf from '@tensorflow/tfjs';
 import { processFeatures, processLables, saveModel } from './utils';
-export async function prepareAndTrainNN(dataframe, predict_column, activationFunc = 'relu', hiddenLayersSizes = '128,128', initializer = 'randomUniform', constantValue = 0.5, normalMean = 0.5, normalStddev = 0.1, minValue = 0.0, maxValue = 1.0, varianceScale = 0.5, varianceFanningMode = "fanIn", varianceDistribution = "normal", hiddenRepresentationNormalization = "batchNorm", normalizationAxis = -1, normalizationMomentum = 0.99, normalizationEpsilon = 0.001, normalizationCenter = true, normalizationScale = true, droputRate = 0.2, regularizationL1 = 0.01, regularizationL2 = 0.01, kernelRegularization = true, biasRegularization = true, activityRegularization = false, finalActivation = 'relu', optimizer = 'Adam', learningRate = 0.001, lossFunc = 'meanSquaredError', metrics = 'MSE', batchSize = 1, epochs = 1, validationSplit, seed = 42, monitor, minDelta, patience, mode, baseline) {
+export async function prepareAndTrainNN(dataframe, predictColumn, activationFunc = 'relu', hiddenLayersSizes = '128,128', initializer = 'randomUniform', constantValue = 0.5, normalMean = 0.5, normalStddev = 0.1, minValue = 0.0, maxValue = 1.0, varianceScale = 0.5, varianceFanningMode = "fanIn", varianceDistribution = "normal", hiddenRepresentationNormalization = "batchNorm", normalizationAxis = -1, normalizationMomentum = 0.99, normalizationEpsilon = 0.001, normalizationCenter = true, normalizationScale = true, droputRate = 0.2, regularizationL1 = 0.01, regularizationL2 = 0.01, kernelRegularization = true, biasRegularization = true, activityRegularization = false, finalActivation = 'relu', optimizer = 'Adam', learningRate = 0.001, lossFunc = 'meanSquaredError', metrics = 'MSE', batchSize = 1, epochs = 1, validationSplit, seed = 42, monitor, minDelta, patience, mode, baseline) {
     // //TODO: Do it all with Danfo.js unless there is a better DataFrame interface
     // let trainX_df: DG.DataFrame = DG.DataFrame.fromColumns([]);
     // let trainY_df: DG.Column;
@@ -12,9 +12,8 @@ export async function prepareAndTrainNN(dataframe, predict_column, activationFun
     //   trainX_df.columns.add(DG.Column.fromList(value.type, key, value.data));
     // }
     // Encode categorical data
-    const dfColumns = dataframe.columns.names();
-    const trainX_df = dataframe.clone(null, dfColumns.filter((col) => col !== predict_column));
-    const trainY_df = dataframe.getCol(predict_column);
+    const trainX_df = dataframe;
+    const trainY_df = predictColumn;
     let trainX = processFeatures(trainX_df);
     let trainY = processLables(trainY_df);
     const hiddenLayersSizesPrep = hiddenLayersSizes.split(",").map(val => Number.parseInt(val));

@@ -106,10 +106,10 @@ class StrandTerminalModificationControls {
 
   private createInputForTerminus(strand: StrandType, terminus: TERMINUS): StringInput {
     const initialValue = this.eventBus.getTerminalModifications()[strand][terminus];
-    const input = ui.textInput(terminus, initialValue);
+    const input = ui.input.textArea(terminus, {value: initialValue});
     this.applyStylingToInput(input);
 
-    input.onInput(() => {
+    input.onInput.subscribe(() => {
       const newValue = input.value;
       if (newValue === null)
         return;

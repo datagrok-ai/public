@@ -9,7 +9,7 @@
 #input: double sampleRate = 256.0 [Signal sample rate, in Hz]
 #input: int octaves = 8 [Octaves in scale values]
 #input: int voices = 16 [Voices in scale values]
-#input: bool removeDc = TRUE [Flag to force DC component removal]
+#input: bool removeDc = true [Flag to force DC component removal]
 #output: graphics [Scalogram plot]
 
 require(Rwave)

@@ -74,12 +74,12 @@ export class PatternEditControlsManager {
 
 
   private createAntisenseStrandToggle(): HTMLElement {
-    const toggleAntisenseStrand = ui.switchInput(
+    const toggleAntisenseStrand = ui.input.toggle(
       `${STRAND_LABEL[STRAND.ANTISENSE]} strand`,
-      this.eventBus.isAntisenseStrandActive()
+      {value: this.eventBus.isAntisenseStrandActive()}
     );
 
-    toggleAntisenseStrand.onInput(
+    toggleAntisenseStrand.onInput.subscribe(
       () => this.eventBus.toggleAntisenseStrand(toggleAntisenseStrand.value)
     );
 
@@ -96,11 +96,8 @@ export class PatternEditControlsManager {
     const createStrandLengthInput = (strand: StrandType) => {
       const sequenceLength = this.eventBus.getNucleotideSequences()[strand].length;
 
-      const input = ui.intInput(
-        `${STRAND_LABEL[strand]} length`,
-        sequenceLength
-      );
-      input.onInput(() => updateStrandLengthInputs(strand, input));
+      const input = ui.input.int(`${STRAND_LABEL[strand]} length`, {value: sequenceLength});
+      input.onInput.subscribe(() => updateStrandLengthInputs(strand, input));
 
       this.eventBus.nucleotideSequencesChanged$.subscribe(() => {
         input.value = this.eventBus.getNucleotideSequences()[strand].length;
@@ -142,9 +139,9 @@ export class PatternEditControlsManager {
       .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
     const defaultNucleotideBase = this.dataManager.fetchDefaultNucleobase();
 
-    const sequenceBaseInput = ui.choiceInput('Sequence basis', defaultNucleotideBase, availableNucleoBases);
+    const sequenceBaseInput = ui.input.choice('Sequence basis', {value: defaultNucleotideBase, items: availableNucleoBases});
 
-    sequenceBaseInput.onInput(() => this.eventBus.replaceSequenceBase(sequenceBaseInput.value!));
+    sequenceBaseInput.onInput.subscribe(() => this.eventBus.replaceSequenceBase(sequenceBaseInput.value!));
 
     this.eventBus.nucleotideSequencesChanged$.subscribe(() => {
       sequenceBaseInput.value = this.eventBus.getSequenceBase();
@@ -155,14 +152,11 @@ export class PatternEditControlsManager {
   }
 
   private createPatternCommentInput(): StringInput {
-    const patternCommentInput = ui.textInput(
-      'Comment',
-      this.eventBus.getComment()
-    );
+    const patternCommentInput = ui.input.textArea('Comment', {value: this.eventBus.getComment()});
 
     $(patternCommentInput.root).addClass('st-pattern-text-input');
 
-    patternCommentInput.onInput(
+    patternCommentInput.onInput.subscribe(
       () => this.eventBus.updateComment(patternCommentInput.value!)
     );
 
@@ -174,14 +168,11 @@ export class PatternEditControlsManager {
   }
 
   private createPatternNameInputBlock(): HTMLElement {
-    const patternNameInput = ui.textInput(
-      'Pattern name',
-      this.eventBus.getPatternName()
-    );
+    const patternNameInput = ui.input.textArea('Pattern name', {value: this.eventBus.getPatternName()});
 
     $(patternNameInput.root).addClass('st-pattern-text-input');
 
-    patternNameInput.onInput(
+    patternNameInput.onInput.subscribe(
       () => this.eventBus.updatePatternName(patternNameInput.value)
     );
     this.eventBus.patternLoaded$.subscribe(() => {

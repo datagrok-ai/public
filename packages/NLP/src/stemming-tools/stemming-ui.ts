@@ -40,17 +40,13 @@ export function modifyMetric(df: DG.DataFrame): void {
     }
   };
 
-  const colsInput = ui.columnsInput('Features', df, onColumnsChanged, {checked: initCheckedCols});
+  const colsInput = ui.input.columns('Features', {value: df.columns.byNames(initCheckedCols), table: df, onValueChanged: (value) => onColumnsChanged(value)});
   colsInput.setTooltip('Features used in computing similarity measure.');
   dlg.add(ui.h3('Source'));
   dlg.add(colsInput);
 
-  const distInput = ui.choiceInput(
-    'Distance',
-    stemCash.aggrDistance,
-    DIST_TYPES_ARR,
-    (dist: DISTANCE_TYPE) => {stemCash.aggrDistance = dist;},
-  );
+  const distInput = ui.input.choice('Distance', {value: stemCash.aggrDistance, items: DIST_TYPES_ARR,
+    onValueChanged: (value) => {stemCash.aggrDistance = value;}});
 
   distInput.setTooltip('Type of distance between elements with the specified features.');
   dlg.add(distInput);
@@ -80,20 +76,22 @@ export function modifyMetric(df: DG.DataFrame): void {
     colsData.set(name, colData);
 
     const choices = getMetricTypesChoicesList(col);
-    const metricInput = ui.choiceInput(`${name}:`, colData.metric.type as string, choices, (str: string) => {
-      const val = colsData.get(name);
-      //@ts-ignore
-      val?.metric.type = str;
-      colsData.set(name, val!);
-    });
+    const metricInput = ui.input.choice(`${name}:`, {value: colData.metric.type as string, items: choices,
+      onValueChanged: (value) => {
+        const val = colsData.get(name);
+        //@ts-ignore
+        val?.metric.type = value;
+        colsData.set(name, val!);
+      }});
     metricInput.setTooltip(`Type of metric between the '${name}' feature values.`);
 
-    const weightInput = ui.floatInput('metric with the weight', colData.metric.weight, (w: number) => {
-      const val = colsData.get(name);
-      //@ts-ignore
-      val?.metric.weight = w;
-      colsData.set(name, val!);
-    });
+    const weightInput = ui.input.float('metric with the weight', {value: colData.metric.weight,
+      onValueChanged: (value) => {
+        const val = colsData.get(name);
+        //@ts-ignore
+        val?.metric.weight = value;
+        colsData.set(name, val!);
+      }});
     weightInput.setTooltip(`Weight coefficient of the '${name}' feature metric.`);
 
     const inputs = {metricInput: metricInput, weightInput: weightInput};

@@ -27,21 +27,22 @@ export async function hierarchicalClusteringDialog(): Promise<void> {
   };
 
   const onTableInputChanged = (table: DG.DataFrame) => {
-    const newColInput = ui.columnsInput('Features', table, onColNamesChange, {available: availableColNames(table)});
+    const newColInput = ui.input.columns('Features', {table: table,
+      onValueChanged: (value) => onColNamesChange(value), available: availableColNames(table)});
     ui.empty(columnsInputDiv);
     columnsInputDiv.appendChild(newColInput.root);
     currentTableView = table;
     currentSelectedColNames = [];
   };
 
-  const tableInput = ui.tableInput('Table', currentTableView, grok.shell.tables, onTableInputChanged);
-  const columnsInput = ui.columnsInput('Features', currentTableView!,
-    onColNamesChange,
-    {available: availableColNames(currentTableView!)});
+  const tableInput = ui.input.table('Table', {value: currentTableView!, items: grok.shell.tables,
+    onValueChanged: (value) => onTableInputChanged(value)});
+  const columnsInput = ui.input.columns('Features', {table: currentTableView!,
+    onValueChanged: (value) => onColNamesChange(value), available: availableColNames(currentTableView!)});
   const columnsInputDiv = ui.div([columnsInput]);
 
-  const distanceInput = ui.choiceInput('Distance', DistanceMetric.Euclidean, Object.values(DistanceMetric));
-  const linkageInput = ui.choiceInput('Linkage', LinkageMethod.Ward, Object.values(LinkageMethod));
+  const distanceInput = ui.input.choice('Distance', {value: DistanceMetric.Euclidean, items: Object.values(DistanceMetric)});
+  const linkageInput = ui.input.choice('Linkage', {value: LinkageMethod.Ward, items: Object.values(LinkageMethod)});
 
   const verticalDiv = ui.divV([
     tableInput.root,
@@ -71,6 +72,7 @@ export async function hierarchicalClusteringUI(
   distance: DistanceMetric = DistanceMetric.Euclidean,
   linkage: string,
   neighborWidth: number = 300,
+  options?: {tableView?: DG.TableView}
 ): Promise<void> {
   const linkageCode = Object.values(LinkageMethod).findIndex((method) => method === linkage);
 
@@ -79,7 +81,7 @@ export async function hierarchicalClusteringUI(
     hierarchicalClusteringFilterDfForNulls(df, colNameSet);
   const th: ITreeHelper = new TreeHelper();
 
-  let tv: DG.TableView = grok.shell.getTableView(df.name);
+  let tv: DG.TableView = options ? options.tableView ?? grok.shell.getTableView(df.name) : grok.shell.getTableView(df.name);
   if (filteredDf.rowCount != df.rowCount) {
     grok.shell.warning('Hierarchical clustering analysis on data filtered out for nulls.');
     tv = grok.shell.addTableView(filteredDf);

@@ -17,7 +17,7 @@ const benchmarkDatasetSizes = [5, 50, 100, 200];
 category('Benchmarks: Mutation Cliffs', () => {
   for (const size of benchmarkDatasetSizes)
     test(`${size}k sequences`, async () => await mutationCliffsBenchmark(size), {timeout: 300000});
-});
+}, {benchmarks: true});
 
 category('Benchmarks: Cluster stats', () => {
   for (const size of benchmarkDatasetSizes) {
@@ -38,7 +38,7 @@ category('Benchmarks: Cluster stats', () => {
         () => calculateClusterStatistics(df, clustersColumnName, [], scaledActivity));
     }, {timeout: 100000});
   }
-});
+}, {benchmarks: true});
 
 category('Benchmarks: Monomer-Position stats', () => {
   for (const size of benchmarkDatasetSizes) {
@@ -64,7 +64,7 @@ category('Benchmarks: Monomer-Position stats', () => {
         () => calculateMonomerPositionStatistics(scaledActivity, DG.BitSet.create(0), positionCols));
     }, {timeout: 100000});
   }
-});
+}, {benchmarks: true});
 
 category('Benchmarks: Analysis start', () => {
   for (const size of benchmarkDatasetSizes) {
@@ -89,7 +89,7 @@ category('Benchmarks: Analysis start', () => {
       });
     }, {timeout: 100000});
   }
-});
+}, {benchmarks: true});
 
 async function mutationCliffsBenchmark(size: number): Promise<void> {
   if (!DG.Test.isInBenchmark)

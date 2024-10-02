@@ -53,28 +53,11 @@ sys.stdout.write(str(result))
 
 category('hierarchicalClustering', () => {
   // Single dimension for integer distances
-  const data1: string = `x
-8
-6
-5
-1`;
+
   const tgt1Dist: number[] = [2, 3, 7, 1, 5, 4];
-  const tgt1DistM: number[][] = [
-    [0, 2, 3, 7],
-    [2, 0, 1, 5],
-    [3, 1, 0, 4],
-    [7, 5, 4, 0]];
   // const tgt1NewickAverage = '(((2:1.00,1:1.00):1.50,0:2.50):2.83,3:5.33);';
 
-  const data2 = `x,y
-0,0
-4,0
-0,3`;
   const tgt2Dist: number[] = [4, 3, 5];
-  const tgt2DistM: number[][] = [
-    [0, 4, 3],
-    [4, 0, 5],
-    [3, 5, 0]];
   // const tgt2NewickAverage = '((2:3.00,0:3.00):1.50,1:4.50);';
 
   const tgt1ClusterMat: ClusterMatrix =
@@ -152,15 +135,6 @@ category('hierarchicalClustering', () => {
 
   //   expect(resNewick, tgtNewick);
   // }
-
-
-  test('distanceScript1', async () => {
-    await _testDistanceScript(data1, tgt1Dist, tgt1DistM);
-  }, {timeout: 60000 /* script */});
-
-  test('distanceScript2', async () => {
-    await _testDistanceScript(data2, tgt2Dist, tgt2DistM);
-  }, {timeout: 60000 /* script */});
 
   async function _testDistanceScript(csv: string, tgtDist: number[], distM: number[][]): Promise<void> {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);

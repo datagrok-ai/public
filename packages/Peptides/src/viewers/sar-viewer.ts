@@ -55,11 +55,20 @@ export enum SAR_PROPERTIES {
   COLUMNS = 'columns',
   AGGREGATION = 'aggregation',
   ACTIVITY_TARGET = 'activityTarget',
+  VALUE_INVARIANT_MAP = 'value',
+  AGGREGATION_INVARIANT_MAP_VALUE = 'valueAggregation',
 }
 
 export enum MONOMER_POSITION_PROPERTIES {
   COLOR = 'color',
   COLOR_AGGREGATION = 'colorAggregation',
+  CUSTOM_COLOR_RANGE = 'customColorRange',
+  MIN_COLOR_VALUE = 'minColorValue',
+  MAX_COLOR_VALUE = 'maxColorValue',
+  LOWER_BOUND_COLOR = 'lowerBoundColor',
+  MIDDLE_COLOR = 'middleColor',
+  UPPER_BOUND_COLOR = 'upperBoundColor',
+  LOG_SCALE_COLOR = 'logScaleColor',
 }
 
 export enum PROPERTY_CATEGORIES {
@@ -70,7 +79,7 @@ export enum PROPERTY_CATEGORIES {
 }
 
 const MUTATION_CLIFFS_CELL_WIDTH = 40;
-const AAR_CELL_WIDTH = 30;
+const AAR_CELL_WIDTH = 40;
 
 export interface ISARViewer {
   sequenceColumnName: string;
@@ -90,12 +99,16 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
   columns: string[];
   aggregation: string;
   targetColumnName: string;
-  targetCategory: string;
   minActivityDelta: number;
   maxMutations: number;
   _scaledActivityColumn: DG.Column | null = null;
   doRender: boolean = true;
   activityTarget: C.ACTIVITY_TARGET;
+  targetColumnInput?: DG.InputBase<DG.Column | null>;
+  targetCategoryInput: DG.ChoiceInput<string | null | undefined>;
+  valueColumnName: string;
+  valueAggregation: DG.AGG;
+
   mutationCliffsDebouncer: (
     activityArray: type.RawData, monomerInfoArray: type.RawColumn[], options?: MutationCliffsOptions
     ) => Promise<type.MutationCliffs>;
@@ -114,23 +127,46 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
     this.activityTarget = this.string(SAR_PROPERTIES.ACTIVITY_TARGET, C.ACTIVITY_TARGET.HIGH,
       {category: PROPERTY_CATEGORIES.GENERAL, choices: Object.values(C.ACTIVITY_TARGET), nullable: false},
     ) as C.ACTIVITY_TARGET;
-    // Mutation Cliffs properties
-    this.targetColumnName = this.column(SAR_PROPERTIES.TARGET, {category: PROPERTY_CATEGORIES.MUTATION_CLIFFS});
-    this.targetCategory = this.string(SAR_PROPERTIES.TARGET_CATEGORY, null,
-      {category: PROPERTY_CATEGORIES.MUTATION_CLIFFS, choices: []});
+    // Mutation Cliffs/invariant map properties
+    // hide it and make it editable through the code
+    this.targetColumnName = this.column(SAR_PROPERTIES.TARGET, {
+      category: PROPERTY_CATEGORIES.GENERAL, nullable: true, columnTypeFilter: 'categorical', userEditable: true});
     this.minActivityDelta = this.float(SAR_PROPERTIES.MIN_ACTIVITY_DELTA, 0,
       {category: PROPERTY_CATEGORIES.MUTATION_CLIFFS, min: 0, max: 100});
     this.maxMutations = this.int(SAR_PROPERTIES.MAX_MUTATIONS, 1,
       {category: PROPERTY_CATEGORIES.MUTATION_CLIFFS, min: 1, max: 20});
-
     this.columns = this.columnList(SAR_PROPERTIES.COLUMNS, [], {category: PROPERTY_CATEGORIES.AGGREGATION});
     this.aggregation = this.string(SAR_PROPERTIES.AGGREGATION, DG.AGG.AVG,
       {category: PROPERTY_CATEGORIES.AGGREGATION, choices: C.AGGREGATION_TYPES});
+    this.valueColumnName = this.column(SAR_PROPERTIES.VALUE_INVARIANT_MAP, {category: PROPERTY_CATEGORIES.INVARIANT_MAP, userEditable: true,
+      nullable: false, columnTypeFilter: 'numerical'});
+    this.valueAggregation = this.string(SAR_PROPERTIES.AGGREGATION_INVARIANT_MAP_VALUE, DG.AGG.TOTAL_COUNT, {
+      category: PROPERTY_CATEGORIES.INVARIANT_MAP, choices: C.AGGREGATION_TYPES, userEditable: true, nullable: false}) as DG.AGG;
 
     this.mutationCliffsDebouncer = debounce(
       async (activityArray: type.RawData, monomerInfoArray: type.RawColumn[], options?: MutationCliffsOptions) => {
         return await findMutations(activityArray, monomerInfoArray, options);
       });
+
+    this.targetCategoryInput = ui.input.choice('Category', {value: null, items: [], nullable: true,
+      onValueChanged: () => {
+        this._mutationCliffs = null;
+        this._mutationCliffStats = null;
+        this._mutationCliffsSelection = null;
+        this._invariantMapSelection = null;
+        this.doRender = false;
+        this._monomerPositionStats = null;
+        this.positionColumns?.forEach((col) => {
+          col.temp[C.TAGS.INVARIANT_MAP_COLOR_CACHE] = null;
+        });
+        if (this.sequenceColumnName && this.activityColumnName)
+          this.calculateMutationCliffs().then((mc) => {this.mutationCliffs = mc.cliffs; this.cliffStats = mc.cliffStats;});
+        this.viewerGrid.invalidate();
+      },
+    });
+    this.targetCategoryInput.root.style.display = 'none';
+    this.targetCategoryInput.root.style.width = '50%';
+    this.targetCategoryInput.root.style.marginLeft = '8px';
   }
 
   _viewerGrid: DG.Grid | null = null;
@@ -187,7 +223,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
     else if (this instanceof MonomerPosition)
       this._positionColumns = getSharedPositionColumns(VIEWER_TYPE.MOST_POTENT_RESIDUES);
     else if (this instanceof MostPotentResidues)
-      this._positionColumns = getSharedPositionColumns(VIEWER_TYPE.MONOMER_POSITION);
+      this._positionColumns = getSharedPositionColumns(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP);
 
 
     this._positionColumns ??= getSharedPositionColumns(VIEWER_TYPE.LOGO_SUMMARY_TABLE) ??
@@ -210,13 +246,20 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
     const isMonomerPositionStatsEqual = (other: SARViewer | PeptidesSettings | null): boolean =>
       this.sequenceColumnName === other?.sequenceColumnName &&
       this.activityColumnName === other?.activityColumnName &&
-      this.activityScaling === other?.activityScaling;
+      this.activityScaling === other?.activityScaling &&
+      ((other instanceof SARViewer && this.targetColumnName == other?.targetColumnName &&
+          this.targetCategoryInput?.value === other?.targetCategoryInput?.value) ||
+        (!(other instanceof SARViewer) && (this.targetColumnName == null || this.targetCategoryInput?.value == null))
+      ) &&
+      ((other instanceof SARViewer && this.valueColumnName == other?.valueColumnName && this.valueAggregation == other?.valueAggregation) ||
+        (!(other instanceof SARViewer) &&
+        (!this.valueColumnName || !this.valueAggregation || this.valueAggregation == DG.AGG.VALUE_COUNT || this.valueAggregation == DG.AGG.TOTAL_COUNT))
+      );
 
     const getSharedStats = (viewerType: VIEWER_TYPE): MonomerPositionStats | null => {
       const viewer = this.model.findViewer(viewerType) as SARViewer | null;
       if (isMonomerPositionStatsEqual(viewer))
         return viewer!._monomerPositionStats;
-
 
       return null;
     };
@@ -226,17 +269,25 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
     else if (this instanceof MonomerPosition)
       this._monomerPositionStats = getSharedStats(VIEWER_TYPE.MOST_POTENT_RESIDUES);
     else if (this instanceof MostPotentResidues)
-      this._monomerPositionStats = getSharedStats(VIEWER_TYPE.MONOMER_POSITION);
+      this._monomerPositionStats = getSharedStats(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP);
 
+
+    const targetCol = this.targetColumnName ? this.dataFrame.col(this.targetColumnName) : null;
+    const targetCategory = this.targetCategoryInput.value;
+    const invariantMapValueCol = this.dataFrame.col(this.valueColumnName);
+    const invariantMapValueAgg = this.valueAggregation;
 
     this._monomerPositionStats ??= calculateMonomerPositionStatistics(this.getScaledActivityColumn(),
-      this.dataFrame.filter, this.positionColumns);
+      this.dataFrame.filter, this.positionColumns,
+      {target: (targetCol && targetCategory) ? {col: targetCol, cat: targetCategory} : undefined,
+        aggValue: (invariantMapValueAgg && invariantMapValueCol) ? {col: invariantMapValueCol, type: invariantMapValueAgg} : undefined,
+      });
     return this._monomerPositionStats;
   }
 
   _mutationCliffs: type.MutationCliffs | null = null;
   _mutationCliffStats: type.MutationCliffStats | null = null;
-
+  _invariantMapSelection: type.Selection | null = null;
   /**
    * Gets mutation cliffs. If mutation cliffs are not attached to the viewer, it tries to get them from other viewers,
    * or calculates its own.
@@ -252,7 +303,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
       v1.activityColumnName === v2.activityColumnName &&
       v1.activityScaling === v2.activityScaling &&
       v1.targetColumnName === v2?.targetColumnName &&
-      v1.targetCategory === v2?.targetCategory &&
+      v1.targetCategoryInput?.value === v2?.targetCategoryInput?.value &&
       v1.minActivityDelta === v2?.minActivityDelta &&
       v1.maxMutations === v2?.maxMutations;
 
@@ -268,7 +319,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
     if (this instanceof MonomerPosition)
       this._mutationCliffs = getSharedMutationCliffs(VIEWER_TYPE.MOST_POTENT_RESIDUES);
     else if (this instanceof MostPotentResidues)
-      this._mutationCliffs = getSharedMutationCliffs(VIEWER_TYPE.MONOMER_POSITION);
+      this._mutationCliffs = getSharedMutationCliffs(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP);
 
 
     return this._mutationCliffs;
@@ -319,10 +370,10 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
     this._mutationCliffsSelection = selection;
     const tagSuffix = this instanceof MonomerPosition ? C.SUFFIXES.MP : C.SUFFIXES.MPR;
     this.dataFrame.setTag(`${tagSuffix}${C.TAGS.MUTATION_CLIFFS_SELECTION}`, JSON.stringify(selection));
-    this.model.fireBitsetChanged(this instanceof MonomerPosition ? VIEWER_TYPE.MONOMER_POSITION :
+    this.model.fireBitsetChanged(this instanceof MonomerPosition ? VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP :
       VIEWER_TYPE.MOST_POTENT_RESIDUES);
 
-    const mpViewer = this.model.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
+    const mpViewer = this.model.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition | null;
     mpViewer?.viewerGrid.invalidate();
     const mprViewer = this.model.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
     mprViewer?.viewerGrid.invalidate();
@@ -369,12 +420,25 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
       this._mutationCliffsSelection = modifySelection(this.mutationCliffsSelection, monomerPosition, options);
   }
 
+  private resetTargetCategoryValue(): void {
+    const colName = this.targetColumnName;
+    const col = this.dataFrame.col(colName);
+    this.targetCategoryInput.items = col?.categories ?? [];
+    this.targetCategoryInput.value = null;
+    if (!colName)
+      this.targetCategoryInput.root.style.display = 'none';
+    else
+      this.targetCategoryInput.root.style.display = 'flex';
+  }
+
   /**
    * Processes property changes.
    * @param property - changed property.
    */
   onPropertyChanged(property: DG.Property): void {
     super.onPropertyChanged(property);
+
+
     this.doRender = true;
     switch (property.name) {
     case `${SAR_PROPERTIES.SEQUENCE}${COLUMN_NAME}`:
@@ -394,8 +458,12 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
       this._viewerGrid = null;
       this._scaledActivityColumn = null;
       break;
-    case `${SAR_PROPERTIES.TARGET}${COLUMN_NAME}`:
-    case SAR_PROPERTIES.TARGET_CATEGORY:
+    case `${SAR_PROPERTIES.VALUE_INVARIANT_MAP}${COLUMN_NAME}`:
+    case SAR_PROPERTIES.AGGREGATION_INVARIANT_MAP_VALUE:
+      this._monomerPositionStats = null;
+      this._viewerGrid = null;
+      this._invariantMapSelection = null;
+      break;
     case SAR_PROPERTIES.MIN_ACTIVITY_DELTA:
     case SAR_PROPERTIES.MAX_MUTATIONS:
       this._mutationCliffs = null;
@@ -415,6 +483,12 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
     }
     if (this._mutationCliffs === null && this.sequenceColumnName && this.activityColumnName)
       this.calculateMutationCliffs().then((mc) => {this.mutationCliffs = mc.cliffs; this.cliffStats = mc.cliffStats;});
+
+    // do this last to avoid recalculating mutation cliffs
+    if (property.name === `${SAR_PROPERTIES.TARGET}${COLUMN_NAME}` && this.targetColumnInput) {
+      this.targetColumnInput.value = this.targetColumnName ? this.dataFrame.col(this.targetColumnName) : null;
+      this.resetTargetCategoryValue();
+    }
   }
 
   /**
@@ -422,8 +496,9 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
    * @return - map of columns and aggregations.
    */
   getAggregationColumns(): AggregationColumns {
-    return Object.fromEntries(
-      this.columns.map((colName) => [colName, this.aggregation] as [string, DG.AGG]));
+    return Object.fromEntries(this.columns.map((colName) => [colName, this.aggregation] as [string, DG.AGG])
+      .filter(([colName, _]) => this.model.df.columns.contains(colName) &&
+        this.model.df.col(colName)!.matches('numerical')));
   }
 
   /**
@@ -432,7 +507,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
    */
   getTotalViewerAggColumns(): [string, DG.AggregationType][] {
     const aggrCols = this.getAggregationColumns();
-    return getTotalAggColumns(this.columns, aggrCols, this.model?.settings?.columns);
+    return getTotalAggColumns(this.model.df, this.columns, aggrCols, this.model?.settings?.columns);
   }
 
   /** Creates viewer grid. */
@@ -453,6 +528,8 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
       this.getProperty(`${SAR_PROPERTIES.SEQUENCE}${COLUMN_NAME}`)
         ?.set(this, this.dataFrame.columns.bySemType(DG.SEMTYPE.MACROMOLECULE)!.name);
       this.getProperty(`${SAR_PROPERTIES.ACTIVITY}${COLUMN_NAME}`)
+        ?.set(this, wu(this.dataFrame.columns.numerical).next().value.name);
+      this.getProperty(`${SAR_PROPERTIES.VALUE_INVARIANT_MAP}${COLUMN_NAME}`)
         ?.set(this, wu(this.dataFrame.columns.numerical).next().value.name);
       if (this.mutationCliffs === null && this.sequenceColumnName && this.activityColumnName)
         this.calculateMutationCliffs().then((mc) => {this.mutationCliffs = mc.cliffs; this.cliffStats = mc.cliffStats;});
@@ -475,7 +552,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
 
     const options: MutationCliffsOptions = {
       maxMutations: this.maxMutations, minActivityDelta: this.minActivityDelta,
-      targetCol, currentTarget: this.targetCategory,
+      targetCol, currentTarget: this.targetCategoryInput.value,
     };
     const activityRawData = scaledActivityCol.getRawData();
 
@@ -490,16 +567,29 @@ export class MonomerPosition extends SARViewer {
   colorColumnName: string;
   colorAggregation: string;
   currentGridCell: DG.GridCell | null = null;
-
+  customColorRange: boolean = false;
+  minColorValue: number = 0;
+  maxColorValue: number = 0;
+  lowerBoundColor: number;
+  middleColor: number;
+  upperBoundColor: number;
+  logScaleColor: boolean = false;
   /** Sets MonomerPosition properties. */
   constructor() {
     super();
 
-    const colorChoices = wu(grok.shell.t.columns.numerical).toArray().map((col) => col.name);
     this.colorColumnName = this.column(MONOMER_POSITION_PROPERTIES.COLOR,
-      {category: PROPERTY_CATEGORIES.INVARIANT_MAP, choices: colorChoices, nullable: false});
+      {category: PROPERTY_CATEGORIES.INVARIANT_MAP, nullable: false, columnTypeFilter: 'numerical'});
     this.colorAggregation = this.string(MONOMER_POSITION_PROPERTIES.COLOR_AGGREGATION, DG.AGG.AVG,
       {category: PROPERTY_CATEGORIES.INVARIANT_MAP, choices: C.AGGREGATION_TYPES});
+    this.lowerBoundColor = this.int(MONOMER_POSITION_PROPERTIES.LOWER_BOUND_COLOR, 0xFF0000FF, {category: PROPERTY_CATEGORIES.INVARIANT_MAP, editor: 'color'});
+    this.middleColor = this.int(MONOMER_POSITION_PROPERTIES.MIDDLE_COLOR, 0xFFFFFFFF, {category: PROPERTY_CATEGORIES.INVARIANT_MAP, editor: 'color'});
+    this.upperBoundColor = this.int(MONOMER_POSITION_PROPERTIES.UPPER_BOUND_COLOR, 0xFFFF0000, {category: PROPERTY_CATEGORIES.INVARIANT_MAP, editor: 'color'});
+
+    this.logScaleColor = this.bool(MONOMER_POSITION_PROPERTIES.LOG_SCALE_COLOR, false, {category: PROPERTY_CATEGORIES.INVARIANT_MAP});
+    this.customColorRange = this.bool(MONOMER_POSITION_PROPERTIES.CUSTOM_COLOR_RANGE, false, {category: PROPERTY_CATEGORIES.INVARIANT_MAP});
+    this.minColorValue = this.float(MONOMER_POSITION_PROPERTIES.MIN_COLOR_VALUE, 0, {category: PROPERTY_CATEGORIES.INVARIANT_MAP});
+    this.maxColorValue = this.float(MONOMER_POSITION_PROPERTIES.MAX_COLOR_VALUE, 0, {category: PROPERTY_CATEGORIES.INVARIANT_MAP});
   }
 
   /**
@@ -507,7 +597,7 @@ export class MonomerPosition extends SARViewer {
    * @return - viewer name.
    */
   get name(): string {
-    return VIEWER_TYPE.MONOMER_POSITION;
+    return VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP;
   }
 
   /**
@@ -529,8 +619,6 @@ export class MonomerPosition extends SARViewer {
     // setTimeout(() => this.viewerGrid.invalidate(), 300);
   }
 
-  _invariantMapSelection: type.Selection | null = null;
-
   /**
    * Gets invariant map selection. Initializes it if it is null.
    * @return - invariant map selection.
@@ -549,7 +637,7 @@ export class MonomerPosition extends SARViewer {
   set invariantMapSelection(selection: type.Selection) {
     this._invariantMapSelection = selection;
     this.dataFrame.setTag(`${C.SUFFIXES.MP}${C.TAGS.INVARIANT_MAP_SELECTION}`, JSON.stringify(selection));
-    this.model.fireBitsetChanged(VIEWER_TYPE.MONOMER_POSITION);
+    this.model.fireBitsetChanged(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP);
     this.model.analysisView.grid.invalidate();
   }
 
@@ -559,6 +647,13 @@ export class MonomerPosition extends SARViewer {
     if (isApplicableDataframe(this.dataFrame)) {
       this.getProperty(`${MONOMER_POSITION_PROPERTIES.COLOR}${COLUMN_NAME}`)
         ?.set(this, this.activityColumnName);
+      this.targetColumnInput = ui.input.column('Target', {value: undefined, nullable: true, table: this.dataFrame,
+        onValueChanged: (value) => {
+          const prop = this.getProperty(`${SAR_PROPERTIES.TARGET}${COLUMN_NAME}`);
+          if (prop && prop.get(this) !== value.name)
+            prop?.set(this, value.name ?? null);
+        },
+      });
     } else {
       const msg = 'PeptidesError: dataframe is missing Macromolecule or numeric columns';
       grok.log.error(msg);
@@ -593,21 +688,19 @@ export class MonomerPosition extends SARViewer {
   onPropertyChanged(property: DG.Property): void {
     super.onPropertyChanged(property);
     switch (property.name) {
-    case MONOMER_POSITION_PROPERTIES.COLOR:
-    case MONOMER_POSITION_PROPERTIES.COLOR_AGGREGATION:
-      this.viewerGrid.invalidate();
-      break;
     case SAR_PROPERTIES.SEQUENCE:
       this._invariantMapSelection = null;
       break;
     }
 
     // this will cause colors to recalculate
-    this.model.df.columns.toList().forEach((col) => {
+    this.positionColumns?.forEach((col) => {
       col.temp[C.TAGS.INVARIANT_MAP_COLOR_CACHE] = null;
     });
     if (this.doRender)
       this.render();
+    else
+      this.viewerGrid.invalidate();
   }
 
   /**
@@ -642,6 +735,10 @@ export class MonomerPosition extends SARViewer {
       const colorColData = colorCol!.getRawData();
       let minColorVal = 9999999;
       let maxColorVal = -9999999;
+      const targetCol = this.targetColumnName ? this.dataFrame.col(this.targetColumnName) : null;
+      const targetColRawData = targetCol?.getRawData();
+      const targetCategory = this.targetCategoryInput.value;
+      const targetCategoryIndex = targetCategory == null ? null : targetCol?.categories.indexOf(targetCategory);
       for (const pCol of this.positionColumns) {
         pCol.temp[C.TAGS.INVARIANT_MAP_COLOR_CACHE] = {};
         const colorCache = pCol.temp[C.TAGS.INVARIANT_MAP_COLOR_CACHE];
@@ -657,7 +754,9 @@ export class MonomerPosition extends SARViewer {
           //const pStatItem = pStats[pMonomer]!;
           const colorValuesIndexes: number[] = [];
           for (let i = 0; i < pCol.length; ++i) {
-            if (positionColCategories[positionColData[i]] === pMonomer)
+            const isCurrentMonomer = positionColCategories[positionColData[i]] === pMonomer;
+            const isTarget = !targetColRawData || targetCategoryIndex == null || targetCategoryIndex == -1 || targetColRawData[i] === targetCategoryIndex;
+            if (isCurrentMonomer && isTarget)
               colorValuesIndexes.push(i);
           }
           const cellColorDataCol = DG.Column.float('color', colorValuesIndexes.length)
@@ -670,6 +769,14 @@ export class MonomerPosition extends SARViewer {
         pCol.temp[C.TAGS.INVARIANT_MAP_COLOR_CACHE] = colorCache;
       }
 
+      const isCustomRangeSet = this.customColorRange && this.minColorValue != null && this.maxColorValue != null;
+      let usedMinValue = isCustomRangeSet ? this.minColorValue : minColorVal;
+      let usedMaxValue = isCustomRangeSet ? this.maxColorValue : maxColorVal;
+      const logScaleUsed = this.logScaleColor && usedMinValue > 1e-30 && usedMaxValue > 1e-30 && minColorVal > 1e-30 && maxColorVal > 1e-30;
+      if (logScaleUsed) {
+        usedMinValue = Math.log(usedMinValue);
+        usedMaxValue = Math.log(usedMaxValue);
+      }
       // do another swing to normalize colors
       for (const pCol of this.positionColumns) {
         const colorCache = pCol.temp[C.TAGS.INVARIANT_MAP_COLOR_CACHE];
@@ -677,10 +784,15 @@ export class MonomerPosition extends SARViewer {
           continue;
         for (const pMonomer of Object.keys(colorCache)) {
           if (this.activityTarget === C.ACTIVITY_TARGET.LOW)
-            colorCache[pMonomer] = maxColorVal - colorCache[pMonomer] + minColorVal;
-          colorCache[pMonomer] = DG.Color.scaleColor(colorCache[pMonomer], minColorVal, maxColorVal);
+            colorCache[pMonomer] = usedMaxValue - colorCache[pMonomer] + usedMinValue;
+          colorCache[pMonomer] = DG.Color.scaleColor(
+            logScaleUsed ? Math.log(colorCache[pMonomer]) : colorCache[pMonomer], usedMinValue, usedMaxValue, undefined,
+            [this.lowerBoundColor, this.middleColor, this.upperBoundColor],
+          );
         }
         pCol.temp[C.TAGS.INVARIANT_MAP_COLOR_CACHE] = colorCache;
+        pCol.temp[C.TAGS.INVARIANT_MAP_COLOR_MIN_CACHE] = minColorVal;
+        pCol.temp[C.TAGS.INVARIANT_MAP_COLOR_MAX_CACHE] = maxColorVal;
       }
     }
   }
@@ -697,7 +809,7 @@ export class MonomerPosition extends SARViewer {
     const positionColumns = this.positionColumns.map((col) => col.name);
     grid.columns.setOrder([C.COLUMNS_NAMES.MONOMER, ...positionColumns]);
     const monomerCol = monomerPositionDf.getCol(C.COLUMNS_NAMES.MONOMER);
-    CR.setMonomerRenderer(monomerCol, this.alphabet);
+    CR.setMonomerRenderer(monomerCol, this.alphabet, true);
     this.cacheInvariantMapColors();
 
     grid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => renderCell(args, this,
@@ -713,7 +825,12 @@ export class MonomerPosition extends SARViewer {
       highlightMonomerPosition(monomerPosition, this.dataFrame, this.monomerPositionStats);
       this.model.isHighlighting = true;
       const columnEntries = this.getTotalViewerAggColumns();
-
+      if (this.mode === SELECTION_MODE.INVARIANT_MAP) {
+        if (this.colorColumnName && this.colorAggregation)
+          columnEntries.unshift([this.colorColumnName, this.colorAggregation as DG.AGG]);
+        if (this.valueColumnName && this.valueAggregation && this.valueAggregation !== DG.AGG.VALUE_COUNT && this.valueAggregation !== DG.AGG.TOTAL_COUNT)
+          columnEntries.unshift([this.valueColumnName, this.valueAggregation as DG.AGG]);
+      }
       return showTooltip(this.model.df, this.getScaledActivityColumn(), columnEntries, {
         fromViewer: true,
         isMutationCliffs: this.mode === SELECTION_MODE.MUTATION_CLIFFS, monomerPosition, x, y,
@@ -796,7 +913,7 @@ export class MonomerPosition extends SARViewer {
         return;
 
 
-      this.model.fireBitsetChanged(VIEWER_TYPE.MONOMER_POSITION);
+      this.model.fireBitsetChanged(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP);
       grid.invalidate();
     });
     grid.root.addEventListener('click', (ev) => {
@@ -898,9 +1015,9 @@ export class MonomerPosition extends SARViewer {
 
     $(this.root).empty();
     let switchHost = ui.divText(VIEWER_TYPE.MOST_POTENT_RESIDUES, {id: 'pep-viewer-title'});
-    if (this.name === VIEWER_TYPE.MONOMER_POSITION) {
-      const mutationCliffsMode = ui.boolInput(SELECTION_MODE.MUTATION_CLIFFS,
-        this.mode === SELECTION_MODE.MUTATION_CLIFFS);
+    if (this.name === VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) {
+      const mutationCliffsMode = ui.input.bool(SELECTION_MODE.MUTATION_CLIFFS,
+        {value: this.mode === SELECTION_MODE.MUTATION_CLIFFS});
       mutationCliffsMode.root.addEventListener('click', () => {
         invariantMapMode.value = false;
         mutationCliffsMode.value = true;
@@ -908,7 +1025,7 @@ export class MonomerPosition extends SARViewer {
         this.showHelp();
       });
       mutationCliffsMode.setTooltip('Statistically significant changes in activity');
-      const invariantMapMode = ui.boolInput(SELECTION_MODE.INVARIANT_MAP, this.mode === SELECTION_MODE.INVARIANT_MAP);
+      const invariantMapMode = ui.input.bool(SELECTION_MODE.INVARIANT_MAP, {value: this.mode === SELECTION_MODE.INVARIANT_MAP});
       invariantMapMode.root.addEventListener('click', () => {
         mutationCliffsMode.value = false;
         invariantMapMode.value = true;
@@ -931,15 +1048,17 @@ export class MonomerPosition extends SARViewer {
     viewerRoot.style.width = 'auto';
     // expand button
     const expand = ui.iconFA('expand-alt', () => {
-      const dialog = ui.dialog('Monomer Position');
+      const dialog = ui.dialog();
       dialog.add(ui.divV([switchHost, viewerRoot], {style: {height: '100%'}}));
       dialog.onCancel(() => this.render());
       dialog.showModal(true);
       this.viewerGrid.invalidate();
-    }, 'Show Monomer Position Table in full screen');
+    }, 'Show Sequence Variability Map Table in full screen');
     $(expand).addClass('pep-help-icon');
-
-    const header = ui.divH([expand, switchHost], {style: {alignSelf: 'center', lineHeight: 'normal'}});
+    this.targetColumnInput && (this.targetColumnInput.root.style.width = '50%');
+    const targetInputsHost = ui.divH([this.targetColumnInput?.root ?? ui.div(), this.targetCategoryInput.root],
+      {style: {alignSelf: 'center', justifyContent: 'center'}});
+    const header = ui.divH([expand, switchHost, targetInputsHost], {style: {alignSelf: 'center', lineHeight: 'normal', flexDirection: 'column'}});
     this.root.appendChild(ui.divV([header, viewerRoot]));
     this.viewerGrid?.invalidate();
   }
@@ -1013,7 +1132,7 @@ export class MostPotentResidues extends SARViewer {
           continue;
 
 
-        if ((monomerStats as StatsItem).count > 1 && (monomerStats as StatsItem).pValue === null)
+        if ((monomerStats as StatsItem).count > 1 && ((monomerStats as StatsItem).pValue == null || ((monomerStats as StatsItem).pValue ?? 1) <= 0.05))
           filteredMonomerStats.push([monomer, monomerStats as StatsItem]);
 
 
@@ -1092,7 +1211,7 @@ export class MostPotentResidues extends SARViewer {
     const monomerCol = mprDf.getCol(C.COLUMNS_NAMES.MONOMER);
 
     // Setting Monomer column renderer
-    CR.setMonomerRenderer(monomerCol, this.alphabet);
+    CR.setMonomerRenderer(monomerCol, this.alphabet, true);
     grid.onCellRender.subscribe(
       (args: DG.GridCellRenderArgs) => renderCell(args, this, false, undefined, undefined));
 
@@ -1281,12 +1400,12 @@ function renderCell(args: DG.GridCellRenderArgs, viewer: SARViewer, isInvariantM
   }
 
   if (isInvariantMap) {
-    const value = currentPosStats![currentMonomer]!.count;
+    const value = currentPosStats![currentMonomer]!.aggValue ?? currentPosStats![currentMonomer]!.count;
     const positionCol = viewer.positionColumns.find((col) => col.name === currentPosition)!;
     const colorCache: { [_: string]: number } = positionCol.temp[C.TAGS.INVARIANT_MAP_COLOR_CACHE] ?? {};
     let color: number = DG.Color.white;
     // const colorColStats = colorCol!.stats;
-    if (colorCache[currentMonomer])
+    if (colorCache[currentMonomer] != null)
       color = colorCache[currentMonomer];
     else if (viewer instanceof MonomerPosition) {
       viewer.cacheInvariantMapColors();

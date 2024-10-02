@@ -4,7 +4,7 @@
     "access": "public"
   },
   "friendlyName": "Datagrok chem-meta library",
-  "version": "1.2.5",
+  "version": "1.2.7",
   "description": "RDKit JS API, utils for molfiles parsing",
   "dependencies": {
     "wu": "latest"
@@ -23,7 +23,7 @@
     "link-api": "npm link datagrok-api",
     "link-utils": "npm link @datagrok-libraries/utils",
     "link-all": "npm link",
-    "build": "git clean -f -X -d ./src && tsc",
+    "build": "tsc",
     "lint": "eslint \"./src/**/*.ts\"",
     "lint-fix": "eslint \"./src/**/*.ts\" --fix",
     "build-all": "npm run build"

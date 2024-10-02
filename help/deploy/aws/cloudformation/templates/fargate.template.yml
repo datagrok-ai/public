@@ -1166,10 +1166,6 @@ Resources:
       - CvmTCP80Listener
       - CvmTCP443Listener
       - CvmTCP8090IntListener
-      - DatagrokJupyterKernelGatewayTCP5005ListenerRule
-      - DatagrokJupyterKernelGatewayTCP5005IntListenerRule
-      - DatagrokJupyterKernelGatewayTCP8888ListenerRule
-      - DatagrokJupyterKernelGatewayTCP8888IntListenerRule
     Properties:
       Cluster:
         Fn::GetAtt:
@@ -1193,11 +1189,6 @@ Resources:
       PlatformVersion: 1.4.0
       PropagateTags: SERVICE
       SchedulingStrategy: REPLICA
-      ServiceRegistries:
-        - RegistryArn:
-            Fn::GetAtt:
-              - DatagrokJupyterKernelGatewayServiceDiscoveryEntry
-              - Arn
       Tags:
         - Key: datagrok.component
           Value: cvm
@@ -1553,74 +1544,6 @@ Resources:
       RequiresCompatibilities:
         - "FARGATE"
     Type: AWS::ECS::TaskDefinition
-  DatagrokJupyterKernelGatewayTCP5005ListenerRule:
-    Properties:
-      Actions:
-        - ForwardConfig:
-            TargetGroups:
-              - TargetGroupArn:
-                  Ref: DatagrokJupyterKernelGatewayTCP5005TargetGroup
-          Type: forward
-      Conditions:
-        - Field: path-pattern
-          PathPatternConfig:
-            Values:
-              - "/jupyter/helper/*"
-      ListenerArn:
-        Ref: CvmTCP443Listener
-      Priority: 3
-    Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  DatagrokJupyterKernelGatewayTCP5005IntListenerRule:
-    Properties:
-      Actions:
-        - ForwardConfig:
-            TargetGroups:
-              - TargetGroupArn:
-                  Ref: DatagrokJupyterKernelGatewayTCP5005IntTargetGroup
-          Type: forward
-      Conditions:
-        - Field: path-pattern
-          PathPatternConfig:
-            Values:
-              - "/jupyter/helper/*"
-      ListenerArn:
-        Ref: CvmTCP8090IntListener
-      Priority: 3
-    Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  DatagrokJupyterKernelGatewayTCP8888ListenerRule:
-    Properties:
-      Actions:
-        - ForwardConfig:
-            TargetGroups:
-              - TargetGroupArn:
-                  Ref: DatagrokJupyterKernelGatewayTCP8888TargetGroup
-          Type: forward
-      Conditions:
-        - Field: path-pattern
-          PathPatternConfig:
-            Values:
-              - "/jupyter/*"
-      ListenerArn:
-        Ref: CvmTCP443Listener
-      Priority: 4
-    Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  DatagrokJupyterKernelGatewayTCP8888IntListenerRule:
-    Properties:
-      Actions:
-        - ForwardConfig:
-            TargetGroups:
-              - TargetGroupArn:
-                  Ref: DatagrokJupyterKernelGatewayTCP8888IntTargetGroup
-          Type: forward
-      Conditions:
-        - Field: path-pattern
-          PathPatternConfig:
-            Values:
-              - "/jupyter/*"
-      ListenerArn:
-        Ref: CvmTCP8090IntListener
-      Priority: 4
-    Type: AWS::ElasticLoadBalancingV2::ListenerRule
   DatagrokJupyterNotebookTCP5005ListenerRule:
     Properties:
       Actions:

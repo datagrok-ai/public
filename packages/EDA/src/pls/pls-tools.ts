@@ -30,8 +30,42 @@ export type PlsInput = {
   features: DG.ColumnList,
   predict: DG.Column,
   components: number,
-  names : DG.Column | null,
+  names : DG.Column | undefined,
 };
+
+/** Return lines */
+export function getLines(names: string[]): DG.FormulaLine[] {
+  const lines: DG.FormulaLine[] = [];
+
+  const addLine = (formula: string, radius: number) => {
+    lines.push({
+      type: 'line',
+      formula: formula,
+      width: LINE_WIDTH,
+      visible: true,
+      title: ' ',
+      min: -radius,
+      max: radius,
+      color: COLOR.CIRCLE,
+    });
+  };
+
+  names.forEach((xName) => {
+    const x = '${' + xName + '}';
+    lines.push({type: 'line', formula: `${x} = 0`, width: LINE_WIDTH, visible: true, title: ' ', color: COLOR.AXIS});
+
+    names.forEach((yName) => {
+      const y = '${' + yName + '}';
+
+      RADIUS.forEach((r) => {
+        addLine(y + ` = sqrt(${r*r} - ${x} * ${x})`, r);
+        addLine(y + ` = -sqrt(${r*r} - ${x} * ${x})`, r);
+      });
+    });
+  });
+
+  return lines;
+}
 
 /** Partial least square regression (PLS) */
 export async function getPlsAnalysis(input: PlsInput): Promise<PlsOutput> {
@@ -58,13 +92,35 @@ export async function getPlsAnalysis(input: PlsInput): Promise<PlsOutput> {
   };
 }
 
+/** Return debiased predction by PLS regression */
+function debiasedPrediction(features: DG.ColumnList, params: DG.Column,
+  target: DG.Column, biasedPrediction: DG.Column): DG.Column {
+  const samples = target.length;
+  const dim = features.length;
+  const rawParams = params.getRawData();
+  const debiased = new Float32Array(samples);
+  const biased = biasedPrediction.getRawData();
+
+  // Compute bias
+  let bias = target.stats.avg;
+  for (let i = 0; i < dim; ++i)
+    bias -= rawParams[i] * features.byIndex(i).stats.avg;
+
+  // Compute debiased prediction
+  for (let i = 0; i < samples; ++i)
+    debiased[i] = bias + biased[i];
+
+  return DG.Column.fromFloat32Array('Debiased', debiased, samples);
+}
+
 /** Perform multivariate analysis using the PLS regression */
 async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<void> {
   const result = await getPlsAnalysis(input);
 
   const plsCols = result.tScores;
   const cols = input.table.columns;
-  const featuresNames = input.features.names();
+  const features = input.features;
+  const featuresNames = features.names();
   const prefix = (analysisType === PLS_ANALYSIS.COMPUTE_COMPONENTS) ? RESULT_NAMES.PREFIX : TITLE.XSCORE;
 
   // add PLS components to the table
@@ -76,7 +132,11 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   if (analysisType === PLS_ANALYSIS.COMPUTE_COMPONENTS)
     return;
 
-  const view = grok.shell.tableView(input.table.name);
+  //const view = grok.shell.tableView(input.table.name);
+
+  const view = (analysisType === PLS_ANALYSIS.DEMO) ?
+    (grok.shell.view(TITLE.BROWSE) as DG.BrowseView).preview as DG.TableView :
+    grok.shell.tableView(input.table.name);
 
   // 0.1 Buffer table
   const buffer = DG.DataFrame.fromColumns([
@@ -91,7 +151,8 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   });
 
   // 1. Predicted vs Reference scatter plot
-  const pred = result.prediction;
+  // Debias prediction (since PLS center data)
+  const pred = debiasedPrediction(features, result.regressionCoefficients, input.predict, result.prediction);
   pred.name = cols.getUnusedName(`${input.predict.name} ${RESULT_NAMES.SUFFIX}`);
   cols.add(pred);
   const predictVsReferScatter = view.addViewer(DG.Viewer.scatterPlot(input.table, {
@@ -149,36 +210,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   });
 
   // 4.3) create lines & circles
-  const lines = [] as DG.FormulaLine[];
-
-  const addLine = (formula: string, radius: number) => {
-    lines.push({
-      type: 'line',
-      formula: formula,
-      width: LINE_WIDTH,
-      visible: true,
-      title: ' ',
-      min: -radius,
-      max: radius,
-      color: COLOR.CIRCLE,
-    });
-  };
-
-  scoreNames.forEach((xName) => {
-    const x = '${' + xName + '}';
-    lines.push({type: 'line', formula: `${x} = 0`, width: LINE_WIDTH, visible: true, title: ' ', color: COLOR.AXIS});
-
-    scoreNames.forEach((yName) => {
-      const y = '${' + yName + '}';
-
-      RADIUS.forEach((r) => {
-        addLine(y + ` = sqrt(${r*r} - ${x} * ${x})`, r);
-        addLine(y + ` = -sqrt(${r*r} - ${x} * ${x})`, r);
-      });
-    });
-  });
-
-  scoresScatter.meta.formulaLines.addAll(lines);
+  scoresScatter.meta.formulaLines.addAll(getLines(scoreNames));
   view.addViewer(scoresScatter);
 
   // 5. Explained Variances
@@ -243,7 +275,9 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
 
 /** Run multivariate analysis (PLS) */
 export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
-  const table = grok.shell.t;
+  const table = (analysisType === PLS_ANALYSIS.DEMO) ?
+    ((grok.shell.view(TITLE.BROWSE) as DG.BrowseView).preview as DG.TableView).table :
+    grok.shell.t;
 
   if (table === null) {
     grok.shell.warning(ERROR_MSG.NO_DF);
@@ -283,18 +317,17 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
 
   // responce (to predict)
   let predict = numCols[numCols.length - 1];
-  const predictInput = ui.columnInput(TITLE.PREDICT, table, predict, () => {
-    predict = predictInput.value!;
+  const predictInput = ui.input.column(TITLE.PREDICT, {table: table, value: predict, onValueChanged: (value) => {
+    predict = value;
     updateIputs();
-  },
-  {filter: (col: DG.Column) => isValidNumeric(col)},
+  }, filter: (col: DG.Column) => isValidNumeric(col)},
   );
   predictInput.setTooltip(HINT.PREDICT);
 
   // predictors (features)
   let features: DG.Column[];
-  const featuresInput = ui.columnsInput(TITLE.USING, table, () => {}, {available: numColNames});
-  featuresInput.onInput(() => updateIputs());
+  const featuresInput = ui.input.columns(TITLE.USING, {table: table, available: numColNames});
+  featuresInput.onInput.subscribe(() => updateIputs());
   featuresInput.setTooltip(HINT.FEATURES);
 
   // components count
@@ -307,7 +340,7 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
     showPlusMinus: true,
     min: COMPONENTS.MIN,
   }));
-  componentsInput.onInput(() => updateIputs());
+  componentsInput.onInput.subscribe(() => updateIputs());
   componentsInput.setTooltip(HINT.COMPONENTS);
 
   let dlgTitle: string;
@@ -335,9 +368,12 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
   };
 
   // names of samples
-  let names = (strCols.length > 0) ? strCols[0] : null;
-  const namesInputs = ui.columnInput(TITLE.NAMES, table, names, () => names = predictInput.value,
-    {filter: (col: DG.Column) => col.type === DG.COLUMN_TYPE.STRING},
+  let names = (strCols.length > 0) ? strCols[0] : undefined;
+  const namesInputs = ui.input.column(TITLE.NAMES, {
+    table: table,
+    value: names,
+    onValueChanged: () => names = predictInput.value ?? undefined,
+    filter: (col: DG.Column) => col.type === DG.COLUMN_TYPE.STRING},
   );
   namesInputs.setTooltip(HINT.NAMES);
   namesInputs.root.hidden = (strCols.length === 0) || (analysisType === PLS_ANALYSIS.COMPUTE_COMPONENTS);

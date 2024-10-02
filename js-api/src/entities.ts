@@ -1,6 +1,6 @@
 // noinspection JSUnusedGlobalSymbols
 
-import {ColumnType, FUNC_TYPES, ScriptLanguage, SemType, Type, TYPE, USER_STATUS} from "./const";
+import {ColumnType, ScriptLanguage, SemType, Type, TYPE, USER_STATUS} from "./const";
 import { FuncCall } from "./functions";
 import {toDart, toJs} from "./wrappers";
 import {FileSource} from "./dapi";
@@ -10,6 +10,7 @@ import {PackageLogger} from "./logger";
 import dayjs from "dayjs";
 import {IDartApi} from "./api/grok_api.g";
 import {DataSourceType} from "./api/grok_shared.api.g";
+import { Tags } from "../dg";
 
 declare var grok: any;
 const api: IDartApi = <any>window;
@@ -98,7 +99,10 @@ export class Entity {
   get createdOn(): dayjs.Dayjs { return dayjs(api.grok_Entity_Get_CreatedOn(this.dart)); }
 
   /** Time when entity was updated **/
-  get updatedOn(): dayjs.Dayjs { return dayjs(api.grok_Entity_Get_UpdatedOn(this.dart)); }
+  get updatedOn(): dayjs.Dayjs | null {
+    const d = api.grok_Entity_Get_UpdatedOn(this.dart);
+    return d ? dayjs(d) : null;
+  }
 
   /** Who created entity **/
   get author(): User { return toJs(api.grok_Entity_Get_Author(this.dart)); }
@@ -418,7 +422,7 @@ export class DataQuery extends Func {
 /** Represents a table query
  * @extends DataQuery */
 export class TableQuery extends DataQuery {
-  /** @constructs TableQeury */
+  /** @constructs TableQuery */
   constructor(dart: any) { super(dart); }
 
   /** Creates a TableQuery
@@ -658,13 +662,22 @@ export class TableInfo extends Entity {
 /** @extends Entity
  * Represents Column metadata */
 export class ColumnInfo extends Entity {
-
+  public tags: {[key: string]: any};
   /** @constructs ColumnInfo */
   constructor(dart: any) {
     super(dart);
+    this.tags = new MapProxy(api.grok_ColumnInfo_Get_Tags(this.dart), 'tags');
   }
 
   get type(): string { return toJs(api.grok_ColumnInfo_Get_Type(this.dart)); }
+
+  /** Returns reference information if the column is referencing another column in another table */
+  get referenceInfo(): {table: string, column: string} | null {
+    return this.tags[Tags.ReferencesTable] && this.tags[Tags.ReferencesColumn] ? {
+      table: this.tags[Tags.ReferencesTable],
+      column: this.tags[Tags.ReferencesColumn]
+    } : null;
+  }
 }
 
 /** @extends Entity
@@ -676,6 +689,8 @@ export class FileInfo extends Entity {
   constructor(dart: any) {
     super(dart);
   }
+
+  get connection(): DataConnection { return api.grok_FileInfo_Get_Connection(toJs(this.dart)); }
 
   /** Returns path, i.e. `geo/dmv_offices.csv` */
   get path(): string { return api.grok_FileInfo_Get_Path(this.dart); }
@@ -697,6 +712,11 @@ export class FileInfo extends Entity {
 
   /** Checks if directory */
   get isDirectory(): boolean { return api.grok_FileInfo_Get_IsDirectory(this.dart); }
+
+  get updatedOn(): dayjs.Dayjs | null {
+    const d = api.grok_FileInfo_Get_UpdatedOn(this.dart);
+    return d ? dayjs(d) : null;
+  }
 
   /** @returns {Promise<string>} */
   // readAsString(): Promise<string> {
@@ -1088,7 +1108,7 @@ export class Package extends Entity {
   }
 
   /** Returns settings for a package. */
-  getSettings(): Promise<any> {
+  getSettings(): Promise<Map<string, any>> {
     return api.grok_Package_Get_Settings(this.name);
   }
 
@@ -1104,6 +1124,19 @@ export class Package extends Entity {
     if (this._files == null)
       this._files = new FileSource(`System:AppData/${this.name}`);
     return this._files;
+  }
+
+  public async getTests(core: boolean = false) {
+    try {
+      await this.load({ file: 'package-test.js' });
+      let module = this.getModule('package-test.js');
+      if (core && module.initAutoTests)
+        module.initAutoTests();
+      return module.tests;
+    } catch (e: any) {
+      this.logger.error(e?.msg ?? 'get module error')
+      return undefined;
+    }
   }
 }
 
@@ -1181,8 +1214,12 @@ export interface PropertyOptions {
   /** List of value validators (functions that take a value and return error message or null) */
   valueValidators?: ValueValidator<any>[];
 
-  /** Custom field caption shown in [PropertyGrid] */
+  /** Custom field caption shown in [PropertyGrid]
+   * @deprecated The property will be removed soon. Use {@link friendlyName} instead */
   caption?: string;
+
+  /** Custom field friendly name shown in [PropertyGrid] */
+  friendlyName?: string;
 
   /** Field postfix shown in [PropertyGrid]. [units] take precedence over the [postfix] value. */
   postfix?: string;
@@ -1191,6 +1228,9 @@ export interface PropertyOptions {
   fieldName?: string;
 
   tags?: any;
+
+  /** Filter for columns, can be numerical, categorical or directly a column type (string, int...) */
+  columnTypeFilter?: ColumnType | 'numerical' | 'categorical';
 }
 
 
@@ -1225,6 +1265,7 @@ export class Property {
   set name(s: string) { api.grok_Property_Set_Name(this.dart, s); }
 
   get caption(): string { return api.grok_Property_Get_Caption(this.dart); }
+  set caption(s: string) { api.grok_Property_Set_Caption(this.dart, s); }
 
   /** Property category */
   get category(): string { return api.grok_Property_Get_Category(this.dart); }
@@ -1233,6 +1274,10 @@ export class Property {
   /** Property type */
   get propertyType(): TYPE { return api.grok_Property_Get_PropertyType(this.dart); }
   set propertyType(s: TYPE) { api.grok_Property_Set_PropertyType(this.dart, s); }
+
+  /** Applies to viewers properties whether to include the property in the layout or not. */
+  get includeInLayout(): boolean { return api.grok_Property_Get_IncludeInLayout(this.dart); }
+  set includeInLayout(s: boolean) { api.grok_Property_Set_IncludeInLayout(this.dart, s); }
 
   /** Semantic type */
   get semType(): SemType | string { return api.grok_Property_Get_SemType(this.dart); }
@@ -1348,10 +1393,7 @@ export class Property {
    * It is editable via the context panel, and gets saved into the view layout as well.
    * Property getter/setter typically uses Widget's "temp" property for storing the value. */
   static registerAttachedProperty(typeName: string, property: Property) {
-    throw 'Not implemented';
-    // Andrew: looks like my commit got lost somewhere :(
-    // Will need to bring it back, it was a nice feature
-    // api.grok_Property_RegisterAttachedProperty(typeName, property.dart);
+    api.grok_Property_RegisterAttachedProperty(typeName, property.dart);
   }
 }
 

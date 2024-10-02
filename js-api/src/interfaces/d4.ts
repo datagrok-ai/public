@@ -73,7 +73,6 @@ export interface IScatterPlot3dSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -170,7 +169,6 @@ export interface ITreeMapSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -347,7 +345,6 @@ export interface IHistogramSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   title: string;
@@ -412,7 +409,6 @@ export interface IFiltersSettings {
 
   filters: Array<{[index: string]: any}>;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -548,6 +544,13 @@ export interface IScatterPlotSettings {
 
   markerMaxSize: number;
 
+  /// When defined, a line would be drawn for each series (defined by the categorical color column)
+  /// using the order specified by "Lines Order"
+  linesOrder: string;
+  linesOrderColumnName: string;
+
+  linesWidth: number;
+
   /// Labels to show next to the markers.
   labels: string;
   labelsColumnName: string;
@@ -556,6 +559,16 @@ export interface IScatterPlotSettings {
   showLabelsFor: keyof typeof RowSet;
 
   labelColorAsMarker: boolean;
+
+  /// Determines how to show marker labels.
+  showMarkerLabels: keyof typeof VisibilityMode;
+
+  /// Marker radius in which label is inscribed.
+  labelCircleRadius: number;
+
+  /// Shows text values by selected column under the main label.
+  extraLabels: string;
+  extraLabelsColumnName: string;
 
   /// Regression line visibility (toggle by pressing R)
   showRegressionLine: boolean;
@@ -678,7 +691,6 @@ export interface IScatterPlotSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -943,7 +955,6 @@ export interface ILineChartSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1144,7 +1155,6 @@ export interface IBarChartSettings {
 
   showLabels: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1189,6 +1199,8 @@ export enum VerticalAlignType {
 }
 
 export interface IDensityPlotSettings {
+  binShape: string;
+
   /// Columns to be put on the X axis
   x: string;
   xColumnName: string;
@@ -1200,6 +1212,14 @@ export interface IDensityPlotSettings {
   autoLayout: boolean;
 
   axisFont: string;
+
+  showColorScale: boolean;
+
+  invertColorScheme: boolean;
+
+  colorTransformType: keyof typeof AxisType;
+
+  linearColorScheme: Array<number>;
 
   showXAxis: boolean;
 
@@ -1213,13 +1233,17 @@ export interface IDensityPlotSettings {
 
   invertYAxis: boolean;
 
+  showXSelector: boolean;
+
+  showYSelector: boolean;
+
+  bins: number;
+
   allowZoom: boolean;
 
   binToRange: boolean;
 
-  xBins: number;
-
-  yBins: number;
+  showBinSelector: boolean;
 
   backColor: number;
 
@@ -1230,7 +1254,6 @@ export interface IDensityPlotSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1264,16 +1287,18 @@ export interface IDensityPlotSettings {
 }
 
 export interface IBoxPlotSettings {
-  showStatistics: boolean;
+  categoryColumnNames: Array<string>;
 
-  category: string;
-  categoryColumnName: string;
+  showStatistics: boolean;
 
   showCategoryAxis: boolean;
 
   showCategorySelector: boolean;
 
   labelOrientation: keyof typeof TextOrientation;
+
+  /// Display subcategories - category combibations in the x axis table.
+  showMinorCategories: boolean;
 
   value: string;
   valueColumnName: string;
@@ -1285,6 +1310,9 @@ export interface IBoxPlotSettings {
   showValueAxis: boolean;
 
   showValueSelector: boolean;
+
+  /// Include plots, which are empty or have null values.
+  showEmptyCategories: boolean;
 
   /// Column to color-code boxes (Q2-Q3 region).
   /// See also *Bin Color Aggr Type*.
@@ -1318,6 +1346,7 @@ export interface IBoxPlotSettings {
 
   markerOpacity: number;
 
+  /// Points are not shown if the number of rows is greater than *Show Values Limit*.
   legendVisibility: keyof typeof VisibilityMode;
 
   legendPosition: keyof typeof FlexPosition;
@@ -1351,6 +1380,8 @@ export interface IBoxPlotSettings {
 
   autoLayout: boolean;
 
+  plotStyle: string;
+
   axisFont: string;
 
   categoryFont: string;
@@ -1363,14 +1394,10 @@ export interface IBoxPlotSettings {
 
   whiskerWidthRatio: number;
 
-  maxBinWidth: number;
-
   axisUseColumnFormat: boolean;
 
-  /// Number of KDE bins to display a violin plot
+  /// Number of KDE bins to display a violin plot.
   bins: number;
-
-  plotStyle: string;
 
   whiskerColor: number;
 
@@ -1404,7 +1431,6 @@ export interface IBoxPlotSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1488,6 +1514,8 @@ export interface IPieChartSettings {
 
   innerLabelColor: number;
 
+  missingValueColor: number;
+
   showInnerPercent: boolean;
 
   showInnerLabel: boolean;
@@ -1517,7 +1545,6 @@ export interface IPieChartSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1578,7 +1605,6 @@ export interface IMatrixPlotSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1643,7 +1669,6 @@ export interface ISummarySettings {
 
   invertColorScheme: boolean;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1693,7 +1718,6 @@ export interface ISparklinesSettings {
   /// Color aggregation type.
   colorAggrType: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1758,6 +1782,7 @@ export interface IGridSettings {
   /// and *Col Header Height* is not specified.
   horzColLabelsHeight: number;
 
+  /// Applicable only to grid
   rowHeight: number;
 
   /// Indicates mouse-over row by drawing a vertical stripe on the row header
@@ -1833,13 +1858,15 @@ export interface IGridSettings {
 
   extendLastColumn: boolean;
 
-  /// Resize rows by dragging the border between rows on a row header
+  /// Resize rows by dragging the border between rows on a row header.
+  /// Applicable only to grid.
   allowRowResizing: boolean;
 
   /// Indicates the way colors are sampled in the heatmap mode when there is not enough
   /// pixels on the screen for each row:
   /// True: each row is draws (but the result is blended and the resulting color might not represent any row)
   /// False: a row is sampled and then drawn as one pixel (but non-sampled rows do not get drawn at all)
+  /// Applicable only to heatmap.
   drawEveryRow: boolean;
 
   /// Whether the context menu is shown
@@ -1901,6 +1928,7 @@ export interface IGridSettings {
 
   /// true: colors are scaled based on the global min/max in all numerical columns
   /// false: colors are scaled based on the column min/max.
+  /// Applicable only to heatmap.
   globalColorScaling: boolean;
 
   /// Controls grid tooltip visibility
@@ -1927,6 +1955,12 @@ export interface IGridSettings {
 
   marginBottom: number;
 
+  /// Heatmap horizontal scroll positions (maxRangeValue, minValue, maxValue)
+  heatmapHorzScroll: Array<number>;
+
+  /// Heatmap vertical scroll positions (maxRangeValue, minValue, maxValue)
+  heatmapVertScroll: Array<number>;
+
   /// Determines whether newly added columns are added to the grid
   syncNewColumns: boolean;
 
@@ -1951,7 +1985,6 @@ export interface IGridSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   title: string;
@@ -2058,7 +2091,6 @@ export interface ICalendarSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2149,7 +2181,6 @@ export interface ITrellisPlotSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2261,7 +2292,6 @@ export interface IPcPlotSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2322,7 +2352,6 @@ export interface IMapViewerSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2369,7 +2398,6 @@ export interface IStatsViewerSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2417,6 +2445,9 @@ export interface ICorrelationPlotSettings {
   /// Shows the tooltip with the corresponding scatter plot inside.
   showTooltip: boolean;
 
+  /// Ignores double click behavior on the grid cells.
+  ignoreDoubleClick: boolean;
+
   backColor: number;
 
   /// Determines the rows shown on the plot.
@@ -2426,7 +2457,6 @@ export interface ICorrelationPlotSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2490,7 +2520,6 @@ export interface IFormSettings {
 
   columnNames: Array<string>;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2534,8 +2563,6 @@ export interface IMarkupViewerSettings {
   /// with the Markup that might be used for html rendering)
   markupEnabled: boolean;
 
-  //StreamController _changes;
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2696,7 +2723,6 @@ export interface INetworkDiagramSettings {
   /// Its signature: `dataframe expand(dynamic nodeId)`.
   onNodeExpandFunction: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2763,7 +2789,6 @@ export interface ICardSettings {
 
   format: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2828,8 +2853,6 @@ export interface ITileViewerSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2896,7 +2919,6 @@ export interface IPivotViewerSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers

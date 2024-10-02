@@ -193,6 +193,8 @@ export class Tags {
 
   static ValueValidators = '.value-validators';
 
+  /// Applies to default filters for string columns only.
+  /// When specified, treats the split strings as separate values in the filter
   static MultiValueSeparator = '.multi-value-separator';
 
   /// Name to be shown in the UI
@@ -232,6 +234,9 @@ export class Tags {
 
   /// Specifies entity type that reference entity had
   static DbPropertyReferenceType = 'dbPropertyReferenceType';
+
+  /// Specifies if calculated columns are subscribed
+  static CalculatedColumnsSubscribed = '.calculatedColumnsSubscribed';
 
 }
 export class FuncOptions {

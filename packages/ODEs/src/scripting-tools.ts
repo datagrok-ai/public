@@ -113,6 +113,7 @@ export type IVP = {
   metas: string[],
   outputs: Map<string, Output> | null,
   solverSettings: string,
+  inputsLookup: string | null,
 };
 
 /** Specific error messages */
@@ -141,7 +142,7 @@ enum ERROR_MSG {
   SERVICE_START = `Variable names should not start with '${SERVICE}'`,
   REUSE_NAME = 'Variable reuse (case-insensitive): rename ',
   SOLVER = `Incorrect solver options. Check the '${CONTROL_EXPR.SOLVER}'-line`,
-}
+} // ERROR_MSG
 
 /** Datagrok annotations */
 enum ANNOT {
@@ -502,6 +503,7 @@ export function getIVP(text: string): IVP {
   const metas = [] as string[];
   let outputs: Map<string, Output> | null = null;
   let solverSettings = DEFAULT_SOLVER_SETTINGS;
+  let inputsLookup: string | null = null;
 
   // 0. Split text into lines & remove comments
   const lines = text.replaceAll('\t', ' ').split('\n')
@@ -542,13 +544,15 @@ export function getIVP(text: string): IVP {
     } else if (firstLine.startsWith(CONTROL_EXPR.TOL)) { // the 'tolerance' block
       tolerance = firstLine.slice( firstLine.indexOf(CONTROL_SEP) + 1).trim();
     } else if (firstLine.startsWith(CONTROL_EXPR.SOLVER)) { // the 'solver settings' block
-      solverSettings = firstLine.slice( firstLine.indexOf(CONTROL_SEP) + 1).trim();
+      solverSettings = firstLine.slice(firstLine.indexOf(CONTROL_SEP) + 1).trim();
     } else if (firstLine.startsWith(CONTROL_EXPR.LOOP)) { // the 'loop' block
       loop = getLoop(lines, block.begin + 1, block.end);
     } else if (firstLine.startsWith(CONTROL_EXPR.UPDATE)) { // the 'update' block
       updates.push(getUpdate(lines, block.begin, block.end));
     } else if (firstLine.startsWith(CONTROL_EXPR.OUTPUT)) { // the 'output' block
       outputs = getOutput(lines, block.begin + 1, block.end);
+    } else if (firstLine.startsWith(CONTROL_EXPR.INPUTS)) { // the 'inputs' block
+      inputsLookup = firstLine.slice(firstLine.indexOf(CONTROL_SEP) + 1).trim();
     } else if (firstLine.startsWith(CONTROL_EXPR.COMMENT)) { // the 'comment' block
       // just skip it
     } else
@@ -578,6 +582,7 @@ export function getIVP(text: string): IVP {
     metas: metas,
     outputs: outputs,
     solverSettings: solverSettings,
+    inputsLookup: inputsLookup,
   };
 
   checkCorrectness(ivp);
@@ -715,7 +720,7 @@ function getCustomOutputLinesWithExpressions(ivp: IVP): string[] {
   // 2. Expressions raw data & variables
   ivp.exprs!.forEach((val, key) => {
     if (ivp.outputs!.has(key))
-      res.push(`const ${key}RawData = new Float32Array(len);`);
+      res.push(`const ${key}RawData = new Float64Array(len);`);
 
     res.push(`let ${key};`);
   });
@@ -743,7 +748,7 @@ function getCustomOutputLinesWithExpressions(ivp: IVP): string[] {
   res.push(`${DF_NAME} = DG.DataFrame.fromColumns([`);
   ivp.outputs!.forEach((val, key) => {
     if (!val.formula)
-      res.push(`${SCRIPT.SPACE2}DG.Column.fromFloat32Array('${val.caption}', ${key}RawData.slice(0, len)),`);
+      res.push(`${SCRIPT.SPACE2}DG.Column.fromFloat64Array('${val.caption}', ${key}RawData.slice(0, len)),`);
   });
 
   if (ivp.updates !== null)
@@ -753,7 +758,7 @@ function getCustomOutputLinesWithExpressions(ivp: IVP): string[] {
   res.push(`${DF_NAME}.name = '${ivp.name}';`);
 
   return res;
-}
+} // getCustomOutputLinesWithExpressions
 
 /** Return custom output lines */
 function getCustomOutputLines(ivp: IVP): string[] {
@@ -947,7 +952,7 @@ function getScriptMainBodyLoopCase(ivp: IVP): string[] {
   const dfNames = getSolutionDfColsNames(ivp);
 
   res.push(`let ${DF_NAME} = DG.DataFrame.fromColumns([`);
-  dfNames.forEach((name) => res.push(`${SCRIPT.SPACE2}DG.Column.fromFloat32Array('${name}', []),`));
+  dfNames.forEach((name) => res.push(`${SCRIPT.SPACE2}DG.Column.fromFloat64Array('${name}', []),`));
   res.push(`]);`);
   res.push(`${DF_NAME}.name = '${ivp.name}';`);
   res.push('');

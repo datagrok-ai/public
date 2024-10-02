@@ -6,7 +6,7 @@ let features = ui.input.columns('Features', {table: t});
 features.value = [t.col('height'), t.col('weight')];
 
 // events
-features.onInput(() => grok.shell.info(features.value.map((col) => col.name).join()));
+features.onInput.subscribe(() => grok.shell.info(features.value.map((col) => col.name).join()));
 
 let inputs = [predict, features];
 let container = ui.div();

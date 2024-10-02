@@ -1,6 +1,11 @@
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 
 
+@grok.decorators.cellRenderer({
+  name: 'binaryImageCellRenderer',
+  cellType: 'BinaryImage',
+})
 export class BinaryImageCellRenderer extends DG.GridCellRenderer {
   get name() { return 'BinaryImage'; }
 

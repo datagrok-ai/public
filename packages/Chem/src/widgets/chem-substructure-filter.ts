@@ -18,10 +18,10 @@ import {_package, getRdKitModule} from '../package';
 import {AVAILABLE_FPS, CHEM_APPLY_FILTER_SYNC, FILTER_SCAFFOLD_TAG, MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT,
   SubstructureSearchType, getSearchProgressEventName, getSearchQueryAndType, getTerminateEventName} from '../constants';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import { IColoredScaffold } from '../rendering/rdkit-cell-renderer';
-import { Fingerprint } from '../utils/chem-common';
+import {IColoredScaffold} from '../rendering/rdkit-cell-renderer';
+import {Fingerprint} from '../utils/chem-common';
 import $ from 'cash-dom';
-import { awaitCheck } from '@datagrok-libraries/utils/src/test';
+import {awaitCheck} from '@datagrok-libraries/utils/src/test';
 
 const FILTER_SYNC_EVENT = 'chem-substructure-filter';
 const SKETCHER_TYPE_CHANGED = 'chem-sketcher-type-changed';
@@ -30,14 +30,14 @@ const ALIGN_SYNC_EVENT = 'chem-align-sync';
 const HIGHLIGHT_SYNC_EVENT = 'chem-highlight-sync';
 let chemFilterid = 0;
 
-const searchTypeHints  = {
+const searchTypeHints = {
   [SubstructureSearchType.CONTAINS]: 'search structures which contain sketched pattern as a substructure',
   [SubstructureSearchType.INCLUDED_IN]: 'search structures for which sketched pattern is a superstructure',
   [SubstructureSearchType.NOT_CONTAINS]: 'search structures which DO NOT contain sketched pattern as a substructure',
   [SubstructureSearchType.NOT_INCLUDED_IN]: 'search structures for which sketched pattern is NOT a superstructure',
   [SubstructureSearchType.EXACT_MATCH]: 'search structures which exactly match sketched pattern',
   [SubstructureSearchType.IS_SIMILAR]: 'search structures similar to sketched pattern',
-}
+};
 
 interface ISubstructureFilterState {
   bitset?: DG.BitSet;
@@ -95,7 +95,7 @@ export class SubstructureFilter extends DG.Filter {
   similarityCutOffInput: DG.InputBase;
   fpInput: DG.InputBase;
   similarityOptionsDiv = ui.divH([], 'chem-filter-similarity-options');
-  sketcherDiv = ui.div('', 'chem-filter-sketcher-div')
+  sketcherDiv = ui.div('', 'chem-filter-sketcher-div');
   emptySketcherDiv = ui.divH([], 'chem-empty-filter');
   optionsIcon: HTMLElement;
   searchTypeChanged = new Subject();
@@ -103,7 +103,7 @@ export class SubstructureFilter extends DG.Filter {
   showOptions = false;
   searchNotCompleted = false;
   recalculateFilter = false;
-  
+
   get calculating(): boolean {return this.loader.style.display == 'initial';}
   set calculating(value: boolean) {this.loader.style.display = value ? 'initial' : 'none';}
 
@@ -127,37 +127,37 @@ export class SubstructureFilter extends DG.Filter {
     this.root = ui.divV([]);
     this.calculating = false;
 
-    this.searchTypeInput = ui.choiceInput('', this.searchType, this.searchTypes, () => { 
+    this.searchTypeInput = ui.input.choice('', {value: this.searchType, items: this.searchTypes, onValueChanged: () => {
       this.onSearchTypeChanged();
-    });
+    }});
     ui.tooltip.bind(this.searchTypeInput.input, () => {
-      return searchTypeHints[this.searchTypeInput.value as SubstructureSearchType]
+      return searchTypeHints[this.searchTypeInput.value as SubstructureSearchType];
     });
     this.searchTypeInput.root.classList.add('chem-filter-search-type');
 
-    this.fpInput = ui.choiceInput('FP', this.fp, this.fpsTypes, () => {
-      this.fp = this.fpInput.value;
+    this.fpInput = ui.input.choice('FP', {value: this.fp, items: this.fpsTypes, onValueChanged: (value) => {
+      this.fp = value;
       !this.fpSync ? this.searchTypeChanged.next() : this.fpSync = false;
-    });
+    }});
     this.fpInput.input.classList.add('chem-filter-fp-editor');
     this.fpInput.captionLabel.classList.add('chem-filter-fp-label');
 
     const property =
     {
-      "name": "lim",
-      "type": DG.TYPE.FLOAT,
-      "showSlider": true,
-      "min": 0,
-      "max": 1,
-      "nullable": false,
+      'name': 'lim',
+      'type': DG.TYPE.FLOAT,
+      'showSlider': true,
+      'min': 0,
+      'max': 1,
+      'nullable': false,
     };
     const slider = DG.Property.fromOptions(property);
-    const initialCutOff = { lim: 0.8 };
+    const initialCutOff = {lim: 0.8};
     this.similarityCutOffInput = ui.input.forProperty(slider, initialCutOff);
     this.similarityCutOffInput.input.classList.add('chem-filter-sim-cutoff-editor');
     this.similarityCutOffInput.captionLabel.classList.add('chem-filter-sim-cutoff-label');
-    this.similarityCutOffInput.onChanged(() => {
-      this.similarityCutOff = this.similarityCutOffInput.value;
+    this.similarityCutOffInput.onChanged.subscribe((value) => {
+      this.similarityCutOff = value;
       !this.similarityCutOffSync ? this.searchTypeChanged.next() : this.similarityCutOffSync = false;
     });
 
@@ -184,15 +184,15 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   get _debounceTime(): number {
-     if (this.column == null)
-       return 1000;
-     const length = this.column.length;
-     const minLength = 500;
-     const maxLength = 10000;
-     const msecMax = 1000;
-     if (length < minLength) return 0;
-     if (length > maxLength) return msecMax;
-     return Math.floor(msecMax * ((length - minLength) / (maxLength - minLength)));
+    if (this.column == null)
+      return 1000;
+    const length = this.column.length;
+    const minLength = 500;
+    const maxLength = 10000;
+    const msecMax = 1000;
+    if (length < minLength) return 0;
+    if (length > maxLength) return msecMax;
+    return Math.floor(msecMax * ((length - minLength) / (maxLength - minLength)));
   }
 
   attach(dataFrame: DG.DataFrame): void {
@@ -203,12 +203,12 @@ export class SubstructureFilter extends DG.Filter {
         return;
       });
     };
-    //this fix is required for Marvin JS sync between filter panel and hamburger menu 
+    //this fix is required for Marvin JS sync between filter panel and hamburger menu
     ui.tools.waitForElementInDom(this.sketcher.root).then(async () => {
       let inplaceSketcher = false;
       try {
         await awaitCheck(() => this.sketcher._mode === DG.chem.SKETCHER_MODE.EXTERNAL);
-      } catch(e) {
+      } catch (e) {
         inplaceSketcher = true;
       }
       if (inplaceSketcher) {
@@ -239,7 +239,6 @@ export class SubstructureFilter extends DG.Filter {
           const smarts = _convertMolNotation(this.currentMolfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, getRdKitModule());
           this.finishSearch(getSearchQueryAndType(smarts, this.searchType, this.fp, this.similarityCutOff));
         }
-
       }));
 
     this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => {
@@ -251,8 +250,8 @@ export class SubstructureFilter extends DG.Filter {
     this.subs.push(grok.events.onCustomEvent(FILTER_SYNC_EVENT).subscribe((state: ISubstructureFilterState) => {
       if (state.colName === this.columnName && this.tableName == state.tableName && this.filterId !== state.filterId) {
         /* setting syncEvent to true if base sketcher is initialized or sketcher is in inplace mode and we are setting new molecule.
-        If base sketcher is initialized, it will fire onChange event */     
-        _package.logger.debug(`********** sync event sent by filter ${state.filterId} to ${this.filterId}`); 
+        If base sketcher is initialized, it will fire onChange event */
+        _package.logger.debug(`********** sync event sent by filter ${state.filterId} to ${this.filterId}`);
         if (this.currentSearches.size > 0)
           grok.events.fireCustomEvent(this.terminateEventName, this.currentSearches.values().next().value);
         const updateMolecule = this.currentMolfile != state.molblock!;
@@ -260,7 +259,7 @@ export class SubstructureFilter extends DG.Filter {
         if ((this.sketcher.sketcher?.isInitialized || this.sketcher._mode == DG.chem.SKETCHER_MODE.INPLACE) && updateMolecule) {
           this.syncEvent = true;
           _package.logger.debug(`set sync to true syncEvent: ${this.syncEvent}, filter id${this.filterId}`);
-        } 
+        }
         this.currentMolfile = state.molblock!;
         this.bitset = state.bitset!;
         _package.logger.debug(`in sync event , true count: ${this.bitset?.trueCount}, syncEvent: ${this.syncEvent}, filter id${this.filterId}`);
@@ -319,7 +318,7 @@ export class SubstructureFilter extends DG.Filter {
         .then((_) => { }); // Precalculating fingerprints in case they were not precalculated before
     }
 
-    let onChangedEvent: any = this.sketcher.onChanged;
+    const onChangedEvent: any = this.sketcher.onChanged;
     //onChangedEvent = onChangedEvent.pipe(debounceTime(this._debounceTime));
     this.onSketcherChangedSubs?.push(onChangedEvent.subscribe(async (_: any) => {
       _package.logger.debug(`in filter onChangedEvent, sync event: ${this.syncEvent} , ${this.filterId}`);
@@ -355,7 +354,7 @@ export class SubstructureFilter extends DG.Filter {
       grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {
         bitset: this.bitset,
         molblock: this.currentMolfile, colName: this.columnName, filterId: this.filterId,
-        tableName: this.tableName, searchType: this.searchType, simCutOff: this.similarityCutOff, fp: this.fp
+        tableName: this.tableName, searchType: this.searchType, simCutOff: this.similarityCutOff, fp: this.fp,
       });
     };
     //terminating search (in case the search was active at the moment of detach)
@@ -365,7 +364,7 @@ export class SubstructureFilter extends DG.Filter {
     this.finishSearch(getSearchQueryAndType(smarts, this.searchType, this.fp, this.similarityCutOff));
     if (this.column?.temp[FILTER_SCAFFOLD_TAG])
       this.column.temp[FILTER_SCAFFOLD_TAG] = null;
-    super.detach(); //super.detach() leads to automatic call of requestFilter -> applyFilter 
+    super.detach(); //super.detach() leads to automatic call of requestFilter -> applyFilter
     this.onSketcherChangedSubs?.forEach((it) => it.unsubscribe());
   }
 
@@ -408,11 +407,11 @@ export class SubstructureFilter extends DG.Filter {
     _package.logger.debug(`in apply filter , true count: ${this.bitset?.trueCount}, filter id${this.filterId}`);
     if (this.dataFrame && this.bitset && !this.isDetached) {
       this.dataFrame.filter.and(this.bitset);
-        this.dataFrame.rows.addFilterState(this.saveState());
-        this.setFilterScaffoldTag();
-        // if filter was disabled during active search and then enabled -> need to recalculate results
-        if (this.searchNotCompleted)
-          this._onSketchChanged();
+      this.dataFrame.rows.addFilterState(this.saveState());
+      this.setFilterScaffoldTag();
+      // if filter was disabled during active search and then enabled -> need to recalculate results
+      if (this.searchNotCompleted)
+        this._onSketchChanged();
     }
   }
 
@@ -459,7 +458,7 @@ export class SubstructureFilter extends DG.Filter {
     const that = this;
     /* columnIsFilteringByStructure variable is required to handle the following:
     there are cloned views, and column is filtered by some structure. And then we apply layout with empty substructure
-    for this column. So in spite molblock is empty, we need to reset filter for this column, so need to run 
+    for this column. So in spite molblock is empty, we need to reset filter for this column, so need to run
     _onSketchChanged().
     */
     const columnIsFilteringByStructure = this.column?.temp[FILTER_SCAFFOLD_TAG] ?
@@ -495,14 +494,15 @@ export class SubstructureFilter extends DG.Filter {
         delete this.column.temp[FILTER_SCAFFOLD_TAG];
       this.terminatePreviousSearch();
       this.finishSearch(getSearchQueryAndType(newSmarts, this.searchType, this.fp, this.similarityCutOff));
-      if (this.column!.temp[CHEM_APPLY_FILTER_SYNC] && this.column!.temp[CHEM_APPLY_FILTER_SYNC].filterId === this.filterId)
+      if (this.column!.temp[CHEM_APPLY_FILTER_SYNC] && this.column!.temp[CHEM_APPLY_FILTER_SYNC].filterId === this.filterId) {
         grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset,
-          molblock: this.currentMolfile, colName: this.columnName, filterId: this.filterId, 
+          molblock: this.currentMolfile, colName: this.columnName, filterId: this.filterId,
           tableName: this.tableName, searchType: this.searchType, simCutOff: this.similarityCutOff, fp: this.fp});
+      }
       this.dataFrame?.rows.requestFilter();
     } else if ((wu(this.dataFrame!.rows.filters)
-      .has(`${this.columnName}: ${this.getFilterSummary(newMolFile)}`) || this.isFilteringBySameStructure(newMolFile))
-      && !this.recalculateFilter && !this.searchNotCompleted) {
+      .has(`${this.columnName}: ${this.getFilterSummary(newMolFile)}`) || this.isFilteringBySameStructure(newMolFile)) &&
+      !this.recalculateFilter && !this.searchNotCompleted) {
       // some other filter is already filtering for the exact same thing
       // value to pass into has() is created similarly to filterSummary property
       _package.logger.debug(`already filter by the same structure ${this.getFilterSummary(newMolFile)} , ${this.filterId}`);
@@ -519,7 +519,7 @@ export class SubstructureFilter extends DG.Filter {
       _package.logger.debug(`starting filter by ${this.currentMolfile}, ${this.filterId}`);
       try {
         grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset,
-          molblock: this.currentMolfile, colName: this.columnName, filterId: this.filterId, 
+          molblock: this.currentMolfile, colName: this.columnName, filterId: this.filterId,
           tableName: this.tableName, searchType: this.searchType, simCutOff: this.similarityCutOff, fp: this.fp});
         const bitArray = await this.getFilterBitset();
         this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
@@ -528,7 +528,7 @@ export class SubstructureFilter extends DG.Filter {
           _package.logger.debug(`progress: ${progress}, molfile: ${this.currentMolfile}, ${this.filterId}`);
           this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
           this.dataFrame?.rows.requestFilter();
-            this.progressBar?.update(progress, `${progress?.toFixed(2)}% of search completed`);
+          this.progressBar?.update(progress, `${progress?.toFixed(2)}% of search completed`);
         });
       } catch {
         this.finishSearch(getSearchQueryAndType(newSmarts, this.searchType, this.fp, this.similarityCutOff));
@@ -551,9 +551,9 @@ export class SubstructureFilter extends DG.Filter {
       this.sketcher.updateExtSketcherContent(); //updating image in minimized sketcher panel
   }
 
-  updateFilterUiOnSketcherChanged(newMolFile: string){
+  updateFilterUiOnSketcherChanged(newMolFile: string) {
     if (this.sketcher._mode !== DG.chem.SKETCHER_MODE.INPLACE) {
-      if (!!newMolFile && !chem.Sketcher.isEmptyMolfile(newMolFile)){
+      if (!!newMolFile && !chem.Sketcher.isEmptyMolfile(newMolFile)) {
         this.removeChildIfExists(this.root, this.emptySketcherDiv, 'empty-filter');
         this.root.appendChild(this.sketcherDiv);
         if (this.searchType === SubstructureSearchType.CONTAINS) {
@@ -567,8 +567,7 @@ export class SubstructureFilter extends DG.Filter {
           else
             this.removeChildIfExists(this.searchOptionsDiv, this.similarityOptionsDiv, 'chem-filter-similarity-options');
         }
-      }
-      else {
+      } else {
         this.emptySketcherDiv.append(this.searchTypeInput.root);
         this.emptySketcherDiv.append(this.sketcherDiv);
         this.root.append(this.emptySketcherDiv);
@@ -596,10 +595,9 @@ export class SubstructureFilter extends DG.Filter {
     if (this.searchType === SubstructureSearchType.IS_SIMILAR) {
       this.searchOptionsDiv.append(this.searchTypeInput.root);
       this.searchOptionsDiv.append(this.similarityOptionsDiv);
-    }
-    else
+    } else
       this.removeChildIfExists(this.searchOptionsDiv, this.similarityOptionsDiv, 'chem-filter-similarity-options');
-      !this.searchTypeSync ? this.searchTypeChanged.next() : this.searchTypeSync = false;
+    !this.searchTypeSync ? this.searchTypeChanged.next() : this.searchTypeSync = false;
   }
 
   renderShowOptionsDiv() {
@@ -622,12 +620,13 @@ export class SubstructureFilter extends DG.Filter {
     const finish = () => {
       _package.logger.debug(`in finish function ${queryMolAndType}, ${this.filterId}`);
       if (this.currentSearches.size === 0) {
-        if (this.column!.temp[CHEM_APPLY_FILTER_SYNC] && this.column!.temp[CHEM_APPLY_FILTER_SYNC].filterId === this.filterId)
+        if (this.column!.temp[CHEM_APPLY_FILTER_SYNC] && this.column!.temp[CHEM_APPLY_FILTER_SYNC].filterId === this.filterId) {
           grok.events.fireCustomEvent(FILTER_SYNC_EVENT, { //synchronize the results with other substructure filters on the same column
             bitset: this.bitset,
             molblock: this.currentMolfile, colName: this.columnName, filterId: this.filterId,
-            tableName: this.tableName, searchType: this.searchType, simCutOff: this.similarityCutOff, fp: this.fp
+            tableName: this.tableName, searchType: this.searchType, simCutOff: this.similarityCutOff, fp: this.fp,
           });
+        }
         this.calculating = false;
         this.progressBar?.close();
         this.progressBar = null;

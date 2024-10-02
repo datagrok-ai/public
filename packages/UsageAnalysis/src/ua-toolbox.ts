@@ -17,10 +17,10 @@ export class UaToolbox {
   groupsInput: ChoiceInputGroups;
   packagesInput: ChoiceInputPackages;
   filterStream: BehaviorSubject<UaFilter>;
-  dateFromDD: DG.InputBase = ui.stringInput('From', '');
-  dateToDD: DG.InputBase = ui.stringInput('To', '');
-  usersDD: DG.InputBase = ui.stringInput('Users', '');
-  packagesDD: DG.InputBase = ui.stringInput('Packages', '');
+  dateFromDD: DG.InputBase = ui.input.string('From', {value: ''});
+  dateToDD: DG.InputBase = ui.input.string('To', {value: ''});
+  usersDD: DG.InputBase = ui.input.string('Users', {value: ''});
+  packagesDD: DG.InputBase = ui.input.string('Packages', {value: ''});
   viewHandler: ViewHandler;
   private _backToView: string = 'Packages';
   set backToView(value: string) {
@@ -40,7 +40,7 @@ export class UaToolbox {
   static async construct(viewHandler: ViewHandler) {
     const date = 'this week';
     const packages = ['all'];
-    const dateInput = ui.stringInput('Date', date);
+    const dateInput = ui.input.string('Date', {value: date});
     dateInput.addPatternMenu('datetime');
     dateInput.setTooltip('Set the date period');
     const groupsInput = await ChoiceInputGroups.construct();
@@ -75,7 +75,7 @@ export class UaToolbox {
       });
       applyB.classList.add('ua-apply-button');
       applyB.disabled = true;
-      dateInput.onChanged(() => applyB.disabled = false);
+      dateInput.onChanged.subscribe(() => applyB.disabled = false);
       $(form).append(applyB);
       this.dateFromDD.readOnly = true;
       this.dateToDD.readOnly = true;

@@ -10,8 +10,6 @@ onmessage = (event) => {
   } = event.data;
   const data: { error?: any, distanceMatrixData?: Float32Array, min?: number, max?: number} = {};
   try {
-    // if (startRow != -1)
-    //   throw new Error('Error in distance matrix worker'); // TODO: remove this line
     let i = startRow;
     let j = startCol;
     let cnt = 0;

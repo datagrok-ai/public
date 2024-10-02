@@ -1,10 +1,10 @@
 {
   "name": "@datagrok/api-tests",
   "friendlyName": "API Tests",
-  "version": "1.7.14",
+  "version": "1.7.17",
   "author": {
-    "name": "Anna Muzychyna",
-    "email": "amuzychyna@datagrok.ai"
+    "name": "Savenko Stanislav",
+    "email": "ssavenko@datagrok.ai"
   },
   "servicePackage": true,
   "description": "Automated tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
@@ -14,9 +14,9 @@
     "directory": "packages/ApiTests"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.2.11",
+    "@datagrok-libraries/utils": "^4.3.0",
     "cash-dom": "^8.1.1",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.21.1",
     "dayjs": "^1.11.10",
     "rxjs": "^6.6.7",
     "wu": "latest"
@@ -46,6 +46,8 @@
     "test": "grok test",
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
+    "debug": "webpack && grok publish",
+    "release": "webpack && grok publish --release",
     "debug-local": "grok publish local",
     "release-local": "grok publish local --release",
     "debug-js-api-tests-dev": "grok publish dev",
@@ -53,7 +55,7 @@
     "debug-js-api-tests-public": "grok publish public",
     "release-js-api-tests-public": "grok publish public --release",
     "debug-js-api-tests-local": "grok publish local",
-    "release-js-api-tests-local": "grok publish local --release",
+    "release-js-api-tests-local": "webpack && grok publish localhost --release",
     "debug-js-api-tests-localhost": "grok publish localhost",
     "release-js-api-tests-localhost": "npm run build-js-api-tests && grok publish localhost --release"
   },

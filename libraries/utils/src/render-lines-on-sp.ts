@@ -35,6 +35,9 @@ export type ILineSeries = {
     visibility?: BitArray; // individual parameter for each line. Set bit to false to hide the line
     arrowSize?: number; // common for all arrows
     skipMultiLineCalculation?: boolean;
+    skipShortLines?: boolean; // skip rendering of lines shorter than ${} pixels
+    shortLineThreshold?: number; // threshold for short lines
+    skipMouseOverDetection?: boolean; // skip mouse over detection
 }
 
 export class ScatterPlotLinesRenderer {
@@ -90,12 +93,15 @@ export class ScatterPlotLinesRenderer {
       this.arrowWidth = lines.arrowSize;
 
     this.canvas.onmousedown = (event: MouseEvent) => {
+      if (this.lines?.skipMouseOverDetection) // if hovering is disabled, calculate coordinates on click
+        this.mouseOverLineId = this.checkCoordsOnLine(event.offsetX, event.offsetY);
+
       if (this.mouseOverLineId !== -1)
         this.lineClicked.next({x: event.clientX, y: event.clientY, id: this.mouseOverLineId, event: event});
     };
 
     this.canvas.onmousemove = (event: MouseEvent) => {
-      this.mouseOverLineId = this.checkCoordsOnLine(event.offsetX, event.offsetY);
+      this.mouseOverLineId = this.lines?.skipMouseOverDetection ? -1 : this.checkCoordsOnLine(event.offsetX, event.offsetY);
       if (this.mouseOverLineId !== -1)
         this.lineHover.next({x: event.clientX, y: event.clientY, id: this.mouseOverLineId, event: event});
     };
@@ -116,18 +122,18 @@ export class ScatterPlotLinesRenderer {
   }
 
   renderLines(): void {
-    const spLook = this.sp.getOptions().look;
-    const individualLineStyles = this.lines.colors || this.lines.width || this.lines.opacities || this.lines.drawArrowsArr;
+    const individualLineStyles = this.lines.colors || this.lines.widths || this.lines.opacities || this.lines.drawArrowsArr;
     if (!individualLineStyles) {
       this.ctx.lineWidth = this.lines.width ?? 1;
       this.ctx.strokeStyle = `rgba(${this.lines.color ?? '0,128,0'},${this.lines.opacity ?? 1})`;
     }
-    const markerSizeCol = spLook['sizeColumnName'] ? this.sp.dataFrame.col(spLook['sizeColumnName']) : null;
     const filter = this.sp.dataFrame.filter;
+    const shortLineSquare = (this.lines.shortLineThreshold ?? 5) ** 2;
     for (let i = 0; i < this.lines.from.length; i++) {
       if (filter.get(this.lines.from[i]) && filter.get(this.lines.to[i]) && this.visibility.getBit(i)) {
         let lineLen = 0;
-        const {sizeFrom, sizeTo} = this.getMarkersSizes(spLook, markerSizeCol, i);
+        const sizeFrom = this.sp.getMarkerSize(this.lines.from[i]) / 2;
+        const sizeTo = this.sp.getMarkerSize(this.lines.to[i]) / 2;
         const pointFrom = this.sp.worldToScreen(this.xAxisCol.get(this.lines.from[i]), this.yAxisCol.get(this.lines.from[i]));
         let aX = pointFrom?.x;
         let aY = pointFrom?.y;
@@ -138,10 +144,10 @@ export class ScatterPlotLinesRenderer {
         this.ctx.beginPath();
         if (aX && aY && bX && bY && Math.hypot(bX! - aX!, bY! - aY!) / minAxis > 0.01) {
           if (individualLineStyles) {
-            const color = this.lines.colors?.[i] ? this.lines.colors?.[i] : '0,128,0';
-            const opacity = this.lines.opacities?.[i] ? this.lines.opacities?.[i] : 1;
+            const color = this.lines.colors?.[i] ? this.lines.colors?.[i] : this.lines.color ?? '0,128,0';
+            const opacity = this.lines.opacities?.[i] ? this.lines.opacities?.[i] : this.lines.opacity ?? 1;
             this.ctx.strokeStyle = `rgba(${color},${opacity})`;
-            this.ctx.lineWidth = this.lines.widths?.[i] ? this.lines.widths?.[i] : 1;
+            this.ctx.lineWidth = this.lines.widths?.[i] ? this.lines.widths?.[i] : this.lines.width ?? 1;
           }
           if (i === this._currentLineIdx)
             this.toggleCurrentLineStyle(true);
@@ -161,8 +167,11 @@ export class ScatterPlotLinesRenderer {
             this.ctx.moveTo(aX!, aY!);
             this.ctx.quadraticCurveTo(controlPoint.x, controlPoint.y, bX, bY);
           } else {
-            this.ctx.moveTo(aX!, aY!);
-            this.ctx.lineTo(bX, bY);
+            // do not draw line if it is too short
+            if (!this.lines.skipShortLines || (bX - aX) ** 2 + (bY - aY) ** 2 > shortLineSquare) {
+              this.ctx.moveTo(aX!, aY!);
+              this.ctx.lineTo(bX, bY);
+            }
           }
           if (this.lines.drawArrows ?? this.lines.drawArrowsArr?.getBit(i)) {
             if (!lineLen)
@@ -199,20 +208,6 @@ export class ScatterPlotLinesRenderer {
     }
   }
 
-  getMarkersSizes(spLook: any, markerSizeCol: DG.Column | null, i: number): MarkerSize {
-    let sizeFrom = 3;
-    let sizeTo = 3;
-    if (markerSizeCol) {
-      sizeFrom = (spLook.markerMinSize + (spLook.markerMaxSize - spLook.markerMinSize) * markerSizeCol.scale(this.lines.from[i])) / 2;
-      sizeTo = (spLook.markerMinSize + (spLook.markerMaxSize - spLook.markerMinSize) * markerSizeCol.scale(this.lines.to[i])) / 2;
-    } else if (spLook.markerDefaultSize) {
-      sizeFrom = spLook.markerDefaultSize / 2;
-      sizeTo = spLook.markerDefaultSize / 2;
-    }
-    return {sizeFrom, sizeTo};
-  }
-
-
   fillLeftBottomRect() {
     const rect = new Path2D();
     rect.rect(this.sp.yAxisBox.minX, this.sp.yAxisBox.maxY, this.sp.yAxisBox.width, this.sp.xAxisBox.height);
@@ -223,38 +218,38 @@ export class ScatterPlotLinesRenderer {
   }
 
   createMultiLinesIndices(): void {
-    const arrayIdxsBitArray = new BitArray(this.lines.from.length);
-    arrayIdxsBitArray.setAll(true);
-    for (let i = -1; (i = arrayIdxsBitArray.findNext(i)) !== -1;) {
-      const firstLineIdx = i;
-      const p1 = this.lines.from[firstLineIdx];
-      const p2 = this.lines.to[firstLineIdx];
-      let linesPerPair = 1;
-      for (let j = i; (j = arrayIdxsBitArray.findNext(j)) !== -1;) {
-        const pointToCompare1 = this.lines.from[j];
-        const pointToCompare2 = this.lines.to[j];
-        if (pointToCompare1 === p1 && pointToCompare2 === p2 ||
-                    pointToCompare2 === p1 && pointToCompare1 === p2) {
-          this.multipleLinesCounts[j] = ++linesPerPair;
-          arrayIdxsBitArray.setBit(j, false, false);
-        }
+    const linesDict: {[key: string]: number[]} = {};
+    for (let i = 0; i < this.lines.from.length; i++) {
+      let smallerNum = 0;
+      let biggerNum = 0;
+      if (this.lines.from[i] < this.lines.to[i]) {
+        smallerNum = this.lines.from[i];
+        biggerNum = this.lines.to[i];
+      } else {
+        smallerNum = this.lines.to[i];
+        biggerNum = this.lines.from[i];
       }
-      if (linesPerPair > 1)
-        this.multipleLinesCounts[firstLineIdx] = 1;
-      arrayIdxsBitArray.setBit(i, false, false);
-    }
+      if (!linesDict[`${smallerNum}|${biggerNum}`]) {
+        linesDict[`${smallerNum}|${biggerNum}`] = [i];
+      } else {
+        if (linesDict[`${smallerNum}|${biggerNum}`].length === 1) {
+          this.multipleLinesCounts[linesDict[`${smallerNum}|${biggerNum}`][0]] = 1;
+          linesDict[`${smallerNum}|${biggerNum}`].push(1);
+        }
+        this.multipleLinesCounts[i] = ++linesDict[`${smallerNum}|${biggerNum}`][1];
+      }
+    } 
   }
 
   checkCoordsOnLine(x: number, y: number): number {
     let candidateIdx = -1;
     let minDist = null;
     let dist = null;
-    const spLook = this.sp.getOptions().look;
-    const markerSizeCol = spLook['sizeColumnName'] ? this.sp.dataFrame.col(spLook['sizeColumnName']) : null;
     const filter = this.sp.dataFrame.filter;
     for (let i = 0; i < this.lines.from.length; i++) {
       if (filter.get(this.lines.from[i]) && filter.get(this.lines.to[i]) && this.visibility.getBit(i)) {
-        const {sizeFrom, sizeTo} = this.getMarkersSizes(spLook, markerSizeCol, i);
+        const sizeFrom = this.sp.getMarkerSize(this.lines.from[i]) / 2;
+        const sizeTo = this.sp.getMarkerSize(this.lines.to[i]) / 2;
         const pFrom = this.sp.worldToScreen(this.xAxisCol.get(this.lines.from[i]), this.yAxisCol.get(this.lines.from[i]));
         const pTo = this.sp.worldToScreen(this.xAxisCol.get(this.lines.to[i]), this.yAxisCol.get(this.lines.to[i]));
         if (this.multipleLinesCounts[i]) {
@@ -265,9 +260,9 @@ export class ScatterPlotLinesRenderer {
             this.findControlPoint(this.multipleLinesCounts[i], fromMarker.x, fromMarker.y, toMarker.x, toMarker.y, i) :
             this.findControlPoint(this.multipleLinesCounts[i], toMarker.x, toMarker.y, fromMarker.x, fromMarker.y, i);
           dist = this.calculateDistToCurveLine(i, x, y, fromMarker, toMarker, controlPoint);
-        } else {
+        } else
           dist = this.calculateDistToStraightLine(x, y, pFrom, pTo);
-        }
+
         if ((!minDist && dist !== null && dist < 5) || minDist && dist !== null && dist < minDist) {
           minDist = dist;
           candidateIdx = i;

@@ -1,10 +1,10 @@
 {
   "name": "@datagrok/drug-bank",
   "friendlyName": "DrugBank",
-  "version": "1.0.17",
+  "version": "1.1.0",
   "author": {
-    "name": "Volodymyr Dyma",
-    "email": "vdyma@datagrok.ai"
+    "name": "Maria Dolotova",
+    "email": "mdolotova@datagrok.ai"
   },
   "description": "Molecular similarity and substructure search capabilities in the [DrugBank](https://go.drugbank.com/) [Open Structures](https://go.drugbank.com/releases/latest#open-data) dataset.",
   "repository": {
@@ -17,7 +17,7 @@
     "cash-dom": "latest",
     "dayjs": "latest",
     "openchemlib": "latest",
-    "@datagrok-libraries/utils": "^4.2.11"
+    "@datagrok-libraries/utils": "^4.3.0"
   },
   "devDependencies": {
     "ts-loader": "latest",
@@ -28,7 +28,7 @@
     "@typescript-eslint/parser": "latest",
     "eslint": "latest",
     "eslint-config-google": "latest",
-    "@datagrok/chem": "latest"
+    "@datagrok/chem": "^1.12.0"
   },
   "scripts": {
     "install-dependencies": "npm install",

@@ -85,12 +85,14 @@ export async function changeOptionsSaveLayout(args: any, withDelay = true): Prom
     try {
         optns = args.viewer!.getOptions(true).look;
     } catch (err: any) {
+        //@ts-ignore
         throw new Error(`Viewer's .getOptions() error.`, { cause: err });
     }
     let props: DG.Property[];
     try {
         props = args.viewer!.getProperties();
     } catch (err: any) {
+        //@ts-ignore
         throw new Error(`Viewer's .getProperties() error.`, { cause: err });
     }
     //change options and properties

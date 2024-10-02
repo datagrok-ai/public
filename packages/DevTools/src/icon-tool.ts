@@ -10,7 +10,7 @@ export class IconTool extends DG.ViewBase {
 
     this.name = name;
 
-    const fileUrl = ui.stringInput('', '');
+    const fileUrl = ui.input.string('', {value: ''});
     fileUrl.readOnly = true;
     fileUrl.enabled = false;
     //@ts-ignore
@@ -31,15 +31,11 @@ export class IconTool extends DG.ViewBase {
     $(fileButtons).css('margin', '0');
     $(fileButtons).children('label').text('Add image');
 
-    const blendMode = ui.choiceInput('Blend mode', 'normal', ['normal', 'multiply', 'darken', 'lighter', 'screen', 'overlay', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'color', 'luminosity'], (value)=>setBlendMode(value));
-    //@ts-ignore
-    const text = ui.stringInput('Add text', '', (value) => setText(value, fontColorPicker.value, fontSize.value, fontWeight.value));
-    //@ts-ignore
-    const fontSize = ui.intInput('Text size', '60', (value) => setText(text.value, fontColorPicker.value, value, fontWeight.value));
+    const blendMode = ui.input.choice('Blend mode', {value: 'normal', items: ['normal', 'multiply', 'darken', 'lighter', 'screen', 'overlay', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'color', 'luminosity'], onValueChanged: (value) => setBlendMode(value)});
+    const text = ui.input.string('Add text', {value: '', onValueChanged: (value) => setText(value, fontColorPicker.value, fontSize.value, fontWeight.value)});
+    const fontSize = ui.input.int('Text size', {value: 60, onValueChanged: (value) => setText(text.value, fontColorPicker.value, value, fontWeight.value)});
     $(fontSize.input).attr('type', 'number');
-    //@ts-ignore
-    const fontWeight = ui.choiceInput('Font weight', 'normal', ['lighter', 'normal', 'bold'], (value) => setText(text.value, fontColorPicker.value, fontSize.value, value));
-    //@ts-ignore
+    const fontWeight = ui.input.choice('Font weight', {value: 'normal', items: ['lighter', 'normal', 'bold'], onValueChanged: (value) => setText(text.value, fontColorPicker.value, fontSize.value, value)});
     fontWeight.input.style.width='100%';
 
     const textX = ui.element('input', 'textX');
@@ -56,7 +52,8 @@ export class IconTool extends DG.ViewBase {
     $(textY).attr('value', '00');
     $(textY).css('margin-left', '5px');
     //@ts-ignore
-    const imageMargin = ui.intInput('Margins', '0', (value) => setImage(image, imageRange.value, imageMargin.value));
+    const imageMargin = ui.input.int('Margins', {value: 0,
+      onValueChanged: (value) => setImage(image, imageRange.value, value)});
     $(imageMargin.input).attr('type', 'number');
     const imageRange = ui.element('input', 'imageRange');
     $(imageRange).attr('type', 'range');

@@ -52,7 +52,7 @@ category('creation', () => {
 		await delay(50);
 		console.log(`Creation took ${stop.valueOf() - start.valueOf()} ms`)
 		return `${DG.Test.isInBenchmark ? 1000 : 100} points, took ${stop.valueOf() - start.valueOf()} ms`
-	});
+	}, {benchmark: true});
 });
 
 category('rendering', () => {
@@ -72,7 +72,7 @@ category('rendering', () => {
 			g.clearRect(0, 0, canvasWidth, canvasHeight);
 		}
 		return `rendering performed ${renderingTimesAmount} times`;
-	});
+	}, {benchmark: true});
 
 	test('rendering different fitChartData on canvas', async () => {
 		const canvasWidth = 160;
@@ -90,7 +90,7 @@ category('rendering', () => {
 			g.clearRect(0, 0, canvasWidth, canvasHeight);
 		}
 		return `rendering performed ${renderingTimesAmount} times`;
-	});
+	}, {benchmark: true});
 
 	test('rendering in grid', async () => {
 		const df = createDemoDataFrame(30, 5, 2);

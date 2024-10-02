@@ -25,6 +25,8 @@ export async function markovClusterWebGPU(
     //console.log(checkSorted(res.KNNIndexes, res.indexOffsets));
 
     const expandRes = await expandNoRevive(device, res.KNNSimilarities, res.KNNIndexes, res.indexOffsets, nRows);
+
+    await sparseKNNNoralizeColwise(device, expandRes.KNNSimilarities, expandRes.indexOffsets, nRows);
     // then we inflate the similarities
     inflate(expandRes.KNNSimilarities, inflateFactor);
 

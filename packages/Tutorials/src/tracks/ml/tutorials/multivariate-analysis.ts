@@ -36,22 +36,19 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     // We create fake dialog that runs analysis (since inputs of the "main" dialog are added using ui.form).
     const dlg = ui.dialog({title: 'Multivariate Analysis (PLS)', helpUrl: this.helpUrl});
 
-    dlg.add(ui.columnInput('Predict', this.t!, null, () => {}, {
+    dlg.add(ui.input.column('Predict', {table: this.t!,
       filter: (col: DG.Column) => (col.type === DG.COLUMN_TYPE.INT) || (col.type === DG.COLUMN_TYPE.FLOAT)
     }));
   
-    dlg.add(ui.columnsInput('Using', this.t!, () => {}, {
-      available: this.t!.columns.toList().filter((col) => 
+    dlg.add(ui.input.columns('Using', {table: this.t!,
+      value: [], available: this.t!.columns.toList().filter((col) =>
         (col.type === DG.COLUMN_TYPE.INT) || (col.type === DG.COLUMN_TYPE.FLOAT)
       ).map((col) => col.name),
-      checked: [],
     }));
   
-    dlg.add(ui.intInput('Components', null, () => {}));
+    dlg.add(ui.input.int('Components'));
   
-    dlg.add(ui.columnInput('Names', this.t!, null, () => {}, {
-      filter: (col: DG.Column) => (col.type === DG.COLUMN_TYPE.STRING)
-    }));
+    dlg.add(ui.input.column('Names', {table: this.t!, filter: (col: DG.Column) => (col.type === DG.COLUMN_TYPE.STRING)}));
 
     let viewers = [] as DG.Viewer[];
   

@@ -15,6 +15,7 @@ import * as utils from '../../utils/utils';
   icon: 'icons/tree-viewer.svg',
 })
 export class TreeViewer extends EChartViewer {
+  private renderQueue: Promise<void> = Promise.resolve();
   layout: layoutType;
   orient: orientation;
   expandAndCollapse: boolean;
@@ -191,7 +192,7 @@ export class TreeViewer extends EChartViewer {
     setItemStyle(data);
   }
 
-  getSeriesData() {
+  async getSeriesData() {
     const aggregations = [];
 
     if (this.sizeColumnName && this.applySizeAggr)
@@ -202,16 +203,21 @@ export class TreeViewer extends EChartViewer {
       aggregations.push({ type: <DG.AggregationType> this.colorAggrType,
         columnName: this.colorColumnName, propertyName: 'color' });
 
-    return [TreeUtils.toTree(this.dataFrame, this.hierarchyColumnNames, this.filter, null, aggregations)];
+    return [await TreeUtils.toTree(this.dataFrame, this.hierarchyColumnNames, this.filter, null, aggregations)];
   }
 
-  render() {
+  render(): void {
+    this.renderQueue = this.renderQueue
+      .then(() => this._render());
+  }
+
+  async _render() {
     if (this.hierarchyColumnNames?.some((colName) => !this.dataFrame.columns.names().includes(colName)))
       this.hierarchyColumnNames = this.hierarchyColumnNames.filter((value) => this.dataFrame.columns.names().includes(value));
     if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0)
       return;
 
-    this.option.series[0].data = this.getSeriesData();
+    this.option.series[0].data = await this.getSeriesData();
 
     this.option.series[0]['symbolSize'] = this.sizeColumnName && this.applySizeAggr ?
       (value: number, params: {[key: string]: any}) => utils.data.mapToRange(

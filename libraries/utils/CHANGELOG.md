@@ -1,5 +1,89 @@
 # utils changelog
 
+## 4.3.4 (2024-09-25) 
+
+utils lib: Add setActive and onValueChanged for ActiveFiles for dialog history
+
+## 4.3.5 (2024-09-26) 
+
+utils lib: Add setActive and onValueChanged for ActiveFiles for dialog history
+
+## 4.2.30 (2024-09-06)
+
+Preparing 1.21.1 release
+
+## 4.2.29 (2024-08-23)
+
+Fixed test reporting
+
+## 4.2.28 (2024-08-21)
+
+Forms viewer: Fixed color coding bug (incorrect indexing if dataframe is filtered or sorted)
+
+## 4.2.27 (2024-08-16)
+
+Invocation time refactoring
+
+## 4.2.26 (2024-08-15)
+
+Invocation time refactoring
+
+## 4.2.25 (2024-08-15)
+
+Added invocation time to tests
+
+## 4.2.24 (2024-08-09)
+
+Forms viewer: Don't use color coding with molecule columns
+
+## 4.2.23 (2024-08-09)
+
+Forms viewer: Ability to resize header, sending event on input click
+
+## 4.2.22 (2024-08-09)
+
+Added stress test invocation method
+
+## 4.2.21 (2024-08-07)
+
+Added stress test flag to test options
+
+## 4.2.20 (2024-08-06)
+
+Optimize linesrenderer for short lines and no mouseover checking conditions. add options to items grid
+
+## 4.2.19 (2024-08-02)
+
+Fix benchmark timeout
+
+## 4.2.18 (2024-08-02)
+
+Added benchmark timeout as test variable
+
+## 4.2.17 (2024-08-02)
+
+ScatterPlotLInesRenderer: speed up multiple lines indexes calculations
+
+## 4.2.16 (2024-08-02)
+
+Fixed core tests output to the Test Manager app
+
+## 4.2.15 (2024-07-30)
+
+Removed Unhadled exception test for benchmarks
+
+## 4.2.14 (2024-07-29)
+
+Fixed setting lines width, color and opacity in ScatterPlotLinesRenderer
+
+## 4.2.13 (2024-07-15)
+
+Added benchmark flag to category options
+
+## 4.2.12 (2024-07-15)
+
+Added benchmark flag to test options
+
 ## 4.2.11 (2023-06-20)
 
 New tests reporting method.
@@ -74,7 +158,8 @@ Fix the lastError problem in the test engine.
 
 ### Features
 
-* [#2687](https://github.com/datagrok-ai/public/issues/2687): Forms viewer: Added an option to adjust the size of the molecule.
+* [#2687](https://github.com/datagrok-ai/public/issues/2687): Forms viewer: Added an option to adjust the size of the
+  molecule.
 * Lowered line threshold for scatterplot lines renderer.
 
 ## 4.1.43 (2024-02-15)
@@ -98,7 +183,7 @@ Fix the lastError problem in the test engine.
 
 * Added to testViewer support options.awaitViewer
 
-### Bug fixes 
+### Bug fixes
 
 * Fixed testViewer for element selector
 

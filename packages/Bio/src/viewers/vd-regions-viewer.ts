@@ -392,8 +392,8 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
     // this.mainLayout.style.height = '100%';
     // this.mainLayout.style.border = '1px solid black';
 
-    this.filterSourceInput = ui.choiceInput<FilterSources>('Data source', this.filterSource,
-      Object.values(FilterSources), this.filterSourceInputOnValueChanged.bind(this));
+    this.filterSourceInput = ui.input.choice<FilterSources>('Data source', {value: this.filterSource,
+      items: Object.values(FilterSources), onValueChanged: this.filterSourceInputOnValueChanged.bind(this)});
     this.filterSourceInput.root.style.position = 'absolute';
     this.filterSourceInput.root.style.right = '9px';
     this.filterSourceInput.root.style.top = '-4px';

@@ -35,15 +35,15 @@ main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
 
   test('curate.smiles', async () => {
     await curate(DG.Test.isInBenchmark ? grok.data.demo.molecules(500) : smiles, 'smiles');
-  }, {timeout: 60000});
+  }, {timeout: 60000, benchmark: true});
 
   test('curate.molV2000', async () => {
     await curate(spgi100, 'Structure');
-  }, {timeout: 60000});
+  }, {timeout: 60000, benchmark: true});
 
   test('curate.molV3000', async () => {
     await curate(approvedDrugs100, 'molecule');
-  }, {timeout: 60000});
+  }, {timeout: 60000, benchmark: true});
 
   test('curate.emptyValues', async () => {
     const df = await readDataframe('tests/sar-small_empty_vals.csv');
@@ -69,23 +69,23 @@ main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
 
   test('mutate.smiles', async () => {
     await mutate('CN1C(CC(O)C1=O)C1=CN=CC=C1');
-  }, {timeout: 60000});
+  }, {timeout: 60000, benchmark: true});
 
   test('mutate.molV2000', async () => {
     await mutate(molV2000);
-  }, {timeout: 60000});
+  }, {timeout: 60000, benchmark: true});
 
   test('mutate.molV3000', async () => {
     await mutate(molV3000);
-  }, {timeout: 60000});
+  }, {timeout: 60000, benchmark: true});
 
   test('mutate.emptyInput', async () => {
     await mutate('');
-  }, {timeout: 60000});
+  }, {timeout: 60000, benchmark: true});
 
   test('mutate.malformedInput', async () => {
     await mutate('COc1ccc2c|c(ccc2c1)C(C)C(=O)OCCCc3cccnc3', 0);
-  }, {timeout: 60000});
+  }, {timeout: 60000, benchmark: true});
 });
 
 

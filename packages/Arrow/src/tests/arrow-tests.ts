@@ -35,7 +35,7 @@ category('Parquet', () => {
   });
   
   test('fromParquet: serialization', async () => {
-    expectTable(dfFromParquet!, dfFromParquet?._exportReopen() ?? DG.DataFrame.create());
+    expectTable(dfFromParquet!, DG.DataFrame.fromByteArray((dfFromParquet ?? DG.DataFrame.create()).toByteArray()));
   });
 });
 
@@ -64,6 +64,6 @@ category('Feather', () => {
   });
 
   test('fromFeather: serialization', async () => {
-    expectTable(dfFromArrow!, dfFromArrow?._exportReopen() ?? DG.DataFrame.create());
+    expectTable(dfFromArrow!, DG.DataFrame.fromByteArray((dfFromArrow ?? DG.DataFrame.create()).toByteArray()));
   });
 });

@@ -1,10 +1,10 @@
 {
   "name": "@datagrok/samples",
   "friendlyName": "Samples",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "author": {
-    "name": "Alexander Paramonov",
-    "email": "aparamonov@datagrok.ai"
+    "name": "Savenko Stanislav",
+    "email": "ssavenko@datagrok.ai"
   },
   "description": "*Samples* contains sample [data connectors](https://datagrok.ai/help/access/databases/connectors/) and demonstrates [scripting](https://datagrok.ai/help/compute/scripting) and [notebooks](https://datagrok.ai/help/compute/jupyter-notebook) functionality.",
   "repository": {
@@ -13,7 +13,7 @@
     "directory": "packages/Samples"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.2.11",
+    "@datagrok-libraries/utils": "^4.3.0",
     "datagrok-api": "^1.13.0",
     "rxjs": "^6.5.5",
     "ts-loader": "latest",
@@ -26,8 +26,8 @@
     "eslint-config-google": "^0.14.0",
     "webpack": "latest",
     "webpack-cli": "latest",
-    "@datagrok/api-tests": "^1.7.12",
-    "@datagrok/dendrogram": "latest"
+    "@datagrok/api-tests": "^1.7.17",
+    "@datagrok/dendrogram": "^1.2.33"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",

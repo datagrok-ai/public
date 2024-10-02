@@ -207,12 +207,13 @@ export async function openMapIdentifiersDialog() {
     grok.shell.warning('Chem Map Identifiers is applicable only to chemical datasets');
     return;
   }
-  const columnSelector = ui.columnInput('Ids', table,
-    moleculeColumns[0], null,
-    {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE});
+  const columnSelector = ui.input.column('Ids', {table: table, value: moleculeColumns[0],
+    filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE});
   columnSelector.root.children[0].classList.add('d4-chem-descriptors-molecule-column-input');
-  const fromSource = ui.choiceInput('From Source', SMILES, UniChemSource.idNamesChoices, null, {nullable: false});
-  const toSource = ui.choiceInput('To Source', UniChemSource.idNamesChoices[0], UniChemSource.idNamesChoices, null, {nullable: false});
+  const fromSource = ui.input.choice('From Source', {value: SMILES,
+    items: UniChemSource.idNamesChoices, nullable: false});
+  const toSource = ui.input.choice('To Source', {value: UniChemSource.idNamesChoices[0],
+    items: UniChemSource.idNamesChoices, nullable: false});
   dlg.add(columnSelector);
   dlg.add(fromSource);
   dlg.add(toSource);

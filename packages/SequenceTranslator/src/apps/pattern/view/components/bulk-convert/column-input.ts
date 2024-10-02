@@ -53,11 +53,8 @@ export class ColumnInputManager {
       this.selectedTable.columns.names().sort((a, b) => a.localeCompare(b)) :
       [];
     const strandColumnInput = Object.fromEntries(STRANDS.map((strand) => {
-      const input = ui.choiceInput(
-        `${STRAND_LABEL[strand]} column`,
-        columns[0],
-        columns,
-        (colName: string) => this.eventBus.selectStrandColumn(strand, colName)
+      const input = ui.input.choice(`${STRAND_LABEL[strand]} column`, {value: columns[0], items: columns,
+        onValueChanged: (value) => this.eventBus.selectStrandColumn(strand, value)}
       );
       this.eventBus.selectStrandColumn(strand, columns[0]);
       return [strand, input.root];
@@ -67,11 +64,8 @@ export class ColumnInputManager {
 
   private createIdColumnInput(): HTMLElement {
     const columns = this.selectedTable ? this.selectedTable.columns.names() : [];
-    const idColumnInput = ui.choiceInput(
-      'ID column',
-      columns[0],
-      columns,
-      (colName: string) => this.eventBus.selectIdColumn(colName)
+    const idColumnInput = ui.input.choice('ID column', {value: columns[0], items: columns,
+      onValueChanged: (value) => this.eventBus.selectIdColumn(value)}
     );
     this.eventBus.selectIdColumn(columns[0]);
     return idColumnInput.root;

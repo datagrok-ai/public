@@ -8,9 +8,7 @@ import {EventsView} from './tabs/events';
 import {PackagesView} from './tabs/packages';
 import {FunctionsView} from './tabs/functions';
 import {OverviewView} from './tabs/overview';
-import {LogView} from './tabs/log';
-import {TestsView, filters} from './tabs/tests';
-import {ErrorsView} from "./tabs/errors"
+import {LogView} from './tabs/log'; 
 
 export class ViewHandler {
   public static UA_NAME = 'Usage Analysis';
@@ -24,8 +22,7 @@ export class ViewHandler {
   async init(date?: string, groups?: string, packages?: string, path?: string): Promise<void> {
     this.view.parentCall = grok.functions.getCurrentCall();
     const toolbox = await UaToolbox.construct(this);
-    toolbox.filters.root.after(filters);
-    const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, LogView, TestsView, ErrorsView];
+    const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, LogView];
     for (let i = 0; i < viewClasses.length; i++) {
       const currentView = new viewClasses[i](toolbox);
       this.view.addView(currentView.name, () => {
@@ -116,13 +113,7 @@ export class ViewHandler {
         }
         helpShown = true;
       }
-      if (view.name === 'Tests') {
-        toolbox.filters.expanded = false;
-        filters.style.display = 'flex';
-      } else {
-        toolbox.filters.expanded = true;
-        filters.style.display = 'none';
-      }
+      
       if (view.name === 'Packages')
         pButtons.style.display = 'flex';
       else

@@ -65,7 +65,7 @@ category('Table view', () => {
   test('Mutation Cliffs selection', async () => {
     const selection = model.df.selection;
 
-    const mpViewer = model.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition;
+    const mpViewer = model.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition;
     await awaitCheck(() => mpViewer.mutationCliffs !== null, 'mutation cliffs haven\'t been generated', 2000);
 
     for (const [position, selectedMonomers] of Object.entries(mpViewer.mutationCliffsSelection))

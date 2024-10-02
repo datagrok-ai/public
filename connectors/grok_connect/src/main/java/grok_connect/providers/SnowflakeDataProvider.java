@@ -86,11 +86,6 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public String addBrackets(String name) {
-        return String.format("\"%s\"", name);
-    }
-
-    @Override
     protected void appendQueryParam(DataQuery dataQuery, String paramName, StringBuilder queryBuffer) {
         FuncParam param = dataQuery.getParam(paramName);
         if (param.propertyType.equals("list")) {
@@ -135,9 +130,6 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
             add(new Property(Property.STRING_TYPE, DbCredentials.ROLE));
             add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
                     DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
-            add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_SCHEMA));
-            add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_RESULTS));
-            add(new Property(Property.STRING_TYPE, DbCredentials.CACHE_INVALIDATE_SCHEDULE));
         }};
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.nameBrackets = "\"";

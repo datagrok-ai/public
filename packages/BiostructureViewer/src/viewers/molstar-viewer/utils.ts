@@ -129,9 +129,13 @@ export async function viewMolstarUI(content: string, name?: string, format?: Bui
  * for that is returned separately which resolves once the viewer is initialized.
  */
 export function previewMolstarUI(file: DG.FileInfo): { view: DG.View, loadingPromise: Promise<void> } {
+  const logPrefix = `BsV: previewMolstarUI()`;
+  _package.logger.debug(`${logPrefix}, start`);
   const builtinFormats = BuiltInTrajectoryFormats.map((obj) => obj[0]) as string[];
 
   function isSupportedFormat(fi: DG.FileInfo) {
+    const logPrefix2 = `${logPrefix}.isSupportedFormat()`;
+    _package.logger.debug(`${logPrefix2}, start, fi: { fullPath: '${fi.fullPath}'. extension: '${fi.extension}'`);
     return fi.extension in molecule3dFileExtensions;
   }
 

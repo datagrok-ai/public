@@ -1,7 +1,7 @@
 {
   "name": "@datagrok-libraries/webcomponents-vue",
   "sideEffects": false,
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Datagrok web components vue wrappers",
   "dependencies": {
     "@datagrok-libraries/webcomponents": "^0.0.2",
@@ -9,7 +9,6 @@
     "datagrok-api": "^1.18.6",
     "dayjs": "=1.11.10",
     "rxjs": "^6.6.7",
-    "vue": "^3.4.27",
     "wu": "^2.1.0"
   },
   "devDependencies": {
@@ -19,6 +18,9 @@
     "eslint": "latest",
     "eslint-config-google": "latest",
     "typescript": "latest"
+  },
+  "peerDependencies": {
+    "vue": "^3.4.27"
   },
   "scripts": {
     "link": "npm link",

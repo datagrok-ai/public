@@ -10,8 +10,6 @@ import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 import {DEFAULT_FORMATS} from '../../common/model/const';
 import {download} from '../../common/model/helpers';
-import {FormatDetector} from '../../common/model/parsing-validation/format-detector';
-import {SequenceValidator} from '../../common/model/parsing-validation/sequence-validator';
 import {ColoredTextInput} from '../../common/view/components/colored-input/colored-text-input';
 import {highlightInvalidSubsequence} from '../../common/view/components/colored-input/input-painters';
 import {MoleculeImage} from '../../common/view/components/molecule-img';
@@ -20,11 +18,11 @@ import {IsolatedAppUIBase} from '../../common/view/isolated-app-ui';
 import {MonomerLibViewer} from '../../common/view/monomer-lib-viewer';
 import {SequenceToMolfileConverter} from '../../structure/model/sequence-to-molfile';
 import {convert, getSupportedTargetFormats, getTranslatedSequences} from '../model/conversion-utils';
-import {FormatConverter} from '../model/format-converter';
 import {ITranslationHelper} from '../../../types';
 
 import {NUCLEOTIDES_FORMAT, SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG} from './const';
 import './style.css';
+import $ from 'cash-dom';
 import {_package} from '../../../package';
 
 const enum REQUIRED_COLUMN_LABEL {
@@ -47,13 +45,20 @@ class TranslatorAppLayout {
     this.moleculeImgDiv.style.marginTop = '12px';
 
     this.outputTableDiv = ui.div([]);
-    this.formatChoiceInput = ui.choiceInput('', DEFAULT_FORMATS.HELM, this.inputFormats, async () => {
-      this.format = this.formatChoiceInput.value;
-      this.updateTable();
-      await this.updateMolImg();
+    this.formatChoiceInput = ui.input.choice('', {
+      value: DEFAULT_FORMATS.HELM, items: this.inputFormats,
+      onValueChanged: async (value, input) => {
+        this.format = value;
+        this.updateTable();
+        await this.updateMolImg();
+      }
     });
-    this.sequenceInputBase = ui.textInput('', DEFAULT_AXOLABS_INPUT,
-      () => { this.onInput.next(); });
+
+    $(this.formatChoiceInput.root.getElementsByTagName('select')[0]).css('width', '20%');
+
+    this.sequenceInputBase = ui.input.textArea(
+      '', {value: DEFAULT_AXOLABS_INPUT, onValueChanged: () => { this.onInput.next(); }}
+    );
 
     this.init();
 
@@ -100,19 +105,15 @@ class TranslatorAppLayout {
 
     const tableControlsManager = new TableControlsManager(this.eventBus);
     const tableControls = tableControlsManager.createUIComponents();
-    const inputFormats = ui.choiceInput(
-      'Input format',
-      DEFAULT_FORMATS.AXOLABS,
-      this.inputFormats,
-      (value: string) => this.eventBus.selectInputFormat(value)
-    );
+    const inputFormats = ui.input.choice('Input format', {
+      value: DEFAULT_FORMATS.AXOLABS,
+      items: this.inputFormats, onValueChanged: (value) => this.eventBus.selectInputFormat(value)
+    });
 
-    const outputFormats = ui.choiceInput(
-      'Output format',
-      NUCLEOTIDES_FORMAT,
-      getSupportedTargetFormats(this.th),
-      (value: string) => this.eventBus.selectOutputFormat(value)
-    );
+    const outputFormats = ui.input.choice('Output format', {
+      value: NUCLEOTIDES_FORMAT,
+      items: getSupportedTargetFormats(this.th), onValueChanged: (value) => this.eventBus.selectOutputFormat(value)
+    });
     const convertBulkButton = this.createConvertBulkButton();
 
     const tableControlsContainer = ui.div([
@@ -169,7 +170,7 @@ class TranslatorAppLayout {
     if (outputFormat === NUCLEOTIDES_FORMAT || outputFormat === DEFAULT_FORMATS.HELM) {
       translatedColumn.semType = DG.SEMTYPE.MACROMOLECULE;
       const units = outputFormat == NUCLEOTIDES_FORMAT ? NOTATION.FASTA : NOTATION.HELM;
-      translatedColumn.setTag(DG.TAGS.UNITS, units);
+      translatedColumn.meta.units = units;
       const seqHandler = SeqHandler.forColumn(translatedColumn as DG.Column<string>);
       const setUnits = outputFormat == NUCLEOTIDES_FORMAT ? SeqHandler.setUnitsToFastaColumn :
         SeqHandler.setUnitsToHelmColumn;
@@ -381,16 +382,15 @@ class TableInputManager {
   private createTableInput(): DG.InputBase<DG.DataFrame | null> {
     const currentlySelectedTable = this.eventBus.getSelectedTable();
 
-    const tableInput = ui.tableInput(
-      'Table',
-      currentlySelectedTable,
-      this.availableTables,
-      (table: DG.DataFrame) => {
+    const tableInput = ui.input.table('Table', {
+      value: currentlySelectedTable!, items: this.availableTables,
+      onValueChanged: (value) => {
         // WARNING: non-null check necessary to prevent resetting columns to
         // null upon handling onTableAdded
-        if (table !== null && table instanceof DG.DataFrame)
-          this.eventBus.selectTable(table);
-      });
+        if (value !== null)
+          this.eventBus.selectTable(value);
+      }
+    });
     return tableInput;
   }
 
@@ -459,10 +459,10 @@ class ColumnInputsManager {
     const selectedColumnName = matchingColumnName ? matchingColumnName : columnNames[0];
     this.selectColumnIfTableNotNull(selectedTable, selectedColumnName, columnLabel);
 
-    const input = ui.choiceInput(
-      `${columnLabel}`,
-      selectedColumnName, columnNames,
-      (colName: string) => this.selectColumnIfTableNotNull(selectedTable, colName, columnLabel)
+    const input = ui.input.choice(`${columnLabel}`, {
+      value: selectedColumnName, items: columnNames,
+      onValueChanged: (value) => this.selectColumnIfTableNotNull(selectedTable, value, columnLabel)
+    }
     );
 
     return input;

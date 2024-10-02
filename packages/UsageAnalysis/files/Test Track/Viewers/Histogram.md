@@ -17,9 +17,9 @@
 8. Filtering
     1. Click the **Toggle filters** icon
     2. Change arbitrary settings on the **Filter Panel** and check the histogram interaction.
-    3. Enable Filtering enabled option in Context Pane > Data
+    3. Enable the **Filtering Enabled** option by navigating to Context Pane > Properties > Data.
     4. Change the horizontal range slider and use it to scroll and data filtering. Dataset should filter accordingly.
-    5. Disable Filtering enabled option in Context Pane > Data
+    5. Disable the **Filtering Enabled** option by navigating to Context Pane > Properties > Data.
     6. Dataset should not be filtered.
 9. Selection
     1. Go to the grid and select the first 50 columns. The selection should be reflected on the histogram.
@@ -46,5 +46,6 @@
 
 ---
 {
-"order": 4
+"order": 4,
+"datasets": ["System:DemoFiles/SPGI.csv"]
 }

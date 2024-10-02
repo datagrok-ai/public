@@ -26,3 +26,14 @@ export const R_GROUP_BLOCK_DUMMY = [
     'label': 'R3'
   }
 ];
+
+export const PT_ERROR_DATAFRAME = 'No dataframe with macromolecule columns open';
+export const PT_WARNING_COLUMN = 'No marcomolecule column chosen!';
+
+export const PT_UI_GET_HELM = 'Get HELM';
+export const PT_UI_ADD_HELM = 'Add HELM column';
+export const PT_UI_USE_CHIRALITY = 'Chirality engine';
+export const PT_UI_DIALOG_CONVERSION = 'Poly Tool Conversion';
+export const PT_UI_DIALOG_UNRULE = 'Poly Tool Unrule';
+export const PT_UI_DIALOG_ENUMERATION = 'Poly Tool Enumeration';
+export const PT_UI_RULES_USED = 'Rules used';

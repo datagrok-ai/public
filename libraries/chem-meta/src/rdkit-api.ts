@@ -130,6 +130,12 @@ interface MolListConstructor {
   new(): MolList;
 }
 
+export interface RDReactionResult {
+  size(): number; //number of lists
+  get(i: number): MolList;
+  delete(): void;
+}
+
 export interface RDReaction {
   draw_to_canvas_with_offset(): string;
   draw_to_canvas(canvas: HTMLCanvasElement, width: number, height: number): string;
@@ -137,6 +143,24 @@ export interface RDReaction {
   is_valid(): boolean;
   get_svg(width?: number, height?: number): string;
   get_svg_with_highlights(options: string): string;
+  run_reactants(reactants: MolList, maxProducts: number): RDReactionResult;
+  //that is because it retutns a pointer to c++ vector, example below
+  // products = rxn.run_reactants(molList, 10000);
+  // for (let i = 0; i < products.size(); i++) {
+  //  let element;
+  //  try {
+  //    element = products.get(i);
+  //    let mol;
+  //    try {
+  //      mol = element.next();
+  //    } finally {
+  //    mol!.delete();
+  //    }
+  //  } finally {
+  //    element!.delete();
+  //  }
+  //}
+  //products!.delete();
 
    /** Reclaims the memory used for that molecule. */
    delete(): void;

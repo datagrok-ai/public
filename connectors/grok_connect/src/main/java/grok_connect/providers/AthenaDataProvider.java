@@ -143,10 +143,4 @@ public class AthenaDataProvider extends JdbcDataProvider {
     protected String getRegexQuery(String columnName, String regexExpression) {
         return String.format("REGEXP_LIKE(%s, '%s')", columnName, regexExpression);
     }
-
-    @Override
-    public String addBrackets(String name) {
-        String brackets = descriptor.nameBrackets;
-        return brackets.charAt(0) + name + brackets.substring(brackets.length() - 1);
-    }
 }

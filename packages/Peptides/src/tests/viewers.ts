@@ -52,7 +52,7 @@ category('Viewers: Monomer-Position', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
-    mpViewer = model.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition;
+    mpViewer = model.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition;
 
     await delay(500);
   });

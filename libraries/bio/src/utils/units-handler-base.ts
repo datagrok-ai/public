@@ -27,7 +27,7 @@ export abstract class UnitsHandlerBase<TValue, TData extends DataBase = DataBase
       throw new Error(`Invalid semantic type '${this.column.semType} of column '${this.column.name}', ` +
         `expected '${requiredSemType}'.`);
     }
-    this.units = this.column.getTag(DG.TAGS.UNITS) as MoleculeUnits;
+    this.units = this.column.meta.units as MoleculeUnits;
     if (!this.units)
       throw new Error(`Units not specified in column '${this.column.name}'.`);
   }

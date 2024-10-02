@@ -1,7 +1,3 @@
-import * as ui from 'datagrok-api/ui';
-import * as grok from 'datagrok-api/grok';
-import * as DG from 'datagrok-api/dg';
-
 import {MonomerType, PolymerType} from '../helm/types';
 import {MonomerTypes, PolymerTypes} from '../helm/consts';
 
@@ -95,7 +91,8 @@ export const DUMMY_MONOMER = {
   'id': 0,
   'polymerType': 'PEPTIDE' as PolymerType,
   'symbol': ''
-};
+} as const;
+
 // range of hex nubers used in PepSea library to endode monomers
 export const MONOMER_ENCODE_MIN = 0x100;
 export const MONOMER_ENCODE_MAX = 0x40A;

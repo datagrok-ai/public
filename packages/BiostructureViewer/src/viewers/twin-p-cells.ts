@@ -42,7 +42,7 @@ export class TwinProteinView {
 
     // ---- INPUTS ----
     const representations = ['cartoon', 'backbone', 'ball+stick', 'licorice', 'hyperball', 'surface'];
-    this.repChoice = ui.choiceInput('Representation', 'cartoon', representations);
+    this.repChoice = ui.input.choice('Representation', {value: 'cartoon', items: representations});
     this.root = ui.div();
     this.changeChoices();
 
@@ -120,7 +120,7 @@ export class TwinProteinView {
       this.ngl.render(false, this.ligandSelection);
     });
 
-    this.repChoice.onChanged(async () => {
+    this.repChoice.onChanged.subscribe(async () => {
       this.ngl.repChoice = this.repChoice;
       reload(true);
     });

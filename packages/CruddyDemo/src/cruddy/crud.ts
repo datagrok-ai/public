@@ -1,6 +1,6 @@
 import * as DG from "datagrok-api/dg";
 import * as grok from "datagrok-api/grok";
-import {DbColumn} from "./table";
+import {DbColumn, DbSchema} from "./table";
 import {DbEntity, DbEntityType} from "./entity";
 import {TFilter} from "./cruddy";
 
@@ -23,6 +23,7 @@ export abstract class Crud<TEntity extends DbEntity = DbEntity> {
 }
 
 export interface IQueryOptions {
+  count?: boolean;
   distinct?: boolean;
   columnNames?: string[];
   limit?: number;
@@ -33,6 +34,8 @@ export interface IQueryOptions {
 export class DbQueryEntityCrud<TEntity extends DbEntity = DbEntity> extends Crud<TEntity> {
   connectionId: string;
   entityType: DbEntityType;
+
+  get schema(): DbSchema { return this.entityType.table.schema!; }
 
   constructor(connectionId: string, entityType: DbEntityType) {
     super();
@@ -78,13 +81,36 @@ values (${entity.entityType.columns.map(c => this.sql(entity, c)).join(', ')})`;
       `where ${this.getWhereKeySql(entity)}`;
   }
 
+  _getJoinCondition(table2Name: string): string {
+    // either find a column that references the specified table, or a column from the specified table that references entity table
+    const refColumn = this.entityType.table.columns.find((c) => c.references?.table?.name == table2Name)
+     ?? this.schema.getTable(table2Name).columns.find((c) => c.references?.table.name == this.entityType.table.name)!;
+    return `${refColumn.tqName} = ${refColumn.references!.tqName}`
+  }
+
   getReadSql(filter?: TFilter, options?: IQueryOptions): string {
-    const columnNames = options?.columnNames ?? this.entityType.columns.map(c => c.name);
+    const columnNames = options?.columnNames ?? this.entityType.gridColumnsNames ?? this.entityType.columns.map(c => c.name);
+
+    const filterJoinColumns = !filter ? []
+      : Object.keys(filter)
+        .map(s => /([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)/.exec(s))
+        .filter(x => x != null)
+        .map(x => x![0]);
+
+    const joinColumnNames = [
+      ...filterJoinColumns,
+      ...this.entityType.gridColumnsNames?.filter((s) => s.indexOf('.') != -1) ?? []
+    ];
+
+    const joins = joinColumnNames
+      .map(s => `join ${s.split('.')[0]} on ${this._getJoinCondition(s.split('.')[0])}`);
+
     return `select ${options?.distinct ? 'distinct ' : ''}${columnNames.join(', ')} ` +
-      `from ${this.entityType.table.name}` +
+      `from ${this.entityType.table.name}\n` +
+      (joins.length == 0 ? '' : [...new Set(joins)].join('\n') + '\n')  +
       (filter && Object.keys(filter).length > 0 ? ` where ${this.getWhereSql(filter)}` : '') +
       (options?.limit ? ` limit ${options.limit}` : '') +
-      (options?.offset ? ` limit ${options.offset}` : '');
+      (options?.offset ? ` offset ${options.offset}` : '');
   }
 
   getDeleteSql(entity: TEntity) {
@@ -103,6 +129,15 @@ values (${entity.entityType.columns.map(c => this.sql(entity, c)).join(', ')})`;
 
   async read(filter?: TFilter, options?: IQueryOptions): Promise<DG.DataFrame> {
     return await this.query(this.getReadSql(filter, options));
+  }
+
+  async count(filter?: TFilter, options?: IQueryOptions): Promise<number> {
+    const optionsCopy = Object.assign({}, options);
+    optionsCopy.offset = undefined;
+    optionsCopy.limit = undefined;
+    const sql = `select count(*) from (${this.getReadSql(filter, optionsCopy)}) as count`;
+    const df = await this.query(sql);
+    return df.columns.byIndex(0).getNumber(0);
   }
 
   async readSingle(keyFilter?: { [name: string]: string }): Promise<{ [name: string]: any } | null> {

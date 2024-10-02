@@ -11,10 +11,11 @@ import {
   HELM_FIELDS, HELM_CORE_FIELDS, HELM_RGROUP_FIELDS, jsonSdfMonomerLibDict,
   MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME, HELM_REQUIRED_FIELD,
 } from '../utils/const';
-import {IMonomerLib} from '../types/index';
-import {GAP_SYMBOL, ISeqSplitted} from '../utils/macromolecule/types';
+import {IMonomerLib, IMonomerSet} from '../types/index';
+import {ISeqSplitted} from '../utils/macromolecule/types';
 import {SeqHandler} from '../utils/seq-handler';
 import {splitAlignedSequences} from '../utils/splitter';
+import {GAP_SYMBOL} from '../utils/macromolecule/consts';
 
 export function encodeMonomers(col: DG.Column): DG.Column | null {
   let encodeSymbol = MONOMER_ENCODE_MIN;
@@ -25,7 +26,8 @@ export function encodeMonomers(col: DG.Column): DG.Column | null {
   for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
     let encodedMonomerStr = '';
     const monomers = sh.getSplitted(rowIdx);
-    for (const cm of monomers.canonicals) {
+    for (let posIdx = 0; posIdx < monomers.length; ++posIdx) {
+      const cm = monomers.getCanonical(posIdx);
       if (!monomerSymbolDict[cm]) {
         if (encodeSymbol > MONOMER_ENCODE_MAX) {
           grok.shell.error(`Not enough symbols to encode monomers`);
@@ -164,18 +166,37 @@ export interface IMonomerLibHelper {
   /** Ensures files are loaded and validated, throws error after timeout */
   awaitLoaded(timeout?: number): Promise<void>;
 
-  /** Singleton monomer library */
+  /** Singleton monomer library collected from various sources */
+  getMonomerLib(): IMonomerLib;
+
+  /**  @deprecated Use {@link getMonomerLib} */
   getBioLib(): IMonomerLib;
+
+  /** Singleton monomer set collected from various sources */
+  getMonomerSets(): IMonomerSet;
 
   getFileManager(): Promise<IMonomerLibFileManager>;
 
   /** (Re)Loads libraries based on settings in user storage {@link LIB_STORAGE_NAME} to singleton.
    * @param {boolean} reload Clean {@link monomerLib} before load libraries [false]
    */
+  loadMonomerLib(reload?: boolean): Promise<void>;
+
+  /** @deprecated Use {@link loadMonomerLib} */
   loadLibraries(reload?: boolean): Promise<void>;
+
+  /** (Re)loads monomer sets based on settings in user storage {@link SETS_STORAGE_NAME} to singleton.
+   * @param {boolean} reload Clean {@link monomerSets} before load sets [false]
+   */
+  loadMonomerSets(reload?: boolean): Promise<void>;
 
   /** Reads library from file shares, handles .json and .sdf */
   readLibrary(path: string, fileName: string): Promise<IMonomerLib>;
+
+  // -- Settings --
+
+  /** Changes user lib settings. */
+  loadMonomerLibForTests(): Promise<void>;
 }
 
 export async function getMonomerLibHelper(): Promise<IMonomerLibHelper> {
@@ -205,7 +226,7 @@ export async function sequenceChemSimilarity(
     positionColumns = splitAlignedSequences(positionColumns).columns.toList();
 
   const libHelper = await getMonomerLibHelper();
-  const monomerLib = libHelper.getBioLib();
+  const monomerLib = libHelper.getMonomerLib();
   // const smilesCols: DG.Column<string>[] = new Array(monomerCols.length);
   const rawCols: { categories: string[], data: Uint32Array, emptyIndex: number }[] = new Array(positionColumns.length);
   const rowCount = positionColumns[0].length;
@@ -213,7 +234,8 @@ export async function sequenceChemSimilarity(
 
   // Calculate base similarity
   for (let position = 0; position < positionColumns.length; ++position) {
-    const referenceMonomerCanonical = referenceSequence.getCanonical(position);
+    const referenceMonomerCanonical = position < referenceSequence.length ?
+      referenceSequence.getCanonical(position) : GAP_SYMBOL;
     const referenceMol = monomerLib.getMonomer('PEPTIDE', referenceMonomerCanonical)?.smiles ?? '';
 
     const monomerCol = positionColumns[position];
@@ -228,14 +250,16 @@ export async function sequenceChemSimilarity(
     const molCol = DG.Column.fromStrings('smiles',
       monomerColCategories.map((cat) => monomerLib.getMonomer('PEPTIDE', cat)?.smiles ?? ''));
     const _df = DG.DataFrame.fromColumns([molCol]); // getSimilarities expects that column is in dataframe
-    const similarityCol = (await grok.chem.getSimilarities(molCol, referenceMol))!;
-    const similarityColData = similarityCol.getRawData();
+    const similarityCol: DG.Column<number> | null = (await grok.chem.getSimilarities(molCol, referenceMol))!;
+    const similarityColData: Float32Array | null = similarityCol ? (similarityCol.getRawData() as Float32Array) : null;
 
     for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
       const monomerCategoryIdx = monomerColData[rowIdx];
-      totalSimilarity[rowIdx] += referenceMonomerCanonical !== GAP_SYMBOL && monomerCategoryIdx !== emptyCategoryIdx ?
-        similarityColData[monomerCategoryIdx] :
-        referenceMonomerCanonical === GAP_SYMBOL && monomerCategoryIdx === emptyCategoryIdx ? 1 : 0;
+      if (referenceMonomerCanonical !== GAP_SYMBOL && monomerCategoryIdx !== emptyCategoryIdx) {
+        totalSimilarity[rowIdx] += similarityColData![monomerCategoryIdx];
+      } else if (referenceMonomerCanonical === GAP_SYMBOL && monomerCategoryIdx === emptyCategoryIdx) {
+        totalSimilarity[rowIdx] += 1;
+      } // Do not increase similarity on mismatch score/penalty equals 0;
     }
   }
 
@@ -264,7 +288,7 @@ export async function calculateMonomerSimilarity(monomerSet: string[],
 ): Promise<{ scoringMatrix: number[][], alphabetIndexes: { [monomerId: string]: number } }> {
   /* eslint-enable max-len */
   const libHelper = await getMonomerLibHelper();
-  const monomerLib = libHelper.getBioLib();
+  const monomerLib = libHelper.getMonomerLib();
   const scoringMatrix: number[][] = [];
   const alphabetIndexes: { [id: string]: number } = {};
   const monomerMolecules = monomerSet.map((monomer) => monomerLib.getMonomer('PEPTIDE', monomer)?.smiles ?? '');
@@ -287,11 +311,12 @@ export async function calculateMonomerSimilarity(monomerSet: string[],
 export async function getMonomerSubstitutionMatrix(monomerSet: string[], fingerprintType: string = 'Morgan',
 ): Promise<{ scoringMatrix: number[][], alphabetIndexes: { [monomerId: string]: number } }> {
   const libHelper = await getMonomerLibHelper();
-  const monomerLib = libHelper.getBioLib();
+  const monomerLib = libHelper.getMonomerLib();
   const scoringMatrix: number[][] =
     new Array(monomerSet.length).fill(0).map(() => new Array(monomerSet.length).fill(0));
   const alphabetIndexes: { [id: string]: number } = {};
-  const monomerMolecules = monomerSet.map((monomer) => monomerLib.getMonomer('PEPTIDE', monomer)?.smiles ?? '');
+  // note, below specifically boolean OR is used to get either molfile or smiles, because we want to skip '' molfiles
+  const monomerMolecules = monomerSet.map((monomer) => monomerLib.getMonomer('PEPTIDE', monomer)?.molfile || monomerLib.getMonomer('PEPTIDE', monomer)?.smiles || '');
   const fingerprintsFunc = DG.Func.find({package: 'Chem', name: 'getFingerprints'})[0];
   if (!fingerprintsFunc) {
     console.warn('Function "Chem:getFingerprints" is not found in chem package. falling back to Morgan fingerprints');

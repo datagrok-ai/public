@@ -10,6 +10,7 @@ import {
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {statisticsProperties, fitSeriesProperties, fitChartDataProperties, IFitChartData, IFitSeries, IFitChartOptions, IFitSeriesOptions, FitStatistics} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {
+  FitChartCellRenderer,
   getChartData,
   getColumnChartOptions,
   getDataFrameChartOptions,
@@ -17,7 +18,7 @@ import {
   mergeProperties,
   substituteZeroes
 } from './fit-renderer';
-import {CellRenderViewer} from './cell-render-viewer';
+import {CellRenderViewer} from '@datagrok-libraries/utils/src/viewers/cell-render-viewer';
 import {convertXMLToIFitChartData} from './fit-parser';
 import {FitConstants} from './const';
 
@@ -242,7 +243,7 @@ export class FitGridCellHandler extends DG.ObjectHandler {
 
   renderProperties(gridCell: DG.GridCell, context: any = null): HTMLElement {
     const acc = ui.accordion('Curves property panel');
-    // TODO: make just the base ui.choiceInput after nullable option is added
+    // TODO: make just the base ui.input.choice after nullable option is added
     const switchProperty = DG.Property.js('level', DG.TYPE.STRING, {description: 'Controls the level at which properties will be switched',
       defaultValue: 'Column', choices: ['Dataframe', 'Column', 'Cell'], nullable: false});
     const switchLevelInput = ui.input.forProperty(switchProperty);
@@ -254,9 +255,9 @@ export class FitGridCellHandler extends DG.ObjectHandler {
     const columnChartOptions = getColumnChartOptions(gridCell.cell.column);
     const dfChartOptions = getDataFrameChartOptions(gridCell.cell.dataFrame);
 
-    const seriesOptionsRefresh = {onValueChanged: (inputBase: DG.InputBase) => 
+    const seriesOptionsRefresh = {onValueChanged: (v: any, inputBase: DG.InputBase) => 
       changeCurvesOptions(gridCell, inputBase, SERIES_OPTIONS, switchLevelInput.value)};
-    const chartOptionsRefresh = {onValueChanged: (inputBase: DG.InputBase) =>
+    const chartOptionsRefresh = {onValueChanged: (v: any, inputBase: DG.InputBase) =>
       changeCurvesOptions(gridCell, inputBase, CHART_OPTIONS, switchLevelInput.value)};
 
     if (!isColorValid(dfChartOptions.seriesOptions?.pointColor) && !isColorValid(columnChartOptions.seriesOptions?.pointColor)) {
@@ -314,13 +315,13 @@ export class FitGridCellHandler extends DG.ObjectHandler {
     const seriesStatsProperty = DG.Property.js('series', DG.TYPE.STRING,
       {description: 'Controls whether to show series statistics or aggregated statistics',
         defaultValue: 'All', choices: ['all', 'aggregated'], nullable: false});
-    const seriesStatsInput = ui.input.forProperty(seriesStatsProperty, null, {onValueChanged(input) {
+    const seriesStatsInput = ui.input.forProperty(seriesStatsProperty, null, {onValueChanged: () => {
       acc.getPane('Fit').root.lastElementChild!.replaceChildren(createFitPane());
     }});
     const aggrTypeProperty = DG.Property.js('aggregation type', DG.TYPE.STRING,
       {description: 'Controls which aggregation to use on the series statistics',
         defaultValue: 'med', choices: Object.values(DG.STATS), nullable: false});
-    const aggrTypeInput = ui.input.forProperty(aggrTypeProperty, null, {onValueChanged(input) {
+    const aggrTypeInput = ui.input.forProperty(aggrTypeProperty, null, {onValueChanged: () => {
       acc.getPane('Fit').root.lastElementChild!.replaceChildren(createFitPane());
     }});
 
@@ -369,7 +370,7 @@ export class FitGridCellHandler extends DG.ObjectHandler {
       return createFitPane();
     });
 
-    acc.addPane('Chart', () => CellRenderViewer.fromGridCell(gridCell).root);
+    acc.addPane('Chart', () => CellRenderViewer.fromGridCell(gridCell, new FitChartCellRenderer()).root);
 
     return acc.root;
   }

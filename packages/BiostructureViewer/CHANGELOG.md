@@ -1,5 +1,17 @@
 # BiostructureViewer changelog
 
+## 1.2.1 (2024-09-26)
+
+Bump dependencies bio lib version
+
+## 1.1.2 (2024-09-02)
+
+### Bug fixes
+
+* MolstarViewer: Fixed styling issues when toggling the expanded viewport
+* MolstarViewer: Enabled fullscreen mode when toggling the expanded viewport
+* BiostructureViewer: Integrated the 3D structure panel into the context panel, replacing the previous docking to the view
+
 ## 1.1.1 (2024-06-10)
 
 ### Bug fixes

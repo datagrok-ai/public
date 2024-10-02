@@ -1,12 +1,12 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {category, expect, test, before, after} from '@datagrok-libraries/utils/src/test';
-import {_package} from '../package-test';
+import { category, expect, test, before, after } from '@datagrok-libraries/utils/src/test';
+import { _package } from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import {readDataframe} from './utils';
-import {getMCS} from '../utils/most-common-subs';
-import {rGroupsMinilib} from '../analysis/r-group-analysis';
+import { readDataframe } from './utils';
+import { getMCS } from '../utils/most-common-subs';
+import { rGroupsMinilib } from '../analysis/r-group-analysis';
 
 
 category('top menu r-groups', () => {
@@ -135,7 +135,7 @@ M  END
           prefix: 'R',
         }); */
     await rGroupsMinilib(df.col('molecule')!, core, false, 0, rGroupOpts);
-  }, {timeout: 60000});
+  }, { timeout: 60000 });
 
   test('rgroups.emptyValues', async () => {
     //const res = await findRGroups('smiles', empty, coreEmpty, 'R');
@@ -143,7 +143,7 @@ M  END
       true, 0, rGroupOpts)).rGroups);
     expect(res.getCol('R1').stats.valueCount, 16);
     expect(res.getCol('R2').stats.valueCount, 16);
-  }, {timeout: 60000});
+  }, { timeout: 60000 });
 
   test('rgroups.emptyInput', async () => {
     //await findRGroups('smiles', empty, '', 'R');
@@ -183,7 +183,7 @@ M  END
   after(async () => {
     grok.shell.closeAll();
   });
-});
+}, { benchmarks: true });
 
 const t = DG.DataFrame.fromCsv(`smiles
 O=C1CN=C(c2ccccc2N1)C3CCCCC3

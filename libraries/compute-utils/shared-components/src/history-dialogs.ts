@@ -22,7 +22,7 @@ export class HistoricalRunEdit extends DG.Dialog {
     let title = funcCall.options['title'] ?? '';
     let description = funcCall.options['description'] ?? '';
     let isFavorite = oldIsFavorite;
-    const titleInput = ui.input.string('Title', {value: title, onValueChanged: () => title = titleInput.value});
+    const titleInput = ui.input.string('Title', {value: title, onValueChanged: (value) => title = value});
 
     const dummyInput = ui.input.string(' ', {value: ''});
     const tagsLine = DG.TagEditor.create();
@@ -52,9 +52,9 @@ export class HistoricalRunEdit extends DG.Dialog {
     this.sub(enterSub);
 
     const descInput = ui.input.string('Description', {value: description,
-      onValueChanged: () => description = descInput.value});
+      onValueChanged: (value) => description = value});
     const favInput = ui.input.bool('Favorites', {value: isFavorite,
-      onValueChanged: () => isFavorite = favInput.value});
+      onValueChanged: (value) => isFavorite = value});
     this.add(ui.form([
       titleInput,
       descInput,

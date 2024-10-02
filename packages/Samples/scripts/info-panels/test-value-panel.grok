@@ -3,6 +3,7 @@
 #language: grok
 #tags: demo, panel
 #condition: true
+#input: dataframe table
 #input: column col {type:numerical}
 #output: double avg
 #test1: ColumnSummary(ApiTests:getColumn(ApiTests:getTable('demog'), 'height')) == 169.03699383882477

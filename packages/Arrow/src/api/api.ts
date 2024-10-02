@@ -10,8 +10,11 @@ export function toFeather(table: DG.DataFrame, asStream: boolean = true): Uint8A
   for (let i = 0; i < column_names.length; i++) {
     let column = table.columns.byName(column_names[i]);
     let columnType = column.type;
-    if (['int', 'double', 'qnum'].includes(columnType))
-      t[column_names[i]] = column.getRawData().subarray(0, column.length);
+    if (columnType === 'double' || columnType === 'qnum' || columnType === 'int') {
+      const rawData = (column.getRawData()).subarray(0, column.length);
+      const nan = columnType !== 'int' ? DG.FLOAT_NULL : DG.INT_NULL;
+      t[column_names[i]] = Array.from(rawData, (v, _) => v === nan ? null : v);
+    }
     else if (columnType === 'datetime') {
       const rawData: Float64Array = (column.getRawData() as Float64Array).subarray(0, column.length);
       t[column_names[i]] = Array.from(rawData, (v, _) => v === DG.FLOAT_NULL ? null : new Date(v / 1000));
@@ -72,8 +75,12 @@ export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
         break;
       case arrow.Type.Float:
       case arrow.Type.Decimal:
-        if (ArrayBuffer.isView(values))
-          columns.push(DG.Column.fromFloat32Array(name, values as Float32Array));
+        if (ArrayBuffer.isView(values)) {
+          if (type.bitWidth < 64)
+            columns.push(DG.Column.fromFloat32Array(name, values as Float32Array));
+          else
+            columns.push(DG.Column.fromFloat64Array(name, values as Float64Array));
+        }
         else
           columns.push(DG.Column.fromList(DG.COLUMN_TYPE.FLOAT as DG.ColumnType, name, values));
         break;

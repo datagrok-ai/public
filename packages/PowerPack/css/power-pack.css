@@ -144,6 +144,7 @@
     display: flex;
     flex-direction: row;
     flex-grow: 1;
+    width: 100%;
 }
 
 .ui-addnewcolumn-element {
@@ -182,16 +183,24 @@
   flex-grow: 1;
 }
 
-.dlg-add-new-column{
-    flex-direction: row;
+.ui-widget-addnewcolumn-functions #categories-div {
+    overflow-y: scroll !important;
+    margin-bottom: 10px;
+    min-height: 70px;
 }
 
-.ui-grid-with-thin-scrollbars > .d4-grid-horz-scroll {
+.dlg-add-new-column{
+    flex-direction: row;
+    overflow: hidden;
+    max-width: 100%
+}
+
+.ui-grid-with-thin-scrollbars .d4-grid-horz-scroll {
     height: 8px !important;
     right: 6px !important;
 }
 
-.ui-grid-with-thin-scrollbars > .d4-grid-vert-scroll {
+.ui-grid-with-thin-scrollbars .d4-grid-vert-scroll {
     top: 0px !important;
     width: 6px !important;
     bottom: 15px !important;
@@ -402,4 +411,31 @@ body.dartium .power-pack-widgets-host.ui-div {
 
 .windows-manager-statusbar .windows-manager-toggle {
     width: 28px;
+}
+
+
+/* Stretch editor to fit inside its containing div */
+.cm-editor {
+    height: 100%;
+    width: 100%;
+}
+
+.cm-error-div {
+    color: red;
+}
+
+.cm-hint-div {
+    padding-top: 2px;
+    min-height: 33px;
+}
+
+.cm-tooltip-hover {
+    color: #4A4A49;
+    background: #fdffe5e0!important;
+    border: 1px solid #E4E6CE;
+    border-radius: 2px;
+    padding: 5px;
+    box-shadow: 0 0 5px #E4E6CE;
+    font-size: 0.9rem;
+    backdrop-filter: blur(5px);
 }

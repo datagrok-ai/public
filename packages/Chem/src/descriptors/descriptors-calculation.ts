@@ -32,7 +32,7 @@ export async function openDescriptorsDialogDocker() {
 /** Adds descriptors to table */
 export async function addDescriptors(smilesCol: DG.Column, viewTable: DG.DataFrame): Promise<void> {
   openDescriptorsDialog(await getSelected(), async (selected: any) => {
-    await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
+    grok.userSettings.add(_STORAGE_NAME, _KEY, JSON.stringify(selected));
     selected = await getSelected();
     const pi = DG.TaskBarProgressIndicator.create('Calculating descriptors...');
     try {
@@ -59,8 +59,8 @@ export function getDescriptorsSingle(smiles: string): DG.Widget {
   const widget = new DG.Widget(ui.div());
   const result = ui.div();
   const selectButton = ui.bigButton('SELECT', async () => {
-    openDescriptorsDialog(await getSelected(), async (selected: any) => {
-      await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
+    openDescriptorsDialog(await getSelected(), (selected: any) => {
+      grok.userSettings.add(_STORAGE_NAME, _KEY, JSON.stringify(selected));
       update();
     });
   });
@@ -238,9 +238,9 @@ function openDescriptorsDialog(selected: any, onOK: onOk, dataFrame?: DG.DataFra
   const dialog = ui.dialog('Descriptors');
   let columnSelector: DG.InputBase;
   if (dataFrame) {
-    columnSelector = ui.columnInput('Molecules', dataFrame,
-      dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE).find((_) => true) ?? null, null,
-      {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE});
+    //@ts-ignore
+    columnSelector = ui.input.column('Molecules', {table: dataFrame, value: dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE)
+      .find((_) => true) ?? null, filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE});
     columnSelector.root.children[0].classList.add('d4-chem-descriptors-molecule-column-input');
     dialog.add(columnSelector.root);
   }
@@ -259,13 +259,13 @@ function openDescriptorsDialog(selected: any, onOK: onOk, dataFrame?: DG.DataFra
 async function getSelected() : Promise<any> {
   if (!descriptors)
     descriptors = await getDescriptorsTree();
-  const str = await grok.dapi.userDataStorage.getValue(_STORAGE_NAME, _KEY);
+  const str = grok.userSettings.getValue(_STORAGE_NAME, _KEY);
   let selected = (str != null && str !== '') ? JSON.parse(str) : [];
   if (selected.length === 0) {
     //selected =
     //  (await grok.chem.descriptorsTree() as any)['Lipinski']['descriptors'].slice(0, 3).map((p: any) => p['name']);
     selected = descriptors['Lipinski']['descriptors'].slice(0, 3).map((p: any) => p['name']);
-    await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
+    grok.userSettings.add(_STORAGE_NAME, _KEY, JSON.stringify(selected));
   }
   return selected;
 }

@@ -2,11 +2,30 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-// See also https://datagrok.ai/help/develop/how-to/develop-custom-viewer
-// This viewer does the following:
-// * listens to changes of filter and selection in the attached table,
-// * updates the number of filtered/selected rows accordingly.
+@grok.decorators.viewer({
+  name: '#{NAME}',
+  description: 'Creates #{NAME} viewer'
+})
 export class #{NAME} extends DG.JsViewer {
+  constructor() {
+    super();
+  }
+
+  // Additional chart settings
+  init() {
+  }
+  
+  // Override to handle property changes
+  onPropertyChanged(property : DG.Property | null) {
+    super.onPropertyChanged(property);
+    this.render();
+  }
+
+  // Cancel subscriptions when the viewer is detached
+  detach() {
+  }
+  
+  // Stream subscriptions
   onTableAttached() {
     this.subs.push(this.dataFrame!.selection.onChanged.subscribe((_) => this.render()));
     this.subs.push(this.dataFrame!.filter.onChanged.subscribe((_) => this.render()));

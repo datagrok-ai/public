@@ -126,7 +126,7 @@ export async function prepareAutoDockData(
   target: string, 
   table: DG.DataFrame, 
   ligandColumn: string, 
-  confirmations: number
+  poses: number
 ): Promise<AutoDockDataType> {
   const isGpfFile = (file: DG.FileInfo): boolean => file.extension === 'gpf';
   const configFile = (await grok.dapi.files.list(`${TARGET_PATH}/${target}`, true)).find(isGpfFile)!;
@@ -144,26 +144,26 @@ export async function prepareAutoDockData(
     ligandMolColName: ligandColumn,
     receptor: receptorData,
     gpfFile: await grok.dapi.files.readAsText(configFile.fullPath),
-    confirmationNum: confirmations,
+    posesNum: poses,
     ligandDfString: table.columns.byName(ligandColumn).toString(),
   };
 }
 
 
-//top-menu: Chem | Autodock...
+//top-menu: Chem | AutoDock...
 //name: Autodock
 //tags: HitTriageFunction
 //description: Autodock plugin UI
 //input: dataframe table [Input data table]
 //input: column ligands {type:categorical; semType: Molecule} [Small molecules to dock]
 //input: string target {choices: Docking: getConfigFiles} [Folder with config and macromolecule]
-//input: int conformations = 10 [Number of output conformations for each small molecule]
-export async function runAutodock5(table: DG.DataFrame, ligands: DG.Column, target: string, confirmations: number): Promise<void> {
+//input: int poses = 10 [Number of output conformations for each small molecule]
+export async function runAutodock5(table: DG.DataFrame, ligands: DG.Column, target: string, poses: number): Promise<void> {
   const desirableHeight = 100;
   const desirableWidth = 100;
   const pi = DG.TaskBarProgressIndicator.create('AutoDock load data ...');
   try {
-    const data = await prepareAutoDockData(target, table, ligands.name, confirmations);
+    const data = await prepareAutoDockData(target, table, ligands.name, poses);
 
     const app = new AutoDockApp();
     const autodockResults = await app.init(data);
@@ -205,13 +205,12 @@ export async function runAutodock5(table: DG.DataFrame, ligands: DG.Column, targ
 
 function formatColumns(autodockResults: DG.DataFrame) {
   for (let col of autodockResults.columns.numerical)
-    col.setTag(DG.TAGS.FORMAT, '0.00');
+    col.meta.format = '0.00';
 }
 
 export function addColorCoding(column: DG.GridColumn) {
   column.isTextColorCoded = true;
-  column.column!.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Linear';
-  column.column!.tags[DG.TAGS.COLOR_CODING_LINEAR] = `[${DG.Color.green}, ${DG.Color.red}]`;
+  column.column!.meta.colors.setLinear([DG.Color.green, DG.Color.red]);
 }
 
 function processAutodockResults(autodockResults: DG.DataFrame, table: DG.DataFrame): DG.DataFrame {
@@ -228,7 +227,7 @@ function processAutodockResults(autodockResults: DG.DataFrame, table: DG.DataFra
   return processedTable;
 }
 
-//name: Docking
+//name: AutoDock
 //tags: panel, chem, widgets
 //input: semantic_value molecule { semType: Molecule3D }
 //output: widget result
@@ -239,7 +238,7 @@ export async function autodockWidget(molecule: DG.SemanticValue): Promise<DG.Wid
 //name: getAutodockSingle
 export async function getAutodockSingle(
   molecule: DG.SemanticValue, showProperties: boolean = true, 
-  table?: DG.DataFrame, colName?: string): Promise<DG.Widget<any> | null> {
+  table?: DG.DataFrame): Promise<DG.Widget<any> | null> {
   const value = molecule.value;
   if (value.toLowerCase().includes(ERROR_COL_NAME))
     return new DG.Widget(ui.divText(value));
@@ -314,14 +313,14 @@ export async function demoDocking(): Promise<void> {
   await _demoDocking();
 }
 
-//name: Biology | Docking
+//name: Biology | AutoDock
 //tags: panel, widgets
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
 export async function autodockPanel(smiles: DG.SemanticValue): Promise<DG.Widget> {
   const items = await getConfigFiles();
   const target = ui.input.choice('Target', {value: items[0], items: items})
-  const conformations = ui.input.int('Conformations', {value: 10});
+  const poses = ui.input.int('Poses', {value: 10});
 
   const resultsContainer = ui.div();
   const button = ui.button('Run', async () => {
@@ -333,7 +332,7 @@ export async function autodockPanel(smiles: DG.SemanticValue): Promise<DG.Widget
     const table = smiles.cell.dataFrame.clone();
     table.rows.removeWhereIdx((idx) => idx !== 0);
 
-    const data = await prepareAutoDockData(target.value!, table, smiles.cell.column.name, conformations.value!);
+    const data = await prepareAutoDockData(target.value!, table, smiles.cell.column.name, poses.value!);
 
     const app = new AutoDockApp();
     const autodockResults = await app.init(data);
@@ -352,7 +351,7 @@ export async function autodockPanel(smiles: DG.SemanticValue): Promise<DG.Widget
     }
   });
 
-  const form = ui.form([target, conformations]);
+  const form = ui.form([target, poses]);
   const panels = ui.divV([form, button, resultsContainer]);
 
   return DG.Widget.fromRoot(panels);

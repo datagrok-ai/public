@@ -1,4 +1,4 @@
-import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLib, IMonomerLibBase, Monomer} from '@datagrok-libraries/bio/src/types';
 import {HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
@@ -8,16 +8,16 @@ import {MolfileWrapper} from './mol-wrapper';
 import {MolfileWrapperFactory} from './mol-wrapper-factory';
 
 export class MonomerWrapper {
-  private molfileWrapper: MolfileWrapper;
+  private readonly molfileWrapper: MolfileWrapper;
   private capGroupElements: string[] = [];
 
   constructor(
-    private monomerSymbol: string,
-    private monomerIdx: number,
+    public readonly monomerSymbol: string,
+    public readonly monomerIdx: number,
     private helm: Helm,
     shift: { x: number, y: number },
     rdKitModule: RDModule,
-    private readonly monomerLib: IMonomerLib
+    private readonly monomerLib: IMonomerLibBase
   ) {
     const libraryMonomerObject = this.getLibraryMonomerObject();
 
@@ -34,6 +34,10 @@ export class MonomerWrapper {
 
     this.shiftCoordinates(shift);
   }
+
+  public get atomCount() { return this.molfileWrapper.atomCount; }
+
+  public get bondCount() { return this.molfileWrapper.bondCount; }
 
   private convertMolfileToV3KFormat(molfileV2K: string, monomerSymbol: string, rdKitModule: RDModule): string {
     let mol: RDMol | null = null;

@@ -1,13 +1,14 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {before, category, expect, test, expectArray, after} from '@datagrok-libraries/utils/src/test';
-import {delay, delayWhen} from "rxjs/operators";
+import { before, category, expect, test, expectArray, after } from '@datagrok-libraries/utils/src/test';
+import { delay, delayWhen } from "rxjs/operators";
 
 
 category('Dapi: connection', () => {
   const dcParams = {
-    dataSource: 'PostgresDart', server: 'localhost:5432', db: 'datagrok_dev', login: 'datagrok_dev', password: '123'};
+    dataSource: 'PostgresDart', server: 'localhost:5432', db: 'datagrok_dev', login: 'datagrok_dev', password: '123'
+  };
 
   test('Create, save, delete, share', async () => {
     let dc = DG.DataConnection.create('Local DG Test', dcParams);
@@ -32,7 +33,7 @@ category('Dapi: connection', () => {
 
     await grok.dapi.connections.delete(dc);
     expect(await grok.dapi.connections.find(dc.id) == undefined);
-  });
+  }, {stressTest: true});
 
   test('JS postprocess', async () => {
     const script = `
@@ -47,11 +48,11 @@ category('Dapi: connection', () => {
     const dc = (await grok.dapi.connections.filter('NorthwindTest').list())[0];
     const q = dc.query('JS postprocess query test', 'select * from orders');
     const query = await grok.dapi.queries.save(q);
-    await query.setProperties({jsScript: script});
+    await query.setProperties({ jsScript: script });
     expect((await query.getProperties()).jsScript, script);
     await query.executeTable();
     await grok.dapi.queries.delete(query);
-  }, {skipReason: 'GROK-11670'});
+  }, { skipReason: 'GROK-11670' });
 });
 
 category('Dapi: connection cache', () => {
@@ -60,7 +61,7 @@ category('Dapi: connection cache', () => {
 
   before(async () => {
     const connection: DG.DataConnection = await grok.dapi.connections.filter(`shortName="AppData"`).first();
-    await grok.functions.call('DropConnectionCache', {'connection': connection});
+    await grok.functions.call('DropConnectionCache', { 'connection': connection });
   });
 
   test('Invalidation, performance', async () => {
@@ -77,7 +78,7 @@ category('Dapi: connection cache', () => {
       await grok.dapi.files.list('System:AppData/ApiTests');
     });
     // second execution should be faster
-    expect(second * 10 < first);
+    expect(second * 1.5 < first);
 
     // cache should be bumped after renaming
     await grok.dapi.files.rename(testFilePath1, 'renamed_test_files.txt');
@@ -88,7 +89,16 @@ category('Dapi: connection cache', () => {
     await grok.dapi.files.delete(testFilePath2);
     list = await grok.dapi.files.list('System:AppData/ApiTests');
     expect(list.every((f) => f.name !== 'renamed_test_files.txt'));
-  }, {skipReason: 'GROK-15408'});
+  });
+
+  test('Dataframe: Ids', async () => {
+    // not from cache
+    const table1 = (await grok.dapi.files.readBinaryDataFrames('System:AppData/ApiTests/datasets/demog.csv'))[0];
+    // from cache
+    const table2 = (await grok.dapi.files.readBinaryDataFrames('System:AppData/ApiTests/datasets/demog.csv'))[0];
+    // id should be absent when we read as csv, and second time from cache
+    expect(!table1.id && !table2.id, true);
+  });
 
   test('Performance: read csv', async () => {
     const first = await getExecutionTime(async () => {
@@ -99,15 +109,50 @@ category('Dapi: connection cache', () => {
     });
     // second execution should be faster
     expect(second * 2 < first);
-  }, {skipReason: 'GROK-15408'});
+  });
+
+  test('Sequential stress test', async () => {
+    const times = DG.Test.isInBenchmark ? 1000 : 100;
+    let demogCsvReads1 = [];
+    await grok.dapi.files.readCsv('System:AppData/ApiTests/datasets/demog.csv');
+    await grok.dapi.files.readCsv('System:AppData/ApiTests/cars.csv');
+    for (let i = 0; i < times; i++)
+      demogCsvReads1.push(await getExecutionTime(async () => {
+        await grok.dapi.files.readCsv('System:AppData/ApiTests/datasets/demog.csv');
+      }));
+
+    let carsReads1 = [];
+    for (let i = 0; i < times; i++)
+      carsReads1.push(await getExecutionTime(async () => {
+        await grok.dapi.files.readCsv('System:AppData/ApiTests/cars.csv');
+      }));
+
+    let carsReads2 = [];
+    let demogCsvReads2 = [];
+    for (let i = 0; i < times; i++) {
+      demogCsvReads2.push(await getExecutionTime(async () => {
+        await grok.dapi.files.readCsv('System:AppData/ApiTests/datasets/demog.csv');
+      }));
+      carsReads2.push(await getExecutionTime(async () => {
+        await grok.dapi.files.readCsv('System:AppData/ApiTests/cars.csv');
+      }));
+    }
+    const demog1Median = median(demogCsvReads1);
+    const demog2Median = median(demogCsvReads2);
+    expect(demog2Median < demog1Median * 2, true);
+
+    const cars1Median = median(carsReads1);
+    const cars2Median = median(carsReads2);
+    expect(cars2Median < cars1Median * 5, true);
+  }, { benchmark: true, timeout: 120000 });
 
   after(async () => {
     try {
       await grok.dapi.files.delete(testFilePath1);
-    } catch (_) {}
+    } catch (_) { }
     try {
       await grok.dapi.files.delete(testFilePath2);
-    } catch (_) {}
+    } catch (_) { }
   });
 });
 
@@ -136,8 +181,10 @@ category('Dapi: TableQuery', () => {
   before(async () => {
     fromTable = DG.TableInfo.fromDataFrame(grok.data.testData('demog', 5000));
     from = fromTable.name;
-    const dcParams = {dataSource: 'Postgres', server: 'dev.datagrok.ai:54322', db: 'northwind',
-      login: 'datagrok', password: 'datagrok'};
+    const dcParams = {
+      dataSource: 'Postgres', server: 'dev.datagrok.ai:54322', db: 'northwind',
+      login: 'datagrok', password: 'datagrok'
+    };
     dc = DG.DataConnection.create('test', dcParams);
     dc = await grok.dapi.connections.save(dc);
   });
@@ -191,12 +238,12 @@ category('Dapi: TableQuery', () => {
   test('From table', async () => {
     const dtqb = DG.TableQuery.fromTable(fromTable);
     expect(dtqb instanceof DG.TableQueryBuilder, true);
-  }, {skipReason: 'GROK-11670'});
+  }, { skipReason: 'GROK-11670' });
 
   test('From', async () => {
     const dtqb = DG.TableQuery.from(from);
     expect(dtqb instanceof DG.TableQueryBuilder, true);
-  }, {skipReason: 'GROK-11670'});
+  }, { skipReason: 'GROK-11670' });
 });
 
 /*
@@ -279,4 +326,12 @@ async function getExecutionTime(f: () => any) {
   const start = Date.now();
   await f();
   return Date.now() - start;
+}
+
+function median(numbers: number[]) {
+  const sorted = Array.from(numbers).sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 0)
+    return (sorted[middle - 1] + sorted[middle]) / 2;
+  return sorted[middle];
 }

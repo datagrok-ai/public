@@ -1,5 +1,11 @@
 # tutorials changelog
 
+## 1.3.13 (2024-08-07)
+
+### Features
+
+* Demo app integration with Browse view
+
 ## 1.3.12 (2024-03-29)
 
 ### Features

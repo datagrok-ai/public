@@ -33,13 +33,13 @@ GROUP BY res.source, time_start, time_end
 
 --name: EventsUsersSources
 --input: string date {pattern: datetime}
---input: list groups
+--input: list<string> groups
 --connection: System:Datagrok
 --meta.cache: all
 --meta.cache.invalidateOn: 0 0 * * *
 with recursive selected_groups as (
   select id from groups
-  where id = any(@groups)
+  where id::varchar = any(@groups)
   union
   select gr.child_id as id from selected_groups sg
   join groups_relations gr on sg.id = gr.parent_id

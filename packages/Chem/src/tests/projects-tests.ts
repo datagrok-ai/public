@@ -188,25 +188,25 @@ async function runChemicalSpace(tv: DG.TableView): Promise<void> {
     plotEmbeddings: true,
     options: undefined,
     preprocessingFunction: undefined,
-    clusterEmbeddings: true
-  }).call(undefined, undefined, { processed: false });
+    clusterEmbeddings: true,
+  }).call(undefined, undefined, {processed: false});
   //need for scatter plot to render
   await delay(10);
 }
 
 async function runStructuralAlerts(tv: DG.TableView): Promise<void> {
-  await DG.Func.find({ package: 'Chem', name: 'runStructuralAlerts' })[0].prepare({
+  await DG.Func.find({package: 'Chem', name: 'runStructuralAlerts'})[0].prepare({
     table: tv.dataFrame,
     molecules: tv.dataFrame.col('smiles'),
     pains: true,
     bms: false,
     sureChembl: false,
     mlsmr: false,
-    dandee: false,
+    dundee: false,
     inpharmatica: false,
     lint: false,
-    glaxo: false
-  }).call(undefined, undefined, { processed: false });
+    glaxo: false,
+  }).call(undefined, undefined, {processed: false});
 }
 
 async function runElementalAnalysis(tv: DG.TableView): Promise<void> {
@@ -311,9 +311,9 @@ async function saveAndOpenProject(tv: DG.TableView, dataSync?: boolean): Promise
   let tableInfo = tv.dataFrame.getTableInfo();
   if (dataSync) {
     //@ts-ignore
-    tableInfo.tags['.data-sync'] = 'sync';
+    tableInfo.tags[DG.Tags.DataSync] = 'sync';
     //@ts-ignore
-    tableInfo.tags['.script'] = grok.shell.tv.dataFrame.getTag('.script');  
+    tableInfo.tags[DG.Tags.CreationScript] = grok.shell.tv.dataFrame.getTag(DG.Tags.CreationScript);  
   }
   let layoutInfo = tv.getInfo();
   project.addChild(tableInfo);

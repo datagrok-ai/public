@@ -19,10 +19,10 @@ export class ColoredTextInput {
     /** Resize, no scrolls  */
     resizeable: boolean = true
   ) {
-    $(this.root).addClass('colored-text-input');
+    $(this.root).addClass('st-colored-text-input');
     if (resizeable) {
       // make input field automatically resizeable
-      this.textInputBase.onChanged(
+      this.textInputBase.onChanged.subscribe(
         () => {
           // necessary for the field to be squeezable, not only expandable
           $(this.textArea).css('height', 0);
@@ -34,7 +34,7 @@ export class ColoredTextInput {
     this.root.appendChild(this.highlights);
     this.colorize();
 
-    this.textInputBase.onChanged(() => this.colorize());
+    this.textInputBase.onChanged.subscribe(() => this.colorize());
   }
 
   private highlights: HTMLDivElement;

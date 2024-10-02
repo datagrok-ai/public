@@ -21,7 +21,7 @@ import {
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 
 import {convertXMLToIFitChartData} from './fit-parser';
-import {CellRenderViewer} from './cell-render-viewer';
+import {CellRenderViewer} from '@datagrok-libraries/utils/src/viewers/cell-render-viewer';
 import { calculateSeriesStats, getChartDataAggrStats } from './fit-grid-cell-handler';
 import {FitConstants} from './const';
 import {
@@ -224,6 +224,11 @@ export function substituteZeroes(data: IFitChartData): void {
   }
 }
 
+@grok.decorators.cellRenderer({
+  name: 'Fit',
+  cellType: 'fit',
+  virtual: true,
+})
 export class FitChartCellRenderer extends DG.GridCellRenderer {
   get name() { return FitConstants.FIT_CELL_TYPE; }
 
@@ -292,7 +297,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     if (!gridCell.cell.value)
       return;
 
-    const cellRenderViewer = CellRenderViewer.fromGridCell(gridCell);
+    const cellRenderViewer = CellRenderViewer.fromGridCell(gridCell, new FitChartCellRenderer());
     const dlg = ui.dialog({title: 'Edit chart'})
       .add(cellRenderViewer.root)
       .show({resizable: true});
@@ -388,6 +393,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
           curve = getCurve(series, fitFunc);
         }
         else {
+          // TODO: Stop refitting when we just rerender the same curve - use LruMap
           const fitResult = fitSeries(series, fitFunc, chartLogOptions);
           curve = fitResult.fittedCurve;
           const params = [...fitResult.parameters]

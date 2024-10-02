@@ -1,3 +1,4 @@
+'use strict';
 /**
  * The class contains semantic type detectors.
  * Detectors are functions tagged with `DG.FUNC_TYPES.SEM_TYPE_DETECTOR`.
@@ -7,6 +8,7 @@
  *
  * TODO: Use detectors from WebLogo pickUp.. methods
  */
+// eslint-disable-next-line max-lines
 
 const SEQ_SAMPLE_LIMIT = 100;
 const SEQ_SAMPLE_LENGTH_LIMIT = 100;
@@ -73,6 +75,12 @@ class BioPackageDetectors extends DG.Package {
 
   constructor() {
     super();
+
+    this.forbiddenMulticharAll = ' .:';
+    this.forbiddenMulticharFirst = ']' + this.forbiddenMulticharAll;
+    this.forbiddenMulticharMiddle = '][' + this.forbiddenMulticharAll;
+    this.forbiddenMulticharLast = '[' + this.forbiddenMulticharAll;
+
     // replace super._logger
     this._logger = new LoggerWrapper(this, this.logger, 'detectors');
   }
@@ -93,8 +101,8 @@ class BioPackageDetectors extends DG.Package {
   numbersRawAlphabet = new Set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
 
   smilesRawAlphabet = new Set([
-    'A', 'B', 'C', 'E', 'F', 'H', 'I', 'K', 'L', 'M', 'N', 'O', 'P', 'R', 'S', 'Z',
-    'a', 'c', 'e', 'g', 'i', 'l', 'n', 'o', 'r', 's', 't', 'u',
+    'C', 'F', 'H', 'N', 'O', 'P', 'S', 'B', /**/'A', 'E', 'I', 'K', 'L', 'M', 'R', 'Z',
+    'c', 'n', 'o', 's', /**/'a', 'e', 'g', 'i', 'l', 'r', 't', 'u',
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
     '+', '-', '.', , '/', '\\', '@', '[', ']', '(', ')', '#', '%', '=']);
 
@@ -167,7 +175,7 @@ class BioPackageDetectors extends DG.Package {
       ) {
         const statsAsHelm = this.getStats(categoriesSample, 2,
           this.getSplitterAsHelm(SEQ_SAMPLE_LENGTH_LIMIT));
-        col.setTag(DG.TAGS.UNITS, NOTATION.HELM);
+        col.meta.units = NOTATION.HELM;
 
         // alphabetSize calculated on (sub)sample of data is incorrect
         // const alphabetSize = Object.keys(statsAsHelm.freq).length;
@@ -175,13 +183,14 @@ class BioPackageDetectors extends DG.Package {
         // col.setTag(SeqHandler.TAGS.alphabetSize, alphabetSize.toString());
         col.setTag(SeqHandler.TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
 
+        col.setTag(DG.TAGS.CELL_RENDERER, 'helm');
         return DG.SEMTYPE.MACROMOLECULE;
       }
 
       const decoyAlphabets = [
-        ['NUMBERS', this.numbersRawAlphabet, 0.25],
-        ['SMILES', this.smilesRawAlphabet, 0.25],
-        ['SMARTS', this.smartsRawAlphabet, 0.45],
+        ['NUMBERS', this.numbersRawAlphabet, 0.25, undefined],
+        ['SMILES', this.smilesRawAlphabet, 0.25, (seq) => seq.replaceAll()],
+        ['SMARTS', this.smartsRawAlphabet, 0.45, undefined],
       ];
 
       const candidateAlphabets = [
@@ -246,7 +255,7 @@ class BioPackageDetectors extends DG.Package {
           return null;
         }
 
-        col.setTag(DG.TAGS.UNITS, units);
+        col.meta.units = units;
         if (separator) col.setTag(SeqHandler.TAGS.separator, separator);
         col.setTag(SeqHandler.TAGS.aligned, ALIGNMENT.SEQ_MSA);
         col.setTag(SeqHandler.TAGS.alphabet, alphabet);
@@ -254,6 +263,7 @@ class BioPackageDetectors extends DG.Package {
           const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);
           col.setTag(SeqHandler.TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
         }
+        col.setTag(DG.TAGS.CELL_RENDERER, 'sequence');
         return DG.SEMTYPE.MACROMOLECULE;
       } else {
         const stats = this.getStats(categoriesSample, seqMinLength, splitter);
@@ -265,24 +275,12 @@ class BioPackageDetectors extends DG.Package {
         }
         // Single- and multi-char monomer names for sequences with separators have constraints
         if (units === NOTATION.SEPARATOR || (units === NOTATION.FASTA && alphabetIsMultichar)) {
-          const badSet = this.checkBadMultichar(stats.freq);
-          const [badCount, allCount] = this.calcBad(stats.freq, badSet);
-          if (badCount / allCount > maxBadRatio) {
-            last.rejectReason = `Forbidden multi-char monomers: ` +
-              `${wu(badSet.keys()).map((m) => `'${m}'`).toArray().join(', ')}`;
+          const badSymbol /*: string | null*/ = this.checkBadMultichar(stats.freq);
+          if (badSymbol) {
+            last.rejectReason = `Forbidden multi-char monomer: '${badSymbol}'.`;
             return null;
           }
         }
-        if (units === NOTATION.FASTA && !alphabetIsMultichar) {
-          const badSet = this.checkBadSinglechar(stats.freq);
-          const [badCount, allCount] = this.calcBad(stats.freq, badSet);
-          if (badCount / allCount > maxBadRatio) {
-            last.rejectReason = `Forbidden single-char monomers: ` +
-              `${wu(badSet.keys()).map((m) => `'${m}'`).toArray().join(', ')}`;
-            return null;
-          }
-        }
-
         const aligned = stats.sameLength ? ALIGNMENT.SEQ_MSA : ALIGNMENT.SEQ;
 
         // TODO: If separator detected, then extra efforts to detect alphabet are allowed.
@@ -293,7 +291,7 @@ class BioPackageDetectors extends DG.Package {
         }
 
         // const forbidden = this.checkForbiddenWoSeparator(stats.freq);
-        col.setTag(DG.TAGS.UNITS, units);
+        col.meta.units = units;
         if (separator) col.setTag(SeqHandler.TAGS.separator, separator);
         col.setTag(SeqHandler.TAGS.aligned, aligned);
         col.setTag(SeqHandler.TAGS.alphabet, alphabet);
@@ -304,7 +302,7 @@ class BioPackageDetectors extends DG.Package {
         }
 
         refineSeqSplitter(col, stats, separator).then(() => { });
-
+        col.setTag(DG.TAGS.CELL_RENDERER, 'sequence');
         return DG.SEMTYPE.MACROMOLECULE;
       }
     } catch (err) {
@@ -357,8 +355,8 @@ class BioPackageDetectors extends DG.Package {
     // Splitter with separator test application
     const splitter = this.getSplitterWithSeparator(sep, SEQ_SAMPLE_LENGTH_LIMIT);
     const stats = this.getStats(categoriesSample, seqMinLength, splitter);
-    const badSet = this.checkBadMultichar(stats.freq);
-    if (badSet.size > 0) return 0;
+    const badSymbol = this.checkBadMultichar(stats.freq);
+    if (badSymbol) return null;
     // TODO: Test for Gamma/Erlang distribution
     const totalMonomerCount = wu(Object.values(stats.freq)).reduce((sum, a) => sum + a, 0);
     const mLengthAvg = wu.entries(stats.freq)
@@ -385,15 +383,27 @@ class BioPackageDetectors extends DG.Package {
   /** Dots and colons are nor allowed in multichar monomer names (but space is allowed).
    * The monomer name/label cannot contain digits only (but single digit is allowed).
    */
-  checkBadMultichar(freq) {
-    const badRe = /[ .:\[\]]|^\d+$/i;
-    return new Set(Object.keys(freq).filter((m) => badRe.test(m)));
-  }
+  checkBadMultichar(freq) /* : string | null */ {
+    for (const symbol of Object.keys(freq)) {
+      if (symbol && !isNaN(symbol))
+        return symbol; // performance evaluated better with RegExp
 
-  /** Space, dot, colon, semicolon, digit, underscore are not allowed as singe char monomer names.*/
-  checkBadSinglechar(freq) {
-    const badRe = /[ .:;\d_]/i;
-    return new Set(Object.keys(freq).filter((m) => badRe.test(m)));
+      const symbolLen = symbol.length;
+      if (this.forbiddenMulticharFirst.includes(symbol[0]))
+        return symbol;
+      if (this.forbiddenMulticharLast.includes(symbol[symbolLen - 1]))
+        return symbol;
+      for (let cI = 1; cI < symbolLen - 1; ++cI) {
+        const c = symbol[cI];
+        if (this.forbiddenMulticharMiddle.includes(c))
+          return symbol;
+      }
+      if (symbol.match(/^\d+\W+.*/))
+        // symbols like '2,...' are forbidden
+        // we require an alphabet character just after the leading digit(s)
+        return symbol;
+    }
+    return null;
   }
 
   calcBad(freq, forbiddenSet) {
@@ -461,10 +471,11 @@ class BioPackageDetectors extends DG.Package {
     const keys = new Set([...new Set(Object.keys(freq)), ...alphabet]);
     keys.delete(gapSymbol);
 
+    const freqSum = Object.values(freq).reduce((a, b) => a + b, 0);
     const freqA = [];
     const alphabetA = [];
     for (const m of keys) {
-      freqA.push(m in freq ? freq[m] : -0.10);
+      freqA.push(m in freq ? freq[m] / freqSum : -0.001);
       alphabetA.push(alphabet.has(m) ? 10 : -20 /* penalty for character outside alphabet set*/);
     }
     /* There were a few ideas: chi-squared, pearson correlation (variance?), scalar product */
@@ -508,7 +519,7 @@ class BioPackageDetectors extends DG.Package {
   }
 
   // Multichar monomer names in square brackets, single char monomers or gap symbol
-  monomerRe = /\[([A-Za-z0-9_\-,()]+)\]|([A-Za-z-])/g;
+  monomerRe = /\[([A-Za-z0-9_\-,()]+)\]|(.)/g;
 
   /** Split sequence for single character monomers, square brackets multichar monomer names or gap symbol. */
   getSplitterAsFasta(lengthLimit) {
@@ -611,11 +622,16 @@ class BioPackageDetectors extends DG.Package {
 
 async function refineSeqSplitter(col, stats, separator) {
   let invalidateRequired = false;
-  const isCyclized = Object.keys(stats.freq).some((om) => om.match(/.+\(\d+\)/));
-  if (isCyclized) {
+  const isCyclized = Object.keys(stats.freq).some((om) => om.match(/^.+\(\d+\)$/));
+  const isDimerized = Object.keys(stats.freq).some((om) => om.match(/^\(#\d\).+$/));
+
+  if (isCyclized && !isDimerized) {
     await grok.functions.call('Bio:applyNotationProviderForCyclized', {col: col, separator: separator});
     // SeqHandler will be recreated and replaced with the next call .forColumn()
     // because of changing tags of the column
+    invalidateRequired = true;
+  } else if (isDimerized) {
+    await grok.functions.call('Bio: applyNotationProviderForDimerized', {col: col, separator: separator});
     invalidateRequired = true;
   }
 

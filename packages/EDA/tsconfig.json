@@ -12,7 +12,7 @@
     // "jsx": "preserve",                           /* Specify JSX code generation: 'preserve', 'react-native', 'react', 'react-jsx' or 'react-jsxdev'. */
     // "declaration": true,                         /* Generates corresponding '.d.ts' file. */
     // "declarationMap": true,                      /* Generates a sourcemap for each corresponding '.d.ts' file. */
-    // "sourceMap": true,                           /* Generates corresponding '.map' file. */
+     "sourceMap": true,                           /* Generates corresponding '.map' file. */
     // "outFile": "./",                             /* Concatenate and emit output to single file. */
     // "outDir": "./",                              /* Redirect output structure to the directory. */
     // "rootDir": "./",                             /* Specify the root directory of input files. Use to control the output directory structure with --outDir. */
@@ -56,8 +56,8 @@
     // "allowUmdGlobalAccess": true,                /* Allow accessing UMD globals from modules. */
 
     /* Source Map Options */
-    // "sourceRoot": "",                            /* Specify the location where debugger should locate TypeScript files instead of source locations. */
-    // "mapRoot": "",                               /* Specify the location where debugger should locate map files instead of generated locations. */
+     "sourceRoot": "",                            /* Specify the location where debugger should locate TypeScript files instead of source locations. */
+     "mapRoot": "",                               /* Specify the location where debugger should locate map files instead of generated locations. */
     // "inlineSourceMap": true,                     /* Emit a single file with source maps instead of having a separate file. */
     // "inlineSources": true,                       /* Emit the source alongside the sourcemaps within a single file; requires '--inlineSourceMap' or '--sourceMap' to be set. */
 
@@ -66,7 +66,7 @@
     // "emitDecoratorMetadata": true,               /* Enables experimental support for emitting type metadata for decorators. */
 
     /* Advanced Options */
-    "skipLibCheck": false,                          /* Skip type checking of declaration files. */
+    "skipLibCheck": true,                          /* Skip type checking of declaration files. */
     "forceConsistentCasingInFileNames": true        /* Disallow inconsistently-cased references to the same file. */
   }
 }

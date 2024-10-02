@@ -1,0 +1,763 @@
+{
+  "name": "Demo template",
+  "subgroup": [
+    {
+      "name": "Absorption",
+      "checked": false,
+      "expanded": true,
+      "description": "Absorption is the process by which drugs enter the bloodstream after administration. It is pivotal in pharmaceutical research, enabling enhanced bioavailability, precise dosing, formulation optimization, reduced variability among patient populations, and minimized side effects. In this part, we studied 3 absorption-related endpoints.",
+      "models": [
+        {
+          "name": "Caco2",
+          "checked": false,
+          "units": "cm/s",
+          "min": -6,
+          "max": -5.5,
+          "properties": [
+            {
+              "property": {
+                "name": "description",
+                "inputType": "TextArea",
+                "enable": false
+              },
+              "object": {
+                "description": "It is a rate of compound flux across polarized human colon carcinoma Caco-2 cells layers, cm/s. High values indicate good permeability characteristics."
+              }
+            },
+            {
+              "property": {
+                "name": "ranges",
+                "inputType": "Map",
+                "enable": false
+              },
+              "object": {
+                "ranges": {
+                  "< -6": "bad",
+                  "-6 - -5.5": "intermediate",
+                  "> -5.5": "good"
+                }
+              }
+            }
+          ],
+          "coloring": {
+            "type": "Linear",
+            "enable": false,
+            "min": "-6",
+            "max": "-5.5",
+            "colors": "[4292224808, 4281114668]"
+          }
+        },
+        {
+          "name": "Lipophilicity",
+          "checked": false,
+          "units": "log-ratio",
+          "min": 0,
+          "max": 5,
+          "properties": [
+            {
+              "property": {
+                "name": "description",
+                "inputType": "TextArea",
+                "enable": false
+              },
+              "object": {
+                "description": "This is a charachteristic of compound quatifying the distribution between lipophilic and hydrophiliv environments. High lipophilicity values  are good for the most of memranes permeability, though low values are related to achievment of therapeutical plasma concentrations. This characterestic is specific to analyzed problem."
+              }
+            },
+            {
+              "property": {
+                "name": "ranges",
+                "inputType": "Map",
+                "enable": false
+              },
+              "object": {
+                "ranges": {
+                  "2 - 3": "ideal",
+                  "0 - 5": "intermediate",
+                  "3 - 5": "intermediate",
+                  "< 0": "bad",
+                  "> 5": "bad"
+                }
+              }
+            }
+          ],
+          "coloring": {
+            "type": "Linear",
+            "enable": false,
+            "min": "0",
+            "max": "5",
+            "colors": "[4292224808, 4281114668]"
+          }
+        },
+        {
+          "name": "Solubility",
+          "checked": false,
+          "units": "log mol/L",
+          "min": -4.5,
+          "max": -1,
+          "properties": [
+            {
+              "property": {
+                "name": "description",
+                "inputType": "TextArea",
+                "enable": false
+              },
+              "object": {
+                "description": "Indicates the fraction of compound that can be solved in water solution, e.g. plasma. This characterestic is specific to analyzed problem."
+              }
+            },
+            {
+              "property": {
+                "name": "direction",
+                "inputType": "Radio",
+                "choices": [
+                  "Lower is better",
+                  "Higher is better"
+                ],
+                "enable": false
+              },
+              "object": {
+                "direction": "Higher is better"
+              }
+            }
+          ],
+          "coloring": {
+            "type": "Linear",
+            "enable": false,
+            "min": "-4.5",
+            "max": "-1",
+            "colors": "[4292224808, 4281114668]"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Distribution",
+      "expanded": false,
+      "checked": false,
+      "description": "Distribution refers to the process of transporting a drug from its point of entry into the bloodstream to its target organs, tissues, or specific sites where it exerts its therapeutic effects, with factors such as drug properties and physiological characteristics influencing this process.",
+      "models": [
+        {
+          "name": "PPBR",
+          "checked": false,
+          "units": "%",
+          "min": 40,
+          "max": 90,
+          "properties": [
+            {
+              "property": {
+                "name": "description",
+                "inputType": "TextArea",
+                "enable": false
+              },
+              "object": {
+                "description": "This value stands for plasma protein binding. PPB strongly influences drug behavior as only free drug is able to penetrate mebranes. Low values indicate good permeability characteristics."
+              }
+            },
+            {
+              "property": {
+                "name": "direction",
+                "inputType": "Radio",
+                "choices": [
+                  "Lower is better",
+                  "Higher is better"
+                ],
+                "enable": true
+              },
+              "object": {
+                "direction": "Higher is better"
+              }
+            },
+            {
+              "property": {
+                "name": "ranges",
+                "inputType": "Map",
+                "enable": false,
+                "skip": true
+              },
+              "object": {
+                "ranges": {
+                  "> 90": "high",
+                  "40 - 90": "moderate",
+                  "< 40": "low"
+                }
+              }
+            }
+          ],
+          "coloring": {
+            "type": "Conditional",
+            "> 90": "#1f77b4",
+            "40 - 90": "#8c564b",
+            "< 40": "#bcbd22"
+          }
+        },
+        {
+          "name": "VDss",
+          "checked": false,
+          "units": "L/kg",
+          "min": 1,
+          "max": 2,
+          "properties": [
+            {
+              "property": {
+                "name": "description",
+                "inputType": "TextArea",
+                "enable": false
+              },
+              "object": {
+                "description": "Volume of distribution (L) is a pharmacokinetic parameter representing the ability of drug to remain in plasma or redistribute to other tissues. High VD has a propensity to leave the plasma to other tissues, low VD indicates the ability of drug to achieve desired concentration at lower doses."
+              }
+            },
+            {
+              "property": {
+                "name": "direction",
+                "inputType": "Radio",
+                "choices": [
+                  "Lower is better",
+                  "Higher is better"
+                ],
+                "enable": true
+              },
+              "object": {
+                "direction": "Higher is better"
+              }
+            },
+            {
+              "property": {
+                "name": "ranges",
+                "inputType": "Map",
+                "enable": false,
+                "skip": true
+              },
+              "object": {
+                "ranges": {
+                  "> 2": "high",
+                  "1 - 2": "moderate",
+                  "< 1": "low"
+                }
+              }
+            }
+          ],
+          "coloring": {
+            "type": "Conditional",
+            "> 2": "#1f77b4",
+            "1 - 2": "#8c564b",
+            "< 1": "#bcbd22"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Metabolism",
+      "expanded": false,
+      "checked": false,
+      "description": "Metabolism is the intricate biochemical system responsible for managing energy and molecular processes within living organisms. It consists of two essential components: anabolism, where complex molecules are built, requiring energy like an investment, and catabolism, which breaks down substances to release energy, akin to a controlled chemical breakdown.",
+      "models": [
+        {
+          "name": "CYP1A2-Inhibitor",
+          "checked": false,
+          "units": "-",
+          "min": 0,
+          "max": 1,
+          "properties": [
+            {
+              "property": {
+                "name": "description",
+                "inputType": "TextArea",
+                "enable": false
+              },
+              "object": {
+                "description": "A probability of being an inhibitor of cytochrome CYP1A2 which catalyzes drug metabolism. Inhibiting CYP1A2 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc."
+              }
+            },
+            {
+              "property": {
+                "name": "direction",
+                "inputType": "Radio",
+                "choices": [
+                  "Lower is better",
+                  "Higher is better"
+                ],
+                "enable": true
+              },
+              "object": {
+                "direction": "Higher is better"
+              }
+            }
+          ],
+          "coloring": {
+            "type": "Linear",
+            "enable": false,
+            "min": "0",
+            "max": "1",
+            "colors": "[4292224808, 4281114668]"
+          }
+        },
+        {
+          "name": "CYP2C19-Inhibitor",
+          "checked": false,
+          "units": "-",
+          "min": 0,
+          "max": 1,
+          "properties": [
+            {
+              "property": {
+                "name": "description",
+                "inputType": "TextArea",
+                "enable": false
+              },
+              "object": {
+                "description": "A probability of being an inhibitor of cytochrome CYP2C19 which catalyzes drug metabolism. Inhibiting CYP2C19 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc."
+              }
+            },
+            {
+              "property": {
+                "name": "direction",
+                "inputType": "Radio",
+                "choices": [
+                  "Lower is better",
+                  "Higher is better"
+                ],
+                "enable": true
+              },
+              "object": {
+                "direction": "Higher is better"
+              }
+            }
+          ],
+          "coloring": {
+            "type": "Linear",
+            "enable": false,
+            "min": "0",
+            "max": "1",
+            "colors": "[4292224808, 4281114668]"
+          }
+        },
+        {
+          "name": "CYP2C9-Inhibitor",
+          "checked": false,
+          "units": "-",
+          "min": 0,
+          "max": 1,
+          "properties": [
+            {
+              "property": {
+                "name": "description",
+                "inputType": "TextArea",
+                "enable": false
+              },
+              "object": {
+                "description": "A probability of being an inhibitor of cytochrome CYP2C9 which catalyzes drug metabolism. Inhibiting CYP2C9 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc."
+              }
+            },
+            {
+              "property": {
+                "name": "direction",
+                "inputType": "Radio",
+                "choices": [
+                  "Lower is better",
+                  "Higher is better"
+                ],
+                "enable": true
+              },
+              "object": {
+                "direction": "Higher is better"
+              }
+            }
+          ],
+          "coloring": {
+            "type": "Linear",
+            "enable": false,
+            "min": "0",
+            "max": "1",
+            "colors": "[4292224808, 4281114668]"
+          }
+        },
+        {
+          "name": "CYP2C9-Substrate",
+          "checked": false,
+          "units": "-",
+          "min": 0,
+          "max": 1,
+          "properties": [
+            {
+              "property": {
+                "name": "description",
+                "inputType": "TextArea",
+                "enable": false
+              },
+              "object": {
+                "description": "A probability of being an inhibitor of substrate CYP2C9 which catalyzes drug metabolism. Binding CYP2C9 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc."
+              }
+            },
+            {
+              "property": {
+                "name": "direction",
+                "inputType": "Radio",
+                "choices": [
+                  "Lower is better",
+                  "Higher is better"
+                ],
+                "enable": true
+              },
+              "object": {
+                "direction": "Higher is better"
+              }
+            }
+          ],
+          "coloring": {
+            "type": "Linear",
+            "enable": false,
+            "min": "0",
+            "max": "1",
+            "colors": "[4292224808, 4281114668]"
+          }
+        },
+        {
+          "name": "CYP2D6-Inhibitor",
+          "checked": false,
+          "units": "-",
+          "min": 0,
+          "max": 1,
+          "properties": [
+            {
+              "property": {
+                "name": "description",
+                "inputType": "TextArea",
+                "enable": false
+              },
+              "object": {
+                "description": "A probability of being an inhibitor of cytochrome CYP2D6 which catalyzes drug metabolism. Inhibiting CYP2D6 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc."
+              }
+            },
+            {
+              "property": {
+                "name": "direction",
+                "inputType": "Radio",
+                "choices": [
+                  "Lower is better",
+                  "Higher is better"
+                ],
+                "enable": true
+              },
+              "object": {
+                "direction": "Higher is better"
+              }
+            }
+          ],
+          "coloring": {
+            "type": "Linear",
+            "enable": false,
+            "min": "0",
+            "max": "1",
+            "colors": "[4292224808, 4281114668]"
+          }
+        },
+        {
+          "name": "CYP2D6-Substrate",
+          "checked": false,
+          "units": "-",
+          "min": 0,
+          "max": 1,
+          "properties": [
+            {
+              "property": {
+                "name": "description",
+                "inputType": "TextArea",
+                "enable": false
+              },
+              "object": {
+                "description": "A probability of being an inhibitor of substrate CYP2D6 which catalyzes drug metabolism. Binding CYP2D6 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc."
+              }
+            },
+            {
+              "property": {
+                "name": "direction",
+                "inputType": "Radio",
+                "choices": [
+                  "Lower is better",
+                  "Higher is better"
+                ],
+                "enable": true
+              },
+              "object": {
+                "direction": "Higher is better"
+              }
+            }
+          ],
+          "coloring": {
+            "type": "Linear",
+            "enable": false,
+            "min": "0",
+            "max": "1",
+            "colors": "[4292224808, 4281114668]"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Excretion",
+      "expanded": false,
+      "checked": false,
+      "description": "Drug excretion is the removal of drugs from the body using various different routes of excretion, including urine, bile, sweat, saliva, tears, milk, and stool.",
+      "models": [
+        {
+          "name": "CL-Hepa",
+          "checked": false,
+          "units": "mL/min",
+          "min": 10,
+          "max": 100,
+          "properties": [
+            {
+              "property": {
+                "name": "description",
+                "inputType": "TextArea",
+                "enable": false
+              },
+              "object": {
+                "description": "Estimate for a hepatocyte clearance is excretion characteristic which contributes to  pojection of dose and drug exposure. This characterestic is specific to analyzed problem."
+              }
+            },
+            {
+              "property": {
+                "name": "direction",
+                "inputType": "Radio",
+                "choices": [
+                  "Lower is better",
+                  "Higher is better"
+                ],
+                "enable": true
+              },
+              "object": {
+                "direction": "Higher is better"
+              }
+            },
+            {
+              "property": {
+                "name": "ranges",
+                "inputType": "Map",
+                "enable": false
+              },
+              "object": {
+                "ranges": {
+                  "> 100": "bad",
+                  "10 - 100": "moderate",
+                  "< 10": "low"
+                }
+              }
+            }
+          ],
+          "coloring": {
+            "type": "Linear",
+            "enable": false,
+            "min": "10",
+            "max": "100",
+            "colors": "[4281114668, 4292224808]"
+          }
+        },
+        {
+          "name": "CL-Micro",
+          "checked": false,
+          "units": "μL/min/million",
+          "min": 10,
+          "max": 100,
+          "properties": [
+            {
+              "property": {
+                "name": "description",
+                "inputType": "TextArea",
+                "enable": false
+              },
+              "object": {
+                "description": "Estimates intrinsic clearance which is related ro compound's metabolic stability. This characterestic is specific to analyzed problem."
+              }
+            },
+            {
+              "property": {
+                "name": "direction",
+                "inputType": "Radio",
+                "choices": [
+                  "Lower is better",
+                  "Higher is better"
+                ],
+                "enable": true
+              },
+              "object": {
+                "direction": "Higher is better"
+              }
+            },
+            {
+              "property": {
+                "name": "ranges",
+                "inputType": "Map",
+                "enable": false
+              },
+              "object": {
+                "ranges": {
+                  "> 100": "bad",
+                  "10 - 100": "moderate",
+                  "< 10": "low"
+                }
+              }
+            }
+          ],
+          "coloring": {
+            "type": "Linear",
+            "enable": false,
+            "min": "10",
+            "max": "100",
+            "colors": "[4281114668, 4292224808]"
+          }
+        },
+        {
+          "name": "Half-Life",
+          "checked": false,
+          "units": "hours",
+          "min": 2,
+          "max": 24,
+          "properties": [
+            {
+              "property": {
+                "name": "description",
+                "inputType": "TextArea",
+                "enable": false
+              },
+              "object": {
+                "description": "This estimates metabolic half-time of the drug or the time when concentration drops by half. This characterestic is specific to analyzed problem."
+              }
+            },
+            {
+              "property": {
+                "name": "direction",
+                "inputType": "Radio",
+                "choices": [
+                  "Lower is better",
+                  "Higher is better"
+                ],
+                "enable": true
+              },
+              "object": {
+                "direction": "Lower is better"
+              }
+            }
+          ],
+          "coloring": {
+            "type": "Linear",
+            "enable": false,
+            "min": "2",
+            "max": "24",
+            "colors": "[4279746255, 4287915965]"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Toxicity",
+      "expanded": false,
+      "checked": false,
+      "description": "Toxicity measures how much damage a drug could cause to organisms.",
+      "models": [
+        {
+          "name": "hERG",
+          "checked": false,
+          "units": "-",
+          "min": 0,
+          "max": 1,
+          "properties": [
+            {
+              "property": {
+                "name": "description",
+                "inputType": "TextArea",
+                "enable": false
+              },
+              "object": {
+                "description": "Inhibition of the hERG (human Ether-à-go-go-Related Gene) current causes QT interval prolongation and lead to life threatening arrhythmia. Inhibition of hERG is considered as precaution."
+              }
+            },
+            {
+              "property": {
+                "name": "direction",
+                "inputType": "Radio",
+                "choices": [
+                  "Lower is better",
+                  "Higher is better"
+                ],
+                "enable": false
+              },
+              "object": {
+                "direction": "Lower is better"
+              }
+            }
+          ],
+          "coloring": {
+            "type": "Linear",
+            "enable": false,
+            "min": "0",
+            "max": "1",
+            "colors": "[4281114668, 4292224808]"
+          }
+        },
+        {
+          "name": "LD50",
+          "checked": false,
+          "units": "mg/kg",
+          "min": 1,
+          "max": 5000,
+          "properties": [
+            {
+              "property": {
+                "name": "description",
+                "inputType": "TextArea",
+                "enable": false
+              },
+              "object": {
+                "description": "Median lethal dose of a substance is the dose required to kill half the members of a tested population after a specified test duration which is a common characteristic of accute toxicity. It is usually classifies substances to 6 toxicological classes - I - most hazardous, VI - most safe."
+              }
+            },
+            {
+              "property": {
+                "name": "direction",
+                "inputType": "Radio",
+                "choices": [
+                  "Lower is better",
+                  "Higher is better"
+                ],
+                "enable": false
+              },
+              "object": {
+                "direction": "Higher is better"
+              }
+            },
+            {
+              "property": {
+                "name": "ranges",
+                "inputType": "Map",
+                "enable": false,
+                "skip": true
+              },
+              "object": {
+                "ranges": {
+                  "<= 5": "Fatal is swallowed",
+                  "5 - 50": "Fatal is swallowed",
+                  "50 - 300": "Toxic is swallowed",
+                  "300 - 2000": "Harmful if swallowed",
+                  "2000 - 5000": "May be harmful if swallowed",
+                  "> 5000": "Non-toxic"
+                }
+              }
+            }
+          ],
+          "coloring": {
+            "type": "Conditional",
+            "<= 5": "#d62728",
+            "5 - 50": "#ff9896",
+            "50 - 300": "#ffbb78",
+            "300 - 2000": "#bcbd22",
+            "2000 - 5000": "#98df8a",
+            "> 5000": "#2ca02c"
+          }
+        }
+      ]
+    }
+  ]
+}

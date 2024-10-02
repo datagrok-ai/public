@@ -61,7 +61,7 @@ Datagrok server core is written in Dart, which is a language developed and suppo
 follow [Dart Security Best Practices](https://dart.dev/security#best-practices) to minimize the risk of introducing a
 vulnerability.
 
-Every release is tested according to our [quality-assurance procedures](quality-assurance.md) which includes
+Every release is tested according to our [quality-assurance procedures](../../../develop/qa/quality-assurance.md) which includes
 vulnerability check by [Snyk](https://snyk.io/) and [Grype](https://github.com/anchore/grype/). All critical
 vulnerabilities are remediated in 2 weeks, high vulnerabilities in 1 moth and lower-level vulnerabilities in 3 month.
 

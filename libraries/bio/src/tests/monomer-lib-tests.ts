@@ -6,11 +6,8 @@ import {expectObject} from '@datagrok-libraries/utils/src/test';
 
 import {IMonomerLib, MonomerLibSummaryType} from '../types/index';
 
-/** Summary for HELMCoreLibrary.json */
-export const defaultMonomerLibSummary: MonomerLibSummaryType = {'PEPTIDE': 322, 'RNA': 383, 'CHEM': 0};
-
-export function expectMonomerLib(lib: IMonomerLib, summary?: { [polymerType: string]: number }): void {
-  const exp: MonomerLibSummaryType = summary ?? defaultMonomerLibSummary;
+export function expectMonomerLib(lib: IMonomerLib, summary: { [polymerType: string]: number }): void {
+  const exp: MonomerLibSummaryType = summary;
   const act: MonomerLibSummaryType = lib.getSummaryObj();
 
   for (const pt in exp)

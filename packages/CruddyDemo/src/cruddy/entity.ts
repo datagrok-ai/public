@@ -10,6 +10,7 @@ export class DbEntityType {
   behaviors: string[] = [];
   filters: IFilterDescription[] = [];
   crud: DbQueryEntityCrud = new DbQueryEntityCrud('', this);
+  defaultView: string = 'grid';
   gridColumns?: DbColumn[];
   gridColumnsNames?: string[];
 

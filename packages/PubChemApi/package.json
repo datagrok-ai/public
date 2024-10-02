@@ -2,10 +2,10 @@
   "name": "@datagrok/pubchem-api",
   "friendlyName": "PubChem",
   "description": "Integration with the PubChem web service.",
-  "version": "1.1.16",
+  "version": "1.2.0",
   "author": {
-    "name": "Volodymyr Dyma",
-    "email": "vdyma@datagrok.ai"
+    "name": "Maria Dolotova",
+    "email": "mdolotova@datagrok.ai"
   },
   "repository": {
     "type": "git",
@@ -13,8 +13,8 @@
     "directory": "packages/PubChemApi"
   },
   "dependencies": {
-    "datagrok-api": "^1.14.1",
-    "@datagrok-libraries/utils": "^4.2.11"
+    "datagrok-api": "^1.21.1",
+    "@datagrok-libraries/utils": "^4.3.0"
   },
   "devDependencies": {
     "ts-loader": "latest",

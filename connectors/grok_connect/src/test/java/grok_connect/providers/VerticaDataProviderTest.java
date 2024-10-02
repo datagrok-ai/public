@@ -22,30 +22,45 @@ import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 import serialization.DataFrame;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Objects;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Testcontainers
 class VerticaDataProviderTest {
     private static final Provider type = Provider.VERTICA;
-    private static final String HOST_SCRIPT_PATH = "scripts/vertica/init.sql";
+    private static final String HOST_SCRIPT_PATH = "/scripts/vertica/init.sql";
     private static final String CONTAINER_SCRIPT_PATH = "/home/dbadmin/init.sql";
     private static final int VERTICA_PORT = 5433;
     @Container
     private static final GenericContainer<?> container =
             new GenericContainer<>(DockerImageName.parse(type.getProperties().get("image").toString()))
-                    .withCopyFileToContainer(MountableFile
-                                    .forClasspathResource(HOST_SCRIPT_PATH),
+                    .withCopyToContainer(Transferable.of(readInitScript()),
                             CONTAINER_SCRIPT_PATH)
                     .withExposedPorts(VERTICA_PORT);
     private JdbcDataProvider provider;
     private DataConnection connection;
     private DataFrameComparator dataFrameComparator;
+
+    public static byte[] readInitScript() {
+        try {
+            Path p = Paths.get(Objects.requireNonNull(VerticaDataProviderTest
+                    .class.getResource(HOST_SCRIPT_PATH)).toURI());
+            return Files.readAllBytes(p);
+        } catch (IOException | URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @BeforeAll
     public void init() {
@@ -176,7 +191,10 @@ class VerticaDataProviderTest {
     private void initContainer() {
         try {
             Thread.sleep(60000);
-            container.execInContainer("/opt/vertica/bin/vsql", "-f", CONTAINER_SCRIPT_PATH);
+            org.testcontainers.containers.Container.ExecResult execResult =
+                    container.execInContainer("/opt/vertica/bin/vsql", "-f", CONTAINER_SCRIPT_PATH);
+            System.out.println("STDOUT:\n" + execResult.getStdout());
+            System.out.println("STDERR:\n" + execResult.getStderr());
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException("Something went wrong when executing init script", e);
         }

@@ -40,7 +40,7 @@ category('PepSeA', () => {
     const tgtMsaCol = df.getCol('MSA');
     for (let i = 0; i < resMsaCol!.length; ++i)
       expect(resMsaCol!.get(i) == tgtMsaCol.get(i), true);
-  }, {timeout: 60000 /* docker */});
+  }, {timeout: 60000 /* docker */, stressTest: true});
 
   test('stderr', async () => {
     const logger = new TestLogger();
@@ -50,7 +50,7 @@ category('PepSeA', () => {
     const tgtMsaCol = df.getCol('MSA');
     expectArray(resMsaCol!.toList(), tgtMsaCol.toList());
     expect(logger.warningList[0].message, pepseaStderrWarningList);
-  }, {timeout: 60000 /* docker */});
+  }, {timeout: 60000 /* docker */, stressTest: true});
 
   test('error', async () => {
     const logger = new TestLogger();

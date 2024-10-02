@@ -18,7 +18,7 @@ const inputs = [
   ui.input.list('list', {value: [1, 2, 3]}),
   ui.input.color('color', {value: '#e66465'}),
   ui.input.column('column', {value: df.col('height'), table: df, filter: (col) => col.type === DG.COLUMN_TYPE.FLOAT}),
-  ui.input.columns('columns', {table: df, available: ['height', 'weight', 'age'], checked: ['weight', 'age']}),
+  ui.input.columns('columns', {table: df, value: df.columns.byNames(['weight', 'age']), available: ['height', 'weight', 'age']}),
   // ui.input.columnsMap('columnsMap'), // doesn't work yet
   ui.input.radio('radio', {items: ['apple', 'orange'], value: 'apple'}),
   ui.input.choice('choice', {items: ['apple', 'orange'], value: 'apple'}),

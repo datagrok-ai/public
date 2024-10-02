@@ -9,7 +9,7 @@
 #input: double sampleRate = 256.0 [Signal sample rate, in Hz]
 #input: int windowLength = 1024 [FFT window length, in samples]
 #input: double timeStep = 0.1 [Analysis time step, in seconds]
-#input: bool removeDc = TRUE [Flag to force DC component removal]
+#input: bool removeDc = true [Flag to force DC component removal]
 #output: graphics {name:spectrogram} [Spectrogram plot]
 
 require(signal)

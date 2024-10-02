@@ -93,9 +93,8 @@ jobs:
         run: |
           channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
           echo "::add-mask::$channel_id"
-          echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
 
-          header="*datagrok-tools* version *${{ needs.check.outputs.version }}* published to <https://www.npmjs.com/package/$(jq -r .name package.json)/v/${{ needs.check.outputs.version }}|NPM>"
+          header="*datagrok-tools* version *${{ needs.check.outputs.version }}* published to <https://www.npmjs.com/package/$(jq -r .name package.json)/v/${{ needs.check.outputs.version }}|NPM>\n<@$channel_id> FYI"
           echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
 
           context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1 | sed -e 's/"/\\"/g')>"
@@ -106,7 +105,7 @@ jobs:
         if: steps.slack-prepare.outcome == 'success'
         uses: slackapi/slack-github-action@v1.24.0
         with:
-          channel-id: ${{ env.SLACK_CHANNEL }}
+          channel-id: '#build'
           payload: |
             {
                 "blocks": [

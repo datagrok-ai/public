@@ -1,6 +1,10 @@
 import * as DG from 'datagrok-api/dg';
-import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
+import {runTests, tests, TestContext, initAutoTests as initTests} from '@datagrok-libraries/utils/src/test';
 import './tests/dim-reduction-tests';
+import './tests/linear-methods-tests';
+import './tests/classifiers-tests';
+import './tests/mis-vals-imputation-tests';
+import './tests/anova-tests';
 export const _package = new DG.Package();
 export {tests};
 
@@ -12,4 +16,9 @@ export {tests};
 export async function test(category: string, test: string, testContext: TestContext): Promise<DG.DataFrame> {
   const data = await runTests({category, test, testContext});
   return DG.DataFrame.fromObjects(data)!;
+}
+
+//name: initAutoTests
+export async function initAutoTests() {
+  await initTests(_package, _package.getModule('package-test.js'));
 }

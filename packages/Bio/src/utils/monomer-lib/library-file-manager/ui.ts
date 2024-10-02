@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -15,9 +16,16 @@ import {getMonomerLibHelper, IMonomerLibFileManager} from '@datagrok-libraries/b
 
 import {MonomerLibFileEventManager} from './event-manager';
 import {_package} from '../../../package';
+import {MonomerManager} from '../monomer-manager/monomer-manager';
+import {DuplicateMonomerManager} from '../monomer-manager/duplicate-monomer-manager';
+import {MonomerLibManager} from '../lib-manager';
 
 export async function showManageLibrariesDialog(): Promise<void> {
   await DialogWrapper.showDialog();
+}
+
+export async function showManageLibrariesView() {
+  await LibManagerView.showView();
 }
 
 export async function getMonomerLibraryManagerLink(): Promise<DG.Widget> {
@@ -50,6 +58,11 @@ class MonomerLibraryManagerWidget {
       })();
     }
     return MonomerLibraryManagerWidget.instancePromise;
+  }
+
+  static async reloadWidget(): Promise<void> {
+    const instance = await MonomerLibraryManagerWidget.getInstance();
+    instance._widget = await instance.createWidget();
   }
 
   private async createWidget() {
@@ -125,7 +138,7 @@ class LibraryControlsManager {
     return inputsForm;
   }
 
-  private updateControlsForm(): void {
+  public updateControlsForm(): void {
     const updatedForm = this._createControlsForm();
     $('.monomer-lib-controls-form').replaceWith(updatedForm);
   }
@@ -139,15 +152,16 @@ class LibraryControlsManager {
     const logPrefix = `${this.toLog()}.createLibInput()`;
     _package.logger.debug(`${logPrefix}, libFileName = '${libFileName}', start`);
     const isMonomerLibrarySelected = !this.userLibSettings.exclude.includes(libFileName);
-    const libInput = ui.boolInput(
-      libFileName,
-      isMonomerLibrarySelected,
-      (isSelected: boolean) => {
-        this.fileManager.eventManager.updateLibrarySelectionStatus(libFileName, isSelected);
-      });
+    const libInput = ui.input.bool(libFileName, {value: isMonomerLibrarySelected, onValueChanged: () => {
+      this.fileManager.eventManager.updateLibrarySelectionStatus(libFileName, libInput.value);
+    }});
     ui.tooltip.bind(libInput.root, `Include monomers from ${libFileName}`);
     const deleteIcon = ui.iconFA('trash-alt', () => this.promptForLibraryDeletion(libFileName));
+    const editIcon = ui.icons.edit(async () => {
+      grok.shell.v = await (await MonomerManager.getInstance()).getViewRoot(libFileName);
+    }, 'Edit monomer library');
     ui.tooltip.bind(deleteIcon, `Delete ${libFileName}`);
+    libInput.addOptions(editIcon);
     libInput.addOptions(deleteIcon);
     _package.logger.debug(`${logPrefix}, libFileName = '${libFileName}', end`);
     return libInput;
@@ -160,7 +174,7 @@ class LibraryControlsManager {
     this.updateLibrarySettings(isMonomerLibrarySelected, libFileName);
     await setUserLibSettings(this.userLibSettings);
     const monomerLibHelper = await getMonomerLibHelper();
-    await monomerLibHelper.loadLibraries(true);
+    await monomerLibHelper.loadMonomerLib(true);
     grok.shell.info('Monomer library user settings saved');
   }
 
@@ -238,3 +252,133 @@ class DialogWrapper {
     return dialog;
   }
 }
+
+class LibManagerView {
+  private constructor() {};
+  private static _instance: LibManagerView;
+  private _view: DG.View;
+  private _duplicateManager: DuplicateMonomerManager;
+  private libManager: MonomerLibManager;
+  private async getView() {
+    const eventManager = MonomerLibFileEventManager.getInstance();
+    const widget = (await MonomerLibraryManagerWidget.getInstance()).widget;
+    const addButton = ui.bigButton('Add',
+      () => eventManager.addLibraryFile(), 'Upload new HELM monomer library');
+    const mergeButton =
+      ui.bigButton('Merge', () => { this.mergeSelectedLibs(); }, 'Merge selected libraries into one');
+
+    const v = ui.splitH(
+      [ui.divV([widget.root, ui.buttonsInput([addButton, mergeButton])], {classes: 'ui-form'}),
+        this._duplicateManager.root],
+      {style: {width: '100%', height: '100%'}},
+      true);
+    this._view = grok.shell.newView('Manage Monomer Libraries', [v]);
+
+    ui.tools.waitForElementInDom(v).then(() => {
+      setTimeout(() => {
+        const children = Array.from(v.children as HTMLCollectionOf<HTMLElement>)
+          .filter((el) => el.classList.contains('ui-box'));
+        if (children.length !== 2)
+          return;
+        const [left, right] = children;
+        const combinedWidth = left.getBoundingClientRect().width + right.getBoundingClientRect().width;
+        const leftWidth = combinedWidth * 0.3;
+        left.style.width = `${leftWidth}px`;
+        const rightWidth = combinedWidth - leftWidth;
+        right.style.width = `${rightWidth}px`;
+      }, 100);
+      this._view.subs.push(grok.events.onCurrentViewChanged.subscribe(async () => {
+        try {
+          const inst = LibManagerView._instance;
+          if (inst && inst._view && 'id' in grok.shell.v && grok.shell.v.id === inst._view.id)
+            inst._duplicateManager?.refresh();
+        } catch (e) {
+          console.error(e);
+        }
+      }));
+    });
+    //grok.shell.dockManager.dock(this._duplicateManager.root, DG.DOCK_TYPE.RIGHT, null, '', 0.4);
+  }
+
+  static async showView() {
+    if (!LibManagerView._instance)
+      LibManagerView._instance = new LibManagerView();
+    if (!LibManagerView._instance._duplicateManager)
+      LibManagerView._instance._duplicateManager = await DuplicateMonomerManager.getInstance();
+    if (!LibManagerView._instance.libManager)
+      LibManagerView._instance.libManager = await MonomerLibManager.getInstance();
+    if (LibManagerView._instance._view &&
+        Array.from(grok.shell.views).find((v) => v.id && v.id === LibManagerView._instance._view.id)) {
+      grok.shell.v = LibManagerView._instance._view;
+      await LibManagerView._instance._duplicateManager.refresh();
+      return;
+    }
+    LibManagerView._instance.getView();
+  }
+  async mergeSelectedLibs() {
+    const libraryExistsError = 'Library with this name already exists';
+    const libManager = await MonomerLibManager.getInstance();
+    await libManager.awaitLoaded();
+    await libManager.loadLibrariesPromise;
+    if (!libManager.duplicatesHandled) {
+      grok.shell.warning(`Selected libraries contain repeating symbols with different monomers.
+        Please choose the correct monomer for each symbol using duplicate monomomer manager.`);
+      return;
+    }
+    const libJSON = libManager.getBioLib().toJSON();
+    const dialog = ui.dialog('Merge selected libraries');
+    const newFileNameInput = ui.input.string('Library Name', {
+      placeholder: 'Enter new library name',
+      nullable: false,
+      onValueChanged: () => {
+        const res = validateInput(newFileNameInput.value);
+        dialog.getButton('Download')?.classList?.toggle('d4-disabled', !!res && res !== libraryExistsError);
+        dialog.getButton('Save')?.classList?.toggle('d4-disabled', !!res);
+      }
+    });
+    const validLibPaths = (await this.libManager.getFileManager()).getValidLibraryPaths();
+    newFileNameInput.addValidator(validateInput);
+    function getFileNameInputValue() {
+      let fileName = newFileNameInput.value;
+      if (!fileName.endsWith('.json'))
+        fileName += '.json';
+      return fileName;
+    };
+
+    function validateInput(v: string) {
+      if (!v || !v.trim()) return 'Library name cannot be empty';
+      if ((v.endsWith('.json') && validLibPaths.includes(v)) || validLibPaths.includes(v + '.json'))
+        return libraryExistsError;
+      return null;
+    }
+    dialog
+      .add(newFileNameInput)
+      .add(ui.divText(`Total monomers: ${libJSON.length}`))
+      .addButton('Download', () => { DG.Utils.download(getFileNameInputValue(), JSON.stringify(libJSON)); })
+      .addButton('Save', async () => {
+        dialog.close();
+        const fileName = getFileNameInputValue();
+        const content = JSON.stringify(libJSON);
+        const fileManager = await this.libManager.getFileManager();
+        this._view && ui.setUpdateIndicator(this._view.root, true);
+        try {
+          await fileManager.addLibraryFile(content, fileName, false); // we will reload after updating settings
+          const settings = await getUserLibSettings();
+          settings.exclude = validLibPaths; // exclude all previous libraries
+          await setUserLibSettings(settings);
+          await this.libManager.loadLibraries(true);
+          await MonomerLibraryManagerWidget.reloadWidget();
+        } catch (e) {
+          grok.shell.error(`Failed to save library ${fileName}. see console for details.`);
+          console.error(e);
+        } finally {
+          this._view && ui.setUpdateIndicator(this._view.root, false);
+        }
+      })
+      .show();
+    dialog.getButton('Download')?.classList?.add('d4-disabled');
+    dialog.getButton('Save')?.classList?.add('d4-disabled');
+  }
+}
+
+

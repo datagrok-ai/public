@@ -14,6 +14,7 @@ import {PeptidesModel} from './model';
 import {macromoleculeSarFastaDemoUI} from './demo/fasta';
 import {u2} from '@datagrok-libraries/utils/src/u2';
 import {ClusterMaxActivityViewer} from './viewers/cluster-max-activity-viewer';
+import {LSTPieChartRenderer} from './utils/cell-renderer';
 
 let monomerWorks: MonomerWorks | null = null;
 let treeHelper: ITreeHelper;
@@ -50,7 +51,6 @@ async function openDemoData(chosenFile: string): Promise<void> {
 }
 
 //name: Peptides
-//tags: app
 //output: view v
 export function Peptides(): DG.View {
   const appHeader = u2.appHeader({
@@ -112,8 +112,8 @@ export function peptidesPanel(col: DG.Column): DG.Widget {
   return new DG.Widget(analyzeObject.host);
 }
 
-//name: Monomer-Position
-//description: Peptides Monomer-Position Viewer
+//name: Sequence Variability Map
+//description: Peptides Sequence Variability Map Viewer
 //tags: viewer
 //meta.icon: files/icons/peptide-sar-viewer.svg
 //output: viewer result
@@ -165,7 +165,15 @@ export function manualAlignment(_monomer: string): DG.Widget {
 //name: Macromolecule SAR Analysis
 //description: Macromolecule SAR Analysis demo on peptide sequences in FASTA format
 //meta.demoPath: Bioinformatics | Macromolecule SAR Analysis
-//meta.isDemoScript: False
 export async function macromoleculeSarFastaDemo(): Promise<void> {
-  return macromoleculeSarFastaDemoUI();
+  return await macromoleculeSarFastaDemoUI();
+}
+
+//name: LST Pie Chart
+//tags: cellRenderer
+//meta.cellType: lst-pie-chart
+//meta.gridChart: true
+//output: grid_cell_renderer result
+export function lstPiechartCellRenderer(): LSTPieChartRenderer {
+  return new LSTPieChartRenderer();
 }

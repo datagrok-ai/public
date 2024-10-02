@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {HitTriageTemplateFunction, HitTriageTemplateScript, IComputeDialogResult} from '../types';
-import {HitDesignMolColName, ViDColFormat} from '../consts';
+import {funcTypeNames, HitDesignMolColName, ViDColFormat} from '../consts';
 import {joinQueryResults} from '../utils';
 
 export async function calculateSingleCellValues(
@@ -17,9 +17,12 @@ export async function calculateSingleCellValues(
   table.name = 'HD Single cell values';
   await table.meta.detectSemanticTypes();
 
-  if (descriptors.length)
-    await grok.chem.descriptors(table, col.name, descriptors);
-
+  try {
+    if (descriptors.length)
+      await grok.chem.descriptors(table, col.name, descriptors);
+  } catch (e) {
+    console.error('Descriptors calculation error', e);
+  }
   for (const func of functions) {
     try {
       const props = func.args;
@@ -41,7 +44,8 @@ export async function calculateSingleCellValues(
   for (const script of scripts) {
     const props = script.args;
     try {
-      const scriptFunc = await grok.dapi.scripts.find(script.id);
+      const scriptFunc = DG.Func.find({name: script.name})
+        .filter((s) => s.type === funcTypeNames.script && s.id === script.id)[0] as DG.Script | undefined;
       if (scriptFunc) {
         const tablePropName = scriptFunc.inputs[0].name;
         const colPropName = scriptFunc.inputs[1].name;
@@ -62,7 +66,8 @@ export async function calculateSingleCellValues(
   for (const query of queries) {
     const props = query.args;
     try {
-      const queryFunc = await grok.dapi.queries.find(query.id);
+      const queryFunc = DG.Func.find({name: query.name})
+        .filter((s) => s.type === funcTypeNames.query && s.id === query.id)[0];
       if (queryFunc) {
         const listPropName = queryFunc.inputs[0].name;
         const valueList = [canonicalSmiles];
@@ -110,9 +115,12 @@ export async function calculateColumns(resultMap: IComputeDialogResult, dataFram
     const newVal = grok.chem.convert(value, grok.chem.Notation.Unknown, grok.chem.Notation.Smiles);
     molCol.set(i, newVal, false);
   }
-
-  if (resultMap.descriptors && resultMap.descriptors.length > 0)
-    await grok.chem.descriptors(dataFrame!, molColName!, resultMap.descriptors);
+  try {
+    if (resultMap.descriptors && resultMap.descriptors.length > 0)
+      await grok.chem.descriptors(dataFrame!, molColName!, resultMap.descriptors);
+  } catch (e) {
+    console.error('Descriptors calculation error', e);
+  }
 
   for (const funcName of Object.keys(resultMap.externals)) {
     try {
@@ -130,14 +138,14 @@ export async function calculateColumns(resultMap: IComputeDialogResult, dataFram
   for (const scriptName of Object.keys(resultMap.scripts ?? {})) {
     const props = resultMap.scripts![scriptName];
     if (props) {
-      // props['table'] = this.dataFrame!;
-      // props['molecules'] = this.molColName!;
       const scriptParts = scriptName.split(':');
       const scriptId = scriptParts[2];
       if (!scriptId)
         continue;
       try {
-        const s = await grok.dapi.scripts.find(scriptId);
+        const sn = scriptParts[1]; // script name
+        const s = DG.Func.find({name: sn})
+          .filter((s) => s.type === funcTypeNames.script && s.id === scriptId)[0] as DG.Script | undefined;
         if (!s)
           continue;
         const tablePropName = s.inputs[0].name;
@@ -164,7 +172,9 @@ export async function calculateColumns(resultMap: IComputeDialogResult, dataFram
       if (!queryId)
         continue;
       try {
-        const s = await grok.dapi.queries.find(queryId);
+        const qn = queryParts[1]; // query name
+        const s = DG.Func.find({name: qn})
+          .filter((s) => s.type === funcTypeNames.query && s.id === queryId)[0];
         if (!s)
           continue;
         const listPropName = s.inputs[0].name;

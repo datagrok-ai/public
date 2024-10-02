@@ -3,7 +3,7 @@
 #reference: https://en.wikipedia.org/wiki/Sentiment_analysis
 #language: r
 #tags: demo
-#sample: tweets.csv
+#sample: nlp/tweets.csv
 #input: dataframe data [Input data table]
 #input: column col {type:text} [Name of column contains text data]
 #output: dataframe emotion {action:join(data)} [Column with distribution of emotions]

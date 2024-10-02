@@ -1,5 +1,64 @@
 # Peptides changelog
 
+## 1.18.2 (2024-09-22)
+
+Color monomer background in invariant map
+
+## 1.18.1 (2024-09-18)
+
+Add monomer custom coloring
+
+## 1.17.29 (2024-08-14)
+
+Update MCL implementation
+
+## 1.17.28 (2024-08-08)
+
+* Downgrade API version
+
+## 1.17.27 (2024-08-08)
+
+* Selection viewer restoring original grid sorting
+* MCL viewer limiting max intercluster lines
+* fix bugs with selections context panel 
+
+## 1.17.26 (2024-08-07)
+
+Rename monomer position viewer to sequence variability map
+
+## 1.17.25 (2024-08-06)
+
+Update MCLalgorytm and Add params to starting menu
+
+## 1.17.24 (2024-07-29)
+
+Fix invariant map values rendering
+
+## 1.17.23 (2024-07-29)
+
+Added options to invariant map:
+* split selection for targets
+* coloring options via aggregation
+* value aggregation
+* tooltips
+* improved stability
+
+## 1.17.22 (2024-07-22)
+
+Fix Active peptide selection viewer failing on frame attached.
+
+## 1.17.21 (2024-07-12)
+
+Add support for string aggregation with pie chart viewer in LST viewer.
+
+## 1.17.20 (2024-07-09)
+
+MCL: Reverse order of clusters
+
+## 1.17.19 (2024-07-01)
+
+Fix dialog styles
+
 ## 1.17.18 (2024-05-27)
 
 Add inflation factor to MCL.

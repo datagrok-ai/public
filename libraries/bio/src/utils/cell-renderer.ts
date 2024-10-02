@@ -14,6 +14,10 @@ export enum TAGS {
   maxMonomerLength = '.mm.cellRenderer.maxMonomerLength',
 }
 
+export enum MONOMER_RENDERER_TAGS {
+  applyToBackground = '.m.cellRenderer.applyToBackground',
+}
+
 export enum DrawStyle {
   MSA = 'MSA',
   classic = 'classic',

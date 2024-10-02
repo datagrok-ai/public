@@ -80,11 +80,11 @@ export class DendrogramColorCodingTreeStyler extends DendrogramTreeStyler {
 
   override getStrokeColor(node: MarkupNodeType): string {
     let res: string;
-    const colorType: string = this._colorCol.colors.getType();
+    const colorType: string = this._colorCol.meta.colors.getType();
     if (colorType != DG.COLOR_CODING_TYPE.OFF) {
       const nodeName: string = node.name;
       const rowI: number = this._rowByNameDict[nodeName];
-      const color: number = this._colorCol.colors.getColor(rowI);
+      const color: number = this._colorCol.meta.colors.getColor(rowI);
       res = DG.Color.toRgb(color);
     } else {
       res = this._strokeColor;
@@ -94,12 +94,12 @@ export class DendrogramColorCodingTreeStyler extends DendrogramTreeStyler {
 
   override getFillColor(node: MarkupNodeType): string {
     let res: string;
-    const colorType: string = this._colorCol.colors.getType();
+    const colorType: string = this._colorCol.meta.colors.getType();
     if (colorType != DG.COLOR_CODING_TYPE.OFF) {
       // const val = this._colorCol.get(node.index);
       const nodeName: string = node.name;
       const rowI: number = this._rowByNameDict[nodeName];
-      const color: number = this._colorCol.colors.getColor(rowI);
+      const color: number = this._colorCol.meta.colors.getColor(rowI);
       res = DG.Color.toRgb(color);
     } else {
       res = this._fillColor;

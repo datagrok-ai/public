@@ -49,7 +49,8 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
         'http://localhost:63343/login.html' : (new URL(config['servers'][config.default]['url'])).origin);
       if (file === 'package.json') {
         // Generate scripts for non-default servers from `config.yaml`
-        const _package = JSON.parse(contents);
+        const _package = JSON.parse(contents); 
+        _package['scripts'] = _package['scripts']  ?? {};
         for (const server in config.servers) {
           if (server === config.default) continue;
           _package['scripts'][`debug-${name.toLowerCase()}-${server}`] = `webpack && grok publish ${server}`;

@@ -1,14 +1,14 @@
 --name: FunctionsUsage
 --input: string date {pattern: datetime}
---input: list groups
---input: list packages
+--input: list<string> groups
+--input: list<string> packages
 --meta.cache: all
 --meta.cache.invalidateOn: 0 0 * * *
 --connection: System:Datagrok
 --test: FunctionsUsage(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'], ['all'])
 with recursive selected_groups as (
   select id from groups
-  where id = any(@groups)
+  where id::varchar = any(@groups)
   union
   select gr.child_id as id from selected_groups sg
   join groups_relations gr on sg.id = gr.parent_id
@@ -51,7 +51,7 @@ AT TIME ZONE 'UTC' + trunc * interval '1 sec' as time_end,
 res.uid, res.ugid, coalesce(res.pid, '00000000-0000-0000-0000-000000000000') as pid
 from res, t2, selected_groups sg
 where res.ugid = sg.id
-and (res.package = any(@packages) or @packages = ARRAY['all'])
+and (res.package = any(@packages) or @packages = ARRAY['all']::varchar[])
 GROUP BY res.function, res.package, res.user, time_start, time_end,
 res.uid, res.ugid, res.pid
 --end
@@ -60,9 +60,9 @@ res.uid, res.ugid, res.pid
 --name: FunctionsContextPane
 --input: int time_start
 --input: int time_end
---input: list users
---input: list packages
---input: list functions
+--input: list<string> users
+--input: list<string> packages
+--input: list<string> functions
 --meta.cache: all
 --meta.cache.invalidateOn: 0 0 * * *
 --connection: System:Datagrok
@@ -84,12 +84,12 @@ inner join users_sessions s on e.session_id = s.id
 inner join users u on u.id = s.user_id
 where e.event_time between to_timestamp(@time_start)
 and to_timestamp(@time_end)
-and u.id = any(@users)
+and u.id::varchar = any(@users)
 and et.name = any(@functions)
 )
 select res.package, res.run, res.function, res.time, res.rid, res.pid
 from res
-where res.pid = any(@packages)
+where res.pid::varchar = any(@packages)
 --end
 
 

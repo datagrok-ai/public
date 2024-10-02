@@ -8,8 +8,8 @@ export class ErrorMarkingPanel {
 
     const error = await grok.dapi.logTypes.include('message,isError').filter(`id = "${id}"`).first();
 
-    const isError = ui.boolInput('Is error', error.isError);
-    const comment = ui.stringInput('Comment', error.comment);
+    const isError = ui.input.bool('Is error', {value: error.isError});
+    const comment = ui.input.string('Comment', {value: error.comment});
 
     const acc = DG.Accordion.create('ErrorInfo');
     acc.addPane('ErrorInfo', () => {

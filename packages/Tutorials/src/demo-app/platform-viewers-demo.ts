@@ -26,7 +26,7 @@ const VIEWER_TABLES_PATH: {[key: string]: string} = {
   Markup: 'files/demog.csv',
   'Tile Viewer': 'chem/sar_small.csv',
   Form: 'files/sar-small.csv',
-  'Shape Map': 'geo/us_2016_election_by_county.csv',
+  //'Shape Map': 'geo/us_2016_election_by_county.csv',
   'Pivot table': 'files/demog.csv',
   Filters: 'files/filters.csv',
 };
@@ -62,14 +62,13 @@ that automatically update when the data changes.
 
 async function getLayout(viewerName: string, df: DG.DataFrame): Promise<DG.ViewLayout> {
   const layout = await _package.files.readAsText(VIEWER_LAYOUTS_FILE_NAMES[viewerName]);
-  const modifiedLayout = DG.ViewLayout.fromJson(layout.replaceAll("tableName", df.name));
-  return modifiedLayout;
+  return DG.ViewLayout.fromJson(layout.replaceAll("tableName", df.name));
 }
 
 async function loadViewerDemoLayout(tableView: DG.TableView, viewerName: string): Promise<void> {
   const layout = await getLayout(viewerName, tableView.dataFrame);
   tableView.loadLayout(layout);
-  const viewer = Array.from(grok.shell.tv.viewers).find((viewer) => viewer.type === viewerName);
+  const viewer = Array.from(tableView.viewers)?.find((viewer) => viewer.type === viewerName);
   if (viewer)
     grok.shell.windows.help.showHelp(viewer.helpUrl);
 }
@@ -78,6 +77,7 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
   const df = ['Line chart', 'Network diagram', 'Correlation plot', 'Tile Viewer', 'Shape Map'].includes(viewerName) ?
     await grok.data.getDemoTable(VIEWER_TABLES_PATH[viewerName]) :
     await grok.data.loadTable(`${_package.webRoot}/${VIEWER_TABLES_PATH[viewerName]}`);
+  await grok.data.detectSemanticTypes(df);
 
   const tableView = grok.shell.addTableView(df);
 
@@ -87,6 +87,9 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
 
   if (['Form', 'Trellis plot', 'Grid', 'Filters'].includes(viewerName)) {
     if (viewerName === DG.VIEWER.FORM) {
+      // In browse view, the dataFrame name may be null. To ensure settings are correctly associated,
+      // we assign a default name ('Table') when it is not provided.
+      tableView.dataFrame.name = 'Table';
       DG.debounce(df.onSemanticTypeDetected, 800).subscribe(async (_) => {
         await loadViewerDemoLayout(tableView, viewerName);
       });

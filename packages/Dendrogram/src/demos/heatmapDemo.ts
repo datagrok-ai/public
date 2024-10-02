@@ -10,7 +10,7 @@ export async function heatmapDemo() {
     const csv: string = await _package.files.readAsText('data/demog-short.csv');
     const df = DG.DataFrame.fromCsv(csv);
     const tv = grok.shell.addTableView(df, DG.DOCK_TYPE.FILL);
-    await hierarchicalClusteringUI(df, ['AGE'], DistanceMetric.Euclidean, 'ward');
+    await hierarchicalClusteringUI(df, ['AGE'], DistanceMetric.Euclidean, 'ward', 300, {tableView: tv});
 
     const adjustTreeHeight = () => {
       const rowCount = tv!.dataFrame.filter.trueCount;

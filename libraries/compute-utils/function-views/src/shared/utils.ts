@@ -7,6 +7,10 @@ import wu from 'wu';
 import {Observable} from 'rxjs';
 import {SubscriptionLike} from '../../../shared-utils/input-wrappers';
 
+export const delay = (delayInms: number) => {
+  return new Promise((resolve) => setTimeout(resolve, delayInms));
+};
+
 export const getDefaultValue = (prop: DG.Property) => {
   // Before 1.19 the default value was in .defaultValue. In 1.19 it was moved to options.default
   if (prop.options?.['default'])
@@ -37,28 +41,6 @@ export function getObservable<T>(onInput: (f: Function) => SubscriptionLike): Ob
     return () => sub.unsubscribe();
   });
 }
-
-export const deepCopy = (call: DG.FuncCall) => {
-  const deepClone = call.clone();
-
-  const dfOutputs = wu(call.outputParams.values())
-    .filter((output) =>
-      output.property.propertyType === DG.TYPE.DATA_FRAME &&
-      !!call.outputs[output.name],
-    );
-  for (const output of dfOutputs)
-    deepClone.outputs[output.name] = call.outputs[output.name].clone();
-
-  const dfInputs = wu(call.inputParams.values())
-    .filter((input) =>
-      input.property.propertyType === DG.TYPE.DATA_FRAME &&
-      !!call.inputs[input.name],
-    );
-  for (const input of dfInputs)
-    deepClone.inputs[input.name] = call.inputs[input.name].clone();
-
-  return deepClone;
-};
 
 export const getPropViewers = (prop: DG.Property): {name: string, config: Record<string, string | boolean>[]} => {
   const viewersRawConfig = prop.options[VIEWER_PATH];

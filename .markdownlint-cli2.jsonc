@@ -11,6 +11,6 @@
     "LICENSE.md",
     "help/develop/admin/releases/changelog-policy.md",
     "packages/UsageAnalysis/files/**",
-    "*/*/CHANGELOG.md"
+    "**/CHANGELOG.md"
   ]
 }

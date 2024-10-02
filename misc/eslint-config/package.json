@@ -1,0 +1,36 @@
+{
+  "name": "@datagrok-misc/eslint-config",
+  "version": "1.0.0",
+  "description": "Common config for all Datagrok packages",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/datagrok-ai/public.git"
+  },
+  "keywords": [
+    "datagrok",
+    "eslint",
+    "eslintconfig"
+  ],
+  "author": {
+    "name": "Pavlo Polovyi",
+    "email": "ppolovyi@datagrok.ai"
+  },
+  "bugs": {
+    "url": "https://github.com/datagrok-ai/public/issues"
+  },
+  "homepage": "https://github.com/datagrok-ai/public/misc/eslint-config#readme",
+  "peerDependencies": {
+    "eslint": "^8.49.0",
+    "@typescript-eslint/eslint-plugin": "^7.16.0",
+    "@typescript-eslint/parser": "^7.16.0"
+  },
+  "dependencies": {
+    "eslint-config-google": "^0.14.0",
+    "@typescript-eslint/eslint-plugin": "^7.16.0",
+    "@typescript-eslint/parser": "^7.16.0"
+  }
+}

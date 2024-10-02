@@ -47,12 +47,21 @@ export class CruddyFilterCategorical extends CruddyFilter {
 
   constructor(entityType: DbEntityType, filter: IFilterDescription) {
     super(entityType, filter);
+    const tableColumn = filter.column.split('.');
+    const tableName = tableColumn.length == 1 ? entityType.table.name : tableColumn[0];
+
+    const sql =
+      `select ${filter.column}, count(${filter.column}) 
+from ${tableName} 
+group by ${filter.column}
+order by count(${filter.column}) desc`;
+
     entityType.crud
-      .query(`select ${filter.column}, count(${filter.column}) from ${entityType.table.name} group by ${filter.column}`)
+      .query(sql)
       //.read({}, { distinct: true, columnNames: [filter.column]})
       .then((df) => {
-        this.choices = ui.multiChoiceInput('values', [], df.columns.byIndex(0).toList());
-        this.choices.onChanged(() => this.onChanged.next(this));
+        this.choices = ui.input.multiChoice('values', {value: [], items: df.columns.byIndex(0).toList()});
+        this.choices.onChanged.subscribe(() => this.onChanged.next(this));
         this.root.appendChild(ui.h2(filter.column));
         this.root.appendChild(this.choices.input);
 
@@ -68,6 +77,7 @@ export class CruddyFilterCategorical extends CruddyFilter {
   }
 
   getCondition(): TFilter {
+    if (!this.choices) return {};
     const choices = (this.choices!.value as Array<any>);
     if (choices.length == 0) return {};
 
@@ -86,8 +96,8 @@ export class CruddyFilterCombo extends CruddyFilter {
       .read({}, {distinct: true, columnNames: [filter.column]})
       .then((df) => {
         const items = df.columns.byIndex(0).toList();
-        this.choices = ui.choiceInput('values', null, items, null, {nullable: true});
-        this.choices.onChanged(() => this.onChanged.next(this));
+        this.choices = ui.input.choice('values', {value: null, items: items, nullable: true});
+        this.choices.onChanged.subscribe(() => this.onChanged.next(this));
         this.root.appendChild(ui.h2(filter.column));
         this.root.appendChild(this.choices.input);
       });
@@ -100,9 +110,9 @@ export class CruddyFilterCombo extends CruddyFilter {
 
 export class CruddyFilterExpression extends CruddyFilter {
 
-  operation = ui.choiceInput('operator', '', ['']);
-  colInput = ui.choiceInput('column', this.entityType.columns[0].name, this.entityType.columns.map((c) => c.name));
-  input = ui.stringInput('input', '');
+  operation = ui.input.choice('operator', {value: '', items: ['']});
+  colInput = ui.input.choice('column', {value: this.entityType.columns[0].name, items: this.entityType.columns.map((c) => c.name)});
+  input = ui.input.string('input', {value: ''});
 
   constructor(entityType: DbEntityType, filter: IFilterDescription) {
     super(entityType, filter);
@@ -115,12 +125,12 @@ export class CruddyFilterExpression extends CruddyFilter {
       this.operation.items = Exp.typeOperators[this.entityType.getColumn(this.colInput.value!).type];
     };
 
-    this.colInput.onChanged(() => {
+    this.colInput.onChanged.subscribe(() => {
       refresh();
       this.onChanged.next(this);
     });
-    this.operation.onChanged(() => this.onChanged.next(this));
-    this.input.onChanged(() => this.onChanged.next(this));
+    this.operation.onChanged.subscribe(() => this.onChanged.next(this));
+    this.input.onChanged.subscribe(() => this.onChanged.next(this));
 
     refresh();
   }

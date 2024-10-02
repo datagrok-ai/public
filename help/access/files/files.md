@@ -36,13 +36,14 @@ and [read files programmatically](../../develop/how-to/access-data.md#reading-fi
 To connect to your file storage, follow these steps:
 
 1. Go to **Data** > **Files**.
-1. Open the **New file share** dialog (**Toolbox** > **Actions** > **New file
+2. Open the **New file share** dialog (**Toolbox** > **Actions** > **New file
    share**). Alternatively, click the **New file share** icon on the **Menu
    Ribbon**.
-1. In the dialog, choose the data source from the **Data Source** dropdown. The
+3. In the dialog, choose the data source from the **Data Source** dropdown. The
    dialog updates with connection-specific parameters.
-1. Set the parameters.
-1. Click **TEST** to test the connection, then click **OK** to save it.
+4. Set the parameters.
+5. Optionally configure [caching](#Caching files shares)
+6. Click **TEST** to test the connection, then click **OK** to save it.
 
 This file share will only be available to you, until you 
 [share it](#file-sharing-and-access-control) with others users or groups.
@@ -281,6 +282,20 @@ comments to those you're sharing with, and more, use the **Sharing** info pane
 in the **Context Panel**.
 
 :::
+
+## Caching files shares
+
+When creating or editing a file connection, you can enable caching and set invalidation schedule for cached files using 
+[cron expressions](https://en.wikipedia.org/wiki/Cron#Cron_expression). Caching will be applied to all files reads and 
+folder listings and results will be stored both in browser cache and server cache.
+When you perform some write/delete/rename operations under files and folders cache will be restored.
+
+You can also configure cache individually per file or folder:
+
+1. Right-click the connection, select **Cache...**.
+2. Choose file or folder using **Path** field.
+3. Input valid cron expression using **Cron expression** field. You can use [crontab.guru](https://crontab.guru/) to validate your expression.
+4. Enable **Preflight** in order to perform additional check of file/folder version every time when it is accessed.
 
 ## Resources
 

@@ -8,7 +8,7 @@ export let _package = new DG.Package();
 //meta.mlname: tfjsNN
 //meta.mlrole: train
 //input: dataframe df {validators: containsMissingValues}
-//input: string predict_column
+//input: column predictColumn
 //input: string activationFunc="relu" {category: Parameters; choices: ["relu", "linear", "elu", "relu6", "selu", "sigmoid", "softplus", "softmax", "tanh", "softplus", "swish", "mish", "hardSigmoid"]} [Activation function to use.]
 //input: string hiddenLayersSizes="16,32" {category: Parameters} [Number of units in each hidden layer.]
 //input: string initializer="randomUniform" {category: Initializer; choices: ["constant", "glorotNormal", "glorotUniform", "heNormal", "heUniform", "leCunNormal", "leCunUniform", "ones", "orthogonal", "randomNormal", "randomUniform", "truncatedNormal", "varianceScaling", "zeros"]} [Kernel and bias weights initializer method.]
@@ -48,11 +48,11 @@ export let _package = new DG.Package();
 //input: string mode="auto" {category: EarlyStopping; choices: ["auto", "min", "max"]}
 //input: double baseline=0.5 {category: EarlyStopping}
 //output: dynamic model
-export async function trainNN(df, predict_column, activationFunc = 'relu', hiddenLayersSizes = '128,128', initializer = 'randomUniform', constantValue = 0.5, normalMean = 0.5, normalStddev = 0.1, minValue = 0.0, maxValue = 1.0, varianceScale = 0.5, varianceFanningMode = "fanIn", varianceDistribution = "normal", hiddenRepresentationNormalization = "batchNorm", normalizationAxis = -1, normalizationMomentum = 0.99, normalizationEpsilon = 0.001, normalizationCenter = true, normalizationScale = true, dropoutRate = 0.2, regularizationL1 = 0.01, regularizationL2 = 0.01, kernelRegularization = true, biasRegularization = true, activityRegularization = false, finalActivation = 'relu', optimizer = 'Adam', learningRate = 0.001, lossFunc = 'meanSquaredError', metrics = 'MSE', batchSize = 1, epochs = 1, validationSplit, seed = 42, constraint, monitor, minDelta, patience, mode, baseline) {
+export async function trainNN(df, predictColumn, activationFunc = 'relu', hiddenLayersSizes = '128,128', initializer = 'randomUniform', constantValue = 0.5, normalMean = 0.5, normalStddev = 0.1, minValue = 0.0, maxValue = 1.0, varianceScale = 0.5, varianceFanningMode = "fanIn", varianceDistribution = "normal", hiddenRepresentationNormalization = "batchNorm", normalizationAxis = -1, normalizationMomentum = 0.99, normalizationEpsilon = 0.001, normalizationCenter = true, normalizationScale = true, dropoutRate = 0.2, regularizationL1 = 0.01, regularizationL2 = 0.01, kernelRegularization = true, biasRegularization = true, activityRegularization = false, finalActivation = 'relu', optimizer = 'Adam', learningRate = 0.001, lossFunc = 'meanSquaredError', metrics = 'MSE', batchSize = 1, epochs = 1, validationSplit, seed = 42, constraint, monitor, minDelta, patience, mode, baseline) {
     //TODO: reorganize
     // let columnsObject: object = {};
     // df.columns.toList().forEach((col: DG.Column) => {columnsObject[col.name] = {type: col.type, data: col.toList() } });
-    let result = await prepareAndTrainNN(df, predict_column, activationFunc, hiddenLayersSizes, initializer, constantValue, normalMean, normalStddev, minValue, maxValue, varianceScale, varianceFanningMode, varianceDistribution, hiddenRepresentationNormalization, normalizationAxis, normalizationMomentum, normalizationEpsilon, normalizationCenter, normalizationScale, dropoutRate, regularizationL1, regularizationL2, kernelRegularization, biasRegularization, activityRegularization, finalActivation, optimizer, learningRate, lossFunc, metrics, batchSize, epochs, validationSplit, seed, monitor, minDelta, patience, mode, baseline);
+    let result = await prepareAndTrainNN(df, predictColumn, activationFunc, hiddenLayersSizes, initializer, constantValue, normalMean, normalStddev, minValue, maxValue, varianceScale, varianceFanningMode, varianceDistribution, hiddenRepresentationNormalization, normalizationAxis, normalizationMomentum, normalizationEpsilon, normalizationCenter, normalizationScale, dropoutRate, regularizationL1, regularizationL2, kernelRegularization, biasRegularization, activityRegularization, finalActivation, optimizer, learningRate, lossFunc, metrics, batchSize, epochs, validationSplit, seed, monitor, minDelta, patience, mode, baseline);
     return result;
 }
 //name: applyNN
@@ -77,10 +77,10 @@ export async function applyNN(df, model) {
 //meta.mlname: tfjsNN
 //meta.mlrole: isApplicable
 //input: dataframe df
-//input: string predict_column
+//input: column predictColumn
 //output: bool result
-export async function isApplicableNN(df, predict_column) {
-    return df.columns.byName(predict_column).matches('numerical');
+export async function isApplicableNN(df, predictColumn) {
+    return predictColumn.matches('numerical');
 }
 
 
@@ -88,11 +88,11 @@ export async function isApplicableNN(df, predict_column) {
 //meta.mlname: tfjsNN
 //meta.mlrole: visualize
 //input: dataframe df
-//input: string predict_column
-//input: string target_column
+//input: column predictColumn
+//input: column targetColumn
 //input: dynamic model
 //output: dynamic widget
-export async function visualizeNN(df, predict_column, target_column, model) {
+export async function visualizeNN(df, predictColumn, targetColumn, model) {
     let loadedModel = await loadModel(model);
     let weights = loadedModel.getNamedWeights();
     const offset = 50;

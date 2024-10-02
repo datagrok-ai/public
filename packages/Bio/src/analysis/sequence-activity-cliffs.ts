@@ -135,7 +135,9 @@ export function createDifferenceCanvas(
   const context = canvas.getContext('2d');
   canvas.height = 30;
   drawMoleculeDifferenceOnCanvas(context!, 0, 0, 0, 30,
-    wu(subParts1.canonicals).toArray(), wu(subParts2.canonicals).toArray(), units, true, molDifferences);
+    wu.count(0).take(subParts1.length).map((posIdx) => subParts1.getCanonical(posIdx)).toArray(),
+    wu.count(0).take(subParts2.length).map((posIdx) => subParts2.getCanonical(posIdx)).toArray(),
+    units, true, molDifferences);
   return canvas;
 }
 
@@ -164,7 +166,7 @@ export function createLinesGrid(df: DG.DataFrame, colNames: string[]): DG.Grid {
   const seqDiffCol = DG.Column.string('seq_diff', df.rowCount)
     .init((i) => `${df.get(colNames[0], i)}#${df.get(colNames[1], i)}`);
   seqDiffCol.semType = 'MacromoleculeDifference';
-  seqDiffCol.setTag(DG.TAGS.UNITS, df.col(colNames[0])!.getTag(DG.TAGS.UNITS));
+  seqDiffCol.meta.units = df.col(colNames[0])!.meta.units;
   seqDiffCol.setTag(bioTAGS.separator, df.col(colNames[0])!.getTag(bioTAGS.separator));
   df.columns.add(seqDiffCol);
   const grid = df.plot.grid();

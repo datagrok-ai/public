@@ -273,11 +273,17 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     this.subs.push(DG.debounce(this.setDataRequest, DebounceIntervals.setData)
       .subscribe(() => { this.onSetDataRequestDebounced(); }));
     this.viewSubs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
+    this._initButtonExpand();
     this._initMenu();
   }
 
   private static viewerCounter: number = -1;
   private readonly viewerId: number = ++MolstarViewer.viewerCounter;
+
+  private _initButtonExpand() {
+    const button = $('.msp-btn.msp-btn-icon.msp-btn-link-toggle-off');
+    button.on('click',  () => this.root.requestFullscreen());
+  }
 
   private viewerToLog(): string { return `MolstarViewer<${this.viewerId}>`; }
 
@@ -775,8 +781,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     const dataFileProp = DG.Property.fromOptions({name: 'dataFile', caption: 'Data file', type: 'file'});
     const dataFileInput = DG.InputBase.forProperty(dataFileProp);
     dataFileInput.captionLabel.innerText = 'Data file';
-    this.viewSubs.push(dataFileInput.onChanged(async () => {
-      const dataFi: DG.FileInfo = dataFileInput.value;
+    this.viewSubs.push(dataFileInput.onChanged.subscribe(async (value) => {
+      const dataFi: DG.FileInfo = value;
       const dataA: Uint8Array = dataFi.data ? dataFi.data /* User's file*/ : await dataFi.readAsBytes()/* Shares */;
       const data: BiostructureData = {binary: true, ext: dataFi.extension, data: dataA};
       this.setOptions({
@@ -877,7 +883,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       throw new Error(`${this.viewerToLog()}.getLigandStrOfRow(), no dataFrame or ligandColumnName`);
 
     const ligandCol: DG.Column = this.dataFrame.getCol(this.ligandColumnName);
-    const ligandUnits: string = ligandCol.getTag(DG.TAGS.UNITS);
+    const ligandUnits: string = ligandCol.meta.units!;
     const ligandCellValue: string = ligandCol.get(rowIdx);
     let ligandValue: string;
     let ligandFormat: BuiltInTrajectoryFormat | TrajectoryFormatProvider;

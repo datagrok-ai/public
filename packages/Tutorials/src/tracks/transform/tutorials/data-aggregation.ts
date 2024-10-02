@@ -109,7 +109,9 @@ export class AggregationTutorial extends Tutorial {
       'You\'ll find a selection of standard viewers like scatterplot, barchart, piechart, and more.'
     );
 
-    const lineChartEl = $(aggRoot).find("div[name=\"Instance of 'LineChartDescriptor'-host\"]").get(0);
+    const lineChartEl = $(aggRoot).find('label.ui-label').filter(function() {
+      return $(this).text().trim() === "Line chart";
+    }).closest('div.d4-icon-text.d4-list-item').get(0);  
     await this.action('Choose Line Chart from the viewers list', waitForElementClick(lineChartEl as HTMLElement), lineChartEl,
       'Now, choose the Line Chart viewer from the list.' +
       'By doing so, you\'ll be able to visualize the aggregation results in a line chart format.' +

@@ -1,11 +1,17 @@
 import {Balloon, Color} from './widgets';
 import {toDart, toJs} from './wrappers';
-import {MARKER_TYPE} from "./const";
-import {Point, Rect, GridCell} from "./grid";
-import {IDartApi} from "./api/grok_api.g";
+import {MARKER_TYPE, ViewerType} from './const';
+import {Point, Rect} from './grid';
+import {IDartApi} from './api/grok_api.g';
+import * as rxjs from 'rxjs';
+import {StreamSubscription} from './events';
+import {DataFrame} from './dataframe';
+import {TableView} from './views/view';
+
+declare let DG: any;
+declare let grok: any;
 
 const api: IDartApi = <any>window;
-
 
 declare global {
   interface CanvasRenderingContext2D {
@@ -127,7 +133,7 @@ export namespace Paint {
         g.drawImage(img, bounds.x, bounds.y, bounds.width, bounds.height);
       }
 
-      img.src = "data:image/jpeg;base64," + window.btoa(r.result as string);
+      img.src = 'data:image/jpeg;base64,' + window.btoa(r.result as string);
     };
   }
 }
@@ -201,6 +207,99 @@ export class Utils {
    * Example: `loadJsCss(['common/exceljs.min.js', 'common/exceljs.min.css'])` */
   static async loadJsCss(files: string[]): Promise<null> {
     return toJs(api.grok_Utils_LoadJsCss(files));
+  }
+
+  static streamToObservable<T = any>(dartStream: any): rxjs.Observable<T> {
+    return rxjs.fromEventPattern(
+      function (handler) {
+        return api.grok_Stream_Listen(dartStream, function (x: any) {
+          handler(x);
+        });
+      },
+      function (handler, dart) {
+        new StreamSubscription(dart).cancel();
+      }
+    );
+  }
+
+  static async executeTests(testsParams: { package: any, params: any }[]): Promise<any> {
+    let failed = false;
+    let csv = "";
+    let verbosePassed = "";
+    let verboseSkipped = "";
+    let verboseFailed = "";
+    let countPassed = 0;
+    let countSkipped = 0;
+    let countFailed = 0;
+    let resultDF: DataFrame | undefined = undefined;
+
+    for (let testParam of testsParams) {
+      let df: DataFrame = await grok.functions.call(testParam.package + ':test', testParam.params);
+
+      if (df.rowCount === 0) {
+        verboseFailed += `Test result : Invocation Fail : ${testParam.params.category}: ${testParam.params.test}\n`;
+        countFailed += 1;
+        failed = true;
+        continue;
+      }
+
+      let row = df.rows.get(0);
+      if (df.rowCount > 1) {
+        let unhandledErrorRow = df.rows.get(1);
+        if (!unhandledErrorRow.get("success")) {
+          unhandledErrorRow["category"] = row.get("category");
+          unhandledErrorRow["name"] = row.get("name");
+          row = unhandledErrorRow;
+        }
+      }
+      const category = row.get("category");
+      const testName = row.get("name");
+      const time = row.get("ms");
+      const result = row.get("result");
+
+      if (resultDF === undefined)
+        resultDF = df;
+      else
+        resultDF = resultDF.append(df);
+
+      if (row["skipped"]) {
+        verboseSkipped += `Test result : Skipped : ${time} : ${category}: ${testName} :  ${result}\n`;
+        countSkipped += 1;
+      }
+      else if (row["success"]) {
+        verbosePassed += `Test result : Success : ${time} : ${category}: ${testName} :  ${result}\n`;
+        countPassed += 1;
+      }
+      else {
+        verboseFailed += `Test result : Failed : ${time} : ${category}: ${testName} :  ${result}\n`;
+        countFailed += 1;
+        failed = true;
+      }
+    }
+
+    if (resultDF) {
+      const bs = DG.BitSet.create(resultDF.rowCount)
+      bs.setAll(true);
+      for(let i = 0; i < resultDF.rowCount; i++){
+        if(resultDF.rows.get(i).get('category') === 'Unhandled exceptions'){
+          bs.set(i, false);
+        }
+      }
+      resultDF =  resultDF.clone(bs);
+      csv = resultDF.toCsv()       
+    }
+
+    return {
+      failed: failed,
+      verbosePassed: verbosePassed,
+      verboseSkipped: verboseSkipped,
+      verboseFailed: verboseFailed,
+      passedAmount: countPassed,
+      skippedAmount: countSkipped,
+      failedAmount: countFailed,
+      csv: csv
+      // df: resultDF?.toJson()
+    };
   }
 }
 
@@ -686,6 +785,11 @@ export function format(x: number, format?: string): string {
   return api.grok_Utils_FormatNumber(x, format);
 }
 
+/* Waits [ms] milliseconds */
+export async function delay(ms: number) {
+  await new Promise((r) => setTimeout(r, ms));
+}
+
 
 /** Autotest-related helpers */
 export namespace Test {
@@ -711,4 +815,32 @@ export namespace Test {
   export function getInputTestDataGeneratorByType(inputType: string) {
     return api.grok_Test_GetInputTestDataGeneratorByType(inputType);
   }
+
+  export async function testViewerProperties(df: DataFrame, viewerType: ViewerType, properties: { [key: string]: any}): Promise<TableView> {
+    const tv = TableView.create(df, true);
+    const viewer = tv.addViewer(viewerType);
+    viewer.setOptions(properties);
+    await delay(1000);
+    return tv;
+  }
+
+  export async function testViewer(viewerType: ViewerType) {
+    await api.grok_Test_RunViewerTest(viewerType);
+  }
+}
+
+// Completer class based on https://stackoverflow.com/a/67007151
+export class Completer<T> {
+	public readonly promise: Promise<T>;
+	public complete: (value: (PromiseLike<T> | T)) => void;
+	public reject: (reason?: any) => void;
+
+	public constructor() {
+    this.complete = (_) => {};
+    this.reject = (_) => {};
+    this.promise = new Promise<T>((resolve, reject) => {
+        this.complete = resolve;
+        this.reject = reject;
+    })
+	}
 }

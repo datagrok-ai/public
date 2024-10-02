@@ -837,7 +837,7 @@ ui.input.bool('Name', {value: false});
 Group selection is commonly used to select one or more option from the predefined list.
 
 ```javascript
-ui.multiChoiceInput('Group label', {value: ['Value 1', 'Value 2'], items: ['Value 3', 'Value 4']});
+ui.input.multiChoice('Group label', {value: ['Value 1', 'Value 2'], items: ['Value 3', 'Value 4']});
 ```
 
 #### Switch

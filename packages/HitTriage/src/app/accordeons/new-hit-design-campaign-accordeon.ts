@@ -1,8 +1,9 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import {CampaignFieldTypes, HitDesignTemplate} from '../types';
-import {HitDesignMolColName, TileCategoriesColName, ViDColName, i18n} from '../consts';
+import {HitDesignMolColName, PeptiHitHelmColName, TileCategoriesColName, ViDColName, i18n} from '../consts';
 import '../../../css/hit-triage.css';
 import {getNewVid} from '../utils/calculate-single-cell';
 
@@ -17,11 +18,20 @@ type HitDesignCampaignAccordeon = {
     cancelPromise: Promise<void>
 }
 
-export function newHitDesignCampaignAccordeon(template: HitDesignTemplate): HitDesignCampaignAccordeon {
+export function newHitDesignCampaignAccordeon(template: HitDesignTemplate, peptiHit = false): HitDesignCampaignAccordeon {
   const df = DG.DataFrame.create(1);
+  if (peptiHit) {
+    const pepCol = df.columns.addNew(PeptiHitHelmColName, DG.TYPE.STRING);
+    pepCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    pepCol.meta.units = 'helm';
+    pepCol.setTag('units', 'helm');
+    pepCol.setTag('cell.renderer', 'helm');
+    pepCol.setTag('.alphabetIsMultichar', 'true');
+  }
+
   const molCol = df.columns.addNew(HitDesignMolColName, DG.TYPE.STRING);
   molCol.semType = DG.SEMTYPE.MOLECULE;
-  molCol.setTag(DG.TAGS.UNITS, DG.UNITS.Molecule.SMILES);
+  molCol.meta.units = DG.UNITS.Molecule.SMILES;
   molCol.set(0, null);
   if (template?.stages?.length > 0) {
     const tileCategoryCol = df.columns.addNew(TileCategoriesColName, DG.TYPE.STRING);

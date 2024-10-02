@@ -16,9 +16,8 @@ export class DemoAppWidget extends DG.Widget {
         
         const demoView = new DemoView();
         const funcs = demoView.funcs;
-        const searchInput = ui.searchInput('','');
+        const searchInput = ui.input.search('',{value: ''});
         
-        grok.shell.dockManager.close(demoView.dockPanel);
         grok.shell.windows.showToolbox = true;
         grok.shell.windows.showRibbon = true;
         grok.shell.windows.showHelp = true;
@@ -85,12 +84,12 @@ export class DemoAppWidget extends DG.Widget {
             }
           });
 
-          searchInput.onChanged(() => {
+          searchInput.onChanged.subscribe((value) => {
             
             const foundFuncs = funcs.filter((func) => {
-                return func.name.toLowerCase().includes(searchInput.value.toLowerCase()) ||
-                  func.func.description.toLowerCase().includes(searchInput.value.toLowerCase()) ||
-                  func.keywords.toLowerCase().includes(searchInput.value.toLowerCase())
+                return func.name.toLowerCase().includes(value.toLowerCase()) ||
+                  func.func.description.toLowerCase().includes(value.toLowerCase()) ||
+                  func.keywords.toLowerCase().includes(value.toLowerCase())
               });
               
               const dom = tree.root.getElementsByClassName('d4-tree-view-node');
@@ -110,13 +109,13 @@ export class DemoAppWidget extends DG.Widget {
                     }
                   }
                 }
-                else if (item.innerText.toLowerCase().includes(searchInput.value.toLowerCase())) {
+                else if (item.innerText.toLowerCase().includes(value.toLowerCase())) {
                   item.classList.remove('hidden');
                 }
                 else
                   item.classList.add('hidden');
 
-                if (searchInput.value == '') {
+                if (value == '') {
                     for (let i = 0; i < tree.items.length; i++){
                         let group = tree.items[i] as TreeViewGroup;
                         group.expanded = false;
