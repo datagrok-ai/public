@@ -52,6 +52,9 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
         setTimeout(() => {
             this.dockManager.initialize();
             this.dockManager.addLayoutListener({
+                onActivePanelChange: (_, panel) => {
+                    this.dispatchEvent(new CustomEvent('active-panel-changed', { detail: panel.title }));
+                },
                 onClosePanel: (dockManager, dockNode) => {
                     const slot = dockNode.elementContent;
                     const element = this.slotElementMap.get(slot);

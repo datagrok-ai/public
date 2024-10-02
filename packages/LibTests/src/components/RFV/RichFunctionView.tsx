@@ -14,7 +14,7 @@ import {
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
-import {useElementHover, useStorage} from '@vueuse/core';
+import {useElementHover, useStorage, useUrlSearchParams} from '@vueuse/core';
 import {FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
 type PanelsState = {
@@ -232,6 +232,11 @@ export const RichFunctionView = Vue.defineComponent({
         visibleTabLabels.value.splice(tabIdx, 1);  
     };
 
+    const hashParams = useUrlSearchParams('hash-params');
+    const handleActivePanelChanged = (panelTitle: string) => {
+      hashParams.activePanel = panelTitle;
+    };
+
     const saveLayout = () => {
       if (!dockRef.value) return;
 
@@ -345,6 +350,7 @@ export const RichFunctionView = Vue.defineComponent({
           <DockManager 
             layoutStorageName={`${currentCall.value.func.nqName}_layout`}
             onPanelClosed={handlePanelClose} 
+            onActivePanelChanged={handleActivePanelChanged}
             ref={dockRef}
           >
             { !historyHidden.value ? 

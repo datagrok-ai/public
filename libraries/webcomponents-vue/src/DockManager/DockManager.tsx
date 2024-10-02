@@ -25,6 +25,7 @@ export const DockManager = Vue.defineComponent({
   }>,
   emits: {
     panelClosed: (element: HTMLElement) => element,
+    activePanelChanged: (panelTitle: string) => panelTitle
   },
   methods: {
     saveLayout: () => {},
@@ -78,6 +79,7 @@ export const DockManager = Vue.defineComponent({
       return <dock-spawn-ts 
         style={{'width': '100%'}}
         onPanelClosed={(ev: {detail: any}) => emit('panelClosed', ev.detail)}
+        onActivePanelChanged={(ev: {detail: any}) => emit('activePanelChanged', ev.detail)}
         ref={dockSpawnRef}
       >
         { slots.default?.() }
