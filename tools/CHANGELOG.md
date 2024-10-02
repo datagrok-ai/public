@@ -1,6 +1,12 @@
 # Datagrok-tools changelog
 
 
+## 4.13.27 (2024-10-02)
+
+### Features
+
+* Publish all added
+
 ## 4.13.26 (2024-10-02)
 
 ### Features
