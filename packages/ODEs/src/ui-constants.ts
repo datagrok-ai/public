@@ -142,6 +142,7 @@ export enum ERROR_MSG {
   SENS_AN_FAILS = 'Sensitivity Analysis fails',
   FITTING_FAILS = 'Fitting fails',
   PLATFORM_ISSUE = 'Platform issue',
+  INCORTECT_INPUT = 'Incorrect input caption',
 };
 
 /** Lookup table fails */
