@@ -16,6 +16,7 @@ export declare class DockSpawnTsWebcomponent extends HTMLElement {
     saveLayout(): string;
     loadLayout(serializedState: string): Promise<void>;
     private initDockspawn;
+    set activePanelTitle(panelTitle: string);
     getElementInSlot(slot: HTMLSlotElement): HTMLElement;
     private handleAddedChildNode;
     private handleRemovedChildNode;

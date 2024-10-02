@@ -69,7 +69,7 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
 
       this.dockManager.addLayoutListener({
         onActivePanelChange: (_, panel) => {
-          this.dispatchEvent(new CustomEvent('active-panel-changed', {detail: panel.title}));
+          this.dispatchEvent(new CustomEvent('active-panel-changed', {detail: panel?.title ?? null}));
         },
         onClosePanel: (dockManager, dockNode) => {
           const slot = dockNode.elementContent as any as HTMLSlotElement;
@@ -100,6 +100,12 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
 
       this.initFinished = true;
     }, 50);
+  }
+
+  public set activePanelTitle(panelTitle: string) {
+    const foundPanel = this.dockManager.getPanels().find((panel) => panel.title === panelTitle);
+    if (foundPanel)
+      this.dockManager.activePanel = foundPanel;
   }
 
   public getElementInSlot(slot: HTMLSlotElement): HTMLElement {

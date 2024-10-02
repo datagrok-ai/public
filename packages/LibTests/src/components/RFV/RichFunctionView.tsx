@@ -233,8 +233,8 @@ export const RichFunctionView = Vue.defineComponent({
     };
 
     const hashParams = useUrlSearchParams('hash-params');
-    const handleActivePanelChanged = (panelTitle: string) => {
-      hashParams.activePanel = panelTitle;
+    const handleActivePanelChanged = (panelTitle: string | null) => {
+      hashParams.activePanel = panelTitle ?? [];
     };
 
     const saveLayout = () => {
@@ -350,7 +350,7 @@ export const RichFunctionView = Vue.defineComponent({
           <DockManager 
             layoutStorageName={`${currentCall.value.func.nqName}_layout`}
             onPanelClosed={handlePanelClose} 
-            onActivePanelChanged={handleActivePanelChanged}
+            onUpdate:activePanelTitle={handleActivePanelChanged}
             ref={dockRef}
           >
             { !historyHidden.value ? 

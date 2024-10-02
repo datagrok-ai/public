@@ -18,14 +18,15 @@ declare global {
 export const DockManager = Vue.defineComponent({
   name: 'DockManager',
   props: {
-    layoutStorageName: Object as Vue.PropType<String>
+    layoutStorageName: Object as Vue.PropType<String>,
+    activePanelTitle: Object as Vue.PropType<String>
   },
   slots: Object as Vue.SlotsType<{
     default?: Vue.VNode[],
   }>,
   emits: {
     panelClosed: (element: HTMLElement) => element,
-    activePanelChanged: (panelTitle: string) => panelTitle
+    'update:activePanelTitle': (panelTitle: string | null) => panelTitle
   },
   methods: {
     saveLayout: () => {},
@@ -78,8 +79,9 @@ export const DockManager = Vue.defineComponent({
     return () => {
       return <dock-spawn-ts 
         style={{'width': '100%'}}
+        activePanelTitle={props.activePanelTitle}
         onPanelClosed={(ev: {detail: any}) => emit('panelClosed', ev.detail)}
-        onActivePanelChanged={(ev: {detail: any}) => emit('activePanelChanged', ev.detail)}
+        onActivePanelChanged={(ev: {detail: string | null}) => emit('update:activePanelTitle', ev.detail)}
         ref={dockSpawnRef}
       >
         { slots.default?.() }
