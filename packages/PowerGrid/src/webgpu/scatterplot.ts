@@ -17,7 +17,7 @@ export function scWebGPURender(sc: DG.ScatterPlotViewer, show: boolean) {
       canvas.style.position = 'absolute';
       canvas.style.pointerEvents = 'none';
       canvas.id = canvasName;
-      sc.canvas.parentElement?.appendChild(canvas);
+      sc.canvas.parentElement?.insertBefore(canvas, sc.overlay);
     }
     canvas.hidden = false;
   
@@ -41,19 +41,18 @@ export function scWebGPURender(sc: DG.ScatterPlotViewer, show: boolean) {
     var linearX = sc.props.xAxisType == "linear";
     var linearY = sc.props.yAxisType == "linear";
   
-    const filter = sc.filter;
-    const rowCount = sc.dataFrame.rowCount;
-    const count = filter.trueCount;
-    const points = new Float32Array(rowCount * 3);
-    var index = 0;
-    //for (let i = 0; i < rowCount; i++) {
-    for (let i = -1; (i = filter.findNext(i, true)) !== -1;) {
-      var sx = gpuViewboxRect.left + worldToScreen(xColumnData[i], gpuViewboxRect.width, viewport.left, viewport.right, inverseX, linearX);
-      var sy = gpuViewboxRect.top + worldToScreen(yColumnData[i], gpuViewboxRect.height, viewport.top, viewport.bottom, inverseY, linearY);
+    const filteredArray = sc.filter.getSelectedIndexes();
+    const pointsCount = filteredArray.length;
+    const points = new Float32Array(pointsCount * 3);
+    var pointsIndex = 0;
+    for (let i = 0; i < pointsCount; i++) {
+      var index = filteredArray[i];
+      var sx = gpuViewboxRect.left + worldToScreen(xColumnData[index], gpuViewboxRect.width, viewport.left, viewport.right, inverseX, linearX);
+      var sy = gpuViewboxRect.top + worldToScreen(yColumnData[index], gpuViewboxRect.height, viewport.top, viewport.bottom, inverseY, linearY);
       var normalized = convertPointToNormalizedCoords(sx, sy);
-      points[index++] = normalized.nx;
-      points[index++] = normalized.ny;
-      points[index++] = sc.getMarkerSize(i); // size
+      points[pointsIndex++] = normalized.nx;
+      points[pointsIndex++] = normalized.ny;
+      points[pointsIndex++] = sc.getMarkerSize(index); // size
     }
   
     webGPUInit(canvas, points);
@@ -310,7 +309,7 @@ gpuDevice.queue.submit([commandBuffer]);
 }
 
 function createCircleCanvas(size: number, fillColor: string, strokeColor: string): OffscreenCanvas {
-const lineWidth = 3;
+const lineWidth = 4;
 const canvas = new OffscreenCanvas(size, size);
 const ctx = canvas.getContext('2d');
 const centerX = size / 2;
