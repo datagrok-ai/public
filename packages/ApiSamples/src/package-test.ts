@@ -36,8 +36,10 @@ const skip = [
 const scriptViewer = [
   'parameterValidation',
   'parameter expressions',
-  'docking',
-  'currently-open-views'
+  'docking', 
+  'input-api',
+  'helm-input',
+  'helm-input-ui'
 ];
 
 //name: test
@@ -54,10 +56,6 @@ export async function test(category: string, test: string, testContext: TestCont
 //tags: init
 export async function initTests() {
 
-  const annotation = `//name: Template
-  //description: Hello world script
-  //language: javascript
-  `;
 
 
   const scripts = await grok.dapi.scripts.filter('package.shortName = "ApiSamples"').list();
@@ -65,6 +63,9 @@ export async function initTests() {
     category(('Scripts:' + script.options.path as string).replaceAll('/', ':'), () => {
       _test(script.friendlyName, async () => {
 
+        const annotation = `//name: ${script.friendlyName} 
+        //language: javascript
+        `;
         debugger
         if (scriptViewer.includes(script.friendlyName))
           await runScriptViewer(script);
@@ -72,10 +73,8 @@ export async function initTests() {
           await evaluateScript(script);
         grok.shell.closeAll();
 
-        async function runScriptViewer(script: DG.Script) {
-          debugger
-          const scriptResult = new Promise<boolean>(async (resolve) => {
-            debugger
+        async function runScriptViewer(script: DG.Script) { 
+          const scriptResult = new Promise<boolean>(async (resolve) => { 
             script.script = `${annotation}\n${script.script}`;
             const scriptView = DG.ScriptView.create(script);
             grok.shell.addView(scriptView);
@@ -104,8 +103,19 @@ export async function initTests() {
         }
 
         async function evaluateScript(script: DG.Script) {
+          let timeout: any;
+          const subscription = grok.functions.onAfterRunAction.subscribe((funcCall) => {
+            if ((funcCall.func as any).script === script.script.replaceAll('\r', '')) {
+              if (timeout)
+                clearTimeout(timeout);
+              subscription.unsubscribe();  
+            }
+          });
           await script.apply();
-          await delay(300);
+          timeout = setTimeout(() => {
+            subscription.unsubscribe();
+            throw new Error('Script didnt pass');
+          }, 10000);
         }
       }, skip.includes(script.friendlyName) ? { skipReason: 'skip' } : { timeout: 60000 });
     });
