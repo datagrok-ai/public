@@ -16,6 +16,8 @@ onmessage = async (event) => {
     await initCompleted;
     const { id, script, namespace, outputs } = event.data;
     let scriptNamespace;
+    let formatError;
+    let reformatExceptionFunc;
     pyodide.setStdout({ batched: (msg) => postMessage({ id, message: msg }) });
     try {
         await pyodide.loadPackagesFromImports(script);
@@ -30,9 +32,15 @@ onmessage = async (event) => {
         }
         postMessage({ id, result });
     } catch (error) {
-        postMessage({ error: error.message, id });
+        reformatExceptionFunc = scriptNamespace.get("reformat_exception");
+        formatError = reformatExceptionFunc();
+        error.message = formatError[0]?.trim();
+        error.stack = formatError[1]?.trim();
+        postMessage({ error: error, id });
     } finally {
         scriptNamespace?.destroy();
+        formatError?.destroy();
+        reformatExceptionFunc?.destroy();
         pyodide.setStdout();
     }
 }
