@@ -32,7 +32,8 @@ export async function saveFuncCall(bridge: FuncCallInstancesBridge) {
   fc.options[RESTRICTIONS_PATH] = serialize(bridge.inputRestrictions$.value, {useJsonDF: true});
   fc.options[OUTPUT_OUTDATED_PATH] = serialize(bridge.isOutputOutdated$.value, {useJsonDF: true});
   fc.newId();
-  return historyUtils.saveRun(fc);
+  await historyUtils.saveRun(fc);
+  return fc;
 }
 
 export async function loadFuncCall(
@@ -56,8 +57,8 @@ export async function saveInstanceState(nqName: string, state: any) {
   const metaCall = await makeMetaCall(nqName);
   metaCall.options[CONFIG_PATH] = serialize(state, {useJsonDF: true});
   metaCall.newId();
-  const fc = await historyUtils.saveRun(metaCall);
-  return fc;
+  await historyUtils.saveRun(metaCall);
+  return metaCall;
 }
 
 export async function loadInstanceState(id: string) {
