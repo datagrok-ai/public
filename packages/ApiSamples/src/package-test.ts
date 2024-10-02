@@ -39,7 +39,8 @@ const scriptViewer = [
   'docking', 
   'input-api',
   'helm-input',
-  'helm-input-ui'
+  'helm-input-ui',
+  'currently-open-views'
 ];
 
 //name: test
