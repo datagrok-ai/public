@@ -1,6 +1,12 @@
 # Datagrok-tools changelog
 
 
+## 4.13.26 (2024-10-02)
+
+### Features
+
+* Create command fixes
+
 ## 4.13.25 (2024-09-30)
 
 ### Features
