@@ -60,6 +60,18 @@ export const TreeWizardApp = Vue.defineComponent({
 
     const searchParams = useUrlSearchParams('history');
 
+    Vue.watch(treeState, () => {
+      if (!treeState.value) return;
+
+      // Getting inital URL user entered with
+      const startUrl = new URL(grok.shell.startUri);
+      const stepId = startUrl.searchParams.get('stepId');
+
+      if (!stepId) return;
+
+      chosenStepUuid.value = stepId;
+    });
+
     const chosenStepState = Vue.computed(() => {
       if (!chosenStepUuid.value || !treeState.value) return null;
 
@@ -97,6 +109,10 @@ export const TreeWizardApp = Vue.defineComponent({
     };
 
     useSubscription((driver.globalROLocked$).subscribe((l) => isLocked.value = l));
+    Vue.onMounted(() => {
+      initPipeline(props.providerFunc);
+    });
+    
     Vue.onUnmounted(() => {
       driver.close();
     });
@@ -137,7 +153,6 @@ export const TreeWizardApp = Vue.defineComponent({
     return () => (
       <div class='w-full h-full'>
         <RibbonPanel>
-          <BigButton onClick={() => initPipeline(props.providerFunc)}>Init Pipeline</BigButton>
           <IconFA 
             name='folder-tree'
             tooltip={treeHidden.value ? 'Show tree': 'Hide tree'}
