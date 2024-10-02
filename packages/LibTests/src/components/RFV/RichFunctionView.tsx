@@ -227,7 +227,7 @@ export const RichFunctionView = Vue.defineComponent({
       if (el === helpRef.value?.$el) helpHidden.value = true;
       if (el === formRef.value) formHidden.value = true;
 
-      const tabIdx = visibleTabLabels.value.findIndex((label) => label === el.title);
+      const tabIdx = visibleTabLabels.value.findIndex((label) => label === el.getAttribute('dock-spawn-title'));
       if (tabIdx >= 0) 
         visibleTabLabels.value.splice(tabIdx, 1);  
     };
@@ -256,9 +256,11 @@ export const RichFunctionView = Vue.defineComponent({
       null as null | string,
     );
 
+    let intelligentLayout = true;
     const loadLayout = async () => {
       if (!dockRef.value || !panelsState.value) return;
 
+      intelligentLayout = false;
       const openedPanels = JSON.parse(panelsState.value) as PanelsState;
 
       historyHidden.value = openedPanels.historyHidden;
@@ -268,7 +270,9 @@ export const RichFunctionView = Vue.defineComponent({
 
       await Vue.nextTick();
 
-      dockRef.value.loadLayout();
+      await dockRef.value.loadLayout();
+
+      intelligentLayout = true;
     };
 
     const eraseLayout = () => {
@@ -420,13 +424,17 @@ export const RichFunctionView = Vue.defineComponent({
                       funcCall={currentCall.value}
                       key={tabLabel}
                       dock-spawn-title={tabLabel}
-                      dock-spawn-dock-to={lastCardLabel && scalarCardCount < 3 ? lastCardLabel: null}
-                      dock-spawn-dock-type={lastCardLabel ? 
+                      dock-spawn-dock-to={intelligentLayout && 
+                        lastCardLabel && scalarCardCount < 3 ? lastCardLabel: null
+                      }
+                      dock-spawn-dock-type={intelligentLayout ? (lastCardLabel ? 
                         (categoryProps.length > 3 ? 
                           'fill': (scalarCardCount < 3 ? 'right': 'down')
-                        ): 'down' 
+                        ): 'down') : null
                       }
-                      dock-spawn-dock-ratio={lastCardLabel && scalarCardCount < 3 ? 0.5: 0.15}
+                      dock-spawn-dock-ratio={intelligentLayout ? 
+                        (lastCardLabel && scalarCardCount < 3 ? 0.5: 0.15) : null
+                      }
                     />;
 
                     if (categoryProps.length < 3) {

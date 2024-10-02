@@ -224,7 +224,10 @@ export const TreeWizardApp = Vue.defineComponent({
             <IconFA name='save' style={{'padding-right': '3px'}}/>
             <span> Save </span>
           </span>
-          <span onClick={loadPipeline}>
+          { 
+          //  <span onClick={loadPipeline}> 
+          }
+          <span>
             <IconFA name='life-ring' style={{'padding-right': '3px'}}/>
             <span> Load </span>
           </span>
@@ -287,7 +290,7 @@ export const TreeWizardApp = Vue.defineComponent({
                 class='overflow-hidden'
                 funcCall={chosenStepState.value.funcCall!}
                 callState={callsState.value?.[chosenStepState.value.uuid]?.value}
-                key={ `${callsState.value?.[chosenStepUuid.value!]?.value?.isOutputOutdated}` }
+                key={ `${callsState.value?.[chosenStepUuid.value!]?.value?.isRunning}` }
                 onUpdate:funcCall={(call) => (chosenStepState.value as StepFunCallState).funcCall = call}
                 onRunClicked={() => runStep(chosenStepState.value!.uuid)}
                 dock-spawn-title='Step review'

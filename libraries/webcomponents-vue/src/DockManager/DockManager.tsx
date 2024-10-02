@@ -30,7 +30,7 @@ export const DockManager = Vue.defineComponent({
   },
   methods: {
     saveLayout: () => {},
-    loadLayout: () => {}
+    loadLayout: async () => {}
   },
   setup(props, {slots, emit, expose}) {
     let dockSpawnRef = Vue.ref(null as DockSpawnTsWebcomponent | null);
