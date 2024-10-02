@@ -1,5 +1,18 @@
 # bio changelog
 
+## 5.44.4 (2024-10-02)
+
+### New features
+
+* Add use monomer colors from monomer lib for MonomerPlacer
+
+### Bug fixes
+
+* Fix splitAlignedSequences for canonical monomer symbol
+* Fix monomer colors for empty monomer lib
+* Fix for grok.userSettings
+* Fixes for eslint
+
 ## 5.44.3 (2024-10-02)
 
 Correct color for monomer lib configs

@@ -23,9 +23,9 @@ export function splitAlignedSequences(sequenceColumn: DG.Column<string>): DG.Dat
   for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
     const currentMonomerList = uh.getSplitted(rowIdx);
     for (let posIdx: number = 0; posIdx < currentMonomerList.length; ++posIdx) {
-      const om: string = currentMonomerList.getOriginal(posIdx);
+      const cm: string = currentMonomerList.getCanonical(posIdx);
       const col = getCol(posIdx) || createCol(posIdx);
-      col.set(rowIdx, om, false);
+      col.set(rowIdx, cm, false);
     }
   }
 

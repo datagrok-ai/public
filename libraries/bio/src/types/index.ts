@@ -71,6 +71,7 @@ export type MonomerLibSummaryType = { [polymerType: string]: number };
 export type MonomerLibData = { [polymerType: string]: { [symbol: string]: Monomer } };
 
 export interface IMonomerLibBase {
+  get isEmpty(): boolean;
   get onChanged(): Observable<any>;
 
   /* Gets library monomer for sequence monomer */
@@ -82,6 +83,8 @@ export interface IMonomerLibBase {
   getWebEditorMonomer(a: HelmAtom | HelmType, symbol?: string): IWebEditorMonomer | null;
 
   getRS(smiles: string): { [r: string]: string };
+
+  getTooltip(biotype: HelmType, monomerSymbol: string): HTMLElement;
 }
 
 export interface IMonomerLib extends IMonomerLibBase {
@@ -92,7 +95,6 @@ export interface IMonomerLib extends IMonomerLibBase {
   getMonomerSymbolsByRGroup(rGroupNumber: number, polymerType: PolymerType, element?: string): string[];
   getMonomerSymbolsByType(polymerType: PolymerType): string[];
   getPolymerTypes(): PolymerType[];
-  update(lib: IMonomerLib): void;
   toJSON(): Monomer[];
 
   /** Summary string with lib monomer count by type
@@ -104,8 +106,6 @@ export interface IMonomerLib extends IMonomerLibBase {
 
   /** Gets dataframe with columns 'polymerType', 'count'. */
   getSummaryDf(): DG.DataFrame;
-
-  getTooltip(biotype: HelmType, monomerSymbol: string): HTMLElement;
 
   // For monomer palettes
   getMonomerSet(biotype: HelmType): MonomerSetType | null;
