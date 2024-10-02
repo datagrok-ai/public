@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.15.7 (2024-10-02)
+
+Adjust monomer colors for very 'white' colors.
+
 ## 2.15.6 (2024-09-27)
 
 ### Bug fixes
