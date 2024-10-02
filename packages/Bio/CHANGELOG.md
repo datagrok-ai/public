@@ -1,5 +1,18 @@
 # Bio changelog
 
+## 2.15.8 (2024-10-02)
+
+### New features
+
+* Add use monomer lib colors for Monomer Difference Macromolecule
+* Add use monomer lib colors fpr WebLogoViewer
+
+### Bug fixes
+
+* Fix test splitters.splitToMonomers for default monomer lib
+* Fix monomer lib colors for natural monomers
+* Fix monomer colors for empty monomer lib
+
 ## 2.15.7 (2024-10-02)
 
 Adjust monomer colors for very 'white' colors.

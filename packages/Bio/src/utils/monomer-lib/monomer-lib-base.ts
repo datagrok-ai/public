@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
+import {Observable, Subject} from 'rxjs';
 
 import {IMonomerLibBase, Monomer, RGroup} from '@datagrok-libraries/bio/src/types/index';
 import {HelmAtom, HelmType, IWebEditorMonomer, MonomerType, PolymerType} from '@datagrok-libraries/bio/src/helm/types';
@@ -10,13 +11,12 @@ import {getMonomerHandleArgs} from '@datagrok-libraries/bio/src/helm/helm-helper
 import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {HelmTypes, PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {HELM_REQUIRED_FIELD as REQ, HELM_RGROUP_FIELDS as RGP} from '@datagrok-libraries/bio/src/utils/const';
-import {GapOriginals, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {GAP_SYMBOL, GapOriginals, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 
 import {AmbiguousWebEditorMonomer, GapWebEditorMonomer, MissingWebEditorMonomer} from './web-editor-monomer-dummy';
 import {LibraryWebEditorMonomer} from './web-editor-monomer-of-library';
 
 import {_package} from '../../package';
-import {Observable, Subject} from 'rxjs';
 
 const monomerRe = /[\w()]+/;
 //** Do not mess with monomer symbol with parenthesis enclosed in square brackets */
@@ -25,13 +25,20 @@ const ambMonomerRe = RegExp(String.raw`\(${monomerRe}(,${monomerRe})+\)`);
 export type MonomerLibDataType = { [polymerType: string]: { [monomerSymbol: string]: Monomer } };
 
 export class MonomerLibBase implements IMonomerLibBase {
+  protected _isEmpty: boolean;
+  get isEmpty(): boolean { return this._isEmpty; }
+
   protected _onChanged = new Subject<any>();
 
   get onChanged(): Observable<any> { return this._onChanged; }
 
+
   constructor(
     protected _monomers: MonomerLibDataType,
-  ) {}
+  ) {
+    this._isEmpty = !this._monomers || Object.keys(this._monomers).length === 0 ||
+      Object.entries(this._monomers).every(([_, ptMonomers]) => Object.keys(ptMonomers).length === 0);
+  }
 
   /** Creates missing {@link Monomer} */
   addMissingMonomer(polymerType: PolymerType, monomerSymbol: string): Monomer {
@@ -40,7 +47,7 @@ export class MonomerLibBase implements IMonomerLibBase {
       mSet = this._monomers[polymerType] = {};
 
     let monomerName: string = monomerSymbol;
-    if (monomerSymbol === GapOriginals[NOTATION.HELM])
+    if (monomerSymbol == GAP_SYMBOL || monomerSymbol === GapOriginals[NOTATION.HELM] /* usage from HELMWebEditor */)
       monomerName = 'Gap';
     else if (polymerType === PolymerTypes.PEPTIDE && monomerSymbol === 'X')
       monomerName = 'Any';
@@ -120,17 +127,17 @@ export class MonomerLibBase implements IMonomerLibBase {
     /** Get or create {@link org,helm.WebEditorMonomer} */
     let resWem: IWebEditorMonomer | null = m.wem ?? null;
     if (!resWem) {
-      if (elem === '*')
-        resWem = m.wem = new GapWebEditorMonomer(biotype, elem);
+      if (elem === GAP_SYMBOL || elem == '*' /* usage from HELMWebEditor */)
+        resWem = m.wem = new GapWebEditorMonomer(biotype);
       else if (
-        (biotype === 'HELM_NUCLETIDE' && elem === 'N') ||
-        (biotype === 'HELM_AA' && elem === 'X') ||
-        (biotype === 'HELM_CHEM' && false) || // TODO: Ambiguous monomer for CHEM
+        (biotype === HelmTypes.NUCLEOTIDE && elem === 'N') ||
+        (biotype === HelmTypes.AA && elem === 'X') ||
+        (biotype === HelmTypes.CHEM && false) || // TODO: Ambiguous monomer for CHEM
         ambMonomerRe.test(elem) // e.g. (A,R,_)
       )
         resWem = m.wem = new AmbiguousWebEditorMonomer(biotype, elem);
       else if (!m.lib)
-        resWem = m.wem = new MissingWebEditorMonomer(biotype, elem);
+        resWem = m.wem = new MissingWebEditorMonomer(biotype, elem, this.isEmpty);
 
       if (!resWem)
         resWem = m.wem = LibraryWebEditorMonomer.fromMonomer(biotype, m, this);
@@ -138,6 +145,51 @@ export class MonomerLibBase implements IMonomerLibBase {
 
     return resWem!;
   }
+
+  getTooltip(biotype: HelmType, monomerSymbol: string): HTMLElement {
+    const polymerType = helmTypeToPolymerType(biotype);
+    const res = ui.div([], {classes: 'ui-form ui-tooltip'});
+    const monomer = this.getMonomer(polymerType, monomerSymbol);
+    if (monomer) {
+      // Symbol & Name
+      const symbol = monomer[REQ.SYMBOL];
+      const _name = monomer[REQ.NAME];
+      const wem = this.getWebEditorMonomer(biotype, monomerSymbol)!;
+      const htmlColor = wem.backgroundcolor;
+      res.append(ui.divH([
+        ui.div([symbol], {style: {fontWeight: 'bolder', textWrap: 'nowrap', marginRight: '6px', color: htmlColor}}),
+        ui.div([monomer.name])
+      ], {style: {display: 'flex', flexDirection: 'row', justifyContent: 'left'}}));
+
+      // Structure
+      const chemOptions = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
+      let structureEl: HTMLElement;
+      if (monomer.molfile)
+        structureEl = grok.chem.svgMol(monomer.molfile, undefined, undefined, chemOptions);
+      else if (monomer.smiles) {
+        structureEl = ui.divV([
+          grok.chem.svgMol(monomer.smiles, undefined, undefined, chemOptions),
+          ui.divText('from smiles', {style: {fontSize: 'smaller'}}),
+        ]);
+      } else {
+        // Unable to get monomer's structure
+        structureEl = ui.divText('No structure', {style: {margin: '6px'}});
+      }
+      res.append(ui.div(structureEl,
+        {style: {display: 'flex', flexDirection: 'row', justifyContent: 'center', margin: '6px'}}));
+
+      // Source
+      if (monomer.symbol != GAP_SYMBOL)
+        res.append(ui.divText(monomer.lib?.source ?? 'Missed in libraries'));
+    } else {
+      res.append(ui.divV([
+        ui.divText(`Monomer '${monomerSymbol}' of type '${polymerType}' not found.`),
+        ui.divText('Open the Context Panel, then expand Manage Libraries'),
+      ]));
+    }
+    return res;
+  }
+
 
   getRS(smiles: string): { [r: string]: string } {
     const newS = smiles.match(/(?<=\[)[^\][]*(?=])/gm);
