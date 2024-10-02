@@ -35,7 +35,9 @@
     "webpack": "latest",
     "webpack-cli": "latest",
     "css-loader": "latest",
-    "style-loader": "latest"
+    "style-loader": "latest",
+    "@datagrok-libraries/math": "^1.2.0",
+    "@webgpu/types": "^0.1.40"
   },
   "scripts": {
     "lint": "eslint src --ext .ts",
