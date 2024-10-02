@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.44.3 (2024-10-02)
+
+Correct color for monomer lib configs
+
 ## 5.44.2 (2024-09-27)
 
 ### New features
