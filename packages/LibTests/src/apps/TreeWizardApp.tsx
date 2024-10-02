@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
 import {zipSync, Zippable} from 'fflate';
-import {BigButton, ComboPopup, DockManager, IconFA, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
+import {DockManager, IconFA, RibbonMenu, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
 import {useSubscription} from '@vueuse/rxjs';
 import {
@@ -22,7 +22,7 @@ import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {BehaviorSubject} from 'rxjs';
 import {ParentFunccallView} from '../components/ParentFunccallView/ParentFunccallView';
-import {BrowserLocationState, useBrowserLocation, useUrlSearchParams} from '@vueuse/core';
+import {useUrlSearchParams} from '@vueuse/core';
 
 const findTreeNode = (uuid: string, state: PipelineState): PipelineState | undefined => {
   let foundState = undefined as PipelineState | undefined;
@@ -121,6 +121,16 @@ export const TreeWizardApp = Vue.defineComponent({
       driver.sendCommand({event: 'initPipeline', provider});
     };
 
+    // let savedId = null as string | null;
+    // const loadPipeline = () => {
+    //   if (savedId) driver.sendCommand({event: 'loadPipeline', funcCallId: savedId});
+    // };
+
+    const savePipeline = () => {
+      driver.sendCommand({event: 'savePipeline'});
+      // savedId = driver.currentState$.value?.uuid ?? null;
+    };
+
     const runStep = async (uuid: string) => {
       driver.sendCommand({event: 'runStep', uuid});
     };
@@ -209,6 +219,16 @@ export const TreeWizardApp = Vue.defineComponent({
             }}
           /> }
         </RibbonPanel>
+        <RibbonMenu groupName='State'>
+          <span onClick={savePipeline}>
+            <IconFA name='save' style={{'padding-right': '3px'}}/>
+            <span> Save </span>
+          </span>
+          <span onClick={loadPipeline}>
+            <IconFA name='life-ring' style={{'padding-right': '3px'}}/>
+            <span> Load </span>
+          </span>
+        </RibbonMenu>
         {treeState.value && <DockManager class='block h-full' onPanelClosed={handlePanelClose}>
           { treeState.value && !treeHidden.value ? <Draggable 
             class="ui-div mtl-tree p-2 overflow-scroll"

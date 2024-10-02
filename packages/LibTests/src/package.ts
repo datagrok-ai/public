@@ -366,10 +366,10 @@ export async function MockProvider1(params: any) {
         id: 'step1',
         nqName: 'LibTests:LongScript',
       },
-      {
-        id: 'step2',
-        nqName: 'LibTests:LongFailingScript',
-      },
+      // {
+      //   id: 'step2',
+      //   nqName: 'LibTests:LongFailingScript',
+      // },
     ],
     links: [{
       id: 'link1',

@@ -294,14 +294,15 @@ export const RichFunctionView = Vue.defineComponent({
               <span> Save </span>
             </span>
             { panelsState.value && 
-          <span onClick={loadLayout}>
-            <IconFA name='life-ring' style={{'padding-right': '3px'}}/>
-            <span> Load </span>
-          </span> }
-            { panelsState.value && <span onClick={eraseLayout}>
-              <IconFA name='eraser' style={{'padding-right': '3px'}}/>
-              <span> Erase </span>
-            </span> }
+              <span onClick={loadLayout}>
+                <IconFA name='life-ring' style={{'padding-right': '3px'}}/>
+                <span> Load </span>
+              </span> }
+            { panelsState.value && 
+              <span onClick={eraseLayout}>
+                <IconFA name='eraser' style={{'padding-right': '3px'}}/>
+                <span> Erase </span>
+              </span> }
           </RibbonMenu>
           <RibbonPanel>
             <IconFA
