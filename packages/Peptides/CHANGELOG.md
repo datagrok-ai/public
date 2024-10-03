@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.18.4 (2024-10-03)
+
+Use monomer tooltip from library
+
 ## 1.18.3 (2024-10-02)
 
 Add Monomer meta columns to the Monomer-Position viewer
