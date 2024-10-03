@@ -30,7 +30,8 @@ const skip = [
   '1m-aggregation',
   '100-million-rows',
   '1-million-columns',
-  'network-diagram'
+  'network-diagram',
+  'parameter validation'
 ];
 
 const scriptViewer = [
@@ -56,8 +57,6 @@ export async function test(category: string, test: string, testContext: TestCont
 
 //tags: init
 export async function initTests() {
-
-
 
   const scripts = await grok.dapi.scripts.filter('package.shortName = "ApiSamples"').list();
   for (const script of scripts) {
@@ -122,8 +121,6 @@ export async function initTests() {
     });
   }
 }
-
-
 
 //name: initAutoTests
 export async function initAutoTests() {

@@ -1,5 +1,5 @@
 //name: parameter validation
-//language: javaScript
+//language: javascript
 //input: int foo = 5 { validator: bar > 3 }
 //input: double bar = 2 { min: 0; max: 10 }
 
