@@ -2,21 +2,21 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import $ from 'cash-dom';
+
 import {filter} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
-import {interval, Observable, fromEvent} from 'rxjs';
+import {interval, fromEvent} from 'rxjs';
 import {DiffStudio} from '../app';
-import {USE_CASES} from '../use-cases';
-import {UI_TIME, TITLE} from '../ui-constants';
+import {UI_TIME} from '../ui-constants';
 import {POPULATION_MODEL} from './constants';
 
-export class DiffStudioTutorial extends Tutorial {
+/** Tutorial on solving differential equations */
+export class DifferentialEquationsTutorial extends Tutorial {
   get name() {
-    return 'Diff Studio';
+    return 'Differential Equations';
   }
   get description() {
-    return 'In-browser solver of ordinary differential equations';
+    return 'Learn how to model processes defined by differential equations with Diff Studio';
   }
   get steps() {return 11;}
 
@@ -25,7 +25,7 @@ export class DiffStudioTutorial extends Tutorial {
 
   protected async _run() {
     this.header.textContent = this.name;
-    this.describe('Diff Studio enables the modeling of processes defined by ordinary differential equations.');
+    this.describe('Diff Studio enables the simulation of processes defined by ordinary differential equations.');
     this.describe(ui.link('Learn more', this.helpUrl).outerHTML);
     this.title(`Earth's Population`);
 
@@ -41,6 +41,7 @@ export class DiffStudioTutorial extends Tutorial {
     );
 
     await new Promise((resolve) => setTimeout(resolve, UI_TIME.APP_RUN_SOLVING * 2));
+    grok.shell.view('Template').close();
 
     const diffStudio = new DiffStudio();
     await diffStudio.runSolverApp(POPULATION_MODEL);
@@ -75,20 +76,20 @@ export class DiffStudioTutorial extends Tutorial {
 
     // 4. Add equation
     const equation = 'dR/dt = -P';
-    const equationWithNoSpaces = equation.replaceAll(' ', '');
+    const equationWithoutSpaces = equation.replaceAll(' ', '');
     await this.action(
       'Add equation',
-      interval(1000).pipe(filter(() => diffStudio.getEquations().replaceAll(' ', '').includes(equationWithNoSpaces))),
+      interval(1000).pipe(filter(() => diffStudio.getEquations().replaceAll(' ', '').includes(equationWithoutSpaces))),
       null,
       `Add the equation <b>${equation}</b> to the <b>#equations:</b>-block. It describes the <i>resource depletion (R)</i>.`,
     );
 
     // 5. Add initial value
     const initCondition = 'R = 3000';
-    const initConditionWithNoSpaces = initCondition.replaceAll(' ', '');
+    const initConditionWithoutSpaces = initCondition.replaceAll(' ', '');
     await this.action(
       'Set initial value',
-      interval(1000).pipe(filter(() => diffStudio.getEquations().replaceAll(' ', '').includes(initConditionWithNoSpaces))),
+      interval(1000).pipe(filter(() => diffStudio.getEquations().replaceAll(' ', '').includes(initConditionWithoutSpaces))),
       null,
       `Add <b>${initCondition}</b> to the <b>#inits:</b>-block. It defines the initial value of <b>R</b>.`,
     );
@@ -101,5 +102,41 @@ export class DiffStudioTutorial extends Tutorial {
       runTabHeader,
       'Go to the <b>Run</b> tab, and explore the updated model.',
     );
-  }
-}
+
+    // 7. Back to model
+    await this.action(
+      'Click the Model tab',
+      fromEvent(modelTabHeader, 'click'),
+      modelTabHeader,
+      'Diff Studio automatically generates the user interface. To enhance usability, navigate to the <b>Model</b> tab.',
+    );
+
+    // 8. Add annotation
+    const annotation = '{caption: Resources; category: Initial values; min: 3000; max: 4000; units: mu}';
+    const annotationWithouSpaces = annotation.replaceAll(' ', '');
+    await this.action(
+      'Annotate R',
+      interval(1000).pipe(filter(() => diffStudio.getEquations().replaceAll(' ', '').includes(annotationWithouSpaces))),
+      null,
+      `Add <b>${annotation}</b> right after <b>${initCondition}</b> in the <b>#inits:</b>-block.`,
+    );
+
+    // 9. Update annotation
+    const category = 'Initial values';
+    const expected = `Population; category: ${category}`.replaceAll(' ', '');
+    await this.action(
+      'Update category of P',
+      interval(1000).pipe(filter(() => diffStudio.getEquations().replaceAll(' ', '').includes(expected))),
+      null,
+      `Replace the current category of <b>P</b> with <b>${category}</b> in the <b>#inits:</b>-block. This will place <i>initial values</i> in the same inputs group.`,
+    );
+
+    // 10. Final checks
+    await this.action(
+      'Click the Run tab',
+      fromEvent(runTabHeader, 'click'),
+      runTabHeader,
+      'Go to the <b>Run</b> tab, and check the updates.',
+    );
+  } // _run
+} // DifferentialEquationsTutorial

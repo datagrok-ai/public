@@ -11,7 +11,7 @@ import {DiffStudio} from './app';
 
 import {getBioreactorSim, getPkPdSim, showBioHelpPanel, showPkPdHelpPanel} from './demo-models';
 
-import {DiffStudioTutorial} from './tutorials/diff-studio-tutorial';
+import {DifferentialEquationsTutorial} from './tutorials/diff-equations-tutorial';
 import {Track} from '@datagrok-libraries/tutorials/src/track';
 
 export const _package = new DG.Package();
@@ -213,17 +213,17 @@ export async function demoSimPKPD(): Promise<any> {
 //tags: track
 //help-url: https://datagrok.ai/help/compute
 //output: object track
-//meta.name: Compute
+//meta.name: Scientific computing
 export function registerTrack() {
-  return new Track('Compute ', [], 'https://datagrok.ai/help/compute');
+  return new Track('Scientific computing', [], 'https://datagrok.ai/help/compute');
 }
 
 //tags: tutorial
 //meta.icon: images/diff-studio-tutorial.png
-//meta.name: Diff Studio
-//meta.track: Compute
-//description: In-browser solver of ordinary differential equations
+//meta.name: Differential Equations
+//meta.track: Scientific computing
+//description: Learn how to model processes defined by differential equations with Diff Studio
 //output: object tutorial
 export function registerTutorial() {
-  return new DiffStudioTutorial();
+  return new DifferentialEquationsTutorial();
 }
