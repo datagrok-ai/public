@@ -64,25 +64,40 @@ export function powerSearchQueryTable(queryCall: DG.FuncCall, options?: PowerSea
 }
 
 
-// takes a pattern which contains some constants and variable regions (marked with ${})
+// takes a pattern which contains some constants and variable regions (marked with ${paramName})
 // tries to parse it and extract the values of the variables from the query
-export function matchAndParseQuery(matchPattern: string, query: string): string[] | undefined | null {
-  //matchPattern is a string like "First 1000 rows of ${} from ${}"
+export function matchAndParseQuery(matchPattern: string, query: string): Record<string, string> | undefined | null {
+  //matchPattern is a string like "First 1000 rows of ${param1} from ${param2}"
   try {
     query ??= '';
     query = query.trim();
-    const result: string[] = [];
-    // replace the ${} in matchPattern with the regex that matches any string
-    const regexPattern = matchPattern.replace(/\$\{\}/g, '(.*)');
+    const result: Record<string, string> = {};
+    // replace the ${param1} in matchPattern with the regex that matches any string
+    // const varNames = matchPattern.matchAll(/\$\{.*\}/g);
+
+    const varNames: string[] = [];
+    let regexPattern = matchPattern;
+    let nextIndex = regexPattern.indexOf('${');
+    while (nextIndex !== -1) {
+      const endIndex = regexPattern.indexOf('}', nextIndex);
+      if (endIndex === -1)
+        break;
+      varNames.push(regexPattern.substring(nextIndex + 2, endIndex));
+      regexPattern = regexPattern.substring(0, nextIndex) + '(.*)' + regexPattern.substring(endIndex + 1);
+
+      nextIndex = regexPattern.indexOf('${', endIndex);
+    }
+
+    //const regexPattern = matchPattern.replace(/\$\{\}/g, '(.*)');
     // make it case insensitive
     const regex = new RegExp(regexPattern, 'i');
     const match = query.match(regex);
     if (!match)
       return null;
     for (let i = 1; i < match.length; i++) {
-      if (!match[i])
+      if (match[i] == null)
         return null;
-      result.push(match[i]);
+      result[varNames[i - 1]] = match[i];
     }
     return result;
   } catch (_e) {
