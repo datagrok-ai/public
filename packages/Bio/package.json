@@ -42,7 +42,7 @@
     "@datagrok-libraries/math": "^1.2.0",
     "@datagrok-libraries/ml": "^6.7.1",
     "@datagrok-libraries/tutorials": "^1.4.2",
-    "@datagrok-libraries/utils": "^4.3.4",
+    "@datagrok-libraries/utils": "^4.3.6",
     "@webgpu/types": "^0.1.40",
     "ajv": "^8.12.0",
     "ajv-errors": "^3.0.0",
