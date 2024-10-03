@@ -41,8 +41,7 @@ export class MonomerCellRendererBack extends CellRendererWithMonomerLibBackBase 
       if (this.monomerLib) {
         const alphabet = this.tableCol.getTag(bioTAGS.alphabet);
         const biotype = alphabet === ALPHABET.RNA || alphabet === ALPHABET.DNA ? HelmTypes.NUCLEOTIDE : HelmTypes.AA;
-        const wem = this.monomerLib.getWebEditorMonomer(biotype, symbol)!;
-        color = wem.backgroundcolor!;
+        color = this.monomerLib.getMonomerTextColor(biotype, symbol);
       }
 
       //cell width of monomer should dictate how many characters can be displayed

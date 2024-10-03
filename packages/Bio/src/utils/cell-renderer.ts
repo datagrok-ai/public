@@ -102,10 +102,11 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   ): void {
     const logPrefix: string = 'MacromoleculeSequenceCellRenderer.render()';
 
-    const [gridCol, tableCol, _temp] =
+    const [gridCol, tableCol, temp] =
       getGridCellColTemp<string, MonomerPlacer>(gridCell);
     if (!tableCol) return;
     const tableColTemp: TempType = tableCol.temp;
+    const sh = SeqHandler.forColumn(tableCol);
 
     let gapLength = 0;
     const msaGapLength = 8;
@@ -121,31 +122,16 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       maxLengthOfMonomer = !isNaN(v) && v ? v : 50;
     }
 
-    const [_gc, _tc, temp] =
-      getGridCellColTemp<string, MonomerPlacer>(gridCell);
     let seqColTemp: MonomerPlacer = temp.rendererBack;
     if (!seqColTemp) {
       seqColTemp = temp.rendererBack = new MonomerPlacer(gridCol, tableCol, _package.logger, maxLengthOfMonomer,
         () => {
-          const sh = SeqHandler.forColumn(tableCol);
           return {
-            seqHandler: sh,
             monomerCharWidth: 7, separatorWidth: !sh.isMsa() ? gapLength : msaGapLength,
             monomerToShort: monomerToShortFunction,
           };
         });
-    }
-
-    if (
-      tableCol.temp[MmcrTemps.rendererSettingsChanged] === rendererSettingsChangedState.true ||
-      seqColTemp.monomerLengthLimit != maxLengthOfMonomer
-    ) {
-      gapLength = tableColTemp[MmcrTemps.gapLength] as number ?? gapLength;
-      // this event means that the mm renderer settings have changed,
-      // particularly monomer representation and max width.
-      seqColTemp.setMonomerLengthLimit(maxLengthOfMonomer);
-      seqColTemp.setSeparatorWidth(seqColTemp.isMsa() ? msaGapLength : gapLength);
-      tableCol.temp[MmcrTemps.rendererSettingsChanged] = rendererSettingsChangedState.false;
+      tableCol.temp[MmcrTemps.rendererSettingsChanged] === rendererSettingsChangedState.true;
     }
 
     seqColTemp.render(g, x, y, w, h, gridCell, _cellStyle);
@@ -269,15 +255,13 @@ export function drawMoleculeDifferenceOnCanvas(
 
       let color1 = undefinedColor;
       if (monomerLib) {
-        const wem1 = monomerLib.getWebEditorMonomer(biotype, amino1)!;
-        color1 = wem1.backgroundcolor!;
+        color1 = monomerLib.getMonomerTextColor(biotype, amino1);
       }
 
       if (amino1 != amino2) {
         let color2 = undefinedColor;
         if (monomerLib) {
-          const wem2 = monomerLib.getWebEditorMonomer(biotype, amino2)!;
-          color2 = wem2.backgroundcolor!;
+          color2 = monomerLib.getMonomerTextColor(biotype, amino2);
         }
         const subX0 = printLeftOrCentered(g, amino1, updatedX, updatedY - vShift, w, h,
           {color: color1, pivot: 0, left: true});

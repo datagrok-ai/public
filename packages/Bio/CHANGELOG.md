@@ -1,5 +1,17 @@
 # Bio changelog
 
+## 2.15.9 (2024-10-03)
+
+### New features
+
+* Add monomer lib getMonomerTextColor
+
+### Bug fixes
+
+* Fix sample monomer Aca colors
+* Fix Difference, Monomer renderers to use getMonomerTextColor
+* Fix MacromoleculeCustomCellRenderer console error on onMouseLeave
+
 ## 2.15.8 (2024-10-02)
 
 ### New features
