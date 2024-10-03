@@ -5,7 +5,7 @@ import {Observable} from 'rxjs';
 import {HelmAtom} from '@datagrok-libraries/helm-web-editor/src/types/org-helm';
 
 import {
-  HelmType, IWebEditorMonomer, MonomerSetType, MonomerType, PolymerType
+  HelmType, IMonomerColors, IWebEditorMonomer, MonomerSetType, MonomerType, PolymerType
 } from '../helm/types';
 import {
   HELM_REQUIRED_FIELD as REQ,
@@ -85,6 +85,10 @@ export interface IMonomerLibBase {
   getRS(smiles: string): { [r: string]: string };
 
   getTooltip(biotype: HelmType, monomerSymbol: string): HTMLElement;
+
+  getMonomerColors(biotype: HelmType, symbol: string): IMonomerColors;
+
+  getMonomerTextColor(biotype: HelmType, symbol: string): string;
 }
 
 export interface IMonomerLib extends IMonomerLibBase {

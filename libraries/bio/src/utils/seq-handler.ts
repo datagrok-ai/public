@@ -329,7 +329,7 @@ export class SeqHandler {
 
   public isFasta(): boolean { return this.notation === NOTATION.FASTA; }
 
-  public isSeparator(): boolean { return this.notation === NOTATION.SEPARATOR; }
+  public isSeparator(): boolean { return this.notation === NOTATION.SEPARATOR || !!this.separator; }
 
   public isHelm(): boolean { return this.notation === NOTATION.HELM; }
 

@@ -1,5 +1,14 @@
 # bio changelog
 
+## 5.44.5 (2024-10-03)
+
+### Bug fixes
+
+* Fix MonomerPlacer to use IMonomerLibBase.getMonomerTextColor
+* Fix MonomerPlacer for changed column settings
+* Fix MonomerPlacer for original monomer symbol
+* Fix SeqHandler .isSeparator to account column tag
+
 ## 5.44.4 (2024-10-02)
 
 ### New features
