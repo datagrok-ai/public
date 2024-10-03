@@ -2,7 +2,7 @@
 title: "Custom script handler"
 ---
 
-If the Datagrok platform does not support a scripting language you are familiar with, you can create a custom script handler within your [package](../../develop/packages/extensions). 
+If the Datagrok platform does not support a scripting language you are familiar with, you can create a custom script handler within your [package](../../develop/how-to/create-package). 
 The Datagrok platform is designed to seamlessly register these custom implementations, making them accessible to other users.
 
 Here’s a step-by-step guide on how to register custom script handler in the package:
