@@ -13,7 +13,7 @@ import {matchAndParseQuery, processPowerSearchTableView}
 const widgetFunctions = DG.Func.find({returnType: 'widget'});
 const searchFunctions = DG.Func.find({tags: ['search'], returnType: 'list'});
 const searchWidgetFunctions = DG.Func.find({tags: ['search'], returnType: 'widget'});
-const tableQueriesSearchFunctions = DG.Func.find({tags: ['tableSearch'], returnType: 'dataframe'})
+const tableQueriesSearchFunctions = DG.Func.find({meta: {searchPattern: null}, returnType: 'dataframe'})
   .filter((f) => f.options['searchPattern']);
 
 export function initSearch() {
@@ -138,11 +138,12 @@ function tableQueriesFunctionsSearch(s: string, host: HTMLDivElement): void {
       const matches = matchAndParseQuery(matchString, s);
       if (!matches)
         continue;
-      if (inputNames.length !== matches.length)
+      if (inputNames.length !== Object.entries(matches).length)
         continue;
       const inputParams: any = {};
-      for (let i = 0; i < inputNames.length; i++)
-        inputParams[inputNames[i]] = matches[i];
+      Object.entries(matches).forEach(([key, value]) => {
+        inputParams[key] = value;
+      });
 
       host.appendChild(widgetHost(DG.Widget.fromRoot(ui.wait(async () => {
         try {
