@@ -87,6 +87,65 @@ of nulls, which won't add any helpful insights to the data profile.
 
 ![Detected Types: Latitude, Longitude, Magnitude](semantic-type-detectors.gif "Detected Types: Latitude, Longitude, Magnitude")
 
+## Detectors test
+
+Every Semantic type detector has its own test in Datagrok, so when you create a detector you have to be aware of its test. Usually, Datagrok uses 
+specified test data for detector tests, but sometimes this data doesn't fit the detector. In this case, you can easily skip tests for your detector by using the `meta.skipTest` tag. 
+
+```  javascript
+//tags: semTypeDetector
+//input: column col
+//output: string semType
+//meta.skipTest: #2596, Fix for test data in the utils library
+detectPdb(col) {
+  if (DG.Detector.sampleCategories(col,
+    // (s) => s.includes('COMPND') && s.includes('ATOM') && s.includes('END'), 1)
+    (s) => s.match(/^COMPND/m) && s.match(/^END/m) &&
+      (s.match(/^ATOM/m) || s.match(/^HETATM/m)),
+  )) {
+    col.meta.units = 'pdb';
+    return 'Molecule3D';
+  } else if (DG.Detector.sampleCategories(col,
+    (s) => s.match(/^MODEL/m) && s.match(/^ENDMDL/m) &&
+      (s.match(/^ATOM/m) || s.match(/^HETATM/m)),
+    1)
+  ) {
+    col.meta.units = 'pdbqt';
+    return 'Molecule3D';
+  }
+
+  return null;
+}
+```
+Also, if you have a specified dataset in the detector package, you can use it to test the detector. You need to set `//meta.testData` to define the dataset for the detector.
+There should be only one column that fits the detector. If you want to ensure that the detector chooses it correctly you can use `//meta.testDataColumnName` to set the column's name for the test.
+```  javascript
+//tags: semTypeDetector
+//input: column col
+//output: string semType
+//meta.testData: pdb_data.csv
+//meta.testDataColumnName: Molecule3D
+detectPdb(col) {
+  if (DG.Detector.sampleCategories(col,
+    // (s) => s.includes('COMPND') && s.includes('ATOM') && s.includes('END'), 1)
+    (s) => s.match(/^COMPND/m) && s.match(/^END/m) &&
+      (s.match(/^ATOM/m) || s.match(/^HETATM/m)),
+  )) {
+    col.meta.units = 'pdb';
+    return 'Molecule3D';
+  } else if (DG.Detector.sampleCategories(col,
+    (s) => s.match(/^MODEL/m) && s.match(/^ENDMDL/m) &&
+      (s.match(/^ATOM/m) || s.match(/^HETATM/m)),
+    1)
+  ) {
+    col.meta.units = 'pdbqt';
+    return 'Molecule3D';
+  }
+
+  return null;
+}
+```
+
 See also:
 
 * [JavaScript Development](../develop.md)
