@@ -3,20 +3,22 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {HelmTypes, PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
-import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {IMonomerLib, IMonomerLibBase, Monomer, MonomerLibData, RGroup} from '@datagrok-libraries/bio/src/types';
 import {RDModule, RDMol, RDReaction, MolList, RDReactionResult} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {HELM_REQUIRED_FIELD, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
+import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
+import {HelmMol, HelmType, JSDraw2ModuleType, OrgType} from '@datagrok-libraries/bio/src/helm/types';
+import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
 import {Rules, RuleLink, RuleReaction} from './pt-rules';
 import {InvalidReactionError, MonomerNotFoundError} from './types';
-import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
+
 import {_package} from '../package';
 
-import {HelmMol, HelmType, JSDraw2ModuleType} from '@datagrok-libraries/bio/src/helm/types';
-import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 declare const JSDraw2: JSDraw2ModuleType;
+declare const org: OrgType;
 
 
 export class Chain {
@@ -238,14 +240,16 @@ export class Chain {
       sR: number
     }[] = [];
 
-    const mol: HelmMol = new JSDraw2.Mol<HelmType>();
 
-    // const hh = await getHelmHelper();
-    // const h = 
-    // const moll = hh.parse(h);
+    const hh = await getHelmHelper();
+    const sampleHwe = hh.createHelmWebEditor();
+    sampleHwe.editor.setHelm('PEPTIDE1{R.P.D.[meI]}$$$$');
+
+    const resHwe = hh.createHelmWebEditor();
+    const resMol = resHwe.editor.m;
 
     const rxp = /(\(.\d+\))?\{[^\}]*\}/g;
-    const seqs:string []= [];
+    const seqs: string [] = [];
     seqs.push(sequence.replaceAll(rxp, ''));
 
     //const l = (rxpRes?.length) ?? -1;
@@ -259,7 +263,7 @@ export class Chain {
     }
 
     let counter = 0;
-    for (let i = 0; i < seqs.length; i ++) {
+    for (let i = 0; i < seqs.length; i++) {
       const splMonomers = seqs[i].split('-');
       const monomers: string [] = new Array<string>(splMonomers.length);
       for (let j = 0; j < splMonomers.length; j++) {
@@ -276,36 +280,41 @@ export class Chain {
     }
 
     counter = 0;
+    const p = new JSDraw2.Point(0, 0);
     for (let i = 0; i < mainFragments.length; i++) {
       for (let j = 0; j < mainFragments[i].length; j++) {
-        if (mainFragments[i][j] ! == '') {
-          const atom = new JSDraw2.Atom<HelmType>(null, mainFragments[i][j]);
+        if (mainFragments[i][j] !== '') {
+          const atom = new JSDraw2.Atom<HelmType>(p, mainFragments[i][j]);
           //@ts-ignore
           atom.bio = {type: HelmTypes.AA, i: i, j: j};
-          mol.addAtom(atom);
+          resMol.addAtom(atom);
 
           if (j !== 0) {
-            const atom1 = mol.atoms[counter - 1];
-            const atom2 = mol.atoms[counter];
+            const atom1 = resMol.atoms[counter - 1];
+            const atom2 = resMol.atoms[counter];
             const bond = new JSDraw2.Bond<HelmType>(atom1, atom2);
-            mol.addBond(bond);
+            bond.r1 = 2;
+            bond.r2 = 1;
+            resMol.addBond(bond);
           }
 
           counter++;
+          p.x += 30;
         }
+        p.y += 30;
       }
     }
 
-    for (let i = 0; i < linkages.length; i ++) {
-      const atom1 = mol.atoms[linkages[i].fMonomer];
-      const atom2 = mol.atoms[linkages[i].sMonomer];
+    for (let i = 0; i < linkages.length; i++) {
+      const atom1 = resMol.atoms[linkages[i].fMonomer];
+      const atom2 = resMol.atoms[linkages[i].sMonomer];
       const bond = new JSDraw2.Bond<HelmType>(atom1, atom2);
       bond.r1 = linkages[i].fR;
       bond.r2 = linkages[i].sR;
-      mol.addBond(bond);
+      resMol.addBond(bond);
     }
 
-    const chain = new Chain(mainFragments, linkages, mol);
+    const chain = new Chain(mainFragments, linkages, resMol);
     return chain;
   }
 
@@ -336,7 +345,7 @@ export class Chain {
     return res;
   }
 
-  getNotationHelm() : string {
+  getNotationHelm(): string {
     return this.getHelm();
   }
 

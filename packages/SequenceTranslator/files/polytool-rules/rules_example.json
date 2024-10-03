@@ -25,7 +25,7 @@
   },
   {
     "type": "reaction",
-    "code": "3",
+    "code": "4",
     "monomericSubstitution": {
       "firstMonomer": "azG",
       "secondMonomer": "aG",

@@ -22,7 +22,7 @@
     }
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.44.2",
+    "@datagrok-libraries/bio": "^5.44.5",
     "@datagrok-libraries/chem-meta": "^1.2.7",
     "@datagrok-libraries/tutorials": "^1.4.2",
     "@datagrok-libraries/utils": "^4.3.5",
@@ -41,9 +41,9 @@
   "devDependencies": {
     "@datagrok-libraries/helm-web-editor": "^1.1.11",
     "@datagrok-libraries/js-draw-lite": "^0.0.8",
-    "@datagrok/bio": "^2.15.6",
+    "@datagrok/bio": "^2.15.7",
     "@datagrok/helm": "^2.5.3",
-    "@datagrok/chem": "^1.12.1",
+    "@datagrok/chem": "^1.12.3",
     "@types/jquery": "^3.5.14",
     "@types/js-yaml": "^4.0.5",
     "@types/lodash": "^4.14.202",

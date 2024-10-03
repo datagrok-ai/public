@@ -5,8 +5,15 @@ import * as DG from 'datagrok-api/dg';
 import {before, after, category, expect, test, expectArray, testEvent, delay} from '@datagrok-libraries/utils/src/test';
 import {Chain} from '../polytool/pt-conversion';
 import {getRules} from '../polytool/pt-rules';
+import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
 category('PolyTool: Chain: parseNotation', () => {
+  let helmHelper: IHelmHelper;
+
+  before(async () => {
+    helmHelper = await getHelmHelper(); // initialize JSDraw2 and org
+  });
+
   const tests = {
     'cyclized': {
       src: {seq: 'R-F-C(1)-T-G-H-F-Y-P-C(1)-meI'},
@@ -36,11 +43,16 @@ category('PolyTool: Chain: parseNotation', () => {
   for (const [testName, testData] of Object.entries(tests)) {
     test(`${testName}`, async () => {
       const rules = await getRules(['rules_example.json']);
-      const resChain = Chain.parseNotation(testData.src.seq);
+      const resChain = await Chain.parseNotation(testData.src.seq);
       //expectArray(resChain.monomers.map((mL) => mL.length), testData.tgt.monomerCount);
       //expect(resChain.linkages.length, testData.tgt.linkageCount);
       // expect(resChain.getNotationHelm(), testData.tgt.helm);
       // expect(resChain.getNotation(), testData.src.seq);
+
+      const hwe = helmHelper.createHelmWebEditor();
+      hwe.editor.setMol(resChain.mol!);
+      const resHelm = hwe.editor.getHelm();
+      expect(resHelm, testData.tgt.helm);
     }, testName == 'reaction2' ? {skipReason: 'reverse reaction'} : undefined);
   }
 });
