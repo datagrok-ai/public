@@ -1137,7 +1137,7 @@ export class Package extends Entity {
       await this.load({ file: 'package-test.js' });
       let module = this.getModule('package-test.js');
       if (core && module.initAutoTests)
-        module.initAutoTests();
+        await module.initAutoTests();
       return module.tests;
     } catch (e: any) {
       this.logger.error(e?.msg ?? 'get module error')
