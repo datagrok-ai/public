@@ -209,13 +209,6 @@ export const RichFunctionView = Vue.defineComponent({
     const helpHidden = Vue.ref(true);
 
     const hasContextHelp = Vue.computed(() => Utils.hasContextHelp(currentCall.value.func));
-
-    const helpText = Vue.ref(null as null | string);
-    Vue.watch(currentCall.value, async () => {
-      const loadedHelp = await Utils.getContextHelp(currentCall.value.func);
-
-      helpText.value = loadedHelp ?? null;
-    }, {immediate: true});
     
     const root = Vue.ref(null as HTMLElement | null);
     const historyRef = Vue.shallowRef(null as InstanceType<typeof History> | null);
@@ -235,18 +228,6 @@ export const RichFunctionView = Vue.defineComponent({
     const hashParams = useUrlSearchParams('hash-params');
     const handleActivePanelChanged = (panelTitle: string | null) => {
       hashParams.activePanel = panelTitle ?? [];
-    };
-
-    const saveLayout = () => {
-      if (!dockRef.value) return;
-
-      panelsState.value = JSON.stringify({
-        historyHidden: historyHidden.value,
-        helpHidden: helpHidden.value,
-        formHidden: formHidden.value,
-        visibleTabLabels: visibleTabLabels.value,
-      });
-      dockRef.value.saveLayout();
     };
 
     const panelsStorageName = Vue.computed(() => `${currentCall.value.func.nqName}_panels`);
@@ -283,6 +264,31 @@ export const RichFunctionView = Vue.defineComponent({
     Vue.watch(tabLabels, () => {
       visibleTabLabels.value = [...tabLabels.value];
     }, {immediate: true});
+
+    const saveLayout = () => {
+      if (!dockRef.value) return;
+
+      panelsState.value = JSON.stringify({
+        historyHidden: historyHidden.value,
+        helpHidden: helpHidden.value,
+        formHidden: formHidden.value,
+        visibleTabLabels: visibleTabLabels.value,
+      });
+      dockRef.value.saveLayout();
+    };
+
+    const helpText = Vue.ref(null as null | string);
+    Vue.watch(currentCall, async () => {
+      Utils.getContextHelp(currentCall.value.func).then((loadedHelp) => {
+        helpText.value = loadedHelp ?? null;
+      });
+      
+      saveLayout();
+    }, {immediate: true});
+
+    Vue.watch(currentCall, async () => {
+      await loadLayout();
+    }, {'flush': 'post'});
 
     const isIncomplete = Vue.computed(() => Utils.isIncomplete(currentCall.value));
 
