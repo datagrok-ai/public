@@ -260,3 +260,30 @@ enables the creation of complex models without writing code.
 export function showPkPdHelpPanel() {
   showHelpPanel(pkpdInfo);
 }
+
+/** Return dataframe with Earth's population simulation */
+export function getEarthPopulationSim(t0: number, t1: number, h: number, P: number,
+  k: number, N: number): DG.DataFrame {
+  const name = `Earth's population`;
+
+  // the problem definition
+  const odes = {
+    name: name,
+    arg: {name: 't', start: t0, finish: t1, step: h},
+    initial: [P],
+    func: (t: number, y: Float64Array, output: Float64Array) => {
+      const P = y[0];
+      output[0] = k * P * (N - P);
+    },
+    tolerance: 0.00005,
+    solutionColNames: ['Population, B'],
+  };
+
+  // get solution
+  const df = ros34prw(odes);
+
+  df.name = name;
+  df.col('t').name = 'Year';
+
+  return df;
+}

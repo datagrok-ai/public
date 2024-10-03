@@ -9,9 +9,10 @@ import {solveDefault, solveIVP} from './solver';
 import {ODEs, SolverOptions} from './solver-tools/solver-defs';
 import {DiffStudio} from './app';
 
-import {getBioreactorSim, getPkPdSim, showBioHelpPanel, showPkPdHelpPanel} from './demo-models';
+import {getBioreactorSim, getPkPdSim, showBioHelpPanel, showPkPdHelpPanel, getEarthPopulationSim} from './demo-models';
 
 import {DifferentialEquationsTutorial} from './tutorials/diff-equations-tutorial';
+import {SensitivityAnalysisTutorial} from './tutorials/sensitivity-analysis-tutorial';
 import {Track} from '@datagrok-libraries/tutorials/src/track';
 
 export const _package = new DG.Package();
@@ -224,6 +225,37 @@ export function registerTrack() {
 //meta.track: Scientific computing
 //description: Learn how to model processes defined by differential equations with Diff Studio
 //output: object tutorial
-export function registerTutorial() {
+export function registerDifferentialEquationsTutorial() {
   return new DifferentialEquationsTutorial();
+}
+
+//tags: tutorial
+//meta.icon: images/diff-studio-tutorial.png
+//meta.name: Sensitivity Analysis
+//meta.track: Scientific computing
+//description: Learn how to analyze the relationship between model inputs and outputs
+//output: object tutorial
+export function registerSensitivityAnalysisTutorial() {
+  return new SensitivityAnalysisTutorial();
+}
+
+//name: Population
+//tags: model
+//description: Earth's population modeling
+//language: javascript
+//input: double t0 = 2000 {caption: initial; category: Time; min: 0; max: 2010; units: year}
+//input: double t1 = 2100 {caption: final; category: Time; min: 2010; max: 2200; units: year}
+//input: double h = 0.5 {caption: step; category: Time; min: 0.5; max: 10; units: year}
+//input: double P = 6.171 {caption: Initial population; category: Parameters; min: 5; max: 10; units: billion}
+//input: double k = 0.002 {caption: Growth rate; category: Parameters; min: 0.001; max: 0.01; units: 1/year}
+//input: double N = 12.53 {caption: Carrying capacity; category: Parameters; min: 2; max: 30; units: billion}
+//output: dataframe df {caption: Earth's population; viewer: Line chart(block: 100, multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 100)}
+//editor: Compute:RichFunctionViewEditor
+//sidebar: @compute
+//meta.runOnOpen: true
+//meta.runOnInput: true
+//meta.features: {"sens-analysis": true, "fitting": true}
+//meta.icon: files/icons/population.png
+export function earthPopulation(t0: number, t1: number, h: number, P: number, k: number, N: number): DG.DataFrame {
+  return getEarthPopulationSim(t0, t1, h, P, k, N);
 }
