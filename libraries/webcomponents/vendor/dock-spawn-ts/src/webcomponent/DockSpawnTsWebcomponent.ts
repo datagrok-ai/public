@@ -179,6 +179,8 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
   }
 
   disconnectedCallback() {
+    if (!this.initFinished) return;
+
     this.resizeSub.unsubscribe();
     window.removeEventListener('orientationchange', this.windowResizedBound);
   }
