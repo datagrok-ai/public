@@ -19,7 +19,7 @@ category('PolyTool: Chain: parseNotation', () => {
       src: {seq: 'R-F-C(1)-T-G-H-F-Y-P-C(1)-meI'},
       tgt: {
         //monomerCount: [11], linkageCount: 1,
-        helm: 'PEPTIDE1{R.F.[C(1)].T.G.H.F.Y.P.[C(1)].[meI]}$$$$',
+        helm: 'PEPTIDE1{R.F.[C(1)].T.G.H.F.Y.P.[C(1)].[meI]}$$$$V2.0',
       },
     },
     'dimerized1': {
@@ -49,8 +49,9 @@ category('PolyTool: Chain: parseNotation', () => {
       // expect(resChain.getNotationHelm(), testData.tgt.helm);
       // expect(resChain.getNotation(), testData.src.seq);
 
+      const resMol = resChain.mol!;
       const hwe = helmHelper.createHelmWebEditor();
-      hwe.editor.setMol(resChain.mol!);
+      hwe.editor.setMol(resMol!);
       const resHelm = hwe.editor.getHelm();
       expect(resHelm, testData.tgt.helm);
     }, testName == 'reaction2' ? {skipReason: 'reverse reaction'} : undefined);

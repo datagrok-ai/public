@@ -283,10 +283,10 @@ export class Chain {
     const p = new JSDraw2.Point(0, 0);
     for (let i = 0; i < mainFragments.length; i++) {
       for (let j = 0; j < mainFragments[i].length; j++) {
-        if (mainFragments[i][j] !== '') {
-          const atom = new JSDraw2.Atom<HelmType>(p, mainFragments[i][j]);
-          //@ts-ignore
-          atom.bio = {type: HelmTypes.AA, i: i, j: j};
+        if (!!mainFragments[i][j]) {
+          const elem = mainFragments[i][j];
+          const bio = {type: HelmTypes.AA, i: i, j: j};
+          const atom = new JSDraw2.Atom<HelmType>(p, elem, bio);
           resMol.addAtom(atom);
 
           if (j !== 0) {
@@ -299,9 +299,9 @@ export class Chain {
           }
 
           counter++;
-          p.x += 30;
+          p.x += JSDraw2.Editor.BONDLENGTH; // Inspired by HELMWebEditor
         }
-        p.y += 30;
+        p.y += 4 * JSDraw2.Editor.BONDLENGTH; // Inspired by HELMWebEditor
       }
     }
 
