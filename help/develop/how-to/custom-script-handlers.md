@@ -52,4 +52,4 @@ export async function clojureScriptHandler(call: DG.FuncCall): Promise<void> {
 [Publish package](../../develop/how-to/publish-packages) and that's it! After that you will see language of your script handler in the list of available options when [creating new script](getting-started#create-a-script).
 Platform will be able to recognize scripts that have a `language` annotation corresponding to your handler and will be able to run them using your script handler.
 
-![custom-script-handler](./_pics/custom-script-handler.png)
+![custom-script-handler](custom-script-handler.png)
