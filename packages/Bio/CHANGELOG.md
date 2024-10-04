@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.15.11 (2024-10-04)
+
+Monomer renderer: Choose correct colors for background
+
 ## 2.15.10 (2024-10-04)
 
 Monomer manager: Better discoverabilty of errors.

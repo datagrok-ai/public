@@ -37,21 +37,28 @@ export class MonomerCellRendererBack extends CellRendererWithMonomerLibBackBase 
       const symbol: string = gridCell.cell.value;
       if (!symbol || symbol == GAP_SYMBOL) return;
 
-      let color = undefinedColor;
+      let textcolor = undefinedColor;
+      let backgroundcolor = 'rgb(255, 255, 255)';
       if (this.monomerLib) {
         const alphabet = this.tableCol.getTag(bioTAGS.alphabet);
         const biotype = alphabet === ALPHABET.RNA || alphabet === ALPHABET.DNA ? HelmTypes.NUCLEOTIDE : HelmTypes.AA;
-        color = this.monomerLib.getMonomerTextColor(biotype, symbol);
+        if (applyToBackground) {
+          const colors = this.monomerLib.getMonomerColors(biotype, symbol);
+          textcolor = colors?.textcolor ?? textcolor;
+          backgroundcolor = colors?.backgroundcolor ?? backgroundcolor;
+        } else {
+          textcolor = this.monomerLib.getMonomerTextColor(biotype, symbol);
+        }
       }
 
       //cell width of monomer should dictate how many characters can be displayed
       // for width 40, 6 characters can be displayed (0.15 is 6 / 40)
       const maxChars = Math.max(2, Math.floor(w * 0.15));
-      g.fillStyle = color;
       if (applyToBackground) {
+        g.fillStyle = backgroundcolor;
         g.fillRect(x, y, w, h);
-        g.fillStyle = DG.Color.toHtml(DG.Color.getContrastColor(DG.Color.fromHtml(color)));
       }
+      g.fillStyle = textcolor;
       g.fillText(monomerToShort(symbol, maxChars), x + (w / 2), y + (h / 2), w);
     } finally {
       g.restore();
