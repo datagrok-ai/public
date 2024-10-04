@@ -10,3 +10,4 @@ export * from './src/FoldableDialog/FoldableDialog';
 export * from './src/DockedPanel/DockedPanel'
 export * from './src/DockManager/DockManager'
 export * from './src/MarkDown/MarkDown'
+export * from './src/Overlapping/Overlapping'
