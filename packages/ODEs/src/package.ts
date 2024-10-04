@@ -9,7 +9,7 @@ import {solveDefault, solveIVP} from './solver';
 import {ODEs, SolverOptions} from './solver-tools/solver-defs';
 import {DiffStudio} from './app';
 
-import {getBioreactorSim, getPkPdSim, showBioHelpPanel, showPkPdHelpPanel, getEarthPopulationSim} from './demo-models';
+import {getBioreactorSim, getPkPdSim, showBioHelpPanel, showPkPdHelpPanel, getBallFlightSim} from './demo-models';
 
 import {DifferentialEquationsTutorial} from './tutorials/diff-equations-tutorial';
 import {SensitivityAnalysisTutorial} from './tutorials/sensitivity-analysis-tutorial';
@@ -239,23 +239,20 @@ export function registerSensitivityAnalysisTutorial() {
   return new SensitivityAnalysisTutorial();
 }
 
-//name: Population
+//name: Ball flight
 //tags: model
-//description: Earth's population modeling
-//language: javascript
-//input: double t0 = 2000 {caption: initial; category: Time; min: 0; max: 2010; units: year}
-//input: double t1 = 2100 {caption: final; category: Time; min: 2010; max: 2200; units: year}
-//input: double h = 0.5 {caption: step; category: Time; min: 0.5; max: 10; units: year}
-//input: double P = 6.171 {caption: Initial population; category: Parameters; min: 5; max: 10; units: billion}
-//input: double k = 0.002 {caption: Growth rate; category: Parameters; min: 0.001; max: 0.01; units: 1/year}
-//input: double N = 12.53 {caption: Carrying capacity; category: Parameters; min: 2; max: 30; units: billion}
-//output: dataframe df {caption: Earth's population; viewer: Line chart(block: 100, multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 100)}
+//description: Ball flight simulation
+//input: double dB = 0.01 {category: Ball; caption: Diameter; units: m; min: 0.01; max: 0.3}
+//input: double roB = 200 {category: Ball; caption: Material density; units: kg/m^3; min: 200; max: 1200}
+//input: double v = 50 {category: Throw parameters; caption: Velocity; min: 40; max: 60; units: m/sec}
+//input: double a = 45 {category: Throw parameters; caption: Angle; min: 1; max: 89; units: deg}
+//output: dataframe df {caption: Ball flight; viewer: Line chart(block: 100, multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 100)}
 //editor: Compute:RichFunctionViewEditor
 //sidebar: @compute
 //meta.runOnOpen: true
 //meta.runOnInput: true
 //meta.features: {"sens-analysis": true, "fitting": true}
-//meta.icon: files/icons/population.png
-export function earthPopulation(t0: number, t1: number, h: number, P: number, k: number, N: number): DG.DataFrame {
-  return getEarthPopulationSim(t0, t1, h, P, k, N);
+//meta.icon: files/icons/ball.png
+export function ballFlight(dB: number, roB: number, v: number, a: number): DG.DataFrame {
+  return getBallFlightSim(v, Math.PI * a / 180, dB, roB);
 }
