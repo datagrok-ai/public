@@ -71,6 +71,9 @@ export class Driver {
     ).subscribe(this.currentValidations$);
 
     this.states$.pipe(
+      switchMap((state) => state ?
+        state.makeFuncCallStatesRequests$.pipe(startWith(null), mapTo(state)) :
+        of(undefined)),
       map((state) => state ? state.getFuncCallStates() : {}),
       takeUntil(this.closed$),
     ).subscribe(this.currentCallsState$);
@@ -149,7 +152,8 @@ export class Driver {
 
   private runStep(msg: RunStep, state?: StateTree) {
     this.checkState(msg, state);
-    return state.runStep(msg.uuid, msg.mockResults, msg.mockDelay);
+    return state.runStep(msg.uuid, msg.mockResults, msg.mockDelay)
+      .pipe(tap(() => state.makeFuncCallStatesRequests$.next()));
   }
 
   private runAction(msg: RunAction, state?: StateTree) {
