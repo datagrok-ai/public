@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-let gpuViewboxRect: DG.Rect;
+let gpuViewbox: DG.Rect;
 
 export function scWebGPURender(sc: DG.ScatterPlotViewer, show: boolean) {
     // Getting WebGPU canvas or creating it if absent
@@ -21,8 +21,8 @@ export function scWebGPURender(sc: DG.ScatterPlotViewer, show: boolean) {
     }
     canvas.hidden = false;
   
-    if (!gpuViewboxRect || !areEqual(sc.viewBox, gpuViewboxRect)) {
-      gpuViewboxRect = sc.viewBox;
+    if (!gpuViewbox || !areEqual(sc.viewBox, gpuViewbox)) {
+      gpuViewbox = sc.viewBox;
       canvas.width = sc.viewBox.width;
       canvas.height = sc.viewBox.height;
       canvas.style.width = `${sc.viewBox.width}px`;
@@ -47,15 +47,14 @@ export function scWebGPURender(sc: DG.ScatterPlotViewer, show: boolean) {
     var pointsIndex = 0;
     for (let i = 0; i < pointsCount; i++) {
       var index = filteredArray[i];
-      var sx = gpuViewboxRect.left + worldToScreen(xColumnData[index], gpuViewboxRect.width, viewport.left, viewport.right, inverseX, linearX);
-      var sy = gpuViewboxRect.top + worldToScreen(yColumnData[index], gpuViewboxRect.height, viewport.top, viewport.bottom, inverseY, linearY);
-      var normalized = convertPointToNormalizedCoords(sx, sy);
-      points[pointsIndex++] = normalized.nx;
-      points[pointsIndex++] = normalized.ny;
+      var sx = gpuViewbox.left + worldToScreen(xColumnData[index], gpuViewbox.width, viewport.left, viewport.right, inverseX, linearX);
+      var sy = gpuViewbox.top + worldToScreen(yColumnData[index], gpuViewbox.height, viewport.top, viewport.bottom, inverseY, linearY);
+      points[pointsIndex++] = sx;
+      points[pointsIndex++] = sy;
       points[pointsIndex++] = sc.getMarkerSize(index); // size
     }
   
-    webGPUInit(canvas, points);
+    webGPUInit(canvas, points, sc);
 }
   
 function worldToScreen(world: number, length: number, min: number, max: number, inverse: boolean, linear: boolean) {
@@ -91,22 +90,7 @@ return Math.floor(rc1.left) == Math.floor(rc2.left) && Math.floor(rc1.top) == Ma
     && Math.floor(rc1.width) == Math.floor(rc2.width) && Math.floor(rc1.height) == Math.floor(rc2.height);
 }
 
-function convertPointToNormalizedCoords(
-x: number,
-y: number
-): { nx: number; ny: number } {
-// Calculate the center of the viewBox
-const centerX = gpuViewboxRect.left + gpuViewboxRect.width / 2;
-const centerY = gpuViewboxRect.top + gpuViewboxRect.height / 2;
-
-// Map the x and y coordinates to the normalized coordinate system (-1 to 1)
-const nx = (x - centerX) / (gpuViewboxRect.width / 2);
-const ny = -((y - centerY) / (gpuViewboxRect.height / 2));
-
-return { nx, ny };
-}
-
-async function webGPUInit(webGPUCanvas: HTMLCanvasElement, points: Float32Array) {
+async function webGPUInit(webGPUCanvas: HTMLCanvasElement, points: Float32Array, sc: DG.ScatterPlotViewer) {
 const adapter = await navigator.gpu?.requestAdapter();
 const gpuDevice = await adapter?.requestDevice() ?? null;  
 if (!gpuDevice) {
@@ -144,7 +128,30 @@ const module = gpuDevice.createShaderModule({
         @location(0) texcoord: vec2f,
     };
 
+    struct Rect {
+        left: f32,
+        top: f32,
+        width: f32,
+        height: f32,
+    };
+
+    struct Props {
+        inverseX: f32,
+        inverseY: f32,
+        linearX: f32,
+        linearY: f32,
+    };
+
+    struct SC {
+        viewBox: Rect,
+        viewport: Rect,
+        props: Props,
+    };
+
     @group(0) @binding(0) var<uniform> uni: Uniforms;
+    @group(0) @binding(1) var s: sampler;
+    @group(0) @binding(2) var t: texture_2d<f32>;
+    @group(0) @binding(3) var<uniform> sc: SC;
 
     @vertex fn vs(
         vert: Vertex,
@@ -160,16 +167,102 @@ const module = gpuDevice.createShaderModule({
         );
         var vsOut: VSOutput;
         let pos = points[vNdx];
-        vsOut.position = vec4f(vert.position + pos * vert.size / uni.resolution, 0, 1);
+        let normalizedPos = convertPointToNormalizedCoords(vert.position.x, vert.position.y);
+        vsOut.position = vec4f(normalizedPos + pos * vert.size / uni.resolution, 0, 1);
         vsOut.texcoord = pos * 0.5 + 0.5;
         return vsOut;
     }
 
-    @group(0) @binding(1) var s: sampler;
-    @group(0) @binding(2) var t: texture_2d<f32>;
-
     @fragment fn fs(vsOut: VSOutput) -> @location(0) vec4f {
         return textureSample(t, s, vsOut.texcoord);
+    }
+
+    fn convertPointToNormalizedCoords(x: f32, y: f32) -> vec2<f32> {
+        let centerX = sc.viewBox.left + sc.viewBox.width / 2.0;
+        let centerY = sc.viewBox.top + sc.viewBox.height / 2.0;
+
+        // Map the x and y coordinates to the normalized coordinate system (-1 to 1)
+        let nx = (x - centerX) / (sc.viewBox.width / 2.0);
+        let ny = -((y - centerY) / (sc.viewBox.height / 2.0));
+
+        return vec2<f32>(nx, ny);
+    }
+
+    fn worldToScreen(
+    world: f32, 
+    length: f32, 
+    min: f32, 
+    max: f32, 
+    inverse: bool, 
+    linear: bool
+    ) -> f32 {
+        if (linear) {
+            return worldToScreenLinear(world, length, min, max, inverse);
+        } else {
+            return worldToScreenLogarithmic(world, length, min, max, inverse);
+        }
+    }
+
+    fn worldToScreenLinear(
+    world: f32, 
+    length: f32, 
+    min: f32, 
+    max: f32, 
+    inverse: bool
+    ) -> f32 {
+        if (inverse) {
+            return (1.0 - ((world - min) / (max - min))) * length;
+        } else {
+            return ((world - min) / (max - min)) * length;
+        }
+    }
+
+    fn worldToScreenLogarithmic(
+    world: f32, 
+    length: f32, 
+    min: f32, 
+    max: f32, 
+    inverse: bool
+    ) -> f32 {
+        // Define a very small float value to avoid precision issues
+        let minLogFloat: f32 = 1e-30;
+
+        // Handle edge cases when world is <= 0 or near the boundary
+        if (world <= 0.0) {
+            return 0.0;
+        }
+        if (abs(world - min) < minLogFloat) {
+            if (inverse) { 
+                return length;
+            } else { 
+                return 0.0; 
+            }
+        }
+        if (abs(world - max) < minLogFloat) {
+            if (inverse) { 
+                return 0.0; 
+            } else {
+                return length;
+            }
+        }
+
+        // Ensure minimum and world values are clamped to minLogFloat
+        var adjustedMin = min;
+        if (min < minLogFloat) { 
+            adjustedMin = minLogFloat;
+        }
+        var adjustedWorld = world;
+        if (world < minLogFloat) { 
+            adjustedWorld = minLogFloat;
+        }
+
+        // Perform the logarithmic transformation
+        let res = (length * log(adjustedWorld / adjustedMin) / log(max / adjustedMin));
+
+        if (inverse) {
+            return length - res;
+        }
+        return res;
     }
     `,
 });
@@ -249,12 +342,31 @@ const kResolutionOffset = 0;
 const resolutionValue = uniformValues.subarray(
     kResolutionOffset, kResolutionOffset + 2);
 
+var viewport = sc.viewport;
+var inverseX = sc.props.invertXAxis;
+var inverseY = !sc.props.invertYAxis;
+var linearX = sc.props.xAxisType == "linear";
+var linearY = sc.props.yAxisType == "linear";
+
+const scBuffer = gpuDevice.createBuffer({
+    size: 16 + 16 + 16,
+    usage: GPUBufferUsage.UNIFORM,
+    mappedAtCreation: true,
+});
+new Float32Array(scBuffer.getMappedRange())
+    .set([gpuViewbox.left, gpuViewbox.top, gpuViewbox.width, gpuViewbox.height,
+        viewport.left, viewport.top, viewport.width, viewport.height,
+        +!!inverseX, +!!inverseY, +!!linearX, +!!linearY
+    ]);
+    scBuffer.unmap();
+
 const bindGroup = gpuDevice.createBindGroup({
     layout: pipeline.getBindGroupLayout(0),
     entries: [
     { binding: 0, resource: { buffer: uniformBuffer }},
     { binding: 1, resource: sampler },
     { binding: 2, resource: texture.createView() },
+    { binding: 3, resource: { buffer: scBuffer }},
     ],
 });
 
@@ -286,6 +398,7 @@ const pass = encoder.beginRenderPass(renderPassDescriptor as GPURenderPassDescri
 pass.setPipeline(pipeline);
 pass.setVertexBuffer(0, vertexBuffer);
 pass.setBindGroup(0, bindGroup);
+//pass.setBindGroup(1, propsGroup);
 pass.draw(6, points.length / 3);
 pass.end();
 
