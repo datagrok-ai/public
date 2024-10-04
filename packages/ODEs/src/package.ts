@@ -12,7 +12,7 @@ import {DiffStudio} from './app';
 import {getBioreactorSim, getPkPdSim, showBioHelpPanel, showPkPdHelpPanel, getBallFlightSim} from './demo-models';
 
 import {DifferentialEquationsTutorial} from './tutorials/diff-equations-tutorial';
-import {SensitivityAnalysisTutorial} from './tutorials/sensitivity-analysis-tutorial';
+import {FittingTutorial} from './tutorials/fitting-tutorial';
 import {Track} from '@datagrok-libraries/tutorials/src/track';
 
 export const _package = new DG.Package();
@@ -231,12 +231,12 @@ export function registerDifferentialEquationsTutorial() {
 
 //tags: tutorial
 //meta.icon: images/diff-studio-tutorial.png
-//meta.name: Sensitivity Analysis
+//meta.name: Parameter optimization
 //meta.track: Scientific computing
-//description: Learn how to analyze the relationship between model inputs and outputs
+//description: Learn how to find the input conditions that lead to a specified output of the model
 //output: object tutorial
-export function registerSensitivityAnalysisTutorial() {
-  return new SensitivityAnalysisTutorial();
+export function registerFittingTutorial() {
+  return new FittingTutorial();
 }
 
 //name: Ball flight

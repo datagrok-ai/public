@@ -9,38 +9,77 @@ import {interval, fromEvent} from 'rxjs';
 import {DiffStudio} from '../app';
 import {UI_TIME} from '../ui-constants';
 import {POPULATION_MODEL_UPD} from './constants';
+import {getElement, getView} from './utils';
 
 /** Tutorial on solving differential equations */
-export class SensitivityAnalysisTutorial extends Tutorial {
+export class FittingTutorial extends Tutorial {
   get name() {
-    return 'Sensitivity Analysis';
+    return 'Parameter optimization';
   }
   get description() {
-    return 'Learn how to analyze the relationship between model inputs and outputs';
+    return 'Learn how to find the input conditions that lead to a specified output of the model';
   }
   get steps() {return 11;}
 
   demoTable: string = '';
-  helpUrl: string = 'https://datagrok.ai/help/compute/function-analysis#sensitivity-analysis';
+  helpUrl: string = 'https://datagrok.ai/help/compute/function-analysis#parameter-optimization';
 
   protected async _run() {
     this.header.textContent = this.name;
-    this.describe('Analyze .');
+    this.describe('Parameter optimization solves an inverse problem: finding the input conditions that lead to a specified output of the model.');
     this.describe(ui.link('Learn more', this.helpUrl).outerHTML);
-    this.title(`Earth's Population`);
+    this.title('Ball flight');
 
-    // 1. Run
+    // 1. Run model catalog
     const browseView = grok.shell.view('Browse') as DG.BrowseView;
+    grok.shell.v = browseView;
     const appsGroup = browseView.mainTree.getOrCreateGroup('Apps', null, false);
-    const diffStudioTree = appsGroup.getOrCreateGroup('Diff Studio');
+    appsGroup.expanded = true;
+    await new Promise((resolve) => setTimeout(resolve, UI_TIME.APP_RUN_SOLVING));
+    const modelCatalogNode = appsGroup.items.find((node) => node.text === 'Model Catalog');
+
+    if (modelCatalogNode === undefined) {
+      grok.shell.error('Cannot run this tutorial: the package Compute is not installed');
+      return;
+    }
+
+    // 1. Model Catalog
     await this.action(
-      'Run Diff Studio',
-      fromEvent(diffStudioTree.root, 'dblclick'),
-      diffStudioTree.root,
-      'Go to <b>Browse > Apps</b>, and double click <b>Diff Studio</b>',
+      'Open Model Catalog',
+      fromEvent(modelCatalogNode.root, 'dblclick'),
+      modelCatalogNode.root,
+      'Go to <b>Browse > Apps</b>, and double click <b>Model Catalog</b>',
     );
 
-    await new Promise((resolve) => setTimeout(resolve, UI_TIME.APP_RUN_SOLVING * 2));
+    // 2. Run model
+    const modelIconRoot = await getElement(grok.shell.v.root, 'span.d4-link-label[name="span-ballFlight"]');
+    if (modelIconRoot === null) {
+      grok.shell.error('Model Catalog run timeout exceeded');
+      return;
+    }
+
+    await this.action(
+      'Run the "Ball flight" model',
+      fromEvent(modelIconRoot, 'dblclick'),
+      modelIconRoot,
+      'Double click <b>Ball flight</b>.',
+    );
+
+    // 3. Play
+    const modelView = await getView('Ball flight');
+    if (modelView === null) {
+      grok.shell.error('Model run timeout exceeded');
+      return;
+    }
+
+    await this.action(
+      'Play',
+      fromEvent(modelIconRoot, 'dblclick'),
+      modelView.root,
+      'Double click <b>Ball flight</b>.',
+    );
+
+    /*await new Promise((resolve) => setTimeout(resolve, UI_TIME.APP_RUN_SOLVING * 2));
     grok.shell.view('Template').close();
 
     const diffStudio = new DiffStudio();
@@ -137,6 +176,6 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       fromEvent(runTabHeader, 'click'),
       runTabHeader,
       'Go to the <b>Run</b> tab, and check the updates.',
-    );
+    );*/
   } // _run
 } // DifferentialEquationsTutorial

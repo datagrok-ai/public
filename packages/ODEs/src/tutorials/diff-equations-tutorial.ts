@@ -31,7 +31,10 @@ export class DifferentialEquationsTutorial extends Tutorial {
 
     // 1. Run
     const browseView = grok.shell.view('Browse') as DG.BrowseView;
+    grok.shell.v = browseView;
     const appsGroup = browseView.mainTree.getOrCreateGroup('Apps', null, false);
+    appsGroup.expanded = true;
+    await new Promise((resolve) => setTimeout(resolve, UI_TIME.APP_RUN_SOLVING));
     const diffStudioTree = appsGroup.getOrCreateGroup('Diff Studio');
     await this.action(
       'Run Diff Studio',
