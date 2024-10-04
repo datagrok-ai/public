@@ -30,8 +30,7 @@ const skip = [
   '1m-aggregation',
   '100-million-rows',
   '1-million-columns',
-  'network-diagram',
-  'parameter validation'
+  'network-diagram'
 ];
 
 const scriptViewer = [
@@ -39,9 +38,7 @@ const scriptViewer = [
   'parameter expressions',
   'docking', 
   'input-api',
-  'helm-input',
-  'helm-input-ui',
-  'currently-open-views'
+  'helm-input-ui'
 ];
 
 //name: test
