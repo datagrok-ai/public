@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.15.10 (2024-10-04)
+
+Monomer manager: Better discoverabilty of errors.
+
 ## 2.15.9 (2024-10-03)
 
 ### New features

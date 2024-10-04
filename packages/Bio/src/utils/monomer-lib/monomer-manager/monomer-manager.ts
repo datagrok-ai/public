@@ -500,6 +500,7 @@ class MonomerForm implements INewMonomerForm {
   get molChanged() { return this._molChanged; }
   private saveValidationResult?: string | null = null;
   private triggerMolChange: boolean = true; // makes sure that change is not triggered by copying the molecule from grid
+  inputsTabControl: DG.TabControl;
   constructor(public monomerLibManager: MonomerLibManager,
     private getMonomerLib: () => IMonomerLib | null, private refreshTable: () => Promise<void>,
     private getMonomersDataFrame: () => DG.DataFrame | undefined) {
@@ -606,6 +607,24 @@ class MonomerForm implements INewMonomerForm {
     ];
     this.metaGrid = new ItemsGrid(metaProps, []);
     this.onMonomerInputChanged();
+
+
+    const mainInputsDiv = ui.divV([
+      this.polymerTypeInput,
+      this.monomerTypeInput,
+      this.monomerSymbolInput,
+      this.monomerNameInput,
+      this.monomerIdInput,
+      this.monomerNaturalAnalogInput,
+    ]);
+
+    this.inputsTabControl = ui.tabControl({
+      'Monomer': mainInputsDiv,
+      'R-groups': this.rgroupsGridRoot,
+      'Meta': ui.divV([this.metaGrid.root]),
+      'Colors': this.colorsEditor.form,
+    }, false);
+
   }
 
   onMonomerInputChanged() {
@@ -662,17 +681,34 @@ class MonomerForm implements INewMonomerForm {
   }
 
   validateInputs(): string | null | undefined {
+    const rGroupsPane = this.inputsTabControl.panes.find((p) => p.name?.toLowerCase() === 'r-groups');
+    rGroupsPane && (rGroupsPane.header.style.removeProperty('background-color'));
     if (!this.molSketcher.getSmiles()) return 'Monomer Molecule field is required';
-    for (const i of [this.polymerTypeInput, this.monomerTypeInput, this.monomerSymbolInput, this.monomerNameInput, this.monomerIdInput, this.monomerNaturalAnalogInput]) {
+    for (const i of [this.polymerTypeInput, this.monomerTypeInput, this.monomerSymbolInput, this.monomerNameInput, this.monomerIdInput]) {
       if (i.value == null || i.value === '')
         return `${i.caption} field is required`;
     }
-    if (this.rgroupsGrid.items.length < 1) return 'At least 1 R-group is required';
-    for (const item of this.rgroupsGrid.items) {
-      for (const [k, v] of Object.entries(item))
-        if (!v) return `R-group ${k} field is required for ${item[HELM_RGROUP_FIELDS.LABEL]}`;
+    let rgroupError: string | null | undefined = null;
+    if (this.rgroupsGrid.items.length < 1)
+      rgroupError = 'At least one R-group is required';
+    if (!rgroupError) {
+      outerFor:
+      for (const item of this.rgroupsGrid.items) {
+        for (const [k, v] of Object.entries(item))
+          if (!v){
+            rgroupError = `R-group ${k} field is required for ${item[HELM_RGROUP_FIELDS.LABEL]}`;
+            break outerFor;
+          } 
+      }
     }
-    if (this.rgroupsGrid.hasErrors()) return 'R-group fields contain errors';
+
+    if (!rgroupError && this.rgroupsGrid.hasErrors()){ 
+      rgroupError = 'R-group fields contain errors';
+    }
+    if (rgroupError) {
+      rGroupsPane && (rGroupsPane.header.style.setProperty('background-color', '#ff000030'));
+      return rgroupError;
+    }
     return null;
   }
 
@@ -685,27 +721,14 @@ class MonomerForm implements INewMonomerForm {
   }
 
   get form() {
-    const mainInputsDiv = ui.divV([
-      this.polymerTypeInput,
-      this.monomerTypeInput,
-      this.monomerSymbolInput,
-      this.monomerNameInput,
-      this.monomerIdInput,
-      this.monomerNaturalAnalogInput,
-    ]);
-
-    const inputsPanel = ui.tabControl({
-      'Monomer': mainInputsDiv,
-      'R-groups': this.rgroupsGridRoot,
-      'Meta': ui.divV([this.metaGrid.root]),
-      'Colors': this.colorsEditor.form,
-    }, false);
-    inputsPanel.header.style.marginBottom = '10px';
+    
+    this.inputsTabControl.root.classList.add('monomer-manager-form-tab-control');
+    this.inputsTabControl.header.style.marginBottom = '10px';
     const saveB = ui.buttonsInput([this.saveButton]);
     ui.tooltip.bind(saveB, () => this.saveValidationResult ?? 'Save monomer to library');
     return ui.divV([
       this.molSketcher.root,
-      inputsPanel.root,
+      this.inputsTabControl.root,
       saveB,
     ], {classes: 'ui-form', style: {paddingLeft: '10px', overflow: 'scroll'}});
   }
@@ -793,8 +816,12 @@ class MonomerForm implements INewMonomerForm {
     const saveLib = async () => {
       try {
         // first remove the existing monomer with that symbol
-        libJSON = libJSON.filter((m) => m.symbol !== monomer.symbol || m.polymerType !== monomer.polymerType);
-        libJSON.push({...monomer, lib: undefined, wem: undefined});
+        const monomerIdx = libJSON.findIndex((m) => m.symbol === monomer.symbol && m.polymerType === monomer.polymerType);
+        if (monomerIdx >= 0) {
+          libJSON[monomerIdx] = {...monomer, lib: undefined, wem: undefined};
+        } else {
+          libJSON.push({...monomer, lib: undefined, wem: undefined});
+        }
         await grok.dapi.files.writeAsText(LIB_PATH + libName, JSON.stringify(libJSON));
         await (await MonomerLibManager.getInstance()).loadLibraries(true);
         await this.refreshTable();
