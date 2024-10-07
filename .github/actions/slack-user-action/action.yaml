@@ -59,7 +59,7 @@ runs:
           SLACK_API_URL="https://slack.com/api/users.lookupByEmail"
           JSON_DATA="{\"email\":\"$email\"}"
 
-          USER_ID=$(bash $GITHUB_WORKSPACE/scripts/slack_api_request.sh "$SLACK_API_URL" "POST" "${{ inputs.slack-token }}" "$JSON_DATA" | jq -r '.user.id')
+          USER_ID=$(bash $GITHUB_WORKSPACE/.github/scripts/slack_api_request.sh "$SLACK_API_URL" "POST" "${{ inputs.slack-token }}" "$JSON_DATA" | jq -r '.user.id')
 
           if [ "$USER_ID" != "null" ]; then
             SLACK_IDS+=("$USER_ID")

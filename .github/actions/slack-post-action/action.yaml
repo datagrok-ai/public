@@ -56,7 +56,7 @@ runs:
       shell: bash
       run: |
         # Use the prepared JSON message and call the Slack API
-        bash ./scripts/slack_api_request.sh \
+        bash ./.github/scripts/slack_api_request.sh \
           "https://slack.com/api/chat.postMessage" \
           "POST" \
           "${{ env.SLACK_BOT_TOKEN }}" \
