@@ -328,7 +328,7 @@ export const RichFunctionView = Vue.defineComponent({
               tooltip='Run step'
               onClick={run} 
             />
-            { !isIncomplete.value && <ComboPopup 
+            { isExportEnabled.value && !isIncomplete.value && <ComboPopup 
               caption={ui.iconFA('arrow-to-bottom')}
               items={['Excel']}
               onSelected={({item: format}) => {
