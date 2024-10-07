@@ -1,5 +1,5 @@
 import {BehaviorSubject, of, combineLatest, Observable, defer, Subject, merge} from 'rxjs';
-import {switchMap, map, takeUntil, finalize, mapTo, skip, distinctUntilChanged, withLatestFrom, filter, startWith} from 'rxjs/operators';
+import {switchMap, map, takeUntil, finalize, mapTo, skip, distinctUntilChanged, withLatestFrom, filter} from 'rxjs/operators';
 import {IFuncCallAdapter, IRunnableWrapper, IStateStore} from './FuncCallAdapters';
 import {RestrictionType, ValidationResult} from '../data/common-types';
 import {FuncallStateItem} from '../config/config-processing-utils';
@@ -164,7 +164,6 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
         throw new Error(`Attempting to run FuncCallInstancesBridge with validation errors`);
       this.isRunning$.next(true);
       return currentInstance.run(mockResults, mockDelay).pipe(
-        startWith(true),
         finalize(() => {
           this.isRunning$.next(false);
           this.outdatedChanged$.next(false);

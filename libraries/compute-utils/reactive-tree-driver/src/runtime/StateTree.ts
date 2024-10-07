@@ -25,7 +25,6 @@ export class StateTree {
   public linksState: LinksState;
 
   public makeStateRequests$ = new Subject<true>();
-  public makeFuncCallStatesRequests$ = new Subject<true>();
   public globalROLocked$ = new BehaviorSubject(false);
   public treeMutationsLocked$ = new BehaviorSubject(false);
 
