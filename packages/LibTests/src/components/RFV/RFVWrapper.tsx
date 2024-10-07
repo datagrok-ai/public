@@ -4,9 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
 import {RichFunctionView} from './RichFunctionView';
-import {FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {historyUtils} from '@datagrok-libraries/compute-utils';
-import {isIncomplete, createPartialCopy} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 
 export const RFVWrapper = Vue.defineComponent({
   props: {
@@ -36,14 +34,12 @@ export const RFVWrapper = Vue.defineComponent({
     };
 
     return () => (
-      <div style={{width: '100%', height: '100%'}}>
-        <RichFunctionView 
-          funcCall={currentFuncCall.value}
-          callState={currentCallState.value}
-          onUpdate:funcCall={(chosenCall) => currentFuncCall.value = chosenCall}
-          onRunClicked={runFunc}
-        />
-      </div>
+      <RichFunctionView 
+        funcCall={currentFuncCall.value}
+        callState={currentCallState.value}
+        onUpdate:funcCall={(chosenCall) => currentFuncCall.value = chosenCall}
+        onRunClicked={runFunc}
+      />
     );
   },
 });

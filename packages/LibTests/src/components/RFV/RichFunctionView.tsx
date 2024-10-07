@@ -16,6 +16,8 @@ import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
 import {useElementHover, useStorage, useUrlSearchParams} from '@vueuse/core';
 import {FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
+import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
+import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
 
 type PanelsState = {
   historyHidden: boolean,
@@ -292,6 +294,12 @@ export const RichFunctionView = Vue.defineComponent({
 
     const isIncomplete = Vue.computed(() => Utils.isIncomplete(currentCall.value));
 
+    const currentFunc = Vue.computed(() => currentCall.value.func);
+    const features = Vue.computed(() => Utils.getFeatures(currentFunc.value));
+    const isSAenabled = Vue.computed(() => Utils.getFeature(features.value, 'sens-analysis', false));
+    const isExportEnabled = Vue.computed(() => Utils.getFeature(features.value, 'export', true));
+    const isFittingEnabled = Vue.computed(() => Utils.getFeature(features.value, 'fitting', false));
+
     return () => {
       let lastCardLabel = null as string | null;
       let scalarCardCount = 0;
@@ -345,6 +353,16 @@ export const RichFunctionView = Vue.defineComponent({
               tooltip='Restore output tabs'
               onClick={() => visibleTabLabels.value = [...tabLabels.value]} 
             />
+            { isSAenabled.value && <IconFA 
+              name='analytics'
+              onClick={() => SensitivityAnalysisView.fromEmpty(currentFunc.value)}
+              tooltip='Run sensitivity analysis'
+            />}
+            { isFittingEnabled.value && <IconFA 
+              name='chart-line'
+              onClick={() => FittingView.fromEmpty(currentFunc.value)}
+              tooltip='Fit inputs'
+            />}
             { hasContextHelp.value && <IconFA 
               name='info' 
               tooltip={ helpHidden.value ? 'Open help panel' : 'Close help panel' }

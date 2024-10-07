@@ -3,13 +3,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Subject, BehaviorSubject, merge} from 'rxjs';
+import {Subject, BehaviorSubject} from 'rxjs';
 import $ from 'cash-dom';
 import dayjs from 'dayjs';
 import {historyUtils} from '../../history-utils';
 import {UiUtils} from '../../shared-components';
 import {CARD_VIEW_TYPE, VIEW_STATE} from '../../shared-utils/consts';
-import {createPartialCopy, deepCopy, fcToSerializable, getContextHelp, getStartedOrNull, hasContextHelp, isIncomplete} from '../../shared-utils/utils';
+import {createPartialCopy, deepCopy, fcToSerializable, getContextHelp, getFeature, getFeatures, hasContextHelp, isIncomplete, isRunningOnInput} from '../../shared-utils/utils';
 import {HistoryPanel} from '../../shared-components/src/history-panel';
 import {RunComparisonView} from './run-comparison-view';
 import {delay, distinctUntilChanged, filter, take} from 'rxjs/operators';
@@ -863,7 +863,7 @@ export abstract class FunctionView extends DG.ViewBase {
   }
 
   protected get runningOnInput() {
-    return this.func.options['runOnInput'] === 'true';
+    return isRunningOnInput(this.func);
   }
 
   protected get runningOnStart() {
@@ -879,25 +879,19 @@ export abstract class FunctionView extends DG.ViewBase {
   }
 
   protected get hasContextHelp() {
-    return !!hasContextHelp(this.func); 
+    return !!hasContextHelp(this.func);
   }
 
   public async getContextHelp() {
-    return getContextHelp(this.func)
+    return getContextHelp(this.func);
   }
 
   protected get features(): Record<string, boolean> | string[] {
-    return JSON.parse(this.func.options['features'] ?? '{}');
+    return getFeatures(this.func);
   }
 
   private getFeature(featureName: string, defaultValue: boolean) {
-    if (this.features instanceof Array)
-      return this.features.includes(featureName);
-
-    if (this.features instanceof Object)
-      return this.features[featureName] ?? defaultValue;
-
-    return defaultValue;
+    return getFeature(this.features, featureName, defaultValue);
   }
 
   protected get isExportEnabled() {

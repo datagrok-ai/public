@@ -726,6 +726,24 @@ export const createPartialCopy = async (call: DG.FuncCall) => {
   return callCopy;
 };
 
+export const isRunningOnInput = (func: DG.Func) => {
+  return func.options['runOnInput'] === 'true';
+};
+
+export const getFeatures = (func: DG.Func) => {
+  return JSON.parse(func.options['features'] ?? '{}');
+};
+
+export const getFeature = (features: Record<string, boolean> | string[], featureName: string, defaultValue: boolean) => {
+  if (features instanceof Array)
+    return features.includes(featureName);
+
+  if (features instanceof Object)
+    return features[featureName] ?? defaultValue;
+
+  return defaultValue;
+};
+
 export const isIncomplete = (run: DG.FuncCall) => {
   return !getStartedOrNull(run) || !run.id;
 };
