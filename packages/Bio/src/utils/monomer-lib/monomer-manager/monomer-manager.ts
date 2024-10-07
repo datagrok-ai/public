@@ -72,11 +72,20 @@ export class MonomerManager implements IMonomerManager {
 
   protected constructor(public monomerLibManamger: MonomerLibManager) {
     this.monomerLib = monomerLibManamger.getBioLib();
-    this._newMonomerForm = new MonomerForm(monomerLibManamger, () => this.activeMonomerLib, async () => {
+    this._newMonomerForm = new MonomerForm(monomerLibManamger, () => this.activeMonomerLib, async (scrollToRowSymbol?: string) => {
       const df = await this.getMonomersDf(this.libInput.value!);
       if (this.tv?.dataFrame) {
         this.tv.dataFrame = df;
         this.adjustColWidths();
+        if (scrollToRowSymbol != undefined) {
+          setTimeout(() => {
+            const col = df.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!;
+            const scrollToRow = col.toList().indexOf(scrollToRowSymbol);
+            if (scrollToRow === -1) return;
+            this.tv?.grid.scrollToCell(df.columns.byIndex(0), scrollToRow);
+            df.currentRow = df.rows.get(scrollToRow);
+          }, 500);
+        }
       }
       
     }, () => this.tv?.dataFrame);
@@ -502,7 +511,7 @@ class MonomerForm implements INewMonomerForm {
   private triggerMolChange: boolean = true; // makes sure that change is not triggered by copying the molecule from grid
   inputsTabControl: DG.TabControl;
   constructor(public monomerLibManager: MonomerLibManager,
-    private getMonomerLib: () => IMonomerLib | null, private refreshTable: () => Promise<void>,
+    private getMonomerLib: () => IMonomerLib | null, private refreshTable: (scrollToRowSymbol?: string) => Promise<void | undefined>,
     private getMonomersDataFrame: () => DG.DataFrame | undefined) {
     const monomerTypes = ['PEPTIDE', 'RNA', 'CHEM', 'BLOB', 'G'];
     this.colors = {
@@ -824,7 +833,7 @@ class MonomerForm implements INewMonomerForm {
         }
         await grok.dapi.files.writeAsText(LIB_PATH + libName, JSON.stringify(libJSON));
         await (await MonomerLibManager.getInstance()).loadLibraries(true);
-        await this.refreshTable();
+        await this.refreshTable(monomer.symbol);
         grok.shell.info(`Monomer ${monomer.symbol} was successfully saved in library ${libName}`);
       } catch (e) {
         grok.shell.error('Error saving monomer');

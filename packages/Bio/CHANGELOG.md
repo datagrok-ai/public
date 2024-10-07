@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.15.12 (2024-10-07)
+
+Fix weblogo colors
+
 ## 2.15.11 (2024-10-04)
 
 Monomer renderer: Choose correct colors for background
