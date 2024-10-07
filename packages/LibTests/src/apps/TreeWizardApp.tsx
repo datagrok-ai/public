@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
 import {zipSync, Zippable} from 'fflate';
-import {DockManager, IconFA, RibbonMenu, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
+import {DockManager, IconFA, ifOverlapping, RibbonMenu, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
 import {useExtractedObservable, useSubject, useSubscription} from '@vueuse/rxjs';
 import {
@@ -19,7 +19,6 @@ import {AugmentedStat} from '../components/TreeWizard/types';
 import '@he-tree/vue/style/default.css';
 import '@he-tree/vue/style/material-design.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
-import {FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {of} from 'rxjs';
 import {ParentFunccallView} from '../components/ParentFunccallView/ParentFunccallView';
 import {useUrlSearchParams} from '@vueuse/core';
@@ -159,26 +158,6 @@ export const TreeWizardApp = Vue.defineComponent({
 
     const handlePanelClose = (el: HTMLElement) => {
       if (el === treeInstance.value?.$el.parentElement) treeHidden.value = true;
-    };
-
-    const ifOverlapping = {
-      loaderMapping: new Map<HTMLElement, HTMLElement>(),
-
-      updated: (el: HTMLElement, binding: Vue.DirectiveBinding<boolean>) => {
-        const isOverlapping = binding.value;
-        const existingLoader = ifOverlapping.loaderMapping.get(el);
-        if (isOverlapping && !existingLoader) {
-          const loader = ui.divV([
-            ui.label('Updating...'),
-            ui.loader(),
-          ], 'd4-update-shadow');
-          el.append(loader);
-          ifOverlapping.loaderMapping.set(el, loader);
-        }
-        if (!isOverlapping && existingLoader) 
-          existingLoader.remove();
-        
-      },
     };
 
     return () => (

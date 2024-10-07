@@ -10,6 +10,7 @@ import {
   RibbonPanel, DockManager, MarkDown,
   ComboPopup,
   RibbonMenu,
+  ifOverlapping,
 } from '@datagrok-libraries/webcomponents-vue';
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
@@ -297,6 +298,8 @@ export const RichFunctionView = Vue.defineComponent({
     });
 
     const isIncomplete = Vue.computed(() => props.callState?.isOutputOutdated);
+    const isRunning = Vue.computed(() => props.callState?.isRunning);
+    const isRunnable = Vue.computed(() => props.callState?.isRunnable);
 
     const currentFunc = Vue.computed(() => currentCall.value.func);
     const features = Vue.computed(() => Utils.getFeatures(currentFunc.value));
@@ -414,7 +417,7 @@ export const RichFunctionView = Vue.defineComponent({
                 />
                 <div class='flex sticky bottom-0 justify-end'>
                   <BigButton 
-                    isDisabled={!props.callState?.isRunnable || props.callState?.isRunning} 
+                    isDisabled={!isRunnable.value || isRunning.value} 
                     onClick={run}> 
                   Run 
                   </BigButton>
@@ -434,12 +437,14 @@ export const RichFunctionView = Vue.defineComponent({
                       dock-spawn-title={tabLabel}
                       key={tabLabel}
                     >
-                      <Viewer
-                        type={options['type'] as string}
-                        options={options}
-                        dataFrame={currentCall.value.inputs[dfProp.name] ?? currentCall.value.outputs[dfProp.name]}
-                        class='w-full'
-                      />
+                      {
+                        Vue.withDirectives(<Viewer
+                          type={options['type'] as string}
+                          options={options}
+                          dataFrame={currentCall.value.inputs[dfProp.name] ?? currentCall.value.outputs[dfProp.name]}
+                          class='w-full'
+                        />, [[ifOverlapping, isRunning.value]])
+                      }
                     </div>;
                   }
 
@@ -474,7 +479,7 @@ export const RichFunctionView = Vue.defineComponent({
                       lastCardLabel = null;
                     }
 
-                    return panel;
+                    return Vue.withDirectives(panel, [[ifOverlapping, isRunning.value]]);
                   }
                 })
             }
