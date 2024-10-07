@@ -4,9 +4,9 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
 import {zipSync, Zippable} from 'fflate';
-import {DockManager, IconFA, Overlapping, RibbonMenu, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
+import {DockManager, IconFA, RibbonMenu, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
-import {useExtractedObservable, useSubscription} from '@vueuse/rxjs';
+import {useExtractedObservable, useSubject, useSubscription} from '@vueuse/rxjs';
 import {
   isFuncCallState, isParallelPipelineState, 
   isSequentialPipelineState, isStaticPipelineState, PipelineState,
@@ -20,7 +20,7 @@ import '@he-tree/vue/style/default.css';
 import '@he-tree/vue/style/material-design.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
-import {BehaviorSubject} from 'rxjs';
+import {of} from 'rxjs';
 import {ParentFunccallView} from '../components/ParentFunccallView/ParentFunccallView';
 import {useUrlSearchParams} from '@vueuse/core';
 
@@ -54,8 +54,6 @@ export const TreeWizardApp = Vue.defineComponent({
     const driver = new Driver();
     const isLocked = Vue.ref(false);
     const treeState = Vue.shallowRef<PipelineState | undefined>(undefined);
-    const callsState = Vue
-      .shallowRef<Record<string, BehaviorSubject<FuncCallStateInfo | undefined>> | undefined>(undefined);
     const chosenStepUuid = Vue.ref<string | undefined>(undefined);
 
     const searchParams = useUrlSearchParams('history');
@@ -100,7 +98,16 @@ export const TreeWizardApp = Vue.defineComponent({
       treeState.value = s;
     }));
 
-    useSubscription((driver.currentCallsState$).subscribe((s) => callsState.value = s));
+    const callStates = useSubject(driver.currentCallsState$);
+    const currentCallState = useExtractedObservable(
+      [callStates, chosenStepUuid], 
+      ([callsState, chosenStepUuid]) => 
+        chosenStepUuid ? callsState[chosenStepUuid].asObservable(): of(undefined),
+      {},
+      {
+        immediate: true,
+      },
+    );
 
     const restoreOpenedNodes = (stat: AugmentedStat) => {
       if (oldClosed.includes(stat.data.uuid)) 
@@ -147,12 +154,6 @@ export const TreeWizardApp = Vue.defineComponent({
       driver.sendCommand({event: 'moveDynamicItem', uuid, position});
     };
 
-    // Vue.watch(isLocked, (newVal) => {
-    //   if (!treeInstance.value) return;
-
-    //   ui.setUpdateIndicator(treeInstance.value.$el, newVal);
-    // });
-
     const treeHidden = Vue.ref(false);
     const rfvRef = Vue.ref(null as InstanceType<typeof RichFunctionView> | null);
 
@@ -190,6 +191,7 @@ export const TreeWizardApp = Vue.defineComponent({
           />
           {treeState.value && <IconFA 
             name='arrow-to-bottom'
+            tooltip='Report all steps'
             onClick={async () => {
               if (treeState.value) {
                 const zipConfig = {} as Zippable;
@@ -288,7 +290,7 @@ export const TreeWizardApp = Vue.defineComponent({
                   (
                     <TreeNode 
                       stat={stat}
-                      callState={callsState.value?.[stat.data.uuid]?.value}
+                      callState={callStates.value?.[stat.data.uuid]?.value}
                       style={{'background-color': stat.data.uuid === chosenStepUuid.value ? '#f2f2f5' : null}}
                       isDraggable={treeInstance.value?.isDraggable(stat)}
                       isDroppable={treeInstance.value?.isDroppable(stat)}
@@ -312,7 +314,7 @@ export const TreeWizardApp = Vue.defineComponent({
               <RichFunctionView 
                 class='overflow-hidden'
                 funcCall={chosenStepState.value.funcCall!}
-                callState={callsState.value?.[chosenStepState.value.uuid]?.value}
+                callState={currentCallState.value}
                 onUpdate:funcCall={(call) => (chosenStepState.value as StepFunCallState).funcCall = call}
                 onRunClicked={() => runStep(chosenStepState.value!.uuid)}
                 dock-spawn-title='Step review'

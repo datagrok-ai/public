@@ -14,7 +14,7 @@ import {
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
-import {useElementHover, useStorage, useUrlSearchParams} from '@vueuse/core';
+import {useStorage, useUrlSearchParams} from '@vueuse/core';
 import {FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
@@ -296,7 +296,7 @@ export const RichFunctionView = Vue.defineComponent({
       saveLayout();
     });
 
-    const isIncomplete = Vue.computed(() => Utils.isIncomplete(currentCall.value));
+    const isIncomplete = Vue.computed(() => props.callState?.isOutputOutdated);
 
     const currentFunc = Vue.computed(() => currentCall.value.func);
     const features = Vue.computed(() => Utils.getFeatures(currentFunc.value));
