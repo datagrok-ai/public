@@ -91,6 +91,12 @@ return Math.floor(rc1.left) == Math.floor(rc2.left) && Math.floor(rc1.top) == Ma
 }
 
 async function webGPUInit(webGPUCanvas: HTMLCanvasElement, points: Float32Array, sc: DG.ScatterPlotViewer) {
+const filteredArray = sc.filter.getSelectedIndexes();
+var xColumnData = sc.table.col(sc.props.xColumnName)?.getRawData();
+var yColumnData = sc.table.col(sc.props.yColumnName)?.getRawData();
+if (!filteredArray.length || !xColumnData?.length || !yColumnData?.length)
+    return;
+
 const adapter = await navigator.gpu?.requestAdapter();
 const gpuDevice = await adapter?.requestDevice() ?? null;  
 if (!gpuDevice) {
@@ -136,22 +142,26 @@ const module = gpuDevice.createShaderModule({
     };
 
     struct Props {
-        inverseX: f32,
-        inverseY: f32,
-        linearX: f32,
-        linearY: f32,
+        inverseX: u32,
+        inverseY: u32,
+        linearX: u32,
+        linearY: u32,
     };
 
     struct SC {
+        alignment: vec4<u32>,
         viewBox: Rect,
         viewport: Rect,
         props: Props,
+        indexes: ${wgslArrayString(filteredArray)},
+        xColumnData: ${wgslArrayString(xColumnData)},
+        yColumnData: ${wgslArrayString(yColumnData)},
     };
 
     @group(0) @binding(0) var<uniform> uni: Uniforms;
     @group(0) @binding(1) var s: sampler;
     @group(0) @binding(2) var t: texture_2d<f32>;
-    @group(0) @binding(3) var<uniform> sc: SC;
+    @group(0) @binding(3) var<storage, read> sc: SC;
 
     @vertex fn vs(
         vert: Vertex,
@@ -329,9 +339,12 @@ const sampler = gpuDevice.createSampler({
 const vertexBuffer = gpuDevice.createBuffer({
     label: 'vertex buffer vertices',
     size: points.byteLength,
-    usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+    usage: GPUBufferUsage.VERTEX,
+    mappedAtCreation: true,
 });
-gpuDevice.queue.writeBuffer(vertexBuffer, 0, points);
+new Float32Array(vertexBuffer.getMappedRange())
+    .set(new Float32Array(points.buffer));
+vertexBuffer.unmap();
 
 const uniformValues = new Float32Array(2);
 const uniformBuffer = gpuDevice.createBuffer({
@@ -348,17 +361,49 @@ var inverseY = !sc.props.invertYAxis;
 var linearX = sc.props.xAxisType == "linear";
 var linearY = sc.props.yAxisType == "linear";
 
+const kAlignmentOffset = 16;
+const kViewBoxByteOffset = 16;
+const kViewPortByteOffset = 16;
+const kPropsByteOffset = 16;
+const kFilteredArrayByteOffset = getPaddedSize(filteredArray.length);
+const kXColumnDataSize = getPaddedSize(xColumnData.length);
+const kYColumnDataSize = getPaddedSize(yColumnData.length);
+
 const scBuffer = gpuDevice.createBuffer({
-    size: 16 + 16 + 16,
-    usage: GPUBufferUsage.UNIFORM,
+    size: kAlignmentOffset + kViewBoxByteOffset + kViewPortByteOffset + kPropsByteOffset + kFilteredArrayByteOffset + kXColumnDataSize + kYColumnDataSize,
+    usage: GPUBufferUsage.STORAGE,
     mappedAtCreation: true,
 });
-new Float32Array(scBuffer.getMappedRange())
-    .set([gpuViewbox.left, gpuViewbox.top, gpuViewbox.width, gpuViewbox.height,
-        viewport.left, viewport.top, viewport.width, viewport.height,
-        +!!inverseX, +!!inverseY, +!!linearX, +!!linearY
-    ]);
-    scBuffer.unmap();
+var scBufferArray = scBuffer.getMappedRange() // get full range
+  // copy the data into the buffer at correct places
+let scBufferOffset = kAlignmentOffset;
+const viewBoxPortArray = new Float32Array(scBufferArray, scBufferOffset, 4 + 4);
+viewBoxPortArray.set([gpuViewbox.left, gpuViewbox.top, gpuViewbox.width, gpuViewbox.height,
+                      viewport.left, viewport.top, viewport.width, viewport.height]);
+scBufferOffset += kViewBoxByteOffset + kViewPortByteOffset;
+const propsArray = new Uint32Array(scBufferArray, scBufferOffset, 4);
+propsArray.set([+!!inverseX, +!!inverseY, +!!linearX, +!!linearY]);
+scBufferOffset += kPropsByteOffset;
+const filteredBufferArray = new Int32Array(scBufferArray, scBufferOffset, filteredArray.length);
+filteredBufferArray.set(filteredArray);
+scBufferOffset += kFilteredArrayByteOffset;
+if (xColumnData instanceof Int32Array) {
+    new Int32Array(scBufferArray, scBufferOffset, xColumnData.length).set(xColumnData);
+} else if (xColumnData instanceof Uint32Array) {
+    new Uint32Array(scBufferArray, scBufferOffset, xColumnData.length).set(xColumnData);
+} else {
+    new Float32Array(scBufferArray, scBufferOffset, xColumnData.length).set(xColumnData);
+}
+scBufferOffset += kXColumnDataSize;
+if (yColumnData instanceof Int32Array) {
+    new Int32Array(scBufferArray, scBufferOffset, yColumnData.length).set(yColumnData);
+} else if (yColumnData instanceof Uint32Array) {
+    new Uint32Array(scBufferArray, scBufferOffset, yColumnData.length).set(yColumnData);
+} else {
+    new Float32Array(scBufferArray, scBufferOffset, yColumnData.length).set(yColumnData);
+}
+scBufferOffset += kYColumnDataSize;
+scBuffer.unmap();
 
 const bindGroup = gpuDevice.createBindGroup({
     layout: pipeline.getBindGroupLayout(0),
@@ -398,7 +443,6 @@ const pass = encoder.beginRenderPass(renderPassDescriptor as GPURenderPassDescri
 pass.setPipeline(pipeline);
 pass.setVertexBuffer(0, vertexBuffer);
 pass.setBindGroup(0, bindGroup);
-//pass.setBindGroup(1, propsGroup);
 pass.draw(6, points.length / 3);
 pass.end();
 
@@ -419,6 +463,20 @@ gpuDevice.queue.submit([commandBuffer]);
 //   }
 // });
 // observer.observe(canvas);
+}
+
+function getPaddedSize(length: number): number {
+  // The GPU struct must be padded to 16 bytes, so we need to calculate the size of the struct in 32bit values
+  const bufferSize = length * Uint32Array.BYTES_PER_ELEMENT;
+  let paddedComputeInfoBufferSize = bufferSize;
+  const remainder = bufferSize & 15; // check if the size is a multiple of 16
+  if (remainder !== 0)
+    paddedComputeInfoBufferSize += 16 - remainder; // pad the size accordingly
+  return paddedComputeInfoBufferSize;
+}
+
+function wgslArrayString(array: Int32Array | Float32Array | Float64Array | Uint32Array): string {
+    return `array<${array instanceof Int32Array ? "i32" : array instanceof Uint32Array ? "u32" : "f32"}, ${array.length}>`;
 }
 
 function createCircleCanvas(size: number, fillColor: string, strokeColor: string): OffscreenCanvas {
