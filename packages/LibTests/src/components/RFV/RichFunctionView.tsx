@@ -293,7 +293,7 @@ export const RichFunctionView = Vue.defineComponent({
     }, {'flush': 'post'});
 
     Vue.onBeforeUnmount(() => {
-      console.log('Unmounting RFV');
+      saveLayout();
     });
 
     const isIncomplete = Vue.computed(() => Utils.isIncomplete(currentCall.value));
