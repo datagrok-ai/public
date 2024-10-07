@@ -586,7 +586,7 @@ jobs:
         uses: ./.github/actions/slack-user-action
         with:
           slack-token: ${{ secrets.SLACKBOT_TOKEN }}
-          email-mapping: ${{ secrets.EMAIL_MAPPING }}
+          email-mapping: ${{ secrets.EMAIL_SLACK_ID }}
 
       - name: Get owners slack
         id: owner
