@@ -104,7 +104,7 @@ export async function testConnections(): Promise<DG.DataFrame> {
 const skip = ['Redshift', 'Athena', 'Files'];
 
 //tags: init
-export async function initTests() {
+export async function initPackageTests() {
   const connections = await grok.dapi.connections.list();
   const categories: {[_:string]: DG.DataConnection[]} = {};
   for (const c of connections) {
