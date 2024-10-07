@@ -148,9 +148,8 @@ export function getSplitterWithSeparator(separator: string, limit: number | unde
 
         let mEa: RegExpExecArray | null = null;
         let mI = 0;
-        while ((mEa = mRe.exec(seq)) !== null && mI < limit) {
+        while ((mEa = mRe.exec(seq)) !== null && mI < limit)
           mmList[mI++] = mEa[0].replace(`"-"`, '').replace(`'-'`, '');
-        }
         mmList.splice(mI);
       } else
         mmList = seq.replaceAll('\"-\"', '').replaceAll('\'-\'', '').split(separator, limit);

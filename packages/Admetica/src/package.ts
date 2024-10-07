@@ -95,11 +95,11 @@ export async function demoAdmetica(): Promise<void> {
 }
 
 
-//name: addAdmeProperty
+//name: admeProperty
 //input: string molecule {semType: Molecule}
 //input: string prop {choices:["Caco2", "Solubility", "Lipophilicity", "PPBR", "VDss"]}
-//output: string propValue
-export async function addAdmeProp(molecule: string, prop: string): Promise<any> {
+//output: double propValue
+export async function admeProperty(molecule: string, prop: string): Promise<any> {
   const csvString = await runAdmetica(`smiles\n${molecule}`, prop, 'false');
   return DG.DataFrame.fromCsv(csvString!).get(prop, 0);
 }

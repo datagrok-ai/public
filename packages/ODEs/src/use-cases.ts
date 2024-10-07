@@ -114,9 +114,9 @@ ${CONTROL_EXPR.INITS}:
 
 ${CONTROL_EXPR.PARAMS}:  
   dose = 1e4 {category: Dosing; min: 1e3; max: 2e4; step: 1e3} [Dosage]
-  KA = 0.3 {caption: rate constant; category: Paramters; min: 0.1; max: 1}
-  CL = 2 {caption: clearance; category: Paramters; min: 1; max: 5}
-  V2 = 4 {caption: central volume; category: Paramters; min: 1; max: 10} [Central compartment volume]
+  KA = 0.3 {caption: rate constant; category: Parameters; min: 0.1; max: 1}
+  CL = 2 {caption: clearance; category: Parameters; min: 1; max: 5}
+  V2 = 4 {caption: central volume; category: Parameters; min: 1; max: 10} [Central compartment volume]
 
 ${CONTROL_EXPR.SOLVER}: {method: 'mrt'; maxTimeMs: 50}
   
@@ -153,14 +153,14 @@ ${CONTROL_EXPR.INITS}:
 
 ${CONTROL_EXPR.PARAMS}:  
   dose = 1e4 {category: Dosing; min: 1e3; max: 2e4; step: 1e3} [Dosage]
-  KA = 0.3 {caption: rate constant; category: Paramters; min: 0.1; max: 1}
-  CL = 2 {caption: clearance; category: Paramters; min: 1; max: 5}
-  V2 = 4 {caption: central volume; category: Paramters; min: 1; max: 10} [Central compartment volume]
-  Q = 1 {caption: inter rate; category: Paramters; min: 0.1; max: 1} [Intercompartmental rate]
-  V3 = 30 {caption: peri volume; category: Paramters; min: 20; max: 40} [Peripheral compartment volume]
-  EC50 = 8 {caption: effect; category: Paramters; min: 1; max: 10}
-  Kin = 0.2 {caption: Kin; category: Paramters; min: 0.1; max: 0.5} [The first-order production constant]
-  Kout = 0.2 {caption: Kout; category: Paramters; min: 0.1; max: 0.5} [The first-order dissipation rate constant]
+  KA = 0.3 {caption: rate constant; category: Parameters; min: 0.1; max: 1}
+  CL = 2 {caption: clearance; category: Parameters; min: 1; max: 5}
+  V2 = 4 {caption: central volume; category: Parameters; min: 1; max: 10} [Central compartment volume]
+  Q = 1 {caption: inter rate; category: Parameters; min: 0.1; max: 1} [Intercompartmental rate]
+  V3 = 30 {caption: peri volume; category: Parameters; min: 20; max: 40} [Peripheral compartment volume]
+  EC50 = 8 {caption: effect; category: Parameters; min: 1; max: 10}
+  Kin = 0.2 {caption: Kin; category: Parameters; min: 0.1; max: 0.5} [The first-order production constant]
+  Kout = 0.2 {caption: Kout; category: Parameters; min: 0.1; max: 0.5} [The first-order dissipation rate constant]
   
 ${CONTROL_EXPR.TOL}: 1e-9`;
 

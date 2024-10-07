@@ -57,7 +57,8 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
   try {
     const requireBackup = window.require;
 
-    // dojo.window','dojo.io.script','dojo.io.iframe','dojo.dom','dojox.gfx','dojox.gfx.svg','dojox.gfx.shape','dojox.charting'
+    // 'dojo.window','dojo.io.script','dojo.io.iframe','dojo.dom',
+    // 'dojox.gfx','dojox.gfx.svg','dojox.gfx.shape','dojox.charting'
     const dojoTargetList: { name: string, checker: () => boolean }[] = [
       {name: 'dojo.window', checker: () => !!(window.dojo?.window)},
       {name: 'dojo.ready', checker: () => !!(window.dojo?.ready)},
@@ -120,14 +121,16 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
         const cmp = dojoRequire == requireBackup;
         try {
           await new Promise<void>((resolve, reject) => {
-            dojoRequire(['dojo/window', 'dojo/dom', 'dojo/io/script', 'dojo/io/iframe',
+            /* eslint-disable indent */
+            dojoRequire([
+                'dojo/window', 'dojo/dom', 'dojo/io/script', 'dojo/io/iframe',
                 'dojox/gfx', 'dojox/gfx/svg', 'dojox/gfx/shape',
                 'dojox/storage/Provider', 'dojox/storage/LocalStorageProvider',
                 'dijit/_base', 'dijit/Tooltip', 'dijit/form/_FormValueWidget',
                 'dijit/form/DropDownButton', 'dijit/layout/AccordionContainer', 'dijit/form/ComboButton',
-                'dijit/layout/StackController', 'dijit/layout/StackContainer',
-              ],
+                'dijit/layout/StackController', 'dijit/layout/StackContainer',],
               (...args: any[]) => { resolve(); });
+            /* eslint-enable indent */
           });
         } finally {
           // TODO: Check interference with NGL
@@ -142,7 +145,8 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
           const dojoProgress = dojoTargetList.length - dojoNotReadyList.length;
           pi.update(Math.round(100 * dojoProgress / dojoTargetList.length),
             `Loading Helm Web Editor ${dojoProgress}/${dojoTargetList.length}`);
-          _package.logger.debug(`${logPrefix}, dojo loading ... ${dojoNotReadyList.map((m) => `'${m}'`).join(',')} ...`);
+          _package.logger.debug(`${logPrefix}, dojo loading ... ` +
+            `${dojoNotReadyList.map((m) => `'${m}'`).join(',')} ...`);
           await delay(100);
         }
         _package.logger.debug(`${logPrefix}, dojo ready all modules`);

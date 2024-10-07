@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.7.3 (2024-10-01)
+
+GROK-16730: Demo: Activity cliffs: Fixed 'Cannot read properties of null'
+
 ## 6.7.2 (2024-09-19)
 
 Activity cliffs: Resolve issue where multiple empty panels appear when clicking on cliffs link in demo

@@ -258,6 +258,10 @@ export class View extends ViewBase {
     return new View(api.grok_View_CreateByType(viewType, options));
   }
 
+  static fromViewAsync(getViewAsync: () => Promise<View>, ribbon: boolean = true) {
+    return toJs(api.grok_View_FromViewAsync(getViewAsync, ribbon));
+  }
+
   get root(): HTMLElement {
     return api.grok_View_Get_Root(this.dart);
   }
@@ -667,7 +671,7 @@ export class BrowseView extends View {
   constructor(dart: any) {
     super(dart);
   }
-
+  // TODO: add static method to return browse view
   get localTree(): TreeViewGroup { return api.grok_BrowseView_Get_LocalTree(this.dart); }
   get mainTree(): TreeViewGroup { return api.grok_BrowseView_Get_MainTree(this.dart); }
 

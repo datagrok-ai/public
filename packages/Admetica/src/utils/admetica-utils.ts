@@ -52,7 +52,30 @@ export async function runAdmetica(csvString: string, queryParams: string, addPro
   };
 
   const path = `/df_upload?models=${queryParams}&probability=${addProbability}`;
-  return await fetchWrapper(() => sendRequestToContainer(admeticaContainer.id, path, params));
+  const response = await fetchWrapper(() => sendRequestToContainer(admeticaContainer.id, path, params));
+  return await convertLD50(response!, DG.Column.fromStrings('smiles', csvString.split('\n').slice(1)));
+}
+
+export async function convertLD50(response: string, smilesCol: DG.Column): Promise<string> {
+  const df = DG.DataFrame.fromCsv(response);
+  if (!df.columns.names().includes('LD50')) return response;
+
+  const ldCol = df.getCol('LD50');
+  const rowCount = df.rowCount;
+
+  const molWeights = await Promise.all(
+    Array.from({ length: rowCount }, (_, i) => 
+      grok.functions.call('Chem:getProperty', { molecule: smilesCol.get(i), prop: "MW" })
+    )
+  );
+
+  ldCol.init((i) => {
+    const molPerKg = Math.pow(10, -ldCol.get(i));
+    const mgPerKg = molPerKg * molWeights[i] * 1000;
+    return mgPerKg;
+  });
+  
+  return df.toCsv();
 }
 
 export async function setProperties() {
@@ -64,7 +87,8 @@ export async function setProperties() {
 }
 
 export async function performChemicalPropertyPredictions(molColumn: DG.Column, viewTable: DG.DataFrame, models: string, template?: string, addPiechart?: boolean, addForm?: boolean) {
-  properties = JSON.parse(template!);
+  if (template)
+    properties = JSON.parse(template);
   const progressIndicator = DG.TaskBarProgressIndicator.create('Running Admetica...');
   const csvString = DG.DataFrame.fromColumns([molColumn]).toCsv();
   progressIndicator.update(10, 'Predicting...');
@@ -91,7 +115,7 @@ function applyColumnColorCoding(column: DG.Column, model: Model): void {
     column.meta.colors.setConditional(createConditionalColoringRules(model.coloring));
 }
 
-export function addColorCoding(table: DG.DataFrame, columnNames: string[], showInPanel: boolean = false): void {
+export function addColorCoding(table: DG.DataFrame, columnNames: string[], showInPanel: boolean = false, props?: string): void {
   const tableView = grok.shell.tableView(table.name);
   if (!tableView && !showInPanel) return;
 
@@ -103,7 +127,7 @@ export function addColorCoding(table: DG.DataFrame, columnNames: string[], showI
     }
 
     const column = table.getCol(columnName);
-    const matchingModel = properties.subgroup
+    const matchingModel = (props ?? properties).subgroup
       .flatMap((subgroup: Subgroup) => subgroup.models)
       .find((model: Model) => columnName.includes(model.name));
 
@@ -133,7 +157,7 @@ function generateNumber(): number {
 }
 
 function createPieSettings(table: DG.DataFrame, columnNames: string[], properties: any): any {
-  const colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728'];
+  const colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd'];
   let sectors: any[] = [];
   let sectorColorIndex = 0;
 
@@ -258,7 +282,7 @@ export function addCustomTooltip(table: string): void {
 function updateColumnProperties(column: DG.Column, model: any, viewTable: DG.DataFrame): void {
   const newColumnName = viewTable.columns.getUnusedName(column.name);
   column.name = newColumnName;
-  column.meta.format = '0.00';
+  column.meta.format = '0.000';
   column.setTag(DG.TAGS.DESCRIPTION, model.properties.find((prop: any) => prop.property.name === 'description').object.description);
   column.meta.units = model.units;
 }
@@ -299,6 +323,27 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
   const acc = ui.accordion('Admetica');
   await setProperties();
 
+  const templates = await getTemplates();
+  let props: string;
+  
+  const handleTemplateChange = async (value: string) => {
+    props = JSON.parse(await grok.dapi.files.readAsText(`${TEMPLATES_FOLDER}/${value}.json`));
+    
+    for (const subgroup of properties.subgroup) {
+      const pane = acc.getPane(subgroup.name);
+      const container = pane.root.children.item(1) as HTMLDivElement;
+      ui.empty(container);
+      update(container, subgroup.name);
+    }
+  };
+  
+  const templatesInput = ui.input.choice('Template', {
+    value: templates[0],
+    items: templates,
+    onValueChanged: handleTemplateChange,
+  });
+  acc.root.appendChild(templatesInput.root);
+
   const update = async (result: HTMLDivElement, modelName: string) => {
     const queryParams = properties.subgroup.find((subg: any) => subg.name === modelName)
       ['models'].map((model: any) => model.name);
@@ -315,12 +360,12 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
 
       const table = DG.DataFrame.fromCsv(csvString!);
       table.name = DEFAULT_TABLE_NAME;
-      addColorCoding(table, queryParams, true);
+      addColorCoding(table, queryParams, true, props);
 
       const map: { [_: string]: any } = {};
       for (const model of queryParams) {
         const column = table.getCol(model);
-        map[model] = ui.divText(column.convertTo(DG.TYPE.STRING, '0.00').get(0), {
+        map[model] = ui.divText(column.get(0).toFixed(3), {
           style: { color: DG.Color.toHtml(column.meta.colors.getColor(0)!) }
         });
       }
@@ -387,4 +432,9 @@ function createDynamicForm(viewTable: DG.DataFrame, updatedModelNames: string[],
   const generator = new FormStateGenerator(viewTable.name, mapping, molColName, addPiechart);
   const formState = generator.generateFormState();
   form.form.state = JSON.stringify(formState);
+}
+
+export async function getTemplates(): Promise<string[]> {
+  const files = await grok.dapi.files.list(TEMPLATES_FOLDER);
+  return files.map((file) => file.fileName.split('.')[0]);
 }

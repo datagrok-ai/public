@@ -15,6 +15,7 @@ const commands = {
   publish: require('./commands/publish').publish,
   test: require('./commands/test').test,
   testall: require('./commands/test-all').testAll,
+  publishall: require('./commands/publish-all').publishAll,
 };
 
 const command = argv['_'][0];

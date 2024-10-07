@@ -1,5 +1,9 @@
 # Arrow changelog
 
+## 1.1.2 (2024-09-23)
+
+* Bump datagrok-api dependency
+
 ## 1.1.1 (2024-09-11)
 
 * Fixes converting of null DG constants

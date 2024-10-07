@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {IMonomerLib} from '../types';
+import {IMonomerLibBase} from '../types';
 import {HelmType, PolymerType} from '../helm/types';
 import {HelmTypes, PolymerTypes} from '../helm/consts';
 
@@ -17,11 +17,11 @@ export interface IMolfileConverter {
 }
 
 export class MonomerWorks {
-  private monomerLib: IMonomerLib;
+  private monomerLib: IMonomerLibBase;
 
   //private molfileConverter: IMolfileConverter;
 
-  constructor(monomerLib: IMonomerLib/*, molfileConverter: IMolfileConverter*/) {
+  constructor(monomerLib: IMonomerLibBase/*, molfileConverter: IMolfileConverter*/) {
     this.monomerLib = monomerLib;
     //this.molfileConverter = molfileConverter;
   }

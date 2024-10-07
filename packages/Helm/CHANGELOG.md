@@ -1,5 +1,14 @@
 # Helm changelog
 
+## 2.5.3 (WIP)
+
+### Bug fixes
+
+* Fix test Helm HelmHelper.removeGaps
+* Fix using IMonomerLibHelper.loadMonomerLibForTests
+* Fix test HelmHelper: removeGaps.single-cycle-gap-at-connection
+* Fixes for eslint
+
 ## 2.5.2 (2024-09-25)
 
 Bump dependencies, bio lib

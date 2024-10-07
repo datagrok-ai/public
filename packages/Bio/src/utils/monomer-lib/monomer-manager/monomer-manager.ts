@@ -8,14 +8,15 @@ import * as DG from 'datagrok-api/dg';
 import {IMonomerManager, INewMonomerForm} from '@datagrok-libraries/bio/src/utils/monomer-ui';
 import {IMonomerLib, Monomer, RGroup} from '@datagrok-libraries/bio/src/types';
 import {DUMMY_MONOMER, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
-import {LIB_PATH} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
 import {mostSimilarNaturalAnalog} from '@datagrok-libraries/bio/src/utils/macromolecule/monomers';
 import {PolymerType, MonomerType} from '@datagrok-libraries/bio/src/helm/types';
 
 import {MonomerLibManager} from '../lib-manager';
+import {LIB_PATH} from '../consts';
 
 import '../../../../css/monomer-manager.css';
+import { MONOMER_RENDERER_TAGS } from '@datagrok-libraries/bio/src/utils/cell-renderer';
 
 // columns of monomers dataframe, note that rgroups is hidden and will be displayed as separate columns
 export enum MONOMER_DF_COLUMN_NAMES {
@@ -50,6 +51,16 @@ export const MONOMER_DF_COLUMNS = {
 
 
 export class MonomerManager implements IMonomerManager {
+
+  private adjustColWidths() {
+    setTimeout(() => {
+      if (this.tv?.grid) {
+        this.tv!.grid.col(MONOMER_DF_COLUMN_NAMES.NAME)!.width = 100;
+        this.tv!.grid.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.width = 70;
+      }
+    }, 200);
+  }
+
   public static readonly VIEW_NAME = 'Manage Monomers';
   private _newMonomer: Monomer = DUMMY_MONOMER;
   private _newMonomerForm: MonomerForm;
@@ -63,7 +74,11 @@ export class MonomerManager implements IMonomerManager {
     this.monomerLib = monomerLibManamger.getBioLib();
     this._newMonomerForm = new MonomerForm(monomerLibManamger, () => this.activeMonomerLib, async () => {
       const df = await this.getMonomersDf(this.libInput.value!);
-      this.tv?.dataFrame && (this.tv.dataFrame = df);
+      if (this.tv?.dataFrame) {
+        this.tv.dataFrame = df;
+        this.adjustColWidths();
+      }
+      
     }, () => this.tv?.dataFrame);
   }
 
@@ -150,7 +165,7 @@ export class MonomerManager implements IMonomerManager {
     const df = await this.getMonomersDf(fileName);
     this.tv = DG.TableView.create(df, true);
     //const f = tv.filters();
-    this.tv.grid.col(MONOMER_DF_COLUMN_NAMES.NAME)!.width = 100;
+    this.adjustColWidths();
     this.tv.subs.push(
       grok.events.onContextMenu.subscribe(({args}) => {
         if (!args || !args.menu || !args.context || args.context.type !== DG.VIEWER.GRID || !args.context.tableView ||
@@ -200,7 +215,7 @@ export class MonomerManager implements IMonomerManager {
       libName && (this.libInput.value = libName);
       const df = await this.getMonomersDf(libName);
       this.tv.dataFrame = df;
-      this.tv.grid.col(MONOMER_DF_COLUMN_NAMES.NAME)!.width = 100;
+      this.adjustColWidths();
       return this.tv;
     }
 
@@ -262,6 +277,7 @@ export class MonomerManager implements IMonomerManager {
         try {
           const df = await this.getMonomersDf(this.libInput.value!);
           this.tv!.dataFrame = df;
+          this.adjustColWidths();
         } catch (e) {
           console.error(e);
         }
@@ -311,6 +327,8 @@ export class MonomerManager implements IMonomerManager {
             df.columns.addNew(rgroupName, DG.COLUMN_TYPE.STRING);
         }
       }
+      df.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.semType = 'Monomer';
+      df.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.setTag(MONOMER_RENDERER_TAGS.applyToBackground, 'true');
 
 
       for (let i = 0; i < monomers.length; i++) {
@@ -470,16 +488,29 @@ class MonomerForm implements INewMonomerForm {
   monomerNaturalAnalogInput: DG.InputBase<string | null>;
   rgroupsGrid: ItemsGrid;
   metaGrid: ItemsGrid;
+  colors: {
+    line: string,
+    background: string,
+    text: string
+  };
+  colorsEditor: ColorsEditor;
   saveButton: HTMLButtonElement;
   rgroupsGridRoot: HTMLElement;
   private _molChanged: boolean = false;
   get molChanged() { return this._molChanged; }
   private saveValidationResult?: string | null = null;
   private triggerMolChange: boolean = true; // makes sure that change is not triggered by copying the molecule from grid
+  inputsTabControl: DG.TabControl;
   constructor(public monomerLibManager: MonomerLibManager,
     private getMonomerLib: () => IMonomerLib | null, private refreshTable: () => Promise<void>,
     private getMonomersDataFrame: () => DG.DataFrame | undefined) {
     const monomerTypes = ['PEPTIDE', 'RNA', 'CHEM', 'BLOB', 'G'];
+    this.colors = {
+      line: '#000000',
+      background: '#000000',
+      text: '#000000',
+    };
+    this.colorsEditor = new ColorsEditor(this.colors);
     this.molSketcher = new DG.chem.Sketcher();
     this.molSketcher.root.classList.add('monomer-manager-sketcher');
     this.polymerTypeInput = ui.input.choice('Polymer Type', {value: 'PEPTIDE', items: monomerTypes,
@@ -576,6 +607,24 @@ class MonomerForm implements INewMonomerForm {
     ];
     this.metaGrid = new ItemsGrid(metaProps, []);
     this.onMonomerInputChanged();
+
+
+    const mainInputsDiv = ui.divV([
+      this.polymerTypeInput,
+      this.monomerTypeInput,
+      this.monomerSymbolInput,
+      this.monomerNameInput,
+      this.monomerIdInput,
+      this.monomerNaturalAnalogInput,
+    ]);
+
+    this.inputsTabControl = ui.tabControl({
+      'Monomer': mainInputsDiv,
+      'R-groups': this.rgroupsGridRoot,
+      'Meta': ui.divV([this.metaGrid.root]),
+      'Colors': this.colorsEditor.form,
+    }, false);
+
   }
 
   onMonomerInputChanged() {
@@ -603,13 +652,12 @@ class MonomerForm implements INewMonomerForm {
     this.monomerIdInput.value = monomer.id;
     this.monomerNaturalAnalogInput.value = monomer.naturalAnalog ?? null;
     this.rgroupsGrid.items = resolveRGroupInfo(monomer.rgroups);
-    this.metaGrid.items = Object.entries(monomer.meta ?? {}).map(([k, v]) => {
+    this.metaGrid.items = Object.entries(monomer.meta ?? {}).filter(([k, v]) => k?.toLowerCase() !== 'colors').map(([k, v]) => {
       return {Property: k, Value: v};
     });
     this.rgroupsGrid.render();
     this.metaGrid.render();
     this.rgroupsGridRoot.style.display = 'flex';
-
     this.onMonomerInputChanged();
     if (!monomer.naturalAnalog) {
       mostSimilarNaturalAnalog(capSmiles(monomer.smiles, this.rgroupsGrid.items as RGroup[]), monomer.polymerType).then((mostSimilar) => {
@@ -617,20 +665,50 @@ class MonomerForm implements INewMonomerForm {
           this.monomerNaturalAnalogInput.value = mostSimilar;
       });
     }
+    const colorsString = monomer.meta?.colors ?? '';
+    let colorsObj: Partial<typeof this.colors> = {};
+    try {
+      colorsObj = colorsString ? JSON.parse(colorsString)?.default : {};
+    } catch (e) {
+      console.error(e);
+    }
+    
+    this.colorsEditor.colors = {
+      line: colorsObj.line ?? '#000000',
+      background: colorsObj.background ?? '#000000',
+      text: colorsObj.text ?? '#000000',
+    };
   }
 
   validateInputs(): string | null | undefined {
+    const rGroupsPane = this.inputsTabControl.panes.find((p) => p.name?.toLowerCase() === 'r-groups');
+    rGroupsPane && (rGroupsPane.header.style.removeProperty('background-color'));
     if (!this.molSketcher.getSmiles()) return 'Monomer Molecule field is required';
-    for (const i of [this.polymerTypeInput, this.monomerTypeInput, this.monomerSymbolInput, this.monomerNameInput, this.monomerIdInput, this.monomerNaturalAnalogInput]) {
+    for (const i of [this.polymerTypeInput, this.monomerTypeInput, this.monomerSymbolInput, this.monomerNameInput, this.monomerIdInput]) {
       if (i.value == null || i.value === '')
         return `${i.caption} field is required`;
     }
-    if (this.rgroupsGrid.items.length < 1) return 'At least 1 R-group is required';
-    for (const item of this.rgroupsGrid.items) {
-      for (const [k, v] of Object.entries(item))
-        if (!v) return `R-group ${k} field is required for ${item[HELM_RGROUP_FIELDS.LABEL]}`;
+    let rgroupError: string | null | undefined = null;
+    if (this.rgroupsGrid.items.length < 1)
+      rgroupError = 'At least one R-group is required';
+    if (!rgroupError) {
+      outerFor:
+      for (const item of this.rgroupsGrid.items) {
+        for (const [k, v] of Object.entries(item))
+          if (!v){
+            rgroupError = `R-group ${k} field is required for ${item[HELM_RGROUP_FIELDS.LABEL]}`;
+            break outerFor;
+          } 
+      }
     }
-    if (this.rgroupsGrid.hasErrors()) return 'R-group fields contain errors';
+
+    if (!rgroupError && this.rgroupsGrid.hasErrors()){ 
+      rgroupError = 'R-group fields contain errors';
+    }
+    if (rgroupError) {
+      rGroupsPane && (rGroupsPane.header.style.setProperty('background-color', '#ff000030'));
+      return rgroupError;
+    }
     return null;
   }
 
@@ -643,26 +721,14 @@ class MonomerForm implements INewMonomerForm {
   }
 
   get form() {
-    const mainInputsDiv = ui.divV([
-      this.polymerTypeInput,
-      this.monomerTypeInput,
-      this.monomerSymbolInput,
-      this.monomerNameInput,
-      this.monomerIdInput,
-      this.monomerNaturalAnalogInput,
-    ]);
-
-    const inputsPanel = ui.tabControl({
-      'Monomer': mainInputsDiv,
-      'R-groups': this.rgroupsGridRoot,
-      'Meta': ui.divV([this.metaGrid.root]),
-    }, false);
-    inputsPanel.header.style.marginBottom = '10px';
+    
+    this.inputsTabControl.root.classList.add('monomer-manager-form-tab-control');
+    this.inputsTabControl.header.style.marginBottom = '10px';
     const saveB = ui.buttonsInput([this.saveButton]);
     ui.tooltip.bind(saveB, () => this.saveValidationResult ?? 'Save monomer to library');
     return ui.divV([
       this.molSketcher.root,
-      inputsPanel.root,
+      this.inputsTabControl.root,
       saveB,
     ], {classes: 'ui-form', style: {paddingLeft: '10px', overflow: 'scroll'}});
   }
@@ -750,8 +816,12 @@ class MonomerForm implements INewMonomerForm {
     const saveLib = async () => {
       try {
         // first remove the existing monomer with that symbol
-        libJSON = libJSON.filter((m) => m.symbol !== monomer.symbol || m.polymerType !== monomer.polymerType);
-        libJSON.push({...monomer, lib: undefined, wem: undefined});
+        const monomerIdx = libJSON.findIndex((m) => m.symbol === monomer.symbol && m.polymerType === monomer.polymerType);
+        if (monomerIdx >= 0) {
+          libJSON[monomerIdx] = {...monomer, lib: undefined, wem: undefined};
+        } else {
+          libJSON.push({...monomer, lib: undefined, wem: undefined});
+        }
         await grok.dapi.files.writeAsText(LIB_PATH + libName, JSON.stringify(libJSON));
         await (await MonomerLibManager.getInstance()).loadLibraries(true);
         await this.refreshTable();
@@ -802,6 +872,13 @@ class MonomerForm implements INewMonomerForm {
     this.metaGrid.items.filter((item) => (!!item['Property']) && (!!item['Value'])).forEach((item) => {
       meta[item['Property']] = item['Value'];
     });
+    const addingItem = this.metaGrid.addingItem;
+    if (addingItem && addingItem['Property'] && addingItem['Value']) {
+      meta[addingItem['Property']] = addingItem['Value'];
+    }
+    //console.log(this.metaGrid.addingItem);
+    if (this.colorsEditor.colors.line !== '#000000' || this.colorsEditor.colors.background !== '#000000' || this.colorsEditor.colors.text !== '#000000')
+      meta.colors = {default: this.colorsEditor.colors};
     const monomer: Monomer = {
       symbol: this.monomerSymbolInput.value,
       name: this.monomerNameInput.value,
@@ -928,4 +1005,43 @@ function monomerFromDfRow(dfRow: DG.Row): Monomer {
     author: dfRow.get(MONOMER_DF_COLUMN_NAMES.AUTHOR),
     createDate: dfRow.get(MONOMER_DF_COLUMN_NAMES.CREATE_DATE),
   };
+}
+
+class ColorsEditor {
+  private _colors: { line: string, background: string, text: string };
+  private _colorInputs: { [key in keyof ColorsEditor['_colors']]: DG.InputBase<string> };
+  constructor(colors: { line: string, background: string, text: string }) {
+    this._colors = colors;
+    this._colorInputs = {
+      line: ui.input.color('Line', {value: colors.line, onValueChanged: (v) => this._colors.line = v}),
+      background: ui.input.color('Background', {value: colors.background, onValueChanged: (v) => this._colors.background = v}),
+      text: ui.input.color('Text', {value: colors.text, onValueChanged: (v) => this._colors.text = v}),
+    };
+  }
+
+  get colors() {
+    return this._colors;
+  }
+
+  set colors(cols: { line: string, background: string, text: string }) {
+    //need to convert to hex as the input accepts only hex
+    const colsHex = {
+      line: DG.Color.toHtml(DG.Color.fromHtml(cols.line ?? '#000000')),
+      background: DG.Color.toHtml(DG.Color.fromHtml(cols.background ?? '#000000')),
+      text: DG.Color.toHtml(DG.Color.fromHtml(cols.text ?? '#000000')),
+    };
+
+    this._colors = colsHex;
+    for (const key in this._colorInputs) {
+      this._colorInputs[key as keyof ColorsEditor['_colors']].value = colsHex[key as keyof ColorsEditor['_colors']];
+    }
+  }
+
+  get colorsMetaFormat() {
+    return {colors: {default: this._colors}};
+  }
+
+  get form() {
+    return ui.form(Object.values(this._colorInputs));
+  }
 }

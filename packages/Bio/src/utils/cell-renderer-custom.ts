@@ -5,6 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import {getGridCellColTemp, CellRendererBackBase} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {GridCell} from 'datagrok-api/dg';
 
 export class MacromoleculeCustomCellRenderer extends DG.GridCellRenderer {
   get name(): string { return 'sequence'; }
@@ -24,9 +25,16 @@ export class MacromoleculeCustomCellRenderer extends DG.GridCellRenderer {
     return back;
   }
 
-  override onMouseLeave(gridCell: DG.GridCell, e: MouseEvent) {
+  override onMouseEnter(gridCell: GridCell, e: MouseEvent) {
     const back = this.getRendererBack(gridCell);
-    back.onMouseLeave(gridCell, e);
+    back.onMouseEnter(gridCell, e);
+  }
+
+  override onMouseLeave(gridCell: DG.GridCell, e: MouseEvent) {
+    // TODO: We get gridCell from another column here, so we can not get back object from the column rendered.
+    ui.tooltip.hide();
+    // const back = this.getRendererBack(gridCell);
+    // back.onMouseLeave(gridCell, e);
   }
 
   override onMouseMove(gridCell: DG.GridCell, e: MouseEvent) {

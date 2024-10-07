@@ -3,7 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {expectTable as _expectTable} from '@datagrok-libraries/utils/src/test';
+import {expect, expectTable as _expectTable} from '@datagrok-libraries/utils/src/test';
+import dayjs from "dayjs";
 
 //name: getTable
 //input: string name
@@ -147,4 +148,12 @@ export function testOutputAnnotationReplaceCol(data: DG.DataFrame, col: DG.Colum
 export function testOutputAnnotationReplaceColList(data: DG.DataFrame, col: DG.Column<string>): DG.ColumnList {
   const colRes = DG.Column.string('val', data.rowCount).init((i) => `${col.get(i)}_abc`);
   return DG.DataFrame.fromColumns([colRes]).columns;
+}
+
+//name: expectDate
+//shortName: expectDate
+//input: datetime actual
+//input: datetime expected
+export function expectDate(actual: dayjs.Dayjs, expected: dayjs.Dayjs): void {
+  expect(actual.valueOf(), expected.valueOf());
 }

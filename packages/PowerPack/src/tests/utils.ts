@@ -27,7 +27,7 @@ export const FUNC_VALIDATION: { [f: string]: string } = {
 i`,
   'DateParse(1)': `Function DateParse 's' param should be string type instead of number`,
   'DateParse(Abs(1))': `Function DateParse 's' param should be string type instead of num`,
-  'Abs(': `Abs(: end of input expected]`,
+  'Abs(': `Possible syntax error`,
   'Abs(${age1})': `Column age1 is missing`,
 };
 

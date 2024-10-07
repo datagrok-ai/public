@@ -1,23 +1,26 @@
 {
-  "name": "pyodide",
+  "name": "@datagrok/pyodide",
   "friendlyName": "Pyodide",
-  "version": "0.0.1",
-  "description": "",
-  "sources": [
-    "https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"
-  ],
+  "version": "1.0.0",
+  "description": "Provides support of python scripting directly in browser using Pyodide (https://pyodide.org/)",
+  "author": {
+    "name": "Pavlo Polovyi",
+    "email": "ppolovyi@datagrok.ai"
+  },
   "dependencies": {
-    "datagrok-api": "latest",
+    "@datagrok-libraries/utils": "latest",
     "cash-dom": "latest",
-    "dayjs": "latest",
-    "@datagrok-libraries/utils": "latest"
+    "datagrok-api": "../../js-api",
+    "dayjs": "^1.11.10",
+    "uuid": "^10.0.0"
   },
   "devDependencies": {
+    "@types/uuid": "^10.0.0",
     "datagrok-tools": "latest",
-    "webpack": "latest",
-    "webpack-cli": "latest",
     "ts-loader": "latest",
-    "typescript": "latest"
+    "typescript": "latest",
+    "webpack": "latest",
+    "webpack-cli": "latest"
   },
   "scripts": {
     "link-all": "grok link",
@@ -36,6 +39,13 @@
   "canView": [
     "All users"
   ],
+  "category": "Scripting",
+  "meta": {
+    "dartium": false,
+    "browserFeatures": [
+      "wasm"
+    ]
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",

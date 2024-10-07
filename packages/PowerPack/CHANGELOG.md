@@ -1,5 +1,9 @@
 # PowerPack changelog
 
+## 1.20.1 (2024-09-27)
+
+Datagrok DB explorer
+
 ## 1.2.0 (2024-09-09)
 
 ### Features

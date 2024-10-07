@@ -107,6 +107,7 @@ export class TestExecutionOptions {
   exclude?: string[];
   verbose?: boolean;
   stressTest?: boolean;
+  tags?: string[];
 }
 
 export async function testEvent<T>(event: Observable<T>,
@@ -351,23 +352,35 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
       moduleDemo.push(test);
     }
     if (f.hasTag('semTypeDetector')) {
+      let detectorsTestData = testData;
+      if (f.options['testData']) {
+        detectorsTestData = await grok.data.files.openTable(`System:AppData/${package_.nqName}/${f.options['testData']}`);
+      }
+
       const test = new Test(detectorsCatName, f.friendlyName, async () => {
         const arr = [];
-        for (const col of testData.clone().columns) {
+        console.log(`System:AppData/${package_.nqName}/${f.options['testData']}`);
+
+        for (const col of detectorsTestData.clone().columns) {
           const res = await f.apply([col]);
           arr.push(res || col.semType);
         }
-        expect(arr.filter((i) => i).length, 1);
+        const resArr = arr.filter((i) => i);
+        expect(resArr.length, 1);
+
+        if (f.options['testDataColumnName'])
+          expect(resArr[0], f.options['testDataColumnName']);
+
       }, { skipReason: f.options['skipTest'] });
       moduleDetectors.push(test);
     }
   }
   wasRegistered[packageId] = true;
-  if (moduleAutoTests.length)
+  if (moduleAutoTests.length > 0)
     moduleTests[autoTestsCatName] = { tests: moduleAutoTests, clear: true };
-  if (moduleDemo.length)
+  if (moduleDemo.length > 0)
     moduleTests[demoCatName] = { tests: moduleDemo, clear: true };
-  if (moduleDetectors.length)
+  if (moduleDetectors.length > 0)
     moduleTests[detectorsCatName] = { tests: moduleDetectors, clear: false };
 }
 
@@ -410,15 +423,10 @@ export async function runTests(options?: TestExecutionOptions) {
   options ??= {};
   options!.testContext ??= new TestContext();
   grok.shell.clearLastError();
-  const categories = [];
   const logs = redefineConsole();
 
-  if (options?.stressTest) {
-    await InvokeStressTests(options);
-  }
-  else {
-    await InvokeAllTests(tests, options);
-  }
+  await invokeTests(tests, options);
+  
   for (let r of results) {
     r.result = r.result.toString().replace(/"/g, '\'');
     if (r.logs != undefined)
@@ -440,41 +448,7 @@ export async function runTests(options?: TestExecutionOptions) {
     return invokationResult
   }
 
-  async function InvokeStressTests(options: TestExecutionOptions) {
-    let testInvocationMap: any[] = [];
-    for (const [key, value] of Object.entries(tests)) {
-      let testsToInvoke = value.tests?.filter((test) => test.options?.stressTest);
-      if (value.stressTests) {
-        testsToInvoke = value.tests?.filter((test) => test.options?.stressTest === undefined || test.options?.stressTest === true)
-      }
-
-
-      const skipped = value.tests?.every((t) => t.options?.skipReason);
-      if (skipped)
-        continue;
-
-      for (let test of testsToInvoke ?? []) {
-        if (test.options?.skipReason == null) {
-          testInvocationMap.push({ test, value });
-        }
-      }
-    }
-    testInvocationMap = shuffle(testInvocationMap);
-
-    const res = [];
-    for (let testingObj of testInvocationMap) {
-      await InvokeCategoryMethod(testingObj.value.before, options.category ?? '')
-      let testRun = await execTest(testingObj.test, options?.test, logs, DG.Test.isInBenchmark ? testingObj.value.benchmarkTimeout : testingObj.value.timeout, package_.name, options.verbose);
-      if (testRun)
-        res.push(testRun);
-      console.log(`Test: ${test?.name}; result: ${testRun}`);
-      await InvokeCategoryMethod(testingObj.value.after, options.category ?? '')
-    }
-
-    results.push(...res);
-  }
-
-  async function InvokeAllTests(categoriesToInvoke: { [key: string]: Category }, options: TestExecutionOptions) {
+  async function invokeTests(categoriesToInvoke: { [key: string]: Category }, options: TestExecutionOptions) {
     try {
       for (const [key, value] of Object.entries(categoriesToInvoke)) {
         if ((!!options?.category && !key.toLowerCase().startsWith(options?.category.toLowerCase())) ||
@@ -485,7 +459,20 @@ export async function runTests(options?: TestExecutionOptions) {
         const skipped = value.tests?.every((t) => t.options?.skipReason);
         if (!skipped)
           value.beforeStatus = await InvokeCategoryMethod(value.before, options.category ?? '');
-        const t = value.tests ?? [];
+
+        let t = value.tests ?? [];
+
+        if (options.stressTest) {
+          t = t.filter((e) => e.options?.stressTest);
+          t = shuffle(t);
+        }
+
+        if ((options.tags?.length ?? 0) > 0) {
+          t = t.filter((e) => 
+            e.options?.tags?.some(tag => (options?.tags ?? []).includes(tag))
+          );
+        }
+
         const res = [];
         if (value.clear) {
           for (let i = 0; i < t.length; i++) {

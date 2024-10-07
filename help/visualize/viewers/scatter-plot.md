@@ -107,6 +107,13 @@ To use this feature:
 1. From the context menu, select **Tooltip** > **Use as Group Tooltip**.
 1. Optional. Close the scatterplot.
 
+### Connecting lines
+
+You can set a column that defines order in which points are connected. 
+Below, we see the (gdp, life expectancy) trajectory of different countries over time.
+
+![](img/scatter-plot-lines.png)
+
 ## Videos
 
 [![ScatterPlot](../../uploads/youtube/visualizations2.png "Open on

@@ -1,20 +1,20 @@
+/* eslint-disable max-len */
 /* Do not change these import lines. Datagrok will import API library in exactly the same manner */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {WebWidget} from "../widgets/web-widget";
-import {DataQuery} from "datagrok-api/dg";
-import {widgetHost} from "../utils";
-import {_package} from "../package";
-import {tryParseJson} from "@datagrok-libraries/utils/src/string-utils";
-import {initTemplates, templatesSearch} from "./templates-search";
+import {widgetHost} from '../utils';
+import {initTemplates, templatesSearch} from './templates-search';
+import {matchAndParseQuery, processPowerSearchTableView}
+  from '@datagrok-libraries/db-explorer/src/search/search-widget-utils';
 
 // Power Search: community-curated, template-based, widget-driven search engine
 
-let queries: DG.DataQuery[] = [];
-let widgetFunctions = DG.Func.find({returnType: 'widget'});
-let searchFunctions = DG.Func.find({tags: ['search'], returnType: 'list'});
-let searchWidgetFunctions = DG.Func.find({tags: ['search'], returnType: 'widget'});
+const widgetFunctions = DG.Func.find({returnType: 'widget'});
+const searchFunctions = DG.Func.find({tags: ['search'], returnType: 'list'});
+const searchWidgetFunctions = DG.Func.find({tags: ['search'], returnType: 'widget'});
+const tableQueriesSearchFunctions = DG.Func.find({meta: {searchPattern: null}, returnType: 'dataframe'})
+  .filter((f) => f.options['searchPattern']);
 
 export function initSearch() {
   //grok.dapi.queries.list().then((qs) => queries = qs);
@@ -23,7 +23,7 @@ export function initSearch() {
 
 export function powerSearch(s: string, host: HTMLDivElement): void {
   ui.empty(host);
-
+  tableQueriesFunctionsSearch(s, host);
   jsEvalSearch(s, host) ||
   viewsSearch(s, host);
 
@@ -31,7 +31,7 @@ export function powerSearch(s: string, host: HTMLDivElement): void {
   projectsSearch(s, host);
   functionEvaluationsSearch(s, host);
   searchFunctionsSearch(s, host);
-/*  queriesEntitiesSearch(s, host);
+  /*  queriesEntitiesSearch(s, host);
   queriesSearch(s, host);*/
   templatesSearch(s, host);
   widgetsSearch(s, host);
@@ -53,31 +53,26 @@ function viewsSearch(s: string, host: HTMLDivElement): boolean {
   return false;
 }
 
-function queriesEntitiesSearch(s: string, host: HTMLDivElement): void {
-  s = s.toLowerCase();
-  host.appendChild(ui.list(queries.filter((q) => q.name.toLowerCase().includes(s))));
-}
-
-
 function regexEntitiesSearch(s: string, host: HTMLDivElement): void {
   const ids = s.split(/,\s*/);
-  const semValues = ids.map(id => DG.SemanticValue.parse(id));
+  const semValues = ids.map((id) => DG.SemanticValue.parse(id));
   if (semValues.length < 1 || semValues[0]?.semType == null)
     return;
 
-  if (semValues.every(sv => sv?.semType && sv.semType == semValues[0].semType) && DG.ObjectHandler.forEntity(semValues[0])) {
+  if (semValues.every((sv) => sv?.semType && sv.semType == semValues[0].semType) &&
+    DG.ObjectHandler.forEntity(semValues[0])) {
     const itemsPanel = ui.div([], {style: {'display': 'flex', 'flex-wrap': 'wrap'}});
     const panel = ui.divV([
       ui.span([
         `${semValues.length} ${semValues[0].semType} ${semValues.length == 1 ? 'object. ' : 'objects. '}`,
         ui.link('Open table', () => {
           const df = DG.DataFrame.create(semValues.length);
-          df.columns.addNewString(semValues[0].semType).init(i => semValues[i].value);
+          df.columns.addNewString(semValues[0].semType).init((i) => semValues[i].value);
           grok.shell.addTable(df);
         })], {style: {'margin-bottom': '10px'}}),
-      itemsPanel
+      itemsPanel,
     ]);
-    for (let sv of semValues)
+    for (const sv of semValues)
       itemsPanel.append(DG.ObjectHandler.forEntity(sv)!.renderCard(sv));
     host.append(panel);
   }
@@ -88,13 +83,14 @@ function projectsSearch(s: string, host: HTMLDivElement): void {
   if (s.length < 3)
     return;
   grok.dapi.projects.filter(s).list({pageSize: 5}).then((projects) => {
-    if (projects.length > 0)
+    if (projects.length > 0) {
       host.appendChild(
         ui.divV([
           ui.h3('Projects'),
-          ui.divH(projects.map((p) => ui.renderCard(p)))
-        ])
+          ui.divH(projects.map((p) => ui.renderCard(p))),
+        ]),
       );
+    }
   });
 }
 
@@ -103,87 +99,112 @@ function projectsSearch(s: string, host: HTMLDivElement): void {
 function jsEvalSearch(s: string, host: HTMLDivElement): boolean {
   if (s.startsWith('grok.') || s.startsWith('DG.') || s.startsWith('ui.')) {
     try {
-      let x = eval(s);
+      const x = eval(s);
       host.appendChild(ui.render(x));
       return true;
-    }
-    catch (_) {}
+    } catch (_) {}
   }
   return false;
 }
 
 /// Evaluates custom search functions
 function searchFunctionsSearch(s: string, host: HTMLDivElement): void {
-  for (let sf of searchFunctions)
+  for (const sf of searchFunctions) {
     sf.apply({s: s}).then((results: any[]) => {
       if (results.length > 0) {
         host.appendChild(ui.divV([
           ui.h3(sf.description ?? sf.name),
-          ui.list(results)
+          ui.list(results),
         ]));
       }
     });
+  }
+}
+
+
+function tableQueriesFunctionsSearch(s: string, host: HTMLDivElement): void {
+  for (const sf of tableQueriesSearchFunctions) {
+    const matchStrings: string[] = (sf.options['searchPattern'] ?? '').split(',').map((s: string) => s.trim())
+      .map((s: string) => {
+        let ms = s;
+        if (s.startsWith('"') || s.startsWith('\''))
+          ms = ms.substring(1);
+        if (s.endsWith('"') || s.endsWith('\''))
+          ms = ms.substring(0, ms.length - 1);
+        return ms;
+      });
+    const inputNames = sf.inputs.map((i) => i.name);
+    for (const matchString of matchStrings) {
+      const matches = matchAndParseQuery(matchString, s);
+      if (!matches)
+        continue;
+      if (inputNames.length !== Object.entries(matches).length)
+        continue;
+      const inputParams: any = {};
+      Object.entries(matches).forEach(([key, value]) => {
+        inputParams[key] = value;
+      });
+
+      host.appendChild(widgetHost(DG.Widget.fromRoot(ui.wait(async () => {
+        try {
+          const fc = sf.prepare(inputParams);
+          const resFuncCall = await fc.call();
+          const v = resFuncCall.getResultViews();
+          if (!v || !v[0] || v[0].type !== DG.VIEW_TYPE.TABLE_VIEW)
+            return ui.divText('No result view produced');
+          const tv = v[0] as DG.TableView;
+          if ((tv.dataFrame?.rowCount ?? 0) === 0)
+            return ui.divText('No results found');
+          // comma separated list of values, with quotes if its string and without if its number
+          const argumentList =
+            sf.inputs.map((i) => i.propertyType === DG.TYPE.STRING ? `"${inputParams[i.name]}"` : inputParams[i.name]).join(',');
+          tv.dataFrame.setTag(DG.Tags.CreationScript, `Result = ${sf.nqName}(${argumentList})`);
+          setTimeout(() => {
+            processPowerSearchTableView(tv);
+            tv._onAdded();
+          }, 200);
+          return tv.root;
+        } catch (e) {
+          console.error(e);
+          return ui.divText('Opperation caused exeption');
+        }
+      }))),
+      );
+    }
+  }
 }
 
 /// Special widgets
 function widgetsSearch(s: string, host: HTMLDivElement): void {
-  for (let sf of searchWidgetFunctions)
-    sf.apply({s: s})
+  for (const sf of searchWidgetFunctions) {
+    const inputName = sf.inputs[0]?.name;
+    if (!inputName)
+      continue;
+    sf.apply({[inputName]: s})
       .then((result: DG.Widget) => {
         if (result)
           host.appendChild(widgetHost(result));
       });
+  }
 }
 
 /// Explicitly spelled widgets
 /// Example: "kpiWidget"
 function specificWidgetsSearch(s: string, host: HTMLDivElement): void {
   s = s.toLowerCase();
-  for (let wf of widgetFunctions)
-    if (wf.name.toLowerCase() == s)
+  for (const wf of widgetFunctions) {
+    if (wf.name.toLowerCase() == s) {
       wf.apply().then((w: DG.Widget) => {
         if (w)
           host.appendChild(ui.div([widgetHost(w)]));
       });
+    }
+  }
 }
 
+export async function tableQueriesSearch() {
 
-export function queriesSearch(s: string, host: HTMLDivElement): void {
-  const dateRegExp = new RegExp('\\btoday\\b|\\bthis week\\b');
-  const varRegExpStr = '@([a-zA-Z0-9_]+)';
-  const varRegExp = new RegExp(varRegExpStr);
-  const idRegExp = new RegExp('([a-zA-Z0-9_]+)');
-  const byRegExp = new RegExp('by ([a-zA-Z0-9_]+)$');
 
-  let byColumn: string | null = null;
-  if (byRegExp.test(s)) {
-    let byMatches = byRegExp.exec(s);
-    if (byMatches != null && byMatches.length == 2) {
-      s = s.replace(byRegExp, '');
-      byColumn = byMatches[1];
-    }
-  }
-
-  for (let q of queries.filter((q) => varRegExp.exec(q.friendlyName) !== null)) {
-    let varMatches = varRegExp.exec(q.friendlyName);
-    if (varMatches == null || varMatches.length != 2)
-      continue;
-
-    let qPattern = new RegExp(q.friendlyName.replace(varRegExp, '([a-zA-Z0-9_]+)'));
-    let matches = qPattern.exec(s);
-    if (matches != null && matches.length == 2) {
-      let varName = varMatches[1];
-      let varValue = matches[1];
-      q.apply({ [varName] : varValue }).then((df: DG.DataFrame) => {
-        let viewer: DG.Viewer = (byColumn == null)
-          ? DG.Viewer.grid(df)
-          : DG.Viewer.barChart(df, { split: byColumn });
-
-        host.appendChild(ui.render(q));
-        host.appendChild(viewer.root);
-      });
-    }
-  }
 }
 
 function functionEvaluationsSearch(s: string, host: HTMLDivElement): void {
@@ -192,6 +213,6 @@ function functionEvaluationsSearch(s: string, host: HTMLDivElement): void {
 
   grok.functions
     .eval(s)
-    .then((result) => host.appendChild(ui.span([s + ' = ', result], {style: {'font-size' : '20px'}})))
-    .catch(() => {})
+    .then((result) => host.appendChild(ui.span([s + ' = ', result], {style: {'font-size': '20px'}})))
+    .catch(() => {});
 }

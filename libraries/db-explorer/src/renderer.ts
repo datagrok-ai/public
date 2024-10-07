@@ -112,6 +112,7 @@ export class DBExplorerRenderer {
   private headerReplacers: {[tableName: string]: string} = {};
   private uniqueColNames: {[tableName: string]: string} = {};
   private customSelectedColumns: {[tableName: string]: Set<string>} = {};
+  private defaultHeaderReplacerColumns: string[] = ['name'];
   constructor(
     private schemaInfo: SchemaInfo,
     private connection: DG.DataConnection,
@@ -121,6 +122,10 @@ export class DBExplorerRenderer {
 
   addHeaderReplacers(replacers: {[tableName: string]: string}) {
     this.headerReplacers = {...this.headerReplacers, ...replacers};
+  }
+
+  addDefaultHeaderReplacerColumns(columns: string[]) {
+    this.defaultHeaderReplacerColumns = [...this.defaultHeaderReplacerColumns, ...columns];
   }
 
   addCustomSelectedColumns(columns: {[tableName: string]: string[]}) {
@@ -206,7 +211,13 @@ export class DBExplorerRenderer {
     const dfMaxCount = Math.min(df.rowCount, 10);
     const replaceColName = this.headerReplacers[tableName];
     for (let i = 0; i < dfMaxCount; i++) {
-      const paneName = replaceColName && df.col(replaceColName)?.get(i) ? df.col(replaceColName)!.get(i).toString() : `Row ${i + 1}`;
+      let paneName = `Row ${i + 1}`;
+      if (replaceColName && df.col(replaceColName)?.get(i)) {
+        paneName = df.col(replaceColName)!.get(i).toString();
+      } else {
+        const f = this.defaultHeaderReplacerColumns.find((col) => df.col(col) && df.col(col)!.get(i));
+        if (f) paneName = df.col(f)!.get(i).toString();
+      }
       acc.addPane(paneName, () => {
         const rowBitset = DG.BitSet.create(df.rowCount);
         rowBitset.set(i, true);

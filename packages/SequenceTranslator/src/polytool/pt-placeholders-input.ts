@@ -111,7 +111,7 @@ export function getPlaceholdersFromText(src: string): PolyToolPlaceholders {
 export function dfToPlaceholders(df: DG.DataFrame): PolyToolPlaceholders {
   const res: PolyToolPlaceholders = [];
   for (let rowI = 0; rowI < df.rowCount; rowI++) {
-    const pos = parseInt(df.get('Position', rowI));
+    const pos = parseInt(df.get('Position', rowI)) - 1;
     if (!isNaN(pos)) {
       const monomerSymbolList = parseMonomerSymbolList(df.get('Monomers', rowI));
       res.push({position: pos, monomers: monomerSymbolList});

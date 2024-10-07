@@ -297,8 +297,8 @@ export class Utils {
       passedAmount: countPassed,
       skippedAmount: countSkipped,
       failedAmount: countFailed,
-      csv: csv,
-      df: resultDF?.toJson()
+      csv: csv
+      // df: resultDF?.toJson()
     };
   }
 }

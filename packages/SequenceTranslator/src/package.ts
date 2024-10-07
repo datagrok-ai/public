@@ -163,12 +163,12 @@ export async function polyToolConvertTopMenu(): Promise<void> {
   await polyToolConvertUI();
 }
 
-//top-menu: Bio | PolyTool | Unrule...
-//name: polyToolUnrule
-//description: Perform uncyclization of polymers by rules
-export async function polyToolUnruleTopMenu(): Promise<void> {
-  await polyToolUnruleUI();
-}
+// //top-menu: Bio | PolyTool | Unrule...
+// //name: polyToolUnrule
+// //description: Perform uncyclization of polymers by rules
+// export async function polyToolUnruleTopMenu(): Promise<void> {
+//   await polyToolUnruleUI();
+// }
 
 //name: getPolyToolConvertEditor
 //tags: editor

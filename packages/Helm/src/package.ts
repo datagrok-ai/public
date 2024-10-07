@@ -9,14 +9,14 @@ import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
-import {App, Editor, HelmMol, HelmType, HweWindow} from '@datagrok-libraries/bio/src/helm/types';
+import {App, HweWindow} from '@datagrok-libraries/bio/src/helm/types';
 import {HelmInputBase, IHelmHelper, IHelmInputInitOptions} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
 import {getPropertiesWidget} from './widgets/properties-widget';
 import {HelmGridCellRenderer, HelmGridCellRendererBack} from './utils/helm-grid-cell-renderer';
-import {_getHelmService, HelmPackage, initHelmLoadAndPatchDojo} from './package-utils';
+import {_getHelmService, HelmPackage} from './package-utils';
 
 // Do not import anything than types from @datagrok/helm-web-editor/src/types
 import type {JSDraw2Module, OrgHelmModule, ScilModule} from './types';
@@ -40,10 +40,9 @@ let initHelmPromise: Promise<void> | null = null;
 
 //tags: init
 export async function initHelm(): Promise<void> {
-  if (initHelmPromise === null) {
+  if (initHelmPromise === null)
     initHelmPromise = initHelmInt();
-  }
-  await initHelmPromise;
+  return initHelmPromise;
 }
 
 async function initHelmInt(): Promise<void> {

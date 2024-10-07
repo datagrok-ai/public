@@ -56,7 +56,12 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
           _package['scripts'][`debug-${name.toLowerCase()}-${server}`] = `webpack && grok publish ${server}`;
           _package['scripts'][`release-${name.toLowerCase()}-${server}`] = `webpack && grok publish ${server} --release`;
         }
-        if (ts) Object.assign(_package.devDependencies, {'ts-loader': 'latest', 'typescript': 'latest'});
+        
+        if (ts) {
+          _package.devDependencies = _package.devDependencies?? {};
+          Object.assign(_package.devDependencies, {'ts-loader': 'latest', 'typescript': 'latest'});
+        }
+
         if (eslint) {
           Object.assign(_package.devDependencies, {
             'eslint': 'latest',
@@ -110,6 +115,7 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
       if (file === '.vscode' && !(ide == 'vscode' && platform == 'win32')) return;
       fs.mkdirSync(copyFilePath);
       // recursive call
+      if(path.basename(origFilePath) === 'node_modules') return;
       createDirectoryContents(name, config, origFilePath, copyFilePath, ide, ts, eslint, test);
     }
   });

@@ -35,7 +35,7 @@ export async function test(args: TestArgs): Promise<boolean> {
 
   const packageJsonData = JSON.parse(fs.readFileSync(path.join(curDir, 'package.json'), { encoding: 'utf-8' }));
   let packageName = args.package ? utils.kebabToCamelCase(args.package) : utils.kebabToCamelCase(utils.removeScope(packageJsonData.name));
-  let packagesDir = path.basename(curDir) === "packages" ? path.dirname(curDir) : curDir;
+  let packagesDir = path.basename(curDir) === "packages" ?  curDir : path.dirname(curDir);
   let categoryToCheck: string | undefined = undefined;
   let testToCheck: string | undefined = undefined;
 
@@ -52,7 +52,8 @@ export async function test(args: TestArgs): Promise<boolean> {
   if (args.core && packageName !== 'DevTools')
     color.warn('--core flag can only be used in the DevTools package');
 
-  if (!args.package) {
+  
+  if (!args.package) { 
     await testUtils.loadPackages(packagesDir,
       packageName,
       args.host,

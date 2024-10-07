@@ -115,6 +115,16 @@ export class DBExplorer {
     return this;
   }
 
+  public addEntryPointValueConverter(func: (a: string | number) => string | number) {
+    this.objHandlers.forEach((handler) => handler.options.valueConverter = func);
+    return this;
+  }
+
+  public addDefaultHeaderReplacerColumns(columns: string[]) {
+    this.objHandlers.forEach((handler) => handler.addDefaultHeaderReplacerColumns(columns));
+    return this;
+  }
+
   public addUniqueColumns(columns: {[tableName: string]: string}) {
     this.objHandlers.forEach((handler) => handler.addUniqueColumns(columns));
     return this;

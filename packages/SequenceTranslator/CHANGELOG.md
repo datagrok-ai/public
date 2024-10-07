@@ -1,8 +1,37 @@
 # Sequence Translator changelog
 
-## 1.4.3 (WIP)
+## 1.4.5 (WIP)
 
-Add PolyTool convert reverse
+### Bug fixes
+
+* Fix for grok.userSettings
+
+## 1.4.4 (2024-09-30)
+
+### New features
+
+* Add convert with reaction rules
+
+### Bug fixes
+
+* Fix sample reaction rule and monomer order
+* Fix isolate PolyTool convert error on row
+* Fix adding test for Chain .fromNotation
+* Fix adding test toAtomicLevel getNewMonomer
+
+## 1.4.3 (2024-09-27)
+
+### Features
+
+* Add PolyTool convert reverse
+
+### Bug fixes
+
+* Add sample reaction rule aG + azG = GGaz, test data
+* Fix using MonomerLibHelper.loadMonomerLibForTests
+* Add test toAtomicLevel with overridden monomer lib
+* Fix PolyTool Enumerate for zero-based monomer position
+* Fix Chain.getHelm square brackets for multi char symbols
 
 ## 1.4.2 (2024-09-24)
 

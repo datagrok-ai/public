@@ -6,7 +6,7 @@ import {before, after, category, expect, test, expectArray, testEvent, delay} fr
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {
-  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
+  getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
@@ -23,9 +23,8 @@ category('PolyTool: Convert', () => {
   before(async () => {
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
-    // Clear settings to test default
-    await setUserLibSettingsForTests();
-    await monomerLibHelper.loadMonomerLib(true);
+
+    await monomerLibHelper.loadMonomerLibForTests();
   });
 
   after(async () => {

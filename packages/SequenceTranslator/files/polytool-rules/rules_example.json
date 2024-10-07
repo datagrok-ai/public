@@ -24,6 +24,16 @@
     }
   },
   {
+    "type": "reaction",
+    "code": "4",
+    "monomericSubstitution": {
+      "firstMonomer": "azG",
+      "secondMonomer": "aG",
+      "reaction": "[C:1]N=[N+]=[N-].[C:2]C#C>>[C:1]N1-N=NC=C1[C:2]",
+      "name": "GGaz"
+    }
+  },
+  {
     "type": "fragmentDuplication",
     "code": "#3"
   },

@@ -2,13 +2,16 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+/* eslint-disable max-len */
 import {after, before, category, delay, expect, expectArray, test, testEvent} from '@datagrok-libraries/utils/src/test';
-import {HelmNotSupportedError, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {HelmNotSupportedError, HelmNotSupportedErrorType, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
-import {Test} from 'datagrok-api/dg';
+/* eslint-enable max-len */
+
+import {_package} from '../package-test';
 
 type TestSrcType = { helm: string };
-type TestTgtType = { helm: string | null, map: [number, number][] };
+type TestTgtType = { helm: string | null, map: [number, number][], errType?: string };
 
 category('HelmHelper: removeGaps', () => {
   let helmHelper: IHelmHelper;
@@ -62,13 +65,13 @@ category('HelmHelper: removeGaps', () => {
     },
     'single-cycle-gap-at-connection': {
       src: {helm: 'PEPTIDE1{[meY].*.C.R.N.P.C.T}$PEPTIDE1,PEPTIDE1,2:R3-7:R3$$$V2.0'},
-      tgt: {helm: null, map: []}
+      tgt: {helm: null, map: [], errType: HelmNotSupportedErrorType}
     }
   };
 
   for (const [testName, testData] of Object.entries(tests)) {
     test(`${testName}`, async () => {
-      let resErr: any = null;
+      let resErr: HelmNotSupportedError | null = null;
       try {
         const res = helmHelper.removeGaps(testData.src.helm);
         expect(res.resHelm, testData.tgt.helm);
@@ -76,8 +79,9 @@ category('HelmHelper: removeGaps', () => {
       } catch (err: any) {
         resErr = err;
       }
-      expect((resErr instanceof HelmNotSupportedError) || resErr?.constructor.name === 'HelmNotSupportedError',
-        testData.tgt.helm === null, 'HelmNotSupportedError thrown expected');
+
+      if (testData.tgt.errType)
+        expect(resErr?.type, testData.tgt.errType, 'HelmNotSupportedError thrown expected');
     });
   }
 });

@@ -36,7 +36,7 @@ ATC-G-TTGC--
     const wlViewer: WebLogoViewer = (await df.plot.fromType('WebLogo')) as WebLogoViewer;
     await testEvent(wlViewer.onLayoutCalculated, () => {}, () => {
       tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
-    }, 500);
+    }, 500, 'Layout calculate timeout');
     const positions: PI[] = wlViewer['positions'];
 
     const resAllDf1: PI[] = [

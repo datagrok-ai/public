@@ -1,5 +1,17 @@
 # Charts changelog
 
+## 1.4.1 (2024-10-03)
+
+### Features
+
+* [#3090](https://github.com/datagrok-ai/public/issues/3090): Sunburst: Usability improvements:
+  * Reduce free space around
+  * Reordering of the columns in the dialog is not reflected on the fly
+
+### Bug Fixes
+
+* Dependency on the chem package has been removed
+
 ## 1.3.5 (2024-08-30)
 
 ### Features

@@ -11,8 +11,8 @@ import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getSeqHelper, ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 
-import {getRules, RuleInputs, RULES_PATH, RULES_STORAGE_NAME} from './pt-rules';
-import {doPolyToolConvert} from './pt-conversion';
+import {getRules, RuleInputs, Rules, RULES_PATH, RULES_STORAGE_NAME} from './pt-rules';
+import {doPolyToolConvert, getOverriddenLibrary} from './pt-conversion';
 import {defaultErrorHandler} from '../utils/err-info';
 import {getLibrariesList} from './utils';
 import {getEnumerationChem, PT_CHEM_EXAMPLE} from './pt-enumeration-chem';
@@ -85,7 +85,7 @@ export async function getPolyToolConvertDialog(srcCol?: DG.Column): Promise<DG.D
     const chiralityEngineInput = ui.input.bool(PT_UI_USE_CHIRALITY, {value: false});
     let ruleFileList: string[];
     const ruleInputs = new RuleInputs(RULES_PATH, RULES_STORAGE_NAME, '.json', {
-      onValueChanged: (value: string[]) => { ruleFileList = value;}
+      onValueChanged: (value: string[]) => { ruleFileList = value; }
     });
     const rulesHeader = ui.inlineText([PT_UI_RULES_USED]);
     ui.tooltip.bind(rulesHeader, 'Add or specify rules to use');
@@ -256,27 +256,10 @@ export async function polyToolConvert(
     if (generateHelm && table) table.columns.add(resHelmCol, true);
 
     const seqHelper: ISeqHelper = await getSeqHelper();
-    const toAtomicLevelRes = await seqHelper.helmToAtomicLevel(resHelmCol, chiralityEngine, /* highlight */ generateHelm);
+    const lib = await getOverriddenLibrary(rules);
+    const toAtomicLevelRes =
+      await seqHelper.helmToAtomicLevel(resHelmCol, chiralityEngine, /* highlight */ generateHelm, lib);
     const resMolCol = toAtomicLevelRes.molCol!;
-
-    // const rdkit = await grok.functions.call('Chem:getRdKitModule');
-    // for (let i = 0; i < rules.reactionRules.length; i++) {
-    //   const reacSmarts = rules.reactionRules[i].reaction;
-    //   const rxn = rdkit.get_rxn(reacSmarts);
-
-    //   for (let j = 0; j < resMolCol.length; j++) {
-    //     const mols = new rdkit.MolList();
-    //     const mol = rdkit.get_mol(resMolCol.get(j));
-    //     mols.append(mol!);
-    //     const rctns = rxn.run_reactants(mols, 1);
-    //     const size = rctns.size();
-    //     const element = rctns.get(0);
-    //     let molP: RDMol | null = null;
-    //     molP = element.next();
-    //     const molBlock = molP?.get_v3Kmolblock();
-    //     resMolCol.set(j, molBlock!);
-    //   }
-    // }
 
     resMolCol.name = getUnusedName(table, `molfile(${seqCol.name})`);
     resMolCol.semType = DG.SEMTYPE.MOLECULE;
