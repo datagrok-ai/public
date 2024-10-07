@@ -1,0 +1,229 @@
+{
+  "#type": "ViewLayout",
+  "type": "TableView",
+  "viewStateMap": {
+    "containerType": "horizontal",
+    "state": {
+      "width": 1607,
+      "height": 1009
+    },
+    "children": [
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 209,
+          "height": 1009,
+          "element": {
+            "id": "8322cf50-73f0-11ef-f0a2-adc84d71f519",
+            "type": "Filters",
+            "look": {
+              "#type": "FiltersLook",
+              "filters": [
+                {
+                  "type": "histogram",
+                  "column": "Height",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "Latitude",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                }
+              ]
+            },
+            "title": "Filters"
+          }
+        },
+        "children": []
+      },
+      {
+        "containerType": "fill",
+        "state": {
+          "width": 587,
+          "height": 1009,
+          "documentManager": true
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 587,
+              "height": 1009,
+              "element": {
+                "id": "8322cf50-73f0-11ef-e860-5123c0fbb402",
+                "type": "Grid",
+                "look": {
+                  "#type": "GridLook",
+                  "showAddNewRowIcon": true,
+                  "addNewRowOnLastRowEdit": true,
+                  "topLevelDefaultMenu": true,
+                  "allowColumnMenu": true,
+                  "columns": [
+                    {
+                      "width": 36,
+                      "backgroundColor": 4294440951,
+                      "customName": "",
+                      "cellType": "row header",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 269,
+                      "columnName": "Hill Name",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 64,
+                      "columnName": "Height",
+                      "cellType": "number",
+                      "format": "0.0",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 82,
+                      "columnName": "Latitude",
+                      "cellType": "number",
+                      "format": "0.000000",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 84,
+                      "columnName": "Longitude",
+                      "cellType": "number",
+                      "format": "0.000000",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 82,
+                      "columnName": "Osgrid",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    }
+                  ]
+                },
+                "title": "scottish_hills",
+                "default": true
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 809,
+          "height": 1009,
+          "element": {
+            "id": "8322f660-73f0-11ef-c237-6904cbcda1eb",
+            "type": "Scripting Viewer",
+            "look": {
+              "#type": "ScriptingViewerLook",
+              "script": "#name: Scottish hills demo\n#description: Displays simple scatter plot\n#language: pyodide\n#tags: demo\n#input: dataframe table\n#output: graphics scatter\n\nimport matplotlib.pyplot as plt\nfrom scipy.stats import linregress\n\nx = table.Height\ny = table.Latitude\n\nstats = linregress(x, y)\n\nm = stats.slope\nb = stats.intercept\n\nplt.scatter(x, y)\nplt.xlabel('Height', fontsize=20)\nplt.ylabel('Latitude', fontsize=20)\nplt.plot(x, m * x + b, color=\"red\") "
+            },
+            "title": "Scripting Viewer"
+          }
+        },
+        "children": []
+      }
+    ],
+    "floating": [],
+    "tableId": "493e67e0-73f0-11ef-de85-2f2f9c113cfb",
+    "tableName": "scottish_hills"
+  },
+  "columns": [
+    {
+      "name": "Latitude",
+      "type": "double",
+      "semType": "Latitude",
+      "id": "6b025b70-73f0-11ef-dff7-397a53b728c4",
+      "friendlyName": "Latitude",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "83234480-73f0-11ef-a9e5-a1be2e4a2747"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "83234480-73f0-11ef-acb2-51af5f8f2c01"
+        },
+        {
+          "tag": "quality",
+          "id": "83234480-73f0-11ef-84a8-1b03ef217b2a"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "83234480-73f0-11ef-f2da-f5546b40a6c3"
+        },
+        {
+          "tag": ".id",
+          "id": "83234480-73f0-11ef-fb0a-f3fb7f600f79"
+        }
+      ],
+      "metaParams": {
+        "format": "0.000000",
+        ".source-precision": "6",
+        "quality": "Latitude",
+        ".semantic-detection-duration": "0",
+        ".id": "6b025b70-73f0-11ef-dff7-397a53b728c4"
+      }
+    },
+    {
+      "name": "Height",
+      "type": "double",
+      "id": "6b023460-73f0-11ef-b584-9bfced1242c0",
+      "friendlyName": "Height",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "83234480-73f0-11ef-f27c-6b5e3d7659c7"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "83234480-73f0-11ef-9cc6-318713e4298b"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "83234480-73f0-11ef-ed33-8934f29ad912"
+        },
+        {
+          "tag": ".id",
+          "id": "83236b90-73f0-11ef-fca4-5963e261206f"
+        }
+      ],
+      "metaParams": {
+        "format": "0.0",
+        ".source-precision": "1",
+        ".semantic-detection-duration": "1",
+        ".id": "6b023460-73f0-11ef-b584-9bfced1242c0"
+      }
+    }
+  ],
+  "name": "ScottishHills",
+  "friendlyName": "scottish_hills",
+  "id": "da749f4a-4c30-465d-978b-69a57bd66b99",
+  "createdOn": "2024-10-07T08:45:32.229Z",
+  "updatedOn": "2024-10-07T08:45:32.229Z"
+}
