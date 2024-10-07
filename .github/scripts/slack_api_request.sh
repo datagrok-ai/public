@@ -21,7 +21,7 @@ slack_api_request() {
         -H "Content-Type: application/json; charset=utf-8" \
         --data "$data")
     else
-      RESPONSE=$(curl -s -D - -X "$method" "$url" \
+      RESPONSE=$(curl -s -D - -X "$method" "$url$data" \
         -H "Authorization: Bearer $token" \
         -H "Content-Type: application/json; charset=utf-8")
     fi
