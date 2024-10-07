@@ -160,6 +160,26 @@ export const TreeWizardApp = Vue.defineComponent({
       if (el === treeInstance.value?.$el.parentElement) treeHidden.value = true;
     };
 
+    const ifOverlapping = {
+      loaderMapping: new Map<HTMLElement, HTMLElement>(),
+
+      updated: (el: HTMLElement, binding: Vue.DirectiveBinding<boolean>) => {
+        const isOverlapping = binding.value;
+        const existingLoader = ifOverlapping.loaderMapping.get(el);
+        if (isOverlapping && !existingLoader) {
+          const loader = ui.divV([
+            ui.label('Updating...'),
+            ui.loader(),
+          ], 'd4-update-shadow');
+          el.append(loader);
+          ifOverlapping.loaderMapping.set(el, loader);
+        }
+        if (!isOverlapping && existingLoader) 
+          existingLoader.remove();
+        
+      },
+    };
+
     return () => (
       <div class='w-full h-full'>
         <RibbonPanel>
@@ -234,67 +254,57 @@ export const TreeWizardApp = Vue.defineComponent({
         </RibbonMenu>
         {treeState.value && <DockManager class='block h-full' onPanelClosed={handlePanelClose}>
           { treeState.value && !treeHidden.value ? 
-            <Overlapping 
-              isOverlapping={isLocked.value}
+            Vue.withDirectives(<Draggable 
+              class="ui-div mtl-tree p-2 overflow-scroll"
+              style={{paddingLeft: '25px'}}
+
               dock-spawn-title='Steps'
               dock-spawn-dock-type='left'
               dock-spawn-dock-ratio={0.3}
-            >
-              {{
-                overlapping: <div class={'flex flex-col justify-center items-center h-full'}>
-                  <IconFA name='lock-alt' style={{paddingBottom: '3px'}}/>
-                  <span> Tree is locked... </span>
-                  <div class={'grok-loader'} style={{top: '10px', left: '-25px'}}> <div/> <div/> <div/> <div/> </div>
-                </div>,
-                default: <Draggable 
-                  class="ui-div mtl-tree p-2 overflow-scroll"
-                  style={{paddingLeft: '25px'}}
                 
-                  rootDroppable={false}
-                  treeLine
-                  childrenKey='steps'
-                  nodeKey={(stat: AugmentedStat) => stat.data.uuid}
-                  statHandler={restoreOpenedNodes}
+              rootDroppable={false}
+              treeLine
+              childrenKey='steps'
+              nodeKey={(stat: AugmentedStat) => stat.data.uuid}
+              statHandler={restoreOpenedNodes}
 
-                  ref={treeInstance} 
-                  modelValue={[treeState.value]} 
+              ref={treeInstance} 
+              modelValue={[treeState.value]} 
         
-                  eachDraggable={(stat: AugmentedStat) =>
-                    (stat.parent && 
+              eachDraggable={(stat: AugmentedStat) =>
+                (stat.parent && 
                 (isParallelPipelineState(stat.parent.data) || isSequentialPipelineState(stat.parent.data))
-                    ) ?? false
-                  }
-                  eachDroppable={(stat: AugmentedStat) => 
-                    (isParallelPipelineState(stat.data) || isSequentialPipelineState(stat.data))}
-                  onAfter-drop={() => {
-                    const draggedStep = dragContext.startInfo.dragNode as AugmentedStat;
-                    moveStep(draggedStep.data.uuid, dragContext.targetInfo.indexBeforeDrop);
-                  }}
-                > 
-                  { 
-                    ({stat}: {stat: AugmentedStat}) =>  
-                      (
-                        <TreeNode 
-                          stat={stat}
-                          callState={callsState.value?.[stat.data.uuid]?.value}
-                          style={{'background-color': stat.data.uuid === chosenStepUuid.value ? '#f2f2f5' : null}}
-                          isDraggable={treeInstance.value?.isDraggable(stat)}
-                          isDroppable={treeInstance.value?.isDroppable(stat)}
-                          isDeletable={!!stat.parent && isParallelPipelineState(stat.parent.data)}
-                          onAddNode={({itemId, position}) => {
-                            addStep(stat.data.uuid, itemId, position);
-                          }}
-                          onRemoveNode={() => removeStep(stat.data.uuid)}
-                          onClick={() => {
-                            chosenStepUuid.value = stat.data.uuid;
-                          }}
-                          onToggleNode={() => stat.open = !stat.open}
-                        />
-                      )
-                  }
-                </Draggable>,
+                ) ?? false
+              }
+              eachDroppable={(stat: AugmentedStat) => 
+                (isParallelPipelineState(stat.data) || isSequentialPipelineState(stat.data))}
+              onAfter-drop={() => {
+                const draggedStep = dragContext.startInfo.dragNode as AugmentedStat;
+                moveStep(draggedStep.data.uuid, dragContext.targetInfo.indexBeforeDrop);
               }}
-            </Overlapping>: null }
+            > 
+              { 
+                ({stat}: {stat: AugmentedStat}) =>  
+                  (
+                    <TreeNode 
+                      stat={stat}
+                      callState={callsState.value?.[stat.data.uuid]?.value}
+                      style={{'background-color': stat.data.uuid === chosenStepUuid.value ? '#f2f2f5' : null}}
+                      isDraggable={treeInstance.value?.isDraggable(stat)}
+                      isDroppable={treeInstance.value?.isDroppable(stat)}
+                      isDeletable={!!stat.parent && isParallelPipelineState(stat.parent.data)}
+                      onAddNode={({itemId, position}) => {
+                        addStep(stat.data.uuid, itemId, position);
+                      }}
+                      onRemoveNode={() => removeStep(stat.data.uuid)}
+                      onClick={() => {
+                        chosenStepUuid.value = stat.data.uuid;
+                      }}
+                      onToggleNode={() => stat.open = !stat.open}
+                    />
+                  )
+              }
+            </Draggable>, [[ifOverlapping, isLocked.value]]): null },
           
           {
             chosenStepState.value && 
