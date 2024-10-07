@@ -6,7 +6,7 @@ import * as Vue from 'vue';
 
 import {FuncCallInput} from '@datagrok-libraries/compute-utils/shared-utils/input-wrappers';
 import {BehaviorSubject} from 'rxjs';
-import {distinctUntilChanged} from 'rxjs/operators';
+import {distinctUntilChanged, filter, take} from 'rxjs/operators';
 import equal from 'deep-equal';
 import {
   PipelineConfiguration, ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult,
@@ -238,6 +238,15 @@ export async function RichFunctionViewEditor2(call: DG.FuncCall) {
   view.name = `${call.func.name}`;
   view.root.classList.remove('ui-panel');
   view.root.style.overflow = 'hidden';
+
+  grok.events.onViewRemoved.pipe(
+    filter((closedView) => {
+      return closedView === view;
+    }),
+    take(1),
+  ).subscribe(() => {
+    app.unmount();
+  });
 
   return view;
 }

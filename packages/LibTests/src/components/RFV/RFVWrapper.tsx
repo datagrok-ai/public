@@ -32,6 +32,10 @@ export const RFVWrapper = Vue.defineComponent({
       if (!isRunningOnInput.value)     
         await historyUtils.saveRun(currentFuncCall.value);
     };
+    
+    Vue.onBeforeUnmount(() => {
+      console.log('Unmounting RFVWrapper');
+    });
 
     return () => (
       <RichFunctionView 
