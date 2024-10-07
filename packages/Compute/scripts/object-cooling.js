@@ -14,7 +14,7 @@
 //output: double timeToCool {caption: Time to cool; units: sec.; category: Output}
 //output: double coolingFactor {caption: Cooling factor; units: 1 / sec.; category: Calculations; precision: 5}
 //output: double tempDiff {caption: Temperature difference; units: C; category: Calculations}
-//editor: Compute:RichFunctionViewEditor
+//editor: LibTests:RichFunctionViewEditor2
 //meta.features: {"sens-analysis": true, "upload": true}
 //meta.foldedCategories: ["Object properties"]
 //meta.compareCustomizer: Compute:CustomCustomizer

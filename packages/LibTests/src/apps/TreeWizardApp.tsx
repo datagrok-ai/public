@@ -6,7 +6,7 @@ import * as Vue from 'vue';
 import {zipSync, Zippable} from 'fflate';
 import {DockManager, IconFA, Overlapping, RibbonMenu, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
-import {useSubscription} from '@vueuse/rxjs';
+import {useExtractedObservable, useSubscription} from '@vueuse/rxjs';
 import {
   isFuncCallState, isParallelPipelineState, 
   isSequentialPipelineState, isStaticPipelineState, PipelineState,

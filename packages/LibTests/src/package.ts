@@ -14,12 +14,12 @@ import {
 import type {ViewerT, InputFormT} from '@datagrok-libraries/webcomponents';
 import {ViewerApp as ViewerAppInstance} from './apps/ViewerApp';
 import {FormApp as FormAppInstance} from './apps/FormApp';
-import {RFVApp as RFVAppInstance} from './apps/RFVApp';
 import {HistoryApp as HistoryAppInstance} from './apps/HistoryApp';
 import {ElementsApp as ElementsAppInstance} from './apps/ElementsApp';
 import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
 import {SimpleDriverApp as SimpleDriverAppInstance} from './apps/SimpleDriverApp';
 import './tailwind.css';
+import {RFVWrapper} from './components/RFV/RFVWrapper';
 
 export const _package = new DG.Package();
 //
@@ -228,6 +228,20 @@ export async function TestElements() {
   grok.shell.addView(view);
 }
 
+//tags: editor, vue
+//input: funccall call
+//output: view result
+export async function RichFunctionViewEditor2(call: DG.FuncCall) {
+  const view = new DG.ViewBase();
+  const app = Vue.createApp(RFVWrapper, {funcCall: call});
+  app.mount(view.root);
+  view.name = `${call.func.name}`;
+  view.root.classList.remove('ui-panel');
+  view.root.style.overflow = 'hidden';
+
+  return view;
+}
+
 //tags: test, vue
 export async function ViewerApp() {
   const view = new DG.ViewBase();
@@ -254,16 +268,6 @@ export async function ElementsApp() {
   app.mount(view.root);
   view.name = 'ElementsApp';
   grok.shell.addView(view);
-}
-
-//tags: test, vue
-export async function RFVApp() {
-  const view = new DG.ViewBase();
-  const app = Vue.createApp(RFVAppInstance);
-  app.mount(view.root);
-  grok.shell.addView(view);
-  view.name = 'RFVApp';
-  view.root.classList.remove('ui-panel');
 }
 
 //tags: test, vue
