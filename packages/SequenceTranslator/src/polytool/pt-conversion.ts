@@ -242,8 +242,8 @@ export class Chain {
 
 
     const hh = await getHelmHelper();
-    const sampleHwe = hh.createHelmWebEditor();
-    sampleHwe.editor.setHelm('PEPTIDE1{R.P.D.[meI]}$$$$');
+    // const sampleHwe = hh.createHelmWebEditor();
+    // sampleHwe.editor.setHelm('PEPTIDE1{R.P.D.[meI]}$$$$');
 
     const resHwe = hh.createHelmWebEditor();
     const resMol = resHwe.editor.m;
@@ -306,8 +306,8 @@ export class Chain {
     }
 
     for (let i = 0; i < linkages.length; i++) {
-      const atom1 = resMol.atoms[linkages[i].fMonomer];
-      const atom2 = resMol.atoms[linkages[i].sMonomer];
+      const atom1 = resMol.atoms[linkages[i].fMonomer - 1];
+      const atom2 = resMol.atoms[linkages[i].sMonomer - 1];
       const bond = new JSDraw2.Bond<HelmType>(atom1, atom2);
       bond.r1 = linkages[i].fR;
       bond.r2 = linkages[i].sR;
@@ -380,8 +380,66 @@ export class Chain {
     return helm;
   }
 
-  getNotation(rules: Rules): string {
-    return 'not implemented';
+  getNotation(): string {
+    const atoms = this.mol!.atoms;
+    const bonds = this.mol!.bonds;
+    const chains: number[] = [];
+    const specialBonds: number[] = [];
+    for (let i = 0; i < bonds.length!; i++) {
+      //@ts-ignore
+      if (bonds[i].a1.bio.i !== bonds[i].a2.bio.i)
+        specialBonds.push(i);
+    }
+
+    for (let i = 0; i < atoms.length!; i++) {
+      //@ts-ignore
+      const atomChain = atoms[i].bio?.i;
+      if (atomChain + 1 > chains.length)
+        chains.push(1);
+      else
+        chains[atomChain]++;
+    }
+
+    const simpleChains: string[][] = new Array(chains.length);
+    let counter = 0;
+    for (let i = 0; i < chains.length!; i++) {
+      const simpleChain: string[] = new Array(chains[i]);
+      for (let j = 0; j < chains[i]; j++) {
+        simpleChain[j] = atoms[counter].elem;
+        counter++;
+      }
+
+      simpleChains[i] = simpleChain;
+    }
+
+    let res = '';
+    for (let i = 0; i < simpleChains.length; i++) {
+      let chainAdd = '';
+
+      for (let j = 0; j < simpleChains[i].length; j++)
+        chainAdd += `${j == 0 ? '' : '-'}${simpleChains[i][j]}`;
+
+      if (i !== 0) {
+        const rxp = /(\(.\d+\))/;
+        const match = chainAdd.match(rxp);
+        chainAdd = chainAdd.replace(match?.[0]!, '');
+        const group = match ? match?.[0]! : '';
+        chainAdd = `${group}{${chainAdd}}`;
+      } else {
+        if (simpleChains.length > 1) {
+          //@ts-ignore
+          const firstAtomLinks = bonds[specialBonds[0]].a1.bio.i == 0 && bonds[specialBonds[0]].a1.bio.j == 0;
+          //@ts-ignore
+          const secondAtomLinks = bonds[specialBonds[0]].a2.bio.i == 1 && bonds[specialBonds[0]].a1.bio.j == 0;
+          if (firstAtomLinks && secondAtomLinks)
+            chainAdd += '-';
+        }
+      }
+
+      res += chainAdd;
+    }
+
+    return res;
   }
 
   protected static getLinkedPositions(monomers: string[], rules: RuleLink[] | RuleReaction []):
