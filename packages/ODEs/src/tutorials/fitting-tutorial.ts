@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {filter} from 'rxjs/operators';
+import {filter, map} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {interval, fromEvent} from 'rxjs';
 import {DiffStudio} from '../app';
@@ -17,7 +17,7 @@ export class FittingTutorial extends Tutorial {
     return 'Parameter optimization';
   }
   get description() {
-    return 'Learn how to find the input conditions that lead to a specified output of the model';
+    return 'Learn how to find the slider conditions that lead to a specified output of the model';
   }
   get steps() {return 11;}
 
@@ -26,9 +26,14 @@ export class FittingTutorial extends Tutorial {
 
   protected async _run() {
     this.header.textContent = this.name;
-    this.describe('Parameter optimization solves an inverse problem: finding the input conditions that lead to a specified output of the model.');
+    this.describe('Parameter optimization solves an inverse problem: finding the slider conditions that lead to a specified output of the model.');
     this.describe(ui.link('Learn more', this.helpUrl).outerHTML);
     this.title('Ball flight');
+
+    if (grok.shell.view('Browse') === undefined) {
+      grok.shell.v = DG.View.createByType('browse');
+      await new Promise((resolve) => setTimeout(resolve, UI_TIME.APP_RUN_SOLVING));
+    }
 
     // 1. Run model catalog
     const browseView = grok.shell.view('Browse') as DG.BrowseView;
@@ -72,11 +77,130 @@ export class FittingTutorial extends Tutorial {
       return;
     }
 
+    const formRoot = await getElement(modelView.root, 'div.d4-flex-row.ui-div.ui-form');
+    const angleInputRoot = formRoot.children[5] as HTMLElement;
+
     await this.action(
-      'Play',
-      fromEvent(modelIconRoot, 'dblclick'),
+      'Change "Angle"',
+      fromEvent(angleInputRoot, 'click'),
+      angleInputRoot,
+      `This is a ball flight simulation. Move slider, and explore the impact of <b>Angle</b> on <b>Max distance</b>,
+      <b>Max height</b> and ball\'trajectory.`,
+    );
+
+    // 4. Run fitting
+    this.title('Fit max distance');
+
+    const fitIcnRoot = document.querySelector('div.d4-ribbon-panel')
+      .querySelector('i.grok-icon.fal.fa-chart-line') as HTMLElement;
+
+    await this.action(
+      'Click "Fit inputs"',
+      fromEvent(fitIcnRoot, 'click'),
+      fitIcnRoot,
+      `How should the ball be thrown so that it flies exactly 10 meters? Run parameter optimization to answer this question.
+      Click the "Fit inputs" icon on the top panel`,
+    );
+
+    // 5. Switch Velocity
+    const fittingView = await getView('ballFlight - fitting');
+    if (fittingView === null) {
+      grok.shell.error('Fitting run timeout exceeded');
+      return;
+    }
+
+    const fitFormRoot = await getElement(fittingView.root, 'div.ui-div.ui-form');
+    const velocityInputRoot = fitFormRoot.children[9] as HTMLElement;
+    const velocitySwitcher = velocityInputRoot.querySelector('div.ui-input-editor') as HTMLElement;
+
+    await this.action(
+      'Switch on "Velocity"',
+      fromEvent(velocitySwitcher, 'click'),
+      velocitySwitcher,
+      'Let\'s find the initial velocity and angle. Switch on <b>Velocity</b>.',
+    );
+
+    // 6. Switch Angle
+    const angleFitInputRoot = fitFormRoot.children[12] as HTMLElement;
+    const angleSwitcher = angleFitInputRoot.querySelector('div.ui-input-editor') as HTMLElement;
+
+    await this.action(
+      'Switch on "Angle"',
+      fromEvent(angleSwitcher, 'click'), //!!!
+      angleSwitcher,
+    );
+
+    // 7. Target value
+    const distFitInputRoot = fitFormRoot.children[16] as HTMLElement;
+    const distSwitcher = distFitInputRoot.querySelector('input.ui-input-editor') as HTMLInputElement;
+    const source = fromEvent(distSwitcher, 'input').pipe(map((_) => distSwitcher.value), filter((val) => val === '10'));
+
+    await this.action(
+      'Set "Max distance, m" to 10',
+      source,
+      distSwitcher,
+      'Set target value for <b>Max distance, m</b>.',
+    );
+
+    // 8. Run
+    const runIcnRoot = document.querySelector('div.d4-ribbon-panel')
+      .querySelector('i.grok-icon.fal.fa-play.fas') as HTMLElement;
+
+    await this.action(
+      'Click "Run"',
+      fromEvent(runIcnRoot, 'click'),
+      runIcnRoot,
+      `Click the <b>Run</b> icon on the top panel. This will launch fitting <b>Velocity</b> and <b>Angle</b>. 
+      You can customize optimizer's settings in the <b>Using</b> block.`,
+    );
+
+    // 9. Results
+
+    // get icon
+
+    await this.action(
+      'Click "Run"',
+      fromEvent(modelIconRoot, 'dblclick'), //!!!
       modelView.root,
-      'Double click <b>Ball flight</b>.',
+      `Click the <b>Run</b> icon on the top panel. This will launch fitting <b>Velocity</b> and <b>Angle</b>. 
+      You can customize optimizer's settings in the <b>Using</b> block.`,
+    );
+
+    // 10. Explore
+
+    // 11. Switch off
+    this.describe('Fit ball\'s trajectory');
+
+    // get icon
+
+    await this.action(
+      'Switch off "Angle"',
+      fromEvent(modelIconRoot, 'dblclick'), //!!!
+      modelView.root,
+      `Click the <b>Run</b> icon on the top panel. This will launch fitting <b>Velocity</b> and <b>Angle</b>. 
+      You can customize optimizer's settings in the <b>Using</b> block.`,
+    );
+
+    // 12. Check target trajectory
+
+    // add tableview
+
+    await this.action(
+      'Click "Ball flight trajectory"',
+      fromEvent(modelIconRoot, 'dblclick'), //!!!
+      modelView.root,
+      'How to throw a ball so that it follows a given trajectory? Click the <b>Ball flight target</b> view to explore it.',
+    );
+
+    // 13. Check target trajectory
+
+    // add tableview
+
+    await this.action(
+      'Click "Ball flight trajectory"',
+      fromEvent(modelIconRoot, 'dblclick'), //!!!
+      modelView.root,
+      'How to throw a ball so that it follows a given trajectory? Click the <b>Ball flight target</b> view to explore it.',
     );
 
     /*await new Promise((resolve) => setTimeout(resolve, UI_TIME.APP_RUN_SOLVING * 2));

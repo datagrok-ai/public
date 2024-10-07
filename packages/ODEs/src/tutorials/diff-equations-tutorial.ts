@@ -29,6 +29,11 @@ export class DifferentialEquationsTutorial extends Tutorial {
     this.describe(ui.link('Learn more', this.helpUrl).outerHTML);
     this.title(`Earth's Population`);
 
+    if (grok.shell.view('Browse') === undefined) {
+      grok.shell.v = DG.View.createByType('browse');
+      await new Promise((resolve) => setTimeout(resolve, UI_TIME.APP_RUN_SOLVING));
+    }
+
     // 1. Run
     const browseView = grok.shell.view('Browse') as DG.BrowseView;
     grok.shell.v = browseView;

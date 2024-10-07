@@ -29,7 +29,7 @@ export async function getElement(parent: HTMLElement, selectors: string) {
   return element;
 }
 
-/** Get the specified child */
+/** Get the specified view */
 export async function getView(name: string) {
   let view: DG.ViewBase;
   let totalTime = 0;

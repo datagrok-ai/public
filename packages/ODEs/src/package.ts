@@ -248,7 +248,7 @@ export function registerFittingTutorial() {
 //input: double a = 45 {category: Throw parameters; caption: Angle; min: 20; max: 70; units: deg}
 //output: double maxDist {caption: Max distance, m}
 //output: double maxHeight {caption: Max height, m}
-//output: dataframe df {caption: Ball flight; viewer: Line chart(block: 75, multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 25)}
+//output: dataframe df {caption: Ball flight; viewer: Line chart(block: 60, multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 40)}
 //editor: Compute:RichFunctionViewEditor
 //sidebar: @compute
 //meta.runOnOpen: true
