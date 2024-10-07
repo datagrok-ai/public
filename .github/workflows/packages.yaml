@@ -582,7 +582,6 @@ jobs:
         if: matrix.publish == 'publish' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.gen_checks.outcome == 'success' && (steps.check.outcome == 'success' || steps.check.outcome == 'skipped') && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || (contains(matrix.package, 'Tests') || matrix.package == 'Chemspace'))
 
       - name: Get actors slack
-        if: ${{ steps.publish.outcome == 'success' && !contains(matrix.package, 'Meta') }}
         id: actor
         uses: ./.github/actions/slack-user-action
         with:
@@ -590,7 +589,6 @@ jobs:
           email-mapping: ${{ secrets.EMAIL_MAPPING }}
 
       - name: Get owners slack
-        if: ${{ steps.publish.outcome == 'success' && !contains(matrix.package, 'Meta') }}
         id: owner
         uses: ./.github/actions/slack-user-action
         with:
@@ -600,13 +598,12 @@ jobs:
       - name: Get QA slack
         id: qa
         uses: ./.github/actions/slack-user-action
-        if: ${{ (matrix.package == 'Tutorials' || matrix.package == 'Chem' || matrix.package == 'DiffStidio' || matrix.package == 'PowerPack') && (steps.publish.outcome == 'success' && !contains(matrix.package, 'Meta')) }}
+        if: ${{ (matrix.package == 'Tutorials' || matrix.package == 'Chem' || matrix.package == 'DiffStidio' || matrix.package == 'PowerPack') }}
         with:
           slack-token: ${{ secrets.SLACKBOT_TOKEN }}
           emails: "opavlenko@datagrok.ai"
 
       - name: Prepare Slack Message
-        if: ${{ steps.publish.outcome == 'success' && !contains(matrix.package, 'Meta') }}
         id: slack-prepare
         shell: bash
         run: |
@@ -619,7 +616,7 @@ jobs:
         if: steps.slack-prepare.outcome == 'success'
         uses: ./.github/actions/slack-post-action
         with:
-          channel: '#build'
+          channel: '#jenkins-test-build'
           slack-token: ${{ secrets.SLACKBOT_TOKEN }}
           message: ${{ env.SLACK_MESSAGE_HEADER }}
 
