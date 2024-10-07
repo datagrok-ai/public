@@ -4,17 +4,17 @@
   "viewStateMap": {
     "containerType": "horizontal",
     "state": {
-      "width": 1607,
+      "width": 1816,
       "height": 1009
     },
     "children": [
       {
         "containerType": "panel",
         "state": {
-          "width": 209,
+          "width": 298,
           "height": 1009,
           "element": {
-            "id": "8322cf50-73f0-11ef-f0a2-adc84d71f519",
+            "id": "ea1da3d0-73f0-11ef-d6ec-51d1729337a3",
             "type": "Filters",
             "look": {
               "#type": "FiltersLook",
@@ -40,6 +40,17 @@
                   "showSlider": true,
                   "showMinMax": false,
                   "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "Longitude",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
                 }
               ]
             },
@@ -49,82 +60,108 @@
         "children": []
       },
       {
-        "containerType": "fill",
+        "containerType": "vertical",
         "state": {
-          "width": 587,
-          "height": 1009,
-          "documentManager": true
+          "width": 753,
+          "height": 1009
         },
         "children": [
           {
+            "containerType": "fill",
+            "state": {
+              "width": 753,
+              "height": 501,
+              "documentManager": true
+            },
+            "children": [
+              {
+                "containerType": "panel",
+                "state": {
+                  "width": 753,
+                  "height": 501,
+                  "element": {
+                    "id": "ea1da3d0-73f0-11ef-b889-2b87f3aebe2e",
+                    "type": "Grid",
+                    "look": {
+                      "#type": "GridLook",
+                      "showAddNewRowIcon": true,
+                      "addNewRowOnLastRowEdit": true,
+                      "topLevelDefaultMenu": true,
+                      "allowColumnMenu": true,
+                      "columns": [
+                        {
+                          "width": 36,
+                          "backgroundColor": 4294440951,
+                          "customName": "",
+                          "cellType": "row header",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 269,
+                          "columnName": "Hill Name",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 64,
+                          "columnName": "Height",
+                          "cellType": "number",
+                          "format": "0.0",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 82,
+                          "columnName": "Latitude",
+                          "cellType": "number",
+                          "format": "0.000000",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 84,
+                          "columnName": "Longitude",
+                          "cellType": "number",
+                          "format": "0.000000",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 82,
+                          "columnName": "Osgrid",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        }
+                      ]
+                    },
+                    "title": "scottish_hills",
+                    "default": true
+                  }
+                },
+                "children": []
+              }
+            ]
+          },
+          {
             "containerType": "panel",
             "state": {
-              "width": 587,
-              "height": 1009,
+              "width": 753,
+              "height": 507,
               "element": {
-                "id": "8322cf50-73f0-11ef-e860-5123c0fbb402",
-                "type": "Grid",
+                "id": "ea1da3d0-73f0-11ef-9b6f-85df05926b92",
+                "type": "Scripting Viewer",
                 "look": {
-                  "#type": "GridLook",
-                  "showAddNewRowIcon": true,
-                  "addNewRowOnLastRowEdit": true,
-                  "topLevelDefaultMenu": true,
-                  "allowColumnMenu": true,
-                  "columns": [
-                    {
-                      "width": 36,
-                      "backgroundColor": 4294440951,
-                      "customName": "",
-                      "cellType": "row header",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 269,
-                      "columnName": "Hill Name",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 64,
-                      "columnName": "Height",
-                      "cellType": "number",
-                      "format": "0.0",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 82,
-                      "columnName": "Latitude",
-                      "cellType": "number",
-                      "format": "0.000000",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 84,
-                      "columnName": "Longitude",
-                      "cellType": "number",
-                      "format": "0.000000",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    },
-                    {
-                      "width": 82,
-                      "columnName": "Osgrid",
-                      "headerCellStyle": {
-                        "textWrap": "words"
-                      }
-                    }
-                  ]
+                  "#type": "ScriptingViewerLook",
+                  "script": "#name: Scottish hills stream plot\n#description: Displays stream plot\n#language: pyodide\n#tags: demo\n#input: dataframe data\n#output: graphics scatter\nimport pandas as pd\nimport numpy as np\nimport matplotlib.pyplot as plt\n\n# Extract necessary columns\nlatitude = data['Latitude'].values\nlongitude = data['Longitude'].values\nheight = data['Height'].values\n\n# Create a grid for the streamplot\nX, Y = np.meshgrid(np.linspace(min(longitude), max(longitude), 100),\n                   np.linspace(min(latitude), max(latitude), 100))\n\n# Create a vector field for the streamplot\nU = np.sin(X)  # Example vector field component\nV = np.cos(Y)  # Example vector field component\n\n# Interpolate height data to match the grid shape\nfrom scipy.interpolate import griddata\nheight_grid = griddata((longitude, latitude), height, (X, Y), method='linear')\n\n# Plot the streamplot\nplt.figure(figsize=(10, 7))\nstream = plt.streamplot(X, Y, U, V, color=height_grid, linewidth=2, cmap='viridis')\nplt.colorbar(stream.lines, label='Height')\nplt.title('Streamplot of Scottish Hills')\nplt.xlabel('Longitude')\nplt.ylabel('Latitude')\nplt.show()"
                 },
-                "title": "scottish_hills",
-                "default": true
+                "title": "Scripting Viewer"
               }
             },
             "children": []
@@ -132,21 +169,47 @@
         ]
       },
       {
-        "containerType": "panel",
+        "containerType": "vertical",
         "state": {
-          "width": 809,
-          "height": 1009,
-          "element": {
-            "id": "8322f660-73f0-11ef-c237-6904cbcda1eb",
-            "type": "Scripting Viewer",
-            "look": {
-              "#type": "ScriptingViewerLook",
-              "script": "#name: Scottish hills demo\n#description: Displays simple scatter plot\n#language: pyodide\n#tags: demo\n#input: dataframe table\n#output: graphics scatter\n\nimport matplotlib.pyplot as plt\nfrom scipy.stats import linregress\n\nx = table.Height\ny = table.Latitude\n\nstats = linregress(x, y)\n\nm = stats.slope\nb = stats.intercept\n\nplt.scatter(x, y)\nplt.xlabel('Height', fontsize=20)\nplt.ylabel('Latitude', fontsize=20)\nplt.plot(x, m * x + b, color=\"red\") "
-            },
-            "title": "Scripting Viewer"
-          }
+          "width": 763,
+          "height": 1009
         },
-        "children": []
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 763,
+              "height": 501,
+              "element": {
+                "id": "ea1df1f0-73f0-11ef-a078-c3a0b76ae826",
+                "type": "Scripting Viewer",
+                "look": {
+                  "#type": "ScriptingViewerLook",
+                  "script": "#name: Scottish hills ridge plot\n#description: Displays ridge plot\n#language: pyodide\n#tags: demo\n#input: dataframe df\n#output: graphics scatter\n\nimport numpy as np\nimport matplotlib.pyplot as plt\n\n# Sort the data by height\ndf_sorted = df.sort_values(by='Height', ascending=False)\n# Set up the matplotlib figure\nplt.figure(figsize=(10, 6))\n\n# Create a color palette\ncolors = plt.cm.viridis(np.linspace(0, 1, len(df_sorted['Hill Name'].unique())))\n\n# Create the ridge plot\nfor i, (hill, subset) in enumerate(df_sorted.groupby('Hill Name')):\n    heights = subset['Height']\n    density, bins = np.histogram(heights, bins=30, density=True)\n    bins_center = 0.5 * (bins[:-1] + bins[1:])\n    plt.fill_between(bins_center, density + i, i, color=colors[i], alpha=0.6)\n\nplt.title('Ridge Plot of Scottish Hills Heights')\nplt.xlabel('Height (m)')\nplt.ylabel('Density')\nplt.show()\n"
+                },
+                "title": "Scripting Viewer"
+              }
+            },
+            "children": []
+          },
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 763,
+              "height": 507,
+              "element": {
+                "id": "ea1df1f0-73f0-11ef-f2c3-c72aa1e00f08",
+                "type": "Scripting Viewer",
+                "look": {
+                  "#type": "ScriptingViewerLook",
+                  "script": "#name: Scottish hills contour plot\n#description: Displays contour plot\n#language: pyodide\n#tags: demo\n#input: dataframe df\n#output: graphics contour\n\nimport numpy as np\nimport matplotlib.pyplot as plt\nfrom scipy.interpolate import griddata\n\n# Create a grid of coordinates\nx = np.linspace(df['Longitude'].min(), df['Longitude'].max(), 100)\ny = np.linspace(df['Latitude'].min(), df['Latitude'].max(), 100)\nX, Y = np.meshgrid(x, y)\n\n# Interpolate height values on the grid\nZ = griddata((df['Longitude'], df['Latitude']), df['Height'], (X, Y), method='cubic')\nplt.figure(figsize=(12, 8))\n\n# Create the contour plot with enhanced styling\ncontour = plt.contourf(X, Y, Z, levels=15, cmap='viridis', alpha=0.75)\ncontour_lines = plt.contour(X, Y, Z, levels=15, colors='black', linewidths=0.5)\nplt.clabel(contour_lines, inline=True, fontsize=8, fmt='%1.0f')\n\n# Add a color bar\ncbar = plt.colorbar(contour)\ncbar.set_label('Height (m)', rotation=270, labelpad=15)\n\n# Add titles and labels with enhanced styling\nplt.title('Contour Plot of Scottish Hills Heights', fontsize=16)\nplt.xlabel('Longitude', fontsize=12)\nplt.ylabel('Latitude', fontsize=12)\n\n# Add grid and customize ticks\nplt.grid(True, linestyle='--', alpha=0.5)\nplt.xticks(fontsize=10)"
+                },
+                "title": "Scripting Viewer"
+              }
+            },
+            "children": []
+          }
+        ]
       }
     ],
     "floating": [],
@@ -155,75 +218,84 @@
   },
   "columns": [
     {
-      "name": "Latitude",
+      "name": "Longitude",
       "type": "double",
-      "semType": "Latitude",
-      "id": "6b025b70-73f0-11ef-dff7-397a53b728c4",
-      "friendlyName": "Latitude",
+      "id": "9ab9f550-73f0-11ef-e312-711b4c6b14d1",
+      "friendlyName": "Longitude",
       "entityTags": [
         {
           "tag": "format",
-          "id": "83234480-73f0-11ef-a9e5-a1be2e4a2747"
+          "id": "ea1e1900-73f0-11ef-964d-33a5a22253d6"
         },
         {
           "tag": ".source-precision",
-          "id": "83234480-73f0-11ef-acb2-51af5f8f2c01"
-        },
-        {
-          "tag": "quality",
-          "id": "83234480-73f0-11ef-84a8-1b03ef217b2a"
-        },
-        {
-          "tag": ".semantic-detection-duration",
-          "id": "83234480-73f0-11ef-f2da-f5546b40a6c3"
+          "id": "ea1e1900-73f0-11ef-d877-c59330140866"
         },
         {
           "tag": ".id",
-          "id": "83234480-73f0-11ef-fb0a-f3fb7f600f79"
+          "id": "ea1e1900-73f0-11ef-f24c-8f91d2294d0b"
         }
       ],
       "metaParams": {
         "format": "0.000000",
         ".source-precision": "6",
-        "quality": "Latitude",
-        ".semantic-detection-duration": "0",
-        ".id": "6b025b70-73f0-11ef-dff7-397a53b728c4"
+        ".id": "9ab9f550-73f0-11ef-e312-711b4c6b14d1"
+      }
+    },
+    {
+      "name": "Latitude",
+      "type": "double",
+      "id": "9ab9f550-73f0-11ef-d894-39fbea3a40bb",
+      "friendlyName": "Latitude",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "ea1e1900-73f0-11ef-979b-b7d9fb3bc216"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "ea1e1900-73f0-11ef-a859-9f7ee422b182"
+        },
+        {
+          "tag": ".id",
+          "id": "ea1e4010-73f0-11ef-927d-8155c7708c44"
+        }
+      ],
+      "metaParams": {
+        "format": "0.000000",
+        ".source-precision": "6",
+        ".id": "9ab9f550-73f0-11ef-d894-39fbea3a40bb"
       }
     },
     {
       "name": "Height",
       "type": "double",
-      "id": "6b023460-73f0-11ef-b584-9bfced1242c0",
+      "id": "9ab9ce40-73f0-11ef-bab8-2fa87dfcd7df",
       "friendlyName": "Height",
       "entityTags": [
         {
           "tag": "format",
-          "id": "83234480-73f0-11ef-f27c-6b5e3d7659c7"
+          "id": "ea1e4010-73f0-11ef-f3d6-f1d1f01e87e5"
         },
         {
           "tag": ".source-precision",
-          "id": "83234480-73f0-11ef-9cc6-318713e4298b"
-        },
-        {
-          "tag": ".semantic-detection-duration",
-          "id": "83234480-73f0-11ef-ed33-8934f29ad912"
+          "id": "ea1e4010-73f0-11ef-8fc8-757e2485501f"
         },
         {
           "tag": ".id",
-          "id": "83236b90-73f0-11ef-fca4-5963e261206f"
+          "id": "ea1e4010-73f0-11ef-c806-13388ea5fce7"
         }
       ],
       "metaParams": {
         "format": "0.0",
         ".source-precision": "1",
-        ".semantic-detection-duration": "1",
-        ".id": "6b023460-73f0-11ef-b584-9bfced1242c0"
+        ".id": "9ab9ce40-73f0-11ef-bab8-2fa87dfcd7df"
       }
     }
   ],
   "name": "ScottishHills",
   "friendlyName": "scottish_hills",
   "id": "da749f4a-4c30-465d-978b-69a57bd66b99",
-  "createdOn": "2024-10-07T08:45:32.229Z",
-  "updatedOn": "2024-10-07T08:45:32.229Z"
+  "createdOn": "2024-10-07T18:42:33.228Z",
+  "updatedOn": "2024-10-07T18:42:33.228Z"
 }
