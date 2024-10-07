@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 # Function to make a Slack API request and handle rate limiting (status 429)
 slack_api_request() {
   local url=$1   # Slack API URL
