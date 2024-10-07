@@ -31,30 +31,7 @@ export function scWebGPURender(sc: DG.ScatterPlotViewer, show: boolean) {
       canvas.style.top = `${sc.viewBox.top}px`;
     }
   
-    var xColumnData = sc.table.col(sc.props.xColumnName)?.getRawData();
-    var yColumnData = sc.table.col(sc.props.yColumnName)?.getRawData();
-    if (!xColumnData || !yColumnData)
-      return false;
-    var viewport = sc.viewport;
-    var inverseX = sc.props.invertXAxis;
-    var inverseY = !sc.props.invertYAxis;
-    var linearX = sc.props.xAxisType == "linear";
-    var linearY = sc.props.yAxisType == "linear";
-  
-    const filteredArray = sc.filter.getSelectedIndexes();
-    const pointsCount = filteredArray.length;
-    const points = new Float32Array(pointsCount * 3);
-    var pointsIndex = 0;
-    for (let i = 0; i < pointsCount; i++) {
-      var index = filteredArray[i];
-      var sx = gpuViewbox.left + worldToScreen(xColumnData[index], gpuViewbox.width, viewport.left, viewport.right, inverseX, linearX);
-      var sy = gpuViewbox.top + worldToScreen(yColumnData[index], gpuViewbox.height, viewport.top, viewport.bottom, inverseY, linearY);
-      points[pointsIndex++] = sx;
-      points[pointsIndex++] = sy;
-      points[pointsIndex++] = sc.getMarkerSize(index); // size
-    }
-  
-    webGPUInit(canvas, points, sc);
+    webGPUInit(canvas, sc);
 }
   
 function worldToScreen(world: number, length: number, min: number, max: number, inverse: boolean, linear: boolean) {
@@ -90,7 +67,7 @@ return Math.floor(rc1.left) == Math.floor(rc2.left) && Math.floor(rc1.top) == Ma
     && Math.floor(rc1.width) == Math.floor(rc2.width) && Math.floor(rc1.height) == Math.floor(rc2.height);
 }
 
-async function webGPUInit(webGPUCanvas: HTMLCanvasElement, points: Float32Array, sc: DG.ScatterPlotViewer) {
+async function webGPUInit(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotViewer) {
 const filteredArray = sc.filter.getSelectedIndexes();
 var xColumnData = sc.table.col(sc.props.xColumnName)?.getRawData();
 var yColumnData = sc.table.col(sc.props.yColumnName)?.getRawData();
@@ -121,8 +98,7 @@ gpuContext.configure({
 const module = gpuDevice.createShaderModule({
     code: `
     struct Vertex {
-        @location(0) position: vec2f,
-        @location(1) size: f32,
+        @location(0) index: i32,
     };
 
     struct Uniforms {
@@ -153,7 +129,7 @@ const module = gpuDevice.createShaderModule({
         viewBox: Rect,
         viewport: Rect,
         props: Props,
-        indexes: ${wgslArrayString(filteredArray)},
+        // indexes: ${wgslArrayString(filteredArray)},
         xColumnData: ${wgslArrayString(xColumnData)},
         yColumnData: ${wgslArrayString(yColumnData)},
     };
@@ -177,8 +153,12 @@ const module = gpuDevice.createShaderModule({
         );
         var vsOut: VSOutput;
         let pos = points[vNdx];
-        let normalizedPos = convertPointToNormalizedCoords(vert.position.x, vert.position.y);
-        vsOut.position = vec4f(normalizedPos + pos * vert.size / uni.resolution, 0, 1);
+
+        var sx = sc.viewBox.left + worldToScreen(sc.xColumnData[vert.index], sc.viewBox.width, sc.viewport.left, sc.viewport.left + sc.viewport.width, sc.props.inverseX, sc.props.linearX);
+        var sy = sc.viewBox.top + worldToScreen(sc.yColumnData[vert.index], sc.viewBox.height, sc.viewport.top, sc.viewport.top + sc.viewport.height, sc.props.inverseY, sc.props.linearY);
+
+        let normalizedPos = convertPointToNormalizedCoords(sx, sy);
+        vsOut.position = vec4f(normalizedPos + pos * 10 / uni.resolution, 0, 1);
         vsOut.texcoord = pos * 0.5 + 0.5;
         return vsOut;
     }
@@ -203,10 +183,10 @@ const module = gpuDevice.createShaderModule({
     length: f32, 
     min: f32, 
     max: f32, 
-    inverse: bool, 
-    linear: bool
+    inverse: u32, 
+    linear: u32
     ) -> f32 {
-        if (linear) {
+        if (linear != 0) {
             return worldToScreenLinear(world, length, min, max, inverse);
         } else {
             return worldToScreenLogarithmic(world, length, min, max, inverse);
@@ -218,9 +198,9 @@ const module = gpuDevice.createShaderModule({
     length: f32, 
     min: f32, 
     max: f32, 
-    inverse: bool
+    inverse: u32
     ) -> f32 {
-        if (inverse) {
+        if (inverse != 0) {
             return (1.0 - ((world - min) / (max - min))) * length;
         } else {
             return ((world - min) / (max - min)) * length;
@@ -232,7 +212,7 @@ const module = gpuDevice.createShaderModule({
     length: f32, 
     min: f32, 
     max: f32, 
-    inverse: bool
+    inverse: u32
     ) -> f32 {
         // Define a very small float value to avoid precision issues
         let minLogFloat: f32 = 1e-30;
@@ -242,14 +222,14 @@ const module = gpuDevice.createShaderModule({
             return 0.0;
         }
         if (abs(world - min) < minLogFloat) {
-            if (inverse) { 
+            if (inverse != 0) { 
                 return length;
             } else { 
                 return 0.0; 
             }
         }
         if (abs(world - max) < minLogFloat) {
-            if (inverse) { 
+            if (inverse != 0) { 
                 return 0.0; 
             } else {
                 return length;
@@ -269,7 +249,7 @@ const module = gpuDevice.createShaderModule({
         // Perform the logarithmic transformation
         let res = (length * log(adjustedWorld / adjustedMin) / log(max / adjustedMin));
 
-        if (inverse) {
+        if (inverse != 0) {
             return length - res;
         }
         return res;
@@ -284,11 +264,11 @@ const pipeline = gpuDevice.createRenderPipeline({
     module,
     buffers: [
         {
-        arrayStride: (2 + 1) * 4, // 3 floats, 4 bytes each
+        arrayStride: 4, // 1 int, 4 bytes
         stepMode: 'instance',
         attributes: [
-            {shaderLocation: 0, offset: 0, format: 'float32x2'},  // position
-            {shaderLocation: 1, offset: 8, format: 'float32'},  // size
+            {shaderLocation: 0, offset: 0, format: 'sint32'},  // position
+            //{shaderLocation: 1, offset: 8, format: 'float32'},  // size
         ],
         },
     ],
@@ -338,12 +318,12 @@ const sampler = gpuDevice.createSampler({
 
 const vertexBuffer = gpuDevice.createBuffer({
     label: 'vertex buffer vertices',
-    size: points.byteLength,
+    size: filteredArray.byteLength,
     usage: GPUBufferUsage.VERTEX,
     mappedAtCreation: true,
 });
 new Float32Array(vertexBuffer.getMappedRange())
-    .set(new Float32Array(points.buffer));
+    .set(new Float32Array(filteredArray.buffer));
 vertexBuffer.unmap();
 
 const uniformValues = new Float32Array(2);
@@ -365,43 +345,28 @@ const kAlignmentOffset = 16;
 const kViewBoxByteOffset = 16;
 const kViewPortByteOffset = 16;
 const kPropsByteOffset = 16;
-const kFilteredArrayByteOffset = getPaddedSize(filteredArray.length);
+//const kFilteredArrayByteOffset = getPaddedSize(filteredArray.length);
 const kXColumnDataSize = getPaddedSize(xColumnData.length);
 const kYColumnDataSize = getPaddedSize(yColumnData.length);
 
 const scBuffer = gpuDevice.createBuffer({
-    size: kAlignmentOffset + kViewBoxByteOffset + kViewPortByteOffset + kPropsByteOffset + kFilteredArrayByteOffset + kXColumnDataSize + kYColumnDataSize,
+    size: kAlignmentOffset + kViewBoxByteOffset + kViewPortByteOffset + kPropsByteOffset + kXColumnDataSize + kYColumnDataSize,
     usage: GPUBufferUsage.STORAGE,
     mappedAtCreation: true,
 });
 var scBufferArray = scBuffer.getMappedRange() // get full range
-  // copy the data into the buffer at correct places
+// copy the data into the buffer at correct places
 let scBufferOffset = kAlignmentOffset;
-const viewBoxPortArray = new Float32Array(scBufferArray, scBufferOffset, 4 + 4);
-viewBoxPortArray.set([gpuViewbox.left, gpuViewbox.top, gpuViewbox.width, gpuViewbox.height,
+new Float32Array(scBufferArray, scBufferOffset, 4 + 4)
+    .set([gpuViewbox.left, gpuViewbox.top, gpuViewbox.width, gpuViewbox.height,
                       viewport.left, viewport.top, viewport.width, viewport.height]);
 scBufferOffset += kViewBoxByteOffset + kViewPortByteOffset;
-const propsArray = new Uint32Array(scBufferArray, scBufferOffset, 4);
-propsArray.set([+!!inverseX, +!!inverseY, +!!linearX, +!!linearY]);
+new Uint32Array(scBufferArray, scBufferOffset, 4)
+    .set([+!!inverseX, +!!inverseY, +!!linearX, +!!linearY]);
 scBufferOffset += kPropsByteOffset;
-const filteredBufferArray = new Int32Array(scBufferArray, scBufferOffset, filteredArray.length);
-filteredBufferArray.set(filteredArray);
-scBufferOffset += kFilteredArrayByteOffset;
-if (xColumnData instanceof Int32Array) {
-    new Int32Array(scBufferArray, scBufferOffset, xColumnData.length).set(xColumnData);
-} else if (xColumnData instanceof Uint32Array) {
-    new Uint32Array(scBufferArray, scBufferOffset, xColumnData.length).set(xColumnData);
-} else {
-    new Float32Array(scBufferArray, scBufferOffset, xColumnData.length).set(xColumnData);
-}
+new Float32Array(scBufferArray, scBufferOffset, xColumnData.length).set(xColumnData);
 scBufferOffset += kXColumnDataSize;
-if (yColumnData instanceof Int32Array) {
-    new Int32Array(scBufferArray, scBufferOffset, yColumnData.length).set(yColumnData);
-} else if (yColumnData instanceof Uint32Array) {
-    new Uint32Array(scBufferArray, scBufferOffset, yColumnData.length).set(yColumnData);
-} else {
-    new Float32Array(scBufferArray, scBufferOffset, yColumnData.length).set(yColumnData);
-}
+new Float32Array(scBufferArray, scBufferOffset, yColumnData.length).set(yColumnData);
 scBufferOffset += kYColumnDataSize;
 scBuffer.unmap();
 
@@ -443,7 +408,7 @@ const pass = encoder.beginRenderPass(renderPassDescriptor as GPURenderPassDescri
 pass.setPipeline(pipeline);
 pass.setVertexBuffer(0, vertexBuffer);
 pass.setBindGroup(0, bindGroup);
-pass.draw(6, points.length / 3);
+pass.draw(6, filteredArray.length);
 pass.end();
 
 const commandBuffer = encoder.finish();
@@ -476,7 +441,8 @@ function getPaddedSize(length: number): number {
 }
 
 function wgslArrayString(array: Int32Array | Float32Array | Float64Array | Uint32Array): string {
-    return `array<${array instanceof Int32Array ? "i32" : array instanceof Uint32Array ? "u32" : "f32"}, ${array.length}>`;
+    //return `array<${array instanceof Int32Array ? "i32" : array instanceof Uint32Array ? "u32" : "f32"}, ${array.length}>`;
+    return `array<f32, ${array.length}>`;
 }
 
 function createCircleCanvas(size: number, fillColor: string, strokeColor: string): OffscreenCanvas {
