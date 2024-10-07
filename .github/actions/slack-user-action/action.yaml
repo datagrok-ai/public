@@ -1,0 +1,76 @@
+name: 'Slack User ID'
+description: 'Fetch Slack User ID'
+author: 'Sofiia Podolskaia'
+inputs:
+  slack-token:
+    description: 'Slack bot token'
+    required: true
+  emails:
+    description: 'A comma-separated list of email addresses to fetch Slack User IDs. If not provided, the GitHub actor will be used for Slack ID mapping.'
+    required: false
+  email-mapping:
+    description: 'Optional JSON mapping of GitHub users to Datagrok email, used if email is not provided'
+    required: false
+
+outputs:
+  user-ids:
+    description: 'A comma-separated list of Slack User IDs fetched by the action.'
+
+runs:
+  using: "composite"
+  steps:
+    # Step 1: Map GitHub Actor to Slack ID (if email is not provided)
+    - name: Set email by actor to get user id
+      if: ${{ inputs.emails == '' }}  # Only run this step if email is NOT provided
+      shell: bash
+      continue-on-error: true
+      run: |
+        echo "Using GitHub actor for Slack ID mapping."
+        EMAIL=$(echo '${{ inputs.email-mapping }}' | jq -r .\"${{ github.actor }}\")
+
+        if [ "$EMAIL" != "null" ]; then
+          echo "::add-mask::$EMAIL"
+          echo "DATAGROK_EMAIL=$EMAIL" >> $GITHUB_ENV
+        else
+          echo "Error: No email found to match Slack ID."
+          exit 1
+        fi
+
+    - name: Set email to get user id
+      if: ${{ inputs.emails != '' }}  # Only run this step if email is NOT provided
+      shell: bash
+      run: |
+        EMAIL=${{ inputs.emails }}
+        echo "::add-mask::$EMAIL"
+        echo "DATAGROK_EMAIL=$EMAIL" >> $GITHUB_ENV
+
+    # Step 2: Fetch Slack User ID by email (if email is provided)
+    - name: Get Slack User ID by Email
+      id: userid
+      if: ${{ env.DATAGROK_EMAIL != '' }}  # Only run this step if email is provided
+      shell: bash
+      run: |
+        # Convert the comma-separated list of emails into an array
+        IFS=',' read -r -a email_array <<< "${{ env.DATAGROK_EMAIL }}"
+        SLACK_IDS=()
+
+        # Loop through the array and fetch Slack user IDs for each email
+        for email in "${email_array[@]}"; do
+          SLACK_API_URL="https://slack.com/api/users.lookupByEmail"
+          JSON_DATA="{\"email\":\"$email\"}"
+
+          USER_ID=$(bash $GITHUB_WORKSPACE/scripts/slack_api_request.sh "$SLACK_API_URL" "POST" "${{ inputs.slack-token }}" "$JSON_DATA" | jq -r '.user.id')
+
+          if [ "$USER_ID" != "null" ]; then
+            SLACK_IDS+=("$USER_ID")
+          else
+            echo "Error: Unable to find Slack user ID for $email."
+            exit 1
+          fi
+        done
+
+        # Join the Slack IDs into a comma-separated string
+        SLACK_IDS_CSV=$(IFS=','; echo "${SLACK_IDS[*]}")
+
+        # Set the list of Slack IDs as an output
+        echo "::set-output name=user-ids::$SLACK_IDS_CSV"
