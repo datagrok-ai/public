@@ -14,7 +14,7 @@ slack_api_request() {
   SUCCESS=false
 
   while [ "$SUCCESS" = false ] && [ "$RETRY_COUNT" -lt "$MAX_RETRIES" ]; do
-    echo "Making request to Slack API: $url (Attempt #$((RETRY_COUNT+1)))"
+#    echo "Making request to Slack API: $url (Attempt #$((RETRY_COUNT+1)))"
 
     # Send API request
     if [ "$method" = "POST" ]; then
@@ -34,7 +34,7 @@ slack_api_request() {
 
     if [ "$HTTP_STATUS" -eq 429 ]; then
       # Rate limit hit, extract Retry-After header and wait
-      echo "Rate limit hit..."
+#      echo "Rate limit hit..."
       sleep 5
       RETRY_COUNT=$((RETRY_COUNT+1))
     else
