@@ -14,6 +14,10 @@ import _ from 'lodash';
 type onClickOptions = 'Select' | 'Filter';
 const CATEGORIES_NUMBER = 500;
 const ERROR_CLASS = 'd4-viewer-error';
+const rowSourceMap: Record<onClickOptions, string> = {
+  Select: 'Filtered',
+  Filter: 'All'
+};
 
 /** Represents a sunburst viewer */
 @grok.decorators.viewer({
@@ -208,7 +212,10 @@ export class SunburstViewer extends EChartViewer {
     if (p?.name === 'table') {
       this.updateTable();
       this.onTableAttached(true);
-    } else
+    }
+    if (p?.name === 'onClick')
+      this.rowSource = rowSourceMap[this.onClick as onClickOptions] || this.rowSource;
+    else
       super.onPropertyChanged(p, render);
   }
 
@@ -217,7 +224,7 @@ export class SunburstViewer extends EChartViewer {
       return;
     this.subs.push(this.dataFrame.onMetadataChanged.subscribe((_) => this.render()));
     this.subs.push(grok.events.onEvent('d4-grid-color-coding-changed').subscribe(() => this.render()));
-    grok.events.onEvent('d4-drag-drop').subscribe((args) => {
+    this.subs.push(grok.events.onEvent('d4-drag-drop').subscribe((args) => {
       const newOrder: number[] = Array.from(args.dart.dragObject.grid._order);
       if (this.savedOrder && _.isEqual(this.savedOrder, newOrder)) return;
 
@@ -235,7 +242,7 @@ export class SunburstViewer extends EChartViewer {
         return null;
       }).filter((columnName): columnName is string => columnName !== null);
       this.render(reordered);      
-    });
+    }));
     this.subs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
     this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((data) => {
       const columnNamesToRemove = data.columns.map((column: DG.Column) => column.name);
