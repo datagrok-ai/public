@@ -56,7 +56,8 @@ runs:
         for email in "${email_array[@]}"; do
           JSON_DATA="?email=$email"
 
-          USER_ID=$(bash $GITHUB_WORKSPACE/.github/scripts/slack_api_request.sh "https://slack.com/api/users.lookupByEmail" "GET" "${{ inputs.slack-token }}" "$JSON_DATA" | jq -r '.user.id')
+          RESPONSE=$(bash $GITHUB_WORKSPACE/.github/scripts/slack_api_request.sh "https://slack.com/api/users.lookupByEmail" "GET" "${{ inputs.slack-token }}" "$JSON_DATA")
+          USER_ID=$(echo $RESPONSE | jq -r '.user.id')
 
           if [ "$USER_ID" != "null" ]; then
             SLACK_IDS+=("$USER_ID")
