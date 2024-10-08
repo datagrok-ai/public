@@ -57,6 +57,7 @@ runs:
           JSON_DATA="?email=$email"
 
           RESPONSE=$(bash $GITHUB_WORKSPACE/.github/scripts/slack_api_request.sh "https://slack.com/api/users.lookupByEmail" "GET" "${{ inputs.slack-token }}" "$JSON_DATA")
+          echo $RESPONSE
           USER_ID=$(echo $RESPONSE | jq -r '.user.id')
 
           if [ "$USER_ID" != "null" ]; then

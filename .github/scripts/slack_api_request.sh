@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x
+#set -x
 
 # Function to make a Slack API request and handle rate limiting (status 429)
 slack_api_request() {
