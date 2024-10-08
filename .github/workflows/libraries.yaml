@@ -208,51 +208,37 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      - name: Get actors slack
+        id: actor
+        uses: ./.github/actions/slack-user-action
+        with:
+          slack-token: ${{ secrets.SLACKBOT_TOKEN }}
+          email-mapping: ${{ secrets.EMAIL_SLACK_ID }}
+      - name: Get owner email
+        run: echo "owner=$(jq -r .author.email package.json)" >> $GITHUB_OUTPUT
+        id: owner-email
+        working-directory: libraries/${{ matrix.project }}
+      - name: Get owners slack
+        id: owner
+        uses: ./.github/actions/slack-user-action
+        with:
+          slack-token: ${{ secrets.SLACKBOT_TOKEN }}
+          emails: ${{ steps.owner-email.outputs.owner }}
       - name: Prepare Slack Message
-        if: steps.publish.outcome == 'success'
-        id: slack-user
+        id: slack-prepare
         shell: bash
-        env:
-          SLACK_ID: ${{ secrets.SLACK_ID }}
         run: |
-          channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
-          echo "::add-mask::$channel_id"
-
-          header="Library *${{ matrix.project }}* version *${{ matrix.version }}* published to <https://www.npmjs.com/package/$(jq -r .name "libraries/${{ matrix.project }}/package.json")/v/${{ matrix.version }}|NPM>\n<@$channel_id> FYI"
+          mentions=$(echo -e "${{ steps.actor.outputs.user-ids }}\n${{ steps.owner.outputs.user-ids }}" | sort -u)
+          header="Library \*${{ matrix.project }}\* version \*${{ matrix.version }}\* published to <https://www.npmjs.com/package/$(jq -r .name "packages/${{ matrix.project }}/package.json")/v/${{ matrix.version }}|NPM>\n$(for value in $mentions; do echo -n "<@$value> "; done) FYI"
           echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
-
-          context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1)>"
-          echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
-
       - name: Send to Slack
         id: slack
-        if: steps.slack-user.outcome == 'success'
-        uses: slackapi/slack-github-action@v1.24.0
+        if: steps.slack-prepare.outcome == 'success'
+        uses: ./.github/actions/slack-post-action
         with:
-          channel-id: '#build'
-          payload: |
-            {
-                "blocks": [
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "${{ env.SLACK_MESSAGE_HEADER }}"
-                        }
-                    },
-                    {
-                        "type": "context",
-                        "elements": [
-                            {
-                                "type": "mrkdwn",
-                                "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"
-                            }
-                        ]
-                    }
-                ]
-            }
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
+          channel: '#jenkins-test-build'
+          slack-token: ${{ secrets.SLACKBOT_TOKEN }}
+          message: ${{ env.SLACK_MESSAGE_HEADER }}
 
       - name: Commit package-lock.json
         continue-on-error: true
