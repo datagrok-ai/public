@@ -110,7 +110,7 @@ jobs:
         if: steps.slack-prepare.outcome == 'success'
         uses: ./.github/actions/slack-post-action
         with:
-          channel: '#jenkins-test-build'
+          channel: '#build'
           slack-token: ${{ secrets.SLACKBOT_TOKEN }}
           message: ${{ env.SLACK_MESSAGE_HEADER }}
 
