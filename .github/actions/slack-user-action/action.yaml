@@ -57,10 +57,10 @@ runs:
           JSON_DATA="?email=$email"
 
           RESPONSE=$(bash $GITHUB_WORKSPACE/.github/scripts/slack_api_request.sh "https://slack.com/api/users.lookupByEmail" "GET" "${{ inputs.slack-token }}" "$JSON_DATA")
-          echo $RESPONSE
           USER_ID=$(echo $RESPONSE | jq -r '.user.id')
 
           if [ "$USER_ID" != "null" ]; then
+            echo $USER_ID
             SLACK_IDS+=("$USER_ID")
           else
             echo "Error: Unable to find Slack user ID for $email."
@@ -72,4 +72,4 @@ runs:
         SLACK_IDS_CSV=$(IFS=','; echo "${SLACK_IDS[*]}")
 
         # Set the list of Slack IDs as an output
-        echo "::set-output name=user-ids::$SLACK_IDS_CSV"
+        echo "user-ids=$SLACK_IDS_CSV" >> $GITHUB_OUTPUT
