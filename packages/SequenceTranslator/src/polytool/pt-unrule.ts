@@ -30,7 +30,7 @@ export function doPolyToolUnrule(helms: string[], rules: Rules): string[] {
       resHrzSeqList[i] = '';
     else {
       const chain = Chain.fromHelm(helms[i]);
-      resHrzSeqList[i] = chain.getNotation(rules);
+      resHrzSeqList[i] = chain.getNotation();
     }
   }
   return resHrzSeqList;

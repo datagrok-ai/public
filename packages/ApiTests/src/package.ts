@@ -96,6 +96,60 @@ export function CustomStringInput(params: any) {
   return defaultInput;
 }
 
+//name: testOutputAnnotationJoinDf
+//input: dataframe data
+//input: column col
+//output: dataframe res {action:join(data)}
+export function testOutputAnnotationJoinDf(data: DG.DataFrame, col: DG.Column<string>): DG.DataFrame {
+  const colRes = DG.Column.string('joined', data.rowCount).init((i) => `${col.get(i)}_abc`);
+  return DG.DataFrame.fromColumns([colRes]);
+}
+
+//name: testOutputAnnotationJoinCol
+//input: dataframe data
+//input: column col
+//output: column res {action:join(data)}
+export function testOutputAnnotationJoinCol(data: DG.DataFrame, col: DG.Column<string>): DG.Column {
+  const colRes = DG.Column.string('joined', data.rowCount).init((i) => `${col.get(i)}_abc`);
+  return colRes;
+}
+
+//name: testOutputAnnotationJoinColList
+//input: dataframe data
+//input: column col
+//output: column res {action:join(data)}
+export function testOutputAnnotationJoinColList(data: DG.DataFrame, col: DG.Column<string>): DG.ColumnList {
+  const colRes = DG.Column.string('joined', data.rowCount).init((i) => `${col.get(i)}_abc`);
+  return DG.DataFrame.fromColumns([colRes]).columns;
+}
+
+//name: testOutputAnnotationReplaceDf
+//input: dataframe data
+//input: column col
+//output: dataframe res {action:replace(data)}
+export function testOutputAnnotationReplaceDf(data: DG.DataFrame, col: DG.Column<string>): DG.DataFrame {
+  const colRes = DG.Column.string('val', data.rowCount).init((i) => `${col.get(i)}_abc`);
+  return DG.DataFrame.fromColumns([colRes]);
+}
+
+//name: testOutputAnnotationReplaceCol
+//input: dataframe data
+//input: column col
+//output: column res {action:replace(data)}
+export function testOutputAnnotationReplaceCol(data: DG.DataFrame, col: DG.Column<string>): DG.Column {
+  const colRes = DG.Column.string('val', data.rowCount).init((i) => `${col.get(i)}_abc`);
+  return colRes;
+}
+
+//name: testOutputAnnotationReplaceColList
+//input: dataframe data
+//input: column col
+//output: column res {action:replace(data)}
+export function testOutputAnnotationReplaceColList(data: DG.DataFrame, col: DG.Column<string>): DG.ColumnList {
+  const colRes = DG.Column.string('val', data.rowCount).init((i) => `${col.get(i)}_abc`);
+  return DG.DataFrame.fromColumns([colRes]).columns;
+}
+
 //name: expectDate
 //shortName: expectDate
 //input: datetime actual

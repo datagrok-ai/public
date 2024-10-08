@@ -211,10 +211,8 @@ export class PositionInfo {
         const left = b.left;
 
         let color: string = undefinedColor;
-        if (monomerLib) {
-          const wem = monomerLib.getWebEditorMonomer(biotype, monomer)!;
-          color = wem.backgroundcolor!;
-        }
+        if (monomerLib)
+          color = monomerLib.getMonomerTextColor(biotype, monomer)!;
 
         g.resetTransform();
         g.strokeStyle = 'lightgray';

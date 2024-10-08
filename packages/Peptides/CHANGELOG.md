@@ -1,5 +1,13 @@
 # Peptides changelog
 
+## 1.18.6 (2024-10-08)
+
+MCL: Better layout for similar size clusters
+
+## 1.18.5 (2024-10-07)
+
+Fix weblogo support
+
 ## 1.18.4 (2024-10-03)
 
 Use monomer tooltip from library
