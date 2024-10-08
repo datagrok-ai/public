@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.15.13 (2024-10-08)
+
+Monomer manager: Fix Molv2k Rgroup line generation
+
 ## 2.15.12 (2024-10-07)
 
 Fix weblogo colors

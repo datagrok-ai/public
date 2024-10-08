@@ -974,7 +974,8 @@ function getCorrectedMolBlock(molBlock: string) {
   const rgpLineIdx = lines.findIndex((line) => line.startsWith('M') && line.includes('RGP'));
 
   if (rgpLineIdx === -1) {
-    const rgpLine = `M  RGP ${rgroupLineNums.length} ${Object.entries(rgroupLineNumbers).map(([atomLine, rGroupNum]) => `${atomLine} ${rGroupNum}`).join(' ')}`;
+    // number of r groups has 3 empty slots before it, atom numbers have 4 empty slots before them
+    let rgpLine = `M  RGP${rgroupLineNums.length.toString().padStart(3,' ')}${Object.entries(rgroupLineNumbers).map(([atomLine, rGroupNum]) => `${atomLine.toString().padStart(4, ' ')}${rGroupNum.toString().padStart(4, ' ')}`).join('')}`;
     const mEndIdx = lines.findIndex((line) => line.startsWith('M') && line.includes('END'));
     lines.splice(mEndIdx, 0, rgpLine);
   }
