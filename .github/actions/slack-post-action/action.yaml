@@ -14,9 +14,11 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Prepare Slack Message
+    - name: Post Slack Message
       id: slack-prepare
       shell: bash
+      env:
+        SLACK_BOT_TOKEN: ${{ inputs.slack-token }}
       run: |
         context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Branch:* <${{ github.server_url }}/${{ github.repository }}/tree/${{ github.event.workflow_run.head_branch }}|${{ github.event.workflow_run.head_branch }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1 | sed -e 's/"/\\"/g')>"
         echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
@@ -47,14 +49,6 @@ runs:
         EOF
         )
 
-        # Save the payload to be used in the next step
-        echo "SLACK_MESSAGE=$SLACK_MESSAGE" >> $GITHUB_ENV
-
-    - name: Post Message to Slack
-      env:
-        SLACK_BOT_TOKEN: ${{ inputs.slack-token }}
-      shell: bash
-      run: |
         # Use the prepared JSON message and call the Slack API
         bash ./.github/scripts/slack_api_request.sh \
           "https://slack.com/api/chat.postMessage" \
