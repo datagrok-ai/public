@@ -229,8 +229,8 @@ jobs:
         shell: bash
         run: |
           mentions=$(echo -e "${{ steps.actor.outputs.user-ids }}\n${{ steps.owner.outputs.user-ids }}" | sort -u)
-          header="Library \*${{ matrix.project }}\* version \*${{ matrix.version }}\* published to <https://www.npmjs.com/package/$(jq -r .name "packages/${{ matrix.project }}/package.json")/v/${{ matrix.version }}|NPM>\n$(for value in $mentions; do echo -n "<@$value> "; done) FYI"
-          echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
+          header="Library *${{ matrix.project }}* version *${{ matrix.version }}* published to <https://www.npmjs.com/package/$(jq -r .name "packages/${{ matrix.project }}/package.json")/v/${{ matrix.version }}|NPM>\n$(for value in $mentions; do echo -n "<@$value> "; done) FYI"
+          echo "SLACK_MESSAGE_HEADER=$header" >> $GITHUB_ENV
       - name: Send to Slack
         id: slack
         if: steps.slack-prepare.outcome == 'success'
