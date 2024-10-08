@@ -29,7 +29,6 @@ runs:
         EMAIL=$(echo '${{ inputs.email-mapping }}' | jq -r .\"${{ github.actor }}\")
 
         if [ "$EMAIL" != "null" ]; then
-#          echo "::add-mask::$EMAIL"
           echo "DATAGROK_EMAIL=$EMAIL" >> $GITHUB_ENV
         else
           echo "Error: No email found to match Slack ID."
@@ -41,7 +40,6 @@ runs:
       shell: bash
       run: |
         EMAIL=${{ inputs.emails }}
-#        echo "::add-mask::$EMAIL"
         echo "DATAGROK_EMAIL=$EMAIL" >> $GITHUB_ENV
 
     # Step 2: Fetch Slack User ID by email (if email is provided)
