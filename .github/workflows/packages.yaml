@@ -563,11 +563,8 @@ jobs:
         id: gen_checks
         working-directory: packages/${{ matrix.package }}
 
-      - name: grok check
+      - run: grok check
         if: ${{ !contains(matrix.package, 'Tests') && !contains(matrix.package, 'Meta') && matrix.beta != 'true' }}
-        run: |
-          grok check
-          echo "owner=$(jq -r .author.email package.json)" >> $GITHUB_OUTPUT
         id: check
         working-directory: packages/${{ matrix.package }}
 
@@ -586,12 +583,17 @@ jobs:
           slack-token: ${{ secrets.SLACKBOT_TOKEN }}
           email-mapping: ${{ secrets.EMAIL_SLACK_ID }}
 
+      - name: Get owner email
+        run: echo "owner=$(jq -r .author.email package.json)" >> $GITHUB_OUTPUT
+        id: owner-email
+        working-directory: packages/${{ matrix.package }}
+
       - name: Get owners slack
         id: owner
         uses: ./.github/actions/slack-user-action
         with:
           slack-token: ${{ secrets.SLACKBOT_TOKEN }}
-          emails: ${{ steps.check.outputs.owner }}
+          emails: ${{ steps.owner-email.outputs.owner }}
 
       - name: Get QA slack
         id: qa

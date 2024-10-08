@@ -40,7 +40,7 @@ runs:
               "elements": [
                 {
                   "type": "mrkdwn",
-                  "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"
+                  "text": "$context"
                 }
               ]
             }
