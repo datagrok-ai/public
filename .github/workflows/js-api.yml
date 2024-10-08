@@ -306,7 +306,7 @@ jobs:
 
       - name: Prepare Slack Message
         if: ${{ steps.test-ApiTests.outcome == 'failure' }}
-        id: slack-prepare
+        id: slack-prepare-api
         shell: bash
         env:
           SLACK_ID: ${{ secrets.SLACK_ID }}
@@ -327,7 +327,7 @@ jobs:
 
       - name: Send test report to Slack
         id: slack
-        if: ${{ steps.slack-prepare.outcome == 'success' }}
+        if: ${{ steps.slack-prepare-api.outcome == 'success' }}
         uses: slackapi/slack-github-action@v1.24.0
         with:
           channel-id: ${{ env.SLACK_CHANNEL }}
