@@ -32,7 +32,10 @@ export class HelmWebEditor implements IHelmWebEditor {
   ) {
     this.host = host ?? ui.div([], {style: {width: `${this.w}px`, height: `${this.h}px`}});
 
-    const styleBackup = {width: this.host.style.width, height: this.host.style.height, overflow: this.host.style.overflow};
+    const styleBackup = {
+      width: this.host.style.width, height: this.host.style.height,
+      overflow: this.host.style.overflow
+    };
     this.editor = new JSDraw2.Editor(this.host, {
       width: this.w, height: this.h, viewonly: true,
       drawOptions: drawOptions

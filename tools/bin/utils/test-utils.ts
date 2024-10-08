@@ -152,7 +152,7 @@ export const recorderConfig = {
   // aspectRatio: '16:9',
 };
 
-export async function loadPackages(packagesDir: string, packagesToLoad?: string, host?: string, skipPublish?: boolean, skipBuild?: boolean, linkPackage?: boolean): Promise<string[]> {
+export async function loadPackages(packagesDir: string, packagesToLoad?: string, host?: string, skipPublish?: boolean, skipBuild?: boolean, linkPackage?: boolean, release?: boolean): Promise<string[]> {
   let packagesToRun = new Map<string, boolean>();
   let hostString = host === undefined ? `` : `${host}`;
   if (packagesToLoad !== "all") {
@@ -177,7 +177,7 @@ export async function loadPackages(packagesDir: string, packagesToLoad?: string,
                 await utils.runScript(`grok link`, packageDir);
               if (skipBuild != true)
                 await utils.runScript(`npm run build`, packageDir);
-              await utils.runScript(`grok publish ${hostString}`, packageDir);
+              await utils.runScript(`grok publish ${hostString}${release ? ' --release' : ''}`, packageDir);
             }
             packagesToRun.set(dirName, true);
             console.log(`Package published ${dirName}`);
@@ -202,5 +202,5 @@ export async function loadPackages(packagesDir: string, packagesToLoad?: string,
 export interface WorkerOptions {
   path?: string, catchUnhandled?: boolean, core?: boolean,
   report?: boolean, record?: boolean, verbose?: boolean, benchmark?: boolean, platform?: boolean, category?: string, test?: string,
-  stressTest?: boolean, gui?:boolean
+  stressTest?: boolean, gui?: boolean
 }

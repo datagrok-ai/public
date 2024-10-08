@@ -36,9 +36,9 @@ Datagrok provides intuitive tools for the rapid solving ODEs.
 * Explore model:
   * Click on the "Run sensitivity analysis" icon <i class="fas fa-analytics"></i>
   * Analyze the relationship between inputs and outputs using one of the following methods:
-    * [Monte Carlo](https://datagrok.ai/help/compute#monte-carlo)
-    * [Sobol](https://datagrok.ai/help/compute#sobol)
-    * [Grid](https://datagrok.ai/help/compute#grid)
+    * [Monte Carlo](https://datagrok.ai/help/compute/function-analysis#monte-carlo)
+    * [Sobol](https://datagrok.ai/help/compute/function-analysis#sobol)
+    * [Grid](https://datagrok.ai/help/compute/function-analysis#grid)
 * Fit parameters:
   * Click on the "Fit inputs" icon <i class="grok-icon fas fa-chart-line"></i>
   * Find input conditions leading to specified output constraints
@@ -273,6 +273,6 @@ Find more features in Diff Studio [docs](https://datagrok.ai/help/compute/diff-s
 
 See also
 
-* [Sensitivity analysis](https://datagrok.ai/help/compute/#sensitivity-analysis)
-* [Parameter optimization](https://datagrok.ai/help/compute/#input-parameter-optimization)
+* [Sensitivity analysis](https://datagrok.ai/help/compute/function-analysis#sensitivity-analysis)
+* [Parameter optimization](https://datagrok.ai/help/compute/function-analysis#parameter-optimization)
 * [Scripting](https://datagrok.ai/help/compute/scripting)

@@ -1,5 +1,31 @@
 # bio changelog
 
+## 5.44.5 (2024-10-03)
+
+### Bug fixes
+
+* Fix MonomerPlacer to use IMonomerLibBase.getMonomerTextColor
+* Fix MonomerPlacer for changed column settings
+* Fix MonomerPlacer for original monomer symbol
+* Fix SeqHandler .isSeparator to account column tag
+
+## 5.44.4 (2024-10-02)
+
+### New features
+
+* Add use monomer colors from monomer lib for MonomerPlacer
+
+### Bug fixes
+
+* Fix splitAlignedSequences for canonical monomer symbol
+* Fix monomer colors for empty monomer lib
+* Fix for grok.userSettings
+* Fixes for eslint
+
+## 5.44.3 (2024-10-02)
+
+Correct color for monomer lib configs
+
 ## 5.44.2 (2024-09-27)
 
 ### New features

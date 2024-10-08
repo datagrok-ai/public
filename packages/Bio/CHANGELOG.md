@@ -1,5 +1,42 @@
 # Bio changelog
 
+## 2.15.11 (2024-10-04)
+
+Monomer renderer: Choose correct colors for background
+
+## 2.15.10 (2024-10-04)
+
+Monomer manager: Better discoverabilty of errors.
+
+## 2.15.9 (2024-10-03)
+
+### New features
+
+* Add monomer lib getMonomerTextColor
+
+### Bug fixes
+
+* Fix sample monomer Aca colors
+* Fix Difference, Monomer renderers to use getMonomerTextColor
+* Fix MacromoleculeCustomCellRenderer console error on onMouseLeave
+
+## 2.15.8 (2024-10-02)
+
+### New features
+
+* Add use monomer lib colors for Monomer Difference Macromolecule
+* Add use monomer lib colors fpr WebLogoViewer
+
+### Bug fixes
+
+* Fix test splitters.splitToMonomers for default monomer lib
+* Fix monomer lib colors for natural monomers
+* Fix monomer colors for empty monomer lib
+
+## 2.15.7 (2024-10-02)
+
+Adjust monomer colors for very 'white' colors.
+
 ## 2.15.6 (2024-09-27)
 
 ### Bug fixes

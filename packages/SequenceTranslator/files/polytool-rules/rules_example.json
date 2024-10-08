@@ -25,11 +25,11 @@
   },
   {
     "type": "reaction",
-    "code": "3",
+    "code": "4",
     "monomericSubstitution": {
-      "firstMonomer": "aG",
-      "secondMonomer": "azG",
-      "reaction": "[H:1]NC(C([OH:2])=O)c1cn(C(N[H:3])C([OH:4])=O)nn1",
+      "firstMonomer": "azG",
+      "secondMonomer": "aG",
+      "reaction": "[C:1]N=[N+]=[N-].[C:2]C#C>>[C:1]N1-N=NC=C1[C:2]",
       "name": "GGaz"
     }
   },

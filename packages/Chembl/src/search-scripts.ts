@@ -5,11 +5,11 @@ import {matchAndParseQuery, powerSearchQueryTable}
   from '@datagrok-libraries/db-explorer/src/search/search-widget-utils';
 
 export async function chemblBioactivityForTargetsSearch(s: string) {
-  const matchResults = matchAndParseQuery('Bioactrivity for bacterial targets for ${}', s);
-  if (!matchResults || !matchResults[0])
+  const matchResults = matchAndParseQuery('Bioactrivity for bacterial targets for ${target}', s);
+  if (!matchResults || !matchResults['target'])
     return null;
 
-  const targetName = matchResults[0];
+  const targetName = matchResults['target'];
   const query = DG.Func.find({package: 'Chembl', name: 'BioactivityDataForBacterialTargetsForOrganism'})[0];
   if (!query)
     return null;
@@ -27,11 +27,11 @@ export async function chemblBioactivityForTargetsSearch(s: string) {
 }
 
 export async function chemblPKForDrugSearch(s: string) {
-  const matchResults = matchAndParseQuery('Pharmacokinetic Data for ${}', s);
-  if (!matchResults || !matchResults[0])
+  const matchResults = matchAndParseQuery('Pharmacokinetic Data for ${drug}', s);
+  if (!matchResults || !matchResults['drug'])
     return null;
 
-  const drugName = matchResults[0];
+  const drugName = matchResults['drug'];
   const query = DG.Func.find({package: 'Chembl', name: 'PKDataFromCuratedDrugPharmacokineticDataSourceForDrug'})[0];
   if (!query)
     return null;
@@ -50,11 +50,11 @@ export async function chemblPKForDrugSearch(s: string) {
 }
 
 export async function activityDetailsForTarget(s: string) {
-  const matchResults = matchAndParseQuery('Compound activity details for target ${}', s);
-  if (!matchResults || !matchResults[0])
+  const matchResults = matchAndParseQuery('Compound activity details for target ${target}', s);
+  if (!matchResults || !matchResults['target'])
     return null;
 
-  const targetID = matchResults[0];
+  const targetID = matchResults['target'];
   const query = DG.Func.find({package: 'Chembl', name: 'CompoundActivityDetailsForTarget'})[0];
   if (!query)
     return null;

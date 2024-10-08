@@ -178,6 +178,7 @@ export class DemoScript {
       this._steps[this._currentStep].options?.delay! : 2000;
 
     try {
+      grok.shell.isInDemo = true;
       await this._steps[this._currentStep].func();
     } catch (e) {
       grok.shell.isInDemo = false;
@@ -203,6 +204,7 @@ export class DemoScript {
     if (this._currentStep === this.stepNumber) {
       this._isAutomatic ? this._stopStartBtn.replaceWith(this._restartBtn) :
         this._nextStepBtn.replaceWith(this._restartBtn);
+      grok.shell.isInDemo = false;
       return;
     }
 
@@ -219,6 +221,7 @@ export class DemoScript {
       const browseView = grok.shell.view('Browse') as DG.BrowseView;
       if (browseView?.preview instanceof DG.TableView)
         await grok.data.detectSemanticTypes(browseView.preview.dataFrame);
+      grok.shell.isInDemo = false;
     }
   }
 
@@ -369,6 +372,7 @@ export class DemoScript {
 
   /** Starts the demo script */
   async start(): Promise<void> {
+    grok.shell.isInDemo = true;
     this._initRoot();
     grok.shell.newView(this.name);
 

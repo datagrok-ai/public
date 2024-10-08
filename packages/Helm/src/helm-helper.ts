@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 
+/* eslint-disable max-len */
 import {
   App, Point, HelmAtom, HelmBond, HelmMol, HelmType, GetMonomerFunc, GetMonomerResType,
   MonomerExplorer, TabDescType, MonomersFuncs, MonomerSetType, ISeqMonomer, PolymerType, MonomerType,
@@ -24,6 +25,7 @@ import {HelmWebEditor} from './helm-web-editor';
 import {OrgHelmModule, ScilModule} from './types';
 import {HelmInput} from './widgets/helm-input';
 import {getHoveredMonomerFromEditorMol} from './utils/get-hovered';
+/* eslint-enable max-len */
 
 import {_package} from './package';
 

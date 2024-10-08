@@ -47,7 +47,6 @@ import {MmDistanceFunctionsNames}
 import {ITSNEOptions, IUMAPOptions}
   from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reducer';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
-import {showMonomerTooltip} from './utils/tooltips';
 import {AggregationColumns, MonomerPositionStats} from './utils/statistics';
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 import {getDbscanWorker} from '@datagrok-libraries/math';
@@ -743,8 +742,6 @@ export class PeptidesModel {
       if (!(cell.isTableCell && cell.tableColumn?.semType === C.SEM_TYPES.MONOMER))
         return false;
 
-
-      showMonomerTooltip(cell.cell.value, x, y);
       return true;
     });
   }

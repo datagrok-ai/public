@@ -6,6 +6,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {ros34prw} from './solver-tools/ros34prw-method';
 import '../css/app-styles.css';
+import {LINK} from './ui-constants';
 
 enum PK_PD {
   INITIAL = 0,
@@ -206,21 +207,21 @@ export function getPkPdSim(dose: number, count: number, interval: number, KA: nu
 } // getPkPdSim
 
 /** Bioreactor demo app info for the Help panel */
-const bioreactorInfo = `# Try
-Vary inputs and check results
-# No-code
-Construction of complex phenomena simulators is provided by Diff Studio.
-# Model
-Only declarative equations description is required.
-# Essence
-Simulation of controlled fab-arm exchange kinetic mechanism is performed here.
+const bioreactorInfo = `# Model
+Simulation of a controlled fab-arm exchange kinetic
+[mechanism](https://doi.org/10.1074/jbc.RA117.000303).
+# Try
+Interactive results based on input changes.
 # Performance
 1000 times faster than the previous version.
 # Complexity
-Each time you change inputs, a system of 13 non-linear ordinary differential equations is solved.
+Each time you change inputs, a system of 13 nonlinear ordinary differential equations is solved.
+# No-code
+[Diff Studio](${LINK.DIF_STUDIO})
+enables the creation of complex models without writing code.
 # Learn more
-* [Diff Studio](https://datagrok.ai/help/compute/diff-studio)
-* [Compute](https://datagrok.ai/help/compute/)`;
+* [Sensitivity analysis](${LINK.SENS_AN})
+* [Parameter optimization](${LINK.FITTING})`;
 
 /** Show info in the Help panel */
 function showHelpPanel(info: string): void {
@@ -241,19 +242,19 @@ export function showBioHelpPanel() {
 }
 
 /** PK-PD demo app info for the Help panel */
-const pkpdInfo = `# Try
-Interactive results when changing inputs.
-# No-code
-Construction of complex phenomena simulators is provided by Diff Studio.
-# Model
-Only declarative equations description is required.
-# Essence
-Two-compartment pharmacokinetic-pharmacodynamic (PK-PD) modeling is performed.
+const pkpdInfo = `# Model
+Simulation of a two-compartment pharmacokinetic-pharmacodynamic
+([PK-PD](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7348046)).
+# Try
+Interactive results based on input changes.
 # Performance
-Nonlinear system of differential equations within a few milliseconds.
+Nonlinear systems of differential equations are solved within milliseconds.
+# No-code
+[Diff Studio](${LINK.DIF_STUDIO})
+enables the creation of complex models without writing code.
 # Learn more
-* [Diff Studio](https://datagrok.ai/help/compute/diff-studio)
-* [Compute](https://datagrok.ai/help/compute/)`;
+* [Sensitivity analysis](${LINK.SENS_AN})
+* [Parameter optimization](${LINK.FITTING})`;
 
 /** Show PK-PD help panel */
 export function showPkPdHelpPanel() {

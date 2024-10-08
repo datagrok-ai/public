@@ -171,6 +171,21 @@ public class GrokConnect {
             return response;
         });
 
+        post("/unique-columns", (request, response) -> {
+            response.type("application/json");
+            try {
+                DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
+                JdbcDataProvider provider = providerManager.getByName(connection.dataSource);
+                List<String> uniqueColumns = provider.getUniqueColumns(connection, connection.get("schema"), connection.get("table"));
+                response.status(200);
+                response.body(gson.toJson(uniqueColumns));
+            } catch (GrokConnectException ex) {
+                response.status(500);
+                response.body(gson.toJson(ex.getMessage()));
+            }
+            return response;
+        });
+
         post("/schemas", (request, response) -> {
             BufferAccessor buffer;
             DataQueryRunResult result = new DataQueryRunResult();

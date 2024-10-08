@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.3.6 (2024-10-03)
+
+Add new item getting from items grid
+
 ## 4.3.4 (2024-09-25) 
 
 utils lib: Add setActive and onValueChanged for ActiveFiles for dialog history

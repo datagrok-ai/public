@@ -102,6 +102,7 @@ export interface IDartApi {
   grok_DataConnectionsDataSource_SubDir(s: any, c: any, dir: String): Promise<any>;
   grok_DataConnectionsDataSource_Get_Schemas(s: any, c: any): Promise<any>;
   grok_DataConnectionsDataSource_Get_Schema(s: any, c: any, schema: String): Promise<any>;
+  grok_DataConnectionsDataSource_Get_Unique_Columns(s: any, c: any, schema: String, table: String): Promise<any>;
   grok_GroupsDataSource_Save(s: any, e: any): Promise<any>;
   grok_EntitiesDataSource_SaveProperties(s: any, props: any): Promise<any>;
   grok_EntitiesDataSource_GetProperties(s: any, e: any): Promise<any>;
@@ -871,6 +872,8 @@ export interface IDartApi {
   grok_Property_Get_ColumnTypeFilter(p: any): any;
   grok_Property_Options(p: any, options: any): any;
   grok_Property_RegisterAttachedProperty(typeName: String, p: any): any;
+  grok_Property_Get_IsVectorizable(p: any): any;
+  grok_Property_Get_VectorName(p: any): any;
   grok_SemanticValue(value: any, semType: String): any;
   grok_SemanticValue_Get_Value(v: any): any;
   grok_SemanticValue_Set_Value(v: any, x: any): any;
@@ -1218,6 +1221,7 @@ export interface IDartApi {
   grok_FuncCall_Get_AdHoc(f: any): any;
   grok_FuncCall_Set_AdHoc(f: any, adHoc: Bool): any;
   grok_FuncCall_GetOutputViews(c: any): any;
+  grok_FuncCall_Get_DebugLogger(c: any): any;
   grok_FuncCallParam_Get_Aux(p: any): any;
   grok_FuncCallParam_Get_Param(p: any): any;
   grok_FuncCallParam_Get_Value(p: any): any;
@@ -1283,6 +1287,7 @@ export interface IDartApi {
   grok_Script_Create(script: String): any;
   grok_Script_GetScript(script: any): any;
   grok_Script_SetScript(script: any, s: String): any;
+  grok_Script_ClientCode(script: any): any;
   grok_Script_GetLanguage(script: any): any;
   grok_Script_SetLanguage(script: any, s: String): any;
   grok_Script_Get_Environment(script: any): any;
@@ -1498,6 +1503,7 @@ export interface IDartApi {
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;
+  grok_ScriptLanguage_Create(): any;
   grok_DockerImage(): any;
   grok_DockerImage_Create(): any;
   grok_DockerImage_Get_description(x: any): any;
@@ -1517,6 +1523,7 @@ export interface IDartApi {
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;
+  grok_ScriptLanguage_Create(): any;
   grok_DockerImage(): any;
   grok_DockerImage_Create(): any;
   grok_DockerImage_Get_description(x: any): any;

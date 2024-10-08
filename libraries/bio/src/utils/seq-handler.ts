@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 
+/* eslint-disable max-len */
 import {ALIGNMENT, ALPHABET, candidateAlphabets, getSplitterWithSeparator, NOTATION, positionSeparator, splitterAsFasta, splitterAsHelm, TAGS} from './macromolecule';
 import {INotationProvider, ISeqSplitted, SeqColStats, SplitterFunc,} from './macromolecule/types';
 import {detectAlphabet, splitterAsFastaSimple, StringListSeqSplitted} from './macromolecule/utils';
@@ -11,6 +12,9 @@ import {getMonomerLibHelper, IMonomerLibHelper} from '../monomer-works/monomer-u
 import {HELM_POLYMER_TYPE, HELM_WRAPPERS_REGEXP, PHOSPHATE_SYMBOL} from './const';
 import {GAP_SYMBOL, GapOriginals} from './macromolecule/consts';
 import {GridCellRendererTemp, CellRendererBackBase} from './cell-renderer-back-base';
+import {HelmTypes} from '../helm/consts';
+import {HelmType} from '../helm/types';
+/* eslint-enable max-len */
 
 export const SeqTemps = new class {
   /** Column's temp slot name for a SeqHandler object */
@@ -182,6 +186,10 @@ export class SeqHandler {
     return alphabet;
   }
 
+  public get defaultBiotype(): HelmType {
+    return this.alphabet === ALPHABET.RNA || this.alphabet === ALPHABET.DNA ? HelmTypes.NUCLEOTIDE : HelmTypes.AA;
+  }
+
   protected get helmCompatible(): string | undefined {
     return this.column.getTag(TAGS.isHelmCompatible);
   }
@@ -321,7 +329,7 @@ export class SeqHandler {
 
   public isFasta(): boolean { return this.notation === NOTATION.FASTA; }
 
-  public isSeparator(): boolean { return this.notation === NOTATION.SEPARATOR; }
+  public isSeparator(): boolean { return this.notation === NOTATION.SEPARATOR || !!this.separator; }
 
   public isHelm(): boolean { return this.notation === NOTATION.HELM; }
 

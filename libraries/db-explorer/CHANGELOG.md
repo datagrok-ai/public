@@ -1,5 +1,9 @@
 # db-explorer changelog
 
+## 1.1.3 (2024-10-03)
+
+Add detection of variable names in search integrated queries
+
 ## 1.1.2 (2024-09-27)
 
 Fix value conversion in search results

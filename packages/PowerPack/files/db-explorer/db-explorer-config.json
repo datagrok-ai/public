@@ -7,15 +7,6 @@
       "column": "login"
     }
   },
-  "joinOptions": [
-  ],
-  "headerNames": {
-  },
-  "uniqueColumns": {
-    "activities": "activity_id",
-    "compound_records": "record_id",
-    "molecule_synonyms": "molsyn_id"
-  },
   "customSelectedColumns": {
     "users": [
       "picture",

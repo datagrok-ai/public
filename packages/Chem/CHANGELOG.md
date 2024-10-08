@@ -1,6 +1,12 @@
 # Chem changelog
 
-## 1.12.2 (WIP)
+## 1.12.3 (2024-10-01)
+
+### Bug fixes
+
+* GROK-16730: Demo: Activity cliffs: Cannot read properties of null
+
+## 1.12.2 (2024-09-25)
 
 ### Bug fixes
 

@@ -25,7 +25,7 @@ export class DataSourceType {
 
   static MariaDB = 'MariaDB';
 
-  static MlFlow = 'MlFlow';
+  static MlFlow = 'MLFlow';
 
   static MongoDB = 'MongoDB';
 
@@ -88,6 +88,24 @@ export class DataSourceType {
   static fileDataSources = ['Azure Blob', 'Dropbox', 'Files', 'GitHub', 'GoogleCloud', 'S3', 'CoreWeave', 'SharePoint'];
 
   static systemDataSources = ['AWS', 'PostgresDart'];
+
+}
+export class ScriptLanguage {
+  static Grok = 'grok';
+
+  static Julia = 'julia';
+
+  static Python = 'python';
+
+  static Pyodide = 'pyodide';
+
+  static R = 'r';
+
+  static NodeJs = 'nodejs';
+
+  static JavaScript = 'javascript';
+
+  static Octave = 'octave';
 
 }
 import {Entity} from '../entities'

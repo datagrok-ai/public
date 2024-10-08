@@ -11,7 +11,7 @@ To validate the functionality of the Fitting tool in Diff Studio, ensuring that 
   * FFox from 0.15 to 1.0
   * FKox from 0 to 3
 4. Scroll to the **Target Block** to locate the Target block in the Fitting view. 
-5. Input **Bioreactor Data**: In the Bioreactor table input field, add the file from Files: App Data > Diff Studio > Bioreactor.csv.
+5. Input **Bioreactor Data**: In the Bioreactor table input field, add the file from Files: App Data > Diff Studio > examples > bioreactor-experiment.csv
 6. Run the Fitting Process. Click the **Run** icon on the ribbon to start the fitting process.
 
 **Expected Results**: The parameters (switch at, FFox, FKox) should be selectable without any issues. The Bioreactor.csv file should be added successfully to the Bioreactor table input. The "RMSE by iterations" column should display a descending graph, reflecting the fitting results accurately. No errors should occur during the process.

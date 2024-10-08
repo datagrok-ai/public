@@ -92,16 +92,11 @@ category('getMonomer', ()=>{
     const monomerLib = monomerLibHelper.getMonomerLib();
     rewriteLibraries(monomerLib);
 
-    // const overriddenMonomersFuncs = helmHelper.revertOriginalMonomersFuncs();
-    // try {
-      const helmHelper: IHelmHelper = await getHelmHelper();
-      expect(helmHelper != null, true);
-      const getMonomerFunc: GetMonomerFunc = helmHelper.originalMonomersFuncs!.getMonomer!;
+    const helmHelper: IHelmHelper = await getHelmHelper();
+    expect(helmHelper != null, true);
+    const getMonomerFunc: GetMonomerFunc = helmHelper.originalMonomersFuncs!.getMonomer!;
 
-      return _testAll('original', getMonomerFunc);
-    // } finally {
-    //   helmHelper.overrideMonomersFuncs(overriddenMonomersFuncs);
-    // }
+    return _testAll('original', getMonomerFunc);
   }, {isAggregated: true});
 
   test('monomerLib', async () =>{

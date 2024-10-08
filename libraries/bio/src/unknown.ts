@@ -80,7 +80,7 @@ export class UnknownColorPalette extends UnknownSeqPalette {
                   this.customMonomerColors[monomerSymbol] = {};
 
                 this.customMonomerColors[monomerSymbol][polymerType] =
-                  correctColor(monomer.meta.colors.default.background, false);
+                  correctColor(monomer.meta.colors.default.background);
               }
             }
           }

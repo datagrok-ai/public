@@ -95,7 +95,7 @@ export class MonomerLibManager implements IMonomerLibHelper {
   }
 
   assignDuplicatePreferances(settings: UserLibSettings) {
-    this._monomerLib.assignDuplicatePreferances(settings);
+    this._monomerLib.assignDuplicatePreferences(settings);
   }
 
   /** Instance promise of {@link getFileManager} */

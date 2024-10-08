@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {registerChemblIdHandler} from './handlers';
-import { activityDetailsForTarget, chemblBioactivityForTargetsSearch, chemblPKForDrugSearch } from './search-scripts';
+import {chemblBioactivityForTargetsSearch, chemblPKForDrugSearch} from './search-scripts';
 
 export const _package = new DG.Package();
 
@@ -186,10 +186,3 @@ export async function chemblPKForDrugSearchWidget(s: string) {
   return await chemblPKForDrugSearch(s);
 }
 
-//name: chemblActivityDetailsForTargetSearchWidget
-//tags: search
-//input: string s
-//output: widget w
-export async function chemblActivityDetailsForTargetSearchWidget(s: string) {
-  return await activityDetailsForTarget(s);
-}

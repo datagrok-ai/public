@@ -58,7 +58,6 @@ export class DemoView extends DG.ViewBase {
         ui.h1(pathElements[pathElements.length - 1]),
         ui.divText(func.description),
         ui.bigButton('Start', async () => {
-          grok.shell.isInDemo = true;
           try {
             await func.apply();
           } catch (e) {

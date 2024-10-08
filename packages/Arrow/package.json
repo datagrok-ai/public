@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/arrow",
   "friendlyName": "Arrow",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "author": {
     "name": "Pavlo Polovyi",
     "email": "ppolovyi@datagrok.ai"
@@ -16,7 +16,7 @@
     "@datagrok-libraries/utils": "^4.3.0",
     "apache-arrow": "^15",
     "cash-dom": "^8.1.1",
-    "datagrok-api": "^1.19.0",
+    "datagrok-api": "^1.21.1",
     "dayjs": "^1.10.6",
     "file-loader": "^6.2.0",
     "parquet-wasm": "0.6.1"

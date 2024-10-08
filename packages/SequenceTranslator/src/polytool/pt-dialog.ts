@@ -12,7 +12,7 @@ import {getSeqHelper, ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-he
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 
 import {getRules, RuleInputs, Rules, RULES_PATH, RULES_STORAGE_NAME} from './pt-rules';
-import {doPolyToolConvert, getOverridenLibrary} from './pt-conversion';
+import {doPolyToolConvert, getOverriddenLibrary} from './pt-conversion';
 import {defaultErrorHandler} from '../utils/err-info';
 import {getLibrariesList} from './utils';
 import {getEnumerationChem, PT_CHEM_EXAMPLE} from './pt-enumeration-chem';
@@ -256,7 +256,7 @@ export async function polyToolConvert(
     if (generateHelm && table) table.columns.add(resHelmCol, true);
 
     const seqHelper: ISeqHelper = await getSeqHelper();
-    const lib = await getOverridenLibrary(rules);
+    const lib = await getOverriddenLibrary(rules);
     const toAtomicLevelRes =
       await seqHelper.helmToAtomicLevel(resHelmCol, chiralityEngine, /* highlight */ generateHelm, lib);
     const resMolCol = toAtomicLevelRes.molCol!;

@@ -58,6 +58,7 @@ export interface IVdRegionsViewer extends VdRegionsProps, IViewer {
 
 declare module 'datagrok-api/dg' {
   export interface DataFramePlotHelper {
+    // eslint-disable-next-line max-len
     fromType(viewerType: 'VdRegions', options: Partial<VdRegionsProps>): Promise<DG.Viewer<VdRegionsProps> & IVdRegionsViewer>;
   }
 }

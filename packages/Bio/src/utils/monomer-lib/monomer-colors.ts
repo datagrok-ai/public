@@ -7,19 +7,21 @@ import {HelmType} from '@datagrok-libraries/bio/src/helm/types';
  */
 export const naturalMonomerColors = {
   [HelmTypes.BASE]: {
-    A: "#A0A0FF",
-    G: "#FF7070",
-    T: "#A0FFA0",
-    C: "#FF8C4B",
-    U: "#FF8080"
+    // Chromatogram palette  // HELMWebEditor monomerColors
+    A: "green",              // "#A0A0FF",
+    G: "black",              // "#FF7070",
+    T: "red",                // "#A0FFA0",
+    C: "blue",               // "#FF8C4B",
+    U: "red",                // "#FF8080"
   },
 
   [HelmTypes.NUCLEOTIDE]: {
-    A: "#A0A0FF",
-    G: "#FF7070",
-    T: "#A0FFA0",
-    C: "#FF8C4B",
-    U: "#FF8080"
+    // Chromatogram palette  // HELMWebEditor monomerColors
+    A: "green",              // "#A0A0FF",
+    G: "black",              // "#FF7070",
+    T: "red",                // "#A0FFA0",
+    C: "blue",               // "#FF8C4B",
+    U: "red",                // "#FF8080"
   },
 
   [HelmTypes.LINKER]: {
@@ -34,26 +36,27 @@ export const naturalMonomerColors = {
   },
 
   [HelmTypes.AA]: {
-    A: "#C8C8C8",
-    R: "#145AFF",
-    N: "#00DCDC",
-    D: "#E60A0A",
-    C: "#E6E600",
-    E: "#00DCDC",
-    Q: "#E60A0A",
-    G: "#EBEBEB",
-    H: "#8282D2",
-    I: "#0F820F",
-    L: "#0F820F",
-    K: "#145AFF",
-    M: "#E6E600",
-    F: "#3232AA",
-    P: "#DC9682",
-    S: "#FA9600",
-    T: "#FA9600",
-    W: "#B45AB4",
-    Y: "#3232AA",
-    V: "#0F820F"
+    // GrokGroups palette    // HELMWebEditor monomerColors
+    A: "rgb(44,160,44)",     // "#C8C8C8",
+    R: "rgb(23,190,207)",    // "#145AFF",
+    N: "rgb(235,137,70)",    // "#00DCDC",
+    D: "rgb(31,119,180)",    // "#E60A0A",
+    C: "rgb(188,189,34)",    // "#E6E600",
+    E: "rgb(31, 120, 150)",  // "#00DCDC",
+    Q: "rgb(205, 111, 71)",  // "#E60A0A",
+    G: "rgb(214,39,40)",     // "#EBEBEB",
+    H: "rgb(158,218,229)",   // "#8282D2",
+    I: "rgb(23,103,57)",     // "#0F820F",
+    L: "rgb(30,110,96)",     // "#0F820F",
+    K: "rgb(108, 218, 229)", //"#145AFF",
+    M: "rgb(60,131,95)",     // "#E6E600",
+    F: "rgb(24,110,79)",     // "#3232AA",
+    P: "rgb(255,152,150)",   // "#DC9682",
+    S: "rgb(255,187,120)",   // "#FA9600",
+    T: "rgb(245,167,100)",   // "#FA9600",
+    W: "rgb(182, 223, 138)", // "#B45AB4",
+    Y: "rgb(152,223,138)",   // "#3232AA",
+    V: "rgb(74,160,74)",     // "#0F820F",
   },
 
   [HelmTypes.CHEM]: {
