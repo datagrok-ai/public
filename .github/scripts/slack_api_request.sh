@@ -18,27 +18,27 @@ slack_api_request() {
 
     # Send API request
     if [ "$method" = "POST" ]; then
-      RESPONSE=$(curl -s -D - -X POST "$url" \
+      RESPONSE=$(curl -s -w "%{http_code}" -X POST "$url" \
         -H "Authorization: Bearer $token" \
         -H "Content-Type: application/json; charset=utf-8" \
         --data "$data")
     else
-      RESPONSE=$(curl -s -D - -X "$method" "$url$data" \
+      RESPONSE=$(curl -s -w "%{http_code}" -X "$method" "$url$data" \
         -H "Authorization: Bearer $token" \
         -H "Content-Type: application/json; charset=utf-8")
     fi
 
     # Extract HTTP status code
-    HTTP_STATUS=$(echo "$RESPONSE" | head -n 1 | awk '{print $2}')
+    HTTP_STATUS="${RESPONSE: -3}"
+    BODY="${RESPONSE%$HTTP_STATUS}"
 
     if [ "$HTTP_STATUS" -eq 429 ]; then
       # Rate limit hit, extract Retry-After header and wait
-      RETRY_AFTER=$(echo "$RESPONSE" | grep "Retry-After" | awk '{print $2}')
-      echo "Rate limit hit. Retrying after $RETRY_AFTER seconds..."
-      sleep $RETRY_AFTER
+      echo "Rate limit hit..."
+      sleep 5
       RETRY_COUNT=$((RETRY_COUNT+1))
     else
-      echo "$RESPONSE"
+      echo "$BODY"
       SUCCESS=true
     fi
   done
