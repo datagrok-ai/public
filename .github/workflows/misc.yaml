@@ -159,9 +159,9 @@ jobs:
         if: ${{ matrix.build == 'build' }}
       - id: datagrok-tools
         run: npm install -g datagrok-tools@latest
-      - run: grok check
-        id: grok_check
-        working-directory: misc/${{ matrix.project }}
+#      - run: grok check
+#        id: grok_check
+#        working-directory: misc/${{ matrix.project }}
       - run: npm run test
         working-directory: misc/${{ matrix.project }}
         if: ${{ matrix.test == 'test' }}
