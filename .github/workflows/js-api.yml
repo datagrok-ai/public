@@ -326,7 +326,7 @@ jobs:
           echo -e "SLACK_MESSAGE_BODY=${SLACK_MESSAGE_BODY}" | sed -e '$ ! s/$/\\n/' -e 's/"/\\"/g' | tr -d '\n' >> $GITHUB_ENV
 
       - name: Send test report to Slack
-        id: slack
+        id: slack-api
         if: ${{ steps.slack-prepare-api.outcome == 'success' }}
         uses: slackapi/slack-github-action@v1.24.0
         with:
