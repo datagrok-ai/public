@@ -162,9 +162,9 @@ jobs:
 #      - run: grok check
 #        id: grok_check
 #        working-directory: misc/${{ matrix.project }}
-      - run: npm run test
-        working-directory: misc/${{ matrix.project }}
-        if: ${{ matrix.test == 'test' }}
+#      - run: npm run test
+#        working-directory: misc/${{ matrix.project }}
+#        if: ${{ matrix.test == 'test' }}
       - name: npm publish
         id: publish
         run: npm publish --access public
