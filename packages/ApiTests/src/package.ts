@@ -157,3 +157,26 @@ export function testOutputAnnotationReplaceColList(data: DG.DataFrame, col: DG.C
 export function expectDate(actual: dayjs.Dayjs, expected: dayjs.Dayjs): void {
   expect(actual.valueOf(), expected.valueOf());
 }
+
+
+//name: testVectorFunc
+//meta.vectorFunc: true
+//input: column col
+//input: string prefix
+//output: column res
+export function testVectorFunc(col: DG.Column, prefix: string) {
+  const res = DG.Column.string('result', col.length).init((i) => `${prefix}_${col.get(i)}`);
+  return res;
+}
+
+
+//name: testVectorFuncNonVectorizableParam
+//meta.vectorFunc: true
+//input: column col
+//input: string prefix
+//input: column postfix
+//output: column res
+export function testVectorFuncNonVectorizableParam(col: DG.Column, prefix: string, postfix: DG.Column) {
+  const res = DG.Column.string('result', col.length).init((i) => `${prefix}_${col.get(i)}_${postfix.get(i)}`);
+  return res;
+}
