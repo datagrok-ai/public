@@ -253,6 +253,7 @@ jobs:
           email-mapping: ${{ secrets.EMAIL_SLACK_ID }}
       - name: Send to Slack
         id: slack
+        if: steps.deploy.outcome == 'success' && github.actor != 'github-actions[bot]'
         uses: ./.github/actions/slack-post-action
         with:
           channel: ${{ steps.actor.outputs.user-ids }}

@@ -388,6 +388,7 @@ jobs:
           email-mapping: ${{ secrets.EMAIL_SLACK_ID }}
       - name: Prepare Slack Message
         id: slack-prepare
+        if: ${{ steps.publish.outcome == 'success' && !contains(matrix.package, 'Meta') }}
         shell: bash
         run: |
           mentions=$(echo -e "${{ steps.actor.outputs.user-ids }}" | sort -u)
