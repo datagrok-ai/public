@@ -142,6 +142,7 @@ jobs:
           sparse-checkout: |
             ./libraries
             ./js-api
+            ./.github
       - name: Check library properties
         working-directory: libraries/${{ matrix.project }}
         run: |
