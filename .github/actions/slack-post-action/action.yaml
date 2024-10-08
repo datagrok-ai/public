@@ -20,7 +20,10 @@ runs:
       env:
         SLACK_BOT_TOKEN: ${{ inputs.slack-token }}
       run: |
-        context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Branch:* <${{ github.server_url }}/${{ github.repository }}/tree/${{ github.event.workflow_run.head_branch }}|${{ github.event.workflow_run.head_branch }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1 | sed -e 's/"/\\"/g')>"
+        branch=${{ github.event.workflow_run.head_branch || github.ref }}
+        branch="${branch#refs/heads/}"
+
+        context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Branch:* <${{ github.server_url }}/${{ github.repository }}/tree/${branch}|${branch}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1 | sed -e 's/"/\\"/g')>"
         echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
 
         # Create the JSON payload with blocks
