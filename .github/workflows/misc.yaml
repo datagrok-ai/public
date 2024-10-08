@@ -182,7 +182,7 @@ jobs:
       - name: Get owner email
         run: echo "owner=$(jq -r .author.email package.json)" >> $GITHUB_OUTPUT
         id: owner-email
-        working-directory: libraries/${{ matrix.project }}
+        working-directory: misc/${{ matrix.project }}
       - name: Get owners slack
         id: owner
         uses: ./.github/actions/slack-user-action
