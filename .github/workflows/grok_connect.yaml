@@ -173,55 +173,38 @@ jobs:
           path: /tmp/${{ steps.param.outputs.tar }}
           retention-days: 7
 
+      - name: Get actors slack
+        id: actor
+        uses: ./.github/actions/slack-user-action
+        with:
+          slack-token: ${{ secrets.SLACKBOT_TOKEN }}
+          email-mapping: ${{ secrets.EMAIL_SLACK_ID }}
+      - name: Get owners slack
+        id: owner
+        uses: ./.github/actions/slack-user-action
+        with:
+          slack-token: ${{ secrets.SLACKBOT_TOKEN }}
+          emails: "ppolovyi@datagrok.ai"
       - name: Prepare Slack Message
+        id: slack-prepare
         if: steps.docker-artifact.outcome == 'skipped' && (steps.build-push.outcome == 'success' || steps.bleeding-edge.outcome == 'success')
-        id: slack-user
         shell: bash
-        env:
-          SLACK_ID: ${{ secrets.SLACK_ID }}
         run: |
-          channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
-          echo "::add-mask::$channel_id"
-
           if [[ "${{ steps.bleeding-edge.outcome == 'success' }}" == "true" ]]; then
-            SLACK_MESSAGE_HEADER="${SLACK_MESSAGE_HEADER}\n*Grok Connect* Docker Image version *bleeding-edge* is published to Docker Hub"
-            echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
+            header="*Grok Connect* Docker Image version *bleeding-edge* is published to Docker Hub"
+            echo SLACK_CHANNEL=${{ steps.actor.outputs.user-ids }} >> $GITHUB_ENV
           else
-            SLACK_MESSAGE_HEADER="*Grok Connect* Docker Image version *${{ needs.build.outputs.version }}* is published to Docker Hub.\n <@$channel_id> FYI"
+            mentions=$(echo -e "${{ steps.actor.outputs.user-ids }}\n${{ steps.owner.outputs.user-ids }}" | sort -u)
+            header="*Grok Connect* Docker Image version *${{ needs.build.outputs.version }}* is published to Docker Hub.\n$(for value in $mentions; do echo -n "<@$value> "; done) FYI"
             echo SLACK_CHANNEL='#build' >> $GITHUB_ENV
           fi
 
-          echo SLACK_MESSAGE_HEADER=$SLACK_MESSAGE_HEADER >> $GITHUB_ENV
-
-          context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1 | sed -e 's/"/\\"/g')>"
-          echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
-
+          echo "SLACK_MESSAGE_HEADER=$header" >> $GITHUB_ENV
       - name: Send to Slack
         id: slack
-        if: steps.slack-user.outcome == 'success'
-        uses: slackapi/slack-github-action@v1.24.0
+        if: steps.slack-prepare.outcome == 'success'
+        uses: ./.github/actions/slack-post-action
         with:
-          channel-id: ${{ env.SLACK_CHANNEL }}
-          payload: |
-            {
-                "blocks": [
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "${{ env.SLACK_MESSAGE_HEADER }}"
-                        }
-                    },
-                    {
-                        "type": "context",
-                        "elements": [
-                            {
-                                "type": "mrkdwn",
-                                "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"
-                            }
-                        ]
-                    }
-                ]
-            }
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
+          channel: ${{ env.SLACK_CHANNEL }}
+          slack-token: ${{ secrets.SLACKBOT_TOKEN }}
+          message: ${{ env.SLACK_MESSAGE_HEADER }}

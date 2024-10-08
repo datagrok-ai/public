@@ -241,53 +241,20 @@ jobs:
           REMOTE_USER: ${{ secrets.HELP_USER }}
           TARGET: ${{ secrets.WIKI_DOCS_TARGET }}
 
-      - name: Prepare Slack Message
-        if: steps.deploy.outcome == 'success' && github.actor != 'github-actions[bot]'
-        id: slack-user
-        shell: bash
-        env:
-          SLACK_ID: ${{ secrets.SLACK_ID }}
-        run: |
-          channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
-          echo "::add-mask::$channel_id"
-          echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
-
-          header="<https://datagrok.ai/help/datagrok/|Help> is deployed"
-          echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
-
-          context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1 | sed -e 's/"/\\"/g')>"
-          echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
-
+      - name: Get actors slack
+        id: actor
+        uses: ./.github/actions/slack-user-action
+        with:
+          slack-token: ${{ secrets.SLACKBOT_TOKEN }}
+          email-mapping: ${{ secrets.EMAIL_SLACK_ID }}
       - name: Send to Slack
         id: slack
-        if: steps.slack-user.outcome == 'success'
-        uses: slackapi/slack-github-action@v1.26.0
+        if: steps.deploy.outcome == 'success' && github.actor != 'github-actions[bot]'
+        uses: ./.github/actions/slack-post-action
         with:
-          channel-id: ${{ env.SLACK_CHANNEL }}
-          payload: |
-            {
-                "blocks": [
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "${{ env.SLACK_MESSAGE_HEADER }}"
-                        }
-                    },
-                    {
-                        "type": "context",
-                        "elements": [
-                            {
-                                "type": "mrkdwn",
-                                "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"
-                            }
-                        ]
-                    }
-                ]
-            }
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
-
+          channel: ${{ steps.actor.outputs.user-ids }}
+          slack-token: ${{ secrets.SLACKBOT_TOKEN }}
+          message: "<https://datagrok.ai/help/datagrok/|Help> is deployed"
 
   scrape:
     name: Scrape
