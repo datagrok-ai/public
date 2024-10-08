@@ -184,7 +184,6 @@ jobs:
           emails: "ppolovyi@datagrok.ai"
       - name: Prepare Slack Message
         id: slack-prepare
-        if: steps.docker-artifact.outcome == 'skipped' && (steps.build-push.outcome == 'success' || steps.bleeding-edge.outcome == 'success')
         shell: bash
         run: |
           if [[ "${{ steps.bleeding-edge.outcome == 'success' }}" == "true" ]]; then

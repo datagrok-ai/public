@@ -99,7 +99,6 @@ jobs:
           emails: "ssavenko@datagrok.ai"
       - name: Prepare Slack Message
         id: slack-prepare
-        if: ${{ steps.publish.outcome == 'success' }}
         shell: bash
         run: |
           mentions=$(echo -e "${{ steps.actor.outputs.user-ids }}\n${{ steps.owner.outputs.user-ids }}" | sort -u)
