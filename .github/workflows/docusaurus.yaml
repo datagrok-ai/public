@@ -241,6 +241,10 @@ jobs:
           REMOTE_USER: ${{ secrets.HELP_USER }}
           TARGET: ${{ secrets.WIKI_DOCS_TARGET }}
 
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            ./.github
       - name: Get actors slack
         id: actor
         uses: ./.github/actions/slack-user-action

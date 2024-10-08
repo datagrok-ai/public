@@ -183,8 +183,7 @@ jobs:
     env:
       HOST: GitHubAction
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
           sparse-checkout: |
@@ -194,8 +193,8 @@ jobs:
             ./packages/ApiTests
             ./libraries
             ./docusaurus
-      - name: Setup Node
-        uses: actions/setup-node@v4
+            ./.github
+      - uses: actions/setup-node@v4
         with:
           node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
@@ -203,10 +202,8 @@ jobs:
           cache-dependency-path: |
             docusaurus/package-lock.json
             js-api/package-lock.json
-      - name: Upgrade npm
-        run: npm install -g npm@x
-      - name: npm version
-        run: npm version
+      - run: npm install -g npm@x
+      - run: npm version
       - run: npm install
         working-directory: ./js-api
       - run: npm run build
@@ -234,8 +231,7 @@ jobs:
           echo "docker_sha=$docker_sha" >> $GITHUB_OUTPUT
           echo "Notify about version used for tests"
           echo "::notice title=js-api::datagrok/datagrok:$DATAGROK_VERSION SHA=$docker_sha docker version was used for tests"
-      - name: Install datagrok tools
-        id: datagrok-tools
+      - id: datagrok-tools
         run: npm install -g datagrok-tools@latest
       - name: Wait for Datagrok to become available
         timeout-minutes: 5

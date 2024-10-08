@@ -134,6 +134,7 @@ jobs:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
           sparse-checkout: |
             ./misc
+            ./.github
       - name: Check properties
         working-directory: misc/${{ matrix.project }}
         run: |
