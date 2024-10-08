@@ -74,6 +74,8 @@ export class ReportingApp {
   refresh(table: DG.DataFrame, grid: DG.Grid) {
     if (table.rowCount > 0 && !this.isInit) {
       grid.sort(['is_resolved', 'last_occurrence', 'errors_count'], [true, false, false]);
+      for (const col of table.columns)
+        col.setTag('.show-prop-panels', 'false');
       table.getCol('number').setTag('friendlyName', '#');
       table.getCol('errors_count').setTag('friendlyName', 'errors');
       table.getCol('last_occurrence').setTag('friendlyName', 'last');
