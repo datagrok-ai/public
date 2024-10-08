@@ -76,10 +76,6 @@ jobs:
               dependencies="$(jq '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' "${DIR}/package.json")"
 
               job_name='Check'
-              if [ ! -z "$(jq -r '. | select( has("build") == true )' <<< "$scripts")" ]; then
-                MATRIX_PUBLISH_JSON+=", \"build\": \"build\""
-                job_name='Build'
-              fi
 
               unpublished_deps="$(jq -r '. | to_entries | map(select(.value | match("\\.\\./.*")))[] | "\(.key)=\(.value)"' <<<$dependencies | tr '\n' ' ')"
 
@@ -91,8 +87,6 @@ jobs:
               fi
               if [ -n "$(jq  '. | select( has("test") == true )' <<< "$scripts")" ] && \
                   [[ "$(jq  -r '. | select( has("skipCI") == true ).skipCI' "${DIR}/package.json")" != "true" ]]; then
-                MATRIX_PUBLISH_JSON+=", \"test\": \"test\""
-                job_name='Build, test'
                 job_test_env='Datagrok'
                 grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' ${DIR}/package.json)"
                 if [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "chem" ]] || \
