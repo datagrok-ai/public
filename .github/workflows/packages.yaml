@@ -565,9 +565,8 @@ jobs:
         id: gen_checks
         working-directory: packages/${{ matrix.package }}
 
-      - name: grok check
+      - run: grok check
         if: ${{ !contains(matrix.package, 'Tests') && !contains(matrix.package, 'Meta') && matrix.beta != 'true' }}
-        run: grok check
         id: check
         working-directory: packages/${{ matrix.package }}
 
@@ -579,51 +578,46 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         if: matrix.publish == 'publish' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.gen_checks.outcome == 'success' && (steps.check.outcome == 'success' || steps.check.outcome == 'skipped') && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || (contains(matrix.package, 'Tests') || matrix.package == 'Chemspace'))
 
+      - name: Get actors slack
+        id: actor
+        uses: ./.github/actions/slack-user-action
+        with:
+          slack-token: ${{ secrets.SLACKBOT_TOKEN }}
+          email-mapping: ${{ secrets.EMAIL_SLACK_ID }}
+      - name: Get owner email
+        run: echo "owner=$(jq -r .author.email package.json)" >> $GITHUB_OUTPUT
+        id: owner-email
+        working-directory: packages/${{ matrix.package }}
+      - name: Get owners slack
+        id: owner
+        uses: ./.github/actions/slack-user-action
+        with:
+          slack-token: ${{ secrets.SLACKBOT_TOKEN }}
+          emails: ${{ steps.owner-email.outputs.owner }}
+      - name: Get QA slack
+        id: qa
+        uses: ./.github/actions/slack-user-action
+        if: ${{ (matrix.package == 'Tutorials' || matrix.package == 'Chem' || matrix.package == 'DiffStidio' || matrix.package == 'PowerPack') }}
+        with:
+          slack-token: ${{ secrets.SLACKBOT_TOKEN }}
+          emails: "opavlenko@datagrok.ai"
       - name: Prepare Slack Message
-        if: ${{ steps.publish.outcome == 'success' && !contains(matrix.package, 'Meta') }}
         id: slack-prepare
+        if: ${{ steps.publish.outcome == 'success' && !contains(matrix.package, 'Meta') }}
         shell: bash
-        env:
-          SLACK_ID: ${{ secrets.SLACK_ID }}
         run: |
-          channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
-          echo "::add-mask::$channel_id"
-
-          header="Package *${{ matrix.package }}* version *${{ matrix.version }}* published to <https://www.npmjs.com/package/$(jq -r .name "packages/${{ matrix.package }}/package.json")/v/${{ matrix.version }}|NPM>\n<@$channel_id> FYI"
-          echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
-
-          context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1 | sed -e 's/"/\\"/g')>"
-          echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
+          mentions=$(echo -e "${{ steps.actor.outputs.user-ids }}\n${{ steps.owner.outputs.user-ids }}\n${{ steps.qa.outputs.user-ids }}" | sort -u)
+          header="Package *${{ matrix.package }}* version *${{ matrix.version }}* published to <https://www.npmjs.com/package/$(jq -r .name "packages/${{ matrix.package }}/package.json")/v/${{ matrix.version }}|NPM>\n$(for value in $mentions; do echo -n "<@$value> "; done) FYI"
+          echo "SLACK_MESSAGE_HEADER=$header" >> $GITHUB_ENV
 
       - name: Send to Slack
         id: slack
         if: steps.slack-prepare.outcome == 'success'
-        uses: slackapi/slack-github-action@v1.24.0
+        uses: ./.github/actions/slack-post-action
         with:
-          channel-id: '#build'
-          payload: |
-            {
-                "blocks": [
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "${{ env.SLACK_MESSAGE_HEADER }}"
-                        }
-                    },
-                    {
-                        "type": "context",
-                        "elements": [
-                            {
-                                "type": "mrkdwn",
-                                "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"
-                            }
-                        ]
-                    }
-                ]
-            }
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
+          channel: '#build'
+          slack-token: ${{ secrets.SLACKBOT_TOKEN }}
+          message: ${{ env.SLACK_MESSAGE_HEADER }}
 
       - name: Save package Docker image to tar archive
         if: steps.build-docker.outcome == 'success' && (steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped')
