@@ -9,21 +9,21 @@ import {fromEvent} from 'rxjs';
 import {UI_TIME} from '../ui-constants';
 import {getElement, getView} from './utils';
 
-/** Tutorial on parameters optimization */
-export class FittingTutorial extends Tutorial {
+/** Tutorial on sensitivity analysis */
+export class SensitivityAnalysisTutorial extends Tutorial {
   get name() {
-    return 'Parameter optimization';
+    return 'Sensitivity analysis';
   }
   get description() {
-    return 'Learn how to find the slider conditions that lead to a specified output of the model';
+    return 'Learn how to analyze the relationship between inputs and outputs of the model';
   }
   get steps() {return 12;}
 
-  helpUrl: string = 'https://datagrok.ai/help/compute/function-analysis#parameter-optimization';
+  helpUrl: string = 'https://datagrok.ai/help/compute/function-analysis#sensitivity-analysis';
 
   protected async _run() {
     this.header.textContent = this.name;
-    this.describe('Parameter optimization solves an inverse problem: finding the slider conditions that lead to a specified output of the model.');
+    this.describe('Sensitivity Analysis runs the computation multiple times with varying inputs, and analyzes the relationship between inputs and outputs.');
     this.describe(ui.link('Learn more', this.helpUrl).outerHTML);
     this.title('Model');
     this.describe('Consider ball flight simulation.');
@@ -85,40 +85,48 @@ export class FittingTutorial extends Tutorial {
       'Move slider, and explore the impact of <b>Angle</b> on <b>Max distance</b>, <b>Max height</b> and ball\'s trajectory.',
     );
 
-    // 4. Run fitting
-    this.title('Fit scalar output');
-    this.describe('How should the ball be thrown so that it flies exactly 10 meters? Let\'s answer this question.');
+    // 4. Run sens.analysis
+    this.title('Analysis');
+    this.describe('How do Angle and other parameters affect the flight trajectory? Let\'s answer this question.');
 
-    const fitIcnRoot = document.querySelector('div.d4-ribbon-panel')
-      .querySelector('i.grok-icon.fal.fa-chart-line') as HTMLElement;
+    const senAnIcnRoot = document.querySelector('div.d4-ribbon-panel')
+      .querySelector('i.grok-icon.fal.fa-analytics') as HTMLElement;
 
     await this.action(
-      'Click "Fit inputs"',
-      fromEvent(fitIcnRoot, 'click'),
-      fitIcnRoot,
-      'Click the "Fit inputs" icon on the top panel.',
+      'Run sensitivity analysis',
+      fromEvent(senAnIcnRoot, 'click'),
+      senAnIcnRoot,
+      'Click the "Run sensitivity analysis" icon on the top panel.',
     );
 
-    // 5. Switch Velocity
-    const fittingView = await getView('ballFlight - fitting');
-    if (fittingView === null) {
-      grok.shell.error('Fitting run timeout exceeded');
+    // 5. Set samples
+    const sensAnView = await getView('ballFlight - comparison');
+    if (sensAnView === null) {
+      grok.shell.error('Sensitivity analysis run timeout exceeded');
       return;
     }
 
-    const fitFormRoot = await getElement(fittingView.root, 'div.ui-div.ui-form');
-    const velocityInputRoot = fitFormRoot.children[9] as HTMLElement;
-    const velocitySwitcher = velocityInputRoot.querySelector('div.ui-input-editor') as HTMLElement;
+    const sensAnFormRoot = await getElement(sensAnView.root, 'div.ui-div.ui-form');
+    const children = sensAnFormRoot.children;
+
+    // switch off trajectory
+    const trajectoryDiv = children[23];
+    const trajectorySwitcherWgt = trajectoryDiv.querySelector('div.ui-input-switch.ui-input-switch-on') as HTMLElement;
+    trajectorySwitcherWgt.click();
+
+    const samplesInputRoot = children[1] as HTMLElement;
+    const samplesInputEditor = samplesInputRoot.querySelector('input.ui-input-editor') as HTMLInputElement;
+    const samplesSource = fromEvent(samplesInputEditor, 'input').pipe(map((_) => samplesInputEditor.value), filter((val) => val === '100'));
 
     await this.action(
-      'Switch on "Velocity"',
-      fromEvent(velocitySwitcher, 'click'),
-      velocitySwitcher,
-      'Let\'s find the initial velocity and angle. Switch on <b>Velocity</b>.',
+      'Set "Samples" to 100',
+      samplesSource,
+      samplesInputRoot,
+      'Monte Carlo is the default method. Increase <b>Samples</b> to get more accurate results.',
     );
 
     // 6. Switch Angle
-    const angleFitInputRoot = fitFormRoot.children[12] as HTMLElement;
+    const angleFitInputRoot = sensAnFormRoot.children[12] as HTMLElement;
     const angleSwitcher = angleFitInputRoot.querySelector('div.ui-input-editor') as HTMLElement;
 
     await this.action(
@@ -128,7 +136,7 @@ export class FittingTutorial extends Tutorial {
     );
 
     // 7. Target value
-    const distFitInputRoot = fitFormRoot.children[16] as HTMLElement;
+    const distFitInputRoot = sensAnFormRoot.children[16] as HTMLElement;
     const distSwitcher = distFitInputRoot.querySelector('input.ui-input-editor') as HTMLInputElement;
     const numSource = fromEvent(distSwitcher, 'input').pipe(map((_) => distSwitcher.value), filter((val) => val === '10'));
 
@@ -164,7 +172,7 @@ export class FittingTutorial extends Tutorial {
     this.title('Fit curve');
     this.describe('How to throw a ball so that it follows a given trajectory?\nYou may check the target in <b>Tables > Ball trajectory</b>.');
 
-    const maxDistRoot = fitFormRoot.children[16] as HTMLElement;
+    const maxDistRoot = sensAnFormRoot.children[16] as HTMLElement;
     const maxDistSwitcher = maxDistRoot.querySelector('div.ui-input-editor') as HTMLElement;
 
     await this.action(
@@ -174,7 +182,7 @@ export class FittingTutorial extends Tutorial {
     );
 
     // 10. Switch on Trajectory
-    const trajectoryRoot = fitFormRoot.children[20] as HTMLElement;
+    const trajectoryRoot = sensAnFormRoot.children[20] as HTMLElement;
     const trajectorySwitcher = trajectoryRoot.querySelector('div.ui-input-editor') as HTMLElement;
 
     await this.action(
@@ -184,7 +192,7 @@ export class FittingTutorial extends Tutorial {
     );
 
     // 11. Select table
-    const tableInputRoot = fitFormRoot.querySelector('div.ui-input-choice.ui-input-table.ui-input-root');
+    const tableInputRoot = sensAnFormRoot.querySelector('div.ui-input-choice.ui-input-table.ui-input-root');
     const tableChoiceRoot = tableInputRoot.querySelector('select.ui-input-editor.d4-invalid') as HTMLSelectElement;
     const dfSource = fromEvent(tableChoiceRoot, 'input').pipe(map((_) => tableChoiceRoot.value), filter((val) => val === 'Ball trajectory'));
 
@@ -205,4 +213,4 @@ export class FittingTutorial extends Tutorial {
 
     this.describe('Compare the simulated and target trajectories. The first row in the grid presents the best values for <b>Velocity</b> and <b>Angle</b>.');
   } // _run
-} // FittingTutorial
+} // SensitivityAnalysisTutorial
