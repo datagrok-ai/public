@@ -84,24 +84,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           sparse-checkout: |
-            ./.github
-      - name: Get actors slack
-        id: actor
-        uses: ./.github/actions/slack-user-action
-        with:
-          slack-token: ${{ secrets.SLACKBOT_TOKEN }}
-          email-mapping: ${{ secrets.EMAIL_SLACK_ID }}
-      - name: Send to Slack
-        id: slack
-        uses: ./.github/actions/slack-post-action
-        with:
-          channel: ${{ steps.actor.outputs.user-ids }}
-          slack-token: ${{ secrets.SLACKBOT_TOKEN }}
-          message: "<https://datagrok.ai/help/datagrok/|Help> is deployed"
-
-      - uses: actions/checkout@v4
-        with:
-          sparse-checkout: |
             docusaurus
             help
             packages
