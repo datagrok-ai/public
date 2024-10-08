@@ -415,7 +415,7 @@ export const RichFunctionView = Vue.defineComponent({
                   Vue.withDirectives(<InputForm 
                     funcCall={currentCall.value}
                     onUpdate:funcCall={(call) => emit('update:funcCall', call)}
-                  />, [[ifOverlapping, isRunning.value]]) 
+                  />, [[ifOverlapping, isRunning.value, 'Recalculating...']]) 
                 }
                 <div class='flex sticky bottom-0 justify-end'>
                   <BigButton 
@@ -445,7 +445,7 @@ export const RichFunctionView = Vue.defineComponent({
                           options={options}
                           dataFrame={currentCall.value.inputs[dfProp.name] ?? currentCall.value.outputs[dfProp.name]}
                           class='w-full'
-                        />, [[ifOverlapping, isRunning.value]])
+                        />, [[ifOverlapping, isRunning.value, 'Recalculating...']])
                       }
                     </div>;
                   }
@@ -481,7 +481,7 @@ export const RichFunctionView = Vue.defineComponent({
                       lastCardLabel = null;
                     }
 
-                    return Vue.withDirectives(panel, [[ifOverlapping, isRunning.value]]);
+                    return Vue.withDirectives(panel, [[ifOverlapping, isRunning.value, 'Recalculating...']]);
                   }
                 })
             }

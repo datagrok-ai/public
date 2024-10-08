@@ -8,10 +8,11 @@ export const ifOverlapping = {
 
   updated: (el: HTMLElement, binding: Vue.DirectiveBinding<boolean>) => {
     const isOverlapping = binding.value;
+    const customText = binding.arg;
     const existingLoader = ifOverlapping.loaderMapping.get(el);
     if (isOverlapping && !existingLoader) {
       const loader = ui.divV([
-        ui.label('Updating...'),
+        ui.label(customText ?? 'Updating...'),
         ui.loader(),
       ], 'd4-update-shadow');
       el.append(loader);

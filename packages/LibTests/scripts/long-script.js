@@ -13,7 +13,7 @@ const delay = (delayInms) => {
   return new Promise((resolve) => setTimeout(resolve, delayInms));
 };
   
-await delay(1000);
+await delay(2000);
 
 res = a+b;
 df = grok.data.demo.demog(res);

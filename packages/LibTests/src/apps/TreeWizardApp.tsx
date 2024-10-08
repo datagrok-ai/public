@@ -285,7 +285,7 @@ export const TreeWizardApp = Vue.defineComponent({
                     />
                   )
               }
-            </Draggable>, [[ifOverlapping, isLocked.value]]): null },
+            </Draggable>, [[ifOverlapping, isLocked.value, 'Locked...']]): null },
           
           {
             chosenStepState.value && 
