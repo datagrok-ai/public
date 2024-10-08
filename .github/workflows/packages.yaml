@@ -608,7 +608,7 @@ jobs:
         shell: bash
         run: |
           mentions=$(echo -e "${{ steps.actor.outputs.user-ids }}\n${{ steps.owner.outputs.user-ids }}\n${{ steps.qa.outputs.user-ids }}" | sort -u)
-          header="Package *${{ matrix.package }}* version *${{ matrix.version }}* published to <https://www.npmjs.com/package/$(jq -r .name "packages/${{ matrix.package }}/package.json")/v/${{ matrix.version }}|NPM>\n$(for value in $mentions; do echo -n "<@$value> "; done) FYI"
+          header="Package \*${{ matrix.package }}\* version \*${{ matrix.version }}\* published to <https://www.npmjs.com/package/$(jq -r .name "packages/${{ matrix.package }}/package.json")/v/${{ matrix.version }}|NPM>\n$(for value in $mentions; do echo -n "<@$value> "; done) FYI"
           echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
 
       - name: Send to Slack
