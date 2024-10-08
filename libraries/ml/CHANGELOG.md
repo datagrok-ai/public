@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.7.4 (2024-10-08)
+
+MCL: Better layout for similar size clusters
+
 ## 6.7.3 (2024-10-01)
 
 GROK-16730: Demo: Activity cliffs: Fixed 'Cannot read properties of null'

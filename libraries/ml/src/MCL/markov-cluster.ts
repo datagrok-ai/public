@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import {SparseMatrix} from '@datagrok-libraries/math';
 import {MCLOptions} from './types';
 import {runMarkovClustering} from './clustering-steps';
@@ -142,9 +143,41 @@ export class MCLSparseReducer {
       const sortedClusterNames = Object.keys(clusterMap);
       sortedClusterNames.sort((a, b) => clusterMap[b as any].length - clusterMap[a as any].length);
       let perRow = 1;
+      const perRowMultiplier = 3;
 
       let yOffset = 0;
       const layoutSize = 5;
+      // cluster sizes could be different, but also very similar. first cluster size can be quite similar
+      // to the second one. if not accounted for, the layout will be very unbalanced, and first cluster will
+      // be very large
+      const perRowSizes: number[] = [1];
+      // if first two cluster sizes are very similar, first perrow should be 2
+      if (sortedClusterNames.length > 1) {
+        const clustSize1 = clusterMap[sortedClusterNames[0] as any].length;
+        const clustSize2 = clusterMap[sortedClusterNames[1] as any].length;
+        if (clustSize1 / clustSize2 < 2)
+          perRowSizes[0] = 2;
+        let curPerRowSize = perRowSizes[0];
+        let maxClustersInNextRow = curPerRowSize * perRowMultiplier;
+        let pointsInCurRow = curPerRowSize == 1 ? clustSize1 : clustSize1 + clustSize2;
+        let pointsAccum = 0;
+        let clustersAccum = 0;
+        for (let i = 2; i < sortedClusterNames.length; i++) {
+          pointsAccum += clusterMap[sortedClusterNames[i] as any].length;
+          clustersAccum++;
+          if (clustersAccum > maxClustersInNextRow || pointsAccum >= pointsInCurRow * 0.7 || i === sortedClusterNames.length - 1) {
+            perRowSizes.push(i === sortedClusterNames.length - 1 ? maxClustersInNextRow : clustersAccum);
+            curPerRowSize = clustersAccum;
+            maxClustersInNextRow = curPerRowSize * perRowMultiplier;
+            pointsInCurRow = Math.max(pointsAccum, pointsInCurRow);
+            pointsAccum = 0;
+            clustersAccum = 0;
+          }
+        }
+      }
+      perRow = perRowSizes[0];
+      let perRowIdx = 0;
+
       for (const clusterName of sortedClusterNames) {
         const cluster = clusterMap[clusterName as any]!;
         const clusterConnections = clusterConnectionMap.get(Number(clusterName))!;
@@ -152,7 +185,8 @@ export class MCLSparseReducer {
         if (clusterNum === perRow) {
           clusterNum = 0;
           yOffset += layoutSize / perRow;
-          perRow = Math.min(Math.ceil(perRow * 3), 45);
+          perRowIdx++;
+          perRow = Math.min(Math.ceil(perRowSizes[perRowIdx]), 45);
         }
         //const clustersPerRow = Math.ceil(perRow / 1.5);
         const offsetX = ((clusterNum) * layoutSize / perRow + layoutSize / perRow * (1 / 1.2 / 4));
