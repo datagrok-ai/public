@@ -411,10 +411,12 @@ export const RichFunctionView = Vue.defineComponent({
                 dock-spawn-title='Inputs'
                 ref={formRef}
               >
-                <InputForm 
-                  funcCall={currentCall.value}
-                  onUpdate:funcCall={(call) => emit('update:funcCall', call)}
-                />
+                {
+                  Vue.withDirectives(<InputForm 
+                    funcCall={currentCall.value}
+                    onUpdate:funcCall={(call) => emit('update:funcCall', call)}
+                  />, [[ifOverlapping, isRunning.value]]) 
+                }
                 <div class='flex sticky bottom-0 justify-end'>
                   <BigButton 
                     isDisabled={!isRunnable.value || isRunning.value} 

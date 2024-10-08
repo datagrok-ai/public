@@ -15,10 +15,13 @@ export const ifOverlapping = {
         ui.loader(),
       ], 'd4-update-shadow');
       el.append(loader);
+      el.classList.add('ui-box')
       ifOverlapping.loaderMapping.set(el, loader);
     }
-    if (!isOverlapping && existingLoader) 
+    if (!isOverlapping && existingLoader) {
+      ifOverlapping.loaderMapping.delete(el);
       existingLoader.remove();
-    
+      el.classList.remove('ui-box')
+    }
   },
 };
