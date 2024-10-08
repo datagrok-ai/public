@@ -246,9 +246,9 @@ export function registerFittingTutorial() {
 //input: double roB = 200 {category: Ball; caption: Material density; units: kg/m^3; min: 200; max: 1200}
 //input: double v = 50 {category: Throw parameters; caption: Velocity; min: 40; max: 60; units: m/sec}
 //input: double a = 45 {category: Throw parameters; caption: Angle; min: 20; max: 70; units: deg}
-//output: double maxDist {caption: Max distance, m}
-//output: double maxHeight {caption: Max height, m}
-//output: dataframe df {caption: Ball flight; viewer: Line chart(block: 60, multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 40)}
+//output: double maxDist {caption: Max distance}
+//output: double maxHeight {caption: Max height}
+//output: dataframe df {caption: Trajectory; viewer: Line chart(block: 60, multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 40)}
 //editor: Compute:RichFunctionViewEditor
 //sidebar: @compute
 //meta.runOnOpen: true
@@ -259,7 +259,7 @@ export function ballFlight(dB: number, roB: number, v: number, a: number) {
   const simlulation = getBallFlightSim(v, Math.PI * a / 180, dB, roB);
   return {
     df: simlulation,
-    maxDist: simlulation.col('Distance, m').stats.max,
-    maxHeight: simlulation.col('Height, m').stats.max,
+    maxDist: simlulation.col('Distance').stats.max,
+    maxHeight: simlulation.col('Height').stats.max,
   };
 }

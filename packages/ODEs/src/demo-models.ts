@@ -349,8 +349,8 @@ export function getBallFlightSim(v: number, a: number, dB: number, roB: number):
   const dist = solution.col('x');
   const height = solution.col('y');
 
-  dist.name = 'Distance, m';
-  height.name = 'Height, m';
+  dist.name = 'Distance';
+  height.name = 'Height';
 
   const result = DG.DataFrame.fromColumns([dist, height]);
   result.name = 'Ball flight';

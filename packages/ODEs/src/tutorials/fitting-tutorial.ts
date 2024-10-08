@@ -5,10 +5,8 @@ import * as ui from 'datagrok-api/ui';
 
 import {filter, map} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
-import {interval, fromEvent} from 'rxjs';
-import {DiffStudio} from '../app';
+import {fromEvent} from 'rxjs';
 import {UI_TIME} from '../ui-constants';
-import {POPULATION_MODEL_UPD} from './constants';
 import {getElement, getView} from './utils';
 
 /** Tutorial on solving differential equations */
@@ -19,7 +17,7 @@ export class FittingTutorial extends Tutorial {
   get description() {
     return 'Learn how to find the slider conditions that lead to a specified output of the model';
   }
-  get steps() {return 11;}
+  get steps() {return 12;}
 
   demoTable: string = '';
   helpUrl: string = 'https://datagrok.ai/help/compute/function-analysis#parameter-optimization';
@@ -28,7 +26,8 @@ export class FittingTutorial extends Tutorial {
     this.header.textContent = this.name;
     this.describe('Parameter optimization solves an inverse problem: finding the slider conditions that lead to a specified output of the model.');
     this.describe(ui.link('Learn more', this.helpUrl).outerHTML);
-    this.title('Ball flight');
+    this.title('Model');
+    this.describe('Consider ball flight simulation.');
 
     if (grok.shell.view('Browse') === undefined) {
       grok.shell.v = DG.View.createByType('browse');
@@ -53,7 +52,7 @@ export class FittingTutorial extends Tutorial {
       'Open Model Catalog',
       fromEvent(modelCatalogNode.root, 'dblclick'),
       modelCatalogNode.root,
-      'Go to <b>Browse > Apps</b>, and double click <b>Model Catalog</b>',
+      'Go to <b>Browse > Apps</b>, and double click <b>Model Catalog</b>.',
     );
 
     // 2. Run model
@@ -84,12 +83,12 @@ export class FittingTutorial extends Tutorial {
       'Change "Angle"',
       fromEvent(angleInputRoot, 'click'),
       angleInputRoot,
-      `This is a ball flight simulation. Move slider, and explore the impact of <b>Angle</b> on <b>Max distance</b>,
-      <b>Max height</b> and ball\'trajectory.`,
+      'Move slider, and explore the impact of <b>Angle</b> on <b>Max distance</b>, <b>Max height</b> and ball\'s trajectory.',
     );
 
     // 4. Run fitting
-    this.title('Fit max distance');
+    this.title('Fit scalar output');
+    this.describe('How should the ball be thrown so that it flies exactly 10 meters? Let\'s answer this question.');
 
     const fitIcnRoot = document.querySelector('div.d4-ribbon-panel')
       .querySelector('i.grok-icon.fal.fa-chart-line') as HTMLElement;
@@ -98,8 +97,7 @@ export class FittingTutorial extends Tutorial {
       'Click "Fit inputs"',
       fromEvent(fitIcnRoot, 'click'),
       fitIcnRoot,
-      `How should the ball be thrown so that it flies exactly 10 meters? Run parameter optimization to answer this question.
-      Click the "Fit inputs" icon on the top panel`,
+      'Click the "Fit inputs" icon on the top panel.',
     );
 
     // 5. Switch Velocity
@@ -126,20 +124,20 @@ export class FittingTutorial extends Tutorial {
 
     await this.action(
       'Switch on "Angle"',
-      fromEvent(angleSwitcher, 'click'), //!!!
+      fromEvent(angleSwitcher, 'click'),
       angleSwitcher,
     );
 
     // 7. Target value
     const distFitInputRoot = fitFormRoot.children[16] as HTMLElement;
     const distSwitcher = distFitInputRoot.querySelector('input.ui-input-editor') as HTMLInputElement;
-    const source = fromEvent(distSwitcher, 'input').pipe(map((_) => distSwitcher.value), filter((val) => val === '10'));
+    const numSource = fromEvent(distSwitcher, 'input').pipe(map((_) => distSwitcher.value), filter((val) => val === '10'));
 
     await this.action(
-      'Set "Max distance, m" to 10',
-      source,
+      'Set "Max distance" to 10',
+      numSource,
       distSwitcher,
-      'Set target value for <b>Max distance, m</b>.',
+      'Set target value for <b>Max distance</b>.',
     );
 
     // 8. Run
@@ -154,152 +152,58 @@ export class FittingTutorial extends Tutorial {
       You can customize optimizer's settings in the <b>Using</b> block.`,
     );
 
-    // 9. Results
+    this.describe(`Find fitting results in the grid rows. There are values of 
+    <b>Velocity</b> and <b>Angle</b>, as well viewers visualizing the goodness of fit.`);
 
-    // get icon
+    const ballFlightTable = await grok.dapi.files.readCsv('System:AppData/DiffStudio/ball-flight-trajectory.csv');
+    ballFlightTable.name = 'Ball trajectory';
+    grok.shell.addTable(ballFlightTable);
 
+    await new Promise((resolve) => setTimeout(resolve, 6000));
+
+    // 9. Switch off Max distance
+    this.title('Fit curve');
+    this.describe('How to throw a ball so that it follows a given trajectory?\nYou may check the target in <b>Tables > Ball trajectory</b>.');
+
+    const maxDistRoot = fitFormRoot.children[16] as HTMLElement;
+    const maxDistSwitcher = maxDistRoot.querySelector('div.ui-input-editor') as HTMLElement;
+
+    await this.action(
+      'Switch off "Max distance"',
+      fromEvent(maxDistSwitcher, 'click'),
+      maxDistSwitcher,
+    );
+
+    // 10. Switch on Trajectory
+    const trajectoryRoot = fitFormRoot.children[20] as HTMLElement;
+    const trajectorySwitcher = trajectoryRoot.querySelector('div.ui-input-editor') as HTMLElement;
+
+    await this.action(
+      'Switch on "Trajectory"',
+      fromEvent(trajectorySwitcher, 'click'),
+      trajectorySwitcher,
+    );
+
+    // 11. Select table
+    const tableInputRoot = fitFormRoot.querySelector('div.ui-input-choice.ui-input-table.ui-input-root');
+    const tableChoiceRoot = tableInputRoot.querySelector('select.ui-input-editor.d4-invalid') as HTMLSelectElement;
+    const dfSource = fromEvent(tableChoiceRoot, 'input').pipe(map((_) => tableChoiceRoot.value), filter((val) => val === 'Ball trajectory'));
+
+    await this.action(
+      'Set "Trajectory" to "Ball trajectory"',
+      dfSource,
+      tableChoiceRoot,
+    );
+
+    // 12. Run
     await this.action(
       'Click "Run"',
-      fromEvent(modelIconRoot, 'dblclick'), //!!!
-      modelView.root,
-      `Click the <b>Run</b> icon on the top panel. This will launch fitting <b>Velocity</b> and <b>Angle</b>. 
-      You can customize optimizer's settings in the <b>Using</b> block.`,
+      fromEvent(runIcnRoot, 'click'),
+      runIcnRoot,
     );
 
-    // 10. Explore
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
-    // 11. Switch off
-    this.describe('Fit ball\'s trajectory');
-
-    // get icon
-
-    await this.action(
-      'Switch off "Angle"',
-      fromEvent(modelIconRoot, 'dblclick'), //!!!
-      modelView.root,
-      `Click the <b>Run</b> icon on the top panel. This will launch fitting <b>Velocity</b> and <b>Angle</b>. 
-      You can customize optimizer's settings in the <b>Using</b> block.`,
-    );
-
-    // 12. Check target trajectory
-
-    // add tableview
-
-    await this.action(
-      'Click "Ball flight trajectory"',
-      fromEvent(modelIconRoot, 'dblclick'), //!!!
-      modelView.root,
-      'How to throw a ball so that it follows a given trajectory? Click the <b>Ball flight target</b> view to explore it.',
-    );
-
-    // 13. Check target trajectory
-
-    // add tableview
-
-    await this.action(
-      'Click "Ball flight trajectory"',
-      fromEvent(modelIconRoot, 'dblclick'), //!!!
-      modelView.root,
-      'How to throw a ball so that it follows a given trajectory? Click the <b>Ball flight target</b> view to explore it.',
-    );
-
-    /*await new Promise((resolve) => setTimeout(resolve, UI_TIME.APP_RUN_SOLVING * 2));
-    grok.shell.view('Template').close();
-
-    const diffStudio = new DiffStudio();
-    await diffStudio.runSolverApp(POPULATION_MODEL_UPD);
-
-    await new Promise((resolve) => setTimeout(resolve, UI_TIME.APP_RUN_SOLVING));
-
-    // 2. Play
-    const finalInputAction = diffStudio.inputAction('Time', 'Final', 2200);
-    await this.action(
-      'Set "Final" to 2200',
-      finalInputAction.promise,
-      finalInputAction.root,
-      'Simulate the population until 2200.',
-    );
-
-    const capacityInputAction = diffStudio.inputAction('Parameters', 'Carrying capacity', 30);
-    await this.action(
-      'Set "Carrying capacity" to 30',
-      capacityInputAction.promise,
-      capacityInputAction.root,
-      'Move a slider to explore the impact of carrying capacity on Earth\'s population.',
-    );
-
-    // 3. Model
-    const modelTabHeader = diffStudio.getTabHeaderRoot('Model');
-    await this.action(
-      'Click the Model tab',
-      fromEvent(modelTabHeader, 'click'),
-      modelTabHeader,
-      'Go to the <b>Model</b> tab, and modify the underlying mathematical model.',
-    );
-
-    // 4. Add equation
-    const equation = 'dR/dt = -P';
-    const equationWithoutSpaces = equation.replaceAll(' ', '');
-    await this.action(
-      'Add equation',
-      interval(1000).pipe(filter(() => diffStudio.getEquations().replaceAll(' ', '').includes(equationWithoutSpaces))),
-      null,
-      `Add the equation <b>${equation}</b> to the <b>#equations:</b>-block. It describes the <i>resource depletion (R)</i>.`,
-    );
-
-    // 5. Add initial value
-    const initCondition = 'R = 3000';
-    const initConditionWithoutSpaces = initCondition.replaceAll(' ', '');
-    await this.action(
-      'Set initial value',
-      interval(1000).pipe(filter(() => diffStudio.getEquations().replaceAll(' ', '').includes(initConditionWithoutSpaces))),
-      null,
-      `Add <b>${initCondition}</b> to the <b>#inits:</b>-block. It defines the initial value of <b>R</b>.`,
-    );
-
-    // 6. Simulate
-    const runTabHeader = diffStudio.getTabHeaderRoot('Run');
-    await this.action(
-      'Click the Run tab',
-      fromEvent(runTabHeader, 'click'),
-      runTabHeader,
-      'Go to the <b>Run</b> tab, and explore the updated model.',
-    );
-
-    // 7. Back to model
-    await this.action(
-      'Click the Model tab',
-      fromEvent(modelTabHeader, 'click'),
-      modelTabHeader,
-      'Diff Studio automatically generates the user interface. To enhance usability, navigate to the <b>Model</b> tab.',
-    );
-
-    // 8. Add annotation
-    const annotation = '{caption: Resources; category: Initial values; min: 3000; max: 4000; units: mu}';
-    const annotationWithouSpaces = annotation.replaceAll(' ', '');
-    await this.action(
-      'Annotate R',
-      interval(1000).pipe(filter(() => diffStudio.getEquations().replaceAll(' ', '').includes(annotationWithouSpaces))),
-      null,
-      `Add <b>${annotation}</b> right after <b>${initCondition}</b> in the <b>#inits:</b>-block.`,
-    );
-
-    // 9. Update annotation
-    const category = 'Initial values';
-    const expected = `Population; category: ${category}`.replaceAll(' ', '');
-    await this.action(
-      'Update category of P',
-      interval(1000).pipe(filter(() => diffStudio.getEquations().replaceAll(' ', '').includes(expected))),
-      null,
-      `Replace the current category of <b>P</b> with <b>${category}</b> in the <b>#inits:</b>-block. This will place <i>initial values</i> in the same inputs group.`,
-    );
-
-    // 10. Final checks
-    await this.action(
-      'Click the Run tab',
-      fromEvent(runTabHeader, 'click'),
-      runTabHeader,
-      'Go to the <b>Run</b> tab, and check the updates.',
-    );*/
+    this.describe('Compare the simulated and target trajectories. The first row in the grid presents the best values for <b>Velocity</b> and <b>Angle</b>.');
   } // _run
-} // DifferentialEquationsTutorial
+} // FittingTutorial
