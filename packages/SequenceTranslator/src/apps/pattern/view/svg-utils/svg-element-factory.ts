@@ -36,7 +36,7 @@ export class SVGElementFactory {
   }
 
   createTextElement(textContent: string, position: Position, fontSize: number, color: string, weight: string,
-    opacity: string, cursor: string, rotate?: string): SVGTextElement {
+    opacity: string, cursor: string, rotate?: string, pointerEvents?: string): SVGTextElement {
     const textElement = this.createElement('text') as SVGTextElement;
     this.setAttributes(textElement, {
       'x': position.x,
@@ -46,13 +46,15 @@ export class SVGElementFactory {
       'font-family': 'Arial',
       'fill': color,
       'cursor': cursor,
-      'opacity': opacity
+      'opacity': opacity,
     });
      if (rotate) {
       textElement.style.transform = rotate;
       textElement.style.transformOrigin = 'center';
       textElement.style.transformBox = 'fill-box';
-    } 
+    }
+    if (pointerEvents)
+      textElement.style.pointerEvents = pointerEvents;
     textElement.textContent = textContent;
     return textElement;
   }

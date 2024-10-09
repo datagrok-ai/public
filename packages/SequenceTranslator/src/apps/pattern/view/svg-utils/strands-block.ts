@@ -278,7 +278,9 @@ class SingleStrandBlock extends SVGBlockBase {
       color,
       'normal',
       '1.0',
-      'default'
+      'default',
+      undefined,
+      'none',
     );
   }
 
