@@ -35,6 +35,7 @@ import './dapi/sticky_meta';
 import './dapi/users';
 import './dapi/benchmarks';
 import './dapi/functions-annotations';
+import './dapi/vector-functions-and-scripts'
 import './widgets/files-widget';
 import './widgets/legend';
 import './widgets/tree-view';
