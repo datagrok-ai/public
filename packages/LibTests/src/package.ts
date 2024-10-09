@@ -233,6 +233,9 @@ export async function TestElements() {
 //output: view result
 export async function RichFunctionViewEditor2(call: DG.FuncCall) {
   const view = new DG.ViewBase();
+
+  await customElements.whenDefined('dg-markdown');
+
   const app = Vue.createApp(RFVWrapper, {funcCall: call});
   app.mount(view.root);
   view.name = `${call.func.name}`;
@@ -307,6 +310,15 @@ export async function TreeWizardApp() {
   view.parentView = thisCall.parentCall.aux['view'];
   view.basePath = `/${thisCall.func.name}`;
   grok.shell.addView(view);
+  
+  grok.events.onViewRemoved.pipe(
+    filter((closedView) => {
+      return closedView === view;
+    }),
+    take(1),
+  ).subscribe(() => {
+    app.unmount();
+  });
 }
 
 //tags: test, vue
