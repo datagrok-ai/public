@@ -37,6 +37,7 @@ export const RFVWrapper = Vue.defineComponent({
       <RichFunctionView 
         funcCall={currentFuncCall.value}
         callState={currentCallState.value}
+        validationEnabled={true}
         onUpdate:funcCall={(chosenCall) => currentFuncCall.value = chosenCall}
         onRunClicked={runFunc}
       />

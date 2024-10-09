@@ -186,6 +186,10 @@ export const RichFunctionView = Vue.defineComponent({
     callState: {
       type: Object as Vue.PropType<FuncCallStateInfo>,
     },
+    validationEnabled: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: {
     'update:funcCall': (call: DG.FuncCall) => call,
@@ -415,6 +419,7 @@ export const RichFunctionView = Vue.defineComponent({
                   Vue.withDirectives(<InputForm 
                     funcCall={currentCall.value}
                     onUpdate:funcCall={(call) => emit('update:funcCall', call)}
+                    validationEnabled={props.validationEnabled}
                   />, [[ifOverlapping, isRunning.value, 'Recalculating...']]) 
                 }
                 <div class='flex sticky bottom-0 justify-end'>
