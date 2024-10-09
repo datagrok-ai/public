@@ -921,6 +921,7 @@ export interface IDartApi {
   grok_BitSet_Invert(b: any, notify: Bool): any;
   grok_BitSet_SetAll(b: any, x: Bool, notify: Bool): any;
   grok_BitSet_GetBit(b: any, i: Num): any;
+  grok_BitSet_Get_Version(b: any): any;
   grok_BitSet_SetBit(b: any, i: Num, x: Bool, notify: Bool): any;
   grok_BitSet_GetSelectedIndexes(b: any): any;
   grok_BitSet_FindNext(b: any, i: Num, x: Bool): any;
