@@ -1,6 +1,13 @@
 # Datagrok-tools changelog
 
 
+## 4.13.29 (2024-10-09)
+
+### Features
+
+* Help fixes
+
+
 ## 4.13.28 (2024-10-09)
 
 ### Features
