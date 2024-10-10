@@ -71,8 +71,11 @@ export type MonomerLibSummaryType = { [polymerType: string]: number };
 export type MonomerLibData = { [polymerType: string]: { [symbol: string]: Monomer } };
 
 export interface IMonomerLibBase {
+  get source(): string;
   get isEmpty(): boolean;
   get onChanged(): Observable<any>;
+
+  getMonomerSymbolsByType(polymerType: PolymerType): string[];
 
   /* Gets library monomer for sequence monomer */
   addMissingMonomer(polymerType: PolymerType, monomerSymbol: string): Monomer;
@@ -92,12 +95,10 @@ export interface IMonomerLibBase {
 }
 
 export interface IMonomerLib extends IMonomerLibBase {
-  get source(): string | undefined;
   get error(): string | undefined;
 
   getMonomerMolsByPolymerType(polymerType: PolymerType): { [monomerSymbol: string]: string } | null;
   getMonomerSymbolsByRGroup(rGroupNumber: number, polymerType: PolymerType, element?: string): string[];
-  getMonomerSymbolsByType(polymerType: PolymerType): string[];
   getPolymerTypes(): PolymerType[];
   toJSON(): Monomer[];
 
@@ -114,5 +115,5 @@ export interface IMonomerLib extends IMonomerLibBase {
   // For monomer palettes
   getMonomerSet(biotype: HelmType): MonomerSetType | null;
 
-  override(overrideData: MonomerLibData): IMonomerLibBase;
+  override(overrideData: MonomerLibData, source: string): IMonomerLibBase;
 }

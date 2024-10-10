@@ -2,7 +2,7 @@ import {monomerWorksConsts as C} from './consts';
 import {getMolGraph, LoopConstants, LoopVariables, MolfileWithMap, MolGraph, MonomerMap, MonomerMolGraphMap} from './types';
 import {HELM_FIELDS, HELM_CORE_FIELDS, HELM_POLYMER_TYPE, HELM_MONOMER_TYPE,} from '../utils/const';
 import {ALPHABET, GAP_SYMBOL} from '../utils/macromolecule/consts';
-import {IMonomerLib, Monomer} from '../types';
+import {IMonomerLibBase, Monomer} from '../types';
 import {ISeqMonomer, PolymerType} from '../helm/types';
 import {helmTypeToPolymerType} from './monomer-works';
 
@@ -13,7 +13,7 @@ import {helmTypeToPolymerType} from './monomer-works';
  * @param {ALPHABET} alphabet - Alphabet of the column
  * @return {Map<string, any>} - Mapping of peptide symbols to HELM monomer library objects with selected fields*/
 export function getFormattedMonomerLib(
-  monomerLib: IMonomerLib, polymerType: PolymerType, alphabet: ALPHABET
+  monomerLib: IMonomerLibBase, polymerType: PolymerType, alphabet: ALPHABET
 ): Map<string, any> {
   const map = new Map<string, any>();
   for (const monomerSymbol of monomerLib.getMonomerSymbolsByType(polymerType)) {

@@ -1,6 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
+
+import {Vector} from '@datagrok-libraries/utils/src/type-declarations';
+import {vectorDotProduct, vectorLength} from '@datagrok-libraries/utils/src/vector-operations';
+
 import {
   CandidateSimType,
   CandidateType, ISeqSplitted,
@@ -9,13 +13,13 @@ import {
   SplitterFunc
 } from './types';
 import {ALPHABET, Alphabets, candidateAlphabets, GAP_SYMBOL, GapOriginals, monomerRe, NOTATION} from './consts';
-import {SeqHandler} from '../seq-handler';
-import {Vector} from '@datagrok-libraries/utils/src/type-declarations';
-import {vectorDotProduct, vectorLength} from '@datagrok-libraries/utils/src/vector-operations';
 import {SeqPalette} from '../../seq-palettes';
 import {AminoacidsPalettes} from '../../aminoacids';
 import {NucleotidesPalettes} from '../../nucleotides';
 import {UnknownSeqPalettes} from '../../unknown';
+import {ISeqHelper} from '../seq-helper';
+
+import {ISeqHandler} from './seq-handler';
 
 export class StringListSeqSplitted implements ISeqSplitted {
   get length(): number { return this.mList.length; }
@@ -281,10 +285,10 @@ export function detectAlphabet(freq: MonomerFreqs, candidates: CandidateType[], 
  * @param {number}  minLength minimum length of sequence to detect palette (empty strings are allowed)
  * @return {SeqPalette} Palette corresponding to the alphabet of the sequences in the column
  */
-export function pickUpPalette(seqCol: DG.Column, minLength: number = 5): SeqPalette {
+export function pickUpPalette(seqCol: DG.Column, seqHelper: ISeqHelper, minLength: number = 5): SeqPalette {
   let alphabet: string;
   if (seqCol.semType == DG.SEMTYPE.MACROMOLECULE) {
-    const sh: SeqHandler = SeqHandler.forColumn(seqCol);
+    const sh: ISeqHandler = seqHelper.getSeqHandler(seqCol);
     alphabet = sh.alphabet;
   } else {
     const stats: SeqColStats = getStatsForCol(seqCol, minLength, splitterAsFasta);
