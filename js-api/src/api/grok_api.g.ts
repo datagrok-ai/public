@@ -84,6 +84,7 @@ export interface IDartApi {
   grok_Dapi_Admin_Send_Email(adminClient: any, email: any): any;
   grok_Dapi_Log(): any;
   grok_Dapi_LogTypes(): any;
+  grok_Dapi_Dockers(): any;
   grok_Dapi_DockerImages(): any;
   grok_Dapi_DockerContainers(): any;
   grok_Dapi_User_Reports(): any;
@@ -1460,6 +1461,8 @@ export interface IDartApi {
   grok_Dapi_DockerContainersDataSource_Stop(s: any, id: String, awaitStop: Bool): Promise<any>;
   grok_Dapi_DockerContainersDataSource_ProxyRequest(s: any, id: String, path: String, params: any): Promise<any>;
   grok_Dapi_DockerContainersDataSource_GetContainerLogs(s: any, id: String, limit: Num): Promise<any>;
+  grok_Dapi_DockersDataSource_GetServiceLogs(serviceName: String, limit: Num): Promise<any>;
+  grok_Dapi_DockersDataSource_GetAvailableServices(): Promise<any>;
   grok_DockerContainer_Status(dc: any): any;
   grok_Dapi_Packages_Load(pack: any, file: any): Promise<any>;
   grok_MathActions_GetDensity(dataFrame: any, xBins: Num, yBins: Num, xColName: String, yColName: String): any;

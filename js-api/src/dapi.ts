@@ -165,7 +165,9 @@ export class Dapi {
     return new HttpDataSource(api.grok_Dapi_Environments());
   }
 
-  docker = new DockerDataSource();
+  get docker(): DockerDataSource {
+    return new DockerDataSource();
+  }
 
   /**
    * @deprecated The UserDataStorage should not be used. Use {@link UserSettingsStorage} instead
@@ -893,6 +895,14 @@ export class DockerDataSource {
    * @type {HttpDataSource<DockerImage>} */
   get dockerContainers(): DockerContainersDataSource {
     return new DockerContainersDataSource(api.grok_Dapi_DockerContainers());
+  }
+
+  getServiceLogs(serviceName: string, limit: number): Promise<DataFrame> {
+    return api.grok_Dapi_DockersDataSource_GetServiceLogs(serviceName, limit);
+  }
+
+  getAvailableServices(): Promise<string[]> {
+    return api.grok_Dapi_DockersDataSource_GetAvailableServices();
   }
 }
 
