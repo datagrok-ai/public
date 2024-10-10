@@ -15,9 +15,8 @@ import {getMolHighlight} from '@datagrok-libraries/bio/src/monomer-works/seq-to-
 import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/index';
 
 import {HelmToMolfileConverter} from '../helm-to-molfile/converter';
-import {MonomerLibManager} from '../monomer-lib/lib-manager';
-
-import {_package, getMonomerLibHelper} from '../../package';
+import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
+import {SeqHandler} from './seq-handler';
 
 type SeqHelperWindowType = Window & { $seqHelperPromise?: Promise<SeqHelper> };
 declare const window: SeqHelperWindowType;
@@ -25,12 +24,17 @@ declare const window: SeqHelperWindowType;
 export class SeqHelper implements ISeqHelper {
   constructor(
     private readonly libHelper: IMonomerLibHelper,
-    private readonly helmHelper: IHelmHelper,
     private readonly rdKitModule: RDModule
   ) {}
 
-  getHelmToMolfileConverter(monomerLib: IMonomerLibBase): HelmToMolfileConverter {
-    return new HelmToMolfileConverter(this.helmHelper, this.rdKitModule, monomerLib);
+  getSeqHandler(seqCol: DG.Column<string>): ISeqHandler {
+    return SeqHandler.forColumn(seqCol);
+  }
+
+  // TODO: Move to the Helm package
+  async getHelmToMolfileConverter(monomerLib: IMonomerLibBase): Promise<HelmToMolfileConverter> {
+    const helmHelper: IHelmHelper = await getHelmHelper();
+    return new HelmToMolfileConverter(helmHelper, this.rdKitModule, monomerLib);
   }
 
   async helmToAtomicLevel(
@@ -41,7 +45,7 @@ export class SeqHelper implements ISeqHelper {
     const df: DG.DataFrame = helmCol.dataFrame;
     const molColName: string = getMolColName(df, helmCol.name);
 
-    const converter = this.getHelmToMolfileConverter(monomerLib);
+    const converter = await this.getHelmToMolfileConverter(monomerLib);
 
     //#region From HelmToMolfileConverter.convertToRdKitBeautifiedMolfileColumn
 
@@ -84,19 +88,5 @@ export class SeqHelper implements ISeqHelper {
     molCol.setTag(ChemTags.SEQUENCE_SRC_COL, helmCol.name);
 
     return {molCol: molCol, warnings: []};
-  }
-
-  static getInstance(): Promise<SeqHelper> {
-    let res = window.$seqHelperPromise;
-    if (res == undefined) {
-      res = window.$seqHelperPromise = (async () => {
-        if (!_package.initialized)
-          throw new Error('Bio package is not initialized, call Bio:getSeqHelper');
-        const instance = new SeqHelper(
-          await MonomerLibManager.getInstance(), await getHelmHelper(), _package.rdKitModule);
-        return instance;
-      })();
-    }
-    return res;
   }
 }

@@ -17,21 +17,19 @@ import {
   TAGS as bioTAGS,
   ALPHABET,
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
-import {IMonomerLib, IMonomerLibBase} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types';
 import {GapOriginals} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
-import {ISeqMonomer} from '@datagrok-libraries/bio/src/helm/types';
 import {execMonomerHoverLinks} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
-import {CellRendererBackBase, getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
+import {getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {MmcrTemps, rendererSettingsChangedState, tempTAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
-import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+
+import {CellRendererWithMonomerLibBackBase} from './monomer-cell-renderer-base';
 import * as C from './constants';
 
 import {_package} from '../package';
-import {CellRendererWithMonomerLibBackBase} from './monomer-cell-renderer-base';
-import {timeout} from 'rxjs/operators';
 
 type TempType = { [tagName: string]: any };
 
@@ -60,6 +58,8 @@ type RendererGridCellTemp = {
 }
 
 export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
+  private readonly seqHelper: ISeqHelper;
+
   get name(): string { return 'sequence'; }
 
   get cellType(): string { return 'sequence'; }
@@ -67,6 +67,11 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   get defaultHeight(): number | null { return 30; }
 
   get defaultWidth(): number | null { return 230; }
+
+  constructor() {
+    super();
+    this.seqHelper = _package.seqHelper;
+  }
 
   onClick(gridCell: DG.GridCell, _e: MouseEvent): void {
     const colTemp: TempType = gridCell.cell.column.temp;
@@ -106,7 +111,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       getGridCellColTemp<string, MonomerPlacer>(gridCell);
     if (!tableCol) return;
     const tableColTemp: TempType = tableCol.temp;
-    const sh = SeqHandler.forColumn(tableCol);
+    const sh = this.seqHelper.getSeqHandler(tableCol);
 
     let gapLength = 0;
     const msaGapLength = 8;
@@ -132,6 +137,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
           };
         });
       tableCol.temp[MmcrTemps.rendererSettingsChanged] === rendererSettingsChangedState.true;
+      seqColTemp.init().then(() => {});
     }
 
     seqColTemp.render(g, x, y, w, h, gridCell, _cellStyle);

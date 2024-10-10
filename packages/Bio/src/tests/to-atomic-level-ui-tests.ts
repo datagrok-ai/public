@@ -11,6 +11,7 @@ import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 type TestDataTargetType = { atomCount: number, bondCount: number };
 type TestDataType = {
@@ -22,10 +23,12 @@ category('toAtomicLevel-ui', () => {
 
   let monomerLibHelper: IMonomerLibHelper;
   let userLibSettings: UserLibSettings;
+  let seqHelper: ISeqHelper;
   let monomerLib: IMonomerLib;
   let rdKitModule: RDModule;
 
   before(async () => {
+    seqHelper = await getSeqHelper();
     rdKitModule = await getRdKitModule();
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
@@ -95,7 +98,7 @@ category('toAtomicLevel-ui', () => {
   async function _testToAtomicLevelFunc(
     seqCol: DG.Column<string>, nonlinear: boolean, tgt: TestDataTargetType,
   ): Promise<void> {
-    const res = (await sequenceToMolfile(seqCol.dataFrame, seqCol, nonlinear, false, monomerLib, rdKitModule))!;
+    const res = (await sequenceToMolfile(seqCol.dataFrame, seqCol, nonlinear, false, monomerLib, seqHelper, rdKitModule))!;
     expect(res.molCol!.semType, DG.SEMTYPE.MOLECULE);
     const resMolStr = res.molCol!.get(0)!;
     const resRdMol = rdKitModule.get_mol(resMolStr);

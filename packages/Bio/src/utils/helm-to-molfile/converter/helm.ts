@@ -21,8 +21,8 @@ export class Helm {
    * complex polymer scope) */
   readonly bondData: Bond[][];
 
-  private simplePolymers: SimplePolymer[];
-  private connectionList?: ConnectionList;
+  public readonly simplePolymers: SimplePolymer[];
+  public readonly connectionList?: ConnectionList;
 
   /** Maps global monomer index to r-group ids (starting from 1) participating
    * in connection */
@@ -74,8 +74,8 @@ export class Helm {
     });
   }
 
-  private getMonomerIdxShifts(): {[simplePolymerId: string]: number} {
-    const result: {[simplePolymerId: string]: number} = {};
+  private getMonomerIdxShifts(): { [simplePolymerId: string]: number } {
+    const result: { [simplePolymerId: string]: number } = {};
     let shift = 0;
     this.simplePolymers.forEach((simplePolymer) => {
       result[simplePolymer.id] = shift;

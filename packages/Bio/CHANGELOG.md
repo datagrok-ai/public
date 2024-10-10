@@ -1,5 +1,18 @@
 # Bio changelog
 
+## 2.16.0 (2024-10-10)
+
+### New features
+
+* Add SeqHandler factory to SeqHelper
+
+### Bug fixes
+
+* Fix monomer lib loading timout
+* Fix natural nucleotides' colors
+* Fix SeqHandler.getHelm to return SemanticValue
+* Fix moving harmonized sequence notation provider to Helm
+
 ## 2.15.13 (2024-10-08)
 
 Monomer manager: Fix Molv2k Rgroup line generation

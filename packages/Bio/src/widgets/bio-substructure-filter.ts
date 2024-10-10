@@ -16,7 +16,6 @@ import {TAGS as bioTAGS, NOTATION} from '@datagrok-libraries/bio/src/utils/macro
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {delay, testEvent} from '@datagrok-libraries/utils/src/test';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {IRenderer} from '@datagrok-libraries/bio/src/types/renderer';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
@@ -125,7 +124,7 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
         else
           this.column = dataFrame.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
       }
-      const sh = SeqHandler.forColumn(this.column!);
+      const sh = _package.seqHelper.getSeqHandler(this.column!);
       this.columnName ??= this.column?.name;
       this.notation ??= this.column?.meta.units!;
 

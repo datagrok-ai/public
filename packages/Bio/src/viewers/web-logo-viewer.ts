@@ -6,7 +6,8 @@ import $ from 'cash-dom';
 import wu from 'wu';
 import {fromEvent, Observable, Subject, Unsubscribable} from 'rxjs';
 
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 import {
   monomerToShort, pickUpSeqCol, TAGS as bioTAGS, positionSeparator, ALPHABET
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
@@ -308,7 +309,8 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
   private viewed: boolean = false;
 
-  private seqHandler: SeqHandler | null;
+  private seqHelper: ISeqHelper;
+  private seqHandler: ISeqHandler | null;
   private initialized: boolean = false;
 
   private monomerLib: IMonomerLibBase | null = null;
@@ -387,6 +389,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   constructor() {
     super();
 
+    this.seqHelper = _package.seqHelper;
     this.textBaseline = 'top';
     this.seqHandler = null;
 
@@ -606,7 +609,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       }
       if (this.seqCol) {
         try {
-          this.seqHandler = SeqHandler.forColumn(this.seqCol);
+          this.seqHandler = this.seqHelper.getSeqHandler(this.seqCol);
 
           this.render(WlRenderLevel.Freqs, 'updateSeqCol()');
           this.error = null;
@@ -1006,7 +1009,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       // endregion updatePositions
 
       const length: number = this.startPosition <= this.endPosition ? this.endPosition - this.startPosition + 1 : 0;
-      this.seqHandler = SeqHandler.forColumn(this.seqCol);
+      this.seqHandler = this.seqHelper.getSeqHandler(this.seqCol);
       const posCount: number = this.startPosition <= this.endPosition ? this.endPosition - this.startPosition + 1 : 0;
       this.positions = new Array(posCount);
       for (let jPos = 0; jPos < length; jPos++) {
@@ -1073,7 +1076,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       const absoluteMaxHeight: number = this.canvas.height - positionLabelsHeight * dpr;
       let alphabetSizeLog: number;
       if (this.valueAggrType === DG.AGG.TOTAL_COUNT) {
-        const alphabetSize: number = this.getAlphabetSize();
+        const alphabetSize: number = this.seqHandler!.getAlphabetSize();
         if ((this.positionHeight == PositionHeight.Entropy) && (alphabetSize == null))
           grok.shell.error('WebLogo: alphabet is undefined.');
         alphabetSizeLog = Math.log2(alphabetSize);
@@ -1139,8 +1142,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       // Hacks to scale uppercase characters to target rectangle
       const uppercaseLetterAscent = 0.25;
       const uppercaseLetterHeight = 12.2;
-      const sh = SeqHandler.forColumn(this.seqCol);
-      const biotype = sh.defaultBiotype;
+      const biotype = this.seqHandler!.defaultBiotype;
       for (let jPos = firstPos; jPos <= lastPos; jPos++)
         this.positions[jPos].render(g, fontStyle, uppercaseLetterAscent, uppercaseLetterHeight, biotype, this.monomerLib);
     } finally {
@@ -1165,9 +1167,9 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   private _lastWidth: number;
   private _lastHeight: number;
 
-  public getAlphabetSize(): number {
-    return this.seqHandler?.getAlphabetSize() ?? 0;
-  }
+  // public getAlphabetSize(): number {
+  //   return this.seqHandler?.getAlphabetSize() ?? 0;
+  // }
 
   // -- Handle events --
 
@@ -1215,7 +1217,8 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     }
   }
 
-  private canvasOnMouseMove(e: MouseEvent) {
+  private canvasOnMouseMove(e: MouseEvent): void {
+    if (!this.monomerLib || !this.seqHandler) return;
     const dpr = window.devicePixelRatio;
     try {
       const args = e as MouseEvent;
@@ -1224,13 +1227,12 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       const [pi, monomer] = this.getMonomer(cursorP, dpr);
       const positionLabelHeight = this.showPositionLabels ? POSITION_LABELS_HEIGHT * dpr : 0;
 
-      if (pi !== null && monomer === null && 0 <= cursorP.y && cursorP.y <= positionLabelHeight && this.monomerLib) {
+      if (pi !== null && monomer === null && 0 <= cursorP.y && cursorP.y <= positionLabelHeight) {
         // Position tooltip
 
         const tooltipRows = [ui.divText(`Position ${pi.label}`)];
         if (this.valueAggrType === DG.AGG.TOTAL_COUNT) {
-          const sh = SeqHandler.forColumn(this.seqCol!);
-          const biotype = sh.defaultBiotype;
+          const biotype = this.seqHandler!.defaultBiotype;
           tooltipRows.push(pi.buildCompositionTable(biotype, this.monomerLib));
         }
         const tooltipEl = ui.divV(tooltipRows);
@@ -1356,7 +1358,7 @@ function renderPositionLabels(g: CanvasRenderingContext2D,
 }
 
 export function checkSeqForMonomerAtPos(
-  df: DG.DataFrame, sh: SeqHandler, filter: DG.BitSet, rowI: number, monomer: string, at: PositionInfo,
+  df: DG.DataFrame, sh: ISeqHandler, filter: DG.BitSet, rowI: number, monomer: string, at: PositionInfo,
 ): boolean {
   const seqMList: ISeqSplitted = sh.getSplitted(rowI);
   const seqCM: string | null = at.pos < seqMList.length ? seqMList.getCanonical(at.pos) : null;
@@ -1364,7 +1366,7 @@ export function checkSeqForMonomerAtPos(
 }
 
 export function countForMonomerAtPosition(
-  df: DG.DataFrame, sh: SeqHandler, filter: DG.BitSet, monomer: string, at: PositionInfo
+  df: DG.DataFrame, sh: ISeqHandler, filter: DG.BitSet, monomer: string, at: PositionInfo
 ): number {
   let count = 0;
   let rowI = -1;

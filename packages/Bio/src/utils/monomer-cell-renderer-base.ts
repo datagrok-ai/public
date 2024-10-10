@@ -5,13 +5,15 @@ import * as ui from 'datagrok-api/ui';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {CellRendererBackBase} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/index';
+import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 import {_package} from '../package';
 
 export abstract class CellRendererWithMonomerLibBackBase extends CellRendererBackBase<string> {
   protected monomerLib: IMonomerLibBase | null = null;
+  protected seqHelper: ISeqHelper | null = null;
 
-  constructor(
+  protected constructor(
     gridCol: DG.GridColumn | null,
     tableCol: DG.Column<string>,
   ) {
@@ -25,6 +27,11 @@ export abstract class CellRendererWithMonomerLibBackBase extends CellRendererBac
         this.dirty = true;
         this.gridCol?.grid?.invalidate();
       }));
+    });
+    getSeqHelper().then((seqHelper) => {
+      this.seqHelper = seqHelper;
+      this.dirty = true;
+      this.gridCol?.grid?.invalidate();
     });
   }
 }

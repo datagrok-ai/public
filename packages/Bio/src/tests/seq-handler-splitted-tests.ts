@@ -3,8 +3,8 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 
-import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {before, category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
+import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {GapOriginals} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 
@@ -16,7 +16,13 @@ enum Tests {
   helm = 'helm',
 }
 
-category('SeqHandler', () => {
+category('SeqHandler: splitted', () => {
+  let seqHelper: ISeqHelper;
+
+  before(async () => {
+    seqHelper = await getSeqHelper();
+  });
+
   const fG = GapOriginals[NOTATION.FASTA];
   const hG = GapOriginals[NOTATION.HELM];
   const sG = GapOriginals[NOTATION.SEPARATOR];
@@ -123,7 +129,7 @@ PEPTIDE1{meI.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.T.dK.Thr_PO3H2}$$$$`
   };
 
   for (const [testName, testData] of Object.entries(data)) {
-    test(`splitted-${testName}`, async () => {
+    test(`${testName}`, async () => {
       const df: DG.DataFrame = DG.DataFrame.fromCsv(testData.src.csv);
       const col: DG.Column = df.getCol('seq');
 
@@ -131,7 +137,7 @@ PEPTIDE1{meI.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.T.dK.Thr_PO3H2}$$$$`
       if (semType) col.semType = semType;
       expect(col.semType, DG.SEMTYPE.MACROMOLECULE);
 
-      const sh = SeqHandler.forColumn(col);
+      const sh = seqHelper.getSeqHandler(col);
       expect(sh.notation, testData.tgt.notation);
       expect(sh.separator === testData.tgt.separator, true);
 

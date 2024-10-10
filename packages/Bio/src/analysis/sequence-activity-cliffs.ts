@@ -10,11 +10,10 @@ import {AvailableMetrics, DistanceMetricsSubjects, StringMetricsNames} from '@da
 import {drawMoleculeDifferenceOnCanvas} from '../utils/cell-renderer';
 import {invalidateMols, MONOMERIC_COL_TAGS} from '../substructure-search/substructure-search';
 import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {HelmType} from '@datagrok-libraries/bio/src/helm/types';
 
-import {getMonomerLib} from '../package';
+import {_package} from '../package';
 
 export async function getDistances(col: DG.Column, seq: string): Promise<Array<number>> {
   const stringArray = col.toList();
@@ -108,7 +107,7 @@ export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivE
   });
 
   const molDifferences: { [key: number]: HTMLCanvasElement } = {};
-  const sh = SeqHandler.forColumn(params.seqCol);
+  const sh = _package.seqHelper.getSeqHandler(params.seqCol);
   const biotype = sh.defaultBiotype;
   const subParts1 = sh.getSplitted(params.points[0]);
   const subParts2 = sh.getSplitted(params.points[1]);
@@ -138,7 +137,7 @@ export function createDifferenceCanvas(
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d');
   canvas.height = 30;
-  const monomerLib = getMonomerLib();
+  const monomerLib = _package.monomerLib;
   drawMoleculeDifferenceOnCanvas(context!, 0, 0, 0, 30,
     wu.count(0).take(subParts1.length).map((posIdx) => subParts1.getCanonical(posIdx)).toArray(),
     wu.count(0).take(subParts2.length).map((posIdx) => subParts2.getCanonical(posIdx)).toArray(),

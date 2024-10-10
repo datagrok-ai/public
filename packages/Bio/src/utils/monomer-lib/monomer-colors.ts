@@ -8,20 +8,20 @@ import {HelmType} from '@datagrok-libraries/bio/src/helm/types';
 export const naturalMonomerColors = {
   [HelmTypes.BASE]: {
     // Chromatogram palette  // HELMWebEditor monomerColors
-    A: "green",              // "#A0A0FF",
-    G: "black",              // "#FF7070",
-    T: "red",                // "#A0FFA0",
-    C: "blue",               // "#FF8C4B",
-    U: "red",                // "#FF8080"
+    A: "#20E040",            // "#A0A0FF",
+    G: "#040404",            // "#FF7070",
+    T: "#FF8080",            // "#A0FFA0",
+    C: "#2060FF",            // "#FF8C4B",
+    U: "#FF8080",            // "#FF8080"
   },
 
   [HelmTypes.NUCLEOTIDE]: {
     // Chromatogram palette  // HELMWebEditor monomerColors
-    A: "green",              // "#A0A0FF",
-    G: "black",              // "#FF7070",
-    T: "red",                // "#A0FFA0",
-    C: "blue",               // "#FF8C4B",
-    U: "red",                // "#FF8080"
+    A: "#20E040",            // "#A0A0FF",
+    G: "#040404",            // "#FF7070",
+    T: "#FF8080",            // "#A0FFA0",
+    C: "#2060FF",            // "#FF8C4B",
+    U: "#FF8080",            // "#FF8080"
   },
 
   [HelmTypes.LINKER]: {
