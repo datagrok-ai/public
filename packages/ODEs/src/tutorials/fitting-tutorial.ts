@@ -19,6 +19,7 @@ export class FittingTutorial extends Tutorial {
   }
   get steps() {return 12;}
 
+  demoTable: string = '';
   helpUrl: string = 'https://datagrok.ai/help/compute/function-analysis#parameter-optimization';
 
   protected async _run() {
@@ -42,7 +43,7 @@ export class FittingTutorial extends Tutorial {
     const modelCatalogNode = appsGroup.items.find((node) => node.text === 'Model Catalog');
 
     if (modelCatalogNode === undefined) {
-      grok.shell.error('Cannot run this tutorial: the package Compute is not installed');
+      grok.shell.warning('Cannot run this tutorial: the package Compute is not installed');
       return;
     }
 
@@ -57,7 +58,7 @@ export class FittingTutorial extends Tutorial {
     // 2. Run model
     const modelIconRoot = await getElement(grok.shell.v.root, 'span.d4-link-label[name="span-ballFlight"]');
     if (modelIconRoot === null) {
-      grok.shell.error('Model Catalog run timeout exceeded');
+      grok.shell.warning('Model Catalog run timeout exceeded');
       return;
     }
 
@@ -71,7 +72,7 @@ export class FittingTutorial extends Tutorial {
     // 3. Play
     const modelView = await getView('Ball flight');
     if (modelView === null) {
-      grok.shell.error('Model run timeout exceeded');
+      grok.shell.warning('Model run timeout exceeded');
       return;
     }
 
@@ -102,7 +103,7 @@ export class FittingTutorial extends Tutorial {
     // 5. Switch Velocity
     const fittingView = await getView('ballFlight - fitting');
     if (fittingView === null) {
-      grok.shell.error('Fitting run timeout exceeded');
+      grok.shell.warning('Fitting run timeout exceeded');
       return;
     }
 
@@ -185,7 +186,8 @@ export class FittingTutorial extends Tutorial {
 
     // 11. Select table
     const tableInputRoot = fitFormRoot.querySelector('div.ui-input-choice.ui-input-table.ui-input-root');
-    const tableChoiceRoot = tableInputRoot.querySelector('select.ui-input-editor.d4-invalid') as HTMLSelectElement;
+    const tableChoiceRoot = tableInputRoot.querySelector('select.ui-input-editor') as HTMLSelectElement;
+    tableChoiceRoot.value = '';
     const dfSource = fromEvent(tableChoiceRoot, 'input').pipe(map((_) => tableChoiceRoot.value), filter((val) => val === 'Ball trajectory'));
 
     await this.action(

@@ -49,7 +49,9 @@ export class DifferentialEquationsTutorial extends Tutorial {
     );
 
     await new Promise((resolve) => setTimeout(resolve, UI_TIME.APP_RUN_SOLVING * 2));
-    grok.shell.view('Template').close();
+    const templateView = grok.shell.view('Template');
+    if (templateView !== undefined)
+      templateView.close();
 
     const diffStudio = new DiffStudio();
     await diffStudio.runSolverApp(POPULATION_MODEL);

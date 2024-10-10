@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 /** Max waiting time */
-const MAX_TIME = 10000;
+const MAX_TIME = 60000;
 
 /** Timeout tick */
 const TICK = 100;
