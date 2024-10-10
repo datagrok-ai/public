@@ -13,6 +13,7 @@ export const ifOverlapping = {
       ui.label(customText ?? 'Updating...'),
       ui.loader(),
     ], 'd4-update-shadow');
+    loader.style.zIndex = '1';
     ifOverlapping.loaderMapping.set(el, loader);
   },
   updated: (el: HTMLElement, binding: Vue.DirectiveBinding<boolean>) => {

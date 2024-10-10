@@ -304,6 +304,7 @@ export async function TreeWizardApp() {
   const view = new DG.ViewBase();
   const app = Vue.createApp(TreeWizardAppInstance, {providerFunc: 'LibTests:MockProvider3'});
   view.root.classList.remove('ui-panel');
+  view.root.classList.add('ui-box');
   app.mount(view.root);
   
   view.name = 'DriverApp';

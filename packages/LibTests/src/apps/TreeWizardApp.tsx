@@ -51,7 +51,6 @@ export const TreeWizardApp = Vue.defineComponent({
   },
   setup(props) {
     const driver = new Driver();
-    const isLocked = Vue.ref(false);
     const treeState = Vue.shallowRef<PipelineState | undefined>(undefined);
     const chosenStepUuid = Vue.ref<string | undefined>(undefined);
 
@@ -97,6 +96,8 @@ export const TreeWizardApp = Vue.defineComponent({
       treeState.value = s;
     }));
 
+    const treeMutationsLocked = useSubject(driver.treeMutationsLocked$);
+
     const callStates = useSubject(driver.currentCallsState$);
     const currentCallState = useExtractedObservable(
       [callStates, chosenStepUuid], 
@@ -119,7 +120,7 @@ export const TreeWizardApp = Vue.defineComponent({
       return stat;
     };
 
-    useSubscription((driver.globalROLocked$).subscribe((l) => isLocked.value = l));
+    const isGlobalLocked = useSubject(driver.globalROLocked$);
     Vue.onMounted(() => {
       initPipeline(props.providerFunc);
     });
@@ -166,7 +167,7 @@ export const TreeWizardApp = Vue.defineComponent({
     };
 
     return () => (
-      <div class='w-full h-full'>
+      Vue.withDirectives(<div class='w-full h-full'>
         <RibbonPanel>
           <IconFA 
             name='folder-tree'
@@ -238,7 +239,7 @@ export const TreeWizardApp = Vue.defineComponent({
         {treeState.value && <DockManager class='block h-full' onPanelClosed={handlePanelClose}>
           { treeState.value && !treeHidden.value ? 
             Vue.withDirectives(<Draggable 
-              class="ui-div mtl-tree p-2 overflow-scroll"
+              class="ui-div mtl-tree p-2 overflow-scroll h-full"
               style={{paddingLeft: '25px'}}
 
               dock-spawn-title='Steps'
@@ -287,7 +288,7 @@ export const TreeWizardApp = Vue.defineComponent({
                     />
                   )
               }
-            </Draggable>, [[ifOverlapping, isLocked.value, 'Locked...']]): null },
+            </Draggable>, [[ifOverlapping, treeMutationsLocked.value, 'Locked...']]): null },
           
           {
             chosenStepState.value && 
@@ -315,7 +316,7 @@ export const TreeWizardApp = Vue.defineComponent({
             />
           }
         </DockManager> }
-      </div>
+      </div>, [[ifOverlapping, isGlobalLocked.value]])
     );
   },
 });
