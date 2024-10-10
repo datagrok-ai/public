@@ -15,7 +15,7 @@ import {
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
-import {useStorage, useUrlSearchParams, whenever} from '@vueuse/core';
+import {useUrlSearchParams} from '@vueuse/core';
 import {FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
@@ -318,6 +318,8 @@ export const RichFunctionView = Vue.defineComponent({
     const isExportEnabled = Vue.computed(() => Utils.getFeature(features.value, 'export', true));
     const isFittingEnabled = Vue.computed(() => Utils.getFeature(features.value, 'fitting', false));
 
+    const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
+
     return () => {
       let lastCardLabel = null as string | null;
       let scalarCardCount = 0;
@@ -332,6 +334,37 @@ export const RichFunctionView = Vue.defineComponent({
             <span onClick={removeSavedPersonalState}>
               <IconFA name='eraser' style={{'padding-right': '3px'}}/>
               <span> Remove personal </span>
+            </span>
+          </RibbonMenu>
+          <RibbonMenu groupName='Panels'>
+            <span 
+              onClick={() => formHidden.value = !formHidden.value} 
+              class={'flex justify-between w-full'}
+            >
+              <div> <IconFA name='pen' style={menuIconStyle}/> Show inputs </div>
+              { !formHidden.value && <IconFA name='check'/>}
+            </span>
+            <span 
+              onClick={() => visibleTabLabels.value = [...tabLabels.value]} 
+              class={'flex justify-between'}
+            >
+              <div> <IconFA name='chart-pie' 
+                style={menuIconStyle}/> Show output tabs </div>
+              { visibleTabLabels.value.length === tabLabels.value.length && <IconFA name='check'/>}
+            </span>
+            { hasContextHelp.value && <span 
+              onClick={() => helpHidden.value = !helpHidden.value} 
+              class={'flex justify-between'}
+            >
+              <div> <IconFA name='info' style={menuIconStyle}/> Show help </div>
+              { !helpHidden.value && <IconFA name='check'/>}
+            </span> }
+            <span 
+              onClick={() => historyHidden.value = !historyHidden.value} 
+              class={'flex justify-between'}
+            >
+              <div> <IconFA name='history' style={menuIconStyle}/> Show history </div>
+              { !historyHidden.value && <IconFA name='check'/>}
             </span>
           </RibbonMenu>
           <RibbonPanel>
@@ -354,17 +387,6 @@ export const RichFunctionView = Vue.defineComponent({
                   ${Utils.getStartedOrNull(currentCall.value) ?? 'Not completed'}.xlsx`, blob));
               }}
             />}
-            <IconFA
-              name='pen'
-              tooltip={formHidden.value ? 'Open inputs': 'Close inputs'}
-              onClick={() => formHidden.value = !formHidden.value} 
-              style={{'background-color': !formHidden.value ? 'var(--grey-1)': null}}
-            />
-            <IconFA
-              name='chart-pie'
-              tooltip='Restore output tabs'
-              onClick={() => visibleTabLabels.value = [...tabLabels.value]} 
-            />
             { isSAenabled.value && <IconFA 
               name='analytics'
               onClick={() => SensitivityAnalysisView.fromEmpty(currentFunc.value)}

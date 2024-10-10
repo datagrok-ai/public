@@ -220,19 +220,16 @@ export const TreeWizardApp = Vue.defineComponent({
             }}
           /> }
         </RibbonPanel>
-        <RibbonMenu groupName='State'>
+        {/* <RibbonMenu groupName='State'>
           <span onClick={savePipeline}>
             <IconFA name='save' style={{'padding-right': '3px'}}/>
             <span> Save </span>
           </span>
-          { 
-          //  <span onClick={loadPipeline}> 
-          }
           <span>
             <IconFA name='life-ring' style={{'padding-right': '3px'}}/>
             <span> Load </span>
           </span>
-        </RibbonMenu>
+        </RibbonMenu> */}
         {treeState.value && <DockManager class='block h-full' onPanelClosed={handlePanelClose}>
           { treeState.value && !treeHidden.value ? 
             Vue.withDirectives(<Draggable 

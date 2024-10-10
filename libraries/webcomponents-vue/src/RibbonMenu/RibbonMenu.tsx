@@ -53,7 +53,7 @@ export const RibbonMenu = Vue.defineComponent({
 
     return () => 
       slots.default?.().filter((slot: any) => slot.type !== Symbol.for('v-cmt')).map((slot: any, idx: number) => 
-        <div slot-idx={`${idx}`} ref={(el) => addElement(el, idx)}> { slot } </div>
+        <div slot-idx={`${idx}`} style={{width: '100%'}} ref={(el) => addElement(el, idx)}> { slot } </div>
       ) 
   }
 });
