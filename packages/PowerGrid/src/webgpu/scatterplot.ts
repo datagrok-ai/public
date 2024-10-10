@@ -13,6 +13,8 @@ class WebGPUCache {
     columnBuffer: GPUBuffer | null = null;
     xCol: DG.Column | null = null;
     yCol: DG.Column | null = null;
+    xColVersion = -1;
+    yColVersion = -1;
     xColLength = -1;
     yColLength = -1;
 
@@ -26,8 +28,8 @@ class WebGPUCache {
 
     isColumnChanged(xCol: DG.Column, yCol: DG.Column) {
         return !this.columnBuffer || xCol != this.xCol || yCol != this.yCol || 
-            !this.xCol || this.xCol.version != xCol.version ||
-            !this.yCol || this.yCol.version != yCol.version ;
+            !this.xCol || this.xColVersion != xCol.version ||
+            !this.yCol || this.yColVersion != yCol.version;
     }
 
     isValid() {
@@ -46,8 +48,8 @@ class WebGPUCache {
 
         const inverseX = sc.props.invertXAxis;
         const inverseY = !sc.props.invertYAxis;
-        const linearX = sc.props.xAxisType == "linear";
-        const linearY = sc.props.yAxisType == "linear";
+        const linearX = sc.props.xAxisType == DG.AxisType.linear;
+        const linearY = sc.props.yAxisType == DG.AxisType.linear;
 
         this.viewBuffer = device.createBuffer({
             size: kViewBoxByteOffset + kViewPortByteOffset + kPropsByteOffset + kPointByteOffset,
@@ -97,6 +99,8 @@ class WebGPUCache {
         const yColumnData = yCol.getRawData();
         this.xColLength = xColumnData.length;
         this.yColLength = yColumnData.length;
+        this.xColVersion = xCol.version;
+        this.yColVersion = yCol.version;
         const kXColumnDataSize = getPaddedSize(this.xColLength);
         const kYColumnDataSize = getPaddedSize(this.yColLength);
         this.columnBuffer = device.createBuffer({
@@ -154,7 +158,6 @@ export function scWebGPURender(sc: DG.ScatterPlotViewer, show: boolean) {
     }
     canvas.hidden = false;
   
-
     const cache = getWebGPUCache(sc);
     if (!cache)
         return;
@@ -188,7 +191,6 @@ export async function scWebGPUPointHitTest(sc: DG.ScatterPlotViewer, pt: DG.Poin
     
     if (!cache.isValid() || !cache.indexBuffer || !cache.columnBuffer || !cache.viewBuffer)
         return -1;
-    
 
     const kWorkgroupSize = 100;
     const workGroupDispatchSize = Math.ceil(Math.sqrt(Math.ceil(cache.indexBufferLength / kWorkgroupSize)));
@@ -256,7 +258,6 @@ export async function scWebGPUPointHitTest(sc: DG.ScatterPlotViewer, pt: DG.Poin
     });
 
     const commandEncoder = device.createCommandEncoder();
-
     const passEncoder = commandEncoder.beginComputePass();
     passEncoder.setPipeline(pipeline);
     passEncoder.setBindGroup(0, bindGroup);
