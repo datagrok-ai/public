@@ -2,4 +2,4 @@
 
 let view = grok.shell.addTableView(grok.data.demo.demog());
 
-view.wordCloud();
+view.addViewer(DG.VIEWER.WORD_CLOUD, {column:'site'});

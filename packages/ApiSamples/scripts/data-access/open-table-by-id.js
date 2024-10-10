@@ -1,3 +1,13 @@
 // An example of using Dart's future as JavaScript's promises
-grok.data.openTable("System:AppData/Samples/cars.csv")
-  .then(t => grok.shell.info(t.name));
+
+let df = grok.data.demo.demog();
+let view = grok.shell.addTableView(df);
+ 
+const tableInfo = df.getTableInfo(); 
+const table = await grok.dapi.tables.save(tableInfo); 
+
+
+let tableSearchRes = await grok.data.openTable(table.id);
+
+grok.shell.info(tableSearchRes.name); 
+await grok.dapi.tables.delete(table);

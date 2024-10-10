@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import { runTests, tests, TestContext, category, test as _test, delay, initAutoTests as initCoreTests, expect, awaitCheck } from '@datagrok-libraries/utils/src/test';
+import { runTests, tests, TestContext, category, test as _test, delay, initAutoTests as initCoreTests, expect, awaitCheck, before } from '@datagrok-libraries/utils/src/test';
 export const _package = new DG.Package();
 export { tests };
 
@@ -38,7 +38,8 @@ const scriptViewer = [
   'parameter expressions',
   'docking', 
   'input-api',
-  'helm-input-ui'
+  'helm-input-ui',
+  'output-layouts'
 ];
 
 //name: test
@@ -51,13 +52,30 @@ export async function test(category: string, test: string, testContext: TestCont
   const data = await runTests({ category, test, testContext });
   return DG.DataFrame.fromObjects(data)!;
 }
+interface ScriptObject {
+  [key: string]: () => Promise<void>;
+}
+
+let beforeArr : ScriptObject= {
+  ['Scripts:ui:inputs'] : async () => {await grok.functions.call("Helm:getHelmHelper()");}
+}
 
 //tags: init
 export async function initTests() {
 
   const scripts = await grok.dapi.scripts.filter('package.shortName = "ApiSamples"').list();
   for (const script of scripts) {
-    category(('Scripts:' + script.options.path as string).replaceAll('/', ':'), () => {
+    let catName = ('Scripts:' + script.options.path as string).replaceAll('/', ':');
+    category(catName, () => {
+      
+      if(beforeArr[catName]){
+        let currentBefore = beforeArr[catName];
+        before(async ()=>{
+          await currentBefore();
+        })
+        delete beforeArr['Scripts:ui:inputs'];
+      }
+      
       _test(script.friendlyName, async () => {
 
         const annotation = `//name: ${script.friendlyName} 
