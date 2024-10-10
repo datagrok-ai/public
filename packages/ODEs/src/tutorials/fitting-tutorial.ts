@@ -24,7 +24,7 @@ export class FittingTutorial extends Tutorial {
 
   protected async _run() {
     this.header.textContent = this.name;
-    this.describe('Parameter optimization solves an inverse problem: finding the slider conditions that lead to a specified output of the model.');
+    this.describe('Parameter optimization solves an inverse problem: finding the input conditions that lead to a specified output of the model.');
     this.describe(ui.link('Learn more', this.helpUrl).outerHTML);
     this.title('Model');
     this.describe('Consider ball flight simulation.');
@@ -90,8 +90,7 @@ export class FittingTutorial extends Tutorial {
     this.title('Fit scalar output');
     this.describe('How should the ball be thrown so that it flies exactly 10 meters? Let\'s answer this question.');
 
-    const fitIcnRoot = document.querySelector('div.d4-ribbon-panel')
-      .querySelector('i.grok-icon.fal.fa-chart-line') as HTMLElement;
+    const fitIcnRoot = document.querySelector('i.grok-icon.fal.fa-chart-line') as HTMLElement;
 
     await this.action(
       'Click "Fit inputs"',
@@ -141,8 +140,7 @@ export class FittingTutorial extends Tutorial {
     );
 
     // 8. Run
-    const runIcnRoot = document.querySelector('div.d4-ribbon-panel')
-      .querySelector('i.grok-icon.fal.fa-play.fas') as HTMLElement;
+    const runIcnRoot = document.querySelector('i.grok-icon.fal.fa-play.fas') as HTMLElement;
 
     await this.action(
       'Click "Run"',
@@ -185,7 +183,7 @@ export class FittingTutorial extends Tutorial {
     );
 
     // 11. Select table
-    const tableInputRoot = fitFormRoot.querySelector('div.ui-input-choice.ui-input-table.ui-input-root');
+    const tableInputRoot = fitFormRoot.querySelector('div.ui-input-choice.ui-input-table.ui-input-root') as HTMLElement;
     const tableChoiceRoot = tableInputRoot.querySelector('select.ui-input-editor') as HTMLSelectElement;
     tableChoiceRoot.value = '';
     const dfSource = fromEvent(tableChoiceRoot, 'input').pipe(map((_) => tableChoiceRoot.value), filter((val) => val === 'Ball trajectory'));
@@ -193,7 +191,7 @@ export class FittingTutorial extends Tutorial {
     await this.action(
       'Set "Trajectory" to "Ball trajectory"',
       dfSource,
-      tableChoiceRoot,
+      tableInputRoot,
     );
 
     // 12. Run
