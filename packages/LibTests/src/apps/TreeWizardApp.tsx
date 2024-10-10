@@ -21,7 +21,7 @@ import '@he-tree/vue/style/material-design.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {of} from 'rxjs';
 import {ParentFunccallView} from '../components/ParentFunccallView/ParentFunccallView';
-import {useUrlSearchParams} from '@vueuse/core';
+import {computedWithControl, useUrlSearchParams} from '@vueuse/core';
 
 const findTreeNode = (uuid: string, state: PipelineState): PipelineState | undefined => {
   let foundState = undefined as PipelineState | undefined;
@@ -107,6 +107,11 @@ export const TreeWizardApp = Vue.defineComponent({
         immediate: true,
       },
     );
+    const isTreeReportable = computedWithControl([currentCallState], 
+      () => Object.values(callStates.value)
+        .map((state) => state.value?.isOutputOutdated)
+        .every((isOutdated) => isOutdated === false),
+    );
 
     const restoreOpenedNodes = (stat: AugmentedStat) => {
       if (oldClosed.includes(stat.data.uuid)) 
@@ -168,7 +173,7 @@ export const TreeWizardApp = Vue.defineComponent({
             tooltip={treeHidden.value ? 'Show tree': 'Hide tree'}
             onClick={() => treeHidden.value = !treeHidden.value } 
           />
-          {treeState.value && <IconFA 
+          {treeState.value && isTreeReportable.value && <IconFA 
             name='arrow-to-bottom'
             tooltip='Report all steps'
             onClick={async () => {

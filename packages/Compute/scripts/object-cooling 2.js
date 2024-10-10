@@ -15,7 +15,7 @@
 //output: double coolingFactor {caption: Cooling factor; units: 1 / sec.; category: Calculations; precision: 5}
 //output: double tempDiff {caption: Temperature difference; units: C; category: Calculations}
 //editor: LibTests:RichFunctionViewEditor2
-//meta.features: {"sens-analysis": true, "upload": true}
+//meta.features: {"sens-analysis": true, "upload": true, "fitting": true}
 //meta.foldedCategories: ["Object properties"]
 //meta.compareCustomizer: Compute:CustomCustomizer
 //meta.uploadFunc: Compute:CustomUploader
