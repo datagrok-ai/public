@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {
-  HelmType, PolymerType, MonomerType,
+  PolymerType, MonomerType,
   IWebEditorMonomer, WebEditorRGroups
 } from '@datagrok-libraries/bio/src/helm/types';
 
@@ -85,8 +85,9 @@ export class GapWebEditorMonomer extends WebEditorMonomerDummy {
   public readonly linecolor: string = '#808080';
   public readonly textcolor: string = '#808080';
 
-  constructor(biotype: string, id: string) {
-    super(biotype, id, 'gap');
+  constructor(biotype: string) {
+    // monomer symbol is used to build pseudo molfile for Helm, symbol can not be empty for molfile
+    super(biotype, '*', 'gap');
   }
 }
 
@@ -105,8 +106,14 @@ export class MissingWebEditorMonomer extends WebEditorMonomerDummy {
   public readonly linecolor: string = '#800000';
   public readonly textcolor: string = '#FFFFFF';
 
-  constructor(biotype: string, id: string) {
+  constructor(biotype: string, id: string, isLibEmpty: boolean) {
     super(biotype, id, 'missing');
+
+    if (isLibEmpty) {
+      this.backgroundcolor = '#C0C0C0';
+      this.linecolor = '#404040';
+      this.textcolor = '#404040';
+    }
   }
 }
 

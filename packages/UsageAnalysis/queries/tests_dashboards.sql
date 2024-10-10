@@ -15,8 +15,10 @@ select
   r.duration,
   r.benchmark
 from tests t full join last_builds b on 1=1
-left join test_runs r on r.test_name = t.name and r.build_name = b.name
+left join test_runs r on r.test_name = t.name and r.build_name = b.name and
+r.date_time = (select max(_r.date_time) from test_runs _r where _r.test_name = r.test_name and _r.build_name = r.build_name and not _r.stress_test) and not r.stress_test
 order by b.name, t.name
+
 --end
 
 --name: Benchmarks

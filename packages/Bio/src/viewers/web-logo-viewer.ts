@@ -7,9 +7,8 @@ import wu from 'wu';
 import {fromEvent, Observable, Subject, Unsubscribable} from 'rxjs';
 
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
-import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {
-  monomerToShort, pickUpPalette, pickUpSeqCol, TAGS as bioTAGS, positionSeparator
+  monomerToShort, pickUpSeqCol, TAGS as bioTAGS, positionSeparator, ALPHABET
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {
   FilterSources, HorizontalAlignments, IWebLogoViewer, PositionHeight, PositionMarginStates,
@@ -21,11 +20,14 @@ import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/type
 import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
 import {GAP_SYMBOL} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/index';
+import {HelmType} from '@datagrok-libraries/bio/src/helm/types';
+import {undefinedColor} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 
 import {AggFunc, getAgg} from '../utils/agg';
 import {buildCompositionTable} from '../widgets/composition-analysis-widget';
 
-import {_package} from '../package';
+import {_package, getMonomerLibHelper} from '../package';
 
 declare global {
   interface HTMLCanvasElement {
@@ -199,7 +201,8 @@ export class PositionInfo {
   }
 
   render(g: CanvasRenderingContext2D,
-    fontStyle: string, uppercaseLetterAscent: number, uppercaseLetterHeight: number, cp: SeqPalette
+    fontStyle: string, uppercaseLetterAscent: number, uppercaseLetterHeight: number,
+    biotype: HelmType, monomerLib: IMonomerLibBase | null
   ) {
     for (const [monomer, pmInfo] of Object.entries(this._freqs)) {
       if (monomer !== GAP_SYMBOL) {
@@ -207,11 +210,15 @@ export class PositionInfo {
         const b = pmInfo.bounds!;
         const left = b.left;
 
+        let color: string = undefinedColor;
+        if (monomerLib)
+          color = monomerLib.getMonomerTextColor(biotype, monomer)!;
+
         g.resetTransform();
         g.strokeStyle = 'lightgray';
         g.lineWidth = 1;
         g.rect(left, b.top, b.width, b.height);
-        g.fillStyle = cp.get(monomer) ?? cp.get('other');
+        g.fillStyle = color;
         g.textAlign = 'left';
         g.font = fontStyle;
         //g.fillRect(b.left, b.top, b.width, b.height);
@@ -233,13 +240,13 @@ export class PositionInfo {
     return !!findRes ? findRes[0] : undefined;
   }
 
-  buildCompositionTable(palette: SeqPalette): HTMLTableElement {
+  buildCompositionTable(biotype: HelmType, monomerLib: IMonomerLibBase): HTMLTableElement {
     if ('-' in this._freqs)
       throw new Error(`Unexpected monomer symbol '-'.`);
-    return buildCompositionTable(palette,
+    return buildCompositionTable(
       Object.assign({}, ...Object.entries(this._freqs)
-        .map(([m, pmi]) => ({[m]: pmi.rowCount})))
-    );
+        .map(([m, pmi]) => ({[m]: pmi.rowCount}))),
+      biotype, monomerLib);
   }
 }
 
@@ -304,9 +311,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   private seqHandler: SeqHandler | null;
   private initialized: boolean = false;
 
-  // private readonly colorScheme: ColorScheme = ColorSchemes[NucleotidesWebLogo.residuesSet];
-  protected palette: SeqPalette | null = null;
-
+  private monomerLib: IMonomerLibBase | null = null;
   private host?: HTMLDivElement;
   private msgHost?: HTMLElement;
   private canvas: HTMLCanvasElement;
@@ -446,6 +451,14 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     this.canvas.classList.value = 'bio-wl-canvas';
     this.canvas.style.width = '100%';
 
+    getMonomerLibHelper().then((libHelper) => {
+      this.monomerLib = libHelper.getMonomerLib();
+      this.render(WlRenderLevel.Render, 'monomerLib');
+      this.subs.push(this.monomerLib.onChanged.subscribe(() => {
+        this.render(WlRenderLevel.Render, 'monomerLib changed');
+      }));
+    });
+
     /* this.root.style.background = '#FFEEDD'; */
     this.viewSyncer = new PromiseSyncer(_package.logger);
   }
@@ -583,7 +596,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     // Set valueColumnNameProp.choices has no effect
   }
 
-  /** Assigns {@link seqCol} and {@link palette} based on {@link sequenceColumnName} and calls {@link render}(). */
+  /** Assigns {@link seqCol} based on {@link sequenceColumnName} and calls {@link render}(). */
   private updateSeqCol(): void {
     if (this.dataFrame) {
       this.seqCol = this.sequenceColumnName ? this.dataFrame.col(this.sequenceColumnName) : null;
@@ -595,7 +608,6 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
         try {
           this.seqHandler = SeqHandler.forColumn(this.seqCol);
 
-          this.palette = pickUpPalette(this.seqCol);
           this.render(WlRenderLevel.Freqs, 'updateSeqCol()');
           this.error = null;
         } catch (err: any) {
@@ -609,7 +621,6 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
           this.positionLabels = [];
           this.startPosition = -1;
           this.endPosition = -1;
-          this.palette = null;
         }
       }
     }
@@ -1085,15 +1096,10 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       this._onLayoutCalculated.next();
     };
 
-    if (this.msgHost) {
-      if (this.seqCol && !this.palette) {
-        this.msgHost!.innerText = `Unknown palette (column semType: '${this.seqCol.semType}').`;
-        this.msgHost!.style.display = '';
-      } else
-        this.msgHost!.style.display = 'none';
-    }
+    if (this.msgHost)
+      this.msgHost!.style.display = 'none';
 
-    if (!this.seqCol || !this.dataFrame || !this.palette || this.host == null || this.slider == null)
+    if (!this.seqCol || !this.dataFrame || this.host == null || this.slider == null)
       return;
 
     const dpr: number = window.devicePixelRatio;
@@ -1133,8 +1139,10 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       // Hacks to scale uppercase characters to target rectangle
       const uppercaseLetterAscent = 0.25;
       const uppercaseLetterHeight = 12.2;
+      const sh = SeqHandler.forColumn(this.seqCol);
+      const biotype = sh.defaultBiotype;
       for (let jPos = firstPos; jPos <= lastPos; jPos++)
-        this.positions[jPos].render(g, fontStyle, uppercaseLetterAscent, uppercaseLetterHeight, this.palette);
+        this.positions[jPos].render(g, fontStyle, uppercaseLetterAscent, uppercaseLetterHeight, biotype, this.monomerLib);
     } finally {
       g.restore();
     }
@@ -1216,12 +1224,15 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       const [pi, monomer] = this.getMonomer(cursorP, dpr);
       const positionLabelHeight = this.showPositionLabels ? POSITION_LABELS_HEIGHT * dpr : 0;
 
-      if (pi !== null && monomer === null && 0 <= cursorP.y && cursorP.y <= positionLabelHeight) {
+      if (pi !== null && monomer === null && 0 <= cursorP.y && cursorP.y <= positionLabelHeight && this.monomerLib) {
         // Position tooltip
 
         const tooltipRows = [ui.divText(`Position ${pi.label}`)];
-        if (this.valueAggrType === DG.AGG.TOTAL_COUNT)
-          tooltipRows.push(pi.buildCompositionTable(this.palette!));
+        if (this.valueAggrType === DG.AGG.TOTAL_COUNT) {
+          const sh = SeqHandler.forColumn(this.seqCol!);
+          const biotype = sh.defaultBiotype;
+          tooltipRows.push(pi.buildCompositionTable(biotype, this.monomerLib));
+        }
         const tooltipEl = ui.divV(tooltipRows);
         ui.tooltip.show(tooltipEl, args.x + 16, args.y + 16);
       } else if (pi !== null && monomer && this.dataFrame && this.seqCol && this.seqHandler) {

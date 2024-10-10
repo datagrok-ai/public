@@ -364,7 +364,7 @@ export function macroMolColumnPropertyPanel(molColumn: DG.Column): DG.Widget {
 //input: semantic_value sequence { semType: Macromolecule }
 //output: widget result
 export function compositionAnalysisWidget(sequence: DG.SemanticValue): DG.Widget {
-  return getCompositionAnalysisWidget(sequence);
+  return getCompositionAnalysisWidget(sequence, monomerLib!);
 }
 
 //name: MacromoleculeDifferenceCellRenderer

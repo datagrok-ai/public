@@ -1478,6 +1478,5 @@ function setViewerGridProps(grid: DG.Grid): void {
   gridProps.showRowHeader = false;
   gridProps.showCurrentRowIndicator = false;
   gridProps.showReadOnlyNotifications = false;
-
   gridProps.rowHeight = 20;
 }

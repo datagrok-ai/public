@@ -87,7 +87,8 @@ export async function setProperties() {
 }
 
 export async function performChemicalPropertyPredictions(molColumn: DG.Column, viewTable: DG.DataFrame, models: string, template?: string, addPiechart?: boolean, addForm?: boolean) {
-  properties = JSON.parse(template!);
+  if (template)
+    properties = JSON.parse(template);
   const progressIndicator = DG.TaskBarProgressIndicator.create('Running Admetica...');
   const csvString = DG.DataFrame.fromColumns([molColumn]).toCsv();
   progressIndicator.update(10, 'Predicting...');
@@ -364,7 +365,7 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
       const map: { [_: string]: any } = {};
       for (const model of queryParams) {
         const column = table.getCol(model);
-        map[model] = ui.divText(column.convertTo(DG.TYPE.STRING, '0.000').get(0), {
+        map[model] = ui.divText(column.get(0).toFixed(3), {
           style: { color: DG.Color.toHtml(column.meta.colors.getColor(0)!) }
         });
       }

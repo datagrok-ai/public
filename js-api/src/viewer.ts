@@ -554,7 +554,11 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotSettings> {
   render(g: CanvasRenderingContext2D): void { api.grok_ScatterPlotViewer_Render(this.dart, g); }
   getRowTooltip(rowIdx: number): HTMLDivElement { return api.grok_ScatterPlotViewer_GetRowTooltip(this.dart, rowIdx); }
   getMarkerSize(rowIdx: number): number { return api.grok_ScatterPlotViewer_GetMarkerSize(this.dart, rowIdx); }
+  getMarkerSizes(): Float32Array { return api.grok_ScatterPlotViewer_GetMarkerSizes(this.dart); }
   getMarkerType(rowIdx: number): string { return api.grok_ScatterPlotViewer_GetMarkerType(this.dart, rowIdx); }
+  getMarkerColor(rowIdx: number): number { return api.grok_ScatterPlotViewer_GetMarkerColor(this.dart, rowIdx); }
+  getMarkerColors(): Uint32Array { return api.grok_ScatterPlotViewer_GetMarkerColors(this.dart); }
+
 
   get onZoomed(): rxjs.Observable<Rect> { return this.onEvent('d4-scatterplot-zoomed'); }
   get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-scatterplot-reset-view'); }

@@ -102,6 +102,7 @@ export interface IDartApi {
   grok_DataConnectionsDataSource_SubDir(s: any, c: any, dir: String): Promise<any>;
   grok_DataConnectionsDataSource_Get_Schemas(s: any, c: any): Promise<any>;
   grok_DataConnectionsDataSource_Get_Schema(s: any, c: any, schema: String): Promise<any>;
+  grok_DataConnectionsDataSource_Get_Unique_Columns(s: any, c: any, schema: String, table: String): Promise<any>;
   grok_GroupsDataSource_Save(s: any, e: any): Promise<any>;
   grok_EntitiesDataSource_SaveProperties(s: any, props: any): Promise<any>;
   grok_EntitiesDataSource_GetProperties(s: any, e: any): Promise<any>;
@@ -414,7 +415,10 @@ export interface IDartApi {
   grok_ScatterPlotViewer_Render(s: any, g: any): any;
   grok_ScatterPlotViewer_GetRowTooltip(s: any, rowIdx: Num): any;
   grok_ScatterPlotViewer_GetMarkerSize(s: any, rowIdx: Num): any;
+  grok_ScatterPlotViewer_GetMarkerSizes(s: any): any;
   grok_ScatterPlotViewer_GetMarkerType(s: any, rowIdx: Num): any;
+  grok_ScatterPlotViewer_GetMarkerColor(s: any, rowIdx: Num): any;
+  grok_ScatterPlotViewer_GetMarkerColors(s: any): any;
   grok_FormViewer_CreateDefault(table: any, columnNames: any): any;
   grok_FormViewer_Get_Form(form: any): any;
   grok_FormViewer_Get_Editable(form: any): any;
@@ -920,6 +924,7 @@ export interface IDartApi {
   grok_BitSet_Invert(b: any, notify: Bool): any;
   grok_BitSet_SetAll(b: any, x: Bool, notify: Bool): any;
   grok_BitSet_GetBit(b: any, i: Num): any;
+  grok_BitSet_Get_Version(b: any): any;
   grok_BitSet_SetBit(b: any, i: Num, x: Bool, notify: Bool): any;
   grok_BitSet_GetSelectedIndexes(b: any): any;
   grok_BitSet_FindNext(b: any, i: Num, x: Bool): any;

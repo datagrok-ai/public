@@ -11,7 +11,7 @@ module.exports = {
     test: {filename: 'package-test.js', library: {type: 'var', name:`${packageName}_test`}, import: './src/package-test.ts'}
   },
   resolve: {
-    extensions: ['.wasm', '.mjs', '.ts', '.json', '.js', '.tsx'],
+    extensions: ['.ts', '.wasm', '.mjs', '.json', '.js', '.tsx'],
   },
   module: {
     rules: [

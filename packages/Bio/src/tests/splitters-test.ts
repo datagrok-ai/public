@@ -4,20 +4,21 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 
-import {
-  after, before, category, test, expect, expectArray
-} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, test, expect, expectArray} from '@datagrok-libraries/utils/src/test';
 import {TAGS as bioTAGS, splitterAsFasta} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
+import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
+import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
 import {splitToMonomersUI} from '../utils/split-to-monomers';
 import {awaitGrid} from './utils';
 import * as C from '../utils/constants';
 import {getHelmMonomers} from '../package';
 
-import {splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
-import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
-
 import {_package} from '../package-test';
+import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 
 category('splitters', async () => {
   before(async () => {
@@ -85,7 +86,23 @@ category('splitters', async () => {
   test('testHelm1', async () => { await _testHelmSplitter(data.testHelm1[0], data.testHelm1[1]); });
   test('testHelm2', async () => { await _testHelmSplitter(data.testHelm2[0], data.testHelm2[1]); });
   test('testHelm3', async () => { await _testHelmSplitter(data.testHelm3[0], data.testHelm3[1]); });
+});
 
+category('splitters', () => {
+  let monomerLibHelper: IMonomerLibHelper;
+  let userLibSettings: UserLibSettings;
+
+  before(async () => {
+    monomerLibHelper = await getMonomerLibHelper();
+    userLibSettings = await getUserLibSettings();
+
+    await monomerLibHelper.loadMonomerLibForTests();
+  });
+
+  after(async () => {
+    await setUserLibSettings(userLibSettings);
+    await monomerLibHelper.loadMonomerLib(true);
+  });
 
   test('splitToMonomers', async () => {
     const df: DG.DataFrame = await grok.dapi.files.readCsv('System:AppData/Bio/samples/MSA.csv');

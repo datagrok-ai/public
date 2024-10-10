@@ -1,6 +1,25 @@
 # Datagrok-tools changelog
 
 
+## 4.13.29 (2024-10-09)
+
+### Features
+
+* Help fixes
+
+
+## 4.13.28 (2024-10-09)
+
+### Features
+
+* Grok Check update(added checks on caching)
+
+## 4.13.27 (2024-10-02)
+
+### Features
+
+* Publish all added
+
 ## 4.13.26 (2024-10-02)
 
 ### Features

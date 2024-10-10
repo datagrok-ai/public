@@ -130,7 +130,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
     const subParts1 = molColSh.getSplitted(this.targetMoleculeIdx);
     const subParts2 = resSh.getSplitted(resDf.currentRowIdx);
     const alignment = alignSequencePair(subParts1, subParts2);
-    const canvas = createDifferenceCanvas(alignment.seq1Splitted, alignment.seq2Splitted, resSh.units, molDifferences);
+    const canvas = createDifferenceCanvas(alignment.seq1Splitted, alignment.seq2Splitted, resSh.defaultBiotype, molDifferences);
     propPanel.append(ui.div(canvas, {style: {width: '300px', overflow: 'scroll'}}));
     if (subParts1.length !== subParts2.length) {
       propPanel.append(ui.divV([

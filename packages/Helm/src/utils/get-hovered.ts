@@ -85,9 +85,8 @@ export function getHoveredMonomerFallback(
 }
 
 export function getSeqMonomerFromHelmAtom(atom: HelmAtom): ISeqMonomer {
-  const polymerType = helmTypeToPolymerType(atom.bio!.type);
   const canonicalSymbol = atom.elem === GapOriginals[NOTATION.HELM] ? GAP_SYMBOL : atom.elem;
-  return {position: parseInt(atom.bio!.continuousId as string) - 1, symbol: atom.elem, biotype: atom.bio!.type};
+  return {position: parseInt(atom.bio!.continuousId as string) - 1, symbol: canonicalSymbol, biotype: atom.bio!.type};
 }
 
 /** Linear

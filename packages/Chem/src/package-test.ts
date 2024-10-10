@@ -35,6 +35,7 @@ import './tests/projects-tests';
 //import './tests/clone-layout-tests';
 import './tests/mmpa-tests';
 import './tests/chemprop-tests';
+import './tests/vector-funcs-tests'
 
 export const _package = new DG.Package();
 export {tests};

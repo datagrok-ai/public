@@ -79,7 +79,7 @@ export function getMonomerSequencesArray(macroMolCol: DG.Column<string>): ISeqMo
   const sh = SeqHandler.forColumn(macroMolCol);
 
   let containsEmptyValues = false;
-  const biotype: HelmType = sh.alphabet === ALPHABET.RNA || sh.alphabet === ALPHABET.DNA ? HelmTypes.NUCLEOTIDE : HelmTypes.AA;
+  const biotype: HelmType = sh.defaultBiotype;
 
   for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
     const seqSS = sh.getSplitted(rowIdx);

@@ -37,7 +37,7 @@ export function buildMonomerHoverLink(
   function buildMonomerMap(seqCol: DG.Column<string>, tableRowIdx: number): MonomerMap {
     const seqSH = SeqHandler.forColumn(seqCol);
     const seqSS = seqSH.getSplitted(tableRowIdx);
-    const biotype = seqSH.alphabet == ALPHABET.RNA || seqSH.alphabet == ALPHABET.DNA ? HelmTypes.NUCLEOTIDE : HelmTypes.AA;
+    const biotype = seqSH.defaultBiotype;
     const seqMList: ISeqMonomer[] = wu.count(0).take(seqSS.length)
       .map((posIdx) => { return {position: posIdx, symbol: seqSS.getCanonical(posIdx), biotype: biotype} as ISeqMonomer; })
       .toArray();
