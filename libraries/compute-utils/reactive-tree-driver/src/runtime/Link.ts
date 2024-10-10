@@ -10,9 +10,10 @@ import {BehaviorSubject, combineLatest, defer, EMPTY, merge, Subject, of} from '
 import {map, filter, takeUntil, withLatestFrom, switchMap, catchError, mapTo, finalize, debounceTime, timestamp, distinctUntilChanged} from 'rxjs/operators';
 import {callHandler} from '../utils';
 import {defaultLinkHandler} from './default-handler';
-import {ControllerCancelled, LinkController, MetaController, ValidatorController} from './LinkControllers';
+import {ControllerCancelled, LinkController, MetaController, MutationController, ValidatorController} from './LinkControllers';
 import {MemoryStore} from './FuncCallAdapters';
 import {LinksState} from './LinksState';
+import {PipelineInstanceConfig} from '../config/PipelineInstance';
 
 const VALIDATOR_DEBOUNCE_TIME = 250;
 
@@ -28,6 +29,14 @@ export class Link {
   public uuid = uuidv4();
   public readonly isValidator = !!this.matchInfo.spec.isValidator;
   public readonly isMeta = !!this.matchInfo.spec.isMeta;
+  public readonly isMutation = !!this.matchInfo.spec.isPipeline;
+
+  // probably a better api
+  public lastPipelineMutations?: {
+    path: NodePath,
+    initConfig: PipelineInstanceConfig,
+  }[];
+
   private nextScheduled$ = new BehaviorSubject(-1);
   private lastFinished$ = new BehaviorSubject(-1);
   public isRunning$ = combineLatest([this.nextScheduled$, this.lastFinished$]).pipe(
@@ -123,9 +132,9 @@ export class Link {
 
     const inputsEntries$ = combineLatest(inputEntries);
 
-    const inputsTriggered$ = this.trigger$.pipe(
-      withLatestFrom(inputsEntries$),
-    );
+    const inputsTriggered$ = inputEntries.length ?
+      this.trigger$.pipe(withLatestFrom(inputsEntries$)) :
+      this.trigger$.pipe(map((scope) => [scope, [] as any[]] as const)) ;
 
     const activeInputs$ = inputsEntries$.pipe(
       filter(() => this.isActive$.value),
@@ -183,10 +192,15 @@ export class Link {
 
     if (this.isMeta)
       return new MetaController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
+
+    if (this.isMutation)
+      return new MutationController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
+
     return new LinkController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
   }
 
-  private setHandlerResults(controller: LinkController | ValidatorController | MetaController, state: BaseTree<StateTreeNode>) {
+  private setHandlerResults(controller: LinkController | ValidatorController | MetaController | MutationController, state: BaseTree<StateTreeNode>) {
+    this.lastPipelineMutations = [];
     const outputsEntries = Object.entries(this.matchInfo.outputs).map(([outputAlias, outputItems]) => {
       const nodes = outputItems.map((output) => {
         const path = [...this.prefix, ...output.path];
@@ -213,6 +227,10 @@ export class Link {
             if (store instanceof MemoryStore)
               throw new Error(`Unable to set meta to a raw memory store ${node.getItem().uuid}`);
             store.setMeta(ioName, controller.outputs[outputAlias]);
+          } else if (controller instanceof MutationController) {
+            const initConfig = controller.outputs[outputAlias];
+            if (initConfig)
+              this.lastPipelineMutations.push({path: nodePath, initConfig});
           } else {
             const [state, restriction] = controller.outputs[outputAlias];
             const nextValue = state instanceof DG.DataFrame ? state.clone() : state;
@@ -229,6 +247,7 @@ export class Action extends Link {
     public prefix: NodePath,
     public matchInfo: MatchInfo,
     public position: ActionPositions,
+    public isPipelineMutation: boolean,
     public friendlyName?: string,
     public menuCategory?: string,
   ) {

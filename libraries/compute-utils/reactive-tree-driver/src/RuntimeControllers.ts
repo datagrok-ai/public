@@ -1,3 +1,4 @@
+import {PipelineInstanceConfig} from './config/PipelineInstance';
 import {RestrictionType, ValidationResult} from './data/common-types';
 
 export interface IRuntimeLinkController {
@@ -17,4 +18,10 @@ export interface IRuntimeMetaController {
   getAll<T = any>(name: string): T[] | undefined;
   getFirst<T = any>(name: string): T | undefined;
   setViewMeta(name: string, meta: any): void;
+}
+
+export interface IRuntimePipelineMutationController {
+  getAll<T = any>(name: string): T[] | undefined;
+  getFirst<T = any>(name: string): T | undefined;
+  setPipelineState(name: any, state: PipelineInstanceConfig): void;
 }

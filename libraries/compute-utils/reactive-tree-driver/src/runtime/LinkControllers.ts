@@ -2,11 +2,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {TreeNode} from '../data/BaseTree';
-import {IRuntimeLinkController, IRuntimeMetaController, IRuntimeValidatorController} from '../RuntimeControllers';
+import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, IRuntimeValidatorController} from '../RuntimeControllers';
 import {RestrictionType, ValidationResult} from '../data/common-types';
 import {StateTreeNode} from './StateTreeNodes';
-import {Action, ScopeInfo} from './Link';
-import {MatchedNodePaths} from './link-matching';
+import {ScopeInfo} from './Link';
+import {PipelineInstanceConfig} from '../config/PipelineInstance';
 
 export class ControllerCancelled extends Error { };
 
@@ -139,5 +139,33 @@ export class MetaController extends ControllerBase<any | undefined> implements I
     this.checkIsClosed();
     this.checkOutput(name);
     this.outputs[name] = meta;
+  }
+}
+
+export class MutationController extends ControllerBase<PipelineInstanceConfig | undefined> implements IRuntimePipelineMutationController {
+  constructor(
+    public inputs: Record<string, any[]>,
+    public inputsSet: Set<string>,
+    public outputsSet: Set<string>,
+    public id: string,
+    public scopeInfo?: ScopeInfo,
+  ) {
+    super(inputs, inputsSet, outputsSet, id, scopeInfo);
+  }
+
+  getAll<T = any>(name: string): T[] {
+    this.checkIsClosed();
+    this.checkInput(name);
+    return this.inputs[name];
+  }
+
+  getFirst<T = any>(name: string): T {
+    return this.getAll<T>(name)?.[0];
+  }
+
+  setPipelineState(name: string, state?: PipelineInstanceConfig) {
+    this.checkIsClosed();
+    this.checkOutput(name);
+    this.outputs[name] = state;
   }
 }

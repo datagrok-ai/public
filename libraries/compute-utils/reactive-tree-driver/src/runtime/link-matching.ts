@@ -1,5 +1,5 @@
 import {isNonRefSelector, LinkNonRefSelectors, LinkIOParsed, LinkRefSelectors, refSelectorAdjacent, refSelectorAll, refSelectorDirection, refSelectorFindOne} from '../config/LinkSpec';
-import {PipelineActionConfiguraion, PipelineLinkConfiguration, StepActionConfiguraion} from '../config/PipelineConfiguration';
+import {PipelineActionConfiguraion, PipelineLinkConfiguration, PipelineMutationConfiguration, StepActionConfiguraion} from '../config/PipelineConfiguration';
 import {BaseTree, NodePath, TreeNode} from '../data/BaseTree';
 import {buildTraverseD} from '../data/graph-traverse-utils';
 import {indexFromEnd} from '../utils';
@@ -7,7 +7,7 @@ import {StateTree} from './StateTree';
 import {StateTreeNode} from './StateTreeNodes';
 
 export type LinkSpec = PipelineLinkConfiguration<LinkIOParsed[]>;
-export type ActionSpec = PipelineActionConfiguraion<LinkIOParsed[]> | StepActionConfiguraion<LinkIOParsed[]>;
+export type ActionSpec = PipelineActionConfiguraion<LinkIOParsed[]> | PipelineMutationConfiguration<LinkIOParsed[]> | StepActionConfiguraion<LinkIOParsed[]>;
 
 type MatchedIO = {
   path: Readonly<NodePath>;
@@ -72,7 +72,8 @@ function matchLinkInstance(
 
   const ioData = [...spec.from.map((item) => ['inputs', item] as const), ...spec.to.map((item) => ['outputs', item] as const)];
   for (const [kind, io] of ioData) {
-    const paths = matchLinkIO(rnode, currentIO, io, false);
+    const skipIO = !!(spec.isPipeline && kind === 'outputs');
+    const paths = matchLinkIO(rnode, currentIO, io, skipIO);
     if (paths.length == 0)
       return;
     if (currentIO[io.name] != null)

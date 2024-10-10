@@ -54,7 +54,7 @@ export class BaseTree<T> {
     this.root = new TreeNode(item);
   }
 
-  addItem(paddress: Readonly<NodeAddress>, item: T, id: string, idx?: number) {
+  addItem(paddress: Readonly<NodeAddress>, item: T, id: string, idx: number) {
     const nodeSeq = this.getNodesFromAddress(paddress);
     const parent = indexFromEnd(nodeSeq)!;
     parent.addChild(item, id, idx);
@@ -72,7 +72,7 @@ export class BaseTree<T> {
     return node;
   }
 
-  attachBrunch(paddress: Readonly<NodeAddress>, node: TreeNode<T>, id: string, idx?: number) {
+  attachBrunch(paddress: Readonly<NodeAddress>, node: TreeNode<T>, id: string, idx: number) {
     const nodeSeq = this.getNodesFromAddress(paddress);
     const parent = indexFromEnd(nodeSeq)!;
     parent.attachNode(node, id, idx);
@@ -123,13 +123,13 @@ export class TreeNode<T> {
     return this.children.getAllItems();
   }
 
-  public addChild(item: T, id: string = '', index: number = this.children.data.length) {
+  public addChild(item: T, id: string, index: number) {
     const cnode = new TreeNode<T>(item);
     this.children.insertItem(cnode, id, index);
     return cnode;
   }
 
-  public attachNode(node: TreeNode<T>, id: string, index: number = this.children.data.length) {
+  public attachNode(node: TreeNode<T>, id: string, index: number) {
     this.children.insertItem(node, id, index);
     return node;
   }
@@ -154,7 +154,7 @@ class PositionedMap<T> {
     return [...this.data];
   }
 
-  public insertItem(item: T, id: string, index = this.data.length - 1) {
+  public insertItem(item: T, id: string, index: number) {
     const dataElem = {id, item};
     this.data.splice(index, 0, dataElem);
     return item;

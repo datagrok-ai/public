@@ -116,7 +116,7 @@ export class LinksState {
         .flat();
       const links = matchedLinks.map((minfo) => {
         const spec = minfo.spec as ActionSpec;
-        const action = new Action(path, minfo, spec.position, spec.friendlyName, spec.menuCategory);
+        const action = new Action(path, minfo, spec.position, !!spec.isPipeline, spec.friendlyName, spec.menuCategory);
         return [item.uuid, action] as const;
       });
       return [...acc, ...links];

@@ -260,8 +260,49 @@ export class StateTree {
 
   public runAction(uuid: string) {
     const action = this.linksState.actions.get(uuid);
-    action?.trigger();
-    return of(undefined);
+    if (!action)
+      throw new Error(`Action ${uuid} not found`);
+    if (action.isPipelineMutation) {
+      return this.withTreeLock(() => {
+        action.trigger();
+        return action.isRunning$.pipe(
+          filter((isRunning) => !isRunning),
+          take(1),
+          tap(() => this.linksState.destroyLinks()),
+          concatMap(() => from(action?.lastPipelineMutations ?? []).pipe(
+            concatMap((data) => {
+              const ppath = data.path.slice(0, -1);
+              const last = indexFromEnd(data.path)!;
+              const subConfig = StateTree.getSubConfig(this.config, ppath, last.id);
+              if (isPipelineStepConfig(subConfig))
+                throw new Error(`FuncCall node ${JSON.stringify(data.path)}, but pipeline is expected`);
+              const subTree = StateTree.fromInstanceConfig(
+                data.initConfig,
+                subConfig,
+                {isReadonly: false,
+                  mockMode: this.mockMode,
+                });
+              this.nodeTree.removeBrunch(data.path);
+              this.nodeTree.attachBrunch(ppath, subTree.nodeTree.root, last.id, last.idx);
+              return StateTree.loadOrCreateCalls(subTree, this.mockMode).pipe(
+                tap(() => this.updateNodesMap()),
+                concatMap(() => this.linksState.update(this.nodeTree, {mutationRootPath: ppath, addIdx: last.idx})),
+                concatMap(() => this.waitForLinks()),
+              );
+            }),
+          )),
+          toArray(),
+          tap(() => {
+            this.removeOrphanedIOMetadata();
+            this.setDepsTracker();
+          }),
+          mapTo(undefined),
+        );
+      });
+    } else {
+      action.trigger();
+      return of(undefined);
+    }
   }
 
   public close() {

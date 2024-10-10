@@ -673,4 +673,85 @@ category('ComputeUtils: Driver links reactivity', async () => {
       expectObservable(inNode.getItem().getStateStore().getStateChanges('a')).toBe('ab 250ms c', {a: undefined, b: 1, c: 10});
     });
   });
+
+  test('Run pipeline mutation actions', async () => {
+    const config4: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'nestedPipeline',
+          type: 'parallel',
+          stepTypes: [
+            {
+              id: 'step1',
+              nqName: 'LibTests:TestAdd2',
+            },
+            {
+              id: 'step2',
+              nqName: 'LibTests:TestMul2',
+            },
+          ],
+          initialSteps: [
+            {
+              id: 'step1',
+            }
+          ]
+        },
+        {
+          id: 'stepr',
+          nqName: 'LibTests:TestSub2',
+        }
+      ],
+      actions: [{
+        id: 'action1',
+        from: [],
+        position: 'none',
+        to: 'out1:nestedPipeline',
+        isPipeline: true,
+        handler({controller}) {
+          controller.setPipelineState('out1', {
+            id: 'nestedPipeline',
+            steps: [
+              {
+                id: 'step2',
+                values: {
+                  a: 5
+                }
+              },
+              {
+                id: 'step1',
+                values: {
+                  a: 10,
+                }
+              },
+            ]
+          })
+        }
+      }],
+      links: [{
+        id: 'link1',
+        from: 'in1:nestedPipeline/all(step1|step2)/a',
+        to: 'out1:stepr/a',
+        handler({controller}) {
+          const v = controller.getAll<number>('in1')!;
+          const r = v.reduce((acc, val) => acc + val, 0);
+          controller.setAll('out1', r);
+        },
+      }],
+    };
+
+    const pconf = await getProcessedConfig(config4);
+    testScheduler.run((helpers) => {
+      const {cold, expectObservable} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const out = tree.nodeTree.getNode([{idx: 1}]);
+      const action = [...tree.linksState.actions.values()][0];
+      cold('-a').subscribe(() => {
+        tree.runAction(action.uuid).subscribe();
+      });
+      expectObservable(out.getItem().getStateStore().getStateChanges('a')).toBe('ab', {a: undefined, b: 15});
+    })
+  });
 });

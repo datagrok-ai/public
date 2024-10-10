@@ -1,5 +1,5 @@
 import {Observable} from 'rxjs';
-import {IRuntimeLinkController, IRuntimeMetaController, IRuntimeValidatorController} from '../RuntimeControllers';
+import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, IRuntimeValidatorController} from '../RuntimeControllers';
 import {ItemId, NqName, RestrictionType, LinkSpecString} from '../data/common-types';
 import {StepParallelInitialConfig, StepSequentialInitialConfig} from './PipelineInstance';
 
@@ -32,6 +32,8 @@ export type HandlerBase<P, R> = ((params: P) => Promise<R> | Observable<R> | R) 
 export type Handler = HandlerBase<{ controller: IRuntimeLinkController }, void>;
 export type Validator = HandlerBase<{ controller: IRuntimeValidatorController }, void>;
 export type MetaHandler = HandlerBase<{ controller: IRuntimeMetaController }, void>;
+export type MutationHandler = HandlerBase<{ controller: IRuntimePipelineMutationController }, void>;
+
 export type PipelineProvider = HandlerBase<{ version?: string }, LoadedPipeline>;
 
 // link-like
@@ -49,6 +51,7 @@ export type PipelineLinkConfigurationBase<P> = {
 export type PipelineHandlerConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   isValidator?: false;
   isMeta?: false;
+  isPipeline?: false;
   actions?: undefined;
   handler?: Handler;
 };
@@ -56,12 +59,14 @@ export type PipelineHandlerConfiguration<P> = PipelineLinkConfigurationBase<P> &
 export type PipelineValidatorConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   isValidator: true;
   isMeta?: false;
+  isPipeline?: false;
   handler: Validator;
 };
 
 export type PipelineMetaConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   isValidator?: false;
   isMeta: true;
+  isPipeline?: false;
   actions?: undefined;
   handler: MetaHandler;
 };
@@ -69,6 +74,7 @@ export type PipelineMetaConfiguration<P> = PipelineLinkConfigurationBase<P> & {
 export type PipelineHookConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   isValidator?: false;
   isMeta?: false;
+  isPipeline?: false;
   base?: undefined,
   actions?: undefined;
   handler: Handler;
@@ -76,14 +82,25 @@ export type PipelineHookConfiguration<P> = PipelineLinkConfigurationBase<P> & {
 
 export type PipelineLinkConfiguration<P> = PipelineHandlerConfiguration<P> | PipelineValidatorConfiguration<P> | PipelineMetaConfiguration<P> | PipelineHookConfiguration<P>;
 
-export type PipelineActionConfiguraion<P> = {
+export type PipelineActionConfiguraion<P> = PipelineLinkConfigurationBase<P> & {
   position: ActionPositions;
   friendlyName?: string;
   menuCategory?: string;
   handler: Handler;
   isValidator?: false;
   isMeta?: false;
-} & PipelineLinkConfigurationBase<P>;
+  isPipeline?: false;
+};
+
+export type PipelineMutationConfiguration<P> = PipelineLinkConfigurationBase<P> & {
+  position: ActionPositions;
+  friendlyName?: string;
+  menuCategory?: string;
+  handler: MutationHandler;
+  isValidator?: false;
+  isMeta?: false;
+  isPipeline: true;
+};
 
 export type StepActionConfiguraion<P> = PipelineActionConfiguraion<P>;
 
@@ -107,7 +124,7 @@ export type PipelineConfigurationBase<P> = {
   version?: string;
   friendlyName?: string;
   onInit?: PipelineHookConfiguration<P>;
-  actions?: PipelineActionConfiguraion<P>[];
+  actions?: (PipelineActionConfiguraion<P> | PipelineMutationConfiguration<P>)[];
   states?: StateItem[];
 };
 
