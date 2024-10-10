@@ -211,7 +211,7 @@ export const TreeNode = Vue.defineComponent({
         ref={treeNodeRef}
         onClick={() => emit('click')}
       >
-        { progressIcon(props.callState ? callStateToStatus(props.callState): 'didn\'t run') }
+        { props.callState && progressIcon(callStateToStatus(props.callState)) }
         { props.stat.children.length ? openIcon() : null }
         <span class="mtl-ml">{ nodeLabel(props.stat) }</span>
         { props.stat.data.isHovered ? 
