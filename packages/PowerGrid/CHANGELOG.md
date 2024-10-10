@@ -1,5 +1,9 @@
 # PowerGrid changelog
 
+## 1.4.2 (2024-10-11)
+
+* Add webGPU ScatterPlot support
+
 ## 1.3.1 (2024-07-24)
 
 ### Features
