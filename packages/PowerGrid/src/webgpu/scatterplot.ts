@@ -1,209 +1,212 @@
+/* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 
 
 class WebGPUCache {
-    viewBox: DG.Rect = new DG.Rect(0, 0, 0, 0);
-    viewBuffer: GPUBuffer | null = null;
-    indexBuffer: GPUBuffer | null = null;
-    vertexBuffer: GPUBuffer | null = null;
-    indexBufferVersion = -1;
-    indexBufferLength = -1;
-    columnBuffer: GPUBuffer | null = null;
-    xCol: DG.Column | null = null;
-    yCol: DG.Column | null = null;
-    xColVersion = -1;
-    yColVersion = -1;
-    xColLength = -1;
-    yColLength = -1;
+  viewBox: DG.Rect = new DG.Rect(0, 0, 0, 0);
+  viewBuffer: GPUBuffer | null = null;
+  indexBuffer: GPUBuffer | null = null;
+  vertexBuffer: GPUBuffer | null = null;
+  indexBufferVersion = -1;
+  indexBufferLength = -1;
+  columnBuffer: GPUBuffer | null = null;
+  xCol: DG.Column | null = null;
+  yCol: DG.Column | null = null;
+  xColVersion = -1;
+  yColVersion = -1;
+  xColLength = -1;
+  yColLength = -1;
 
-    isViewBoxChanged(viewBox: DG.Rect) {
-        return !areEqual(viewBox, this.viewBox);
-    }
+  isViewBoxChanged(viewBox: DG.Rect) {
+    return !areEqual(viewBox, this.viewBox);
+  }
 
-    isIndexBufferChanged(indexBuffer: DG.BitSet) {
-        return this.indexBufferVersion != indexBuffer.version;
-    }
+  isIndexBufferChanged(indexBuffer: DG.BitSet) {
+    //@ts-ignore // TODO: remove after js api merge
+    return this.indexBufferVersion != indexBuffer.version;
+  }
 
-    isColumnChanged(xCol: DG.Column, yCol: DG.Column) {
-        return !this.columnBuffer || xCol != this.xCol || yCol != this.yCol || 
+  isColumnChanged(xCol: DG.Column, yCol: DG.Column) {
+    return !this.columnBuffer || xCol != this.xCol || yCol != this.yCol ||
             !this.xCol || this.xColVersion != xCol.version ||
             !this.yCol || this.yColVersion != yCol.version;
-    }
+  }
 
-    isValid() {
-        return this.indexBufferLength > 0 && this.xColLength > 0 && this.yColLength > 0;
-    }
+  isValid() {
+    return this.indexBufferLength > 0 && this.xColLength > 0 && this.yColLength > 0;
+  }
 
-    setViewBox(viewBox: DG.Rect) {
-        this.viewBox = viewBox;
-    }
+  setViewBox(viewBox: DG.Rect) {
+    this.viewBox = viewBox;
+  }
 
-    setViewBuffer(sc: DG.ScatterPlotViewer, device: GPUDevice, pt: DG.Point = new DG.Point(0, 0)) {
-        const kViewBoxByteOffset = 16;
-        const kViewPortByteOffset = 16;
-        const kPropsByteOffset = 16;
-        const kPointByteOffset = 16;
+  setViewBuffer(sc: DG.ScatterPlotViewer, device: GPUDevice, pt: DG.Point = new DG.Point(0, 0)) {
+    const kViewBoxByteOffset = 16;
+    const kViewPortByteOffset = 16;
+    const kPropsByteOffset = 16;
+    const kPointByteOffset = 16;
 
-        const inverseX = sc.props.invertXAxis;
-        const inverseY = !sc.props.invertYAxis;
-        const linearX = sc.props.xAxisType == DG.AxisType.linear;
-        const linearY = sc.props.yAxisType == DG.AxisType.linear;
+    const inverseX = sc.props.invertXAxis;
+    const inverseY = !sc.props.invertYAxis;
+    const linearX = sc.props.xAxisType == DG.AxisType.linear;
+    const linearY = sc.props.yAxisType == DG.AxisType.linear;
 
-        this.viewBuffer = device.createBuffer({
-            size: kViewBoxByteOffset + kViewPortByteOffset + kPropsByteOffset + kPointByteOffset,
-            usage: GPUBufferUsage.STORAGE,
-            mappedAtCreation: true,
-        });
-        const viewBufferArray = this.viewBuffer.getMappedRange();
-        let viewBufferOffset = 0;
-        new Float32Array(viewBufferArray, viewBufferOffset, 4 + 4)
-            .set([sc.viewBox.left, sc.viewBox.top, sc.viewBox.width, sc.viewBox.height,
-                sc.viewport.left, sc.viewport.top, sc.viewport.width, sc.viewport.height]);
-        viewBufferOffset += kViewBoxByteOffset + kViewPortByteOffset;
-        new Uint32Array(viewBufferArray, viewBufferOffset, 4)
-            .set([+!!inverseX, +!!inverseY, +!!linearX, +!!linearY]);
-        viewBufferOffset += kPropsByteOffset;
-        new Float32Array(viewBufferArray, viewBufferOffset, 2).set([pt.x, pt.y])
-        this.viewBuffer.unmap();
-    }
+    this.viewBuffer = device.createBuffer({
+      size: kViewBoxByteOffset + kViewPortByteOffset + kPropsByteOffset + kPointByteOffset,
+      usage: GPUBufferUsage.STORAGE,
+      mappedAtCreation: true,
+    });
+    const viewBufferArray = this.viewBuffer.getMappedRange();
+    let viewBufferOffset = 0;
+    new Float32Array(viewBufferArray, viewBufferOffset, 4 + 4)
+      .set([sc.viewBox.left, sc.viewBox.top, sc.viewBox.width, sc.viewBox.height,
+        sc.viewport.left, sc.viewport.top, sc.viewport.width, sc.viewport.height]);
+    viewBufferOffset += kViewBoxByteOffset + kViewPortByteOffset;
+    new Uint32Array(viewBufferArray, viewBufferOffset, 4)
+      .set([+!!inverseX, +!!inverseY, +!!linearX, +!!linearY]);
+    viewBufferOffset += kPropsByteOffset;
+    new Float32Array(viewBufferArray, viewBufferOffset, 2).set([pt.x, pt.y]);
+    this.viewBuffer.unmap();
+  }
 
-    setIndexBuffer(indexBuffer: DG.BitSet, device: GPUDevice) {
-        this.indexBufferVersion = indexBuffer.version;
-        this.indexBufferLength = indexBuffer.length;
-        const kFilteredArrayByteOffset = getPaddedSize(this.indexBufferLength);
-        const filteredIndexes = indexBuffer.getSelectedIndexes();
+  setIndexBuffer(indexBuffer: DG.BitSet, device: GPUDevice) {
+    //@ts-ignore // TODO: remove after js api merge
+    this.indexBufferVersion = indexBuffer.version;
+    this.indexBufferLength = indexBuffer.length;
+    const kFilteredArrayByteOffset = getPaddedSize(this.indexBufferLength);
+    const filteredIndexes = indexBuffer.getSelectedIndexes();
 
-        this.indexBuffer = device.createBuffer({
-            size: kFilteredArrayByteOffset,
-            usage: GPUBufferUsage.STORAGE,
-            mappedAtCreation: true,
-        });
-        new Int32Array(this.indexBuffer.getMappedRange()).set(filteredIndexes);
-        this.indexBuffer.unmap();
-        
-        this.vertexBuffer = device.createBuffer({
-            size: kFilteredArrayByteOffset,
-            usage: GPUBufferUsage.VERTEX,
-            mappedAtCreation: true,
-        });
-        new Int32Array(this.vertexBuffer.getMappedRange()).set(filteredIndexes);
-        this.vertexBuffer.unmap();
-    }
+    this.indexBuffer = device.createBuffer({
+      size: kFilteredArrayByteOffset,
+      usage: GPUBufferUsage.STORAGE,
+      mappedAtCreation: true,
+    });
+    new Int32Array(this.indexBuffer.getMappedRange()).set(filteredIndexes);
+    this.indexBuffer.unmap();
 
-    setColumns(xCol: DG.Column, yCol: DG.Column, device: GPUDevice) {
-        this.xCol = xCol;
-        this.yCol = yCol;
-        const xColumnData = xCol.getRawData();
-        const yColumnData = yCol.getRawData();
-        this.xColLength = xColumnData.length;
-        this.yColLength = yColumnData.length;
-        this.xColVersion = xCol.version;
-        this.yColVersion = yCol.version;
-        const kXColumnDataSize = getPaddedSize(this.xColLength);
-        const kYColumnDataSize = getPaddedSize(this.yColLength);
-        this.columnBuffer = device.createBuffer({
-            size: kXColumnDataSize + kYColumnDataSize,
-            usage: GPUBufferUsage.STORAGE,
-            mappedAtCreation: true,
-        });
-        const scBufferArray = this.columnBuffer.getMappedRange();
-        let scBufferOffset = 0;
-        new Float32Array(scBufferArray, scBufferOffset, this.xColLength).set(xColumnData);
-        scBufferOffset += kXColumnDataSize;
-        new Float32Array(scBufferArray, scBufferOffset, this.yColLength).set(yColumnData);
-        scBufferOffset += kYColumnDataSize;
-        this.columnBuffer.unmap();
-    }
+    this.vertexBuffer = device.createBuffer({
+      size: kFilteredArrayByteOffset,
+      usage: GPUBufferUsage.VERTEX,
+      mappedAtCreation: true,
+    });
+    new Int32Array(this.vertexBuffer.getMappedRange()).set(filteredIndexes);
+    this.vertexBuffer.unmap();
+  }
+
+  setColumns(xCol: DG.Column, yCol: DG.Column, device: GPUDevice) {
+    this.xCol = xCol;
+    this.yCol = yCol;
+    const xColumnData = xCol.getRawData();
+    const yColumnData = yCol.getRawData();
+    this.xColLength = xColumnData.length;
+    this.yColLength = yColumnData.length;
+    this.xColVersion = xCol.version;
+    this.yColVersion = yCol.version;
+    const kXColumnDataSize = getPaddedSize(this.xColLength);
+    const kYColumnDataSize = getPaddedSize(this.yColLength);
+    this.columnBuffer = device.createBuffer({
+      size: kXColumnDataSize + kYColumnDataSize,
+      usage: GPUBufferUsage.STORAGE,
+      mappedAtCreation: true,
+    });
+    const scBufferArray = this.columnBuffer.getMappedRange();
+    let scBufferOffset = 0;
+    new Float32Array(scBufferArray, scBufferOffset, this.xColLength).set(xColumnData);
+    scBufferOffset += kXColumnDataSize;
+    new Float32Array(scBufferArray, scBufferOffset, this.yColLength).set(yColumnData);
+    scBufferOffset += kYColumnDataSize;
+    this.columnBuffer.unmap();
+  }
 };
 
-let scMap: Map<DG.ScatterPlotViewer, WebGPUCache> = new Map();
+const scMap: Map<DG.ScatterPlotViewer, WebGPUCache> = new Map();
 
 function getWebGPUCache(sc: DG.ScatterPlotViewer) {
-    if (!scMap.get(sc))
-        scMap.set(sc, new WebGPUCache());
-    return scMap.get(sc);
+  if (!scMap.get(sc))
+    scMap.set(sc, new WebGPUCache());
+  return scMap.get(sc);
 }
 
 function updateCanvasPosition(cache: WebGPUCache, viewBox: DG.Rect, canvas: HTMLCanvasElement) {
-    if (cache.isViewBoxChanged(viewBox)) {
-        cache.setViewBox(viewBox);
-        canvas.width = viewBox.width;
-        canvas.height = viewBox.height;
-        canvas.style.width = `${viewBox.width}px`;
-        canvas.style.height = `${viewBox.height}px`;
-        canvas.style.left = `${viewBox.left}px`;
-        canvas.style.top = `${viewBox.top}px`;
-    }
+  if (cache.isViewBoxChanged(viewBox)) {
+    cache.setViewBox(viewBox);
+    canvas.width = viewBox.width;
+    canvas.height = viewBox.height;
+    canvas.style.width = `${viewBox.width}px`;
+    canvas.style.height = `${viewBox.height}px`;
+    canvas.style.left = `${viewBox.left}px`;
+    canvas.style.top = `${viewBox.top}px`;
+  }
 }
 
 export function scWebGPURender(sc: DG.ScatterPlotViewer, show: boolean) {
-    // Getting WebGPU canvas or creating it if absent
-    const canvasName = "webGPUCanvas";
-    let canvas = sc.canvas.parentElement?.children.namedItem(canvasName) as HTMLCanvasElement;
-    //We need to hide the canvas if we are not drawing on WebGPU
-    if (!show) {
-        if (canvas)
-            canvas.hidden = true;
-        return;
-    }
+  // Getting WebGPU canvas or creating it if absent
+  const canvasName = 'webGPUCanvas';
+  let canvas = sc.canvas.parentElement?.children.namedItem(canvasName) as HTMLCanvasElement;
+  //We need to hide the canvas if we are not drawing on WebGPU
+  if (!show) {
+    if (canvas)
+      canvas.hidden = true;
+    return;
+  }
 
-    if (!canvas) {
-        canvas = ui.canvas(sc.viewBox.width ?? 100, sc.viewBox.height ?? 100);
-        canvas.style.position = 'absolute';
-        canvas.style.pointerEvents = 'none';
-        canvas.id = canvasName;
-        sc.canvas.parentElement?.insertBefore(canvas, sc.overlay);
-    }
-    canvas.hidden = false;
-  
-    const cache = getWebGPUCache(sc);
-    if (!cache)
-        return;
+  if (!canvas) {
+    canvas = ui.canvas(sc.viewBox.width ?? 100, sc.viewBox.height ?? 100);
+    canvas.style.position = 'absolute';
+    canvas.style.pointerEvents = 'none';
+    canvas.id = canvasName;
+    sc.canvas.parentElement?.insertBefore(canvas, sc.overlay);
+  }
+  canvas.hidden = false;
 
-    updateCanvasPosition(cache, sc.viewBox, canvas);  
-    webGPUInit(canvas, sc);
+  const cache = getWebGPUCache(sc);
+  if (!cache)
+    return;
+
+  updateCanvasPosition(cache, sc.viewBox, canvas);
+  webGPUInit(canvas, sc);
 }
 
 export async function scWebGPUPointHitTest(sc: DG.ScatterPlotViewer, pt: DG.Point) : Promise<number> {
-    const cache = getWebGPUCache(sc);
-    if (!cache)
-        return -1;
+  const cache = getWebGPUCache(sc);
+  if (!cache)
+    return -1;
 
-    const device = await getGPUDevice();
-    if (!device)
-        return -1;
+  const device = await getGPUDevice();
+  if (!device)
+    return -1;
 
-    const xCol = sc.table.col(sc.props.xColumnName);
-    const yCol = sc.table.col(sc.props.yColumnName);
-    if (!xCol || !yCol)
-        return -1;
+  const xCol = sc.table.col(sc.props.xColumnName);
+  const yCol = sc.table.col(sc.props.yColumnName);
+  if (!xCol || !yCol)
+    return -1;
 
-    if (cache.isIndexBufferChanged(sc.filter))
-        cache.setIndexBuffer(sc.filter, device);
+  if (cache.isIndexBufferChanged(sc.filter))
+    cache.setIndexBuffer(sc.filter, device);
 
-    if (cache.isColumnChanged(xCol, yCol))
-        cache.setColumns(xCol, yCol, device);
+  if (cache.isColumnChanged(xCol, yCol))
+    cache.setColumns(xCol, yCol, device);
 
-    // We'll set the viewBox and viewPort each time as this is cheap
-    cache.setViewBuffer(sc, device, pt);
-    
-    if (!cache.isValid() || !cache.indexBuffer || !cache.columnBuffer || !cache.viewBuffer)
-        return -1;
+  // We'll set the viewBox and viewPort each time as this is cheap
+  cache.setViewBuffer(sc, device, pt);
 
-    const kWorkgroupSize = 100;
-    const workGroupDispatchSize = Math.ceil(Math.sqrt(Math.ceil(cache.indexBufferLength / kWorkgroupSize)));
+  if (!cache.isValid() || !cache.indexBuffer || !cache.columnBuffer || !cache.viewBuffer)
+    return -1;
 
-    const hitResultBuffer = device.createBuffer({
-        size: 4, // A single i32 result
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
-        mappedAtCreation: true
-    });
-    new Int32Array(hitResultBuffer.getMappedRange()).set([-1]); // Initialize to -1 (no hit)
-    hitResultBuffer.unmap();
+  const kWorkgroupSize = 100;
+  const workGroupDispatchSize = Math.ceil(Math.sqrt(Math.ceil(cache.indexBufferLength / kWorkgroupSize)));
 
-    const shaderModule = device.createShaderModule({ code: `
+  const hitResultBuffer = device.createBuffer({
+    size: 4, // A single i32 result
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
+    mappedAtCreation: true
+  });
+  new Int32Array(hitResultBuffer.getMappedRange()).set([-1]); // Initialize to -1 (no hit)
+  hitResultBuffer.unmap();
+
+  const shaderModule = device.createShaderModule({code: `
             ${addStructures(cache)}    
 
             @group(0) @binding(0) var<storage, read> indexes: array<i32, ${cache.indexBufferLength}>;
@@ -238,97 +241,97 @@ export async function scWebGPUPointHitTest(sc: DG.ScatterPlotViewer, pt: DG.Poin
                     atomicMax(&hitResult, i32(filteredIndex));
                 }
             }
-        ` });
-    const pipeline = device.createComputePipeline({
-        layout: 'auto',
-        compute: {
-            module: shaderModule,
-            entryPoint: 'main',
-        },
-    });
+        `});
+  const pipeline = device.createComputePipeline({
+    layout: 'auto',
+    compute: {
+      module: shaderModule,
+      entryPoint: 'main',
+    },
+  });
 
-    const bindGroup = device.createBindGroup({
-        layout: pipeline.getBindGroupLayout(0),
-        entries: [
-            { binding: 0, resource: { buffer: cache.indexBuffer } },
-            { binding: 1, resource: { buffer: cache.viewBuffer } },
-            { binding: 2, resource: { buffer: cache.columnBuffer } },
-            { binding: 3, resource: { buffer: hitResultBuffer } }
-        ],
-    });
+  const bindGroup = device.createBindGroup({
+    layout: pipeline.getBindGroupLayout(0),
+    entries: [
+      {binding: 0, resource: {buffer: cache.indexBuffer}},
+      {binding: 1, resource: {buffer: cache.viewBuffer}},
+      {binding: 2, resource: {buffer: cache.columnBuffer}},
+      {binding: 3, resource: {buffer: hitResultBuffer}}
+    ],
+  });
 
-    const commandEncoder = device.createCommandEncoder();
-    const passEncoder = commandEncoder.beginComputePass();
-    passEncoder.setPipeline(pipeline);
-    passEncoder.setBindGroup(0, bindGroup);
-    passEncoder.dispatchWorkgroups(workGroupDispatchSize, workGroupDispatchSize);
-    passEncoder.end();
+  const commandEncoder = device.createCommandEncoder();
+  const passEncoder = commandEncoder.beginComputePass();
+  passEncoder.setPipeline(pipeline);
+  passEncoder.setBindGroup(0, bindGroup);
+  passEncoder.dispatchWorkgroups(workGroupDispatchSize, workGroupDispatchSize);
+  passEncoder.end();
 
-    // Copy hit result to a readable buffer
-    const readbackBuffer = device.createBuffer({
-        size: 4, // size for i32 result
-        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-    });
-    commandEncoder.copyBufferToBuffer(hitResultBuffer, 0, readbackBuffer, 0, 4);
+  // Copy hit result to a readable buffer
+  const readbackBuffer = device.createBuffer({
+    size: 4, // size for i32 result
+    usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+  });
+  commandEncoder.copyBufferToBuffer(hitResultBuffer, 0, readbackBuffer, 0, 4);
 
-    const commandBuffer = commandEncoder.finish();
-    device.queue.submit([commandBuffer]);
+  const commandBuffer = commandEncoder.finish();
+  device.queue.submit([commandBuffer]);
 
-    // Wait for the result and read hit point index
-    await readbackBuffer.mapAsync(GPUMapMode.READ);
-    const resultArray = new Int32Array(readbackBuffer.getMappedRange());
-    const hitIndex = resultArray[0];
-    readbackBuffer.unmap();
+  // Wait for the result and read hit point index
+  await readbackBuffer.mapAsync(GPUMapMode.READ);
+  const resultArray = new Int32Array(readbackBuffer.getMappedRange());
+  const hitIndex = resultArray[0];
+  readbackBuffer.unmap();
 
-    return hitIndex;
+  return hitIndex;
 }
 
 function areEqual(rc1: DG.Rect, rc2: DG.Rect): boolean {
-    return Math.floor(rc1.left) == Math.floor(rc2.left) && Math.floor(rc1.top) == Math.floor(rc2.top)
-        && Math.floor(rc1.width) == Math.floor(rc2.width) && Math.floor(rc1.height) == Math.floor(rc2.height);
+  return Math.floor(rc1.left) == Math.floor(rc2.left) && Math.floor(rc1.top) == Math.floor(rc2.top) &&
+        Math.floor(rc1.width) == Math.floor(rc2.width) && Math.floor(rc1.height) == Math.floor(rc2.height);
 }
 
 async function webGPUInit(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotViewer) {
-    const cache = getWebGPUCache(sc);
-    if (!cache)
-        return;
+  const cache = getWebGPUCache(sc);
+  if (!cache)
+    return;
 
-    const device = await getGPUDevice();
-    if (!device)
-        return;
+  const device = await getGPUDevice();
+  if (!device)
+    return;
 
-    const xCol = sc.table.col(sc.props.xColumnName);
-    const yCol = sc.table.col(sc.props.yColumnName);
-    if (!xCol || !yCol)
-        return;
+  const xCol = sc.table.col(sc.props.xColumnName);
+  const yCol = sc.table.col(sc.props.yColumnName);
+  if (!xCol || !yCol)
+    return;
 
-    if (cache.isIndexBufferChanged(sc.filter))
-        cache.setIndexBuffer(sc.filter, device);
+  if (cache.isIndexBufferChanged(sc.filter))
+    cache.setIndexBuffer(sc.filter, device);
 
-    if (cache.isColumnChanged(xCol, yCol))
-        cache.setColumns(xCol, yCol, device);
+  if (cache.isColumnChanged(xCol, yCol))
+    cache.setColumns(xCol, yCol, device);
 
-    // We'll set the viewBox and viewPort each time as this is cheap
-    cache.setViewBuffer(sc, device);
-    
-    if (!cache.isValid() || !cache.indexBuffer || !cache.columnBuffer || !cache.viewBuffer)
-        return;
+  // We'll set the viewBox and viewPort each time as this is cheap
+  cache.setViewBuffer(sc, device);
 
-    const gpuContext = webGPUCanvas.getContext('webgpu');
-    if (!gpuContext)
-        return;
+  if (!cache.isValid() || !cache.indexBuffer || !cache.columnBuffer || !cache.viewBuffer)
+    return;
 
-    const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-    gpuContext.configure({
-        device: device,
-        format: presentationFormat,
-        alphaMode: 'premultiplied',
-    });
+  const gpuContext = webGPUCanvas.getContext('webgpu');
+  if (!gpuContext)
+    return;
 
-    const markerSize = 12;
+  const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+  gpuContext.configure({
+    device: device,
+    format: presentationFormat,
+    alphaMode: 'premultiplied',
+  });
 
-    const module = device.createShaderModule({
-        code: `
+  const markerSize = 12;
+
+  const module = device.createShaderModule({
+    code: `
         struct Vertex {
             @location(0) index: i32,
         };
@@ -379,125 +382,125 @@ async function webGPUInit(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotVie
 
         ${addPointConversionMethods()}
         `,
-    });
+  });
 
-    const pipeline = device.createRenderPipeline({
-        label: 'sizeable points with texture',
-        layout: 'auto',
-        vertex: {
-        module,
-        buffers: [
-            {
-            arrayStride: 4, // 1 int, 4 bytes
-            stepMode: 'instance',
-            attributes: [
-                {shaderLocation: 0, offset: 0, format: 'sint32'},  // position
-            ],
-            },
-        ],
+  const pipeline = device.createRenderPipeline({
+    label: 'sizeable points with texture',
+    layout: 'auto',
+    vertex: {
+      module,
+      buffers: [
+        {
+          arrayStride: 4, // 1 int, 4 bytes
+          stepMode: 'instance',
+          attributes: [
+            {shaderLocation: 0, offset: 0, format: 'sint32'}, // position
+          ],
         },
-        fragment: {
-        module,
-        targets: [
-            {
-            format: presentationFormat,
-            blend: {
-                color: {
-                srcFactor: 'one',
-                dstFactor: 'one-minus-src-alpha',
-                operation: 'add',
-                },
-                alpha: {
-                srcFactor: 'one',
-                dstFactor: 'one-minus-src-alpha',
-                operation: 'add',
-                },
+      ],
+    },
+    fragment: {
+      module,
+      targets: [
+        {
+          format: presentationFormat,
+          blend: {
+            color: {
+              srcFactor: 'one',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add',
             },
+            alpha: {
+              srcFactor: 'one',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add',
             },
-        ],
+          },
         },
-    });
+      ],
+    },
+  });
 
-    // Defining textures that will be drawn
-    const circleCanvas = createCircleCanvas(markerSize, sc);
-    const texture = device.createTexture({
-        size: [markerSize, markerSize],
-        format: 'rgba8unorm',
-        usage: GPUTextureUsage.TEXTURE_BINDING |
+  // Defining textures that will be drawn
+  const circleCanvas = createCircleCanvas(markerSize, sc);
+  const texture = device.createTexture({
+    size: [markerSize, markerSize],
+    format: 'rgba8unorm',
+    usage: GPUTextureUsage.TEXTURE_BINDING |
             GPUTextureUsage.COPY_DST |
             GPUTextureUsage.RENDER_ATTACHMENT,
-    });
-    device.queue.copyExternalImageToTexture(
-        { source: circleCanvas, flipY: true },
-        { texture: texture, premultipliedAlpha: true },
-        [markerSize, markerSize],
-    );
+  });
+  device.queue.copyExternalImageToTexture(
+    {source: circleCanvas, flipY: true},
+    {texture: texture, premultipliedAlpha: true},
+    [markerSize, markerSize]
+  );
 
-    const sampler = device.createSampler({
-        minFilter: 'linear',
-        magFilter: 'linear',
-    });
+  const sampler = device.createSampler({
+    minFilter: 'linear',
+    magFilter: 'linear',
+  });
 
-    const uniformValues = new Float32Array(2);
-    const uniformBuffer = device.createBuffer({
-        size: uniformValues.byteLength,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-    const kResolutionOffset = 0;
-    const resolutionValue = uniformValues.subarray(
-        kResolutionOffset, kResolutionOffset + 2);
+  const uniformValues = new Float32Array(2);
+  const uniformBuffer = device.createBuffer({
+    size: uniformValues.byteLength,
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+  });
+  const kResolutionOffset = 0;
+  const resolutionValue = uniformValues.subarray(
+    kResolutionOffset, kResolutionOffset + 2);
 
-    const renderGroup = device.createBindGroup({
-        layout: pipeline.getBindGroupLayout(0),
-        entries: [
-        { binding: 0, resource: { buffer: uniformBuffer }},
-        { binding: 1, resource: sampler },
-        { binding: 2, resource: texture.createView() },
-        ],
-    });
+  const renderGroup = device.createBindGroup({
+    layout: pipeline.getBindGroupLayout(0),
+    entries: [
+      {binding: 0, resource: {buffer: uniformBuffer}},
+      {binding: 1, resource: sampler},
+      {binding: 2, resource: texture.createView()},
+    ],
+  });
 
-    const dataGroup = device.createBindGroup({
-        layout: pipeline.getBindGroupLayout(1),
-        entries: [
-            { binding: 0, resource: { buffer: cache.viewBuffer } },
-            { binding: 1, resource: { buffer: cache.columnBuffer } },
-        ],
-    });
+  const dataGroup = device.createBindGroup({
+    layout: pipeline.getBindGroupLayout(1),
+    entries: [
+      {binding: 0, resource: {buffer: cache.viewBuffer}},
+      {binding: 1, resource: {buffer: cache.columnBuffer}},
+    ],
+  });
 
-    const renderPassDescriptor = {
-        label: 'our basic canvas renderPass',
-        colorAttachments: [
-        {
-            // view: <- to be filled out when we render
-            loadOp: 'clear',
-            storeOp: 'store',
-            view: gpuContext.getCurrentTexture().createView(),
-        },
-        ],
-    };
+  const renderPassDescriptor = {
+    label: 'our basic canvas renderPass',
+    colorAttachments: [
+      {
+        // view: <- to be filled out when we render
+        loadOp: 'clear',
+        storeOp: 'store',
+        view: gpuContext.getCurrentTexture().createView(),
+      },
+    ],
+  };
 
-    // Get the current texture from the canvas context and
-    // set it as the texture to render to.
-    const canvasTexture = gpuContext.getCurrentTexture();
-    (renderPassDescriptor.colorAttachments as any)[0].view =
+  // Get the current texture from the canvas context and
+  // set it as the texture to render to.
+  const canvasTexture = gpuContext.getCurrentTexture();
+  (renderPassDescriptor.colorAttachments as any)[0].view =
         canvasTexture.createView();
 
-    // Update the resolution in the uniform buffer
-    resolutionValue.set([canvasTexture.width, canvasTexture.height]);
-    device.queue.writeBuffer(uniformBuffer, 0, uniformValues);
+  // Update the resolution in the uniform buffer
+  resolutionValue.set([canvasTexture.width, canvasTexture.height]);
+  device.queue.writeBuffer(uniformBuffer, 0, uniformValues);
 
-    const encoder = device.createCommandEncoder();
-    const pass = encoder.beginRenderPass(renderPassDescriptor as GPURenderPassDescriptor);
-    pass.setPipeline(pipeline);
-    pass.setVertexBuffer(0, cache.vertexBuffer);
-    pass.setBindGroup(0, renderGroup);
-    pass.setBindGroup(1, dataGroup);
-    pass.draw(6, cache.indexBufferLength);
-    pass.end();
+  const encoder = device.createCommandEncoder();
+  const pass = encoder.beginRenderPass(renderPassDescriptor as GPURenderPassDescriptor);
+  pass.setPipeline(pipeline);
+  pass.setVertexBuffer(0, cache.vertexBuffer);
+  pass.setBindGroup(0, renderGroup);
+  pass.setBindGroup(1, dataGroup);
+  pass.draw(6, cache.indexBufferLength);
+  pass.end();
 
-    const commandBuffer = encoder.finish();
-    device.queue.submit([commandBuffer]);
-    await device.queue.onSubmittedWorkDone();
+  const commandBuffer = encoder.finish();
+  device.queue.submit([commandBuffer]);
+  await device.queue.onSubmittedWorkDone();
 }
 
 function getPaddedSize(length: number): number {
@@ -511,27 +514,27 @@ function getPaddedSize(length: number): number {
 }
 
 function createCircleCanvas(size: number, sc: DG.ScatterPlotViewer): OffscreenCanvas {
-    const lineWidth = sc.props.markerBorderWidth;
-    const canvas = new OffscreenCanvas(size, size);
-    const ctx = canvas.getContext('2d');
-    const centerX = size / 2;
-    const centerY = size / 2;
-    const radius = size / 2 - lineWidth;
-    if (ctx) {
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
-        ctx.fillStyle = DG.Color.toHtml(sc.props.filteredRowsColor);
-        ctx.fill();
-        ctx.lineWidth = lineWidth;
-        ctx.strokeStyle = DG.Color.toHtml(DG.Color.darken(sc.props.filteredRowsColor, 50));
-        ctx.stroke();
-    }
+  const lineWidth = sc.props.markerBorderWidth;
+  const canvas = new OffscreenCanvas(size, size);
+  const ctx = canvas.getContext('2d');
+  const centerX = size / 2;
+  const centerY = size / 2;
+  const radius = size / 2 - lineWidth;
+  if (ctx) {
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
+    ctx.fillStyle = DG.Color.toHtml(sc.props.filteredRowsColor);
+    ctx.fill();
+    ctx.lineWidth = lineWidth;
+    ctx.strokeStyle = DG.Color.toHtml(DG.Color.darken(sc.props.filteredRowsColor, 50));
+    ctx.stroke();
+  }
 
-    return canvas;
+  return canvas;
 }
 
 function addPointConversionMethods() {
-    return `
+  return `
         fn pointToScreen(index: i32) -> vec2<f32> {
             var sx = sc.viewBox.left + worldToScreen(data.xColumnData[index], sc.viewBox.width, sc.viewport.left, sc.viewport.left + sc.viewport.width, sc.props.inverseX, sc.props.linearX);
             var sy = sc.viewBox.top + worldToScreen(data.yColumnData[index], sc.viewBox.height, sc.viewport.top, sc.viewport.top + sc.viewport.height, sc.props.inverseY, sc.props.linearY);
@@ -591,7 +594,7 @@ function addPointConversionMethods() {
 }
 
 function addStructures(cache: WebGPUCache) {
-    return `
+  return `
         struct Rect {
             left: f32,
             top: f32,
