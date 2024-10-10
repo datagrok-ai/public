@@ -1,5 +1,9 @@
 # HitTriage changelog
 
+## 1.3.1 (2024-10-10)
+
+* Remove project save button from the ribbon panel
+
 ## 1.2.2 (2024-08-26)
 
 * Fix progress tracker layout loading
