@@ -305,12 +305,12 @@ export async function TreeWizardApp() {
   const app = Vue.createApp(TreeWizardAppInstance, {providerFunc: 'LibTests:MockProvider3'});
   view.root.classList.remove('ui-panel');
   app.mount(view.root);
+  
   view.name = 'DriverApp';
   view.parentCall = thisCall;
   view.parentView = thisCall.parentCall.aux['view'];
   view.basePath = `/${thisCall.func.name}`;
   grok.shell.addView(view);
-  
   grok.events.onViewRemoved.pipe(
     filter((closedView) => {
       return closedView === view;
@@ -452,8 +452,8 @@ export async function MockWrapper3() {}
 export async function MockProvider3(params: any) {
   const c: PipelineConfiguration = {
     id: 'pipelinePar',
-    nqName: 'LibTests:MockWrapper3',
-    provider: 'LibTests:MockProvider3',
+    nqName: 'LibTests:MockWrapper3', // for history
+    provider: 'LibTests:MockProvider3', // for config
     friendlyName: 'Tree wizard model',
     version: '1.0',
     type: 'parallel',

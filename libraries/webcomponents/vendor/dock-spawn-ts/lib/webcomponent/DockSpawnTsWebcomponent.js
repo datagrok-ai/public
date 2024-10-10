@@ -28,10 +28,10 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
         this.windowResizedBound = this.windowResized.bind(this);
         this.slotElementMap = new WeakMap();
     }
-    saveLayout() {
+    getLayout() {
         return this.dockManager.saveState();
     }
-    async loadLayout(serializedState) {
+    async useLayout(serializedState) {
         this.observer.disconnect();
         const oldPanels = this.dockManager.getPanels();
         await this.dockManager.loadState(serializedState);
@@ -80,6 +80,7 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
             this.observer.observe(this, { childList: true });
             this.resizeSub = elementResized(this).pipe(debounceTime(50)).subscribe(() => this.resize());
             this.initFinished = true;
+            this.dispatchEvent(new CustomEvent('init-finished'));
         }, 50);
     }
     set activePanelTitle(panelTitle) {

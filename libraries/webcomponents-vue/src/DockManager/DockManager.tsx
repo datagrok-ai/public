@@ -26,14 +26,17 @@ export const DockManager = Vue.defineComponent({
   }>,
   emits: {
     panelClosed: (element: HTMLElement) => element,
-    'update:activePanelTitle': (panelTitle: string | null) => panelTitle
+    'update:activePanelTitle': (panelTitle: string | null) => panelTitle,
+    initFinished: () => {}
   },
   methods: {
-    saveLayout: () => {},
-    loadLayout: async () => {}
+    //@ts-ignore
+    getLayout: (): string | null => {},
+    useLayout: async (layout: string) => {}
   },
   setup(props, {slots, emit, expose}) {
     let dockSpawnRef = Vue.ref(null as DockSpawnTsWebcomponent | null);
+    const layoutStorageName = Vue.computed(() => props.layoutStorageName)
 
     whenever(dockSpawnRef, async () => {
       if (!dockSpawnRef.value?.dockManager) await Vue.nextTick();
@@ -56,24 +59,16 @@ export const DockManager = Vue.defineComponent({
       };
     }, {once: true})
 
-    const saveLayout = () => {
-      if (!dockSpawnRef.value || !props.layoutStorageName) return;
-
-      localStorage.setItem(props.layoutStorageName.toString(), dockSpawnRef.value.saveLayout())
+    const getLayout = () => {
+      return dockSpawnRef.value?.getLayout() ?? null;
     }
 
-    const loadLayout = async () => {
-      if (!dockSpawnRef.value || !props.layoutStorageName) return;
-
-      const savedLayout = localStorage.getItem(props.layoutStorageName.toString());
-
-      if (!savedLayout) return;
-
-      await dockSpawnRef.value.loadLayout(savedLayout)
+    const useLayout = async (layout: string) => {
+      await dockSpawnRef.value?.useLayout(layout)
     }
     expose({
-      'saveLayout': saveLayout,
-      'loadLayout': loadLayout
+      'getLayout': getLayout,
+      'useLayout': useLayout
     })
 
     return () => {
@@ -82,6 +77,7 @@ export const DockManager = Vue.defineComponent({
         activePanelTitle={props.activePanelTitle}
         onPanelClosed={(ev: {detail: any}) => emit('panelClosed', ev.detail)}
         onActivePanelChanged={(ev: {detail: string | null}) => emit('update:activePanelTitle', ev.detail)}
+        onInitFinished={() => emit('initFinished')}
         ref={dockSpawnRef}
       >
         { slots.default?.() }

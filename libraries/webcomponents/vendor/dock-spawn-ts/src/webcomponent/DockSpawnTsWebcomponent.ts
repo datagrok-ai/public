@@ -39,11 +39,11 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
     this.slotElementMap = new WeakMap();
   }
 
-  public saveLayout() {
+  public getLayout() {
     return this.dockManager.saveState();
   }
 
-  public async loadLayout(serializedState: string) {
+  public async useLayout(serializedState: string) {
     this.observer.disconnect();
     const oldPanels = this.dockManager.getPanels();
     await this.dockManager.loadState(serializedState);
@@ -99,6 +99,7 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
       this.resizeSub = elementResized(this).pipe(debounceTime(50)).subscribe(() => this.resize());
 
       this.initFinished = true;
+      this.dispatchEvent(new CustomEvent('init-finished'));
     }, 50);
   }
 

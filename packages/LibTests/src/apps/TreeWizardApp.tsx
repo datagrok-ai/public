@@ -101,7 +101,7 @@ export const TreeWizardApp = Vue.defineComponent({
     const currentCallState = useExtractedObservable(
       [callStates, chosenStepUuid], 
       ([callsState, chosenStepUuid]) => 
-        chosenStepUuid ? callsState[chosenStepUuid].asObservable(): of(undefined),
+        chosenStepUuid && callsState[chosenStepUuid] ? callsState[chosenStepUuid].asObservable(): of(undefined),
       {},
       {
         immediate: true,
