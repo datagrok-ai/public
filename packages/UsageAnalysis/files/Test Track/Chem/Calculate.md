@@ -8,7 +8,7 @@
 Do the asme for each section in the Calculate menu ()
 ---
 {
-  "order": 1,
+  "order": 3,
    "datasets": [
     "System:DemoFiles/chem/smiles.csv",
     "System:AppData/Chem/mol1K.sdf",

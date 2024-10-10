@@ -19,6 +19,6 @@ Verify that changing the properties works without any errors or crashes.
 
 ---
 {
-  "order": 1,
+  "order": 3,
   "datasets": ["System:DemoFiles/chem/smiles.csv"]  
 }
