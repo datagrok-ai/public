@@ -23,6 +23,7 @@ import * as PinnedUtils from '@datagrok-libraries/gridext/src/pinned/PinnedUtils
 import {PinnedColumn} from '@datagrok-libraries/gridext/src/pinned/PinnedColumn';
 import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 import {FormCellRenderer} from './forms/forms';
+import { scWebGPUPointHitTest, scWebGPURender } from './webgpu/scatterplot';
 
 export const _package = new DG.Package();
 
@@ -247,6 +248,22 @@ export function demoCellTypes() {
   site.setTag(DG.TAGS.CELL_RENDERER, 'Tags');
 
   grok.shell.addTableView(t);
+}
+
+//tags: scWebGPURender
+//input: dynamic sc
+//input: bool show
+export function _scWebGPURender(sc: DG.ScatterPlotViewer, show: boolean) {
+  return scWebGPURender(sc, show);
+}
+
+//tags: scWebGPUPointHitTest
+//input: dynamic sc
+//input: dynamic pt
+//output: int result
+export async function _scWebGPUPointHitTest(sc: DG.ScatterPlotViewer, pt: DG.Point) {
+  let result = await scWebGPUPointHitTest(sc, pt);
+  return result;
 }
 
 export {_ImageCellRenderer};

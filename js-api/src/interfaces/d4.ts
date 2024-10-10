@@ -612,6 +612,8 @@ export interface IScatterPlotSettings {
 
   allowZoom: boolean;
 
+  useGPUComputing: boolean;
+
   autoLayout: boolean;
 
   backColor: number;
