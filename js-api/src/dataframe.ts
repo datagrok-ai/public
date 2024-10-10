@@ -1818,6 +1818,10 @@ export class BitSet {
     api.grok_BitSet_FireChanged(this.dart);
   }
 
+  get version(): number {
+    return api.grok_BitSet_Version(this.dart);
+  }
+
   /** @returns {Observable} - fires when the bitset gets changed. */
   get onChanged(): Observable<any> {
     return observeStream(api.grok_BitSet_Changed(this.dart));

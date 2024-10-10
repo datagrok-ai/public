@@ -928,6 +928,7 @@ export interface IDartApi {
   grok_BitSet_FireChanged(b: any): any;
   grok_BitSet_OnChanged(b: any, handler: any): any;
   grok_BitSet_Changed(b: any): any;
+  grok_BitSet_Version(b: any): any;
   grok_BitSet_SimilarityTo(b: any, b2: any, metric: String): any;
   grok_BitSet_FromString(zeroOnes: String): any;
   grok_BitSet_ToBinaryString(b: any): any;
