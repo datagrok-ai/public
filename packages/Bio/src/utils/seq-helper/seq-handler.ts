@@ -3,32 +3,25 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 
 /* eslint-disable max-len */
-import {ALIGNMENT, ALPHABET, candidateAlphabets, getSplitterWithSeparator, NOTATION, positionSeparator, splitterAsFasta, splitterAsHelm, TAGS} from './macromolecule';
-import {INotationProvider, ISeqSplitted, SeqColStats, SplitterFunc,} from './macromolecule/types';
-import {detectAlphabet, splitterAsFastaSimple, StringListSeqSplitted} from './macromolecule/utils';
+import {ALIGNMENT, ALPHABET, candidateAlphabets, getSplitterWithSeparator, NOTATION, positionSeparator, splitterAsFasta, splitterAsHelm, TAGS} from '@datagrok-libraries/bio/src/utils/macromolecule/index';
+import {INotationProvider, ISeqSplitted, SeqColStats, SplitterFunc,} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {detectAlphabet, splitterAsFastaSimple, StringListSeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 import {mmDistanceFunctions, MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {mmDistanceFunctionType} from '@datagrok-libraries/ml/src/macromolecule-distance-functions/types';
-import {getMonomerLibHelper, IMonomerLibHelper} from '../monomer-works/monomer-utils';
-import {HELM_POLYMER_TYPE, HELM_WRAPPERS_REGEXP, PHOSPHATE_SYMBOL} from './const';
-import {GAP_SYMBOL, GapOriginals} from './macromolecule/consts';
-import {GridCellRendererTemp, CellRendererBackBase} from './cell-renderer-back-base';
-import {HelmTypes} from '../helm/consts';
-import {HelmType} from '../helm/types';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {HELM_POLYMER_TYPE, HELM_WRAPPERS_REGEXP, PHOSPHATE_SYMBOL} from '@datagrok-libraries/bio/src/utils/const';
+import {GAP_SYMBOL, GapOriginals} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {CellRendererBackBase, GridCellRendererTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
+import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
+import {HelmType} from '@datagrok-libraries/bio/src/helm/types';
+import {ISeqHandler, ConvertFunc, JoinerFunc, SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
+
 /* eslint-enable max-len */
-
-export const SeqTemps = new class {
-  /** Column's temp slot name for a SeqHandler object */
-  seqHandler = `seq-handler`;
-  notationProvider = `seq-handler.notation-provider`;
-}();
-
-export type ConvertFunc = (src: string) => string;
-export type JoinerFunc = (src: ISeqSplitted) => string;
 
 /** Class for handling notation units in Macromolecule columns and
  * conversion of notation systems in Macromolecule columns
  */
-export class SeqHandler {
+export class SeqHandler implements ISeqHandler {
   protected readonly _column: DG.Column; // the column to be converted
   protected readonly _units: string; // units, of the form fasta, separator
   protected readonly _notation: NOTATION; // current notation (without :SEQ:NT, etc.)
@@ -271,13 +264,18 @@ export class SeqHandler {
   }
 
   /** Any Macromolecule can be represented on Helm format. The reverse is not always possible. */
-  public async getHelm(rowIdx: number, options?: any): Promise<string> {
+  public async getHelm(rowIdx: number, options?: any): Promise<DG.SemanticValue<string>> {
     const seq: string = this.column.get(rowIdx);
-    if (this.notationProvider) {
-      const helmCol = await this.notationProvider.getHelm(this.column, options);
-      return helmCol.get(rowIdx)!;
-    } else
-      return this.convertToHelm(seq);
+    let resHelmSV: DG.SemanticValue<string>;
+    if (this.notationProvider)
+      resHelmSV = await this.notationProvider.getHelm(seq, options);
+    else {
+      const resHelm = this.convertToHelm(seq);
+      resHelmSV = DG.SemanticValue.fromValueType(resHelm, DG.SEMTYPE.MACROMOLECULE, NOTATION.HELM);
+      // TODO: set tags from column
+    }
+
+    return resHelmSV;
   }
 
   private _stats: SeqColStats | null = null;
@@ -437,19 +435,6 @@ export class SeqHandler {
   /** Creates a new column on data of {@link seqList} with the same tags */
   public getNewColumnFromList(name: string, seqList: string[]): DG.Column<string> {
     return this.getNewColumn(this.notation, this.separator, name, seqList);
-  }
-
-  /**
-   * Create a new empty column using templateCol as a template
-   *
-   * @param {DG.Column} templateCol  the properties and units of this column are used as a
-   * template to build the new one
-   * @return {DG.Column}
-   */
-  public static getNewColumn(templateCol: DG.Column): DG.Column {
-    const col: SeqHandler = SeqHandler.forColumn(templateCol);
-    const targetNotation = col.notation;
-    return col.getNewColumn(targetNotation);
   }
 
   /**

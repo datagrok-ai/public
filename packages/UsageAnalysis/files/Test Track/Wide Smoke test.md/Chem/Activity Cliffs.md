@@ -6,3 +6,7 @@
 - On the menu ribbon, open Chem | Activity cliffs.
 - Change the Similarity and Method name parameters arbitrarily
 - Click OK to run a function with edited parameters.
+---
+{
+"order": 2
+}

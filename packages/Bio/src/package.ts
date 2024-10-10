@@ -9,8 +9,7 @@ import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cli
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {BitArrayMetrics, KnownMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {SeqHandler, SeqTemps} from '@datagrok-libraries/bio/src/utils/seq-handler';
-import {IMonomerLib, IMonomerSet} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLib, IMonomerLibBase, IMonomerSet} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
 import {SCORE} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
@@ -66,12 +65,11 @@ import {GetRegionApp} from './apps/get-region-app';
 import {GetRegionFuncEditor} from './utils/get-region-func-editor';
 import {sequenceToMolfile} from './utils/sequence-to-mol';
 import {detectMacromoleculeProbeDo} from './utils/detect-macromolecule-probe';
-import {CyclizedNotationProvider} from './utils/cyclized';
-import {DimerizedNotationProvider} from './utils/dimerized';
 import {getMolColumnFromHelm} from './utils/helm-to-molfile/utils';
 import {MonomerManager} from './utils/monomer-lib/monomer-manager/monomer-manager';
 import {calculateScoresWithEmptyValues} from './utils/calculate-scores';
 import {SeqHelper} from './utils/seq-helper/seq-helper';
+import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 
 export const _package = new BioPackage(/*{debug: true}/**/);
 
@@ -99,9 +97,6 @@ export class SeqPaletteCustom implements SeqPalette {
   }
 }
 
-let monomerLib: IMonomerLib | null = null;
-let monomerSets: IMonomerSet | null = null;
-
 let initBioPromise: Promise<void> | null = null;
 
 //tags: init
@@ -115,21 +110,26 @@ export async function initBio(): Promise<void> {
 async function initBioInt() {
   const logPrefix = 'Bio: _package.initBio()';
   _package.logger.debug(`${logPrefix}, start`);
+  let monomerLib!: IMonomerLib;
+  let monomerSets!: IMonomerSet;
   let rdKitModule!: RDModule;
-  let monomerLibManager: MonomerLibManager;
+  let libHelper!: MonomerLibManager;
   const t1: number = window.performance.now();
   await Promise.all([
     (async () => {
-      monomerLibManager = await MonomerLibManager.getInstance();
+      libHelper = await MonomerLibManager.getInstance();
       // Fix user lib settings for explicit stuck from a terminated test
       const libSettings = await getUserLibSettings();
       if (libSettings.explicit) {
         libSettings.explicit = [];
         await setUserLibSettings(libSettings);
       }
-      await Promise.all([monomerLibManager.loadMonomerLib(), monomerLibManager.loadMonomerSets()]);
-      monomerLib = monomerLibManager.getMonomerLib();
-      monomerSets = monomerLibManager.getMonomerSets();
+      libHelper.awaitLoaded(Infinity).then(() => {
+        // Do not wait for monomers and sets loaded
+        return Promise.all([libHelper.loadMonomerLib(), libHelper.loadMonomerSets()]);
+      });
+      monomerLib = libHelper.getMonomerLib();
+      monomerSets = libHelper.getMonomerSets();
     })(),
     (async () => {
       const pkgProps = await _package.getProperties();
@@ -141,8 +141,8 @@ async function initBioInt() {
     const t2: number = window.performance.now();
     _package.logger.debug(`${logPrefix}, loading ET: ${t2 - t1} ms`);
   });
-
-  _package.completeInit(rdKitModule);
+  const seqHelper = new SeqHelper(libHelper, rdKitModule);
+  _package.completeInit(seqHelper, monomerLib, monomerSets, rdKitModule);
 
   const monomers: string[] = [];
   const logPs: number[] = [];
@@ -174,7 +174,7 @@ async function initBioInt() {
 //input: column col {semType: Macromolecule}
 //output: widget result
 export function sequenceTooltip(col: DG.Column): DG.Widget<any> {
-  const resWidget = new MacromoleculeColumnWidget(col);
+  const resWidget = new MacromoleculeColumnWidget(col, _package.seqHelper);
   const _resPromise = resWidget.init().then(() => { })
     .catch((err: any) => {
       const errMsg = err instanceof Error ? err.message : err.toString();
@@ -187,19 +187,14 @@ export function sequenceTooltip(col: DG.Column): DG.Widget<any> {
 //name: getBioLib
 //output: object monomerLib
 export function getBioLib(): IMonomerLib {
-  return monomerLib!;
-}
-
-// For sync internal use, on initialized package
-export function getMonomerLib(): IMonomerLib {
-  return monomerLib!;
+  return _package.monomerLib;
 }
 
 //name: getSeqHandler
 //input: column sequence { semType: Macromolecule }
 //output: object result
-export function getSeqHandler(sequence: DG.Column<string>): SeqHandler {
-  return SeqHandler.forColumn(sequence);
+export function getSeqHandler(sequence: DG.Column<string>): ISeqHandler {
+  return _package.seqHelper.getSeqHandler(sequence);
 }
 
 // -- Panels --
@@ -215,7 +210,7 @@ export function getRegionPanel(seqCol: DG.Column<string>): DG.Widget {
   if (funcList.length !== 1) throw new Error(`Package '${_package.name}' func '${funcName}' not found`);
   const func = funcList[0];
   const funcCall = func.prepare({table: seqCol.dataFrame, sequence: seqCol});
-  const funcEditor = new GetRegionFuncEditor(funcCall);
+  const funcEditor = new GetRegionFuncEditor(funcCall, _package.seqHelper);
   return funcEditor.widget();
 }
 
@@ -236,7 +231,7 @@ export async function libraryPanel(_seqColumn: DG.Column): Promise<DG.Widget> {
 //input: funccall call
 export function GetRegionEditor(call: DG.FuncCall): void {
   try {
-    const funcEditor = new GetRegionFuncEditor(call);
+    const funcEditor = new GetRegionFuncEditor(call, _package.seqHelper);
     funcEditor.dialog();
   } catch (err: any) {
     const errMsg = err instanceof Error ? err.message : err.toString();
@@ -364,7 +359,7 @@ export function macroMolColumnPropertyPanel(molColumn: DG.Column): DG.Widget {
 //input: semantic_value sequence { semType: Macromolecule }
 //output: widget result
 export function compositionAnalysisWidget(sequence: DG.SemanticValue): DG.Widget {
-  return getCompositionAnalysisWidget(sequence, monomerLib!);
+  return getCompositionAnalysisWidget(sequence, _package.monomerLib, _package.seqHelper);
 }
 
 //name: MacromoleculeDifferenceCellRenderer
@@ -635,8 +630,10 @@ export async function toAtomicLevel(
   const pi = DG.TaskBarProgressIndicator.create('Converting to atomic level ...');
   try {
     await initBioPromise;
-    const monomerLib = (await getMonomerLibHelper()).getMonomerLib();
-    await sequenceToMolfile(table, seqCol, nonlinear, highlight, monomerLib, _package.rdKitModule);
+    const monomerLib = _package.monomerLib;
+    const seqHelper = _package.seqHelper;
+    const rdKitModule = _package.rdKitModule;
+    await sequenceToMolfile(table, seqCol, nonlinear, highlight, monomerLib, seqHelper, rdKitModule);
   } finally {
     pi.close();
   }
@@ -647,7 +644,7 @@ export async function toAtomicLevel(
 //description: Performs multiple sequence alignment
 //tags: bio, panel
 export function multipleSequenceAlignmentDialog(): void {
-  multipleSequenceAlignmentUI()
+  multipleSequenceAlignmentUI({}, _package.seqHelper)
     .catch((err: any) => {
       const [errMsg, errStack] = errInfo(err);
       if (err instanceof MsaWarning) {
@@ -666,10 +663,12 @@ export function multipleSequenceAlignmentDialog(): void {
 //tags: bio
 //input: column sequenceCol {semType: Macromolecule}
 //input: column clustersCol
+//input: object options = undefined { optional: true }
 //output: column result
-export async function alignSequences(sequenceCol: DG.Column<string> | null = null,
-  clustersCol: DG.Column | null = null): Promise<DG.Column<string>> {
-  return multipleSequenceAlignmentUI({col: sequenceCol, clustersCol});
+export async function alignSequences(
+  sequenceCol: DG.Column<string> | null = null, clustersCol: DG.Column | null = null, options?: any
+): Promise<DG.Column<string>> {
+  return multipleSequenceAlignmentUI({col: sequenceCol, clustersCol: clustersCol, ...options}, _package.seqHelper);
 }
 
 //top-menu: Bio | Analyze | Composition
@@ -686,7 +685,7 @@ export async function compositionAnalysis(): Promise<void> {
     if (col.semType != DG.SEMTYPE.MACROMOLECULE)
       return false;
 
-    const _colSh = SeqHandler.forColumn(col);
+    const _colSh = _package.seqHelper.getSeqHandler(col);
     // TODO: prevent for cyclic, branched or multiple chains in Helm
     return true;
   });
@@ -705,7 +704,7 @@ export async function compositionAnalysis(): Promise<void> {
     return;
   } else if (colList.length > 1) {
     const colListNames: string [] = colList.map((col) => col.name);
-    const selectedCol = colList.find((c) => { return SeqHandler.forColumn(c).isMsa(); });
+    const selectedCol = colList.find((c) => { return _package.seqHelper.getSeqHandler(c).isMsa(); });
     const colInput: DG.InputBase = ui.input.choice(
       'Column', {value: selectedCol ? selectedCol.name : colListNames[0], items: colListNames});
     ui.dialog({
@@ -756,8 +755,8 @@ export function importBam(fileContent: string): DG.DataFrame [] {
 //top-menu: Bio | Convert | Notation...
 //name: convertDialog
 export function convertDialog() {
-  const col = getMacromoleculeColumns()[0];
-  convert(col);
+  const col: DG.Column<string> | undefined = getMacromoleculeColumns()[0];
+  convert(col, _package.seqHelper);
 }
 
 //top-menu: Bio | Convert | TestConvert
@@ -774,7 +773,7 @@ export async function convertSeqNotation(sequence: string, targetNotation: NOTAT
     const semType = await grok.functions.call('Bio:detectMacromolecule', {col: col});
     if (semType)
       col.semType = semType;
-    const converterSh = SeqHandler.forColumn(col);
+    const converterSh = _package.seqHelper.getSeqHandler(col);
     const newColumn = converterSh.convert(targetNotation, separator);
     return newColumn.get(0);
   } catch (err: any) {
@@ -851,14 +850,15 @@ export async function testDetectMacromolecule(path: string): Promise<DG.DataFram
 //input: column sequence { semType: Macromolecule }
 //output: dataframe result
 //editor: Bio:SplitToMonomersEditor
-export async function splitToMonomersTopMenu(table: DG.DataFrame, sequence: DG.Column): Promise<void> {
-  await splitToMonomersUI(table, sequence);
+export async function splitToMonomersTopMenu(table: DG.DataFrame, sequence: DG.Column): Promise<DG.DataFrame> {
+  return await splitToMonomersUI(table, sequence);
 }
 
 //name: Bio: getHelmMonomers
 //input: column sequence {semType: Macromolecule}
+//output: object result
 export function getHelmMonomers(sequence: DG.Column<string>): string[] {
-  const sh = SeqHandler.forColumn(sequence);
+  const sh = _package.seqHelper.getSeqHandler(sequence);
   const stats = sh.stats;
   return Object.keys(stats.freq);
 }
@@ -869,7 +869,7 @@ export function getHelmMonomers(sequence: DG.Column<string>): string[] {
 //meta.icon: files/icons/sequence-similarity-viewer.svg
 //output: viewer result
 export function similaritySearchViewer(): SequenceSimilarityViewer {
-  return new SequenceSimilarityViewer();
+  return new SequenceSimilarityViewer(_package.seqHelper);
 }
 
 //top-menu: Bio | Search | Similarity Search
@@ -887,7 +887,7 @@ export function similaritySearchTopMenu(): void {
 //meta.icon: files/icons/sequence-diversity-viewer.svg
 //output: viewer result
 export function diversitySearchViewer(): SequenceDiversityViewer {
-  return new SequenceDiversityViewer();
+  return new SequenceDiversityViewer(_package.seqHelper);
 }
 
 //top-menu: Bio | Search | Diversity Search
@@ -928,13 +928,14 @@ export function SubsequenceSearchTopMenu(macromolecules: DG.Column): void {
 //name: Identity Scoring
 //description: Adds a column with fraction of matching monomers
 //input: dataframe table [Table containing Macromolecule column]
-//input: column macromolecules {semType: Macromolecule} [Sequences to score]
+//input: column macromolecule {semType: Macromolecule} [Sequences to score]
 //input: string reference [Sequence, matching column format]
 //output: column scores
 export async function sequenceIdentityScoring(
   table: DG.DataFrame, macromolecule: DG.Column, reference: string
 ): Promise<DG.Column<number>> {
-  const scores = calculateScoresWithEmptyValues(table, macromolecule, reference, SCORE.IDENTITY);
+  const seqHelper = _package.seqHelper;
+  const scores = calculateScoresWithEmptyValues(table, macromolecule, reference, SCORE.IDENTITY, seqHelper);
   return scores;
 }
 
@@ -942,13 +943,14 @@ export async function sequenceIdentityScoring(
 //name: Similarity Scoring
 //description: Adds a column with similarity scores, calculated as sum of monomer fingerprint similarities
 //input: dataframe table [Table containing Macromolecule column]
-//input: column macromolecules {semType: Macromolecule} [Sequences to score]
+//input: column macromolecule {semType: Macromolecule} [Sequences to score]
 //input: string reference [Sequence, matching column format]
 //output: column scores
 export async function sequenceSimilarityScoring(
   table: DG.DataFrame, macromolecule: DG.Column, reference: string
 ): Promise<DG.Column<number>> {
-  const scores = calculateScoresWithEmptyValues(table, macromolecule, reference, SCORE.SIMILARITY);
+  const seqHelper = _package.seqHelper;
+  const scores = calculateScoresWithEmptyValues(table, macromolecule, reference, SCORE.SIMILARITY, seqHelper);
   return scores;
 }
 
@@ -1046,13 +1048,13 @@ export function longSeqTableSeparator(): void {
 
 //name: longSeqTableFasta
 export function longSeqTableFasta(): void {
-  const df = DG.DataFrame.fromColumns([generateLongSequence2(NOTATION.FASTA)]);
+  const df = DG.DataFrame.fromColumns([generateLongSequence2(_package.seqHelper, NOTATION.FASTA)]);
   grok.shell.addTableView(df);
 }
 
 //name: longSeqTableHelm
 export function longSeqTableHelm(): void {
-  const df = DG.DataFrame.fromColumns([generateLongSequence2(NOTATION.HELM)]);
+  const df = DG.DataFrame.fromColumns([generateLongSequence2(_package.seqHelper, NOTATION.HELM)]);
   grok.shell.addTableView(df);
 }
 
@@ -1062,7 +1064,7 @@ export function longSeqTableHelm(): void {
 //input: object cell
 //input: object menu
 export function addCopyMenu(cell: DG.Cell, menu: DG.Menu): void {
-  addCopyMenuUI(cell, menu);
+  addCopyMenuUI(cell, menu, _package.seqHelper);
 }
 
 // -- Demo --
@@ -1148,7 +1150,9 @@ export async function seq2atomic(seq: string, nonlinear: boolean): Promise<strin
     if (semType) seqCol.semType = semType;
 
     const monomerLib = (await getMonomerLibHelper()).getMonomerLib();
-    const res = (await sequenceToMolfile(df, seqCol, nonlinear, false, monomerLib, _package.rdKitModule))?.molCol?.get(0);
+    const seqHelper = _package.seqHelper;
+    const rdKitModule = await getRdKitModule();
+    const res = (await sequenceToMolfile(df, seqCol, nonlinear, false, monomerLib, seqHelper, rdKitModule))?.molCol?.get(0);
     return res ?? undefined;
   } catch (err: any) {
     const [errMsg, errStack] = errInfo(err);
@@ -1192,7 +1196,7 @@ export async function seqIdentity(seq: string, ref: string): Promise<number | nu
     const semType = await grok.functions.call('Bio:detectMacromolecule', {col: seqCol});
     if (!semType) throw new Error('Macromolecule required');
 
-    const resCol = await calculateScoresWithEmptyValues(df, seqCol, ref, SCORE.IDENTITY);
+    const resCol = await calculateScoresWithEmptyValues(df, seqCol, ref, SCORE.IDENTITY, _package.seqHelper);
     return resCol.get(0);
   } catch (err: any) {
     const [errMsg, errStack] = errInfo(err);
@@ -1214,7 +1218,7 @@ export async function detectMacromoleculeProbe(file: DG.FileInfo, colName: strin
 //name: getSeqHelper
 //output: object result
 export async function getSeqHelper(): Promise<ISeqHelper> {
-  return SeqHelper.getInstance();
+  return _package.seqHelper;
 }
 
 //name: getMolFromHelm
@@ -1225,25 +1229,7 @@ export async function getSeqHelper(): Promise<ISeqHelper> {
 export function getMolFromHelm(
   df: DG.DataFrame, helmCol: DG.Column<string>, chiralityEngine: boolean
 ): Promise<DG.Column<string>> {
-  return getMolColumnFromHelm(df, helmCol, chiralityEngine, getMonomerLib());
-}
-
-// -- Custom notation providers --
-
-//name: applyNotationProviderForCyclized
-//input: column col
-//input: string separator
-export function applyNotationProviderForCyclized(col: DG.Column<string>, separator: string) {
-  col.meta.units = NOTATION.CUSTOM;
-  col.temp[SeqTemps.notationProvider] = new CyclizedNotationProvider(separator);
-}
-
-//name: applyNotationProviderForDimerized
-//input: column col
-//input: string separator
-export function applyNotationProviderForDimerized(col: DG.Column<string>, separator: string) {
-  col.meta.units = NOTATION.CUSTOM;
-  col.temp[SeqTemps.notationProvider] = new DimerizedNotationProvider(separator);
+  return getMolColumnFromHelm(df, helmCol, chiralityEngine, _package.monomerLib);
 }
 
 //name: test1

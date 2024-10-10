@@ -13,9 +13,10 @@ import {
 import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {LoggerWrapper} from '@datagrok-libraries/bio/src/utils/logger';
+import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
-import {HelmHelper} from './helm-helper';
 import {HelmService} from './utils/helm-service';
 import {OrgHelmModule, ScilModule} from './types';
 import {rewriteLibraries} from './utils/get-monomer';
@@ -38,14 +39,15 @@ type DojoConfigWindowType = {
   },
 };
 type HelmWindowType = {
-  $helmService?: HelmServiceBase,
+  $helmServicePromise?: Promise<HelmServiceBase>,
   require: any,
 };
 declare const window: Window & DojoConfigWindowType & DojoWindowType & HweWindow & HelmWindowType;
 
-export function _getHelmService(): HelmServiceBase {
-  let res = window.$helmService;
-  if (!res) res = window.$helmService = new HelmService();
+export async function _getHelmService(): Promise<HelmServiceBase> {
+  let res = window.$helmServicePromise;
+  if (!res)
+    res = window.$helmServicePromise = Promise.resolve(new HelmService());
   return res;
 }
 
@@ -203,15 +205,27 @@ export const helmJsonReplacer = (key: string, value: any): any => {
 
 export class HelmPackage extends DG.Package {
   public alertOriginal: ((s: string) => void) | null = null;
-  public readonly helmHelper: HelmHelper;
-  public libHelper!: IMonomerLibHelper;
+
+  private _seqHelper: ISeqHelper;
+  public get seqHelper(): ISeqHelper {
+    if (!this._seqHelper)
+      throw new Error('Package Helm .seqHelper is not initialized');
+    return this._seqHelper;
+  }
+
+  private _helmHelper: IHelmHelper;
+  public get helmHelper(): IHelmHelper {
+    if (!this._helmHelper)
+      throw new Error('Package Helm .helmHelper is not initialized');
+    return this._helmHelper;
+  };
+
+  public _libHelper!: IMonomerLibHelper;
 
   constructor(opts: { debug: boolean } = {debug: false}) {
     super();
     // @ts-ignore
     super._logger = new LoggerWrapper(super.logger, opts.debug);
-
-    this.helmHelper = new HelmHelper(this.logger);
   }
 
   // -- Init --
@@ -303,16 +317,20 @@ export class HelmPackage extends DG.Package {
   // -- MonomerLib --
 
   public get monomerLib(): IMonomerLib {
-    if (!this.libHelper)
+    if (!this._libHelper)
       throw new Error(`Helm: _package.libHelper is not initialized yet`);
-    return this.libHelper.getMonomerLib();
+    return this._libHelper.getMonomerLib();
   }
 
   private _monomerLibSub?: Unsubscribable;
 
+  private _initialized: boolean = false;
+
   /** Requires both Bio & HELMWebEditor initialized */
-  initMonomerLib(libHelper: IMonomerLibHelper): void {
-    this.libHelper = libHelper;
+  completeInit(seqHelper: ISeqHelper, helmHelper: IHelmHelper, libHelper: IMonomerLibHelper): void {
+    this._seqHelper = seqHelper;
+    this._helmHelper = helmHelper;
+    this._libHelper = libHelper;
 
     const lib = this.monomerLib;
     rewriteLibraries(lib); // initHelm()
@@ -320,6 +338,7 @@ export class HelmPackage extends DG.Package {
       .subscribe(this.monomerLibOnChangedHandler.bind(this));
 
     this.initHelmPatchPistoia();
+    this._initialized = true;
   }
 
   monomerLibOnChangedHandler(): void {

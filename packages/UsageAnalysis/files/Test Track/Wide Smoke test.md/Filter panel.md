@@ -13,3 +13,7 @@ Expected result: both layout and filtering of the dataframe should be applied to
 - Check the question mark on Filter Panel - all the filtering should be listed
 - Click Reset Filter icon (looks like reload) and check the question mark again - it should be empty, all the filtering should be reset
 - No hidden columns should be visible in filter panel
+---
+{
+"order": 1
+}

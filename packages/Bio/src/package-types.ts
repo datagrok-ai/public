@@ -7,6 +7,9 @@ import {Observable, Subject} from 'rxjs';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {LoggerWrapper} from '@datagrok-libraries/bio/src/utils/logger';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {SeqHelper} from './utils/seq-helper';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {IMonomerLib, IMonomerLibBase, IMonomerSet} from '@datagrok-libraries/bio/src/types';
 
 /** Names of package properties/settings declared in properties section of {@link './package.json'} */
 export const enum BioPackagePropertiesNames {
@@ -60,8 +63,33 @@ export class BioPackageProperties extends Map<string, any> {
 export class BioPackage extends DG.Package {
   private _properties: BioPackageProperties;
 
+  private _seqHelper: ISeqHelper;
+  public get seqHelper(): ISeqHelper {
+    if (!this._seqHelper)
+      throw new Error('Package Bio .seqHelper is not initialized.');
+    return this._seqHelper;
+  };
+
+  private _monomerLib: IMonomerLib;
+  public get monomerLib(): IMonomerLib {
+    if (!this._monomerLib)
+      throw new Error('Package Bio .monomerLib is not initialized.');
+    return this._monomerLib;
+  };
+
+  private _monomerSets: IMonomerSet;
+  public get monomerSets(): IMonomerSet {
+    if (!this._monomerSets)
+      throw new Error('Package Bio .monomerSets is not initialized.');
+    return this._monomerSets;
+  };
+
   private _rdKitModule: RDModule;
-  public get rdKitModule(): RDModule { return this._rdKitModule;};
+  public get rdKitModule(): RDModule {
+    if (!this._rdKitModule)
+      throw new Error('Package Bio .rdKitModule is not initialized.');
+    return this._rdKitModule;
+  };
 
   /** Package properties/settings declared in properties section of {@link './package.json'} */
   public get properties(): BioPackageProperties { return this._properties; };
@@ -78,7 +106,12 @@ export class BioPackage extends DG.Package {
     super._logger = new LoggerWrapper(super.logger, opts.debug);
   }
 
-  public completeInit(rdKitModule: RDModule): void {
+  public completeInit(
+    seqHelper: ISeqHelper, monomerLib: IMonomerLib, monomerSets: IMonomerSet, rdKitModule: RDModule
+  ): void {
+    this._seqHelper = seqHelper;
+    this._monomerLib = monomerLib;
+    this._monomerSets = monomerSets;
     this._rdKitModule = rdKitModule;
     this._initialized = true;
   }

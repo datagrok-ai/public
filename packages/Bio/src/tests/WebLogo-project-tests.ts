@@ -13,7 +13,7 @@ import {_package} from '../package-test';
 
 const PROJECT_PREFIX: string = 'Tests.Bio.WebLogo-project';
 
-category('WebLogo-project', () => {
+category('WebLogo.project', () => {
   test('fasta', async () => {
     const prjName = `${PROJECT_PREFIX}.fasta`;
     const df = await _package.files.readCsv('tests/filter_FASTA.csv');

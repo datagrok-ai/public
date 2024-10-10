@@ -39,10 +39,10 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
 
   constructor(
     monomers: MonomerLibDataType,
-    public readonly source: string | undefined = undefined,
+    source: string,
     public readonly error: string | undefined = undefined,
   ) {
-    super(monomers);
+    super(monomers, source);
     for (const [_monomerType, monomersOfType] of Object.entries(this._monomers)) {
       for (const [_monomerSymbol, monomer] of Object.entries(monomersOfType))
         monomer.lib = this;
@@ -110,10 +110,6 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
     });
 
     return res;
-  }
-
-  getMonomerSymbolsByType(polymerType: PolymerType): string[] {
-    return Object.keys(this._monomers[polymerType]);
   }
 
   /** Get a list of monomers with specified element attached to specified
@@ -241,20 +237,30 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
     return resStr;
   }
 
-  override(data: MonomerLibData): IMonomerLibBase {
-    return new OverriddenMonomerLib(data, this);
+  override(data: MonomerLibData, source: string): IMonomerLibBase {
+    return new OverriddenMonomerLib(data, source, this);
   }
 }
 
 class OverriddenMonomerLib extends MonomerLibBase {
   constructor(
     private readonly data: MonomerLibData,
+    source: string,
     private readonly base: MonomerLibBase
   ) {
-    super(data);
+    super(data, source);
   }
 
   get onChanged(): Observable<any> { return this.base.onChanged; }
+
+  override getMonomerSymbolsByType(polymerType: PolymerType): string[] {
+    const resList = this.base.getMonomerSymbolsByType(polymerType);
+    for (const overrideSymbol of Object.keys(this.data[polymerType] ?? {})) {
+      if (!resList.includes(overrideSymbol))
+        resList.push(overrideSymbol);
+    }
+    return resList;
+  }
 
   addMissingMonomer(polymerType: PolymerType, monomerSymbol: string): Monomer {
     return this.base.addMissingMonomer(polymerType, monomerSymbol);

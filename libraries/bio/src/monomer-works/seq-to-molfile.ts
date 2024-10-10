@@ -10,9 +10,8 @@ import {ALPHABET} from '../utils/macromolecule';
 import {
   MolfileWithMap, MolGraph, MonomerMap, MonomerMapValue, MonomerMolGraphMap, SeqToMolfileWorkerData, SeqToMolfileWorkerRes
 } from './types';
-import {ToAtomicLevelRes} from '../utils/seq-helper';
+import {ISeqHelper, ToAtomicLevelRes} from '../utils/seq-helper';
 import {getMolColName, hexToPercentRgb} from './utils';
-import {SeqHandler} from '../utils/seq-handler';
 import {IMonomerLib, IMonomerLibBase} from '../types';
 import {ISeqMonomer, PolymerType} from '../helm/types';
 import {HelmTypes, PolymerTypes} from '../helm/consts';
@@ -28,7 +27,8 @@ export type SeqToMolfileResult = {
 }
 
 export async function seqToMolFileWorker(seqCol: DG.Column<string>, monomersDict: MonomerMolGraphMap,
-  alphabet: ALPHABET, polymerType: PolymerType, monomerLib: IMonomerLib, rdKitModule: RDModule
+  alphabet: ALPHABET, polymerType: PolymerType,
+  monomerLib: IMonomerLib, seqHelper: ISeqHelper, rdKitModule: RDModule
 ): Promise<ToAtomicLevelRes> {
   const srcColLength = seqCol.length;
   const df: DG.DataFrame | undefined = seqCol.dataFrame;
@@ -37,7 +37,7 @@ export async function seqToMolFileWorker(seqCol: DG.Column<string>, monomersDict
     .map(() => new Worker(new URL('./seq-to-molfile-worker', import.meta.url)));
   const chunkSize = srcColLength / threadCount;
   const promises = new Array<Promise<SeqToMolfileWorkerRes>>(threadCount);
-  const seqSH = SeqHandler.forColumn(seqCol);
+  const seqSH = seqHelper.getSeqHandler(seqCol);
   const biotype = polymerType == PolymerTypes.RNA ? HelmTypes.NUCLEOTIDE : HelmTypes.AA;
   const seqList: ISeqMonomer[][] = wu.count(0).take(seqCol.length).map((rowIdx) => {
     const seqSS = seqSH.getSplitted(rowIdx);

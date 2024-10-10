@@ -21,7 +21,8 @@ export interface ISeqSplitted {
 export interface INotationProvider {
   get splitter(): SplitterFunc;
 
-  getHelm(seqCol: DG.Column<string>, options?: any): Promise<DG.Column<string>>;
+  /** Any Macromolecule can be presented as Helm notation */
+  getHelm(seq: string, options: any): Promise<DG.SemanticValue<string>>;
 
   createCellRendererBack(gridCol: DG.GridColumn | null, tableCol: DG.Column<string>): CellRendererBackBase<string>;
 }

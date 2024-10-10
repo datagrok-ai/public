@@ -198,10 +198,14 @@ export class AddNewColumnDialog {
 
   prepareFunctionsListForAutocomplete() {
     //filter functions with one input (multiple inputs or functions returning void are not included)
+    //also filter functions returning scalar param unless it is a vector function
+    const returnTypeCond = (it: DG.Func) => {
+      return (DG.TYPES_SCALAR.has(it.outputs[0].propertyType) || ALLOWED_OUTPUT_TYPES.includes(it.outputs[0].propertyType))
+        || it.options['vectorFunc'];
+    }
     const allFunctionsList = DG.Func.find()
-      .filter((it) => TAGS_TO_EXCLUDE.every((tag) => !it.hasTag(tag)) &&it.outputs.length === 1 
-      && (DG.TYPES_SCALAR.has(it.outputs[0].propertyType) || ALLOWED_OUTPUT_TYPES.includes(it.outputs[0].propertyType))
-      && it.inputs.every((inp) => inp.propertyType !== DG.TYPE.DATA_FRAME && inp.propertyType !== DG.TYPE.COLUMN));
+      .filter((it) => TAGS_TO_EXCLUDE.every((tag) => !it.hasTag(tag)) && it.outputs.length === 1 
+      && returnTypeCond(it));
     for (const func of allFunctionsList) {
       const params: PropInfo[] = func.inputs.map((it) => {
         return {propName: it.name, propType: it.semType ?? it.propertyType};
@@ -622,6 +626,7 @@ export class AddNewColumnDialog {
     }
 
     //validate types for current function
+    let firstColParam = true;
     for (const property of funcCall.func.inputs) {
       let actualInputType = actualInputParamTypes[property.name];
       const input = funcCall.inputs[property.name];
@@ -639,8 +644,13 @@ export class AddNewColumnDialog {
       //handling dynamic type in actual input
       if (actualInputType === DG.TYPE.DYNAMIC) {
         //extract type from column in case $COLUMN_NAME was passed to formula
-        if (input?.func && input.func.name === COLUMN_FUNCTION_NAME)
-          actualInputType = this.sourceDf!.col(input.inputs['field'])!.type;
+        if (input?.func && input.func.name === COLUMN_FUNCTION_NAME) {
+          if (firstColParam && funcCall.func.options['vectorFunc']) {
+            actualInputType = 'column';
+            firstColParam = false;
+          } else
+            actualInputType = this.sourceDf!.col(input.inputs['field'])!.type;
+        }
         //handling 'row' function
         //TODO: Handle other similar functions
         for (const reservedFunc of Object.keys(RESERVED_FUNC_NAMES_AND_TYPES)) {
@@ -814,7 +824,13 @@ export class AddNewColumnDialog {
 
   /** Creates and initializes the "Function List Widget". */
   async initUiFunctions(): Promise<HTMLDivElement> {
-    this.widgetFunctions = await DG.Func.byName('FunctionsWidget').apply({scalarOnly: true, plusIconOnHover: true});
+    this.widgetFunctions = await DG.Func.byName('FunctionsWidget').apply({
+      scalarOnly: true,
+      plusIconOnHover: true,
+      includeVectorFuncs: true,
+      ignoreTags: TAGS_TO_EXCLUDE,
+      ignorePackages: PACKAGES_TO_EXCLUDE
+    });
     this.widgetFunctions!.props.visibleCategories = this.visibleTags.join(',');
     this.widgetFunctions!.props.showSignature = true;
     (this.widgetFunctions as DG.FunctionsWidget)!.onActionPlusIconClicked.subscribe((e: DG.Func) => {

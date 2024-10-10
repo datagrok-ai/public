@@ -2,13 +2,20 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test} from '@datagrok-libraries/utils/src/test';
+import {before, category, test} from '@datagrok-libraries/utils/src/test';
 import {ALIGNMENT, ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 import {_testNeg, _testPos, DfReaderFunc} from './utils/detectors-utils';
 
 
-category('detectors:weak-and-likely', () => {
+category('detectors.weak-and-likely', () => {
+  let seqHelper: ISeqHelper;
+
+  before(async () => {
+    seqHelper = await getSeqHelper();
+  });
+
   const enum csvTests {
     fastaDnaWeak1 = 'fastaDnaWeak1',
     fastaDnaWeak1LikelyName = 'fastaDnaWeak1LikelyName',
@@ -92,7 +99,7 @@ Megafantastic
     await _testNeg(readCsv(csvTests.fastaDnaWeak1), 'colName');
   });
   test(csvTests.fastaDnaWeak1LikelyName, async () => {
-    await _testPos(readCsv(csvTests.fastaDnaWeak1LikelyName), 'seq',
+    await _testPos(readCsv(csvTests.fastaDnaWeak1LikelyName), 'seq', seqHelper,
       NOTATION.FASTA, ALIGNMENT.SEQ_MSA, ALPHABET.DNA, 4, false);
   });
 
@@ -100,7 +107,7 @@ Megafantastic
     await _testNeg(readCsv(csvTests.fastaRnaWeak1), 'colName');
   });
   test(csvTests.fastaRnaWeak1LikelyName, async () => {
-    await _testPos(readCsv(csvTests.fastaRnaWeak1LikelyName), 'seq',
+    await _testPos(readCsv(csvTests.fastaRnaWeak1LikelyName), 'seq', seqHelper,
       NOTATION.FASTA, ALIGNMENT.SEQ_MSA, ALPHABET.RNA, 4, false);
   });
 
@@ -108,7 +115,7 @@ Megafantastic
     await _testNeg(readCsv(csvTests.fastaPtWeak1), 'colName');
   });
   test(csvTests.fastaPtWeak1LikelyName, async () => {
-    await _testPos(readCsv(csvTests.fastaPtWeak1LikelyName), 'seq',
+    await _testPos(readCsv(csvTests.fastaPtWeak1LikelyName), 'seq', seqHelper,
       NOTATION.FASTA, ALIGNMENT.SEQ_MSA, ALPHABET.PT, 20, false);
   });
 

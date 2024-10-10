@@ -11,13 +11,12 @@ import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/type
 import {IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 import {splitToMonomersUI} from '../utils/split-to-monomers';
 import {awaitGrid} from './utils';
 import * as C from '../utils/constants';
-import {getHelmMonomers} from '../package';
 
-import {_package} from '../package-test';
 import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 
 category('splitters', async () => {
@@ -89,10 +88,12 @@ category('splitters', async () => {
 });
 
 category('splitters', () => {
+  let seqHelper: ISeqHelper;
   let monomerLibHelper: IMonomerLibHelper;
   let userLibSettings: UserLibSettings;
 
   before(async () => {
+    seqHelper = await getSeqHelper();
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
 
@@ -113,7 +114,7 @@ category('splitters', () => {
       seqCol.semType = semType;
     seqCol.setTag(bioTAGS.aligned, C.MSA);
 
-    const newDf = await splitToMonomersUI(df, seqCol);
+    const newDf: DG.DataFrame = await grok.functions.call('Bio:splitToMonomersTopMenu', {table: df, sequence: seqCol});
     expect(newDf.columns.names().includes('17'), true);
     // call to calculate 'cell.renderer' tag
     await grok.data.detectSemanticTypes(newDf);
@@ -134,7 +135,7 @@ PEPTIDE1{hHis.Aca.Cys_SEt}$$$,5.72388
     const expectedMonomerList = ['hHis', 'Aca', 'Cys_SEt', 'N', 'T'];
 
     const helmCol: DG.Column = df.getCol('HELM');
-    const res = getHelmMonomers(helmCol);
+    const res = await grok.functions.call('Bio:getHelmMonomers', {sequence: helmCol}) as string[];
 
     const missed = expectedMonomerList.filter((m) => !res.includes(m));
     const unexpected = res.filter((m) => !expectedMonomerList.includes(m));

@@ -54,5 +54,6 @@ Scaffold tree highlighting issue
 
 ---
 {
-"datasets": ["System:DemoFiles/chem/SPGI.csv]
+"order": 2,
+"datasets": ["System:DemoFiles/chem/SPGI.csv"]
 }

@@ -4,25 +4,25 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 
-import {TAGS as bioTAGS, ALPHABET, getPaletteByType} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
-import {UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {TAGS as bioTAGS, ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {GAP_SYMBOL} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types';
 import {HelmType} from '@datagrok-libraries/bio/src/helm/types';
 import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
 
 import '../../css/composition-analysis.css';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
-export function getCompositionAnalysisWidget(val: DG.SemanticValue, monomerLib: IMonomerLibBase): DG.Widget {
+export function getCompositionAnalysisWidget(
+  val: DG.SemanticValue, monomerLib: IMonomerLibBase, seqHelper: ISeqHelper
+): DG.Widget {
   const host = ui.div();
   host.classList.add('macromolecule-cell-comp-analysis-host');
   const alphabet = val.cell.column.tags[bioTAGS.alphabet];
   const biotype = alphabet === ALPHABET.DNA || alphabet === ALPHABET.RNA ? HelmTypes.NUCLEOTIDE : HelmTypes.AA;
 
   const counts: { [m: string]: number } = {};
-  const sh = SeqHandler.forColumn(val.cell.column as DG.Column<string>);
+  const sh = seqHelper.getSeqHandler(val.cell.column as DG.Column<string>);
   const rowIdx = val.cell.rowIndex;
   const seqSS = sh.getSplitted(rowIdx);
   wu.count(0).take(seqSS.length).filter((posIdx) => !seqSS.isGap(posIdx)).forEach((posIdx) => {

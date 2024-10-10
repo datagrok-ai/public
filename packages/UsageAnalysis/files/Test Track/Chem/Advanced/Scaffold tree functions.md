@@ -6,5 +6,6 @@
 
 ---
 {
+  "order": 1,
   "datasets": ["System:DemoFiles/chem/smiles-50.csv"]
 }

@@ -10,3 +10,7 @@
 4. Check that all necessary panels are displayed on the Property Panel (Gasteiger Partial Charges, Structure 3D, Structure 2D, Toxicity, Identifiers, Structural Alerts, Drug Likeness, Properties, Chem Descriptors)
 5. Expand each panel on Property Panel
 6. Make sure the content for each panel is displayed correctly
+---
+{
+"order": 1
+}

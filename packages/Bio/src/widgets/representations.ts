@@ -2,13 +2,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {getMolfilesFromSingleSeq} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {TAGS as mmcrTAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 
 import {MmcrTemps, rendererSettingsChangedState} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {getMolfilesFromSingleSeq} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
 import {_package} from '../package';
-import {max} from 'rxjs/operators';
 
 
 /**
@@ -105,16 +105,19 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
  * @export
  * @param {DG.Cell} macroMolecule macromolecule cell.
  * @param {any[]} monomersLibObject
+ * @param {ISeqHelper} seqHelper
  * @return {Promise<DG.Widget>} Widget.
  */
-export async function representationsWidget(macroMolecule: DG.Cell, monomersLibObject: any[]): Promise<DG.Widget> {
+export async function representationsWidget(
+  macroMolecule: DG.Cell, monomersLibObject: any[], seqHelper: ISeqHelper
+): Promise<DG.Widget> {
   const pi = DG.TaskBarProgressIndicator.create('Creating 3D view');
 
   let widgetHost;
   let molBlock3D = '';
   try {
     try {
-      const _atomicCodes = getMolfilesFromSingleSeq(macroMolecule, monomersLibObject);
+      const _atomicCodes = getMolfilesFromSingleSeq(macroMolecule, monomersLibObject, seqHelper);
       const result = '';//await getMacroMol(atomicCodes!);
       const molBlock2D = result[0];
       molBlock3D = (await grok.functions.call('Bio:Embed', {molBlock2D})) as unknown as string;

@@ -33,6 +33,8 @@ export enum TAGS {
   regions = '.regions',
 }
 
+export {TAGS as BioTags};
+
 export const positionSeparator: string = ', ';
 
 export const monomerRe: RegExp = /(?:\[([A-Za-z0-9_\-,()]+)\])|([A-Za-z\-])/g;

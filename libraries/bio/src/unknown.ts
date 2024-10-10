@@ -60,13 +60,14 @@ export class GrayAllPalette extends UnknownSeqPalette {
 
 export class UnknownColorPalette extends UnknownSeqPalette {
   public static palette: string[] = UnknownColorPalette.buildPalette();
-  // this way is just more futureproof, when we start distinguishing
+  // this way is just more future-proof, when we start distinguishing
   // between different polymer types for coloring of non natural aa's or nucleotides
-  public static customMonomerColors: {[symbol: string]: {[polymerType: string]: string}} = {};
+  public static customMonomerColors: { [symbol: string]: { [polymerType: string]: string } } = {};
   public static polymerTypes: string[] = [];
+
   private static buildPalette(): string[] {
     getMonomerLibHelper().then((lh) => {
-      lh.awaitLoaded().then(() => {
+      lh.awaitLoaded(Infinity).then(() => {
         const monLib = lh.getMonomerLib();
         monLib.onChanged.subscribe(() => {
           UnknownColorPalette.customMonomerColors = {};

@@ -1,6 +1,14 @@
 # Helm changelog
 
-## 2.5.3 (WIP)
+## 2.5.4 (2024-10-10)
+
+### New features
+
+* Fix using SeqHandler factory
+* Fix Helm cell renderer get tooltip from overridden monomer lib
+* Fix HelmService rendering with overridden monomer lib
+
+## 2.5.3 (2024-09-27)
 
 ### Bug fixes
 

@@ -4,11 +4,11 @@ import * as grok from 'datagrok-api/grok';
 
 import {Observable} from 'rxjs';
 
-import type {Point, App, HelmType} from './types';
+import type {Point, App, HelmType, IHelmEditorOptions} from './types';
 import {
   GetMonomerFunc, MonomersFuncs, HelmMol, HelmString, IHelmWebEditor, HelmAtom, IHelmDrawOptions
 } from './types';
-import {IMonomerLib} from '../types/index';
+import {IMonomerLibBase} from '../types/index';
 
 export type IHelmInputInitOptions = ui.input.IInputInitOptions<HelmString | HelmMol> & {
   editable: boolean;
@@ -49,13 +49,13 @@ export class HelmNotSupportedError extends Error {
 export interface IHelmHelper {
   createHelmInput(name: string, options?: IHelmInputInitOptions): HelmInputBase;
 
-  createHelmWebEditor(host?: HTMLElement, drawOptions?: Partial<IHelmDrawOptions>): IHelmWebEditor;
+  createHelmWebEditor(host?: HTMLElement, options?: Partial<IHelmEditorOptions>): IHelmWebEditor;
 
   createWebEditorApp(host: HTMLDivElement, helm?: string): App;
 
   get originalMonomersFuncs(): MonomersFuncs | null;
 
-  buildMonomersFuncsFromLib(monomerLib: IMonomerLib): MonomersFuncs;
+  buildMonomersFuncsFromLib(monomerLib: IMonomerLibBase): MonomersFuncs;
 
   overrideMonomersFuncs(monomersFuncs: MonomersFuncs): MonomersFuncs;
   revertOriginalMonomersFuncs(): MonomersFuncs;

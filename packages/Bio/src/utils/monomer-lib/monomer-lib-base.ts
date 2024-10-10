@@ -42,9 +42,14 @@ export class MonomerLibBase implements IMonomerLibBase {
 
   constructor(
     protected _monomers: MonomerLibDataType,
+    public readonly source: string,
   ) {
     this._isEmpty = !this._monomers || Object.keys(this._monomers).length === 0 ||
       Object.entries(this._monomers).every(([_, ptMonomers]) => Object.keys(ptMonomers).length === 0);
+  }
+
+  getMonomerSymbolsByType(polymerType: PolymerType): string[] {
+    return Object.keys(this._monomers[polymerType]);
   }
 
   /** Creates missing {@link Monomer} */
@@ -212,7 +217,7 @@ export class MonomerLibBase implements IMonomerLibBase {
       if (rgbM)
         return [parseInt(rgbM[1]), parseInt(rgbM[2]), parseInt(rgbM[3])];
 
-      const n = DG.Color.fromHtml(colors.textcolor!);
+      const n = DG.Color.fromHtml(html);
       return [DG.Color.r(n), DG.Color.g(n), DG.Color.b(n)];
     };
 

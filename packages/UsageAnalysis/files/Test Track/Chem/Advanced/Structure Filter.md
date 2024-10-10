@@ -66,7 +66,6 @@ Expected result: filter is applied, filters are synchronized in two open views.
 
 ---
 {
-  "datasets": [
-    "System:DemoFiles/chem/SPGI.csv"
-  ]
+  "order": 4,
+  "datasets": ["System:DemoFiles/chem/SPGI.csv"]
 }

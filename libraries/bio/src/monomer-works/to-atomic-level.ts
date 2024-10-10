@@ -8,17 +8,15 @@ import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 import {HELM_FIELDS, HELM_POLYMER_TYPE, HELM_RGROUP_FIELDS} from '../utils/const';
 import {ALPHABET, NOTATION} from '../utils/macromolecule/consts';
-import {IMonomerLib, Monomer} from '../types';
-import {SeqHandler} from '../utils/seq-handler';
+import {IMonomerLib, IMonomerLibBase, Monomer} from '../types';
 import {getFormattedMonomerLib, keepPrecision} from './to-atomic-level-utils';
 import {seqToMolFileWorker} from './seq-to-molfile';
 import {Atoms, Bonds, hasMolGraph, ITypedArray, LibMonomerKey, MolGraph, MonomerMetadata, MonomerMolGraphMap, NumberWrapper, Point, setMolGraph} from './types';
-import {ToAtomicLevelRes} from '../utils/seq-helper';
+import {ISeqHelper, ToAtomicLevelRes} from '../utils/seq-helper';
 import {errInfo} from '../utils/err-info';
 import {alphabetToPolymerType} from './utils';
 import {HelmType, ISeqMonomer, PolymerType} from '../helm/types';
 import {monomerWorksConsts as C} from './consts';
-import {HelmTypes} from '../helm/consts';
 
 // todo: verify that all functions have return types
 
@@ -28,7 +26,8 @@ import {HelmTypes} from '../helm/consts';
  * @param {IMonomerLib} monomerLib - Monomer library
  */
 export async function _toAtomicLevel(
-  df: DG.DataFrame, seqCol: DG.Column<string>, monomerLib: IMonomerLib, rdKitModule: RDModule
+  df: DG.DataFrame, seqCol: DG.Column<string>,
+  monomerLib: IMonomerLib, seqHelper: ISeqHelper, rdKitModule: RDModule
 ): Promise<ToAtomicLevelRes> {
   if (seqCol.semType !== DG.SEMTYPE.MACROMOLECULE) {
     const msg: string = `Only the ${DG.SEMTYPE.MACROMOLECULE} columns can be converted to atomic level, ` +
@@ -37,7 +36,7 @@ export async function _toAtomicLevel(
   }
 
   let srcCol: DG.Column<string> = seqCol;
-  const seqUh = SeqHandler.forColumn(seqCol);
+  const seqUh = seqHelper.getSeqHandler(seqCol);
 
   // convert 'helm' to 'separator' units
   if (seqUh.notation !== NOTATION.SEPARATOR) {
@@ -48,7 +47,7 @@ export async function _toAtomicLevel(
   let polymerType: PolymerType;
   let alphabet: ALPHABET;
   try {
-    const srcSh = SeqHandler.forColumn(srcCol);
+    const srcSh = seqHelper.getSeqHandler(srcCol);
     alphabet = srcSh.alphabet as ALPHABET;
     polymerType = alphabetToPolymerType(alphabet);
   } catch (err: any) {
@@ -56,12 +55,12 @@ export async function _toAtomicLevel(
     return {molCol: null, warnings: [errMsg]};
   }
 
-  const monomerSequencesArray: ISeqMonomer[][] = getMonomerSequencesArray(srcCol);
+  const monomerSequencesArray: ISeqMonomer[][] = getMonomerSequencesArray(srcCol, seqHelper);
   const monomersDict = getMonomersDictFromLib(monomerSequencesArray, polymerType, alphabet, monomerLib, rdKitModule);
   const srcColLength = srcCol.length;
 
   const res = await seqToMolFileWorker(
-    srcCol, monomersDict, alphabet, polymerType, monomerLib, rdKitModule);
+    srcCol, monomersDict, alphabet, polymerType, monomerLib, seqHelper, rdKitModule);
   if (res.warnings.length > 0.05 * srcColLength)
     throw new Error('Too many errors getting molfiles.');
 
@@ -71,12 +70,12 @@ export async function _toAtomicLevel(
 /** Get jagged array of monomer symbols for the dataframe
  * @param {DG.Column} macroMolCol - Column with macro-molecules
  * @return {string[]} - Jagged array of monomer symbols for the dataframe */
-export function getMonomerSequencesArray(macroMolCol: DG.Column<string>): ISeqMonomer[][] {
+export function getMonomerSequencesArray(macroMolCol: DG.Column<string>, seqHelper: ISeqHelper): ISeqMonomer[][] {
   const rowCount = macroMolCol.length;
   const result: ISeqMonomer[][] = new Array(rowCount);
 
   // split the string into monomers
-  const sh = SeqHandler.forColumn(macroMolCol);
+  const sh = seqHelper.getSeqHandler(macroMolCol);
 
   let containsEmptyValues = false;
   const biotype: HelmType = sh.defaultBiotype;
@@ -105,7 +104,7 @@ export function getMonomerSequencesArray(macroMolCol: DG.Column<string>): ISeqMo
  * @return {Map<string, MolGraph>} - Mapping of monomer symbols to MolGraph objects*/
 export function getMonomersDictFromLib(
   monomerSequencesArray: ISeqMonomer[][], polymerType: PolymerType, alphabet: ALPHABET,
-  monomerLib: IMonomerLib, rdKitModule: RDModule
+  monomerLib: IMonomerLibBase, rdKitModule: RDModule
 ): MonomerMolGraphMap {
   // todo: exception - no gaps, no empty string monomers
   const formattedMonomerLib = getFormattedMonomerLib(monomerLib, polymerType, alphabet);
@@ -736,12 +735,13 @@ function adjustPeptideMonomerGraph(monomer: MolGraph): void {
     flipMonomerAroundOY(monomer);
 
   const doubleBondedOxygen = findDoubleBondedCarbonylOxygen(monomer);
+  if (doubleBondedOxygen != null) {
+    // flip carboxyl and R if necessary
+    flipCarboxylAndRadical(monomer, doubleBondedOxygen);
 
-  // flip carboxyl and R if necessary
-  flipCarboxylAndRadical(monomer, doubleBondedOxygen);
-
-  // flip hydroxyl group with double-bound O inside carboxyl group if necessary
-  flipHydroxilGroup(monomer, doubleBondedOxygen);
+    // flip hydroxyl group with double-bound O inside carboxyl group if necessary
+    flipHydroxilGroup(monomer, doubleBondedOxygen);
+  }
 }
 
 function adjustPhosphateMonomerGraph(monomer: MolGraph): void {
@@ -954,7 +954,7 @@ function flipHydroxilGroup(monomer: MolGraph, doubleBondedOxygen: number): void 
  * double-bonded oxygen of the carbonyl group
  * @param {MolGraph}monomer - peptide monomer
  * @return {number} index of the double-bonded oxygen atom*/
-function findDoubleBondedCarbonylOxygen(monomer: MolGraph): number {
+function findDoubleBondedCarbonylOxygen(monomer: MolGraph): number | null {
   const bondsMap = constructBondsMap(monomer);
   let doubleBondedOxygen = 0;
   const sentinel = monomer.atoms.atomTypes.length;
@@ -965,8 +965,10 @@ function findDoubleBondedCarbonylOxygen(monomer: MolGraph): number {
     if (monomer.atoms.atomTypes[node - 1] === C.OXYGEN && node !== monomer.meta.rNodes[1])
       doubleBondedOxygen = node;
     i++;
-    if (i > sentinel)
-      throw new Error(`Search for double-bonded Oxygen in ${monomer} has exceeded the limit of ${sentinel}`);
+    if (i > sentinel) {
+      // throw new Error(`Search for double-bonded Oxygen in ${monomer} has exceeded the limit of ${sentinel}`);
+      return null;
+    }
   }
   return doubleBondedOxygen;
 }

@@ -8,7 +8,7 @@ import $ from 'cash-dom';
 import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {App, HweWindow} from '@datagrok-libraries/bio/src/helm/types';
 import {HelmInputBase, IHelmHelper, IHelmInputInitOptions} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
@@ -17,6 +17,7 @@ import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/mon
 import {getPropertiesWidget} from './widgets/properties-widget';
 import {HelmGridCellRenderer, HelmGridCellRendererBack} from './utils/helm-grid-cell-renderer';
 import {_getHelmService, HelmPackage} from './package-utils';
+import {HelmHelper} from './helm-helper';
 
 // Do not import anything than types from @datagrok/helm-web-editor/src/types
 import type {JSDraw2Module, OrgHelmModule, ScilModule} from './types';
@@ -50,13 +51,15 @@ async function initHelmInt(): Promise<void> {
   _package.logger.debug(`${logPrefix}, start`);
 
   try {
-    const [_, libHelper] = await Promise.all([
+    const helmHelper: IHelmHelper = new HelmHelper(_package.logger);
+    const [_, seqHelper, libHelper] = await Promise.all([
       _package.initHELMWebEditor(),
+      getSeqHelper(),
       getMonomerLibHelper(),
     ]);
 
     _package.logger.debug(`${logPrefix}, lib loaded`);
-    _package.initMonomerLib(libHelper);
+    _package.completeInit(seqHelper, helmHelper, libHelper);
   } catch (err: any) {
     const [errMsg, errStack] = errInfo(err);
     // const errMsg: string = err instanceof Error ? err.message : !!err ? err.toString() : 'Exception \'undefined\'';
@@ -71,8 +74,9 @@ async function initHelmInt(): Promise<void> {
 }
 
 //name: getHelmService
+//description: Helm renderer service
 //output: object result
-export function getHelmService(): HelmServiceBase {
+export async function getHelmService(): Promise<HelmServiceBase> {
   return _getHelmService();
 }
 
@@ -107,7 +111,7 @@ export function editMoleculeCell(cell: DG.GridCell): void {
 export function openEditor(mol: string): void {
   const df = grok.shell.tv.grid.dataFrame;
   const col = df.columns.bySemType('Macromolecule')! as DG.Column<string>;
-  const colSh = SeqHandler.forColumn(col);
+  const colSh = _package.seqHelper.getSeqHandler(col);
   const colUnits = col.meta.units;
   if (df.currentRowIdx === -1)
     return;
@@ -132,7 +136,7 @@ function openWebEditor(cell: DG.GridCell, value?: string, units?: string) {
   // const df = grok.shell.tv.grid.dataFrame;
   // const col = df.columns.bySemType('Macromolecule')!
   const col = cell.cell.column as DG.Column<string>;
-  const sh = SeqHandler.forColumn(col);
+  const sh = _package.seqHelper.getSeqHandler(col);
   const app: App =
     _package.helmHelper.createWebEditorApp(view, !!cell && units === undefined ? cell.cell.value : value!);
   const dlg = ui.dialog({showHeader: false, showFooter: true});
@@ -183,7 +187,7 @@ export function helmInput(name: string, options: IHelmInputInitOptions): HelmInp
 
 //name: getHelmHelper
 //output: object result
-export async function getHelmHelper(): Promise<IHelmHelper> {
+export function getHelmHelper(): IHelmHelper {
   return _package.helmHelper;
 }
 
@@ -223,7 +227,6 @@ export async function measureCellRenderer(): Promise<void> {
 // -- Test apps --
 
 //name: Highlight Monomers
-//tags: app
 //output: view result
 export async function highlightMonomers(): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('Test app highlight monomers');

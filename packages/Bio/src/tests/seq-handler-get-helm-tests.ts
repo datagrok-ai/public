@@ -3,17 +3,19 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
-import {NOTATION, TAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 
 category('SeqHandler: getHelm', () => {
+  let seqHelper: ISeqHelper;
   let monomerLibHelper: IMonomerLibHelper;
   let userLibSettings: UserLibSettings; // backup
 
   before(async () => {
+    seqHelper = await getSeqHelper();
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
 
@@ -25,7 +27,6 @@ category('SeqHandler: getHelm', () => {
     await setUserLibSettings(userLibSettings);
     await monomerLibHelper.loadMonomerLib(true); // load user settings libraries
   });
-
 
   const tests: {
     [testName: string]: {
@@ -79,8 +80,9 @@ category('SeqHandler: getHelm', () => {
     // if (srcSeparator) seqCol.setTag(TAGS.separator, srcSeparator);
     await grok.data.detectSemanticTypes(df);
 
-    const sh = SeqHandler.forColumn(seqCol);
-    const resHelm = await sh.getHelm(0, false);
+    const sh = seqHelper.getSeqHandler(seqCol);
+    const resSemValue = await sh.getHelm(0);
+    const resHelm = resSemValue.value;
     expect(resHelm, tgtHelm);
   }
 });

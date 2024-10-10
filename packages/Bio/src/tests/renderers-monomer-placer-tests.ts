@@ -7,7 +7,7 @@ import wu from 'wu';
 import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {MonomerPlacer, hitBounds} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 import {monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {getSeqHelper, ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {
   getUserLibSettings, setUserLibSettings
@@ -115,14 +115,13 @@ id3,QHIRE--LT
       const sepWidth: number = 12;
       const colTemp: MonomerPlacer = new MonomerPlacer(null, seqCol, _package.logger, monLength,
         () => {
-          const sh = SeqHandler.forColumn(seqCol);
           return {
-            seqHandler: sh,
             monomerCharWidth: charWidth,
             separatorWidth: sepWidth,
             monomerToShort: monomerToShort,
           };
         });
+      await colTemp.init();
 
       const width: number = 10000;
       const testList = testData.testList;
@@ -142,9 +141,7 @@ id3,QHIRE--LT
         throw new Error('Test failed error(s):\n' + errorList.join(', \n'));
     });
   }
-});
 
-category('renderers: monomerPlacer', () => {
   const boundsTestData = {
     bounds: [10, 20, 30, 40, 50, 60],
     tests: {

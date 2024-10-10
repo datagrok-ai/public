@@ -491,7 +491,7 @@ export async function chemDescriptors(table: DG.DataFrame, molecules: DG.Column,
 
 //name: chemDescriptor
 //meta.vectorFunc: true
-//input: column molecules
+//input: column molecules {semType: Molecule}
 //input: string descriptor
 //output: column res
 export async function chemDescriptor(molecules: DG.Column, descriptor: string): Promise<DG.Column> {
@@ -982,7 +982,7 @@ export function addInchisTopMenu(table: DG.DataFrame, col: DG.Column): void {
 
 //name: getInchis
 //meta.vectorFunc: true
-//input: column molecules
+//input: column molecules {semType: Molecule}
 //output: column res
 export function getInchis(molecules: DG.Column): DG.Column {
   return getInchisImpl(molecules);
@@ -1002,7 +1002,7 @@ export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void 
 
 //name: getInchiKeys
 //meta.vectorFunc: true
-//input: column molecules
+//input: column molecules {semType: Molecule}
 //output: column res
 export function getInchiKeys(molecules: DG.Column): DG.Column {
   return getInchiKeysImpl(molecules);
@@ -1080,7 +1080,7 @@ export async function runStructuralAlerts(table: DG.DataFrame, molecules: DG.Col
 
 //name: runStructuralAlert
 //meta.vectorFunc: true
-//input: column molecules
+//input: column molecules {semType: Molecule}
 //input: string alert
 //output: column res
 export async function runStructuralAlert(molecules: DG.Column, alert: RuleId): Promise<DG.Column | void> {
@@ -1604,7 +1604,7 @@ export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: D
 
 //name: getMolProperty
 //meta.vectorFunc: true
-//input: column molecules
+//input: column molecules {semType: Molecule}
 //input: string property {choices:["MW", "HBA", "HBD", "LogP", "LogS", "PSA", "Rotatable bonds", "Stereo centers", "Molecule charge"]}
 //output: column res
 export async function getMolProperty(molecules: DG.Column, property: string): Promise<DG.Column> {

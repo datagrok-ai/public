@@ -1,5 +1,5 @@
 import type {
-  HelmType, PolymerType, MonomerType, IWebEditorMonomer, WebEditorRGroups, IMonomerColors, MonomerSetType
+  HelmType, PolymerType, MonomerType, WebEditorRGroups, MonomerSetType
 } from '@datagrok-libraries/js-draw-lite/src/types/org';
 
 import type {Point} from '@datagrok-libraries/js-draw-lite/src/Point';
@@ -7,12 +7,14 @@ import type {Atom} from '@datagrok-libraries/js-draw-lite/src/Atom';
 import type {IJsAtom} from '@datagrok-libraries/js-draw-lite/src/types/jsdraw2';
 import type {Bond} from '@datagrok-libraries/js-draw-lite/src/Bond';
 import type {Mol} from '@datagrok-libraries/js-draw-lite/src/Mol';
+import type {IMolHandler} from '@datagrok-libraries/js-draw-lite/src/types/mol-handler';
 import type {Editor} from '@datagrok-libraries/js-draw-lite/src/JSDraw.Editor';
 
 import type {
   HelmAtom, HelmBond, HelmMol, HelmEditor, HelmString,
-  IOrgHelmWebEditor, IOrgHelmMonomers, GetMonomerFunc, GetMonomerResType, MonomersFuncs,
-  IHelmDrawOptions
+  IOrgHelmWebEditor, IOrgHelmMonomers,
+  GetMonomerFunc, GetMonomerResType, MonomersFuncs,
+  IHelmEditorOptions, IHelmDrawOptions, IMonomerColors, IWebEditorMonomer,
 } from '@datagrok-libraries/helm-web-editor/src/types/org-helm';
 import type {HweWindow} from '@datagrok-libraries/helm-web-editor/src/types';
 import type {MonomerExplorer} from '@datagrok-libraries/helm-web-editor/helm/MonomerExplorer';
@@ -31,8 +33,9 @@ export {Point, Atom, IJsAtom, Bond, Mol, Editor, MonomerExplorer};
 export {HelmAtom, HelmBond, HelmMol, HelmEditor, HelmString};
 
 export {
-  IWebEditorMonomer, IMonomerColors, IOrgHelmWebEditor, IOrgHelmMonomers, IHelmDrawOptions,
-  App, Monomers, GetMonomerFunc, GetMonomerResType
+  IWebEditorMonomer, IMonomerColors, IOrgHelmWebEditor, IOrgHelmMonomers,
+  IMolHandler, IHelmEditorOptions, IHelmDrawOptions, GetMonomerFunc, GetMonomerResType,
+  App, Monomers,
 };
 
 export {DojoType, DojoxType};
