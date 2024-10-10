@@ -4,11 +4,13 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 import {JSDraw2Module} from '../types';
 import {removeGapsFromHelm} from '../utils';
+
+import {_package} from '../package';
 
 declare const JSDraw2: JSDraw2Module;
 
@@ -18,7 +20,7 @@ export class SeqPropertiesError extends Error {
   }
 }
 
-export function getPropertiesDict(seq: string, sh: SeqHandler): {} {
+export function getPropertiesDict(seq: string, sh: ISeqHandler): {} {
   const host = ui.div([], {style: {width: '0', height: '0'}});
   document.documentElement.appendChild(host);
   try {
@@ -48,7 +50,7 @@ export function getPropertiesDict(seq: string, sh: SeqHandler): {} {
 
 
 export function getPropertiesWidget(value: DG.SemanticValue<string>): DG.Widget {
-  const sh = SeqHandler.forColumn(value.cell.column as DG.Column<string>);
+  const sh = _package.seqHelper.getSeqHandler(value.cell.column as DG.Column<string>);
   try {
     const propDict = getPropertiesDict(value.value, sh);
     return new DG.Widget(

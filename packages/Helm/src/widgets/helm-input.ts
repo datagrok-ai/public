@@ -7,7 +7,7 @@ import {fromEvent, Observable, Unsubscribable} from 'rxjs';
 
 import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/index';
 import {HelmInputBase, IHelmHelper, IHelmInputInitOptions} from '@datagrok-libraries/bio/src/helm/helm-helper';
-import {HelmAtom, HelmMol, HelmString, IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmAtom, HelmMol, HelmString, IHelmEditorOptions, IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
 
 import {defaultErrorHandler} from '../utils/err-info';
 import {getHoveredMonomerFromEditorMol, getSeqMonomerFromHelmAtom} from '../utils/get-hovered';
@@ -86,7 +86,7 @@ export class HelmInput extends HelmInputBase {
       style: {width: '100%', height: '100%', overflow: 'hidden'},
     });
     this.viewer = this.helmHelper.createHelmWebEditor(this.viewerHost, {
-      monomerNumbering: MonomerNumberingTypes.continuous
+      drawOptions: {monomerNumbering: MonomerNumberingTypes.continuous},
     });
 
     this.editHintDiv = ui.divH([
