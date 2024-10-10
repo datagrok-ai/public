@@ -356,7 +356,7 @@ export const RichFunctionView = Vue.defineComponent({
               onClick={() => helpHidden.value = !helpHidden.value} 
               class={'flex justify-between'}
             >
-              <div> <IconFA name='info' style={menuIconStyle}/> Show help </div>
+              <div> <IconFA name='question' style={menuIconStyle}/> Show help </div>
               { !helpHidden.value && <IconFA name='check'/>}
             </span> }
             <span 
@@ -398,7 +398,7 @@ export const RichFunctionView = Vue.defineComponent({
               tooltip='Fit inputs'
             />}
             { hasContextHelp.value && <IconFA 
-              name='info' 
+              name='question' 
               tooltip={ helpHidden.value ? 'Open help panel' : 'Close help panel' }
               onClick={() => helpHidden.value = !helpHidden.value}
               style={{'background-color': !helpHidden.value ? 'var(--grey-1)': null}}
