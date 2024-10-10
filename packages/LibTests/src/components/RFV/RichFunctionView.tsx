@@ -191,6 +191,10 @@ export const RichFunctionView = Vue.defineComponent({
       type: Boolean,
       default: false,
     },
+    historyEnabled: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: {
     'update:funcCall': (call: DG.FuncCall) => call,
@@ -359,13 +363,13 @@ export const RichFunctionView = Vue.defineComponent({
               <div> <IconFA name='question' style={menuIconStyle}/> Show help </div>
               { !helpHidden.value && <IconFA name='check'/>}
             </span> }
-            <span 
+            { props.historyEnabled && <span 
               onClick={() => historyHidden.value = !historyHidden.value} 
               class={'flex justify-between'}
             >
               <div> <IconFA name='history' style={menuIconStyle}/> Show history </div>
               { !historyHidden.value && <IconFA name='check'/>}
-            </span>
+            </span> }
           </RibbonMenu>
           <RibbonPanel>
             <IconFA
@@ -403,12 +407,12 @@ export const RichFunctionView = Vue.defineComponent({
               onClick={() => helpHidden.value = !helpHidden.value}
               style={{'background-color': !helpHidden.value ? 'var(--grey-1)': null}}
             /> }
-            <IconFA 
+            { props.historyEnabled && <IconFA 
               name='history' 
               tooltip='Open history panel' 
               onClick={() => historyHidden.value = !historyHidden.value}
               style={{'background-color': !historyHidden.value ? 'var(--grey-1)': null}}
-            />
+            /> }
           </RibbonPanel>
           <DockManager 
             layoutStorageName={`${currentCall.value.func.nqName}_personal_layout`}
