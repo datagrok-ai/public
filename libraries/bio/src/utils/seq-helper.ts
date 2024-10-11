@@ -23,6 +23,8 @@ export interface ISeqHelper {
   ): Promise<ToAtomicLevelRes>;
 
   getSeqHandler(seqCol: DG.Column<string>): ISeqHandler;
+
+  getSeqMonomers(seqCol: DG.Column<string>): string[];
 }
 
 export async function getSeqHelper(): Promise<ISeqHelper> {
