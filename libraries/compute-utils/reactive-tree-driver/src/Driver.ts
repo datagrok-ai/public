@@ -3,8 +3,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, Observable, Subject, EMPTY, of, from} from 'rxjs';
 import {isFuncCallSerializedState, PipelineState} from './config/PipelineInstance';
-import {AddDynamicItem, InitPipeline, LoadDynamicItem, LoadPipeline, MoveDynamicItem, RemoveDynamicItem, RunAction, RunStep, SaveDynamicItem, SavePipeline, ViewConfigCommands} from './view/ViewCommunication';
-import {pairwise, takeUntil, concatMap, catchError, switchMap, map, mapTo, startWith, withLatestFrom, tap} from 'rxjs/operators';
+import {AddDynamicItem, InitPipeline, LoadDynamicItem, LoadPipeline,
+  MoveDynamicItem, RemoveDynamicItem, RunAction, RunStep,
+  SaveDynamicItem, SavePipeline, ViewConfigCommands} from './view/ViewCommunication';
+import {pairwise, takeUntil, concatMap, catchError,
+  switchMap, map, mapTo, startWith, withLatestFrom, tap} from 'rxjs/operators';
 import {StateTree} from './runtime/StateTree';
 import {loadInstanceState} from './runtime/funccall-utils';
 import {callHandler} from './utils';
@@ -15,8 +18,12 @@ import {ValidationResult} from './data/common-types';
 
 export class Driver {
   public currentState$ = new BehaviorSubject<PipelineState | undefined>(undefined);
-  public currentValidations$ = new BehaviorSubject<Record<string, BehaviorSubject<Record<string, ValidationResult>>>>({});
-  public currentConsistency$ = new BehaviorSubject<Record<string, BehaviorSubject<Record<string, ConsistencyInfo>>>>({});
+  public currentValidations$ = new BehaviorSubject<Record<
+    string, BehaviorSubject<Record<string, ValidationResult>>
+  >>({});
+  public currentConsistency$ = new BehaviorSubject<Record<
+    string, BehaviorSubject<Record<string, ConsistencyInfo>>
+  >>({});
   public currentMeta$ = new BehaviorSubject<Record<string, BehaviorSubject<any | undefined>>>({});
   public currentCallsState$ = new BehaviorSubject<Record<string, BehaviorSubject<FuncCallStateInfo | undefined>>>({});
 

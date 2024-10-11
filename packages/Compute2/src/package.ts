@@ -22,7 +22,7 @@ export const _package = new DG.Package();
 //output: view app
 //meta.icon: icons/tree-wizard.png
 export async function TreeWizardApp() {
-  return DG.Func.byName('Compute2:TreeWizardEditor').prepare({providerFunc: 'LibTests:MockProvider3'}).call();
+  return DG.Func.byName('Compute2:TreeWizardEditor').prepare({providerFunc: 'Compute2:MockProvider3'}).call();
 }
 
 //name: Tree Wizard Editor
@@ -114,18 +114,18 @@ export async function MockWrapper1() {}
 export async function MockProvider1(params: any) {
   const c: PipelineConfiguration = {
     id: 'pipeline1',
-    nqName: 'LibTests:MockWrapper1',
-    provider: 'LibTests:MockProvider1',
+    nqName: 'Compute2:MockWrapper1',
+    provider: 'Compute2:MockProvider1',
     version: '1.0',
     type: 'static',
     steps: [
       {
         id: 'step1',
-        nqName: 'LibTests:LongScript',
+        nqName: 'Compute2:LongScript',
       },
       // {
       //   id: 'step2',
-      //   nqName: 'LibTests:LongFailingScript',
+      //   nqName: 'Compute2:LongFailingScript',
       // },
     ],
     links: [{
@@ -147,8 +147,8 @@ export async function MockWrapper2() {}
 export async function MockProvider2(params: any) {
   const c: PipelineConfiguration = {
     id: 'pipelinePar',
-    nqName: 'LibTests:MockWrapper2',
-    provider: 'LibTests:MockProvider2',
+    nqName: 'Compute2:MockWrapper2',
+    provider: 'Compute2:MockProvider2',
     version: '1.0',
     type: 'parallel',
     stepTypes: [{
@@ -157,11 +157,11 @@ export async function MockProvider2(params: any) {
       friendlyName: 'cooling',
     }, {
       id: 'stepMul',
-      nqName: 'LibTests:TestMul2',
+      nqName: 'Compute2:TestMul2',
       friendlyName: 'mul',
     }, {
       type: 'ref',
-      provider: 'LibTests:MockProvider1',
+      provider: 'Compute2:MockProvider1',
       version: '1.0',
     }],
     initialSteps: [
@@ -184,14 +184,14 @@ export async function MockWrapper3() {}
 export async function MockProvider3(params: any) {
   const c: PipelineConfiguration = {
     id: 'pipelinePar',
-    nqName: 'LibTests:MockWrapper3', // for history
-    provider: 'LibTests:MockProvider3', // for config
+    nqName: 'Compute2:MockWrapper3', // for history
+    provider: 'Compute2:MockProvider3', // for config
     friendlyName: 'Tree wizard model',
     version: '1.0',
     type: 'parallel',
     stepTypes: [{
       type: 'ref',
-      provider: 'LibTests:MockProvider2',
+      provider: 'Compute2:MockProvider2',
       version: '1.0',
     }],
     initialSteps: [
