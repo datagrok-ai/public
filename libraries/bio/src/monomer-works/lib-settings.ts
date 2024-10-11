@@ -10,7 +10,7 @@ let userLibSettingsPromise: Promise<void> = Promise.resolve();
 export async function getUserLibSettings(): Promise<UserLibSettings> {
   let res: UserLibSettings;
   userLibSettingsPromise = userLibSettingsPromise.then(async () => {
-    const resStr: string = await grok.dapi.userDataStorage.getValue(LIB_STORAGE_NAME, 'Settings', true);
+    const resStr: string | undefined = grok.userSettings.getValue(LIB_STORAGE_NAME, 'Settings', true);
     res = resStr ? JSON.parse(resStr) : {exclude: [], explicit: [], duplicateMonomerPreferences: {}};
 
     // Fix empty object returned in case there is no settings stored for user
@@ -27,7 +27,7 @@ export async function getUserLibSettings(): Promise<UserLibSettings> {
 export async function setUserLibSettings(value: UserLibSettings): Promise<void> {
   userLibSettingsPromise = userLibSettingsPromise.then(async () => {
     console.debug(`Bio: setUserLibSettings()\n${JSON.stringify(value, undefined, 2)}`);
-    await grok.dapi.userDataStorage.postValue(LIB_STORAGE_NAME, 'Settings', JSON.stringify(value), true);
+    grok.userSettings.add(LIB_STORAGE_NAME, 'Settings', JSON.stringify(value), true);
   });
   await userLibSettingsPromise;
 }

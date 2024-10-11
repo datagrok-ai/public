@@ -35,7 +35,8 @@ export class MonomerLibManager implements IMonomerLibHelper {
 
   public get eventManager(): IMonomerLibFileEventManager { return this._eventManager; }
 
-  public async awaitLoaded(timeout: number = 5000): Promise<void> {
+  public async awaitLoaded(timeout: number = Infinity): Promise<void> {
+    timeout = timeout === Infinity ? 1 * 60000 : timeout; // Limit the max lib loaded timeout
     return await Promise.race([
       (async () => {
         const fileManager = await this.getFileManager();
@@ -95,7 +96,7 @@ export class MonomerLibManager implements IMonomerLibHelper {
   }
 
   assignDuplicatePreferances(settings: UserLibSettings) {
-    this._monomerLib.assignDuplicatePreferances(settings);
+    this._monomerLib.assignDuplicatePreferences(settings);
   }
 
   /** Instance promise of {@link getFileManager} */
@@ -273,7 +274,7 @@ export class MonomerLibManager implements IMonomerLibHelper {
   /** Changes userLibSettings set only HELMCoreLibrary.json, polytool-lib.json */
   async loadMonomerLibForTests(): Promise<void> {
     await setUserLibSettings(LIB_SETTINGS_FOR_TESTS);
-    await this.awaitLoaded();
+    await this.awaitLoaded(10000);
     await this.loadMonomerLib(true); // load default libraries
   }
 

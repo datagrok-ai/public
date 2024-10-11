@@ -16,10 +16,10 @@
   "dependencies": {
     "@datagrok-libraries/utils": "^4.3.0",
     "cash-dom": "^8.1.1",
-    "datagrok-api": "^1.21.1",
+    "datagrok-api": "../../js-api",
     "dayjs": "^1.11.10",
     "rxjs": "^6.6.7",
-    "wu": "latest"
+    "wu": "^2.1.0"
   },
   "devDependencies": {
     "@types/wu": "^2.1.42",
@@ -27,7 +27,7 @@
     "@typescript-eslint/parser": "^5.26.0",
     "eslint": "^8.16.0",
     "eslint-config-google": "^0.14.0",
-    "root-require": "latest",
+    "root-require": "^0.3.1",
     "source-map-loader": "^4.0.1",
     "ts-loader": "^9.2.6",
     "typescript": "^5.0.4",

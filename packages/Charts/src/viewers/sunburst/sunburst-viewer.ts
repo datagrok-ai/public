@@ -7,12 +7,17 @@ import { TreeUtils, TreeDataType } from '../../utils/tree-utils';
 import * as echarts from 'echarts';
 import { fromEvent } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
+import _ from 'lodash';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 
 type onClickOptions = 'Select' | 'Filter';
 const CATEGORIES_NUMBER = 500;
 const ERROR_CLASS = 'd4-viewer-error';
+const rowSourceMap: Record<onClickOptions, string> = {
+  Select: 'Filtered',
+  Filter: 'All'
+};
 
 /** Represents a sunburst viewer */
 @grok.decorators.viewer({
@@ -23,6 +28,8 @@ const ERROR_CLASS = 'd4-viewer-error';
 
 export class SunburstViewer extends EChartViewer {
   private renderQueue: Promise<void> = Promise.resolve();
+  savedOrder: number[] = [];
+  columnIndexMap: { [key: string]: number } = {};
   hierarchyColumnNames: string[];
   eligibleHierarchyNames!: string[];
   hierarchyLevel: number;
@@ -49,6 +56,7 @@ export class SunburstViewer extends EChartViewer {
       series: [
         {
           type: 'sunburst',
+          radius: '98%',
           nodeClick: false,
           emphasis: {
             focus: 'series',
@@ -204,7 +212,10 @@ export class SunburstViewer extends EChartViewer {
     if (p?.name === 'table') {
       this.updateTable();
       this.onTableAttached(true);
-    } else
+    }
+    if (p?.name === 'onClick')
+      this.rowSource = rowSourceMap[this.onClick as onClickOptions] || this.rowSource;
+    else
       super.onPropertyChanged(p, render);
   }
 
@@ -213,6 +224,25 @@ export class SunburstViewer extends EChartViewer {
       return;
     this.subs.push(this.dataFrame.onMetadataChanged.subscribe((_) => this.render()));
     this.subs.push(grok.events.onEvent('d4-grid-color-coding-changed').subscribe(() => this.render()));
+    this.subs.push(grok.events.onEvent('d4-drag-drop').subscribe((args) => {
+      const newOrder: number[] = Array.from(args.dart.dragObject.grid._order);
+      if (this.savedOrder && _.isEqual(this.savedOrder, newOrder)) return;
+
+      const {rowIndex, value} = args.args.dragObject.cell;
+
+      if (this.hierarchyColumnNames.includes(value) && !this.columnIndexMap[value])
+        this.columnIndexMap[value] = rowIndex;
+
+      this.savedOrder = newOrder;
+      const reordered = this.savedOrder.map(index => {
+        for (const [column, colIndex] of Object.entries(this.columnIndexMap)) {
+          if (colIndex === index)
+            return column;
+        }
+        return null;
+      }).filter((columnName): columnName is string => columnName !== null);
+      this.render(reordered);      
+    }));
     this.subs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
     this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((data) => {
       const columnNamesToRemove = data.columns.map((column: DG.Column) => column.name);
@@ -233,6 +263,10 @@ export class SunburstViewer extends EChartViewer {
       return;
 
     this.hierarchyColumnNames = categoricalColumns.slice(0, this.hierarchyLevel).map((col) => col.name);
+    this.hierarchyColumnNames.forEach((column, index) => {
+      this.columnIndexMap[column] = index;
+    });
+
     this.addSubs();
     this.render();
   }
@@ -311,13 +345,13 @@ export class SunburstViewer extends EChartViewer {
     return { height, width };
   }
 
-  render(): void {
+  render(orderedHierarchyNames?: string[]): void {
     if (this.dataFrame)
-      this.renderQueue = this.renderQueue.then(() => this._render());
+      this.renderQueue = this.renderQueue.then(() => this._render(orderedHierarchyNames));
   }
 
-  async _render() {
-    this.eligibleHierarchyNames = this.hierarchyColumnNames.filter(
+  async _render(orderedHierarchyNames?: string[]) {
+    this.eligibleHierarchyNames = (orderedHierarchyNames ?? this.hierarchyColumnNames).filter(
       (name) => this.dataFrame.getCol(name).categories.length <= CATEGORIES_NUMBER,
     );
 

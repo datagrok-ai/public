@@ -22,9 +22,9 @@
     }
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.44.2",
+    "@datagrok-libraries/bio": "^5.44.5",
     "@datagrok-libraries/chem-meta": "^1.2.7",
-    "@datagrok-libraries/tutorials": "^1.4.0",
+    "@datagrok-libraries/tutorials": "^1.4.2",
     "@datagrok-libraries/utils": "^4.3.5",
     "@types/react": "^18.0.15",
     "cash-dom": "^8.1.0",
@@ -36,32 +36,32 @@
     "ts-loader": "^9.3.1",
     "typeahead-standalone": "4.14.1",
     "typescript": "^5.4.2",
-    "wu": "latest"
+    "wu": "^2.1.0"
   },
   "devDependencies": {
     "@datagrok-libraries/helm-web-editor": "^1.1.11",
     "@datagrok-libraries/js-draw-lite": "^0.0.8",
-    "@datagrok/bio": "^2.15.6",
+    "@datagrok/bio": "^2.15.7",
     "@datagrok/helm": "^2.5.3",
-    "@datagrok/chem": "^1.12.1",
+    "@datagrok/chem": "^1.12.3",
     "@types/jquery": "^3.5.14",
     "@types/js-yaml": "^4.0.5",
     "@types/lodash": "^4.14.202",
     "@types/node-fetch": "^2.6.2",
     "@types/object-hash": "^3.0.6",
     "@types/react": "^18.0.15",
-    "@types/wu": "latest",
+    "@types/wu": "^2.1.44",
     "@typescript-eslint/eslint-plugin": "^7.2.0",
     "@typescript-eslint/parser": "^7.2.0",
     "css-loader": "^6.7.3",
     "eslint": "^8.57.0",
-    "eslint-config-google": "latest",
+    "eslint-config-google": "^0.14.0",
     "style-loader": "^3.3.1",
     "ts-loader": "^9.3.1",
     "typescript": "^4.7.4",
     "typescript-eslint": "^7.2.0",
     "webpack": "^5.75.0",
-    "webpack-cli": "latest"
+    "webpack-cli": "^5.1.4"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",

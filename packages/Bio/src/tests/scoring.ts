@@ -6,9 +6,8 @@ import wu from 'wu';
 
 import {category, test, expectFloat, before, after, expect} from '@datagrok-libraries/utils/src/test';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {IMonomerLibHelper, getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
-import {getMonomerLibHelper, sequenceIdentityScoring, sequenceSimilarityScoring} from '../package';
 import {
   getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
@@ -51,7 +50,8 @@ PEPTIDE1{[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[
   });
 
   test('Identity', async () => {
-    const scoresCol = await sequenceIdentityScoring(table, seqCol, reference);
+    const scoresCol = await grok.functions.call('Bio:sequenceIdentityScoring',
+      {table: table, macromolecule: seqCol, reference: reference}) as DG.Column<number>;
     for (let i = 0; i < scoresCol.length; i++) {
       const resScore = scoresCol.get(i)!;
       const tgtScore = table.get(expectedIdentity, i);
@@ -61,19 +61,22 @@ PEPTIDE1{[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[
   });
 
   test('Identity-shortReference', async () => {
-    const scoresCol = await sequenceIdentityScoring(table, seqCol, shortReference);
+    const scoresCol = await grok.functions.call('Bio:sequenceIdentityScoring',
+      {table: table, macromolecule: seqCol, reference: shortReference}) as DG.Column<number>;
     expect(wu.count(0).take(scoresCol.length).map((rowI) => scoresCol.get(rowI))
       .every((v) => v != null && !isNaN(v)), true);
   });
 
   test('Identity-longReference', async () => {
-    const scoresCol = await sequenceIdentityScoring(table, seqCol, longReference);
+    const scoresCol = await grok.functions.call('Bio:sequenceIdentityScoring',
+      {table: table, macromolecule: seqCol, reference: longReference}) as DG.Column<number>;
     expect(wu.count(0).take(scoresCol.length).map((rowI) => scoresCol.get(rowI))
       .every((v) => v != null && !isNaN(v)), true);
   });
 
   test('Similarity', async () => {
-    const scoresCol = await sequenceSimilarityScoring(table, seqCol, reference);
+    const scoresCol = await grok.functions.call('Bio:sequenceSimilarityScoring',
+      {table: table, macromolecule: seqCol, reference: reference}) as DG.Column<number>;
     for (let i = 0; i < scoresCol.length; i++) {
       const resScore = scoresCol.get(i)!;
       const tgtScore = table.get(expectedSimilarity, i);

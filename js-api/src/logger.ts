@@ -79,7 +79,8 @@ export class Logger {
   _log(msg: LogMessage) {
     if (this.putCallback != null)
       this.putCallback(msg);
-    msg.stackTrace ??= new Error().stack;
+    if (msg.level === LOG_LEVEL.ERROR)
+      msg.stackTrace ??= new Error().stack;
     api.grok_Log(this.dart, msg.level, msg.message, toDart(msg.params), msg.type, msg.stackTrace);
   }
 

@@ -3,8 +3,8 @@ import * as DG from 'datagrok-api/dg';
 import {sequenceChemSimilarity} from '../../monomer-works/monomer-utils';
 import {ISeqSplitted} from '../../utils/macromolecule/types';
 import {splitAlignedSequences} from '../splitter';
-import {SeqHandler} from '../seq-handler';
 import {GAP_SYMBOL} from './consts';
+import {ISeqHelper} from '../seq-helper';
 
 export enum SCORE {
   IDENTITY = 'identity',
@@ -16,18 +16,19 @@ export enum SCORE {
  * @param {DG.Column<string>} col Sequences column to score. Must have Macromolecule semantic type.
  * @param {string} ref Reference sequence to score against.
  * @param {SCORE} scoring Scoring method.
+ * @param {ISeqHelper} seqHelper Helper for sequence operations.
  * @returns {DG.Column<number>} Scores column. */
 export async function calculateScores(
-  table: DG.DataFrame, col: DG.Column<string>, ref: string, scoring: SCORE
+  table: DG.DataFrame, col: DG.Column<string>, ref: string, scoring: SCORE, seqHelper: ISeqHelper
 ): Promise<DG.Column<number>> {
-  const splitSeqDf = splitAlignedSequences(col);
-  const srcSh = SeqHandler.forColumn(col);
+  const splitSeqDf = splitAlignedSequences(col, seqHelper);
+  const srcSh = seqHelper.getSeqHandler(col);
   const refCol = srcSh.getNewColumnFromList('ref', [ref]);
-  const refUh = SeqHandler.forColumn(refCol);
+  const refUh = seqHelper.getSeqHandler(refCol);
   const refSplitted = refUh.getSplitted(0); // ref is at 0
 
   const scoresCol = scoring === SCORE.IDENTITY ? calculateIdentity(refSplitted, splitSeqDf) :
-    scoring === SCORE.SIMILARITY ? await calculateSimilarity(refSplitted, splitSeqDf) : null;
+    scoring === SCORE.SIMILARITY ? await calculateSimilarity(refSplitted, splitSeqDf, seqHelper) : null;
   if (scoresCol === null)
     throw new Error(`In bio library: Unknown sequence scoring method: ${scoring}`);
   scoresCol.name = table.columns.getUnusedName(scoresCol.name);
@@ -74,9 +75,9 @@ export function calculateIdentity(reference: ISeqSplitted, positionsDf: DG.DataF
  * @param {DG.DataFrame} positionsDf Table which only contains position columns with semantic type Monomer.
  * @return {DG.Column<number>} Scores column. */
 export async function calculateSimilarity(
-  reference: ISeqSplitted, positionsDf: DG.DataFrame
+  reference: ISeqSplitted, positionsDf: DG.DataFrame, seqHelper: ISeqHelper
 ): Promise<DG.Column<number>> {
   const monomerColumns = positionsDf.columns.toList() as DG.Column<string>[];
-  const scoresCol = await sequenceChemSimilarity(monomerColumns, reference);
+  const scoresCol = await sequenceChemSimilarity(monomerColumns, reference, seqHelper);
   return scoresCol;
 }

@@ -2,11 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
-import {TaskBarProgressIndicator} from 'datagrok-api/dg';
+import {_package} from '../package';
 
 export function getRegionUI(col: DG.Column<string>): void {
-  const sh = SeqHandler.forColumn(col);
+  const sh = _package.seqHelper.getSeqHandler(col);
 
   const nameInput = ui.input.string('Name', {value: ''});
   const startPositionInput = ui.input.choice('Start Position', {value: sh.posList[0], items: sh.posList,
@@ -23,7 +22,7 @@ export function getRegionUI(col: DG.Column<string>): void {
     startPositionInput,
     endPositionInput,
   ])).onOK(() => {
-    const pi = TaskBarProgressIndicator.create('Getting region...');
+    const pi = DG.TaskBarProgressIndicator.create('Getting region...');
     try {
       const name: string = nameInput.value ?? getDefaultName();
       const regCol = getRegionDo(col, name, startPositionInput.value, endPositionInput.value);
@@ -39,7 +38,7 @@ export function getRegionUI(col: DG.Column<string>): void {
 export function getRegionDo(
   col: DG.Column<string>, startPosName: string | null, endPosName: string | null, name: string | null
 ): DG.Column<string> {
-  const sh = SeqHandler.forColumn(col);
+  const sh = _package.seqHelper.getSeqHandler(col);
 
   let startPosIdx: number | null = null;
   let endPosIdx: number | null = null;

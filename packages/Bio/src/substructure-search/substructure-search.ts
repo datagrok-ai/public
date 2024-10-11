@@ -2,10 +2,12 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {getMonomericMols} from '../calculations/monomerLevelMols';
-import {updateDivInnerHTML} from '../utils/ui-utils';
 import {delay} from '@datagrok-libraries/utils/src/test';
 import {TAGS as bioTAGS, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+
+import {getMonomericMols} from '../calculations/monomerLevelMols';
+import {updateDivInnerHTML} from '../utils/ui-utils';
 
 export const MONOMER_MOLS_COL = 'monomeric-mols';
 
@@ -29,7 +31,9 @@ export class SubstructureSearchDialog {
   col: DG.Column;
   dialog: DG.Dialog;
 
-  constructor(columns: DG.Column<string>[]) {
+  constructor(columns: DG.Column<string>[],
+    private readonly seqHelper: ISeqHelper
+  ) {
     this.col = columns[0];
     this.createUI();
   }
@@ -96,7 +100,7 @@ export class SubstructureSearchDialog {
           substructure = substructure.replaceAll(this.separatorInput.value, this.separator);
         let matches: DG.BitSet;
         if (this.units === NOTATION.HELM)
-          matches = await helmSubstructureSearch(substructure, this.col);
+          matches = await helmSubstructureSearch(substructure, this.col, this.seqHelper);
         else
           matches = linearSubstructureSearch(substructure, this.col);
         this.col.dataFrame.filter.and(matches);
@@ -129,14 +133,16 @@ function prepareSubstructureRegex(substructure: string, separator: string) {
   return re;
 }
 
-export async function helmSubstructureSearch(substructure: string, col: DG.Column<string>): Promise<DG.BitSet> {
+export async function helmSubstructureSearch(
+  substructure: string, col: DG.Column<string>, seqHelper: ISeqHelper
+): Promise<DG.BitSet> {
   if (col.version !== col.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION])
-    await invalidateMols(col, true);
+    await invalidateMols(col, seqHelper, true);
   const substructureCol: DG.Column<string> = DG.Column.string('helm', 1).init((_i) => substructure);
   substructureCol.semType = DG.SEMTYPE.MACROMOLECULE;
   substructureCol.meta.units = NOTATION.HELM;
   const substructureMolsCol =
-    await getMonomericMols(substructureCol, true, col.temp[MONOMERIC_COL_TAGS.MONOMERS_DICT]);
+    await getMonomericMols(substructureCol, seqHelper, true, col.temp[MONOMERIC_COL_TAGS.MONOMERS_DICT]);
   const matchesCol = await grok.functions.call('Chem:searchSubstructure', {
     molStringsColumn: col.temp[MONOMERIC_COL_TAGS.MONOMERIC_MOLS],
     molString: substructureMolsCol.get(0),
@@ -145,12 +151,12 @@ export async function helmSubstructureSearch(substructure: string, col: DG.Colum
   return matchesCol.get(0);
 }
 
-export async function invalidateMols(col: DG.Column<string>, pattern: boolean) {
+export async function invalidateMols(col: DG.Column<string>, seqHelper: ISeqHelper, pattern: boolean): Promise<void> {
   const progressBar = DG.TaskBarProgressIndicator.create(`Invalidating molfiles for ${col.name}`);
   try {
     await delay(10);
     const monomersDict = new Map();
-    const monomericMolsCol = await getMonomericMols(col, pattern, monomersDict);
+    const monomericMolsCol = await getMonomericMols(col, seqHelper, pattern, monomersDict);
     col.temp[MONOMERIC_COL_TAGS.MONOMERIC_MOLS] = monomericMolsCol;
     col.temp[MONOMERIC_COL_TAGS.MONOMERS_DICT] = monomersDict;
     col.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION] = col.version;

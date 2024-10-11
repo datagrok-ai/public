@@ -9,6 +9,6 @@
  
   "order": 14, 
   "datasets": [
-    "System:DemoFiles/chem/matched_molecular_pairs_demo.csv"
+    "System:DemoFiles/chem/mmp_demo.csv"
   ]
 }

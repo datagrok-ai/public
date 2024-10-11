@@ -2,8 +2,7 @@
 --friendlyName: Browse | Compound activity details for @target
 --connection: Chembl
 --input: string target = "CHEMBL1827"
---tags: tableSearch
---meta.searchPattern: "compound activity details for target ${}"
+--meta.searchPattern: "compound activity details for target ${target}"
 --meta.cache: true
 --meta.localCache: true
 --meta.invalidate: 0 0 * ? * * *

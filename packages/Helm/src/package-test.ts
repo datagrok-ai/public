@@ -5,7 +5,7 @@ import * as grok from 'datagrok-api/grok';
 // import {JSDraw2ModuleType} from '@datagrok/js-draw-lite/src/types/jsdraw2';
 // import {HelmType, OrgHelmModuleType} from '@datagrok/helm-web-editor/src/types/org-helm';
 
-import {runTests, tests, TestContext, initAutoTests as initTests } from '@datagrok-libraries/utils/src/test';
+import {runTests, tests, TestContext, initAutoTests as initTests} from '@datagrok-libraries/utils/src/test';
 
 import './tests/_first-tests';
 import './tests/helm-tests';

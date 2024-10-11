@@ -175,9 +175,8 @@ export class TestManager extends DG.ViewBase {
           await f.package.load({ file: f.options.file });
           const testModule = f.package.getModule(f.options.file);
           if (!testModule)
-            console.error(`Error getting tests from '${f.package.name}/${f.options.file}' module.`);
-          await initAutoTests(f.package, testModule);
-          const allPackageTests = testModule ? testModule.tests : undefined;
+            console.error(`Error getting tests from '${f.package.name}/${f.options.file}' module.`); 
+          const allPackageTests = await f.package.getTests(true);
           const packageTestsFinal: { [cat: string]: ICategory } = {};
           if (allPackageTests) {
             Object.keys(allPackageTests).forEach((cat) => {

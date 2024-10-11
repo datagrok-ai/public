@@ -551,9 +551,8 @@ export interface IScatterPlotSettings {
 
   linesWidth: number;
 
-  /// Labels to show next to the markers.
-  labels: string;
-  labelsColumnName: string;
+  /// Label columns to show next to the markers.
+  labelFormColumnNames: Array<string>;
 
   /// Determines the rows shown on the scatter plot.
   showLabelsFor: keyof typeof RowSet;
@@ -561,14 +560,16 @@ export interface IScatterPlotSettings {
   labelColorAsMarker: boolean;
 
   /// Determines how to show marker labels.
-  showMarkerLabels: keyof typeof VisibilityMode;
+  showLabelsMode: keyof typeof VisibilityMode;
+
+  /// Determines how to show custom labels.
+  useLabelAsMarker: boolean;
 
   /// Marker radius in which label is inscribed.
   labelCircleRadius: number;
 
-  /// Shows text values by selected column under the main label.
-  extraLabels: string;
-  extraLabelsColumnName: string;
+  /// Label inner content size.
+  labelCircleContentSize: number;
 
   /// Regression line visibility (toggle by pressing R)
   showRegressionLine: boolean;
@@ -610,6 +611,8 @@ export interface IScatterPlotSettings {
   lassoTool: boolean;
 
   allowZoom: boolean;
+
+  useGPUComputing: boolean;
 
   autoLayout: boolean;
 

@@ -193,7 +193,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
         onRemoveSub.unsubscribe();
       }
     });
-    const ribbons = view?.getRibbonPanels();
+    let ribbons = view?.getRibbonPanels();
     if (ribbons) {
       const hasSubmit = checkRibbonsHaveSubmit(ribbons);
       if (!hasSubmit) {
@@ -317,6 +317,16 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
 
         ribbons.push(ribbonButtons);
         // remove project save button from the ribbon
+        ribbons.some((rg) => {
+          const saveBtnIdx = rg?.findIndex((r) => r?.textContent?.toLowerCase() === 'save') ?? -1;
+          if (saveBtnIdx !== -1) {
+            rg.splice(saveBtnIdx, 1);
+            return true;
+          }
+          return false;
+        });
+        // remove empty ribbon arrays
+        ribbons = ribbons.filter((r) => (r?.length ?? 0) > 0);
         view.setRibbonPanels(ribbons);
       }
     }

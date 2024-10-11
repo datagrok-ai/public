@@ -5,12 +5,12 @@ import * as ui from 'datagrok-api/ui';
 import $ from 'cash-dom';
 import {fromEvent} from 'rxjs';
 
-import {category, expect, test, delay, testEvent} from '@datagrok-libraries/utils/src/test';
+import {category, expect, test, delay, testEvent, before} from '@datagrok-libraries/utils/src/test';
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 import {generateLongSequence, generateManySequences} from '@datagrok-libraries/bio/src/utils/generator';
 
-import {importFasta} from '../package';
 import {convertDo} from '../utils/convert';
 import {performanceTest} from './utils/sequences-generators';
 import {multipleSequenceAlignmentUI} from '../utils/multiple-sequence-alignment-ui';
@@ -20,6 +20,12 @@ import * as C from '../utils/constants';
 import {_package} from '../package-test';
 
 category('renderers', () => {
+  let seqHelper: ISeqHelper;
+
+  before(async () => {
+    seqHelper = await getSeqHelper();
+  });
+
   test('long sequence performance ', async () => {
     await performanceTest(generateLongSequence, 'Long sequences');
   });
@@ -124,7 +130,7 @@ category('renderers', () => {
 
   async function _testAfterMsa() {
     const fastaTxt: string = await grok.dapi.files.readAsText('System:AppData/Bio/samples/FASTA.fasta');
-    const df: DG.DataFrame = importFasta(fastaTxt)[0];
+    const df = (await grok.functions.call('Bio:importFasta', {fileContent: fastaTxt}))[0] as DG.DataFrame;
 
     const srcSeqCol: DG.Column = df.getCol('sequence');
     const semType: string = await grok.functions.call('Bio:detectMacromolecule', {col: srcSeqCol});
@@ -148,7 +154,7 @@ category('renderers', () => {
     expect(srcSeqCol.getTag(bioTAGS.alphabet), ALPHABET.PT);
     expect(srcSeqCol.getTag(DG.TAGS.CELL_RENDERER), 'sequence');
 
-    const msaSeqCol = await multipleSequenceAlignmentUI({col: srcSeqCol});
+    const msaSeqCol = await multipleSequenceAlignmentUI({col: srcSeqCol}, seqHelper);
     await awaitGrid(tv.grid);
     expect(tv.grid.dataFrame.id, df.id);
 
@@ -159,7 +165,7 @@ category('renderers', () => {
     expect(msaSeqCol.getTag(DG.TAGS.CELL_RENDERER), 'sequence');
 
     // check newColumn with SeqHandler constructor
-    const _sh: SeqHandler = SeqHandler.forColumn(msaSeqCol);
+    const _sh: ISeqHandler = seqHelper.getSeqHandler(msaSeqCol);
   }
 
   async function _testAfterConvert() {
@@ -175,7 +181,7 @@ category('renderers', () => {
     // call to calculate 'cell.renderer' tag
     await grok.data.detectSemanticTypes(df);
 
-    const tgtCol: DG.Column = await convertDo(srcCol, NOTATION.SEPARATOR, '/');
+    const tgtCol: DG.Column = await convertDo(srcCol, seqHelper, NOTATION.SEPARATOR, '/');
     await awaitGrid(tv.grid);
     expect(tv.grid.dataFrame.id, df.id);
 
@@ -183,7 +189,7 @@ category('renderers', () => {
     expect(resCellRenderer, 'sequence');
 
     // check tgtCol with SeqHandler constructor
-    const _sh: SeqHandler = SeqHandler.forColumn(tgtCol);
+    const _sh: ISeqHandler = seqHelper.getSeqHandler(tgtCol);
   }
 
   async function _testAfterConvertToHelm() {
@@ -192,7 +198,7 @@ category('renderers', () => {
     await awaitGrid(view.grid);
 
     const srcCol = df.getCol('sequence');
-    const sh = SeqHandler.forColumn(srcCol);
+    const sh = seqHelper.getSeqHandler(srcCol);
     const tgtCol = sh.convert(NOTATION.HELM);
     df.columns.add(tgtCol);
     await awaitGrid(view.grid);

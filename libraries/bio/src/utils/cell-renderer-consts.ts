@@ -17,6 +17,7 @@ export const enum MmcrTemps {
   monomerPlacer = '.mm.cellRenderer.monomerPlacer',
 
   rendererSettingsChanged = '.mm.cellRenderer.settingsChanged',
+  overriddenLibrary = '.mm.cellRenderer.overriddenLibrary',
 }
 
 export const enum tempTAGS {

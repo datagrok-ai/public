@@ -4,24 +4,23 @@ import * as DG from 'datagrok-api/dg';
 
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {getSeqHelper, ToAtomicLevelRes} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {getSeqHelper, ISeqHelper, ToAtomicLevelRes} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ChemTags, ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
 import {buildMonomerHoverLink} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
 
-import {checkInputColumnUI} from './check-input-column';
+import {checkInputColumn, checkInputColumnUI} from './check-input-column';
 import {getMolColName} from '@datagrok-libraries/bio/src/monomer-works/utils';
 
 export async function sequenceToMolfile(
   df: DG.DataFrame, macroMolecule: DG.Column, nonlinear: boolean, highlight: boolean,
-  monomerLib: IMonomerLib, rdKitModule: RDModule
+  monomerLib: IMonomerLib, seqHelper: ISeqHelper, rdKitModule: RDModule
 ): Promise<ToAtomicLevelRes> {
   let res: ToAtomicLevelRes;
   if (nonlinear) {
     const seqHelper = await getSeqHelper();
-    const seqSh = SeqHandler.forColumn(macroMolecule);
+    const seqSh = seqHelper.getSeqHandler(macroMolecule);
 
     let helmCol: DG.Column<string>;
     let seqColName!: string;
@@ -43,10 +42,10 @@ export async function sequenceToMolfile(
       }
     }
   } else { // linear
-    if (!checkInputColumnUI(macroMolecule, 'To Atomic Level'))
+    if (!checkInputColumn(macroMolecule, 'To Atomic Level', seqHelper)[0])
       return {molCol: null, warnings: ['Column is not suitable']};
 
-    res = await _toAtomicLevel(df, macroMolecule, monomerLib, rdKitModule);
+    res = await _toAtomicLevel(df, macroMolecule, monomerLib, seqHelper, rdKitModule);
   }
 
   if (res.molCol) {
@@ -54,7 +53,7 @@ export async function sequenceToMolfile(
     res.molCol.name = molColName;
     df.columns.add(res.molCol, true);
 
-    buildMonomerHoverLink(macroMolecule, res.molCol, monomerLib, rdKitModule);
+    buildMonomerHoverLink(macroMolecule, res.molCol, monomerLib, seqHelper, rdKitModule);
     res.molCol.setTag(ChemTags.SEQUENCE_SRC_HL_MONOMERS, String(highlight));
     await grok.data.detectSemanticTypes(df);
   }

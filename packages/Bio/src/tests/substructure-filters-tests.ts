@@ -11,7 +11,7 @@ import {
   getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
-import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {getSeqHelper, ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 import {awaitGrid, readDataframe} from './utils';
 
@@ -23,15 +23,14 @@ import {HelmBioFilter} from '../widgets/bio-substructure-filter-helm';
 
 import {_package} from '../package-test';
 
-
 category('bio-substructure-filters', async () => {
-  let helmHelper: IHelmHelper;
+  let seqHelper: ISeqHelper;
   let monomerLibHelper: IMonomerLibHelper;
   /** Backup actual user's monomer libraries settings */
   let userLibSettings: UserLibSettings;
 
   before(async () => {
-    helmHelper = await getHelmHelper(); // init Helm package
+    seqHelper = await getSeqHelper();
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
 
@@ -52,7 +51,7 @@ category('bio-substructure-filters', async () => {
     const fSubStr: string = 'MD';
     const fTrueCount: number = 3;
 
-    const filter = new BioSubstructureFilter();
+    const filter = new BioSubstructureFilter(seqHelper, _package.logger);
     filter.attach(df);
     await filter.awaitRendered();
     try {
@@ -73,7 +72,7 @@ category('bio-substructure-filters', async () => {
 
   test('separator', async () => {
     const msa = await readDataframe('tests/filter_MSA.csv');
-    const filter = new BioSubstructureFilter();
+    const filter = new BioSubstructureFilter(seqHelper, _package.logger);
     await grok.data.detectSemanticTypes(msa);
     filter.attach(msa);
     await filter.awaitRendered();
@@ -112,7 +111,7 @@ category('bio-substructure-filters', async () => {
   //   // // Helm filter calls waitForElementInDom
   //   // const fg = view.getFiltersGroup({createDefaultFilters: false});
   //   // _package.logger.debug('Bio tests: substructureFilters/helm, filter attaching.');
-  //   // const filter = new BioSubstructureFilter();
+  //   // const filter = await createBioSubstructureFilter();
   //   // filter.attach(df);
   //   // _package.logger.debug('Bio tests: substructureFilters/helm, filter attached.');
   //   // const fg = await df.plot.fromType(DG.VIEWER.FILTERS, {
@@ -157,7 +156,7 @@ category('bio-substructure-filters', async () => {
     const view = grok.shell.addTableView(df);
 
     _package.logger.debug(`${logPrefix}, filter attaching.`);
-    const filter = new BioSubstructureFilter();
+    const filter = new BioSubstructureFilter(seqHelper, _package.logger);
     filter.attach(df);
     const dlg = ui.dialog('Test filters').add(filter.root).show(); // to waitForElementInDom
     await filter.awaitRendered();
@@ -337,7 +336,6 @@ category('bio-substructure-filters', async () => {
     const fSeq2SubStr: string = 'GCATT';
     const fSeq2Trues: number[] = df.getCol('trueSeq2').toList();
 
-    //const seq2Filter = new BioSubstructureFilter();
     const filterList: any[] = [
       {type: 'Bio:bioSubstructureFilter', columnName: fSeq1ColName},
       {type: 'Bio:bioSubstructureFilter', columnName: fSeq2ColName},
@@ -451,19 +449,20 @@ category('bio-substructure-filters', async () => {
     await delay(100);
     await awaitGrid(view.grid);
   });
+
+  async function createFilter(colName: string, df: DG.DataFrame): Promise<BioSubstructureFilter> {
+    if (!df.columns.names().includes(colName)) {
+      throw new Error(`The column '${colName}' not found. ` +
+        `Available in data frame are ${JSON.stringify(df.columns.names())}`);
+    }
+
+    const filter = new BioSubstructureFilter(seqHelper, _package.logger);
+    filter.attach(df);
+    filter.applyState({columnName: colName});
+    filter.column = df.col(colName);
+    filter.columnName = colName;
+    //filter.tableName = df.name;
+    return filter;
+  };
 });
 
-async function createFilter(colName: string, df: DG.DataFrame): Promise<BioSubstructureFilter> {
-  if (!df.columns.names().includes(colName)) {
-    throw new Error(`The column '${colName}' not found. ` +
-      `Available in data frame are ${JSON.stringify(df.columns.names())}`);
-  }
-
-  const filter = new BioSubstructureFilter();
-  filter.attach(df);
-  filter.applyState({columnName: colName});
-  filter.column = df.col(colName);
-  filter.columnName = colName;
-  //filter.tableName = df.name;
-  return filter;
-};

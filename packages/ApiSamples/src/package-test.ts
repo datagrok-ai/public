@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import { runTests, tests, TestContext, category, test as _test, delay, initAutoTests as initCoreTests, expect, awaitCheck } from '@datagrok-libraries/utils/src/test';
+import { runTests, tests, TestContext, category, test as _test, delay, initAutoTests as initCoreTests, expect, awaitCheck, before } from '@datagrok-libraries/utils/src/test';
 export const _package = new DG.Package();
 export { tests };
 
@@ -36,8 +36,10 @@ const skip = [
 const scriptViewer = [
   'parameterValidation',
   'parameter expressions',
-  'docking',
-  'currently-open-views'
+  'docking', 
+  'input-api',
+  'helm-input-ui',
+  'output-layouts'
 ];
 
 //name: test
@@ -50,21 +52,35 @@ export async function test(category: string, test: string, testContext: TestCont
   const data = await runTests({ category, test, testContext });
   return DG.DataFrame.fromObjects(data)!;
 }
+interface ScriptObject {
+  [key: string]: () => Promise<void>;
+}
+
+let beforeArr : ScriptObject= {
+  ['Scripts:ui:inputs'] : async () => {await grok.functions.call("Helm:getHelmHelper()");}
+}
 
 //tags: init
 export async function initTests() {
 
-  const annotation = `//name: Template
-  //description: Hello world script
-  //language: javascript
-  `;
-
-
   const scripts = await grok.dapi.scripts.filter('package.shortName = "ApiSamples"').list();
   for (const script of scripts) {
-    category(('Scripts:' + script.options.path as string).replaceAll('/', ':'), () => {
+    let catName = ('Scripts:' + script.options.path as string).replaceAll('/', ':');
+    category(catName, () => {
+      
+      if(beforeArr[catName]){
+        let currentBefore = beforeArr[catName];
+        before(async ()=>{
+          await currentBefore();
+        })
+        delete beforeArr['Scripts:ui:inputs'];
+      }
+      
       _test(script.friendlyName, async () => {
 
+        const annotation = `//name: ${script.friendlyName} 
+        //language: javascript
+        `;
         debugger
         if (scriptViewer.includes(script.friendlyName))
           await runScriptViewer(script);
@@ -72,10 +88,8 @@ export async function initTests() {
           await evaluateScript(script);
         grok.shell.closeAll();
 
-        async function runScriptViewer(script: DG.Script) {
-          debugger
-          const scriptResult = new Promise<boolean>(async (resolve) => {
-            debugger
+        async function runScriptViewer(script: DG.Script) { 
+          const scriptResult = new Promise<boolean>(async (resolve) => { 
             script.script = `${annotation}\n${script.script}`;
             const scriptView = DG.ScriptView.create(script);
             grok.shell.addView(scriptView);
@@ -104,15 +118,24 @@ export async function initTests() {
         }
 
         async function evaluateScript(script: DG.Script) {
+          let timeout: any;
+          const subscription = grok.functions.onAfterRunAction.subscribe((funcCall) => {
+            if ((funcCall.func as any).script === script.script.replaceAll('\r', '')) {
+              if (timeout)
+                clearTimeout(timeout);
+              subscription.unsubscribe();  
+            }
+          });
           await script.apply();
-          await delay(300);
+          timeout = setTimeout(() => {
+            subscription.unsubscribe();
+            throw new Error('Script didnt pass');
+          }, 10000);
         }
       }, skip.includes(script.friendlyName) ? { skipReason: 'skip' } : { timeout: 60000 });
     });
   }
 }
-
-
 
 //name: initAutoTests
 export async function initAutoTests() {

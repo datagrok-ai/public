@@ -64,3 +64,7 @@
     overflow-x: clip;
     overflow-y: auto;
 }
+
+.monomer-manager-form-tab-control input.d4-invalid {
+    background: #ff000030;
+}

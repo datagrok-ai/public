@@ -50,14 +50,14 @@ export class Molecule3DUnitsHandler extends UnitsHandlerBase<any, Molecule3DBase
     if (this.units === 'pdb') return this.column;
     let convertToPdb: (src: string) => Promise<string>;
     switch (this.units) {
-      case 'pdbqt': {
-        convertToPdb = (srcPdbqt: string): Promise<string> => {
-          return ph.pdbqtToMol(srcPdbqt);
-        };
-        break;
-      }
-      default:
-        throw new Error('Unsupported units \'${this.units}\' of the Molecule3D column');
+    case 'pdbqt': {
+      convertToPdb = (srcPdbqt: string): Promise<string> => {
+        return ph.pdbqtToMol(srcPdbqt);
+      };
+      break;
+    }
+    default:
+      throw new Error('Unsupported units \'${this.units}\' of the Molecule3D column');
     }
 
     const colLength: number = this.column.length;

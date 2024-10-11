@@ -2,36 +2,37 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
-import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {HelmTypes, PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
+import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {IMonomerLib, IMonomerLibBase, Monomer, MonomerLibData, RGroup} from '@datagrok-libraries/bio/src/types';
 import {RDModule, RDMol, RDReaction, MolList, RDReactionResult} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {HELM_REQUIRED_FIELD, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
+import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
+import {HelmMol, HelmType, JSDraw2ModuleType, OrgType} from '@datagrok-libraries/bio/src/helm/types';
+import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
 import {Rules, RuleLink, RuleReaction} from './pt-rules';
 import {InvalidReactionError, MonomerNotFoundError} from './types';
-import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
+
 import {_package} from '../package';
 
-export const RULES_DIMER = '(#2)';
-export const RULES_HETERODIMER = '($2)';
+declare const JSDraw2: JSDraw2ModuleType;
+declare const org: OrgType;
 
-// function addCommonTags(col: DG.Column): void {
-//   col.semType = DG.SEMTYPE.MACROMOLECULE;
-//   col.setTag('aligned', ALIGNMENT.SEQ);
-//   col.setTag('alphabet', ALPHABET.PT);
-// }
 
 export class Chain {
   linkages: { fChain: number, sChain: number, fMonomer: number, sMonomer: number, fR: number, sR: number }[];
   monomers: string[][];
+  mol: HelmMol | null;
 
   constructor(
     monomers: string[][],
-    linkages: { fChain: number, sChain: number, fMonomer: number, sMonomer: number, fR: number, sR: number }[]) {
+    linkages: { fChain: number, sChain: number, fMonomer: number, sMonomer: number, fR: number, sR: number }[],
+    mol: HelmMol | null) {
     this.linkages = linkages;
     this.monomers = monomers;
+    this.mol = mol;
   }
 
   static fromHelm(helm: string) {
@@ -78,7 +79,7 @@ export class Chain {
       }
     }
 
-    return new Chain(monomers, linkages);
+    return new Chain(monomers, linkages, null);
   }
 
   static fromNotation(sequence: string, rules: Rules): Chain {
@@ -223,7 +224,97 @@ export class Chain {
       }
     }
 
-    const chain = new Chain(monomersAll, linkages);
+    const chain = new Chain(monomersAll, linkages, null);
+    return chain;
+  }
+
+  static async parseNotation(sequence: string): Promise<Chain> {
+    const mainFragments: string[][] = [];
+
+    const linkages: {
+      fChain: number,
+      sChain: number,
+      fMonomer: number,
+      sMonomer: number,
+      fR: number,
+      sR: number
+    }[] = [];
+
+
+    const hh = await getHelmHelper();
+    // const sampleHwe = hh.createHelmWebEditor();
+    // sampleHwe.editor.setHelm('PEPTIDE1{R.P.D.[meI]}$$$$');
+
+    const resHwe = hh.createHelmWebEditor();
+    const resMol = resHwe.editor.m;
+
+    const rxp = /(\(.\d+\))?\{[^\}]*\}/g;
+    const seqs: string [] = [];
+    seqs.push(sequence.replaceAll(rxp, ''));
+
+    //const l = (rxpRes?.length) ?? -1;
+
+    const matches = sequence.matchAll(rxp);
+    //const rxpRes = rxp.exec(sequence);
+    for (const m of matches) {
+      const str = m![0];
+      if (str)
+        seqs.push(str);
+    }
+
+    let counter = 0;
+    for (let i = 0; i < seqs.length; i++) {
+      const splMonomers = seqs[i].split('-');
+      const monomers: string [] = new Array<string>(splMonomers.length);
+      for (let j = 0; j < splMonomers.length; j++) {
+        const monomer = splMonomers[j].replace('{', '').replace('}', '');
+        if (monomer !== '') {
+          monomers[j] = monomer;
+          counter++;
+        } else {
+          linkages.push({fChain: i, sChain: i + 1, fMonomer: counter, sMonomer: counter + 1, fR: 1, sR: 1});
+        }
+      }
+
+      mainFragments.push(monomers);
+    }
+
+    counter = 0;
+    const p = new JSDraw2.Point(0, 0);
+    for (let i = 0; i < mainFragments.length; i++) {
+      for (let j = 0; j < mainFragments[i].length; j++) {
+        if (!!mainFragments[i][j]) {
+          const elem = mainFragments[i][j];
+          const bio = {type: HelmTypes.AA, i: i, j: j};
+          const atom = new JSDraw2.Atom<HelmType>(p, elem, bio);
+          resMol.addAtom(atom);
+
+          if (j !== 0) {
+            const atom1 = resMol.atoms[counter - 1];
+            const atom2 = resMol.atoms[counter];
+            const bond = new JSDraw2.Bond<HelmType>(atom1, atom2);
+            bond.r1 = 2;
+            bond.r2 = 1;
+            resMol.addBond(bond);
+          }
+
+          counter++;
+          p.x += JSDraw2.Editor.BONDLENGTH; // Inspired by HELMWebEditor
+        }
+        p.y += 4 * JSDraw2.Editor.BONDLENGTH; // Inspired by HELMWebEditor
+      }
+    }
+
+    for (let i = 0; i < linkages.length; i++) {
+      const atom1 = resMol.atoms[linkages[i].fMonomer - 1];
+      const atom2 = resMol.atoms[linkages[i].sMonomer - 1];
+      const bond = new JSDraw2.Bond<HelmType>(atom1, atom2);
+      bond.r1 = linkages[i].fR;
+      bond.r2 = linkages[i].sR;
+      resMol.addBond(bond);
+    }
+
+    const chain = new Chain(mainFragments, linkages, resMol);
     return chain;
   }
 
@@ -233,17 +324,17 @@ export class Chain {
     let idx1 = 0;
     let idx2 = 0;
     loop1:
-      for (let i = 0; i < this.monomers.length; i++) {
-        loop2:
-          for (let j = 0; j < this.monomers[i].length; j++) {
-            if (counter == changeNumber) {
-              idx1 = i;
-              idx2 = j;
-              break loop1;
-            }
-            counter++;
-          }
+    for (let i = 0; i < this.monomers.length; i++) {
+      loop2:
+      for (let j = 0; j < this.monomers[i].length; j++) {
+        if (counter == changeNumber) {
+          idx1 = i;
+          idx2 = j;
+          break loop1;
+        }
+        counter++;
       }
+    }
 
     const previous = this.monomers[idx1][idx2];
 
@@ -252,6 +343,10 @@ export class Chain {
     this.monomers[idx1][idx2] = previous;
 
     return res;
+  }
+
+  getNotationHelm(): string {
+    return this.getHelm();
   }
 
   getHelm(): string {
@@ -285,8 +380,66 @@ export class Chain {
     return helm;
   }
 
-  getNotation(rules: Rules): string {
-    return 'not implemented';
+  getNotation(): string {
+    const atoms = this.mol!.atoms;
+    const bonds = this.mol!.bonds;
+    const chains: number[] = [];
+    const specialBonds: number[] = [];
+    for (let i = 0; i < bonds.length!; i++) {
+      //@ts-ignore
+      if (bonds[i].a1.bio.i !== bonds[i].a2.bio.i)
+        specialBonds.push(i);
+    }
+
+    for (let i = 0; i < atoms.length!; i++) {
+      //@ts-ignore
+      const atomChain = atoms[i].bio?.i;
+      if (atomChain + 1 > chains.length)
+        chains.push(1);
+      else
+        chains[atomChain]++;
+    }
+
+    const simpleChains: string[][] = new Array(chains.length);
+    let counter = 0;
+    for (let i = 0; i < chains.length!; i++) {
+      const simpleChain: string[] = new Array(chains[i]);
+      for (let j = 0; j < chains[i]; j++) {
+        simpleChain[j] = atoms[counter].elem;
+        counter++;
+      }
+
+      simpleChains[i] = simpleChain;
+    }
+
+    let res = '';
+    for (let i = 0; i < simpleChains.length; i++) {
+      let chainAdd = '';
+
+      for (let j = 0; j < simpleChains[i].length; j++)
+        chainAdd += `${j == 0 ? '' : '-'}${simpleChains[i][j]}`;
+
+      if (i !== 0) {
+        const rxp = /(\(.\d+\))/;
+        const match = chainAdd.match(rxp);
+        chainAdd = chainAdd.replace(match?.[0]!, '');
+        const group = match ? match?.[0]! : '';
+        chainAdd = `${group}{${chainAdd}}`;
+      } else {
+        if (simpleChains.length > 1) {
+          //@ts-ignore
+          const firstAtomLinks = bonds[specialBonds[0]].a1.bio.i == 0 && bonds[specialBonds[0]].a1.bio.j == 0;
+          //@ts-ignore
+          const secondAtomLinks = bonds[specialBonds[0]].a2.bio.i == 1 && bonds[specialBonds[0]].a1.bio.j == 0;
+          if (firstAtomLinks && secondAtomLinks)
+            chainAdd += '-';
+        }
+      }
+
+      res += chainAdd;
+    }
+
+    return res;
   }
 
   protected static getLinkedPositions(monomers: string[], rules: RuleLink[] | RuleReaction []):

@@ -15,12 +15,17 @@ const commands = {
   publish: require('./commands/publish').publish,
   test: require('./commands/test').test,
   testall: require('./commands/test-all').testAll,
+  publishall: require('./commands/publish-all').publishAll,
 };
 
 const command = argv['_'][0];
 if (command in commands) {
   try { 
-    if (!commands[command](argv)) { 
+    if(argv["help"]){ 
+      console.log(help[command]);
+      exitWithCode(1);
+    }
+    else if (!commands[command](argv)) { 
       console.log(help[command]);
       exitWithCode(1);
     }

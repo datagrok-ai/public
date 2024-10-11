@@ -2,12 +2,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {HelmType, IMonomerColors, IWebEditorMonomer, MonomerType, PolymerType, WebEditorRGroups} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmType, IWebEditorMonomer, MonomerType, PolymerType, WebEditorRGroups} from '@datagrok-libraries/bio/src/helm/types';
 import {IMonomerLibBase, Monomer} from '@datagrok-libraries/bio/src/types/index';
 import {HELM_OPTIONAL_FIELDS as OPT, HELM_REQUIRED_FIELD as REQ, HELM_RGROUP_FIELDS as RGP} from '@datagrok-libraries/bio/src/utils/const';
 
-import {BrokenWebEditorMonomer, MissingWebEditorMonomer} from './web-editor-monomer-dummy';
-import {naturalMonomerColors} from './monomer-colors';
+import {BrokenWebEditorMonomer} from './web-editor-monomer-dummy';
 
 export class LibraryWebEditorMonomer implements IWebEditorMonomer {
   public get rs(): number { return Object.keys(this.at).length; }
@@ -43,7 +42,8 @@ export class LibraryWebEditorMonomer implements IWebEditorMonomer {
       at = monomerLib.getRS(smiles);
     } else if (!monomer.lib) {
       // missing
-      return new MissingWebEditorMonomer(biotype, symbol);
+      throw new Error('Unexpected missing monomer without .lib');
+      // return new MissingWebEditorMonomer(biotype, symbol);
     } else {
       // broken
       return new BrokenWebEditorMonomer(biotype, symbol);
@@ -58,7 +58,7 @@ export class LibraryWebEditorMonomer implements IWebEditorMonomer {
       monomer[REQ.MONOMER_TYPE],
       at);
 
-    const colors = getMonomerColors(biotype, monomer);
+    const colors = monomerLib.getMonomerColors(biotype, monomer[REQ.SYMBOL]);
     if (colors) {
       res.textcolor = colors?.textcolor;
       res.linecolor = colors?.linecolor;
@@ -67,36 +67,4 @@ export class LibraryWebEditorMonomer implements IWebEditorMonomer {
 
     return res;
   }
-}
-
-function getMonomerColors(biotype: HelmType, monomer: Monomer): IMonomerColors | null {
-  const currentMonomerSchema = 'default';
-  let monomerSchema: string = currentMonomerSchema;
-
-  let res: any;
-  if (monomer.meta && monomer.meta.colors) {
-    const monomerColors: { [colorSchemaName: string]: any } = monomer.meta.colors;
-    if (!(currentMonomerSchema in monomerColors)) monomerSchema = 'default';
-    let res = monomerColors[monomerSchema];
-  }
-
-  if (!res) {
-    const biotypeColors: { [symbol: string]: string } | undefined = naturalMonomerColors[biotype];
-    const nColor = biotypeColors?.[monomer.symbol];
-    if (nColor)
-      res = {textColor: "#000000", lineColor: "#000000", backgroundColor: nColor};
-  }
-
-  const na = monomer[OPT.NATURAL_ANALOG];
-  if (!res && na) {
-    const biotypeColors: { [symbol: string]: string } | undefined = naturalMonomerColors[biotype];
-    const naColor = biotypeColors?.[na];
-    res = {textColor: "#000000", lineColor: "#000000", backgroundColor: naColor ?? "#FFFFFF",};
-  }
-
-  return !res ? null : {
-    textcolor: res.text ?? res.textColor,
-    linecolor: res.line ?? res.lineColor,
-    backgroundcolor: res.background ?? res.backgroundColor
-  } as IMonomerColors;
 }

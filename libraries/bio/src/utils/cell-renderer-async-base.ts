@@ -296,7 +296,7 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
     super.reset();
   }
 
-  protected abstract getRenderService(): RenderServiceBase<TProps, TAux>;
+  protected abstract getRenderService(): RenderServiceBase<TProps, TAux> | null;
 
   protected abstract getRenderTaskProps(
     gridCell: DG.GridCell, backColor: number, width: number, height: number
@@ -305,6 +305,12 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
   public render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
   ): void {
+    if (gridCell.tableRowIndex == null)
+      return;
+    const service = this.getRenderService();
+    if (!service)
+      return;
+
     if (this.dirty) {
       try { this.reset(); } catch (err) {
         const [errMsg, errStack] = errInfo(err);
@@ -313,10 +319,6 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
     }
 
     const dpr = window.devicePixelRatio;
-    const service = this.getRenderService();
-
-    if (gridCell.tableRowIndex == null) return;
-
     const rowIdx: number = gridCell.tableRowIndex;
     this.logger.debug('PdbRenderer.render() start ' + `rowIdx=${rowIdx}`);
 

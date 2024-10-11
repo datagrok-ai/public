@@ -26,7 +26,7 @@ interface WorkerRequest {
 
 interface WorkerResponse {
   id: string;
-  error?: string;
+  error?: Error;
   result?: {[key: string]: any};
 }
 
@@ -47,11 +47,14 @@ export async function initPyodide() {
       onSuccess(result);
     }
   };
-  supportsArrow = false /* DG.Func.find({package: 'Arrow', name: 'toFeather'}).length > 0 */;
+  /* supportsArrow = DG.Func.find({package: 'Arrow', name: 'toFeather'}).length > 0; */
 }
 
 function makeCodeHeader(scriptCall: DG.FuncCall): string {
-  let code: string = '';
+  let code: string = `def reformat_exception():
+\tfrom traceback import format_exception_only, format_exception
+\timport sys
+\treturn ["".join(format_exception_only(sys.last_value)), "".join(format_exception(sys.last_value))]\n`;
   const inputParamsTypes: string[] = (Object.values(scriptCall.inputParams) as DG.FuncCallParam[]).map((p) =>  p.property.propertyType);
   const outputParamsTypes: string[] = (Object.values(scriptCall.outputParams) as DG.FuncCallParam[]).map((p) =>  p.property.propertyType);
   if (inputParamsTypes.some((type) => type === DG.TYPE.DATA_FRAME)
@@ -259,6 +262,6 @@ export async function pyodideLanguageHandler(scriptCall: DG.FuncCall): Promise<v
   scriptCall.debugLogger?.debug(`Final code:\n${req.script}`);
   const response: WorkerResponse = await sendRequest(req); // spawn new worker if current is busy?
   if (response.error)
-    throw new Error(response.error);
+    throw response.error;
   await setOutputs(scriptCall, response);
 }

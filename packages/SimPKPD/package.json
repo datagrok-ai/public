@@ -14,25 +14,25 @@
     "directory": "packages/SimPKPD"
   },
   "dependencies": {
-    "@datagrok-libraries/tutorials": "^1.4.0",
+    "@datagrok-libraries/tutorials": "^1.4.2",
     "@datagrok-libraries/utils": "^4.3.0",
     "@datagrok/compute": "^1.39.0",
-    "cash-dom": "latest",
+    "cash-dom": "^8.1.5",
     "datagrok-api": "^1.20.1",
-    "dayjs": "latest",
+    "dayjs": "^1.11.13",
     "ts-loader": "^9.5.0"
   },
   "devDependencies": {
     "@types/node": "^20.8.4",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
-    "css-loader": "latest",
+    "css-loader": "^7.1.2",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
-    "style-loader": "latest",
+    "style-loader": "^4.0.0",
     "typescript": "^5.0.4",
-    "webpack": "latest",
-    "webpack-cli": "latest"
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
   },
   "scripts": {
     "lint": "eslint src --ext .ts",

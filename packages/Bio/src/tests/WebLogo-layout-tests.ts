@@ -11,7 +11,7 @@ import {Debounces, WebLogoViewer} from '../viewers/web-logo-viewer';
 
 import {_package} from '../package-test';
 
-category('WebLogo-layout', () => {
+category('WebLogo.layout', () => {
   test('fasta', async () => {
     const df = await _package.files.readCsv('tests/filter_FASTA.csv');
     const col = df.getCol('fasta');

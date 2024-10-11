@@ -24,12 +24,12 @@ function getDerived(col: DG.Column, description: string,
 }
 
 /** Adds InchI identifiers for the specified molecular column. */
-export function getInchis(col: DG.Column): DG.Column {
+export function getInchisImpl(col: DG.Column): DG.Column {
   return getDerived(col, 'Getting Inchi', (m) => m.get_inchi(), 'inchi');
 }
 
 /** Adds InchI keys identifiers for the specified molecular column. */
-export function getInchiKeys(col: DG.Column): DG.Column {
+export function getInchiKeysImpl(col: DG.Column): DG.Column {
   return getDerived(col, 'Getting Inchi',
     (m) => _rdKitModule.get_inchikey_for_inchi(m.get_inchi()), 'inchi_key');
 }

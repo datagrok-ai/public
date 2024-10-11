@@ -5,10 +5,12 @@ import * as DG from 'datagrok-api/dg';
 
 import {HelmType, Mol} from '../helm/types';
 import {PropsBase, RenderServiceBase} from '../utils/cell-renderer-async-base';
+import {IMonomerLibBase} from '../types/index';
 
 export class HelmProps extends PropsBase {
   public constructor(
     public readonly helm: string,
+    public readonly monomerLib: IMonomerLibBase,
     backColor: number, width: number, height: number
   ) {
     super(backColor, width, height);

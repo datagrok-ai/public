@@ -7,7 +7,7 @@ import {getMonomericMols} from '../calculations/monomerLevelMols';
 import {createDifferenceCanvas, createDifferencesWithPositions} from './sequence-activity-cliffs';
 import {updateDivInnerHTML} from '../utils/ui-utils';
 import {Subject} from 'rxjs';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {alignSequencePair} from '@datagrok-libraries/bio/src/utils/macromolecule/alignment';
 import {KnnResult, SparseMatrixService} from '@datagrok-libraries/ml/src/distance-matrix/sparse-matrix-service';
 import {getEncodedSeqSpaceCol} from './sequence-space';
@@ -32,7 +32,10 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   kPrevNeighbors: number = 0;
   demo?: boolean;
 
-  constructor(demo?: boolean) {
+  constructor(
+    private readonly seqHelper: ISeqHelper,
+    demo?: boolean,
+  ) {
     super('similarity');
     this.cutoff = this.float('cutoff', 0.01, {min: 0, max: 1});
     this.hotSearch = this.bool('hotSearch', true);
@@ -52,7 +55,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
       if (computeData && !this.gridSelect) {
         this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-        const sh = SeqHandler.forColumn(this.moleculeColumn!);
+        const sh = this.seqHelper.getSeqHandler(this.moleculeColumn!);
 
         await (!sh.isHelm() ? this.computeByMM() : this.computeByChem());
         const similarColumnName: string = this.similarColumnLabel != null ? this.similarColumnLabel :
@@ -83,7 +86,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   }
 
   private async computeByChem() {
-    const monomericMols = await getMonomericMols(this.moleculeColumn!);
+    const monomericMols = await getMonomericMols(this.moleculeColumn!, this.seqHelper);
     //need to create df to calculate fingerprints
     const _monomericMolsDf = DG.DataFrame.fromColumns([monomericMols]);
     const df = await grok.functions.call('Chem:callChemSimilaritySearch', {
@@ -125,12 +128,12 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
     const molDifferences: { [key: number]: HTMLCanvasElement } = {};
     const molColName = this.molCol?.name!;
     const resCol: DG.Column<string> = resDf.col(molColName)!;
-    const molColSh = SeqHandler.forColumn(this.moleculeColumn!);
-    const resSh = SeqHandler.forColumn(resCol);
+    const molColSh = this.seqHelper.getSeqHandler(this.moleculeColumn!);
+    const resSh = this.seqHelper.getSeqHandler(resCol);
     const subParts1 = molColSh.getSplitted(this.targetMoleculeIdx);
     const subParts2 = resSh.getSplitted(resDf.currentRowIdx);
     const alignment = alignSequencePair(subParts1, subParts2);
-    const canvas = createDifferenceCanvas(alignment.seq1Splitted, alignment.seq2Splitted, resSh.units, molDifferences);
+    const canvas = createDifferenceCanvas(alignment.seq1Splitted, alignment.seq2Splitted, resSh.defaultBiotype, molDifferences);
     propPanel.append(ui.div(canvas, {style: {width: '300px', overflow: 'scroll'}}));
     if (subParts1.length !== subParts2.length) {
       propPanel.append(ui.divV([

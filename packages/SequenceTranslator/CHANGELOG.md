@@ -1,5 +1,11 @@
 # Sequence Translator changelog
 
+## 1.4.5 (WIP)
+
+### Bug fixes
+
+* Fix for grok.userSettings
+
 ## 1.4.4 (2024-09-30)
 
 ### New features

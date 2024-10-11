@@ -9,17 +9,16 @@ import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ChemTags} from '@datagrok-libraries/chem-meta/src/consts';
 import {addSubstructProvider, getMonomerHover, ISubstruct, setMonomerHover} from '@datagrok-libraries/chem-meta/src/types';
 
-import {IMonomerLib} from '../types/index';
+import {IMonomerLibBase} from '../types/index';
 import {ISeqMonomer} from '../helm/types';
-import {HelmTypes, PolymerTypes} from '../helm/consts';
-import {SeqHandler} from '../utils/seq-handler';
+import {PolymerTypes} from '../helm/consts';
 import {ALPHABET} from '../utils/macromolecule';
-import {helmTypeToPolymerType} from './monomer-works';
 import {getMonomersDictFromLib} from './to-atomic-level';
 import {monomerSeqToMolfile} from './to-atomic-level-utils';
 import {hexToPercentRgb, MonomerHoverLink} from './utils';
 import {getMolHighlight} from './seq-to-molfile';
 import {MonomerMap} from './types';
+import {ISeqHelper} from '../utils/seq-helper';
 
 export const MonomerHoverLinksTemp = 'MonomerHoverLinks';
 
@@ -32,12 +31,13 @@ function addMonomerHoverLink(seqColTemp: any, resLink: MonomerHoverLink) {
 }
 
 export function buildMonomerHoverLink(
-  seqCol: DG.Column<string>, molCol: DG.Column<string>, monomerLib: IMonomerLib, rdKitModule: RDModule
+  seqCol: DG.Column<string>, molCol: DG.Column<string>,
+  monomerLib: IMonomerLibBase, seqHelper: ISeqHelper, rdKitModule: RDModule
 ): MonomerHoverLink {
   function buildMonomerMap(seqCol: DG.Column<string>, tableRowIdx: number): MonomerMap {
-    const seqSH = SeqHandler.forColumn(seqCol);
+    const seqSH = seqHelper.getSeqHandler(seqCol);
     const seqSS = seqSH.getSplitted(tableRowIdx);
-    const biotype = seqSH.alphabet == ALPHABET.RNA || seqSH.alphabet == ALPHABET.DNA ? HelmTypes.NUCLEOTIDE : HelmTypes.AA;
+    const biotype = seqSH.defaultBiotype;
     const seqMList: ISeqMonomer[] = wu.count(0).take(seqSS.length)
       .map((posIdx) => { return {position: posIdx, symbol: seqSS.getCanonical(posIdx), biotype: biotype} as ISeqMonomer; })
       .toArray();
@@ -78,6 +78,7 @@ export function buildMonomerHoverLink(
         if (prev) {
           setMonomerHover(null);
           prev.gridCell.grid?.invalidate();
+          // prev.gridCell.render();
         }
         if (!seqMonomer) {
           setMonomerHover(null);
@@ -108,6 +109,7 @@ export function buildMonomerHoverLink(
 
         // TODO: Invalidate targetGridCell
         grid.invalidate();
+        // targetGridCell.render();
       }
 
       return true;

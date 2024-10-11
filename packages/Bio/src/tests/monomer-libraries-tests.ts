@@ -83,7 +83,7 @@ category('monomerLibraries', () => {
     const absentOverrideMonomer = monomerLib.getMonomer(overMon.polymerType, overMon.symbol);
     expect(absentOverrideMonomer === null, true, `Unexpectedly found monomer '${overMon.symbol}' `);
 
-    const overriddenMonomerLib = monomerLib.override({[overMon.polymerType]: {[overMon.symbol]: overMon}});
+    const overriddenMonomerLib = monomerLib.override({[overMon.polymerType]: {[overMon.symbol]: overMon}}, 'test');
     const resOverMon = overriddenMonomerLib.getMonomer(overMon.polymerType, overMon.symbol);
     expectObject(resOverMon as any, overMon);
   });
