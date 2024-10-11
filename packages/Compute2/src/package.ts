@@ -25,7 +25,6 @@ export async function init() {
 //name: RichFunctionViewEditor
 //tags: editor, vue
 //input: funccall call
-//output: view result
 export async function RichFunctionViewEditor(call: DG.FuncCall) {
   const thisCall = grok.functions.getCurrentCall();
 
@@ -33,6 +32,7 @@ export async function RichFunctionViewEditor(call: DG.FuncCall) {
 
   const view = new DG.ViewBase();
   const app = Vue.createApp(RFVWrapper, {funcCall: call});
+  grok.shell.add(view);
   app.mount(view.root);
   view.name = `${call.func.name}`;
   view.root.classList.remove('ui-panel');
@@ -43,6 +43,7 @@ export async function RichFunctionViewEditor(call: DG.FuncCall) {
   view.parentCall = thisCall;
   view.parentView = thisCall.parentCall?.aux['view'];
   view.basePath = `/${call.func.name}`;
+
   grok.events.onViewRemoved.pipe(
     filter((closedView) => {
       return closedView === view;
@@ -59,7 +60,6 @@ export async function RichFunctionViewEditor(call: DG.FuncCall) {
 //name: Tree Wizard
 //tags: test, vue, model
 //sidebar: @compute
-//output: view app
 //meta.icon: icons/tree-wizard.png
 export async function TreeWizardApp() {
   return DG.Func.byName('Compute2:TreeWizardEditor')
@@ -69,7 +69,6 @@ export async function TreeWizardApp() {
 //name: Tree Wizard Editor
 //tags: editor
 //input: funccall call
-//output: view treeWizardView
 export async function TreeWizardEditor(call: DG.FuncCall) {
   const thisCall = grok.functions.getCurrentCall();
 
@@ -79,12 +78,13 @@ export async function TreeWizardEditor(call: DG.FuncCall) {
   const app = Vue.createApp(TreeWizardAppInstance, {providerFunc: call.func.nqName});
   view.root.classList.remove('ui-panel');
   view.root.classList.add('ui-box');
+  grok.shell.add(view);
   app.mount(view.root);
-  
   view.name = call.func.friendlyName;
   view.parentCall = thisCall;
   view.parentView = thisCall.parentCall?.aux['view'];
-  view.basePath = `/${call.func.name}`;
+  view.basePath = `/${thisCall.func.name}`;
+
   grok.events.onViewRemoved.pipe(
     filter((closedView) => {
       return closedView === view;
