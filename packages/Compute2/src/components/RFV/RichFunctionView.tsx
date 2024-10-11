@@ -416,7 +416,6 @@ export const RichFunctionView = Vue.defineComponent({
             /> }
           </RibbonPanel>
           <DockManager 
-            layoutStorageName={`${currentCall.value.func.nqName}_personal_layout`}
             onPanelClosed={handlePanelClose} 
             onUpdate:activePanelTitle={handleActivePanelChanged}
             onInitFinished={() => dockInited.value = true}

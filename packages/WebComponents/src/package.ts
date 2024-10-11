@@ -12,9 +12,12 @@ import {DockSpawnTsWebcomponent} from '@datagrok-libraries/webcomponents'
 
 export const _package = new DG.Package();
 
-//tags: autostart
-export function registerWebcomponents() {
-  console.log('registerWebcomponents');
+let inited = false;
+
+//tags: init
+export function init() {
+  if (inited) return;
+
   customElements.define('dg-viewer', Viewer);
   customElements.define('dg-input-form', InputForm);
   customElements.define('dg-button', DGButton, {extends: 'button'});
@@ -26,4 +29,6 @@ export function registerWebcomponents() {
   customElements.define('dg-combo-popup', DGComboPopup);
   customElements.define('dock-spawn-ts', DockSpawnTsWebcomponent);
   customElements.define('dg-markdown', DGMarkdown);
+  inited = true;
+  console.log('webcomponents registered');
 }

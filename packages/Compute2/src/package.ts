@@ -17,17 +17,32 @@ import './tailwind.css'
 
 export const _package = new DG.Package();
 
+//tags: init
+export async function init() {
+  await DG.Func.byName('WebComponents:init').prepare().call();
+}
+
+//name: RichFunctionViewEditor
 //tags: editor, vue
 //input: funccall call
 //output: view result
 export async function RichFunctionViewEditor(call: DG.FuncCall) {
+  const thisCall = grok.functions.getCurrentCall();
+
+  await customElements.whenDefined('dg-markdown');
+
   const view = new DG.ViewBase();
   const app = Vue.createApp(RFVWrapper, {funcCall: call});
   app.mount(view.root);
   view.name = `${call.func.name}`;
   view.root.classList.remove('ui-panel');
+  view.root.classList.add('ui-box');
   view.root.style.overflow = 'hidden';
 
+  view.name = call.func.friendlyName;
+  view.parentCall = thisCall;
+  view.parentView = thisCall.parentCall?.aux['view'];
+  view.basePath = `/${call.func.name}`;
   grok.events.onViewRemoved.pipe(
     filter((closedView) => {
       return closedView === view;
@@ -48,7 +63,7 @@ export async function RichFunctionViewEditor(call: DG.FuncCall) {
 //meta.icon: icons/tree-wizard.png
 export async function TreeWizardApp() {
   return DG.Func.byName('Compute2:TreeWizardEditor')
-    .prepare({providerCall: DG.Func.byName('Compute2:MockProvider3').prepare()}).call();
+    .prepare({call: DG.Func.byName('Compute2:MockProvider3').prepare()}).call();
 }
 
 //name: Tree Wizard Editor
@@ -69,7 +84,7 @@ export async function TreeWizardEditor(call: DG.FuncCall) {
   view.name = call.func.friendlyName;
   view.parentCall = thisCall;
   view.parentView = thisCall.parentCall?.aux['view'];
-  view.basePath = `/${thisCall.func.name}`;
+  view.basePath = `/${call.func.name}`;
   grok.events.onViewRemoved.pipe(
     filter((closedView) => {
       return closedView === view;

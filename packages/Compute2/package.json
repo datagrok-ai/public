@@ -1,7 +1,6 @@
 {
   "name": "compute2",
   "friendlyName": "Compute2",
-  "beta": true,
   "version": "0.0.1",
   "description": "",
   "dependencies": {

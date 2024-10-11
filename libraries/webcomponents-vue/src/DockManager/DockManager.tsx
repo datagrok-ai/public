@@ -5,7 +5,7 @@ import * as Vue from 'vue';
 
 import {DockSpawnTsWebcomponent} from '@datagrok-libraries/webcomponents';
 import { IState } from '@datagrok-libraries/webcomponents/vendor/dock-spawn-ts/lib/interfaces/IState';
-import { whenever } from '@vueuse/core';
+
 
 declare global {
   namespace JSX {
@@ -18,7 +18,6 @@ declare global {
 export const DockManager = Vue.defineComponent({
   name: 'DockManager',
   props: {
-    layoutStorageName: Object as Vue.PropType<String>,
     activePanelTitle: Object as Vue.PropType<String>
   },
   slots: Object as Vue.SlotsType<{
@@ -36,11 +35,9 @@ export const DockManager = Vue.defineComponent({
   },
   setup(props, {slots, emit, expose}) {
     let dockSpawnRef = Vue.ref(null as DockSpawnTsWebcomponent | null);
-    const layoutStorageName = Vue.computed(() => props.layoutStorageName)
 
-    whenever(dockSpawnRef, async () => {
-      if (!dockSpawnRef.value?.dockManager) await Vue.nextTick();
-
+    const inited = Vue.ref(false);
+    Vue.watch(inited, async () => {
       dockSpawnRef.value!.dockManager.getElementCallback = async (state: IState) => {
         let aimSlot = null as null | HTMLElement;
 
@@ -77,7 +74,7 @@ export const DockManager = Vue.defineComponent({
         activePanelTitle={props.activePanelTitle}
         onPanelClosed={(ev: {detail: any}) => emit('panelClosed', ev.detail)}
         onActivePanelChanged={(ev: {detail: string | null}) => emit('update:activePanelTitle', ev.detail)}
-        onInitFinished={() => emit('initFinished')}
+        onInitFinished={() => {inited.value = true; emit('initFinished')}}
         ref={dockSpawnRef}
       >
         { slots.default?.() }
