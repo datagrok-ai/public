@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {BigButton, Button, IconFA, SplitH, TabArea, TabHeaderStripe, Tabs} from '@datagrok-libraries/webcomponents-vue';
+import {IconFA, SplitH,  Tabs} from '@datagrok-libraries/webcomponents-vue';
 import * as Vue from 'vue';
 
 export const ElementsApp = Vue.defineComponent({

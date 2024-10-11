@@ -5,6 +5,7 @@
   "description": "Datagrok web components vue wrappers",
   "dependencies": {
     "@datagrok-libraries/webcomponents": "^0.0.2",
+    "@datagrok-libraries/compute-utils": "latest",
     "@datagrok-libraries/compute-api": "latest",
     "@vueuse/core": "^10.11.1",
     "@vueuse/rxjs": "^11.0.3",
@@ -26,11 +27,11 @@
   "scripts": {
     "link": "npm link",
     "link-api": "npm link datagrok-api",
-    "link-all": "npm link vue datagrok-api @datagrok-libraries/webcomponents @datagrok-libraries/compute-utils  @datagrok-libraries/compute-api",
+    "link-all": "npm link vue datagrok-api @datagrok-libraries/webcomponents @datagrok-libraries/compute-api @datagrok-libraries/compute-utils",
     "build": "tsc",
     "lint": "eslint . --ext .ts,.tsx",
     "lint-fix": "eslint . --ext .ts,.tsx --fix",
-    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/webcomponents run build && npm run build"
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/webcomponents run build && npm --prefix ./../../libraries/compute-api run build && npm run build"
   },
   "repository": {
     "type": "git",
