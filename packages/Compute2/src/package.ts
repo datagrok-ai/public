@@ -17,6 +17,30 @@ import './tailwind.css'
 
 export const _package = new DG.Package();
 
+//tags: editor, vue
+//input: funccall call
+//output: view result
+export async function RichFunctionViewEditor(call: DG.FuncCall) {
+  const view = new DG.ViewBase();
+  const app = Vue.createApp(RFVWrapper, {funcCall: call});
+  app.mount(view.root);
+  view.name = `${call.func.name}`;
+  view.root.classList.remove('ui-panel');
+  view.root.style.overflow = 'hidden';
+
+  grok.events.onViewRemoved.pipe(
+    filter((closedView) => {
+      return closedView === view;
+    }),
+    take(1),
+  ).subscribe(() => {
+    app.unmount();
+  });
+
+  return view;
+}
+
+
 //name: Tree Wizard
 //tags: test, vue, model
 //sidebar: @compute
