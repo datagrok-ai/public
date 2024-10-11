@@ -53,24 +53,23 @@ export async function TreeWizardApp() {
 
 //name: Tree Wizard Editor
 //tags: editor
-//input: funccall providerCall
+//input: funccall call
 //output: view treeWizardView
-export async function TreeWizardEditor(providerCall: DG.FuncCall) {
+export async function TreeWizardEditor(call: DG.FuncCall) {
   const thisCall = grok.functions.getCurrentCall();
 
   await customElements.whenDefined('dg-markdown');
 
   const view = new DG.ViewBase();
-  const app = Vue.createApp(TreeWizardAppInstance, {providerFunc: providerCall.func.nqName});
+  const app = Vue.createApp(TreeWizardAppInstance, {providerFunc: call.func.nqName});
   view.root.classList.remove('ui-panel');
   view.root.classList.add('ui-box');
   app.mount(view.root);
   
-  view.name = providerCall.func.friendlyName;
+  view.name = call.func.friendlyName;
   view.parentCall = thisCall;
-  view.parentView = thisCall.parentCall.aux['view'];
+  view.parentView = thisCall.parentCall?.aux['view'];
   view.basePath = `/${thisCall.func.name}`;
-  grok.shell.addView(view);
   grok.events.onViewRemoved.pipe(
     filter((closedView) => {
       return closedView === view;
@@ -79,6 +78,8 @@ export async function TreeWizardEditor(providerCall: DG.FuncCall) {
   ).subscribe(() => {
     app.unmount();
   });
+  
+  return view;
 }
 
 //tags: test, vue
