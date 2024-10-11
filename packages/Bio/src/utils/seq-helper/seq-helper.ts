@@ -18,6 +18,7 @@ import {HelmToMolfileConverter} from '../helm-to-molfile/converter';
 import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 import {SeqHandler} from './seq-handler';
 import {Column} from 'datagrok-api/dg';
+import {NOTATION, TAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 type SeqHelperWindowType = Window & { $seqHelperPromise?: Promise<SeqHelper> };
 declare const window: SeqHelperWindowType;
@@ -29,7 +30,7 @@ export class SeqHelper implements ISeqHelper {
   ) {}
 
   getSeqHandler(seqCol: DG.Column<string>): ISeqHandler {
-    return SeqHandler.forColumn(seqCol);
+    return SeqHandler.forColumn(seqCol, this);
   }
 
   getSeqMonomers(seqCol: Column<string>): string[] {
@@ -94,5 +95,32 @@ export class SeqHelper implements ISeqHelper {
     molCol.setTag(ChemTags.SEQUENCE_SRC_COL, helmCol.name);
 
     return {molCol: molCol, warnings: []};
+  }
+
+  public setUnitsToFastaColumn(uh: SeqHandler) {
+    if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE || uh.column.meta.units !== NOTATION.FASTA)
+      throw new Error(`The column of notation '${NOTATION.FASTA}' must be '${DG.SEMTYPE.MACROMOLECULE}'.`);
+
+    uh.column.meta.units = NOTATION.FASTA;
+    SeqHandler.setTags(uh);
+  }
+
+  public setUnitsToSeparatorColumn(uh: SeqHandler, separator?: string) {
+    if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE || uh.column.meta.units !== NOTATION.SEPARATOR)
+      throw new Error(`The column of notation '${NOTATION.SEPARATOR}' must be '${DG.SEMTYPE.MACROMOLECULE}'.`);
+    if (!separator)
+      throw new Error(`The column of notation '${NOTATION.SEPARATOR}' must have the separator tag.`);
+
+    uh.column.meta.units = NOTATION.SEPARATOR;
+    uh.column.setTag(TAGS.separator, separator);
+    SeqHandler.setTags(uh);
+  }
+
+  public setUnitsToHelmColumn(uh: SeqHandler) {
+    if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE)
+      throw new Error(`The column of notation '${NOTATION.HELM}' must be '${DG.SEMTYPE.MACROMOLECULE}'`);
+
+    uh.column.meta.units = NOTATION.HELM;
+    SeqHandler.setTags(uh);
   }
 }

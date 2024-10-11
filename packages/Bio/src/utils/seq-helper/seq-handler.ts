@@ -16,6 +16,8 @@ import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {HelmType} from '@datagrok-libraries/bio/src/helm/types';
 import {ISeqHandler, ConvertFunc, JoinerFunc, SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 
+import {SeqHelper} from './seq-helper';
+
 /* eslint-enable max-len */
 
 /** Class for handling notation units in Macromolecule columns and
@@ -30,7 +32,9 @@ export class SeqHandler implements ISeqHandler {
 
   private _splitter: SplitterFunc | null = null;
 
-  protected constructor(col: DG.Column<string>) {
+  protected constructor(col: DG.Column<string>,
+    private readonly seqHelper: SeqHelper,
+  ) {
     if (col.type !== DG.TYPE.STRING)
       throw new Error(`Unexpected column type '${col.type}', must be '${DG.TYPE.STRING}'.`);
     this._column = col;
@@ -50,12 +54,12 @@ export class SeqHandler implements ISeqHandler {
       // The following detectors and setters are to be called because the column is likely
       // as the UnitsHandler constructor was called on the column.
       if (this.isFasta())
-        SeqHandler.setUnitsToFastaColumn(this);
+        this.seqHelper.setUnitsToFastaColumn(this);
       else if (this.isSeparator()) {
         const separator = col.getTag(TAGS.separator);
-        SeqHandler.setUnitsToSeparatorColumn(this, separator);
+        this.seqHelper.setUnitsToSeparatorColumn(this, separator);
       } else if (this.isHelm())
-        SeqHandler.setUnitsToHelmColumn(this);
+        this.seqHelper.setUnitsToHelmColumn(this);
       else
         throw new Error(`Unexpected units '${this.column.meta.units}'.`);
     }
@@ -83,33 +87,6 @@ export class SeqHandler implements ISeqHandler {
       this.notationProvider = this.column.temp[SeqTemps.notationProvider] ?? null;
     }
     this.columnVersion = this.column.version;
-  }
-
-  public static setUnitsToFastaColumn(uh: SeqHandler) {
-    if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE || uh.column.meta.units !== NOTATION.FASTA)
-      throw new Error(`The column of notation '${NOTATION.FASTA}' must be '${DG.SEMTYPE.MACROMOLECULE}'.`);
-
-    uh.column.meta.units = NOTATION.FASTA;
-    SeqHandler.setTags(uh);
-  }
-
-  public static setUnitsToSeparatorColumn(uh: SeqHandler, separator?: string) {
-    if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE || uh.column.meta.units !== NOTATION.SEPARATOR)
-      throw new Error(`The column of notation '${NOTATION.SEPARATOR}' must be '${DG.SEMTYPE.MACROMOLECULE}'.`);
-    if (!separator)
-      throw new Error(`The column of notation '${NOTATION.SEPARATOR}' must have the separator tag.`);
-
-    uh.column.meta.units = NOTATION.SEPARATOR;
-    uh.column.setTag(TAGS.separator, separator);
-    SeqHandler.setTags(uh);
-  }
-
-  public static setUnitsToHelmColumn(uh: SeqHandler) {
-    if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE)
-      throw new Error(`The column of notation '${NOTATION.HELM}' must be '${DG.SEMTYPE.MACROMOLECULE}'`);
-
-    uh.column.meta.units = NOTATION.HELM;
-    SeqHandler.setTags(uh);
   }
 
   /** From detectMacromolecule */
@@ -141,7 +118,7 @@ export class SeqHandler implements ISeqHandler {
     }
   }
 
-  protected get column(): DG.Column { return this._column; }
+  get column(): DG.Column { return this._column; }
 
   public get length(): number { return this._column.length; }
 
@@ -741,11 +718,11 @@ export class SeqHandler implements ISeqHandler {
   }
 
   /** Gets a column's UnitsHandler object from temp slot or creates a new and stores it to the temp slot. */
-  public static forColumn(col: DG.Column<string>): SeqHandler {
+  public static forColumn(col: DG.Column<string>, seqHelper: SeqHelper): SeqHandler {
     // TODO: Invalidate col.temp[Temps.uh] checking column's metadata
     let res = col.temp[SeqTemps.seqHandler];
     if (!res || res.columnVersion !== col.version)
-      res = col.temp[SeqTemps.seqHandler] = new SeqHandler(col);
+      res = col.temp[SeqTemps.seqHandler] = new SeqHandler(col, seqHelper);
     return res;
   }
 
