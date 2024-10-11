@@ -12,8 +12,6 @@ import {DiffStudio} from './app';
 import {getBioreactorSim, getPkPdSim, showBioHelpPanel, showPkPdHelpPanel, getBallFlightSim} from './demo-models';
 
 import {DifferentialEquationsTutorial} from './tutorials/diff-equations-tutorial';
-import {FittingTutorial} from './tutorials/fitting-tutorial';
-import {SensitivityAnalysisTutorial} from './tutorials/sensitivity-analysis-tutorial';
 import {Track} from '@datagrok-libraries/tutorials/src/track';
 
 export const _package = new DG.Package();
@@ -215,46 +213,26 @@ export async function demoSimPKPD(): Promise<any> {
 //tags: track
 //help-url: https://datagrok.ai/help/compute
 //output: object track
-//meta.name: Scientific computing
+//meta.name: Scientific
 export function registerTrack() {
-  return new Track('Scientific computing', [], 'https://datagrok.ai/help/compute');
+  return new Track('Scientific', [], 'https://datagrok.ai/help/compute');
 }
 
 //tags: tutorial
 //meta.icon: images/diff-studio-tutorial.png
 //meta.name: Differential Equations
-//meta.track: Scientific computing
+//meta.track: Scientific
 //description: Learn how to model processes defined by differential equations with Diff Studio
 //output: object tutorial
 export function registerDifferentialEquationsTutorial() {
   return new DifferentialEquationsTutorial();
 }
 
-//tags: tutorial
-//meta.icon: images/diff-studio-tutorial.png
-//meta.name: Parameter optimization
-//meta.track: Scientific computing
-//description: Learn how to find the input conditions that lead to a specified output of the model
-//output: object tutorial
-export function registerFittingTutorial() {
-  return new FittingTutorial();
-}
-
-//tags: tutorial
-//meta.icon: images/diff-studio-tutorial.png
-//meta.name: Sensitivity analysis
-//meta.track: Scientific computing
-//description: Learn how to analyze the relationship between inputs and outputs of the model
-//output: object tutorial
-export function registerSensitivityAnalysisTutorial() {
-  return new SensitivityAnalysisTutorial();
-}
-
 //name: Ball flight
 //tags: model
 //description: Ball flight simulation
 //input: double dB = 0.01 {category: Ball; caption: Diameter; units: m; min: 0.01; max: 0.3}
-//input: double roB = 200 {category: Ball; caption: Material density; units: kg/m^3; min: 200; max: 1200}
+//input: double roB = 200 {category: Ball; caption: Density; units: kg/m^3; min: 200; max: 1200} [Material density]
 //input: double v = 50 {category: Throw parameters; caption: Velocity; min: 40; max: 60; units: m/sec}
 //input: double a = 45 {category: Throw parameters; caption: Angle; min: 20; max: 70; units: deg}
 //output: double maxDist {caption: Max distance}
