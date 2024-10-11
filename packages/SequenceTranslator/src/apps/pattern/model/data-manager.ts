@@ -264,8 +264,8 @@ export class DataManager {
     return (await grok.dapi.users.current()).id;
   }
 
-  private fetchPatterns() {
-    const patternsRecord = grok.userSettings.get(STORAGE_NAME, false) as RawPatternRecords;
+  private fetchPatterns(): RawPatternRecords {
+    const patternsRecord = (grok.userSettings.get(STORAGE_NAME, false) ?? {}) as RawPatternRecords;
     return patternsRecord;
   }
 

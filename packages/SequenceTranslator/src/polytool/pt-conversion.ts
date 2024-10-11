@@ -2,11 +2,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import wu from 'wu';
+
 import {HelmTypes, PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {IMonomerLib, IMonomerLibBase, Monomer, MonomerLibData, RGroup} from '@datagrok-libraries/bio/src/types';
 import {RDModule, RDMol, RDReaction, MolList, RDReactionResult} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {HELM_REQUIRED_FIELD, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
+import {HELM_REQUIRED_FIELD as REQ, HELM_OPTIONAL_FIELDS as OPT, HELM_RGROUP_FIELDS, HELM_OPTIONAL_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {HelmMol, HelmType, JSDraw2ModuleType, OrgType} from '@datagrok-libraries/bio/src/helm/types';
@@ -670,17 +672,23 @@ export function getNewMonomer(rdkit: RDModule, mLib: IMonomerLib, rule: RuleReac
   const groups: RGroup[] = getNewGroups(monomer1!, monomer2!);
 
   const resMonomer: Monomer = {
-    [HELM_REQUIRED_FIELD.SYMBOL]: monomerName,
-    [HELM_REQUIRED_FIELD.NAME]: monomerName,
-    [HELM_REQUIRED_FIELD.MOLFILE]: molBlock,
-    [HELM_REQUIRED_FIELD.AUTHOR]: '',
-    [HELM_REQUIRED_FIELD.ID]: 0,
-    [HELM_REQUIRED_FIELD.RGROUPS]: groups,
-    [HELM_REQUIRED_FIELD.SMILES]: '',
-    [HELM_REQUIRED_FIELD.POLYMER_TYPE]: 'PEPTIDE',
-    [HELM_REQUIRED_FIELD.MONOMER_TYPE]: 'Backbone',
-    [HELM_REQUIRED_FIELD.CREATE_DATE]: null,
+    [REQ.SYMBOL]: monomerName,
+    [REQ.NAME]: monomerName,
+    [REQ.MOLFILE]: molBlock,
+    [REQ.AUTHOR]: '',
+    [REQ.ID]: 0,
+    [REQ.RGROUPS]: groups,
+    [REQ.SMILES]: '',
+    [REQ.POLYMER_TYPE]: 'PEPTIDE',
+    [REQ.MONOMER_TYPE]: 'Backbone',
+    [REQ.CREATE_DATE]: null,
+
+    // // @ts-ignore
+    // lib: {source: 'Reaction'},
   };
+
+  resMonomer[OPT.META] = Object.assign(resMonomer[OPT.META] ?? {},
+    {'colors': {'default': {line: '#2083D5', text: '#2083D5', background: '#F2F2F5'}}});
 
   return [monomerName, resMonomer];
 }
@@ -698,6 +706,7 @@ export async function getOverriddenLibrary(rules: Rules): Promise<IMonomerLibBas
   }
 
   const overrideMonomerLibData: MonomerLibData = {[PolymerTypes.PEPTIDE]: argLib};
-  const overriddenMonomerLib = systemMonomerLib.override(overrideMonomerLibData);
+  const overriddenMonomerLib = systemMonomerLib.override(overrideMonomerLibData,
+    'ST-PT-reactions.' + wu.repeat(1).map(() => Math.floor((Math.random() * 36)).toString(36)).take(4).toArray().join(''));
   return overriddenMonomerLib;
 }

@@ -45,7 +45,7 @@ category('toAtomicLevel', () => {
     expect(ggazM != null, true, `Monomer 'GGaz' not found.`);
 
     const overrideMonomerLibData: MonomerLibData = {[PolymerTypes.PEPTIDE]: {'GGaz': ggazM}};
-    const overriddenMonomerLib = systemMonomerLib.override(overrideMonomerLibData);
+    const overriddenMonomerLib = systemMonomerLib.override(overrideMonomerLibData, 'test');
 
     const seqHelper = await getSeqHelper();
 

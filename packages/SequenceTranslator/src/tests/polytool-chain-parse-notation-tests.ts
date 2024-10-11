@@ -27,16 +27,16 @@ category('PolyTool: Chain: parseNotation', () => {
       tgt: {
         // TODO: Target test data requires clarification
         //monomerCount: [2, 8], linkageCount: 0,
-        helm: 'PEPTIDE1{[(#2)Succ]}|PEPTIDE2{A(CHOL).F.[C(1)].T.G.H.Y.P.[C(1)].[NH2]}$PEPTIDE1,PEPTIDE2,1:R1-1:R1$$$',
-      }
+        helm: 'PEPTIDE1{[(#2)Succ]}|PEPTIDE2{[A(CHOL)].F.[C(2)].T.G.H.Y.P.[C(2)].[NH2]}$PEPTIDE1,PEPTIDE2,1:R1-1:R1$$$V2.0',
+      },
     },
     'dimerized2': {
       src: {seq: '($2)Succ-{R-F-C(1)-T-G-H-F-P-C(1)-NH2}($2){A(CHOL)-F-C(1)-T-G-H-F-P-C(1)-NH2}'},
       tgt: {
         // TODO: Target test data requires clarification
         //monomerCount: [2, 8], linkageCount: 0,
-        helm: 'PEPTIDE1{[($2)Succ]}|PEPTIDE2{R.F.[C(1)].T.G.H.F.P.[C(1)].NH2}|PEPTIDE3{[($2)A(CHOL)].F.[C(1)].T.G.H.F.P.[C(1)].[NH2]}$PEPTIDE1,PEPTIDE2,1:R1-1:R1$$$',
-      }
+        helm: 'PEPTIDE1{[($2)Succ]}|PEPTIDE2{R.F.[C(1)].T.G.H.F.P.[C(1)].[NH2]}|PEPTIDE3{[($2)A(CHOL)].F.[C(1)].T.G.H.F.P.[C(1)].[NH2]}$PEPTIDE1,PEPTIDE2,1:R1-1:R1$$$V2.0',
+      },
     },
   };
 

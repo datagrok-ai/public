@@ -9,7 +9,10 @@ import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getSeqHelper, ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
+import {buildMonomerHoverLink} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
+import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
+import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 import {getRules, RuleInputs, Rules, RULES_PATH, RULES_STORAGE_NAME} from './pt-rules';
 import {doPolyToolConvert, getOverriddenLibrary} from './pt-conversion';
@@ -74,7 +77,7 @@ export async function getPolyToolConvertDialog(srcCol?: DG.Column): Promise<DG.D
       table: srcColVal.dataFrame, value: srcColVal,
       filter: (col: DG.Column) => {
         if (col.semType !== DG.SEMTYPE.MACROMOLECULE) return false;
-        const sh = SeqHandler.forColumn(col);
+        const sh = _package.seqHelper.getSeqHandler(col);
         return sh.notation === NOTATION.CUSTOM;
       }
     });
@@ -256,7 +259,11 @@ export async function polyToolConvert(
     if (generateHelm && table) table.columns.add(resHelmCol, true);
 
     const seqHelper: ISeqHelper = await getSeqHelper();
+    const rdKitModule: RDModule = await getRdKitModule();
     const lib = await getOverriddenLibrary(rules);
+    const resHelmColTemp = resHelmCol.temp;
+    resHelmColTemp[MmcrTemps.overriddenLibrary] = lib;
+    resHelmCol.temp = resHelmColTemp;
     const toAtomicLevelRes =
       await seqHelper.helmToAtomicLevel(resHelmCol, chiralityEngine, /* highlight */ generateHelm, lib);
     const resMolCol = toAtomicLevelRes.molCol!;
@@ -267,6 +274,9 @@ export async function polyToolConvert(
       table.columns.add(resMolCol, true);
       await grok.data.detectSemanticTypes(table);
     }
+
+    buildMonomerHoverLink(resHelmCol, resMolCol, lib, seqHelper, rdKitModule);
+
     return [resHelmCol, resMolCol];
   } finally {
     pi.close();
