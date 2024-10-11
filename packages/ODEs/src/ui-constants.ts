@@ -38,6 +38,7 @@ export enum HINT {
   ABORT = 'Abort computations',
   MAX_TIME = `Max computation time, ${COMPUTATION_TIME_UNITS}.`,
   CLICK_RUN = `Click to run`,
+  SOLVE = `Solve equations (${HOT_KEY.RUN})`,
 }; // HINT
 
 /** UI titles */
@@ -142,6 +143,7 @@ export enum ERROR_MSG {
   SENS_AN_FAILS = 'Sensitivity Analysis fails',
   FITTING_FAILS = 'Fitting fails',
   PLATFORM_ISSUE = 'Platform issue',
+  INCORTECT_INPUT = 'Incorrect input caption',
 };
 
 /** Lookup table fails */
