@@ -3,10 +3,10 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
-import {RichFunctionView} from './RichFunctionView';
+import {RichFunctionView} from '../components/RFV/RichFunctionView';
 import {historyUtils} from '@datagrok-libraries/compute-utils';
 
-export const RFVWrapper = Vue.defineComponent({
+export const RFVApp = Vue.defineComponent({
   props: {
     funcCall: {
       type: Object as Vue.PropType<DG.FuncCall>,

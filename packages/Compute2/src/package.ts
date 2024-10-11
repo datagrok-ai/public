@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
-import {distinctUntilChanged, filter, take} from 'rxjs/operators';
+import {filter, take} from 'rxjs/operators';
 
 import {ViewerApp as ViewerAppInstance} from './apps/ViewerApp';
 import {FormApp as FormAppInstance} from './apps/FormApp';
@@ -11,7 +11,7 @@ import {HistoryApp as HistoryAppInstance} from './apps/HistoryApp';
 import {ElementsApp as ElementsAppInstance} from './apps/ElementsApp';
 import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
 import {SimpleDriverApp as SimpleDriverAppInstance} from './apps/SimpleDriverApp';
-import {RFVWrapper} from './components/RFV/RFVWrapper';
+import {RFVApp} from './apps/RFVApp';
 import { PipelineConfiguration } from '@datagrok-libraries/compute-utils';
 import './tailwind.css'
 
@@ -31,12 +31,12 @@ export async function RichFunctionViewEditor(call: DG.FuncCall) {
   await customElements.whenDefined('dg-markdown');
 
   const view = new DG.ViewBase();
-  const app = Vue.createApp(RFVWrapper, {funcCall: call});
+  const app = Vue.createApp(RFVApp, {funcCall: call});
   grok.shell.add(view);
   app.mount(view.root);
   view.name = `${call.func.name}`;
   view.root.classList.remove('ui-panel');
-  view.root.classList.add('ui-box');
+  // view.root.classList.add('ui-box');
   view.root.style.overflow = 'hidden';
 
   view.name = call.func.friendlyName;
@@ -52,8 +52,6 @@ export async function RichFunctionViewEditor(call: DG.FuncCall) {
   ).subscribe(() => {
     app.unmount();
   });
-
-  return view;
 }
 
 
@@ -93,8 +91,6 @@ export async function TreeWizardEditor(call: DG.FuncCall) {
   ).subscribe(() => {
     app.unmount();
   });
-  
-  return view;
 }
 
 //tags: test, vue
