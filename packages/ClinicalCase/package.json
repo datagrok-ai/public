@@ -17,7 +17,7 @@
     "@datagrok-libraries/utils": "^4.3.0",
     "@datagrok/charts": "^1.4.0",
     "@datagrok/multiplot": "^0.0.4",
-    "cash-dom": "latest",
+    "cash-dom": "^8.1.5",
     "datagrok-api": "^1.21.1",
     "jstat": "^1.9.5",
     "moment": "^2.29.1"
@@ -27,9 +27,9 @@
     "@typescript-eslint/parser": "^5.32.0",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
-    "ts-loader": "latest",
+    "ts-loader": "^9.5.1",
     "typescript": "^5.0.4",
-    "webpack": "latest",
+    "webpack": "^5.95.0",
     "webpack-cli": "^4.7.2"
   },
   "scripts": {

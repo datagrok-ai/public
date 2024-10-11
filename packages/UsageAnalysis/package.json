@@ -21,7 +21,7 @@
     "datagrok-api": "../../js-api",
     "moment": "^2.29.1",
     "rxjs": "^6.5.5",
-    "dayjs": "latest"
+    "dayjs": "^1.11.13"
   },
   "scripts": {
     "lint": "eslint src --ext .ts",
