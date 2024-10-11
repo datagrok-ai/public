@@ -17,6 +17,7 @@ import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/index';
 import {HelmToMolfileConverter} from '../helm-to-molfile/converter';
 import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 import {SeqHandler} from './seq-handler';
+import {Column} from 'datagrok-api/dg';
 
 type SeqHelperWindowType = Window & { $seqHelperPromise?: Promise<SeqHelper> };
 declare const window: SeqHelperWindowType;
@@ -29,6 +30,11 @@ export class SeqHelper implements ISeqHelper {
 
   getSeqHandler(seqCol: DG.Column<string>): ISeqHandler {
     return SeqHandler.forColumn(seqCol);
+  }
+
+  getSeqMonomers(seqCol: Column<string>): string[] {
+    const sh = this.getSeqHandler(seqCol);
+    return Object.keys(sh.stats.freq);
   }
 
   // TODO: Move to the Helm package

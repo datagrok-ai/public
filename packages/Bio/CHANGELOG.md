@@ -1,5 +1,11 @@
 # Bio changelog
 
+## 2.16.1 (2024-10-11)
+
+### Bug fixes
+
+* GROK-16782: Fix bio-substructure-filters tests
+
 ## 2.16.0 (2024-10-10)
 
 ### New features

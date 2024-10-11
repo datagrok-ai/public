@@ -11,7 +11,7 @@ import {
   getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
-import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {getSeqHelper, ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 import {awaitGrid, readDataframe} from './utils';
 
@@ -24,13 +24,13 @@ import {HelmBioFilter} from '../widgets/bio-substructure-filter-helm';
 import {_package} from '../package-test';
 
 category('bio-substructure-filters', async () => {
-  let helmHelper: IHelmHelper;
+  let seqHelper: ISeqHelper;
   let monomerLibHelper: IMonomerLibHelper;
   /** Backup actual user's monomer libraries settings */
   let userLibSettings: UserLibSettings;
 
   before(async () => {
-    helmHelper = await getHelmHelper(); // init Helm package
+    seqHelper = await getSeqHelper();
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
 
@@ -51,7 +51,7 @@ category('bio-substructure-filters', async () => {
     const fSubStr: string = 'MD';
     const fTrueCount: number = 3;
 
-    const filter = await createBioSubstructureFilter();
+    const filter = new BioSubstructureFilter(seqHelper, _package.logger);
     filter.attach(df);
     await filter.awaitRendered();
     try {
@@ -68,11 +68,11 @@ category('bio-substructure-filters', async () => {
       filter.detach();
     }
     await filter.awaitRendered();
-  }, {skipReason: 'GROK-16782'});
+  });
 
   test('separator', async () => {
     const msa = await readDataframe('tests/filter_MSA.csv');
-    const filter = await createBioSubstructureFilter();
+    const filter = new BioSubstructureFilter(seqHelper, _package.logger);
     await grok.data.detectSemanticTypes(msa);
     filter.attach(msa);
     await filter.awaitRendered();
@@ -101,7 +101,7 @@ category('bio-substructure-filters', async () => {
       filter.detach();
     }
     await filter.awaitRendered();
-  }, {skipReason: 'GROK-16782'});
+  });
 
   // test('helm', async () => {
   //   const df = await readDataframe('tests/filter_HELM.csv');
@@ -156,7 +156,7 @@ category('bio-substructure-filters', async () => {
     const view = grok.shell.addTableView(df);
 
     _package.logger.debug(`${logPrefix}, filter attaching.`);
-    const filter = await createBioSubstructureFilter();
+    const filter = new BioSubstructureFilter(seqHelper, _package.logger);
     filter.attach(df);
     const dlg = ui.dialog('Test filters').add(filter.root).show(); // to waitForElementInDom
     await filter.awaitRendered();
@@ -187,7 +187,7 @@ category('bio-substructure-filters', async () => {
     }
     await filter.awaitRendered();
     await delay(3000); //TODO: await for grid.onLookChanged
-  }, {skipReason: 'GROK-16782'});
+  });
 
   // Generates unhandled exception accessing isFiltering before bioFilter created
   test('helm-view', async () => {
@@ -234,7 +234,7 @@ category('bio-substructure-filters', async () => {
       f2.detach();
     }
     await Promise.all([f1.awaitRendered(), f2.awaitRendered()]);
-  }, {skipReason: 'GROK-16782'});
+  });
 
   // MSA filter has the second input field for separator
   test('sync-msa', async () => {
@@ -268,7 +268,7 @@ category('bio-substructure-filters', async () => {
       f2.detach();
     }
     await Promise.all([f1.awaitRendered(), f2.awaitRendered()]);
-  }, {skipReason: 'GROK-16782'});
+  });
 
   test('sync-helm', async () => {
     const df = await _package.files.readCsv('tests/filter_HELM.csv');
@@ -311,7 +311,7 @@ category('bio-substructure-filters', async () => {
     await Promise.all([f1.awaitRendered(), f2.awaitRendered()]);
     await awaitGrid(view.grid);
     await delay(3000); //TODO: await for grid.onLookChanged
-  }, {skipReason: 'GROK-16782'});
+  });
 
   // two seq columns
 
@@ -449,24 +449,20 @@ category('bio-substructure-filters', async () => {
     await delay(100);
     await awaitGrid(view.grid);
   });
+
+  async function createFilter(colName: string, df: DG.DataFrame): Promise<BioSubstructureFilter> {
+    if (!df.columns.names().includes(colName)) {
+      throw new Error(`The column '${colName}' not found. ` +
+        `Available in data frame are ${JSON.stringify(df.columns.names())}`);
+    }
+
+    const filter = new BioSubstructureFilter(seqHelper, _package.logger);
+    filter.attach(df);
+    filter.applyState({columnName: colName});
+    filter.column = df.col(colName);
+    filter.columnName = colName;
+    //filter.tableName = df.name;
+    return filter;
+  };
 });
 
-async function createFilter(colName: string, df: DG.DataFrame): Promise<BioSubstructureFilter> {
-  if (!df.columns.names().includes(colName)) {
-    throw new Error(`The column '${colName}' not found. ` +
-      `Available in data frame are ${JSON.stringify(df.columns.names())}`);
-  }
-
-  const filter = await createBioSubstructureFilter();
-  filter.attach(df);
-  filter.applyState({columnName: colName});
-  filter.column = df.col(colName);
-  filter.columnName = colName;
-  //filter.tableName = df.name;
-  return filter;
-};
-
-async function createBioSubstructureFilter(): Promise<BioSubstructureFilter> {
-  const filter = await grok.functions.call('Bio:bioSubstructureFilter');
-  return filter.dart.jsFilter as BioSubstructureFilter;
-}

@@ -6,12 +6,14 @@ import wu from 'wu';
 
 import {ITooltipAndPanelParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {getSimilarityFromDistance} from '@datagrok-libraries/ml/src/distance-metrics-methods';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {AvailableMetrics, DistanceMetricsSubjects, StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
-import {drawMoleculeDifferenceOnCanvas} from '../utils/cell-renderer';
-import {invalidateMols, MONOMERIC_COL_TAGS} from '../substructure-search/substructure-search';
 import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {HelmType} from '@datagrok-libraries/bio/src/helm/types';
+
+import {drawMoleculeDifferenceOnCanvas} from '../utils/cell-renderer';
+import {invalidateMols, MONOMERIC_COL_TAGS} from '../substructure-search/substructure-search';
 
 import {_package} from '../package';
 
@@ -46,11 +48,11 @@ export async function getSimilaritiesMatrix(
   return simArr;
 }
 
-export async function getChemSimilaritiesMatrix(dim: number, seqCol: DG.Column,
+export async function getChemSimilaritiesMatrix(dim: number, seqCol: DG.Column, seqHelper: ISeqHelper,
   df: DG.DataFrame, colName: string, simArr: (DG.Column | null)[])
   : Promise<(DG.Column | null)[]> {
   if (seqCol.version !== seqCol.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION])
-    await invalidateMols(seqCol, false);
+    await invalidateMols(seqCol, seqHelper, false);
   const fpDf = DG.DataFrame.create(seqCol.length);
   fpDf.columns.addNewString(colName).init((i) => seqCol.temp[MONOMERIC_COL_TAGS.MONOMERIC_MOLS].get(i));
   const res = await grok.functions.call('Chem:getChemSimilaritiesMatrix', {
