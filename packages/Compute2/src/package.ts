@@ -13,6 +13,7 @@ import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
 import {SimpleDriverApp as SimpleDriverAppInstance} from './apps/SimpleDriverApp';
 import {RFVWrapper} from './components/RFV/RFVWrapper';
 import { PipelineConfiguration } from '@datagrok-libraries/compute-utils';
+import './tailwind.css'
 
 export const _package = new DG.Package();
 
@@ -22,25 +23,26 @@ export const _package = new DG.Package();
 //output: view app
 //meta.icon: icons/tree-wizard.png
 export async function TreeWizardApp() {
-  return DG.Func.byName('Compute2:TreeWizardEditor').prepare({providerFunc: 'Compute2:MockProvider3'}).call();
+  return DG.Func.byName('Compute2:TreeWizardEditor')
+    .prepare({providerCall: DG.Func.byName('Compute2:MockProvider3').prepare()}).call();
 }
 
 //name: Tree Wizard Editor
 //tags: editor
-//input: string providerFunc
+//input: funccall providerCall
 //output: view treeWizardView
-export async function TreeWizardEditor(providerFunc: string) {
+export async function TreeWizardEditor(providerCall: DG.FuncCall) {
   const thisCall = grok.functions.getCurrentCall();
 
   await customElements.whenDefined('dg-markdown');
 
   const view = new DG.ViewBase();
-  const app = Vue.createApp(TreeWizardAppInstance, {providerFunc});
+  const app = Vue.createApp(TreeWizardAppInstance, {providerFunc: providerCall.func.nqName});
   view.root.classList.remove('ui-panel');
   view.root.classList.add('ui-box');
   app.mount(view.root);
   
-  view.name = 'DriverApp';
+  view.name = providerCall.func.friendlyName;
   view.parentCall = thisCall;
   view.parentView = thisCall.parentCall.aux['view'];
   view.basePath = `/${thisCall.func.name}`;
@@ -181,6 +183,7 @@ export async function MockWrapper3() {}
 //name: MockProvider3
 //input: object params
 //output: object result
+//editor: Compute2:TreeWizardEditor
 export async function MockProvider3(params: any) {
   const c: PipelineConfiguration = {
     id: 'pipelinePar',
@@ -201,4 +204,41 @@ export async function MockProvider3(params: any) {
     ],
   };
   return c;
+}
+
+//name: TestAdd2
+//input: double a
+//input: double b
+//output: double res
+export async function TestAdd2(a: number, b: number) {
+  return a + b;
+}
+
+
+//name: TestMul2
+//input: double a
+//input: double b
+//output: double res
+export async function TestSub2(a: number, b: number) {
+  return a - b;
+}
+
+//input: double a
+//input: double b
+//output: double res
+export async function TestMul2(a: number, b: number) {
+  return a * b;
+}
+
+//input: double a
+//input: double b
+//output: double res
+export async function TestDiv2(a: number, b: number) {
+  return a / b;
+}
+
+//input: dataframe df
+//output: dataframe res
+export async function TestDF1(df: DG.DataFrame) {
+  return df;
 }
