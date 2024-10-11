@@ -2,7 +2,10 @@
 
 ## 5.45.2 (2024-10-11)
 
-Fix moving setUnits methods to ISeqHelper
+### Bug fixes
+
+* Fix moving setUnits methods to ISeqHelper
+* Fix dependencies version
 
 ## 5.45.1 (2024-10-11)
 
