@@ -1,5 +1,11 @@
 # Bio changelog
 
+## 2.16.2 (2024-10-11)
+
+### Bug fixes
+
+* Fix moving setUnits methods to SeqHelper
+
 ## 2.16.1 (2024-10-11)
 
 ### Bug fixes

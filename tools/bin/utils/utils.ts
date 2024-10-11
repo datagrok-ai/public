@@ -188,10 +188,10 @@ export const headerTags = [
 ];
  
 export const fileParamRegex = {
-  py: new RegExp(`\#\\s*((?:${headerTags.join('|')})[^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`),
-  ts: new RegExp(`\/\/\\s*((?:${headerTags.join('|')})[^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`),
-  js: new RegExp(`\/\/\\s*((?:${headerTags.join('|')})[^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`), 
-  sql: new RegExp(`--\\s*((?:${headerTags.join('|')})[^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`)
+  py: new RegExp(`^\#\\s*((?:${headerTags.join('|')})[^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`),
+  ts: new RegExp(`^\/\/\\s*((?:${headerTags.join('|')})[^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`),
+  js: new RegExp(`^\/\/\\s*((?:${headerTags.join('|')})[^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`), 
+  sql: new RegExp(`^--\\s*((?:${headerTags.join('|')})[^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`)
 }
 
 export const nameAnnRegex = /\/\/\s*(name[^:]*): ([^\n\r\[\{]+)/;

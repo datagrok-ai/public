@@ -609,6 +609,7 @@ export class AddNewColumnDialog {
   validateFuncCallTypes(funcCall: DG.FuncCall) {
     const innerFuncCalls: string[] = [];
     const actualInputParamTypes: { [key: string]: string } = {};
+    const actualInputSemTypes: { [key: string]: string } = {};
 
     //collect actual input parameter types
     for (const key of Object.keys(funcCall.inputs)) {
@@ -619,16 +620,19 @@ export class AddNewColumnDialog {
         //treat $COLUMN_NAME as scalar
         if (funcCall.inputs[key].func.name !== COLUMN_FUNCTION_NAME)
           innerFuncCalls.push(key);
-        actualInputParamTypes[key] = funcCall.inputs[key].func.outputs.length ?
-          funcCall.inputs[key].func.outputs[0].propertyType : 'dynamic';
+        if (funcCall.inputs[key].func.outputs.length) {
+          actualInputParamTypes[key] = funcCall.inputs[key].func.outputs[0].propertyType;
+          actualInputSemTypes[key] = funcCall.inputs[key].func.outputs[0].semType;
+        } else
+          actualInputParamTypes[key] = 'dynamic';
       } else
         actualInputParamTypes[key] = typeof funcCall.inputs[key];
     }
 
     //validate types for current function
-    let firstColParam = true;
     for (const property of funcCall.func.inputs) {
       let actualInputType = actualInputParamTypes[property.name];
+      let actualSemType = actualInputSemTypes[property.name];
       const input = funcCall.inputs[property.name];
       //check for variables missing in the context
       //TODO: preview with variables doesn't work
@@ -645,11 +649,8 @@ export class AddNewColumnDialog {
       if (actualInputType === DG.TYPE.DYNAMIC) {
         //extract type from column in case $COLUMN_NAME was passed to formula
         if (input?.func && input.func.name === COLUMN_FUNCTION_NAME) {
-          if (firstColParam && funcCall.func.options['vectorFunc']) {
-            actualInputType = 'column';
-            firstColParam = false;
-          } else
-            actualInputType = this.sourceDf!.col(input.inputs['field'])!.type;
+          actualInputType = this.sourceDf!.col(input.inputs['field'])!.type;
+          actualSemType = this.sourceDf!.col(input.inputs['field'])!.semType;
         }
         //handling 'row' function
         //TODO: Handle other similar functions
@@ -663,13 +664,22 @@ export class AddNewColumnDialog {
       //dynamic allows any type
       if (property.propertyType === DG.TYPE.DYNAMIC || actualInputType === DG.TYPE.DYNAMIC)
         continue;
-      //check for exact match
-      if (property.propertyType === actualInputType)
-        continue;
-      //check for type match in mapping
-      if (VALIDATION_TYPES_MAPPING[property.propertyType] && VALIDATION_TYPES_MAPPING[property.propertyType].includes(actualInputType))
-        continue;
-      throw new Error(`Function ${funcCall.func.name} '${property.name}' param should be ${property.propertyType} type instead of ${actualInputType}`);
+      //check for semType match
+      if (property.semType && actualSemType && property.semType !== actualSemType)
+        throw new Error(`Function ${funcCall.func.name} '${property.name}' param should be ${property.semType} type instead of ${actualSemType}`);
+      //check for column and list types
+      if (property.propertyType === DG.TYPE.COLUMN || actualInputType === DG.TYPE.LIST) {
+        if (property.propertySubType && property.propertySubType !== actualInputType)
+          throw new Error(`Function ${funcCall.func.name} '${property.name}' param should be ${property.propertySubType} type instead of ${actualInputType}`);
+      } else {
+        //check for type match
+        if (property.propertyType !== actualInputType) {
+          //check for type match in mapping
+          const mappingMatch = VALIDATION_TYPES_MAPPING[property.propertyType] && VALIDATION_TYPES_MAPPING[property.propertyType].includes(actualInputType);
+          if (!mappingMatch)
+            throw new Error(`Function ${funcCall.func.name} '${property.name}' param should be ${property.propertyType} type instead of ${actualInputType}`);
+        }
+      }
     }
     //validate inner func calls recursively
     if (innerFuncCalls.length) {

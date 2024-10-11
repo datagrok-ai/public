@@ -18,6 +18,8 @@ export type ConvertFunc = (src: string) => string;
 export type JoinerFunc = (src: ISeqSplitted) => string;
 
 export interface ISeqHandler {
+  get column(): DG.Column<string>;
+
   get alphabet(): string;
   get notation(): NOTATION;
   get separator(): string | undefined;
