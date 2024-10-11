@@ -220,7 +220,7 @@ export class DiffStudio {
       [
         [this.openIcon, this.saveIcon],
         [this.exportButton, this.sensAnIcon, this.fittingIcon],
-        [this.helpIcon],
+        [this.runIcon, this.helpIcon],
       ];
 
     this.solverView.setRibbonPanels(panels);
@@ -287,7 +287,7 @@ export class DiffStudio {
     this.solverView.setRibbonPanels([
       [this.openIcon, this.saveIcon],
       [this.exportButton, this.sensAnIcon, this.fittingIcon],
-      [this.helpIcon],
+      [this.runIcon, this.helpIcon],
     ]);
     this.toChangePath = false;
     const helpMD = ui.markdown(demoInfo);
@@ -322,17 +322,11 @@ export class DiffStudio {
     }, HINT.SAVE);
     this.solverView.append(saveBtn);
     saveBtn.hidden = true;
-    let isSaveBtnAdded = false;
 
     const ribbonPnls = this.browseView!.getRibbonPanels();
     ribbonPnls.push([this.sensAnIcon, this.fittingIcon]);
+    ribbonPnls.push([this.runIcon, saveBtn, this.helpIcon]);
     this.browseView!.setRibbonPanels(ribbonPnls);
-
-    const addSaveBtnToRibbon = () => {
-      ribbonPnls.push([saveBtn]);
-      this.browseView!.setRibbonPanels(ribbonPnls);
-      isSaveBtnAdded = true;
-    };
 
     // routing
     const paramsIdx = path.indexOf(PATH.PARAM);
@@ -348,12 +342,7 @@ export class DiffStudio {
       }
     }
 
-    this.editorView!.dom.addEventListener('keydown', async (e) => {
-      if (!isSaveBtnAdded)
-        addSaveBtnToRibbon();
-
-      saveBtn.hidden = false;
-    });
+    this.editorView!.dom.addEventListener('keydown', async (e) => saveBtn.hidden = false);
 
     this.toRunWhenFormCreated = true;
 
@@ -408,6 +397,7 @@ export class DiffStudio {
   private openIcon: HTMLElement;
   private saveIcon: HTMLElement;
   private helpIcon: HTMLElement;
+  private runIcon: HTMLElement;
   private exportButton: HTMLButtonElement;
   private sensAnIcon: HTMLElement;
   private fittingIcon: HTMLElement;
@@ -475,6 +465,9 @@ export class DiffStudio {
     this.exportButton = ui.bigButton(TITLE.TO_JS, async () => {await this.exportToJS();}, HINT.TO_JS);
     this.sensAnIcon = ui.iconFA('analytics', async () => {await this.runSensitivityAnalysis();}, HINT.SENS_AN);
     this.fittingIcon = ui.iconFA('chart-line', async () => {await this.runFitting();}, HINT.FITTING);
+    this.runIcon = ui.iconFA('play', async () => {await this.runSolving(true);}, HINT.SOLVE);
+    this.runIcon.classList.add('fas', 'diff-studio-app-run-icon');
+    this.runIcon.hidden = true;
 
     this.createTree(browsing);
   }; // constructor
@@ -499,6 +492,7 @@ export class DiffStudio {
         this.toRunWhenFormCreated = true;
         this.toChangeSolutionViewerProps = true;
         this.setCallWidgetsVisibility(true);
+        this.runIcon.hidden = false;
       } else {
         e.stopImmediatePropagation();
         e.preventDefault();
@@ -903,6 +897,8 @@ export class DiffStudio {
 
   /** Run solving the current IVP */
   private async runSolving(toShowInputsForm: boolean): Promise<void> {
+    this.runIcon.hidden = true;
+
     try {
       const ivp = getIVP(this.editorView!.state.doc.toString());
       await this.getInputsForm(ivp);

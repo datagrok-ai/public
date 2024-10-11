@@ -2,7 +2,8 @@
 
 ## 1.1.5 (2024-10-10)
 
-Added tutorials
+* Added the Ball flight demo model
+* Updated model run widgets
 
 ## 1.1.4 (2024-09-30)
 
