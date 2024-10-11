@@ -29,7 +29,15 @@ export type FuncCallStateInfo = {
   isRunning: boolean,
   isRunnable: boolean,
   isOutputOutdated: boolean,
+  runError: string | undefined,
   pendingDependencies: string[],
+}
+
+export interface AdapterInitData {
+  adapter: IFuncCallAdapter,
+  restrictions: Record<string, RestrictionState>,
+  isOutputOutdated: boolean,
+  runError?: string,
 }
 
 export interface IStoreProvider {
@@ -74,10 +82,11 @@ export class FuncCallNode implements IStoreProvider {
       this.instancesWrapper.isRunning$,
       this.instancesWrapper.isRunable$,
       this.instancesWrapper.isOutputOutdated$,
+      this.instancesWrapper.runError$,
       this.pendingDependencies$,
     ]).pipe(
-      map(([isRunning, isRunnable, isOutputOutdated, pendingDependencies]) =>
-        ({isRunning, isRunnable, isOutputOutdated, pendingDependencies})),
+      map(([isRunning, isRunnable, isOutputOutdated, runError, pendingDependencies]) =>
+        ({isRunning, isRunnable, isOutputOutdated, runError, pendingDependencies})),
       takeUntil(this.closed$),
     ).subscribe(this.funcCallState$);
 
@@ -88,12 +97,10 @@ export class FuncCallNode implements IStoreProvider {
   }
 
   initAdapter(
-    adapter: IFuncCallAdapter,
-    restrictions: Record<string, RestrictionState | undefined>,
-    isOutputOutdated: boolean,
+    data: AdapterInitData,
     initValues: boolean,
   ) {
-    this.instancesWrapper.init({adapter, restrictions, isOutputOutdated, initValues});
+    this.instancesWrapper.init({...data, initValues});
   }
 
   changeAdapter(adapter: IFuncCallAdapter) {

@@ -1,13 +1,16 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {v4 as uuidv4} from 'uuid';
 import {BaseTree, NodeAddress} from '../data/BaseTree';
 import {StateTree} from './StateTree';
 import {isFuncCallNode, isSequentialPipelineNode, isStaticPipelineNode, StateTreeNode} from './StateTreeNodes';
-import {ActionSpec, isActionSpec, MatchedNodePaths, matchNodeLink} from './link-matching';
+import {ActionSpec, isActionSpec, LinkSpec, MatchedNodePaths, MatchInfo, matchNodeLink} from './link-matching';
 import {Action, Link} from './Link';
 import {BehaviorSubject, concat, merge, Subject, of, Observable, defer, combineLatest} from 'rxjs';
 import {takeUntil, map, scan, switchMap, filter, mapTo, toArray, take, tap, debounceTime} from 'rxjs/operators';
+import {parseLinkIO} from '../config/LinkSpec';
+import {makeValidationResult} from '../utils';
 
 export interface NestedMutationData {
   mutationRootPath: NodeAddress,
@@ -41,7 +44,7 @@ export class LinksState {
 
   public runningLinks$ = new BehaviorSubject<undefined | string[]>(undefined);
 
-  constructor() {
+  constructor(private defaultValidators: boolean = false) {
     this.linksUpdates.pipe(
       switchMap(() => this.getRunningLinks()),
       takeUntil(this.closed$),
@@ -51,6 +54,10 @@ export class LinksState {
   public update(state: BaseTree<StateTreeNode>, nestedMutationData?: NestedMutationData) {
     this.destroyLinks();
     const links = this.createLinks(state);
+    if (this.defaultValidators) {
+      const validators = this.createDefaultValidators(state);
+      links.push(...validators);
+    }
     this.links = new Map(links.map((link) => [link.uuid, link] as const));
     [this.actions, this.nodesActions] = this.createActions(state);
     this.stepsDependencies = this.calculateStepsDependencies(state, links);
@@ -129,6 +136,51 @@ export class LinksState {
     }
     const actionsMap = new Map(actionEntries.map(([, action]) => [action.uuid, action]));
     return [actionsMap, nodeActions] as const;
+  }
+
+  public createDefaultValidators(state: BaseTree<StateTreeNode>) {
+    const defaultValidators = state.traverse(state.root, (acc, node, path) => {
+      const item = node.getItem();
+      if (!isFuncCallNode(item))
+        return acc;
+      const validators = item.config.io?.map((io) => {
+        if (io.nullable)
+          return;
+        const spec: LinkSpec = {
+          id: uuidv4(),
+          from: [parseLinkIO(`in:${io.id}`, io.direction)],
+          to: [parseLinkIO(`out:${io.id}`, io.direction)],
+          isValidator: true,
+          handler({controller}) {
+            const val = controller.getFirst('in');
+            if (val == null)
+              controller.setValidation('out', makeValidationResult({errors: ['Missing value']}));
+            else
+              controller.setValidation('out', undefined);
+          }
+        }
+        // don't need to really match anything, just set to current node
+        const minfo: MatchInfo = {
+          spec,
+          inputs: {
+            'in': [{
+              path: [],
+              ioName: io.id
+            }]
+          },
+          outputs: {
+            'in': [{
+              path: [],
+              ioName: io.id
+            }]
+          },
+          actions: {},
+        };
+        return new Link(path, minfo);
+      }).filter(x => !!x);
+      return [...acc, ...(validators ?? [])];
+    }, [] as Link[]);
+    return defaultValidators;
   }
 
   // TODO: cycles detection
@@ -273,9 +325,11 @@ export class LinksState {
         ([, isRunning]) => isRunning).map(([uuid]) => uuid)),
     );
   }
+
   public isDataLink(link: Link) {
     return !isActionSpec(link.matchInfo.spec) && !link.matchInfo.spec.isValidator && !link.matchInfo.spec.isMeta;
   }
+
   public isAffected(rootPath: Readonly<NodeAddress>, link: Link, addIdx?: number, removeIdx?: number) {
     return this.hasNested(rootPath, link.prefix, link.matchInfo.inputs) ||
       this.hasNonNested(rootPath, link.prefix, link.matchInfo.outputs);

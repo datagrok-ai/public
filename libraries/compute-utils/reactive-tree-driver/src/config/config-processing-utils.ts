@@ -13,6 +13,7 @@ import {LinkIOParsed, parseLinkIO} from './LinkSpec';
 export type FuncallStateItem = {
   id: ItemId;
   type: string;
+  nullable: boolean;
   direction: 'input' | 'output';
 }
 
@@ -122,8 +123,12 @@ async function processStepConfig(conf: PipelineStepConfiguration<LinkSpecString,
 
 async function getFuncCallIO(nqName: NqName): Promise<FuncallStateItem[]> {
   const func: DG.Func = await grok.functions.eval(nqName);
-  const inputs = func.inputs.map((input) => ({id: input.name, type: input.propertyType as any, direction: 'input'} as FuncallStateItem));
-  const outputs = func.outputs.map((output) => ({id: output.name, type: output.propertyType as any, direction: 'output'} as FuncallStateItem));
+  const inputs = func.inputs.map((input) => (
+    {id: input.name, type: input.propertyType as any, direction: 'input' as const, nullable: input.nullable}
+  ));
+  const outputs = func.outputs.map((output) => (
+    {id: output.name, type: output.propertyType as any, direction: 'output' as const, nullable: output.nullable}
+  ));
   const io = [...inputs, ...outputs];
   return io;
 }

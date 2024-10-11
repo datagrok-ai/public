@@ -32,9 +32,10 @@ export class StateTree {
     item: StateTreeNode,
     private config: PipelineConfigurationProcessed,
     private mockMode = false,
+    private defaultValidators = false,
   ) {
     this.nodeTree = new BaseTree(item);
-    this.linksState = new LinksState();
+    this.linksState = new LinksState(defaultValidators);
 
     this.linksState.runningLinks$.pipe(
       map((links) => !!links?.length),
@@ -129,8 +130,8 @@ export class StateTree {
   }
 
   // for testing
-  public runMutateTree() {
-    return this.mutateTree(() => of([]));
+  public runMutateTree(data?: NestedMutationData) {
+    return this.mutateTree(() => of([data] as const));
   }
 
   public save(uuid?: string) {
@@ -211,6 +212,7 @@ export class StateTree {
           startPath: [...path, {id, idx: pos}],
           startState: this,
           isReadonly: false,
+          defaultValidators: this.defaultValidators,
           mockMode: this.mockMode,
         });
       }
@@ -229,7 +231,15 @@ export class StateTree {
       const subConfig = StateTree.getSubConfig(this.config, path, id);
       if (isPipelineStepConfig(subConfig))
         throw new Error(`FuncCall node ${JSON.stringify(path)}, but pipeline is expected`);
-      const tree = StateTree.load(dbId, subConfig, {mockMode: this.mockMode, isReadonly}).pipe(
+      const tree = StateTree.load(
+        {
+          dbId,
+          config: subConfig,
+          mockMode: this.mockMode,
+          defaultValidators: this.defaultValidators,
+          isReadonly
+        }
+      ).pipe(
         concatMap((tree) => StateTree.loadOrCreateCalls(tree, this.mockMode)),
       ).pipe(
         map((tree) => this.nodeTree.attachBrunch(path, tree.nodeTree.root, id, pos)),
@@ -258,6 +268,26 @@ export class StateTree {
     });
   }
 
+  public runSequence(startUuid: string) {
+    return this.withTreeLock(() => {
+      const nodesSeq = this.nodeTree.traverse(this.nodeTree.root, (acc, node) => [...acc, node.getItem()], [] as StateTreeNode[]);
+      const startIdx = nodesSeq.findIndex(node => node.uuid === startUuid);
+      if (startIdx < 0)
+        return of(undefined);
+      return from(nodesSeq.slice(startIdx)).pipe(
+        concatMap((node) => {
+          if (!isFuncCallNode(node) || node.pendingDependencies$.value?.length || !node.getStateStore().isRunable$.value)
+            return of(undefined);
+          return node.getStateStore().run().pipe(
+            concatMap(() => this.waitForLinks())
+          );
+        }),
+        toArray(),
+        mapTo(undefined)
+      );
+    });
+  }
+
   public runAction(uuid: string) {
     const action = this.linksState.actions.get(uuid);
     if (!action)
@@ -277,9 +307,11 @@ export class StateTree {
               if (isPipelineStepConfig(subConfig))
                 throw new Error(`FuncCall node ${JSON.stringify(data.path)}, but pipeline is expected`);
               const subTree = StateTree.fromInstanceConfig(
-                data.initConfig,
-                subConfig,
-                {isReadonly: false,
+                {
+                  instanceConfig: data.initConfig,
+                  config: subConfig,
+                  isReadonly: false,
+                  defaultValidators: this.defaultValidators,
                   mockMode: this.mockMode,
                 });
               this.nodeTree.removeBrunch(data.path);
@@ -319,14 +351,22 @@ export class StateTree {
   // creation helpers
   //
 
-  static load(
+  static load({
+    dbId,
+    config,
+    isReadonly = false,
+    defaultValidators = false,
+    mockMode = false
+  }: {
     dbId: string,
     config: PipelineConfigurationProcessed,
-    {isReadonly = false, mockMode = false}: {isReadonly?: boolean, mockMode?: boolean } = {},
-  ): Observable<StateTree> {
+    isReadonly?: boolean,
+    defaultValidators?: boolean
+    mockMode?: boolean
+  }): Observable<StateTree> {
     return defer(async () => {
       const state = await loadInstanceState(dbId);
-      const tree = StateTree.fromInstanceState({state, config, isReadonly, mockMode});
+      const tree = StateTree.fromInstanceState({state, config, isReadonly, defaultValidators, mockMode});
       return tree;
     });
   }
@@ -337,6 +377,7 @@ export class StateTree {
     startPath = [],
     startState,
     isReadonly = false,
+    defaultValidators = false,
     mockMode = false,
   } : {
     config: PipelineConfigurationProcessed;
@@ -344,8 +385,9 @@ export class StateTree {
     startPath?: Readonly<NodePath>;
     startState?: StateTree;
     isReadonly?: boolean;
-    mockMode?: boolean; },
-  ): StateTree {
+    defaultValidators?: boolean
+    mockMode?: boolean;
+  }): StateTree {
     const refMap = buildRefMap(config);
 
     // TODO: initial infinite cycles detection
@@ -384,7 +426,7 @@ export class StateTree {
           throw new Error(`Wrong FuncCall node state type ${state.type} on path ${JSON.stringify(path)}`);
         node.initState(state);
       }
-      return StateTree.addTreeNodeOrCreate(acc, config, node, ppath, idx, mockMode);
+      return StateTree.addTreeNodeOrCreate(acc, config, node, ppath, idx, defaultValidators, mockMode);
     }, startState);
     return tree!;
   }
@@ -394,11 +436,13 @@ export class StateTree {
     config,
     isReadonly,
     mockMode = false,
+    defaultValidators = false,
   } : {
     state: PipelineSerializedState;
     config: PipelineConfigurationProcessed;
     isReadonly: boolean,
-    mockMode?: boolean },
+    defaultValidators?: boolean,
+    mockMode?: boolean }
   ): StateTree {
     const refMap = buildRefMap(config);
 
@@ -412,16 +456,24 @@ export class StateTree {
     const tree = traverse(state, (acc, state, path) => {
       const [node, ppath, idx] = StateTree.makeTreeNode(config, refMap, path, isReadonly || state.isReadonly);
       node.restoreState(state);
-      return StateTree.addTreeNodeOrCreate(acc, config, node, ppath, idx, mockMode);
+      return StateTree.addTreeNodeOrCreate(acc, config, node, ppath, idx, defaultValidators, mockMode);
     }, undefined as StateTree | undefined);
     return tree!;
   }
 
-  static fromInstanceConfig(
+  static fromInstanceConfig({
+    instanceConfig,
+    config,
+    isReadonly = false,
+    defaultValidators = false,
+    mockMode = false
+  }: {
     instanceConfig: PipelineInstanceConfig,
     config: PipelineConfigurationProcessed,
-    {isReadonly = false, mockMode = false}: {isReadonly?: boolean, mockMode?: boolean } = {},
-  ): StateTree {
+    isReadonly?: boolean,
+    defaultValidators?: boolean,
+    mockMode?: boolean
+  }): StateTree {
     const refMap = buildRefMap(config);
 
     // TODO: fix static pipeline missing steps
@@ -439,7 +491,7 @@ export class StateTree {
       const [node, ppath, idx] = StateTree.makeTreeNode(config, refMap, path, isReadonly);
       if (isFuncCallNode(node))
         node.initState(state);
-      return StateTree.addTreeNodeOrCreate(acc, config, node, ppath, idx, mockMode);
+      return StateTree.addTreeNodeOrCreate(acc, config, node, ppath, idx, defaultValidators, mockMode);
     }, undefined as StateTree | undefined);
     return tree!;
   }
@@ -484,12 +536,13 @@ export class StateTree {
     node: StateTreeNode,
     ppath: NodePath,
     pos: number,
+    defaultValidators: boolean,
     mockMode: boolean,
   ) {
     if (acc)
       acc.nodeTree.addItem(ppath, node, node.config.id, pos);
     else
-      return new StateTree(node, config, mockMode);
+      return new StateTree(node, config, mockMode, defaultValidators);
     return acc;
   }
 
@@ -503,16 +556,14 @@ export class StateTree {
           else if (mockMode) {
             const obs$ = defer(() => {
               const adapter = new FuncCallMockAdapter(item.config.io!, item.isReadonly);
-              item.initAdapter(adapter, {}, true, true);
+              item.initAdapter({adapter, restrictions: {}, isOutputOutdated: true, runError: undefined}, true);
               return of(undefined);
             });
             return [...acc, obs$];
           } else if (item.instancesWrapper.id == null && item.pendingId == null) {
             const obs$ = defer(() => {
               return from(makeFuncCall(item.config.nqName, false)).pipe(
-                map(([adapter, restrictions, outputState]) => {
-                  item.initAdapter(adapter, restrictions, outputState, true);
-                }),
+                map((data) => item.initAdapter(data, true)),
               );
             });
             return [...acc, obs$];
@@ -520,9 +571,7 @@ export class StateTree {
             const savedId = item.pendingId;
             const obs$ = defer(() => {
               return from(loadFuncCall(savedId, item.isReadonly)).pipe(
-                map(([adapter, restrictions, outputState]) => {
-                  item.initAdapter(adapter, restrictions, outputState, false);
-                }),
+                map((data) => item.initAdapter(data, false)),
               );
             });
             return [...acc, obs$];

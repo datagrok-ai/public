@@ -209,7 +209,7 @@ category('ComputeUtils: Driver init calls', async () => {
       ],
     };
     const pconf = await getProcessedConfig(config);
-    const tree = StateTree.fromInstanceConfig(instanceConfig, pconf);
+    const tree = StateTree.fromInstanceConfig({instanceConfig, config: pconf});
     await tree.init().toPromise();
     const state = tree.toState();
     const fc = ((state as PipelineStateStatic<any>).steps[1] as StepFunCallState).funcCall!;

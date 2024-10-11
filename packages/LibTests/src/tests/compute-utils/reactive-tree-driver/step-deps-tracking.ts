@@ -109,15 +109,15 @@ category('ComputeUtils: Driver steps dependencies tracking', async () => {
           'pendingDependencies': [],
         },
         d: {
-          'isRunning': false,
+          'isRunning': true,
           'isRunnable': false,
-          'isOutputOutdated': true,
+          'isOutputOutdated': false,
           'pendingDependencies': [],
         },
         e: {
           'isRunning': false,
-          'isRunnable': true,
-          'isOutputOutdated': true,
+          'isRunnable': false,
+          'isOutputOutdated': false,
           'pendingDependencies': [],
         },
         f: {
@@ -153,15 +153,15 @@ category('ComputeUtils: Driver steps dependencies tracking', async () => {
           'pendingDependencies': [],
         },
         d: {
-          'isRunning': false,
+          'isRunning': true,
           'isRunnable': false,
-          'isOutputOutdated': true,
+          'isOutputOutdated': false,
           'pendingDependencies': [],
         },
         e: {
           'isRunning': false,
-          'isRunnable': true,
-          'isOutputOutdated': true,
+          'isRunnable': false,
+          'isOutputOutdated': false,
           'pendingDependencies': [],
         },
         f: {
@@ -203,15 +203,15 @@ category('ComputeUtils: Driver steps dependencies tracking', async () => {
           'pendingDependencies': [],
         },
         d: {
-          'isRunning': false,
+          'isRunning': true,
           'isRunnable': false,
-          'isOutputOutdated': true,
+          'isOutputOutdated': false,
           'pendingDependencies': [],
         },
         e: {
           'isRunning': false,
-          'isRunnable': true,
-          'isOutputOutdated': true,
+          'isRunnable': false,
+          'isOutputOutdated': false,
           'pendingDependencies': [],
         },
         f: {

@@ -60,7 +60,7 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
   let testScheduler: TestScheduler;
   before(async () => {
     testScheduler = new TestScheduler((actual, expected) => {
-      console.log(actual, expected);
+      // console.log(actual, expected);
       expectDeepEqual(actual, expected);
     });
   });

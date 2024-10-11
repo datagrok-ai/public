@@ -15,7 +15,7 @@ category('ComputeUtils: Driver state tree readonly', async () => {
     await tree.init().toPromise();
     const sc = tree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});
     const metaCall = await tree.save().toPromise();
-    const loadedTree = await StateTree.load(metaCall!.id, pconf, {isReadonly: true}).toPromise();
+    const loadedTree = await StateTree.load({dbId: metaCall!.id, config: pconf, isReadonly: true}).toPromise();
     await loadedTree.init().toPromise();
     const lc = loadedTree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});
     sc.isReadonly = true;
@@ -69,7 +69,7 @@ category('ComputeUtils: Driver state tree readonly', async () => {
     // save outer with inner
     const metaCallOuter = await outerTree.save().toPromise();
     // load outer with inner
-    const loadedTree = await StateTree.load(metaCallOuter!.id, outerPconf).toPromise();
+    const loadedTree = await StateTree.load({dbId: metaCallOuter!.id, config: outerPconf}).toPromise();
     const lc = loadedTree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});
     expectDeepEqual(lc, sc);
   });

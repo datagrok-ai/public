@@ -47,6 +47,11 @@ export interface RunAction {
   uuid: string;
 }
 
+export interface RunSequence {
+  event: 'runSequence';
+  startUuid: string;
+}
+
 export interface SavePipeline {
   event: 'savePipeline';
 }
@@ -64,4 +69,4 @@ export interface InitPipeline {
   version?: number;
 }
 
-export type ViewConfigCommands = AddDynamicItem | LoadDynamicItem | SaveDynamicItem | RemoveDynamicItem | MoveDynamicItem | RunStep | RunAction | SavePipeline | LoadPipeline | InitPipeline;
+export type ViewConfigCommands = AddDynamicItem | LoadDynamicItem | SaveDynamicItem | RemoveDynamicItem | MoveDynamicItem | RunStep | RunAction | RunSequence | SavePipeline | LoadPipeline | InitPipeline;

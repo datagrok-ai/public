@@ -180,31 +180,43 @@ category('ComputeUtils: Driver instance additional states', async () => {
         'isRunning': false,
         'isRunnable': true,
         'isOutputOutdated': true,
+        pendingDependencies: [],
+        runError: undefined,
       };
       const b = {
         'isRunning': true,
         'isRunnable': true,
         'isOutputOutdated': true,
+        pendingDependencies: [],
+        runError: undefined,
       };
       const c = {
         'isRunning': true,
         'isRunnable': false,
         'isOutputOutdated': true,
+        pendingDependencies: [],
+        runError: undefined,
       };
       const d = {
-        'isRunning': false,
+        'isRunning': true,
         'isRunnable': false,
-        'isOutputOutdated': true,
+        'isOutputOutdated': false,
+        pendingDependencies: [],
+        runError: undefined,
       };
       const e = {
         'isRunning': false,
-        'isRunnable': true,
-        'isOutputOutdated': true,
+        'isRunnable': false,
+        'isOutputOutdated': false,
+        pendingDependencies: [],
+        runError: undefined,
       };
       const f = {
         'isRunning': false,
         'isRunnable': true,
         'isOutputOutdated': false,
+        pendingDependencies: [],
+        runError: undefined,
       };
       expectObservable(states[node.getItem().uuid], '^ 1000ms !').toBe('a(bc)-(def)', {a, b, c, d, e, f});
     });
@@ -248,7 +260,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
     const outNode = tree.nodeTree.getNode([{idx: 1}]);
     outNode.getItem().getStateStore().setState('a', 10, 'restricted');
     const metaCallSaved = await tree.save().toPromise();
-    const loadedTree = await StateTree.load(metaCallSaved!.id, pconf, {isReadonly: false}).toPromise();
+    const loadedTree = await StateTree.load({dbId: metaCallSaved!.id, config: pconf, isReadonly: false}).toPromise();
     await loadedTree.init().toPromise();
     const outNodeLoaded = loadedTree.nodeTree.getNode([{idx: 1}]);
     outNodeLoaded.getItem().getStateStore().editState('a', 3);
@@ -273,7 +285,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
     fcnode.getStateStore().setState('b', 2);
     await fcnode.getStateStore().run().toPromise();
     const metaCallSaved = await tree.save().toPromise();
-    const loadedTree = await StateTree.load(metaCallSaved!.id, pconf, {isReadonly: false}).toPromise();
+    const loadedTree = await StateTree.load({dbId: metaCallSaved!.id, config: pconf, isReadonly: false}).toPromise();
     await loadedTree.init().toPromise();
     const nodeLoaded = loadedTree.nodeTree.getNode([{idx: 0}]);
     const states = loadedTree.getFuncCallStates();

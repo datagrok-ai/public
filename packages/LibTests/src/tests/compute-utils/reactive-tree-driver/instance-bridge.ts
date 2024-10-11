@@ -14,9 +14,9 @@ category('ComputeUtils: Driver instance bridge', async () => {
   let testScheduler: TestScheduler;
 
   const io: FuncallStateItem[] = [
-    {direction: 'input', id: 'arg1', type: 'string'},
-    {direction: 'input', id: 'arg2', type: 'string'},
-    {direction: 'output', id: 'res', type: 'string'},
+    {direction: 'input', id: 'arg1', type: 'string', nullable: true},
+    {direction: 'input', id: 'arg2', type: 'string', nullable: true},
+    {direction: 'output', id: 'res', type: 'string', nullable: true},
   ];
 
   before(async () => {

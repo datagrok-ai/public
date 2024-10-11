@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, Observable, Subject, EMPTY, of, from} from 'rxjs';
 import {isFuncCallSerializedState, PipelineState} from './config/PipelineInstance';
-import {AddDynamicItem, InitPipeline, LoadDynamicItem, LoadPipeline, MoveDynamicItem, RemoveDynamicItem, RunAction, RunStep, SaveDynamicItem, SavePipeline, ViewConfigCommands} from './view/ViewCommunication';
+import {AddDynamicItem, InitPipeline, LoadDynamicItem, LoadPipeline, MoveDynamicItem, RemoveDynamicItem, RunAction, RunSequence, RunStep, SaveDynamicItem, SavePipeline, ViewConfigCommands} from './view/ViewCommunication';
 import {pairwise, takeUntil, concatMap, catchError, switchMap, map, mapTo, startWith, withLatestFrom, tap} from 'rxjs/operators';
 import {StateTree} from './runtime/StateTree';
 import {loadInstanceState} from './runtime/funccall-utils';
@@ -112,6 +112,8 @@ export class Driver {
       return this.runStep(msg, state);
     case 'runAction':
       return this.runAction(msg, state);
+    case 'runSequence':
+      return this.runSequence(msg, state);
     case 'savePipeline':
       return this.savePipeline(msg, state);
     case 'loadPipeline':
@@ -157,6 +159,11 @@ export class Driver {
     return state.runAction(msg.uuid);
   }
 
+  private runSequence(msg: RunSequence, state?: StateTree) {
+    this.checkState(msg, state);
+    return state.runAction(msg.startUuid);
+  }
+
   public savePipeline(msg: SavePipeline, state?: StateTree) {
     this.checkState(msg, state);
     return state.save();
@@ -177,7 +184,7 @@ export class Driver {
         );
       }),
       map(([state, config]) =>
-        StateTree.fromInstanceState({state, config, isReadonly: !!msg.readonly, mockMode: this.mockMode})),
+        StateTree.fromInstanceState({state, config, isReadonly: !!msg.readonly, defaultValidators: true, mockMode: this.mockMode})),
       concatMap((state) => state.init()),
       tap((state) => this.states$.next(state)),
     );
@@ -186,7 +193,7 @@ export class Driver {
   private initPipeline(msg: InitPipeline) {
     return callHandler<PipelineConfiguration>(msg.provider, {version: msg.version}).pipe(
       concatMap((conf) => from(getProcessedConfig(conf))),
-      map((config) => StateTree.fromPipelineConfig({config, isReadonly: false, mockMode: this.mockMode})),
+      map((config) => StateTree.fromPipelineConfig({config, isReadonly: false, defaultValidators: true, mockMode: this.mockMode})),
       concatMap((state) => state.init()),
       tap((state) => this.states$.next(state)),
     );

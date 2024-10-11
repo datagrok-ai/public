@@ -14,7 +14,7 @@ category('ComputeUtils: Driver state tree persistence', async () => {
     await tree.init().toPromise();
     const sc = tree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});
     const metaCall = await tree.save().toPromise();
-    const loadedTree = await StateTree.load(metaCall!.id, pconf).toPromise();
+    const loadedTree = await StateTree.load({dbId: metaCall!.id, config: pconf}).toPromise();
     await loadedTree.init().toPromise();
     const lc = loadedTree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});
     expectDeepEqual(lc, sc);
@@ -27,7 +27,7 @@ category('ComputeUtils: Driver state tree persistence', async () => {
     await tree.init().toPromise();
     const sc = tree.toSerializedState();
     const metaCall = await tree.save().toPromise();
-    const loadedTree = await StateTree.load(metaCall!.id, pconf).toPromise();
+    const loadedTree = await StateTree.load({dbId: metaCall!.id, config: pconf}).toPromise();
     await loadedTree.init().toPromise();
     const lc = loadedTree.toSerializedState();
 
@@ -83,7 +83,7 @@ category('ComputeUtils: Driver state tree persistence', async () => {
     const metaCall = await outerTree.save(nestedRoot.getItem().uuid).toPromise();
     const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider2', {version: '1.0'}).toPromise();
     const pconf = await getProcessedConfig(config);
-    const loadedTree = await StateTree.load(metaCall!.id, pconf).toPromise();
+    const loadedTree = await StateTree.load({dbId: metaCall!.id, config: pconf}).toPromise();
     await loadedTree.init().toPromise();
     const lc = loadedTree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});
     expectDeepEqual(lc, sc);

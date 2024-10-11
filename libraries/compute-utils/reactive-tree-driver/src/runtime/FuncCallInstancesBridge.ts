@@ -1,5 +1,6 @@
-import {BehaviorSubject, of, combineLatest, Observable, defer, Subject, merge} from 'rxjs';
-import {switchMap, map, takeUntil, finalize, mapTo, skip, distinctUntilChanged, withLatestFrom, filter} from 'rxjs/operators';
+import * as grok from 'datagrok-api/grok';
+import {BehaviorSubject, of, combineLatest, Observable, defer, Subject, merge, EMPTY} from 'rxjs';
+import {switchMap, map, takeUntil, finalize, mapTo, skip, distinctUntilChanged, withLatestFrom, filter, catchError, tap} from 'rxjs/operators';
 import {IFuncCallAdapter, IRunnableWrapper, IStateStore} from './FuncCallAdapters';
 import {RestrictionType, ValidationResult} from '../data/common-types';
 import {FuncallStateItem} from '../config/config-processing-utils';
@@ -17,6 +18,7 @@ export interface BridgePreInitData {
 export interface BridgeInitData {
   adapter: IFuncCallAdapter,
   restrictions: Record<string, RestrictionState | undefined>,
+  runError?: string,
   isOutputOutdated: boolean,
   initValues: boolean,
 }
@@ -32,6 +34,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
   public isRunning$ = new BehaviorSubject(false);
   public isRunable$ = new BehaviorSubject(false);
   public isOutputOutdated$ = new BehaviorSubject(true);
+  public runError$ = new BehaviorSubject<string | undefined>(undefined);
 
   public validations$ = new BehaviorSubject<Record<string, Record<string, ValidationResult | undefined>>>({});
   public meta$ = new BehaviorSubject<Record<string, BehaviorSubject<any | undefined>>>({});
@@ -69,6 +72,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
 
     this.inputRestrictions$.next({...this.inputRestrictions$.value, ...data.restrictions});
     this.instance$.next({adapter: data.adapter, isNew: true});
+    this.runError$.next(data.runError);
     this.outdatedChanged$.next(data.isOutputOutdated);
 
     this.setupStateWatcher();
@@ -164,9 +168,19 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
         throw new Error(`Attempting to run FuncCallInstancesBridge with validation errors`);
       this.isRunning$.next(true);
       return currentInstance.run(mockResults, mockDelay).pipe(
+        tap(() => {
+          if (this.runError$.value)
+            this.runError$.next(undefined);
+          this.outdatedChanged$.next(false);
+        }),
+        catchError((e) => {
+          this.runError$.next(String(e));
+          this.outdatedChanged$.next(true);
+          grok.shell.error(e);
+          return EMPTY;
+        }),
         finalize(() => {
           this.isRunning$.next(false);
-          this.outdatedChanged$.next(false);
         }),
       );
     });
