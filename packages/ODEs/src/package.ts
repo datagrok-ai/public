@@ -11,9 +11,6 @@ import {DiffStudio} from './app';
 
 import {getBioreactorSim, getPkPdSim, showBioHelpPanel, showPkPdHelpPanel, getBallFlightSim} from './demo-models';
 
-import {DifferentialEquationsTutorial} from './tutorials/diff-equations-tutorial';
-import {Track} from '@datagrok-libraries/tutorials/src/track';
-
 export const _package = new DG.Package();
 
 //name: info
@@ -208,24 +205,6 @@ export async function demoSimPKPD(): Promise<any> {
   await openModelFuncCall.call();
 
   showPkPdHelpPanel();
-}
-
-//tags: track
-//help-url: https://datagrok.ai/help/compute
-//output: object track
-//meta.name: Scientific
-export function registerTrack() {
-  return new Track('Scientific', [], 'https://datagrok.ai/help/compute');
-}
-
-//tags: tutorial
-//meta.icon: images/diff-studio-tutorial.png
-//meta.name: Differential Equations
-//meta.track: Scientific
-//description: Learn how to model processes defined by differential equations with Diff Studio
-//output: object tutorial
-export function registerDifferentialEquationsTutorial() {
-  return new DifferentialEquationsTutorial();
 }
 
 //name: Ball flight

@@ -1682,42 +1682,4 @@ export class DiffStudio {
       grok.shell.warning(`Failed to add ivp-file to recents: ${(e instanceof Error) ? e.message : 'platfrom issue'}`);
     }
   } // getCardWithBuiltInModel
-
-  /** Return root of the specified tab */
-  public getTabHeaderRoot(name: string): HTMLElement {
-    return this.tabControl.header.querySelector(`div.d4-tab-header[name="${name}"]`);
-  }
-
-  /** A helper method to access model inputs. */
-  public inputAction(category: string, caption: string, value: number) {
-    let resolve: (value: void | PromiseLike<void>) => void;
-    let reject: (reason?: any) => void;
-    const promise = new Promise<void>((res, rej) => {
-      resolve = res;
-      reject = rej;
-    });
-
-    const inputs = this.inputsByCategories.get(category);
-    if (inputs === undefined)
-      throw new Error(ERROR_MSG.INCORTECT_INPUT);
-
-    const input = inputs.find((inp) => inp.caption === caption);
-    if (input === undefined)
-      throw new Error(ERROR_MSG.INCORTECT_INPUT);
-
-    input.onChanged.subscribe(() => {
-      if (input.value === value)
-        resolve();
-    });
-
-    return {
-      root: input.root,
-      promise: promise,
-    };
-  } // inputAction
-
-  /** Return current equations */
-  public getEquations() {
-    return this.editorView!.state.doc.toString();
-  }
 };
