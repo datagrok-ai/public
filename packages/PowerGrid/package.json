@@ -13,7 +13,7 @@
     "directory": "packages/PowerGrid"
   },
   "dependencies": {
-    "datagrok-tools": "^4.13.29",
+    "datagrok-tools": "latest",
     "@datagrok-libraries/gridext": "^1.3.73",
     "@datagrok-libraries/utils": "^4.3.0",
     "@types/wu": "^2.1.44",

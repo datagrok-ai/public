@@ -58,7 +58,7 @@
     "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "^6.14.0",
     "css-loader": "^6.8.1",
-    "datagrok-tools": "^4.13.29",
+    "datagrok-tools": "latest",
     "eslint": "^8.55.0",
     "eslint-config-google": "^0.14.0",
     "file-loader": "^6.2.0",

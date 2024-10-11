@@ -16,7 +16,7 @@
   },
   "devDependencies": {
     "@types/uuid": "^10.0.0",
-    "datagrok-tools": "^4.13.29",
+    "datagrok-tools": "latest",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
     "webpack": "^5.95.0",

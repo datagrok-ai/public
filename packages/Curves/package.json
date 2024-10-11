@@ -17,7 +17,7 @@
     "rxjs": "^6.5.5"
   },
   "devDependencies": {
-    "datagrok-tools": "^4.13.29",
+    "datagrok-tools": "latest",
     "css-loader": "^5.0.0",
     "source-map-loader": "^4.0.1",
     "style-loader": "^2.0.0",

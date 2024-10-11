@@ -36,7 +36,7 @@
     "@types/wu": "^2.1.44",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
-    "datagrok-tools": "^4.13.29",
+    "datagrok-tools": "latest",
     "eslint": "^9.12.0",
     "eslint-config-google": "^0.14.0",
     "eslint-plugin-deprecation": "^3.0.0",
