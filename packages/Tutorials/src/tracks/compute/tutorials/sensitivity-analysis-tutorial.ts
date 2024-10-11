@@ -6,7 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import {filter, map} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {fromEvent} from 'rxjs';
-import {getElement, getView} from './utils';
+import {getElement, getView, describeElements, singleDescription} from './utils';
 
 /** Monte Carlo viewers description */
 const monteCarloViewersInfo = [
@@ -42,70 +42,13 @@ const sobolViewersInfo = [
   Overall impact of parameters, including their interactions with each other: **Angle** produces greater contribution than **Velocity**.`,
 ];
 
-/** Describe viewers and return the Done button */
-function describeViewers(viewerRoots: HTMLElement[], description: string[]): HTMLButtonElement {
-  if (viewerRoots.length !== description.length)
-    throw new Error('Non-equal size of viewer roots and descritions');
-
-  let idx = 0;
-  let hint: HTMLElement;
-  let msg: HTMLDivElement;
-  let popup: HTMLDivElement;
-  const nextBtn = ui.button('next', () => hint.click(), 'Go to the next viewer');
-  const prevBtn = ui.button('prev', () => {
-    idx -= 2;
-    hint.click();
-  }, 'Go to the previous viewer');
-  const doneBtn = ui.button('done', () => hint.click(), 'Go to the next step');
-  const btnsDiv = ui.divH([prevBtn, nextBtn, doneBtn]);
-  btnsDiv.style.marginLeft = 'auto';
-  btnsDiv.style.marginRight = '0';
-
-  const step = () => {
-    if (idx < viewerRoots.length) {
-      msg = ui.divV([ui.markdown(description[idx]), btnsDiv]);
-      popup = ui.hints.addHint(viewerRoots[idx], msg, 'left');
-      doneBtn.hidden = (idx < viewerRoots.length - 1);
-      nextBtn.hidden = (idx === viewerRoots.length - 1);
-      prevBtn.hidden = (idx < 1);
-      hint = ui.hints.addHintIndicator(popup, undefined, 4000);
-      hint.onclick = () => {
-        popup.remove();
-        ++idx;
-        step();
-      };
-    }
-  };
-
-  step();
-
-  return doneBtn;
-}
-
-/** Description of a single element */
-function singleDescription(root: HTMLElement, description: string, tooltip: string): HTMLButtonElement {
-  const clearBtn = ui.button('clear', () => hint.click(), tooltip);
-  const btnDiv = ui.divH([clearBtn]);
-  const msg = ui.divV([
-    ui.markdown(description),
-    btnDiv,
-  ]);
-  const popup = ui.hints.addHint(root, msg, 'left');
-  btnDiv.style.marginLeft = 'auto';
-  btnDiv.style.marginRight = '0';
-  const hint = ui.hints.addHintIndicator(popup, undefined, 4000);
-  hint.onclick = () => popup.remove();
-
-  return clearBtn;
-}
-
 /** Tutorial on sensitivity analysis */
 export class SensitivityAnalysisTutorial extends Tutorial {
   get name() {
     return 'Sensitivity analysis';
   }
   get description() {
-    return 'Learn how to analyze the relationship between inputs and outputs of the model';
+    return 'Analyze the relationship between inputs and outputs of the model';
   }
   get steps() {return 15;}
 
@@ -166,14 +109,25 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       return;
     }
 
-    const formRoot = await getElement(modelView.root, 'div.d4-flex-row.ui-div.ui-form');
-    const angleInputRoot = formRoot!.children[5] as HTMLElement;
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
+    const modelRoot = await getElement(modelView.root, 'div.d4-line-chart');
+    if (modelRoot === null) {
+      grok.shell.warning('Sensitivity analysis run timeout exceeded');
+      return;
+    }
+
+    let clearBtn = singleDescription(
+      modelRoot,
+      '# Model\n\nThis is a ball flight simulation.',
+      'Go to the next step',
+    );
+    
     await this.action(
-      'Change "Angle"',
-      fromEvent(angleInputRoot, 'click'),
-      angleInputRoot,
-      'Move slider, and explore the impact of <b>Angle</b> on <b>Max distance</b>, <b>Max height</b> and ball\'s trajectory.',
+      'Click "Clear"',
+      fromEvent(clearBtn, 'click'),
+      undefined,
+      `Click "Clear" to go to the next step.`,
     );
 
     // 4. Run sens.analysis
@@ -252,7 +206,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     }
 
     let viewerRoots = [...sensAnView.viewers].map((v) => v.root);
-    let doneBtn = describeViewers(viewerRoots, monteCarloViewersInfo);
+    let doneBtn = describeElements(viewerRoots, monteCarloViewersInfo);
 
     await this.action(
       'Explore each viewer',
@@ -278,7 +232,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // 10. Check grid
-    let clearBtn = singleDescription(
+    clearBtn = singleDescription(
       sensAnView.grid.root,
       '# Maximum\n\n**Angle** providing the highest **Max distance**',
       'Go to the next step',
@@ -327,13 +281,13 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     // 14. Explore viewers
     // Wait for computations complete
     const barChartRoot = await getElement(sensAnView.root, 'div.d4-bar-chart');
-    if (pcPlotRoot === null) {
+    if (barChartRoot === null) {
       grok.shell.warning('Sensitivity analysis run timeout exceeded');
       return;
     }
 
     viewerRoots = [...sensAnView.viewers].map((v) => v.root).slice(3);
-    doneBtn = describeViewers(viewerRoots, sobolViewersInfo);
+    doneBtn = describeElements(viewerRoots, sobolViewersInfo);
 
     await this.action(
       'Explore each viewer',
@@ -346,7 +300,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     const methodLabelRoot = children[0].querySelector('label.ui-label') as HTMLElement;
     clearBtn = singleDescription(
       methodLabelRoot,
-      '# Method\n\nThe Monte Carlo and Sobol methods study a model at randomly taken points. Select "Grid" to get exploration at non-random points.',
+      '# Method\n\nThe Monte Carlo and Sobol methods study a model at randomly taken points. Use "Grid" to get exploration at non-random points.',
       'Complete this tutorial',
     );
 

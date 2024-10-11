@@ -6,7 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import {filter, map} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {fromEvent} from 'rxjs';
-import {getElement, getView} from './utils';
+import {getElement, getView, singleDescription} from './utils';
 
 /** Tutorial on parameters optimization */
 export class FittingTutorial extends Tutorial {
@@ -14,9 +14,9 @@ export class FittingTutorial extends Tutorial {
     return 'Parameter optimization';
   }
   get description() {
-    return 'Learn how to find the slider conditions that lead to a specified output of the model';
+    return 'Find the initial conditions that lead to a specified output of the model';
   }
-  get steps() {return 12;}
+  get steps() {return 14;}
 
   demoTable: string = '';
   helpUrl: string = 'https://datagrok.ai/help/compute/function-analysis#parameter-optimization';
@@ -68,21 +68,32 @@ export class FittingTutorial extends Tutorial {
       'Double click <b>Ball flight</b>.',
     );
 
-    // 3. Play
+    // 3. Model
     const modelView = await getView('Ball flight');
     if (modelView === null) {
       grok.shell.warning('Model run timeout exceeded');
       return;
     }
 
-    const formRoot = await getElement(modelView.root, 'div.d4-flex-row.ui-div.ui-form');
-    const angleInputRoot = formRoot!.children[5] as HTMLElement;
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
+    const modelRoot = await getElement(modelView.root, 'div.d4-line-chart');
+    if (modelRoot === null) {
+      grok.shell.warning('Sensitivity analysis run timeout exceeded');
+      return;
+    }
+
+    let clearBtn = singleDescription(
+      modelRoot,
+      '# Model\n\nThis is a ball flight simulation.',
+      'Go to the next step',
+    );
+    
     await this.action(
-      'Change "Angle"',
-      fromEvent(angleInputRoot, 'click'),
-      angleInputRoot,
-      'Move slider, and explore the impact of <b>Angle</b> on <b>Max distance</b>, <b>Max height</b> and ball\'s trajectory.',
+      'Click "Clear"',
+      fromEvent(clearBtn, 'click'),
+      undefined,
+      `Click "Clear" to go to the next step.`,
     );
 
     // 4. Run fitting
@@ -99,7 +110,7 @@ export class FittingTutorial extends Tutorial {
     );
 
     // 5. Switch Velocity
-    const fittingView = await getView('ballFlight - fitting');
+    const fittingView = await getView('ballFlight - fitting') as DG.TableView;
     if (fittingView === null) {
       grok.shell.warning('Fitting run timeout exceeded');
       return;
@@ -149,16 +160,31 @@ export class FittingTutorial extends Tutorial {
       You can customize optimizer's settings in the <b>Using</b> block.`,
     );
 
-    this.describe(`Find fitting results in the grid rows. There are values of 
-    <b>Velocity</b> and <b>Angle</b>, as well viewers visualizing the goodness of fit.`);
+    // 9. Explore
+    const barChartRoot = await getElement(fittingView.root, 'div.d4-bar-chart');
+    if (barChartRoot === null) {
+      grok.shell.warning('Sensitivity analysis run timeout exceeded');
+      return;
+    }
+
+    clearBtn = singleDescription(
+      fittingView.grid.root,
+      '# Solution\n\nThe first row presents the best fit:\n\n* The computed <b>Velocity</b> and <b>Angle</b>\n* A visualization illustrating the goodness of fit',
+      'Go to the next step',
+    );
+    
+    await this.action(
+      'Click "Clear"',
+      fromEvent(clearBtn, 'click'),
+      undefined,
+      `Click "Clear" to go to the next step.`,
+    );
 
     const ballFlightTable = await grok.dapi.files.readCsv('System:AppData/Tutorials/ball-flight-trajectory.csv');
     ballFlightTable.name = 'Ball trajectory';
     grok.shell.addTable(ballFlightTable);
 
-    await new Promise((resolve) => setTimeout(resolve, 6000));
-
-    // 9. Switch off Max distance
+    // 10. Switch off Max distance
     this.title('Fit curve');
     this.describe('How to throw a ball so that it follows a given trajectory?\nYou may check the target in <b>Tables > Ball trajectory</b>.');
 
@@ -171,7 +197,7 @@ export class FittingTutorial extends Tutorial {
       maxDistSwitcher,
     );
 
-    // 10. Switch on Trajectory
+    // 11. Switch on Trajectory
     const trajectoryRoot = fitFormRoot!.children[20] as HTMLElement;
     const trajectorySwitcher = trajectoryRoot.querySelector('div.ui-input-editor') as HTMLElement;
 
@@ -181,7 +207,7 @@ export class FittingTutorial extends Tutorial {
       trajectorySwitcher,
     );
 
-    // 11. Select table
+    // 12. Select table
     const tableInputRoot = fitFormRoot!.querySelector('div.ui-input-choice.ui-input-table.ui-input-root') as HTMLElement;
     const tableChoiceRoot = tableInputRoot.querySelector('select.ui-input-editor') as HTMLSelectElement;
     tableChoiceRoot.value = '';
@@ -193,15 +219,13 @@ export class FittingTutorial extends Tutorial {
       tableInputRoot,
     );
 
-    // 12. Run
+    // 13. Run
     await this.action(
       'Click "Run"',
       fromEvent(runIcnRoot, 'click'),
       runIcnRoot,
     );
 
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-
-    this.describe('Compare the simulated and target trajectories. The first row in the grid presents the best values for <b>Velocity</b> and <b>Angle</b>.');
+    await new Promise((resolve) => setTimeout(resolve, 5000));
   } // _run
 } // FittingTutorial
