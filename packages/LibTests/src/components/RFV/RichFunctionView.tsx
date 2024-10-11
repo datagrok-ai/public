@@ -38,15 +38,15 @@ declare global {
 
 const dfBlockTitle = (dfProp: DG.Property) => dfProp.options['caption'] ?? dfProp.name ?? ' ';
 
-type TabContent = Record<string, 
+type TabContent = Map<string, 
   {type: 'dataframe', dfProp: DG.Property, config: Record<string, string | boolean> } | 
   {type: 'scalars', scalarProps: DG.Property[]}
 >;
 
 const tabToProperties = (func: DG.Func) => {
   const map = {
-    inputs: {} as TabContent,
-    outputs: {} as TabContent,
+    inputs: new Map() as TabContent,
+    outputs: new Map() as TabContent,
   };
 
   const processDf = (dfProp: DG.Property) => {
@@ -59,7 +59,7 @@ const tabToProperties = (func: DG.Func) => {
       const tabLabel = dfProp.category === 'Misc' ? 
         dfNameWithViewer: `${dfProp.category}: ${dfNameWithViewer}`;
 
-      map.inputs[tabLabel] = {type: 'dataframe', dfProp: dfProp, config: dfViewer};
+      map.inputs.set(tabLabel, {type: 'dataframe', dfProp: dfProp, config: dfViewer});
     });
     return;
   };
@@ -78,10 +78,11 @@ const tabToProperties = (func: DG.Func) => {
       
       const category = outputProp.category === 'Misc' ? 'Output': outputProp.category;
 
-      if (map.outputs[category] && map.outputs[category].type === 'scalars')
-        map.outputs[category].scalarProps.push(outputProp);
+      const categoryProps = map.outputs.get(category);
+      if (categoryProps && categoryProps.type === 'scalars')
+        categoryProps.scalarProps.push(outputProp);
       else
-        map.outputs[category] = {type: 'scalars', scalarProps: [outputProp]};
+        map.outputs.set(category, {type: 'scalars', scalarProps: [outputProp]});
     });
 
   return map;
@@ -207,8 +208,8 @@ export const RichFunctionView = Vue.defineComponent({
 
     const tabLabels = Vue.computed(() => {
       return [
-        ...Object.keys(tabToPropertiesMap.value.inputs),
-        ...Object.keys(tabToPropertiesMap.value.outputs),
+        ...tabToPropertiesMap.value.inputs.keys(),
+        ...tabToPropertiesMap.value.outputs.keys(),
       ];
     });
 
@@ -461,8 +462,8 @@ export const RichFunctionView = Vue.defineComponent({
 
             {          
               visibleTabLabels.value
-                .map((tabLabel) => ({tabLabel, tabContent: tabToPropertiesMap.value.inputs[tabLabel] ?? 
-                tabToPropertiesMap.value.outputs[tabLabel]}))
+                .map((tabLabel) => ({tabLabel, tabContent: tabToPropertiesMap.value.inputs.get(tabLabel) ?? 
+                tabToPropertiesMap.value.outputs.get(tabLabel)!}))
                 .map(({tabLabel, tabContent}) => {
                   if (tabContent.type === 'dataframe') {
                     const options = tabContent.config;
