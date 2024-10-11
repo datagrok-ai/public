@@ -7,8 +7,6 @@ export type MmpFilters = {
     activityValuesDivs: HTMLDivElement[];
     activityColorInputs: DG.InputBase[];
     activityActiveInputs: DG.InputBase[];
-    pairsSliderInput: DG.InputBase;
-    pairsValueDiv: HTMLDivElement;
     filtersDiv: HTMLDivElement;
 }
 
@@ -37,11 +35,6 @@ export function getMmpFilters(mmpInput: MmpInput, maxActs: number[], numPairs: n
     activityActiveInputs[i] = activeInput;
   };
 
-  const pairsSliderInput = ui.input.slider('Pairs', {value: numPairs, min: 0, max: numPairs, step: 1});
-  const pairsValueDiv = ui.divText(pairsSliderInput.stringValue, 'ui-input-description');
-  pairsSliderInput.addOptions(pairsValueDiv);
-  pairsSliderInput.root.classList.add('mmpa-slider-input', 'mmpa-pairs-slider');
-  ui.tooltip.bind(pairsSliderInput.captionLabel, `Select cutoff by significant pairs`);
 
   const activitiesRoots: HTMLDivElement[] = new Array<HTMLDivElement>(activitySliderInputs.length);
   for (let i = 0; i < activitySliderInputs.length; i ++) {
@@ -51,10 +44,9 @@ export function getMmpFilters(mmpInput: MmpInput, maxActs: number[], numPairs: n
   }
   const activitiesDiv = ui.divV(activitiesRoots, 'mmpa-activity-filters');
   const filtersDiv = ui.divV([
-    pairsSliderInput.root,
     activitiesDiv,
-  ], 'css-flex-wrap mmpa-slider-roots');
+  ], 'mmpa-slider-roots');
 
   return {activitySliderInputs, activityValuesDivs, activityColorInputs, activityActiveInputs,
-    pairsSliderInput, pairsValueDiv, filtersDiv};
+    filtersDiv};
 }

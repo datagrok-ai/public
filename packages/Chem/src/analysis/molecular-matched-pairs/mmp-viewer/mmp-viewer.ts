@@ -198,10 +198,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.cutoffMasks![i].setAll(true);
     }
 
-    mmpFilters.pairsSliderInput.onChanged.subscribe((value) => {
-      mmpFilters.pairsValueDiv.innerText = value.toString();
-      this.pairedGrids!.refilterFragmentPairsByCases(value);
-    });
   }
 
   setupCliffsTab(sp: DG.Viewer, mmpFilters: MmpFilters, linesEditor: ScatterPlotLinesRenderer): HTMLDivElement {
@@ -255,10 +251,20 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
 
     const header = ui.h1('Fragment vs fragment', 'chem-mmpa-transformation-tab-header');
+    const trellisTv = DG.TableView.create(this.pairedGrids!.fpGrid.dataFrame, false);
+    const filters = trellisTv.getFiltersGroup();
+
+    let dockNode: DG.DockNode | null = null;
+    const filterIcon = ui.icons.filter(() => {
+      if (!dockNode?.parent)
+        dockNode = grok.shell.tv.dockManager.dock(filters.root, DG.DOCK_TYPE.RIGHT, null, 'Fragment filters', 0.2);
+    }, 'Open fragments filters');
+    filterIcon.classList.add('chem-mmpa-fragments-filters-icon');
+
     tp.root.prepend(header);
     const tpDiv = ui.splitV([
       ui.box(
-        ui.divH([header]),
+        ui.divH([header, filterIcon]),
         {style: {maxHeight: '30px'}},
       ),
       tp.root,
@@ -300,7 +306,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         //grok.shell.o = ui.div();
         //grok.shell.o = mmPairsRoot;
       } else if (tabs.currentPane.name == MMP_NAMES.TAB_FRAGMENTS) {
-        tabs.currentPane.content.append(mmpFilters.filtersDiv);
         this.pairedGrids!.refreshMaskFragmentPairsFilter();
         // this.pairedGrids!.enableFilters = false;
         // this.pairedGrids!.mmpMaskByFragment.setAll(false);

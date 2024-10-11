@@ -607,6 +607,11 @@
   visibility: hidden;
 }
 
+.chem-mmpa-fragments-filters-icon {
+  padding-left: 5px;
+  padding-top: 5px;
+}
+
 .selected > .chem-mmpa-add-generation-to-workspace-button {
   visibility: visible;
 }
