@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.45.2 (2024-10-11)
+
+Fix moving setUnits methods to ISeqHelper
+
 ## 5.45.1 (2024-10-11)
 
 ### Bug fixes
