@@ -650,6 +650,8 @@ export interface IScatterPlotSettings {
 
   viewport: string;
 
+  colorServiceColNames: Array<string>;
+
   /// Controls scatter plot tooltip visibility
   showTooltip: string;
 
