@@ -8,6 +8,7 @@ import {BehaviorSubject} from 'rxjs';
 import {distinctUntilChanged} from 'rxjs/operators';
 import equal from 'deep-equal';
 import {
+  PipelineConfiguration,
   ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult,
 } from '@datagrok-libraries/compute-utils';
 import type {ViewerT, InputFormT} from '@datagrok-libraries/webcomponents';
@@ -221,8 +222,6 @@ export async function TestElements() {
 
 // pipeline driver testing
 
-
-//name: TestAdd2
 //input: double a
 //input: double b
 //output: double res
@@ -230,8 +229,6 @@ export async function TestAdd2(a: number, b: number) {
   return a + b;
 }
 
-
-//name: TestMul2
 //input: double a
 //input: double b
 //output: double res
@@ -257,4 +254,98 @@ export async function TestDiv2(a: number, b: number) {
 //output: dataframe res
 export async function TestDF1(df: DG.DataFrame) {
   return df;
+}
+
+
+//name: MockWrapper1
+export async function MockWrapper1() {}
+
+//input: object params
+//output: object result
+export async function MockProvider1(params: any) {
+  const c: PipelineConfiguration = {
+    id: 'pipeline1',
+    nqName: 'LibTests:MockWrapper1',
+    provider: 'LibTests:MockProvider1',
+    version: '1.0',
+    type: 'static',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:TestAdd2',
+      },
+      {
+        id: 'step2',
+        nqName: 'LibTests:TestMul2',
+      },
+    ],
+    links: [{
+      id: 'link1',
+      from: 'in1:step1/res',
+      to: 'out1:step2/a',
+    }],
+  };
+  return c;
+}
+
+//name: MockWrapper2
+export async function MockWrapper2() {}
+
+//input: object params
+//output: object result
+export async function MockProvider2(params: any) {
+  const c: PipelineConfiguration = {
+    id: 'pipelinePar',
+    nqName: 'LibTests:MockWrapper2',
+    provider: 'LibTests:MockProvider2',
+    version: '1.0',
+    type: 'parallel',
+    stepTypes: [{
+      id: 'stepAdd',
+      nqName: 'LibTests:TestAdd2',
+      friendlyName: 'add',
+    }, {
+      id: 'stepMul',
+      nqName: 'LibTests:TestMul2',
+      friendlyName: 'mul',
+    }, {
+      type: 'ref',
+      provider: 'LibTests:MockProvider1',
+      version: '1.0',
+    }],
+    initialSteps: [
+      {
+        id: 'stepAdd',
+      }, {
+        id: 'pipeline1',
+      },
+    ],
+  };
+  return c;
+}
+
+//name: MockWrapper3
+export async function MockWrapper3() {}
+
+//input: object params
+//output: object result
+export async function MockProvider3(params: any) {
+  const c: PipelineConfiguration = {
+    id: 'pipelinePar',
+    nqName: 'LibTests:MockWrapper3',
+    provider: 'LibTests:MockProvider3',
+    version: '1.0',
+    type: 'parallel',
+    stepTypes: [{
+      type: 'ref',
+      provider: 'LibTests:MockProvider2',
+      version: '1.0',
+    }],
+    initialSteps: [
+      {
+        id: 'pipelinePar',
+      },
+    ],
+  };
+  return c;
 }
