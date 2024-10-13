@@ -33,6 +33,7 @@
     "release-admetica": "webpack && grok publish --release",
     "build-admetica": "webpack",
     "build": "webpack",
+    "test": "grok test",
     "debug-admetica-dev": "grok publish dev --rebuild",
     "release-admetica-dev": "grok publish dev --rebuild --release",
     "debug-admetica-local": "grok publish local --rebuild",
