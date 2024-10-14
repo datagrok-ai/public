@@ -40,6 +40,7 @@
     "release-eda": "webpack && grok publish --release",
     "build-eda": "webpack",
     "build": "webpack",
+    "test": "grok test",
     "debug-eda-dev": "webpack && grok publish dev",
     "release-eda-dev": "webpack && grok publish dev --release",
     "debug-eda-local": "webpack && grok publish local",

@@ -40,6 +40,7 @@
     "release-odes": "webpack && grok publish --release",
     "build-odes": "webpack",
     "build": "webpack",
+    "test": "grok test",
     "debug-odes-dev": "webpack && grok publish dev",
     "release-odes-dev": "webpack && grok publish dev --release",
     "debug-odes-local": "webpack && grok publish local",
