@@ -54,7 +54,6 @@
   "canView": [
     "All users"
   ],
-  "skipCI": "true",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
