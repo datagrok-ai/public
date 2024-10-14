@@ -369,4 +369,14 @@ category('Dapi: functions', async () => {
     const loadedFuncCalls = await GDF.filter(`nqName="ApiTests:dummyPackageScript"`).list({pageSize: 5});
     expect(loadedFuncCalls.length, 1);
   }, { skipReason: 'GROK-15175' });
+
+  test('Call query', async () => {
+    const queryList: DG.DataQuery[] = await grok.dapi.queries.filter('name = "dummyPackageQuery" and package.name = "ApiTests"').list();
+    expect(queryList.length, 1);
+    const query: DG.DataQuery = queryList[0];
+    expect(query.inputs.length, 1);
+    const call = query.prepare({'x': 0.5});
+    const res = (await call.call()).getOutputParamValue();
+    expect(res.get('res', 0), 0.5);
+  }, {skipReason: 'GROK-16807'});
 });
