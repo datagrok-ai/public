@@ -6,7 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import {filter, map} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {fromEvent} from 'rxjs';
-import {getElement, getView, describeElements, singleDescription} from './utils';
+import {getElement, getView, describeElements, singleDescription, closeWindows} from './utils';
 
 /** Monte Carlo viewers description */
 const monteCarloViewersInfo = [
@@ -61,6 +61,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     this.describe(ui.link('Learn more', this.helpUrl).outerHTML);
     this.title('Model');
     this.describe('Consider ball flight simulation.');
+    closeWindows();
 
     if (grok.shell.view('Browse') === undefined) {
       grok.shell.v = DG.View.createByType('browse');
@@ -117,17 +118,17 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       return;
     }
 
-    let clearBtn = singleDescription(
+    let okBtn = singleDescription(
       modelRoot,
       '# Model\n\nThis is a ball flight simulation.',
       'Go to the next step',
     );
     
     await this.action(
-      'Click "Clear"',
-      fromEvent(clearBtn, 'click'),
+      'Click "OK"',
+      fromEvent(okBtn, 'click'),
       undefined,
-      `Click "Clear" to go to the next step.`,
+      `Click "OK" to go to the next step.`,
     );
 
     // 4. Run sens.analysis
@@ -166,7 +167,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       'Set "Samples" to 100',
       samplesSource,
       samplesInputRoot,
-      'Monte Carlo is the default method, and <b>Samples</b> defines the number of model evaluations. Increase <b>Samples</b> to get more accurate results.',
+      'Monte Carlo is the default method, and the <b>Samples</b> value defines the number of model evaluations. Increase <b>Samples</b> to get more accurate results.',
     );
 
     // 6. Switch Angle
@@ -192,9 +193,9 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     await this.action(
       'Run sensitivity analysis',
       runSensAnPromise,
-      [runIcnRoot, runBtnRoot],
+      runIcnRoot,
       `Click the <b>Run</b> button or the <b>Run</b> icon on the top panel.`,
-    );
+    );    
 
     // 8. Explore viewers
 
@@ -232,7 +233,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // 10. Check grid
-    clearBtn = singleDescription(
+    okBtn = singleDescription(
       sensAnView.grid.root,
       '# Maximum\n\n**Angle** providing the highest **Max distance**',
       'Go to the next step',
@@ -240,12 +241,19 @@ export class SensitivityAnalysisTutorial extends Tutorial {
 
     await this.action(
       'Explore solution',
-      fromEvent(clearBtn, 'click'),
+      fromEvent(okBtn, 'click'),
       undefined,
       'Click "Clear" to go to the next step.',
     );
 
     // 11. Parameters' impact
+
+    // Align elements
+    const panelRoot = sensAnView.root.querySelector('div.panel-base') as HTMLElement;
+    panelRoot.style.width = '300px';
+    const pcPlotColumnRoot = sensAnView.root.querySelector('div.splitter-container-column.splitter-container-horizontal') as HTMLElement;
+    pcPlotColumnRoot.style.width = '300px';
+
     this.title('Parameters\' impact');
     this.describe('Explore which of the throw parameters has the most significant impact on <b>Max distance</b> and <b>Max height</b>.');
 
@@ -297,16 +305,17 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     );
 
     // 15. The Grid  method note
+    panelRoot.style.width = '300px';
     const methodLabelRoot = children[0].querySelector('label.ui-label') as HTMLElement;
-    clearBtn = singleDescription(
+    okBtn = singleDescription(
       methodLabelRoot,
       '# Method\n\nThe Monte Carlo and Sobol methods study a model at randomly taken points. Use "Grid" to get exploration at non-random points.',
       'Complete this tutorial',
     );
 
     await this.action(
-      'Click "Clear"',
-      fromEvent(clearBtn, 'click'),
+      'Click "OK"',
+      fromEvent(okBtn, 'click'),
     );
   } // _run
 } // SensitivityAnalysisTutorial

@@ -6,7 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import {filter, map} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {fromEvent} from 'rxjs';
-import {getElement, getView, singleDescription} from './utils';
+import {getElement, getView, singleDescription, closeWindows} from './utils';
 
 /** Tutorial on parameters optimization */
 export class FittingTutorial extends Tutorial {
@@ -14,7 +14,7 @@ export class FittingTutorial extends Tutorial {
     return 'Parameter optimization';
   }
   get description() {
-    return 'Find the initial conditions that lead to a specified output of the model';
+    return 'Find the initial conditions that produce a desired model output';
   }
   get steps() {return 14;}
 
@@ -27,6 +27,7 @@ export class FittingTutorial extends Tutorial {
     this.describe(ui.link('Learn more', this.helpUrl).outerHTML);
     this.title('Model');
     this.describe('Consider ball flight simulation.');
+    closeWindows();
 
     if (grok.shell.view('Browse') === undefined) {
       grok.shell.v = DG.View.createByType('browse');
@@ -83,22 +84,22 @@ export class FittingTutorial extends Tutorial {
       return;
     }
 
-    let clearBtn = singleDescription(
+    let okBtn = singleDescription(
       modelRoot,
       '# Model\n\nThis is a ball flight simulation.',
       'Go to the next step',
     );
     
     await this.action(
-      'Click "Clear"',
-      fromEvent(clearBtn, 'click'),
+      'Click "OK"',
+      fromEvent(okBtn, 'click'),
       undefined,
-      `Click "Clear" to go to the next step.`,
+      `Click "OK" to go to the next step.`,
     );
 
     // 4. Run fitting
     this.title('Fit scalar output');
-    this.describe('How should the ball be thrown so that it flies exactly 10 meters? Let\'s answer this question.');
+    this.describe('How should the ball be thrown to make it fly exactly 10 meters? Let\'s find the answer.');
 
     const fitIcnRoot = document.querySelector('i.grok-icon.fal.fa-chart-line') as HTMLElement;
 
@@ -167,7 +168,7 @@ export class FittingTutorial extends Tutorial {
       return;
     }
 
-    clearBtn = singleDescription(
+    okBtn = singleDescription(
       fittingView.grid.root,
       '# Solution\n\nThe first row presents the best fit:\n\n* The computed <b>Velocity</b> and <b>Angle</b>\n* A visualization illustrating the goodness of fit',
       'Go to the next step',
@@ -175,7 +176,7 @@ export class FittingTutorial extends Tutorial {
     
     await this.action(
       'Click "Clear"',
-      fromEvent(clearBtn, 'click'),
+      fromEvent(okBtn, 'click'),
       undefined,
       `Click "Clear" to go to the next step.`,
     );

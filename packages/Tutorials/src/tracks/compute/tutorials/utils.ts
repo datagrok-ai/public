@@ -90,7 +90,7 @@ export function describeElements(roots: HTMLElement[], description: string[]): H
 
 /** Description of a single element */
 export function singleDescription(root: HTMLElement, description: string, tooltip: string): HTMLButtonElement {
-  const clearBtn = ui.button('clear', () => hint.click(), tooltip);
+  const clearBtn = ui.button('ok', () => hint.click(), tooltip);
   const btnDiv = ui.divH([clearBtn]);
   const msg = ui.divV([
     ui.markdown(description),
@@ -103,4 +103,15 @@ export function singleDescription(root: HTMLElement, description: string, toolti
   hint.onclick = () => popup.remove();
 
   return clearBtn;
+}
+
+/** Close windows */
+export function closeWindows() {
+  grok.shell.windows.showToolbox = false;
+  grok.shell.windows.showHelp = false;
+  grok.shell.windows.showContextPanel = false;
+  grok.shell.windows.showConsole = false;
+  grok.shell.windows.showVariables = false;
+  grok.shell.windows.showTables = false;
+  grok.shell.windows.showColumns = false;
 }
