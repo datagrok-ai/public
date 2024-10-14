@@ -51,7 +51,7 @@ main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
     const t: DG.DataFrame = await grok.functions.call('Chem:Curate', {'data': df, 'molecules': 'smiles',
       'kekulization': true, 'normalization': true, 'reionization': true,
       'neutralization': true, 'tautomerization': true, 'mainFragment': true});
-    const col = t.getCol('curated_molecule');
+    const col = df.getCol('curated_molecule');
     expect(col.stats.valueCount, 16);
     col.categories.slice(0, -1).forEach((c) => expect(c.includes('C'), true));
   }, {timeout: 60000});
@@ -62,7 +62,7 @@ main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
     const t: DG.DataFrame = await grok.functions.call('Chem:Curate', {'data': df, 'molecules': 'canonical_smiles',
       'kekulization': true, 'normalization': true, 'reionization': true,
       'neutralization': true, 'tautomerization': true, 'mainFragment': true});
-    const col = t.getCol('curated_molecule');
+    const col = df.getCol('curated_molecule');
     expect(col.stats.valueCount, 43);
     col.categories.slice(0, -1).forEach((c) => expect(c.includes('C'), true));
   }, {timeout: 60000});
@@ -93,7 +93,7 @@ async function curate(df: DG.DataFrame, col: string) {
   const t: DG.DataFrame = await grok.functions.call('Chem:Curate', {'data': df, 'molecules': col,
     'kekulization': true, 'normalization': true, 'reionization': true,
     'neutralization': true, 'tautomerization': true, 'mainFragment': true});
-  const cm = t.getCol('curated_molecule');
+  const cm = df.getCol('curated_molecule');
   if (col !== 'smiles' || DG.Test.isInBenchmark) {
     for (let i = 0; i < t.rowCount; i++) expect(cm.get(i).includes('C'), true);
     return;
