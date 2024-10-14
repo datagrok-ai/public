@@ -3,10 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
-import {type ViewerT} from '@datagrok-libraries/webcomponents';
 import {
-  Viewer, InputForm, 
-  BigButton, IconFA, 
+  Viewer, InputForm,
+  BigButton, IconFA,
   RibbonPanel, DockManager, MarkDown,
   ComboPopup,
   RibbonMenu,
@@ -28,18 +27,11 @@ type PanelsState = {
   layout: string,
 };
 
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'dg-viewer': ViewerT
-    }
-  }
-}
 
 const dfBlockTitle = (dfProp: DG.Property) => dfProp.options['caption'] ?? dfProp.name ?? ' ';
 
-type TabContent = Map<string, 
-  {type: 'dataframe', dfProp: DG.Property, config: Record<string, string | boolean> } | 
+type TabContent = Map<string,
+  {type: 'dataframe', dfProp: DG.Property, config: Record<string, string | boolean> } |
   {type: 'scalars', scalarProps: DG.Property[]}
 >;
 
@@ -56,7 +48,7 @@ const tabToProperties = (func: DG.Func) => {
     dfViewers.forEach((dfViewer) => {
       const dfNameWithViewer = `${dfBlockTitle(dfProp)} / ${dfViewer['type']}`;
 
-      const tabLabel = dfProp.category === 'Misc' ? 
+      const tabLabel = dfProp.category === 'Misc' ?
         dfNameWithViewer: `${dfProp.category}: ${dfNameWithViewer}`;
 
       map.inputs.set(tabLabel, {type: 'dataframe', dfProp: dfProp, config: dfViewer});
@@ -75,7 +67,7 @@ const tabToProperties = (func: DG.Func) => {
         processDf(outputProp);
         return;
       }
-      
+
       const category = outputProp.category === 'Misc' ? 'Output': outputProp.category;
 
       const categoryProps = map.outputs.get(category);
@@ -104,7 +96,7 @@ export const ScalarsPanel = Vue.defineComponent({
     const getContent = (prop: DG.Property) => {
       const precision = prop.options.precision;
 
-      const scalarValue = precision && 
+      const scalarValue = precision &&
                 prop.propertyType === DG.TYPE.FLOAT && props.funcCall.outputs[prop.name] ?
         props.funcCall.outputs[prop.name].toPrecision(precision):
         props.funcCall.outputs[prop.name];
@@ -119,27 +111,27 @@ export const ScalarsPanel = Vue.defineComponent({
     };
 
     const hoveredIdx = Vue.ref(null as null | number);
-    
-    return () => 
+
+    return () =>
       props.categoryScalars.length <= 3 ?
-        <div 
-          class='flex flex-wrap justify-around' 
+        <div
+          class='flex flex-wrap justify-around'
         >
           { props.categoryScalars.map((prop, idx) => {
             const [scalarValue, units] = getContent(prop);
 
-            return <div 
+            return <div
               class='flex flex-col p-2 items-center gap-4 flex-nowrap'
               onMouseenter={() => hoveredIdx.value = idx}
               onMouseleave={() => hoveredIdx.value = null}
-            > 
+            >
               <div class='text-center' style={{color: 'var(--grey-4)'}}> { prop.caption ?? prop.name } </div>
-              <span style={{fontSize: 'var(--font-size-large)'}}> 
-                { scalarValue } { units } 
-                <span style={{color: 'var(--grey-3)', paddingLeft: '3px'}} class='absolute'> 
-                  { hoveredIdx.value === idx && <IconFA 
-                    name='copy' 
-                    tooltip="Copy caption & value" 
+              <span style={{fontSize: 'var(--font-size-large)'}}>
+                { scalarValue } { units }
+                <span style={{color: 'var(--grey-3)', paddingLeft: '3px'}} class='absolute'>
+                  { hoveredIdx.value === idx && <IconFA
+                    name='copy'
+                    tooltip="Copy caption & value"
                     onClick={() => copyToClipboard(`${ prop.caption ?? prop.name } ${ scalarValue } ${ units } `)}
                   /> }
                 </span>
@@ -148,10 +140,10 @@ export const ScalarsPanel = Vue.defineComponent({
           })}
         </div> :
         <div class='h-full overflow-scroll'>
-          <table class='d4-table d4-item-table d4-info-table rfv-scalar-table'> 
+          <table class='d4-table d4-item-table d4-info-table rfv-scalar-table'>
             <tbody>
-              { 
-                props.categoryScalars.map((prop, idx) => { 
+              {
+                props.categoryScalars.map((prop, idx) => {
                   const [scalarValue, units] = getContent(prop);
 
                   return <tr
@@ -161,11 +153,11 @@ export const ScalarsPanel = Vue.defineComponent({
                     <td> <span> { prop.caption ?? prop.name } </span></td>
                     <td> <span> { units } </span></td>
                     <td> <span> { scalarValue } </span></td>
-                    <td> 
-                      { hoveredIdx.value === idx && <IconFA 
+                    <td>
+                      { hoveredIdx.value === idx && <IconFA
                         style={{color: 'var(--grey-3)'}}
-                        name='copy' 
-                        tooltip="Copy caption & value" 
+                        name='copy'
+                        tooltip="Copy caption & value"
                         onClick={() => copyToClipboard(`${ prop.caption ?? prop.name } ${ scalarValue } ${ units } `)}
                       /> }
                     </td>
@@ -187,10 +179,6 @@ export const RichFunctionView = Vue.defineComponent({
     },
     callState: {
       type: Object as Vue.PropType<FuncCallStateInfo>,
-    },
-    validationEnabled: {
-      type: Boolean,
-      default: false,
     },
     historyEnabled: {
       type: Boolean,
@@ -222,7 +210,7 @@ export const RichFunctionView = Vue.defineComponent({
     const helpHidden = Vue.ref(true);
 
     const hasContextHelp = Vue.computed(() => Utils.hasContextHelp(currentCall.value.func));
-    
+
     const root = Vue.ref(null as HTMLElement | null);
     const historyRef = Vue.shallowRef(null as InstanceType<typeof History> | null);
     const helpRef = Vue.shallowRef(null as InstanceType<typeof MarkDown> | null);
@@ -234,8 +222,8 @@ export const RichFunctionView = Vue.defineComponent({
       if (el === formRef.value) formHidden.value = true;
 
       const tabIdx = visibleTabLabels.value.findIndex((label) => label === el.getAttribute('dock-spawn-title'));
-      if (tabIdx >= 0) 
-        visibleTabLabels.value.splice(tabIdx, 1);  
+      if (tabIdx >= 0)
+        visibleTabLabels.value.splice(tabIdx, 1);
     };
 
     const hashParams = useUrlSearchParams('hash-params');
@@ -296,7 +284,7 @@ export const RichFunctionView = Vue.defineComponent({
 
     const helpText = Vue.ref(null as null | string);
 
-    Vue.watch(currentCall, async (_, oldCall) => {      
+    Vue.watch(currentCall, async (_, oldCall) => {
       Utils.getContextHelp(currentCall.value.func).then((loadedHelp) => {
         helpText.value = loadedHelp ?? null;
       });
@@ -342,30 +330,30 @@ export const RichFunctionView = Vue.defineComponent({
             </span>
           </RibbonMenu>
           <RibbonMenu groupName='Panels'>
-            <span 
-              onClick={() => formHidden.value = !formHidden.value} 
+            <span
+              onClick={() => formHidden.value = !formHidden.value}
               class={'flex justify-between w-full'}
             >
               <div> <IconFA name='pen' style={menuIconStyle}/> Show inputs </div>
               { !formHidden.value && <IconFA name='check'/>}
             </span>
-            <span 
-              onClick={() => visibleTabLabels.value = [...tabLabels.value]} 
+            <span
+              onClick={() => visibleTabLabels.value = [...tabLabels.value]}
               class={'flex justify-between'}
             >
-              <div> <IconFA name='chart-pie' 
+              <div> <IconFA name='chart-pie'
                 style={menuIconStyle}/> Show output tabs </div>
               { visibleTabLabels.value.length === tabLabels.value.length && <IconFA name='check'/>}
             </span>
-            { hasContextHelp.value && <span 
-              onClick={() => helpHidden.value = !helpHidden.value} 
+            { hasContextHelp.value && <span
+              onClick={() => helpHidden.value = !helpHidden.value}
               class={'flex justify-between'}
             >
               <div> <IconFA name='question' style={menuIconStyle}/> Show help </div>
               { !helpHidden.value && <IconFA name='check'/>}
             </span> }
-            { props.historyEnabled && <span 
-              onClick={() => historyHidden.value = !historyHidden.value} 
+            { props.historyEnabled && <span
+              onClick={() => historyHidden.value = !historyHidden.value}
               class={'flex justify-between'}
             >
               <div> <IconFA name='history' style={menuIconStyle}/> Show history </div>
@@ -376,9 +364,9 @@ export const RichFunctionView = Vue.defineComponent({
             <IconFA
               name='play'
               tooltip='Run step'
-              onClick={run} 
+              onClick={run}
             />
-            { isExportEnabled.value && !isIncomplete.value && <ComboPopup 
+            { isExportEnabled.value && !isIncomplete.value && <ComboPopup
               caption={ui.iconFA('arrow-to-bottom')}
               items={['Excel']}
               onSelected={({item: format}) => {
@@ -387,42 +375,42 @@ export const RichFunctionView = Vue.defineComponent({
                   currentCall.value.func,
                   currentCall.value,
                   Utils.dfToViewerMapping(currentCall.value),
-                ).then((blob) => 
-                  DG.Utils.download(`${currentCall.value.func.nqName} - 
+                ).then((blob) =>
+                  DG.Utils.download(`${currentCall.value.func.nqName} -
                   ${Utils.getStartedOrNull(currentCall.value) ?? 'Not completed'}.xlsx`, blob));
               }}
             />}
-            { isSAenabled.value && <IconFA 
+            { isSAenabled.value && <IconFA
               name='analytics'
               onClick={() => SensitivityAnalysisView.fromEmpty(currentFunc.value)}
               tooltip='Run sensitivity analysis'
             />}
-            { isFittingEnabled.value && <IconFA 
+            { isFittingEnabled.value && <IconFA
               name='chart-line'
               onClick={() => FittingView.fromEmpty(currentFunc.value)}
               tooltip='Fit inputs'
             />}
-            { hasContextHelp.value && <IconFA 
-              name='question' 
+            { hasContextHelp.value && <IconFA
+              name='question'
               tooltip={ helpHidden.value ? 'Open help panel' : 'Close help panel' }
               onClick={() => helpHidden.value = !helpHidden.value}
               style={{'background-color': !helpHidden.value ? 'var(--grey-1)': null}}
             /> }
-            { props.historyEnabled && <IconFA 
-              name='history' 
-              tooltip='Open history panel' 
+            { props.historyEnabled && <IconFA
+              name='history'
+              tooltip='Open history panel'
               onClick={() => historyHidden.value = !historyHidden.value}
               style={{'background-color': !historyHidden.value ? 'var(--grey-1)': null}}
             /> }
           </RibbonPanel>
-          <DockManager 
-            onPanelClosed={handlePanelClose} 
+          <DockManager
+            onPanelClosed={handlePanelClose}
             onUpdate:activePanelTitle={handleActivePanelChanged}
             onInitFinished={() => dockInited.value = true}
             ref={dockRef}
           >
-            { !historyHidden.value ? 
-              <History 
+            { !historyHidden.value ?
+              <History
                 func={currentCall.value.func}
                 showActions
                 showBatchActions
@@ -434,9 +422,9 @@ export const RichFunctionView = Vue.defineComponent({
                 ref={historyRef}
                 class='overflow-scroll h-full'
               />: null }
-          
+
             { !formHidden.value &&
-              <div 
+              <div
                 class='flex flex-col p-2 overflow-scroll h-full'
                 dock-spawn-dock-type='left'
                 dock-spawn-dock-ratio={0.2}
@@ -444,30 +432,28 @@ export const RichFunctionView = Vue.defineComponent({
                 ref={formRef}
               >
                 {
-                  Vue.withDirectives(<InputForm 
+                  Vue.withDirectives(<InputForm
                     funcCall={currentCall.value}
-                    onUpdate:funcCall={(call) => emit('update:funcCall', call)}
-                    validationEnabled={props.validationEnabled}
-                  />, [[ifOverlapping, isRunning.value, 'Recalculating...']]) 
+                  />, [[ifOverlapping, isRunning.value, 'Recalculating...']])
                 }
                 <div class='flex sticky bottom-0 justify-end'>
-                  <BigButton 
-                    isDisabled={!isRunnable.value || isRunning.value} 
-                    onClick={run}> 
-                  Run 
+                  <BigButton
+                    isDisabled={!isRunnable.value || isRunning.value}
+                    onClick={run}>
+                  Run
                   </BigButton>
                 </div>
               </div> }
 
-            {          
+            {
               visibleTabLabels.value
-                .map((tabLabel) => ({tabLabel, tabContent: tabToPropertiesMap.value.inputs.get(tabLabel) ?? 
+                .map((tabLabel) => ({tabLabel, tabContent: tabToPropertiesMap.value.inputs.get(tabLabel) ??
                 tabToPropertiesMap.value.outputs.get(tabLabel)!}))
                 .map(({tabLabel, tabContent}) => {
                   if (tabContent.type === 'dataframe') {
                     const options = tabContent.config;
                     const dfProp = tabContent.dfProp;
-                    return <div 
+                    return <div
                       class='flex flex-col pl-2 h-full w-full'
                       dock-spawn-title={tabLabel}
                       key={tabLabel}
@@ -485,28 +471,28 @@ export const RichFunctionView = Vue.defineComponent({
 
                   if (tabContent.type === 'scalars') {
                     const categoryProps = tabContent.scalarProps;
-                    
+
                     const panel = <ScalarsPanel
                       class='h-full overflow-scroll'
                       categoryScalars={categoryProps}
                       funcCall={currentCall.value}
                       key={tabLabel}
                       dock-spawn-title={tabLabel}
-                      dock-spawn-dock-to={intelligentLayout && 
+                      dock-spawn-dock-to={intelligentLayout &&
                         lastCardLabel && scalarCardCount < 3 ? lastCardLabel: null
                       }
-                      dock-spawn-dock-type={intelligentLayout ? (lastCardLabel ? 
-                        (categoryProps.length > 3 ? 
+                      dock-spawn-dock-type={intelligentLayout ? (lastCardLabel ?
+                        (categoryProps.length > 3 ?
                           'fill': (scalarCardCount < 3 ? 'right': 'down')
                         ): 'down') : null
                       }
-                      dock-spawn-dock-ratio={intelligentLayout ? 
+                      dock-spawn-dock-ratio={intelligentLayout ?
                         (lastCardLabel && scalarCardCount < 3 ? 0.5: 0.15) : null
                       }
                     />;
 
                     if (categoryProps.length < 3) {
-                      scalarCardCount += categoryProps.length;     
+                      scalarCardCount += categoryProps.length;
                       lastCardLabel = tabLabel;
                     }
                     if (scalarCardCount >= 2) {
@@ -518,14 +504,14 @@ export const RichFunctionView = Vue.defineComponent({
                   }
                 })
             }
-            { !helpHidden.value && helpText.value ? 
-              <MarkDown 
+            { !helpHidden.value && helpText.value ?
+              <MarkDown
                 markdown={helpText.value}
                 dock-spawn-title='Help'
                 dock-spawn-dock-type='right'
                 dock-spawn-dock-ratio={0.15}
                 ref={helpRef}
-              /> : null 
+              /> : null
             }
           </DockManager>
         </div>

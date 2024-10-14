@@ -16,7 +16,7 @@ export const RFVApp = Vue.defineComponent({
   setup(props) {
     const currentFuncCall = Vue.shallowRef(props.funcCall);
     const currentCallState = Vue.ref(
-      {isRunning: false, isOutputOutdated: false, isRunnable: true, pendingDependencies: []},
+      {isRunning: false, isOutputOutdated: false, isRunnable: true, runError: undefined, pendingDependencies: []},
     );
 
     const func = Vue.computed(() => currentFuncCall.value.func);
@@ -29,15 +29,14 @@ export const RFVApp = Vue.defineComponent({
       await currentFuncCall.value.call();
       currentCallState.value.isRunning = false;
 
-      if (!isRunningOnInput.value)     
+      if (!isRunningOnInput.value)
         await historyUtils.saveRun(currentFuncCall.value);
     };
 
     return () => (
-      <RichFunctionView 
+      <RichFunctionView
         funcCall={currentFuncCall.value}
         callState={currentCallState.value}
-        validationEnabled={true}
         onUpdate:funcCall={(chosenCall) => currentFuncCall.value = chosenCall}
         onRunClicked={runFunc}
       />

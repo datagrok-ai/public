@@ -1,7 +1,7 @@
 {
   "name": "@datagrok-libraries/webcomponents",
   "sideEffects": false,
-  "version": "0.0.3",
+  "version": "0.0.5",
   "description": "Datagrok web components wrappers",
   "dependencies": {
     "cash-dom": "^8.1.4",

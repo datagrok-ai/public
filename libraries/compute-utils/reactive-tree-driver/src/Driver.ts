@@ -188,7 +188,7 @@ export class Driver {
         );
       }),
       map(([state, config]) =>
-        StateTree.fromInstanceState({state, config, isReadonly: !!msg.readonly, defaultValidators: true, mockMode: this.mockMode})),
+        StateTree.fromInstanceState({state, config, isReadonly: !!msg.readonly, defaultValidators: false, mockMode: this.mockMode})),
       concatMap((state) => state.init()),
       tap((state) => this.states$.next(state)),
     );
@@ -197,7 +197,7 @@ export class Driver {
   private initPipeline(msg: InitPipeline) {
     return callHandler<PipelineConfiguration>(msg.provider, {version: msg.version}).pipe(
       concatMap((conf) => from(getProcessedConfig(conf))),
-      map((config) => StateTree.fromPipelineConfig({config, isReadonly: false, defaultValidators: true, mockMode: this.mockMode})),
+      map((config) => StateTree.fromPipelineConfig({config, isReadonly: false, defaultValidators: false, mockMode: this.mockMode})),
       concatMap((state) => state.init()),
       tap((state) => this.states$.next(state)),
     );
