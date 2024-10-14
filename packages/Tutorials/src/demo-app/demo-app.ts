@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
 import {_package} from '../package';
-import {sortFunctionsByHierarchy, getParentCategoryName} from './utils';
+import {sortFunctionsByHierarchy} from './utils';
 import {DEMO_APP_HIERARCHY} from './const';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 
@@ -36,6 +36,15 @@ export class DemoView extends DG.ViewBase {
     if (this.tree.items.length === 0)
       this._initTree();
     this._initContent();
+    // temporary solution, waiting for the browseOnly apps, now need to do this unfortunately
+    setTimeout(() => {
+      const views = Array.from(grok.shell.views);
+      const dv = views.find((view) => view instanceof DemoView);
+      this.browseView.preview = this as unknown as DG.View;
+      grok.shell.v = this.browseView;
+      if (dv)
+        dv.close();
+    }, 500);
   }
 
   static findDemoFunc(demoPath: string): DG.Func {
