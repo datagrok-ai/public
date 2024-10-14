@@ -3,10 +3,7 @@ package grok_connect.providers;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import grok_connect.managers.ColumnManager;
 import grok_connect.managers.bigint_column.OracleBigIntColumnManager;
@@ -23,6 +20,7 @@ import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.Property;
 import oracle.jdbc.OracleResultSet;
+import oracle.jdbc.driver.OracleConnection;
 import oracle.sql.json.OracleJsonObject;
 import serialization.Types;
 
@@ -71,6 +69,13 @@ public class OracleDataProvider extends JdbcDataProvider {
     @Override
     public void prepareProvider() {
         System.getProperties().setProperty("oracle.jdbc.J2EE13Compliant", "true");
+    }
+
+    @Override
+    public Properties getProperties(DataConnection conn) {
+        java.util.Properties properties = defaultConnectionProperties(conn);
+        properties.setProperty(OracleConnection.CONNECTION_PROPERTY_THIN_NET_CONNECT_TIMEOUT, "180000");
+        return properties;
     }
 
     @Override
