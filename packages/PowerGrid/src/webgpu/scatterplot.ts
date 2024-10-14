@@ -18,6 +18,8 @@ class WebGPUCache {
   yColVersion = -1;
   xColLength = -1;
   yColLength = -1;
+  markerSizesBuffer: GPUBuffer | null = null;
+  markerSizesLength = -1;
 
   isViewBoxChanged(viewBox: DG.Rect) {
     return !areEqual(viewBox, this.viewBox);
@@ -104,20 +106,31 @@ class WebGPUCache {
     this.yColLength = yColumnData.length;
     this.xColVersion = xCol.version;
     this.yColVersion = yCol.version;
-    const kXColumnDataSize = getPaddedSize(this.xColLength);
-    const kYColumnDataSize = getPaddedSize(this.yColLength);
     this.columnBuffer = device.createBuffer({
-      size: kXColumnDataSize + kYColumnDataSize,
+      size: getPaddedSize(this.xColLength + this.yColLength),
       usage: GPUBufferUsage.STORAGE,
       mappedAtCreation: true,
     });
     const scBufferArray = this.columnBuffer.getMappedRange();
     let scBufferOffset = 0;
     new Float32Array(scBufferArray, scBufferOffset, this.xColLength).set(xColumnData);
-    scBufferOffset += kXColumnDataSize;
+    scBufferOffset += this.xColLength * Float32Array.BYTES_PER_ELEMENT;
     new Float32Array(scBufferArray, scBufferOffset, this.yColLength).set(yColumnData);
-    scBufferOffset += kYColumnDataSize;
     this.columnBuffer.unmap();
+  }
+
+  setMarkerSizes(sizes: Float32Array, device: GPUDevice) {
+    this.markerSizesLength = sizes.length;
+    this.markerSizesBuffer = device.createBuffer({
+        size: getPaddedSize(this.markerSizesLength),
+        usage: GPUBufferUsage.STORAGE,
+        mappedAtCreation: true,
+      });
+      const scBufferArray = this.markerSizesBuffer.getMappedRange();
+      let scBufferOffset = 0;
+      new Float32Array(scBufferArray, scBufferOffset, this.markerSizesLength).set(sizes);
+      scBufferOffset += this.xColLength * Float32Array.BYTES_PER_ELEMENT;
+      this.markerSizesBuffer.unmap();
   }
 };
 
@@ -314,7 +327,9 @@ async function webGPUInit(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotVie
   // We'll set the viewBox and viewPort each time as this is cheap
   cache.setViewBuffer(sc, device);
 
-  if (!cache.isValid() || !cache.indexBuffer || !cache.columnBuffer || !cache.viewBuffer)
+  cache.setMarkerSizes(sc.getMarkerSizes(), device);
+
+  if (!cache.isValid() || !cache.indexBuffer || !cache.columnBuffer || !cache.viewBuffer || !cache.markerSizesBuffer)
     return;
 
   const gpuContext = webGPUCanvas.getContext('webgpu');
@@ -327,8 +342,6 @@ async function webGPUInit(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotVie
     format: presentationFormat,
     alphaMode: 'premultiplied',
   });
-
-  const markerSize = 12;
 
   const module = device.createShaderModule({
     code: `
@@ -353,6 +366,7 @@ async function webGPUInit(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotVie
         
         @group(1) @binding(0) var<storage, read> sc: SC;
         @group(1) @binding(1) var<storage, read> data: Data;
+        @group(1) @binding(2) var<storage, read> markerSizes: array<f32, ${cache.markerSizesLength}>;
 
         @vertex fn vs(
             vert: Vertex,
@@ -371,7 +385,7 @@ async function webGPUInit(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotVie
 
             let screenPoint = pointToScreen(vert.index);
             let normalizedPos = convertPointToNormalizedCoords(screenPoint);
-            vsOut.position = vec4f(normalizedPos + pos * ${markerSize} / uni.resolution, 0, 1);
+            vsOut.position = vec4f(normalizedPos + pos * (markerSizes[vert.index] + ${sc.props.markerBorderWidth}) / uni.resolution, 0, 1);
             vsOut.texcoord = pos * 0.5 + 0.5;
             return vsOut;
         }
@@ -421,24 +435,10 @@ async function webGPUInit(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotVie
     },
   });
 
-  // Defining textures that will be drawn
-  const circleCanvas = createCircleCanvas(markerSize, sc);
-  const texture = device.createTexture({
-    size: [markerSize, markerSize],
-    format: 'rgba8unorm',
-    usage: GPUTextureUsage.TEXTURE_BINDING |
-            GPUTextureUsage.COPY_DST |
-            GPUTextureUsage.RENDER_ATTACHMENT,
-  });
-  device.queue.copyExternalImageToTexture(
-    {source: circleCanvas, flipY: true},
-    {texture: texture, premultipliedAlpha: true},
-    [markerSize, markerSize]
-  );
-
-  const sampler = device.createSampler({
+   const sampler = device.createSampler({
     minFilter: 'linear',
     magFilter: 'linear',
+    mipmapFilter: 'linear',  // Enable mipmap filtering for smooth scaling
   });
 
   const uniformValues = new Float32Array(2);
@@ -450,20 +450,12 @@ async function webGPUInit(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotVie
   const resolutionValue = uniformValues.subarray(
     kResolutionOffset, kResolutionOffset + 2);
 
-  const renderGroup = device.createBindGroup({
-    layout: pipeline.getBindGroupLayout(0),
-    entries: [
-      {binding: 0, resource: {buffer: uniformBuffer}},
-      {binding: 1, resource: sampler},
-      {binding: 2, resource: texture.createView()},
-    ],
-  });
-
   const dataGroup = device.createBindGroup({
     layout: pipeline.getBindGroupLayout(1),
     entries: [
       {binding: 0, resource: {buffer: cache.viewBuffer}},
       {binding: 1, resource: {buffer: cache.columnBuffer}},
+      {binding: 2, resource: {buffer: cache.markerSizesBuffer}},
     ],
   });
 
@@ -489,6 +481,34 @@ async function webGPUInit(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotVie
   resolutionValue.set([canvasTexture.width, canvasTexture.height]);
   device.queue.writeBuffer(uniformBuffer, 0, uniformValues);
 
+  // Defining textures that will be drawn
+  const maxMarkerSize = 32;
+  const circleCanvas = createCircleCanvas(maxMarkerSize, sc);
+  const texture = device.createTexture({
+    size: [maxMarkerSize, maxMarkerSize],
+    format: 'rgba8unorm',
+    mipLevelCount: Math.floor(Math.log2(maxMarkerSize)) + 1,  // Enable mipmaps
+    usage: GPUTextureUsage.TEXTURE_BINDING |
+            GPUTextureUsage.COPY_DST |
+            GPUTextureUsage.RENDER_ATTACHMENT,
+  });
+  device.queue.copyExternalImageToTexture(
+    {source: circleCanvas, flipY: true},
+    {texture: texture, premultipliedAlpha: true},
+    [maxMarkerSize, maxMarkerSize]
+  );
+
+  const renderGroup = device.createBindGroup({
+    layout: pipeline.getBindGroupLayout(0),
+    entries: [
+      {binding: 0, resource: {buffer: uniformBuffer}},
+      {binding: 1, resource: sampler},
+      {binding: 2, resource: texture.createView()},
+    ],
+  });
+
+  generateMips(device, texture);
+
   const encoder = device.createCommandEncoder();
   const pass = encoder.beginRenderPass(renderPassDescriptor as GPURenderPassDescriptor);
   pass.setPipeline(pipeline);
@@ -498,9 +518,110 @@ async function webGPUInit(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotVie
   pass.draw(6, cache.indexBufferLength);
   pass.end();
 
-  const commandBuffer = encoder.finish();
-  device.queue.submit([commandBuffer]);
+  const encoderBuffer = encoder.finish();
+  device.queue.submit([encoderBuffer]);
   await device.queue.onSubmittedWorkDone();
+}
+
+function generateMips(device: GPUDevice, texture: GPUTexture) {
+    const module = device.createShaderModule({
+    label: 'textured quad shaders for mip level generation',
+    code: `
+        struct VSOutput {
+        @builtin(position) position: vec4f,
+        @location(0) texcoord: vec2f,
+        };
+
+        @vertex fn vs(
+        @builtin(vertex_index) vertexIndex : u32
+        ) -> VSOutput {
+        let pos = array(
+
+            vec2f( 0.0,  0.0),  // center
+            vec2f( 1.0,  0.0),  // right, center
+            vec2f( 0.0,  1.0),  // center, top
+
+            // 2st triangle
+            vec2f( 0.0,  1.0),  // center, top
+            vec2f( 1.0,  0.0),  // right, center
+            vec2f( 1.0,  1.0),  // right, top
+        );
+
+        var vsOutput: VSOutput;
+        let xy = pos[vertexIndex];
+        vsOutput.position = vec4f(xy * 2.0 - 1.0, 0.0, 1.0);
+        vsOutput.texcoord = vec2f(xy.x, 1.0 - xy.y);
+        return vsOutput;
+        }
+
+        @group(0) @binding(0) var ourSampler: sampler;
+        @group(0) @binding(1) var ourTexture: texture_2d<f32>;
+
+        @fragment fn fs(fsInput: VSOutput) -> @location(0) vec4f {
+        return textureSample(ourTexture, ourSampler, fsInput.texcoord);
+        }
+    `,
+    });
+
+    const sampler = device.createSampler({
+        minFilter: 'linear',
+        magFilter: 'linear',
+        mipmapFilter: 'linear',  // Enable mipmap filtering for smooth scaling
+    });
+
+    const pipeline = device.createRenderPipeline({
+        label: 'mip level generator pipeline',
+        layout: 'auto',
+        vertex: {
+          module,
+        },
+        fragment: {
+          module,
+          targets: [{ format: texture.format }],
+        },
+      });
+
+    const encoder = device.createCommandEncoder({
+      label: 'mip gen encoder',
+    });
+
+    let width = texture.width;
+    let height = texture.height;
+    let baseMipLevel = 0;
+    while (width > 1 || height > 1) {
+      width = Math.max(1, width / 2 | 0);
+      height = Math.max(1, height / 2 | 0);
+
+      const bindGroup = device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: sampler },
+          { binding: 1, resource: texture.createView({baseMipLevel, mipLevelCount: 1}) },
+        ],
+      });
+
+      ++baseMipLevel;
+
+      const renderPassDescriptor = {
+        label: 'our basic canvas renderPass',
+        colorAttachments: [
+          {
+            view: texture.createView({baseMipLevel, mipLevelCount: 1}),
+            loadOp: 'clear',
+            storeOp: 'store',
+          },
+        ],
+      };
+
+      const pass = encoder.beginRenderPass(renderPassDescriptor as GPURenderPassDescriptor);
+      pass.setPipeline(pipeline);
+      pass.setBindGroup(0, bindGroup);
+      pass.draw(6);  // call our vertex shader 6 times
+      pass.end();
+    }
+
+    const commandBuffer = encoder.finish();
+    device.queue.submit([commandBuffer]);
 }
 
 function getPaddedSize(length: number): number {
