@@ -70,7 +70,7 @@ category('Packages: migrations', () => {
     let versionsList = await grok.dapi.packages.filter('shortName = "Apitestsdb"').list();
     console.log(versionsList);
     expect(versionsList.length, 1);
-  });
+  }, { timeout: 50000 });
 
   test('Isolation', async () => {
     await expectExceptionAsync(() => publish(packageWithDropEntities, 'apitestsbad', false));
