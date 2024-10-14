@@ -71,7 +71,7 @@ export class AddNewColumnDialog {
   maxAutoNameLength: number = 50;
   maxPreviewRowCount: number = 20;
   newColumnBgColor: number = 0xFFFDFFE7; // The same bg-color as the bg-color of tooltips.
-  colNamePattern: RegExp = /\${(.+?)(?<!\\)}|\$\[(.+?)(?<!\\)\]/g;
+  colNamePattern: RegExp;
   colNamePatternWithoutDollar: RegExp = /{(.+?)}|\[(.+?)\]/g;
   tooltips = {
     name: 'Сolumn name.',
@@ -121,6 +121,7 @@ export class AddNewColumnDialog {
 
   constructor(call: DG.FuncCall | null = null) {
     const table = call?.getParamValue('table');
+    this.colNamePattern = DG._isDartium() ? /\${(.+?)}|\$\[(.+?)\]/g : /\${(.+?)(?<!\\)}|\$\[(.+?)(?<!\\)\]/g;;
 
     DG.debounce(this.updatePreviewEvent, 1000).subscribe(async (params: UpdatePreviewParams) => {
       await this.updatePreview(params.expression, params.changeName);
