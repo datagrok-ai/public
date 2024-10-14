@@ -14,7 +14,7 @@ import {FunctionView} from './function-view';
 import {RunComparisonView} from './run-comparison-view';
 import '../css/pipeline-view.css';
 import {serialize} from '@datagrok-libraries/utils/src/json-serialization';
-import {createPartialCopy, deepCopy, fcToSerializable, getStartedOrNull, isIncomplete} from '../../shared-utils/utils';
+import {createPartialCopy, deepCopy, fcToSerializable, getStartedOrNull, isIncomplete, showHelpWithDelay} from '../../shared-utils/utils';
 import {testPipeline} from '../../shared-utils/function-views-testing';
 
 export type StepState = {
@@ -578,10 +578,7 @@ export class PipelineView extends FunctionView {
   }
 
   private async showHelpWithDelay(currentStep: StepState) {
-    grok.shell.windows.help.visible = true;
-    // Workaround to deal with help panel bug
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    grok.shell.windows.help.showHelp(ui.markdown(this.helpFiles[currentStep.func.nqName]));
+    showHelpWithDelay(this.helpFiles[currentStep.func.nqName])
   }
 
   private findCurrentStep() {

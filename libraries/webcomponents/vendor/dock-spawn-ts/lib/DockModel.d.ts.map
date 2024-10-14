@@ -1,0 +1,1 @@
+{"version":3,"file":"DockModel.d.ts","sourceRoot":"","sources":["../src/DockModel.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,QAAQ,EAAE,MAAM,eAAe,CAAC;AACzC,OAAO,EAAE,MAAM,EAAE,MAAM,aAAa,CAAC;AAErC,qBAAa,SAAS;IAClB,QAAQ,EAAE,QAAQ,CAAC;IACnB,mBAAmB,EAAE,QAAQ,CAAC;IAC9B,OAAO,EAAE,MAAM,EAAE,CAAA;;CAKpB"}

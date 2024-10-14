@@ -1,0 +1,51 @@
+import { DockManager } from './DockManager.js';
+import { Point } from './Point.js';
+import { PanelContainer } from './PanelContainer.js';
+import { DraggableContainer } from './DraggableContainer.js';
+import { ResizableContainer } from './ResizableContainer.js';
+import { EventHandler } from './EventHandler.js';
+import { DockNode } from './DockNode.js';
+export declare class Dialog {
+    elementDialog: HTMLDivElement & {
+        floatingDialog: Dialog;
+    };
+    draggable: DraggableContainer;
+    panel: PanelContainer;
+    dockManager: DockManager;
+    eventListener: DockManager;
+    position: Point;
+    resizable: ResizableContainer;
+    disableResize: boolean;
+    mouseDownHandler: any;
+    onKeyPressBound: any;
+    noDocking: boolean;
+    isHidden: boolean;
+    keyPressHandler: EventHandler;
+    focusHandler: EventHandler;
+    grayoutParent: PanelContainer;
+    contextmenuHandler: EventHandler;
+    _ctxMenu: HTMLDivElement;
+    _windowsContextMenuCloseBound: any;
+    constructor(panel: PanelContainer, dockManager: DockManager, grayoutParent?: PanelContainer, disableResize?: boolean);
+    saveState(x: number, y: number): void;
+    static fromElement(id: string, dockManager: DockManager): Dialog;
+    _initialize(): void;
+    setPosition(x: number, y: number): void;
+    getPosition(): Point;
+    onFocus(): void;
+    onMouseDown(e: PointerEvent): void;
+    destroy(): void;
+    resize(width: number, height: number): void;
+    setTitle(title: string): void;
+    setTitleIcon(iconName: string): void;
+    bringToFront(): void;
+    hide(): void;
+    close(): void;
+    remove(): void;
+    show(): void;
+    static createContextMenuContentCallback: (dialog: Dialog, documentMangerNodes: DockNode[]) => Node[];
+    oncontextMenuClicked(e: MouseEvent): void;
+    closeContextMenu(): void;
+    windowsContextMenuClose(e: Event): void;
+}
+//# sourceMappingURL=Dialog.d.ts.map

@@ -7,8 +7,10 @@
     "@datagrok-libraries/utils": "^4.3.0",
     "@datagrok-libraries/webcomponents": "^0.0.3",
     "cash-dom": "latest",
+    "css-loader": "^7.1.2",
     "datagrok-api": "latest",
-    "dayjs": "latest"
+    "dayjs": "latest",
+    "style-loader": "^4.0.0"
   },
   "devDependencies": {
     "datagrok-tools": "latest",

@@ -23,12 +23,12 @@
   "scripts": {
     "link": "npm link",
     "link-api": "npm link datagrok-api",
-    "link-all": "npm link datagrok-api",
+    "link-all": "npm link datagrok-api @datagrok-libraries/compute-utils",
     "build": "tsc",
     "clean": "tsc --build --clean",
     "lint": "eslint . --ext .ts",
     "lint-fix": "eslint . --ext .ts --fix",
-    "build-all": "npm --prefix ./../../js-api run build && npm run build"
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/compute-utils run build && npm run build"
   },
   "repository": {
     "type": "git",

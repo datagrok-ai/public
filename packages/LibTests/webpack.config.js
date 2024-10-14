@@ -21,9 +21,6 @@ module.exports = {
   },
   module: {
     rules: [
-      {test: /\.tsx?$/, loader: 'babel-loader', options: {
-        'plugins': ['@vue/babel-plugin-jsx'],
-      }},
       {test: /\.tsx?$/, loader: 'ts-loader', options: {allowTsInNodeModules: true}},
       {
         test: /\.css$/,
@@ -48,6 +45,7 @@ module.exports = {
     'wu': 'wu',
     'exceljs': 'ExcelJS',
     'html2canvas': 'html2canvas',
+    'vue': 'Vue',
   },
   output: {
     filename: '[name].js',

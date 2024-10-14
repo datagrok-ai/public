@@ -5,7 +5,6 @@ import * as DG from 'datagrok-api/dg';
 
 export class InputForm extends HTMLElement {
   private formInst?: DG.InputForm;
-  private currentSource?: DG.FuncCall;
 
   constructor() {
     super();
@@ -18,30 +17,38 @@ export class InputForm extends HTMLElement {
   }
 
   get funcCall() {
-    return this.currentSource;
+    return this.formInst?.source;
   }
 
   set funcCall(fc: DG.FuncCall | undefined) {
-    this.currentSource = fc;
-    if (!this.currentSource) {
-      this.formInst = undefined;
-      this.attach();
-    } else if (this.formInst)
-      this.formInst.source = this.currentSource;
-    else
-      this.init();
+    if (!fc) {
+      ui.empty(this);
+      return;
+    }
+
+    if (!this.funcCall) {
+      this.replaceFunc(fc);
+      return;
+    }
+
+    if (this.funcCall.func.id === fc.func.id) {
+      if (this.funcCall.id !== fc.id) this.formInst!.source = this.funcCall;
+    } else
+      this.replaceFunc(fc);
   }
 
-  private async init() {
-    this.formInst = await DG.InputForm.forFuncCall(this.currentSource!, {twoWayBinding: true});
+  private async replaceFunc(funcCall: DG.FuncCall) {
+    this.formInst = await DG.InputForm.forFuncCall(funcCall, {twoWayBinding: true});
+    this.formInst.onInputChanged
+      .subscribe((event) => this.dispatchEvent(new CustomEvent('input-changed', {detail: event})));
     this.attach();
   }
 
   private attach() {
     ui.empty(this);
-    this.dispatchEvent(new CustomEvent('form-changed', {detail: this.formInst}));
     if (this.formInst)
       this.appendChild(this.formInst.root);
+    this.dispatchEvent(new CustomEvent('form-replaced', {detail: this.formInst}));
   }
 }
 

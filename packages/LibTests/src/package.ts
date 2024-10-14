@@ -1,22 +1,19 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
-// eslint-disable-next-line
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 import {FuncCallInput} from '@datagrok-libraries/compute-utils/shared-utils/input-wrappers';
 import {BehaviorSubject} from 'rxjs';
 import {distinctUntilChanged} from 'rxjs/operators';
 import equal from 'deep-equal';
-import {PipelineConfiguration, ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult} from '@datagrok-libraries/compute-utils';
-import type {ViewerT, InputFormT} from '@datagrok-libraries/webcomponents/src';
-import {createApp, provide} from 'vue';
-import {VueViewerTestApp} from './components/VueViewerTestApp';
-import {VueFormTestApp} from './components/VueFormTestApp';
-import {VueElementsTestApp} from './components/VueElelementsTestApp';
-import {VueDriverTestApp} from './components/VueDriverTestApp';
+import {
+  PipelineConfiguration,
+  ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult,
+} from '@datagrok-libraries/compute-utils';
+import type {ViewerT, InputFormT} from '@datagrok-libraries/webcomponents';
 
 export const _package = new DG.Package();
-
 //
 // Validators manual testing
 //
@@ -223,43 +220,7 @@ export async function TestElements() {
   grok.shell.addView(view);
 }
 
-//tags: test
-export async function TestVueViewerComponent() {
-  const view = new DG.ViewBase();
-  const app = createApp(VueViewerTestApp);
-  app.mount(view.root);
-  grok.shell.addView(view);
-}
-
-//tags: test
-export async function TestVueFormComponent() {
-  const view = new DG.ViewBase();
-  const app = createApp(VueFormTestApp);
-  app.mount(view.root);
-  grok.shell.addView(view);
-}
-
-
-//tags: test
-export async function TestVueElements() {
-  const view = new DG.ViewBase();
-  const app = createApp(VueElementsTestApp);
-  app.mount(view.root);
-  grok.shell.addView(view);
-}
-
-//tags: test
-export async function TestVueDriver() {
-  // TODO: close view handling
-  const view = new DG.ViewBase();
-  const app = createApp(VueDriverTestApp);
-  app.mount(view.root);
-  grok.shell.addView(view);
-}
-
-
 // pipeline driver testing
-
 
 //input: double a
 //input: double b
