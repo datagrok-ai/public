@@ -73,7 +73,7 @@ export async function initTests() {
         before(async ()=>{
           await currentBefore();
         })
-        delete beforeArr['Scripts:ui:inputs'];
+        delete beforeArr[catName];
       }
       
       _test(script.friendlyName, async () => {
