@@ -9,35 +9,77 @@ import {interval, fromEvent} from 'rxjs';
 import {getElement, getView, describeElements, singleDescription, closeWindows} from './utils';
 
 /** Earth's population modeling */
-export const POPULATION_MODEL = `#name: Population 
-#equations:
-  dP/dt = k * P * (N - P)
+export const POPULATION_MODEL = `#name: Lotka-Volterra
+#equations: 
+  dx/dt = alpha * x
+  dy/dt = -gamma * y
 
 #argument: t
-  t0 = 2000 {caption: initial; category: Time; min: 0; max: 2010; units: year}
-  t1 = 2100 {caption: final; category: Time; min: 2010; max: 2200; units: year}
-  h = 0.5   {caption: step; category: Time; min: 0.5; max: 10; units: year}
+  initial = 0 {min: 0; max: 2; caption: Start; category: Time}
+  final = 15  {min: 2; max: 150; caption: Finish; category: Time}
+  step = 0.1  {min: 0.1; max: 1; caption: Step; category: Time}
 
-#inits:
-  P = 6.171 {caption: Population; category: Parameters; min: 5; max: 10; units: billion}
+#inits:  
+  x = 20 {min: 2; max: 40; category: Seed; caption: Prey}
+  y = 2  {min: 2; max: 10; category: Seed; caption: Predator}
 
 #parameters:
-  k = 0.002 {caption: Growth rate; category: Parameters; min: 0.001; max: 0.01; units: 1/year}
-  N = 12.53 {caption: Carrying capacity; category: Parameters; min: 2; max: 30; units: billion}`;
+  alpha = 1.1 {min: 0.1; max: 1.5; category: Parameters} [The maximum prey per capita growth rate]
+  beta = 0.4  {min: 0.1; max: 1; category: Parameters} [The effect of the presence of predators on the prey death rate]
+  gamma = 1.1 {min: 0.1; max: 1.5; category: Parameters} [The predator's per capita death rate]
+  delta = 0.4 {min: 0.1; max: 1; category: Parameters} [The effect of the presence of prey on the predator's growth rate]
 
-/** Diff studio UI info */
+#output:
+  t {caption: Time}
+  x {caption: Prey}
+  y {caption: Predator}`;
+
+/** Diff Studio UI info */
 const uiInfo = [
   `# Model
   
   You can enter the model inputs here.`,
-  `# Graph
+  `# Graphs
   
-  The contribution of varying inputs alone: **Angle** has the highest impact.
+  The model is incomplete, leading to the following effects:
 
-  (to explore **Max height**, change value in the value selector)`,
-  `# Max distance
+  * The prey population grows infinitely
+  * The predator population steadily declines`,
+  `# Dataframe
 
-  Overall impact of parameters, including their interactions with each other: **Angle** produces greater contribution than **Velocity**.`,
+  The outcomes of the numerical simulation.`,
+];
+
+/** Diff Studio editor info */
+const editorInfo = [
+  `# Equations
+   
+  Place differential equations in this block.`,
+  `# Argument
+  
+  Define the argument in this block: 
+  * the initial value
+  * the final value
+  * the grid step`,
+  `# Annotation
+  
+  Diff Studio automatically generates user interface. To improve usability, specifiy in braces \`{}\`:
+
+  * \`min\` and \`max\` to get sliders for the rapid model exploration
+  * \`caption\` to get the desired input caption
+  * \`category\` to group inputs by their categories`,
+  `# Inits
+  
+  Define initial values here.`,
+  `# Parameters
+  
+  If your model has paraterers, specify them here.`,
+  `# Annotation
+  
+  To improve usability, you can specifiy tooltips in brackets \`[]\`.`,
+  `# Output
+
+  The computation output is a dataframe. You can customize it here.`,
 ];
 
 /** Tutorial on solving differential equations */
@@ -48,7 +90,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
   get description() {
     return 'Learn how to model processes defined by differential equations with Diff Studio';
   }
-  get steps() {return 11;}
+  get steps() {return 12;}
 
   demoTable: string = '';
   helpUrl: string = 'https://datagrok.ai/help/compute/diff-studio';
@@ -58,7 +100,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
     this.describe('Diff Studio enables the simulation of processes defined by ordinary differential equations.');
     this.describe(ui.link('Learn more', this.helpUrl).outerHTML);
     this.title('Model');
-    this.describe('Consider the simulation of Earth\'s population growth.');
+    this.describe(`Let\'s implement the Lotka-Volterra predator-prey ${ui.link('model', this.helpUrl).outerHTML}.`);
     closeWindows();
 
     if (grok.shell.view('Browse') === undefined) {
@@ -90,96 +132,141 @@ export class DifferentialEquationsTutorial extends Tutorial {
     await openModelFuncCall.call();
 
     await new Promise((resolve) => setTimeout(resolve, 300));
+    
+    // 2. Explore elements
+    this.describe('We start with an incomplete model.');
 
-    // 2. Play
-    const finalInputAction = diffStudio.inputAction('Time', 'Final', 2200);
+    const dsView = grok.shell.v as DG.TableView;
+    const dsViewRoot = dsView.root;
+    let uiFormRoot = dsViewRoot.querySelector('div.ui-form') as HTMLElement;
+    const gridRoot = dsView.grid.root;
+    const lineChartRoot = dsViewRoot.querySelector('div.d4-line-chart') as HTMLElement;
+
+    let doneBtn = describeElements([uiFormRoot, lineChartRoot, gridRoot], uiInfo);
     await this.action(
-      'Set "Final" to 2200',
-      finalInputAction.promise,
-      finalInputAction.root,
-      'Simulate the population until 2200.',
+      'Explore the interface',
+      fromEvent(doneBtn, 'click'),
+      undefined,
+      'Click "Next" to go to the next item.',
     );
 
-    const capacityInputAction = diffStudio.inputAction('Parameters', 'Carrying capacity', 30);
+    // 3. Play with inputs
+    let inputRoots = uiFormRoot.querySelectorAll('div.ui-input.ui-input-root.ui-input-float');
+    let finishEditor = inputRoots[1].querySelector('input[class="ui-input-editor"]') as HTMLInputElement;
     await this.action(
-      'Set "Carrying capacity" to 30',
-      capacityInputAction.promise,
-      capacityInputAction.root,
-      'Move a slider to explore the impact of carrying capacity on Earth\'s population.',
+      'Set "Finish" to 150',
+      interval(100).pipe(filter(() => finishEditor.value == '150')),
+      finishEditor,
+      'Move a slider to get a simulation over a longer time period.',
     );
 
-    // 3. Model
-    const modelTabHeader = diffStudio.getTabHeaderRoot('Model');
+    // 4. Go to ODEs
+    const editorRoot = dsViewRoot.querySelector('div.panel-base') as HTMLElement;
+    this.describe('Explore the mathematical model.');
+    const modelTabRoot = dsViewRoot.querySelector('div.d4-tab-header[name="Model"]') as HTMLElement;
     await this.action(
       'Click the Model tab',
-      fromEvent(modelTabHeader, 'click'),
-      modelTabHeader,
+      fromEvent(modelTabRoot, 'click'),
+      modelTabRoot,
       'Go to the <b>Model</b> tab, and modify the underlying mathematical model.',
     );
 
-    // 4. Add equation
-    const equation = 'dR/dt = -P';
-    const equationWithoutSpaces = equation.replaceAll(' ', '');
+    // 5. Explore equations editor
+    editorRoot.style.width = '515px';
+    const lineRoots = editorRoot.querySelectorAll('div[class="cm-line"]') as unknown as HTMLElement[];
+
+    doneBtn = describeElements([
+      lineRoots[0],
+      lineRoots[4],
+      lineRoots[5],
+      lineRoots[9],
+      lineRoots[13],
+      lineRoots[14],
+      lineRoots[20],
+    ], editorInfo);
+
     await this.action(
-      'Add equation',
-      interval(1000).pipe(filter(() => diffStudio.getEquations().replaceAll(' ', '').includes(equationWithoutSpaces))),
-      null,
-      `Add the equation <b>${equation}</b> to the <b>#equations:</b>-block. It describes the <i>resource depletion (R)</i>.`,
+      'Explore editor',
+      fromEvent(doneBtn, 'click'),
+      undefined,
+      'Click "Next" to go to the next item.',
     );
 
-    // 5. Add initial value
-    const initCondition = 'R = 3000';
-    const initConditionWithoutSpaces = initCondition.replaceAll(' ', '');
+    // 6. Complete 1st equation  
+    this.title('Improvement');
+    this.describe('Let\'s modify the model so that it takes into account the interaction between predator and prey.');
+    
     await this.action(
-      'Set initial value',
-      interval(1000).pipe(filter(() => diffStudio.getEquations().replaceAll(' ', '').includes(initConditionWithoutSpaces))),
-      null,
-      `Add <b>${initCondition}</b> to the <b>#inits:</b>-block. It defines the initial value of <b>R</b>.`,
+      'Complete the first equation',
+      interval(100).pipe(filter(() => lineRoots[1].textContent?.replaceAll(' ', '') == 'dx/dt=alpha*x-beta*x*y')),
+      undefined,
+      'Replace the 1-st equation with <b>dx/dt = alpha * x - beta * x * y</b>',
     );
 
-    // 6. Simulate
-    const runTabHeader = diffStudio.getTabHeaderRoot('Run');
+    // 7. Complete 1st equation    
     await this.action(
-      'Click the Run tab',
-      fromEvent(runTabHeader, 'click'),
-      runTabHeader,
-      'Go to the <b>Run</b> tab, and explore the updated model.',
+      'Complete the second equation',
+      interval(100).pipe(filter(() => lineRoots[2].textContent?.replaceAll(' ', '') == 'dy/dt=-gamma*y+delta*x*y')),
+      undefined,
+      'Replace the 2-nd equation with <b>dy/dt = -gamma * y + delta * x * y</b>',
     );
 
-    // 7. Back to model
+    // 8. Check meaning
+    const description = '# Updates\n\nNow, the model takes into account:' + 
+      '\n* the effect of the presence of predators on the prey death rate' +
+      '\n* the effect of the presence of prey on the predator\'s growth rate';
+    
+    let okBtn = singleDescription(lineRoots[1], description, 'Go to the next step');
+
     await this.action(
-      'Click the Model tab',
-      fromEvent(modelTabHeader, 'click'),
-      modelTabHeader,
-      'Diff Studio automatically generates the user interface. To enhance usability, navigate to the <b>Model</b> tab.',
+      'Click "OK"',
+      fromEvent(okBtn, 'click'),
+      undefined,
+      'Check the updates. Click "OK" to go to the next step.',
     );
 
-    // 8. Add annotation
-    const annotation = '{caption: Resources; category: Initial values; min: 3000; max: 4000; units: mu}';
-    const annotationWithouSpaces = annotation.replaceAll(' ', '');
+    editorRoot.style.width = '220px';
+
+    // 9. Run computations
+    this.title('Exploration');
+    const runIcnRoot = document.querySelector('i.grok-icon.fal.fa-play.fas') as HTMLElement;
+
     await this.action(
-      'Annotate R',
-      interval(1000).pipe(filter(() => diffStudio.getEquations().replaceAll(' ', '').includes(annotationWithouSpaces))),
-      null,
-      `Add <b>${annotation}</b> right after <b>${initCondition}</b> in the <b>#inits:</b>-block.`,
+      'Run the model',
+      fromEvent(runIcnRoot, 'click'),
+      runIcnRoot,
+      `Click the <b>Run</b> icon on the top panel.`,
     );
 
-    // 9. Update annotation
-    const category = 'Initial values';
-    const expected = `Population; category: ${category}`.replaceAll(' ', '');
+    // 10. Play with inputs 
+    uiFormRoot = dsViewRoot.querySelector('div.ui-form') as HTMLElement;   
+    inputRoots = uiFormRoot.querySelectorAll('div.ui-input.ui-input-root.ui-input-float');
+    console.log(inputRoots);
+
+    const preyEditor = inputRoots[3].querySelector('input[class="ui-input-editor"]') as HTMLInputElement;
     await this.action(
-      'Update category of P',
-      interval(1000).pipe(filter(() => diffStudio.getEquations().replaceAll(' ', '').includes(expected))),
-      null,
-      `Replace the current category of <b>P</b> with <b>${category}</b> in the <b>#inits:</b>-block. This will place <i>initial values</i> in the same inputs group.`,
+      'Set "Prey" to 2',
+      interval(100).pipe(filter(() => preyEditor.value == '2')),
+      preyEditor,
+      'Move a slider to reduce the initial value of the prey population.',
     );
 
-    // 10. Final checks
+    // 11. Play with inputs    
+    const deltaEditor = inputRoots[8].querySelector('input[class="ui-input-editor"]') as HTMLInputElement;
     await this.action(
-      'Click the Run tab',
-      fromEvent(runTabHeader, 'click'),
-      runTabHeader,
-      'Go to the <b>Run</b> tab, and check the updates.',
+      'Set "Delta" to 0.1',
+      interval(100).pipe(filter(() => deltaEditor.value == '0.1')),
+      deltaEditor,
+      'Reduce the effect of preys on the predator\'s growth rate.',
+    );
+
+    // 12. Play with inputs
+    finishEditor = inputRoots[1].querySelector('input[class="ui-input-editor"]') as HTMLInputElement;
+    await this.action(
+      'Set "Finish" to 150',
+      interval(100).pipe(filter(() => finishEditor.value == '150')),
+      finishEditor,
+      'Get a simulation over a longer time period.',
     );
   } // _run
 } // DifferentialEquationsTutorial

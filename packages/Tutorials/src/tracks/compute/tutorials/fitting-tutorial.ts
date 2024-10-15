@@ -175,10 +175,10 @@ export class FittingTutorial extends Tutorial {
     );
     
     await this.action(
-      'Click "Clear"',
+      'Click "OK"',
       fromEvent(okBtn, 'click'),
       undefined,
-      `Click "Clear" to go to the next step.`,
+      `Click "OK" to go to the next step.`,
     );
 
     const ballFlightTable = await grok.dapi.files.readCsv('System:AppData/Tutorials/ball-flight-trajectory.csv');

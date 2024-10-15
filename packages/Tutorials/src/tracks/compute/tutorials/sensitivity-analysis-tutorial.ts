@@ -243,7 +243,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       'Explore solution',
       fromEvent(okBtn, 'click'),
       undefined,
-      'Click "Clear" to go to the next step.',
+      'Click "OK" to go to the next step.',
     );
 
     // 11. Parameters' impact
