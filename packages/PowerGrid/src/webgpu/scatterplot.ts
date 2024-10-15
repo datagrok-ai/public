@@ -23,6 +23,27 @@ class WebGPUCache {
   markerDefaultSize = -1;
   sizeColumnName = '';
 
+  updateAndValidate(sc: DG.ScatterPlotViewer, device: GPUDevice, pt: DG.Point = new DG.Point(0, 0)) {
+    const xCol = sc.table.col(sc.props.xColumnName);
+    const yCol = sc.table.col(sc.props.yColumnName);
+    if (!xCol || !yCol)
+      return false;
+  
+    if (this.isIndexBufferChanged(sc.filter))
+        this.setIndexBuffer(sc.filter, device);
+  
+    if (this.isColumnChanged(xCol, yCol))
+        this.setColumns(xCol, yCol, device);
+  
+    // We'll set the viewBox and viewPort each time as this is cheap
+    this.setViewBuffer(sc, device, pt);
+  
+    if (this.isMarkerSizesParamsChanged(sc))
+        this.setMarkerSizes(sc, device);
+  
+    return this.isValid();
+  }
+
   isViewBoxChanged(viewBox: DG.Rect) {
     return !areEqual(viewBox, this.viewBox);
   }
@@ -44,7 +65,6 @@ class WebGPUCache {
   isValid() {
     return this.indexBufferLength > 0 && this.xColLength > 0 && this.yColLength > 0;
   }
-
 
   setViewBox(viewBox: DG.Rect) {
     this.viewBox = viewBox;
@@ -199,21 +219,7 @@ export async function scWebGPUPointHitTest(sc: DG.ScatterPlotViewer, pt: DG.Poin
   if (!device)
     return -1;
 
-  const xCol = sc.table.col(sc.props.xColumnName);
-  const yCol = sc.table.col(sc.props.yColumnName);
-  if (!xCol || !yCol)
-    return -1;
-
-  if (cache.isIndexBufferChanged(sc.filter))
-    cache.setIndexBuffer(sc.filter, device);
-
-  if (cache.isColumnChanged(xCol, yCol))
-    cache.setColumns(xCol, yCol, device);
-
-  // We'll set the viewBox and viewPort each time as this is cheap
-  cache.setViewBuffer(sc, device, pt);
-
-  if (!cache.isValid() || !cache.indexBuffer || !cache.columnBuffer || !cache.viewBuffer)
+  if (!cache.updateAndValidate(sc, device, pt) || !cache.indexBuffer || !cache.columnBuffer || !cache.viewBuffer || !cache.markerSizesBuffer)
     return -1;
 
   const kWorkgroupSize = 100;
@@ -235,6 +241,8 @@ export async function scWebGPUPointHitTest(sc: DG.ScatterPlotViewer, pt: DG.Poin
             @group(0) @binding(2) var<storage, read> data: Data;
             @group(0) @binding(3) var<storage, read_write> hitResult: atomic<i32>;
 
+            @group(1) @binding(0) var<storage, read> markerSizes: array<f32, ${cache.markerSizesLength}>;
+
             fn getMarkerType(index: u32) -> i32 {
                 return 0; // Dummy function for marker type
             }
@@ -255,10 +263,10 @@ export async function scWebGPUPointHitTest(sc: DG.ScatterPlotViewer, pt: DG.Poin
                 }
 
                 let filteredIndex = indexes[idx];
+                let markerSize = markerSizes[filteredIndex];
                 let screenPoint = pointToScreen(filteredIndex);
                 let markerType = getMarkerType(idx);
-                let markerSize = 10.0;
-                if (hitTest(markerSize / 2, screenPoint, markerType)) {
+                if (hitTest(ceil(markerSize) / 2.0, screenPoint, markerType)) {
                     atomicMax(&hitResult, i32(filteredIndex));
                 }
             }
@@ -281,10 +289,18 @@ export async function scWebGPUPointHitTest(sc: DG.ScatterPlotViewer, pt: DG.Poin
     ],
   });
 
+  const dataGroup = device.createBindGroup({
+    layout: pipeline.getBindGroupLayout(1),
+    entries: [
+      {binding: 0, resource: {buffer: cache.markerSizesBuffer}},
+    ],
+  });
+
   const commandEncoder = device.createCommandEncoder();
   const passEncoder = commandEncoder.beginComputePass();
   passEncoder.setPipeline(pipeline);
   passEncoder.setBindGroup(0, bindGroup);
+  passEncoder.setBindGroup(1, dataGroup);
   passEncoder.dispatchWorkgroups(workGroupDispatchSize, workGroupDispatchSize);
   passEncoder.end();
 
@@ -321,24 +337,7 @@ async function webGPUInit(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotVie
   if (!device)
     return;
 
-  const xCol = sc.table.col(sc.props.xColumnName);
-  const yCol = sc.table.col(sc.props.yColumnName);
-  if (!xCol || !yCol)
-    return;
-
-  if (cache.isIndexBufferChanged(sc.filter))
-    cache.setIndexBuffer(sc.filter, device);
-
-  if (cache.isColumnChanged(xCol, yCol))
-    cache.setColumns(xCol, yCol, device);
-
-  // We'll set the viewBox and viewPort each time as this is cheap
-  cache.setViewBuffer(sc, device);
-
-  if (cache.isMarkerSizesParamsChanged(sc))
-    cache.setMarkerSizes(sc, device);
-
-  if (!cache.isValid() || !cache.indexBuffer || !cache.columnBuffer || !cache.viewBuffer || !cache.markerSizesBuffer)
+  if (!cache.updateAndValidate(sc, device) || !cache.indexBuffer || !cache.columnBuffer || !cache.viewBuffer || !cache.markerSizesBuffer)
     return;
 
   const gpuContext = webGPUCanvas.getContext('webgpu');
