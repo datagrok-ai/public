@@ -807,8 +807,11 @@ export class AddNewColumnDialog {
       columnsGrid.autoSize(350, 345, undefined, undefined, true);
       columnsGrid.root.classList.add('add-new-column-columns-grid');
       ui.onSizeChanged(this.uiDialog!.root).subscribe(() => {
-        const newHeight = this.uiDialog!.root.getElementsByClassName('add-new-column-columns-grid')[0].clientHeight - 5;
-        columnsGrid.autoSize(350, newHeight, undefined, undefined, true);
+        const gridEl = this.uiDialog!.root.getElementsByClassName('add-new-column-columns-grid');
+        if (gridEl.length) {
+          const newHeight = gridEl[0].clientHeight - 5;
+          columnsGrid.autoSize(350, newHeight, undefined, undefined, true);
+        }
       });
     }
     
