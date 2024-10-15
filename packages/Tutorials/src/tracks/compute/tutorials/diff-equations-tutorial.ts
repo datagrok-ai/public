@@ -6,7 +6,9 @@ import * as ui from 'datagrok-api/ui';
 import {filter} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {interval, fromEvent} from 'rxjs';
-import {getElement, getView, describeElements, singleDescription, closeWindows} from './utils';
+import {describeElements, singleDescription, closeWindows} from './utils';
+
+import '../../../../css/tutorial.css';
 
 /** Earth's population modeling */
 export const POPULATION_MODEL = `#name: Lotka-Volterra
@@ -195,21 +197,48 @@ export class DifferentialEquationsTutorial extends Tutorial {
     // 6. Complete 1st equation  
     this.title('Improvement');
     this.describe('Let\'s modify the model so that it takes into account the interaction between predator and prey.');
+
+    const tutorialPanelRoot = document.querySelector('div.tutorials-root-description.ui-div');
+
+    let equation = 'dx/dt = alpha * x - beta * x * y';
+    let rawEquation = equation.replaceAll(' ', '');
+    let codeDiv = ui.divV([
+      ui.label('You should get'),
+      ui.divH([
+        ui.div(equation, 'tutorials-code-section'),
+        ui.div(ui.iconFA('copy', () => navigator.clipboard.writeText(equation), 'Copy to clipboard'), 'tutorials-copy-icon'),
+      ]),
+    ]);
+
+    setTimeout(() => tutorialPanelRoot?.append(codeDiv), 100);
     
     await this.action(
       'Complete the first equation',
-      interval(100).pipe(filter(() => lineRoots[1].textContent?.replaceAll(' ', '') == 'dx/dt=alpha*x-beta*x*y')),
-      undefined,
-      'Replace the 1-st equation with <b>dx/dt = alpha * x - beta * x * y</b>',
+      interval(100).pipe(filter(() => lineRoots[1].textContent?.replaceAll(' ', '') == rawEquation)),
     );
 
-    // 7. Complete 1st equation    
+    codeDiv.hidden = true;
+
+
+    // 7. Complete 2nd equation    
+    equation = 'dy/dt = -gamma * y + delta * x * y';
+    rawEquation = equation.replaceAll(' ', '');
+    codeDiv = ui.divV([
+      ui.label('You should get'),
+      ui.divH([
+        ui.div(equation, 'tutorials-code-section'),
+        ui.div(ui.iconFA('copy', () => navigator.clipboard.writeText(equation), 'Copy to clipboard'), 'tutorials-copy-icon'),
+      ]),
+    ]);
+
+    setTimeout(() => tutorialPanelRoot?.append(codeDiv), 100);
+
     await this.action(
       'Complete the second equation',
-      interval(100).pipe(filter(() => lineRoots[2].textContent?.replaceAll(' ', '') == 'dy/dt=-gamma*y+delta*x*y')),
-      undefined,
-      'Replace the 2-nd equation with <b>dy/dt = -gamma * y + delta * x * y</b>',
+      interval(100).pipe(filter(() => lineRoots[2].textContent?.replaceAll(' ', '') == rawEquation)),
     );
+
+    codeDiv.hidden = true;
 
     // 8. Check meaning
     const description = '# Updates\n\nNow, the model takes into account:' + 
@@ -223,9 +252,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
       fromEvent(okBtn, 'click'),
       undefined,
       'Check the updates. Click "OK" to go to the next step.',
-    );
-
-    editorRoot.style.width = '220px';
+    );    
 
     // 9. Run computations
     this.title('Exploration');
@@ -238,10 +265,11 @@ export class DifferentialEquationsTutorial extends Tutorial {
       `Click the <b>Run</b> icon on the top panel.`,
     );
 
+    editorRoot.style.width = '220px';
+
     // 10. Play with inputs 
     uiFormRoot = dsViewRoot.querySelector('div.ui-form') as HTMLElement;   
     inputRoots = uiFormRoot.querySelectorAll('div.ui-input.ui-input-root.ui-input-float');
-    console.log(inputRoots);
 
     const preyEditor = inputRoots[3].querySelector('input[class="ui-input-editor"]') as HTMLInputElement;
     await this.action(
