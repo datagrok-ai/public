@@ -261,7 +261,8 @@ export class HelmHelper implements IHelmHelper {
         const logPrefixInt = `${logPrefix}, org.helm.webeditor.Monomers.getMonomer()`;
         try {
           // logger.debug(`${logPrefixInt}, a: ${JSON.stringify(a, helmJsonReplacer)}, name: '${name}'`);
-
+          if (name?.startsWith('[') && name.endsWith(']'))
+            name = name.substring(1, name.length - 1);
           // Creates monomers in lib
           const dgWem = monomerLib.getWebEditorMonomer(a, name);
 
