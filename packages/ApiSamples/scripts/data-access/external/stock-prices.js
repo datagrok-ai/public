@@ -1,2 +1,2 @@
-grok.data.loadTable('https://www.quandl.com/api/v1/datasets/WIKI/AAPL.csv')
+grok.data.loadTable('https://calmcode.io/static/data/bigmac.csv')
   .then(t => grok.shell.addTableView(t));
