@@ -336,8 +336,10 @@ export class AddNewColumnDialog {
         this.packageFunctionsNames, this.packageFunctionsParams, this.coreFunctionsParams)],
       activateOnCompletion: ({ apply }) => {
         this.autocompleteEnter = true;
-        if (typeof apply === 'string' && apply.match(this.colNamePatternWithoutDollar))
+        //check for column autocompletion
+        if (typeof apply === 'string' && (apply.startsWith('{') || apply.endsWith('}') || apply.startsWith('[') || apply.endsWith(']')))
           return true;
+        //in case this is not a column name - we have either package or function
         this.packageAutocomplete = typeof apply === 'string' && apply.slice(-1) === ':';
         this.functionAutocomplete = !this.packageAutocomplete;
         return this.packageAutocomplete;
