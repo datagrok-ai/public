@@ -323,7 +323,7 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
           if (map.wait) await delay(map.wait);
           // eslint-disable-next-line no-throw-literal
           if (typeof res === 'boolean' && !res) throw `Failed: ${tests[i]}, expected true, got ${res}`;
-        }, { skipReason: map.skip, timeout: DG.Test.isInBenchmark ? map.benchmarkTimeout : map.timeout });
+        }, { skipReason: map.skip, timeout: DG.Test.isInBenchmark ? map.benchmarkTimeout ?? BENCHMARK_TIMEOUT : map.timeout ?? STANDART_TIMEOUT});
         if (map.cat) {
           const cat: string = autoTestsCatName + ': ' + map.cat;
           test.category = cat;
@@ -563,9 +563,7 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
     if (skip)
       r = { date: new Date().toISOString(), success: true, result: skipReason!, ms: 0, skipped: true };
     else {
-      let timeout_ = t.options?.timeout === STANDART_TIMEOUT &&
-        categoryTimeout ? categoryTimeout : t.options?.timeout!;
-      timeout_ = (timeout_ === STANDART_TIMEOUT && DG.Test.isInBenchmark) ? BENCHMARK_TIMEOUT : timeout_;
+      let timeout_ = t.options?.timeout ?? STANDART_TIMEOUT;
       r = { date: new Date().toISOString(), success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false };
     }
   } catch (x: any) {
