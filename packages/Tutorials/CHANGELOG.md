@@ -1,5 +1,9 @@
 # Tutorials changelog
 
+## 1.5.4 (2024-10-19)
+
+Added the scientific computing tutorials
+
 ## 1.3.27 (2024-07-19)
 
 ### Bug fixes
