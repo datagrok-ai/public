@@ -6,7 +6,7 @@ import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
 import {Chain} from './pt-conversion';
 import {getPolyToolUnruleDialog} from './pt-unrule-dialog';
-import {Rules} from './pt-rules';
+import {Rules} from './pt-rules/pt-rules';
 
 import {_package} from '../package';
 

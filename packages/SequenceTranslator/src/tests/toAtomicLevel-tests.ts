@@ -16,7 +16,7 @@ import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 import {_package} from '../package-test';
 import {getNewMonomer} from '../polytool/pt-conversion';
-import {getRules, RuleReaction} from '../polytool/pt-rules';
+import {getRules, RuleReaction} from '../polytool/pt-rules/pt-rules';
 
 category('toAtomicLevel', () => {
   let userLibSettings: UserLibSettings;

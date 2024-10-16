@@ -11,7 +11,7 @@ import {
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 import {doPolyToolConvert} from '../polytool/pt-conversion';
-import {getRules} from '../polytool/pt-rules';
+import {getRules} from '../polytool/pt-rules/pt-rules';
 
 import {_package} from '../package-test';
 

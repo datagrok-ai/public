@@ -14,7 +14,7 @@ import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {HelmMol, HelmType, JSDraw2ModuleType, OrgType} from '@datagrok-libraries/bio/src/helm/types';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
-import {Rules, RuleLink, RuleReaction} from './pt-rules';
+import {Rules, RuleLink, RuleReaction} from './pt-rules/pt-rules';
 import {InvalidReactionError, MonomerNotFoundError} from './types';
 
 import {_package} from '../package';

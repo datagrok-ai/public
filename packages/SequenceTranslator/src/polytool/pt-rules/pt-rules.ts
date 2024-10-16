@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {ActiveFiles} from '@datagrok-libraries/utils/src/settings/active-files-base';
+import {RulesManager} from './rule-manager';
 
 export const RULES_PATH = 'System:AppData/SequenceTranslator/polytool-rules/';
 export const RULES_STORAGE_NAME = 'Polytool';
@@ -15,6 +16,19 @@ export class RuleInputs extends ActiveFiles {
     options?: { onValueChanged: (value: string[]) => void }
   ) {
     super(path, userStorageName, ext, options);
+  }
+
+  override createInput(available: string, isChecked: boolean): DG.InputBase<boolean> {
+    const res = super.createInput(available, isChecked);
+
+    const editIcon = ui.icons.edit(async () => {
+      const rulesManager = await RulesManager.getInstance(available);
+      grok.shell.v = await rulesManager.getViewRoot();
+    }, 'Edit rules');
+
+    res.addOptions(editIcon);
+
+    return res;
   }
 }
 
@@ -41,6 +55,37 @@ export type RuleReaction = {
   secondMonomer: string,
   reaction: string,
   name: string
+}
+
+export function dfFromRules(rules: Rules) : DG.DataFrame {
+  const length = rules.reactionRules.length;
+  const codeCol = DG.Column.int('code', length);
+  const firstMonomerCol = DG.Column.string('firstMonomer', length);
+  const secondMonomerCol = DG.Column.string('secondMonomer', length);
+  const name = DG.Column.string('name', length);
+  const firstReactant = DG.Column.string('firstReactant', length);
+  const secondReactant = DG.Column.string('secondReactant', length);
+  const product = DG.Column.string('product', length);
+
+  for (let i = 0; i < length; i++) {
+    codeCol.set(i, rules.reactionRules[i].code);
+    firstMonomerCol.set(i, rules.reactionRules[i].firstMonomer);
+    secondMonomerCol.set(i, rules.reactionRules[i].secondMonomer);
+    name.set(i, rules.reactionRules[i].name);
+
+    const reaction = rules.reactionRules[i].reaction.split('>>');
+    const reactants = reaction[0].split('.');
+
+    firstReactant.set(i, reactants[0]);
+    secondReactant.set(i, reactants[1]);
+    product.set(i, reaction[1]);
+  }
+  firstReactant.semType = DG.SEMTYPE.MOLECULE;
+  secondReactant.semType = DG.SEMTYPE.MOLECULE;
+  product.semType = DG.SEMTYPE.MOLECULE;
+
+
+  return DG.DataFrame.fromColumns([name, firstReactant, secondReactant, product, codeCol, firstMonomerCol, secondMonomerCol]);
 }
 
 export async function getRules(ruleFiles: string[]): Promise<Rules> {

@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {_package} from '../package';
 import {defaultErrorHandler} from '../utils/err-info';
 import {PT_UI_DIALOG_CONVERSION, PT_UI_RULES_USED} from './const';
-import {RuleInputs, RULES_PATH, RULES_STORAGE_NAME} from './pt-rules';
+import {RuleInputs, RULES_PATH, RULES_STORAGE_NAME} from './pt-rules/pt-rules';
 
 /** Inputs of polyToolConvert2 package function */
 export enum P {
