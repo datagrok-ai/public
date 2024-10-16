@@ -1,5 +1,9 @@
 # Chemspace changelog
 
+## 1.1.2 (2024-10-16)
+
+* Fixed cache invalidating
+
 ## 1.1.1 (2024-08-28)
 
 * Caching results
