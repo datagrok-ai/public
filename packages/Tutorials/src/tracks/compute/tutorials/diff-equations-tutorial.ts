@@ -78,10 +78,10 @@ const editorInfo = [
   If your model has paraterers, specify them here.`,
   `# Annotation
   
-  To improve usability, you can specifiy tooltips in brackets \`[]\`.`,
+  To improve usability, specifiy tooltips in brackets \`[]\`.`,
   `# Output
 
-  The computation output is a dataframe. You can customize it here.`,
+  The computation output is a dataframe. Customize it here.`,
 ];
 
 /** Tutorial on solving differential equations */
@@ -141,10 +141,11 @@ export class DifferentialEquationsTutorial extends Tutorial {
     const dsView = grok.shell.v as DG.TableView;
     const dsViewRoot = dsView.root;
     let uiFormRoot = dsViewRoot.querySelector('div.ui-form') as HTMLElement;
+    let inputRoots = uiFormRoot.querySelectorAll('div.ui-input.ui-input-root.ui-input-float');
     const gridRoot = dsView.grid.root;
     const lineChartRoot = dsViewRoot.querySelector('div.d4-line-chart') as HTMLElement;
 
-    let doneBtn = describeElements([uiFormRoot, lineChartRoot, gridRoot], uiInfo);
+    let doneBtn = describeElements([inputRoots[0] as HTMLElement, lineChartRoot, gridRoot], uiInfo);
     await this.action(
       'Explore the interface',
       fromEvent(doneBtn, 'click'),
@@ -152,25 +153,23 @@ export class DifferentialEquationsTutorial extends Tutorial {
       'Click "Next" to go to the next item.',
     );
 
-    // 3. Play with inputs
-    let inputRoots = uiFormRoot.querySelectorAll('div.ui-input.ui-input-root.ui-input-float');
+    // 3. Play with inputs    
     let finishEditor = inputRoots[1].querySelector('input[class="ui-input-editor"]') as HTMLInputElement;
     await this.action(
       'Set "Finish" to 150',
       interval(100).pipe(filter(() => finishEditor.value == '150')),
       finishEditor,
-      'Move a slider to get a simulation over a longer time period.',
+      'You can also enter "150" (instead of dragging a slider) to achieve the goal.',
     );
 
     // 4. Go to ODEs
     const editorRoot = dsViewRoot.querySelector('div.panel-base') as HTMLElement;
-    this.describe('Explore the mathematical model.');
+    this.describe('Explore the underlying mathematical model.');
     const modelTabRoot = dsViewRoot.querySelector('div.d4-tab-header[name="Model"]') as HTMLElement;
     await this.action(
       'Click the Model tab',
       fromEvent(modelTabRoot, 'click'),
       modelTabRoot,
-      'Go to the <b>Model</b> tab, and modify the underlying mathematical model.',
     );
 
     // 5. Explore equations editor
@@ -203,10 +202,13 @@ export class DifferentialEquationsTutorial extends Tutorial {
     let equation = 'dx/dt = alpha * x - beta * x * y';
     let rawEquation = equation.replaceAll(' ', '');
     let codeDiv = ui.divV([
-      ui.label('You should get'),
+      ui.label('Get the equation'),
       ui.divH([
         ui.div(equation, 'tutorials-code-section'),
-        ui.div(ui.iconFA('copy', () => navigator.clipboard.writeText(equation), 'Copy to clipboard'), 'tutorials-copy-icon'),
+        ui.div(ui.iconFA('copy', () => {
+          grok.shell.info('Copied to clipboard');
+          navigator.clipboard.writeText(equation);
+        }, 'Copy to clipboard'), 'tutorials-copy-icon'),
       ]),
     ]);
 
@@ -219,15 +221,17 @@ export class DifferentialEquationsTutorial extends Tutorial {
 
     codeDiv.hidden = true;
 
-
     // 7. Complete 2nd equation    
     equation = 'dy/dt = -gamma * y + delta * x * y';
     rawEquation = equation.replaceAll(' ', '');
     codeDiv = ui.divV([
-      ui.label('You should get'),
+      ui.label('Get the equation'),
       ui.divH([
         ui.div(equation, 'tutorials-code-section'),
-        ui.div(ui.iconFA('copy', () => navigator.clipboard.writeText(equation), 'Copy to clipboard'), 'tutorials-copy-icon'),
+        ui.div(ui.iconFA('copy', () => {
+          grok.shell.info('Copied to clipboard');
+          navigator.clipboard.writeText(equation);
+        }, 'Copy to clipboard'), 'tutorials-copy-icon'),
       ]),
     ]);
 
@@ -276,7 +280,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
       'Set "Prey" to 2',
       interval(100).pipe(filter(() => preyEditor.value == '2')),
       preyEditor,
-      'Move a slider to reduce the initial value of the prey population.',
+      'Reduce the initial value of the prey population.',
     );
 
     // 11. Play with inputs    

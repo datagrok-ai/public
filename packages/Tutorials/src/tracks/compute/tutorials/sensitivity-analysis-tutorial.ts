@@ -163,11 +163,13 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     const samplesInputEditor = samplesInputRoot.querySelector('input.ui-input-editor') as HTMLInputElement;
     const samplesSource = fromEvent(samplesInputEditor, 'input').pipe(map((_) => samplesInputEditor.value), filter((val) => val === '100'));
 
+    this.describe('Monte Carlo is the default method, and the <b>Samples</b> value defines the number of model evaluations.');
+
     await this.action(
       'Set "Samples" to 100',
       samplesSource,
       samplesInputRoot,
-      'Monte Carlo is the default method, and the <b>Samples</b> value defines the number of model evaluations. Increase <b>Samples</b> to get more accurate results.',
+      'Increase <b>Samples</b> to get more accurate results.',
     );
 
     // 6. Switch Angle
@@ -255,7 +257,8 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     pcPlotColumnRoot.style.width = '300px';
 
     this.title('Parameters\' impact');
-    this.describe('Explore which of the throw parameters has the most significant impact on <b>Max distance</b> and <b>Max height</b>.');
+    this.describe(`Explore which of the throw parameters has the most significant impact on
+    <b>Max distance</b> and <b>Max height</b>. The Sobol method provides a quantitative assessment of the parameters' impact.`);
 
     const methodInputRoot = children[0] as HTMLElement;
     const methodChoiceRoot = methodInputRoot.querySelector('select.ui-input-editor') as HTMLSelectElement;
@@ -265,7 +268,6 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       'Set "Method" to "Sobol"',
       methodSource,
       methodInputRoot,
-      'The Sobol method provides a quantitative assessment of the parameters\' impact.',
     );
 
     // 12. Switch Velocity

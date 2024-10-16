@@ -16,7 +16,7 @@ export class FittingTutorial extends Tutorial {
   get description() {
     return 'Find the initial conditions that produce a desired model output';
   }
-  get steps() {return 14;}
+  get steps() {return 13;}
 
   demoTable: string = '';
   helpUrl: string = 'https://datagrok.ai/help/compute/function-analysis#parameter-optimization';
@@ -34,7 +34,6 @@ export class FittingTutorial extends Tutorial {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
-    // 1. Run model catalog
     const browseView = grok.shell.view('Browse') as DG.BrowseView;
     grok.shell.v = browseView;
     const appsGroup = browseView.mainTree.getOrCreateGroup('Apps', null, false);
@@ -121,11 +120,12 @@ export class FittingTutorial extends Tutorial {
     const velocityInputRoot = fitFormRoot!.children[9] as HTMLElement;
     const velocitySwitcher = velocityInputRoot.querySelector('div.ui-input-editor') as HTMLElement;
 
+    this.describe('Let\'s find the initial velocity and angle.');
+
     await this.action(
       'Switch on "Velocity"',
       fromEvent(velocitySwitcher, 'click'),
       velocitySwitcher,
-      'Let\'s find the initial velocity and angle. Switch on <b>Velocity</b>.',
     );
 
     // 6. Switch Angle
@@ -147,7 +147,7 @@ export class FittingTutorial extends Tutorial {
       'Set "Max distance" to 10',
       numSource,
       distSwitcher,
-      'Set target value for <b>Max distance</b>.',
+      'Set the target value for <b>Max distance</b>.',
     );
 
     // 8. Run
@@ -157,8 +157,8 @@ export class FittingTutorial extends Tutorial {
       'Click "Run"',
       fromEvent(runIcnRoot, 'click'),
       runIcnRoot,
-      `Click the <b>Run</b> icon on the top panel. This will launch fitting <b>Velocity</b> and <b>Angle</b>. 
-      You can customize optimizer's settings in the <b>Using</b> block.`,
+      `Click the <b>Run</b> icon on the top panel to launch fitting <b>Velocity</b> and <b>Angle</b>. 
+      Customize optimizer's settings in the <b>Using</b> block.`,
     );
 
     // 9. Explore
@@ -170,7 +170,7 @@ export class FittingTutorial extends Tutorial {
 
     okBtn = singleDescription(
       fittingView.grid.root,
-      '# Solution\n\nThe first row presents the best fit:\n\n* The computed <b>Velocity</b> and <b>Angle</b>\n* A visualization illustrating the goodness of fit',
+      '# Solution\n\nThe first row presents the best fit:\n\n* the computed <b>Velocity</b> and <b>Angle</b>\n* a visualization illustrating the goodness of fit',
       'Go to the next step',
     );
     
@@ -227,6 +227,9 @@ export class FittingTutorial extends Tutorial {
       runIcnRoot,
     );
 
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await new Promise<void>((resolve) => {
+      //setTimeout(resolve, 5000);
+      fittingView.grid.onAfterDrawContent.subscribe((e) => resolve());
+    });
   } // _run
 } // FittingTutorial
