@@ -377,4 +377,14 @@ category('Dapi: functions', async () => {
     const res = (await call.call()).getOutputParamValue();
     expect(res.get('res', 0), 0.5);
   }, {skipReason: 'GROK-16807'});
+
+  test('save with NaN', async () => {
+    let func = await grok.functions.eval("ApiTests:TestNaNOutput")
+    let fc = func.prepare({a: 1});
+    fc.newId();
+    await fc.call();
+    await grok.dapi.functions.calls.allPackageVersions().save(fc);
+    await grok.dapi.functions.calls.allPackageVersions()
+      .include('session.user,func.package, inputs, outputs').find(fc.id);
+  });
 });
