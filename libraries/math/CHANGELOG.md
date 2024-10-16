@@ -1,5 +1,9 @@
 # math changelog
 
+## 1.2.2 (2024-10-16)
+
+* Increase complexity of bit array functions
+
 ## 1.2.1 (2024-09-25)
 
 * Expect navigator.gpu to be undefined in some browsers
