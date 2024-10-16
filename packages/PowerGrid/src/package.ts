@@ -30,6 +30,8 @@ export const _package = new DG.Package();
 
 let gpuDevice: GPUDevice | null = null;
 let gpuErrorCounter = 0;
+let scOriginalMarkerType = '';
+let scOriginalMarkersColumnName = '';
 
 //name: barCellRenderer
 //tags: cellRenderer
@@ -284,8 +286,22 @@ export async function _scWebGPUPointHitTest(sc: DG.ScatterPlotViewer, pt: DG.Poi
 
 //tags: isWebGPUAvailable
 //output: bool result
-export function isWebGPUAvailable() {
+export function isWebGPUAvailable(sc: DG.ScatterPlotViewer) {
   return gpuDevice != null && !gpuErrorCounter;
+}
+
+//tags: isWebGPURenderValid
+//input: dynamic sc
+//output: bool result
+export function isWebGPURenderValid(sc: DG.ScatterPlotViewer) {
+  if (scOriginalMarkerType == '')
+    scOriginalMarkerType = sc.props.markerType;
+  if (scOriginalMarkersColumnName == '')
+    scOriginalMarkersColumnName = sc.props.markersColumnName;
+  return sc.props.zoomAndFilter != 'pack and zoom by filter' 
+    && sc.props.markerType == scOriginalMarkerType
+    && sc.props.markersColumnName == scOriginalMarkersColumnName
+    && !sc.dataFrame.selection.anyTrue;
 }
 
 export {_ImageCellRenderer};
