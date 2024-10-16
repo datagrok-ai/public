@@ -44,6 +44,7 @@ import './utils/color';
 import './packages/properties';
 import './packages/docker';
 import './packages/user-settings-storage';
+import './packages/upload-migrations';
 import './grid/grid';
 import './grid/color-coding';
 import './grid/multi-value-column';

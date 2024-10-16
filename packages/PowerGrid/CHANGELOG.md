@@ -1,5 +1,9 @@
 # PowerGrid changelog
 
+## 1.4.3 (2024-10-11)
+
+* Fix webGPU Sc for non 4-divisible rows
+
 ## 1.4.2 (2024-10-11)
 
 * Add webGPU ScatterPlot support

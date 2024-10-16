@@ -68,19 +68,30 @@ order by r.test_name, worker
 --connection: System:Datagrok
 with last_builds as (
     select name  from builds order by build_date desc limit 10
-) 
-
-select CAST(min(r.duration) AS int)as duration, r.test_name as test, r.build_name
-from test_runs r
-where r.benchmark = true
+),
+benchmarks  as (
+  select * from tests 
+  where exists
+  (select * from test_runs where test_name = name and benchmark)
+), 
+testruns as (
+  select * from test_runs r
+  where  r.benchmark = true
 and r.passed = true
 and r.skipped = false
 and not r.test_name like '%Unhandled exceptions: Exception'
 and r.build_name in (select name from last_builds)
-group by r.test_name, r.build_name
-order by r.build_name desc, r.test_name
---end
+)
 
+select CAST(min(r.duration) AS int)as minDuration, CAST(max(r.duration) AS int)as maxDuration, CAST(avg(r.duration) AS int)as avgDuration, b.name as test, l.name
+from benchmarks b
+join last_builds l on 1=1 
+left join testruns as r 
+on (r.test_name = b.name and l.name = r.build_name)
+group by  b.name, l.name
+order by l.name desc,  b.name
+
+--end
 --name:  LastBuildsCompare
 --friendlyName:UA | Tests | Last Builds Compare
 --connection: System:Datagrok

@@ -7,7 +7,6 @@ import {Observable, Subject} from 'rxjs';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {LoggerWrapper} from '@datagrok-libraries/bio/src/utils/logger';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {SeqHelper} from './utils/seq-helper';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {IMonomerLib, IMonomerLibBase, IMonomerSet} from '@datagrok-libraries/bio/src/types';
 

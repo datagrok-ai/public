@@ -71,7 +71,7 @@ export class AddNewColumnDialog {
   maxAutoNameLength: number = 50;
   maxPreviewRowCount: number = 20;
   newColumnBgColor: number = 0xFFFDFFE7; // The same bg-color as the bg-color of tooltips.
-  colNamePattern: RegExp = /\${(.+?)(?<!\\)}|\$\[(.+?)(?<!\\)\]/g;
+  colNamePattern: RegExp;
   colNamePatternWithoutDollar: RegExp = /{(.+?)}|\[(.+?)\]/g;
   tooltips = {
     name: 'Сolumn name.',
@@ -121,6 +121,7 @@ export class AddNewColumnDialog {
 
   constructor(call: DG.FuncCall | null = null) {
     const table = call?.getParamValue('table');
+    this.colNamePattern = DG._isDartium() ? /\${(.+?)}|\$\[(.+?)\]/g : /\${(.+?)(?<!\\)}|\$\[(.+?)(?<!\\)\]/g;;
 
     DG.debounce(this.updatePreviewEvent, 1000).subscribe(async (params: UpdatePreviewParams) => {
       await this.updatePreview(params.expression, params.changeName);
@@ -335,8 +336,10 @@ export class AddNewColumnDialog {
         this.packageFunctionsNames, this.packageFunctionsParams, this.coreFunctionsParams)],
       activateOnCompletion: ({ apply }) => {
         this.autocompleteEnter = true;
-        if (typeof apply === 'string' && apply.match(this.colNamePatternWithoutDollar))
+        //check for column autocompletion
+        if (typeof apply === 'string' && (apply.startsWith('{') || apply.endsWith('}') || apply.startsWith('[') || apply.endsWith(']')))
           return true;
+        //in case this is not a column name - we have either package or function
         this.packageAutocomplete = typeof apply === 'string' && apply.slice(-1) === ':';
         this.functionAutocomplete = !this.packageAutocomplete;
         return this.packageAutocomplete;
@@ -609,6 +612,7 @@ export class AddNewColumnDialog {
   validateFuncCallTypes(funcCall: DG.FuncCall) {
     const innerFuncCalls: string[] = [];
     const actualInputParamTypes: { [key: string]: string } = {};
+    const actualInputSemTypes: { [key: string]: string } = {};
 
     //collect actual input parameter types
     for (const key of Object.keys(funcCall.inputs)) {
@@ -619,16 +623,19 @@ export class AddNewColumnDialog {
         //treat $COLUMN_NAME as scalar
         if (funcCall.inputs[key].func.name !== COLUMN_FUNCTION_NAME)
           innerFuncCalls.push(key);
-        actualInputParamTypes[key] = funcCall.inputs[key].func.outputs.length ?
-          funcCall.inputs[key].func.outputs[0].propertyType : 'dynamic';
+        if (funcCall.inputs[key].func.outputs.length) {
+          actualInputParamTypes[key] = funcCall.inputs[key].func.outputs[0].propertyType;
+          actualInputSemTypes[key] = funcCall.inputs[key].func.outputs[0].semType;
+        } else
+          actualInputParamTypes[key] = 'dynamic';
       } else
         actualInputParamTypes[key] = typeof funcCall.inputs[key];
     }
 
     //validate types for current function
-    let firstColParam = true;
     for (const property of funcCall.func.inputs) {
       let actualInputType = actualInputParamTypes[property.name];
+      let actualSemType = actualInputSemTypes[property.name];
       const input = funcCall.inputs[property.name];
       //check for variables missing in the context
       //TODO: preview with variables doesn't work
@@ -645,11 +652,8 @@ export class AddNewColumnDialog {
       if (actualInputType === DG.TYPE.DYNAMIC) {
         //extract type from column in case $COLUMN_NAME was passed to formula
         if (input?.func && input.func.name === COLUMN_FUNCTION_NAME) {
-          if (firstColParam && funcCall.func.options['vectorFunc']) {
-            actualInputType = 'column';
-            firstColParam = false;
-          } else
-            actualInputType = this.sourceDf!.col(input.inputs['field'])!.type;
+          actualInputType = this.sourceDf!.col(input.inputs['field'])!.type;
+          actualSemType = this.sourceDf!.col(input.inputs['field'])!.semType;
         }
         //handling 'row' function
         //TODO: Handle other similar functions
@@ -663,13 +667,22 @@ export class AddNewColumnDialog {
       //dynamic allows any type
       if (property.propertyType === DG.TYPE.DYNAMIC || actualInputType === DG.TYPE.DYNAMIC)
         continue;
-      //check for exact match
-      if (property.propertyType === actualInputType)
-        continue;
-      //check for type match in mapping
-      if (VALIDATION_TYPES_MAPPING[property.propertyType] && VALIDATION_TYPES_MAPPING[property.propertyType].includes(actualInputType))
-        continue;
-      throw new Error(`Function ${funcCall.func.name} '${property.name}' param should be ${property.propertyType} type instead of ${actualInputType}`);
+      //check for semType match
+      if (property.semType && actualSemType && property.semType !== actualSemType)
+        throw new Error(`Function ${funcCall.func.name} '${property.name}' param should be ${property.semType} type instead of ${actualSemType}`);
+      //check for column and list types
+      if (property.propertyType === DG.TYPE.COLUMN || actualInputType === DG.TYPE.LIST) {
+        if (property.propertySubType && property.propertySubType !== actualInputType)
+          throw new Error(`Function ${funcCall.func.name} '${property.name}' param should be ${property.propertySubType} type instead of ${actualInputType}`);
+      } else {
+        //check for type match
+        if (property.propertyType !== actualInputType) {
+          //check for type match in mapping
+          const mappingMatch = VALIDATION_TYPES_MAPPING[property.propertyType] && VALIDATION_TYPES_MAPPING[property.propertyType].includes(actualInputType);
+          if (!mappingMatch)
+            throw new Error(`Function ${funcCall.func.name} '${property.name}' param should be ${property.propertyType} type instead of ${actualInputType}`);
+        }
+      }
     }
     //validate inner func calls recursively
     if (innerFuncCalls.length) {
@@ -796,8 +809,11 @@ export class AddNewColumnDialog {
       columnsGrid.autoSize(350, 345, undefined, undefined, true);
       columnsGrid.root.classList.add('add-new-column-columns-grid');
       ui.onSizeChanged(this.uiDialog!.root).subscribe(() => {
-        const newHeight = this.uiDialog!.root.getElementsByClassName('add-new-column-columns-grid')[0].clientHeight - 5;
-        columnsGrid.autoSize(350, newHeight, undefined, undefined, true);
+        const gridEl = this.uiDialog!.root.getElementsByClassName('add-new-column-columns-grid');
+        if (gridEl.length) {
+          const newHeight = gridEl[0].clientHeight - 5;
+          columnsGrid.autoSize(350, newHeight, undefined, undefined, true);
+        }
       });
     }
     

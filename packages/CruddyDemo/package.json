@@ -12,18 +12,18 @@
   ],
   "dependencies": {
     "datagrok-api": "^1.21.1",
-    "cash-dom": "latest",
-    "dayjs": "latest",
+    "cash-dom": "^8.1.5",
+    "dayjs": "^1.11.13",
     "rxjs": "^6.5.5",
     "@datagrok-libraries/utils": "^4.3.0"
   },
   "devDependencies": {
     "datagrok-tools": "latest",
-    "webpack": "latest",
-    "webpack-cli": "latest",
-    "ts-loader": "latest",
-    "typescript": "latest",
-    "css-loader": "latest"
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.6.3",
+    "css-loader": "^7.1.2"
   },
   "scripts": {
     "link-all": "npm link datagrok-api @datagrok-libraries/utils",

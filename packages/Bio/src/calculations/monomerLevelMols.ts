@@ -6,19 +6,18 @@ import wu from 'wu';
 
 import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {GAP_SYMBOL} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
-
-import {_package, getHelmMonomers} from '../package';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 const V2000_ATOM_NAME_POS = 31;
 
 export async function getMonomericMols(
-  mcol: DG.Column<string>, pattern: boolean = false, monomersDict?: Map<string, string>
+  mcol: DG.Column<string>, seqHelper: ISeqHelper, pattern: boolean = false, monomersDict?: Map<string, string>
 ): Promise<DG.Column> {
-  const sh = _package.seqHelper.getSeqHandler(mcol);
+  const sh = seqHelper.getSeqHandler(mcol);
   let molV3000Array;
   monomersDict ??= new Map();
   const monomers = sh.isHelm() ?
-    getHelmMonomers(mcol) : Object.keys(sh.stats.freq).filter((it) => it !== '');
+    seqHelper.getSeqMonomers(mcol) : Object.keys(sh.stats.freq).filter((it) => it !== '');
 
   for (let i = 0; i < monomers.length; i++) {
     if (!monomersDict.has(monomers[i]))

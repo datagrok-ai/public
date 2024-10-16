@@ -1,5 +1,23 @@
 # Bio changelog
 
+## 2.16.3 (2024-10-15)
+
+### Bug fixes
+
+* Fix weblogo slider not visible
+
+## 2.16.2 (2024-10-11)
+
+### Bug fixes
+
+* Fix moving setUnits methods to SeqHelper
+
+## 2.16.1 (2024-10-11)
+
+### Bug fixes
+
+* GROK-16782: Fix bio-substructure-filters tests
+
 ## 2.16.0 (2024-10-10)
 
 ### New features

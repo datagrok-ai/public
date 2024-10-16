@@ -13,11 +13,11 @@
     "directory": "packages/TensorFlow.js"
   },
   "dependencies": {
-    "@tensorflow/tfjs": "latest",
-    "cash-dom": "latest",
+    "@tensorflow/tfjs": "^4.21.0",
+    "cash-dom": "^8.1.5",
     "datagrok-api": "^1.0.0",
-    "dayjs": "latest",
-    "jszip": "latest",
+    "dayjs": "^1.11.13",
+    "jszip": "^3.10.1",
     "jszip-sync": "^3.2.1-sync"
   },
   "devDependencies": {
@@ -25,8 +25,8 @@
     "@typescript-eslint/parser": "^5.32.0",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
-    "webpack": "latest",
-    "webpack-cli": "latest"
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
   },
   "scripts": {
     "lint": "eslint src --ext .ts",
@@ -42,7 +42,11 @@
     "debug-tensorflow-dev-local": "grok publish local",
     "release-tensorflow-dev-local": "grok publish local --release"
   },
-  "canEdit": [ "Developers" ],
-  "canView": [ "All users" ],
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
   "category": "Machine Learning"
 }

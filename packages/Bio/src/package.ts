@@ -562,7 +562,7 @@ export async function macromoleculePreprocessingFunction(
 export async function helmPreprocessingFunction(
   col: DG.Column<string>, _metric: BitArrayMetrics): Promise<PreprocessFunctionReturnType> {
   if (col.version !== col.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION])
-    await invalidateMols(col, false);
+    await invalidateMols(col, _package.seqHelper, false);
   const molCol = col.temp[MONOMERIC_COL_TAGS.MONOMERIC_MOLS];
   const fingerPrints: DG.Column<DG.BitSet | null> =
     await grok.functions.call('Chem:getMorganFingerprints', {molColumn: molCol});
@@ -858,9 +858,7 @@ export async function splitToMonomersTopMenu(table: DG.DataFrame, sequence: DG.C
 //input: column sequence {semType: Macromolecule}
 //output: object result
 export function getHelmMonomers(sequence: DG.Column<string>): string[] {
-  const sh = _package.seqHelper.getSeqHandler(sequence);
-  const stats = sh.stats;
-  return Object.keys(stats.freq);
+  return _package.seqHelper.getSeqMonomers(sequence);
 }
 
 
@@ -908,7 +906,7 @@ export function searchSubsequenceEditor(call: DG.FuncCall) {
   if (columns.length === 1)
     call.func.prepare({macromolecules: columns[0]}).call(true);
   else
-    new SubstructureSearchDialog(columns);
+    new SubstructureSearchDialog(columns, _package.seqHelper);
 }
 
 //top-menu: Bio | Search | Subsequence Search ...
@@ -980,7 +978,7 @@ export function saveAsFasta() {
 //output: filter result
 //meta.semType: Macromolecule
 export function bioSubstructureFilter(): BioSubstructureFilter {
-  return new BioSubstructureFilter();
+  return new BioSubstructureFilter(_package.seqHelper, _package.logger);
 }
 
 // -- Test apps --

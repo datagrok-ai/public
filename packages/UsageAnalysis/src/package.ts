@@ -122,7 +122,10 @@ export async function reportsApp(path?: string): Promise<DG.ViewBase> {
 //input: map params {isOptional: true}
 //output: view v
 export async function serviceLogsApp(path?: string, params?: any): Promise<DG.ViewBase> {
-  return ServiceLogsApp.createView(grok.functions.getCurrentCall());
+  const app = new ServiceLogsApp(grok.functions.getCurrentCall());
+  await app.init();
+  return app;
+  // return ServiceLogsApp.createView(grok.functions.getCurrentCall());
 }
 
 //input: dynamic treeNode

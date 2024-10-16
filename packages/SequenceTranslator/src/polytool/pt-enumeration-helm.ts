@@ -4,7 +4,8 @@ import * as DG from 'datagrok-api/dg';
 
 import {
   HelmType, HelmMol,
-  JSDraw2ModuleType, OrgType
+  JSDraw2ModuleType, OrgType,
+  IHelmEditorOptions
 } from '@datagrok-libraries/bio/src/helm/types';
 
 
@@ -72,7 +73,7 @@ function getPtEnumeratorBreadth(m: HelmMol, placeholdersBreadth: PolyToolPlaceho
 export function doPolyToolEnumerateHelm(
   helm: string, id: string, params: PolyToolEnumeratorParams
 ): [ /* helm */ string, /* id */ string][] {
-  const molHandler = new JSDraw2.MolHandler<HelmType>();
+  const molHandler = new JSDraw2.MolHandler<HelmType, IHelmEditorOptions>();
   const plugin = new org.helm.webeditor.Plugin(molHandler);
   org.helm.webeditor.IO.parseHelm(plugin, helm, new JSDraw2.Point(0, 0), undefined);
   const m = molHandler.m;

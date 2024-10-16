@@ -50,8 +50,7 @@ category('parseHelm', () => {
 
     libHelper = await getMonomerLibHelper();
 
-    await timeout(async () => { userLibSettings = await getUserLibSettings(); }, 5000,
-      'get user lib settings for backup');
+    userLibSettings = await getUserLibSettings();
 
     // parseHelm is dependent on monomers RGroups available, test requires default monomer library
     await libHelper.loadMonomerLibForTests();
@@ -71,7 +70,7 @@ category('parseHelm', () => {
   for (const [testName, {src, tgt}] of Object.entries(testData)) {
     test(`woDOM-${testName}`, async () => {
       _testParseHelmWithoutDOM(src, tgt);
-    }, testName == 'RNA' ? {skipReason: 'GROK-16721'} : undefined);
+    });
   }
 });
 
@@ -104,4 +103,5 @@ function _testParseHelmWithoutDOM(src: string, tgt: TestTgtType): void {
   expect(m.atoms.length, tgt.atomCount);
   expect(m.bonds.length, tgt.bondCount);
   expect(resHelm, tgt.helm);
+  expect(m.atoms.every((a) => !a.elem.startsWith('[') && !a.elem.endsWith(']')), true, 'Atoms should not contain square braces.');
 }

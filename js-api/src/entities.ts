@@ -1281,6 +1281,9 @@ export class Property {
   get propertyType(): TYPE { return api.grok_Property_Get_PropertyType(this.dart); }
   set propertyType(s: TYPE) { api.grok_Property_Set_PropertyType(this.dart, s); }
 
+  /** Property subtype */
+  get propertySubType(): TYPE { return api.grok_Property_Get_PropertySubType(this.dart); }
+
   /** Applies to viewers properties whether to include the property in the layout or not. */
   get includeInLayout(): boolean { return api.grok_Property_Get_IncludeInLayout(this.dart); }
   set includeInLayout(s: boolean) { api.grok_Property_Set_IncludeInLayout(this.dart, s); }

@@ -104,19 +104,17 @@ class WebGPUCache {
     this.yColLength = yColumnData.length;
     this.xColVersion = xCol.version;
     this.yColVersion = yCol.version;
-    const kXColumnDataSize = getPaddedSize(this.xColLength);
-    const kYColumnDataSize = getPaddedSize(this.yColLength);
     this.columnBuffer = device.createBuffer({
-      size: kXColumnDataSize + kYColumnDataSize,
+      size: getPaddedSize(this.xColLength + this.yColLength),
       usage: GPUBufferUsage.STORAGE,
       mappedAtCreation: true,
     });
     const scBufferArray = this.columnBuffer.getMappedRange();
     let scBufferOffset = 0;
     new Float32Array(scBufferArray, scBufferOffset, this.xColLength).set(xColumnData);
-    scBufferOffset += kXColumnDataSize;
+    scBufferOffset += this.xColLength * 4;
     new Float32Array(scBufferArray, scBufferOffset, this.yColLength).set(yColumnData);
-    scBufferOffset += kYColumnDataSize;
+    scBufferOffset += this.yColLength * 4;
     this.columnBuffer.unmap();
   }
 };

@@ -1,5 +1,10 @@
 # Diff Studio changelog
 
+## 1.1.5 (2024-10-10)
+
+* Added the Ball flight demo model
+* Updated model run widgets
+
 ## 1.1.4 (2024-09-30)
 
 Added the use of lookup tables in the Sensitivity Analysis & Fitting features
@@ -23,10 +28,6 @@ Added the Bioreactor & SimPKPD models
 ## 1.1.0 (2024-09-10)
 
 * 1.21.1 release
-
-## 1.0.11-rc (2024-06-10)
-
-* Preparing 1.21.1 release
 
 ## 1.0.10 (2024-06-10)
 

@@ -2,8 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {DEFAULT_FORMATS} from '../apps/common/model/const';
-import {ITranslationHelper} from '../types';
+import {DEFAULT_FORMATS} from '../../apps/common/model/const';
+import {ITranslationHelper} from '../../types';
 
 export class OligoToolkitTestPackage extends DG.Package {
   async getTranslationHelper(): Promise<ITranslationHelper> {

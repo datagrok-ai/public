@@ -548,6 +548,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
         style: {
           display: 'flex',
           flexDirection: 'row',
+          flexGrow: 0,
           /** For alignContent to have an effect */ flexWrap: 'wrap',
           /* backgroundColor: '#EEFFEE' */
         }

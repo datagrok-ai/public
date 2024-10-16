@@ -50,7 +50,7 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
   }
 
   private async computeByChem() {
-    const monomericMols = await getMonomericMols(this.moleculeColumn!);
+    const monomericMols = await getMonomericMols(this.moleculeColumn!, this.seqHelper);
     //need to create df to calculate fingerprints
     const _monomericMolsDf = DG.DataFrame.fromColumns([monomericMols]);
     this.renderMolIds = await grok.functions.call('Chem:callChemDiversitySearch', {

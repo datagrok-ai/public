@@ -19,14 +19,16 @@ public class ConnectionPool {
 
     public static Connection getConnection(String url, java.util.Properties properties, String driverClassName)
             throws GrokConnectException {
+        LOGGER.debug("getConnection was called for driver {} with url {}", driverClassName, url);
+        if (GrokConnectUtil.isEmpty(url) || properties == null || GrokConnectUtil.isEmpty(driverClassName))
+            throw new GrokConnectException("Connection parameters are null");
+        String key = url + properties + driverClassName;
         try {
-            LOGGER.debug("getConnection was called for driver {} with url {}", driverClassName, url);
-            if (GrokConnectUtil.isEmpty(url) || properties == null || GrokConnectUtil.isEmpty(driverClassName))
-                throw new GrokConnectException("Connection parameters are null");
-            String key = url + properties + driverClassName;
             HikariDataSource ds = connectionPool.computeIfAbsent(key, k -> getDataSource(url, properties, driverClassName));
             return ds.getConnection();
         } catch (HikariPool.PoolInitializationException | SQLTransientConnectionException e) {
+            if (connectionPool.containsKey(key))
+                connectionPool.remove(key).close();
             Throwable cause = e.getCause();
             throw new GrokConnectException(cause != null ? cause : e);
         } catch (SQLException e) {

@@ -8,6 +8,7 @@ import './tests/formats-to-helm';
 import './tests/helm-to-nucleotides';
 import './tests/formats-support';
 import './tests/files-tests';
+import './tests/polytool-detectors-custom-notation-test';
 import './tests/polytool-convert-tests';
 import './tests/polytool-unrule-tests';
 import './tests/polytool-enumerate-tests';

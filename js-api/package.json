@@ -4,14 +4,14 @@
   "description": "",
   "dependencies": {
     "@datagrok-libraries/chem-meta": "^1.0.12",
-    "@types/react": "latest",
-    "@types/wu": "latest",
+    "@types/react": "^18.3.11",
+    "@types/wu": "^2.1.44",
     "cash-dom": "^8.0.0",
     "dayjs": "^1.11.10",
     "openchemlib": "^7.2.3",
-    "react": "latest",
+    "react": "^18.3.1",
     "rxjs": "^6.5.5",
-    "wu": "latest",
+    "wu": "^2.1.0",
     "typeahead-standalone": "4.14.1"
   },
   "devDependencies": {
