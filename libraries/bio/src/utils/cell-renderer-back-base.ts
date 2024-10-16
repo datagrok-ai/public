@@ -91,7 +91,7 @@ export abstract class CellRendererBackBase<TValue> extends CellRendererBackStub 
   }
 
   private static viewerCounter: number = -1;
-  private readonly viewerId: number = ++CellRendererBackBase.viewerCounter;
+  protected readonly viewerId: number = ++CellRendererBackBase.viewerCounter;
 
   protected toLog(): string {
     return `${this.constructor.name}<${this.viewerId}>`;
