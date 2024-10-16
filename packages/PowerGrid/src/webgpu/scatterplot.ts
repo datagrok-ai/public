@@ -182,7 +182,7 @@ function updateCanvasPosition(cache: WebGPUCache, viewBox: DG.Rect, canvas: HTML
   }
 }
 
-export function scWebGPURender(sc: DG.ScatterPlotViewer, show: boolean) {
+export async function scWebGPURender(sc: DG.ScatterPlotViewer, show: boolean) {
   // Getting WebGPU canvas or creating it if absent
   const canvasName = 'webGPUCanvas';
   let canvas = sc.canvas.parentElement?.children.namedItem(canvasName) as HTMLCanvasElement;
@@ -203,24 +203,29 @@ export function scWebGPURender(sc: DG.ScatterPlotViewer, show: boolean) {
   canvas.hidden = false;
 
   const cache = getWebGPUCache(sc);
-  if (!cache)
-    return;
+  if (cache) {
+    updateCanvasPosition(cache, sc.viewBox, canvas);
 
-  updateCanvasPosition(cache, sc.viewBox, canvas);
-  webGPUInit(canvas, sc);
+    try {
+        await webGPUInit(canvas, sc);    
+    } catch (error) {
+        canvas.hidden = true;
+        throw error;
+    }
+  }
 }
 
 export async function scWebGPUPointHitTest(sc: DG.ScatterPlotViewer, pt: DG.Point) : Promise<number> {
   const cache = getWebGPUCache(sc);
   if (!cache)
-    return -1;
+    throw  'Failed to get WebGPU cache for scatter plot viewer';
 
   const device = await getGPUDevice();
   if (!device)
-    return -1;
+    throw  'Failed to get WebGPU device';
 
   if (!cache.updateAndValidate(sc, device, pt) || !cache.indexBuffer || !cache.columnBuffer || !cache.viewBuffer || !cache.markerSizesBuffer)
-    return -1;
+    throw 'Failed to update and validate cache or to initalize buffers';
 
   const kWorkgroupSize = 100;
   const workGroupDispatchSize = Math.ceil(Math.sqrt(Math.ceil(cache.indexBufferLength / kWorkgroupSize)));
@@ -233,7 +238,7 @@ export async function scWebGPUPointHitTest(sc: DG.ScatterPlotViewer, pt: DG.Poin
   new Int32Array(hitResultBuffer.getMappedRange()).set([-1]); // Initialize to -1 (no hit)
   hitResultBuffer.unmap();
 
-  const shaderModule = device.createShaderModule({code: `
+  const module = device.createShaderModule({code: `
             ${addStructures(cache)}    
 
             @group(0) @binding(0) var<storage, read> indexes: array<i32, ${cache.indexBufferLength}>;
@@ -274,7 +279,7 @@ export async function scWebGPUPointHitTest(sc: DG.ScatterPlotViewer, pt: DG.Poin
   const pipeline = device.createComputePipeline({
     layout: 'auto',
     compute: {
-      module: shaderModule,
+      module: module,
       entryPoint: 'main',
     },
   });
@@ -320,6 +325,13 @@ export async function scWebGPUPointHitTest(sc: DG.ScatterPlotViewer, pt: DG.Poin
   const hitIndex = resultArray[0];
   readbackBuffer.unmap();
 
+  const info = await module.getCompilationInfo();
+  for (const message of info.messages) {
+    if (message.type === 'error') {
+      throw `WebGPU hit test shader module error: ${message.message}`;
+    }
+  }
+
   return hitIndex;
 }
 
@@ -331,18 +343,18 @@ function areEqual(rc1: DG.Rect, rc2: DG.Rect): boolean {
 async function webGPUInit(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotViewer) {
   const cache = getWebGPUCache(sc);
   if (!cache)
-    return;
+    throw  'Failed to get WebGPU cache for scatter plot viewer';
 
   const device = await getGPUDevice();
   if (!device)
-    return;
+    throw  'Failed to get WebGPU device';
 
   if (!cache.updateAndValidate(sc, device) || !cache.indexBuffer || !cache.columnBuffer || !cache.viewBuffer || !cache.markerSizesBuffer)
-    return;
+    throw 'Failed to update and validate cache or to initalize buffers';
 
   const gpuContext = webGPUCanvas.getContext('webgpu');
   if (!gpuContext)
-    return;
+    throw 'Failed to get gpu context from canvas';
 
   const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
   gpuContext.configure({
@@ -554,6 +566,13 @@ async function webGPUInit(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotVie
   const encoderBuffer = encoder.finish();
   device.queue.submit([encoderBuffer]);
   await device.queue.onSubmittedWorkDone();
+
+  const info = await module.getCompilationInfo();
+  for (const message of info.messages) {
+    if (message.type === 'error') {
+      throw `WebGPURender shader module error: ${message.message}`;
+    }
+  }
 }
 
 function getPaddedSize(length: number): number {
