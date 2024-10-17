@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.18.7 (2024-10-17)
+
+Fixes For GROK-16606, GROK-16609
+
 ## 1.18.6 (2024-10-08)
 
 MCL: Better layout for similar size clusters
