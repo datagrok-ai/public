@@ -1,6 +1,6 @@
 {
   "name": "datagrok-api",
-  "version": "1.22.0-rc.a4a142af00.32f8dca7d4b",
+  "version": "1.22.0-rc.de2b99cd34.062774543dd",
   "description": "",
   "dependencies":   {
     "@datagrok-libraries/chem-meta": "^1.0.12",
