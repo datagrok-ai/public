@@ -23,6 +23,7 @@
     "ts-loader": "^9.5.0"
   },
   "devDependencies": {
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
     "@types/node": "^20.8.4",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",

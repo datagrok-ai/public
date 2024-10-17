@@ -19,9 +19,9 @@
     "choices.js": "^10.1.0",
     "color-hash": "^2.0.2",
     "datagrok-api": "../../js-api",
+    "dayjs": "^1.11.13",
     "moment": "^2.29.1",
-    "rxjs": "^6.5.5",
-    "dayjs": "^1.11.13"
+    "rxjs": "^6.5.5"
   },
   "scripts": {
     "lint": "eslint src --ext .ts",
@@ -41,6 +41,7 @@
     "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm run build"
   },
   "devDependencies": {
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
     "@types/color-hash": "^1.0.2",
     "@types/select2": "^4.0.55",
     "@typescript-eslint/eslint-plugin": "^5.32.0",

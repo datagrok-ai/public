@@ -13,13 +13,14 @@
     "directory": "packages/SQLite"
   },
   "dependencies": {
-    "datagrok-api": "^1.21.1",
     "@datagrok-libraries/utils": "^4.3.0",
+    "datagrok-api": "^1.21.1",
     "file-loader": "^6.2.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3"
   },
   "devDependencies": {
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
     "@types/sql.js": "^1.4.9",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",

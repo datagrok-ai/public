@@ -20,6 +20,7 @@
     "rxjs": "^6.5.5"
   },
   "devDependencies": {
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
     "@types/codemirror": "^5.60.5",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",

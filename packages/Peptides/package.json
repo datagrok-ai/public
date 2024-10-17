@@ -19,9 +19,9 @@
     "@datagrok-libraries/statistics": "^1.2.12",
     "@datagrok-libraries/tutorials": "^1.4.2",
     "@datagrok-libraries/utils": "^4.3.0",
-    "datagrok-api": "^1.21.1",
     "@webgpu/types": "^0.1.40",
     "cash-dom": "^8.1.5",
+    "datagrok-api": "^1.21.1",
     "file-loader": "^6.2.0",
     "rxjs": "^6.5.5",
     "uuid": "^10.0.0",
@@ -30,6 +30,7 @@
   "devDependencies": {
     "@datagrok-libraries/helm-web-editor": "^1.1.7",
     "@datagrok-libraries/js-draw-lite": "^0.0.5",
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
     "@datagrok/bio": "^2.15.0",
     "@datagrok/chem": "^1.12.0",
     "@datagrok/dendrogram": "^1.2.33",

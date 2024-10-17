@@ -42,6 +42,7 @@
 	},
 	"parser": "@typescript-eslint/parser",
 	"plugins": [
+		"@datagrok-misc/eslint-plugin-config",
 		"@typescript-eslint"
 	]
 }

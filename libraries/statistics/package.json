@@ -8,14 +8,15 @@
   "description": "Statistics utilities",
   "dependencies": {
     "@datagrok-libraries/utils": "^4.3.0",
+    "@types/seedrandom": "^3.0.8",
     "cash-dom": "^8.0.0",
     "datagrok-api": "^1.20.0",
     "dayjs": "^1.11.7",
     "jstat": "^1.9.6",
-    "seedrandom": "^3.0.5",
-    "@types/seedrandom": "^3.0.8"
+    "seedrandom": "^3.0.5"
   },
   "devDependencies": {
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
     "eslint": "^8.57.1",

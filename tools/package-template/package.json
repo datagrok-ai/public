@@ -4,12 +4,14 @@
   "version": "0.0.1",
   "description": "",
   "dependencies": {
-    "datagrok-api": "^1.21.3",
+    "@datagrok-libraries/utils": "^4.3.6",
     "cash-dom": "^8.1.5",
-    "dayjs": "^1.11.13",
-    "@datagrok-libraries/utils": "^4.3.6"
+    "datagrok-api": "^1.21.3",
+    "dayjs": "^1.11.13"
   },
   "devDependencies": {
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
+    "eslint": "^8.57.1",
     "datagrok-tools": "latest",
     "webpack": "^5.95.0",
     "webpack-cli": "^5.1.4"

@@ -16,22 +16,23 @@
     "directory": "packages/PowerPack"
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^6.16.0",
+    "@codemirror/lang-javascript": "^6.2.2",
+    "@codemirror/language": "^6.10.2",
+    "@codemirror/search": "^6.5.6",
+    "@codemirror/state": "^6.4.1",
+    "@codemirror/view": "^6.26.3",
+    "@datagrok-libraries/db-explorer": "1.1.3",
     "@datagrok-libraries/utils": "^4.3.0",
     "cash-dom": "^8.1.5",
+    "codemirror": "^6.0.1",
     "datagrok-api": "../../js-api",
     "dayjs": "^1.11.7",
     "fuse.js": "^6.6.2",
-    "rxjs": "^6.5.5",
-    "codemirror": "^6.0.1",
-    "@codemirror/state": "^6.4.1",
-    "@codemirror/view": "^6.26.3",
-    "@codemirror/lang-javascript": "^6.2.2",
-    "@codemirror/autocomplete": "^6.16.0",
-    "@codemirror/search": "^6.5.6",
-    "@codemirror/language": "^6.10.2",
-    "@datagrok-libraries/db-explorer": "1.1.3"
+    "rxjs": "^6.5.5"
   },
   "devDependencies": {
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
     "eslint": "^8.21.0",

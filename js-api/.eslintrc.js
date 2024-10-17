@@ -4,6 +4,9 @@ module.exports = {
     'browser': true,
     'es2021': true
   },
+  "plugins": [
+    "@datagrok-misc/config"
+  ],
   'parserOptions': {
     'ecmaVersion': 12,
     'sourceType': 'module'

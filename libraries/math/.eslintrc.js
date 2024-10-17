@@ -11,7 +11,9 @@ module.exports = {
     ecmaVersion: 12,
     sourceType: 'module',
   },
-  plugins: ['@typescript-eslint', 'gpu-rules'],
+  plugins: ['@typescript-eslint', 'gpu-rules', 
+    "@datagrok-misc/config"
+  ],
   rules: {
     'gpu-rules/assure-buffer-destroy': 'error',
     'indent': ['error', 2, {SwitchCase: 1}],

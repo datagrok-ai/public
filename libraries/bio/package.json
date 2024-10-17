@@ -30,6 +30,7 @@
   "devDependencies": {
     "@datagrok-libraries/helm-web-editor": "^1.1.12",
     "@datagrok-libraries/js-draw-lite": "^0.0.9",
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
     "@types/signals": "1.0.1",
     "@types/three": "^0.159.0",
     "@types/uuid": "^9.0.1",

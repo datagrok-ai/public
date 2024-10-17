@@ -5,6 +5,7 @@
   },
   "parser": "@typescript-eslint/parser",
   "plugins": [
+    "@datagrok-misc/config",
     "@typescript-eslint"
   ],
   "parserOptions": {

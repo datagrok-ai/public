@@ -9,15 +9,16 @@
   },
   "description": "GIS (geographic information system) functionality, such as maps and geocoding.",
   "dependencies": {
-    "datagrok-api": "^1.19.0",
     "@datagrok-libraries/utils": "^4.3.0",
     "cash-dom": "^8.1.5",
+    "datagrok-api": "^1.19.0",
     "dayjs": "^1.11.13",
     "jszip": "^3.10.1",
     "ol": "^6.15.1",
     "xhr2": "^0.2.1"
   },
   "devDependencies": {
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
     "eslint": "^8.57.1",

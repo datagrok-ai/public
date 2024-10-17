@@ -22,6 +22,7 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
     "@types/wu": "^2.1.42",
     "@typescript-eslint/eslint-plugin": "^5.26.0",
     "@typescript-eslint/parser": "^5.26.0",

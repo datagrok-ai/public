@@ -27,6 +27,7 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
     "@datagrok/dendrogram": "^1.2.33",
     "@types/node": "^17.0.24",
     "@types/wu": "^2.1.44",

@@ -8,25 +8,26 @@
   },
   "description": "Support for previewing and opening text file formats (PDF, DOCX)",
   "dependencies": {
-    "datagrok-api": "^1.16.5",
-    "cash-dom": "^8.1.5",
-    "dayjs": "^1.11.13",
     "@datagrok-libraries/utils": "^4.3.0",
-    "pdfjs-dist": "4.2.67",
-    "docx-preview": "^0.1.18"
+    "cash-dom": "^8.1.5",
+    "datagrok-api": "^1.16.5",
+    "dayjs": "^1.11.13",
+    "docx-preview": "^0.1.18",
+    "pdfjs-dist": "4.2.67"
   },
   "devDependencies": {
-    "datagrok-tools": "latest",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4",
-    "ts-loader": "^9.5.1",
-    "typescript": "^5.6.3",
-    "eslint": "^8.57.1",
-    "eslint-config-google": "^0.14.0",
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
+    "css-loader": "^6.4.0",
+    "datagrok-tools": "latest",
+    "eslint": "^8.57.1",
+    "eslint-config-google": "^0.14.0",
     "style-loader": "^3.3.0",
-    "css-loader": "^6.4.0"
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.6.3",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
   },
   "scripts": {
     "link-all": "",

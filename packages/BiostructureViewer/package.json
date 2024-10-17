@@ -45,6 +45,7 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
     "@datagrok/chem": "^1.12.0",
     "@datagrok/samples": "^1.0.0",
     "@types/node": "^18.19.0",

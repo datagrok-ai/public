@@ -60,6 +60,7 @@
   "devDependencies": {
     "@datagrok-libraries/helm-web-editor": "^1.1.12",
     "@datagrok-libraries/js-draw-lite": "^0.0.9",
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
     "@datagrok/chem": "^1.12.3",
     "@datagrok/dendrogram": "^1.2.33",
     "@datagrok/helm": "^2.5.3",

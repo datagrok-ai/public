@@ -11,7 +11,8 @@
     "ecmaVersion": 12,
     "sourceType": "module"
   },
-  "plugins": ["@typescript-eslint"],
+  "plugins": [
+    "@datagrok-misc/config","@typescript-eslint"],
   "rules": {
     "indent": [
       "error",

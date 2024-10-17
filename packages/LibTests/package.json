@@ -25,6 +25,7 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
     "@types/deep-equal": "^1.0.1",
     "@types/lodash.clonedeepwith": "^4.5.9",
     "@types/wu": "^2.1.42",

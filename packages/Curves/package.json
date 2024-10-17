@@ -17,8 +17,9 @@
     "rxjs": "^6.5.5"
   },
   "devDependencies": {
-    "datagrok-tools": "latest",
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
     "css-loader": "^5.0.0",
+    "datagrok-tools": "latest",
     "source-map-loader": "^4.0.1",
     "style-loader": "^2.0.0",
     "ts-loader": "^9.5.1",

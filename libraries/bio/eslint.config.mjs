@@ -1,4 +1,5 @@
 import typescriptEslint from '@typescript-eslint/eslint-plugin';
+import datagrokConfig from '@datagrok-misc/eslint-plugin-config';
 import deprecation from 'eslint-plugin-deprecation';
 import globals from 'globals';
 import tsParser from '@typescript-eslint/parser';
@@ -27,6 +28,7 @@ export default [{
 }, ...compat.extends('google'), {
   plugins: {
     '@typescript-eslint': typescriptEslint,
+    '@datagrok-misc/config': datagrokConfig,
     deprecation,
   },
 

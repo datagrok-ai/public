@@ -21,15 +21,16 @@
     "cash-dom": "^8.1.5",
     "css-loader": "^6.5.1",
     "datagrok-api": "^1.21.1",
+    "rxjs": "^6.5.5",
     "source-map-loader": "^4.0.1",
     "style-loader": "^3.3.1",
     "ts-loader": "^9.5.1",
-    "rxjs": "^6.5.5",
+    "typeahead-standalone": "4.14.1",
     "typescript": "^5.6.3",
-    "uuid": "^9.0.0",
-    "typeahead-standalone": "4.14.1"
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
     "@types/uuid": "^9.0.2",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",

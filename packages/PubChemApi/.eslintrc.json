@@ -12,6 +12,7 @@
 	  "sourceType": "module"
 	},
 	"plugins": [
+		"@datagrok-misc/eslint-plugin-config",
 	  "@typescript-eslint"
 	],
 	"rules": {

@@ -13,6 +13,7 @@
     "project": ["tsconfig.json"]
   },
   "plugins": [
+    "@datagrok-misc/config",
     "@typescript-eslint"
   ],
   "rules": {

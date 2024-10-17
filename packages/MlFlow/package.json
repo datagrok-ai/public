@@ -8,21 +8,22 @@
     "email": "kamelichev@datagrok.ai"
   },
   "dependencies": {
-    "datagrok-api": "^1.20.0",
+    "@datagrok-libraries/utils": "^4.3.0",
     "cash-dom": "^8.1.5",
-    "dayjs": "^1.11.13",
-    "@datagrok-libraries/utils": "^4.3.0"
+    "datagrok-api": "^1.20.0",
+    "dayjs": "^1.11.13"
   },
   "devDependencies": {
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.8.1",
+    "@typescript-eslint/parser": "^8.8.1",
     "datagrok-tools": "latest",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4",
-    "ts-loader": "^9.5.1",
-    "typescript": "^5.6.3",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
-    "@typescript-eslint/eslint-plugin": "^8.8.1",
-    "@typescript-eslint/parser": "^8.8.1"
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.6.3",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
   },
   "scripts": {
     "link-all": "",

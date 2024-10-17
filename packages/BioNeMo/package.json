@@ -9,21 +9,22 @@
   },
   "description": "",
   "dependencies": {
+    "@datagrok-libraries/bio": "^5.42.14",
     "@datagrok-libraries/utils": "^4.3.0",
     "axios": "^1.7.4",
     "cash-dom": "^8.1.5",
     "datagrok-api": "^1.21.3",
-    "dayjs": "^1.11.13",
-    "@datagrok-libraries/bio": "^5.42.14"
+    "dayjs": "^1.11.13"
   },
   "devDependencies": {
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
+    "css-loader": "^7.1.2",
     "datagrok-tools": "latest",
+    "style-loader": "^4.0.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
     "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4",
-    "css-loader": "^7.1.2",
-    "style-loader": "^4.0.0"
+    "webpack-cli": "^5.1.4"
   },
   "scripts": {
     "link-all": "",

@@ -11,19 +11,20 @@
     "css/cruddy.css"
   ],
   "dependencies": {
-    "datagrok-api": "^1.21.1",
+    "@datagrok-libraries/utils": "^4.3.0",
     "cash-dom": "^8.1.5",
+    "datagrok-api": "^1.21.1",
     "dayjs": "^1.11.13",
-    "rxjs": "^6.5.5",
-    "@datagrok-libraries/utils": "^4.3.0"
+    "rxjs": "^6.5.5"
   },
   "devDependencies": {
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
+    "css-loader": "^7.1.2",
     "datagrok-tools": "latest",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
-    "css-loader": "^7.1.2"
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
   },
   "scripts": {
     "link-all": "npm link datagrok-api @datagrok-libraries/utils",

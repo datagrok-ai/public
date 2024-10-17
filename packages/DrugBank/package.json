@@ -13,22 +13,23 @@
     "directory": "packages/DrugBank"
   },
   "dependencies": {
-    "datagrok-api": "^1.11.1",
+    "@datagrok-libraries/utils": "^4.3.0",
     "cash-dom": "^8.1.5",
+    "datagrok-api": "^1.11.1",
     "dayjs": "^1.11.13",
-    "openchemlib": "^8.15.0",
-    "@datagrok-libraries/utils": "^4.3.0"
+    "openchemlib": "^8.15.0"
   },
   "devDependencies": {
-    "ts-loader": "^9.5.1",
-    "typescript": "^5.6.3",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4",
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
+    "@datagrok/chem": "^1.12.0",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
-    "@datagrok/chem": "^1.12.0"
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.6.3",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
   },
   "scripts": {
     "install-dependencies": "npm install",

@@ -11,6 +11,7 @@
     "dayjs": "^1.11.4"
   },
   "devDependencies": {
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
     "datagrok-tools": "latest",
     "source-map-loader": "^5.0.0",
     "ts-loader": "^9.5.1",

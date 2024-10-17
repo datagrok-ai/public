@@ -17,6 +17,7 @@
     "rxjs": "6.6.7"
   },
   "devDependencies": {
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
     "@typescript-eslint/eslint-plugin": "^5.39.0",
     "@typescript-eslint/parser": "^5.39.0",
     "dts-bundle-generator": "^7.0.0",

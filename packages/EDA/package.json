@@ -23,6 +23,7 @@
     "email": "vmakarichev@datagrok.ai"
   },
   "devDependencies": {
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
     "css-loader": "^7.1.2",

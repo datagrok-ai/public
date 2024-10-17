@@ -12,6 +12,7 @@
     "datagrok-api": "^1.21.1"
   },
   "devDependencies": {
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
     "eslint": "^8.57.1",

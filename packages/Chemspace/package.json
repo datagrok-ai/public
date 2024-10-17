@@ -14,19 +14,20 @@
     "directory": "packages/Chemspace"
   },
   "dependencies": {
-    "datagrok-api": "^1.21.1",
-    "@datagrok-libraries/utils": "^4.3.0"
+    "@datagrok-libraries/utils": "^4.3.0",
+    "datagrok-api": "^1.21.1"
   },
   "devDependencies": {
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
     "css-loader": "^7.1.2",
+    "datagrok-tools": "latest",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^4.0.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
-    "datagrok-tools": "latest",
     "webpack": "^5.95.0",
     "webpack-cli": "^5.1.4"
   },

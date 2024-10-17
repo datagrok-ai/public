@@ -48,6 +48,7 @@
     "All users"
   ],
   "devDependencies": {
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
     "@types/d3": "^7.4.0",
     "@types/d3-cloud": "^1.2.5",
     "@types/d3-drag": "^3.0.2",
