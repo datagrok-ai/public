@@ -5,12 +5,13 @@ import * as grok from 'datagrok-api/grok';
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {_testFindSimilar, _testGetSimilarities} from './menu-tests-similarity-diversity';
 import {testCsv, testSubstructure} from './substructure-search-tests';
+import { readDataframe } from './utils';
 
 category('server features', () => {
   test('descriptors', async () => {
     const tree = await grok.chem.descriptorsTree();
     expect(tree !== undefined, true);
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('System:AppData/Chem/tests/smiles_500K.zip') :
+    const df = DG.Test.isInBenchmark ? await readDataframe('tests/smiles_50K.csv') :
       DG.DataFrame.fromCsv(testCsv);
     const t: DG.DataFrame = await grok.chem.descriptors(df, 'smiles',
       ['MolWt', 'NumAromaticCarbocycles', 'NumHAcceptors', 'NumHeteroatoms', 'NumRotatableBonds', 'RingCount']);

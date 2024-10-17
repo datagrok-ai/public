@@ -190,7 +190,7 @@ export class AddNewColumnDialog {
     }
 
     this.prepareForSeleniumTests();
-    if (!this.call)
+    if (!this.call || !this.call.getParamValue('expression'))
       await this.updatePreview(this.codeMirror!.state.doc.toString(), false);
     this.prepareFunctionsListForAutocomplete();
     //set initial focus on code mirror
@@ -1096,9 +1096,12 @@ export class AddNewColumnDialog {
           ...this.getSelectedType(),
       );
       //temporary fix to activate macromolecule cell renderer
-      const semType = await grok.functions.call('Bio:detectMacromolecule', {col: this.sourceDf?.col(name)});
-      if (semType)
-        this.sourceDf!.col(name)!.semType = semType;
+      const col = this.sourceDf?.col(name);
+      if (col) {
+        const semType = await grok.functions.call('Bio:detectMacromolecule', {col: col});
+        if (semType)
+          col.semType = semType;
+      }
     }
   }
 
