@@ -4,7 +4,7 @@
 4. On the Menu Ribbon, click the **Edit** button.
 5. Add the next code to the Notebook body:
 ```
-race= demog[‘RACE’]
+race= demog['RACE']
 race.describe()
 ```
 6. On the Menu Ribbon, click the **Play** button.
