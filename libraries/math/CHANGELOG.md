@@ -1,5 +1,9 @@
 # math changelog
 
+## 1.2.3 (2024-10-17)
+
+Fix compatibility with newer version of wgpu types
+
 ## 1.2.2 (2024-10-16)
 
 * Increase complexity of bit array functions
