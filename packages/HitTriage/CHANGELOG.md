@@ -1,5 +1,9 @@
 # HitTriage changelog
 
+## 1.3.2 (2024-10-17)
+
+* Fix HT Campaigns and templates
+
 ## 1.3.1 (2024-10-10)
 
 * Remove project save button from the ribbon panel
