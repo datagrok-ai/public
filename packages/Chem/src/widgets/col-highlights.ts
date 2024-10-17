@@ -55,7 +55,7 @@ export class HighlightWidget extends DG.Widget {
         });
         itemsGrid.onAddingItemChanged.subscribe((item) => {
             this.itemsGridChanged = true;
-            if (itemsGrid.items.indexOf(item.item) === -1) {
+            if (itemsGrid.items.indexOf(item.item) === -1 && item.item.molecule) {
                 this.latestHighLightTag = JSON.stringify(itemsGrid.items.concat([item.item]));
                 this.col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, this.latestHighLightTag);
             }
