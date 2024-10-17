@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/cvm-tests",
   "friendlyName": "CVM Tests",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": {
     "name": "Pavlo Polovyi",
     "email": "ppolovyi@datagrok.ai"
