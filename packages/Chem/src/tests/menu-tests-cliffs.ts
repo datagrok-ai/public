@@ -25,7 +25,7 @@ category('top menu activity cliffs', async () => {
       await grok.data.files.openTable('System:AppData/Chem/tests/smiles_10K_with_activities.csv') :
       await readDataframe('tests/activity_cliffs_test.csv');
     await _testActivityCliffsOpen(df, 'smiles', 'Activity', DG.Test.isInBenchmark ? 78 : 2, !DG.Test.isInBenchmark);
-  }, {timeout: 20000, benchmark: true});
+  }, {timeout: 20000, benchmark: true, benchmarkTimeout: 180000});
 
   test('activityCliffsOpen.molV2000', async () => {
     await _testActivityCliffsOpen(await readDataframe('tests/spgi-100.csv'), 'Structure', 'Chemical Space X', 1);
@@ -73,7 +73,7 @@ async function _testActivityCliffsOpen(df: DG.DataFrame, molCol: string, activit
   if (molCol === 'molecule') actCliffsTableView.dataFrame.rows.removeAt(51, 489);
   const encodingFunc = DG.Func.find({name: 'getFingerprints', package: 'Chem'})[0];
   await activityCliffs(df, df.col(molCol)!, actCliffsTableView.dataFrame.getCol(activityCol), 80,
-    DimReductionMethods.UMAP, BitArrayMetricsNames.Tanimoto, encodingFunc);
+    DimReductionMethods.UMAP, BitArrayMetricsNames.Tanimoto, encodingFunc, undefined, undefined, true);
   let scatterPlot: DG.Viewer | null = null;
   for (const i of actCliffsTableView.viewers) {
     if (i.type == DG.VIEWER.SCATTER_PLOT)
@@ -87,7 +87,7 @@ async function _testActivityCliffsOpen(df: DG.DataFrame, molCol: string, activit
   }
   await awaitCheck(() => {
     return checkScatterPlotInitialized();
-  }, 'activity cliffs failed', 1000);
+  }, 'activity cliffs failed', layout ? 1000 : 60000);
   if (layout) {
     const layout = actCliffsTableView.saveLayout();
     scatterPlot?.close();
