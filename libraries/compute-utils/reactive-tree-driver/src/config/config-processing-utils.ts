@@ -123,11 +123,12 @@ async function processStepConfig(conf: PipelineStepConfiguration<LinkSpecString,
 
 async function getFuncCallIO(nqName: NqName): Promise<FuncallStateItem[]> {
   const func: DG.Func = await grok.functions.eval(nqName);
+  // force all io to be non-null
   const inputs = func.inputs.map((input) => (
-    {id: input.name, type: input.propertyType as any, direction: 'input' as const, nullable: input.nullable}
+    {id: input.name, type: input.propertyType as any, direction: 'input' as const, nullable: false}
   ));
   const outputs = func.outputs.map((output) => (
-    {id: output.name, type: output.propertyType as any, direction: 'output' as const, nullable: output.nullable}
+    {id: output.name, type: output.propertyType as any, direction: 'output' as const, nullable: false}
   ));
   const io = [...inputs, ...outputs];
   return io;

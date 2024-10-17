@@ -8,7 +8,7 @@ import {isFuncCallNode, isSequentialPipelineNode, isStaticPipelineNode, StateTre
 import {ActionSpec, isActionSpec, LinkSpec, MatchedNodePaths, MatchInfo, matchNodeLink} from './link-matching';
 import {Action, Link} from './Link';
 import {BehaviorSubject, concat, merge, Subject, of, Observable, defer, combineLatest} from 'rxjs';
-import {takeUntil, map, scan, switchMap, filter, mapTo, toArray, take, tap, debounceTime} from 'rxjs/operators';
+import {takeUntil, map, scan, switchMap, filter, mapTo, toArray, take, tap, debounceTime, delay, concatMap} from 'rxjs/operators';
 import {parseLinkIO} from '../config/LinkSpec';
 import {makeValidationResult} from '../utils';
 
@@ -86,9 +86,13 @@ export class LinksState {
       ).pipe(toArray(), mapTo(undefined));
     } else {
       this.linksUpdates.next(true);
+      const metaMap = new Map(links.filter((link) => !this.isDataLink(link)).map((link) => [link.uuid, link]));
       return concat(
         of(this.wireLinks(state)),
         this.runNewInits(state),
+        // tight to default validators for now, since used in testing
+        // only, should be a sepatate option rly
+        this.defaultValidators ? of(null).pipe(delay(0), concatMap(() => this.runLinks(state, metaMap))) : of(null),
       ).pipe(toArray(), mapTo(undefined));
     }
   }
@@ -144,7 +148,7 @@ export class LinksState {
       if (!isFuncCallNode(item))
         return acc;
       const validators = item.config.io?.map((io) => {
-        if (io.nullable)
+        if (io.nullable || io.direction === 'output')
           return;
         const spec: LinkSpec = {
           id: uuidv4(),
@@ -169,14 +173,14 @@ export class LinksState {
             }]
           },
           outputs: {
-            'in': [{
+            'out': [{
               path: [],
               ioName: io.id
             }]
           },
           actions: {},
         };
-        return new Link(path, minfo);
+        return new Link(path, minfo, 0);
       }).filter(x => !!x);
       return [...acc, ...(validators ?? [])];
     }, [] as Link[]);
@@ -191,7 +195,7 @@ export class LinksState {
         for (const infoIn of infosIn) {
           const inPathFull = [...link.prefix, ...infoIn.path];
           const nodeIn = state.getNode(inPathFull);
-          // pipeline memory state should be immutable and set in
+          // pipeline memory states should be immutable and set in
           // onInit, so they are always ready
           if (!isFuncCallNode(nodeIn.getItem()))
             continue;

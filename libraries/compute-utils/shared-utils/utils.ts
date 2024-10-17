@@ -790,13 +790,12 @@ export function isInputBase(input: FuncCallInput): input is DG.InputBase {
 }
 
 export const deepCopy = (call: DG.FuncCall) => {
-  const previousId = call.id;
   const deepClone = DG.Func.byName(call.func.nqName).prepare();
 
   //@ts-ignore
-  if (!previousId) deepClone.id = null;
+  deepClone.id = call.id;
 
-  deepClone.options = cloneDeepWith(call.options);
+  call.options.forEach((key: string) => deepClone.options[key] = call.options[key]);
 
   const definedOutputs = wu(deepClone.outputParams.values())
     .filter((output) => !!call.outputs[output.name]);

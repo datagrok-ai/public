@@ -44,7 +44,7 @@ export class Link {
     distinctUntilChanged(),
   );
 
-  constructor(public prefix: NodePath, public matchInfo: MatchInfo) {}
+  constructor(public prefix: NodePath, public matchInfo: MatchInfo, private customDebounceTime?: number) {}
 
   wire(state: BaseTree<StateTreeNode>, linksState?: LinksState) {
     const inputNames = Object.keys(this.matchInfo.inputs);
@@ -136,9 +136,11 @@ export class Link {
       this.trigger$.pipe(withLatestFrom(inputsEntries$)) :
       this.trigger$.pipe(map((scope) => [scope, [] as any[]] as const)) ;
 
+    const debounceVal = this.customDebounceTime ?? (this.isValidator ? VALIDATOR_DEBOUNCE_TIME : 0);
+
     const activeInputs$ = inputsEntries$.pipe(
       filter(() => this.isActive$.value),
-      debounceTime(this.isValidator ? VALIDATOR_DEBOUNCE_TIME : 0),
+      debounceTime(debounceVal),
       map((obs) => [undefined, obs] as const),
     );
 
@@ -209,33 +211,30 @@ export class Link {
       return [outputAlias, nodes] as const;
     });
     for (const [outputAlias, nodesData] of outputsEntries) {
-      const nextData = controller.outputs[outputAlias];
-      if (nextData) {
-        for (const [ioName, nodePath, node] of nodesData) {
-          if (controller.scopeInfo?.scope &&
-            !BaseTree.isNodeChildOffseted(controller.scopeInfo.scope, nodePath, controller.scopeInfo.childOffset)
-          )
-            continue;
+      for (const [ioName, nodePath, node] of nodesData) {
+        if (controller.scopeInfo?.scope &&
+          !BaseTree.isNodeChildOffseted(controller.scopeInfo.scope, nodePath, controller.scopeInfo.childOffset)
+        )
+          continue;
 
-          if (controller instanceof ValidatorController) {
-            const store = node.getItem().getStateStore();
-            if (store instanceof MemoryStore)
-              throw new Error(`Unable to set validations to a raw memory store ${node.getItem().uuid}`);
-            store.setValidation(ioName, this.uuid, controller.outputs[outputAlias]);
-          } else if (controller instanceof MetaController) {
-            const store = node.getItem().getStateStore();
-            if (store instanceof MemoryStore)
-              throw new Error(`Unable to set meta to a raw memory store ${node.getItem().uuid}`);
-            store.setMeta(ioName, controller.outputs[outputAlias]);
-          } else if (controller instanceof MutationController) {
-            const initConfig = controller.outputs[outputAlias];
-            if (initConfig)
-              this.lastPipelineMutations.push({path: nodePath, initConfig});
-          } else {
-            const [state, restriction] = controller.outputs[outputAlias];
-            const nextValue = state instanceof DG.DataFrame ? state.clone() : state;
-            node.getItem().getStateStore().setState(ioName, nextValue, restriction);
-          }
+        if (controller instanceof ValidatorController) {
+          const store = node.getItem().getStateStore();
+          if (store instanceof MemoryStore)
+            throw new Error(`Unable to set validations to a raw memory store ${node.getItem().uuid}`);
+          store.setValidation(ioName, this.uuid, controller.outputs[outputAlias]);
+        } else if (controller instanceof MetaController) {
+          const store = node.getItem().getStateStore();
+          if (store instanceof MemoryStore)
+            throw new Error(`Unable to set meta to a raw memory store ${node.getItem().uuid}`);
+          store.setMeta(ioName, controller.outputs[outputAlias]);
+        } else if (controller instanceof MutationController) {
+          const initConfig = controller.outputs[outputAlias];
+          if (initConfig)
+            this.lastPipelineMutations.push({path: nodePath, initConfig});
+        } else {
+          const [state, restriction] = controller.outputs[outputAlias];
+          const nextValue = state instanceof DG.DataFrame ? state.clone() : state;
+          node.getItem().getStateStore().setState(ioName, nextValue, restriction);
         }
       }
     }

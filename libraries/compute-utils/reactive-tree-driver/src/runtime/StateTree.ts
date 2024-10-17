@@ -672,14 +672,21 @@ export class StateTree {
       if (!ioDeps)
         return acc;
 
-      for (const ioName of item.instancesWrapper.getStateNames()) {
+      const ioNames = item.instancesWrapper.getStateNames();
+      for (const ioName of ioNames) {
         const deps = ioDeps[ioName];
         if (!deps?.data)
           item.clearIORestriction(ioName);
         if (!deps?.meta)
           item.clearIOMeta(ioName);
-        item.clearOldValidations(new Set(deps?.validation ?? []));
       }
+
+      const currentValidatorIds = ioNames.flatMap(ioName => {
+        const deps = ioDeps[ioName];
+        return deps?.validation ?? [];
+      });
+      item.clearOldValidations(new Set(currentValidatorIds));
+
       return acc;
     }, null);
   }

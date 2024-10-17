@@ -7,9 +7,10 @@ import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {of, Subject} from 'rxjs';
-import {delay, mapTo, switchMap} from 'rxjs/operators';
+import {delay, mapTo, skip, switchMap, take} from 'rxjs/operators';
 import {FuncCallInstancesBridge} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/FuncCallInstancesBridge';
 import {makeValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
+import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
 
 category('ComputeUtils: Driver links reactivity', async () => {
@@ -505,6 +506,159 @@ category('ComputeUtils: Driver links reactivity', async () => {
       });
     });
   });
+
+  test('Run default validators', async () => {
+    const pconf = await getProcessedConfig({
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:TestAdd2',
+        },
+        {
+          id: 'step2',
+          nqName: 'LibTests:TestMul2',
+        },
+      ],
+    });
+
+    testScheduler.run((helpers) => {
+      const {expectObservable, cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, defaultValidators: true});
+      StateTree.loadOrCreateCalls(tree, true).subscribe();
+      tree.init().subscribe();
+      const n1 = tree.nodeTree.getNode([{idx: 0}]);
+      const n2 = tree.nodeTree.getNode([{idx: 1}]);
+      cold('-a').subscribe(() => {
+        n1.getItem().getStateStore().setState('a', 1);
+        n1.getItem().getStateStore().setState('b', 2);
+        n2.getItem().getStateStore().setState('a', 3);
+        n2.getItem().getStateStore().setState('b', 4);
+      });
+      cold('--a').subscribe(() => {
+        n2.getItem().getStateStore().setState('b', undefined);
+      });
+      expectObservable((n1.getItem() as FuncCallNode).validationInfo$, '-^ 1000ms !').toBe('-(abc)', {
+        a: {
+          "a": {
+            "errors": [
+              {
+                "description": "Missing value"
+              }
+            ],
+            "warnings": [],
+            "notifications": []
+          },
+          "b": {
+            "errors": [
+              {
+                "description": "Missing value"
+              }
+            ],
+            "warnings": [],
+            "notifications": []
+          }
+        },
+        b: {
+          "b": {
+            "errors": [
+              {
+                "description": "Missing value"
+              }
+            ],
+            "warnings": [],
+            "notifications": []
+          }
+        },
+        c: {},
+      });
+      expectObservable((n2.getItem() as FuncCallNode).validationInfo$.pipe(take(3)), '-^ 1000ms !').toBe('-(abc|)', {
+        a: {
+          "a": {
+            "errors": [
+              {
+                "description": "Missing value"
+              }
+            ],
+            "warnings": [],
+            "notifications": []
+          },
+          "b": {
+            "errors": [
+              {
+                "description": "Missing value"
+              }
+            ],
+            "warnings": [],
+            "notifications": []
+          }
+        },
+        b: {
+          "b": {
+            "errors": [
+              {
+                "description": "Missing value"
+              }
+            ],
+            "warnings": [],
+            "notifications": []
+          }
+        },
+        c: {},
+      });
+      expectObservable((n2.getItem() as FuncCallNode).validationInfo$.pipe(skip(3)), '-^ 1000ms !').toBe('--a', {
+        a: {
+          "b": {
+            "errors": [
+              {
+                "description": "Missing value"
+              }
+            ],
+            "warnings": [],
+            "notifications": []
+          }
+        }
+      });
+      expectObservable((n1.getItem() as FuncCallNode).funcCallState$, '-^ 1000ms !').toBe('-(ab)',{
+        a: {
+          "isRunning": false,
+          "isRunnable": false,
+          "isOutputOutdated": true,
+          "pendingDependencies": []
+        },
+        b: {
+          "isRunning": false,
+          "isRunnable": true,
+          "isOutputOutdated": true,
+          "pendingDependencies": []
+        }
+      });
+      expectObservable((n2.getItem() as FuncCallNode).funcCallState$.pipe(take(2)), '-^ 1000ms !').toBe('-(ab|)', {
+        a: {
+          "isRunning": false,
+          "isRunnable": false,
+          "isOutputOutdated": true,
+          "pendingDependencies": []
+        },
+        b: {
+          "isRunning": false,
+          "isRunnable": true,
+          "isOutputOutdated": true,
+          "pendingDependencies": []
+        }
+      });
+      expectObservable((n2.getItem() as FuncCallNode).funcCallState$.pipe(skip(2)), '-^ 1000ms !').toBe('--a', {
+        a: {
+          "isRunning": false,
+          "isRunnable": false,
+          "isOutputOutdated": true,
+          "pendingDependencies": []
+        }
+      });
+    });
+  });
+
 
   test('Propagate meta info', async () => {
     const config: PipelineConfiguration = {

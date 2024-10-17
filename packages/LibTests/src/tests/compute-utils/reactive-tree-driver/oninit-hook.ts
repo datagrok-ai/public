@@ -18,7 +18,7 @@ category('ComputeUtils: Driver onInit hook running', async () => {
 
   before(async () => {
     testScheduler = new TestScheduler((actual, expected) => {
-      console.log(actual, expected);
+      // console.log(actual, expected);
       expectDeepEqual(actual, expected);
     });
   });
