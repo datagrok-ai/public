@@ -23,7 +23,7 @@ export class RuleInputs extends ActiveFiles {
 
     const editIcon = ui.icons.edit(async () => {
       const rulesManager = await RulesManager.getInstance(available);
-      grok.shell.v = await rulesManager.getViewRoot();
+      await rulesManager.show();
     }, 'Edit rules');
 
     res.addOptions(editIcon);
@@ -57,8 +57,8 @@ export type RuleReaction = {
   name: string
 }
 
-export function dfFromRules(rules: Rules) : DG.DataFrame {
-  const length = rules.reactionRules.length;
+export function dfFromSynthesisRules(rules: RuleReaction []) : DG.DataFrame {
+  const length = rules.length;
   const codeCol = DG.Column.int('code', length);
   const firstMonomerCol = DG.Column.string('firstMonomer', length);
   const secondMonomerCol = DG.Column.string('secondMonomer', length);
@@ -68,12 +68,12 @@ export function dfFromRules(rules: Rules) : DG.DataFrame {
   const product = DG.Column.string('product', length);
 
   for (let i = 0; i < length; i++) {
-    codeCol.set(i, rules.reactionRules[i].code);
-    firstMonomerCol.set(i, rules.reactionRules[i].firstMonomer);
-    secondMonomerCol.set(i, rules.reactionRules[i].secondMonomer);
-    name.set(i, rules.reactionRules[i].name);
+    codeCol.set(i, rules[i].code);
+    firstMonomerCol.set(i, rules[i].firstMonomer);
+    secondMonomerCol.set(i, rules[i].secondMonomer);
+    name.set(i, rules[i].name);
 
-    const reaction = rules.reactionRules[i].reaction.split('>>');
+    const reaction = rules[i].reaction.split('>>');
     const reactants = reaction[0].split('.');
 
     firstReactant.set(i, reactants[0]);
@@ -88,6 +88,34 @@ export function dfFromRules(rules: Rules) : DG.DataFrame {
   return DG.DataFrame.fromColumns([name, firstReactant, secondReactant, product, codeCol, firstMonomerCol, secondMonomerCol]);
 }
 
+export function synthesisRulesFromDf(df: DG.DataFrame) : RuleReaction [] {
+  const length = df.rowCount;
+  const rules: RuleReaction [] = new Array<RuleReaction>(length);
+  const codeCol = df.columns.byName('code');
+  const firstMonomerCol = df.columns.byName('firstMonomer');
+  const secondMonomerCol = df.columns.byName('secondMonomer');
+  const name = df.columns.byName('name');
+  const firstReactant = df.columns.byName('firstReactant');
+  const secondReactant = df.columns.byName('secondReactant');
+  const product = df.columns.byName('product');
+
+  for (let i = 0; i < length; i++) {
+    const smartsReaction = `${firstReactant.get(i)}.${secondReactant.get(i)}>>${product.get(i)}`;
+
+    const rule = {
+      code: codeCol.get(i),
+      firstMonomer: firstMonomerCol.get(i),
+      secondMonomer: secondMonomerCol.get(i),
+      reaction: smartsReaction,
+      name: name.get(i)
+    };
+
+    rules[i] = rule;
+  }
+
+  return rules;
+}
+
 export async function getRules(ruleFiles: string[]): Promise<Rules> {
   const fileSource = new DG.FileSource(RULES_PATH);
   const linkRules: RuleLink[] = [];
@@ -96,42 +124,16 @@ export async function getRules(ruleFiles: string[]): Promise<Rules> {
 
   for (let i = 0; i < ruleFiles.length; i++) {
     const rulesRaw = await fileSource.readAsText(ruleFiles[i].replace(RULES_PATH, ''));
-    const ruleSingle = JSON.parse(rulesRaw);
-    for (let j = 0; j < ruleSingle.length; j++) {
-      if (ruleSingle[j].type !== undefined && ruleSingle[j].code !== undefined) {
-        switch (ruleSingle[j].type) {
-        case RULES_TYPE_LINK: {
-          const rule = ruleSingle[j].monomericSubstitution;
-          rule['code'] = ruleSingle[j].code;
-          linkRules.push(rule);
-          break;
-        }
-        case RULES_TYPE_REACTION: {
-          const rule = ruleSingle[j].monomericSubstitution;
-          rule['code'] = ruleSingle[j].code;
-          reactionRules.push(rule);
-          break;
-        }
-        case RULES_TYPE_HOMODIMER: {
-          if (rules.homodimerCode)
-            grok.shell.warning(`PolyTool: homodimer code is duplicated in rules.`);
-          rules.homodimerCode = ruleSingle[j].code;
-          break;
-        }
-        case RULES_TYPE_HETERODIMER: {
-          if (rules.heterodimerCode)
-            grok.shell.warning(`PolyTool: heterodimer code is duplicated in rules.`);
-          rules.heterodimerCode = ruleSingle[j].code;
-          break;
-        }
-        default:
-          grok.shell.warning(`PolyTool: Unexpected type - '${ruleSingle[j]}'.`);
-          break;
-        }
-      } else {
-        grok.shell.warning('Polytool: rules contain invalid rule');
-      }
-    }
+    const ruleSingle : Rules = JSON.parse(rulesRaw);
+
+    rules.homodimerCode = ruleSingle.homodimerCode;
+    rules.heterodimerCode = ruleSingle.heterodimerCode;
+
+    for (let j = 0; j < ruleSingle.linkRules.length; j++)
+      linkRules.push(ruleSingle.linkRules[j]);
+
+    for (let j = 0; j < ruleSingle.reactionRules.length; j++)
+      reactionRules.push(ruleSingle.reactionRules[j]);
   }
 
   return rules;

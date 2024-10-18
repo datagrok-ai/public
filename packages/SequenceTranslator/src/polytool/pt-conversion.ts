@@ -194,6 +194,13 @@ export class Chain {
             linkages[j].sChain++;
           }
         }
+
+        // const ffr1 = rules.reactionRules[ruleN[0]].name == 'Ac-S' ? 2 : 3;
+        // const ssr1 = rules.reactionRules[ruleN[0]].name == 'Ac-S' ? 2 : 2;
+
+        // const ffr2 = rules.reactionRules[ruleN[0]].name == 'Ac-S' ? 3 : 4;
+        // const ssr2 = rules.reactionRules[ruleN[0]].name == 'Ac-S' ? 2 : 1;
+
         linkages.push({
           fChain: 0,
           sChain: 0,
@@ -568,7 +575,9 @@ export function doPolyToolConvert(sequences: string[], rules: Rules): string[] {
 function getMonomersMolBlocks(monomer1: Monomer, monomer2: Monomer): [string, string] {
   const mb1 = monomer1.molfile;
   let mb2 = monomer2.molfile;
-  const addGroups = monomer1.rgroups.length;
+  let addGroups = monomer1.rgroups.length;
+  if (addGroups == 1)
+    addGroups++;
 
   //mol v2000 monomer
   const rgpIdx = mb2.indexOf('M  RGP');
