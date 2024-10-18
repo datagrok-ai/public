@@ -23,7 +23,7 @@ Open linked datasets
 ***
 
 1. Add filters.
-2. View > layout > clone.
+2. View > Layout > Clone View.
 3. Disable filters on the clone.
 3. Close-open the filter panel.
 4. Enable filters.
