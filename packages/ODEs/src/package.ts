@@ -194,7 +194,7 @@ export function pkPdDemo(dose: number, count: number, interval: number, KA: numb
 
 //name: PK-PD Simulation Demo
 //description: In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation
-//meta.demoPath: Compute | PK-PD modeling
+//meta.demoPath: Compute | PK-PD Modeling
 //test: demoSimPKPD() //wait: 100
 export async function demoSimPKPD(): Promise<any> {
   const doeSimpleFunc: DG.Func = await grok.functions.eval('DiffStudio:pkPdDemo');
