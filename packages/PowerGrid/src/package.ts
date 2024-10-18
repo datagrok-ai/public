@@ -30,7 +30,6 @@ export const _package = new DG.Package();
 
 let gpuDevice: GPUDevice | null = null;
 let gpuErrorCounter = 0;
-let scOriginalMarkerType = '';
 let scOriginalMarkersColumnName = '';
 
 //name: barCellRenderer
@@ -294,12 +293,10 @@ export function isWebGPUAvailable(sc: DG.ScatterPlotViewer) {
 //input: dynamic sc
 //output: bool result
 export function isWebGPURenderValid(sc: DG.ScatterPlotViewer) {
-  if (scOriginalMarkerType == '')
-    scOriginalMarkerType = sc.props.markerType;
   if (scOriginalMarkersColumnName == '')
     scOriginalMarkersColumnName = sc.props.markersColumnName;
   return sc.props.zoomAndFilter != 'pack and zoom by filter' 
-    && sc.props.markerType == scOriginalMarkerType
+    && (sc.props.markerType == 'dot' || sc.props.markerType == 'circle')
     && sc.props.markersColumnName == scOriginalMarkersColumnName
     && !sc.dataFrame.selection.anyTrue;
 }

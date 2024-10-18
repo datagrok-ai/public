@@ -22,6 +22,12 @@ class WebGPUCache {
   markerSizesLength = -1;
   markerDefaultSize = -1;
   sizeColumnName = '';
+  textureAtlas: OffscreenCanvas | null = null;
+  minTextureSize = 2;
+  maxTextureSize = 100;
+  textureGridSize = Math.ceil(Math.sqrt((this.maxTextureSize - this.minTextureSize) / 2 + 1));
+  texturePadding = 2;
+  gpuTextureAtlas: GPUTexture | null = null;
 
   updateAndValidate(sc: DG.ScatterPlotViewer, device: GPUDevice, pt: DG.Point = new DG.Point(0, 0)) {
     const xCol = sc.table.col(sc.props.xColumnName);
@@ -40,6 +46,8 @@ class WebGPUCache {
   
     if (this.isMarkerSizesParamsChanged(sc))
         this.setMarkerSizes(sc, device);
+
+    this.updateTexuteAtlas(sc, device);
   
     return this.isValid();
   }
@@ -159,6 +167,26 @@ class WebGPUCache {
       new Float32Array(scBufferArray, scBufferOffset, this.markerSizesLength).set(sizes);
       scBufferOffset += this.xColLength * Float32Array.BYTES_PER_ELEMENT;
       this.markerSizesBuffer.unmap();
+  }
+
+  updateTexuteAtlas(sc: DG.ScatterPlotViewer, device: GPUDevice) {
+    if (this.textureAtlas == null || this.gpuTextureAtlas == null || this.minTextureSize != roundUpToEven(sc.props.markerMinSize) || this.maxTextureSize != roundUpToEven(sc.props.markerMaxSize)) {
+      this.minTextureSize = roundUpToEven(sc.props.markerMinSize);
+      this.maxTextureSize = roundUpToEven(sc.props.markerMaxSize);
+      this.textureGridSize = Math.ceil(Math.sqrt((this.maxTextureSize - this.minTextureSize) / 2 + 1));
+      this.textureAtlas = createTextureAtlas(this, sc);
+
+      this.gpuTextureAtlas = device.createTexture({
+          size: [this.textureAtlas.width, this.textureAtlas.height],
+          format: 'rgba8unorm',
+          usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
+      });  
+      device.queue.copyExternalImageToTexture(
+          { source: this.textureAtlas },
+          { texture: this.gpuTextureAtlas, premultipliedAlpha: true},
+          [this.textureAtlas.width, this.textureAtlas.height]
+      );
+    }
   }
 };
 
@@ -341,6 +369,7 @@ function areEqual(rc1: DG.Rect, rc2: DG.Rect): boolean {
 }
 
 async function webGPUInit(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotViewer) {
+  console.time('GPU Render');
   const cache = getWebGPUCache(sc);
   if (!cache)
     throw  'Failed to get WebGPU cache for scatter plot viewer';
@@ -349,7 +378,7 @@ async function webGPUInit(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotVie
   if (!device)
     throw  'Failed to get WebGPU device';
 
-  if (!cache.updateAndValidate(sc, device) || !cache.indexBuffer || !cache.columnBuffer || !cache.viewBuffer || !cache.markerSizesBuffer)
+  if (!cache.updateAndValidate(sc, device) || !cache.indexBuffer || !cache.columnBuffer || !cache.viewBuffer || !cache.markerSizesBuffer || !cache.gpuTextureAtlas)
     throw 'Failed to update and validate cache or to initalize buffers';
 
   const gpuContext = webGPUCanvas.getContext('webgpu');
@@ -364,9 +393,6 @@ async function webGPUInit(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotVie
   });
 
   // Defining textures that will be drawn
-  const kMinTextureSize = 2;
-  const kMaxTextureSize = 100;
-
   const module = device.createShaderModule({
     code: `
         struct Vertex {
@@ -409,8 +435,8 @@ async function webGPUInit(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotVie
             // Get the marker size for the current vertex
             let markerSize = markerSizes[vert.index];
             
-            let minSize = f32(${kMinTextureSize});
-            let maxSize = f32(${kMaxTextureSize});
+            let minSize = f32(${cache.minTextureSize});
+            let maxSize = f32(${cache.maxTextureSize});
 
             // The textures are made of even sizes to avoid blur and artefacts
             // Rounding up to the nearest even index and dividing by two to get the needed index in the texture atlas
@@ -422,15 +448,14 @@ async function webGPUInit(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotVie
             let screenPoint = pointToScreen(vert.index);
             let normalizedPos = convertPointToNormalizedCoords(screenPoint);
             // Making a pixel perfect position, to avoid artefacts and blurring
-            vsOut.position = vec4f(floor((normalizedPos + pos * maxSize / uni.resolution) * uni.resolution) / uni.resolution, 0, 1);
+            vsOut.position = vec4f(floor((normalizedPos + pos * (maxSize + ${sc.props.markerBorderWidth * 2 + cache.texturePadding}) / uni.resolution) * uni.resolution) / uni.resolution, 0, 1);
             vsOut.texcoord = pos * 0.5 + 0.5;
             vsOut.markerIndex = sizeIndex;   // Pass marker index to fragment shader
             return vsOut;
         }
 
         @fragment fn fs(vsOut: VSOutput) -> @location(0) vec4f {
-            // Assume gridSize is 10x10 based on atlas layout
-            let gridSize: u32 = 10;
+            let gridSize: u32 = ${cache.textureGridSize};
 
             // Get the size index based on the marker index (you might want a mapping function here)
             let sizeIndex: u32 = vsOut.markerIndex;
@@ -532,25 +557,12 @@ async function webGPUInit(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotVie
   resolutionValue.set([canvasTexture.width, canvasTexture.height]);
   device.queue.writeBuffer(uniformBuffer, 0, uniformValues);
 
-  const atlasCanvas = createTextureAtlas(kMaxTextureSize, kMinTextureSize + sc.props.markerBorderWidth * 2, sc);  
-
-  const texture = device.createTexture({
-      size: [atlasCanvas.width, atlasCanvas.height],
-      format: 'rgba8unorm',
-      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
-  });  
-  device.queue.copyExternalImageToTexture(
-      { source: atlasCanvas },
-      { texture: texture, premultipliedAlpha: true},
-      [atlasCanvas.width, atlasCanvas.height]
-  );
-
   const renderGroup = device.createBindGroup({
     layout: pipeline.getBindGroupLayout(0),
     entries: [
       {binding: 0, resource: {buffer: uniformBuffer}},
       {binding: 1, resource: sampler},
-      {binding: 2, resource: texture.createView()},
+      {binding: 2, resource: cache.gpuTextureAtlas.createView()},
     ],
   });
 
@@ -573,6 +585,7 @@ async function webGPUInit(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotVie
       throw `WebGPURender shader module error: ${message.message}`;
     }
   }
+  console.timeEnd('GPU Render');
 }
 
 function getPaddedSize(length: number): number {
@@ -585,15 +598,14 @@ function getPaddedSize(length: number): number {
   return paddedComputeInfoBufferSize;
 }
 
-function createTextureAtlas(maxSize: number, minSize: number, sc: DG.ScatterPlotViewer, padding: number = 0): OffscreenCanvas {
+function createTextureAtlas(cache: WebGPUCache, sc: DG.ScatterPlotViewer): OffscreenCanvas {
+    const minSize = cache.minTextureSize + sc.props.markerBorderWidth * 2;
+    const maxSize = cache.maxTextureSize + sc.props.markerBorderWidth * 2;
     // We'll take the minimum size as 2 while adding the border width to maintain the whole size
-    const sizes = Array.from({ length: maxSize }, (_, i) => 2 * i + minSize);
-  
-    // Calculate the number of rows and columns for a grid large enough to fit all circle sizes
-    const gridSize = Math.ceil(Math.sqrt(sizes.length));
+    const sizes = Array.from({ length: (maxSize - minSize) / 2 + 1 }, (_, i) => 2 * i + minSize);
   
     // Calculate the size of the atlas canvas
-    const atlasSize = (maxSize + padding) * gridSize; // Each cell will have a size of maxSize + padding
+    const atlasSize = (maxSize + cache.texturePadding) * cache.textureGridSize; // Each cell will have a size of maxSize + padding
     const atlasCanvas = new OffscreenCanvas(atlasSize, atlasSize);
     const ctx = atlasCanvas.getContext('2d');
   
@@ -602,14 +614,14 @@ function createTextureAtlas(maxSize: number, minSize: number, sc: DG.ScatterPlot
   
     // Draw each circle in the grid
     sizes.forEach((size, index) => {
-        const x = index % gridSize;
-        const y = Math.floor(index / gridSize);
+        const x = index % cache.textureGridSize;
+        const y = Math.floor(index / cache.textureGridSize);
     
         // Get the canvas for the current circle size
         const circleCanvas = createCircleCanvas(size, sc);
     
         // Calculate position in the atlas
-        const cellSize = maxSize + padding;
+        const cellSize = maxSize + cache.texturePadding;
         // Center the texture in the cell
         const posX = x * cellSize + (cellSize - size) / 2; 
         const posY = y * cellSize + (cellSize - size) / 2;
@@ -644,6 +656,10 @@ function createCircleCanvas(size: number, sc: DG.ScatterPlotViewer): OffscreenCa
   }
 
   return canvas;
+}
+
+function roundUpToEven(num: number): number {
+  return Math.ceil(num / 2) * 2;
 }
 
 function addPointConversionMethods() {
