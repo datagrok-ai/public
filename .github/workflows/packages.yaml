@@ -340,6 +340,13 @@ jobs:
         if: ${{ matrix.build == 'build' }}
         id: build
         run: |
+          for dockerfile in $(echo -e ${{ matrix.docker }}); do
+            docker_config_file="$(dirname $dockerfile)/container.json"
+            if [ -f "${docker_config_file}" ]; then
+              jq 'del(.gpu)' ${docker_config_file} > temp.json && mv temp.json ${docker_config_file}
+            fi
+          done
+
           if [[ $(jq -r '. | select( has("scripts") == true ).scripts | select( has("build") == true ).build' "package.json") == "webpack" ]]; then
             npm run build -- --mode=production
           else
@@ -405,16 +412,6 @@ jobs:
       - name: Publish package to Datagrok
         if: ${{ matrix.test == 'test' }}
         run: |
-          for dockerfile in $(echo -e ${{ matrix.docker }}); do
-            docker_config_file="$(dirname $dockerfile)/container.json"
-            if [ -f "${docker_config_file}" ]; then
-              gpu_count=$(jq '.gpu' ${docker_config_file})
-              if [ "$gpu_count" -gt 0 ]; then
-                jq 'del(.gpu)' ${docker_config_file} > temp.json && mv temp.json ${docker_config_file}
-              fi
-            fi
-          done
-
           count=0
           retries=5
           until grok publish ${{ steps.datagrok-image.outputs.alias }}; do
