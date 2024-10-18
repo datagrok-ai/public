@@ -410,7 +410,7 @@ jobs:
             if [ -f "${docker_config_file}" ]; then
               gpu_count=$(jq '.gpu' ${docker_config_file})
               if [ "$gpu_count" -gt 0 ]; then
-                jq '.gpu = 0' ${docker_config_file} > temp.json && mv temp.json ${docker_config_file}
+                jq 'del(.gpu)' ${docker_config_file} > temp.json && mv temp.json ${docker_config_file}
               fi
             fi
           done
