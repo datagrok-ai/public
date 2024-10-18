@@ -13,7 +13,7 @@ category('fingerprints', async () => {
       chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
       await chemCommonRdKit.initRdKitModuleLocal();
     }
-    molecules = DG.Test.isInBenchmark ? await grok.data.files.openTable('System:DemoFiles/chem/smiles_1M.zip') :
+    molecules = DG.Test.isInBenchmark ? await grok.data.files.openTable('System:AppData/Chem/tests/smiles_100K.zip') :
       grok.data.demo.molecules(100);
   });
 

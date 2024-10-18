@@ -75,7 +75,9 @@ benchmarks  as (
   (select * from test_runs where test_name = name and benchmark)
 ), 
 testruns as (
-  select * from test_runs r
+  select build_name, test_name, duration,
+  case when r.passed is null then 'did not run' when r.skipped then 'skipped' when r.passed then 'passed' when not r.passed then 'failed' else 'unknown' end as status
+  from test_runs r
   where  r.benchmark = true
 and r.passed = true
 and r.skipped = false
@@ -83,12 +85,13 @@ and not r.test_name like '%Unhandled exceptions: Exception'
 and r.build_name in (select name from last_builds)
 )
 
-select CAST(min(r.duration) AS int)as minDuration, CAST(max(r.duration) AS int)as maxDuration, CAST(avg(r.duration) AS int)as avgDuration, b.name as test, l.name
+select CAST(min(r.duration) AS int)as minDuration, CAST(max(r.duration) AS int)as maxDuration, CAST(avg(r.duration) AS int)as avgDuration,
+b.name as test, l.name as build_name, COALESCE(r.status, 'didn''t run') as status
 from benchmarks b
 join last_builds l on 1=1 
 left join testruns as r 
 on (r.test_name = b.name and l.name = r.build_name)
-group by  b.name, l.name
+group by  b.name, l.name,  r.status
 order by l.name desc,  b.name
 
 --end

@@ -114,6 +114,10 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     this.reset();
   }
 
+  override toLog(): string {
+    return `MonomerPlacer<${this.viewerId}>`;
+  }
+
   protected getMonomerLib(): IMonomerLibBase | null {
     return this.tableCol.temp[MmcrTemps.overriddenLibrary] ?? this.sysMonomerLib;
   }
@@ -217,8 +221,8 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     for (let seqIdx = startIdx; seqIdx < endIdx; seqIdx++) {
       if (this._processedRows.get(seqIdx) && maxVisibleSeqLength <= this._processedMaxVisibleSeqLength)
         continue;
-      const seqSS: ISeqSplitted = this.seqHelper.getSeqHandler(this.tableCol)
-        .getSplitted(seqIdx, maxVisibleSeqLength);
+      const sh = this.seqHelper.getSeqHandler(this.tableCol);
+      const seqSS: ISeqSplitted = sh.getSplitted(seqIdx, maxVisibleSeqLength);
 
       const visibleSeqLength: number = Math.min(maxVisibleSeqLength, seqSS.length);
       if (visibleSeqLength > res.length)
@@ -271,6 +275,9 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     const gridCol = this.gridCol;
     const tableCol = this.tableCol;
     const dpr = window.devicePixelRatio;
+
+    const logPrefix = `${this.toLog()}.render()`;
+    this.logger.debug(`${logPrefix}, start`);
 
     // Cell renderer settings
     let maxLengthOfMonomer: number = this.monomerLengthLimit;
@@ -379,15 +386,11 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
   }
 
   override onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
+    const logPrefix = `${this.toLog()}.onMouseMove()`;
     if (!this.seqHelper || gridCell.tableRowIndex == null) return;
 
     // if (gridCell.cell.column.getTag(bioTAGS.aligned) !== ALIGNMENT.SEQ_MSA)
     //   return;
-
-    const [_gridCol, tableCol, temp] =
-      getGridCellColTemp<string, MonomerPlacer>(gridCell);
-    const seqColTemp: MonomerPlacer = temp.rendererBack;
-    if (!seqColTemp) return; // Can do nothing without precalculated data
 
     const gridCellBounds: DG.Rect = gridCell.bounds;
     // const value: any = gridCell.cell.value;
@@ -398,9 +401,10 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     //   maxLengthWordsSum[posI] = maxLengthWordsSum[posI - 1] + maxLengthWords[posI];
     // const maxIndex = maxLengthWords.length;
     const argsX = e.offsetX - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCellBounds.x);
-    const left: number | null = seqColTemp.getPosition(gridCell.tableRowIndex!, argsX, gridCellBounds.width);
+    const left: number | null = this.getPosition(gridCell.tableRowIndex!, argsX, gridCellBounds.width);
+    this.logger.debug(`${logPrefix}, start, argsX: ${argsX}, left: ${left}`);
 
-    const sh = this.seqHelper.getSeqHandler(tableCol);
+    const sh = this.seqHelper.getSeqHandler(this.tableCol);
     const seqSS = sh.getSplitted(gridCell.tableRowIndex!);
     if (left !== null && left < seqSS.length) {
       const alphabet = sh.alphabet ?? ALPHABET.UN;
@@ -410,10 +414,10 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         symbol: seqSS.getCanonical(left),
       } as ISeqMonomer;
       const tooltipElements: HTMLElement[] = [];
-      let monomerDiv = seqColTemp._monomerStructureMap[seqMonomer.symbol];
+      let monomerDiv = this._monomerStructureMap[seqMonomer.symbol];
       if (!monomerDiv || true) {
         const monomerLib = this.getMonomerLib();
-        monomerDiv = seqColTemp._monomerStructureMap[seqMonomer.symbol] = (() => {
+        monomerDiv = this._monomerStructureMap[seqMonomer.symbol] = (() => {
           return monomerLib ? monomerLib.getTooltip(seqMonomer.biotype, seqMonomer.symbol) :
             ui.divText('Monomer library is not available');
         })();

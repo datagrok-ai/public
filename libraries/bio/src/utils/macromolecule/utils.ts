@@ -145,16 +145,10 @@ export function getSplitterWithSeparator(separator: string, limit: number | unde
       return new StringListSeqSplitted([], GapOriginals[NOTATION.SEPARATOR]);
     else {
       let mmList: string[];
-      const mRe = new RegExp(String.raw`"-"|'-'|[^${separator}]+`, 'g'); // depends on separator args
+      const mRe = new RegExp(`(?<=^|\\${separator})("-"|'-'|[^\\${separator}]*)(?=\\${separator}|$)`, 'g'); // depends on separator args
       if (limit !== undefined) {
         mRe.lastIndex = 0;
-        mmList = new Array<string>(Math.ceil(limit));
-
-        let mEa: RegExpExecArray | null = null;
-        let mI = 0;
-        while ((mEa = mRe.exec(seq)) !== null && mI < limit)
-          mmList[mI++] = mEa[0].replace(`"-"`, '').replace(`'-'`, '');
-        mmList.splice(mI);
+        mmList = wu(seq.matchAll(mRe)).take(limit).map((ea) => ea[0]).toArray();
       } else
         mmList = seq.replaceAll('\"-\"', '').replaceAll('\'-\'', '').split(separator, limit);
 

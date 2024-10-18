@@ -1,5 +1,13 @@
 # Bio changelog
 
+## 2.16.4 (20246-10-16)
+
+### Bug fixes
+
+* Fix helm parser for separate simple polymers, add tests
+* Fix adding MonomerPlacer lengths tests
+* Fix monomer lib getTooltip for gaps
+
 ## 2.16.3 (2024-10-15)
 
 ### Bug fixes

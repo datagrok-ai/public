@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {awaitCheck, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
 import { addInchisKeysTopMenu, addInchisTopMenu } from '../package';
+import { readDataframe } from './utils';
 
 
 const csvForInchi = `smiles
@@ -16,7 +17,7 @@ CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCC(C)C)`;
 category('column panel', () => {
   test('inchi', async () => {
     if (DG.Test.isInBenchmark) {
-      const df = await grok.data.files.openTable('System:AppData/Chem/tests/smiles_200K.zip');
+      const df = await readDataframe('tests/smi10K.csv');
       await grok.functions.call('Chem:addInchisTopMenu', {table: df, molecules: df.col('smiles')!});
     } else {
       await testInchiPanel('addInchisTopMenu', 'inchi', 'inchi',
@@ -26,7 +27,7 @@ category('column panel', () => {
 
   test('add inchi keys', async () => {
     if (DG.Test.isInBenchmark) {
-      const df = await grok.data.files.openTable('System:AppData/Chem/tests/smiles_200K.zip');
+      const df = await readDataframe('tests/smi10K.csv');
       await grok.functions.call('Chem:addInchisKeysTopMenu', {table: df, molecules: df.col('smiles')!});
     } else
       await testInchiPanel('addInchisKeysTopMenu', 'inchiKeys', 'inchi_key', 'BRJLNESNMQYEGX-UHFFFAOYSA-N');

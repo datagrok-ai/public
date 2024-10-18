@@ -1,5 +1,12 @@
 # bio changelog
 
+## 5.45.3 (2024-10-16)
+
+### Bug fixes
+
+* Fix splitterWithSeparator
+* Fix MonomerPlacer onMouseMove handling
+
 ## 5.45.2 (2024-10-11)
 
 ### Bug fixes

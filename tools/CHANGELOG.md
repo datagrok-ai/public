@@ -1,6 +1,12 @@
 # Datagrok-tools changelog
 
 
+## 4.13.32 (2024-10-16)
+
+### Features
+
+* Added global.d.ts file
+
 ## 4.13.31 (2024-10-15)
 
 ### Features

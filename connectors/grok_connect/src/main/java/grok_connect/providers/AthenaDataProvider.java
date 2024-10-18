@@ -8,9 +8,9 @@ import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
-import grok_connect.utils.GrokConnectUtil;
-import grok_connect.utils.Prop;
-import grok_connect.utils.Property;
+import grok_connect.utils.*;
+import serialization.DataFrame;
+import serialization.StringColumn;
 import serialization.Types;
 
 public class AthenaDataProvider extends JdbcDataProvider {
@@ -112,11 +112,20 @@ public class AthenaDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public String getSchemaSql(String db, String schema, String table) {
-        List<String> filters = new ArrayList<String>() {{
-            add("c.table_schema = '" + ((schema != null) ? schema : descriptor.defaultSchema) + "'");
-        }};
+    public DataFrame getSchemas(DataConnection connection) throws QueryCancelledByUser, GrokConnectException {
+        if (GrokConnectUtil.isNotEmpty(connection.getDb())) {
+            DataFrame dataFrame = DataFrame.fromColumns(new StringColumn("TABLE_SCHEMA"));
+            dataFrame.addRow(connection.getDb());
+            return dataFrame;
+        }
+        return super.getSchemas(connection);
+    }
 
+    @Override
+    public String getSchemaSql(String db, String schema, String table) {
+        List<String> filters = new ArrayList<>();
+        if (GrokConnectUtil.isNotEmpty(db))
+            filters.add("c.table_schema = '" + db + "'");
         if (GrokConnectUtil.isNotEmpty(table))
             filters.add("c.table_name = '" + table + "'");
 
@@ -125,7 +134,8 @@ public class AthenaDataProvider extends JdbcDataProvider {
         return "SELECT c.table_schema as table_schema, c.table_name as table_name, c.column_name as column_name, "
                 + "c.data_type as data_type, "
                 + "case t.table_type when 'VIEW' then 1 else 0 end as is_view FROM information_schema.columns c "
-                + "JOIN information_schema.tables t ON t.table_name = c.table_name " + whereClause +
+                + "JOIN information_schema.tables t ON t.table_name = c.table_name "
+                + whereClause +
                 " ORDER BY c.table_name";
     }
 

@@ -444,22 +444,7 @@ jobs:
           TEST_TEST_DEV_KEY: ${{ secrets.TEST_TEST_DEV_KEY }}
         timeout-minutes: 10
         run: |
-          check_container=false
-          for dockerfile in $(echo -e ${{ matrix.docker }}); do
-            docker_config_file="$(dirname $dockerfile)/container.json"
-            if [ -f "${docker_config_file}" ]; then
-              gpu_count=$(jq '.gpu' ${docker_config_file})
-              if [ "$gpu_count" -gt 0 ]; then
-                check_container=false
-              else
-                check_container=true
-                break
-              fi
-            else
-              check_container=true
-              break
-            fi
-          done
+          check_container=true
           if [[ "${check_container}" == "true" ]] ; then
             if [[ "${{ steps.datagrok-image.outputs.alias }}" == "test" ]]; then
               key="$TEST_TEST_DEV_KEY"

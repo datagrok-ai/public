@@ -323,7 +323,7 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
           if (map.wait) await delay(map.wait);
           // eslint-disable-next-line no-throw-literal
           if (typeof res === 'boolean' && !res) throw `Failed: ${tests[i]}, expected true, got ${res}`;
-        }, { skipReason: map.skip, timeout: DG.Test.isInBenchmark ? map.benchmarkTimeout : map.timeout });
+        }, { skipReason: map.skip, timeout: DG.Test.isInBenchmark ? map.benchmarkTimeout ?? BENCHMARK_TIMEOUT : map.timeout ?? STANDART_TIMEOUT});
         if (map.cat) {
           const cat: string = autoTestsCatName + ': ' + map.cat;
           test.category = cat;
@@ -483,7 +483,7 @@ export async function runTests(options?: TestExecutionOptions) {
                 t[i].options!.benchmark = value.benchmarks ?? false;
               }
             }
-            let testRun = await execTest(t[i], options?.test, logs, DG.Test.isInBenchmark ? value.benchmarkTimeout : value.timeout, package_.name, options.verbose);
+            let testRun = await execTest(t[i], options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout ?? STANDART_TIMEOUT, package_.name, options.verbose);
             if (testRun)
               res.push(testRun);
             grok.shell.closeAll();
@@ -491,7 +491,7 @@ export async function runTests(options?: TestExecutionOptions) {
           }
         } else {
           for (let i = 0; i < t.length; i++) {
-            let testRun = await execTest(t[i], options?.test, logs, DG.Test.isInBenchmark ? value.benchmarkTimeout : value.timeout, package_.name, options.verbose);
+            let testRun = await execTest(t[i], options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout, package_.name, options.verbose);
             if (testRun)
               res.push(testRun);
           }
@@ -543,7 +543,7 @@ async function getResult(x: any): Promise<string> {
 }
 
 async function execTest(t: Test, predicate: string | undefined, logs: any[],
-  categoryTimeout?: number, packageName?: string, verbose?: boolean): Promise<any> {
+  testTimeout?: number, packageName?: string, verbose?: boolean): Promise<any> {
   logs.length = 0;
   let r: { date: string, category?: string, name?: string, success: boolean, result: any, ms: number, skipped: boolean, logs?: string };
   let type: string = 'package';
@@ -563,9 +563,7 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
     if (skip)
       r = { date: new Date().toISOString(), success: true, result: skipReason!, ms: 0, skipped: true };
     else {
-      let timeout_ = t.options?.timeout === STANDART_TIMEOUT &&
-        categoryTimeout ? categoryTimeout : t.options?.timeout!;
-      timeout_ = (timeout_ === STANDART_TIMEOUT && DG.Test.isInBenchmark) ? BENCHMARK_TIMEOUT : timeout_;
+      let timeout_ = testTimeout ?? STANDART_TIMEOUT;
       r = { date: new Date().toISOString(), success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false };
     }
   } catch (x: any) {
