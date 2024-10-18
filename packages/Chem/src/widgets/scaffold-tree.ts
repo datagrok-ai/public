@@ -509,11 +509,13 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.ringCutoff = this.int('ringCutoff', 10, {
       category: 'Scaffold Generation',
       description: 'Ignore molecules with # rings > N',
+      userEditable: false
     });
 
     this.dischargeAndDeradicalize = this.bool('dischargeAndDeradicalize', false, {
       category: 'Scaffold Generation',
       description: 'Remove charges and radicals from scaffolds',
+      userEditable: false
     });
 
     this.treeEncode = this.string('treeEncode', '[]', {userEditable: false});
@@ -546,6 +548,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   initMolColumns() {
+    this.molColumns = [];
     const dataFrames = grok.shell.tables;
     for (let n = 0; n < dataFrames.length; ++n) {
       const molCols = dataFrames[n].columns.bySemTypeAll(DG.SEMTYPE.MOLECULE);
