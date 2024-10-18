@@ -405,6 +405,16 @@ jobs:
       - name: Publish package to Datagrok
         if: ${{ matrix.test == 'test' }}
         run: |
+          for dockerfile in $(echo -e ${{ matrix.docker }}); do
+            docker_config_file="$(dirname $dockerfile)/container.json"
+            if [ -f "${docker_config_file}" ]; then
+              gpu_count=$(jq '.gpu' ${docker_config_file})
+              if [ "$gpu_count" -gt 0 ]; then
+                jq '.gpu = 0' ${docker_config_file} > temp.json && mv temp.json ${docker_config_file}
+              fi
+            fi
+          done
+
           count=0
           retries=5
           until grok publish ${{ steps.datagrok-image.outputs.alias }}; do
@@ -444,48 +454,27 @@ jobs:
           TEST_TEST_DEV_KEY: ${{ secrets.TEST_TEST_DEV_KEY }}
         timeout-minutes: 10
         run: |
-          check_container=false
-          for dockerfile in $(echo -e ${{ matrix.docker }}); do
-            docker_config_file="$(dirname $dockerfile)/container.json"
-            if [ -f "${docker_config_file}" ]; then
-              gpu_count=$(jq '.gpu' ${docker_config_file})
-              if [ "$gpu_count" -gt 0 ]; then
-                jq '.gpu = 0' ${docker_config_file} > temp.json && mv temp.json ${docker_config_file}
-                check_container=true
-              else
-                check_container=true
-                break
-              fi
-            else
-              check_container=true
-              break
-            fi
+          if [[ "${{ steps.datagrok-image.outputs.alias }}" == "test" ]]; then
+            key="$TEST_TEST_DEV_KEY"
+          elif [[ "${{ steps.datagrok-image.outputs.alias }}" == "dev" ]]; then
+            key="$DEV_TEST_DEV_KEY"
+          else
+            key='admin'
+          fi
+          token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/$key | jq -r .token)
+          until .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}'
+          do
+            sleep 1
+            echo -e "\nContainer for ${{ matrix.package }} did not start yet..."
+            echo -e "\nRetrying '/api/docker/containers'..."
           done
-          if [[ "${check_container}" == "true" ]] ; then
-            if [[ "${{ steps.datagrok-image.outputs.alias }}" == "test" ]]; then
-              key="$TEST_TEST_DEV_KEY"
-            elif [[ "${{ steps.datagrok-image.outputs.alias }}" == "dev" ]]; then
-              key="$DEV_TEST_DEV_KEY"
-            else
-              key='admin'
-            fi
-            token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/$key | jq -r .token)
-            until .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}'
+          if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
+            until .github/scripts/check-output.sh "docker ps" '${{ matrix.package }}'
             do
               sleep 1
               echo -e "\nContainer for ${{ matrix.package }} did not start yet..."
-              echo -e "\nRetrying '/api/docker/containers'..."
+              echo -e "\nRetrying 'docker ps'..."
             done
-            if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
-              until .github/scripts/check-output.sh "docker ps" '${{ matrix.package }}'
-              do
-                sleep 1
-                echo -e "\nContainer for ${{ matrix.package }} did not start yet..."
-                echo -e "\nRetrying 'docker ps'..."
-              done
-            fi
-          else
-            echo "GPU is not available, skipping container wait"
           fi
       - name: Test Package
         if: ${{ matrix.test == 'test' }}
