@@ -742,4 +742,2902 @@ category('ComputeUtils: Driver workflow test', async () => {
     });
   });
 
+  test('Simulate adding node 1', async () => {
+    const pconf = await getProcessedConfig(config1);
+
+    testScheduler.run((helpers) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      mockWorkflow(tree).subscribe();
+      helpers.cold('500ms a').subscribe(() => {
+        tree.runMutateTree({ mutationRootPath: [], addIdx: 0}).subscribe();
+      });
+      expectNodes(tree, helpers, [
+        {
+          address: [{idx: 0}],
+          io: {
+            a: ['a 9ms b', {a: undefined, b: 2}],
+            b: ['a 9ms b', {a: undefined, b: 2}],
+            res: ['a 19ms b', {a: undefined, b: 4}]
+          }
+        },
+        {
+          address: [{idx: 1}],
+          io: {
+            a: ['a 19ms b 479ms c', {a: undefined, b: 4, c: 4}],
+            b: ['a 29ms b', {a: undefined, b: 1}],
+            res: ['a 39ms b', {a: undefined, b: 3}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 0}],
+          io: {
+            a: ['a 49ms b', {a: undefined, b: 2}],
+            b: ['a 49ms b', {a: undefined, b: 2}],
+            res: ['a 59ms b', {a: undefined, b: 4}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 1}],
+          io: {
+            a: ['a 39ms b', {a: undefined, b: 3}],
+            b: ['a 69ms b', {a: undefined, b: 1}],
+            res: ['a 79ms b', {a: undefined, b: 2}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 2}],
+          io: {
+            a: ['a 79ms b 9ms c', {a: undefined, b: 2, c: 2}],
+            b: ['a 89ms b', {a: undefined, b: 3}],
+            res: ['a 99ms b', {a: undefined, b: 6}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 3}],
+          io: {
+            a: ['a 39ms b', {a: undefined, b: 3}],
+            b: ['a 109ms b', {a: undefined, b: 6}],
+            res: ['a 119ms b', {a: undefined, b: 0.5}]
+          }
+        },
+        {
+          address: [{idx: 3}],
+          io: {
+            a: ['a 119ms b', {a: undefined, b: 0.5}],
+            b: ['a 129ms b', {a: undefined, b: 10}],
+            res: ['a 139ms b', {a: undefined, b: 5}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 0}],
+          io: {
+            a: ['a 139ms b', {a: undefined, b: 5}],
+            b: ['a 149ms b', {a: undefined, b: 2}],
+            res: ['a 159ms b', {a: undefined, b: 7}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 1}],
+          io: {
+            a: ['a 139ms b', {a: undefined, b: 5}],
+            b: ['a 169ms b', {a: undefined, b: 1}],
+            res: ['a 179ms b', {a: undefined, b: 4}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 2}],
+          io: {
+            a: ['a 139ms b', {a: undefined, b: 5}],
+            b: ['a 189ms b', {a: undefined, b: 2}],
+            res: ['a 199ms b', {a: undefined, b: 10}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 3}],
+          io: {
+            a: ['a 139ms b', {a: undefined, b: 5}],
+            b: ['a 209ms b', {a: undefined, b: 2}],
+            res: ['a 219ms b', {a: undefined, b: 2.5}]
+          }
+        },
+        {
+          address: [{idx: 5}],
+          io: {
+            a: ['a 159ms b 19ms c 19ms d 19ms e', {a: undefined, b: NaN, c: NaN, d: NaN, e: 23.5}],
+            b: ['a 19ms b 479ms c', {a: undefined, b: 4, c: 4}],
+            res: ['a 239ms b', {a: undefined, b: 5.875}]
+          }
+        },
+      ]);
+      expectMeta(tree, helpers, [
+        {
+          address: [{idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          },
+        },
+        {
+          address: [{idx: 1}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a 19ms b 479ms b', {a: undefined, b: {
+              "payload": "meta from link8"
+            }}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 1}],
+          io: {
+            a: ['a 39ms b 459ms b', {a: undefined, b: {
+              "payload": "meta from link33"
+            } }],
+            b: ['a 39ms b 459ms b', {a: undefined, b: {
+              "payload": "meta from link10"
+            } }],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 2}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 3}],
+          io: {
+            a: ['a 39ms b 459ms b', {a: undefined, b: {
+              "payload": "meta from link35"
+            }}],
+            b: ['a 39ms b 459ms b', {a: undefined, b: {
+              "payload": "meta from link10"
+            }}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 3}],
+          io: {
+            a: ['a 119ms b 379ms b', {a: undefined, b: {
+              "payload": "meta from link11"
+            } }],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 1}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 2}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 3}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 5}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a 19ms b 479ms b', {a: undefined, b: {
+              "payload": "meta from link6"
+            }}],
+            res: ['a', {a: undefined}]
+          }
+        },
+      ]);
+      expectValidations(tree, helpers, [
+        {
+          address: [{idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          },
+        },
+        {
+          address: [{idx: 1}],
+          io: {
+            a: ['a 269ms b 229ms (bb)', {a: undefined, b: undefined}],
+            b: ['a 269ms b 229ms (cb)', {
+              a: undefined,
+              b: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 9"
+                  }
+                ],
+                "notifications": []
+              },
+              c: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 9"
+                  },
+                  {
+                    "description": "warning from link 9"
+                  }
+                ],
+                "notifications": []
+              }
+            }],
+            res: ['a 269ms b 229ms (bb)', {a: undefined, b: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 1}],
+          io: {
+            a: ['a 289ms b 209ms (cb)', {
+              a: undefined,
+              b: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 32"
+                  }
+                ],
+                "notifications": []
+              },
+              c: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 32"
+                  },
+                  {
+                    "description": "warning from link 32"
+                  },
+
+                ],
+                "notifications": []
+              }
+            }],
+            b: ['a 289ms b 209ms (bb)', {a: undefined, b: undefined}],
+            res: ['a 289ms b 209ms (bb)', {a: undefined, b: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 2}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 3}],
+          io: {
+            a: ['a 289ms b 209ms (cb)', {
+              a: undefined,
+              b: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 34"
+                  }
+                ],
+                "notifications": []
+              },
+              c: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 34"
+                  },
+                  {
+                    "description": "warning from link 34"
+                  },
+                ],
+                "notifications": []
+              }
+            }],
+            b: ['a 289ms b 209ms (bb)', {a: undefined, b: undefined}],
+            res: ['a 289ms b 209ms (bb)', {a: undefined, b: undefined}]
+          }
+        },
+        {
+          address: [{idx: 3}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 1}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 2}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 3}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 5}],
+          io: {
+            a: ['a 269ms b 229ms (bb)', {a: undefined, b: undefined}],
+            b: ['a 269ms b 229ms (cb)', {
+              a: undefined,
+              b: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 7"
+                  }
+                ],
+                "notifications": []
+              },
+              c: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 7",
+                  },
+                  {
+                    "description": "warning from link 7",
+                  }
+                ],
+                "notifications": []
+              }
+            }],
+            res: ['a 269ms b 229ms (bb)', {a: undefined, b: undefined}]
+          }
+        },
+      ]);
+    });
+  });
+
+  test('Simulate adding node 2', async () => {
+    const pconf = await getProcessedConfig(config1);
+
+    testScheduler.run((helpers) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      mockWorkflow(tree).subscribe();
+      helpers.cold('500ms a').subscribe(() => {
+        tree.runMutateTree({ mutationRootPath: [], addIdx: 1}).subscribe();
+      });
+      expectNodes (tree, helpers, [
+        {
+          address: [{idx: 0}],
+          io: {
+            a: ['a 9ms b', {a: undefined, b: 2}],
+            b: ['a 9ms b', {a: undefined, b: 2}],
+            res: ['a 19ms b', {a: undefined, b: 4}]
+          }
+        },
+        {
+          address: [{idx: 1}],
+          io: {
+            a: ['a 19ms b 479ms c', {a: undefined, b: 4, c: 4}],
+            b: ['a 29ms b', {a: undefined, b: 1}],
+            res: ['a 39ms b', {a: undefined, b: 3}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 0}],
+          io: {
+            a: ['a 49ms b', {a: undefined, b: 2}],
+            b: ['a 49ms b', {a: undefined, b: 2}],
+            res: ['a 59ms b', {a: undefined, b: 4}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 1}],
+          io: {
+            a: ['a 39ms b 459ms b', {a: undefined, b: 3}],
+            b: ['a 69ms b', {a: undefined, b: 1}],
+            res: ['a 79ms b', {a: undefined, b: 2}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 2}],
+          io: {
+            a: ['a 79ms b 9ms c', {a: undefined, b: 2, c: 2}],
+            b: ['a 89ms b', {a: undefined, b: 3}],
+            res: ['a 99ms b', {a: undefined, b: 6}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 3}],
+          io: {
+            a: ['a 39ms b 459ms b', {a: undefined, b: 3}],
+            b: ['a 109ms b', {a: undefined, b: 6}],
+            res: ['a 119ms b', {a: undefined, b: 0.5}]
+          }
+        },
+        {
+          address: [{idx: 3}],
+          io: {
+            a: ['a 119ms b', {a: undefined, b: 0.5}],
+            b: ['a 129ms b', {a: undefined, b: 10}],
+            res: ['a 139ms b', {a: undefined, b: 5}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 0}],
+          io: {
+            a: ['a 139ms b', {a: undefined, b: 5}],
+            b: ['a 149ms b', {a: undefined, b: 2}],
+            res: ['a 159ms b', {a: undefined, b: 7}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 1}],
+          io: {
+            a: ['a 139ms b', {a: undefined, b: 5}],
+            b: ['a 169ms b', {a: undefined, b: 1}],
+            res: ['a 179ms b', {a: undefined, b: 4}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 2}],
+          io: {
+            a: ['a 139ms b', {a: undefined, b: 5}],
+            b: ['a 189ms b', {a: undefined, b: 2}],
+            res: ['a 199ms b', {a: undefined, b: 10}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 3}],
+          io: {
+            a: ['a 139ms b', {a: undefined, b: 5}],
+            b: ['a 209ms b', {a: undefined, b: 2}],
+            res: ['a 219ms b', {a: undefined, b: 2.5}]
+          }
+        },
+        {
+          address: [{idx: 5}],
+          io: {
+            a: ['a 159ms b 19ms c 19ms d 19ms e', {a: undefined, b: NaN, c: NaN, d: NaN, e: 23.5}],
+            b: ['a 19ms b 479ms c', {a: undefined, b: 4, c: 4}],
+            res: ['a 239ms b', {a: undefined, b: 5.875}]
+          }
+        },
+      ]);
+      expectMeta(tree, helpers, [
+        {
+          address: [{idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          },
+        },
+        {
+          address: [{idx: 1}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a 19ms b 479ms b', {a: undefined, b: {
+              "payload": "meta from link8"
+            }}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 1}],
+          io: {
+            a: ['a 39ms b 459ms (bb)', {a: undefined, b: {
+              "payload": "meta from link33"
+            } }],
+            b: ['a 39ms b 459ms b', {a: undefined, b: {
+              "payload": "meta from link10"
+            } }],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 2}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 3}],
+          io: {
+            a: ['a 39ms b 459ms (bb)', {a: undefined, b: {
+              "payload": "meta from link35"
+            }}],
+            b: ['a 39ms b 459ms b', {a: undefined, b: {
+              "payload": "meta from link10"
+            }}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 3}],
+          io: {
+            a: ['a 119ms b 379ms b', {a: undefined, b: {
+              "payload": "meta from link11"
+            } }],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 1}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 2}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 3}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 5}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a 19ms b 479ms b', {a: undefined, b: {
+              "payload": "meta from link6"
+            }}],
+            res: ['a', {a: undefined}]
+          }
+        },
+      ]);
+      expectValidations(tree, helpers, [
+        {
+          address: [{idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          },
+        },
+        {
+          address: [{idx: 1}],
+          io: {
+            a: ['a 269ms b 229ms (bb)', {a: undefined, b: undefined}],
+            b: ['a 269ms b 229ms (cb)', {
+              a: undefined,
+              b: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 9"
+                  }
+                ],
+                "notifications": []
+              },
+              c: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 9"
+                  },
+                  {
+                    "description": "warning from link 9"
+                  }
+                ],
+                "notifications": []
+              }
+            }],
+            res: ['a 269ms b 229ms (bb)', {a: undefined, b: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 1}],
+          io: {
+            a: ['a 289ms b 209ms (cb) 246ms b', {
+              a: undefined,
+              b: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 32"
+                  }
+                ],
+                "notifications": []
+              },
+              c: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 32"
+                  },
+                  {
+                    "description": "warning from link 32"
+                  },
+
+                ],
+                "notifications": []
+              }
+            }],
+            b: ['a 289ms b 209ms (bb) 246ms b', {a: undefined, b: undefined}],
+            res: ['a 289ms b 209ms (bb) 246ms b', {a: undefined, b: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 2}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 3}],
+          io: {
+            a: ['a 289ms b 209ms (cb) 246ms b', {
+              a: undefined,
+              b: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 34"
+                  }
+                ],
+                "notifications": []
+              },
+              c: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 34"
+                  },
+                  {
+                    "description": "warning from link 34"
+                  },
+                ],
+                "notifications": []
+              }
+            }],
+            b: ['a 289ms b 209ms (bb) 246ms b', {a: undefined, b: undefined}],
+            res: ['a 289ms b 209ms (bb) 246ms b', {a: undefined, b: undefined}]
+          }
+        },
+        {
+          address: [{idx: 3}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 1}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 2}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 3}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 5}],
+          io: {
+            a: ['a 269ms b 229ms (bb)', {a: undefined, b: undefined}],
+            b: ['a 269ms b 229ms (cb)', {
+              a: undefined,
+              b: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 7"
+                  }
+                ],
+                "notifications": []
+              },
+              c: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 7",
+                  },
+                  {
+                    "description": "warning from link 7",
+                  }
+                ],
+                "notifications": []
+              }
+            }],
+            res: ['a 269ms b 229ms (bb)', {a: undefined, b: undefined}]
+          }
+        },
+      ]);
+    });
+  });
+
+  test('Simulate adding pipeline 3', async () => {
+    const pconf = await getProcessedConfig(config1);
+
+    testScheduler.run((helpers) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      mockWorkflow(tree).subscribe();
+      helpers.cold('500ms a').subscribe(() => {
+        tree.runMutateTree({ mutationRootPath: [], addIdx: 2}).subscribe();
+      });
+      expectNodes (tree, helpers, [
+        {
+          address: [{idx: 0}],
+          io: {
+            a: ['a 9ms b', {a: undefined, b: 2}],
+            b: ['a 9ms b', {a: undefined, b: 2}],
+            res: ['a 19ms b', {a: undefined, b: 4}]
+          }
+        },
+        {
+          address: [{idx: 1}],
+          io: {
+            a: ['a 19ms b', {a: undefined, b: 4}],
+            b: ['a 29ms b', {a: undefined, b: 1}],
+            res: ['a 39ms b', {a: undefined, b: 3}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 0}],
+          io: {
+            a: ['a 49ms b', {a: undefined, b: 2}],
+            b: ['a 49ms b', {a: undefined, b: 2}],
+            res: ['a 59ms b', {a: undefined, b: 4}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 1}],
+          io: {
+            a: ['a 39ms b 459ms b', {a: undefined, b: 3}],
+            b: ['a 69ms b', {a: undefined, b: 1}],
+            res: ['a 79ms b', {a: undefined, b: 2}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 2}],
+          io: {
+            a: ['a 79ms b 9ms c', {a: undefined, b: 2, c: 2}],
+            b: ['a 89ms b', {a: undefined, b: 3}],
+            res: ['a 99ms b', {a: undefined, b: 6}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 3}],
+          io: {
+            a: ['a 39ms b 459ms b', {a: undefined, b: 3}],
+            b: ['a 109ms b', {a: undefined, b: 6}],
+            res: ['a 119ms b', {a: undefined, b: 0.5}]
+          }
+        },
+        {
+          address: [{idx: 3}],
+          io: {
+            a: ['a 119ms b 379ms b', {a: undefined, b: 0.5}],
+            b: ['a 129ms b', {a: undefined, b: 10}],
+            res: ['a 139ms b', {a: undefined, b: 5}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 0}],
+          io: {
+            a: ['a 139ms b', {a: undefined, b: 5}],
+            b: ['a 149ms b', {a: undefined, b: 2}],
+            res: ['a 159ms b', {a: undefined, b: 7}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 1}],
+          io: {
+            a: ['a 139ms b', {a: undefined, b: 5}],
+            b: ['a 169ms b', {a: undefined, b: 1}],
+            res: ['a 179ms b', {a: undefined, b: 4}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 2}],
+          io: {
+            a: ['a 139ms b', {a: undefined, b: 5}],
+            b: ['a 189ms b', {a: undefined, b: 2}],
+            res: ['a 199ms b', {a: undefined, b: 10}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 3}],
+          io: {
+            a: ['a 139ms b', {a: undefined, b: 5}],
+            b: ['a 209ms b', {a: undefined, b: 2}],
+            res: ['a 219ms b', {a: undefined, b: 2.5}]
+          }
+        },
+        {
+          address: [{idx: 5}],
+          io: {
+            a: ['a 159ms b 19ms c 19ms d 19ms e', {a: undefined, b: NaN, c: NaN, d: NaN, e: 23.5}],
+            b: ['a 19ms b 479ms c', {a: undefined, b: 4, c: 4}],
+            res: ['a 239ms b', {a: undefined, b: 5.875}]
+          }
+        },
+      ]);
+      expectMeta(tree, helpers, [
+        {
+          address: [{idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          },
+        },
+        {
+          address: [{idx: 1}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a 19ms b', {a: undefined, b: {
+              "payload": "meta from link8"
+            }}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 1}],
+          io: {
+            a: ['a 39ms b 459ms (bb)', {a: undefined, b: {
+              "payload": "meta from link33"
+            } }],
+            b: ['a 39ms b 459ms b', {a: undefined, b: {
+              "payload": "meta from link10"
+            } }],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 2}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 3}],
+          io: {
+            a: ['a 39ms b 459ms (bb)', {a: undefined, b: {
+              "payload": "meta from link35"
+            }}],
+            b: ['a 39ms b 459ms b', {a: undefined, b: {
+              "payload": "meta from link10"
+            }}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 3}],
+          io: {
+            a: ['a 119ms b 379ms b', {a: undefined, b: {
+              "payload": "meta from link11"
+            } }],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 1}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 2}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 3}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 5}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a 19ms b 479ms b', {a: undefined, b: {
+              "payload": "meta from link6"
+            }}],
+            res: ['a', {a: undefined}]
+          }
+        },
+      ]);
+      expectValidations(tree, helpers, [
+        {
+          address: [{idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          },
+        },
+        {
+          address: [{idx: 1}],
+          io: {
+            a: ['a 269ms b 229ms (bb)', {a: undefined, b: undefined}],
+            b: ['a 269ms b 229ms (cb)', {
+              a: undefined,
+              b: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 9"
+                  }
+                ],
+                "notifications": []
+              },
+              c: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 9"
+                  },
+                  {
+                    "description": "warning from link 9"
+                  }
+                ],
+                "notifications": []
+              }
+            }],
+            res: ['a 269ms b 229ms (bb)', {a: undefined, b: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 1}],
+          io: {
+            a: ['a 289ms b 209ms (cb) 246ms b', {
+              a: undefined,
+              b: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 32"
+                  }
+                ],
+                "notifications": []
+              },
+              c: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 32"
+                  },
+                  {
+                    "description": "warning from link 32"
+                  },
+
+                ],
+                "notifications": []
+              }
+            }],
+            b: ['a 289ms b 209ms (bb) 246ms b', {a: undefined, b: undefined}],
+            res: ['a 289ms b 209ms (bb) 246ms b', {a: undefined, b: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 2}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 3}],
+          io: {
+            a: ['a 289ms b 209ms (cb) 246ms b', {
+              a: undefined,
+              b: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 34"
+                  }
+                ],
+                "notifications": []
+              },
+              c: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 34"
+                  },
+                  {
+                    "description": "warning from link 34"
+                  },
+                ],
+                "notifications": []
+              }
+            }],
+            b: ['a 289ms b 209ms (bb) 246ms b', {a: undefined, b: undefined}],
+            res: ['a 289ms b 209ms (bb) 246ms b', {a: undefined, b: undefined}]
+          }
+        },
+        {
+          address: [{idx: 3}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 1}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 2}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 3}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 5}],
+          io: {
+            a: ['a 269ms b 229ms (bb)', {a: undefined, b: undefined}],
+            b: ['a 269ms b 229ms (cb)', {
+              a: undefined,
+              b: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 7"
+                  }
+                ],
+                "notifications": []
+              },
+              c: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 7",
+                  },
+                  {
+                    "description": "warning from link 7",
+                  }
+                ],
+                "notifications": []
+              }
+            }],
+            res: ['a 269ms b 229ms (bb)', {a: undefined, b: undefined}]
+          }
+        },
+      ]);
+    });
+  });
+
+  test('Simulate adding node 3-3', async () => {
+    const pconf = await getProcessedConfig(config1);
+
+    testScheduler.run((helpers) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      mockWorkflow(tree).subscribe();
+      helpers.cold('500ms a').subscribe(() => {
+        tree.runMutateTree({ mutationRootPath: [{idx: 2}], addIdx: 2}).subscribe();
+      });
+      expectNodes(tree, helpers, [
+        {
+          address: [{idx: 0}],
+          io: {
+            a: ['a 9ms b', {a: undefined, b: 2}],
+            b: ['a 9ms b', {a: undefined, b: 2}],
+            res: ['a 19ms b', {a: undefined, b: 4}]
+          }
+        },
+        {
+          address: [{idx: 1}],
+          io: {
+            a: ['a 19ms b', {a: undefined, b: 4}],
+            b: ['a 29ms b', {a: undefined, b: 1}],
+            res: ['a 39ms b', {a: undefined, b: 3}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 0}],
+          io: {
+            a: ['a 49ms b', {a: undefined, b: 2}],
+            b: ['a 49ms b', {a: undefined, b: 2}],
+            res: ['a 59ms b', {a: undefined, b: 4}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 1}],
+          io: {
+            a: ['a 39ms b', {a: undefined, b: 3}],
+            b: ['a 69ms b', {a: undefined, b: 1}],
+            res: ['a 79ms b', {a: undefined, b: 2}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 2}],
+          io: {
+            a: ['a 79ms b 9ms c 409ms c', {a: undefined, b: 2, c: 2}],
+            b: ['a 89ms b', {a: undefined, b: 3}],
+            res: ['a 99ms b', {a: undefined, b: 6}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 3}],
+          io: {
+            a: ['a 39ms b 459ms b', {a: undefined, b: 3}],
+            b: ['a 109ms b', {a: undefined, b: 6}],
+            res: ['a 119ms b', {a: undefined, b: 0.5}]
+          }
+        },
+        {
+          address: [{idx: 3}],
+          io: {
+            a: ['a 119ms b', {a: undefined, b: 0.5}],
+            b: ['a 129ms b', {a: undefined, b: 10}],
+            res: ['a 139ms b', {a: undefined, b: 5}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 0}],
+          io: {
+            a: ['a 139ms b', {a: undefined, b: 5}],
+            b: ['a 149ms b', {a: undefined, b: 2}],
+            res: ['a 159ms b', {a: undefined, b: 7}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 1}],
+          io: {
+            a: ['a 139ms b', {a: undefined, b: 5}],
+            b: ['a 169ms b', {a: undefined, b: 1}],
+            res: ['a 179ms b', {a: undefined, b: 4}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 2}],
+          io: {
+            a: ['a 139ms b', {a: undefined, b: 5}],
+            b: ['a 189ms b', {a: undefined, b: 2}],
+            res: ['a 199ms b', {a: undefined, b: 10}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 3}],
+          io: {
+            a: ['a 139ms b', {a: undefined, b: 5}],
+            b: ['a 209ms b', {a: undefined, b: 2}],
+            res: ['a 219ms b', {a: undefined, b: 2.5}]
+          }
+        },
+        {
+          address: [{idx: 5}],
+          io: {
+            a: ['a 159ms b 19ms c 19ms d 19ms e', {a: undefined, b: NaN, c: NaN, d: NaN, e: 23.5}],
+            b: ['a 19ms b', {a: undefined, b: 4, c: 4}],
+            res: ['a 239ms b', {a: undefined, b: 5.875}]
+          }
+        },
+      ]);
+      expectMeta(tree, helpers, [
+        {
+          address: [{idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          },
+        },
+        {
+          address: [{idx: 1}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a 19ms b', {a: undefined, b: {
+              "payload": "meta from link8"
+            }}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 1}],
+          io: {
+            a: ['a 39ms b', {a: undefined, b: {
+              "payload": "meta from link33"
+            } }],
+            b: ['a 39ms b 459ms b', {a: undefined, b: {
+              "payload": "meta from link10"
+            } }],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 2}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 3}],
+          io: {
+            a: ['a 39ms b 459ms (bb)', {a: undefined, b: {
+              "payload": "meta from link35"
+            }}],
+            b: ['a 39ms b 459ms b', {a: undefined, b: {
+              "payload": "meta from link10"
+            }}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 3}],
+          io: {
+            a: ['a 119ms b 379ms b', {a: undefined, b: {
+              "payload": "meta from link11"
+            } }],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 1}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 2}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 3}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 5}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a 19ms b', {a: undefined, b: {
+              "payload": "meta from link6"
+            }}],
+            res: ['a', {a: undefined}]
+          }
+        },
+      ]);
+      expectValidations(tree, helpers, [
+        {
+          address: [{idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          },
+        },
+        {
+          address: [{idx: 1}],
+          io: {
+            a: ['a 269ms b 229ms (bb)', {a: undefined, b: undefined}],
+            b: ['a 269ms b 229ms (cb)', {
+              a: undefined,
+              b: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 9"
+                  }
+                ],
+                "notifications": []
+              },
+              c: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 9"
+                  },
+                  {
+                    "description": "warning from link 9"
+                  }
+                ],
+                "notifications": []
+              }
+            }],
+            res: ['a 269ms b 229ms (bb)', {a: undefined, b: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 1}],
+          io: {
+            a: ['a 289ms b 209ms (cb)', {
+              a: undefined,
+              b: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 32"
+                  }
+                ],
+                "notifications": []
+              },
+              c: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 32"
+                  },
+                  {
+                    "description": "warning from link 32"
+                  },
+
+                ],
+                "notifications": []
+              }
+            }],
+            b: ['a 289ms b 209ms (bb)', {a: undefined, b: undefined}],
+            res: ['a 289ms b 209ms (bb)', {a: undefined, b: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 2}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 3}],
+          io: {
+            a: ['a 289ms b 209ms (cb) 246ms b', {
+              a: undefined,
+              b: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 34"
+                  }
+                ],
+                "notifications": []
+              },
+              c: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 34"
+                  },
+                  {
+                    "description": "warning from link 34"
+                  },
+                ],
+                "notifications": []
+              }
+            }],
+            b: ['a 289ms b 209ms (bb) 246ms b', {a: undefined, b: undefined}],
+            res: ['a 289ms b 209ms (bb) 246ms b', {a: undefined, b: undefined}]
+          }
+        },
+        {
+          address: [{idx: 3}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 1}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 2}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 3}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 5}],
+          io: {
+            a: ['a 269ms b 229ms (bb)', {a: undefined, b: undefined}],
+            b: ['a 269ms b 229ms (cb)', {
+              a: undefined,
+              b: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 7"
+                  }
+                ],
+                "notifications": []
+              },
+              c: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 7",
+                  },
+                  {
+                    "description": "warning from link 7",
+                  }
+                ],
+                "notifications": []
+              }
+            }],
+            res: ['a 269ms b 229ms (bb)', {a: undefined, b: undefined}]
+          }
+        },
+      ]);
+    });
+  });
+
+  test('Simulate removing at node 3-3', async () => {
+    const pconf = await getProcessedConfig(config1);
+
+    testScheduler.run((helpers) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      mockWorkflow(tree).subscribe();
+      helpers.cold('500ms a').subscribe(() => {
+        tree.runMutateTree({ mutationRootPath: [{idx: 2}], removeIdx: 2}).subscribe();
+      });
+      expectNodes(tree, helpers, [
+        {
+          address: [{idx: 0}],
+          io: {
+            a: ['a 9ms b', {a: undefined, b: 2}],
+            b: ['a 9ms b', {a: undefined, b: 2}],
+            res: ['a 19ms b', {a: undefined, b: 4}]
+          }
+        },
+        {
+          address: [{idx: 1}],
+          io: {
+            a: ['a 19ms b', {a: undefined, b: 4}],
+            b: ['a 29ms b', {a: undefined, b: 1}],
+            res: ['a 39ms b', {a: undefined, b: 3}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 0}],
+          io: {
+            a: ['a 49ms b', {a: undefined, b: 2}],
+            b: ['a 49ms b', {a: undefined, b: 2}],
+            res: ['a 59ms b', {a: undefined, b: 4}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 1}],
+          io: {
+            a: ['a 39ms b', {a: undefined, b: 3}],
+            b: ['a 69ms b', {a: undefined, b: 1}],
+            res: ['a 79ms b', {a: undefined, b: 2}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 2}],
+          io: {
+            a: ['a 79ms b 9ms c 409ms c', {a: undefined, b: 2, c: 2}],
+            b: ['a 89ms b', {a: undefined, b: 3}],
+            res: ['a 99ms b', {a: undefined, b: 6}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 3}],
+          io: {
+            a: ['a 39ms b 459ms b', {a: undefined, b: 3}],
+            b: ['a 109ms b', {a: undefined, b: 6}],
+            res: ['a 119ms b', {a: undefined, b: 0.5}]
+          }
+        },
+        {
+          address: [{idx: 3}],
+          io: {
+            a: ['a 119ms b 379ms b', {a: undefined, b: 0.5}],
+            b: ['a 129ms b', {a: undefined, b: 10}],
+            res: ['a 139ms b', {a: undefined, b: 5}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 0}],
+          io: {
+            a: ['a 139ms b', {a: undefined, b: 5}],
+            b: ['a 149ms b', {a: undefined, b: 2}],
+            res: ['a 159ms b', {a: undefined, b: 7}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 1}],
+          io: {
+            a: ['a 139ms b', {a: undefined, b: 5}],
+            b: ['a 169ms b', {a: undefined, b: 1}],
+            res: ['a 179ms b', {a: undefined, b: 4}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 2}],
+          io: {
+            a: ['a 139ms b', {a: undefined, b: 5}],
+            b: ['a 189ms b', {a: undefined, b: 2}],
+            res: ['a 199ms b', {a: undefined, b: 10}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 3}],
+          io: {
+            a: ['a 139ms b', {a: undefined, b: 5}],
+            b: ['a 209ms b', {a: undefined, b: 2}],
+            res: ['a 219ms b', {a: undefined, b: 2.5}]
+          }
+        },
+        {
+          address: [{idx: 5}],
+          io: {
+            a: ['a 159ms b 19ms c 19ms d 19ms e', {a: undefined, b: NaN, c: NaN, d: NaN, e: 23.5}],
+            b: ['a 19ms b', {a: undefined, b: 4, c: 4}],
+            res: ['a 239ms b', {a: undefined, b: 5.875}]
+          }
+        },
+      ]);
+      expectMeta(tree, helpers, [
+        {
+          address: [{idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          },
+        },
+        {
+          address: [{idx: 1}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a 19ms b', {a: undefined, b: {
+              "payload": "meta from link8"
+            }}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 1}],
+          io: {
+            a: ['a 39ms b', {a: undefined, b: {
+              "payload": "meta from link33"
+            } }],
+            b: ['a 39ms b 459ms b', {a: undefined, b: {
+              "payload": "meta from link10"
+            } }],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 2}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 3}],
+          io: {
+            a: ['a 39ms b 459ms (bb)', {a: undefined, b: {
+              "payload": "meta from link35"
+            }}],
+            b: ['a 39ms b 459ms b', {a: undefined, b: {
+              "payload": "meta from link10"
+            }}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 3}],
+          io: {
+            a: ['a 119ms b 379ms b', {a: undefined, b: {
+              "payload": "meta from link11"
+            } }],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 1}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 2}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 3}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 5}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a 19ms b', {a: undefined, b: {
+              "payload": "meta from link6"
+            }}],
+            res: ['a', {a: undefined}]
+          }
+        },
+      ]);
+      expectValidations(tree, helpers, [
+        {
+          address: [{idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          },
+        },
+        {
+          address: [{idx: 1}],
+          io: {
+            a: ['a 269ms b 229ms (bb)', {a: undefined, b: undefined}],
+            b: ['a 269ms b 229ms (cb)', {
+              a: undefined,
+              b: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 9"
+                  }
+                ],
+                "notifications": []
+              },
+              c: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 9"
+                  },
+                  {
+                    "description": "warning from link 9"
+                  }
+                ],
+                "notifications": []
+              }
+            }],
+            res: ['a 269ms b 229ms (bb)', {a: undefined, b: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 1}],
+          io: {
+            a: ['a 289ms b 209ms (cb)', {
+              a: undefined,
+              b: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 32"
+                  }
+                ],
+                "notifications": []
+              },
+              c: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 32"
+                  },
+                  {
+                    "description": "warning from link 32"
+                  },
+
+                ],
+                "notifications": []
+              }
+            }],
+            b: ['a 289ms b 209ms (bb)', {a: undefined, b: undefined}],
+            res: ['a 289ms b 209ms (bb)', {a: undefined, b: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 2}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 3}],
+          io: {
+            a: ['a 289ms b 209ms (cb) 246ms b', {
+              a: undefined,
+              b: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 34"
+                  }
+                ],
+                "notifications": []
+              },
+              c: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 34"
+                  },
+                  {
+                    "description": "warning from link 34"
+                  },
+                ],
+                "notifications": []
+              }
+            }],
+            b: ['a 289ms b 209ms (bb) 246ms b', {a: undefined, b: undefined}],
+            res: ['a 289ms b 209ms (bb) 246ms b', {a: undefined, b: undefined}]
+          }
+        },
+        {
+          address: [{idx: 3}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 1}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 2}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 3}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 5}],
+          io: {
+            a: ['a 269ms b 229ms (bb)', {a: undefined, b: undefined}],
+            b: ['a 269ms b 229ms (cb)', {
+              a: undefined,
+              b: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 7"
+                  }
+                ],
+                "notifications": []
+              },
+              c: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 7",
+                  },
+                  {
+                    "description": "warning from link 7",
+                  }
+                ],
+                "notifications": []
+              }
+            }],
+            res: ['a 269ms b 229ms (bb)', {a: undefined, b: undefined}]
+          }
+        },
+      ]);
+    });
+  });
+
+  test('Simulate adding node 5-3', async () => {
+    const pconf = await getProcessedConfig(config1);
+
+    testScheduler.run((helpers) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      mockWorkflow(tree).subscribe();
+      helpers.cold('500ms a').subscribe(() => {
+        tree.runMutateTree({ mutationRootPath: [{idx: 4}], addIdx: 2}).subscribe();
+      });
+      expectNodes(tree, helpers, [
+        {
+          address: [{idx: 0}],
+          io: {
+            a: ['a 9ms b', {a: undefined, b: 2}],
+            b: ['a 9ms b', {a: undefined, b: 2}],
+            res: ['a 19ms b', {a: undefined, b: 4}]
+          }
+        },
+        {
+          address: [{idx: 1}],
+          io: {
+            a: ['a 19ms b', {a: undefined, b: 4}],
+            b: ['a 29ms b', {a: undefined, b: 1}],
+            res: ['a 39ms b', {a: undefined, b: 3}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 0}],
+          io: {
+            a: ['a 49ms b', {a: undefined, b: 2}],
+            b: ['a 49ms b', {a: undefined, b: 2}],
+            res: ['a 59ms b', {a: undefined, b: 4}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 1}],
+          io: {
+            a: ['a 39ms b', {a: undefined, b: 3}],
+            b: ['a 69ms b', {a: undefined, b: 1}],
+            res: ['a 79ms b', {a: undefined, b: 2}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 2}],
+          io: {
+            a: ['a 79ms b 9ms c', {a: undefined, b: 2, c: 2}],
+            b: ['a 89ms b', {a: undefined, b: 3}],
+            res: ['a 99ms b', {a: undefined, b: 6}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 3}],
+          io: {
+            a: ['a 39ms b', {a: undefined, b: 3}],
+            b: ['a 109ms b', {a: undefined, b: 6}],
+            res: ['a 119ms b', {a: undefined, b: 0.5}]
+          }
+        },
+        {
+          address: [{idx: 3}],
+          io: {
+            a: ['a 119ms b', {a: undefined, b: 0.5}],
+            b: ['a 129ms b', {a: undefined, b: 10}],
+            res: ['a 139ms b', {a: undefined, b: 5}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 0}],
+          io: {
+            a: ['a 139ms b', {a: undefined, b: 5}],
+            b: ['a 149ms b', {a: undefined, b: 2}],
+            res: ['a 159ms b', {a: undefined, b: 7}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 1}],
+          io: {
+            a: ['a 139ms b', {a: undefined, b: 5}],
+            b: ['a 169ms b', {a: undefined, b: 1}],
+            res: ['a 179ms b', {a: undefined, b: 4}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 2}],
+          io: {
+            a: ['a 139ms b 359ms b', {a: undefined, b: 5}],
+            b: ['a 189ms b', {a: undefined, b: 2}],
+            res: ['a 199ms b', {a: undefined, b: 10}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 3}],
+          io: {
+            a: ['a 139ms b 359ms b', {a: undefined, b: 5}],
+            b: ['a 209ms b', {a: undefined, b: 2}],
+            res: ['a 219ms b', {a: undefined, b: 2.5}]
+          }
+        },
+        {
+          address: [{idx: 5}],
+          io: {
+            a: ['a 159ms b 19ms c 19ms d 19ms e 279ms e', {a: undefined, b: NaN, c: NaN, d: NaN, e: 23.5}],
+            b: ['a 19ms b', {a: undefined, b: 4, c: 4}],
+            res: ['a 239ms b', {a: undefined, b: 5.875}]
+          }
+        },
+      ]);
+      expectMeta(tree, helpers, [
+        {
+          address: [{idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          },
+        },
+        {
+          address: [{idx: 1}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a 19ms b', {a: undefined, b: {
+              "payload": "meta from link8"
+            }}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 1}],
+          io: {
+            a: ['a 39ms b', {a: undefined, b: {
+              "payload": "meta from link33"
+            } }],
+            b: ['a 39ms b', {a: undefined, b: {
+              "payload": "meta from link10"
+            } }],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 2}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 3}],
+          io: {
+            a: ['a 39ms b', {a: undefined, b: {
+              "payload": "meta from link35"
+            }}],
+            b: ['a 39ms b', {a: undefined, b: {
+              "payload": "meta from link10"
+            }}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 3}],
+          io: {
+            a: ['a 119ms b', {a: undefined, b: {
+              "payload": "meta from link11"
+            } }],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 1}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 2}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 3}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 5}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a 19ms b', {a: undefined, b: {
+              "payload": "meta from link6"
+            }}],
+            res: ['a', {a: undefined}]
+          }
+        },
+      ]);
+      expectValidations(tree, helpers, [
+        {
+          address: [{idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          },
+        },
+        {
+          address: [{idx: 1}],
+          io: {
+            a: ['a 269ms b 229ms (bb)', {a: undefined, b: undefined}],
+            b: ['a 269ms b 229ms (cb)', {
+              a: undefined,
+              b: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 9"
+                  }
+                ],
+                "notifications": []
+              },
+              c: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 9"
+                  },
+                  {
+                    "description": "warning from link 9"
+                  }
+                ],
+                "notifications": []
+              }
+            }],
+            res: ['a 269ms b 229ms (bb)', {a: undefined, b: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 1}],
+          io: {
+            a: ['a 289ms b 209ms (cb)', {
+              a: undefined,
+              b: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 32"
+                  }
+                ],
+                "notifications": []
+              },
+              c: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 32"
+                  },
+                  {
+                    "description": "warning from link 32"
+                  },
+
+                ],
+                "notifications": []
+              }
+            }],
+            b: ['a 289ms b 209ms (bb)', {a: undefined, b: undefined}],
+            res: ['a 289ms b 209ms (bb)', {a: undefined, b: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 2}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 3}],
+          io: {
+            a: ['a 289ms b 209ms (cb)', {
+              a: undefined,
+              b: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 34"
+                  }
+                ],
+                "notifications": []
+              },
+              c: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 34"
+                  },
+                  {
+                    "description": "warning from link 34"
+                  },
+                ],
+                "notifications": []
+              }
+            }],
+            b: ['a 289ms b 209ms (bb)', {a: undefined, b: undefined}],
+            res: ['a 289ms b 209ms (bb)', {a: undefined, b: undefined}]
+          }
+        },
+        {
+          address: [{idx: 3}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 1}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 2}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 3}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 5}],
+          io: {
+            a: ['a 269ms b 229ms (bb)', {a: undefined, b: undefined}],
+            b: ['a 269ms b 229ms (cb)', {
+              a: undefined,
+              b: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 7"
+                  }
+                ],
+                "notifications": []
+              },
+              c: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 7",
+                  },
+                  {
+                    "description": "warning from link 7",
+                  }
+                ],
+                "notifications": []
+              }
+            }],
+            res: ['a 269ms b 229ms (bb)', {a: undefined, b: undefined}]
+          }
+        },
+      ]);
+    });
+  });
+
+  test('Simulate removing node 5-3', async () => {
+    const pconf = await getProcessedConfig(config1);
+
+    testScheduler.run((helpers) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      mockWorkflow(tree).subscribe();
+      helpers.cold('500ms a').subscribe(() => {
+        tree.runMutateTree({ mutationRootPath: [{idx: 4}], removeIdx: 2}).subscribe();
+      });
+      expectNodes(tree, helpers, [
+        {
+          address: [{idx: 0}],
+          io: {
+            a: ['a 9ms b', {a: undefined, b: 2}],
+            b: ['a 9ms b', {a: undefined, b: 2}],
+            res: ['a 19ms b', {a: undefined, b: 4}]
+          }
+        },
+        {
+          address: [{idx: 1}],
+          io: {
+            a: ['a 19ms b', {a: undefined, b: 4}],
+            b: ['a 29ms b', {a: undefined, b: 1}],
+            res: ['a 39ms b', {a: undefined, b: 3}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 0}],
+          io: {
+            a: ['a 49ms b', {a: undefined, b: 2}],
+            b: ['a 49ms b', {a: undefined, b: 2}],
+            res: ['a 59ms b', {a: undefined, b: 4}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 1}],
+          io: {
+            a: ['a 39ms b', {a: undefined, b: 3}],
+            b: ['a 69ms b', {a: undefined, b: 1}],
+            res: ['a 79ms b', {a: undefined, b: 2}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 2}],
+          io: {
+            a: ['a 79ms b 9ms c', {a: undefined, b: 2, c: 2}],
+            b: ['a 89ms b', {a: undefined, b: 3}],
+            res: ['a 99ms b', {a: undefined, b: 6}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 3}],
+          io: {
+            a: ['a 39ms b', {a: undefined, b: 3}],
+            b: ['a 109ms b', {a: undefined, b: 6}],
+            res: ['a 119ms b', {a: undefined, b: 0.5}]
+          }
+        },
+        {
+          address: [{idx: 3}],
+          io: {
+            a: ['a 119ms b', {a: undefined, b: 0.5}],
+            b: ['a 129ms b', {a: undefined, b: 10}],
+            res: ['a 139ms b', {a: undefined, b: 5}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 0}],
+          io: {
+            a: ['a 139ms b', {a: undefined, b: 5}],
+            b: ['a 149ms b', {a: undefined, b: 2}],
+            res: ['a 159ms b', {a: undefined, b: 7}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 1}],
+          io: {
+            a: ['a 139ms b', {a: undefined, b: 5}],
+            b: ['a 169ms b', {a: undefined, b: 1}],
+            res: ['a 179ms b', {a: undefined, b: 4}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 2}],
+          io: {
+            a: ['a 139ms b 359ms b', {a: undefined, b: 5}],
+            b: ['a 189ms b', {a: undefined, b: 2}],
+            res: ['a 199ms b', {a: undefined, b: 10}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 3}],
+          io: {
+            a: ['a 139ms b 359ms b', {a: undefined, b: 5}],
+            b: ['a 209ms b', {a: undefined, b: 2}],
+            res: ['a 219ms b', {a: undefined, b: 2.5}]
+          }
+        },
+        {
+          address: [{idx: 5}],
+          io: {
+            a: ['a 159ms b 19ms c 19ms d 19ms e 279ms e', {a: undefined, b: NaN, c: NaN, d: NaN, e: 23.5}],
+            b: ['a 19ms b', {a: undefined, b: 4, c: 4}],
+            res: ['a 239ms b', {a: undefined, b: 5.875}]
+          }
+        },
+      ]);
+      expectMeta(tree, helpers, [
+        {
+          address: [{idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          },
+        },
+        {
+          address: [{idx: 1}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a 19ms b', {a: undefined, b: {
+              "payload": "meta from link8"
+            }}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 1}],
+          io: {
+            a: ['a 39ms b', {a: undefined, b: {
+              "payload": "meta from link33"
+            } }],
+            b: ['a 39ms b', {a: undefined, b: {
+              "payload": "meta from link10"
+            } }],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 2}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 3}],
+          io: {
+            a: ['a 39ms b', {a: undefined, b: {
+              "payload": "meta from link35"
+            }}],
+            b: ['a 39ms b', {a: undefined, b: {
+              "payload": "meta from link10"
+            }}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 3}],
+          io: {
+            a: ['a 119ms b', {a: undefined, b: {
+              "payload": "meta from link11"
+            } }],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 1}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 2}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 3}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 5}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a 19ms b', {a: undefined, b: {
+              "payload": "meta from link6"
+            }}],
+            res: ['a', {a: undefined}]
+          }
+        },
+      ]);
+      expectValidations(tree, helpers, [
+        {
+          address: [{idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          },
+        },
+        {
+          address: [{idx: 1}],
+          io: {
+            a: ['a 269ms b 229ms (bb)', {a: undefined, b: undefined}],
+            b: ['a 269ms b 229ms (cb)', {
+              a: undefined,
+              b: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 9"
+                  }
+                ],
+                "notifications": []
+              },
+              c: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 9"
+                  },
+                  {
+                    "description": "warning from link 9"
+                  }
+                ],
+                "notifications": []
+              }
+            }],
+            res: ['a 269ms b 229ms (bb)', {a: undefined, b: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 1}],
+          io: {
+            a: ['a 289ms b 209ms (cb)', {
+              a: undefined,
+              b: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 32"
+                  }
+                ],
+                "notifications": []
+              },
+              c: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 32"
+                  },
+                  {
+                    "description": "warning from link 32"
+                  },
+
+                ],
+                "notifications": []
+              }
+            }],
+            b: ['a 289ms b 209ms (bb)', {a: undefined, b: undefined}],
+            res: ['a 289ms b 209ms (bb)', {a: undefined, b: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 2}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 2}, {idx: 3}],
+          io: {
+            a: ['a 289ms b 209ms (cb)', {
+              a: undefined,
+              b: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 34"
+                  }
+                ],
+                "notifications": []
+              },
+              c: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 34"
+                  },
+                  {
+                    "description": "warning from link 34"
+                  },
+                ],
+                "notifications": []
+              }
+            }],
+            b: ['a 289ms b 209ms (bb)', {a: undefined, b: undefined}],
+            res: ['a 289ms b 209ms (bb)', {a: undefined, b: undefined}]
+          }
+        },
+        {
+          address: [{idx: 3}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 0}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 1}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 2}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 4}, {idx: 3}],
+          io: {
+            a: ['a', {a: undefined}],
+            b: ['a', {a: undefined}],
+            res: ['a', {a: undefined}]
+          }
+        },
+        {
+          address: [{idx: 5}],
+          io: {
+            a: ['a 269ms b 229ms (bb)', {a: undefined, b: undefined}],
+            b: ['a 269ms b 229ms (cb)', {
+              a: undefined,
+              b: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 7"
+                  }
+                ],
+                "notifications": []
+              },
+              c: {
+                "errors": [],
+                "warnings": [
+                  {
+                    "description": "warning from link 7",
+                  },
+                  {
+                    "description": "warning from link 7",
+                  }
+                ],
+                "notifications": []
+              }
+            }],
+            res: ['a 269ms b 229ms (bb)', {a: undefined, b: undefined}]
+          }
+        },
+      ]);
+    });
+  });
+
 });

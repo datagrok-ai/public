@@ -335,8 +335,9 @@ export class LinksState {
   }
 
   public isAffected(rootPath: Readonly<NodeAddress>, link: Link, addIdx?: number, removeIdx?: number) {
-    return this.hasNested(rootPath, link.prefix, link.matchInfo.inputs) ||
-      this.hasNonNested(rootPath, link.prefix, link.matchInfo.outputs);
+    const bound = this.getLowerBound(addIdx, removeIdx);
+    return this.hasNested(rootPath, link.prefix, link.matchInfo.inputs, bound) ||
+      this.hasNested(rootPath, link.prefix, link.matchInfo.outputs, bound);
   }
 
   public isInbound(rootPath: Readonly<NodeAddress>, link: Link, addIdx?: number, removeIdx?: number) {
