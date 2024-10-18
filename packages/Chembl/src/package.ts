@@ -62,9 +62,28 @@ export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = f
       compsHost.appendChild(ui.divText('No matches'));
       return;
     }
+
     const moleculeCol = table.getCol('smiles');
     const chemblId = table.getCol('chembl_id');
     const molCount = Math.min(table.rowCount, 20);
+
+    if (!substructure) {
+      const similarityCol = table.getCol('similarity');
+      const order = similarityCol.getSortedOrder();
+      const descendingOrder = order.slice().sort((a, b) => similarityCol.get(b) - similarityCol.get(a));
+      
+      const reorderedMols: string[] = new Array<string>(descendingOrder.length);
+      const reorderedScores: number[] = new Array<number>(descendingOrder.length);
+      
+      for (let i = 0; i < descendingOrder.length; ++i) {
+        const index = descendingOrder[i];
+        reorderedMols[i] = moleculeCol.get(index);
+        reorderedScores[i] = similarityCol.get(index);
+      }
+      
+      moleculeCol.init((i) => reorderedMols[i]);
+      similarityCol.init((i) => reorderedScores[i]);
+    }
 
     for (let i = 0; i < molCount; i++) {
       const molHost = ui.divV([]);

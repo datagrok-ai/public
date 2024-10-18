@@ -1,6 +1,17 @@
 # Bio changelog
 
-## 2.16.4 (20246-10-16)
+## 1.16.5 (2024-10-18)
+
+### Bug fixes
+
+* Weblogo: fix compatibility with column types and fix aggregations
+* Monomer manager: Fix validations
+
+### Features
+
+Monomer manager: Add new empty monomer
+
+## 2.16.4 (2024-10-16)
 
 ### Bug fixes
 

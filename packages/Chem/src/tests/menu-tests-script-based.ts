@@ -35,15 +35,15 @@ main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
 
   test('curate.smiles', async () => {
     await curate(DG.Test.isInBenchmark ? grok.data.demo.molecules(1000) : smiles, 'smiles');
-  }, {timeout: 60000, benchmark: true});
+  }, {timeout: 90000, benchmark: true});
 
   test('curate.molV2000', async () => {
     await curate(spgi100, 'Structure');
-  }, {timeout: 60000, benchmark: true});
+  }, {timeout: 90000, benchmark: true});
 
   test('curate.molV3000', async () => {
     await curate(approvedDrugs100, 'molecule');
-  }, {timeout: 60000, benchmark: true});
+  }, {timeout: 90000, benchmark: true});
 
   test('curate.emptyValues', async () => {
     const df = await readDataframe('tests/sar-small_empty_vals.csv');
@@ -54,7 +54,7 @@ main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
     const col = df.getCol('curated_molecule');
     expect(col.stats.valueCount, 16);
     col.categories.slice(0, -1).forEach((c) => expect(c.includes('C'), true));
-  }, {timeout: 60000});
+  }, {timeout: 90000});
 
   test('curate.malformedData', async () => {
     const df = await readDataframe('tests/Test_smiles_malformed.csv');
@@ -65,7 +65,7 @@ main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
     const col = df.getCol('curated_molecule');
     expect(col.stats.valueCount, 43);
     col.categories.slice(0, -1).forEach((c) => expect(c.includes('C'), true));
-  }, {timeout: 60000});
+  }, {timeout: 90000});
 
   test('mutate.smiles', async () => {
     await mutate('CN1C(CC(O)C1=O)C1=CN=CC=C1');

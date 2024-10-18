@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {runTests, TestContext, tests, initAutoTests as initTests } from '@datagrok-libraries/utils/src/test';
+import {runTests, TestContext, tests, initAutoTests as initTests} from '@datagrok-libraries/utils/src/test';
 
 import './tests/ui-tests-info-panel';
 import './tests/ui-tests-top-menu';
@@ -14,6 +14,7 @@ import './tests/cell-panel-tests';
 
 import './tests/substructure-search-tests';
 import './tests/rendering-tests';
+import './tests/rendering-scatter-plot-tooltip-tests';
 import './tests/sketcher-tests';
 
 import './tests/detector-tests';
@@ -24,8 +25,6 @@ import './tests/screening-tools';
 import './tests/save-as-sdf-tests';
 import './tests/substructure-filter-tests';
 
-import './tests/viewers';
-
 import './tests/mol2-importer-tests';
 import './tests/chemical-table-parsing';
 import './tests/is-smarts-tests';
@@ -35,7 +34,9 @@ import './tests/projects-tests';
 //import './tests/clone-layout-tests';
 import './tests/mmpa-tests';
 import './tests/chemprop-tests';
-import './tests/vector-funcs-tests'
+import './tests/vector-funcs-tests';
+
+import './tests/viewers';
 
 export const _package = new DG.Package();
 export {tests};

@@ -2,7 +2,7 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "1.12.3",
+  "version": "1.12.4",
   "author": {
     "name": "Leonid Stolbov",
     "email": "lstolbov@datagrok.ai"
@@ -41,9 +41,9 @@
     "datagrok-api": "^1.21.1",
     "@datagrok-libraries/chem-meta": "^1.2.7",
     "@datagrok-libraries/ml": "^6.7.3",
-    "@datagrok-libraries/math": "^1.2.2",
+    "@datagrok-libraries/math": "^1.2.3",
     "@datagrok-libraries/tutorials": "^1.4.2",
-    "@datagrok-libraries/utils": "../../libraries/utils",
+    "@datagrok-libraries/utils": "^4.3.6",
     "@types/pako": "^2.0.3",
     "typescript-lru-cache": "^2.0.0",
     "cash-dom": "^8.1.5",

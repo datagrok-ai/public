@@ -31,7 +31,7 @@ export class ViewersTutorial extends Tutorial {
 
     this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML);
 
-    this.title('Selection and current records display');
+    this.title('Selection and current records');
 
     const ribbonPanels = grok.shell.v.getRibbonPanels();
     const addViewerIcon = ribbonPanels[1][1];
