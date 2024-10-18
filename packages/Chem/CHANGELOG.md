@@ -1,5 +1,11 @@
 # Chem changelog
 
+## 1.12.4 (WIP)
+
+### Bug fixes
+
+* Fix rdkit cell renderer for viewers tooltip, enable test
+
 ## 1.12.3 (2024-10-01)
 
 ### Bug fixes
