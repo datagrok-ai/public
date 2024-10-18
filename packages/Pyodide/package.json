@@ -10,7 +10,7 @@
   "dependencies": {
     "@datagrok-libraries/utils": "^4.3.6",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.22.0-rc.f0b36b1cf1.4843fa207a7",
     "dayjs": "^1.11.10",
     "uuid": "^10.0.0"
   },
