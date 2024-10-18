@@ -22,12 +22,12 @@ class WebGPUCache {
   markerSizesLength = -1;
   markerDefaultSize = -1;
   sizeColumnName = '';
-  textureAtlas: OffscreenCanvas | null = null;
+  texture: OffscreenCanvas | null = null;
   minTextureSize = 2;
   maxTextureSize = 100;
   textureGridSize = Math.ceil(Math.sqrt((this.maxTextureSize - this.minTextureSize) / 2 + 1));
   texturePadding = 2;
-  gpuTextureAtlas: GPUTexture | null = null;
+  gpuTexture: GPUTexture | null = null;
 
   updateAndValidate(sc: DG.ScatterPlotViewer, device: GPUDevice, pt: DG.Point = new DG.Point(0, 0)) {
     const xCol = sc.table.col(sc.props.xColumnName);
@@ -46,8 +46,6 @@ class WebGPUCache {
   
     if (this.isMarkerSizesParamsChanged(sc))
         this.setMarkerSizes(sc, device);
-
-    this.updateTexuteAtlas(sc, device);
   
     return this.isValid();
   }
@@ -155,37 +153,72 @@ class WebGPUCache {
   setMarkerSizes(sc: DG.ScatterPlotViewer, device: GPUDevice) {
     this.markerDefaultSize = sc.props.markerDefaultSize;
     this.sizeColumnName = sc.props.sizeColumnName;
-    const sizes = sc.getMarkerSizes();
-    this.markerSizesLength = sizes.length;
-    this.markerSizesBuffer = device.createBuffer({
-        size: getPaddedSize(this.markerSizesLength),
-        usage: GPUBufferUsage.STORAGE,
-        mappedAtCreation: true,
-      });
+    if (!sc.props.sizeColumnName || this.sizeColumnName == '') {
+      const size = sc.getMarkerSize(0);
+      this.markerSizesLength = 1;
+      this.markerSizesBuffer = device.createBuffer({
+          size: getPaddedSize(this.markerSizesLength),
+          usage: GPUBufferUsage.STORAGE,
+          mappedAtCreation: true,
+        });
       const scBufferArray = this.markerSizesBuffer.getMappedRange();
-      let scBufferOffset = 0;
-      new Float32Array(scBufferArray, scBufferOffset, this.markerSizesLength).set(sizes);
-      scBufferOffset += this.xColLength * Float32Array.BYTES_PER_ELEMENT;
+      new Float32Array(scBufferArray, 0, this.markerSizesLength).set([size]);
       this.markerSizesBuffer.unmap();
+    }
+    else {
+      const sizes = sc.getMarkerSizes();
+      this.markerSizesLength = sizes.length;
+      this.markerSizesBuffer = device.createBuffer({
+          size: getPaddedSize(this.markerSizesLength),
+          usage: GPUBufferUsage.STORAGE,
+          mappedAtCreation: true,
+        });
+      const scBufferArray = this.markerSizesBuffer.getMappedRange();
+      new Float32Array(scBufferArray, 0, this.markerSizesLength).set(sizes);
+      this.markerSizesBuffer.unmap();
+    }
   }
 
   updateTexuteAtlas(sc: DG.ScatterPlotViewer, device: GPUDevice) {
-    if (this.textureAtlas == null || this.gpuTextureAtlas == null || this.minTextureSize != roundUpToEven(sc.props.markerMinSize) || this.maxTextureSize != roundUpToEven(sc.props.markerMaxSize)) {
-      this.minTextureSize = roundUpToEven(sc.props.markerMinSize);
-      this.maxTextureSize = roundUpToEven(sc.props.markerMaxSize);
-      this.textureGridSize = Math.ceil(Math.sqrt((this.maxTextureSize - this.minTextureSize) / 2 + 1));
-      this.textureAtlas = createTextureAtlas(this, sc);
+    if (this.texture == null || this.gpuTexture == null 
+      || this.isMarkerSizesParamsChanged(sc)
+      || this.minTextureSize != roundUpToEven(sc.props.markerMinSize) 
+      || this.maxTextureSize != roundUpToEven(sc.props.markerMaxSize)) {
+        if (!sc.props.sizeColumnName || sc.props.sizeColumnName == '') {
+          this.minTextureSize = roundUpToEven(sc.props.markerMinSize);
+          this.maxTextureSize = roundUpToEven(sc.props.markerMaxSize);
+          this.textureGridSize = Math.ceil(Math.sqrt((this.maxTextureSize - this.minTextureSize) / 2 + 1));
+          const size = sc.getMarkerSize(0);
+          this.texture = createCircleCanvas(size + sc.props.markerBorderWidth * 2, sc);
 
-      this.gpuTextureAtlas = device.createTexture({
-          size: [this.textureAtlas.width, this.textureAtlas.height],
-          format: 'rgba8unorm',
-          usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
-      });  
-      device.queue.copyExternalImageToTexture(
-          { source: this.textureAtlas },
-          { texture: this.gpuTextureAtlas, premultipliedAlpha: true},
-          [this.textureAtlas.width, this.textureAtlas.height]
-      );
+          this.gpuTexture = device.createTexture({
+              size: [this.texture.width, this.texture.height],
+              format: 'rgba8unorm',
+              usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
+          });  
+          device.queue.copyExternalImageToTexture(
+              { source: this.texture },
+              { texture: this.gpuTexture, premultipliedAlpha: true},
+              [this.texture.width, this.texture.height]
+          );
+        }
+        else {
+          this.minTextureSize = roundUpToEven(sc.props.markerMinSize);
+          this.maxTextureSize = roundUpToEven(sc.props.markerMaxSize);
+          this.textureGridSize = Math.ceil(Math.sqrt((this.maxTextureSize - this.minTextureSize) / 2 + 1));
+          this.texture = createTextureAtlas(this, sc);
+
+          this.gpuTexture = device.createTexture({
+              size: [this.texture.width, this.texture.height],
+              format: 'rgba8unorm',
+              usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
+          });  
+          device.queue.copyExternalImageToTexture(
+              { source: this.texture },
+              { texture: this.gpuTexture, premultipliedAlpha: true},
+              [this.texture.width, this.texture.height]
+          );
+        }
     }
   }
 };
@@ -296,7 +329,7 @@ export async function scWebGPUPointHitTest(sc: DG.ScatterPlotViewer, pt: DG.Poin
                 }
 
                 let filteredIndex = indexes[idx];
-                let markerSize = markerSizes[filteredIndex];
+                let markerSize = markerSizes[ ${!sc.props.sizeColumnName || sc.props.sizeColumnName == '' ? 0 : `filteredIndex`}];
                 let screenPoint = pointToScreen(filteredIndex);
                 let markerType = getMarkerType(idx);
                 if (hitTest(ceil(markerSize) / 2.0, screenPoint, markerType)) {
@@ -378,7 +411,11 @@ async function webGPUInit(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotVie
   if (!device)
     throw  'Failed to get WebGPU device';
 
-  if (!cache.updateAndValidate(sc, device) || !cache.indexBuffer || !cache.columnBuffer || !cache.viewBuffer || !cache.markerSizesBuffer || !cache.gpuTextureAtlas)
+  cache.updateTexuteAtlas(sc, device);
+  if (!cache.gpuTexture)
+    throw 'Failed to update texture atlas';
+
+  if (!cache.updateAndValidate(sc, device) || !cache.indexBuffer || !cache.columnBuffer || !cache.viewBuffer || !cache.markerSizesBuffer)
     throw 'Failed to update and validate cache or to initalize buffers';
 
   const gpuContext = webGPUCanvas.getContext('webgpu');
@@ -419,61 +456,7 @@ async function webGPUInit(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotVie
         @group(1) @binding(1) var<storage, read> data: Data;
         @group(1) @binding(2) var<storage, read> markerSizes: array<f32, ${cache.markerSizesLength}>;
 
-        @vertex fn vs(
-            vert: Vertex,
-            @builtin(vertex_index) vNdx: u32,
-            ) -> VSOutput {
-            let points = array(
-            vec2f(-1, -1),
-            vec2f( 1, -1),
-            vec2f(-1,  1),
-            vec2f(-1,  1),
-            vec2f( 1, -1),
-            vec2f( 1,  1),
-            );
-
-            // Get the marker size for the current vertex
-            let markerSize = markerSizes[vert.index];
-            
-            let minSize = f32(${cache.minTextureSize});
-            let maxSize = f32(${cache.maxTextureSize});
-
-            // The textures are made of even sizes to avoid blur and artefacts
-            // Rounding up to the nearest even index and dividing by two to get the needed index in the texture atlas
-            let sizeIndex = u32(ceil(ceil(markerSize) / 2.0) * 2.0 - minSize) / 2;
-
-            var vsOut: VSOutput;
-            let pos = points[vNdx];
-
-            let screenPoint = pointToScreen(vert.index);
-            let normalizedPos = convertPointToNormalizedCoords(screenPoint);
-            // Making a pixel perfect position, to avoid artefacts and blurring
-            vsOut.position = vec4f(floor((normalizedPos + pos * (maxSize + ${sc.props.markerBorderWidth * 2 + cache.texturePadding}) / uni.resolution) * uni.resolution) / uni.resolution, 0, 1);
-            vsOut.texcoord = pos * 0.5 + 0.5;
-            vsOut.markerIndex = sizeIndex;   // Pass marker index to fragment shader
-            return vsOut;
-        }
-
-        @fragment fn fs(vsOut: VSOutput) -> @location(0) vec4f {
-            let gridSize: u32 = ${cache.textureGridSize};
-
-            // Get the size index based on the marker index (you might want a mapping function here)
-            let sizeIndex: u32 = vsOut.markerIndex;
-
-            // Calculate (x, y) in the texture atlas grid
-            let x: u32 = sizeIndex % gridSize;
-            let y: u32 = sizeIndex / gridSize;
-
-            // Calculate UV offset for the selected size
-            let uvOffset = vec2f(f32(x) * (1.0 / f32(gridSize)), f32(y) * (1.0 / f32(gridSize)));
-            let uvScale = 1.0 / f32(gridSize);
-
-            // Adjust the texcoords to the right portion of the atlas
-            let texCoords = vsOut.texcoord * uvScale + uvOffset;
-
-            // Sample the texture atlas
-            return textureSample(t, s, texCoords);
-        }
+        ${!sc.props.sizeColumnName || sc.props.sizeColumnName == '' ? addSingleMarkerSizeRendering(cache, sc) : addDifferentMarkerSizesRendering(cache, sc)}
 
         ${addPointConversionMethods()}
         `,
@@ -562,7 +545,7 @@ async function webGPUInit(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotVie
     entries: [
       {binding: 0, resource: {buffer: uniformBuffer}},
       {binding: 1, resource: sampler},
-      {binding: 2, resource: cache.gpuTextureAtlas.createView()},
+      {binding: 2, resource: cache.gpuTexture.createView()},
     ],
   });
 
@@ -750,4 +733,101 @@ function addStructures(cache: WebGPUCache) {
             yColumnData: array<f32, ${cache.yColLength}>,
         };
     `;
+}
+
+function addDifferentMarkerSizesRendering(cache: WebGPUCache, sc: DG.ScatterPlotViewer) {
+  return `
+      @vertex fn vs(
+          vert: Vertex,
+          @builtin(vertex_index) vNdx: u32,
+          ) -> VSOutput {
+          let points = array(
+          vec2f(-1, -1),
+          vec2f( 1, -1),
+          vec2f(-1,  1),
+          vec2f(-1,  1),
+          vec2f( 1, -1),
+          vec2f( 1,  1),
+          );
+
+          // Get the marker size for the current vertex
+          let markerSize = markerSizes[vert.index];
+          
+          let minSize = f32(${cache.minTextureSize});
+          let maxSize = f32(${cache.maxTextureSize});
+
+          // The textures are made of even sizes to avoid blur and artefacts
+          // Rounding up to the nearest even index and dividing by two to get the needed index in the texture atlas
+          let sizeIndex = u32(ceil(ceil(markerSize) / 2.0) * 2.0 - minSize) / 2;
+
+          var vsOut: VSOutput;
+          let pos = points[vNdx];
+
+          let screenPoint = pointToScreen(vert.index);
+          let normalizedPos = convertPointToNormalizedCoords(screenPoint);
+          // Making a pixel perfect position, to avoid artefacts and blurring
+          vsOut.position = vec4f(floor((normalizedPos + pos * (maxSize + ${sc.props.markerBorderWidth * 2 + cache.texturePadding}) / uni.resolution) * uni.resolution) / uni.resolution, 0, 1);
+          vsOut.texcoord = pos * 0.5 + 0.5;
+          vsOut.markerIndex = sizeIndex;   // Pass marker index to fragment shader
+          return vsOut;
+      }
+
+      @fragment fn fs(vsOut: VSOutput) -> @location(0) vec4f {
+          let gridSize: u32 = ${cache.textureGridSize};
+
+          // Get the size index based on the marker index (you might want a mapping function here)
+          let sizeIndex: u32 = vsOut.markerIndex;
+
+          // Calculate (x, y) in the texture atlas grid
+          let x: u32 = sizeIndex % gridSize;
+          let y: u32 = sizeIndex / gridSize;
+
+          // Calculate UV offset for the selected size
+          let uvOffset = vec2f(f32(x) * (1.0 / f32(gridSize)), f32(y) * (1.0 / f32(gridSize)));
+          let uvScale = 1.0 / f32(gridSize);
+
+          // Adjust the texcoords to the right portion of the atlas
+          let texCoords = vsOut.texcoord * uvScale + uvOffset;
+
+          // Sample the texture atlas
+          return textureSample(t, s, texCoords);
+      }
+  `;
+}
+
+function addSingleMarkerSizeRendering(cache: WebGPUCache, sc: DG.ScatterPlotViewer) {
+  return `
+      @vertex fn vs(
+          vert: Vertex,
+          @builtin(vertex_index) vNdx: u32,
+          ) -> VSOutput {
+          let points = array(
+          vec2f(-1, -1),
+          vec2f( 1, -1),
+          vec2f(-1,  1),
+          vec2f(-1,  1),
+          vec2f( 1, -1),
+          vec2f( 1,  1),
+          );
+
+          // Get the marker size for the current vertex
+          let markerSize = markerSizes[0];
+          
+          var vsOut: VSOutput;
+          let pos = points[vNdx];
+
+          let screenPoint = pointToScreen(vert.index);
+          let normalizedPos = convertPointToNormalizedCoords(screenPoint);
+          // Making a pixel perfect position, to avoid artefacts and blurring
+          vsOut.position = vec4f(floor((normalizedPos + pos * (markerSize + ${sc.props.markerBorderWidth}) / uni.resolution) * uni.resolution) / uni.resolution, 0, 1);
+          vsOut.texcoord = pos * 0.5 + 0.5;
+          vsOut.markerIndex = 0;   // Pass marker index to fragment shader
+          return vsOut;
+      }
+
+      @fragment fn fs(vsOut: VSOutput) -> @location(0) vec4f {
+          // Sample the texture atlas
+          return textureSample(t, s, vsOut.texcoord);
+      }
+  `;
 }
