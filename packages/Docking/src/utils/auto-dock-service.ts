@@ -239,7 +239,7 @@ export class AutoDockService implements IAutoDockService {
       if (posesAllDf === undefined) {
         posesAllDf = posesDf;
       } else {
-        posesAllDf.append(posesAllDf, true);
+        posesAllDf.append(posesDf!, true);
       }
     }
 
