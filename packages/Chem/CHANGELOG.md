@@ -1,5 +1,11 @@
 # Chem changelog
 
+## 1.11.7 (2024-10-21)
+
+### Bug Fixes
+
+* [#3055](https://github.com/datagrok-ai/public/issues/3055): Page is freezing after applying layout with multiple scaffold trees with large number of structures
+
 ## 1.11.6 (2024-09-20)
 
 ### Bug Fixes
