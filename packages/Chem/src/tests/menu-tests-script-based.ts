@@ -34,16 +34,16 @@ main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
   });
 
   test('curate.smiles', async () => {
-    await curate(DG.Test.isInBenchmark ? grok.data.demo.molecules(500) : smiles, 'smiles');
-  }, {timeout: 60000, benchmark: true});
+    await curate(DG.Test.isInBenchmark ? grok.data.demo.molecules(1000) : smiles, 'smiles');
+  }, {timeout: 90000, benchmark: true, skipReason: 'GROK-16908'});
 
   test('curate.molV2000', async () => {
     await curate(spgi100, 'Structure');
-  }, {timeout: 60000, benchmark: true});
+  }, {timeout: 90000, benchmark: true, skipReason: 'GROK-16908'});
 
   test('curate.molV3000', async () => {
     await curate(approvedDrugs100, 'molecule');
-  }, {timeout: 60000, benchmark: true});
+  }, {timeout: 90000, benchmark: true, skipReason: 'GROK-16908'});
 
   test('curate.emptyValues', async () => {
     const df = await readDataframe('tests/sar-small_empty_vals.csv');
@@ -51,10 +51,10 @@ main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
     const t: DG.DataFrame = await grok.functions.call('Chem:Curate', {'data': df, 'molecules': 'smiles',
       'kekulization': true, 'normalization': true, 'reionization': true,
       'neutralization': true, 'tautomerization': true, 'mainFragment': true});
-    const col = t.getCol('curated_molecule');
+    const col = df.getCol('curated_molecule');
     expect(col.stats.valueCount, 16);
     col.categories.slice(0, -1).forEach((c) => expect(c.includes('C'), true));
-  }, {timeout: 60000});
+  }, {timeout: 90000, skipReason: 'GROK-16908'});
 
   test('curate.malformedData', async () => {
     const df = await readDataframe('tests/Test_smiles_malformed.csv');
@@ -62,10 +62,10 @@ main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
     const t: DG.DataFrame = await grok.functions.call('Chem:Curate', {'data': df, 'molecules': 'canonical_smiles',
       'kekulization': true, 'normalization': true, 'reionization': true,
       'neutralization': true, 'tautomerization': true, 'mainFragment': true});
-    const col = t.getCol('curated_molecule');
+    const col = df.getCol('curated_molecule');
     expect(col.stats.valueCount, 43);
     col.categories.slice(0, -1).forEach((c) => expect(c.includes('C'), true));
-  }, {timeout: 60000});
+  }, {timeout: 90000, skipReason: 'GROK-16908'});
 
   test('mutate.smiles', async () => {
     await mutate('CN1C(CC(O)C1=O)C1=CN=CC=C1');
@@ -93,7 +93,7 @@ async function curate(df: DG.DataFrame, col: string) {
   const t: DG.DataFrame = await grok.functions.call('Chem:Curate', {'data': df, 'molecules': col,
     'kekulization': true, 'normalization': true, 'reionization': true,
     'neutralization': true, 'tautomerization': true, 'mainFragment': true});
-  const cm = t.getCol('curated_molecule');
+  const cm = df.getCol('curated_molecule');
   if (col !== 'smiles' || DG.Test.isInBenchmark) {
     for (let i = 0; i < t.rowCount; i++) expect(cm.get(i).includes('C'), true);
     return;

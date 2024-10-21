@@ -16,8 +16,16 @@ import {MonomerLibWrapper} from './monomer-lib/lib-wrapper';
 import {FormatConverter} from '../../translator/model/format-converter';
 import {FormatDetector} from './parsing-validation/format-detector';
 import {highlightInvalidSubsequence} from '../view/components/colored-input/input-painters';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 export class OligoToolkitPackage extends DG.Package implements ITranslationHelper {
+  private _seqHelper: ISeqHelper;
+  public get seqHelper(): ISeqHelper {
+    if (!this._seqHelper)
+      throw new Error('Package SequenceTranslator .seqHelper is not initialized');
+    return this._seqHelper;
+  }
+
   private _monomerLib?: IMonomerLib;
   get monomerLib(): IMonomerLib {
     if (!this._monomerLib)
@@ -46,6 +54,10 @@ export class OligoToolkitPackage extends DG.Package implements ITranslationHelpe
   }
 
   private initPromise?: Promise<void>;
+
+  completeInit(seqHelper: ISeqHelper): void {
+    this._seqHelper = seqHelper;
+  }
 
   async initLibData(): Promise<void> {
     if (!this.initPromise) {

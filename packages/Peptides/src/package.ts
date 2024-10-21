@@ -85,7 +85,11 @@ export function Peptides(): DG.View {
 
 //top-menu: Bio | Analyze | SAR...
 //name: Bio Peptides
-export function peptidesDialog(): DG.Dialog {
+export function peptidesDialog(): DG.Dialog | null {
+  if (!grok.shell.t || !grok.shell.t.columns.bySemType('Macromolecule')?.length) {
+    grok.shell.warning('SAR Analysis requires an active table with Macromolecule column');
+    return null;
+  }
   const analyzeObject = analyzePeptidesUI(grok.shell.t);
   const dialog = ui.dialog('Analyze Peptides').add(analyzeObject.host).onOK(async () => {
     const startSuccess = analyzeObject.callback();

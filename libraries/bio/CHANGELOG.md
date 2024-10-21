@@ -1,5 +1,39 @@
 # bio changelog
 
+## 5.45.3 (2024-10-16)
+
+### Bug fixes
+
+* Fix splitterWithSeparator
+* Fix MonomerPlacer onMouseMove handling
+
+## 5.45.2 (2024-10-11)
+
+### Bug fixes
+
+* Fix moving setUnits methods to ISeqHelper
+* Fix dependencies version
+
+## 5.45.1 (2024-10-11)
+
+### Bug fixes
+
+* Fix ISeqHelper adding getSeqMonomers
+
+## 5.45.0 (2024-10-10)
+
+### New features
+
+* Add SeqHelper factory for SeqHandler moving to the Bio package
+
+### Bug fixes
+
+* Fix toAtomicLevel for monomers without peptide bond (NH2)
+* Fix createHelmWebEditor drawOptions to options
+* Fix MonomerPlacer to get tooltip from overridden monomer lib
+* Fix Helm cell renderer props adding overridden monomer lib
+* Fix monomer lib loading timout on palettes
+
 ## 5.44.5 (2024-10-03)
 
 ### Bug fixes

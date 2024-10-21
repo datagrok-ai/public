@@ -33,7 +33,9 @@ export async function test(args: TestArgs): Promise<boolean> {
   isArgsValid(args);
   utils.setHost(args.host, config);
 
-  const packageJsonData = JSON.parse(fs.readFileSync(path.join(curDir, 'package.json'), { encoding: 'utf-8' }));
+  let packageJsonData = undefined;
+  if(!args.package)
+    packageJsonData = JSON.parse(fs.readFileSync(path.join(curDir, 'package.json'), { encoding: 'utf-8' }))
   let packageName = args.package ? utils.kebabToCamelCase(args.package) : utils.kebabToCamelCase(utils.removeScope(packageJsonData.name));
   let packagesDir = path.basename(curDir) === "packages" ?  curDir : path.dirname(curDir);
   let categoryToCheck: string | undefined = undefined;

@@ -269,7 +269,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     this._scaledActivityColumn ??= scaleActivity(this.dataFrame.getCol(this.activityColumnName),
       this.activityScaling);
     if (isFiltered) {
-      return DG.DataFrame.fromColumns([this._scaledActivityColumn]).clone(this.dataFrame.filter)
+      return DG.DataFrame.fromColumns([this._scaledActivityColumn])
+        .clone(this.dataFrame.rowCount === this._scaledActivityColumn.length ? this.dataFrame.filter : null)
         .getCol(this._scaledActivityColumn.name) as DG.Column<number>;
     }
     return this._scaledActivityColumn as DG.Column<number>;

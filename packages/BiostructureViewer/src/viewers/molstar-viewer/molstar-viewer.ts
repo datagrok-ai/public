@@ -781,8 +781,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     const dataFileProp = DG.Property.fromOptions({name: 'dataFile', caption: 'Data file', type: 'file'});
     const dataFileInput = DG.InputBase.forProperty(dataFileProp);
     dataFileInput.captionLabel.innerText = 'Data file';
-    this.viewSubs.push(dataFileInput.onChanged.subscribe(async (value) => {
-      const dataFi: DG.FileInfo = value;
+    this.viewSubs.push(dataFileInput.onChanged.subscribe(async () => {
+      const dataFi: DG.FileInfo = dataFileInput.value;
       const dataA: Uint8Array = dataFi.data ? dataFi.data /* User's file*/ : await dataFi.readAsBytes()/* Shares */;
       const data: BiostructureData = {binary: true, ext: dataFi.extension, data: dataA};
       this.setOptions({

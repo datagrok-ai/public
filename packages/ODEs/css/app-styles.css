@@ -41,3 +41,7 @@
     font-size: 13px;
     font-weight: bold;
 }
+
+.diff-studio-app-run-icon {
+    color: var(--green-2);
+}

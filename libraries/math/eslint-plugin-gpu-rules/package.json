@@ -9,6 +9,6 @@
   "keywords": [],
   "author": "Davit Rizhinashvili",
   "devDependencies": {
-    "eslint": "latest"
+    "eslint": "^8.57.1"
   }
 }

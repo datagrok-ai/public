@@ -1,5 +1,9 @@
 # Helm changelog
 
+## 2.5.5 (2024-10-15)
+
+* Fix Getting monomers in HWE that can contain square brackets
+
 ## 2.5.4 (2024-10-10)
 
 ### New features

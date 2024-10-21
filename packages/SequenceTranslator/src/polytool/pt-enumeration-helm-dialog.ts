@@ -16,7 +16,6 @@ import {getSeqHelper, ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-he
 import '@datagrok-libraries/bio/src/types/input';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {InputColumnBase} from '@datagrok-libraries/bio/src/types/input';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 
 import {
   PolyToolEnumeratorParams, PolyToolEnumeratorType, PolyToolEnumeratorTypes
@@ -36,8 +35,9 @@ type PolyToolEnumerateInputs = {
   placeholdersBreadth: PolyToolPlaceholdersBreadthInput;
   enumeratorType: DG.ChoiceInput<PolyToolEnumeratorType>
   trivialNameCol: InputColumnBase,
-  toAtomicLevel: DG.InputBase<boolean>;
   keepOriginal: DG.InputBase<boolean>;
+  toAtomicLevel: DG.InputBase<boolean>;
+  toHarmonizedSequence: DG.InputBase<boolean>;
 };
 
 type PolyToolEnumerateHelmSerialized = {
@@ -46,8 +46,9 @@ type PolyToolEnumerateHelmSerialized = {
   placeholdersBreadth: string;
   enumeratorType: PolyToolEnumeratorType;
   trivialNameCol: string;
-  toAtomicLevel: boolean;
   keepOriginal: boolean;
+  toAtomicLevel: boolean;
+  toHarmonizedSequence: boolean;
 };
 
 export async function polyToolEnumerateHelmUI(cell?: DG.Cell): Promise<void> {
@@ -160,10 +161,12 @@ async function getPolyToolEnumerateDialog(
           showRowHeader: false,
           showCellTooltip: false,
         }),
-      toAtomicLevel: ui.input.bool(
-        'To atomic level', {value: false}),
       keepOriginal: ui.input.bool(
         'Keep original', {value: false}),
+      toAtomicLevel: ui.input.bool(
+        'To atomic level', {value: false}),
+      toHarmonizedSequence: ui.input.bool(
+        'To harmonized sequence', {value: false}),
       trivialNameCol: ui.input.column2(
         'Trivial name', {
           table: cell?.dataFrame,
@@ -184,6 +187,7 @@ async function getPolyToolEnumerateDialog(
         }),
     };
 
+    inputs.toHarmonizedSequence.root.style.display = 'none';
     inputs.trivialNameCol.addOptions(trivialNameSampleDiv);
 
     let placeholdersValidity: string | null = null;
@@ -363,8 +367,9 @@ async function getPolyToolEnumerateDialog(
       let helmValue: string;
       let table: DG.DataFrame | undefined = undefined;
       if (cell && cell.rowIndex >= 0 && cell?.column.semType == DG.SEMTYPE.MACROMOLECULE) {
-        const sh = SeqHandler.forColumn(cell.column);
-        helmValue = await sh.getHelm(cell.rowIndex);
+        const sh = _package.seqHelper.getSeqHandler(cell.column);
+        const helmSemValue = await sh.getHelm(cell.rowIndex);
+        helmValue = helmSemValue.value;
         table = cell.dataFrame;
       } else {
         helmValue = PT_HELM_EXAMPLE;
@@ -414,8 +419,8 @@ async function getPolyToolEnumerateDialog(
       .add(inputs.enumeratorType)
       .add(inputs.placeholdersBreadth)
       .add(inputs.trivialNameCol)
-      .add(inputs.toAtomicLevel)
-      .add(inputs.keepOriginal)
+      .add(ui.divH([inputs.keepOriginal.root, inputs.toAtomicLevel.root, inputs.toHarmonizedSequence.root],
+        {style: {width: '100%'}}))
       .add(warningsTextDiv)
       // .addButton('Enumerate', () => {
       //   execDialog()
@@ -433,8 +438,9 @@ async function getPolyToolEnumerateDialog(
           enumeratorType: inputs.enumeratorType.value,
           placeholdersBreadth: inputs.placeholdersBreadth.stringValue,
           trivialNameCol: inputs.trivialNameCol.stringValue,
-          toAtomicLevel: inputs.toAtomicLevel.value,
           keepOriginal: inputs.keepOriginal.value,
+          toAtomicLevel: inputs.toAtomicLevel.value,
+          toHarmonizedSequence: inputs.toHarmonizedSequence.value,
         };
       },
       /* applyInput */ (x: PolyToolEnumerateHelmSerialized): void => {
@@ -443,8 +449,9 @@ async function getPolyToolEnumerateDialog(
         inputs.enumeratorType.value = x.enumeratorType;
         inputs.placeholdersBreadth.stringValue = x.placeholdersBreadth;
         inputs.trivialNameCol.stringValue = x.trivialNameCol;
-        inputs.toAtomicLevel.value = x.toAtomicLevel;
         inputs.keepOriginal.value = x.keepOriginal;
+        inputs.toAtomicLevel.value = x.toAtomicLevel;
+        inputs.toHarmonizedSequence.value = x.toHarmonizedSequence;
       });
     return dialog;
   } catch (err: any) {

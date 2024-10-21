@@ -39,24 +39,24 @@ category('top menu r-groups', () => {
   test('mcs.exactAtomsExactBonds', async () => {
     const mcs = await getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `smiles` : `Structure`)!, true, true);
     expect(mcs, DG.Test.isInBenchmark ? '[#17]' : '[#6]-[#6]-[#7]-[#6]');
-  });
+  }, {benchmark: true});
 
   test('mcs.anyAtomsExactBonds', async () => {
     const mcs = await getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `smiles` : `Structure`)!, false, true);
     expect(mcs, DG.Test.isInBenchmark ? '[#17]' : '[#6,#7,#8,#9]-[#6,#7,#8]-[#7,#6](-[#6,#8,#9,#16])-[#6,#7,#9]');
-  });
+  }, {benchmark: true});
 
   test('mcs.exactAtomsAnyBonds', async () => {
     const mcs = await getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `smiles` : `Structure`)!, true, false);
     expect(mcs, DG.Test.isInBenchmark ? '[#17]' : '[#6]-,:[#6]-,:[#7]-,:[#6]-,:[#6]');
-  });
+  }, {benchmark: true});
 
   test('mcs.anyAtomsAnyBonds', async () => {
     const mcs = await getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `smiles` : `Structure`)!, false, false);
     expect(mcs, DG.Test.isInBenchmark ?
       `[#8,#6,#7,#9,#15,#16,#17,#35]-,:[#17,#5,#6,#7,#8,#14,#15,#16,#33,#34]` :
       `[#6,#8,#9]-,:[#6,#7,#8]-,:[#7,#6](-,:[#6,#7,#8,#16]-,:[#6,#7,#8]-,:[#6,#7]-,:[#7,#6,#8]-,:[#6,#7,#8,#16]-,:[#6,#7,#8,#16])-,:[#6,#7,#8]-,:[#6,#7]-,:[#6,#7,#8]-,:[#6,#7,#8,#9]`);
-  });
+  }, {benchmark: true});
 
   test('rgroups.smiles', async () => {
     if (DG.Test.isInBenchmark) {
@@ -66,7 +66,7 @@ category('top menu r-groups', () => {
               core: 'c1ccccc1',
               prefix: 'R',
             }); */
-      const df = await grok.data.files.openTable('System:AppData/Chem/tests/smiles_200K.zip');
+      const df = await grok.data.files.openTable('System:AppData/Chem/tests/smiles_50K.csv');
       await rGroupsMinilib(df.col('smiles')!, 'c1ccccc1', false, 0, rGroupOpts);
       return;
     }
@@ -89,7 +89,7 @@ category('top menu r-groups', () => {
       expect(rgroups.getCol('R2').get(5), 'Cl[*:2]');
       expect(rgroups.getCol('R2').get(6), 'Cl[*:2]');
     }
-  });
+  }, {benchmark: true});
 
   test('rgroups.molV2000', async () => {
     const df = DG.DataFrame.fromColumns([(await readDataframe('tests/spgi-100.csv')).getCol('Structure')]);
@@ -183,7 +183,7 @@ M  END
   after(async () => {
     grok.shell.closeAll();
   });
-}, { benchmarks: true });
+});
 
 const t = DG.DataFrame.fromCsv(`smiles
 O=C1CN=C(c2ccccc2N1)C3CCCCC3

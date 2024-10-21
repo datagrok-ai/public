@@ -1,10 +1,15 @@
 # Sequence Translator changelog
 
-## 1.4.5 (WIP)
+## 1.4.5 (2024-10-11)
 
 ### Bug fixes
 
 * Fix for grok.userSettings
+* Fix moving support custom notation harmonized sequence
+* Fix PT Convert for monomer highlighting
+* Fix PT Convert reaction monomer colors
+* Fix PT detectors adding tests
+* Bump dependencies versions
 
 ## 1.4.4 (2024-09-30)
 

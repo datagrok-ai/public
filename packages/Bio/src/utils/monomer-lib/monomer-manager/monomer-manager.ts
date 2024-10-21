@@ -16,7 +16,7 @@ import {MonomerLibManager} from '../lib-manager';
 import {LIB_PATH} from '../consts';
 
 import '../../../../css/monomer-manager.css';
-import { MONOMER_RENDERER_TAGS } from '@datagrok-libraries/bio/src/utils/cell-renderer';
+import {MONOMER_RENDERER_TAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 
 // columns of monomers dataframe, note that rgroups is hidden and will be displayed as separate columns
 export enum MONOMER_DF_COLUMN_NAMES {
@@ -51,7 +51,6 @@ export const MONOMER_DF_COLUMNS = {
 
 
 export class MonomerManager implements IMonomerManager {
-
   private adjustColWidths() {
     setTimeout(() => {
       if (this.tv?.grid) {
@@ -87,7 +86,6 @@ export class MonomerManager implements IMonomerManager {
           }, 500);
         }
       }
-      
     }, () => this.tv?.dataFrame);
   }
 
@@ -203,6 +201,7 @@ export class MonomerManager implements IMonomerManager {
         }
       })
     );
+    this.tv.grid && (this.tv.grid.props.allowEdit = false); // disable editing
     return this.tv;
   }
 
@@ -238,6 +237,10 @@ export class MonomerManager implements IMonomerManager {
         .filter((r) => r.getElementsByClassName('grok-icon-filter').length !== 0); // remove everything except filter
     });
     ribbons = ribbons.filter((r) => r.length > 0);
+
+    const newMonomerButton = ui.icons.add(() => {
+      this._newMonomerForm.setEmptyMonomer();
+    }, 'Add New Monomer');
 
     const editButton = ui.icons.edit(() => {
       if ((this.tv?.dataFrame?.currentRowIdx ?? -1) < 0) return;
@@ -277,19 +280,19 @@ export class MonomerManager implements IMonomerManager {
       DG.Utils.download(libName!, lib!, 'text/plain');
     }, 'Download Monomer Library');
 
-    ribbons.push([editButton, deleteButton, downloadButton]);
+    ribbons.push([newMonomerButton, editButton, deleteButton, downloadButton]);
     this.tv.setRibbonPanels(ribbons);
 
 
     this.tv.name = MonomerManager.VIEW_NAME;
     this.libInput = ui.input.choice('Monomer Library', {value: libName, items: availableMonLibs, nullable: false, onValueChanged: async () => {
-        try {
-          const df = await this.getMonomersDf(this.libInput.value!);
+      try {
+        const df = await this.getMonomersDf(this.libInput.value!);
           this.tv!.dataFrame = df;
           this.adjustColWidths();
-        } catch (e) {
-          console.error(e);
-        }
+      } catch (e) {
+        console.error(e);
+      }
     }});
     this.libInput.addOptions(ui.icons.add(() => { this.createNewLibDialog(); }, 'Create new monomer library...'));
     const monForm = this._newMonomerForm.form;
@@ -370,6 +373,7 @@ export class MonomerManager implements IMonomerManager {
         df.col(rgName)!.semType = DG.SEMTYPE.MOLECULE;
       });
       df.currentRowIdx = -1;
+      // eslint-disable-next-line rxjs/no-ignored-subscription
       df.onCurrentRowChanged.subscribe((_) => {
         try {
           if (df.currentRowIdx === -1 || this._newMonomerForm.molChanged)
@@ -541,6 +545,7 @@ class MonomerForm implements INewMonomerForm {
       await this.saveMonomer();
     });
     // this.saveButton.style.pointerEvents = 'revert';
+    // eslint-disable-next-line rxjs/no-async-subscribe
     this.molSketcher.subs.push(this.molSketcher.onChanged.subscribe(async () => {
       if (!this.triggerMolChange) {
         this.triggerMolChange = true;
@@ -551,6 +556,9 @@ class MonomerForm implements INewMonomerForm {
         let smiles = this.molSketcher.getSmiles();
         if (!smiles) {
           this.rgroupsGrid.items = [];
+          this.rgroupsGrid.render();
+          this.saveValidationResult = 'Monomer molecule is required';
+          this.invalidateSaveButton();
           return;
         }
         smiles = getCorrectedSmiles([], smiles);
@@ -559,6 +567,8 @@ class MonomerForm implements INewMonomerForm {
         if (rGroupMatches.length === 0) {
           this.rgroupsGrid.items = [];
           this.rgroupsGrid.render();
+          this.saveValidationResult = 'At least one R-group is required';
+          this.invalidateSaveButton();
           return;
         }
         const rGroupNums = rGroupMatches.map((match) => Number.parseInt(match[0].match(/[1-9]/g)![0]));
@@ -606,6 +616,7 @@ class MonomerForm implements INewMonomerForm {
         [HELM_RGROUP_FIELDS.LABEL]: 'Label',
       },
     });
+    // eslint-disable-next-line rxjs/no-ignored-subscription
     this.rgroupsGrid.onItemChanged.subscribe(() => this.onMonomerInputChanged());
 
     this.rgroupsGridRoot = ui.divV([this.rgroupsGrid.root]);
@@ -633,22 +644,45 @@ class MonomerForm implements INewMonomerForm {
       'Meta': ui.divV([this.metaGrid.root]),
       'Colors': this.colorsEditor.form,
     }, false);
+  }
 
+  invalidateSaveButton() {
+    if (this.saveValidationResult)
+      this.saveButton.classList.add('d4-disabled');
+    else
+      this.saveButton.classList.remove('d4-disabled');
   }
 
   onMonomerInputChanged() {
     setTimeout(() => {
       this.saveValidationResult = this.validateInputs();
-      if (this.saveValidationResult)
-        this.saveButton.classList.add('d4-disabled');
-      else
-        this.saveButton.classList.remove('d4-disabled');
-
+      this.invalidateSaveButton();
       const monomerExists = this.polymerTypeInput.value && this.polymerTypeInput.value &&
         !!this.getMonomerLib()?.getMonomer(this.polymerTypeInput.value as PolymerType, this.monomerSymbolInput.value);
 
       this.saveButton.textContent = monomerExists ? 'Save Monomer' : 'Add Monomer';
     }, 200);
+  }
+
+  setEmptyMonomer() {
+    this.triggerMolChange = false;
+    this.molSketcher.setSmiles('');
+    // leave polymer and monomer type as is
+    this.monomerSymbolInput.value = '';
+    this.monomerNameInput.value = '';
+    this.monomerIdInput.value = null;
+    this.monomerNaturalAnalogInput.value = null;
+    this.rgroupsGrid.items = [];
+    this.metaGrid.items = [];
+    this.rgroupsGrid.render();
+    this.metaGrid.render();
+    this.rgroupsGridRoot.style.display = 'none';
+    this.onMonomerInputChanged();
+    this.colorsEditor.colors = {
+      line: '#000000',
+      background: '#000000',
+      text: '#000000',
+    };
   }
 
   setMonomer(monomer: Monomer) {
@@ -661,7 +695,7 @@ class MonomerForm implements INewMonomerForm {
     this.monomerIdInput.value = monomer.id;
     this.monomerNaturalAnalogInput.value = monomer.naturalAnalog ?? null;
     this.rgroupsGrid.items = resolveRGroupInfo(monomer.rgroups);
-    this.metaGrid.items = Object.entries(monomer.meta ?? {}).filter(([k, v]) => k?.toLowerCase() !== 'colors').map(([k, v]) => {
+    this.metaGrid.items = Object.entries(monomer.meta ?? {}).filter(([k, _v]) => k?.toLowerCase() !== 'colors').map(([k, v]) => {
       return {Property: k, Value: v};
     });
     this.rgroupsGrid.render();
@@ -681,7 +715,7 @@ class MonomerForm implements INewMonomerForm {
     } catch (e) {
       console.error(e);
     }
-    
+
     this.colorsEditor.colors = {
       line: colorsObj.line ?? '#000000',
       background: colorsObj.background ?? '#000000',
@@ -693,7 +727,7 @@ class MonomerForm implements INewMonomerForm {
     const rGroupsPane = this.inputsTabControl.panes.find((p) => p.name?.toLowerCase() === 'r-groups');
     rGroupsPane && (rGroupsPane.header.style.removeProperty('background-color'));
     if (!this.molSketcher.getSmiles()) return 'Monomer Molecule field is required';
-    for (const i of [this.polymerTypeInput, this.monomerTypeInput, this.monomerSymbolInput, this.monomerNameInput, this.monomerIdInput]) {
+    for (const i of [this.polymerTypeInput, this.monomerTypeInput, this.monomerSymbolInput, this.monomerNameInput]) {
       if (i.value == null || i.value === '')
         return `${i.caption} field is required`;
     }
@@ -703,17 +737,18 @@ class MonomerForm implements INewMonomerForm {
     if (!rgroupError) {
       outerFor:
       for (const item of this.rgroupsGrid.items) {
-        for (const [k, v] of Object.entries(item))
-          if (!v){
+        for (const [k, v] of Object.entries(item)) {
+          if (!v) {
             rgroupError = `R-group ${k} field is required for ${item[HELM_RGROUP_FIELDS.LABEL]}`;
             break outerFor;
-          } 
+          }
+        }
       }
     }
 
-    if (!rgroupError && this.rgroupsGrid.hasErrors()){ 
+    if (!rgroupError && this.rgroupsGrid.hasErrors())
       rgroupError = 'R-group fields contain errors';
-    }
+
     if (rgroupError) {
       rGroupsPane && (rGroupsPane.header.style.setProperty('background-color', '#ff000030'));
       return rgroupError;
@@ -730,7 +765,6 @@ class MonomerForm implements INewMonomerForm {
   }
 
   get form() {
-    
     this.inputsTabControl.root.classList.add('monomer-manager-form-tab-control');
     this.inputsTabControl.header.style.marginBottom = '10px';
     const saveB = ui.buttonsInput([this.saveButton]);
@@ -826,11 +860,11 @@ class MonomerForm implements INewMonomerForm {
       try {
         // first remove the existing monomer with that symbol
         const monomerIdx = libJSON.findIndex((m) => m.symbol === monomer.symbol && m.polymerType === monomer.polymerType);
-        if (monomerIdx >= 0) {
+        if (monomerIdx >= 0)
           libJSON[monomerIdx] = {...monomer, lib: undefined, wem: undefined};
-        } else {
+        else
           libJSON.push({...monomer, lib: undefined, wem: undefined});
-        }
+
         await grok.dapi.files.writeAsText(LIB_PATH + libName, JSON.stringify(libJSON));
         await (await MonomerLibManager.getInstance()).loadLibraries(true);
         await this.refreshTable(monomer.symbol);
@@ -839,6 +873,7 @@ class MonomerForm implements INewMonomerForm {
         grok.shell.error('Error saving monomer');
         console.error(e);
       }
+      this.onMonomerInputChanged();
     };
     let infoTable: HTMLDivElement | null = null;
     let promptMessage = '';
@@ -882,9 +917,9 @@ class MonomerForm implements INewMonomerForm {
       meta[item['Property']] = item['Value'];
     });
     const addingItem = this.metaGrid.addingItem;
-    if (addingItem && addingItem['Property'] && addingItem['Value']) {
+    if (addingItem && addingItem['Property'] && addingItem['Value'])
       meta[addingItem['Property']] = addingItem['Value'];
-    }
+
     //console.log(this.metaGrid.addingItem);
     if (this.colorsEditor.colors.line !== '#000000' || this.colorsEditor.colors.background !== '#000000' || this.colorsEditor.colors.text !== '#000000')
       meta.colors = {default: this.colorsEditor.colors};
@@ -975,7 +1010,7 @@ function getCorrectedMolBlock(molBlock: string) {
 
   if (rgpLineIdx === -1) {
     // number of r groups has 3 empty slots before it, atom numbers have 4 empty slots before them
-    let rgpLine = `M  RGP${rgroupLineNums.length.toString().padStart(3,' ')}${Object.entries(rgroupLineNumbers).map(([atomLine, rGroupNum]) => `${atomLine.toString().padStart(4, ' ')}${rGroupNum.toString().padStart(4, ' ')}`).join('')}`;
+    const rgpLine = `M  RGP${rgroupLineNums.length.toString().padStart(3, ' ')}${Object.entries(rgroupLineNumbers).map(([atomLine, rGroupNum]) => `${atomLine.toString().padStart(4, ' ')}${rGroupNum.toString().padStart(4, ' ')}`).join('')}`;
     const mEndIdx = lines.findIndex((line) => line.startsWith('M') && line.includes('END'));
     lines.splice(mEndIdx, 0, rgpLine);
   }
@@ -1042,9 +1077,8 @@ class ColorsEditor {
     };
 
     this._colors = colsHex;
-    for (const key in this._colorInputs) {
+    for (const key in this._colorInputs)
       this._colorInputs[key as keyof ColorsEditor['_colors']].value = colsHex[key as keyof ColorsEditor['_colors']];
-    }
   }
 
   get colorsMetaFormat() {

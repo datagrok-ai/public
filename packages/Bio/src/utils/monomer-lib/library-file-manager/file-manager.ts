@@ -264,7 +264,7 @@ export class MonomerLibFileManager implements IMonomerLibFileManager {
     this.logger.debug(`${logPrefix}, start`);
 
     const libPaths = await grok.dapi.files.list(LIB_PATH)
-      .then((l) => l.map((fi) => fi.fullPath));
+      .then((l) => l.filter((f) => f.isFile).map((fi) => fi.fullPath));
 
     const checkForUi = false;
     const existingLibPaths: string[] = [];

@@ -1,5 +1,42 @@
 # Bio changelog
 
+## 1.16.5 (2024-10-18)
+
+### Bug fixes
+
+* Weblogo: fix compatibility with column types and fix aggregations
+* Monomer manager: Fix validations
+
+### Features
+
+Monomer manager: Add new empty monomer
+
+## 2.16.4 (2024-10-16)
+
+### Bug fixes
+
+* Fix helm parser for separate simple polymers, add tests
+* Fix adding MonomerPlacer lengths tests
+* Fix monomer lib getTooltip for gaps
+
+## 2.16.3 (2024-10-15)
+
+### Bug fixes
+
+* Fix weblogo slider not visible
+
+## 2.16.2 (2024-10-11)
+
+### Bug fixes
+
+* Fix moving setUnits methods to SeqHelper
+
+## 2.16.1 (2024-10-11)
+
+### Bug fixes
+
+* GROK-16782: Fix bio-substructure-filters tests
+
 ## 2.16.0 (2024-10-10)
 
 ### New features

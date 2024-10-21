@@ -855,10 +855,11 @@ export function ActivityCliffsEditor(call: DG.FuncCall): void {
 //input: func preprocessingFunction {optional: true}
 //input: object options {optional: true}
 //input: bool isDemo {optional: true}
+//input: bool isTest {optional: true}
 //editor: Chem:ActivityCliffsEditor
 export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column,
   similarity: number, methodName: DimReductionMethods, similarityMetric: BitArrayMetrics,
-  preprocessingFunction: DG.Func, options?: (IUMAPOptions | ITSNEOptions) & Options, isDemo?: boolean): Promise<void> {
+  preprocessingFunction: DG.Func, options?: (IUMAPOptions | ITSNEOptions) & Options, isDemo?: boolean, isTest?: boolean): Promise<void> {
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
     return;
@@ -905,7 +906,7 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, 
   };
 
   const axesNames = getEmbeddingColsNames(table);
-  if (table.rowCount > fastRowCount) {
+  if (table.rowCount > fastRowCount && !isTest) {
     ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
     Do you want to continue?`))
       .onOK(async () => {

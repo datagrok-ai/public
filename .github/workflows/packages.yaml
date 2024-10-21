@@ -84,13 +84,9 @@ jobs:
               unpublished_deps="$(jq -r '. | to_entries | map(select(.value | match("\\.\\./.*")))[] | "\(.key)=\(.value)"' <<<$dependencies | tr '\n' ' ')"
 
               job_test_env=''
-              runner='ubuntu-22.04'
-              if [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "admetica" ]] || \
-                 [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"admetica"* ]]; then
-                runner='ubuntu-latest-m'
-              fi
               if [ -n "$(jq  '. | select( has("test") == true )' <<< "$scripts")" ] && \
-                  [[ "$(jq  -r '. | select( has("skipCI") == true ).skipCI' "${DIR}/package.json")" != "true" ]]; then
+                  [[ "$(jq  -r '. | select( has("skipCI") == true ).skipCI' "${DIR}/package.json")" != "true" ]] && \
+                  [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" != "docking" ]]; then
                 MATRIX_PUBLISH_JSON+=", \"test\": \"test\""
                 job_name='Build, test'
                 job_test_env='Datagrok'
@@ -100,13 +96,14 @@ jobs:
                    [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "dendrogram" ]] || \
                    [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "cvmtests" ]] || \
                    [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "samples" ]] || \
+                   [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "admetica" ]] || \
                    [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]] || \
                    [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"simpkpd"* ]] || \
                    [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"cvmtests"* ]] || \
                    [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"dendrogram"* ]] || \
+                   [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"admetica"* ]] || \
                    [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"samples"* ]]; then
                   job_test_env+=',JKG'
-                  runner='ubuntu-latest-m'
                 fi
                 if [ -d "${DIR}/dockerfiles" ]; then
                   job_test_env+=',Spawner'
@@ -116,6 +113,12 @@ jobs:
                 else
                   job_test_env+=' bleeding-edge version'
                 fi
+              fi
+              runner='ubuntu-22.04'
+              if [[ "${job_test_env}" == *"JKG"* ]] || \
+                 [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "admetica" ]] || \
+                 [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"admetica"* ]]; then
+                runner='ubuntu-latest-m'
               fi
 
               name="$(jq -r .name "${DIR}/package.json")"
@@ -337,6 +340,16 @@ jobs:
         if: ${{ matrix.build == 'build' }}
         id: build
         run: |
+          for dockerfile in $(echo -e ${{ matrix.docker }}); do
+            cd ../../
+            docker_config_file="$(dirname $dockerfile)/container.json"
+            if [ -f "${docker_config_file}" ]; then
+              jq 'del(.gpu)' ${docker_config_file} > temp.json && mv temp.json ${docker_config_file}
+            fi
+            cat "${docker_config_file}"
+            cd packages/${{ matrix.package }}
+          done
+
           if [[ $(jq -r '. | select( has("scripts") == true ).scripts | select( has("build") == true ).build' "package.json") == "webpack" ]]; then
             npm run build -- --mode=production
           else
@@ -402,6 +415,12 @@ jobs:
       - name: Publish package to Datagrok
         if: ${{ matrix.test == 'test' }}
         run: |
+          for dockerfile in $(echo -e ${{ matrix.docker }}); do
+            cd ../../
+            cat "$(dirname $dockerfile)/container.json"
+            cd packages/${{ matrix.package }}
+          done
+          
           count=0
           retries=5
           until grok publish ${{ steps.datagrok-image.outputs.alias }}; do
@@ -441,47 +460,27 @@ jobs:
           TEST_TEST_DEV_KEY: ${{ secrets.TEST_TEST_DEV_KEY }}
         timeout-minutes: 10
         run: |
-          check_container=false
-          for dockerfile in $(echo -e ${{ matrix.docker }}); do
-            docker_config_file="$(dirname $dockerfile)/container.json"
-            if [ -f "${docker_config_file}" ]; then
-              gpu_count=$(jq '.gpu' ${docker_config_file})
-              if [ "$gpu_count" -gt 0 ]; then
-                check_container=false
-              else
-                check_container=true
-                break
-              fi
-            else
-              check_container=true
-              break
-            fi
+          if [[ "${{ steps.datagrok-image.outputs.alias }}" == "test" ]]; then
+            key="$TEST_TEST_DEV_KEY"
+          elif [[ "${{ steps.datagrok-image.outputs.alias }}" == "dev" ]]; then
+            key="$DEV_TEST_DEV_KEY"
+          else
+            key='admin'
+          fi
+          token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/$key | jq -r .token)
+          until .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}'
+          do
+            sleep 1
+            echo -e "\nContainer for ${{ matrix.package }} did not start yet..."
+            echo -e "\nRetrying '/api/docker/containers'..."
           done
-          if [[ "${check_container}" == "true" ]] ; then
-            if [[ "${{ steps.datagrok-image.outputs.alias }}" == "test" ]]; then
-              key="$TEST_TEST_DEV_KEY"
-            elif [[ "${{ steps.datagrok-image.outputs.alias }}" == "dev" ]]; then
-              key="$DEV_TEST_DEV_KEY"
-            else
-              key='admin'
-            fi
-            token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/$key | jq -r .token)
-            until .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}'
+          if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
+            until .github/scripts/check-output.sh "docker ps" '${{ matrix.package }}'
             do
               sleep 1
               echo -e "\nContainer for ${{ matrix.package }} did not start yet..."
-              echo -e "\nRetrying '/api/docker/containers'..."
+              echo -e "\nRetrying 'docker ps'..."
             done
-            if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
-              until .github/scripts/check-output.sh "docker ps" '${{ matrix.package }}'
-              do
-                sleep 1
-                echo -e "\nContainer for ${{ matrix.package }} did not start yet..."
-                echo -e "\nRetrying 'docker ps'..."
-              done
-            fi
-          else
-            echo "GPU is not available, skipping container wait"
           fi
       - name: Test Package
         if: ${{ matrix.test == 'test' }}

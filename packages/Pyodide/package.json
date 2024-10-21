@@ -8,8 +8,8 @@
     "email": "ppolovyi@datagrok.ai"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "latest",
-    "cash-dom": "latest",
+    "@datagrok-libraries/utils": "^4.3.6",
+    "cash-dom": "^8.1.5",
     "datagrok-api": "../../js-api",
     "dayjs": "^1.11.10",
     "uuid": "^10.0.0"
@@ -17,10 +17,10 @@
   "devDependencies": {
     "@types/uuid": "^10.0.0",
     "datagrok-tools": "latest",
-    "ts-loader": "latest",
-    "typescript": "latest",
-    "webpack": "latest",
-    "webpack-cli": "latest"
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.6.3",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
   },
   "scripts": {
     "link-all": "grok link",
