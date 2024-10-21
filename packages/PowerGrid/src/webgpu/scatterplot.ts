@@ -153,7 +153,7 @@ class WebGPUCache {
   setMarkerSizes(sc: DG.ScatterPlotViewer, device: GPUDevice) {
     this.markerDefaultSize = sc.props.markerDefaultSize;
     this.sizeColumnName = sc.props.sizeColumnName;
-    if (!sc.props.sizeColumnName || this.sizeColumnName == '') {
+    if (!sc.props.sizeColumnName) {
       const size = sc.getMarkerSize(0);
       this.markerSizesLength = 1;
       this.markerSizesBuffer = device.createBuffer({
@@ -184,7 +184,7 @@ class WebGPUCache {
       || this.isMarkerSizesParamsChanged(sc)
       || this.minTextureSize != roundUpToEven(sc.props.markerMinSize) 
       || this.maxTextureSize != roundUpToEven(sc.props.markerMaxSize)) {
-        if (!sc.props.sizeColumnName || sc.props.sizeColumnName == '') {
+        if (!sc.props.sizeColumnName) {
           this.minTextureSize = roundUpToEven(sc.props.markerMinSize);
           this.maxTextureSize = roundUpToEven(sc.props.markerMaxSize);
           this.textureGridSize = Math.ceil(Math.sqrt((this.maxTextureSize - this.minTextureSize) / 2 + 1));
@@ -329,7 +329,7 @@ export async function scWebGPUPointHitTest(sc: DG.ScatterPlotViewer, pt: DG.Poin
                 }
 
                 let filteredIndex = indexes[idx];
-                let markerSize = markerSizes[ ${!sc.props.sizeColumnName || sc.props.sizeColumnName == '' ? 0 : `filteredIndex`}];
+                let markerSize = markerSizes[ ${!sc.props.sizeColumnName ? 0 : `filteredIndex`}];
                 let screenPoint = pointToScreen(filteredIndex);
                 let markerType = getMarkerType(idx);
                 if (hitTest(ceil(markerSize) / 2.0, screenPoint, markerType)) {
@@ -402,7 +402,6 @@ function areEqual(rc1: DG.Rect, rc2: DG.Rect): boolean {
 }
 
 async function webGPUInit(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotViewer) {
-  console.time('GPU Render');
   const cache = getWebGPUCache(sc);
   if (!cache)
     throw  'Failed to get WebGPU cache for scatter plot viewer';
@@ -456,7 +455,7 @@ async function webGPUInit(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotVie
         @group(1) @binding(1) var<storage, read> data: Data;
         @group(1) @binding(2) var<storage, read> markerSizes: array<f32, ${cache.markerSizesLength}>;
 
-        ${!sc.props.sizeColumnName || sc.props.sizeColumnName == '' ? addSingleMarkerSizeRendering(cache, sc) : addDifferentMarkerSizesRendering(cache, sc)}
+        ${!sc.props.sizeColumnName ? addSingleMarkerSizeRendering(cache, sc) : addDifferentMarkerSizesRendering(cache, sc)}
 
         ${addPointConversionMethods()}
         `,
@@ -568,7 +567,6 @@ async function webGPUInit(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotVie
       throw `WebGPURender shader module error: ${message.message}`;
     }
   }
-  console.timeEnd('GPU Render');
 }
 
 function getPaddedSize(length: number): number {
@@ -819,7 +817,7 @@ function addSingleMarkerSizeRendering(cache: WebGPUCache, sc: DG.ScatterPlotView
           let screenPoint = pointToScreen(vert.index);
           let normalizedPos = convertPointToNormalizedCoords(screenPoint);
           // Making a pixel perfect position, to avoid artefacts and blurring
-          vsOut.position = vec4f(floor((normalizedPos + pos * (markerSize + ${sc.props.markerBorderWidth}) / uni.resolution) * uni.resolution) / uni.resolution, 0, 1);
+          vsOut.position = vec4f(normalizedPos + pos * (markerSize + ${sc.props.markerBorderWidth * 2}) / uni.resolution, 0, 1);
           vsOut.texcoord = pos * 0.5 + 0.5;
           vsOut.markerIndex = 0;   // Pass marker index to fragment shader
           return vsOut;
