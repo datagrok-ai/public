@@ -134,7 +134,7 @@ export class Link {
 
     const inputsTriggered$ = inputEntries.length ?
       this.trigger$.pipe(withLatestFrom(inputsEntries$)) :
-      this.trigger$.pipe(map((scope) => [scope, [] as any[]] as const)) ;
+      this.trigger$.pipe(map((scope) => [scope, [] as any[]] as const));
 
     const debounceVal = this.customDebounceTime ?? (this.isValidator ? VALIDATOR_DEBOUNCE_TIME : 0);
 

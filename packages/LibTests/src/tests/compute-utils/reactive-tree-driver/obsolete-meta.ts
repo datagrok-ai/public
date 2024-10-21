@@ -166,6 +166,7 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.linksState.forceInitialMetaRun = true;
       tree.init().subscribe();
       const outNode = tree.nodeTree.getNode([{idx: 2}]);
       const [, link2] = tree.linksState.links.values();
@@ -174,15 +175,29 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
         (outNode.getItem() as FuncCallNode).instancesWrapper.setValidation('a', 'asdf', makeValidationResult({warnings: ['test warning2']}));
         link2.trigger();
       });
-      cold('5ms a').subscribe(() => {
+      cold('10ms a').subscribe(() => {
         tree.runMutateTree().subscribe();
       });
-      expectObservable(tree.getValidations()[outNode.getItem().uuid], '^ 1000ms !').toBe('a (bc)d', {
-        a: {},
+      expectObservable(tree.getValidations()[outNode.getItem().uuid], '^ 1000ms !').toBe('a(bb) 5ms (cd)', {
+        a: {
+          'a': {
+            'errors': [],
+            'warnings': [
+              {
+                'description': 'test warning',
+              },
+            ],
+            'notifications': [],
+          },
+        },
         b: {
           'a': {
             'errors': [],
             'warnings': [
+              {
+                'description': 'test warning',
+              },
+
               {
                 'description': 'test warning2',
               },
@@ -195,28 +210,32 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
             'errors': [],
             'warnings': [
               {
-                'description': 'test warning2',
+                "description": "test warning"
               },
               {
-                'description': 'test warning',
+                "description": "test warning2"
               },
+              {
+                "description": "test warning"
+              }
             ],
             'notifications': [],
           },
         },
         d: {
-          'a': {
-            'errors': [],
-            'warnings': [
+
+          "a": {
+            "errors": [],
+            "warnings": [
               {
-                'description': 'test warning',
-              },
+                "description": "test warning"
+              }
             ],
-            'notifications': [],
-          },
-        },
+            "notifications": []
+          }
+        }
       });
     });
-  }, {skipReason: 'TODO'});
+  });
 
 });

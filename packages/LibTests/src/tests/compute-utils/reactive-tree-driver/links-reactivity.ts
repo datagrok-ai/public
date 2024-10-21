@@ -541,120 +541,120 @@ category('ComputeUtils: Driver links reactivity', async () => {
       });
       expectObservable((n1.getItem() as FuncCallNode).validationInfo$, '-^ 1000ms !').toBe('-(abc)', {
         a: {
-          "a": {
-            "errors": [
+          'a': {
+            'errors': [
               {
-                "description": "Missing value"
-              }
+                'description': 'Missing value',
+              },
             ],
-            "warnings": [],
-            "notifications": []
+            'warnings': [],
+            'notifications': [],
           },
-          "b": {
-            "errors": [
+          'b': {
+            'errors': [
               {
-                "description": "Missing value"
-              }
+                'description': 'Missing value',
+              },
             ],
-            "warnings": [],
-            "notifications": []
-          }
+            'warnings': [],
+            'notifications': [],
+          },
         },
         b: {
-          "b": {
-            "errors": [
+          'b': {
+            'errors': [
               {
-                "description": "Missing value"
-              }
+                'description': 'Missing value',
+              },
             ],
-            "warnings": [],
-            "notifications": []
-          }
+            'warnings': [],
+            'notifications': [],
+          },
         },
         c: {},
       });
       expectObservable((n2.getItem() as FuncCallNode).validationInfo$.pipe(take(3)), '-^ 1000ms !').toBe('-(abc|)', {
         a: {
-          "a": {
-            "errors": [
+          'a': {
+            'errors': [
               {
-                "description": "Missing value"
-              }
+                'description': 'Missing value',
+              },
             ],
-            "warnings": [],
-            "notifications": []
+            'warnings': [],
+            'notifications': [],
           },
-          "b": {
-            "errors": [
+          'b': {
+            'errors': [
               {
-                "description": "Missing value"
-              }
+                'description': 'Missing value',
+              },
             ],
-            "warnings": [],
-            "notifications": []
-          }
+            'warnings': [],
+            'notifications': [],
+          },
         },
         b: {
-          "b": {
-            "errors": [
+          'b': {
+            'errors': [
               {
-                "description": "Missing value"
-              }
+                'description': 'Missing value',
+              },
             ],
-            "warnings": [],
-            "notifications": []
-          }
+            'warnings': [],
+            'notifications': [],
+          },
         },
         c: {},
       });
       expectObservable((n2.getItem() as FuncCallNode).validationInfo$.pipe(skip(3)), '-^ 1000ms !').toBe('--a', {
         a: {
-          "b": {
-            "errors": [
+          'b': {
+            'errors': [
               {
-                "description": "Missing value"
-              }
+                'description': 'Missing value',
+              },
             ],
-            "warnings": [],
-            "notifications": []
-          }
-        }
+            'warnings': [],
+            'notifications': [],
+          },
+        },
       });
-      expectObservable((n1.getItem() as FuncCallNode).funcCallState$, '-^ 1000ms !').toBe('-(ab)',{
+      expectObservable((n1.getItem() as FuncCallNode).funcCallState$, '-^ 1000ms !').toBe('-(ab)', {
         a: {
-          "isRunning": false,
-          "isRunnable": false,
-          "isOutputOutdated": true,
-          "pendingDependencies": []
+          'isRunning': false,
+          'isRunnable': false,
+          'isOutputOutdated': true,
+          'pendingDependencies': [],
         },
         b: {
-          "isRunning": false,
-          "isRunnable": true,
-          "isOutputOutdated": true,
-          "pendingDependencies": []
-        }
+          'isRunning': false,
+          'isRunnable': true,
+          'isOutputOutdated': true,
+          'pendingDependencies': [],
+        },
       });
       expectObservable((n2.getItem() as FuncCallNode).funcCallState$.pipe(take(2)), '-^ 1000ms !').toBe('-(ab|)', {
         a: {
-          "isRunning": false,
-          "isRunnable": false,
-          "isOutputOutdated": true,
-          "pendingDependencies": []
+          'isRunning': false,
+          'isRunnable': false,
+          'isOutputOutdated': true,
+          'pendingDependencies': [],
         },
         b: {
-          "isRunning": false,
-          "isRunnable": true,
-          "isOutputOutdated": true,
-          "pendingDependencies": []
-        }
+          'isRunning': false,
+          'isRunnable': true,
+          'isOutputOutdated': true,
+          'pendingDependencies': [],
+        },
       });
       expectObservable((n2.getItem() as FuncCallNode).funcCallState$.pipe(skip(2)), '-^ 1000ms !').toBe('--a', {
         a: {
-          "isRunning": false,
-          "isRunnable": false,
-          "isOutputOutdated": true,
-          "pendingDependencies": []
-        }
+          'isRunning': false,
+          'isRunnable': false,
+          'isOutputOutdated': true,
+          'pendingDependencies': [],
+        },
       });
     });
   });
@@ -849,13 +849,13 @@ category('ComputeUtils: Driver links reactivity', async () => {
           initialSteps: [
             {
               id: 'step1',
-            }
-          ]
+            },
+          ],
         },
         {
           id: 'stepr',
           nqName: 'LibTests:TestSub2',
-        }
+        },
       ],
       actions: [{
         id: 'action1',
@@ -870,18 +870,18 @@ category('ComputeUtils: Driver links reactivity', async () => {
               {
                 id: 'step2',
                 values: {
-                  a: 5
-                }
+                  a: 5,
+                },
               },
               {
                 id: 'step1',
                 values: {
                   a: 10,
-                }
+                },
               },
-            ]
-          })
-        }
+            ],
+          });
+        },
       }],
       links: [{
         id: 'link1',
@@ -906,6 +906,6 @@ category('ComputeUtils: Driver links reactivity', async () => {
         tree.runAction(action.uuid).subscribe();
       });
       expectObservable(out.getItem().getStateStore().getStateChanges('a')).toBe('ab', {a: undefined, b: 15});
-    })
+    });
   });
 });

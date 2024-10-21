@@ -256,6 +256,14 @@ export async function TestDF1(df: DG.DataFrame) {
   return df;
 }
 
+//input: double a
+//input: double b
+//output: double res
+export async function TestAdd2Error(a: number, b: number) {
+  if (a < 0 || b < 0)
+    throw new Error('Test error');
+  return a + b;
+}
 
 //name: MockWrapper1
 export async function MockWrapper1() {}
@@ -348,4 +356,39 @@ export async function MockProvider3(params: any) {
     ],
   };
   return c;
+}
+
+//name: MockWrapper
+export async function MockWrapper4() {}
+
+//input: object params
+//output: object result
+export async function MockProvider4(params: any) {
+  const config2: PipelineConfiguration = {
+    id: 'pipeline1',
+    type: 'static',
+    nqName: 'LibTests:MockWrapper4',
+    provider: 'LibTests:MockProvider4',
+    version: '1.0',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:TestAdd2Error',
+      },
+      {
+        id: 'step2',
+        nqName: 'LibTests:TestMul2',
+      },
+    ],
+    links: [{
+      id: 'link1',
+      from: 'in1:step1/a',
+      to: 'out1:step2/a',
+      handler({controller}) {
+        controller.setAll('out1', 2, 'restricted');
+        return;
+      },
+    }],
+  };
+  return config2;
 }

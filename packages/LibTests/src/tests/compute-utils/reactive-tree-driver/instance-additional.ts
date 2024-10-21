@@ -33,6 +33,7 @@ const config1: PipelineConfiguration = {
   }],
 };
 
+
 category('ComputeUtils: Driver instance additional states', async () => {
   let testScheduler: TestScheduler;
 
@@ -180,43 +181,43 @@ category('ComputeUtils: Driver instance additional states', async () => {
         'isRunning': false,
         'isRunnable': true,
         'isOutputOutdated': true,
-        pendingDependencies: [],
-        runError: undefined,
+        'pendingDependencies': [],
+        'runError': undefined,
       };
       const b = {
         'isRunning': true,
         'isRunnable': true,
         'isOutputOutdated': true,
-        pendingDependencies: [],
-        runError: undefined,
+        'pendingDependencies': [],
+        'runError': undefined,
       };
       const c = {
         'isRunning': true,
         'isRunnable': false,
         'isOutputOutdated': true,
-        pendingDependencies: [],
-        runError: undefined,
+        'pendingDependencies': [],
+        'runError': undefined,
       };
       const d = {
         'isRunning': true,
         'isRunnable': false,
         'isOutputOutdated': false,
-        pendingDependencies: [],
-        runError: undefined,
+        'pendingDependencies': [],
+        'runError': undefined,
       };
       const e = {
         'isRunning': false,
         'isRunnable': false,
         'isOutputOutdated': false,
-        pendingDependencies: [],
-        runError: undefined,
+        'pendingDependencies': [],
+        'runError': undefined,
       };
       const f = {
         'isRunning': false,
         'isRunnable': true,
         'isOutputOutdated': false,
-        pendingDependencies: [],
-        runError: undefined,
+        'pendingDependencies': [],
+        'runError': undefined,
       };
       expectObservable(states[node.getItem().uuid], '^ 1000ms !').toBe('a(bc)-(def)', {a, b, c, d, e, f});
     });
@@ -294,5 +295,69 @@ category('ComputeUtils: Driver instance additional states', async () => {
       'isRunnable': true,
       'isOutputOutdated': false,
     });
+  });
+
+  test('Handle script errors', async () => {
+    const config2 = await callHandler<PipelineConfiguration>('LibTests:MockProvider4', {version: '1.0'}).toPromise();
+    const pconf = await getProcessedConfig(config2);
+    const tree = StateTree.fromPipelineConfig({config: pconf});
+    await tree.init().toPromise();
+    const node = tree.nodeTree.getNode([{idx: 0}]);
+    const fcnode = node.getItem() as FuncCallNode;
+    fcnode.getStateStore().setState('a', -1);
+    fcnode.getStateStore().setState('b', -2);
+    await fcnode.getStateStore().run().toPromise();
+    expectDeepEqual(fcnode.funcCallState$.value, {
+      'isRunning': false,
+      'isRunnable': true,
+      'isOutputOutdated': true,
+      'runError': 'Error: Test error',
+      'pendingDependencies': [],
+    });
+  });
+
+  test('Remove script errors on success', async () => {
+    const config2 = await callHandler<PipelineConfiguration>('LibTests:MockProvider4', {version: '1.0'}).toPromise();
+    const pconf = await getProcessedConfig(config2);
+    const tree = StateTree.fromPipelineConfig({config: pconf});
+    await tree.init().toPromise();
+    const node = tree.nodeTree.getNode([{idx: 0}]);
+    const fcnode = node.getItem() as FuncCallNode;
+    fcnode.getStateStore().setState('a', -1);
+    fcnode.getStateStore().setState('b', -2);
+    await fcnode.getStateStore().run().toPromise();
+    fcnode.getStateStore().setState('a', 1);
+    fcnode.getStateStore().setState('b', 2);
+    await fcnode.getStateStore().run().toPromise();
+    expectDeepEqual(fcnode.funcCallState$.value, {
+      'isRunning': false,
+      'isRunnable': true,
+      'isOutputOutdated': false,
+      'pendingDependencies': [],
+    });
+  });
+
+  test('Restore saved error state', async () => {
+    const config2 = await callHandler<PipelineConfiguration>('LibTests:MockProvider4', {version: '1.0'}).toPromise();
+    const pconf = await getProcessedConfig(config2);
+    const tree = StateTree.fromPipelineConfig({config: pconf});
+    await tree.init().toPromise();
+    const node = tree.nodeTree.getNode([{idx: 0}]);
+    const fcnode = node.getItem() as FuncCallNode;
+    fcnode.getStateStore().setState('a', -1);
+    fcnode.getStateStore().setState('b', -2);
+    await fcnode.getStateStore().run().toPromise();
+    const metaCallSaved = await tree.save().toPromise();
+    const loadedTree = await StateTree.load({dbId: metaCallSaved!.id, config: pconf, isReadonly: false}).toPromise();
+    await loadedTree.init().toPromise();
+    const nodeLoaded = loadedTree.nodeTree.getNode([{idx: 0}]);
+    expectDeepEqual((nodeLoaded.getItem() as FuncCallNode).funcCallState$.value, {
+      'isRunning': false,
+      'isRunnable': true,
+      'isOutputOutdated': true,
+      'runError': 'Error: Test error',
+      'pendingDependencies': [],
+    });
+
   });
 });

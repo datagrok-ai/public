@@ -43,6 +43,7 @@ export class LinksState {
   public ioDependencies: Map<string, IoDeps> = new Map();
 
   public runningLinks$ = new BehaviorSubject<undefined | string[]>(undefined);
+  public forceInitialMetaRun = false;
 
   constructor(private defaultValidators: boolean = false) {
     this.linksUpdates.pipe(
@@ -90,9 +91,7 @@ export class LinksState {
       return concat(
         of(this.wireLinks(state)),
         this.runNewInits(state),
-        // tight to default validators for now, since used in testing
-        // only, should be a sepatate option rly
-        this.defaultValidators ? of(null).pipe(delay(0), concatMap(() => this.runLinks(state, metaMap))) : of(null),
+        (this.defaultValidators || this.forceInitialMetaRun) ? of(null).pipe(delay(0), concatMap(() => this.runLinks(state, metaMap))) : of(null),
       ).pipe(toArray(), mapTo(undefined));
     }
   }
@@ -161,27 +160,27 @@ export class LinksState {
               controller.setValidation('out', makeValidationResult({errors: ['Missing value']}));
             else
               controller.setValidation('out', undefined);
-          }
-        }
+          },
+        };
         // don't need to really match anything, just set to current node
         const minfo: MatchInfo = {
           spec,
           inputs: {
             'in': [{
               path: [],
-              ioName: io.id
-            }]
+              ioName: io.id,
+            }],
           },
           outputs: {
             'out': [{
               path: [],
-              ioName: io.id
-            }]
+              ioName: io.id,
+            }],
           },
           actions: {},
         };
         return new Link(path, minfo, 0);
-      }).filter(x => !!x);
+      }).filter((x) => !!x);
       return [...acc, ...(validators ?? [])];
     }, [] as Link[]);
     return defaultValidators;

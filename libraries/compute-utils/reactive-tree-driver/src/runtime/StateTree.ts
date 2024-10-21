@@ -237,8 +237,8 @@ export class StateTree {
           config: subConfig,
           mockMode: this.mockMode,
           defaultValidators: this.defaultValidators,
-          isReadonly
-        }
+          isReadonly,
+        },
       ).pipe(
         concatMap((tree) => StateTree.loadOrCreateCalls(tree, this.mockMode)),
       ).pipe(
@@ -271,7 +271,7 @@ export class StateTree {
   public runSequence(startUuid: string) {
     return this.withTreeLock(() => {
       const nodesSeq = this.nodeTree.traverse(this.nodeTree.root, (acc, node) => [...acc, node.getItem()], [] as StateTreeNode[]);
-      const startIdx = nodesSeq.findIndex(node => node.uuid === startUuid);
+      const startIdx = nodesSeq.findIndex((node) => node.uuid === startUuid);
       if (startIdx < 0)
         return of(undefined);
       return from(nodesSeq.slice(startIdx)).pipe(
@@ -279,11 +279,11 @@ export class StateTree {
           if (!isFuncCallNode(node) || node.pendingDependencies$.value?.length || !node.getStateStore().isRunable$.value)
             return of(undefined);
           return node.getStateStore().run().pipe(
-            concatMap(() => this.waitForLinks())
+            concatMap(() => this.waitForLinks()),
           );
         }),
         toArray(),
-        mapTo(undefined)
+        mapTo(undefined),
       );
     });
   }
@@ -356,7 +356,7 @@ export class StateTree {
     config,
     isReadonly = false,
     defaultValidators = false,
-    mockMode = false
+    mockMode = false,
   }: {
     dbId: string,
     config: PipelineConfigurationProcessed,
@@ -442,7 +442,7 @@ export class StateTree {
     config: PipelineConfigurationProcessed;
     isReadonly: boolean,
     defaultValidators?: boolean,
-    mockMode?: boolean }
+    mockMode?: boolean },
   ): StateTree {
     const refMap = buildRefMap(config);
 
@@ -466,7 +466,7 @@ export class StateTree {
     config,
     isReadonly = false,
     defaultValidators = false,
-    mockMode = false
+    mockMode = false,
   }: {
     instanceConfig: PipelineInstanceConfig,
     config: PipelineConfigurationProcessed,
@@ -681,7 +681,7 @@ export class StateTree {
           item.clearIOMeta(ioName);
       }
 
-      const currentValidatorIds = ioNames.flatMap(ioName => {
+      const currentValidatorIds = ioNames.flatMap((ioName) => {
         const deps = ioDeps[ioName];
         return deps?.validation ?? [];
       });
