@@ -17,7 +17,7 @@ category('scaffold tree', () => {
 
   // check that scaffold viewer openes without errors
   test('scaffoldTreeViewerOpens', async () => {
-    const df = DG.Test.isInBenchmark ? await readDataframe('tests/smi10K.csv') :
+    const df = DG.Test.isInBenchmark ? await readDataframe('smiles.csv') :
       await readDataframe('tests/sar-small_test.csv');
     const tv = grok.shell.addTableView(df);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);

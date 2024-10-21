@@ -18,7 +18,7 @@ category('top menu chem space', async () => {
   let smallDf: DG.DataFrame;
   let spgi100: DG.DataFrame;
   let approvedDrugs100: DG.DataFrame;
-  let gd = await getGPUDevice();
+  let gd: GPUDevice | null;
 
   before(async () => {
     if (!chemCommonRdKit.moduleInitialized) {
@@ -28,11 +28,11 @@ category('top menu chem space', async () => {
     smallDf = await readDataframe('tests/sar-small_test.csv');
     spgi100 = await readDataframe('tests/spgi-100.csv');
     approvedDrugs100 = await readDataframe('tests/approved-drugs-100.csv');
+    gd = await getGPUDevice();
   });
 
   test('chemSpaceOpens.smiles', async () => {
-    const df = DG.Test.isInBenchmark ? gd ? await grok.data.files
-      .openTable('System:AppData/Chem/tests/smiles_100K.zip') : await readDataframe('tests/smiles_50K.csv') : smallDf;
+    const df = DG.Test.isInBenchmark ? gd ? await readDataframe('tests/smi10K.csv') : grok.data.demo.molecules(1000) : smallDf;
     await _testChemSpaceReturnsResult(df, 'smiles');
   }, {timeout: 1000000, benchmark: true, benchmarkTimeout: 1000000});
 
