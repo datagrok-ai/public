@@ -28,7 +28,6 @@ import {
   IBiostructureViewer,
   PluginLayoutControlsDisplayType,
   RegionStateOptionsType,
-  RepresentationType,
   SimpleRegionStateOptionsType,
 } from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb/index';
@@ -45,6 +44,11 @@ import {createRcsbViewer, disposeRcsbViewer} from './utils';
 
 import {_package} from '../../package';
 import { convertWasm } from '../../conversion/wasm/converterWasm';
+import { StateObjectRef } from 'molstar/lib/mol-state';
+import { createStructureRepresentationParams } from 'molstar/lib/mol-plugin-state/helpers/structure-representation-params';
+import { StructureRepresentationRegistry } from 'molstar/lib/mol-repr/structure/registry';
+import { StateTransforms } from 'molstar/lib/mol-plugin-state/transforms';
+import { StateElements } from 'molstar/lib/examples/proteopedia-wrapper/helpers';
 
 // TODO: find out which extensions are needed.
 /*const Extensions = {
@@ -210,7 +214,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
     // -- Style --
     this.representation = this.string(PROPS.representation, defaults.representation,
-      {category: PROPS_CATS.STYLE, choices: Object.values(RepresentationType)});
+      {category: PROPS_CATS.STYLE, choices: Object.keys(StructureRepresentationRegistry.BuiltIn)});
 
     // -- Layout --
     this.layoutIsExpanded = this.bool(PROPS.layoutIsExpanded, defaults.layoutIsExpanded,
@@ -382,6 +386,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       }
 
       case PROPS.representation:
+        this.updateView(this.representation);
         break;
       case PROPS.showImportControls:
         break;
@@ -797,9 +802,21 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     this.logger.debug(`${logPrefix}, end`);
   }
 
-  private updateView(): void {
-
-  }
+  private async updateView(type: any) {
+    const entries = this.viewer!.plugin.managers.structure.selection.entries;
+    const state = this.viewer?.plugin.state;
+    entries.forEach(async ({ selection }, ref) => {
+      const cell = StateObjectRef.resolveAndCheck(state!.data, ref);
+      if (cell) {
+        const components = this.viewer!.plugin.build().to(cell)
+        const repr = createStructureRepresentationParams(this.viewer!.plugin, void 0, {
+          type: type
+        });
+        components.applyOrUpdate(StateElements.SequenceVisual, StateTransforms.Representation.StructureRepresentation3D, repr);
+        await components.commit();
+      }
+    });
+  }  
 
   private calcSize(logIndent: number, caller: string): void {
     const callLog = `calcSize( <- ${caller} )`;
