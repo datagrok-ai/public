@@ -21,6 +21,7 @@ import './tests/compute-utils/reactive-tree-driver/step-deps-tracking';
 import './tests/compute-utils/reactive-tree-driver/obsolete-meta';
 import './tests/compute-utils/reactive-tree-driver/oninit-hook';
 import './tests/compute-utils/reactive-tree-driver/links-workflow';
+import './tests/compute-utils/reactive-tree-driver/sequence-run';
 
 export const _package = new DG.Package();
 export {tests};
