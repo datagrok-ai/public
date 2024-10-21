@@ -18,15 +18,16 @@ to provide abstractions on top of FuncCalls.
   providing layout customization.
 
 - `Reactive Tree Driver` - is a configurable state store, backed by
-  FuncCalls, and a linking mechanism between those states. It is
-  created via a typescript configuration with simple link handler
-  functions and provides many addition features: runtime tree
-  structure mutations, tree queries for handlers, action handlers,
-  different types of links (validators, metadata, tree mutations),
-  consistency checking, readonly subtrees, full and partial
-  saving/loading. For the UI integration driver provides (using rxjs
-  observables) main state tree, separate meta states for tree nodes,
-  and a message api for tree mutations.
+  FuncCalls, and a linking mechanism between those states. For an end
+  user it will be a sequence of steps workflow, with some configurable
+  runtime mutations capabilities. It is created via a typescript
+  configuration with simple link handler functions and provides many
+  addition features: runtime tree structure mutations, tree queries
+  for handlers, action handlers, different types of links (validators,
+  metadata, tree mutations), consistency checking, readonly subtrees,
+  full and partial saving/loading. For the UI integration driver
+  provides (using rxjs observables) main state tree, separate meta
+  states for tree nodes, and a message api for tree mutations.
 
 - `Tree Wizard` - is an UI layer for `Reactive Tree Driver`, each
   FuncCall is rendered the same as in `Rich Function View`. `Tree
