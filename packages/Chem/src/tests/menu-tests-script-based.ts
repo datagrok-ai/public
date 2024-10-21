@@ -39,11 +39,11 @@ main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
 
   test('curate.molV2000', async () => {
     await curate(spgi100, 'Structure');
-  }, {timeout: 90000, benchmark: true});
+  }, {timeout: 90000});
 
   test('curate.molV3000', async () => {
     await curate(approvedDrugs100, 'molecule');
-  }, {timeout: 90000, benchmark: true});
+  }, {timeout: 90000});
 
   test('curate.emptyValues', async () => {
     const df = await readDataframe('tests/sar-small_empty_vals.csv');
@@ -73,19 +73,19 @@ main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
 
   test('mutate.molV2000', async () => {
     await mutate(molV2000);
-  }, {timeout: 60000, benchmark: true});
+  }, {timeout: 60000});
 
   test('mutate.molV3000', async () => {
     await mutate(molV3000);
-  }, {timeout: 60000, benchmark: true});
+  }, {timeout: 60000});
 
   test('mutate.emptyInput', async () => {
     await mutate('');
-  }, {timeout: 60000, benchmark: true});
+  }, {timeout: 60000});
 
   test('mutate.malformedInput', async () => {
     await mutate('COc1ccc2c|c(ccc2c1)C(C)C(=O)OCCCc3cccnc3', 0);
-  }, {timeout: 60000, benchmark: true});
+  }, {timeout: 60000});
 });
 
 

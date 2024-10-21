@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {chemGetFingerprints} from '../chem-searches';
 import {Fingerprint} from '../utils/chem-common';
+import { readDataframe } from './utils';
 
 category('fingerprints', async () => {
   let molecules: DG.DataFrame;
@@ -13,7 +14,7 @@ category('fingerprints', async () => {
       chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
       await chemCommonRdKit.initRdKitModuleLocal();
     }
-    molecules = DG.Test.isInBenchmark ? await grok.data.files.openTable('System:AppData/Chem/tests/smiles_100K.zip') :
+    molecules = DG.Test.isInBenchmark ? await readDataframe('tests/smi10K.csv') :
       grok.data.demo.molecules(100);
   });
 

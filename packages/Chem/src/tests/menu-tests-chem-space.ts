@@ -31,8 +31,7 @@ category('top menu chem space', async () => {
   });
 
   test('chemSpaceOpens.smiles', async () => {
-    const df = DG.Test.isInBenchmark ? gd ? await grok.data.files
-      .openTable('System:AppData/Chem/tests/smiles_100K.zip') : await readDataframe('tests/smiles_50K.csv') : smallDf;
+    const df = DG.Test.isInBenchmark ? gd ? await readDataframe('tests/smi10K.csv') : grok.data.demo.molecules(1000) : smallDf;
     await _testChemSpaceReturnsResult(df, 'smiles');
   }, {timeout: 1000000, benchmark: true, benchmarkTimeout: 1000000});
 
