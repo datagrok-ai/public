@@ -18,7 +18,7 @@ category('top menu chem space', async () => {
   let smallDf: DG.DataFrame;
   let spgi100: DG.DataFrame;
   let approvedDrugs100: DG.DataFrame;
-  let gd = await getGPUDevice();
+  let gd: GPUDevice | null;
 
   before(async () => {
     if (!chemCommonRdKit.moduleInitialized) {
@@ -28,6 +28,7 @@ category('top menu chem space', async () => {
     smallDf = await readDataframe('tests/sar-small_test.csv');
     spgi100 = await readDataframe('tests/spgi-100.csv');
     approvedDrugs100 = await readDataframe('tests/approved-drugs-100.csv');
+    gd = await getGPUDevice();
   });
 
   test('chemSpaceOpens.smiles', async () => {
