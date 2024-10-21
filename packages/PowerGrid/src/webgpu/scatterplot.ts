@@ -268,7 +268,10 @@ export async function scWebGPURender(sc: DG.ScatterPlotViewer, show: boolean) {
     updateCanvasPosition(cache, sc.viewBox, canvas);
 
     try {
-        await webGPUInit(canvas, sc);    
+        if (sc.props.markerType == DG.MARKER_TYPE.DOT)
+          await webGPURenderDots(canvas, sc);
+        else
+          await webGPURenderTexture(canvas, sc);    
     } catch (error) {
         canvas.hidden = true;
         throw error;
@@ -401,7 +404,118 @@ function areEqual(rc1: DG.Rect, rc2: DG.Rect): boolean {
         Math.floor(rc1.width) == Math.floor(rc2.width) && Math.floor(rc1.height) == Math.floor(rc2.height);
 }
 
-async function webGPUInit(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotViewer) {
+async function webGPURenderDots(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotViewer) {
+  console.time('GPU dots render');
+  const cache = getWebGPUCache(sc);
+  if (!cache)
+    throw  'Failed to get WebGPU cache for scatter plot viewer';
+
+  const device = await getGPUDevice();
+  if (!device)
+    throw  'Failed to get WebGPU device';
+
+  if (!cache.updateAndValidate(sc, device) || !cache.indexBuffer || !cache.columnBuffer || !cache.viewBuffer)
+    throw 'Failed to update and validate cache or to initalize buffers';
+
+  const gpuContext = webGPUCanvas.getContext('webgpu');
+  if (!gpuContext)
+    throw 'Failed to get gpu context from canvas';
+
+  const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+  gpuContext.configure({
+    device: device,
+    format: presentationFormat,
+    alphaMode: 'premultiplied',
+  });
+
+  // Defining textures that will be drawn
+  const module = device.createShaderModule({
+    code: `
+        struct Vertex {
+            @location(0) index: i32,
+        };
+
+        struct VSOutput {
+            @builtin(position) position: vec4f,
+        };
+
+        ${addStructures(cache)}
+
+        @group(0) @binding(0) var<storage, read> sc: SC;
+        @group(0) @binding(1) var<storage, read> data: Data;
+
+        ${addDotsRendering(sc)}
+
+        ${addPointConversionMethods()}
+        `,
+  });
+
+  const pipeline = device.createRenderPipeline({
+    label: '1 pixel points',
+    layout: 'auto',
+    vertex: {
+      module,
+      buffers: [
+        {
+          arrayStride: 4, // 1 int, 4 bytes
+          stepMode: 'instance',
+          attributes: [
+            {shaderLocation: 0, offset: 0, format: 'sint32'}, // position
+          ],
+        },
+      ],
+    },
+    fragment: {
+      module,
+      targets: [{ format: presentationFormat }],
+    },
+    primitive: {
+      topology: 'point-list',
+    },
+  });
+
+  const dataGroup = device.createBindGroup({
+    layout: pipeline.getBindGroupLayout(0),
+    entries: [
+      {binding: 0, resource: {buffer: cache.viewBuffer}},
+      {binding: 1, resource: {buffer: cache.columnBuffer}},
+    ],
+  });
+
+  const renderPassDescriptor = {
+    label: 'Dot canvas renderPass',
+    colorAttachments: [
+      {
+        loadOp: 'clear',
+        storeOp: 'store',
+        view: gpuContext.getCurrentTexture().createView(),
+      },
+    ],
+  };
+
+  const encoder = device.createCommandEncoder();
+  const pass = encoder.beginRenderPass(renderPassDescriptor as GPURenderPassDescriptor);
+  pass.setPipeline(pipeline);
+  pass.setVertexBuffer(0, cache.vertexBuffer);
+  pass.setBindGroup(0, dataGroup);
+  pass.draw(1, cache.indexBufferLength);
+  pass.end();
+
+  const encoderBuffer = encoder.finish();
+  device.queue.submit([encoderBuffer]);
+  await device.queue.onSubmittedWorkDone();
+
+  console.timeEnd('GPU dots render');
+
+  const info = await module.getCompilationInfo();
+  for (const message of info.messages) {
+    if (message.type === 'error') {
+      throw `WebGPURender shader module error: ${message.message}`;
+    }
+  }
+}
+
+async function webGPURenderTexture(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotViewer) {
   const cache = getWebGPUCache(sc);
   if (!cache)
     throw  'Failed to get WebGPU cache for scatter plot viewer';
@@ -826,6 +940,26 @@ function addSingleMarkerSizeRendering(cache: WebGPUCache, sc: DG.ScatterPlotView
       @fragment fn fs(vsOut: VSOutput) -> @location(0) vec4f {
           // Sample the texture atlas
           return textureSample(t, s, vsOut.texcoord);
+      }
+  `;
+}
+
+function addDotsRendering(sc: DG.ScatterPlotViewer) {
+  const c = sc.props.filteredRowsColor;
+  return `
+      @vertex fn vs(vert: Vertex) -> VSOutput {
+          var vsOut: VSOutput;
+
+          let screenPoint = pointToScreen(vert.index);
+          let normalizedPos = convertPointToNormalizedCoords(screenPoint);
+          // Making a pixel perfect position, to avoid artefacts and blurring
+          vsOut.position = vec4f(normalizedPos, 0, 1);
+          return vsOut;
+      }
+
+      @fragment fn fs(vsOut: VSOutput) -> @location(0) vec4f {
+          // Sample the texture atlas
+          return vec4f(${DG.Color.r(c) / 255.0}, ${DG.Color.g(c) / 255.0}, ${DG.Color.b(c) / 255.0}, ${DG.Color.a(c) / 255.0});
       }
   `;
 }
