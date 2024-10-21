@@ -405,7 +405,6 @@ function areEqual(rc1: DG.Rect, rc2: DG.Rect): boolean {
 }
 
 async function webGPURenderDots(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotViewer) {
-  console.time('GPU dots render');
   const cache = getWebGPUCache(sc);
   if (!cache)
     throw  'Failed to get WebGPU cache for scatter plot viewer';
@@ -504,8 +503,6 @@ async function webGPURenderDots(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterP
   const encoderBuffer = encoder.finish();
   device.queue.submit([encoderBuffer]);
   await device.queue.onSubmittedWorkDone();
-
-  console.timeEnd('GPU dots render');
 
   const info = await module.getCompilationInfo();
   for (const message of info.messages) {
@@ -950,7 +947,7 @@ function addDotsRendering(sc: DG.ScatterPlotViewer) {
       @vertex fn vs(vert: Vertex) -> VSOutput {
           var vsOut: VSOutput;
 
-          let screenPoint = pointToScreen(vert.index);
+          let screenPoint = pointToScreen(vert.index) + 0.5;
           let normalizedPos = convertPointToNormalizedCoords(screenPoint);
           // Making a pixel perfect position, to avoid artefacts and blurring
           vsOut.position = vec4f(normalizedPos, 0, 1);
