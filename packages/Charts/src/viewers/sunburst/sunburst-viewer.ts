@@ -347,9 +347,9 @@ export class SunburstViewer extends EChartViewer {
   }
 
   async _render(orderedHierarchyNames?: string[]) {
-    this.eligibleHierarchyNames = (orderedHierarchyNames ?? this.hierarchyColumnNames).filter(
+    this.eligibleHierarchyNames = this.dataFrame ? (orderedHierarchyNames ?? this.hierarchyColumnNames).filter(
       (name) => this.dataFrame.getCol(name).categories.length <= CATEGORIES_NUMBER,
-    );
+    ) : [];
 
     if (!this.eligibleHierarchyNames.length) {
       this._showMessage('The Sunburst viewer requires at least one categorical column with fewer than 500 unique categories', ERROR_CLASS);
