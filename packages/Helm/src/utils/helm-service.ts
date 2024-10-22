@@ -1,4 +1,3 @@
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
@@ -89,15 +88,19 @@ export class HelmService extends HelmServiceBase {
     if (!helmStr)
       editor.reset();
 
-    const bBox = (editor.div.children[0] as SVGSVGElement).getBBox();
+    const svgEl = editor.div.children[0] as SVGSVGElement;
+    const bBox = svgEl.getBBox();
+    const [cellWidth, cellHeight] = [task.props.width, task.props.height];
+    const bScale = Math.min(cellWidth * 0.95 / bBox.width, cellHeight * 0.95 / bBox.height);
+    const [drawWidth, drawHeight] = [bBox.width * bScale, bBox.height * bScale];
     const aux: HelmAux = {
       mol: editor.m.clone(false),
       bBox: new DG.Rect(bBox.x, bBox.y, bBox.width + 2, bBox.height + 2) /* adjust for clipping right/bottom */,
+      dBox: new DG.Rect((cellWidth - drawWidth) / 2, (cellHeight - drawHeight) / 2, drawWidth, drawHeight),
       cBox: new DG.Rect(0, 0, task.props.width, task.props.height),
     };
     const lET = window.performance.now();
 
-    const svgEl = $(this.hostDiv).find('svg').get(0) as unknown as SVGSVGElement;
     const dpr = window.devicePixelRatio;
 
     const rST = window.performance.now();
@@ -135,7 +138,9 @@ export class HelmService extends HelmServiceBase {
       if (!this.image || !g) return false;
       // g.fillStyle = '#C0C0FF';
       // g.fillRect(0, 0, canvas.width, canvas.height);
-      g.drawImage(this.image, 0, 0);
+      g.drawImage(this.image,
+        aux.bBox.x, aux.bBox.y, aux.bBox.width, aux.bBox.height,
+        aux.dBox.x, aux.dBox.y, aux.dBox.width, aux.dBox.height);
       task.onAfterRender(canvas, aux);
     } finally {
       canvas.remove();
