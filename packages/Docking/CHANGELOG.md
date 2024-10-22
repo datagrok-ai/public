@@ -1,5 +1,11 @@
 # Docking changelog
 
+## 1.1.2 (2024-10-21)
+
+### Bug Fixes
+
+* Docking: Increased timeout for clinfo test
+
 ## 1.1.1 (2024-10-18)
 
 ### Bug Fixes

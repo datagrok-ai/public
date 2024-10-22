@@ -48,7 +48,7 @@ category('rendering', () => {
   });
 
   test('rdkit grid cell renderer scroll', async () => {
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('System:DemoFiles/chem/smiles_1M.zip') :
+    const df = DG.Test.isInBenchmark ? await readDataframe('tests/smi10K.csv') :
       await readDataframe('tests/sar-small_test.csv');
     const scrollCycles = DG.Test.isInBenchmark ? 1000 : 10;
     const scrollDelta = DG.Test.isInBenchmark ? 150000 : 10000;
