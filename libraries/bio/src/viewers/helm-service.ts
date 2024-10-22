@@ -20,6 +20,7 @@ export class HelmProps extends PropsBase {
 export type HelmAux = {
   /** The molecule made of atoms (monomers) and bonds */ mol: Mol<HelmType>,
   /** SVG bounding box */ bBox: DG.Rect,
+  /** Draw bounding box */ dBox: DG.Rect,
   /** Cell box {0, 0, w, h} */ cBox: DG.Rect,
 }
 

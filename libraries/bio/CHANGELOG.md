@@ -1,5 +1,12 @@
 # bio changelog
 
+## 5.45.4 (2024-10-22)
+
+### Bug fixes
+
+* Fix ISeqHandler getValue of type MacromoleculeValueBase
+* Fix CellRendererAsyncBase for LRU imageCache, cacheEnabled
+
 ## 5.45.3 (2024-10-16)
 
 ### Bug fixes

@@ -34,7 +34,7 @@ export type Monomer = {
   [OPT.NATURAL_ANALOG]?: string,
   [OPT.META]?: { [property: string]: any },
 
-  lib?: IMonomerLib,
+  lib?: IMonomerLibBase,
   wem?: IWebEditorMonomer,
 };
 
