@@ -27,6 +27,7 @@ import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
+import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
 
 import {getMacromoleculeColumns} from './utils/ui-utils';
 import {MacromoleculeDifferenceCellRenderer, MacromoleculeSequenceCellRenderer,} from './utils/cell-renderer';
@@ -630,7 +631,7 @@ export async function toAtomicLevel(
   const pi = DG.TaskBarProgressIndicator.create('Converting to atomic level ...');
   try {
     await initBioPromise;
-    const monomerLib = _package.monomerLib;
+    const monomerLib = seqCol.temp[MmcrTemps.overriddenLibrary] ?? _package.monomerLib;
     const seqHelper = _package.seqHelper;
     const rdKitModule = _package.rdKitModule;
     await sequenceToMolfile(table, seqCol, nonlinear, highlight, monomerLib, seqHelper, rdKitModule);

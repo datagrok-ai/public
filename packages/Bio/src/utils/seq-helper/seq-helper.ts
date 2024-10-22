@@ -56,7 +56,7 @@ export class SeqHelper implements ISeqHelper {
 
     //#region From HelmToMolfileConverter.convertToRdKitBeautifiedMolfileColumn
 
-    const molfilesV3K = converter.convertToMolfileV3K(helmCol, this.rdKitModule, monomerLib);
+    const molfilesV3K = converter.convertToMolfileV3K(helmCol.toList());
 
     const beautifiedMolList: (RDMol | null)[] = molfilesV3K.map((item) => {
       const molfile = item.molfile;
