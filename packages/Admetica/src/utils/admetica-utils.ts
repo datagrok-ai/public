@@ -61,13 +61,7 @@ export async function convertLD50(response: string, smilesCol: DG.Column): Promi
   if (!df.columns.names().includes('LD50')) return response;
 
   const ldCol = df.getCol('LD50');
-  const rowCount = df.rowCount;
-
-  const molWeights = await Promise.all(
-    Array.from({ length: rowCount }, (_, i) => 
-      grok.functions.call('Chem:getProperty', { molecule: smilesCol.get(i), prop: "MW" })
-    )
-  );
+  const molWeights = await grok.functions.call('Chem: getMolProperty', {molecules: smilesCol, property: "MW"});
 
   ldCol.init((i) => {
     const molPerKg = Math.pow(10, -ldCol.get(i));
