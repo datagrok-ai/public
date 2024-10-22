@@ -31,6 +31,8 @@ category('Admetica', () => {
   test('Calculate dialog. UI', async () => {
     molecules = grok.data.demo.molecules(100);
     v = grok.shell.addTableView(molecules);
+    await grok.data.detectSemanticTypes(molecules);
+    await delay(1000);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     grok.shell.topMenu.find('Chem').group('Admetica').find('Сalculate...').click();
     await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot open Admetica dialog', 2000);
@@ -62,26 +64,48 @@ category('Admetica', () => {
   }, {timeout: 100000});
 
   test('Calculate. For single cell', async () => {
-    molecules = grok.data.demo.molecules(20);
-    v = grok.shell.addTableView(molecules);
-    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
+    const molecules = grok.data.demo.molecules(20);
+    const v = grok.shell.addTableView(molecules);
+    await awaitCheck(() => document.querySelector('canvas') !== null, 'Cannot load table', 3000);
     grok.shell.windows.showProperties = true;
+  
     const table = v.dataFrame;
     table.currentCell = table.cell(0, 'smiles');
     await delay(1000);
+  
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
-    await awaitPanel(pp, 'Admetica', 6000);
+    await awaitPanel(pp, 'Biology', 6000);
+  
+    const biologyPanel = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
+      .find((el) => el.textContent === 'Biology') as HTMLElement;
+    if (biologyPanel && !biologyPanel.classList.contains('expanded')) {
+      biologyPanel.click();
+    }
+    
+    await delay(2000);
+  
     const admePanel = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Admetica') as HTMLElement;
-    if (!admePanel?.classList.contains('expanded')) admePanel?.click();
+    if (admePanel && !admePanel.classList.contains('expanded')) {
+      admePanel.click();
+    }
+  
     await delay(2000);
+    
     const distribution = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Distribution') as HTMLElement;
-    if (!distribution.classList.contains('expanded')) distribution.click();
+    if (distribution && !distribution.classList.contains('expanded')) {
+      distribution.click();
+    }
+  
     await delay(1000);
+  
     await awaitCheck(() => 
-      (admePanel?.parentElement?.getElementsByClassName('d4-table d4-item-table d4-info-table')[0] as HTMLElement).innerText.trim() !== '', 'Properties weren`t calculated', 8000);
-  }, {timeout: 100000});
+      (admePanel?.parentElement?.getElementsByClassName('d4-table d4-item-table d4-info-table')[0] as HTMLElement)?.innerText.trim() !== '',
+      'Properties weren’t calculated',
+      8000
+    );
+  }, { timeout: 100000 });  
 
   test('Calculate.Benchmark column', async () => {
     const runAdmeticaBenchmark = async (moleculesCount: number) => {
