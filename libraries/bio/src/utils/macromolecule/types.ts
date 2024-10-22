@@ -22,7 +22,7 @@ export interface INotationProvider {
   get splitter(): SplitterFunc;
 
   /** Any Macromolecule can be presented as Helm notation */
-  getHelm(seq: string, options: any): Promise<DG.SemanticValue<string>>;
+  getHelm(seq: string, options: any): Promise<string>;
 
   createCellRendererBack(gridCol: DG.GridColumn | null, tableCol: DG.Column<string>): CellRendererBackBase<string>;
 }
