@@ -51,7 +51,8 @@
     "release-compute-localhost": "grok publish localhost --release",
     "debug-compute-compose": "grok publish compose",
     "release-compute-compose": "grok publish compose --release",
-    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/compute-utils run build && npm run build"
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/compute-utils run build && npm run build",
+    "test": "grok test"
   },
   "canEdit": [
     "Developers"
