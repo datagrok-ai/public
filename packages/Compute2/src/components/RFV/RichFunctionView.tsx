@@ -182,6 +182,10 @@ export const RichFunctionView = Vue.defineComponent({
     callState: {
       type: Object as Vue.PropType<FuncCallStateInfo>,
     },
+    isTreeLocked: {
+      type: Boolean,
+      default: false,
+    },
     historyEnabled: {
       type: Boolean,
       default: false,
@@ -440,7 +444,7 @@ export const RichFunctionView = Vue.defineComponent({
                 }
                 <div class='flex sticky bottom-0 justify-end'>
                   <BigButton
-                    isDisabled={!isRunnable.value || isRunning.value}
+                    isDisabled={!isRunnable.value || isRunning.value || props.isTreeLocked}
                     onClick={run}>
                   Run
                   </BigButton>

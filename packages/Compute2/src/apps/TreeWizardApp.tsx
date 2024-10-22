@@ -297,6 +297,7 @@ export const TreeWizardApp = Vue.defineComponent({
                 class='overflow-hidden'
                 funcCall={chosenStepState.value.funcCall!}
                 callState={currentCallState.value}
+                isTreeLocked={treeMutationsLocked.value}
                 onUpdate:funcCall={(call) => (chosenStepState.value as StepFunCallState).funcCall = call}
                 onRunClicked={() => runStep(chosenStepState.value!.uuid)}
                 dock-spawn-title='Step review'
