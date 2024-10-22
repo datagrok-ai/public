@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {
   InputForm, Viewer, DGBigButton, 
-  DGButton, DGSplitH, DGIconFA, 
+  DGButton, DGIconFA, 
   DGToggleInput, DGComboPopup, DGMarkdown,
   DGIcon
 } from '@datagrok-libraries/webcomponents';
@@ -22,7 +22,6 @@ export function init() {
   customElements.define('dg-input-form', InputForm);
   customElements.define('dg-button', DGButton, {extends: 'button'});
   customElements.define('dg-big-button', DGBigButton, {extends: 'button'});
-  customElements.define('dg-split-h', DGSplitH);
   customElements.define('dg-icon-fa', DGIconFA);
   customElements.define('dg-icon', DGIcon);
   customElements.define('dg-toggle-input', DGToggleInput);
