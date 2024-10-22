@@ -6,7 +6,7 @@
 
 * [#3090](https://github.com/datagrok-ai/public/issues/3090): Sunburst: Usability improvements:
   * Reduce free space around
-  * Reordering of the columns in the dialog is not reflected on the fly
+  * Column reordering in the dialog is not updated in real-time
 * [#3097](https://github.com/datagrok-ai/public/issues/3097): Sunburst: Change Row Source to 'All' once the setting 'On Click' is switched to 'Filtered'
 
 ### Bug Fixes
