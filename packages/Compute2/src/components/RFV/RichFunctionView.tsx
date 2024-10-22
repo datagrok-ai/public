@@ -80,6 +80,8 @@ const tabToProperties = (func: DG.Func) => {
   return map;
 };
 
+const DEFAULT_FLOAT_PRECISION = 2;
+
 export const ScalarsPanel = Vue.defineComponent({
   name: 'ScalarsPanel',
   props: {
@@ -96,13 +98,13 @@ export const ScalarsPanel = Vue.defineComponent({
     const getContent = (prop: DG.Property) => {
       const precision = prop.options.precision;
 
-      const scalarValue = precision &&
-                prop.propertyType === DG.TYPE.FLOAT && props.funcCall.outputs[prop.name] ?
-        props.funcCall.outputs[prop.name].toPrecision(precision):
-        props.funcCall.outputs[prop.name];
+      const scalarValue = props.funcCall.outputs[prop.name];
+      const formattedScalarValue = prop.propertyType === DG.TYPE.FLOAT && scalarValue ?
+        precision ? scalarValue.toPrecision(precision): scalarValue.toFixed(DEFAULT_FLOAT_PRECISION):
+        scalarValue;
       const units = prop.options['units'] ? ` [${prop.options['units']}]`: ``;
 
-      return [scalarValue, units];
+      return [formattedScalarValue, units];
     };
 
     const copyToClipboard = async (text: string) => {
