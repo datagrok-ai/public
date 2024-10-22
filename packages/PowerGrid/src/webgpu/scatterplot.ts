@@ -22,6 +22,16 @@ class WebGPUCache {
   markerSizesLength = -1;
   markerDefaultSize = -1;
   sizeColumnName = '';
+  colorBuffer: GPUBuffer | null = null;
+  colorColumnName = '';
+  colorLength = -1;
+  colorAxisType: keyof typeof DG.AxisType = DG.AxisType.logarithmic;
+  colorMin = -1;
+  colorMax = -1;
+  selectedRowsColor = -1;
+  filteredRowsColor = -1;
+  filteredOutRowsColor = -1;
+  invertColorScheme = true;
   texture: OffscreenCanvas | null = null;
   minTextureSize = 2;
   maxTextureSize = 100;
@@ -46,6 +56,9 @@ class WebGPUCache {
   
     if (this.isMarkerSizesParamsChanged(sc))
         this.setMarkerSizes(sc, device);
+
+    if (this.isColorChanged(sc))
+      this.setColor(sc, device);
   
     return this.isValid();
   }
@@ -66,6 +79,17 @@ class WebGPUCache {
 
   isMarkerSizesParamsChanged(sc: DG.ScatterPlotViewer) {
     return sc.props.markerDefaultSize != this.markerDefaultSize || sc.props.sizeColumnName != this.sizeColumnName;
+  }
+
+  isColorChanged(sc: DG.ScatterPlotViewer) {
+    return sc.props.colorColumnName != this.colorColumnName ||
+     sc.props.selectedRowsColor != this.selectedRowsColor ||
+     sc.props.filteredRowsColor != this.filteredRowsColor ||
+     sc.props.filteredOutRowsColor != this.filteredOutRowsColor ||
+     sc.props.colorAxisType != this.colorAxisType ||
+     sc.props.invertColorScheme != this.invertColorScheme ||
+     sc.props.colorMin != this.colorMin ||
+     sc.props.colorMax != this.colorMax;
   }
 
   isValid() {
@@ -177,6 +201,27 @@ class WebGPUCache {
       new Float32Array(scBufferArray, 0, this.markerSizesLength).set(sizes);
       this.markerSizesBuffer.unmap();
     }
+  }
+
+  setColor(sc: DG.ScatterPlotViewer, device: GPUDevice) {
+    this.colorColumnName = sc.props.colorColumnName;
+    const colors = sc.getMarkerColors();
+    this.colorLength = colors.length;
+    this.selectedRowsColor = sc.props.selectedRowsColor;
+    this.filteredRowsColor = sc.props.filteredRowsColor;
+    this.filteredOutRowsColor = sc.props.filteredOutRowsColor;
+    this.invertColorScheme = sc.props.invertColorScheme;;
+    this.colorAxisType = sc.props.colorAxisType;
+    this.colorMin = sc.props.colorMin;
+    this.colorMax = sc.props.colorMax;
+    this.colorBuffer = device.createBuffer({
+        size: getPaddedSize(this.colorLength),
+        usage: GPUBufferUsage.STORAGE,
+        mappedAtCreation: true,
+      });
+    const colorsArray = this.colorBuffer.getMappedRange();
+    new Uint32Array(colorsArray, 0, this.colorLength).set(colors);
+    this.colorBuffer.unmap();
   }
 
   updateTexuteAtlas(sc: DG.ScatterPlotViewer, device: GPUDevice) {
@@ -413,7 +458,7 @@ async function webGPURenderDots(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterP
   if (!device)
     throw  'Failed to get WebGPU device';
 
-  if (!cache.updateAndValidate(sc, device) || !cache.indexBuffer || !cache.columnBuffer || !cache.viewBuffer)
+  if (!cache.updateAndValidate(sc, device) || !cache.indexBuffer || !cache.columnBuffer || !cache.viewBuffer || !cache.colorBuffer)
     throw 'Failed to update and validate cache or to initalize buffers';
 
   const gpuContext = webGPUCanvas.getContext('webgpu');
@@ -436,16 +481,20 @@ async function webGPURenderDots(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterP
 
         struct VSOutput {
             @builtin(position) position: vec4f,
+            @location(0) @interpolate(flat) markerIndex: u32, // This stores the marker index for the fragment shader
         };
 
         ${addStructures(cache)}
 
         @group(0) @binding(0) var<storage, read> sc: SC;
         @group(0) @binding(1) var<storage, read> data: Data;
+        @group(0) @binding(2) var<storage, read> markerColors: array<u32, ${cache.colorLength}>;
 
-        ${addDotsRendering(sc)}
+        ${addDotsRendering()}
 
         ${addPointConversionMethods()}
+
+        ${addColorMethods()}
         `,
   });
 
@@ -478,6 +527,7 @@ async function webGPURenderDots(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterP
     entries: [
       {binding: 0, resource: {buffer: cache.viewBuffer}},
       {binding: 1, resource: {buffer: cache.columnBuffer}},
+      {binding: 2, resource: {buffer: cache.colorBuffer}},
     ],
   });
 
@@ -525,7 +575,7 @@ async function webGPURenderTexture(webGPUCanvas: HTMLCanvasElement, sc: DG.Scatt
   if (!cache.gpuTexture)
     throw 'Failed to update texture atlas';
 
-  if (!cache.updateAndValidate(sc, device) || !cache.indexBuffer || !cache.columnBuffer || !cache.viewBuffer || !cache.markerSizesBuffer)
+  if (!cache.updateAndValidate(sc, device) || !cache.indexBuffer || !cache.columnBuffer || !cache.viewBuffer || !cache.markerSizesBuffer || !cache.colorBuffer)
     throw 'Failed to update and validate cache or to initalize buffers';
 
   const gpuContext = webGPUCanvas.getContext('webgpu');
@@ -565,10 +615,13 @@ async function webGPURenderTexture(webGPUCanvas: HTMLCanvasElement, sc: DG.Scatt
         @group(1) @binding(0) var<storage, read> sc: SC;
         @group(1) @binding(1) var<storage, read> data: Data;
         @group(1) @binding(2) var<storage, read> markerSizes: array<f32, ${cache.markerSizesLength}>;
+        @group(1) @binding(3) var<storage, read> markerColors: array<u32, ${cache.colorLength}>;
 
         ${!sc.props.sizeColumnName ? addSingleMarkerSizeRendering(cache, sc) : addDifferentMarkerSizesRendering(cache, sc)}
 
         ${addPointConversionMethods()}
+
+        ${addColorMethods()}
         `,
   });
 
@@ -629,6 +682,7 @@ async function webGPURenderTexture(webGPUCanvas: HTMLCanvasElement, sc: DG.Scatt
       {binding: 0, resource: {buffer: cache.viewBuffer}},
       {binding: 1, resource: {buffer: cache.columnBuffer}},
       {binding: 2, resource: {buffer: cache.markerSizesBuffer}},
+      {binding: 3, resource: {buffer: cache.colorBuffer}},
     ],
   });
 
@@ -739,10 +793,10 @@ function createCircleCanvas(size: number, sc: DG.ScatterPlotViewer): OffscreenCa
     ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
     ctx.save();
     ctx.clip();
-    ctx.fillStyle = DG.Color.toHtml(sc.props.filteredRowsColor);
+    ctx.fillStyle = "#0000ff";
     ctx.fill();
     ctx.lineWidth = lineWidth * 2;
-    ctx.strokeStyle = DG.Color.toHtml(DG.Color.darken(sc.props.filteredRowsColor, 50));
+    ctx.strokeStyle = "#ffff00";
     ctx.stroke();
     ctx.restore();
   }
@@ -898,8 +952,17 @@ function addDifferentMarkerSizesRendering(cache: WebGPUCache, sc: DG.ScatterPlot
           // Adjust the texcoords to the right portion of the atlas
           let texCoords = vsOut.texcoord * uvScale + uvOffset;
 
-          // Sample the texture atlas
-          return textureSample(t, s, texCoords);
+          let color = textureSample(t, s, texCoords);
+          var c = markerColors[sizeIndex];
+          
+          if (color.b > 0.0 || color.g > 0.0) {            
+            if (color.g > 0.0) {
+              c = darken(c, i32(floor(color.g * 100.0)));
+            }
+            return vec4f(r(c), g(c), b(c), a(c));
+          }
+
+          return color;
       }
   `;
 }
@@ -930,19 +993,27 @@ function addSingleMarkerSizeRendering(cache: WebGPUCache, sc: DG.ScatterPlotView
           // Making a pixel perfect position, to avoid artefacts and blurring
           vsOut.position = vec4f(normalizedPos + pos * (markerSize + ${sc.props.markerBorderWidth * 2}) / uni.resolution, 0, 1);
           vsOut.texcoord = pos * 0.5 + 0.5;
-          vsOut.markerIndex = 0;   // Pass marker index to fragment shader
+          vsOut.markerIndex = u32(vert.index);   // Pass marker index to fragment shader
           return vsOut;
       }
 
       @fragment fn fs(vsOut: VSOutput) -> @location(0) vec4f {
-          // Sample the texture atlas
-          return textureSample(t, s, vsOut.texcoord);
+          let color = textureSample(t, s, vsOut.texcoord);
+          var c = markerColors[vsOut.markerIndex];
+
+          if (color.b > 0.0 || color.g > 0.0) {
+            if (color.g > 0.0) {
+              c = darken(c, i32(floor(color.g * 100.0)));
+            }
+            return vec4f(r(c), g(c), b(c), a(c));
+          }
+
+          return color;
       }
   `;
 }
 
-function addDotsRendering(sc: DG.ScatterPlotViewer) {
-  const c = sc.props.filteredRowsColor;
+function addDotsRendering() {
   return `
       @vertex fn vs(vert: Vertex) -> VSOutput {
           var vsOut: VSOutput;
@@ -951,12 +1022,46 @@ function addDotsRendering(sc: DG.ScatterPlotViewer) {
           let normalizedPos = convertPointToNormalizedCoords(screenPoint);
           // Making a pixel perfect position, to avoid artefacts and blurring
           vsOut.position = vec4f(normalizedPos, 0, 1);
+          vsOut.markerIndex = u32(vert.index);   // Pass marker index to fragment shader
           return vsOut;
       }
 
       @fragment fn fs(vsOut: VSOutput) -> @location(0) vec4f {
-          // Sample the texture atlas
-          return vec4f(${DG.Color.r(c) / 255.0}, ${DG.Color.g(c) / 255.0}, ${DG.Color.b(c) / 255.0}, ${DG.Color.a(c) / 255.0});
+          var c = markerColors[vsOut.markerIndex];
+          return vec4f(r(c), g(c), b(c), a(c));
+      }
+  `;
+}
+
+function addColorMethods() {
+  return `
+      fn a(c: u32) -> f32 {    
+        return f32((c >> 24u) & 0xFFu) / 255.0;
+      }
+
+      fn r(c: u32) -> f32 {
+        return f32((c >> 16u) & 0xFFu) / 255.0;
+      }
+
+      fn g(c: u32) -> f32 {
+        return f32((c >> 8u) & 0xFFu) / 255.0;
+      }
+
+      fn b(c: u32) -> f32 {
+        return f32(c & 0xFFu) / 255.0;
+      }
+
+      fn clamp(value: i32, minVal: i32, maxVal: i32) -> u32 {
+          return u32(max(min(value, maxVal), minVal));
+      }
+
+      fn darken(c: u32, diff: i32) -> u32 {
+          let a: u32 = clamp(i32((c >> 24) & 0xFF), 0, 255);
+          let r: u32 = clamp(i32((c >> 16) & 0xFF) - diff, 0, 255);
+          let g: u32 = clamp(i32((c >> 8) & 0xFF) - diff, 0, 255);
+          let b: u32 = clamp(i32(c & 0xFF) - diff, 0, 255);
+
+          return u32((a << 24) | (r << 16) | (g << 8) | b);
       }
   `;
 }
