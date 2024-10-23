@@ -22,6 +22,8 @@ import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {of} from 'rxjs';
 import {ParentFunccallView} from '../components/ParentFunccallView/ParentFunccallView';
 import {computedWithControl, useUrlSearchParams} from '@vueuse/core';
+import {Logger} from '../components/Logger/Logger';
+import {LogItem} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/Logger';
 
 const findTreeNode = (uuid: string, state: PipelineState): PipelineState | undefined => {
   let foundState = undefined as PipelineState | undefined;
@@ -51,6 +53,7 @@ export const TreeWizardApp = Vue.defineComponent({
   },
   setup(props) {
     const driver = new Driver();
+    const logs = Vue.shallowRef<LogItem[]>([]);
     const treeState = Vue.shallowRef<PipelineState | undefined>(undefined);
     const chosenStepUuid = Vue.ref<string | undefined>(undefined);
 
@@ -95,6 +98,10 @@ export const TreeWizardApp = Vue.defineComponent({
       }
       treeState.value = s;
     }));
+
+    useSubscription((driver.logger.logs$).subscribe((l) => {
+      logs.value = l;
+    }))
 
     const treeMutationsLocked = useSubject(driver.treeMutationsLocked$);
 
@@ -160,6 +167,8 @@ export const TreeWizardApp = Vue.defineComponent({
     };
 
     const treeHidden = Vue.ref(false);
+    const loggerHidden = Vue.ref(true);
+
     const rfvRef = Vue.ref(null as InstanceType<typeof RichFunctionView> | null);
 
     const handlePanelClose = (el: HTMLElement) => {
@@ -173,6 +182,11 @@ export const TreeWizardApp = Vue.defineComponent({
             name='folder-tree'
             tooltip={treeHidden.value ? 'Show tree': 'Hide tree'}
             onClick={() => treeHidden.value = !treeHidden.value } 
+          />
+          <IconFA
+            name='list'
+            tooltip={loggerHidden.value ? 'Show logger': 'Hide logger'}
+            onClick={() => loggerHidden.value = !loggerHidden.value }
           />
           {treeState.value && isTreeReportable.value && <IconFA 
             name='arrow-to-bottom'
@@ -237,8 +251,9 @@ export const TreeWizardApp = Vue.defineComponent({
           </span>
         </RibbonMenu> */}
         {treeState.value && <DockManager class='block h-full' onPanelClosed={handlePanelClose}>
-          { treeState.value && !treeHidden.value ? 
-            Vue.withDirectives(<Draggable 
+          { !loggerHidden.value ? <Logger logs={logs.value}></Logger> : null }
+          { treeState.value && !treeHidden.value ?
+            Vue.withDirectives(<Draggable
               class="ui-div mtl-tree p-2 overflow-scroll h-full"
               style={{paddingLeft: '25px'}}
 

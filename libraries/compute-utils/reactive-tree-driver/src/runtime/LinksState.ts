@@ -11,6 +11,7 @@ import {BehaviorSubject, concat, merge, Subject, of, Observable, defer, combineL
 import {takeUntil, map, scan, switchMap, filter, mapTo, toArray, take, tap, debounceTime, delay, concatMap} from 'rxjs/operators';
 import {parseLinkIO} from '../config/LinkSpec';
 import {makeValidationResult} from '../utils';
+import {DriverLogger} from '../data/Logger';
 
 export interface NestedMutationData {
   mutationRootPath: NodeAddress,
@@ -45,7 +46,10 @@ export class LinksState {
   public runningLinks$ = new BehaviorSubject<undefined | string[]>(undefined);
   public forceInitialMetaRun = false;
 
-  constructor(private defaultValidators: boolean = false) {
+  constructor(
+    private defaultValidators: boolean = false,
+    private logger?: DriverLogger,
+  ) {
     this.linksUpdates.pipe(
       switchMap(() => this.getRunningLinks()),
       takeUntil(this.closed$),
@@ -106,7 +110,7 @@ export class LinksState {
           .filter((x) => !!x)
           .flat();
         const links = matchedLinks.map((minfo) => {
-          const link = new Link(path, minfo);
+          const link = new Link(path, minfo, undefined, this.logger);
           return link;
         });
         return [...acc, ...links];

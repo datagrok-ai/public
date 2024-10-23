@@ -14,6 +14,7 @@ import {ControllerCancelled, LinkController, MetaController, MutationController,
 import {MemoryStore} from './FuncCallAdapters';
 import {LinksState} from './LinksState';
 import {PipelineInstanceConfig} from '../config/PipelineInstance';
+import {DriverLogger} from '../data/Logger';
 
 const VALIDATOR_DEBOUNCE_TIME = 250;
 
@@ -44,7 +45,12 @@ export class Link {
     distinctUntilChanged(),
   );
 
-  constructor(public prefix: NodePath, public matchInfo: MatchInfo, private customDebounceTime?: number) {}
+  constructor(
+    public prefix: NodePath,
+    public matchInfo: MatchInfo,
+    private customDebounceTime?: number,
+    private logger?: DriverLogger,
+  ) {}
 
   wire(state: BaseTree<StateTreeNode>, linksState?: LinksState) {
     const inputNames = Object.keys(this.matchInfo.inputs);
@@ -161,7 +167,13 @@ export class Link {
     scope?: ScopeInfo,
   ) {
     const controller = this.getControllerInstance(inputs, inputSet, outputSet, actions, baseNode, scope);
-
+    if (this.logger) {
+      this.logger.logLink('linkRunStarted', {
+        prefix: this.prefix,
+        id: this.matchInfo.spec.id,
+        linkUUID: this.uuid,
+      });
+    }
     if (this.matchInfo.spec.handler) {
       return callHandler(this.matchInfo.spec.handler as HandlerBase<any, void>, {controller}).pipe(
         catchError((e) => {
@@ -203,6 +215,13 @@ export class Link {
 
   private setHandlerResults(controller: LinkController | ValidatorController | MetaController | MutationController, state: BaseTree<StateTreeNode>) {
     this.lastPipelineMutations = [];
+    if (this.logger) {
+      this.logger.logLink('linkRunFinished', {
+        prefix: this.prefix,
+        id: this.matchInfo.spec.id,
+        linkUUID: this.uuid,
+      });
+    }
     const outputsEntries = Object.entries(this.matchInfo.outputs).map(([outputAlias, outputItems]) => {
       const nodes = outputItems.map((output) => {
         const path = [...this.prefix, ...output.path];
@@ -249,7 +268,8 @@ export class Action extends Link {
     public isPipelineMutation: boolean,
     public friendlyName?: string,
     public menuCategory?: string,
+    logger?: DriverLogger,
   ) {
-    super(prefix, matchInfo);
+    super(prefix, matchInfo, undefined, logger);
   }
 }

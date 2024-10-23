@@ -1,10 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {BehaviorSubject, Observable, Subject, EMPTY, of, from} from 'rxjs';
+import {BehaviorSubject, Observable, Subject, EMPTY, of, from, combineLatest} from 'rxjs';
 import {isFuncCallSerializedState, PipelineState} from './config/PipelineInstance';
 import {AddDynamicItem, InitPipeline, LoadDynamicItem, LoadPipeline, MoveDynamicItem, RemoveDynamicItem, RunAction, RunSequence, RunStep, SaveDynamicItem, SavePipeline, ViewConfigCommands} from './view/ViewCommunication';
-import {pairwise, takeUntil, concatMap, catchError, switchMap, map, mapTo, startWith, withLatestFrom, tap} from 'rxjs/operators';
+import {pairwise, takeUntil, concatMap, catchError, switchMap, map, mapTo, startWith, withLatestFrom, tap, debounceTime} from 'rxjs/operators';
 import {StateTree} from './runtime/StateTree';
 import {loadInstanceState} from './runtime/funccall-utils';
 import {callHandler} from './utils';
@@ -12,6 +12,7 @@ import {PipelineConfiguration} from './config/PipelineConfiguration';
 import {getProcessedConfig} from './config/config-processing-utils';
 import {ConsistencyInfo, FuncCallStateInfo} from './runtime/StateTreeNodes';
 import {ValidationResult} from './data/common-types';
+import {DriverLogger} from './data/Logger';
 
 export class Driver {
   public currentState$ = new BehaviorSubject<PipelineState | undefined>(undefined);
@@ -24,12 +25,22 @@ export class Driver {
   public currentMeta$ = new BehaviorSubject<Record<string, BehaviorSubject<any | undefined>>>({});
   public currentCallsState$ = new BehaviorSubject<Record<string, BehaviorSubject<FuncCallStateInfo | undefined>>>({});
 
+  public treeData$ = combineLatest([
+    this.currentState$,
+    this.currentCallsState$,
+    this.currentValidations$,
+    this.currentConsistency$
+  ]).pipe(
+    debounceTime(0),
+  );
+
   public globalROLocked$ = new BehaviorSubject(false);
   public treeMutationsLocked$ = new BehaviorSubject(false);
 
   private states$ = new BehaviorSubject<StateTree | undefined>(undefined);
   private commands$ = new Subject<ViewConfigCommands>();
   private closed$ = new Subject<true>();
+  public logger = new DriverLogger();
 
   constructor(private mockMode = false) {
     this.commands$.pipe(
@@ -188,7 +199,14 @@ export class Driver {
         );
       }),
       map(([state, config]) =>
-        StateTree.fromInstanceState({state, config, isReadonly: !!msg.readonly, defaultValidators: false, mockMode: this.mockMode})),
+        StateTree.fromInstanceState({
+          state,
+          config,
+          isReadonly: !!msg.readonly,
+          defaultValidators: true,
+          mockMode: this.mockMode,
+          logger: this.logger
+        })),
       concatMap((state) => state.init()),
       tap((state) => this.states$.next(state)),
     );
@@ -197,7 +215,13 @@ export class Driver {
   private initPipeline(msg: InitPipeline) {
     return callHandler<PipelineConfiguration>(msg.provider, {version: msg.version}).pipe(
       concatMap((conf) => from(getProcessedConfig(conf))),
-      map((config) => StateTree.fromPipelineConfig({config, isReadonly: false, defaultValidators: false, mockMode: this.mockMode})),
+      map((config) => StateTree.fromPipelineConfig({
+        config,
+        isReadonly: false,
+        defaultValidators: false,
+        mockMode: this.mockMode,
+        logger: this.logger
+      })),
       concatMap((state) => state.init()),
       tap((state) => this.states$.next(state)),
     );

@@ -14,6 +14,7 @@ import {ConsistencyInfo, FuncCallNode, FuncCallStateInfo, isFuncCallNode, Parall
 import {indexFromEnd} from '../utils';
 import {LinksState, NestedMutationData} from './LinksState';
 import {ValidationResult} from '../data/common-types';
+import {DriverLogger} from '../data/Logger';
 
 const MAX_CONCURENT_SAVES = 5;
 
@@ -33,9 +34,10 @@ export class StateTree {
     private config: PipelineConfigurationProcessed,
     private mockMode = false,
     private defaultValidators = false,
+    private logger?: DriverLogger,
   ) {
     this.nodeTree = new BaseTree(item);
-    this.linksState = new LinksState(defaultValidators);
+    this.linksState = new LinksState(defaultValidators, this.logger);
 
     this.linksState.runningLinks$.pipe(
       map((links) => !!links?.length),
@@ -379,6 +381,7 @@ export class StateTree {
     isReadonly = false,
     defaultValidators = false,
     mockMode = false,
+    logger,
   } : {
     config: PipelineConfigurationProcessed;
     startNode?: PipelineConfigurationProcessed;
@@ -387,6 +390,7 @@ export class StateTree {
     isReadonly?: boolean;
     defaultValidators?: boolean
     mockMode?: boolean;
+    logger?: DriverLogger
   }): StateTree {
     const refMap = buildRefMap(config);
 
@@ -426,7 +430,7 @@ export class StateTree {
           throw new Error(`Wrong FuncCall node state type ${state.type} on path ${JSON.stringify(path)}`);
         node.initState(state);
       }
-      return StateTree.addTreeNodeOrCreate(acc, config, node, ppath, idx, defaultValidators, mockMode);
+      return StateTree.addTreeNodeOrCreate({acc, config, node, ppath, pos: idx, defaultValidators, mockMode, logger});
     }, startState);
     return tree!;
   }
@@ -437,13 +441,15 @@ export class StateTree {
     isReadonly,
     mockMode = false,
     defaultValidators = false,
-  } : {
+    logger,
+  }: {
     state: PipelineSerializedState;
     config: PipelineConfigurationProcessed;
     isReadonly: boolean,
     defaultValidators?: boolean,
-    mockMode?: boolean },
-  ): StateTree {
+    mockMode?: boolean,
+    logger?: DriverLogger
+  }): StateTree {
     const refMap = buildRefMap(config);
 
     const traverse = buildTraverseD([] as Readonly<NodePath>, (item: PipelineSerializedState, path) => {
@@ -456,7 +462,7 @@ export class StateTree {
     const tree = traverse(state, (acc, state, path) => {
       const [node, ppath, idx] = StateTree.makeTreeNode(config, refMap, path, isReadonly || state.isReadonly);
       node.restoreState(state);
-      return StateTree.addTreeNodeOrCreate(acc, config, node, ppath, idx, defaultValidators, mockMode);
+      return StateTree.addTreeNodeOrCreate({acc, config, node, ppath, pos: idx, defaultValidators, mockMode, logger});
     }, undefined as StateTree | undefined);
     return tree!;
   }
@@ -467,12 +473,14 @@ export class StateTree {
     isReadonly = false,
     defaultValidators = false,
     mockMode = false,
+    logger,
   }: {
     instanceConfig: PipelineInstanceConfig,
     config: PipelineConfigurationProcessed,
     isReadonly?: boolean,
     defaultValidators?: boolean,
-    mockMode?: boolean
+    mockMode?: boolean,
+    logger?: DriverLogger
   }): StateTree {
     const refMap = buildRefMap(config);
 
@@ -491,7 +499,7 @@ export class StateTree {
       const [node, ppath, idx] = StateTree.makeTreeNode(config, refMap, path, isReadonly);
       if (isFuncCallNode(node))
         node.initState(state);
-      return StateTree.addTreeNodeOrCreate(acc, config, node, ppath, idx, defaultValidators, mockMode);
+      return StateTree.addTreeNodeOrCreate({acc, config, node, ppath, pos: idx, defaultValidators, mockMode, logger});
     }, undefined as StateTree | undefined);
     return tree!;
   }
@@ -531,18 +539,30 @@ export class StateTree {
   }
 
   private static addTreeNodeOrCreate(
-    acc: StateTree | undefined,
-    config: PipelineConfigurationProcessed,
-    node: StateTreeNode,
-    ppath: NodePath,
-    pos: number,
-    defaultValidators: boolean,
-    mockMode: boolean,
+    {
+      acc,
+      config,
+      node,
+      ppath,
+      pos,
+      defaultValidators,
+      mockMode,
+      logger
+    } : {
+      acc: StateTree | undefined;
+      config: PipelineConfigurationProcessed;
+      node: StateTreeNode;
+      ppath: NodePath;
+      pos: number;
+      defaultValidators: boolean;
+      mockMode: boolean;
+      logger?: DriverLogger
+    },
   ) {
     if (acc)
       acc.nodeTree.addItem(ppath, node, node.config.id, pos);
     else
-      return new StateTree(node, config, mockMode, defaultValidators);
+      return new StateTree(node, config, mockMode, defaultValidators, logger);
     return acc;
   }
 
@@ -612,6 +632,8 @@ export class StateTree {
 
   private mutateTree<R>(fn: () => Observable<readonly [NestedMutationData?, R?]>, waitForLinks = true) {
     return defer(() => {
+      if (this.logger)
+        this.logger.logTreeUpdates('treeUpdateStarted');
       this.treeLock();
       return (waitForLinks ? this.waitForLinks() : of(undefined)).pipe(
         tap(() => this.linksState.destroyLinks()),
@@ -621,6 +643,8 @@ export class StateTree {
       tap(() => this.updateNodesMap()),
       concatMap((data) => {
         const [mutationData, res] = data ?? [];
+        if (this.logger)
+          this.logger.logMutations(mutationData);
         return this.linksState.update(this.nodeTree, mutationData).pipe(mapTo(res));
       }),
       tap(() => {
@@ -629,6 +653,8 @@ export class StateTree {
       }),
       finalize(() => {
         this.treeUnlock();
+        if (this.logger)
+          this.logger.logTreeUpdates('treeUpdateFinished');
         this.makeStateRequests$.next(true);
       }),
     );

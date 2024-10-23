@@ -2,7 +2,6 @@
 export type ItemId = string;
 export type LinkSpecString = string | string[];
 export type ItemPathArray = string[];
-export type ItemAddress = string[];
 export type NqName = string;
 export type TypeKey = string;
 export type RestrictionType = 'disabled' | 'restricted' | 'info' | 'none';
