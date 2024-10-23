@@ -32,6 +32,8 @@ class WebGPUCache {
   filteredRowsColor = -1;
   filteredOutRowsColor = -1;
   invertColorScheme = true;
+  linearColorScheme: Array<number> = [];
+  categoricalColorScheme: Array<number> = [];
   texture: OffscreenCanvas | null = null;
   minTextureSize = 2;
   maxTextureSize = 100;
@@ -89,7 +91,11 @@ class WebGPUCache {
      sc.props.colorAxisType != this.colorAxisType ||
      sc.props.invertColorScheme != this.invertColorScheme ||
      sc.props.colorMin != this.colorMin ||
-     sc.props.colorMax != this.colorMax;
+     sc.props.colorMax != this.colorMax ||
+     sc.props.linearColorScheme.length != this.linearColorScheme.length ||
+     !sc.props.linearColorScheme.every((c, i) => c == this.linearColorScheme[i]) ||
+     sc.props.categoricalColorScheme.length != this.categoricalColorScheme.length ||
+     !sc.props.categoricalColorScheme.every((c, i) => c == this.categoricalColorScheme[i]);
   }
 
   isValid() {
@@ -214,6 +220,8 @@ class WebGPUCache {
     this.colorAxisType = sc.props.colorAxisType;
     this.colorMin = sc.props.colorMin;
     this.colorMax = sc.props.colorMax;
+    this.linearColorScheme = sc.props.linearColorScheme;
+    this.categoricalColorScheme = sc.props.categoricalColorScheme;
     this.colorBuffer = device.createBuffer({
         size: getPaddedSize(this.colorLength),
         usage: GPUBufferUsage.STORAGE,
