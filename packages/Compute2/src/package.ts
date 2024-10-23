@@ -181,7 +181,7 @@ export async function MockProvider2(params: any) {
     stepTypes: [{
       id: 'stepAdd',
       nqName: 'Compute:ObjectCooling',
-      friendlyName: 'cooling',
+      friendlyName: 'cooling loooooooong name',
     }, {
       id: 'stepMul',
       nqName: 'Compute2:TestMul2',
@@ -216,7 +216,7 @@ export async function MockProvider3(params: any) {
     provider: 'Compute2:MockProvider3', // for config
     friendlyName: 'Tree wizard model',
     version: '1.0',
-    type: 'parallel',
+    type: 'sequential',
     stepTypes: [{
       type: 'ref',
       provider: 'Compute2:MockProvider2',

@@ -276,7 +276,7 @@ export const TreeWizard = Vue.defineComponent({
                       style={{'background-color': stat.data.uuid === chosenStepUuid.value ? '#f2f2f5' : null}}
                       isDraggable={treeInstance.value?.isDraggable(stat)}
                       isDroppable={treeInstance.value?.isDroppable(stat)}
-                      isDeletable={!!stat.parent && isParallelPipelineState(stat.parent.data)}
+                      isDeletable={!!stat.parent && (isParallelPipelineState(stat.parent.data) || isSequentialPipelineState(stat.parent.data))}
                       onAddNode={({itemId, position}) => {
                         addStep(stat.data.uuid, itemId, position);
                       }}
