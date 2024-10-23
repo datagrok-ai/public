@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { Observable } from 'rxjs';
 import { testData } from './dataframe-utils';
+import { TestOptions } from 'datagrok-api/dg';
 import Timeout = NodeJS.Timeout;
 import { changeOptionsSaveLayout, filterAsync, loadLayout, selectFilterChangeCurrent, testViewerInternal } from './test-viewer-utils';
 
@@ -12,6 +13,8 @@ const stdLog = console.log.bind(console);
 const stdInfo = console.info.bind(console);
 const stdWarn = console.warn.bind(console);
 const stdError = console.error.bind(console);
+
+export { TestOptions };
 
 export const tests: {
   [key: string]: Category
@@ -29,17 +32,6 @@ export namespace assure {
     if (value == null)
       throw new Error(`${name == null ? 'Value' : name} not defined`);
   }
-}
-
-export interface TestOptions {
-  timeout?: number;
-  benchmarkTimeout?: number;
-  unhandledExceptionTimeout?: number;
-  skipReason?: string;
-  isAggregated?: boolean;
-  benchmark?: boolean;
-  stressTest?: boolean;
-  tags?: string[];
 }
 
 export interface CategoryOptions {

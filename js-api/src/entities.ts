@@ -1147,6 +1147,31 @@ export class Package extends Entity {
 }
 
 
+export interface TestOptions {
+  timeout?: number;
+  benchmarkTimeout?: number;
+  unhandledExceptionTimeout?: number;
+  skipReason?: string;
+  isAggregated?: boolean;
+  benchmark?: boolean;
+  stressTest?: boolean;
+  tags?: string[];
+}
+
+export class XamgleTestParams implements TestOptions{
+  dart?: any;
+  skipReason?: string;
+  benchmark?: boolean;
+  timeout?: number;
+
+  constructor(dart?: any){
+    this.dart = dart;
+    this.skipReason = api.grok_XamgleTestParams_Get_SkipReason(this.dart)
+    this.benchmark = api.grok_XamgleTestParams_Get_Benchmark(this.dart)
+    this.timeout = api.grok_XamgleTestParams_Get_Timeout(this.dart)
+  } 
+}
+
 // export class DockerImage extends Entity {
 //   constructor(dart: any) {
 //     super(dart);

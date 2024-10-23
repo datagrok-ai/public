@@ -1492,6 +1492,9 @@ export interface IDartApi {
   grok_BrowseView_Get_ShowTree(view: any): any;
   grok_BrowseView_Set_ShowTree(view: any, x: Bool): any;
   grok_InfoPanels_GetAccordion(x: any): any;
+  grok_XamgleTestParams_Get_Timeout(testParams: any): any;
+  grok_XamgleTestParams_Get_Benchmark(testParams: any): any;
+  grok_XamgleTestParams_Get_SkipReason(testParams: any): any;
   grok_Reports_Get(num: Num): Promise<any>;
   grok_Reports_Find(id: String): Promise<any>;
   grok_UserReport_Id(report: any): any;
