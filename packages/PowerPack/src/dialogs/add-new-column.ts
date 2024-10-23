@@ -641,7 +641,7 @@ export class AddNewColumnDialog {
         }
         if (openingBracket && isClosingBracket(j)) {
           columnSelections.push({from: openingBracketIdx! + 1, to: j + 1});
-          columnNames.push(trimmedFormula.substring(openingBracketIdx! + 1, j));
+          columnNames.push(trimmedFormula.substring(openingBracketIdx! + 3, j));
           if (openingBracketIdx === -1 && j === trimmedFormula.length - 1)
             isSingleCol = true;
         }
@@ -665,7 +665,7 @@ export class AddNewColumnDialog {
       const funcCall = grok.functions.parse(formula, false);
       this.validateFuncCallTypes(funcCall);
     } catch (e: any) {
-      return e.message.endsWith(': end of input expected]') ? 'Possible syntax error' : e.message;
+      return e.message?.endsWith(': end of input expected]') ? 'Possible syntax error' : e?.message;
     }
     return '';
   }
@@ -1203,7 +1203,7 @@ export class AddNewColumnDialog {
         const openingSym = word.text.includes('$[') ? '[' : '{';
         const closingSym = openingSym === '{' ? '}' : ']';
         const openingBracketIdx = word.text.indexOf(openingSym);
-        const closingBracket = context.state.doc.length > word.text.length ? context.state.doc.toString().at(word.to) === openingSym : false;
+        const closingBracket = context.state.doc.length > word.text.length ? context.state.doc.toString()[word.to] === openingSym : false;
         colNames.forEach((name: string) => options.push({ label: name, type: "variable",
           apply: openingBracketIdx !== -1 ? closingBracket ? `${grok.functions.handleOuterBracketsInColName(name, true)}` : 
             `${grok.functions.handleOuterBracketsInColName(name, true)}${closingSym}` :
