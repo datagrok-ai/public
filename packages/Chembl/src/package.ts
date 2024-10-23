@@ -10,7 +10,7 @@ export const _package = new DG.Package();
 const WIDTH = 200;
 const HEIGHT = 100;
 
-//tags: init,autostart
+//tags: autostart
 export function init() {
   //Register handlers
   // DG.ObjectHandler.register(new ChemblIdHandler());
