@@ -3,8 +3,6 @@ export {Viewer} from './src/Viewer/Viewer';
 export type {ViewerT} from './src/Viewer/Viewer';
 export {InputForm} from './src/InputForm/InputForm';
 export type {InputFormT} from './src/InputForm/InputForm';
-export {DGSplitH} from './src/SplitH/SplitH';
-export type {DGSplitHT} from './src/SplitH/SplitH';
 export {DockSpawnTsWebcomponent} from './vendor/dock-spawn-ts/lib';
 export type {DockSpawnTsWebcomponent as DockSpawnTsWebcomponentT}
   from './vendor/dock-spawn-ts/lib';

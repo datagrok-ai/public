@@ -3,14 +3,13 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
-import type {DGBigButtonT, DGButtonT, DGComboPopupT, DGIconFAT, DGIconT, DGSplitH, DGToggleInputT} from '@datagrok-libraries/webcomponents';
+import type {DGBigButtonT, DGButtonT, DGComboPopupT, DGIconFAT, DGIconT, DGToggleInputT} from '@datagrok-libraries/webcomponents';
 
 declare global {
   namespace JSX {
     interface IntrinsicElements {
       'dg-button': DGButtonT,
       'dg-big-button': DGBigButtonT,
-      'dg-split-h': DGSplitH,
       'dg-icon-fa': DGIconFAT,
       'dg-icon': DGIconT,
       'dg-toggle-input': DGToggleInputT
@@ -52,25 +51,6 @@ export const BigButton = Vue.defineComponent({
     >
       {slots.default ? slots.default() : ''}
     </button>);
-  },
-});
-
-
-export const SplitH = Vue.defineComponent({
-  name: 'SplitH',
-  props: {
-    resize: Boolean,
-  },
-  setup(props, {slots, attrs, emit}) {
-    return () =>{
-      return (<dg-split-h
-        resize={props.resize}
-        v-bind={attrs}
-        style={{height: '100%', width: '100%'}}
-      >
-        {slots.default ? slots.default() : []}
-      </dg-split-h>);
-    };
   },
 });
 

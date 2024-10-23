@@ -8,7 +8,6 @@ import {filter, take} from 'rxjs/operators';
 import {ViewerApp as ViewerAppInstance} from './apps/ViewerApp';
 import {FormApp as FormAppInstance} from './apps/FormApp';
 import {HistoryApp as HistoryAppInstance} from './apps/HistoryApp';
-import {ElementsApp as ElementsAppInstance} from './apps/ElementsApp';
 import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
 import {SimpleDriverApp as SimpleDriverAppInstance} from './apps/SimpleDriverApp';
 import {RFVApp} from './apps/RFVApp';
@@ -111,16 +110,6 @@ export async function FormApp() {
   grok.shell.addView(view);
 }
 
-
-//tags: test, vue
-export async function ElementsApp() {
-  const view = new DG.ViewBase();
-  const app = Vue.createApp(ElementsAppInstance);
-  app.mount(view.root);
-  view.name = 'ElementsApp';
-  grok.shell.addView(view);
-}
-
 //tags: test, vue
 export async function HistoryApp() {
   const view = new DG.ViewBase();
@@ -192,7 +181,7 @@ export async function MockProvider2(params: any) {
     stepTypes: [{
       id: 'stepAdd',
       nqName: 'Compute:ObjectCooling',
-      friendlyName: 'cooling',
+      friendlyName: 'cooling loooooooong name',
     }, {
       id: 'stepMul',
       nqName: 'Compute2:TestMul2',
@@ -227,7 +216,7 @@ export async function MockProvider3(params: any) {
     provider: 'Compute2:MockProvider3', // for config
     friendlyName: 'Tree wizard model',
     version: '1.0',
-    type: 'parallel',
+    type: 'sequential',
     stepTypes: [{
       type: 'ref',
       provider: 'Compute2:MockProvider2',

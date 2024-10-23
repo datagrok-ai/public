@@ -213,9 +213,9 @@ export const TreeNode = Vue.defineComponent({
       >
         { props.callState && progressIcon(callStateToStatus(props.callState)) }
         { props.stat.children.length ? openIcon() : null }
-        <span class="mtl-ml">{ nodeLabel(props.stat) }</span>
+        <span class="mtl-ml text-nowrap text-ellipsis overflow-hidden">{ nodeLabel(props.stat) }</span>
         { props.stat.data.isHovered ? 
-          <div class='flex items-center justify-end w-full px-2'>
+          <div class='flex items-center px-2 w-fit justify-end ml-auto'>
             { hasAddButton(props.stat.data) ? 
               <ComboPopup 
                 caption={ui.iconFA('plus')}

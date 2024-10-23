@@ -3,12 +3,7 @@ export * from './src/Viewer/Viewer';
 export * from './src/RibbonPanel/RibbonPanel';
 export * from './src/RibbonMenu/RibbonMenu';
 export * from './src/elements';
-export * from './src/Tabs/TabHeaderStripe/TabHeaderStripe';
-export * from './src/Tabs/TabArea/TabArea';
-export * from './src/Tabs/Tabs';
-export * from './src/FoldableDialog/FoldableDialog';
 export * from './src/DockedPanel/DockedPanel'
 export * from './src/DockManager/DockManager'
 export * from './src/MarkDown/MarkDown'
-export * from './src/Overlapping/Overlapping'
 export * from './src/directives'
