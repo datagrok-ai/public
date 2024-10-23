@@ -7,4 +7,4 @@
   }});
 
   ui.dialog().add(ui.divV([selector, host])).show();
-  host.appendChild(DG.View.createByType(DG.View.ALL_VIEW_TYPES[0]).root);я
+  host.appendChild(DG.View.createByType(DG.View.ALL_VIEW_TYPES[0]).root);
