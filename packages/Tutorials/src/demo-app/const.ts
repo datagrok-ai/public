@@ -4,6 +4,9 @@ export const DEMO_APP_HIERARCHY = {
 			name: 'Cheminformatics',
 			children: [
 				{
+					name: 'Overview',
+				},
+				{
 					name: 'ADMETox',
 				},
 				{
@@ -14,9 +17,6 @@ export const DEMO_APP_HIERARCHY = {
 				},
 				{
 					name: 'Molecule Activity Cliffs',
-				},
-				{
-					name: 'Overview',
 				},
 				{
 					name: 'R Group Analysis',

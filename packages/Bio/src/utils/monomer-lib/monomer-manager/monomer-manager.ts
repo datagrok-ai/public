@@ -868,6 +868,7 @@ class MonomerForm implements INewMonomerForm {
         await grok.dapi.files.writeAsText(LIB_PATH + libName, JSON.stringify(libJSON));
         await (await MonomerLibManager.getInstance()).loadLibraries(true);
         await this.refreshTable(monomer.symbol);
+        this._molChanged = false; // reset the flag
         grok.shell.info(`Monomer ${monomer.symbol} was successfully saved in library ${libName}`);
       } catch (e) {
         grok.shell.error('Error saving monomer');

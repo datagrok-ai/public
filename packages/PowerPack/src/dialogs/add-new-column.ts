@@ -31,6 +31,13 @@ type UpdatePreviewParams = {
   changeName: boolean,
 }
 
+type ColumnNamesAndSelections = {
+  quotesSelection: {from: number, to: number}[],
+  columnSelections: {from: number, to: number}[],
+  columnNames: string[],
+  isSingleCol: boolean,
+}
+
 const VALIDATION_TYPES_MAPPING: { [key: string]: string[] } = {
   'num': ['number', 'int', 'double', 'float', 'qnum'],
   'number': ['num', 'int', 'double', 'float', 'qnum'],
@@ -71,8 +78,6 @@ export class AddNewColumnDialog {
   maxAutoNameLength: number = 50;
   maxPreviewRowCount: number = 20;
   newColumnBgColor: number = 0xFFFDFFE7; // The same bg-color as the bg-color of tooltips.
-  colNamePattern: RegExp;
-  colNamePatternWithoutDollar: RegExp = /{(.+?)}|\[(.+?)\]/g;
   tooltips = {
     name: 'Сolumn name.',
     type: 'Column type. When set to "auto", type is determined based on the expression.',
@@ -121,7 +126,6 @@ export class AddNewColumnDialog {
 
   constructor(call: DG.FuncCall | null = null) {
     const table = call?.getParamValue('table');
-    this.colNamePattern = DG._isDartium() ? /\${(.+?)}|\$\[(.+?)\]/g : /\${(.+?)(?<!\\)}|\$\[(.+?)(?<!\\)\]/g;;
 
     DG.debounce(this.updatePreviewEvent, 1000).subscribe(async (params: UpdatePreviewParams) => {
       await this.updatePreview(params.expression, params.changeName);
@@ -181,7 +185,7 @@ export class AddNewColumnDialog {
 
     this.codeMirror = this.initCodeMirror();
     this.codeMirrorDiv.onkeydown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && this.autocompleteEnter) { //do not close the dialog when autocompleting using Enter button
+      if (e.code === 'Enter' && this.autocompleteEnter) { //do not close the dialog when autocompleting using Enter button
         e.stopImmediatePropagation();
         this.autocompleteEnter = false;
       }
@@ -482,11 +486,13 @@ export class AddNewColumnDialog {
             //remove highlight
             setSelection(cm, [{from: 0, to: cmValue.length}], removeHighlight);
 
+            const columnsAndSelections = this.getColumnNamesAndSelections(cmValue);
+
             //add column highlight
-            addRegexpSelection('\\$\\{(.+?)(?<!\\\\)\\}|\\$\\[(.+?)(?<!\\\\)\\]', addColHighlight);
+            setSelection(cm, columnsAndSelections.columnSelections, addColHighlight);
             
-            //add text in quotes highlight
-            addRegexpSelection(`".*?"|'.*?'`, addTextWithinQuotes);
+            //add text in quotes addTextWithinQuotes
+            setSelection(cm, columnsAndSelections.quotesSelection, addTextWithinQuotes);
 
             //add unmatched parentheses highlight
             const openBrackets: number[] = [];
@@ -528,11 +534,11 @@ export class AddNewColumnDialog {
                 else if (!this.packageFunctionsNames[packAndFuncNames[0]].includes(packAndFuncNames[1]))
                   this.error = `Function ${packAndFuncNames[1]} not found in ${packAndFuncNames[0]} package`;
                 else
-                  this.error = this.validateFormula(cmValue);
+                  this.error = this.validateFormula(cmValue, columnsAndSelections.columnNames, columnsAndSelections.isSingleCol);
               } else {
                 if (this.functionAutocomplete)
                   this.setSelection(cm.state.selection.main.head, true);
-                this.error = this.validateFormula(cmValue);
+                this.error = this.validateFormula(cmValue, columnsAndSelections.columnNames, columnsAndSelections.isSingleCol);
               }
             }
             this.packageAutocomplete = false;
@@ -579,31 +585,87 @@ export class AddNewColumnDialog {
     }
   }
 
-  validateFormula(formula: string): string {
-    const matchesAll = formula.match(this.colNamePattern) as string[];
-    const unmatchedCols: string[] = [];
-    if (matchesAll?.length) {
-      for (const match of matchesAll) {
-        const matchCol = match.substring(2, match.length - 1);
-        const unescapedMatch = grok.functions.handleOuterBracketsInColName(matchCol, false);
-        if (!this.columnNamesLowerCase.includes(unescapedMatch.toLowerCase()))
-          unmatchedCols.push(matchCol);
+  getColumnNamesAndSelections(formula: string): ColumnNamesAndSelections {
+    //first check for parts in quotes and collect indexes outside quotes to check them for column names
+    const trimmedFormula = formula.trim();
+    const re = /".*?"|'.*?'/gm;
+    let match = null;
+    const quotesSelection: {from: number, to: number}[] = [];
+    const columnSelections: {from: number, to: number}[] = [];
+    const columnNames: string[] = [];
+    const intervalsToCheckForColumns: [number, number][]= [];
+    let isSingleCol = false;
+    let counter = 0;
+    while ((match = re.exec(trimmedFormula)) != null) {
+      if (!counter && match.index > 0) {
+        intervalsToCheckForColumns.push([0, match.index]);
+      }
+      if (counter) {
+        intervalsToCheckForColumns.push([quotesSelection[counter].to, match.index]);
+      }
+      quotesSelection.push({from: match.index, to: match.index + match[0].length});
+      counter++;
+    }
+    if (counter) {
+      if (quotesSelection[counter - 1].to < trimmedFormula.length - 1)
+        intervalsToCheckForColumns.push([quotesSelection[counter - 1].to, trimmedFormula.length - 1]);
+    } else {
+      intervalsToCheckForColumns.push([0, trimmedFormula.length]);
+    }
+
+    const isOpeningBracket = (i: number): string => {
+      let bracket = '';
+      if (i > 0 && trimmedFormula[i - 1] === '$')
+        bracket =  trimmedFormula[i] === '{' ? '{' : trimmedFormula[i] === '[' ? '[' : '';
+      return bracket;
+    }
+
+    const isClosingBracket = (i: number): boolean => {
+      return i > 0 && trimmedFormula[i - 1] !== '\\' && trimmedFormula[i] === closingBracket;
+    }
+    const getClosingBracketSym = (sym: string) => {
+      return sym === '{' ? '}' : sym === '[' ? ']' : '';
+    }
+
+    let openingBracket = '';
+    let openingBracketIdx: number | null = null;
+    let closingBracket = '';
+    for (let i = 0; i < intervalsToCheckForColumns.length; i++) {
+      for (let j = intervalsToCheckForColumns[i][0]; j < intervalsToCheckForColumns[i][1]; j++) {
+        const bracket = isOpeningBracket(j);
+        if (!openingBracket && bracket) {
+          openingBracket = bracket;
+          openingBracketIdx = j - 2; // 2 is ${
+          closingBracket = getClosingBracketSym(bracket);
+          continue;
+        }
+        if (openingBracket && isClosingBracket(j)) {
+          columnSelections.push({from: openingBracketIdx! + 1, to: j + 1});
+          columnNames.push(trimmedFormula.substring(openingBracketIdx! + 3, j));
+          if (openingBracketIdx === -1 && j === trimmedFormula.length - 1)
+            isSingleCol = true;
+        }
       }
     }
-    if (unmatchedCols.length)
-      return unmatchedCols.length > 1 ? `Columns ${unmatchedCols.join(',')} are missing` :
-        `Column ${unmatchedCols[0]} is missing`;
-    //check cases when only one column is entered
-    const singleColumnPattern = /^\${(.+?)}$|^\$\[(.+?)\]$/;
-    const found = formula.trim().match(singleColumnPattern);
-    if (found)
+    return {quotesSelection, columnSelections, columnNames, isSingleCol};
+  }
+
+  validateFormula(formula: string, columnNames: string[], isSingleCol: boolean): string {
+    const unmatchedCols: string[] = [];
+    for (const colName of columnNames) {
+      const unescapedMatch = grok.functions.handleOuterBracketsInColName(colName, false);
+        if (!this.columnNamesLowerCase.includes(unescapedMatch.toLowerCase()))
+          unmatchedCols.push(colName);
+    }
+    //check for single column formula
+    if (isSingleCol)
       return '';
     //check syntax errors
     try {
       const funcCall = grok.functions.parse(formula, false);
       this.validateFuncCallTypes(funcCall);
     } catch (e: any) {
-      return e.message.endsWith(': end of input expected]') ? 'Possible syntax error' : e.message;
+      return e.message?.endsWith(': end of input expected]') ? 'Possible syntax error' : e?.message;
     }
     return '';
   }
@@ -924,8 +986,6 @@ export class AddNewColumnDialog {
         ...this.getSelectedType()
     );*/
     ui.setUpdateIndicator(this.gridPreview!.root, false);
-    //temporary fix to activate macromolecule cell renderer
-    await grok.functions.call('Bio:detectMacromolecule', {col: this.previwDf!.col(colName)});
 
     this.gridPreview!.dataFrame = this.previwDf!.clone(null, columnIds);
     this.gridPreview!.col(colName)!.backColor = this.newColumnBgColor;
@@ -940,15 +1000,14 @@ export class AddNewColumnDialog {
 
   /** Finds all unique column names used in the Expression input field. */
   findUniqueColumnNamesInExpression(expression: string): string[] {
-    const expr = expression;
-    const names = expr.match(this.colNamePattern) as string[];
+    const columnsAndSelections = this.getColumnNamesAndSelections(expression);
 
-    if (!names)
+    if (!columnsAndSelections.columnNames.length)
       return [];
 
     const lcSourceColumnNames = (this.sourceDf!.columns.names() as string[]).map((name) => name.toLowerCase());
 
-    return names
+    return columnsAndSelections.columnNames
       .filter((v, i, a) => a.indexOf(v) === i) // Selecting only unique names.
       .map((name) => name.slice(2, -1)) // Removing the naming syntax: ${}.
       .filter((v) => lcSourceColumnNames.includes(v.toLowerCase())); // Selecting only real column names.
@@ -1095,13 +1154,6 @@ export class AddNewColumnDialog {
           this.codeMirror!.state.doc.toString().trim(),
           ...this.getSelectedType(),
       );
-      //temporary fix to activate macromolecule cell renderer
-      const col = this.sourceDf?.col(name);
-      if (col) {
-        const semType = await grok.functions.call('Bio:detectMacromolecule', {col: col});
-        if (semType)
-          col.semType = semType;
-      }
     }
   }
 
@@ -1151,7 +1203,7 @@ export class AddNewColumnDialog {
         const openingSym = word.text.includes('$[') ? '[' : '{';
         const closingSym = openingSym === '{' ? '}' : ']';
         const openingBracketIdx = word.text.indexOf(openingSym);
-        const closingBracket = context.state.doc.length > word.text.length ? context.state.doc.toString().at(word.to) === openingSym : false;
+        const closingBracket = context.state.doc.length > word.text.length ? context.state.doc.toString()[word.to] === openingSym : false;
         colNames.forEach((name: string) => options.push({ label: name, type: "variable",
           apply: openingBracketIdx !== -1 ? closingBracket ? `${grok.functions.handleOuterBracketsInColName(name, true)}` : 
             `${grok.functions.handleOuterBracketsInColName(name, true)}${closingSym}` :

@@ -59,6 +59,7 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
   try {
     const requireBackup = window.require;
 
+    // Dojo modules required by JDraw2 and HELMWebEditor
     // 'dojo.window','dojo.io.script','dojo.io.iframe','dojo.dom',
     // 'dojox.gfx','dojox.gfx.svg','dojox.gfx.shape','dojox.charting'
     const dojoTargetList: { name: string, checker: () => boolean }[] = [
