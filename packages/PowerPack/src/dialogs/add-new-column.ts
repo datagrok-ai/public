@@ -21,14 +21,22 @@ import { Subject } from 'rxjs';
  * see the preview result.
  */
 
+const SYNTAX_ERROR = 'Possible syntax error';
+
 type PropInfo = {
   propName: string,
   propType: string
 }
 
+type FuncInfo = {
+  params: PropInfo[],
+  isVectorFunc: boolean,
+}
+
 type UpdatePreviewParams = {
   expression: string,
   changeName: boolean,
+  error?: boolean
 }
 
 type ColumnNamesAndSelections = {
@@ -111,9 +119,9 @@ export class AddNewColumnDialog {
   columnNames: string[] = [];
   columnNamesLowerCase: string[] = [];
   coreFunctionsNames: string[] = [];
-  coreFunctionsParams: {[key: string]: PropInfo[]} = {};
+  coreFunctionsParams: {[key: string]: FuncInfo} = {};
   packageFunctionsNames: {[key: string]: string[]} = {};
-  packageFunctionsParams: {[key: string]: PropInfo[]} = {};
+  packageFunctionsParams: {[key: string]: FuncInfo} = {};
   packageNames: string[] = [];
   packageAutocomplete = false;
   functionAutocomplete = false;
@@ -128,7 +136,7 @@ export class AddNewColumnDialog {
     const table = call?.getParamValue('table');
 
     DG.debounce(this.updatePreviewEvent, 1000).subscribe(async (params: UpdatePreviewParams) => {
-      await this.updatePreview(params.expression, params.changeName);
+      await this.updatePreview(params.expression, params.changeName, params.error);
     });
 
     if (table) {
@@ -226,11 +234,11 @@ export class AddNewColumnDialog {
           this.packageFunctionsNames[packageName] = [];
         }
         this.packageFunctionsNames[packageName].push(func.name);
-        this.packageFunctionsParams[`${packageName}:${func.name}`] = params;
+        this.packageFunctionsParams[`${packageName}:${func.name}`] = {params: params, isVectorFunc: func.options['vectorFunc']};
       } catch { //in case of core functions calling func.package throws an exception
         const funcName = func.nqName.startsWith('core:') ? func.name : func.nqName;
         this.coreFunctionsNames.push(funcName);
-        this.coreFunctionsParams[funcName] = params;
+        this.coreFunctionsParams[funcName] = {params: params, isVectorFunc: func.options['vectorFunc']};
       }
     }
   }
@@ -529,9 +537,7 @@ export class AddNewColumnDialog {
                 const packAndFuncNames = fullFuncName.split(':');
                 if (!this.packageNames.includes(packAndFuncNames[0]))
                   this.error = `Package ${packAndFuncNames[0]} not found`;
-                else if (!packAndFuncNames[1])
-                  this.error = `Start typing to see ${packAndFuncNames[0]} package functions`;
-                else if (!this.packageFunctionsNames[packAndFuncNames[0]].includes(packAndFuncNames[1]))
+                else if (packAndFuncNames[1] && !this.packageFunctionsNames[packAndFuncNames[0]].includes(packAndFuncNames[1]))
                   this.error = `Function ${packAndFuncNames[1]} not found in ${packAndFuncNames[0]} package`;
                 else
                   this.error = this.validateFormula(cmValue, columnsAndSelections.columnNames, columnsAndSelections.isSingleCol);
@@ -546,7 +552,8 @@ export class AddNewColumnDialog {
             ui.empty(this.errorDiv);
             if (this.error)
               this.errorDiv.append(ui.divText(this.error, 'cm-error-div'));
-            this.updatePreviewEvent.next({expression: cmValue, changeName: false});
+            //in case os syntax error we try to run expression to save string interpolation functionality
+            this.updatePreviewEvent.next({expression: cmValue, changeName: false , error: !!this.error && this.error !== SYNTAX_ERROR});
           }),
         ],
       }),
@@ -733,7 +740,7 @@ export class AddNewColumnDialog {
       if (property.semType && actualSemType && property.semType !== actualSemType)
         throw new Error(`Function ${funcCall.func.name} '${property.name}' param should be ${property.semType} type instead of ${actualSemType}`);
       //check for column and list types
-      if (property.propertyType === DG.TYPE.COLUMN || actualInputType === DG.TYPE.LIST) {
+      if (property.propertyType === DG.TYPE.COLUMN || property.propertyType === DG.TYPE.LIST) {
         if (property.propertySubType && property.propertySubType !== actualInputType)
           throw new Error(`Function ${funcCall.func.name} '${property.name}' param should be ${property.propertySubType} type instead of ${actualInputType}`);
       } else {
@@ -754,7 +761,7 @@ export class AddNewColumnDialog {
   }
 
   getFunctionNameAtPosition(view: EditorView, pos: number, side: number,
-    packageFunctionsParams: { [key: string]: PropInfo[] }, coreFunctionsParams: { [key: string]: PropInfo[] },
+    packageFunctionsParams: { [key: string]: FuncInfo }, coreFunctionsParams: { [key: string]: FuncInfo },
     withoutSignature?: boolean): { funcName: string, signature?: string, start: number, end: number } | null {
     let { from, to, text } = view.state.doc.lineAt(pos);
     let start = pos, end = pos;
@@ -766,14 +773,14 @@ export class AddNewColumnDialog {
       return null;
     const funcName = text.slice(start - from, end - from);
     if (!packageFunctionsParams[funcName] && !coreFunctionsParams[funcName])
-      return null;
+      return {funcName: funcName, start: start, end: end};
     if (withoutSignature)
       return {funcName: funcName, start: start, end: end};
     const funcParams = funcName.includes(':') ? packageFunctionsParams[funcName] : coreFunctionsParams[funcName];
     if (!funcParams)
-      return null;
-    const funcInputs = funcParams.filter((it) => it.propName !== FUNC_OUTPUT_TYPE);
-    const funcOutputs = funcParams.filter((it) => it.propName === FUNC_OUTPUT_TYPE);
+      return {funcName: funcName, start: start, end: end};
+    const funcInputs = funcParams.params.filter((it) => it.propName !== FUNC_OUTPUT_TYPE);
+    const funcOutputs = funcParams.params.filter((it) => it.propName === FUNC_OUTPUT_TYPE);
     let funcOutputType = '';
     if (funcOutputs.length)
       funcOutputType = funcOutputs[0].propType;
@@ -785,11 +792,11 @@ export class AddNewColumnDialog {
     }
   }
 
-  hoverTooltipCustom(packageFunctionsParams: { [key: string]: PropInfo[] },
-    coreFunctionsParams: { [key: string]: PropInfo[] }): Extension {
+  hoverTooltipCustom(packageFunctionsParams: { [key: string]: FuncInfo },
+    coreFunctionsParams: { [key: string]: FuncInfo }): Extension {
     return hoverTooltip((view: EditorView, pos: number, side: number) => {
       const res = this.getFunctionNameAtPosition(view, pos, side, packageFunctionsParams, coreFunctionsParams);
-      if (!res)
+      if (!res || !res.signature)
         return null;
       return {
         pos: res.start,
@@ -957,9 +964,17 @@ export class AddNewColumnDialog {
   }
 
   /** Updates the Preview Grid. Executed every time the controls are changed. */
-  async updatePreview(expression: string, changeName: boolean): Promise<void> {
+  async updatePreview(expression: string, changeName: boolean, error?: boolean): Promise<void> {
     //get result column name
     const colName = this.getResultColumnName();
+
+    //clearing preview df
+    if (error) {
+      const rowCount = this.gridPreview!.dataFrame.rowCount;
+      this.gridPreview!.dataFrame = DG.DataFrame.fromColumns([DG.Column.string(colName, rowCount)]);
+      this.gridPreview!.col(colName)!.backColor = this.newColumnBgColor;
+      return;
+    }
 
     //in case name was changed in nameInput, do not recalculate preview
     if (changeName) {
@@ -1169,7 +1184,7 @@ export class AddNewColumnDialog {
 
   functionsCompletions(colNames: string[], packageNames: string[], 
     coreFunctionsNames: string[], packageFunctionsNames: {[key: string]: string[]},
-    packageFunctionsParams: {[key: string]: PropInfo[]}, coreFunctionsParams:  {[key: string]: PropInfo[]}) {
+    packageFunctionsParams: {[key: string]: FuncInfo}, coreFunctionsParams:  {[key: string]: FuncInfo}) {
     return (context: CompletionContext) => {
       let word = context.matchBefore(/[\w|:|$|${|$\[|'|"]*/);
       if (!word || word?.from === word?.to && !context.explicit)
@@ -1193,7 +1208,7 @@ export class AddNewColumnDialog {
         if (packageFunctionsNames[packName])
           packageFunctionsNames[packName].forEach((name: string, idx: number) => {
             options.push({ label: name, type: "variable",
-              apply: `${name}(${packageFunctionsParams[`${packName}:${name}`]
+              apply: `${name}(${packageFunctionsParams[`${packName}:${name}`].params
                 .filter((it) => it.propName !== FUNC_OUTPUT_TYPE)
                 .map((it)=> it.propType).join(',')})` })
           });
@@ -1215,7 +1230,7 @@ export class AddNewColumnDialog {
         coreFunctionsNames.concat(packageNames)
           .forEach((name: string, idx: number) => options.push({
             label: name, type: "variable",
-            apply: idx < coreFunctionsNames.length ? `${name}(${coreFunctionsParams[name]
+            apply: idx < coreFunctionsNames.length ? `${name}(${coreFunctionsParams[name].params
               .filter((it) => it.propName !== FUNC_OUTPUT_TYPE)
               .map((it)=> it.propType).join(',')})` : `${name}:`,
             detail: idx < coreFunctionsNames.length ? '' : 'package',
