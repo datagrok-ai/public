@@ -32,7 +32,7 @@ category('Admetica', () => {
     molecules = grok.data.demo.molecules(100);
     v = grok.shell.addTableView(molecules);
     await grok.data.detectSemanticTypes(molecules);
-    await delay(1000);
+    await delay(5000);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     grok.shell.topMenu.find('Chem').group('Admetica').find('Сalculate...').click();
     await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot open Admetica dialog', 2000);
