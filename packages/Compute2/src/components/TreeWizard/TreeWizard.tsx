@@ -22,6 +22,7 @@ import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {of} from 'rxjs';
 import {ParentFunccallView} from '../ParentFunccallView/ParentFunccallView';
 import {computedWithControl, useUrlSearchParams} from '@vueuse/core';
+import { take } from 'rxjs/operators';
 
 const findTreeNode = (uuid: string, state: PipelineState): PipelineState | undefined => {
   let foundState = undefined as PipelineState | undefined;
@@ -133,14 +134,17 @@ export const TreeWizard = Vue.defineComponent({
       driver.sendCommand({event: 'initPipeline', provider});
     };
 
-    // let savedId = null as string | null;
-    // const loadPipeline = () => {
-    //   if (savedId) driver.sendCommand({event: 'loadPipeline', funcCallId: savedId});
-    // };
+    let savedId = null as string | null;
+    const loadPipeline = () => {
+      if (savedId) driver.sendCommand({event: 'loadPipeline', funcCallId: savedId});
+    };
 
     const savePipeline = () => {
-      driver.sendCommand({event: 'savePipeline'});
-      // savedId = driver.currentState$.value?.uuid ?? null;
+      driver.savePipeline({event: 'savePipeline'}).pipe(
+        take(1)
+      ).subscribe((saved) => {
+        savedId = saved?.id ?? null;
+      });
     };
 
     const runStep = async (uuid: string) => {
@@ -226,16 +230,16 @@ export const TreeWizard = Vue.defineComponent({
             }}
           /> }
         </RibbonPanel>
-        {/* <RibbonMenu groupName='State'>
+        <RibbonMenu groupName='State'>
           <span onClick={savePipeline}>
             <IconFA name='save' style={{'padding-right': '3px'}}/>
             <span> Save </span>
           </span>
-          <span>
+          <span onClick={loadPipeline}>
             <IconFA name='life-ring' style={{'padding-right': '3px'}}/>
             <span> Load </span>
           </span>
-        </RibbonMenu> */}
+        </RibbonMenu>
         {treeState.value && <DockManager class='block h-full' onPanelClosed={handlePanelClose}>
           { treeState.value && !treeHidden.value ? 
             Vue.withDirectives(<Draggable 
