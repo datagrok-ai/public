@@ -75,12 +75,14 @@ export async function TreeWizardEditor(call: DG.FuncCall) {
   const app = Vue.createApp(TreeWizardAppInstance, {providerFunc: call.func.nqName});
   view.root.classList.remove('ui-panel');
   view.root.classList.add('ui-box');
-  grok.shell.add(view);
-  app.mount(view.root);
+  
   view.name = call.func.friendlyName;
   view.parentCall = thisCall;
   view.parentView = thisCall.parentCall?.aux['view'];
   view.basePath = `/${thisCall.func.name}`;
+  
+  grok.shell.add(view);
+  app.mount(view.root);
 
   grok.events.onViewRemoved.pipe(
     filter((closedView) => {
