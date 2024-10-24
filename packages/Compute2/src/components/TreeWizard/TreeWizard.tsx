@@ -164,10 +164,12 @@ export const TreeWizard = Vue.defineComponent({
 
     const treeHidden = Vue.ref(false);
     const inspectorHidden = Vue.ref(true);
+    const inspectorInstance = Vue.ref(null as InstanceType<typeof Inspector> | null);
     const rfvRef = Vue.ref(null as InstanceType<typeof RichFunctionView> | null);
 
     const handlePanelClose = (el: HTMLElement) => {
       if (el === treeInstance.value?.$el.parentElement) treeHidden.value = true;
+      if (el === inspectorInstance.value?.$el) inspectorHidden.value = true;
     };
 
     return () => (
@@ -248,6 +250,7 @@ export const TreeWizard = Vue.defineComponent({
               treeState={treeState.value}
               config={config.value}
               logs={logs.value}
+              ref={inspectorInstance}
               dock-spawn-title='Inspector'
             ></Inspector>
           }
