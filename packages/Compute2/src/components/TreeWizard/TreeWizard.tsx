@@ -252,6 +252,7 @@ export const TreeWizard = Vue.defineComponent({
               logs={logs.value}
               ref={inspectorInstance}
               dock-spawn-title='Inspector'
+              class='h-full overflow-scroll'
             ></Inspector>
           }
           { treeState.value && !treeHidden.value ?
