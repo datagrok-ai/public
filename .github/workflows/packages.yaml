@@ -319,6 +319,7 @@ jobs:
           df -h
           apiUrl='http://127.0.0.1:8080/api'
           alias=${HOST}
+          docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} exec db psql -U postgres -d datagrok -c "UPDATE users SET agreement_accept_date = '2222-01-01';"
 
           # fi
 
