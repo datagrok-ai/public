@@ -705,10 +705,15 @@ export function biostructureDataToJson(
 export function structure3D(molecule: DG.SemanticValue): DG.Widget {
   const widget = new DG.Widget(ui.div([]));
   const { dataFrame, column, rowIndex } = molecule.cell;
-  const gridCell = grok.shell.getTableView(dataFrame.name)?.grid.cell(column.name, rowIndex);
+  const inBrowseView = grok.shell.v.type === DG.VIEW_TYPE.BROWSE;
+  const tableView = inBrowseView
+    ? ((grok.shell.view('Browse') as DG.BrowseView)?.preview as DG.TableView)
+    : grok.shell.getTableView(dataFrame.name);
+  const { grid } = tableView;
+  const gridCell = grid.cell(column.name, rowIndex);
   const renderer = new PdbGridCellRendererBack(null, column);
 
-  renderer.createViewer(gridCell).then(async ({ tview, viewer }) => {
+  renderer.createViewer(gridCell, tableView).then(async ({ tview, viewer }) => {
     if (tview && viewer) {
       widget.root.appendChild(viewer.root);
     }
