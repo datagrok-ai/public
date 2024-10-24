@@ -181,9 +181,13 @@ export async function MockProvider2(params: any) {
     version: '1.0',
     type: 'parallel',
     stepTypes: [{
-      id: 'stepAdd',
+      id: 'cooling',
       nqName: 'Compute:ObjectCooling',
-      friendlyName: 'cooling loooooooong name',
+      friendlyName: 'cooling',
+    }, {
+      id: 'stepAdd',
+      nqName: 'Compute2:TestAdd2',
+      friendlyName: 'add',
     }, {
       id: 'stepMul',
       nqName: 'Compute2:TestMul2',
@@ -195,7 +199,7 @@ export async function MockProvider2(params: any) {
     }],
     initialSteps: [
       {
-        id: 'stepAdd',
+        id: 'cooling',
       }, {
         id: 'pipeline1',
       },
