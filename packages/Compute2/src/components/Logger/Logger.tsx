@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
-import { LogItem } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/Logger';
+import {LogItem} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/Logger';
 
 
 export const Logger = Vue.defineComponent({
@@ -27,11 +27,11 @@ export const Logger = Vue.defineComponent({
           );
         } else if(item.type === 'treeUpdateMutation') {
           const dateString = item.timestamp.toISOString();
-          const pathString = item.mutationRootPath ? [...item.mutationRootPath.map(({idx}) => idx)].join('/') : '';
+          const pathString = item.mutationRootPath?.length ? [...item.mutationRootPath.map(({idx}) => idx)].join('/') : '/';
           return (
             <div key={item.uuid} style={{ display: 'flex', borderBottom: '1px solid Gainsboro', marginTop: '5px' }}>
               <span>
-                { dateString } | { item.type } | { pathString } | { item.addIdx } | { item.removeIdx }
+                { dateString } | { item.type } | mutationRootPath: { pathString } | addIdx: { String(item.addIdx) } | removeIdx: { String(item.removeIdx) }
               </span>
             </div>
           );

@@ -31,7 +31,7 @@ export class StateTree {
 
   constructor(
     item: StateTreeNode,
-    private config: PipelineConfigurationProcessed,
+    public config: PipelineConfigurationProcessed,
     private mockMode = false,
     private defaultValidators = false,
     private logger?: DriverLogger,
@@ -203,25 +203,24 @@ export class StateTree {
 
   public addSubTree(puuid: string, id: string, pos: number) {
     return this.mutateTree(() => {
-      const [_root, _nqName, path] = StateTree.findPipelineNode(this, puuid);
-      const subConfig = StateTree.getSubConfig(this.config, path, id);
+      const [_root, _nqName, ppath] = StateTree.findPipelineNode(this, puuid);
+      const subConfig = StateTree.getSubConfig(this.config, ppath, id);
       if (isPipelineStepConfig(subConfig))
-        this.nodeTree.attachBrunch(path, new TreeNode(new FuncCallNode(subConfig, false)), id, pos);
+        this.nodeTree.attachBrunch(ppath, new TreeNode(new FuncCallNode(subConfig, false)), id, pos);
       else {
         StateTree.fromPipelineConfig({
           config: this.config,
           startNode: subConfig,
-          startPath: [...path, {id, idx: pos}],
+          startPath: [...ppath, {id, idx: pos}],
           startState: this,
           isReadonly: false,
           defaultValidators: this.defaultValidators,
           mockMode: this.mockMode,
         });
       }
-      const [mutationRootPath, addIdx] = this.getMutationSlice(path);
       const mutationData: NestedMutationData = {
-        mutationRootPath,
-        addIdx,
+        mutationRootPath: ppath,
+        addIdx: pos,
       };
       return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(mapTo([mutationData]));
     });
@@ -229,10 +228,10 @@ export class StateTree {
 
   public loadSubTree(puuid: string, dbId: string, id: string, pos: number, isReadonly: boolean) {
     return this.mutateTree(() => {
-      const [_root, _nqName, path] = StateTree.findPipelineNode(this, puuid);
-      const subConfig = StateTree.getSubConfig(this.config, path, id);
+      const [_root, _nqName, ppath] = StateTree.findPipelineNode(this, puuid);
+      const subConfig = StateTree.getSubConfig(this.config, ppath, id);
       if (isPipelineStepConfig(subConfig))
-        throw new Error(`FuncCall node ${JSON.stringify(path)}, but pipeline is expected`);
+        throw new Error(`FuncCall node ${JSON.stringify(ppath)}, but pipeline is expected`);
       const tree = StateTree.load(
         {
           dbId,
@@ -244,12 +243,11 @@ export class StateTree {
       ).pipe(
         concatMap((tree) => StateTree.loadOrCreateCalls(tree, this.mockMode)),
       ).pipe(
-        map((tree) => this.nodeTree.attachBrunch(path, tree.nodeTree.root, id, pos)),
+        map((tree) => this.nodeTree.attachBrunch(ppath, tree.nodeTree.root, id, pos)),
       );
-      const [mutationRootPath, addIdx] = this.getMutationSlice(path);
       const mutationData: NestedMutationData = {
-        mutationRootPath,
-        addIdx,
+        mutationRootPath: ppath,
+        addIdx: pos,
       };
       return tree.pipe(mapTo([mutationData]));
     });

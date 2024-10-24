@@ -9,7 +9,7 @@ import {StateTree} from './runtime/StateTree';
 import {loadInstanceState} from './runtime/funccall-utils';
 import {callHandler} from './utils';
 import {PipelineConfiguration} from './config/PipelineConfiguration';
-import {getProcessedConfig} from './config/config-processing-utils';
+import {getProcessedConfig, PipelineConfigurationProcessed} from './config/config-processing-utils';
 import {ConsistencyInfo, FuncCallStateInfo} from './runtime/StateTreeNodes';
 import {ValidationResult} from './data/common-types';
 import {DriverLogger} from './data/Logger';
@@ -24,12 +24,14 @@ export class Driver {
   >>({});
   public currentMeta$ = new BehaviorSubject<Record<string, BehaviorSubject<any | undefined>>>({});
   public currentCallsState$ = new BehaviorSubject<Record<string, BehaviorSubject<FuncCallStateInfo | undefined>>>({});
+  public currentConfig$ = new BehaviorSubject<PipelineConfigurationProcessed | undefined>(undefined);
 
   public treeData$ = combineLatest([
     this.currentState$,
     this.currentCallsState$,
     this.currentValidations$,
-    this.currentConsistency$
+    this.currentConsistency$,
+    this.currentConfig$,
   ]).pipe(
     debounceTime(0),
   );
@@ -89,6 +91,11 @@ export class Driver {
       map((state) => state ? state.getFuncCallStates() : {}),
       takeUntil(this.closed$),
     ).subscribe(this.currentCallsState$);
+
+    this.states$.pipe(
+      map((state) => state ? state.config : undefined),
+      takeUntil(this.closed$),
+    ).subscribe(this.currentConfig$)
 
     this.states$.pipe(
       switchMap((state) => state ? state.globalROLocked$ : of(false)),
