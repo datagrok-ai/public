@@ -25,7 +25,7 @@ class WebGPUCache {
   colorBuffer: GPUBuffer | null = null;
   colorColumnName = '';
   colorLength = -1;
-  colorAxisType: keyof typeof DG.AxisType = DG.AxisType.logarithmic;
+  colorAxisType: keyof typeof DG.AxisType | null = null;
   colorMin = -1;
   colorMax = -1;
   selectedRowsColor = -1;
@@ -34,6 +34,7 @@ class WebGPUCache {
   invertColorScheme = true;
   linearColorScheme: Array<number> = [];
   categoricalColorScheme: Array<number> = [];
+  selectionVersion = -1;
   texture: OffscreenCanvas | null = null;
   minTextureSize = 2;
   maxTextureSize = 100;
@@ -46,20 +47,26 @@ class WebGPUCache {
     const yCol = sc.table.col(sc.props.yColumnName);
     if (!xCol || !yCol)
       return false;
+
+    // Storing check results first not to rewrite anything beforehand
+    const indexBufferChanged = this.isIndexBufferChanged(sc.filter);
+    const columnChanged = this.isColumnChanged(xCol, yCol);
+    const markerSizesParamsChanged = this.isMarkerSizesParamsChanged(sc);
+    const colorChanged = this.isColorChanged(sc);
   
-    if (this.isIndexBufferChanged(sc.filter))
+    if (indexBufferChanged)
         this.setIndexBuffer(sc.filter, device);
   
-    if (this.isColumnChanged(xCol, yCol))
+    if (columnChanged)
         this.setColumns(xCol, yCol, device);
   
     // We'll set the viewBox and viewPort each time as this is cheap
     this.setViewBuffer(sc, device, pt);
   
-    if (this.isMarkerSizesParamsChanged(sc))
+    if (markerSizesParamsChanged)
         this.setMarkerSizes(sc, device);
 
-    if (this.isColorChanged(sc))
+    if (colorChanged)
       this.setColor(sc, device);
   
     return this.isValid();
@@ -92,6 +99,7 @@ class WebGPUCache {
      sc.props.invertColorScheme != this.invertColorScheme ||
      sc.props.colorMin != this.colorMin ||
      sc.props.colorMax != this.colorMax ||
+     sc.dataFrame.selection.version != this.selectionVersion ||
      sc.props.linearColorScheme.length != this.linearColorScheme.length ||
      !sc.props.linearColorScheme.every((c, i) => c == this.linearColorScheme[i]) ||
      sc.props.categoricalColorScheme.length != this.categoricalColorScheme.length ||
@@ -184,7 +192,7 @@ class WebGPUCache {
     this.markerDefaultSize = sc.props.markerDefaultSize;
     this.sizeColumnName = sc.props.sizeColumnName;
     if (!sc.props.sizeColumnName) {
-      const size = sc.getMarkerSize(0);
+      const size = Math.max(sc.getMarkerSize(0), 2);
       this.markerSizesLength = 1;
       this.markerSizesBuffer = device.createBuffer({
           size: getPaddedSize(this.markerSizesLength),
@@ -222,6 +230,7 @@ class WebGPUCache {
     this.colorMax = sc.props.colorMax;
     this.linearColorScheme = sc.props.linearColorScheme;
     this.categoricalColorScheme = sc.props.categoricalColorScheme;
+    this.selectionVersion = sc.dataFrame.selection.version;
     this.colorBuffer = device.createBuffer({
         size: getPaddedSize(this.colorLength),
         usage: GPUBufferUsage.STORAGE,
@@ -612,6 +621,7 @@ async function webGPURenderTexture(webGPUCanvas: HTMLCanvasElement, sc: DG.Scatt
             @builtin(position) position: vec4f,
             @location(0) texcoord: vec2f,
             @location(1) @interpolate(flat) markerIndex: u32, // This stores the marker index for the fragment shader
+            @location(2) @interpolate(flat) sizeIndex: u32, // This stores the marker size index for the fragment shader
         };
 
         ${addStructures(cache)}
@@ -804,7 +814,7 @@ function createCircleCanvas(size: number, sc: DG.ScatterPlotViewer): OffscreenCa
     ctx.fillStyle = "#0000ff";
     ctx.fill();
     ctx.lineWidth = lineWidth * 2;
-    ctx.strokeStyle = "#ffff00";
+    ctx.strokeStyle = "#00003f";
     ctx.stroke();
     ctx.restore();
   }
@@ -939,7 +949,8 @@ function addDifferentMarkerSizesRendering(cache: WebGPUCache, sc: DG.ScatterPlot
           // Making a pixel perfect position, to avoid artefacts and blurring
           vsOut.position = vec4f(floor((normalizedPos + pos * (maxSize + ${sc.props.markerBorderWidth * 2 + cache.texturePadding}) / uni.resolution) * uni.resolution) / uni.resolution, 0, 1);
           vsOut.texcoord = pos * 0.5 + 0.5;
-          vsOut.markerIndex = sizeIndex;   // Pass marker index to fragment shader
+          vsOut.markerIndex = u32(vert.index);
+          vsOut.sizeIndex = sizeIndex;
           return vsOut;
       }
 
@@ -947,7 +958,7 @@ function addDifferentMarkerSizesRendering(cache: WebGPUCache, sc: DG.ScatterPlot
           let gridSize: u32 = ${cache.textureGridSize};
 
           // Get the size index based on the marker index (you might want a mapping function here)
-          let sizeIndex: u32 = vsOut.markerIndex;
+          let sizeIndex: u32 = vsOut.sizeIndex;
 
           // Calculate (x, y) in the texture atlas grid
           let x: u32 = sizeIndex % gridSize;
@@ -961,15 +972,12 @@ function addDifferentMarkerSizesRendering(cache: WebGPUCache, sc: DG.ScatterPlot
           let texCoords = vsOut.texcoord * uvScale + uvOffset;
 
           let color = textureSample(t, s, texCoords);
-          var c = markerColors[sizeIndex];
+          var c = markerColors[vsOut.markerIndex];
           
-          if (color.b > 0.0 || color.g > 0.0) {            
-            if (color.g > 0.0) {
-              c = darken(c, i32(floor(color.g * 100.0)));
-            }
-            return vec4f(r(c), g(c), b(c), a(c));
+          // color.b is from 0 to 1 - basically it measures intencity, as stroke is darker
+          if (color.b > 0.0) {
+            return vec4f(r(c) * color.b, g(c) * color.b, b(c) * color.b, color.a);  
           }
-
           return color;
       }
   `;
@@ -1002,6 +1010,7 @@ function addSingleMarkerSizeRendering(cache: WebGPUCache, sc: DG.ScatterPlotView
           vsOut.position = vec4f(normalizedPos + pos * (markerSize + ${sc.props.markerBorderWidth * 2}) / uni.resolution, 0, 1);
           vsOut.texcoord = pos * 0.5 + 0.5;
           vsOut.markerIndex = u32(vert.index);   // Pass marker index to fragment shader
+          vsOut.sizeIndex = 0;
           return vsOut;
       }
 
@@ -1009,13 +1018,10 @@ function addSingleMarkerSizeRendering(cache: WebGPUCache, sc: DG.ScatterPlotView
           let color = textureSample(t, s, vsOut.texcoord);
           var c = markerColors[vsOut.markerIndex];
 
-          if (color.b > 0.0 || color.g > 0.0) {
-            if (color.g > 0.0) {
-              c = darken(c, i32(floor(color.g * 100.0)));
-            }
-            return vec4f(r(c), g(c), b(c), a(c));
+          // color.b is from 0 to 1 - basically it measures intencity, as stroke is darker
+          if (color.b > 0.0) {
+            return vec4f(r(c) * color.b, g(c) * color.b, b(c) * color.b, color.a);  
           }
-
           return color;
       }
   `;

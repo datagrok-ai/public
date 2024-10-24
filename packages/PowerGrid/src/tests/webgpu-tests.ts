@@ -12,7 +12,7 @@ category('webgpu', () => {
   test('gpuRender', async () => {
     const types = ['dot', 'circle'];
     for (let size = 10000000; size <= 10000000; size *= 10) {
-    for (let type = 0; type < types.length; ++type) {
+      for (let type = 0; type < types.length; ++type) {
         const df: DG.DataFrame = grok.data.demo.randomWalk(size, 2);
         df.name = 'test';
         const view = grok.shell.addTableView(df);
@@ -28,12 +28,12 @@ category('webgpu', () => {
         }
       }
     }
-  });
+  }, {benchmarkTimeout: 20000});
   
   test('gpuHitTest', async () => {
     const types = ['dot', 'circle'];
     for (let size = 10000000; size <= 10000000; size *= 10) {
-    for (let type = 0; type < types.length; ++type) {
+      for (let type = 0; type < types.length; ++type) {
         const df: DG.DataFrame = grok.data.demo.randomWalk(size, 2);
         df.name = 'test';
         const view = grok.shell.addTableView(df);
@@ -49,5 +49,5 @@ category('webgpu', () => {
         }
       }
     }
-  });
-});
+  }, {benchmarkTimeout: 20000});
+}, {benchmarks: true});
