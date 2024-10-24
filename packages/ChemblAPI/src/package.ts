@@ -65,8 +65,8 @@ export function getData(searchType: SEARCH_TYPE, smiles: string, score: number |
     //   col.set(i, property.textContent);
     // }
   }
-  for (let i = stopIdx + 1; i < rowCount; i++)
-    df.rows.removeAt(stopIdx + 1);
+  for (let i = stopIdx; i < rowCount; i++)
+    df.rows.removeAt(stopIdx);
   return df;
 }
 

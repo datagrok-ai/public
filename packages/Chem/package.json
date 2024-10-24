@@ -4,8 +4,8 @@
   "fullName": "Chem",
   "version": "1.12.4",
   "author": {
-    "name": "Leonid Stolbov",
-    "email": "lstolbov@datagrok.ai"
+    "name": "Maria Dolotova",
+    "email": "mdolotova@datagrok.ai"
   },
   "description": "Cheminformatics support: import, rendering, sketching, calculation of properties, predictive models, augmentations, multiple analyses.",
   "repository": {

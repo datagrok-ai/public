@@ -138,6 +138,8 @@ export namespace chem {
     onHighlightChanged: Subject<boolean> = new Subject<boolean>();
     sketcherFunctions: Func[] = [];
     sketcherDialogOpened = false;
+    molInputChanged = false;
+    pastedMolFile = '';
 
     /** Whether the currently drawn molecule becomes the current object as you sketch it */
     syncCurrentObject: boolean = true;
@@ -302,7 +304,7 @@ export namespace chem {
     setValue(x: string) {
       const index = extractors.map(it => it.name.toLowerCase()).indexOf('nametosmiles');
       const el = extractors.splice(index, 1)[0];
-      extractors.splice(extractors.length, 0, el);
+      extractors.unshift(el);
 
       const extractor = extractors
         .find((f) => new RegExp(f.options['inputRegexp']).test(x));
@@ -504,24 +506,29 @@ export namespace chem {
       }
 
       const applyInput = (e: any) => {
-        const newSmilesValue: string = (e?.target as HTMLTextAreaElement).value;
+        const newValue: string = !!this.pastedMolFile && !this. molInputChanged ?
+          this.pastedMolFile : (e?.target as HTMLTextAreaElement).value;
+        this.pastedMolFile = '';
+        this.molInputChanged = false;
 
-        if (this.getSmiles() !== newSmilesValue)
-          this.setValue(newSmilesValue);
+        if ((isMolBlock(newValue) && this.getMolFile() !== newValue) || this.getSmiles() !== newValue)
+          this.setValue(newValue);
       };
 
       this.molInput.addEventListener('keydown', (e) => {
         if (e.key == 'Enter') {
           applyInput(e);
           e.stopImmediatePropagation();
+        } else {
+          this.molInputChanged = true;
         }
       });
 
       this.molInput.addEventListener('paste', (e) => {
         const text = e.clipboardData?.getData('text/plain');
         if (text != null && isMolBlock(text)) {
-          e.preventDefault();
-          this.setValue(text);
+          this.pastedMolFile = text;
+          this.molInputChanged = false;
         }
       });
 

@@ -1,7 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import * as rx from "rxjs";
 
 export class ServiceLogsApp extends DG.ViewBase {
     static readonly DEFAULT_LIMIT: number = 1000;
@@ -24,18 +23,22 @@ export class ServiceLogsApp extends DG.ViewBase {
         (this.limitInput.input as HTMLInputElement).placeholder = `${ServiceLogsApp.DEFAULT_LIMIT}`;
         this.serviceChoiceInput = ui.input.choice<string | null>('Service', {items: services, tooltipText: 'Choose service',
             nullable: false, value: service ? service : services.length > 0 ? services[0] : null});
-        rx.merge(this.limitInput.onInput, this.serviceChoiceInput.onInput).subscribe(async (_) => {
-            if (this.limitInput.input.classList.contains('d4-invalid'))
-                return;
-            this.updatePath();
-            await this.getLogs();
-        });
+        this.subs.push(
+            this.serviceChoiceInput.onInput.subscribe(async (_) => {
+                if (this.limitInput.input.classList.contains('d4-invalid'))
+                    return;
+                this.updatePath();
+                await this.getLogs();
+            })
+        );
         const form = ui.forms.condensed([this.serviceChoiceInput, this.limitInput]);
         const content = ui.divV([form, this.logsRoot]);
         this.root.append(content);
-        this.setRibbonPanels([[ui.iconFA('arrow-to-bottom', () => DG.Utils.download(`${this.serviceChoiceInput.value ?? ''}.logs`, new Blob([this.currentLogs], {
+        const downloadIcon = ui.iconFA('arrow-to-bottom', () => DG.Utils.download(`${this.serviceChoiceInput.value ?? ''}.logs`, new Blob([this.currentLogs], {
                 type: 'text/plain'}),  'text/plain'),
-            'Download logs')]]);
+            'Download logs');
+        const refreshIcon = ui.iconFA('sync', async () => await this.getLogs(), 'Refresh logs');
+        this.setRibbonPanels([[downloadIcon, refreshIcon]]);
         setTimeout(() => this.updatePath(), 300);
     }
 
