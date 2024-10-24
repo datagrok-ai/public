@@ -664,6 +664,9 @@ export class AddNewColumnDialog {
         if (!this.columnNamesLowerCase.includes(unescapedMatch.toLowerCase()))
           unmatchedCols.push(colName);
     }
+    if (unmatchedCols.length)
+      return unmatchedCols.length > 1 ? `Columns ${unmatchedCols.join(',')} are missing` :
+        `Column ${unmatchedCols[0]} is missing`;
     //check for single column formula
     if (isSingleCol)
       return '';
@@ -1024,7 +1027,6 @@ export class AddNewColumnDialog {
 
     return columnsAndSelections.columnNames
       .filter((v, i, a) => a.indexOf(v) === i) // Selecting only unique names.
-      .map((name) => name.slice(2, -1)) // Removing the naming syntax: ${}.
       .filter((v) => lcSourceColumnNames.includes(v.toLowerCase())); // Selecting only real column names.
   }
 
