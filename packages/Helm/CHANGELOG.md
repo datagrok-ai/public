@@ -1,5 +1,11 @@
 # Helm changelog
 
+## 2.5.7 (2024-10-24)
+
+### Bug fixes
+
+* Fix HelmHelper adding .seqHelper
+
 ## 2.5.6 (2024-10-22)
 
 ### Bug fixes
