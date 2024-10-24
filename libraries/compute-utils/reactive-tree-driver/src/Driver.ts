@@ -4,12 +4,12 @@ import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, Observable, Subject, EMPTY, of, from, combineLatest} from 'rxjs';
 import {isFuncCallSerializedState, PipelineState} from './config/PipelineInstance';
 import {AddDynamicItem, InitPipeline, LoadDynamicItem, LoadPipeline, MoveDynamicItem, RemoveDynamicItem, RunAction, RunSequence, RunStep, SaveDynamicItem, SavePipeline, ViewConfigCommands} from './view/ViewCommunication';
-import {pairwise, takeUntil, concatMap, catchError, switchMap, map, mapTo, startWith, withLatestFrom, tap, debounceTime} from 'rxjs/operators';
+import {pairwise, takeUntil, concatMap, catchError, switchMap, map, mapTo, startWith, withLatestFrom, tap, debounceTime, distinctUntilChanged} from 'rxjs/operators';
 import {StateTree} from './runtime/StateTree';
 import {loadInstanceState} from './runtime/funccall-utils';
 import {callHandler} from './utils';
 import {PipelineConfiguration} from './config/PipelineConfiguration';
-import {getProcessedConfig} from './config/config-processing-utils';
+import {getProcessedConfig, PipelineConfigurationProcessed} from './config/config-processing-utils';
 import {ConsistencyInfo, FuncCallStateInfo} from './runtime/StateTreeNodes';
 import {ValidationResult} from './data/common-types';
 import {DriverLogger} from './data/Logger';
@@ -24,12 +24,14 @@ export class Driver {
   >>({});
   public currentMeta$ = new BehaviorSubject<Record<string, BehaviorSubject<any | undefined>>>({});
   public currentCallsState$ = new BehaviorSubject<Record<string, BehaviorSubject<FuncCallStateInfo | undefined>>>({});
+  public currentConfig$ = new BehaviorSubject<PipelineConfigurationProcessed | undefined>(undefined);
 
   public treeData$ = combineLatest([
     this.currentState$,
     this.currentCallsState$,
     this.currentValidations$,
-    this.currentConsistency$
+    this.currentConsistency$,
+    this.currentConfig$,
   ]).pipe(
     debounceTime(0),
   );
@@ -62,41 +64,50 @@ export class Driver {
         oldval.close();
     });
 
-    this.states$.pipe(
+    const stateUpdates$ = this.states$.pipe(
       switchMap((state) => state ?
         state.makeStateRequests$.pipe(startWith(null), mapTo(state)) :
-        of(undefined)),
+        of(undefined)));
+
+    stateUpdates$.pipe(
       map((state) => state ? state.toState() : undefined),
       takeUntil(this.closed$),
     ).subscribe(this.currentState$);
 
-    this.states$.pipe(
+    stateUpdates$.pipe(
       map((state) => state ? state.getConsistency() : {}),
       takeUntil(this.closed$),
     ).subscribe(this.currentConsistency$);
 
-    this.states$.pipe(
+    stateUpdates$.pipe(
       map((state) => state ? state.getMeta() : {}),
       takeUntil(this.closed$),
     ).subscribe(this.currentMeta$);
 
-    this.states$.pipe(
+    stateUpdates$.pipe(
       map((state) => state ? state.getValidations() : {}),
       takeUntil(this.closed$),
     ).subscribe(this.currentValidations$);
 
-    this.states$.pipe(
+    stateUpdates$.pipe(
       map((state) => state ? state.getFuncCallStates() : {}),
       takeUntil(this.closed$),
     ).subscribe(this.currentCallsState$);
 
-    this.states$.pipe(
+    stateUpdates$.pipe(
+      map((state) => state ? state.config : undefined),
+      takeUntil(this.closed$),
+    ).subscribe(this.currentConfig$)
+
+    stateUpdates$.pipe(
       switchMap((state) => state ? state.globalROLocked$ : of(false)),
+      distinctUntilChanged(),
       takeUntil(this.closed$),
     ).subscribe(this.globalROLocked$);
 
-    this.states$.pipe(
+    stateUpdates$.pipe(
       switchMap((state) => state ? state.treeMutationsLocked$ : of(false)),
+      distinctUntilChanged(),
       takeUntil(this.closed$),
     ).subscribe(this.treeMutationsLocked$);
   }

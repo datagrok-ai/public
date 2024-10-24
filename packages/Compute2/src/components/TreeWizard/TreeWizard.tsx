@@ -6,9 +6,9 @@ import * as Vue from 'vue';
 import {zipSync, Zippable} from 'fflate';
 import {DockManager, IconFA, ifOverlapping, RibbonMenu, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
-import {useExtractedObservable, useSubject, useSubscription} from '@vueuse/rxjs';
+import {useExtractedObservable, useObservable, useSubject, useSubscription} from '@vueuse/rxjs';
 import {
-  isFuncCallState, isParallelPipelineState, 
+  isFuncCallState, isParallelPipelineState,
   isSequentialPipelineState, isStaticPipelineState, PipelineState,
   StepFunCallState,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
@@ -22,23 +22,25 @@ import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {of} from 'rxjs';
 import {PipelineView} from '../PipelineView/PipelineView';
 import {computedWithControl, useUrlSearchParams} from '@vueuse/core';
-import { take } from 'rxjs/operators';
+import {LogItem} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/Logger';
+import {PipelineConfigurationProcessed} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
+import { Inspector } from '../Inspector/Inspector';
 
 const findTreeNode = (uuid: string, state: PipelineState): PipelineState | undefined => {
   let foundState = undefined as PipelineState | undefined;
   const notVisitedStates = [state];
-  
+
   while (notVisitedStates.length > 0 && !foundState) {
     const currentState = notVisitedStates.pop()!;
 
-    if (currentState.uuid === uuid) 
+    if (currentState.uuid === uuid)
       foundState = currentState;
 
     if (
       isParallelPipelineState(currentState) ||
-      isSequentialPipelineState(currentState) || 
+      isSequentialPipelineState(currentState) ||
       isStaticPipelineState(currentState)
-    ) 
+    )
       notVisitedStates.push(...currentState.steps);
   }
 
@@ -53,6 +55,8 @@ export const TreeWizard = Vue.defineComponent({
   setup(props) {
     const driver = new Driver();
     const treeState = Vue.shallowRef<PipelineState | undefined>(undefined);
+    const logs = useObservable(driver.logger.logs$);
+    const config = useObservable(driver.currentConfig$);
     const chosenStepUuid = Vue.ref<string | undefined>(undefined);
 
     const searchParams = useUrlSearchParams('history');
@@ -89,8 +93,8 @@ export const TreeWizard = Vue.defineComponent({
         //@ts-ignore
         const oldStats = treeInstance.value!.statsFlat as AugmentedStat[];
         oldClosed = oldStats.reduce((acc, stat) => {
-          if (!stat.open) 
-            acc.push(stat.data.uuid); 
+          if (!stat.open)
+            acc.push(stat.data.uuid);
           return acc;
         }, [] as string[]);
       }
@@ -101,22 +105,22 @@ export const TreeWizard = Vue.defineComponent({
 
     const callStates = useSubject(driver.currentCallsState$);
     const currentCallState = useExtractedObservable(
-      [callStates, chosenStepUuid], 
-      ([callsState, chosenStepUuid]) => 
+      [callStates, chosenStepUuid],
+      ([callsState, chosenStepUuid]) =>
         chosenStepUuid && callsState[chosenStepUuid] ? callsState[chosenStepUuid].asObservable(): of(undefined),
       {},
       {
         immediate: true,
       },
     );
-    const isTreeReportable = computedWithControl([currentCallState], 
+    const isTreeReportable = computedWithControl([currentCallState],
       () => Object.values(callStates.value)
         .map((state) => state.value?.isOutputOutdated)
         .every((isOutdated) => isOutdated === false),
     );
 
     const restoreOpenedNodes = (stat: AugmentedStat) => {
-      if (oldClosed.includes(stat.data.uuid)) 
+      if (oldClosed.includes(stat.data.uuid))
         stat.open = false;
       return stat;
     };
@@ -125,7 +129,7 @@ export const TreeWizard = Vue.defineComponent({
     Vue.onMounted(() => {
       initPipeline(props.providerFunc);
     });
-    
+
     Vue.onUnmounted(() => {
       driver.close();
     });
@@ -159,6 +163,7 @@ export const TreeWizard = Vue.defineComponent({
     };
 
     const treeHidden = Vue.ref(false);
+    const inspectorHidden = Vue.ref(true);
     const rfvRef = Vue.ref(null as InstanceType<typeof RichFunctionView> | null);
 
     const handlePanelClose = (el: HTMLElement) => {
@@ -168,12 +173,18 @@ export const TreeWizard = Vue.defineComponent({
     return () => (
       Vue.withDirectives(<div class='w-full h-full'>
         <RibbonPanel>
-          <IconFA 
+          <IconFA
             name='folder-tree'
             tooltip={treeHidden.value ? 'Show tree': 'Hide tree'}
-            onClick={() => treeHidden.value = !treeHidden.value } 
+            onClick={() => treeHidden.value = !treeHidden.value }
           />
-          {treeState.value && isTreeReportable.value && <IconFA 
+          <IconFA
+            name='bug'
+            tooltip={inspectorHidden.value ? 'Show inspector': 'Hide inspector'}
+            onClick={() => inspectorHidden.value = !inspectorHidden.value }
+          />
+
+          {treeState.value && isTreeReportable.value && <IconFA
             name='arrow-to-bottom'
             tooltip='Report all steps'
             onClick={async () => {
@@ -201,8 +212,8 @@ export const TreeWizard = Vue.defineComponent({
                   }
 
                   if (
-                    isSequentialPipelineState(state) || 
-                    isParallelPipelineState(state) || 
+                    isSequentialPipelineState(state) ||
+                    isParallelPipelineState(state) ||
                     isStaticPipelineState(state)
                   ) {
                     const nestedPath = `${String(idx).padStart(3, '0')}_${state.friendlyName ?? state.nqName}`;
@@ -210,15 +221,15 @@ export const TreeWizard = Vue.defineComponent({
 
                     if (previousPath.length > 0) validatedNestedPath = `${previousPath}/${validatedNestedPath}`;
 
-                    for (const [idx, stepState] of state.steps.entries()) 
+                    for (const [idx, stepState] of state.steps.entries())
                       await reportStep(stepState, validatedNestedPath, idx + 1);
                   }
-                }; 
-                
+                };
+
                 await reportStep(treeState.value);
 
                 DG.Utils.download(
-                  `${treeState.value.friendlyName ?? treeState.value.configId}.zip`, 
+                  `${treeState.value.friendlyName ?? treeState.value.configId}.zip`,
                   new Blob([zipSync(zipConfig)]),
                 );
               }
@@ -232,40 +243,48 @@ export const TreeWizard = Vue.defineComponent({
           </span>
         </RibbonMenu>
         {treeState.value && <DockManager class='block h-full' onPanelClosed={handlePanelClose}>
-          { treeState.value && !treeHidden.value ? 
-            Vue.withDirectives(<Draggable 
+          { !inspectorHidden.value &&
+            <Inspector
+              treeState={treeState.value}
+              config={config.value}
+              logs={logs.value}
+              dock-spawn-title='Inspector'
+            ></Inspector>
+          }
+          { treeState.value && !treeHidden.value ?
+            Vue.withDirectives(<Draggable
               class="ui-div mtl-tree p-2 overflow-scroll h-full"
               style={{paddingLeft: '25px'}}
 
               dock-spawn-title='Steps'
               dock-spawn-dock-type='left'
               dock-spawn-dock-ratio={0.3}
-                
+
               rootDroppable={false}
               treeLine
               childrenKey='steps'
               nodeKey={(stat: AugmentedStat) => stat.data.uuid}
               statHandler={restoreOpenedNodes}
 
-              ref={treeInstance} 
-              modelValue={[treeState.value]} 
-        
+              ref={treeInstance}
+              modelValue={[treeState.value]}
+
               eachDraggable={(stat: AugmentedStat) =>
-                (stat.parent && 
+                (stat.parent &&
                 (isParallelPipelineState(stat.parent.data) || isSequentialPipelineState(stat.parent.data))
                 ) ?? false
               }
-              eachDroppable={(stat: AugmentedStat) => 
+              eachDroppable={(stat: AugmentedStat) =>
                 (isParallelPipelineState(stat.data) || isSequentialPipelineState(stat.data))}
               onAfter-drop={() => {
                 const draggedStep = dragContext.startInfo.dragNode as AugmentedStat;
                 moveStep(draggedStep.data.uuid, dragContext.targetInfo.indexBeforeDrop);
               }}
-            > 
-              { 
-                ({stat}: {stat: AugmentedStat}) =>  
+            >
+              {
+                ({stat}: {stat: AugmentedStat}) =>
                   (
-                    <TreeNode 
+                    <TreeNode
                       stat={stat}
                       callState={callStates.value?.[stat.data.uuid]?.value}
                       style={{'background-color': stat.data.uuid === chosenStepUuid.value ? '#f2f2f5' : null}}
@@ -284,11 +303,11 @@ export const TreeWizard = Vue.defineComponent({
                   )
               }
             </Draggable>, [[ifOverlapping, treeMutationsLocked.value, 'Locked...']]): null },
-          
+
           {
-            chosenStepState.value && 
+            chosenStepState.value &&
             isFuncCallState(chosenStepState.value) && chosenStepState.value.funcCall &&
-              <RichFunctionView 
+              <RichFunctionView
                 class='overflow-hidden'
                 funcCall={chosenStepState.value.funcCall!}
                 callState={currentCallState.value}
@@ -306,7 +325,7 @@ export const TreeWizard = Vue.defineComponent({
               funcCall={DG.Func.byName(chosenStepState.value.nqName!).prepare()}
               dock-spawn-title='Step sequence review'
               onProceedClicked={() => {
-                if (chosenStepState.value && !isFuncCallState(chosenStepState.value)) 
+                if (chosenStepState.value && !isFuncCallState(chosenStepState.value))
                   chosenStepUuid.value = chosenStepState.value.steps[0].uuid;
               }}
               onUpdate:funcCall={(newCall) => loadPipeline(newCall.id)}
