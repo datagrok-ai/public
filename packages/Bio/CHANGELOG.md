@@ -1,5 +1,11 @@
 # Bio changelog
 
+## 2.16.7 (WIP)
+
+### Bug fixes
+
+* Fix splitterAsHelm for multiple simple polymers, add test
+
 ## 2.16.6 (2024-10-22)
 
 ### Bug fixes
