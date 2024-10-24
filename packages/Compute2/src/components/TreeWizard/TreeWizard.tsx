@@ -134,17 +134,12 @@ export const TreeWizard = Vue.defineComponent({
       driver.sendCommand({event: 'initPipeline', provider});
     };
 
-    let savedId = null as string | null;
-    const loadPipeline = () => {
-      if (savedId) driver.sendCommand({event: 'loadPipeline', funcCallId: savedId});
+    const loadPipeline = (funcCallId: string) => {
+      driver.sendCommand({event: 'loadPipeline', funcCallId});
     };
 
     const savePipeline = () => {
-      driver.savePipeline({event: 'savePipeline'}).pipe(
-        take(1)
-      ).subscribe((saved) => {
-        savedId = saved?.id ?? null;
-      });
+      driver.sendCommand({event: 'savePipeline'})
     };
 
     const runStep = async (uuid: string) => {
@@ -235,10 +230,6 @@ export const TreeWizard = Vue.defineComponent({
             <IconFA name='save' style={{'padding-right': '3px'}}/>
             <span> Save </span>
           </span>
-          <span onClick={loadPipeline}>
-            <IconFA name='life-ring' style={{'padding-right': '3px'}}/>
-            <span> Load </span>
-          </span>
         </RibbonMenu>
         {treeState.value && <DockManager class='block h-full' onPanelClosed={handlePanelClose}>
           { treeState.value && !treeHidden.value ? 
@@ -318,6 +309,7 @@ export const TreeWizard = Vue.defineComponent({
                 if (chosenStepState.value && !isFuncCallState(chosenStepState.value)) 
                   chosenStepUuid.value = chosenStepState.value.steps[0].uuid;
               }}
+              onUpdate:funcCall={(newCall) => loadPipeline(newCall.id)}
             />
           }
         </DockManager> }
