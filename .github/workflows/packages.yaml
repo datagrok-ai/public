@@ -319,8 +319,6 @@ jobs:
           df -h
           apiUrl='http://127.0.0.1:8080/api'
           alias=${HOST}
-          docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} exec db psql -U postgres -d datagrok -c "UPDATE users SET agreement_accept_date = '2222-01-01';"
-
           # fi
 
           echo "apiUrl=$apiUrl" >> $GITHUB_OUTPUT
@@ -370,6 +368,7 @@ jobs:
           done
           curl -s ${{ steps.datagrok-image.outputs.apiUrl }}/info/server
           curl -s ${{ steps.datagrok-image.outputs.apiUrl }}/admin/health
+          docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} exec db psql -U postgres -d datagrok -c "UPDATE users SET agreement_accept_date = '2222-01-01';"
       - name: Create configuration for grok command-line tool
         if: ${{ matrix.test == 'test' }}
         id: grok-config
