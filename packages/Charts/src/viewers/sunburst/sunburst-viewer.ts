@@ -305,6 +305,9 @@ export class SunburstViewer extends EChartViewer {
     const maxHeightCharacters = Math.floor(height / averageCharHeight);
     const maxLength = maxWidthCharacters;
 
+    if (width < averageCharWidth || height < averageCharHeight)
+      return ' ';
+
     const name = params.name;
     const lines = name.split(' ');
     let result = '';
