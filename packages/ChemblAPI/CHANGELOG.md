@@ -1,5 +1,11 @@
 # ChemblAPI changelog
 
+## 1.1.1 (2024-10-24)
+
+### Bug fixes
+
+* GROK-16847: Empty structure is shown in search results
+
 ## 1.0.13 (2024-08-05)
 
 * Fixed tests
