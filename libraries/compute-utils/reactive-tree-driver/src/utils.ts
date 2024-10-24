@@ -10,7 +10,7 @@ export function callHandler<R, P = any>(handler: HandlerBase<P, R>, params: P): 
       const f: DG.Func = await grok.functions.eval(handler);
       const call = f.prepare({params});
       await call.call();
-      const res = call.outputs.result as R;
+      const res = call.getOutputParamValue() as R;
       return res;
     });
   } else {
