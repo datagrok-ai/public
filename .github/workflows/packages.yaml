@@ -368,7 +368,9 @@ jobs:
           done
           curl -s ${{ steps.datagrok-image.outputs.apiUrl }}/info/server
           curl -s ${{ steps.datagrok-image.outputs.apiUrl }}/admin/health
-          docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} exec db psql -U postgres -d datagrok -c "UPDATE users SET agreement_accept_date = '2222-01-01';"
+
+          token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/admin | jq -r .token)
+          curl -s -H "Authorization: $token" -H "Content-Type": "application/json" '${{ steps.datagrok-image.outputs.apiUrl }}/admin/plugins/admin/settings' -X POST -d '{"#type":"AdminPluginSettings", "agreementDate":null}'
       - name: Create configuration for grok command-line tool
         if: ${{ matrix.test == 'test' }}
         id: grok-config
