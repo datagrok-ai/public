@@ -282,7 +282,10 @@ export const TreeWizard = Vue.defineComponent({
                 (isParallelPipelineState(stat.data) || isSequentialPipelineState(stat.data))}
               onAfter-drop={() => {
                 const draggedStep = dragContext.startInfo.dragNode as AugmentedStat;
-                moveStep(draggedStep.data.uuid, dragContext.targetInfo.indexBeforeDrop);
+                const newIndex = dragContext.startInfo.indexBeforeDrop < dragContext.targetInfo.indexBeforeDrop ?
+                  dragContext.targetInfo.indexBeforeDrop - 1:
+                  dragContext.targetInfo.indexBeforeDrop;
+                moveStep(draggedStep.data.uuid, newIndex);
               }}
             >
               {
