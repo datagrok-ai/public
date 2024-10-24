@@ -7,102 +7,12 @@ import {AugmentedStat, Status} from './types';
 import {ComboPopup, IconFA} from '@datagrok-libraries/webcomponents-vue';
 import {OpenIcon} from '@he-tree/vue';
 import {
-  isFuncCallState, isParallelPipelineState, 
+  isParallelPipelineState, 
   isSequentialPipelineState, PipelineState, 
   PipelineStateParallel, PipelineStateSequential,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {useElementHover} from '@vueuse/core';
 import {FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
-
-const getCall = (funcCall: DG.FuncCall | string, params?: {
-  a?: number,
-  b?: number,
-}) => {
-  const defaultParams = {
-    a: 2,
-    b: 3,
-  };
-
-  return funcCall instanceof DG.FuncCall ?
-    funcCall.func.prepare({
-      ...defaultParams,
-      ...params,
-    }) : DG.Func.byName(funcCall).prepare({
-      ...defaultParams,
-      ...params,
-    });
-};
-
-const runSequentallly = async (children: AugmentedStat[]) => {
-  for (const child of children) 
-    await runByTree(child);
-};
-
-const runInParallel = async (children: AugmentedStat[]): Promise<void[]> => 
-  Promise.all(children.map(async (child) => runByTree(child as AugmentedStat)));
-
-const updateNextStepAndParent = (currentStat: AugmentedStat) => {
-  const parent = currentStat.parent;
-  if (!parent) return;
-
-  const getNextSibling = (step?: AugmentedStat | null) => {
-    const parent = step?.parent;
-    if (!parent) return;
-
-    return parent.children[
-      parent.children.findIndex(
-        (childStat) => childStat === step,
-      ) + 1
-    ];
-  };
-
-  const nextSibling = getNextSibling(currentStat);
-
-  if (nextSibling) 
-    nextSibling.status = `didn't run`;
-  else {
-    // parent.status = currentStat.data.status;
-    const parentNextSibling = getNextSibling(parent);
-    if (parentNextSibling)
-      parentNextSibling.status = `didn't run`;
-  }
-};
-
-const runByTree = async (currentStat: AugmentedStat) => {
-  const nodeCall = isFuncCallState(currentStat.data) ? currentStat.data.funcCall: null;
-  // currentStat.data.status = 'running';
-  if (nodeCall) {
-    try {
-      await getCall(nodeCall).call();
-      // currentStat.data.status = 'succeeded';
-      
-      updateNextStepAndParent(currentStat);
-
-      // return Promise.resolve(currentStat.data.status);
-      return Promise.resolve();
-    } catch (e) {
-      // currentStat.data.status = 'failed';
-
-      return Promise.reject(e);
-    }
-  } else {  
-    return (isParallelPipelineState(currentStat.data) ? 
-      runInParallel(currentStat.children): 
-      runSequentallly(currentStat.children)
-    ).then(() => {
-      // currentStat.data.status = 'succeeded';
-
-      updateNextStepAndParent(currentStat);
-
-      // return Promise.resolve(currentStat.data.status);
-      return Promise.resolve();
-    }).catch((e) => {
-      // currentStat.data.status = 'failed';
-
-      return Promise.reject(e);
-    });                      
-  }
-};
 
 const statusToIcon = {
   ['locked']: 'lock',
