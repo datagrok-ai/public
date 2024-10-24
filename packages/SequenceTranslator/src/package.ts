@@ -24,9 +24,9 @@ import {PolyToolCsvLibHandler} from './polytool/csv-to-json-monomer-lib-converte
 import {ITranslationHelper} from './types';
 import {addContextMenuUI} from './utils/context-menu';
 import {PolyToolConvertFuncEditor} from './polytool/pt-convert-editor';
-import {polyToolUnruleUI} from './polytool/pt-unrule';
 import {CyclizedNotationProvider} from './utils/cyclized';
 import {getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {PolyToolTags} from './consts';
 
 export const _package: OligoToolkitPackage = new OligoToolkitPackage({debug: true}/**/);
 
@@ -34,8 +34,9 @@ let initSequenceTranslatorPromise: Promise<void> | null = null;
 
 //tags: init
 export async function init(): Promise<void> {
-  if (initSequenceTranslatorPromise === null)
-    initSequenceTranslatorPromise = initSequenceTranslatorInt();
+  if (initSequenceTranslatorPromise === null) {
+    _package.startInit(initSequenceTranslatorPromise = initSequenceTranslatorInt());
+  }
   return initSequenceTranslatorPromise;
 }
 
@@ -300,6 +301,6 @@ export async function ptEnumeratorChemApp(): Promise<void> {
 //input: string separator
 export function applyNotationProviderForCyclized(col: DG.Column<string>, separator: string) {
   col.meta.units = NOTATION.CUSTOM;
-  col.tags['pt-role'] = 'template';
+  col.tags[PolyToolTags.dataRole] = 'template';
   col.temp[SeqTemps.notationProvider] = new CyclizedNotationProvider(separator, _package.seqHelper);
 }
