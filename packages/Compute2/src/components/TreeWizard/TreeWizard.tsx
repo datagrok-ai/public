@@ -20,7 +20,7 @@ import '@he-tree/vue/style/default.css';
 import '@he-tree/vue/style/material-design.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {of} from 'rxjs';
-import {ParentFunccallView} from '../ParentFunccallView/ParentFunccallView';
+import {PipelineView} from '../PipelineView/PipelineView';
 import {computedWithControl, useUrlSearchParams} from '@vueuse/core';
 import { take } from 'rxjs/operators';
 
@@ -311,7 +311,7 @@ export const TreeWizard = Vue.defineComponent({
           {
             chosenStepState.value && 
             !isFuncCallState(chosenStepState.value) && chosenStepState.value.provider && 
-            <ParentFunccallView 
+            <PipelineView 
               funcCall={DG.Func.byName(chosenStepState.value.nqName!).prepare()}
               dock-spawn-title='Step sequence review'
               onProceedClicked={() => {

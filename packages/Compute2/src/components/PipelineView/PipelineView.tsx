@@ -6,8 +6,8 @@ import {Button, DockManager, IconFA, MarkDown} from '@datagrok-libraries/webcomp
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
 
-export const ParentFunccallView = Vue.defineComponent({
-  name: 'ParentFunccallView',
+export const PipelineView = Vue.defineComponent({
+  name: 'PipelineView',
   props: {
     funcCall: {
       type: Object as Vue.PropType<DG.FuncCall>,
@@ -49,14 +49,14 @@ export const ParentFunccallView = Vue.defineComponent({
               isHistory
               onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
               dock-spawn-dock-type='fill'
-              {...{title: 'History'}}
+              dock-spawn-title='History'
               ref={historyRef}
               class='overflow-scroll h-full'
             />: null }
           { !helpHidden.value && helpText.value ? 
             <MarkDown 
               markdown={helpText.value}
-              {...{title: 'Help'}}
+              dock-spawn-title='Help'
               dock-spawn-dock-type='fill'
               ref={helpRef}
             /> : null 
@@ -65,7 +65,8 @@ export const ParentFunccallView = Vue.defineComponent({
             dock-spawn-hide-close-button
             dock-spawn-dock-type='left'
             dock-spawn-dock-ratio={0.35}
-            {...{title: 'Actions', mode: 'Card'}}
+            dock-spawn-title='Actions'
+            {...{mode: 'Card'}}
             class={'p-2'}
             style={{minWidth: '200px'}}
           >
