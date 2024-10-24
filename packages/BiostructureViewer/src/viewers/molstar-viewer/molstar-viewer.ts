@@ -79,6 +79,7 @@ export enum PROPS {
   pdb = 'pdb',
   pdbTag = 'pdbTag',
   ligandColumnName = 'ligandColumnName',
+  proteinColumnName = 'proteinColumnName',
   // pdbProvider = 'pdbProvider',
   // emdbProvider = 'emdbProvider',
   biostructureIdColumnName = 'biostructureIdColumnName',
@@ -110,6 +111,7 @@ export enum PROPS {
   showWelcomeToast = 'showWelcomeToast',
   showImportControls = 'showImportControls',
   // -- Behaviour --
+  showCurrentRow = 'showCurrentRow',
   showSelectedRowsLigands = 'showSelectedRowsLigands',
   showCurrentRowLigand = 'showCurrentRowLigand',
   showMouseOverRowLigand = 'showMouseOverRowLigand',
@@ -146,7 +148,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   biostructureIdColumnName: string | null;
   /** DG.Func nqName */
   biostructureDataProvider: string | null;
-
+  
+  [PROPS.proteinColumnName]: string;
   [PROPS.ligandColumnName]: string;
   // [PROPS.pdbProvider]: string;
   // [PROPS.emdbProvider]: string;
@@ -177,6 +180,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   [PROPS.showImportControls]: boolean;
 
   // -- Behaviour --
+  [PROPS.showCurrentRow]: boolean;
   [PROPS.showSelectedRowsLigands]: boolean;
   [PROPS.showCurrentRowLigand]: boolean;
   [PROPS.showMouseOverRowLigand]: boolean;
@@ -205,6 +209,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     this.biostructureDataProvider = this.string(PROPS.biostructureDataProvider, defaults.biostructureDataProvider,
       {category: PROPS_CATS.DATA, /* fill choices in setData() */});
 
+    this.proteinColumnName = this.string(PROPS.proteinColumnName, defaults.proteinColumnName,
+      {category: PROPS_CATS.DATA, semType: DG.SEMTYPE.MOLECULE3D, nullable: false});
     this.ligandColumnName = this.string(PROPS.ligandColumnName, defaults.ligandColumnName,
       {category: PROPS_CATS.DATA, semType: DG.SEMTYPE.MOLECULE});
     // this.pdbProvider = this.string(PROPS.pdbProvider, defaults.pdbProvider,
@@ -259,6 +265,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       {category: PROPS_CATS.CONTROLS});
 
     // -- Behaviour --
+    this.showCurrentRow = this.bool(PROPS.showCurrentRow, true, {category: PROPS_CATS.BEHAVIOUR});
     this.showSelectedRowsLigands = this.bool(PROPS.showSelectedRowsLigands, false,
       {category: PROPS_CATS.BEHAVIOUR});
     this.showCurrentRowLigand = this.bool(PROPS.showCurrentRowLigand, true,
@@ -413,6 +420,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       case PROPS.pdbTag:
       case PROPS.biostructureDataProvider:
       case PROPS.biostructureIdColumnName:
+      case PROPS.proteinColumnName:
       case PROPS.ligandColumnName: {
         this.setData(logIndent + 1, callLog);
         break;
@@ -581,6 +589,12 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
           this.viewed = false;
         }
 
+        if (this.dataFrame && !this.proteinColumnName) {
+          const molCol: DG.Column | null = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE3D);
+          if (molCol)
+            this.proteinColumnName = molCol.name;
+        }
+
         // -- PDB data --
         this.dataEff = null;
         let pdbTagName: string = pdbTAGS.PDB;
@@ -588,10 +602,14 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         if (this.pdbTag) pdbTagName = this.pdbTag;
         if (this.dataFrame && this.dataFrame.tags.has(pdbTagName)) pdb = this.dataFrame.getTag(pdbTagName);
         if (this.pdb) pdb = this.pdb;
+        if (this.dataFrame && this.proteinColumnName)
+          pdb = this.dataFrame.get(this.proteinColumnName, this.dataFrame.currentRowIdx);
         if (pdb && pdb != pdbDefault)
           this.dataEff = {binary: false, ext: 'pdb', data: pdb!};
-        if (this.dataJson && this.dataJson !== BiostructureDataJson.empty)
+        if (this.dataJson && this.dataJson !== BiostructureDataJson.empty) {
           this.dataEff = BiostructureDataJson.toData(this.dataJson);
+          this.dataJson = '';
+        }
         if (this.biostructureDataProvider) {
           if (!this.biostructureDataProviderFunc) {
             this.biostructureDataProviderFunc = this.biostructureDataProviderList
@@ -766,6 +784,9 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
           this.onRebuildViewLigandsDebounced.bind(this)));
         await this.buildViewLigands(logIndent, callLog);
       }
+
+      if (this.dataFrame && this.proteinColumnName)
+        this.dataFrame.onCurrentRowChanged.subscribe(async (_) => this.setData(logIndent + 1, callLog));
     }
 
     this.logger.debug(`${logPrefix}, end`);
