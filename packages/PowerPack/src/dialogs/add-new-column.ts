@@ -102,7 +102,7 @@ export class AddNewColumnDialog {
   widgetFunctions?: DG.Widget;
   resultColumnType?: string;
   dialogTitle: string = '';
-  call: DG.FuncCall | null = null;
+  call: DG.FuncCall;
   edit: boolean = false;
   currentCalculatedColName = '';
 
@@ -132,15 +132,15 @@ export class AddNewColumnDialog {
   mouseDownOnCm = false;
   updatePreviewEvent = new Subject<UpdatePreviewParams>();
 
-  constructor(call: DG.FuncCall | null = null) {
-    const table = call?.getParamValue('table');
+  constructor(call: DG.FuncCall) {
+    this.call = call;
+    const table = call.getParamValue('table');
 
     DG.debounce(this.updatePreviewEvent, 1000).subscribe(async (params: UpdatePreviewParams) => {
       await this.updatePreview(params.expression, params.changeName, params.error);
     });
 
     if (table) {
-      this.call = call;
       this.sourceDf = table;
       this.edit = table.columns.names().includes(call?.getParamValue('name'));
     } else
@@ -202,7 +202,7 @@ export class AddNewColumnDialog {
     }
 
     this.prepareForSeleniumTests();
-    if (!this.call || !this.call.getParamValue('expression'))
+    if (!this.call.getParamValue('expression'))
       await this.updatePreview(this.codeMirror!.state.doc.toString(), false);
     this.prepareFunctionsListForAutocomplete();
     //set initial focus on code mirror
@@ -285,7 +285,7 @@ export class AddNewColumnDialog {
     const input = control.input as HTMLInputElement;
     input.classList.add('ui-input-addnewcolumn-name');
     input.placeholder = this.placeholderName;
-    if (this.call)
+    if (this.call.getParamValue('name'))
       input.value = this.call.getParamValue('name');
 
     return control;
@@ -297,7 +297,7 @@ export class AddNewColumnDialog {
     this.supportedTypes.unshift(defaultChoice); // The first item of the ChoiceBox will be "Auto".
     this.supportedTypes.push(this.plainTextType); // The last item of the ChoiceBox will be "Treat As String".
 
-    const control = ui.input.choice('', {value: this.call ?
+    const control = ui.input.choice('', {value: this.call.getParamValue('type') ?
       this.call.getParamValue('type') : defaultChoice, items: this.supportedTypes});
     control.onInput.subscribe(async () => await this.updatePreview(this.codeMirror!.state.doc.toString(), false));
     control.setTooltip(this.tooltips['type']);
@@ -573,7 +573,7 @@ export class AddNewColumnDialog {
     });
     this.mutationObserver.observe(cm.dom, {attributes: true, childList: true});
 
-    if (this.call)
+    if (this.call.getParamValue('expression'))
       cm!.dispatch({changes: {
         from: 0,
         to: cm.state.doc.length,
@@ -1156,20 +1156,15 @@ export class AddNewColumnDialog {
 
   /** Adds a New Column to the source table or edit formula for an existing column. */
   async addNewColumnAction(): Promise<void> {
-    if (this.edit) {
-      this.call!.setParamValue('name', this.inputName!.value);
-      this.call!.setParamValue('expression', this.codeMirror!.state.doc.toString());
-      this.call!.setParamValue('type', this.getSelectedType()[0]);
-      this.call!.setParamValue('treatAsString', this.getSelectedType()[1]);
-      await this.call!.call();
-    } else {
-      const name = this.getResultColumnName();
-      await this.sourceDf!.columns.addNewCalculated(
-        name,
-          this.codeMirror!.state.doc.toString().trim(),
-          ...this.getSelectedType(),
-      );
-    }
+    if (!this.call.getParamValue('table'))
+      this.call.setParamValue('table', this.sourceDf);
+    this.call.setParamValue('name', this.edit ? this.inputName!.value : this.getResultColumnName());
+    this.call.setParamValue('expression', this.codeMirror!.state.doc.toString().trim());
+    this.call.setParamValue('type', this.getSelectedType()[0]);
+    this.call.setParamValue('treatAsString', this.getSelectedType()[1]);
+    if (!this.edit)
+      this.call.setParamValue('subscribeOnChanges', true);
+    await this.call.call();
   }
 
   /** Closes Add New Column Dialog Window. */

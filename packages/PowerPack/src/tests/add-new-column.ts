@@ -9,17 +9,20 @@ import { expectTyped } from './dialogs';
 
 category('Add new column', () => {
   let df: DG.DataFrame;
+  let call: DG.FuncCall;
 
   before(async () => {
     df = grok.data.demo.demog(10);
     grok.shell.addTableView(df);
+    call = DG.Func.find({ name: 'AddNewColumn' })[0].prepare({'table': df});
   });
 
   test('functions without errors', async () => {
     const funcs = Object.keys(FUNC_TESTS).map((name) => DG.Func.find({ name: name })[0]);
 
     for (const f of funcs) {
-      const dlg = new AddNewColumnDialog();
+      call = DG.Func.find({ name: 'AddNewColumn' })[0].prepare({'table': df});
+      const dlg = new AddNewColumnDialog(call);
       await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
       for (const [expression, result] of Object.entries(FUNC_TESTS[f.name])) {
         const columnName = df.columns.getUnusedName(expression);
@@ -46,7 +49,7 @@ category('Add new column', () => {
   });
 
   test('validation', async () => {
-    const dlg = new AddNewColumnDialog();
+    const dlg = new AddNewColumnDialog(call);
     await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
     for (const f of Object.keys(FUNC_VALIDATION)) {
         dlg.codeMirror!.dispatch({
@@ -62,7 +65,7 @@ category('Add new column', () => {
   });
 
   test('hints', async () => {
-    const dlg = new AddNewColumnDialog();
+    const dlg = new AddNewColumnDialog(call);
     await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
     for (const f of Object.keys(FUNC_HINTS)) {
       dlg.codeMirror!.dispatch({
@@ -89,7 +92,7 @@ category('Add new column', () => {
       });
       await awaitCheck(() => dlg.codeMirror!.state.doc.toString() === '', 'code mirror has\'t been cleared');
     }      
-    const dlg = new AddNewColumnDialog();
+    const dlg = new AddNewColumnDialog(call);
     await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
     const absFuncLink = dlg.widgetFunctions?.root.querySelector('[name="span-Abs"]') as HTMLElement;
     //check function is added on click
