@@ -7,7 +7,7 @@ import {PipelineStateParallel, PipelineStateSequential, PipelineStateStatic, Ste
 import {PipelineConfigurationParallelProcessed, PipelineConfigurationProcessed, PipelineConfigurationSequentialProcessed, PipelineConfigurationStaticProcessed} from '../config/config-processing-utils';
 import {IFuncCallAdapter, IStateStore, MemoryStore} from './FuncCallAdapters';
 import {FuncCallInstancesBridge, RestrictionState} from './FuncCallInstancesBridge';
-import {isPipelineConfig, PipelineStepConfigurationProcessed} from '../config/config-utils';
+import { isPipelineConfig, isPipelineStepConfig, PipelineStepConfigurationProcessed} from '../config/config-utils';
 import {map, mapTo, scan, skip, switchMap, takeUntil, withLatestFrom} from 'rxjs/operators';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {RestrictionType, ValidationResult} from '../data/common-types';
@@ -332,6 +332,7 @@ export class PipelineNodeBase implements IStoreProvider {
       provider: this.config.provider,
       version: this.config.version,
       nqName: this.config.nqName,
+      friendlyName: this.config.friendlyName,
       isReadonly: this.isReadonly,
     };
     if (options.disableNodesUUID)
@@ -380,11 +381,11 @@ export class ParallelPipelineNode extends PipelineNodeBase {
       type: this.nodeType,
       steps: [],
       stepTypes: this.config.stepTypes.map((s) => {
-        if (isPipelineConfig(s)) {
+        if (isPipelineConfig(s) || isPipelineStepConfig(s)) {
           const {id: configId, disableUIAdding, nqName, friendlyName} = s;
           return {configId, disableUIAdding, nqName, friendlyName};
         } else {
-          const {id: configId, disableUIAdding} = s;
+          const {id: configId, disableUIAdding, } = s;
           return {configId, disableUIAdding};
         }
       }),
@@ -410,11 +411,11 @@ export class SequentialPipelineNode extends PipelineNodeBase {
       type: this.nodeType,
       steps: [],
       stepTypes: this.config.stepTypes.map((s) => {
-        if (isPipelineConfig(s)) {
+        if (isPipelineConfig(s) || isPipelineStepConfig(s)) {
           const {id: configId, disableUIAdding, nqName, friendlyName} = s;
           return {configId, disableUIAdding, nqName, friendlyName};
         } else {
-          const {id: configId, disableUIAdding} = s;
+          const {id: configId, disableUIAdding, } = s;
           return {configId, disableUIAdding};
         }
       }),

@@ -251,9 +251,12 @@ export class Link {
           if (initConfig)
             this.lastPipelineMutations.push({path: nodePath, initConfig});
         } else {
-          const [state, restriction] = controller.outputs[outputAlias];
-          const nextValue = state instanceof DG.DataFrame ? state.clone() : state;
-          node.getItem().getStateStore().setState(ioName, nextValue, restriction);
+          const data = controller.outputs[outputAlias];
+          if (data) {
+            const [state, restriction] = data;
+            const nextValue = state instanceof DG.DataFrame ? state.clone() : state;
+            node.getItem().getStateStore().setState(ioName, nextValue, restriction);
+          }
         }
       }
     }

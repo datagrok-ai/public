@@ -7,8 +7,8 @@ import {AugmentedStat, Status} from './types';
 import {ComboPopup, IconFA} from '@datagrok-libraries/webcomponents-vue';
 import {OpenIcon} from '@he-tree/vue';
 import {
-  isParallelPipelineState, 
-  isSequentialPipelineState, PipelineState, 
+  isParallelPipelineState,
+  isSequentialPipelineState, PipelineState,
   PipelineStateParallel, PipelineStateSequential,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {useElementHover} from '@vueuse/core';
@@ -44,7 +44,7 @@ const statusToTooltip = {
 const callStateToStatus = (callState: FuncCallStateInfo): Status => {
   if (callState.isRunning) return 'running';
   if (!callState.isOutputOutdated) return 'succeeded';
-  
+
   return 'didn\'t run';
 };
 
@@ -73,16 +73,16 @@ export const TreeNode = Vue.defineComponent({
     click: () => {},
     toggleNode: () => {},
   },
-  setup(props, {emit}) {      
+  setup(props, {emit}) {
     const openIcon = () => <OpenIcon
       open={props.stat.open}
       class="mtl-mr"
       //@ts-ignore
       onClick={(e) => {emit('toggleNode'); e.stopPropagation();}}
     />;
-    
-    const progressIcon = (status: Status) =>{ 
-      return <IconFA 
+
+    const progressIcon = (status: Status) =>{
+      return <IconFA
         name={statusToIcon[status]}
         animation={status === `running` ? 'spin': null}
         tooltip={statusToTooltip[status] ?? null}
@@ -91,28 +91,28 @@ export const TreeNode = Vue.defineComponent({
           alignSelf: 'center',
           left: '-20px',
           position: 'absolute',
-        }} 
+        }}
       />;
     };
 
     const nodeLabel = (state: AugmentedStat) => {
       const data = state.data;
-    
-      return data.friendlyName ?? data.configId;  
+
+      return data.friendlyName ?? data.configId;
     };
 
-    const hasAddButton = (data: PipelineState): data is (PipelineStateSequential<any> | PipelineStateParallel<any>) => 
+    const hasAddButton = (data: PipelineState): data is (PipelineStateSequential<any> | PipelineStateParallel<any>) =>
       (isParallelPipelineState(data) || isSequentialPipelineState(data)) && data.stepTypes.length > 0;
 
     const treeNodeRef = Vue.ref(null as null | HTMLElement);
     Vue.watch(useElementHover(treeNodeRef), (isHovered) => {
       props.stat.data.isHovered = isHovered;
     });
-    
+
     return () => (
-      <div 
+      <div
         style={{
-          display: 'flex', 
+          display: 'flex',
           width: '100%',
           height: '30px',
           alignItems: 'center',
@@ -124,13 +124,13 @@ export const TreeNode = Vue.defineComponent({
         { props.callState && progressIcon(callStateToStatus(props.callState)) }
         { props.stat.children.length ? openIcon() : null }
         <span class="mtl-ml text-nowrap text-ellipsis overflow-hidden">{ nodeLabel(props.stat) }</span>
-        { props.stat.data.isHovered ? 
+        { props.stat.data.isHovered ?
           <div class='flex items-center px-2 w-fit justify-end ml-auto'>
-            { hasAddButton(props.stat.data) ? 
-              <ComboPopup 
+            { hasAddButton(props.stat.data) ?
+              <ComboPopup
                 caption={ui.iconFA('plus')}
                 items={props.stat.data.stepTypes
-                  .map((stepType) => stepType.friendlyName ?? stepType.nqName ?? stepType.configId)
+                  .map((stepType) => stepType.friendlyName || stepType.nqName || stepType.configId)
                 }
                 onSelected={({itemIdx}) => {
                   const data = props.stat.data as PipelineStateSequential<any> | PipelineStateParallel<any>;
@@ -141,19 +141,18 @@ export const TreeNode = Vue.defineComponent({
                 }}
                 class='d4-ribbon-item'
               />: null }
-            { props.isDraggable ? <IconFA 
-              name='grip-vertical' 
+            { props.isDraggable ? <IconFA
+              name='grip-vertical'
               cursor='grab'
               class='d4-ribbon-item'
             />: null }
-            { props.isDeletable ? <IconFA 
-              name='times' 
+            { props.isDeletable ? <IconFA
+              name='times'
               onClick={(e: Event) => {emit('removeNode'); e.stopPropagation();}}
               class='d4-ribbon-item'
             />: null }
           </div> : null }
       </div>
-    );    
+    );
   },
 });
-
