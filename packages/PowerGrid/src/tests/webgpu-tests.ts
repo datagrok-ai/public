@@ -11,13 +11,13 @@ const consecutiveLaunches = 3;
 category('webgpu', async () => {
   const render = DG.Func.find({tags: ['scWebGPURender']})[0];
   const hitTest = DG.Func.find({tags: ['scWebGPUPointHitTest']})[0];
-  // const gpuDevice = await getGPUDevice();
-  // if (!gpuDevice || !DG.Test.isInBenchmark)
-  //   return;
+  const gpuDevice = await getGPUDevice();
 
   types.forEach((t) => {
     sizes.forEach((s) => {
       test(`GPURender: ${s / 1000000.0}m ${t}s`, async () => {
+        if (!gpuDevice || !DG.Test.isInBenchmark)
+          return;
         const view = grok.shell.addTableView(grok.data.demo.randomWalk(s, 2));
         const sp: DG.ScatterPlotViewer = view.scatterPlot();
         sp.props.markerType = t;
@@ -29,6 +29,8 @@ category('webgpu', async () => {
       }, {benchmarkTimeout: 10000, benchmark: true});
 
       test(`GPURender Color: ${s / 1000000.0}m ${t}s`, async () => {
+        if (!gpuDevice || !DG.Test.isInBenchmark)
+          return;
         const view = grok.shell.addTableView(grok.data.demo.randomWalk(s, 2));
         const sp: DG.ScatterPlotViewer = view.scatterPlot();
         sp.props.markerType = t;
@@ -41,6 +43,8 @@ category('webgpu', async () => {
       }, {benchmarkTimeout: 10000, benchmark: true});
 
       test(`GPURender Size: ${s / 1000000.0}m ${t}s`, async () => {
+        if (!gpuDevice || !DG.Test.isInBenchmark)
+          return;
         const view = grok.shell.addTableView(grok.data.demo.randomWalk(s, 2));
         const sp: DG.ScatterPlotViewer = view.scatterPlot();
         sp.props.markerType = t;
@@ -53,6 +57,8 @@ category('webgpu', async () => {
       }, {benchmarkTimeout: 10000, benchmark: true});
 
       test(`GPUHitTest: ${s / 1000000.0}m ${t}s`, async () => {
+        if (!gpuDevice || !DG.Test.isInBenchmark)
+          return;
         const view = grok.shell.addTableView(grok.data.demo.randomWalk(s, 2));
         const sp: DG.ScatterPlotViewer = view.scatterPlot();
         sp.props.markerType = t;
