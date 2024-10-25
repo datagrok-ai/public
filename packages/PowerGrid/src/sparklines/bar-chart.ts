@@ -89,13 +89,14 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
     const cols = df.columns.byNames(settings.columnNames);
     const gmin = Math.min(...cols.map((c: DG.Column) => c.min));
     const gmax = Math.max(...cols.map((c: DG.Column) => c.max));
+    g.strokeStyle = 'lightgray';
 
     for (let i = 0; i < cols.length; i++) {
       const currentCol = cols[i];
       if (!currentCol.isNone(row)) {
-        const color = settings.colorCode === BarChartColoringType.Values ? currentCol.meta.colors.getType() !== DG.COLOR_CODING_TYPE.OFF ?
-          currentCol.meta.colors.getColor(row) : DG.Color.fromHtml('#8080ff') : settings.colorCode === BarChartColoringType.Bins ?
-          DG.Color.getCategoricalColor(i) : DG.Color.fromHtml('#8080ff');
+        const color = settings.colorCode === BarChartColoringType.Off ? DG.Color.fromHtml('#8080ff') :
+          settings.colorCode === BarChartColoringType.Bins ? DG.Color.getCategoricalColor(i) :
+          currentCol.meta.colors.getType() === DG.COLOR_CODING_TYPE.OFF ? DG.Color.getRowColor(currentCol, row) : currentCol.meta.colors.getColor(row);
         g.setFillStyle(DG.Color.toRgb(color));
         const scaled = settings.globalScale ? (currentCol.getNumber(row) - gmin) / (gmax - gmin) : currentCol?.scale(row);
         const bb = b
@@ -103,6 +104,8 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
           .getBottomScaled(scaled > minH ? scaled : minH)
           .inflateRel(0.9, 1);
         g.fillRect(bb.left, bb.top, bb.width, bb.height);
+        if (settings.colorCode === BarChartColoringType.Values)
+          g.strokeRect(bb.left, bb.top, bb.width, bb.height);
       }
     }
   }
