@@ -1,5 +1,13 @@
 # bio changelog
 
+## 5.45.5 (2024-10-24)
+
+### Bug fixes
+
+* Fix splitterAsHelm for multiple simple polymers
+* Fix IHelmHelper adding .seqHelper
+* Fix exporting HWE IBio, HelmBio
+
 ## 5.45.4 (2024-10-22)
 
 ### Bug fixes

@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/helm",
   "friendlyName": "Helm",
-  "version": "2.5.6",
+  "version": "2.5.7",
   "author": {
     "name": "Aleksandr Tanas",
     "email": "atanas@datagrok.ai"
@@ -16,7 +16,7 @@
     "css/helm.css"
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.45.4",
+    "@datagrok-libraries/bio": "^5.45.5",
     "@datagrok-libraries/chem-meta": "^1.2.7",
     "@datagrok-libraries/utils": "^4.3.6",
     "cash-dom": "^8.1.1",

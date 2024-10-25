@@ -15,6 +15,9 @@ export interface ISeqSplitted {
   /** For fasta and Helm must not be enclosed to square brackets [meA].*/
   getOriginal(posIdx: number): string;
 
+  // TODO: Get ISeqMonomer for seq position
+  // get(posIdx: number): ISeqMonomer;
+
   length: number;
 }
 

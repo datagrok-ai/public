@@ -1,5 +1,14 @@
 # Usage Analysis changelog
 
+# 2.2.0 (2024-10-24)
+
+* Dependency: datagarok-api >= 1.22.0*
+
+## Features:
+
+* Reporting: Better subscriptions handling
+* Service logs app: Application that gives possibility to see logs of different services within Datagrok infrastructure.
+
 ## 2.0.2 (2024-07-23)
 
 * Dependency: datagarok-api >= 1.20.0*

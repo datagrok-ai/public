@@ -13,6 +13,7 @@ import {CellRendererBackBase} from '@datagrok-libraries/bio/src/utils/cell-rende
 import {MonomerPlacer} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 import {monomerToShort, StringListSeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
+import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
 import {Chain} from '../polytool/pt-conversion';
 
@@ -39,14 +40,11 @@ export class CyclizedNotationProvider implements INotationProvider {
       GapOriginals[NOTATION.SEPARATOR]);
   }
 
-  public async getHelm(seq: string, options?: any): Promise<DG.SemanticValue<string>> {
-    const seqChain = await Chain.parseNotation(seq);
-    const seqPseudoHelm = seqChain.getNotationHelm();
-
-    const resPseudoHelmSV = DG.SemanticValue.fromValueType(seqPseudoHelm,
-      DG.SEMTYPE.MACROMOLECULE, NOTATION.HELM);
-    resPseudoHelmSV.tags['pt-role'] = 'template';
-    return resPseudoHelmSV;
+  public async getHelm(seq: string, options?: any): Promise<string> {
+    const helmHelper = await getHelmHelper();
+    const seqChain = await Chain.parseNotation(seq, helmHelper);
+    const resPseudoHelm = seqChain.getNotationHelm();
+    return resPseudoHelm;
   }
 
   public createCellRendererBack(gridCol: DG.GridColumn | null, tableCol: DG.Column<string>): CellRendererBackBase<string> {

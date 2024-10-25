@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {Unsubscribable} from 'rxjs';
-import {PolyToolPlaceholders, PolyToolPlaceholdersBreadth} from './types';
+import {PolyToolBreadthPlaceholder} from './types';
 import {parseMonomerSymbolList} from './pt-placeholders-input';
 
 export class PolyToolPlaceholdersBreadthInput extends DG.JsInputBase<DG.DataFrame> {
@@ -21,7 +21,7 @@ export class PolyToolPlaceholdersBreadthInput extends DG.JsInputBase<DG.DataFram
 
   setStringValue(str: string): void { this.grid.dataFrame = DG.DataFrame.fromCsv(str); }
 
-  get placeholdersBreadthValue(): PolyToolPlaceholdersBreadth {
+  get placeholdersBreadthValue(): PolyToolBreadthPlaceholder[] {
     return dfToPlaceholdersBreadth(this.grid.dataFrame);
   }
 
@@ -97,8 +97,8 @@ export class PolyToolPlaceholdersBreadthInput extends DG.JsInputBase<DG.DataFram
   }
 }
 
-export function dfToPlaceholdersBreadth(df: DG.DataFrame): PolyToolPlaceholdersBreadth {
-  const res: PolyToolPlaceholdersBreadth = [];
+export function dfToPlaceholdersBreadth(df: DG.DataFrame): PolyToolBreadthPlaceholder[] {
+  const res: PolyToolBreadthPlaceholder[] = [];
   for (let rowI = 0; rowI < df.rowCount; rowI++) {
     const startPos = parseInt(df.get('Start', rowI)) - 1;
     const endPos = parseInt(df.get('End', rowI)) - 1;

@@ -130,7 +130,7 @@ export async function chemblSearchWidget(mol: string, substructure: boolean = fa
     return new DG.Widget(ui.divText('Molecule string is malformed'));
   }
   const headerHost = ui.divH([]);
-  const compsHost = ui.div([ui.loader(), headerHost], 'd4-flex-wrap chem-viewer-grid');
+  const compsHost = ui.div([ui.loader(), headerHost], 'd4-flex-wrap chem-viewer-grid chem-search-panel-wrapper');
   const panel = ui.divV([compsHost]);
   const searchFunc = substructure ?
     async () => chemblSubstructureSearch(mol) :

@@ -52,7 +52,7 @@ export async function chemblSimilaritySearch(molecule: string): Promise<DG.DataF
 //output: widget result
 export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = false): DG.Widget {
   const headerHost = ui.div([]);
-  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap chem-viewer-grid');
+  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap chem-viewer-grid chem-search-panel-wrapper');
   const panel = ui.divV([headerHost, compsHost]);
   const searchFunc = substructure ? async () => chemblSubstructureSearch(mol) : async () => chemblSimilaritySearch(mol);
 
@@ -175,7 +175,6 @@ export async function chemblMolregno(table: DG.DataFrame, molecules: DG.Column):
   }
   return table;
 }
-
 
 //name: chemblIdToSmilesTs
 //meta.role: converter

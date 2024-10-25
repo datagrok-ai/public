@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/samples",
   "friendlyName": "Samples",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "author": {
     "name": "Savenko Stanislav",
     "email": "ssavenko@datagrok.ai"
@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@datagrok-libraries/utils": "^4.3.0",
-    "datagrok-api": "^1.13.0",
+    "datagrok-api": "^1.22.0",
     "rxjs": "^6.5.5",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3"
