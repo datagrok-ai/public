@@ -1,10 +1,11 @@
 # Sequence Translator changelog
 
-## 1.4.6 (WIP)
+## 1.4.6 (2024-10-25)
 
 ### New features
 
 * Add PolyTool Enumerate for harmonized sequences
+* PolyTool ambigous R groups handling
 
 ### Bug fixes
 
