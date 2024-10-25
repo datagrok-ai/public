@@ -21,7 +21,7 @@ import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
   CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS} from './scripting-tools';
 import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools/solver-defs';
-import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo} from './utils';
+import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN, getReducedTable} from './utils';
 
 import '../css/app-styles.css';
 
@@ -413,6 +413,8 @@ export class DiffStudio {
   private toPreventSolving = false;
   private inputByName: Map<string, DG.InputBase> | null = null;
   private topCategory: string | null = null;
+
+  private toSwitchToModelTab: boolean = true;
 
   constructor(toAddTableView: boolean = true, toDockTabCtrl: boolean = true, isFilePreview: boolean = false,
     browsing?: Browsing) {
@@ -843,7 +845,13 @@ export class DiffStudio {
       }
 
       this.solutionTable = call.outputs[DF_NAME];
-      this.solverView.dataFrame = call.outputs[DF_NAME];
+
+      if (hasNaN(this.solutionTable)) {
+        grok.shell.warning(ERROR_MSG.NANS_OBTAINED);
+        this.solutionTable = getReducedTable(this.solutionTable);
+      }
+
+      this.solverView.dataFrame = this.solutionTable;
       this.solverView.name = this.solutionTable.name;
 
       if (ivp.updates) {

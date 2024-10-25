@@ -206,3 +206,29 @@ export function getLookupsInfo(inputsLookup: string) {
     choices: info.get(MISC.CHOICES),
   };
 } // getLookupsInfo
+
+/** Check whether a table contains NaN-s */
+export function hasNaN(df: DG.DataFrame): boolean {
+  for (const col of df.columns) {
+    if (!col.isNumerical)
+      continue;
+
+    if (isNaN(col.stats.avg))
+      return true;
+  }
+
+  return false;
+}
+
+/** Return the reduced solution table */
+export function getReducedTable(df: DG.DataFrame): DG.DataFrame {
+  const reducedCols: DG.Column[] = [];
+
+  for (const col of df.columns)
+    reducedCols.push(DG.Column.fromList(col.type, col.name, [col.get(0)]));
+
+  const reduced = DG.DataFrame.fromColumns(reducedCols);
+  reduced.name = df.name;
+
+  return reduced;
+}
