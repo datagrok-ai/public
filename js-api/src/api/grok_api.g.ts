@@ -418,6 +418,7 @@ export interface IDartApi {
   grok_ScatterPlotViewer_GetMarkerSize(s: any, rowIdx: Num): any;
   grok_ScatterPlotViewer_GetMarkerSizes(s: any): any;
   grok_ScatterPlotViewer_GetMarkerType(s: any, rowIdx: Num): any;
+  grok_ScatterPlotViewer_GetMarkerTypes(s: any): any;
   grok_ScatterPlotViewer_GetMarkerColor(s: any, rowIdx: Num): any;
   grok_ScatterPlotViewer_GetMarkerColors(s: any): any;
   grok_FormViewer_CreateDefault(table: any, columnNames: any): any;
@@ -1468,6 +1469,8 @@ export interface IDartApi {
   grok_Dapi_Packages_Load(pack: any, file: any): Promise<any>;
   grok_MathActions_GetDensity(dataFrame: any, xBins: Num, yBins: Num, xColName: String, yColName: String): any;
   grok_Paint_Marker(g: any, type: String, x: Num, y: Num, color: Num, size: Num): any;
+  grok_Marker_Types(): any;
+  grok_Marker_Type_Indexes(): any;
   grok_Paint_HorzAxis(g: any, min: Num, max: Num, x: Num, y: Num, w: Num, h: Num, log: Bool, inverse: Bool): any;
   grok_Paint_VertAxis(g: any, min: Num, max: Num, x: Num, y: Num, w: Num, h: Num, log: Bool, inverse: Bool): any;
   grok_HelpPanel_Get_SyncCurrentObject(): any;

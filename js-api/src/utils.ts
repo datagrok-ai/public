@@ -120,6 +120,14 @@ export namespace Paint {
     api.grok_Paint_Marker(g, markerType, x, y, c, size);
   }
 
+  export function markerTypes(): string[] {
+    return api.grok_Marker_Types();
+  }
+
+  export function markerTypeIndexes(): {[key: string]: number} {
+    return new MapProxy(api.grok_Marker_Type_Indexes()) as unknown as {[key: string]: number};
+  }
+
   /** Renders a PNG image from bytes */
   export function pngImage(g: CanvasRenderingContext2D, bounds: Rect, imageBytes: Uint8Array) {
     let r = new FileReader();
