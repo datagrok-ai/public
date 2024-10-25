@@ -424,6 +424,7 @@ export class DiffStudio {
 
     this.solverView.helpUrl = LINK.DIF_STUDIO_REL;
     this.solverView.name = MISC.VIEW_DEFAULT_NAME;
+    this.runPane = this.tabControl.addPane(TITLE.IPUTS, () => this.inputsPanel);
     this.modelPane = this.tabControl.addPane(TITLE.MODEL, () => {
       setTimeout(() => {
         this.modelDiv.style.height = '100%';
@@ -432,7 +433,6 @@ export class DiffStudio {
       }, 10);
       return this.modelDiv;
     });
-    this.runPane = this.tabControl.addPane(TITLE.IPUTS, () => this.inputsPanel);
 
     this.tabControl.onTabChanged.subscribe(async (_) => {
       if ((this.tabControl.currentPane === this.runPane) && this.toChangeInputs)

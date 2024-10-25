@@ -144,7 +144,7 @@ export enum ERROR_MSG {
   FITTING_FAILS = 'Fitting fails',
   PLATFORM_ISSUE = 'Platform issue',
   INCORTECT_INPUT = 'Incorrect input caption',
-  NANS_OBTAINED = 'Failed computations: NaN-s obtained. Check inputs and formulas.',
+  NANS_OBTAINED = 'Failed computations: obtained NaN-s. Check inputs and formulas.',
 };
 
 /** Lookup table fails */
