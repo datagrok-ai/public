@@ -2,8 +2,6 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {awaitCheck, category, expect, expectArray, test, testEvent} from '@datagrok-libraries/utils/src/test';
-import { _scWebGPURender, _scWebGPUPointHitTest } from '../package';
-import { forEach } from 'wu';
 
 const sizes = [10000, 1000000, 10000000];
 const types = ['dot', 'circle'];
