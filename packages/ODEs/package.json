@@ -60,9 +60,5 @@
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/ODEs"
   },
-  "category": "Compute",
-  "meta": {
-    "menu": {
-    }
-  }
+  "category": "Compute"
 }

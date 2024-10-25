@@ -472,6 +472,8 @@ export class DiffStudio {
     this.runIcon.hidden = true;
 
     this.createTree(browsing);
+
+    this.solverView.ribbonMenu = DG.Menu.create();
   }; // constructor
 
   /** Create model editor */
