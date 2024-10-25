@@ -41,6 +41,10 @@
   flex-grow: 0;
 }
 
+#tt-name .ui-input-editor{
+  margin-top: 5px;
+}
+
 #tt-edit-button {
   position: absolute;
   display: none;
