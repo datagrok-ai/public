@@ -2543,6 +2543,58 @@ export interface IConfusionMatrixSettings {
 
 }
 
+export interface IRocCurveSettings {
+  /// Columns to be put on the X axis
+  predictionColumnNames: Array<string>;
+
+  /// Column to be put on the Y axis
+  targetColumn: string;
+
+  /// Positive class name
+  positiveClass: string;
+
+  /// Select to draw thresholds
+  showThreshold: boolean;
+
+  /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
+  /// Formula that filters out rows to show.
+  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  filter: string;
+
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  description: string;
+
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+}
+
 export interface IFormSettings {
   /// Determines what gets shown on the form.
   syncMode: string;
