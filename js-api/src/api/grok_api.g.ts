@@ -37,7 +37,7 @@ export interface IDartApi {
   grok_Get_Sidebar(): any;
   grok_Get_DockManager(): any;
   grok_Tools_SetHoverVisibility(e: any, items: any): any;
-  grok_Balloon(messageOrElement: any, [type]: any): any;
+  grok_Balloon(messageOrElement: any, type: String, options: any): any;
   grok_Balloon_CloseAll(): any;
   grok_CurrentTable(): any;
   grok_Get_CurrentView(): any;
