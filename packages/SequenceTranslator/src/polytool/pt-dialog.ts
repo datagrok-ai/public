@@ -236,8 +236,11 @@ async function getPolyToolEnumerationChemDialog(cell?: DG.Cell): Promise<DG.Dial
 }
 
 function dealGroups(col: DG.Column<string>): void {
-  for (let i = 0; i < col.length; i++)
+  for (let i = 0; i < col.length; i++) {
     col.set(i, col.get(i)!.replaceAll('undefined', 'H'));
+    col.set(i, col.get(i)!.replaceAll('Oh', 'O'));
+    col.set(i, col.get(i)!.replaceAll('0.000000 3', '0.000000 0'));
+  }
 }
 
 /** Returns Helm and molfile columns.  */
