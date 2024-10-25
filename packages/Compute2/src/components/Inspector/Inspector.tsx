@@ -9,9 +9,10 @@ import {
 import {LogItem} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/Logger';
 import {Logger} from '../Logger/Logger';
 // it will register a custom element
-import 'pretty-json-custom-element';
 import {PipelineConfigurationProcessed} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
-
+import VueJsonPretty from 'vue-json-pretty';
+import 'vue-json-pretty/lib/styles.css';
+import {LinksData} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/LinksState';
 
 function replacer(key: any, value: any) {
   // Filtering out properties
@@ -29,6 +30,9 @@ export const Inspector = Vue.defineComponent({
     treeState: {
       type: Object as Vue.PropType<PipelineState>,
     },
+    links: {
+      type: Array as Vue.PropType<LinksData[]>,
+    },
     config: {
       type: Object as Vue.PropType<PipelineConfigurationProcessed>,
     },
@@ -38,29 +42,43 @@ export const Inspector = Vue.defineComponent({
   },
   setup(props) {
     const selectedTab = Vue.ref('Log');
-    const treeStateStr = props.treeState ? JSON.stringify(props.treeState, replacer) : '';
-    const configStr = props.config ? JSON.stringify(props.config, replacer) : '';
-    // TODO: fix changing between pretty-json elements
+    const toJSON = (x: any) => {
+      return x ? JSON.parse(JSON.stringify(x, replacer)) : {};
+    }
+
+    const lastVisibleIdx = Vue.ref(0);
     return () => (
       <div>
         <div>
           <select v-model={selectedTab.value}>
             <option>Log</option>
             <option>Tree State</option>
+            <option>Links</option>
             <option>Config</option>
           </select>
         </div>
         { selectedTab.value === 'Log' && props.logs &&
-          <Logger logs={ props.logs }></Logger>
+          <div>
+            <div style={{display: 'flex', flexDirection: 'row'}}>
+              <Button onClick={() => lastVisibleIdx.value = 0}>Show All</Button>
+              <Button onClick={() => lastVisibleIdx.value = props.logs?.length ?? 0}>Hide Current</Button>
+            </div>
+            <Logger logs={ props.logs.slice(lastVisibleIdx.value) }></Logger>
+          </div>
         }
         { selectedTab.value === 'Tree State' && props.treeState &&
           <div>
-            <pretty-json expand="5">{treeStateStr}</pretty-json>
+            <VueJsonPretty deep={3} showLength={true} data={toJSON(props.treeState)}></VueJsonPretty>
+          </div>
+        }
+        { selectedTab.value === 'Links' && props.links &&
+          <div>
+            <VueJsonPretty deep={3} showLength={true} data={toJSON(props.links)}></VueJsonPretty>
           </div>
         }
         { selectedTab.value === 'Config' && props.config &&
           <div>
-            <pretty-json expand="5">{configStr}</pretty-json>
+            <VueJsonPretty deep={3} showLength={true} data={toJSON(props.config)}></VueJsonPretty>
           </div>
         }
       </div>

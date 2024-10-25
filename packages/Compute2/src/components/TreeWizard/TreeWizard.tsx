@@ -22,9 +22,7 @@ import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {of} from 'rxjs';
 import {PipelineView} from '../PipelineView/PipelineView';
 import {computedWithControl, useUrlSearchParams} from '@vueuse/core';
-import {LogItem} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/Logger';
-import {PipelineConfigurationProcessed} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
-import { Inspector } from '../Inspector/Inspector';
+import {Inspector} from '../Inspector/Inspector';
 
 const findTreeNode = (uuid: string, state: PipelineState): PipelineState | undefined => {
   let foundState = undefined as PipelineState | undefined;
@@ -57,6 +55,8 @@ export const TreeWizard = Vue.defineComponent({
     const treeState = Vue.shallowRef<PipelineState | undefined>(undefined);
     const logs = useObservable(driver.logger.logs$);
     const config = useObservable(driver.currentConfig$);
+    const links = useObservable(driver.currentLinks$);
+
     const chosenStepUuid = Vue.ref<string | undefined>(undefined);
 
     const searchParams = useUrlSearchParams('history');
@@ -250,6 +250,7 @@ export const TreeWizard = Vue.defineComponent({
               treeState={treeState.value}
               config={config.value}
               logs={logs.value}
+              links={links.value}
               ref={inspectorInstance}
               dock-spawn-title='Inspector'
               class='h-full overflow-scroll'
@@ -326,9 +327,9 @@ export const TreeWizard = Vue.defineComponent({
               />
           }
           {
-            chosenStepState.value && 
-            !isFuncCallState(chosenStepState.value) && chosenStepState.value.provider && 
-            <PipelineView 
+            chosenStepState.value &&
+            !isFuncCallState(chosenStepState.value) && chosenStepState.value.provider &&
+            <PipelineView
               funcCall={DG.Func.byName(chosenStepState.value.nqName!).prepare()}
               dock-spawn-title='Step sequence review'
               onProceedClicked={() => {

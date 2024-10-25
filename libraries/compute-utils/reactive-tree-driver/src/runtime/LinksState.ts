@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {v4 as uuidv4} from 'uuid';
-import {BaseTree, NodeAddress} from '../data/BaseTree';
+import {BaseTree, NodeAddress, NodePath} from '../data/BaseTree';
 import {StateTree} from './StateTree';
 import {isFuncCallNode, isSequentialPipelineNode, isStaticPipelineNode, StateTreeNode} from './StateTreeNodes';
 import {ActionSpec, isActionSpec, LinkSpec, MatchedNodePaths, MatchInfo, matchNodeLink} from './link-matching';
@@ -17,6 +17,12 @@ export interface NestedMutationData {
   mutationRootPath: NodeAddress,
   addIdx?: number,
   removeIdx?: number,
+}
+
+export interface LinksData {
+  prefix: NodePath;
+  isAction: boolean;
+  matchInfo: MatchInfo;
 }
 
 class DependenciesData {
@@ -318,6 +324,12 @@ export class LinksState {
 
   public close() {
     this.closed$.next(true);
+  }
+
+  public getLinksInfo(): LinksData[] {
+    const links = [...this.links.values()].map((l) => ({ prefix: l.prefix, isAction: false, matchInfo: l.matchInfo}));
+    const actions = [...this.actions.values()].map((l) => ({ prefix: l.prefix, isAction: true, matchInfo: l.matchInfo}));
+    return [...links, ...actions];
   }
 
   private getRunningLinks() {

@@ -1,10 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {BehaviorSubject, Observable, Subject, EMPTY, of, from, combineLatest} from 'rxjs';
+import {BehaviorSubject, Observable, Subject, EMPTY, of, from} from 'rxjs';
 import {isFuncCallSerializedState, PipelineState} from './config/PipelineInstance';
 import {AddDynamicItem, InitPipeline, LoadDynamicItem, LoadPipeline, MoveDynamicItem, RemoveDynamicItem, RunAction, RunSequence, RunStep, SaveDynamicItem, SavePipeline, ViewConfigCommands} from './view/ViewCommunication';
-import {pairwise, takeUntil, concatMap, catchError, switchMap, map, mapTo, startWith, withLatestFrom, tap, debounceTime, distinctUntilChanged} from 'rxjs/operators';
+import {pairwise, takeUntil, concatMap, catchError, switchMap, map, mapTo, startWith, withLatestFrom, tap, distinctUntilChanged} from 'rxjs/operators';
 import {StateTree} from './runtime/StateTree';
 import {loadInstanceState} from './runtime/funccall-utils';
 import {callHandler} from './utils';
@@ -13,6 +13,7 @@ import {getProcessedConfig, PipelineConfigurationProcessed} from './config/confi
 import {ConsistencyInfo, FuncCallStateInfo} from './runtime/StateTreeNodes';
 import {ValidationResult} from './data/common-types';
 import {DriverLogger} from './data/Logger';
+import {LinksData} from './runtime/LinksState';
 
 export class Driver {
   public currentState$ = new BehaviorSubject<PipelineState | undefined>(undefined);
@@ -25,16 +26,7 @@ export class Driver {
   public currentMeta$ = new BehaviorSubject<Record<string, BehaviorSubject<any | undefined>>>({});
   public currentCallsState$ = new BehaviorSubject<Record<string, BehaviorSubject<FuncCallStateInfo | undefined>>>({});
   public currentConfig$ = new BehaviorSubject<PipelineConfigurationProcessed | undefined>(undefined);
-
-  public treeData$ = combineLatest([
-    this.currentState$,
-    this.currentCallsState$,
-    this.currentValidations$,
-    this.currentConsistency$,
-    this.currentConfig$,
-  ]).pipe(
-    debounceTime(0),
-  );
+  public currentLinks$ = new BehaviorSubject<LinksData[]>([]);
 
   public globalROLocked$ = new BehaviorSubject(false);
   public treeMutationsLocked$ = new BehaviorSubject(false);
@@ -93,6 +85,11 @@ export class Driver {
       map((state) => state ? state.getFuncCallStates() : {}),
       takeUntil(this.closed$),
     ).subscribe(this.currentCallsState$);
+
+    stateUpdates$.pipe(
+      map((state) => state ? state.linksState.getLinksInfo() : []),
+      takeUntil(this.closed$),
+    ).subscribe(this.currentLinks$)
 
     stateUpdates$.pipe(
       map((state) => state ? state.config : undefined),
