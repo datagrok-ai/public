@@ -1,10 +1,17 @@
 # Sequence Translator changelog
 
+## 1.4.8 (2024-10-25)
+
+### Bug fixes
+
+* PolyTool ambigous R groups handling bug
+
 ## 1.4.7 (2024-10-25)
 
 ### Bug fixes
 
 * PolyTool ambigous R groups handling bug
+
 ## 1.4.6 (2024-10-25)
 
 ### New features
