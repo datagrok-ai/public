@@ -83,7 +83,7 @@ export async function _timelinesViewerDemo() {
 
 //name: treeViewerDemo
 //description: Tree viewer visualizes hierarchical data by categories
-//meta.demoPath: Visualization | Data flow and hierarchy | Tree
+//meta.demoPath: Visualization | Data Flow and Hierarchy | Tree
 //meta.demoWait: 4000
 export async function _treeViewerDemo() {
   await viewerDemo('Tree', {left: '40px', right: '75px'});

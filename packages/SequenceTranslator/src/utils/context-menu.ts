@@ -40,11 +40,11 @@ function addContextMenuForCell(gridCell: DG.GridCell, menu: DG.Menu): boolean {
   if (gridCell && gridCell.tableColumn) {
     switch (gridCell.tableColumn.semType) {
     case DG.SEMTYPE.MACROMOLECULE: {
-      menu.item('PolyTool-Enumerate', () => { polyToolEnumerateHelmUI(gridCell.cell); });
+      menu.item('PolyTool-Enumerate', () => { polyToolEnumerateHelmUI(gridCell.cell).then(() => {}); });
       return true;
     }
     case DG.SEMTYPE.MOLECULE: {
-      menu.item('PolyTool-Enumerate', () => { polyToolEnumerateChemUI(gridCell.cell); });
+      menu.item('PolyTool-Enumerate', () => { polyToolEnumerateChemUI(gridCell.cell).then(() => {}); });
       return true;
     }
     }

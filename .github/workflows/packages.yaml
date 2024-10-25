@@ -319,7 +319,6 @@ jobs:
           df -h
           apiUrl='http://127.0.0.1:8080/api'
           alias=${HOST}
-
           # fi
 
           echo "apiUrl=$apiUrl" >> $GITHUB_OUTPUT
@@ -336,6 +335,15 @@ jobs:
           key: ${{ matrix.package }}-${{ github.ref_name }}-webpack-build
           restore-keys: |
             ${{ matrix.package }}-master-webpack-build
+      - name: Remove GPU from docker configuration
+        if: matrix.docker != '' && steps.datagrok-image.outcome == 'success'
+        run: |
+          for dockerfile in $(echo -e ${{ matrix.docker }}); do
+            docker_config_file="$(dirname $dockerfile)/container.json"
+            if [ -f "${docker_config_file}" ]; then
+              jq 'del(.gpu)' ${docker_config_file} > temp.json && mv temp.json ${docker_config_file}
+            fi
+          done
       - name: Build package
         if: ${{ matrix.build == 'build' }}
         id: build
@@ -360,6 +368,9 @@ jobs:
           done
           curl -s ${{ steps.datagrok-image.outputs.apiUrl }}/info/server
           curl -s ${{ steps.datagrok-image.outputs.apiUrl }}/admin/health
+
+          token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/admin | jq -r .token)
+          curl -s -H "Authorization: $token" -H "Content-Type": "application/json" '${{ steps.datagrok-image.outputs.apiUrl }}/admin/plugins/admin/settings' -X POST -d '{"#type":"AdminPluginSettings", "agreementDate":null}'
       - name: Create configuration for grok command-line tool
         if: ${{ matrix.test == 'test' }}
         id: grok-config
@@ -444,32 +455,27 @@ jobs:
           TEST_TEST_DEV_KEY: ${{ secrets.TEST_TEST_DEV_KEY }}
         timeout-minutes: 10
         run: |
-          check_container=true
-          if [[ "${check_container}" == "true" ]] ; then
-            if [[ "${{ steps.datagrok-image.outputs.alias }}" == "test" ]]; then
-              key="$TEST_TEST_DEV_KEY"
-            elif [[ "${{ steps.datagrok-image.outputs.alias }}" == "dev" ]]; then
-              key="$DEV_TEST_DEV_KEY"
-            else
-              key='admin'
-            fi
-            token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/$key | jq -r .token)
-            until .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}'
+          if [[ "${{ steps.datagrok-image.outputs.alias }}" == "test" ]]; then
+            key="$TEST_TEST_DEV_KEY"
+          elif [[ "${{ steps.datagrok-image.outputs.alias }}" == "dev" ]]; then
+            key="$DEV_TEST_DEV_KEY"
+          else
+            key='admin'
+          fi
+          token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/$key | jq -r .token)
+          until .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}'
+          do
+            sleep 1
+            echo -e "\nContainer for ${{ matrix.package }} did not start yet..."
+            echo -e "\nRetrying '/api/docker/containers'..."
+          done
+          if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
+            until .github/scripts/check-output.sh "docker ps" '${{ matrix.package }}'
             do
               sleep 1
               echo -e "\nContainer for ${{ matrix.package }} did not start yet..."
-              echo -e "\nRetrying '/api/docker/containers'..."
+              echo -e "\nRetrying 'docker ps'..."
             done
-            if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
-              until .github/scripts/check-output.sh "docker ps" '${{ matrix.package }}'
-              do
-                sleep 1
-                echo -e "\nContainer for ${{ matrix.package }} did not start yet..."
-                echo -e "\nRetrying 'docker ps'..."
-              done
-            fi
-          else
-            echo "GPU is not available, skipping container wait"
           fi
       - name: Test Package
         if: ${{ matrix.test == 'test' }}

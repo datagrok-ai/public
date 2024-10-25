@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/dbtests",
   "friendlyName": "DB Tests",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Automated tests for JDBC Providers",
   "author": {
     "name": "Pavlo Polovyi",

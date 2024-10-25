@@ -196,14 +196,15 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
             results[i] = rdMol.get_smarts();
             break;
           default:
-            rdMol?.delete();
+            results[i] = 'Unknown notation: ' + targetNotation;
             throw Error('Unknown notation: ' + targetNotation);
           }
           addedToCache = this.addToCache(rdMol);
         } catch {
           // nothing to do, fp is already null
         } finally {
-          if (!addedToCache) { //do not delete mol in case it is in cache
+          if (!addedToCache) {
+            //do not delete mol in case it is in cache
             rdMol?.delete();
           }
         }

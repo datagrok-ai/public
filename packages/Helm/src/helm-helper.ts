@@ -19,6 +19,7 @@ import {
 import {IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
 import {IMonomerLib, IMonomerLibBase, IMonomerLinkData, IMonomerSetPlaceholder} from '@datagrok-libraries/bio/src/types/index';
 import {GAP_SYMBOL, GapOriginals, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 import {HelmWebEditor} from './helm-web-editor';
 import {OrgHelmModule, ScilModule} from './types';
@@ -39,6 +40,7 @@ export class HelmHelper implements IHelmHelper {
   private static instanceCount: number = 0;
 
   constructor(
+    public readonly seqHelper: ISeqHelper,
     private readonly logger: ILogger
   ) {
     // Watchdog for singleton

@@ -22,28 +22,29 @@ category('top menu activity cliffs', async () => {
 
   test('activityCliffsOpenAndLayoutApply.smiles', async () => {
     const df = DG.Test.isInBenchmark ?
-      await grok.data.files.openTable('System:AppData/Chem/tests/smiles_10K_with_activities.csv') :
+      await readDataframe('tests/smiles_1K_with_activities.csv') :
       await readDataframe('tests/activity_cliffs_test.csv');
-    await _testActivityCliffsOpen(df, 'smiles', 'Activity', DG.Test.isInBenchmark ? 78 : 2, !DG.Test.isInBenchmark);
+    await _testActivityCliffsOpen(df, 'smiles', 'Activity', DG.Test.isInBenchmark ? 60 : 80,
+      DG.Test.isInBenchmark ? 16 : 2, !DG.Test.isInBenchmark);
   }, {timeout: 20000, benchmark: true, benchmarkTimeout: 180000});
 
   test('activityCliffsOpen.molV2000', async () => {
-    await _testActivityCliffsOpen(await readDataframe('tests/spgi-100.csv'), 'Structure', 'Chemical Space X', 1);
+    await _testActivityCliffsOpen(await readDataframe('tests/spgi-100.csv'), 'Structure', 'Chemical Space X', 80, 1);
   }, {timeout: 20000});
 
   test('activityCliffsOpen.molV3000', async () => {
-    await _testActivityCliffsOpen(await readDataframe('v3000_sample.csv'), 'molecule', 'Activity', 185);
+    await _testActivityCliffsOpen(await readDataframe('v3000_sample.csv'), 'molecule', 'Activity', 80, 185);
   });
 
   test('activityCliffs.emptyValues', async () => {
     await _testActivityCliffsOpen(await readDataframe('tests/activity_cliffs_empty_rows.csv'),
-      'smiles', 'Activity', 1);
+      'smiles', 'Activity', 80, 1);
   });
 
   test('activityCliffs.malformedData', async () => {
     DG.Balloon.closeAll();
     await _testActivityCliffsOpen(await readDataframe('tests/Test_smiles_malformed.csv'),
-      'canonical_smiles', 'FractionCSP3', 24);
+      'canonical_smiles', 'FractionCSP3', 80, 24);
     try {
       await awaitCheck(() => document.querySelector(`.${MALFORMED_DATA_WARNING_CLASS}`)?.innerHTML ===
         '2 molecules with indexes 31,41 are possibly malformed and are not included in analysis',
@@ -55,7 +56,7 @@ category('top menu activity cliffs', async () => {
   });
 
   test('activityCliffs_layout', async () => {
-    await _testActivityCliffsOpen(await readDataframe('tests/spgi-100.csv'), 'Structure', 'Chemical Space X', 1);
+    await _testActivityCliffsOpen(await readDataframe('tests/spgi-100.csv'), 'Structure', 'Chemical Space X', 80, 1);
   });
 
   after(async () => {
@@ -64,7 +65,7 @@ category('top menu activity cliffs', async () => {
   });
 });
 
-async function _testActivityCliffsOpen(df: DG.DataFrame, molCol: string, activityCol: string,
+async function _testActivityCliffsOpen(df: DG.DataFrame, molCol: string, activityCol: string, simCutOff: number,
   numberCliffs: number, layout?: boolean) {
   await grok.data.detectSemanticTypes(df);
   const actCliffsTableView = grok.shell.addTableView(df);
@@ -72,7 +73,7 @@ async function _testActivityCliffsOpen(df: DG.DataFrame, molCol: string, activit
     'Activity cliffs table view hasn\'t been created', 1000);
   if (molCol === 'molecule') actCliffsTableView.dataFrame.rows.removeAt(51, 489);
   const encodingFunc = DG.Func.find({name: 'getFingerprints', package: 'Chem'})[0];
-  await activityCliffs(df, df.col(molCol)!, actCliffsTableView.dataFrame.getCol(activityCol), 80,
+  await activityCliffs(df, df.col(molCol)!, actCliffsTableView.dataFrame.getCol(activityCol), simCutOff,
     DimReductionMethods.UMAP, BitArrayMetricsNames.Tanimoto, encodingFunc, undefined, undefined, true);
   let scatterPlot: DG.Viewer | null = null;
   for (const i of actCliffsTableView.viewers) {

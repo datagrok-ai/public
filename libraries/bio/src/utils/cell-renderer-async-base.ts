@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 
 import wu from 'wu';
 import {Observable, Subject, Unsubscribable} from 'rxjs';
+import {LRUCache} from 'lru-cache';
 
 import {testEvent} from '@datagrok-libraries/utils/src/test';
 
@@ -273,7 +274,7 @@ export abstract class RenderServiceBase<TProps extends PropsBase, TAux> {
 export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
   extends CellRendererBackBase<string> {
   protected readonly taskQueueMap = new Map<number, RenderTask<TProps, TAux>>;
-  protected imageCache = new Map<number, ImageData>();
+  protected imageCache = new LRUCache<number, ImageData>({max: 100});
 
   /** Consumer identifier of the render service */
   protected consumerId: number | null = null;
@@ -292,7 +293,7 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
       // for (const cellImageData of this.imageCache.values())
       //   cellImageData.remove();
     }
-    this.imageCache = new Map<number, ImageData>();
+    this.imageCache.clear();
     super.reset();
   }
 
@@ -371,7 +372,8 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
               const cellCanvasData = cellCanvasCtx.getImageData(0, 0, cellCanvas.width, cellCanvas.height);
               this.renderOnGrid(g, new DG.Rect(x, y, w, h), gridCell, cellCanvasData);
 
-              this.imageCache.set(rowIdx, cellCanvasData);
+              if (this.cacheEnabled)
+                this.imageCache.set(rowIdx, cellCanvasData);
             } finally {
               g.restore();
               this.taskQueueMap.delete(rowIdx);

@@ -9,6 +9,7 @@ import {
   GetMonomerFunc, MonomersFuncs, HelmMol, HelmString, IHelmWebEditor, HelmAtom, IHelmDrawOptions
 } from './types';
 import {IMonomerLibBase} from '../types/index';
+import {ISeqHelper} from '../utils/seq-helper';
 
 export type IHelmInputInitOptions = ui.input.IInputInitOptions<HelmString | HelmMol> & {
   editable: boolean;
@@ -47,6 +48,8 @@ export class HelmNotSupportedError extends Error {
 }
 
 export interface IHelmHelper {
+  get seqHelper(): ISeqHelper;
+
   createHelmInput(name: string, options?: IHelmInputInitOptions): HelmInputBase;
 
   createHelmWebEditor(host?: HTMLElement, options?: Partial<IHelmEditorOptions>): IHelmWebEditor;

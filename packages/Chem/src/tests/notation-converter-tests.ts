@@ -43,10 +43,10 @@ category('converters', async () => {
 
   test('SMILES to Molfile V2000', async () => {
     if (DG.Test.isInBenchmark) {
-      const df = await readDataframe('tests/smi10K.csv');
+      const df = await readDataframe('smiles.csv');
       const rdkitModule = getRdKitModule();
       for (let i = 0; i < df.rowCount; i++)
-        _convertMolNotation(df.get('smiles', i), DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock, rdkitModule);
+        _convertMolNotation(df.get('canonical_smiles', i), DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock, rdkitModule);
     } else
       _testConvert(DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
   }, {benchmark: true});
@@ -89,7 +89,7 @@ category('converters', async () => {
     expect(smiles1 === smiles2);
   });
   test('Convert notations for column', async () => {
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('System:AppData/Chem/tests/smiles_100K.zip') :
+    const df = DG.Test.isInBenchmark ? await readDataframe('tests/smi10K.csv') :
       await readDataframe('tests/Test_smiles_with_empty_and_malformed.csv');
 
     const testColumnAdded = async (colName: string, convertFrom: DG.chem.Notation, convertTo: DG.chem.Notation) => {

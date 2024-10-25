@@ -47,21 +47,28 @@ export class OligoToolkitPackage extends DG.Package implements ITranslationHelpe
     return this._monomerLibWrapper;
   }
 
+  private _initPromise: Promise<void>;
+  public get initPromise(): Promise<void> { return this._initPromise; }
+
   constructor(opts: { debug: boolean } = {debug: false}) {
     super();
     // @ts-ignore
     super._logger = new LoggerWrapper(super.logger, opts.debug);
   }
 
-  private initPromise?: Promise<void>;
+  startInit(initPromise: Promise<void>): void {
+    this._initPromise = initPromise;
+  }
 
   completeInit(seqHelper: ISeqHelper): void {
     this._seqHelper = seqHelper;
   }
 
+  private initLibDataPromise?: Promise<void>;
+
   async initLibData(): Promise<void> {
-    if (!this.initPromise) {
-      this.initPromise = (async () => {
+    if (!this.initLibDataPromise) {
+      this.initLibDataPromise = (async () => {
         const packageSettings = await this.getSettings();
         let monomersPath: string = packageSettings['MonomersPath'];
         if (!monomersPath || !(await grok.dapi.files.exists(monomersPath))) {
@@ -76,7 +83,7 @@ export class OligoToolkitPackage extends DG.Package implements ITranslationHelpe
         this._monomerLibWrapper = new MonomerLibWrapper(this.monomerLib, this.jsonData);
       })();
     }
-    return this.initPromise;
+    return this.initLibDataPromise;
   }
 
   async getTranslationHelper(): Promise<ITranslationHelper> {

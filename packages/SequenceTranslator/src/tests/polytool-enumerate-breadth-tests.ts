@@ -41,7 +41,7 @@ category('PolyTool: Enumerate', () => {
       src: 'PEPTIDE1{[Ac(1)].F.W.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0',
       params: {
         type: PolyToolEnumeratorTypes.Single,
-        placeholdersBreadth: [
+        breadthPlaceholders: [
           {start: 2, end: 4, monomers: ['K']},
         ],
       },
@@ -55,7 +55,7 @@ category('PolyTool: Enumerate', () => {
       src: 'PEPTIDE1{[Ac(1)].F.W.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0',
       params: {
         type: PolyToolEnumeratorTypes.Single,
-        placeholdersBreadth: [
+        breadthPlaceholders: [
           {start: 2, end: 4, monomers: ['K']},
         ],
         keepOriginal: true,
@@ -71,7 +71,7 @@ category('PolyTool: Enumerate', () => {
       src: 'PEPTIDE1{[Ac(1)].F.W.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0',
       params: {
         type: PolyToolEnumeratorTypes.Single,
-        placeholdersBreadth: [
+        breadthPlaceholders: [
           {start: 2, end: 4, monomers: ['K', 'Y']},
         ],
       },
@@ -88,7 +88,7 @@ category('PolyTool: Enumerate', () => {
       src: 'PEPTIDE1{[Ac(1)].F.W.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0',
       params: {
         type: PolyToolEnumeratorTypes.Single,
-        placeholdersBreadth: [
+        breadthPlaceholders: [
           {start: 2, end: 4, monomers: ['K']},
           {start: 2, end: 4, monomers: ['Y']},
         ],

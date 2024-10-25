@@ -48,7 +48,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     this.distanceMetric = this.string('distanceMetric', CHEM_SIMILARITY_METRICS[0], {choices: CHEM_SIMILARITY_METRICS});
     this.size = this.string('size', Object.keys(this.sizesMap)[0], {choices: Object.keys(this.sizesMap)});
     this.rowSource = this.string('rowSource', this.rowSourceChoices[0], {choices: this.rowSourceChoices});
-    this.moleculeColumnName = this.string('moleculeColumnName');
+    this.moleculeColumnName = this.addProperty('moleculeColumnName', DG.TYPE.COLUMN, '', {semType: DG.SEMTYPE.MOLECULE});
     this.name = name;
     this.moleculeProperties = this.columnList('moleculeProperties', [],
       {description: 'Adds selected fields from the grid to similarity search viewer'});

@@ -1,5 +1,9 @@
 # Chembl changelog
 
+## 1.1.5 (2024-10-23)
+
+Remove dual function initialization
+
 ## 1.1.4 (2024-10-03)
 
 Improve search integrated queries

@@ -7,6 +7,7 @@ import $ from 'cash-dom';
 import '@datagrok-libraries/bio/src/types/ngl'; // To enable import from the NGL module declared in bio lib
 import {GridSize, IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
 import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
+import {DockingRole, DockingTags} from '@datagrok-libraries/bio/src/viewers/molecule3d';
 
 import {AutoDockApp, AutoDockDataType} from './apps/auto-dock-app';
 import {_runAutodock, AutoDockService, _runAutodock2} from './utils/auto-dock-service';
@@ -227,9 +228,18 @@ function processAutodockResults(autodockResults: DG.DataFrame, table: DG.DataFra
   return processedTable;
 }
 
+//name: isApplicable
+//input: semantic_value molecule
+//output: bool result
+export function isApplicable(molecule: DG.SemanticValue): boolean {
+  return molecule.cell.column.getTag(DockingTags.dockingRole) === DockingRole.ligand;
+}
+
+
 //name: AutoDock
 //tags: panel, chem, widgets
 //input: semantic_value molecule { semType: Molecule3D }
+//condition: Docking:isApplicable(molecule)
 //output: widget result
 export async function autodockWidget(molecule: DG.SemanticValue): Promise<DG.Widget<any> | null> {
   return await getAutodockSingle(molecule);

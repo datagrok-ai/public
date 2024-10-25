@@ -51,15 +51,13 @@ async function initHelmInt(): Promise<void> {
   _package.logger.debug(`${logPrefix}, start`);
 
   try {
-    const helmHelper: IHelmHelper = new HelmHelper(_package.logger);
     const [_, seqHelper, libHelper] = await Promise.all([
       _package.initHELMWebEditor(),
       getSeqHelper(),
       getMonomerLibHelper(),
     ]);
-
-    _package.logger.debug(`${logPrefix}, lib loaded`);
-    _package.completeInit(seqHelper, helmHelper, libHelper);
+    const helmHelper: IHelmHelper = new HelmHelper(seqHelper, _package.logger);
+    _package.completeInit(helmHelper, libHelper);
   } catch (err: any) {
     const [errMsg, errStack] = errInfo(err);
     // const errMsg: string = err instanceof Error ? err.message : !!err ? err.toString() : 'Exception \'undefined\'';

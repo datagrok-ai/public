@@ -38,17 +38,18 @@ type PolyToolEnumerateChemSerialized = {
   screenLibrary: string | null;
 }
 
-export function polyToolEnumerateChemUI(cell?: DG.Cell): void {
-  getPolyToolEnumerationChemDialog(cell)
-    .then((dialog) => {
-      dialog.show({resizable: true});
-    })
-    .catch((_err: any) => {
-      grok.shell.warning('To run PolyTool Enumeration, sketch the molecule and specify the R group to vary');
-    });
+export async function polyToolEnumerateChemUI(cell?: DG.Cell): Promise<void> {
+  await _package.initPromise;
+  try {
+    const dialog = await getPolyToolEnumerationChemDialog(cell);
+    dialog.show({resizable: true});
+  } catch (_err: any) {
+    grok.shell.warning('To run PolyTool Enumeration, sketch the molecule and specify the R group to vary');
+  }
 }
 
 export async function polyToolConvertUI(): Promise<void> {
+  await _package.initPromise;
   let dialog: DG.Dialog;
   try {
     dialog = await getPolyToolConvertDialog();
@@ -244,11 +245,11 @@ export async function polyToolConvert(
       if (!df) return colName;
       return df.columns.getUnusedName(colName);
     };
-    await getHelmHelper(); // initializes JSDraw and org
+    const helmHelper = await getHelmHelper(); // initializes JSDraw and org
 
     const table = seqCol.dataFrame;
     const rules = await getRules(ruleFiles);
-    const resList = doPolyToolConvert(seqCol.toList(), rules);
+    const resList = doPolyToolConvert(seqCol.toList(), rules, helmHelper);
 
     const resHelmColName = getUnusedName(table, `transformed(${seqCol.name})`);
     const resHelmCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, resHelmColName, resList.length)

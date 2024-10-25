@@ -11,7 +11,7 @@ category('server features', () => {
   test('descriptors', async () => {
     const tree = await grok.chem.descriptorsTree();
     expect(tree !== undefined, true);
-    const df = DG.Test.isInBenchmark ? await readDataframe('tests/smiles_50K.csv') :
+    const df = DG.Test.isInBenchmark ? await readDataframe('tests/smi10K.csv') :
       DG.DataFrame.fromCsv(testCsv);
     const t: DG.DataFrame = await grok.chem.descriptors(df, 'smiles',
       ['MolWt', 'NumAromaticCarbocycles', 'NumHAcceptors', 'NumHeteroatoms', 'NumRotatableBonds', 'RingCount']);

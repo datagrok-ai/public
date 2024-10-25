@@ -9,6 +9,7 @@ import {getPolyToolUnruleDialog} from './pt-unrule-dialog';
 import {Rules} from './pt-rules';
 
 import {_package} from '../package';
+import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
 export async function polyToolUnruleUI(): Promise<void> {
   let dialog: DG.Dialog;
@@ -23,13 +24,13 @@ export async function polyToolUnruleUI(): Promise<void> {
 }
 
 /** Returns list of harmonized sequences. Covered with tests. */
-export function doPolyToolUnrule(helms: string[], rules: Rules): string[] {
+export function doPolyToolUnrule(helms: string[], rules: Rules, helmHelper: IHelmHelper): string[] {
   const resHrzSeqList = new Array<string>(helms.length);
   for (let i = 0; i < helms.length; ++i) {
     if (!helms[i])
       resHrzSeqList[i] = '';
     else {
-      const chain = Chain.fromHelm(helms[i]);
+      const chain = Chain.parseHelm(helms[i], helmHelper);
       resHrzSeqList[i] = chain.getNotation();
     }
   }

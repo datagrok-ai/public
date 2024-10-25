@@ -15,6 +15,9 @@ export interface ISeqSplitted {
   /** For fasta and Helm must not be enclosed to square brackets [meA].*/
   getOriginal(posIdx: number): string;
 
+  // TODO: Get ISeqMonomer for seq position
+  // get(posIdx: number): ISeqMonomer;
+
   length: number;
 }
 
@@ -22,7 +25,7 @@ export interface INotationProvider {
   get splitter(): SplitterFunc;
 
   /** Any Macromolecule can be presented as Helm notation */
-  getHelm(seq: string, options: any): Promise<DG.SemanticValue<string>>;
+  getHelm(seq: string, options: any): Promise<string>;
 
   createCellRendererBack(gridCol: DG.GridColumn | null, tableCol: DG.Column<string>): CellRendererBackBase<string>;
 }

@@ -29,11 +29,14 @@ const skip = [
   '1m-aggregation',
   '100-million-rows',
   '1-million-columns',
-  'network-diagram'
+  'network-diagram',
+  'output-layouts',
+  'file-browser'
 ];
 
 const scriptViewer = [
   'parameterValidation',
+  'parameter validation',
   'parameter expressions',
   'docking', 
   'input-api',

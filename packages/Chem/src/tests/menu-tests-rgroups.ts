@@ -32,29 +32,29 @@ category('top menu r-groups', () => {
     await grok.data.detectSemanticTypes(malformed);
     coreEmpty = await getMCS(empty.col('smiles')!, true, true)!;
     coreMalformed = await getMCS(malformed.col('smiles')!, true, true)!;
-    dfForMcs = DG.Test.isInBenchmark ? await grok.data.files.openTable('System:AppData/Chem/tests/smiles_50K.csv') :
+    dfForMcs = DG.Test.isInBenchmark ? await readDataframe('smiles.csv') :
       await readDataframe('tests/spgi-100.csv');
   });
 
   test('mcs.exactAtomsExactBonds', async () => {
-    const mcs = await getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `smiles` : `Structure`)!, true, true);
-    expect(mcs, DG.Test.isInBenchmark ? '[#17]' : '[#6]-[#6]-[#7]-[#6]');
+    const mcs = await getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `canonical_smiles` : `Structure`)!, true, true);
+    expect(mcs, DG.Test.isInBenchmark ? '[#6]' : '[#6]-[#6]-[#7]-[#6]');
   }, {benchmark: true});
 
   test('mcs.anyAtomsExactBonds', async () => {
-    const mcs = await getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `smiles` : `Structure`)!, false, true);
-    expect(mcs, DG.Test.isInBenchmark ? '[#17]' : '[#6,#7,#8,#9]-[#6,#7,#8]-[#7,#6](-[#6,#8,#9,#16])-[#6,#7,#9]');
+    const mcs = await getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `canonical_smiles` : `Structure`)!, false, true);
+    expect(mcs, DG.Test.isInBenchmark ? '[#7,#6,#8,#9,#16,#17,#35,#53]-[#6,#7,#8,#16,#53]' : '[#6,#7,#8,#9]-[#6,#7,#8]-[#7,#6](-[#6,#8,#9,#16])-[#6,#7,#9]');
   }, {benchmark: true});
 
   test('mcs.exactAtomsAnyBonds', async () => {
-    const mcs = await getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `smiles` : `Structure`)!, true, false);
-    expect(mcs, DG.Test.isInBenchmark ? '[#17]' : '[#6]-,:[#6]-,:[#7]-,:[#6]-,:[#6]');
+    const mcs = await getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `canonical_smiles` : `Structure`)!, true, false);
+    expect(mcs, DG.Test.isInBenchmark ? '[#6]-,:[#6]' : '[#6]-,:[#6]-,:[#7]-,:[#6]-,:[#6]');
   }, {benchmark: true});
 
   test('mcs.anyAtomsAnyBonds', async () => {
-    const mcs = await getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `smiles` : `Structure`)!, false, false);
+    const mcs = await getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `canonical_smiles` : `Structure`)!, false, false);
     expect(mcs, DG.Test.isInBenchmark ?
-      `[#8,#6,#7,#9,#15,#16,#17,#35]-,:[#17,#5,#6,#7,#8,#14,#15,#16,#33,#34]` :
+      `[#7,#6,#8,#9,#16,#17,#35,#53]-,:[#6,#7,#8,#16]-,:[#6,#7,#8,#16]:,-[#6,#7,#8,#16]:,-[#7,#6,#8,#16]:,-[#7,#6,#8,#9,#16,#17,#35]` :
       `[#6,#8,#9]-,:[#6,#7,#8]-,:[#7,#6](-,:[#6,#7,#8,#16]-,:[#6,#7,#8]-,:[#6,#7]-,:[#7,#6,#8]-,:[#6,#7,#8,#16]-,:[#6,#7,#8,#16])-,:[#6,#7,#8]-,:[#6,#7]-,:[#6,#7,#8]-,:[#6,#7,#8,#9]`);
   }, {benchmark: true});
 
@@ -66,8 +66,8 @@ category('top menu r-groups', () => {
               core: 'c1ccccc1',
               prefix: 'R',
             }); */
-      const df = await grok.data.files.openTable('System:AppData/Chem/tests/smiles_50K.csv');
-      await rGroupsMinilib(df.col('smiles')!, 'c1ccccc1', false, 0, rGroupOpts);
+      const df = await readDataframe('smiles.csv');
+      await rGroupsMinilib(df.col('canonical_smiles')!, 'c1ccccc1', false, 0, rGroupOpts);
       return;
     }
     /*     const rgroups: DG.DataFrame = await grok.functions.call('Chem:FindRGroups', {

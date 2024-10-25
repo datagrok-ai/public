@@ -12,16 +12,22 @@ import {
 
 const minH = 0.05;
 
+enum BarChartColoringType {
+  Off = 'off',
+  Bins = 'bins',
+  Values = 'values'
+}
+
 interface BarChartSettings extends SummarySettingsBase {
   globalScale: boolean;
-  colorCode: boolean;
+  colorCode: BarChartColoringType;
 }
 
 function getSettings(gc: DG.GridColumn): BarChartSettings {
   const settings: BarChartSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
     gc.settings[SparklineType.BarChart] ??= getSettingsBase(gc, SparklineType.BarChart);
   settings.globalScale ??= false;
-  settings.colorCode ??= false;
+  settings.colorCode ??= BarChartColoringType.Off;
   return settings;
 }
 
@@ -85,10 +91,13 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
     const gmax = Math.max(...cols.map((c: DG.Column) => c.max));
 
     for (let i = 0; i < cols.length; i++) {
-      if (!cols[i].isNone(row)) {
-        const color = settings.colorCode ? DG.Color.getCategoricalColor(i) : DG.Color.fromHtml('#8080ff');
+      const currentCol = cols[i];
+      if (!currentCol.isNone(row)) {
+        const color = settings.colorCode === BarChartColoringType.Values ? currentCol.meta.colors.getType() !== DG.COLOR_CODING_TYPE.OFF ?
+          currentCol.meta.colors.getColor(row) : DG.Color.fromHtml('#8080ff') : settings.colorCode === BarChartColoringType.Bins ?
+          DG.Color.getCategoricalColor(i) : DG.Color.fromHtml('#8080ff');
         g.setFillStyle(DG.Color.toRgb(color));
-        const scaled = settings.globalScale ? (cols[i].getNumber(row) - gmin) / (gmax - gmin) : cols[i]?.scale(row);
+        const scaled = settings.globalScale ? (currentCol.getNumber(row) - gmin) / (gmax - gmin) : currentCol?.scale(row);
         const bb = b
           .getLeftPart(cols.length, i)
           .getBottomScaled(scaled > minH ? scaled : minH)
@@ -113,8 +122,11 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
     const normalizeInput = DG.InputBase.forProperty(globalScaleProp, settings);
     normalizeInput.onChanged.subscribe(() => gc.grid.invalidate());
 
-    const colorCodeScaleProp = DG.Property.js('colorCode', DG.TYPE.BOOL, {
-      description: 'Activates color rendering'
+    const colorCodeScaleProp = DG.Property.js('colorCode', DG.TYPE.STRING, {
+      description: 'Activates color rendering',
+      choices: [BarChartColoringType.Off, BarChartColoringType.Bins, BarChartColoringType.Values],
+      defaultValue: BarChartColoringType.Off,
+      nullable: false,
     });
 
     const colorCodeNormalizeInput = DG.InputBase.forProperty(colorCodeScaleProp, settings);

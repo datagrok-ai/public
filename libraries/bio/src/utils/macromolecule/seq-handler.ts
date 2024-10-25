@@ -17,6 +17,27 @@ export const SeqTemps = new class {
 export type ConvertFunc = (src: string) => string;
 export type JoinerFunc = (src: ISeqSplitted) => string;
 
+export class MacromoleculeValueBase extends DG.SemanticValue<string> {
+
+  override get value(): string { return this.helm; }
+
+  constructor(
+    public readonly helm: string,
+    private seqHandler: ISeqHandler,
+    private rowIdx?: number,
+  ) {
+    let v: DG.SemanticValue<string>;
+    if (rowIdx != null) {
+      const tableCell = seqHandler.column.dataFrame.cell(rowIdx, seqHandler.column.name);
+      v = DG.SemanticValue.fromTableCell(tableCell);
+    } else {
+      v = DG.SemanticValue.fromValueType(helm, DG.SEMTYPE.MACROMOLECULE, NOTATION.HELM);
+    }
+    // @ts-ignore
+    super(v.dart);
+  }
+}
+
 export interface ISeqHandler {
   get column(): DG.Column<string>;
 
@@ -40,9 +61,8 @@ export interface ISeqHandler {
   isHelm(): boolean;
   isSeparator(): boolean;
 
-
   getSplitted(rowIdx: number, limit?: number): ISeqSplitted;
-  getHelm(rowIdx: number, options?: any): Promise<DG.SemanticValue<string>>;
+  getValue(rowIdx: number, options?: any): Promise<MacromoleculeValueBase>;
 
   getAlphabetSize(): number;
   getAlphabetIsMultichar(): boolean;

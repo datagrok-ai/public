@@ -463,7 +463,7 @@ M  END
 
     // TODO: make both filtering scaffold and single highlight scaffold appear
     const mhData = getMonomerHover();
-    if (mhData && mhData.dataFrameId == gridCell.grid.dataFrame.id && mhData.gridRowIdx === gridCell.gridRow &&
+    if (mhData && mhData.dataFrameId == gridCell.grid?.dataFrame.id && mhData.gridRowIdx === gridCell.gridRow &&
       mhData.seqColName === gridCell.tableColumn?.getTag(ChemTags.SEQUENCE_SRC_COL)
     ) {
       const substruct = mhData.getSubstruct();

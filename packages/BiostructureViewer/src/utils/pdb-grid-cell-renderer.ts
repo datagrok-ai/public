@@ -67,7 +67,7 @@ export class PdbGridCellRendererBack extends CellRendererBackAsyncBase<NglGlProp
     });
   }
 
-  async createViewer(gridCell: DG.GridCell): Promise<{ tview: DG.TableView | undefined, viewer: any }> {
+  async createViewer(gridCell: DG.GridCell, view?: DG.TableView): Promise<{ tview: DG.TableView | undefined, viewer: any }> {
     const df: DG.DataFrame = gridCell.grid.dataFrame;
     const tableCol: DG.Column | null = gridCell.tableColumn;
     if (!tableCol)
@@ -76,7 +76,7 @@ export class PdbGridCellRendererBack extends CellRendererBackAsyncBase<NglGlProp
     const dockingRole: string = tableCol.getTag(DockingTags.dockingRole);
     const value: string = gridCell.cell.value;
 
-    const tview: DG.TableView | undefined = wu(grok.shell.tableViews)
+    const tview: DG.TableView | undefined = view ?? wu(grok.shell.tableViews)
       .find((tv) => tv.dataFrame.id === df.id);
 
     if (!tview)
