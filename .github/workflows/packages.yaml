@@ -443,7 +443,7 @@ jobs:
           if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
             if [[ "${{ matrix.package }}" == "Chemspace" ]]; then
               token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/admin | jq -r .token)
-              curl -s -H "Authorization: $token" -H "Content-Type": "application/json" '${{ steps.datagrok-image.outputs.apiUrl }}/credentials/for/Chemspace:Chemspace' -X POST -d "{'apiKey': '$CHEMSPACE_APIKEY'}"
+              curl -s -H "Authorization: $token" -H "Content-Type": "application/json" '${{ steps.datagrok-image.outputs.apiUrl }}/credentials/for/Chemspace.Chemspace' -X POST -d "{\"apiKey\": \"$CHEMSPACE_APIKEY\"}"
             fi
           fi
 
