@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## 1.1.6 (2024-11-01)
+
+* Updated the Acid Production example
+
 ## 1.1.5 (2024-10-10)
 
 * Added the Ball flight demo model
