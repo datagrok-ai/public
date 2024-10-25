@@ -495,6 +495,7 @@ export class DiffStudio {
         this.toChangeSolutionViewerProps = true;
         this.setCallWidgetsVisibility(true);
         this.runIcon.hidden = false;
+        this.toSwitchToModelTab = true;
       } else {
         e.stopImmediatePropagation();
         e.preventDefault();
@@ -885,6 +886,7 @@ export class DiffStudio {
 
       this.isSolvingSuccess = true;
       this.runPane.header.hidden = false;
+      this.toSwitchToModelTab = false;
     } catch (error) {
       if (error instanceof CallbackAction) {
         this.isSolvingSuccess = true;
@@ -980,10 +982,13 @@ export class DiffStudio {
     this.solverView.dataFrame = this.solutionTable;
     this.setCallWidgetsVisibility(false);
 
-    if (this.prevInputsNode !== null)
-      this.inputsPanel.removeChild(this.prevInputsNode);
-    this.prevInputsNode = null;
-    this.tabControl.currentPane = this.modelPane;
+    if (this.toSwitchToModelTab) {
+      this.tabControl.currentPane = this.modelPane;
+
+      if (this.prevInputsNode !== null)
+        this.inputsPanel.removeChild(this.prevInputsNode);
+      this.prevInputsNode = null;
+    }
 
     if (this.solutionViewer && this.viewerDockNode) {
       grok.shell.dockManager.close(this.viewerDockNode);
