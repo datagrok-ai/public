@@ -235,6 +235,11 @@ async function getPolyToolEnumerationChemDialog(cell?: DG.Cell): Promise<DG.Dial
   }
 }
 
+function dealGroups(col: DG.Column<string>): void {
+  for (let i = 0; i < col.length; i++)
+    col.set(i, col.get(i)!.replaceAll('undefined', 'H'));
+}
+
 /** Returns Helm and molfile columns.  */
 export async function polyToolConvert(
   seqCol: DG.Column<string>, generateHelm: boolean, chiralityEngine: boolean, ruleFiles: string[]
@@ -268,7 +273,7 @@ export async function polyToolConvert(
     const toAtomicLevelRes =
       await seqHelper.helmToAtomicLevel(resHelmCol, chiralityEngine, /* highlight */ generateHelm, lib);
     const resMolCol = toAtomicLevelRes.molCol!;
-
+    dealGroups(resMolCol);
     resMolCol.name = getUnusedName(table, `molfile(${seqCol.name})`);
     resMolCol.semType = DG.SEMTYPE.MOLECULE;
     if (table) {
