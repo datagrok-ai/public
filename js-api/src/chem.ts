@@ -520,7 +520,8 @@ export namespace chem {
       this.molInput.addEventListener('paste', (e) => {
         const text = e.clipboardData?.getData('text/plain');
         if (text != null && (isMolBlock(text) || checkSmiles(text))) {
-          e.preventDefault();
+          if (isMolBlock(text))
+            e.preventDefault();
           this.setValue(text);
         }
       });
