@@ -20,19 +20,19 @@ To show the relationship between three variables, use a [3D Scatterplot](3d-scat
 
 ## Controls
 
-|                        |                      |
-|------------------------|----------------------|
-| Context menu           | Right-click         |
-| Zoom                   | Alt+Mouse Drag       |
-| Zoom in                | Mouse Wheel Up or Plus|
-| Zoom out               | Mouse Wheel Down or Minus|
-| Double-click           | Reset view             |
-| Select                 | Shift+Mouse Drag       |
-| Invert selected        | Ctrl+Mouse Click       |
-| Scroll                 |  Up, Down, Left, Right |
-| Toggle lasso tool      | L        |
-| Toggle regression line | R       |
-| Show in full screen    | Alt+F        |
+|                        |                                           |
+|------------------------|-------------------------------------------|
+| Context menu           | Right-click                               |
+| Zoom                   | Alt+Mouse Drag                            |
+| Zoom in                | Mouse Wheel Up or Plus                    |
+| Zoom out               | Mouse Wheel Down or Minus                 |
+| Double-click           | Reset view                                |
+| Select                 | Shift+Mouse Drag, Ctrl+Click, Shift+Click |
+| Invert selected        | Ctrl+Mouse Click                          |
+| Scroll                 | Up, Down, Left, Right                     |
+| Toggle lasso tool      | L                                         |
+| Toggle regression line | R                                         |
+| Show in full screen    | Alt+F                                     |
 
 ![Scatterplot](../../uploads/gifs/scatter-plot.gif)
 
@@ -57,13 +57,52 @@ To add a scatterplot from the **Console**, use
 
 :::
 
-### Calculations and trends
+
+### Data source
+
+To specify the rows to show on the scatter plot, use the "Table" and "Row Source" properties in the **Data** 
+section on the **Context Panel**. 
+* "Table" to visualize a table other than the current one
+* "Row Source" to visualize a subset of data: 
+  * "Filtered" (the default value) - scatter plot follows view filter
+  * "All", "Selected", "SelectedOrCurrent", "FilteredSelected", "MouseOverGroup", "CurrentRow", "MouseOverRow" - 
+    other options useful for providing interactivity
+
+You can further filter visible rows by setting the "Filter" property to an 
+expression, such as "${AGE} > 18".
+
+### Filtering
+
+In addition to visualizing filtered rows, scatter plot can also be used to filter the table, which
+in turn affects what you see on other viewers on this view. This behavior is controlled by the
+"Zoom and Filter" property:
+
+* "filter by zoom" (default): as you zoom in, global view filter changes to show only rows that are 
+  visible on the scatterplot. In this mode, "Filter Out Invalid" property defined whether rows that
+  could not be visualized on the scatter plot (such as negative values on log scales) should be
+  filtered out. 
+* "no action": zooming in does not affect view filter
+* "zoom by filter": as the view filter changes, scatter plot zooms in to the minimum area containing
+  filtered points. This is useful for analyzing clusters of data.
+* "pack and zoom by filter": mostly same as "zoom by filter", but in case categorical values 
+  are shown on an axis and some categories are completely filtered out, these categories get removed
+  (packed) from the axis. Useful when visualizing data that has a large number of categories.
+
+### Selection
+
+To switch between lasso and rectangular selection modes, press `L` or click `Lasso Tool` 
+from the context menu. 
+
+### Regression lines
+
+
+### Formula lines
 
 A scatterplot can show reference lines that represent formulas or equations.
 These lines are used to emphasize specific areas on the chart or data. Common
-examples include a regression line, value bands, and so on. 
+examples include a regression line, value bands, and so on.
 
-To toggle a regression line, press the **R** key. 
+To toggle a regression line, press the **R** key.
 
 To show a custom formula line, right-click a scatterplot, then choose **Tools**
 > **Formula Lines...** This action opens a **Formula Lines** dialog. Here, enter
@@ -79,15 +118,6 @@ width="800px"/>
 You can [add formula lines programmatically](https://datagrok.ai/help/develop/how-to/show-formula-lines).
 
 :::
-
-### Filtering and selection
-
-To adjust the data display settings, use the **Data** info pane from the
-**Context Panel**. Here, you can specify which rows to show on the scatterplot,
-define zoom and filtering actions, and so on.
-
-For manual selection settings, use the **Misc** info pane. Here, you can choose
-the selector you want and define actions for the mouse drag. 
 
 ### Tooltip
 
