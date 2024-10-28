@@ -239,12 +239,6 @@ class NotebookView extends DG.ViewBase {
       NotebookActions.runAll(nbWidget.content, nbWidget.context.sessionContext).then();
     });
 
-    handler.editor = editor;
-
-    nbWidget.content.activeCellChanged.connect((sender, cell) => {
-      handler.editor = cell !== null && cell !== undefined ? cell.editor : null;
-    });
-
     const iframe = document.createElement('iframe');
     iframe.style.width = '100%';
     iframe.style.height = '100%';
@@ -275,7 +269,22 @@ class NotebookView extends DG.ViewBase {
     iframeDocument.documentElement.style.overflow = 'auto';
     iframeDocument.body.style.overflow = 'auto';
     
-    
+    handler.editor = editor;
+    nbWidget.content.activeCellChanged.connect((sender, cell) => {
+      handler.editor = cell !== null && cell !== undefined ? cell.editor : null;
+      if (cell && cell.editor) cell.editor.focus();
+    });
+
+    nbWidget.content.node.addEventListener('click', (event) => {
+      const cells = nbWidget.content.widgets; // all cells in the notebook
+      for (let i = 0; i < cells.length; i++) {
+         if (cells[i].node.contains(event.target)) {
+             nbWidget.content.activeCellIndex = i; // sets the active cell by index
+             break;
+         }
+      }
+   });
+
     // Initialize the command registry with the bindings.
     // Setup the keydown listener for the document.
     const commands = new CommandRegistry();
