@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -70,6 +71,48 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
         console.error(e);
       }
     }));
+  }
+
+  public get stages() {
+    return this.campaign?.template?.stages ?? this.template?.stages ?? [];
+  }
+
+  public async setStages(st: string[]) {
+    if (!this.campaign || !this.campaign.template || !this.template) {
+      grok.shell.error('Campaign or template is not set');
+      return;
+    }
+    if (!st?.length) {
+      grok.shell.error('Removing all stages is not allowed');
+      return;
+    }
+    const stageCol = this.dataFrame?.col(TileCategoriesColName);
+    if (!stageCol) {
+      grok.shell.error('No stage column found');
+      return;
+    }
+    const removedStages: string[] = [];
+    //make sure there is no duplication
+    const stageSet = new Set(st);
+    const uniqueStages = [...stageSet];
+    const dfLen = this.dataFrame!.rowCount;
+    const stageCats = stageCol.categories;
+    const stageIndexes = stageCol.getRawData() as Int32Array;
+    for (let i = 0; i < dfLen; i++) {
+      const stage = stageCats[stageIndexes[i]];
+      if (!stageSet.has(stage)) {
+        stageCol.set(i, st[0], false);
+        removedStages.push(stage);
+      }
+    }
+
+    if (removedStages.length > 0)
+      grok.shell.warning(`Some stages were removed: (${removedStages.join(', ')}). Corresponding rows were set to stage "${st[0]}"`);
+
+
+    this.campaign.template.stages = uniqueStages;
+    this.template.stages = uniqueStages;
+    await this.saveCampaign(undefined, true);
   }
 
   public async setTemplate(template: T, campaignId?: string) {
@@ -304,8 +347,9 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
         });
         submitButton.classList.add('hit-design-submit-button');
         const ribbonButtons: HTMLElement[] = [submitButton];
-        if (this.template?.stages?.length ?? 0 > 0)
+        if (this.stages.length > 0)
           ribbonButtons.unshift(tilesButton);
+        // only initialize campaign template if its not exsitent yet
         if (this.campaign && this.template && !this.campaign.template)
           this.campaign.template = this.template;
 
@@ -358,11 +402,11 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     subs.push(this.dataFrame!.onRowsAdded.pipe(filter(() => !this.isJoining))
       .subscribe(() => { // TODO, insertion of rows in the middle
         try {
-          if (this.template!.stages?.length > 0) {
+          if (this.stages.length > 0) {
             for (let i = 0; i < this.dataFrame!.rowCount; i++) {
               const colVal = this.dataFrame!.col(TileCategoriesColName)!.get(i);
               if (!colVal || colVal === '' || this.dataFrame!.col(TileCategoriesColName)?.isNone(i))
-                this.dataFrame!.set(TileCategoriesColName, i, this.template!.stages[0]);
+                this.dataFrame!.set(TileCategoriesColName, i, this.stages[0]);
             }
           }
           let lastAddedCell: DG.GridCell | null = null;

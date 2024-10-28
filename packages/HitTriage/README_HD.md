@@ -60,9 +60,13 @@ After the campaign starts, users can sketch new molecules, filter, modify or add
 
 ![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-save-campaign.gif?raw=true)
 
-Hit design campaign consists of two views, a main design view and a tiles view. You can access the tiles view from the views list. Tiles view provides a versatile way to organize molecules in the campaign. Users can drag and drop molecules between stages, which were defined in the template.
+Hit design campaign consists of two views, a main design view and a tiles view. You can access the tiles view from by clicking the 'Progrss Tracker' button on the ribbon pannel. Tiles view provides a versatile way to organize molecules in the campaign. Users can drag and drop molecules between stages, which were defined in the template.
 
 ![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-tiles.gif?raw=true)
+
+As mentioned previously, "Stages" or tiles are defined in the template, but users can also modify them after starting the campaign. To do so, open the Progress Tracker and click the "Modify Stages" button. You can add, remove or rename stages. After clicking OK, the changes will be saved and reflected in the Progress Tracker view. If you remove a stage which had some molecules in it, those molecules will be automatically moved to the first stage.
+
+![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-tiles-modify-stages.gif?raw=true)
 
 ## Adding custom compute and submit functions
 
