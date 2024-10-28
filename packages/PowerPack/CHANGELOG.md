@@ -1,6 +1,12 @@
 # PowerPack changelog
 
-## 1.20.1 (2024-09-27)
+## 1.2.2 (2024-10-28)
+
+### Bug Fixes
+
+* [#3119](https://github.com/datagrok-ai/public/issues/3119): Calculated column: formula with multi-argument functions is parsed incorrectly if more than one argument contains a column
+
+## 1.2.1 (2024-09-27)
 
 Datagrok DB explorer
 
