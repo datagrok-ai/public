@@ -642,6 +642,12 @@ export class ConfusionMatrix extends Viewer<interfaces.IConfusionMatrixSettings>
   }
 }
 
+export class RocCurve extends Viewer<interfaces.IRocCurveSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+}
+
 
 export class CalendarViewer extends Viewer<interfaces.ICalendarSettings> {
   constructor(dart: any) {
