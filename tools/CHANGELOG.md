@@ -5,6 +5,7 @@
 
 ### Features
 
+* Replaced publishAll by publuish variables 
 * Added global.d.ts file
 
 ## 4.13.31 (2024-10-15)
