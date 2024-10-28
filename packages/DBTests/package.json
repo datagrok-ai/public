@@ -11,7 +11,7 @@
   "dependencies": {
     "@datagrok-libraries/utils": "^4.3.0",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.21.1",
+    "datagrok-api": "../../js-api",
     "dayjs": "=1.11.10"
   },
   "devDependencies": {
