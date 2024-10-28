@@ -132,7 +132,7 @@ class LibraryControlsManager {
 
   private _createControlsForm(): HTMLElement {
     const libraryControls = this.createLibraryControls();
-    const inputsForm = ui.form(libraryControls);
+    const inputsForm = ui.form(libraryControls, undefined, false);
     $(inputsForm).addClass('monomer-lib-controls-form');
 
     return inputsForm;
