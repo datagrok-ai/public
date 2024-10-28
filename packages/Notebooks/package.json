@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/notebooks",
   "fullName": "Notebooks",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "author": {
     "name": "Alexander Paramonov",
     "email": "aparamonov@datagrok.ai"
