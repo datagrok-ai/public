@@ -569,6 +569,10 @@ export class DataConnection extends Entity {
     return toJs(api.grok_DataConnection_Get_Credentials(this.dart));
   }
 
+  get dataSource(): string {
+    return api.grok_DataConnection_Get_DataSource(this.dart);
+  }
+
   /** Collection of parameters: server, database, endpoint, etc. */
   // get parameters(): DataConnectionParams { return api.grok_DataConnection_Parameters(this.dart); }
 
