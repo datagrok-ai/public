@@ -210,6 +210,12 @@ type Browsing = {
   browseView: DG.BrowseView,
 };
 
+/** Last called model specification */
+type LastModel = {
+  info: string,
+  isCustom: boolean,
+};
+
 /** Solver of differential equations */
 export class DiffStudio {
   /** Run Diff Studio application */
@@ -273,8 +279,26 @@ export class DiffStudio {
           if (node !== undefined) {
             setTimeout(() => node.root.click(), UI_TIME.SWITCH_TO_FOLDER);
             return DG.View.create();
-          } else
-            await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
+          } else {
+            const lastModel = await this.getLastCalledModel();
+
+            if (lastModel.isCustom) {
+              const equations = await this.getEquationsFromFile(lastModel.info);
+
+              if (equations !== null) {
+                const newState = EditorState.create({
+                  doc: equations,
+                  extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
+                });
+
+                this.editorView!.setState(newState);
+                this.solverMainPath = PATH.CUSTOM;
+                await this.runSolving(true);
+              } else
+                await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
+            } else
+              await this.setState(STATE_BY_TITLE.get(lastModel.info as TITLE) ?? EDITOR_STATE.BASIC_TEMPLATE);
+          }
         }
       }
     },
@@ -1719,4 +1743,66 @@ export class DiffStudio {
       grok.shell.warning(`Failed to add ivp-file to recents: ${(e instanceof Error) ? e.message : 'platfrom issue'}`);
     }
   } // getCardWithBuiltInModel
+
+  /** Return last called model */
+  private async getLastCalledModel(): Promise<LastModel> {
+    const lastModel: LastModel = {info: TITLE.BASIC, isCustom: false};
+
+    try {
+      const folder = `${grok.shell.user.project.name}:Home/`;
+      const files = await grok.dapi.files.list(folder);
+      const names = files.map((file) => file.name);
+
+      if (names.includes(PATH.RECENT)) {
+        const dfs = await grok.dapi.files.readBinaryDataFrames(`${folder}${PATH.RECENT}`);
+        const recentDf = dfs[0];
+        const size = recentDf.rowCount;
+        const infoCol = recentDf.col(TITLE.INFO);
+        const isCustomCol = recentDf.col(TITLE.IS_CUST);
+
+        if ((infoCol !== null) && (isCustomCol !== null)) {
+          lastModel.info = infoCol.get(size - 1);
+          lastModel.isCustom = isCustomCol.get(size - 1);
+        }
+      }
+    } catch (err) {};
+
+    return lastModel;
+  }
+
+  /** Get equations from file */
+  private async getEquationsFromFile(path: string): Promise<string | null> {
+    try {
+      const exist = await grok.dapi.files.exists(path);
+      const idx = path.lastIndexOf('/');
+      const folderPath = path.slice(0, idx + 1);
+      let file: DG.FileInfo;
+
+      if (exist) {
+        const fileList = await grok.dapi.files.list(folderPath);
+        file = fileList.find((file) => file.nqName === path);
+
+        return await file.readAsString();
+      } else
+        return null;
+
+      /*card.onclick = async () => {
+        if (exist) {
+          const equations = await file.readAsString();
+
+          const solver = new DiffStudio(false);
+          this.browseView.preview = await solver.runSolverApp(
+            equations,
+            undefined,
+            `files/${file.fullPath.replace(':', '.').toLowerCase()}`,
+          ) as DG.View;
+        } else
+          grok.shell.warning(`File not found: ${path}`);
+      };
+
+      return card;*/
+    } catch (e) {
+      return null;
+    }
+  }
 };
