@@ -62,6 +62,15 @@ Expected Result: The scatter plot should display no data points, but the table s
 15. Verify that Scatterplot ignores negatives and zero values when switching to log scale ([#2456](https://github.com/datagrok-ai/public/issues/2456)):
 - Switch axes to the log scale
 - Try to set categorical axis to the X
+16. Colour picker in legend. (Verify that the color picker in the legend of the Scatterplot works correctly, including opening, color changes, and maintaining previous selections across categories.)
+- Assign any column to the Color on the Scatterplot to open legend. Check the color picker (an icon with a pen, appears when you hower over the legend). 
+- Click the color picker icon. Main features are:
+  - Pressing color picker opens color changind window (check for structure colunms as well). 
+  - Change the Color of a Category: In the color picker, select a new color for a category.
+Expected Result: The category color updates on the legend and Scatterplot.
+  - Cancel Color Change: Reopen the color picker and select a different color. Press the "Cancel" button in the color picker window. Expected Result: The original color is restored, and no change is applied.
+  - Maintain Previously Selected Colors: Select a new color for another category using the color picker. Expected Result: The color of the previously modified category remains unchanged.
+  
 
 
 ---
