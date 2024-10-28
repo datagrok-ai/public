@@ -1,5 +1,9 @@
 # HitTriage changelog
 
+## 1.3.3 (2024-10-28)
+
+* Modification of HD Stages within campaign.
+
 ## 1.3.2 (2024-10-17)
 
 * Fix HT Campaigns and templates
