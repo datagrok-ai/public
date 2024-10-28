@@ -221,7 +221,7 @@ export class SunburstViewer extends EChartViewer {
   }
 
   addSubs() {
-    if (this.dataFrame === null)
+    if (!this.dataFrame)
       return;
     this.subs.push(this.dataFrame.onMetadataChanged.subscribe((_) => this.render()));
     this.subs.push(grok.events.onEvent('d4-grid-color-coding-changed').subscribe(() => this.render()));
@@ -345,11 +345,13 @@ export class SunburstViewer extends EChartViewer {
   }
 
   render(orderedHierarchyNames?: string[]): void {
-    if (this.dataFrame)
-      this.renderQueue = this.renderQueue.then(() => this._render(orderedHierarchyNames));
+    this.renderQueue = this.renderQueue.then(() => this._render(orderedHierarchyNames));
   }
 
   async _render(orderedHierarchyNames?: string[]) {
+    if (!this.dataFrame)
+      return;
+
     this.eligibleHierarchyNames = (orderedHierarchyNames ?? this.hierarchyColumnNames).filter(
       (name) => this.dataFrame.getCol(name).categories.length <= CATEGORIES_NUMBER,
     );
