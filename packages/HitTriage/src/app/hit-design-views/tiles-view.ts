@@ -85,7 +85,7 @@ export function getTilesViewDialog(app: HitDesignApp, getTableView: () => DG.Tab
       .add(stageEditor.fieldsDiv)
       .onOK(async () => {
         closeViewer(); // so that its not included in the layout.
-        ui.setUpdateIndicator(modal.root, true, 'Updating stages...');
+        ui.setUpdateIndicator(modal.root, true);
         try {
           await app.setStages(stageEditor.getFields());
           ui.setUpdateIndicator(modal.root, false);
