@@ -157,7 +157,8 @@ export async function loadPackages(packagesDir: string, packagesToLoad?: string,
   let hostString = host === undefined ? `` : `${host}`;
   if (packagesToLoad !== "all") {
     for (let pacakgeName of (packagesToLoad ?? "").split(' ')) {
-      packagesToRun.set(spaceToCamelCase(pacakgeName).toLocaleLowerCase(), false);
+      if((pacakgeName ?? '').length !== 0)
+        packagesToRun.set(spaceToCamelCase(pacakgeName).toLocaleLowerCase(), false);
     }
   }
 
@@ -167,7 +168,7 @@ export async function loadPackages(packagesDir: string, packagesToLoad?: string,
 
       try {
         const packageJsonData = JSON.parse(fs.readFileSync(path.join(packageDir, 'package.json'), { encoding: 'utf-8' }));
-        const packageFriendlyName = packagesToRun.get(spaceToCamelCase(packageJsonData["friendlyName"] ?? packageJsonData["name"].split("/")[1]).toLocaleLowerCase() ?? "");
+        const packageFriendlyName = packagesToRun.get(spaceToCamelCase(packageJsonData["friendlyName"] ?? packageJsonData["name"].split("/")[1] ?? packageJsonData["name"]?? '').toLocaleLowerCase() ?? "");
 
         if (utils.isPackageDir(packageDir) && (packageFriendlyName !== undefined || packagesToLoad === "all")) {
           try {

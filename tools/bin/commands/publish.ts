@@ -10,6 +10,7 @@ import yaml from 'js-yaml';
 import { checkImportStatements, checkFuncSignatures, extractExternals, checkPackageFile, checkChangelog } from './check';
 import * as utils from '../utils/utils';
 import { Indexable } from '../utils/utils';
+import { loadPackages } from "../utils/test-utils";
 import * as color from '../utils/color-utils';
 
 const { exec } = require('child_process');
@@ -18,12 +19,13 @@ const grokDir = path.join(os.homedir(), '.grok');
 const confPath = path.join(grokDir, 'config.yaml');
 const confTemplateDir = path.join(path.dirname(path.dirname(__dirname)), 'config-template.yaml');
 const confTemplate = yaml.load(fs.readFileSync(confTemplateDir, { encoding: 'utf-8' }));
-const curDir = process.cwd();
+let curDir = process.cwd();
 const packDir = path.join(curDir, 'package.json');
 const packageFiles = [
   'src/package.ts', 'src/detectors.ts', 'src/package.js', 'src/detectors.js',
   'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js',
 ];
+const config = yaml.load(fs.readFileSync(confPath, { encoding: 'utf-8' })) as utils.Config;
 
 export async function processPackage(debug: boolean, rebuild: boolean, host: string, devKey: string, packageName: any, suffix?: string) {
   // Get the server timestamps
@@ -31,6 +33,8 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   let url = `${host}/packages/dev/${devKey}/${packageName}`;
   if (debug) {
     try {
+      console.log(url);
+
       timestamps = await (await fetch(url + '/timestamps')).json();
       if (timestamps['#type'] === 'ApiError') {
         color.error(timestamps.message);
@@ -199,7 +203,33 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   return 0;
 }
 
-export function publish(args: PublishArgs) {
+export async function publish(args: PublishArgs) {
+
+  if (args.refresh || args.all) {
+    if (path.basename(curDir) !== 'packages')
+      curDir = path.dirname(curDir);
+
+    let host = config.default;
+    if (args['_'].length === 2)
+      host = args['_'][1];
+    utils.setHost(host, config);
+
+    let baseUrl = config['servers'][host]['url'];
+    let url = `${baseUrl}/info/packages`;
+
+    let packagesToLoad =['all']
+    console.log(url);
+    if (args.refresh)
+      packagesToLoad = Object.keys(await (await fetch(url)).json());
+    console.log('Loading packages:');
+    await loadPackages(curDir, packagesToLoad.join(' '), host, false, false, false, args.release);
+  }
+  else {
+    await publishPackage(args);
+  }
+}
+
+async function publishPackage(args: PublishArgs) {
   const nOptions = Object.keys(args).length - 1;
   const nArgs = args['_'].length;
 
@@ -222,7 +252,6 @@ export function publish(args: PublishArgs) {
   if (!fs.existsSync(grokDir)) fs.mkdirSync(grokDir);
   if (!fs.existsSync(confPath)) fs.writeFileSync(confPath, yaml.dump(confTemplate));
 
-  const config = yaml.load(fs.readFileSync(confPath, { encoding: 'utf-8' })) as utils.Config;
   let host = config.default;
   const urls = utils.mapURL(config);
   if (nArgs === 2) host = args['_'][1];
@@ -264,10 +293,10 @@ export function publish(args: PublishArgs) {
           console.error(`Standard Error: ${stderr}`);
           return;
         }
-        if(!args.suffix && stdout)
-          args.suffix = stdout.toString().substring(0,8); 
+        if (!args.suffix && stdout)
+          args.suffix = stdout.toString().substring(0, 8);
       });
-      await utils.delay(100); 
+      await utils.delay(100);
       code = await processPackage(!args.release, Boolean(args.rebuild), url, key, packageName, args.suffix);
     } catch (error) {
       console.error(error);
@@ -288,4 +317,6 @@ interface PublishArgs {
   release?: boolean,
   key?: string,
   suffix?: string,
+  all?: boolean,
+  refresh?: boolean
 }
