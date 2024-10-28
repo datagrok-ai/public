@@ -120,7 +120,16 @@ export async function runAutodock4(
 //output: list<string> configFiles
 export async function getConfigFiles(): Promise<string[]> {
   const targetsFiles: DG.FileInfo[] = await grok.dapi.files.list(TARGET_PATH, true);
-  return targetsFiles.filter(file => file.isDirectory).map(file => file.name);
+  const directoriesWithGpf = await Promise.all(
+    targetsFiles.filter(file => file.isDirectory).map(async dir => {
+      const filesInDir = await grok.dapi.files.list(dir.fullPath, true);
+      return filesInDir.some(file => file.path.endsWith('.gpf')) ? dir.name : null;
+    }
+  )
+);
+
+return directoriesWithGpf.filter((dir): dir is string => Boolean(dir));
+
 }
 
 export async function prepareAutoDockData(
@@ -339,10 +348,11 @@ export async function autodockPanel(smiles: DG.SemanticValue): Promise<DG.Widget
     const loader = ui.loader();
     resultsContainer.appendChild(loader);
 
-    const table = smiles.cell.dataFrame.clone();
-    table.rows.removeWhereIdx((idx) => idx !== 0);
+    const ligandColumn = 'smiles';
+    const table = DG.DataFrame.fromCsv(`${ligandColumn}\n${smiles.value}`);
+    await grok.data.detectSemanticTypes(table);
 
-    const data = await prepareAutoDockData(target.value!, table, smiles.cell.column.name, poses.value!);
+    const data = await prepareAutoDockData(target.value!, table, ligandColumn, poses.value!);
 
     const app = new AutoDockApp();
     const autodockResults = await app.init(data);
