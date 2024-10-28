@@ -293,9 +293,6 @@ export function isWebGPUAvailable(sc: DG.ScatterPlotViewer) {
 //output: bool result
 export function isWebGPURenderValid(sc: DG.ScatterPlotViewer) {
   return sc.props.zoomAndFilter != 'pack and zoom by filter' 
-    && (sc.props.markerType == DG.MARKER_TYPE.DOT || sc.props.markerType == DG.MARKER_TYPE.CIRCLE ||
-      sc.props.markerType == DG.MARKER_TYPE.CIRCLE_BORDER || sc.props.markerType == DG.MARKER_TYPE.CROSS_BORDER ||
-      sc.props.markerType == DG.MARKER_TYPE.SQUARE || sc.props.markerType == DG.MARKER_TYPE.SQUARE_BORDER)
     && !sc.props.markersColumnName;
 }
 
