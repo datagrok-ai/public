@@ -2,7 +2,11 @@
 
 ## 1.1.6 (2024-11-01)
 
-* Updated the Acid Production example
+Updated
+
+* The Acid Production example
+* UI: tabs order, removed unnecessary windows
+* App behavior in the case of model mistakes
 
 ## 1.1.5 (2024-10-10)
 

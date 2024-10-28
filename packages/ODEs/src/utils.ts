@@ -232,3 +232,13 @@ export function getReducedTable(df: DG.DataFrame): DG.DataFrame {
 
   return reduced;
 }
+
+/** Close redundant windows */
+export function closeWindows() {
+  grok.shell.windows.showToolbox = false;
+  grok.shell.windows.showContextPanel = false;
+  grok.shell.windows.showConsole = false;
+  grok.shell.windows.showVariables = false;
+  grok.shell.windows.showTables = false;
+  grok.shell.windows.showColumns = false;
+}

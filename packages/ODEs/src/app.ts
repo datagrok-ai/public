@@ -21,7 +21,8 @@ import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
   CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS} from './scripting-tools';
 import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools/solver-defs';
-import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN, getReducedTable} from './utils';
+import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN,
+  getReducedTable, closeWindows} from './utils';
 
 import '../css/app-styles.css';
 
@@ -213,6 +214,7 @@ type Browsing = {
 export class DiffStudio {
   /** Run Diff Studio application */
   public async runSolverApp(content?: string, state?: EDITOR_STATE, path?: string): Promise<DG.ViewBase> {
+    closeWindows();
     this.createEditorView(content, true);
 
     const panels = ((state !== undefined) || (path !== undefined)) ?
@@ -284,6 +286,7 @@ export class DiffStudio {
   /** Run Diff Studio demo application */
   public async runSolverDemoApp(): Promise<void> {
     this.createEditorView(DEMO_TEMPLATE, true);
+    closeWindows();
     this.solverView.setRibbonPanels([
       [this.openIcon, this.saveIcon],
       [this.exportButton, this.sensAnIcon, this.fittingIcon],
@@ -303,6 +306,7 @@ export class DiffStudio {
 
   /** Return file preview view */
   public async getFilePreview(file: DG.FileInfo, path: string): Promise<DG.View> {
+    closeWindows();
     const equations = await file.readAsString();
     await this.saveModelToRecent(file.fullPath, true);
     this.createEditorView(equations, false);
@@ -1506,35 +1510,51 @@ export class DiffStudio {
     const names = files.map((file) => file.name);
     const info = isCustom ? modelSpecification : TITLE_BY_STATE.get(modelSpecification);
 
-    const dfToAdd = DG.DataFrame.fromColumns([
-      DG.Column.fromStrings(TITLE.INFO, [info]),
-      DG.Column.fromList(DG.COLUMN_TYPE.BOOL, TITLE.IS_CUST, [isCustom]),
-    ]);
-
     try {
-      if (names.includes(PATH.RECENT)) {
+      if (names.includes(PATH.RECENT)) { // a file with reccent models exists
         const dfs = await grok.dapi.files.readBinaryDataFrames(`${folder}${PATH.RECENT}`);
         const recentDf = dfs[0];
 
-        if (!recentDf.col(TITLE.INFO).toList().includes(info)) {
-          recentDf.append(dfToAdd, true);
+        const recentInfo = recentDf.col(TITLE.INFO).toList() as string[];
+        const recentIsCust = recentDf.col(TITLE.IS_CUST).toList() as boolean[];
 
-          await grok.dapi.files.writeBinaryDataFrames(`${folder}${PATH.RECENT}`, [
-            getTableFromLastRows(recentDf, MAX_RECENT_COUNT),
-          ]);
+        const newIsCust: boolean[] = [];
+        const newInfo: string[] = [];
 
-          const items = this.recentFolder.items;
+        recentInfo.forEach((val, idx) => {
+          if (val !== info) {
+            newIsCust.push(recentIsCust[idx]);
+            newInfo.push(val);
+          }
+        });
 
-          if (items.length >= MAX_RECENT_COUNT)
-            items[0].remove();
+        newInfo.push(info);
+        newIsCust.push(isCustom);
 
-          if (isCustom)
-            this.putCustomModelToRecents(info);
-          else
-            this.putBuiltInModelToFolder(info, this.recentFolder);
-        }
-      } else
-        await grok.dapi.files.writeBinaryDataFrames(`${folder}${PATH.RECENT}`, [dfToAdd]);
+        const items = this.recentFolder.items;
+
+        if (items.length >= MAX_RECENT_COUNT)
+          items[0].remove();
+
+        await grok.dapi.files.writeBinaryDataFrames(`${folder}${PATH.RECENT}`, [
+          getTableFromLastRows(DG.DataFrame.fromColumns([
+            DG.Column.fromStrings(TITLE.INFO, newInfo),
+            DG.Column.fromList(DG.COLUMN_TYPE.BOOL, TITLE.IS_CUST, newIsCust),
+          ]), MAX_RECENT_COUNT),
+        ]);
+
+        if (isCustom)
+          this.putCustomModelToRecents(info);
+        else
+          this.putBuiltInModelToFolder(info, this.recentFolder);
+      } else { // a file with reccent models doesn't exist
+        await grok.dapi.files.writeBinaryDataFrames(`${folder}${PATH.RECENT}`, [
+          DG.DataFrame.fromColumns([
+            DG.Column.fromStrings(TITLE.INFO, [info]),
+            DG.Column.fromList(DG.COLUMN_TYPE.BOOL, TITLE.IS_CUST, [isCustom]),
+          ]),
+        ]);
+      }
     } catch (err) {
       grok.shell.warning(`Failed to save recent models: ${(err instanceof Error) ? err.message : 'platfrom issue'}`);
     }
