@@ -1381,7 +1381,6 @@ export class DiffStudio {
       this.appTree = appsGroup.getOrCreateGroup(TITLE.DIF_ST);
     }
 
-
     if (this.appTree.items.length > 0)
       this.recentFolder = this.appTree.getOrCreateGroup(TITLE.RECENT, null, false);
     else {
@@ -1520,21 +1519,18 @@ export class DiffStudio {
 
         const newIsCust: boolean[] = [];
         const newInfo: string[] = [];
+        const items = this.recentFolder.items;
 
         recentInfo.forEach((val, idx) => {
           if (val !== info) {
             newIsCust.push(recentIsCust[idx]);
             newInfo.push(val);
-          }
+          } else
+            items[idx].remove();
         });
 
         newInfo.push(info);
         newIsCust.push(isCustom);
-
-        const items = this.recentFolder.items;
-
-        if (items.length >= MAX_RECENT_COUNT)
-          items[0].remove();
 
         await grok.dapi.files.writeBinaryDataFrames(`${folder}${PATH.RECENT}`, [
           getTableFromLastRows(DG.DataFrame.fromColumns([
