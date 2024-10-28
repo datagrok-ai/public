@@ -1520,14 +1520,20 @@ export class DiffStudio {
         const newIsCust: boolean[] = [];
         const newInfo: string[] = [];
         const items = this.recentFolder.items;
+        let removed = false;
 
         recentInfo.forEach((val, idx) => {
           if (val !== info) {
             newIsCust.push(recentIsCust[idx]);
             newInfo.push(val);
-          } else
+          } else {
             items[idx].remove();
+            removed = true;
+          }
         });
+
+        if (!removed && items.length >= MAX_RECENT_COUNT)
+          items[0].remove();
 
         newInfo.push(info);
         newIsCust.push(isCustom);
