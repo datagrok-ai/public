@@ -22,6 +22,9 @@ class WebGPUCache {
   markerSizesLength = -1;
   markerDefaultSize = -1;
   markerType: DG.MARKER_TYPE | null = null;
+  markerTypesBuffer: GPUBuffer | null = null;
+  markerTypesLength = -1;
+  markerTypesColumnName = '';
   sizeColumnName = '';
   colorBuffer: GPUBuffer | null = null;
   colorColumnName = '';
@@ -54,6 +57,7 @@ class WebGPUCache {
     const columnChanged = this.isColumnChanged(xCol, yCol);
     const markerSizesParamsChanged = this.isMarkerSizesParamsChanged(sc);
     const colorChanged = this.isColorChanged(sc);
+    const markerTypesChanged = this.isMarkerTypesChanged(sc);
   
     if (indexBufferChanged)
         this.setIndexBuffer(sc.filter, device);
@@ -69,6 +73,9 @@ class WebGPUCache {
 
     if (colorChanged)
       this.setColor(sc, device);
+
+    if (markerTypesChanged)
+      this.setMarkerTypes(sc, device);
 
     return this.isValid();
   }
@@ -105,6 +112,11 @@ class WebGPUCache {
      !sc.props.linearColorScheme.every((c, i) => c == this.linearColorScheme[i]) ||
      sc.props.categoricalColorScheme.length != this.categoricalColorScheme.length ||
      !sc.props.categoricalColorScheme.every((c, i) => c == this.categoricalColorScheme[i]);
+  }
+
+  isMarkerTypesChanged(sc: DG.ScatterPlotViewer) {
+    return (sc.getMarkerType(0) as DG.MARKER_TYPE) != this.markerType ||
+      sc.props.markersColumnName != this.markerTypesColumnName;
   }
 
   isValid() {
@@ -242,25 +254,53 @@ class WebGPUCache {
     this.colorBuffer.unmap();
   }
 
+  setMarkerTypes(sc: DG.ScatterPlotViewer, device: GPUDevice) {
+    this.markerTypesColumnName = sc.props.markersColumnName;
+    this.markerType = sc.getMarkerType(0) as DG.MARKER_TYPE;
+    
+    const markerTypes = sc.getMarkerTypes();
+    this.markerTypesLength = markerTypes.length;
+    this.markerTypesBuffer = device.createBuffer({
+      size: getPaddedSize(this.markerTypesLength),
+      usage: GPUBufferUsage.STORAGE,
+      mappedAtCreation: true,
+    });
+    const scBufferArray = this.markerTypesBuffer.getMappedRange();
+    new Uint32Array(scBufferArray, 0, this.markerTypesLength).set(markerTypes);
+    this.markerTypesBuffer.unmap();
+  }
+
   updateTexuteAtlas(sc: DG.ScatterPlotViewer, device: GPUDevice) {
     if (this.texture == null || this.gpuTexture == null 
       || this.isMarkerSizesParamsChanged(sc)
+      || this.isMarkerTypesChanged(sc)
       || this.minTextureSize != sc.props.markerMinSize
-      || this.maxTextureSize != sc.props.markerMaxSize
-      || this.markerType != sc.getMarkerType(0)) {
+      || this.maxTextureSize != sc.props.markerMaxSize) {
         this.minTextureSize = sc.props.markerMinSize;
         this.maxTextureSize = sc.props.markerMaxSize;
         this.textureGridSize = Math.ceil(Math.sqrt((this.maxTextureSize - this.minTextureSize) + 1));
         this.markerType = sc.getMarkerType(0) as DG.MARKER_TYPE;
+        this.markerTypesColumnName = sc.props.markersColumnName;
 
-        const isSingle = !sc.props.sizeColumnName;
+        const isSingle = !sc.props.sizeColumnName && !sc.props.markersColumnName;
         if (isSingle) {
           const size = sc.getMarkerSize(0);
+          const shape = this.markerType;
           const canvasSize = size + sc.props.markerBorderWidth;
-          this.texture = createShapeCanvas(canvasSize, canvasSize, sc);
+          this.texture = createShapeCanvas(canvasSize, canvasSize, shape, sc);
         }
         else {
           this.texture = createTextureAtlas(this, sc);
+          this.texture.convertToBlob().then(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'canvas_image.png'; // Set the file name for the download
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url); // Clean up the object URL
+          });
         }
 
         this.gpuTexture = device.createTexture({
@@ -760,6 +800,8 @@ function createTextureAtlas(cache: WebGPUCache, sc: DG.ScatterPlotViewer): Offsc
     // We'll take the minimum size as 2 while adding the border width to maintain the whole size
     const sizes = Array.from({ length: (maxSize - minSize) + 1 }, (_, i) => i + minSize);
 
+    const markerTypes = !sc.props.markersColumnName ? [cache.markerType ?? DG.MARKER_TYPE.CIRCLE] : DG.Paint.markerTypes();
+
     // Calculate the size of the atlas canvas
     const atlasSize = (maxSize + cache.texturePadding) * cache.textureGridSize; // Each cell will have a size of maxSize + padding
     const atlasCanvas = new OffscreenCanvas(atlasSize, atlasSize);
@@ -768,24 +810,28 @@ function createTextureAtlas(cache: WebGPUCache, sc: DG.ScatterPlotViewer): Offsc
     if (!ctx)
         return atlasCanvas;
 
-    // Draw each circle in the grid
-    sizes.forEach((size, index) => {
-        const x = index % cache.textureGridSize;
+    // Draw grids for each marker type
+    markerTypes.forEach((markerType, markerIndex) => {
+      // Draw each size of the marker in the grid
+      sizes.forEach((size, index) => {
+        const x = (index % cache.textureGridSize) * (markerIndex + 1);
         const y = Math.floor(index / cache.textureGridSize);
 
         // Calculate position in the atlas
         const cellSize = maxSize + cache.texturePadding;
 
         // Get the canvas for the current circle size
-        const circleCanvas = createShapeCanvas(cellSize, size, sc);
+        const shapeCanvas = createShapeCanvas(cellSize, size, markerType as DG.MARKER_TYPE, sc);
 
         // Center the texture in the cell
         const posX = x * cellSize;
         const posY = y * cellSize;
 
         // Draw the texture onto the atlas at the calculated position
-        ctx.drawImage(circleCanvas, posX, posY);
+        ctx.drawImage(shapeCanvas, posX, posY);
+      });
     });
+    
   
     return atlasCanvas;
 }
@@ -793,6 +839,7 @@ function createTextureAtlas(cache: WebGPUCache, sc: DG.ScatterPlotViewer): Offsc
 function createShapeCanvas(
   canvasSize: number,
   markerSize: number,
+  shapeType: DG.MARKER_TYPE,
   sc: DG.ScatterPlotViewer
 ): OffscreenCanvas {
   const canvas = new OffscreenCanvas(canvasSize, canvasSize);
@@ -807,16 +854,11 @@ function createShapeCanvas(
   // Translate the origin down by the canvas height to correct the position after flipping
   ctx.translate(0, -ctx.canvas.height);
 
-  const shapeType: DG.MARKER_TYPE = sc.getMarkerType(0) as DG.MARKER_TYPE;
   DG.Paint.marker(ctx as unknown as CanvasRenderingContext2D, shapeType, canvasSize / 2, canvasSize / 2, "#0000ff", markerSize - sc.props.markerBorderWidth);
 
   ctx.restore(); 
 
   return canvas;
-}
-
-function roundUpToEven(num: number): number {
-  return Math.ceil(num / 2) * 2;
 }
 
 function addPointConversionMethods() {
