@@ -22,9 +22,6 @@ class WebGPUCache {
   markerSizesLength = -1;
   markerDefaultSize = -1;
   markerType: DG.MARKER_TYPE | null = null;
-  markerTypesBuffer: GPUBuffer | null = null;
-  markerTypesLength = -1;
-  markerTypesColumnName = '';
   sizeColumnName = '';
   colorBuffer: GPUBuffer | null = null;
   colorColumnName = '';
@@ -57,7 +54,6 @@ class WebGPUCache {
     const columnChanged = this.isColumnChanged(xCol, yCol);
     const markerSizesParamsChanged = this.isMarkerSizesParamsChanged(sc);
     const colorChanged = this.isColorChanged(sc);
-    const markerTypesChanged = this.isMarkerTypesChanged(sc);
   
     if (indexBufferChanged)
         this.setIndexBuffer(sc.filter, device);
@@ -73,9 +69,6 @@ class WebGPUCache {
 
     if (colorChanged)
       this.setColor(sc, device);
-
-    if (markerTypesChanged)
-      this.setMarkerTypes(sc, device);
 
     return this.isValid();
   }
@@ -113,12 +106,7 @@ class WebGPUCache {
      sc.props.categoricalColorScheme.length != this.categoricalColorScheme.length ||
      !sc.props.categoricalColorScheme.every((c, i) => c == this.categoricalColorScheme[i]);
   }
-
-  isMarkerTypesChanged(sc: DG.ScatterPlotViewer) {
-    return (sc.getMarkerType(0) as DG.MARKER_TYPE) != this.markerType ||
-      sc.props.markersColumnName != this.markerTypesColumnName;
-  }
-
+  
   isValid() {
     return this.indexBufferLength > 0 && this.xColLength > 0 && this.yColLength > 0;
   }
@@ -254,33 +242,16 @@ class WebGPUCache {
     this.colorBuffer.unmap();
   }
 
-  setMarkerTypes(sc: DG.ScatterPlotViewer, device: GPUDevice) {
-    this.markerTypesColumnName = sc.props.markersColumnName;
-    this.markerType = sc.getMarkerType(0) as DG.MARKER_TYPE;
-    
-    const markerTypes = sc.getMarkerTypes();
-    this.markerTypesLength = markerTypes.length;
-    this.markerTypesBuffer = device.createBuffer({
-      size: getPaddedSize(this.markerTypesLength),
-      usage: GPUBufferUsage.STORAGE,
-      mappedAtCreation: true,
-    });
-    const scBufferArray = this.markerTypesBuffer.getMappedRange();
-    new Uint32Array(scBufferArray, 0, this.markerTypesLength).set(markerTypes);
-    this.markerTypesBuffer.unmap();
-  }
-
   updateTexuteAtlas(sc: DG.ScatterPlotViewer, device: GPUDevice) {
     if (this.texture == null || this.gpuTexture == null 
       || this.isMarkerSizesParamsChanged(sc)
-      || this.isMarkerTypesChanged(sc)
+      || this.markerType != sc.getMarkerType(0) as DG.MARKER_TYPE
       || this.minTextureSize != sc.props.markerMinSize
       || this.maxTextureSize != sc.props.markerMaxSize) {
         this.minTextureSize = sc.props.markerMinSize;
         this.maxTextureSize = sc.props.markerMaxSize;
         this.textureGridSize = Math.ceil(Math.sqrt((this.maxTextureSize - this.minTextureSize) + 1));
         this.markerType = sc.getMarkerType(0) as DG.MARKER_TYPE;
-        this.markerTypesColumnName = sc.props.markersColumnName;
 
         const isSingle = !sc.props.sizeColumnName && !sc.props.markersColumnName;
         if (isSingle) {
@@ -291,16 +262,6 @@ class WebGPUCache {
         }
         else {
           this.texture = createTextureAtlas(this, sc);
-          this.texture.convertToBlob().then(blob => {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'canvas_image.png'; // Set the file name for the download
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url); // Clean up the object URL
-          });
         }
 
         this.gpuTexture = device.createTexture({
@@ -800,8 +761,6 @@ function createTextureAtlas(cache: WebGPUCache, sc: DG.ScatterPlotViewer): Offsc
     // We'll take the minimum size as 2 while adding the border width to maintain the whole size
     const sizes = Array.from({ length: (maxSize - minSize) + 1 }, (_, i) => i + minSize);
 
-    const markerTypes = !sc.props.markersColumnName ? [cache.markerType ?? DG.MARKER_TYPE.CIRCLE] : DG.Paint.markerTypes();
-
     // Calculate the size of the atlas canvas
     const atlasSize = (maxSize + cache.texturePadding) * cache.textureGridSize; // Each cell will have a size of maxSize + padding
     const atlasCanvas = new OffscreenCanvas(atlasSize, atlasSize);
@@ -810,29 +769,25 @@ function createTextureAtlas(cache: WebGPUCache, sc: DG.ScatterPlotViewer): Offsc
     if (!ctx)
         return atlasCanvas;
 
-    // Draw grids for each marker type
-    markerTypes.forEach((markerType, markerIndex) => {
-      // Draw each size of the marker in the grid
-      sizes.forEach((size, index) => {
-        const x = (index % cache.textureGridSize) * (markerIndex + 1);
-        const y = Math.floor(index / cache.textureGridSize);
+    // Draw each size of the marker in the grid
+    sizes.forEach((size, index) => {
+      const x = index % cache.textureGridSize;
+      const y = Math.floor(index / cache.textureGridSize);
 
-        // Calculate position in the atlas
-        const cellSize = maxSize + cache.texturePadding;
+      // Calculate position in the atlas
+      const cellSize = maxSize + cache.texturePadding;
 
-        // Get the canvas for the current circle size
-        const shapeCanvas = createShapeCanvas(cellSize, size, markerType as DG.MARKER_TYPE, sc);
+      // Get the canvas for the current circle size
+      const shapeCanvas = createShapeCanvas(cellSize, size, cache.markerType as DG.MARKER_TYPE, sc);
 
-        // Center the texture in the cell
-        const posX = x * cellSize;
-        const posY = y * cellSize;
+      // Center the texture in the cell
+      const posX = x * cellSize;
+      const posY = y * cellSize;
 
-        // Draw the texture onto the atlas at the calculated position
-        ctx.drawImage(shapeCanvas, posX, posY);
-      });
+      // Draw the texture onto the atlas at the calculated position
+      ctx.drawImage(shapeCanvas, posX, posY);
     });
-    
-  
+
     return atlasCanvas;
 }
 
