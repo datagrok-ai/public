@@ -14,7 +14,8 @@ import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
-import {doPolyToolConvert, getOverriddenLibrary} from '../polytool/pt-conversion';
+import {doPolyToolConvert} from '../polytool/conversion/pt-conversion';
+import {getOverriddenLibrary} from '../polytool/conversion/pt-misc';
 import {getRules} from '../polytool/pt-rules';
 
 

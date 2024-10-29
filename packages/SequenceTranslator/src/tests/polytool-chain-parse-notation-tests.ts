@@ -3,7 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {before, after, category, expect, test, expectArray, testEvent, delay} from '@datagrok-libraries/utils/src/test';
-import {Chain, getInnerIdx, getOuterIdx} from '../polytool/pt-conversion';
+import {Chain} from '../polytool/conversion/pt-chain';
+import {getInnerIdx, getOuterIdx} from '../polytool/conversion/pt-misc';
 import {getRules} from '../polytool/pt-rules';
 import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 

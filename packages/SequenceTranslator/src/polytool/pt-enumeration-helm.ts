@@ -9,7 +9,7 @@ import {
 } from '@datagrok-libraries/bio/src/helm/types';
 
 
-import {Chain} from './pt-conversion';
+import {Chain} from './conversion/pt-chain';
 import {getAvailableMonomers} from './utils';
 import {PolyToolEnumeratorParams, PolyToolEnumeratorTypes, PolyToolPlaceholder, PolyToolBreadthPlaceholder} from './types';
 
