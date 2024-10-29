@@ -940,9 +940,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   get molColumn(): DG.Column | null {
-    return this.molCol !== null ?
-      this.molCol :
-      (this.molColumns.length === 0 ? null : this.molColumns[this.tableIdx][this.molColumnIdx]);
+    return this.molCol !== null
+      ? this.molCol
+      : (this.molColumns && this.molColumns.length > 0
+        ? this.molColumns[this.tableIdx][this.molColumnIdx]
+        : null);
   }
 
   public openEditSketcher(group: TreeViewGroup) {
