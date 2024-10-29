@@ -23,7 +23,7 @@ import {defaultErrorHandler} from '../utils/err-info';
 import {PolyToolPlaceholdersBreadthInput} from './pt-placeholders-breadth-input';
 import {PT_UI_DIALOG_ENUMERATION} from './const';
 import {PolyToolDataRole, PolyToolTags} from '../consts';
-import {Chain} from './pt-conversion';
+import {Chain} from './conversion/pt-chain';
 
 import {_package, applyNotationProviderForCyclized} from '../package';
 

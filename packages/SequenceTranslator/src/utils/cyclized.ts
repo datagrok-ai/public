@@ -15,7 +15,7 @@ import {monomerToShort, StringListSeqSplitted} from '@datagrok-libraries/bio/src
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
-import {Chain} from '../polytool/pt-conversion';
+import {Chain} from '../polytool/conversion/pt-chain';
 
 import {_package} from '../package';
 

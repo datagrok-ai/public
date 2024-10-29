@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {before, after, category, expect, test, expectArray, testEvent, delay} from '@datagrok-libraries/utils/src/test';
-import {Chain} from '../polytool/pt-conversion';
+import {Chain} from '../polytool/conversion/pt-chain';
 import {getRules} from '../polytool/pt-rules';
 import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
@@ -23,7 +23,7 @@ category('PolyTool: Chain', () => {
       },
       tgt: {
         templateChain: {monomerCount: [11], linkageCount: 0},
-        mmChain: {monomerCount: [11], linkageCount: 1,}
+        mmChain: {monomerCount: [11], linkageCount: 1}
       },
     },
     'reaction1': {
@@ -131,5 +131,4 @@ category('PolyTool: Chain', () => {
       expect(resMmChain.getHelm(), data.mmHelm);
     }, {skipReason: 'applyRules is not implemented'});
   }
-
 });
