@@ -70,7 +70,7 @@ export class FormStateGenerator {
     };
   }
 
-  generateFormState() {
+  generateFormState(tableName: string) {
     const elementStates = [];
     const leftOffset = 10;
     const colWidth = 300;
@@ -137,7 +137,9 @@ export class FormStateGenerator {
 
     return {
       "#type": "SketchState",
-      "elementStates": elementStates
+      "elementStates": elementStates,
+      "table": tableName,
+      "formDesigned": true
     };
   }
 
