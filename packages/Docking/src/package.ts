@@ -124,12 +124,9 @@ export async function getConfigFiles(): Promise<string[]> {
     targetsFiles.filter(file => file.isDirectory).map(async dir => {
       const filesInDir = await grok.dapi.files.list(dir.fullPath, true);
       return filesInDir.some(file => file.path.endsWith('.gpf')) ? dir.name : null;
-    }
-  )
-);
-
-return directoriesWithGpf.filter((dir): dir is string => Boolean(dir));
-
+    })
+  );
+  return directoriesWithGpf.filter((dir): dir is string => Boolean(dir));
 }
 
 export async function prepareAutoDockData(
