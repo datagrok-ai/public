@@ -286,27 +286,28 @@ category('mmpa', () => {
       return mmpCreated;
     }, 'MMPA hasn\'t been initialized', 3000);
     //check created lines
-    await awaitCheck(() => mmp.lines!.from.length === 81 && mmp.lines!.to.length === 81 &&
+    await awaitCheck(() => mmp.lines?.from.length === 81 && mmp.lines?.to.length === 81 &&
     mmp.linesIdxs!.length === 81, 'Incorrect lines number');
-    await awaitCheck(() => mmp.linesMask!.allTrue, 'Incorrect initial lines mask');
-    checkRandomArrayVals(mmp.lines!.from, [0, 10, 30, 50, 70], [30, 6, 37, 23, 9], 'mmp.lines.from');
-    checkRandomArrayVals(mmp.lines!.to, [0, 10, 30, 50, 70], [0, 28, 0, 27, 23], 'mmp.lines.to');
-    checkRandomArrayVals(mmp.linesIdxs!,
+    await awaitCheck(() => mmp.linesMask?.allTrue == true, 'Incorrect initial lines mask');
+    checkRandomArrayVals(mmp.lines?.from, [0, 10, 30, 50, 70], [30, 6, 37, 23, 9], 'mmp.lines.from');
+    checkRandomArrayVals(mmp.lines?.to, [0, 10, 30, 50, 70], [0, 28, 0, 27, 23], 'mmp.lines.to');
+    checkRandomArrayVals(mmp.linesIdxs,
       [0, 10, 30, 50, 80], [mmp.calculatedOnGPU ? 0 : 3, 22, 8, 47, 52], 'mmp.linesIdxs');
-    checkRandomArrayVals(mmp.lines!.colors,
+    checkRandomArrayVals(mmp.lines?.colors,
       [0, 30, 80], ['31,119,180', '255,187,120', '44,160,44'], 'mmp.lines.colors');
     checkRandomArrayVals(mmp.linesActivityCorrespondance, [0, 27, 55], [0, 1, 2], 'mmp.linesActivityCorrespondance');
 
+    expect(mmp.mmpFilters?.activitySliderInputs?.length === 3, 'mmp cliffs filters haven\'t been created');
     //changing sliders inputs values
     mmp.mmpFilters!.activitySliderInputs![0].value = 11.87;
     mmp.mmpFilters!.activitySliderInputs![1].value = 14.15;
     mmp.mmpFilters!.activitySliderInputs![2].value = 1.627;
-    await awaitCheck(() => DG.BitSet.fromBytes(mmp.linesMask!.buffer.buffer, 81).trueCount === 7,
+    await awaitCheck(() => !!mmp.linesMask && DG.BitSet.fromBytes(mmp.linesMask.buffer.buffer, 81).trueCount === 7,
       'Incorrect lines mask after slider input changed', 3000);
 
     //switch of one of activities
     mmp.mmpFilters!.activityActiveInputs[2].value = false;
-    await awaitCheck(() => DG.BitSet.fromBytes(mmp.linesMask!.buffer.buffer, 81).trueCount === 2,
+    await awaitCheck(() => !!mmp.linesMask && DG.BitSet.fromBytes(mmp.linesMask!.buffer.buffer, 81).trueCount === 2,
       'Incorrect lines mask after checkboxes values changed', 3000);
   });
 
@@ -359,5 +360,6 @@ function checkRandomValues(df: DG.DataFrame, dfName: string, isGPU: boolean) {
 }
 
 function checkRandomArrayVals(array: any, idxs: number[], vals: (number | string)[], name: string) {
+  expect(array != undefined, 'array of values is not defined');
   idxs.forEach((it: number, idx: number) => expect(array[it], vals[idx], `Incorrect value in ${name}, idx: ${it}`));
 }
