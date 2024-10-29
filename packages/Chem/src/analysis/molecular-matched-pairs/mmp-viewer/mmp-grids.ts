@@ -176,7 +176,7 @@ export class MmpPairedGrids {
   }
 
   unPinMatchedPair(): void {
-    const grid = grok.shell.tv.grid ?? ((grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView).grid;
+    const grid = grok.shell.tv?.grid ?? ((grok.shell.view('Browse')! as DG.BrowseView)?.preview as DG.TableView)?.grid;
     if (grid) {
       grid.setOptions({
         pinnedRowValues: [],
