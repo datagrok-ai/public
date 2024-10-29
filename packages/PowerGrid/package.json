@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/power-grid",
   "friendlyName": "PowerGrid",
-  "version": "1.4.5",
+  "version": "1.4.6",
   "author": {
     "name": "Andrew Skalkin",
     "email": "askalkin@datagrok.ai"
