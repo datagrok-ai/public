@@ -212,6 +212,9 @@ export class TreeViewer extends EChartViewer {
   }
 
   async _render() {
+    if (!this.dataFrame)
+      return;
+
     if (this.hierarchyColumnNames?.some((colName) => !this.dataFrame.columns.names().includes(colName)))
       this.hierarchyColumnNames = this.hierarchyColumnNames.filter((value) => this.dataFrame.columns.names().includes(value));
     if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0)
