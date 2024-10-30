@@ -65,12 +65,13 @@ export class FormStateGenerator {
       "viewerSettings": {
         "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
         "input-value": `                         ${categoryName}`,
-        "backgroundColor": 4293717745
+        "backgroundColor": 4293717745,
+        "textColor": 4278190080
       }
     };
   }
 
-  generateFormState(tableName: string) {
+  generateFormState() {
     const elementStates = [];
     const leftOffset = 10;
     const colWidth = 300;
@@ -138,7 +139,7 @@ export class FormStateGenerator {
     return {
       "#type": "SketchState",
       "elementStates": elementStates,
-      "table": tableName,
+      "table": this.table,
       "formDesigned": true
     };
   }

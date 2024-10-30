@@ -36,11 +36,11 @@ async function sendRequestToContainer(containerId: string, path: string, params:
 }
 
 export async function runAdmetica(csvString: string, queryParams: string, addProbability: string): Promise<string | null> {
-  const admeticaContainer = await getAdmeticaContainer();
+  /*const admeticaContainer = await getAdmeticaContainer();
   if (!admeticaContainer || (admeticaContainer.status !== 'started' && admeticaContainer.status !== 'checking')) {
     await startAdmeticaContainer(admeticaContainer?.id);
     return null;
-  }
+  }*/
 
   const params: RequestInit = {
     method: 'POST',
@@ -51,9 +51,13 @@ export async function runAdmetica(csvString: string, queryParams: string, addPro
     body: csvString
   };
 
-  const path = `/df_upload?models=${queryParams}&probability=${addProbability}`;
-  const response = await fetchWrapper(() => sendRequestToContainer(admeticaContainer.id, path, params));
-  return await convertLD50(response!, DG.Column.fromStrings('smiles', csvString.split('\n').slice(1)));
+
+  //const path = `/df_upload?models=${queryParams}&probability=${addProbability}`;
+  //const response = await fetchWrapper(() => sendRequestToContainer(admeticaContainer.id, path, params));
+  const path = `http://127.0.0.1:6678/df_upload?models=${queryParams}&probability=${addProbability}`;
+  const response = await fetch(path, params);
+  return await response.text();
+  //return await convertLD50(response!, DG.Column.fromStrings('smiles', csvString.split('\n').slice(1)));
 }
 
 export async function convertLD50(response: string, smilesCol: DG.Column): Promise<string> {
@@ -326,6 +330,7 @@ export function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, a
   if (addForm) {
     const form = createDynamicForm(viewTable, updatedModelNames, viewTable.columns.names()[molColIdx], addPiechart);
     grok.shell.tv.dockManager.dock(form, DG.DOCK_TYPE.RIGHT, null, 'Form', 0.45);
+    grok.shell.tv.grid.invalidate();
   }
 }
 
@@ -440,7 +445,7 @@ export function createDynamicForm(viewTable: DG.DataFrame, updatedModelNames: st
   const form = DG.FormViewer.createDefault(viewTable, {columns: updatedModelNames});
   const mapping = FormStateGenerator.createCategoryModelMapping(properties, updatedModelNames);
   const generator = new FormStateGenerator(viewTable.name, mapping, molColName, addPiechart);
-  const formState = generator.generateFormState(viewTable.name);
+  const formState = generator.generateFormState();
   form.form.state = JSON.stringify(formState);
   return form;
 }
