@@ -4,7 +4,7 @@
   "version": "2.2.0",
   "author": {
     "name": "Maria Dolotova",
-    "email": "maria.dolotova@softwarecountry.com"
+    "email": "mdolotova@datagrok.ai"
   },
   "description": "Adds [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) as an optional molecular sketcher.",
   "repository": {
