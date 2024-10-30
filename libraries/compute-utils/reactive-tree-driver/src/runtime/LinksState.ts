@@ -204,10 +204,6 @@ export class LinksState {
         for (const infoIn of infosIn) {
           const inPathFull = [...link.prefix, ...infoIn.path];
           const nodeIn = state.getNode(inPathFull);
-          // pipeline memory states should be immutable and set in
-          // onInit, so they are always ready
-          if (!isFuncCallNode(nodeIn.getItem()))
-            continue;
           for (const infosOut of Object.values(link.matchInfo.outputs)) {
             for (const infoOut of infosOut) {
               const outPathFull = [...link.prefix, ...infoOut.path];
