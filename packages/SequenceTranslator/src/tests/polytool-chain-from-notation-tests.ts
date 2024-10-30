@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {before, after, category, expect, test, expectArray, testEvent, delay} from '@datagrok-libraries/utils/src/test';
 import {Chain} from '../polytool/conversion/pt-chain';
-import {getRules} from '../polytool/pt-rules';
+import {getRules} from '../polytool/conversion/pt-rules';
 import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
 category('PolyTool: Chain', () => {

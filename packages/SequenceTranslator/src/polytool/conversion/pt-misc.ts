@@ -8,7 +8,7 @@ import {RDModule, RDMol, RDReaction, MolList, RDReactionResult} from '@datagrok-
 import {HELM_REQUIRED_FIELD as REQ,
   HELM_OPTIONAL_FIELDS as OPT, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
-import {Rules, RuleReaction} from '../pt-rules';
+import {Rules, RuleReaction} from './pt-rules';
 import {InvalidReactionError, MonomerNotFoundError} from '../types';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 

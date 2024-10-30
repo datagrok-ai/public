@@ -2,7 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {before, after, category, expect, test, expectArray, testEvent, delay, expectObject} from '@datagrok-libraries/utils/src/test';
+import {before, after, category, expect, test, expectArray, testEvent, expectObject}
+  from '@datagrok-libraries/utils/src/test';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {
@@ -16,7 +17,7 @@ import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-
 
 import {doPolyToolConvert} from '../polytool/conversion/pt-conversion';
 import {getOverriddenLibrary} from '../polytool/conversion/pt-misc';
-import {getRules} from '../polytool/pt-rules';
+import {getRules} from '../polytool/conversion/pt-rules';
 
 
 import {_package} from '../package-test';

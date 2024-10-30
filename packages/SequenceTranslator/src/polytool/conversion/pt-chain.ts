@@ -3,7 +3,7 @@ import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-
 import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {cleanupHelmSymbol} from '@datagrok-libraries/bio/src/helm/utils';
 import {getOuterIdx, getInnerIdx} from './pt-misc';
-import {Rules, RuleLink, RuleReaction} from '../pt-rules';
+import {Rules, RuleLink, RuleReaction} from './pt-rules';
 
 declare const JSDraw2: JSDraw2ModuleType;
 declare const org: OrgType;

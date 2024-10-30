@@ -6,7 +6,7 @@ import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
 import {Chain} from './conversion/pt-chain';
 import {getPolyToolUnruleDialog} from './pt-unrule-dialog';
-import {Rules} from './pt-rules/pt-rules';
+import {Rules} from './conversion/pt-rules';
 
 import {_package} from '../package';
 import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
