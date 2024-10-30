@@ -106,7 +106,7 @@ class WebGPUCache {
      sc.props.categoricalColorScheme.length != this.categoricalColorScheme.length ||
      !sc.props.categoricalColorScheme.every((c, i) => c == this.categoricalColorScheme[i]);
   }
-  
+
   isValid() {
     return this.indexBufferLength > 0 && this.xColLength > 0 && this.yColLength > 0;
   }
@@ -253,7 +253,7 @@ class WebGPUCache {
         this.textureGridSize = Math.ceil(Math.sqrt((this.maxTextureSize - this.minTextureSize) + 1));
         this.markerType = sc.getMarkerType(0) as DG.MARKER_TYPE;
 
-        const isSingle = !sc.props.sizeColumnName && !sc.props.markersColumnName;
+        const isSingle = !sc.props.sizeColumnName;
         if (isSingle) {
           const size = sc.getMarkerSize(0);
           const shape = this.markerType;
