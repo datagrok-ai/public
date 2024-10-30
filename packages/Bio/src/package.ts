@@ -1139,7 +1139,6 @@ export async function sdfToJsonLib(table: DG.DataFrame) {
 //input: string seq { semType: Macromolecule }
 //input: bool nonlinear
 //output: string molfile { semType: Molecule }
-//meta.role: converter
 export async function seq2atomic(seq: string, nonlinear: boolean): Promise<string | undefined> {
   if (!(seq.trim())) return '';
   try {

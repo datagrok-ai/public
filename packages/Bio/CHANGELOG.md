@@ -1,6 +1,6 @@
 # Bio changelog
 
-## 2.16.7 (WIP)
+## 2.16.7 (2024-10-30)
 
 ### Bug fixes
 
