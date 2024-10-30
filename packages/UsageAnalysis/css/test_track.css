@@ -197,6 +197,11 @@
   align-self: end;
 }
 
+.tt-dialog  .create-ticket-button-wrap{
+  margin: 0 10px;
+  margin-top: 55px;
+}
+
 .tt-dialog .d4-pane-jira_tickets .d4-flex-col{
   width: 75%;
 }

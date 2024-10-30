@@ -765,21 +765,30 @@ export class TestTrack extends DG.ViewBase {
         createTicketBtn.disabled = false;
       });
     })
-
+    
     createTicketBtn.disabled =true;
-    const errorTypeSelector = ui.input.choice('Error severity level', { value: null, items: errorSeverityLevels, nullable: true, onValueChanged:(e)=>{
-        createTicketBtn.disabled = value.length === 0 || !errorTypeSelector.value === null;
+    const errorTypeSelector = ui.input.choice('Error severity level', { value: null, items: ['', ...errorSeverityLevels], nullable: false, onValueChanged:(e)=>{
+        createTicketBtn.disabled = ticketSummary.value.length === 0 || errorTypeSelector.value == null;
     }});
     const textInput = ui.input.textArea(errorSeverityLevels.includes(status) ? 'Tickets' : 'Reasons', { value: value });
     textInput.nullable = false;
     textInput.classList.add('ui-input-reason');
     ticketSummary.onChanged.subscribe((value) => {
-      createTicketBtn.disabled = value.length === 0 || !errorTypeSelector.value === null;
+      createTicketBtn.disabled = value.length === 0 || errorTypeSelector.value == null;
     })
 
-    createTicketBtn.classList.add('create-ticket-button');
-    const jiraTicketsTab = ui.divH([ui.divV([ticketSummary, ticketDescription]), createTicketBtn]);
+    const createBtnWrap = ui.div(createTicketBtn);
+    const createTicketButtonTooltip = ui.tooltip.bind(createBtnWrap, 'Ensure that you selected severity level and wrote ticket summary.')
+    createBtnWrap.classList.add('create-ticket-button-wrap');
 
+    createTicketBtn.classList.add('create-ticket-button');
+    const jiraTicketsTab = ui.divH([ui.divV([ticketSummary, ticketDescription]), createBtnWrap]);
+      
+    errorTypeSelector.addValidator((value)=>{
+      if(value == '')
+        return 'Can\'t be null';
+      return null;
+    });
 
     if (errorSeverityLevels.includes(status)) {
       errorTypeSelector.onChanged.subscribe((value) => {
@@ -803,9 +812,19 @@ export class TestTrack extends DG.ViewBase {
       const accordion = ui.accordion();
       accordion.addPane('Jira Tickets', () => jiraTicketsTab)
       dialog.add(accordion);
-    }
+    } 
+
     dialog.show({ resizable: false });
     dialog.initDefaultHistory();
+    
+    const okButton = dialog.root.getElementsByClassName("d4-dialog-footer")[0].getElementsByClassName('ui-btn-ok')[0];
+    textInput.addValidator((e)=>{
+      if(textInput.value.trim() == ''){ 
+        return 'Can\'t be null';
+      } 
+      errorTypeSelector.value
+      return null;
+    });
   }
 
   changeNodeStatus(node: DG.TreeViewNode, status: Status, reason?: string, uid: string = this.uid, reportData: Boolean = true): void {
@@ -845,7 +864,7 @@ export class TestTrack extends DG.ViewBase {
       if (status !== SKIPPED)
         severityLevel = status;
     }
-    value.fullReason = reason;
+    value.fullReason = reason?.trim();
     const params = {
       success: status === PASSED, result: reason ?? '', skipped: status === SKIPPED, type: 'manual',
       category: value.path.replace(/:\s[^:]+$/, ''), name: node.text, version: this.version, uid: uid, start: this.start, ms: 0, batchName: this.testingName,
