@@ -1127,13 +1127,9 @@ export class Package extends Entity {
     return api.grok_Package_Set_Settings(this.name, props, group?.dart);
   }
 
-  private _files: FileSource | null = null;
-
   /** Global application data */
   get files(): FileSource {
-    if (this._files == null)
-      this._files = new FileSource(`System:AppData/${this.name}`);
-    return this._files;
+    return new FileSource(`System:AppData/${this.name}`);
   }
 
   public async getTests(core: boolean = false) {
