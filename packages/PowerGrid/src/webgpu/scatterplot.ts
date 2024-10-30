@@ -40,7 +40,7 @@ class WebGPUCache {
   minTextureSize = 2;
   maxTextureSize = 100;
   textureGridSize = Math.ceil(Math.sqrt((this.maxTextureSize - this.minTextureSize) / 2 + 1));
-  texturePadding = 2;
+  texturePadding = 4;
   gpuTexture: GPUTexture | null = null;
 
   updateAndValidate(sc: DG.ScatterPlotViewer, device: GPUDevice, pt: DG.Point = new DG.Point(0, 0)) {
@@ -245,17 +245,20 @@ class WebGPUCache {
   updateTexuteAtlas(sc: DG.ScatterPlotViewer, device: GPUDevice) {
     if (this.texture == null || this.gpuTexture == null 
       || this.isMarkerSizesParamsChanged(sc)
-      || this.minTextureSize != roundUpToEven(sc.props.markerMinSize) 
-      || this.maxTextureSize != roundUpToEven(sc.props.markerMaxSize + 1)
-      || this.markerType != sc.getMarkerType(0)) {
-        this.minTextureSize = roundUpToEven(sc.props.markerMinSize);
-        this.maxTextureSize = roundUpToEven(sc.props.markerMaxSize + 1);
-        this.textureGridSize = Math.ceil(Math.sqrt((this.maxTextureSize - this.minTextureSize) / 2 + 1));
+      || this.markerType != sc.getMarkerType(0) as DG.MARKER_TYPE
+      || this.minTextureSize != sc.props.markerMinSize
+      || this.maxTextureSize != sc.props.markerMaxSize) {
+        this.minTextureSize = sc.props.markerMinSize;
+        this.maxTextureSize = sc.props.markerMaxSize;
+        this.textureGridSize = Math.ceil(Math.sqrt((this.maxTextureSize - this.minTextureSize) + 1));
         this.markerType = sc.getMarkerType(0) as DG.MARKER_TYPE;
 
-        if (!sc.props.sizeColumnName) {
+        const isSingle = !sc.props.sizeColumnName;
+        if (isSingle) {
           const size = sc.getMarkerSize(0);
-          this.texture = createShapeCanvas(size + sc.props.markerBorderWidth * 2 + 1, sc);
+          const shape = this.markerType;
+          const canvasSize = size + sc.props.markerBorderWidth;
+          this.texture = createShapeCanvas(canvasSize, canvasSize, shape, sc);
         }
         else {
           this.texture = createTextureAtlas(this, sc);
@@ -267,7 +270,7 @@ class WebGPUCache {
           usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
         });  
         device.queue.copyExternalImageToTexture(
-            { source: this.texture },
+            { source: this.texture, flipY: isSingle },
             { texture: this.gpuTexture, premultipliedAlpha: true},
             [this.texture.width, this.texture.height]
         );
@@ -753,10 +756,10 @@ function getPaddedSize(length: number): number {
 }
 
 function createTextureAtlas(cache: WebGPUCache, sc: DG.ScatterPlotViewer): OffscreenCanvas {
-    const minSize = cache.minTextureSize + sc.props.markerBorderWidth * 2;
-    const maxSize = cache.maxTextureSize + sc.props.markerBorderWidth * 2;
+    const minSize = cache.minTextureSize + sc.props.markerBorderWidth;
+    const maxSize = cache.maxTextureSize + sc.props.markerBorderWidth;
     // We'll take the minimum size as 2 while adding the border width to maintain the whole size
-    const sizes = Array.from({ length: (maxSize - minSize) / 2 + 1 }, (_, i) => 2 * i + minSize);
+    const sizes = Array.from({ length: (maxSize - minSize) + 1 }, (_, i) => i + minSize);
 
     // Calculate the size of the atlas canvas
     const atlasSize = (maxSize + cache.texturePadding) * cache.textureGridSize; // Each cell will have a size of maxSize + padding
@@ -766,135 +769,51 @@ function createTextureAtlas(cache: WebGPUCache, sc: DG.ScatterPlotViewer): Offsc
     if (!ctx)
         return atlasCanvas;
 
-    // Draw each circle in the grid
+    // Draw each size of the marker in the grid
     sizes.forEach((size, index) => {
-        const x = index % cache.textureGridSize;
-        const y = Math.floor(index / cache.textureGridSize);
+      const x = index % cache.textureGridSize;
+      const y = Math.floor(index / cache.textureGridSize);
 
-        // Get the canvas for the current circle size
-        const circleCanvas = createShapeCanvas(size, sc);
+      // Calculate position in the atlas
+      const cellSize = maxSize + cache.texturePadding;
 
-        // Calculate position in the atlas
-        const cellSize = maxSize + cache.texturePadding;
-        // Center the texture in the cell
-        const posX = x * cellSize + (cellSize - size) / 2; 
-        const posY = y * cellSize + (cellSize - size) / 2;
+      // Get the canvas for the current circle size
+      const shapeCanvas = createShapeCanvas(cellSize, size, cache.markerType as DG.MARKER_TYPE, sc);
 
-        // Draw the texture onto the atlas at the calculated position
-        ctx.drawImage(circleCanvas, posX, posY);
+      // Center the texture in the cell
+      const posX = x * cellSize;
+      const posY = y * cellSize;
+
+      // Draw the texture onto the atlas at the calculated position
+      ctx.drawImage(shapeCanvas, posX, posY);
     });
-  
+
     return atlasCanvas;
 }
 
 function createShapeCanvas(
-  size: number,
+  canvasSize: number,
+  markerSize: number,
+  shapeType: DG.MARKER_TYPE,
   sc: DG.ScatterPlotViewer
 ): OffscreenCanvas {
-  const canvas = new OffscreenCanvas(size, size);
+  const canvas = new OffscreenCanvas(canvasSize, canvasSize);
   const ctx = canvas.getContext('2d');
 
   if (!ctx)
     return canvas;
 
-  // Set defaults for drawing styles
-  ctx.fillStyle = "#0000ff";
-  ctx.strokeStyle = "#00003f";
-  ctx.lineWidth = sc.props.markerBorderWidth * 2;
+  ctx.save();
+  // Flip vertically by scaling the y-axis by -1
+  ctx.scale(1, -1);
+  // Translate the origin down by the canvas height to correct the position after flipping
+  ctx.translate(0, -ctx.canvas.height);
 
-  const shapeType: DG.MARKER_TYPE = sc.getMarkerType(0) as DG.MARKER_TYPE;
+  DG.Paint.marker(ctx as unknown as CanvasRenderingContext2D, shapeType, canvasSize / 2, canvasSize / 2, "#0000ff", markerSize - sc.props.markerBorderWidth);
 
-  // Shape specific drawing logic based on string representation
-  switch (shapeType) {
-    case DG.MARKER_TYPE.CIRCLE:
-      drawCircle(ctx, size);
-      break;
-    case DG.MARKER_TYPE.CIRCLE_BORDER:
-      drawCircleBorder(ctx, size);
-      break;
-    case DG.MARKER_TYPE.SQUARE:
-      drawSquare(ctx, size);
-      break;
-    case DG.MARKER_TYPE.SQUARE_BORDER:
-      drawSquareBorder(ctx, size);
-      break;
-    case DG.MARKER_TYPE.CROSS_BORDER:
-      drawCrossBorder(ctx, size);
-      break;
-    default:
-      console.warn('Unknown shape type');
-  }
+  ctx.restore(); 
 
   return canvas;
-}
-
-function drawCircle(ctx: OffscreenCanvasRenderingContext2D, size: number) {
-  // Align center to the pixel grid
-  const centerX = Math.floor(size / 2) + 0.5;
-  const centerY = Math.floor(size / 2) + 0.5;
-  // Ensure radius fits within pixel grid
-  const radius = Math.floor((size - ctx.lineWidth / 2) / 2);
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
-  ctx.save();
-  ctx.clip();
-  ctx.fill();
-  ctx.stroke();
-  ctx.restore();
-}
-
-function drawCircleBorder(ctx: OffscreenCanvasRenderingContext2D, size: number) {
-  // Align center to the pixel grid
-  const centerX = Math.floor(size / 2) + 0.5;
-  const centerY = Math.floor(size / 2) + 0.5;
-  // Ensure radius fits within pixel grid
-  const radius = Math.floor((size - ctx.lineWidth / 2) / 2);
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
-  ctx.save();
-  ctx.lineWidth = size / 3;
-  ctx.strokeStyle = "#0000ff";
-  ctx.clip();
-  ctx.stroke();
-  ctx.restore();
-}
-
-// Additional shape methods for each type like square, diamond, etc.
-function drawSquare(ctx: OffscreenCanvasRenderingContext2D, size: number) {
-  const halfSize = Math.floor((size - ctx.lineWidth / 2) / 2);
-  const fullSize = halfSize * 2;
-  ctx.fillRect(size - fullSize, size - fullSize, fullSize, fullSize);
-  ctx.save();
-  ctx.lineWidth = ctx.lineWidth / 4;
-  ctx.strokeRect(size - fullSize + 1, size - fullSize + 1, fullSize - 2, fullSize - 2);
-  ctx.restore();
-}
-
-function drawSquareBorder(ctx: OffscreenCanvasRenderingContext2D, size: number) {
-  const halfSize = Math.floor((size - ctx.lineWidth / 2) / 2);
-  const fullSize = halfSize * 2;
-  const strokeSize = Math.min(1, Math.floor((size / 6))) * 2;
-  const halfStroke = strokeSize / 2;
-  const offset = size - fullSize;
-  ctx.save();
-  ctx.lineWidth = strokeSize;
-  ctx.strokeStyle = "#0000ff";
-  ctx.strokeRect(offset + halfStroke, offset + halfStroke, fullSize - halfStroke - offset, fullSize - halfStroke - offset);
-  ctx.restore();
-}
-
-function drawCrossBorder(ctx: OffscreenCanvasRenderingContext2D, size: number) {
-  // Align center to the pixel grid
-  const centerX = Math.floor(size / 2);
-  const centerY = Math.floor(size / 2);
-  // Ensure radius fits within pixel grid
-  const radius = Math.floor((size - ctx.lineWidth / 2) / 2);
-  ctx.fillRect(centerX - radius, centerY - 1, radius * 2, 2);
-  ctx.fillRect(centerX - 1, centerY - radius, 2, radius * 2);
-}
-
-function roundUpToEven(num: number): number {
-  return Math.ceil(num / 2) * 2;
 }
 
 function addPointConversionMethods() {
@@ -1003,14 +922,14 @@ function addDifferentMarkerSizesRendering(cache: WebGPUCache, sc: DG.ScatterPlot
           );
 
           // Get the marker size for the current vertex
-          let markerSize = markerSizes[vert.index] + 1;
+          let markerSize = markerSizes[vert.index];
           
           let minSize = f32(${cache.minTextureSize});
           let maxSize = f32(${cache.maxTextureSize});
 
           // The textures are made of even sizes to avoid blur and artefacts
           // Rounding up to the nearest even index and dividing by two to get the needed index in the texture atlas
-          let sizeIndex = u32(ceil(ceil(markerSize) / 2.0) * 2.0 - minSize) / 2;
+          let sizeIndex = u32(markerSize - minSize);
 
           var vsOut: VSOutput;
           let pos = points[vNdx];
@@ -1018,7 +937,7 @@ function addDifferentMarkerSizesRendering(cache: WebGPUCache, sc: DG.ScatterPlot
           let screenPoint = pointToScreen(vert.index);
           let normalizedPos = convertPointToNormalizedCoords(screenPoint);
           // Making a pixel perfect position, to avoid artefacts and blurring
-          vsOut.position = vec4f(floor((normalizedPos + pos * (maxSize + ${sc.props.markerBorderWidth * 2 + cache.texturePadding}) / uni.resolution) * uni.resolution) / uni.resolution, 0, 1);
+          vsOut.position = vec4f(floor((normalizedPos + pos * (maxSize + ${sc.props.markerBorderWidth + cache.texturePadding}) / uni.resolution) * uni.resolution) / uni.resolution, 0, 1);
           vsOut.texcoord = pos * 0.5 + 0.5;
           vsOut.markerIndex = u32(vert.index);
           vsOut.sizeIndex = sizeIndex;
@@ -1070,7 +989,7 @@ function addSingleMarkerSizeRendering(cache: WebGPUCache, sc: DG.ScatterPlotView
           );
 
           // Get the marker size for the current vertex
-          let markerSize = markerSizes[0] + 1;
+          let markerSize = markerSizes[0];
           
           var vsOut: VSOutput;
           let pos = points[vNdx];
@@ -1078,7 +997,7 @@ function addSingleMarkerSizeRendering(cache: WebGPUCache, sc: DG.ScatterPlotView
           let screenPoint = pointToScreen(vert.index);
           let normalizedPos = convertPointToNormalizedCoords(screenPoint);
           // Making a pixel perfect position, to avoid artefacts and blurring
-          vsOut.position = vec4f(normalizedPos + pos * (markerSize + ${sc.props.markerBorderWidth * 2}) / uni.resolution, 0, 1);
+          vsOut.position = vec4f(normalizedPos + pos * (markerSize + ${sc.props.markerBorderWidth}) / uni.resolution, 0, 1);
           vsOut.texcoord = pos * 0.5 + 0.5;
           vsOut.markerIndex = u32(vert.index);   // Pass marker index to fragment shader
           vsOut.sizeIndex = 0;
