@@ -170,7 +170,7 @@ export class DockWheel {
             if (wheelItem.active)
                 return wheelItem;
         }
-        return undefined;
+        return this.wheelItems[WheelTypes.fill];
     }
     _handleDockRequest(wheelItem, dialog) {
         wheelItem.active = false;
