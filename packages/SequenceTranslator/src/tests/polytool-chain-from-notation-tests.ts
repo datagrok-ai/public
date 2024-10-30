@@ -124,7 +124,7 @@ category('PolyTool: Chain', () => {
     test(`applyRules-${testName}`, async () => {
       const rules = await getRules(['rules_example.json']);
       const resTemplateChain = Chain.parseNotation(data.templateSeq, helmHelper);
-      const resMmChain = resTemplateChain.applyRules(rules);
+      const resMmChain = await resTemplateChain.applyRules(rules);
       resMmChain.check(true);
       expectArray(resMmChain.monomers.map((mL) => mL.length), tgt.mmChain.monomerCount);
       expect(resMmChain.linkages.length, tgt.mmChain.linkageCount);
