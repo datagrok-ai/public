@@ -81,8 +81,8 @@ category('SeqHandler: getHelm', () => {
     await grok.data.detectSemanticTypes(df);
 
     const sh = seqHelper.getSeqHandler(seqCol);
-    const resSemValue = await sh.getHelm(0);
-    const resHelm = resSemValue.value;
+    const resMValue = await sh.getValue(0);
+    const resHelm = resMValue.helm;
     expect(resHelm, tgtHelm);
   }
 });

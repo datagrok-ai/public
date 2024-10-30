@@ -80,11 +80,11 @@ export class PeptiHitApp extends HitDesignApp<PeptiHitTemplate> {
     subs.push(this.dataFrame!.onRowsAdded.pipe(filter(() => !this.isJoining))
       .subscribe(() => { // TODO, insertion of rows in the middle
         try {
-          if (this.template!.stages?.length > 0) {
+          if (this.stages.length > 0) {
             for (let i = 0; i < this.dataFrame!.rowCount; i++) {
               const colVal = this.dataFrame!.col(TileCategoriesColName)!.get(i);
               if (!colVal || colVal === '' || this.dataFrame!.col(TileCategoriesColName)?.isNone(i))
-                this.dataFrame!.set(TileCategoriesColName, i, this.template!.stages[0]);
+                this.dataFrame!.set(TileCategoriesColName, i, this.stages[0]);
             }
           }
           let lastAddedCell: DG.GridCell | null = null;

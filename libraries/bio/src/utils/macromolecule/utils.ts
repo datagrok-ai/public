@@ -20,6 +20,7 @@ import {UnknownSeqPalettes} from '../../unknown';
 import {ISeqHelper} from '../seq-helper';
 
 import {ISeqHandler} from './seq-handler';
+import {cleanupHelmSymbol} from '../../helm/utils';
 
 export class StringListSeqSplitted implements ISeqSplitted {
   get length(): number { return this.mList.length; }
@@ -157,10 +158,6 @@ export function getSplitterWithSeparator(separator: string, limit: number | unde
   };
 }
 
-const helmRe: RegExp = /(PEPTIDE1|DNA1|RNA1)\{([^}]+)}/g;
-const helmPp1Re: RegExp = /\[([^\[\]]+)]/g;
-
-
 /** Splits Helm string to monomers, but does not replace monomer names to other notation (e.g. for RNA).
  * Only for linear polymers, does not split RNA for ribose and phosphate monomers.
  * @param {string} seq Source string of HELM notation
@@ -168,21 +165,12 @@ const helmPp1Re: RegExp = /\[([^\[\]]+)]/g;
  * @return {string[]}
  */
 export const splitterAsHelm: SplitterFunc = (seq: any): ISeqSplitted => {
-  helmRe.lastIndex = 0;
-  const ea: RegExpExecArray | null = helmRe.exec(seq.toString());
-  const inSeq: string | null = ea ? ea[2] : null;
+  const helmParts = seq.split('$');
+  const spList = helmParts[0].split('|');
+  const mList: string[] = wu(spList.map((sp: string) => sp.match(/(?<=\{).+(?=})/)![0].split('.').map((m) => cleanupHelmSymbol(m))))
+    .flatten().toArray();
 
-  const mmPostProcess = (mm: string): string => {
-    helmPp1Re.lastIndex = 0;
-    const pp1M = helmPp1Re.exec(mm);
-    if (pp1M && pp1M.length >= 2)
-      return pp1M[1];
-    else
-      return mm;
-  };
-
-  const mmList: string[] = inSeq ? inSeq.split('.') : [];
-  return new StringListSeqSplitted(mmList.map(mmPostProcess), GapOriginals[NOTATION.HELM]);
+  return new StringListSeqSplitted(mList, GapOriginals[NOTATION.HELM]);
 };
 
 /** Func type to shorten a {@link monomerLabel} with length {@link limit} */

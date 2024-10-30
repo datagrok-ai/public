@@ -556,6 +556,7 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotSettings> {
   getMarkerSize(rowIdx: number): number { return api.grok_ScatterPlotViewer_GetMarkerSize(this.dart, rowIdx); }
   getMarkerSizes(): Float32Array { return api.grok_ScatterPlotViewer_GetMarkerSizes(this.dart); }
   getMarkerType(rowIdx: number): string { return api.grok_ScatterPlotViewer_GetMarkerType(this.dart, rowIdx); }
+  getMarkerTypes(): Uint32Array { return api.grok_ScatterPlotViewer_GetMarkerTypes(this.dart); }
   getMarkerColor(rowIdx: number): number { return api.grok_ScatterPlotViewer_GetMarkerColor(this.dart, rowIdx); }
   getMarkerColors(): Uint32Array { return api.grok_ScatterPlotViewer_GetMarkerColors(this.dart); }
 
@@ -636,6 +637,12 @@ export class CorrelationPlot extends Viewer<interfaces.ICorrelationPlotSettings>
 }
 
 export class ConfusionMatrix extends Viewer<interfaces.IConfusionMatrixSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+}
+
+export class RocCurve extends Viewer<interfaces.IRocCurveSettings> {
   constructor(dart: any) {
     super(dart);
   }

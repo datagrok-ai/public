@@ -120,12 +120,15 @@ export async function reportsApp(path?: string): Promise<DG.ViewBase> {
 //meta.browsePath: Admin
 //input: string path {isOptional: true; meta.url: true}
 //input: map params {isOptional: true}
+//input: int limit {isOptional: true}
 //output: view v
-export async function serviceLogsApp(path?: string, params?: any): Promise<DG.ViewBase> {
-  const app = new ServiceLogsApp(grok.functions.getCurrentCall());
-  await app.init();
+export async function serviceLogsApp(path?: string, params?: any, limit?: number): Promise<DG.ViewBase> {
+  const currentCall = grok.functions.getCurrentCall();
+  const services = await grok.dapi.docker.getAvailableServices();
+  const app = new ServiceLogsApp(currentCall, services, path, limit);
+  if (services.length > 0)
+    app.getLogs().then((_) => {});
   return app;
-  // return ServiceLogsApp.createView(grok.functions.getCurrentCall());
 }
 
 //input: dynamic treeNode

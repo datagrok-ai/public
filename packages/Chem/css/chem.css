@@ -424,6 +424,10 @@
   overflow: hidden!important;
 }
 
+.chem-scaffold-tree-loader {
+  margin-left: -40px;
+}
+
 .chem-drug-likeness-widget-score-div, .chem-toxicity-widget-risk-row {
   display: flex;
   align-items: center;
@@ -682,19 +686,24 @@
   width: 8px;
 }
 
-.mmpa-fragments-tab .mmpa-pairs-slider{
+.mmpa-fragments-tab .mmpa-pairs-slider {
   display: flex;
   padding-right: 32px;
 }
 
-.mmpa-fragments-tab .mmpa-activity-filters{
+.mmpa-fragments-tab .mmpa-activity-filters {
   display: none;
 }
 
-.mmpa-cliffs-tab .mmpa-activity-filters{
+.mmpa-cliffs-tab .mmpa-activity-filters {
   display: flex;
 }
 
-.mmpa-cliffs-tab .mmpa-pairs-slider{
+.mmpa-cliffs-tab .mmpa-pairs-slider {
   display: none;
+}
+
+.chem-search-panel-wrapper {
+  overflow: hidden;
+  max-height: 400px;
 }

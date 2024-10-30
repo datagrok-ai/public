@@ -9,31 +9,31 @@ category('Property: General', () => {
     const dfList: DG.DataFrame[] = await grok.functions
       .eval('OpenServerFile("System:AppData/ApiTests/datasets/demog.csv")');
     expect(dfList[0].columns instanceof DG.ColumnList, true);
-  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-13478'});
+  });
 
   test('call', async () => {
     const dfList: DG.DataFrame[] = await grok.functions
       .call('OpenServerFile', {'fullPath': 'System:AppData/ApiTests/datasets/demog.csv'});
     expect(dfList[0].columns instanceof DG.ColumnList, true);
-  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-13478'});
+  });
   
   test('def param', async () => {
     await grok.functions.call('AddNewColumn', {table: grok.data.demo.demog(), expression: 'test', name: 'test'});
-  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-13478'});
+  });
 
   test('call params', async () => {
     expect(await grok.functions.call('sin', {y: 0.5}), null, '{y: 0.5}');
     expect(await grok.functions.call('sin', {x: 0.5}), 0.479425538604203, '{x: 0.5}');
     expect(await grok.functions.call('sin', {X: 0.5}), 0.479425538604203, '{X: 0.5}');
     await expectExceptionAsync(() => grok.functions.call('qqqqqq'));
-  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-13478'});
+  });
 
   test('query params', async () => {
     // expect(await grok.data.query('ApiTests:dummyPackageQuery', {y: 0.5}), null, '{y: 0.5}');
     expect((await grok.data.query('ApiTests:dummyPackageQuery', {x: 0.5})).get('res', 0), 0.5, '{x: 0.5}');
     expect((await grok.data.query('ApiTests:dummyPackageQuery', {X: 0.5})).get('res', 0), 0.5, '{X: 0.5}');
     await expectExceptionAsync(() => grok.data.query('ApiTests:qqqqqq'));
-  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-13478'});
+  });
 });
 
 category('Property: Header parsing', () => {

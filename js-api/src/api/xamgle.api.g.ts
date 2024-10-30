@@ -103,6 +103,9 @@ export interface SettingsInterface {
   /// box will not be shown to the user and indexing of files will not be configurable.
   enableConnectionIndexFiles: boolean;
 
+  // When true, use WebGPU for rendering and advanced computations if possible.
+  enableScatterPlotWebGPUAcceleration: boolean;
+
   dateFormat: string;
 
   integerNumberFormat: string;

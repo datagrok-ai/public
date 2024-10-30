@@ -46,6 +46,10 @@ export class MonomerLibBase implements IMonomerLibBase {
   ) {
     this._isEmpty = !this._monomers || Object.keys(this._monomers).length === 0 ||
       Object.entries(this._monomers).every(([_, ptMonomers]) => Object.keys(ptMonomers).length === 0);
+    for (const [_monomerType, monomersOfType] of Object.entries(this._monomers)) {
+      for (const [_monomerSymbol, monomer] of Object.entries(monomersOfType))
+        monomer.lib = this;
+    }
   }
 
   getMonomerSymbolsByType(polymerType: PolymerType): string[] {

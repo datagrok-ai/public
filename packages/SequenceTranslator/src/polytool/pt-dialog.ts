@@ -14,8 +14,9 @@ import {buildMonomerHoverLink} from '@datagrok-libraries/bio/src/monomer-works/m
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
-import {getRules, RuleInputs, Rules, RULES_PATH, RULES_STORAGE_NAME} from './pt-rules/pt-rules';
-import {doPolyToolConvert, getOverriddenLibrary} from './pt-conversion';
+import {getRules, RuleInputs, Rules, RULES_PATH, RULES_STORAGE_NAME} from './pt-rules';
+import {doPolyToolConvert} from './conversion/pt-conversion';
+import {getOverriddenLibrary} from './conversion/pt-misc';
 import {defaultErrorHandler} from '../utils/err-info';
 import {getLibrariesList} from './utils';
 import {getEnumerationChem, PT_CHEM_EXAMPLE} from './pt-enumeration-chem';
@@ -38,17 +39,18 @@ type PolyToolEnumerateChemSerialized = {
   screenLibrary: string | null;
 }
 
-export function polyToolEnumerateChemUI(cell?: DG.Cell): void {
-  getPolyToolEnumerationChemDialog(cell)
-    .then((dialog) => {
-      dialog.show({resizable: true});
-    })
-    .catch((_err: any) => {
-      grok.shell.warning('To run PolyTool Enumeration, sketch the molecule and specify the R group to vary');
-    });
+export async function polyToolEnumerateChemUI(cell?: DG.Cell): Promise<void> {
+  await _package.initPromise;
+  try {
+    const dialog = await getPolyToolEnumerationChemDialog(cell);
+    dialog.show({resizable: true});
+  } catch (_err: any) {
+    grok.shell.warning('To run PolyTool Enumeration, sketch the molecule and specify the R group to vary');
+  }
 }
 
 export async function polyToolConvertUI(): Promise<void> {
+  await _package.initPromise;
   let dialog: DG.Dialog;
   try {
     dialog = await getPolyToolConvertDialog();
@@ -234,6 +236,16 @@ async function getPolyToolEnumerationChemDialog(cell?: DG.Cell): Promise<DG.Dial
   }
 }
 
+function dealGroups(col: DG.Column<string>): void {
+  for (let i = 0; i < col.length; i++) {
+    col.set(i, col.get(i)!.replaceAll('undefined', 'H'));
+    col.set(i, col.get(i)!.replaceAll('Oh', 'O'));
+    col.set(i, col.get(i)!.replaceAll('0.000000 3', '0.000000 0'));
+    col.set(i, col.get(i)!.replaceAll('?', 'O'));
+    col.set(i, col.get(i)!.replaceAll('0 3\n', '0 0\n'));
+  }
+}
+
 /** Returns Helm and molfile columns.  */
 export async function polyToolConvert(
   seqCol: DG.Column<string>, generateHelm: boolean, chiralityEngine: boolean, ruleFiles: string[]
@@ -244,11 +256,11 @@ export async function polyToolConvert(
       if (!df) return colName;
       return df.columns.getUnusedName(colName);
     };
-    await getHelmHelper(); // initializes JSDraw and org
+    const helmHelper = await getHelmHelper(); // initializes JSDraw and org
 
     const table = seqCol.dataFrame;
     const rules = await getRules(ruleFiles);
-    const resList = doPolyToolConvert(seqCol.toList(), rules);
+    const resList = doPolyToolConvert(seqCol.toList(), rules, helmHelper);
 
     const resHelmColName = getUnusedName(table, `transformed(${seqCol.name})`);
     const resHelmCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, resHelmColName, resList.length)
@@ -267,7 +279,7 @@ export async function polyToolConvert(
     const toAtomicLevelRes =
       await seqHelper.helmToAtomicLevel(resHelmCol, chiralityEngine, /* highlight */ generateHelm, lib);
     const resMolCol = toAtomicLevelRes.molCol!;
-
+    dealGroups(resMolCol);
     resMolCol.name = getUnusedName(table, `molfile(${seqCol.name})`);
     resMolCol.semType = DG.SEMTYPE.MOLECULE;
     if (table) {

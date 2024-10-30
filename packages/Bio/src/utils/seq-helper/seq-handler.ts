@@ -14,7 +14,7 @@ import {GAP_SYMBOL, GapOriginals} from '@datagrok-libraries/bio/src/utils/macrom
 import {CellRendererBackBase, GridCellRendererTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {HelmType} from '@datagrok-libraries/bio/src/helm/types';
-import {ISeqHandler, ConvertFunc, JoinerFunc, SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
+import {ISeqHandler, ConvertFunc, JoinerFunc, SeqTemps, MacromoleculeValueBase} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 
 import {SeqHelper} from './seq-helper';
 
@@ -241,18 +241,16 @@ export class SeqHandler implements ISeqHandler {
   }
 
   /** Any Macromolecule can be represented on Helm format. The reverse is not always possible. */
-  public async getHelm(rowIdx: number, options?: any): Promise<DG.SemanticValue<string>> {
+  public async getValue(rowIdx: number, options?: any): Promise<MacromoleculeValueBase> {
     const seq: string = this.column.get(rowIdx);
-    let resHelmSV: DG.SemanticValue<string>;
+    let resHelm: string;
     if (this.notationProvider)
-      resHelmSV = await this.notationProvider.getHelm(seq, options);
+      resHelm = await this.notationProvider.getHelm(seq, options);
     else {
-      const resHelm = this.convertToHelm(seq);
-      resHelmSV = DG.SemanticValue.fromValueType(resHelm, DG.SEMTYPE.MACROMOLECULE, NOTATION.HELM);
-      // TODO: set tags from column
+      resHelm = this.convertToHelm(seq);
     }
-
-    return resHelmSV;
+    const resMValue = new MacromoleculeValueBase(resHelm, this, rowIdx);
+    return resMValue;
   }
 
   private _stats: SeqColStats | null = null;

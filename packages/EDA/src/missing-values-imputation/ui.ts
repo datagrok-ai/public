@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {TITLE, KNN_IMPUTER, ERROR_MSG, HINT} from './ui-constants';
+import {TITLE, KNN_IMPUTER, ERROR_MSG, HINT, MAX_INPUT_NAME_LENGTH} from './ui-constants';
 import {SUPPORTED_COLUMN_TYPES, METRIC_TYPE, DISTANCE_TYPE, MetricInfo, DEFAULT, MIN_NEIGHBORS,
   impute, getMissingValsIndices, areThereFails, imputeFailed} from './knn-imputer';
 
@@ -190,7 +190,7 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
 
   // Metrics components
   const featuresMetrics = new Map<string, MetricInfo>();
-  const metricInfoInputs = new Map<string, HTMLDivElement>();
+  const metricInfoInputs = new Map<string, HTMLElement>();
   const metricsDiv = ui.divV([]);
   metricsDiv.style.overflow = 'auto';
 
@@ -214,7 +214,7 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
 
     // The following should provide a slider (see th bug https://reddata.atlassian.net/browse/GROK-14431)
     const prop = DG.Property.fromOptions({
-      'name': name,
+      'name': name.length < MAX_INPUT_NAME_LENGTH ? name : name.slice(0, MAX_INPUT_NAME_LENGTH).concat('...'),
       'inputType': 'Float',
       'min': 0,
       'max': 10,
@@ -229,11 +229,11 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
       distInfo.weight = value ?? settings.defaultWeight;
       featuresMetrics.set(name, distInfo);
     });
-    weightInput.setTooltip(HINT.WEIGHT);
+    ui.tooltip.bind(weightInput.captionLabel, name);
+    ui.tooltip.bind(weightInput.input, HINT.WEIGHT);
 
-    const div = ui.divH([distTypeInput.root, weightInput.root]);
-    metricInfoInputs.set(name, div);
-    metricsDiv.append(div);
+    metricInfoInputs.set(name, weightInput.root);
+    metricsDiv.append(weightInput.root);
   });
 
   // The main dialog

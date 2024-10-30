@@ -21,7 +21,7 @@ const STATISTICS_TAG = '.statistics';
 
 //name: Curve fitting
 //description: Curve fitting is the process of constructing a curve, or mathematical function, that has the best fit to a series of data points
-//meta.demoPath: Curves | Curve fitting
+//meta.demoPath: Curves | Curve Fitting
 //test: curveFitDemo() //wait: 2000
 export async function curveFitDemo(): Promise<void> {
   await curveDemo();

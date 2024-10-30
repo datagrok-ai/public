@@ -37,14 +37,14 @@ export class DemoView extends DG.ViewBase {
       this._initTree();
     this._initContent();
     // temporary solution, waiting for the browseOnly apps, now need to do this unfortunately
-    setTimeout(() => {
-      const views = Array.from(grok.shell.views);
-      const dv = views.find((view) => view instanceof DemoView);
-      this.browseView.preview = this as unknown as DG.View;
-      grok.shell.v = this.browseView;
-      if (dv)
-        dv.close();
-    }, 500);
+    // setTimeout(() => {
+    //   const views = Array.from(grok.shell.views);
+    //   const dv = views.find((view) => view instanceof DemoView);
+    //   this.browseView.preview = this as unknown as DG.View;
+    //   grok.shell.v = this.browseView;
+    //   if (dv)
+    //     dv.close();
+    // }, 500);
   }
 
   static findDemoFunc(demoPath: string): DG.Func {
@@ -442,7 +442,7 @@ export class DemoView extends DG.ViewBase {
     this.tree.root.classList.add('demo-app-tree-group');
 
     DG.debounce(this.tree.rootNode.onSelectedNodeChanged, 300).subscribe(async (value) => {
-      if (!this.tree.root.contains(value.root) || value.text === 'Demo')
+      if (!value || !this.tree.root.contains(value.root) || value.text === 'Demo')
         return;
 
       const panelRoot = this.tree.rootNode.root.parentElement!;

@@ -41,6 +41,10 @@
   flex-grow: 0;
 }
 
+#tt-name .ui-input-editor{
+  margin-top: 5px;
+}
+
 #tt-edit-button {
   position: absolute;
   display: none;
@@ -191,6 +195,11 @@
 
 .tt-dialog .create-ticket-button{
   align-self: end;
+}
+
+.tt-dialog  .create-ticket-button-wrap{
+  margin: 0 10px;
+  margin-top: 55px;
 }
 
 .tt-dialog .d4-pane-jira_tickets .d4-flex-col{

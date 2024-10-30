@@ -26,10 +26,52 @@ category('Dapi: vector scripts and functions', async () => {
         ['abc_1_a', 'abc_4_b', 'abc_7_c'], 'x', [3, 6, 9], ['abc_3_a', 'abc_6_b', 'abc_9_c']);
   });
 
+  test('Vector func: cascade columns modification', async () => {
+    const df = DG.DataFrame.fromCsv(`x, y, val
+      1, 2, a
+      4, 5, b
+      7, 8, c`);
+
+     
+    await df.columns.addNewCalculated('newColScalar', '${val} + \'_scalar\'');
+    await df.columns.addNewCalculated('newColVector', 'ApiTests:testVectorFunc(${newColScalar}, \'vector\')');
+    await df.columns.addNewCalculated('newColScalar2', '${newColVector} + \'_scalar2\'');
+
+    df.col('val')!.set(0, 'b', true);
+
+    await awaitCheck(() => df.col('newColScalar')?.get(0) === 'b_scalar',
+        `incorrect value in newColScalar after initial value changed, actual: ${df.col('newColScalar')?.get(0)}, expected: b_scalar`, 1000);
+    await awaitCheck(() => df.col('newColVector')?.get(0) === 'vector_b_scalar',
+        `incorrect value in newColVector after initial value changed, actual: ${df.col('newColVector')?.get(0)}, expected: vector_b_scalar`, 1000);
+    await awaitCheck(() => df.col('newColScalar2')?.get(0) === 'vector_b_scalar_scalar2',
+        `incorrect value in newColScalar2 after initial value changed, actual: ${df.col('newColScalar2')?.get(0)}, expected: vector_b_scalar_scalar2`, 1000);
+  })
+
+  test('Vector script: cascade columns modification', async () => {
+    const df = DG.DataFrame.fromCsv(`x, y, val
+      1, 2, a
+      4, 5, b
+      7, 8, c`);
+
+     
+    await df.columns.addNewCalculated('newColScalar', '${x} + 1');
+    await df.columns.addNewCalculated('newColVector', 'ApiTests:vectorScript(${newColScalar}, 1)');
+    await df.columns.addNewCalculated('newColScalar2', '${newColVector} + \'1\'');
+
+    df.col('x')!.set(0, 2, true);
+
+    await awaitCheck(() => df.col('newColScalar')?.get(0) === 3,
+        `incorrect value in newColScalar after initial value changed, actual: ${df.col('newColScalar')?.get(0)}, expected: 3`, 1000);
+    await awaitCheck(() => df.col('newColVector')?.get(0) === '3_1',
+        `incorrect value in newColVector after initial value changed, actual: ${df.col('newColVector')?.get(0)}, expected: 3_1`, 1000);
+    await awaitCheck(() => df.col('newColScalar2')?.get(0) === '3_11',
+        `incorrect value in newColScalar2 after initial value changed, actual: ${df.col('newColScalar2')?.get(0)}, expected: 3_11`, 1000);
+  })
+
 });
 
 async function testVectorFunc(formula: string, results: string[], colToChange: string, newVals: number[], resultsAfterValChange: string[]): Promise<void> {
-    var df = DG.DataFrame.fromCsv(`x, y, val
+    const df = DG.DataFrame.fromCsv(`x, y, val
         1, 2, a
         4, 5, b
         7, 8, c`);

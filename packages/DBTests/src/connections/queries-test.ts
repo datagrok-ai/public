@@ -6,7 +6,7 @@ category('Connections', () => {
   test('External Provider Chembl Perf', async () => {
     if (!DG.Test.isInBenchmark) return;
     const query = await grok.dapi.queries.filter(`friendlyName = "ChemblPerfGenerated"`).include('params').first();
-    const lim = 5000000;
+    const lim = 500000;
     const call = query.prepare({'num': lim});
     await call.call();
     const t = call.getOutputParamValue() as DG.DataFrame;

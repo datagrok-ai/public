@@ -2,7 +2,7 @@
 
 1. Open the **demog** dataset.
 2. Click the **Add viewer** icon, find **Trellis plot** viewer and press on it. 
-* Expected result: **Calendar** visualized viewer opens without errors in console. 
+* Expected result: **Trellis plot** visualized viewer opens without errors in the console. 
 3. Close previously opened viewer. On the **Viewers tab**, click **Trellis plot** icon. 
 * Expected result: **Trellis plot** visualized viewer opens without errors in console. 
 

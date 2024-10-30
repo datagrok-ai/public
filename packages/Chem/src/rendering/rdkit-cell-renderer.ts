@@ -20,6 +20,9 @@ import {hexToPercentRgb} from '../utils/chem-common';
 import {_rdKitModule, drawErrorCross, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
 import {IMolContext, getMolSafe} from '../utils/mol-creation_rdkit';
 import {getGridCellColTemp} from '../utils/ui-utils';
+import {errInfo} from '../utils/err-info';
+
+import {_package} from '../package';
 
 interface IMolRenderingInfo {
   //mol: RDMol | null; // null when molString is invalid?
@@ -461,14 +464,23 @@ M  END
     const colTemp = gridCell.cell.column.temp;
     const highlightInfo = this.getHighlightTagInfo(colTemp, gridCell);
 
+    let mhSubstruct: ISubstruct | undefined;
+    try {
+      const mhData = getMonomerHover();
+      if (mhData && mhData.dataFrameId == gridCell.grid?.dataFrame.id && mhData.gridRowIdx === gridCell.gridRow &&
+        mhData.seqColName === gridCell.tableColumn?.getTag(ChemTags.SEQUENCE_SRC_COL)
+      ) {
+        mhSubstruct = mhData.getSubstruct();
+      }
+    } catch (err: any) {
+      const [errMsg, errStack] = errInfo(err);
+      _package.logger.error(errMsg, undefined, errStack);
+    }
+
     // TODO: make both filtering scaffold and single highlight scaffold appear
-    const mhData = getMonomerHover();
-    if (mhData && mhData.dataFrameId == gridCell.grid.dataFrame.id && mhData.gridRowIdx === gridCell.gridRow &&
-      mhData.seqColName === gridCell.tableColumn?.getTag(ChemTags.SEQUENCE_SRC_COL)
-    ) {
-      const substruct = mhData.getSubstruct();
+    if (mhSubstruct) {
       this._drawMolecule(x, y, w, h, g.canvas,
-        molString, [], false, false, cellStyle, false, undefined, substruct);
+        molString, [], false, false, cellStyle, false, undefined, mhSubstruct);
     } else if (highlightInfo.scaffolds && highlightInfo.alighByFirstSubtruct) {
       this._drawMolecule(x, y, w, h, g.canvas,
         molString, highlightInfo.scaffolds, false, false, cellStyle, highlightInfo.alighByFirstSubtruct);
@@ -531,7 +543,16 @@ M  END
     } else {
       const [_gridCol, tableCol, _temp] = getGridCellColTemp(gridCell);
       const substructList = (getSubstructProviders(tableCol?.temp) ?? [])
-        .map((p) => p.getSubstruct(gridCell.tableRowIndex));
+        .map((p) => {
+          let res: ISubstruct | undefined;
+          try {
+            res = p.getSubstruct(gridCell.tableRowIndex);
+          } catch (err: any) {
+            const [errMsg, errStack] = errInfo(err);
+            _package.logger.error(errMsg, undefined, errStack);
+          }
+          return res;
+        });
       substructObj = mergeSubstructs(substructList);
     }
 

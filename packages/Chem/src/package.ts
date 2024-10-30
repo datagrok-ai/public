@@ -313,7 +313,7 @@ export async function chemCellRenderer(): Promise<DG.GridCellRenderer> {
 
 //name: getMorganFingerprints
 //meta.vectorFunc: true
-//input: column molColumn {semType: Molecule}
+//input: column<string> molColumn {semType: Molecule}
 //output: column result
 export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Column> {
   assure.notNull(molColumn, 'molColumn');
@@ -491,12 +491,18 @@ export async function chemDescriptors(table: DG.DataFrame, molecules: DG.Column,
 
 //name: chemDescriptor
 //meta.vectorFunc: true
-//input: column molecules {semType: Molecule}
+//input: column<string> molecules {semType: Molecule}
 //input: string descriptor
 //output: column res
 export async function chemDescriptor(molecules: DG.Column, descriptor: string): Promise<DG.Column> {
-  const descCols = await fetchWrapper(() => calculateDescriptors(molecules, [descriptor]));
-  return descCols.length ? descCols.filter((it) => it)[0] : DG.Column.string(descriptor, molecules.length).init(`Error calculating ${descriptor}`);
+  let descCol: DG.Column;
+  try {
+    const descCols = await fetchWrapper(() => calculateDescriptors(molecules, [descriptor]));
+    descCol = descCols.length ? descCols.filter((it) => it)[0] : DG.Column.string(descriptor, molecules.length).init(`Error calculating ${descriptor}`);
+  } catch(e) {
+    descCol = DG.Column.string(descriptor, molecules.length).init(`Error calculating ${descriptor}`);
+  }
+  return descCol;
 }  
 
 
@@ -855,10 +861,11 @@ export function ActivityCliffsEditor(call: DG.FuncCall): void {
 //input: func preprocessingFunction {optional: true}
 //input: object options {optional: true}
 //input: bool isDemo {optional: true}
+//input: bool isTest {optional: true}
 //editor: Chem:ActivityCliffsEditor
 export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column,
   similarity: number, methodName: DimReductionMethods, similarityMetric: BitArrayMetrics,
-  preprocessingFunction: DG.Func, options?: (IUMAPOptions | ITSNEOptions) & Options, isDemo?: boolean): Promise<void> {
+  preprocessingFunction: DG.Func, options?: (IUMAPOptions | ITSNEOptions) & Options, isDemo?: boolean, isTest?: boolean): Promise<void> {
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
     return;
@@ -905,7 +912,7 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, 
   };
 
   const axesNames = getEmbeddingColsNames(table);
-  if (table.rowCount > fastRowCount) {
+  if (table.rowCount > fastRowCount && !isTest) {
     ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
     Do you want to continue?`))
       .onOK(async () => {
@@ -982,7 +989,7 @@ export function addInchisTopMenu(table: DG.DataFrame, col: DG.Column): void {
 
 //name: getInchis
 //meta.vectorFunc: true
-//input: column molecules {semType: Molecule}
+//input: column<string> molecules {semType: Molecule}
 //output: column res
 export function getInchis(molecules: DG.Column): DG.Column {
   return getInchisImpl(molecules);
@@ -1002,7 +1009,7 @@ export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void 
 
 //name: getInchiKeys
 //meta.vectorFunc: true
-//input: column molecules {semType: Molecule}
+//input: column<string> molecules {semType: Molecule}
 //output: column res
 export function getInchiKeys(molecules: DG.Column): DG.Column {
   return getInchiKeysImpl(molecules);
@@ -1080,19 +1087,26 @@ export async function runStructuralAlerts(table: DG.DataFrame, molecules: DG.Col
 
 //name: runStructuralAlert
 //meta.vectorFunc: true
-//input: column molecules {semType: Molecule}
+//input: column<string> molecules {semType: Molecule}
 //input: string alert
 //output: column res
 export async function runStructuralAlert(molecules: DG.Column, alert: RuleId): Promise<DG.Column | void> {
-
-  const ruleSet: {[key: string]: boolean} = {};
-  for (const rule of STRUCT_ALERTS_RULES_NAMES) {
-    ruleSet[rule] = alert.toLocaleLowerCase() === rule.toLocaleLowerCase();
-  }
-
-  const resultDf = await getStructuralAlertsByRules(molecules, ruleSet as RuleSet);
-  if (resultDf)
-    return resultDf.columns.byIndex(0);
+  let col: DG.Column = DG.Column.string(alert, molecules.length).init(`Error calculating ${alert}`);
+  try {
+    const ruleSet: {[key: string]: boolean} = {};
+    for (const rule of STRUCT_ALERTS_RULES_NAMES) { 
+      ruleSet[rule] = alert.toLocaleLowerCase() === rule.toLocaleLowerCase();
+    }
+  
+    const resultDf = await getStructuralAlertsByRules(molecules, ruleSet as RuleSet);
+    if (resultDf){
+      if(!resultDf.columns.names().length)
+        col = DG.Column.string(alert, molecules.length).init(`Incorrect alert`);
+      else
+        col = resultDf.columns.byIndex(0);
+    }
+  } catch (e) {}
+  return col;
 }
 
 //#endregion
@@ -1221,18 +1235,22 @@ export function toxicity(smiles: DG.SemanticValue): DG.Widget {
 
 //name: convertMoleculeNotation
 //meta.vectorFunc: true
-//input: column molecule {semType: Molecule}
+//input: column<string> molecule {semType: Molecule}
 //input: string targetNotation
-//output: column result {semType: Molecule}
+//output: column result
 export async function convertMoleculeNotation(molecule: DG.Column, targetNotation: DG.chem.Notation): Promise<DG.Column> {
-  const res = await convertNotationForColumn(molecule, targetNotation);
-  const col = DG.Column.fromStrings(`${molecule.name}_${targetNotation}`, res);
-  col.semType = DG.SEMTYPE.MOLECULE;
+  let col: DG.Column;
+  try {
+    const res = await convertNotationForColumn(molecule, targetNotation);
+    col = DG.Column.fromStrings(`${molecule.name}_${targetNotation}`, res);
+    col.semType = DG.SEMTYPE.MOLECULE;
+  } catch (e: any) {
+    col = DG.Column.string(`${molecule.name}_${targetNotation}`, molecule.length).init((i) => e?.message);
+  }
   return col;
 }
 
 //name: convertMolNotation
-//meta.hasVectorFunc: true
 //description: RDKit-based conversion for SMILES, SMARTS, InChi, Molfile V2000 and Molfile V3000
 //tags: unitConverter
 //input: string molecule {semType: Molecule}
@@ -1604,18 +1622,26 @@ export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: D
 
 //name: getMolProperty
 //meta.vectorFunc: true
-//input: column molecules {semType: Molecule}
+//input: column<string> molecules {semType: Molecule}
 //input: string property {choices:["MW", "HBA", "HBD", "LogP", "LogS", "PSA", "Rotatable bonds", "Stereo centers", "Molecule charge"]}
 //output: column res
 export async function getMolProperty(molecules: DG.Column, property: string): Promise<DG.Column> {
-  const propNames = Object.keys(CHEM_PROP_MAP);
-  let props: string[] = [];
+  let col: DG.Column = DG.Column.string(property, molecules.length).init(`Error calculating ${alert}`);
+  try {
+    const propNames = Object.keys(CHEM_PROP_MAP);
+    let props: string[] = [];
+  
+    for (const propName of propNames)
+      props = props.concat(propName === property ? [property] : []);
+  
+    const cols = await getPropertiesAsColumns(molecules, props);
+    if(!cols.length)
+      col = DG.Column.string(property, molecules.length).init(`Incorrect property`);
+    else
+      col = cols[0];
+  } catch(e) {}
 
-  for (const propName of propNames)
-    props = props.concat(propName === property ? [property] : []);
-
-  const cols = await getPropertiesAsColumns(molecules, props);
-  return cols[0];
+  return col;
 }
 
 

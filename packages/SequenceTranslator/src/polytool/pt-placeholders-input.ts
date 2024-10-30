@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {Unsubscribable} from 'rxjs';
 
-import {PolyToolPlaceholders} from './types';
+import {PolyToolPlaceholder} from './types';
 
 export class PolyToolPlaceholdersInput extends DG.JsInputBase<DG.DataFrame> {
   get inputType(): string { return 'Positions'; }
@@ -21,7 +21,7 @@ export class PolyToolPlaceholdersInput extends DG.JsInputBase<DG.DataFrame> {
 
   setStringValue(str: string): void { this.grid.dataFrame = DG.DataFrame.fromCsv(str); }
 
-  get placeholdersValue(): PolyToolPlaceholders {
+  get placeholdersValue(): PolyToolPlaceholder[] {
     return dfToPlaceholders(this.grid.dataFrame);
   }
 
@@ -95,8 +95,8 @@ export class PolyToolPlaceholdersInput extends DG.JsInputBase<DG.DataFrame> {
   }
 }
 
-export function getPlaceholdersFromText(src: string): PolyToolPlaceholders {
-  const res: PolyToolPlaceholders = [];
+export function getPlaceholdersFromText(src: string): PolyToolPlaceholder[] {
+  const res: PolyToolPlaceholder[] = [];
   for (const line of src.split('\n')) {
     const lineM = /^\s*(?<pos>\d+)\s*:\s*(?<monomers>.+)$/.exec(line);
     if (lineM) {
@@ -108,8 +108,8 @@ export function getPlaceholdersFromText(src: string): PolyToolPlaceholders {
   return res;
 }
 
-export function dfToPlaceholders(df: DG.DataFrame): PolyToolPlaceholders {
-  const res: PolyToolPlaceholders = [];
+export function dfToPlaceholders(df: DG.DataFrame): PolyToolPlaceholder[] {
+  const res: PolyToolPlaceholder[] = [];
   for (let rowI = 0; rowI < df.rowCount; rowI++) {
     const pos = parseInt(df.get('Position', rowI)) - 1;
     if (!isNaN(pos)) {
