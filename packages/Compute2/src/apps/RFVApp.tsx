@@ -39,6 +39,7 @@ export const RFVApp = Vue.defineComponent({
         callState={currentCallState.value}
         onUpdate:funcCall={(chosenCall) => currentFuncCall.value = chosenCall}
         onRunClicked={runFunc}
+        historyEnabled={true}
       />
     );
   },

@@ -31,14 +31,14 @@ export class InputForm extends HTMLElement {
       return;
     }
 
-    if (this.funcCall.func.id === fc.func.id) {
-      if (this.funcCall.id !== fc.id) this.formInst!.source = this.funcCall;
-    } else
+    // if (this.funcCall.func.id === fc.func.id) {
+    //   if (this.funcCall.id !== fc.id) this.formInst!.source = this.funcCall;
+    // } else
       this.replaceFunc(fc);
   }
 
   private async replaceFunc(funcCall: DG.FuncCall) {
-    this.formInst = await DG.InputForm.forFuncCall(funcCall, {twoWayBinding: true});
+    this.formInst = await DG.InputForm.forFuncCall(funcCall, {twoWayBinding: false});
     this.formInst.onInputChanged
       .subscribe((event) => this.dispatchEvent(new CustomEvent('input-changed', {detail: event})));
     this.attach();

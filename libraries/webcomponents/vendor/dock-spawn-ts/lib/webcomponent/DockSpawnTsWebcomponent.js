@@ -104,6 +104,10 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
         const hideCloseButton = element.hasAttribute('dock-spawn-hide-close-button');
         const title = element.getAttribute('dock-spawn-title');
         const container = new PanelContainer(slot, this.dockManager, title, dockPanelType, hideCloseButton);
+        const customZindex = element.getAttribute('dock-spawn-z-index');
+        if (customZindex && slot.parentElement) {
+            slot.parentElement.style.zIndex = customZindex;
+        }
         element.slot = slotName;
         this.slotElementMap.set(slot, element);
         this.elementContainerMap.set(element, container);

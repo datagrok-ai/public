@@ -9,9 +9,9 @@ import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {ID_COLUMN_NAME} from '@datagrok-libraries/compute-utils/shared-components/src/history-input';
 import {EXP_COLUMN_NAME, FAVORITE_COLUMN_NAME, ACTIONS_COLUMN_NAME, COMPLETE_COLUMN_NAME, STARTED_COLUMN_NAME, AUTHOR_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME, DESC_COLUMN_NAME} from '@datagrok-libraries/compute-utils/shared-utils/consts';
 import {HistoricalRunEdit, HistoricalRunsDelete} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
-import {take} from 'rxjs/operators';
+import {filter, take} from 'rxjs/operators';
 import wu from 'wu';
-import {watchExtractedObservable} from '@vueuse/rxjs';
+import {useObservable, watchExtractedObservable} from '@vueuse/rxjs';
 
 export const History = Vue.defineComponent({
   props: {
@@ -260,6 +260,8 @@ export const History = Vue.defineComponent({
       }, 100);
     });
 
+    const fallbackText = <div class='p-1'> {props.fallbackText} </div>
+
     return () => {
       const controls = <div style={{display: 'flex', justifyContent: 'space-between', padding: '0px 6px'}}>
         <div style={{'display': 'flex', 'padding': '6px 0px', 'gap': '6px'}}>
@@ -307,6 +309,8 @@ export const History = Vue.defineComponent({
       return <div style={{height: '100%'}}>
         {isLoading.value ? 
           <span> Loading... </span>: 
+          historicalRuns.value.size === 0 ? 
+          fallbackText:
           <div style={{
             display: 'flex', 
             flexDirection: isCompactMode.value ? 'column': 'row', 

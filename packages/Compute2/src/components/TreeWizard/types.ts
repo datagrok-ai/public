@@ -5,9 +5,7 @@ import {PipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-dri
 import {Stat} from '@he-tree/vue/dist/v3/components/TreeProcessorVue';
 
 
-export type RuntimeData = {
-  isHovered: boolean,
-}
+export type RuntimeData = {}
 
 export type Data = RuntimeData & PipelineState
 

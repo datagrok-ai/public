@@ -105,9 +105,7 @@ export const TreeNode = Vue.defineComponent({
       (isParallelPipelineState(data) || isSequentialPipelineState(data)) && data.stepTypes.length > 0;
 
     const treeNodeRef = Vue.ref(null as null | HTMLElement);
-    Vue.watch(useElementHover(treeNodeRef), (isHovered) => {
-      props.stat.data.isHovered = isHovered;
-    });
+    const isHovered = useElementHover(treeNodeRef);
 
     return () => (
       <div
@@ -124,7 +122,7 @@ export const TreeNode = Vue.defineComponent({
         { props.callState && progressIcon(callStateToStatus(props.callState)) }
         { props.stat.children.length ? openIcon() : null }
         <span class="mtl-ml text-nowrap text-ellipsis overflow-hidden">{ nodeLabel(props.stat) }</span>
-        { props.stat.data.isHovered ?
+        { isHovered.value ?
           <div class='flex items-center px-2 w-fit justify-end ml-auto'>
             { hasAddButton(props.stat.data) ?
               <ComboPopup
@@ -138,6 +136,7 @@ export const TreeNode = Vue.defineComponent({
                     itemId: data.stepTypes[itemIdx].configId,
                     position: data.steps.length,
                   });
+                  isHovered.value = false;
                 }}
                 class='d4-ribbon-item'
               />: null }
