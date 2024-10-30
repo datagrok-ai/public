@@ -614,4 +614,40 @@ category('ComputeUtils: Driver links matching', async () => {
     const matchInfos = links.map((link) => matchLink(tree, [], link));
     await snapshotCompare(matchInfos, 'Links expanding deep base path');
   });
+
+  test('Links not matching', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:TestAdd2',
+        },
+        {
+          id: 'step2',
+          nqName: 'LibTests:TestMul2',
+        },
+        {
+          id: 'step3',
+          nqName: 'LibTests:TestDiv2',
+
+        }
+      ],
+      links: [{
+        id: 'link1',
+        from: 'in1:step1/res',
+        to: 'out1:step2/a',
+        not: 'not:step3',
+      }],
+    };
+
+    const pconf = await getProcessedConfig(config);
+    const tree = StateTree.fromPipelineConfig({config: pconf});
+    await tree.init().toPromise();
+    const links = (tree.nodeTree.root.getItem().config as PipelineConfigurationStaticProcessed).links!;
+    const matchInfos = links.map((link) => matchLink(tree, [], link));
+    await snapshotCompare(matchInfos, 'Links not matching');
+  });
+
 });

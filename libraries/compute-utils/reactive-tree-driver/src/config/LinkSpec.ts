@@ -1,6 +1,7 @@
 import {Grammars, Parser, IToken} from 'ebnf';
 import {ItemId} from '../data/common-types';
 import {indexFromEnd} from '../utils';
+import { IOType } from './config-processing-utils';
 
 const linkSpecGrammar = `
 Link ::= Name (':' Segment)? ('/' Segment)*
@@ -67,7 +68,7 @@ export function refSelectorDirection(sel: LinkRefSelectors): SelectorDirection {
   return sel.startsWith('after') ? 'after' : 'before';
 }
 
-export function parseLinkIO(io: string, ioType: 'input' | 'output' | 'base' | 'actions'): LinkIOParsed {
+export function parseLinkIO(io: string, ioType: IOType): LinkIOParsed {
   const ast = linkParser.getAST(io);
   checkAST(io, ast);
   const name = ast.children.find((cnode) => cnode.type === 'Name')!.text;

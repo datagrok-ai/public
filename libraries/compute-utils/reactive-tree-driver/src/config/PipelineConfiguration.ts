@@ -42,6 +42,7 @@ export type PipelineLinkConfigurationBase<P> = {
   id: ItemId;
   from: P;
   to: P;
+  not?: P;
   base?: P,
   actions?: P;
   dataFrameMutations?: boolean | string[];

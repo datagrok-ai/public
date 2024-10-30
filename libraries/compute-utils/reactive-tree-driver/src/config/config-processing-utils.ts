@@ -25,6 +25,8 @@ export type PipelineConfigurationParallelProcessed = AbstractPipelineParallelCon
 export type PipelineConfigurationSequentialProcessed = AbstractPipelineSequentialConfiguration<LinkIOParsed[], FuncallStateItem[], PipelineSelfRef>;
 export type PipelineConfigurationProcessed = PipelineConfigurationStaticProcessed | PipelineConfigurationParallelProcessed | PipelineConfigurationSequentialProcessed;
 
+export type IOType = 'input' | 'output' | 'base' | 'actions' | 'not';
+
 function isPipelineStaticInitial(c: ConfigInitialTraverseItem): c is PipelineConfigurationStaticInitial {
   return !!((c as PipelineConfigurationStaticInitial).type === 'static');
 }
@@ -152,11 +154,12 @@ function processLinkData<L extends Partial<PipelineLinkConfigurationBase<LinkSpe
   const from = processLink(link.from ?? [], 'input');
   const to = processLink(link.to ?? [], 'output');
   const base = processLink(link.base ?? [], 'base');
+  const not = processLink(link.not ?? [], 'not');
   const actions = processLink(link.actions ?? [], 'actions');
-  return {...link, from, to, base, actions};
+  return {...link, from, to, base, not, actions};
 }
 
-function processLink(io: LinkSpecString, ioType: 'input' | 'output' | 'base' | 'actions') {
+function processLink(io: LinkSpecString, ioType: IOType) {
   if (Array.isArray(io))
     return io.map((item) => parseLinkIO(item, ioType));
   else if (io)

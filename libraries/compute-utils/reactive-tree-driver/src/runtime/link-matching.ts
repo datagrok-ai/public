@@ -38,6 +38,14 @@ export function matchLink(state: StateTree, address: NodePath, spec: LinkSpec): 
 export function matchNodeLink(rnode: TreeNode<StateTreeNode>, spec: LinkSpec | ActionSpec, basePath?: Readonly<NodePath>) {
   const basePaths = basePath ? [{path: basePath}] : spec.base?.length ? expandLinkBase(rnode, spec.base[0]) : undefined;
   const baseName = spec.base?.length ? spec.base[0].name : undefined;
+  if (spec.not) {
+    const currentIO: Record<string, MatchedNodePaths> = {};
+    for (const io of spec.not) {
+      const paths = matchLinkIO(rnode, currentIO, io, true);
+      if (paths?.length)
+        return undefined;
+    }
+  }
   if (basePaths == null) {
     const matchInfo = matchLinkInstance(rnode, spec);
     return matchInfo ? [matchInfo] : undefined;
