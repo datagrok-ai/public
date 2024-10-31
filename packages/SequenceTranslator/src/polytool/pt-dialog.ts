@@ -14,7 +14,7 @@ import {buildMonomerHoverLink} from '@datagrok-libraries/bio/src/monomer-works/m
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
-import {getRules, RuleInputs, Rules, RULES_PATH, RULES_STORAGE_NAME} from './conversion/pt-rules';
+import {getRules, RuleInputs, RULES_PATH, RULES_STORAGE_NAME} from './conversion/pt-rules';
 import {doPolyToolConvert} from './conversion/pt-conversion';
 import {getOverriddenLibrary} from './conversion/pt-misc';
 import {defaultErrorHandler} from '../utils/err-info';
@@ -23,7 +23,7 @@ import {getEnumerationChem, PT_CHEM_EXAMPLE} from './pt-enumeration-chem';
 
 import {
   PT_ERROR_DATAFRAME, PT_UI_ADD_HELM, PT_UI_DIALOG_CONVERSION, PT_UI_DIALOG_ENUMERATION,
-  PT_UI_GET_HELM, PT_UI_RULES_USED, PT_UI_USE_CHIRALITY, PT_WARNING_COLUMN
+  PT_UI_GET_HELM, PT_UI_RULES_USED, PT_UI_USE_CHIRALITY
 } from './const';
 
 import {_package} from '../package';

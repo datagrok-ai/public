@@ -15,7 +15,7 @@ import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 import {_package} from '../package-test';
-import {getNewMonomer} from '../polytool/conversion/pt-misc';
+import {getNewMonomers} from '../polytool/conversion/pt-misc';
 import {getRules, RuleReaction} from '../polytool/conversion/pt-rules';
 
 category('toAtomicLevel', () => {
@@ -78,10 +78,10 @@ category('toAtomicLevel', () => {
     const rules = await getRules(['rules_example.json']);
     const reactionRule = rules.reactionRules.find((r) => r.name == 'GGaz')!;
 
-    const [newSymbol, newMonomer] = getNewMonomer(rdKitModule, systemMonomerLib, reactionRule);
-    expect(newSymbol, reactionRule.name);
+    const [newSymbols, newMonomers] = getNewMonomers(rdKitModule, systemMonomerLib, reactionRule);
+    expect(newSymbols, reactionRule.name);
 
-    const mol = rdKitModule.get_mol(newMonomer.molfile);
+    const mol = rdKitModule.get_mol(newMonomers[0].molfile);
     try {
       const molInchi = mol.get_inchi();
       const molInchiKey = rdKitModule.get_inchikey_for_inchi(molInchi);

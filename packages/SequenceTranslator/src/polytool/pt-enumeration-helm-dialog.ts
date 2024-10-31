@@ -508,9 +508,9 @@ async function polyToolEnumerateHelm(
     }
     const enumeratorResDf = DG.DataFrame.fromColumns([enumCol]);
     await grok.data.detectSemanticTypes(enumeratorResDf);
-    if (dataRole == PolyToolDataRole.template) {
+    if (dataRole == PolyToolDataRole.template)
       applyNotationProviderForCyclized(enumCol, '-');
-    }
+
 
     if (toAtomicLevel && dataRole != PolyToolDataRole.template) {
       const seqHelper: ISeqHelper = await getSeqHelper();
