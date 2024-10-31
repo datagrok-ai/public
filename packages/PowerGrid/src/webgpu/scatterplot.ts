@@ -250,19 +250,17 @@ class WebGPUCache {
       || this.maxTextureSize != sc.props.markerMaxSize) {
         this.minTextureSize = sc.props.markerMinSize;
         this.maxTextureSize = sc.props.markerMaxSize;
-        this.textureGridSize = Math.ceil(Math.sqrt((this.maxTextureSize - this.minTextureSize) + 1));
         this.markerType = sc.getMarkerType(0) as DG.MARKER_TYPE;
 
-        const isSingle = !sc.props.sizeColumnName;
-        if (isSingle) {
-          const size = sc.getMarkerSize(0);
-          const shape = this.markerType;
-          const canvasSize = size + sc.props.markerBorderWidth;
-          this.texture = createShapeCanvas(canvasSize, canvasSize, shape, sc);
+        let minSize = this.minTextureSize + sc.props.markerBorderWidth;
+        let maxSize = this.maxTextureSize + sc.props.markerBorderWidth;
+        if (!sc.props.sizeColumnName) {
+          const size = sc.getMarkerSize(0) + sc.props.markerBorderWidth;
+          minSize = size;
+          maxSize = size;
         }
-        else {
-          this.texture = createTextureAtlas(this, sc);
-        }
+        this.textureGridSize = Math.ceil(Math.sqrt((maxSize - minSize) + 1));
+        this.texture = createTextureAtlas(minSize, maxSize, this, sc);
 
         this.gpuTexture = device.createTexture({
           size: [this.texture.width, this.texture.height],
@@ -270,7 +268,7 @@ class WebGPUCache {
           usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
         });  
         device.queue.copyExternalImageToTexture(
-            { source: this.texture, flipY: isSingle },
+            { source: this.texture },
             { texture: this.gpuTexture, premultipliedAlpha: true},
             [this.texture.width, this.texture.height]
         );
@@ -755,9 +753,7 @@ function getPaddedSize(length: number): number {
   return paddedComputeInfoBufferSize;
 }
 
-function createTextureAtlas(cache: WebGPUCache, sc: DG.ScatterPlotViewer): OffscreenCanvas {
-    const minSize = cache.minTextureSize + sc.props.markerBorderWidth;
-    const maxSize = cache.maxTextureSize + sc.props.markerBorderWidth;
+function createTextureAtlas(minSize: number, maxSize: number, cache: WebGPUCache, sc: DG.ScatterPlotViewer): OffscreenCanvas {
     // We'll take the minimum size as 2 while adding the border width to maintain the whole size
     const sizes = Array.from({ length: (maxSize - minSize) + 1 }, (_, i) => i + minSize);
 
@@ -936,8 +932,8 @@ function addDifferentMarkerSizesRendering(cache: WebGPUCache, sc: DG.ScatterPlot
 
           let screenPoint = pointToScreen(vert.index);
           let normalizedPos = convertPointToNormalizedCoords(screenPoint);
-          // Making a pixel perfect position, to avoid artefacts and blurring
-          vsOut.position = vec4f(floor((normalizedPos + pos * (maxSize + ${sc.props.markerBorderWidth + cache.texturePadding}) / uni.resolution) * uni.resolution) / uni.resolution, 0, 1);
+
+          vsOut.position = vec4f(normalizedPos + pos * (maxSize + ${sc.props.markerBorderWidth + cache.texturePadding}) / uni.resolution, 0, 1);
           vsOut.texcoord = pos * 0.5 + 0.5;
           vsOut.markerIndex = u32(vert.index);
           vsOut.sizeIndex = sizeIndex;
@@ -997,7 +993,7 @@ function addSingleMarkerSizeRendering(cache: WebGPUCache, sc: DG.ScatterPlotView
           let screenPoint = pointToScreen(vert.index);
           let normalizedPos = convertPointToNormalizedCoords(screenPoint);
           // Making a pixel perfect position, to avoid artefacts and blurring
-          vsOut.position = vec4f(normalizedPos + pos * (markerSize + ${sc.props.markerBorderWidth}) / uni.resolution, 0, 1);
+          vsOut.position = vec4f(normalizedPos + pos * (markerSize + ${sc.props.markerBorderWidth + cache.texturePadding}) / uni.resolution, 0, 1);
           vsOut.texcoord = pos * 0.5 + 0.5;
           vsOut.markerIndex = u32(vert.index);   // Pass marker index to fragment shader
           vsOut.sizeIndex = 0;
