@@ -207,7 +207,7 @@ export const helmJsonReplacer = (key: string, value: any): any => {
 export class HelmPackage extends DG.Package {
   public alertOriginal: ((s: string) => void) | null = null;
 
-  private _helmHelper: IHelmHelper;
+  private _helmHelper?: IHelmHelper;
   public get helmHelper(): IHelmHelper {
     if (!this._helmHelper)
       throw new Error('Package Helm .helmHelper is not initialized');
@@ -215,7 +215,7 @@ export class HelmPackage extends DG.Package {
   };
 
   public get seqHelper(): ISeqHelper {
-    return this._helmHelper.seqHelper;
+    return this.helmHelper!.seqHelper;
   }
 
   public _libHelper!: IMonomerLibHelper;

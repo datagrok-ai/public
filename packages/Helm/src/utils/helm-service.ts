@@ -5,7 +5,7 @@ import $ from 'cash-dom';
 import {Subject, Unsubscribable} from 'rxjs';
 import {LRUCache} from 'lru-cache';
 
-import {HelmEditor, HelmType, IHelmEditorOptions} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmEditor, HelmType, IHelmBio, IHelmEditorOptions} from '@datagrok-libraries/bio/src/helm/types';
 import {RenderTask} from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
 import {HelmAux, HelmProps, HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
 import {svgToImage} from '@datagrok-libraries/utils/src/svg';
@@ -49,8 +49,8 @@ export class HelmService extends HelmServiceBase {
 
     let resEditor: HelmEditor | undefined = this.editorLruCache.get(editorKey);
     if (!resEditor) {
-      const getMonomerFuncs = _package.helmHelper.buildMonomersFuncsFromLib(props.monomerLib);
-      resEditor = new JSDraw2.Editor<HelmType, IHelmEditorOptions>(this.hostDiv, {
+      const getMonomerFuncs = _package.helmHelper.buildMonomersFuncsFromLib(props.monomerLib, );
+      resEditor = new JSDraw2.Editor<HelmType, IHelmBio, IHelmEditorOptions>(this.hostDiv, {
         width: props.width, height: props.height, skin: 'w8', viewonly: true,
         drawOptions: {getMonomer: getMonomerFuncs.getMonomer},
       });
