@@ -506,14 +506,14 @@ async function webGPURenderDots(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterP
   if (!gpuContext)
     throw 'Failed to get gpu context from canvas';
 
-  _renderDots(device, gpuContext, cache, cache.selectionLength > 0);
+  _renderDots(device, gpuContext, cache);
 }
 
-async function _renderDots(device: GPUDevice, gpuContext: GPUCanvasContext, cache: WebGPUCache, addSelection: boolean) {
+async function _renderDots(device: GPUDevice, gpuContext: GPUCanvasContext, cache: WebGPUCache) {
   if (!cache.indexBuffer || !cache.columnBuffer || !cache.viewBuffer || !cache.colorBuffer)
     throw 'Failed to update and validate cache or to initalize buffers';
 
-  const rendersCount = addSelection ? 2 : 1;
+  const rendersCount = cache.selectionLength > 0 ? 2 : 1;
 
   const encoder = device.createCommandEncoder();
   const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
@@ -621,6 +621,16 @@ async function webGPURenderTexture(webGPUCanvas: HTMLCanvasElement, sc: DG.Scatt
   if (!gpuContext)
     throw 'Failed to get gpu context from canvas';
 
+  _renderTextures(sc, device, gpuContext, cache);
+}
+
+async function _renderTextures(sc: DG.ScatterPlotViewer, device: GPUDevice, gpuContext: GPUCanvasContext, cache: WebGPUCache) {
+  if (!cache.indexBuffer || !cache.columnBuffer || !cache.viewBuffer || !cache.markerSizesBuffer || !cache.colorBuffer || !cache.gpuTexture)
+    throw 'Failed to update and validate cache or to initalize buffers';
+
+  const rendersCount = cache.selectionLength > 0 ? 2 : 1;
+
+  const encoder = device.createCommandEncoder();
   const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
   gpuContext.configure({
     device: device,
@@ -628,148 +638,126 @@ async function webGPURenderTexture(webGPUCanvas: HTMLCanvasElement, sc: DG.Scatt
     alphaMode: 'premultiplied',
   });
 
-  // Defining textures that will be drawn
-  const module = device.createShaderModule({
-    code: `
-        struct Vertex {
-            @location(0) index: i32,
-        };
+  let module: GPUShaderModule | null = null;
 
-        struct Uniforms {
-            resolution: vec2f,
-        };
+  for (let step = 0; step < rendersCount; ++step) {
+    const isSelection = step > 0;
 
-        struct VSOutput {
-            @builtin(position) position: vec4f,
-            @location(0) texcoord: vec2f,
-            @location(1) @interpolate(flat) markerIndex: u32, // This stores the marker index for the fragment shader
-            @location(2) @interpolate(flat) sizeIndex: u32, // This stores the marker size index for the fragment shader
-        };
-
-        ${addStructures(cache)}
-
-        @group(0) @binding(0) var<uniform> uni: Uniforms;
-        @group(0) @binding(1) var s: sampler;
-        @group(0) @binding(2) var t: texture_2d<f32>;
-        
-        @group(1) @binding(0) var<storage, read> sc: SC;
-        @group(1) @binding(1) var<storage, read> data: Data;
-        @group(1) @binding(2) var<storage, read> markerSizes: array<f32, ${cache.markerSizesLength}>;
-        @group(1) @binding(3) var<storage, read> markerColors: array<u32, ${cache.colorLength}>;
-
-        ${!sc.props.sizeColumnName ? addSingleMarkerSizeRendering(cache, sc) : addDifferentMarkerSizesRendering(cache, sc)}
-
-        ${addPointConversionMethods()}
-
-        ${addColorMethods()}
-        `,
-  });
-
-  const pipeline = device.createRenderPipeline({
-    label: 'sizeable points with texture',
-    layout: 'auto',
-    vertex: {
-      module,
-      buffers: [
-        {
-          arrayStride: 4, // 1 int, 4 bytes
-          stepMode: 'instance',
-          attributes: [
-            {shaderLocation: 0, offset: 0, format: 'sint32'}, // position
-          ],
-        },
-      ],
-    },
-    fragment: {
-      module,
-      targets: [
-        {
-          format: presentationFormat,
-          blend: {
-            color: {
-              srcFactor: 'one',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add',
-            },
-            alpha: {
-              srcFactor: 'one',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add',
+    module = device.createShaderModule({
+      code: wgslGetTextureRendering(sc, cache, isSelection),
+    });
+  
+    const pipeline = device.createRenderPipeline({
+      label: 'sizeable points with texture',
+      layout: 'auto',
+      vertex: {
+        module,
+        buffers: [
+          {
+            arrayStride: 4, // 1 int, 4 bytes
+            stepMode: 'instance',
+            attributes: [
+              {shaderLocation: 0, offset: 0, format: 'sint32'}, // position
+            ],
+          },
+        ],
+      },
+      fragment: {
+        module,
+        targets: [
+          {
+            format: presentationFormat,
+            blend: {
+              color: {
+                srcFactor: 'one',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add',
+              },
+              alpha: {
+                srcFactor: 'one',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add',
+              },
             },
           },
+        ],
+      },
+    });
+  
+    const sampler = device.createSampler({
+      minFilter: 'nearest',
+      magFilter: 'nearest',
+    });
+  
+    const uniformValues = new Float32Array(2);
+    const uniformBuffer = device.createBuffer({
+      size: uniformValues.byteLength,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    const kResolutionOffset = 0;
+    const resolutionValue = uniformValues.subarray(
+      kResolutionOffset, kResolutionOffset + 2);
+  
+    const dataGroup = device.createBindGroup({
+      layout: pipeline.getBindGroupLayout(1),
+      entries: isSelection ? [
+        {binding: 0, resource: {buffer: cache.viewBuffer}},
+        {binding: 1, resource: {buffer: cache.columnBuffer}},
+        {binding: 2, resource: {buffer: cache.markerSizesBuffer}},
+      ] :  [
+        {binding: 0, resource: {buffer: cache.viewBuffer}},
+        {binding: 1, resource: {buffer: cache.columnBuffer}},
+        {binding: 2, resource: {buffer: cache.markerSizesBuffer}},
+        {binding: 3, resource: {buffer: cache.colorBuffer}},
+      ],
+    });
+  
+    const renderPassDescriptor = {
+      label: 'our basic canvas renderPass',
+      colorAttachments: [
+        {
+          loadOp: isSelection ? 'load' : 'clear',
+          storeOp: 'store',
+          view: gpuContext.getCurrentTexture().createView(),
         },
       ],
-    },
-  });
+    };
+  
+    // Get the current texture from the canvas context and
+    // set it as the texture to render to.
+    const canvasTexture = gpuContext.getCurrentTexture();
+    // Update the resolution in the uniform buffer
+    resolutionValue.set([canvasTexture.width, canvasTexture.height]);
+    device.queue.writeBuffer(uniformBuffer, 0, uniformValues);
+  
+    const renderGroup = device.createBindGroup({
+      layout: pipeline.getBindGroupLayout(0),
+      entries: [
+        {binding: 0, resource: {buffer: uniformBuffer}},
+        {binding: 1, resource: sampler},
+        {binding: 2, resource: cache.gpuTexture.createView()},
+      ],
+    });
 
-  const sampler = device.createSampler({
-    minFilter: 'nearest',
-    magFilter: 'nearest',
-  });
-
-  const uniformValues = new Float32Array(2);
-  const uniformBuffer = device.createBuffer({
-    size: uniformValues.byteLength,
-    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-  });
-  const kResolutionOffset = 0;
-  const resolutionValue = uniformValues.subarray(
-    kResolutionOffset, kResolutionOffset + 2);
-
-  const dataGroup = device.createBindGroup({
-    layout: pipeline.getBindGroupLayout(1),
-    entries: [
-      {binding: 0, resource: {buffer: cache.viewBuffer}},
-      {binding: 1, resource: {buffer: cache.columnBuffer}},
-      {binding: 2, resource: {buffer: cache.markerSizesBuffer}},
-      {binding: 3, resource: {buffer: cache.colorBuffer}},
-    ],
-  });
-
-  const renderPassDescriptor = {
-    label: 'our basic canvas renderPass',
-    colorAttachments: [
-      {
-        loadOp: 'clear',
-        storeOp: 'store',
-        view: gpuContext.getCurrentTexture().createView(),
-      },
-    ],
-  };
-
-  // Get the current texture from the canvas context and
-  // set it as the texture to render to.
-  const canvasTexture = gpuContext.getCurrentTexture();
-  // Update the resolution in the uniform buffer
-  resolutionValue.set([canvasTexture.width, canvasTexture.height]);
-  device.queue.writeBuffer(uniformBuffer, 0, uniformValues);
-
-  const renderGroup = device.createBindGroup({
-    layout: pipeline.getBindGroupLayout(0),
-    entries: [
-      {binding: 0, resource: {buffer: uniformBuffer}},
-      {binding: 1, resource: sampler},
-      {binding: 2, resource: cache.gpuTexture.createView()},
-    ],
-  });
-
-  const encoder = device.createCommandEncoder();
-  const pass = encoder.beginRenderPass(renderPassDescriptor as GPURenderPassDescriptor);
-  pass.setPipeline(pipeline);
-  pass.setVertexBuffer(0, cache.vertexBuffer);
-  pass.setBindGroup(0, renderGroup);
-  pass.setBindGroup(1, dataGroup);
-  pass.draw(6, cache.indexBufferLength);
-  pass.end();
+    const pass = encoder.beginRenderPass(renderPassDescriptor as GPURenderPassDescriptor);
+    pass.setPipeline(pipeline);
+    pass.setVertexBuffer(0, isSelection ? cache.selectionVertexBuffer : cache.vertexBuffer);
+    pass.setBindGroup(0, renderGroup);
+    pass.setBindGroup(1, dataGroup);
+    pass.draw(6, isSelection ? cache.selectionLength : cache.indexBufferLength);
+    pass.end();
+  }
 
   const encoderBuffer = encoder.finish();
   device.queue.submit([encoderBuffer]);
   await device.queue.onSubmittedWorkDone();
 
-  const info = await module.getCompilationInfo();
-  for (const message of info.messages) {
-    if (message.type === 'error') {
-      throw `WebGPURender shader module error: ${message.message}`;
+  if (module != null) {
+    const info = await module.getCompilationInfo();
+    for (const message of info.messages) {
+      if (message.type === 'error') {
+        throw `WebGPURender shader module error: ${message.message}`;
+      }
     }
   }
 }
@@ -933,7 +921,7 @@ function addStructures(cache: WebGPUCache) {
     `;
 }
 
-function addDifferentMarkerSizesRendering(cache: WebGPUCache, sc: DG.ScatterPlotViewer) {
+function addDifferentMarkerSizesRendering(cache: WebGPUCache, sc: DG.ScatterPlotViewer, isSelection: boolean) {
   return `
       @vertex fn vs(
           vert: Vertex,
@@ -989,7 +977,7 @@ function addDifferentMarkerSizesRendering(cache: WebGPUCache, sc: DG.ScatterPlot
           let texCoords = vsOut.texcoord * uvScale + uvOffset;
 
           let color = textureSample(t, s, texCoords);
-          var c = markerColors[vsOut.markerIndex];
+          var c = ${isSelection ? `u32(${cache.selectedRowsColor})` : `markerColors[vsOut.markerIndex]`};
           
           // color.b is from 0 to 1 - basically it measures intencity, as stroke is darker
           if (color.b > 0.0) {
@@ -1000,7 +988,7 @@ function addDifferentMarkerSizesRendering(cache: WebGPUCache, sc: DG.ScatterPlot
   `;
 }
 
-function addSingleMarkerSizeRendering(cache: WebGPUCache, sc: DG.ScatterPlotViewer) {
+function addSingleMarkerSizeRendering(cache: WebGPUCache, sc: DG.ScatterPlotViewer, isSelection: boolean) {
   return `
       @vertex fn vs(
           vert: Vertex,
@@ -1033,7 +1021,7 @@ function addSingleMarkerSizeRendering(cache: WebGPUCache, sc: DG.ScatterPlotView
 
       @fragment fn fs(vsOut: VSOutput) -> @location(0) vec4f {
           let color = textureSample(t, s, vsOut.texcoord);
-          var c = markerColors[vsOut.markerIndex];
+          var c = ${isSelection ? `u32(${cache.selectedRowsColor})` : `markerColors[vsOut.markerIndex]`};
 
           // color.b is from 0 to 1 - basically it measures intencity, as stroke is darker
           if (color.b > 0.0) {
@@ -1082,6 +1070,42 @@ function wgslGetDotsRendering(cache: WebGPUCache, isSelection: boolean) {
         ${isSelection ? `` : `@group(0) @binding(2) var<storage, read> markerColors: array<u32, ${cache.colorLength}>;`}
 
         ${addDotsRendering(cache, isSelection)}
+
+        ${addPointConversionMethods()}
+
+        ${addColorMethods()}
+        `;
+}
+
+function wgslGetTextureRendering(sc: DG.ScatterPlotViewer, cache: WebGPUCache, isSelection: boolean) {
+  return `
+        struct Vertex {
+            @location(0) index: i32,
+        };
+
+        struct Uniforms {
+            resolution: vec2f,
+        };
+
+        struct VSOutput {
+            @builtin(position) position: vec4f,
+            @location(0) texcoord: vec2f,
+            @location(1) @interpolate(flat) markerIndex: u32, // This stores the marker index for the fragment shader
+            @location(2) @interpolate(flat) sizeIndex: u32, // This stores the marker size index for the fragment shader
+        };
+
+        ${addStructures(cache)}
+
+        @group(0) @binding(0) var<uniform> uni: Uniforms;
+        @group(0) @binding(1) var s: sampler;
+        @group(0) @binding(2) var t: texture_2d<f32>;
+        
+        @group(1) @binding(0) var<storage, read> sc: SC;
+        @group(1) @binding(1) var<storage, read> data: Data;
+        @group(1) @binding(2) var<storage, read> markerSizes: array<f32, ${cache.markerSizesLength}>;
+        ${isSelection ? `` : `@group(1) @binding(3) var<storage, read> markerColors: array<u32, ${cache.colorLength}>;`}
+
+        ${!sc.props.sizeColumnName ? addSingleMarkerSizeRendering(cache, sc, isSelection) : addDifferentMarkerSizesRendering(cache, sc, isSelection)}
 
         ${addPointConversionMethods()}
 
