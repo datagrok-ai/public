@@ -17,14 +17,10 @@ import {LinksData} from './runtime/LinksState';
 
 export class Driver {
   public currentState$ = new BehaviorSubject<PipelineState | undefined>(undefined);
-  public currentValidations$ = new BehaviorSubject<Record<
-    string, BehaviorSubject<Record<string, ValidationResult>>
-  >>({});
-  public currentConsistency$ = new BehaviorSubject<Record<
-    string, BehaviorSubject<Record<string, ConsistencyInfo>>
-  >>({});
-  public currentMeta$ = new BehaviorSubject<Record<string, BehaviorSubject<any | undefined>>>({});
   public currentCallsState$ = new BehaviorSubject<Record<string, BehaviorSubject<FuncCallStateInfo | undefined>>>({});
+  public currentValidations$ = new BehaviorSubject<Record<string, BehaviorSubject<Record<string, ValidationResult>>>>({});
+  public currentConsistency$ = new BehaviorSubject<Record<string, BehaviorSubject<Record<string, ConsistencyInfo>>>>({});
+  public currentMeta$ = new BehaviorSubject<Record<string, BehaviorSubject<Record<string, BehaviorSubject<any>>>>>({});
   public currentConfig$ = new BehaviorSubject<PipelineConfigurationProcessed | undefined>(undefined);
   public currentLinks$ = new BehaviorSubject<LinksData[]>([]);
 

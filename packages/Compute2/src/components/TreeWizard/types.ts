@@ -19,4 +19,4 @@ export type AugmentedStat = RestrictedStat & {
 };
 
 
-export type Status = 'locked' | `didn't run` | 'running' | 'succeeded' | 'failed' | 'partially succeeded';
+export type Status = 'locked' | 'next' | 'pending' | 'running' | 'succeeded' | 'failed' | 'partially succeeded';

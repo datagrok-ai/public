@@ -12,11 +12,13 @@ import {
   PipelineStateParallel, PipelineStateSequential,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {useElementHover} from '@vueuse/core';
-import {FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
+import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
+import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 
 const statusToIcon = {
   ['locked']: 'lock',
-  [`didn't run`]: 'circle',
+  ['next']: 'arrow-right',
+  [`pending`]: 'circle',
   ['running']: 'hourglass-half',
   ['succeeded']: 'check-circle',
   ['partially succeeded']: 'dot-circle',
@@ -25,7 +27,8 @@ const statusToIcon = {
 
 const statusToColor = {
   ['locked']: 'black',
-  [`didn't run`]: 'blue',
+  ['next']: 'blue',
+  [`pending`]: 'gray',
   ['running']: 'blue',
   ['succeeded']: 'green',
   ['partially succeeded']: 'red',
@@ -33,19 +36,32 @@ const statusToColor = {
 } as Record<Status, string>;
 
 const statusToTooltip = {
-  ['locked']: 'This step is currently locked',
-  [`didn't run`]: `This step didn't run yet`,
+  ['locked']: 'This step is read only',
+  [`next`]: `This step is avaliable to run`,
+  ['pending']: 'This step has pending dependencies',
   ['running']: 'Running...',
   ['succeeded']: 'Run succeeded',
   ['partially succeeded']: 'Partially succeeded',
   ['failed']: 'Run failed',
 } as Record<Status, string>;
 
-const callStateToStatus = (callState: FuncCallStateInfo): Status => {
+const statesToStatus = (
+  callState: FuncCallStateInfo,
+  validationsState?: Record<string, ValidationResult>,
+  consistencyStates?: Record<string, ConsistencyInfo>,
+): Status => {
   if (callState.isRunning) return 'running';
-  if (!callState.isOutputOutdated) return 'succeeded';
-
-  return 'didn\'t run';
+  if (callState.pendingDependencies?.length) return 'pending';
+  if (!callState.isOutputOutdated) {
+    const firstError = Object.values(validationsState || {}).find(val => (val.errors?.length || val.warnings?.length))
+    const firstInconsistency = Object.values(consistencyStates || {}).find(val => val.inconsistent);
+    if (firstError || firstInconsistency)
+      return 'partially succeeded';
+    return 'succeeded';
+  } else {
+    if (callState.runError) return 'failed';
+  };
+  return 'next';
 };
 
 export const TreeNode = Vue.defineComponent({
@@ -56,6 +72,12 @@ export const TreeNode = Vue.defineComponent({
     },
     callState: {
       type: Object as Vue.PropType<FuncCallStateInfo>,
+    },
+    validationStates: {
+      type: Object as Vue.PropType<Record<string, ValidationResult>>,
+    },
+    consistencyStates: {
+      type: Object as Vue.PropType<Record<string, ConsistencyInfo>>,
     },
     isDraggable: {
       type: Boolean,
@@ -119,7 +141,7 @@ export const TreeNode = Vue.defineComponent({
         ref={treeNodeRef}
         onClick={() => emit('click')}
       >
-        { props.callState && progressIcon(callStateToStatus(props.callState)) }
+        { props.callState && progressIcon(statesToStatus(props.callState, props.validationStates, props.consistencyStates)) }
         { props.stat.children.length ? openIcon() : null }
         <span class="mtl-ml text-nowrap text-ellipsis overflow-hidden">{ nodeLabel(props.stat) }</span>
         { isHovered.value ?

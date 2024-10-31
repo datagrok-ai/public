@@ -19,10 +19,13 @@ import {AugmentedStat} from './types';
 import '@he-tree/vue/style/default.css';
 import '@he-tree/vue/style/material-design.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
-import {of} from 'rxjs';
+import {of, merge, BehaviorSubject} from 'rxjs';
 import {PipelineView} from '../PipelineView/PipelineView';
 import {computedWithControl, useUrlSearchParams} from '@vueuse/core';
 import {Inspector} from '../Inspector/Inspector';
+import {switchMap, map} from 'rxjs/operators';
+import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
+import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 
 const findTreeNode = (uuid: string, state: PipelineState): PipelineState | undefined => {
   let foundState = undefined as PipelineState | undefined;
@@ -44,6 +47,11 @@ const findTreeNode = (uuid: string, state: PipelineState): PipelineState | undef
 
   return foundState;
 };
+
+function makeMergedItems<T>(input: Record<string, BehaviorSubject<T>>) {
+  const entries = Object.entries(input).map(([name, state$]) => state$.pipe(map((s) => [name, s] as const)));
+  return merge(...entries);
+}
 
 export const TreeWizard = Vue.defineComponent({
   name: 'TreeWizard',
@@ -104,6 +112,51 @@ export const TreeWizard = Vue.defineComponent({
     const treeMutationsLocked = useSubject(driver.treeMutationsLocked$);
 
     const callStates = useSubject(driver.currentCallsState$);
+
+    const states = Vue.reactive({
+      calls: {} as Record<string, FuncCallStateInfo | undefined>,
+      validations: {} as Record<string, Record<string, ValidationResult> | undefined>,
+      consistency: {} as Record<string, Record<string, ConsistencyInfo> | undefined>,
+      meta: {} as Record<string, Record<string, BehaviorSubject<any>> | undefined>
+    });
+
+    useSubscription(driver.currentCallsState$.pipe(
+      switchMap((data) => {
+        states.calls = {};
+        return makeMergedItems(data);
+      }),
+    ).subscribe(([k, val]) => {
+      states.calls[k] = Object.freeze(val);
+    }));
+
+    useSubscription(driver.currentValidations$.pipe(
+      switchMap((data) => {
+        states.validations = {};
+        return makeMergedItems(data);
+      }),
+    ).subscribe(([k, val]) => {
+      states.validations[k] = Object.freeze(val);
+    }));
+
+    useSubscription(driver.currentConsistency$.pipe(
+      switchMap((data) => {
+        states.consistency = {};
+        return makeMergedItems(data);
+      }),
+    ).subscribe(([k, val]) => {
+      states.consistency[k] = Object.freeze(val);
+    }));
+
+    useSubscription(driver.currentMeta$.pipe(
+      switchMap((data) => {
+        states.meta = {};
+        return makeMergedItems(data);
+      }),
+    ).subscribe(([k, val]) => {
+      states.meta[k] = Object.freeze(val);
+    }));
+
+
     const currentCallState = useExtractedObservable(
       [callStates, chosenStepUuid],
       ([callsState, chosenStepUuid]) =>
@@ -113,6 +166,7 @@ export const TreeWizard = Vue.defineComponent({
         immediate: true,
       },
     );
+
     const isTreeReportable = computedWithControl([currentCallState],
       () => Object.values(callStates.value)
         .map((state) => state.value?.isOutputOutdated)
@@ -295,7 +349,9 @@ export const TreeWizard = Vue.defineComponent({
                   (
                     <TreeNode
                       stat={stat}
-                      callState={callStates.value?.[stat.data.uuid]?.value}
+                      callState={states.calls[stat.data.uuid]}
+                      validationStates={states.validations[stat.data.uuid]}
+                      consistencyStates={states.consistency[stat.data.uuid]}
                       style={{'background-color': stat.data.uuid === chosenStepUuid.value ? '#f2f2f5' : null}}
                       isDraggable={treeInstance.value?.isDraggable(stat)}
                       isDroppable={treeInstance.value?.isDroppable(stat)}
