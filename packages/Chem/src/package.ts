@@ -1866,8 +1866,6 @@ let container: DG.DockerContainer;
 export async function getContainer() {
   if (!container)
     container = await grok.dapi.docker.dockerContainers.filter('chemprop').first();
-  if (container.status !== 'started' && container.status !== 'checking')
-    await grok.dapi.docker.dockerContainers.run(container.id, true);
   return container;
 }
 
