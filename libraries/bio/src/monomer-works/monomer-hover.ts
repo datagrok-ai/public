@@ -22,7 +22,7 @@ import {ISeqHelper} from '../utils/seq-helper';
 
 export const MonomerHoverLinksTemp = 'MonomerHoverLinks';
 
-function addMonomerHoverLink(seqColTemp: any, resLink: MonomerHoverLink) {
+export function addMonomerHoverLink(seqColTemp: any, resLink: MonomerHoverLink) {
   let mhhList = seqColTemp[MonomerHoverLinksTemp];
   if (!mhhList)
     mhhList = seqColTemp[MonomerHoverLinksTemp] = [];
