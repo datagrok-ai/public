@@ -161,7 +161,7 @@ https://datagrok.ai/help/develop/how-to/test-packages#local-testing
 `;
 
 const HELP_TESTALL = `
-Usage: grok testAll
+Usage: grok testall
 
 Options:
 [--packages] [--host] [--csv] [--gui] [--skip-build] [--skip-publish] [--link-package] [--catchUnhandled] [--report] [--record] [--verbose] [--benchmark] [--stress-test] [--order] [--tags] [--testRepeat] [--workersCount]
@@ -214,6 +214,6 @@ export const help = {
   link: HELP_LINK,
   publish: HELP_PUBLISH,
   test: HELP_TEST,
-  testAll: HELP_TESTALL,
+  testall: HELP_TESTALL,
   help: HELP,
 };

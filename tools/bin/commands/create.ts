@@ -42,6 +42,7 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
       contents = contents.replace(/#{PACKAGE_DETECTORS_NAME}/g, utils.kebabToCamelCase(name));
       contents = contents.replace(/#{PACKAGE_NAME_LOWERCASE}/g, name.toLowerCase());
       contents = contents.replace(/#{PACKAGE_NAME_LOWERCASE_WORD}/g, name.replace(/-/g, '').toLowerCase());
+      contents = contents.replace(/#{CURRENT_DATE}/g, new Date().toISOString().slice(0, 10));
       // eslint-disable-next-line new-cap
       contents = utils.replacers['PACKAGE_NAMESPACE'](contents, name);
       contents = contents.replace(/#{GROK_HOST_ALIAS}/g, config.default);
