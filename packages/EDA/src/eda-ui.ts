@@ -33,7 +33,6 @@ export function predictedVersusReferenceScatterPlot(
       y: prediction.name,
       showRegressionLine: true,
       markerType: 'circle',
-      labels: samplesNames.name,
     });
 }
 
@@ -82,7 +81,6 @@ export function scoresScatterPlot(
       x: xScores[0].name,
       y: xScores[index].name,
       markerType: 'circle',
-      labels: samplesNames.name,
     });
 }
 
@@ -109,7 +107,6 @@ export function loadingScatterPlot(features: DG.ColumnList, xLoadings: Array<DG.
       x: xLoadings[0].name,
       y: xLoadings[xLoadings.length - 1].name,
       markerType: 'circle',
-      labels: 'labels',
     });
 }
 
