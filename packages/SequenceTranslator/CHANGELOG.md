@@ -1,5 +1,17 @@
 # Sequence Translator changelog
 
+## 1.4.9 (2024-10-31)
+
+### Bug fixes
+
+* Fix package initializing helmHelper
+* Fix Chain using HelmAtom.bio of type PtBio
+* Fix PT Enumerate dialog for harmonized sequences
+* Fix PT Enumerate for monomer hovering
+* Fix PT Enumerate for historical values
+* Fix PT Enumerate adding buildCyclizedMonomerHoverLink, WIP
+* Fix adding CyclizedGridCellRenderBack
+
 ## 1.4.8 (2024-10-25)
 
 ### Bug fixes

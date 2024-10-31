@@ -13,7 +13,11 @@ export type PolyToolEnumeratorType = typeof PolyToolEnumeratorTypes[keyof typeof
 
 export type PolyToolPlaceholder = { position: number, monomers: string[] };
 
-export type PolyToolBreadthPlaceholder = { start: number, end: number, monomers: string[] };
+export type PolyToolBreadthPlaceholder = {
+  /** 0-based monomer position index */ start: number,
+  /** 0-based monomer position index */ end: number,
+  monomers: string[]
+};
 
 export type PolyToolEnumeratorParams = {
   type: PolyToolEnumeratorType;
