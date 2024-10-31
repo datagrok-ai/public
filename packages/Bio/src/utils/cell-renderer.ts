@@ -81,8 +81,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
   override onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
     const [gridCol, tableCol, temp] = getGridCellColTemp<string, MonomerPlacer>(gridCell);
-    const back = temp.rendererBack;
-    back.onMouseMove(gridCell, e);
+    temp.rendererBack?.onMouseMove(gridCell, e);
   }
 
   override onMouseLeave(gridCell: DG.GridCell, e: MouseEvent) {
@@ -99,7 +98,6 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
    * @param {number} h height of the cell.
    * @param {DG.GridCell} gridCell Grid cell.
    * @param {DG.GridCellStyle} _cellStyle Cell style.
-   * @memberof AlignedSequenceCellRenderer
    */
   render(
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
