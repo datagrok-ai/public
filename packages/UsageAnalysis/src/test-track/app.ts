@@ -767,14 +767,14 @@ export class TestTrack extends DG.ViewBase {
     })
     
     createTicketBtn.disabled =true;
-    const errorTypeSelector = ui.input.choice('Error severity level', { value: null, items: ['', ...errorSeverityLevels], nullable: false, onValueChanged:(e)=>{
-        createTicketBtn.disabled = ticketSummary.value.length === 0 || errorTypeSelector.value == null;
+    const errorTypeSelector = ui.input.choice('Severity', { value: null, items: ['', ...errorSeverityLevels], nullable: false, onValueChanged:(e)=>{
+        createTicketBtn.disabled = ticketSummary.value.length === 0 || errorTypeSelector.value == '';
     }});
     const textInput = ui.input.textArea(errorSeverityLevels.includes(status) ? 'Tickets' : 'Reasons', { value: value });
     textInput.nullable = false;
     textInput.classList.add('ui-input-reason');
     ticketSummary.onChanged.subscribe((value) => {
-      createTicketBtn.disabled = value.length === 0 || errorTypeSelector.value == null;
+      createTicketBtn.disabled = value.length === 0 || errorTypeSelector.value == '';
     })
 
     const createBtnWrap = ui.div(createTicketBtn);
