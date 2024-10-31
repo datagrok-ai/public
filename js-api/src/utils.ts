@@ -1,6 +1,6 @@
 import {Balloon, Color} from './widgets';
 import {toDart, toJs} from './wrappers';
-import {MARKER_TYPE, ViewerType} from './const';
+import {COLUMN_TYPE, MARKER_TYPE, ViewerType} from './const';
 import {Point, Rect} from './grid';
 import {IDartApi} from './api/grok_api.g';
 import * as rxjs from 'rxjs';
@@ -230,7 +230,7 @@ export class Utils {
     );
   }
 
-  static async executeTests(testsParams: { package: any, params: any }[]): Promise<any> {
+  static async executeTests(testsParams: { package: any, params: any }[], stopOnTimeout?:  boolean): Promise<any> {
     let failed = false;
     let csv = "";
     let verbosePassed = "";
@@ -265,11 +265,14 @@ export class Utils {
       const time = row.get("ms");
       const result = row.get("result");
 
-      if (resultDF === undefined)
+      if (resultDF === undefined){
+        df.changeColumnType('result', COLUMN_TYPE.STRING);
         resultDF = df;
-      else
+      }
+      else{
+        df.changeColumnType('result', COLUMN_TYPE.STRING);
         resultDF = resultDF.append(df);
-
+      }
       if (row["skipped"]) {
         verboseSkipped += `Test result : Skipped : ${time} : ${category}: ${testName} :  ${result}\n`;
         countSkipped += 1;
@@ -283,6 +286,8 @@ export class Utils {
         countFailed += 1;
         failed = true;
       }
+      if(result.toString().trim() === 'EXECUTION TIMEOUT' && stopOnTimeout)
+        break;
     }
 
     if (resultDF) {
@@ -797,7 +802,6 @@ export function format(x: number, format?: string): string {
 export async function delay(ms: number) {
   await new Promise((r) => setTimeout(r, ms));
 }
-
 
 /** Autotest-related helpers */
 export namespace Test {
