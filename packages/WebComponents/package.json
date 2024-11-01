@@ -4,6 +4,7 @@
   "version": "0.0.3",
   "description": "",
   "dependencies": {
+    "@datagrok-libraries/dock-spawn-dg": "../../libraries/dock-spawn-dg",
     "@datagrok-libraries/utils": "^4.3.0",
     "@datagrok-libraries/webcomponents": "^0.0.2",
     "cash-dom": "latest",
@@ -13,15 +14,14 @@
     "style-loader": "^4.0.0"
   },
   "devDependencies": {
-    "datagrok-tools": "latest",
-    "source-map-loader": "^5.0.0",
+    "source-map-loader": "latest",
     "ts-loader": "latest",
     "typescript": "latest",
     "webpack": "latest",
     "webpack-cli": "latest"
   },
   "scripts": {
-    "link-all": "",
+    "link-all": "npm link datagrok-api @datagrok-libraries/webcomponents @datagrok-libraries/dock-spawn-dg",
     "debug-webcomponents": "webpack && grok publish",
     "release-webcomponents": "webpack && grok publish --release",
     "build-webcomponents": "webpack",

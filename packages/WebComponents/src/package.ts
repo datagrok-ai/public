@@ -8,7 +8,7 @@ import {
   DGToggleInput, DGComboPopup, DGMarkdown,
   DGIcon
 } from '@datagrok-libraries/webcomponents';
-import {DockSpawnTsWebcomponent} from '@datagrok-libraries/webcomponents'
+import {DockSpawnTsWebcomponent} from '@datagrok-libraries/dock-spawn-dg/lib'
 
 export const _package = new DG.Package();
 

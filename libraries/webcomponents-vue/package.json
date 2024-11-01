@@ -4,6 +4,7 @@
   "version": "0.0.4",
   "description": "Datagrok web components vue wrappers",
   "dependencies": {
+    "@datagrok-libraries/dock-spawn-dg": "../dock-spawn-dg",
     "@datagrok-libraries/webcomponents": "^0.0.2",
     "@vueuse/core": "^10.11.1",
     "@vueuse/rxjs": "^11.0.3",
@@ -11,8 +12,8 @@
     "datagrok-api": "^1.18.6",
     "dayjs": "=1.11.10",
     "rxjs": "^6.6.7",
-    "wu": "^2.1.0",
-    "vue": "^3.4.38"
+    "vue": "^3.4.38",
+    "wu": "^2.1.0"
   },
   "devDependencies": {
     "@types/wu": "^2.1.0",

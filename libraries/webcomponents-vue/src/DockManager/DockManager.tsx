@@ -3,8 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
-import {DockSpawnTsWebcomponent} from '@datagrok-libraries/webcomponents';
-import { IState } from '@datagrok-libraries/webcomponents/vendor/dock-spawn-ts/lib/interfaces/IState';
+import type {DockSpawnTsWebcomponent} from '@datagrok-libraries/dock-spawn-dg/lib';
+import type { IState } from '@datagrok-libraries/dock-spawn-dg/lib/interfaces/IState';
 
 
 declare global {
