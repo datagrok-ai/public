@@ -24,7 +24,7 @@ const ERROR = 0.1;
 category('Principal component analysis', () => {
   test(`Performance: ${ROWS_K}K rows, ${COLS} cols, ${COMPONENTS} components`, async () => {
     const df = grok.data.demo.randomWalk(ROWS_K * 1000, COLS);
-    await computePCA(df, df.columns, COMPONENTS, false, false, true);
+    await computePCA(df, df.columns, COMPONENTS, false, false);
   }, {timeout: TIMEOUT, benchmark: true});
 
   test('Correctness', async () => {
@@ -32,7 +32,7 @@ category('Principal component analysis', () => {
     const df = regressionDataset(ROWS, COMPONENTS, DEP_COLS);
 
     // Apply
-    const pca = await computePCA(df, df.columns, COMPONENTS + 1, false, false, true);
+    const pca = await computePCA(df, df.columns, COMPONENTS + 1, false, false);
 
     // Check
     const lastPca = pca.columns.byIndex(COMPONENTS);

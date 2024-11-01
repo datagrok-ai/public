@@ -13,13 +13,16 @@ export function _principalComponentAnalysis(table, columns, componentsCount, cen
   return callWasm(EDA, 'principalComponentAnalysis', [columns, componentsCount, centerNum, scaleNum]);
 }
 
-export async function _principalComponentAnalysisInWebWorker(table, columns, componentsCount, centerNum, scaleNum) {
+export async function _principalComponentAnalysisInWebWorker(table, columns, componentsCount) {
   return new Promise((resolve, reject) => {
-    const worker = new Worker(new URL('../wasm/workers/principalComponentAnalysisWorker.js', import.meta.url));
-    worker.postMessage(getCppInput(EDA['principalComponentAnalysis'].arguments,[columns, componentsCount, centerNum, scaleNum]));
+    const worker = new Worker(new URL('../wasm/workers/principalComponentAnalysisWorkerUpd.js', import.meta.url));
+    worker.postMessage(getCppInput(EDA['principalComponentAnalysis'].arguments, [columns, componentsCount, 0, 0]));
     worker.onmessage = function(e) {
       worker.terminate();
-      resolve(getResult(EDA['principalComponentAnalysis'], e.data));
+      if (e.data.callResult === 0)
+        resolve(getResult(EDA['principalComponentAnalysis'], e.data));
+      else
+        resolve(-1);
     }
   });
 }

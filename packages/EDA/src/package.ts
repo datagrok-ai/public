@@ -77,11 +77,8 @@ export async function dbScan(df: DG.DataFrame, xCol: DG.Column, yCol: DG.Column,
 //input: int components = 2 {caption: Components; nullable: false; min: 1} [Number of components.]
 //input: bool center = false [Indicating whether the variables should be shifted to be zero centered.]
 //input: bool scale = false [Indicating whether the variables should be scaled to have unit variance.]
-//input: bool nipals = true
-export async function PCA(table: DG.DataFrame, features: DG.ColumnList, components: number, center: boolean, scale: boolean, nipals: boolean): Promise<void> {
-  const start = Date.now();
-
-  const pcaTable = await computePCA(table, features, components, center, scale, nipals);
+export async function PCA(table: DG.DataFrame, features: DG.ColumnList, components: number, center: boolean, scale: boolean): Promise<void> {
+  const pcaTable = await computePCA(table, features, components, center, scale);
   addPrefixToEachColumnName('PC', pcaTable.columns);
 
   if (table.id === null) // table is loaded from a local file
@@ -94,9 +91,6 @@ export async function PCA(table: DG.DataFrame, features: DG.ColumnList, componen
       cols.add(col);
     }
   }
-
-  const finish = Date.now();
-  console.log(`${nipals ? 'Niplas' : 'Classic'}: ${finish - start} ms.`);
 }
 
 //name: DBSCAN clustering

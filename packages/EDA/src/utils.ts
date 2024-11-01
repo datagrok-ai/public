@@ -12,6 +12,8 @@ const PERCENTAGE_MIN = 0;
 const PERCENTAGE_MAX = 100;
 const MAX_ELEMENTS_COUNT = 100000000;
 
+const TINY = 0.000001;
+
 // Error messages
 const COMP_POSITVE_MES = 'components must be positive.';
 const COMP_EXCESS = 'components must not be greater than features count.';
@@ -179,4 +181,78 @@ export function getRowsOfNumericalColumnns(columnList: DG.ColumnList): any[][] {
   }
 
   return output;
+}
+
+/** Return centered data */
+function centerDf(df: DG.DataFrame): DG.DataFrame {
+  const rowCount = df.rowCount;
+
+  for (const col of df.columns) {
+    if (col.isNumerical) {
+      const avg = col.stats.avg;
+
+      if (Math.abs(avg) > TINY) {
+        const raw = col.getRawData();
+
+        for (let i = 0; i < rowCount; ++i)
+          raw[i] -= avg;
+      }
+    }
+  }
+  return df;
+}
+
+/** Return scaled & centered data */
+function centerScaleDf(df: DG.DataFrame): DG.DataFrame {
+  const rowCount = df.rowCount;
+
+  for (const col of df.columns) {
+    if (col.isNumerical) {
+      const stdev = col.stats.stdev;
+      const avg = col.stats.avg;
+      const raw = col.getRawData();
+
+      if (stdev > 0) {
+        for (let i = 0; i < rowCount; ++i)
+          raw[i] = (raw[i] - avg) / stdev;
+      } else {
+        for (let i = 0; i < rowCount; ++i)
+          raw[i] -= avg;
+      }
+    }
+  }
+  return df;
+}
+
+/** Return scaled data */
+function scaleDf(df: DG.DataFrame): DG.DataFrame {
+  const rowCount = df.rowCount;
+
+  for (const col of df.columns) {
+    if (col.isNumerical) {
+      const stdev = col.stats.stdev;
+
+      if (Math.abs(stdev - 1) > TINY && (stdev > 0)) {
+        const raw = col.getRawData();
+
+        for (let i = 0; i < rowCount; ++i)
+          raw[i] /= stdev;
+      }
+    }
+  }
+  return df;
+}
+
+export function centerScaleDataFrame(df: DG.DataFrame, toCenter: boolean, toScale: boolean): DG.DataFrame {
+  if (toCenter) {
+    if (toScale)
+      return centerScaleDf(df);
+    else
+      return centerDf(df);
+  }
+
+  if (toScale)
+    return scaleDf(df);
+
+  return df;
 }
