@@ -5,9 +5,6 @@ import {_package, applyNotationProviderForCyclized} from '../../package';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {doPolyToolConvert} from './pt-conversion';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
-import {PolyToolTags} from '../../consts';
-import {SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
-import {CyclizedNotationProvider} from '../../utils/cyclized';
 
 export class RulesManager {
   rules: Rules;
@@ -97,19 +94,8 @@ export class RulesManager {
     const initCol = DG.Column.fromStrings('monomers', seqs);
     const helmCol = DG.Column.fromStrings('helm', helms);
 
-    //applyNotationProviderForCyclized(initCol, '-');
-
-    // initCol.meta.units = NOTATION.CUSTOM;
-    // initCol.tags[PolyToolTags.dataRole] = 'template';
-    // initCol.temp[SeqTemps.notationProvider] = new CyclizedNotationProvider('-', _package.seqHelper);
-
-    // initCol.setTag(DG.TAGS.CELL_RENDERER, 'sequence');
-    // initCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    // initCol.meta.units = NOTATION.CUSTOM;
-    // //initCol.setTag('separator', '-');
-    // initCol.setTag('aligned', 'SEQ');
-    // initCol.setTag('alphabet', 'UN');
-    // initCol.setTag('polytool-data-role', 'template');
+    initCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    applyNotationProviderForCyclized(initCol, '-');
 
     helmCol.semType = DG.SEMTYPE.MACROMOLECULE;
     helmCol.meta.units = NOTATION.HELM;
@@ -136,9 +122,10 @@ export class RulesManager {
 
     const initCol = DG.Column.fromStrings('monomers', seqs);
     const helmCol = DG.Column.fromStrings('helm', helms);
-    // initCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    // initCol.meta.units = NOTATION.CUSTOM;
-    // initCol.setTag(DG.TAGS.CELL_RENDERER, 'sequence');
+
+    initCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    applyNotationProviderForCyclized(initCol, '-');
+
     helmCol.semType = DG.SEMTYPE.MACROMOLECULE;
     helmCol.meta.units = NOTATION.HELM;
     helmCol.setTag(DG.TAGS.CELL_RENDERER, 'helm');
@@ -173,8 +160,6 @@ export class RulesManager {
     const reactionsGridDiv =
       this.createGridDiv('Reaction rules', this.synthRuleDataFrame.plot.grid({showAddNewRowIcon: true}));
 
-    //let gridsDiv = ui.div();
-
     linksGridDiv.style.width = '100%';
     reactionsGridDiv.style.width = '100%';
 
@@ -207,6 +192,7 @@ export class RulesManager {
     ]);
 
     panel.style.height = '100%';
+    panel.style.alignItems = 'center';
 
     const form = ui.splitH([
       panel,
