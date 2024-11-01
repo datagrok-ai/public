@@ -79,7 +79,6 @@ export enum PROPS {
   pdb = 'pdb',
   pdbTag = 'pdbTag',
   ligandColumnName = 'ligandColumnName',
-  proteinColumnName = 'proteinColumnName',
   // pdbProvider = 'pdbProvider',
   // emdbProvider = 'emdbProvider',
   biostructureIdColumnName = 'biostructureIdColumnName',
@@ -147,7 +146,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   biostructureIdColumnName: string | null;
   /** DG.Func nqName */
   biostructureDataProvider: string | null;
-  
+
   [PROPS.ligandColumnName]: string;
   // [PROPS.pdbProvider]: string;
   // [PROPS.emdbProvider]: string;
