@@ -1,12 +1,12 @@
 /* eslint-disable max-len */
 import fs from 'fs';
 import os from 'os';
-import path from 'path';  
+import path from 'path';
 import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
 import * as testUtils from '../utils/test-utils';
-import { setRandomOrder, setAlphabeticalOrder, setPackageRandomOrder, setPackageAlphabeticalOrder} from '../utils/order-functions';
-import { WorkerOptions, loadTestsList, saveCsvResults, printWorkersResult, runWorker, ResultObject} from '../utils/test-utils';
+import { setRandomOrder, setAlphabeticalOrder, setPackageRandomOrder, setPackageAlphabeticalOrder } from '../utils/order-functions';
+import { WorkerOptions, loadTestsList, saveCsvResults, printWorkersResult, runWorker, ResultObject, Test, OrganizedTests } from '../utils/test-utils';
 
 enum order {
   random = 0,
@@ -44,7 +44,7 @@ const csvReportDir = path.join(curDir, 'test-report.csv');
 
 const testInvocationTimeout = 7200000;
 
-const orderingFunctions: Map<order, (tests: any, workersAmount: number, testRepeats: number) => any[][]> = new Map<order, (tests: any, workersAmount: number, testRepeats: number) => any[][]>([
+const orderingFunctions: Map<order, (tests: Test[], workersAmount: number, testRepeats: number) => Test[][]> = new Map<order, (tests: Test[], workersAmount: number, testRepeats: number) => Test[][]>([
   [order.random, setRandomOrder],
   [order.alphabetical, setAlphabeticalOrder],
   [order.packageRandom, setPackageRandomOrder],
@@ -59,7 +59,7 @@ export async function testAll(args: TestArgs): Promise<boolean> {
   let packagesToRun = await testUtils.loadPackages(curDir, args.packages, args.host, args['skip-publish'], args['skip-build']);
 
   let testsObj = await loadTestsList(packagesToRun, args.core);
-  let filteredTests = await filterTests(testsObj, (args.tags ?? "").split(" "), args['stress-test'], args.benchmark); 
+  let filteredTests: Test[] = await filterTests(testsObj, (args.tags ?? "").split(" "), args['stress-test'], args.benchmark);
   let workersOrder = await setWorkersOrder(filteredTests, getEnumOrder(args.order ?? ''), args.workersCount, args.testRepeat);
 
   let testsResults = await runTests(workersOrder, {
@@ -84,8 +84,8 @@ export async function testAll(args: TestArgs): Promise<boolean> {
   return !(testsResults.map((test) => test.failed)).some(failStatus => failStatus === true);
 }
 
-async function filterTests(tests: any[], tags: string[], stressTest: boolean = false, benchmark: boolean = false): Promise<any[]> {
-  let filteredTests: any[] = [];
+async function filterTests(tests: Test[], tags: string[], stressTest: boolean = false, benchmark: boolean = false): Promise<Test[]> {
+  let filteredTests: Test [] = [];
   let stressTestValue: boolean = tags.includes("stress-test") || stressTest;
   let benchmarkValue: boolean = benchmark;
 
@@ -106,20 +106,19 @@ async function filterTests(tests: any[], tags: string[], stressTest: boolean = f
   return filteredTests;
 }
 
-async function setWorkersOrder(tests: any[], invocationOrder: order = 0, countOfWorkers: number = 1, testRepeats: number = 1): Promise<any[][]> {
-  let resultOrder: any[][] = [];
+async function setWorkersOrder(tests: Test[], invocationOrder: order = 0, countOfWorkers: number = 1, testRepeats: number = 1): Promise<Test[][]> {
+  let resultOrder: Test[][] = [];
 
   let orderingFunction = orderingFunctions.get(invocationOrder);
   if (orderingFunction !== undefined)
     resultOrder = orderingFunction(tests, countOfWorkers, testRepeats);
   else
     throw new Error("Cannot find ordering function");
-
   return resultOrder;
 }
 
-async function runTests(workersOrder: any[][], workerOptions: WorkerOptions): Promise<ResultObject[]> {
-  let workersCommands: any[][] = [];
+async function runTests(workersOrder: Test[][], workerOptions: WorkerOptions): Promise<ResultObject[]> {
+  let workersCommands: OrganizedTests[][] = [];
 
   for (let workerOrder of workersOrder)
     workersCommands.push(workerOrder.map(testObj => ({
