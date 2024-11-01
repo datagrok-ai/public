@@ -30,10 +30,10 @@
   "devDependencies": {
     "@datagrok-libraries/helm-web-editor": "^1.1.7",
     "@datagrok-libraries/js-draw-lite": "^0.0.5",
-    "@datagrok/bio": "^2.15.0",
+    "@datagrok/bio": "^2.16.9",
     "@datagrok/chem": "^1.12.0",
     "@datagrok/dendrogram": "^1.2.33",
-    "@datagrok/helm": "^2.5.0",
+    "@datagrok/helm": "^2.5.9",
     "@types/uuid": "^10.0.0",
     "@types/wu": "^2.1.44",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
