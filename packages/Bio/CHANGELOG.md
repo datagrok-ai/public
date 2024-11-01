@@ -1,5 +1,52 @@
 # Bio changelog
 
+## 2.16.9 (2024-11-01)
+
+Correct package initialization
+
+## 2.16.8 (2024-10-31)
+
+### Bug fixes
+
+* Fix SeqHandler check for custom notation
+* Fix SeqHandler adding splitter, getHelm, isCustom
+
+## 2.16.7 (2024-10-30)
+
+### Bug fixes
+
+* Fix splitterAsHelm for multiple simple polymers, add test
+
+## 2.16.6 (2024-10-22)
+
+### Bug fixes
+
+* Fix toAtomicLevel using pseudo molfile with removed gaps
+* Fix toAtomicLevel Helm parser to clean symbols square brackets
+* Fix toAtomicLevel using column's overridden monomer lib
+* Fix OverriddenMonomerLibrary for added monomers as not missed
+* Fix SeqHandler getValue of type MacromoleculeValueBase
+* Fix monomerLibraries override test
+
+## 2.16.5 (2024-10-18)
+
+### Bug fixes
+
+* WebLogo: fix compatibility with column types and fix aggregations
+* Monomer manager: Fix validations
+
+### Features
+
+Monomer manager: Add new empty monomer
+
+## 2.16.4 (2024-10-16)
+
+### Bug fixes
+
+* Fix helm parser for separate simple polymers, add tests
+* Fix adding MonomerPlacer lengths tests
+* Fix monomer lib getTooltip for gaps
+
 ## 2.16.3 (2024-10-15)
 
 ### Bug fixes

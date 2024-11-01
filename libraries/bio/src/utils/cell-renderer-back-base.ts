@@ -24,7 +24,7 @@ export function getGridCellColTemp<TValue, TBack extends CellRendererBackBase<TV
   } catch { [gridCol, temp] = [null, null]; }
 
   const tableCol: DG.Column<TValue> = gridCell.cell.column;
-  temp = temp ?? tableCol.temp;
+  temp = temp ?? (tableCol ? tableCol.temp : null);
 
   if (!temp)
     throw new Error(`Grid cell renderer back store (GridColumn or Column) not found.`);
@@ -91,7 +91,7 @@ export abstract class CellRendererBackBase<TValue> extends CellRendererBackStub 
   }
 
   private static viewerCounter: number = -1;
-  private readonly viewerId: number = ++CellRendererBackBase.viewerCounter;
+  protected readonly viewerId: number = ++CellRendererBackBase.viewerCounter;
 
   protected toLog(): string {
     return `${this.constructor.name}<${this.viewerId}>`;

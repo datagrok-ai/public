@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* Do not change these import lines. Datagrok will import API library in exactly the same manner */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -15,6 +16,7 @@ import {macromoleculeSarFastaDemoUI} from './demo/fasta';
 import {u2} from '@datagrok-libraries/utils/src/u2';
 import {ClusterMaxActivityViewer} from './viewers/cluster-max-activity-viewer';
 import {LSTPieChartRenderer} from './utils/cell-renderer';
+import {PeptideUtils} from './peptideUtils';
 
 let monomerWorks: MonomerWorks | null = null;
 let treeHelper: ITreeHelper;
@@ -34,6 +36,7 @@ export async function initPeptides(): Promise<void> {
   try {
     monomerWorks ??= new MonomerWorks(await grok.functions.call('Bio:getBioLib'));
     treeHelper ??= await getTreeHelper();
+    await PeptideUtils.loadSeqHelper();
   } catch (e) {
     grok.log.error(e as string);
   }
@@ -85,7 +88,17 @@ export function Peptides(): DG.View {
 
 //top-menu: Bio | Analyze | SAR...
 //name: Bio Peptides
-export function peptidesDialog(): DG.Dialog {
+export function peptidesDialog(): DG.Dialog | null {
+  if (!grok.shell.t || !grok.shell.t.columns.bySemType('Macromolecule')?.length) {
+    grok.shell.warning('SAR Analysis requires an active table with Macromolecule column');
+    return null;
+  }
+
+  if (!DG.Utils.firstOrNull(grok.shell.t.columns.numerical)) {
+    grok.shell.warning('SAR Analysis requires an active table with at least one numerical column for activity');
+    return null;
+  }
+
   const analyzeObject = analyzePeptidesUI(grok.shell.t);
   const dialog = ui.dialog('Analyze Peptides').add(analyzeObject.host).onOK(async () => {
     const startSuccess = analyzeObject.callback();
@@ -108,6 +121,8 @@ export async function testInitFunctionPeptides(v: DG.Viewer): Promise<void> {
 //input: column col {semType: Macromolecule}
 //output: widget result
 export function peptidesPanel(col: DG.Column): DG.Widget {
+  if (!col.dataFrame || !DG.Utils.firstOrNull(col.dataFrame.columns.numerical))
+    return new DG.Widget(ui.divText('SAR Analysis requires an active table with at least one numerical column for activity'));
   const analyzeObject = analyzePeptidesUI(col.dataFrame, col);
   return new DG.Widget(analyzeObject.host);
 }

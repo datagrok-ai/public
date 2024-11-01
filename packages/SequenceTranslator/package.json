@@ -1,10 +1,10 @@
 {
   "name": "@datagrok/sequence-translator",
   "friendlyName": "Sequence Translator",
-  "version": "1.4.5",
+  "version": "1.4.10",
   "author": {
-    "name": "Alexey Chopovsky",
-    "email": "achopovsky@datagrok.ai"
+    "name": "Leonid Stolbov",
+    "email": "lstolbov@datagrok.ai"
   },
   "description": "SequenceTranslator translates [oligonucleotide](https://en.wikipedia.org/wiki/Oligonucleotide) sequences between [different representations](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#sequence-representations).",
   "repository": {
@@ -22,10 +22,10 @@
     }
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.45.2",
+    "@datagrok-libraries/bio": "^5.45.6",
     "@datagrok-libraries/chem-meta": "^1.2.7",
     "@datagrok-libraries/tutorials": "^1.4.3",
-    "@datagrok-libraries/utils": "^4.3.6",
+    "@datagrok-libraries/utils": "^4.3.7",
     "@types/react": "^18.0.15",
     "cash-dom": "^8.1.0",
     "datagrok-api": "^1.21.1",
@@ -39,11 +39,11 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@datagrok-libraries/helm-web-editor": "^1.1.12",
-    "@datagrok-libraries/js-draw-lite": "^0.0.9",
-    "@datagrok/bio": "^2.16.2",
-    "@datagrok/helm": "^2.5.4",
-    "@datagrok/chem": "^1.12.3",
+    "@datagrok-libraries/helm-web-editor": "^1.1.13",
+    "@datagrok-libraries/js-draw-lite": "^0.0.10",
+    "@datagrok/bio": "^2.16.8",
+    "@datagrok/helm": "^2.5.8",
+    "@datagrok/chem": "^1.12.4",
     "@types/jquery": "^3.5.14",
     "@types/js-yaml": "^4.0.5",
     "@types/lodash": "^4.14.202",

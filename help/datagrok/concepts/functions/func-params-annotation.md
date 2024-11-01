@@ -548,7 +548,7 @@ To learn more, see [Compute](../../../compute/compute.md#data-access).
 
 
 ```js
-//language: javaScript
+//language: javascript
 //input: dataframe orders {category: Data; editor: Samples:OrdersByEmployee}
 //input: int factor = 2 {category: Computation}
 //input: string country {category: Computation; editorParam: orders.shipCountry}

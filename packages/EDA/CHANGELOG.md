@@ -1,5 +1,12 @@
 # EDA changelog
 
+## 1.2.3 (2024-10-25)
+
+Fixed:
+
+* k-NN imputer input form
+* console output
+
 ## 1.2.2 (2024-09-12)
 
 Updated ANOVA:
@@ -14,10 +21,6 @@ Updated ANOVA:
 ## 1.2.0 (2024-09-10)
 
 * 1.21.1 release
-
-## 1.1.36-rc (2024-09-06)
-
-* Preparing 1.21.1 release
 
 ## 1.1.35 (2024-08-28)
 

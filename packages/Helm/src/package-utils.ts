@@ -59,6 +59,7 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
   try {
     const requireBackup = window.require;
 
+    // Dojo modules required by JDraw2 and HELMWebEditor
     // 'dojo.window','dojo.io.script','dojo.io.iframe','dojo.dom',
     // 'dojox.gfx','dojox.gfx.svg','dojox.gfx.shape','dojox.charting'
     const dojoTargetList: { name: string, checker: () => boolean }[] = [
@@ -206,19 +207,16 @@ export const helmJsonReplacer = (key: string, value: any): any => {
 export class HelmPackage extends DG.Package {
   public alertOriginal: ((s: string) => void) | null = null;
 
-  private _seqHelper: ISeqHelper;
-  public get seqHelper(): ISeqHelper {
-    if (!this._seqHelper)
-      throw new Error('Package Helm .seqHelper is not initialized');
-    return this._seqHelper;
-  }
-
-  private _helmHelper: IHelmHelper;
+  private _helmHelper?: IHelmHelper;
   public get helmHelper(): IHelmHelper {
     if (!this._helmHelper)
       throw new Error('Package Helm .helmHelper is not initialized');
     return this._helmHelper;
   };
+
+  public get seqHelper(): ISeqHelper {
+    return this.helmHelper!.seqHelper;
+  }
 
   public _libHelper!: IMonomerLibHelper;
 
@@ -327,8 +325,7 @@ export class HelmPackage extends DG.Package {
   private _initialized: boolean = false;
 
   /** Requires both Bio & HELMWebEditor initialized */
-  completeInit(seqHelper: ISeqHelper, helmHelper: IHelmHelper, libHelper: IMonomerLibHelper): void {
-    this._seqHelper = seqHelper;
+  completeInit(helmHelper: IHelmHelper, libHelper: IMonomerLibHelper): void {
     this._helmHelper = helmHelper;
     this._libHelper = libHelper;
 

@@ -46,6 +46,10 @@ export class MonomerLibBase implements IMonomerLibBase {
   ) {
     this._isEmpty = !this._monomers || Object.keys(this._monomers).length === 0 ||
       Object.entries(this._monomers).every(([_, ptMonomers]) => Object.keys(ptMonomers).length === 0);
+    for (const [_monomerType, monomersOfType] of Object.entries(this._monomers)) {
+      for (const [_monomerSymbol, monomer] of Object.entries(monomersOfType))
+        monomer.lib = this;
+    }
   }
 
   getMonomerSymbolsByType(polymerType: PolymerType): string[] {
@@ -161,12 +165,12 @@ export class MonomerLibBase implements IMonomerLibBase {
   getTooltip(biotype: HelmType, monomerSymbol: string): HTMLElement {
     const polymerType = helmTypeToPolymerType(biotype);
     const res = ui.div([], {classes: 'ui-form ui-tooltip'});
+    const wem = this.getWebEditorMonomer(biotype, monomerSymbol)!;
     const monomer = this.getMonomer(polymerType, monomerSymbol);
     if (monomer) {
       // Symbol & Name
       const symbol = monomer[REQ.SYMBOL];
       const _name = monomer[REQ.NAME];
-      const wem = this.getWebEditorMonomer(biotype, monomerSymbol)!;
 
       const htmlColor = wem.backgroundcolor;
       res.append(ui.divH([

@@ -614,7 +614,7 @@ export async function demoFix3(): Promise<void> {
 // -- cache --
 //name: readAsText
 //meta.cache: client
-//meta.invalidateOn: 0 0 1 * * ?
+//meta.cache.invalidateOn: 0 * * * *
 //input: string file
 //output: string result
 export async function readAsText(file: string): Promise<string> {
@@ -623,7 +623,7 @@ export async function readAsText(file: string): Promise<string> {
 
 //name: readAsTextDapi
 //meta.cache: client
-//meta.invalidateOn: 0 0 1 * * ?
+//meta.cache.invalidateOn: 0 * * * *
 //input: string file
 //output: string result
 export async function readAsTextDapi(file: string): Promise<string> {
@@ -656,7 +656,7 @@ export async function getBiostructureRcsbPdb(id: string): Promise<string> {
 //description: Get biostructure by id as mmCIF
 //meta.dataProvider: Molecule3D
 //meta.cache: client
-//meta.invalidateOn: 0 0 1 * * ?
+//meta.cache.invalidateOn: 0 * * * *
 //input: string id
 //output: string result
 export async function getBiostructureRcsbMmcif(id: string): Promise<string> {
@@ -672,7 +672,7 @@ export async function getBiostructureRcsbMmcif(id: string): Promise<string> {
 //description: Get biostructure by id as BinaryCIF
 //meta.dataProvider: Molecule3D
 //meta.cache: client
-//meta.invalidateOn: 0 0 1 * * ?
+//meta.cache.invalidateOn: 0 * * * *
 //input: string id ='1QBS'
 //output: string result
 export async function getBiostructureRcsbBcif(id: string): Promise<string> {
@@ -711,11 +711,9 @@ export function structure3D(molecule: DG.SemanticValue): DG.Widget {
     : grok.shell.getTableView(dataFrame.name);
   const { grid } = tableView;
   const gridCell = grid.cell(column.name, rowIndex);
-  console.log('pdb from panel');
-  console.log(gridCell.cell.value);
   const renderer = new PdbGridCellRendererBack(null, column);
 
-  renderer.createViewer(gridCell).then(async ({ tview, viewer }) => {
+  renderer.createViewer(gridCell, tableView).then(async ({ tview, viewer }) => {
     if (tview && viewer) {
       widget.root.appendChild(viewer.root);
     }

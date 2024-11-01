@@ -10,7 +10,7 @@ export const _package = new DG.Package();
 const WIDTH = 200;
 const HEIGHT = 100;
 
-//tags: init,autostart
+//tags: autostart
 export function init() {
   //Register handlers
   // DG.ObjectHandler.register(new ChemblIdHandler());
@@ -52,7 +52,7 @@ export async function chemblSimilaritySearch(molecule: string): Promise<DG.DataF
 //output: widget result
 export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = false): DG.Widget {
   const headerHost = ui.div([]);
-  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap chem-viewer-grid');
+  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap chem-viewer-grid chem-search-panel-wrapper');
   const panel = ui.divV([headerHost, compsHost]);
   const searchFunc = substructure ? async () => chemblSubstructureSearch(mol) : async () => chemblSimilaritySearch(mol);
 
@@ -62,9 +62,28 @@ export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = f
       compsHost.appendChild(ui.divText('No matches'));
       return;
     }
+
     const moleculeCol = table.getCol('smiles');
     const chemblId = table.getCol('chembl_id');
     const molCount = Math.min(table.rowCount, 20);
+
+    if (!substructure) {
+      const similarityCol = table.getCol('similarity');
+      const order = similarityCol.getSortedOrder();
+      const descendingOrder = order.slice().sort((a, b) => similarityCol.get(b) - similarityCol.get(a));
+      
+      const reorderedMols: string[] = new Array<string>(descendingOrder.length);
+      const reorderedScores: number[] = new Array<number>(descendingOrder.length);
+      
+      for (let i = 0; i < descendingOrder.length; ++i) {
+        const index = descendingOrder[i];
+        reorderedMols[i] = moleculeCol.get(index);
+        reorderedScores[i] = similarityCol.get(index);
+      }
+      
+      moleculeCol.init((i) => reorderedMols[i]);
+      similarityCol.init((i) => reorderedScores[i]);
+    }
 
     for (let i = 0; i < molCount; i++) {
       const molHost = ui.divV([]);
@@ -156,7 +175,6 @@ export async function chemblMolregno(table: DG.DataFrame, molecules: DG.Column):
   }
   return table;
 }
-
 
 //name: chemblIdToSmilesTs
 //meta.role: converter

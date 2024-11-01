@@ -1,10 +1,8 @@
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
-import {ISeqSplitted, SeqColStats} from './types';
+import {ISeqSplitted, SeqColStats, SplitterFunc} from './types';
 import {NOTATION} from './consts';
 import {HelmType} from '../../helm/types';
 import {CellRendererBackBase} from '../cell-renderer-back-base';
@@ -16,6 +14,31 @@ export const SeqTemps = new class {
 }();
 export type ConvertFunc = (src: string) => string;
 export type JoinerFunc = (src: ISeqSplitted) => string;
+
+export class SeqValueBase extends DG.SemanticValue<string> {
+
+  override get value(): string { return this.seqHandler.column.get(this.rowIdx)!; }
+
+  override set value(v: string) { this.seqHandler.column.set(this.rowIdx, v); }
+
+  get helm(): string { return this.seqHandler.getHelm(this.rowIdx); }
+
+  constructor(
+    private rowIdx: number,
+    private seqHandler: ISeqHandler,
+  ) {
+    if (seqHandler.column.dataFrame == null)
+      throw new Error('Attribute .dataFrame is required for SeqValueBase from cell');
+    const tableCell = seqHandler.column.dataFrame.cell(rowIdx, seqHandler.column.name);
+    const v = DG.SemanticValue.fromTableCell(tableCell);
+    // @ts-ignore
+    super(v.dart);
+  }
+
+  getSplitted(): ISeqSplitted {
+    return this.seqHandler.getSplitted(this.rowIdx);
+  }
+}
 
 export interface ISeqHandler {
   get column(): DG.Column<string>;
@@ -31,6 +54,7 @@ export interface ISeqHandler {
   get length(): number;
   get defaultGapOriginal(): string;
   get stats(): SeqColStats;
+  get splitter(): SplitterFunc;
   get joiner(): JoinerFunc;
 
   get posList(): string[];
@@ -40,9 +64,9 @@ export interface ISeqHandler {
   isHelm(): boolean;
   isSeparator(): boolean;
 
-
   getSplitted(rowIdx: number, limit?: number): ISeqSplitted;
-  getHelm(rowIdx: number, options?: any): Promise<DG.SemanticValue<string>>;
+  getValue(rowIdx: number, options?: any): SeqValueBase;
+  getHelm(rowIdx: number): string;
 
   getAlphabetSize(): number;
   getAlphabetIsMultichar(): boolean;

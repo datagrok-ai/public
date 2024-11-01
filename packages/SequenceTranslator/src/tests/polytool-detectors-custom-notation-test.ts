@@ -22,7 +22,7 @@ category('PolyTool: detectors', () => {
 3,R-F-C(1)-T-G-H-F-Y-P-C(1)
 4,C(1)-T-G-H-F-H-P-C(1)
 5,R-F-D(2)-T-G-H-F-Y-P-NH2(2)
-6,R-F-aG(3)-T-G-H-F-Y-P-azG(3)-meI`,
+6,R-F-aG(4)-T-G-H-F-Y-P-azG(4)-meI`,
       pos: {'seq': new PosCol(NOTATION.CUSTOM, ALIGNMENT.SEQ, ALPHABET.UN, 13, true, '-')}
     },
   };

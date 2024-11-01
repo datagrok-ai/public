@@ -9,8 +9,8 @@ import {before, after, category, expect, test, expectArray, testEvent, delay} fr
 
 import {_package} from '../package-test';
 
-category('rendering', () => {
-  test('scatterPlotTooltip', async () => {
+category('rendering-tooltip', () => {
+  test('scatterPlot', async () => {
     await _testScatterPlotTooltip();
   });
 

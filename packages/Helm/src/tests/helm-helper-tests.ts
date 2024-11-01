@@ -6,6 +6,9 @@ import * as DG from 'datagrok-api/dg';
 import {after, before, category, delay, expect, expectArray, test, testEvent} from '@datagrok-libraries/utils/src/test';
 import {HelmNotSupportedError, HelmNotSupportedErrorType, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 /* eslint-enable max-len */
 
 import {_package} from '../package-test';
@@ -15,9 +18,21 @@ type TestTgtType = { helm: string | null, map: [number, number][], errType?: str
 
 category('HelmHelper: removeGaps', () => {
   let helmHelper: IHelmHelper;
+  let libHelper: IMonomerLibHelper;
+  let userLibSettings: UserLibSettings;
 
   before(async () => {
     helmHelper = await getHelmHelper();
+    libHelper = await getMonomerLibHelper();
+
+    userLibSettings = await getUserLibSettings();
+    // Cysteine has different R-groups in other libraries
+    await libHelper.loadMonomerLibForTests();
+  });
+
+  after(async () => {
+    await setUserLibSettings(userLibSettings);
+    await libHelper.loadMonomerLib(true);
   });
 
   const tests: { [testName: string]: { src: TestSrcType, tgt: TestTgtType } } = {

@@ -18,15 +18,16 @@ import {defaultErrorHandler} from './utils/err-info';
 //polytool specific
 import {polyToolConvert, polyToolConvertUI} from './polytool/pt-dialog';
 import {polyToolEnumerateChemUI} from './polytool/pt-dialog';
-import {polyToolEnumerateHelmUI} from './polytool/pt-enumeration-helm-dialog';
+import {polyToolEnumerateHelmUI} from './polytool/pt-enumerate-seq-dialog';
 import {_setPeptideColumn} from './polytool/utils';
 import {PolyToolCsvLibHandler} from './polytool/csv-to-json-monomer-lib-converter';
 import {ITranslationHelper} from './types';
 import {addContextMenuUI} from './utils/context-menu';
 import {PolyToolConvertFuncEditor} from './polytool/pt-convert-editor';
-import {polyToolUnruleUI} from './polytool/pt-unrule';
 import {CyclizedNotationProvider} from './utils/cyclized';
 import {getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {PolyToolTags} from './consts';
+import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
 export const _package: OligoToolkitPackage = new OligoToolkitPackage({debug: true}/**/);
 
@@ -35,15 +36,16 @@ let initSequenceTranslatorPromise: Promise<void> | null = null;
 //tags: init
 export async function init(): Promise<void> {
   if (initSequenceTranslatorPromise === null)
-    initSequenceTranslatorPromise = initSequenceTranslatorInt();
+    _package.startInit(initSequenceTranslatorPromise = initSequenceTranslatorInt());
+
   return initSequenceTranslatorPromise;
 }
 
 async function initSequenceTranslatorInt(): Promise<void> {
-  const [seqHelper] = await Promise.all([
-    getSeqHelper(),
+  const [helmHelper] = await Promise.all([
+    getHelmHelper(),
   ]);
-  _package.completeInit(seqHelper);
+  _package.completeInit(helmHelper);
 }
 
 //name: Oligo Toolkit
@@ -300,6 +302,6 @@ export async function ptEnumeratorChemApp(): Promise<void> {
 //input: string separator
 export function applyNotationProviderForCyclized(col: DG.Column<string>, separator: string) {
   col.meta.units = NOTATION.CUSTOM;
-  col.tags['pt-role'] = 'template';
-  col.temp[SeqTemps.notationProvider] = new CyclizedNotationProvider(separator, _package.seqHelper);
+  col.tags[PolyToolTags.dataRole] = 'template';
+  col.temp[SeqTemps.notationProvider] = new CyclizedNotationProvider(separator, _package.helmHelper);
 }

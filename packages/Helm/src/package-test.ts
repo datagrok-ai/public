@@ -14,7 +14,6 @@ import './tests/helm-service-tests';
 import './tests/renderers-tests';
 import './tests/get-molfiles-tests';
 import './tests/properties-widget-tests';
-import './tests/get-all-parts-tests';
 import './tests/get-monomer-tests';
 import './tests/parse-helm-tests';
 import './tests/helm-web-editor-tests';

@@ -30,7 +30,7 @@ There are four mandatory annotations that must be present to register a function
 * `input: funccall scriptCall` - defines input. Handler should have only one input parameter of type `funccall`.
 
 There are other optional annotations as well:
-* `meta.scriptHandler.templateScript` - defines template code that will be added to all [newly created scripts](getting-started#create-a-script).
+* `meta.scriptHandler.templateScript` - defines template code that will be added to all [newly created scripts](../../compute/scripting/getting-started.md#create-a-script).
 * `meta.scriptHandler.codeEditorMode` - defines code editor mode. Datagrok uses [CodeMirror](https://codemirror.net/) to display and edit scripts in UI. You can get the list of available modes [here](https://codemirror.net/5/mode/).
 * `meta.icon` - defines path to the icon inside the [package files](../../develop/how-to/work-with-package-files). This icon will be used in UI for all scripts created with the language of your handler.
 * `meta.scriptHandler.vectorizationFunction` - defines function in the form of `<namespace>:<function name>` that will perform vectorization of DG.Script. This function should accept DG.Script and return string with vectorized code.
@@ -49,7 +49,7 @@ export async function clojureScriptHandler(call: DG.FuncCall): Promise<void> {
 
 ## 3. Publish package
 
-[Publish package](../../develop/how-to/publish-packages) and that's it! After that you will see language of your script handler in the list of available options when [creating new script](getting-started#create-a-script).
+[Publish package](../../develop/how-to/publish-packages) and that's it! After that you will see language of your script handler in the list of available options when [creating new script](../../compute/scripting/getting-started.md#create-a-script).
 Platform will be able to recognize scripts that have a `language` annotation corresponding to your handler and will be able to run them using your script handler.
 
 ![custom-script-handler](custom-script-handler.png)

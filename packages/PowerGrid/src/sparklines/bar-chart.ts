@@ -12,16 +12,22 @@ import {
 
 const minH = 0.05;
 
+enum BarChartColoringType {
+  Off = 'Off',
+  Bins = 'Bins',
+  Values = 'Values'
+}
+
 interface BarChartSettings extends SummarySettingsBase {
   globalScale: boolean;
-  colorCode: boolean;
+  colorCode: BarChartColoringType;
 }
 
 function getSettings(gc: DG.GridColumn): BarChartSettings {
   const settings: BarChartSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
     gc.settings[SparklineType.BarChart] ??= getSettingsBase(gc, SparklineType.BarChart);
   settings.globalScale ??= false;
-  settings.colorCode ??= false;
+  settings.colorCode ??= BarChartColoringType.Off;
   return settings;
 }
 
@@ -83,17 +89,23 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
     const cols = df.columns.byNames(settings.columnNames);
     const gmin = Math.min(...cols.map((c: DG.Column) => c.min));
     const gmax = Math.max(...cols.map((c: DG.Column) => c.max));
+    g.strokeStyle = DG.Color.toRgb(DG.Color.lightGray);
 
     for (let i = 0; i < cols.length; i++) {
-      if (!cols[i].isNone(row)) {
-        const color = settings.colorCode ? DG.Color.getCategoricalColor(i) : DG.Color.fromHtml('#8080ff');
+      const currentCol = cols[i];
+      if (!currentCol.isNone(row)) {
+        const color = settings.colorCode === BarChartColoringType.Off ? DG.Color.fromHtml('#8080ff') :
+          settings.colorCode === BarChartColoringType.Bins ? DG.Color.getCategoricalColor(i) :
+          currentCol.meta.colors.getType() === DG.COLOR_CODING_TYPE.OFF ? DG.Color.getRowColor(currentCol, row) : currentCol.meta.colors.getColor(row);
         g.setFillStyle(DG.Color.toRgb(color));
-        const scaled = settings.globalScale ? (cols[i].getNumber(row) - gmin) / (gmax - gmin) : cols[i]?.scale(row);
+        const scaled = settings.globalScale ? (currentCol.getNumber(row) - gmin) / (gmax - gmin) : currentCol?.scale(row);
         const bb = b
           .getLeftPart(cols.length, i)
           .getBottomScaled(scaled > minH ? scaled : minH)
           .inflateRel(0.9, 1);
         g.fillRect(bb.left, bb.top, bb.width, bb.height);
+        if (settings.colorCode === BarChartColoringType.Values)
+          g.strokeRect(bb.left, bb.top, bb.width, bb.height);
       }
     }
   }
@@ -113,13 +125,6 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
     const normalizeInput = DG.InputBase.forProperty(globalScaleProp, settings);
     normalizeInput.onChanged.subscribe(() => gc.grid.invalidate());
 
-    const colorCodeScaleProp = DG.Property.js('colorCode', DG.TYPE.BOOL, {
-      description: 'Activates color rendering'
-    });
-
-    const colorCodeNormalizeInput = DG.InputBase.forProperty(colorCodeScaleProp, settings);
-    colorCodeNormalizeInput.onChanged.subscribe(() => { gc.grid.invalidate(); });
-
     const columnNames = settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical);
     return ui.inputs([
       normalizeInput,
@@ -129,7 +134,16 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
           gc.grid.invalidate();
         }, available: names(gc.grid.dataFrame.columns.numerical),
       }),
-      colorCodeNormalizeInput
+      ui.input.choice<BarChartColoringType>('Color Code', {
+        value: settings.colorCode,
+        items: [BarChartColoringType.Off, BarChartColoringType.Bins, BarChartColoringType.Values],
+        onValueChanged: (value) => {
+          settings.colorCode = value;
+          gc.grid.invalidate();
+        },
+        tooltipText: 'Activates color rendering',
+        nullable: false
+      }),
     ]);
   }
 }

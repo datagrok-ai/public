@@ -1,5 +1,48 @@
 # Sequence Translator changelog
 
+## 1.4.10 (2024-11-01)
+
+### Bug fixes
+
+* Fix build
+
+## 1.4.9 (2024-10-31)
+
+### Bug fixes
+
+* Fix package initializing helmHelper
+* Fix Chain using HelmAtom.bio of type PtBio
+* Fix PT Enumerate dialog for harmonized sequences
+* Fix PT Enumerate for monomer hovering
+* Fix PT Enumerate for historical values
+* Fix PT Enumerate adding buildCyclizedMonomerHoverLink, WIP
+* Fix adding CyclizedGridCellRenderBack
+
+## 1.4.8 (2024-10-25)
+
+### Bug fixes
+
+* PolyTool ambigous R groups handling bug
+
+## 1.4.7 (2024-10-25)
+
+### Bug fixes
+
+* PolyTool ambigous R groups handling bug
+
+## 1.4.6 (2024-10-25)
+
+### New features
+
+* Add PolyTool Enumerate for harmonized sequences
+* PolyTool ambigous R groups handling
+
+### Bug fixes
+
+* Fix PolyTool chain, add check consistency, add tests
+* Fix PolyTool Convert tests
+* Fix the package init
+
 ## 1.4.5 (2024-10-11)
 
 ### Bug fixes

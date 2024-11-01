@@ -18,6 +18,7 @@ import {getPropertiesWidget} from './widgets/properties-widget';
 import {HelmGridCellRenderer, HelmGridCellRendererBack} from './utils/helm-grid-cell-renderer';
 import {_getHelmService, HelmPackage} from './package-utils';
 import {HelmHelper} from './helm-helper';
+import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 
 // Do not import anything than types from @datagrok/helm-web-editor/src/types
 import type {JSDraw2Module, OrgHelmModule, ScilModule} from './types';
@@ -51,15 +52,13 @@ async function initHelmInt(): Promise<void> {
   _package.logger.debug(`${logPrefix}, start`);
 
   try {
-    const helmHelper: IHelmHelper = new HelmHelper(_package.logger);
-    const [_, seqHelper, libHelper] = await Promise.all([
-      _package.initHELMWebEditor(),
-      getSeqHelper(),
-      getMonomerLibHelper(),
-    ]);
-
-    _package.logger.debug(`${logPrefix}, lib loaded`);
-    _package.completeInit(seqHelper, helmHelper, libHelper);
+    // order of things is very important
+    await getRdKitModule();
+    const seqHelper = await getSeqHelper();
+    const libHelper = await getMonomerLibHelper();
+    await _package.initHELMWebEditor();
+    const helmHelper: IHelmHelper = new HelmHelper(seqHelper, _package.logger);
+    _package.completeInit(helmHelper, libHelper);
   } catch (err: any) {
     const [errMsg, errStack] = errInfo(err);
     // const errMsg: string = err instanceof Error ? err.message : !!err ? err.toString() : 'Exception \'undefined\'';

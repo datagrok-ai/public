@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/samples",
   "friendlyName": "Samples",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "author": {
     "name": "Savenko Stanislav",
     "email": "ssavenko@datagrok.ai"
@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@datagrok-libraries/utils": "^4.3.0",
-    "datagrok-api": "^1.13.0",
+    "datagrok-api": "^1.22.0",
     "rxjs": "^6.5.5",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3"
@@ -26,7 +26,7 @@
     "eslint-config-google": "^0.14.0",
     "webpack": "^5.95.0",
     "webpack-cli": "^5.1.4",
-    "@datagrok/api-tests": "^1.7.17",
+    "@datagrok/api-tests": "^1.8.0",
     "@datagrok/dendrogram": "^1.2.33"
   },
   "scripts": {

@@ -1,5 +1,12 @@
 # Admetica changelog
 
+## 1.0.2 (2024-10-18)
+
+### Bug Fixes
+
+* Admetica: Fixed tests
+* Admetica: Support CPU usage when no GPU is available
+
 ## 1.0.1 (2024-09-30)
 
 ### Features

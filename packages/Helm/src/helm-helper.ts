@@ -6,9 +6,9 @@ import $ from 'cash-dom';
 
 /* eslint-disable max-len */
 import {
-  App, Point, HelmAtom, HelmBond, HelmMol, HelmType, GetMonomerFunc, GetMonomerResType,
+  App, Point, HelmType, IHelmBio, HelmAtom, HelmBond, HelmMol, GetMonomerFunc, GetMonomerResType,
   MonomerExplorer, TabDescType, MonomersFuncs, MonomerSetType, ISeqMonomer, PolymerType, MonomerType,
-  DojoType, JSDraw2ModuleType, IHelmEditorOptions, IHelmDrawOptions
+  DojoType, JSDraw2ModuleType, IHelmEditorOptions, IHelmDrawOptions,
 } from '@datagrok-libraries/bio/src/helm/types';
 import {HelmTabKeys, HelmTypes, MonomerTypes, PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
@@ -19,6 +19,7 @@ import {
 import {IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
 import {IMonomerLib, IMonomerLibBase, IMonomerLinkData, IMonomerSetPlaceholder} from '@datagrok-libraries/bio/src/types/index';
 import {GAP_SYMBOL, GapOriginals, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 import {HelmWebEditor} from './helm-web-editor';
 import {OrgHelmModule, ScilModule} from './types';
@@ -39,6 +40,7 @@ export class HelmHelper implements IHelmHelper {
   private static instanceCount: number = 0;
 
   constructor(
+    public readonly seqHelper: ISeqHelper,
     private readonly logger: ILogger
   ) {
     // Watchdog for singleton
@@ -342,7 +344,7 @@ export class HelmHelper implements IHelmHelper {
   }
 
   public parse(helm: string, origin?: Point): HelmMol {
-    const molHandler = new JSDraw2.MolHandler<HelmType, IHelmEditorOptions>();
+    const molHandler = new JSDraw2.MolHandler<HelmType, IHelmBio, IHelmEditorOptions>();
     const plugin = new org.helm.webeditor.Plugin(molHandler);
     org.helm.webeditor.IO.parseHelm(plugin, helm, origin ?? new JSDraw2.Point(0, 0));
     return plugin.jsd.m;
@@ -399,7 +401,7 @@ export class HelmHelper implements IHelmHelper {
 
     for (let aI: number = 0; aI < mol.atoms.length; ++aI) {
       const a: HelmAtom = mol.atoms[aI];
-      monomerMap.set(parseInt(a.bio!.continuousId as string) - 1, aI);
+      monomerMap.set(a.bio!.continuousId - 1, aI);
     }
 
     const resHelm = org.helm.webeditor.IO.getHelm(mol)!;

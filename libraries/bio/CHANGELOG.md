@@ -1,5 +1,48 @@
 # bio changelog
 
+## 5.45.9 (2024-11-01)
+
+Unknown pallete correct initialization
+
+## 5.45.8 (2024-11-01)
+
+Correct loading of unknown pallete
+
+## 5.45.7 (2024-11-01)
+
+Unknown pallete correct initialization
+
+## 5.45.6 (2024-10-31)
+
+### Bug fixes
+
+* Fix SeqValueBase adding seqHandler, getSplitted, helm
+* Fix HelmInputBase for SeqValueBase
+* Fix ISeqHandler adding getHelm, splitter
+* Fix INotationProvider adding setUnits, getHelm
+
+## 5.45.5 (2024-10-24)
+
+### Bug fixes
+
+* Fix splitterAsHelm for multiple simple polymers
+* Fix IHelmHelper adding .seqHelper
+* Fix exporting HWE IBio, HelmBio
+
+## 5.45.4 (2024-10-22)
+
+### Bug fixes
+
+* Fix ISeqHandler getValue of type MacromoleculeValueBase
+* Fix CellRendererAsyncBase for LRU imageCache, cacheEnabled
+
+## 5.45.3 (2024-10-16)
+
+### Bug fixes
+
+* Fix splitterWithSeparator
+* Fix MonomerPlacer onMouseMove handling
+
 ## 5.45.2 (2024-10-11)
 
 ### Bug fixes

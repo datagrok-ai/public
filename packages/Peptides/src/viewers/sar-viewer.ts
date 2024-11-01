@@ -40,6 +40,7 @@ import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule/c
 import {ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
+import {PeptideUtils} from '../peptideUtils';
 
 export enum SELECTION_MODE {
   MUTATION_CLIFFS = 'Mutation Cliffs',
@@ -231,7 +232,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
 
 
     this._positionColumns ??= getSharedPositionColumns(VIEWER_TYPE.LOGO_SUMMARY_TABLE) ??
-      splitAlignedSequences(this.dataFrame.getCol(this.sequenceColumnName)).columns.toList();
+      splitAlignedSequences(this.dataFrame.getCol(this.sequenceColumnName), PeptideUtils.getSeqHelper()).columns.toList();
     return this._positionColumns!;
   }
 

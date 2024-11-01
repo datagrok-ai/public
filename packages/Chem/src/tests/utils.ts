@@ -26,8 +26,7 @@ export async function createTableView(tableName: string): Promise<DG.TableView> 
 }
 
 export async function readDataframe(tableName: string): Promise<DG.DataFrame> {
-  const file = await loadFileAsText(tableName);
-  const df = DG.DataFrame.fromCsv(file);
+  const df = await grok.dapi.files.readCsv(`System:AppData/Chem/${tableName}`);
   df.name = tableName.replace('.csv', '');
   return df;
 }
