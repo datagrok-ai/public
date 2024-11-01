@@ -61,7 +61,6 @@ export class GrayAllPalette extends UnknownSeqPalette {
 export class UnknownColorPalette extends UnknownSeqPalette {
   private static _pallete: string[] | null = null;
   public static get palette(): string[] {
-    console.log('UnknownColorPalette.palette');
     if (!UnknownColorPalette._pallete)
       UnknownColorPalette._pallete = UnknownColorPalette.buildPalette();
     return UnknownColorPalette._pallete;
