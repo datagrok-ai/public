@@ -2,7 +2,11 @@
 
 ## 1.2.4 (2024-10-31)
 
-Fixed labels in the PLS tools
+Fixed:
+
+* Labels and help links in the PLS tools
+* Fixed k-NN imputer description
+* 
 
 ## 1.2.3 (2024-10-25)
 
