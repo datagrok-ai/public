@@ -4,21 +4,34 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {_principalComponentAnalysisInWebWorker,
-  _partialLeastSquareRegressionInWebWorker} from '../wasm/EDAAPI';
+import {_principalComponentAnalysisInWebWorker, _principalComponentAnalysis,
+  _partialLeastSquareRegressionInWebWorker,
+  _principalComponentAnalysisNipals,
+} from '../wasm/EDAAPI';
 
 import {checkWasmDimensionReducerInputs, checkUMAPinputs, checkTSNEinputs,
   getRowsOfNumericalColumnns} from './utils';
 
 // Principal components analysis (PCA)
 export async function computePCA(table: DG.DataFrame, features: DG.ColumnList, components: number,
-  center: boolean, scale: boolean): Promise<DG.DataFrame> {
+  center: boolean, scale: boolean, nipals: boolean): Promise<DG.DataFrame> {
   checkWasmDimensionReducerInputs(features, components);
 
   const centerNum = center ? 1 : 0;
   const scaleNum = scale ? 1 : 0;
 
-  return await _principalComponentAnalysisInWebWorker(table, features, components, centerNum, scaleNum);
+  try {
+    const df = nipals ? _principalComponentAnalysisNipals(table, features, components) :
+      _principalComponentAnalysis(table, features, components, centerNum, scaleNum);
+    return df;
+  } catch (e) {
+    return DG.DataFrame.fromColumns([
+      DG.Column.fromFloat32Array('1', new Float32Array(table.rowCount)),
+      DG.Column.fromFloat32Array('2', new Float32Array(table.rowCount)),
+    ]);
+  }
+
+  return _principalComponentAnalysis(table, features, components, centerNum, scaleNum);
 }
 
 // Partial least square regression (PLS): TO REMOVE
