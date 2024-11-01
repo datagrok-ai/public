@@ -1,5 +1,11 @@
 # Sequence Translator changelog
 
+## 1.4.10 (2024-11-01)
+
+### Bug fixes
+
+* Fix build
+
 ## 1.4.9 (2024-10-31)
 
 ### Bug fixes

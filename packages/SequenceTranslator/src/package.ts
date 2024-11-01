@@ -37,6 +37,7 @@ let initSequenceTranslatorPromise: Promise<void> | null = null;
 export async function init(): Promise<void> {
   if (initSequenceTranslatorPromise === null)
     _package.startInit(initSequenceTranslatorPromise = initSequenceTranslatorInt());
+
   return initSequenceTranslatorPromise;
 }
 

@@ -23,7 +23,7 @@ import {getEnumerationChem, PT_CHEM_EXAMPLE} from './pt-enumeration-chem';
 
 import {
   PT_ERROR_DATAFRAME, PT_UI_ADD_HELM, PT_UI_DIALOG_CONVERSION, PT_UI_DIALOG_ENUMERATION,
-  PT_UI_GET_HELM, PT_UI_HIGHLIGHT_MONOMERS, PT_UI_RULES_USED, PT_UI_USE_CHIRALITY, PT_WARNING_COLUMN
+  PT_UI_GET_HELM, PT_UI_HIGHLIGHT_MONOMERS, PT_UI_RULES_USED, PT_UI_USE_CHIRALITY
 } from './const';
 
 import {_package} from '../package';
@@ -36,7 +36,7 @@ import {PolymerTypes} from '@datagrok-libraries/js-draw-lite/src/types/org';
 import {getMonomersDictFromLib} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
 import {monomerSeqToMolfile} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level-utils';
 import {LRUCache} from 'lru-cache';
-import {addSubstructProvider, getMonomerHover, ISubstruct, mergeSubstructs, setMonomerHover} from '@datagrok-libraries/chem-meta/src/types';
+import {getMonomerHover, ISubstruct, setMonomerHover} from '@datagrok-libraries/chem-meta/src/types';
 import {getMolHighlight} from '@datagrok-libraries/bio/src/monomer-works/seq-to-molfile';
 import {ChemTags} from '@datagrok-libraries/chem-meta/src/consts';
 
@@ -319,7 +319,9 @@ function buildCyclizedMonomerHoverLink(
     const seqSS = seqSH.getSplitted(tableRowIdx);
     const biotype = seqSH.defaultBiotype;
     const seqMList: ISeqMonomer[] = wu.count(0).take(seqSS.length)
-      .map((posIdx) => { return {position: posIdx, symbol: seqSS.getCanonical(posIdx), biotype: biotype} as ISeqMonomer; })
+      .map((posIdx) => {
+        return {position: posIdx, symbol: seqSS.getCanonical(posIdx), biotype: biotype} as ISeqMonomer;
+      })
       .toArray();
 
     const alphabet = seqSH.alphabet as ALPHABET;
@@ -337,9 +339,9 @@ function buildCyclizedMonomerHoverLink(
     if (seq == null) return null;
 
     let resMonomerMap = monomerMapLruCache.get(seq);
-    if (!resMonomerMap) {
+    if (!resMonomerMap)
       monomerMapLruCache.set(seq, resMonomerMap = buildMonomerMap(seqCol, tableRowIdx));
-    }
+
     return resMonomerMap;
   }
 
@@ -382,13 +384,13 @@ function buildCyclizedMonomerHoverLink(
             const resSubstructList: ISubstruct[] = [];
             const seqMonomerList: number[] = [cyclizedMonomer.position]; // TODO: Map position of harmonized sequence
             for (const seqMonomer of seqMonomerList) {
-
               const monomerMap = molMonomerMap.get(cyclizedMonomer!.position); // single monomer
               if (!monomerMap) return {atoms: [], bonds: [], highlightAtomColors: [], highlightBondColors: []};
               resSubstructList.push(getMolHighlight([monomerMap], monomerLib));
             }
-            const res: ISubstruct = mergeSubstructs(resSubstructList);
-            return res;
+            //TODO: refine merge substract
+            //const res: ISubstruct = mergeSubstructs(resSubstructList);
+            return undefined;
           }
         });
 
@@ -399,7 +401,8 @@ function buildCyclizedMonomerHoverLink(
 
       return true;
     },
-    /* ISubstructProvider.*/getSubstruct: (tableRowIdx: number | null,): ISubstruct | undefined => { // Gets whole molecule highlight
+    /* ISubstructProvider.*/getSubstruct: (tableRowIdx: number | null): ISubstruct | undefined =>{
+      // Gets whole molecule highlight
       if (molCol.getTag(ChemTags.SEQUENCE_SRC_HL_MONOMERS) != 'true') return undefined;
       if (tableRowIdx == null) return undefined;
       const seq = seqCol.get(tableRowIdx);

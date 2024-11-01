@@ -25,8 +25,7 @@ const packageFiles = [
   'src/package.ts', 'src/detectors.ts', 'src/package.js', 'src/detectors.js',
   'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js',
 ];
-const config = yaml.load(fs.readFileSync(confPath, { encoding: 'utf-8' })) as utils.Config;
-
+let config : utils.Config;
 export async function processPackage(debug: boolean, rebuild: boolean, host: string, devKey: string, packageName: any, suffix?: string) {
   // Get the server timestamps
   let timestamps: Indexable = {};
@@ -205,6 +204,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
 
 export async function publish(args: PublishArgs) {
 
+  config = yaml.load(fs.readFileSync(confPath, { encoding: 'utf-8' })) as utils.Config;
   if (args.refresh || args.all) {
     if (path.basename(curDir) !== 'packages')
       curDir = path.dirname(curDir);
