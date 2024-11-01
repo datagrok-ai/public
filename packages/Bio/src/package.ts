@@ -102,52 +102,46 @@ let initBioPromise: Promise<void> | null = null;
 
 //tags: init
 export async function initBio(): Promise<void> {
-  if (initBioPromise === null) {
+  if (initBioPromise === null)
     initBioPromise = initBioInt();
-  }
+
   await initBioPromise;
 }
 
 async function initBioInt() {
   const logPrefix = 'Bio: _package.initBio()';
   _package.logger.debug(`${logPrefix}, start`);
-  let monomerLib!: IMonomerLib;
-  let monomerSets!: IMonomerSet;
-  let rdKitModule!: RDModule;
-  let libHelper!: MonomerLibManager;
   const t1: number = window.performance.now();
-  await Promise.all([
-    (async () => {
-      libHelper = await MonomerLibManager.getInstance();
-      // Fix user lib settings for explicit stuck from a terminated test
-      const libSettings = await getUserLibSettings();
-      if (libSettings.explicit) {
-        libSettings.explicit = [];
-        await setUserLibSettings(libSettings);
-      }
-      libHelper.awaitLoaded(Infinity).then(() => {
-        // Do not wait for monomers and sets loaded
-        return Promise.all([libHelper.loadMonomerLib(), libHelper.loadMonomerSets()]);
-      });
-      monomerLib = libHelper.getMonomerLib();
-      monomerSets = libHelper.getMonomerSets();
-    })(),
-    (async () => {
-      const pkgProps = await _package.getProperties();
-      const bioPkgProps = new BioPackageProperties(pkgProps);
-      _package.properties = bioPkgProps;
-    })(),
-    (async () => { rdKitModule = await getRdKitModule(); })(),
-  ]).finally(() => {
-    const t2: number = window.performance.now();
-    _package.logger.debug(`${logPrefix}, loading ET: ${t2 - t1} ms`);
+  // very important that loading should happen in correct order!
+  // first make sure chem and rdkit module are loaded
+  const rdKitModule = await getRdKitModule();
+  // then load package settings
+  const pkgProps = await _package.getProperties();
+  const bioPkgProps = new BioPackageProperties(pkgProps);
+  _package.properties = bioPkgProps;
+  // then load monomer lib
+  const libHelper = await MonomerLibManager.getInstance();
+  // Fix user lib settings for explicit stuck from a terminated test
+  const libSettings = await getUserLibSettings();
+  if (libSettings.explicit) {
+    libSettings.explicit = [];
+    await setUserLibSettings(libSettings);
+  }
+  libHelper.awaitLoaded(Infinity).then(() => {
+    // Do not wait for monomers and sets loaded
+    return Promise.all([libHelper.loadMonomerLib(), libHelper.loadMonomerSets()]);
   });
-  const seqHelper = new SeqHelper(libHelper, rdKitModule);
-  _package.completeInit(seqHelper, monomerLib, monomerSets, rdKitModule);
+  const monomerLib = libHelper.getMonomerLib();
+  const monomerSets = libHelper.getMonomerSets();
+  // finally log
+  const t2: number = window.performance.now();
+  _package.logger.debug(`${logPrefix}, loading ET: ${t2 - t1} ms`);
 
   const monomers: string[] = [];
   const logPs: number[] = [];
 
+  const seqHelper = new SeqHelper(libHelper, rdKitModule);
+  _package.completeInit(seqHelper, monomerLib, monomerSets, rdKitModule);
   const series = monomerLib!.getMonomerMolsByPolymerType('PEPTIDE')!;
   Object.keys(series).forEach((symbol) => {
     monomers.push(symbol);
@@ -1216,6 +1210,7 @@ export async function detectMacromoleculeProbe(file: DG.FileInfo, colName: strin
 //name: getSeqHelper
 //output: object result
 export async function getSeqHelper(): Promise<ISeqHelper> {
+  await initBio();
   return _package.seqHelper;
 }
 
