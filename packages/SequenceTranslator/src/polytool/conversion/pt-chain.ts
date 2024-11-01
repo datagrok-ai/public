@@ -1,7 +1,8 @@
-import {HelmAtom, HelmBio, HelmMol, HelmType, JSDraw2ModuleType, OrgType} from '@datagrok-libraries/bio/src/helm/types';
+import {Atom, IHelmBio, HelmMol, HelmType, JSDraw2ModuleType, OrgType,} from '@datagrok-libraries/bio/src/helm/types';
 import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {cleanupHelmSymbol} from '@datagrok-libraries/bio/src/helm/utils';
+
 import {getOuterIdx, getInnerIdx} from './pt-misc';
 import {Rules, RuleLink, RuleReaction, getMonomerPairs} from './pt-rules';
 
@@ -16,8 +17,9 @@ type Linkage = {
   fR: number,
   sR: number
 }
+export type PtBio = IHelmBio & { i: number, j: number };
 
-type PolyToolBio = HelmBio & { i: number, j: number };
+type PtAtom = Atom<HelmType, PtBio>
 
 export class Chain {
   linkages: Linkage[];
@@ -25,9 +27,9 @@ export class Chain {
   mol: HelmMol;
 
   constructor(
-    monomers: string[][],
-    linkages: Linkage[],
-    mol: HelmMol) {
+    monomers: string[][], linkages: Linkage[], mol: HelmMol,
+    protected helmHelper: IHelmHelper,
+  ) {
     this.linkages = linkages;
     this.monomers = monomers;
     this.mol = mol;
@@ -58,14 +60,14 @@ export class Chain {
       monomers[i] = rawFragments[i].slice(idxStart + 1, idxEnd).split('.').map((s) => cleanupHelmSymbol(s));
       for (let j = 0; j < monomers[i].length; j++) {
         const elem = monomers[i][j];
-        const bio: PolyToolBio = {type: HelmTypes.AA, i: i, j: j, continuousId: counter};
-        const atom = new JSDraw2.Atom<HelmType>(p, elem, bio);
+        const bio: PtBio = {type: HelmTypes.AA, i: i, j: j, continuousId: counter};
+        const atom = new JSDraw2.Atom<HelmType, IHelmBio>(p, elem, bio);
         resMol.addAtom(atom);
 
         if (j !== 0) {
           const atom1 = resMol.atoms[counter - 1];
           const atom2 = resMol.atoms[counter];
-          const bond = new JSDraw2.Bond<HelmType>(atom1, atom2);
+          const bond = new JSDraw2.Bond<HelmType, IHelmBio>(atom1, atom2);
           bond.r1 = 2;
           bond.r2 = 1;
           resMol.addBond(bond);
@@ -101,20 +103,19 @@ export class Chain {
     for (let i = 0; i < linkages.length; i++) {
       const atom1 = resMol.atoms[linkages[i].fMonomer - 1];
       const atom2 = resMol.atoms[linkages[i].sMonomer - 1];
-      const bond = new JSDraw2.Bond<HelmType>(atom1, atom2);
+      const bond = new JSDraw2.Bond<HelmType, IHelmBio>(atom1, atom2);
       bond.r1 = linkages[i].fR;
       bond.r2 = linkages[i].sR;
       resMol.addBond(bond);
     }
 
-    return new Chain(monomers, linkages, resMol);
+    return new Chain(monomers, linkages, resMol, helmHelper);
   }
 
   /** Get macromolecule from harmonized sequence (template) */
-  async applyRules(rules: Rules): Promise<Chain> {
+  applyRules(rules: Rules): Chain {
     const newNotation = this.getNotation();
-    const helmHelper = await getHelmHelper();
-    return Chain.fromNotation(newNotation, rules, helmHelper);
+    return Chain.fromNotation(newNotation, rules, this.helmHelper);
   }
 
   static fromNotation(sequence: string, rules: Rules, helmHelper: IHelmHelper): Chain {
@@ -208,14 +209,14 @@ export class Chain {
         const ch2 = new Array<string>(monomersCycled.length - allPos2[0]);
         for (let j = 0; j < allPos2[0] - 1; j++) {
           const elem = ch1[j] = monomersCycled[j];
-          const bio: PolyToolBio = {type: HelmTypes.AA, i: i, j: j, continuousId: counter};
-          const atom: HelmAtom = new JSDraw2.Atom<HelmType>(p, elem, bio);
+          const bio: PtBio = {type: HelmTypes.AA, i: i, j: j, continuousId: counter};
+          const atom: PtAtom = new JSDraw2.Atom<HelmType, PtBio>(p, elem, bio);
           resMol.addAtom(atom);
 
           if (j > 0) {
             const atom1 = resMol.atoms[counter - 1];
             const atom2 = resMol.atoms[counter];
-            const bond = new JSDraw2.Bond<HelmType>(atom1, atom2);
+            const bond = new JSDraw2.Bond<HelmType, IHelmBio>(atom1, atom2);
             bond.r1 = 2;
             bond.r2 = 1;
             resMol.addBond(bond);
@@ -225,14 +226,14 @@ export class Chain {
 
         for (let j = allPos2[0]; j < monomersCycled.length; j++) {
           const elem = ch2[j - allPos2[0]] = monomersCycled[j];
-          const bio: PolyToolBio = {type: HelmTypes.AA, i: i, j: j, continuousId: counter};
-          const atom: HelmAtom = new JSDraw2.Atom<HelmType>(p, elem, bio);
+          const bio: PtBio = {type: HelmTypes.AA, i: i, j: j, continuousId: counter};
+          const atom: PtAtom = new JSDraw2.Atom<HelmType, PtBio>(p, elem, bio);
           resMol.addAtom(atom);
 
           if (j > allPos2[0]) {
             const atom1 = resMol.atoms[counter - 1];
             const atom2 = resMol.atoms[counter];
-            const bond = new JSDraw2.Bond<HelmType>(atom1, atom2);
+            const bond = new JSDraw2.Bond<HelmType, IHelmBio>(atom1, atom2);
             bond.r1 = 2;
             bond.r2 = 1;
             resMol.addBond(bond);
@@ -282,14 +283,14 @@ export class Chain {
       } else {
         for (let j = 0; j < monomers[i].length; j++) {
           const elem = monomers[i][j];
-          const bio: PolyToolBio = {type: HelmTypes.AA, i: i, j: j, continuousId: counter};
-          const atom: HelmAtom = new JSDraw2.Atom<HelmType>(p, elem, bio);
+          const bio: PtBio = {type: HelmTypes.AA, i: i, j: j, continuousId: counter};
+          const atom: PtAtom = new JSDraw2.Atom<HelmType, PtBio>(p, elem, bio);
           resMol.addAtom(atom);
 
           if (j > 0) {
             const atom1 = resMol.atoms[counter - 1];
             const atom2 = resMol.atoms[counter];
-            const bond = new JSDraw2.Bond<HelmType>(atom1, atom2);
+            const bond = new JSDraw2.Bond<HelmType, IHelmBio>(atom1, atom2);
             bond.r1 = 2;
             bond.r2 = 1;
             resMol.addBond(bond);
@@ -303,13 +304,13 @@ export class Chain {
     for (const l of linkages) {
       const atom1 = resMol.atoms[l.fMonomer - 1];
       const atom2 = resMol.atoms[l.sMonomer - 1];
-      const bond = new JSDraw2.Bond<HelmType>(atom1, atom2);
+      const bond = new JSDraw2.Bond<HelmType, IHelmBio>(atom1, atom2);
       bond.r1 = l.fR;
       bond.r2 = l.sR;
       resMol.addBond(bond);
     }
 
-    const chain = new Chain(monomersAll, linkages, resMol);
+    const chain = new Chain(monomersAll, linkages, resMol, helmHelper);
     return chain;
   }
 
@@ -360,14 +361,14 @@ export class Chain {
       for (let j = 0; j < mainFragments[i].length; j++) {
         if (!!mainFragments[i][j]) {
           const elem = mainFragments[i][j];
-          const bio: PolyToolBio = {type: HelmTypes.AA, i: i, j: j, continuousId: counter};
-          const atom = new JSDraw2.Atom<HelmType>(p, elem, bio);
+          const bio: PtBio = {type: HelmTypes.AA, i: i, j: j, continuousId: counter};
+          const atom = new JSDraw2.Atom<HelmType, IHelmBio>(p, elem, bio);
           resMol.addAtom(atom);
 
           if (j !== 0) {
             const atom1 = resMol.atoms[counter - 1];
             const atom2 = resMol.atoms[counter];
-            const bond = new JSDraw2.Bond<HelmType>(atom1, atom2);
+            const bond = new JSDraw2.Bond<HelmType, IHelmBio>(atom1, atom2);
             bond.r1 = 2;
             bond.r2 = 1;
             resMol.addBond(bond);
@@ -383,13 +384,13 @@ export class Chain {
     for (let i = 0; i < linkages.length; i++) {
       const atom1 = resMol.atoms[linkages[i].fMonomer - 1];
       const atom2 = resMol.atoms[linkages[i].sMonomer - 1];
-      const bond = new JSDraw2.Bond<HelmType>(atom1, atom2);
+      const bond = new JSDraw2.Bond<HelmType, IHelmBio>(atom1, atom2);
       bond.r1 = linkages[i].fR;
       bond.r2 = linkages[i].sR;
       resMol.addBond(bond);
     }
 
-    const chain = new Chain(mainFragments, linkages, resMol);
+    const chain = new Chain(mainFragments, linkages, resMol, helmHelper);
     return chain;
   }
 

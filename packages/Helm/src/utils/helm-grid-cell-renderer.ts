@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 
 import wu from 'wu';
 
-import {HelmType, ISeqMonomer, Mol} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmType, IHelmBio, ISeqMonomer, Mol} from '@datagrok-libraries/bio/src/helm/types';
 import {
   CellRendererBackAsyncBase, RenderServiceBase
 } from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
@@ -16,6 +16,7 @@ import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/mon
 import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/index';
 import {execMonomerHoverLinks} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
 import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
+import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
 import {getHoveredMonomerFromEditorMol, getSeqMonomerFromHelmAtom} from './get-hovered';
 
@@ -25,6 +26,7 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
   private _auxList: (HelmAux | null)[];
 
   private sysMonomerLib: IMonomerLibBase | null = null;
+  private helmHelper: IHelmHelper | null = null;
   private helmRenderService: HelmServiceBase | null = null;
 
   // eslint-disable-next-line max-len
@@ -42,6 +44,9 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
       (async () => {
         const libHelper = await getMonomerLibHelper();
         this.sysMonomerLib = libHelper.getMonomerLib();
+      })(),
+      (async () => {
+        this.helmHelper = await getHelmHelper();
       })(),
       (async () => {
         this.helmRenderService = await getHelmService();
@@ -167,7 +172,7 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
     const bX = aux.bBox.x + (cX - aux.dBox.x) * aux.bBox.width / aux.dBox.width;
     const bY = aux.bBox.y + (cY - aux.dBox.y) * aux.bBox.height / aux.dBox.height;
 
-    const editorMol: Mol<HelmType> | null = aux.mol; // in bBox world
+    const editorMol: Mol<HelmType, IHelmBio> | null = aux.mol; // in bBox world
     if (!editorMol) {
       this.logger.warning(`${logPrefix}, editorMol of the cell not found.`);
       return; // The gridCell is not rendered yet
@@ -175,8 +180,10 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
     const hoveredAtom = getHoveredMonomerFromEditorMol(bX, bY, editorMol, gridCell.bounds.height);
 
     let seqMonomer: ISeqMonomer | null = null;
-    if (hoveredAtom) {
-      seqMonomer = getSeqMonomerFromHelmAtom(hoveredAtom);
+    if (hoveredAtom && this.helmHelper && gridCell.tableRowIndex != null) {
+      const seqHandler = this.helmHelper.seqHelper.getSeqHandler(this.tableCol);
+      const seqValue = seqHandler.getValue(gridCell.tableRowIndex);
+      seqMonomer = getSeqMonomerFromHelmAtom(seqValue, hoveredAtom);
       const monomerLib = this.tableCol.temp[MmcrTemps.overriddenLibrary] ?? _package.monomerLib;
       const tooltipEl = monomerLib ? monomerLib.getTooltip(seqMonomer.biotype, seqMonomer.symbol) :
         ui.divText('Monomer library is not available');
