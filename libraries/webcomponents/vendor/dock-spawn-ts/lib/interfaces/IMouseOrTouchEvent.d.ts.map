@@ -1,1 +1,0 @@
-{"version":3,"file":"IMouseOrTouchEvent.d.ts","sourceRoot":"","sources":["../../src/interfaces/IMouseOrTouchEvent.ts"],"names":[],"mappings":"AAAA,MAAM,WAAW,kBAAkB;IAC/B,OAAO,EAAE,MAAM,CAAC;IAChB,OAAO,EAAE,MAAM,CAAC;IAChB,cAAc,CAAC,EAAE,kBAAkB,EAAE,CAAC;IACtC,OAAO,CAAC,EAAE,kBAAkB,EAAE,CAAC;CAClC"}

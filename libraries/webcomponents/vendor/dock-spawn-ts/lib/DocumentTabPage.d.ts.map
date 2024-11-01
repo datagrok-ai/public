@@ -1,1 +1,0 @@
-{"version":3,"file":"DocumentTabPage.d.ts","sourceRoot":"","sources":["../src/DocumentTabPage.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,OAAO,EAAE,MAAM,cAAc,CAAC;AACvC,OAAO,EAAE,OAAO,EAAE,MAAM,cAAc,CAAC;AAEvC,OAAO,EAAE,cAAc,EAAE,MAAM,gCAAgC,CAAC;AAGhE;;GAEG;AACH,qBAAa,eAAgB,SAAQ,OAAO;gBAE5B,IAAI,EAAE,OAAO,EAAE,SAAS,EAAE,cAAc;IAgBpD,OAAO;CAOV"}

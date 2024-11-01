@@ -1,1 +1,0 @@
-{"version":3,"file":"IPanelInfo.d.ts","sourceRoot":"","sources":["../../src/interfaces/IPanelInfo.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,aAAa,EAAE,MAAM,qBAAqB,CAAC;AACpD,OAAO,EAAE,KAAK,EAAE,MAAM,aAAa,CAAC;AACpC,OAAO,EAAE,MAAM,EAAE,MAAM,aAAa,CAAC;AAErC,MAAM,WAAW,UAAU;IACvB,aAAa,EAAE,aAAa,CAAC;IAC7B,KAAK,EAAE,MAAM,CAAC;IACd,QAAQ,EAAE,KAAK,CAAC;IAChB,QAAQ,EAAE,OAAO,CAAC;CACrB"}

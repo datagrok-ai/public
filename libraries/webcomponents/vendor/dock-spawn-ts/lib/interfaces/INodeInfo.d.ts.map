@@ -1,1 +1,0 @@
-{"version":3,"file":"INodeInfo.d.ts","sourceRoot":"","sources":["../../src/interfaces/INodeInfo.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,aAAa,EAAE,MAAM,qBAAqB,CAAC;AACpD,OAAO,EAAE,MAAM,EAAE,MAAM,aAAa,CAAC;AAErC,MAAM,WAAW,SAAS;IACtB,aAAa,EAAE,aAAa,CAAC;IAC7B,KAAK,EAAE,MAAM,CAAC;IACd,QAAQ,EAAE,SAAS,EAAE,CAAC;CACzB"}

@@ -29,13 +29,7 @@ dist/
 .idea/codeStyles/
 
 # Emitted *.js files
-src/**/*.js
-src/**/*.d.ts
-src/**/*.d.ts.map
-
-vendor/dock-spawn-ts/src/**/*.js
-vendor/dock-spawn-ts/src/**/*.d.ts
-vendor/dock-spawn-ts/src/**/*.d.ts.map
-
-# build info
-*.tsbuildinfo
+**/*.js
+**/*.js.map
+**/*.d.ts
+**/*.d.ts.map
