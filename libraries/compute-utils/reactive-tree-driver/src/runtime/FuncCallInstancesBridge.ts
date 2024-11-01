@@ -212,7 +212,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
       (item) => item.direction === 'input').map((item) => item.id);
 
     const inputsChanges = inputs.map(
-      (inputName) => this.getStateChanges(inputName).pipe(skip(1)));
+      (inputName) => this.getStateChanges(inputName, true).pipe(skip(1)));
     merge(...inputsChanges).pipe(
       mapTo(true),
       takeUntil(this.closed$),
