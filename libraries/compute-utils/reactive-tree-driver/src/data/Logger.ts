@@ -3,7 +3,7 @@ import {NodeAddress} from './BaseTree';
 import {BehaviorSubject} from 'rxjs';
 
 export type DebugLogType =
- 'linkRunScheduled'  | 'linkRunFinished' |
+ 'linkRunScheduled' | 'linkRunFinished' |
  'treeUpdateStarted' | 'treeUpdateMutation' | 'treeUpdateFinished'
 
 export interface DebugLogBase {
@@ -72,6 +72,5 @@ export class DriverLogger {
     const uuid = uuidv4();
     const timestamp = new Date();
     this.log = [...this.log, {type: 'treeUpdateMutation', uuid, timestamp, ...data}];
-
   }
 }

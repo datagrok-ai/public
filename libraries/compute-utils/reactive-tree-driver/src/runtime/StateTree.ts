@@ -226,7 +226,7 @@ export class StateTree {
     });
   }
 
-  public loadSubTree(puuid: string, dbId: string, id: string, pos: number, isReadonly: boolean) {
+  public loadSubTree(puuid: string, dbId: string, id: string, pos: number, isReadonly: boolean, isReplace = false) {
     return this.mutateTree(() => {
       const [_root, _nqName, ppath] = StateTree.findPipelineNode(this, puuid);
       const subConfig = StateTree.getSubConfig(this.config, ppath, id);
@@ -243,7 +243,10 @@ export class StateTree {
       ).pipe(
         concatMap((tree) => StateTree.loadOrCreateCalls(tree, this.mockMode)),
       ).pipe(
-        map((tree) => this.nodeTree.attachBrunch(ppath, tree.nodeTree.root, id, pos)),
+        map((tree) => isReplace ?
+          this.nodeTree.replaceBrunch(ppath, tree.nodeTree.root, id, pos) :
+          this.nodeTree.attachBrunch(ppath, tree.nodeTree.root, id, pos)
+        ),
       );
       const mutationData: NestedMutationData = {
         mutationRootPath: ppath,
@@ -545,7 +548,7 @@ export class StateTree {
       pos,
       defaultValidators,
       mockMode,
-      logger
+      logger,
     } : {
       acc: StateTree | undefined;
       config: PipelineConfigurationProcessed;

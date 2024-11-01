@@ -13,6 +13,10 @@ export const PipelineView = Vue.defineComponent({
       type: Object as Vue.PropType<DG.FuncCall>,
       required: true,
     },
+    isRoot: {
+      type: Boolean,
+      required: true,
+    }
   },
   emits: {
     'update:funcCall': (call: DG.FuncCall) => call,
@@ -38,11 +42,11 @@ export const PipelineView = Vue.defineComponent({
 
     return () => (
       <div class='w-full h-full flex'>
-        <DockManager 
-          onPanelClosed={handlePanelClose} 
+        <DockManager
+          onPanelClosed={handlePanelClose}
         >
-          { !historyHidden.value ? 
-            <History 
+          { !historyHidden.value ?
+            <History
               func={props.funcCall.func}
               showActions
               showBatchActions
@@ -53,15 +57,15 @@ export const PipelineView = Vue.defineComponent({
               ref={historyRef}
               class='overflow-scroll h-full'
             />: null }
-          { !helpHidden.value && helpText.value ? 
-            <MarkDown 
+          { !helpHidden.value && helpText.value ?
+            <MarkDown
               markdown={helpText.value}
               dock-spawn-title='Help'
               dock-spawn-dock-type='fill'
               ref={helpRef}
-            /> : null 
+            /> : null
           }
-          <div 
+          <div
             dock-spawn-hide-close-button
             dock-spawn-dock-type='left'
             dock-spawn-dock-ratio={0.35}
@@ -73,27 +77,27 @@ export const PipelineView = Vue.defineComponent({
             <span>
             This is a sequence of steps. You may:
             </span>
-             
+
             <div class={'grok-gallery-grid'}>
-              <div 
+              <div
                 class='grok-app-card grok-gallery-grid-item-wrapper pr-4'
                 onClick={() => historyHidden.value = false}
-              > 
+              >
                 <IconFA name='history' class={'d4-picture'} />
                 <div> Load completed run </div>
               </div>
-              { helpText.value && 
-                <div 
+              { helpText.value &&
+                <div
                   class='grok-app-card grok-gallery-grid-item-wrapper pr-4'
                   onClick={() => helpHidden.value = false}
-                > 
+                >
                   <IconFA name='info' class={'d4-picture'} />
                   <div> Review the docs </div>
                 </div> }
-              <div 
+              <div
                 class='grok-app-card grok-gallery-grid-item-wrapper pr-4'
                 onClick={() => emit('proceedClicked')}
-              > 
+              >
                 <IconFA name='plane-departure' class={'d4-picture'} />
                 <div> Proceed to the sequence's first step </div>
               </div>

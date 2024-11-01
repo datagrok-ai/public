@@ -1,7 +1,7 @@
 import {Grammars, Parser, IToken} from 'ebnf';
 import {ItemId} from '../data/common-types';
 import {indexFromEnd} from '../utils';
-import { IOType } from './config-processing-utils';
+import {IOType} from './config-processing-utils';
 
 const linkSpecGrammar = `
 Link ::= Name (':' Segment)? ('/' Segment)*

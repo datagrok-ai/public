@@ -88,6 +88,9 @@ export const TreeNode = Vue.defineComponent({
     isDeletable: {
       type: Boolean,
     },
+    isReadonly: {
+      type: Boolean,
+    }
   },
   emits: {
     addNode: ({itemId, position}:{itemId: string, position: number}) => ({itemId, position}),
@@ -144,7 +147,7 @@ export const TreeNode = Vue.defineComponent({
         { props.callState && progressIcon(statesToStatus(props.callState, props.validationStates, props.consistencyStates)) }
         { props.stat.children.length ? openIcon() : null }
         <span class="mtl-ml text-nowrap text-ellipsis overflow-hidden">{ nodeLabel(props.stat) }</span>
-        { isHovered.value ?
+        { (isHovered.value && !props.isReadonly) ?
           <div class='flex items-center px-2 w-fit justify-end ml-auto'>
             { hasAddButton(props.stat.data) ?
               <ComboPopup

@@ -17,6 +17,7 @@ export interface LoadDynamicItem {
   itemId: ItemId;
   position: number;
   readonly?: boolean;
+  isReplace?: boolean;
 }
 
 export interface SaveDynamicItem {

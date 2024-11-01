@@ -323,8 +323,8 @@ export class LinksState {
   }
 
   public getLinksInfo(): LinksData[] {
-    const links = [...this.links.values()].map((l) => ({ prefix: l.prefix, isAction: false, matchInfo: l.matchInfo}));
-    const actions = [...this.actions.values()].map((l) => ({ prefix: l.prefix, isAction: true, matchInfo: l.matchInfo}));
+    const links = [...this.links.values()].map((l) => ({prefix: l.prefix, isAction: false, matchInfo: l.matchInfo}));
+    const actions = [...this.actions.values()].map((l) => ({prefix: l.prefix, isAction: true, matchInfo: l.matchInfo}));
     return [...links, ...actions];
   }
 

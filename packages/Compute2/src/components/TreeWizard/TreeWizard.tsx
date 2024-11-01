@@ -2,14 +2,12 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
-
-import {zipSync, Zippable} from 'fflate';
 import {DockManager, IconFA, ifOverlapping, RibbonMenu, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
-import {useExtractedObservable, useObservable, useSubject, useSubscription} from '@vueuse/rxjs';
+import {useObservable, useSubject, useSubscription, useExtractedObservable} from '@vueuse/rxjs';
 import {
   isFuncCallState, isParallelPipelineState,
-  isSequentialPipelineState, isStaticPipelineState, PipelineState,
+  isSequentialPipelineState, PipelineState,
   StepFunCallState,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {RichFunctionView} from '../RFV/RichFunctionView';
@@ -18,40 +16,15 @@ import {Draggable, dragContext} from '@he-tree/vue';
 import {AugmentedStat} from './types';
 import '@he-tree/vue/style/default.css';
 import '@he-tree/vue/style/material-design.css';
-import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
-import {of, merge, BehaviorSubject} from 'rxjs';
+import {BehaviorSubject, of} from 'rxjs';
 import {PipelineView} from '../PipelineView/PipelineView';
-import {computedWithControl, useUrlSearchParams} from '@vueuse/core';
+import {useUrlSearchParams} from '@vueuse/core';
 import {Inspector} from '../Inspector/Inspector';
-import {switchMap, map} from 'rxjs/operators';
+import {switchMap} from 'rxjs/operators';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
+import {findTreeNode, findTreeNodeParrent, makeMergedItems, reportStep} from '../../utils';
 
-const findTreeNode = (uuid: string, state: PipelineState): PipelineState | undefined => {
-  let foundState = undefined as PipelineState | undefined;
-  const notVisitedStates = [state];
-
-  while (notVisitedStates.length > 0 && !foundState) {
-    const currentState = notVisitedStates.pop()!;
-
-    if (currentState.uuid === uuid)
-      foundState = currentState;
-
-    if (
-      isParallelPipelineState(currentState) ||
-      isSequentialPipelineState(currentState) ||
-      isStaticPipelineState(currentState)
-    )
-      notVisitedStates.push(...currentState.steps);
-  }
-
-  return foundState;
-};
-
-function makeMergedItems<T>(input: Record<string, BehaviorSubject<T>>) {
-  const entries = Object.entries(input).map(([name, state$]) => state$.pipe(map((s) => [name, s] as const)));
-  return merge(...entries);
-}
 
 export const TreeWizard = Vue.defineComponent({
   name: 'TreeWizard',
@@ -87,6 +60,10 @@ export const TreeWizard = Vue.defineComponent({
       return findTreeNode(chosenStepUuid.value, treeState.value);
     });
 
+    const isRootChoosen = Vue.computed(() => {
+      return (!!chosenStepState.value?.uuid) && chosenStepState.value?.uuid === treeState.value?.uuid;
+    })
+
     Vue.watch(chosenStepUuid, (newStepId) => {
       if (newStepId)
         searchParams['stepId'] = newStepId;
@@ -98,7 +75,6 @@ export const TreeWizard = Vue.defineComponent({
 
     useSubscription((driver.currentState$).subscribe((s) => {
       if (treeInstance.value) {
-        //@ts-ignore
         const oldStats = treeInstance.value!.statsFlat as AugmentedStat[];
         oldClosed = oldStats.reduce((acc, stat) => {
           if (!stat.open)
@@ -110,8 +86,7 @@ export const TreeWizard = Vue.defineComponent({
     }));
 
     const treeMutationsLocked = useSubject(driver.treeMutationsLocked$);
-
-    const callStates = useSubject(driver.currentCallsState$);
+    const isGlobalLocked = useSubject(driver.globalROLocked$);
 
     const states = Vue.reactive({
       calls: {} as Record<string, FuncCallStateInfo | undefined>,
@@ -156,7 +131,7 @@ export const TreeWizard = Vue.defineComponent({
       states.meta[k] = Object.freeze(val);
     }));
 
-
+    const callStates = useSubject(driver.currentCallsState$);
     const currentCallState = useExtractedObservable(
       [callStates, chosenStepUuid],
       ([callsState, chosenStepUuid]) =>
@@ -167,11 +142,11 @@ export const TreeWizard = Vue.defineComponent({
       },
     );
 
-    const isTreeReportable = computedWithControl([currentCallState],
-      () => Object.values(callStates.value)
-        .map((state) => state.value?.isOutputOutdated)
-        .every((isOutdated) => isOutdated === false),
-    );
+    const isTreeReportable = Vue.computed(() => {
+      return Object.values(states.calls)
+        .map((state) => state?.isOutputOutdated)
+        .every((isOutdated) => isOutdated === false);
+    });
 
     const restoreOpenedNodes = (stat: AugmentedStat) => {
       if (oldClosed.includes(stat.data.uuid))
@@ -179,7 +154,6 @@ export const TreeWizard = Vue.defineComponent({
       return stat;
     };
 
-    const isGlobalLocked = useSubject(driver.globalROLocked$);
     Vue.onMounted(() => {
       initPipeline(props.providerFunc);
     });
@@ -195,6 +169,10 @@ export const TreeWizard = Vue.defineComponent({
     const loadPipeline = (funcCallId: string) => {
       driver.sendCommand({event: 'loadPipeline', funcCallId});
     };
+
+    const loadAndReplaceNestedPipeline = (parentUuid: string, dbId: string, itemId: string, position: number) => {
+      driver.sendCommand({event: 'loadDynamicItem', parentUuid, dbId, itemId, position, readonly: true, isReplace: true});
+    }
 
     const savePipeline = () => {
       driver.sendCommand({event: 'savePipeline'})
@@ -243,53 +221,7 @@ export const TreeWizard = Vue.defineComponent({
           {treeState.value && isTreeReportable.value && <IconFA
             name='arrow-to-bottom'
             tooltip='Report all steps'
-            onClick={async () => {
-              if (treeState.value) {
-                const zipConfig = {} as Zippable;
-
-                const reportStep = async (state: PipelineState, previousPath: string = '', idx: number = 1) => {
-                  if (isFuncCallState(state) && state.funcCall) {
-                    const funccall = state.funcCall;
-
-                    const blob = await Utils.richFunctionViewReport(
-                      'Excel',
-                      funccall.func,
-                      funccall,
-                      Utils.dfToViewerMapping(funccall),
-                    );
-
-                    const validatedFilename = Utils.replaceForWindowsPath(
-                      `${String(idx).padStart(3, '0')}_${Utils.getFuncCallDefaultFilename(funccall)}`,
-                    );
-                    const validatedFilenameWithPath = `${previousPath}/${validatedFilename}`;
-
-                    zipConfig[validatedFilenameWithPath] =
-                      [new Uint8Array(await blob.arrayBuffer()), {level: 0}];
-                  }
-
-                  if (
-                    isSequentialPipelineState(state) ||
-                    isParallelPipelineState(state) ||
-                    isStaticPipelineState(state)
-                  ) {
-                    const nestedPath = `${String(idx).padStart(3, '0')}_${state.friendlyName ?? state.nqName}`;
-                    let validatedNestedPath = Utils.replaceForWindowsPath(nestedPath);
-
-                    if (previousPath.length > 0) validatedNestedPath = `${previousPath}/${validatedNestedPath}`;
-
-                    for (const [idx, stepState] of state.steps.entries())
-                      await reportStep(stepState, validatedNestedPath, idx + 1);
-                  }
-                };
-
-                await reportStep(treeState.value);
-
-                DG.Utils.download(
-                  `${treeState.value.friendlyName ?? treeState.value.configId}.zip`,
-                  new Blob([zipSync(zipConfig)]),
-                );
-              }
-            }}
+            onClick={async () => reportStep(treeState.value) }
           /> }
         </RibbonPanel>
         <RibbonMenu groupName='State'>
@@ -349,6 +281,7 @@ export const TreeWizard = Vue.defineComponent({
                   (
                     <TreeNode
                       stat={stat}
+                      isReadonly={stat.data.isReadonly}
                       callState={states.calls[stat.data.uuid]}
                       validationStates={states.validations[stat.data.uuid]}
                       consistencyStates={states.consistency[stat.data.uuid]}
@@ -376,6 +309,7 @@ export const TreeWizard = Vue.defineComponent({
                 class='overflow-hidden'
                 funcCall={chosenStepState.value.funcCall!}
                 callState={currentCallState.value}
+                isReadonly={chosenStepState.value.isReadonly}
                 isTreeLocked={treeMutationsLocked.value}
                 onUpdate:funcCall={(call) => (chosenStepState.value as StepFunCallState).funcCall = call}
                 onRunClicked={() => runStep(chosenStepState.value!.uuid)}
@@ -388,12 +322,25 @@ export const TreeWizard = Vue.defineComponent({
             !isFuncCallState(chosenStepState.value) && chosenStepState.value.provider &&
             <PipelineView
               funcCall={DG.Func.byName(chosenStepState.value.nqName!).prepare()}
+              isRoot={isRootChoosen.value}
               dock-spawn-title='Step sequence review'
               onProceedClicked={() => {
                 if (chosenStepState.value && !isFuncCallState(chosenStepState.value))
                   chosenStepUuid.value = chosenStepState.value.steps[0].uuid;
               }}
-              onUpdate:funcCall={(newCall) => loadPipeline(newCall.id)}
+              onUpdate:funcCall={
+                (newCall) => {
+                  if (isRootChoosen.value) {
+                    loadPipeline(newCall.id);
+                  } else if (chosenStepState.value && chosenStepUuid.value && treeState.value && !isFuncCallState(chosenStepState.value)) {
+                    const parent = findTreeNodeParrent(chosenStepUuid.value, treeState.value);
+                    if (parent && !isFuncCallState(parent)) {
+                      const position = parent.steps.findIndex(step => step.uuid === chosenStepUuid.value);
+                      loadAndReplaceNestedPipeline(parent.uuid, newCall.id, chosenStepState.value.configId, position);
+                    }
+                  }
+                }
+              }
             />
           }
         </DockManager> }

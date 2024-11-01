@@ -85,12 +85,12 @@ export class Driver {
     stateUpdates$.pipe(
       map((state) => state ? state.linksState.getLinksInfo() : []),
       takeUntil(this.closed$),
-    ).subscribe(this.currentLinks$)
+    ).subscribe(this.currentLinks$);
 
     stateUpdates$.pipe(
       map((state) => state ? state.config : undefined),
       takeUntil(this.closed$),
-    ).subscribe(this.currentConfig$)
+    ).subscribe(this.currentConfig$);
 
     stateUpdates$.pipe(
       switchMap((state) => state ? state.globalROLocked$ : of(false)),
@@ -150,7 +150,7 @@ export class Driver {
 
   private loadDynamicItem(msg: LoadDynamicItem, state?: StateTree) {
     this.checkState(msg, state);
-    return state.loadSubTree(msg.parentUuid, msg.dbId, msg.itemId, msg.position, !!msg.readonly);
+    return state.loadSubTree(msg.parentUuid, msg.dbId, msg.itemId, msg.position, !!msg.readonly, !!msg.isReplace);
   }
 
   public saveDynamicItem(msg: SaveDynamicItem, state?: StateTree) {
@@ -209,7 +209,7 @@ export class Driver {
           isReadonly: !!msg.readonly,
           defaultValidators: true,
           mockMode: this.mockMode,
-          logger: this.logger
+          logger: this.logger,
         })),
       concatMap((state) => state.init()),
       tap((state) => this.states$.next(state)),
@@ -224,7 +224,7 @@ export class Driver {
         isReadonly: false,
         defaultValidators: false,
         mockMode: this.mockMode,
-        logger: this.logger
+        logger: this.logger,
       })),
       concatMap((state) => state.init()),
       tap((state) => this.states$.next(state)),
