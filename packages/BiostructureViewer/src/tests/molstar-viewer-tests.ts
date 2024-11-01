@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import wu from 'wu';
 
-import {category, delay, expect/*, expect*/, test, testEvent} from '@datagrok-libraries/utils/src/test';
+import {awaitCheck, category, delay, expect, test, testEvent} from '@datagrok-libraries/utils/src/test';
 import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
 import {BiostructureProps, IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 
@@ -230,4 +230,77 @@ category('MolstarViewer', () => {
     expect(aViewer.dataEff.data.includes(pdbName), true, `Viewer dataEff must be '${pdbName}' for row ${rowIdx}.`);
     expect((aViewer.dataEffStructureRefs?.length ?? 0) >= 2, true, 'Structure in the viewer not found');
   }, {timeout: 60000, skipReason: 'TODO: Searching for hanging test'});
+
+  test('open_file_shares', async () => {
+    const df = await _package.files.readCsv('pdb_data.csv');
+    const view = grok.shell.addTableView(df);
+    await awaitGrid(view.grid);
+    
+    const viewer = (await df.plot.fromType('Biostructure')) as unknown as MolstarViewer;
+    view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure', 0.4);
+    await Promise.all([awaitGrid(view.grid), viewer.awaitRendered()]);
+    await delay(10000);
+    
+    const fileInput = viewer.root.querySelector('.fa-folder-tree') as HTMLElement;
+    fileInput.click();
+    
+    await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot open Select a file dialog', 2000);
+    const selectDialog = returnDialog('Select a file')?.root;
+  
+    expect(selectDialog !== null, true);
+  
+    await delay(5000);
+  
+    const targetElement = Array.from(selectDialog!.querySelectorAll('.d4-tree-view-group-label'))
+      .find(el => el.textContent!.trim() === 'BiostructureViewer')
+      ?.closest('.d4-tree-view-group');
+  
+    expect(targetElement !== null, true);
+  
+    const expander = targetElement!.querySelector('.d4-tree-view-tri') as HTMLElement;
+    if (expander && !expander.classList.contains('d4-tree-view-tri-expanded')) {
+      expander.click();
+    }
+  
+    await delay(2000);
+  
+    const dockingElement = Array.from(targetElement!.querySelectorAll('.d4-tree-view-group-label'))
+      .find(el => el.textContent!.trim() === 'docking')
+      ?.closest('.d4-tree-view-group');
+  
+    expect(dockingElement !== null, true);
+  
+    const dockingExpander = dockingElement!.querySelector('.d4-tree-view-tri') as HTMLElement;
+    if (dockingExpander && !dockingExpander.classList.contains('d4-tree-view-tri-expanded')) {
+      dockingExpander.click();
+    }
+  
+    await delay(2000);
+  
+    const ligandNode = Array.from(dockingElement!.querySelectorAll('.d4-tree-view-node'))
+      .find(el => el.textContent!.trim() === 'ligand.pdbqt');
+  
+    expect(ligandNode !== null, true);
+  
+    (ligandNode as HTMLElement).click();
+  
+    const okButton = selectDialog!.querySelector('.ui-btn-ok') as HTMLElement;
+    okButton.click();
+  
+    await delay(10000);
+  
+    const rendered = viewer.root.querySelector('canvas') !== null;
+    expect(rendered, true);
+  
+  }, { timeout: 60000 });  
 });
+
+export function returnDialog(dialogTitle: string): DG.Dialog | undefined {
+  let dialog: DG.Dialog | undefined;
+  for (let i = 0; i < DG.Dialog.getOpenDialogs().length; i++) {
+    if (DG.Dialog.getOpenDialogs()[i].title == dialogTitle) {
+      dialog = DG.Dialog.getOpenDialogs()[i];
+      return dialog;
+    }
+  }
+}
