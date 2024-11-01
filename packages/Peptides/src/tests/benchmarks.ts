@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test} from '@datagrok-libraries/utils/src/test';
+import {before, category, test} from '@datagrok-libraries/utils/src/test';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 import {_package} from '../package-test';
@@ -10,16 +10,23 @@ import * as type from '../utils/types';
 import {scaleActivity} from '../utils/misc';
 import {startAnalysis} from '../widgets/peptides';
 import * as C from '../utils/constants';
+import {PeptideUtils} from '../peptideUtils';
 
 
 const benchmarkDatasetSizes = [5, 50, 100, 200];
 
 category('Benchmarks: Mutation Cliffs', () => {
+  before(async () => {
+    await PeptideUtils.loadSeqHelper();
+  });
   for (const size of benchmarkDatasetSizes)
     test(`${size}k sequences`, async () => await mutationCliffsBenchmark(size), {timeout: 300000});
 }, {benchmarks: true});
 
 category('Benchmarks: Cluster stats', () => {
+  before(async () => {
+    await PeptideUtils.loadSeqHelper();
+  });
   for (const size of benchmarkDatasetSizes) {
     test(`${size}k sequences`, async () => {
       if (!DG.Test.isInBenchmark)
@@ -41,6 +48,9 @@ category('Benchmarks: Cluster stats', () => {
 }, {benchmarks: true});
 
 category('Benchmarks: Monomer-Position stats', () => {
+  before(async () => {
+    await PeptideUtils.loadSeqHelper();
+  });
   for (const size of benchmarkDatasetSizes) {
     test(`${size}k sequences`, async () => {
       if (!DG.Test.isInBenchmark)
@@ -67,6 +77,9 @@ category('Benchmarks: Monomer-Position stats', () => {
 }, {benchmarks: true});
 
 category('Benchmarks: Analysis start', () => {
+  before(async () => {
+    await PeptideUtils.loadSeqHelper();
+  });
   for (const size of benchmarkDatasetSizes) {
     test(`${size}k sequences`, async () => {
       if (!DG.Test.isInBenchmark)

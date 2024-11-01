@@ -13,7 +13,7 @@
     "directory": "packages/Peptides"
   },
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.45.8",
+    "@datagrok-libraries/bio": "^5.45.9",
     "@datagrok-libraries/math": "^1.2.3",
     "@datagrok-libraries/ml": "^6.7.4",
     "@datagrok-libraries/statistics": "^1.2.12",
