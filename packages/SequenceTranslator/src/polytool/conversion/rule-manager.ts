@@ -103,13 +103,13 @@ export class RulesManager {
     // initCol.tags[PolyToolTags.dataRole] = 'template';
     // initCol.temp[SeqTemps.notationProvider] = new CyclizedNotationProvider('-', _package.seqHelper);
 
-    initCol.setTag(DG.TAGS.CELL_RENDERER, 'sequence');
-    initCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    initCol.meta.units = NOTATION.CUSTOM;
-    //initCol.setTag('separator', '-');
-    initCol.setTag('aligned', 'SEQ');
-    initCol.setTag('alphabet', 'UN');
-    initCol.setTag('polytool-data-role', 'template');
+    // initCol.setTag(DG.TAGS.CELL_RENDERER, 'sequence');
+    // initCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    // initCol.meta.units = NOTATION.CUSTOM;
+    // //initCol.setTag('separator', '-');
+    // initCol.setTag('aligned', 'SEQ');
+    // initCol.setTag('alphabet', 'UN');
+    // initCol.setTag('polytool-data-role', 'template');
 
     helmCol.semType = DG.SEMTYPE.MACROMOLECULE;
     helmCol.meta.units = NOTATION.HELM;
@@ -136,9 +136,9 @@ export class RulesManager {
 
     const initCol = DG.Column.fromStrings('monomers', seqs);
     const helmCol = DG.Column.fromStrings('helm', helms);
-    initCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    initCol.meta.units = NOTATION.CUSTOM;
-    initCol.setTag(DG.TAGS.CELL_RENDERER, 'sequence');
+    // initCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    // initCol.meta.units = NOTATION.CUSTOM;
+    // initCol.setTag(DG.TAGS.CELL_RENDERER, 'sequence');
     helmCol.semType = DG.SEMTYPE.MACROMOLECULE;
     helmCol.meta.units = NOTATION.HELM;
     helmCol.setTag(DG.TAGS.CELL_RENDERER, 'helm');
@@ -199,6 +199,8 @@ export class RulesManager {
     const saveButton = ui.bigButton('Save changes', () => {
       this.save();
     });
+
+
     const panel = ui.divV([
       inputsTabControl.root,
       saveButton

@@ -1,5 +1,5 @@
-import {Atom, IHelmBio, HelmMol, HelmType, JSDraw2ModuleType, OrgType,} from '@datagrok-libraries/bio/src/helm/types';
-import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {Atom, IHelmBio, HelmMol, HelmType, JSDraw2ModuleType, OrgType} from '@datagrok-libraries/bio/src/helm/types';
+import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {cleanupHelmSymbol} from '@datagrok-libraries/bio/src/helm/utils';
 
@@ -568,7 +568,7 @@ export class Chain {
           }
 
           if (!(firstFound && secondFound))
-            result.push([-1, -1, -1]);
+            continue;
           else if (firstIsFirst)
             result.push([firstEntryIndex, secondEntryIndex, i]);
           else
@@ -598,7 +598,7 @@ export class Chain {
         }
 
         if (!(firstFound && secondFound))
-          result.push([-1, -1, -1]);
+          continue;
         else if (firstIsFirst)
           result.push([firstEntryIndex, secondEntryIndex, i]);
         else
@@ -615,30 +615,22 @@ export class Chain {
     const allPos2: number [] = [];
     const allAttaches1: number [] = [];
     const allAttaches2: number [] = [];
-    const ruleCount = rules.length;
+    const count = positions.length;
 
-    for (let i = 0; i < ruleCount; i++) {
+    for (let i = 0; i < count; i++) {
       if (positions[i][0] == -1)
         continue;
 
-      const firstMonomer = monomers[positions[i][0]];
-      const secondMonomer = monomers[positions[i][1]];
+      const ruleNum = positions [i][2];
+      const code = rules[ruleNum].code;
 
-      // monomers[positions[i][0]] = monomers[positions[i][0]].replace(firstMonomer, rules[i].firstSubstitution);
-      // monomers[positions[i][1]] = monomers[positions[i][1]].replace(secondMonomer, rules[i].secondSubstitution);
-      monomers[positions[i][0]] = monomers[positions[i][0]].replace('(0)', '');
-      monomers[positions[i][1]] = monomers[positions[i][1]].replace('(0)', '');
-      monomers[positions[i][0]] = monomers[positions[i][0]].replace('(1)', '');
-      monomers[positions[i][1]] = monomers[positions[i][1]].replace('(1)', '');
-      monomers[positions[i][0]] = monomers[positions[i][0]].replace('(2)', '');
-      monomers[positions[i][1]] = monomers[positions[i][1]].replace('(2)', '');
-      monomers[positions[i][0]] = monomers[positions[i][0]].replace('(3)', '');
-      monomers[positions[i][1]] = monomers[positions[i][1]].replace('(3)', '');
+      monomers[positions[i][0]] = monomers[positions[i][0]].replace(`(${code})`, '');
+      monomers[positions[i][1]] = monomers[positions[i][1]].replace(`(${code})`, '');
 
       allPos1.push(positions[i][0] + 1);
       allPos2.push(positions[i][1] + 1);
-      allAttaches1.push(rules[i].firstLinkingGroup);
-      allAttaches2.push(rules[i].secondLinkingGroup);
+      allAttaches1.push(rules[ruleNum].firstLinkingGroup);
+      allAttaches2.push(rules[ruleNum].secondLinkingGroup);
     }
 
     return [monomers, allPos1, allPos2, allAttaches1, allAttaches2];
@@ -649,25 +641,16 @@ export class Chain {
     const allPos1: number [] = [];
     const allPos2: number [] = [];
     const rule: number [] = [];
-    const ruleCount = rules.length;
+    const count = positions.length;
 
-    for (let i = 0; i < ruleCount; i++) {
+    for (let i = 0; i < count; i++) {
       if (positions[i][0] == -1)
         continue;
 
-      const firstMonomer = monomers[positions[i][0]];
-      const secondMonomer = monomers[positions[i][1]];
-      // monomers[positions[i][0]] = monomers[positions[i][0]].replace(firstMonomer, rules[i].firstMonomer);
-      // monomers[positions[i][1]] = monomers[positions[i][1]].replace(secondMonomer, rules[i].secondMonomer);
-
-      monomers[positions[i][0]] = monomers[positions[i][0]].replace('(0)', '');
-      monomers[positions[i][1]] = monomers[positions[i][1]].replace('(0)', '');
-      monomers[positions[i][0]] = monomers[positions[i][0]].replace('(1)', '');
-      monomers[positions[i][1]] = monomers[positions[i][1]].replace('(1)', '');
-      monomers[positions[i][0]] = monomers[positions[i][0]].replace('(2)', '');
-      monomers[positions[i][1]] = monomers[positions[i][1]].replace('(2)', '');
-      monomers[positions[i][0]] = monomers[positions[i][0]].replace('(3)', '');
-      monomers[positions[i][1]] = monomers[positions[i][1]].replace('(3)', '');
+      const ruleNum = positions [i][2];
+      const code = rules[ruleNum].code;
+      monomers[positions[i][0]] = monomers[positions[i][0]].replace(`(${code})`, '');
+      monomers[positions[i][1]] = monomers[positions[i][1]].replace(`(${code})`, '');
 
       allPos1.push(positions[i][0] + 1);
       allPos2.push(positions[i][1] + 1);
