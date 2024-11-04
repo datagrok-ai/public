@@ -814,7 +814,7 @@ export interface ILineChartSettings {
 
   markerSize: number;
 
-  showMarkers: string;
+  showMarkers: keyof typeof VisibilityMode;
 
   /// Show vertical line reflecting the position of the current row
   /// See also *Current Line Color*
