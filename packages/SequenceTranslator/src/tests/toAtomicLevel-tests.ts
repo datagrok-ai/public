@@ -79,7 +79,7 @@ category('toAtomicLevel', () => {
     const reactionRule = rules.reactionRules.find((r) => r.name == 'GGaz')!;
 
     const [newSymbols, newMonomers] = getNewMonomers(rdKitModule, systemMonomerLib, reactionRule);
-    expect(newSymbols, reactionRule.name);
+    expect(newSymbols[0], reactionRule.name);
 
     const mol = rdKitModule.get_mol(newMonomers[0].molfile);
     try {
