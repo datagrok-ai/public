@@ -156,6 +156,8 @@ export class PdbGridCellRenderer extends DG.GridCellRenderer {
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle,
   ): void {
+    if (!gridCell.cell.column)
+      return;
     const back = PdbGridCellRendererBack.getOrCreate(gridCell);
     back.render(g, x, y, w, h, gridCell, cellStyle);
   }
