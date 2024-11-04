@@ -2,8 +2,7 @@
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
-import {Rules, RuleReaction} from '../pt-rules';
-import {InvalidReactionError, MonomerNotFoundError} from '../types';
+import {Rules} from './pt-rules';
 import {Chain} from './pt-chain';
 
 import {_package} from '../../package';

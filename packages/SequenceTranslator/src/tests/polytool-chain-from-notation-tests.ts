@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {before, after, category, expect, test, expectArray, testEvent, delay} from '@datagrok-libraries/utils/src/test';
 import {Chain} from '../polytool/conversion/pt-chain';
-import {getRules} from '../polytool/pt-rules';
+import {getRules} from '../polytool/conversion/pt-rules';
 import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
 category('PolyTool: Chain', () => {
@@ -54,15 +54,11 @@ category('PolyTool: Chain', () => {
         templateHelm: 'PEPTIDE1{[(#3)Succ]}' + '|' +
           'PEPTIDE2{[A(CHOL)].F.[C(1)].T.G.H.Y.P.[C(1)].[NH2]}' + '$' +
           'PEPTIDE1,PEPTIDE2,1:R1-1:R1' + '$$$' + 'V2.0',
-        mmHelm: 'PEPTIDE1{[Succ].[A(CHOL)].F.C.T.G.H.Y.P.C.[NH2]}' + '|' +
-          'PEPTIDE2{[A(CHOL)].F.C.T.G.H.Y.P.C.[NH2]}' + '$' +
-          'PEPTIDE1,PEPTIDE2,1:R1-1:R1' + '|' +
-          'PEPTIDE1,PEPTIDE1,4:R3-10:R3' + '|' +
-          'PEPTIDE2,PEPTIDE2,3:R3-9:R3' + '$$$V2.0',
+        mmHelm: 'PEPTIDE1{[(#3)Succ].[{A(CHOL)].F.C.T.G.H.Y.P.C.[NH2}]}$PEPTIDE1,PEPTIDE1,4:R3-10:R3$$$V2.0',
       },
       tgt: {
         templateChain: {monomerCount: [1, 10], linkageCount: 1},
-        mmChain: {monomerCount: [11, 10], linkageCount: 3,}
+        mmChain: {monomerCount: [11], linkageCount: 1}
       }
     },
     'dimerized2': {
@@ -72,15 +68,11 @@ category('PolyTool: Chain', () => {
           'PEPTIDE2{R.F.[C(1)].T.G.H.F.P.[C(1)].[NH2]}' + '|' +
           'PEPTIDE3{[($3)A(CHOL)].F.[C(1)].Y.H.G.D.N.[C(1)].[meI]}' + '$' +
           'PEPTIDE1,PEPTIDE2,1:R1-1:R1' + '$$$' + 'V2.0',
-        mmHelm: 'PEPTIDE1{[Succ].R.F.C.T.G.H.F.P.C.[NH2]}' + '|' +
-          'PEPTIDE2{[A(CHOL)].F.C.Y.H.G.D.N.C.[meI]}' + '$' +
-          'PEPTIDE1,PEPTIDE2,1:R1-1:R1' + '|' +
-          'PEPTIDE1,PEPTIDE1,4:R3-10:R3' + '|' +
-          'PEPTIDE2,PEPTIDE2,3:R3-9:R3' + '$$$V2.0',
+        mmHelm: 'PEPTIDE1{[($3)Succ].[{R].F.C.T.G.H.F.P.C.[NH2}($3){A(CHOL)].F.[C(1)].Y.H.G.D.N.[C(1)].[meI}]}$PEPTIDE1,PEPTIDE1,4:R3-10:R3$$$V2.0',
       },
       tgt: {
-        templateChain: {monomerCount: [1, 10, 10], linkageCount: 1,},
-        mmChain: {monomerCount: [11, 10], linkageCount: 3,}
+        templateChain: {monomerCount: [1, 10, 10], linkageCount: 1},
+        mmChain: {monomerCount: [20], linkageCount: 1}
       }
     }
   };
