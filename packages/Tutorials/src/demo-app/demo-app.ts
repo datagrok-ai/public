@@ -53,7 +53,7 @@ export class DemoView extends DG.ViewBase {
 
   public async startDemoFunc(func: DG.Func, viewPath: string): Promise<void> {
     const path = viewPath.split('|').map((s) => s.trim()).join('/');
-    const updateIndicatorRoot = ([...document.querySelectorAll('#elementContent')] as HTMLElement[])
+    const updateIndicatorRoot = (Array.from(document.querySelectorAll('#elementContent')) as HTMLElement[])
       .find((el) => el.classList.contains('ui-box'));
 
     if (func.options['isDemoScript'] == 'True') {

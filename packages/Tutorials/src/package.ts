@@ -106,6 +106,7 @@ export async function tutorialsInit() {
 //tags: app
 //description: Interactive demo of major Datagrok capabilities
 //meta.icon: images/icons/demoapp-icon.png
+//meta.browseOnly: true
 //input: string path {meta.url: true; optional: true}
 //input: string filter {optional: true}
 //output: view v
