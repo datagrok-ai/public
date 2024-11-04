@@ -44,7 +44,7 @@ category('activityCliffs', async () => {
   test('activityCliffsOpens', async () => {
     const testData = !DG.Test.isInBenchmark ?
       {fileName: 'tests/100_3_clustests.csv', tgt: {cliffCount: 3}} :
-      {fileName: 'tests/peptides_motif-with-random_10000.csv', tgt: {cliffCount: 53}};
+      {fileName: 'tests/peptides_with_random_motif_1600.csv', tgt: {cliffCount: 64}};
     const actCliffsDf = await readDataframe(testData.fileName);
     const actCliffsTableView = grok.shell.addTableView(actCliffsDf);
 
