@@ -1,5 +1,11 @@
 # Sequence Translator changelog
 
+## 1.5.0 (2024-11-04)
+
+### New features
+
+* Add PolyTool interface for rule management
+
 ## 1.4.10 (2024-11-01)
 
 ### Bug fixes
