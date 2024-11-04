@@ -11,6 +11,7 @@ const FEATURES_COUNT_MIN = 1;
 const PERCENTAGE_MIN = 0;
 const PERCENTAGE_MAX = 100;
 const MAX_ELEMENTS_COUNT = 100000000;
+export const NIPALS_PREFER_COLS_COUNT = 900;
 
 const TINY = 0.000001;
 
@@ -243,6 +244,7 @@ function scaleDf(df: DG.DataFrame): DG.DataFrame {
   return df;
 }
 
+/** Return standartized dataframe */
 export function centerScaleDataFrame(df: DG.DataFrame, toCenter: boolean, toScale: boolean): DG.DataFrame {
   if (toCenter) {
     if (toScale)
@@ -255,4 +257,16 @@ export function centerScaleDataFrame(df: DG.DataFrame, toCenter: boolean, toScal
     return scaleDf(df);
 
   return df;
+}
+
+/** Return table of columns with non-zero variance */
+export function extractNonConstantColsDf(features: DG.ColumnList): DG.DataFrame {
+  const cols: DG.Column[]= [];
+
+  for (const col of features) {
+    if ((col.stats.stdev > 0) && (col.stats.missingValueCount < 1))
+      cols.push(col);
+  }
+
+  return DG.DataFrame.fromColumns(cols);
 }

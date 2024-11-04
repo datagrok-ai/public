@@ -165,7 +165,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     help: LINK.MODEL,
   }));
 
-  if (input.names !== undefined)
+  if ((input.names !== undefined) && (input.names !== null))
     predictVsReferScatter.setOptions({labelFormColumnNames: [input.names?.name]});
 
   // 2. Regression Coefficients Bar Chart
@@ -211,8 +211,8 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     showViewerFormulaLines: true,
   });
 
-  if (input.names !== undefined)
-    scoresScatter.setOptions({labelFormColumnNames: [input.names?.name]});
+  if ((input.names !== undefined) && (input.names !== null))
+    predictVsReferScatter.setOptions({labelFormColumnNames: [input.names?.name]});
 
   // 4.3) create lines & circles
   scoresScatter.meta.formulaLines.addAll(getLines(scoreNames));

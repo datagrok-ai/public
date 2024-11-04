@@ -6,7 +6,7 @@ Fixed:
 
 * Labels and help links in the PLS tools
 * Fixed k-NN imputer description
-* 
+* PCA computations
 
 ## 1.2.3 (2024-10-25)
 

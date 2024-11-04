@@ -9,25 +9,62 @@ import {_principalComponentAnalysisInWebWorker, _principalComponentAnalysis,
   _principalComponentAnalysisNipals, _principalComponentAnalysisNipalsInWebWorker,
 } from '../wasm/EDAAPI';
 
-import {checkWasmDimensionReducerInputs, checkUMAPinputs, checkTSNEinputs,
-  getRowsOfNumericalColumnns, centerScaleDataFrame} from './utils';
+import {checkWasmDimensionReducerInputs, checkUMAPinputs, checkTSNEinputs, NIPALS_PREFER_COLS_COUNT,
+  getRowsOfNumericalColumnns, centerScaleDataFrame, extractNonConstantColsDf} from './utils';
 
 // Principal components analysis (PCA)
 export async function computePCA(table: DG.DataFrame, features: DG.ColumnList, components: number,
   toCenter: boolean, toScale: boolean): Promise<DG.DataFrame> {
   checkWasmDimensionReducerInputs(features, components);
 
-  const res = await _principalComponentAnalysisInWebWorker(table, features, components);
+  const rowCount = table.rowCount;
 
-  if (res !== -1)
-    return centerScaleDataFrame(res, toCenter, toScale);
+  // Extract non-const cols dataframe
+  const nonConstData = extractNonConstantColsDf(features);
+  const nonConstColsCount = nonConstData.columns.length;
 
-  return centerScaleDataFrame(
-    await _principalComponentAnalysisNipalsInWebWorker(table, features, components),
-    toCenter,
-    toScale,
-  );
-}
+  // Return zero columns if data is constant
+  if (nonConstColsCount === 0) {
+    const cols: DG.Column[] = [];
+
+    for (let i = 0; i < components; ++i)
+      cols.push(DG.Column.fromFloat32Array(`${i + 1}`, new Float32Array(rowCount).fill(0)));
+
+    return DG.DataFrame.fromColumns(cols);
+  }
+
+  const zeroColsToAdd = (nonConstColsCount < components) ? (components - nonConstColsCount) : 0;
+  const componentsToCompute = Math.min(components, nonConstColsCount);
+
+  let output: DG.DataFrame | undefined = undefined;
+
+  // PCA
+  if (nonConstColsCount > NIPALS_PREFER_COLS_COUNT)
+    output = await _principalComponentAnalysisNipalsInWebWorker(table, features, componentsToCompute);
+  else {
+    //try to apply the classic algorithm
+    const res = await _principalComponentAnalysisInWebWorker(table, features, componentsToCompute);
+
+    if (res !== -1) // the classic succeed
+      output = centerScaleDataFrame(res, toCenter, toScale);
+    else // the classic failed
+      output = await _principalComponentAnalysisNipalsInWebWorker(table, features, componentsToCompute);
+  }
+
+  if (output === undefined)
+    throw new Error('Failed to compute PCA');
+
+  output = centerScaleDataFrame(output, toCenter, toScale);
+
+  const cols = output.columns;
+  const count = cols.length;
+
+  // Add zero columns (with respect to the const cols count)
+  for (let i = 0; i < zeroColsToAdd; ++i)
+    cols.add(DG.Column.fromFloat32Array(`${count + i + 1}`, new Float32Array(rowCount).fill(0)));
+
+  return output;
+} // computePCA
 
 // Uniform Manifold Approximation and Projection (UMAP)
 export async function computeUMAP(features: DG.ColumnList, components: number, epochs: number,

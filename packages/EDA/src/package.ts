@@ -78,18 +78,22 @@ export async function dbScan(df: DG.DataFrame, xCol: DG.Column, yCol: DG.Column,
 //input: bool center = false [Indicating whether the variables should be shifted to be zero centered.]
 //input: bool scale = false [Indicating whether the variables should be scaled to have unit variance.]
 export async function PCA(table: DG.DataFrame, features: DG.ColumnList, components: number, center: boolean, scale: boolean): Promise<void> {
-  const pcaTable = await computePCA(table, features, components, center, scale);
-  addPrefixToEachColumnName('PC', pcaTable.columns);
+  try {
+    const pcaTable = await computePCA(table, features, components, center, scale);
+    addPrefixToEachColumnName('PC', pcaTable.columns);
 
-  if (table.id === null) // table is loaded from a local file
-    grok.shell.addTableView(pcaTable);
-  else {
-    const cols = table.columns;
+    if (table.id === null) // table is loaded from a local file
+      grok.shell.addTableView(pcaTable);
+    else {
+      const cols = table.columns;
 
-    for (const col of pcaTable.columns) {
-      col.name = cols.getUnusedName(col.name);
-      cols.add(col);
+      for (const col of pcaTable.columns) {
+        col.name = cols.getUnusedName(col.name);
+        cols.add(col);
+      }
     }
+  } catch (error) {
+    grok.shell.warning(`Failed to compute PCA: ${error instanceof Error ? error.message : 'platform issue'}`);
   }
 }
 
