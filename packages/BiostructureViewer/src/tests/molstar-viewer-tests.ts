@@ -232,68 +232,54 @@ category('MolstarViewer', () => {
   }, {timeout: 60000, skipReason: 'TODO: Searching for hanging test'});
 
   test('open_file_shares', async () => {
+    const waitForElement = async (selector: string, errorMsg: string, timeout = 2000) => {
+      await awaitCheck(() => !!viewer.root.querySelector(selector), errorMsg, timeout);
+      return viewer.root.querySelector(selector) as HTMLElement;
+    };
+  
+    const clickAndExpand = async (parentElement: HTMLElement, label: string, errorMsg: string, timeout: number) => {
+      const node = Array.from(parentElement.querySelectorAll('.d4-tree-view-group-label'))
+        .find(el => el.textContent?.trim() === label)
+        ?.closest('.d4-tree-view-group');
+      expect(node !== null, true, errorMsg);
+  
+      const expander = node!.querySelector('.d4-tree-view-tri') as HTMLElement;
+      if (expander && !expander.classList.contains('d4-tree-view-tri-expanded'))
+        expander.click();
+      await delay(timeout);
+      return node as HTMLElement;
+    };
+
     const df = await _package.files.readCsv('pdb_data.csv');
     const view = grok.shell.addTableView(df);
     await awaitGrid(view.grid);
-    
+
     const viewer = (await df.plot.fromType('Biostructure')) as unknown as MolstarViewer;
     view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure', 0.4);
     await Promise.all([awaitGrid(view.grid), viewer.awaitRendered()]);
-    await delay(10000);
-    
-    const fileInput = viewer.root.querySelector('.fa-folder-tree') as HTMLElement;
-    fileInput.click();
-    
-    await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot open Select a file dialog', 2000);
+
+    (await waitForElement('.fa-folder-tree', 'File tree icon not found')).click();
+    await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'Cannot open "Select a file" dialog', 2000);
+  
     const selectDialog = returnDialog('Select a file')?.root;
-  
-    expect(selectDialog !== null, true);
-  
-    await delay(5000);
-  
-    const targetElement = Array.from(selectDialog!.querySelectorAll('.d4-tree-view-group-label'))
-      .find(el => el.textContent!.trim() === 'BiostructureViewer')
-      ?.closest('.d4-tree-view-group');
-  
-    expect(targetElement !== null, true);
-  
-    const expander = targetElement!.querySelector('.d4-tree-view-tri') as HTMLElement;
-    if (expander && !expander.classList.contains('d4-tree-view-tri-expanded')) {
-      expander.click();
-    }
-  
-    await delay(2000);
-  
-    const dockingElement = Array.from(targetElement!.querySelectorAll('.d4-tree-view-group-label'))
-      .find(el => el.textContent!.trim() === 'docking')
-      ?.closest('.d4-tree-view-group');
-  
-    expect(dockingElement !== null, true);
-  
-    const dockingExpander = dockingElement!.querySelector('.d4-tree-view-tri') as HTMLElement;
-    if (dockingExpander && !dockingExpander.classList.contains('d4-tree-view-tri-expanded')) {
-      dockingExpander.click();
-    }
-  
-    await delay(2000);
-  
-    const ligandNode = Array.from(dockingElement!.querySelectorAll('.d4-tree-view-node'))
-      .find(el => el.textContent!.trim() === 'ligand.pdbqt');
-  
-    expect(ligandNode !== null, true);
-  
+    expect(selectDialog !== null, true, 'Select a file dialog is missing');
+
+    const filesNode = await clickAndExpand(selectDialog!, 'Files', 'Files group not found', 5000);
+    const appDataNode = await clickAndExpand(filesNode, 'App Data', 'App Data group not found', 2500);
+    const bioStructureNode = await clickAndExpand(appDataNode, 'BiostructureViewer', 'BiostructureViewer group not found', 2500);
+    const dockingNode = await clickAndExpand(bioStructureNode, 'docking', 'Docking group not found', 2500);
+
+    const ligandNode = Array.from(dockingNode.querySelectorAll('.d4-tree-view-node'))
+      .find(el => el.textContent?.trim() === 'ligand.pdbqt');
+    expect(ligandNode !== null, true, 'ligand.pdbqt file not found');
     (ligandNode as HTMLElement).click();
-  
+
     const okButton = selectDialog!.querySelector('.ui-btn-ok') as HTMLElement;
     okButton.click();
-  
-    await delay(10000);
-  
-    const rendered = viewer.root.querySelector('canvas') !== null;
-    expect(rendered, true);
-  
-  }, { timeout: 60000 });  
-});
+
+    await awaitCheck(() => viewer.root.querySelector('canvas') !== null, 'Canvas not rendered', 10000);
+  }, {timeout: 60000})
+})
 
 export function returnDialog(dialogTitle: string): DG.Dialog | undefined {
   let dialog: DG.Dialog | undefined;
