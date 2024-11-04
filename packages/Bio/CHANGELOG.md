@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.16.9 (2024-11-01)
+
+Correct package initialization
+
 ## 2.16.8 (2024-10-31)
 
 ### Bug fixes

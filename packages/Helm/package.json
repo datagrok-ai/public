@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/helm",
   "friendlyName": "Helm",
-  "version": "2.5.7",
+  "version": "2.5.9",
   "author": {
     "name": "Aleksandr Tanas",
     "email": "atanas@datagrok.ai"
@@ -16,9 +16,9 @@
     "css/helm.css"
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.45.5",
+    "@datagrok-libraries/bio": "^5.45.7",
     "@datagrok-libraries/chem-meta": "^1.2.7",
-    "@datagrok-libraries/utils": "^4.3.6",
+    "@datagrok-libraries/utils": "^4.3.7",
     "cash-dom": "^8.1.1",
     "datagrok-api": "^1.21.1",
     "dayjs": "^1.10.6",
@@ -27,9 +27,9 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@datagrok-libraries/helm-web-editor": "^1.1.12",
-    "@datagrok-libraries/js-draw-lite": "^0.0.9",
-    "@datagrok/bio": "^2.16.6",
+    "@datagrok-libraries/helm-web-editor": "^1.1.13",
+    "@datagrok-libraries/js-draw-lite": "^0.0.10",
+    "@datagrok/bio": "^2.16.8",
     "@datagrok/chem": "^1.12.3",
     "@types/node": "17.0.45",
     "@types/webpack-env": "^1.18.5",

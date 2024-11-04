@@ -1,6 +1,19 @@
 # Datagrok-tools changelog
 
 
+## 4.13.34 (2024-11-1)
+
+### Features
+
+* Config bug fixes
+
+## 4.13.33 (2024-10-31)
+
+### Features
+
+* Added Changelog to package template
+* Added ability to reload page on Execution Timeout
+
 ## 4.13.32 (2024-10-16)
 
 ### Features

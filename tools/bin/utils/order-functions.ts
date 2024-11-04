@@ -1,4 +1,6 @@
-export function setRandomOrder(tests: any[], workersAmount: number, testRepeats: number): any[][] {
+import { Test } from "./test-utils";
+
+export function setRandomOrder(tests: Test[], workersAmount: number, testRepeats: number): Test[][] {
     if (workersAmount > tests.length)
         workersAmount = tests.length;
 
@@ -7,7 +9,7 @@ export function setRandomOrder(tests: any[], workersAmount: number, testRepeats:
     return splitArray(orderedTests, workersAmount);
 }
 
-export function setPackageRandomOrder(tests: any[], workersAmount: number, testRepeats: number): any[][] {
+export function setPackageRandomOrder(tests: Test[], workersAmount: number, testRepeats: number): Test[][] {
     const packages = splitTestsByPackages(tests);
 
     if (workersAmount > packages.size)
@@ -32,7 +34,7 @@ export function setPackageRandomOrder(tests: any[], workersAmount: number, testR
     return splittedTestsArray;
 }
 
-export function setAlphabeticalOrder(tests: any[], workersAmount: number, testRepeats: number): any[][] {
+export function setAlphabeticalOrder(tests: Test[], workersAmount: number, testRepeats: number): Test[][] {
     if (workersAmount > tests.length)
         workersAmount = tests.length;
 
@@ -42,7 +44,7 @@ export function setAlphabeticalOrder(tests: any[], workersAmount: number, testRe
     return splitArray(orderedTests, workersAmount);
 }
 
-export function setPackageAlphabeticalOrder(tests: any[], workersAmount: number, testRepeats: number): any[][] {
+export function setPackageAlphabeticalOrder(tests: Test[], workersAmount: number, testRepeats: number): Test[][] {
     const packages = splitTestsByPackages(tests);
 
     if (workersAmount > packages.size)
@@ -67,11 +69,11 @@ export function setPackageAlphabeticalOrder(tests: any[], workersAmount: number,
     return splittedTestsArray;
 }
 
-function alphabeticalSortFunction(test1: any, test2: any): number {
+function alphabeticalSortFunction(test1: Test, test2: Test): number {
     return (`${test1.category}: ${test1.name}s`.localeCompare(`${test2.category}: ${test2.name}s`));
 }
 
-function splitTestsByPackages(tests: any[]): Map<string, any> {
+function splitTestsByPackages(tests: Test[]): Map<string, any> {
     let resultMap = new Map<string, any>();
 
     for (let test of tests) {
@@ -84,7 +86,7 @@ function splitTestsByPackages(tests: any[]): Map<string, any> {
     return resultMap;
 }
 
-function repeatTests(tests: Object[], testRepeats: number): Object[] {
+function repeatTests(tests: Test[], testRepeats: number): Test[] {
     let repeatedTests: any[] = []
     for (let test of tests) {
         for (let i = 0; i < testRepeats; i++) {

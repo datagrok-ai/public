@@ -35,7 +35,7 @@ What's more, Datagrok understands the nature of your
   and treat duplicates and outliers.
 * Use statistical [functions](../../../concepts/functions/functions.md) to perform calculations.
 * Slice and dice data with [50+ interactive viewers](../../../../visualize/viewers/viewers.md). We support all popular
-  visualizations (like [scatterplots with built-in regression lines](../../../../visualize/viewers/scatter-plot.md#calculations-and-trends)
+  visualizations (like [scatterplots with built-in regression lines](../../../../visualize/viewers/scatter-plot.md#formula-lines)
   or [box-plots with built-in statistical tests](../../../../visualize/viewers/box-plot.md#t-test)) and certain domain-specific
   viewers. The viewers also support domain-specific value renderers like molecules on scatterplot axes and points.
 * Filter, zoom, aggregate, pivot, and cross-link data on the fly. All our viewers are synchronized, [high-performant, and interactive](../../../../develop/under-the-hood/performance.md#viewers).

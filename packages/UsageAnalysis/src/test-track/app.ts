@@ -767,22 +767,20 @@ export class TestTrack extends DG.ViewBase {
     })
     
     createTicketBtn.disabled =true;
-    const errorTypeSelector = ui.input.choice('Severity', { value: null, items: ['', ...errorSeverityLevels], nullable: false, onValueChanged:(e)=>{
+    const errorTypeSelector = ui.input.choice('Severity', { value: '', items: ['', ...errorSeverityLevels], nullable: false, onValueChanged:(e)=>{
         createTicketBtn.disabled = ticketSummary.value.length === 0 || errorTypeSelector.value == '';
     }});
-    const textInput = ui.input.textArea(errorSeverityLevels.includes(status) ? 'Tickets' : 'Reasons', { value: value });
-    textInput.nullable = false;
+    
+    const textInput = ui.input.textArea(errorSeverityLevels.includes(status) ? 'Tickets' : 'Reasons', { value: value, nullable: false });
     textInput.classList.add('ui-input-reason');
     ticketSummary.onChanged.subscribe((value) => {
       createTicketBtn.disabled = value.length === 0 || errorTypeSelector.value == '';
     })
-
-    const createBtnWrap = ui.div(createTicketBtn);
-    const createTicketButtonTooltip = ui.tooltip.bind(createBtnWrap, 'Ensure that you selected severity level and wrote ticket summary.')
-    createBtnWrap.classList.add('create-ticket-button-wrap');
+ 
+    const createTicketButtonTooltip = ui.tooltip.bind(createTicketBtn, 'Ensure that you selected severity level and wrote ticket summary.') 
 
     createTicketBtn.classList.add('create-ticket-button');
-    const jiraTicketsTab = ui.divH([ui.divV([ticketSummary, ticketDescription]), createBtnWrap]);
+    const jiraTicketsTab = ui.divH([ui.divV([ticketSummary, ticketDescription]), createTicketBtn]);
       
     errorTypeSelector.addValidator((value)=>{
       if(value == '')
@@ -804,7 +802,7 @@ export class TestTrack extends DG.ViewBase {
       if (e.key == 'Enter' && document.activeElement?.nodeName === 'TEXTAREA')
         e.stopImmediatePropagation();
     });
-    dialog.add(textInput.root);
+    dialog.add(textInput);
     dialog.onOK(() => {
       edit ? this.changeNodeReason(node, status, textInput.value) : this.changeNodeStatus(node, status, textInput.value);
     });
@@ -817,14 +815,7 @@ export class TestTrack extends DG.ViewBase {
     dialog.show({ resizable: false });
     dialog.initDefaultHistory();
     
-    const okButton = dialog.root.getElementsByClassName("d4-dialog-footer")[0].getElementsByClassName('ui-btn-ok')[0];
-    textInput.addValidator((e)=>{
-      if(textInput.value.trim() == ''){ 
-        return 'Can\'t be null';
-      } 
-      errorTypeSelector.value
-      return null;
-    });
+    const okButton = dialog.root.getElementsByClassName("d4-dialog-footer")[0].getElementsByClassName('ui-btn-ok')[0]; 
   }
 
   changeNodeStatus(node: DG.TreeViewNode, status: Status, reason?: string, uid: string = this.uid, reportData: Boolean = true): void {

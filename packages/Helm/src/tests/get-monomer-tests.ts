@@ -9,7 +9,7 @@ import {
 } from '@datagrok-libraries/utils/src/test';
 import {getHelmHelper, getMonomerHandleArgs} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
-import {Atom, HelmType, IJsAtom, GetMonomerFunc} from '@datagrok-libraries/bio/src/helm/types';
+import {Atom, HelmType, IJsAtom, GetMonomerFunc, HelmAtom} from '@datagrok-libraries/bio/src/helm/types';
 import {MonomerLibSummaryType} from '@datagrok-libraries/bio/src/types';
 import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
@@ -138,7 +138,7 @@ category('getMonomer', ()=>{
     }
 
     for (const [[testName, testData], testI] of wu.enumerate(Object.entries(tests))) {
-      const a: Atom<HelmType> | HelmType = getAtomFromJson(testData.args.a);
+      const a: HelmAtom | HelmType = getAtomFromJson(testData.args.a);
       const [biotype, elem] = getMonomerHandleArgs(a, testData.args.name);
       const tgt = testData.tgt;
 
@@ -173,8 +173,8 @@ category('getMonomer', ()=>{
   });
 });
 
-function getAtomFromJson(argA: IJsAtom<HelmType> | HelmType): Atom<HelmType> | HelmType {
-  let res: Atom<HelmType> | HelmType;
+function getAtomFromJson(argA: IJsAtom<HelmType> | HelmType): HelmAtom | HelmType {
+  let res: HelmAtom | HelmType;
   const a = argA as IJsAtom<HelmType>;
   if (a.T === 'ATOM')
     res = new JSDraw2.Atom(a.p, a.elem, a.bio);

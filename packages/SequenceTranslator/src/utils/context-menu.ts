@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {defaultErrorHandler} from './err-info';
-import {polyToolEnumerateHelmUI} from '../polytool/pt-enumeration-helm-dialog';
+import {polyToolEnumerateHelmUI} from '../polytool/pt-enumerate-seq-dialog';
 import {polyToolEnumerateChemUI} from '../polytool/pt-dialog';
 
 import {_package} from '../package';

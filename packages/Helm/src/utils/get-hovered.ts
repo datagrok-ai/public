@@ -8,6 +8,7 @@ import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/m
 
 import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {GAP_SYMBOL, GapOriginals, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {SeqValueBase} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 
 export function getHoveredMonomerFromEditorMol(
   argsX: number, argsY: number, mol: HelmMol, cellHeight?: number
@@ -47,9 +48,11 @@ export function getHoveredMonomerFromEditorMol(
   return resAtom;
 }
 
-export function getSeqMonomerFromHelmAtom(atom: HelmAtom): ISeqMonomer {
-  const canonicalSymbol = atom.elem === GapOriginals[NOTATION.HELM] ? GAP_SYMBOL : atom.elem;
-  return {position: parseInt(atom.bio!.continuousId as string) - 1, symbol: canonicalSymbol, biotype: atom.bio!.type};
+export function getSeqMonomerFromHelmAtom(seqValue: SeqValueBase, atom: HelmAtom): ISeqMonomer {
+  const pos: number = atom.bio!.continuousId - 1;
+  const canonicalSymbol = seqValue.getSplitted().getCanonical(pos);
+  // const canonicalSymbol = atom.elem === GapOriginals[NOTATION.HELM] ? GAP_SYMBOL : atom.elem;
+  return {position: atom.bio!.continuousId - 1, symbol: canonicalSymbol, biotype: atom.bio!.type};
 }
 
 /** Linear

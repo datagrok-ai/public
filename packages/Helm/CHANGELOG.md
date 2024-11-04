@@ -1,5 +1,17 @@
 # Helm changelog
 
+## 2.5.9 (2024-11-01)
+
+Correct initialization of the Helm
+
+## 2.5.8 (2024-10-31)
+
+### Bug fixes
+
+* Fix HelmInput for SeqValueBase
+* Fix HelmGridCellRenderer for original and canonical symbols
+* Fix using HelmAtom
+
 ## 2.5.7 (2024-10-24)
 
 ### Bug fixes
