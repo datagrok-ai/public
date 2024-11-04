@@ -222,7 +222,7 @@ export class Driver {
       map((config) => StateTree.fromPipelineConfig({
         config,
         isReadonly: false,
-        defaultValidators: false,
+        defaultValidators: true,
         mockMode: this.mockMode,
         logger: this.logger,
       })),

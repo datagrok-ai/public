@@ -166,7 +166,7 @@ export class LinksState {
           isValidator: true,
           handler({controller}) {
             const val = controller.getFirst('in');
-            if (val == null)
+            if (val == null || val === '')
               controller.setValidation('out', makeValidationResult({errors: ['Missing value']}));
             else
               controller.setValidation('out', undefined);

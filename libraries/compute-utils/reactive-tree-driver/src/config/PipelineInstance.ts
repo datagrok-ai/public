@@ -18,7 +18,7 @@ export type StepSequentialInitialConfig = {
 
 export type StepFunCallInitialConfig = {
   id: ItemId;
-  values?: Record<string, any>;
+  initialValues?: Record<string, any>;
   inputRestrictions?: Record<string, RestrictionType>;
 }
 

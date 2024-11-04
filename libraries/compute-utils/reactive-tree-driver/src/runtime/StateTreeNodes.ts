@@ -126,14 +126,14 @@ export class FuncCallNode implements IStoreProvider {
   initState(initialConfig: StepFunCallInitialConfig) {
     const initialRestrictions: Record<string, RestrictionState> = {};
     for (const [k, restrictionType] of Object.entries(initialConfig.inputRestrictions ?? {})) {
-      const initalVal = (initialConfig.values ?? {})[k];
+      const initalVal = (initialConfig.initialValues ?? {})[k];
       initialRestrictions[k] = {
         assignedValue: initalVal,
         type: restrictionType,
       };
     }
     this.instancesWrapper.setPreInitialData({
-      initialValues: initialConfig.values ?? {},
+      initialValues: initialConfig.initialValues ?? {},
       initialRestrictions,
     });
   }

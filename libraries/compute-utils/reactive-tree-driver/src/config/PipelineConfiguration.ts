@@ -116,6 +116,8 @@ export type PipelineStepConfiguration<P, S> = {
   friendlyName?: string;
   io?: S;
   actions?: StepActionConfiguraion<P>[];
+  initialValues?: Record<string, any>;
+  inputRestrictions?: Record<string, RestrictionType>;
 };
 
 export type PipelineConfigurationBase<P> = {
