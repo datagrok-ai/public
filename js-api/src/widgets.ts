@@ -1018,13 +1018,17 @@ export class Menu {
 export class Balloon {
 
   /** Shows information message (green background) */
-  info(s: string | HTMLElement): void {
-    api.grok_Balloon(s, 'info', {});
+   info(s: string | HTMLElement): void {
+    api.grok_Balloon(s, 'info', toDart({}));
   }
 
   /** Shows information message (red background) */
   error(s: string | HTMLElement): void {
-    api.grok_Balloon(s, 'error', {});
+    api.grok_Balloon(s, 'error', toDart({}));
+  }
+
+  warning(s: string | HTMLElement): void {
+    api.grok_Balloon(s, 'warning', toDart({}));
   }
 
   /** Closes all balloons currently shown */
