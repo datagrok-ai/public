@@ -69,6 +69,6 @@ category('ContextMenu', () => {
         menu.root.style.display = 'none';
       }
     }
-  }, {skipReason: 'GROK-15931'});
+  });
 });
 

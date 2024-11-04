@@ -563,8 +563,11 @@ export interface IScatterPlotSettings {
   /// Determines how to show marker labels.
   showLabelsMode: keyof typeof VisibilityMode;
 
-  /// Determines how to show custom labels.
+  /// If checked, display a label content as marker.
   useLabelAsMarker: boolean;
+
+  /// Determines whether to show column names next to label values.
+  showValueColumns: keyof typeof VisibilityMode;
 
   /// Marker radius in which label is inscribed.
   labelCircleRadius: number;

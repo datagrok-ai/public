@@ -5,6 +5,7 @@ import {before, category, expect, test} from '@datagrok-libraries/utils/src/test
 import {findMutations, MutationCliffsOptions} from '../utils/algorithms';
 import * as type from '../utils/types';
 import {extractColInfo} from '../utils/misc';
+import {PeptideUtils} from '../peptideUtils';
 
 category('Algorithms', () => {
   let activityCol: type.RawData;
@@ -13,6 +14,8 @@ category('Algorithms', () => {
   let targetCol: type.RawColumn;
 
   before(async () => {
+    await PeptideUtils.loadSeqHelper();
+
     activityCol = DG.Column.fromList('int', 'test', [1, 2, 5]).getRawData();
     monomerColumns = [
       DG.Column.fromList('string', '1', 'AAA'.split('')),

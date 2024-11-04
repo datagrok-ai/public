@@ -9,7 +9,7 @@ import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
 import * as testUtils from '../utils/test-utils';
-import { WorkerOptions, loadTestsList, runWorker, ResultObject, saveCsvResults, printWorkersResult, mergeWorkersResults} from '../utils/test-utils';
+import { WorkerOptions, loadTestsList, runWorker, ResultObject, saveCsvResults, printWorkersResult, mergeWorkersResults, Test, OrganizedTests} from '../utils/test-utils';
 import { setAlphabeticalOrder } from '../utils/order-functions';
 
 const testInvocationTimeout = 3600000;
@@ -82,8 +82,8 @@ function isArgsValid(args: TestArgs): boolean {
 async function runTesting(args: TestArgs, categoryToCheck: string | undefined, testToCheck: string | undefined): Promise<ResultObject> {
   color.info('Loading tests...');
   const testsObj = await loadTestsList([process.env.TARGET_PACKAGE ?? ''], args.core);
-  const parsed: any[][] = (setAlphabeticalOrder(testsObj, 1, 1));
-  let organized = parsed[0].map(testObj => ({
+  const parsed: Test[][] = (setAlphabeticalOrder(testsObj, 1, 1));
+  let organized : OrganizedTests[]= parsed[0].map(testObj => ({
     package: testObj.packageName,
     params: {
       category: testObj.category,
@@ -94,7 +94,7 @@ async function runTesting(args: TestArgs, categoryToCheck: string | undefined, t
       }
     }
   }));
-  let filtered: any[] = []
+  let filtered: OrganizedTests[] = []
   if (args.category) {
     for (let element of organized) {
       if (element.params.category === args.category) {
@@ -119,7 +119,7 @@ async function runTesting(args: TestArgs, categoryToCheck: string | undefined, t
       stopOnTimeout: true
     }, 1, testInvocationTimeout);
     testsResults.push(r);
-    let testsLeft: any[] = [];
+    let testsLeft: OrganizedTests[] = [];
     for(let testData of organized){
       if(!r.csv.includes(`${testData.params.category},${testData.params.test}`))
         testsLeft.push(testData);
@@ -132,8 +132,8 @@ async function runTesting(args: TestArgs, categoryToCheck: string | undefined, t
 
 interface TestArgs {
   _: string[],
-  category?: any,
-  test?: any,
+  category?: string,
+  test?: string,
   host?: string,
   package?: string,
   csv?: boolean,

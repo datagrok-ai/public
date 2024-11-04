@@ -69,7 +69,7 @@ section on the **Context Panel**.
     other options useful for providing interactivity
 
 You can further filter visible rows by setting the "Filter" property to an 
-expression, such as "${AGE} > 18".
+expression, such as `${AGE} > 18`.
 
 ### Filtering
 

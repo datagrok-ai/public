@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.19.0 (2024-11-01)
+
+Migrate to new seqHelper API
+
 ## 1.18.7 (2024-10-17)
 
 Fixes For GROK-16606, GROK-16609

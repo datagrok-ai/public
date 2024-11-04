@@ -57,6 +57,7 @@ category('Admetica', () => {
     smilesColumn = molecules.columns.bySemType(DG.SEMTYPE.MOLECULE)!;
     const newTableColumn = 'Caco2';
     await performChemicalPropertyPredictions(smilesColumn, v.dataFrame, newTableColumn);
+    await delay(2000);
     expect(molecules.columns.names().includes(newTableColumn), true, `${newTableColumn} column has not been added`);
     expect(parseFloat(molecules.col(newTableColumn)!.get(0).toFixed(2)), -4.62, `Calculated value for ${newTableColumn} is incorrect`);
     expect(molecules.col(newTableColumn)!.getTag('.color-coding-type'), DG.COLOR_CODING_TYPE.LINEAR, `Expected ${DG.COLOR_CODING_TYPE.LINEAR} color coding type, but got a different value`);

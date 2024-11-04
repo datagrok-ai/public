@@ -14,7 +14,6 @@ Commands:
     init      Modify a package template
     link      Link \`datagrok-api\` and libraries for local development
     publish   Upload a package
-    publishAll   Upload all packages
     test      Run package tests
     testAll      Run packages tests
 
@@ -112,7 +111,10 @@ Usage: grok publish [host]
 Upload a package
 
 Options:
-[--build|--rebuild] [--debug|--release] [-k | --key] [--suffix]
+[--build|--rebuild] [--debug|--release] [-k | --key] [--suffix] [--all] [--refresh]
+
+--all             Publish all available packages 
+--refresh         Publish all available already loaded packages 
 
 Running \`grok publish\` is the same as running \`grok publish defaultHost --build --debug\`
 `;
@@ -124,8 +126,6 @@ Options:
 [-r | --recursive]
 
 --recursive       Check all packages in the current directory
---all             Publish all available packages 
---refresh         Publish all available already loaded packages 
 
 Check package content (function signatures, import statements of external modules, etc.)
 `;
