@@ -2,6 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import { createDynamicForm, getQueryParams, performChemicalPropertyPredictions } from './admetica-utils';
+import { UiUtils } from '@datagrok-libraries/compute-utils/shared-components';
+import '../css/admetica.css';
 
 interface ISplash {
   close: () => void;
@@ -17,68 +19,26 @@ export class AdmeticaViewApp {
   formContainer: HTMLElement;
   modeContainer: HTMLElement;
   sketcherDiv: HTMLElement;
-  sketcher?: HTMLElement; // Keep reference to sketcher as HTMLElement
-
-  hintShownForMode: boolean = false;
-  hintShownForSketcher: boolean = false;
-  hintShownForForm: boolean = false;
-  indicators: HTMLElement[] = [];
-  popups: HTMLElement[] = [];
-  
+  sketcher?: HTMLElement;
   placeholder: HTMLElement;
-
-  contentContainerStyle = {
-    flex: '1',
-    height: '100%',
-    border: '1px solid #ccc',
-    borderRadius: '5px',
-    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-    backgroundColor: '#fff',
-    overflow: 'hidden',
-    padding: '10px',
-    display: 'flex',
-    flexDirection: 'column',
-  };
 
   constructor(parentCall: DG.FuncCall) {
     this.parentCall = parentCall;
-
-    this.container = ui.divH([], { style: { width: '100%', height: '100%', display: 'flex', gap: '20px' } });
-    this.formContainer = ui.box(null, { style: { ...this.contentContainerStyle } });
-    this.sketcherDiv = ui.div([], { style: { ...this.contentContainerStyle, border: 'none' } });
-    this.modeContainer = ui.box(null, {
-      style: {
-        flex: '1',
-        height: '100%',
-        border: '1px solid #ccc',
-        borderRadius: '5px',
-        boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-        backgroundColor: '#fff',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-      }
-    });
     
+    // Create main container with unified style
+    this.container = ui.divH([], { classes: 'app-container' });
+    
+    // Create form and mode containers with reusable styling
+    this.formContainer = ui.box(null, { classes: 'content-container', style: { height: '100%' } });
+    this.sketcherDiv = ui.div([], { classes: 'content-container', style: { border: 'none' } });
+    this.modeContainer = ui.box(null, { classes: 'mode-container', style: { height: '100%' } });
+    
+    // Placeholder with unified style
     this.placeholder = ui.divText('Please select a molecule or upload a file to see the predictions.', {
-      style: {
-        textAlign: 'center',
-        padding: '40px',
-        color: '#333',
-        fontSize: '18px',
-        fontWeight: 'bold',
-        backgroundColor: '#f9f9f9',
-        borderRadius: '10px',
-        margin: '20px',
-        boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100%',
-      }
+      classes: 'placeholder-text'
     });
 
-    // Add keyframes for fade-in animation
+    // Insert keyframes for animations
     const styleSheet = document.styleSheets[0];
     styleSheet.insertRule(`
       @keyframes fadeIn {
@@ -93,17 +53,26 @@ export class AdmeticaViewApp {
   }
 
   async init() {
-    //const smiles = 'CC(=O)Oc1ccccc1C(=O)O';
-    this.sketcher = grok.chem.sketcher(async (smiles: string) => await this.onChanged(smiles));
+    this.sketcher = grok.chem.sketcher(async (smiles: string) => await this.onChanged(smiles), 'CC(Oc1ccccc1C(O)=O)=O');
     this.sketcherDiv.appendChild(this.sketcher);
 
+    // Mode selection with unified tabs style
     const modeTabs = ui.tabControl();
     modeTabs.onTabChanged.subscribe((tab: DG.TabPane) => {
       this.clearTable();
       this.clearForm();
       this.mode = tab.header.innerText.split(' ')[0].toLowerCase();
-      //this.resetSketcher(); // Reset sketcher on mode change
-    });
+    
+      if (this.mode === 'file') {
+        // Hide formContainer in "File Input" mode
+        this.formContainer.style.visibility = 'hidden';
+        this.formContainer.style.position = 'absolute';
+      } else {
+        // Show formContainer in "Single Molecule" mode
+        this.formContainer.style.visibility = 'visible';
+        this.formContainer.style.position = 'relative'; // Restore original layout positioning
+      }
+    });    
 
     modeTabs.addPane('Single Molecule', () => {
       this.mode = 'single';
@@ -116,23 +85,24 @@ export class AdmeticaViewApp {
     });
 
     this.modeContainer.appendChild(modeTabs.root);
+    this.prepareTableView();
+  }
 
+  prepareTableView() {
     const table = DG.DataFrame.create(1);
     this.tableView = DG.TableView.create(table, false);
     this.tableView.parentCall = this.parentCall;
     this.tableView.dataFrame.name = 'Table';
-
+    
     setTimeout(async () => {
       this.tableView!._onAdded();
       await this.refresh(table, this.container);
       (grok.shell.view(DG.VIEW_TYPE.BROWSE) as DG.BrowseView).preview = this.tableView!;
-      this.showSketcherHint();
     }, 300);
   }
 
   clearTable() {
-    if (this.tableView)
-      this.tableView.dataFrame = DG.DataFrame.create(1);
+    if (this.tableView) this.tableView.dataFrame = DG.DataFrame.create(1);
   }
 
   clearForm() {
@@ -140,94 +110,64 @@ export class AdmeticaViewApp {
     this.formContainer.appendChild(this.placeholder);
   }
 
-  showSketcherHint() {
-    if (!this.hintShownForSketcher) {
-      const hint = ui.hints.addHintIndicator(this.sketcherDiv, false, 7000);
-      hint.style.cssText = `
-        background-color: rgba(255, 255, 255, 0.9); /* Light background for better visibility */
-      `;
-      
-      const popup = ui.hints.addHint(this.sketcherDiv, ui.divText('Draw a structure'), ui.hints.POSITION.LEFT);
-      this.indicators.push(hint);
-      this.popups.push(popup);
-    }
-  }
-
-  closeHints() {
-    this.indicators.forEach(indicator => indicator.click());
-    this.popups.forEach(popup => popup.remove());
-    this.indicators = [];
-    this.popups = [];
-  }
-
   async onChanged(smiles: string) {
     if (this.mode === 'single') {
-      this.closeHints();
       const col = this.tableView?.dataFrame.columns.getOrCreate('smiles', 'string', 1);
       col!.semType = DG.SEMTYPE.MOLECULE;
       this.tableView?.dataFrame.set('smiles', 0, smiles);
       await grok.data.detectSemanticTypes(this.tableView!.dataFrame);
       const models = await getQueryParams();
-      const dataFrame = this.tableView!.dataFrame;
 
       const splashScreen = this.buildSplash(this.formContainer, 'Processing...');
       await performChemicalPropertyPredictions(
-        dataFrame.getCol('smiles'),
-        dataFrame,
+        this.tableView!.dataFrame.getCol('smiles'),
+        this.tableView!.dataFrame,
         models,
         undefined,
         true,
         false,
         true
       );
-
       splashScreen.close();
       
       const form = createDynamicForm(this.tableView!.dataFrame, models.split(','), 'smiles', true);
-      this.tableView!.grid.invalidate();
       this.formContainer.innerHTML = ''; 
       this.formContainer.appendChild(form.root);
-      this.closePlaceholder(); // Hide placeholder when form is populated
+      this.hidePlaceholder();
     }
   }
 
   createFileInputPane() {
-    return ui.divV([
-      ui.input.file('Choose File', {
-        onValueChanged: async (file) => {
-          const csvData = await file.readAsString();
-          const table = DG.DataFrame.fromCsv(csvData);
-          this.tableView!.dataFrame = table;
-          await grok.data.detectSemanticTypes(this.tableView!.dataFrame);
-
-          const splashScreen = this.buildSplash(this.formContainer, 'Processing...');
-          const models = await getQueryParams();
-          await performChemicalPropertyPredictions(
-            table.columns.bySemType(DG.SEMTYPE.MOLECULE)!,
-            table,
-            models,
-            undefined,
-            true,
-            false,
-            true
-          );
-          splashScreen.close();
-
-          const form = createDynamicForm(this.tableView!.dataFrame, models.split(','), table.columns.bySemType(DG.SEMTYPE.MOLECULE)!.name, true);
-          this.tableView!.grid.invalidate();
-          this.formContainer.innerHTML = ''; 
-          this.formContainer.appendChild(form.root);
-          this.closePlaceholder(); // Hide placeholder when form is populated
-          this.refresh(table, this.container);
-        }
-      })
-    ], { style: { padding: '10px', width: '100%' } });
+    const fileInputEditor = UiUtils.fileInput('', null, async (file: File) => {
+      await this.processFile(file);
+    }, null);
+  
+    fileInputEditor.root.classList.add('file-input');
+    return ui.divV([fileInputEditor], { classes: 'file-input-container' });
   }
 
-  closePlaceholder() {
-    if (this.placeholder.parentElement) {
-      this.formContainer.removeChild(this.placeholder);
-    }
+  async processFile(file: File) {
+    const csvData = await file.text();
+    const table = DG.DataFrame.fromCsv(csvData);
+    this.tableView!.dataFrame = table;
+    await grok.data.detectSemanticTypes(this.tableView!.dataFrame);
+  
+    const splashScreen = this.buildSplash(this.formContainer, 'Processing...');
+    const models = await getQueryParams();
+    await performChemicalPropertyPredictions(
+      table.columns.bySemType(DG.SEMTYPE.MOLECULE)!,
+      table,
+      models,
+      undefined,
+      true,
+      false,
+      true
+    );
+    splashScreen.close();
+  }   
+
+  hidePlaceholder() {
+    if (this.placeholder.parentElement) this.formContainer.removeChild(this.placeholder);
   }
 
   refresh(table: DG.DataFrame, modeContainer: HTMLElement) {
@@ -238,21 +178,10 @@ export class AdmeticaViewApp {
 
   buildSplash(root: HTMLElement, description: string): ISplash {
     const indicator = ui.loader();
-    indicator.style.cssText = 'margin: 0 auto; padding-right: 50px;';
-
-    const panel = ui.divV([
-      indicator,
-      ui.p(description),
-    ], { style: { textAlign: 'center', color: 'white' } });
-
-    const loaderEl = ui.div([panel], 'bsv-modal-background');
-    loaderEl.style.cssText = 'display: flex; justify-content: center; align-items: center; color: white; background: rgba(0, 0, 0, 0.7); position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999;';
-
+    const panel = ui.divV([indicator, ui.p(description)], { classes: 'splash-panel' });
+    const loaderEl = ui.div([panel], { classes: 'splash-container' });
     root.append(loaderEl);
 
-    return new class implements ISplash {
-      constructor(public readonly el: HTMLElement) {};
-      close(): void { this.el.remove(); }
-    }(loaderEl);
+    return { el: loaderEl, close: () => loaderEl.remove() };
   }
 }
