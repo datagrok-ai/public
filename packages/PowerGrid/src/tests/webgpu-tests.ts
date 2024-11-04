@@ -28,7 +28,7 @@ category('webgpu', async () => {
         }
       }, {benchmarkTimeout: 10000, benchmark: true, skipReason: 'Run manually in "Run Skipped" mode'});
 
-      test(`GPURender Color: ${s / 1000000.0}m ${t}s`, async () => {
+      test(`GPURender Size: ${s / 1000000.0}m ${t}s`, async () => {
         if (!gpuDevice || !DG.Test.isInBenchmark)
           return;
         const view = grok.shell.addTableView(grok.data.demo.randomWalk(s, 2));
@@ -42,7 +42,7 @@ category('webgpu', async () => {
         }
       }, {benchmarkTimeout: 10000, benchmark: true, skipReason: 'Run manually in "Run Skipped" mode'});
 
-      test(`GPURender Size: ${s / 1000000.0}m ${t}s`, async () => {
+      test(`GPURender Color: ${s / 1000000.0}m ${t}s`, async () => {
         if (!gpuDevice || !DG.Test.isInBenchmark)
           return;
         const view = grok.shell.addTableView(grok.data.demo.randomWalk(s, 2));
