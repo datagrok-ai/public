@@ -8,7 +8,7 @@ import {RDModule, RDMol, RDReaction, MolList, RDReactionResult} from '@datagrok-
 import {HELM_REQUIRED_FIELD as REQ,
   HELM_OPTIONAL_FIELDS as OPT, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
-import {Rules, RuleReaction} from '../pt-rules';
+import {Rules, RuleReaction, getMonomerPairs} from './pt-rules';
 import {InvalidReactionError, MonomerNotFoundError} from '../types';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
@@ -128,39 +128,48 @@ function getNewGroups(monomer1: Monomer, monomer2: Monomer): RGroup[] {
   return groups;
 }
 
-export function getNewMonomer(rdkit: RDModule, mLib: IMonomerLib, rule: RuleReaction): [string, Monomer] {
+export function getNewMonomers(rdkit: RDModule, mLib: IMonomerLib, rule: RuleReaction): [string[], Monomer[]] {
   const reacSmarts = rule.reaction;
   const monomerName = rule.name;
 
-  const monomer1 = mLib.getMonomer('PEPTIDE', rule.firstMonomer);
-  if (!monomer1) throw new MonomerNotFoundError('PEPTIDE', rule.firstMonomer);
-  const monomer2 = mLib.getMonomer('PEPTIDE', rule.secondMonomer);
-  if (!monomer2) throw new MonomerNotFoundError('PEPTIDE', rule.secondMonomer);
+  const [firstMonomers, secondMonomers] = getMonomerPairs(rule);
 
-  const [mb1, mb2] = getMonomersMolBlocks(monomer1!, monomer2!);
-  const molBlock = getSyntheticMolBlock(rdkit, reacSmarts, mb1, mb2, monomerName);
-  const groups: RGroup[] = getNewGroups(monomer1!, monomer2!);
+  const monomerNames = new Array<string>(firstMonomers.length);
+  const resMonomers = new Array<Monomer>(firstMonomers.length);
 
-  const resMonomer: Monomer = {
-    [REQ.SYMBOL]: monomerName,
-    [REQ.NAME]: monomerName,
-    [REQ.MOLFILE]: molBlock,
-    [REQ.AUTHOR]: '',
-    [REQ.ID]: 0,
-    [REQ.RGROUPS]: groups,
-    [REQ.SMILES]: '',
-    [REQ.POLYMER_TYPE]: 'PEPTIDE',
-    [REQ.MONOMER_TYPE]: 'Backbone',
-    [REQ.CREATE_DATE]: null,
+  for (let i = 0; i < firstMonomers.length; i ++) {
+    const monomer1 = mLib.getMonomer('PEPTIDE', firstMonomers[i]);
+    if (!monomer1) throw new MonomerNotFoundError('PEPTIDE', firstMonomers[i]);
+    const monomer2 = mLib.getMonomer('PEPTIDE', secondMonomers[i]);
+    if (!monomer2) throw new MonomerNotFoundError('PEPTIDE', secondMonomers[i]);
 
-    // // @ts-ignore
-    // lib: {source: 'Reaction'},
-  };
+    const [mb1, mb2] = getMonomersMolBlocks(monomer1!, monomer2!);
+    const molBlock = getSyntheticMolBlock(rdkit, reacSmarts, mb1, mb2, monomerName);
+    const groups: RGroup[] = getNewGroups(monomer1!, monomer2!);
 
-  resMonomer[OPT.META] = Object.assign(resMonomer[OPT.META] ?? {},
-    {'colors': {'default': {line: '#2083D5', text: '#2083D5', background: '#F2F2F5'}}});
+    const resMonomer: Monomer = {
+      [REQ.SYMBOL]: monomerName,
+      [REQ.NAME]: monomerName,
+      [REQ.MOLFILE]: molBlock,
+      [REQ.AUTHOR]: '',
+      [REQ.ID]: 0,
+      [REQ.RGROUPS]: groups,
+      [REQ.SMILES]: '',
+      [REQ.POLYMER_TYPE]: 'PEPTIDE',
+      [REQ.MONOMER_TYPE]: 'Backbone',
+      [REQ.CREATE_DATE]: null,
+      // // @ts-ignore
+      // lib: {source: 'Reaction'},
+    };
 
-  return [monomerName, resMonomer];
+    resMonomer[OPT.META] = Object.assign(resMonomer[OPT.META] ?? {},
+      {'colors': {'default': {line: '#2083D5', text: '#2083D5', background: '#F2F2F5'}}});
+
+    monomerNames[i] = monomerName;
+    resMonomers[i] = resMonomer;
+  }
+
+  return [monomerNames, resMonomers];
 }
 
 export async function getOverriddenLibrary(rules: Rules): Promise<IMonomerLibBase> {
@@ -171,8 +180,9 @@ export async function getOverriddenLibrary(rules: Rules): Promise<IMonomerLibBas
   const argLib: { [symbol: string]: Monomer } = {};
 
   for (let i = 0; i < rules.reactionRules.length; i++) {
-    const [name, monomer] = getNewMonomer(rdkit, systemMonomerLib, rules.reactionRules[i]);
-    argLib[name] = monomer;
+    const [names, monomers] = getNewMonomers(rdkit, systemMonomerLib, rules.reactionRules[i]);
+    for (let j = 0; j < names.length; j ++)
+      argLib[names[j]] = monomers[j];
   }
 
   const overrideMonomerLibData: MonomerLibData = {[PolymerTypes.PEPTIDE]: argLib};

@@ -1,10 +1,10 @@
-import {Atom, IHelmBio, HelmMol, HelmType, JSDraw2ModuleType, OrgType,} from '@datagrok-libraries/bio/src/helm/types';
-import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {Atom, IHelmBio, HelmMol, HelmType, JSDraw2ModuleType, OrgType} from '@datagrok-libraries/bio/src/helm/types';
+import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {cleanupHelmSymbol} from '@datagrok-libraries/bio/src/helm/utils';
 
 import {getOuterIdx, getInnerIdx} from './pt-misc';
-import {Rules, RuleLink, RuleReaction} from '../pt-rules';
+import {Rules, RuleLink, RuleReaction, getMonomerPairs} from './pt-rules';
 
 declare const JSDraw2: JSDraw2ModuleType;
 declare const org: OrgType;
@@ -523,7 +523,7 @@ export class Chain {
 
   protected static getLinkedPositions(monomers: string[], rules: RuleLink[] | RuleReaction []):
     [number, number, number][] {
-    const result: [number, number, number][] = new Array<[number, number, number]>(rules.length);
+    const result: [number, number, number][] = [];
 
     for (let i = 0; i < rules.length; i++) {
       let firstFound = false;
@@ -532,42 +532,78 @@ export class Chain {
       let firstEntryIndex = -1;
       let secondEntryIndex = -1;
       const add = `(${rules[i].code})`;
-      for (let j = 0; j < monomers.length; j++) {
-        if (monomers[j].includes(add)) {
-          if (firstFound) {
-            if (firstIsFirst && monomers[j] == rules[i].secondMonomer + add) {
-              secondFound = true;
-              secondEntryIndex = j;
-              break;
-            } else if (!firstIsFirst && monomers[j] == rules[i].firstMonomer + add) {
-              secondFound = true;
-              secondEntryIndex = j;
-              break;
-            } else {
-              continue;
+
+      const [firstMonomers, secondMonomers] = getMonomerPairs(rules[i]);
+
+      if (firstMonomers.length > 0) {
+        for (let j = 0; j < firstMonomers.length; j++) {
+          for (let k = 0; k < monomers.length; k++) {
+            if (monomers[k].includes(add)) {
+              if (firstFound) {
+                if (firstIsFirst && monomers[k] == secondMonomers[j] + add) {
+                  secondFound = true;
+                  secondEntryIndex = k;
+                  break;
+                } else if (!firstIsFirst && monomers[k] == firstMonomers[j] + add) {
+                  secondFound = true;
+                  secondEntryIndex = k;
+                  break;
+                } else {
+                  continue;
+                }
+              } else {
+                if (monomers[k] == firstMonomers[j] + add) {
+                  firstFound = true;
+                  firstIsFirst = true;
+                  firstEntryIndex = k;
+                } else if (monomers[k] == secondMonomers[j] + add) {
+                  firstFound = true;
+                  firstIsFirst = false;
+                  firstEntryIndex = k;
+                } else {
+                  continue;
+                }
+              }
             }
-          } else {
-            if (monomers[j] == rules[i].firstMonomer + add) {
+          }
+
+          if (!(firstFound && secondFound))
+            continue;
+          else if (firstIsFirst)
+            result.push([firstEntryIndex, secondEntryIndex, i]);
+          else
+            result.push([secondEntryIndex, firstEntryIndex, i]);
+        }
+      } else {
+        for (let k = 0; k < monomers.length; k++) {
+          if (monomers[k].includes(add)) {
+            if (firstFound) {
+              if (firstIsFirst && monomers[k]) {
+                secondFound = true;
+                secondEntryIndex = k;
+                break;
+              } else if (!firstIsFirst && monomers[k]) {
+                secondFound = true;
+                secondEntryIndex = k;
+                break;
+              } else {
+                continue;
+              }
+            } else {
               firstFound = true;
               firstIsFirst = true;
-              firstEntryIndex = j;
-            } else if (monomers[j] == rules[i].secondMonomer + add) {
-              firstFound = true;
-              firstIsFirst = false;
-              firstEntryIndex = j;
-            } else {
-              continue;
+              firstEntryIndex = k;
             }
           }
         }
-      }
 
-      if (!(firstFound && secondFound))
-        result[i] = [-1, -1, -1];
-      else if (firstIsFirst)
-        result[i] = [firstEntryIndex, secondEntryIndex, i];
-      else
-        result[i] = [secondEntryIndex, firstEntryIndex, i];
+        if (!(firstFound && secondFound))
+          continue;
+        else if (firstIsFirst)
+          result.push([firstEntryIndex, secondEntryIndex, i]);
+        else
+          result.push([secondEntryIndex, firstEntryIndex, i]);
+      }
     }
 
     return result;
@@ -579,21 +615,22 @@ export class Chain {
     const allPos2: number [] = [];
     const allAttaches1: number [] = [];
     const allAttaches2: number [] = [];
-    const ruleCount = rules.length;
+    const count = positions.length;
 
-    for (let i = 0; i < ruleCount; i++) {
+    for (let i = 0; i < count; i++) {
       if (positions[i][0] == -1)
         continue;
 
-      const firstMonomer = monomers[positions[i][0]];
-      const secondMonomer = monomers[positions[i][1]];
-      monomers[positions[i][0]] = monomers[positions[i][0]].replace(firstMonomer, rules[i].firstSubstitution);
-      monomers[positions[i][1]] = monomers[positions[i][1]].replace(secondMonomer, rules[i].secondSubstitution);
+      const ruleNum = positions [i][2];
+      const code = rules[ruleNum].code;
+
+      monomers[positions[i][0]] = monomers[positions[i][0]].replace(`(${code})`, '');
+      monomers[positions[i][1]] = monomers[positions[i][1]].replace(`(${code})`, '');
 
       allPos1.push(positions[i][0] + 1);
       allPos2.push(positions[i][1] + 1);
-      allAttaches1.push(rules[i].firstLinkingGroup);
-      allAttaches2.push(rules[i].secondLinkingGroup);
+      allAttaches1.push(rules[ruleNum].firstLinkingGroup);
+      allAttaches2.push(rules[ruleNum].secondLinkingGroup);
     }
 
     return [monomers, allPos1, allPos2, allAttaches1, allAttaches2];
@@ -604,16 +641,16 @@ export class Chain {
     const allPos1: number [] = [];
     const allPos2: number [] = [];
     const rule: number [] = [];
-    const ruleCount = rules.length;
+    const count = positions.length;
 
-    for (let i = 0; i < ruleCount; i++) {
+    for (let i = 0; i < count; i++) {
       if (positions[i][0] == -1)
         continue;
 
-      const firstMonomer = monomers[positions[i][0]];
-      const secondMonomer = monomers[positions[i][1]];
-      monomers[positions[i][0]] = monomers[positions[i][0]].replace(firstMonomer, rules[i].firstMonomer);
-      monomers[positions[i][1]] = monomers[positions[i][1]].replace(secondMonomer, rules[i].secondMonomer);
+      const ruleNum = positions [i][2];
+      const code = rules[ruleNum].code;
+      monomers[positions[i][0]] = monomers[positions[i][0]].replace(`(${code})`, '');
+      monomers[positions[i][1]] = monomers[positions[i][1]].replace(`(${code})`, '');
 
       allPos1.push(positions[i][0] + 1);
       allPos2.push(positions[i][1] + 1);

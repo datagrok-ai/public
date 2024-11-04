@@ -14,7 +14,7 @@ import {addMonomerHoverLink, buildMonomerHoverLink} from '@datagrok-libraries/bi
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
-import {getRules, RuleInputs, RULES_PATH, RULES_STORAGE_NAME} from './pt-rules';
+import {getRules, RuleInputs, RULES_PATH, RULES_STORAGE_NAME} from './conversion/pt-rules';
 import {doPolyToolConvert} from './conversion/pt-conversion';
 import {getOverriddenLibrary} from './conversion/pt-misc';
 import {defaultErrorHandler} from '../utils/err-info';
