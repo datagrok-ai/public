@@ -17,6 +17,11 @@ import {
   makeRevalidation as makeRevalidationInst,
   mergeValidationResults as mergeValidationResultsInst,
 } from '@datagrok-libraries/compute-utils/shared-utils/validation';
+export {
+  makeValidationResult as makeValidationResult2,
+  makeAdvice as makeAdvice2,
+  mergeValidationResults as mergeValidationResults2,
+} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {ModelCatalogView, ModelHandler} from '@datagrok-libraries/compute-utils/model-catalog';
 import {
   testPipeline as testPipelineInst

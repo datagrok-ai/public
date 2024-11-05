@@ -22,7 +22,11 @@ declare global {
       makeAdvice: typeof makeAdvice,
       makeRevalidation: typeof makeRevalidation,
       mergeValidationResults: typeof mergeValidationResults,
-    }
+
+      makeValidationResult2: typeof makeValidationResult2,
+      makeAdvice2: typeof makeAdvice2,
+      mergeValidationResults2: typeof mergeValidationResults2,
+    },
   }
 }
 
@@ -40,6 +44,18 @@ export {
   makeValidationResult, makeAdvice, makeRevalidation, mergeValidationResults,
   ValidationInfo,
 };
+
+import {
+  makeValidationResult2, makeAdvice2, mergeValidationResults2,
+} from './src/validation2'
+export {
+  makeValidationResult2, makeAdvice2, mergeValidationResults2,
+};
+
+export type {
+  PipelineConfiguration, IRuntimeLinkController, IRuntimeMetaController,
+  IRuntimeValidatorController, IRuntimePipelineMutationController
+} from '@datagrok-libraries/compute-utils/reactive-tree-driver/index';
 
 import {
   ComputationView, RichFunctionView, PipelineView,
