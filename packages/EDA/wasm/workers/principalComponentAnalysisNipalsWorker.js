@@ -7,7 +7,7 @@ onmessage = async function (evt) {
   exportEDA().then(module => 
     {
       let args = evt.data;
-      let result = cppWrapper(module, args, 'principalComponentAnalysis', 'number');
+      let result = cppWrapper(module, args, 'principalComponentAnalysisNipals', 'number');
       postMessage({'callResult': result, 'args': args});
     } )
 }
