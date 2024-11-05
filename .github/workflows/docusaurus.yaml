@@ -275,34 +275,29 @@ jobs:
           sparse-checkout: |
             docusaurus/docsearch.json
 
-      - name: Prepare for docsearch
-        id: config
-        run: |
-          mkdir -p .local/share && chmod -R 777 .local/share
-          echo "docsearch_config=$(cat docusaurus/docsearch.json | jq -r tostring)" >> $GITHUB_OUTPUT
-
-      - name: Run DocSearch Scraper
-        uses: docker://typesense/docsearch-scraper:latest
+      - uses: celsiusnarhwal/typesense-scraper@v2
         continue-on-error: true
-        env:
-          TYPESENSE_API_KEY: ${{ secrets.TYPESENSE_API_KEY }}
-          TYPESENSE_HOST: 'typesense.datagrok.ai'
-          TYPESENSE_PORT: '443'
-          TYPESENSE_PROTOCOL: 'https'
-          CONFIG: 'docusaurus/docsearch.json'
-          WORKON_HOME: '/home/seleuser/.local/share'
         with:
-          args: |
-            bash -c "
-              cd /home/seleuser &&
-              pipenv run python -m src.index
-            "
+          api-key: ${{ secrets.TYPESENSE_API_KEY }}
+          host: 'typesense.datagrok.ai'
+          port: '443'
+          protocol: 'https'
+          config: docusaurus/docsearch.json
 
-#      - uses: celsiusnarhwal/typesense-scraper@v2
+# TODO: Experiment with direct run to be able to cancel workflow. 05.11.2024: It fails with missing Pipfile because of working directory.
+#      - name: Run DocSearch Scraper
+#        uses: docker://typesense/docsearch-scraper:latest
 #        continue-on-error: true
+#        env:
+#          TYPESENSE_API_KEY: ${{ secrets.TYPESENSE_API_KEY }}
+#          TYPESENSE_HOST: 'typesense.datagrok.ai'
+#          TYPESENSE_PORT: '443'
+#          TYPESENSE_PROTOCOL: 'https'
+#          CONFIG: 'docusaurus/docsearch.json'
+#          WORKON_HOME: '/home/seleuser/.local/share'
 #        with:
-#          api-key: ${{ secrets.TYPESENSE_API_KEY }}
-#          host: 'typesense.datagrok.ai'
-#          port: '443'
-#          protocol: 'https'
-#          config: docusaurus/docsearch.json
+#          args: |
+#            bash -c "
+#              cd /home/seleuser &&
+#              pipenv run python -m src.index
+#            "
