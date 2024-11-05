@@ -273,12 +273,30 @@ jobs:
       - uses: actions/checkout@v4
         with:
           sparse-checkout: |
-            docusaurus
-      - uses: celsiusnarhwal/typesense-scraper@v2
+            docusaurus/docsearch.json
+
+      - name: Prepare for docsearch
+        id: config
+        run: |
+          mkdir -p .local/share && chmod -R 777 .local/share
+          echo "docsearch_config=$(cat docusaurus/docsearch.json | jq -r tostring)" >> $GITHUB_OUTPUT
+
+      - name: Run DocSearch Scraper
+        uses: docker://typesense/docsearch-scraper:latest
         continue-on-error: true
-        with:
-          api-key: ${{ secrets.TYPESENSE_API_KEY }}
-          host: 'typesense.datagrok.ai'
-          port: '443'
-          protocol: 'https'
-          config: docusaurus/docsearch.json
+        env:
+          TYPESENSE_API_KEY: ${{ secrets.TYPESENSE_API_KEY }}
+          TYPESENSE_HOST: 'typesense.datagrok.ai'
+          TYPESENSE_PORT: '443'
+          TYPESENSE_PROTOCOL: 'https'
+          CONFIG: 'docusaurus/docsearch.json'
+          WORKON_HOME: '/github/workspace/.local/share'
+
+#      - uses: celsiusnarhwal/typesense-scraper@v2
+#        continue-on-error: true
+#        with:
+#          api-key: ${{ secrets.TYPESENSE_API_KEY }}
+#          host: 'typesense.datagrok.ai'
+#          port: '443'
+#          protocol: 'https'
+#          config: docusaurus/docsearch.json

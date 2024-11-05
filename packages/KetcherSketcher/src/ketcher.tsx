@@ -5,15 +5,12 @@ import * as ui from "datagrok-api/ui";
 import * as DG from "datagrok-api/dg";
 import {_package} from "./package";
 import {Editor} from "ketcher-react";
-import * as PolymerKetcher from "ketcher-macromolecules";
 import {StandaloneStructServiceProvider} from "ketcher-standalone";
 import {Ketcher} from "ketcher-core";
 import "ketcher-react/dist/index.css";
 import "../css/editor.css";
 import { chem } from "datagrok-api/grok";
-import { KETCHER_MOLV2000, KETCHER_MOLV3000, KETCHER_WINDOW_OBJECT } from "./constants";
-import { ketcherMacromoleculeMode, setShowPolymerEditor, ToggleControl } from "./modeControl";
-import { Subscription } from "rxjs";
+import { KETCHER_MOLV2000, KETCHER_MOLV3000, KETCHER_OPTIONS, KETCHER_USER_STORAGE, KETCHER_WINDOW_OBJECT } from "./constants";
 
 let sketcherId = 0;
 
@@ -25,20 +22,10 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   _smarts: string | null = null;
   _sketcher: Ketcher | null = null;
   ketcherHost: HTMLDivElement;
-  componentKetcher;
-  componentPolymerKetcher;
-  togglerComponent;
-  ketcherModeSub: Subscription;
-  compRoot;
 
   constructor() {
     super();
     let structServiceProvider = new StandaloneStructServiceProvider();
-
-    this.togglerComponent = React.createElement(ToggleControl);
-    this.ketcherModeSub = ketcherMacromoleculeMode.subscribe((value: boolean) => {
-      value ? this.compRoot.render(this.componentPolymerKetcher) : this.compRoot.render(this.componentKetcher);
-    })
 
     let props = {
       staticResourcesUrl: !_package.webRoot
@@ -69,22 +56,15 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
           this.onChanged.next(null);
         });
       },
-      togglerComponent: this.togglerComponent
     };
 
     this.ketcherHost = ui.div([], 'ketcher-host');
 
-    this.componentKetcher = React.createElement(Editor, props, null);
-    this.compRoot = ReactDOM.createRoot(this.ketcherHost);   
-    this.componentPolymerKetcher = React.createElement(PolymerKetcher.Editor, {
-      togglerComponent: this.togglerComponent
-    });
-    this.compRoot.render(this.componentKetcher);
-    this.root.appendChild(this.ketcherHost);
-  }
+    let component = React.createElement(Editor, props, null);
+    const root = ReactDOM.createRoot(this.ketcherHost);
+    root.render(component);
 
-  resize() {
-    this.ketcherHost.classList.add('ketcher-resizing');
+    this.root.appendChild(this.ketcherHost);
   }
 
   async init(host: chem.Sketcher) {
@@ -160,6 +140,10 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     return this._sketcher !== null;
   }
 
+  resize() {
+      this.ketcherHost.classList.add('ketcher-resizing');
+  }
+
   setKetcherMolecule(molecule: string) {
     try {
       this._sketcher?.setMolecule(molecule);
@@ -192,10 +176,6 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   detach() {
    // grok.dapi.userDataStorage.postValue(KETCHER_OPTIONS, KETCHER_USER_STORAGE, JSON.stringify(this._sketcher?.editor.options()), true);
     super.detach();
-    this.compRoot.unmount();
-    this.ketcherModeSub.unsubscribe();
-    setShowPolymerEditor(false);
-    
   }
 
 }
