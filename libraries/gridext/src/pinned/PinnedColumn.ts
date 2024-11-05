@@ -442,14 +442,14 @@ export class PinnedColumn {
     );
 
     const storeGridOptions = () => {
-      const gridLook = grid.getOptions(true).look as DG.IGridSettings;
+      const gridLook = grid.getOptions(true).look;
       this.colHeaderHeight = gridLook.colHeaderHeight;
       this.rowHeight = gridLook.rowHeight;
       this.colHeaderFont = gridLook.colHeaderFont;
     }
 
     storeGridOptions();
-    grid.onPropertyValueChanged.subscribe((_) => storeGridOptions());
+    grid.onDartPropertyChanged.subscribe((_) => storeGridOptions());
 
     const g = eCanvasThis.getContext('2d');
     headerThis.paint(g, grid);
