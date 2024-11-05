@@ -139,15 +139,18 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     grok.shell.tableView(input.table.name);
 
   // 0.1 Buffer table
-  const buffer = DG.DataFrame.fromColumns([
+  const loadingsRegrCoefsTable = DG.DataFrame.fromColumns([
     DG.Column.fromStrings(TITLE.FEATURE, featuresNames),
     result.regressionCoefficients,
   ]);
 
+  loadingsRegrCoefsTable.name = TITLE.ANALYSIS;
+  grok.shell.addTable(loadingsRegrCoefsTable);
+
   // 0.2. Add X-Loadings
   result.xLoadings.forEach((col, idx) => {
-    col.name = buffer.columns.getUnusedName(`${TITLE.XLOADING}${idx + 1}`);
-    buffer.columns.add(col);
+    col.name = loadingsRegrCoefsTable.columns.getUnusedName(`${TITLE.XLOADING}${idx + 1}`);
+    loadingsRegrCoefsTable.columns.add(col);
   });
 
   // 1. Predicted vs Reference scatter plot
@@ -170,7 +173,8 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
 
   // 2. Regression Coefficients Bar Chart
   result.regressionCoefficients.name = TITLE.REGR_COEFS;
-  const regrCoeffsBar = view.addViewer(DG.Viewer.barChart(buffer, {
+  const regrCoeffsBar = view.addViewer(DG.Viewer.barChart(loadingsRegrCoefsTable, {
+    table: loadingsRegrCoefsTable.name,
     title: TITLE.REGR_COEFS,
     splitColumnName: TITLE.FEATURE,
     valueColumnName: result.regressionCoefficients.name,
@@ -182,7 +186,8 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
 
   // 3. Loadings Scatter Plot
   result.xLoadings.forEach((col, idx) => col.name = `${TITLE.XLOADING}${idx + 1}`);
-  const loadingsScatter = view.addViewer(DG.Viewer.scatterPlot(buffer, {
+  const loadingsScatter = view.addViewer(DG.Viewer.scatterPlot(loadingsRegrCoefsTable, {
+    table: loadingsRegrCoefsTable.name,
     title: TITLE.LOADINGS,
     xColumnName: `${TITLE.XLOADING}1`,
     yColumnName: `${TITLE.XLOADING}${result.xLoadings.length > 1 ? '2' : '1'}`,
@@ -249,10 +254,14 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     DG.Column.fromFloat32Array(input.predict.name, yExplVars),
   ]);
 
+  explVarsDF.name = TITLE.EXPL_VAR;
+  grok.shell.addTable(explVarsDF);
+
   xExplVars.forEach((arr, idx) => explVarsDF.columns.add(DG.Column.fromFloat32Array(featuresNames[idx], arr)));
 
   // 5.3) bar chart
   const explVarsBar = view.addViewer(DG.Viewer.barChart(explVarsDF, {
+    table: explVarsDF.name,
     title: TITLE.EXPL_VAR,
     splitColumnName: TITLE.COMPONENTS,
     valueColumnName: input.predict.name,
