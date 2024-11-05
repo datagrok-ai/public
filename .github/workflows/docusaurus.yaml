@@ -291,6 +291,12 @@ jobs:
           TYPESENSE_PROTOCOL: 'https'
           CONFIG: 'docusaurus/docsearch.json'
           WORKON_HOME: '/home/seleuser/.local/share'
+        with:
+          args: |
+            bash -c "
+              cd /home/seleuser &&
+              pipenv run python -m src.index
+            "
 
 #      - uses: celsiusnarhwal/typesense-scraper@v2
 #        continue-on-error: true
