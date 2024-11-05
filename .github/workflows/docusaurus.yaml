@@ -290,7 +290,7 @@ jobs:
           TYPESENSE_PORT: '443'
           TYPESENSE_PROTOCOL: 'https'
           CONFIG: 'docusaurus/docsearch.json'
-          WORKON_HOME: '/github/workspace/.local/share'
+          WORKON_HOME: '/home/seleuser/.local/share'
 
 #      - uses: celsiusnarhwal/typesense-scraper@v2
 #        continue-on-error: true
