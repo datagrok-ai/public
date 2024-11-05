@@ -24,6 +24,7 @@ button[title="About"], button[title="Help (?)"] {
 
 .ketcher-resizing {
     width: 100%!important;
+    height: 100%!important;
 }
 
 .Settings-module_settings__Z5btc {
