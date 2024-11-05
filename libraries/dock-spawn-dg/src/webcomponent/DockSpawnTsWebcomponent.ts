@@ -50,7 +50,9 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
     this.observer.observe(this, {childList: true});
     oldPanels.forEach((panel) => panel.elementContentContainer.remove());
     this.dockManager.element.firstChild.remove();
-    this.dockManager.invalidate();
+    setTimeout(() => {
+      this.dockManager.invalidate();
+    }, 50)    
   }
 
   private initDockspawn() {
@@ -68,8 +70,11 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
       this.dockManager.initialize();
 
       this.dockManager.addLayoutListener({
-        onActivePanelChange: (_, panel) => {
-          this.dispatchEvent(new CustomEvent('active-panel-changed', {detail: panel?.title ?? null}));
+        onActivePanelChange: (_, panel, prevPanel) => {
+          this.dispatchEvent(new CustomEvent('active-panel-changed', {detail: {
+            newPanel: panel?.title ?? null,
+            prevPanel: prevPanel?.title ?? null
+          }}));
         },
         onClosePanel: (dockManager, dockNode) => {
           const slot = dockNode.elementContent as any as HTMLSlotElement;

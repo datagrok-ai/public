@@ -198,7 +198,11 @@ export const RichFunctionView = Vue.defineComponent({
     'update:funcCall': (call: DG.FuncCall) => call,
     'runClicked': () => {},
   },
-  setup(props, {emit}) {
+  methods: {
+    savePersonalState: () => {},
+    loadPersonalLayout: () => {}
+  },
+  setup(props, {emit, expose}) {
     const currentCall = Vue.computed(() => props.funcCall);
 
     const tabToPropertiesMap = Vue.computed(() => tabToProperties(currentCall.value.func));
@@ -259,7 +263,9 @@ export const RichFunctionView = Vue.defineComponent({
       return item ? JSON.parse(item): null;
     };
 
-    const savePersonalState = (call: DG.FuncCall) => {
+    const savePersonalState = (call: DG.FuncCall = currentCall.value) => {
+      if (!dockInited.value) return;
+
       const state = getCurrentState();
       if (state) localStorage.setItem(personalPanelsStorage(call), state);
     };
@@ -271,7 +277,7 @@ export const RichFunctionView = Vue.defineComponent({
     let intelligentLayout = true;
     const loadPersonalLayout = async () => {
       const personalState = getSavedPersonalState(currentCall.value);
-      if (!dockRef.value || !personalState) return;
+      if (!dockRef.value || !personalState || !dockInited.value) return;
 
       intelligentLayout = false;
 
@@ -287,6 +293,11 @@ export const RichFunctionView = Vue.defineComponent({
       intelligentLayout = true;
     };
 
+    expose({
+      savePersonalState,
+      loadPersonalLayout,
+    })
+
     const dockInited = Vue.ref(false);
 
     const visibleTabLabels = Vue.ref([] as string[]);
@@ -298,7 +309,7 @@ export const RichFunctionView = Vue.defineComponent({
         helpText.value = loadedHelp ?? null;
       });
 
-      if (dockInited.value && oldCall) savePersonalState(oldCall);
+      if (oldCall) savePersonalState(oldCall);
       visibleTabLabels.value = [...tabLabels.value];
     }, {immediate: true});
 

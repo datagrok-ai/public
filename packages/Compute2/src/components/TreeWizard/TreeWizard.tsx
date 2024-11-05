@@ -42,6 +42,21 @@ export const TreeWizard = Vue.defineComponent({
 
     const searchParams = useUrlSearchParams('history');
 
+    const handleActivePanelChanged = async (newPanel: string | null, prevPanel: string | null) => {
+      if (prevPanel === 'Steps') return;
+
+      if (prevPanel === 'Step review') {
+        rfvRef.value?.savePersonalState();
+      }
+
+      if (newPanel === 'Step review') {
+        await Vue.nextTick();
+        setTimeout(() => {
+          rfvRef.value?.loadPersonalLayout();
+        }, 50)
+      }
+    };
+
     Vue.watch(treeState, () => {
       if (!treeState.value) return;
 
@@ -219,7 +234,11 @@ export const TreeWizard = Vue.defineComponent({
             <span> Save </span>
           </span>
         </RibbonMenu>
-        {treeState.value && <DockManager class='block h-full' onPanelClosed={handlePanelClose}>
+        {treeState.value && 
+        <DockManager class='block h-full' 
+          onPanelClosed={handlePanelClose}
+          onUpdate:activePanelTitle={handleActivePanelChanged}
+        >
           { !inspectorHidden.value &&
             <Inspector
               treeState={treeState.value}
