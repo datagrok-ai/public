@@ -53,7 +53,13 @@ export class AdmeticaViewApp {
   }
 
   async init() {
-    this.sketcher = grok.chem.sketcher(async (smiles: string) => await this.onChanged(smiles), 'CC(Oc1ccccc1C(O)=O)=O');
+    const sketcherInstance = new grok.chem.Sketcher();
+    sketcherInstance.setMolecule('CC(Oc1ccccc1C(O)=O)=O');
+    sketcherInstance.onChanged.subscribe(async () => {
+      const smiles = sketcherInstance.getSmiles();
+      await this.onChanged(smiles)
+    });
+    this.sketcher = sketcherInstance.root;
     this.sketcherDiv.appendChild(this.sketcher);
 
     // Mode selection with unified tabs style
@@ -114,7 +120,8 @@ export class AdmeticaViewApp {
     if (this.mode === 'single') {
       const col = this.tableView?.dataFrame.columns.getOrCreate('smiles', 'string', 1);
       col!.semType = DG.SEMTYPE.MOLECULE;
-      this.tableView?.dataFrame.set('smiles', 0, smiles);
+      if (smiles !== null)
+        this.tableView?.dataFrame.set('smiles', 0, smiles);
       await grok.data.detectSemanticTypes(this.tableView!.dataFrame);
       const models = await getQueryParams();
 
