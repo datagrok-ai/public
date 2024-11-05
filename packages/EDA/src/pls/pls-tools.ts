@@ -212,7 +212,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   });
 
   if ((input.names !== undefined) && (input.names !== null))
-    predictVsReferScatter.setOptions({labelFormColumnNames: [input.names?.name]});
+    scoresScatter.setOptions({labelFormColumnNames: [input.names?.name]});
 
   // 4.3) create lines & circles
   scoresScatter.meta.formulaLines.addAll(getLines(scoreNames));
