@@ -869,13 +869,13 @@ category('ComputeUtils: Driver links reactivity', async () => {
             steps: [
               {
                 id: 'step2',
-                values: {
+                initialValues: {
                   a: 5,
                 },
               },
               {
                 id: 'step1',
-                values: {
+                initialValues: {
                   a: 10,
                 },
               },

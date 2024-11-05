@@ -5,7 +5,7 @@
   "description": "Datagrok web components vue wrappers",
   "dependencies": {
     "@datagrok-libraries/dock-spawn-dg": "../dock-spawn-dg",
-    "@datagrok-libraries/webcomponents": "^0.0.2",
+    "@datagrok-libraries/webcomponents": "file:../webcomponents",
     "@vueuse/core": "^10.11.1",
     "@vueuse/rxjs": "^11.0.3",
     "cash-dom": "^8.1.4",

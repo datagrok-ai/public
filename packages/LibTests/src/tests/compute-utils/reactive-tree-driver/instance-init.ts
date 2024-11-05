@@ -198,7 +198,7 @@ category('ComputeUtils: Driver init calls', async () => {
         },
         {
           id: 'step2',
-          values: {
+          initialValues: {
             'a': 1,
             'b': 2,
           },

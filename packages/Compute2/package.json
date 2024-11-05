@@ -4,9 +4,9 @@
   "version": "0.0.1",
   "description": "",
   "dependencies": {
-    "@datagrok-libraries/compute-utils": "^1.39.2",
-    "@datagrok-libraries/utils": "^4.3.0",
-    "@datagrok-libraries/webcomponents-vue": "^0.0.3",
+    "@datagrok-libraries/compute-utils": "file:../../libraries/compute-utils",
+    "@datagrok-libraries/utils": "file:../../libraries/utils",
+    "@datagrok-libraries/webcomponents-vue": "file:../../libraries/webcomponents-vue",
     "@he-tree/vue": "^2.8.7",
     "@types/wu": "^2.1.44",
     "@vueuse/core": "^11.1.0",

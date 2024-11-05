@@ -5,12 +5,13 @@
   "description": "",
   "dependencies": {
     "@datagrok-libraries/dock-spawn-dg": "../../libraries/dock-spawn-dg",
-    "@datagrok-libraries/utils": "^4.3.0",
-    "@datagrok-libraries/webcomponents": "^0.0.2",
+    "@datagrok-libraries/utils": "file:../../libraries/utils",
+    "@datagrok-libraries/webcomponents": "file:../../libraries/webcomponents",
     "cash-dom": "latest",
     "css-loader": "^7.1.2",
     "datagrok-api": "^1.21.1",
     "dayjs": "=1.11.10",
+    "dock-spawn-dg": "file:../../libraries/dock-spawn-dg",
     "style-loader": "^4.0.0"
   },
   "devDependencies": {
