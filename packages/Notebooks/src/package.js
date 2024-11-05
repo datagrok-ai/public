@@ -4,19 +4,10 @@ import * as DG from "datagrok-api/dg";
 
 export let _package = new DG.Package();
 
-import '@jupyterlab/application/style/index.css';
-import '@jupyterlab/codemirror/style/index.css';
-import '@jupyterlab/completer/style/index.css';
-import '@jupyterlab/documentsearch/style/index.css';
-import '@jupyterlab/notebook/style/index.css';
-import '../css/application-base.css'
 import '../css/notebooks.css';
-import '../css/theme-light-extension-index.css';
-import '../css/ui-components-base.css';
 
 import {PageConfig} from '@jupyterlab/coreutils';
 import {CommandRegistry} from '@lumino/commands';
-import {Widget} from '@lumino/widgets';
 import {ServiceManager, ServerConnection} from '@jupyterlab/services';
 import {MathJaxTypesetter} from '@jupyterlab/mathjax2';
 import {
@@ -32,8 +23,7 @@ import {DocumentManager} from '@jupyterlab/docmanager';
 import {DocumentRegistry} from '@jupyterlab/docregistry';
 import {RenderMimeRegistry, standardRendererFactories as initialFactories} from '@jupyterlab/rendermime';
 import {SetupCommands} from './commands';
-import {sessionContextDialogs} from '@jupyterlab/apputils';
-
+import {} from '@jupyterlab/apputils';
 
 class NotebookView extends DG.ViewBase {
   constructor(params, path) {
@@ -152,7 +142,13 @@ class NotebookView extends DG.ViewBase {
     let iframe = document.createElement('iframe');
     iframe.src = 'data:text/html;base64,' + btoa(this.html.replace(/\u00a0/g, " "));
     iframe.classList.add('grok-notebook-view-iframe');
-    let container = ui.div([iframe], 'grok-notebook-view-container');
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync(".grok-notebook-view-iframe {width: 100%; height:100%; border: none;display: flex;flex-grow: 1;}");
+
+    let container = ui.div(null, 'grok-notebook-view-container');
+    let shadowRoot = container.attachShadow({'mode': 'open'});
+    shadowRoot.appendChild(iframe);
+    shadowRoot.adoptedStyleSheets = [sheet];
     let view = ui.div([container], 'd4-root,d4-flex-col');
     this.setRibbonPanels([[this.saveAsComboPopup, this.editIcon]], true);
     this.editIcon.parentNode.parentNode.style.flexShrink = '0';
@@ -178,7 +174,7 @@ class NotebookView extends DG.ViewBase {
           await environment.setup();
           ui.setUpdateIndicator(this.root, false);
         }
-        this.editorMode();
+        this.editMode();
       }
     });
     return environmentInput;
@@ -196,14 +192,6 @@ class NotebookView extends DG.ViewBase {
     let notebookPath = await this.notebook.edit();
     const manager = new ServiceManager({serverSettings: NotebookView.getSettings()});
     await manager.ready;
-
-    // Initialize the command registry with the bindings.
-    // Setup the keydown listener for the document.
-    const commands = new CommandRegistry();
-    const useCapture = true;
-    document.addEventListener('keydown', event => {
-      commands.processKeydownEvent(event);
-    }, useCapture);
 
     const renderMime = new RenderMimeRegistry({
       initialFactories: initialFactories,
@@ -251,19 +239,76 @@ class NotebookView extends DG.ViewBase {
       NotebookActions.runAll(nbWidget.content, nbWidget.context.sessionContext).then();
     });
 
-    handler.editor = editor;
+    const iframe = document.createElement('iframe');
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.border = 'none';
+    this.root.appendChild(iframe);
 
+    // Get iframe's document and append the nbWidget to its body
+    const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+    iframeDocument.open();
+    iframeDocument.write('<html><head></head><body></body></html>');
+    iframeDocument.close();
+    function addLink(path) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = _package.webRoot + 'dist/' + path;
+      iframeDocument.head.append(link);  
+    }
+    addLink('styles/jupyter-styles.css');
+    iframe.style.pointerEvents = 'auto';
+    iframeDocument.body.style.backgroundColor = 'white';
+    const container = iframeDocument.createElement('div');
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.height = '100%';
+    container.style.overflow = 'auto';
+    iframeDocument.body.append(container);
+    iframeDocument.documentElement.style.overflow = 'auto';
+    iframeDocument.body.style.overflow = 'auto';
+    
+    handler.editor = editor;
     nbWidget.content.activeCellChanged.connect((sender, cell) => {
       handler.editor = cell !== null && cell !== undefined ? cell.editor : null;
+      if (cell && cell.editor) cell.editor.focus();
     });
 
+    nbWidget.content.node.addEventListener('click', (event) => {
+      const cells = nbWidget.content.widgets; // all cells in the notebook
+      for (let i = 0; i < cells.length; i++) {
+         if (cells[i].node.contains(event.target)) {
+             nbWidget.content.activeCellIndex = i; // sets the active cell by index
+             break;
+         }
+      }
+   });
+
+    // Initialize the command registry with the bindings.
+    // Setup the keydown listener for the document.
+    const commands = new CommandRegistry();
+    const useCapture = true;
+    iframeDocument.addEventListener('keydown', event => {
+      commands.processKeydownEvent(event);
+    }, useCapture);
+    // iframe.addEventListener('mousemove', _event => {
+    //   iframe.contentWindow.focus();
+    // }, useCapture);
     completer.hide();
 
-    Widget.attach(nbWidget, this.root);
-    Widget.attach(completer, this.root);
+    // container.append(nbWidget.node);
+    // container.append(completer.node);
+    // MessageLoop.sendMessage(nbWidget, Widget.Msg.BeforeAttach);
+    container.appendChild(nbWidget.node);
+    // MessageLoop.sendMessage(nbWidget, Widget.Msg.AfterAttach);
+    // MessageLoop.sendMessage(completer, Widget.Msg.BeforeAttach);
+    container.appendChild(completer.node);
+    // MessageLoop.sendMessage(completer, Widget.Msg.AfterAttach);
 
-    if (this.environmentInput === undefined)
-      this.environmentInput = await this.getEnvironmentsInput();
+
+    // if (this.environmentInput === undefined)
+    //   this.environmentInput = await this.getEnvironmentsInput();
 
     this.setRibbonPanels([
       [
@@ -280,15 +325,21 @@ class NotebookView extends DG.ViewBase {
         ui.iconFA('paste', () => NotebookActions.copy(nbWidget.content), 'Paste cell'),
         ui.iconFA('play', () => NotebookActions.runAndAdvance(nbWidget.content, nbWidget.context.sessionContext), 'Run cell'),
         ui.iconFA('stop', () => nbWidget.context.sessionContext.session.kernel.interrupt(), 'Interrupt Kernel'),
-        ui.iconFA('redo', () => sessionContextDialogs.restart(nbWidget.context.sessionContext), 'Restart Kernel'),
-        ui.iconFA('forward', () => sessionContextDialogs.restart(nbWidget.context.sessionContext)
-            .then(restarted => {
-              if (restarted) NotebookActions.runAll(nbWidget.content, nbWidget.context.sessionContext);
-            }),
-          'Restart Kernel and run all cells'),
+        ui.iconFA('redo', () => {
+          ui.dialog({ title: 'Restart Kernel' })
+          .onOK(() => sessionContext.restartKernel())
+          .show();
+        }),
+        ui.iconFA('forward', () => {
+          ui.dialog({ title: 'Restart Kernel and run all cells' })
+          .onOK(() => sessionContext.restartKernel().then(restarted => {
+            if (restarted) NotebookActions.runAll(nbWidget.content, nbWidget.context.sessionContext)
+          }))
+          .show();
+        }),
         new CellTypeSwitcher(nbWidget.content).node,
       ],
-      [this.environmentInput.root],
+      // [this.environmentInput.root],
     ], true);
     nbWidget.toolbar.hide();
     this.openAsHtmlIcon.parentNode.parentNode.style.flexShrink = '0';

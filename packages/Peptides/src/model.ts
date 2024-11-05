@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
@@ -13,7 +14,7 @@ import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
 import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {TAGS as _treeTAGS} from '@datagrok-libraries/bio/src/trees';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import wu from 'wu';
 import * as rxjs from 'rxjs';
 import $ from 'cash-dom';
@@ -47,7 +48,6 @@ import {MmDistanceFunctionsNames}
 import {ITSNEOptions, IUMAPOptions}
   from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reducer';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
-import {showMonomerTooltip} from './utils/tooltips';
 import {AggregationColumns, MonomerPositionStats} from './utils/statistics';
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 import {getDbscanWorker} from '@datagrok-libraries/math';
@@ -55,6 +55,7 @@ import {markovCluster} from '@datagrok-libraries/ml/src/MCL/clustering-view';
 import {DistanceAggregationMethods} from '@datagrok-libraries/ml/src/distance-matrix/types';
 import {ClusterMaxActivityViewer, IClusterMaxActivity} from './viewers/cluster-max-activity-viewer';
 import {MCL_OPTIONS_TAG, MCLSerializableOptions} from '@datagrok-libraries/ml/src/MCL';
+import {PeptideUtils} from './peptideUtils';
 
 export enum VIEWER_TYPE {
   SEQUENCE_VARIABILITY_MAP = 'Sequence Variability Map',
@@ -614,7 +615,7 @@ export class PeptidesModel {
             (requestSource as SARViewer | LogoSummaryTable).getScaledActivityColumn(),
           gridColumns: trueModel.analysisView.grid.columns,
           colorPalette: pickUpPalette(trueModel.df.getCol(isModelSource ? trueModel.settings!.sequenceColumnName :
-            (requestSource as SARViewer | LogoSummaryTable).sequenceColumnName)),
+            (requestSource as SARViewer | LogoSummaryTable).sequenceColumnName), PeptideUtils.getSeqHelper()),
           tableSelection: trueModel.getCombinedSelection(),
           isAnalysis: trueModel.settings !== null && (isModelSource ||
         areObjectsEqual(trueModel.settings.columns, (requestSource as PeptideViewer).getAggregationColumns())),
@@ -653,7 +654,7 @@ export class PeptidesModel {
       selectionCallback: (monomerPosition: type.SelectionItem, options: type.SelectionOptions): void =>
         this.modifyWebLogoSelection(monomerPosition, options),
       unhighlightCallback: (): void => this.unhighlight(),
-      colorPalette: () => pickUpPalette(this.df.getCol(this.settings!.sequenceColumnName)),
+      colorPalette: () => pickUpPalette(this.df.getCol(this.settings!.sequenceColumnName), PeptideUtils.getSeqHelper()),
       webLogoBounds: () => this.webLogoBounds,
       cachedWebLogoTooltip: () => this.cachedWebLogoTooltip,
       highlightCallback: (mp: type.SelectionItem, df: DG.DataFrame, mpStats: MonomerPositionStats): void =>
@@ -687,7 +688,7 @@ export class PeptidesModel {
     // append splitSeqDf columns to source table and make sure columns are not added more than once
     const name = this.df.name;
     const cols = this.df.columns;
-    const splitSeqDf = splitAlignedSequences(this.df.getCol(this.settings!.sequenceColumnName));
+    const splitSeqDf = splitAlignedSequences(this.df.getCol(this.settings!.sequenceColumnName), PeptideUtils.getSeqHelper());
     const positionColumns = splitSeqDf.columns.names();
     for (const colName of positionColumns) {
       let col = this.df.col(colName);
@@ -743,8 +744,6 @@ export class PeptidesModel {
       if (!(cell.isTableCell && cell.tableColumn?.semType === C.SEM_TYPES.MONOMER))
         return false;
 
-
-      showMonomerTooltip(cell.cell.value, x, y);
       return true;
     });
   }
@@ -1052,7 +1051,7 @@ export class PeptidesModel {
         'Adds a column with fractions of matching monomers against sequence in the current row');
       calculateIdentity.onclick = (): void => {
         const seqCol = this.df.getCol(this.settings!.sequenceColumnName);
-        calculateScores(this.df, seqCol, seqCol.get(this.df.currentRowIdx), SCORE.IDENTITY)
+        calculateScores(this.df, seqCol, seqCol.get(this.df.currentRowIdx), SCORE.IDENTITY, PeptideUtils.getSeqHelper())
           .then((col: DG.Column<number>) => col.setTag(C.TAGS.IDENTITY_TEMPLATE, seqCol.get(this.df.currentRowIdx)))
           .catch((e) => _package.logger.debug(e));
       };
@@ -1064,7 +1063,7 @@ export class PeptidesModel {
         'Adds a column with sequence similarity scores against sequence in the current row');
       calculateSimilarity.onclick = (): void => {
         const seqCol = this.df.getCol(this.settings!.sequenceColumnName);
-        calculateScores(this.df, seqCol, seqCol.get(this.df.currentRowIdx), SCORE.SIMILARITY)
+        calculateScores(this.df, seqCol, seqCol.get(this.df.currentRowIdx), SCORE.SIMILARITY, PeptideUtils.getSeqHelper())
           .then((col: DG.Column<number>) => col.setTag(C.TAGS.SIMILARITY_TEMPLATE, seqCol.get(this.df.currentRowIdx)))
           .catch((e) => _package.logger.debug(e));
       };
@@ -1359,7 +1358,7 @@ export class PeptidesModel {
       this._sequenceSpaceCols.forEach((col) => this.df.columns.remove(col));
     this._sequenceSpaceCols = [];
     let seqCol = this.df.getCol(this.settings!.sequenceColumnName!);
-    const sh = SeqHandler.forColumn(seqCol);
+    const sh = PeptideUtils.getSeqHelper().getSeqHandler(seqCol);
     const isHelm = sh.isHelm();
     if (isHelm) {
       try {
@@ -1463,7 +1462,7 @@ export class PeptidesModel {
         menu.item('Modify Sequence space parameters', () => {
           getSettingsDialog(this);
         });
-      } catch (e) {
+      } catch (_) {
       }
     });
   }

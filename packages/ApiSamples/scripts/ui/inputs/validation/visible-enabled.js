@@ -6,4 +6,4 @@
 //input: bool tankExtension = false { visible: type == 'ICE'; enabled: tankVolume > 50 }
 //input: double batteryCapacity = 80 { visible: type == 'Electric'; units: kWh }
 
-alert(type);
+grok.shell.info(type);

@@ -1028,6 +1028,9 @@ export class PinnedColumn {
      } else if (bAddToSel) //column select
        this.m_bColSelect = true;
     }
+
+    if (e.offsetY < GridUtils.getGridColumnHeaderHeight(grid))
+      grok.shell.o = this.m_colGrid.column;
   }
 
   public onMouseUp(e : MouseEvent) : void {

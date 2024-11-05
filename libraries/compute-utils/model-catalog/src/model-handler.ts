@@ -15,6 +15,10 @@ function displayPopover(icon: HTMLElement, popover: HTMLElement) {
   popover.showPopover();
 }
 
+function hidePopover(popover: HTMLElement) {
+  popover.hidePopover();
+}
+
 function alignPopover(target: HTMLElement, popover: HTMLElement): void {
   const bounds = target.getBoundingClientRect().toJSON();
   popover.style.inset = 'unset';
@@ -34,24 +38,24 @@ function stylePopover(popover: HTMLElement): void {
   popover.style.color = 'var(--gray-6)';
 }
 
-function requestMembership(groupName: string) {
-  return async () => {
-    try {
-      const groups = await grok.dapi.groups.filter(`friendlyName="${groupName}"`).list();
-      if (groups.length === 0)
-        throw new Error(`group with specified name is not found`);
+async function requestMembership(groupName: string) {
+  try {
+    const groups = await grok.dapi.groups.filter(`friendlyName="${groupName}"`).list();
+    if (groups.length === 0)
+      throw new Error(`group with specified name is not found`);
 
-      if (groups.length > 1)
-        throw new Error(`found more than one group with specified name`);
+    if (groups.length > 1)
+      throw new Error(`found more than one group with specified name`);
 
-      const group = groups[0];
+    const group = groups[0];
 
-      // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14160
-      fetch(`${window.location.origin}/api/groups/${group.id}/requests/${grok.shell.user.group.id}`, {method: 'POST'});
-    } catch (e: any) {
-      grok.shell.error(e.toString());
-    }
-  };
+    // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14160
+    await fetch(`${window.location.origin}/api/groups/${group.id}/requests/${grok.shell.user.group.id}`, {method: 'POST'});
+
+    grok.shell.info(`Request to join ${groupName} has been initiated. Please allow some time for approval.`);
+  } catch (e: any) {
+    grok.shell.error(e.toString());
+  }
 }
 
 export class ModelHandler extends DG.ObjectHandler {
@@ -128,7 +132,10 @@ export class ModelHandler extends DG.ObjectHandler {
         ...missingMandatoryGroups.map((group) => ui.divV([
           ui.span([getBulletIcon(), group.name], {style: {'font-weight': 600}}),
           ...group.help ? [ui.span([group.help], {style: {marginLeft: '16px'}})]: [],
-          ui.link(`Request group membership`, requestMembership(group.name), undefined, {style: {marginLeft: '16px'}}),
+          ui.link(`Request group membership`, async () => {
+            await requestMembership(group.name);
+            hidePopover(mandatoryGroupsInfo);
+          }, undefined, {style: {marginLeft: '16px'}}),
         ])),
       ], {style: {gap: '10px'}})) as HTMLElement;
 
@@ -182,18 +189,19 @@ export class ModelHandler extends DG.ObjectHandler {
     return ui.iconImage(func.package.name, iconUrl);
   }
 
-  override async renderPreview(x: DG.Func) {
+  override renderPreview(x: DG.Func) {
     const editorName = x.options.editor ?? 'Compute:RichFunctionViewEditor';
-    const editor = await grok.functions.find(editorName);
-    if (editor !== null && editor instanceof DG.Func) {
-      const viewCall = editor.prepare({'call': x.prepare()});
-      await viewCall.call(false, undefined, {processed: true});
-      const view = viewCall.getOutputParamValue();
-      if (view instanceof DG.View)
-        return view;
-    }
-    //@ts-ignore
-    return super.renderPreview(x);
+    return DG.View.fromViewAsync(async () => {
+      const editor = await grok.functions.find(editorName);
+      if (editor !== null && editor instanceof DG.Func) {
+        const viewCall = editor.prepare({'call': x.prepare()});
+        await viewCall.call(false, undefined, {processed: true});
+        const view = viewCall.getOutputParamValue();
+        if (view instanceof DG.View)
+          return view;
+      }
+      return super.renderPreview(x);
+    });
   }
 
   override renderProperties(func: DG.Func) {

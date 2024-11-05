@@ -4,13 +4,14 @@ import * as DG from 'datagrok-api/dg';
 
 import {
   HelmType, HelmMol,
-  JSDraw2ModuleType, OrgType
+  JSDraw2ModuleType, OrgType,
+  IHelmEditorOptions
 } from '@datagrok-libraries/bio/src/helm/types';
 
 
-import {Chain} from './pt-conversion';
+import {Chain, PtBio} from './conversion/pt-chain';
 import {getAvailableMonomers} from './utils';
-import {PolyToolEnumeratorParams, PolyToolEnumeratorTypes, PolyToolPlaceholders} from './types';
+import {PolyToolEnumeratorParams, PolyToolEnumeratorTypes, PolyToolPlaceholder, PolyToolBreadthPlaceholder} from './types';
 
 // For example keep monomers presented in HELMCoreLibrary.json only (not [NH2])
 export const PT_HELM_EXAMPLE = 'PEPTIDE1{R.[Aca].T.G.H.F.G.A.A.Y.P.E.[meI]}$$$$';
@@ -19,17 +20,21 @@ export const PT_HELM_EXAMPLE = 'PEPTIDE1{R.[Aca].T.G.H.F.G.A.A.Y.P.E.[meI]}$$$$'
 declare const JSDraw2: JSDraw2ModuleType;
 declare const org: OrgType;
 
-function polyToolEnumeratorCore(m: HelmMol, position: number, monomerList: string[]): HelmMol[] {
-  const resMolList: HelmMol[] = new Array<HelmMol>(monomerList.length);
-  for (let i = 0; i < monomerList.length; i++) {
-    const newSymbol = monomerList[i];
-    const resM = resMolList[i] = m.clone() as HelmMol;
-    const oldSymbol = resM.atoms[position].elem;
-    resM.atoms[position].elem = newSymbol;
+function polyToolEnumeratorCore(m: HelmMol, start: number, end: number, monomerList: string[]): HelmMol[] {
+  const resMolList: HelmMol[] = new Array<HelmMol>(monomerList.length * (end - start + 1));
+  for (let monI: number = 0; monI < monomerList.length; ++monI) {
+    const posCount = end - start + 1;
+    for (let posI: number = 0; posI < posCount; ++posI) {
+      const pos = start + posI;
+      const newSymbol = monomerList[monI];
+      const resM = resMolList[monI * posCount + posI] = m.clone() as HelmMol;
+      const oldSymbol = resM.atoms[pos].elem;
+      resM.atoms[pos].elem = newSymbol;
 
-    const idOldSymbol = oldSymbol?.length > 1 ? `[${oldSymbol}]` : oldSymbol;
-    const idNewSymbol = newSymbol?.length > 1 ? `[${newSymbol}]` : newSymbol;
-    resM.name = `${m.name}-${idOldSymbol}${position + 1}${idNewSymbol}`;
+      const idOldSymbol = oldSymbol?.length > 1 ? `[${oldSymbol}]` : oldSymbol;
+      const idNewSymbol = newSymbol?.length > 1 ? `[${newSymbol}]` : newSymbol;
+      resM.name = `${m.name}-${idOldSymbol}${pos + 1}${idNewSymbol}`;
+    }
   }
   return resMolList;
 }
@@ -39,19 +44,30 @@ function polyToolEnumeratorCore(m: HelmMol, position: number, monomerList: strin
  * @param  placeholders Placeholders by zero-based position key
  * @returns {string[]} List of enumerated molecules in Helm format
  */
-function getPtEnumeratorSingle(m: HelmMol, placeholders: PolyToolPlaceholders): HelmMol[] {
-  const coreResList: HelmMol[][] = Object.entries(placeholders)
-    .map(([p, monomerList]: [string, string[]]) => polyToolEnumeratorCore(m, parseInt(p), monomerList));
+function getPtEnumeratorSingle(m: HelmMol, placeholders: PolyToolPlaceholder[]): HelmMol[] {
+  const coreResList: HelmMol[][] = placeholders
+    .map((ph) => polyToolEnumeratorCore(m, ph.position, ph.position, ph.monomers));
   const resMolList = coreResList.reduce((acc, posList) => acc.concat(posList), []);
   return resMolList;
 }
 
-function getPtEnumeratorMatrix(m: HelmMol, placeholders: PolyToolPlaceholders): HelmMol[] {
+function getPtEnumeratorMatrix(m: HelmMol, placeholders: PolyToolPlaceholder[]): HelmMol[] {
   let resMolList = [m];
-  for (const [p, monomerList] of Object.entries(placeholders)) {
-    const pos: number = parseInt(p);
-    const posResMolList: HelmMol[][] = resMolList.map((m: HelmMol) => polyToolEnumeratorCore(m, pos, monomerList));
-    resMolList = posResMolList.reduce((acc, l) => acc.concat(l), []);
+  for (const ph of placeholders) {
+    const phResMolList: HelmMol[][] = resMolList.map((m: HelmMol) => polyToolEnumeratorCore(m, ph.position, ph.position, ph.monomers));
+    resMolList = phResMolList.reduce((acc, l) => acc.concat(l), []);
+  }
+  return resMolList;
+}
+
+function getPtEnumeratorBreadth(m: HelmMol, placeholdersBreadth: PolyToolBreadthPlaceholder[]): HelmMol[] {
+  if (placeholdersBreadth.length == 0)
+    return [];
+
+  let resMolList = [m];
+  for (const phb of placeholdersBreadth) {
+    const phResMolList: HelmMol[][] = resMolList.map((m: HelmMol) => polyToolEnumeratorCore(m, phb.start, phb.end, phb.monomers));
+    resMolList = phResMolList.reduce((acc, l) => acc.concat(l), []);
   }
   return resMolList;
 }
@@ -60,23 +76,31 @@ function getPtEnumeratorMatrix(m: HelmMol, placeholders: PolyToolPlaceholders): 
 export function doPolyToolEnumerateHelm(
   helm: string, id: string, params: PolyToolEnumeratorParams
 ): [ /* helm */ string, /* id */ string][] {
-  const molHandler = new JSDraw2.MolHandler<HelmType>();
+  const molHandler = new JSDraw2.MolHandler<HelmType, PtBio, IHelmEditorOptions>();
   const plugin = new org.helm.webeditor.Plugin(molHandler);
   org.helm.webeditor.IO.parseHelm(plugin, helm, new JSDraw2.Point(0, 0), undefined);
   const m = molHandler.m;
   m.name = id;
 
-  let resMolList: HelmMol[];
-  switch (params.type) {
-  case PolyToolEnumeratorTypes.Single: {
-    resMolList = getPtEnumeratorSingle(molHandler.m, params.placeholders);
-    break;
+  let resMolList: HelmMol[] = [];
+  if (params.placeholders) {
+    switch (params.type) {
+    case PolyToolEnumeratorTypes.Single: {
+      resMolList = getPtEnumeratorSingle(molHandler.m, params.placeholders);
+      break;
+    }
+    case PolyToolEnumeratorTypes.Matrix: {
+      resMolList = getPtEnumeratorMatrix(molHandler.m, params.placeholders);
+      break;
+    }
+    }
   }
-  case PolyToolEnumeratorTypes.Matrix: {
-    resMolList = getPtEnumeratorMatrix(molHandler.m, params.placeholders);
-    break;
+
+  let resBreadthMolList: HelmMol[] = [];
+  if (params.breadthPlaceholders) {
+    resBreadthMolList = getPtEnumeratorBreadth(molHandler.m, params.breadthPlaceholders);
   }
-  }
+  resMolList = resMolList.concat(resBreadthMolList);
 
   if (params.keepOriginal)
     resMolList = [m, ...resMolList];

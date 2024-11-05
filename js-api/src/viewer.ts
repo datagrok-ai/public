@@ -39,7 +39,7 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
 
   public tags: any;
   private _meta: ViewerMetaHelper | undefined;
-  filter: BitSet = BitSet.create(0);
+  private _filter: BitSet | null = null;
 
   /** @constructs Viewer */
   constructor(dart: any, root?: HTMLElement) {
@@ -47,6 +47,13 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     this.initDartObject(dart);
   }
 
+  /** combined filter of the viewer */
+  get filter(): BitSet { 
+    return this._filter ??= this.dart ? toJs(api.grok_Viewer_Get_Filter(this.dart)) : BitSet.create(0); 
+  }
+  set filter(f: BitSet) {
+    this._filter = f;
+  }
   get onDataEvent(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event'); }
   get onTooltipCreated(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-tooltip')); }
   get onDataSelected(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-select')); }
@@ -547,7 +554,12 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotSettings> {
   render(g: CanvasRenderingContext2D): void { api.grok_ScatterPlotViewer_Render(this.dart, g); }
   getRowTooltip(rowIdx: number): HTMLDivElement { return api.grok_ScatterPlotViewer_GetRowTooltip(this.dart, rowIdx); }
   getMarkerSize(rowIdx: number): number { return api.grok_ScatterPlotViewer_GetMarkerSize(this.dart, rowIdx); }
+  getMarkerSizes(): Float32Array { return api.grok_ScatterPlotViewer_GetMarkerSizes(this.dart); }
   getMarkerType(rowIdx: number): string { return api.grok_ScatterPlotViewer_GetMarkerType(this.dart, rowIdx); }
+  getMarkerTypes(): Uint32Array { return api.grok_ScatterPlotViewer_GetMarkerTypes(this.dart); }
+  getMarkerColor(rowIdx: number): number { return api.grok_ScatterPlotViewer_GetMarkerColor(this.dart, rowIdx); }
+  getMarkerColors(): Uint32Array { return api.grok_ScatterPlotViewer_GetMarkerColors(this.dart); }
+
 
   get onZoomed(): rxjs.Observable<Rect> { return this.onEvent('d4-scatterplot-zoomed'); }
   get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-scatterplot-reset-view'); }
@@ -622,6 +634,18 @@ export class CorrelationPlot extends Viewer<interfaces.ICorrelationPlotSettings>
   }
 
   get onCorrCellClicked(): rxjs.Observable<EventData<CorrPlotCellArgs>> { return this.onEvent('d4-correlation-plot-corr-cell-click'); }
+}
+
+export class ConfusionMatrix extends Viewer<interfaces.IConfusionMatrixSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+}
+
+export class RocCurve extends Viewer<interfaces.IRocCurveSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
 }
 
 

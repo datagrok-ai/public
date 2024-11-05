@@ -1,11 +1,17 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {before, category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
+import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {ALPHABET, NOTATION, TAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 category('SeqHandler: getRegion', () => {
+  let seqHelper: ISeqHelper;
+
+  before(async () => {
+    seqHelper = await getSeqHelper();
+  });
+
   const data: {
     [testName: string]: {
       srcCsv: string,
@@ -76,7 +82,7 @@ PEPTIDE1{[Cys_SEt].T.*.*}$$$$`,
       const semType: string | null = await grok.functions.call('Bio:detectMacromolecule', {col: srcSeqCol});
       if (semType) srcSeqCol.semType = semType;
 
-      const srcSh = SeqHandler.forColumn(srcSeqCol);
+      const srcSh = seqHelper.getSeqHandler(srcSeqCol);
       const resSeqCol = srcSh.getRegion(testData.startIdx, testData.endIdx, 'regSeq');
 
       const tgtDf = DG.DataFrame.fromCsv(testData.tgtCsv);

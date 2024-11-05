@@ -23,7 +23,7 @@ Open linked datasets
 ***
 
 1. Add filters.
-2. View > layout > clone.
+2. View > Layout > Clone View.
 3. Disable filters on the clone.
 3. Close-open the filter panel.
 4. Enable filters.
@@ -66,7 +66,6 @@ Expected result: filter is applied, filters are synchronized in two open views.
 
 ---
 {
-  "datasets": [
-    "System:DemoFiles/chem/SPGI.csv"
-  ]
+  "order": 4,
+  "datasets": ["System:DemoFiles/chem/SPGI.csv"]
 }

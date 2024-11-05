@@ -17,7 +17,10 @@ module.exports = {
     rules: [
       {
         test: /\.tsx?$/, 
-        loader: 'ts-loader'
+        loader: 'ts-loader',
+        options: {
+          allowTsInNodeModules: true
+        }
       },
       {
         test: /\.css$/,
@@ -25,7 +28,7 @@ module.exports = {
       }
     ],
   },
-  devtool: 'inline-source-map',
+  devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',

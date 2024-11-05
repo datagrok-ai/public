@@ -42,6 +42,7 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
       contents = contents.replace(/#{PACKAGE_DETECTORS_NAME}/g, utils.kebabToCamelCase(name));
       contents = contents.replace(/#{PACKAGE_NAME_LOWERCASE}/g, name.toLowerCase());
       contents = contents.replace(/#{PACKAGE_NAME_LOWERCASE_WORD}/g, name.replace(/-/g, '').toLowerCase());
+      contents = contents.replace(/#{CURRENT_DATE}/g, new Date().toISOString().slice(0, 10));
       // eslint-disable-next-line new-cap
       contents = utils.replacers['PACKAGE_NAMESPACE'](contents, name);
       contents = contents.replace(/#{GROK_HOST_ALIAS}/g, config.default);
@@ -56,7 +57,12 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
           _package['scripts'][`debug-${name.toLowerCase()}-${server}`] = `webpack && grok publish ${server}`;
           _package['scripts'][`release-${name.toLowerCase()}-${server}`] = `webpack && grok publish ${server} --release`;
         }
-        if (ts) Object.assign(_package.devDependencies, {'ts-loader': 'latest', 'typescript': 'latest'});
+        
+        if (ts) {
+          _package.devDependencies = _package.devDependencies?? {};
+          Object.assign(_package.devDependencies, {'ts-loader': 'latest', 'typescript': 'latest'});
+        }
+
         if (eslint) {
           Object.assign(_package.devDependencies, {
             'eslint': 'latest',
@@ -110,6 +116,7 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
       if (file === '.vscode' && !(ide == 'vscode' && platform == 'win32')) return;
       fs.mkdirSync(copyFilePath);
       // recursive call
+      if(path.basename(origFilePath) === 'node_modules') return;
       createDirectoryContents(name, config, origFilePath, copyFilePath, ide, ts, eslint, test);
     }
   });

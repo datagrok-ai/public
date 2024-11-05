@@ -188,25 +188,25 @@ async function runChemicalSpace(tv: DG.TableView): Promise<void> {
     plotEmbeddings: true,
     options: undefined,
     preprocessingFunction: undefined,
-    clusterEmbeddings: true
-  }).call(undefined, undefined, { processed: false });
+    clusterEmbeddings: true,
+  }).call(undefined, undefined, {processed: false});
   //need for scatter plot to render
   await delay(10);
 }
 
 async function runStructuralAlerts(tv: DG.TableView): Promise<void> {
-  await DG.Func.find({ package: 'Chem', name: 'runStructuralAlerts' })[0].prepare({
+  await DG.Func.find({package: 'Chem', name: 'runStructuralAlerts'})[0].prepare({
     table: tv.dataFrame,
     molecules: tv.dataFrame.col('smiles'),
     pains: true,
     bms: false,
     sureChembl: false,
     mlsmr: false,
-    dandee: false,
+    dundee: false,
     inpharmatica: false,
     lint: false,
-    glaxo: false
-  }).call(undefined, undefined, { processed: false });
+    glaxo: false,
+  }).call(undefined, undefined, {processed: false});
 }
 
 async function runElementalAnalysis(tv: DG.TableView): Promise<void> {
@@ -246,7 +246,6 @@ async function runCurate(tv: DG.TableView): Promise<void> {
     tautomerization: false,
     mainFragment: false,
   });
-  tv.dataFrame.columns.add(df.col('curated_molecule'));
 }
 
 async function runAddChemPropertiesColumns(tv: DG.TableView): Promise<void> {

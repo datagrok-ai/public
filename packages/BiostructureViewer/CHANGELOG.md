@@ -1,5 +1,13 @@
 # BiostructureViewer changelog
 
+## 1.2.2 (2024-10-32)
+
+Fix opening files
+
+## 1.2.1 (2024-09-26)
+
+Bump dependencies bio lib version
+
 ## 1.1.2 (2024-09-02)
 
 ### Bug fixes

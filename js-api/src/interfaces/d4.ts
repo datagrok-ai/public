@@ -544,24 +544,36 @@ export interface IScatterPlotSettings {
 
   markerMaxSize: number;
 
-  /// Labels to show next to the markers.
-  labels: string;
-  labelsColumnName: string;
+  /// When defined, a line would be drawn for each series (defined by the categorical color column)
+  /// using the order specified by "Lines Order"
+  linesOrder: string;
+  linesOrderColumnName: string;
+
+  linesWidth: number;
+
+  /// Label columns to show next to the markers.
+  labelFormColumnNames: Array<string>;
 
   /// Determines the rows shown on the scatter plot.
   showLabelsFor: keyof typeof RowSet;
 
+  /// To display labels separately or as markers (works for non-text labels).
   labelColorAsMarker: boolean;
 
   /// Determines how to show marker labels.
-  showMarkerLabels: keyof typeof VisibilityMode;
+  showLabelsMode: keyof typeof VisibilityMode;
+
+  /// If checked, display a label content as marker.
+  useLabelAsMarker: boolean;
+
+  /// Determines whether to show column names next to label values.
+  showValueColumns: keyof typeof VisibilityMode;
 
   /// Marker radius in which label is inscribed.
   labelCircleRadius: number;
 
-  /// Shows text values by selected column under the main label.
-  extraLabels: string;
-  extraLabelsColumnName: string;
+  /// Label inner content size.
+  labelCircleContentSize: number;
 
   /// Regression line visibility (toggle by pressing R)
   showRegressionLine: boolean;
@@ -802,7 +814,7 @@ export interface ILineChartSettings {
 
   markerSize: number;
 
-  showMarkers: string;
+  showMarkers: keyof typeof VisibilityMode;
 
   /// Show vertical line reflecting the position of the current row
   /// See also *Current Line Color*
@@ -2485,6 +2497,106 @@ export interface ICorrelationPlotSettings {
 export enum CorrelationType {
   Pearson = 'Pearson',
   Spearman = 'Spearman',
+}
+
+export interface IConfusionMatrixSettings {
+  /// Column to be put on the X axis
+  x: string;
+  xColumnName: string;
+
+  /// Column to be put on the Y axis
+  y: string;
+  yColumnName: string;
+
+  /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
+  /// Formula that filters out rows to show.
+  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  filter: string;
+
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  description: string;
+
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+}
+
+export interface IRocCurveSettings {
+  /// Columns to be put on the X axis
+  predictionColumnNames: Array<string>;
+
+  /// Column to be put on the Y axis
+  targetColumn: string;
+
+  /// Positive class name
+  positiveClass: string;
+
+  /// Select to draw thresholds
+  showThreshold: boolean;
+
+  /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
+  /// Formula that filters out rows to show.
+  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  filter: string;
+
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  description: string;
+
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
 }
 
 export interface IFormSettings {

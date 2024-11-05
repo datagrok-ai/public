@@ -124,7 +124,7 @@ for (const lang of langs) {
       const column = await df.columns.addNewCalculated('new', `CVMTests:${lang}CalcColumn(\${x} + \${y})`);
       expect(df.columns.contains(column.name), true);
       expect(column.get(0), 6);
-    }, {stressTest: true});
+    }, {stressTest: true, skipReason: lang === 'Grok' ? 'Doesn\'t support vectorization' : undefined});
 
     test('File input', async () => {
       const files = await grok.dapi.files.list('System:AppData/CvmTests/', false, 'cars.csv');

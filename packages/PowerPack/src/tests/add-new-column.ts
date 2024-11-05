@@ -19,7 +19,8 @@ category('Add new column', () => {
     const funcs = Object.keys(FUNC_TESTS).map((name) => DG.Func.find({ name: name })[0]);
 
     for (const f of funcs) {
-      const dlg = new AddNewColumnDialog();
+      const call = DG.Func.find({ name: 'AddNewColumn' })[0].prepare({'table': df});
+      const dlg = new AddNewColumnDialog(call);
       await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
       for (const [expression, result] of Object.entries(FUNC_TESTS[f.name])) {
         const columnName = df.columns.getUnusedName(expression);
@@ -46,7 +47,8 @@ category('Add new column', () => {
   });
 
   test('validation', async () => {
-    const dlg = new AddNewColumnDialog();
+    const call = DG.Func.find({ name: 'AddNewColumn' })[0].prepare({'table': df});
+    const dlg = new AddNewColumnDialog(call);
     await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
     for (const f of Object.keys(FUNC_VALIDATION)) {
         dlg.codeMirror!.dispatch({
@@ -62,7 +64,8 @@ category('Add new column', () => {
   });
 
   test('hints', async () => {
-    const dlg = new AddNewColumnDialog();
+    const call = DG.Func.find({ name: 'AddNewColumn' })[0].prepare({'table': df});
+    const dlg = new AddNewColumnDialog(call);
     await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
     for (const f of Object.keys(FUNC_HINTS)) {
       dlg.codeMirror!.dispatch({
@@ -88,8 +91,9 @@ category('Add new column', () => {
         }
       });
       await awaitCheck(() => dlg.codeMirror!.state.doc.toString() === '', 'code mirror has\'t been cleared');
-    }      
-    const dlg = new AddNewColumnDialog();
+    }
+    const call = DG.Func.find({ name: 'AddNewColumn' })[0].prepare({'table': df});      
+    const dlg = new AddNewColumnDialog(call);
     await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
     const absFuncLink = dlg.widgetFunctions?.root.querySelector('[name="span-Abs"]') as HTMLElement;
     //check function is added on click
@@ -98,11 +102,11 @@ category('Add new column', () => {
     await clear();
     //check function is added on click and selected column with matching type is added automatically
     dlg.columnsDf!.currentRowIdx = 3;
-    await awaitCheck(() => dlg.selectedColumn!.name === 'age', 'expression has\'t been set');
+    await awaitCheck(() => dlg.selectedColumn!.name === 'age', 'column has\'t been set');
     absFuncLink.click();
-    await awaitCheck(() => dlg.codeMirror!.state.doc.toString() === 'Abs(${age})', 'expression has\'t been set');
-    await awaitCheck(() => dlg.gridPreview!.dataFrame.get('Abs(${age})', 0) === 61, 'incorrect preview data');
-    await awaitCheck(() => dlg.gridPreview!.dataFrame.get('Abs(${age})', 9) === 26, 'incorrect preview data');
+    await awaitCheck(() => dlg.codeMirror!.state.doc.toString() === 'Abs(${age})', 'expression has\'t been set', 3000);
+    await awaitCheck(() => dlg.gridPreview!.dataFrame.col('Abs(${age})') ? dlg.gridPreview!.dataFrame.get('Abs(${age})', 0) === 61 : false, 'incorrect preview data', 3000);
+    await awaitCheck(() => dlg.gridPreview!.dataFrame.get('Abs(${age})', 9) === 26, 'incorrect preview data', 1000);
   });
 
   after(async () => {

@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {runTests, tests, TestContext, test as _test, category} from '@datagrok-libraries/utils/src/test';
+import {runTests, tests, TestContext, test as _test, category, initAutoTests as initTests } from '@datagrok-libraries/utils/src/test';
 import './connections/queries-test';
 import './sync/data-sync-test';
 import './benchmarks/benchmark';
@@ -104,11 +104,11 @@ export async function testConnections(): Promise<DG.DataFrame> {
 const skip = ['Redshift', 'Athena', 'Files'];
 
 //tags: init
-export async function initTests() {
+export async function initPackageTests() {
   const connections = await grok.dapi.connections.list();
   const categories: {[_:string]: DG.DataConnection[]} = {};
   for (const c of connections) {
-    const cat = c.dart.dataSource ?? c.dart.z;
+    const cat = c.dataSource;
     if (skip.includes(cat)) continue;
     categories[cat] ??= [];
     categories[cat].push(c);
@@ -124,4 +124,9 @@ export async function initTests() {
         });
       }
     });
+}
+
+//name: initAutoTests
+export async function initAutoTests() {
+  await initTests(_package, _package.getModule('package-test.js'));
 }

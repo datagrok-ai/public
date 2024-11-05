@@ -5,7 +5,7 @@
 4. Rerun the script, choose any dataset from the local machine, and click **OK**.
 4. Rerun script, choose any dataset from Datagrok Files using folder icon, and click **OK**.
 4. Rerun script, choose any query using the datasource icon, and click **OK**.
-5. Open Datagrok console (Alt + C).
+5. Open Datagrok console (~).
 6. Enter the following expression into the console: *{your namespace}:testRscript("cars")*. Where {your namespace}
    equals your platform login.
 7. Press enter to execute the command typed in the console.

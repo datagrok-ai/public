@@ -1,0 +1,20 @@
+{
+  "connectionName": "Datagrok",
+  "schemaName": "public",
+  "entryPoints": {
+    "DG_USER_LOGIN": {
+      "table": "users",
+      "column": "login"
+    }
+  },
+  "customSelectedColumns": {
+    "users": [
+      "picture",
+      "first_name",
+      "last_name",
+      "joined",
+      "email",
+      "status"
+    ]
+  }
+}

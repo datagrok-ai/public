@@ -1,0 +1,197 @@
+{
+  "#type": "ViewLayout",
+  "viewStateMap": {
+    "containerType": "horizontal",
+    "state": {
+      "width": 1194,
+      "height": 994
+    },
+    "children": [
+      {
+        "containerType": "fill",
+        "state": {
+          "width": 645,
+          "height": 994,
+          "documentManager": true
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 645,
+              "height": 994,
+              "element": {
+                "id": "4a7fd5e0-73f0-11ef-8e00-8775acae5683",
+                "type": "Grid",
+                "look": {
+                  "#type": "GridLook",
+                  "showAddNewRowIcon": true,
+                  "addNewRowOnLastRowEdit": true,
+                  "rowHeight": 100,
+                  "topLevelDefaultMenu": true,
+                  "allowColumnMenu": true,
+                  "columns": [
+                    {
+                      "width": 44,
+                      "backgroundColor": 4294440951,
+                      "customName": "",
+                      "cellType": "row header",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 152,
+                      "columnName": "compound_chembl_id",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 200,
+                      "columnName": "canonical_smiles",
+                      "cellType": "Molecule",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 351,
+                      "columnName": "compound_key",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 214,
+                      "columnName": "pubmed_id_or_doi",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 400,
+                      "columnName": "assay_description",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 122,
+                      "columnName": "standard_type",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 127,
+                      "columnName": "standard_relation",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 140,
+                      "columnName": "standard_value",
+                      "cellType": "number",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 111,
+                      "columnName": "standard_units",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 129,
+                      "columnName": "activity_comment",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    }
+                  ]
+                },
+                "title": "Compound activity details for CHEMBL1827",
+                "default": true
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 548,
+          "height": 994,
+          "element": {
+            "id": "4a7ffcf0-73f0-11ef-b2c8-51af1b15c486",
+            "type": "Pie chart",
+            "look": {
+              "#type": "PieChartLook",
+              "categoryColumnName": "standard_type",
+              "categoryFunction": "",
+              "segmentAngleColumnName": "standard_value"
+            },
+            "title": "Pie chart"
+          }
+        },
+        "children": []
+      }
+    ],
+    "floating": [],
+    "tableId": "b2b1d600-73f0-11ef-aea4-6522480e4aeb",
+    "tableName": "Compound activity details for CHEMBL1827"
+  },
+  "columns": [
+    {
+      "name": "standard_type",
+      "type": "string",
+      "id": "b2d42b10-73f0-11ef-8a03-59502a9866a9",
+      "friendlyName": "Standard_type",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "4a7ffcf0-73f0-11ef-e241-bd6f631b4469"
+        },
+        {
+          "tag": ".id",
+          "id": "4a7ffcf0-73f0-11ef-bb54-ddfee05f759f"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "2",
+        ".id": "b2d42b10-73f0-11ef-8a03-59502a9866a9"
+      }
+    },
+    {
+      "name": "standard_value",
+      "type": "double",
+      "id": "b2d42b10-73f0-11ef-f815-d76f12d27be5",
+      "friendlyName": "Standard_value",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "4a802400-73f0-11ef-e292-49806fbdfdf7"
+        },
+        {
+          "tag": ".id",
+          "id": "4a802400-73f0-11ef-f10c-2be196e3e055"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "2",
+        ".id": "b2d42b10-73f0-11ef-f815-d76f12d27be5"
+      }
+    }
+  ],
+  "name": "CompoundActivityDetailsForCHEMBL1827",
+  "friendlyName": "Compound activity details for CHEMBL1827",
+  "author": {
+    "id": "9e9f6b50-6280-11ee-9466-b1c86e676b97"
+  },
+  "createdOn": "2024-09-30T10:10:59.773Z"
+}

@@ -7,8 +7,8 @@ import $ from 'cash-dom';
 import {getRdKitModule, drawMoleculeToCanvas, getRdKitWebRoot} from '../utils/chem-common-rdkit';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
-import { HIGHLIGHT_BY_SCAFFOLD_TAG } from '../constants';
-import { IColoredScaffold } from '../rendering/rdkit-cell-renderer';
+import {HIGHLIGHT_BY_SCAFFOLD_TAG} from '../constants';
+import {IColoredScaffold} from '../rendering/rdkit-cell-renderer';
 
 
 let alertsDf: DG.DataFrame | null = null;
@@ -110,12 +110,12 @@ export async function structuralAlertsWidget(molecule: string): Promise<DG.Widge
                 array.splice(substrIdx, 1);
             } else {
               if (color !== NO_HIGHLIGHT)
-                array.push({molecule: smartsCol.get(i), color: DG.Color.toHtml(color)! });
+                array.push({molecule: smartsCol.get(i), color: DG.Color.toHtml(color)!});
             }
             col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(array));
             grok.shell.tv.dataFrame?.fireValuesChanged();
-          })), () => { })
-/*           menu.item('Filter by alert', () => {
+          })), () => { });
+        /*           menu.item('Filter by alert', () => {
             filterByAlert(grok.shell.tv.dataFrame.currentCol, smartsCol.get(i));
           }) */
         menu.show();
@@ -123,31 +123,34 @@ export async function structuralAlertsWidget(molecule: string): Promise<DG.Widge
       'More',
     );
     $(moreBtn).addClass('chem-mol-view-icon pep-more-icon');
-    const host = ui.div([description, ui.divV([moreBtn, imageHost], 'chem-mol-box struct-alerts-mol-box')], 'd4-flex-col');
+    const host = ui.div([description,
+      ui.divV([moreBtn, imageHost], 'chem-mol-box struct-alerts-mol-box')], 'd4-flex-col');
     host.style.margin = '5px';
     return host;
-  }), {classes: 'd4-flex-wrap', style: {'overflow': 'hidden', 'max-height': '400px'}});
+  }), {classes: 'd4-flex-wrap chem-search-panel-wrapper'});
 
   return new DG.Widget(ui.divV([calcForWholeButton, ui.box(list)]));
 }
 
 function getColoredDiv(color: number): HTMLDivElement {
-  return color === NO_HIGHLIGHT ? 
+  return color === NO_HIGHLIGHT ?
     ui.div('None', {style: {width: '100%', minHeight: '20px', marginLeft: '2px'}}) :
-    ui.div('', {style: {width: '100%', minHeight: '20px', marginRight: '6px', backgroundColor: DG.Color.toHtml(color)}});
+    ui.div('', {style:
+      {width: '100%', minHeight: '20px', marginRight: '6px', backgroundColor: DG.Color.toHtml(color)}});
 }
 
 function filterByAlert(molCol: DG.Column, alert: string): void {
   const tv = grok.shell.tv;
   //@ts-ignore
-  const filterState = tv.getFiltersGroup({createDefaultFilters: false}).getStates(molCol.name, 'Chem:scaffoldTreeFilter');
+  const filterState =
+    tv.getFiltersGroup({createDefaultFilters: false}).getStates(molCol.name, 'Chem:scaffoldTreeFilter');
   let newScaffoldTree = [{scaffold: alert}];
   if (filterState.length) {
     // @ts-ignore
     newScaffoldTree = JSON.parse(filterState[0].savedTree);
     if (newScaffoldTree.findIndex((it: any) => it.scaffold === alert) !== -1)
       grok.shell.warning(`Structure already added to filter`);
-    else 
+    else
       newScaffoldTree = newScaffoldTree.concat([{scaffold: alert}]);
   }
   tv.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({

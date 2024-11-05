@@ -3,10 +3,11 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 
 import {ALPHABET, getAlphabet, NOTATION, TAGS} from './macromolecule';
-import {GapOriginals, SeqHandler} from './seq-handler';
+import {ISeqHelper} from './seq-helper';
 import {StringListSeqSplitted} from './macromolecule/utils';
 import {IMonomerLib} from '../types/index';
 import {PolymerTypes} from '../helm/consts';
+import {GapOriginals} from './macromolecule/consts';
 
 export function generateManySequences(): DG.Column[] {
   const columns: DG.Column[] = [];
@@ -35,7 +36,7 @@ export function generateLongSequence(length: number = 10 ** 5): DG.Column[] {
   return columns;
 }
 
-export function generateLongSequence2(
+export function generateLongSequence2(seqHelper: ISeqHelper,
   notation: NOTATION = NOTATION.SEPARATOR, alphabet: ALPHABET = ALPHABET.PT,
   separator: string | undefined = (notation === NOTATION.SEPARATOR ? '-' : undefined),
   monomerLib: IMonomerLib | undefined = undefined,
@@ -51,7 +52,7 @@ export function generateLongSequence2(
   col.setTag(TAGS.alphabet, alphabet);
   if (notation == NOTATION.SEPARATOR) col.setTag(TAGS.separator, separator!);
 
-  const sh = SeqHandler.forColumn(col);
+  const sh = seqHelper.getSeqHandler(col);
   for (let rowI = 0; rowI < rowCount; rowI++) {
     const seqMList: string[] = wu.count(0).take(seqLength)
       .map((i) => { return alphabetSet[Math.floor(Math.random() * alphabetSize)]; })

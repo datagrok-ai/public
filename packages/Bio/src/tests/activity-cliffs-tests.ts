@@ -10,7 +10,7 @@ import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {
-  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
+  getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
@@ -32,8 +32,7 @@ category('activityCliffs', async () => {
     userLibSettings = await getUserLibSettings();
 
     // Test 'helm' requires default monomer library loaded
-    await setUserLibSettingsForTests();
-    await monomerLibHelper.loadMonomerLib(true); // load default libraries
+    await monomerLibHelper.loadMonomerLibForTests();
   });
 
   after(async () => {
@@ -45,7 +44,7 @@ category('activityCliffs', async () => {
   test('activityCliffsOpens', async () => {
     const testData = !DG.Test.isInBenchmark ?
       {fileName: 'tests/100_3_clustests.csv', tgt: {cliffCount: 3}} :
-      {fileName: 'tests/peptides_motif-with-random_10000.csv', tgt: {cliffCount: 53}};
+      {fileName: 'tests/peptides_with_random_motif_1600.csv', tgt: {cliffCount: 64}};
     const actCliffsDf = await readDataframe(testData.fileName);
     const actCliffsTableView = grok.shell.addTableView(actCliffsDf);
 

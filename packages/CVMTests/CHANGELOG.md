@@ -1,5 +1,13 @@
 # CVMTests changelog
 
+# 1.1.1
+
+* Test fixes
+
+# 1.1.0
+
+* Version bump
+
 # 1.0.10 (WIP)
 
 * Skip some tests, dependencies bump

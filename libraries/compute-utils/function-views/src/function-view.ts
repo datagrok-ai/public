@@ -21,7 +21,7 @@ import {getStarted, properUpdateIndicator} from './shared/utils';
 // Getting inital URL user entered with
 const startUrl = new URL(grok.shell.startUri);
 
-const RunDataJSON = 'Run Data JSON';
+const DEVELOPERS_GROUP = 'Developers';
 
 const startRecording = async () => {
   const stream = await navigator.mediaDevices.getDisplayMedia({
@@ -605,10 +605,18 @@ export abstract class FunctionView extends DG.ViewBase {
     if (this.getHelp)
       ribbonMenu.item('Help', () => this.getHelp!());
 
-    const testingGroup = ribbonMenu.group('Test runner');
-    testingGroup.item('Execute Test JSON', () => this.importRunJsonDialog());
-    testingGroup.item('Update Test JSON', () => this.importRunJsonDialog(true));
-    ribbonMenu.endGroup();
+    setTimeout(async () => {
+      // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14159
+      const userGroups = (await(await fetch(`${window.location.origin}/api/groups/all_parents`)).json() as DG.Group[]);
+
+      if (userGroups.find((group) => group.friendlyName === DEVELOPERS_GROUP)) {
+        const testingGroup = ribbonMenu.group('Test runner');
+        testingGroup.item('Run Data JSON', () => this.importRunJsonDialog());
+        testingGroup.item('Execute Test JSON', () => this.importRunJsonDialog());
+        testingGroup.item('Update Test JSON', () => this.importRunJsonDialog(true));
+        ribbonMenu.endGroup();
+      }
+    }, 0);
 
     ribbonMenu.item('Record the screen', startRecording);
 
@@ -627,17 +635,11 @@ export abstract class FunctionView extends DG.ViewBase {
   }
 
   public async exportRun(format: string) {
-    if (format === RunDataJSON) {
-      const data = await this.exportRunJson();
-      if (data)
-        DG.Utils.download(this.defaultExportFilename('', 'json'), data);
-      return;
-    }
     DG.Utils.download(this.exportConfig!.filename(format), await this.exportConfig!.export(format));
   }
 
   private getFormats() {
-    return [...(this.exportConfig?.supportedFormats ?? []), RunDataJSON];
+    return (this.exportConfig?.supportedFormats ?? []);
   }
 
   /**
@@ -791,6 +793,12 @@ export abstract class FunctionView extends DG.ViewBase {
     }
   }
 
+  public async getRunJSON() {
+    const data = await this.exportRunJson();
+    if (data)
+      DG.Utils.download(this.defaultExportFilename('', 'json'), data);
+  }
+
   public async importRunJsonDialog(isUpdate = false) {
     const fileInput = new FileInput('JSON file', null, null, 'application/json');
     const showParams = {modal: true, fullScreen: true, width: 500, height: 200, center: true};
@@ -815,7 +823,7 @@ export abstract class FunctionView extends DG.ViewBase {
       await this.executeTest(spec, true);
       // TODO: fix isHistorical in pipeline, not to emit before setting lastCall
       await this.isHistorical.pipe(filter((x) => x), take(1), delay(0)).toPromise();
-      await this.exportRun(RunDataJSON);
+      await this.getRunJSON();
     }
   }
 

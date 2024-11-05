@@ -22,6 +22,13 @@ class AppBuildInfo {
   server: ComponentBuildInfo = new ComponentBuildInfo();
 }
 
+export interface BalloonOptions {
+  oneTimeKey?: string // the messages with the same oneTimeKey will only be shown once
+  copyText?: string; // will be copied to the clipboard when user clicks on the "copy to clipboard" icon
+  autoHide?: boolean; // auto hide icon after timeout, default is true
+  timeout?: number; // timeout in seconds after which balloon will be automatically hidden, default is 5
+}
+
 /**
  * Grok visual shell, use it to get access to top-level views, tables, methods, etc.
  * @example
@@ -118,21 +125,25 @@ export class Shell {
   }
 
   /** Shows information message (green background)
-   * @param {string} x - message */
-  info(x: any): void {
-    api.grok_Balloon(typeof x == "string" || x instanceof HTMLElement ? x : JSON.stringify(x), 'info');
+   * @param {string} x - message
+   * @param options */
+  info(x: any, options?: BalloonOptions): void {
+    api.grok_Balloon(typeof x == "string" || x instanceof HTMLElement ? x : JSON.stringify(x),
+        'info', toDart(options ?? {}));
   }
 
   /** Shows information message (red background)
+   * @param options
    * @param {string} s - message */
-  error(s: string | HTMLElement): void {
-    api.grok_Balloon(s, 'error');
+  error(s: string | HTMLElement, options?: BalloonOptions): void {
+    api.grok_Balloon(s, 'error', toDart(options ?? {}));
   }
 
   /** Shows warning message (yellow background)
+   * @param options
    * @param {string} s - message */
-  warning(s: string | HTMLElement): void {
-    api.grok_Balloon(s, 'warning');
+  warning(s: string | HTMLElement, options?: BalloonOptions): void {
+    api.grok_Balloon(s, 'warning', toDart(options ?? {}));
   }
 
   /** Docks element in a separate window.

@@ -26,7 +26,7 @@ export const COPY_SUFFIX = 'copy';
 
 /** UI titles */
 export enum TITLE {
-  KNN_IMPUTER = 'Impute',
+  KNN_IMPUTER = 'KNN Imputation',
   TABLE = 'Table',
   IN_PLACE = 'In-place',
   COLUMNS = 'Impute',
@@ -62,3 +62,5 @@ export enum HINT {
   IMPUTATION_SETTINGS = 'Simple imputation settings',
   KEEP_EMPTY = 'Defines whether to keep empty missing values failed to be imputed OR fill them using simple imputation',
 };
+
+export const MAX_INPUT_NAME_LENGTH = 15;

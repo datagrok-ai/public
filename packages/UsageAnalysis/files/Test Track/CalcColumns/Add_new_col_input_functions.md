@@ -8,3 +8,8 @@
 8. Clear the text field.
 9. Click on 'Id' column in the columns list. Then click on sort type icon in the top right corner and select sorting by name
 10. Add Abs function by drag'n'drop or *plus* icon. The fucntion should be added, but the column should not be passed as a parameter since its type doesn't match the input parameter type
+
+---
+{
+  "order": 6
+}

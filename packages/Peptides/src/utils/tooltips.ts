@@ -7,7 +7,6 @@ import * as C from '../utils/constants';
 
 import {getActivityDistribution, getStatsTableMap} from '../widgets/distribution';
 import {getDistributionPanel, getDistributionTable} from './misc';
-import {getMonomerWorksInstance} from '../package';
 import {getAggregatedColumnValues, MonomerPositionStats} from './statistics';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 
@@ -16,33 +15,6 @@ export type TooltipOptions = {
   mpStats: MonomerPositionStats, aggrColValues?: StringDictionary,
   isMostPotentResidues?: boolean, cliffStats?: type.MutationCliffStats['stats']
 };
-
-/**
- * Shows monomer tooltip at the given coordinates.
- * @param monomer - Monomer symbol.
- * @param x - X coordinate.
- * @param y - Y coordinate.
- * @return - Flag if the tooltip is shown.
- */
-export function showMonomerTooltip(monomer: string, x: number, y: number): boolean {
-  const tooltipElements: HTMLDivElement[] = [];
-  const monomerName = monomer.toLowerCase();
-  const mw = getMonomerWorksInstance();
-  const mol = mw?.getCappedRotatedMonomer('PEPTIDE', monomer);
-
-  if (mol) {
-    tooltipElements.push(ui.div(monomerName));
-    const options = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
-    tooltipElements.push(grok.chem.svgMol(mol, undefined, undefined, options));
-  } else if (monomer !== '')
-    tooltipElements.push(ui.div(monomer));
-  else
-    return true;
-
-
-  ui.tooltip.show(ui.divV(tooltipElements), x, y);
-  return true;
-}
 
 /**
  * Shows tooltip at the given coordinates.
@@ -57,9 +29,7 @@ export function showTooltip(df: DG.DataFrame, activityCol: DG.Column<number>, co
   options.fromViewer ??= false;
   options.isMutationCliffs ??= false;
   options.isMostPotentResidues ??= false;
-  if (options.monomerPosition.positionOrClusterType === C.COLUMNS_NAMES.MONOMER)
-    showMonomerTooltip(options.monomerPosition.monomerOrCluster, options.x, options.y);
-  else
+  if (options.monomerPosition.positionOrClusterType !== C.COLUMNS_NAMES.MONOMER)
     showTooltipAt(df, activityCol, columns, options);
 
 

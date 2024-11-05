@@ -111,7 +111,7 @@ services:
     profiles: [ "all", "cvm", "scripting", "jupyter_kernel_gateway", "jkg" ]
 
   db:
-    image: postgres:12.9
+    image: postgres:12.20
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres

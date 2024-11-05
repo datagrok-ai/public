@@ -19,7 +19,6 @@ category('Dapi: connection', () => {
     expect((dc.parameters as any)['db'], dcParams.db);
     expect(dc.friendlyName, 'Local DG Test');
     expect((await grok.dapi.connections.find(dc.id)).id, dc.id);
-
     // changing credentials
     dc.credentials.parameters['login'] = 'changed_login';
     dc = await grok.dapi.connections.save(dc);
@@ -53,6 +52,15 @@ category('Dapi: connection', () => {
     await query.executeTable();
     await grok.dapi.queries.delete(query);
   }, { skipReason: 'GROK-11670' });
+
+  after(async () => {
+    const connections:DG.DataConnection[] = await grok.dapi.connections.filter(`name="Local DG Test"`).list();
+    for (const conn of connections) {
+      try {
+        await grok.dapi.connections.delete(conn);
+      } catch (_) {}
+    }
+  });
 });
 
 category('Dapi: connection cache', () => {

@@ -35,4 +35,13 @@
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
-  }
+}
+
+.diff-studio-app-input-choice {
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.diff-studio-app-run-icon {
+    color: var(--green-2);
+}

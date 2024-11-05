@@ -24,9 +24,13 @@ button[title="About"], button[title="Help (?)"] {
 
 .ketcher-resizing {
     width: 100%!important;
-    height: 100%!important;
 }
 
 .Settings-module_settings__Z5btc {
     height: 50vh!important;
+}
+
+/* temporary fix for menus that are shown under the DG.Dialog */
+div[role='presentation'][id='menu-'] { 
+    z-index: 10000;
 }

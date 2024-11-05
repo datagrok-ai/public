@@ -238,6 +238,9 @@ export class Tags {
   /// Specifies if calculated columns are subscribed
   static CalculatedColumnsSubscribed = '.calculatedColumnsSubscribed';
 
+  /// Boolean flag that allows not to show property panel for the cell/column
+  static ShowPropPanels = '.show-prop-panels';
+
 }
 export class FuncOptions {
   /// Fully qualified name of the function that edits corresponding function calls
@@ -272,6 +275,10 @@ export class FuncOptions {
   /// Demo path, such as 'Viewers | Radar'
   static DemoPath = 'demoPath';
 
+  /// When set to 'true', the app operates in 'browseOnly' mode, using the browse tree for navigation
+  /// and displaying results only within the browse view
+  static BrowseOnly = 'browseOnly';
+
   /// Path in the browse tree, such as 'Oligo'
   static BrowsePath = 'browsePath';
 
@@ -294,7 +301,7 @@ export class FuncOptions {
   /// Function that returns a Widget that gets added as a tab to the "Inspector" window
   static InspectorPanel = 'inspectorPanel';
 
-  /// Function that returns a Widget that gets added as a tab to the "Inspector" window
+  /// Function that should be cached
   static Cache = 'cache';
 
   /// Cron string that specifies when the cache is invalidated
@@ -302,6 +309,34 @@ export class FuncOptions {
 
   /// Specifies the position of the viewer (top, bottom, left, right, fill, auto)
   static ViewerPosition = 'viewerPosition';
+
+  /// Specifies language of this [FuncTypes.ScriptHandler].
+  /// Mandatory options if tag [FuncTypes.ScriptHandler] is present.
+  static ScriptHandlerLanguage = 'scriptHandler.language';
+
+  /// Specifies comma separated extensions that this [FuncTypes.ScriptHandler] supports.
+  /// Mandatory options if tag [FuncTypes.ScriptHandler] is present.
+  static ScriptHandlerExtensions = 'scriptHandler.extensions';
+
+  /// Specifies friendlyName of this [FuncTypes.ScriptHandler] to be used in UI.
+  /// Defaults to language
+  static ScriptHandlerName = 'scriptHandler.friendlyName';
+
+  /// Specifies comment start sign for this [FuncTypes.ScriptHandler]. Default: #
+  static ScriptHandlerComment = 'scriptHandler.commentStart';
+
+  /// Specifies function that will handle vectorizations of scripts for this [FuncTypes.ScriptHandler].
+  /// The function should accept Script and return String with code that is vectorized.
+  /// Scalar script inputs in this case are corresponding to dataframe column names. Dataframe that has [VectorScript.vecInputTableName]
+  /// name should be used as target.
+  static ScriptHandlerVectorization = 'scriptHandler.vectorizationFunction';
+
+  /// Specifies template script for this [FuncTypes.ScriptHandler].
+  static ScriptHandlerTemplate = 'scriptHandler.templateScript';
+
+  /// Specifies code editor mode that will be used in CodeMirror for this [FuncTypes.ScriptHandler].
+  /// Defaults to language.
+  static ScriptHandlerEditorMode = 'scriptHandler.codeEditorMode';
 
 }
 export class FuncParamOptions {

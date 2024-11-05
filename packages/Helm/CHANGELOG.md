@@ -1,5 +1,65 @@
 # Helm changelog
 
+## 2.5.9 (2024-11-01)
+
+Correct initialization of the Helm
+
+## 2.5.8 (2024-10-31)
+
+### Bug fixes
+
+* Fix HelmInput for SeqValueBase
+* Fix HelmGridCellRenderer for original and canonical symbols
+* Fix using HelmAtom
+
+## 2.5.7 (2024-10-24)
+
+### Bug fixes
+
+* Fix HelmHelper adding .seqHelper
+
+## 2.5.6 (2024-10-22)
+
+### Bug fixes
+
+* Fix HelmGridCellRenderer for size limit and flickering
+* Remove HelmMonomerPlacer, cleanup
+* Fix HelmHelper removeGaps tests using standard monomer libs
+* Fix HelmHelper adding tests for parse Helm, and with gaps
+
+## 2.5.5 (2024-10-15)
+
+* Fix Getting monomers in HWE that can contain square brackets
+
+## 2.5.4 (2024-10-10)
+
+### New features
+
+* Fix using SeqHandler factory
+* Fix Helm cell renderer get tooltip from overridden monomer lib
+* Fix HelmService rendering with overridden monomer lib
+
+## 2.5.3 (2024-09-27)
+
+### Bug fixes
+
+* Fix test Helm HelmHelper.removeGaps
+* Fix using IMonomerLibHelper.loadMonomerLibForTests
+* Fix test HelmHelper: removeGaps.single-cycle-gap-at-connection
+* Fixes for eslint
+
+## 2.5.2 (2024-09-25)
+
+Bump dependencies, bio lib
+
+## 2.5.1 (2024-09-24)
+
+### New features
+
+* Add HelmHelper parse and removeGaps methods, add tests
+* Add monomer hover handling for substruct
+* Add dojo bundled loading (fix freezing the browser)
+
 ## 2.5.0 (2024-09-10)
 
 ### Bug fixes

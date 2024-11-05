@@ -1,27 +1,33 @@
 {
   "name": "@datagrok/admetica",
   "friendlyName": "Admetica",
-  "version": "0.0.3",
-  "description": "",
+  "version": "1.0.2",
+  "author": {
+    "name": "Oleksandra Serhiienko",
+    "email": "oserhiienko@datagrok.ai"
+  },
+  "description": "Assessment of ADMET Properties",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/Admetica"
   },
   "dependencies": {
-    "datagrok-api": "../../js-api",
-    "cash-dom": "latest",
-    "dayjs": "latest",
+    "datagrok-api": "^1.21.1",
+    "cash-dom": "^8.1.5",
+    "dayjs": "^1.11.13",
     "@datagrok-libraries/utils": "^4.3.3",
     "@datagrok/power-grid": "^1.4.0"
   },
   "devDependencies": {
-    "webpack": "latest",
-    "webpack-cli": "latest",
-    "ts-loader": "latest",
-    "css-loader": "latest",
-    "style-loader": "latest",
-    "typescript": "latest"
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4",
+    "ts-loader": "^9.5.1",
+    "css-loader": "^7.1.2",
+    "style-loader": "^4.0.0",
+    "typescript": "^5.6.3",
+    "@datagrok/chem": "1.12.4",
+    "@datagrok/power-grid": "1.4.3"
   },
   "scripts": {
     "link-all": "",
@@ -29,6 +35,7 @@
     "release-admetica": "webpack && grok publish --release",
     "build-admetica": "webpack",
     "build": "webpack",
+    "test": "grok test",
     "debug-admetica-dev": "grok publish dev --rebuild",
     "release-admetica-dev": "grok publish dev --rebuild --release",
     "debug-admetica-local": "grok publish local --rebuild",

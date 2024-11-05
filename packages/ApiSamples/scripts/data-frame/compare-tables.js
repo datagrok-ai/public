@@ -1,6 +1,6 @@
 // The following example shows tables compare feature.
 //
-// https://datagrok.ai/help/explore/compare-tables
+// https://datagrok.ai/help/transform/compare-tables
 
 let t1 = grok.data.testData('demog', 10000);
 t1.name = 'demog1';
@@ -15,4 +15,5 @@ t2.set('weight', 2, 80.5);
 grok.shell.addTableView(t2);
 
 let values = t1.columns.names().filter(name => name !== 'subj');
-grok.data.compareTables(t1, t2, ['subj'], ['subj'], values, values);
+let diffTable = grok.data.compareTables(t1, t2, ['subj'], ['subj'], values, values).diffTable;
+grok.shell.addTableView(diffTable);

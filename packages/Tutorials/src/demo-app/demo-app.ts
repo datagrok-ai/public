@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
 import {_package} from '../package';
-import {sortFunctionsByHierarchy, getParentCategoryName} from './utils';
+import {sortFunctionsByHierarchy} from './utils';
 import {DEMO_APP_HIERARCHY} from './const';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 
@@ -36,6 +36,15 @@ export class DemoView extends DG.ViewBase {
     if (this.tree.items.length === 0)
       this._initTree();
     this._initContent();
+    // temporary solution, waiting for the browseOnly apps, now need to do this unfortunately
+    // setTimeout(() => {
+    //   const views = Array.from(grok.shell.views);
+    //   const dv = views.find((view) => view instanceof DemoView);
+    //   this.browseView.preview = this as unknown as DG.View;
+    //   grok.shell.v = this.browseView;
+    //   if (dv)
+    //     dv.close();
+    // }, 500);
   }
 
   static findDemoFunc(demoPath: string): DG.Func {
@@ -44,10 +53,8 @@ export class DemoView extends DG.ViewBase {
 
   public async startDemoFunc(func: DG.Func, viewPath: string): Promise<void> {
     const path = viewPath.split('|').map((s) => s.trim()).join('/');
-
-    // TODO: change to getElementById('elementContent') when it is fixed
-    const updateIndicatorRoot =
-      document.querySelector('.layout-dockarea .view-tabs .dock-container.dock-container-fill > .tab-host > .tab-content > .d4-dock-container > .grok-view.grok-view-browse > .d4-root > .splitter-container-row > .dock-container.dock-container-fill > .tab-host > .tab-content')! as HTMLElement;
+    const updateIndicatorRoot = (Array.from(document.querySelectorAll('#elementContent')) as HTMLElement[])
+      .find((el) => el.classList.contains('ui-box'))!;
 
     if (func.options['isDemoScript'] == 'True') {
       ui.setUpdateIndicator(updateIndicatorRoot, true);
@@ -58,7 +65,6 @@ export class DemoView extends DG.ViewBase {
         ui.h1(pathElements[pathElements.length - 1]),
         ui.divText(func.description),
         ui.bigButton('Start', async () => {
-          grok.shell.isInDemo = true;
           try {
             await func.apply();
           } catch (e) {
@@ -434,7 +440,7 @@ export class DemoView extends DG.ViewBase {
     this.tree.root.classList.add('demo-app-tree-group');
 
     DG.debounce(this.tree.rootNode.onSelectedNodeChanged, 300).subscribe(async (value) => {
-      if (!this.tree.root.contains(value.root) || value.text === 'Demo')
+      if (!value || !this.tree.root.contains(value.root) || value.text === 'Demo')
         return;
 
       const panelRoot = this.tree.rootNode.root.parentElement!;

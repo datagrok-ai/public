@@ -56,6 +56,7 @@ public class PostgresDataProvider extends JdbcDataProvider {
             properties.setProperty("ssl", "true");
             properties.setProperty("sslfactory", "org.postgresql.ssl.NonValidatingFactory");
         }
+        properties.setProperty("socketTimeout", "180");
         return properties;
     }
 

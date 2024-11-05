@@ -12,20 +12,22 @@ import {
   MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME, HELM_REQUIRED_FIELD,
 } from '../utils/const';
 import {IMonomerLib, IMonomerSet} from '../types/index';
-import {GAP_SYMBOL, ISeqSplitted} from '../utils/macromolecule/types';
-import {SeqHandler} from '../utils/seq-handler';
+import {ISeqSplitted} from '../utils/macromolecule/types';
 import {splitAlignedSequences} from '../utils/splitter';
+import {GAP_SYMBOL} from '../utils/macromolecule/consts';
+import {ISeqHelper} from '../utils/seq-helper';
 
-export function encodeMonomers(col: DG.Column): DG.Column | null {
+export function encodeMonomers(col: DG.Column, seqHelper: ISeqHelper): DG.Column | null {
   let encodeSymbol = MONOMER_ENCODE_MIN;
   const monomerSymbolDict: { [key: string]: number } = {};
-  const sh = SeqHandler.forColumn(col);
+  const sh = seqHelper.getSeqHandler(col);
   const encodedStringArray = [];
   const rowCount = col.length;
   for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
     let encodedMonomerStr = '';
     const monomers = sh.getSplitted(rowIdx);
-    for (const cm of monomers.canonicals) {
+    for (let posIdx = 0; posIdx < rowCount; ++posIdx) {
+      const cm = monomers.getCanonical(posIdx);
       if (!monomerSymbolDict[cm]) {
         if (encodeSymbol > MONOMER_ENCODE_MAX) {
           grok.shell.error(`Not enough symbols to encode monomers`);
@@ -41,15 +43,17 @@ export function encodeMonomers(col: DG.Column): DG.Column | null {
   return DG.Column.fromStrings('encodedMolecules', encodedStringArray);
 }
 
-export function getMolfilesFromSeq(col: DG.Column, monomersLibObject: any[]): any[][] | null {
-  const sh = SeqHandler.forColumn(col);
+export function getMolfilesFromSeq(
+  col: DG.Column, monomersLibObject: any[], seqHelper: ISeqHelper
+): any[][] | null {
+  const sh = seqHelper.getSeqHandler(col);
   const monomersDict = createMomomersMolDict(monomersLibObject);
   const molFiles = [];
   const rowCount = col.length;
   for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
     const monomers = sh.getSplitted(rowIdx);
     const molFilesForSeq = [];
-    for (let j = 0; j < monomers.length; ++j) {
+    for (let j = 0; j < rowCount; ++j) {
       const cm = monomers.getCanonical(j);
       if (cm) {
         if (!monomersDict[cm]) {
@@ -65,8 +69,10 @@ export function getMolfilesFromSeq(col: DG.Column, monomersLibObject: any[]): an
   return molFiles;
 }
 
-export function getMolfilesFromSingleSeq(cell: DG.Cell, monomersLibObject: any[]): any[][] | null {
-  const sh = SeqHandler.forColumn(cell.column);
+export function getMolfilesFromSingleSeq(
+  cell: DG.Cell, monomersLibObject: any[], seqHelper: ISeqHelper
+): any[][] | null {
+  const sh = seqHelper.getSeqHandler(cell.column);
   const monomersDict = createMomomersMolDict(monomersLibObject);
   const molFiles = [];
   const monomers = sh.getSplitted(cell.rowIndex);
@@ -190,6 +196,11 @@ export interface IMonomerLibHelper {
 
   /** Reads library from file shares, handles .json and .sdf */
   readLibrary(path: string, fileName: string): Promise<IMonomerLib>;
+
+  // -- Settings --
+
+  /** Changes user lib settings. */
+  loadMonomerLibForTests(): Promise<void>;
 }
 
 export async function getMonomerLibHelper(): Promise<IMonomerLibHelper> {
@@ -209,14 +220,16 @@ export async function getMonomerLibHelper(): Promise<IMonomerLibHelper> {
  * @returns {Promise<DG.Column<number>>} Column with similarity values. */
 
 /* eslint-disable max-len */
-export async function sequenceChemSimilarity(sequenceCol: DG.Column<string>, referenceSequence: ISeqSplitted): Promise<DG.Column<number>>;
-export async function sequenceChemSimilarity(positionColumns: DG.Column<string>[], referenceSequence: ISeqSplitted): Promise<DG.Column<number>>;
 export async function sequenceChemSimilarity(
-  positionColumns: DG.Column<string>[] | DG.Column<string>, referenceSequence: ISeqSplitted
+  sequenceCol: DG.Column<string>, referenceSequence: ISeqSplitted, seqHelper: ISeqHelper): Promise<DG.Column<number>>;
+export async function sequenceChemSimilarity(
+  positionColumns: DG.Column<string>[], referenceSequence: ISeqSplitted, seqHelper: ISeqHelper): Promise<DG.Column<number>>;
+export async function sequenceChemSimilarity(
+  positionColumns: DG.Column<string>[] | DG.Column<string>, referenceSequence: ISeqSplitted, seqHelper: ISeqHelper
 ): Promise<DG.Column<number>> {
   /* eslint-enable max-len */
   if (positionColumns instanceof DG.Column)
-    positionColumns = splitAlignedSequences(positionColumns).columns.toList();
+    positionColumns = splitAlignedSequences(positionColumns, seqHelper).columns.toList();
 
   const libHelper = await getMonomerLibHelper();
   const monomerLib = libHelper.getMonomerLib();

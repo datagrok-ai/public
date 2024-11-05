@@ -1,5 +1,7 @@
-import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
+
 import '../../css/chem.css';
 
 export function updateDivInnerHTML(div: HTMLElement, content: string | Node): void {
@@ -43,4 +45,22 @@ export function pickTextColorBasedOnBgColor(bgColor: string, lightColor: string,
   const b = parseInt(color.substring(4, 6), 16); // hexToB
   return (((r * 0.299) + (g * 0.587) + (b * 0.114)) > 186) ?
     darkColor : lightColor;
+}
+
+export function getGridCellColTemp<TValue, TTemp>(
+  gridCell: DG.GridCell
+): [DG.GridColumn | null, DG.Column<TValue>, TTemp] {
+  let temp: TTemp | null = null;
+  let gridCol: DG.GridColumn | null = null;
+  try {
+    gridCol = gridCell.dart ? gridCell.gridColumn : null;
+    temp = gridCol ? gridCol.temp as TTemp : null;
+  } catch { [gridCol, temp] = [null, null]; }
+
+  const tableCol: DG.Column<TValue> = gridCell.cell.column;
+  temp = temp ?? tableCol.temp;
+
+  if (!temp)
+    throw new Error(`Grid cell renderer back store (GridColumn or Column) not found.`);
+  return [gridCol, tableCol, temp];
 }

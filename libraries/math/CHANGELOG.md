@@ -1,5 +1,17 @@
 # math changelog
 
+## 1.2.3 (2024-10-17)
+
+Fix compatibility with newer version of wgpu types
+
+## 1.2.2 (2024-10-16)
+
+* Increase complexity of bit array functions
+
+## 1.2.1 (2024-09-25)
+
+* Expect navigator.gpu to be undefined in some browsers
+
 ## 1.1.13 (2024-09-06)
 
 Bump Api version

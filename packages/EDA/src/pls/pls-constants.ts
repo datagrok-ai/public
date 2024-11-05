@@ -50,13 +50,13 @@ export enum HINT {
 
 /** Links to help */
 export enum LINK {
-  PLS = 'https://datagrok.ai/help/explore/multivariate-analysis/pls#pls-components',
-  MVA = 'https://datagrok.ai/help/explore/multivariate-analysis/pls',
-  MODEL = 'https://datagrok.ai/help/explore/multivariate-analysis/plots/predicted-vs-reference',
-  COEFFS = 'https://datagrok.ai/help/explore/multivariate-analysis/plots/regression-coefficients',
-  LOADINGS = 'https://datagrok.ai/help/explore/multivariate-analysis/plots/loadings',
-  EXPL_VARS = 'https://datagrok.ai/help/explore/multivariate-analysis/plots/explained-variance',
-  SCORES = 'https://datagrok.ai/help/explore/multivariate-analysis/plots/scores',
+  PLS = '/help/explore/multivariate-analysis/pls#pls-components',
+  MVA = '/help/explore/multivariate-analysis/pls',
+  MODEL = '/help/explore/multivariate-analysis/plots/predicted-vs-reference',
+  COEFFS = '/help/explore/multivariate-analysis/plots/regression-coefficients',
+  LOADINGS = '/help/explore/multivariate-analysis/plots/loadings',
+  EXPL_VARS = '/help/explore/multivariate-analysis/plots/explained-variance',
+  SCORES = '/help/explore/multivariate-analysis/plots/scores',
 }
 
 /** Components consts */

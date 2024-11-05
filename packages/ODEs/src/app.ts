@@ -16,12 +16,12 @@ import {TEMPLATES, DEMO_TEMPLATE} from './templates';
 import {USE_CASES} from './use-cases';
 import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, DOCK_RATIO, TEMPLATE_TITLES, EXAMPLE_TITLES,
   WARNING, MISC, demoInfo, INPUT_TYPE, PATH, UI_TIME, MODEL_HINT, MAX_RECENT_COUNT,
-  modelImageLink, CUSTOM_MODEL_IMAGE_LINK} from './ui-constants';
+  modelImageLink, CUSTOM_MODEL_IMAGE_LINK, INPUTS_DF} from './ui-constants';
 import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
   CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS} from './scripting-tools';
 import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools/solver-defs';
-import {unusedFileName, getTableFromLastRows} from './utils';
+import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo} from './utils';
 
 import '../css/app-styles.css';
 
@@ -168,6 +168,7 @@ const completions = [
   {label: `${CONTROL_EXPR.UPDATE}:  `, type: 'keyword', info: INFO.UPDATE},
   {label: `${CONTROL_EXPR.OUTPUT}:\n  `, type: 'keyword', info: INFO.OUTPUT},
   {label: `${CONTROL_EXPR.COMMENT}: `, type: 'keyword', info: INFO.COMMENT},
+  {label: `${CONTROL_EXPR.INPUTS}: `, type: 'keyword', info: INFO.INPUS},
 ];
 
 /** Control expressions completion utilite */
@@ -202,6 +203,12 @@ const strToVal = (s: string) => {
   return !isNaN(num) ? num : s === 'true' ? true : s === 'false' ? false : s;
 };
 
+/** Browse properties */
+type Browsing = {
+  treeNode: DG.TreeViewGroup,
+  browseView: DG.BrowseView,
+};
+
 /** Solver of differential equations */
 export class DiffStudio {
   /** Run Diff Studio application */
@@ -213,7 +220,7 @@ export class DiffStudio {
       [
         [this.openIcon, this.saveIcon],
         [this.exportButton, this.sensAnIcon, this.fittingIcon],
-        [this.helpIcon],
+        [this.runIcon, this.helpIcon],
       ];
 
     this.solverView.setRibbonPanels(panels);
@@ -280,7 +287,7 @@ export class DiffStudio {
     this.solverView.setRibbonPanels([
       [this.openIcon, this.saveIcon],
       [this.exportButton, this.sensAnIcon, this.fittingIcon],
-      [this.helpIcon],
+      [this.runIcon, this.helpIcon],
     ]);
     this.toChangePath = false;
     const helpMD = ui.markdown(demoInfo);
@@ -291,7 +298,7 @@ export class DiffStudio {
     grok.shell.windows.showContextPanel = false;
     grok.shell.windows.showProperties = false;
     grok.shell.windows.help.visible = true;
-    await this.runSolving(false);
+    await this.runSolving(true);
   } // runSolverDemoApp
 
   /** Return file preview view */
@@ -315,17 +322,11 @@ export class DiffStudio {
     }, HINT.SAVE);
     this.solverView.append(saveBtn);
     saveBtn.hidden = true;
-    let isSaveBtnAdded = false;
 
     const ribbonPnls = this.browseView!.getRibbonPanels();
     ribbonPnls.push([this.sensAnIcon, this.fittingIcon]);
+    ribbonPnls.push([this.runIcon, saveBtn, this.helpIcon]);
     this.browseView!.setRibbonPanels(ribbonPnls);
-
-    const addSaveBtnToRibbon = () => {
-      ribbonPnls.push([saveBtn]);
-      this.browseView!.setRibbonPanels(ribbonPnls);
-      isSaveBtnAdded = true;
-    };
 
     // routing
     const paramsIdx = path.indexOf(PATH.PARAM);
@@ -341,16 +342,24 @@ export class DiffStudio {
       }
     }
 
-    this.editorView!.dom.addEventListener('keydown', async (e) => {
-      if (!isSaveBtnAdded)
-        addSaveBtnToRibbon();
-
-      saveBtn.hidden = false;
-    });
+    this.editorView!.dom.addEventListener('keydown', async (e) => saveBtn.hidden = false);
 
     this.toRunWhenFormCreated = true;
 
-    setTimeout(() => this.runSolving(true), UI_TIME.PREVIEW_RUN_SOLVING);
+    setTimeout(() => {
+      const node = this.solverView.dockManager.dock(
+        this.tabControl.root,
+        DG.DOCK_TYPE.LEFT,
+        null,
+        undefined,
+        DOCK_RATIO,
+      );
+
+      if (node.container.dart.elementTitle)
+        node.container.dart.elementTitle.hidden = true;
+
+      this.runSolving(true);
+    }, UI_TIME.PREVIEW_RUN_SOLVING);
 
     return this.solverView;
   } // getFilePreview
@@ -388,6 +397,7 @@ export class DiffStudio {
   private openIcon: HTMLElement;
   private saveIcon: HTMLElement;
   private helpIcon: HTMLElement;
+  private runIcon: HTMLElement;
   private exportButton: HTMLButtonElement;
   private sensAnIcon: HTMLElement;
   private fittingIcon: HTMLElement;
@@ -400,8 +410,12 @@ export class DiffStudio {
   private isRecentRun = false;
 
   private inputsByCategories = new Map<string, DG.InputBase[]>();
+  private toPreventSolving = false;
+  private inputByName: Map<string, DG.InputBase> | null = null;
+  private topCategory: string | null = null;
 
-  constructor(toAddTableView: boolean = true, toDockTabCtrl: boolean = true, isFilePreview: boolean = false) {
+  constructor(toAddTableView: boolean = true, toDockTabCtrl: boolean = true, isFilePreview: boolean = false,
+    browsing?: Browsing) {
     this.solverView = toAddTableView ?
       grok.shell.addTableView(this.solutionTable) :
       DG.TableView.create(this.solutionTable, false);
@@ -436,11 +450,10 @@ export class DiffStudio {
         node.container.dart.elementTitle.hidden = true;
     };
 
-    if (toDockTabCtrl) {
-      if (!toAddTableView) {
-        const timeout = isFilePreview ? UI_TIME.PREVIEW_DOCK_TIMEOUT : UI_TIME.DOCK_EDITOR_TIMEOUT;
-        setTimeout(dockTabCtrl, timeout);
-      } else
+    if (toDockTabCtrl && !isFilePreview) {
+      if (!toAddTableView)
+        setTimeout(dockTabCtrl, UI_TIME.DOCK_EDITOR_TIMEOUT);
+      else
         dockTabCtrl();
     }
 
@@ -452,8 +465,11 @@ export class DiffStudio {
     this.exportButton = ui.bigButton(TITLE.TO_JS, async () => {await this.exportToJS();}, HINT.TO_JS);
     this.sensAnIcon = ui.iconFA('analytics', async () => {await this.runSensitivityAnalysis();}, HINT.SENS_AN);
     this.fittingIcon = ui.iconFA('chart-line', async () => {await this.runFitting();}, HINT.FITTING);
+    this.runIcon = ui.iconFA('play', async () => {await this.runSolving(true);}, HINT.SOLVE);
+    this.runIcon.classList.add('fas', 'diff-studio-app-run-icon');
+    this.runIcon.hidden = true;
 
-    this.createTree();
+    this.createTree(browsing);
   }; // constructor
 
   /** Create model editor */
@@ -476,6 +492,7 @@ export class DiffStudio {
         this.toRunWhenFormCreated = true;
         this.toChangeSolutionViewerProps = true;
         this.setCallWidgetsVisibility(true);
+        this.runIcon.hidden = false;
       } else {
         e.stopImmediatePropagation();
         e.preventDefault();
@@ -615,7 +632,7 @@ export class DiffStudio {
   private async saveToMyFiles(): Promise<void> {
     const modelCode = this.editorView!.state.doc.toString();
     const modelName = getIVP(modelCode).name.replaceAll(' ', '-');
-    const login = grok.shell.user.login;
+    const login = grok.shell.user.project.name;
     const folder = login.charAt(0).toUpperCase() + login.slice(1) + ':Home/';
     const files = await grok.dapi.files.list(folder);
 
@@ -776,6 +793,9 @@ export class DiffStudio {
 
   /** Solve IVP */
   private async solve(ivp: IVP, inputsPath: string): Promise<void> {
+    if (this.toPreventSolving)
+      return;
+
     const customSettings = (ivp.solverSettings !== DEFAULT_SOLVER_SETTINGS);
 
     try {
@@ -877,6 +897,8 @@ export class DiffStudio {
 
   /** Run solving the current IVP */
   private async runSolving(toShowInputsForm: boolean): Promise<void> {
+    this.runIcon.hidden = true;
+
     try {
       const ivp = getIVP(this.editorView!.state.doc.toString());
       await this.getInputsForm(ivp);
@@ -890,12 +912,20 @@ export class DiffStudio {
           this.inputsPanel.removeChild(this.prevInputsNode);
 
         const form = ui.form([]);
+        const miscInputs = this.inputsByCategories.get(TITLE.MISC);
 
         if (this.inputsByCategories.size === 1)
-          this.inputsByCategories.get(TITLE.MISC)!.forEach((input) => form.append(input.root));
+          miscInputs.forEach((input) => form.append(input.root));
         else {
+          if (this.topCategory !== null) {
+            form.append(ui.h2(this.topCategory));
+            this.inputsByCategories.get(this.topCategory).forEach((inp) => {
+              form.append(inp.root);
+            });
+          }
+
           this.inputsByCategories.forEach((inputs, category) => {
-            if (category !== TITLE.MISC) {
+            if ((category !== TITLE.MISC) && (category !== this.topCategory)) {
               form.append(ui.h2(category));
               inputs.forEach((inp) => {
                 form.append(inp.root);
@@ -903,11 +933,11 @@ export class DiffStudio {
             }
           });
 
-          if (this.inputsByCategories.get(TITLE.MISC)!.length > 0) {
+          if ((miscInputs.length > 0) && (this.topCategory !== TITLE.MISC)) {
             form.append(ui.h2(TITLE.MISC));
-              this.inputsByCategories.get(TITLE.MISC)!.forEach((inp) => {
-                form.append(inp.root);
-              });
+            miscInputs.forEach((inp) => {
+              form.append(inp.root);
+            });
           }
         }
 
@@ -1019,6 +1049,9 @@ export class DiffStudio {
     }; // getOptions
 
     const inputsByCategories = new Map<string, DG.InputBase[]>();
+    const toSaveInputs = ivp.inputsLookup !== null;
+    this.topCategory = null;
+    this.inputByName = toSaveInputs ? new Map<string, DG.InputBase>() : null;
     inputsByCategories.set(TITLE.MISC, []);
     let options: DG.PropertyOptions;
 
@@ -1034,6 +1067,12 @@ export class DiffStudio {
         inputsByCategories.set(category, [input]);
 
       input.setTooltip(options.description!);
+    };
+
+    /** Save input */
+    const saveInput = (name: string, input: DG.InputBase) => {
+      if (toSaveInputs)
+        this.inputByName.set(name, input);
     };
 
     /** Return line with inputs names & values */
@@ -1068,6 +1107,7 @@ export class DiffStudio {
       });
 
       categorizeInput(options, input);
+      saveInput(key, input);
     }
 
     // Inputs for initial values
@@ -1084,6 +1124,7 @@ export class DiffStudio {
       });
 
       categorizeInput(options, input);
+      saveInput(key, input);
     });
 
     // Inputs for parameters
@@ -1101,6 +1142,7 @@ export class DiffStudio {
         });
 
         categorizeInput(options, input);
+        saveInput(key, input);
       });
     }
 
@@ -1120,13 +1162,90 @@ export class DiffStudio {
       });
 
       categorizeInput(options, input);
+      saveInput(SCRIPTING.COUNT, input);
     }
 
     if (this.toRunWhenFormCreated)
       await this.solve(ivp, getInputsPath());
 
     this.inputsByCategories = inputsByCategories;
+
+    if (toSaveInputs)
+      await this.setLookupChoiceInput(ivp.inputsLookup);
   } // getInputsUI
+
+  /** Set behavior of the values lookup input */
+  private async setLookupChoiceInput(inputsLookup: string) {
+    const lookupInfo = getLookupsInfo(inputsLookup);
+
+    if (lookupInfo === null)
+      return;
+
+    const inputsDf = await getInputsTable(lookupInfo.choices);
+    //const inputsDf = await getInputsTable('OpenFile("System:AppData/DiffStudio/examples/bioreactor-inputs.csv")');
+
+    if (inputsDf === null)
+      return;
+
+    const cols = inputsDf.columns;
+    const rowCount = inputsDf.rowCount;
+
+    const inpSetsNames = cols.byIndex(INPUTS_DF.INPUT_SETS_COL_IDX).toList();
+    const choices = [MISC.DEFAULT as string].concat(inpSetsNames);
+
+    const defaultInputs = new Map<string, number>();
+    let firstInput: DG.InputBase | null = null;
+
+    this.inputByName.forEach((input, name) => {
+      if (firstInput === null)
+        firstInput = input;
+
+      defaultInputs.set(name, input.value);
+    });
+
+    const tableInputs = new Map<string, Map<string, number>>(); // set <-> {(input <-> value)}
+    const colsRaw = new Map<string, Int32Array | Uint32Array | Float32Array | Float64Array>();
+
+    for (const col of cols) {
+      if (col.isNumerical)
+        colsRaw.set(col.name, col.getRawData());
+    }
+
+    for (let row = 0; row < rowCount; ++row) {
+      const inputs = new Map<string, number>();
+      colsRaw.forEach((arr, name) => inputs.set(name, arr[row]));
+      tableInputs.set(inpSetsNames[row], inputs);
+    }
+
+    // create input for lookup table use
+    const lookupChoiceInput = ui.input.choice<string>(lookupInfo.caption, {
+      items: choices,
+      nullable: false,
+      value: choices[0],
+      tooltipText: lookupInfo.tooltip,
+      onValueChanged: (value) => {
+        this.toPreventSolving = true;
+
+        if (value === MISC.DEFAULT)
+          this.inputByName.forEach((input, name) => input.value = defaultInputs.get(name));
+        else {
+          const colInputs = tableInputs.get(value);
+          this.inputByName.forEach((input, name) => input.value = colInputs.get(name) ?? input.value);
+        }
+
+        this.toPreventSolving = false;
+        firstInput.value = firstInput.value;
+      },
+    });
+
+    this.topCategory = lookupInfo.category;
+    const catorizedInputs = this.inputsByCategories.get(lookupInfo.category);
+
+    if (catorizedInputs !== undefined)
+      this.inputsByCategories.set(lookupInfo.category, [lookupChoiceInput as DG.InputBase].concat(catorizedInputs));
+    else
+      this.inputsByCategories.set(lookupInfo.category, [lookupChoiceInput]);
+  } // setLookupChoiceInput
 
   /** Run sensitivity analysis */
   private async runSensitivityAnalysis(): Promise<void> {
@@ -1135,8 +1254,9 @@ export class DiffStudio {
       await this.tryToSolve(ivp);
       const scriptText = getScriptLines(ivp, true, true).join('\n');
       const script = DG.Script.create(scriptText);
-      //@ts-ignore
-      await SensitivityAnalysisView.fromEmpty(script);
+      await SensitivityAnalysisView.fromEmpty(script, {
+        inputsLookup: ivp.inputsLookup !== null ? ivp.inputsLookup : undefined,
+      });
     } catch (err) {
       this.clearSolution();
       grok.shell.error(`${ERROR_MSG.SENS_AN_FAILS}:
@@ -1151,8 +1271,9 @@ export class DiffStudio {
       await this.tryToSolve(ivp);
       const scriptText = getScriptLines(ivp, true, true).join('\n');
       const script = DG.Script.create(scriptText);
-      //@ts-ignore
-      await FittingView.fromEmpty(script);
+      await FittingView.fromEmpty(script, {
+        inputsLookup: ivp.inputsLookup !== null ? ivp.inputsLookup : undefined,
+      });
     } catch (err) {
       this.clearSolution();
       grok.shell.error(`${ERROR_MSG.SENS_AN_FAILS}:
@@ -1228,13 +1349,19 @@ export class DiffStudio {
   } // showPerformanceDlg
 
   /** Browse tree */
-  private async createTree() {
-    if (grok.shell.view(TITLE.BROWSE) === undefined)
-      grok.shell.v = DG.View.createByType('browse');
+  private async createTree(browsing?: Browsing) {
+    if (browsing) {
+      this.browseView = browsing.browseView;
+      this.appTree = browsing.treeNode;
+    } else {
+      if (grok.shell.view(TITLE.BROWSE) === undefined)
+        grok.shell.v = DG.View.createByType('browse');
 
-    this.browseView = grok.shell.view(TITLE.BROWSE) as DG.BrowseView;
-    const appsGroup = this.browseView.mainTree.getOrCreateGroup(TITLE.APPS, null, false);
-    this.appTree = appsGroup.getOrCreateGroup(TITLE.DIF_ST);
+      this.browseView = grok.shell.view(TITLE.BROWSE) as DG.BrowseView;
+      const appsGroup = this.browseView.mainTree.getOrCreateGroup(TITLE.APPS, null, false);
+      this.appTree = appsGroup.getOrCreateGroup(TITLE.DIF_ST);
+    }
+
 
     if (this.appTree.items.length > 0)
       this.recentFolder = this.appTree.getOrCreateGroup(TITLE.RECENT, null, false);
@@ -1253,7 +1380,7 @@ export class DiffStudio {
 
       // Add recent models to the Recent folder
       try {
-        const folder = `${grok.shell.user.login}:Home/`;
+        const folder = `${grok.shell.user.project.name}:Home/`;
         const files = await grok.dapi.files.list(folder);
         const names = files.map((file) => file.name);
 
@@ -1359,7 +1486,7 @@ export class DiffStudio {
 
   /** Save model to recent models file */
   private async saveModelToRecent(modelSpecification: string, isCustom: boolean) {
-    const folder = `${grok.shell.user.login}:Home/`;
+    const folder = `${grok.shell.user.project.name}:Home/`;
     const files = await grok.dapi.files.list(folder);
     const names = files.map((file) => file.name);
     const info = isCustom ? modelSpecification : TITLE_BY_STATE.get(modelSpecification);
@@ -1432,7 +1559,7 @@ export class DiffStudio {
       this.browseView.path = `browse/apps/DiffStudio/${TITLE.RECENT}`;
 
       try {
-        const folder = `${grok.shell.user.login}:Home/`;
+        const folder = `${grok.shell.user.project.name}:Home/`;
         const files = await grok.dapi.files.list(folder);
         const names = files.map((file) => file.name);
 

@@ -15,6 +15,7 @@ import {TEST_COLUMN_NAMES} from './utils';
 import wu from 'wu';
 import {CLUSTER_TYPE, LogoSummaryTable} from '../viewers/logo-summary';
 import {MonomerPosition} from '../viewers/sar-viewer';
+import {PeptideUtils} from '../peptideUtils';
 
 category('Widgets: Settings', () => {
   let df: DG.DataFrame;
@@ -25,6 +26,8 @@ category('Widgets: Settings', () => {
   let scaledActivityCol: DG.Column<number>;
 
   before(async () => {
+    await PeptideUtils.loadSeqHelper();
+
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
     activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
     sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
@@ -70,6 +73,8 @@ category('Widgets: Distribution panel', () => {
   let scaledActivityCol: DG.Column<number>;
 
   before(async () => {
+    await PeptideUtils.loadSeqHelper();
+
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
     activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
     sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
@@ -109,6 +114,8 @@ category('Widgets: Mutation cliffs', () => {
   let scaledActivityCol: DG.Column<number>;
 
   before(async () => {
+    await PeptideUtils.loadSeqHelper();
+
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
     activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
     sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
@@ -152,6 +159,8 @@ category('Widgets: Actions', () => {
   let scaledActivityCol: DG.Column<number>;
 
   before(async () => {
+    await PeptideUtils.loadSeqHelper();
+
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
     await df.meta.detectSemanticTypes();
     activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);

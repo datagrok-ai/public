@@ -1,5 +1,27 @@
 # EDA changelog
 
+## 1.2.4 (2024-10-31)
+
+Fixed:
+
+* Labels and help links in the PLS tools
+* Fixed k-NN imputer description
+* PCA computations
+
+## 1.2.3 (2024-10-25)
+
+Fixed:
+
+* k-NN imputer input form
+* console output
+
+## 1.2.2 (2024-09-12)
+
+Updated ANOVA:
+
+* Add tests & benchmarks
+* Fixed the incorrect feature column type bug
+
 ## 1.2.1 (2024-09-12)
 
 * Add tests & benchmarks for missing values imputation using KNN
@@ -7,10 +29,6 @@
 ## 1.2.0 (2024-09-10)
 
 * 1.21.1 release
-
-## 1.1.36-rc (2024-09-06)
-
-* Preparing 1.21.1 release
 
 ## 1.1.35 (2024-08-28)
 

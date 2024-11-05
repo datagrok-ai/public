@@ -16,17 +16,15 @@ import {TAGS as bioTAGS, NOTATION} from '@datagrok-libraries/bio/src/utils/macro
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {delay, testEvent} from '@datagrok-libraries/utils/src/test';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {IRenderer} from '@datagrok-libraries/bio/src/types/renderer';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 import {helmSubstructureSearch, linearSubstructureSearch} from '../substructure-search/substructure-search';
 import {updateDivInnerHTML} from '../utils/ui-utils';
 import {BioFilterBase, BioFilterProps, IBioFilter, IFilterProps} from './bio-substructure-filter-types';
 import {HelmBioFilter} from './bio-substructure-filter-helm';
-
-import {_package} from '../package';
 
 const FILTER_SYNC_EVENT: string = 'bio-substructure-filter';
 
@@ -56,7 +54,6 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
   readonly loader: HTMLDivElement;
   notation: string | undefined = undefined;
 
-  readonly logger: ILogger;
   readonly filterSyncer: PromiseSyncer;
 
   get calculating(): boolean { return this.loader.style.display == 'initial'; }
@@ -88,22 +85,15 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
     return res;
   }
 
-  constructor() {
+  constructor(
+    private readonly seqHelper: ISeqHelper,
+    private logger: ILogger
+  ) {
     super();
     this.root = ui.divV([]);
     this.loader = ui.loader();
     this.calculating = false;
-    this.filterSyncer = new PromiseSyncer(this.logger = _package.logger);
-
-    return new Proxy(this, {
-      set(target: any, key, value) {
-        if (key === 'column') {
-          const k = 42;
-        }
-        target[key] = value;
-        return true;
-      }
-    });
+    this.filterSyncer = new PromiseSyncer(this.logger);
   }
 
   private static filterCounter: number = -1;
@@ -125,13 +115,13 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
         else
           this.column = dataFrame.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
       }
-      const sh = SeqHandler.forColumn(this.column!);
+      const sh = this.seqHelper.getSeqHandler(this.column!);
       this.columnName ??= this.column?.name;
       this.notation ??= this.column?.meta.units!;
 
       this.bioFilter = this.notation === NOTATION.FASTA ?
         new FastaBioFilter() : this.notation === NOTATION.SEPARATOR ?
-          new SeparatorBioFilter(this.column!.getTag(bioTAGS.separator)) : new HelmBioFilter();
+          new SeparatorBioFilter(this.column!.getTag(bioTAGS.separator)) : new HelmBioFilter(this.seqHelper);
       this.root.appendChild(this.bioFilter!.filterPanel);
       this.root.appendChild(this.loader);
       await this.bioFilter.attach(); // may await waitForElementInDom
@@ -201,7 +191,7 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
 
   private fireFilterSync(): void {
     const logPrefix = `${this.filterToLog()}.fireFilterSync()`;
-    _package.logger.debug(`${logPrefix}, ` +
+    this.logger.debug(`${logPrefix}, ` +
       `bioFilter = ${!!this.bioFilter ? this.bioFilter.constructor.name : 'null'}` +
       (!!this.bioFilter ? `, props = ${JSON.stringify(this.bioFilter!.saveProps())}` : ''));
 
@@ -219,7 +209,7 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
   bioFilterOnChangedDebounced(): void {
     if (!this.dataFrame) return; // Debounced event can be handled postponed
     const logPrefix = `${this.filterToLog()}.bioFilterOnChangedDebounced()`;
-    _package.logger.debug(`${logPrefix}, start, ` +
+    this.logger.debug(`${logPrefix}, start, ` +
       `isFiltering = ${this.isFiltering}, ` +
       `props = ${JSON.stringify(this.bioFilter!.saveProps())}`);
 
@@ -236,22 +226,22 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
     this.filterSyncer.sync(logPrefix, async () => {
       this.calculating = true;
       try {
-        _package.logger.debug(`${logPrefix}, before substructureSearch`);
+        this.logger.debug(`${logPrefix}, before substructureSearch`);
         this.bitset = await this.bioFilter?.substructureSearch(this.column!)!;
-        _package.logger.debug(`${logPrefix}, after substructureSearch`);
+        this.logger.debug(`${logPrefix}, after substructureSearch`);
         this.calculating = false;
         this.fireFilterSync();
         this.dataFrame?.rows.requestFilter();
       } finally {
         this.calculating = false;
-        _package.logger.debug(`${logPrefix}, end`);
+        this.logger.debug(`${logPrefix}, end`);
       }
     });
   }
 
   grokEventsOnResetFilterRequest(): void {
     const logPrefix = `${this.filterToLog()}.grokEventsOnResetFilterRequest()`;
-    _package.logger.debug(`${logPrefix}`);
+    this.logger.debug(`${logPrefix}`);
     this.bioFilter?.resetFilter();
   }
 

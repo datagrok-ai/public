@@ -227,5 +227,6 @@ export function getTileCategoryEditor(preset?: string[]) {
   return {
     getFields: getFieldParams,
     fieldsDiv: itemsGrid.root,
+    itemsGrid,
   };
 }

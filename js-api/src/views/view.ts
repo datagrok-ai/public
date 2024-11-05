@@ -72,7 +72,7 @@ export class ViewBase {
 
   set root(newRoot: HTMLElement){
     this._root = newRoot
-  } 
+  }
 
   get box(): boolean {
     return $(this.root).hasClass('ui-box');
@@ -258,6 +258,10 @@ export class View extends ViewBase {
     return new View(api.grok_View_CreateByType(viewType, options));
   }
 
+  static fromViewAsync(getViewAsync: () => Promise<View>, ribbon: boolean = true) {
+    return toJs(api.grok_View_FromViewAsync(getViewAsync, ribbon));
+  }
+
   get root(): HTMLElement {
     return api.grok_View_Get_Root(this.dart);
   }
@@ -332,8 +336,8 @@ export class View extends ViewBase {
   // to be used in [createByType].
   static readonly APPS = 'apps';
   static readonly SETTINGS = 'settings';
-  static readonly WELCOME = 'welcome';
-  static readonly SCRIPT = 'script';
+  static readonly WELCOME = 'welcome';  // no any viewer like that
+  static readonly SCRIPT = 'script'; // no any viewer like that
   static readonly SKETCH = 'sketch';
   static readonly FORUM = 'forum';
   static readonly PROJECTS = 'projects';
@@ -346,8 +350,8 @@ export class View extends ViewBase {
   static readonly FUNCTIONS = 'functions';
   static readonly DATA_CONNECTIONS = 'connections';
   static readonly DATA_JOB_RUNS = 'jobs';
-  static readonly FILES = 'files';
-  static readonly DATA_QUERY_RUNS = 'queryruns';
+  static readonly FILES = 'files'; 
+  static readonly DATA_QUERY_RUNS = 'queryruns'; // no any viewer like that
   static readonly EMAILS = 'emails';
   static readonly GROUPS = 'groups';
   static readonly MODELS = 'models';
@@ -359,10 +363,10 @@ export class View extends ViewBase {
   static readonly JS_EDITOR = 'js';
   static readonly BROWSE = 'browse';
 
-  static readonly ALL_VIEW_TYPES = [View.APPS, View.SETTINGS, View.WELCOME, View.SCRIPT, View.SKETCH,
+  static readonly ALL_VIEW_TYPES = [View.APPS, View.SETTINGS, View.SKETCH,
     View.FORUM, View.PROJECTS, View.NOTEBOOKS, View.HELP, View.OPEN_TEXT, View.DATABASES,
     View.WEB_SERVICES, View.VIEW_LAYOUTS, View.FUNCTIONS, View.DATA_CONNECTIONS, View.DATA_JOB_RUNS,
-    View.FILES, View.DATA_QUERY_RUNS, View.EMAILS, View.GROUPS, View.MODELS, View.QUERIES,
+    View.FILES, View.EMAILS, View.GROUPS, View.MODELS, View.QUERIES,
     View.SCRIPTS, View.USERS, View.PACKAGES, View.PACKAGE_REPOSITORIES, View.JS_EDITOR, View.BROWSE];
 }
 
@@ -667,7 +671,7 @@ export class BrowseView extends View {
   constructor(dart: any) {
     super(dart);
   }
-
+  // TODO: add static method to return browse view
   get localTree(): TreeViewGroup { return api.grok_BrowseView_Get_LocalTree(this.dart); }
   get mainTree(): TreeViewGroup { return api.grok_BrowseView_Get_MainTree(this.dart); }
 

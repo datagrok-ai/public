@@ -176,8 +176,7 @@ export class TestManager extends DG.ViewBase {
           const testModule = f.package.getModule(f.options.file);
           if (!testModule)
             console.error(`Error getting tests from '${f.package.name}/${f.options.file}' module.`);
-          await initAutoTests(f.package, testModule);
-          const allPackageTests = testModule ? testModule.tests : undefined;
+          const allPackageTests = await f.package.getTests(true);
           const packageTestsFinal: { [cat: string]: ICategory } = {};
           if (allPackageTests) {
             Object.keys(allPackageTests).forEach((cat) => {
@@ -466,10 +465,10 @@ export class TestManager extends DG.ViewBase {
     let runSkipped = false;
     if (DG.Test.isInBenchmark && !t.test.options?.benchmark) {
       t.test.options.skipReason = "Test can not be runned in benchmark mode";
-    
+
       this.updateTestResultsIcon(t.resultDiv, true, true);
       return;
-    } 
+    }
     const skipReason = t.test.options?.skipReason;
     if ((force || this.runSkippedMode) && skipReason) {
       t.test.options.skipReason = undefined;
@@ -730,8 +729,17 @@ export class TestManager extends DG.ViewBase {
       const results = testInfo.getCol('success').toList();
       const skipped = testInfo.getCol('skipped').toList().filter((b) => b).length;
       if (unhandled) {
-        testInfo.rows.addNew([false, unhandled, 0, false, 'Unhandled exceptions',
-          'exceptions', testInfo.get('package', 0)]);
+        const currentDate = new Date();
+        const formattedDate = currentDate.toLocaleString("en-US", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false,
+        }) + "." + currentDate.getMilliseconds().toString().padStart(3, "0");
+        testInfo.rows.addNew([formattedDate, false, 'unhandled', 0, false, '', '', testInfo.get('package', 0), '']);
       }
       if (testInfo.rowCount === 1 && testInfo.col('name').isNone(0))
         return { info, testInfo };

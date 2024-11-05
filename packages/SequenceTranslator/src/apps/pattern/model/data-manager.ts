@@ -33,7 +33,7 @@ export class DataManager {
     instance.currentUserName = await instance.fetchCurrentUserName();
     instance.currentUserId = await instance.fetchCurrentUserId();
 
-    const patternRecords = await instance.fetchPatterns();
+    const patternRecords = instance.fetchPatterns();
     await instance.initializePatternMaps(patternRecords);
 
     return instance;
@@ -81,7 +81,7 @@ export class DataManager {
     if (hash === null || hash === '')
       return null;
     try {
-      const patternConfig = await grok.dapi.userDataStorage.getValue(STORAGE_NAME, hash, false);
+      const patternConfig = grok.userSettings.getValue(STORAGE_NAME, hash, false) ?? 'null';
       const config = JSON.parse(patternConfig) as PatternConfigRecord;
       return config;
     } catch {
@@ -181,7 +181,7 @@ export class DataManager {
         [D.MODIFY]: timestamp,
       };
       const record = JSON.stringify(recordObj);
-      await grok.dapi.userDataStorage.postValue(STORAGE_NAME, hash, record, false);
+      grok.userSettings.add(STORAGE_NAME, hash, record, false);
       this.currentUserPatternNameToHash.set(patternName, hash);
 
       eventBus.selectAuthor(this.getCurrentUserAuthorshipCategory());
@@ -212,14 +212,14 @@ export class DataManager {
     newRecordObj[R.DATE] = {
       [D.MODIFY]: timestamp,
     };
-    const oldPattern = await grok.dapi.userDataStorage.getValue(STORAGE_NAME, oldHash, false);
+    const oldPattern = grok.userSettings.getValue(STORAGE_NAME, oldHash, false) ?? 'null';
     const oldPatternsRecord = JSON.parse(oldPattern) as PatternConfigRecord;
     if (oldPatternsRecord[R.DATE] !== undefined && oldPatternsRecord[R.DATE][D.CREATE] != undefined)
       newRecordObj[R.DATE][D.CREATE] = oldPatternsRecord[R.DATE][D.CREATE];
 
     const newRecord = JSON.stringify(newRecordObj);
-    await grok.dapi.userDataStorage.postValue(STORAGE_NAME, newHash, newRecord, false);
-    await grok.dapi.userDataStorage.remove(STORAGE_NAME, oldHash, false);
+    grok.userSettings.add(STORAGE_NAME, newHash, newRecord, false);
+    grok.userSettings.delete(STORAGE_NAME, oldHash, false);
 
     this.currentUserPatternNameToHash.set(patternName, newHash);
     eventBus.requestPatternLoad(newHash);
@@ -237,7 +237,7 @@ export class DataManager {
     }
     if (hash === undefined)
       throw new Error(`Pattern with name ${patternName} not found`);
-    await grok.dapi.userDataStorage.remove(STORAGE_NAME, hash, false);
+    grok.userSettings.delete(STORAGE_NAME, hash, false);
     this.currentUserPatternNameToHash.delete(patternName);
     eventBus.updatePatternList();
 
@@ -264,8 +264,8 @@ export class DataManager {
     return (await grok.dapi.users.current()).id;
   }
 
-  private async fetchPatterns() {
-    const patternsRecord = await grok.dapi.userDataStorage.get(STORAGE_NAME, false) as RawPatternRecords;
+  private fetchPatterns(): RawPatternRecords {
+    const patternsRecord = (grok.userSettings.get(STORAGE_NAME, false) ?? {}) as RawPatternRecords;
     return patternsRecord;
   }
 

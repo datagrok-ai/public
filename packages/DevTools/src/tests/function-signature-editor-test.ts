@@ -1,10 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
-import {category, before, test, expect, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import { category, before, test, expect, awaitCheck } from '@datagrok-libraries/utils/src/test';
 
-category('FSE', ()=> {
-  before(async ()=> {
+category('FSE', () => {
+  before(async () => {
     grok.shell.windows.simpleMode = false;
   });
 
@@ -13,7 +13,8 @@ category('FSE', ()=> {
     for (let i = 0; i < 5; i++) {
       b = true;
       try {
-        const v = DG.View.createByType('ScriptView');
+        let script = await grok.dapi.scripts.first();
+        const v = DG.ScriptView.create(script);
         grok.shell.addView(v);
         await awaitCheck(() => grok.shell.v != null, '', 1000);
         await awaitCheck(() => {
@@ -30,7 +31,8 @@ category('FSE', ()=> {
   });
 
   test('open', async () => {
-    const v = DG.View.createByType('ScriptView');
+    let script = await grok.dapi.scripts.first();
+    const v = DG.ScriptView.create(script);
     grok.shell.addView(v);
     await awaitCheck(() => grok.shell.v != null, '', 2000);
     let fseButton: HTMLElement;
@@ -53,7 +55,8 @@ category('FSE', ()=> {
   });
 
   test('close', async () => {
-    const v = DG.View.createByType('ScriptView');
+    let script = await grok.dapi.scripts.first();
+    const v = DG.ScriptView.create(script);
     grok.shell.addView(v);
     await awaitCheck(() => grok.shell.v != null, '', 2000);
     let fseButton: HTMLElement;

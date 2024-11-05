@@ -2,15 +2,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {getMolfilesFromSingleSeq} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {TAGS as mmcrTAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 
-import {
-  Temps as mmcrTemps, rendererSettingsChangedState, Temps
-} from '../utils/cell-renderer-consts';
+import {MmcrTemps, rendererSettingsChangedState} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {getMolfilesFromSingleSeq} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
 import {_package} from '../package';
-import {max} from 'rxjs/operators';
 
 
 /**
@@ -30,8 +28,8 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
     const v = parseInt(col.getTag(mmcrTAGS.maxMonomerLength));
     maxMonomerLength = !isNaN(v) ? v : maxMonomerLength;
   }
-  if (Temps.maxMonomerLength in col.temp) {
-    const v = parseInt(col.temp[Temps.maxMonomerLength]);
+  if (MmcrTemps.maxMonomerLength in col.temp) {
+    const v = parseInt(col.temp[MmcrTemps.maxMonomerLength]);
     maxMonomerLength = !isNaN(v) ? v : maxMonomerLength;
   }
   const maxMonomerLengthInput = ui.input.int('Max Monomer Length', {
@@ -43,8 +41,8 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
       else {
         const newValue = value ?? '';
         const tagValue = newValue == null ? '' : newValue.toString();
-        col.temp[Temps.maxMonomerLength] = tagValue;
-        col.temp[Temps.rendererSettingsChanged] = rendererSettingsChangedState.true;
+        col.temp[MmcrTemps.maxMonomerLength] = tagValue;
+        col.temp[MmcrTemps.rendererSettingsChanged] = rendererSettingsChangedState.true;
         col.dataFrame.fireValuesChanged();
       }
     },
@@ -52,10 +50,10 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
   });
 
   const gapLengthInput = ui.input.int('Monomer Margin', {
-    value: col.temp[mmcrTemps.gapLength] ?? 0,
+    value: col.temp[MmcrTemps.gapLength] ?? 0,
     onValueChanged: (value) => {
-      col.temp[mmcrTemps.gapLength] = value;
-      col.temp[mmcrTemps.rendererSettingsChanged] = rendererSettingsChangedState.true;
+      col.temp[MmcrTemps.gapLength] = value;
+      col.temp[MmcrTemps.rendererSettingsChanged] = rendererSettingsChangedState.true;
       col.dataFrame.fireValuesChanged();
     },
     tooltipText: 'The size of margin between monomers (in pixels)'
@@ -107,16 +105,19 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
  * @export
  * @param {DG.Cell} macroMolecule macromolecule cell.
  * @param {any[]} monomersLibObject
+ * @param {ISeqHelper} seqHelper
  * @return {Promise<DG.Widget>} Widget.
  */
-export async function representationsWidget(macroMolecule: DG.Cell, monomersLibObject: any[]): Promise<DG.Widget> {
+export async function representationsWidget(
+  macroMolecule: DG.Cell, monomersLibObject: any[], seqHelper: ISeqHelper
+): Promise<DG.Widget> {
   const pi = DG.TaskBarProgressIndicator.create('Creating 3D view');
 
   let widgetHost;
   let molBlock3D = '';
   try {
     try {
-      const _atomicCodes = getMolfilesFromSingleSeq(macroMolecule, monomersLibObject);
+      const _atomicCodes = getMolfilesFromSingleSeq(macroMolecule, monomersLibObject, seqHelper);
       const result = '';//await getMacroMol(atomicCodes!);
       const molBlock2D = result[0];
       molBlock3D = (await grok.functions.call('Bio:Embed', {molBlock2D})) as unknown as string;

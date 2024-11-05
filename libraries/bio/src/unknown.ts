@@ -1,27 +1,35 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {SeqPalette, SeqPaletteBase} from './seq-palettes';
+import {getMonomerLibHelper} from './monomer-works/monomer-utils';
+import {PolymerType} from './helm/types';
+import {PolymerTypes} from './helm/consts';
 
 /** makes the color less white, makes the transparency effect always perceptible
- * @param {string} color x coordinate.
+ * @param {string} color color in string format either hex or rgb.
+ * @param {boolean} scale if scale is needed to 210 brightness.
+ * @return {string} color in rgb format.
  * */
-function correctColor(color: string | null): string {
+function correctColor(color: string | null, scale = true): string {
   if (color == null)
     return 'rgb(100,100,100)';
 
   const dgColor: number = DG.Color.fromHtml(color);
-  const g = DG.Color.g(dgColor);
-  const r = DG.Color.r(dgColor);
-  const b = DG.Color.b(dgColor);
-  // calculate euclidean distance to white
-  const distToBlack = Math.sqrt(Math.pow(0 - r, 2) + Math.pow(0 - g, 2) + Math.pow(0 - b, 2));
-  // normalize vector r g b
-  const normR = r / distToBlack;
-  const normG = g / distToBlack;
-  const normB = b / distToBlack;
-  if (distToBlack > 210) {
-    return `rgb(${normR * 210},${normG * 210},${normB * 210})`;
+  if (scale) {
+    const g = DG.Color.g(dgColor);
+    const r = DG.Color.r(dgColor);
+    const b = DG.Color.b(dgColor);
+    // calculate euclidean distance to white
+    const distToBlack = Math.sqrt(Math.pow(0 - r, 2) + Math.pow(0 - g, 2) + Math.pow(0 - b, 2));
+    // normalize vector r g b
+    const normR = r / distToBlack;
+    const normG = g / distToBlack;
+    const normB = b / distToBlack;
+    if (distToBlack > 210)
+      return `rgb(${normR * 210},${normG * 210},${normB * 210})`;
   }
+
   return DG.Color.toRgb(dgColor);
 }
 
@@ -39,30 +47,64 @@ export class StringUtils {
   }
 }
 
-import {SeqPalette, SeqPaletteBase} from './seq-palettes';
-
 export abstract class UnknownSeqPalette implements SeqPalette {
-  public abstract get(m: string): string;
+  public abstract get(m: string, polymerType?: string): string;
 }
 
 export class GrayAllPalette extends UnknownSeqPalette {
-  public get(m: string): string {
+  public get(_m: string, _polymerType?: string): string {
     return '#666666';
   }
 }
 
 
 export class UnknownColorPalette extends UnknownSeqPalette {
-  public static palette: string[] = UnknownColorPalette.buildPalette();
+  private static _pallete: string[] | null = null;
+  public static get palette(): string[] {
+    if (!UnknownColorPalette._pallete)
+      UnknownColorPalette._pallete = UnknownColorPalette.buildPalette();
+    return UnknownColorPalette._pallete;
+  }
+  // this way is just more future-proof, when we start distinguishing
+  // between different polymer types for coloring of non natural aa's or nucleotides
+  private static customMonomerColors: { [symbol: string]: { [polymerType: string]: string } } = {};
+  private static polymerTypes: string[] = [];
 
   private static buildPalette(): string[] {
+    getMonomerLibHelper().then((lh) => {
+      lh.awaitLoaded(Infinity).then(() => {
+        const monLib = lh.getMonomerLib();
+        monLib.onChanged.subscribe(() => {
+          UnknownColorPalette.customMonomerColors = {};
+          UnknownColorPalette.polymerTypes = monLib.getPolymerTypes();
+          for (const polymerType of this.polymerTypes) {
+            const monomerSymbols = monLib.getMonomerSymbolsByType(polymerType as PolymerType);
+            for (const monomerSymbol of monomerSymbols) {
+              const monomer = monLib.getMonomer(polymerType as PolymerType, monomerSymbol);
+              if (monomer?.meta?.colors?.default?.background) {
+                if (!this.customMonomerColors[monomerSymbol])
+                  this.customMonomerColors[monomerSymbol] = {};
+
+                this.customMonomerColors[monomerSymbol][polymerType] =
+                  correctColor(monomer.meta.colors.default.background);
+              }
+            }
+          }
+        });
+      });
+    });
     const res = ([] as string[]).concat(...Object.values(SeqPaletteBase.colourPalette));
     return res;
   }
 
-  public get(m: string): string {
+  public get(m: string, polymerType?: string): string {
+    const palleteLength = UnknownColorPalette.palette.length;
+    const colorObj = UnknownColorPalette.customMonomerColors[m];
+    const polType = polymerType ?? PolymerTypes.PEPTIDE;
+    if (colorObj && colorObj[polType])
+      return colorObj[polType];
     const hash: number = StringUtils.hashCode(m);
-    const pI = hash % UnknownColorPalette.palette.length;
+    const pI = hash % palleteLength;
     return correctColor(UnknownColorPalette.palette[pI]);
   }
 }

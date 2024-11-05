@@ -69,6 +69,7 @@ public class MySqlDataProvider extends JdbcDataProvider {
                 properties.setProperty("verifyServerCertificate", "false");
             }
         }
+        properties.setProperty("socketTimeout", "180000");
         return properties;
     }
 

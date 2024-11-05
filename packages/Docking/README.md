@@ -65,6 +65,8 @@ Grid calculation works on a single CPU core, so it can take about a minute.
 Datagrok caches calculated grids, so subsequent runs with the same 
 target will be much faster.
 
+![docking simulations](help/docking-simulations.gif)
+
 ### Analyze results
 
 When the results are ready, you can:
@@ -73,3 +75,5 @@ When the results are ready, you can:
 2. **Check free energy**: The column with free energy numbers provides users with quantitative information about the stability of each ligand-receptor complex.
 3. **Zoom to pocket**: By clicking on a pose, a Molstar viewer appears in the context panel. It automatically zooms to the binding pocket of interest, providing a closer look at the ligand-receptor interaction.
 4. **Explore additional properties**: Calculated properties for the selected pose allow users to explore binding affinities, interaction energies, or other relevant information for detailed analysis.
+
+![additional properties](help/additional-properties.gif)
