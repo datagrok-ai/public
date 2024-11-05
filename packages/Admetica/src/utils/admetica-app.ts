@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import { createDynamicForm, getQueryParams, performChemicalPropertyPredictions } from './admetica-utils';
+import { addSparklines, createDynamicForm, getQueryParams, performChemicalPropertyPredictions, properties, setProperties } from './admetica-utils';
 import { UiUtils } from '@datagrok-libraries/compute-utils/shared-components';
 import '../css/admetica.css';
 
@@ -21,6 +21,9 @@ export class AdmeticaViewApp {
   sketcherDiv: HTMLElement;
   sketcher?: HTMLElement;
   placeholder: HTMLElement;
+
+  private taskQueue: (() => Promise<void>)[] = [];
+  private isTaskActive: boolean = false;
 
   constructor(parentCall: DG.FuncCall) {
     this.parentCall = parentCall;
@@ -117,30 +120,61 @@ export class AdmeticaViewApp {
   }
 
   async onChanged(smiles: string) {
-    if (this.mode === 'single') {
-      const col = this.tableView?.dataFrame.columns.getOrCreate('smiles', 'string', 1);
-      col!.semType = DG.SEMTYPE.MOLECULE;
-      if (smiles !== null)
-        this.tableView?.dataFrame.set('smiles', 0, smiles);
-      await grok.data.detectSemanticTypes(this.tableView!.dataFrame);
-      const models = await getQueryParams();
+    if (this.isTaskActive) {
+      this.isTaskActive = false;
+      return;
+    }
 
-      const splashScreen = this.buildSplash(this.formContainer, 'Processing...');
-      await performChemicalPropertyPredictions(
-        this.tableView!.dataFrame.getCol('smiles'),
-        this.tableView!.dataFrame,
-        models,
-        undefined,
-        true,
-        false,
-        true
-      );
-      splashScreen.close();
-      
-      const form = createDynamicForm(this.tableView!.dataFrame, models.split(','), 'smiles', true);
-      this.formContainer.innerHTML = ''; 
-      this.formContainer.appendChild(form.root);
-      this.hidePlaceholder();
+    this.isTaskActive = true; // Mark the task as active
+    try {
+      if (this.mode === 'single') {
+        this.clearTable();
+        const col = this.tableView?.dataFrame.columns.getOrCreate('smiles', 'string', 1);
+        col!.semType = DG.SEMTYPE.MOLECULE;
+        this.tableView?.dataFrame.set('smiles', 0, smiles);
+        await grok.data.detectSemanticTypes(this.tableView!.dataFrame);
+
+        const models = await getQueryParams();
+        const splashScreen = this.buildSplash(this.formContainer, 'Processing...');
+
+        // Perform chemical property predictions without passing signal
+        await performChemicalPropertyPredictions(
+          this.tableView!.dataFrame.getCol('smiles'),
+          this.tableView!.dataFrame,
+          models,
+          undefined,
+          false,
+          false,
+          true
+        );
+
+        const molIdx = this.tableView?.dataFrame.columns.names().indexOf('smiles');
+        await addSparklines(this.tableView!.dataFrame, models.split(','), molIdx!);
+        splashScreen.close();
+        
+        const form = createDynamicForm(this.tableView!.dataFrame, models.split(','), 'smiles', true);
+        this.formContainer.innerHTML = ''; 
+        this.formContainer.appendChild(form.root);
+        this.hidePlaceholder();
+      }
+    } catch (error) {
+      console.error('Error in prediction task:', error);
+    } finally {
+      this.isTaskActive = false; // Reset the task flag
+    }
+  }
+
+  addTaskToQueue(task: () => Promise<void>) {
+    // Add the task to the queue and immediately attempt to execute it
+    this.taskQueue.push(task);
+    this.processNextTask();
+  }
+
+  processNextTask() {
+    if (this.taskQueue.length === 0 || this.isTaskActive) return;
+    const nextTask = this.taskQueue.shift();
+    if (nextTask) {
+      nextTask().finally(() => this.processNextTask());
     }
   }
 
@@ -148,6 +182,45 @@ export class AdmeticaViewApp {
     const fileInputEditor = UiUtils.fileInput('', null, async (file: File) => {
       await this.processFile(file);
     }, null);
+
+    const labels = fileInputEditor.root.querySelectorAll('.ui-label, .ui-input-label');
+    labels.forEach(label => label.remove());
+
+    const inputEditor = fileInputEditor.root.querySelector('.ui-input-editor') as HTMLElement;
+    if (inputEditor) {
+      Object.assign(inputEditor.style, {
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#f9f9f9',
+        color: '#007bff',
+        fontSize: '22px',
+        cursor: 'pointer',
+        textAlign: 'center'
+      });
+
+      inputEditor.addEventListener('dragenter', () => {
+        inputEditor.style.backgroundColor = '#e0f7fa';
+      });
+      
+      inputEditor.addEventListener('dragleave', () => {
+        inputEditor.style.backgroundColor = '#f9f9f9';
+      });
+      
+      inputEditor.addEventListener('dragover', (event) => {
+        inputEditor.style.backgroundColor = '#e0f7fa';
+      });
+      
+      inputEditor.addEventListener('drop', () => {
+        inputEditor.style.backgroundColor = '#f9f9f9';
+      });
+    }
+
+    const optionsIcon = fileInputEditor.root.querySelector('.ui-input-options .grok-icon.fal.fa-cloud-upload') as HTMLElement;
+    if (optionsIcon)
+      optionsIcon.remove();
   
     fileInputEditor.root.classList.add('file-input');
     return ui.divV([fileInputEditor], { classes: 'file-input-container' });
@@ -166,11 +239,26 @@ export class AdmeticaViewApp {
       table,
       models,
       undefined,
-      true,
+      false,
       false,
       true
     );
     splashScreen.close();
+
+    const molColName = table.columns.bySemType(DG.SEMTYPE.MOLECULE)!.name;
+    const molIdx = table.columns.names().findIndex(c => c === molColName);
+    await setProperties();
+    const uniqueSubgroupNames: string[] = Array.from(
+      new Set(properties.subgroup.map((subg: any) => subg.name))
+    );
+    
+    uniqueSubgroupNames.forEach(async (subgroupName: string) => {
+      const models = properties.subgroup
+        .filter((subg: any) => subg.name === subgroupName) // Filter subgroups with the current name
+        .flatMap((subg: any) => subg.models.map((model: any) => model.name)); // Map to model names and flatten
+      
+      await addSparklines(this.tableView!.dataFrame, models, molIdx, subgroupName);
+    });
   }   
 
   hidePlaceholder() {
@@ -182,13 +270,14 @@ export class AdmeticaViewApp {
       this.tableView?.dockManager.dock(modeContainer, DG.DOCK_TYPE.TOP, null, '', 0.65);
     }
   }
-
+  
   buildSplash(root: HTMLElement, description: string): ISplash {
     const indicator = ui.loader();
     const panel = ui.divV([indicator, ui.p(description)], { classes: 'splash-panel' });
     const loaderEl = ui.div([panel], { classes: 'splash-container' });
     root.append(loaderEl);
-
+  
     return { el: loaderEl, close: () => loaderEl.remove() };
   }
+  
 }

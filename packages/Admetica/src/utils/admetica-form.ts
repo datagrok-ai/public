@@ -5,7 +5,7 @@ export class FormStateGenerator {
   table: string;
   categories: { [s: string]: string[] };
   molColName: string;
-  addPiechart: boolean;
+  addPiechart: boolean = true;
   maxHeight: number;
 
   constructor(table: string, categories: { [s: string]: string[] }, molColName: string, addPiechart: boolean, maxHeight: number = 600) {
@@ -107,7 +107,7 @@ export class FormStateGenerator {
         "type": "sparkline-cell",
         "viewerSettings": {
           "table": this.table,
-          "column": piechartIndex === 1 ? "piechart" : `piechart (${piechartIndex})`
+          "column": piechartIndex === 0 ? "piechart" : `piechart (${piechartIndex})`
         }
       });
 
