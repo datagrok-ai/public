@@ -231,66 +231,67 @@ export const TreeWizard = Vue.defineComponent({
               class='h-full overflow-scroll'
             ></Inspector>
           }
-          { treeState.value && !treeHidden.value ?
-            Vue.withDirectives(<Draggable
-              class="ui-div mtl-tree p-2 overflow-scroll h-full"
-              style={{paddingLeft: '25px'}}
+          { 
+            treeState.value && !treeHidden.value ?
+              Vue.withDirectives(<Draggable
+                class="ui-div mtl-tree p-2 overflow-scroll h-full"
+                style={{paddingLeft: '25px'}}
 
-              dock-spawn-title='Steps'
-              dock-spawn-dock-type='left'
-              dock-spawn-dock-ratio={0.3}
-              dock-spawn-z-index={102}
+                dock-spawn-title='Steps'
+                dock-spawn-dock-type='left'
+                dock-spawn-dock-ratio={0.3}
+                dock-spawn-z-index={102}
 
-              rootDroppable={false}
-              treeLine
-              childrenKey='steps'
-              nodeKey={(stat: AugmentedStat) => stat.data.uuid}
-              statHandler={restoreOpenedNodes}
+                rootDroppable={false}
+                treeLine
+                childrenKey='steps'
+                nodeKey={(stat: AugmentedStat) => stat.data.uuid}
+                statHandler={restoreOpenedNodes}
 
-              ref={treeInstance}
-              modelValue={[treeState.value]}
+                ref={treeInstance}
+                modelValue={[treeState.value]}
 
-              eachDraggable={(stat: AugmentedStat) =>
-                (stat.parent &&
-                (isParallelPipelineState(stat.parent.data) || isSequentialPipelineState(stat.parent.data))
-                ) ?? false
-              }
-              eachDroppable={(stat: AugmentedStat) =>
-                (isParallelPipelineState(stat.data) || isSequentialPipelineState(stat.data))}
-              onAfter-drop={() => {
-                const draggedStep = dragContext.startInfo.dragNode as AugmentedStat;
-                const newIndex = dragContext.startInfo.indexBeforeDrop < dragContext.targetInfo.indexBeforeDrop ?
-                  dragContext.targetInfo.indexBeforeDrop - 1:
-                  dragContext.targetInfo.indexBeforeDrop;
-                moveStep(draggedStep.data.uuid, newIndex);
-              }}
-            >
-              {
-                ({stat}: {stat: AugmentedStat}) =>
-                  (
-                    <TreeNode
-                      stat={stat}
-                      isReadonly={stat.data.isReadonly}
-                      callState={states.calls[stat.data.uuid]}
-                      validationStates={states.validations[stat.data.uuid]}
-                      consistencyStates={states.consistency[stat.data.uuid]}
-                      style={{'background-color': stat.data.uuid === chosenStepUuid.value ? '#f2f2f5' : null}}
-                      isDraggable={treeInstance.value?.isDraggable(stat)}
-                      isDroppable={treeInstance.value?.isDroppable(stat)}
-                      isDeletable={!!stat.parent && (isParallelPipelineState(stat.parent.data) || isSequentialPipelineState(stat.parent.data))}
-                      onAddNode={({itemId, position}) => {
-                        addStep(stat.data.uuid, itemId, position);
-                      }}
-                      onRemoveNode={() => removeStep(stat.data.uuid)}
-                      onClick={() => {
-                        chosenStepUuid.value = stat.data.uuid;
-                      }}
-                      onToggleNode={() => stat.open = !stat.open}
-                    />
-                  )
-              }
-            </Draggable>, [[ifOverlapping, treeMutationsLocked.value, 'Locked...']]): null },
-
+                eachDraggable={(stat: AugmentedStat) =>
+                  (stat.parent &&
+                  (isParallelPipelineState(stat.parent.data) || isSequentialPipelineState(stat.parent.data))
+                  ) ?? false
+                }
+                eachDroppable={(stat: AugmentedStat) =>
+                  (isParallelPipelineState(stat.data) || isSequentialPipelineState(stat.data))}
+                onAfter-drop={() => {
+                  const draggedStep = dragContext.startInfo.dragNode as AugmentedStat;
+                  const newIndex = dragContext.startInfo.indexBeforeDrop < dragContext.targetInfo.indexBeforeDrop ?
+                    dragContext.targetInfo.indexBeforeDrop - 1:
+                    dragContext.targetInfo.indexBeforeDrop;
+                  moveStep(draggedStep.data.uuid, newIndex);
+                }}
+              >
+                {
+                  ({stat}: {stat: AugmentedStat}) =>
+                    (
+                      <TreeNode
+                        stat={stat}
+                        isReadonly={stat.data.isReadonly}
+                        callState={states.calls[stat.data.uuid]}
+                        validationStates={states.validations[stat.data.uuid]}
+                        consistencyStates={states.consistency[stat.data.uuid]}
+                        style={{'background-color': stat.data.uuid === chosenStepUuid.value ? '#f2f2f5' : null}}
+                        isDraggable={treeInstance.value?.isDraggable(stat)}
+                        isDroppable={treeInstance.value?.isDroppable(stat)}
+                        isDeletable={!!stat.parent && (isParallelPipelineState(stat.parent.data) || isSequentialPipelineState(stat.parent.data))}
+                        onAddNode={({itemId, position}) => {
+                          addStep(stat.data.uuid, itemId, position);
+                        }}
+                        onRemoveNode={() => removeStep(stat.data.uuid)}
+                        onClick={() => {
+                          chosenStepUuid.value = stat.data.uuid;
+                        }}
+                        onToggleNode={() => stat.open = !stat.open}
+                      />
+                    )
+                }
+              </Draggable>, [[ifOverlapping, treeMutationsLocked.value, 'Locked...']]): null 
+          }
           {
             chosenStepState.value &&
             isFuncCallState(chosenStepState.value) && chosenStepState.value.funcCall &&
