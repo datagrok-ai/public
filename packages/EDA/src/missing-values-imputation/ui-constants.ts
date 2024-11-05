@@ -26,7 +26,7 @@ export const COPY_SUFFIX = 'copy';
 
 /** UI titles */
 export enum TITLE {
-  KNN_IMPUTER = 'Impute',
+  KNN_IMPUTER = 'KNN Imputation',
   TABLE = 'Table',
   IN_PLACE = 'In-place',
   COLUMNS = 'Impute',

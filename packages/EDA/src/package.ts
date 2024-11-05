@@ -556,9 +556,9 @@ export function anova(): void {
   runOneWayAnova();
 }
 
-//top-menu: ML | Missing Values Imputation ...
+//top-menu: ML | Impute Missing Values...
 //name: KNN impute
-//description: Missing values imputation using the k-nearest neighbors method
+//description: Missing values imputation using the k-nearest neighbors method (KNN)
 export function kNNImputation() {
   runKNNImputer();
 }
