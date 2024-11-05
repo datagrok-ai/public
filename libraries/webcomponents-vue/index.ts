@@ -6,4 +6,5 @@ export * from './src/elements';
 export * from './src/DockedPanel/DockedPanel'
 export * from './src/DockManager/DockManager'
 export * from './src/MarkDown/MarkDown'
-export * from './src/directives'
+export * from './src/directives/ifOverlapping'
+export * from './src/directives/useReactiveStorage'
