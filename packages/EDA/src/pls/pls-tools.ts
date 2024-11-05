@@ -144,7 +144,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     result.regressionCoefficients,
   ]);
 
-  loadingsRegrCoefsTable.name = TITLE.ANALYSIS;
+  loadingsRegrCoefsTable.name = `${input.table.name}(${TITLE.ANALYSIS})`;
   grok.shell.addTable(loadingsRegrCoefsTable);
 
   // 0.2. Add X-Loadings
@@ -254,7 +254,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     DG.Column.fromFloat32Array(input.predict.name, yExplVars),
   ]);
 
-  explVarsDF.name = TITLE.EXPL_VAR;
+  explVarsDF.name = `${input.table.name}(${TITLE.EXPL_VAR})`;
   grok.shell.addTable(explVarsDF);
 
   xExplVars.forEach((arr, idx) => explVarsDF.columns.add(DG.Column.fromFloat32Array(featuresNames[idx], arr)));
