@@ -278,7 +278,7 @@ jobs:
       - name: Prepare for docsearch
         id: config
         run: |
-          mkdir -p .local/share
+          mkdir -p .local/share && chmod -R 777 .local/share
           echo "docsearch_config=$(cat docusaurus/docsearch.json | jq -r tostring)" >> $GITHUB_OUTPUT
 
       - name: Run DocSearch Scraper
