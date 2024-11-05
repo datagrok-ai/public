@@ -168,6 +168,8 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     help: LINK.MODEL,
   }));
 
+  console.log(input.names?.name);
+
   if ((input.names !== undefined) && (input.names !== null))
     predictVsReferScatter.setOptions({labelFormColumnNames: [input.names?.name]});
 
@@ -386,7 +388,7 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
   const namesInputs = ui.input.column(TITLE.NAMES, {
     table: table,
     value: names,
-    onValueChanged: () => names = predictInput.value ?? undefined,
+    onValueChanged: (value) => names = value ?? undefined,
     filter: (col: DG.Column) => col.type === DG.COLUMN_TYPE.STRING},
   );
   namesInputs.setTooltip(HINT.NAMES);
@@ -396,6 +398,8 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
     .add(ui.form([predictInput, featuresInput, componentsInput, namesInputs]))
     .addButton(TITLE.RUN, async () => {
       dlg.close();
+
+      console.log(names);
 
       await performMVA({
         table: table,
