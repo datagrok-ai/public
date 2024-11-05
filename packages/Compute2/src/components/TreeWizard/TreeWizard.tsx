@@ -131,17 +131,6 @@ export const TreeWizard = Vue.defineComponent({
       states.meta[k] = Object.freeze(val);
     }));
 
-    const callStates = useSubject(driver.currentCallsState$);
-    const currentCallState = useExtractedObservable(
-      [callStates, chosenStepUuid],
-      ([callsState, chosenStepUuid]) =>
-        chosenStepUuid && callsState[chosenStepUuid] ? callsState[chosenStepUuid].asObservable(): of(undefined),
-      {},
-      {
-        immediate: true,
-      },
-    );
-
     const isTreeReportable = Vue.computed(() => {
       return Object.values(states.calls)
         .map((state) => state?.isOutputOutdated)
@@ -308,7 +297,7 @@ export const TreeWizard = Vue.defineComponent({
               <RichFunctionView
                 class='overflow-hidden'
                 funcCall={chosenStepState.value.funcCall!}
-                callState={currentCallState.value}
+                callState={chosenStepUuid.value ? states.calls[chosenStepUuid.value] : undefined}
                 isReadonly={chosenStepState.value.isReadonly}
                 isTreeLocked={treeMutationsLocked.value}
                 onUpdate:funcCall={(call) => (chosenStepState.value as StepFunCallState).funcCall = call}

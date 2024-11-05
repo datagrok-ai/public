@@ -36,16 +36,16 @@ export const BigButton = Vue.defineComponent({
   },
   emits: ['click'],
   setup(props, {slots, emit}) {
-    const btn = Vue.shallowRef(null as null | HTMLElement);
+    const btn = Vue.shallowRef<HTMLElement | null>(null);
 
-    Vue.watch(() => props.isDisabled, () => {
-      if (!btn.value) return;
+    Vue.watch([() => props.isDisabled, btn] as const, ([isDisabled, btn]) => {
+      if (!btn) return;
 
-      btn.value.classList.toggle('d4-disabled', props.isDisabled);
-    })
+      btn.classList.toggle('d4-disabled', isDisabled);
+    }, { immediate: true });
 
-    return () => (<button 
-      onClick={(p) => emit('click', p)} 
+    return () => (<button
+      onClick={(p) => emit('click', p)}
       ref={btn}
       is="dg-big-button"
     >
@@ -116,7 +116,7 @@ export const ToggleInput = Vue.defineComponent({
     'update:value': (value: boolean) => value,
   },
   setup(props, {emit, attrs}) {
-    return () => <dg-toggle-input 
+    return () => <dg-toggle-input
       caption={props.caption}
       value={props.value}
       nullable={props.nullable}
@@ -129,7 +129,7 @@ export const ToggleInput = Vue.defineComponent({
 export const ComboPopup = Vue.defineComponent({
   name: 'ComboPopup',
   props: {
-    caption: { 
+    caption: {
       type: Object as Vue.PropType<String | HTMLElement>,
       required: true,
     },

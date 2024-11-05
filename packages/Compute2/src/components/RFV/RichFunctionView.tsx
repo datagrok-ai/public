@@ -313,8 +313,8 @@ export const RichFunctionView = Vue.defineComponent({
     const isIncomplete = Vue.computed(() => props.callState?.isOutputOutdated);
     const isRunning = Vue.computed(() => props.callState?.isRunning);
     const isRunnable = Vue.computed(() => props.callState?.isRunnable);
-
     const currentFunc = Vue.computed(() => currentCall.value.func);
+
     const features = Vue.computed(() => Utils.getFeatures(currentFunc.value));
     const isSAenabled = Vue.computed(() => Utils.getFeature(features.value, 'sens-analysis', false));
     const isExportEnabled = Vue.computed(() => Utils.getFeature(features.value, 'export', true));
