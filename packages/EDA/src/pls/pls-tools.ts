@@ -161,9 +161,12 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     yColumnName: pred.name,
     showRegressionLine: true,
     markerType: DG.MARKER_TYPE.CIRCLE,
-    labels: input.names?.name,
+    showLabels: 'Always',
     help: LINK.MODEL,
   }));
+
+  if ((input.names !== undefined) && (input.names !== null))
+    predictVsReferScatter.setOptions({labelFormColumnNames: [input.names?.name]});
 
   // 2. Regression Coefficients Bar Chart
   result.regressionCoefficients.name = TITLE.REGR_COEFS;
@@ -184,7 +187,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     xColumnName: `${TITLE.XLOADING}1`,
     yColumnName: `${TITLE.XLOADING}${result.xLoadings.length > 1 ? '2' : '1'}`,
     markerType: DG.MARKER_TYPE.CIRCLE,
-    labels: TITLE.FEATURE,
+    labelFormColumnNames: [TITLE.FEATURE],
     help: LINK.LOADINGS,
   }));
 
@@ -204,10 +207,12 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     xColumnName: plsCols[0].name,
     yColumnName: (plsCols.length > 1) ? plsCols[1].name : result.uScores[0].name,
     markerType: DG.MARKER_TYPE.CIRCLE,
-    labels: input.names?.name,
     help: LINK.SCORES,
     showViewerFormulaLines: true,
   });
+
+  if ((input.names !== undefined) && (input.names !== null))
+    predictVsReferScatter.setOptions({labelFormColumnNames: [input.names?.name]});
 
   // 4.3) create lines & circles
   scoresScatter.meta.formulaLines.addAll(getLines(scoreNames));
