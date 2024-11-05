@@ -141,6 +141,10 @@ export class PinnedColumn {
 
   private m_bThisColumnIsSorting = false;
 
+  private colHeaderHeight: number = -1;
+  private rowHeight: number = -1;
+  private colHeaderFont: string = '';
+
   constructor(colGrid : DG.GridColumn) {
     MouseDispatcher.create();
 
@@ -436,6 +440,17 @@ export class PinnedColumn {
           headerThis.paint(g, grid);
         }
     );
+
+    const storeGridOptions = () => {
+      const gridLook = grid.getOptions(true).look as DG.IGridSettings;
+      this.colHeaderHeight = gridLook.colHeaderHeight;
+      this.rowHeight = gridLook.rowHeight;
+      this.colHeaderFont = gridLook.colHeaderFont;
+    }
+
+    storeGridOptions();
+    grid.onPropertyValueChanged.subscribe((_) => storeGridOptions());
+
     const g = eCanvasThis.getContext('2d');
     headerThis.paint(g, grid);
   }
@@ -605,7 +620,8 @@ export class PinnedColumn {
       return;
 
     const grid = this.m_colGrid.grid;
-    const nRowGrid = PinnedColumn.hitTestRows(this.m_root, grid, e, false);
+    const nRowGrid = PinnedColumn.hitTestRows(this.m_root, grid, e, false, undefined,
+      {colHeaderHeight: this.colHeaderHeight, rowHeight: this.rowHeight});
     if(nRowGrid >= 0) {
       const cell = grid.cell(this.m_colGrid.name, nRowGrid);
       const nRecord = cell.tableRowIndex;
@@ -632,7 +648,8 @@ export class PinnedColumn {
     }
 
     const arXYOnCell = [-1,-1];
-    let nRowGrid = PinnedColumn.hitTestRows(this.m_root, grid, e, false, arXYOnCell);
+    let nRowGrid = PinnedColumn.hitTestRows(this.m_root, grid, e, false, arXYOnCell,
+      {colHeaderHeight: this.colHeaderHeight, rowHeight: this.rowHeight});
     if(nRowGrid >= 0) {
       const cell = grid.cell(this.m_colGrid.name, nRowGrid);
 
@@ -668,7 +685,8 @@ export class PinnedColumn {
       this.m_cellCurrent = null;
     }
 
-    nRowGrid = PinnedColumn.hitTestRows(this.m_root, grid, e, true, undefined);
+    nRowGrid = PinnedColumn.hitTestRows(this.m_root, grid, e, true, undefined,
+      {colHeaderHeight: this.colHeaderHeight, rowHeight: this.rowHeight});
     if (nRowGrid >= 0) {
       this.m_nResizeRowGridMoving = nRowGrid;
       document.body.style.cursor = "row-resize";
@@ -688,7 +706,7 @@ export class PinnedColumn {
       return;
 
     const eDivHamb = GridUtils.getToolIconDiv(colGrid.grid);
-    const nHColHeader = GridUtils.getGridColumnHeaderHeight(colGrid.grid);
+    const nHColHeader = GridUtils.getGridColumnHeaderHeight(colGrid.grid, this.colHeaderHeight);
     if(0 <= e.offsetY && e.offsetY < nHColHeader) {
       //Resizing Columns
       if(this.m_root.offsetWidth - PinnedColumn.X_RESIZE_SENSITIVITY <= e.offsetX && e.offsetX <= this.m_root.offsetWidth) {
@@ -705,7 +723,7 @@ export class PinnedColumn {
       // @ts-ignore
       eDivHamb?.style.left = (PinnedUtils.getPinnedColumnLeft(this) + this.getWidth() - 18) + 'px';
       // @ts-ignore
-      eDivHamb?.style.top = (GridUtils.getGridColumnHeaderHeight(colGrid.grid) - 16) + "px";
+      eDivHamb?.style.top = (GridUtils.getGridColumnHeaderHeight(colGrid.grid, this.colHeaderHeight) - 16) + "px";
     } else {
       const colGrid = this.getGridColumn();
       if(colGrid != null) {
@@ -759,7 +777,7 @@ export class PinnedColumn {
         return;
 
       g.fillStyle = "white";
-      const nHHeaderCols = GridUtils.getGridColumnHeaderHeight(grid);
+      const nHHeaderCols = GridUtils.getGridColumnHeaderHeight(grid, this.colHeaderHeight);
       g.fillRect(0,nHHeaderCols, eCanvasThis.offsetWidth, eCanvasThis.offsetHeight);
 
       grid.setOptions({
@@ -856,7 +874,7 @@ export class PinnedColumn {
       this.m_bSortedAscending = true;
     else this.m_bSortedAscending = null;
 
-    const nHHeaderCols = GridUtils.getGridColumnHeaderHeight(grid);
+    const nHHeaderCols = GridUtils.getGridColumnHeaderHeight(grid, this.colHeaderHeight);
 
     if(0 <= e.offsetX && e.offsetX <= this.m_root.offsetWidth &&
        0 <= e.offsetY && e.offsetY <= nHHeaderCols)   //on the rows header
@@ -883,7 +901,8 @@ export class PinnedColumn {
           return false;
         }
 
-        const nRow = PinnedColumn.hitTestRows(this.m_root, this.m_colGrid.grid, e, false, undefined);
+        const nRow = PinnedColumn.hitTestRows(this.m_root, this.m_colGrid.grid, e, false, undefined,
+          {colHeaderHeight: this.colHeaderHeight, rowHeight: this.rowHeight});
         const b = isColMolBlock(column);
         const dialog = ui.dialog({title: 'Edit Structure'});
         const sketcher = new DG.chem.Sketcher();
@@ -904,9 +923,10 @@ export class PinnedColumn {
         return;
       } else {
         const grid = this.m_colGrid.grid;
-        const nHColHead = GridUtils.getGridColumnHeaderHeight(grid);
-        const nHRows = GridUtils.getGridRowHeight(grid);
-        const nRow = PinnedColumn.hitTestRows(this.m_root, this.m_colGrid.grid, e, false, undefined);
+        const nHColHead = GridUtils.getGridColumnHeaderHeight(grid, this.colHeaderHeight);
+        const nHRows = GridUtils.getGridRowHeight(grid, this.rowHeight);
+        const nRow = PinnedColumn.hitTestRows(this.m_root, this.m_colGrid.grid, e, false, undefined,
+          {colHeaderHeight: this.colHeaderHeight, rowHeight: this.rowHeight});
         const arRowsMinMax = [-1, -1];
         GridUtils.fillVisibleViewportRows(arRowsMinMax, grid);
         const nRowMin = arRowsMinMax[0];
@@ -974,15 +994,17 @@ export class PinnedColumn {
     this.m_nResizeRowGridMoving = -1;
     const bAddToSel : boolean = e.ctrlKey || e.shiftKey || e.metaKey;
 
-    let nRowGrid = bAddToSel ? -1 : PinnedColumn.hitTestRows(eCanvasThis, grid, e, true, undefined);
+    let nRowGrid = bAddToSel ? -1 : PinnedColumn.hitTestRows(eCanvasThis, grid, e, true, undefined,
+      {colHeaderHeight: this.colHeaderHeight, rowHeight: this.rowHeight});
     if (nRowGrid >= 0) {
-      const nHRows = GridUtils.getGridRowHeight(grid);
+      const nHRows = GridUtils.getGridRowHeight(grid, this.rowHeight);
       this.m_nResizeRowGridDragging = nRowGrid;
       this.m_nYResizeDraggingAnchor = e.clientY;
       this.m_nHResizeRowsBeforeDrag = nHRows;
     }
     else {
-      nRowGrid = PinnedColumn.hitTestRows(eCanvasThis, grid, e, false, this.m_arXYMouseOnCellDown);
+      nRowGrid = PinnedColumn.hitTestRows(eCanvasThis, grid, e, false, this.m_arXYMouseOnCellDown,
+        {colHeaderHeight: this.colHeaderHeight, rowHeight: this.rowHeight});
 
       this.m_nRowGridDragging = nRowGrid;
       this.m_nYDraggingAnchor = e.clientY;
@@ -1012,7 +1034,7 @@ export class PinnedColumn {
       return;
 
     const eDivHamb = GridUtils.getToolIconDiv(colGrid.grid);
-    const nHColHeader = GridUtils.getGridColumnHeaderHeight(colGrid.grid);
+    const nHColHeader = GridUtils.getGridColumnHeaderHeight(colGrid.grid, this.colHeaderHeight);
     if(0 <= e.offsetY && e.offsetY < nHColHeader) {
 
      if(this.m_root.offsetWidth -PinnedColumn.X_RESIZE_SENSITIVITY <= e.offsetX && e.offsetX <= this.m_root.offsetWidth) { //column resize
@@ -1029,7 +1051,7 @@ export class PinnedColumn {
        this.m_bColSelect = true;
     }
 
-    if (e.offsetY < GridUtils.getGridColumnHeaderHeight(grid))
+    if (e.offsetY < GridUtils.getGridColumnHeaderHeight(grid, this.colHeaderHeight))
       grok.shell.o = this.m_colGrid.column;
   }
 
@@ -1072,7 +1094,7 @@ export class PinnedColumn {
     }
 
     if (this.m_nResizeRowGridDragging >= 0) {
-      const nHRow = GridUtils.getGridRowHeight(grid);
+      const nHRow = GridUtils.getGridRowHeight(grid, this.rowHeight);
       notifyAllPinnedColsRowsResized(this, nHRow, false);
       notifyAllColsRowsResized(grid, nHRow, false);
     }
@@ -1096,7 +1118,8 @@ export class PinnedColumn {
 
       let bSel = true;
 
-      const nRowGrid = PinnedColumn.hitTestRows(this.m_root, grid, e, false, this.m_arXYMouseOnCellUp);
+      const nRowGrid = PinnedColumn.hitTestRows(this.m_root, grid, e, false, this.m_arXYMouseOnCellUp,
+        {colHeaderHeight: this.colHeaderHeight, rowHeight: this.rowHeight});
       if(!bCtrl && !bRangeSel && nRowGrid === this.m_nRowGridDragging) { //click on the same row which will become active
 
         let cellRH = null;
@@ -1292,9 +1315,7 @@ export class PinnedColumn {
       return; //everything is filtered
 
     //column Header
-    const options : any = grid.getOptions(true);
-    const fontCellDefault = options.look.defaultCellFont;
-    let font = options.look.colHeaderFont == null || options.look.colHeaderFont === undefined ? "bold 14px Volta Text, Arial" : options.look.colHeaderFont;
+    let font = this.colHeaderFont == null || this.colHeaderFont === undefined ? 'bold 14px Volta Text, Arial' : this.colHeaderFont;
     let fontScaled = GridUtils.scaleFont(font, window.devicePixelRatio);
     g.font = fontScaled;
 
@@ -1311,7 +1332,7 @@ export class PinnedColumn {
 
     let nX = 0;
     let nY = 0;
-    const nHCH = GridUtils.getGridColumnHeaderHeight(grid)*window.devicePixelRatio;
+    const nHCH = GridUtils.getGridColumnHeaderHeight(grid, this.colHeaderHeight)*window.devicePixelRatio;
     g.textAlign = 'start';
     g.fillStyle = "Black";
     let nYOffset = Math.floor((nHCH - nHFont)/2);
@@ -1350,7 +1371,7 @@ export class PinnedColumn {
     const nRowMin = arRowsMinMax[0];
     const nRowMax = arRowsMinMax[1];
     //console.log(nRowMin + " " + nRowMax);
-    const nHRow = GridUtils.getGridRowHeight(grid);
+    const nHRow = GridUtils.getGridRowHeight(grid, this.rowHeight);
     const nVRowCountEst = Math.floor(grid.root.offsetHeight / nHRow);
     if (nRowMax - nRowMin > nVRowCountEst +5)
       return; //layout is loading, will be subsequent calls with right nRowMin, nRowMax
@@ -1496,7 +1517,8 @@ export class PinnedColumn {
     }//for
   }
 
-  private static hitTestRows(eCanvasPinned : HTMLCanvasElement, grid : DG.Grid, e : MouseEvent, bBorder : boolean, arXYOnCell : Array<number> | undefined = undefined) : number
+  private static hitTestRows(eCanvasPinned : HTMLCanvasElement, grid : DG.Grid, e : MouseEvent, bBorder : boolean, arXYOnCell : Array<number> | undefined = undefined,
+    options: {colHeaderHeight?: number, rowHeight?: number} = {}) : number
   {
     const rect = eCanvasPinned.getBoundingClientRect();
     const scrollLeft= window.pageXOffset || document.documentElement.scrollLeft;
@@ -1506,8 +1528,8 @@ export class PinnedColumn {
 
     if(nX <= e.clientX && e.clientX <= nX + eCanvasPinned.offsetWidth)   //on the rows header
     {
-      const nHHeaderCols = GridUtils.getGridColumnHeaderHeight(grid);
-      const nHRowGrid = GridUtils.getGridRowHeight(grid);
+      const nHHeaderCols = GridUtils.getGridColumnHeaderHeight(grid, options.colHeaderHeight);
+      const nHRowGrid = GridUtils.getGridRowHeight(grid, options.rowHeight);
 
       const arMinMaxRows = [-1,-1];
       GridUtils.fillVisibleViewportRows(arMinMaxRows, grid);
