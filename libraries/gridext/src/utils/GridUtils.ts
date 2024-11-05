@@ -115,9 +115,8 @@ export function getGridColumnRenderer(colGrid : DG.GridColumn) : GridCellRendere
   return renderer;
 }
 
-export function getGridColumnHeaderHeight(grid : DG.Grid) : number {
-  const options : any = grid.getOptions(true);
-  let nHColHeader = options.look.colHeaderHeight;
+export function getGridColumnHeaderHeight(grid : DG.Grid, colHeaderHeight: number = -1) : number {
+  const nHColHeader = colHeaderHeight !== -1 ? colHeaderHeight : grid.getOptions(true).look.colHeaderHeight;
   if(nHColHeader === null || nHColHeader === undefined) {//DG bug
 
     const cellGrid = grid.hitTest(2,2);//.cell(col.name, 0);
@@ -131,9 +130,8 @@ export function getGridColumnHeaderHeight(grid : DG.Grid) : number {
   return nHColHeader;
 }
 
-export function getGridRowHeight(grid : DG.Grid) : number {
-  const options : any = grid.getOptions(true);
-  const nHRow =  options.look.rowHeight;
+export function getGridRowHeight(grid : DG.Grid, rowHeight: number = -1) : number {
+  const nHRow = rowHeight !== -1 ? rowHeight : grid.getOptions(true).look.rowHeight;
   if(nHRow === null || nHRow === undefined) {//DG bug
     let col = null;
     const nColCount = grid.columns.length;
