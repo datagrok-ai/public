@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { _package } from '../package-test';
-import { TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, DEFAULT_LOWER_VALUE, DEFAULT_UPPER_VALUE, TAGS, DEFAULT_TABLE_NAME } from './constants';
+import { TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, DEFAULT_LOWER_VALUE, DEFAULT_UPPER_VALUE, TAGS, DEFAULT_TABLE_NAME, ERROR_MESSAGES } from './constants';
 import { PieChartCellRenderer } from '@datagrok/power-grid/src/sparklines/piechart';
 import { CellRenderViewer } from '@datagrok-libraries/utils/src/viewers/cell-render-viewer';
 import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
@@ -342,10 +342,11 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
     const queryParams = properties.subgroup.find((subg: any) => subg.name === modelName)
       ['models'].map((model: any) => model.name);
 
-    if (smiles === 'MALFORMED_INPUT_VALUE') {
-      result.appendChild(ui.divText('The molecule is possibly malformed'));
-      return;
-    }
+    if (smiles === 'MALFORMED_INPUT_VALUE')
+      return result.appendChild(ui.divText(ERROR_MESSAGES.MALFORMED));
+
+    if (!smiles || DG.chem.Sketcher.isEmptyMolfile(smiles))
+      return result.appendChild(ui.divText(ERROR_MESSAGES.EMPTY));
 
     result.appendChild(ui.loader());
     try {
@@ -365,7 +366,7 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
       }
       result.appendChild(ui.tableFromMap(map));
     } catch (e) {
-      result.appendChild(ui.divText('Couldn\'t analyse properties'));
+      result.appendChild(ui.divText('Couldn\'t analyze properties'));
       //console.log(e);
     }
   };
