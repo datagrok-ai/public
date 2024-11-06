@@ -17,6 +17,7 @@ select
 from tests t full join last_builds b on 1=1
 left join test_runs r on r.test_name = t.name and r.build_name = b.name and
 r.date_time = (select max(_r.date_time) from test_runs _r where _r.test_name = r.test_name and _r.build_name = r.build_name and not _r.stress_test) and not r.stress_test
+where (t.first_run <= r.date_time or t.first_run is null) and   t.name not like '%Unhandled exceptions: Exception' and (not t.name = ': : ') and t.name not like 'Unknown:%'
 order by b.name, t.name
 
 --end
@@ -36,8 +37,8 @@ select
   r.result,
   CAST(min(r.duration) AS int)as duration
 from tests t full join last_builds b on 1=1
-left join test_runs r on r.test_name = t.name and r.build_name = b.name
-where r.benchmark
+left join test_runs r on r.test_name = t.name and r.build_name = b.name and r.benchmark 
+where (t.first_run <= r.date_time or t.first_run is null) and  t.name not like '%Unhandled exceptions: Exception' and (not t.name = ': : ')
 group by b.name, t.name, r.date_time, r.passed, r.skipped, r.result, t.type
 order by b.name, t.name
 --end
@@ -57,7 +58,7 @@ r.duration,
 r.params ->> 'totalWorkers' total_workers,  r.params ->> 'worker' worker, avg(rs.duration)
 from test_runs r
 left join test_runs rs on rs.test_name = r.test_name  and not rs.stress_test and rs.passed
-where r.stress_test and (r.batch_name = COALESCE(NULLIF(@batch_name, ''), (select name  from last_build)))
+where r.stress_test and (r.batch_name = COALESCE(NULLIF(@batch_name, ''), (select name  from last_build))) and not r.test_name like '%Unhandled exceptions: Exception' and not r.test_name = ': : '
 group by r.date_time, r.test_name, r.passed, r.duration, r.params ->> 'worker', r.params ->> 'totalWorkers'
 order by r.test_name, worker
 --end
@@ -78,9 +79,7 @@ testruns as (
   select build_name, test_name, duration,
   case when r.passed is null then 'did not run' when r.skipped then 'skipped' when r.passed then 'passed' when not r.passed then 'failed' else 'unknown' end as status
   from test_runs r
-  where  r.benchmark = true
-and r.passed = true
-and r.skipped = false
+  where  r.benchmark = true 
 and not r.test_name like '%Unhandled exceptions: Exception'
 and r.build_name in (select name from last_builds)
 )
