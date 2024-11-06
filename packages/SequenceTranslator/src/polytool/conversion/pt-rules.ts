@@ -155,10 +155,13 @@ export class Rules {
 
 
     for (let i = 0; i < length; i++) {
+      const fSplit = firstMonomerCol.get(i).split(',');
+      const sSplit = secondMonomerCol.get(i).split(',');
+
       const rule = {
         code: codeCol.get(i),
-        firstMonomers: firstMonomerCol.get(i).split(','),
-        secondMonomers: secondMonomerCol.get(i).split(','),
+        firstMonomers: fSplit[0] !== '' ? fSplit : [],
+        secondMonomers: sSplit[0] !== '' ? sSplit : [],
         firstLinkingGroup: firstLink.get(i),
         secondLinkingGroup: secondLink.get(i)
       };
@@ -182,11 +185,13 @@ export class Rules {
 
     for (let i = 0; i < length; i++) {
       const smartsReaction = `${firstReactant.get(i)}.${secondReactant.get(i)}>>${product.get(i)}`;
+      const fSplit = firstMonomerCol.get(i).split(',');
+      const sSplit = secondMonomerCol.get(i).split(',');
 
       const rule = {
         code: codeCol.get(i),
-        firstMonomers: firstMonomerCol.get(i).split(','),
-        secondMonomers: secondMonomerCol.get(i).split(','),
+        firstMonomers: fSplit[0] !== '' ? fSplit : [],
+        secondMonomers: sSplit[0] !== '' ? sSplit : [],
         reaction: smartsReaction,
         name: name.get(i)
       };
