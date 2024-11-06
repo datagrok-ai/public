@@ -174,7 +174,7 @@ for (const lang of langs) {
     }, {timeout: 60000, benchmark: true, stressTest: true, skipReason: lang === 'Grok' ? 'Doesn\'t support vectorization' : undefined});
 
     test(`Dataframe performance test sequentially`, async () => {
-      const iterations = DG.Test.isInBenchmark ? 10 : 3;
+      const iterations = DG.Test.isInBenchmark ? ['JavaScript', 'Grok'].includes(lang) ? 500 : 10 : 3;
       const results = [];
       for (let i = 0; i < iterations; i++) {
         results.push(await getScriptTime(`CVMTests:${lang}SingleDf`,
