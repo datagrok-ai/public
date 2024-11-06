@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/compute",
   "friendlyName": "Compute",
-  "version": "1.39.3",
+  "version": "1.39.5",
   "author": {
     "name": "Aufar Zakiev",
     "email": "aufar.zakiev@softwarecountry.com"
@@ -14,9 +14,9 @@
   },
   "dependencies": {
     "@datagrok-libraries/utils": "^4.3.0",
-    "@datagrok-libraries/compute-utils": "^1.39.2",
+    "@datagrok-libraries/compute-utils": "^1.39.5",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.22.0",
+    "datagrok-api": "^1.22.1",
     "rxjs": "^6.6.7",
     "source-map-loader": "^4.0.1",
     "ts-loader": "^9.5.1",
