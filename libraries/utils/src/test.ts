@@ -39,6 +39,7 @@ export interface TestOptions {
   isAggregated?: boolean;
   benchmark?: boolean;
   stressTest?: boolean;
+  responsive?: string;
   tags?: string[];
 }
 
@@ -323,7 +324,7 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
           if (map.wait) await delay(map.wait);
           // eslint-disable-next-line no-throw-literal
           if (typeof res === 'boolean' && !res) throw `Failed: ${tests[i]}, expected true, got ${res}`;
-        }, { skipReason: map.skip, timeout: DG.Test.isInBenchmark ? map.benchmarkTimeout ?? BENCHMARK_TIMEOUT : map.timeout ?? STANDART_TIMEOUT});
+        }, { skipReason: map.skip, timeout: DG.Test.isInBenchmark ? map.benchmarkTimeout ?? BENCHMARK_TIMEOUT : map.timeout ?? STANDART_TIMEOUT });
         if (map.cat) {
           const cat: string = autoTestsCatName + ': ' + map.cat;
           test.category = cat;
@@ -417,7 +418,7 @@ export async function runTests(options?: TestExecutionOptions) {
   await initAutoTests(package_);
   const results: {
     category?: string, name?: string, success: boolean,
-    result: string, ms: number, skipped: boolean, logs?: string
+    result: string, ms: number, skipped: boolean, logs?: string, responsive?: string
   }[] = [];
   console.log(`Running tests`);
   options ??= {};
@@ -426,7 +427,7 @@ export async function runTests(options?: TestExecutionOptions) {
   const logs = redefineConsole();
 
   await invokeTests(tests, options);
-  
+
   for (let r of results) {
     r.result = r.result.toString().replace(/"/g, '\'');
     if (r.logs != undefined)
@@ -468,7 +469,7 @@ export async function runTests(options?: TestExecutionOptions) {
         }
 
         if ((options.tags?.length ?? 0) > 0) {
-          t = t.filter((e) => 
+          t = t.filter((e) =>
             e.options?.tags?.some(tag => (options?.tags ?? []).includes(tag))
           );
         }
@@ -545,7 +546,7 @@ async function getResult(x: any): Promise<string> {
 async function execTest(t: Test, predicate: string | undefined, logs: any[],
   testTimeout?: number, packageName?: string, verbose?: boolean): Promise<any> {
   logs.length = 0;
-  let r: { date: string, category?: string, name?: string, success: boolean, result: any, ms: number, skipped: boolean, logs?: string };
+  let r: { date: string, category?: string, name?: string, success: boolean, result: any, ms: number, skipped: boolean, logs?: string, responsive?: string };
   let type: string = 'package';
   const filter = predicate != undefined && (t.name.toLowerCase() !== predicate.toLowerCase());
   let skip = t.options?.skipReason || filter;
@@ -588,10 +589,11 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
     stdLog(`Finished ${t.category} ${t.name} for ${r.ms} ms`);
   r.category = t.category;
   r.name = t.name;
+  r.responsive = t.options?.responsive ?? '';
   if (!filter) {
     let params = {
       'success': r.success, 'result': r.result, 'ms': r.ms,
-      'skipped': r.skipped, 'package': packageName, 'category': t.category, 'name': t.name, 'logs': r.logs,
+      'skipped': r.skipped, 'package': packageName, 'category': t.category, 'name': t.name, 'logs': r.logs,'responsive': r.responsive,
     };
     if (r.result.constructor == Object) {
       const res = Object.keys(r.result).reduce((acc, k) => ({ ...acc, ['result.' + k]: r.result[k] }), {});

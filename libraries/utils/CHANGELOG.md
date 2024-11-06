@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.3.8 (2024-11-06)
+
+Added ability to set test responsivness 
+
 ## 4.3.7 (2024-10-31)
 
 Fix svgToImage for non Latin1 chars
