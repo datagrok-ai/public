@@ -22,6 +22,7 @@ export type MatchInfo = {
   actions: Record<string, MatchedNodePaths>;
   inputs: Record<string, MatchedNodePaths>;
   outputs: Record<string, MatchedNodePaths>;
+  isDefaultValidator?: boolean;
 }
 
 export function isActionSpec(spec: LinkSpec | ActionSpec): spec is ActionSpec {

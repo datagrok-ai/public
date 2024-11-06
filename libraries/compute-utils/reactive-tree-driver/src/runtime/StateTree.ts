@@ -245,7 +245,7 @@ export class StateTree {
       ).pipe(
         map((tree) => isReplace ?
           this.nodeTree.replaceBrunch(ppath, tree.nodeTree.root, id, pos) :
-          this.nodeTree.attachBrunch(ppath, tree.nodeTree.root, id, pos)
+          this.nodeTree.attachBrunch(ppath, tree.nodeTree.root, id, pos),
         ),
       );
       const mutationData: NestedMutationData = {
@@ -301,7 +301,7 @@ export class StateTree {
         return action.isRunning$.pipe(
           filter((isRunning) => !isRunning),
           take(1),
-          tap(() => this.linksState.destroyLinks()),
+          tap(() => this.linksState.disableLinks()),
           concatMap(() => from(action?.lastPipelineMutations ?? []).pipe(
             concatMap((data) => {
               const ppath = data.path.slice(0, -1);
@@ -637,7 +637,7 @@ export class StateTree {
         this.logger.logTreeUpdates('treeUpdateStarted');
       this.treeLock();
       return (waitForLinks ? this.waitForLinks() : of(undefined)).pipe(
-        tap(() => this.linksState.destroyLinks()),
+        tap(() => this.linksState.disableLinks()),
         concatMap(() => fn()),
       );
     }).pipe(

@@ -85,7 +85,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.init().subscribe();
       const ls = new LinksState();
-      const [link1, link2] = ls.createLinks(tree.nodeTree);
+      const [link1, link2] = ls.createStateLinks(tree.nodeTree);
       link1.wire(tree.nodeTree);
       link2.wire(tree.nodeTree);
       const inNode = tree.nodeTree.getNode([{idx: 0}]);
@@ -139,7 +139,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.init().subscribe();
       const ls = new LinksState();
-      const [link1] = ls.createLinks(tree.nodeTree);
+      const [link1] = ls.createStateLinks(tree.nodeTree);
       link1.wire(tree.nodeTree);
       const outNode = tree.nodeTree.getNode([{idx: 1}]);
       const consistency = tree.getConsistency();
@@ -231,7 +231,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, isReadonly: true});
       tree.init().subscribe();
       const ls = new LinksState();
-      const [link1] = ls.createLinks(tree.nodeTree);
+      const [link1] = ls.createStateLinks(tree.nodeTree);
       link1.wire(tree.nodeTree);
       const outNode = tree.nodeTree.getNode([{idx: 1}]);
       const consistency = tree.getConsistency();

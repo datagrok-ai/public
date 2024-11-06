@@ -12,6 +12,7 @@ import {takeUntil, map, scan, switchMap, filter, mapTo, toArray, take, tap, debo
 import {parseLinkIO} from '../config/LinkSpec';
 import {makeValidationResult} from '../utils';
 import {DriverLogger} from '../data/Logger';
+import {getLinksDiff} from './links-diff';
 
 export interface NestedMutationData {
   mutationRootPath: NodeAddress,
@@ -63,13 +64,12 @@ export class LinksState {
   }
 
   public update(state: BaseTree<StateTreeNode>, nestedMutationData?: NestedMutationData) {
-    this.destroyLinks();
-    const links = this.createLinks(state);
-    if (this.defaultValidators) {
-      const validators = this.createDefaultValidators(state);
-      links.push(...validators);
-    }
+    this.disableLinks();
+
+    const oldLinks = [...this.links.values()];
+    const links = this.createLinks(state, oldLinks);
     this.links = new Map(links.map((link) => [link.uuid, link] as const));
+
     [this.actions, this.nodesActions] = this.createActions(state);
     this.stepsDependencies = this.calculateStepsDependencies(state, links);
     this.ioDependencies = this.calculateIoDependencies(state, links);
@@ -80,20 +80,17 @@ export class LinksState {
       const inbound = links.filter((link) => this.isDataLink(link) && this.isInbound(mutationRootPath, link, addIdx, removeIdx));
       const outgoing = links.filter((link) => this.isDataLink(link) && this.isOutgoing(mutationRootPath, link, addIdx));
       const affectedMeta = links
-        .filter((link) => link.isMeta && this.isAffected(mutationRootPath, link, addIdx, removeIdx));
-      const validatorLinks = links.filter((link) => link.isValidator);
+        .filter((link) => !this.isDataLink(link) && this.isAffected(mutationRootPath, link, addIdx, removeIdx));
       const inboundMap = new Map(inbound.map((link) => [link.uuid, link]));
       const outgoingMap = new Map(outgoing.map((link) => [link.uuid, link]));
-      const validatorsMap = new Map(validatorLinks.map((link) => [link.uuid, link]));
-      const affectedMap = new Map(affectedMeta.map((link) => [link.uuid, link]));
+      const affectedMetaMap = new Map(affectedMeta.map((link) => [link.uuid, link]));
       this.linksUpdates.next(true);
       return concat(
         of(this.wireLinks(state)),
         this.runNewInits(state),
         this.runLinks(state, inboundMap, mutationRootPath, bound),
         this.runLinks(state, outgoingMap),
-        this.runLinks(state, affectedMap),
-        this.runLinks(state, validatorsMap),
+        this.runLinks(state, affectedMetaMap),
       ).pipe(toArray(), mapTo(undefined));
     } else {
       this.linksUpdates.next(true);
@@ -106,7 +103,35 @@ export class LinksState {
     }
   }
 
-  public createLinks(state: BaseTree<StateTreeNode>) {
+  public createLinks(state: BaseTree<StateTreeNode>, oldLinks: Link[]) {
+    const newLinks = this.createStateLinks(state);
+    if (this.defaultValidators) {
+      const validators = this.createDefaultValidators(state);
+      newLinks.push(...validators);
+    }
+    const {toRemove, toAdd} = getLinksDiff(oldLinks, newLinks);
+    const mergedLinks = [];
+    for (const oldLink of oldLinks) {
+      if (!toRemove.has(oldLink.uuid))
+        mergedLinks.push(oldLink);
+      else {
+        if (this.logger && !oldLink.matchInfo.isDefaultValidator)
+          this.logger.logLink('linkRemoved', { linkUUID: oldLink.uuid, prefix: oldLink.prefix, id: oldLink.matchInfo.spec.id });
+        oldLink.destroy();
+      }
+    }
+
+    for (const newLink of newLinks) {
+      if (toAdd.has(newLink.uuid)) {
+        if (this.logger && !newLink.matchInfo.isDefaultValidator)
+          this.logger.logLink('linkAdded', { linkUUID: newLink.uuid, prefix: newLink.prefix, id: newLink.matchInfo.spec.id });
+        mergedLinks.push(newLink);
+      }
+    }
+    return mergedLinks;
+  }
+
+  public createStateLinks(state: BaseTree<StateTreeNode>) {
     const links = state.traverse(state.root, (acc, node, path) => {
       const item = node.getItem();
       if (isStaticPipelineNode(item) || isSequentialPipelineNode(item)) {
@@ -172,7 +197,7 @@ export class LinksState {
               controller.setValidation('out', undefined);
           },
         };
-        // don't need to really match anything, just set to current node
+        // don't really need to match anything, just set to the current node
         const minfo: MatchInfo = {
           spec,
           inputs: {
@@ -188,6 +213,7 @@ export class LinksState {
             }],
           },
           actions: {},
+          isDefaultValidator: true,
         };
         return new Link(path, minfo, 0);
       }).filter((x) => !!x);
@@ -313,9 +339,9 @@ export class LinksState {
       action.wire(state, this);
   }
 
-  public destroyLinks() {
+  public disableLinks() {
     for (const [, link] of this.links)
-      link.destroy();
+      link.setInactive();
   }
 
   public close() {
@@ -342,7 +368,7 @@ export class LinksState {
   }
 
   public isDataLink(link: Link) {
-    return !isActionSpec(link.matchInfo.spec) && !link.matchInfo.spec.isValidator && !link.matchInfo.spec.isMeta;
+    return !link.matchInfo.spec.isValidator && !link.matchInfo.spec.isMeta;
   }
 
   public isAffected(rootPath: Readonly<NodeAddress>, link: Link, addIdx?: number, removeIdx?: number) {

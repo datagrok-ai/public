@@ -19,11 +19,13 @@
     "fflate": "^0.7.4",
     "html2canvas": "^1.4.1",
     "lodash.clonedeepwith": "^4.5.0",
+    "lodash.isequal": "^4.5.0",
     "rxjs": "^6.6.7",
     "uuid": "^10.0.0",
     "wu": "^2.1.0"
   },
   "devDependencies": {
+    "@types/lodash.isequal": "^4.5.8",
     "@types/wu": "^2.1.44",
     "@typescript-eslint/eslint-plugin": "^8.13.0",
     "@typescript-eslint/parser": "^8.13.0",

@@ -169,16 +169,14 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
       tree.linksState.forceInitialMetaRun = true;
       tree.init().subscribe();
       const outNode = tree.nodeTree.getNode([{idx: 2}]);
-      const [, link2] = tree.linksState.links.values();
 
       cold('-a').subscribe(() => {
         (outNode.getItem() as FuncCallNode).instancesWrapper.setValidation('a', 'asdf', makeValidationResult({warnings: ['test warning2']}));
-        link2.trigger();
       });
       cold('10ms a').subscribe(() => {
         tree.runMutateTree().subscribe();
       });
-      expectObservable(tree.getValidations()[outNode.getItem().uuid], '^ 1000ms !').toBe('a(bb) 5ms (cd)', {
+      expectObservable(tree.getValidations()[outNode.getItem().uuid], '^ 1000ms !').toBe('ab 8ms (ba)', {
         a: {
           'a': {
             'errors': [],
@@ -205,35 +203,6 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
             'notifications': [],
           },
         },
-        c: {
-          'a': {
-            'errors': [],
-            'warnings': [
-              {
-                "description": "test warning"
-              },
-              {
-                "description": "test warning2"
-              },
-              {
-                "description": "test warning"
-              }
-            ],
-            'notifications': [],
-          },
-        },
-        d: {
-
-          "a": {
-            "errors": [],
-            "warnings": [
-              {
-                "description": "test warning"
-              }
-            ],
-            "notifications": []
-          }
-        }
       });
     });
   });

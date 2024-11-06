@@ -3,7 +3,7 @@ import {NodeAddress} from './BaseTree';
 import {BehaviorSubject} from 'rxjs';
 
 export type DebugLogType =
- 'linkRunScheduled' | 'linkRunFinished' |
+ 'linkRunScheduled' | 'linkRunFinished' | 'linkAdded' | 'linkRemoved' |
  'treeUpdateStarted' | 'treeUpdateMutation' | 'treeUpdateFinished'
 
 export interface DebugLogBase {
@@ -27,6 +27,14 @@ export interface LinkRunFinishedLogItem extends LinkLogItem {
   type: 'linkRunFinished',
 }
 
+export interface LinkRunAddedLogItem extends LinkLogItem {
+  type: 'linkAdded',
+}
+
+export interface LinkRunRemoveLogItem extends LinkLogItem {
+  type: 'linkRemoved',
+}
+
 export interface TreeUpdateStartedLogItem extends DebugLogBase {
   type: 'treeUpdateStarted',
 }
@@ -47,13 +55,13 @@ export interface TreeUpdateFinishedLogItem extends DebugLogBase {
 
 export type LogItem =
 TreeUpdateStartedLogItem | TreeUpdateMutationLogItem | TreeUpdateFinishedLogItem |
-LinkRunStartedLogItem | LinkRunFinishedLogItem;
+LinkRunStartedLogItem | LinkRunFinishedLogItem | LinkRunAddedLogItem | LinkRunRemoveLogItem;
 
 export class DriverLogger {
   private log: LogItem[] = [];
   public logs$ = new BehaviorSubject<LogItem[]>([]);
 
-  logLink(type: 'linkRunStarted' | 'linkRunFinished', data: LinkLogPayload) {
+  logLink(type: 'linkRunStarted' | 'linkRunFinished' | 'linkAdded' | 'linkRemoved', data: LinkLogPayload) {
     const uuid = uuidv4();
     const timestamp = new Date();
     const logItem = {type, uuid, timestamp, ...data};

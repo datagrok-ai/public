@@ -290,7 +290,11 @@ export class FuncCallNode implements IStoreProvider {
   // TODO: checking for additional actual Object keys (?)
   private deepEq(actual: any, expected: any) {
     try {
+      // expectDeepEqual will not check additional props in an actual
+      // data, only those that are explicitly present in the expected
+      // data
       expectDeepEqual(actual, expected, {maxErrorsReport: 1});
+      expectDeepEqual(expected, actual, {maxErrorsReport: 1});
     } catch {
       return false;
     }

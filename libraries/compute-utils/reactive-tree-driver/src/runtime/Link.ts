@@ -45,6 +45,8 @@ export class Link {
     distinctUntilChanged(),
   );
 
+  private isWired = false;
+
   constructor(
     public prefix: NodePath,
     public matchInfo: MatchInfo,
@@ -53,6 +55,8 @@ export class Link {
   ) {}
 
   wire(state: BaseTree<StateTreeNode>, linksState?: LinksState) {
+    if (this.isWired)
+      return;
     const inputNames = Object.keys(this.matchInfo.inputs);
     const outputNames = Object.keys(this.matchInfo.outputs);
     const inputSet = new Set(inputNames);
@@ -99,10 +103,16 @@ export class Link {
       map(({timestamp}) => timestamp),
       takeUntil(this.destroyed$),
     ).subscribe(this.lastFinished$);
+
+    this.isWired = true;
   }
 
   setActive() {
     this.isActive$.next(true);
+  }
+
+  setInactive() {
+    this.isActive$.next(false);
   }
 
   trigger(scope?: NodeAddress, childOffset?: number) {
