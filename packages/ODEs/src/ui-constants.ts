@@ -39,12 +39,13 @@ export enum HINT {
   MAX_TIME = `Max computation time, ${COMPUTATION_TIME_UNITS}.`,
   CLICK_RUN = `Click to run`,
   SOLVE = `Solve equations (${HOT_KEY.RUN})`,
+  NO_MODELS = 'No models found',
 }; // HINT
 
 /** UI titles */
 export enum TITLE {
   LOAD = 'Load...',
-  FROM_FILE = 'From file...',
+  IMPORT = 'Import...',
   SAVE_TO = 'Save to',
   LOCAL_FILE = 'Local file...',
   MY_FILES = 'My files...',
@@ -54,7 +55,7 @@ export enum TITLE {
   BASIC = 'Basic',
   ADV = 'Advanced',
   EXT = 'Extended',
-  EXAMP = 'Examples',
+  LIBRARY = 'Library',
   RECENT = 'Recent',
   CHEM = 'Chem reactions',
   ROB = `Robertson's model`,
@@ -69,8 +70,8 @@ export enum TITLE {
   TO_JS = 'js',
   MISC = 'Misc',
   VARY = 'Vary inputs',
-  MODEL = 'Model',
-  IPUTS = 'Run',
+  EDIT = 'Edit',
+  SOLVE = 'Solve',
   FIT = 'Fit',
   SOLUTION = 'Solution',
   OPEN = 'Open',
@@ -82,6 +83,8 @@ export enum TITLE {
   TYPE = 'Type',
   INFO = 'Info',
   IS_CUST = 'Custom model',
+  MY_MODELS = 'My Models',
+  NO_MODELS = 'None',
 }; // TITLE
 
 /** Titles of template models */
@@ -219,10 +222,10 @@ In-browser solver of ordinary differential equations
 ([ODEs](https://en.wikipedia.org/wiki/Ordinary_differential_equation))
 
 # Interactivity
-Play with model inputs on the **${TITLE.IPUTS}** tab.
+Play with model inputs on the **${TITLE.SOLVE}** tab.
 
 # Model
-Go to the **${TITLE.MODEL}** tab and modify formulas.
+Go to the **${TITLE.EDIT}** tab and modify formulas.
 
 # No-code
 Define equations in a declarative form.

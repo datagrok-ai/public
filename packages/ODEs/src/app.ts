@@ -22,7 +22,7 @@ import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS} from './scripting-tools';
 import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools/solver-defs';
 import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN,
-  getReducedTable, closeWindows} from './utils';
+  getReducedTable, closeWindows, getRecentModelsTable} from './utils';
 
 import '../css/app-styles.css';
 
@@ -61,7 +61,7 @@ function stateToPath(state: EDITOR_STATE): string {
     return `/${TITLE.TEMPL}/${state}`;
 
   default:
-    return `/${TITLE.EXAMP}/${state}`;
+    return `/${TITLE.LIBRARY}/${state}`;
   }
 }
 
@@ -223,13 +223,11 @@ export class DiffStudio {
     closeWindows();
     this.createEditorView(content, true);
 
-    const panels = ((state !== undefined) || (path !== undefined)) ?
-      [[this.sensAnIcon, this.fittingIcon]] :
-      [
-        [this.openIcon, this.saveIcon],
-        [this.exportButton, this.sensAnIcon, this.fittingIcon],
-        [this.runIcon, this.helpIcon],
-      ];
+    const panels = [
+      [this.openComboMenu, this.saveIcon],
+      [this.exportButton, this.sensAnIcon, this.fittingIcon],
+      [this.runIcon, this.helpIcon],
+    ];
 
     this.solverView.setRibbonPanels(panels);
     this.toChangePath = true;
@@ -312,7 +310,7 @@ export class DiffStudio {
     this.createEditorView(DEMO_TEMPLATE, true);
     closeWindows();
     this.solverView.setRibbonPanels([
-      [this.openIcon, this.saveIcon],
+      [this.openComboMenu, this.saveIcon],
       [this.exportButton, this.sensAnIcon, this.fittingIcon],
       [this.runIcon, this.helpIcon],
     ]);
@@ -417,8 +415,8 @@ export class DiffStudio {
   private toShowPerformanceDlg = true;
   private isStartingRun = true;
   private secondsLimit = UI_TIME.SOLV_DEFAULT_TIME_SEC;
-  private modelPane: DG.TabPane;
-  private runPane: DG.TabPane;
+  private editPane: DG.TabPane;
+  private solvePane: DG.TabPane;
   private editorView: EditorView | undefined;
   private openMenu: DG.Menu;
   private saveMenu: DG.Menu;
@@ -444,6 +442,8 @@ export class DiffStudio {
 
   private toSwitchToModelTab: boolean = true;
 
+  private openComboMenu: HTMLElement;
+
   constructor(toAddTableView: boolean = true, toDockTabCtrl: boolean = true, isFilePreview: boolean = false,
     browsing?: Browsing) {
     this.solverView = toAddTableView ?
@@ -452,8 +452,8 @@ export class DiffStudio {
 
     this.solverView.helpUrl = LINK.DIF_STUDIO_REL;
     this.solverView.name = MISC.VIEW_DEFAULT_NAME;
-    this.runPane = this.tabControl.addPane(TITLE.IPUTS, () => this.inputsPanel);
-    this.modelPane = this.tabControl.addPane(TITLE.MODEL, () => {
+    this.solvePane = this.tabControl.addPane(TITLE.SOLVE, () => this.inputsPanel);
+    this.editPane = this.tabControl.addPane(TITLE.EDIT, () => {
       setTimeout(() => {
         this.modelDiv.style.height = '100%';
         if (this.editorView)
@@ -463,7 +463,7 @@ export class DiffStudio {
     });
 
     this.tabControl.onTabChanged.subscribe(async (_) => {
-      if ((this.tabControl.currentPane === this.runPane) && this.toChangeInputs)
+      if ((this.tabControl.currentPane === this.solvePane) && this.toChangeInputs)
         await this.runSolving(true);
     });
 
@@ -499,6 +499,8 @@ export class DiffStudio {
     this.runIcon.classList.add('fas', 'diff-studio-app-run-icon');
     this.runIcon.hidden = true;
 
+    this.openComboMenu = this.getOpenComboMenu();
+
     this.createTree(browsing);
 
     this.solverView.ribbonMenu = DG.Menu.create();
@@ -533,7 +535,7 @@ export class DiffStudio {
         if ( this.toChangeInputs )
           await this.runSolving(true);
         else
-          this.tabControl.currentPane = this.runPane;
+          this.tabControl.currentPane = this.solvePane;
       }
     });
 
@@ -550,7 +552,7 @@ export class DiffStudio {
   /** Return the open model menu */
   private getOpenMenu(): DG.Menu {
     return DG.Menu.popup()
-      .item(TITLE.FROM_FILE, async () => await this.overwrite(), undefined, {description: HINT.LOAD})
+      .item(TITLE.IMPORT, async () => await this.overwrite(), undefined, {description: HINT.LOAD})
       .group(TITLE.TEMPL)
       .item(TITLE.BASIC, async () =>
         await this.overwrite(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: HINT.BASIC},
@@ -561,7 +563,7 @@ export class DiffStudio {
       .item(TITLE.EXT, async () =>
         await this.overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT})
       .endGroup()
-      .group(TITLE.EXAMP)
+      .group(TITLE.LIBRARY)
       .item(TITLE.CHEM, async () => await this.overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM})
       .item(TITLE.ROB, async () => await this.overwrite(EDITOR_STATE.ROBERT), undefined, {description: HINT.ROB})
       .item(TITLE.FERM, async () => await this.overwrite(EDITOR_STATE.FERM), undefined, {description: HINT.FERM})
@@ -601,7 +603,7 @@ export class DiffStudio {
         await this.overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT},
       )
       .endGroup()
-      .group(TITLE.EXAMP)
+      .group(TITLE.LIBRARY)
       .item(TITLE.CHEM, async () =>
         await this.overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM},
       )
@@ -915,12 +917,12 @@ export class DiffStudio {
       }
 
       this.isSolvingSuccess = true;
-      this.runPane.header.hidden = false;
+      this.solvePane.header.hidden = false;
       this.toSwitchToModelTab = false;
     } catch (error) {
       if (error instanceof CallbackAction) {
         this.isSolvingSuccess = true;
-        this.runPane.header.hidden = false;
+        this.solvePane.header.hidden = false;
 
         if (this.toShowPerformanceDlg && !customSettings) {
           ivp.solverSettings = DEFAULT_SOLVER_SETTINGS;
@@ -946,7 +948,7 @@ export class DiffStudio {
 
       if (this.isSolvingSuccess) {
         this.toChangeInputs = false;
-        this.tabControl.currentPane = this.runPane;
+        this.tabControl.currentPane = this.solvePane;
 
         if (this.prevInputsNode !== null)
           this.inputsPanel.removeChild(this.prevInputsNode);
@@ -985,9 +987,9 @@ export class DiffStudio {
         this.prevInputsNode = this.inputsPanel.appendChild(form);
 
         if (!toShowInputsForm)
-          setTimeout(() => this.tabControl.currentPane = this.modelPane, 5);
+          setTimeout(() => this.tabControl.currentPane = this.editPane, 5);
       } else
-        this.tabControl.currentPane = this.modelPane;
+        this.tabControl.currentPane = this.editPane;
     } catch (error) {
       if (error instanceof CallbackAction)
         grok.shell.warning(error.message);
@@ -1000,7 +1002,7 @@ export class DiffStudio {
 
   /** Show/hide model call widgets */
   private setCallWidgetsVisibility(toShow: boolean): void {
-    this.runPane.header.hidden = !toShow;
+    this.solvePane.header.hidden = !toShow;
     this.exportButton.disabled = !toShow;
     this.sensAnIcon.hidden = !toShow;
     this.fittingIcon.hidden = !toShow;
@@ -1013,7 +1015,7 @@ export class DiffStudio {
     this.setCallWidgetsVisibility(false);
 
     if (this.toSwitchToModelTab) {
-      this.tabControl.currentPane = this.modelPane;
+      this.tabControl.currentPane = this.editPane;
 
       if (this.prevInputsNode !== null)
         this.inputsPanel.removeChild(this.prevInputsNode);
@@ -1409,7 +1411,7 @@ export class DiffStudio {
       this.recentFolder = this.appTree.getOrCreateGroup(TITLE.RECENT, null, false);
     else {
       const templatesFolder = this.getFolderWithBultInModels(TEMPLATE_TITLES, TITLE.TEMPL);
-      const examplesFolder = this.getFolderWithBultInModels(EXAMPLE_TITLES, TITLE.EXAMP);
+      const examplesFolder = this.getFolderWithBultInModels(EXAMPLE_TITLES, TITLE.LIBRARY);
 
       const putModelsToFolder = (models: TITLE[], folder: DG.TreeViewGroup) => {
         models.forEach((name) => this.putBuiltInModelToFolder(name, folder));
@@ -1501,6 +1503,8 @@ export class DiffStudio {
             undefined,
             `files/${file.fullPath.replace(':', '.').toLowerCase()}`,
           ) as DG.View;
+
+          await this.saveModelToRecent(path, true);
         } else
           grok.shell.warning(`File not found: ${path}`);
 
@@ -1734,6 +1738,8 @@ export class DiffStudio {
             undefined,
             `files/${file.fullPath.replace(':', '.').toLowerCase()}`,
           ) as DG.View;
+
+          await this.saveModelToRecent(path, true);
         } else
           grok.shell.warning(`File not found: ${path}`);
       };
@@ -1805,4 +1811,119 @@ export class DiffStudio {
       return null;
     }
   }
+
+  /** Return the Open model combo menu */
+  private getOpenComboMenu(): HTMLElement {
+    const menu = ui.div(ui.iconFA('folder-open', () => {}, HINT.OPEN));
+    menu.classList.add('d4-combo-popup');
+    ui.tooltip.bind(menu, HINT.OPEN);
+    menu.onclick = async () => (await this.getOpenModelMenu()).show();
+
+    return menu;
+  }
+
+  /** Return open menu */
+  private async getOpenModelMenu(): Promise<DG.Menu> {
+    const menu = DG.Menu.popup();
+    menu.item(TITLE.IMPORT, async () => await this.overwrite(), undefined, {description: HINT.LOAD}).separator();
+
+    await this.appendMenuWithRecentModels(menu);
+
+    menu.separator();
+
+    menu.group(TITLE.TEMPL)
+      .item(TITLE.BASIC, async () =>
+        await this.overwrite(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: HINT.BASIC},
+      )
+      .item(TITLE.ADV, async () =>
+        await this.overwrite(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: HINT.ADV},
+      )
+      .item(TITLE.EXT, async () =>
+        await this.overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT})
+      .endGroup()
+      .group(TITLE.LIBRARY)
+      .item(TITLE.CHEM, async () => await this.overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM})
+      .item(TITLE.ROB, async () => await this.overwrite(EDITOR_STATE.ROBERT), undefined, {description: HINT.ROB})
+      .item(TITLE.FERM, async () => await this.overwrite(EDITOR_STATE.FERM), undefined, {description: HINT.FERM})
+      .item(TITLE.PK, async () => await this.overwrite(EDITOR_STATE.PK), undefined, {description: HINT.PK})
+      .item(TITLE.PKPD, async () => await this.overwrite(EDITOR_STATE.PKPD), undefined, {description: HINT.PKPD})
+      .item(TITLE.ACID, async () => await this.overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: HINT.ACID})
+      .item(TITLE.NIM, async () => await this.overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM})
+      .item(TITLE.BIO, async () => await this.overwrite(EDITOR_STATE.BIOREACTOR), undefined, {description: HINT.BIO})
+      .item(TITLE.POLL, async () => await this.overwrite(EDITOR_STATE.POLLUTION), undefined, {description: HINT.POLL})
+      .endGroup();
+
+    return menu;
+  } // getOpenMenu
+
+  /** Append menu with my and recent models */
+  private async appendMenuWithRecentModels(menu: DG.Menu) {
+    const submenu = menu.group(TITLE.RECENT);
+
+    try {
+      const recentDf = await getRecentModelsTable();
+      const size = recentDf.rowCount;
+      const infoCol = recentDf.col(TITLE.INFO);
+      const isCustomCol = recentDf.col(TITLE.IS_CUST);
+
+      if ((infoCol === null) || (isCustomCol === null))
+        throw new Error('corrupted data file');
+
+
+      for (let i = 0; i < size; ++i) {
+        const name = infoCol.get(i);
+
+        if (isCustomCol.get(i))
+          await this.appendMenuWithCustomModel(submenu, name);
+        else
+          this.appendMenuWithBuiltInModel(submenu, name);
+      }
+    } catch (err) {
+      submenu.item(TITLE.NO_MODELS, undefined, null, {description: HINT.NO_MODELS});
+    };
+
+    submenu.endGroup();
+  } // appendMenuWithRecentModels
+
+  /** Append menu with built-in model model */
+  private appendMenuWithBuiltInModel(menu: DG.Menu, name: TITLE) {
+    menu.item(name, async () => {
+      const solver = new DiffStudio();
+      await solver.runSolverApp(
+        undefined,
+        STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
+      ) as DG.View;
+    }, null, {description: MODEL_HINT.get(name) ?? ''});
+  }
+
+  /** Append menu with custom model */
+  private async appendMenuWithCustomModel(menu: DG.Menu, path: TITLE) {
+    try {
+      if (await grok.dapi.files.exists(path)) {
+        const idx = path.lastIndexOf('/');
+        const name = path.slice(idx + 1, path.length);
+        const folderPath = path.slice(0, idx + 1);
+        const fileList = await grok.dapi.files.list(folderPath);
+        const file = fileList.find((file) => file.nqName === path);
+
+        menu.item(name, async () => {
+          try {
+            const equations = await file.readAsString();
+            const solver = new DiffStudio();
+            await solver.runSolverApp(
+              equations,
+              undefined,
+              `files/${file.fullPath.replace(':', '.').toLowerCase()}`,
+            ) as DG.View;
+
+            await this.saveModelToRecent(path, true);
+          } catch (err) {
+            grok.shell.warning(`File not found: ${path}`);
+          }
+        }, null, {description: path});
+      }
+    } catch (e) {
+      grok.shell.warning(`Failed to add ivp-file to recents: ${(e instanceof Error) ? e.message : 'platfrom issue'}`);
+    }
+  } // appendMenuWithCustomModel
 };

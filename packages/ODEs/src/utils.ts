@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {MISC, INPUTS_DF, LOOKUP_DF_FAIL, LOOKUP_EXPR_FAIL, TITLE} from './ui-constants';
+import {MISC, INPUTS_DF, LOOKUP_DF_FAIL, LOOKUP_EXPR_FAIL, TITLE, PATH} from './ui-constants';
 import {CONTROL_EXPR} from './constants';
 import {CONTROL_SEP, BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR} from './scripting-tools';
 
@@ -241,4 +241,11 @@ export function closeWindows() {
   grok.shell.windows.showVariables = false;
   grok.shell.windows.showTables = false;
   grok.shell.windows.showColumns = false;
+}
+
+/** Get dataframe with recent models */
+export async function getRecentModelsTable(): Promise<DG.DataFrame> {
+  const folder = `${grok.shell.user.project.name}:Home/`;
+  const dfs = await grok.dapi.files.readBinaryDataFrames(`${folder}${PATH.RECENT}`);
+  return dfs[0];
 }
