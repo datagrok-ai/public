@@ -12,11 +12,14 @@ import {CLUSTER_TYPE, LogoSummaryTable, LST_PROPERTIES} from '../viewers/logo-su
 import {PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {TEST_COLUMN_NAMES} from './utils';
 import {showTooltip} from '../utils/tooltips';
+import {PeptideUtils} from '../peptideUtils';
 
 category('Viewers: Basic', () => {
   let df: DG.DataFrame;
 
   before(async () => {
+    await PeptideUtils.loadSeqHelper();
+
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
     await delay(500);
   });

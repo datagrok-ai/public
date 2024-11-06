@@ -1,4 +1,3 @@
-import { publishAll } from "./publish-all";
 import { testAll } from "./test-all";
 
 const HELP = `
@@ -15,7 +14,6 @@ Commands:
     init      Modify a package template
     link      Link \`datagrok-api\` and libraries for local development
     publish   Upload a package
-    publishAll   Upload all packages
     test      Run package tests
     testAll      Run packages tests
 
@@ -113,23 +111,12 @@ Usage: grok publish [host]
 Upload a package
 
 Options:
-[--build|--rebuild] [--debug|--release] [-k | --key] [--suffix]
+[--build|--rebuild] [--debug|--release] [-k | --key] [--suffix] [--all] [--refresh]
+
+--all             Publish all available packages 
+--refresh         Publish all available already loaded packages 
 
 Running \`grok publish\` is the same as running \`grok publish defaultHost --build --debug\`
-`;
-
-const HELP_PUBLISHALL = `
-Usage: grok publishAll 
-
-Upload all packages
-
-Options:
-  [--host] [--release] [--link-package] [--skip-build]
-
-  --host              Host alias as in the config file
-  --release           Publish cureent version as release version
-  --skip-build        Skip the package build step
-  --link-package      Link local packages
 `;
 
 const HELP_CHECK = `
@@ -174,7 +161,7 @@ https://datagrok.ai/help/develop/how-to/test-packages#local-testing
 `;
 
 const HELP_TESTALL = `
-Usage: grok testAll
+Usage: grok testall
 
 Options:
 [--packages] [--host] [--csv] [--gui] [--skip-build] [--skip-publish] [--link-package] [--catchUnhandled] [--report] [--record] [--verbose] [--benchmark] [--stress-test] [--order] [--tags] [--testRepeat] [--workersCount]
@@ -226,8 +213,7 @@ export const help = {
   init: HELP_INIT,
   link: HELP_LINK,
   publish: HELP_PUBLISH,
-  publishAll: HELP_PUBLISHALL,
   test: HELP_TEST,
-  testAll: HELP_TESTALL,
+  testall: HELP_TESTALL,
   help: HELP,
 };

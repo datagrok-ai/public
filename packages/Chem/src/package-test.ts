@@ -31,7 +31,7 @@ import './tests/is-smarts-tests';
 import './tests/fingerprints';
 import './tests/scaffold-tree-tests';
 import './tests/projects-tests';
-//import './tests/clone-layout-tests';
+import './tests/clone-layout-tests';
 import './tests/mmpa-tests';
 import './tests/chemprop-tests';
 import './tests/vector-funcs-tests';

@@ -9,7 +9,7 @@ import {
 } from '@datagrok-libraries/bio/src/helm/types';
 
 
-import {Chain} from './pt-conversion';
+import {Chain, PtBio} from './conversion/pt-chain';
 import {getAvailableMonomers} from './utils';
 import {PolyToolEnumeratorParams, PolyToolEnumeratorTypes, PolyToolPlaceholder, PolyToolBreadthPlaceholder} from './types';
 
@@ -76,7 +76,7 @@ function getPtEnumeratorBreadth(m: HelmMol, placeholdersBreadth: PolyToolBreadth
 export function doPolyToolEnumerateHelm(
   helm: string, id: string, params: PolyToolEnumeratorParams
 ): [ /* helm */ string, /* id */ string][] {
-  const molHandler = new JSDraw2.MolHandler<HelmType, IHelmEditorOptions>();
+  const molHandler = new JSDraw2.MolHandler<HelmType, PtBio, IHelmEditorOptions>();
   const plugin = new org.helm.webeditor.Plugin(molHandler);
   org.helm.webeditor.IO.parseHelm(plugin, helm, new JSDraw2.Point(0, 0), undefined);
   const m = molHandler.m;

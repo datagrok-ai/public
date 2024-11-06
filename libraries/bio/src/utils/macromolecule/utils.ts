@@ -29,6 +29,7 @@ export class StringListSeqSplitted implements ISeqSplitted {
     return this.getOriginal(posIdx) === this.gapOriginalMonomer;
   }
 
+  /** @param {number} posIdx monomer position 0-based index */
   getCanonical(posIdx: number): string {
     if (this.length <= posIdx)
       throw new Error('Index out of bounds');

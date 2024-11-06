@@ -52,7 +52,7 @@ async function requestMembership(groupName: string) {
     // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14160
     await fetch(`${window.location.origin}/api/groups/${group.id}/requests/${grok.shell.user.group.id}`, {method: 'POST'});
 
-    grok.shell.info(`Request to join ${groupName} has been initiated. Please allow some time for approval.`)
+    grok.shell.info(`Request to join ${groupName} has been initiated. Please allow some time for approval.`);
   } catch (e: any) {
     grok.shell.error(e.toString());
   }
@@ -189,18 +189,19 @@ export class ModelHandler extends DG.ObjectHandler {
     return ui.iconImage(func.package.name, iconUrl);
   }
 
-  override async renderPreview(x: DG.Func) {
+  override renderPreview(x: DG.Func) {
     const editorName = x.options.editor ?? 'Compute:RichFunctionViewEditor';
-    const editor = await grok.functions.find(editorName);
-    if (editor !== null && editor instanceof DG.Func) {
-      const viewCall = editor.prepare({'call': x.prepare()});
-      await viewCall.call(false, undefined, {processed: true});
-      const view = viewCall.getOutputParamValue();
-      if (view instanceof DG.View)
-        return view;
-    }
-    //@ts-ignore
-    return super.renderPreview(x);
+    return DG.View.fromViewAsync(async () => {
+      const editor = await grok.functions.find(editorName);
+      if (editor !== null && editor instanceof DG.Func) {
+        const viewCall = editor.prepare({'call': x.prepare()});
+        await viewCall.call(false, undefined, {processed: true});
+        const view = viewCall.getOutputParamValue();
+        if (view instanceof DG.View)
+          return view;
+      }
+      return super.renderPreview(x);
+    });
   }
 
   override renderProperties(func: DG.Func) {

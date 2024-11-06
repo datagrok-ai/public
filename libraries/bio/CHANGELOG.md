@@ -1,5 +1,26 @@
 # bio changelog
 
+## 5.45.9 (2024-11-01)
+
+Unknown pallete correct initialization
+
+## 5.45.8 (2024-11-01)
+
+Correct loading of unknown pallete
+
+## 5.45.7 (2024-11-01)
+
+Unknown pallete correct initialization
+
+## 5.45.6 (2024-10-31)
+
+### Bug fixes
+
+* Fix SeqValueBase adding seqHandler, getSplitted, helm
+* Fix HelmInputBase for SeqValueBase
+* Fix ISeqHandler adding getHelm, splitter
+* Fix INotationProvider adding setUnits, getHelm
+
 ## 5.45.5 (2024-10-24)
 
 ### Bug fixes

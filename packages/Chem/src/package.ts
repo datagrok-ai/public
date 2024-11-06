@@ -123,9 +123,9 @@ export let _properties: any;
 let _rdRenderer: RDKitCellRenderer;
 export let renderer: GridCellRendererProxy;
 let _renderers: Map<string, DG.GridCellRenderer>;
+let _initChemPromise: Promise<void> | null = null;
 
-//tags: init
-export async function initChem(): Promise<void> {
+async function initChemInt(): Promise<void> {
   chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
   await chemCommonRdKit.initRdKitModuleLocal();
   _properties = await _package.getProperties();
@@ -149,6 +149,14 @@ export async function initChem(): Promise<void> {
     DG.chem.currentSketcherType = DG.DEFAULT_SKETCHER;
   }
   _renderers = new Map();
+}
+
+
+//tags: init
+export async function init(): Promise<void> {
+  if (!_initChemPromise)
+    _initChemPromise = initChemInt();
+  await _initChemPromise;
 }
 
 //tags: autostart
@@ -1866,8 +1874,6 @@ let container: DG.DockerContainer;
 export async function getContainer() {
   if (!container)
     container = await grok.dapi.docker.dockerContainers.filter('chemprop').first();
-  if (container.status !== 'started' && container.status !== 'checking')
-    await grok.dapi.docker.dockerContainers.run(container.id, true);
   return container;
 }
 

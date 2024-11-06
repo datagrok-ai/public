@@ -651,6 +651,9 @@ export class AddNewColumnDialog {
           columnNames.push(trimmedFormula.substring(openingBracketIdx! + 3, j));
           if (openingBracketIdx === -1 && j === trimmedFormula.length - 1)
             isSingleCol = true;
+          openingBracket = '';
+          openingBracketIdx = null;
+          closingBracket = '';
         }
       }
     }

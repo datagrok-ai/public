@@ -20,6 +20,14 @@ position: 6 # float position is supported
 See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.md)
+## 2024-11-04 1.22.1
+
+### Addressed Issues
+
+* [#3119](https://github.com/datagrok-ai/public/issues/3119): Calculated column: formula with multi-argument functions is parsed incorrectly if more than one argument contains a column (WIP)
+* GROK-16793: #3101: Shift-click selects unexpected rows in some cases 
+
+
 ## 2024-10-24 1.22.0
 
 ### Addressed Issues

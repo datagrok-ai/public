@@ -2,11 +2,30 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import CodeMirror from 'codemirror';
-import { BehaviorSubject } from 'rxjs';
-import { DEFAULT_CATEGORY, FUNC_PROPS_FIELDS, tooltipMessage, obligatoryFuncProps, 
-  functionPropsLabels, highlightModeByLang, functionPropsCode, funcParamTypes, FUNC_PARAM_FIELDS, 
-  DIRECTION, functionParamsMapping, COMMON_TAG_NAMES, OPTIONAL_TAG_NAME, LANGUAGE, headerSign, 
-  optionTags, OPTIONAL_TAG_NAMES, getChoicesByName, FUNC_PROPS_FIELD, DATA_QUERY_VIEW, helpUrls } from './const';
+import {BehaviorSubject} from 'rxjs';
+import {
+  COMMON_TAG_NAMES,
+  DATA_QUERY_VIEW,
+  DEFAULT_CATEGORY,
+  DIRECTION,
+  FUNC_PARAM_FIELDS,
+  FUNC_PROPS_FIELD,
+  FUNC_PROPS_FIELDS,
+  funcParamTypes,
+  functionParamsMapping,
+  functionPropsCode,
+  functionPropsLabels,
+  getChoicesByName,
+  headerSign,
+  helpUrls,
+  highlightModeByLang,
+  LANGUAGE,
+  obligatoryFuncProps,
+  OPTIONAL_TAG_NAME,
+  OPTIONAL_TAG_NAMES,
+  optionTags,
+  tooltipMessage
+} from './const';
 import 'codemirror/mode/javascript/javascript';
 import 'codemirror/mode/python/python';
 import 'codemirror/mode/octave/octave';
@@ -41,7 +60,7 @@ function addFseRibbonScript(v: DG.View) {
 }
 
 function getInputBaseArray(props: DG.Property[], param: any): DG.InputBase[] {
-  const inputBaseArray = props.map((prop) => {
+  return props.map((prop) => {
     const input = DG.InputBase.forProperty(prop, param);
     input.setTooltip(tooltipMessage[prop.name as OPTIONAL_TAG_NAME]);
     input.root.onclick = (_) => {
@@ -50,7 +69,6 @@ function getInputBaseArray(props: DG.Property[], param: any): DG.InputBase[] {
     };
     return input;
   });
-  return inputBaseArray;
 }
 
 let conn; 
@@ -61,15 +79,13 @@ async function getDataQuery(sql: string): Promise<DG.DataQuery> {
   const connectionName = match ? match[1]: null;
   const connection = await grok.functions.eval(connectionName);
   conn = connectionName;
-  const query = connection.query('sql', sql);
-  return query;
+  return connection.query('sql', sql);
 }
 
 async function getInputCode(v: DG.View, functionCode: string) {
-  const inputCodeCopy = v.type === DATA_QUERY_VIEW 
-  ? await getDataQuery(functionCode) 
-  : DG.Script.create(functionCode);
-  return inputCodeCopy;
+  return v.type === DATA_QUERY_VIEW
+      ? await getDataQuery(functionCode)
+      : DG.Script.create(functionCode);
 }
 
 async function openFse(v: DG.View, functionCode: string) {
@@ -324,7 +340,8 @@ async function openFse(v: DG.View, functionCode: string) {
   (paramsDF.columns as DG.ColumnList).addNew('+', DG.TYPE.STRING);
 
   paramsDF.onCurrentRowChanged.subscribe(() => {
-    onFunctionParamClick((paramsDF.currentRow as any)['Name']);
+    if (paramsDF?.currentRow && paramsDF.currentRow.idx !== -1)
+      onFunctionParamClick(paramsDF.currentRow.get('Name'));
   });
 
   const paramsGrid = DG.Grid.create(paramsDF);
@@ -384,6 +401,19 @@ async function openFse(v: DG.View, functionCode: string) {
 
   const propsForm = functionPropsForm();
 
+  const defaultParamName = 'newParam';
+
+  const getUniqueParamName = () => {
+    const params = functionParamsCopy.filter((p) => p.name.startsWith(defaultParamName));
+    let num = 0;
+    for (const param of params) {
+      const match = param.name.match(/newParam_(\d+)/);
+      if (match || param.name === defaultParamName)
+        num++;
+    }
+    return num === 0 ? defaultParamName : `${defaultParamName}_${num}`
+  }
+
   const addParamBtn = (rowIdx: number) => {
     const btn = ui.button(
       [
@@ -393,7 +423,7 @@ async function openFse(v: DG.View, functionCode: string) {
       () => {
         const newParam = {
           [FUNC_PARAM_FIELDS.DIRECTION]: DIRECTION.INPUT,
-          [FUNC_PARAM_FIELDS.NAME]: 'newParam',
+          [FUNC_PARAM_FIELDS.NAME]: getUniqueParamName(),
           [FUNC_PARAM_FIELDS.TYPE]: DG.TYPE.BOOL,
           [FUNC_PARAM_FIELDS.DEFAULT_VALUE]: false,
           [FUNC_PARAM_FIELDS.DESCRIPTION]: '',

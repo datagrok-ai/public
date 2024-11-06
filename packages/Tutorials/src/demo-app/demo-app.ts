@@ -53,10 +53,8 @@ export class DemoView extends DG.ViewBase {
 
   public async startDemoFunc(func: DG.Func, viewPath: string): Promise<void> {
     const path = viewPath.split('|').map((s) => s.trim()).join('/');
-
-    // TODO: change to getElementById('elementContent') when it is fixed
-    const updateIndicatorRoot =
-      document.querySelector('.layout-dockarea .view-tabs .dock-container.dock-container-fill > .tab-host > .tab-content > .d4-dock-container > .grok-view.grok-view-browse > .d4-root > .splitter-container-row > .dock-container.dock-container-fill > .tab-host > .tab-content')! as HTMLElement;
+    const updateIndicatorRoot = (Array.from(document.querySelectorAll('#elementContent')) as HTMLElement[])
+      .find((el) => el.classList.contains('ui-box'))!;
 
     if (func.options['isDemoScript'] == 'True') {
       ui.setUpdateIndicator(updateIndicatorRoot, true);

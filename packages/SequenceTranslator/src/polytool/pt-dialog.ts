@@ -7,25 +7,38 @@ import {Unsubscribable} from 'rxjs';
 
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
-import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getSeqHelper, ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
-import {buildMonomerHoverLink} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
+import {addMonomerHoverLink, buildMonomerHoverLink} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
-import {getRules, RuleInputs, Rules, RULES_PATH, RULES_STORAGE_NAME} from './pt-rules';
-import {doPolyToolConvert, getOverriddenLibrary} from './pt-conversion';
+import {getRules, RuleInputs, RULES_PATH, RULES_STORAGE_NAME} from './conversion/pt-rules';
+import {doPolyToolConvert} from './conversion/pt-conversion';
+import {getOverriddenLibrary} from './conversion/pt-misc';
 import {defaultErrorHandler} from '../utils/err-info';
 import {getLibrariesList} from './utils';
 import {getEnumerationChem, PT_CHEM_EXAMPLE} from './pt-enumeration-chem';
 
 import {
   PT_ERROR_DATAFRAME, PT_UI_ADD_HELM, PT_UI_DIALOG_CONVERSION, PT_UI_DIALOG_ENUMERATION,
-  PT_UI_GET_HELM, PT_UI_RULES_USED, PT_UI_USE_CHIRALITY, PT_WARNING_COLUMN
+  PT_UI_GET_HELM, PT_UI_HIGHLIGHT_MONOMERS, PT_UI_RULES_USED, PT_UI_USE_CHIRALITY
 } from './const';
 
 import {_package} from '../package';
+import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/index';
+import {MonomerHoverLink} from '@datagrok-libraries/bio/src/monomer-works/utils';
+import {MonomerMap} from '@datagrok-libraries/bio/src/monomer-works/types';
+import {ISeqMonomer} from '@datagrok-libraries/bio/src/helm/types';
+import wu from 'wu';
+import {PolymerTypes} from '@datagrok-libraries/js-draw-lite/src/types/org';
+import {getMonomersDictFromLib} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
+import {monomerSeqToMolfile} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level-utils';
+import {LRUCache} from 'lru-cache';
+import {getMonomerHover, ISubstruct, setMonomerHover} from '@datagrok-libraries/chem-meta/src/types';
+import {getMolHighlight} from '@datagrok-libraries/bio/src/monomer-works/seq-to-molfile';
+import {ChemTags} from '@datagrok-libraries/chem-meta/src/consts';
 
 type PolyToolConvertSerialized = {
   generateHelm: boolean;
@@ -87,6 +100,7 @@ export async function getPolyToolConvertDialog(srcCol?: DG.Column): Promise<DG.D
     ui.tooltip.bind(generateHelmInput.root, PT_UI_ADD_HELM);
 
     const chiralityEngineInput = ui.input.bool(PT_UI_USE_CHIRALITY, {value: false});
+    const highlightMonomersInput = ui.input.bool(PT_UI_HIGHLIGHT_MONOMERS, {value: false});
     let ruleFileList: string[];
     const ruleInputs = new RuleInputs(RULES_PATH, RULES_STORAGE_NAME, '.json', {
       onValueChanged: (value: string[]) => { ruleFileList = value; }
@@ -99,6 +113,7 @@ export async function getPolyToolConvertDialog(srcCol?: DG.Column): Promise<DG.D
       srcColInput,
       generateHelmInput,
       chiralityEngineInput,
+      highlightMonomersInput,
       rulesHeader,
       rulesForm
     ]);
@@ -129,7 +144,7 @@ export async function getPolyToolConvertDialog(srcCol?: DG.Column): Promise<DG.D
       /* applyInput */ (x: PolyToolConvertSerialized): void => {
         generateHelmInput.value = x.generateHelm;
         chiralityEngineInput.value = x.chiralityEngine;
-        ruleInputs.setActive(ruleFileList);
+        ruleInputs.setActive(x.rules);
       });
     return dialog;
   } catch (err: any) {
@@ -236,8 +251,13 @@ async function getPolyToolEnumerationChemDialog(cell?: DG.Cell): Promise<DG.Dial
 }
 
 function dealGroups(col: DG.Column<string>): void {
-  for (let i = 0; i < col.length; i++)
+  for (let i = 0; i < col.length; i++) {
     col.set(i, col.get(i)!.replaceAll('undefined', 'H'));
+    col.set(i, col.get(i)!.replaceAll('Oh', 'O'));
+    col.set(i, col.get(i)!.replaceAll('0.000000 3', '0.000000 0'));
+    col.set(i, col.get(i)!.replaceAll('?', 'O'));
+    col.set(i, col.get(i)!.replaceAll('0 3\n', '0 0\n'));
+  }
 }
 
 /** Returns Helm and molfile columns.  */
@@ -282,9 +302,121 @@ export async function polyToolConvert(
     }
 
     buildMonomerHoverLink(resHelmCol, resMolCol, lib, seqHelper, rdKitModule);
+    buildCyclizedMonomerHoverLink(seqCol, resHelmCol, resMolCol, lib, seqHelper, rdKitModule);
 
     return [resHelmCol, resMolCol];
   } finally {
     pi.close();
   }
+}
+
+function buildCyclizedMonomerHoverLink(
+  cyclizedCol: DG.Column<string>, seqCol: DG.Column<string>, molCol: DG.Column<string>,
+  monomerLib: IMonomerLibBase, seqHelper: ISeqHelper, rdKitModule: RDModule
+): MonomerHoverLink {
+  function buildMonomerMap(seqCol: DG.Column<string>, tableRowIdx: number): MonomerMap {
+    const seqSH = seqHelper.getSeqHandler(seqCol);
+    const seqSS = seqSH.getSplitted(tableRowIdx);
+    const biotype = seqSH.defaultBiotype;
+    const seqMList: ISeqMonomer[] = wu.count(0).take(seqSS.length)
+      .map((posIdx) => {
+        return {position: posIdx, symbol: seqSS.getCanonical(posIdx), biotype: biotype} as ISeqMonomer;
+      })
+      .toArray();
+
+    const alphabet = seqSH.alphabet as ALPHABET;
+    const polymerType = alphabet == ALPHABET.RNA || alphabet == ALPHABET.DNA ? PolymerTypes.RNA : PolymerTypes.PEPTIDE;
+    const monomersDict = getMonomersDictFromLib([seqMList], polymerType, alphabet, monomerLib, rdKitModule);
+    // Call seq-to-molfile worker core directly
+    const molWM = monomerSeqToMolfile(seqMList, monomersDict, alphabet, polymerType);
+    return molWM.monomers;
+  }
+
+  const monomerMapLruCache = new LRUCache<string, MonomerMap>({max: 100});
+
+  function getMonomerMap(seqCol: DG.Column<string>, tableRowIdx: number): MonomerMap | null {
+    const seq = seqCol.get(tableRowIdx);
+    if (seq == null) return null;
+
+    let resMonomerMap = monomerMapLruCache.get(seq);
+    if (!resMonomerMap)
+      monomerMapLruCache.set(seq, resMonomerMap = buildMonomerMap(seqCol, tableRowIdx));
+
+    return resMonomerMap;
+  }
+
+  const resLink: MonomerHoverLink = {
+    targetCol: molCol,
+    handler: (seqGridCell: DG.GridCell, cyclizedMonomer: ISeqMonomer | null, targetGridCol: DG.GridColumn): boolean => {
+      const grid = targetGridCol.grid;
+      const tableRowIdx = seqGridCell.tableRowIndex!;
+      const gridRowIdx = seqGridCell.gridRow;
+      const targetGridCell = grid.cell(targetGridCol.name, gridRowIdx);
+
+      const prev = getMonomerHover();
+      if (!prev || (prev && (prev.dataFrameId != seqCol.dataFrame.id || prev.gridRowIdx != gridRowIdx ||
+        prev.seqColName != seqCol.name || prev.seqPosition != cyclizedMonomer?.position))
+      ) {
+        if (prev) {
+          setMonomerHover(null);
+          prev.gridCell.grid?.invalidate();
+          // prev.gridCell.render();
+        }
+        if (!cyclizedMonomer) {
+          setMonomerHover(null);
+          return true;
+        }
+
+        setMonomerHover({
+          gridCell: targetGridCell,
+          dataFrameId: seqCol.dataFrame.id,
+          gridRowIdx: gridRowIdx,
+          seqColName: seqCol.name,
+          seqPosition: cyclizedMonomer ? cyclizedMonomer.position : -1,
+          getSubstruct: (): ISubstruct | undefined => { // Gets monomer highlight
+            if (!cyclizedMonomer || cyclizedMonomer.symbol === '*')
+              return undefined;
+
+            const molMonomerMap = getMonomerMap(seqCol, tableRowIdx);
+            if (!molMonomerMap)
+              return undefined;
+
+            const resSubstructList: ISubstruct[] = [];
+            const seqMonomerList: number[] = [cyclizedMonomer.position]; // TODO: Map position of harmonized sequence
+            for (const seqMonomer of seqMonomerList) {
+              const monomerMap = molMonomerMap.get(cyclizedMonomer!.position); // single monomer
+              if (!monomerMap) return {atoms: [], bonds: [], highlightAtomColors: [], highlightBondColors: []};
+              resSubstructList.push(getMolHighlight([monomerMap], monomerLib));
+            }
+            //TODO: refine merge substract
+            //const res: ISubstruct = mergeSubstructs(resSubstructList);
+            return undefined;
+          }
+        });
+
+        // TODO: Invalidate targetGridCell
+        grid.invalidate();
+        // targetGridCell.render();
+      }
+
+      return true;
+    },
+    /* ISubstructProvider.*/getSubstruct: (tableRowIdx: number | null): ISubstruct | undefined =>{
+      // Gets whole molecule highlight
+      if (molCol.getTag(ChemTags.SEQUENCE_SRC_HL_MONOMERS) != 'true') return undefined;
+      if (tableRowIdx == null) return undefined;
+      const seq = seqCol.get(tableRowIdx);
+      if (!seq) return undefined;
+
+      const molMonomerMap = getMonomerMap(seqCol, tableRowIdx);
+      if (!molMonomerMap) return undefined;
+      const res: ISubstruct = getMolHighlight(molMonomerMap.values(), monomerLib);
+      return res;
+    }
+  };
+
+  addMonomerHoverLink(cyclizedCol.temp, resLink);
+  // addSubstructProvider(molCol.temp, resLink); //
+
+  return resLink;
 }

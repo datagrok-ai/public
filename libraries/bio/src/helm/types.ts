@@ -1,5 +1,5 @@
 import type {
-  HelmType, PolymerType, MonomerType, WebEditorRGroups, MonomerSetType
+  HelmType, PolymerType, MonomerType, WebEditorRGroups, MonomerSetType,
 } from '@datagrok-libraries/js-draw-lite/src/types/org';
 
 import type {Point} from '@datagrok-libraries/js-draw-lite/src/Point';
@@ -11,7 +11,7 @@ import type {IMolHandler} from '@datagrok-libraries/js-draw-lite/src/types/mol-h
 import type {Editor} from '@datagrok-libraries/js-draw-lite/src/JSDraw.Editor';
 
 import type {
-  HelmAtom, HelmBond, HelmMol, HelmEditor, HelmString,
+  IHelmBio, HelmAtom, HelmBond, HelmMol, HelmEditor, HelmString,
   IOrgHelmWebEditor, IOrgHelmMonomers,
   GetMonomerFunc, GetMonomerResType, MonomersFuncs,
   IHelmEditorOptions, IHelmDrawOptions, IMonomerColors, IWebEditorMonomer,
@@ -30,9 +30,7 @@ import type {DojoType, DojoxType} from '@datagrok-libraries/js-draw-lite/src/typ
 export {HelmType, PolymerType, MonomerType, WebEditorRGroups};
 export {Point, IBio, Atom, IJsAtom, Bond, Mol, Editor, MonomerExplorer};
 
-type HelmBio = IBio<HelmType>;
-
-export {HelmBio, HelmAtom, HelmBond, HelmMol, HelmEditor, HelmString};
+export {IHelmBio, HelmAtom, HelmBond, HelmMol, HelmEditor, HelmString};
 
 export {
   IWebEditorMonomer, IMonomerColors, IOrgHelmWebEditor, IOrgHelmMonomers,

@@ -13,9 +13,9 @@ import {
 const minH = 0.05;
 
 enum BarChartColoringType {
-  Off = 'off',
-  Bins = 'bins',
-  Values = 'values'
+  Off = 'Off',
+  Bins = 'Bins',
+  Values = 'Values'
 }
 
 interface BarChartSettings extends SummarySettingsBase {
@@ -89,7 +89,7 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
     const cols = df.columns.byNames(settings.columnNames);
     const gmin = Math.min(...cols.map((c: DG.Column) => c.min));
     const gmax = Math.max(...cols.map((c: DG.Column) => c.max));
-    g.strokeStyle = 'lightgray';
+    g.strokeStyle = DG.Color.toRgb(DG.Color.lightGray);
 
     for (let i = 0; i < cols.length; i++) {
       const currentCol = cols[i];
@@ -125,16 +125,6 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
     const normalizeInput = DG.InputBase.forProperty(globalScaleProp, settings);
     normalizeInput.onChanged.subscribe(() => gc.grid.invalidate());
 
-    const colorCodeScaleProp = DG.Property.js('colorCode', DG.TYPE.STRING, {
-      description: 'Activates color rendering',
-      choices: [BarChartColoringType.Off, BarChartColoringType.Bins, BarChartColoringType.Values],
-      defaultValue: BarChartColoringType.Off,
-      nullable: false,
-    });
-
-    const colorCodeNormalizeInput = DG.InputBase.forProperty(colorCodeScaleProp, settings);
-    colorCodeNormalizeInput.onChanged.subscribe(() => { gc.grid.invalidate(); });
-
     const columnNames = settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical);
     return ui.inputs([
       normalizeInput,
@@ -144,7 +134,16 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
           gc.grid.invalidate();
         }, available: names(gc.grid.dataFrame.columns.numerical),
       }),
-      colorCodeNormalizeInput
+      ui.input.choice<BarChartColoringType>('Color Code', {
+        value: settings.colorCode,
+        items: [BarChartColoringType.Off, BarChartColoringType.Bins, BarChartColoringType.Values],
+        onValueChanged: (value) => {
+          settings.colorCode = value;
+          gc.grid.invalidate();
+        },
+        tooltipText: 'Activates color rendering',
+        nullable: false
+      }),
     ]);
   }
 }

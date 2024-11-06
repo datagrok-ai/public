@@ -232,7 +232,7 @@ jobs:
           echo "Notify about version used for tests"
           echo "::notice title=js-api::datagrok/datagrok:$DATAGROK_VERSION SHA=$docker_sha docker version was used for tests"
       - id: datagrok-tools
-        run: npm install -g datagrok-tools@latest
+        run: npm install -g datagrok-tools@4.13.31
       - name: Wait for Datagrok to become available
         timeout-minutes: 5
         run: |

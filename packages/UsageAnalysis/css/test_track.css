@@ -43,6 +43,7 @@
 
 #tt-name .ui-input-editor{
   margin-top: 5px;
+  text-align: left;
 }
 
 #tt-edit-button {
@@ -195,8 +196,9 @@
 
 .tt-dialog .create-ticket-button{
   align-self: end;
+  pointer-events:all !important;
 }
-
+ 
 .tt-dialog .d4-pane-jira_tickets .d4-flex-col{
   width: 75%;
 }

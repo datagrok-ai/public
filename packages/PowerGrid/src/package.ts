@@ -293,9 +293,7 @@ export function isWebGPUAvailable(sc: DG.ScatterPlotViewer) {
 //output: bool result
 export function isWebGPURenderValid(sc: DG.ScatterPlotViewer) {
   return sc.props.zoomAndFilter != 'pack and zoom by filter' 
-    && (sc.props.markerType == DG.MARKER_TYPE.DOT || sc.props.markerType == DG.MARKER_TYPE.CIRCLE)
-    && !sc.props.markersColumnName
-    && !sc.dataFrame.selection.anyTrue;
+    && !sc.props.markersColumnName;
 }
 
 export {_ImageCellRenderer};

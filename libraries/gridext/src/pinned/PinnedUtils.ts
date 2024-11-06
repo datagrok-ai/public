@@ -322,8 +322,6 @@ export function registerPinnedColumns() {
     }
   });
 
-  //grok.events.onV
-
   grok.events.onViewLayoutApplied.subscribe((layout : DG.ViewInfo) => {
     const view : DG.TableView = layout.view as TableView;
     if(view === null) {
@@ -358,6 +356,38 @@ export function registerPinnedColumns() {
             colPinned.invalidate();
           }
         }, 200);
+      }
+    }
+  });
+
+  grok.events.onProjectOpened.subscribe((project: DG.Project) => {
+    const viewInfos = project.children.filter((child) => child instanceof DG.ViewInfo) as DG.ViewInfo[];
+    for (let i = 0; i < viewInfos.length; i++) {
+      const viewInfo = viewInfos[i];
+      const view = viewInfo.view;
+      if (view instanceof DG.TableView) {
+        if (!view.viewers)
+          continue;
+        const viewers = Array.from(view.viewers);
+        for (let j = 0; j < viewers.length; j++) {
+          if (viewers[j].type !== DG.VIEWER.GRID)
+            continue;
+          const grid = viewers[j] as DG.Grid;
+          PinnedUtils.installPinnedColumns(grid);
+          const strRowHeight = viewInfo.getUserDataValue(TABLE_ROW_HEIGHT_KEY);
+          if (strRowHeight !== null && strRowHeight !== undefined) {
+            setTimeout(() => {
+              grid.setOptions({rowHeight: parseInt(strRowHeight)});
+              grid.columns.byIndex(0)!.visible = false;
+              const pinnedColCount = PinnedUtils.getPinnedColumnCount(grid);
+              for (let k = 0; k < pinnedColCount; k++) {
+                const pinnedCol = PinnedUtils.getPinnedColumn(k, grid);
+                pinnedCol.getGridColumn()!.settings
+                pinnedCol.invalidate();
+              }
+            }, 200);
+          }
+        }
       }
     }
   });

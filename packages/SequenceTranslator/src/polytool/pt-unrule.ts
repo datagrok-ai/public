@@ -4,9 +4,9 @@ import * as DG from 'datagrok-api/dg';
 
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
-import {Chain} from './pt-conversion';
+import {Chain} from './conversion/pt-chain';
 import {getPolyToolUnruleDialog} from './pt-unrule-dialog';
-import {Rules} from './pt-rules';
+import {Rules} from './conversion/pt-rules';
 
 import {_package} from '../package';
 import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
