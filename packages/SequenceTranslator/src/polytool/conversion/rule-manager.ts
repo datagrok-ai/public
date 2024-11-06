@@ -11,14 +11,15 @@ export class RulesManager {
   linkRuleDataFrame: DG.DataFrame;
   synthRuleDataFrame: DG.DataFrame;
   fileName: string;
-  v: DG.View | null = null;
+  private v: DG.ViewBase | null = null;
 
   homoDimerInput: DG.InputBase;
   heteroDimerInput: DG.InputBase;
 
   currentTab = '';
 
-  private static instance: RulesManager;
+  // every rule set will have its editor instance
+  private static instances: Record<string, RulesManager> = {};
 
   protected constructor(rules: Rules, fileName: string) {
     this.rules = rules;
@@ -34,22 +35,43 @@ export class RulesManager {
     );
   }
 
-  async getView(): Promise<DG.ViewBase> {
+  async getAndAddView(): Promise<DG.ViewBase> {
+    if (this.v) {
+      try {
+        //find active view; name is unique due to file names in name
+        const activeView = Array.from(grok.shell.views).find((v) => v.name === this.v!.name);
+        if (!activeView) {
+          this.v.detach();
+          this.v.close();
+          throw new Error('View is closed, making it null in catch statement');
+        }
+        // switch to existing view
+        grok.shell.v = activeView;
+      } catch (_) {
+        //here we only come if some error is caused due to double detaching, so no handling needed
+        this.v = null;
+      }
+    }
+
     if (!this.v) {
       this.v = DG.View.create();
-      this.v.name = 'Manage Polytool Rules';
+      this.v.name = `Manage Polytool Rules - ${this.fileName}`;
       this.v.append(await this.getForm());
+      this.v = grok.shell.addView(this.v);
+      grok.shell.v = this.v!; // just in any case, to make sure it switches
+      return this.v;
     }
 
     return this.v;
   }
 
   public static async getInstance(name: string): Promise<RulesManager> {
-    if (!this.instance) {
+    // every rull will have its own instance
+    if (!this.instances[name]) {
       const rules = await getRules([name]);
-      this.instance = new RulesManager(rules, name);
+      this.instances[name] = new RulesManager(rules, name);
     }
-    return this.instance;
+    return this.instances[name]!;
   }
 
   save(): void {
