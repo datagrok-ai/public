@@ -1,14 +1,15 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
-import { category, before, test, expect, awaitCheck } from '@datagrok-libraries/utils/src/test';
+import { category, before, test, expect, awaitCheck, after, delay } from '@datagrok-libraries/utils/src/test';
 
 category('FSE', () => {
   before(async () => {
-    grok.shell.windows.simpleMode = false;
+    grok.shell.windows.simpleMode = false; 
+    await delay(10000) 
   });
 
-  test('exist', async () => {
+  test('exist', async () => { 
     let b: boolean;
     for (let i = 0; i < 5; i++) {
       b = true;
@@ -30,7 +31,7 @@ category('FSE', () => {
     if (!b) throw new Error('Failed: FSE button does not exist');
   });
 
-  test('open', async () => {
+  test('open', async () => { 
     let script = await grok.dapi.scripts.first();
     const v = DG.ScriptView.create(script);
     grok.shell.addView(v);
@@ -54,7 +55,7 @@ category('FSE', () => {
     expect(allTabsExist, true);
   });
 
-  test('close', async () => {
+  test('close', async () => { 
     let script = await grok.dapi.scripts.first();
     const v = DG.ScriptView.create(script);
     grok.shell.addView(v);
@@ -80,5 +81,9 @@ category('FSE', () => {
     editorButton.click();
     await awaitCheck(() => !!currentView.root.querySelector('.CodeMirror.cm-s-default'),
       'Code button did not open view', 2000);
+  });
+
+  after(async ()=>{
+    grok.shell.closeAll()
   });
 });
