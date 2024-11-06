@@ -95,10 +95,24 @@ export class GlobeViewer extends DG.JsViewer {
   onTableAttached() {
     this.init();
     this.filter = this.dataFrame.filter;
-    this.latitudeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE)?.name || '';
-    this.longitudeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE)?.name || '';
-    if (!this.latitudeColumnName) grok.shell.warning('Cannot find latitude column!');
+    let longitudeColName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE)?.name;
+    if (!longitudeColName) {
+      const longColNames = this.dataFrame.columns.toList().filter((col) => ['long', 'lon', 'lng', 'longitude', 'x']
+        .some((name) => col.name.toLowerCase().includes(name)));
+      if (longColNames.length !== 0)
+        longitudeColName = longColNames[0].name;
+    }
+    let latitudeColName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE)?.name;
+    if (!latitudeColName) {
+      const latColNames = this.dataFrame.columns.toList().filter((col) => ['lat', 'ltt', 'latitude', 'y']
+        .some((name) => col.name.toLowerCase().includes(name)));
+      if (latColNames.length !== 0)
+        latitudeColName = latColNames[0].name;
+    }
+    this.longitudeColumnName = longitudeColName || '';
+    this.latitudeColumnName = latitudeColName || '';
     if (!this.longitudeColumnName) grok.shell.warning('Cannot find longitude column!');
+    if (!this.latitudeColumnName) grok.shell.warning('Cannot find latitude column!');
     const magnitudeColumn = this.dataFrame.columns.bySemType('Magnitude')!;
     if (magnitudeColumn !== null) this.magnitudeColumnName = magnitudeColumn.name;
     else {
