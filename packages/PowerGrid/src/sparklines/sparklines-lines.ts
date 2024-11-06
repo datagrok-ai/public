@@ -2,13 +2,12 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {
   getSettingsBase,
-  names,
   SparklineType,
   SummarySettingsBase,
   Hit,
   distance,
   createTooltip,
-  isSummarySettingsBase
+  isSummarySettingsBase, SummaryColumnColoringType, createBaseInputs, getRenderColor
 } from './shared';
 
 const minDistance = 5;
@@ -35,14 +34,13 @@ function getPos(col: number, row: number, constants: getPosConstants): DG.Point 
 
 interface SparklineSettings extends SummarySettingsBase {
   globalScale: boolean;
-  colorCode: boolean;
 }
 
 function getSettings(gc: DG.GridColumn): SparklineSettings {
   const settings: SparklineSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
     gc.settings[SparklineType.Sparkline] ??= getSettingsBase(gc, SparklineType.Sparkline);
   settings.globalScale ??= false;
-  settings.colorCode ??= true;
+  settings.colorCode ??= SummaryColumnColoringType.Bins;
   return settings;
 }
 
@@ -146,8 +144,8 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
     for (let i = 0; i < cols.length; i++) {
       if (!cols[i].isNone(row)) {
         const p = getPos(i, row, getPosConstants);
-        const color = settings.colorCode ? DG.Color.getCategoricalColor(i) : DG.Color.blue;
-        DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, p.x, p.y, color, 3);
+        DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, p.x, p.y, getRenderColor(settings, DG.Color.blue,
+          {column: cols[i], colIdx: i, rowIdx: row}), 3);
       }
     }
   }
@@ -167,24 +165,6 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
     const normalizeInput = DG.InputBase.forProperty(globalScaleProp, settings);
     normalizeInput.onChanged.subscribe(() => gridColumn.grid.invalidate());
 
-    const colorCodeScaleProp = DG.Property.js('colorCode', DG.TYPE.BOOL, {
-      description: 'Activates color rendering'
-    });
-
-    const colorCodeNormalizeInput = DG.InputBase.forProperty(colorCodeScaleProp, settings);
-    colorCodeNormalizeInput.onChanged.subscribe(() => { gridColumn.grid.invalidate(); });
-
-    const columnNames = settings?.columnNames ?? names(gridColumn.grid.dataFrame.columns.numerical);
-    return ui.inputs([
-      normalizeInput,
-      ui.input.columns('Сolumns', {value: gridColumn.grid.dataFrame.columns.byNames(columnNames),
-        table: gridColumn.grid.dataFrame,
-        onValueChanged: (value) => {
-          settings.columnNames = names(value);
-          gridColumn.grid.invalidate();
-        }, available: names(gridColumn.grid.dataFrame.columns.numerical),
-      }),
-      colorCodeNormalizeInput,
-    ]);
+    return ui.inputs([normalizeInput, ...createBaseInputs(gridColumn, settings)]);
   }
 }

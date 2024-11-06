@@ -1,14 +1,14 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import * as grok from 'datagrok-api/grok';
 import {
+  createBaseInputs,
+  createTooltip, getRenderColor,
   getSettingsBase,
-  names,
-  SparklineType,
-  SummarySettingsBase,
-  createTooltip,
   Hit,
-  isSummarySettingsBase
+  isSummarySettingsBase,
+  SparklineType,
+  SummaryColumnColoringType,
+  SummarySettingsBase
 } from './shared';
 import {VlaaiVisManager} from '../utils/vlaaivis-manager';
 
@@ -51,6 +51,7 @@ function getSettings(gc: DG.GridColumn): PieChartSettings {
     gc.settings[SparklineType.PieChart] ??= getSettingsBase(gc, SparklineType.PieChart);
   settings.style ??= PieChartStyle.Radius;
   settings.sectors ??= sectors;
+  settings.colorCode ??= SummaryColumnColoringType.Bins;
   return settings;
 }
 
@@ -278,7 +279,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
           2 * Math.PI * i / cols.length, 2 * Math.PI * (i + 1) / cols.length);
         g.closePath();
 
-        g.fillStyle = DG.Color.toRgb(DG.Color.getCategoricalColor(i));
+        g.fillStyle = DG.Color.toRgb(getRenderColor(settings, DG.Color.blue,{column: cols[i], colIdx: i, rowIdx: row}));
         g.fill();
         g.strokeStyle = DG.Color.toRgb(DG.Color.lightGray);
         g.stroke();
@@ -333,7 +334,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         g.arc(box.midX, box.midY, r, currentAngle, endAngle);
         g.closePath();
 
-        g.fillStyle = DG.Color.toRgb(DG.Color.getCategoricalColor(i));
+        g.fillStyle = DG.Color.toRgb(getRenderColor(settings, DG.Color.blue,{column: cols[i], colIdx: i, rowIdx: row}));
         g.fill();
         g.strokeStyle = DG.Color.toRgb(DG.Color.lightGray);
         g.stroke();
@@ -346,18 +347,9 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
     const settings: PieChartSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
       gc.settings[SparklineType.PieChart] ??= getSettings(gc);
 
-    const columnNames = settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical);
     const elementsDiv = ui.div([]);
     const inputs = ui.inputs([
-      ui.input.columns('Сolumns', {
-        value: gc.grid.dataFrame.columns.byNames(columnNames),
-        table: gc.grid.dataFrame,
-        onValueChanged: (value) => {
-          settings.columnNames = names(value);
-          gc.grid.invalidate();
-        },
-        available: names(gc.grid.dataFrame.columns.numerical)
-      }),
+      ...createBaseInputs(gc, settings),
       ui.input.choice('Style', {value: settings.style ?? PieChartStyle.Radius, items: [PieChartStyle.Angle, PieChartStyle.Radius, PieChartStyle.Vlaaivis],
         onValueChanged: (value) => {
           settings.style = value;
@@ -373,7 +365,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
           if (input.value === PieChartStyle.Vlaaivis)
             elementsDiv.appendChild(new VlaaiVisManager(settings, gc).createTreeGroup());
         }
-      })
+      }),
     ]);
 
     return ui.divV([inputs, elementsDiv]);
