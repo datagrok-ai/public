@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
@@ -8,6 +9,7 @@ import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 import {_package} from '../package';
 
+/// NB! UNUSED LEGACY CODE
 export class MacromoleculeCustomCellRenderer extends DG.GridCellRenderer {
   private readonly seqHelper: ISeqHelper;
 
@@ -41,7 +43,7 @@ export class MacromoleculeCustomCellRenderer extends DG.GridCellRenderer {
     back?.onMouseEnter(gridCell, e);
   }
 
-  override onMouseLeave(gridCell: DG.GridCell, e: MouseEvent) {
+  override onMouseLeave(_gridCell: DG.GridCell, _e: MouseEvent) {
     // TODO: We get gridCell from another column here, so we can not get back object from the column rendered.
     ui.tooltip.hide();
     // const back = this.getRendererBack(gridCell);
