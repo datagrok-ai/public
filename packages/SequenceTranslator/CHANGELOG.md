@@ -1,5 +1,11 @@
 # Sequence Translator changelog
 
+## 1.5.3 (2024-11-06)
+
+### Bug fixes
+
+* PolyTool fix rules empty specification (all monomers undergo)
+
 ## 1.5.2 (2024-11-06)
 
 ### Bug fixes

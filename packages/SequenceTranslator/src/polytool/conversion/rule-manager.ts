@@ -106,7 +106,7 @@ export class RulesManager {
       const code = this.rules.linkRules[i].code;
       const [firstMonomers, secondMonomers] = getMonomerPairs(this.rules.linkRules[i]);
       for (let j = 0; j < firstMonomers.length; j++) {
-        const seq = `${firstMonomers[j]}(${code})-A-A-A-A-${secondMonomers[j]}(${code})-A`;
+        const seq = `${firstMonomers[j]}(${code})-A-A-A-A-${secondMonomers[j]}(${code})`;
         seqs.push(seq);
       }
     }
