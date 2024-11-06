@@ -1,5 +1,11 @@
 # Sequence Translator changelog
 
+## 1.5.2 (2024-11-06)
+
+### Bug fixes
+
+* PolyTool rules several instances bug fix
+
 ## 1.5.1 (2024-11-06)
 
 ### Bug fixes
