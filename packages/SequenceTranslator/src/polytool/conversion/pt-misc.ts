@@ -184,7 +184,7 @@ export async function getOverriddenLibrary(rules: Rules): Promise<IMonomerLibBas
 
   for (let i = 0; i < rules.reactionRules.length; i++) {
     try {
-      const [names, monomers] = getNewMonomers(rdkit, systemMonomerLib, rules.reactionRules[i]);
+      [names, monomers] = getNewMonomers(rdkit, systemMonomerLib, rules.reactionRules[i]);
     } catch (e: any) {
       names = [];
       monomers = [];
