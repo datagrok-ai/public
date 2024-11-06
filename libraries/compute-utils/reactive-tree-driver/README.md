@@ -78,9 +78,9 @@ and inputs before `I` will be rerun. If there is an output before `I`,
 it will be discarded.
 - Data links the has inputs in `I` and outputs outside of `I` will be
   run.
-- Meta links that have either input or output in `Y` will be rerun.
-- All validators will be rerun.
-- All orphaned metadata will be discarded.
+- Meta and validatros links that have either input or output in `Y`
+  will be rerun.
+- All orphaned metadata and validations will be discarded.
 
 Note that links run order is based on the DFS order of the first
 encountered input. After data link is triggered, all triggered
@@ -100,8 +100,7 @@ X   Y                    X   Y
 output before, it will be discarded.
 - Data links the has inputs in `Y` and outputs outside of `Y` will be
   run.
-- Meta links that have either input or output in `Y` will be rerun.
-- All validators will be rerurn.
-- All orphaned metadata will be discarded.
+- Meta and validator links that have either input or output in `Y` will be rerun.
+- All orphaned metadata and validations will be discarded.
 
 Similar rules are applied to the moving case.
