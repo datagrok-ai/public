@@ -31,7 +31,9 @@ export class RuleInputs extends ActiveFiles {
     const editIcon = ui.icons.edit(async () => {
       const rulesManager = await RulesManager.getInstance(available);
       //await rulesManager.show();
-      grok.shell.addView(await rulesManager.getView());
+      // close the dialogs, its easier if we just close it from active dialogs with filtering
+      DG.Dialog.getOpenDialogs()?.filter((d) => d.root.contains(editIcon)).forEach((d) => d.close());
+      await rulesManager.getAndAddView();
     }, 'Edit rules');
 
     res.addOptions(editIcon);
