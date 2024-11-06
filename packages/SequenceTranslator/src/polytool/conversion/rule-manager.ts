@@ -37,6 +37,7 @@ export class RulesManager {
   async getView(): Promise<DG.ViewBase> {
     if (!this.v) {
       this.v = DG.View.create();
+      this.v.name = 'Manage Polytool Rules';
       this.v.append(await this.getForm());
     }
 
@@ -94,8 +95,8 @@ export class RulesManager {
     const initCol = DG.Column.fromStrings('monomers', seqs);
     const helmCol = DG.Column.fromStrings('helm', helms);
 
-    initCol.semType = DG.SEMTYPE.MACROMOLECULE;
     applyNotationProviderForCyclized(initCol, '-');
+    initCol.semType = DG.SEMTYPE.MACROMOLECULE;
 
     helmCol.semType = DG.SEMTYPE.MACROMOLECULE;
     helmCol.meta.units = NOTATION.HELM;
