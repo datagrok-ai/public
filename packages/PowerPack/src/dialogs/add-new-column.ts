@@ -608,14 +608,14 @@ export class AddNewColumnDialog {
         intervalsToCheckForColumns.push([0, match.index]);
       }
       if (counter) {
-        intervalsToCheckForColumns.push([quotesSelection[counter].to, match.index]);
+        intervalsToCheckForColumns.push([quotesSelection[counter - 1].to, match.index]);
       }
       quotesSelection.push({from: match.index, to: match.index + match[0].length});
       counter++;
     }
     if (counter) {
-      if (quotesSelection[counter - 1].to < trimmedFormula.length - 1)
-        intervalsToCheckForColumns.push([quotesSelection[counter - 1].to, trimmedFormula.length - 1]);
+      if (quotesSelection[counter - 1].to < trimmedFormula.length)
+        intervalsToCheckForColumns.push([quotesSelection[counter - 1].to, trimmedFormula.length]);
     } else {
       intervalsToCheckForColumns.push([0, trimmedFormula.length]);
     }
