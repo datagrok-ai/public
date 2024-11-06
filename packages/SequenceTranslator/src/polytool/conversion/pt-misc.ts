@@ -179,10 +179,20 @@ export async function getOverriddenLibrary(rules: Rules): Promise<IMonomerLibBas
   const rdkit = await getRdKitModule();
   const argLib: { [symbol: string]: Monomer } = {};
 
+  let names: string [] = [];
+  let monomers: Monomer [] = [];
+
   for (let i = 0; i < rules.reactionRules.length; i++) {
-    const [names, monomers] = getNewMonomers(rdkit, systemMonomerLib, rules.reactionRules[i]);
-    for (let j = 0; j < names.length; j ++)
-      argLib[names[j]] = monomers[j];
+    try {
+      const [names, monomers] = getNewMonomers(rdkit, systemMonomerLib, rules.reactionRules[i]);
+    } catch (e: any) {
+      names = [];
+      monomers = [];
+      console.error(e);
+    } finally {
+      for (let j = 0; j < names.length; j ++)
+        argLib[names[j]] = monomers[j];
+    }
   }
 
   const overrideMonomerLibData: MonomerLibData = {[PolymerTypes.PEPTIDE]: argLib};
