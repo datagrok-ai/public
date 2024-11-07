@@ -30,8 +30,10 @@ export function _makeInspectorPanel(): DG.Widget {
   return DG.Widget.fromRoot(ui.divText('Custom panel from DevTools'));
 }
 
+//description: DevTools autostart function
 //tags: autostart
-export function describeCurrentObj(): void {
+export function autostartTools(): void {
+  // Dev pane
   minifiedClassNameMap = getMinifiedClassNameMap();
 
   grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
@@ -46,23 +48,13 @@ export function describeCurrentObj(): void {
     if (args.args.context instanceof DG.Viewer && (args.args.context as DG.Viewer).type !== DG.VIEWER.GRID)
       addToJSContextCommand(args);
   });
-}
 
-//description: ScriptEditor
-//tags: autostart
-export function _scriptEditor(): void {
-  grok.events.onViewAdded.subscribe((view) => {
-    if (view.type == 'ScriptView')
-      initScriptEditor(view);
-  });
-}
-
-//description: FunctionSignatureEditor
-//tags: autostart
-export function _functionSignatureEditor(): void {
+  // script editor, signature editor
   grok.events.onViewAdded.subscribe((view) => {
     if (view.type == 'ScriptView' || view.type == 'DataQueryView')
       functionSignatureEditor(view);
+    if (view.type == 'ScriptView')
+      initScriptEditor(view);
   });
 }
 
