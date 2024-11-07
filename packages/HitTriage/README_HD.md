@@ -44,7 +44,7 @@ Campaigns are built based on templates and encompass the actual hit design proce
 
 Campaigns can be groupped either by template key, status or be ungroupped. The groupping setting can be changed by clicking 'Group By' icon next to 'Comntinue Campaign' header.
 
-![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-modify-groupping?raw=true)
+![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-modify-groupping.gif?raw=true)
 
 ## Getting started
 
