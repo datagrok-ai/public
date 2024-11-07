@@ -2,20 +2,37 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+/* eslint-disable max-len */
 import {after, before, category, delay, expect, expectArray, test, testEvent} from '@datagrok-libraries/utils/src/test';
-import {HelmNotSupportedError, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {HelmNotSupportedError, HelmNotSupportedErrorType, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
+/* eslint-enable max-len */
 
 import {_package} from '../package-test';
 
 type TestSrcType = { helm: string };
-type TestTgtType = { helm: string | null, map: [number, number][] };
+type TestTgtType = { helm: string | null, map: [number, number][], errType?: string };
 
 category('HelmHelper: removeGaps', () => {
   let helmHelper: IHelmHelper;
+  let libHelper: IMonomerLibHelper;
+  let userLibSettings: UserLibSettings;
 
   before(async () => {
     helmHelper = await getHelmHelper();
+    libHelper = await getMonomerLibHelper();
+
+    userLibSettings = await getUserLibSettings();
+    // Cysteine has different R-groups in other libraries
+    await libHelper.loadMonomerLibForTests();
+  });
+
+  after(async () => {
+    await setUserLibSettings(userLibSettings);
+    await libHelper.loadMonomerLib(true);
   });
 
   const tests: { [testName: string]: { src: TestSrcType, tgt: TestTgtType } } = {
@@ -63,13 +80,13 @@ category('HelmHelper: removeGaps', () => {
     },
     'single-cycle-gap-at-connection': {
       src: {helm: 'PEPTIDE1{[meY].*.C.R.N.P.C.T}$PEPTIDE1,PEPTIDE1,2:R3-7:R3$$$V2.0'},
-      tgt: {helm: null, map: []}
+      tgt: {helm: null, map: [], errType: HelmNotSupportedErrorType}
     }
   };
 
   for (const [testName, testData] of Object.entries(tests)) {
     test(`${testName}`, async () => {
-      let resErr: any = null;
+      let resErr: HelmNotSupportedError | null = null;
       try {
         const res = helmHelper.removeGaps(testData.src.helm);
         expect(res.resHelm, testData.tgt.helm);
@@ -78,17 +95,8 @@ category('HelmHelper: removeGaps', () => {
         resErr = err;
       }
 
-      if (testData.tgt.helm === null) { // err expected, for debug on GitHub CI
-        expect(resErr != null, true, 'Error expected');
-        const isErrorInstance = resErr instanceof HelmNotSupportedError;
-        const errCtorName = resErr.constructor.name;
-        const isErrorCtor = errCtorName === 'HelmNotSupportedError';
-        _package.logger.debug(`Check error object. ` +
-          `isErrorInstance: ${isErrorInstance}, isErrorCtor: ${isErrorCtor}, errCtorName: ${errCtorName}`);
-      }
-
-      expect((resErr instanceof HelmNotSupportedError) || resErr?.constructor.name === 'HelmNotSupportedError',
-        testData.tgt.helm === null, 'HelmNotSupportedError thrown expected');
-    }, testData.tgt.helm == null ? {skipReason: 'GitHub CI does not support testing exceptions'} : undefined);
+      if (testData.tgt.errType)
+        expect(resErr?.type, testData.tgt.errType, 'HelmNotSupportedError thrown expected');
+    });
   }
 });

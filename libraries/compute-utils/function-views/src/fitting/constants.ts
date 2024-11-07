@@ -102,9 +102,9 @@ It computes inputs minimizing deviation measured by [loss function](https://en.w
 8. Open ${HELP_ITEMS.CONTEXT}. You will get the function run corresponding to the selected grid row.
 
 9. Press <i class="grok-icon fal fa-question"></i> on the top panel to learn more about 
-[parameters optimization](https://datagrok.ai/help/compute/#input-parameter-optimization).
+[parameters optimization](https://datagrok.ai/help/compute/function-analysis#parameter-optimization).
 
 # Learn more
 
-* [Parameters optimization](https://datagrok.ai/help/compute/#input-parameter-optimization)
+* [Parameters optimization](https://datagrok.ai/help/compute/function-analysis#parameter-optimization)
 * [Nelder-Mead method](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method)`;

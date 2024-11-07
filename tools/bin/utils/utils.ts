@@ -156,6 +156,13 @@ export function getParam(name: string, script: string, comment: string = '#'): s
   return match ? match[1]?.trim() : null;
 };
 
+export const cahceValues = ['all', 'server' , 'client', 'true'];
+
+export function isValidCron(cronExpression: string) : boolean {
+  const cronRegex = /^(\*|([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])|\*\/([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])) (\*|([0-9]|1[0-9]|2[0-3])|\*\/([0-9]|1[0-9]|2[0-3])) (\*|([1-9]|1[0-9]|2[0-9]|3[0-1])|\*\/([1-9]|1[0-9]|2[0-9]|3[0-1])) (\*|([1-9]|1[0-2])|\*\/([1-9]|1[0-2])) (\*|([0-6])|\*\/([0-6]))$/;
+  return cronRegex.test(cronExpression);
+}
+
 export const dgToTsTypeMap: Indexable = {
   int: 'number',
   double: 'number',
@@ -179,8 +186,13 @@ export const headerTags = [
   'top-menu', 'environment', 'require', 'editor-for', 'schedule',
   'reference', 'editor', 'meta',
 ];
-
-export const paramRegex = new RegExp(`\/\/\\s*(${headerTags.join('|')}\\.[^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?`);
+ 
+export const fileParamRegex = {
+  py: new RegExp(`^\#\\s*((?:${headerTags.join('|')})[^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`),
+  ts: new RegExp(`^\/\/\\s*((?:${headerTags.join('|')})[^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`),
+  js: new RegExp(`^\/\/\\s*((?:${headerTags.join('|')})[^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`), 
+  sql: new RegExp(`^--\\s*((?:${headerTags.join('|')})[^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`)
+}
 
 export const nameAnnRegex = /\/\/\s*(name[^:]*): ([^\n\r\[\{]+)/;
 

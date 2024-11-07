@@ -124,6 +124,13 @@ export class TreeUtils {
           path: parentNode?.path == null ? name : parentNode.path + ' | ' + name,
           value: 0,
         };
+
+        if (value === '') {
+          node.itemStyle = {
+            color: '#c7c7c7'
+          }
+        }
+
         const colorCodingType = columns[colIdx].meta.colors.getType();
         if (colorCodingType !== DG.COLOR_CODING_TYPE.OFF && colorCodingType !== null && inherit) {
           node.itemStyle = {

@@ -38,6 +38,9 @@ import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter'
 import {LogoSummaryTable} from './logo-summary';
 import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
+import {PeptideUtils} from '../peptideUtils';
 
 export enum SELECTION_MODE {
   MUTATION_CLIFFS = 'Mutation Cliffs',
@@ -180,6 +183,8 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
     return this._viewerGrid;
   }
 
+  render(): void {}
+
   /**
    * Returns sequence column alphabet.
    * @return - sequence column alphabet.
@@ -227,7 +232,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
 
 
     this._positionColumns ??= getSharedPositionColumns(VIEWER_TYPE.LOGO_SUMMARY_TABLE) ??
-      splitAlignedSequences(this.dataFrame.getCol(this.sequenceColumnName)).columns.toList();
+      splitAlignedSequences(this.dataFrame.getCol(this.sequenceColumnName), PeptideUtils.getSeqHelper()).columns.toList();
     return this._positionColumns!;
   }
 
@@ -520,6 +525,8 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
     this.subs.forEach((sub) => sub.unsubscribe());
   }
 
+  protected _monomerMetaColumns: Set<string> = new Set();
+
   /** Processes attached table and sets viewer properties. */
   onTableAttached(): void {
     super.onTableAttached();
@@ -533,6 +540,28 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
         ?.set(this, wu(this.dataFrame.columns.numerical).next().value.name);
       if (this.mutationCliffs === null && this.sequenceColumnName && this.activityColumnName)
         this.calculateMutationCliffs().then((mc) => {this.mutationCliffs = mc.cliffs; this.cliffStats = mc.cliffStats;});
+      this.subs.push(grok.events.onContextMenu.subscribe((a: DG.EventData) => {
+        if (!a || !a.causedBy || !a.args || !a.args.menu || !a.causedBy.target || !(a.causedBy.target instanceof HTMLElement) || !this.root.contains(a.causedBy.target))
+          return;
+        const menu = a.args.menu as DG.Menu;
+        getMonomerLibHelper().then((lh) => {
+          const lib = lh.getMonomerLib();
+          const mSymbols = lib.getMonomerSymbolsByType(PolymerTypes.PEPTIDE);
+          const monomerMetas = mSymbols.map((s) => lib.getMonomer(PolymerTypes.PEPTIDE, s)).filter(Boolean).map((m) => m!.meta ?? {});
+          const availableMetas = new Set<string>();
+          monomerMetas.forEach((m) => Object.keys(m).forEach((k) => availableMetas.add(k)));
+          availableMetas.delete('colors'); // colors are not needed
+          const g = menu.group('Monomer Meta');
+          g.items(Array.from(availableMetas), (meta) => {
+            if (this._monomerMetaColumns.has(meta))
+              this._monomerMetaColumns.delete(meta);
+            else
+              this._monomerMetaColumns.add(meta);
+            this._viewerGrid = null;
+            this.render();
+          }, {isChecked: (meta) => this._monomerMetaColumns.has(meta)});
+        });
+      }));
     } else {
       const msg = 'PeptidesError: dataframe is missing Macromolecule or numeric columns';
       grok.log.error(msg);
@@ -717,13 +746,24 @@ export class MonomerPosition extends SARViewer {
           uniqueMonomers.add(cat);
       }
     }
-
-    const monomerCol = DG.Column.fromStrings(C.COLUMNS_NAMES.MONOMER, Array.from(uniqueMonomers));
+    const monomersArray = Array.from(uniqueMonomers);
+    const monomerCol = DG.Column.fromStrings(C.COLUMNS_NAMES.MONOMER, monomersArray);
     const monomerPositionDf = DG.DataFrame.fromColumns([monomerCol]);
+    const monomersMetaPromise: Promise<Record<string, string>[]> = getMonomerLibHelper().then((lh) => {
+      const lib = lh.getMonomerLib();
+      if (!lib)
+        return monomersArray.map((_m) => ({}));
+      return monomersArray.map((m) => lib.getMonomer(PolymerTypes.PEPTIDE, m)?.meta ?? {});
+    });
+    this._monomerMetaColumns.forEach((meta) => {
+      const metaCol = monomerPositionDf.columns.addNewString(meta);
+      monomersMetaPromise.then((metaInfo) => {
+        metaCol.init((i) => metaInfo[i][meta]?.toString() ?? '');
+      });
+    });
     monomerPositionDf.name = 'SAR';
     for (const col of splitSeqCols)
       monomerPositionDf.columns.addNewBool(col.name);
-
 
     return monomerPositionDf;
   }
@@ -807,7 +847,7 @@ export class MonomerPosition extends SARViewer {
     const grid = monomerPositionDf.plot.grid();
     grid.sort([C.COLUMNS_NAMES.MONOMER]);
     const positionColumns = this.positionColumns.map((col) => col.name);
-    grid.columns.setOrder([C.COLUMNS_NAMES.MONOMER, ...positionColumns]);
+    grid.columns.setOrder([C.COLUMNS_NAMES.MONOMER, ...this._monomerMetaColumns, ...positionColumns]);
     const monomerCol = monomerPositionDf.getCol(C.COLUMNS_NAMES.MONOMER);
     CR.setMonomerRenderer(monomerCol, this.alphabet, true);
     this.cacheInvariantMapColors();
@@ -817,7 +857,7 @@ export class MonomerPosition extends SARViewer {
       this.colorAggregation as DG.AGG));
 
     grid.onCellTooltip((gridCell: DG.GridCell, x: number, y: number) => {
-      if (!gridCell.isTableCell) {
+      if (!gridCell.isTableCell || !gridCell?.cell.column?.name || this._monomerMetaColumns.has(gridCell.cell.column.name)) {
         this.model.unhighlight();
         return true;
       }
@@ -840,6 +880,8 @@ export class MonomerPosition extends SARViewer {
     grid.root.addEventListener('mouseleave', (_ev) => this.model.unhighlight());
     DG.debounce(grid.onCurrentCellChanged, 500).subscribe((gridCell: DG.GridCell) => {
       try {
+        if (!gridCell || !gridCell.dart || !gridCell?.cell?.column?.name || this._monomerMetaColumns.has(gridCell.cell.column.name))
+          return;
         if (!this.keyPressed)
           return;
 
@@ -918,7 +960,9 @@ export class MonomerPosition extends SARViewer {
     });
     grid.root.addEventListener('click', (ev) => {
       const gridCell = grid.hitTest(ev.offsetX, ev.offsetY);
-      if (!gridCell?.isTableCell || gridCell?.tableColumn?.name === C.COLUMNS_NAMES.MONOMER)
+      if (!gridCell?.isTableCell || gridCell?.tableColumn?.name === C.COLUMNS_NAMES.MONOMER ||
+        (gridCell?.tableColumn?.name && this._monomerMetaColumns.has(gridCell.tableColumn.name))
+      )
         return;
 
 
@@ -940,26 +984,6 @@ export class MonomerPosition extends SARViewer {
       this.showHelp();
     });
 
-    // const columnWidths = new Map<string, number>();
-    // columnWidths.set(C.COLUMNS_NAMES.MONOMER, AAR_CELL_WIDTH);
-    // for (const posCol of positionColumns)
-    //   columnWidths.set(posCol, MUTATION_CLIFFS_CELL_WIDTH);
-
-    // grid.onColumnResized.subscribe(() => {
-    //   try {
-    //     const resizedCol = Array.from(columnWidths.keys()).find((col) => grid.col(col)?.width !== columnWidths.get(col));
-    //     if (!resizedCol)
-    //       return;
-    //     const resizedColWidth = Math.max(grid.col(resizedCol)?.width ?? MUTATION_CLIFFS_CELL_WIDTH / 2, MUTATION_CLIFFS_CELL_WIDTH / 2);
-    //     Array.from(columnWidths.keys()).forEach((col) => {
-    //       columnWidths.set(col, resizedColWidth);
-    //       grid.col(col) && (grid.col(col)!.width = resizedColWidth);
-    //     });
-    //     grid.props.rowHeight = resizedColWidth / 1.5;
-    //   } catch (e) {
-    //     grok.log.error(e);
-    //   }
-    // });
     setViewerGridProps(grid);
 
     // Monomer cell renderer overrides width settings. This way I ensure is "initially" set.
@@ -1455,6 +1479,5 @@ function setViewerGridProps(grid: DG.Grid): void {
   gridProps.showRowHeader = false;
   gridProps.showCurrentRowIndicator = false;
   gridProps.showReadOnlyNotifications = false;
-
   gridProps.rowHeight = 20;
 }

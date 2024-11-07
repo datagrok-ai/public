@@ -4,14 +4,16 @@ import * as DG from 'datagrok-api/dg';
 
 import {Unsubscribable} from 'rxjs';
 
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getUnusedColName} from '@datagrok-libraries/bio/src/monomer-works/utils';
+import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
 import {defaultErrorHandler} from '../utils/err-info';
 import {doPolyToolUnrule} from './pt-unrule';
-import {getRules, RuleInputs, RULES_PATH, RULES_STORAGE_NAME} from './pt-rules';
+import {getRules, RuleInputs, RULES_PATH, RULES_STORAGE_NAME} from './conversion/pt-rules';
 import {PT_ERROR_DATAFRAME, PT_UI_DIALOG_UNRULE, PT_UI_RULES_USED} from './const';
+
+import {_package} from '../package';
 
 type PolyToolUnruleSerialized = {
   rules: string[];
@@ -34,7 +36,7 @@ export async function getPolyToolUnruleDialog(srcCol?: DG.Column<string>): Promi
       table: srcColVal.dataFrame, value: srcColVal,
       filter: (col: DG.Column) => {
         if (col.semType !== DG.SEMTYPE.MACROMOLECULE) return false;
-        const sh = SeqHandler.forColumn(col);
+        const sh = _package.seqHelper.getSeqHandler(col);
         return sh.notation === NOTATION.HELM;
       }
     });
@@ -87,9 +89,11 @@ export async function polyToolUnrule(
 ): Promise<DG.Column> {
   const pi = DG.TaskBarProgressIndicator.create('PolyTool unrule...');
   try {
+    const helmHelper = await getHelmHelper();
+
     const table = srcCol.dataFrame;
     const rules = await getRules(ruleFiles);
-    const resHelmList = doPolyToolUnrule(srcCol.toList(), rules);
+    const resHelmList = doPolyToolUnrule(srcCol.toList(), rules, helmHelper);
     const resHelmColName = `harmonized(srcCol.name)`;
     const resHelmCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, resHelmColName, resHelmList,);
     resHelmCol.semType = DG.SEMTYPE.MACROMOLECULE;

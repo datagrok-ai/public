@@ -4,13 +4,12 @@ import * as ui from 'datagrok-api/ui';
 
 import wu from 'wu';
 
-import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
 import {MonomerPlacer, hitBounds} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 import {monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {
-  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
+  getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 
@@ -24,9 +23,7 @@ category('renderers: monomerPlacer', () => {
     libHelper = await getMonomerLibHelper();
     libSettings = await getUserLibSettings();
 
-    await setUserLibSettingsForTests();
-    await libHelper.awaitLoaded();
-    await libHelper.loadMonomerLib(true);
+    await libHelper.loadMonomerLibForTests();
   });
 
   after(async () => {
@@ -117,14 +114,13 @@ id3,QHIRE--LT
       const sepWidth: number = 12;
       const colTemp: MonomerPlacer = new MonomerPlacer(null, seqCol, _package.logger, monLength,
         () => {
-          const sh = SeqHandler.forColumn(seqCol);
           return {
-            seqHandler: sh,
             monomerCharWidth: charWidth,
             separatorWidth: sepWidth,
             monomerToShort: monomerToShort,
           };
         });
+      await colTemp.init();
 
       const width: number = 10000;
       const testList = testData.testList;
@@ -144,9 +140,7 @@ id3,QHIRE--LT
         throw new Error('Test failed error(s):\n' + errorList.join(', \n'));
     });
   }
-});
 
-category('renderers: monomerPlacer', () => {
   const boundsTestData = {
     bounds: [10, 20, 30, 40, 50, 60],
     tests: {
@@ -167,6 +161,62 @@ category('renderers: monomerPlacer', () => {
     test('hitBounds-' + testName, async () => {
       const res = hitBounds(boundsTestData.bounds, testData.x);
       expect(res, testData.tgt);
+    });
+  }
+
+  const lengthsTests = {
+    mono1: {
+      src: {
+        csv: 'seq' + '\n' +
+          'm1/m2/m3/m4/m5/m6/m7/m8/m9' + '\n' +
+          'n1/m2/n3/m4/n5/m6/n7/m8/n9' + '\n' +
+          'm1/n2/m3/n4/m5/n6/m7/n8/m9' + '\n',
+      },
+      tgt: {
+        lengths: [5, 31, 57, 83, 109, 135, 161, 187, 213, 239],
+      }
+    },
+    monoWithGaps: {
+      src: {
+        csv: 'seq' + '\n' +
+          'm1/m2/m3/m4/m5/m6//m8/m9' + '\n' +
+          'n1/m2/n3/m4/n5/m6//m8/n9' + '\n' +
+          'm1/n2/m3/n4/m5/n6/m7/n8/m9' + '\n',
+      },
+      tgt: {
+        lengths: [5, 31, 57, 83, 109, 135, 161, 187, 213, 239],
+      }
+    },
+    monoWithGapColumn: {
+      src: {
+        csv: 'seq' + '\n' +
+          'm1/m2/m3/m4/m5/m6//m8/m9' + '\n' +
+          'n1/m2/n3/m4/n5/m6//m8/n9' + '\n' +
+          'm1/n2/m3/n4/m5///n8/m9' + '\n',
+      },
+      tgt: {lengths: [5, 31, 57, 83, 109, 135, 161, 180, 206, 232],}
+    },
+  };
+
+  for (const [testName, testData] of Object.entries(lengthsTests)) {
+    test(`getCellMonomerLengths-${testName}`, async () => {
+      const df: DG.DataFrame = DG.DataFrame.fromCsv(testData.src.csv);
+      await grok.data.detectSemanticTypes(df);
+      const seqCol = df.getCol('seq');
+
+      const monLengthLimit: number = 3;
+      const charWidth: number = 7;
+      const sepWidth: number = 12;
+      const colTemp = new MonomerPlacer(null, seqCol, _package.logger, monLengthLimit, () => {
+        return {
+          monomerCharWidth: charWidth,
+          separatorWidth: sepWidth,
+          monomerToShort: monomerToShort,
+        };
+      });
+      await colTemp.init();
+      const resLengths = colTemp.getCellMonomerLengths(0, 1000)[1];
+      expectArray(resLengths, testData.tgt.lengths);
     });
   }
 });

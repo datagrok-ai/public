@@ -1,6 +1,6 @@
 {
   "name": "datagrok-tools",
-  "version": "4.13.24",
+  "version": "4.13.35",
   "description": "Utility to upload and publish packages to Datagrok",
   "homepage": "https://github.com/datagrok-ai/public/tree/master/tools#readme",
   "dependencies": {
@@ -9,7 +9,7 @@
     "@babel/traverse": "^7.23.7",
     "archiver": "^4.0.2",
     "archiver-promise": "^1.0.0",
-    "fs": "latest",
+    "fs": "^0.0.1-security",
     "ignore-walk": "^3.0.4",
     "inquirer": "^7.3.3",
     "js-yaml": "^4.1.0",
@@ -29,7 +29,8 @@
   },
   "bin": {
     "datagrok-upload": "./bin/_deprecated/upload.js",
-    "grok": "./bin/grok.js"
+    "grok": "./bin/grok.js",
+    "datagrok-tools": "./bin/grok.js"
   },
   "babel": {
     "presets": [
@@ -47,6 +48,7 @@
     "@babel/plugin-transform-runtime": "^7.23.7",
     "@babel/preset-env": "^7.23.8",
     "@babel/preset-typescript": "7.15.0",
+    "@datagrok-misc/eslint-plugin-config": "^1.0.0",
     "@types/ignore-walk": "^4.0.3",
     "@types/inquirer": "^8.2.10",
     "@types/js-yaml": "^4.0.9",

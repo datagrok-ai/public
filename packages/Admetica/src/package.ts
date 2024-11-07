@@ -90,6 +90,7 @@ export async function admeticaMenu(
 
 //name: Demo Admetica
 //meta.demoPath: Cheminformatics | Admetica
+//meta.demoSkip: GROK-16464
 export async function demoAdmetica(): Promise<void> {
   await _demoAdmetica();
 }

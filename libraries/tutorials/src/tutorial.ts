@@ -128,7 +128,7 @@ export abstract class Tutorial extends DG.Widget {
     } catch (error) {
       // If the tutorial was closed during execution, exit without error
       if (!this.closed) return Promise.reject(error);
-    }    
+    }
 
     this.endSection();
 
@@ -485,8 +485,8 @@ export abstract class Tutorial extends DG.Widget {
     await this.action(instructions,
       new Observable((subscriber: any) => {
         if (inp.stringValue === value) subscriber.next(inp.stringValue);
-        inp.onChanged.subscribe((inpValue) => {
-          if (inpValue === value) subscriber.next(inpValue);
+        inp.onChanged.subscribe(() => {
+          if (inp.stringValue === value) subscriber.next(inp.stringValue);
         });
       }),
       historyHint ? this.getElement(dlg.root, 'i.fa-history.d4-command-bar-icon') : inp.root,

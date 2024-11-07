@@ -37,7 +37,7 @@ export interface IDartApi {
   grok_Get_Sidebar(): any;
   grok_Get_DockManager(): any;
   grok_Tools_SetHoverVisibility(e: any, items: any): any;
-  grok_Balloon(messageOrElement: any, [type]: any): any;
+  grok_Balloon(messageOrElement: any, type: String, options: any): any;
   grok_Balloon_CloseAll(): any;
   grok_CurrentTable(): any;
   grok_Get_CurrentView(): any;
@@ -84,6 +84,7 @@ export interface IDartApi {
   grok_Dapi_Admin_Send_Email(adminClient: any, email: any): any;
   grok_Dapi_Log(): any;
   grok_Dapi_LogTypes(): any;
+  grok_Dapi_Dockers(): any;
   grok_Dapi_DockerImages(): any;
   grok_Dapi_DockerContainers(): any;
   grok_Dapi_User_Reports(): any;
@@ -102,6 +103,7 @@ export interface IDartApi {
   grok_DataConnectionsDataSource_SubDir(s: any, c: any, dir: String): Promise<any>;
   grok_DataConnectionsDataSource_Get_Schemas(s: any, c: any): Promise<any>;
   grok_DataConnectionsDataSource_Get_Schema(s: any, c: any, schema: String): Promise<any>;
+  grok_DataConnectionsDataSource_Get_Unique_Columns(s: any, c: any, schema: String, table: String): Promise<any>;
   grok_GroupsDataSource_Save(s: any, e: any): Promise<any>;
   grok_EntitiesDataSource_SaveProperties(s: any, props: any): Promise<any>;
   grok_EntitiesDataSource_GetProperties(s: any, e: any): Promise<any>;
@@ -414,7 +416,11 @@ export interface IDartApi {
   grok_ScatterPlotViewer_Render(s: any, g: any): any;
   grok_ScatterPlotViewer_GetRowTooltip(s: any, rowIdx: Num): any;
   grok_ScatterPlotViewer_GetMarkerSize(s: any, rowIdx: Num): any;
+  grok_ScatterPlotViewer_GetMarkerSizes(s: any): any;
   grok_ScatterPlotViewer_GetMarkerType(s: any, rowIdx: Num): any;
+  grok_ScatterPlotViewer_GetMarkerTypes(s: any): any;
+  grok_ScatterPlotViewer_GetMarkerColor(s: any, rowIdx: Num): any;
+  grok_ScatterPlotViewer_GetMarkerColors(s: any): any;
   grok_FormViewer_CreateDefault(table: any, columnNames: any): any;
   grok_FormViewer_Get_Form(form: any): any;
   grok_FormViewer_Get_Editable(form: any): any;
@@ -692,6 +698,7 @@ export interface IDartApi {
   grok_GridCell_Set_Element(gridCell: any, e: any): any;
   grok_GridCell_Get_Renderer(gridCell: any): any;
   grok_GridCell_SetValue(gridCell: any, value: any, notify: Bool): any;
+  grok_GridCell_Render(gridCell: any, g: any, bounds: any): any;
   grok_GridCellStyle_Create(): any;
   grok_GridCellStyle_Get_Font(gcs: any): any;
   grok_GridCellStyle_Set_Font(gcs: any, x: any): any;
@@ -838,6 +845,7 @@ export interface IDartApi {
   grok_Property_Set_Category(p: any, x: String): any;
   grok_Property_Get_PropertyType(p: any): any;
   grok_Property_Set_PropertyType(p: any, x: String): any;
+  grok_Property_Get_PropertySubType(p: any): any;
   grok_Property_Get_IncludeInLayout(p: any): any;
   grok_Property_Set_IncludeInLayout(p: any, x: Bool): any;
   grok_Property_Get_SemType(p: any): any;
@@ -870,6 +878,8 @@ export interface IDartApi {
   grok_Property_Get_ColumnTypeFilter(p: any): any;
   grok_Property_Options(p: any, options: any): any;
   grok_Property_RegisterAttachedProperty(typeName: String, p: any): any;
+  grok_Property_Get_IsVectorizable(p: any): any;
+  grok_Property_Get_VectorName(p: any): any;
   grok_SemanticValue(value: any, semType: String): any;
   grok_SemanticValue_Get_Value(v: any): any;
   grok_SemanticValue_Set_Value(v: any, x: any): any;
@@ -917,6 +927,7 @@ export interface IDartApi {
   grok_BitSet_Invert(b: any, notify: Bool): any;
   grok_BitSet_SetAll(b: any, x: Bool, notify: Bool): any;
   grok_BitSet_GetBit(b: any, i: Num): any;
+  grok_BitSet_Get_Version(b: any): any;
   grok_BitSet_SetBit(b: any, i: Num, x: Bool, notify: Bool): any;
   grok_BitSet_GetSelectedIndexes(b: any): any;
   grok_BitSet_FindNext(b: any, i: Num, x: Bool): any;
@@ -1015,6 +1026,7 @@ export interface IDartApi {
   grok_DataConnection_Get_Parameters(c: any): any;
   grok_DataConnection_Query(c: any, name: String, sql: String): any;
   grok_DataConnection_Get_Credentials(c: any): any;
+  grok_DataConnection_Get_DataSource(c: any): any;
   grok_DataConnection_Test(c: any): Promise<any>;
   grok_Credentials_Parameters(c: any): any;
   grok_Credentials_OpenParameters(c: any): any;
@@ -1217,6 +1229,7 @@ export interface IDartApi {
   grok_FuncCall_Get_AdHoc(f: any): any;
   grok_FuncCall_Set_AdHoc(f: any, adHoc: Bool): any;
   grok_FuncCall_GetOutputViews(c: any): any;
+  grok_FuncCall_Get_DebugLogger(c: any): any;
   grok_FuncCallParam_Get_Aux(p: any): any;
   grok_FuncCallParam_Get_Param(p: any): any;
   grok_FuncCallParam_Get_Value(p: any): any;
@@ -1282,6 +1295,7 @@ export interface IDartApi {
   grok_Script_Create(script: String): any;
   grok_Script_GetScript(script: any): any;
   grok_Script_SetScript(script: any, s: String): any;
+  grok_Script_ClientCode(script: any): any;
   grok_Script_GetLanguage(script: any): any;
   grok_Script_SetLanguage(script: any, s: String): any;
   grok_Script_Get_Environment(script: any): any;
@@ -1450,10 +1464,14 @@ export interface IDartApi {
   grok_Dapi_DockerContainersDataSource_Stop(s: any, id: String, awaitStop: Bool): Promise<any>;
   grok_Dapi_DockerContainersDataSource_ProxyRequest(s: any, id: String, path: String, params: any): Promise<any>;
   grok_Dapi_DockerContainersDataSource_GetContainerLogs(s: any, id: String, limit: Num): Promise<any>;
+  grok_Dapi_DockersDataSource_GetServiceLogs(serviceName: String, limit: Num): Promise<any>;
+  grok_Dapi_DockersDataSource_GetAvailableServices(): Promise<any>;
   grok_DockerContainer_Status(dc: any): any;
   grok_Dapi_Packages_Load(pack: any, file: any): Promise<any>;
   grok_MathActions_GetDensity(dataFrame: any, xBins: Num, yBins: Num, xColName: String, yColName: String): any;
   grok_Paint_Marker(g: any, type: String, x: Num, y: Num, color: Num, size: Num): any;
+  grok_Marker_Types(): any;
+  grok_Marker_Type_Indexes(): any;
   grok_Paint_HorzAxis(g: any, min: Num, max: Num, x: Num, y: Num, w: Num, h: Num, log: Bool, inverse: Bool): any;
   grok_Paint_VertAxis(g: any, min: Num, max: Num, x: Num, y: Num, w: Num, h: Num, log: Bool, inverse: Bool): any;
   grok_HelpPanel_Get_SyncCurrentObject(): any;
@@ -1497,6 +1515,7 @@ export interface IDartApi {
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;
+  grok_ScriptLanguage_Create(): any;
   grok_DockerImage(): any;
   grok_DockerImage_Create(): any;
   grok_DockerImage_Get_description(x: any): any;
@@ -1516,6 +1535,7 @@ export interface IDartApi {
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;
+  grok_ScriptLanguage_Create(): any;
   grok_DockerImage(): any;
   grok_DockerImage_Create(): any;
   grok_DockerImage_Get_description(x: any): any;

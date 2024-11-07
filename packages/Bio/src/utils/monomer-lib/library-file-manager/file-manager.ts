@@ -8,7 +8,6 @@ import {JSONSchemaType} from 'ajv';
 import {MonomerType, PolymerType} from '@datagrok-libraries/bio/src/helm/types';
 import {IMonomerLib, IMonomerLinkData, IMonomerSet, Monomer} from '@datagrok-libraries/bio/src/types';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
-import {LIB_PATH, SETS_PATH} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {
   HELM_REQUIRED_FIELD as REQ,
 } from '@datagrok-libraries/bio/src/utils/const';
@@ -17,10 +16,10 @@ import {
 } from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
 import {MonomerLib} from '../monomer-lib';
-import {HELM_JSON_SCHEMA_PATH} from './consts';
 import {MonomerLibFileEventManager} from './event-manager';
 import {MonomerLibFileValidator} from './file-validator';
 import {MonomerSet, MonomerSetPlaceholder} from '../monomer-set';
+import {HELM_JSON_SCHEMA_PATH, LIB_PATH, SETS_PATH} from '../consts';
 
 import {_package} from '../../../package';
 
@@ -265,7 +264,7 @@ export class MonomerLibFileManager implements IMonomerLibFileManager {
     this.logger.debug(`${logPrefix}, start`);
 
     const libPaths = await grok.dapi.files.list(LIB_PATH)
-      .then((l) => l.map((fi) => fi.fullPath));
+      .then((l) => l.filter((f) => f.isFile).map((fi) => fi.fullPath));
 
     const checkForUi = false;
     const existingLibPaths: string[] = [];

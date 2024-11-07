@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
-import {Atom, HelmType, IWebEditorMonomer, GetMonomerResType} from '@datagrok-libraries/bio/src/helm/types';
+import {Atom, HelmType, IWebEditorMonomer, GetMonomerResType, IHelmBio, HelmAtom} from '@datagrok-libraries/bio/src/helm/types';
 
 import {OrgHelmModule, ScilModule} from '../types';
 import {RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from '../constants';
@@ -15,8 +15,8 @@ declare const org: OrgHelmModule;
 declare const scil: ScilModule;
 
 type GetMonomerOverridingFunc = (
-  a: Atom<HelmType> | HelmType, name: string | undefined, monomerLib: IMonomerLib,
-  originalGetMonomer: (a: Atom<HelmType> | HelmType, name: string) => GetMonomerResType) => GetMonomerResType;
+  a: HelmAtom | HelmType, name: string | undefined, monomerLib: IMonomerLib,
+  originalGetMonomer: (a: HelmAtom | HelmType, name: string) => GetMonomerResType) => GetMonomerResType;
 
 export function getMonomerOverrideAndLogAlert(
   monomerLib: IMonomerLib, getMonomerOverriding: GetMonomerOverridingFunc, trigger: () => void, logger: ILogger,
@@ -27,7 +27,7 @@ export function getMonomerOverrideAndLogAlert(
   const alertOriginal = scil.Utils.alert;
   try {
     org.helm.webeditor.Monomers.getMonomer =
-      (a: Atom<HelmType> | HelmType, name?: string): GetMonomerResType => {
+      (a: HelmAtom | HelmType, name?: string): GetMonomerResType => {
         return getMonomerOverriding(a, name, monomerLib, getMonomerOriginal);
       };
     // Preventing alert message box for missing monomers with compressed Scilligence.JSDraw2.Lite.js

@@ -7,7 +7,7 @@ import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {
-  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
+  getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 
 import {PolyToolEnumeratorParams, PolyToolEnumeratorTypes} from '../polytool/types';
@@ -25,10 +25,8 @@ category('PolyTool: Enumerate', () => {
 
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
-    // Clear settings to test default
-    await setUserLibSettingsForTests();
-    await monomerLibHelper.awaitLoaded();
-    await monomerLibHelper.loadMonomerLib(true);
+
+    await monomerLibHelper.loadMonomerLibForTests();
   });
 
   after(async () => {
@@ -43,7 +41,7 @@ category('PolyTool: Enumerate', () => {
       src: 'PEPTIDE1{[Ac(1)].F.W.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0',
       params: {
         type: PolyToolEnumeratorTypes.Single,
-        placeholdersBreadth: [
+        breadthPlaceholders: [
           {start: 2, end: 4, monomers: ['K']},
         ],
       },
@@ -57,7 +55,7 @@ category('PolyTool: Enumerate', () => {
       src: 'PEPTIDE1{[Ac(1)].F.W.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0',
       params: {
         type: PolyToolEnumeratorTypes.Single,
-        placeholdersBreadth: [
+        breadthPlaceholders: [
           {start: 2, end: 4, monomers: ['K']},
         ],
         keepOriginal: true,
@@ -73,7 +71,7 @@ category('PolyTool: Enumerate', () => {
       src: 'PEPTIDE1{[Ac(1)].F.W.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0',
       params: {
         type: PolyToolEnumeratorTypes.Single,
-        placeholdersBreadth: [
+        breadthPlaceholders: [
           {start: 2, end: 4, monomers: ['K', 'Y']},
         ],
       },
@@ -90,7 +88,7 @@ category('PolyTool: Enumerate', () => {
       src: 'PEPTIDE1{[Ac(1)].F.W.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0',
       params: {
         type: PolyToolEnumeratorTypes.Single,
-        placeholdersBreadth: [
+        breadthPlaceholders: [
           {start: 2, end: 4, monomers: ['K']},
           {start: 2, end: 4, monomers: ['Y']},
         ],

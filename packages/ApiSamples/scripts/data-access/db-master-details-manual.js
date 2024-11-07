@@ -6,10 +6,11 @@ grok.data.query('Samples:Countries', {}).then((countries) => {
   grok.shell.addTableView(countries);
   countries.onCurrentRowChanged.subscribe((_) => {
     grok.data.query('Samples:CustomersInCountry', {country: countries.currentRow['country']}).then((t) => {
-      if (customersView === null)
+      //if (customersView === null)
         customersView = grok.shell.addTableView(t);
       customersView.dataFrame = t;
     });
-    grok.shell.addTableView(countries);
+    //grok.shell.addTableView(t);
   })
 });
+

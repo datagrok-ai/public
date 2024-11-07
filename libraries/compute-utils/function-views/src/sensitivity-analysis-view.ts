@@ -15,6 +15,7 @@ import {combineLatest} from 'rxjs';
 import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {DOCK_RATIO, ROW_HEIGHT, STARTING_HELP} from './variance-based-analysis/constants';
+import {getLookupChoiceInput} from './shared/lookup-tools';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedInputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATA_FRAME];
@@ -406,16 +407,18 @@ export class SensitivityAnalysisView {
   private gridSubscription: any = null;
 
   store = this.generateInputFields(this.func);
-  comparisonView: DG.TableView;
+  comparisonView!: DG.TableView;
 
   static async fromEmpty(
     func: DG.Func,
     options: {
       parentView?: DG.View,
       parentCall?: DG.FuncCall,
+      inputsLookup?: string,
     } = {
       parentView: undefined,
       parentCall: undefined,
+      inputsLookup: undefined,
     },
   ) {
     const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE);
@@ -441,10 +444,12 @@ export class SensitivityAnalysisView {
       parentView?: DG.View,
       parentCall?: DG.FuncCall,
       configFunc?: undefined,
+      inputsLookup?: string,
     } = {
       parentView: undefined,
       parentCall: undefined,
       configFunc: undefined,
+      inputsLookup: undefined,
     },
   ) {
     this.runButton = ui.bigButton('Run', async () => await this.runAnalysis());
@@ -454,37 +459,36 @@ export class SensitivityAnalysisView {
     this.runIcon.classList.add('fas');
 
     this.helpIcon = ui.iconFA('question', () => {
-      window.open('https://datagrok.ai/help/compute.md#sensitivity-analysis', '_blank');
+      window.open('https://datagrok.ai/help/compute/function-analysis#sensitivity-analysis', '_blank');
     }, 'Open help in a new tab');
 
-    const form = this.buildFormWithBtn();
-    this.runButton.disabled = !this.canEvaluationBeRun();
-    this.runIcon.hidden = this.runButton.disabled;
-    this.addTooltips();
-    this.comparisonView = baseView;
+    this.buildFormWithBtn(options.inputsLookup).then((form) => {
+      this.runButton.disabled = !this.canEvaluationBeRun();
+      this.runIcon.hidden = this.runButton.disabled;
+      this.addTooltips();
+      this.comparisonView = baseView;
 
-    this.comparisonView.dockManager.dock(
-      form,
-      DG.DOCK_TYPE.LEFT,
-      null,
-      `${this.func.name} - Sensitivity Analysis`,
-      0.25,
-    );
-    /*saDock.container.containerElement.style.minWidth = '220px';
-    saDock.container.containerElement.style.maxWidth = '390px';*/
+      this.comparisonView.dockManager.dock(
+        form,
+        DG.DOCK_TYPE.LEFT,
+        null,
+        `${this.func.name} - Sensitivity Analysis`,
+        0.25,
+      );
 
-    this.comparisonView.grid.columns.byName(RUN_NAME_COL_LABEL)!.visible = false;
+      this.comparisonView.grid.columns.byName(RUN_NAME_COL_LABEL)!.visible = false;
 
-    const rbnPanels = this.comparisonView.getRibbonPanels();
-    rbnPanels.push([this.helpIcon, this.runIcon]);
-    this.comparisonView.setRibbonPanels(rbnPanels);
+      const rbnPanels = this.comparisonView.getRibbonPanels();
+      rbnPanels.push([this.helpIcon, this.runIcon]);
+      this.comparisonView.setRibbonPanels(rbnPanels);
 
-    this.comparisonView.helpUrl = 'https://datagrok.ai/help/compute.md#sensitivity-analysis';
-    this.tableDockNode = this.comparisonView.dockManager.findNode(this.comparisonView.grid.root);
-    const helpMD = ui.markdown(STARTING_HELP);
-    helpMD.style.padding = '10px';
-    helpMD.style.overflow = 'auto';
-    this.helpMdNode = this.comparisonView.dockManager.dock(helpMD, DG.DOCK_TYPE.FILL, this.tableDockNode, 'About');
+      this.comparisonView.helpUrl = '/help/function-analysis.md#sensitivity-analysis';
+      this.tableDockNode = this.comparisonView.dockManager.findNode(this.comparisonView.grid.root);
+      const helpMD = ui.markdown(STARTING_HELP);
+      helpMD.style.padding = '10px';
+      helpMD.style.overflow = 'auto';
+      this.helpMdNode = this.comparisonView.dockManager.dock(helpMD, DG.DOCK_TYPE.FILL, this.tableDockNode, 'About');
+    });
   }
 
   private closeOpenedViewers() {
@@ -571,32 +575,85 @@ export class SensitivityAnalysisView {
     this.runIcon.hidden = this.runButton.disabled;
   }
 
-  private buildFormWithBtn() {
-    let prevCategory = 'Misc';
-    const form = Object.values(this.store.inputs)
-      .reduce((container, inputConfig) => {
-        const prop = inputConfig.prop;
-        if (prop.category !== prevCategory) {
-          container.append(ui.h2(prop.category));
-          prevCategory = prop.category;
+  private async getLookupElement(inputsLookup?: string) {
+    if (inputsLookup === undefined)
+      return null;
+
+    const constIputs = new Map<string, DG.InputBase>();
+    Object.keys(this.store.inputs).forEach((name) => constIputs.set(name, this.store.inputs[name].constForm[0]));
+
+    const lookupElement = await getLookupChoiceInput(inputsLookup, constIputs);
+
+    if (lookupElement !== null)
+      lookupElement.input.root.insertBefore(getSwitchMock(), lookupElement.input.captionLabel);
+
+    return lookupElement;
+  }
+
+  private async buildFormWithBtn(inputsLookup?: string) {
+    // inputs grouped by categories
+    const inputsByCategories = new Map<string, HTMLElement[]>([['Misc', []]]);
+
+    // group inputs by categories
+    Object.values(this.store.inputs).forEach((inputConfig) => {
+      const category = inputConfig.prop.category;
+      const roots = [...inputConfig.constForm.map((input) => input.root), ...inputConfig.saForm.map((input) => input.root)];
+
+      if (inputsByCategories.has(category))
+        inputsByCategories.get(category)!.push(...roots);
+      else
+        inputsByCategories.set(category, roots);
+    });
+
+    // the main form
+    const form = ui.div([
+      this.store.analysisInputs.analysisType.input,
+      this.store.analysisInputs.samplesCount.input,
+    ], {style: {'overflow-y': 'scroll', 'width': '100%'}});
+
+    const lookupElement = await this.getLookupElement(inputsLookup);
+    let topCategory: string | null = null;
+
+    if (lookupElement !== null) {
+      const inputs = inputsByCategories.get(lookupElement.category);
+      topCategory = lookupElement.category;
+
+      if (inputs !== undefined)
+        inputsByCategories.set(topCategory, [lookupElement.input.root].concat(inputs));
+      else 
+        inputsByCategories.set(topCategory, [lookupElement.input.root]);
+    }
+
+    // add inputs to the main form (grouped by categories)
+    if (inputsByCategories.size > 1) {
+      if (topCategory !== null) {
+        form.append(ui.h2(topCategory));
+        form.append(...inputsByCategories.get(topCategory)!);
+      }
+
+      inputsByCategories.forEach((roots, category) => {
+        if ((category !== 'Misc') && (category !== topCategory)) {
+          form.append(ui.h2(category));
+          form.append(...roots);
         }
+      });
 
-        container.append(
-          ...inputConfig.constForm.map((input) => input.root),
-          ...inputConfig.saForm.map((input) => input.root),
-        );
+      if (topCategory !== 'Misc') {
+        const miscRoots = inputsByCategories.get('Misc');
 
-        return container;
-      }, ui.div([
-        this.store.analysisInputs.analysisType.input,
-        this.store.analysisInputs.samplesCount.input,
-      ], {style: {'overflow-y': 'scroll', 'width': '100%'}}));
+        if (miscRoots!.length > 0) {
+          form.append(ui.h2('Misc'));
+          form.append(...inputsByCategories.get('Misc')!);
+        }
+      }
+    } else
+      form.append(...inputsByCategories.get('Misc')!);
 
     $(form).addClass('ui-form');
 
     const outputsTitle = ui.h2('Outputs');
     form.appendChild(outputsTitle);
-    prevCategory = 'Misc';
+    let prevCategory = 'Misc';
 
     const outputForm = Object.values(this.store.outputs)
       .reduce((container, outputConfig) => {

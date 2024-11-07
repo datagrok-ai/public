@@ -2,12 +2,19 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {category, expect, test} from '@datagrok-libraries/utils/src/test';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
+import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {MmDistanceFunctionsNames, mmDistanceFunctions}
   from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
 category('Distance', async () => {
+  let seqHelper: ISeqHelper;
+
+  before(async () => {
+    seqHelper = await getSeqHelper();
+  });
+
   const scoringMatrix = [
     [1, 0, 0, 0],
     [0, 1, 0, 0],
@@ -42,19 +49,19 @@ ATCGAATCGA
 ATCGAATCGA`;
 
   test('protein-distance-function', async () => {
-    const sh = await _initMacromoleculeColumn(protTable);
+    const sh = await _initMacromoleculeColumn(protTable, seqHelper);
     const distFunc = sh.getDistanceFunctionName();
     expect(distFunc, MmDistanceFunctionsNames.LEVENSHTEIN);
   });
 
   test('DNA-distance-function', async () => {
-    const sh = await _initMacromoleculeColumn(DNATable);
+    const sh = await _initMacromoleculeColumn(DNATable, seqHelper);
     const distFunc = sh.getDistanceFunctionName();
     expect(distFunc, MmDistanceFunctionsNames.LEVENSHTEIN);
   });
 
   test('MSA-distance-function', async () => {
-    const sh = await _initMacromoleculeColumn(MSATable);
+    const sh = await _initMacromoleculeColumn(MSATable, seqHelper);
     const distFunc = sh.getDistanceFunctionName();
     expect(distFunc, MmDistanceFunctionsNames.HAMMING);
   });
@@ -127,7 +134,7 @@ ATCGAATCGA`;
   }, {benchmark: true});
 });
 
-async function _initMacromoleculeColumn(csv: string): Promise<SeqHandler> {
+async function _initMacromoleculeColumn(csv: string, seqHelper: ISeqHelper): Promise<ISeqHandler> {
   const srcDf: DG.DataFrame = DG.DataFrame.fromCsv(csv);
   const seqCol = srcDf.col('seq')!;
   const semType: string = await grok.functions
@@ -135,7 +142,7 @@ async function _initMacromoleculeColumn(csv: string): Promise<SeqHandler> {
   if (semType)
     seqCol.semType = semType;
   await grok.data.detectSemanticTypes(srcDf);
-  const sh = SeqHandler.forColumn(seqCol);
+  const sh = seqHelper.getSeqHandler(seqCol);
   return sh;
 }
 

@@ -73,23 +73,27 @@ export async function dbScan(df: DG.DataFrame, xCol: DG.Column, yCol: DG.Column,
 //name: PCA
 //description: Principal component analysis (PCA)
 //input: dataframe table
-//input: column_list features {type: numerical}
-//input: int components = 2 {caption: Components} [Number of components.]
+//input: column_list features {type: numerical; allowNulls: false}
+//input: int components = 2 {caption: Components; nullable: false; min: 1} [Number of components.]
 //input: bool center = false [Indicating whether the variables should be shifted to be zero centered.]
 //input: bool scale = false [Indicating whether the variables should be scaled to have unit variance.]
 export async function PCA(table: DG.DataFrame, features: DG.ColumnList, components: number, center: boolean, scale: boolean): Promise<void> {
-  const pcaTable = await computePCA(table, features, components, center, scale);
-  addPrefixToEachColumnName('PC', pcaTable.columns);
+  try {
+    const pcaTable = await computePCA(table, features, components, center, scale);
+    addPrefixToEachColumnName('PC', pcaTable.columns);
 
-  if (table.id === null) // table is loaded from a local file
-    grok.shell.addTableView(pcaTable);
-  else {
-    const cols = table.columns;
+    if (table.id === null) // table is loaded from a local file
+      grok.shell.addTableView(pcaTable);
+    else {
+      const cols = table.columns;
 
-    for (const col of pcaTable.columns) {
-      col.name = cols.getUnusedName(col.name);
-      cols.add(col);
+      for (const col of pcaTable.columns) {
+        col.name = cols.getUnusedName(col.name);
+        cols.add(col);
+      }
     }
+  } catch (error) {
+    grok.shell.warning(`Failed to compute PCA: ${error instanceof Error ? error.message : 'platform issue'}`);
   }
 }
 
@@ -304,7 +308,7 @@ export async function MVA(): Promise<void> {
 
 //name: MVA demo
 //description: Multidimensional data analysis using partial least squares (PLS) regression. It identifies latent factors and constructs a linear model based on them.
-//meta.demoPath: Compute | Multivariate analysis
+//meta.demoPath: Compute | Multivariate Analysis
 export async function demoMultivariateAnalysis(): Promise<any> {
   await runDemoMVA();
 }
@@ -552,15 +556,15 @@ export function anova(): void {
   runOneWayAnova();
 }
 
-//top-menu: ML | Missing Values Imputation ...
+//top-menu: ML | Impute Missing Values...
 //name: KNN impute
-//desription: Missing values imputation using the k-nearest neighbors method
+//description: Missing values imputation using the k-nearest neighbors method (KNN)
 export function kNNImputation() {
   runKNNImputer();
 }
 
 //name: KNN imputation for a table
-//desription: Missing values imputation using the k-nearest neighbors method for a given table
+//description: Missing values imputation using the k-nearest neighbors method
 //input: dataframe table
 export async function kNNImputationForTable(table: DG.DataFrame) {
   await runKNNImputer(table);

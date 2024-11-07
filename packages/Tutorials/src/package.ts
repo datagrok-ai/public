@@ -105,6 +105,7 @@ export async function tutorialsInit() {
 //tags: app
 //description: Interactive demo of major Datagrok capabilities
 //meta.icon: images/icons/demoapp-icon.png
+//meta.browseOnly: true
 //input: string path {meta.url: true; optional: true}
 //input: string filter {optional: true}
 //output: view v
@@ -239,14 +240,14 @@ export async function _pieChartDemo() {
 
 //name: trellisPlotDemo
 //description: Trellis Charts are useful for finding the structure and patterns in complex data. A Trellis Chart is a layout of smaller charts in a grid with consistent scales. Each smaller chart represents rows that belong to a corresponding category. The grid layout looks similar to a garden trellis, hence the name Trellis Chart.
-//meta.demoPath: Visualization | Data separation | Trellis Plot
+//meta.demoPath: Visualization | Data Separation | Trellis Plot
 export async function _trellisPlotDemo() {
   await viewerDemo(DG.VIEWER.TRELLIS_PLOT);
 }
 
 //name: matrixPlotDemo
 //description: Use Matrix Plot to assess the relationship among many pairs of columns at the same time.
-//meta.demoPath: Visualization | Data separation | Matrix Plot
+//meta.demoPath: Visualization | Data Separation | Matrix Plot
 export async function _matrixPlotDemo() {
   await viewerDemo(DG.VIEWER.MATRIX_PLOT);
 }
@@ -274,7 +275,7 @@ export async function _pcPlotDemo() {
 
 //name: networkDiagramDemo
 //description: Network diagram is used to visualize graphs, where values of the specified two columns become nodes, and rows become edges. It is possible to color-code and size-code nodes and columns by choosing the aggregate function that would apply to the values that represent an edge or a Node.js.
-//meta.demoPath: Visualization | Data flow and hierarchy | Network Diagram
+//meta.demoPath: Visualization | Data Flow and Hierarchy | Network Diagram
 export async function _networkDiagramDemo() {
   await viewerDemo(DG.VIEWER.NETWORK_DIAGRAM, {'node1ColumnName': 'Source', 'node2ColumnName': 'Target', useGoogleImage: true});
 }
@@ -288,7 +289,7 @@ export async function _boxPlotDemo() {
 
 //name: treeMapDemo
 //description: Treemap displays hierarchical (tree-structured) data as nested rectangles. The branches are rectangles, then tiled with smaller rectangles representing sub-branches. Rectangles have areas proportional to a specified dimension of the data using the specified aggregation function (count by default).
-//meta.demoPath: Visualization | Data flow and hierarchy | Tree map
+//meta.demoPath: Visualization | Data Flow and Hierarchy | Tree Map
 export async function _treeMapDemo() {
   await viewerDemo(DG.VIEWER.TREE_MAP, {splitByColumnNames: ['DIS_POP', 'SEX', '']});
 }
@@ -309,14 +310,14 @@ export async function _correlationPlotDemo() {
 
 //name: calendarDemo
 //description: Calendar lets you analyze longitudinal data. It needs at least one column of type DateTime.
-//meta.demoPath: Visualization | Time and date | Calendar
+//meta.demoPath: Visualization | Time and Date | Calendar
 export async function calendarDemo() {
   await viewerDemo(DG.VIEWER.CALENDAR);
 }
 
 //name: gridDemo
 //description: A grid table contains a set of data that is structured in rows and columns. It allows the user to scroll in both directions and can handle large numbers of items and columns.
-//meta.demoPath: Visualization | Input and edit | Grid
+//meta.demoPath: Visualization | Input and Edit | Grid
 export async function _gridDemo() {
   await viewerDemo(DG.VIEWER.GRID);
 }
@@ -337,7 +338,7 @@ export async function _tileViewerDemo() {
 
 //name: formDemo
 //description: Form allows you to customize the appearance of the row by manually positioning the fields, and adding other visual elements, such as pictures or panels. A form can be used either as a stand-alone viewer, or as a row template of the Tile Viewer.
-//meta.demoPath: Visualization | Input and edit | Form
+//meta.demoPath: Visualization | Input and Edit | Form
 export async function _formDemo() {
   await viewerDemo(DG.VIEWER.FORM);
 }

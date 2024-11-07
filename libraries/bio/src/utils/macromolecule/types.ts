@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {CellRendererBackBase} from '../cell-renderer-back-base';
+import {ISeqHandler} from './seq-handler';
 
 export type SeqSplittedBase = ArrayLike<string> & Iterable<string>;
 
@@ -15,13 +16,22 @@ export interface ISeqSplitted {
   /** For fasta and Helm must not be enclosed to square brackets [meA].*/
   getOriginal(posIdx: number): string;
 
+  // TODO: Get ISeqMonomer for seq position
+  // get(posIdx: number): ISeqMonomer;
+
   length: number;
 }
 
 export interface INotationProvider {
+  get defaultGapOriginal(): string;
+
+  /** Adjust {@link seqHandler} units, {@link seqHandler.column.tags} by {@link seqHandler} constructor */
+  setUnits(seqHandler: ISeqHandler): void;
+
   get splitter(): SplitterFunc;
 
-  getHelm(seqCol: DG.Column<string>, options?: any): Promise<DG.Column<string>>;
+  /** Any Macromolecule can be presented as Helm notation */
+  getHelm(seq: string, options: any): string;
 
   createCellRendererBack(gridCol: DG.GridColumn | null, tableCol: DG.Column<string>): CellRendererBackBase<string>;
 }

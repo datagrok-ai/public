@@ -9,6 +9,7 @@ import * as rxjs from "rxjs";
 import dayjs from "dayjs";
 import {IDartApi} from "./api/grok_api.g";
 import {ViewBase} from "./views/view";
+import {Logger} from "./logger";
 declare let grok: any;
 declare let DG: any;
 const api: IDartApi = <any>window;
@@ -335,7 +336,9 @@ export class FuncCall extends Entity {
   get adHoc(): boolean { return api.grok_FuncCall_Get_AdHoc(this.dart); }
   set adHoc(a: boolean) { api.grok_FuncCall_Set_AdHoc(this.dart, a); }
 
-  override get author(): User { return toJs(api.grok_FuncCall_Get_Author(this.dart)) }
+  override get author(): User { return toJs(api.grok_FuncCall_Get_Author(this.dart)); }
+
+  get debugLogger(): Logger { return new Logger(undefined, {dartLogger: api.grok_FuncCall_Get_DebugLogger(this.dart)}); }
 
   /** Returns function call parameter value
    * @param {string} name

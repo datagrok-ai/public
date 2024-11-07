@@ -3,9 +3,10 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
+import $ from 'cash-dom';
 import {Subject, BehaviorSubject, Observable} from 'rxjs';
 
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 import {DEFAULT_FORMATS} from '../../common/model/const';
@@ -22,7 +23,6 @@ import {ITranslationHelper} from '../../../types';
 
 import {NUCLEOTIDES_FORMAT, SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG} from './const';
 import './style.css';
-import $ from 'cash-dom';
 import {_package} from '../../../package';
 
 const enum REQUIRED_COLUMN_LABEL {
@@ -34,9 +34,10 @@ const REQUIRED_COLUMN_LABELS = [REQUIRED_COLUMN_LABEL.SEQUENCE];
 class TranslatorAppLayout {
   private eventBus: EventBus;
   private inputFormats = Object.keys(_package.jsonData.codesToHelmDict).concat(DEFAULT_FORMATS.HELM);
+  private readonly seqHelper: ISeqHelper = _package.seqHelper;
 
   constructor(
-    private readonly th: ITranslationHelper
+    private readonly th: ITranslationHelper,
   ) {
     this.moleculeImgDiv = ui.div([]);
     this.moleculeImgDiv.className = 'mol-host';
@@ -171,9 +172,9 @@ class TranslatorAppLayout {
       translatedColumn.semType = DG.SEMTYPE.MACROMOLECULE;
       const units = outputFormat == NUCLEOTIDES_FORMAT ? NOTATION.FASTA : NOTATION.HELM;
       translatedColumn.meta.units = units;
-      const seqHandler = SeqHandler.forColumn(translatedColumn as DG.Column<string>);
-      const setUnits = outputFormat == NUCLEOTIDES_FORMAT ? SeqHandler.setUnitsToFastaColumn :
-        SeqHandler.setUnitsToHelmColumn;
+      const seqHandler = this.seqHelper.getSeqHandler(translatedColumn as DG.Column<string>);
+      const setUnits = outputFormat == NUCLEOTIDES_FORMAT ? this.seqHelper.setUnitsToFastaColumn :
+        this.seqHelper.setUnitsToHelmColumn;
       setUnits(seqHandler);
     }
 
@@ -462,8 +463,7 @@ class ColumnInputsManager {
     const input = ui.input.choice(`${columnLabel}`, {
       value: selectedColumnName, items: columnNames,
       onValueChanged: (value) => this.selectColumnIfTableNotNull(selectedTable, value, columnLabel)
-    }
-    );
+    });
 
     return input;
   }

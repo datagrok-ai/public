@@ -2,11 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
-import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-
 import {defaultErrorHandler} from './err-info';
-import {polyToolEnumerateHelmUI} from '../polytool/pt-enumeration-helm-dialog';
+import {polyToolEnumerateHelmUI} from '../polytool/pt-enumerate-seq-dialog';
 import {polyToolEnumerateChemUI} from '../polytool/pt-dialog';
 
 import {_package} from '../package';
@@ -43,11 +40,11 @@ function addContextMenuForCell(gridCell: DG.GridCell, menu: DG.Menu): boolean {
   if (gridCell && gridCell.tableColumn) {
     switch (gridCell.tableColumn.semType) {
     case DG.SEMTYPE.MACROMOLECULE: {
-      menu.item('PolyTool-Enumerate', () => { polyToolEnumerateHelmUI(gridCell.cell); });
+      menu.item('PolyTool-Enumerate', () => { polyToolEnumerateHelmUI(gridCell.cell).then(() => {}); });
       return true;
     }
     case DG.SEMTYPE.MOLECULE: {
-      menu.item('PolyTool-Enumerate', () => { polyToolEnumerateChemUI(gridCell.cell); });
+      menu.item('PolyTool-Enumerate', () => { polyToolEnumerateChemUI(gridCell.cell).then(() => {}); });
       return true;
     }
     }

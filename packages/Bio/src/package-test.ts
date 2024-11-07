@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {runTests, TestContext, tests, initAutoTests as initTests } from '@datagrok-libraries/utils/src/test';
+import {runTests, TestContext, tests, initAutoTests as initTests} from '@datagrok-libraries/utils/src/test';
 
 import './tests/_first-tests';
 import './tests/Palettes-test';
@@ -30,6 +30,7 @@ import './tests/seq-handler-tests';
 import './tests/seq-handler-splitted-tests';
 import './tests/seq-handler-get-region-tests';
 import './tests/seq-handler-get-helm-tests';
+import './tests/helm-tests';
 import './tests/to-atomic-level-tests';
 import './tests/to-atomic-level-ui-tests';
 import './tests/mm-distance-tests';

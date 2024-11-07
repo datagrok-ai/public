@@ -26,6 +26,7 @@ export type SubstructureSearchWithFpResult = {
 export type SubstructureSearchBatchResult = {
   matches: BitArray;
   fpRes: IFpResult | null;
+  fpCreated: boolean
 };
 
 export class RdKitService {
@@ -280,7 +281,7 @@ export class RdKitService {
    * */
   async searchSubstructureWithFps(query: string, queryMolBlockFailover: string, result: SubstructureSearchWithFpResult,
     progressFunc: (progress: number) => void, molecules: string[], createSmiles = false,
-    searchType = SubstructureSearchType.CONTAINS, simCutOff = 0.8, fp = Fingerprint.Morgan) {
+    searchType = SubstructureSearchType.CONTAINS, simCutOff = 0.8, fp = Fingerprint.Morgan, afterBatchCalculated = () => {}) {
     const queryMol = searchType === SubstructureSearchType.IS_SIMILAR ? getMolSafe(query, {}, getRdKitModule()).mol :
       getQueryMolSafe(query, queryMolBlockFailover, getRdKitModule());
     const fpType = searchType === SubstructureSearchType.IS_SIMILAR ? fp : Fingerprint.Pattern;
@@ -316,13 +317,18 @@ export class RdKitService {
             batchRes.fpRes!.fps[j] = null;
       }
       batchRes.fpRes = null;
+      if (batchRes.fpCreated)
+        afterBatchCalculated();
     };
 
     return this._doParallelBatches(molecules, result, updateRes, async (batch, workerIdx,
       _workerCount, batchStartIdx) => {
       let fpResult: IFpResult;
-      if (!result.fpsRes || !result.fpsRes.fps[batchStartIdx + batch.length - 1])
+      let fpCreated = false;
+      if (!result.fpsRes || !result.fpsRes.fps[batchStartIdx + batch.length - 1]) {
         fpResult = await this.parallelWorkers[workerIdx].getFingerprints(fpType, batch, createSmiles);
+        fpCreated = true;
+      }
       else {
         fpResult = {
           fps: result.fpsRes.fps.slice(batchStartIdx, batchStartIdx + batch.length),
@@ -331,14 +337,14 @@ export class RdKitService {
       }
 
       if (query === '')
-        return {matches: new BitArray(batch.length, true), fpRes: fpResult};
+        return {matches: new BitArray(batch.length, true), fpRes: fpResult, fpCreated: fpCreated};
       let finalBitArray = new BitArray(batch.length, false);
       if (searchType !== SubstructureSearchType.IS_SIMILAR) {
         let filteredMolecules: string[] = [];
         let patternFpFilterBitArray: BitArray | null = null;
         if (searchType !== SubstructureSearchType.NOT_CONTAINS && searchType !== SubstructureSearchType.NOT_INCLUDED_IN) {
           // *********** FILTERING using fingerprints
-          patternFpFilterBitArray = this.filterByPatternFps(searchType,batch, fpRdKit, fpResult);
+          patternFpFilterBitArray = this.filterByPatternFps(searchType, batch, fpRdKit, fpResult);
           filteredMolecules = this.filterMoleculesByBitArray(patternFpFilterBitArray, batch, fpResult, createSmiles);
         } else
           filteredMolecules = createSmiles ? fpResult.smiles! as string[] : batch;
@@ -372,6 +378,7 @@ export class RdKitService {
       return {
         matches: finalBitArray,
         fpRes: fpResult,
+        fpCreated: fpCreated
       };
     }, progressFunc);
   }

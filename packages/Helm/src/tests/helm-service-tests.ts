@@ -16,7 +16,7 @@ import {RenderTask} from '@datagrok-libraries/bio/src/utils/cell-renderer-async-
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {
-  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
+  getUserLibSettings, setUserLibSettings,
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 
 import {initHelmMainPackage} from './utils';
@@ -38,11 +38,7 @@ category('HelmService', () => {
       monomerLibHelper = await getMonomerLibHelper();
       userLibSettings = await getUserLibSettings();
 
-      await delay(1000); // for loading monomer libraries files
-      // Test 'helm' requires default monomer library loaded
-      await setUserLibSettingsForTests();
-      await monomerLibHelper.loadMonomerLib(true); // load default libraries
-      const libSummary = monomerLibHelper.getMonomerLib().getSummaryObj();
+      await monomerLibHelper.loadMonomerLibForTests(); // load default libraries
 
       helmSvc = await getHelmService();
       await helmSvc.reset();
@@ -68,6 +64,7 @@ category('HelmService', () => {
     const logPrefix: string = `Helm: tests: HelmService: helm`;
     _package.logger.debug(`${logPrefix}, start`);
     const helmStr: string = 'PEPTIDE1{I.H.A.N.T.Thr_PO3H2.Aca.D-Tyr_Et}$$$$';
+    const monomerLib = monomerLibHelper.getMonomerLib();
     let consumerId: number | null = null;
     let taskAux: HelmAux | null = null;
     const event = new Subject<void>();
@@ -78,7 +75,7 @@ category('HelmService', () => {
         const task: RenderTask<HelmProps, HelmAux> = {
           name: 'test1',
           props: {
-            helm: helmStr,
+            helm: helmStr, monomerLib: monomerLib,
             backColor: DG.Color.fromHtml('#FFFFFF'),
             width: 300, height: 100,
           },

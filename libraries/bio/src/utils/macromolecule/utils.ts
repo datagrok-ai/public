@@ -1,6 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
+
+import {Vector} from '@datagrok-libraries/utils/src/type-declarations';
+import {vectorDotProduct, vectorLength} from '@datagrok-libraries/utils/src/vector-operations';
+
 import {
   CandidateSimType,
   CandidateType, ISeqSplitted,
@@ -9,13 +13,14 @@ import {
   SplitterFunc
 } from './types';
 import {ALPHABET, Alphabets, candidateAlphabets, GAP_SYMBOL, GapOriginals, monomerRe, NOTATION} from './consts';
-import {SeqHandler} from '../seq-handler';
-import {Vector} from '@datagrok-libraries/utils/src/type-declarations';
-import {vectorDotProduct, vectorLength} from '@datagrok-libraries/utils/src/vector-operations';
 import {SeqPalette} from '../../seq-palettes';
 import {AminoacidsPalettes} from '../../aminoacids';
 import {NucleotidesPalettes} from '../../nucleotides';
 import {UnknownSeqPalettes} from '../../unknown';
+import {ISeqHelper} from '../seq-helper';
+
+import {ISeqHandler} from './seq-handler';
+import {cleanupHelmSymbol} from '../../helm/utils';
 
 export class StringListSeqSplitted implements ISeqSplitted {
   get length(): number { return this.mList.length; }
@@ -24,6 +29,7 @@ export class StringListSeqSplitted implements ISeqSplitted {
     return this.getOriginal(posIdx) === this.gapOriginalMonomer;
   }
 
+  /** @param {number} posIdx monomer position 0-based index */
   getCanonical(posIdx: number): string {
     if (this.length <= posIdx)
       throw new Error('Index out of bounds');
@@ -141,17 +147,10 @@ export function getSplitterWithSeparator(separator: string, limit: number | unde
       return new StringListSeqSplitted([], GapOriginals[NOTATION.SEPARATOR]);
     else {
       let mmList: string[];
-      const mRe = new RegExp(String.raw`"-"|'-'|[^${separator}]+`, 'g'); // depends on separator args
+      const mRe = new RegExp(`(?<=^|\\${separator})("-"|'-'|[^\\${separator}]*)(?=\\${separator}|$)`, 'g'); // depends on separator args
       if (limit !== undefined) {
         mRe.lastIndex = 0;
-        mmList = new Array<string>(Math.ceil(limit));
-
-        let mEa: RegExpExecArray | null = null;
-        let mI = 0;
-        while ((mEa = mRe.exec(seq)) !== null && mI < limit) {
-          mmList[mI++] = mEa[0].replace(`"-"`, '').replace(`'-'`, '');
-        }
-        mmList.splice(mI);
+        mmList = wu(seq.matchAll(mRe)).take(limit).map((ea) => ea[0]).toArray();
       } else
         mmList = seq.replaceAll('\"-\"', '').replaceAll('\'-\'', '').split(separator, limit);
 
@@ -160,10 +159,6 @@ export function getSplitterWithSeparator(separator: string, limit: number | unde
   };
 }
 
-const helmRe: RegExp = /(PEPTIDE1|DNA1|RNA1)\{([^}]+)}/g;
-const helmPp1Re: RegExp = /\[([^\[\]]+)]/g;
-
-
 /** Splits Helm string to monomers, but does not replace monomer names to other notation (e.g. for RNA).
  * Only for linear polymers, does not split RNA for ribose and phosphate monomers.
  * @param {string} seq Source string of HELM notation
@@ -171,21 +166,12 @@ const helmPp1Re: RegExp = /\[([^\[\]]+)]/g;
  * @return {string[]}
  */
 export const splitterAsHelm: SplitterFunc = (seq: any): ISeqSplitted => {
-  helmRe.lastIndex = 0;
-  const ea: RegExpExecArray | null = helmRe.exec(seq.toString());
-  const inSeq: string | null = ea ? ea[2] : null;
+  const helmParts = seq.split('$');
+  const spList = helmParts[0].split('|');
+  const mList: string[] = wu(spList.map((sp: string) => sp.match(/(?<=\{).+(?=})/)![0].split('.').map((m) => cleanupHelmSymbol(m))))
+    .flatten().toArray();
 
-  const mmPostProcess = (mm: string): string => {
-    helmPp1Re.lastIndex = 0;
-    const pp1M = helmPp1Re.exec(mm);
-    if (pp1M && pp1M.length >= 2)
-      return pp1M[1];
-    else
-      return mm;
-  };
-
-  const mmList: string[] = inSeq ? inSeq.split('.') : [];
-  return new StringListSeqSplitted(mmList.map(mmPostProcess), GapOriginals[NOTATION.HELM]);
+  return new StringListSeqSplitted(mList, GapOriginals[NOTATION.HELM]);
 };
 
 /** Func type to shorten a {@link monomerLabel} with length {@link limit} */
@@ -282,10 +268,10 @@ export function detectAlphabet(freq: MonomerFreqs, candidates: CandidateType[], 
  * @param {number}  minLength minimum length of sequence to detect palette (empty strings are allowed)
  * @return {SeqPalette} Palette corresponding to the alphabet of the sequences in the column
  */
-export function pickUpPalette(seqCol: DG.Column, minLength: number = 5): SeqPalette {
+export function pickUpPalette(seqCol: DG.Column, seqHelper: ISeqHelper, minLength: number = 5): SeqPalette {
   let alphabet: string;
   if (seqCol.semType == DG.SEMTYPE.MACROMOLECULE) {
-    const sh: SeqHandler = SeqHandler.forColumn(seqCol);
+    const sh: ISeqHandler = seqHelper.getSeqHandler(seqCol);
     alphabet = sh.alphabet;
   } else {
     const stats: SeqColStats = getStatsForCol(seqCol, minLength, splitterAsFasta);

@@ -8,9 +8,9 @@ import {initSelection, scaleActivity} from '../utils/misc';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {COLUMNS_NAMES, SCALING_METHODS} from '../utils/constants';
 import {TEST_COLUMN_NAMES} from './utils';
-import {showMonomerTooltip} from '../utils/tooltips';
 import {CLUSTER_TYPE, LogoSummaryTable} from '../viewers/logo-summary';
 import {MonomerPosition} from '../viewers/sar-viewer';
+import {PeptideUtils} from '../peptideUtils';
 
 category('Table view', () => {
   let df: DG.DataFrame;
@@ -27,6 +27,8 @@ category('Table view', () => {
   const secondCluster = {monomerOrCluster: '1', positionOrClusterType: CLUSTER_TYPE.ORIGINAL, count: 3};
 
   before(async () => {
+    await PeptideUtils.loadSeqHelper();
+
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
     activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
     sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
@@ -43,11 +45,6 @@ category('Table view', () => {
   });
 
   after(async () => await delay(3000));
-
-  test('Tooltip', async () => {
-    expect(showMonomerTooltip(firstPair.monomerOrCluster, 0, 0), true,
-      `Couldn't structure for monomer ${firstPair.monomerOrCluster}`);
-  }, {skipReason: 'Need to find a way to replace _package variable to call for Bio function with tests'});
 
   test('Visible columns', async () => {
     const gridCols = model.analysisView.grid.columns;

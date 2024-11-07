@@ -4,17 +4,20 @@ import * as grok from 'datagrok-api/grok';
 
 import {Observable} from 'rxjs';
 
-import type {Point, App, HelmType} from './types';
+import type {Point, App, HelmType, IHelmEditorOptions} from './types';
 import {
   GetMonomerFunc, MonomersFuncs, HelmMol, HelmString, IHelmWebEditor, HelmAtom, IHelmDrawOptions
 } from './types';
-import {IMonomerLib} from '../types/index';
+import {IMonomerLibBase} from '../types/index';
+import {ISeqHelper} from '../utils/seq-helper';
+import {SeqValueBase} from '../utils/macromolecule/seq-handler';
 
-export type IHelmInputInitOptions = ui.input.IInputInitOptions<HelmString | HelmMol> & {
+export type IHelmInputInitOptions = ui.input.IInputInitOptions<SeqValueBase> & {
+  editorOptions: Partial<IHelmEditorOptions>;
   editable: boolean;
 };
 
-export abstract class HelmInputBase extends DG.JsInputBase<HelmString> {
+export abstract class HelmInputBase extends DG.JsInputBase<SeqValueBase> {
   abstract get molValue(): HelmMol;
   abstract set molValue(value: HelmMol);
 
@@ -36,22 +39,28 @@ export type HelmConvertRes = {
   monomerMap: Map<number, number> | null;
 }
 
+export const HelmNotSupportedErrorType = 'HelmNotSupportedError';
+
 export class HelmNotSupportedError extends Error {
+  public readonly type = HelmNotSupportedErrorType;
+
   constructor(message?: string) {
     super(message);
   }
 }
 
 export interface IHelmHelper {
+  get seqHelper(): ISeqHelper;
+
   createHelmInput(name: string, options?: IHelmInputInitOptions): HelmInputBase;
 
-  createHelmWebEditor(host?: HTMLElement, drawOptions?: Partial<IHelmDrawOptions>): IHelmWebEditor;
+  createHelmWebEditor(host?: HTMLElement, options?: Partial<IHelmEditorOptions>): IHelmWebEditor;
 
   createWebEditorApp(host: HTMLDivElement, helm?: string): App;
 
   get originalMonomersFuncs(): MonomersFuncs | null;
 
-  buildMonomersFuncsFromLib(monomerLib: IMonomerLib): MonomersFuncs;
+  buildMonomersFuncsFromLib(monomerLib: IMonomerLibBase): MonomersFuncs;
 
   overrideMonomersFuncs(monomersFuncs: MonomersFuncs): MonomersFuncs;
   revertOriginalMonomersFuncs(): MonomersFuncs;

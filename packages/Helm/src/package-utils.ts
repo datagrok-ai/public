@@ -13,9 +13,10 @@ import {
 import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {LoggerWrapper} from '@datagrok-libraries/bio/src/utils/logger';
+import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
-import {HelmHelper} from './helm-helper';
 import {HelmService} from './utils/helm-service';
 import {OrgHelmModule, ScilModule} from './types';
 import {rewriteLibraries} from './utils/get-monomer';
@@ -38,14 +39,15 @@ type DojoConfigWindowType = {
   },
 };
 type HelmWindowType = {
-  $helmService?: HelmServiceBase,
+  $helmServicePromise?: Promise<HelmServiceBase>,
   require: any,
 };
 declare const window: Window & DojoConfigWindowType & DojoWindowType & HweWindow & HelmWindowType;
 
-export function _getHelmService(): HelmServiceBase {
-  let res = window.$helmService;
-  if (!res) res = window.$helmService = new HelmService();
+export async function _getHelmService(): Promise<HelmServiceBase> {
+  let res = window.$helmServicePromise;
+  if (!res)
+    res = window.$helmServicePromise = Promise.resolve(new HelmService());
   return res;
 }
 
@@ -57,7 +59,9 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
   try {
     const requireBackup = window.require;
 
-    // dojo.window','dojo.io.script','dojo.io.iframe','dojo.dom','dojox.gfx','dojox.gfx.svg','dojox.gfx.shape','dojox.charting'
+    // Dojo modules required by JDraw2 and HELMWebEditor
+    // 'dojo.window','dojo.io.script','dojo.io.iframe','dojo.dom',
+    // 'dojox.gfx','dojox.gfx.svg','dojox.gfx.shape','dojox.charting'
     const dojoTargetList: { name: string, checker: () => boolean }[] = [
       {name: 'dojo.window', checker: () => !!(window.dojo?.window)},
       {name: 'dojo.ready', checker: () => !!(window.dojo?.ready)},
@@ -120,14 +124,16 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
         const cmp = dojoRequire == requireBackup;
         try {
           await new Promise<void>((resolve, reject) => {
-            dojoRequire(['dojo/window', 'dojo/dom', 'dojo/io/script', 'dojo/io/iframe',
+            /* eslint-disable indent */
+            dojoRequire([
+                'dojo/window', 'dojo/dom', 'dojo/io/script', 'dojo/io/iframe',
                 'dojox/gfx', 'dojox/gfx/svg', 'dojox/gfx/shape',
                 'dojox/storage/Provider', 'dojox/storage/LocalStorageProvider',
                 'dijit/_base', 'dijit/Tooltip', 'dijit/form/_FormValueWidget',
                 'dijit/form/DropDownButton', 'dijit/layout/AccordionContainer', 'dijit/form/ComboButton',
-                'dijit/layout/StackController', 'dijit/layout/StackContainer',
-              ],
+                'dijit/layout/StackController', 'dijit/layout/StackContainer',],
               (...args: any[]) => { resolve(); });
+            /* eslint-enable indent */
           });
         } finally {
           // TODO: Check interference with NGL
@@ -142,7 +148,8 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
           const dojoProgress = dojoTargetList.length - dojoNotReadyList.length;
           pi.update(Math.round(100 * dojoProgress / dojoTargetList.length),
             `Loading Helm Web Editor ${dojoProgress}/${dojoTargetList.length}`);
-          _package.logger.debug(`${logPrefix}, dojo loading ... ${dojoNotReadyList.map((m) => `'${m}'`).join(',')} ...`);
+          _package.logger.debug(`${logPrefix}, dojo loading ... ` +
+            `${dojoNotReadyList.map((m) => `'${m}'`).join(',')} ...`);
           await delay(100);
         }
         _package.logger.debug(`${logPrefix}, dojo ready all modules`);
@@ -199,15 +206,24 @@ export const helmJsonReplacer = (key: string, value: any): any => {
 
 export class HelmPackage extends DG.Package {
   public alertOriginal: ((s: string) => void) | null = null;
-  public readonly helmHelper: HelmHelper;
-  public libHelper!: IMonomerLibHelper;
+
+  private _helmHelper?: IHelmHelper;
+  public get helmHelper(): IHelmHelper {
+    if (!this._helmHelper)
+      throw new Error('Package Helm .helmHelper is not initialized');
+    return this._helmHelper;
+  };
+
+  public get seqHelper(): ISeqHelper {
+    return this.helmHelper!.seqHelper;
+  }
+
+  public _libHelper!: IMonomerLibHelper;
 
   constructor(opts: { debug: boolean } = {debug: false}) {
     super();
     // @ts-ignore
     super._logger = new LoggerWrapper(super.logger, opts.debug);
-
-    this.helmHelper = new HelmHelper(this.logger);
   }
 
   // -- Init --
@@ -299,16 +315,19 @@ export class HelmPackage extends DG.Package {
   // -- MonomerLib --
 
   public get monomerLib(): IMonomerLib {
-    if (!this.libHelper)
+    if (!this._libHelper)
       throw new Error(`Helm: _package.libHelper is not initialized yet`);
-    return this.libHelper.getMonomerLib();
+    return this._libHelper.getMonomerLib();
   }
 
   private _monomerLibSub?: Unsubscribable;
 
+  private _initialized: boolean = false;
+
   /** Requires both Bio & HELMWebEditor initialized */
-  initMonomerLib(libHelper: IMonomerLibHelper): void {
-    this.libHelper = libHelper;
+  completeInit(helmHelper: IHelmHelper, libHelper: IMonomerLibHelper): void {
+    this._helmHelper = helmHelper;
+    this._libHelper = libHelper;
 
     const lib = this.monomerLib;
     rewriteLibraries(lib); // initHelm()
@@ -316,6 +335,7 @@ export class HelmPackage extends DG.Package {
       .subscribe(this.monomerLibOnChangedHandler.bind(this));
 
     this.initHelmPatchPistoia();
+    this._initialized = true;
   }
 
   monomerLibOnChangedHandler(): void {

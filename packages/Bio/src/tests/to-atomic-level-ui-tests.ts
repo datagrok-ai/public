@@ -5,12 +5,13 @@ import {after, before, category, expect, expectArray, test} from '@datagrok-libr
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {sequenceToMolfile} from '../utils/sequence-to-mol';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 type TestDataTargetType = { atomCount: number, bondCount: number };
 type TestDataType = {
@@ -22,18 +23,18 @@ category('toAtomicLevel-ui', () => {
 
   let monomerLibHelper: IMonomerLibHelper;
   let userLibSettings: UserLibSettings;
+  let seqHelper: ISeqHelper;
   let monomerLib: IMonomerLib;
   let rdKitModule: RDModule;
 
   before(async () => {
+    seqHelper = await getSeqHelper();
     rdKitModule = await getRdKitModule();
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
 
     // Test 'helm' requires default monomer library loaded
-    await setUserLibSettingsForTests();
-    await monomerLibHelper.awaitLoaded();
-    await monomerLibHelper.loadMonomerLib(true); // load default libraries
+    await monomerLibHelper.loadMonomerLibForTests(); // load default libraries
 
     monomerLib = monomerLibHelper.getMonomerLib();
   });
@@ -91,13 +92,13 @@ category('toAtomicLevel-ui', () => {
     test(`${testName}-nonlinear`, async () => {
       const seqCol = await getSeqCol(testData);
       await _testToAtomicLevelFunc(seqCol, true, testData.tgt);
-    }, {skipReason: 'To publish HelmHelper.removeGaps dependency'});
+    });
   }
 
   async function _testToAtomicLevelFunc(
     seqCol: DG.Column<string>, nonlinear: boolean, tgt: TestDataTargetType,
   ): Promise<void> {
-    const res = (await sequenceToMolfile(seqCol.dataFrame, seqCol, nonlinear, false, monomerLib, rdKitModule))!;
+    const res = (await sequenceToMolfile(seqCol.dataFrame, seqCol, nonlinear, false, monomerLib, seqHelper, rdKitModule))!;
     expect(res.molCol!.semType, DG.SEMTYPE.MOLECULE);
     const resMolStr = res.molCol!.get(0)!;
     const resRdMol = rdKitModule.get_mol(resMolStr);

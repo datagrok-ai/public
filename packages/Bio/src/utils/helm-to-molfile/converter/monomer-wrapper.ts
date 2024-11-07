@@ -28,8 +28,7 @@ export class MonomerWrapper {
     this.molfileWrapper = MolfileWrapperFactory.getInstance(molfile, monomerSymbol);
     this.capGroupElements = this.getCapGroupElements(libraryMonomerObject);
 
-    if (helm.bondedRGroupsMap.has(monomerIdx))
-      this.removeRGroups(helm.bondedRGroupsMap.get(monomerIdx)!);
+    this.removeRGroups(helm.bondedRGroupsMap[monomerIdx]!);
     this.capRemainingRGroups();
 
     this.shiftCoordinates(shift);

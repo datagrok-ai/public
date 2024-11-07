@@ -38,6 +38,7 @@ export enum HINT {
   ABORT = 'Abort computations',
   MAX_TIME = `Max computation time, ${COMPUTATION_TIME_UNITS}.`,
   CLICK_RUN = `Click to run`,
+  SOLVE = `Solve equations (${HOT_KEY.RUN})`,
 }; // HINT
 
 /** UI titles */
@@ -110,8 +111,8 @@ export const MODEL_HINT = new Map([
 export enum LINK {
   DIF_STUDIO_REL = '/help/compute/diff-studio',
   DIF_STUDIO = 'https://datagrok.ai/help/compute/diff-studio',
-  SENS_AN = 'https://datagrok.ai/help/compute#sensitivity-analysis',
-  FITTING = 'https://datagrok.ai/help/compute#input-parameter-optimization',
+  SENS_AN = 'https://datagrok.ai/help/compute/function-analysis#sensitivity-analysis',
+  FITTING = 'https://datagrok.ai/help/compute/function-analysis#parameter-optimization',
   CHEM_REACT = `${DIF_STUDIO_REL}#chem-reactions`,
   FERMENTATION = `${DIF_STUDIO_REL}#fermentation`,
   GA_PRODUCTION = `${DIF_STUDIO_REL}#acid-production`,
@@ -121,6 +122,7 @@ export enum LINK {
   ROBERTSON = `${DIF_STUDIO_REL}#robertson-model`,
   BIOREACTOR = `${DIF_STUDIO_REL}#bioreactor`,
   POLLUTION = `${DIF_STUDIO_REL}#pollution`,
+  COMPUTE = 'https://datagrok.ai/help/compute',
 };
 
 /** Error messages */
@@ -141,6 +143,7 @@ export enum ERROR_MSG {
   SENS_AN_FAILS = 'Sensitivity Analysis fails',
   FITTING_FAILS = 'Fitting fails',
   PLATFORM_ISSUE = 'Platform issue',
+  INCORTECT_INPUT = 'Incorrect input caption',
 };
 
 /** Lookup table fails */
@@ -210,14 +213,18 @@ export enum INFO {
 };
 
 /** Demo app help info */
-export const demoInfo = `# Try
-Modify formulas and go to the **${TITLE.IPUTS}** tab.
-
-# No-code
-Define equations in a declarative form.
+export const demoInfo = `# Diff Studio
+In-browser solver of ordinary differential equations 
+([ODEs](https://en.wikipedia.org/wiki/Ordinary_differential_equation))
 
 # Interactivity
 Play with model inputs on the **${TITLE.IPUTS}** tab.
+
+# Model
+Go to the **${TITLE.MODEL}** tab and modify formulas.
+
+# No-code
+Define equations in a declarative form.
 
 # Examples
 Click <i class="fas fa-folder-open"></i> **Open** icon and explore **Examples**.
@@ -226,13 +233,12 @@ Click <i class="fas fa-folder-open"></i> **Open** icon and explore **Examples**.
 Click **JS** button and export model to JavaScript script.
 
 # Analysis
-* Click <i class="fas fa-analytics"></i> **Run sensitivity analysis** icon to explore model
-* Click <i class="fas fa-chart-line"></i> **Run fitting inputs** icon to optimize inputs
+* Click <i class="fas fa-analytics"></i> to run [sensitivity analysis](${LINK.SENS_AN}).
+* Click <i class="fas fa-chart-line"></i> to [optimize inputs](${LINK.FITTING}).
 
 # Learn more
 * [Diff Studio](${LINK.DIF_STUDIO})
-* [Sensitivity Analysis](${LINK.SENS_AN})
-* [Parameter Optimization](${LINK.FITTING})`;
+* [Compute](${LINK.COMPUTE})`;
 
 /** Inputs types */
 export enum INPUT_TYPE {

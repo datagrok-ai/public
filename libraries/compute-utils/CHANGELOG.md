@@ -1,5 +1,15 @@
 # compute-utils changelog
 
+## 1.39.5 (2024-11-06)
+
+- RFV: Added validation rules for export options
+- ModelCatalog: Fixes for JS API 1.22
+- RFV: Moved JSON loading to TestRunner menu for Developers
+
+## 1.39.4 (2024-09-30)
+
+- Sensitivity Analysis & Fitting: Added the use of lookup tables
+
 ## 1.39.3 (2024-09-23)
 
 - ModelCatalog: Added info notification on group membership request

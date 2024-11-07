@@ -2,16 +2,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {MonomerLibWrapper} from './apps/common/model/monomer-lib/lib-wrapper';
+import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
+
 import {OligoToolkitPackage} from './apps/common/model/oligo-toolkit-package';
-import {FormatDetector} from './apps/common/model/parsing-validation/format-detector';
-import {SequenceValidator} from './apps/common/model/parsing-validation/sequence-validator';
 import {APP_NAME} from './apps/common/view/const';
 import {getSpecifiedAppUI} from './apps/common/view/utils';
 import {CombinedAppUI} from './apps/common/view/combined-app-ui';
 import {linkStrandsV3000} from './apps/structure/model/mol-transformations';
 import {SequenceToMolfileConverter} from './apps/structure/model/sequence-to-molfile';
-import {FormatConverter} from './apps/translator/model/format-converter';
 import {demoOligoPatternUI, demoOligoStructureUI, demoOligoTranslatorUI} from './demo/demo-st-ui';
 import {getExternalAppViewFactories} from './plugins/mermade';
 import {defaultErrorHandler} from './utils/err-info';
@@ -19,15 +18,35 @@ import {defaultErrorHandler} from './utils/err-info';
 //polytool specific
 import {polyToolConvert, polyToolConvertUI} from './polytool/pt-dialog';
 import {polyToolEnumerateChemUI} from './polytool/pt-dialog';
-import {polyToolEnumerateHelmUI} from './polytool/pt-enumeration-helm-dialog';
+import {polyToolEnumerateHelmUI} from './polytool/pt-enumerate-seq-dialog';
 import {_setPeptideColumn} from './polytool/utils';
 import {PolyToolCsvLibHandler} from './polytool/csv-to-json-monomer-lib-converter';
 import {ITranslationHelper} from './types';
 import {addContextMenuUI} from './utils/context-menu';
 import {PolyToolConvertFuncEditor} from './polytool/pt-convert-editor';
-import {polyToolUnruleUI} from './polytool/pt-unrule';
+import {CyclizedNotationProvider} from './utils/cyclized';
+import {getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {PolyToolTags} from './consts';
+import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
 export const _package: OligoToolkitPackage = new OligoToolkitPackage({debug: true}/**/);
+
+let initSequenceTranslatorPromise: Promise<void> | null = null;
+
+//tags: init
+export async function init(): Promise<void> {
+  if (initSequenceTranslatorPromise === null)
+    _package.startInit(initSequenceTranslatorPromise = initSequenceTranslatorInt());
+
+  return initSequenceTranslatorPromise;
+}
+
+async function initSequenceTranslatorInt(): Promise<void> {
+  const [helmHelper] = await Promise.all([
+    getHelmHelper(),
+  ]);
+  _package.completeInit(helmHelper);
+}
 
 //name: Oligo Toolkit
 //meta.icon: img/icons/toolkit.png
@@ -163,12 +182,12 @@ export async function polyToolConvertTopMenu(): Promise<void> {
   await polyToolConvertUI();
 }
 
-//top-menu: Bio | PolyTool | Unrule...
-//name: polyToolUnrule
-//description: Perform uncyclization of polymers by rules
-export async function polyToolUnruleTopMenu(): Promise<void> {
-  await polyToolUnruleUI();
-}
+// //top-menu: Bio | PolyTool | Unrule...
+// //name: polyToolUnrule
+// //description: Perform uncyclization of polymers by rules
+// export async function polyToolUnruleTopMenu(): Promise<void> {
+//   await polyToolUnruleUI();
+// }
 
 //name: getPolyToolConvertEditor
 //tags: editor
@@ -276,4 +295,16 @@ export async function ptEnumeratorHelmApp(): Promise<void> {
 //tags: app
 export async function ptEnumeratorChemApp(): Promise<void> {
   polyToolEnumerateChemUI();
+}
+
+//name: applyNotationProviderForHarmonizedSequence
+//input: column col
+//input: string separator
+export function applyNotationProviderForCyclized(col: DG.Column<string>, separator: string) {
+  col.setTag('aligned', 'SEQ');
+  col.setTag('alphabet', 'UN');
+  col.setTag('.alphabetIsMultichar', 'true');
+  col.meta.units = NOTATION.CUSTOM;
+  col.tags[PolyToolTags.dataRole] = 'template';
+  col.temp[SeqTemps.notationProvider] = new CyclizedNotationProvider(separator, _package.helmHelper);
 }

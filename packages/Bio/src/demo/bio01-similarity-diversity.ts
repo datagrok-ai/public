@@ -7,10 +7,13 @@ import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 import {handleError} from './utils';
 import {SequenceDiversityViewer} from '../analysis/sequence-diversity-viewer';
 import {SequenceSimilarityViewer} from '../analysis/sequence-similarity-viewer';
+import {getSeqHelper, ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 const dataFn: string = 'samples/FASTA_PT_activity.csv';
 
 export async function demoBio01UI() {
+  let seqHelper: ISeqHelper = await getSeqHelper();
+
   let view: DG.TableView;
   let df: DG.DataFrame;
 
@@ -37,7 +40,7 @@ export async function demoBio01UI() {
         delay: 2000,
       })
       .step('Find the most similar sequences to the current one', async () => {
-        const simViewer = new SequenceSimilarityViewer(true);
+        const simViewer = new SequenceSimilarityViewer(seqHelper, true);
         view.addViewer(simViewer, {
           moleculeColumnName: 'sequence',
           similarColumnLabel: 'Similar to current',

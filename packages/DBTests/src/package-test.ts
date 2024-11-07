@@ -104,11 +104,11 @@ export async function testConnections(): Promise<DG.DataFrame> {
 const skip = ['Redshift', 'Athena', 'Files'];
 
 //tags: init
-export async function initTests() {
+export async function initPackageTests() {
   const connections = await grok.dapi.connections.list();
   const categories: {[_:string]: DG.DataConnection[]} = {};
   for (const c of connections) {
-    const cat = c.dart.dataSource ?? c.dart.z;
+    const cat = c.dataSource;
     if (skip.includes(cat)) continue;
     categories[cat] ??= [];
     categories[cat].push(c);

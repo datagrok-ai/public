@@ -1,11 +1,11 @@
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 import {Subject, Unsubscribable} from 'rxjs';
+import {LRUCache} from 'lru-cache';
 
-import {HelmEditor, HelmType, IHelmDrawOptions} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmEditor, HelmType, IHelmBio, IHelmEditorOptions} from '@datagrok-libraries/bio/src/helm/types';
 import {RenderTask} from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
 import {HelmAux, HelmProps, HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
 import {svgToImage} from '@datagrok-libraries/utils/src/svg';
@@ -19,7 +19,9 @@ declare const JSDraw2: JSDraw2Module;
 export class HelmService extends HelmServiceBase {
   private readonly hostDiv: HTMLDivElement;
 
-  private editor!: HelmEditor;
+  private readonly editorLruCache: LRUCache<string, HelmEditor>;
+
+  // private editor!: HelmEditor;
   private image: HTMLImageElement | null = null;
 
   constructor() {
@@ -34,10 +36,27 @@ export class HelmService extends HelmServiceBase {
     this.hostDiv.style.height = '0px';
     this.hostDiv.style.visibility = 'hidden';
     document.body.appendChild(this.hostDiv);
+
+    this.editorLruCache = new LRUCache<string, HelmEditor>({max: 20});
   }
 
   protected override toLog(): string {
     return `Helm: ${super.toLog()}`;
+  }
+
+  private getEditor(props: HelmProps): HelmEditor {
+    const editorKey = props.monomerLib.source;
+
+    let resEditor: HelmEditor | undefined = this.editorLruCache.get(editorKey);
+    if (!resEditor) {
+      const getMonomerFuncs = _package.helmHelper.buildMonomersFuncsFromLib(props.monomerLib, );
+      resEditor = new JSDraw2.Editor<HelmType, IHelmBio, IHelmEditorOptions>(this.hostDiv, {
+        width: props.width, height: props.height, skin: 'w8', viewonly: true,
+        drawOptions: {getMonomer: getMonomerFuncs.getMonomer},
+      });
+      this.editorLruCache.set(editorKey, resEditor);
+    }
+    return resEditor;
   }
 
   protected override async requestRender(
@@ -46,15 +65,14 @@ export class HelmService extends HelmServiceBase {
     const logPrefix = `${this.toLog()}.requestRender()`;
     this.logger.debug(`${logPrefix}, start, ` + `key: ${key?.toString()}`);
     const emptyCanvasHash: number = 0;
+    const monomerLib = task.props.monomerLib;
 
-    if (!this.editor) {
-      this.editor = new JSDraw2.Editor<HelmType, IHelmDrawOptions>(this.hostDiv,
-        {width: task.props.width, height: task.props.height, skin: 'w8', viewonly: true});
-    }
+    const editor = this.getEditor(task.props);
+
     const lST = window.performance.now();
-    this.editor.options.width = task.props.width;
-    this.editor.options.height = task.props.height;
-    this.editor.resize(task.props.width, task.props.height);
+    editor.options.width = task.props.width;
+    editor.options.height = task.props.height;
+    editor.resize(task.props.width, task.props.height);
     const helmStr = task.props.helm;
     if (helmStr) {
       // getMonomerOverrideAndLogAlert(
@@ -65,20 +83,24 @@ export class HelmService extends HelmServiceBase {
       //     this.editor.setData(helmStr, 'helm');
       //   }, this.logger);
       this.logger.debug(`${logPrefix}, editor.setData( '${helmStr}' )`);
-      this.editor.setData(helmStr, 'helm');
+      editor.setData(helmStr, 'helm');
     }
     if (!helmStr)
-      this.editor.reset();
+      editor.reset();
 
-    const bBox = (this.editor.div.children[0] as SVGSVGElement).getBBox();
+    const svgEl = editor.div.children[0] as SVGSVGElement;
+    const bBox = svgEl.getBBox();
+    const [cellWidth, cellHeight] = [task.props.width, task.props.height];
+    const bScale = Math.min(cellWidth * 0.95 / bBox.width, cellHeight * 0.95 / bBox.height);
+    const [drawWidth, drawHeight] = [bBox.width * bScale, bBox.height * bScale];
     const aux: HelmAux = {
-      mol: this.editor.m.clone(false),
+      mol: editor.m.clone(false),
       bBox: new DG.Rect(bBox.x, bBox.y, bBox.width + 2, bBox.height + 2) /* adjust for clipping right/bottom */,
+      dBox: new DG.Rect((cellWidth - drawWidth) / 2, (cellHeight - drawHeight) / 2, drawWidth, drawHeight),
       cBox: new DG.Rect(0, 0, task.props.width, task.props.height),
     };
     const lET = window.performance.now();
 
-    const svgEl = $(this.hostDiv).find('svg').get(0) as unknown as SVGSVGElement;
     const dpr = window.devicePixelRatio;
 
     const rST = window.performance.now();
@@ -116,7 +138,9 @@ export class HelmService extends HelmServiceBase {
       if (!this.image || !g) return false;
       // g.fillStyle = '#C0C0FF';
       // g.fillRect(0, 0, canvas.width, canvas.height);
-      g.drawImage(this.image, 0, 0);
+      g.drawImage(this.image,
+        aux.bBox.x, aux.bBox.y, aux.bBox.width, aux.bBox.height,
+        aux.dBox.x, aux.dBox.y, aux.dBox.width, aux.dBox.height);
       task.onAfterRender(canvas, aux);
     } finally {
       canvas.remove();

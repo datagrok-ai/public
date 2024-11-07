@@ -13,6 +13,7 @@ import { ReportingApp } from "./reporting/reporting_app";
 import { TestAnalysisManager } from './test-analysis/test-analysis-manager'; 
 import { getDate } from './utils';
 import dayjs from "dayjs";
+import {ServiceLogsApp} from "./service_logs/service_logs";
 
 
 export const _package = new DG.Package();
@@ -111,6 +112,23 @@ export async function reportsApp(path?: string): Promise<DG.ViewBase> {
   const app = new ReportingApp(parent);
   await app.init(path);
   return app.view!;
+}
+
+//name: Service Logs
+//tags: app
+//meta.url: /service-logs
+//meta.browsePath: Admin
+//input: string path {isOptional: true; meta.url: true}
+//input: map params {isOptional: true}
+//input: int limit {isOptional: true}
+//output: view v
+export async function serviceLogsApp(path?: string, params?: any, limit?: number): Promise<DG.ViewBase> {
+  const currentCall = grok.functions.getCurrentCall();
+  const services = await grok.dapi.docker.getAvailableServices();
+  const app = new ServiceLogsApp(currentCall, services, path, limit);
+  if (services.length > 0)
+    app.getLogs().then((_) => {});
+  return app;
 }
 
 //input: dynamic treeNode

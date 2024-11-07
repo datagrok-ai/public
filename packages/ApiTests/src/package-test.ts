@@ -34,6 +34,8 @@ import './dapi/tables';
 import './dapi/sticky_meta';
 import './dapi/users';
 import './dapi/benchmarks';
+import './dapi/functions-annotations';
+import './dapi/vector-functions-and-scripts'
 import './widgets/files-widget';
 import './widgets/legend';
 import './widgets/tree-view';
@@ -42,6 +44,7 @@ import './utils/color';
 import './packages/properties';
 import './packages/docker';
 import './packages/user-settings-storage';
+import './packages/upload-migrations';
 import './grid/grid';
 import './grid/color-coding';
 import './grid/multi-value-column';

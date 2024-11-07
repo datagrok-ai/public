@@ -7,7 +7,7 @@ import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {
-  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
+  getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 
 import {PolyToolEnumeratorParams, PolyToolEnumeratorTypes} from '../polytool/types';
@@ -26,9 +26,7 @@ category('PolyTool: Enumerate', () => {
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
     // Clear settings to test default
-    await setUserLibSettingsForTests();
-    await monomerLibHelper.awaitLoaded();
-    await monomerLibHelper.loadMonomerLib(true);
+    await monomerLibHelper.loadMonomerLibForTests();
   });
 
   after(async () => {

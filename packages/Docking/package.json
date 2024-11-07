@@ -2,7 +2,7 @@
   "name": "@datagrok/docking",
   "friendlyName": "Docking",
   "fullName": "Docking",
-  "version": "1.1.0",
+  "version": "1.1.2",
   "author": {
     "name": "Oleksandra Serhiienko",
     "email": "oserhiienko@datagrok.ai"
@@ -12,14 +12,14 @@
     "@datagrok-libraries/bio": "^5.42.14",
     "@datagrok-libraries/utils": "^4.3.3",
     "datagrok-api": "^1.20.0",
-    "cash-dom": "latest",
+    "cash-dom": "^8.1.5",
     "dayjs": "^1.11.4",
     "rxjs": "^6.5.5",
-    "wu": "latest"
+    "wu": "^2.1.0"
   },
   "devDependencies": {
     "@datagrok/biostructure-viewer": "^1.2.0",
-    "@types/wu": "latest",
+    "@types/wu": "^2.1.44",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4",
     "ts-loader": "9.4.2",
@@ -54,7 +54,6 @@
   "canView": [
     "All users"
   ],
-  "skipCI": "true",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",

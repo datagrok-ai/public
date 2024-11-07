@@ -11,22 +11,18 @@ import {
   HelmType, HelmAtom,
   MonomerSetType, MonomerType, PolymerType, IWebEditorMonomer,
 } from '@datagrok-libraries/bio/src/helm/types';
-import {HelmTypes, PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
-import {IMonomerLib, IMonomerSet, Monomer, MonomerLibSummaryType, RGroup} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLibBase, IMonomerLib, IMonomerSet, Monomer, MonomerLibData, MonomerLibSummaryType, RGroup} from '@datagrok-libraries/bio/src/types';
 import {HELM_OPTIONAL_FIELDS as OPT, HELM_REQUIRED_FIELD as REQ, HELM_RGROUP_FIELDS as RGP} from '@datagrok-libraries/bio/src/utils/const';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
-import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
-import {getUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
-import {GapOriginals} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 
 import {MonomerLibBase, MonomerLibDataType} from './monomer-lib-base';
 
-import '../../../css/cell-renderer.css';
-
 import {_package} from '../../package';
 
+import '../../../css/cell-renderer.css';
 
 /** Wrapper for monomers obtained from different sources. For managing monomere
  * libraries, use MolfileHandler class instead */
@@ -43,14 +39,10 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
 
   constructor(
     monomers: MonomerLibDataType,
-    public readonly source: string | undefined = undefined,
+    source: string,
     public readonly error: string | undefined = undefined,
   ) {
-    super(monomers);
-    for (const [_monomerType, monomersOfType] of Object.entries(this._monomers)) {
-      for (const [_monomerSymbol, monomer] of Object.entries(monomersOfType))
-        monomer.lib = this;
-    }
+    super(monomers, source);
   }
 
   toJSON(): Monomer[] {
@@ -83,7 +75,7 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
       }
     } else {
       const dict = this._monomers[polymerType];
-      res = dict ? dict[monomerSymbol] : null;
+      res = dict?.[monomerSymbol] ?? null;
     }
     return res;
   }
@@ -114,10 +106,6 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
     });
 
     return res;
-  }
-
-  getMonomerSymbolsByType(polymerType: PolymerType): string[] {
-    return Object.keys(this._monomers[polymerType]);
   }
 
   /** Get a list of monomers with specified element attached to specified
@@ -167,22 +155,20 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
         this._monomers[type][monomerSymbol] = lib.getMonomer(type, monomerSymbol)!;
       });
     });
-  }
-
-  public update(lib: IMonomerLib): void {
-    this._updateLibInt(lib);
-    this._onChanged.next();
+    this._isEmpty = this.isEmpty && lib.isEmpty;
   }
 
   public updateLibs(libList: IMonomerLib[], reload: boolean = false): void {
-    if (reload)
+    if (reload) {
       this._monomers = {};
+      this._isEmpty = true;
+    }
     this._duplicateMonomers = {}; // Reset duplicates
     for (const lib of libList)
       if (!lib.error) this._updateLibInt(lib);
     if (Object.entries(this.duplicateMonomers).length > 0) {
       getUserLibSettings().then((settings) => {
-        this.assignDuplicatePreferances(settings);
+        this.assignDuplicatePreferences(settings);
       });
     } else
       this._duplicatesHandled = true;
@@ -190,8 +176,8 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
     this._onChanged.next();
   }
 
-  /** Checks wether all duplicated monomers have set preferences in user settings. overwrites those which have. */
-  assignDuplicatePreferances(userSettings: UserLibSettings): boolean {
+  /** Checks weather all duplicated monomers have set preferences in user settings. overwrites those which have. */
+  assignDuplicatePreferences(userSettings: UserLibSettings): boolean {
     let res = true;
     for (const polymerType in this.duplicateMonomers) {
       for (const monomerSymbol in this.duplicateMonomers[polymerType]) {
@@ -247,44 +233,40 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
     return resStr;
   }
 
-  getTooltip(biotype: HelmType, monomerSymbol: string): HTMLElement {
-    const polymerType = helmTypeToPolymerType(biotype);
-    const res = ui.div([], {classes: 'ui-form ui-tooltip'});
-    const monomer = this.getMonomer(polymerType, monomerSymbol);
-    if (monomer) {
-      // Symbol & Name
-      const symbol = monomer[REQ.SYMBOL];
-      const _name = monomer[REQ.NAME];
-      res.append(ui.divH([
-        ui.div([symbol], {style: {fontWeight: 'bolder', textWrap: 'nowrap', marginRight: '6px'}}),
-        ui.div([monomer.name])
-      ], {style: {display: 'flex', flexDirection: 'row', justifyContent: 'left'}}));
+  static overrideCounter: number = 0;
 
-      // Structure
-      const chemOptions = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
-      let structureEl: HTMLElement;
-      if (monomer.molfile)
-        structureEl = grok.chem.svgMol(monomer.molfile, undefined, undefined, chemOptions);
-      else if (monomer.smiles) {
-        structureEl = ui.divV([
-          grok.chem.svgMol(monomer.smiles, undefined, undefined, chemOptions),
-          ui.divText('from smiles', {style: {fontSize: 'smaller'}}),
-        ]);
-      } else {
-        // Unable to get monomer's structure
-        structureEl = ui.divText('No structure', {style: {margin: '6px'}});
-      }
-      res.append(ui.div(structureEl,
-        {style: {display: 'flex', flexDirection: 'row', justifyContent: 'center', margin: '6px'}}));
+  override(data: MonomerLibData, source: string): IMonomerLibBase {
+    return new OverriddenMonomerLib(data, `override: ${++MonomerLib.overrideCounter}, ${source}`, this);
+  }
+}
 
-      // Source
-      res.append(ui.divText(monomer.lib?.source ?? 'Missed in libraries'));
-    } else {
-      res.append(ui.divV([
-        ui.divText(`Monomer '${monomerSymbol}' of type '${polymerType}' not found.`),
-        ui.divText('Open the Context Panel, then expand Manage Libraries'),
-      ]));
+class OverriddenMonomerLib extends MonomerLibBase {
+  constructor(
+    private readonly data: MonomerLibData,
+    source: string,
+    private readonly base: MonomerLibBase
+  ) {
+    super(data, source);
+  }
+
+  get onChanged(): Observable<any> { return this.base.onChanged; }
+
+  override getMonomerSymbolsByType(polymerType: PolymerType): string[] {
+    const resList = this.base.getMonomerSymbolsByType(polymerType);
+    for (const overrideSymbol of Object.keys(this.data[polymerType] ?? {})) {
+      if (!resList.includes(overrideSymbol))
+        resList.push(overrideSymbol);
     }
-    return res;
+    return resList;
+  }
+
+  addMissingMonomer(polymerType: PolymerType, monomerSymbol: string): Monomer {
+    return this.base.addMissingMonomer(polymerType, monomerSymbol);
+  }
+
+  getMonomer(polymerType: PolymerType | null, monomerSymbol: string): Monomer | null {
+    const dataMonomer = this.data[polymerType as string]?.[monomerSymbol];
+    const resMonomer = dataMonomer ?? this.base.getMonomer(polymerType, monomerSymbol);
+    return resMonomer;
   }
 }

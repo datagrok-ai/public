@@ -23,8 +23,13 @@ import * as PinnedUtils from '@datagrok-libraries/gridext/src/pinned/PinnedUtils
 import {PinnedColumn} from '@datagrok-libraries/gridext/src/pinned/PinnedColumn';
 import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 import {FormCellRenderer} from './forms/forms';
+import { scWebGPUPointHitTest, scWebGPURender } from './webgpu/scatterplot';
+import { getGPUDevice } from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 
 export const _package = new DG.Package();
+
+let gpuDevice: GPUDevice | null = null;
+let gpuErrorCounter = 0;
 
 //name: barCellRenderer
 //tags: cellRenderer
@@ -204,9 +209,10 @@ export function demoTestUnitsCellRenderer() {
 }
 
 //tags: autostart
-export function _autoPowerGrid(): void {
+export async function _autoPowerGrid() {
   PinnedUtils.registerPinnedColumns();
   DG.GridCellRenderer.register(new ScatterPlotCellRenderer());
+  gpuDevice = await getGPUDevice();
 }
 
 //name: Forms
@@ -247,6 +253,47 @@ export function demoCellTypes() {
   site.setTag(DG.TAGS.CELL_RENDERER, 'Tags');
 
   grok.shell.addTableView(t);
+}
+
+//tags: scWebGPURender
+//input: dynamic sc
+//input: bool show
+export async function _scWebGPURender(sc: DG.ScatterPlotViewer, show: boolean) {
+  try {
+    await scWebGPURender(sc, show);
+  } catch (error) {
+    gpuErrorCounter++;
+  }  
+}
+
+//tags: scWebGPUPointHitTest
+//input: dynamic sc
+//input: dynamic pt
+//output: int result
+export async function _scWebGPUPointHitTest(sc: DG.ScatterPlotViewer, pt: DG.Point) {
+  let result = -1;
+  try {
+    result = await scWebGPUPointHitTest(sc, pt);  
+  } catch (error) {
+    gpuErrorCounter++;
+    throw error;
+  }
+  
+  return result;
+}
+
+//tags: isWebGPUAvailable
+//output: bool result
+export function isWebGPUAvailable(sc: DG.ScatterPlotViewer) {
+  return gpuDevice != null && !gpuErrorCounter;
+}
+
+//tags: isWebGPURenderValid
+//input: dynamic sc
+//output: bool result
+export function isWebGPURenderValid(sc: DG.ScatterPlotViewer) {
+  return sc.props.zoomAndFilter != 'pack and zoom by filter' 
+    && !sc.props.markersColumnName;
 }
 
 export {_ImageCellRenderer};

@@ -1,6 +1,6 @@
 // noinspection JSUnusedGlobalSymbols
 
-import {ColumnType, ScriptLanguage, SemType, Type, TYPE, USER_STATUS} from "./const";
+import {ColumnType, ScriptingLanguage, SemType, Type, TYPE, USER_STATUS} from "./const";
 import { FuncCall } from "./functions";
 import {toDart, toJs} from "./wrappers";
 import {FileSource} from "./dapi";
@@ -569,6 +569,10 @@ export class DataConnection extends Entity {
     return toJs(api.grok_DataConnection_Get_Credentials(this.dart));
   }
 
+  get dataSource(): string {
+    return api.grok_DataConnection_Get_DataSource(this.dart);
+  }
+
   /** Collection of parameters: server, database, endpoint, etc. */
   // get parameters(): DataConnectionParams { return api.grok_DataConnection_Parameters(this.dart); }
 
@@ -823,6 +827,9 @@ export class Group extends Entity {
  * Represents a Script
  * */
 export class Script extends Func {
+  public static readonly vecInputTableName = 'in_vec_table';
+  public static readonly vecOutputTableName = 'out_vec_table';
+
   /** @constructs Script */
   constructor(dart: any) {
     super(dart);
@@ -834,9 +841,12 @@ export class Script extends Func {
   get script(): string { return api.grok_Script_GetScript(this.dart); }
   set script(s: string) { api.grok_Script_SetScript(this.dart, s); }
 
+  /** Script */
+  get clientCode(): string { return api.grok_Script_ClientCode(this.dart); }
+
   /** Script language. See also: https://datagrok.ai/help/datagrok/functions/func-params-annotation */
-  get language(): ScriptLanguage { return api.grok_Script_GetLanguage(this.dart); }
-  set language(s: ScriptLanguage) { api.grok_Script_SetLanguage(this.dart, s); }
+  get language(): ScriptingLanguage { return api.grok_Script_GetLanguage(this.dart); }
+  set language(s: ScriptingLanguage) { api.grok_Script_SetLanguage(this.dart, s); }
 
   /** Environment name. See also: https://datagrok.ai/help/datagrok/functions/func-params-annotation */
   get environment(): string { return api.grok_Script_Get_Environment(this.dart); }
@@ -1117,13 +1127,9 @@ export class Package extends Entity {
     return api.grok_Package_Set_Settings(this.name, props, group?.dart);
   }
 
-  private _files: FileSource | null = null;
-
   /** Global application data */
   get files(): FileSource {
-    if (this._files == null)
-      this._files = new FileSource(`System:AppData/${this.name}`);
-    return this._files;
+    return new FileSource(`System:AppData/${this.name}`);
   }
 
   public async getTests(core: boolean = false) {
@@ -1131,7 +1137,7 @@ export class Package extends Entity {
       await this.load({ file: 'package-test.js' });
       let module = this.getModule('package-test.js');
       if (core && module.initAutoTests)
-        module.initAutoTests();
+        await module.initAutoTests();
       return module.tests;
     } catch (e: any) {
       this.logger.error(e?.msg ?? 'get module error')
@@ -1275,6 +1281,9 @@ export class Property {
   get propertyType(): TYPE { return api.grok_Property_Get_PropertyType(this.dart); }
   set propertyType(s: TYPE) { api.grok_Property_Set_PropertyType(this.dart, s); }
 
+  /** Property subtype */
+  get propertySubType(): TYPE { return api.grok_Property_Get_PropertySubType(this.dart); }
+
   /** Applies to viewers properties whether to include the property in the layout or not. */
   get includeInLayout(): boolean { return api.grok_Property_Get_IncludeInLayout(this.dart); }
   set includeInLayout(s: boolean) { api.grok_Property_Set_IncludeInLayout(this.dart, s); }
@@ -1327,6 +1336,10 @@ export class Property {
    *  @returns {Array<string>} */
   get choices(): string[] { return api.grok_Property_Get_Choices(this.dart); }
   set choices(x: string[]) { api.grok_Property_Set_Choices(this.dart, x); }
+
+  get isVectorizable(): boolean { return api.grok_Property_Get_IsVectorizable(this.dart); }
+
+  get vectorName(): string { return api.grok_Property_Get_VectorName(this.dart); }
 
   /** Column type filter */
   get columnFilter(): ColumnType | 'numerical' | 'categorical' | null {

@@ -1,5 +1,25 @@
 # Charts changelog
 
+## 1.4.1 (2024-10-03)
+
+### Bug Fixes
+
+* GROK-16844: Word cloud: Fixed viewer opens empty on SPGI dataset
+* Charts: Sunburst: Fixed test throws exception when this.dataframe is null in _render() in then
+* Charts: Tree: Fixed test throws exception when this.dataframe is null in _render() in then
+
+### Features
+
+* [#3090](https://github.com/datagrok-ai/public/issues/3090): Sunburst: Usability improvements:
+  * Reduce free space around
+  * Reordering of the columns in the dialog is not reflected on the fly
+* [#3097](https://github.com/datagrok-ai/public/issues/3097): Sunburst: change Row Source to 'All' once the setting 'On Click' is switched to 'Filtered'
+* Charts: Sunburst: Improve logic for labels rendering
+
+### Bug Fixes
+
+* Dependency on the chem package has been removed
+
 ## 1.3.5 (2024-08-30)
 
 ### Features

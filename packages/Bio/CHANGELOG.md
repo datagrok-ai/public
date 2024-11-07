@@ -1,5 +1,144 @@
 # Bio changelog
 
+## 2.17.0 (2024-11-06)
+
+Cell renderer: Harmonize macromolecule renderers
+
+## 2.16.9 (2024-11-01)
+
+Correct package initialization
+
+## 2.16.8 (2024-10-31)
+
+### Bug fixes
+
+* Fix SeqHandler check for custom notation
+* Fix SeqHandler adding splitter, getHelm, isCustom
+
+## 2.16.7 (2024-10-30)
+
+### Bug fixes
+
+* Fix splitterAsHelm for multiple simple polymers, add test
+
+## 2.16.6 (2024-10-22)
+
+### Bug fixes
+
+* Fix toAtomicLevel using pseudo molfile with removed gaps
+* Fix toAtomicLevel Helm parser to clean symbols square brackets
+* Fix toAtomicLevel using column's overridden monomer lib
+* Fix OverriddenMonomerLibrary for added monomers as not missed
+* Fix SeqHandler getValue of type MacromoleculeValueBase
+* Fix monomerLibraries override test
+
+## 2.16.5 (2024-10-18)
+
+### Bug fixes
+
+* WebLogo: fix compatibility with column types and fix aggregations
+* Monomer manager: Fix validations
+
+### Features
+
+Monomer manager: Add new empty monomer
+
+## 2.16.4 (2024-10-16)
+
+### Bug fixes
+
+* Fix helm parser for separate simple polymers, add tests
+* Fix adding MonomerPlacer lengths tests
+* Fix monomer lib getTooltip for gaps
+
+## 2.16.3 (2024-10-15)
+
+### Bug fixes
+
+* Fix weblogo slider not visible
+
+## 2.16.2 (2024-10-11)
+
+### Bug fixes
+
+* Fix moving setUnits methods to SeqHelper
+
+## 2.16.1 (2024-10-11)
+
+### Bug fixes
+
+* GROK-16782: Fix bio-substructure-filters tests
+
+## 2.16.0 (2024-10-10)
+
+### New features
+
+* Add SeqHandler factory to SeqHelper
+
+### Bug fixes
+
+* Fix monomer lib loading timout
+* Fix natural nucleotides' colors
+* Fix SeqHandler.getHelm to return SemanticValue
+* Fix moving harmonized sequence notation provider to Helm
+
+## 2.15.13 (2024-10-08)
+
+Monomer manager: Fix Molv2k Rgroup line generation
+
+## 2.15.12 (2024-10-07)
+
+Fix weblogo colors
+
+## 2.15.11 (2024-10-04)
+
+Monomer renderer: Choose correct colors for background
+
+## 2.15.10 (2024-10-04)
+
+Monomer manager: Better discoverabilty of errors.
+
+## 2.15.9 (2024-10-03)
+
+### New features
+
+* Add monomer lib getMonomerTextColor
+
+### Bug fixes
+
+* Fix sample monomer Aca colors
+* Fix Difference, Monomer renderers to use getMonomerTextColor
+* Fix MacromoleculeCustomCellRenderer console error on onMouseLeave
+
+## 2.15.8 (2024-10-02)
+
+### New features
+
+* Add use monomer lib colors for Monomer Difference Macromolecule
+* Add use monomer lib colors fpr WebLogoViewer
+
+### Bug fixes
+
+* Fix test splitters.splitToMonomers for default monomer lib
+* Fix monomer lib colors for natural monomers
+* Fix monomer colors for empty monomer lib
+
+## 2.15.7 (2024-10-02)
+
+Adjust monomer colors for very 'white' colors.
+
+## 2.15.6 (2024-09-27)
+
+### Bug fixes
+
+* Fix detectMacromolecule forbidding monomers '2,...', add test
+* Fix using IMonomerLibHelper.loadMonomerLibForTests
+* Fix cell renderer to reset reference sequence on reset current row
+* GROK-16699: Fix PepSeA container return meaningful error messages, unskip test
+* Fix test data monomers add aG, azG
+* Fix unskip toAtomicLevel tests depending on HelmHelper
+* Fix detectMacromolecule for harmonized sequences, add test
+
 ## 2.15.5 (2024-09-25)
 
 ### New features

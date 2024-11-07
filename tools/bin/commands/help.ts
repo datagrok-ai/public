@@ -1,3 +1,5 @@
+import { testAll } from "./test-all";
+
 const HELP = `
 Usage: grok <command>
 
@@ -13,6 +15,7 @@ Commands:
     link      Link \`datagrok-api\` and libraries for local development
     publish   Upload a package
     test      Run package tests
+    testAll      Run packages tests
 
 To get help on a particular command, use:
     grok <command> --help
@@ -108,7 +111,10 @@ Usage: grok publish [host]
 Upload a package
 
 Options:
-[--build|--rebuild] [--debug|--release] [-k | --key] [--suffix]
+[--build|--rebuild] [--debug|--release] [-k | --key] [--suffix] [--all] [--refresh]
+
+--all             Publish all available packages 
+--refresh         Publish all available already loaded packages 
 
 Running \`grok publish\` is the same as running \`grok publish defaultHost --build --debug\`
 `;
@@ -128,9 +134,11 @@ const HELP_TEST = `
 Usage: grok test
 
 Options:
-[--category] [--host] [--csv] [--gui] [--skip-build] [--skip-publish] [--catchUnhandled] [--report] [--record] [--verbose] [--platform]
+[--package] [--category] [--test] [--host] [--csv] [--gui] [--skip-build] [--skip-publish] [--link] [--catchUnhandled] [--report] [--record] [--verbose] [--platform] [--benchmark] [--stress-test]
 
+--package           Specify a package name to run tests for
 --category          Specify a category name to run tests for
+--test              Specify a test name to run 
 --host              Host alias as in the config file
 --csv               Save the test report in a CSV file
 --gui               Launch graphical interface (non-headless mode)
@@ -138,12 +146,46 @@ Options:
 --report            Report failed tests to audit, notifies package author (default=false)
 --skip-build        Skip the package build step
 --skip-publish      Skip the package publication step
+--link  	          Link the package to local utils
 --record            Records the test execution process in mp4 format
 --verbose           Prints detailed information about passed and skipped tests in the console
 --platform          Runs only platform tests (applicable for ApiTests package only)
 --core              Runs package & core tests (applicable  for DevTools package only)
-
+--benchmark   	    Runs tests in benchmark mode
+--stress-test       Runs shuffled stress-test only
+ 
 Run package tests
+
+See instructions:
+https://datagrok.ai/help/develop/how-to/test-packages#local-testing
+`;
+
+const HELP_TESTALL = `
+Usage: grok testall
+
+Options:
+[--packages] [--host] [--csv] [--gui] [--skip-build] [--skip-publish] [--link-package] [--catchUnhandled] [--report] [--record] [--verbose] [--benchmark] [--stress-test] [--order] [--tags] [--testRepeat] [--workersCount]
+
+--packages          Specify a packages names to run tests for
+--host              Host alias as in the config file
+--csv               Save the test report in a CSV file
+--gui               Launch graphical interface (non-headless mode)
+--catchUnhandled    Catch unhandled exceptions during test execution (default=true)
+--report            Report failed tests to audit, notifies packages author (default=false)
+--skip-build        Skip the packages build step
+--skip-publish      Skip the packages publication step
+--link-package  	  Link the packages to local utils
+--record            Records the test execution process in mp4 format
+--verbose           Prints detailed information about passed and skipped tests in the console
+--core              Runs packages & core tests (applicable  for DevTools packages only)
+--benchmark   	    Runs tests in benchmark mode
+--stress-test       Runs shuffled stress-test only
+--order             Specify order for tests invocation
+--tags              Filter tests by tag name for run
+--testRepeat        Set amount of tests repeats
+--workersCount      Set amount of workers for tests run
+
+Run tests of all or specified packages 
 
 See instructions:
 https://datagrok.ai/help/develop/how-to/test-packages#local-testing
@@ -153,12 +195,6 @@ const HELP_LINK = `
 Usage: grok link
 
 Link \`datagrok-api\` and libraries for local development
-
-Options:
-[--local | --npm]
-
---local   Default. Links libraries and updates package scripts ("link-all", "build-all")
---npm     Unlinks local packages and runs \`npm i\`
 `;
 
 // const HELP_MIGRATE = `
@@ -178,5 +214,6 @@ export const help = {
   link: HELP_LINK,
   publish: HELP_PUBLISH,
   test: HELP_TEST,
+  testall: HELP_TESTALL,
   help: HELP,
 };

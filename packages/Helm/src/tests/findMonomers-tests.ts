@@ -6,7 +6,7 @@ import {after, before, category, delay, expect, expectObject, test} from '@datag
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {
-  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
+  getUserLibSettings, setUserLibSettings,
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 
 import {findMonomers, parseHelm} from '../utils';
@@ -25,8 +25,7 @@ category('findMonomers', () => {
     userLibSettings = await getUserLibSettings();
 
     // Tests 'findMonomers' requires default monomer library loaded
-    await setUserLibSettingsForTests();
-    await monomerLibHelper.loadMonomerLib(true); // load default libraries for tests
+    await monomerLibHelper.loadMonomerLibForTests(); // load default libraries for tests
   });
 
   after(async () => {

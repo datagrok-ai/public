@@ -1,6 +1,76 @@
 # Datagrok-tools changelog
 
 
+## 4.13.35 (2024-11-4)
+
+### Features
+
+* Grok help fixes
+
+## 4.13.34 (2024-11-1)
+
+### Features
+
+* Config bug fixes
+
+## 4.13.33 (2024-10-31)
+
+### Features
+
+* Added Changelog to package template
+* Added ability to reload page on Execution Timeout
+
+## 4.13.32 (2024-10-16)
+
+### Features
+
+* Replaced publishAll by publuish variables 
+* Added global.d.ts file
+
+## 4.13.31 (2024-10-15)
+
+### Features
+
+* Grok test without repository fixes
+
+
+## 4.13.30 (2024-10-11)
+
+### Features
+
+* Grok Check fixes
+
+## 4.13.29 (2024-10-09)
+
+### Features
+
+* Help fixes
+
+
+## 4.13.28 (2024-10-09)
+
+### Features
+
+* Grok Check update(added checks on caching)
+
+## 4.13.27 (2024-10-02)
+
+### Features
+
+* Publish all added
+
+## 4.13.26 (2024-10-02)
+
+### Features
+
+* Create command fixes
+
+## 4.13.25 (2024-09-30)
+
+### Features
+
+* Test command package publishing fix 
+
 ## 4.13.24 (2024-09-26)
 
 ### Features

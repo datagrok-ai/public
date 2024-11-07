@@ -6,10 +6,10 @@ import $ from 'cash-dom';
 import wu from 'wu';
 import {fromEvent, Observable, Subject, Unsubscribable} from 'rxjs';
 
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
-import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 import {
-  monomerToShort, pickUpPalette, pickUpSeqCol, TAGS as bioTAGS, positionSeparator
+  monomerToShort, pickUpSeqCol, TAGS as bioTAGS, positionSeparator, ALPHABET
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {
   FilterSources, HorizontalAlignments, IWebLogoViewer, PositionHeight, PositionMarginStates,
@@ -21,11 +21,14 @@ import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/type
 import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
 import {GAP_SYMBOL} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/index';
+import {HelmType} from '@datagrok-libraries/bio/src/helm/types';
+import {undefinedColor} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 
 import {AggFunc, getAgg} from '../utils/agg';
 import {buildCompositionTable} from '../widgets/composition-analysis-widget';
 
-import {_package} from '../package';
+import {_package, getMonomerLibHelper} from '../package';
 
 declare global {
   interface HTMLCanvasElement {
@@ -199,7 +202,8 @@ export class PositionInfo {
   }
 
   render(g: CanvasRenderingContext2D,
-    fontStyle: string, uppercaseLetterAscent: number, uppercaseLetterHeight: number, cp: SeqPalette
+    fontStyle: string, uppercaseLetterAscent: number, uppercaseLetterHeight: number,
+    biotype: HelmType, monomerLib: IMonomerLibBase | null
   ) {
     for (const [monomer, pmInfo] of Object.entries(this._freqs)) {
       if (monomer !== GAP_SYMBOL) {
@@ -207,11 +211,15 @@ export class PositionInfo {
         const b = pmInfo.bounds!;
         const left = b.left;
 
+        let color: string = undefinedColor;
+        if (monomerLib)
+          color = monomerLib.getMonomerTextColor(biotype, monomer)!;
+
         g.resetTransform();
         g.strokeStyle = 'lightgray';
         g.lineWidth = 1;
         g.rect(left, b.top, b.width, b.height);
-        g.fillStyle = cp.get(monomer) ?? cp.get('other');
+        g.fillStyle = color;
         g.textAlign = 'left';
         g.font = fontStyle;
         //g.fillRect(b.left, b.top, b.width, b.height);
@@ -233,13 +241,13 @@ export class PositionInfo {
     return !!findRes ? findRes[0] : undefined;
   }
 
-  buildCompositionTable(palette: SeqPalette): HTMLTableElement {
+  buildCompositionTable(biotype: HelmType, monomerLib: IMonomerLibBase): HTMLTableElement {
     if ('-' in this._freqs)
       throw new Error(`Unexpected monomer symbol '-'.`);
-    return buildCompositionTable(palette,
+    return buildCompositionTable(
       Object.assign({}, ...Object.entries(this._freqs)
-        .map(([m, pmi]) => ({[m]: pmi.rowCount})))
-    );
+        .map(([m, pmi]) => ({[m]: pmi.rowCount}))),
+      biotype, monomerLib);
   }
 }
 
@@ -301,12 +309,11 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
   private viewed: boolean = false;
 
-  private seqHandler: SeqHandler | null;
+  private seqHelper: ISeqHelper;
+  private seqHandler: ISeqHandler | null;
   private initialized: boolean = false;
 
-  // private readonly colorScheme: ColorScheme = ColorSchemes[NucleotidesWebLogo.residuesSet];
-  protected palette: SeqPalette | null = null;
-
+  private monomerLib: IMonomerLibBase | null = null;
   private host?: HTMLDivElement;
   private msgHost?: HTMLElement;
   private canvas: HTMLCanvasElement;
@@ -382,19 +389,20 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   constructor() {
     super();
 
+    this.seqHelper = _package.seqHelper;
     this.textBaseline = 'top';
     this.seqHandler = null;
 
     // -- Data --
     this.sequenceColumnName = this.string(PROPS.sequenceColumnName, defaults.sequenceColumnName,
-      {category: PROPS_CATS.DATA});
+      {category: PROPS_CATS.DATA, semType: DG.SEMTYPE.MACROMOLECULE});
     const aggExcludeList = [DG.AGG.KEY, DG.AGG.PIVOT, DG.AGG.MISSING_VALUE_COUNT, DG.AGG.SKEW, DG.AGG.KURT,
       DG.AGG.SELECTED_ROWS_COUNT];
     const aggChoices = Object.values(DG.AGG).filter((agg) => !aggExcludeList.includes(agg));
     this.valueAggrType = this.string(PROPS.valueAggrType, defaults.valueAggrType,
       {category: PROPS_CATS.DATA, choices: aggChoices}) as DG.AggregationType;
     this.valueColumnName = this.string(PROPS.valueColumnName, defaults.valueColumnName,
-      {category: PROPS_CATS.DATA});
+      {category: PROPS_CATS.DATA, columnTypeFilter: 'numerical'});
     this.startPositionName = this.string(PROPS.startPositionName, defaults.startPositionName,
       {category: PROPS_CATS.DATA});
     this.endPositionName = this.string(PROPS.endPositionName, defaults.endPositionName,
@@ -445,6 +453,14 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     this.canvas = ui.canvas();
     this.canvas.classList.value = 'bio-wl-canvas';
     this.canvas.style.width = '100%';
+
+    getMonomerLibHelper().then((libHelper) => {
+      this.monomerLib = libHelper.getMonomerLib();
+      this.render(WlRenderLevel.Render, 'monomerLib');
+      this.subs.push(this.monomerLib.onChanged.subscribe(() => {
+        this.render(WlRenderLevel.Render, 'monomerLib changed');
+      }));
+    });
 
     /* this.root.style.background = '#FFEEDD'; */
     this.viewSyncer = new PromiseSyncer(_package.logger);
@@ -532,6 +548,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
         style: {
           display: 'flex',
           flexDirection: 'row',
+          flexGrow: 0,
           /** For alignContent to have an effect */ flexWrap: 'wrap',
           /* backgroundColor: '#EEFFEE' */
         }
@@ -583,7 +600,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     // Set valueColumnNameProp.choices has no effect
   }
 
-  /** Assigns {@link seqCol} and {@link palette} based on {@link sequenceColumnName} and calls {@link render}(). */
+  /** Assigns {@link seqCol} based on {@link sequenceColumnName} and calls {@link render}(). */
   private updateSeqCol(): void {
     if (this.dataFrame) {
       this.seqCol = this.sequenceColumnName ? this.dataFrame.col(this.sequenceColumnName) : null;
@@ -593,9 +610,8 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       }
       if (this.seqCol) {
         try {
-          this.seqHandler = SeqHandler.forColumn(this.seqCol);
+          this.seqHandler = this.seqHelper.getSeqHandler(this.seqCol);
 
-          this.palette = pickUpPalette(this.seqCol);
           this.render(WlRenderLevel.Freqs, 'updateSeqCol()');
           this.error = null;
         } catch (err: any) {
@@ -609,7 +625,6 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
           this.positionLabels = [];
           this.startPosition = -1;
           this.endPosition = -1;
-          this.palette = null;
         }
       }
     }
@@ -995,7 +1010,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       // endregion updatePositions
 
       const length: number = this.startPosition <= this.endPosition ? this.endPosition - this.startPosition + 1 : 0;
-      this.seqHandler = SeqHandler.forColumn(this.seqCol);
+      this.seqHandler = this.seqHelper.getSeqHandler(this.seqCol);
       const posCount: number = this.startPosition <= this.endPosition ? this.endPosition - this.startPosition + 1 : 0;
       this.positions = new Array(posCount);
       for (let jPos = 0; jPos < length; jPos++) {
@@ -1007,20 +1022,18 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
       // 2022-05-05 askalkin instructed to show WebLogo based on filter (not selection)
       const dfRowCount = this.dataFrame.rowCount;
-
+      const filterIndexes = dfFilter.getSelectedIndexes();
       for (let jPos = 0; jPos < length; ++jPos) {
         // Here we want to build lists of values for every monomer in position jPos
-        for (let rowI = 0; rowI < dfRowCount; ++rowI) {
-          if (dfFilter.get(rowI)) {
-            const seqS: ISeqSplitted = this.seqHandler.getSplitted(rowI);
-            const om: string = jPos < seqS.length ? seqS.getCanonical(this.startPosition + jPos) :
-              this.seqHandler.defaultGapOriginal;
-            const cm: string = this.seqHandler.defaultGapOriginal === om ? GAP_SYMBOL : om;
-            const pi = this.positions[jPos];
-            const pmi = pi.getFreq(cm);
-            ++pi.sumRowCount;
-            pmi.value = ++pmi.rowCount;
-          }
+        for (const rowI of filterIndexes) {
+          const seqS: ISeqSplitted = this.seqHandler.getSplitted(rowI);
+          const om: string = jPos + this.startPosition < seqS.length ? seqS.getCanonical(this.startPosition + jPos) :
+            this.seqHandler.defaultGapOriginal;
+          const cm: string = this.seqHandler.defaultGapOriginal === om ? GAP_SYMBOL : om;
+          const pi = this.positions[jPos];
+          const pmi = pi.getFreq(cm);
+          ++pi.sumRowCount;
+          pmi.value = ++pmi.rowCount;
         }
         if (this.valueAggrType === DG.AGG.TOTAL_COUNT) continue;
 
@@ -1033,13 +1046,13 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
         } catch { valueCol = null; }
         if (!valueCol) continue; // fallback to TOTAL_COUNT
 
-        for (let rowI = 0; rowI < dfRowCount; ++rowI) {
-          if (dfFilter.get(rowI)) { // respect the filter
-            const seqMList: ISeqSplitted = this.seqHandler.getSplitted(rowI);
-            const cm: string = seqMList.getCanonical(this.startPosition + jPos);
-            const value: number | null = valueCol.get(rowI);
-            this.positions[jPos].getFreq(cm).push(value);
-          }
+        for (const rowI of filterIndexes) {
+          const seqS: ISeqSplitted = this.seqHandler.getSplitted(rowI);
+          const om: string = jPos + this.startPosition < seqS.length ? seqS.getCanonical(this.startPosition + jPos) :
+            this.seqHandler.defaultGapOriginal;
+          const cm: string = this.seqHandler.defaultGapOriginal === om ? GAP_SYMBOL : om;
+          const value: number | null = valueCol.get(rowI);
+          this.positions[jPos].getFreq(cm).push(value);
         }
         this.positions[jPos].aggregate(this.valueAggrType);
       }
@@ -1062,7 +1075,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       const absoluteMaxHeight: number = this.canvas.height - positionLabelsHeight * dpr;
       let alphabetSizeLog: number;
       if (this.valueAggrType === DG.AGG.TOTAL_COUNT) {
-        const alphabetSize: number = this.getAlphabetSize();
+        const alphabetSize: number = this.seqHandler!.getAlphabetSize();
         if ((this.positionHeight == PositionHeight.Entropy) && (alphabetSize == null))
           grok.shell.error('WebLogo: alphabet is undefined.');
         alphabetSizeLog = Math.log2(alphabetSize);
@@ -1085,15 +1098,10 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       this._onLayoutCalculated.next();
     };
 
-    if (this.msgHost) {
-      if (this.seqCol && !this.palette) {
-        this.msgHost!.innerText = `Unknown palette (column semType: '${this.seqCol.semType}').`;
-        this.msgHost!.style.display = '';
-      } else
-        this.msgHost!.style.display = 'none';
-    }
+    if (this.msgHost)
+      this.msgHost!.style.display = 'none';
 
-    if (!this.seqCol || !this.dataFrame || !this.palette || this.host == null || this.slider == null)
+    if (!this.seqCol || !this.dataFrame || this.host == null || this.slider == null)
       return;
 
     const dpr: number = window.devicePixelRatio;
@@ -1133,8 +1141,9 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       // Hacks to scale uppercase characters to target rectangle
       const uppercaseLetterAscent = 0.25;
       const uppercaseLetterHeight = 12.2;
+      const biotype = this.seqHandler!.defaultBiotype;
       for (let jPos = firstPos; jPos <= lastPos; jPos++)
-        this.positions[jPos].render(g, fontStyle, uppercaseLetterAscent, uppercaseLetterHeight, this.palette);
+        this.positions[jPos].render(g, fontStyle, uppercaseLetterAscent, uppercaseLetterHeight, biotype, this.monomerLib);
     } finally {
       g.restore();
     }
@@ -1157,9 +1166,9 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   private _lastWidth: number;
   private _lastHeight: number;
 
-  public getAlphabetSize(): number {
-    return this.seqHandler?.getAlphabetSize() ?? 0;
-  }
+  // public getAlphabetSize(): number {
+  //   return this.seqHandler?.getAlphabetSize() ?? 0;
+  // }
 
   // -- Handle events --
 
@@ -1207,7 +1216,8 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     }
   }
 
-  private canvasOnMouseMove(e: MouseEvent) {
+  private canvasOnMouseMove(e: MouseEvent): void {
+    if (!this.monomerLib || !this.seqHandler) return;
     const dpr = window.devicePixelRatio;
     try {
       const args = e as MouseEvent;
@@ -1220,8 +1230,10 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
         // Position tooltip
 
         const tooltipRows = [ui.divText(`Position ${pi.label}`)];
-        if (this.valueAggrType === DG.AGG.TOTAL_COUNT)
-          tooltipRows.push(pi.buildCompositionTable(this.palette!));
+        if (this.valueAggrType === DG.AGG.TOTAL_COUNT) {
+          const biotype = this.seqHandler!.defaultBiotype;
+          tooltipRows.push(pi.buildCompositionTable(biotype, this.monomerLib));
+        }
         const tooltipEl = ui.divV(tooltipRows);
         ui.tooltip.show(tooltipEl, args.x + 16, args.y + 16);
       } else if (pi !== null && monomer && this.dataFrame && this.seqCol && this.seqHandler) {
@@ -1345,7 +1357,7 @@ function renderPositionLabels(g: CanvasRenderingContext2D,
 }
 
 export function checkSeqForMonomerAtPos(
-  df: DG.DataFrame, sh: SeqHandler, filter: DG.BitSet, rowI: number, monomer: string, at: PositionInfo,
+  df: DG.DataFrame, sh: ISeqHandler, filter: DG.BitSet, rowI: number, monomer: string, at: PositionInfo,
 ): boolean {
   const seqMList: ISeqSplitted = sh.getSplitted(rowI);
   const seqCM: string | null = at.pos < seqMList.length ? seqMList.getCanonical(at.pos) : null;
@@ -1353,7 +1365,7 @@ export function checkSeqForMonomerAtPos(
 }
 
 export function countForMonomerAtPosition(
-  df: DG.DataFrame, sh: SeqHandler, filter: DG.BitSet, monomer: string, at: PositionInfo
+  df: DG.DataFrame, sh: ISeqHandler, filter: DG.BitSet, monomer: string, at: PositionInfo
 ): number {
   let count = 0;
   let rowI = -1;

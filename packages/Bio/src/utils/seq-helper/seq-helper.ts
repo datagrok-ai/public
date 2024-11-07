@@ -15,9 +15,10 @@ import {getMolHighlight} from '@datagrok-libraries/bio/src/monomer-works/seq-to-
 import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/index';
 
 import {HelmToMolfileConverter} from '../helm-to-molfile/converter';
-import {MonomerLibManager} from '../monomer-lib/lib-manager';
-
-import {_package, getMonomerLibHelper} from '../../package';
+import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
+import {SeqHandler} from './seq-handler';
+import {Column} from 'datagrok-api/dg';
+import {NOTATION, TAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 type SeqHelperWindowType = Window & { $seqHelperPromise?: Promise<SeqHelper> };
 declare const window: SeqHelperWindowType;
@@ -25,12 +26,22 @@ declare const window: SeqHelperWindowType;
 export class SeqHelper implements ISeqHelper {
   constructor(
     private readonly libHelper: IMonomerLibHelper,
-    private readonly helmHelper: IHelmHelper,
     private readonly rdKitModule: RDModule
   ) {}
 
-  getHelmToMolfileConverter(monomerLib: IMonomerLibBase): HelmToMolfileConverter {
-    return new HelmToMolfileConverter(this.helmHelper, this.rdKitModule, monomerLib);
+  getSeqHandler(seqCol: DG.Column<string>): ISeqHandler {
+    return SeqHandler.forColumn(seqCol, this);
+  }
+
+  getSeqMonomers(seqCol: Column<string>): string[] {
+    const sh = this.getSeqHandler(seqCol);
+    return Object.keys(sh.stats.freq);
+  }
+
+  // TODO: Move to the Helm package
+  async getHelmToMolfileConverter(monomerLib: IMonomerLibBase): Promise<HelmToMolfileConverter> {
+    const helmHelper: IHelmHelper = await getHelmHelper();
+    return new HelmToMolfileConverter(helmHelper, this.rdKitModule, monomerLib);
   }
 
   async helmToAtomicLevel(
@@ -41,11 +52,11 @@ export class SeqHelper implements ISeqHelper {
     const df: DG.DataFrame = helmCol.dataFrame;
     const molColName: string = getMolColName(df, helmCol.name);
 
-    const converter = this.getHelmToMolfileConverter(monomerLib);
+    const converter = await this.getHelmToMolfileConverter(monomerLib);
 
     //#region From HelmToMolfileConverter.convertToRdKitBeautifiedMolfileColumn
 
-    const molfilesV3K = converter.convertToMolfileV3K(helmCol, this.rdKitModule, monomerLib);
+    const molfilesV3K = converter.convertToMolfileV3K(helmCol.toList());
 
     const beautifiedMolList: (RDMol | null)[] = molfilesV3K.map((item) => {
       const molfile = item.molfile;
@@ -86,17 +97,30 @@ export class SeqHelper implements ISeqHelper {
     return {molCol: molCol, warnings: []};
   }
 
-  static getInstance(): Promise<SeqHelper> {
-    let res = window.$seqHelperPromise;
-    if (res == undefined) {
-      res = window.$seqHelperPromise = (async () => {
-        if (!_package.initialized)
-          throw new Error('Bio package is not initialized, call Bio:getSeqHelper');
-        const instance = new SeqHelper(
-          await MonomerLibManager.getInstance(), await getHelmHelper(), _package.rdKitModule);
-        return instance;
-      })();
-    }
-    return res;
+  public setUnitsToFastaColumn(uh: SeqHandler) {
+    if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE || uh.column.meta.units !== NOTATION.FASTA)
+      throw new Error(`The column of notation '${NOTATION.FASTA}' must be '${DG.SEMTYPE.MACROMOLECULE}'.`);
+
+    uh.column.meta.units = NOTATION.FASTA;
+    SeqHandler.setTags(uh);
+  }
+
+  public setUnitsToSeparatorColumn(uh: SeqHandler, separator?: string) {
+    if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE || uh.column.meta.units !== NOTATION.SEPARATOR)
+      throw new Error(`The column of notation '${NOTATION.SEPARATOR}' must be '${DG.SEMTYPE.MACROMOLECULE}'.`);
+    if (!separator)
+      throw new Error(`The column of notation '${NOTATION.SEPARATOR}' must have the separator tag.`);
+
+    uh.column.meta.units = NOTATION.SEPARATOR;
+    uh.column.setTag(TAGS.separator, separator);
+    SeqHandler.setTags(uh);
+  }
+
+  public setUnitsToHelmColumn(uh: SeqHandler) {
+    if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE)
+      throw new Error(`The column of notation '${NOTATION.HELM}' must be '${DG.SEMTYPE.MACROMOLECULE}'`);
+
+    uh.column.meta.units = NOTATION.HELM;
+    SeqHandler.setTags(uh);
   }
 }

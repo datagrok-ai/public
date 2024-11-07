@@ -9,7 +9,7 @@ import {solveDefault, solveIVP} from './solver';
 import {ODEs, SolverOptions} from './solver-tools/solver-defs';
 import {DiffStudio} from './app';
 
-import {getBioreactorSim, getPkPdSim, showBioHelpPanel, showPkPdHelpPanel} from './demo-models';
+import {getBioreactorSim, getPkPdSim, showBioHelpPanel, showPkPdHelpPanel, getBallFlightSim} from './demo-models';
 
 export const _package = new DG.Package();
 
@@ -194,7 +194,7 @@ export function pkPdDemo(dose: number, count: number, interval: number, KA: numb
 
 //name: PK-PD Simulation Demo
 //description: In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation
-//meta.demoPath: Compute | PK-PD modeling
+//meta.demoPath: Compute | PK-PD Modeling
 //test: demoSimPKPD() //wait: 100
 export async function demoSimPKPD(): Promise<any> {
   const doeSimpleFunc: DG.Func = await grok.functions.eval('DiffStudio:pkPdDemo');
@@ -205,4 +205,29 @@ export async function demoSimPKPD(): Promise<any> {
   await openModelFuncCall.call();
 
   showPkPdHelpPanel();
+}
+
+//name: Ball flight
+//tags: model
+//description: Ball flight simulation
+//input: double dB = 0.01 {category: Ball; caption: Diameter; units: m; min: 0.01; max: 0.3}
+//input: double roB = 200 {category: Ball; caption: Density; units: kg/m^3; min: 200; max: 1200} [Material density]
+//input: double v = 50 {category: Throw parameters; caption: Velocity; min: 40; max: 60; units: m/sec}
+//input: double a = 45 {category: Throw parameters; caption: Angle; min: 20; max: 70; units: deg}
+//output: double maxDist {caption: Max distance}
+//output: double maxHeight {caption: Max height}
+//output: dataframe df {caption: Trajectory; viewer: Line chart(block: 60, multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 40)}
+//editor: Compute:RichFunctionViewEditor
+//sidebar: @compute
+//meta.runOnOpen: true
+//meta.runOnInput: true
+//meta.features: {"sens-analysis": true, "fitting": true}
+//meta.icon: files/icons/ball.png
+export function ballFlight(dB: number, roB: number, v: number, a: number) {
+  const simlulation = getBallFlightSim(v, Math.PI * a / 180, dB, roB);
+  return {
+    df: simlulation,
+    maxDist: simlulation.col('Distance').stats.max,
+    maxHeight: simlulation.col('Height').stats.max,
+  };
 }

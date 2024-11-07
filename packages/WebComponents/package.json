@@ -6,17 +6,17 @@
   "dependencies": {
     "@datagrok-libraries/utils": "^4.3.0",
     "@datagrok-libraries/webcomponents": "^0.0.2",
-    "cash-dom": "latest",
-    "datagrok-api": "latest",
-    "dayjs": "latest"
+    "cash-dom": "^8.1.5",
+    "datagrok-api": "^1.21.1",
+    "dayjs": "^1.11.4"
   },
   "devDependencies": {
     "datagrok-tools": "latest",
     "source-map-loader": "^5.0.0",
-    "ts-loader": "latest",
-    "typescript": "latest",
-    "webpack": "latest",
-    "webpack-cli": "latest"
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.6.3",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
   },
   "scripts": {
     "link-all": "",

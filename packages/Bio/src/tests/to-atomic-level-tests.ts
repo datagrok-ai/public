@@ -12,10 +12,10 @@ import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {
-  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
+  getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {getSeqHelper, ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 
 import {_package} from '../package-test';
@@ -60,17 +60,17 @@ category('toAtomicLevel', async () => {
   /** Backup actual user's monomer libraries settings */
   let userLibSettings: UserLibSettings;
 
+  let seqHelper: ISeqHelper;
   let monomerLib: IMonomerLib;
   let rdKitModule: RDModule;
 
   before(async () => {
     rdKitModule = await getRdKitModule();
+    seqHelper = await getSeqHelper();
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
     // Clear settings to test default
-    await setUserLibSettingsForTests();
-    await monomerLibHelper.awaitLoaded();
-    await monomerLibHelper.loadMonomerLib(true);
+    await monomerLibHelper.loadMonomerLibForTests();
 
     monomerLib = monomerLibHelper.getMonomerLib();
 
@@ -216,7 +216,7 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
     seqCol.meta.units = NOTATION.FASTA;
     seqCol.setTag(bioTAGS.alphabet, ALPHABET.PT);
-    const sh = SeqHandler.forColumn(seqCol);
+    const sh = seqHelper.getSeqHandler(seqCol);
     const resCol = (await _testToAtomicLevel(srcDf, 'seq', monomerLibHelper))!;
     expect(polishMolfile(resCol.get(0)), polishMolfile(tgtMol));
   });
@@ -225,7 +225,7 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr
     df: DG.DataFrame, seqColName: string = 'seq', monomerLibHelper: IMonomerLibHelper
   ): Promise<DG.Column | null> {
     const seqCol: DG.Column<string> = df.getCol(seqColName);
-    const res = await _toAtomicLevel(df, seqCol, monomerLib, rdKitModule);
+    const res = await _toAtomicLevel(df, seqCol, monomerLib, seqHelper, rdKitModule);
     if (res.warnings.length > 0)
       _package.logger.warning(`_toAtomicLevel() warnings ${res.warnings.join('\n')}`);
     return res.molCol;

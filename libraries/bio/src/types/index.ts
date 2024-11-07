@@ -5,7 +5,7 @@ import {Observable} from 'rxjs';
 import {HelmAtom} from '@datagrok-libraries/helm-web-editor/src/types/org-helm';
 
 import {
-  HelmType, IWebEditorMonomer, MonomerSetType, MonomerType, PolymerType
+  HelmType, IMonomerColors, IWebEditorMonomer, MonomerSetType, MonomerType, PolymerType
 } from '../helm/types';
 import {
   HELM_REQUIRED_FIELD as REQ,
@@ -34,7 +34,7 @@ export type Monomer = {
   [OPT.NATURAL_ANALOG]?: string,
   [OPT.META]?: { [property: string]: any },
 
-  lib?: IMonomerLib,
+  lib?: IMonomerLibBase,
   wem?: IWebEditorMonomer,
 };
 
@@ -68,8 +68,14 @@ export interface IMonomerSet {
 
 export type MonomerLibSummaryType = { [polymerType: string]: number };
 
+export type MonomerLibData = { [polymerType: string]: { [symbol: string]: Monomer } };
+
 export interface IMonomerLibBase {
+  get source(): string;
+  get isEmpty(): boolean;
   get onChanged(): Observable<any>;
+
+  getMonomerSymbolsByType(polymerType: PolymerType): string[];
 
   /* Gets library monomer for sequence monomer */
   addMissingMonomer(polymerType: PolymerType, monomerSymbol: string): Monomer;
@@ -80,17 +86,20 @@ export interface IMonomerLibBase {
   getWebEditorMonomer(a: HelmAtom | HelmType, symbol?: string): IWebEditorMonomer | null;
 
   getRS(smiles: string): { [r: string]: string };
+
+  getTooltip(biotype: HelmType, monomerSymbol: string): HTMLElement;
+
+  getMonomerColors(biotype: HelmType, symbol: string): IMonomerColors;
+
+  getMonomerTextColor(biotype: HelmType, symbol: string): string;
 }
 
 export interface IMonomerLib extends IMonomerLibBase {
-  get source(): string | undefined;
   get error(): string | undefined;
 
   getMonomerMolsByPolymerType(polymerType: PolymerType): { [monomerSymbol: string]: string } | null;
   getMonomerSymbolsByRGroup(rGroupNumber: number, polymerType: PolymerType, element?: string): string[];
-  getMonomerSymbolsByType(polymerType: PolymerType): string[];
   getPolymerTypes(): PolymerType[];
-  update(lib: IMonomerLib): void;
   toJSON(): Monomer[];
 
   /** Summary string with lib monomer count by type
@@ -103,8 +112,8 @@ export interface IMonomerLib extends IMonomerLibBase {
   /** Gets dataframe with columns 'polymerType', 'count'. */
   getSummaryDf(): DG.DataFrame;
 
-  getTooltip(biotype: HelmType, monomerSymbol: string): HTMLElement;
-
   // For monomer palettes
   getMonomerSet(biotype: HelmType): MonomerSetType | null;
+
+  override(overrideData: MonomerLibData, source: string): IMonomerLibBase;
 }

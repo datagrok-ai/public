@@ -30,3 +30,4 @@ dist/
 
 # Emitted *.js files
 src/**/*.js
+!src/worker.js

@@ -6,12 +6,16 @@ import wu from 'wu';
 
 import {ITooltipAndPanelParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {getSimilarityFromDistance} from '@datagrok-libraries/ml/src/distance-metrics-methods';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {AvailableMetrics, DistanceMetricsSubjects, StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
+import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {HelmType} from '@datagrok-libraries/bio/src/helm/types';
+
 import {drawMoleculeDifferenceOnCanvas} from '../utils/cell-renderer';
 import {invalidateMols, MONOMERIC_COL_TAGS} from '../substructure-search/substructure-search';
-import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
-import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+
+import {_package} from '../package';
 
 export async function getDistances(col: DG.Column, seq: string): Promise<Array<number>> {
   const stringArray = col.toList();
@@ -44,11 +48,11 @@ export async function getSimilaritiesMatrix(
   return simArr;
 }
 
-export async function getChemSimilaritiesMatrix(dim: number, seqCol: DG.Column,
+export async function getChemSimilaritiesMatrix(dim: number, seqCol: DG.Column, seqHelper: ISeqHelper,
   df: DG.DataFrame, colName: string, simArr: (DG.Column | null)[])
   : Promise<(DG.Column | null)[]> {
   if (seqCol.version !== seqCol.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION])
-    await invalidateMols(seqCol, false);
+    await invalidateMols(seqCol, seqHelper, false);
   const fpDf = DG.DataFrame.create(seqCol.length);
   fpDf.columns.addNewString(colName).init((i) => seqCol.temp[MONOMERIC_COL_TAGS.MONOMERIC_MOLS].get(i));
   const res = await grok.functions.call('Chem:getChemSimilaritiesMatrix', {
@@ -105,10 +109,11 @@ export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivE
   });
 
   const molDifferences: { [key: number]: HTMLCanvasElement } = {};
-  const sh = SeqHandler.forColumn(params.seqCol);
-  const subParts1 = sh.getSplitted(params.points[0]); // splitter(sequencesArray[0], {uh, rowIdx: -1});
-  const subParts2 = sh.getSplitted(params.points[1]); // splitter(sequencesArray[1], {uh, rowIdx: -1});
-  const canvas = createDifferenceCanvas(subParts1, subParts2, sh.units, molDifferences);
+  const sh = _package.seqHelper.getSeqHandler(params.seqCol);
+  const biotype = sh.defaultBiotype;
+  const subParts1 = sh.getSplitted(params.points[0]);
+  const subParts2 = sh.getSplitted(params.points[1]);
+  const canvas = createDifferenceCanvas(subParts1, subParts2, biotype, molDifferences);
   propPanel.append(ui.div(canvas, {style: {width: '300px', overflow: 'scroll'}}));
 
   propPanel.append(createDifferencesWithPositions(molDifferences));
@@ -129,15 +134,16 @@ function createPropPanelField(name: string, value: number): HTMLDivElement {
 export function createDifferenceCanvas(
   subParts1: ISeqSplitted,
   subParts2: ISeqSplitted,
-  units: string,
+  biotype: HelmType,
   molDifferences: { [key: number]: HTMLCanvasElement }): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d');
   canvas.height = 30;
+  const monomerLib = _package.monomerLib;
   drawMoleculeDifferenceOnCanvas(context!, 0, 0, 0, 30,
     wu.count(0).take(subParts1.length).map((posIdx) => subParts1.getCanonical(posIdx)).toArray(),
     wu.count(0).take(subParts2.length).map((posIdx) => subParts2.getCanonical(posIdx)).toArray(),
-    units, true, molDifferences);
+    biotype, monomerLib, true, molDifferences);
   return canvas;
 }
 

@@ -1,7 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 import {IMonomerLibBase} from '../types';
+
+import {ISeqHandler} from './macromolecule/seq-handler';
 
 export type ToAtomicLevelRes = {
   molCol: DG.Column<string> | null,
@@ -18,6 +21,14 @@ export interface ISeqHelper {
   helmToAtomicLevel(
     helmCol: DG.Column<string>, chiralityEngine?: boolean, highlight?: boolean, overrideMonomerLib?: IMonomerLibBase
   ): Promise<ToAtomicLevelRes>;
+
+  getSeqHandler(seqCol: DG.Column<string>): ISeqHandler;
+
+  getSeqMonomers(seqCol: DG.Column<string>): string[];
+
+  setUnitsToFastaColumn(sh: ISeqHandler): void;
+  setUnitsToSeparatorColumn(sh: ISeqHandler): void;
+  setUnitsToHelmColumn(sh: ISeqHandler): void;
 }
 
 export async function getSeqHelper(): Promise<ISeqHelper> {

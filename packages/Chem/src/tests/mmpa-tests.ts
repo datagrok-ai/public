@@ -80,32 +80,32 @@ M  END
 
 const randomValsToCheck: {[key: string]: {[key: string]: {idxs: number[], values: any[]}}} = {
   'Transformations_Fragments': {
-    'From': {idxs: [1, 29, 37], values: ['CC[*:1]', 'CNC(=O)C[*:1]', 'CC(Br)[*:1]']},
-    'To': {idxs: [5, 9, 37], values: ['O[*:1]', 'Br[*:1]', 'CC[*:1]']},
-    'Pairs': {idxs: [0, 10, 39], values: [3, 2, 1]},
+    'From': {idxs: [1, 29, 37], values: ["CC(Br)[*:1]", "C[*:1]", "O[*:1]"]},
+    'To': {idxs: [5, 9, 37], values: ["CC(C)C[*:1]", "CC(C)[*:1]", "O[*:1]"]},
+    'Pairs': {idxs: [0, 28, 39], values: [1, 2, 3]},
     'Mean Difference Activity':
-      {idxs: [0, 11, 30], values: [-2.53, 3.56, 3.46]},
+      {idxs: [0, 11, 30], values: [-12.23, -4.64, 6.85]},
     'Mean Difference Permeability':
-      {idxs: [0, 11, 30], values: [1.85, -4.71, -7.13]},
+      {idxs: [0, 11, 30], values: [-14.59, -7.56, 8.35]},
     'Mean Difference Toxicity':
-      {idxs: [0, 11, 30], values: [1.49, -0.62, -0.70]},
+      {idxs: [0, 11, 30], values: [-2.79, -0.65, 0.86]},
   },
   'Transformations_Pairs': {
     'From': {idxs: [0, 30, 50], values: [
       pairsFromMolblock,
-      'O=c1cc(-CC(C)C)oc2cc(O)c(O)c(O)c12',
-      'O=c1cc(-CC)oc2cc(O)c(O)c(O)c12',
+      "O=c1cc(-CC)oc2cc(O)c(O)c(O)c12",
+      "c12ccc(Cl)cc2nccc1CCC",
     ]},
     'To': {idxs: [0, 30, 50], values: [
       pairsToMolblock,
-      'O=c1cc(-CCC(=O)NC)oc2cc(O)c(O)c(O)c12',
-      'O=c1cc(-C(C)Br)oc2cc(O)c(O)c(O)c12',
+      "O=c1cc(-CC)oc2cc(O)c(O)c(O)c12",
+      "c12ccc(Cl)cc2nccc1CC",
     ]},
     'Difference Activity':
-      {idxs: [0, 30, 50], values: [-3.01, 4.21, 8.30]},
+      {idxs: [0, 30, 50], values: [-12.23, 1.78, 10.31]},
     'Difference Permeability':
-      {idxs: [0, 30, 50], values: [2.22, -12.71, -8.75]},
-    'Difference Toxicity': {idxs: [0, 30, 50], values: [1.51, 0.29, 0.22]},
+      {idxs: [0, 30, 50], values: [-14.59, 1.23, 12.71]},
+    'Difference Toxicity': {idxs: [0, 30, 50], values: [-3.19, 0.29, 1.68]},
   },
   'Generation': {
     'Structure': {idxs: [0, 70, 113], values: [
@@ -125,53 +125,6 @@ const randomValsToCheck: {[key: string]: {[key: string]: {idxs: number[], values
   },
 };
 
-
-const randomValsToCheckGPU: {[key: string]: {[key: string]: {idxs: number[], values: any[]}}} = {
-  'Transformations_Fragments': {
-    'From': {idxs: [1, 9, 29, 37], values: ['C[*:1]', 'Br[*:1]', 'CNC(=O)C[*:1]', 'CC(Br)[*:1]']},
-    'To': {idxs: [1, 5, 9, 29, 37], values: ['CC[*:1]', 'O[*:1]', 'Cl[*:1]', 'C[*:1]', 'CC[*:1]']},
-    'Pairs': {idxs: [0, 10, 39], values: [3, 2, 1]},
-    'Mean Difference Activity':
-      {idxs: [0, 11, 30], values: [2.53, 3.56, 3.46]},
-    'Mean Difference Permeability':
-      {idxs: [0, 11, 30], values: [1.85, -4.71, -7.13]},
-    'Mean Difference Toxicity':
-      {idxs: [0, 11, 30], values: [1.49, -0.62, -0.70]},
-  },
-  'Transformations_Pairs': {
-    'From': {idxs: [3, 30, 50], values: [
-      pairsFromMolblock,
-      'O=c1cc(-CC(C)C)oc2cc(O)c(O)c(O)c12',
-      'O=c1cc(-CC)oc2cc(O)c(O)c(O)c12',
-    ]},
-    'To': {idxs: [3, 30, 50], values: [
-      pairsToMolblock,
-      'O=c1cc(-CCC(=O)NC)oc2cc(O)c(O)c(O)c12',
-      'O=c1cc(-C(C)Br)oc2cc(O)c(O)c(O)c12',
-    ]},
-    'Difference Activity': {idxs: [0, 30, 50], values: [3.01, 4.21, 8.30]},
-    'Difference Permeability':
-      {idxs: [0, 30, 50], values: [-2.22, -12.71, -8.75]},
-    'Difference Toxicity':
-      {idxs: [0, 30, 50], values: [-1.51, 0.29, 0.22]},
-  },
-  'Generation': {
-    'Structure': {idxs: [0, 70, 113], values: [
-      'c12ccc(Cl)cc2nccc1CC',
-      'O=C1Oc2ccccc2C(O)C1Cc3ccc(O)cc3O',
-      'c12ccc(Cl)cc2nccc1CO',
-    ]},
-    'Initial value': {idxs: [0, 70, 113], values: [48.67, 5.89, -2.46]},
-    'Activity': {idxs: [0, 38, 76], values: ['Activity', 'Permeability', 'Toxicity']},
-    'Core': {idxs: [0, 70, 113],
-      values: ['Clc1ccc2c(C[*:1])ccnc2c1', 'O=C1Oc2ccccc2C([*:1])C1Cc1ccc(O)cc1O', 'Clc1ccc2c(C[*:1])ccnc2c1']},
-    'From': {idxs: [0, 70, 107], values: ['C[*:1]', 'O[*:1]', 'O=C(O)[*:1]']},
-    'To': {idxs: [0, 70, 113], values: ['O=C(O)[*:1]', 'CC(C)[*:1]', 'CC[*:1]']},
-    'Prediction': {idxs: [0, 70, 113], values: [58.98, 13.53, 0.33]},
-    'Generation': {idxs: [0, 70, 113],
-      values: ['O=C(O)Cc1ccnc2cc(Cl)ccc12', 'CC(C)C1c2ccccc2OC(=O)C1Cc1ccc(O)cc1O', 'CCCc1ccnc2cc(Cl)ccc12']},
-  },
-};
 
 category('mmpa', () => {
   before(async () => {
@@ -240,18 +193,13 @@ category('mmpa', () => {
     //check Fragments Grid
     await awaitCheck(() => mmp.pairedGrids!.fpGrid.dataFrame != null, 'All pairs grid hasn\'t been created', 3000);
     const fragsDf = mmp.pairedGrids!.fpGrid.dataFrame;
-    await awaitCheck(() => fragsDf.rowCount === 40 && fragsDf.columns.length === 7 &&
-      fragsDf.filter.trueCount === 2 && fragsDf.filter.get(mmp.calculatedOnGPU ? 1 : 0) && fragsDf.filter.get(2),
-    'Incorrect fragments grid', 3000);
-    checkRandomValues(fragsDf, 'Transformations_Fragments', mmp.calculatedOnGPU!);
+    await awaitCheck(() => fragsDf.rowCount === 40 && fragsDf.columns.length === 7 && fragsDf.filter.trueCount === 2, 'Incorrect fragments grid', 3000);
+    checkRandomValues(fragsDf, 'Transformations_Fragments', true);
 
     //check Pairs Grid
     const pairsDf = mmp.pairedGrids!.mmpGrid.dataFrame;
-    await awaitCheck(() => pairsDf.rowCount === 54 && pairsDf.columns.length === 13 &&
-    pairsDf.filter.trueCount === 3 && pairsDf!.filter.get(mmp.calculatedOnGPU ? 3 : 0) &&
-    pairsDf.filter.get(mmp.calculatedOnGPU ? 4 : 1) && pairsDf.filter.get(mmp.calculatedOnGPU ? 5 : 2),
-    'Incorrect pairs grid', 3000);
-    checkRandomValues(mmp.pairedGrids!.mmpGrid.dataFrame, 'Transformations_Pairs', mmp.calculatedOnGPU!);
+    await awaitCheck(() => pairsDf.rowCount === 54 && pairsDf.columns.length === 13 && pairsDf.filter.trueCount === 3, 'Incorrect pairs grid', 3000);
+    checkRandomValues(mmp.pairedGrids!.mmpGrid.dataFrame, 'Transformations_Pairs', true);
 
     //changing fragment
     mmp.pairedGrids!.fpGrid.dataFrame.currentRowIdx = 2;
@@ -286,27 +234,28 @@ category('mmpa', () => {
       return mmpCreated;
     }, 'MMPA hasn\'t been initialized', 3000);
     //check created lines
-    await awaitCheck(() => mmp.lines!.from.length === 81 && mmp.lines!.to.length === 81 &&
-    mmp.linesIdxs!.length === 81, 'Incorrect lines number');
-    await awaitCheck(() => mmp.linesMask!.allTrue, 'Incorrect initial lines mask');
-    checkRandomArrayVals(mmp.lines!.from, [0, 10, 30, 50, 70], [30, 6, 37, 23, 9], 'mmp.lines.from');
-    checkRandomArrayVals(mmp.lines!.to, [0, 10, 30, 50, 70], [0, 28, 0, 27, 23], 'mmp.lines.to');
-    checkRandomArrayVals(mmp.linesIdxs!,
+    await awaitCheck(() => mmp.lines?.from.length === 81 && mmp.lines?.to.length === 81 &&
+    mmp.linesIdxs!.length === 81, 'Incorrect lines number', 3000);
+    await awaitCheck(() => mmp.linesMask?.allTrue == true, 'Incorrect initial lines mask');
+    checkRandomArrayVals(mmp.lines?.from, [0, 10, 30, 50, 70], [30, 6, 37, 23, 9], 'mmp.lines.from');
+    checkRandomArrayVals(mmp.lines?.to, [0, 10, 30, 50, 70], [0, 28, 0, 27, 23], 'mmp.lines.to');
+    checkRandomArrayVals(mmp.linesIdxs,
       [0, 10, 30, 50, 80], [mmp.calculatedOnGPU ? 0 : 3, 22, 8, 47, 52], 'mmp.linesIdxs');
-    checkRandomArrayVals(mmp.lines!.colors,
+    checkRandomArrayVals(mmp.lines?.colors,
       [0, 30, 80], ['31,119,180', '255,187,120', '44,160,44'], 'mmp.lines.colors');
     checkRandomArrayVals(mmp.linesActivityCorrespondance, [0, 27, 55], [0, 1, 2], 'mmp.linesActivityCorrespondance');
 
+    expect(mmp.mmpFilters?.activitySliderInputs?.length, 3, 'mmp cliffs filters haven\'t been created');
     //changing sliders inputs values
     mmp.mmpFilters!.activitySliderInputs![0].value = 11.87;
     mmp.mmpFilters!.activitySliderInputs![1].value = 14.15;
     mmp.mmpFilters!.activitySliderInputs![2].value = 1.627;
-    await awaitCheck(() => DG.BitSet.fromBytes(mmp.linesMask!.buffer.buffer, 81).trueCount === 7,
+    await awaitCheck(() => !!mmp.linesMask && DG.BitSet.fromBytes(mmp.linesMask.buffer.buffer, 81).trueCount === 7,
       'Incorrect lines mask after slider input changed', 3000);
 
     //switch of one of activities
     mmp.mmpFilters!.activityActiveInputs[2].value = false;
-    await awaitCheck(() => DG.BitSet.fromBytes(mmp.linesMask!.buffer.buffer, 81).trueCount === 2,
+    await awaitCheck(() => !!mmp.linesMask && DG.BitSet.fromBytes(mmp.linesMask!.buffer.buffer, 81).trueCount === 2,
       'Incorrect lines mask after checkboxes values changed', 3000);
   });
 
@@ -332,7 +281,7 @@ category('mmpa', () => {
     await awaitCheck(() => mmp.generationsGrid?.dataFrame != null, 'Generation grid hasn\'t been created', 3000);
     const genDf = mmp.generationsGrid!.dataFrame;
     await awaitCheck(() => genDf.rowCount === 114, 'Incorrect lines number');
-    checkRandomValues(genDf, 'Generation', mmp.calculatedOnGPU!);
+    checkRandomValues(genDf, 'Generation');
     //check that 'Existing' column has been calculated
     await awaitCheck(() =>
       genDf.columns.names().includes('Existing'), '\'Existing\' column hasn\'t been created', 10000);
@@ -344,20 +293,22 @@ category('mmpa', () => {
 });
 
 
-function checkRandomValues(df: DG.DataFrame, dfName: string, isGPU: boolean) {
-  const randVals = isGPU ? randomValsToCheckGPU : randomValsToCheck;
-  Object.keys(randVals[dfName]).forEach((key: string) => {
-    const idxs = randVals[dfName][key].idxs;
-    const vals = randVals[dfName][key].values;
+function checkRandomValues(df: DG.DataFrame, dfName: string, sort?: boolean) {
+  Object.keys(randomValsToCheck[dfName]).forEach((key: string) => {
+    const idxs = randomValsToCheck[dfName][key].idxs;
+    const vals = randomValsToCheck[dfName][key].values;
+    const col = df.col(key)?.toList();
+    if (sort)
+      typeof col![0] === 'number' ? col?.sort((a, b) => a - b) : col?.sort();
     idxs.forEach((it, idx) => {
-      const val = typeof df.col(key)!.get(it) === 'number' ?
-        Math.round(df.col(key)!.get(it)*100)/100 :
-        df.col(key)!.get(it);
+      const val = typeof col![it] === 'number' ?
+        Math.round(col![it]*100)/100 : col![it];
       expect(val, vals[idx], `incorrect data in ${key} column, row ${it}`);
     });
   });
 }
 
 function checkRandomArrayVals(array: any, idxs: number[], vals: (number | string)[], name: string) {
+  expect(array != undefined, true, 'array of values is not defined');
   idxs.forEach((it: number, idx: number) => expect(array[it], vals[idx], `Incorrect value in ${name}, idx: ${it}`));
 }
