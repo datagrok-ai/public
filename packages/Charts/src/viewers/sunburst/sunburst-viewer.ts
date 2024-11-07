@@ -293,10 +293,7 @@ export class SunburstViewer extends EChartViewer {
       if (getCurrentItemIndex === index)
         return item;
     });
-    const r = ItemLayoutInfo.r;
-    const r0 = ItemLayoutInfo.r0;
-    const startAngle = ItemLayoutInfo.startAngle;
-    const endAngle = ItemLayoutInfo.endAngle;
+    const { r, r0, startAngle, endAngle } = ItemLayoutInfo;
     const { width, height } = this.calculateRingDimensions(r0, r, startAngle, endAngle);
 
     const averageCharWidth = 5;
@@ -332,8 +329,19 @@ export class SunburstViewer extends EChartViewer {
 
     const resultWidth = result.length * averageCharWidth;
     const resultHeight = result.split('\n').length * averageCharHeight;
-    if (resultWidth > width || resultHeight > height)
-      result = '...';
+    if (resultWidth > width) {
+      const maxChars = Math.floor(width / averageCharWidth) - 3;
+      result = result.slice(0, maxChars) + '...';
+    }
+
+    if (resultHeight > height) {
+      const maxLines = Math.floor(height / averageCharHeight) - 1;
+      const truncatedLines = result.split('\n').slice(0, maxLines);
+      result = truncatedLines.join('\n') + '...';
+    }
+
+    if (result === '...')
+      result = ' ';
 
     return result;
   }
