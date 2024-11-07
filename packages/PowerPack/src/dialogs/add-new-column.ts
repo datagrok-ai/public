@@ -297,7 +297,7 @@ export class AddNewColumnDialog {
     this.supportedTypes.unshift(defaultChoice); // The first item of the ChoiceBox will be "Auto".
     this.supportedTypes.push(this.plainTextType); // The last item of the ChoiceBox will be "Treat As String".
 
-    const control = ui.input.choice('', {value: this.call.getParamValue('type') ?
+    const control = ui.input.choice('', {value: this.call.getParamValue('table') &&  this.call.getParamValue('type') ?
       this.call.getParamValue('type') : defaultChoice, items: this.supportedTypes});
     control.onInput.subscribe(async () => await this.updatePreview(this.codeMirror!.state.doc.toString(), false));
     control.setTooltip(this.tooltips['type']);
