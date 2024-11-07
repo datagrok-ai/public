@@ -908,6 +908,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   async loadTreeStr(jsonStr: string) {
     this.clear();
+    this.updateSizes();
     const json = JSON.parse(jsonStr);
     if (json.length > 0 && (json.includes(BitwiseOp.AND) || json.includes(BitwiseOp.OR))) {
       this._bitOpInput!.value = json[json.length - 1];
@@ -933,7 +934,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.updateUI();
       await updateVisibleNodes(thisViewer);
       this.appendOrphanFolders(this.tree);
-      this.updateSizes();
       this.updateFilters();
       this.updateTag();
     }, 0);
