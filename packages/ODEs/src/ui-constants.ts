@@ -28,7 +28,7 @@ export enum HINT {
   BIO = 'Bioreactor simulation',
   POLL = 'The chemical reaction part of the air pollution model',
   CLEAR = 'Clear model',
-  TO_JS = 'Export model to JavaScript script',
+  TO_JS = 'Open in script editor',
   APP = 'Export model to platform application with user interface',
   OPEN_DS = 'Open model in Diff Studio',
   SAVE = 'Save changes',
@@ -40,6 +40,7 @@ export enum HINT {
   CLICK_RUN = `Click to run`,
   SOLVE = `Solve equations (${HOT_KEY.RUN})`,
   NO_MODELS = 'No models found',
+  EDIT = 'Edit',
 }; // HINT
 
 /** UI titles */

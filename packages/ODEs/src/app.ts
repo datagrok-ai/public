@@ -224,12 +224,14 @@ export class DiffStudio {
     this.createEditorView(content);
 
     const panels = [
-      [this.openComboMenu, this.saveIcon],
-      [this.exportButton, this.sensAnIcon, this.fittingIcon],
-      [this.runIcon, this.helpIcon],
+      [this.openComboMenu, this.addNewWgt],
+      [this.refreshWgt, this.exportToJsWgt, this.helpIcon, this.fittingWgt, this.sensAnWgt],
+      [this.saveBtn, this.downLoadIcon, this.appStateInputWgt],
     ];
 
     this.solverView.setRibbonPanels(panels);
+    this.updateRibbonWgts();
+
     this.toChangePath = true;
 
     setTimeout(async () => {
@@ -247,14 +249,10 @@ export class DiffStudio {
         this.inBrowseRun = true;
         await this.setState(state);
       } else {
-        console.log('Starting an app');
-
         const modelIdx = this.startingPath.lastIndexOf('/') + 1;
         const paramsIdx = this.startingPath.indexOf(PATH.PARAM);
 
         if (paramsIdx > -1) {
-          console.log(`We've found params`);
-
           const model = this.startingPath.slice(modelIdx, (paramsIdx > -1) ? paramsIdx : undefined);
 
           if (MODELS.includes(model)) {
@@ -296,9 +294,9 @@ export class DiffStudio {
     this.createEditorView(DEMO_TEMPLATE);
     closeWindows();
     this.solverView.setRibbonPanels([
-      [this.openComboMenu, this.saveIcon],
-      [this.exportButton, this.sensAnIcon, this.fittingIcon],
-      [this.runIcon, this.helpIcon],
+      [this.openComboMenu, this.saveBtn],
+      [this.exportToJsWgt, this.sensAnWgt, this.fittingWgt],
+      [this.helpIcon],
     ]);
     this.toChangePath = false;
     const helpMD = ui.markdown(demoInfo);
@@ -336,8 +334,8 @@ export class DiffStudio {
     saveBtn.hidden = true;
 
     const ribbonPnls = this.browseView!.getRibbonPanels();
-    ribbonPnls.push([this.sensAnIcon, this.fittingIcon]);
-    ribbonPnls.push([this.runIcon, saveBtn, this.helpIcon]);
+    ribbonPnls.push([this.sensAnWgt, this.fittingWgt]);
+    ribbonPnls.push([saveBtn, this.helpIcon]);
     this.browseView!.setRibbonPanels(ribbonPnls);
 
     // routing
@@ -404,15 +402,6 @@ export class DiffStudio {
   private editPane: DG.TabPane;
   private solvePane: DG.TabPane;
   private editorView: EditorView | undefined;
-  private openMenu: DG.Menu;
-  private saveMenu: DG.Menu;
-  private openIcon: HTMLElement;
-  private saveIcon: HTMLElement;
-  private helpIcon: HTMLElement;
-  private runIcon: HTMLElement;
-  private exportButton: HTMLButtonElement;
-  private sensAnIcon: HTMLElement;
-  private fittingIcon: HTMLElement;
   private performanceDlg: DG.Dialog | null = null;
   private inBrowseRun = false;
   private fromFileHandler = false;
@@ -428,7 +417,18 @@ export class DiffStudio {
 
   private toSwitchToModelTab: boolean = true;
 
-  private openComboMenu: HTMLElement;
+  private isEditState = false;
+
+  private openComboMenu = this.getOpenComboMenu();
+  private addNewWgt = this.getAddNewWgt();
+  private appStateInputWgt = this.getAppStateInput();
+  private saveBtn = ui.bigButton(TITLE.SAVE, async () => await this.saveToMyFiles(), HINT.SAVE_MY);
+  private downLoadIcon = this.getDownLoadIcon();
+  private helpIcon = this.getHelpIcon();
+  private exportToJsWgt = this.getExportToJsWgt();
+  private refreshWgt = this.getRefreshWgt();
+  private sensAnWgt = this.getSensAnWgt();
+  private fittingWgt = this.getFitWgt();
 
   constructor(toAddTableView: boolean = true, toDockTabCtrl: boolean = true, isFilePreview: boolean = false,
     browsing?: Browsing) {
@@ -473,24 +473,108 @@ export class DiffStudio {
         dockTabCtrl();
     }
 
-    this.openMenu = this.getOpenMenu();
-    this.saveMenu = this.getSaveMenu();
-    this.openIcon = ui.iconFA('folder-open', () => this.openMenu.show(), HINT.OPEN);
-    this.saveIcon = ui.iconFA('save', async () => this.saveMenu.show(), HINT.SAVE_MODEL);
-    this.helpIcon = ui.iconFA('question', () => {window.open(LINK.DIF_STUDIO, '_blank');}, HINT.HELP);
-    this.exportButton = ui.bigButton(TITLE.TO_JS, async () => {await this.exportToJS();}, HINT.TO_JS);
-    this.sensAnIcon = ui.iconFA('analytics', async () => {await this.runSensitivityAnalysis();}, HINT.SENS_AN);
-    this.fittingIcon = ui.iconFA('chart-line', async () => {await this.runFitting();}, HINT.FITTING);
-    this.runIcon = ui.iconFA('play', async () => {await this.runSolving(true);}, HINT.SOLVE);
-    this.runIcon.classList.add('fas', 'diff-studio-app-run-icon');
-    this.runIcon.hidden = true;
-
-    this.openComboMenu = this.getOpenComboMenu();
-
     this.createTree(browsing);
 
     this.solverView.ribbonMenu = DG.Menu.create();
   }; // constructor
+
+  private updateRibbonWgts() {
+    console.log('Updating');
+    this.sensAnWgt.hidden = this.isEditState;
+    this.fittingWgt.hidden = this.isEditState;
+    this.refreshWgt.hidden = !this.isEditState;
+    this.exportToJsWgt.hidden = !this.isEditState;
+    this.helpIcon.hidden = !this.isEditState;
+  }
+
+  private getDownLoadIcon(): HTMLElement {
+    const icon = ui.iconFA('arrow-to-bottom', async () => await this.saveToLocalFile(), HINT.SAVE_LOC);
+    icon.classList.add('diff-studio-ribbon-download');
+
+    return icon;
+  }
+
+  private getFitWgt(): HTMLElement {
+    const span = ui.span(['Fit']);
+    span.classList.add('diff-studio-ribbon-fit');
+    const wgt = ui.divH([ui.iconFA('wave-sine'), span]);
+    wgt.onclick = async () => await this.runFitting();
+    ui.tooltip.bind(wgt, 'Fit parameters. Opens a separate view');
+
+    return wgt;
+  }
+
+  private getSensAnWgt(): HTMLElement {
+    const span = ui.span(['Sensitivity']);
+    span.classList.add('diff-studio-ribbon-sa');
+    const wgt = ui.divH([ui.iconFA('chart-line'), span]);
+    wgt.onclick = async () => await this.runSensitivityAnalysis();
+    ui.tooltip.bind(wgt, 'Run sensitivity analysis. Opens a separate view');
+
+    return wgt;
+  }
+
+  private getAppStateInput(): HTMLElement {
+    const input = ui.input.toggle('', {
+      value: false,
+      onValueChanged: (val) => {
+        this.isEditState = val;
+        input.setTooltip(val ? 'Finish editing' : 'Edit equations');
+        this.updateRibbonWgts();
+      },
+    });
+
+    input.setTooltip(this.isEditState ? 'Finish editing' : 'Edit equations');
+
+    const span = ui.span([TITLE.EDIT]);
+    span.classList.add('diff-studio-ribbon-text');
+
+    const wgt = ui.divH([input.root, span]);
+
+    return wgt;
+  }
+
+  private getAddNewWgt(): HTMLElement {
+    const span = ui.span(['New']);
+    span.classList.add('diff-studio-ribbon-text');
+    const wgt = ui.divH([ui.iconFA('plus'), span]);
+    wgt.onclick = async () => {}; //TODO: Implement
+    ui.tooltip.bind(wgt, 'Open a copy of the current model in a new view');
+
+    return wgt;
+  }
+
+  private getHelpIcon(): HTMLElement {
+    const icon = ui.icons.help(() => {
+      grok.shell.windows.showHelp = true;
+      this.tabControl.currentPane.content.click();
+    });
+    icon.classList.add('diff-studio-help-icon');
+
+    return icon;
+  }
+
+  private getExportToJsWgt(): HTMLElement {
+    const wgt = ui.span(['</>']);
+    wgt.classList.add('d4-ribbon-name');
+    wgt.style.minWidth = '20px';
+    wgt.style.marginLeft = '30px';
+    wgt.style.marginRight = '30px';
+    wgt.onclick = async () => await this.exportToJS();
+    ui.tooltip.bind(wgt, HINT.TO_JS);
+
+    return wgt;
+  }
+
+  private getRefreshWgt(): HTMLElement {
+    const span = ui.span(['Refresh']);
+    span.classList.add('diff-studio-ribbon-text');
+    const wgt = ui.divH([ui.iconFA('sync'), span]);
+    wgt.onclick = async () => await this.runSolving(false);
+    ui.tooltip.bind(wgt, 'Apply changes (F5)');
+
+    return wgt;
+  }
 
   /** Create model editor */
   private createEditorView(content?: string): void {
@@ -512,7 +596,6 @@ export class DiffStudio {
         this.toRunWhenFormCreated = true;
         this.toChangeSolutionViewerProps = true;
         this.setCallWidgetsVisibility(true);
-        this.runIcon.hidden = false;
         this.toSwitchToModelTab = true;
       } else {
         e.stopImmediatePropagation();
@@ -527,40 +610,6 @@ export class DiffStudio {
 
     this.editorView.dom.classList.add('diff-studio-eqs-editor');
   } // createEditorView
-
-  /** Return the open model menu */
-  private getOpenMenu(): DG.Menu {
-    return DG.Menu.popup()
-      .item(TITLE.IMPORT, async () => await this.overwrite(), undefined, {description: HINT.LOAD})
-      .group(TITLE.TEMPL)
-      .item(TITLE.BASIC, async () =>
-        await this.overwrite(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: HINT.BASIC},
-      )
-      .item(TITLE.ADV, async () =>
-        await this.overwrite(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: HINT.ADV},
-      )
-      .item(TITLE.EXT, async () =>
-        await this.overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT})
-      .endGroup()
-      .group(TITLE.LIBRARY)
-      .item(TITLE.CHEM, async () => await this.overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM})
-      .item(TITLE.ROB, async () => await this.overwrite(EDITOR_STATE.ROBERT), undefined, {description: HINT.ROB})
-      .item(TITLE.FERM, async () => await this.overwrite(EDITOR_STATE.FERM), undefined, {description: HINT.FERM})
-      .item(TITLE.PK, async () => await this.overwrite(EDITOR_STATE.PK), undefined, {description: HINT.PK})
-      .item(TITLE.PKPD, async () => await this.overwrite(EDITOR_STATE.PKPD), undefined, {description: HINT.PKPD})
-      .item(TITLE.ACID, async () => await this.overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: HINT.ACID})
-      .item(TITLE.NIM, async () => await this.overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM})
-      .item(TITLE.BIO, async () => await this.overwrite(EDITOR_STATE.BIOREACTOR), undefined, {description: HINT.BIO})
-      .item(TITLE.POLL, async () => await this.overwrite(EDITOR_STATE.POLLUTION), undefined, {description: HINT.POLL})
-      .endGroup();
-  } // getOpenMenu
-
-  /** Return the save model menu */
-  private getSaveMenu(): DG.Menu {
-    return DG.Menu.popup()
-      .item(TITLE.TO_MY_FILES, async () => await this.saveToMyFiles(), undefined, {description: HINT.SAVE_MY})
-      .item(TITLE.AS_LOCAL, async () => await this.saveToLocalFile(), undefined, {description: HINT.SAVE_LOC});
-  } // getOpenMenu
 
   /** Load IVP from file */
   private async loadFn(): Promise<void> {
@@ -872,8 +921,6 @@ export class DiffStudio {
 
   /** Run solving the current IVP */
   private async runSolving(toShowInputsForm: boolean): Promise<void> {
-    this.runIcon.hidden = true;
-
     try {
       const ivp = getIVP(this.editorView!.state.doc.toString());
       await this.getInputsForm(ivp);
@@ -934,11 +981,11 @@ export class DiffStudio {
   }; // runSolving
 
   /** Show/hide model call widgets */
-  private setCallWidgetsVisibility(toShow: boolean): void {
+  private setCallWidgetsVisibility(toShow: boolean): void {/*
     this.solvePane.header.hidden = !toShow;
-    this.exportButton.disabled = !toShow;
+    this.exportToJsWgt.hidden = !toShow;
     this.sensAnIcon.hidden = !toShow;
-    this.fittingIcon.hidden = !toShow;
+    this.fittingIcon.hidden = !toShow;*/
   }
 
   /** Clear solution table & viewer */

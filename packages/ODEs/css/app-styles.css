@@ -45,3 +45,30 @@
 .diff-studio-app-run-icon {
     color: var(--green-2);
 }
+
+.diff-studio-help-icon {
+    font-size: large;
+    font-weight: bold;
+    margin-right: 20px;
+}
+
+.diff-studio-ribbon-text {    
+    font-weight: normal;
+    margin-left: 0px;
+}
+
+.diff-studio-ribbon-fit {    
+    font-weight: normal;
+    margin-right: 35px;
+}
+
+.diff-studio-ribbon-sa {    
+    font-weight: normal;
+    margin-right: 26px;
+}
+
+.diff-studio-ribbon-download {    
+    font-weight: normal;
+    margin-left: 10px;
+    margin-right: 10px;
+}
