@@ -1806,13 +1806,7 @@ export class DiffStudio {
         menu.item(name, async () => {
           try {
             const equations = await file.readAsString();
-            const solver = new DiffStudio();
-            await solver.runSolverApp(
-              equations,
-              undefined,
-              `files/${file.fullPath.replace(':', '.').toLowerCase()}`,
-            ) as DG.View;
-
+            await this.setState(EDITOR_STATE.FROM_FILE, true, equations);
             await this.saveModelToRecent(path, true);
           } catch (err) {
             grok.shell.warning(`File not found: ${path}`);
