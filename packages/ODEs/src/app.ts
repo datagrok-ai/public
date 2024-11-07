@@ -22,7 +22,7 @@ import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS} from './scripting-tools';
 import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools/solver-defs';
 import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN,
-  getReducedTable, closeWindows, getRecentModelsTable} from './utils';
+  getReducedTable, closeWindows, getRecentModelsTable, getMyModelFiles, getEquationsFromFile} from './utils';
 
 import '../css/app-styles.css';
 
@@ -247,10 +247,14 @@ export class DiffStudio {
         this.inBrowseRun = true;
         await this.setState(state);
       } else {
+        console.log('Starting an app');
+
         const modelIdx = this.startingPath.lastIndexOf('/') + 1;
         const paramsIdx = this.startingPath.indexOf(PATH.PARAM);
 
         if (paramsIdx > -1) {
+          console.log(`We've found params`);
+
           const model = this.startingPath.slice(modelIdx, (paramsIdx > -1) ? paramsIdx : undefined);
 
           if (MODELS.includes(model)) {
@@ -269,7 +273,7 @@ export class DiffStudio {
 
             await this.setState(model as EDITOR_STATE, false);
           } else
-            await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
+            await this.runLastCalledModel();
         } else {
           const folderName = this.startingPath.slice(modelIdx);
           const node = this.appTree.items.find((node) => node.text === folderName);
@@ -277,26 +281,8 @@ export class DiffStudio {
           if (node !== undefined) {
             setTimeout(() => node.root.click(), UI_TIME.SWITCH_TO_FOLDER);
             return DG.View.create();
-          } else {
-            const lastModel = await this.getLastCalledModel();
-
-            if (lastModel.isCustom) {
-              const equations = await this.getEquationsFromFile(lastModel.info);
-
-              if (equations !== null) {
-                const newState = EditorState.create({
-                  doc: equations,
-                  extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
-                });
-
-                this.editorView!.setState(newState);
-                this.solverMainPath = PATH.CUSTOM;
-                await this.runSolving(true);
-              } else
-                await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
-            } else
-              await this.setState(STATE_BY_TITLE.get(lastModel.info as TITLE) ?? EDITOR_STATE.BASIC_TEMPLATE);
-          }
+          } else
+            await this.runLastCalledModel();
         }
       }
     },
@@ -1776,42 +1762,6 @@ export class DiffStudio {
     return lastModel;
   }
 
-  /** Get equations from file */
-  private async getEquationsFromFile(path: string): Promise<string | null> {
-    try {
-      const exist = await grok.dapi.files.exists(path);
-      const idx = path.lastIndexOf('/');
-      const folderPath = path.slice(0, idx + 1);
-      let file: DG.FileInfo;
-
-      if (exist) {
-        const fileList = await grok.dapi.files.list(folderPath);
-        file = fileList.find((file) => file.nqName === path);
-
-        return await file.readAsString();
-      } else
-        return null;
-
-      /*card.onclick = async () => {
-        if (exist) {
-          const equations = await file.readAsString();
-
-          const solver = new DiffStudio(false);
-          this.browseView.preview = await solver.runSolverApp(
-            equations,
-            undefined,
-            `files/${file.fullPath.replace(':', '.').toLowerCase()}`,
-          ) as DG.View;
-        } else
-          grok.shell.warning(`File not found: ${path}`);
-      };
-
-      return card;*/
-    } catch (e) {
-      return null;
-    }
-  }
-
   /** Return the Open model combo menu */
   private getOpenComboMenu(): HTMLElement {
     const menu = ui.div(ui.iconFA('folder-open', () => {}, HINT.OPEN));
@@ -1827,8 +1777,8 @@ export class DiffStudio {
     const menu = DG.Menu.popup();
     menu.item(TITLE.IMPORT, async () => await this.overwrite(), undefined, {description: HINT.LOAD}).separator();
 
+    await this.appendMenuWithMyModels(menu);
     await this.appendMenuWithRecentModels(menu);
-
     menu.separator();
 
     menu.group(TITLE.TEMPL)
@@ -1926,4 +1876,43 @@ export class DiffStudio {
       grok.shell.warning(`Failed to add ivp-file to recents: ${(e instanceof Error) ? e.message : 'platfrom issue'}`);
     }
   } // appendMenuWithCustomModel
+
+  /** Append menu with models from user's files */
+  private async appendMenuWithMyModels(menu: DG.Menu) {
+    const submenu = menu.group(TITLE.MY_MODELS);
+
+    try {
+      const myModelFiles = await getMyModelFiles();
+      if (myModelFiles.length < 1)
+        submenu.item(TITLE.NO_MODELS, undefined, null, {description: HINT.NO_MODELS});
+      else
+        myModelFiles.forEach(async (file) => await this.appendMenuWithCustomModel(submenu, file.fullPath as TITLE));
+    } catch (err) {
+      submenu.item(TITLE.NO_MODELS, undefined, null, {description: HINT.NO_MODELS});
+    };
+
+    submenu.endGroup();
+  }
+
+  /** Run last called model */
+  private async runLastCalledModel() {
+    const lastModel = await this.getLastCalledModel();
+
+    if (lastModel.isCustom) {
+      const equations = await getEquationsFromFile(lastModel.info);
+
+      if (equations !== null) {
+        const newState = EditorState.create({
+          doc: equations,
+          extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
+        });
+
+                this.editorView!.setState(newState);
+                this.solverMainPath = PATH.CUSTOM;
+                await this.runSolving(true);
+      } else
+        await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
+    } else
+      await this.setState(STATE_BY_TITLE.get(lastModel.info as TITLE) ?? EDITOR_STATE.BASIC_TEMPLATE);
+  }
 };

@@ -249,3 +249,30 @@ export async function getRecentModelsTable(): Promise<DG.DataFrame> {
   const dfs = await grok.dapi.files.readBinaryDataFrames(`${folder}${PATH.RECENT}`);
   return dfs[0];
 }
+
+/** Return model files from user's home */
+export async function getMyModelFiles(): Promise<DG.FileInfo[]> {
+  const folder = `${grok.shell.user.project.name}:Home/`;
+  return await grok.dapi.files.list(folder, true, MISC.IVP_EXT);
+}
+
+
+/** Get equations from file */
+export async function getEquationsFromFile(path: string): Promise<string | null> {
+  try {
+    const exist = await grok.dapi.files.exists(path);
+    const idx = path.lastIndexOf('/');
+    const folderPath = path.slice(0, idx + 1);
+    let file: DG.FileInfo;
+
+    if (exist) {
+      const fileList = await grok.dapi.files.list(folderPath);
+      file = fileList.find((file) => file.nqName === path);
+
+      return await file.readAsString();
+    } else
+      return null;
+  } catch (e) {
+    return null;
+  }
+}
