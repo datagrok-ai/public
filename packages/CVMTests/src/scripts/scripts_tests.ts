@@ -168,9 +168,7 @@ for (const lang of langs) {
     test('Calculated column performance', async () => {
       const rows = DG.Test.isInBenchmark ? 10000 : 100;
       const df = grok.data.demo.demog(rows);
-      const start = Date.now();
       await df.columns.addNewCalculated('new', `CVMTests:${lang}CalcColumn(\${age})`);
-      return `Execution time: ${Date.now() - start}`;
     }, {timeout: 60000, benchmark: true, stressTest: true, skipReason: lang === 'Grok' ? 'Doesn\'t support vectorization' : undefined});
 
     test(`Dataframe performance test sequentially`, async () => {
