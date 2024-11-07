@@ -289,6 +289,30 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     button.on('click',  () => this.root.requestFullscreen());
   }
 
+  private async _initProps() {
+    if (!this.dataFrame) return;
+
+    // -- Pdb or Pdb Id --
+    if (!this.biostructureIdColumnName) {
+      const pdbCol = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE3D) || this.dataFrame.columns.bySemType(DG.SEMTYPE.PDB_ID);
+      if (pdbCol) {
+        this.biostructureIdColumnName = pdbCol.name;
+
+        if (pdbCol.semType === DG.SEMTYPE.PDB_ID) {
+          const funcs = await getDataProviderList(DG.SEMTYPE.MOLECULE3D);
+          this.biostructureDataProvider = funcs[0]?.nqName;
+        }
+      }
+    }
+
+    // -- Ligand --
+    if (!this.ligandColumnName) {
+      const molCol = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+      if (molCol)
+        this.ligandColumnName = molCol.name;
+    }
+  }
+
   private viewerToLog(): string { return `MolstarViewer<${this.viewerId}>`; }
 
   override onPropertyChanged(property: DG.Property | null): void {
@@ -449,6 +473,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       this.props.getProperty(PROPS.biostructureDataProvider).choices =
         ['', ...this.biostructureDataProviderList.map((f) => f.nqName)];
     });
+    this._initProps();
 
     //this.subs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
 
@@ -601,13 +626,6 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
           }
         }
 
-        // -- Ligand --
-        if (this.dataFrame && !this.ligandColumnName) {
-          const molCol: DG.Column | null = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-          if (molCol)
-            this.ligandColumnName = molCol.name;
-        }
-
         if (!this.viewed) {
           await this.buildView(1, callLog);
           this.viewed = true;
@@ -665,7 +683,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         delete this.viewerDiv;
       }
     } else {
-      if (this.dataEffStructureRefs)
+      if (this.dataEffStructureRefs && this.viewer?.plugin)
         await removeVisualsData(this.viewer!.plugin, this.dataEffStructureRefs, callLog);
     }
     this.logger.debug(`${logPrefix}, end `);
