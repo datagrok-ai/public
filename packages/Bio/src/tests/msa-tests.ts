@@ -8,7 +8,6 @@ import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-he
 
 import {runKalign} from '../utils/multiple-sequence-alignment';
 import {multipleSequenceAlignmentUI} from '../utils/multiple-sequence-alignment-ui';
-import {awaitContainerStart} from '../utils/docker';
 
 category('MSA', async () => {
   let seqHelper: ISeqHelper;
@@ -87,12 +86,10 @@ MWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHP
   });
 
   test('isCorrectHelm', async () => {
-    await awaitContainerStart();
     await _testMSAOnColumn(helmFromCsv, helmToCsv, NOTATION.HELM, NOTATION.SEPARATOR, undefined, 'mafft');
   }, {timeout: 60000 /* docker */});
 
   test('isCorrectHelmLong', async () => {
-    await awaitContainerStart();
     await _testMSAOnColumn(longHelmFromCsv, longHelmToCsv, NOTATION.HELM, NOTATION.SEPARATOR, undefined, 'mafft');
   }, {timeout: 60000 /* docker */});
 
