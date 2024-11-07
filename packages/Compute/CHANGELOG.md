@@ -1,5 +1,9 @@
 # Compute changelog
 
+## 1.39.6 (2024-11-07)
+
+- ModelCatalog: Added intergration with BrowseTree
+
 ## 1.39.5 (2024-11-06)
 
 - RFV: Added validation rules for export options
