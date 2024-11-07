@@ -191,12 +191,13 @@ category('mmpa', () => {
     }, 'MMPA hasn\'t been initialized', 3000);
 
     //check Fragments Grid
-    await awaitCheck(() => mmp.pairedGrids!.fpGrid.dataFrame != null, 'All pairs grid hasn\'t been created', 3000);
+    await awaitCheck(() => mmp.pairedGrids?.fpGrid?.dataFrame != null, 'All pairs grid hasn\'t been created', 3000);
     const fragsDf = mmp.pairedGrids!.fpGrid.dataFrame;
     await awaitCheck(() => fragsDf.rowCount === 40 && fragsDf.columns.length === 7 && fragsDf.filter.trueCount === 2, 'Incorrect fragments grid', 3000);
     checkRandomValues(fragsDf, 'Transformations_Fragments', true);
 
     //check Pairs Grid
+    await awaitCheck(() => mmp.pairedGrids?.mmpGrid?.dataFrame != null, 'mmpGrid hasn\'t been created', 3000);
     const pairsDf = mmp.pairedGrids!.mmpGrid.dataFrame;
     await awaitCheck(() => pairsDf.rowCount === 54 && pairsDf.columns.length === 13 && pairsDf.filter.trueCount === 3, 'Incorrect pairs grid', 3000);
     checkRandomValues(mmp.pairedGrids!.mmpGrid.dataFrame, 'Transformations_Pairs', true);
