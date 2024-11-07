@@ -221,7 +221,7 @@ export class DiffStudio {
   /** Run Diff Studio application */
   public async runSolverApp(content?: string, state?: EDITOR_STATE, path?: string): Promise<DG.ViewBase> {
     closeWindows();
-    this.createEditorView(content, true);
+    this.createEditorView(content);
 
     const panels = [
       [this.openComboMenu, this.saveIcon],
@@ -293,7 +293,7 @@ export class DiffStudio {
 
   /** Run Diff Studio demo application */
   public async runSolverDemoApp(): Promise<void> {
-    this.createEditorView(DEMO_TEMPLATE, true);
+    this.createEditorView(DEMO_TEMPLATE);
     closeWindows();
     this.solverView.setRibbonPanels([
       [this.openComboMenu, this.saveIcon],
@@ -317,7 +317,7 @@ export class DiffStudio {
     closeWindows();
     const equations = await file.readAsString();
     await this.saveModelToRecent(file.fullPath, true);
-    this.createEditorView(equations, false);
+    this.createEditorView(equations);
     this.toChangePath = true;
     this.solverView.setRibbonPanels([]);
 
@@ -493,7 +493,7 @@ export class DiffStudio {
   }; // constructor
 
   /** Create model editor */
-  private createEditorView(content?: string, toAddContextMenu?: boolean): void {
+  private createEditorView(content?: string): void {
     this.editorView = new EditorView({
       doc: content ?? TEMPLATES.BASIC,
       extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
@@ -526,13 +526,6 @@ export class DiffStudio {
     });
 
     this.editorView.dom.classList.add('diff-studio-eqs-editor');
-
-    if (toAddContextMenu) {
-      this.editorView.dom.addEventListener<'contextmenu'>('contextmenu', (event) => {
-        event.preventDefault();
-        this.showContextMenu();
-      });
-    }
   } // createEditorView
 
   /** Return the open model menu */
@@ -568,52 +561,6 @@ export class DiffStudio {
       .item(TITLE.TO_MY_FILES, async () => await this.saveToMyFiles(), undefined, {description: HINT.SAVE_MY})
       .item(TITLE.AS_LOCAL, async () => await this.saveToLocalFile(), undefined, {description: HINT.SAVE_LOC});
   } // getOpenMenu
-
-  /** Show context menu */
-  private showContextMenu(): void {
-    DG.Menu.popup()
-      .item(TITLE.LOAD, async () => await this.overwrite(), undefined, {description: HINT.LOAD})
-      .group(TITLE.SAVE_TO)
-      .item(TITLE.MY_FILES, async () => await this.saveToMyFiles(), undefined, {description: HINT.SAVE_MY})
-      .item(TITLE.LOCAL_FILE, async () => await this.saveToLocalFile(), undefined, {description: HINT.SAVE_LOC})
-      .endGroup()
-      .separator()
-      .group(TITLE.TEMPL)
-      .item(TITLE.BASIC, async () =>
-        await this.overwrite(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: HINT.BASIC},
-      )
-      .item(TITLE.ADV, async () =>
-        await this.overwrite(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: HINT.ADV},
-      )
-      .item(TITLE.EXT, async () =>
-        await this.overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT},
-      )
-      .endGroup()
-      .group(TITLE.LIBRARY)
-      .item(TITLE.CHEM, async () =>
-        await this.overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM},
-      )
-      .item(TITLE.ROB, async () => await this.overwrite(EDITOR_STATE.ROBERT), undefined, {description: HINT.ROB})
-      .item(TITLE.FERM, async () => await this.overwrite(EDITOR_STATE.FERM), undefined, {description: HINT.FERM})
-      .item(TITLE.PK, async () => await this.overwrite(EDITOR_STATE.PK), undefined, {description: HINT.PK})
-      .item(TITLE.PKPD, async () => await this.overwrite(EDITOR_STATE.PKPD), undefined, {description: HINT.PKPD})
-      .item(TITLE.ACID, async () =>
-        await this.overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: HINT.ACID},
-      )
-      .item(TITLE.NIM, async () =>
-        await this.overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM},
-      )
-      .item(TITLE.BIO, async () =>
-        await this.overwrite(EDITOR_STATE.BIOREACTOR), undefined, {description: HINT.BIO},
-      )
-      .item(TITLE.POLL, async () =>
-        await this.overwrite(EDITOR_STATE.POLLUTION), undefined, {description: HINT.POLL},
-      )
-      .endGroup()
-      .separator()
-      .item(TITLE.CLEAR, async () => await this.overwrite(EDITOR_STATE.EMPTY), undefined, {description: HINT.CLEAR})
-      .show();
-  } // showContextMenu
 
   /** Load IVP from file */
   private async loadFn(): Promise<void> {
@@ -1541,13 +1488,13 @@ export class DiffStudio {
             newIsCust.push(recentIsCust[idx]);
             newInfo.push(val);
           } else {
-            items[idx].remove();
+            items[idx]?.remove();
             removed = true;
           }
         });
 
         if (!removed && items.length >= MAX_RECENT_COUNT)
-          items[0].remove();
+          items[0]?.remove();
 
         newInfo.push(info);
         newIsCust.push(isCustom);
@@ -1907,9 +1854,9 @@ export class DiffStudio {
           extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
         });
 
-                this.editorView!.setState(newState);
-                this.solverMainPath = PATH.CUSTOM;
-                await this.runSolving(true);
+        this.editorView!.setState(newState);
+        this.solverMainPath = PATH.CUSTOM;
+        await this.runSolving(true);
       } else
         await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
     } else
