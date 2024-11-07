@@ -5,7 +5,8 @@ import {CONTROL_EXPR} from './constants';
 const CHEM_REACT_MODEL = `${CONTROL_EXPR.NAME}: Chem react
 ${CONTROL_EXPR.TAGS}: model
 ${CONTROL_EXPR.DESCR}: Mass-action kinetics illustration
-${CONTROL_EXPR.COMMENT}: This model is taken from https://doi.org/10.1002/ijch.201800003.
+${CONTROL_EXPR.COMMENT}: 
+  Source: https://doi.org/10.1002/ijch.201800003.
 ${CONTROL_EXPR.DIF_EQ}:
   dx1/dt = -k1 * x1 + k2 * (x2)**2 + k3 * x1 * x3 
            - k4 * (x1)**2 - 2 * k5 * (x1)**2 + k6 * x2 * x4
@@ -41,7 +42,7 @@ ${CONTROL_EXPR.TOL}: 5e-5`;
 /** Robertson's chemical reaction model - stiff ODEs */
 const ROBERTSON_MODEL = `${CONTROL_EXPR.NAME}: Robertson
 ${CONTROL_EXPR.TAGS}: model
-${CONTROL_EXPR.DESCR}: Robertson's chemical reaction model
+${CONTROL_EXPR.DESCR}: Robertson chemical reaction model
 ${CONTROL_EXPR.COMMENT}: This is classic example of stiff ODEs.
 ${CONTROL_EXPR.DIF_EQ}:
   dA/dt = -0.04 * A + 1e4 * B * C
@@ -64,7 +65,8 @@ ${CONTROL_EXPR.TOL}: 1e-7`;
 const FERMENTATION_MODEL = `${CONTROL_EXPR.NAME}: Fermentation
 ${CONTROL_EXPR.TAGS}: model
 ${CONTROL_EXPR.DESCR}: Simulation of fermentation process in the ethanol production
-${CONTROL_EXPR.COMMENT}: This problem is taken from https://core.ac.uk/download/pdf/11737483.pdf.
+${CONTROL_EXPR.COMMENT}: 
+  Source: https://core.ac.uk/download/pdf/11737483.pdf.
 ${CONTROL_EXPR.DIF_EQ}:
   dP/dt = r * X
   dS/dt = -q * X
@@ -220,7 +222,8 @@ ${CONTROL_EXPR.TOL}: 1e-9`;
 const NIMOTUZUMAB_MODEL = `${CONTROL_EXPR.NAME}: Nimotuzumab
 ${CONTROL_EXPR.TAGS}: model
 ${CONTROL_EXPR.DESCR}: Nimotuzumab disposition model
-${CONTROL_EXPR.COMMENT}: Source: https://www.mdpi.com/1999-4923/12/12/1147
+${CONTROL_EXPR.COMMENT}:
+  Source: https://www.mdpi.com/1999-4923/12/12/1147
 ${CONTROL_EXPR.DIF_EQ}:
   dA1/dt = (-(CL * A3 / V1 + Q / V1) * A1 + Q / V2 * A2 - kint * Rtot * A1 / (Kss + A1 / V1)) 
            / (1 + Rtot * Kss / (Kss + A1 / V1)**2)
@@ -265,7 +268,8 @@ ${CONTROL_EXPR.TOL}: 1e-7`;
 const BIOREACTOR_MODEL = `${CONTROL_EXPR.NAME}: Bioreactor
 ${CONTROL_EXPR.TAGS}: model
 ${CONTROL_EXPR.DESCR}: Bioreactor simulation
-${CONTROL_EXPR.COMMENT}: Source paper is https://doi.org/10.1074/jbc.RA117.000303.
+${CONTROL_EXPR.COMMENT}: 
+  Source: https://doi.org/10.1074/jbc.RA117.000303.
 ${CONTROL_EXPR.DIF_EQ}:
 
   d(FFox)/dt = -E11 + E12
@@ -416,7 +420,8 @@ ${CONTROL_EXPR.INPUTS}: mode {caption: Process mode; category: Process parameter
 const POLLUTION_MODEL = `${CONTROL_EXPR.NAME}: Pollution
 ${CONTROL_EXPR.TAGS}: model
 ${CONTROL_EXPR.DESCR}: The chemical reaction part of the air pollution model developed at The Dutch National Institute of Public Health and Environmental Protection
-${CONTROL_EXPR.COMMENT}: Source is https://archimede.uniba.it/~testset/report/pollu.pdf
+${CONTROL_EXPR.COMMENT}: 
+  Source: https://archimede.uniba.it/~testset/report/pollu.pdf
 ${CONTROL_EXPR.DIF_EQ}:
   dy1/dt = -(r1 + r10 + r14 + r23 + r24) + (r2 + r3 + r9 + r11 + r12 + r22 + r25)
 

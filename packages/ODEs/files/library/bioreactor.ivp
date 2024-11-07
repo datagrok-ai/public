@@ -1,7 +1,8 @@
 #name: Bioreactor
 #tags: model
 #description: Bioreactor simulation
-#comment: Source paper is https://doi.org/10.1074/jbc.RA117.000303.
+#comment: 
+  Source: https://doi.org/10.1074/jbc.RA117.000303.
 #equations:
 
   d(FFox)/dt = -E11 + E12
