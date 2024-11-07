@@ -100,7 +100,7 @@ export type HitTriageTemplateSubmit = {
     package: string
 };
 
-export type HitTriageCampaignStatus = 'In Progress' | 'Submitted';
+export type HitTriageCampaignStatus = string;
 
 export type HitTriageCampaign = {
     name: string,

@@ -1,9 +1,10 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
-import {CampaignJsonName, ComputeQueryMolColName} from './consts';
-import {AppName, CampaignsType, TriagePermissions} from './types';
+import {CampaignGroupingType, CampaignJsonName, ComputeQueryMolColName, HDCampaignsGroupingLSKey} from './consts';
+import {AppName, CampaignsType, HitDesignCampaign, HitTriageCampaign, TriagePermissions} from './types';
 import {_package} from '../package';
 
 export const toFormatedDateString = (d: Date): string => {
@@ -163,4 +164,83 @@ export async function checkEditPermissions(authorId: string, permissions: Triage
 
 export async function checkViewPermissions(authorId: string, permissions: TriagePermissions): Promise<boolean> {
   return checkPermissions(authorId, Array.from(new Set([...permissions.view, ...permissions.edit])));
+}
+
+export function getLocalStorageValue<T = string>(key: string): T | null {
+  return localStorage.getItem(key) as unknown as T;
+}
+
+export function setLocalStorageValue(key: string, value: string) {
+  localStorage.setItem(key, value as unknown as string);
+}
+
+export function getSavedCampaignsGrouping(): CampaignGroupingType {
+  return getLocalStorageValue<CampaignGroupingType>(HDCampaignsGroupingLSKey) ?? CampaignGroupingType.None;
+}
+
+export function setSavedCampaignsGrouping(value: CampaignGroupingType) {
+  setLocalStorageValue(HDCampaignsGroupingLSKey, value);
+}
+
+export const getGroupingKey = <T extends HitDesignCampaign | HitTriageCampaign = HitDesignCampaign>(grouping: CampaignGroupingType, campaign: T): string => {
+  switch (grouping) {
+  case CampaignGroupingType.Template:
+    return campaign.template?.key ?? campaign.templateName;
+  case CampaignGroupingType.Status:
+    return campaign.status;
+  default:
+    return '';
+  }
+};
+
+export function getGroupedCampaigns<T extends HitDesignCampaign | HitTriageCampaign = HitDesignCampaign>(campaigns: T[], grouping: CampaignGroupingType):
+  {[key: string]: T[]} {
+  if (grouping === CampaignGroupingType.None)
+    return {'': campaigns};
+  const groupedCampaigns: {[key: string]: T[]} = {};
+  for (const campaign of campaigns) {
+    const key = getGroupingKey(grouping, campaign);
+    if (!groupedCampaigns[key])
+      groupedCampaigns[key] = [];
+    groupedCampaigns[key].push(campaign);
+  }
+  return groupedCampaigns;
+}
+
+export function processGroupingTable<T extends HitDesignCampaign | HitTriageCampaign = HitDesignCampaign>(table: HTMLTableElement, groupedCampaigns: {[key: string]: T[]}, numCols = 6) {
+  table.classList.add('hit-design-groupped-campaigns-table');
+  const keys = Object.keys(groupedCampaigns);
+  if (keys.length < 2)
+    return table;
+  const body = table.getElementsByTagName('tbody')[0];
+  const rows = Array.from(table.getElementsByTagName('tr')).filter((row) => !row.classList.contains('header'));
+  let curRow = 0;
+
+  const setState = (expanded: boolean, start: number, end: number) => {
+    for (let i = start; i < end; i++)
+      rows[i]?.style && (rows[i].style.display = expanded ? 'table-row' : 'none');
+  };
+
+
+  for (const key of keys) {
+    const row = rows[curRow];
+    if (!row)
+      break;
+    const l = groupedCampaigns[key].length;
+    const startRow = curRow;
+    const endRow = curRow + l;
+    const acc = ui.accordion(`Hit-Design-campaigns-group-${key}`);
+    const pane = acc.addPane(key, () => {return ui.div();}, undefined, undefined, false);
+    pane.root.style.marginLeft = '-24px';
+    pane.root.onclick = () => {
+      setState(pane.expanded, startRow, endRow);
+    };
+    setState(pane.expanded, startRow, endRow);
+    const newRow = body.insertRow(0);
+    const newCell = newRow.insertCell(0);
+    newCell.appendChild(pane.root);
+    newCell.colSpan = numCols;
+    body.insertBefore(newRow, row);
+    curRow += l;
+  }
 }
