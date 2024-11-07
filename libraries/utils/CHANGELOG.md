@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.3.9 (2024-11-07)
+
+Added ability to set category responsivness 
+
 ## 4.3.8 (2024-11-06)
 
 Added ability to set test responsivness 
