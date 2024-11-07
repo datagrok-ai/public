@@ -208,6 +208,33 @@ export const TreeWizard = Vue.defineComponent({
       if (el === inspectorInstance.value?.$el) inspectorHidden.value = true;
     };
 
+    const isEachDraggable = (stat: AugmentedStat) => {
+      return (stat.parent && !stat.parent.data.isReadonly &&
+        (isParallelPipelineState(stat.parent.data) || isSequentialPipelineState(stat.parent.data))
+      ) ?? false
+    }
+
+    const isEachDroppable = (stat: AugmentedStat) => {
+      const draggedStep = dragContext?.startInfo?.dragNode as AugmentedStat | undefined;
+      return (isParallelPipelineState(stat.data) || isSequentialPipelineState(stat.data)) &&
+        (!draggedStep || stat.data.uuid === draggedStep.parent?.data.uuid);
+    }
+
+    const onAfterDrop = () => {
+      const draggedStep = dragContext.startInfo?.dragNode as AugmentedStat | undefined;
+      if (draggedStep) {
+        const newIndex = dragContext.startInfo.indexBeforeDrop < dragContext.targetInfo.indexBeforeDrop ?
+          dragContext.targetInfo.indexBeforeDrop - 1:
+          dragContext.targetInfo.indexBeforeDrop;
+        moveStep(draggedStep.data.uuid, newIndex);
+      }
+    }
+
+    const isDeletable = (stat: AugmentedStat) => {
+      return !!stat.parent && !stat.parent.data.isReadonly &&
+        (isParallelPipelineState(stat.parent.data) || isSequentialPipelineState(stat.parent.data))
+    }
+
     return () => (
       Vue.withDirectives(<div class='w-full h-full'>
         <RibbonPanel>
@@ -234,8 +261,8 @@ export const TreeWizard = Vue.defineComponent({
             <span> Save </span>
           </span>
         </RibbonMenu>
-        {treeState.value && 
-        <DockManager class='block h-full' 
+        {treeState.value &&
+        <DockManager class='block h-full'
           onPanelClosed={handlePanelClose}
           onUpdate:activePanelTitle={handleActivePanelChanged}
         >
@@ -250,7 +277,7 @@ export const TreeWizard = Vue.defineComponent({
               class='h-full overflow-scroll'
             ></Inspector>
           }
-          { 
+          {
             treeState.value && !treeHidden.value ?
               Vue.withDirectives(<Draggable
                 class="ui-div mtl-tree p-2 overflow-scroll h-full"
@@ -270,34 +297,25 @@ export const TreeWizard = Vue.defineComponent({
                 ref={treeInstance}
                 modelValue={[treeState.value]}
 
-                eachDraggable={(stat: AugmentedStat) =>
-                  (stat.parent &&
-                  (isParallelPipelineState(stat.parent.data) || isSequentialPipelineState(stat.parent.data))
-                  ) ?? false
-                }
-                eachDroppable={(stat: AugmentedStat) =>
-                  (isParallelPipelineState(stat.data) || isSequentialPipelineState(stat.data))}
-                onAfter-drop={() => {
-                  const draggedStep = dragContext.startInfo.dragNode as AugmentedStat;
-                  const newIndex = dragContext.startInfo.indexBeforeDrop < dragContext.targetInfo.indexBeforeDrop ?
-                    dragContext.targetInfo.indexBeforeDrop - 1:
-                    dragContext.targetInfo.indexBeforeDrop;
-                  moveStep(draggedStep.data.uuid, newIndex);
-                }}
+                eachDraggable={isEachDraggable}
+                eachDroppable={isEachDroppable}
+                onAfter-drop={onAfterDrop}
               >
                 {
                   ({stat}: {stat: AugmentedStat}) =>
                     (
                       <TreeNode
                         stat={stat}
-                        isReadonly={stat.data.isReadonly}
                         callState={states.calls[stat.data.uuid]}
                         validationStates={states.validations[stat.data.uuid]}
                         consistencyStates={states.consistency[stat.data.uuid]}
-                        style={{'background-color': stat.data.uuid === chosenStepUuid.value ? '#f2f2f5' : null}}
+                        style={{
+                          'background-color': stat.data.uuid === chosenStepUuid.value ? '#f2f2f5' : null,
+                        }}
                         isDraggable={treeInstance.value?.isDraggable(stat)}
                         isDroppable={treeInstance.value?.isDroppable(stat)}
-                        isDeletable={!!stat.parent && (isParallelPipelineState(stat.parent.data) || isSequentialPipelineState(stat.parent.data))}
+                        isDeletable={isDeletable(stat)}
+                        isReadonly={stat.data.isReadonly}
                         onAddNode={({itemId, position}) => {
                           addStep(stat.data.uuid, itemId, position);
                         }}
@@ -309,7 +327,7 @@ export const TreeWizard = Vue.defineComponent({
                       />
                     )
                 }
-              </Draggable>, [[ifOverlapping, treeMutationsLocked.value, 'Locked...']]): null 
+              </Draggable>, [[ifOverlapping, treeMutationsLocked.value, 'Locked...']]): null
           }
           {
             chosenStepState.value &&

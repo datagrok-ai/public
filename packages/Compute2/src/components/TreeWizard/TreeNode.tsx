@@ -16,7 +16,6 @@ import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-ut
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 
 const statusToIcon = {
-  ['locked']: 'lock',
   ['next']: 'arrow-right',
   [`pending`]: 'circle',
   ['running']: 'hourglass-half',
@@ -26,22 +25,20 @@ const statusToIcon = {
 } as Record<Status, string>;
 
 const statusToColor = {
-  ['locked']: 'black',
   ['next']: 'blue',
   [`pending`]: 'gray',
   ['running']: 'blue',
   ['succeeded']: 'green',
-  ['partially succeeded']: 'red',
+  ['partially succeeded']: 'orange',
   ['failed']: 'red',
 } as Record<Status, string>;
 
 const statusToTooltip = {
-  ['locked']: 'This step is read only',
   [`next`]: `This step is avaliable to run`,
   ['pending']: 'This step has pending dependencies',
-  ['running']: 'Running...',
-  ['succeeded']: 'Run succeeded',
-  ['partially succeeded']: 'Partially succeeded',
+  ['running']: 'This step is running',
+  ['succeeded']: 'This step is succeeded',
+  ['partially succeeded']: 'This step has issues',
   ['failed']: 'Run failed',
 } as Record<Status, string>;
 
@@ -53,16 +50,25 @@ const statesToStatus = (
   if (callState.isRunning) return 'running';
   if (callState.pendingDependencies?.length) return 'pending';
   if (!callState.isOutputOutdated) {
-    const firstError = Object.values(validationsState || {}).find(val => (val.errors?.length || val.warnings?.length))
-    const firstInconsistency = Object.values(consistencyStates || {}).find(val => val.inconsistent);
-    if (firstError || firstInconsistency)
-      return 'partially succeeded';
-    return 'succeeded';
+    return getCallSuccess(validationsState, consistencyStates);
   } else {
     if (callState.runError) return 'failed';
   };
   return 'next';
 };
+
+const getToolTip = (status: Status, isReadonly: boolean) => {
+  if (!isReadonly || status !== 'next') return statusToTooltip[status];
+  return 'This step is locked';
+}
+
+const getCallSuccess = (validationsState?: Record<string, ValidationResult>, consistencyStates?: Record<string, ConsistencyInfo>) => {
+  const firstError = Object.values(validationsState || {}).find(val => (val.errors?.length || val.warnings?.length))
+  const firstInconsistency = Object.values(consistencyStates || {}).find(val => val.inconsistent);
+  if (firstError || firstInconsistency)
+    return 'partially succeeded';
+  return 'succeeded';
+}
 
 export const TreeNode = Vue.defineComponent({
   props: {
@@ -106,11 +112,11 @@ export const TreeNode = Vue.defineComponent({
       onClick={(e) => {emit('toggleNode'); e.stopPropagation();}}
     />;
 
-    const progressIcon = (status: Status) =>{
+    const progressIcon = (status: Status, isReadOnly: boolean) => {
       return <IconFA
-        name={statusToIcon[status]}
+        name={isReadOnly ? 'lock' : statusToIcon[status]}
         animation={status === `running` ? 'spin': null}
-        tooltip={statusToTooltip[status] ?? null}
+        tooltip={getToolTip(status, isReadOnly) ?? null}
         style={{
           color: statusToColor[status],
           alignSelf: 'center',
@@ -120,14 +126,11 @@ export const TreeNode = Vue.defineComponent({
       />;
     };
 
-    const nodeLabel = (state: AugmentedStat) => {
-      const data = state.data;
-
-      return data.friendlyName ?? data.configId;
-    };
+    const nodeLabel = (state: AugmentedStat) =>
+      state.data.friendlyName ?? state.data.configId;
 
     const hasAddButton = (data: PipelineState): data is (PipelineStateSequential<any> | PipelineStateParallel<any>) =>
-      (isParallelPipelineState(data) || isSequentialPipelineState(data)) && data.stepTypes.length > 0;
+      (isParallelPipelineState(data) || isSequentialPipelineState(data)) && data.stepTypes.length > 0 && !data.isReadonly;
 
     const treeNodeRef = Vue.ref(null as null | HTMLElement);
     const isHovered = useElementHover(treeNodeRef);
@@ -144,10 +147,10 @@ export const TreeNode = Vue.defineComponent({
         ref={treeNodeRef}
         onClick={() => emit('click')}
       >
-        { props.callState && progressIcon(statesToStatus(props.callState, props.validationStates, props.consistencyStates)) }
+        { props.callState && progressIcon(statesToStatus(props.callState, props.validationStates, props.consistencyStates), props.isReadonly) }
         { props.stat.children.length ? openIcon() : null }
         <span class="mtl-ml text-nowrap text-ellipsis overflow-hidden">{ nodeLabel(props.stat) }</span>
-        { (isHovered.value && !props.isReadonly) ?
+        { (isHovered.value) ?
           <div class='flex items-center px-2 w-fit justify-end ml-auto'>
             { hasAddButton(props.stat.data) ?
               <ComboPopup
