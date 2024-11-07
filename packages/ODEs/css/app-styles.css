@@ -55,6 +55,7 @@
 .diff-studio-ribbon-text {    
     font-weight: normal;
     margin-left: 0px;
+    margin-right: 10px;
 }
 
 .diff-studio-ribbon-fit {    
@@ -64,11 +65,11 @@
 
 .diff-studio-ribbon-sa {    
     font-weight: normal;
-    margin-right: 26px;
+    margin-right: 36px;
 }
 
 .diff-studio-ribbon-download {    
     font-weight: normal;
-    margin-left: 10px;
-    margin-right: 10px;
+    margin-left: 15px;
+    margin-right: 15px;
 }
