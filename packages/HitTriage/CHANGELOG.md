@@ -1,5 +1,9 @@
 # HitTriage changelog
 
+## 1.3.5 (2024-11-07)
+
+Correct readme links
+
 ## 1.3.4 (2024-11-07)
 
 * Groupping of campaigns
