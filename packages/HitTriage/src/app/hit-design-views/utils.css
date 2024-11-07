@@ -5,3 +5,7 @@ img[alt='hitDesignReadmeImg'] {
 .hit-design-stage-editing-dialog {
     z-index: 10000 !important;
 }
+
+.hit-design-groupped-campaigns-table .d4-accordion-pane-content.expanded {
+    margin: 0 !important;
+}

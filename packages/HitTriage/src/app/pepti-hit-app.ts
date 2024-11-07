@@ -154,7 +154,7 @@ export class PeptiHitApp extends HitDesignApp<PeptiHitTemplate> {
     view?.grid && subs.push(view.grid.onCellValueEdited.subscribe(async (gc) => {
       try {
         if (gc.tableColumn?.name === TileCategoriesColName) {
-          await this.saveCampaign(undefined, false);
+          await this.saveCampaign(false);
           return;
         }
         if (gc.tableColumn?.name !== this.helmColName)

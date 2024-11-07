@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.45.10 (2024-11-07)
+
+Remove the startDockerContainer method from the IAutoDockService interface
+
 ## 5.45.9 (2024-11-01)
 
 Unknown pallete correct initialization

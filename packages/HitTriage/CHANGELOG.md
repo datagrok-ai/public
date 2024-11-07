@@ -1,5 +1,14 @@
 # HitTriage changelog
 
+## 1.3.5 (2024-11-07)
+
+Correct readme links
+
+## 1.3.4 (2024-11-07)
+
+* Groupping of campaigns
+* Status change of campaigns
+
 ## 1.3.3 (2024-10-28)
 
 * Modification of HD Stages within campaign.
