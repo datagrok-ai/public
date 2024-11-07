@@ -6,10 +6,16 @@ import {checkHTMLElement} from './utils';
 
 category('UI: Tab control', () => {
   let v: DG.View;
-  const tabs = ui.tabControl();
+  let tabs: DG.TabControl;
 
   before(async () => {
+    const tabsItems = {
+      '1' : ui.div([], 'new-pane'),
+      '2' : ui.div([], 'new-pane')
+    };
     v = grok.shell.newView('');
+    tabs = ui.tabControl(tabsItems);
+    v.append(tabs.root);
   });
 
   test('tabControl.root', async () => {
@@ -41,7 +47,8 @@ category('UI: Tab control', () => {
   });
 
   test('tabControl.getPane', async () => {
-    const pane = tabs.panes[0];
+    tabs.addPane('New pane', ()=> ui.div([], 'new-pane'));
+    const pane = tabs.panes[tabs.panes.length-1];
     const getPane = tabs.getPane('New pane');
     expect(pane, getPane);
   });
@@ -67,11 +74,11 @@ category('UI: Tab control', () => {
   });
 
   test('tabControl.onBeforeTabChanged', async () => {
+    tabs.currentPane = tabs.panes[0];
     let check = true;
     tabs.onBeforeTabChanged.subscribe((_)=> {check=false;});
-    tabs.currentPane = tabs.panes[0];
-    if (check)
-      throw new Error('onBeforeTabChanged event error');
+    tabs.currentPane = tabs.panes[1];
+    expect(check, false, 'onBeforeTabChanged event error')
   });
 
   after(async () => {

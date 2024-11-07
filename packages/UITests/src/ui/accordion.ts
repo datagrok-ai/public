@@ -10,6 +10,7 @@ category('UI: Accordion', () => {
 
   before(async () => {
     v = grok.shell.newView('');
+    acc.addPane('1',()=> ui.div(''))
   });
 
   test('accordion.root', async () => {
