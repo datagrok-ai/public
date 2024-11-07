@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {AppName, HitDesignCampaign, HitDesignTemplate, HitTriageCampaignStatus, IFunctionArgs} from './types';
+import {AppName, HitDesignCampaign, HitDesignTemplate, IFunctionArgs} from './types';
 import {HitDesignInfoView} from './hit-design-views/info-view';
 import {CampaignIdKey, CampaignJsonName, CampaignTableName,
   HTQueryPrefix, HTScriptPrefix, HitDesignCampaignIdKey,
@@ -36,6 +36,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
   protected currentDesignViewId?: string;
   public mainView: DG.ViewBase;
   protected get version() {return this._campaign?.version ?? 0;};
+  public existingStatuses: string[] = [];
   constructor(c: DG.FuncCall, an: AppName = 'Hit Design',
     infoViewConstructor: (app: HitDesignApp) => HitDesignInfoView = (app) => new HitDesignInfoView(app)) {
     super(c, an);
@@ -112,7 +113,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
 
     this.campaign.template.stages = uniqueStages;
     this.template.stages = uniqueStages;
-    await this.saveCampaign(undefined, true);
+    await this.saveCampaign(true);
   }
 
   public async setTemplate(template: T, campaignId?: string) {
@@ -226,7 +227,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
             this.dataFrame!.col(col.name)!.set(newValueIdx, col.get(0), false);
     }
           this.dataFrame!.fireValuesChanged();
-          this.saveCampaign(undefined, false);
+          this.saveCampaign(false);
   }
 
   protected initDesignViewRibbons(view: DG.TableView, subs: Subscription[]) {
@@ -318,7 +319,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
               this.dataFrame!.fireValuesChanged();
             } finally {
               ui.setUpdateIndicator(view.grid.root, false);
-              this.saveCampaign(undefined, false);
+              this.saveCampaign(false);
             }
           }, () => null, this.campaign?.template!, true);
         };
@@ -328,7 +329,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
         const permissionsButton = ui.iconFA('share', async () => {
           await (new PermissionsDialog(this.campaign?.permissions)).show((res) => {
             this.campaign!.permissions = res;
-            this.saveCampaign(undefined, true);
+            this.saveCampaign(true);
           });
         }, 'Edit campaign permissions');
         const tilesButton = ui.bigButton('Progress tracker', () => {
@@ -340,8 +341,13 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
           if (dialogContent) {
             const dlg = ui.dialog('Submit');
             dlg.add(dialogContent);
-            dlg.addButton('Save', ()=>{this.saveCampaign(); dlg.close();});
-            dlg.addButton('Submit', ()=>{this._submitView?.submit(); dlg.close();});
+            dlg.addButton('Save', () => {
+              this._campaign!.status = this._submitView!.getStatus();
+              this.saveCampaign();
+              dlg.close();
+            });
+            if (this.template?.submit?.fName && this.template?.submit?.package && DG.Func.find({name: this.template.submit.fName, package: this.template.submit.package})?.length > 0)
+              dlg.addButton('Submit', ()=>{this._submitView?.submit(); dlg.close();});
             dlg.show();
           }
         });
@@ -476,7 +482,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     view?.grid && subs.push(view.grid.onCellValueEdited.subscribe(async (gc) => {
       try {
         if (gc.tableColumn?.name === TileCategoriesColName) {
-          await this.saveCampaign(undefined, false);
+          await this.saveCampaign(false);
           return;
         }
         if (gc.tableColumn?.name !== this.molColName)
@@ -610,7 +616,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
 
           if (this._campaign)
             this._campaign!.savePath = this._filePath;
-          await this.saveCampaign(undefined, true);
+          await this.saveCampaign(true);
           ui.empty(pathDiv);
           const folderPath = getFolderPath();
           link = ui.link(folderPath,
@@ -647,7 +653,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     };
   }
 
-  async saveCampaign(status?: HitTriageCampaignStatus, notify = true): Promise<HitDesignCampaign> {
+  async saveCampaign(notify = true): Promise<HitDesignCampaign> {
     const campaignId = this.campaignId!;
     const templateName = this.template!.name;
     const enrichedDf = this.dataFrame!;
@@ -665,7 +671,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     const campaign: HitDesignCampaign = {
       name: campaignName,
       templateName,
-      status: status ?? this.campaign?.status ?? 'In Progress',
+      status: this.campaign?.status ?? 'In Progress',
       createDate: this.campaign?.createDate ?? toFormatedDateString(new Date()),
       campaignFields: this.campaign?.campaignFields ?? this.campaignProps,
       columnSemTypes,
