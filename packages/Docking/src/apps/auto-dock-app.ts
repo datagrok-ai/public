@@ -77,16 +77,6 @@ export class AutoDockApp {
 
   async buildView(): Promise<void> {
     this.view = grok.shell.tv;
-
-    const adSvc: IAutoDockService = await getAutoDockService();
-    if (!adSvc.ready) {
-      ui.tooltip.bind(this.runBtn, 'AutoDock docker container is not ready');
-
-      await adSvc.startDockerContainer();
-      if (adSvc.ready) {
-        grok.shell.info('AutoDock docker container is ready.');
-      }
-    }
   }
 
   private runBtn!: HTMLButtonElement;
