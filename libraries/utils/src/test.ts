@@ -48,6 +48,7 @@ export interface CategoryOptions {
   timeout?: number;
   benchmarks?: boolean;
   stressTests?: boolean;
+  responsive?: string;
 }
 
 export class TestContext {
@@ -99,6 +100,7 @@ export class Category {
   benchmarks?: boolean;
   benchmarkTimeout?: number;
   stressTests?: boolean;
+  responsive?: string;
 }
 
 export class TestExecutionOptions {
@@ -255,6 +257,7 @@ export function category(category: string, tests_: () => void, options?: Categor
     tests[currentCategory].timeout = options?.timeout;
     tests[currentCategory].benchmarks = options?.benchmarks;
     tests[currentCategory].stressTests = options?.stressTests;
+    tests[currentCategory].responsive = options?.responsive;
   }
 }
 
@@ -484,7 +487,11 @@ export async function runTests(options?: TestExecutionOptions) {
                 t[i].options!.benchmark = value.benchmarks ?? false;
               }
             }
-            let testRun = await execTest(t[i], options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout ?? STANDART_TIMEOUT, package_.name, options.verbose);
+            let test = t[i];
+            if (test?.options) {
+              test.options.responsive = t[i].options?.responsive ?? value?.responsive;
+            } 
+            let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout ?? STANDART_TIMEOUT, package_.name, options.verbose);
             if (testRun)
               res.push(testRun);
             grok.shell.closeAll();
@@ -492,7 +499,11 @@ export async function runTests(options?: TestExecutionOptions) {
           }
         } else {
           for (let i = 0; i < t.length; i++) {
-            let testRun = await execTest(t[i], options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout, package_.name, options.verbose);
+            let test = t[i];
+            if (test?.options) {
+              test.options.responsive = t[i].options?.responsive ?? value?.responsive;
+            } 
+            let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout, package_.name, options.verbose);
             if (testRun)
               res.push(testRun);
           }
@@ -593,7 +604,7 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
   if (!filter) {
     let params = {
       'success': r.success, 'result': r.result, 'ms': r.ms,
-      'skipped': r.skipped, 'package': packageName, 'category': t.category, 'name': t.name, 'logs': r.logs,'responsive': r.responsive,
+      'skipped': r.skipped, 'package': packageName, 'category': t.category, 'name': t.name, 'logs': r.logs, 'responsive': r.responsive,
     };
     if (r.result.constructor == Object) {
       const res = Object.keys(r.result).reduce((acc, k) => ({ ...acc, ['result.' + k]: r.result[k] }), {});
