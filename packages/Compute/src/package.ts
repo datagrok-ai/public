@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {filter} from 'rxjs/operators';
+import {filter, take} from 'rxjs/operators';
 import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-viewer';
 import {
   ComputationView as ComputationViewInst,
@@ -341,31 +341,72 @@ export function ObjectCoolingSelector(params: any) {
 //input: dynamic treeNode
 //input: view browseView
 export async function modelCatalogTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
+  const NO_CATEGORY = 'Uncategorized' as const;
+
   const modelSource = grok.dapi.functions.filter('(#model)');
   const modelList = await modelSource.list();
   const departments = modelList.reduce((acc, model) => {
-    if (model.options.department) acc.add(model.options.department)
+    if (model.options.department) 
+      acc.add(model.options.department)
+    else 
+      acc.add(NO_CATEGORY)
     return acc;
   }, new Set([] as string[]));
   
   const hlProcesses = modelList.reduce((acc, model) => {
-    if (model.options.HL_process) acc.add(model.options.HL_process)
+    if (model.options.HL_process) 
+      acc.add(model.options.HL_process) 
+    else 
+      acc.add(NO_CATEGORY)
     return acc;
   }, new Set([] as string[]));
 
   const processes = modelList.reduce((acc, model) => {
-    if (model.options.process) acc.add(model.options.process)
+    if (model.options.process) 
+      acc.add(model.options.process)
+    else 
+      acc.add(NO_CATEGORY)
     return acc;
   }, new Set([] as string[]));
-  
+
   for (const department of departments) {
-    const depNode = treeNode.group(department)
+    const serverDep = (department !== NO_CATEGORY ? department: undefined);
+    const hasModelsDep = modelList.find((model) => 
+      model.options.department === serverDep
+    )
+
+    if (!hasModelsDep) continue;
+
+    const depNode = treeNode.getOrCreateGroup(department, null, false)
     for (const hlProcess of hlProcesses) {
-      const hlNode = depNode.group(hlProcess);
+      const serverHlProcess = (hlProcess !== NO_CATEGORY ? hlProcess: undefined);
+      const hasModelsHl = modelList.find((model) => 
+        model.options.department === serverDep &&
+        model.options.HL_process === serverHlProcess
+      )
+
+      if (!hasModelsHl) continue;
+
+      const hlNode = hlProcess !== NO_CATEGORY ? depNode.getOrCreateGroup(hlProcess, null, false): depNode;
       for (const process of processes) {
-        hlNode.group(process).loadSources(modelSource.filter(
-          `((options.department in ("${department}")) and (options.HL_process in ("${hlProcess}")) and (options.process in ("${process}")))`
-        ));
+        const serverProcess = (process !== NO_CATEGORY ? process: undefined);
+        const hasModels = modelList.find((model) => 
+          model.options.department === serverDep &&
+          model.options.HL_process === serverHlProcess &&
+          model.options.process === serverProcess
+        )
+
+        if (!hasModels) continue;
+
+        const processNode = process !== NO_CATEGORY ? hlNode.getOrCreateGroup(process, null, false): hlNode;
+        processNode.onNodeExpanding.pipe(take(1)).subscribe(() => {
+          const modelRule = `(#model)`;
+          const depRules = department === NO_CATEGORY ? `(options.department = null)`: `(options.department in ("${department}"))`;
+          const hlProcessRules = hlProcess === NO_CATEGORY ? `(options.HL_process = null)`: `(options.HL_process in ("${hlProcess}"))`;
+          const processRules = process === NO_CATEGORY ? `(options.process = null)`: `(options.process in ("${process}"))`;
+          const filteringRules = `(${[modelRule, depRules, hlProcessRules, processRules].join(' and ')})`
+          processNode.loadSources(grok.dapi.functions.filter(filteringRules));
+        })        
       }
     }
   }
