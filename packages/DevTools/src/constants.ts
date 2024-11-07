@@ -51,10 +51,10 @@ const str = await grok.dapi.files.readAsText("${ent.fullPath}");
 
 // Read as dataframe
 const df = await grok.data.files.openTable("${ent.fullPath}");`,
-  DataConnection: (ent: DG.DataConnection) =>
-    `const connection = await grok.dapi.connections.find('${ent.id}');
-
-// Test the connection
+  DataConnection: (ent: DG.DataConnection) => {
+    let code = `const connection = await grok.dapi.connections.find('${ent.id}')\n`;
+    if (!DG.DataSourceType.fileDataSources.includes(ent.dataSource))
+      code += `// Test the connection
 const t = await grok.data.db.query(connection.nqName, 'select 1');
 grok.shell.addTableView(t);
 
@@ -63,7 +63,18 @@ grok.shell.info(JSON.stringify(connection.parameters));
 
 // Find the connection's queries
 const queries = await grok.dapi.queries.filter(\`connection.id = "\${connection.id}"\`).list();
-grok.shell.info('Found queries: ' + queries.length);`,
+grok.shell.info('Found queries: ' + queries.length);`;
+    else
+      code += `// test connection
+await connection.test();
+
+// list all files
+const list = await grok.dapi.files.list(\`\${connection.nqName}/\`, true);
+const filesCount = list.filter((f) => f.isFile).length;
+const foldersCount = list.filter((f) => f.isDirectory).length;
+grok.shell.info(\`Total of \${filesCount} files and \${foldersCount} folders\`);`;
+    return code;
+  },
 
   DataQuery: (ent: DG.DataQuery) =>
     `const q = await grok.dapi.queries.find("${ent.id}");
