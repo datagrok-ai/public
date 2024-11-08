@@ -42,6 +42,7 @@ type UpdatePreviewParams = {
 type ColumnNamesAndSelections = {
   quotesSelection: {from: number, to: number}[],
   columnSelections: {from: number, to: number}[],
+  unmatchedBracketsSelections: {from: number, to: number}[],
   columnNames: string[],
   isSingleCol: boolean,
 }
@@ -502,28 +503,7 @@ export class AddNewColumnDialog {
             //add text in quotes addTextWithinQuotes
             setSelection(cm, columnsAndSelections.quotesSelection, addTextWithinQuotes);
 
-            //add unmatched parentheses highlight
-            const openBrackets: number[] = [];
-            const closeBrackets: number[] = [];
-          
-            for (let i = 0; i < cmValue.length; i++) {
-              if (cmValue[i] === '(') {
-                openBrackets.push(i);
-              }
-              if (cmValue[i] === ')') {
-                if (!openBrackets.length)
-                  closeBrackets.push(i)
-                else
-                  openBrackets.pop();
-              }
-            }
-            const unmatchedBracketsSelections: any[] = [];
-            openBrackets.concat(closeBrackets).forEach((it) => {
-              unmatchedBracketsSelections.push({from: it, to: it + 1});
-            });
-
-            if (unmatchedBracketsSelections.length)
-              setSelection(cm, unmatchedBracketsSelections, addUnmatchedParentheses);
+            setSelection(cm, columnsAndSelections.unmatchedBracketsSelections, addUnmatchedParentheses);
 
             (this.inputName!.input as HTMLInputElement).placeholder =
               ((!cmValue || (cmValue.length > this.maxAutoNameLength)) ? this.placeholderName : cmValue).trim();
@@ -628,6 +608,9 @@ export class AddNewColumnDialog {
 
     const {quotesSelection, intervalsWithoutQuotes} = this.getIntervalsWithinAndOutsideQuotes(formula);
 
+    const openBrackets: number[] = [];
+    const closeBrackets: number[] = [];
+
     const isOpeningBracket = (i: number): string => {
       let bracket = '';
       if (i > 0 && formula[i - 1] === '$')
@@ -647,6 +630,19 @@ export class AddNewColumnDialog {
     let closingBracket = '';
     for (let i = 0; i < intervalsWithoutQuotes.length; i++) {
       for (let j = intervalsWithoutQuotes[i][0]; j < intervalsWithoutQuotes[i][1]; j++) {
+        
+        if (formula[j] === '(') {
+          openBrackets.push(j);
+          continue;
+        }
+        if (formula[j] === ')') {
+          if (!openBrackets.length)
+            closeBrackets.push(j)
+          else
+            openBrackets.pop();
+          continue;
+        }
+
         const bracket = isOpeningBracket(j);
         if (!openingBracket && bracket) {
           openingBracket = bracket;
@@ -665,7 +661,13 @@ export class AddNewColumnDialog {
         }
       }
     }
-    return {quotesSelection, columnSelections, columnNames, isSingleCol};
+
+    const unmatchedBracketsSelections: {from: number, to: number}[] = [];
+    openBrackets.concat(closeBrackets).forEach((it) => {
+      unmatchedBracketsSelections.push({ from: it, to: it + 1 });
+    });
+
+    return {quotesSelection, columnSelections, columnNames, isSingleCol, unmatchedBracketsSelections};
   }
 
   validateFormula(formula: string, columnNames: string[], isSingleCol: boolean): string {
