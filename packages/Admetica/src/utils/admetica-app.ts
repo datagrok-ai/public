@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import { addSparklines, createDynamicForm, getQueryParams, performChemicalPropertyPredictions, properties, setProperties } from './admetica-utils';
+import { addColorCoding, addSparklines, createDynamicForm, getQueryParams, performChemicalPropertyPredictions, properties, setProperties } from './admetica-utils';
 import { UiUtils } from '@datagrok-libraries/compute-utils/shared-components';
 import '../css/admetica.css';
 
@@ -14,13 +14,14 @@ export class AdmeticaViewApp {
   view?: DG.View;
   parentCall: DG.FuncCall;
   tableView?: DG.TableView;
-  mode: string = 'single';
+  mode: string = 'sketch';
   container: HTMLElement;
   formContainer: HTMLElement;
   modeContainer: HTMLElement;
   sketcherDiv: HTMLElement;
   sketcher?: HTMLElement;
   placeholder: HTMLElement;
+  sketcherInstance: grok.chem.Sketcher;
 
   private taskQueue: (() => Promise<void>)[] = [];
   private isTaskActive: boolean = false;
@@ -35,9 +36,10 @@ export class AdmeticaViewApp {
     this.formContainer = ui.box(null, { classes: 'content-container', style: { height: '100%' } });
     this.sketcherDiv = ui.div([], { classes: 'content-container', style: { border: 'none' } });
     this.modeContainer = ui.box(null, { classes: 'mode-container', style: { height: '100%' } });
+    this.sketcherInstance = new grok.chem.Sketcher();
     
     // Placeholder with unified style
-    this.placeholder = ui.divText('Please select a molecule or upload a file to see the predictions.', {
+    this.placeholder = ui.divText('Please sketch a molecule to see the predictions.', {
       classes: 'placeholder-text'
     });
 
@@ -50,46 +52,91 @@ export class AdmeticaViewApp {
       }
     `, styleSheet.cssRules.length);
 
+    // /this.showPlaceholder();
     this.formContainer.appendChild(this.placeholder);
     this.container.appendChild(this.modeContainer);
     this.container.appendChild(this.formContainer);
   }
 
   async init() {
-    const sketcherInstance = new grok.chem.Sketcher();
-    sketcherInstance.setMolecule('CC(Oc1ccccc1C(O)=O)=O');
-    sketcherInstance.onChanged.subscribe(async () => {
-      const smiles = sketcherInstance.getSmiles();
+    this.sketcherInstance.setMolecule('CC(Oc1ccccc1C(O)=O)=O');
+    this.sketcherInstance.onChanged.subscribe(async () => {
+      const smiles = this.sketcherInstance.getSmiles();
       await this.onChanged(smiles)
     });
-    this.sketcher = sketcherInstance.root;
+    this.sketcherInstance.molInput.value = 'aspirin';
+    this.sketcher = this.sketcherInstance.root;
     this.sketcherDiv.appendChild(this.sketcher);
 
     // Mode selection with unified tabs style
     const modeTabs = ui.tabControl();
     modeTabs.onTabChanged.subscribe((tab: DG.TabPane) => {
+      this.mode = tab.header.innerText.split(' ')[0].toLowerCase();
       this.clearTable();
       this.clearForm();
-      this.mode = tab.header.innerText.split(' ')[0].toLowerCase();
-    
-      if (this.mode === 'file') {
-        // Hide formContainer in "File Input" mode
-        this.formContainer.style.visibility = 'hidden';
-        this.formContainer.style.position = 'absolute';
-      } else {
-        // Show formContainer in "Single Molecule" mode
+      if (this.mode === 'sketch') {
         this.formContainer.style.visibility = 'visible';
         this.formContainer.style.position = 'relative'; // Restore original layout positioning
+        if (this.tableView?.grid) {
+          this.tableView.grid.root.style.visibility = 'hidden';
+          this.tableView.dockManager.dock(this.container, DG.DOCK_TYPE.TOP, null, '', 0.99);
+        }
+        this.sketcherInstance.onChanged.next();
+      } else {
+        this.formContainer.style.visibility = 'hidden';
+        this.formContainer.style.position = 'absolute';
+        if (this.tableView?.grid) {
+          this.tableView.grid.root.style.visibility = 'visible';
+          this.tableView.dockManager.dock(this.container, DG.DOCK_TYPE.TOP, null, '', 0.2 );
+          this.tableView.grid.root.style.visibility = 'visible';
+          this.tableView.dockManager.dock(this.container, DG.DOCK_TYPE.TOP, null, '', 0.2 );
+          openMoleculeDataset('System:AppData/Admetica/demo_files/sar-small_app.csv').then((df) => {
+            this.tableView!.dataFrame = df;
+            grok.data.detectSemanticTypes(this.tableView!.dataFrame).then(() => {
+            const molColName = this.tableView!.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE)!.name;
+            const molIdx = this.tableView!.dataFrame.columns.names().findIndex(c => c === molColName);
+            let i = molIdx + 2;
+            getQueryParams().then((models) => {
+              addColorCoding(this.tableView!.dataFrame, models.split(','));
+              setProperties().then(() => {
+                addSparklines(this.tableView!.dataFrame, models.split(','), i, 'ADMET');
+                i += 1;
+                const uniqueSubgroupNames: string[] = Array.from(
+                  new Set(properties.subgroup.map((subg: any) => subg.name))
+                );
+        
+                uniqueSubgroupNames.forEach(async (subgroupName: string) => {
+                  const models = properties.subgroup
+                    .filter((subg: any) => subg.name === subgroupName) // Filter subgroups with the current name
+                    .flatMap((subg: any) => subg.models.map((model: any) => model.name)); // Map to model names and flatten
+                    
+                  await addSparklines(this.tableView!.dataFrame, models, i, subgroupName);
+                  i += 1;
+                });
+                this.tableView!.grid.scrollToCell(molColName, 0);
+              });
+            })
+          });
+          })
+        }
       }
     });    
 
-    modeTabs.addPane('Single Molecule', () => {
-      this.mode = 'single';
+    modeTabs.addPane('Sketch', () => {
+      this.mode = 'sketch';
+      this.formContainer.style.visibility = 'visible';
+      this.formContainer.style.position = 'relative'; // Restore original layout positioning
+      if (this.tableView?.grid) {
+        this.tableView.grid.root.style.visibility = 'hidden';
+        this.tableView.dockManager.dock(this.container, DG.DOCK_TYPE.TOP, null, '', 0.99);
+      }
       return this.sketcherDiv;
     });
     
-    modeTabs.addPane('File Input', () => {
+    modeTabs.addPane('File', () => {
       this.mode = 'file';
+      this.formContainer.style.visibility = 'hidden';
+      this.formContainer.style.position = 'absolute';
       return this.createFileInputPane();
     });
 
@@ -105,7 +152,9 @@ export class AdmeticaViewApp {
     
     setTimeout(async () => {
       this.tableView!._onAdded();
-      await this.refresh(table, this.container);
+      //this.tableView!.grid.root.style.display = 'none';
+      this.tableView!.grid.root.style.visibility = 'hidden';
+      await this.refresh(table, this.container, 0.99);
       (grok.shell.view(DG.VIEW_TYPE.BROWSE) as DG.BrowseView).preview = this.tableView!;
     }, 300);
   }
@@ -116,7 +165,7 @@ export class AdmeticaViewApp {
 
   clearForm() {
     this.formContainer.innerHTML = '';
-    this.formContainer.appendChild(this.placeholder);
+    //this.formContainer.appendChild(this.placeholder);
   }
 
   async onChanged(smiles: string) {
@@ -127,7 +176,18 @@ export class AdmeticaViewApp {
 
     this.isTaskActive = true; // Mark the task as active
     try {
-      if (this.mode === 'single') {
+      if (this.mode === 'sketch') {
+
+        if (!smiles) {
+          this.clearForm();
+          //this.showPlaceholder();
+          return;
+        }
+
+        /*if (smiles && this.formContainer.innerHTML === '') {
+          this.showPlaceholder();
+        }*/
+
         this.clearTable();
         const col = this.tableView?.dataFrame.columns.getOrCreate('smiles', 'string', 1);
         col!.semType = DG.SEMTYPE.MOLECULE;
@@ -135,7 +195,7 @@ export class AdmeticaViewApp {
         await grok.data.detectSemanticTypes(this.tableView!.dataFrame);
 
         const models = await getQueryParams();
-        const splashScreen = this.buildSplash(this.formContainer, 'Processing...');
+        const splashScreen = this.buildSplash(this.formContainer, 'Calculating...');
 
         // Perform chemical property predictions without passing signal
         await performChemicalPropertyPredictions(
@@ -149,13 +209,14 @@ export class AdmeticaViewApp {
         );
 
         const molIdx = this.tableView?.dataFrame.columns.names().indexOf('smiles');
-        await addSparklines(this.tableView!.dataFrame, models.split(','), molIdx!);
+        await addSparklines(this.tableView!.dataFrame, models.split(','), molIdx! + 1);
         splashScreen.close();
         
         const form = createDynamicForm(this.tableView!.dataFrame, models.split(','), 'smiles', true);
         this.formContainer.innerHTML = ''; 
         this.formContainer.appendChild(form.root);
-        this.hidePlaceholder();
+        this.tableView?.grid.invalidate();
+        //this.hidePlaceholder();
       }
     } catch (error) {
       console.error('Error in prediction task:', error);
@@ -194,7 +255,7 @@ export class AdmeticaViewApp {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#f9f9f9',
+        backgroundColor: '#ffffff',
         color: '#007bff',
         fontSize: '22px',
         cursor: 'pointer',
@@ -232,7 +293,7 @@ export class AdmeticaViewApp {
     this.tableView!.dataFrame = table;
     await grok.data.detectSemanticTypes(this.tableView!.dataFrame);
   
-    const splashScreen = this.buildSplash(this.formContainer, 'Processing...');
+    const splashScreen = this.buildSplash(this.formContainer, 'Calculating...');
     const models = await getQueryParams();
     await performChemicalPropertyPredictions(
       table.columns.bySemType(DG.SEMTYPE.MOLECULE)!,
@@ -247,27 +308,37 @@ export class AdmeticaViewApp {
 
     const molColName = table.columns.bySemType(DG.SEMTYPE.MOLECULE)!.name;
     const molIdx = table.columns.names().findIndex(c => c === molColName);
+    let i = molIdx + 2;
+    await addSparklines(this.tableView!.dataFrame, models.split(','), i, 'ADMET');
+    i += 1;
     await setProperties();
     const uniqueSubgroupNames: string[] = Array.from(
       new Set(properties.subgroup.map((subg: any) => subg.name))
     );
-    
+    console.log('unique subgroups');
+    console.log(uniqueSubgroupNames);
     uniqueSubgroupNames.forEach(async (subgroupName: string) => {
       const models = properties.subgroup
         .filter((subg: any) => subg.name === subgroupName) // Filter subgroups with the current name
         .flatMap((subg: any) => subg.models.map((model: any) => model.name)); // Map to model names and flatten
       
-      await addSparklines(this.tableView!.dataFrame, models, molIdx, subgroupName);
+      await addSparklines(this.tableView!.dataFrame, models, i, subgroupName);
+      i += 1;
     });
-  }   
+    this.tableView!.grid.scrollToCell(molColName, 0);
+  }
+
+  showPlaceholder() {
+    this.formContainer.appendChild(this.placeholder);
+  }
 
   hidePlaceholder() {
     if (this.placeholder.parentElement) this.formContainer.removeChild(this.placeholder);
   }
 
-  refresh(table: DG.DataFrame, modeContainer: HTMLElement) {
+  refresh(table: DG.DataFrame, modeContainer: HTMLElement, ratio: number) {
     if (table.rowCount > 0) {
-      this.tableView?.dockManager.dock(modeContainer, DG.DOCK_TYPE.TOP, null, '', 0.65);
+      this.tableView?.dockManager.dock(modeContainer, DG.DOCK_TYPE.TOP, null, '', ratio);
     }
   }
   
@@ -280,4 +351,9 @@ export class AdmeticaViewApp {
     return { el: loaderEl, close: () => loaderEl.remove() };
   }
   
+}
+
+async function openMoleculeDataset(name: string): Promise<DG.DataFrame> {
+  const table = DG.DataFrame.fromCsv(await grok.dapi.files.readAsText(name));
+  return table;
 }

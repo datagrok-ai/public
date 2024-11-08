@@ -156,7 +156,7 @@ function generateNumber(): number {
 }
 
 function createPieSettings(table: DG.DataFrame, columnNames: string[], properties: any): any {
-  const colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd'];
+  const colors = ['#1f77b4', '#cf5a0c', '#2ca02c', '#d62728', '#9467bd'];
   let sectors: any[] = [];
   let sectorColorIndex = 0;
 
@@ -217,19 +217,22 @@ function createPieSettings(table: DG.DataFrame, columnNames: string[], propertie
   };
 }
 
-export function addSparklines(table: DG.DataFrame, columnNames: string[], molColIdx: number): void {
+export function addSparklines(table: DG.DataFrame, columnNames: string[], index: number, name?: string): void {
   const tv = getTableView(table);
   if (!tv) return;
 
-  const pie = tv.grid.columns.add({ cellType: 'piechart', index: molColIdx + 1 });
   let pieChartIdx: number;
   if (tablePieChartIndexMap.has(table.name)) {
-    pieChartIdx = tablePieChartIndexMap.get(table.name)!;
-    tablePieChartIndexMap.set(table.name, pieChartIdx + 1);
+    pieChartIdx = tablePieChartIndexMap.get(table.name)! + 1;
+    tablePieChartIndexMap.set(table.name, pieChartIdx);
   } else {
-    pieChartIdx = piechartIndex;
-    tablePieChartIndexMap.set(table.name, pieChartIdx + 1);
+    pieChartIdx = piechartIndex + 1;
+    tablePieChartIndexMap.set(table.name, pieChartIdx);
   }
+
+  const pieName = pieChartIdx === 0 ? "piechart" : `piechart (${pieChartIdx})`
+  name ??= pieName;
+  const pie = tv.grid.columns.add({ gridColumnName: name, cellType: 'piechart', index: index });
 
   pie.settings = { columnNames: columnNames };
   pie.settings = createPieSettings(table, columnNames, properties);
@@ -322,7 +325,7 @@ export function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, a
   }
 
   if (addPiechart)
-    addSparklines(viewTable, updatedModelNames, molColIdx);
+    addSparklines(viewTable, updatedModelNames, molColIdx + 1);
 
   addColorCoding(viewTable, updatedModelNames);
   addCustomTooltip(viewTable);
