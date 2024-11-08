@@ -620,8 +620,8 @@ export class AddNewColumnDialog {
 
   getColumnNamesAndSelections(formula: string): ColumnNamesAndSelections {
     //first check for parts in quotes and collect indexes outside quotes to check them for column names
-    const leadingSpaces = formula.length - formula.trimStart().length;
-    const closingSpaces = formula.length - formula.trimEnd().length;
+    const leadingSpaces = formula.length - (DG._isDartium() ? formula.trimLeft().length : formula.trimStart().length);
+    const closingSpaces = formula.length - (DG._isDartium() ? formula.trimRight().length : formula.trimEnd().length);
     let isSingleCol = false;
     const columnSelections: {from: number, to: number}[] = [];
     const columnNames: string[] = [];
@@ -1221,16 +1221,17 @@ export class AddNewColumnDialog {
         index = word!.from + colonIdx + 1;
         filter = !word.text.endsWith(':');
       } else if (word.text.includes('$') || word.text.includes('${') || word.text.includes('$[')) {
+        const dollarIdx = word.text.lastIndexOf('$');
         const openingSym = word.text.includes('$[') ? '[' : '{';
         const closingSym = openingSym === '{' ? '}' : ']';
-        const openingBracketIdx = word.text.indexOf(openingSym);
-        const closingBracket = context.state.doc.length > word.text.length ? context.state.doc.toString()[word.to] === openingSym : false;
+        const openingBracketIdx = word.text.indexOf(openingSym) > dollarIdx ? word.text.indexOf(openingSym) : -1;
+        const closingBracket = context.state.doc.length > word.text.length ? context.state.doc.toString()[word.to] === closingSym : false;
         colNames.forEach((name: string) => options.push({ label: name, type: "variable",
           apply: openingBracketIdx !== -1 ? closingBracket ? `${grok.functions.handleOuterBracketsInColName(name, true)}` : 
             `${grok.functions.handleOuterBracketsInColName(name, true)}${closingSym}` :
               closingBracket ? `${openingSym}${grok.functions.handleOuterBracketsInColName(name, true)}` : 
                 `${openingSym}${grok.functions.handleOuterBracketsInColName(name, true)}${closingSym}`}));
-        index = word!.from + (openingBracketIdx === -1 ? word.text.indexOf("$") + 1 : openingBracketIdx + 1);
+        index = word!.from + (openingBracketIdx === -1 ? word.text.lastIndexOf("$") + 1 : openingBracketIdx + 1);
         filter = !word.text.endsWith('$') && !word.text.endsWith(openingSym);
       } else
         coreFunctionsNames.concat(packageNames)
