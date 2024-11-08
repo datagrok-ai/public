@@ -14,9 +14,15 @@ import { TestAnalysisManager } from './test-analysis/test-analysis-manager';
 import { getDate } from './utils';
 import dayjs from "dayjs";
 import {ServiceLogsApp} from "./service_logs/service_logs";
-
+import { TestGridCellHandler } from './test-grid-cell-handler';
 
 export const _package = new DG.Package();
+
+
+//tags: init
+export function _initUA(): void {
+  DG.ObjectHandler.register(new TestGridCellHandler());
+}
 
 //name: TestsList 
 //meta.url: /tests/list
