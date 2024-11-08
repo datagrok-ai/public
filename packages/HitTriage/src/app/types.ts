@@ -119,7 +119,9 @@ export type HitTriageCampaign = {
     columnTypes?: {[key: string]: string},
     version?: number,
     permissions?: TriagePermissions,
-    authorUserId?: string
+    authorUserId?: string,
+    authorUserFriendlyName?: string,
+    lastModifiedUserName?: string,
 };
 
 export type TriagePermissions = {

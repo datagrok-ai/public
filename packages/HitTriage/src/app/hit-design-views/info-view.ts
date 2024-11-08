@@ -253,14 +253,17 @@ export class HitDesignInfoView
       });
       return [shareIcon, deleteIcon];
     };
-    const table = ui.table(Object.values(campaignNamesMap), (info) =>
-      ([ui.link(info.name, () => this.setCampaign(info.name), '', ''),
+
+    const table = ui.table(Object.values(grouppedCampaigns).flat(), (info) =>
+      ([ui.link(info.name, () => this.setCampaign(info.name), 'Continue Campaign', ''),
         info.createDate,
+        info.authorUserFriendlyName ?? '',
+        info.lastModifiedUserName ?? '',
         info.rowCount,
         info.status,
         ...(deleteAndShareCampaignIcons(info)),
       ]),
-    ['Name', 'Created', 'Molecules', 'Status', '']);
+    ['Name', 'Created', 'Author', 'Last Modified by', 'Molecules', 'Status', '', '']);
     table.style.color = 'var(--grey-5)';
     table.style.marginLeft = '24px';
     processGroupingTable(table, grouppedCampaigns);

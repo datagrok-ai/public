@@ -645,10 +645,13 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
 
     return {
       'Template': this.template?.name ?? 'Molecules',
-      'File path': getPathEditor(),
+      'File Path': getPathEditor(),
+      ...(this.campaign?.authorUserFriendlyName ? {'Author': this.campaign.authorUserFriendlyName} : {}),
+      ...(this.campaign?.lastModifiedUserName ? {'Last Modified By': this.campaign.lastModifiedUserName} : {}),
+      ...(this.campaign?.createDate ? {'Create Date': this.campaign.createDate} : {}),
       ...campaignProps,
-      'Number of molecules': (this.dataFrame!.rowCount).toString(),
-      'Enrichment methods': [this.template!.compute.descriptors.enabled ? 'descriptors' : '',
+      'Number of Molecules': (this.dataFrame!.rowCount).toString(),
+      'Enrichment Methods': [this.template!.compute.descriptors.enabled ? 'descriptors' : '',
         ...this.template!.compute.functions.map((func) => func.name)].filter((f) => f && f.trim() !== '').join(', '),
     };
   }
@@ -667,7 +670,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     // if its first time save author as current user, else keep the same
     const authorUserId = this.campaign?.authorUserId ?? grok.shell.user.id;
     const permissions = this.campaign?.permissions ?? defaultPermissions;
-
+    const authorName = authorUserId ? this.campaign?.authorUserFriendlyName ?? (await grok.dapi.users.find(authorUserId))?.friendlyName : undefined;
     const campaign: HitDesignCampaign = {
       name: campaignName,
       templateName,
@@ -682,6 +685,8 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
       tilesViewerFormSketch: sketchStateString,
       version: this.version + 1,
       authorUserId,
+      authorUserFriendlyName: authorName,
+      lastModifiedUserName: grok.shell.user.friendlyName,
       permissions,
     };
     if (!this.hasEditPermission) {

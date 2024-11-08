@@ -29,6 +29,7 @@ export const i18n = {
   continueCampaigns: 'Continue Campaign',
   createNewCampaignHeader: 'New Campaign',
   selectTemplate: 'Template',
+  noInformation: 'No Information',
 } as const;
 
 export const funcTypeNames = {
@@ -43,4 +44,6 @@ export enum CampaignGroupingType {
   None = 'None',
   Template = 'Template',
   Status = 'Status',
+  Author = 'Author',
+  LastModifiedUser = 'Last Modified User',
 }
