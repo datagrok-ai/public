@@ -23,6 +23,7 @@ import {BehaviorSubject, combineLatest, EMPTY, merge, Subject} from 'rxjs';
 import {useSubscription, from} from '@vueuse/rxjs'
 import {catchError, switchMap, tap, map, debounceTime, withLatestFrom, share} from 'rxjs/operators';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
+import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 
 type PanelsState = {
   historyHidden: boolean,
@@ -107,6 +108,9 @@ export const RichFunctionView = Vue.defineComponent({
     },
     callMeta: {
       type: Object as Vue.PropType<Record<string, BehaviorSubject<any>>>,
+    },
+    validationStates: {
+      type: Object as Vue.PropType<Record<string, ValidationResult>>,
     },
     isTreeLocked: {
       type: Boolean,
@@ -321,6 +325,9 @@ export const RichFunctionView = Vue.defineComponent({
     const isIncomplete = Vue.computed(() => props.callState?.isOutputOutdated);
     const isRunning = Vue.computed(() => props.callState?.isRunning);
     const isRunnable = Vue.computed(() => props.callState?.isRunnable);
+
+    const validationState = Vue.computed(() => props.validationStates);
+
     const currentFunc = Vue.computed(() => currentCall.value.func);
 
     const features = Vue.computed(() => Utils.getFeatures(currentFunc.value));
@@ -451,6 +458,7 @@ export const RichFunctionView = Vue.defineComponent({
                 {
                   Vue.withDirectives(<InputForm
                     funcCall={currentCall.value}
+                    validationStates={validationState.value}
                   />, [[ifOverlapping, isRunning.value, 'Recalculating...']])
                 }
                 <div class='flex sticky bottom-0 justify-end'>
