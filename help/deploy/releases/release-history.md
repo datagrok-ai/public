@@ -76,7 +76,6 @@ The Datagrok 1.22.0 release enhances platform stability and delivers key functio
 
 ### [Scatterplot](../../visualize/viewers/scatter-plot.md)
 * Improved label positioning and size adjustments (including for structure labels [#2688](https://github.com/datagrok-ai/public/issues/2688))
-* Implemented WebGPU support to improve rendering efficiency and handling of large datasets
 * Added lines to connect data series
 * Added color coding via expressions to enhance data visualization capabilities
     
