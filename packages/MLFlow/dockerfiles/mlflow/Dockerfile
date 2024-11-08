@@ -15,6 +15,8 @@ RUN curl https://pyenv.run | bash \
 	&& python -m  pip install virtualenv
 ENV PATH="/root/.pyenv/bin:${PATH}"
 RUN pyenv install 3.10.12
+RUN pyenv install 3.12.4
+RUN pyenv install 3.11.9
 
 EXPOSE 5001
 CMD ["./run.sh"]

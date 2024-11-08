@@ -1,8 +1,8 @@
 {
   "name": "@datagrok/mlflow",
-  "friendlyName": "MlFlow",
-  "version": "0.0.1",
-  "description": "MlFlow Integration package",
+  "friendlyName": "MLFlow",
+  "version": "1.0.0",
+  "description": "MLFlow Integration package",
   "author": {
     "name": "Konstantin Amelichev",
     "email": "kamelichev@datagrok.ai"
@@ -48,6 +48,6 @@
   "repository": {
     "type": "git",
     "url": "ssh://git@github.com/datagrok-ai/public.git",
-    "directory": "packages/MlFlow"
+    "directory": "packages/MLFlow"
   }
 }
