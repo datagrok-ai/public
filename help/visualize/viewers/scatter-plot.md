@@ -144,6 +144,19 @@ Below, we see the (gdp, life expectancy) trajectory of different countries over 
 
 ![](img/scatter-plot-lines.png)
 
+### WebGPU acceleration
+
+This feature allows to do highly optimized rendering and hit testing of the scatterplot markers when their number exceeds 50 000. It supports different marker colors, sizes and types and provides a smooth CPU fallback mechanism if some functionality is not supported by your system.
+
+<img alt="WebGPU 1m markers rendering" src={require('./img/webgpu-scatterplot.gif').default}
+width="800px"/>
+ 
+To enable the feature select **Settings** > **Beta** > **Enable Scatter Plot Web GPU Acceleration**
+
+It is adviced to turn off the scatterplot **Zoom and Filter** option to levarage full GPU processing speed when you have more then million markers.
+
+![](img/scatter-plot-zoom-and-fliter.png)
+
 ## Videos
 
 [![ScatterPlot](../../uploads/youtube/visualizations2.png "Open on
