@@ -59,8 +59,7 @@ export async function runAdmetica(csvString: string, queryParams: string, addPro
 
 export async function convertLD50(response: string, smilesCol: DG.Column): Promise<string> {
   const df = DG.DataFrame.fromCsv(response);
-  //if (!df.columns.names().includes('LD50')) return response;
-  return response;
+  if (!df.columns.names().includes('LD50')) return response;
 
   const ldCol = df.getCol('LD50');
   const molWeights = await grok.functions.call('Chem: getMolProperty', {molecules: smilesCol, property: "MW"});
