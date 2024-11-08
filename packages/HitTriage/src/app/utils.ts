@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
-import {CampaignGroupingType, CampaignJsonName, ComputeQueryMolColName, HDCampaignsGroupingLSKey} from './consts';
+import {CampaignGroupingType, CampaignJsonName, ComputeQueryMolColName, HDCampaignsGroupingLSKey, i18n} from './consts';
 import {AppName, CampaignsType, HitDesignCampaign, HitTriageCampaign, TriagePermissions} from './types';
 import {_package} from '../package';
 
@@ -128,6 +128,11 @@ export async function loadCampaigns<T extends AppName>(
         !await checkViewPermissions(campaignJson.authorUserId, campaignJson.permissions)
       )
         continue;
+      if (campaignJson.authorUserId && !campaignJson.authorUserFriendlyName) {
+        const user = await grok.dapi.users.find(campaignJson.authorUserId);
+        if (user)
+          campaignJson.authorUserFriendlyName = user.friendlyName;
+      }
       campaignNamesMap[campaignJson.name] = campaignJson;
     } catch (e) {
       continue;
@@ -141,13 +146,12 @@ async function checkPermissions(authorId: string, groupIdList: string[]): Promis
   const userGroupId = DG.User.current().group?.id;
   if (authorId === userId)
     return true;
-  const dapiGroups = grok.dapi.groups;
   for (const groupId of groupIdList) {
-    const group = await dapiGroups.find(groupId);
+    const group = await grok.dapi.groups.find(groupId);
     if (!group)
       continue;
     if (group.personal) {
-      const user = await dapiGroups.getUser(group);
+      const user = await grok.dapi.groups.getUser(group);
       if (user?.id === userId)
         return true;
     } else if (userGroupId && group.members.length > 0) {
@@ -188,6 +192,10 @@ export const getGroupingKey = <T extends HitDesignCampaign | HitTriageCampaign =
     return campaign.template?.key ?? campaign.templateName;
   case CampaignGroupingType.Status:
     return campaign.status;
+  case CampaignGroupingType.Author:
+    return campaign.authorUserFriendlyName ?? i18n.noInformation;
+  case CampaignGroupingType.LastModifiedUser:
+    return campaign.lastModifiedUserName ?? i18n.noInformation;
   default:
     return '';
   }
@@ -207,7 +215,7 @@ export function getGroupedCampaigns<T extends HitDesignCampaign | HitTriageCampa
   return groupedCampaigns;
 }
 
-export function processGroupingTable<T extends HitDesignCampaign | HitTriageCampaign = HitDesignCampaign>(table: HTMLTableElement, groupedCampaigns: {[key: string]: T[]}, numCols = 6) {
+export function processGroupingTable<T extends HitDesignCampaign | HitTriageCampaign = HitDesignCampaign>(table: HTMLTableElement, groupedCampaigns: {[key: string]: T[]}, numCols = 8) {
   table.classList.add('hit-design-groupped-campaigns-table');
   const keys = Object.keys(groupedCampaigns);
   if (keys.length < 2)

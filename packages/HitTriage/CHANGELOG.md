@@ -1,5 +1,9 @@
 # HitTriage changelog
 
+## 1.3.6 (2024-11-08)
+
+* Correct grouping of campaigns table, Added author/last modified user info.
+
 ## 1.3.5 (2024-11-07)
 
 Correct readme links
