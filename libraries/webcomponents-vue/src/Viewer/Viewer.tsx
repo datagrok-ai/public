@@ -22,7 +22,7 @@ export const Viewer = Vue.defineComponent({
     options: Object as Vue.PropType<Record<string, string | boolean>>,
   },
   emits: {
-    viewerChanged: (a: DG.Viewer<any>) => a,
+    viewerChanged: (v: DG.Viewer<any> | undefined) => v,
   },
   setup(props, {emit}) {
     const viewerChangedCb = (event: any) => {

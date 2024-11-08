@@ -1,3 +1,5 @@
+import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 import {Observable} from 'rxjs';
 import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, IRuntimeValidatorController} from '../RuntimeControllers';
 import {ItemId, NqName, RestrictionType, LinkSpecString} from '../data/common-types';
@@ -33,8 +35,9 @@ export type Handler = HandlerBase<{ controller: IRuntimeLinkController }, void>;
 export type Validator = HandlerBase<{ controller: IRuntimeValidatorController }, void>;
 export type MetaHandler = HandlerBase<{ controller: IRuntimeMetaController }, void>;
 export type MutationHandler = HandlerBase<{ controller: IRuntimePipelineMutationController }, void>;
-
 export type PipelineProvider = HandlerBase<{ version?: string }, LoadedPipeline>;
+export type ViewersHook = (ioName: string, type: string, viewer?: DG.Viewer, meta?: any) => void
+
 
 // link-like
 
@@ -118,6 +121,7 @@ export type PipelineStepConfiguration<P, S> = {
   actions?: StepActionConfiguraion<P>[];
   initialValues?: Record<string, any>;
   inputRestrictions?: Record<string, RestrictionType>;
+  viewersHook?: ViewersHook;
 };
 
 export type PipelineConfigurationBase<P> = {

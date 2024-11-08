@@ -147,6 +147,7 @@ export class FuncCallNode implements IStoreProvider {
       friendlyName: this.config.friendlyName,
       funcCall: instance?.getFuncCall(),
       isReadonly: this.isReadonly,
+      viewersHook: this.config.viewersHook,
       actions,
     };
     if (options.disableNodesUUID)
