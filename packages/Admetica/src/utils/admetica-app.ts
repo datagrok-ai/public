@@ -155,7 +155,7 @@ export class AdmeticaViewApp {
     await addSparklines(this.tableView!.dataFrame, models.split(','), molIdx! + 1);
     splashScreen.close();
     
-    const form = createDynamicForm(this.tableView!.dataFrame, models.split(','), 'smiles', true);
+    const form = createDynamicForm(this.tableView!.dataFrame, models.split(','), 'smiles', false);
     this.clearForm();
     this.formContainer.appendChild(form.root);
     this.tableView?.grid.invalidate();  
