@@ -99,7 +99,8 @@ export class FormCellRenderer extends DG.GridCellRenderer {
     for (let i = 0; i < cols.length; i++) {
       const col = cols[i];
       const cell = gridCell.grid.cell(col.name, gridCell.gridRow);
-      cell.style.backColor = getRenderColor(settings, gridCell.grid.props.backColor, {column: col, colIdx: i, rowIdx: row});
+      cell.style.backColor = gridCell.grid.props.backColor;
+      cell.style.textColor = getRenderColor(settings, gridCell.grid.props.cellTextColor, {column: col, colIdx: i, rowIdx: row});
       const minColHeight = 8;
       const fontSize = colHeight < 20 * 0.7 ? 10 + 3 * ((colHeight - 8) / 6) : 13;
       const font = `${fontSize.toFixed(1)}px Roboto, Roboto Local`;
