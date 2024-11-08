@@ -127,45 +127,38 @@ export class AdmeticaViewApp {
   }
 
   async onChanged(smiles: string) {
-    try {
-      if (this.mode === 'sketch') {
-
-        if (!smiles) {
-          this.clearForm();
-          return;
-        }
-
-        this.clearTable();
-        const col = this.tableView?.dataFrame.columns.getOrCreate('smiles', 'string', 1);
-        col!.semType = DG.SEMTYPE.MOLECULE;
-        this.tableView?.dataFrame.set('smiles', 0, smiles);
-        await grok.data.detectSemanticTypes(this.tableView!.dataFrame);
-
-        const models = await getQueryParams();
-        const splashScreen = this.buildSplash(this.formContainer, 'Calculating...');
-
-        await performChemicalPropertyPredictions(
-          this.tableView!.dataFrame.getCol('smiles'),
-          this.tableView!.dataFrame,
-          models,
-          undefined,
-          false,
-          false,
-          true
-        );
-
-        const molIdx = this.tableView?.dataFrame.columns.names().indexOf('smiles');
-        await addSparklines(this.tableView!.dataFrame, models.split(','), molIdx! + 1);
-        splashScreen.close();
-        
-        const form = createDynamicForm(this.tableView!.dataFrame, models.split(','), 'smiles', true);
-        this.clearForm();
-        this.formContainer.appendChild(form.root);
-        this.tableView?.grid.invalidate();
-      }
-    } catch (error) {
-      console.error('Error in prediction task:', error);
+    if (!smiles) {
+      this.clearForm();
+      return;
     }
+
+    this.clearTable();
+    const col = this.tableView?.dataFrame.columns.getOrCreate('smiles', 'string', 1);
+    col!.semType = DG.SEMTYPE.MOLECULE;
+    this.tableView?.dataFrame.set('smiles', 0, smiles);
+    await grok.data.detectSemanticTypes(this.tableView!.dataFrame);
+
+    const models = await getQueryParams();
+    const splashScreen = this.buildSplash(this.formContainer, 'Calculating...');
+
+    await performChemicalPropertyPredictions(
+      this.tableView!.dataFrame.getCol('smiles'),
+      this.tableView!.dataFrame,
+      models,
+      undefined,
+      false,
+      false,
+      true
+    );
+
+    const molIdx = this.tableView?.dataFrame.columns.names().indexOf('smiles');
+    await addSparklines(this.tableView!.dataFrame, models.split(','), molIdx! + 1);
+    splashScreen.close();
+    
+    const form = createDynamicForm(this.tableView!.dataFrame, models.split(','), 'smiles', true);
+    this.clearForm();
+    this.formContainer.appendChild(form.root);
+    this.tableView?.grid.invalidate();  
   }
 
   createFileInputPane() {
