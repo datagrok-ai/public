@@ -592,43 +592,51 @@ export class AddNewColumnDialog {
     }
   }
 
-  getColumnNamesAndSelections(formula: string): ColumnNamesAndSelections {
-    //first check for parts in quotes and collect indexes outside quotes to check them for column names
-    const trimmedFormula = formula.trim();
+  getIntervalsWithinAndOutsideQuotes(formula: string): {quotesSelection: {from: number, to: number}[], intervalsWithoutQuotes: [number, number][]} {
     const re = /".*?"|'.*?'/gm;
     let match = null;
     const quotesSelection: {from: number, to: number}[] = [];
-    const columnSelections: {from: number, to: number}[] = [];
-    const columnNames: string[] = [];
-    const intervalsToCheckForColumns: [number, number][]= [];
-    let isSingleCol = false;
+    const intervalsWithoutQuotes: [number, number][]= [];
     let counter = 0;
-    while ((match = re.exec(trimmedFormula)) != null) {
+    while ((match = re.exec(formula)) != null) {
       if (!counter && match.index > 0) {
-        intervalsToCheckForColumns.push([0, match.index]);
+        intervalsWithoutQuotes.push([0, match.index]);
       }
       if (counter) {
-        intervalsToCheckForColumns.push([quotesSelection[counter - 1].to, match.index]);
+        intervalsWithoutQuotes.push([quotesSelection[counter - 1].to, match.index]);
       }
       quotesSelection.push({from: match.index, to: match.index + match[0].length});
       counter++;
     }
     if (counter) {
-      if (quotesSelection[counter - 1].to < trimmedFormula.length)
-        intervalsToCheckForColumns.push([quotesSelection[counter - 1].to, trimmedFormula.length]);
+      if (quotesSelection[counter - 1].to < formula.length)
+        intervalsWithoutQuotes.push([quotesSelection[counter - 1].to, formula.length]);
     } else {
-      intervalsToCheckForColumns.push([0, trimmedFormula.length]);
+      intervalsWithoutQuotes.push([0, formula.length]);
     }
+
+    return {quotesSelection, intervalsWithoutQuotes};
+  }
+
+  getColumnNamesAndSelections(formula: string): ColumnNamesAndSelections {
+    //first check for parts in quotes and collect indexes outside quotes to check them for column names
+    const leadingSpaces = formula.length - formula.trimStart().length;
+    const closingSpaces = formula.length - formula.trimEnd().length;
+    let isSingleCol = false;
+    const columnSelections: {from: number, to: number}[] = [];
+    const columnNames: string[] = [];
+
+    const {quotesSelection, intervalsWithoutQuotes} = this.getIntervalsWithinAndOutsideQuotes(formula);
 
     const isOpeningBracket = (i: number): string => {
       let bracket = '';
-      if (i > 0 && trimmedFormula[i - 1] === '$')
-        bracket =  trimmedFormula[i] === '{' ? '{' : trimmedFormula[i] === '[' ? '[' : '';
+      if (i > 0 && formula[i - 1] === '$')
+        bracket =  formula[i] === '{' ? '{' : formula[i] === '[' ? '[' : '';
       return bracket;
     }
 
     const isClosingBracket = (i: number): boolean => {
-      return i > 0 && trimmedFormula[i - 1] !== '\\' && trimmedFormula[i] === closingBracket;
+      return i > 0 && formula[i - 1] !== '\\' && formula[i] === closingBracket;
     }
     const getClosingBracketSym = (sym: string) => {
       return sym === '{' ? '}' : sym === '[' ? ']' : '';
@@ -637,19 +645,19 @@ export class AddNewColumnDialog {
     let openingBracket = '';
     let openingBracketIdx: number | null = null;
     let closingBracket = '';
-    for (let i = 0; i < intervalsToCheckForColumns.length; i++) {
-      for (let j = intervalsToCheckForColumns[i][0]; j < intervalsToCheckForColumns[i][1]; j++) {
+    for (let i = 0; i < intervalsWithoutQuotes.length; i++) {
+      for (let j = intervalsWithoutQuotes[i][0]; j < intervalsWithoutQuotes[i][1]; j++) {
         const bracket = isOpeningBracket(j);
         if (!openingBracket && bracket) {
           openingBracket = bracket;
-          openingBracketIdx = j - 2; // 2 is ${
+          openingBracketIdx = j - 1;
           closingBracket = getClosingBracketSym(bracket);
           continue;
         }
         if (openingBracket && isClosingBracket(j)) {
-          columnSelections.push({from: openingBracketIdx! + 1, to: j + 1});
-          columnNames.push(trimmedFormula.substring(openingBracketIdx! + 3, j));
-          if (openingBracketIdx === -1 && j === trimmedFormula.length - 1)
+          columnSelections.push({from: openingBracketIdx!, to: j + 1});
+          columnNames.push(formula.substring(openingBracketIdx! + 2, j));
+          if (openingBracketIdx === 0 + leadingSpaces && j === formula.length - 1 - closingSpaces)
             isSingleCol = true;
           openingBracket = '';
           openingBracketIdx = null;
@@ -1191,11 +1199,9 @@ export class AddNewColumnDialog {
         return null;
 
       //check if word is inside quotes and if yes - do not show autocomplete
-      const beforeWord = context.state.doc.toString().substring(0, word.to)
-      const quoteSym = beforeWord.includes('\'') ? '\'' : beforeWord.includes('\"') ? '\"' : '';
-      if (quoteSym) {
-        const closingQuote = context.state.doc.toString().substring(word.to).includes(quoteSym);
-        if (closingQuote)
+      const {quotesSelection, intervalsWithoutQuotes} = this.getIntervalsWithinAndOutsideQuotes(context.state.doc.toString());
+      for (let i = 0; i < quotesSelection.length; i++) {
+        if (word.from >= quotesSelection[i].from && word.to <= quotesSelection[i].to)
           return null;
       }
 
