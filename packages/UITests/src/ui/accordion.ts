@@ -6,11 +6,14 @@ import {checkHTMLElement} from './utils';
 
 category('UI: Accordion', () => {
   let v: DG.View;
-  const acc = ui.accordion();
+  let acc: DG.Accordion ;
 
   before(async () => {
+    acc = ui.accordion()
     v = grok.shell.newView('');
-    acc.addPane('1',()=> ui.div(''))
+    v.append(acc.root);
+    acc.addPane('New pane',()=> ui.div(''))
+    acc.addPane('New pane3',()=> ui.div(''))
   });
 
   test('accordion.root', async () => {
@@ -18,7 +21,7 @@ category('UI: Accordion', () => {
   });
 
   test('accordion.addPane', async () => {
-    acc.addPane('New pane', () => ui.div(), false);
+    acc.addPane('New pane1', () => ui.div(), false);
     checkHTMLElement('accordion pane', acc.root, v, '.d4-accordion-pane');
   });
 
@@ -42,8 +45,9 @@ category('UI: Accordion', () => {
   });
 
   test('accordion.removePane', async () => {
-    acc.removePane(acc.panes[0]);
-    if (acc.getPane('New pane') != undefined)
+    debugger
+    acc.removePane(acc.getPane('New pane3'));
+    if (acc.getPane('New pane3') != undefined)
       throw new Error('getPane error');
   });
 
