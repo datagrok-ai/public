@@ -18,6 +18,7 @@ import {useUrlSearchParams} from '@vueuse/core';
 import {FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
+import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import { ScalarsPanel } from './ScalarsPanel';
 
 type PanelsState = {
@@ -90,6 +91,9 @@ export const RichFunctionView = Vue.defineComponent({
     },
     callState: {
       type: Object as Vue.PropType<FuncCallStateInfo>,
+    },
+    validationStates: {
+      type: Object as Vue.PropType<Record<string, ValidationResult>>,
     },
     isTreeLocked: {
       type: Boolean,
@@ -233,6 +237,9 @@ export const RichFunctionView = Vue.defineComponent({
     const isIncomplete = Vue.computed(() => props.callState?.isOutputOutdated);
     const isRunning = Vue.computed(() => props.callState?.isRunning);
     const isRunnable = Vue.computed(() => props.callState?.isRunnable);
+
+    const validationState = Vue.computed(() => props.validationStates);
+
     const currentFunc = Vue.computed(() => currentCall.value.func);
 
     const features = Vue.computed(() => Utils.getFeatures(currentFunc.value));
@@ -363,6 +370,7 @@ export const RichFunctionView = Vue.defineComponent({
                 {
                   Vue.withDirectives(<InputForm
                     funcCall={currentCall.value}
+                    validationStates={validationState.value}
                   />, [[ifOverlapping, isRunning.value, 'Recalculating...']])
                 }
                 <div class='flex sticky bottom-0 justify-end'>

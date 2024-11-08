@@ -336,6 +336,7 @@ export const TreeWizard = Vue.defineComponent({
                 class='overflow-hidden'
                 funcCall={chosenStepState.value.funcCall!}
                 callState={chosenStepUuid.value ? states.calls[chosenStepUuid.value] : undefined}
+                validationStates={states.validations[chosenStepState.value.uuid]}
                 isReadonly={chosenStepState.value.isReadonly}
                 isTreeLocked={treeMutationsLocked.value}
                 onUpdate:funcCall={(call) => (chosenStepState.value as StepFunCallState).funcCall = call}
