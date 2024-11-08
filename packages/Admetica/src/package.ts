@@ -5,7 +5,6 @@ import * as DG from 'datagrok-api/dg';
 import { getModelsSingle, performChemicalPropertyPredictions, addSparklines, runAdmetica, setProperties } from './utils/admetica-utils';
 import { properties } from './utils/admetica-utils';
 import { AdmeticaBaseEditor } from './utils/admetica-editor';
-import { _demoAdmetica } from './demo/demo-admetica';
 import { Model, Subgroup } from './utils/constants';
 import { AdmeticaViewApp } from './utils/admetica-app';
 
@@ -88,14 +87,6 @@ export async function admeticaMenu(
 ): Promise<void> {
   await performChemicalPropertyPredictions(molecules, table, models.join(','), template, addPiechart, addForm);
 }
-
-//name: Demo Admetica
-//meta.demoPath: Cheminformatics | Admetica
-//meta.demoSkip: GROK-16464
-export async function demoAdmetica(): Promise<void> {
-  await _demoAdmetica();
-}
-
 
 //name: admeProperty
 //input: string molecule {semType: Molecule}
