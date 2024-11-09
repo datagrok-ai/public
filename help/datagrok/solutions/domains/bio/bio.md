@@ -16,6 +16,7 @@ keywords:
   - activity cliffs
   - sequence space
   - manage monomer libraries
+  - monomer management
   - analyze docking results
 ---
 
@@ -302,13 +303,52 @@ To learn more about filtering, watch this [video](https://www.youtube.com/watch?
 
 ## Manage monomer libraries
 
-The default [HELM monomer library](https://github.com/datagrok-ai/public/blob/master/packages/Bio/files/monomer-libraries/HELMCoreLibrary.json) is pre-installed with the [Bio package](https://github.com/datagrok-ai/public/tree/master/packages/Bio). You can add your own monomer libraries using the dialog accessible from **Top Menu** > **Bio** > **Manage** > **Monomer Libraries**:
+Datagrok allows you to manage monomer libraries for any Macromolecule type (DNA, RNA, Peptide or custom). Monomer libraries are used to define the monomers, their properties and molecular structures that are
+used throughout the platform. They are crucial for functions like [To Atomic Level](#get-atomic-level-structure) conversion, sequence analysis, and other bioinformatics tasks, ensuring accurate representation and manipulation of macromolecules.
 
-![Monomer library file manager](./img/monomer-lib-file-manager.png "Monomer library file manager")
+The default [HELM monomer library](https://github.com/datagrok-ai/public/blob/master/packages/Bio/files/monomer-libraries/HELMCoreLibrary.json) is pre-installed with the [Bio package](https://github.com/datagrok-ai/public/tree/master/packages/Bio). You can add your own monomer libraries using the view accessible from **Top Menu** > **Bio** > **Manage** > **Monomer Libraries**:
 
-To include monomers from a library, click on a checkbox next to its name.
+![Monomer library file manager](./img/monomer-library-manager.png "Monomer library file manager")
+
+To include monomers from a library, click on a checkbox next to its name. Similarly, to exclude monomer library, uncheck the checkbox. The changes are applied immediately and reflected throughout the platform.
 
 To add a new monomer library file, click **ADD** button. All monomer library files are validated against the standard HELM [JSON schema](https://github.com/datagrok-ai/public/blob/master/packages/Bio/files/tests/libraries/HELMmonomerSchema.json) and must fully conform to it. The added files will be stored under `AppData/Bio/monomer-libraries` in [file shares](../../../../access/files/files.md#connecting-to-file-storage).
+
+You can also merge selected monomer libraries into a single file by clicking **MERGE** button. The merged file will be saved in the same location as the original files or can be downloaded.
+Not needed monomer libraries can be removed by clicking **Delete** icon next to their name.
+
+Some combinations of monomer libraries can contain conflicting monomer definitions (different structures/properties for same monomer symbol). In such cases, you will see duplicate monomer symbols, along with their structures and sources on the right side of the view. You can manually resolve these conflicts by selecting the correct monomer structure for the given symbol, and the choice will be immediately applied throughout the platform.
+
+![Duplicate monomer management](./img/manage-duplicate-monomers.gif "Duplicate monomer management")
+
+### Manage monomers
+
+Apart from being able to manage which monomer libraries are used, you can also manage and edit individual monomers within them. To do so, click on the **Edit** icon next to the monomer library name. You can also access monomer management through **Top Menu** > **Bio** > **Manage** > **Monomers**. This view allows you to view, add, edit and delete monomers within the selected monomer library.
+
+The view consists of two main parts: On the left side, you can see a molecular sketcher, where you can draw the structure of the monomer, along with the monomer properties editors such as name, symbol, natural analog, r-groups, colors and others. On the right side, you can see a list of all monomers in the library, along with their structures and properties. You can select a monomer from the list to edit its properties, or delete it from the library.
+
+![Monomer management](./img/manage-monomers-view.gif "Monomer management")
+
+<details>
+<summary>How to use</summary>
+
+* To remove a monomer from the library, right click on the monomer in the table, and select **Remove Monomer**. Alternatively, you can select the monomer and click the **Delete** icon on the top ribbon pannel. You can also remove multiple monomers at once by selecting them and clicking the **Delete** icon.
+
+![Remove monomers](./img/remove-monomers.gif "Remove monomers")
+
+* To add a new monomer to the library, click the **Add** icon on the top ribbon panel. This will create a blank monomer, for which you can draw molecular structure, fill in the properties and save it to the library.
+  * If the given symbol or molecular structure already exists in the library, you will be prompted about it.
+  * The molecular structure is requeired to have at least one R-group.
+  * Upon drawing the structure, monomer natural analogue will be automatically set to the most similar natural monomer (based on tanimoto similarity of corresponding Morgan fingerprints).
+
+![Add monomers](./img/add-new-monomer.gif "Add monomers")
+
+* You can also edit existing monomers, or use them as template for new ones. To do so, simply click on any monomer in the table, and its properties will be loaded into the editor. You can then modify the properties, and save the changes to the library. To find a monomer in the table, you can use standard datagrok filters, which enables you to search based on names, symbols, molecular substructure, similarity, and other properties.
+
+![Edit monomers](./img/edit-monomer.gif "Edit monomers")
+
+</details>
+
 
 ## Sequence analysis
 
