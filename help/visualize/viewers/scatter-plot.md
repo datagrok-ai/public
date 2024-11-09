@@ -83,8 +83,16 @@ in turn affects what you see on other viewers on this view. This behavior is con
 
 ### Selection
 
+Scatterplot highlights selected rows in yellow, and lets you select points as well:
+
+* To select area: Shift + mouse-drag
+* To unselect area: Ctrl + Shift + mouse-drag
+* To toggle point selection: Ctrl + click
+
 To switch between lasso and rectangular selection modes, press `L` or click `Lasso Tool` 
 from the context menu. 
+
+![](img/scatter-plot-selection.gif)
 
 ### Regression lines
 
@@ -126,7 +134,7 @@ In addition, a scatterplot itself can be used as a
 [group tooltip](../../datagrok/navigation/views/table-view.md#group-tooltips), which may be especially useful when 
 dealing with grouped or clustered data or when the screen space is limited.
 
-![Group Tooltip](../../uploads/viewers/viewer-group-tooltip.png "Group Tooltip")
+![Group Tooltip](img/group-tooltip.gif)
 
 To use this feature: 
 
