@@ -50,13 +50,6 @@ right-clicking.
 <img alt="Molecular structures rendering" src={require('./img/Axes.gif').default}
 width="800px"/>
 
-:::note developers
-
-To add a scatterplot from the **Console**, use
-`grok.shell.tv.addViewer('Scatterplot');`
-
-:::
-
 
 ### Data source
 
@@ -95,6 +88,10 @@ from the context menu.
 
 ### Regression lines
 
+To show a regression line, press `R` or check the "Show Regression Line" property
+on the context panel. To hide the equation, uncheck "Show Regression Line Equation".
+
+![](img/scatter-plot-regression-line.png)
 
 ### Formula lines
 
@@ -146,16 +143,12 @@ Below, we see the (gdp, life expectancy) trajectory of different countries over 
 
 ### WebGPU acceleration
 
-This feature allows to do highly optimized rendering and hit testing of the scatterplot markers when their number exceeds 50 000. It supports different marker colors, sizes and types and provides a smooth CPU fallback mechanism if some functionality is not supported by your system.
+WebGPU acceleration allows you to quickly render massive datasets (10 millions rows and more).
+To get the maximum performance, set **Zoom and Filter** property to "no action".
 
-<img alt="WebGPU 1m markers rendering" src={require('./img/webgpu-scatterplot.gif').default}
-width="800px"/>
- 
-To enable the feature select **Settings** > **Beta** > **Enable Scatter Plot Web GPU Acceleration**
+This feature is currently in beta. To enable it, check **Settings** > **Beta** > **Enable Scatter Plot Web GPU Acceleration**
 
-It is adviced to turn off the scatterplot **Zoom and Filter** option to levarage full GPU processing speed when you have more then million markers.
-
-![](img/scatter-plot-zoom-and-fliter.png)
+![](img/webgpu-scatterplot.gif)
 
 ## Videos
 
