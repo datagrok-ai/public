@@ -323,9 +323,9 @@ Some combinations of monomer libraries can contain conflicting monomer definitio
 
 ### Manage monomers
 
-Apart from being able to manage which monomer libraries are used, you can also manage and edit individual monomers within them. To do so, click on the **Edit** icon next to the monomer library name. You can also access monomer management through **Top Menu** > **Bio** > **Manage** > **Monomers**. This view allows you to view, add, edit and delete monomers within the selected monomer library.
+Apart from being able to manage which monomer libraries are used, you can also manage and edit individual monomers within them. To do so, click on the **Edit** icon next to the monomer library name. You can also access monomer management through **Top Menu** > **Bio** > **Manage** > **Monomers**. Monomer manager allows you to view, add, edit and delete monomers within the selected library.
 
-The view consists of two main parts: On the left side, you can see a molecular sketcher, where you can draw the structure of the monomer, along with the monomer properties editors such as name, symbol, natural analog, r-groups, colors and others. On the right side, you can see a list of all monomers in the library, along with their structures and properties. You can select a monomer from the list to edit its properties, or delete it from the library.
+The Monomer manager view consists of two main parts: On the left side, you can see a molecular sketcher, where you can draw the structure of the monomer, along with the monomer properties editors such as name, symbol, natural analog, r-groups, colors and others. On the right side, you can see a list of all monomers in the library, along with their structures and properties. You can select a monomer from the list to view or edit its properties, or delete it from the library.
 
 ![Monomer management](./img/manage-monomers-view.gif "Monomer management")
 
