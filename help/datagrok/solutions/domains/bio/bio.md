@@ -303,14 +303,14 @@ To learn more about filtering, watch this [video](https://www.youtube.com/watch?
 
 ## Manage monomer libraries
 
-Datagrok allows you to manage monomer libraries for any Macromolecule type (DNA, RNA, Peptide or custom). Monomer libraries are used to define the monomers, their properties and molecular structures that are
-used throughout the platform. They are crucial for functions like [To Atomic Level](#get-atomic-level-structure) conversion, sequence analysis, and other bioinformatics tasks, ensuring accurate representation and manipulation of macromolecules.
+Datagrok enables you to manage monomer libraries for various macromolecule types, including DNA, RNA, peptides, and custom structures. These libraries define the building blocks, or monomers, that compose polymers and store detailed metadata about each monomer, such as properties, labels, and molecular structures. This metadata supports flexible and accurate functionality across the platform, such as the [To Atomic Level](#get-atomic-level-structure) conversion, sequence analysis, and polymer enumeration in tools like PolyTool. By managing monomer libraries, users can select specific monomers for custom analyses and workflows, ensuring precise control over macromolecule representation and manipulation.
+
 
 The default [HELM monomer library](https://github.com/datagrok-ai/public/blob/master/packages/Bio/files/monomer-libraries/HELMCoreLibrary.json) is pre-installed with the [Bio package](https://github.com/datagrok-ai/public/tree/master/packages/Bio). You can add your own monomer libraries using the view accessible from **Top Menu** > **Bio** > **Manage** > **Monomer Libraries**:
 
 ![Monomer library file manager](./img/monomer-library-manager.png "Monomer library file manager")
 
-To include monomers from a library, click on a checkbox next to its name. Similarly, to exclude monomer library, uncheck the checkbox. The changes are applied immediately and reflected throughout the platform.
+To make the monomers from a library available throughout Datagrok, select the checkbox next to the library name. Similarly, to exclude monomer library, uncheck the checkbox. The changes are applied immediately and reflected throughout the platform.
 
 To add a new monomer library file, click **ADD** button. All monomer library files are validated against the standard HELM [JSON schema](https://github.com/datagrok-ai/public/blob/master/packages/Bio/files/tests/libraries/HELMmonomerSchema.json) and must fully conform to it. The added files will be stored under `AppData/Bio/monomer-libraries` in [file shares](../../../../access/files/files.md#connecting-to-file-storage).
 
