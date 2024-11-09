@@ -3,20 +3,12 @@ title: "Scatterplot"
 format: mdx
 ---
 
-A scatterplot displays data points on the horizontal (X) and vertical (Y) axes
+A scatterplot displays data points on the X and Y axes
 to show the relationship between two variables. By using marker color, shape,
-and size, you can show up to three additional data dimensions. Use the
-scatterplot to explore patterns and relationships between variables in your
-data.
+and size, you can show up to three additional data dimensions. 
 
 A scatterplot is a [chemically-aware viewer](../../datagrok/solutions/domains/chem/chemically-aware-viewers#scatter-plot)
  and can be used to explore a chemical space.
-
-:::tip
-
-To show the relationship between three variables, use a [3D Scatterplot](3d-scatter-plot.md).
-
-::: 
 
 ## Controls
 
@@ -107,10 +99,8 @@ A scatterplot can show reference lines that represent formulas or equations.
 These lines are used to emphasize specific areas on the chart or data. Common
 examples include a regression line, value bands, and so on.
 
-To toggle a regression line, press the **R** key.
-
-To show a custom formula line, right-click a scatterplot, then choose **Tools**
-> **Formula Lines...** This action opens a **Formula Lines** dialog. Here, enter
+To show a custom formula line, right-click a scatterplot, then choose **Tools** > **Formula Lines...** 
+This action opens a **Formula Lines** dialog. Here, enter
 your formula and configure the line settings. Your formula should refer to the
 columns on the **X** and **Y** axes. The syntax for the formula is similar to
 that used to [Add New Column](../../transform/add-new-column.md).
@@ -134,13 +124,10 @@ In addition, a scatterplot itself can be used as a
 [group tooltip](../../datagrok/navigation/views/table-view.md#group-tooltips), which may be especially useful when 
 dealing with grouped or clustered data or when the screen space is limited.
 
+To make scatterplot appear in a tooltip when you hover over a row group, 
+right-click on the scatterplot and select **Tooltip** > **Use as Group Tooltip**. 
+
 ![Group Tooltip](img/group-tooltip.gif)
-
-To use this feature: 
-
-1. Add and configure a scatterplot.
-1. From the context menu, select **Tooltip** > **Use as Group Tooltip**.
-1. Optional. Close the scatterplot.
 
 ### Connecting lines
 
@@ -148,6 +135,14 @@ You can set a column that defines order in which points are connected.
 Below, we see the (gdp, life expectancy) trajectory of different countries over time.
 
 ![](img/scatter-plot-lines.png)
+
+### Cheminformatics
+
+Scatterplot supports custom value renderers, and in particular it's very useful for
+visualizing high-dimensional chemical data. If you choose to do so, molecules could 
+be rendered on axes, as labels, or on tooltips.
+
+![](../../uploads/viewers/scatter-plot-molecules.png)
 
 ### WebGPU acceleration
 
@@ -165,8 +160,8 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 
 See also:
 
+* [3D Scatterplot](3d-scatter-plot.md)
 * [Column selectors](column-selectors.md)
 * [Viewers](viewers.md)
 * [Table view](../../datagrok/navigation/views/table-view.md)
-* [JS API:
-  Scatterplot](https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot)
+* [JS API: Scatterplot](https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot)
