@@ -24,14 +24,13 @@ See also:
 
 # 2024-10-22 Datagrok 1.22.0 release 
 
-The Datagrok 1.22.0 release enhances platform stability and delivers key functionality and optimizations to support users in maintaining an efficient and responsive platform experience.
+The Datagrok 1.22.0 release includes stability improvements, key optimizations, and new features for a more efficient and responsive platform
 
 ## Main updates
 
-* **Automated data cleanup**: The platform now automatically removes temporary files and obsolete data to optimize storage space and improve system performance
-* **Pyodide integration**: Integrated Pyodide as a supported language, with improved support for all Datagrok data types
-* **Dedicated package database**: Packages now can define a dedicated database, that allows persistent storage of package-related data
-* **Plugin management improvements**: Streamlined plugin uninstall and delete processes
+* **Automated data cleanup** keeps the server lean by deleting old data and logs (could be configured)
+* **Pyodide**: you can now run Python functions, including data transformation steps, directly in the browser
+* **Plugin databases**: you can now ship a Postgres database (such as chemical registration system) with your plugin
 
 ## Platform
 
@@ -80,8 +79,10 @@ The Datagrok 1.22.0 release enhances platform stability and delivers key functio
 * Added color coding via expressions to enhance data visualization capabilities
     
 ## Packages
+* Plugin management improvements: Streamlined plugin uninstall and delete processes
 * Added functionality to reset the *touchedOn* flag when selecting a package's current version
 * Ability to auto update deprecated packages
+
 
 ### [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts/CHANGELOG.md)
 * [#3090](https://github.com/datagrok-ai/public/issues/3090): Sunburst usability improvements 
