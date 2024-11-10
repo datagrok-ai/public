@@ -7,9 +7,10 @@ A scatterplot displays data points on the X and Y axes
 to show the relationship between two variables. By using marker color, shape,
 and size, you can show up to three additional data dimensions. 
 
-A scatterplot is a [chemically-aware viewer](../../datagrok/solutions/domains/chem/chemically-aware-viewers#scatter-plot)
- and can be used to explore a chemical space.
-
+A scatterplot is a [chemically-aware viewer](../../datagrok/solutions/domains/chem/chemically-aware-viewers#scatter-plot) and is a great choice to visualize 
+[chemical space](../../datagrok/solutions/domains/chem/chem.md#chemical-space) or 
+[activity cliffs](../../datagrok/solutions/domains/chem/chem.md#activity-cliffs).
+ 
 ## Controls
 
 |                        |                                           |
@@ -73,6 +74,8 @@ in turn affects what you see on other viewers on this view. This behavior is con
   are shown on an axis and some categories are completely filtered out, these categories get removed
   (packed) from the axis. Useful when visualizing data that has a large number of categories.
 
+![](img/scatter-plot-zoom-and-pack.gif)
+
 ### Selection
 
 Scatterplot highlights selected rows in yellow, and lets you select points as well:
@@ -83,6 +86,7 @@ Scatterplot highlights selected rows in yellow, and lets you select points as we
 
 To switch between lasso and rectangular selection modes, press `L` or click `Lasso Tool` 
 from the context menu. 
+
 
 ![](img/scatter-plot-selection.gif)
 
@@ -129,6 +133,21 @@ right-click on the scatterplot and select **Tooltip** > **Use as Group Tooltip**
 
 ![Group Tooltip](img/group-tooltip.gif)
 
+### Labels
+
+To show values next to the markers, set the **Labels** settings either from context menu or from
+the properties panel:
+* To select columns to show, expand **Label Form** and check or drag-and-drop columns
+* To select a subset of rows to show, use **Show Labels For**
+  * You can drag-and-drop labels to exact positions in the **Selected** or **Current** modes   
+* **Use Label as Marker** renders centered label instead of the marker. This is 
+  particularly useful for zooming in on molecular datasets (points become molecules).
+* Check **Show Column Names** to show column names next to the values 
+
+To quickly adjust settings for labels, right-click on the label.
+
+![](img/scatter-plot-labels.gif)
+
 ### Connecting lines
 
 You can set a column that defines order in which points are connected. 
@@ -141,6 +160,7 @@ Below, we see the (gdp, life expectancy) trajectory of different countries over 
 Scatterplot supports custom value renderers, and in particular it's very useful for
 visualizing high-dimensional chemical data. If you choose to do so, molecules could 
 be rendered on axes, as labels, or on tooltips.
+To learn more, check out [cheminformatics](../../datagrok/solutions/domains/chem/chem.md).
 
 ![](../../uploads/viewers/scatter-plot-molecules.png)
 
