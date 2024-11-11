@@ -38,6 +38,10 @@ export const TreeWizard = Vue.defineComponent({
     const config = useObservable(driver.currentConfig$);
     const links = useObservable(driver.currentLinks$);
 
+    const runAction = (actionUuid: string) => {
+      driver.sendCommand({ event: 'runAction', uuid: actionUuid})
+    }
+
     const chosenStepUuid = Vue.ref<string | undefined>(undefined);
 
     const searchParams = useUrlSearchParams('history');
@@ -343,6 +347,7 @@ export const TreeWizard = Vue.defineComponent({
                 isTreeLocked={treeMutationsLocked.value}
                 onUpdate:funcCall={(call) => (chosenStepState.value as StepFunCallState).funcCall = call}
                 onRunClicked={() => runStep(chosenStepState.value!.uuid)}
+                onActionRequested={runAction}
                 dock-spawn-title='Step review'
                 ref={rfvRef}
               />

@@ -20,18 +20,6 @@ declare global {
   }
 }
 
-const convertNewValidationToOld = (newResult: ValidationResult): ValidationResultBase => {
-  const convert = (error: Advice) => ({
-    description: error.description,
-    actions: error.actions?.map((actionItem) => ({actionName: actionItem.actionName, action: () => {}})),
-  });
-  return {
-    errors: newResult.errors?.map(convert),
-    warnings: newResult.warnings?.map(convert),
-    notifications: newResult.notifications?.map(convert),
-  };
-};
-
 export const InputForm = Vue.defineComponent({
   name: 'InputForm',
   props: {
@@ -45,10 +33,25 @@ export const InputForm = Vue.defineComponent({
   },
   emits: {
     formReplaced: (a: DG.InputForm | undefined) => a,
+    actionRequested: (actionUuid: string) => actionUuid,
   },
   setup(props, {emit}) {
     const currentCall = Vue.computed(() => props.funcCall);
     const validationStates = Vue.computed(() => props.validationStates);
+
+    const convertNewValidationToOld = (newResult: ValidationResult): ValidationResultBase => {
+      const convert = (error: Advice) => ({
+        description: error.description,
+        actions: error.actions?.map((actionItem) => ({actionName: actionItem.actionName, action: () => {
+          emit('actionRequested', actionItem.action);
+        }})),
+      });
+      return {
+        errors: newResult.errors?.map(convert),
+        warnings: newResult.warnings?.map(convert),
+        notifications: newResult.notifications?.map(convert),
+      };
+    };
 
     let currentForm = undefined as undefined | DG.InputForm;
 
