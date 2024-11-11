@@ -82,38 +82,6 @@ export class AutoDockService implements IAutoDockService {
     this.dcName = `${_package.name.toLowerCase()}-autodock`;
   }
 
-  async startDockerContainer(timeout: number = 30000): Promise<void> {
-    // TODO: Use the new dockerContainers API
-    const res = await grok.dapi.docker.dockerContainers.run(this.dc.id /*, true */);
-    let end: boolean = false;
-    for (let i = 0; i < timeout / 200; ++i) {
-      this.dc = await grok.dapi.docker.dockerContainers.find(this.dc.id);
-      switch (this.dc.status) {
-        case 'stopped': {
-          await grok.dapi.docker.dockerContainers.run(this.dc.id);
-          break;
-        }
-        case 'pending change':
-        case 'changing': {
-          // skip to wait
-          break;
-        }
-        case 'checking':
-        case 'started': {
-          end = true;
-          break;
-        }
-        case 'error': {
-          throw new Error('Docker container error state.');
-        }
-      }
-      if (end) break;
-      await delay(200);
-    }
-    if (!end) throw new Error('Docker container run timeout.');
-    this.dc = await grok.dapi.docker.dockerContainers.find(this.dc.id);
-  }
-
   async init(): Promise<void> {
     [this.dc, this.ph] = await Promise.all([
       // returns docker container with status not actual soon
@@ -239,7 +207,7 @@ export class AutoDockService implements IAutoDockService {
       if (posesAllDf === undefined) {
         posesAllDf = posesDf;
       } else {
-        posesAllDf.append(posesAllDf, true);
+        posesAllDf.append(posesDf!, true);
       }
     }
 

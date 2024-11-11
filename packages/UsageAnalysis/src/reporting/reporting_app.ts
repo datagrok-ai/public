@@ -74,6 +74,8 @@ export class ReportingApp {
   refresh(table: DG.DataFrame, grid: DG.Grid) {
     if (table.rowCount > 0 && !this.isInit) {
       grid.sort(['is_resolved', 'last_occurrence', 'errors_count'], [true, false, false]);
+      for (const col of table.columns)
+        col.setTag('.show-prop-panels', 'false');
       table.getCol('number').setTag('friendlyName', '#');
       table.getCol('errors_count').setTag('friendlyName', 'errors');
       table.getCol('last_occurrence').setTag('friendlyName', 'last');
@@ -105,60 +107,55 @@ export class ReportingApp {
           gc.style.element = ui.tooltip.bind(link, () => 'Link to JIRA ticket');
         }
       });
-      const isAcknowledged = table.getCol('is_resolved');
-      grid.onCellRender.subscribe((gc) => {
-        if (isAcknowledged.get(gc.cell.tableRowIndex ?? gc.cell.gridRow))
-          gc.cell.style.textColor = 0xFFB8BAC0;
-      });
-
-
-      rx.zip(grid.onCellClick, table.onCurrentRowChanged).pipe(delay(100))
-          .subscribe(async (_) => await this.showPropertyPanel(table));
-
-
-      // grid.onCellClick.subscribe((_) => setTimeout(async () => await this.showPropertyPanel(table), 200));
-
-      // table.onCurrentRowChanged.subscribe(async (_) => await this.showPropertyPanel(table));
       table.getCol('labels').meta.multiValueSeparator = ',';
-      table.onValuesChanged.subscribe(async () => {
-        grid.sort(['is_resolved', 'last_occurrence', 'errors_count'], [true, false, false]);
-        // this._scroll(grid);
-      });
-      grok.events.onEvent('d4-report-changed').subscribe((r: DG.UserReport) => {
-        const idCol = table.getCol('id');
-        const length = idCol.length;
-        for (let i = 0; i < length; i++) {
-          if (idCol.get(i) === r.id) {
-            table.cell(i, 'is_resolved').value = r.isResolved;
-            table.cell(i, 'jira').value = r.jiraTicket;
-            table.cell(i, 'assignee').value = r.assignee?.friendlyName;
+      this.view!.subs.push(
+          grid.onCellRender.subscribe((gc) => {
+            const isAcknowledged = table.getCol('is_resolved');
+            if (isAcknowledged.get(gc.cell.tableRowIndex ?? gc.cell.gridRow))
+              gc.cell.style.textColor = 0xFFB8BAC0;
+          }),
+          rx.zip(grid.onCellClick, table.onCurrentRowChanged).pipe(delay(100))
+              .subscribe(async (_) => await this.showPropertyPanel(table)),
+          table.onValuesChanged.subscribe(async () => {
+            if (grid.dataFrame)
+              grid.sort(['is_resolved', 'last_occurrence', 'errors_count'], [true, false, false]);
+            // this._scroll(grid);
+          }),
+          grok.events.onEvent('d4-report-changed').subscribe((r: DG.UserReport) => {
+            const idCol = table.getCol('id');
+            const length = idCol.length;
+            for (let i = 0; i < length; i++) {
+              if (idCol.get(i) === r.id) {
+                table.cell(i, 'is_resolved').value = r.isResolved;
+                table.cell(i, 'jira').value = r.jiraTicket;
+                table.cell(i, 'assignee').value = r.assignee?.friendlyName;
+                table.fireValuesChanged();
+              }
+            }
+          }),
+          grok.events.onEvent('d4-report-deleted').subscribe((id: string) => {
+            table.rows.removeWhere((r) => r.get('id') === id);
+            if (table.rowCount > 0) {
+              table.currentRowIdx = 0;
+            }
+          }),
+          grok.events.onEvent('d4-report-batch-changed').subscribe((data: {[_:string]: any}) => {
+            const affectedIds = new Set(data['affected']);
+            const fields = data['fields'];
+            const idCol = table.getCol('id');
+            const length = idCol.length;
+            for (let i = 0; i < length; i++) {
+              if (affectedIds.has(idCol.get(i))) {
+                table.cell(i, 'is_resolved').value = fields['is_resolved'];
+                table.cell(i, 'assignee').value = fields['assignee'];
+                if (fields['label'])
+                  table.cell(i, 'labels').value =  `${table.cell(i, 'labels').value},${fields['label']}`;
+              }
+            }
             table.fireValuesChanged();
-          }
-        }
-      });
+          })
+      );
 
-      grok.events.onEvent('d4-report-deleted').subscribe((id: string) => {
-        table.rows.removeWhere((r) => r.get('id') === id);
-        if (table.rowCount > 0) {
-          table.currentRowIdx = 0;
-        }
-      });
-
-      grok.events.onEvent('d4-report-batch-changed').subscribe((data: {[_:string]: any}) => {
-        const affectedIds = new Set(data['affected']);
-        const fields = data['fields'];
-        const idCol = table.getCol('id');
-        const length = idCol.length;
-        for (let i = 0; i < length; i++) {
-          if (affectedIds.has(idCol.get(i))) {
-            table.cell(i, 'is_resolved').value = fields['is_resolved'];
-            table.cell(i, 'assignee').value = fields['assignee'];
-            if (fields['label'])
-              table.cell(i, 'labels').value =  `${table.cell(i, 'labels').value},${fields['label']}`;
-          }
-        }
-        table.fireValuesChanged();
-      });
       this.refreshFilter(table);
       this.isInit = true;
       if (table.currentRowIdx === -1) {

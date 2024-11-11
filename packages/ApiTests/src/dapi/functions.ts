@@ -3,8 +3,6 @@ import * as DG from 'datagrok-api/dg';
 
 import { category, test, expect, expectTable } from '@datagrok-libraries/utils/src/test';
 
-const GDF = grok.dapi.functions;
-
 category('Dapi: functions calls', async () => {
   const xValue = 1.5;
 
@@ -20,7 +18,7 @@ category('Dapi: functions calls', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');
     const funcCall = await func.prepare({ x: xValue }).call();
     funcCall.newId();
-    const savedFuncCall = await GDF.calls.save(funcCall);
+    const savedFuncCall = await grok.dapi.functions.calls.save(funcCall);
     expect(savedFuncCall.inputs['x'], funcCall.inputs['x']);
   }, {stressTest: true});
 
@@ -28,7 +26,7 @@ category('Dapi: functions calls', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');
     const funcCall = await func.prepare({ x: xValue }).call();
     funcCall.newId();
-    const savedFuncCall = await GDF.calls.include('session.user').save(funcCall);
+    const savedFuncCall = await grok.dapi.functions.calls.include('session.user').save(funcCall);
     expect(savedFuncCall.author, grok.shell.user);
   }, { skipReason: 'GROK-15119' });
 
@@ -40,8 +38,8 @@ category('Dapi: functions calls', async () => {
     const funcCall = await funcWithDf.prepare({'table': inputTable}).call();
     await grok.dapi.tables.uploadDataFrame(funcCall.outputs['tableOut']); // save output df separately
 
-    const savedFuncCall = await GDF.calls.save(funcCall); // save call after that
-    const loadedFuncCall = await GDF.calls.find(savedFuncCall.id);
+    const savedFuncCall = await grok.dapi.functions.calls.save(funcCall); // save call after that
+    const loadedFuncCall = await grok.dapi.functions.calls.find(savedFuncCall.id);
 
     const loadedInputTableId = loadedFuncCall.inputs['table'];
     const loadedOutputTableId = loadedFuncCall.outputs['tableOut'];
@@ -69,7 +67,7 @@ category('Dapi: functions calls', async () => {
     const funcCall = await func.prepare({ x: xValue }).call();
     funcCall.newId();
     funcCall.options['testName'] = 'testValue';
-    const savedFuncCall = await GDF.calls.save(funcCall);
+    const savedFuncCall = await grok.dapi.functions.calls.save(funcCall);
     expect(savedFuncCall.options['testName'], 'testValue');
   }, {stressTest: true});
 
@@ -81,10 +79,10 @@ category('Dapi: functions calls', async () => {
     parentFuncCall.newId();
     funcCall.newId();
     funcCall.parentCall = parentFuncCall;
-    await GDF.calls.save(parentFuncCall);
-    await GDF.calls.save(funcCall);
+    await grok.dapi.functions.calls.save(parentFuncCall);
+    await grok.dapi.functions.calls.save(funcCall);
 
-    const loadedFunCall = await GDF.calls.include('parentCall').find(funcCall.id);
+    const loadedFunCall = await grok.dapi.functions.calls.include('parentCall').find(funcCall.id);
     expect(loadedFunCall.parentCall.id, parentFuncCall.id);
   }, { skipReason: 'GROK-14488' });
 
@@ -92,29 +90,29 @@ category('Dapi: functions calls', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
     const funcCall = await packFunc.prepare({ a: 1, b: 2 }).call();
     funcCall.newId();
-    await GDF.calls.save(funcCall);
+    await grok.dapi.functions.calls.save(funcCall);
 
     // expect no-throw
-    await GDF.calls.find(funcCall.id);
+    await grok.dapi.functions.calls.find(funcCall.id);
   });
 
   test('load script call', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
     const funcCall = await packFunc.prepare({ a: 1, b: 2 }).call();
     funcCall.newId();
-    await GDF.calls.save(funcCall);
+    await grok.dapi.functions.calls.save(funcCall);
 
     // expect no-throw
-    await GDF.calls.find(funcCall.id);
+    await grok.dapi.functions.calls.find(funcCall.id);
   });
 
   test('load script call author', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
     const funcCall = await packFunc.prepare({ a: 1, b: 2 }).call();
     funcCall.newId();
-    await GDF.calls.save(funcCall);
+    await grok.dapi.functions.calls.save(funcCall);
 
-    const loadedCall = await GDF.calls.include('session.user').find(funcCall.id);
+    const loadedCall = await grok.dapi.functions.calls.include('session.user').find(funcCall.id);
     expect(loadedCall.author.id, grok.shell.user.id);
   });
 
@@ -122,9 +120,9 @@ category('Dapi: functions calls', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
     const funcCall = await packFunc.prepare({ a: 1, b: 2 }).call();
     funcCall.newId();
-    await GDF.calls.save(funcCall);
+    await grok.dapi.functions.calls.save(funcCall);
 
-    const loadedCall = await GDF.calls.include('session.user').find(funcCall.id);
+    const loadedCall = await grok.dapi.functions.calls.include('session.user').find(funcCall.id);
     expect(loadedCall.author.id, grok.shell.user.id);
   });
 
@@ -132,8 +130,8 @@ category('Dapi: functions calls', async () => {
     const packFunc = await grok.functions.eval('ApiTests:dummyPackageFunction');
     const funcCall = await packFunc.prepare({ a: 1, b: 2 }).call();
     funcCall.newId();
-    await GDF.calls.save(funcCall);
-    const loadedCall = await GDF.calls.include('func.package').find(funcCall.id);
+    await grok.dapi.functions.calls.save(funcCall);
+    const loadedCall = await grok.dapi.functions.calls.include('func.package').find(funcCall.id);
     expect(loadedCall.func.package.name, 'ApiTests');
   }, { skipReason: 'GROK-15174' });
 
@@ -141,8 +139,8 @@ category('Dapi: functions calls', async () => {
     const packFunc = await grok.functions.eval('ApiTests:dummyPackageScript');
     const funcCall = await packFunc.prepare({ a: 1, b: 2 }).call();
     funcCall.newId();
-    await GDF.calls.save(funcCall);
-    const loadedCall = await GDF.calls.include('func.package').find(funcCall.id);
+    await grok.dapi.functions.calls.save(funcCall);
+    const loadedCall = await grok.dapi.functions.calls.include('func.package').find(funcCall.id);
     expect(loadedCall.func.package.name, 'ApiTests');
   }, { skipReason: 'GROK-15174' });
 
@@ -150,9 +148,9 @@ category('Dapi: functions calls', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
     const funcCall = await packFunc.prepare({ a: 1, b: 2 }).call();
     funcCall.newId();
-    await GDF.calls.save(funcCall);
+    await grok.dapi.functions.calls.save(funcCall);
 
-    const loadedCall = await GDF.calls.find(funcCall.id);
+    const loadedCall = await grok.dapi.functions.calls.find(funcCall.id);
     expect(loadedCall.inputs['a'], 1);
     expect(loadedCall.inputs['b'], 2);
     expect(loadedCall.outputs['c'], 3);
@@ -162,9 +160,9 @@ category('Dapi: functions calls', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
     const funcCall = await packFunc.prepare({ a: 1, b: 2 }).call();
     funcCall.newId();
-    await GDF.calls.save(funcCall);
+    await grok.dapi.functions.calls.save(funcCall);
 
-    const loadedCall = await GDF.calls.find(funcCall.id);
+    const loadedCall = await grok.dapi.functions.calls.find(funcCall.id);
     expect(loadedCall.inputs['a'], 1);
     expect(loadedCall.inputs['b'], 2);
     expect(loadedCall.outputs['c'], 3);
@@ -174,8 +172,8 @@ category('Dapi: functions calls', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
     const funcCall = await packFunc.prepare({ a: 1, b: 2 }).call();
     funcCall.newId();
-    await GDF.calls.save(funcCall);
-    const loadedWithFunc = await GDF.calls.include('func').find(funcCall.id);
+    await grok.dapi.functions.calls.save(funcCall);
+    const loadedWithFunc = await grok.dapi.functions.calls.include('func').find(funcCall.id);
 
     expect(loadedWithFunc.func.nqName, 'ApiTests:dummyPackageFunction');
   });
@@ -184,8 +182,8 @@ category('Dapi: functions calls', async () => {
     const scriptFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
     const funcCall = await scriptFunc.prepare({ a: 1, b: 2 }).call();
     funcCall.newId();
-    await GDF.calls.save(funcCall);
-    const loadedWithFunc = await GDF.calls.include('func').find(funcCall.id);
+    await grok.dapi.functions.calls.save(funcCall);
+    const loadedWithFunc = await grok.dapi.functions.calls.include('func').find(funcCall.id);
 
     expect(loadedWithFunc.func.nqName, 'ApiTests:DummyPackageScript');
   });
@@ -194,8 +192,8 @@ category('Dapi: functions calls', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
     const funcCall = await packFunc.prepare({ a: 1, b: 2 }).call();
     funcCall.newId();
-    await GDF.calls.save(funcCall);
-    const loadedWithFuncs = await GDF.calls
+    await grok.dapi.functions.calls.save(funcCall);
+    const loadedWithFuncs = await grok.dapi.functions.calls
       .filter(`func.name="dummyPackageFunction"`)
       .include('func')
       .list({ pageSize: 10 });
@@ -207,8 +205,8 @@ category('Dapi: functions calls', async () => {
     const scriptFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
     const funcCall = await scriptFunc.prepare({ a: 1, b: 2 }).call();
     funcCall.newId();
-    await GDF.calls.save(funcCall);
-    const loadedWithFuncs = await GDF.calls
+    await grok.dapi.functions.calls.save(funcCall);
+    const loadedWithFuncs = await grok.dapi.functions.calls
       .filter(`func.name="dummyPackageScript"`)
       .include('func')
       .list({ pageSize: 10 });
@@ -220,8 +218,8 @@ category('Dapi: functions calls', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');
     const funcCall = await func.prepare({ x: xValue }).call();
     funcCall.newId();
-    await GDF.calls.save(funcCall);
-    const loadedFuncCalls = await GDF.calls.filter(`id="${funcCall.id}"`).list({ pageSize: 5 });
+    await grok.dapi.functions.calls.save(funcCall);
+    const loadedFuncCalls = await grok.dapi.functions.calls.filter(`id="${funcCall.id}"`).list({ pageSize: 5 });
     expect(loadedFuncCalls.some((loadedCall) => loadedCall.id === funcCall.id), true);
   });
 
@@ -229,10 +227,10 @@ category('Dapi: functions calls', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
     const funcCall = await packFunc.prepare({ a: 1, b: 2 }).call();
     funcCall.newId();
-    await GDF.calls.save(funcCall);
+    await grok.dapi.functions.calls.save(funcCall);
 
     const loadedCalls =
-      await GDF.calls.filter(`session.user.id="${grok.shell.user.id}"`).include('session.user').first();
+      await grok.dapi.functions.calls.filter(`session.user.id="${grok.shell.user.id}"`).include('session.user').first();
     expect(loadedCalls.author.id, grok.shell.user.id);
   });
 
@@ -240,10 +238,10 @@ category('Dapi: functions calls', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
     const funcCall = await packFunc.prepare({ a: 1, b: 2 }).call();
     funcCall.newId();
-    await GDF.calls.save(funcCall);
+    await grok.dapi.functions.calls.save(funcCall);
 
     const loadedCalls =
-      await GDF.calls.filter(`session.user.id="${grok.shell.user.id}"`).include('session.user, func.params').first();
+      await grok.dapi.functions.calls.filter(`session.user.id="${grok.shell.user.id}"`).include('session.user, func.params').first();
     expect(loadedCalls.inputs[0].name, 'a');
   }, { skipReason: 'GROK-14735' });
 
@@ -251,10 +249,10 @@ category('Dapi: functions calls', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
     const funcCall = await packFunc.prepare({ a: 1, b: 2 }).call();
     funcCall.newId();
-    await GDF.calls.save(funcCall);
+    await grok.dapi.functions.calls.save(funcCall);
 
     const loadedCalls =
-      await GDF.calls.filter(`session.user.id="${grok.shell.user.id}"`).include('session.user').first();
+      await grok.dapi.functions.calls.filter(`session.user.id="${grok.shell.user.id}"`).include('session.user').first();
     expect(loadedCalls.author.id, grok.shell.user.id);
   });
 
@@ -262,10 +260,10 @@ category('Dapi: functions calls', async () => {
     const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
     const funcCall = await packFunc.prepare({ a: 1, b: 2 }).call();
     funcCall.newId();
-    await GDF.calls.save(funcCall);
+    await grok.dapi.functions.calls.save(funcCall);
 
     const loadedCalls =
-      await GDF.calls.filter(`session.user.id="${grok.shell.user.id}"`).include('session.user, func.params').first();
+      await grok.dapi.functions.calls.filter(`session.user.id="${grok.shell.user.id}"`).include('session.user, func.params').first();
     expect(loadedCalls.inputs[0].name, 'a');
   }, { skipReason: 'GROK-14735' });
 
@@ -303,8 +301,8 @@ category('Dapi: functions calls', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');
     const funcCall = await func.prepare({ x: xValue }).call();
     funcCall.newId();
-    await GDF.calls.save(funcCall);
-    const loadedFuncCall = await GDF.calls.find(funcCall.id);
+    await grok.dapi.functions.calls.save(funcCall);
+    const loadedFuncCall = await grok.dapi.functions.calls.find(funcCall.id);
     expect(loadedFuncCall.inputs['x'], xValue);
   });
 
@@ -313,8 +311,8 @@ category('Dapi: functions calls', async () => {
     const funcCall = await func.prepare({ x: xValue }).call();
     funcCall.newId();
     funcCall.options['testName'] = 'testValue';
-    await GDF.calls.save(funcCall);
-    const loadedFuncCall = await GDF.calls.include('options').find(funcCall.id);
+    await grok.dapi.functions.calls.save(funcCall);
+    const loadedFuncCall = await grok.dapi.functions.calls.include('options').find(funcCall.id);
     expect(loadedFuncCall.options['testName'], 'testValue');
   });
 
@@ -322,8 +320,8 @@ category('Dapi: functions calls', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');
     const funcCall = await func.prepare({ x: xValue }).call();
     funcCall.newId();
-    await GDF.calls.save(funcCall);
-    const loadedFuncCall = await GDF.calls.include('func.params').find(funcCall.id);
+    await grok.dapi.functions.calls.save(funcCall);
+    const loadedFuncCall = await grok.dapi.functions.calls.include('func.params').find(funcCall.id);
     expect(loadedFuncCall.func.inputs[0].name, 'x');
   }, { skipReason: 'GROK-14735' });
 
@@ -331,10 +329,10 @@ category('Dapi: functions calls', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');
     const funcCall = await func.prepare({ x: xValue }).call();
     funcCall.newId();
-    await GDF.calls.save(funcCall);
-    expect(await GDF.calls.find(funcCall.id) !== undefined, true, 'funcCall was not saved');
-    await GDF.calls.delete(funcCall);
-    expect(await GDF.calls.find(funcCall.id) === undefined, true, 'funcCall was not deleted');
+    await grok.dapi.functions.calls.save(funcCall);
+    expect(await grok.dapi.functions.calls.find(funcCall.id) !== undefined, true, 'funcCall was not saved');
+    await grok.dapi.functions.calls.delete(funcCall);
+    expect(await grok.dapi.functions.calls.find(funcCall.id) === undefined, true, 'funcCall was not deleted');
   });
 });
 
@@ -348,25 +346,45 @@ category('Dapi: functions', async () => {
 
   test('Load package function with package', async () => {
     const func = await grok.functions.eval('ApiTests:dummyPackageFunction');
-    const loadedFunc = await GDF.include('package').find(func!.id);
+    const loadedFunc = await grok.dapi.functions.include('package').find(func!.id);
 
     expect(loadedFunc.package.name, 'ApiTests');
   });
 
   test('Load script function with package', async () => {
     const func = await grok.functions.eval('ApiTests:dummyPackageScript');
-    const loadedFunc = await GDF.include('package').find(func!.id);
+    const loadedFunc = await grok.dapi.functions.include('package').find(func!.id);
 
     expect(loadedFunc.package.name, 'ApiTests');
   });
 
   test('Filter functions by nqName (script)', async () => {
-    const loadedFuncCalls = await GDF.filter(`nqName="ApiTests:dummyPackageFunction"`).list({pageSize: 5});
+    const loadedFuncCalls = await grok.dapi.functions.filter(`nqName="ApiTests:dummyPackageFunction"`).list({pageSize: 5});
     expect(loadedFuncCalls.length, 1);
   }, { skipReason: 'GROK-15175' });
 
   test('Filter functions by nqName (package function)', async () => {
-    const loadedFuncCalls = await GDF.filter(`nqName="ApiTests:dummyPackageScript"`).list({pageSize: 5});
+    const loadedFuncCalls = await grok.dapi.functions.filter(`nqName="ApiTests:dummyPackageScript"`).list({pageSize: 5});
     expect(loadedFuncCalls.length, 1);
   }, { skipReason: 'GROK-15175' });
+
+  test('Call query', async () => {
+    const queryList: DG.DataQuery[] = await grok.dapi.queries.filter('name = "dummyPackageQuery" and package.name = "ApiTests"').list();
+    expect(queryList.length, 1);
+    const query: DG.DataQuery = queryList[0];
+    expect(query.inputs.length, 1);
+    const call = query.prepare({'x': 0.5});
+    const res = (await call.call()).getOutputParamValue();
+    expect(res.get('res', 0), 0.5);
+  }, {skipReason: 'GROK-16807'});
+
+  test('save with NaN', async () => {
+    let func = await grok.functions.eval("ApiTests:TestNaNOutput")
+    let fc = func.prepare({a: 1});
+    fc.newId();
+    await fc.call();
+    await grok.dapi.functions.calls.allPackageVersions().save(fc);
+    await grok.dapi.functions.calls.allPackageVersions()
+      .include('session.user,func.package, inputs, outputs').find(fc.id);
+  });
 });

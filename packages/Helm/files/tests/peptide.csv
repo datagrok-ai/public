@@ -1,0 +1,14 @@
+id,helm,description
+1,"PEPTIDE1{A.G.C.P.C.T.D.S.C.N}$$$$V2.0","linear natural"
+2,"PEPTIDE1{*.G.C.P.C.T.D.S.C.N}$$$$V2.0","linear natural with start gap"
+2,"PEPTIDE1{A.G.C.P.*.T.D.S.C.N}$$$$V2.0","linear natural with middle gap"
+2,"PEPTIDE1{A.G.C.P.C.T.D.S.C.*}$$$$V2.0","linear natural with end gap"
+3,"PEPTIDE1{[meI].G.C.[Nva].C.[meT].[meD].S.C.[Aca]}$$$$V2.0","linear non-natural"
+3,PEPTIDE1{*.G.C.[Nva].C.[meT].[meD].S.C.[Aca]}$$$$V2.0,linear non-natural with start gap
+3,"PEPTIDE1{[meI].G.C.[Nva].*.[meT].[meD].S.C.[Aca]}$$$$V2.0","linear non-natural with middle gap"
+3,"PEPTIDE1{[meI].G.C.[Nva].C.[meT].[meD].S.C.*}$$$$V2.0","linear non-natural with end gap"
+1,"PEPTIDE1{A.G.C.P.C.T.D.S.C.N}$PEPTIDE1,PEPTIDE1,3:R3-9:R3$$$V2.0","cycled natural"
+2,"PEPTIDE1{*.G.C.P.C.T.D.S.C.N}$PEPTIDE1,PEPTIDE1,3:R3-9:R3$$$V2.0","cycled natural with start gap"
+2,"PEPTIDE1{A.G.C.P.*.T.D.S.C.N}$PEPTIDE1,PEPTIDE1,3:R3-9:R3$$$V2.0","cycled natural with middle gap"
+2,"PEPTIDE1{A.G.C.P.C.T.D.S.C.*}$PEPTIDE1,PEPTIDE1,3:R3-9:R3$$$V2.0","cycled natural with end gap"
+

@@ -1,4 +1,6 @@
 import {HELM_MONOMER_TYPE, HELM_POLYMER_TYPE} from '@datagrok-libraries/bio/src/utils/const';
+import {cleanupHelmSymbol} from '@datagrok-libraries/bio/src/helm/utils';
+
 import {Bond} from './types';
 
 /** Wrapper over simple polymer substring of HELM, like RNA1{d(A)p}  */
@@ -41,7 +43,7 @@ export class SimplePolymer {
     return id;
   }
 
-  private getMonomerSymbolsAndTypes(): {monomers: string[], monomerTypes: HELM_MONOMER_TYPE[]} {
+  private getMonomerSymbolsAndTypes(): { monomers: string[], monomerTypes: HELM_MONOMER_TYPE[] } {
     const helmWrapperRegex = new RegExp(`${this.polymerType}${this.idx}{|}`, 'g');
     const monomerGroups = this.simplePolymer.replace(helmWrapperRegex, '').split('.');
     const monomerList: string[] = [];
@@ -51,7 +53,7 @@ export class SimplePolymer {
       // monomerList.push(...splitted);
       // WARNING: only the groups of the form r(A)p, as in RNA, are supported
 
-      monomerList.push(monomerGroup);
+      monomerList.push(cleanupHelmSymbol(monomerGroup));
       // const monomerTypes = splitted.map(
       //   (_, idx) => (idx % 2 === 0) ? HELM_MONOMER_TYPE.BACKBONE : HELM_MONOMER_TYPE.BRANCH
       // );

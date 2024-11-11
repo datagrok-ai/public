@@ -1,25 +1,28 @@
 /**
  * RDKit-based molecule cell renderer.
  * */
-
-import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
+import {getMonomerHover, getSubstructProviders} from '@datagrok-libraries/chem-meta/src/types';
+import {ChemTags, ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
+import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
+import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
+
 import {
   ALIGN_BY_SCAFFOLD_TAG, FILTER_SCAFFOLD_TAG, HIGHLIGHT_BY_SCAFFOLD_COL,
   HIGHLIGHT_BY_SCAFFOLD_TAG, MIN_MOL_IMAGE_SIZE, PARENT_MOL_COL,
-  REGENERATE_COORDS, SCAFFOLD_COL, SCAFFOLD_TREE_HIGHLIGHT, SUBSTRUCT_COL,
+  REGENERATE_COORDS, SCAFFOLD_COL, SCAFFOLD_TREE_HIGHLIGHT,
 } from '../constants';
 import {hexToPercentRgb} from '../utils/chem-common';
 import {_rdKitModule, drawErrorCross, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
 import {IMolContext, getMolSafe} from '../utils/mol-creation_rdkit';
-import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
+import {getGridCellColTemp} from '../utils/ui-utils';
+import {errInfo} from '../utils/err-info';
 
-export interface ISubstruct {
-  atoms?: number[],
-  bonds?: number[],
-  highlightAtomColors?: {[key: number]: number[] | null},
-  highlightBondColors?: {[key: number]: number[] | null}
-}
+import {_package} from '../package';
 
 interface IMolRenderingInfo {
   //mol: RDMol | null; // null when molString is invalid?
@@ -52,13 +55,13 @@ export function _addColorsToBondsAndAtoms(mainSubstr: ISubstruct, color?: string
       for (let j = 0; j < substrToTakeAtomsFrom.atoms.length; j++) {
         mainSubstr.highlightAtomColors ??= {};
         mainSubstr.highlightAtomColors[substrToTakeAtomsFrom.atoms[j]] = colorArr;
-      };
+      }
     }
     if (substrToTakeAtomsFrom.bonds) {
       for (let j = 0; j < substrToTakeAtomsFrom.bonds.length; j++) {
         mainSubstr.highlightBondColors ??= {};
         mainSubstr.highlightBondColors[substrToTakeAtomsFrom.bonds[j]] = colorArr;
-      };
+      }
     }
   }
 }
@@ -74,9 +77,11 @@ export class GridCellRendererProxy extends DG.GridCellRenderer {
   }
 
   get defaultWidth(): number | null {return this.renderer.defaultWidth;}
+
   get defaultHeight(): number | null {return this.renderer.defaultHeight;}
 
   get name(): string {return this.renderer.name;}
+
   get cellType(): string {return this._cellType;}
 
   render(
@@ -109,23 +114,26 @@ M  END
     this.rdKitModule = rdKitModule;
     this.canvasCounter = 0;
     this.canvasReused = new OffscreenCanvas(this.defaultWidth, this.defaultHeight);
-    this.molCache.onItemEvicted = function(obj: {[_ : string]: any}) {
+    this.molCache.onItemEvicted = function(obj: { [_: string]: any }) {
       obj.mol?.delete();
     };
   }
 
-  ensureCanvasSize(w: number, h: number) : OffscreenCanvas {
+  ensureCanvasSize(w: number, h: number): OffscreenCanvas {
     if (this.canvasReused.width < w || this.canvasReused.height < h)
       this.canvasReused = new OffscreenCanvas(Math.max(this.defaultWidth, w), Math.max(this.defaultHeight, h));
     return this.canvasReused;
   }
 
   get name(): string {return 'RDKit cell renderer';}
+
   get cellType(): DG.SemType {return DG.SEMTYPE.MOLECULE;}
+
   get defaultWidth(): number {return 200;}
+
   get defaultHeight(): number {return 100;}
 
-  getDefaultSize(): {width: number, height: number} {
+  getDefaultSize(): { width: number, height: number } {
     return {width: this.defaultWidth, height: this.defaultHeight};
   }
 
@@ -237,7 +245,7 @@ M  END
                   this._addAtomsOrBonds(matchedAtomsAndBonds[j].atoms!, substruct.atoms!);
                   this._addAtomsOrBonds(matchedAtomsAndBonds[j].bonds!, substruct.bonds!);
                   _addColorsToBondsAndAtoms(substruct, scaffolds[i].color, matchedAtomsAndBonds[j]);
-                };
+                }
               }
             }
           }
@@ -275,7 +283,7 @@ M  END
     for (let j = 0; j < fromAtomsOrBonds.length; j++) {
       if (!toAtomsOrBonds?.includes(fromAtomsOrBonds[j]))
         toAtomsOrBonds?.push(fromAtomsOrBonds[j]);
-    };
+    }
   }
 
   _fetchMol(molString: string, scaffolds: IColoredScaffold[], molRegenerateCoords: boolean,
@@ -345,7 +353,7 @@ M  END
     const name = width + ' || ' + height + ' || ' +
       molString + ' || ' + JSON.stringify(scaffolds) + ' || ' +
       molRegenerateCoords + ' || ' + scaffoldRegenerateCoords + ' || ' +
-      ((details as any).haveReferenceSmarts || false).toString() + ' || ' + JSON.stringify(substructureObj); ;
+      ((details as any).haveReferenceSmarts || false).toString() + ' || ' + JSON.stringify(substructureObj);
 
     return this.rendersCache.getOrCreate(name, (_: any) => this._rendererGetOrCreate(width, height,
       molString, scaffolds, molRegenerateCoords, scaffoldRegenerateCoords,
@@ -442,8 +450,10 @@ M  END
       return;
 
     const r = window.devicePixelRatio;
-    x = r * x; y = r * y;
-    w = r * w; h = r * h;
+    x = r * x;
+    y = r * y;
+    w = r * w;
+    h = r * h;
 
     // value-based drawing (coming from HtmlCellRenderer.renderValue)
     if (gridCell.cell.column == null) {
@@ -454,9 +464,24 @@ M  END
     const colTemp = gridCell.cell.column.temp;
     const highlightInfo = this.getHighlightTagInfo(colTemp, gridCell);
 
-    // TODO: make both filtering scaffold and single highlight scaffold appear
+    let mhSubstruct: ISubstruct | undefined;
+    try {
+      const mhData = getMonomerHover();
+      if (mhData && mhData.dataFrameId == gridCell.grid?.dataFrame.id && mhData.gridRowIdx === gridCell.gridRow &&
+        mhData.seqColName === gridCell.tableColumn?.getTag(ChemTags.SEQUENCE_SRC_COL)
+      ) {
+        mhSubstruct = mhData.getSubstruct();
+      }
+    } catch (err: any) {
+      const [errMsg, errStack] = errInfo(err);
+      _package.logger.error(errMsg, undefined, errStack);
+    }
 
-    if (highlightInfo.scaffolds && highlightInfo.alighByFirstSubtruct) {
+    // TODO: make both filtering scaffold and single highlight scaffold appear
+    if (mhSubstruct) {
+      this._drawMolecule(x, y, w, h, g.canvas,
+        molString, [], false, false, cellStyle, false, undefined, mhSubstruct);
+    } else if (highlightInfo.scaffolds && highlightInfo.alighByFirstSubtruct) {
       this._drawMolecule(x, y, w, h, g.canvas,
         molString, highlightInfo.scaffolds, false, false, cellStyle, highlightInfo.alighByFirstSubtruct);
     } else
@@ -511,10 +536,24 @@ M  END
 
     //check for column with per-row ISubstruct objects for highlight
     let substructObj: ISubstruct | undefined = undefined;
-    if (colTemp[SUBSTRUCT_COL]) {
-      const rawSubstructCol = df.columns.byName(colTemp[SUBSTRUCT_COL]);
+    if (colTemp[ChemTemps.SUBSTRUCT_COL]) {
+      const rawSubstructCol = df.columns.byName(colTemp[ChemTemps.SUBSTRUCT_COL]);
       if (rawSubstructCol)
         substructObj = rawSubstructCol.get(idx!);
+    } else {
+      const [_gridCol, tableCol, _temp] = getGridCellColTemp(gridCell);
+      const substructList = (getSubstructProviders(tableCol?.temp) ?? [])
+        .map((p) => {
+          let res: ISubstruct | undefined;
+          try {
+            res = p.getSubstruct(gridCell.tableRowIndex);
+          } catch (err: any) {
+            const [errMsg, errStack] = errInfo(err);
+            _package.logger.error(errMsg, undefined, errStack);
+          }
+          return res;
+        });
+      substructObj = mergeSubstructs(substructList);
     }
 
     if (rowScaffoldCol == null || rowScaffoldCol.name === gridCell.cell.column.name) {
@@ -573,4 +612,15 @@ function hasNonZeroZCoords(molfile: string, numAtoms: number): boolean {
     }
   }
   return false;
+}
+
+function mergeSubstructs(substructList: (ISubstruct | undefined)[]): ISubstruct | undefined {
+  if (substructList.length === 0)
+    return undefined;
+  else if (substructList.length === 1)
+    return substructList[0];
+  else {
+    throw new Error('Multiple substruct providers are not supported.');
+    // TODO: Average colors for atoms and bonds (or just merge lists)
+  }
 }

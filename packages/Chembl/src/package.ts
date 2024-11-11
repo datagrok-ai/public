@@ -1,18 +1,20 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import $ from 'cash-dom';
-import {ChemblIdHandler} from "./handlers";
+import {registerChemblIdHandler} from './handlers';
+import {chemblBioactivityForTargetsSearch, chemblPKForDrugSearch} from './search-scripts';
 
 export const _package = new DG.Package();
 
 const WIDTH = 200;
 const HEIGHT = 100;
 
-//tags: init
+//tags: autostart
 export function init() {
   //Register handlers
-  DG.ObjectHandler.register(new ChemblIdHandler());
+  // DG.ObjectHandler.register(new ChemblIdHandler());
+  registerChemblIdHandler(_package);
 }
 
 export async function chemblSubstructureSearch(molecule: string): Promise<DG.DataFrame | null> {
@@ -50,7 +52,7 @@ export async function chemblSimilaritySearch(molecule: string): Promise<DG.DataF
 //output: widget result
 export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = false): DG.Widget {
   const headerHost = ui.div([]);
-  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap chem-viewer-grid');
+  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap chem-viewer-grid chem-search-panel-wrapper');
   const panel = ui.divV([headerHost, compsHost]);
   const searchFunc = substructure ? async () => chemblSubstructureSearch(mol) : async () => chemblSimilaritySearch(mol);
 
@@ -60,9 +62,28 @@ export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = f
       compsHost.appendChild(ui.divText('No matches'));
       return;
     }
+
     const moleculeCol = table.getCol('smiles');
     const chemblId = table.getCol('chembl_id');
     const molCount = Math.min(table.rowCount, 20);
+
+    if (!substructure) {
+      const similarityCol = table.getCol('similarity');
+      const order = similarityCol.getSortedOrder();
+      const descendingOrder = order.slice().sort((a, b) => similarityCol.get(b) - similarityCol.get(a));
+      
+      const reorderedMols: string[] = new Array<string>(descendingOrder.length);
+      const reorderedScores: number[] = new Array<number>(descendingOrder.length);
+      
+      for (let i = 0; i < descendingOrder.length; ++i) {
+        const index = descendingOrder[i];
+        reorderedMols[i] = moleculeCol.get(index);
+        reorderedScores[i] = similarityCol.get(index);
+      }
+      
+      moleculeCol.init((i) => reorderedMols[i]);
+      similarityCol.init((i) => reorderedScores[i]);
+    }
 
     for (let i = 0; i < molCount; i++) {
       const molHost = ui.divV([]);
@@ -155,7 +176,6 @@ export async function chemblMolregno(table: DG.DataFrame, molecules: DG.Column):
   return table;
 }
 
-
 //name: chemblIdToSmilesTs
 //meta.role: converter
 //meta.inputRegexp: (CHEMBL[0-9]+)
@@ -164,6 +184,23 @@ export async function chemblMolregno(table: DG.DataFrame, molecules: DG.Column):
 export async function chemblIdToSmilesTs(id: string): Promise<string> {
   // this function won't be needed once we include queries to functions in the startupData
   // damn, it returns null instead of the actual molecule
-  return await grok.functions.call('Chembl:chemblIdToSmiles', {id: id})
+  return await grok.functions.call('Chembl:chemblIdToSmiles', {id: id});
   //return 'CN(C)CCc1c[nH]c2ccc(C[C@H]3COC(=O)N3)cc12';
 }
+
+//name: chemblBioactivitySearchWidget
+//tags: search
+//input: string s
+//output: widget w
+export async function chemblBioactivitySearchWidget(s: string) {
+  return await chemblBioactivityForTargetsSearch(s);
+}
+
+//name: chemblPKForDrugSearchWidget
+//tags: search
+//input: string s
+//output: widget w
+export async function chemblPKForDrugSearchWidget(s: string) {
+  return await chemblPKForDrugSearch(s);
+}
+

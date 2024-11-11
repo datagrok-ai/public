@@ -13,9 +13,16 @@ import { ReportingApp } from "./reporting/reporting_app";
 import { TestAnalysisManager } from './test-analysis/test-analysis-manager'; 
 import { getDate } from './utils';
 import dayjs from "dayjs";
-
+import {ServiceLogsApp} from "./service_logs/service_logs";
+import { TestGridCellHandler } from './test-grid-cell-handler';
 
 export const _package = new DG.Package();
+
+
+//tags: init
+export function _initUA(): void {
+  DG.ObjectHandler.register(new TestGridCellHandler());
+}
 
 //name: TestsList 
 //meta.url: /tests/list
@@ -73,6 +80,7 @@ export async function TestAnalysisReportForCurrentDay(date: any) {
 //name: Usage Analysis
 //tags: app
 //meta.url: /
+//meta.browsePath: Admin
 //input: string path {isOptional: true; meta.url: true}
 //input: string date {isOptional: true}
 //input: string groups {isOptional: true}
@@ -88,6 +96,7 @@ export async function usageAnalysisApp(path?: string, date?: string, groups?: st
 //name: Test Track
 //tags: app
 //meta.url: /tests/manager
+//meta.browsePath: Admin
 //input: string path {isOptional: true; meta.url: true}
 //input: map params {isOptional: true}
 export function testTrackApp(): void {
@@ -100,6 +109,7 @@ export function testTrackApp(): void {
 //name: Reports
 //tags: app
 //meta.url: /reports
+//meta.browsePath: Admin
 //input: string path {isOptional: true; meta.url: true}
 //input: map params {isOptional: true}
 //output: view v
@@ -108,6 +118,23 @@ export async function reportsApp(path?: string): Promise<DG.ViewBase> {
   const app = new ReportingApp(parent);
   await app.init(path);
   return app.view!;
+}
+
+//name: Service Logs
+//tags: app
+//meta.url: /service-logs
+//meta.browsePath: Admin
+//input: string path {isOptional: true; meta.url: true}
+//input: map params {isOptional: true}
+//input: int limit {isOptional: true}
+//output: view v
+export async function serviceLogsApp(path?: string, params?: any, limit?: number): Promise<DG.ViewBase> {
+  const currentCall = grok.functions.getCurrentCall();
+  const services = await grok.dapi.docker.getAvailableServices();
+  const app = new ServiceLogsApp(currentCall, services, path, limit);
+  if (services.length > 0)
+    app.getLogs().then((_) => {});
+  return app;
 }
 
 //input: dynamic treeNode

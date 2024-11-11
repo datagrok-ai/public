@@ -1688,6 +1688,9 @@ export class BitSet {
   /** Whether any bits are set to false. */
   get anyFalse(): boolean { return this.falseCount > 0; }
 
+  /** Version of the bitset */
+  get version(): number { return api.grok_BitSet_Get_Version(this.dart); }
+
   /** Clones a bitset
    *  @returns {BitSet} */
   clone(): BitSet {

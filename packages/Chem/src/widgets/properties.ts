@@ -86,13 +86,16 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
 
 export async function addPropertiesAsColumns(df: DG.DataFrame, smilesCol: DG.Column<string>,
   propsMap: string[]) {
-  const oclService = new OCLService();
-  const props = await oclService.getChemProperties(smilesCol, propsMap);
-
-  oclService.terminate();
-  propsMap.forEach((p) => {
-    const colName = df.columns.getUnusedName(p);
-    const col = DG.Column.fromList(DGTypeMap[PROP_MAP[p].type], colName, props[p]);
+  const resCols = await getPropertiesAsColumns(smilesCol, propsMap);
+  resCols.forEach((col) => {
+    col.name = df.columns.getUnusedName(col.name);
     df.columns.add(col);
   });
+}
+
+export async function getPropertiesAsColumns(smilesCol: DG.Column<string>, propsMap: string[]): Promise<DG.Column[]> {
+  const oclService = new OCLService();
+  const props = await oclService.getChemProperties(smilesCol, propsMap);
+  oclService.terminate();
+  return propsMap.map((p) => DG.Column.fromList(DGTypeMap[PROP_MAP[p].type], p, props[p]));
 }

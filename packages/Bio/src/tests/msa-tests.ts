@@ -2,13 +2,20 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+
 import {runKalign} from '../utils/multiple-sequence-alignment';
 import {multipleSequenceAlignmentUI} from '../utils/multiple-sequence-alignment-ui';
-import {awaitContainerStart} from '../utils/docker';
 
 category('MSA', async () => {
+  let seqHelper: ISeqHelper;
+
+  before(async () => {
+    seqHelper = await getSeqHelper();
+  });
+
   //table = await grok.data.files.openTable('Demo:Files/bio/peptides.csv');
   const fromCsv = `seq
 FWRWYVKHP
@@ -79,12 +86,10 @@ MWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHP
   });
 
   test('isCorrectHelm', async () => {
-    await awaitContainerStart();
     await _testMSAOnColumn(helmFromCsv, helmToCsv, NOTATION.HELM, NOTATION.SEPARATOR, undefined, 'mafft');
   }, {timeout: 60000 /* docker */});
 
   test('isCorrectHelmLong', async () => {
-    await awaitContainerStart();
     await _testMSAOnColumn(longHelmFromCsv, longHelmToCsv, NOTATION.HELM, NOTATION.SEPARATOR, undefined, 'mafft');
   }, {timeout: 60000 /* docker */});
 
@@ -99,6 +104,30 @@ MWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHP
       SeparatorLongFromCsv, SeparatorLongToCsv, NOTATION.SEPARATOR, NOTATION.FASTA, ALPHABET.PT,
     );
   });
+
+  async function _testMSAOnColumn(
+    srcCsv: string, tgtCsv: string,
+    srcNotation: NOTATION, tgtNotation: NOTATION, alphabet?: ALPHABET, pepseaMethod?: string,
+  ): Promise<void> {
+    const srcDf: DG.DataFrame = DG.DataFrame.fromCsv(srcCsv);
+    await grok.data.detectSemanticTypes(srcDf);
+    const tgtDf: DG.DataFrame = DG.DataFrame.fromCsv(tgtCsv);
+
+    const tgtCol = tgtDf.getCol('seq')!;
+    const srcCol: DG.Column = srcDf.getCol('seq')!;
+    expect(srcCol.semType, DG.SEMTYPE.MACROMOLECULE);
+    expect(srcCol.meta.units, srcNotation);
+    if (alphabet)
+      expect(srcCol.getTag(bioTAGS.alphabet), alphabet);
+
+    const msaSeqCol = await multipleSequenceAlignmentUI({col: srcCol, pepsea: {method: pepseaMethod}}, seqHelper);
+    expect(msaSeqCol.semType, DG.SEMTYPE.MACROMOLECULE);
+    expect(msaSeqCol.meta.units, tgtNotation);
+    expect(msaSeqCol.getTag(bioTAGS.aligned), ALIGNMENT.SEQ_MSA);
+    if (alphabet)
+      expect(msaSeqCol.getTag(bioTAGS.alphabet), alphabet);
+    expectArray(msaSeqCol.toList(), tgtCol.toList());
+  }
 });
 
 async function _testMsaIsCorrect(srcCsv: string, tgtCsv: string): Promise<void> {
@@ -114,27 +143,4 @@ async function _testMsaIsCorrect(srcCsv: string, tgtCsv: string): Promise<void> 
   expectArray(resCol.toList(), tgtCol.toList());
 }
 
-async function _testMSAOnColumn(
-  srcCsv: string, tgtCsv: string,
-  srcNotation: NOTATION, tgtNotation: NOTATION, alphabet?: ALPHABET, pepseaMethod?: string,
-): Promise<void> {
-  const srcDf: DG.DataFrame = DG.DataFrame.fromCsv(srcCsv);
-  await grok.data.detectSemanticTypes(srcDf);
-  const tgtDf: DG.DataFrame = DG.DataFrame.fromCsv(tgtCsv);
 
-  const tgtCol = tgtDf.getCol('seq')!;
-  const srcCol: DG.Column = srcDf.getCol('seq')!;
-  expect(srcCol.semType, DG.SEMTYPE.MACROMOLECULE);
-  expect(srcCol.meta.units, srcNotation);
-  if (alphabet)
-    expect(srcCol.getTag(bioTAGS.alphabet), alphabet);
-
-  const msaSeqCol = await multipleSequenceAlignmentUI({col: srcCol, pepsea: {method: pepseaMethod}});
-  expect(msaSeqCol.semType, DG.SEMTYPE.MACROMOLECULE);
-  expect(msaSeqCol.semType, DG.SEMTYPE.MACROMOLECULE);
-  expect(msaSeqCol.meta.units, tgtNotation);
-  expect(msaSeqCol.getTag(bioTAGS.aligned), ALIGNMENT.SEQ_MSA);
-  if (alphabet)
-    expect(msaSeqCol.getTag(bioTAGS.alphabet), alphabet);
-  expectArray(msaSeqCol.toList(), tgtCol.toList());
-}

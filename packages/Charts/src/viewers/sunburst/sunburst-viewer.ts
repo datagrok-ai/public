@@ -7,12 +7,18 @@ import { TreeUtils, TreeDataType } from '../../utils/tree-utils';
 import * as echarts from 'echarts';
 import { fromEvent } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
+import _ from 'lodash';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 
 type onClickOptions = 'Select' | 'Filter';
 const CATEGORIES_NUMBER = 500;
+let sunburstId = 0;
 const ERROR_CLASS = 'd4-viewer-error';
+const rowSourceMap: Record<onClickOptions, string> = {
+  Select: 'Filtered',
+  Filter: 'All'
+};
 
 /** Represents a sunburst viewer */
 @grok.decorators.viewer({
@@ -30,6 +36,8 @@ export class SunburstViewer extends EChartViewer {
   selectedOptions: string[] = ['Selected', 'SelectedOrCurrent', 'FilteredSelected'];
   inheritFromGrid: boolean;
   title: string;
+  sunburstVersion: number | null = null;
+  currentVersion: number | null = null;
 
   constructor() {
     super();
@@ -49,6 +57,7 @@ export class SunburstViewer extends EChartViewer {
       series: [
         {
           type: 'sunburst',
+          radius: '98%',
           nodeClick: false,
           emphasis: {
             focus: 'series',
@@ -204,15 +213,33 @@ export class SunburstViewer extends EChartViewer {
     if (p?.name === 'table') {
       this.updateTable();
       this.onTableAttached(true);
-    } else
+    }
+    if (p?.name === 'onClick')
+      this.rowSource = rowSourceMap[this.onClick as onClickOptions] || this.rowSource;
+    else
       super.onPropertyChanged(p, render);
   }
 
   addSubs() {
-    if (this.dataFrame === null)
+    if (!this.dataFrame)
       return;
     this.subs.push(this.dataFrame.onMetadataChanged.subscribe((_) => this.render()));
     this.subs.push(grok.events.onEvent('d4-grid-color-coding-changed').subscribe(() => this.render()));
+    this.subs.push(grok.events.onEvent('d4-current-viewer-changed').subscribe((args) => {
+      const {viewer} = args.args;
+      if (viewer instanceof SunburstViewer)
+        this.currentVersion = viewer.sunburstVersion;
+    }));
+    this.subs.push(grok.events.onEvent('d4-drag-drop').subscribe((args) => {
+      if (this.sunburstVersion != this.currentVersion) return;
+      const grid = (args.args.dragObject.grid as DG.Grid);
+      const gridOrder: Int32Array = new Int32Array(grid.getRowOrder().buffer);
+      const names = this.hierarchyColumnNames;
+      this.hierarchyColumnNames = Array.from(gridOrder)
+        .map(index => grid.table.row(index).get('name'))
+        .filter(columnName => names.includes(columnName!));
+      this.render();
+    }));    
     this.subs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
     this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((data) => {
       const columnNamesToRemove = data.columns.map((column: DG.Column) => column.name);
@@ -233,6 +260,9 @@ export class SunburstViewer extends EChartViewer {
       return;
 
     this.hierarchyColumnNames = categoricalColumns.slice(0, this.hierarchyLevel).map((col) => col.name);
+    this.sunburstVersion = sunburstId;
+    sunburstId++;
+
     this.addSubs();
     this.render();
   }
@@ -263,10 +293,7 @@ export class SunburstViewer extends EChartViewer {
       if (getCurrentItemIndex === index)
         return item;
     });
-    const r = ItemLayoutInfo.r;
-    const r0 = ItemLayoutInfo.r0;
-    const startAngle = ItemLayoutInfo.startAngle;
-    const endAngle = ItemLayoutInfo.endAngle;
+    const { r, r0, startAngle, endAngle } = ItemLayoutInfo;
     const { width, height } = this.calculateRingDimensions(r0, r, startAngle, endAngle);
 
     const averageCharWidth = 5;
@@ -274,6 +301,9 @@ export class SunburstViewer extends EChartViewer {
     const maxWidthCharacters = Math.floor(width / averageCharWidth);
     const maxHeightCharacters = Math.floor(height / averageCharHeight);
     const maxLength = maxWidthCharacters;
+
+    if (width < averageCharWidth || height < averageCharHeight)
+      return ' ';
 
     const name = params.name;
     const lines = name.split(' ');
@@ -299,8 +329,19 @@ export class SunburstViewer extends EChartViewer {
 
     const resultWidth = result.length * averageCharWidth;
     const resultHeight = result.split('\n').length * averageCharHeight;
-    if (resultWidth > width || resultHeight > height)
-      result = '...';
+    if (resultWidth > width) {
+      const maxChars = Math.floor(width / averageCharWidth) - 3;
+      result = result.slice(0, maxChars) + '...';
+    }
+
+    if (resultHeight > height) {
+      const maxLines = Math.floor(height / averageCharHeight) - 1;
+      const truncatedLines = result.split('\n').slice(0, maxLines);
+      result = truncatedLines.join('\n') + '...';
+    }
+
+    if (result === '...')
+      result = ' ';
 
     return result;
   }
@@ -311,13 +352,15 @@ export class SunburstViewer extends EChartViewer {
     return { height, width };
   }
 
-  render(): void {
-    if (this.dataFrame)
-      this.renderQueue = this.renderQueue.then(() => this._render());
+  render(orderedHierarchyNames?: string[]): void {
+    this.renderQueue = this.renderQueue.then(() => this._render(orderedHierarchyNames));
   }
 
-  async _render() {
-    this.eligibleHierarchyNames = this.hierarchyColumnNames.filter(
+  async _render(orderedHierarchyNames?: string[]) {
+    if (!this.dataFrame)
+      return;
+
+    this.eligibleHierarchyNames = (orderedHierarchyNames ?? this.hierarchyColumnNames).filter(
       (name) => this.dataFrame.getCol(name).categories.length <= CATEGORIES_NUMBER,
     );
 

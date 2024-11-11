@@ -1,5 +1,117 @@
 # Sequence Translator changelog
 
+## 1.5.3 (2024-11-06)
+
+### Bug fixes
+
+* PolyTool fix rules empty specification (all monomers undergo)
+
+## 1.5.2 (2024-11-06)
+
+### Bug fixes
+
+* PolyTool rules several instances bug fix
+
+## 1.5.1 (2024-11-06)
+
+### Bug fixes
+
+* PolyTool rules fixes rule management
+* PolyTool rules fixes crash if monomer is absent
+
+## 1.5.0 (2024-11-04)
+
+### New features
+
+* Add PolyTool interface for rule management
+
+## 1.4.10 (2024-11-01)
+
+### Bug fixes
+
+* Fix build
+
+## 1.4.9 (2024-10-31)
+
+### Bug fixes
+
+* Fix package initializing helmHelper
+* Fix Chain using HelmAtom.bio of type PtBio
+* Fix PT Enumerate dialog for harmonized sequences
+* Fix PT Enumerate for monomer hovering
+* Fix PT Enumerate for historical values
+* Fix PT Enumerate adding buildCyclizedMonomerHoverLink, WIP
+* Fix adding CyclizedGridCellRenderBack
+
+## 1.4.8 (2024-10-25)
+
+### Bug fixes
+
+* PolyTool ambigous R groups handling bug
+
+## 1.4.7 (2024-10-25)
+
+### Bug fixes
+
+* PolyTool ambigous R groups handling bug
+
+## 1.4.6 (2024-10-25)
+
+### New features
+
+* Add PolyTool Enumerate for harmonized sequences
+* PolyTool ambigous R groups handling
+
+### Bug fixes
+
+* Fix PolyTool chain, add check consistency, add tests
+* Fix PolyTool Convert tests
+* Fix the package init
+
+## 1.4.5 (2024-10-11)
+
+### Bug fixes
+
+* Fix for grok.userSettings
+* Fix moving support custom notation harmonized sequence
+* Fix PT Convert for monomer highlighting
+* Fix PT Convert reaction monomer colors
+* Fix PT detectors adding tests
+* Bump dependencies versions
+
+## 1.4.4 (2024-09-30)
+
+### New features
+
+* Add convert with reaction rules
+
+### Bug fixes
+
+* Fix sample reaction rule and monomer order
+* Fix isolate PolyTool convert error on row
+* Fix adding test for Chain .fromNotation
+* Fix adding test toAtomicLevel getNewMonomer
+
+## 1.4.3 (2024-09-27)
+
+### Features
+
+* Add PolyTool convert reverse
+
+### Bug fixes
+
+* Add sample reaction rule aG + azG = GGaz, test data
+* Fix using MonomerLibHelper.loadMonomerLibForTests
+* Add test toAtomicLevel with overridden monomer lib
+* Fix PolyTool Enumerate for zero-based monomer position
+* Fix Chain.getHelm square brackets for multi char symbols
+
+## 1.4.2 (2024-09-24)
+
+### New features
+
+* Add PolyTool breadth enumerator
+
 ## 1.4.1 (2024-09-12)
 
 ### Bug fixes

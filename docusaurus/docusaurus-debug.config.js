@@ -189,7 +189,7 @@ const config = {
                         protocol: 'https',
                     }
                 ],
-                apiKey: 'Crm7kyT3PHDgImIroB9cpkE0SHqTKAJZ',
+                apiKey: 'JAMTguX1muycLDcZSVDtkPLMW3rAT2nO',
             },
 
             // Optional: Typesense search parameters: https://typesense.org/docs/0.21.0/api/search.md#search-parameters

@@ -46,23 +46,19 @@ public class GrokConnect {
     public static Properties properties;
 
     public static void main(String[] args) {
-        try {
-            properties = getInfo();
-            setGlobalLogLevel();
-            PARENT_LOGGER.info(String.format("%s - version: %s", properties.get(NAME), properties.get(VERSION)));
-            PARENT_LOGGER.info("Grok Connect initializing");
-            PARENT_LOGGER.info(getStringLogMemory());
-            PARENT_LOGGER.trace("HELLO FROM TRACE");
+        properties = getInfo();
+        setGlobalLogLevel();
+        PARENT_LOGGER.info(String.format("%s - version: %s", properties.get(NAME), properties.get(VERSION)));
+        PARENT_LOGGER.info("Grok Connect initializing");
+        PARENT_LOGGER.info(getStringLogMemory());
+        PARENT_LOGGER.trace("HELLO FROM TRACE");
 
-            providerManager = new ProviderManager();
-            port(DEFAULT_PORT);
-            connectorsModule();
-            PARENT_LOGGER.info("grok_connect with Hikari pool");
-            PARENT_LOGGER.info("grok_connect: Running on {}", DEFAULT_URI);
-            PARENT_LOGGER.info("grok_connect: Connectors: {}", providerManager.getAllProvidersTypes());
-        } catch (Throwable ex) {
-            PARENT_LOGGER.error(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
-        }
+        providerManager = new ProviderManager();
+        port(DEFAULT_PORT);
+        connectorsModule();
+        PARENT_LOGGER.info("grok_connect with Hikari pool");
+        PARENT_LOGGER.info("grok_connect: Running on {}", DEFAULT_URI);
+        PARENT_LOGGER.info("grok_connect: Connectors: {}", providerManager.getAllProvidersTypes());
     }
 
     private static void connectorsModule() {
@@ -172,6 +168,21 @@ public class GrokConnect {
                 PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
             }
             prepareResponse(result, response, buffer);
+            return response;
+        });
+
+        post("/unique-columns", (request, response) -> {
+            response.type("application/json");
+            try {
+                DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
+                JdbcDataProvider provider = providerManager.getByName(connection.dataSource);
+                List<String> uniqueColumns = provider.getUniqueColumns(connection, connection.get("schema"), connection.get("table"));
+                response.status(200);
+                response.body(gson.toJson(uniqueColumns));
+            } catch (GrokConnectException ex) {
+                response.status(500);
+                response.body(gson.toJson(ex.getMessage()));
+            }
             return response;
         });
 

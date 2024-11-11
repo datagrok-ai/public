@@ -13,12 +13,15 @@ import {
 import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {LoggerWrapper} from '@datagrok-libraries/bio/src/utils/logger';
+import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
-import {HelmHelper} from './helm-helper';
 import {HelmService} from './utils/helm-service';
 import {OrgHelmModule, ScilModule} from './types';
 import {rewriteLibraries} from './utils/get-monomer';
+
+import type {DojoWindowType} from '../helm/dojo/types';
 
 import {_package} from './package';
 
@@ -29,49 +32,54 @@ declare const org: OrgHelmModule;
 
 type DojoConfigWindowType = {
   dojoConfig: {
+    baseUrl: string,
     packages?: (string | { name: string, location: string })[],
     deps?: string[], callback: Function, has?: any, parseOnLoad?: boolean, async?: boolean | string, locale?: string,
+    loaderPatch: any,
   },
 };
 type HelmWindowType = {
-  $helmService?: HelmServiceBase,
-  require: Function,
+  $helmServicePromise?: Promise<HelmServiceBase>,
+  require: any,
 };
-declare const window: Window & DojoConfigWindowType & HweWindow & HelmWindowType;
+declare const window: Window & DojoConfigWindowType & DojoWindowType & HweWindow & HelmWindowType;
 
-export function _getHelmService(): HelmServiceBase {
-  let res = window.$helmService;
-  if (!res) res = window.$helmService = new HelmService();
+export async function _getHelmService(): Promise<HelmServiceBase> {
+  let res = window.$helmServicePromise;
+  if (!res)
+    res = window.$helmServicePromise = Promise.resolve(new HelmService());
   return res;
 }
 
 export async function initHelmLoadAndPatchDojo(): Promise<void> {
-  const logPrefix = `Helm: _package.initHelmPatchDojo()`;
+  const logPrefix = `Helm: _package.initHelmLoadAndPatchDojo()`;
   // patch window.dojox.gfx.svg.Text.prototype.getTextWidth hangs
   /** get the text width in pixels */
   const pi = DG.TaskBarProgressIndicator.create('Loading Helm Web Editor ...');
   try {
     const requireBackup = window.require;
 
-    // dojo.window','dojo.io.script','dojo.io.iframe','dojo.dom','dojox.gfx','dojox.gfx.svg','dojox.gfx.shape','dojox.charting'
+    // Dojo modules required by JDraw2 and HELMWebEditor
+    // 'dojo.window','dojo.io.script','dojo.io.iframe','dojo.dom',
+    // 'dojox.gfx','dojox.gfx.svg','dojox.gfx.shape','dojox.charting'
     const dojoTargetList: { name: string, checker: () => boolean }[] = [
-      {name: 'dojo.window', checker: () => !!dojo?.window},
-      {name: 'dojo.ready', checker: () => !!dojo?.ready},
-      {name: 'dojo.io.script', checker: () => !!dojo?.io?.script},
-      {name: 'dojo.io.iframe', checker: () => !!dojo?.io?.iframe},
-      // {name: 'dojo.dom', checker: () => !!dojo?.dom},
-      {name: 'dojox.gfx', checker: () => !!dojox?.gfx},
-      {name: 'dojox.gfx.svg', checker: () => !!dojox?.gfx?.svg},
-      {name: 'dojox.gfx.createSurface', checker: () => !!dojox?.gfx?.createSurface},
-      {name: 'dojox.gfx.shape', checker: () => !!dojox?.gfx?.shape},
-      {name: 'dojox.storage.Provider', checker: () => !!dojox?.storage?.Provider},
-      {name: 'dojox.storage.LocalStorageProvider', checker: () => !!dojox?.storage?.LocalStorageProvider},
-      // {name: 'dojox.charting', checker: () => !!dojox.charting},
-      // {name: 'dojox.charting.themes.Claro', checker: () => !!dojox.charting?.themes?.Claro},
-      // {name: 'dojox.charting.themes.Wetland', checker: () => !!dojox.charting?.themes?.Wetland},
-      // {name: 'dojox.charting.plot2d.Base', checker: () => !!dojox.charting?.plot2d?.Base},
-      // {name: 'dojox.charting.Series', checker: () => !!dojox?.charting?.Series},
-      // {name: 'dojox.charting.Chart2D', checker: () => !!dojox?.charting?.Chart2D},
+      {name: 'dojo.window', checker: () => !!(window.dojo?.window)},
+      {name: 'dojo.ready', checker: () => !!(window.dojo?.ready)},
+      {name: 'dojo.io.script', checker: () => !!(window.dojo?.io?.script)},
+      {name: 'dojo.io.iframe', checker: () => !!(window.dojo?.io?.iframe)},
+      // {name: 'dojo.dom', checker: () => !!(window.dojo?.dom)},
+      {name: 'dojox.gfx', checker: () => !!(window.dojox?.gfx)},
+      {name: 'dojox.gfx.svg', checker: () => !!(window.dojox?.gfx?.svg)},
+      {name: 'dojox.gfx.createSurface', checker: () => !!(window.dojox?.gfx?.createSurface)},
+      {name: 'dojox.gfx.shape', checker: () => !!(window.dojox?.gfx?.shape)},
+      {name: 'dojox.storage.Provider', checker: () => !!(window.dojox?.storage?.Provider)},
+      {name: 'dojox.storage.LocalStorageProvider', checker: () => !!(window.dojox?.storage?.LocalStorageProvider)},
+      // {name: 'dojox.charting', checker: () => !!(window.dojox.charting)},
+      // {name: 'dojox.charting.themes.Claro', checker: () => !!(window.dojox.charting?.themes?.Claro)},
+      // {name: 'dojox.charting.themes.Wetland', checker: () => !!(window.dojox.charting?.themes?.Wetland)},
+      // {name: 'dojox.charting.plot2d.Base', checker: () => !!(window.dojox.charting?.plot2d?.Base)},
+      // {name: 'dojox.charting.Series', checker: () => !!(window.dojox?.charting?.Series)},
+      // {name: 'dojox.charting.Chart2D', checker: () => !!(window.dojox?.charting?.Chart2D)},
     ];
     /** Gets list ofd modules not ready yet */
     const getDojoNotReadyList = (): string[] => {
@@ -85,15 +93,30 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
       await timeout(async () => {
         await new Promise<void>((resolve, reject) => {
           window.dojoConfig = {
+            baseUrl: '/dojo',
             callback: () => { resolve(); },
-            parseOnLoad: true,
-            async: false,
+            parseOnLoad: false,
+            async: true,
             locale: 'en-us', // to limit dijit/nls file set
+            loaderPatch: {
+              injectUrl: (url: string, callback: any, owner: any) => {
+                const logPrefixInt = `${logPrefix} dojoConfig.loaderPatch.injectUrl()`;
+                _package.logger.debug(`${logPrefixInt}, url: ${url}`);
+                try {
+                  const bundledFn = `.${url}${window.dojo$.uncompressed}`;
+                  window.dojo$.ctx(bundledFn);
+                  callback();
+                } catch (err: any) {
+                  _package.logger.warning(`${logPrefixInt}: not loaded url: '${url}'.`);
+                }
+              },
+            },
           };
           // Load dojo without package/sources section for the settings dojoConfig to take effect
           DG.Utils.loadJsCss([
             // 'https://ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/dojo.js.uncompressed.js',
-            `${_package.webRoot}/vendor/dojo-1.10.10/dojo/dojo.js.uncompressed.js`,
+            // `${_package.webRoot}/vendor/dojo-1.10.10/dojo/dojo.js.uncompressed.js`,
+            `${_package.webRoot}/dist/package-dojo.js`,
           ]).then(() => {});
         });
 
@@ -101,14 +124,16 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
         const cmp = dojoRequire == requireBackup;
         try {
           await new Promise<void>((resolve, reject) => {
-            dojoRequire(['dojo/window', 'dojo/dom', 'dojo/io/script', 'dojo/io/iframe',
+            /* eslint-disable indent */
+            dojoRequire([
+                'dojo/window', 'dojo/dom', 'dojo/io/script', 'dojo/io/iframe',
                 'dojox/gfx', 'dojox/gfx/svg', 'dojox/gfx/shape',
                 'dojox/storage/Provider', 'dojox/storage/LocalStorageProvider',
                 'dijit/_base', 'dijit/Tooltip', 'dijit/form/_FormValueWidget',
                 'dijit/form/DropDownButton', 'dijit/layout/AccordionContainer', 'dijit/form/ComboButton',
-                'dijit/layout/StackController', 'dijit/layout/StackContainer',
-              ],
+                'dijit/layout/StackController', 'dijit/layout/StackContainer',],
               (...args: any[]) => { resolve(); });
+            /* eslint-enable indent */
           });
         } finally {
           // TODO: Check interference with NGL
@@ -123,7 +148,8 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
           const dojoProgress = dojoTargetList.length - dojoNotReadyList.length;
           pi.update(Math.round(100 * dojoProgress / dojoTargetList.length),
             `Loading Helm Web Editor ${dojoProgress}/${dojoTargetList.length}`);
-          _package.logger.debug(`${logPrefix}, dojo loading ... ${dojoNotReadyList.map((m) => `'${m}'`).join(',')} ...`);
+          _package.logger.debug(`${logPrefix}, dojo loading ... ` +
+            `${dojoNotReadyList.map((m) => `'${m}'`).join(',')} ...`);
           await delay(100);
         }
         _package.logger.debug(`${logPrefix}, dojo ready all modules`);
@@ -180,15 +206,24 @@ export const helmJsonReplacer = (key: string, value: any): any => {
 
 export class HelmPackage extends DG.Package {
   public alertOriginal: ((s: string) => void) | null = null;
-  public readonly helmHelper: HelmHelper;
-  public libHelper!: IMonomerLibHelper;
+
+  private _helmHelper?: IHelmHelper;
+  public get helmHelper(): IHelmHelper {
+    if (!this._helmHelper)
+      throw new Error('Package Helm .helmHelper is not initialized');
+    return this._helmHelper;
+  };
+
+  public get seqHelper(): ISeqHelper {
+    return this.helmHelper!.seqHelper;
+  }
+
+  public _libHelper!: IMonomerLibHelper;
 
   constructor(opts: { debug: boolean } = {debug: false}) {
     super();
     // @ts-ignore
     super._logger = new LoggerWrapper(super.logger, opts.debug);
-
-    this.helmHelper = new HelmHelper(this.logger);
   }
 
   // -- Init --
@@ -280,16 +315,19 @@ export class HelmPackage extends DG.Package {
   // -- MonomerLib --
 
   public get monomerLib(): IMonomerLib {
-    if (!this.libHelper)
+    if (!this._libHelper)
       throw new Error(`Helm: _package.libHelper is not initialized yet`);
-    return this.libHelper.getMonomerLib();
+    return this._libHelper.getMonomerLib();
   }
 
   private _monomerLibSub?: Unsubscribable;
 
+  private _initialized: boolean = false;
+
   /** Requires both Bio & HELMWebEditor initialized */
-  initMonomerLib(libHelper: IMonomerLibHelper): void {
-    this.libHelper = libHelper;
+  completeInit(helmHelper: IHelmHelper, libHelper: IMonomerLibHelper): void {
+    this._helmHelper = helmHelper;
+    this._libHelper = libHelper;
 
     const lib = this.monomerLib;
     rewriteLibraries(lib); // initHelm()
@@ -297,6 +335,7 @@ export class HelmPackage extends DG.Package {
       .subscribe(this.monomerLibOnChangedHandler.bind(this));
 
     this.initHelmPatchPistoia();
+    this._initialized = true;
   }
 
   monomerLibOnChangedHandler(): void {

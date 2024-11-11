@@ -34,6 +34,8 @@ import './dapi/tables';
 import './dapi/sticky_meta';
 import './dapi/users';
 import './dapi/benchmarks';
+import './dapi/functions-annotations';
+import './dapi/vector-functions-and-scripts'
 import './widgets/files-widget';
 import './widgets/legend';
 import './widgets/tree-view';
@@ -42,6 +44,7 @@ import './utils/color';
 import './packages/properties';
 import './packages/docker';
 import './packages/user-settings-storage';
+import './packages/upload-migrations';
 import './grid/grid';
 import './grid/color-coding';
 import './grid/multi-value-column';
@@ -51,10 +54,10 @@ import './valuematcher/valuematcher';
 import './property/property';
 import './widgets/input-form';
 
-import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
+import { runTests, tests, TestContext, initAutoTests as initTests } from '@datagrok-libraries/utils/src/test';
 
 export const _package = new DG.Package();
-export {tests};
+export { tests };
 
 //name: test
 //input: string category {optional: true}
@@ -63,7 +66,7 @@ export {tests};
 //input: bool stressTest {optional: true}
 //output: dataframe result
 export async function test(category: string, test: string, testContext: TestContext, stressTest?: boolean): Promise<DG.DataFrame> {
-  const data = await runTests({category, test, testContext, stressTest});
+  const data = await runTests({ category, test, testContext, stressTest });
   return DG.DataFrame.fromObjects(data)!;
 }
 
@@ -72,7 +75,7 @@ export async function test(category: string, test: string, testContext: TestCont
 //top-menu: Tools | Dev | Test | Platform
 export async function testPlatform(): Promise<DG.DataFrame> {
   const skip = ['Benchmarks', 'Packages: Docker', 'Functions: Client-side cache'];
-  const data = await runTests({exclude: skip});
+  const data = await runTests({ exclude: skip });
   return DG.DataFrame.fromObjects(data)!;
 }
 
@@ -80,7 +83,7 @@ export async function testPlatform(): Promise<DG.DataFrame> {
 //output: dataframe result
 //top-menu: Tools | Dev | Test | Packages
 export async function testPackages(): Promise<DG.DataFrame> {
-  const funcs = DG.Func.find({name: 'test'});
+  const funcs = DG.Func.find({ name: 'test' });
   const dfs: DG.DataFrame[] = [];
   for (const f of funcs) {
     if (f.package?.name != null) {
@@ -108,3 +111,8 @@ export async function testPackages(): Promise<DG.DataFrame> {
 
   return result!;
 }
+
+//name: initAutoTests
+export async function initAutoTests() {
+  await initTests(_package, _package.getModule('package-test.js'));
+} 

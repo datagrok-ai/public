@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {SeqHandler} from './seq-handler';
 import {NOTATION} from './macromolecule/consts';
 
 /** Class for parsing FASTA files */
@@ -62,9 +61,6 @@ export class FastaFileHandler {
     const sequenceCol = DG.Column.fromStrings('sequence', this.sequencesArray);
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
     sequenceCol.meta.units = NOTATION.FASTA;
-
-    // here should go the code from units handler
-    const sh = SeqHandler.forColumn(sequenceCol);
 
     return [DG.DataFrame.fromColumns([
       descriptionsArrayCol,

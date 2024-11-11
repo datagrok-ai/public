@@ -1,7 +1,19 @@
 package grok_connect.providers;
 
-import java.sql.*;
-import java.util.*;
+import java.sql.Array;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.List;
+import java.util.Properties;
+import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -42,8 +54,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     public Connection getConnection(DataConnection conn) throws SQLException, GrokConnectException {
         prepareProvider();
-        return ConnectionPool.getInstance().getConnection(getConnectionString(conn),
-                getProperties(conn), driverClassName);
+        return ConnectionPool.getConnection(getConnectionString(conn), getProperties(conn), driverClassName);
     }
 
     public Properties getProperties(DataConnection conn) {
@@ -93,6 +104,19 @@ public abstract class JdbcDataProvider extends DataProvider {
         queryRun.func.connection = connection;
 
         return execute(queryRun);
+    }
+
+    public List<String> getUniqueColumns(DataConnection conn, String schema, String table) throws GrokConnectException {
+        try (Connection connection = getConnection(conn);
+             ResultSet rs = connection.getMetaData().getIndexInfo(conn.getDb(), schema, table, true, false)) {
+            List<String> uniqueColumns = new ArrayList<>();
+            while(rs.next())
+                uniqueColumns.add(rs.getString("COLUMN_NAME"));
+            return uniqueColumns;
+
+        } catch (SQLException e) {
+            throw new GrokConnectException(e);
+        }
     }
 
     public DataFrame getForeignKeys(DataConnection conn, String schema) throws GrokConnectException, QueryCancelledByUser {

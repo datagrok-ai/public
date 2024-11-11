@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/compute",
   "friendlyName": "Compute",
-  "version": "1.39.2",
+  "version": "1.39.6",
   "author": {
     "name": "Aufar Zakiev",
     "email": "aufar.zakiev@softwarecountry.com"
@@ -14,13 +14,13 @@
   },
   "dependencies": {
     "@datagrok-libraries/utils": "^4.3.0",
-    "@datagrok-libraries/compute-utils": "^1.39.2",
-    "cash-dom": "latest",
-    "datagrok-api": "^1.21.1",
+    "@datagrok-libraries/compute-utils": "^1.39.5",
+    "cash-dom": "^8.1.5",
+    "datagrok-api": "^1.22.1",
     "rxjs": "^6.6.7",
     "source-map-loader": "^4.0.1",
-    "ts-loader": "latest",
-    "typescript": "latest",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.6.3",
     "exceljs": "^4.3.0"
   },
   "devDependencies": {
@@ -31,8 +31,8 @@
     "eslint": "^8.0.1",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^3.3.1",
-    "webpack": "latest",
-    "webpack-cli": "latest"
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",

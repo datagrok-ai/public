@@ -2,10 +2,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { getModelsSingle, performChemicalPropertyPredictions, addSparklines } from './utils/admetica-utils';
+import { getModelsSingle, performChemicalPropertyPredictions, addSparklines, runAdmetica, setProperties } from './utils/admetica-utils';
 import { properties } from './utils/admetica-utils';
 import { AdmeticaBaseEditor } from './utils/admetica-editor';
-import { _demoAdmetica } from './demo/demo-admetica';
+import { Model, Subgroup } from './utils/constants';
+import { AdmeticaViewApp } from './utils/admetica-app';
 
 export const _package = new DG.Package();
 
@@ -28,10 +29,12 @@ export async function admeticaWidget(semValue: DG.SemanticValue): Promise<DG.Wid
 //name: getModels
 //input: string property
 //output: list<string> result
-export function getModels(property: string): string[] {
-  return properties[property].models
-    .filter((model: any) => !model.skip)
-    .map((model: any) => model.name);;
+export async function getModels(property: string): Promise<string[]> {
+  await setProperties();
+  return properties.subgroup
+    .filter((subg: Subgroup) => subg.name === property)
+    .flatMap((subg: Subgroup) => subg.models)
+    .map((model: Model) => model.name);
 }
 
 //name: AdmeticaHT
@@ -85,8 +88,21 @@ export async function admeticaMenu(
   await performChemicalPropertyPredictions(molecules, table, models.join(','), template, addPiechart, addForm);
 }
 
-//name: Demo Admetica
-//meta.demoPath: Cheminformatics | Admetica
-export async function demoAdmetica(): Promise<void> {
-  await _demoAdmetica();
+//name: admeProperty
+//input: string molecule {semType: Molecule}
+//input: string prop {choices:["Caco2", "Solubility", "Lipophilicity", "PPBR", "VDss"]}
+//output: double propValue
+export async function admeProperty(molecule: string, prop: string): Promise<any> {
+  const csvString = await runAdmetica(`smiles\n${molecule}`, prop, 'false');
+  return DG.DataFrame.fromCsv(csvString!).get(prop, 0);
+}
+
+//name: Admetica
+//tags: app
+//output: view v
+export async function admeticaApp(): Promise<DG.ViewBase | null> {
+  const parent = grok.functions.getCurrentCall();
+  const app = new AdmeticaViewApp(parent);
+  await app.init();
+  return app.tableView!;
 }

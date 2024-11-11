@@ -8,15 +8,20 @@ import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter'
 import * as C from './constants';
 import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {SEM_TYPES} from './constants';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {_package} from '../package';
 
 
-export async function splitToMonomersUI(table: DG.DataFrame, seqCol: DG.Column<string>): Promise<DG.DataFrame> {
+export async function splitToMonomersUI(
+  table: DG.DataFrame, seqCol: DG.Column<string>
+): Promise<DG.DataFrame> {
   // Delay is required for initial function dialog to close before starting invalidating of molfiles.
   // Otherwise, dialog is freezing
   await delay(10);
   if (!checkInputColumnUI(seqCol, 'Sequence space')) return table;
 
-  const tempDf = splitAlignedSequences(seqCol);
+  const seqHelper = _package.seqHelper;
+  const tempDf = splitAlignedSequences(seqCol, seqHelper);
   tempDf.name = 'splitToMonomers';
   const originalDf = seqCol.dataFrame;
   for (const tempCol of tempDf.columns) {

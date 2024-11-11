@@ -5,7 +5,7 @@ export class FormStateGenerator {
   table: string;
   categories: { [s: string]: string[] };
   molColName: string;
-  addPiechart: boolean;
+  addPiechart: boolean = true;
   maxHeight: number;
 
   constructor(table: string, categories: { [s: string]: string[] }, molColName: string, addPiechart: boolean, maxHeight: number = 600) {
@@ -16,10 +16,10 @@ export class FormStateGenerator {
     this.maxHeight = maxHeight;
   }
 
-  private createElementState(table: string, left: number, top: number, column: string) {
+  private createElementState(table: string, left: number, top: number, width: number, column: string) {
     return [
       {
-        "left": left + this.getTextWidth(column),
+        "left": left + width,
         "top": top,
         "width": 100,
         "height": 20,
@@ -33,7 +33,7 @@ export class FormStateGenerator {
       {
         "left": left,
         "top": top,
-        "width": this.getTextWidth(column),
+        "width": width,
         "height": 20,
         "type": "html",
         "viewerSettings": {
@@ -65,7 +65,8 @@ export class FormStateGenerator {
       "viewerSettings": {
         "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
         "input-value": `                         ${categoryName}`,
-        "backgroundColor": 4293717745
+        "backgroundColor": 4293717745,
+        "textColor": 4278190080
       }
     };
   }
@@ -106,9 +107,13 @@ export class FormStateGenerator {
         "type": "sparkline-cell",
         "viewerSettings": {
           "table": this.table,
-          "column": piechartIndex === 1 ? "piechart" : `piechart (${piechartIndex})`
+          "column": piechartIndex === 0 ? "piechart" : `piechart (${piechartIndex})`
         }
       });
+
+    const allColumns = Object.values(this.categories).flat();
+    const longestColumnName = allColumns.reduce((longest, columnName) => columnName.length > longest.length ? columnName : longest, '');
+    const textWidth = this.getTextWidth(longestColumnName);
 
     for (const [category, columns] of Object.entries(this.categories)) {
       const categoryHeight = headerHeight + columns.length * rowHeight;
@@ -123,7 +128,8 @@ export class FormStateGenerator {
       currentTopOffset += headerHeight;
 
       columns.forEach((column: string, index: number) => {
-        const elementState = this.createElementState(this.table, currentLeftOffset, currentTopOffset + index * rowHeight, column);
+        const elementState = 
+          this.createElementState(this.table, currentLeftOffset, currentTopOffset + index * rowHeight, textWidth, column);
         elementStates.push(...elementState);
       });
 
@@ -132,7 +138,9 @@ export class FormStateGenerator {
 
     return {
       "#type": "SketchState",
-      "elementStates": elementStates
+      "elementStates": elementStates,
+      "table": this.table,
+      "formDesigned": true
     };
   }
 

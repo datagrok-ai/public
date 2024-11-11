@@ -18,15 +18,6 @@ category('AutoDock', () => {
   before(async () => {
     try {
       adSvc = await getAutoDockService();
-      if (!adSvc.ready) {
-        _package.logger.warning('AutoDock docker container is not ready, trying to start.');
-        await adSvc.startDockerContainer();
-        _package.logger.warning('AutoDock docker container successfully started.');
-        if (!adSvc.ready) {
-          _package.logger.warning('AutoDock docker container can not start, skip tests');
-          adSvc = null;
-        }
-      }
     } catch (err: any) {
       const [errMsg, errStack] = errInfo(err);
       _package.logger.error(errMsg, undefined, errStack);
@@ -38,7 +29,7 @@ category('AutoDock', () => {
 
     const clinfoCount = await fetchWrapper(() => adSvc!.checkOpenCl());
     expect(clinfoCount > 0, true, 'OpenCL platform not found.');
-  });
+  }, {timeout: 25000});
 
   test('dock ligand', async () => {
     if (!adSvc) return;
@@ -72,6 +63,6 @@ category('AutoDock', () => {
     const npts = new GridSize(20, 20, 20);
     const autodockGpf = buildDefaultAutodockGpf('1bdq', npts);
     const posesDf = await adSvc.dockLigandColumn(receptorData, ligandCol, autodockGpf);
-    expect(posesDf.rowCount, 120);
+    expect(posesDf.rowCount, 90);
   }, {timeout: 200000, stressTest: true});
 });

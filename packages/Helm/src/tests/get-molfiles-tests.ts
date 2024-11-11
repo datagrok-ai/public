@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {after, before, category, delay, expect, test, expectArray, testEvent} from '@datagrok-libraries/utils/src/test';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {
-  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
+  getUserLibSettings, setUserLibSettings,
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
@@ -24,8 +24,8 @@ category('getMolfiles', () => {
     await initHelmMainPackage();
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
-    await setUserLibSettingsForTests();
-    await monomerLibHelper.loadMonomerLib(true);
+
+    await monomerLibHelper.loadMonomerLibForTests();
   });
 
   after(async () => {

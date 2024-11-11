@@ -1,5 +1,149 @@
 # bio changelog
 
+## 5.45.10 (2024-11-07)
+
+Remove the startDockerContainer method from the IAutoDockService interface
+
+## 5.45.9 (2024-11-01)
+
+Unknown pallete correct initialization
+
+## 5.45.8 (2024-11-01)
+
+Correct loading of unknown pallete
+
+## 5.45.7 (2024-11-01)
+
+Unknown pallete correct initialization
+
+## 5.45.6 (2024-10-31)
+
+### Bug fixes
+
+* Fix SeqValueBase adding seqHandler, getSplitted, helm
+* Fix HelmInputBase for SeqValueBase
+* Fix ISeqHandler adding getHelm, splitter
+* Fix INotationProvider adding setUnits, getHelm
+
+## 5.45.5 (2024-10-24)
+
+### Bug fixes
+
+* Fix splitterAsHelm for multiple simple polymers
+* Fix IHelmHelper adding .seqHelper
+* Fix exporting HWE IBio, HelmBio
+
+## 5.45.4 (2024-10-22)
+
+### Bug fixes
+
+* Fix ISeqHandler getValue of type MacromoleculeValueBase
+* Fix CellRendererAsyncBase for LRU imageCache, cacheEnabled
+
+## 5.45.3 (2024-10-16)
+
+### Bug fixes
+
+* Fix splitterWithSeparator
+* Fix MonomerPlacer onMouseMove handling
+
+## 5.45.2 (2024-10-11)
+
+### Bug fixes
+
+* Fix moving setUnits methods to ISeqHelper
+* Fix dependencies version
+
+## 5.45.1 (2024-10-11)
+
+### Bug fixes
+
+* Fix ISeqHelper adding getSeqMonomers
+
+## 5.45.0 (2024-10-10)
+
+### New features
+
+* Add SeqHelper factory for SeqHandler moving to the Bio package
+
+### Bug fixes
+
+* Fix toAtomicLevel for monomers without peptide bond (NH2)
+* Fix createHelmWebEditor drawOptions to options
+* Fix MonomerPlacer to get tooltip from overridden monomer lib
+* Fix Helm cell renderer props adding overridden monomer lib
+* Fix monomer lib loading timout on palettes
+
+## 5.44.5 (2024-10-03)
+
+### Bug fixes
+
+* Fix MonomerPlacer to use IMonomerLibBase.getMonomerTextColor
+* Fix MonomerPlacer for changed column settings
+* Fix MonomerPlacer for original monomer symbol
+* Fix SeqHandler .isSeparator to account column tag
+
+## 5.44.4 (2024-10-02)
+
+### New features
+
+* Add use monomer colors from monomer lib for MonomerPlacer
+
+### Bug fixes
+
+* Fix splitAlignedSequences for canonical monomer symbol
+* Fix monomer colors for empty monomer lib
+* Fix for grok.userSettings
+* Fixes for eslint
+
+## 5.44.3 (2024-10-02)
+
+Correct color for monomer lib configs
+
+## 5.44.2 (2024-09-27)
+
+### New features
+
+* Add IMonomer .override method
+* Add IMonomerLibHelper .loadMonomerLibForTests method
+
+### Bug fixes
+
+* Fix cell renderer monomer placer to handle currentRow reset
+* Fix test Helm HelmHelper.removeGaps
+
+## 5.44.1 (2024-09-25)
+
+### New features
+
+* Add IMonomerLibBase interface for overriding libraries
+* Add custom notation for sequences
+
+## 5.44.0 (2024-09-24)
+
+### New features
+
+* Add monomer hover link
+* Add getMolHighlight to build ISubstruct from monomer map
+* Add HelmHelper parse and removeGaps methods
+
+### Bug fixes
+
+* Fix toAtomicLevel for sequences with gaps
+* Fix toAtomicLevel for polymerType of sequence monomer
+* Fix ISeqMonomer for biotype and add position
+* Fix ISeqSplitted remove .canonicals and .originals
+* Fix IMonomerLib .getTooltip for biotype of HelmType
+* Fix toAtomicLevel linear for sequences with gaps
+
+## 5.43.1 (2024-09-22)
+
+Add monomer background coloring
+
+## 5.43.0 (2024-09-18)
+
+Add coloring from monomer library to separator/fasta renderer
+
 ## 5.42.15 (2024-09-10)
 
 ### Bug fixes

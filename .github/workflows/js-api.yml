@@ -183,8 +183,7 @@ jobs:
     env:
       HOST: GitHubAction
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
           sparse-checkout: |
@@ -194,8 +193,8 @@ jobs:
             ./packages/ApiTests
             ./libraries
             ./docusaurus
-      - name: Setup Node
-        uses: actions/setup-node@v4
+            ./.github
+      - uses: actions/setup-node@v4
         with:
           node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
@@ -203,10 +202,8 @@ jobs:
           cache-dependency-path: |
             docusaurus/package-lock.json
             js-api/package-lock.json
-      - name: Upgrade npm
-        run: npm install -g npm@x
-      - name: npm version
-        run: npm version
+      - run: npm install -g npm@x
+      - run: npm version
       - run: npm install
         working-directory: ./js-api
       - run: npm run build
@@ -234,9 +231,8 @@ jobs:
           echo "docker_sha=$docker_sha" >> $GITHUB_OUTPUT
           echo "Notify about version used for tests"
           echo "::notice title=js-api::datagrok/datagrok:$DATAGROK_VERSION SHA=$docker_sha docker version was used for tests"
-      - name: Install datagrok tools
-        id: datagrok-tools
-        run: npm install -g datagrok-tools@latest
+      - id: datagrok-tools
+        run: npm install -g datagrok-tools@4.13.31
       - name: Wait for Datagrok to become available
         timeout-minutes: 5
         run: |
@@ -310,7 +306,7 @@ jobs:
 
       - name: Prepare Slack Message
         if: ${{ steps.test-ApiTests.outcome == 'failure' }}
-        id: slack-prepare
+        id: slack-prepare-api
         shell: bash
         env:
           SLACK_ID: ${{ secrets.SLACK_ID }}
@@ -330,8 +326,8 @@ jobs:
           echo -e "SLACK_MESSAGE_BODY=${SLACK_MESSAGE_BODY}" | sed -e '$ ! s/$/\\n/' -e 's/"/\\"/g' | tr -d '\n' >> $GITHUB_ENV
 
       - name: Send test report to Slack
-        id: slack
-        if: ${{ steps.slack-prepare.outcome == 'success' }}
+        id: slack-api
+        if: ${{ steps.slack-prepare-api.outcome == 'success' }}
         uses: slackapi/slack-github-action@v1.24.0
         with:
           channel-id: ${{ env.SLACK_CHANNEL }}
@@ -384,51 +380,28 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         if: needs.version.outputs.changed_version == 'true'
 
-      - name: Prepare Slack Message
-        if: ${{ steps.publish.outcome == 'success' && !contains(matrix.package, 'Meta') }}
-        id: slack-prepare-build
-        shell: bash
-        env:
-          SLACK_ID: ${{ secrets.SLACK_ID }}
-        run: |
-          channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
-          echo "::add-mask::$channel_id"
-
-          header="*JS API* version *${{ needs.version.outputs.current_version }}* published to <https://www.npmjs.com/package/datagrok-api/v/${{ needs.version.outputs.current_version }}|NPM> with tag ${{ steps.publish.outputs.tag }}\n<@$channel_id> FYI"
-          echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
-
-          context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1 | sed -e 's/"/\\"/g')>"
-          echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
-
-      - name: Send to Slack
-        id: slack-build
-        if: steps.slack-prepare-build.outcome == 'success'
-        uses: slackapi/slack-github-action@v1.24.0
+      - name: Get actors slack
+        id: actor
+        uses: ./.github/actions/slack-user-action
         with:
-          channel-id: '#build'
-          payload: |
-            {
-                "blocks": [
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "${{ env.SLACK_MESSAGE_HEADER }}"
-                        }
-                    },
-                    {
-                        "type": "context",
-                        "elements": [
-                            {
-                                "type": "mrkdwn",
-                                "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"
-                            }
-                        ]
-                    }
-                ]
-            }
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
+          slack-token: ${{ secrets.SLACKBOT_TOKEN }}
+          email-mapping: ${{ secrets.EMAIL_SLACK_ID }}
+      - name: Prepare Slack Message
+        id: slack-prepare
+        if: ${{ steps.publish.outcome == 'success' && !contains(matrix.package, 'Meta') }}
+        shell: bash
+        run: |
+          mentions=$(echo -e "${{ steps.actor.outputs.user-ids }}" | sort -u)
+          header="*JS API* version *${{ needs.version.outputs.current_version }}* published to <https://www.npmjs.com/package/datagrok-api/v/${{ needs.version.outputs.current_version }}|NPM> with tag ${{ steps.publish.outputs.tag || 'latest' }}\n$(for value in $mentions; do echo -n "<@$value> "; done) FYI"
+          echo "SLACK_MESSAGE_HEADER=$header" >> $GITHUB_ENV
+      - name: Send to Slack
+        id: slack
+        if: steps.slack-prepare.outcome == 'success'
+        uses: ./.github/actions/slack-post-action
+        with:
+          channel: '#build'
+          slack-token: ${{ secrets.SLACKBOT_TOKEN }}
+          message: ${{ env.SLACK_MESSAGE_HEADER }}
 
       - name: Commit js-api version json for compatibility-tool
         if: ${{ steps.publish.outcome == 'success' }}

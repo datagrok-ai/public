@@ -2,7 +2,7 @@
 
 1. Open the DataFrame:
 * Open the **iris.csv** file from the Demo files.
-* Alternatively, click on the 'star' icon in TestTrack (tooltip: "Open test data") to load the cars.csv dataset.
+* Alternatively, click on the 'star' icon in TestTrack (tooltip: "Open test data") to load the iris.csv dataset.
 2. Train the Partial least squares regression:
 * Go to **Top Menu > ML > Models > Train Model…**.
 * In the **Predict field**, select **“Species”**.

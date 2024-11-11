@@ -183,6 +183,7 @@ class BioPackageDetectors extends DG.Package {
         // col.setTag(SeqHandler.TAGS.alphabetSize, alphabetSize.toString());
         col.setTag(SeqHandler.TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
 
+        col.setTag(DG.TAGS.CELL_RENDERER, 'helm');
         return DG.SEMTYPE.MACROMOLECULE;
       }
 
@@ -262,6 +263,7 @@ class BioPackageDetectors extends DG.Package {
           const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);
           col.setTag(SeqHandler.TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
         }
+        col.setTag(DG.TAGS.CELL_RENDERER, 'sequence');
         return DG.SEMTYPE.MACROMOLECULE;
       } else {
         const stats = this.getStats(categoriesSample, seqMinLength, splitter);
@@ -300,7 +302,7 @@ class BioPackageDetectors extends DG.Package {
         }
 
         refineSeqSplitter(col, stats, separator).then(() => { });
-
+        col.setTag(DG.TAGS.CELL_RENDERER, 'sequence');
         return DG.SEMTYPE.MACROMOLECULE;
       }
     } catch (err) {
@@ -383,7 +385,8 @@ class BioPackageDetectors extends DG.Package {
    */
   checkBadMultichar(freq) /* : string | null */ {
     for (const symbol of Object.keys(freq)) {
-      if (symbol && !isNaN(symbol)) return symbol; // performance evaluated better with RegExp
+      if (symbol && !isNaN(symbol))
+        return symbol; // performance evaluated better with RegExp
 
       const symbolLen = symbol.length;
       if (this.forbiddenMulticharFirst.includes(symbol[0]))
@@ -395,6 +398,10 @@ class BioPackageDetectors extends DG.Package {
         if (this.forbiddenMulticharMiddle.includes(c))
           return symbol;
       }
+      if (symbol.match(/^\d+\W+.*/))
+        // symbols like '2,...' are forbidden
+        // we require an alphabet character just after the leading digit(s)
+        return symbol;
     }
     return null;
   }
@@ -615,17 +622,22 @@ class BioPackageDetectors extends DG.Package {
 
 async function refineSeqSplitter(col, stats, separator) {
   let invalidateRequired = false;
-  const isCyclized = Object.keys(stats.freq).some((om) => om.match(/^.+\(\d+\)$/));
-  const isDimerized = Object.keys(stats.freq).some((om) => om.match(/^\(#\d\).+$/));
 
-  if (isCyclized && !isDimerized) {
-    await grok.functions.call('Bio:applyNotationProviderForCyclized', {col: col, separator: separator});
-    // SeqHandler will be recreated and replaced with the next call .forColumn()
-    // because of changing tags of the column
-    invalidateRequired = true;
-  } else if (isDimerized) {
-    await grok.functions.call('Bio: applyNotationProviderForDimerized', {col: col, separator: separator});
-    invalidateRequired = true;
+  const refinerList = [
+    {package: 'SequenceTranslator', name: 'refineNotationProviderForHarmonizedSequence'},
+  ];
+
+  for (const refineFuncFind of refinerList) {
+    try {
+      const funcList = DG.Func.find(refineFuncFind);
+      if (funcList.length === 0) continue;
+
+      const funcFc = funcList[0].prepare({col: col, stats: stats, separator: separator});
+      const refineRes = (await funcFc.call()).getOutputParamValue();
+      invalidateRequired ||= refineRes;
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   if (invalidateRequired) {

@@ -88,6 +88,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
   onPropertyChangedDebounced() {
+    if (!this.dataFrame)
+      return;
     if (this.totalDataUpdated) {
       this.moleculesCol = this.dataFrame.col(this.molecules!);
       this.activitiesCols = DG.DataFrame.fromColumns(this.dataFrame.columns.byNames(this.activities!)).columns;
@@ -130,7 +132,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
             fragmentCutoff: this.fragmentCutoff!,
           });
       } catch (e: any) {
-
+        const errMsg = e instanceof Error ? e.message : e.toString();
+        grok.shell.error(errMsg);
       } finally {
         $(this.root).empty();
         if (this.mmpView)

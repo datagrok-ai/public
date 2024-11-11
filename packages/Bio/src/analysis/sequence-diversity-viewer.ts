@@ -7,7 +7,7 @@ import {SequenceSearchBaseViewer} from './sequence-search-base-viewer';
 import {getMonomericMols} from '../calculations/monomerLevelMols';
 import {updateDivInnerHTML} from '../utils/ui-utils';
 import {Subject} from 'rxjs';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {getEncodedSeqSpaceCol} from './sequence-space';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {DistanceMatrixService, dmLinearIndex} from '@datagrok-libraries/ml/src/distance-matrix';
@@ -19,7 +19,9 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
   columnNames = [];
   computeCompleted = new Subject<boolean>();
 
-  constructor() {
+  constructor(
+    private readonly seqHelper: ISeqHelper,
+  ) {
     super('diversity');
     this.diverseColumnLabel = this.string('diverseColumnLabel', null);
   }
@@ -29,7 +31,7 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
       return;
     if (this.dataFrame) {
       if (computeData && this.moleculeColumn) {
-        const sh = SeqHandler.forColumn(this.moleculeColumn);
+        const sh = this.seqHelper.getSeqHandler(this.moleculeColumn);
         await (sh.isFasta() ? this.computeByMM() : this.computeByChem());
 
         const diverseColumnName: string = this.diverseColumnLabel != null ? this.diverseColumnLabel :
@@ -48,7 +50,7 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
   }
 
   private async computeByChem() {
-    const monomericMols = await getMonomericMols(this.moleculeColumn!);
+    const monomericMols = await getMonomericMols(this.moleculeColumn!, this.seqHelper);
     //need to create df to calculate fingerprints
     const _monomericMolsDf = DG.DataFrame.fromColumns([monomericMols]);
     this.renderMolIds = await grok.functions.call('Chem:callChemDiversitySearch', {

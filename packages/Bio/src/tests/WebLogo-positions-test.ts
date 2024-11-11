@@ -1,10 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, expect, expectArray, test, testEvent} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, expectArray, test, testEvent} from '@datagrok-libraries/utils/src/test';
 import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
-import {GAP_SYMBOL} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {getSeqHelper, ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {GAP_SYMBOL} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 
 import {
   countForMonomerAtPosition,
@@ -15,7 +15,13 @@ import {
 
 const g: string = GAP_SYMBOL;
 
-category('WebLogo-positions', () => {
+category('WebLogo.positions', () => {
+  let seqHelper: ISeqHelper;
+
+  before(async () => {
+    seqHelper = await getSeqHelper();
+  });
+
   const csvDf1 = `seq
 ATC-G-TTGC--
 ATC-G-TTGC--
@@ -36,7 +42,7 @@ ATC-G-TTGC--
     const wlViewer: WebLogoViewer = (await df.plot.fromType('WebLogo')) as WebLogoViewer;
     await testEvent(wlViewer.onLayoutCalculated, () => {}, () => {
       tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
-    }, 500);
+    }, 500, 'Layout calculate timeout');
     const positions: PI[] = wlViewer['positions'];
 
     const resAllDf1: PI[] = [
@@ -182,7 +188,7 @@ ATC-G-TTGC--
     }
 
     const atPI1: PI = resPosList[1];
-    const sh = SeqHandler.forColumn(seqCol);
+    const sh = seqHelper.getSeqHandler(seqCol);
     const countAt1 = countForMonomerAtPosition(df, sh, df.filter, 'G', atPI1);
     expect(countAt1, 5);
     await wlViewer.awaitRendered();

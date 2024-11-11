@@ -1,43 +1,21 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Subscription} from "rxjs";
-import {first} from "rxjs/operators";
+import {applyCodeMirror} from "./utils/code-mirror-check";
 
 export function initScriptEditor(view: DG.View): void {
-  const startTime = new Date().getTime();
-  let timeoutId: number | undefined;
-
-  const sub: Subscription = grok.events.onViewChanged.pipe(first()).subscribe((_) => {
-    if (timeoutId)
-      clearTimeout(timeoutId);
-  });
-
-  const check = () => {
-    console.log('CALLED');
-    if (new Date().getTime() - startTime >= 1500) {
-      sub.unsubscribe();
-      return;
-    }
-    const codeMirror = view.root.querySelector(".CodeMirror");
-    if (codeMirror) {
-      // @ts-ignore
-      const editor = codeMirror.CodeMirror;
-      const doc = editor.getDoc();
-      if (doc.getLine(2) == '//language: javascript') {
+  applyCodeMirror(view, (editor) => {
+    const doc = editor.getDoc();
+    const lineCount = doc.lineCount();
+    for (let i = 0; i < lineCount; i++) {
+      if (doc.getLine(i).trim() == '//language: javascript') {
         setScriptRibbon(view, doc);
         editor.setCursor({line: 6, ch: 0});
-        console.log('ADDED');
+        break;
         //editor.setFocus();
       }
-      sub.unsubscribe();
-      return;
     }
-
-    timeoutId = window.setTimeout(check, 100);
-  };
-
-  check();
+  });
 }
 
 function setScriptRibbon(v: DG.View, doc: any) {

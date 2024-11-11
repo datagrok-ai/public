@@ -1,5 +1,14 @@
 # Samples changelog
 
+## 1.2.0 (2024-10-24)
+
+* Queries auto tests
+* Pyodide samples
+
+## 1.1.0 (2024-09-09)
+
+* Dependencies bump
+
 ## 1.0.4 (2024-07-18)
 
 * Fixes demo swagger connections, projects, scripts

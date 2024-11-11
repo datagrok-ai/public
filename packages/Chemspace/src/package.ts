@@ -300,7 +300,7 @@ async function getApiToken(): Promise<void> {
 
 //description: Perform query with multipart form data
 //meta.cache: all
-//meta.invalidateOn: 0 0 1 * *
+//meta.cache.invalidateOn: 0 0 1 * *
 //input: string path
 //input: string formParamsStr
 //input: string paramsStr {optional: true}

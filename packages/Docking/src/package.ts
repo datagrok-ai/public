@@ -7,6 +7,7 @@ import $ from 'cash-dom';
 import '@datagrok-libraries/bio/src/types/ngl'; // To enable import from the NGL module declared in bio lib
 import {GridSize, IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
 import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
+import {DockingRole, DockingTags} from '@datagrok-libraries/bio/src/viewers/molecule3d';
 
 import {AutoDockApp, AutoDockDataType} from './apps/auto-dock-app';
 import {_runAutodock, AutoDockService, _runAutodock2} from './utils/auto-dock-service';
@@ -119,7 +120,13 @@ export async function runAutodock4(
 //output: list<string> configFiles
 export async function getConfigFiles(): Promise<string[]> {
   const targetsFiles: DG.FileInfo[] = await grok.dapi.files.list(TARGET_PATH, true);
-  return targetsFiles.filter(file => file.isDirectory).map(file => file.name);
+  const directoriesWithGpf = await Promise.all(
+    targetsFiles.filter(file => file.isDirectory).map(async dir => {
+      const filesInDir = await grok.dapi.files.list(dir.fullPath, true);
+      return filesInDir.some(file => file.path.endsWith('.gpf')) ? dir.name : null;
+    })
+  );
+  return directoriesWithGpf.filter((dir): dir is string => Boolean(dir));
 }
 
 export async function prepareAutoDockData(
@@ -227,6 +234,14 @@ function processAutodockResults(autodockResults: DG.DataFrame, table: DG.DataFra
   return processedTable;
 }
 
+//name: isApplicable
+//input: semantic_value molecule
+//output: bool result
+export function isApplicable(molecule: DG.SemanticValue): boolean {
+  return molecule.cell.column.getTag(DockingTags.dockingRole) === DockingRole.ligand;
+}
+
+
 //name: AutoDock
 //tags: panel, chem, widgets
 //input: semantic_value molecule { semType: Molecule3D }
@@ -264,7 +279,11 @@ export async function getAutodockSingle(
 
   const autodockResults: DG.DataFrame = matchingValue.clone();
   const widget = new DG.Widget(ui.div([]));
-  const targetViewer = await currentTable!.plot.fromType('Biostructure', {
+
+  if (table)
+    currentTable.currentRowIdx = 0;
+
+  const targetViewer = await currentTable.plot.fromType('Biostructure', {
     dataJson: BiostructureDataJson.fromData(key.receptor),
     ligandColumnName: molecule.cell.column.name,
     zoom: true,
@@ -329,10 +348,13 @@ export async function autodockPanel(smiles: DG.SemanticValue): Promise<DG.Widget
     const loader = ui.loader();
     resultsContainer.appendChild(loader);
 
-    const table = smiles.cell.dataFrame.clone();
-    table.rows.removeWhereIdx((idx) => idx !== 0);
+    const ligandColumnName = 'ligand';
+    const column = DG.Column.fromStrings(ligandColumnName, [smiles.value]);
+    const table = DG.DataFrame.fromColumns([column]);
+    column.semType = DG.SEMTYPE.MOLECULE;
+    await grok.data.detectSemanticTypes(table);
 
-    const data = await prepareAutoDockData(target.value!, table, smiles.cell.column.name, poses.value!);
+    const data = await prepareAutoDockData(target.value!, table, ligandColumnName, poses.value!);
 
     const app = new AutoDockApp();
     const autodockResults = await app.init(data);

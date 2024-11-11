@@ -4,17 +4,17 @@
     "access": "public"
   },
   "friendlyName": "Datagrok chem-meta library",
-  "version": "1.2.6",
+  "version": "1.2.8",
   "description": "RDKit JS API, utils for molfiles parsing",
   "dependencies": {
-    "wu": "latest"
+    "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@types/wu": "latest",
-    "@typescript-eslint/eslint-plugin": "latest",
-    "@typescript-eslint/parser": "latest",
-    "eslint": "latest",
-    "eslint-config-google": "latest",
+    "@types/wu": "^2.1.44",
+    "@typescript-eslint/eslint-plugin": "^8.8.1",
+    "@typescript-eslint/parser": "^8.8.1",
+    "eslint": "^8.57.1",
+    "eslint-config-google": "^0.14.0",
     "ts-loader": "^9.2.6",
     "typescript": "^4.2.3"
   },

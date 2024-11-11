@@ -2,7 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+
+import {_package} from '../package';
 
 /**
  * Checks if the column is suitable for the analysis.
@@ -13,9 +15,11 @@ import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
  * @param {boolean} notify show warning message if the column is not suitable for the analysis
  * @return {boolean} True if the column is suitable for the analysis.
  */
-export function checkInputColumnUI(col: DG.Column, name: string, allowedNotations: string[] = [],
-  allowedAlphabets: string[] = [], notify: boolean = true): boolean {
-  const [res, msg]: [boolean, string] = checkInputColumn(col, name, allowedNotations, allowedAlphabets);
+export function checkInputColumnUI(col: DG.Column, name: string,
+  allowedNotations: string[] = [], allowedAlphabets: string[] = [], notify: boolean = true
+): boolean {
+  const seqHelper = _package.seqHelper;
+  const [res, msg]: [boolean, string] = checkInputColumn(col, name, seqHelper, allowedNotations, allowedAlphabets);
   if (notify && !res)
     grok.shell.warning(msg);
   return res;
@@ -23,23 +27,23 @@ export function checkInputColumnUI(col: DG.Column, name: string, allowedNotation
 
 /**
  * Checks if the column is suitable for the analysis.
- * @param {DG.Column} col macromolecule coulumn.
- * @param {string} name column name
+ * @param {DG.Column} col macromolecule column.
+ * @param {string} name Analysis name
  * @param {string[]} allowedNotations allowed notations
  * @param {string[]} allowedAlphabets allowed alphabets
  * @return {[boolean, string]} [True if the column is suitable for the analysis, warning message].
  */
-export function checkInputColumn(
-  col: DG.Column, name: string, allowedNotations: string[] = [], allowedAlphabets: string[] = [],
+export function checkInputColumn(col: DG.Column, name: string, seqHelper: ISeqHelper,
+  allowedNotations: string[] = [], allowedAlphabets: string[] = [],
 ): [boolean, string] {
   let res: boolean = true;
   let msg: string = '';
 
-  const sh = SeqHandler.forColumn(col);
   if (col.semType !== DG.SEMTYPE.MACROMOLECULE) {
     grok.shell.warning(name + ' analysis is allowed for Macromolecules semantic type');
     res = false;
   } else {
+    const sh = seqHelper.getSeqHandler(col);
     const notation: string = sh.notation;
     if (allowedNotations.length > 0 &&
       !allowedNotations.some((n) => notation.toUpperCase() == (n.toUpperCase()))

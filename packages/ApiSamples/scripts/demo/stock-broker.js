@@ -42,7 +42,7 @@ function runStockBroker() {
   let view = grok.shell.addTableView(df);
 
   view.boxPlot({
-    categoryColumnName: 'symbol',
+    categoryColumnNames: ['symbol'],
     valueColumnName: 'price'
   });
 

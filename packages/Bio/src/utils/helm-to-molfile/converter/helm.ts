@@ -10,8 +10,7 @@ export class Helm {
     const simplePolymers = helmSections[0].split(HELM_ITEM_SEPARATOR);
     this.simplePolymers = simplePolymers
       .map((item) => new SimplePolymer(item));
-    if (helmSections[1] !== '')
-      this.connectionList = new ConnectionList(helmSections[1]);
+    this.connectionList = new ConnectionList(helmSections[1]);
     this.bondData = this.getBondData();
 
     this.bondedRGroupsMap = this.getBondedRGroupsMap();
@@ -21,26 +20,26 @@ export class Helm {
    * complex polymer scope) */
   readonly bondData: Bond[][];
 
-  private simplePolymers: SimplePolymer[];
-  private connectionList?: ConnectionList;
+  public readonly simplePolymers: SimplePolymer[];
+  public readonly connectionList: ConnectionList;
 
   /** Maps global monomer index to r-group ids (starting from 1) participating
    * in connection */
-  readonly bondedRGroupsMap: Map<number, number[]>;
+  readonly bondedRGroupsMap: number[][];
 
-  private getBondedRGroupsMap(): Map<number, number[]> {
-    const bondedRGroupsMap = new Map<number, number[]>();
+  private getBondedRGroupsMap(): number[][] {
+    const monomerCount = this.simplePolymers.map((sp) => sp.monomers.length)
+      .reduce((a, b) => a + b, 0);
+    const bondedRGroupsList: number[][] = Array.from({length: monomerCount}, () => []);
     this.bondData.forEach((bond) => {
       bond.forEach((bondPart) => {
         const monomerIdx = bondPart.monomerIdx;
         const rGroupId = bondPart.rGroupId;
-        if (!bondedRGroupsMap.get(monomerIdx))
-          bondedRGroupsMap.set(monomerIdx, []);
-        bondedRGroupsMap.get(monomerIdx)!.push(rGroupId);
+        bondedRGroupsList[monomerIdx].push(rGroupId);
       });
     });
 
-    return bondedRGroupsMap;
+    return bondedRGroupsList;
   }
 
   toString() {
@@ -74,8 +73,8 @@ export class Helm {
     });
   }
 
-  private getMonomerIdxShifts(): {[simplePolymerId: string]: number} {
-    const result: {[simplePolymerId: string]: number} = {};
+  private getMonomerIdxShifts(): { [simplePolymerId: string]: number } {
+    const result: { [simplePolymerId: string]: number } = {};
     let shift = 0;
     this.simplePolymers.forEach((simplePolymer) => {
       result[simplePolymer.id] = shift;
@@ -93,19 +92,17 @@ export class Helm {
       this.shiftBondMonomerIds(shift, bondData);
       result.push(...bondData);
     });
-    if (this.connectionList) {
-      const connectionData = this.connectionList.getConnectionData();
-      connectionData.forEach((connection) => {
-        const data: Bond[] = [];
-        connection.forEach((connectionItem) => {
-          const shift = shifts[connectionItem.polymerId];
-          const bond = connectionItem.bond;
-          bond.monomerIdx += shift;
-          data.push(bond);
-        });
-        result.push(data);
+    const connectionData = this.connectionList.getConnectionData();
+    connectionData.forEach((connection) => {
+      const data: Bond[] = [];
+      connection.forEach((connectionItem) => {
+        const shift = shifts[connectionItem.polymerId];
+        const bond = connectionItem.bond;
+        bond.monomerIdx += shift;
+        data.push(bond);
       });
-    }
+      result.push(data);
+    });
     return result;
   }
 }

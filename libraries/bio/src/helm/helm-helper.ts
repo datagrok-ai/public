@@ -2,18 +2,22 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import type {App} from '@datagrok-libraries/helm-web-editor/helm/App';
+import {Observable} from 'rxjs';
+
+import type {Point, App, HelmType, IHelmEditorOptions} from './types';
 import {
   GetMonomerFunc, MonomersFuncs, HelmMol, HelmString, IHelmWebEditor, HelmAtom, IHelmDrawOptions
 } from './types';
-import {IMonomerLib} from '../types/index';
-import {Observable} from 'rxjs';
+import {IMonomerLibBase} from '../types/index';
+import {ISeqHelper} from '../utils/seq-helper';
+import {SeqValueBase} from '../utils/macromolecule/seq-handler';
 
-export type IHelmInputInitOptions = ui.input.IInputInitOptions<HelmString | HelmMol> & {
+export type IHelmInputInitOptions = ui.input.IInputInitOptions<SeqValueBase> & {
+  editorOptions: Partial<IHelmEditorOptions>;
   editable: boolean;
 };
 
-export abstract class HelmInputBase extends DG.JsInputBase<HelmString> {
+export abstract class HelmInputBase extends DG.JsInputBase<SeqValueBase> {
   abstract get molValue(): HelmMol;
   abstract set molValue(value: HelmMol);
 
@@ -26,16 +30,37 @@ export abstract class HelmInputBase extends DG.JsInputBase<HelmString> {
   abstract showTooltip(content: HTMLElement | string, a: HelmAtom): void;
 }
 
+/**
+ * @property {Map<number, number>} monomerMap srcPosIdx -> resPosIdx
+ */
+export type HelmConvertRes = {
+  srcHelm: string;
+  resHelm: string;
+  monomerMap: Map<number, number> | null;
+}
+
+export const HelmNotSupportedErrorType = 'HelmNotSupportedError';
+
+export class HelmNotSupportedError extends Error {
+  public readonly type = HelmNotSupportedErrorType;
+
+  constructor(message?: string) {
+    super(message);
+  }
+}
+
 export interface IHelmHelper {
+  get seqHelper(): ISeqHelper;
+
   createHelmInput(name: string, options?: IHelmInputInitOptions): HelmInputBase;
 
-  createHelmWebEditor(host?: HTMLElement, drawOptions?: Partial<IHelmDrawOptions>): IHelmWebEditor;
+  createHelmWebEditor(host?: HTMLElement, options?: Partial<IHelmEditorOptions>): IHelmWebEditor;
 
   createWebEditorApp(host: HTMLDivElement, helm?: string): App;
 
   get originalMonomersFuncs(): MonomersFuncs | null;
 
-  buildMonomersFuncsFromLib(monomerLib: IMonomerLib): MonomersFuncs;
+  buildMonomersFuncsFromLib(monomerLib: IMonomerLibBase): MonomersFuncs;
 
   overrideMonomersFuncs(monomersFuncs: MonomersFuncs): MonomersFuncs;
   revertOriginalMonomersFuncs(): MonomersFuncs;
@@ -44,6 +69,9 @@ export interface IHelmHelper {
 
   /** Gets pseudo molfiles with monomers as atoms */
   getMolfiles(helmStrList: string[]): string[];
+
+  parse(helm: string, origin?: Point): HelmMol;
+  removeGaps(helm: string): HelmConvertRes;
 }
 
 export async function getHelmHelper(): Promise<IHelmHelper> {
@@ -68,3 +96,22 @@ ui.input.helmAsync = async function(
   name: string, options?: IHelmInputInitOptions): Promise<HelmInputBase> {
   return (await getHelmHelper()).createHelmInput(name, options);
 };
+
+/** Inputs logic */
+export function getMonomerHandleArgs(
+  a: HelmAtom | HelmType, name?: string
+): [/** biotype */ HelmType, /** elem */ string] {
+  if (!a)
+    throw new Error(`Argument 'a' of type Atom or HelmType is mandatory.`);
+  let biotype: HelmType;
+  let elem: string;
+  const aa = a as HelmAtom;
+  if (aa.T === 'ATOM') {
+    biotype = aa.biotype()!;
+    elem = aa.elem;
+  } else {
+    biotype = a as HelmType;
+    elem = name!;
+  }
+  return [biotype, elem];
+}

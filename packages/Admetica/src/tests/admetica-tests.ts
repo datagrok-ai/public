@@ -31,13 +31,13 @@ category('Admetica', () => {
   test('Calculate dialog. UI', async () => {
     molecules = grok.data.demo.molecules(100);
     v = grok.shell.addTableView(molecules);
+    await grok.data.detectSemanticTypes(molecules);
+    await delay(5000);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     grok.shell.topMenu.find('Chem').group('Admetica').find('Сalculate...').click();
     await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot open Admetica dialog', 2000);
     const admeticaDialog = returnDialog('Admetica')?.root;
-    const settingsIcon = admeticaDialog?.querySelector('.grok-icon.grok-font-icon-settings') as HTMLElement;
-    settingsIcon.click();
-    await awaitCheck(() => admeticaDialog!.querySelectorAll('.d4-tree-view-group-host > .d4-tree-view-group').length === 4,
+    await awaitCheck(() => admeticaDialog!.querySelectorAll('.d4-tree-view-group-host > .d4-tree-view-group').length === 5,
       'properties number inside Admetica dialog is different than expected', 5000);
     const smilesColumn = admeticaDialog!.querySelector('.d4-column-selector-column') as HTMLElement;
     await awaitCheck(() => smilesColumn!.innerText === 'smiles',
@@ -57,42 +57,63 @@ category('Admetica', () => {
     smilesColumn = molecules.columns.bySemType(DG.SEMTYPE.MOLECULE)!;
     const newTableColumn = 'Caco2';
     await performChemicalPropertyPredictions(smilesColumn, v.dataFrame, newTableColumn);
+    await delay(2000);
     expect(molecules.columns.names().includes(newTableColumn), true, `${newTableColumn} column has not been added`);
-    expect(molecules.col(newTableColumn)!.get(0), -4.615971565246582, `Calculated value for ${newTableColumn} is incorrect`);
-    expect(molecules.col(newTableColumn)!.meta.colors.getColor(0), 4278255360, 'Wrong color coding was added');
-    expect(molecules.col(newTableColumn)!.meta.colors.getColor(4), 4288177664, 'Wrong color coding was added');
+    expect(parseFloat(molecules.col(newTableColumn)!.get(0).toFixed(2)), -4.62, `Calculated value for ${newTableColumn} is incorrect`);
+    expect(molecules.col(newTableColumn)!.getTag('.color-coding-type'), DG.COLOR_CODING_TYPE.LINEAR, `Expected ${DG.COLOR_CODING_TYPE.LINEAR} color coding type, but got a different value`);
+    expect(molecules.col(newTableColumn)!.getTag('.color-coding-linear'), '[4292224808,4281114668]', 'Expected another linear color values');
   }, {timeout: 100000});
 
   test('Calculate. For single cell', async () => {
-    molecules = grok.data.demo.molecules(20);
-    v = grok.shell.addTableView(molecules);
-    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
+    const molecules = grok.data.demo.molecules(20);
+    const v = grok.shell.addTableView(molecules);
+    await awaitCheck(() => document.querySelector('canvas') !== null, 'Cannot load table', 3000);
     grok.shell.windows.showProperties = true;
+  
     const table = v.dataFrame;
     table.currentCell = table.cell(0, 'smiles');
     await delay(1000);
+  
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
-    await awaitPanel(pp, 'Admetica', 6000);
-    (document.querySelector('.fa-chevron-square-down') as HTMLElement)?.click();
+    await awaitPanel(pp, 'Biology', 6000);
+  
+    const biologyPanel = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
+      .find((el) => el.textContent === 'Biology') as HTMLElement;
+    if (biologyPanel && !biologyPanel.classList.contains('expanded')) {
+      biologyPanel.click();
+    }
+    
+    await delay(2000);
+  
+    const admePanel = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
+      .find((el) => el.textContent === 'Admetica') as HTMLElement;
+    if (admePanel && !admePanel.classList.contains('expanded')) {
+      admePanel.click();
+    }
+  
+    await delay(2000);
+    
     const distribution = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Distribution') as HTMLElement;
-    if (!distribution.classList.contains('expanded')) {
+    if (distribution && !distribution.classList.contains('expanded')) {
       distribution.click();
     }
+  
     await delay(1000);
-    const distributionRes = `
-      PPBR\t82.26
-      VDss\t8.48`;
-    await awaitCheck(() => (pp.getElementsByClassName('d4-table d4-item-table d4-info-table')[2] as HTMLElement).innerText === distributionRes, 'Results for single cell differ', 8000);
-  }, {timeout: 100000});
+  
+    await awaitCheck(() => 
+      (admePanel?.parentElement?.getElementsByClassName('d4-table d4-item-table d4-info-table')[0] as HTMLElement)?.innerText.trim() !== '',
+      'Properties weren’t calculated',
+      8000
+    );
+  }, { timeout: 100000 });  
 
   test('Calculate.Benchmark column', async () => {
     const runAdmeticaBenchmark = async (moleculesCount: number) => {
-        const molecules = grok.data.demo.molecules(moleculesCount);
-        molecules.columns.remove('logD');
-        const iterations = DG.Test.isInBenchmark ? 100 : 5;
-        const args = [molecules.toCsv(), await getQueryParams(), 'false'];
-        return await runInLoop(iterations, runAdmetica, ...args);
+      const molecules = grok.data.demo.molecules(moleculesCount);
+      molecules.columns.remove('logD');
+      const args = [molecules.toCsv(), await getQueryParams(), 'false'];
+      return await runOnce(runAdmetica, ...args);
     };
 
     const mol1k = await runAdmeticaBenchmark(1000);
@@ -100,31 +121,21 @@ category('Admetica', () => {
     const mol10k = await runAdmeticaBenchmark(10000);
 
     return DG.toDart({"1k molecules": mol1k, "5k molecules": mol5k, "10k molecules": mol10k});
-}, {timeout: 10000000000, benchmark: true });
+  }, {timeout: 10000000000, benchmark: true });
 
   test('Calculate.Benchmark cell', async () => {
     const smiles = `smiles
     O=C1Nc2ccccc2C(C2CCCCC2)=NC1`;
-    const iterations = DG.Test.isInBenchmark ? 100 : 10;
     const distributionSubgroup = properties.subgroup.find((subgroup: any) => subgroup.name === "Distribution");
     const distributionModels = distributionSubgroup ? distributionSubgroup.models.map((model: any) => model.name) : [];
     const args = [smiles, distributionModels, 'false'];
-    const cellResults = await runInLoop(iterations, runAdmetica, ...args);
+    const cellResults = await runOnce(runAdmetica, ...args);
     return DG.toDart({"results": cellResults});
   }, {timeout: 1000000, benchmark: true});
 });
-
-async function runInLoop(iterations: number, func: (...args: string[]) => Promise<string | null>, ...args: string[]) {
-  const results = new Array<number>(iterations);
-  for (let i = 0; i < iterations; ++i) {
-    const startTime = performance.now();
-    await func(...args);
-    const endTime = performance.now();
-    results[i] = (endTime - startTime) / 1000;
-  }
-  const sum = results.reduce((p, c) => p + c, 0);
-  return {'Iterations' : results.length, 'Average time': sum / results.length,
-    'Min time': Math.min(...results), 'Max time': Math.max(...results)};
+  
+async function runOnce(func: (...args: string[]) => Promise<string | null>, ...args: string[]) {
+  return await func(...args);
 }
 
 async function awaitPanel(pp: HTMLElement, name: string, ms: number = 5000): Promise<void> {

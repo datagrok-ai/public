@@ -1,5 +1,37 @@
 # Peptides changelog
 
+## 1.19.0 (2024-11-01)
+
+Migrate to new seqHelper API
+
+## 1.18.7 (2024-10-17)
+
+Fixes For GROK-16606, GROK-16609
+
+## 1.18.6 (2024-10-08)
+
+MCL: Better layout for similar size clusters
+
+## 1.18.5 (2024-10-07)
+
+Fix weblogo support
+
+## 1.18.4 (2024-10-03)
+
+Use monomer tooltip from library
+
+## 1.18.3 (2024-10-02)
+
+Add Monomer meta columns to the Monomer-Position viewer
+
+## 1.18.2 (2024-09-22)
+
+Color monomer background in invariant map
+
+## 1.18.1 (2024-09-18)
+
+Add monomer custom coloring
+
 ## 1.17.29 (2024-08-14)
 
 Update MCL implementation

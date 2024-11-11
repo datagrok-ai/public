@@ -17,8 +17,8 @@ export class MoleculeImage {
     this.molblock = molblok;
   }
 
-  private _validMolBlock: string;
-  get molblock(): string { return this._validMolBlock; }
+  private _validMolBlock!: string;
+  get molblock(): string { return this._validMolBlock!; }
 
   set molblock(value: string) {
     if (value === '') {

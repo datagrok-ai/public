@@ -80,7 +80,7 @@ export async function runPepsea(srcCol: DG.Column<string>, unUsedName: string,
 
   const alignedSequences: string[] = new Array(peptideCount);
   for (const body of bodies) { // getting aligned sequences for each cluster
-    const alignedObject = await fetchWrapper(() => requestAlignedObjects(pepseaContainer.id, body, method, gapOpen, gapExtend, logger));
+    const alignedObject = await requestAlignedObjects(pepseaContainer.id, body, method, gapOpen, gapExtend, logger);
     const alignments = alignedObject.Alignment;
 
     for (const alignment of alignments) { // filling alignedSequencesCol

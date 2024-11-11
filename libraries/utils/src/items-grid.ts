@@ -136,6 +136,16 @@ export class ItemsGrid {
     }
   }
 
+  private addingItemInputs: {[key: string]: InputType} = {};
+
+  public get addingItem(): ItemType {
+    const res: ItemType = {};
+    Object.keys(this.addingItemInputs).forEach((pName) => {
+      res[pName] = this.addingItemInputs[pName].value;
+    });
+    return res;
+  }
+
   private getItemDiv(item: ItemType = {}, isAdding?: boolean): HTMLElement[] {
     const editors: HTMLElement[] = [];
 
@@ -165,6 +175,7 @@ export class ItemsGrid {
 
     let companionButton: HTMLElement | null = null;
     if (isAdding) {
+      this.addingItemInputs = inputsMap;
       const addButton = ui.icons.add(() => {
         const newItem: ItemType = this.options.newItemFunction ? this.options.newItemFunction() : {};
         Object.keys(inputsMap).forEach((pName) => {

@@ -10,7 +10,7 @@
 #input: double sampleRate = 256.0 [Signal sample rate, in Hz]
 #input: int w0 = 4 [Tradeoff between time and frequency resolution]
 #input: bool removeDc = true [Flag to force DC component removal]
-#output: graphics [Scalogram plot]
+#output: graphics result [Scalogram plot]
 
 import numpy as np
 import matplotlib.pyplot as plt

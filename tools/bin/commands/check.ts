@@ -8,6 +8,7 @@ import { PackageFile } from '../utils/interfaces';
 import * as testUtils from '../utils/test-utils';
 import { error } from 'console';
 
+const warns = ['Latest package version', 'Datagrok API version should contain'];
 
 export function check(args: CheckArgs): boolean {
   const nOptions = Object.keys(args).length - 1;
@@ -28,10 +29,10 @@ export function check(args: CheckArgs): boolean {
 
 function runChecks(packagePath: string): boolean {
   const files = walk.sync({ path: packagePath, ignoreFiles: ['.npmignore', '.gitignore'] });
-  const jsTsFiles = files.filter((f) => !f.startsWith('dist/') && (f.endsWith('.js') || f.endsWith('.ts')));
+  const jsTsFiles = files.filter((f) => !f.startsWith('dist/') && (f.endsWith('.js') || f.endsWith('.ts') || f.endsWith('.sql') || f.endsWith('.py')));
   const packageFiles = ['src/package.ts', 'src/detectors.ts', 'src/package.js', 'src/detectors.js',
     'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js'];
-  const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f));
+  // const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f)); 
   const errors: string[] = [];
   const warnings: string[] = [];
   const packageFilePath = path.join(packagePath, 'package.json');
@@ -39,7 +40,11 @@ function runChecks(packagePath: string): boolean {
 
   const webpackConfigPath = path.join(packagePath, 'webpack.config.js');
   const isWebpack = fs.existsSync(webpackConfigPath);
+  let isReleaseCandidateVersion: boolean = false;
   let externals: { [key: string]: string } | null = null;
+
+  if (/\d+.\d+.\d+-rc(.[A-Za-z0-9]*.[A-Za-z0-9]*)?/.test(json.version))
+    isReleaseCandidateVersion = true;
   if (isWebpack) {
     const content = fs.readFileSync(webpackConfigPath, { encoding: 'utf-8' });
     externals = extractExternals(content);
@@ -49,14 +54,14 @@ function runChecks(packagePath: string): boolean {
   errors.push(...checkSourceMap(packagePath));
   errors.push(...checkNpmIgnore(packagePath));
   warnings.push(...checkScriptNames(packagePath));
-  errors.push(...checkFuncSignatures(packagePath, funcFiles));
-  errors.push(...checkPackageFile(packagePath, json, { isWebpack, externals }));
-  warnings.push(...checkChangelog(packagePath, json));
+  errors.push(...checkFuncSignatures(packagePath, jsTsFiles));
+  errors.push(...checkPackageFile(packagePath, json, { isWebpack, externals, isReleaseCandidateVersion }));
+  if (!isReleaseCandidateVersion)
+    warnings.push(...checkChangelog(packagePath, json));
 
   if (warnings.length) {
     console.log(`${path.basename(packagePath)} warnings`);
     warn(warnings);
-
   }
 
   if (errors.length) {
@@ -69,8 +74,6 @@ function runChecks(packagePath: string): boolean {
   console.log(`Checking package ${path.basename(packagePath)}...\t\t\t\u2713 OK`);
   return true;
 }
-
-const warns = ['Latest package version', 'Datagrok API version should contain'];
 
 function runChecksRec(dir: string): boolean {
   const files = fs.readdirSync(dir);
@@ -215,8 +218,7 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
       let value = true;
       let message = '';
 
-      // TODO: GROK-15398: Fix file viewer check in grok check
-      if (tags == null || (tags.length !== 1 || tags[0] !== 'fileViewer')) {
+      if (tags == null || (tags.length !== 1 && tags[0] !== 'fileViewer')) {
         value = false;
         message += 'File viewers must have only one tag: "fileViewer"\n';
       }
@@ -279,11 +281,12 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
 
   for (const file of files) {
     const content = fs.readFileSync(path.join(packagePath, file), { encoding: 'utf-8' });
-    const functions = getFuncMetadata(content);
+    const functions = getFuncMetadata(content, file.split('.').pop() ?? 'ts');
     for (const f of functions) {
       const paramsCheck = checkFunctions.params(f);
       if (!paramsCheck.value)
         warnings.push(`File ${file}, function ${f.name}:\n${paramsCheck.message}`);
+
       const roles = functionRoles.filter((role) => f.tags?.includes(role));
       if (roles.length > 1)
         warnings.push(`File ${file}, function ${f.name}: several function roles are used (${roles.join(', ')})`);
@@ -292,6 +295,15 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
         if (!vr.value)
           warnings.push(`File ${file}, function ${f.name}:\n${vr.message}`);
       }
+      if(f.isInvalidateOnWithoutCache)
+        warnings.push(`File ${file}, function ${f.name}: Cant use invalidateOn without cache, please follow this example: 'meta.cache.invalidateOn'`);
+
+      if (f.cache)
+        if (!utils.cahceValues.includes(f.cache))
+          warnings.push(`File ${file}, function ${f.name}: unsupposed variable for cache : ${f.cache}`);
+      if (f.invalidateOn)
+        if (!utils.isValidCron(f.invalidateOn))
+          warnings.push(`File ${file}, function ${f.name}: unsupposed variable for invalidateOn : ${f.invalidateOn}`);
     }
   }
 
@@ -308,7 +320,7 @@ const sharedLibExternals: { [lib: string]: {} } = {
 
 export function checkPackageFile(packagePath: string, json: PackageFile, options?: {
   externals?:
-  { [key: string]: string } | null, isWebpack?: boolean
+  { [key: string]: string } | null, isWebpack?: boolean | null, isReleaseCandidateVersion?: boolean
 }): string[] {
   const warnings: string[] = [];
   const isPublicPackage = path.basename(path.dirname(packagePath)) === 'packages' &&
@@ -341,7 +353,7 @@ export function checkPackageFile(packagePath: string, json: PackageFile, options
   if (api) {
     if (api === '../../js-api') { } else if (api === 'latest')
       warnings.push('File "package.json": you should specify Datagrok API version constraint (for example ^1.16.0, >=1.16.0).');
-    else if (!/^(\^|>|<|~).+/.test(api))
+    else if (options?.isReleaseCandidateVersion === false && (!/^(\^|>|<|~).+/.test(api)))
       warnings.push('File "package.json": Datagrok API version should starts with > | >= | ~ | ^ | < | <=');
   }
 
@@ -382,6 +394,31 @@ export function checkPackageFile(packagePath: string, json: PackageFile, options
       if (!(fs.existsSync(path.join(packagePath, source))))
         warnings.push(`Source ${source} not found in the package.`);
     }
+  }
+
+  if (options?.isReleaseCandidateVersion === true) {
+    let hasRCDependency = false;
+
+    for (let dependency of Object.keys(json.dependencies ?? {})) {
+      if (/\d+.\d+.\d+-rc(.[A-Za-z0-9]*.[A-Za-z0-9]*)?/.test((json.dependencies ?? {})[dependency])) {
+        hasRCDependency = true;
+        break;
+      }
+    }
+
+    if (!hasRCDependency) {
+      for (let dependency of Object.keys(json.dependencies ?? {})) {
+        console.log(dependency);
+        console.log((json.dependencies ?? {})[dependency]);
+        if (/\d+.\d+.\d+-rc(.[A-Za-z0-9]*.[A-Za-z0-9]*)?/.test((json.devDependencies ?? {})[dependency])) {
+          hasRCDependency = true;
+          break;
+        }
+      }
+    }
+
+    if (!hasRCDependency)
+      warnings.push('Release candidate error: Current package doesnt have any dependencies from any release candidate package ');
   }
 
   return warnings;
@@ -476,7 +513,6 @@ function checkScriptNames(packagePath: string): string[] {
   return warnings;
 }
 
-
 function getAllFilesInDirectory(directoryPath: string): string[] {
   const excludedFilesToCheck: string[] = ['node_modules', 'dist'];
 
@@ -503,7 +539,8 @@ function showError(errors: string[]): void {
 function warn(warnings: string[]): void {
   warnings.forEach((w) => color.warn(w));
 }
-function getFuncMetadata(script: string): FuncMetadata[] {
+
+function getFuncMetadata(script: string, fileExtention: string): FuncMetadata[] {
   const funcData: FuncMetadata[] = [];
   let isHeader = false;
   let data: FuncMetadata = { name: '', inputs: [], outputs: [] };
@@ -511,8 +548,8 @@ function getFuncMetadata(script: string): FuncMetadata[] {
   for (const line of script.split('\n')) {
     if (!line)
       continue;
-
-    const match = line.match(utils.paramRegex);
+    //@ts-ignore
+    const match = line.match(utils.fileParamRegex[fileExtention]);
     if (match) {
       if (!isHeader)
         isHeader = true;
@@ -521,12 +558,23 @@ function getFuncMetadata(script: string): FuncMetadata[] {
         data.name = line.match(utils.nameAnnRegex)?.[2];
       else if (param === 'description')
         data.description = match[2];
-      else if (param === 'input')
+      else if (param === 'input') {
         data.inputs.push({ type: match[2], name: match[3] });
+      }
       else if (param === 'output')
         data.outputs.push({ type: match[2], name: match[3] });
-      else if (param === 'tags')
+      else if (param === 'tags') {
         data.tags = match.input && match[3] ? match.input.split(':')[1].split(',').map((t) => t.trim()) : [match[2]];
+      }
+      else if (param === 'meta.cache') {
+        data.cache = line.split(':').pop()?.trim();
+      }
+      else if (param === 'meta.cache.invalidateOn') {
+        data.invalidateOn = line.split(':').pop()?.trim();
+      }
+      else if (param === 'meta.invalidateOn') {
+        data.isInvalidateOnWithoutCache = true;
+      }
     }
     if (isHeader) {
       const nm = line.match(utils.nameRegex);

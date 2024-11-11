@@ -20,10 +20,14 @@ import {IFpResult} from './rdkit-service/rdkit-service-worker-similarity';
 import {SubstructureSearchType, getSearchProgressEventName, getSearchQueryAndType, getTerminateEventName} from './constants';
 import {SubstructureSearchWithFpResult} from './rdkit-service/rdkit-service';
 import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import { filter } from 'rxjs/operators';
+
 
 const enum FING_COL_TAGS {
   molsCreatedForVersion = '.mols.created.for.version',
 }
+
+const DATA_CHANGED_TAG = 'dataChanged'
 
 export const enum FILTER_TYPES {
   scaffold = 'scaffold',
@@ -104,31 +108,33 @@ function invalidatedColumnKey(col: DG.Column): string {
   return col.dataFrame?.name + '.' + col.name;
 }
 
-function colInvalidated(col: DG.Column): Boolean {
-  return (lastColumnInvalidated == invalidatedColumnKey(col) &&
-    col.getTag(FING_COL_TAGS.molsCreatedForVersion) == String(col.version));
-}
+function checkForSavedColumns(col: DG.Column, colTags: (Fingerprint | string) []): {[key: string | Fingerprint] : DG.Column<any>} {
 
-//updates array of RDMols in case column has been changed
-async function _invalidate(molCol: DG.Column) {
-  if (!colInvalidated(molCol)) {
-    await (await getRdKitService()).initMoleculesStructures(molCol.toList());
-    molCol.setTag(FING_COL_TAGS.molsCreatedForVersion, String(molCol.version + 1));
-    lastColumnInvalidated = invalidatedColumnKey(molCol);
+  //in case column has not been subsribed to onDataChange, then do it and set column value change counter to 0
+  if (col.temp[DATA_CHANGED_TAG] == null) {
+    col.temp[DATA_CHANGED_TAG] = 0;
+    col.dataFrame?.onDataChanged.pipe(filter((args: any) => {
+      return args?.args?.column?.name === col.name && args?.args?.indexes?.length
+    })).subscribe((e) => {
+      // every time values in column have been changed - increment counter. Counter > 0 means that we need to recalculate fps
+      col.temp[DATA_CHANGED_TAG]++;
+    });
   }
-}
 
+  const colsArray: {[key: string | Fingerprint] : DG.Column<any>} = {};
 
-function checkForSavedColumn(col: DG.Column, colTag: Fingerprint | string): DG.Column<any> | null {
-  const savedColName = '~' + col.name + '.' + colTag;
-  const colVerTag = '.' + colTag + '.Version';
-
-  if (col.dataFrame && col.dataFrame?.col(savedColName) &&
-      col.getTag(colVerTag) == String(col.version)) {
-    const savedCol = col.dataFrame.columns.byName(savedColName);
-    return savedCol;
+  for (const colTag of colTags) {
+    const savedColName = '~' + col.name + '.' + colTag;
+    if (col.dataFrame && col.dataFrame?.col(savedColName) && col.temp[DATA_CHANGED_TAG] === 0) {
+      const savedCol = col.dataFrame.columns.byName(savedColName);
+      colsArray[colTag] = savedCol;
+    }
   }
-  return null;
+
+  // reset the data change flag
+  col.temp[DATA_CHANGED_TAG] = 0;
+
+  return colsArray;
 }
 
 function saveColumns(col: DG.Column, data: (Uint8Array | string | null)[][],
@@ -137,9 +143,6 @@ function saveColumns(col: DG.Column, data: (Uint8Array | string | null)[][],
     for (let i = 0; i < data.length; i++)
       saveColumn(col, data[i], tags[i], colTypes[i]);
 
-    const colVersion = col.version + data.length;
-    for (let i = 0; i < data.length; i++)
-      col.setTag('.' + tags[i] + '.Version', String(colVersion));
   }
 }
 
@@ -181,9 +184,10 @@ async function getUint8ArrayFingerprints(
   returnSmiles = false): Promise<IFpResult> {
   await chemBeginCriticalSection();
   try {
-    const fgsCheck = checkForSavedColumn(molCol, fingerprintsType);
+    const colsArray = checkForSavedColumns(molCol, [fingerprintsType, canonicalSmilesColName]);
+    const fgsCheck = colsArray[fingerprintsType]; ;
     if (returnSmiles) {
-      const smilesCheck = checkForSavedColumn(molCol, canonicalSmilesColName);
+      const smilesCheck = colsArray[canonicalSmilesColName];
       if (fgsCheck && smilesCheck)
         return {fps: fgsCheck.toList(), smiles: smilesCheck.toList()};
       else {
@@ -292,17 +296,13 @@ export async function chemSubstructureSearchLibrary(
       grok.events.fireCustomEvent(searchProgressEventName, progress * 100);
     };
 
-    const getSavedCol = (colName: string) => {
-      const savedCol = checkForSavedColumn(molStringsColumn, colName);
-      if (!savedCol)
-        invalidateCacheFlag = true;
-      return savedCol;
-    };
-
-    const canonicalSmilesList = getSavedCol(canonicalSmilesColName)?.toList() ??
-      new Array<string | null>(molStringsColumn.length).fill(null);
     const fpType = searchType === SubstructureSearchType.IS_SIMILAR ? fp : Fingerprint.Pattern;
-    const fgsList = getSavedCol(fpType)?.toList() ??
+    const savedColsArray = checkForSavedColumns(molStringsColumn, [canonicalSmilesColName, fpType]);
+    invalidateCacheFlag = !savedColsArray[canonicalSmilesColName] || !savedColsArray[fpType];
+
+    const canonicalSmilesList = savedColsArray[canonicalSmilesColName]?.toList() ??
+      new Array<string | null>(molStringsColumn.length).fill(null);
+    const fgsList = savedColsArray[fpType]?.toList() ??
       new Array<Uint8Array | null>(molStringsColumn.length).fill(null);
 
     if (invalidateCacheFlag) //invalidating cache in case column has been changed
@@ -315,18 +315,25 @@ export async function chemSubstructureSearchLibrary(
         smiles: !columnIsCanonicalSmiles ? canonicalSmilesList : null,
       },
     };
+    let numOfCalculatedFpBatches = 0;
+    const updateNumOfCalculatedFpBatches = () => { 
+      numOfCalculatedFpBatches++; 
+    }  
     const subFuncs = await rdKitService.
       searchSubstructureWithFps(molString, molBlockFailover, result, updateFilterFunc,
-        molStringsColumn.toList(), !columnIsCanonicalSmiles, searchType, similarityCutOff, fp);     
+        molStringsColumn.toList(), !columnIsCanonicalSmiles, searchType, similarityCutOff, fp, updateNumOfCalculatedFpBatches);   
     const saveProcessedColumns = () => {
       try {
-        !columnIsCanonicalSmiles ?
+        //save procecced columns only in case at least one fp batch has been calculated. Otherwise, we just used existing data and do not need to save
+        if (numOfCalculatedFpBatches) {
+          !columnIsCanonicalSmiles ?
           saveColumns(molStringsColumn, [result.fpsRes!.fps, result.fpsRes!.smiles!],
             [fpType, canonicalSmilesColName], [DG.COLUMN_TYPE.BYTE_ARRAY, DG.COLUMN_TYPE.STRING]):
           saveColumns(molStringsColumn, [result.fpsRes!.fps], [fpType], [DG.COLUMN_TYPE.BYTE_ARRAY]);
           _package.logger.debug(`in chemSubstructureSearchLibrary, saveProcessedColumns: ${currentSearch}`);
-      } catch {
-
+        }
+      } catch(e: any) {
+        _package.logger.debug(e);
       } finally {
         _package.logger.debug(`in chemSubstructureSearchLibrary, ending critical section: ${currentSearch}`);
         chemEndCriticalSection();

@@ -4,9 +4,10 @@ import * as grok from 'datagrok-api/grok';
 
 import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {mmDistanceFunctionArgs} from '@datagrok-libraries/ml/src/macromolecule-distance-functions/types';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {getMonomerSubstitutionMatrix} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+
+import {_package} from '../package';
 
 export interface ISequenceSpaceResult {
   distance?: Float32Array;
@@ -18,7 +19,7 @@ export async function getEncodedSeqSpaceCol(
 ): Promise<{ seqList: string[], options: { [_: string]: any } }> {
 // encodes sequences using utf characters to also support multichar and non fasta sequences
   const rowCount = seqCol.length;
-  const sh = SeqHandler.forColumn(seqCol);
+  const sh = _package.seqHelper.getSeqHandler(seqCol);
   const encList = Array<string>(rowCount);
   let charCodeCounter = 1; // start at 1, 0 is reserved for null.
   const charCodeMap = new Map<string, string>();

@@ -1,10 +1,8 @@
 package grok_connect.providers;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
 import grok_connect.managers.ColumnManager;
 import grok_connect.managers.bool_column.MySqlMssqlBoolColumnManager;
 import grok_connect.connectors_info.DataConnection;
@@ -142,6 +140,13 @@ public class MsSqlDataProvider extends JdbcDataProvider {
         String values = String.join(",", list);
         statement.setObject(n, values);
         return 0;
+    }
+
+    @Override
+    public Properties getProperties(DataConnection conn) {
+        java.util.Properties properties = defaultConnectionProperties(conn);
+        properties.setProperty("socketTimeout", "180000");
+        return properties;
     }
 
     @Override

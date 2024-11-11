@@ -1,5 +1,30 @@
 # HitTriage changelog
 
+## 1.3.6 (2024-11-08)
+
+* Correct grouping of campaigns table, Added author/last modified user info.
+
+## 1.3.5 (2024-11-07)
+
+Correct readme links
+
+## 1.3.4 (2024-11-07)
+
+* Groupping of campaigns
+* Status change of campaigns
+
+## 1.3.3 (2024-10-28)
+
+* Modification of HD Stages within campaign.
+
+## 1.3.2 (2024-10-17)
+
+* Fix HT Campaigns and templates
+
+## 1.3.1 (2024-10-10)
+
+* Remove project save button from the ribbon panel
+
 ## 1.2.2 (2024-08-26)
 
 * Fix progress tracker layout loading

@@ -62,6 +62,7 @@ export function isMolBlock(s: string): boolean {
   return s.includes('M  END');
 }
 
+/** @deprecated Use DG.Color.hexToPercentRgb */
 export function hexToPercentRgb(hex: string): number[] | null {
   const result = hex.length === 7 ? /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex) :
     /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);

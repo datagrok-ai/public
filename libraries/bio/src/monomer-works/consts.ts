@@ -1,3 +1,5 @@
+import {PolymerTypes} from '../helm/consts';
+
 export const monomerWorksConsts = {
 // constants for parsing molfile V2000
   V2K_RGP_SHIFT: 8,
@@ -21,9 +23,10 @@ export const monomerWorksConsts = {
   V3K_END: 'M  END',
   PRECISION_FACTOR: 10_000, // HELMCoreLibrary has 4 significant digits after decimal point in atom coordinates
   // symbols for the corresponding monomers in HELM library
-  DEOXYRIBOSE: 'd',
-  RIBOSE: 'r',
-  PHOSPHATE: 'p',
+
+  DEOXYRIBOSE: {polymerType: PolymerTypes.RNA, symbol: 'd'},
+  RIBOSE: {polymerType: PolymerTypes.RNA, symbol: 'r'},
+  PHOSPHATE: {polymerType: PolymerTypes.RNA, symbol: 'p'},
 
   OXYGEN: 'O',
   HYDROGEN: 'H',

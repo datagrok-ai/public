@@ -24,8 +24,8 @@
             "colors": {
                 "default": {
                     "line": "#202020",
-                    "text": "#202020",
-                    "background": "#60FF40"
+                    "text": "#20C010",
+                    "background": "#F0F0F0"
                 }
             }
         },

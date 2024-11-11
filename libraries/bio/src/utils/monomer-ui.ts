@@ -32,11 +32,13 @@ export interface IMonomerManager {
 }
 
 export const MonomerInputProperties: { [key: string]: DG.Property } = {
-  'monomerType': DG.Property.js('monomerType', DG.TYPE.STRING, {choices: [MonomerTypes.BACKBONE, MonomerTypes.BRANCH, MonomerTypes.TERMINAL]}),
+  'monomerType': DG.Property.js('monomerType', DG.TYPE.STRING,
+    {choices: [MonomerTypes.BACKBONE, MonomerTypes.BRANCH, MonomerTypes.TERMINAL]}),
   'molecule': DG.Property.fromOptions({name: 'molecule', type: DG.InputType.Molecule}),
   'name': DG.Property.js('name', DG.TYPE.STRING),
   'naturalAnalog': DG.Property.js('naturalAnalog', DG.TYPE.STRING),
   'id': DG.Property.js('id', DG.TYPE.INT),
-  'polymerType': DG.Property.js('polymerType', DG.TYPE.STRING, {choices: [PolymerTypes.RNA, PolymerTypes.PEPTIDE, PolymerTypes.CHEM, PolymerTypes.BLOB, PolymerTypes.G]}),
+  'polymerType': DG.Property.js('polymerType', DG.TYPE.STRING,
+    {choices: [PolymerTypes.RNA, PolymerTypes.PEPTIDE, PolymerTypes.CHEM, PolymerTypes.BLOB, PolymerTypes.G]}),
   'symbol': DG.Property.js('symbol', DG.TYPE.STRING),
 };

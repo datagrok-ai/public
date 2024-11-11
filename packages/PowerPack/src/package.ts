@@ -17,6 +17,7 @@ import {HtmlWidget} from './widgets/html-widget';
 import {viewersDialog} from './viewers-gallery';
 import {windowsManagerPanel} from './windows-manager';
 import {initSearch} from './search/power-search';
+import { newUsersSearch, registerDGUserHandler } from './dg-db';
 
 export const _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
@@ -28,9 +29,9 @@ export function _compareColumns(): void {
 }
 
 //name: addNewColumn
-//input: funccall call {optional: true}
+//input: funccall call
 //editor-for: AddNewColumn
-export function addNewColumnDialog(call: DG.FuncCall | null = null): AddNewColumnDialog {
+export function addNewColumnDialog(call: DG.FuncCall): AddNewColumnDialog {
   return new AddNewColumnDialog(call);
 }
 
@@ -128,6 +129,14 @@ export function _wikiSearch(s: string): Promise<any> {
   return wikiSearch(s);
 }
 
+//name: newUsersSearchWidget
+//tags: search
+//input: string s
+//output: widget w
+export function newUsersSearchWidget(s: string) {
+  return newUsersSearch(s);
+}
+
 //name: formulaLinesEditor
 //input: dataframe src {optional: grok.shell.o}
 //top-menu: Data | Formula Lines...
@@ -159,6 +168,7 @@ grok.events.onContextMenu.subscribe((args) => {
 export async function powerPackInit() {
   initSearch();
   _properties = await _package.getProperties();
+  await registerDGUserHandler(_package);
 }
 
 //description: Windows Manager

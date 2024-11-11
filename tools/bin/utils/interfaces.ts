@@ -53,6 +53,9 @@ export interface FuncMetadata extends Indexable {
   outputs: FuncParam[],
   tags?: string[],
   description?: string,
+  cache?: string,
+  invalidateOn?: string,
+  isInvalidateOnWithoutCache?: boolean,
 }
 
 export interface FuncParam {

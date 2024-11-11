@@ -2,8 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {testEvent} from './test';
 import {Subject} from 'rxjs';
+import {Base64} from 'js-base64';
+
+import {testEvent} from './test';
 
 export function svgToImage(svgEl: SVGSVGElement, dpr: number, timeout: number = 1000): Promise<HTMLImageElement> {
   const w: number = svgEl.width.baseVal.value;
@@ -12,7 +14,7 @@ export function svgToImage(svgEl: SVGSVGElement, dpr: number, timeout: number = 
   const svgXml = new XMLSerializer().serializeToString(svgEl);
 
   const svg64Prefix: string = 'data:image/svg+xml;base64,';
-  const svg64: string = window.btoa(svgXml);
+  const svg64: string = Base64.encode(svgXml);
 
   const svgImgOnLoad = new Subject<void>();
   const svgImgOnLoadListener = () => {

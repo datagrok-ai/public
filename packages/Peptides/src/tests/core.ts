@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {awaitCheck, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
+import {awaitCheck, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
 
 import {_package} from '../package-test';
 import {startAnalysis} from '../widgets/peptides';
@@ -10,10 +10,13 @@ import * as C from '../utils/constants';
 import {scaleActivity} from '../utils/misc';
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {MonomerPosition} from '../viewers/sar-viewer';
+import {PeptideUtils} from '../peptideUtils';
 
 category('Core', () => {
   const alignedSequenceCol = 'AlignedSequence';
-
+  before(async () => {
+    await PeptideUtils.loadSeqHelper();
+  });
   let model: PeptidesModel | null = null;
   test('Start analysis: simple', async () => {
     const simpleActivityColName = 'IC50';

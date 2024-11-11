@@ -19,7 +19,8 @@ export async function openDescriptorsDialogDocker() {
     if (molecules) {
       const prog = DG.TaskBarProgressIndicator.create('Calculating descriptors...');
       try {
-        await calculateDescriptors(table, molecules, selected);
+        const cols = await calculateDescriptors(molecules, selected);
+        addDescriptorsColsToDf(table, cols);
       } catch (e) {
         throw e;
       } finally {
@@ -27,6 +28,16 @@ export async function openDescriptorsDialogDocker() {
       }
     }
   }, table);
+}
+
+export function addDescriptorsColsToDf(table: DG.DataFrame, colsArr: DG.Column[]) {
+  for (const col of colsArr) {
+    if (!col)
+      continue; 
+    const unusedName = table.columns.getUnusedName(col.name);
+    col.name = unusedName;
+    table.columns.add(col);
+  }
 }
 
 /** Adds descriptors to table */

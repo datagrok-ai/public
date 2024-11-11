@@ -34,6 +34,7 @@ import {_package} from '../package';
 import {calculateClusterStatistics} from '../utils/algorithms';
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 import {SARViewer} from './sar-viewer';
+import {PeptideUtils} from '../peptideUtils';
 
 const getAggregatedColName = (aggF: string, colName: string): string => `${aggF}(${colName})`;
 
@@ -229,7 +230,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
 
     this._positionColumns ??= getSharedPositionColumns(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) ??
       getSharedPositionColumns(VIEWER_TYPE.MOST_POTENT_RESIDUES) ??
-      splitAlignedSequences(this.dataFrame.getCol(this.sequenceColumnName)).columns.toList();
+      splitAlignedSequences(this.dataFrame.getCol(this.sequenceColumnName),
+        PeptideUtils.getSeqHelper()).columns.toList();
     return this._positionColumns!;
   }
 
@@ -269,7 +271,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     this._scaledActivityColumn ??= scaleActivity(this.dataFrame.getCol(this.activityColumnName),
       this.activityScaling);
     if (isFiltered) {
-      return DG.DataFrame.fromColumns([this._scaledActivityColumn]).clone(this.dataFrame.filter)
+      return DG.DataFrame.fromColumns([this._scaledActivityColumn])
+        .clone(this.dataFrame.rowCount === this._scaledActivityColumn.length ? this.dataFrame.filter : null)
         .getCol(this._scaledActivityColumn.name) as DG.Column<number>;
     }
     return this._scaledActivityColumn as DG.Column<number>;

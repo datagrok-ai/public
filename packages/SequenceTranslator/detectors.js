@@ -37,4 +37,28 @@ class SequenceTranslatorPackageDetectors extends DG.Package {
       this.logger.debug(`${logPrefix}, onContextMenu, end`);
     });
   }
+
+  // //tags: semTypeDetector
+  // //input: column col
+  // //output: string semType
+  // detectHarmonizedSequence(col) {
+  //   // To prevent "Error initializing SequenceTranslator 1.4.4.X-ba98e6f7: ReferenceError: SequenceTranslatorPackageDetectors is not defined"
+  //   return null;
+  // }
+
+
+  //name: refineNotationProviderForHarmonizedSequence
+  //input: column col
+  //input: object stats
+  //input: string separator = null { optional: true }
+  //output: bool result
+  async refineNotationProviderForHarmonizedSequence(col, stats, separator) {
+    const isCyclized = Object.keys(stats.freq).some((om) => om.match(/^.+\(\d+\)$/));
+    const isDimerized = Object.keys(stats.freq).some((om) => om.match(/^\(#\d\).+$/));
+
+    if (!isCyclized && !isDimerized) return false;
+
+    await grok.functions.call('SequenceTranslator:applyNotationProviderForCyclized', {col, separator});
+    return true;
+  }
 }

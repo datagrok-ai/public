@@ -3,6 +3,10 @@ let gpuDevice: GPUDevice | null = null;
 
 
 export async function getGPUDevice() {
+  if (!navigator.gpu) {
+    console.error('WebGPU is not supported in this browser');
+    return null;
+  }
   if (!gpuAdapter) {
     //reason: only here we get the gpuAdapter
     // eslint-disable-next-line no-restricted-syntax
@@ -39,6 +43,10 @@ export async function getGPUDevice() {
 }
 
 export async function getGPUAdapterDescription() {
+  if (!navigator.gpu) {
+    console.error('WebGPU is not supported in this browser');
+    return null;
+  }
   if (!gpuAdapter) {
     // reason: only here we get the gpuAdapter
     // eslint-disable-next-line no-restricted-syntax
@@ -46,7 +54,13 @@ export async function getGPUAdapterDescription() {
     if (gpuAdapter == null)
       return null;
   }
-  const info = await gpuAdapter.requestAdapterInfo();
+
+  let info: GPUAdapterInfo | null = null;
+  if ('info' in gpuAdapter)
+    info = gpuAdapter.info as GPUAdapterInfo;
+  // this option is sort of deprecated but still available in every initial release
+  else if ('requestAdapterInfo' in gpuAdapter && typeof gpuAdapter.requestAdapterInfo === 'function')
+    info = (await gpuAdapter.requestAdapterInfo()) as GPUAdapterInfo;
   if (!info) return null;
 
   const outString = replaceEmptyString(

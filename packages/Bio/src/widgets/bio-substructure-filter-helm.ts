@@ -10,6 +10,7 @@ import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {delay} from '@datagrok-libraries/utils/src/test';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 import {updateDivInnerHTML} from '../utils/ui-utils';
 import {helmSubstructureSearch} from '../substructure-search/substructure-search';
@@ -32,7 +33,9 @@ export class HelmBioFilter extends BioFilterBase<BioFilterProps> /* implements I
 
   get type(): string { return 'HelmBioFilter'; }
 
-  constructor() {
+  constructor(
+    private readonly seqHelper: ISeqHelper,
+  ) {
     super();
     this.logger = _package.logger;
   }
@@ -138,7 +141,7 @@ export class HelmBioFilter extends BioFilterBase<BioFilterProps> /* implements I
     _package.logger.debug(`${logPrefix}, start`);
     try {
       await delay(10);
-      const res = await helmSubstructureSearch(this.props.substructure, column);
+      const res = await helmSubstructureSearch(this.props.substructure, column, this.seqHelper);
       return res;
     } finally {
       _package.logger.debug(`${logPrefix}, end`);
