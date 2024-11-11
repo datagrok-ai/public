@@ -191,6 +191,7 @@ export const TreeWizard = Vue.defineComponent({
             name='save' 
             tooltip={'Save current state of model'}
             style={{'padding-right': '3px'}}
+            onClick={savePipeline}
           />
           {treeState.value && isTreeReportable.value && <IconFA
             name='arrow-to-bottom'
