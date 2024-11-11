@@ -290,7 +290,7 @@ export const TreeWizard = Vue.defineComponent({
                 dock-spawn-title='Steps'
                 dock-spawn-dock-type='left'
                 dock-spawn-dock-ratio={0.3}
-                dock-spawn-z-index={102}
+                dock-spawn-z-index={51}
 
                 rootDroppable={false}
                 treeLine
