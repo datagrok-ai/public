@@ -112,18 +112,12 @@ export async function tutorialsInit() {
 //output: view v
 export function demoApp(path?: string, filter?: string): DG.ViewBase {
   const pathSegments = (!path || path === '') ? [] : path.split('/');
-  if (grok.shell.view('Browse') === undefined)
-    grok.shell.v = DG.View.createByType('browse');
   const demoView = new DemoView();
   if (pathSegments.length > 0) {
-    const pathElements = pathSegments.map((elem) => elem.replaceAll('%20', ' '));
-    const path = pathElements.join('/');
-    const func = DemoView.findDemoFunc(pathElements.join(' | '));
-    setTimeout(() => {
-      func ? demoView.startDemoFunc(func, pathElements.join(' | ')) : demoView.nodeView(pathElements[pathElements.length - 1], path);
-    }, 1);
+    const pathElements = pathSegments.map((elem) => elem.replaceAll('-', ' '));
+    const node = demoView.tree.items.find((node) => node.text === pathElements[pathElements.length - 1])?.root;
+    node?.click();
   }
-
   return demoView;
 }
 
