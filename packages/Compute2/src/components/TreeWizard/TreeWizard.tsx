@@ -22,7 +22,6 @@ import {Inspector} from '../Inspector/Inspector';
 import {findTreeNode, findTreeNodeParrent, reportStep} from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
 
-
 export const TreeWizard = Vue.defineComponent({
   name: 'TreeWizard',
   props: {
@@ -44,14 +43,12 @@ export const TreeWizard = Vue.defineComponent({
       loadAndReplaceNestedPipeline,
       savePipeline,
       runStep,
+      runAction,
       addStep,
       removeStep,
       moveStep,
     } = useReactiveTreeDriver(props.providerFunc);
 
-    const runAction = (actionUuid: string) => {
-      driver.sendCommand({ event: 'runAction', uuid: actionUuid})
-    }
 
     const chosenStepUuid = Vue.ref<string | undefined>(undefined);
 

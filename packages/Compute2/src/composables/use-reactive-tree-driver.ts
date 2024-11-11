@@ -96,6 +96,10 @@ export function useReactiveTreeDriver(providerFunc: string) {
     driver.sendCommand({event: 'runStep', uuid});
   };
 
+  const runAction = (actionUuid: string) => {
+    driver.sendCommand({ event: 'runAction', uuid: actionUuid})
+  }
+
   const addStep = (parentUuid: string, itemId: string, position: number) => {
     driver.sendCommand({event: 'addDynamicItem', parentUuid, itemId, position});
   };
@@ -122,6 +126,7 @@ export function useReactiveTreeDriver(providerFunc: string) {
     loadAndReplaceNestedPipeline,
     savePipeline,
     runStep,
+    runAction,
     addStep,
     removeStep,
     moveStep,
