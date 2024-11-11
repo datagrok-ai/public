@@ -5,12 +5,18 @@ import * as Vue from 'vue';
 import {Button, DockManager, IconFA, MarkDown} from '@datagrok-libraries/webcomponents-vue';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
+import { isParallelPipelineState, isSequentialPipelineState, PipelineState, PipelineStateParallel, PipelineStateSequential } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import { AugmentedStat } from '../TreeWizard/types';
 
 export const PipelineView = Vue.defineComponent({
   name: 'PipelineView',
   props: {
     funcCall: {
       type: Object as Vue.PropType<DG.FuncCall>,
+      required: true,
+    },
+    state: {
+      type: Object as Vue.PropType<PipelineState>,
       required: true,
     },
     isRoot: {
@@ -21,6 +27,7 @@ export const PipelineView = Vue.defineComponent({
   emits: {
     'update:funcCall': (call: DG.FuncCall) => call,
     'proceedClicked': () => {},
+    'addNode': ({itemId, position}:{itemId: string, position: number}) => ({itemId, position})
   },
   setup(props, {emit}) {
     const historyHidden = Vue.ref(true);
@@ -39,6 +46,11 @@ export const PipelineView = Vue.defineComponent({
       if (el === historyRef.value?.$el) historyHidden.value = true;
       if (el === helpRef.value?.$el) helpHidden.value = true;
     };
+
+    const cardsClasses = 'grok-app-card grok-gallery-grid-item-wrapper pr-4';
+
+    const hasAddList = (data: PipelineState): data is (PipelineStateSequential<any> | PipelineStateParallel<any>) =>
+      (isParallelPipelineState(data) || isSequentialPipelineState(data)) && data.stepTypes.length > 0 && !data.isReadonly;
 
     return () => (
       <div class='w-full h-full flex'>
@@ -72,35 +84,62 @@ export const PipelineView = Vue.defineComponent({
             dock-spawn-title='Actions'
             {...{mode: 'Card'}}
             class={'p-2'}
-            style={{minWidth: '200px'}}
+            style={{overflow: 'auto'}}
           >
-            <span>
-            This is a sequence of steps. You may:
-            </span>
+            <div
+             style={{minWidth: '200px'}}
+            >
+              <span>
+              This is a sequence of steps. You may:
+              </span>
 
-            <div class={'grok-gallery-grid'}>
-              <div
-                class='grok-app-card grok-gallery-grid-item-wrapper pr-4'
-                onClick={() => historyHidden.value = false}
-              >
-                <IconFA name='history' class={'d4-picture'} />
-                <div> Load completed run </div>
-              </div>
-              { helpText.value &&
+              <div class={'grok-gallery-grid'}>
                 <div
-                  class='grok-app-card grok-gallery-grid-item-wrapper pr-4'
-                  onClick={() => helpHidden.value = false}
+                  class={cardsClasses}
+                  onClick={() => historyHidden.value = false}
                 >
-                  <IconFA name='info' class={'d4-picture'} />
-                  <div> Review the docs </div>
-                </div> }
-              <div
-                class='grok-app-card grok-gallery-grid-item-wrapper pr-4'
-                onClick={() => emit('proceedClicked')}
-              >
-                <IconFA name='plane-departure' class={'d4-picture'} />
-                <div> Proceed to the sequence's first step </div>
+                  <IconFA name='history' class={'d4-picture'} />
+                  <div> Load completed run </div>
+                </div>
+                { helpText.value &&
+                  <div
+                    class={cardsClasses}
+                    onClick={() => helpHidden.value = false}
+                  >
+                    <IconFA name='info' class={'d4-picture'} />
+                    <div> Review the docs </div>
+                  </div> }
+                <div
+                  class={cardsClasses}
+                  onClick={() => emit('proceedClicked')}
+                >
+                  <IconFA name='plane-departure' class={'d4-picture'} />
+                  <div> Proceed to the sequence's first step </div>
+                </div>
               </div>
+
+              { hasAddList(props.state) && <span>
+              ... or choose the step to add:
+              </span> }
+
+              { hasAddList(props.state) && <div class={'grok-gallery-grid'}>
+                { props.state.stepTypes
+                    .map((stepType, idx) => 
+                      <div
+                        class={cardsClasses}
+                        onClick={() => {
+                          const data = props.state as PipelineStateSequential<any> | PipelineStateParallel<any>;
+                          emit('addNode', {
+                            itemId: data.stepTypes[idx].configId,
+                            position: data.steps.length,
+                          });
+                        }}
+                      >
+                        <IconFA name='circle' class={'d4-picture'} />
+                        <div> {stepType.friendlyName || stepType.nqName || stepType.configId} </div>
+                      </div>
+                )}
+              </div> }
             </div>
           </div>
         </DockManager>

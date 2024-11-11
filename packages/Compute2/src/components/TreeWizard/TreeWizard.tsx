@@ -357,6 +357,7 @@ export const TreeWizard = Vue.defineComponent({
             !isFuncCallState(chosenStepState.value) && chosenStepState.value.provider &&
             <PipelineView
               funcCall={DG.Func.byName(chosenStepState.value.nqName!).prepare()}
+              state={chosenStepState.value}
               isRoot={isRootChoosen.value}
               dock-spawn-title='Step sequence review'
               onProceedClicked={() => {
