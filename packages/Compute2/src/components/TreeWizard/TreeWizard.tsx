@@ -22,6 +22,8 @@ import {Inspector} from '../Inspector/Inspector';
 import {findTreeNode, findTreeNodeParrent, reportStep} from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
 
+const DEVELOPERS_GROUP = 'Developers';
+
 export const TreeWizard = Vue.defineComponent({
   name: 'TreeWizard',
   props: {
@@ -162,6 +164,16 @@ export const TreeWizard = Vue.defineComponent({
         (isParallelPipelineState(stat.parent.data) || isSequentialPipelineState(stat.parent.data))
     }
 
+    const isUserDeveloper = Vue.ref(false);
+    Vue.onMounted(async () => {
+      // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14159
+      const userGroups = (await(await fetch(`${window.location.origin}/api/groups/all_parents`)).json() as DG.Group[]);
+
+      if (userGroups.find((group) => group.friendlyName === DEVELOPERS_GROUP)) {
+        isUserDeveloper.value = true;
+      }
+    })
+
     return () => (
       Vue.withDirectives(<div class='w-full h-full'>
         <RibbonPanel>
@@ -170,24 +182,22 @@ export const TreeWizard = Vue.defineComponent({
             tooltip={treeHidden.value ? 'Show tree': 'Hide tree'}
             onClick={() => treeHidden.value = !treeHidden.value }
           />
-          <IconFA
+          { isUserDeveloper.value && <IconFA
             name='bug'
             tooltip={inspectorHidden.value ? 'Show inspector': 'Hide inspector'}
             onClick={() => inspectorHidden.value = !inspectorHidden.value }
+          /> }
+          <IconFA 
+            name='save' 
+            tooltip={'Save current state of model'}
+            style={{'padding-right': '3px'}}
           />
-
           {treeState.value && isTreeReportable.value && <IconFA
             name='arrow-to-bottom'
             tooltip='Report all steps'
             onClick={async () => reportStep(treeState.value) }
           /> }
         </RibbonPanel>
-        <RibbonMenu groupName='State'>
-          <span onClick={savePipeline}>
-            <IconFA name='save' style={{'padding-right': '3px'}}/>
-            <span> Save </span>
-          </span>
-        </RibbonMenu>
         {treeState.value &&
         <DockManager class='block h-full'
           onPanelClosed={handlePanelClose}
