@@ -4,6 +4,6 @@
 //input: int x
 //output: int y
 
-let y = 0;
+y = 0;
 for (let i = 0; i < 100000; i++)
     y = 2 * x;
