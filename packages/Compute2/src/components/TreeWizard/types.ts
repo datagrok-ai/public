@@ -4,14 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {PipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {Stat} from '@he-tree/vue/dist/v3/components/TreeProcessorVue';
 
-
-export type RuntimeData = {}
-
-export type Data = RuntimeData & PipelineState
-
-type NoStringIndex<T> = { [K in keyof T as string extends K ? never : K]: T[K] };
-
-type RestrictedStat = NoStringIndex<Stat<Data>>
+type RestrictedStat = Stat<PipelineState>
 
 export type AugmentedStat = RestrictedStat & {
   parent: AugmentedStat | null;

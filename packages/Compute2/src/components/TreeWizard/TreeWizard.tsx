@@ -300,6 +300,9 @@ export const TreeWizard = Vue.defineComponent({
                   }
                 }
               }
+              onAddNode={({itemId, position}) => {
+                addStep(chosenStepState.value!.uuid, itemId, position);
+              }}
             />
           }
         </DockManager> }
