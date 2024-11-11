@@ -116,7 +116,7 @@ export const style1 = css`
   background-clip: content-box;
   width: 100% !important;
   float: left;
-  z-index: 100;
+  z-index: 50;
   cursor: ns-resize;
   flex-shrink: 0;
   max-height: 1px;
@@ -134,7 +134,7 @@ export const style1 = css`
   background-clip: content-box;
   height: 100% !important;
   float: left;
-  z-index: 100;
+  z-index: 50;
   cursor: ew-resize;
   flex-shrink: 0;
   max-width: 1px;

@@ -120,6 +120,7 @@ export const RichFunctionView = Vue.defineComponent({
   emits: {
     'update:funcCall': (call: DG.FuncCall) => call,
     'runClicked': () => {},
+    'actionRequested': (actionUuid: string) => actionUuid,
   },
   methods: {
     savePersonalState: () => {},
@@ -387,6 +388,7 @@ export const RichFunctionView = Vue.defineComponent({
                   Vue.withDirectives(<InputForm
                     funcCall={currentCall.value}
                     validationStates={validationState.value}
+                    onActionRequested={(actionUuid) => emit('actionRequested', actionUuid)}
                   />, [[ifOverlapping, isRunning.value, 'Recalculating...']])
                 }
                 <div class='flex sticky bottom-0 justify-end'>

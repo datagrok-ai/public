@@ -13,6 +13,7 @@ import {SimpleDriverApp as SimpleDriverAppInstance} from './apps/SimpleDriverApp
 import {RFVApp} from './apps/RFVApp';
 import { PipelineConfiguration } from '@datagrok-libraries/compute-utils';
 import './tailwind.css'
+import { makeAdvice, makeValidationResult } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 
 export const _package = new DG.Package();
 
@@ -60,7 +61,7 @@ export async function RichFunctionViewEditor(call: DG.FuncCall) {
 //meta.icon: icons/tree-wizard.png
 export async function TreeWizardApp() {
   return DG.Func.byName('Compute2:TreeWizardEditor')
-    .prepare({call: DG.Func.byName('Compute2:MockProvider3').prepare()}).call();
+    .prepare({call: DG.Func.byName('Compute2:MockProvider2').prepare()}).call();
 }
 
 //name: Tree Wizard Editor
@@ -179,11 +180,21 @@ export async function MockProvider2(params: any) {
     nqName: 'Compute2:MockWrapper2',
     provider: 'Compute2:MockProvider2',
     version: '1.0',
-    type: 'parallel',
+    type: 'sequential',
     stepTypes: [{
       id: 'cooling',
       nqName: 'Compute:ObjectCooling',
       friendlyName: 'cooling',
+      actions: [{
+        id: 'action1',
+        from: 'in:ambTemp',
+        to: 'out:initTemp',
+        position: 'none',
+        handler({controller}) {
+          controller.setAll('out', controller.getFirst('in') * 2);
+          return;
+        },
+      }],
     }, {
       id: 'stepAdd',
       nqName: 'Compute2:TestAdd2',
@@ -204,38 +215,44 @@ export async function MockProvider2(params: any) {
         id: 'pipeline1',
       },
     ],
+    links: [{
+      id: 'initialTempValidator',
+      from: [
+        'initTemp:cooling/initTemp',
+        'ambTemp:cooling/ambTemp',
+      ],
+      to: [
+        'toInitTemp:cooling/initTemp'
+      ],
+      actions: 'actions:cooling',
+      isValidator: true,
+      handler({controller}) {
+        const initTemp = controller.getFirst('initTemp');
+        const ambTemp = controller.getFirst('ambTemp');
+        
+        if (initTemp < ambTemp) {
+          const action = controller.getValidationAction('actions', 'action1');
+
+          if (!action) return;
+
+          controller.setValidation('toInitTemp',
+            makeValidationResult({ errors: [
+              makeAdvice(
+                `Initial temperature should be more than ambient temperature ${ambTemp}`,
+                [{actionName: `Set reasonable initial temperature`, action}]
+              )
+            ]}));
+        } else {
+          controller.setValidation('toInitTemp');
+        }
+      },
+    }],
   };
   return c;
 }
 
 //name: MockWrapper3
 export async function MockWrapper3() {}
-
-//name: MockProvider3
-//input: object params
-//output: object result
-//editor: Compute2:TreeWizardEditor
-export async function MockProvider3(params: any) {
-  const c: PipelineConfiguration = {
-    id: 'pipelinePar',
-    nqName: 'Compute2:MockWrapper3', // for history
-    provider: 'Compute2:MockProvider3', // for config
-    friendlyName: 'Tree wizard model',
-    version: '1.0',
-    type: 'sequential',
-    stepTypes: [{
-      type: 'ref',
-      provider: 'Compute2:MockProvider2',
-      version: '1.0',
-    }],
-    initialSteps: [
-      {
-        id: 'pipelinePar',
-      },
-    ],
-  };
-  return c;
-}
 
 //name: TestAdd2
 //input: double a

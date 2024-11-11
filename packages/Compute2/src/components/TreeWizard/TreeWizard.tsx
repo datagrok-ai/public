@@ -49,6 +49,10 @@ export const TreeWizard = Vue.defineComponent({
       moveStep,
     } = useReactiveTreeDriver(props.providerFunc);
 
+    const runAction = (actionUuid: string) => {
+      driver.sendCommand({ event: 'runAction', uuid: actionUuid})
+    }
+
     const chosenStepUuid = Vue.ref<string | undefined>(undefined);
 
     const searchParams = useUrlSearchParams('history');
@@ -210,7 +214,7 @@ export const TreeWizard = Vue.defineComponent({
                 dock-spawn-title='Steps'
                 dock-spawn-dock-type='left'
                 dock-spawn-dock-ratio={0.3}
-                dock-spawn-z-index={102}
+                dock-spawn-z-index={51}
 
                 rootDroppable={false}
                 treeLine
@@ -224,6 +228,9 @@ export const TreeWizard = Vue.defineComponent({
                 eachDraggable={isEachDraggable}
                 eachDroppable={isEachDroppable}
                 onAfter-drop={onAfterDrop}
+                onClick:node={(stat) => {
+                  chosenStepUuid.value = stat.data.uuid
+                }}
               >
                 {
                   ({stat}: {stat: AugmentedStat}) =>
@@ -244,9 +251,6 @@ export const TreeWizard = Vue.defineComponent({
                           addStep(stat.data.uuid, itemId, position);
                         }}
                         onRemoveNode={() => removeStep(stat.data.uuid)}
-                        onClick={() => {
-                          chosenStepUuid.value = stat.data.uuid;
-                        }}
                         onToggleNode={() => stat.open = !stat.open}
                       />
                     )
@@ -267,6 +271,7 @@ export const TreeWizard = Vue.defineComponent({
                 isTreeLocked={treeMutationsLocked.value}
                 onUpdate:funcCall={(call) => (chosenStepState.value as StepFunCallState).funcCall = call}
                 onRunClicked={() => runStep(chosenStepState.value!.uuid)}
+                onActionRequested={runAction}
                 dock-spawn-title='Step review'
                 ref={rfvRef}
               />
@@ -276,6 +281,7 @@ export const TreeWizard = Vue.defineComponent({
             !isFuncCallState(chosenStepState.value) && chosenStepState.value.provider &&
             <PipelineView
               funcCall={DG.Func.byName(chosenStepState.value.nqName!).prepare()}
+              state={chosenStepState.value}
               isRoot={isRootChoosen.value}
               dock-spawn-title='Step sequence review'
               onProceedClicked={() => {
