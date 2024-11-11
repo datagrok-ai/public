@@ -148,10 +148,12 @@ export const TreeWizard = Vue.defineComponent({
     const onAfterDrop = () => {
       const draggedStep = dragContext.startInfo?.dragNode as AugmentedStat | undefined;
       if (draggedStep) {
+        const oldIndex = dragContext.startInfo.indexBeforeDrop;
         const newIndex = dragContext.startInfo.indexBeforeDrop < dragContext.targetInfo.indexBeforeDrop ?
           dragContext.targetInfo.indexBeforeDrop - 1:
           dragContext.targetInfo.indexBeforeDrop;
-        moveStep(draggedStep.data.uuid, newIndex);
+        if (oldIndex !== newIndex)
+          moveStep(draggedStep.data.uuid, newIndex);
       }
     }
 

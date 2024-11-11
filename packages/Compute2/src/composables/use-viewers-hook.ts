@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 import {useSubscription, from} from '@vueuse/rxjs'
 import {BehaviorSubject, combineLatest, EMPTY, merge, Subject} from 'rxjs';
-import {catchError, switchMap, tap, map, debounceTime, withLatestFrom, share} from 'rxjs/operators';
+import {catchError, switchMap, tap, map, debounceTime, withLatestFrom, share, shareReplay} from 'rxjs/operators';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 
 type ViewersData = Record<string, DG.Viewer | undefined>;
@@ -37,7 +37,7 @@ export function useViewersHook(
       }
       return nextStates;
     }),
-    share(),
+    shareReplay(1),
   );
 
   const viewerChanges$ = new Subject<readonly [DG.Viewer | undefined,  string, string]>();
