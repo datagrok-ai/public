@@ -1,4 +1,4 @@
-//name: parameter expressions
+//name: parameter-expressions
 //language: javascript
 //input: string type = 'ICE' { choices: ['Electric', 'ICE'] }
 //input: int cylinders = 4 { visible: type == 'ICE' }
