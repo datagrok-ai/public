@@ -3,12 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 import {PipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
-import {
-  BigButton, Button,
-} from '@datagrok-libraries/webcomponents-vue';
+import {Button} from '@datagrok-libraries/webcomponents-vue';
 import {LogItem} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/Logger';
 import {Logger} from '../Logger/Logger';
-// it will register a custom element
 import {PipelineConfigurationProcessed} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import VueJsonPretty from 'vue-json-pretty';
 import 'vue-json-pretty/lib/styles.css';

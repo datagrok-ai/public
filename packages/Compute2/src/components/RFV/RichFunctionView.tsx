@@ -24,6 +24,7 @@ import {useSubscription, from} from '@vueuse/rxjs'
 import {catchError, switchMap, tap, map, debounceTime, withLatestFrom, share} from 'rxjs/operators';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
+import { useViewersHook } from '../../composables/use-viewers-hook';
 
 type PanelsState = {
   historyHidden: boolean,
@@ -32,17 +33,6 @@ type PanelsState = {
   visibleTabLabels: string[],
   layout: string,
 };
-
-type ViewersData = Record<string, DG.Viewer | undefined>;
-
-function runViewersHook(viewersHook: ViewersHook | undefined, io: string, viewers: ViewersData, meta: any) {
-  if (viewersHook) {
-    for (const [type, viewer] of Object.entries(viewers)) {
-      if (viewer)
-        viewersHook(io, type, viewer, meta);
-    }
-  }
-}
 
 const dfBlockTitle = (dfProp: DG.Property) => dfProp.options['caption'] ?? dfProp.name ?? ' ';
 
@@ -250,77 +240,15 @@ export const RichFunctionView = Vue.defineComponent({
       if (dockInited.value) await loadPersonalLayout();
     }, {flush: 'post'});
 
-    const metaStates = Vue.computed(() => props.callMeta);
-    const viewersHook = Vue.computed(() => props.viewersHook);
-
-    const metaStates$ = from(metaStates, { immediate: true });
-    const viewersHook$ = from(viewersHook, { immediate: true });
-    const currentCall$ = from(currentCall, { immediate: true });
-
-    const viewerStates$ = currentCall$.pipe(
-      map((call) => {
-        const nextStates: Record<string, BehaviorSubject<ViewersData>> = {};
-        const states = [...Object.keys(call.inputs), ...Object.keys(call.outputs)];
-        for (const io of states) {
-          const viewers$ = new BehaviorSubject<ViewersData>({});
-          nextStates[io] = viewers$;
-        }
-        return nextStates;
-      }),
-      share(),
-    );
-
-    const viewerChanges$ = new Subject<readonly [DG.Viewer | undefined,  string, string]>();
-    const viewersSub = viewerChanges$.pipe(
-      withLatestFrom(viewerStates$),
-      tap(([[viewer, io, type], viewerStates]) => {
-        const viewers$ = viewerStates[io];
-        if (viewers$) {
-          const viewers = viewers$.value;
-          viewers$.next({...viewers, [type]: viewer});
-        }
-      })
-    ).subscribe();
-    useSubscription(viewersSub);
-
-    const viewHooksSub = combineLatest([viewersHook$, metaStates$, viewerStates$]).pipe(
-      debounceTime(0),
-      switchMap(([viewersHook, metaStates, viewerStates]) => {
-        const hooksDeps: Record<string, { meta$?: BehaviorSubject<any>, viewers$?: BehaviorSubject<ViewersData> }> = {};
-        for (const [io, meta$] of Object.entries(metaStates ?? {})) {
-          if (!hooksDeps[io])
-            hooksDeps[io] = {};
-          hooksDeps[io].meta$ = meta$;
-        }
-        for (const [io, viewers$] of Object.entries(viewerStates ?? {})) {
-          if (!hooksDeps[io])
-            hooksDeps[io] = {};
-          hooksDeps[io].viewers$ = viewers$;
-        }
-        const hookRuns = [...Object.entries(hooksDeps)].map(([io, {meta$, viewers$}]) => {
-          if (!meta$ || !viewers$)
-            return EMPTY;
-          return combineLatest([viewers$, meta$]).pipe(
-            tap(([viewers, meta]) => runViewersHook(viewersHook, io, viewers, meta)),
-            catchError((e) => {
-              grok.shell.error(e);
-              console.error(e);
-              return EMPTY;
-            })
-          )
-        })
-        return merge(...hookRuns);
-      }),
-    ).subscribe();
-    useSubscription(viewHooksSub);
-
-    const setViewerRef = (viewer: DG.Viewer | undefined, io: string, type: string) => {
-      viewerChanges$.next([viewer, io, type] as const);
-    }
-
     Vue.onBeforeUnmount(() => {
       savePersonalState(currentCall.value);
     });
+
+    const { setViewerRef } = useViewersHook(
+      Vue.toRef(props, 'viewersHook'),
+      Vue.toRef(props, 'callMeta'),
+      currentCall
+    );
 
     const isIncomplete = Vue.computed(() => props.callState?.isOutputOutdated);
     const isRunning = Vue.computed(() => props.callState?.isRunning);

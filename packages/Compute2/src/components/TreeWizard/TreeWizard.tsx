@@ -16,14 +16,11 @@ import {Draggable, dragContext} from '@he-tree/vue';
 import {AugmentedStat} from './types';
 import '@he-tree/vue/style/default.css';
 import '@he-tree/vue/style/material-design.css';
-import {BehaviorSubject, of} from 'rxjs';
 import {PipelineView} from '../PipelineView/PipelineView';
 import {useUrlSearchParams} from '@vueuse/core';
 import {Inspector} from '../Inspector/Inspector';
-import {switchMap} from 'rxjs/operators';
-import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
-import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
-import {findTreeNode, findTreeNodeParrent, makeMergedItems, reportStep} from '../../utils';
+import {findTreeNode, findTreeNodeParrent, reportStep} from '../../utils';
+import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
 
 
 export const TreeWizard = Vue.defineComponent({
@@ -32,11 +29,25 @@ export const TreeWizard = Vue.defineComponent({
     providerFunc: {type: String, required: true},
   },
   setup(props) {
-    const driver = new Driver();
-    const treeState = Vue.shallowRef<PipelineState | undefined>(undefined);
-    const logs = useObservable(driver.logger.logs$);
-    const config = useObservable(driver.currentConfig$);
-    const links = useObservable(driver.currentLinks$);
+
+    // TODO: handle providerFunc changes, not necessary as of now
+    const {
+      treeMutationsLocked,
+      isGlobalLocked,
+      treeState,
+      states,
+      logs,
+      config,
+      links,
+      //
+      loadPipeline,
+      loadAndReplaceNestedPipeline,
+      savePipeline,
+      runStep,
+      addStep,
+      removeStep,
+      moveStep,
+    } = useReactiveTreeDriver(props.providerFunc);
 
     const chosenStepUuid = Vue.ref<string | undefined>(undefined);
 
@@ -88,63 +99,16 @@ export const TreeWizard = Vue.defineComponent({
 
     let oldClosed = [] as string[];
 
-    useSubscription((driver.currentState$).subscribe((s) => {
-      if (treeInstance.value) {
-        const oldStats = treeInstance.value!.statsFlat as AugmentedStat[];
+    Vue.watch(treeState, (_nextState, oldState) => {
+      if (oldState && treeInstance.value) {
+        const oldStats = treeInstance.value.statsFlat as AugmentedStat[];
         oldClosed = oldStats.reduce((acc, stat) => {
           if (!stat.open)
             acc.push(stat.data.uuid);
           return acc;
         }, [] as string[]);
       }
-      treeState.value = s;
-    }));
-
-    const treeMutationsLocked = useSubject(driver.treeMutationsLocked$);
-    const isGlobalLocked = useSubject(driver.globalROLocked$);
-
-    const states = Vue.reactive({
-      calls: {} as Record<string, FuncCallStateInfo | undefined>,
-      validations: {} as Record<string, Record<string, ValidationResult> | undefined>,
-      consistency: {} as Record<string, Record<string, ConsistencyInfo> | undefined>,
-      meta: {} as Record<string, Record<string, BehaviorSubject<any>> | undefined>
-    });
-
-    useSubscription(driver.currentCallsState$.pipe(
-      switchMap((data) => {
-        states.calls = {};
-        return makeMergedItems(data);
-      }),
-    ).subscribe(([k, val]) => {
-      states.calls[k] = Object.freeze(val);
-    }));
-
-    useSubscription(driver.currentValidations$.pipe(
-      switchMap((data) => {
-        states.validations = {};
-        return makeMergedItems(data);
-      }),
-    ).subscribe(([k, val]) => {
-      states.validations[k] = Object.freeze(val);
-    }));
-
-    useSubscription(driver.currentConsistency$.pipe(
-      switchMap((data) => {
-        states.consistency = {};
-        return makeMergedItems(data);
-      }),
-    ).subscribe(([k, val]) => {
-      states.consistency[k] = Object.freeze(val);
-    }));
-
-    useSubscription(driver.currentMeta$.pipe(
-      switchMap((data) => {
-        states.meta = {};
-        return makeMergedItems(data);
-      }),
-    ).subscribe(([k, val]) => {
-      states.meta[k] = Object.freeze(val);
-    }));
+    }, { immediate: true });
 
     const isTreeReportable = Vue.computed(() => {
       return Object.values(states.calls)
@@ -156,46 +120,6 @@ export const TreeWizard = Vue.defineComponent({
       if (oldClosed.includes(stat.data.uuid))
         stat.open = false;
       return stat;
-    };
-
-    Vue.onMounted(() => {
-      initPipeline(props.providerFunc);
-    });
-
-    Vue.onUnmounted(() => {
-      driver.close();
-    });
-
-    const initPipeline = (provider: string) => {
-      driver.sendCommand({event: 'initPipeline', provider});
-    };
-
-    const loadPipeline = (funcCallId: string) => {
-      driver.sendCommand({event: 'loadPipeline', funcCallId});
-    };
-
-    const loadAndReplaceNestedPipeline = (parentUuid: string, dbId: string, itemId: string, position: number) => {
-      driver.sendCommand({event: 'loadDynamicItem', parentUuid, dbId, itemId, position, readonly: true, isReplace: true});
-    }
-
-    const savePipeline = () => {
-      driver.sendCommand({event: 'savePipeline'})
-    };
-
-    const runStep = async (uuid: string) => {
-      driver.sendCommand({event: 'runStep', uuid});
-    };
-
-    const addStep = (parentUuid: string, itemId: string, position: number) => {
-      driver.sendCommand({event: 'addDynamicItem', parentUuid, itemId, position});
-    };
-
-    const removeStep = (uuid: string) => {
-      driver.sendCommand({event: 'removeDynamicItem', uuid});
-    };
-
-    const moveStep = (uuid: string, position: number) => {
-      driver.sendCommand({event: 'moveDynamicItem', uuid, position});
     };
 
     const treeHidden = Vue.ref(false);

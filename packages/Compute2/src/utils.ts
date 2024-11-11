@@ -1,8 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {BehaviorSubject, merge} from 'rxjs';
-import {map} from 'rxjs/operators';
 import {
   isFuncCallState,
   isParallelPipelineState,
@@ -97,9 +95,4 @@ export async function reportStep(treeState?: PipelineState) {
     );
 
   }
-}
-
-export function makeMergedItems<T>(input: Record<string, BehaviorSubject<T>>) {
-  const entries = Object.entries(input).map(([name, state$]) => state$.pipe(map((s) => [name, s] as const)));
-  return merge(...entries);
 }

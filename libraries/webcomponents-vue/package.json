@@ -4,6 +4,7 @@
   "version": "0.0.4",
   "description": "Datagrok web components vue wrappers",
   "dependencies": {
+    "@datagrok-libraries/compute-utils": "file:../compute-utils",
     "@datagrok-libraries/dock-spawn-dg": "../dock-spawn-dg",
     "@datagrok-libraries/webcomponents": "file:../webcomponents",
     "@vueuse/core": "^10.11.1",
