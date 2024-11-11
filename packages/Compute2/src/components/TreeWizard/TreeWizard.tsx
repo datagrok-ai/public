@@ -304,6 +304,9 @@ export const TreeWizard = Vue.defineComponent({
                 eachDraggable={isEachDraggable}
                 eachDroppable={isEachDroppable}
                 onAfter-drop={onAfterDrop}
+                onClick:node={(stat) => {
+                  chosenStepUuid.value = stat.data.uuid
+                }}
               >
                 {
                   ({stat}: {stat: AugmentedStat}) =>
@@ -324,9 +327,6 @@ export const TreeWizard = Vue.defineComponent({
                           addStep(stat.data.uuid, itemId, position);
                         }}
                         onRemoveNode={() => removeStep(stat.data.uuid)}
-                        onClick={() => {
-                          chosenStepUuid.value = stat.data.uuid;
-                        }}
                         onToggleNode={() => stat.open = !stat.open}
                       />
                     )

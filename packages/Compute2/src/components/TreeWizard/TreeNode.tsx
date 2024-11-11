@@ -101,7 +101,6 @@ export const TreeNode = Vue.defineComponent({
   emits: {
     addNode: ({itemId, position}:{itemId: string, position: number}) => ({itemId, position}),
     removeNode: () => {},
-    click: () => {},
     toggleNode: () => {},
   },
   setup(props, {emit}) {
@@ -145,7 +144,6 @@ export const TreeNode = Vue.defineComponent({
           borderBottom: '1px solid var(--steel-2)',
         }}
         ref={treeNodeRef}
-        onClick={() => emit('click')}
       >
         { props.callState && progressIcon(statesToStatus(props.callState, props.validationStates, props.consistencyStates), props.isReadonly) }
         { props.stat.children.length ? openIcon() : null }
