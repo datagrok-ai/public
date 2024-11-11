@@ -6,7 +6,6 @@ format: mdx
 A scatterplot displays data points on the X and Y axes
 to show the relationship between two variables. By using marker color, shape,
 and size, you can show up to three additional data dimensions. 
-
 A scatterplot is a [chemically-aware viewer](../../datagrok/solutions/domains/chem/chemically-aware-viewers#scatter-plot) and is a great choice to visualize 
 [chemical space](../../datagrok/solutions/domains/chem/chem.md#chemical-space) or 
 [activity cliffs](../../datagrok/solutions/domains/chem/chem.md#activity-cliffs).
@@ -27,24 +26,20 @@ A scatterplot is a [chemically-aware viewer](../../datagrok/solutions/domains/ch
 | Toggle regression line | R                                         |
 | Show in full screen    | Alt+F                                     |
 
-![Scatterplot](../../uploads/gifs/scatter-plot.gif)
-
 ## Adding and configuring a scatterplot
 
 To add a scatterplot, click the **Scatterplot** icon on the **Toolbox**.
 
 Use the viewer controls to select columns for each axis and marker color and
-size. For additional configurations, click the **Gear** icon on top of the
-viewer and set your preferences in the **Context Panel**. Here, you can change
-the background, adjust the legend position, add or remove labels, show drop
-lines, and more. You can also access key settings from the context menu by
-right-clicking.
+size. You can also drag-and-drop columns from the grid into the scatter plot. 
+For additional configurations, click the **Gear** icon on top of the
+viewer and set your preferences in the **Context Panel**. 
 
-<img alt="Molecular structures rendering" src={require('./img/Axes.gif').default}
-width="800px"/>
+You can also access key settings from the context menu by right-clicking.
+Element-specific context menus appear when you click on legend, axis, or label.  
 
 
-### Data source
+## Data source
 
 To specify the rows to show on the scatter plot, use the "Table" and "Row Source" properties in the **Data** 
 section on the **Context Panel**. 
@@ -57,7 +52,15 @@ section on the **Context Panel**.
 You can further filter visible rows by setting the "Filter" property to an 
 expression, such as `${AGE} > 18`.
 
-### Filtering
+
+## X, Y, Colors, Sizes, Markers
+
+Use the column selectors on top of the scatterplot, and the popup menu 
+to setup basic properties:
+
+![](img/scatter-plot-colors-sizes-markers-labels.gif)
+
+## Filtering
 
 In addition to visualizing filtered rows, scatter plot can also be used to filter the table, which
 in turn affects what you see on other viewers on this view. This behavior is controlled by the
@@ -76,7 +79,7 @@ in turn affects what you see on other viewers on this view. This behavior is con
 
 ![](img/scatter-plot-zoom-and-pack.gif)
 
-### Selection
+## Selection
 
 Scatterplot highlights selected rows in yellow, and lets you select points as well:
 
@@ -90,14 +93,14 @@ from the context menu.
 
 ![](img/scatter-plot-selection.gif)
 
-### Regression lines
+## Regression lines
 
 To show a regression line, press `R` or check the "Show Regression Line" property
 on the context panel. To hide the equation, uncheck "Show Regression Line Equation".
 
 ![](img/scatter-plot-regression-line.png)
 
-### Formula lines
+## Formula lines
 
 A scatterplot can show reference lines that represent formulas or equations.
 These lines are used to emphasize specific areas on the chart or data. Common
@@ -118,7 +121,7 @@ You can [add formula lines programmatically](https://datagrok.ai/help/develop/ho
 
 :::
 
-### Tooltip
+## Tooltip
 
 By default, a scatterplot inherits the tooltip from the grid. However, you can
 customize the scatterplot's tooltip to show the data you want using the
@@ -133,7 +136,7 @@ right-click on the scatterplot and select **Tooltip** > **Use as Group Tooltip**
 
 ![Group Tooltip](img/group-tooltip.gif)
 
-### Labels
+## Labels
 
 To show values next to the markers, set the **Labels** settings either from context menu or from
 the properties panel:
@@ -148,14 +151,21 @@ To quickly adjust settings for labels, right-click on the label.
 
 ![](img/scatter-plot-labels.gif)
 
-### Connecting lines
+## Jitter
+
+Many points in your dataset might fall into the same X and Y coordinates (often happens
+with integer or categorical columns). To spread them out on the plot, set **Jitter Size**:
+
+![](img/scatter-plot-jitter.gif)
+
+## Connecting lines
 
 You can set a column that defines order in which points are connected. 
 Below, we see the (gdp, life expectancy) trajectory of different countries over time.
 
 ![](img/scatter-plot-lines.png)
 
-### Cheminformatics
+## Cheminformatics
 
 Scatterplot supports custom value renderers, and in particular it's very useful for
 visualizing high-dimensional chemical data. If you choose to do so, molecules could 
@@ -164,7 +174,7 @@ To learn more, check out [cheminformatics](../../datagrok/solutions/domains/chem
 
 ![](../../uploads/viewers/scatter-plot-molecules.png)
 
-### WebGPU acceleration
+## WebGPU acceleration
 
 WebGPU acceleration allows you to quickly render massive datasets (10 millions rows and more).
 To get the maximum performance, set **Zoom and Filter** property to "no action".
