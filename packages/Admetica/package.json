@@ -16,7 +16,6 @@
     "@datagrok-libraries/compute-utils": "^1.39.4",
     "@datagrok-libraries/tutorials": "^1.4.3",
     "@datagrok-libraries/utils": "^4.3.3",
-    "@datagrok/power-grid": "^1.4.0",
     "cash-dom": "^8.1.5",
     "datagrok-api": "../../js-api",
     "dayjs": "^1.11.13"
