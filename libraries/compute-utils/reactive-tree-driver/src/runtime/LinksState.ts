@@ -5,7 +5,7 @@ import {v4 as uuidv4} from 'uuid';
 import {BaseTree, NodeAddress, NodePath} from '../data/BaseTree';
 import {StateTree} from './StateTree';
 import {isFuncCallNode, isSequentialPipelineNode, isStaticPipelineNode, StateTreeNode} from './StateTreeNodes';
-import {ActionSpec, isActionSpec, LinkSpec, MatchedNodePaths, MatchInfo, matchNodeLink} from './link-matching';
+import {ActionSpec, LinkSpec, MatchedNodePaths, MatchInfo, matchNodeLink} from './link-matching';
 import {Action, Link} from './Link';
 import {BehaviorSubject, concat, merge, Subject, of, Observable, defer, combineLatest} from 'rxjs';
 import {takeUntil, map, scan, switchMap, filter, mapTo, toArray, take, tap, debounceTime, delay, concatMap} from 'rxjs/operators';
@@ -13,6 +13,7 @@ import {parseLinkIO} from '../config/LinkSpec';
 import {makeValidationResult} from '../utils';
 import {DriverLogger} from '../data/Logger';
 import {getLinksDiff} from './links-diff';
+import {ViewAction} from '../config/PipelineInstance';
 
 export interface NestedMutationData {
   mutationRootPath: NodeAddress,
@@ -103,6 +104,13 @@ export class LinksState {
     }
   }
 
+  public getNodeActionsData(uuid: string): ViewAction[] | undefined {
+    const actions = this.nodesActions.get(uuid);
+    if (actions)
+      return actions.map(({uuid, spec}) => ({uuid, ...spec}));
+    return actions;
+  }
+
   public createLinks(state: BaseTree<StateTreeNode>, oldLinks: Link[]) {
     const newLinks = this.createStateLinks(state);
     if (this.defaultValidators) {
@@ -161,7 +169,7 @@ export class LinksState {
         .flat();
       const links = matchedLinks.map((minfo) => {
         const spec = minfo.spec as ActionSpec;
-        const action = new Action(path, minfo, spec.position, !!spec.isPipeline, spec.friendlyName, spec.menuCategory);
+        const action = new Action(path, minfo, spec, this.logger);
         return [item.uuid, action] as const;
       });
       return [...acc, ...links];

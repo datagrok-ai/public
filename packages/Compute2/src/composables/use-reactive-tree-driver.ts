@@ -14,12 +14,15 @@ function makeMergedItems<T>(input: Record<string, BehaviorSubject<T>>) {
   return merge(...entries);
 }
 
-export function useReactiveTreeDriver(providerFunc: string) {
+export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
   const driver = new Driver();
 
   const treeMutationsLocked = useSubject(driver.treeMutationsLocked$);
   const isGlobalLocked = useSubject(driver.globalROLocked$);
   const treeState = useSubject(driver.currentState$);
+
+  const currentMetaCallId = useSubject(driver.currentMetaCallId$);
+  const hasNotSavedEdits = useSubject(driver.hasNotSavedEdits$);
 
   const logs = useObservable(driver.logger.logs$);
   const config = useObservable(driver.currentConfig$);
@@ -68,8 +71,12 @@ export function useReactiveTreeDriver(providerFunc: string) {
     states.meta[k] = Object.freeze(val);
   }));
 
-  Vue.onMounted(() => {
+  Vue.watch(() => providerFunc.value, (providerFunc) => {
     initPipeline(providerFunc);
+  });
+
+  Vue.onMounted(() => {
+    initPipeline(providerFunc.value);
   });
 
   Vue.onUnmounted(() => {
@@ -117,6 +124,8 @@ export function useReactiveTreeDriver(providerFunc: string) {
     treeMutationsLocked,
     isGlobalLocked,
     treeState,
+    currentMetaCallId,
+    hasNotSavedEdits,
     states,
     logs,
     config,

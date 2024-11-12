@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, combineLatest, merge, Observable, Subject} from 'rxjs';
 import {v4 as uuidv4} from 'uuid';
-import {PipelineStateParallel, PipelineStateSequential, PipelineStateStatic, StepFunCallInitialConfig, StepFunCallSerializedState, StepFunCallState, PipelineSerializedState, isFuncCallSerializedState} from '../config/PipelineInstance';
+import {PipelineStateParallel, PipelineStateSequential, PipelineStateStatic, StepFunCallInitialConfig, StepFunCallSerializedState, StepFunCallState, PipelineSerializedState, isFuncCallSerializedState, ViewAction} from '../config/PipelineInstance';
 import {PipelineConfigurationParallelProcessed, PipelineConfigurationProcessed, PipelineConfigurationSequentialProcessed, PipelineConfigurationStaticProcessed} from '../config/config-processing-utils';
 import {IFuncCallAdapter, IStateStore, MemoryStore} from './FuncCallAdapters';
 import {FuncCallInstancesBridge, RestrictionState} from './FuncCallInstancesBridge';
@@ -12,7 +12,6 @@ import {map, mapTo, scan, skip, switchMap, takeUntil, withLatestFrom} from 'rxjs
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {RestrictionType, ValidationResult} from '../data/common-types';
 import {mergeValidationResults} from '../utils';
-import {Action} from './Link';
 
 export type StateTreeSerializationOptions = {
   disableNodesUUID?: boolean,
@@ -138,7 +137,7 @@ export class FuncCallNode implements IStoreProvider {
     });
   }
 
-  toState(options: StateTreeSerializationOptions, actions?: Action[]): StepFunCallState {
+  toState(options: StateTreeSerializationOptions, actions?: ViewAction[]): StepFunCallState {
     const instance = this.instancesWrapper.getInstance();
     const res: StepFunCallState = {
       type: 'funccall',
@@ -294,8 +293,8 @@ export class FuncCallNode implements IStoreProvider {
       // expectDeepEqual will not check additional props in an actual
       // data, only those that are explicitly present in the expected
       // data
-      expectDeepEqual(actual, expected, {maxErrorsReport: 1});
-      expectDeepEqual(expected, actual, {maxErrorsReport: 1});
+      expectDeepEqual(actual, expected, {maxErrorsReport: 1, floatTolerance: 0.0001 });
+      expectDeepEqual(expected, actual, {maxErrorsReport: 1, floatTolerance: 0.0001 });
     } catch {
       return false;
     }
@@ -325,7 +324,7 @@ export class PipelineNodeBase implements IStoreProvider {
     return this.store;
   }
 
-  toState(options: StateTreeSerializationOptions, actions?: Action[]) {
+  toState(options: StateTreeSerializationOptions, actions?: ViewAction[]) {
     const state = this.toSerializedState(options);
     return {...state, actions};
   }
@@ -357,9 +356,9 @@ export class StaticPipelineNode extends PipelineNodeBase {
     super(config, isReadonly);
   }
 
-  toSerializedState(options: StateTreeSerializationOptions): PipelineStateStatic<StepFunCallState> {
+  toSerializedState(options: StateTreeSerializationOptions): PipelineStateStatic<StepFunCallState, {}> {
     const base = super.toSerializedState(options);
-    const res: PipelineStateStatic<StepFunCallState> = {
+    const res: PipelineStateStatic<StepFunCallState, {}> = {
       ...base,
       nqName: this.config.nqName,
       type: this.nodeType,
@@ -379,9 +378,9 @@ export class ParallelPipelineNode extends PipelineNodeBase {
     super(config, isReadonly);
   }
 
-  toSerializedState(options: StateTreeSerializationOptions): PipelineStateParallel<StepFunCallState> {
+  toSerializedState(options: StateTreeSerializationOptions): PipelineStateParallel<StepFunCallState, {}> {
     const base = super.toSerializedState(options);
-    const res: PipelineStateParallel<StepFunCallState> = {
+    const res: PipelineStateParallel<StepFunCallState, {}> = {
       ...base,
       type: this.nodeType,
       steps: [],
@@ -411,7 +410,7 @@ export class SequentialPipelineNode extends PipelineNodeBase {
 
   toSerializedState(options: StateTreeSerializationOptions) {
     const base = super.toSerializedState(options);
-    const res: PipelineStateSequential<StepFunCallState> = {
+    const res: PipelineStateSequential<StepFunCallState, {}> = {
       ...base,
       type: this.nodeType,
       steps: [],

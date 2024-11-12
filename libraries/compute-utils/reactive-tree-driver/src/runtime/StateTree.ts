@@ -64,7 +64,7 @@ export class StateTree {
     linksState?: LinksState,
   ): PipelineState | PipelineSerializedState {
     const item = node.getItem();
-    const actions = linksState ? linksState.nodesActions.get(item.uuid) : undefined;
+    const actions = linksState ? linksState.getNodeActionsData(item.uuid) : undefined;
     if (isFuncCallNode(item))
       return isSerialized ? item.toSerializedState(options) : item.toState(options, actions);
     const state = isSerialized ? item.toSerializedState(options) : item.toState(options, actions);
@@ -119,6 +119,16 @@ export class StateTree {
       return acc;
     }, [] as (readonly [string, BehaviorSubject<FuncCallStateInfo | undefined>])[]);
     return Object.fromEntries(entries);
+  }
+
+  public getIOMutations() {
+    const allFlags = this.nodeTree.traverse(this.nodeTree.root, (acc, node) => {
+      const item = node.getItem();
+      if (isFuncCallNode(item))
+        return [...acc, item.instancesWrapper.getIOEditsFlag()];
+      return acc;
+    }, [] as Observable<boolean>[]);
+    return merge(...allFlags);
   }
 
   //
@@ -295,7 +305,7 @@ export class StateTree {
     const action = this.linksState.actions.get(uuid);
     if (!action)
       throw new Error(`Action ${uuid} not found`);
-    if (action.isPipelineMutation) {
+    if (action.spec.isPipeline) {
       return this.withTreeLock(() => {
         action.trigger();
         return action.isRunning$.pipe(

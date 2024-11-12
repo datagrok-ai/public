@@ -1,10 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {BehaviorSubject, Observable, Subject, EMPTY, of, from} from 'rxjs';
+import {BehaviorSubject, Observable, Subject, EMPTY, of, from, combineLatest} from 'rxjs';
 import {isFuncCallSerializedState, PipelineState} from './config/PipelineInstance';
 import {AddDynamicItem, InitPipeline, LoadDynamicItem, LoadPipeline, MoveDynamicItem, RemoveDynamicItem, RunAction, RunSequence, RunStep, SaveDynamicItem, SavePipeline, ViewConfigCommands} from './view/ViewCommunication';
-import {pairwise, takeUntil, concatMap, catchError, switchMap, map, mapTo, startWith, withLatestFrom, tap, distinctUntilChanged} from 'rxjs/operators';
+import {pairwise, takeUntil, concatMap, catchError, switchMap, map, mapTo, startWith, withLatestFrom, tap, distinctUntilChanged, filter} from 'rxjs/operators';
 import {StateTree} from './runtime/StateTree';
 import {loadInstanceState} from './runtime/funccall-utils';
 import {callHandler} from './utils';
@@ -16,6 +16,8 @@ import {DriverLogger} from './data/Logger';
 import {LinksData} from './runtime/LinksState';
 
 export class Driver {
+  public currentMetaCallId$ = new BehaviorSubject<string | undefined>(undefined);
+  public hasNotSavedEdits$ = new BehaviorSubject<boolean>(false);
   public currentState$ = new BehaviorSubject<PipelineState | undefined>(undefined);
   public currentCallsState$ = new BehaviorSubject<Record<string, BehaviorSubject<FuncCallStateInfo | undefined>>>({});
   public currentValidations$ = new BehaviorSubject<Record<string, BehaviorSubject<Record<string, ValidationResult>>>>({});
@@ -30,6 +32,8 @@ export class Driver {
   private states$ = new BehaviorSubject<StateTree | undefined>(undefined);
   private commands$ = new Subject<ViewConfigCommands>();
   private closed$ = new Subject<true>();
+  private wasEdited$ = new BehaviorSubject<boolean>(false);
+
   public logger = new DriverLogger();
 
   constructor(private mockMode = false) {
@@ -56,6 +60,16 @@ export class Driver {
       switchMap((state) => state ?
         state.makeStateRequests$.pipe(startWith(null), mapTo(state)) :
         of(undefined)));
+
+    stateUpdates$.pipe(
+      switchMap((state) => state ? state.getIOMutations() : EMPTY),
+      takeUntil(this.closed$),
+    ).subscribe(() => this.wasEdited$.next(true));
+
+    combineLatest([this.globalROLocked$, this.treeMutationsLocked$, this.wasEdited$]).pipe(
+      filter(([roLock, mutationLock]) => !roLock && !mutationLock),
+      map(([, , wasEdited]) => wasEdited)
+    ).subscribe(this.hasNotSavedEdits$);
 
     stateUpdates$.pipe(
       map((state) => state ? state.toState() : undefined),
@@ -145,27 +159,35 @@ export class Driver {
 
   private addDynamicItem(msg: AddDynamicItem, state?: StateTree) {
     this.checkState(msg, state);
-    return state.addSubTree(msg.parentUuid, msg.itemId, msg.position);
+    return state.addSubTree(msg.parentUuid, msg.itemId, msg.position).pipe(
+      tap(() => this.wasEdited$.next(true))
+    );
   }
 
   private loadDynamicItem(msg: LoadDynamicItem, state?: StateTree) {
     this.checkState(msg, state);
-    return state.loadSubTree(msg.parentUuid, msg.dbId, msg.itemId, msg.position, !!msg.readonly, !!msg.isReplace);
+    return state.loadSubTree(msg.parentUuid, msg.dbId, msg.itemId, msg.position, !!msg.readonly, !!msg.isReplace).pipe(
+      tap(() => this.wasEdited$.next(true))
+    );
   }
 
-  public saveDynamicItem(msg: SaveDynamicItem, state?: StateTree) {
+  private saveDynamicItem(msg: SaveDynamicItem, state?: StateTree) {
     this.checkState(msg, state);
     return state.save(msg.uuid);
   }
 
   private removeDynamicItem(msg: RemoveDynamicItem, state?: StateTree) {
     this.checkState(msg, state);
-    return state.removeSubtree(msg.uuid);
+    return state.removeSubtree(msg.uuid).pipe(
+      tap(() => this.wasEdited$.next(true))
+    );
   }
 
   private moveDynamicItem(msg: MoveDynamicItem, state?: StateTree) {
     this.checkState(msg, state);
-    return state.moveSubtree(msg.uuid, msg.position);
+    return state.moveSubtree(msg.uuid, msg.position).pipe(
+      tap(() => this.wasEdited$.next(true))
+    );
   }
 
   private runStep(msg: RunStep, state?: StateTree) {
@@ -183,12 +205,15 @@ export class Driver {
     return state.runAction(msg.startUuid);
   }
 
-  public savePipeline(msg: SavePipeline, state?: StateTree) {
+  private savePipeline(msg: SavePipeline, state?: StateTree) {
     this.checkState(msg, state);
-    return state.save();
+    return state.save().pipe(
+      tap(call => this.currentMetaCallId$.next(call?.id)),
+      tap(() => this.wasEdited$.next(false))
+    );
   }
 
-  public loadPipeline(msg: LoadPipeline) {
+  private loadPipeline(msg: LoadPipeline) {
     return from(loadInstanceState(msg.funcCallId)).pipe(
       concatMap((stateLoaded) => {
         if (isFuncCallSerializedState(stateLoaded))
@@ -212,7 +237,11 @@ export class Driver {
           logger: this.logger,
         })),
       concatMap((state) => state.init()),
-      tap((state) => this.states$.next(state)),
+      tap((state) => {
+        this.states$.next(state);
+        this.currentMetaCallId$.next(msg.funcCallId);
+        this.wasEdited$.next(false);
+      }),
     );
   }
 
@@ -227,7 +256,11 @@ export class Driver {
         logger: this.logger,
       })),
       concatMap((state) => state.init()),
-      tap((state) => this.states$.next(state)),
+      tap((state) => {
+        this.states$.next(state)
+        this.currentMetaCallId$.next(undefined);
+        this.wasEdited$.next(true);
+      }),
     );
   }
 

@@ -6,14 +6,14 @@ import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {TestScheduler} from 'rxjs/testing';
 import {map, take, takeUntil, toArray} from 'rxjs/operators';
 import {Subject} from 'rxjs';
-import {FuncallStateItem} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
+import {FuncCallIODescription} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {FuncCallInstancesBridge} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/FuncCallInstancesBridge';
 import {makeValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 
 category('ComputeUtils: Driver instance bridge', async () => {
   let testScheduler: TestScheduler;
 
-  const io: FuncallStateItem[] = [
+  const io: FuncCallIODescription[] = [
     {direction: 'input', id: 'arg1', type: 'string', nullable: true},
     {direction: 'input', id: 'arg2', type: 'string', nullable: true},
     {direction: 'output', id: 'res', type: 'string', nullable: true},

@@ -1,7 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {ItemId, NqName, RestrictionType} from '../data/common-types';
-import {Action} from '../runtime/Link';
-import {ViewersHook} from './PipelineConfiguration';
+import {ActionPositions, ViewersHook} from './PipelineConfiguration';
 
 //
 // initial steps config for dynamic pipelines
@@ -42,8 +41,8 @@ export interface PipelineInstanceState {
 
 export type StateTypes = PipelineState['type'];
 
-export type PipelineState = PipelineStateRec<StepFunCallState>;
-export type PipelineSerializedState = PipelineStateRec<StepFunCallSerializedState>;
+export type PipelineState = PipelineStateRec<StepFunCallState, PipelineInstanceRuntimeData>;
+export type PipelineSerializedState = PipelineStateRec<StepFunCallSerializedState, {}>;
 
 export function isFuncCallState(state: PipelineState): state is StepFunCallState {
   return state.type === 'funccall';
@@ -53,20 +52,29 @@ export function isFuncCallSerializedState(state: PipelineSerializedState): state
 }
 
 
-export function isStaticPipelineState(state: PipelineState): state is PipelineStateStatic<StepFunCallState> {
+export function isStaticPipelineState(state: PipelineState): state is PipelineStateStatic<StepFunCallState, PipelineInstanceRuntimeData> {
   return state.type === 'static';
 }
-export function isParallelPipelineState(state: PipelineState): state is PipelineStateParallel<StepFunCallState> {
+export function isParallelPipelineState(state: PipelineState): state is PipelineStateParallel<StepFunCallState, PipelineInstanceRuntimeData> {
   return state.type === 'parallel';
 }
-export function isSequentialPipelineState(state: PipelineState): state is PipelineStateSequential<StepFunCallState> {
+export function isSequentialPipelineState(state: PipelineState): state is PipelineStateSequential<StepFunCallState, PipelineInstanceRuntimeData> {
   return state.type === 'sequential';
 }
 
-export type PipelineStateRec<S> = PipelineStateStatic<S> | PipelineStateSequential<S> | PipelineStateParallel<S> | S;
+export type PipelineStateRec<S, T> = PipelineStateStatic<S, T> | PipelineStateSequential<S, T> | PipelineStateParallel<S, T> | S;
 
 
 // funccall
+
+export type ViewAction = {
+  uuid: string;
+  position: ActionPositions;
+  description?: string;
+  menuCategory?: string;
+  friendlyName?:string;
+  icon?:string;
+}
 
 export type StepFunCallStateBase = {
   type: 'funccall';
@@ -85,12 +93,17 @@ export type StepFunCallSerializedState = {
 export type StepFunCallState = {
   funcCall?: DG.FuncCall;
   viewersHook?: ViewersHook;
-  actions?: Action[];
+  actions?: ViewAction[];
 } & StepFunCallStateBase;
 
 // pipeline base
 
-export type PipelineInstanceBase<I> = {
+export type PipelineInstanceRuntimeData = {
+  actions: ViewAction[] | undefined;
+  approversGroup: string | undefined;
+}
+
+export type PipelineInstanceBase<I, T> = {
   uuid: string;
   configId: string;
   isReadonly: boolean;
@@ -98,14 +111,14 @@ export type PipelineInstanceBase<I> = {
   provider: NqName | undefined;
   version: string | undefined;
   nqName: string | undefined;
-} & I;
+} & I & T;
 
 // static
 
-export type PipelineStateStatic<S> = PipelineInstanceBase<{
+export type PipelineStateStatic<S, T> = PipelineInstanceBase<{
   type: 'static',
-  steps: PipelineStateRec<S>[];
-}>;
+  steps: PipelineStateRec<S, T>[];
+}, T>;
 
 // sequential
 
@@ -116,13 +129,13 @@ export type StepSequentialDescription = {
   disableUIAdding?: boolean;
 };
 
-export type StepSequentialState<S> = PipelineStateRec<S> & StepSequentialDescription;
+export type StepSequentialState<S, T> = PipelineStateRec<S, T> & StepSequentialDescription;
 
-export type PipelineStateSequential<S> = PipelineInstanceBase<{
+export type PipelineStateSequential<S, T> = PipelineInstanceBase<{
   type: 'sequential';
-  steps: StepSequentialState<S>[];
+  steps: StepSequentialState<S, T>[];
   stepTypes: StepSequentialDescription[];
-}>;
+}, T>;
 
 // parallel
 
@@ -133,10 +146,10 @@ export type StepParallelDescription = {
   disableUIAdding?: boolean;
 };
 
-export type StepParallelState<S> = PipelineStateRec<S> & StepParallelDescription;
+export type StepParallelState<S, T> = PipelineStateRec<S, T> & StepParallelDescription;
 
-export type PipelineStateParallel<S> = PipelineInstanceBase<{
+export type PipelineStateParallel<S, T> = PipelineInstanceBase<{
   type: 'parallel';
-  steps: StepParallelState<S>[];
+  steps: StepParallelState<S, T>[];
   stepTypes: StepParallelDescription[];
-}>;
+}, T>;

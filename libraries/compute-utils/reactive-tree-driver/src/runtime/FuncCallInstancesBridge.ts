@@ -3,7 +3,7 @@ import {BehaviorSubject, of, combineLatest, Observable, defer, Subject, merge, E
 import {switchMap, map, takeUntil, finalize, mapTo, skip, distinctUntilChanged, withLatestFrom, filter, catchError, tap} from 'rxjs/operators';
 import {IFuncCallAdapter, IRunnableWrapper, IStateStore} from './FuncCallAdapters';
 import {RestrictionType, ValidationResult} from '../data/common-types';
-import {FuncallStateItem} from '../config/config-processing-utils';
+import {FuncCallIODescription} from '../config/config-processing-utils';
 
 export interface RestrictionState {
   type: RestrictionType,
@@ -48,7 +48,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
   private closed$ = new Subject<true>();
   private initialData?: BridgePreInitData;
 
-  constructor(private io: FuncallStateItem[], public readonly isReadonly: boolean) {}
+  constructor(private io: FuncCallIODescription[], public readonly isReadonly: boolean) {}
 
   get id() {
     return this.instance$.value?.adapter?.id;
@@ -186,6 +186,16 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
     });
   }
 
+  public getIOEditsFlag(filteredInputs?: FuncCallIODescription[]) {
+    const inputs = filteredInputs ?? this.io;
+    const inputsChanges = inputs.map(
+      (item) => this.getStateChanges(item.id, true).pipe(skip(1)));
+    return merge(...inputsChanges).pipe(
+      mapTo(true),
+      takeUntil(this.closed$),
+    );
+  }
+
   getStateNames() {
     return this.io.map((item) => item.id);
   }
@@ -208,15 +218,8 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
       takeUntil(this.closed$),
     ).subscribe(this.isRunable$);
 
-    const inputs = this.io.filter(
-      (item) => item.direction === 'input').map((item) => item.id);
-
-    const inputsChanges = inputs.map(
-      (inputName) => this.getStateChanges(inputName, true).pipe(skip(1)));
-    merge(...inputsChanges).pipe(
-      mapTo(true),
-      takeUntil(this.closed$),
-    ).subscribe(this.outdatedChanged$);
+    const inputs = this.io.filter((item) => item.direction === 'input');
+    (this.getIOEditsFlag(inputs)).subscribe(this.outdatedChanged$);
 
     this.outdatedChanged$.pipe(
       withLatestFrom(this.isOutputOutdated$),

@@ -2,11 +2,12 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
-import {Button, DockManager, IconFA, MarkDown} from '@datagrok-libraries/webcomponents-vue';
+import {DockManager, IconFA, MarkDown} from '@datagrok-libraries/webcomponents-vue';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
-import { isParallelPipelineState, isSequentialPipelineState, PipelineState, PipelineStateParallel, PipelineStateSequential } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
-import { AugmentedStat } from '../TreeWizard/types';
+import {hasAddControls, PipelineWithAdd} from '../../utils';
+import {PipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+
 
 export const PipelineView = Vue.defineComponent({
   name: 'PipelineView',
@@ -48,9 +49,6 @@ export const PipelineView = Vue.defineComponent({
     };
 
     const cardsClasses = 'grok-app-card grok-gallery-grid-item-wrapper pr-4';
-
-    const hasAddList = (data: PipelineState): data is (PipelineStateSequential<any> | PipelineStateParallel<any>) =>
-      (isParallelPipelineState(data) || isSequentialPipelineState(data)) && data.stepTypes.length > 0 && !data.isReadonly;
 
     return () => (
       <div class='w-full h-full flex'>
@@ -118,17 +116,17 @@ export const PipelineView = Vue.defineComponent({
                 </div>
               </div>
 
-              { hasAddList(props.state) && <span>
+              { hasAddControls(props.state) && <span>
               ... or choose the step to add:
               </span> }
 
-              { hasAddList(props.state) && <div class={'grok-gallery-grid'}>
+              { hasAddControls(props.state) && <div class={'grok-gallery-grid'}>
                 { props.state.stepTypes
-                    .map((stepType, idx) => 
+                    .map((stepType, idx) =>
                       <div
                         class={cardsClasses}
                         onClick={() => {
-                          const data = props.state as PipelineStateSequential<any> | PipelineStateParallel<any>;
+                          const data = props.state as PipelineWithAdd;
                           emit('addNode', {
                             itemId: data.stepTypes[idx].configId,
                             position: data.steps.length,

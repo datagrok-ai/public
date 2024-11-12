@@ -10,7 +10,7 @@ import {LinkIOParsed, parseLinkIO} from './LinkSpec';
 // Internal config processing
 //
 
-export type FuncallStateItem = {
+export type FuncCallIODescription = {
   id: ItemId;
   type: string;
   nullable: boolean;
@@ -20,9 +20,9 @@ export type FuncallStateItem = {
 type PipelineStepConfigurationInitial = PipelineStepConfiguration<LinkSpecString, never>;
 type ConfigInitialTraverseItem = PipelineConfigurationInitial | PipelineStepConfigurationInitial;
 
-export type PipelineConfigurationStaticProcessed = AbstractPipelineStaticConfiguration<LinkIOParsed[], FuncallStateItem[], PipelineSelfRef>;
-export type PipelineConfigurationParallelProcessed = AbstractPipelineParallelConfiguration<LinkIOParsed[], FuncallStateItem[], PipelineSelfRef>;
-export type PipelineConfigurationSequentialProcessed = AbstractPipelineSequentialConfiguration<LinkIOParsed[], FuncallStateItem[], PipelineSelfRef>;
+export type PipelineConfigurationStaticProcessed = AbstractPipelineStaticConfiguration<LinkIOParsed[], FuncCallIODescription[], PipelineSelfRef>;
+export type PipelineConfigurationParallelProcessed = AbstractPipelineParallelConfiguration<LinkIOParsed[], FuncCallIODescription[], PipelineSelfRef>;
+export type PipelineConfigurationSequentialProcessed = AbstractPipelineSequentialConfiguration<LinkIOParsed[], FuncCallIODescription[], PipelineSelfRef>;
 export type PipelineConfigurationProcessed = PipelineConfigurationStaticProcessed | PipelineConfigurationParallelProcessed | PipelineConfigurationSequentialProcessed;
 
 export type IOType = 'input' | 'output' | 'base' | 'actions' | 'not';
@@ -59,7 +59,7 @@ export async function getProcessedConfig(conf: PipelineConfigurationInitial): Pr
 async function configProcessing(
   conf: ConfigInitialTraverseItem,
   loadedPipelines: Set<string>,
-): Promise<PipelineConfigurationProcessed | PipelineStepConfiguration<LinkIOParsed[], FuncallStateItem[]> | PipelineSelfRef> {
+): Promise<PipelineConfigurationProcessed | PipelineStepConfiguration<LinkIOParsed[], FuncCallIODescription[]> | PipelineSelfRef> {
   if (isPipelineConfigInitial(conf) && !isPipelineRefInitial(conf) && conf.nqName)
     loadedPipelines.add(conf.nqName);
 
@@ -123,9 +123,9 @@ async function processStepConfig(conf: PipelineStepConfiguration<LinkSpecString,
   return {...conf, io, actions};
 }
 
-async function getFuncCallIO(nqName: NqName): Promise<FuncallStateItem[]> {
+async function getFuncCallIO(nqName: NqName): Promise<FuncCallIODescription[]> {
   const func: DG.Func = await grok.functions.eval(nqName);
-  // force all io to be non-null
+  // make everything non-nullable
   const inputs = func.inputs.map((input) => (
     {id: input.name, type: input.propertyType as any, direction: 'input' as const, nullable: false}
   ));

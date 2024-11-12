@@ -6,14 +6,10 @@ import * as Vue from 'vue';
 import {AugmentedStat, Status} from './types';
 import {ComboPopup, IconFA} from '@datagrok-libraries/webcomponents-vue';
 import {OpenIcon} from '@he-tree/vue';
-import {
-  isParallelPipelineState,
-  isSequentialPipelineState, PipelineState,
-  PipelineStateParallel, PipelineStateSequential,
-} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {useElementHover} from '@vueuse/core';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
+import {hasAddControls, PipelineWithAdd} from '../../utils';
 
 const statusToIcon = {
   ['next']: 'arrow-right',
@@ -128,9 +124,6 @@ export const TreeNode = Vue.defineComponent({
     const nodeLabel = (state: AugmentedStat) =>
       state.data.friendlyName ?? state.data.configId;
 
-    const hasAddButton = (data: PipelineState): data is (PipelineStateSequential<any> | PipelineStateParallel<any>) =>
-      (isParallelPipelineState(data) || isSequentialPipelineState(data)) && data.stepTypes.length > 0 && !data.isReadonly;
-
     const treeNodeRef = Vue.ref(null as null | HTMLElement);
     const isHovered = useElementHover(treeNodeRef);
 
@@ -150,14 +143,14 @@ export const TreeNode = Vue.defineComponent({
         <span class="mtl-ml text-nowrap text-ellipsis overflow-hidden">{ nodeLabel(props.stat) }</span>
         { (isHovered.value) ?
           <div class='flex items-center px-2 w-fit justify-end ml-auto'>
-            { hasAddButton(props.stat.data) ?
+            { hasAddControls(props.stat.data) ?
               <ComboPopup
                 caption={ui.iconFA('plus')}
                 items={props.stat.data.stepTypes
                   .map((stepType) => stepType.friendlyName || stepType.nqName || stepType.configId)
                 }
                 onSelected={({itemIdx}) => {
-                  const data = props.stat.data as PipelineStateSequential<any> | PipelineStateParallel<any>;
+                  const data = props.stat.data as PipelineWithAdd;
                   emit('addNode', {
                     itemId: data.stepTypes[itemIdx].configId,
                     position: data.steps.length,

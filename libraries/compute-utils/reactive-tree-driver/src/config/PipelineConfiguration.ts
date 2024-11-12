@@ -89,7 +89,9 @@ export type PipelineLinkConfiguration<P> = PipelineHandlerConfiguration<P> | Pip
 export type PipelineActionConfiguraion<P> = PipelineLinkConfigurationBase<P> & {
   position: ActionPositions;
   friendlyName?: string;
+  description?: string;
   menuCategory?: string;
+  icon?: string;
   handler: Handler;
   isValidator?: false;
   isMeta?: false;
@@ -99,7 +101,9 @@ export type PipelineActionConfiguraion<P> = PipelineLinkConfigurationBase<P> & {
 export type PipelineMutationConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   position: ActionPositions;
   friendlyName?: string;
+  description?: string;
   menuCategory?: string;
+  icon?: string;
   handler: MutationHandler;
   isValidator?: false;
   isMeta?: false;
@@ -128,6 +132,7 @@ export type PipelineConfigurationBase<P> = {
   id: ItemId;
   nqName?: NqName;
   provider?: NqName;
+  approversGroup?: string;
   version?: string;
   friendlyName?: string;
   onInit?: PipelineHookConfiguration<P>;

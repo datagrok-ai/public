@@ -63,6 +63,7 @@ export async function saveInstanceState(nqName: string, state: any) {
   const metaCall = await makeMetaCall(nqName);
   metaCall.options[CONFIG_PATH] = serialize(state, {useJsonDF: true});
   metaCall.newId();
+  await metaCall.call();
   await historyUtils.saveRun(metaCall);
   return metaCall;
 }

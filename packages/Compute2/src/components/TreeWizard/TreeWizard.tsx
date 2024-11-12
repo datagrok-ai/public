@@ -34,6 +34,8 @@ export const TreeWizard = Vue.defineComponent({
       treeMutationsLocked,
       isGlobalLocked,
       treeState,
+      currentMetaCallId,
+      hasNotSavedEdits,
       states,
       logs,
       config,
@@ -47,7 +49,7 @@ export const TreeWizard = Vue.defineComponent({
       addStep,
       removeStep,
       moveStep,
-    } = useReactiveTreeDriver(props.providerFunc);
+    } = useReactiveTreeDriver(Vue.toRef(props, 'providerFunc'));
 
 
     const chosenStepUuid = Vue.ref<string | undefined>(undefined);
@@ -68,6 +70,9 @@ export const TreeWizard = Vue.defineComponent({
         }, 50)
       }
     };
+
+    Vue.watch(currentMetaCallId, (id) => console.log('metaCall:', id), { immediate: true });
+    Vue.watch(hasNotSavedEdits, (val) => console.log('hasNotSavedEdits:', val), { immediate: true });
 
     Vue.watch(treeState, () => {
       if (!treeState.value) return;

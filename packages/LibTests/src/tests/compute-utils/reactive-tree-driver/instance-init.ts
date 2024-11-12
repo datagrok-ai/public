@@ -161,7 +161,7 @@ category('ComputeUtils: Driver init calls', async () => {
     const tree = StateTree.fromPipelineConfig({config: pconf});
     await tree.init().toPromise();
     const state = tree.toState();
-    (state as PipelineStateStatic<any>).steps.map(
+    (state as PipelineStateStatic<any, {}>).steps.map(
       (x) => {
         if (!((x as StepFunCallState).funcCall instanceof DG.FuncCall))
           throw new Error(`funcCall is not an instance of DG.FuncCall`);
@@ -212,7 +212,7 @@ category('ComputeUtils: Driver init calls', async () => {
     const tree = StateTree.fromInstanceConfig({instanceConfig, config: pconf});
     await tree.init().toPromise();
     const state = tree.toState();
-    const fc = ((state as PipelineStateStatic<any>).steps[1] as StepFunCallState).funcCall!;
+    const fc = ((state as PipelineStateStatic<any, {}>).steps[1] as StepFunCallState).funcCall!;
     expectDeepEqual(fc.inputs.a, 1);
     expectDeepEqual(fc.inputs.b, 2);
   });

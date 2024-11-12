@@ -5,7 +5,7 @@ import {v4 as uuidv4} from 'uuid';
 import {ActionPositions, HandlerBase} from '../config/PipelineConfiguration';
 import {BaseTree, NodeAddress, NodePath, TreeNode} from '../data/BaseTree';
 import {StateTreeNode} from './StateTreeNodes';
-import {MatchInfo} from './link-matching';
+import { ActionSpec, MatchInfo} from './link-matching';
 import {BehaviorSubject, combineLatest, defer, EMPTY, merge, Subject, of} from 'rxjs';
 import {map, filter, takeUntil, withLatestFrom, switchMap, catchError, mapTo, finalize, debounceTime, timestamp, distinctUntilChanged} from 'rxjs/operators';
 import {callHandler} from '../utils';
@@ -277,10 +277,7 @@ export class Action extends Link {
   constructor(
     public prefix: NodePath,
     public matchInfo: MatchInfo,
-    public position: ActionPositions,
-    public isPipelineMutation: boolean,
-    public friendlyName?: string,
-    public menuCategory?: string,
+    public spec: ActionSpec,
     logger?: DriverLogger,
   ) {
     super(prefix, matchInfo, undefined, logger);

@@ -4,7 +4,13 @@ import * as DG from 'datagrok-api/dg';
 import {
   isFuncCallState,
   isParallelPipelineState,
-  isSequentialPipelineState, isStaticPipelineState, PipelineState,
+  isSequentialPipelineState,
+  isStaticPipelineState,
+  PipelineInstanceRuntimeData,
+  PipelineState,
+  PipelineStateParallel,
+  PipelineStateSequential,
+  StepFunCallState,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {zipSync, Zippable} from 'fflate';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
@@ -46,6 +52,12 @@ export function findTreeNodeParrent(uuid: string, state: PipelineState): Pipelin
     }
   }
 };
+
+export type PipelineWithAdd = PipelineStateSequential<StepFunCallState, PipelineInstanceRuntimeData> |
+PipelineStateParallel<StepFunCallState, PipelineInstanceRuntimeData>;
+
+export const hasAddControls = (data: PipelineState): data is  PipelineWithAdd =>
+  (isParallelPipelineState(data) || isSequentialPipelineState(data)) && data.stepTypes.length > 0 && !data.isReadonly;
 
 
 export async function reportStep(treeState?: PipelineState) {

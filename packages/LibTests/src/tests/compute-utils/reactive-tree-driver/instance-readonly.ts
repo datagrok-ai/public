@@ -19,8 +19,8 @@ category('ComputeUtils: Driver state tree readonly', async () => {
     await loadedTree.init().toPromise();
     const lc = loadedTree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});
     sc.isReadonly = true;
-    (sc as PipelineStateStatic<StepFunCallStateBase>).steps[0].isReadonly = true;
-    (sc as PipelineStateStatic<StepFunCallStateBase>).steps[1].isReadonly = true;
+    (sc as PipelineStateStatic<StepFunCallStateBase, {}>).steps[0].isReadonly = true;
+    (sc as PipelineStateStatic<StepFunCallStateBase, {}>).steps[1].isReadonly = true;
     expectDeepEqual(lc, sc);
   });
 
@@ -43,10 +43,10 @@ category('ComputeUtils: Driver state tree readonly', async () => {
     const loadedTree = outerTree.nodeTree.getNode([{idx: 1}]);
     const lc = StateTree.toStateRec(loadedTree, true, {disableNodesUUID: true, disableCallsUUID: true});
     sc.isReadonly = true;
-    (sc as PipelineStateStatic<StepFunCallStateBase>).steps[0].isReadonly = true;
-    (sc as PipelineStateStatic<StepFunCallStateBase>).steps[1].isReadonly = true;
-    ((sc as PipelineStateStatic<StepFunCallStateBase>).steps[1] as PipelineStateStatic<StepFunCallStateBase>).steps[0].isReadonly = true;
-    ((sc as PipelineStateStatic<StepFunCallStateBase>).steps[1] as PipelineStateStatic<StepFunCallStateBase>).steps[1].isReadonly = true;
+    (sc as PipelineStateStatic<StepFunCallStateBase, {}>).steps[0].isReadonly = true;
+    (sc as PipelineStateStatic<StepFunCallStateBase, {}>).steps[1].isReadonly = true;
+    ((sc as PipelineStateStatic<StepFunCallStateBase, {}>).steps[1] as PipelineStateStatic<StepFunCallStateBase, {}>).steps[0].isReadonly = true;
+    ((sc as PipelineStateStatic<StepFunCallStateBase, {}>).steps[1] as PipelineStateStatic<StepFunCallStateBase, {}>).steps[1].isReadonly = true;
     expectDeepEqual(lc, sc);
   });
 
