@@ -447,6 +447,7 @@ export class DiffStudio {
       }, 10);
       return this.modelDiv;
     });
+    this.tabControl.header.hidden = true;
 
     this.tabControl.onTabChanged.subscribe(async (_) => {
       if ((this.tabControl.currentPane === this.solvePane) && this.toChangeInputs)
@@ -479,7 +480,6 @@ export class DiffStudio {
   }; // constructor
 
   private updateRibbonWgts() {
-    console.log('Updating');
     this.sensAnWgt.hidden = this.isEditState;
     this.fittingWgt.hidden = this.isEditState;
     this.refreshWgt.hidden = !this.isEditState;
@@ -515,21 +515,26 @@ export class DiffStudio {
   }
 
   private getAppStateInput(): HTMLElement {
-    const input = ui.input.toggle('', {
-      value: false,
-      onValueChanged: (val) => {
-        this.isEditState = val;
-        input.setTooltip(val ? 'Finish editing' : 'Edit equations');
-        this.updateRibbonWgts();
-      },
-    });
-
-    input.setTooltip(this.isEditState ? 'Finish editing' : 'Edit equations');
+    const input = ui.input.toggle('', {value: this.isEditState});
 
     const span = ui.span([TITLE.EDIT]);
     span.classList.add('diff-studio-ribbon-text');
 
     const wgt = ui.divH([input.root, span]);
+
+    ui.tooltip.bind(wgt, this.isEditState ? 'Finish editing' : 'Edit equations');
+
+    wgt.addEventListener('click', (e) => {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+
+      this.isEditState = !this.isEditState;
+      input.value = this.isEditState;
+      ui.tooltip.bind(wgt, this.isEditState ? 'Finish editing' : 'Edit equations');
+      this.tabControl.currentPane = this.isEditState ? this.editPane : this.solvePane;
+      this.updateRibbonWgts();
+      this.updateRefreshWidget();
+    });
 
     return wgt;
   }
@@ -569,11 +574,33 @@ export class DiffStudio {
   private getRefreshWgt(): HTMLElement {
     const span = ui.span(['Refresh']);
     span.classList.add('diff-studio-ribbon-text');
-    const wgt = ui.divH([ui.iconFA('sync'), span]);
-    wgt.onclick = async () => await this.runSolving(false);
+    span.style.color = this.isModelChanged ? '#40607F' : 'var(--grey-3)';
+
+    const icn = ui.iconFA('sync');
+    icn.style.color = this.isModelChanged ? '#40607F' : 'var(--grey-3)';
+
+    const wgt = ui.divH([icn, span]);
+    wgt.onclick = async () => {
+      if (this.isModelChanged) {
+        await this.runSolving(false);
+        this.updateRefreshWidget();
+      }
+    };
+
     ui.tooltip.bind(wgt, 'Apply changes (F5)');
 
     return wgt;
+  }
+
+  private getColor(enabled: boolean) {
+    return enabled ? '#40607F' : 'var(--grey-3)';
+  }
+
+  private updateRefreshWidget() {
+    const ch = this.refreshWgt.children;
+    const color = this.getColor(this.isModelChanged);
+    (ch.item(0) as HTMLElement).style.color = color;
+    (ch.item(1) as HTMLElement).style.color = color;
   }
 
   /** Create model editor */
@@ -595,16 +622,14 @@ export class DiffStudio {
         this.isSolvingSuccess = false;
         this.toRunWhenFormCreated = true;
         this.toChangeSolutionViewerProps = true;
-        this.setCallWidgetsVisibility(true);
+        //this.setCallWidgetsVisibility(true);
         this.toSwitchToModelTab = true;
+        this.updateRefreshWidget();
       } else {
         e.stopImmediatePropagation();
         e.preventDefault();
 
-        if ( this.toChangeInputs )
-          await this.runSolving(true);
-        else
-          this.tabControl.currentPane = this.solvePane;
+        await this.runSolving(false);
       }
     });
 
@@ -908,10 +933,12 @@ export class DiffStudio {
 
   /** Run solving the current IVP */
   private async runSolving(toShowInputsForm: boolean): Promise<void> {
+    this.isModelChanged = false;
+
     try {
       const ivp = getIVP(this.editorView!.state.doc.toString());
       await this.getInputsForm(ivp);
-      this.setCallWidgetsVisibility(this.isSolvingSuccess);
+      //this.setCallWidgetsVisibility(this.isSolvingSuccess);
 
       if (this.isSolvingSuccess) {
         this.toChangeInputs = false;
@@ -953,10 +980,11 @@ export class DiffStudio {
         form.style.overflowY = 'hidden';
         this.prevInputsNode = this.inputsPanel.appendChild(form);
 
-        if (!toShowInputsForm)
+        if (this.isEditState)
+        //if (!toShowInputsForm)
           setTimeout(() => this.tabControl.currentPane = this.editPane, 5);
-      } else
-        this.tabControl.currentPane = this.editPane;
+      }/* else
+        this.tabControl.currentPane = this.editPane;*/
     } catch (error) {
       if (error instanceof CallbackAction)
         grok.shell.warning(error.message);
@@ -967,22 +995,14 @@ export class DiffStudio {
     }
   }; // runSolving
 
-  /** Show/hide model call widgets */
-  private setCallWidgetsVisibility(toShow: boolean): void {/*
-    this.solvePane.header.hidden = !toShow;
-    this.exportToJsWgt.hidden = !toShow;
-    this.sensAnIcon.hidden = !toShow;
-    this.fittingIcon.hidden = !toShow;*/
-  }
-
   /** Clear solution table & viewer */
   private clearSolution() {
     this.solutionTable = DG.DataFrame.create();
     this.solverView.dataFrame = this.solutionTable;
-    this.setCallWidgetsVisibility(false);
+    //this.setCallWidgetsVisibility(false);
 
     if (this.toSwitchToModelTab) {
-      this.tabControl.currentPane = this.editPane;
+      //this.tabControl.currentPane = this.editPane;
 
       if (this.prevInputsNode !== null)
         this.inputsPanel.removeChild(this.prevInputsNode);
