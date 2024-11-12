@@ -155,7 +155,7 @@ export class AdmeticaViewApp {
     await addSparklines(this.tableView!.dataFrame, models.split(','), molIdx! + 1);
     splashScreen.close();
     
-    const form = createDynamicForm(this.tableView!.dataFrame, models.split(','), 'smiles', false);
+    const form = createDynamicForm(this.tableView!.dataFrame, models.split(','), 'smiles', true);
     this.clearForm();
     this.formContainer.appendChild(form.root);
     this.tableView?.grid.invalidate();  
@@ -199,6 +199,7 @@ export class AdmeticaViewApp {
       fontSize: '22px',
       cursor: 'pointer',
       textAlign: 'center',
+      borderBottom: 'none',
     });
   }
   
@@ -209,17 +210,24 @@ export class AdmeticaViewApp {
     const highlightColor = '#e0f7fa';
     const defaultColor = '#ffffff';
   
-    const changeBackgroundColor = (color: string) => {
-      inputEditor.style.backgroundColor = color;
+    const setHighlightedStyle = () => {
+      inputEditor.style.backgroundColor = highlightColor;
+      inputEditor.style.borderBottom = '1px dashed #007bff';
     };
   
-    inputEditor.addEventListener('dragenter', () => changeBackgroundColor(highlightColor));
-    inputEditor.addEventListener('dragleave', () => changeBackgroundColor(defaultColor));
+    const resetStyle = () => {
+      inputEditor.style.backgroundColor = defaultColor;
+      inputEditor.style.borderBottom = 'none';
+    };
+  
+    inputEditor.addEventListener('dragenter', setHighlightedStyle);
     inputEditor.addEventListener('dragover', (event) => {
       event.preventDefault();
-      changeBackgroundColor(highlightColor);
+      setHighlightedStyle();
     });
-    inputEditor.addEventListener('drop', () => changeBackgroundColor(defaultColor));
+  
+    inputEditor.addEventListener('dragleave', resetStyle);
+    inputEditor.addEventListener('drop', resetStyle);
   }
   
   private removeOptionsIcon(root: HTMLElement): void {
