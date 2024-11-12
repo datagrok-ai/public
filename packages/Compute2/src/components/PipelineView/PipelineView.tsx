@@ -35,6 +35,7 @@ export const PipelineView = Vue.defineComponent({
     const helpHidden = Vue.ref(true);
     const historyRef = Vue.shallowRef(null as InstanceType<typeof History> | null);
     const helpRef = Vue.shallowRef(null as InstanceType<typeof MarkDown> | null);
+    const state = Vue.computed(() => props.state)
 
     const helpText = Vue.ref(null as null | string);
     Vue.watch(() => props.funcCall, async () => {
@@ -116,17 +117,17 @@ export const PipelineView = Vue.defineComponent({
                 </div>
               </div>
 
-              { hasAddControls(props.state) && <span>
+              { hasAddControls(state.value) && <span>
               ... or choose the step to add:
               </span> }
 
-              { hasAddControls(props.state) && <div class={'grok-gallery-grid'}>
-                { props.state.stepTypes
+              { hasAddControls(state.value) && <div class={'grok-gallery-grid'}>
+                { state.value.stepTypes
                     .map((stepType, idx) =>
                       <div
                         class={cardsClasses}
                         onClick={() => {
-                          const data = props.state as PipelineWithAdd;
+                          const data = state.value as PipelineWithAdd;
                           emit('addNode', {
                             itemId: data.stepTypes[idx].configId,
                             position: data.steps.length,

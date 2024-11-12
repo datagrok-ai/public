@@ -523,7 +523,7 @@ export const styleHistoryFilters = (
   ];
   if (columnNames.length > 0) {
     ui.setDisplay(filters.root, true);
-    filters.setOptions({columnNames, 'showHeader': false, 'showBoolCombinedFitler': false});
+    filters.setOptions({columnNames, 'showHeader': false, 'showBoolCombinedFilter': true});
   } else
     ui.setDisplay(filters.root, false);
 

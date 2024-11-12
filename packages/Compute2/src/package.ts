@@ -196,6 +196,9 @@ export async function MockProvider2(params: any) {
         },
       }],
     }, {
+      type: 'ref',
+      provider: 'Compute2:MockProvider2',
+    }, {
       id: 'stepAdd',
       nqName: 'Compute2:TestAdd2',
       friendlyName: 'add',

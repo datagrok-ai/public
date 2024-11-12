@@ -389,6 +389,7 @@ export const RichFunctionView = Vue.defineComponent({
                     funcCall={currentCall.value}
                     validationStates={validationState.value}
                     onActionRequested={(actionUuid) => emit('actionRequested', actionUuid)}
+                    isReadonly={props.isReadonly}
                   />, [[ifOverlapping, isRunning.value, 'Recalculating...']])
                 }
                 <div class='flex sticky bottom-0 justify-end'>
