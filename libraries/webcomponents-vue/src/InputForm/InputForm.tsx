@@ -30,6 +30,9 @@ export const InputForm = Vue.defineComponent({
     validationStates: {
       type: Object as Vue.PropType<Record<string, ValidationResult>>,
     },
+    isReadonly: {
+      type: Boolean,
+    },
   },
   emits: {
     formReplaced: (a: DG.InputForm | undefined) => a,
@@ -38,6 +41,9 @@ export const InputForm = Vue.defineComponent({
   setup(props, {emit}) {
     const currentCall = Vue.computed(() => props.funcCall);
     const validationStates = Vue.computed(() => props.validationStates);
+    const isReadonly = Vue.computed(() => props.isReadonly);
+
+    let currentForm = undefined as undefined | DG.InputForm;
 
     const convertNewValidationToOld = (newResult: ValidationResult): ValidationResultBase => {
       const convert = (error: Advice) => ({
@@ -52,8 +58,6 @@ export const InputForm = Vue.defineComponent({
         notifications: newResult.notifications?.map(convert),
       };
     };
-
-    let currentForm = undefined as undefined | DG.InputForm;
 
     const runValidations = () => {
       const newStates = validationStates.value;
@@ -90,12 +94,18 @@ export const InputForm = Vue.defineComponent({
           injectInputBaseValidation(input);
         });
       runValidations();
+
+      [...currentCall.value.inputParams.values()]
+        .filter((param) => (currentForm!.getInput(param.property.name)))
+        .forEach((param) => {
+          const input = currentForm!.getInput(param.property.name);
+          input.enabled = !isReadonly.value;
+        });
     };
 
     return () => <dg-input-form
       funcCall={currentCall.value}
-      onFormReplaced={formReplacedCb}
-      validationStates={validationStates.value}>
+      onFormReplaced={formReplacedCb}>
     </dg-input-form>;
   },
 });
