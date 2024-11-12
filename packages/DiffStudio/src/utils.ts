@@ -46,12 +46,12 @@ export function error(df1: DG.DataFrame, df2: DG.DataFrame): number {
 
 /** Return unused IVP-file name */
 export function unusedFileName(name: string, files: string[]): string {
-  if (!files.includes(`${name}.${MISC.IVP_EXT}`))
+  if (!files.includes(`${name}.${MISC.MODEL_FILE_EXT}`))
     return name;
 
   let num = 1;
 
-  while (files.includes(`${name}(${num}).${MISC.IVP_EXT}`))
+  while (files.includes(`${name}(${num}).${MISC.MODEL_FILE_EXT}`))
     ++num;
 
   return `${name}(${num})`;
@@ -253,7 +253,7 @@ export async function getRecentModelsTable(): Promise<DG.DataFrame> {
 /** Return model files from user's home */
 export async function getMyModelFiles(): Promise<DG.FileInfo[]> {
   const folder = `${grok.shell.user.project.name}:Home/`;
-  return await grok.dapi.files.list(folder, true, MISC.IVP_EXT);
+  return await grok.dapi.files.list(folder, true, MISC.MODEL_FILE_EXT);
 }
 
 

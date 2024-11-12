@@ -654,7 +654,7 @@ export class DiffStudio {
     const files = await grok.dapi.files.list(folder);
 
     // get model file names in from the user's folder
-    const existingNames = files.filter((file) => file.extension === MISC.IVP_EXT).map((file) => file.name);
+    const existingNames = files.filter((file) => file.extension === MISC.MODEL_FILE_EXT).map((file) => file.name);
 
     let fileName = unusedFileName(modelName, existingNames);
     const nameInput = ui.input.string(TITLE.NAME, {
@@ -669,20 +669,8 @@ export class DiffStudio {
       },
     });
 
-    let extension = MISC.IVP_EXT;
-    const extInput = ui.input.choice<MISC>(TITLE.TYPE, {
-      value: extension,
-      items: [MISC.IVP_EXT, MISC.TXT_EXT],
-      nullable: false,
-      onValueChanged: () => {
-        extension = extInput.value;
-        if (extension !== MISC.IVP_EXT)
-          grok.shell.warning(WARNING.PREVIEW);
-      },
-    });
-
     const save = async () => {
-      const path = `${folder}${fileName}.${MISC.IVP_EXT}`;
+      const path = `${folder}${fileName}.${MISC.MODEL_FILE_EXT}`;
 
       try {
         await grok.dapi.files.writeAsText(path, modelCode);
@@ -695,11 +683,10 @@ export class DiffStudio {
       dlg.close();
     };
 
-    const dlg = ui.dialog({title: TITLE.SAVE_TO})
+    const dlg = ui.dialog({title: TITLE.SAVE_TO_MY_FILES, helpUrl: LINK.LOAD_SAVE})
       .add(nameInput)
-      .add(extInput)
       .addButton(TITLE.SAVE, async () => {
-        if (!existingNames.includes(`${fileName}.${extension}`))
+        if (!existingNames.includes(`${fileName}.${MISC.MODEL_FILE_EXT}`))
           await save();
         else {
           ui.dialog({title: WARNING.TITLE})

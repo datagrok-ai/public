@@ -47,7 +47,7 @@ export enum HINT {
 export enum TITLE {
   LOAD = 'Load...',
   IMPORT = 'Import...',
-  SAVE_TO = 'Save to',
+  SAVE_TO_MY_FILES = 'Save to My files',
   LOCAL_FILE = 'Local file...',
   MY_FILES = 'My files...',
   TO_MY_FILES = 'Save to My Files...',
@@ -127,6 +127,7 @@ export enum LINK {
   BIOREACTOR = `${DIF_STUDIO_REL}#bioreactor`,
   POLLUTION = `${DIF_STUDIO_REL}#pollution`,
   COMPUTE = 'https://datagrok.ai/help/compute',
+  LOAD_SAVE = `${DIF_STUDIO_REL}#loading-and-saving-data`,
 };
 
 /** Error messages */
@@ -172,9 +173,8 @@ export enum LOOKUP_EXPR_FAIL {
 /** Other UI constants */
 export enum MISC {
   VIEW_DEFAULT_NAME = 'Template',
-  IVP_EXT = 'ivp',
-  TXT_EXT = 'txt',
-  FILE_DEFAULT_NAME = `equations.${IVP_EXT}`,
+  MODEL_FILE_EXT = 'ivp',
+  FILE_DEFAULT_NAME = `equations.${MODEL_FILE_EXT}`,
   DEFAULT = 'Default',
   CHOICES = 'choices',
   NAME = 'name',
@@ -193,7 +193,7 @@ export enum WARNING {
   CHECK_PERF = 'Check time',
   TIME_LIM = 'Time limit',
   UNITS = COMPUTATION_TIME_UNITS,
-  PREVIEW = `Model preview is unavailble for this type. Use "${MISC.IVP_EXT}" instead`,
+  PREVIEW = `Model preview is unavailble for this type. Use "${MISC.MODEL_FILE_EXT}" instead`,
 };
 
 /** Code completion infos */
