@@ -169,6 +169,15 @@
   height: 100%;
 }
 
+.ui-btn-test-run{
+  max-width: 70px;
+}
+
+.ui-test-data{
+  width: 140px;
+  justify-content: space-between;
+}
+
 .tt-dialog .ui-input-textarea{ 
   display: inline-block;
 }
