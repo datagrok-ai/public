@@ -16,7 +16,7 @@ import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 import {getRules, RuleInputs, RULES_PATH, RULES_STORAGE_NAME} from './conversion/pt-rules';
 import {doPolyToolConvert} from './conversion/pt-conversion';
-import {getOverriddenLibrary} from './conversion/pt-misc';
+import {getOverriddenLibrary} from './conversion/pt-synthetic';
 import {defaultErrorHandler} from '../utils/err-info';
 import {getLibrariesList} from './utils';
 import {getEnumerationChem, PT_CHEM_EXAMPLE} from './pt-enumeration-chem';
