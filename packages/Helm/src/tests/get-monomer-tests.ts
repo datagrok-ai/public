@@ -32,6 +32,8 @@ declare const JSDraw2: JSDraw2Module;
 
 type TestDataType = { args: { a: any, name?: string }, tgt: any };
 
+const getResultDf = false;
+
 const tests: { [testName: string]: TestDataType } = {
   /* eslint-disable */
   //@formatter:off
@@ -68,7 +70,7 @@ const tests: { [testName: string]: TestDataType } = {
   /* eslint-enable */
 };
 
-category('getMonomer', ()=>{
+category('getMonomer', ()=> {
   let helmHelper: IHelmHelper;
   let monomerLibHelper: IMonomerLibHelper;
   /** Backup actual user's monomer libraries settings */
@@ -95,14 +97,15 @@ category('getMonomer', ()=>{
     const helmHelper: IHelmHelper = await getHelmHelper();
     expect(helmHelper != null, true);
     const getMonomerFunc: GetMonomerFunc = helmHelper.originalMonomersFuncs!.getMonomer!;
-
-    return _testAll('original', getMonomerFunc);
-  }, {isAggregated: true});
+    const res = _testAll('original', getMonomerFunc);
+    return getResultDf ? (res ?? DG.DataFrame.create(0)) : null;
+  }, {isAggregated: getResultDf});
 
   test('monomerLib', async () =>{
     const getMonomerFunc = org.helm.webeditor.Monomers.getMonomer;
-    return _testAll('monomerLib', getMonomerFunc);
-  }, {isAggregated: true});
+    const res = _testAll('monomerLib', getMonomerFunc);
+    return getResultDf ? (res ?? DG.DataFrame.create(0)) : null;
+  }, {isAggregated: getResultDf});
 
   function _testAll(prefix: string, getMonomerFunc: GetMonomerFunc): DG.DataFrame {
     const resDf = DG.DataFrame.fromColumns([
@@ -135,6 +138,7 @@ category('getMonomer', ()=>{
       resDf.set('error', resI, errMsg);
       resDf.set('stack', resI, errStack);
       resDf.set('success', resI, false);
+      throw err;
     }
 
     for (const [[testName, testData], testI] of wu.enumerate(Object.entries(tests))) {
@@ -155,6 +159,7 @@ category('getMonomer', ()=>{
         resDf.set('error', resI, errMsg);
         resDf.set('stack', resI, errStack);
         resDf.set('success', resI, false);
+        throw err;
       }
     }
     return resDf;

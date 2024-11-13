@@ -35,9 +35,8 @@ const skip = [
 ];
 
 const scriptViewer = [
-  'parameterValidation',
-  'parameter validation',
-  'parameter expressions',
+  'parameter-validation',
+  'parameter-expressions',
   'docking', 
   'input-api',
   'helm-input-ui',

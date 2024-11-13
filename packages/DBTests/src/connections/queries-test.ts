@@ -24,4 +24,15 @@ category('Connections', () => {
     expect(t.columns.contains('first_name'), true);
     expect(t.columns.byName('first_name').length, 0);
   }, {stressTest: true});
+
+  test('External Provider: grok.data.query no params', async () => {
+    const result: DG.DataFrame = await grok.data.query('DbTests:PostgresqlPatternsAll', null, true);
+    expect(result?.rowCount ?? 0, 30);
+  });
+
+  test('External Provider: grok.data.query with params', async () => {
+    const result: DG.DataFrame = await grok.data.query('DbTests:PostgresqlPatternsAllParams', {'first_name': 'starts with p', 'id': '>1', 'bool': false,
+      'email': 'contains com', 'some_number': '>20', 'country': 'in (Indonesia)', 'date': 'before 1/1/2022'});
+    expect(result?.rowCount ?? 0, 1);
+  });
 });

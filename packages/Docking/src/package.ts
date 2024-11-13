@@ -288,6 +288,7 @@ export async function getAutodockSingle(
     ligandColumnName: molecule.cell.column.name,
     zoom: true,
   });
+  targetViewer.root.classList.add('bsv-container-info-panel');
 
   widget.root.append(targetViewer.root);
   if (!showProperties) return widget;
