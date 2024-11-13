@@ -39,7 +39,7 @@ export interface TestOptions {
   isAggregated?: boolean;
   benchmark?: boolean;
   stressTest?: boolean;
-  responsive?: string;
+  owner?: string;
   tags?: string[];
 }
 
@@ -48,7 +48,7 @@ export interface CategoryOptions {
   timeout?: number;
   benchmarks?: boolean;
   stressTests?: boolean;
-  responsive?: string;
+  owner?: string;
 }
 
 export class TestContext {
@@ -100,7 +100,7 @@ export class Category {
   benchmarks?: boolean;
   benchmarkTimeout?: number;
   stressTests?: boolean;
-  responsive?: string;
+  owner?: string;
 }
 
 export class TestExecutionOptions {
@@ -257,7 +257,7 @@ export function category(category: string, tests_: () => void, options?: Categor
     tests[currentCategory].timeout = options?.timeout;
     tests[currentCategory].benchmarks = options?.benchmarks;
     tests[currentCategory].stressTests = options?.stressTests;
-    tests[currentCategory].responsive = options?.responsive;
+    tests[currentCategory].owner = options?.owner;
   }
 }
 
@@ -301,7 +301,7 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
       cat = fullName.join(': ');
       if (moduleTests[cat] === undefined)
         moduleTests[cat] = { tests: [], clear: true };
-      moduleTests[cat].tests.push(new Test(cat, name, f.test, { isAggregated: false, timeout: f.options?.timeout ?? STANDART_TIMEOUT, skipReason: f.options?.skipReason }));
+      moduleTests[cat].tests.push(new Test(cat, name, f.test, { isAggregated: false, timeout: f.options?.timeout ?? STANDART_TIMEOUT, skipReason: f.options?.skipReason, owner: f.options?.owner }));
     }
   }
   const moduleAutoTests = [];
@@ -421,7 +421,7 @@ export async function runTests(options?: TestExecutionOptions) {
   await initAutoTests(package_);
   const results: {
     category?: string, name?: string, success: boolean,
-    result: string, ms: number, skipped: boolean, logs?: string, responsive?: string
+    result: string, ms: number, skipped: boolean, logs?: string, owner?: string
   }[] = [];
   console.log(`Running tests`);
   options ??= {};
@@ -489,7 +489,7 @@ export async function runTests(options?: TestExecutionOptions) {
             }
             let test = t[i];
             if (test?.options) {
-              test.options.responsive = t[i].options?.responsive ?? value?.responsive;
+              test.options.owner = t[i].options?.owner ?? value?.owner;
             } 
             let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout ?? STANDART_TIMEOUT, package_.name, options.verbose);
             if (testRun)
@@ -501,7 +501,7 @@ export async function runTests(options?: TestExecutionOptions) {
           for (let i = 0; i < t.length; i++) {
             let test = t[i];
             if (test?.options) {
-              test.options.responsive = t[i].options?.responsive ?? value?.responsive;
+              test.options.owner = t[i].options?.owner ?? value?.owner;
             } 
             let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout, package_.name, options.verbose);
             if (testRun)
@@ -557,7 +557,7 @@ async function getResult(x: any): Promise<string> {
 async function execTest(t: Test, predicate: string | undefined, logs: any[],
   testTimeout?: number, packageName?: string, verbose?: boolean): Promise<any> {
   logs.length = 0;
-  let r: { date: string, category?: string, name?: string, success: boolean, result: any, ms: number, skipped: boolean, logs?: string, responsive?: string };
+  let r: { date: string, category?: string, name?: string, success: boolean, result: any, ms: number, skipped: boolean, logs?: string, owner?: string };
   let type: string = 'package';
   const filter = predicate != undefined && (t.name.toLowerCase() !== predicate.toLowerCase());
   let skip = t.options?.skipReason || filter;
@@ -600,11 +600,11 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
     stdLog(`Finished ${t.category} ${t.name} for ${r.ms} ms`);
   r.category = t.category;
   r.name = t.name;
-  r.responsive = t.options?.responsive ?? '';
+  r.owner = t.options?.owner ?? '';
   if (!filter) {
     let params = {
       'success': r.success, 'result': r.result, 'ms': r.ms,
-      'skipped': r.skipped, 'package': packageName, 'category': t.category, 'name': t.name, 'logs': r.logs, 'responsive': r.responsive,
+      'skipped': r.skipped, 'package': packageName, 'category': t.category, 'name': t.name, 'logs': r.logs, 'owner': r.owner,
     };
     if (r.result.constructor == Object) {
       const res = Object.keys(r.result).reduce((acc, k) => ({ ...acc, ['result.' + k]: r.result[k] }), {});
