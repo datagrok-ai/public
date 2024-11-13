@@ -34,7 +34,7 @@ It provides a set of methods that could be used for
 [Chemprop](https://github.com/chemprop/chemprop) model engine is used for applying models 
 to chemical compounds to predict molecule properties.
 
-Under the hood, chemprop uses message passing neural networks. The model engine has an extensive set of parameters: dimensions of network layers, activation functions, learning rate etc.
+Under the hood, Chemprop uses message passing neural networks. The model engine has an extensive set of parameters: dimensions of network layers, activation functions, learning rate etc.
 
 #### EDA
 
