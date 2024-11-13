@@ -46,13 +46,15 @@ export class CyclizedNotationProvider implements INotationProvider {
   }
 
   public getHelm(seq: string, options?: any): string {
-    const seqChain = Chain.parseNotation(seq, this.helmHelper);
-    const resPseudoHelm = seqChain.getNotationHelm();
+    const seqChain = Chain.fromSeparator(seq, this.helmHelper);
+    const resPseudoHelm = seqChain.getHelm();
     return resPseudoHelm;
   }
 
-  public createCellRendererBack(gridCol: DG.GridColumn | null, tableCol: DG.Column<string>): CellRendererBackBase<string> {
-    let maxLengthOfMonomer: number = 4; // (_package.bioProperties ? _package.bioProperties.maxMonomerLength : 4) ?? 50;
+  public createCellRendererBack(gridCol: DG.GridColumn | null, tableCol: DG.Column<string>):
+  CellRendererBackBase<string> {
+    const maxLengthOfMonomer: number = 4;
+    // (_package.bioProperties ? _package.bioProperties.maxMonomerLength : 4) ?? 50;
     const back = new CyclizedCellRendererBack(gridCol, tableCol,
       maxLengthOfMonomer, this.helmHelper.seqHelper);
 
