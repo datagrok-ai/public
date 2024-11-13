@@ -21,6 +21,11 @@ import {useUrlSearchParams} from '@vueuse/core';
 import {Inspector} from '../Inspector/Inspector';
 import {findTreeNode, findTreeNodeParrent, reportStep} from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
+import { HistoricalRunEdit } from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
+import { take } from 'rxjs/operators';
+import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import { historyUtils } from '@datagrok-libraries/compute-utils';
+import { EditDialog } from './EditDialog';
 
 const DEVELOPERS_GROUP = 'Developers';
 
@@ -178,6 +183,15 @@ export const TreeWizard = Vue.defineComponent({
         isUserDeveloper.value = true;
       }
     })
+    
+    const openMetadataEditDialog = () => {
+      const dialog = new EditDialog();
+      dialog.onMetadataEdit.pipe(take(1)).subscribe((editOptions) => {
+        savePipeline(editOptions)
+      });
+      
+      dialog.show({center: true, width: 500})
+    }
 
     return () => (
       Vue.withDirectives(<div class='w-full h-full'>
@@ -196,7 +210,7 @@ export const TreeWizard = Vue.defineComponent({
             name='save' 
             tooltip={'Save current state of model'}
             style={{'padding-right': '3px'}}
-            onClick={savePipeline}
+            onClick={openMetadataEditDialog}
           />
           {treeState.value && isTreeReportable.value && <IconFA
             name='arrow-to-bottom'

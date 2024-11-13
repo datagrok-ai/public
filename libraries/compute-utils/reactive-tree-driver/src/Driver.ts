@@ -68,7 +68,7 @@ export class Driver {
 
     combineLatest([this.globalROLocked$, this.treeMutationsLocked$, this.wasEdited$]).pipe(
       filter(([roLock, mutationLock]) => !roLock && !mutationLock),
-      map(([, , wasEdited]) => wasEdited)
+      map(([, , wasEdited]) => wasEdited),
     ).subscribe(this.hasNotSavedEdits$);
 
     stateUpdates$.pipe(
@@ -160,33 +160,34 @@ export class Driver {
   private addDynamicItem(msg: AddDynamicItem, state?: StateTree) {
     this.checkState(msg, state);
     return state.addSubTree(msg.parentUuid, msg.itemId, msg.position).pipe(
-      tap(() => this.wasEdited$.next(true))
+      tap(() => this.wasEdited$.next(true)),
     );
   }
 
   private loadDynamicItem(msg: LoadDynamicItem, state?: StateTree) {
     this.checkState(msg, state);
     return state.loadSubTree(msg.parentUuid, msg.dbId, msg.itemId, msg.position, !!msg.readonly, !!msg.isReplace).pipe(
-      tap(() => this.wasEdited$.next(true))
+      tap(() => this.wasEdited$.next(true)),
     );
   }
 
   private saveDynamicItem(msg: SaveDynamicItem, state?: StateTree) {
     this.checkState(msg, state);
-    return state.save(msg.uuid);
+    const {title, description, tags} = msg;
+    return state.save(msg.uuid, {title, description, tags});
   }
 
   private removeDynamicItem(msg: RemoveDynamicItem, state?: StateTree) {
     this.checkState(msg, state);
     return state.removeSubtree(msg.uuid).pipe(
-      tap(() => this.wasEdited$.next(true))
+      tap(() => this.wasEdited$.next(true)),
     );
   }
 
   private moveDynamicItem(msg: MoveDynamicItem, state?: StateTree) {
     this.checkState(msg, state);
     return state.moveSubtree(msg.uuid, msg.position).pipe(
-      tap(() => this.wasEdited$.next(true))
+      tap(() => this.wasEdited$.next(true)),
     );
   }
 
@@ -207,9 +208,10 @@ export class Driver {
 
   private savePipeline(msg: SavePipeline, state?: StateTree) {
     this.checkState(msg, state);
-    return state.save().pipe(
-      tap(call => this.currentMetaCallId$.next(call?.id)),
-      tap(() => this.wasEdited$.next(false))
+    const {title, description, tags} = msg;
+    return state.save(undefined, {title, description, tags}).pipe(
+      tap((call) => this.currentMetaCallId$.next(call?.id)),
+      tap(() => this.wasEdited$.next(false)),
     );
   }
 
@@ -257,7 +259,7 @@ export class Driver {
       })),
       concatMap((state) => state.init()),
       tap((state) => {
-        this.states$.next(state)
+        this.states$.next(state);
         this.currentMetaCallId$.next(undefined);
         this.wasEdited$.next(true);
       }),

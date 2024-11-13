@@ -15,6 +15,7 @@ import {indexFromEnd} from '../utils';
 import {LinksState, NestedMutationData} from './LinksState';
 import {ValidationResult} from '../data/common-types';
 import {DriverLogger} from '../data/Logger';
+import {ItemMetadata} from '../view/ViewCommunication';
 
 const MAX_CONCURENT_SAVES = 5;
 
@@ -146,7 +147,7 @@ export class StateTree {
     return this.mutateTree(() => of([data] as const));
   }
 
-  public save(uuid?: string) {
+  public save(uuid?: string, metaData?: ItemMetadata) {
     return this.mutateTree(() => {
       const [root, nqName] = StateTree.findPipelineNode(this, uuid);
       if (this.mockMode)
@@ -171,7 +172,7 @@ export class StateTree {
       }, [] as Array<Observable<void>>);
       return merge(...pendingFuncCallSaves, MAX_CONCURENT_SAVES).pipe(
         toArray(),
-        concatMap(() => this.saveMetaCall(root, nqName)),
+        concatMap(() => this.saveMetaCall(root, nqName, metaData)),
         map((call) => [undefined, call]),
       );
     });
@@ -779,12 +780,13 @@ export class StateTree {
   private saveMetaCall(
     root: TreeNode<StateTreeNode>,
     nqName: string,
+    metaData?: ItemMetadata,
   ) {
     return defer(() => {
       if (this.mockMode)
         return of(undefined);
       const state = StateTree.toStateRec(root, true, {disableNodesUUID: true});
-      return saveInstanceState(nqName, state);
+      return saveInstanceState(nqName, state, metaData);
     });
   }
 }

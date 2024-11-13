@@ -20,7 +20,13 @@ export interface LoadDynamicItem {
   isReplace?: boolean;
 }
 
-export interface SaveDynamicItem {
+export type ItemMetadata = {
+  title?: string,
+  description?: string,
+  tags?: string[],
+}
+
+export interface SaveDynamicItem extends ItemMetadata {
   event: 'saveDynamicItem';
   uuid: string;
 }
@@ -53,7 +59,7 @@ export interface RunSequence {
   startUuid: string;
 }
 
-export interface SavePipeline {
+export interface SavePipeline extends ItemMetadata {
   event: 'savePipeline';
 }
 
