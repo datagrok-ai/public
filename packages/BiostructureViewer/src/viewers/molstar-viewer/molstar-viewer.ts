@@ -290,7 +290,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   }
 
   private async _initProps() {
-    if (!this.dataFrame) return;
+    if (!this.dataFrame || this.dataJson) return;
 
     // -- Pdb or Pdb Id --
     if (!this.biostructureIdColumnName) {

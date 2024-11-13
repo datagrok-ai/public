@@ -715,6 +715,7 @@ export function structure3D(molecule: DG.SemanticValue): DG.Widget {
 
   renderer.createViewer(gridCell, tableView).then(async ({ tview, viewer }) => {
     if (tview && viewer) {
+      viewer.root.classList.add('bsv-container-info-panel');
       widget.root.appendChild(viewer.root);
     }
   });
