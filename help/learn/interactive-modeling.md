@@ -6,6 +6,7 @@ The predictive modeling toolkit allows an interactive visualization tool for the
 
 There are a lot of cases when models do not have a lot of parameters and could be trained relatively fast. For such situations Datagrok builds a UI for the model: it has all the parameters that model uses. The user has the ability to change parameters, and model will be retrained, providing user with visualizations
 
+![](./interactive-modeling.gif)
 
 ## Workflow
 
@@ -17,9 +18,8 @@ When data is selected, we have established the predictive problem. To start work
 
 Having access to data, Datagrok can suggest models based on the data structure. It suggest list of models that match the feature columns, but also selects the best matching model from the list.
 
-(Show the simple workflow in a GIF)
 
-### Tips on the go
+### Tips as you go
 
 Datagrok analyses data that is used for the prediction and model predictions themselves.
 Based on the situation, the platform can suggest data transformations or changes to model configurations or give insights.
@@ -29,7 +29,10 @@ Examples of such behavior include:
 * For data with missing values, Datagrok suggests to ignore rows with missing values or to use Missing Values Imputation
 * For binary classification Datagrok will analyze false positive and false negatives.
 
-(ADD EXAMPLE IMAGES)
+| Class imbalance | Ignore missing values | Low precision |
+|---|---|---|
+| ![](./tip-class-imbalance.png) | ![](./tip-impute-missing.png) | ![](./tip-low_accuracy.png) |
+
 
 ### Model comparison
 
@@ -45,17 +48,17 @@ Datagrok supports extensive list of visualizations, that are shown based on the 
 
 | Visualization                | Description                                                                 | Showed for               | Example | Read more                                                                                  |
 |------------------------------|-----------------------------------------------------------------------------|--------------------------|---------|-------------------------------------------------------------------------------------------|
-| Scatter Plot (regression)    | Visualizes predicted vs actual values.                                      | Regression problems ($y$ is numerical)     | --      |                                                                                           |
-| Residuals plot               | Shows the difference between prediction and the real value.                | Regression problems ($y$ is numerical)     | --      | [Errors and residuals](https://en.wikipedia.org/wiki/Errors_and_residuals)                |
-| Scatter plot (classification)| Visualizes predicted vs actual values using colors for classes.            | Classification problems ($y$ is categorical) | --      |                                                                                           |
-| Roc Curve                    | Displays trade-offs between true/false positive rates for classifiers.     | Binary classification problems ($y$ is categorical with 2 classes) | --      | [ROC curve](https://en.wikipedia.org/wiki/Receiver_operating_characteristic)              |
-| PC Plot                      | Parallel coordinates plot.         | $X$ has more than 2 and less than 11 numerical columns                       | --      |                                                                                           |
-| Statistics                   | Statistics of the $y$ column                          | Regression problems ($y$ is numerical)          | --      |                                                                               |
-| Distribution                 | Shows the distribution of predicted values, and distribution of values in $y$.      | Regression problems ($y$ is numerical)                       | --      | Kurtosis skewness analysis                                                                                      |
-| Confusion matrix             | Each row of the matrix represents the instances in an actual class while each column represents the instances in a predicted class. Also shows relevant metrics.  | Classification problems ($y$ is categorical)  | --      | [Confusion matrix](https://en.wikipedia.org/wiki/Confusion_matrix)                        |
-| Correlation plot             | Shows feature interdependencies                 | $X$ has more than 10 numerical columns      |    -- |                                                                                         |
-| Performance metrics          | Aggregated performance statistics (e.g., R², accuracy).                    | Always          | --      |                                                                                           |
-| Wrong predictions            | Highlights incorrectly classified instances of the data. | Classification problems ($y$ is categorical) | --      |                                                                                           |
+| Scatter Plot (regression)    | Visualizes predicted vs actual values.                                      | Regression problems ($y$ is numerical)     | ![](./interactive-scatterplot-numerical.png)  |                                                                                           |
+| Residuals plot               | Shows the difference between prediction and the real value.                | Regression problems ($y$ is numerical)     | ![](./interactive-residuals.png)     | [Errors and residuals](https://en.wikipedia.org/wiki/Errors_and_residuals)                |
+| Scatter plot (classification)| Visualizes predicted vs actual values using colors for classes.            | Classification problems ($y$ is categorical) | ![](./interactive-scatterplot-categorical.png)      |                                                                                           |
+| Roc Curve                    | Displays trade-offs between true/false positive rates for classifiers.     | Binary classification problems ($y$ is categorical with 2 classes) | ![](./interactive-roc-curve.png)      | [ROC curve](https://en.wikipedia.org/wiki/Receiver_operating_characteristic)              |
+| PC Plot                      | Parallel coordinates plot.         | $X$ has more than 2 and less than 11 numerical columns                       | ![](./interactive-pcplot.png)      |                                                                                           |
+| Statistics                   | Statistics of the $y$ column                          | Regression problems ($y$ is numerical)          | ![](./interactive-statistics.png)      |                                                                               |
+| Distribution                 | Shows the distribution of predicted values, and distribution of values in $y$.      | Regression problems ($y$ is numerical)                       | ![](./interactive-distributions.png)      | Kurtosis skewness analysis                                                                                      |
+| Confusion matrix             | Each row of the matrix represents the instances in an actual class while each column represents the instances in a predicted class. Also shows relevant metrics.  | Classification problems ($y$ is categorical)  | ![](./interactive-confusion-matrix.png)     | [Confusion matrix](https://en.wikipedia.org/wiki/Confusion_matrix)                        |
+| Correlation plot             | Shows feature interdependencies                 | $X$ has more than 10 numerical columns      |    ![](./interactive-corrplot.png) |                                                                                         |
+| Performance metrics          | Aggregated performance statistics (e.g., R², accuracy).                    | Always          | ![](./interactive-performance.png)     |                                                                                           |
+| Wrong predictions            | Highlights incorrectly classified instances of the data. | Classification problems ($y$ is categorical) | ![](./interactive-mismatches.png)      |                                                                                           |
 | Custom visualizations        | Enables package-defined visualizations for specific models.                    | Specific models          | --      |                                                                                           |
 
 
