@@ -73,3 +73,14 @@
     margin-left: 15px;
     margin-right: 15px;
 }
+
+.diff-studio-inputs-category {    
+    font-size: 13px;
+    font-weight: bold;
+    margin-top: 18px;
+    padding-right: 5px;
+}
+
+.diff-studio-chevron {
+    padding-right: 5px;
+}

@@ -256,7 +256,6 @@ export async function getMyModelFiles(): Promise<DG.FileInfo[]> {
   return await grok.dapi.files.list(folder, true, MISC.MODEL_FILE_EXT);
 }
 
-
 /** Get equations from file */
 export async function getEquationsFromFile(path: string): Promise<string | null> {
   try {
@@ -275,4 +274,9 @@ export async function getEquationsFromFile(path: string): Promise<string | null>
   } catch (e) {
     return null;
   }
+}
+
+/** Return category control widget */
+export function getCategoryWidget(category: string, inputs: DG.InputBase[]) {
+  
 }

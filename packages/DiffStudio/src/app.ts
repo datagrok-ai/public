@@ -931,13 +931,59 @@ export class DiffStudio {
     }
   }; // solve
 
+  /** Return inputs form */
+  private getInputsForm() {
+    const form = ui.form([]);
+    const miscInputs = this.inputsByCategories.get(TITLE.MISC);
+
+    if (this.inputsByCategories.size === 1)
+      miscInputs.forEach((input) => form.append(input.root));
+    else {
+      if (this.topCategory !== null) {
+        form.append(ui.h2(this.topCategory));
+
+        this.inputsByCategories.get(this.topCategory).forEach((inp) => {form.append(inp.root);});
+      }
+
+      this.inputsByCategories.forEach((inputs, category) => {
+        if ((category !== TITLE.MISC) && (category !== this.topCategory)) {
+          const chevronToOpen = ui.iconFA('chevron-right');
+          chevronToOpen.classList.add('diff-studio-chevron');
+
+          const chevronToClose = ui.iconFA('chevron-down');
+          chevronToClose.classList.add('diff-studio-chevron');
+
+          form.append(ui.divH(
+            [chevronToOpen, chevronToClose, ui.label(category)],
+            'diff-studio-inputs-category',
+          ));
+
+          inputs.forEach((inp) => {form.append(inp.root);});
+        }
+      });
+
+      if ((miscInputs.length > 0) && (this.topCategory !== TITLE.MISC)) {
+        const chevronToOpen = ui.iconFA('chevron-right');
+        const chevronToClose = ui.iconFA('chevron-down');
+
+        form.append(ui.divH([chevronToOpen, chevronToClose, ui.h2(TITLE.MISC, {style: {'display': 'inline'}})]));
+
+        miscInputs.forEach((inp) => {form.append(inp.root);});
+      }
+    }
+
+    form.style.overflowY = 'hidden';
+
+    return form;
+  } // getInputsForm
+
   /** Run solving the current IVP */
   private async runSolving(toShowInputsForm: boolean): Promise<void> {
     this.isModelChanged = false;
 
     try {
       const ivp = getIVP(this.editorView!.state.doc.toString());
-      await this.getInputsForm(ivp);
+      await this.generateInputs(ivp);
       //this.setCallWidgetsVisibility(this.isSolvingSuccess);
 
       if (this.isSolvingSuccess) {
@@ -947,44 +993,13 @@ export class DiffStudio {
         if (this.prevInputsNode !== null)
           this.inputsPanel.removeChild(this.prevInputsNode);
 
-        const form = ui.form([]);
-        const miscInputs = this.inputsByCategories.get(TITLE.MISC);
-
-        if (this.inputsByCategories.size === 1)
-          miscInputs.forEach((input) => form.append(input.root));
-        else {
-          if (this.topCategory !== null) {
-            form.append(ui.h2(this.topCategory));
-            this.inputsByCategories.get(this.topCategory).forEach((inp) => {
-              form.append(inp.root);
-            });
-          }
-
-          this.inputsByCategories.forEach((inputs, category) => {
-            if ((category !== TITLE.MISC) && (category !== this.topCategory)) {
-              form.append(ui.h2(category));
-              inputs.forEach((inp) => {
-                form.append(inp.root);
-              });
-            }
-          });
-
-          if ((miscInputs.length > 0) && (this.topCategory !== TITLE.MISC)) {
-            form.append(ui.h2(TITLE.MISC));
-            miscInputs.forEach((inp) => {
-              form.append(inp.root);
-            });
-          }
-        }
-
-        form.style.overflowY = 'hidden';
+        const form = this.getInputsForm();
         this.prevInputsNode = this.inputsPanel.appendChild(form);
 
         if (this.isEditState)
         //if (!toShowInputsForm)
           setTimeout(() => this.tabControl.currentPane = this.editPane, 5);
-      }/* else
-        this.tabControl.currentPane = this.editPane;*/
+      }
     } catch (error) {
       if (error instanceof CallbackAction)
         grok.shell.warning(error.message);
@@ -1017,7 +1032,7 @@ export class DiffStudio {
   } // clearSolution
 
   /** Return form with model inputs */
-  private async getInputsForm(ivp: IVP): Promise<void> {
+  private async generateInputs(ivp: IVP): Promise<void> {
     /** Return options with respect to the model input specification */
     const getOptions = (name: string, modelInput: Input, modelBlock: string) => {
       const options: DG.PropertyOptions = {
