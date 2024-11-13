@@ -18852,15 +18852,29 @@ var Map = function () {
   Map.prototype.findAndHighlightShortest = function findAndHighlightShortest() {
     var _this8 = this;
 
-    this.unhighlight();
+    var inc = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+
+
     var nodes = Array.from(new Set(Object.values(this.getSelectedNodes()).sort(function (node1, node2) {
       return (!!node1.selectionOrder ? node1.selectionOrder : 0) - (!!node2.selectionOrder ? node2.selectionOrder : 0);
     }).map(function (a) {
       return a.bigg_id;
     })));
     if (nodes.length !== 2) return;
-    nodes;
-    var path = (0, _algo.findShortestPath)(this, nodes[0], nodes[1]);
+
+    var path = void 0;
+    var k = void 0;
+    try {
+      var reactionHash = 'r' + nodes[0] + '_r' + nodes[1];
+      k = inc == 0 ? 1 : Math.max(this.shortestPathInfo ? this.shortestPathInfo.hash === reactionHash ? this.shortestPathInfo.k + inc : 1 : 1, 1);
+      path = (0, _algo.findKthShortestPath)(this, nodes[0], nodes[1], k);
+      this.shortestPathInfo = { hash: reactionHash, k: k };
+    } catch (e) {
+      console.error('Error finding ' + k + 'th shortest path', e);
+      return;
+    }
+    this.unhighlight();
+    //const kthPath = findKthShortestPath(this, nodes[0], nodes[1], 20);
     for (var i = 0; i < path.length - 1; i++) {
       var reactionId = path[i].reaction_id;
       var firtNodeBiggId = path[i].met;
@@ -25009,6 +25023,7 @@ exports.default = Canvas;
 
 exports.__esModule = true;
 exports.findShortestPath = findShortestPath;
+exports.findKthShortestPath = findKthShortestPath;
 exports.getReactionPathSegments = getReactionPathSegments;
 function findShortestPath(map, fromNodeBiggId, toNodeBiggId) {
     // todo: add skipped paths for kth shortest path
@@ -25024,8 +25039,6 @@ function findShortestPath(map, fromNodeBiggId, toNodeBiggId) {
     }).map(function (node) {
         return node.bigg_id;
     }));
-
-    var biggIdToNodeId = {};
 
     var _loop = function _loop(reactionId) {
         var reaction = map.reactions[reactionId];
@@ -25114,6 +25127,196 @@ function findShortestPath(map, fromNodeBiggId, toNodeBiggId) {
     return path;
 }
 
+function findKthShortestPath(map, fromNodeBiggId, toNodeBiggId) {
+    var k = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1;
+
+    var reactionOrder = function reactionOrder(coef) {
+        return coef > 0 ? 1 : -1;
+    };
+    var primaryMetabolitBiggIds = new Set(Object.values(map.nodes).filter(function (node) {
+        return node.node_type === 'metabolite' && node.node_is_primary;
+    }).map(function (node) {
+        return node.bigg_id;
+    }));
+
+    var graph = {};
+
+    // Build the graph structure
+
+    var _loop3 = function _loop3(reactionId) {
+        var reaction = map.reactions[reactionId];
+
+        var _loop5 = function _loop5(metabolite) {
+            if (metabolite.coefficient > 0 && !reaction.reversibility) return 'continue';
+            if (!graph[metabolite.bigg_id]) graph[metabolite.bigg_id] = {};
+            var metaboliteReactionOrder = reactionOrder(metabolite.coefficient);
+            reaction.metabolites.filter(function (met) {
+                return met.bigg_id !== metabolite.bigg_id && reactionOrder(met.coefficient) !== metaboliteReactionOrder && primaryMetabolitBiggIds.has(met.bigg_id);
+            }).forEach(function (met) {
+                graph[metabolite.bigg_id][met.bigg_id] = { coefficient: met.coefficient, reaction_id: reaction.reaction_id };
+            });
+        };
+
+        for (var _iterator4 = reaction.metabolites, _isArray4 = Array.isArray(_iterator4), _i4 = 0, _iterator4 = _isArray4 ? _iterator4 : _iterator4[Symbol.iterator]();;) {
+            var _ref5;
+
+            if (_isArray4) {
+                if (_i4 >= _iterator4.length) break;
+                _ref5 = _iterator4[_i4++];
+            } else {
+                _i4 = _iterator4.next();
+                if (_i4.done) break;
+                _ref5 = _i4.value;
+            }
+
+            var metabolite = _ref5;
+
+            var _ret5 = _loop5(metabolite);
+
+            if (_ret5 === 'continue') continue;
+        }
+    };
+
+    for (var reactionId in map.reactions) {
+        _loop3(reactionId);
+    }
+
+    // Helper function for finding shortest path with Dijkstra's algorithm
+    function dijkstra(fromNode, toNode) {
+        var visited = {};
+        var distance = {};
+        var previous = {};
+
+        Object.values(map.nodes).filter(function (node) {
+            return node.node_type == 'metabolite';
+        }).forEach(function (node) {
+            return distance[node.bigg_id] = Infinity;
+        });
+        distance[fromNode] = 0;
+        var queue = [fromNode];
+
+        while (queue.length > 0) {
+            var _node2 = queue.sort(function (a, b) {
+                return distance[a] - distance[b];
+            })[0];
+            queue.splice(0, 1);
+            if (visited[_node2]) continue;
+            visited[_node2] = true;
+            if (_node2 === toNode) break;
+
+            for (var neighbor in graph[_node2]) {
+                var alt = distance[_node2] + 1;
+                if (alt < distance[neighbor]) {
+                    distance[neighbor] = alt;
+                    previous[neighbor] = { met: _node2, reaction_id: graph[_node2][neighbor].reaction_id };
+                    queue.push(neighbor);
+                }
+            }
+        }
+
+        // Reconstruct path
+        var path = [{ met: toNodeBiggId, reaction_id: null }];
+        var node = previous[toNode];
+        while (node) {
+            path.unshift(node);
+            node = previous[node.met];
+        }
+        return { path: path, length: distance[toNode] };
+    }
+
+    // Initialize paths list with the first shortest path
+    var paths = [];
+
+    var _dijkstra = dijkstra(fromNodeBiggId, toNodeBiggId),
+        shortestPath = _dijkstra.path,
+        shortestLength = _dijkstra.length;
+
+    if (shortestPath.length === 0) return null; // No path found
+    paths.push({ path: shortestPath, length: shortestLength });
+
+    // Priority queue for candidate paths
+    var candidates = [];
+
+    for (var i = 1; i < k; i++) {
+        var lastPath = paths[i - 1].path;
+
+        var _loop4 = function _loop4(j) {
+            var spurNode = lastPath[j].met;
+            var rootPath = lastPath.slice(0, j);
+            // Temporarily remove edges that overlap with the current path
+            var removedEdges = [];
+            for (var _iterator2 = paths, _isArray2 = Array.isArray(_iterator2), _i2 = 0, _iterator2 = _isArray2 ? _iterator2 : _iterator2[Symbol.iterator]();;) {
+                var _ref2;
+
+                if (_isArray2) {
+                    if (_i2 >= _iterator2.length) break;
+                    _ref2 = _iterator2[_i2++];
+                } else {
+                    _i2 = _iterator2.next();
+                    if (_i2.done) break;
+                    _ref2 = _i2.value;
+                }
+
+                var p = _ref2;
+
+                if (p.path.slice(0, j).every(function (step, idx) {
+                    return step.met === rootPath[idx].met;
+                })) {
+                    var nextNode = p.path[j + 1].met;
+                    if (graph[spurNode] && graph[spurNode][nextNode]) {
+                        removedEdges.push([spurNode, nextNode, graph[spurNode][nextNode]]);
+                        delete graph[spurNode][nextNode];
+                    }
+                }
+            }
+
+            var spurPath = dijkstra(spurNode, toNodeBiggId);
+            if (spurPath.path.length > 0) {
+                var totalPath = [].concat(rootPath, spurPath.path);
+                var totalLength = rootPath.length + spurPath.length;
+                candidates.push({ path: totalPath, length: totalLength });
+            }
+
+            // Restore removed edges
+            for (var _iterator3 = removedEdges, _isArray3 = Array.isArray(_iterator3), _i3 = 0, _iterator3 = _isArray3 ? _iterator3 : _iterator3[Symbol.iterator]();;) {
+                var _ref4;
+
+                if (_isArray3) {
+                    if (_i3 >= _iterator3.length) break;
+                    _ref4 = _iterator3[_i3++];
+                } else {
+                    _i3 = _iterator3.next();
+                    if (_i3.done) break;
+                    _ref4 = _i3.value;
+                }
+
+                var _ref3 = _ref4;
+                var from = _ref3[0];
+                var to = _ref3[1];
+                var edgeData = _ref3[2];
+
+                graph[from][to] = edgeData;
+            }
+        };
+
+        for (var j = 0; j < lastPath.length - 1; j++) {
+            _loop4(j);
+        }
+
+        if (candidates.length === 0) break;
+
+        // Sort candidates and add the shortest candidate path to paths
+        candidates.sort(function (a, b) {
+            return a.length - b.length;
+        });
+        var bestCandidate = candidates.shift();
+        paths.push(bestCandidate);
+    }
+
+    // Return the k-th shortest path if available
+    return paths[k - 1] ? paths[k - 1].path : null;
+}
+
 function getReactionPathSegments(map, fromNodeBiggId, toNodeBiggId, reactionId) {
     var reaction = map.reactions[reactionId];
     if (!reaction) return;
@@ -25136,19 +25339,19 @@ function getReactionPathSegments(map, fromNodeBiggId, toNodeBiggId, reactionId) 
 
     // create graph
     var graph = {};
-    for (var _iterator2 = Object.keys(reaction.segments), _isArray2 = Array.isArray(_iterator2), _i2 = 0, _iterator2 = _isArray2 ? _iterator2 : _iterator2[Symbol.iterator]();;) {
-        var _ref2;
+    for (var _iterator5 = Object.keys(reaction.segments), _isArray5 = Array.isArray(_iterator5), _i5 = 0, _iterator5 = _isArray5 ? _iterator5 : _iterator5[Symbol.iterator]();;) {
+        var _ref6;
 
-        if (_isArray2) {
-            if (_i2 >= _iterator2.length) break;
-            _ref2 = _iterator2[_i2++];
+        if (_isArray5) {
+            if (_i5 >= _iterator5.length) break;
+            _ref6 = _iterator5[_i5++];
         } else {
-            _i2 = _iterator2.next();
-            if (_i2.done) break;
-            _ref2 = _i2.value;
+            _i5 = _iterator5.next();
+            if (_i5.done) break;
+            _ref6 = _i5.value;
         }
 
-        var segmentId = _ref2;
+        var segmentId = _ref6;
 
         var segment = reaction.segments[segmentId];
         if (!graph[segment.from_node_id]) {
@@ -25184,19 +25387,19 @@ function getReactionPathSegments(map, fromNodeBiggId, toNodeBiggId, reactionId) 
             break;
         }
 
-        for (var _iterator3 = Object.keys(graph[nodeId]), _isArray3 = Array.isArray(_iterator3), _i3 = 0, _iterator3 = _isArray3 ? _iterator3 : _iterator3[Symbol.iterator]();;) {
-            var _ref3;
+        for (var _iterator6 = Object.keys(graph[nodeId]), _isArray6 = Array.isArray(_iterator6), _i6 = 0, _iterator6 = _isArray6 ? _iterator6 : _iterator6[Symbol.iterator]();;) {
+            var _ref7;
 
-            if (_isArray3) {
-                if (_i3 >= _iterator3.length) break;
-                _ref3 = _iterator3[_i3++];
+            if (_isArray6) {
+                if (_i6 >= _iterator6.length) break;
+                _ref7 = _iterator6[_i6++];
             } else {
-                _i3 = _iterator3.next();
-                if (_i3.done) break;
-                _ref3 = _i3.value;
+                _i6 = _iterator6.next();
+                if (_i6.done) break;
+                _ref7 = _i6.value;
             }
 
-            var neighborId = _ref3;
+            var neighborId = _ref7;
 
             var alt = distance[nodeId] + 1;
             if (alt < distance[neighborId]) {
@@ -28606,21 +28809,32 @@ var ButtonPanel = function (_Component) {
             title: "Find Shortest path"
           },
           (0, _preact.h)('i', { className: 'icon-shortest-path' })
-        )
-      ),
-      (0, _preact.h)(
-        'li',
-        null,
+        ),
         (0, _preact.h)(
-          'button',
-          {
-            className: 'button btn',
-            onClick: function onClick() {
-              return _this2.props.map.mergeSelectedNodes();
+          'div',
+          { className: 'kth-reaction-arrows' },
+          (0, _preact.h)(
+            'button',
+            {
+              className: 'buttonGroup btn',
+              title: 'Previous shortest reaction',
+              onClick: function onClick() {
+                return _this2.props.map.findAndHighlightShortest(-1);
+              }
             },
-            title: "Merge selected nodes"
-          },
-          (0, _preact.h)('i', { className: 'icon-merge' })
+            (0, _preact.h)('i', { className: 'icon-left-big' })
+          ),
+          (0, _preact.h)(
+            'button',
+            {
+              className: 'buttonGroup btn',
+              title: 'Next shortest reaction',
+              onClick: function onClick() {
+                return _this2.props.map.findAndHighlightShortest(1);
+              }
+            },
+            (0, _preact.h)('i', { className: 'icon-right-big' })
+          )
         )
       ),
       (0, _preact.h)(
@@ -28844,7 +29058,7 @@ if(false) {}
 
 exports = module.exports = __webpack_require__(9)(false);
 // Module
-exports.push([module.i, ".escher-container .button-panel {\r\n  position: absolute;\r\n  left: 4px;\r\n  top: 20%;\r\n  margin-top: -32px;\r\n  padding-left: 0;\r\n  touch-action: none;\r\n}\r\n\r\n.escher-container .button-panel>li {\r\n  margin-top: 5px;\r\n  display: block;\r\n\r\n  /* these sometimes get overridden */\r\n  margin-left: 0 !important;\r\n}\r\n\r\n.escher-container .grouping {\r\n  display: block;\r\n}\r\n\r\n.escher-container .buttonGroup {\r\n  display: block;\r\n  margin-bottom: -1px;\r\n  padding: 5px 0px;\r\n  border-radius: 0;\r\n}\r\n\r\n.escher-container .grouping>.buttonGroup:first-child {\r\n  border-top-left-radius: 4px;\r\n  border-top-right-radius: 4px;\r\n}\r\n\r\n.escher-container .grouping>.buttonGroup:last-child {\r\n  border-bottom-left-radius: 4px;\r\n  border-bottom-right-radius: 4px;\r\n}\r\n\r\n.escher-container .button-panel>.grouping:last-child {\r\n  margin-top: 4px;\r\n}\r\n\r\n.escher-container #currentMode,\r\n.escher-container .active-button {\r\n  background-image: linear-gradient(#8F4F3F,#834c3c 6%,#8d3a2d) !important;\r\n}\r\n\r\n.escher-container .buttonGroup.btn {\r\n  margin-top: -1px;\r\n}\r\n\r\n.escher-container .button {\r\n  border-radius: 4px;\r\n}\r\n\r\n.escher-container .button.btn, .escher-container .buttonGroup.btn {\r\n  padding: unset;\r\n  color: white!important;\r\n  border: 1px solid #474949;\r\n  background-image: linear-gradient(#4F5151, #474949 6%, #3F4141);\r\n  background-color: white;\r\n  text-align: center;\r\n  vertical-align: middle;\r\n  cursor: pointer;\r\n  font-size: 14px!important;\r\n  font-weight: 400;\r\n  width: 40px;\r\n  height: 40px;\r\n}\r\n\r\n.escher-container .button-panel .button:active, .escher-container .buttonGroup label:active, .escher-container .button-panel .buttonGroup:active {\r\n  background-image: linear-gradient(#3F4141, #474949 6%, #4F5151);\r\n}\r\n\r\n.escher-container .button-panel .fa {\r\n  font-size: 24px;\r\n}\r\n\r\n/* Icons */\r\n.escher-container .button-panel [class^='icon-'] {\r\n  font-size: 23px;\r\n}\r\n", ""]);
+exports.push([module.i, ".escher-container .button-panel {\r\n  position: absolute;\r\n  left: 4px;\r\n  top: 20%;\r\n  margin-top: -32px;\r\n  padding-left: 0;\r\n  touch-action: none;\r\n}\r\n\r\n.escher-container .button-panel>li {\r\n  margin-top: 5px;\r\n  display: block;\r\n\r\n  /* these sometimes get overridden */\r\n  margin-left: 0 !important;\r\n}\r\n\r\n.escher-container .grouping {\r\n  display: block;\r\n}\r\n\r\n.escher-container .buttonGroup {\r\n  display: block;\r\n  margin-bottom: -1px;\r\n  padding: 5px 0px;\r\n  border-radius: 0;\r\n}\r\n\r\n.escher-container .grouping>.buttonGroup:first-child {\r\n  border-top-left-radius: 4px;\r\n  border-top-right-radius: 4px;\r\n}\r\n\r\n.escher-container .grouping>.buttonGroup:last-child {\r\n  border-bottom-left-radius: 4px;\r\n  border-bottom-right-radius: 4px;\r\n}\r\n\r\n.escher-container .button-panel>.grouping:last-child {\r\n  margin-top: 4px;\r\n}\r\n\r\n.escher-container #currentMode,\r\n.escher-container .active-button {\r\n  background-image: linear-gradient(#8F4F3F,#834c3c 6%,#8d3a2d) !important;\r\n}\r\n\r\n.escher-container .buttonGroup.btn {\r\n  margin-top: -1px;\r\n}\r\n\r\n.escher-container .button {\r\n  border-radius: 4px;\r\n}\r\n\r\n.escher-container .button.btn, .escher-container .buttonGroup.btn {\r\n  padding: unset;\r\n  color: white!important;\r\n  border: 1px solid #474949;\r\n  background-image: linear-gradient(#4F5151, #474949 6%, #3F4141);\r\n  background-color: white;\r\n  text-align: center;\r\n  vertical-align: middle;\r\n  cursor: pointer;\r\n  font-size: 14px!important;\r\n  font-weight: 400;\r\n  width: 40px;\r\n  height: 40px;\r\n}\r\n\r\n.escher-container .button-panel .button:active, .escher-container .buttonGroup label:active, .escher-container .button-panel .buttonGroup:active {\r\n  background-image: linear-gradient(#3F4141, #474949 6%, #4F5151);\r\n}\r\n\r\n.escher-container .button-panel .fa {\r\n  font-size: 24px;\r\n}\r\n\r\n/* Icons */\r\n.escher-container .button-panel [class^='icon-'] {\r\n  font-size: 23px;\r\n}\r\n\r\n.escher-container .kth-reaction-arrows {\r\n  display: flex;\r\n    width: 40px;\r\n    flex-direction: row;\r\n}\r\n\r\n.escher-container .kth-reaction-arrows button.btn {\r\n  width: 20px;\r\n  height: 20px;\r\n}\r\n\r\n.escher-container .kth-reaction-arrows button.btn i {\r\n  font-size: 12px;\r\n}", ""]);
 
 
 /***/ }),
