@@ -99,13 +99,13 @@ jobs:
             js-api/package-lock.json
       - name: Cache Docusaurus
         uses: actions/cache@v4
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/vhlushchenko/kubernetes_typesense'
         with:
           path: docusaurus/.docusaurus
           key: ${{ github.ref }}-docusaurus
       - name: Cache Docusaurus build
         uses: actions/cache@v4
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/vhlushchenko/kubernetes_typesense'
         with:
           path: docusaurus/build
           key: ${{ github.ref }}-docusaurus-build
@@ -189,7 +189,7 @@ jobs:
           retention-days: 14
       - uses: actions/upload-artifact@v4
         name: Save docusaurus build
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/vhlushchenko/kubernetes_typesense'
         with:
           name: docusaurus
           path: docusaurus/build
@@ -201,7 +201,7 @@ jobs:
     concurrency:
       group: help-deploy-${{ github.ref }}
       cancel-in-progress: true
-    if: always() && needs.convert.result == 'success' && github.ref == 'refs/heads/master'
+    if: always() && needs.convert.result == 'success' && github.ref == 'refs/heads/vhlushchenko/kubernetes_typesense'
     runs-on: ubuntu-22.04
     environment: Help
     steps:
