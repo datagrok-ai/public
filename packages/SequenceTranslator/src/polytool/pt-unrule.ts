@@ -27,10 +27,10 @@ export async function polyToolUnruleUI(): Promise<void> {
 export function doPolyToolUnrule(helms: string[], rules: Rules, helmHelper: IHelmHelper): string[] {
   const resHrzSeqList = new Array<string>(helms.length);
   for (let i = 0; i < helms.length; ++i) {
-    if (!helms[i])
+    if (!helms[i]) {
       resHrzSeqList[i] = '';
-    else {
-      const chain = Chain.parseHelm(helms[i], helmHelper);
+    } else {
+      const chain = Chain.fromHelm(helms[i], helmHelper);
       resHrzSeqList[i] = chain.getNotation();
     }
   }

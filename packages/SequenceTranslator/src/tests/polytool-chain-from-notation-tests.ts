@@ -33,8 +33,8 @@ category('PolyTool: Chain', () => {
         mmHelm: 'PEPTIDE1{R.F.[GGaz].T.G.H.F.Y.P}|PEPTIDE2{[meI]}$PEPTIDE1,PEPTIDE1,3:R3-9:R2|PEPTIDE1,PEPTIDE2,3:R4-1:R1$$$V2.0',
       },
       tgt: {
-        templateChain: {monomerCount: [11], linkageCount: 0,},
-        mmChain: {monomerCount: [9, 1], linkageCount: 2,}
+        templateChain: {monomerCount: [11], linkageCount: 0},
+        mmChain: {monomerCount: [9, 1], linkageCount: 2}
       }
     },
     'reaction2': {
@@ -44,8 +44,8 @@ category('PolyTool: Chain', () => {
         mmHelm: 'PEPTIDE1{R.F}|PEPTIDE2{T.G.H.F.Y.P.[GGaz].[meI]}$PEPTIDE1,PEPTIDE2,2:R2-7:R3|PEPTIDE2,PEPTIDE2,1:R1-7:R4,$$$V2.0',
       },
       tgt: {
-        templateChain: {monomerCount: [11], linkageCount: 0,},
-        mmChain: {monomerCount: [2, 8], linkageCount: 2,}
+        templateChain: {monomerCount: [11], linkageCount: 0},
+        mmChain: {monomerCount: [2, 8], linkageCount: 2}
       }
     },
     'dimerized1': {
@@ -80,7 +80,8 @@ category('PolyTool: Chain', () => {
   for (const [testName, {data, tgt}] of Object.entries(tests)) {
     test(`fromNotation-${testName}`, async () => {
       const rules = await getRules(['rules_example.json']);
-      const resMmChain = Chain.fromNotation(data.templateSeq, rules, helmHelper);
+      const resMmChain = Chain.fromSeparator(data.templateSeq, helmHelper);
+      resMmChain.applyRules(rules);
       resMmChain.check(true);
       expectArray(resMmChain.monomers.map((mL) => mL.length), tgt.mmChain.monomerCount);
       expect(resMmChain.linkages.length, tgt.mmChain.linkageCount);
@@ -91,7 +92,7 @@ category('PolyTool: Chain', () => {
   for (const [testName, {data, tgt}] of Object.entries(tests)) {
     test(`parseNotation-${testName}`, async () => {
       const rules = await getRules(['rules_example.json']);
-      const resTemplateChain = Chain.parseNotation(data.templateSeq, helmHelper);
+      const resTemplateChain = Chain.fromSeparator(data.templateSeq, helmHelper);
       resTemplateChain.check(true);
       expectArray(resTemplateChain.monomers.map((mL) => mL.length), tgt.templateChain.monomerCount);
       expect(resTemplateChain.linkages.length, tgt.templateChain.linkageCount);
@@ -103,7 +104,7 @@ category('PolyTool: Chain', () => {
   for (const [testName, {data, tgt}] of Object.entries(tests)) {
     test(`parseHelm-${testName}`, async () => {
       const rules = await getRules(['rules_example.json']);
-      const resTemplateChain = Chain.parseHelm(data.templateHelm, helmHelper);
+      const resTemplateChain = Chain.fromHelm(data.templateHelm, helmHelper);
       resTemplateChain.check(true);
       expectArray(resTemplateChain.monomers.map((mL) => mL.length), tgt.templateChain.monomerCount);
       expect(resTemplateChain.linkages.length, tgt.templateChain.linkageCount);
@@ -115,12 +116,12 @@ category('PolyTool: Chain', () => {
   for (const [testName, {data, tgt}] of Object.entries(tests)) {
     test(`applyRules-${testName}`, async () => {
       const rules = await getRules(['rules_example.json']);
-      const resTemplateChain = Chain.parseNotation(data.templateSeq, helmHelper);
-      const resMmChain = await resTemplateChain.applyRules(rules);
-      resMmChain.check(true);
-      expectArray(resMmChain.monomers.map((mL) => mL.length), tgt.mmChain.monomerCount);
-      expect(resMmChain.linkages.length, tgt.mmChain.linkageCount);
-      expect(resMmChain.getHelm(), data.mmHelm);
+      const resTemplateChain = Chain.fromSeparator(data.templateSeq, helmHelper);
+      resTemplateChain.applyRules(rules);
+      resTemplateChain.check(true);
+      expectArray(resTemplateChain.monomers.map((mL) => mL.length), tgt.mmChain.monomerCount);
+      expect(resTemplateChain.linkages.length, tgt.mmChain.linkageCount);
+      expect(resTemplateChain.getHelm(), data.mmHelm);
     }, {skipReason: 'applyRules is not implemented'});
   }
 });

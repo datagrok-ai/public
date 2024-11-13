@@ -12,6 +12,15 @@ import {Rules, RuleReaction, getMonomerPairs} from './pt-rules';
 import {InvalidReactionError, MonomerNotFoundError} from '../types';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
+export type Linkage = {
+  fChain: number,
+  sChain: number,
+  /** Continuous 1-based numbering */ fMonomer: number,
+  /** Continuous 1-based numbering */ sMonomer: number,
+  fR: number,
+  sR: number
+}
+
 /** Gets 0-based in-index (simple polymer) of out-index (continuous) {@link idx} */
 export function getInnerIdx(outIdx: number, monomers: string[][]): [number, number] {
   // let prevSpCount = 0;
