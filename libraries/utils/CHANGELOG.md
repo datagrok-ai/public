@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.3.9 (2024-13-07)
+
+Added ability to set test owner in core tests 
+
 ## 4.3.9 (2024-11-07)
 
 Added ability to set category responsivness 
