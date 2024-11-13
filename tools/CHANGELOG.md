@@ -1,6 +1,12 @@
 # Datagrok-tools changelog
 
 
+## 4.13.35 (2024-11-4)
+
+### Features
+
+* Grok help fixes
+
 ## 4.13.34 (2024-11-1)
 
 ### Features

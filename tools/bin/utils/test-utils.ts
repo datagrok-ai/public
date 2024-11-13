@@ -62,7 +62,7 @@ export function getDevKey(hostKey: string): { url: string, key: string } {
   return { url, key };
 }
 
-export async function getBrowserPage(puppeteer: PuppeteerNode, params: {} = defaultLaunchParameters): Promise<{ browser: any, page: any }> {
+export async function getBrowserPage(puppeteer: PuppeteerNode, params: {} = defaultLaunchParameters): Promise<{ browser: Browser, page: Page }> {
   let url: string = process.env.HOST ?? '';
   const cfg = getDevKey(url);
   url = cfg.url;
@@ -127,16 +127,6 @@ export async function timeout(func: () => Promise<any>, testTimeout: number, tim
 export function exitWithCode(code: number): void {
   console.log(`Exiting with code ${code}`);
   process.exit(code);
-}
-
-export class TestContext {
-  catchUnhandled = true;
-  report = false;
-
-  constructor(catchUnhandled?: boolean, report?: boolean) {
-    if (catchUnhandled !== undefined) this.catchUnhandled = catchUnhandled;
-    if (report !== undefined) this.report = report;
-  };
 }
 
 export const recorderConfig = {
@@ -205,7 +195,7 @@ export async function loadPackages(packagesDir: string, packagesToLoad?: string,
     .map(([key]) => key);;
 }
 
-export async function loadTestsList(packages: string[], core: boolean = false): Promise<Object[]> {
+export async function loadTestsList(packages: string[], core: boolean = false): Promise<Test[]> {
   var packageTestsData = await timeout(async () => {
     const params = Object.assign({}, defaultLaunchParameters);
     // params['headless'] = false;
@@ -213,8 +203,8 @@ export async function loadTestsList(packages: string[], core: boolean = false): 
     const browser: Browser = out.browser;
     const page: Page = out.page;
 
-    const r = await page.evaluate((packages, coreTests): Promise<any> => {
-      return new Promise<any>((resolve, reject) => {
+    const r = await page.evaluate((packages, coreTests): Promise<LoadedPackageData[] | {failReport: string}> => {
+      return new Promise<LoadedPackageData[] | {failReport: string}>((resolve, reject) => {
         const promises: any[] = [];
         try {
           packages.map((packageName: string) => {
@@ -249,15 +239,13 @@ export async function loadTestsList(packages: string[], core: boolean = false): 
           });
       });
     }, packages, core);
-
     if (browser != null) {
       await browser.close();
     }
 
     return r;
   }, testCollectionTimeout);
-
-  let testsList: Object[] = [];
+  let testsList: Test[] = [];
 
   for (let testPackage of packageTestsData) {
     for (const key in testPackage.tests) {
@@ -272,7 +260,7 @@ export async function loadTestsList(packages: string[], core: boolean = false): 
   return testsList;
 }
 
-export function addLogsToFile(filePath: string, stringToSave: any) {
+export function addLogsToFile(filePath: string, stringToSave: string) {
   fs.appendFileSync(filePath, `${stringToSave}`);
 }
 
@@ -313,7 +301,7 @@ export function saveCsvResults(stringToSave: string[], csvReportDir: string) {
   color.info('Saved `test-report.csv`\n');
 }
 
-export async function runWorker(testExecutionData: any[], workerOptions: WorkerOptions, workersId: number, testInvocationTimeout: number = 3600000): Promise<ResultObject> {
+export async function runWorker(testExecutionData: OrganizedTests[], workerOptions: WorkerOptions, workersId: number, testInvocationTimeout: number = 3600000): Promise<ResultObject> {
   return await timeout(async () => {
     const params = Object.assign({}, defaultLaunchParameters);
     if (workerOptions.gui)
@@ -338,7 +326,7 @@ export async function runWorker(testExecutionData: any[], workerOptions: WorkerO
         addLogsToFile(logsDir, `CONSOLE LOG REQUEST: ${response.status()}, ${response.url()}\n`);
       });
     }
-    let testingResults = await page.evaluate((testData, options): Promise<any> => {
+    let testingResults = await page.evaluate((testData, options): Promise<ResultObject> => {
       if (options.benchmark)
         (<any>window).DG.Test.isInBenchmark = true;
 
@@ -374,15 +362,15 @@ export async function runWorker(testExecutionData: any[], workerOptions: WorkerO
   }, testInvocationTimeout);
 }
 
-export async function mergeWorkersResults(workersResults: ResultObject[]) : Promise<ResultObject>{
+export async function mergeWorkersResults(workersResults: ResultObject[]): Promise<ResultObject> {
 
   let mergedResult: ResultObject = {
     failed: workersResults[0].failed,
     verbosePassed: workersResults[0].verbosePassed,
-    verboseSkipped:  workersResults[0].verboseSkipped,
+    verboseSkipped: workersResults[0].verboseSkipped,
     verboseFailed: workersResults[0].verboseFailed,
     passedAmount: workersResults[0].passedAmount,
-    skippedAmount:  workersResults[0].skippedAmount,
+    skippedAmount: workersResults[0].skippedAmount,
     failedAmount: workersResults[0].failedAmount,
     csv: workersResults[0].csv
   }
@@ -427,6 +415,47 @@ export type ResultObject = {
   passedAmount: number,
   skippedAmount: number,
   failedAmount: number,
-  csv: string,
-  df?: any
+  csv: string
 };
+
+export class TestContext {
+  catchUnhandled = true;
+  report = false;
+
+  constructor(catchUnhandled?: boolean, report?: boolean) {
+    if (catchUnhandled !== undefined) this.catchUnhandled = catchUnhandled;
+    if (report !== undefined) this.report = report;
+  };
+}
+
+export type LoadedTest = {
+  category: string,
+  name: string,
+}
+export type LoadedPackageData = {
+  packageName: string,
+  tests: { [key: string]: LoadedTest }
+}
+
+export type Test = {
+  category: string,
+  name: string,
+  packageName: string,
+  options: {
+    tags: string[],
+    stressTest : boolean,
+    benchmark : boolean
+  }
+}
+
+export type OrganizedTests = {
+  package: string,
+  params: {
+    category: string,
+    test: string,
+    options: {
+      catchUnhandled: boolean | undefined,
+      report: boolean | undefined
+    }
+  }
+}

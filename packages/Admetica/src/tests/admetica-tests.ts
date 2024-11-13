@@ -57,6 +57,7 @@ category('Admetica', () => {
     smilesColumn = molecules.columns.bySemType(DG.SEMTYPE.MOLECULE)!;
     const newTableColumn = 'Caco2';
     await performChemicalPropertyPredictions(smilesColumn, v.dataFrame, newTableColumn);
+    await delay(2000);
     expect(molecules.columns.names().includes(newTableColumn), true, `${newTableColumn} column has not been added`);
     expect(parseFloat(molecules.col(newTableColumn)!.get(0).toFixed(2)), -4.62, `Calculated value for ${newTableColumn} is incorrect`);
     expect(molecules.col(newTableColumn)!.getTag('.color-coding-type'), DG.COLOR_CODING_TYPE.LINEAR, `Expected ${DG.COLOR_CODING_TYPE.LINEAR} color coding type, but got a different value`);
@@ -114,12 +115,7 @@ category('Admetica', () => {
       const args = [molecules.toCsv(), await getQueryParams(), 'false'];
       return await runOnce(runAdmetica, ...args);
     };
-
-    const mol1k = await runAdmeticaBenchmark(1000);
-    const mol5k = await runAdmeticaBenchmark(5000);
-    const mol10k = await runAdmeticaBenchmark(10000);
-
-    return DG.toDart({"1k molecules": mol1k, "5k molecules": mol5k, "10k molecules": mol10k});
+    await DG.timeAsync('Admetica column', async () => await runAdmeticaBenchmark(5000));
   }, {timeout: 10000000000, benchmark: true });
 
   test('Calculate.Benchmark cell', async () => {
@@ -128,8 +124,7 @@ category('Admetica', () => {
     const distributionSubgroup = properties.subgroup.find((subgroup: any) => subgroup.name === "Distribution");
     const distributionModels = distributionSubgroup ? distributionSubgroup.models.map((model: any) => model.name) : [];
     const args = [smiles, distributionModels, 'false'];
-    const cellResults = await runOnce(runAdmetica, ...args);
-    return DG.toDart({"results": cellResults});
+    await DG.timeAsync('Admetica cell', async () => await runOnce(runAdmetica, ...args));
   }, {timeout: 1000000, benchmark: true});
 });
   

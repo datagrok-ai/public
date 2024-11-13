@@ -1,5 +1,12 @@
 # PowerPack changelog
 
+## 1.2.3 (2024-11-13)
+
+### Bug Fixes
+
+* [#3146](https://github.com/datagrok-ai/public/issues/3146): Add new columns: Error on calculated columns validation if a complex formula is pasted
+* [#3147](https://github.com/datagrok-ai/public/issues/3147): Add new columns: Columns are not calculated for some formulae inside if clause
+
 ## 1.2.2 (2024-10-28)
 
 ### Bug Fixes

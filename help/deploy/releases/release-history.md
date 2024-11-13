@@ -21,7 +21,6 @@ See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.md)
 
-
 # 2024-10-22 Datagrok 1.22.0 release 
 
 The Datagrok 1.22.0 release includes stability improvements, key optimizations, and new features for a more efficient and responsive platform

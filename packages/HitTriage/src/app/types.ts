@@ -100,7 +100,7 @@ export type HitTriageTemplateSubmit = {
     package: string
 };
 
-export type HitTriageCampaignStatus = 'In Progress' | 'Submitted';
+export type HitTriageCampaignStatus = string;
 
 export type HitTriageCampaign = {
     name: string,
@@ -119,7 +119,9 @@ export type HitTriageCampaign = {
     columnTypes?: {[key: string]: string},
     version?: number,
     permissions?: TriagePermissions,
-    authorUserId?: string
+    authorUserId?: string,
+    authorUserFriendlyName?: string,
+    lastModifiedUserName?: string,
 };
 
 export type TriagePermissions = {

@@ -39,6 +39,7 @@ export interface TestOptions {
   isAggregated?: boolean;
   benchmark?: boolean;
   stressTest?: boolean;
+  owner?: string;
   tags?: string[];
 }
 
@@ -47,6 +48,7 @@ export interface CategoryOptions {
   timeout?: number;
   benchmarks?: boolean;
   stressTests?: boolean;
+  owner?: string;
 }
 
 export class TestContext {
@@ -98,6 +100,7 @@ export class Category {
   benchmarks?: boolean;
   benchmarkTimeout?: number;
   stressTests?: boolean;
+  owner?: string;
 }
 
 export class TestExecutionOptions {
@@ -254,6 +257,7 @@ export function category(category: string, tests_: () => void, options?: Categor
     tests[currentCategory].timeout = options?.timeout;
     tests[currentCategory].benchmarks = options?.benchmarks;
     tests[currentCategory].stressTests = options?.stressTests;
+    tests[currentCategory].owner = options?.owner;
   }
 }
 
@@ -297,7 +301,7 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
       cat = fullName.join(': ');
       if (moduleTests[cat] === undefined)
         moduleTests[cat] = { tests: [], clear: true };
-      moduleTests[cat].tests.push(new Test(cat, name, f.test, { isAggregated: false, timeout: f.options?.timeout ?? STANDART_TIMEOUT, skipReason: f.options?.skipReason }));
+      moduleTests[cat].tests.push(new Test(cat, name, f.test, { isAggregated: false, timeout: f.options?.timeout ?? STANDART_TIMEOUT, skipReason: f.options?.skipReason, owner: f.options?.owner }));
     }
   }
   const moduleAutoTests = [];
@@ -323,7 +327,7 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
           if (map.wait) await delay(map.wait);
           // eslint-disable-next-line no-throw-literal
           if (typeof res === 'boolean' && !res) throw `Failed: ${tests[i]}, expected true, got ${res}`;
-        }, { skipReason: map.skip, timeout: DG.Test.isInBenchmark ? map.benchmarkTimeout ?? BENCHMARK_TIMEOUT : map.timeout ?? STANDART_TIMEOUT});
+        }, { skipReason: map.skip, timeout: DG.Test.isInBenchmark ? map.benchmarkTimeout ?? BENCHMARK_TIMEOUT : map.timeout ?? STANDART_TIMEOUT });
         if (map.cat) {
           const cat: string = autoTestsCatName + ': ' + map.cat;
           test.category = cat;
@@ -417,7 +421,7 @@ export async function runTests(options?: TestExecutionOptions) {
   await initAutoTests(package_);
   const results: {
     category?: string, name?: string, success: boolean,
-    result: string, ms: number, skipped: boolean, logs?: string
+    result: string, ms: number, skipped: boolean, logs?: string, owner?: string
   }[] = [];
   console.log(`Running tests`);
   options ??= {};
@@ -426,7 +430,7 @@ export async function runTests(options?: TestExecutionOptions) {
   const logs = redefineConsole();
 
   await invokeTests(tests, options);
-  
+
   for (let r of results) {
     r.result = r.result.toString().replace(/"/g, '\'');
     if (r.logs != undefined)
@@ -468,7 +472,7 @@ export async function runTests(options?: TestExecutionOptions) {
         }
 
         if ((options.tags?.length ?? 0) > 0) {
-          t = t.filter((e) => 
+          t = t.filter((e) =>
             e.options?.tags?.some(tag => (options?.tags ?? []).includes(tag))
           );
         }
@@ -483,7 +487,11 @@ export async function runTests(options?: TestExecutionOptions) {
                 t[i].options!.benchmark = value.benchmarks ?? false;
               }
             }
-            let testRun = await execTest(t[i], options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout ?? STANDART_TIMEOUT, package_.name, options.verbose);
+            let test = t[i];
+            if (test?.options) {
+              test.options.owner = t[i].options?.owner ?? value?.owner;
+            } 
+            let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout ?? STANDART_TIMEOUT, package_.name, options.verbose);
             if (testRun)
               res.push(testRun);
             grok.shell.closeAll();
@@ -491,7 +499,11 @@ export async function runTests(options?: TestExecutionOptions) {
           }
         } else {
           for (let i = 0; i < t.length; i++) {
-            let testRun = await execTest(t[i], options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout, package_.name, options.verbose);
+            let test = t[i];
+            if (test?.options) {
+              test.options.owner = t[i].options?.owner ?? value?.owner;
+            } 
+            let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout, package_.name, options.verbose);
             if (testRun)
               res.push(testRun);
           }
@@ -545,7 +557,7 @@ async function getResult(x: any): Promise<string> {
 async function execTest(t: Test, predicate: string | undefined, logs: any[],
   testTimeout?: number, packageName?: string, verbose?: boolean): Promise<any> {
   logs.length = 0;
-  let r: { date: string, category?: string, name?: string, success: boolean, result: any, ms: number, skipped: boolean, logs?: string };
+  let r: { date: string, category?: string, name?: string, success: boolean, result: any, ms: number, skipped: boolean, logs?: string, owner?: string };
   let type: string = 'package';
   const filter = predicate != undefined && (t.name.toLowerCase() !== predicate.toLowerCase());
   let skip = t.options?.skipReason || filter;
@@ -588,10 +600,11 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
     stdLog(`Finished ${t.category} ${t.name} for ${r.ms} ms`);
   r.category = t.category;
   r.name = t.name;
+  r.owner = t.options?.owner ?? '';
   if (!filter) {
     let params = {
       'success': r.success, 'result': r.result, 'ms': r.ms,
-      'skipped': r.skipped, 'package': packageName, 'category': t.category, 'name': t.name, 'logs': r.logs,
+      'skipped': r.skipped, 'package': packageName, 'category': t.category, 'name': t.name, 'logs': r.logs, 'owner': r.owner,
     };
     if (r.result.constructor == Object) {
       const res = Object.keys(r.result).reduce((acc, k) => ({ ...acc, ['result.' + k]: r.result[k] }), {});

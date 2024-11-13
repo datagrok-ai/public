@@ -54,3 +54,8 @@ export const TAGS = {
   WEIGHT: ".weight",
   GROUP_NAME: ".group-name"
 };
+
+export const ERROR_MESSAGES = {
+  MALFORMED: 'Molecule is possibly malformed',
+  EMPTY: 'Molecule is empty'
+};

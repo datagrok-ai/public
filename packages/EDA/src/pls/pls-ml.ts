@@ -276,7 +276,8 @@ export class PlsModel {
       xColumnName: columns.byIndex(shift).name,
       yColumnName: columns.byIndex(shift + (components > 1 ? 1 : 0)).name,
       markerType: DG.MARKER_TYPE.CIRCLE,
-      labels: TITLE.FEATURES,
+      //@ts-ignore
+      labelFormColumnNames: [TITLE.FEATURES],
       help: LINK.LOADINGS,
     }));
 

@@ -245,7 +245,6 @@ export function isApplicable(molecule: DG.SemanticValue): boolean {
 //name: AutoDock
 //tags: panel, chem, widgets
 //input: semantic_value molecule { semType: Molecule3D }
-//condition: Docking:isApplicable(molecule)
 //output: widget result
 export async function autodockWidget(molecule: DG.SemanticValue): Promise<DG.Widget<any> | null> {
   return await getAutodockSingle(molecule);
@@ -280,11 +279,16 @@ export async function getAutodockSingle(
 
   const autodockResults: DG.DataFrame = matchingValue.clone();
   const widget = new DG.Widget(ui.div([]));
-  const targetViewer = await currentTable!.plot.fromType('Biostructure', {
+
+  if (table)
+    currentTable.currentRowIdx = 0;
+
+  const targetViewer = await currentTable.plot.fromType('Biostructure', {
     dataJson: BiostructureDataJson.fromData(key.receptor),
     ligandColumnName: molecule.cell.column.name,
     zoom: true,
   });
+  targetViewer.root.classList.add('bsv-container-info-panel');
 
   widget.root.append(targetViewer.root);
   if (!showProperties) return widget;
@@ -345,11 +349,13 @@ export async function autodockPanel(smiles: DG.SemanticValue): Promise<DG.Widget
     const loader = ui.loader();
     resultsContainer.appendChild(loader);
 
-    const ligandColumn = 'smiles';
-    const table = DG.DataFrame.fromCsv(`${ligandColumn}\n${smiles.value}`);
+    const ligandColumnName = 'ligand';
+    const column = DG.Column.fromStrings(ligandColumnName, [smiles.value]);
+    const table = DG.DataFrame.fromColumns([column]);
+    column.semType = DG.SEMTYPE.MOLECULE;
     await grok.data.detectSemanticTypes(table);
 
-    const data = await prepareAutoDockData(target.value!, table, ligandColumn, poses.value!);
+    const data = await prepareAutoDockData(target.value!, table, ligandColumnName, poses.value!);
 
     const app = new AutoDockApp();
     const autodockResults = await app.init(data);

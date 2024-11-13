@@ -23,6 +23,9 @@ namespace pca {
 	typedef int Integer;
 	typedef double Double;
 
+	const Float TOL = 0.000001f;
+	const Integer MAX_ITER = 100;
+
 	enum ResultCode {NO_ERROR = 0, UNCORRECT_ARGUMENTS_ERROR, COMPUTATION_ERROR, METHOD_ERROR};
 
 	/* Principal Component Analysis of the data: using correlation matrix.
@@ -42,6 +45,22 @@ namespace pca {
 
 	// Maximum absolute deviation between arrays
 	Float mad(Float * arr1, Float * arr2, const int length) noexcept;
+
+    /* The NIPALS algorithm for PCA.
+         data - input matrix;
+         height, width - sizes of the input;
+	     numOfPrincipalComponents - number of principal components to be computed;
+	     principalComponents - the principal components computed.
+
+	   Reference
+	     H. Risvik. Principal component analysis (PCA) & NIPALS algorithm.
+	     https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=a1a75889929b604cfefcb7cddfd58accce8d01d8
+    */
+	int nipals(Float* data,
+	    const int height,
+	    const int width,
+	    const int numOfPrincipalComponents,
+	    Float* principalComponents) noexcept;
 };
 
 #endif // PCA_H

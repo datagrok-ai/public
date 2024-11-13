@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.17.0 (2024-11-06)
+
+Cell renderer: Harmonize macromolecule renderers
+
 ## 2.16.9 (2024-11-01)
 
 Correct package initialization

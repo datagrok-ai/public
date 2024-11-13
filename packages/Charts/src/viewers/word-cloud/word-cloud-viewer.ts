@@ -112,8 +112,7 @@ export class WordCloudViewer extends DG.JsViewer {
       this._showMessage('Not enough data to produce the result.', ERROR_CLASS);
       return;
     }
-    if (this.strColumnName === null || this.strColumnName === '' ||
-      this.dataFrame.getCol(this.strColumnName).categories.length > MAX_UNIQUE_CATEGORIES_NUMBER) {
+    if (!this.strColumnName || this.dataFrame.getCol(this.strColumnName).categories.length > MAX_UNIQUE_CATEGORIES_NUMBER) {
       this._showMessage('The Word cloud viewer requires categorical column with 500 or fewer unique categories', ERROR_CLASS);
       return;
     }

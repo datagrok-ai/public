@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -5,10 +6,13 @@ import {u2} from '@datagrok-libraries/utils/src/u2';
 import {HitDesignApp} from '../hit-design-app';
 import {_package} from '../../package';
 import $ from 'cash-dom';
-import {CampaignJsonName, HitDesignCampaignIdKey, i18n} from '../consts';
+import {CampaignGroupingType, CampaignJsonName, HitDesignCampaignIdKey, i18n} from '../consts';
 import {HitDesignCampaign, HitDesignTemplate} from '../types';
 import {addBreadCrumbsToRibbons, checkEditPermissions,
-  checkViewPermissions, loadCampaigns, modifyUrl, popRibbonPannels} from '../utils';
+  checkViewPermissions, getGroupedCampaigns, getSavedCampaignsGrouping,
+  loadCampaigns, modifyUrl, popRibbonPannels,
+  processGroupingTable,
+  setSavedCampaignsGrouping} from '../utils';
 import {newHitDesignCampaignAccordeon} from '../accordeons/new-hit-design-campaign-accordeon';
 import {newHitDesignTemplateAccordeon} from '../accordeons/new-hit-design-template-accordeon';
 import {HitBaseView} from '../base-view';
@@ -17,6 +21,7 @@ import {defaultPermissions, PermissionsDialog} from '../dialogs/permissions-dial
 export class HitDesignInfoView
   <T extends HitDesignTemplate = HitDesignTemplate, K extends HitDesignApp = HitDesignApp>
   extends HitBaseView<T, K> {
+  currentSorting: string = 'None';
   constructor(app: K) {
     super(app);
     this.name = 'Hit Design';
@@ -48,6 +53,7 @@ export class HitDesignInfoView
     ui.setUpdateIndicator(this.root, true);
     try {
       const continueCampaignsHeader = ui.h1(i18n.continueCampaigns);
+
       const createNewCampaignHeader = ui.h1(i18n.createNewCampaignHeader, {style: {marginLeft: '10px'}});
       const appHeader = this.getAppHeader();
 
@@ -56,10 +62,38 @@ export class HitDesignInfoView
       const contentDiv = ui.div([templatesDiv, campaignAccordionDiv], 'ui-form');
 
       const campaignsTable = await this.getCampaignsTable();
+      const tableRoot = ui.div([campaignsTable], {style: {position: 'relative'}});
+
+      const sortIcon = ui.iconFA('sort', () => {
+        const menu = DG.Menu.popup();
+        Object.values(CampaignGroupingType).forEach((i) => {
+          menu.item(i, async () => {
+            setSavedCampaignsGrouping(i as CampaignGroupingType);
+            ui.setUpdateIndicator(tableRoot, true);
+            try {
+              const t = await this.getCampaignsTable();
+              ui.setUpdateIndicator(tableRoot, false);
+              ui.empty(tableRoot);
+              tableRoot.appendChild(t);
+            } catch (e) {
+              grok.shell.error('Failed to update campaigns table');
+              console.error(e);
+            } finally {
+              ui.setUpdateIndicator(tableRoot, false);
+            }
+          });
+          menu.show({element: sortingHeader, x: 100, y: sortingHeader.offsetTop + 30});
+        });
+      });
+      sortIcon.style.marginBottom = '12px';
+      sortIcon.style.marginLeft = '5px';
+      sortIcon.style.fontSize = '15px';
+      ui.tooltip.bind(sortIcon, () => `Group Campaigns. Current: ${this.currentSorting}`);
+      const sortingHeader = ui.divH([continueCampaignsHeader, sortIcon], {style: {alignItems: 'center'}});
       $(this.root).empty();
       this.root.appendChild(ui.div([
-        ui.divV([appHeader, continueCampaignsHeader], {style: {marginLeft: '10px'}}),
-        campaignsTable,
+        ui.divV([appHeader, sortingHeader], {style: {marginLeft: '10px'}}),
+        tableRoot,
         createNewCampaignHeader,
         contentDiv,
       ]));
@@ -178,7 +212,10 @@ export class HitDesignInfoView
 
   private async getCampaignsTable() {
     const campaignNamesMap = await loadCampaigns(this.app.appName, this.deletedCampaigns);
-
+    const grouppingMode = getSavedCampaignsGrouping();
+    const grouppedCampaigns = getGroupedCampaigns<HitDesignCampaign>(Object.values(campaignNamesMap), grouppingMode);
+    this.currentSorting = grouppingMode;
+    this.app.existingStatuses = Array.from(new Set(Object.values(campaignNamesMap).map((c) => c.status).filter((s) => !!s)));
     const deleteAndShareCampaignIcons = (info: HitDesignCampaign) => {
       const deleteIcon = ui.icons.delete(async () => {
         ui.dialog('Delete campaign')
@@ -216,16 +253,20 @@ export class HitDesignInfoView
       });
       return [shareIcon, deleteIcon];
     };
-    const table = ui.table(Object.values(campaignNamesMap), (info) =>
-      ([ui.link(info.name, () => this.setCampaign(info.name), '', ''),
+
+    const table = ui.table(Object.values(grouppedCampaigns).flat(), (info) =>
+      ([ui.link(info.name, () => this.setCampaign(info.name), 'Continue Campaign', ''),
         info.createDate,
+        info.authorUserFriendlyName ?? '',
+        info.lastModifiedUserName ?? '',
         info.rowCount,
         info.status,
         ...(deleteAndShareCampaignIcons(info)),
       ]),
-    ['Name', 'Created', 'Molecules', 'Status', '']);
+    ['Name', 'Created', 'Author', 'Last Modified by', 'Molecules', 'Status', '', '']);
     table.style.color = 'var(--grey-5)';
     table.style.marginLeft = '24px';
+    processGroupingTable(table, grouppedCampaigns);
     return table;
   }
 
@@ -239,7 +280,7 @@ export class HitDesignInfoView
       this.app.dataFrame = camp.df;
       await this.app.setTemplate(template);
       this.app.campaignProps = camp.campaignProps;
-      await this.app.saveCampaign(undefined, false);
+      await this.app.saveCampaign(false);
       if (template.layoutViewState && this.app.campaign)
         this.app.campaign.layout = template.layoutViewState;
     });

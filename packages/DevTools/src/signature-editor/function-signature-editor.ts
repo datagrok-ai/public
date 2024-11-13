@@ -33,30 +33,30 @@ import 'codemirror/mode/r/r';
 import 'codemirror/mode/julia/julia';
 import 'codemirror/mode/sql/sql.js';
 import '../../css/styles.css';
+import {applyCodeMirror} from "../utils/code-mirror-check";
 
 export function functionSignatureEditor(view: DG.View) {
   view.type === DATA_QUERY_VIEW ? addFseRibbonQuery(view) : addFseRibbonScript(view);
 }
 
-const editor = (v: DG.View) => (v.root.querySelector('.CodeMirror') as any).CodeMirror.getDoc().getValue();
+const getCode = (codeMirror: any) => codeMirror.getDoc().getValue();
 
 function addFseRibbonQuery(v: DG.View) {
-  setTimeout(() => {
-    const iconFse = ui.iconFA('magic', () => openFse(v, editor(v)), 'Open Signature Editor');
-    //@ts-ignore
-    v.ribbonMenu.root.previousSibling?.append(ui.div(iconFse,'d4-ribbon-item'));
-  }, 500);
+  applyCodeMirror(v, (codeMirror) => {
+    const iconFse = ui.iconFA('magic', () => openFse(v, getCode(codeMirror)), 'Open Signature Editor');
+    (v.ribbonMenu.root.previousSibling as HTMLElement)?.append(ui.div(iconFse,'d4-ribbon-item'));
+  });
 }
 
 function addFseRibbonScript(v: DG.View) {
-  setTimeout(() => {
+  applyCodeMirror(v, (codeMirror) => {
     const panels = v.getRibbonPanels();
-    const iconFse = ui.iconFA('magic', () => openFse(v, editor(v)), 'Open Signature Editor');
+    const iconFse = ui.iconFA('magic', () => openFse(v, getCode(codeMirror)), 'Open Signature Editor');
     if (!panels.some((panel) => panel.some((icon) => {
       return (icon.firstChild as HTMLElement).outerHTML === iconFse.outerHTML;
-    }))) 
-    v.setRibbonPanels([...panels, [iconFse]]);
-  }, 500);
+    })))
+      v.setRibbonPanels([...panels, [iconFse]]);
+  });
 }
 
 function getInputBaseArray(props: DG.Property[], param: any): DG.InputBase[] {

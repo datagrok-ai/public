@@ -36,15 +36,6 @@ export class DemoView extends DG.ViewBase {
     if (this.tree.items.length === 0)
       this._initTree();
     this._initContent();
-    // temporary solution, waiting for the browseOnly apps, now need to do this unfortunately
-    // setTimeout(() => {
-    //   const views = Array.from(grok.shell.views);
-    //   const dv = views.find((view) => view instanceof DemoView);
-    //   this.browseView.preview = this as unknown as DG.View;
-    //   grok.shell.v = this.browseView;
-    //   if (dv)
-    //     dv.close();
-    // }, 500);
   }
 
   static findDemoFunc(demoPath: string): DG.Func {
@@ -53,10 +44,8 @@ export class DemoView extends DG.ViewBase {
 
   public async startDemoFunc(func: DG.Func, viewPath: string): Promise<void> {
     const path = viewPath.split('|').map((s) => s.trim()).join('/');
-
-    // TODO: change to getElementById('elementContent') when it is fixed
-    const updateIndicatorRoot =
-      document.querySelector('.layout-dockarea .view-tabs .dock-container.dock-container-fill > .tab-host > .tab-content > .d4-dock-container > .grok-view.grok-view-browse > .d4-root > .splitter-container-row > .dock-container.dock-container-fill > .tab-host > .tab-content')! as HTMLElement;
+    const updateIndicatorRoot = (Array.from(document.querySelectorAll('#elementContent')) as HTMLElement[])
+      .find((el) => el.classList.contains('ui-box'))!;
 
     if (func.options['isDemoScript'] == 'True') {
       ui.setUpdateIndicator(updateIndicatorRoot, true);
@@ -98,7 +87,7 @@ export class DemoView extends DG.ViewBase {
       ui.setUpdateIndicator(updateIndicatorRoot, false);
     }
 
-    this.browseView.path = `${this.DEMO_APP_PATH}/${path}`;
+    this.browseView.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;
     this._setBreadcrumbsInViewName(viewPath.split('|').map((s) => s.trim()));
   }
 
@@ -302,7 +291,7 @@ export class DemoView extends DG.ViewBase {
     const view = DG.View.create();
     view.name = viewName;
     view.append(resultContainer);
-    this.browseView.path = `${this.DEMO_APP_PATH}/${path}`;
+    this.browseView.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;
 
     const directionFuncs = this.funcs.filter((func) => (func.func.options[DG.FUNC_OPTIONS.DEMO_PATH] as string).includes(viewName));
     const root = this._createViewRootElement(viewName);

@@ -26,7 +26,7 @@ export const COPY_SUFFIX = 'copy';
 
 /** UI titles */
 export enum TITLE {
-  KNN_IMPUTER = 'Impute',
+  KNN_IMPUTER = 'k-NN Imputation',
   TABLE = 'Table',
   IN_PLACE = 'In-place',
   COLUMNS = 'Impute',
@@ -44,12 +44,12 @@ export enum TITLE {
 };
 
 /** Help links */
-export const KNN_IMPUTER = '/help/explore/missing-values-imputation';
+export const KNN_IMPUTER = '/help/explore/missing-values-imputation#the-k-nn-method';
 
 /** Tooltips */
 export enum HINT {
   TARGET = 'Columns with missing values that must be filled',
-  FEATURES = "Columns with features to be used for determining the 'nearest' elements in the KNN method",
+  FEATURES = "Columns with features to be used for determining the 'nearest' elements in the k-NN method",
   IN_PLACE = 'Defines whether to use in-place imputation or add a new column without missing values',
   METRIC = 'Type of metric between the feature values',
   WEIGHT = 'Weight',
@@ -61,6 +61,7 @@ export enum HINT {
   FILL_VALUE = 'Fill value',
   IMPUTATION_SETTINGS = 'Simple imputation settings',
   KEEP_EMPTY = 'Defines whether to keep empty missing values failed to be imputed OR fill them using simple imputation',
+  RUN = 'Run imputation using the k-NN method',
 };
 
 export const MAX_INPUT_NAME_LENGTH = 15;

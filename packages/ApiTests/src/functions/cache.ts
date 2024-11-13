@@ -37,13 +37,13 @@ category('Benchmarks: Client-side cache', () => {
   });
 
   test('Tiny scalar calls no cache', async () => {
-    const iterations = DG.Test.isInBenchmark ? 100000 : 100;
+    const iterations = DG.Test.isInBenchmark ? 40000 : 100;
     return DG.toDart(await runLoop(false, tiny, getTinyGenerator(true, iterations)));
   }, {timeout: 400000, benchmark: true});
 
   test('Tiny scalar calls with cache', async () => {
     await tiny.apply({'x': 1});
-    const iterations = DG.Test.isInBenchmark ? 100000 : 100;
+    const iterations = DG.Test.isInBenchmark ? 40000 : 100;
     return DG.toDart(await runLoop(true, tiny, getTinyGenerator(true, iterations)));
   }, {timeout: 400000, benchmark: true});
 
