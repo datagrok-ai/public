@@ -13,8 +13,6 @@ on:
           - 'no'
         default: 'no'
   push:
-    branches:
-      - vhlushchenko/kubernetes_typesense
     paths:
       - 'help/**/*.md'
       - 'help/**/*.mdx'
@@ -99,13 +97,13 @@ jobs:
             js-api/package-lock.json
       - name: Cache Docusaurus
         uses: actions/cache@v4
-        if: github.ref == 'refs/heads/vhlushchenko/kubernetes_typesense'
+        if: github.ref == 'refs/heads/master'
         with:
           path: docusaurus/.docusaurus
           key: ${{ github.ref }}-docusaurus
       - name: Cache Docusaurus build
         uses: actions/cache@v4
-        if: github.ref == 'refs/heads/vhlushchenko/kubernetes_typesense'
+        if: github.ref == 'refs/heads/master'
         with:
           path: docusaurus/build
           key: ${{ github.ref }}-docusaurus-build
@@ -189,7 +187,7 @@ jobs:
           retention-days: 14
       - uses: actions/upload-artifact@v4
         name: Save docusaurus build
-        if: github.ref == 'refs/heads/vhlushchenko/kubernetes_typesense'
+        if: github.ref == 'refs/heads/master'
         with:
           name: docusaurus
           path: docusaurus/build
@@ -201,7 +199,7 @@ jobs:
     concurrency:
       group: help-deploy-${{ github.ref }}
       cancel-in-progress: true
-    if: always() && needs.convert.result == 'success' && github.ref == 'refs/heads/vhlushchenko/kubernetes_typesense'
+    if: always() && needs.convert.result == 'success' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-22.04
     environment: Help
     steps:
@@ -281,7 +279,7 @@ jobs:
         continue-on-error: true
         with:
           api-key: ${{ secrets.TYPESENSE_API_KEY }}
-          host: ${{ vars.TYPESENSE_HOST }}
+          host: 'typesense.datagrok.ai'
           port: '443'
           protocol: 'https'
           config: docusaurus/docsearch.json
