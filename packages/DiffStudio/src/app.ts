@@ -21,7 +21,7 @@ import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
   CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS} from './scripting-tools';
 import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools/solver-defs';
-import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN,
+import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN, getCategoryWidget,
   getReducedTable, closeWindows, getRecentModelsTable, getMyModelFiles, getEquationsFromFile} from './utils';
 
 import '../css/app-styles.css';
@@ -947,27 +947,13 @@ export class DiffStudio {
 
       this.inputsByCategories.forEach((inputs, category) => {
         if ((category !== TITLE.MISC) && (category !== this.topCategory)) {
-          const chevronToOpen = ui.iconFA('chevron-right');
-          chevronToOpen.classList.add('diff-studio-chevron');
-
-          const chevronToClose = ui.iconFA('chevron-down');
-          chevronToClose.classList.add('diff-studio-chevron');
-
-          form.append(ui.divH(
-            [chevronToOpen, chevronToClose, ui.label(category)],
-            'diff-studio-inputs-category',
-          ));
-
+          form.append(getCategoryWidget(category, inputs));
           inputs.forEach((inp) => {form.append(inp.root);});
         }
       });
 
       if ((miscInputs.length > 0) && (this.topCategory !== TITLE.MISC)) {
-        const chevronToOpen = ui.iconFA('chevron-right');
-        const chevronToClose = ui.iconFA('chevron-down');
-
-        form.append(ui.divH([chevronToOpen, chevronToClose, ui.h2(TITLE.MISC, {style: {'display': 'inline'}})]));
-
+        form.append(getCategoryWidget(TITLE.MISC, miscInputs));
         miscInputs.forEach((inp) => {form.append(inp.root);});
       }
     }

@@ -278,5 +278,22 @@ export async function getEquationsFromFile(path: string): Promise<string | null>
 
 /** Return category control widget */
 export function getCategoryWidget(category: string, inputs: DG.InputBase[]) {
-  
+  const updateWgts = (isExpanded: boolean) => {
+    chevronToOpen.hidden = isExpanded;
+    chevronToClose.hidden = !isExpanded;
+
+    inputs.forEach((inp) => inp.root.hidden = !isExpanded);
+  };
+
+  const chevronToOpen = ui.iconFA('chevron-right', () => updateWgts(true), 'Open category');
+  chevronToOpen.classList.add('diff-studio-chevron-right');
+  chevronToOpen.hidden = true;
+
+  const chevronToClose = ui.iconFA('chevron-down', () => updateWgts(false), 'Close category');
+  chevronToClose.classList.add('diff-studio-chevron-down');
+
+  return ui.divH(
+    [chevronToOpen, chevronToClose, ui.label(category)],
+    'diff-studio-inputs-category',
+  );
 }

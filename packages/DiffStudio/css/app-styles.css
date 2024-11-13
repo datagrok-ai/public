@@ -81,6 +81,10 @@
     padding-right: 5px;
 }
 
-.diff-studio-chevron {
+.diff-studio-chevron-right {
+    padding-right: 10px;
+}
+
+.diff-studio-chevron-down {
     padding-right: 5px;
 }
