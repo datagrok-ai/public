@@ -15,7 +15,7 @@ import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
 import {useUrlSearchParams} from '@vueuse/core';
-import {FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
+import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
 import {ScalarsPanel} from './ScalarsPanel';
@@ -101,6 +101,9 @@ export const RichFunctionView = Vue.defineComponent({
     },
     validationStates: {
       type: Object as Vue.PropType<Record<string, ValidationResult>>,
+    },
+    consistencyStates: {
+      type: Object as Vue.PropType<Record<string, ConsistencyInfo>>,
     },
     isTreeLocked: {
       type: Boolean,
@@ -388,6 +391,7 @@ export const RichFunctionView = Vue.defineComponent({
                   Vue.withDirectives(<InputForm
                     funcCall={currentCall.value}
                     validationStates={validationState.value}
+                    consistencyStates={props.consistencyStates}
                     onActionRequested={(actionUuid) => emit('actionRequested', actionUuid)}
                     isReadonly={props.isReadonly}
                   />, [[ifOverlapping, isRunning.value, 'Recalculating...']])

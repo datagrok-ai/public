@@ -282,6 +282,7 @@ export const TreeWizard = Vue.defineComponent({
                 callMeta={chosenStepUuid.value ? states.meta[chosenStepUuid.value] : undefined}
                 viewersHook={chosenStepState.value.viewersHook}
                 validationStates={states.validations[chosenStepState.value.uuid]}
+                consistencyStates={states.consistency[chosenStepState.value.uuid]}
                 isReadonly={chosenStepState.value.isReadonly}
                 isTreeLocked={treeMutationsLocked.value}
                 onUpdate:funcCall={(call) => (chosenStepState.value as StepFunCallState).funcCall = call}

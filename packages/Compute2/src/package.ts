@@ -213,12 +213,18 @@ export async function MockProvider2(params: any) {
     }],
     initialSteps: [
       {
-        id: 'cooling',
+        id: 'stepAdd',
       }, {
-        id: 'pipeline1',
+        id: 'stepMul',
       },
     ],
     links: [{
+      id: 'toMul',
+      from: 'from:stepAdd/res',
+      to: 'to:stepMul/a',
+      defaultRestrictions: { to: 'restricted' },
+    },
+    {
       id: 'initialTempValidator',
       from: [
         'initTemp:cooling/initTemp',
