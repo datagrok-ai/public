@@ -13,6 +13,8 @@ on:
           - 'no'
         default: 'no'
   push:
+    branches:
+      - vhlushchenko/kubernetes_typesense
     paths:
       - 'help/**/*.md'
       - 'help/**/*.mdx'
@@ -279,7 +281,7 @@ jobs:
         continue-on-error: true
         with:
           api-key: ${{ secrets.TYPESENSE_API_KEY }}
-          host: 'typesense.datagrok.ai'
+          host: ${{ vars.TYPESENSE_HOST }}
           port: '443'
           protocol: 'https'
           config: docusaurus/docsearch.json
