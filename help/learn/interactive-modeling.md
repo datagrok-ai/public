@@ -4,30 +4,31 @@ title: "Interactive modeling"
 
 The predictive modeling toolkit allows an interactive visualization tool for the models. 
 
-There are a lot of cases when models do not have a lot of parameters and could be trained relatively fast. For such situation, Datagrok builds a UI for the model: it has all the parameters that model uses. The user has the ability to change parameters, and the model will be retrained, providing the user with visualizations
+Many classical ML models can be trained quickly. In these cases, Datagrok creates a UI displaying all model parameters.
+
+Such approach is particulary useful for quick prototyping and data analysis. Datagrok automatically analyses data and predictions to provide user with the most relevant models and insights. So, all the machine learning is done automatically. User then has all the tools to analyze the results and continue exploring problem with the guide of the platform.
 
 ![](./interactive-modeling.gif)
 
 ## Workflow
 
-To start setting up a model, we start with the data configuration. First, we select a table to work with, then we have to choose a target column and feature columns.
+Model setup begins with data configuration. First, we select a table to work with, then we have to choose a target column and feature columns.
 
-When data is selected, we have established the predictive problem. To start working on the solution, we have to configure model engine (source of model or model architecture), and then configure model hyperparameters. Datagrok automatically builds a UI that updates the model when parameters are changed. So it allows to use Datagrok as interactive playground for modeling.
+Selecting data establishes the predictive problem. Next, configure the model engine (e.g., its source or architecture) and hyperparameters. Datagrok dynamically updates the model as parameters are adjusted. This makes Datagrok an interactive playground for modeling.
 
 ### Model autoselection and autoconfiguration
 
-Having access to data, Datagrok can suggest models based on the data structure. It suggests a list of models that match the feature columns, but also selects the best matching model from the list.
+Based on the data structure, Datagrok suggests suitable models. Datagrok provides a list of models that match the data and selects the best one.
 
 
 ### Tips as you go
 
-Datagrok analyses data that is used for the prediction and model predictions themselves.
-Based on the situation, the platform can suggest data transformations or changes to model configurations or give insights.
+The platform suggests data transformations, model configuration changes, or insights based on the situation.
 
-Examples of such behavior include:
-* If data is imbalanced, Datagrok shows the imbalanced columns
-* For data with missing values, Datagrok suggests ignoring rows with missing values or using Missing Values Imputation
-* For binary classification, Datagrok analyses false positive and false negative errors.
+For example, Datagrok may:
+* Show correlated columns
+* Suggest handling of missing values
+* Analyses false positive and false negative errors for binary classification problem.
 
 | Class imbalance | Ignore missing values | Low precision |
 |---|---|---|
@@ -36,13 +37,13 @@ Examples of such behavior include:
 
 ### Model comparison
 
-Datagrok allows users to play with models by changing parameters on the go. To avoid losing good parameters found during testing, models can be saved to the model comparison tool.
+Datagrok allows users to play with models by changing parameters on the go. To preserve effective configurations, models can be saved to the comparison tool.
 
-Model comparison tool saves model parameters, so they can be returned to later. So user can get to the best model configurations and save only it.
+The comparison tool stores model parameters for future reference. This ensures users can identify and save only the best configurations.
 
 ## Visualizations
 
-Datagrok supports an extensive list of visualizations, that are shown based on the problem context. For the table, we use $X$ as a notation for the list of columns, and $y$ for the target column. 
+Datagrok offers a wide range of context-aware visualizations. In tables, $X$ represents feature columns and $y$ denotes the target column. 
 
 | Visualization                | Description                                                                 | Showed for               | Example | Read more                                                                                  |
 |------------------------------|-----------------------------------------------------------------------------|--------------------------|---------|-------------------------------------------------------------------------------------------|
@@ -53,7 +54,7 @@ Datagrok supports an extensive list of visualizations, that are shown based on t
 | PC Plot                      | Parallel coordinates plot.         | $X$ has more than 2 and less than 11 numerical columns                       | ![](./interactive-pcplot.png)      |                                                                                           |
 | Statistics                   | Statistics of the $y$ column                          | Regression problems ($y$ is numerical)          | ![](./interactive-statistics.png)      |                                                                               |
 | Distribution      |            Distribution of the predicted values, and distribution of values in $y$.      | Regression problems ($y$ is numerical)                       | ![](./interactive-distributions.png)      |                                                                                  |
-| Confusion matrix             | Each row of the matrix represents the instances in an actual class. Each column represents the instances in a predicted class. Also shows relevant metrics.  | Classification problems ($y$ is categorical)  | ![](./interactive-confusion-matrix.png)     | [Confusion matrix](https://en.wikipedia.org/wiki/Confusion_matrix)                        |
+| Confusion matrix             | Rows represent actual classes, columns represent predicted classes, and relevant metrics are displayed.  | Classification problems ($y$ is categorical)  | ![](./interactive-confusion-matrix.png)     | [Confusion matrix](https://en.wikipedia.org/wiki/Confusion_matrix)                        |
 | Correlation plot             | Shows feature interdependencies                 | $X$ has more than 10 numerical columns      |    ![](./interactive-corrplot.png) |                                                                                         |
 | Performance metrics          | Aggregated performance statistics (e.g., R², accuracy).                    | Always          | ![](./interactive-performance.png)     |                                                                                           |
 | Wrong predictions            | Highlights incorrectly classified instances of the data. | Classification problems ($y$ is categorical) | ![](./interactive-mismatches.png)      |                                                                                           |
@@ -61,7 +62,7 @@ Datagrok supports an extensive list of visualizations, that are shown based on t
 
 ### Custom visualizations
 
-For the custom models, it is possible to define custom viewers using the JS API. It requires a setup by the rules to similar described in [custom models guide](./custom-machine-learning-models.md).
+Custom viewers can be defined for specific models using the JS API. It requires a setup by the rules to similar described in [custom models guide](./custom-machine-learning-models.md).
 
 ```js
 
@@ -79,4 +80,4 @@ export async function visualize(df: DG.DataFrame, targetColumn: DG.Column, predi
 }
 ```
 
-Such viewers will be automatically added to the interactive training view
+These viewers are automatically added to the interactive training view.
