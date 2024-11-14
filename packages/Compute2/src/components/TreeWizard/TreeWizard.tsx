@@ -21,6 +21,11 @@ import {useUrlSearchParams} from '@vueuse/core';
 import {Inspector} from '../Inspector/Inspector';
 import {findTreeNode, findTreeNodeParrent, reportStep} from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
+import { HistoricalRunEdit } from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
+import { take } from 'rxjs/operators';
+import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import { historyUtils } from '@datagrok-libraries/compute-utils';
+import { EditDialog } from './EditDialog';
 
 const DEVELOPERS_GROUP = 'Developers';
 
@@ -36,7 +41,7 @@ export const TreeWizard = Vue.defineComponent({
       treeMutationsLocked,
       isGlobalLocked,
       treeState,
-      currentMetaCallId,
+      currentMetaCallData,
       hasNotSavedEdits,
       states,
       logs,
@@ -56,7 +61,7 @@ export const TreeWizard = Vue.defineComponent({
 
     const chosenStepUuid = Vue.ref<string | undefined>(undefined);
 
-    const searchParams = useUrlSearchParams('history');
+    const searchParams = useUrlSearchParams<{id?: string, stepId?: string}>('history');
 
     const handleActivePanelChanged = async (newPanel: string | null, prevPanel: string | null) => {
       if (prevPanel === 'Steps') return;
@@ -73,19 +78,32 @@ export const TreeWizard = Vue.defineComponent({
       }
     };
 
-    Vue.watch(currentMetaCallId, (id) => console.log('metaCall:', id), { immediate: true });
-    Vue.watch(hasNotSavedEdits, (val) => console.log('hasNotSavedEdits:', val), { immediate: true });
+    const providerFuncName = Vue.computed(() => props.providerFunc.substring(props.providerFunc.indexOf(':') + 1))
+    Vue.watch([currentMetaCallData, hasNotSavedEdits], ([metadata, hasNotSavedEdits]) => {
+      if (!metadata || hasNotSavedEdits) {
+        searchParams.id = undefined;
+        grok.shell.v.name = providerFuncName.value
+        return;
+      }
 
+      const {id, title, started} = metadata;
+      if (id) searchParams.id = id;
+      if (title) grok.shell.v.name = `${providerFuncName.value} - ${title}`
+      else if (started) grok.shell.v.name = `${providerFuncName.value} - ${started}`
+      else grok.shell.v.name = providerFuncName.value
+    });
+
+    let alreadyLoaded = false;
     Vue.watch(treeState, () => {
-      if (!treeState.value) return;
+      if (!treeState.value || alreadyLoaded) return;
 
       // Getting inital URL user entered with
       const startUrl = new URL(grok.shell.startUri);
-      const stepId = startUrl.searchParams.get('stepId');
-
-      if (!stepId) return;
-
-      chosenStepUuid.value = stepId;
+      const loadingId = startUrl.searchParams.get('id');
+      if (loadingId) {
+        loadPipeline(loadingId);
+        alreadyLoaded = true;
+      }
     });
 
     const chosenStepState = Vue.computed(() => {
@@ -100,7 +118,7 @@ export const TreeWizard = Vue.defineComponent({
 
     Vue.watch(chosenStepUuid, (newStepId) => {
       if (newStepId)
-        searchParams['stepId'] = newStepId;
+        searchParams.stepId = newStepId;
     });
 
     const treeInstance = Vue.ref(null as InstanceType<typeof Draggable> | null);
@@ -178,6 +196,15 @@ export const TreeWizard = Vue.defineComponent({
         isUserDeveloper.value = true;
       }
     })
+    
+    const openMetadataEditDialog = () => {
+      const dialog = new EditDialog(currentMetaCallData.value);
+      dialog.onMetadataEdit.pipe(take(1)).subscribe((editOptions) => {
+        savePipeline(editOptions)
+      });
+      
+      dialog.show({center: true, width: 500})
+    }
 
     return () => (
       Vue.withDirectives(<div class='w-full h-full'>
@@ -196,7 +223,7 @@ export const TreeWizard = Vue.defineComponent({
             name='save' 
             tooltip={'Save current state of model'}
             style={{'padding-right': '3px'}}
-            onClick={savePipeline}
+            onClick={openMetadataEditDialog}
           />
           {treeState.value && isTreeReportable.value && <IconFA
             name='arrow-to-bottom'
@@ -282,6 +309,7 @@ export const TreeWizard = Vue.defineComponent({
                 callMeta={chosenStepUuid.value ? states.meta[chosenStepUuid.value] : undefined}
                 viewersHook={chosenStepState.value.viewersHook}
                 validationStates={states.validations[chosenStepState.value.uuid]}
+                consistencyStates={states.consistency[chosenStepState.value.uuid]}
                 isReadonly={chosenStepState.value.isReadonly}
                 isTreeLocked={treeMutationsLocked.value}
                 onUpdate:funcCall={(call) => (chosenStepState.value as StepFunCallState).funcCall = call}

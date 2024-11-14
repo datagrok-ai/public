@@ -10,13 +10,13 @@ import {loadInstanceState} from './runtime/funccall-utils';
 import {callHandler} from './utils';
 import {PipelineConfiguration} from './config/PipelineConfiguration';
 import {getProcessedConfig, PipelineConfigurationProcessed} from './config/config-processing-utils';
-import {ConsistencyInfo, FuncCallStateInfo} from './runtime/StateTreeNodes';
+import {ConsistencyInfo, FuncCallStateInfo, MetaCallInfo} from './runtime/StateTreeNodes';
 import {ValidationResult} from './data/common-types';
 import {DriverLogger} from './data/Logger';
 import {LinksData} from './runtime/LinksState';
 
 export class Driver {
-  public currentMetaCallId$ = new BehaviorSubject<string | undefined>(undefined);
+  public currentMetaCallData$ = new BehaviorSubject<MetaCallInfo>({});
   public hasNotSavedEdits$ = new BehaviorSubject<boolean>(false);
   public currentState$ = new BehaviorSubject<PipelineState | undefined>(undefined);
   public currentCallsState$ = new BehaviorSubject<Record<string, BehaviorSubject<FuncCallStateInfo | undefined>>>({});
@@ -68,7 +68,7 @@ export class Driver {
 
     combineLatest([this.globalROLocked$, this.treeMutationsLocked$, this.wasEdited$]).pipe(
       filter(([roLock, mutationLock]) => !roLock && !mutationLock),
-      map(([, , wasEdited]) => wasEdited)
+      map(([, , wasEdited]) => wasEdited),
     ).subscribe(this.hasNotSavedEdits$);
 
     stateUpdates$.pipe(
@@ -160,33 +160,34 @@ export class Driver {
   private addDynamicItem(msg: AddDynamicItem, state?: StateTree) {
     this.checkState(msg, state);
     return state.addSubTree(msg.parentUuid, msg.itemId, msg.position).pipe(
-      tap(() => this.wasEdited$.next(true))
+      tap(() => this.wasEdited$.next(true)),
     );
   }
 
   private loadDynamicItem(msg: LoadDynamicItem, state?: StateTree) {
     this.checkState(msg, state);
     return state.loadSubTree(msg.parentUuid, msg.dbId, msg.itemId, msg.position, !!msg.readonly, !!msg.isReplace).pipe(
-      tap(() => this.wasEdited$.next(true))
+      tap(() => this.wasEdited$.next(true)),
     );
   }
 
   private saveDynamicItem(msg: SaveDynamicItem, state?: StateTree) {
     this.checkState(msg, state);
-    return state.save(msg.uuid);
+    const {title, description, tags} = msg;
+    return state.save(msg.uuid, {title, description, tags});
   }
 
   private removeDynamicItem(msg: RemoveDynamicItem, state?: StateTree) {
     this.checkState(msg, state);
     return state.removeSubtree(msg.uuid).pipe(
-      tap(() => this.wasEdited$.next(true))
+      tap(() => this.wasEdited$.next(true)),
     );
   }
 
   private moveDynamicItem(msg: MoveDynamicItem, state?: StateTree) {
     this.checkState(msg, state);
     return state.moveSubtree(msg.uuid, msg.position).pipe(
-      tap(() => this.wasEdited$.next(true))
+      tap(() => this.wasEdited$.next(true)),
     );
   }
 
@@ -207,15 +208,21 @@ export class Driver {
 
   private savePipeline(msg: SavePipeline, state?: StateTree) {
     this.checkState(msg, state);
-    return state.save().pipe(
-      tap(call => this.currentMetaCallId$.next(call?.id)),
-      tap(() => this.wasEdited$.next(false))
+    const {title, description, tags} = msg;
+    return state.save(undefined, {title, description, tags}).pipe(
+      tap((call) => this.currentMetaCallData$.next({
+        id: call?.id,
+        title: call?.options.title,
+        description: call?.options.description,
+        tags: call?.options.tags,
+      })),
+      tap(() => this.wasEdited$.next(false)),
     );
   }
 
   private loadPipeline(msg: LoadPipeline) {
     return from(loadInstanceState(msg.funcCallId)).pipe(
-      concatMap((stateLoaded) => {
+      concatMap(([stateLoaded, metaCall]) => {
         if (isFuncCallSerializedState(stateLoaded))
           throw new Error(`Wrong pipeline config in wrapper FuncCall ${msg.funcCallId}`);
         if (!stateLoaded.provider)
@@ -224,22 +231,27 @@ export class Driver {
           return of([stateLoaded, msg.config] as const);
         return callHandler<PipelineConfiguration>(stateLoaded.provider, {version: stateLoaded.version}).pipe(
           concatMap((conf) => from(getProcessedConfig(conf))),
-          map((config) => [stateLoaded, config] as const),
+          map((config) => [stateLoaded, config, metaCall] as const),
         );
       }),
-      map(([state, config]) =>
-        StateTree.fromInstanceState({
+      map(([state, config, metaCall]) =>
+        [StateTree.fromInstanceState({
           state,
           config,
           isReadonly: !!msg.readonly,
           defaultValidators: true,
           mockMode: this.mockMode,
           logger: this.logger,
-        })),
-      concatMap((state) => state.init()),
-      tap((state) => {
+        }), metaCall] as const),
+      concatMap(([state, metaCall]) => state.init().pipe(mapTo([state, metaCall] as const))),
+      tap(([state, metaCall]) => {
         this.states$.next(state);
-        this.currentMetaCallId$.next(msg.funcCallId);
+        this.currentMetaCallData$.next({
+          id: metaCall?.id,
+          title: metaCall?.options.title,
+          description: metaCall?.options.description,
+          tags: metaCall?.options.tags,
+        });
         this.wasEdited$.next(false);
       }),
     );
@@ -257,8 +269,8 @@ export class Driver {
       })),
       concatMap((state) => state.init()),
       tap((state) => {
-        this.states$.next(state)
-        this.currentMetaCallId$.next(undefined);
+        this.states$.next(state);
+        this.currentMetaCallData$.next({});
         this.wasEdited$.next(true);
       }),
     );

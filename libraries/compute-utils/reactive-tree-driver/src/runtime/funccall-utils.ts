@@ -7,6 +7,7 @@ import {FuncCallAdapter} from './FuncCallAdapters';
 import {serialize, deserialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {FuncCallInstancesBridge} from './FuncCallInstancesBridge';
 import {AdapterInitData} from './StateTreeNodes';
+import {ItemMetadata} from '../view/ViewCommunication';
 
 const RESTRICTIONS_PATH = 'INPUT_RESTRICTIONS';
 const OUTPUT_OUTDATED_PATH = 'OUTPUT_OUTDATED';
@@ -59,9 +60,16 @@ export async function makeMetaCall(nqName: string) {
   return metaCall;
 }
 
-export async function saveInstanceState(nqName: string, state: any) {
+export async function saveInstanceState(
+  nqName: string,
+  state: any,
+  metaData?: ItemMetadata,
+) {
   const metaCall = await makeMetaCall(nqName);
   metaCall.options[CONFIG_PATH] = serialize(state, {useJsonDF: true});
+  if (metaData?.title) metaCall.options['title'] = metaData.title;
+  if (metaData?.description) metaCall.options['description'] = metaData.description;
+  if (metaData?.tags) metaCall.options['tags'] = metaData.tags;
   metaCall.newId();
   await metaCall.call();
   await historyUtils.saveRun(metaCall);
@@ -71,5 +79,5 @@ export async function saveInstanceState(nqName: string, state: any) {
 export async function loadInstanceState(id: string) {
   const metaCall = await historyUtils.loadRun(id, false);
   const config: PipelineSerializedState = deserialize(metaCall.options[CONFIG_PATH] ?? '{}');
-  return config;
+  return [config, metaCall] as const;
 }

@@ -5,12 +5,18 @@ import * as Vue from 'vue';
 
 import {Advice, ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import type {InputFormT} from '@datagrok-libraries/webcomponents';
-import {injectInputBaseValidation, isInputBase} from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {injectInputBaseValidation, injectLockStates, isInputBase} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {ValidationResultBase} from '@datagrok-libraries/compute-utils/shared-utils/validation';
 import {
+  FuncCallInput,
   FuncCallInputValidated,
   isFuncCallInputValidated,
+  isInputLockable,
 } from '@datagrok-libraries/compute-utils/shared-utils/input-wrappers';
+import $ from 'cash-dom';
+import {injectLockIcons} from '@datagrok-libraries/compute-utils/function-views/src/shared/utils';
+import {ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
+import {FuncCallInputStatusable, injectInputBaseStatus, isInputInjected} from './utils';
 
 declare global {
   namespace JSX {
@@ -30,6 +36,9 @@ export const InputForm = Vue.defineComponent({
     validationStates: {
       type: Object as Vue.PropType<Record<string, ValidationResult>>,
     },
+    consistencyStates: {
+      type: Object as Vue.PropType<Record<string, ConsistencyInfo>>,
+    },
     isReadonly: {
       type: Boolean,
     },
@@ -41,9 +50,10 @@ export const InputForm = Vue.defineComponent({
   setup(props, {emit}) {
     const currentCall = Vue.computed(() => props.funcCall);
     const validationStates = Vue.computed(() => props.validationStates);
+    const consistencyStates = Vue.computed(() => props.consistencyStates);
     const isReadonly = Vue.computed(() => props.isReadonly);
 
-    let currentForm = undefined as undefined | DG.InputForm;
+    const currentForm = Vue.ref(undefined as undefined | DG.InputForm);
 
     const convertNewValidationToOld = (newResult: ValidationResult): ValidationResultBase => {
       const convert = (error: Advice) => ({
@@ -59,48 +69,31 @@ export const InputForm = Vue.defineComponent({
       };
     };
 
-    const runValidations = () => {
-      const newStates = validationStates.value;
-      if (!newStates || !currentForm) return;
+    Vue.watchEffect(() => {
+      if (!currentForm.value) return;
 
       [...currentCall.value.inputParams.values()]
-        .filter((param) => (currentForm!.getInput(param.property.name)))
+        .filter((param) => (currentForm.value!.getInput(param.property.name)))
         .forEach((param) => {
-          const input = currentForm!.getInput(param.property.name);
-          const validationState = newStates[param.property.name];
+          const input = currentForm.value!.getInput(param.property.name);
+          const validationState = validationStates.value?.[param.property.name];
+          const consistencyState = consistencyStates.value?.[param.property.name];
 
-          if (isFuncCallInputValidated(input)) {
-            (input as FuncCallInputValidated).setValidation(
-              validationState ? convertNewValidationToOld(validationState): undefined,
-            );
-          }
+          if (!isInputInjected(input))
+            injectInputBaseStatus(input);
+
+          (input as any).setStatus({
+            validation: validationState ? convertNewValidationToOld(validationState): undefined,
+            consistency: consistencyState,
+          });
+
+          input.enabled = !isReadonly.value;
         });
-    };
-
-    Vue.watch(validationStates, () => {
-      runValidations();
     });
 
     const formReplacedCb = async (event: {detail?: DG.InputForm}) => {
       emit('formReplaced', event.detail);
-      currentForm = event.detail;
-
-      if (!currentForm || !validationStates.value) return;
-
-      [...currentCall.value.inputParams.values()]
-        .filter((param) => isInputBase(currentForm!.getInput(param.property.name)))
-        .forEach((param) => {
-          const input = currentForm!.getInput(param.property.name);
-          injectInputBaseValidation(input);
-        });
-      runValidations();
-
-      [...currentCall.value.inputParams.values()]
-        .filter((param) => (currentForm!.getInput(param.property.name)))
-        .forEach((param) => {
-          const input = currentForm!.getInput(param.property.name);
-          input.enabled = !isReadonly.value;
-        });
+      currentForm.value = event.detail;
     };
 
     return () => <dg-input-form

@@ -8,6 +8,7 @@ import {switchMap, map} from 'rxjs/operators';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
+import { ItemMetadata } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/view/ViewCommunication';
 
 function makeMergedItems<T>(input: Record<string, BehaviorSubject<T>>) {
   const entries = Object.entries(input).map(([name, state$]) => state$.pipe(map((s) => [name, s] as const)));
@@ -21,7 +22,7 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
   const isGlobalLocked = useSubject(driver.globalROLocked$);
   const treeState = useSubject(driver.currentState$);
 
-  const currentMetaCallId = useSubject(driver.currentMetaCallId$);
+  const currentMetaCallData = useSubject(driver.currentMetaCallData$);
   const hasNotSavedEdits = useSubject(driver.hasNotSavedEdits$);
 
   const logs = useObservable(driver.logger.logs$);
@@ -95,8 +96,8 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
     driver.sendCommand({event: 'loadDynamicItem', parentUuid, dbId, itemId, position, readonly: true, isReplace: true});
   }
 
-  const savePipeline = () => {
-    driver.sendCommand({event: 'savePipeline'})
+  const savePipeline = (metaData?: ItemMetadata) => {
+    driver.sendCommand({event: 'savePipeline', ...metaData})
   };
 
   const runStep = async (uuid: string) => {
@@ -124,7 +125,7 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
     treeMutationsLocked,
     isGlobalLocked,
     treeState,
-    currentMetaCallId,
+    currentMetaCallData,
     hasNotSavedEdits,
     states,
     logs,

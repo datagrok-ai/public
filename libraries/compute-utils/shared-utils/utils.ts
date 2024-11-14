@@ -860,7 +860,6 @@ export const injectLockStates = (input: FuncCallInput) => {
 
   function setRestrictedDefault() {
     input.enabled = false;
-    if (isInputBase(input)) (input.input as HTMLInputElement).disabled = false; ;
     $(input.root).addClass('rfv-restricted-input');
     $(input.root).removeClass('rfv-restricted-unlocked-input');
     $(input.root).removeClass('rfv-inconsistent-input');
