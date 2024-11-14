@@ -552,7 +552,7 @@ export interface IScatterPlotSettings {
   linesWidth: number;
 
   /// Label columns to show next to the markers.
-  labelTableColumnNames: Array<string>;
+  labelColumnNames: Array<string>;
 
   /// Determines the rows shown on the scatter plot.
   showLabelsFor: keyof typeof RowSet;
@@ -561,7 +561,7 @@ export interface IScatterPlotSettings {
   displayLabels: keyof typeof VisibilityMode;
 
   /// Determines whether to show column names next to label values.
-  showNames: keyof typeof VisibilityMode;
+  showLabelNamedColumns: keyof typeof VisibilityMode;
 
   /// If checked, display a label content as marker.
   useLabelAsMarker: boolean;
