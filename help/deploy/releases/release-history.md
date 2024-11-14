@@ -21,39 +21,39 @@ See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.md)
 
-# 2024-10-22 Datagrok 1.22.0 release 
+## 2024-10-22 Datagrok 1.22.0 release 
 
 The Datagrok 1.22.0 release includes stability improvements, key optimizations, and new features for a more efficient and responsive platform
 
-## Main updates
+### Main updates
 
 * **Automated data cleanup** keeps the server lean by deleting old data and logs (could be configured)
 * **Pyodide**: you can now run Python functions, including data transformation steps, directly in the browser
 * **Plugin databases**: you can now ship a Postgres database (such as chemical registration system) with your plugin
 
-## Platform
+### Platform
 
-### Browse
+#### Browse
 * Improved structure in the Browse section for more intuitive access to plugins and apps 
 * Set a custom order for apps within the tree, making navigation faster and tailored to user needs
 * Fixes:
   * Adding new folders now automatically refreshes the tree, keeping the view up-to-date
   * Refreshing now retains previews without resetting, making it easier to track content
 
-### [Scripting](https://datagrok.ai/help/compute/scripting/)
+#### [Scripting](https://datagrok.ai/help/compute/scripting/)
 * Added the ability to get Func result view 
 * Refactor handlers, Script, ScriptParam classes 
 * Fixed browser tab crash for 1-million-columns script
 
-### JS API
+#### JS API
 * [#3063](https://github.com/datagrok-ai/public/issues/3063): Added the capability to add color palettes to configs 
 * Addressed an issue preventing dapi.queries from being executable, restoring full query functionality
 
-### Data Access
+#### Data Access
 * Database initialization update: moved legacy database migrations to init_db.sql, optimizing the setup process and reducing overhead from outdated migration files
 * Schema-specific migrations: implemented support for schema-specific database migrations that can be configured directly from packages, allowing for easier version control and better alignment with package requirements
 
-## Viewers
+### Viewers
 * New Confusion matrix data viewer 
 * [Density plot](../../visualize/viewers/density-plot.md): Increase bins after certain zoom
 * [#3015](https://github.com/datagrok-ai/public/issues/3015): [Trellis plot](../../visualize/viewers/trellis-plot.md) is re-rendered on changing settings when there is no data to display after settings change 
@@ -65,28 +65,28 @@ The Datagrok 1.22.0 release includes stability improvements, key optimizations, 
   * [Scaffold tree](../../visualize/viewers/scaffold-tree.md): Fixing loader freezing on 0%
   * [Tree map viewer](https://datagrok.ai/help/visualize/viewers/tree-map#interactivity): "Split By" option fixing
 
-### [Grid](../../visualize/viewers/grid.md)
+#### [Grid](../../visualize/viewers/grid.md)
 * Formula-based rendering integration
 * Add method to invalidate a single grid cell 
 * Fixes:
   * [#2683](https://github.com/datagrok-ai/public/issues/2683): Pinned columns: left-clicking on the column name does not change the Context Panel display 
   * [#3095](https://github.com/datagrok-ai/public/issues/3095): Wrong columns are exported with 'Visible columns only' option if there are multiple views for the table 
 
-### [Scatterplot](../../visualize/viewers/scatter-plot.md)
+#### [Scatterplot](../../visualize/viewers/scatter-plot.md)
 * Improved label positioning and size adjustments (including for structure labels [#2688](https://github.com/datagrok-ai/public/issues/2688))
 * Added lines to connect data series
 * Added color coding via expressions to enhance data visualization capabilities
     
-## Packages
+### Packages
 * Plugin management improvements: Streamlined plugin uninstall and delete processes
 * Added functionality to reset the *touchedOn* flag when selecting a package's current version
 * Ability to auto update deprecated packages
 
 
-### [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts/CHANGELOG.md)
+#### [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts/CHANGELOG.md)
 * [#3090](https://github.com/datagrok-ai/public/issues/3090): Sunburst usability improvements 
 
-### [PowerPack](https://github.com/datagrok-ai/public/blob/master/packages/PowerPack/CHANGELOG.md)
+#### [PowerPack](https://github.com/datagrok-ai/public/blob/master/packages/PowerPack/CHANGELOG.md)
 * Fixes for 'Add new column' functionality:
   * Fixed validation error when using if(true, "yes", error("Error")) in formulas 
   * Resolved incorrect validation when using nested columns in a formula
@@ -97,15 +97,15 @@ The Datagrok 1.22.0 release includes stability improvements, key optimizations, 
   * [#2981](https://github.com/datagrok-ai/public/issues/2981): Fixed an issue where typing in calculated formulas caused input to be unexpectedly overwritten
   * [#3009](https://github.com/datagrok-ai/public/issues/3009): Addressed an issue with calculated column hints breaking when using round and curly brackets together
 
-### [Diff Studio](https://datagrok.ai/help/compute/diff-studio#lookup-tables)
+#### [Diff Studio](https://datagrok.ai/help/compute/diff-studio#lookup-tables)
 * Value lookups: Implemented the use of lookup tables
 
- ### [EDA](https://datagrok.ai/help/deploy/releases/plugins/EDA#122-2024-09-12)
+#### [EDA](https://datagrok.ai/help/deploy/releases/plugins/EDA#122-2024-09-12)
 * Fixes:
   * ANOVA: Fix incorrect column type bug 
   * Missing values imputation: Fixing dialog
 
-## Other fixes
+### Other fixes
 * [#3027](https://github.com/datagrok-ai/public/issues/3027): Cannot copy text from any input in filters panel 
 * [#3032](https://github.com/datagrok-ai/public/issues/3032): Page is freezing for a while when color by column is applied in some cases (large number of categories + "starts with") 
 * [#2715](https://github.com/datagrok-ai/public/issues/2715): PadLeft and PadRight do not seem to work (WIP)
@@ -117,12 +117,13 @@ The Datagrok 1.22.0 release includes stability improvements, key optimizations, 
 * Invisible columns cause exception waterfall 
 
 
-# 2024-11-04 Datagrok 1.21.4  
+## 2024-11-04 Datagrok 1.21.4  
+
 ### Improvements and fixes:
 * Bugfixes for model signatures synchronization
 * Text Renderer: Fixed multi-line link rendering
 
-# 2024-09-10 Datagrok 1.21.1 release 
+## 2024-09-10 Datagrok 1.21.1 release 
 
 The Datagrok 1.21.1 release enhances platform stability and usability, streamlining workflows for a more intuitive user experience. 
 
@@ -236,12 +237,12 @@ Database migrations are irreversible in this version. You cannot roll back to an
 * [#2943](https://github.com/datagrok-ai/public/issues/2943): Categorical filter in column header is not broken after removing the same column from filters panel. 
 * [#2985](https://github.com/datagrok-ai/public/issues/2985): Combined boolean filter can be removed from the project.
 
-# 2024-09-26 1.20.3
+## 2024-09-26 1.20.3
 
 ### Improvement:
 * [#3032](https://github.com/datagrok-ai/public/issues/3032): Page is freezing for a while when colour by column is applied in some cases (large number of categories + "starts with") 
 
-# 2024-08-27 1.20.2
+## 2024-08-27 1.20.2
 
 ### Improvements and fixes:
 * GROK-13701: Column headers rendering updates. 
@@ -251,7 +252,7 @@ Database migrations are irreversible in this version. You cannot roll back to an
 * [#2976](https://github.com/datagrok-ai/public/issues/2976): Categorical colouring's properties ".color-coding-fallback-color" and ".color-coding-match-type" are not saved in the layout. 
 * [#2791](https://github.com/datagrok-ai/public/issues/2791): Fix duplicated table` renaming. 
 
-# 2024-08-05 1.20.1
+## 2024-08-05 1.20.1
 
 ### Fixes:
 * [#2927](https://github.com/datagrok-ai/public/issues/2927): Heatmap is in a collapsed state after applying saved layout if it was stacked with another viewer.
