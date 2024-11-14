@@ -283,9 +283,9 @@ function getLinkedPositions(monomers: string[], rules: RuleLink[] | RuleReaction
         if (!(firstFound && secondFound))
           continue;
         else if (firstIsFirst)
-          result.push({firstIdx, secondIdx, ruleIdx: i});
+          result.push({firstIdx: firstIdx, secondIdx: secondIdx, ruleIdx: i});
         else
-          result.push({secondIdx, firstIdx, ruleIdx: i});
+          result.push({firstIdx: secondIdx, secondIdx: firstIdx, ruleIdx: i});
       }
     } else {
       const [firstFound, secondFound, firstIsFirst, firstIdx, secondIdx] = find(monomers, add, true);
@@ -293,9 +293,9 @@ function getLinkedPositions(monomers: string[], rules: RuleLink[] | RuleReaction
       if (!(firstFound && secondFound))
         continue;
       else if (firstIsFirst)
-        result.push({firstIdx, secondIdx, ruleIdx: i});
+        result.push({firstIdx: firstIdx, secondIdx: secondIdx, ruleIdx: i});
       else
-        result.push({secondIdx, firstIdx, ruleIdx: i});
+        result.push({firstIdx: secondIdx, secondIdx: firstIdx, ruleIdx: i});
     }
   }
 
