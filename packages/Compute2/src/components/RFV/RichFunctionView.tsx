@@ -166,9 +166,9 @@ export const RichFunctionView = Vue.defineComponent({
         visibleTabLabels.value.splice(tabIdx, 1);
     };
 
-    const hashParams = useUrlSearchParams('hash-params');
+    const hashParams = useUrlSearchParams<{activePanel: string | null}>('hash-params');
     const handleActivePanelChanged = (panelTitle: string | null) => {
-      hashParams.activePanel = panelTitle ?? [];
+      hashParams.activePanel = panelTitle;
     };
     const personalPanelsStorage = (call: DG.FuncCall) => `${call.func.nqName}_personal_state`;
 
