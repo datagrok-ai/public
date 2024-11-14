@@ -379,7 +379,7 @@ export class StateTree {
     mockMode?: boolean
   }): Observable<StateTree> {
     return defer(async () => {
-      const state = await loadInstanceState(dbId);
+      const [state, _] = await loadInstanceState(dbId);
       const tree = StateTree.fromInstanceState({state, config, isReadonly, defaultValidators, mockMode});
       return tree;
     });

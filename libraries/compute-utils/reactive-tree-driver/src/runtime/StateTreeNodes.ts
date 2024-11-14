@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, combineLatest, merge, Observable, Subject} from 'rxjs';
+import dayjs from 'dayjs';
 import {v4 as uuidv4} from 'uuid';
 import {PipelineStateParallel, PipelineStateSequential, PipelineStateStatic, StepFunCallInitialConfig, StepFunCallSerializedState, StepFunCallState, PipelineSerializedState, isFuncCallSerializedState, ViewAction} from '../config/PipelineInstance';
 import {PipelineConfigurationParallelProcessed, PipelineConfigurationProcessed, PipelineConfigurationSequentialProcessed, PipelineConfigurationStaticProcessed} from '../config/config-processing-utils';
@@ -30,6 +31,14 @@ export type FuncCallStateInfo = {
   isOutputOutdated: boolean,
   runError: string | undefined,
   pendingDependencies: string[],
+}
+
+export type MetaCallInfo = {
+  id?: string,
+  title?: string,
+  description?: string
+  tags?: string[],
+  started?: dayjs.Dayjs
 }
 
 export interface AdapterInitData {
@@ -293,8 +302,8 @@ export class FuncCallNode implements IStoreProvider {
       // expectDeepEqual will not check additional props in an actual
       // data, only those that are explicitly present in the expected
       // data
-      expectDeepEqual(actual, expected, {maxErrorsReport: 1, floatTolerance: 0.0001 });
-      expectDeepEqual(expected, actual, {maxErrorsReport: 1, floatTolerance: 0.0001 });
+      expectDeepEqual(actual, expected, {maxErrorsReport: 1, floatTolerance: 0.0001});
+      expectDeepEqual(expected, actual, {maxErrorsReport: 1, floatTolerance: 0.0001});
     } catch {
       return false;
     }

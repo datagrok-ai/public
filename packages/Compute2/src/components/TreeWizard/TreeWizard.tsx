@@ -41,7 +41,7 @@ export const TreeWizard = Vue.defineComponent({
       treeMutationsLocked,
       isGlobalLocked,
       treeState,
-      currentMetaCallId,
+      currentMetaCallData,
       hasNotSavedEdits,
       states,
       logs,
@@ -61,7 +61,7 @@ export const TreeWizard = Vue.defineComponent({
 
     const chosenStepUuid = Vue.ref<string | undefined>(undefined);
 
-    const searchParams = useUrlSearchParams<{id: string, stepId: string}>('history');
+    const searchParams = useUrlSearchParams<{id?: string, stepId?: string}>('history');
 
     const handleActivePanelChanged = async (newPanel: string | null, prevPanel: string | null) => {
       if (prevPanel === 'Steps') return;
@@ -78,10 +78,19 @@ export const TreeWizard = Vue.defineComponent({
       }
     };
 
-    Vue.watch([currentMetaCallId, hasNotSavedEdits], ([id, hasNotSavedEdits]) => {
-      if (!id || hasNotSavedEdits) return;
+    const providerFuncName = Vue.computed(() => props.providerFunc.substring(props.providerFunc.indexOf(':') + 1))
+    Vue.watch([currentMetaCallData, hasNotSavedEdits], ([metadata, hasNotSavedEdits]) => {
+      if (!metadata || hasNotSavedEdits) {
+        searchParams.id = undefined;
+        grok.shell.v.name = providerFuncName.value
+        return;
+      }
 
-      searchParams.id = id;
+      const {id, title, started} = metadata;
+      if (id) searchParams.id = id;
+      if (title) grok.shell.v.name = `${providerFuncName.value} - ${title}`
+      else if (started) grok.shell.v.name = `${providerFuncName.value} - ${started}`
+      else grok.shell.v.name = providerFuncName.value
     });
     Vue.watch(hasNotSavedEdits, (val) => console.log('hasNotSavedEdits:', val), { immediate: true });
 

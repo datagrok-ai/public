@@ -79,5 +79,5 @@ export async function saveInstanceState(
 export async function loadInstanceState(id: string) {
   const metaCall = await historyUtils.loadRun(id, false);
   const config: PipelineSerializedState = deserialize(metaCall.options[CONFIG_PATH] ?? '{}');
-  return config;
+  return [config, metaCall] as const;
 }

@@ -22,7 +22,7 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
   const isGlobalLocked = useSubject(driver.globalROLocked$);
   const treeState = useSubject(driver.currentState$);
 
-  const currentMetaCallId = useSubject(driver.currentMetaCallId$);
+  const currentMetaCallData = useSubject(driver.currentMetaCallData$);
   const hasNotSavedEdits = useSubject(driver.hasNotSavedEdits$);
 
   const logs = useObservable(driver.logger.logs$);
@@ -125,7 +125,7 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
     treeMutationsLocked,
     isGlobalLocked,
     treeState,
-    currentMetaCallId,
+    currentMetaCallData,
     hasNotSavedEdits,
     states,
     logs,
