@@ -62,7 +62,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
         id: 'link1',
         from: 'in1:step1/a',
         to: 'out1:step1/a',
-        isValidator: true,
+        type: 'validator',
         handler({controller}) {
           controller.setValidation('out1', makeValidationResult({warnings: ['test warn']}));
           return;
@@ -71,7 +71,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
         id: 'link1',
         from: 'in1:step1/b',
         to: 'out1:step1/b',
-        isValidator: true,
+        type: 'validator',
         handler({controller}) {
           controller.setValidation('out1', makeValidationResult({warnings: ['another test warn']}));
           return;
@@ -220,6 +220,66 @@ category('ComputeUtils: Driver instance additional states', async () => {
         'runError': undefined,
       };
       expectObservable(states[node.getItem().uuid], '^ 1000ms !').toBe('a(bc)-(def)', {a, b, c, d, e, f});
+    });
+  });
+
+  test('Propage nodes descriptions', async () => {
+    const config5: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:TestAdd2',
+        },
+      ],
+      links: [{
+        id: 'selector',
+        type: 'selector',
+        from: 'in:step1/a',
+        to: ['out1:name', 'out2:description', 'out3:tags'],
+        handler({controller}) {
+          const val = controller.getFirst('in');
+          controller.setDescriptionItem('out1', `Title ${val}`);
+          controller.setDescriptionItem('out2', `Description ${val}`);
+          controller.setDescriptionItem('out3', [`tag ${val}`]);
+        }
+      }]
+        }
+    const pconf = await getProcessedConfig(config5);
+    testScheduler.run((helpers) => {
+      const {cold, expectObservable} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const node = tree.nodeTree.getNode([{idx: 0}]);
+      const pipeline = tree.nodeTree.root;
+      cold('--a').subscribe(() => {
+        node.getItem().getStateStore().setState('a', 1);
+      });
+      cold('----a').subscribe(() => {
+        node.getItem().getStateStore().setState('a', 2);
+      });
+      expectObservable(tree.getNodesDescriptions()[pipeline.getItem().uuid]).toBe('a-b-c', {
+        a: {
+          "name": undefined,
+          "description": undefined,
+          "tags": undefined,
+        },
+        b: {
+          "name": "Title 1",
+          "description": "Description 1",
+          "tags": [
+            "tag 1"
+          ]
+        },
+        c: {
+          "name": "Title 2",
+          "description": "Description 2",
+          "tags": [
+            "tag 2"
+          ]
+        }
+      });
     });
   });
 

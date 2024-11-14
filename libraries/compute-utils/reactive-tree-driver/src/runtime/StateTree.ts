@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Observable, defer, of, merge, Subject, BehaviorSubject, from, combineLatest} from 'rxjs';
-import {finalize, map, mapTo, toArray, concatMap, tap, takeUntil, filter, debounceTime, take} from 'rxjs/operators';
+import {finalize, map, mapTo, toArray, concatMap, tap, takeUntil, filter, debounceTime, take, scan} from 'rxjs/operators';
 import {NodePath, BaseTree, TreeNode} from '../data/BaseTree';
 import {PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {isFuncCallSerializedState, PipelineInstanceConfig, PipelineSerializedState, PipelineState} from '../config/PipelineInstance';
@@ -118,6 +118,24 @@ export class StateTree {
         return [...acc, [item.uuid, item.funcCallState$] as const];
       return acc;
     }, [] as (readonly [string, BehaviorSubject<FuncCallStateInfo | undefined>])[]);
+    return Object.fromEntries(entries);
+  }
+
+  public getNodesDescriptions() {
+    const entries = this.nodeTree.traverse(this.nodeTree.root, (acc, node) => {
+      const item = node.getItem();
+      const stateNames = item.nodeDescription.getStateNames();
+      const stateChanges = stateNames.map(name => item.nodeDescription.getStateChanges(name).pipe(
+        map(val => [name, val] as const),
+      ));
+      const descriptions$ = merge(...stateChanges).pipe(
+        scan((acc, [name, val]) => {
+          return {...acc, [name]: val};
+        }, {} as Record<string, string[] | string>),
+        debounceTime(0)
+      )
+      return [...acc, [item.uuid, descriptions$] as const];
+    }, [] as (readonly [string, Observable<Record<string, string | string[]> | undefined>])[]);
     return Object.fromEntries(entries);
   }
 
@@ -305,7 +323,7 @@ export class StateTree {
     const action = this.linksState.actions.get(uuid);
     if (!action)
       throw new Error(`Action ${uuid} not found`);
-    if (action.spec.isPipeline) {
+    if (action.spec.type === 'pipeline') {
       return this.withTreeLock(() => {
         action.trigger();
         return action.isRunning$.pipe(
@@ -419,7 +437,8 @@ export class StateTree {
           if (!item)
             throw new Error(`Node ${step.id} not found on path ${JSON.stringify(path)}`);
           const nextPath = [...path, {id: step.id, idx}];
-          return [item, nextPath] as const;
+          const stepItem = {...step, ...item};
+          return [stepItem, nextPath] as const;
         });
         return items;
       } else if (isPipelineStaticConfig(data))

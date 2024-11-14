@@ -38,7 +38,7 @@ category('ComputeUtils: Driver links additional states propagation', async () =>
         id: 'link1',
         from: 'in1:step1/a',
         to: 'out1:step1/a',
-        isValidator: true,
+        type: 'validator',
         handler({controller}) {
           controller.setValidation('out1', makeValidationResult({warnings: ['test warn']}));
           return;
@@ -92,7 +92,7 @@ category('ComputeUtils: Driver links additional states propagation', async () =>
         id: 'link1',
         from: 'in1:step1/b',
         to: 'out1:step2/a',
-        isMeta: true,
+        type: 'meta',
         handler({controller}) {
           controller.setViewMeta('out1', {key: 'val'});
         },

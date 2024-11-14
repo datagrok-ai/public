@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Observable} from 'rxjs';
-import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, IRuntimeValidatorController} from '../RuntimeControllers';
+import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController} from '../RuntimeControllers';
 import {ItemId, NqName, RestrictionType, LinkSpecString} from '../data/common-types';
 import {StepParallelInitialConfig, StepSequentialInitialConfig} from './PipelineInstance';
 
@@ -35,8 +35,9 @@ export type Handler = HandlerBase<{ controller: IRuntimeLinkController }, void>;
 export type Validator = HandlerBase<{ controller: IRuntimeValidatorController }, void>;
 export type MetaHandler = HandlerBase<{ controller: IRuntimeMetaController }, void>;
 export type MutationHandler = HandlerBase<{ controller: IRuntimePipelineMutationController }, void>;
+export type SelectorHandler = HandlerBase<{ controller: INameSelectorController }, void>;
 export type PipelineProvider = HandlerBase<{ version?: string }, LoadedPipeline>;
-export type ViewersHook = (ioName: string, type: string, viewer?: DG.Viewer, meta?: any) => void
+export type ViewersHook = (ioName: string, type: string, viewer?: DG.Viewer, meta?: any) => void;
 
 
 // link-like
@@ -53,62 +54,55 @@ export type PipelineLinkConfigurationBase<P> = {
 }
 
 export type PipelineHandlerConfiguration<P> = PipelineLinkConfigurationBase<P> & {
-  isValidator?: false;
-  isMeta?: false;
-  isPipeline?: false;
+  type?: 'data',
   actions?: undefined;
   handler?: Handler;
 };
 
 export type PipelineValidatorConfiguration<P> = PipelineLinkConfigurationBase<P> & {
-  isValidator: true;
-  isMeta?: false;
-  isPipeline?: false;
+  type: 'validator'
   handler: Validator;
 };
 
 export type PipelineMetaConfiguration<P> = PipelineLinkConfigurationBase<P> & {
-  isValidator?: false;
-  isMeta: true;
-  isPipeline?: false;
+  type: 'meta'
   actions?: undefined;
   handler: MetaHandler;
 };
 
 export type PipelineHookConfiguration<P> = PipelineLinkConfigurationBase<P> & {
-  isValidator?: false;
-  isMeta?: false;
-  isPipeline?: false;
+  type?: 'data',
   base?: undefined,
   actions?: undefined;
   handler: Handler;
 };
 
-export type PipelineLinkConfiguration<P> = PipelineHandlerConfiguration<P> | PipelineValidatorConfiguration<P> | PipelineMetaConfiguration<P> | PipelineHookConfiguration<P>;
+export type PipelineSelectorConfiguration<P> = PipelineLinkConfigurationBase<P> & {
+  type: 'selector',
+  base?: undefined,
+  actions?: undefined;
+  handler: SelectorHandler;
+};
+
+export type PipelineLinkConfiguration<P> = PipelineHandlerConfiguration<P> | PipelineValidatorConfiguration<P> | PipelineMetaConfiguration<P> | PipelineHookConfiguration<P> | PipelineSelectorConfiguration<P>;
+
+export type ActionInfo = {
+  position: ActionPositions;
+  friendlyName?: string;
+  description?: string;
+  menuCategory?: string;
+  icon?: string;
+};
 
 export type PipelineActionConfiguraion<P> = PipelineLinkConfigurationBase<P> & {
-  position: ActionPositions;
-  friendlyName?: string;
-  description?: string;
-  menuCategory?: string;
-  icon?: string;
+  type?: 'data',
   handler: Handler;
-  isValidator?: false;
-  isMeta?: false;
-  isPipeline?: false;
-};
+} & ActionInfo;
 
 export type PipelineMutationConfiguration<P> = PipelineLinkConfigurationBase<P> & {
-  position: ActionPositions;
-  friendlyName?: string;
-  description?: string;
-  menuCategory?: string;
-  icon?: string;
+  type: 'pipeline',
   handler: MutationHandler;
-  isValidator?: false;
-  isMeta?: false;
-  isPipeline: true;
-};
+} & ActionInfo;
 
 export type StepActionConfiguraion<P> = PipelineActionConfiguraion<P>;
 
@@ -153,16 +147,17 @@ export type AbstractPipelineStaticConfiguration<P, S, R> = {
 
 // parallel pipeline
 
-export type ParallelItemContext<P> = {
+export type ParallelItemContext = {
   disableUIAdding?: boolean;
-  selectorPath?: P;
+  disableUIDragging?: boolean;
 };
 
-export type PipelineParallelItem<P, S, R> = ((PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | R) & ParallelItemContext<P>);
+export type PipelineParallelItem<P, S, R> = ((PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | R) & ParallelItemContext);
 
 export type AbstractPipelineParallelConfiguration<P, S, R> = {
   initialSteps?: StepParallelInitialConfig[];
   stepTypes: PipelineParallelItem<P, S, R>[];
+  links?: PipelineLinkConfiguration<P>[];
   type: 'parallel';
 } & PipelineConfigurationBase<P>;
 
@@ -170,6 +165,7 @@ export type AbstractPipelineParallelConfiguration<P, S, R> = {
 
 export type SequentialItemContext = {
   disableUIAdding?: boolean;
+  disableUIDragging?: boolean;
 };
 
 export type PipelineSequentialItem<P, S, R> = ((PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | R) & SequentialItemContext);

@@ -13,10 +13,7 @@ export function defaultLinkHandler(
   for (let i = 0; i < Math.min(inputs.length, outputs.length); i++) {
     const input = ctrlInstance.getFirst(inputs[i]);
     const restriction = defaultRestrictions?.[outputs[i]];
-    if (input instanceof DG.DataFrame)
-      ctrlInstance.setAll(outputs[i], input.clone(), restriction);
-    else
-      ctrlInstance.setAll(outputs[i], input, restriction);
+    ctrlInstance.setAll(outputs[i], input, restriction);
   }
   ctrlInstance.close();
 }

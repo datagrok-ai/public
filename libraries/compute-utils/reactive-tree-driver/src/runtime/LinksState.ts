@@ -3,8 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {v4 as uuidv4} from 'uuid';
 import {BaseTree, NodeAddress, NodePath} from '../data/BaseTree';
-import {StateTree} from './StateTree';
-import {isFuncCallNode, isSequentialPipelineNode, isStaticPipelineNode, StateTreeNode} from './StateTreeNodes';
+import {isFuncCallNode, StateTreeNode} from './StateTreeNodes';
 import {ActionSpec, LinkSpec, MatchedNodePaths, MatchInfo, matchNodeLink} from './link-matching';
 import {Action, Link} from './Link';
 import {BehaviorSubject, concat, merge, Subject, of, Observable, defer, combineLatest} from 'rxjs';
@@ -142,7 +141,7 @@ export class LinksState {
   public createStateLinks(state: BaseTree<StateTreeNode>) {
     const links = state.traverse(state.root, (acc, node, path) => {
       const item = node.getItem();
-      if (isStaticPipelineNode(item) || isSequentialPipelineNode(item)) {
+      if (!isFuncCallNode(item)) {
         const {config} = item;
         const matchedLinks = (config.links ?? [])
           .map((link) => matchNodeLink(node, link))
@@ -196,7 +195,7 @@ export class LinksState {
           id: uuidv4(),
           from: [parseLinkIO(`in:${io.id}`, io.direction)],
           to: [parseLinkIO(`out:${io.id}`, io.direction)],
-          isValidator: true,
+          type: 'validator',
           handler({controller}) {
             const val = controller.getFirst('in');
             if (val == null || val === '')
@@ -376,7 +375,7 @@ export class LinksState {
   }
 
   public isDataLink(link: Link) {
-    return !link.matchInfo.spec.isValidator && !link.matchInfo.spec.isMeta;
+    return !link.matchInfo.spec.type || link.matchInfo.spec.type === 'data';
   }
 
   public isAffected(rootPath: Readonly<NodeAddress>, link: Link, addIdx?: number, removeIdx?: number) {

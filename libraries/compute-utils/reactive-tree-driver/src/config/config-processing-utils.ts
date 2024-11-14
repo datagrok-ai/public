@@ -70,21 +70,21 @@ async function configProcessing(
     const pconf = processStaticConfig(conf);
     const steps = await Promise.all(conf.steps.map(async (step) => {
       const sconf = await configProcessing(step, loadedPipelines);
-      return sconf as any;
+      return sconf;
     }));
     return {...pconf, steps};
   } else if (isPipelineParallelInitial(conf)) {
     const pconf = processParallelConfig(conf);
     const stepTypes = await Promise.all(conf.stepTypes.map(async (item) => {
       const nconf = await configProcessing(item, loadedPipelines);
-      return {...item, ...nconf} as any;
+      return nconf;
     }));
     return {...pconf, stepTypes};
   } else if (isPipelineSequentialInitial(conf)) {
     const pconf = processSequentialConfig(conf);
     const stepTypes = await Promise.all(conf.stepTypes.map(async (item) => {
       const nconf = await configProcessing(item, loadedPipelines);
-      return {...item, ...nconf} as any;
+      return nconf;
     }));
     return {...pconf, stepTypes};
   } else if (isPipelineRefInitial(conf)) {
@@ -105,9 +105,10 @@ function processStaticConfig(conf: PipelineConfigurationStaticInitial) {
 }
 
 function processParallelConfig(conf: PipelineConfigurationParallelInitial) {
+  const links = conf.links?.map((link) => processLinkData(link));
   const actions = processPipelineActions(conf.actions ?? []);
   const onInit = processHook(conf.onInit);
-  return {...conf, actions, onInit, stepTypes: []};
+  return {...conf, actions, links, onInit};
 }
 
 function processSequentialConfig(conf: PipelineConfigurationSequentialInitial) {

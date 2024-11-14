@@ -53,7 +53,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
       id: 'link1',
       from: 'in1:step1/a',
       to: 'out1:step1/a',
-      isValidator: true,
+      type: 'validator',
       handler({controller}) {
         controller.setValidation('out1', makeValidationResult({warnings: ['test warn']}));
         return;
@@ -444,7 +444,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
         id: 'link1',
         from: 'in1:step1/a',
         to: 'out1:step1/a',
-        isValidator: true,
+        type: 'validator',
         handler({controller}) {
           controller.setValidation('out1', makeValidationResult({warnings: ['some warn']}));
           return;
@@ -453,7 +453,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
         id: 'link2',
         from: 'in1:step1/a',
         to: 'out1:step1/a',
-        isValidator: true,
+        type: 'validator',
         handler({controller}) {
           controller.setValidation('out1', makeValidationResult({warnings: ['another warn']}));
           return;
@@ -678,7 +678,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
         id: 'link1',
         from: 'in1:step1/b',
         to: 'out1:step2/a',
-        isMeta: true,
+        type: 'meta',
         handler({controller}) {
           controller.setViewMeta('out1', {key: 'val'});
         },
@@ -726,7 +726,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
         from: 'in1:step1/a',
         to: 'out1:step1/a',
         actions: 'actions',
-        isValidator: true,
+        type: 'validator',
         handler({controller}) {
           const v = controller.getFirst('in1');
           if (v === 1) {
@@ -797,7 +797,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
         from: 'in1:step1/a',
         to: 'out1:step1/a',
         actions: 'actions:step1',
-        isValidator: true,
+        type: 'validator',
         handler({controller}) {
           const v = controller.getFirst('in1');
           if (v === 1) {
@@ -862,7 +862,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
         from: [],
         position: 'none',
         to: 'out1:nestedPipeline',
-        isPipeline: true,
+        type: 'pipeline',
         handler({controller}) {
           controller.setPipelineState('out1', {
             id: 'nestedPipeline',
@@ -908,4 +908,51 @@ category('ComputeUtils: Driver links reactivity', async () => {
       expectObservable(out.getItem().getStateStore().getStateChanges('a')).toBe('ab', {a: undefined, b: 15});
     });
   });
+
+  test('Select state descriptions', async () => {
+    const config5: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:TestAdd2',
+        },
+      ],
+      links: [{
+        id: 'selector',
+        type: 'selector',
+        from: 'in:step1/a',
+        to: ['out1:name', 'out2:description', 'out3:tags'],
+        handler({controller}) {
+          const val = controller.getFirst('in');
+          controller.setDescriptionItem('out1', `Title ${val}`);
+          controller.setDescriptionItem('out2', `Description ${val}`);
+          controller.setDescriptionItem('out3', [`tag ${val}`]);
+        }
+      }]
+    }
+    const pconf = await getProcessedConfig(config5);
+
+    testScheduler.run((helpers) => {
+      const {cold, expectObservable} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const node = tree.nodeTree.getNode([{idx: 0}]);
+      const pipeline = tree.nodeTree.root;
+      cold('-a').subscribe(() => {
+        node.getItem().getStateStore().setState('a', 1);
+      });
+      cold('--a').subscribe(() => {
+        node.getItem().getStateStore().setState('a', 2);
+      });
+      expectObservable(pipeline.getItem().nodeDescription.getStateChanges('name')).toBe('abc',
+        {a: undefined, b: 'Title 1', c: 'Title 2'});
+      expectObservable(pipeline.getItem().nodeDescription.getStateChanges('description')).toBe('abc',
+        {a: undefined, b: 'Description 1', c: 'Description 2'});
+      expectObservable(pipeline.getItem().nodeDescription.getStateChanges('tags')).toBe('abc',
+        {a: undefined, b: ['tag 1'], c: ['tag 2']});
+    });
+  });
+
 });

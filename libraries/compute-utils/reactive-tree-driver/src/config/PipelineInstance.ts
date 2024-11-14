@@ -9,11 +9,17 @@ import {ActionPositions, ViewersHook} from './PipelineConfiguration';
 export type StepParallelInitialConfig = {
   id: ItemId;
   disableUIRemoving?: boolean;
+  disableUIDragging?: boolean;
+  initialValues?: Record<string, any>;
+  inputRestrictions?: Record<string, RestrictionType>;
 }
 
 export type StepSequentialInitialConfig = {
   id: ItemId;
   disableUIRemoving?: boolean;
+  disableUIDragging?: boolean;
+  initialValues?: Record<string, any>;
+  inputRestrictions?: Record<string, RestrictionType>;
 }
 
 export type StepFunCallInitialConfig = {

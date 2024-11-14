@@ -42,7 +42,7 @@ export function matchNodeLink(rnode: TreeNode<StateTreeNode>, spec: LinkSpec | A
   if (spec.not) {
     const currentIO: Record<string, MatchedNodePaths> = {};
     for (const io of spec.not) {
-      const paths = matchLinkIO(rnode, currentIO, io, true);
+      const paths = matchLinkIO(rnode, currentIO, io, true, false);
       if (paths?.length)
         return undefined;
     }
@@ -75,14 +75,15 @@ function matchLinkInstance(
     currentIO[baseName] = [base];
 
   for (const action of spec.actions ?? []) {
-    const parsed = matchLinkIO(rnode, currentIO, action, true);
+    const parsed = matchLinkIO(rnode, currentIO, action, true, false);
     actions[action.name] = parsed;
   }
 
   const ioData = [...spec.from.map((item) => ['inputs', item] as const), ...spec.to.map((item) => ['outputs', item] as const)];
   for (const [kind, io] of ioData) {
-    const skipIO = !!(spec.isPipeline && kind === 'outputs');
-    const paths = matchLinkIO(rnode, currentIO, io, skipIO);
+    const skipIO = (spec.type === 'pipeline' && kind === 'outputs');
+    const useDescriptionsStore = (spec.type === 'selector' && kind === 'outputs');
+    const paths = matchLinkIO(rnode, currentIO, io, skipIO, useDescriptionsStore);
     if (paths.length == 0)
       return;
     if (currentIO[io.name] != null)
@@ -120,6 +121,7 @@ function matchLinkIO(
   currentIO: Record<string, MatchedNodePaths>,
   parsedLink: LinkIOParsed,
   skipIO: boolean,
+  useDescriptionStore: boolean,
 ): MatchedNodePaths {
   const traverse = buildTraverseD([] as Readonly<NodePath>, (pnode: TreeNode<StateTreeNode>, path, level?: number) => {
     const segment = parsedLink.segments[level!];
@@ -151,7 +153,8 @@ function matchLinkIO(
       const ioSegment = indexFromEnd(parsedLink.segments)!;
       const ioName = ioSegment.ids[0];
       const item = node.getItem();
-      const state = item.getStateStore().getStateNames().find((name) => name === ioName);
+      const names = useDescriptionStore ? item.nodeDescription.getStateNames(): item.getStateStore().getStateNames();
+      const state = names.find((name) => name === ioName);
       if (state)
         return [...acc, {path, ioName}] as const;
       return acc;

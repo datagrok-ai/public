@@ -72,7 +72,7 @@ category('ComputeUtils: Driver workflow test', async () => {
           },
           {
             id: 'link32',
-            isValidator: true,
+            type: 'validator',
             base: 'base:expand(stepSub)',
             from: 'in1:same(@base,stepSub)/a',
             to: 'out1:same(@base,stepSub)/a',
@@ -82,7 +82,7 @@ category('ComputeUtils: Driver workflow test', async () => {
           },
           {
             id: 'link33',
-            isMeta: true,
+            type: 'meta',
             base: 'base:expand(stepSub)',
             from: 'in1:same(@base,stepSub)/a',
             to: 'out1:same(@base,stepSub)/a',
@@ -92,7 +92,7 @@ category('ComputeUtils: Driver workflow test', async () => {
           },
           {
             id: 'link34',
-            isValidator: true,
+            type: 'validator',
             base: 'base:expand(stepDiv)',
             from: 'in1:same(@base,stepDiv)/a',
             to: 'out1:same(@base,stepDiv)/a',
@@ -102,7 +102,7 @@ category('ComputeUtils: Driver workflow test', async () => {
           },
           {
             id: 'link35',
-            isMeta: true,
+            type: 'meta',
             base: 'base:expand(stepDiv)',
             from: 'in1:same(@base,stepDiv)/a',
             to: 'out1:same(@base,stepDiv)/a',
@@ -185,7 +185,7 @@ category('ComputeUtils: Driver workflow test', async () => {
         },
       }, {
         id: 'link6',
-        isMeta: true,
+        type: 'meta',
         from: 'in1:stepAdd/res',
         to: 'out1:stepDiv/b',
         handler({controller}) {
@@ -193,7 +193,7 @@ category('ComputeUtils: Driver workflow test', async () => {
         },
       }, {
         id: 'link7',
-        isValidator: true,
+        type: 'validator',
         from: 'in1:stepAdd/res',
         to: 'out1:stepDiv/b',
         handler({controller}) {
@@ -201,7 +201,7 @@ category('ComputeUtils: Driver workflow test', async () => {
         },
       }, {
         id: 'link8',
-        isMeta: true,
+        type: 'meta',
         from: 'in1:stepAdd/res',
         to: 'out1:stepSub/b',
         handler({controller}) {
@@ -209,7 +209,7 @@ category('ComputeUtils: Driver workflow test', async () => {
         },
       }, {
         id: 'link9',
-        isValidator: true,
+        type: 'validator',
         from: 'in1:stepAdd/res',
         to: 'out1:stepSub/b',
         handler({controller}) {
@@ -217,7 +217,7 @@ category('ComputeUtils: Driver workflow test', async () => {
         },
       }, {
         id: 'link10',
-        isMeta: true,
+        type: 'meta',
         from: 'in1:stepSub/res',
         to: 'out1:pipeline3/all(stepSub|stepDiv)/b',
         handler({controller}) {
@@ -225,7 +225,7 @@ category('ComputeUtils: Driver workflow test', async () => {
         },
       }, {
         id: 'link11',
-        isMeta: true,
+        type: 'meta',
         from: 'in1:pipeline3/last(stepAdd|stepSub|stepMul|stepDiv)/res',
         to: 'out1:stepMul/a',
         handler({controller}) {

@@ -13,6 +13,9 @@ import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {RestrictionType, ValidationResult} from '../data/common-types';
 import {mergeValidationResults} from '../utils';
 
+export const descriptionOutputs = ['name', 'description', 'tags'] as const;
+const descriptionStates = descriptionOutputs.map(id => ({id}));
+
 export type StateTreeSerializationOptions = {
   disableNodesUUID?: boolean,
   disableCallsUUID?: boolean,
@@ -43,6 +46,8 @@ export interface IStoreProvider {
   getStateStore(): IStateStore;
 }
 
+export class NodeMetaDescription extends MemoryStore {}
+
 export class FuncCallNode implements IStoreProvider {
   private depsData$ = new BehaviorSubject<(readonly [string, Observable<boolean>])[]>([]);
 
@@ -57,6 +62,7 @@ export class FuncCallNode implements IStoreProvider {
   public metaInfo$ = new BehaviorSubject<Record<string, BehaviorSubject<any | undefined>>>({});
   public funcCallState$ = new BehaviorSubject<FuncCallStateInfo | undefined>(undefined);
   public pendingDependencies$ = new BehaviorSubject<string[]>([]);
+  public nodeDescription = new NodeMetaDescription(descriptionStates, false);
 
   private closed$ = new Subject<true>();
 
@@ -287,7 +293,6 @@ export class FuncCallNode implements IStoreProvider {
     return pending$;
   }
 
-  // TODO: checking for additional actual Object keys (?)
   private deepEq(actual: any, expected: any) {
     try {
       // expectDeepEqual will not check additional props in an actual
@@ -305,6 +310,7 @@ export class FuncCallNode implements IStoreProvider {
 export class PipelineNodeBase implements IStoreProvider {
   public uuid = uuidv4();
   private store: MemoryStore;
+  public nodeDescription = new NodeMetaDescription(descriptionStates, false);
 
   constructor(
     public readonly config: PipelineConfigurationProcessed,

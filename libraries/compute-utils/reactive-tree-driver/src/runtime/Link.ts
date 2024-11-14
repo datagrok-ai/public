@@ -2,15 +2,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {v4 as uuidv4} from 'uuid';
-import {ActionPositions, HandlerBase} from '../config/PipelineConfiguration';
+import {HandlerBase} from '../config/PipelineConfiguration';
 import {BaseTree, NodeAddress, NodePath, TreeNode} from '../data/BaseTree';
-import {StateTreeNode} from './StateTreeNodes';
-import { ActionSpec, MatchInfo} from './link-matching';
+import { descriptionOutputs, StateTreeNode} from './StateTreeNodes';
+import {ActionSpec, MatchInfo} from './link-matching';
 import {BehaviorSubject, combineLatest, defer, EMPTY, merge, Subject, of} from 'rxjs';
 import {map, filter, takeUntil, withLatestFrom, switchMap, catchError, mapTo, finalize, debounceTime, timestamp, distinctUntilChanged} from 'rxjs/operators';
 import {callHandler} from '../utils';
 import {defaultLinkHandler} from './default-handler';
-import {ControllerCancelled, LinkController, MetaController, MutationController, ValidatorController} from './LinkControllers';
+import {ControllerCancelled, LinkController, MetaController, MutationController, NameSelectorController, ValidatorController} from './LinkControllers';
 import {MemoryStore} from './FuncCallAdapters';
 import {LinksState} from './LinksState';
 import {PipelineInstanceConfig} from '../config/PipelineInstance';
@@ -28,9 +28,11 @@ export class Link {
   private trigger$ = new Subject<ScopeInfo>();
 
   public uuid = uuidv4();
-  public readonly isValidator = !!this.matchInfo.spec.isValidator;
-  public readonly isMeta = !!this.matchInfo.spec.isMeta;
-  public readonly isMutation = !!this.matchInfo.spec.isPipeline;
+  public readonly isValidator = this.matchInfo.spec.type === 'validator';
+  public readonly isMeta = this.matchInfo.spec.type === 'meta';
+  public readonly isMutation = this.matchInfo.spec.type === 'pipeline';
+  public readonly isSelector = this.matchInfo.spec.type === 'selector';
+
 
   // probably a better api
   public lastPipelineMutations?: {
@@ -220,10 +222,13 @@ export class Link {
     if (this.isMutation)
       return new MutationController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
 
+    if (this.isSelector)
+      return new NameSelectorController(inputs, inputSet, new Set(descriptionOutputs), this.matchInfo.spec.id, scope);
+
     return new LinkController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
   }
 
-  private setHandlerResults(controller: LinkController | ValidatorController | MetaController | MutationController, state: BaseTree<StateTreeNode>) {
+  private setHandlerResults(controller: LinkController | ValidatorController | MetaController | MutationController | NameSelectorController, state: BaseTree<StateTreeNode>) {
     this.lastPipelineMutations = [];
     if (this.logger) {
       this.logger.logLink('linkRunFinished', {
@@ -260,6 +265,10 @@ export class Link {
           const initConfig = controller.outputs[outputAlias];
           if (initConfig)
             this.lastPipelineMutations.push({path: nodePath, initConfig});
+        } else if (controller instanceof NameSelectorController) {
+          const data = controller.outputs[outputAlias];
+          const descrStore = node.getItem().nodeDescription;
+          descrStore.setState(ioName, data);
         } else {
           const data = controller.outputs[outputAlias];
           if (data) {

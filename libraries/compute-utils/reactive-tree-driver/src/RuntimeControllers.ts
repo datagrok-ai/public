@@ -25,3 +25,9 @@ export interface IRuntimePipelineMutationController {
   getFirst<T = any>(name: string): T | undefined;
   setPipelineState(name: any, state: PipelineInstanceConfig): void;
 }
+
+export interface INameSelectorController {
+  getAll<T = any>(name: string): T[] | undefined;
+  getFirst<T = any>(name: string): T | undefined;
+  setDescriptionItem(name: string, description: any): void;
+}

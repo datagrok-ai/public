@@ -42,7 +42,7 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
       id: 'link2',
       from: 'in1:step1/res',
       to: 'out1:step3/a',
-      isValidator: true,
+      type: 'validator',
       handler({controller}) {
         controller.setValidation('out1', makeValidationResult({warnings: ['test warning']}));
       },
@@ -50,7 +50,7 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
       id: 'link3',
       from: 'in1:step1/res',
       to: 'out1:step3/a',
-      isMeta: true,
+      type: 'meta',
       handler({controller}) {
         controller.setViewMeta('out1', {key: 'val'});
       },
