@@ -92,7 +92,6 @@ export const TreeWizard = Vue.defineComponent({
       else if (started) grok.shell.v.name = `${providerFuncName.value} - ${started}`
       else grok.shell.v.name = providerFuncName.value
     });
-    Vue.watch(hasNotSavedEdits, (val) => console.log('hasNotSavedEdits:', val), { immediate: true });
 
     Vue.watch(treeState, () => {
       if (!treeState.value) return;
