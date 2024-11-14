@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/sequence-translator",
   "friendlyName": "Sequence Translator",
-  "version": "1.5.3",
+  "version": "1.6.0",
   "author": {
     "name": "Leonid Stolbov",
     "email": "lstolbov@datagrok.ai"

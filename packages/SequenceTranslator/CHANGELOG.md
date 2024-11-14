@@ -1,5 +1,11 @@
 # Sequence Translator changelog
 
+## 1.6.0 (2024-11-14)
+
+### New features
+
+* Add PolyTool work with sinthetic monomers
+
 ## 1.5.3 (2024-11-06)
 
 ### Bug fixes
