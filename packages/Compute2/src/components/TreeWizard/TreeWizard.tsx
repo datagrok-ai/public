@@ -93,16 +93,17 @@ export const TreeWizard = Vue.defineComponent({
       else grok.shell.v.name = providerFuncName.value
     });
 
+    let alreadyLoaded = false;
     Vue.watch(treeState, () => {
-      if (!treeState.value) return;
+      if (!treeState.value || alreadyLoaded) return;
 
       // Getting inital URL user entered with
       const startUrl = new URL(grok.shell.startUri);
-      const stepId = startUrl.searchParams.get('stepId');
-
-      if (!stepId) return;
-
-      chosenStepUuid.value = stepId;
+      const loadingId = startUrl.searchParams.get('id');
+      if (loadingId) {
+        loadPipeline(loadingId);
+        alreadyLoaded = true;
+      }
     });
 
     const chosenStepState = Vue.computed(() => {
