@@ -61,7 +61,7 @@ export const TreeWizard = Vue.defineComponent({
 
     const chosenStepUuid = Vue.ref<string | undefined>(undefined);
 
-    const searchParams = useUrlSearchParams('history');
+    const searchParams = useUrlSearchParams<{id: string, stepId: string}>('history');
 
     const handleActivePanelChanged = async (newPanel: string | null, prevPanel: string | null) => {
       if (prevPanel === 'Steps') return;
@@ -78,7 +78,11 @@ export const TreeWizard = Vue.defineComponent({
       }
     };
 
-    Vue.watch(currentMetaCallId, (id) => console.log('metaCall:', id), { immediate: true });
+    Vue.watch([currentMetaCallId, hasNotSavedEdits], ([id, hasNotSavedEdits]) => {
+      if (!id || hasNotSavedEdits) return;
+
+      searchParams.id = id;
+    });
     Vue.watch(hasNotSavedEdits, (val) => console.log('hasNotSavedEdits:', val), { immediate: true });
 
     Vue.watch(treeState, () => {
@@ -105,7 +109,7 @@ export const TreeWizard = Vue.defineComponent({
 
     Vue.watch(chosenStepUuid, (newStepId) => {
       if (newStepId)
-        searchParams['stepId'] = newStepId;
+        searchParams.stepId = newStepId;
     });
 
     const treeInstance = Vue.ref(null as InstanceType<typeof Draggable> | null);
