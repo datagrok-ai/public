@@ -197,7 +197,7 @@ export const TreeWizard = Vue.defineComponent({
     })
     
     const openMetadataEditDialog = () => {
-      const dialog = new EditDialog();
+      const dialog = new EditDialog(currentMetaCallData.value);
       dialog.onMetadataEdit.pipe(take(1)).subscribe((editOptions) => {
         savePipeline(editOptions)
       });
