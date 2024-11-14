@@ -64,9 +64,13 @@ let beforeArr : ScriptObject= {
 
 let beforeArrAdded : string[]  = [];
 
+let initStarted:boolean = false;
 //tags: init
 export async function initTests() {
 
+  if(initStarted)
+    return;
+  initStarted = true;
   const scripts = await grok.dapi.scripts.filter('package.shortName = "ApiSamples"').list();
   for (const script of scripts) {
     let catName = ('Scripts:' + script.options.path as string).replaceAll('/', ':');
@@ -106,13 +110,14 @@ export async function initTests() {
               }
             });
             await delay(1000);
-            (document.getElementsByClassName("fa-play")[0] as any).click();
-            await delay(1000);
             timeout = setTimeout(() => {
               subscription.unsubscribe();
               scriptView.close();
               resolve(false);
             }, 10000);
+            (document.getElementsByClassName("fa-play")[0] as any).click();
+            await delay(1000);
+           
           })
 
           if (!(await scriptResult))
