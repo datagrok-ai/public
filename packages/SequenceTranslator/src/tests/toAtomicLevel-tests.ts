@@ -15,7 +15,7 @@ import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 import {_package} from '../package-test';
-import {getNewMonomers} from '../polytool/conversion/pt-misc';
+import {getNewMonomers} from '../polytool/conversion/pt-synthetic';
 import {getRules, RuleReaction} from '../polytool/conversion/pt-rules';
 
 category('toAtomicLevel', () => {

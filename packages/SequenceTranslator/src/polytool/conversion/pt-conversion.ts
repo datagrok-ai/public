@@ -1,10 +1,8 @@
 
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
-
 import {Rules} from './pt-rules';
 import {Chain} from './pt-chain';
-
 import {_package} from '../../package';
 
 /** The main PolyTool convert engine. Returns list of Helms. Covered with tests. */
@@ -13,7 +11,8 @@ export function doPolyToolConvert(sequences: string[], rules: Rules, helmHelper:
   for (let i = 0; i < sequences.length; i++) {
     try {
       if (sequences[i] == null) { helms[i] = ''; } else {
-        const chain = Chain.fromNotation(sequences[i], rules, helmHelper);
+        const chain = Chain.fromSeparator(sequences[i], helmHelper);
+        chain.applyRules(rules);
         helms[i] = chain.getHelm();
       }
     } catch (err: any) {

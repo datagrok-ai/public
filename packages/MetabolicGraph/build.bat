@@ -3,7 +3,7 @@ setlocal
 
 REM Save the current and escher directories
 set PACKAGE_DIR=%cd%
-set "ESCHER_DIR=..\..\..\..\escher"
+set "ESCHER_DIR=..\Escher"
 set "PACKAGE_ESCHER_DIST_DIR=%PACKAGE_DIR%\escher_dist"
 
 REM Navigate to the escher directory
