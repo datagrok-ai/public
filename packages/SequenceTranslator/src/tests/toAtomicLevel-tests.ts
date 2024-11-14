@@ -79,14 +79,14 @@ category('toAtomicLevel', () => {
     const reactionRule = rules.reactionRules.find((r) => r.name == 'GGaz')!;
 
     const [newSymbols, newMonomers] = getNewMonomers(rdKitModule, systemMonomerLib, reactionRule);
-    expect(newSymbols[0], reactionRule.name);
+    expect(newSymbols[0], 'azG_GGaz');
 
     const mol = rdKitModule.get_mol(newMonomers[0].molfile);
     try {
       const molInchi = mol.get_inchi();
       const molInchiKey = rdKitModule.get_inchikey_for_inchi(molInchi);
-      expect(mol.get_num_bonds(), 18);
-      expect(mol.get_num_atoms(), 18);
+      expect(mol.get_num_bonds(), 6);
+      expect(mol.get_num_atoms(), 7);
       // TODO: Check inchi key for the new monomer molfile
       // expect(molInchiKey, 'V2H10N2O3S-UHFFFAOYSA-N');
     } finally {

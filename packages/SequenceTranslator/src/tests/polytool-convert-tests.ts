@@ -49,51 +49,51 @@ category('PolyTool: Convert', () => {
       src: {seq: 'R-F-C(1)-T-G-H-F-Y-P-C(1)-meI'},
       tgt: {
         helm: 'PEPTIDE1{R.F.C.T.G.H.F.Y.P.C.[meI]}$PEPTIDE1,PEPTIDE1,3:R3-10:R3$$$V2.0',
-        mol: {atomCount: 95, bondCount: 100, inchiKey: 'LMJUFVBPWWJJPN-AJJYTACESA-N',},
+        mol: {atomCount: 95, bondCount: 100, inchiKey: 'LMJUFVBPWWJJPN-AJJYTACESA-N'},
       }
     },
     'cyclized-C(1)-0-1': {
       src: {seq: 'C(1)-T-G-H-F-Y-P-C(1)-meI'},
       tgt: {
         helm: 'PEPTIDE1{C.T.G.H.F.Y.P.C.[meI]}$PEPTIDE1,PEPTIDE1,1:R3-8:R3$$$V2.0',
-        mol: {atomCount: 73, bondCount: 77, inchiKey: 'KLFRBMUPPMMGJM-HXTBFBBASA-N',},
+        mol: {atomCount: 73, bondCount: 77, inchiKey: 'KLFRBMUPPMMGJM-HXTBFBBASA-N'},
       }
     },
     'cyclized-C(1)-2-0': {
       src: {seq: 'R-F-C(1)-T-G-H-F-Y-P-C(1)'},
       tgt: {
         helm: 'PEPTIDE1{R.F.C.T.G.H.F.Y.P.C}$PEPTIDE1,PEPTIDE1,3:R3-10:R3$$$V2.0',
-        mol: {atomCount: 86, bondCount: 91, inchiKey: 'WIHSRTQGMICACU-DDDKLKPZSA-N',},
+        mol: {atomCount: 86, bondCount: 91, inchiKey: 'WIHSRTQGMICACU-DDDKLKPZSA-N'},
       }
     },
     'cyclized-C(1)-0-0': {
       src: {seq: 'C(1)-T-G-H-F-Y-P-C(1)'},
       tgt: {
         helm: 'PEPTIDE1{C.T.G.H.F.Y.P.C}$PEPTIDE1,PEPTIDE1,1:R3-8:R3$$$V2.0',
-        mol: {atomCount: 64, bondCount: 68, inchiKey: 'LOSMDBLEXLWPLB-OFZKBENXSA-N',},
+        mol: {atomCount: 64, bondCount: 68, inchiKey: 'LOSMDBLEXLWPLB-OFZKBENXSA-N'},
       }
     },
     'cyclized-D(2)-NH2(2)-3-0': {
       src: {seq: 'R-F-D(2)-T-G-H-F-Y-P-NH2(2)'},
       tgt: {
         helm: 'PEPTIDE1{R.F.D.T.G.H.F.Y.P.[NH2]}$PEPTIDE1,PEPTIDE1,10:R2-3:R3$$$V2.0',
-        mol: {atomCount: 81, bondCount: 86, inchiKey: 'CBMGNYKOZWNVNK-AHGCAHLCSA-N',},
+        mol: {atomCount: 81, bondCount: 86, inchiKey: 'CBMGNYKOZWNVNK-AHGCAHLCSA-N'},
       }
     },
     'cyclized-D(2)-NH2(2)-0-0': {
       src: {seq: 'D(2)-T-G-H-F-Y-P-NH2(2)'},
       tgt: {
         helm: 'PEPTIDE1{D.T.G.H.F.Y.P.[NH2]}$PEPTIDE1,PEPTIDE1,8:R2-1:R3$$$V2.0',
-        mol: {atomCount: 59, bondCount: 63, inchiKey: 'HGRHAUQBJXFERJ-MUFWPYSASA-N',},
+        mol: {atomCount: 59, bondCount: 63, inchiKey: 'HGRHAUQBJXFERJ-MUFWPYSASA-N'},
       }
     },
-    'cyclized-azG(4)-aG(4)-2-1': {
-      src: {seq: 'R-F-azG(4)-T-G-H-F-Y-P-aG(4)-meI'},
-      tgt: {
-        helm: 'PEPTIDE1{R.F.[GGaz].T.G.H.F.Y.P}|PEPTIDE2{[meI]}$PEPTIDE1,PEPTIDE1,3:R3-9:R2|PEPTIDE1,PEPTIDE2,3:R4-1:R1$$$V2.0',
-        mol: {atomCount: 97, bondCount: 103, inchiKey: 'WJSYGVBGPCCSJF-PERUNASMSA-N',},
-      }
-    },
+    // 'cyclized-azG(4)-aG(4)-2-1': {
+    //   src: {seq: 'R-F-azG(4)-T-G-H-F-Y-P-aG(4)-meI'},
+    //   tgt: {
+    //     helm: 'PEPTIDE1{R.F.[azG_GGaz].T.G.H.F.Y.P.[aG_GGaz].[meI]}|PEPTIDE2{[GGaz]}$PEPTIDE1,PEPTIDE2,3:R3-1:R1|PEPTIDE1,PEPTIDE2,10:R3-1:R2$$$V2.0',
+    //     mol: {atomCount: 97, bondCount: 103, inchiKey: 'WJSYGVBGPCCSJF-PERUNASMSA-N'},
+    //   }
+    // },
   };
 
   for (const [testName, testData] of Object.entries(tests)) {

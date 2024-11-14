@@ -41,7 +41,7 @@
   "devDependencies": {
     "@datagrok-libraries/helm-web-editor": "^1.1.13",
     "@datagrok-libraries/js-draw-lite": "^0.0.10",
-    "@datagrok/bio": "^2.16.8",
+    "@datagrok/bio": "^2.17.0",
     "@datagrok/helm": "^2.5.8",
     "@datagrok/chem": "^1.12.4",
     "@types/jquery": "^3.5.14",
