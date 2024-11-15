@@ -133,7 +133,7 @@ export class DemoView extends DG.ViewBase {
       let tempArr: string[] = [];
 
       for (let j = 0; j < directionFuncs.length; ++j) {
-        let imgPath = `${_package.webRoot}images/demoapp/${directionFuncs[j].name}.jpg`;
+        let imgPath = `${_package.webRoot}images/demoapp/${directionFuncs[j].name}.png`;
 
         const path = directionFuncs[j].options[DG.FUNC_OPTIONS.DEMO_PATH] as string;
         const pathArray = path.split('|').map((s) => s.trim());
@@ -236,7 +236,7 @@ export class DemoView extends DG.ViewBase {
             if (response.ok) {
               return Promise.resolve(response.url)
             } else if(response.status === 404) {
-              return Promise.reject(`${_package.webRoot}images/demoapp/emptyImg.jpg`)
+              return Promise.reject(`${_package.webRoot}images/demoapp/emptyImg.png`)
             }
           })
           .then((data) => root.style.backgroundImage = `url(${data})`)
