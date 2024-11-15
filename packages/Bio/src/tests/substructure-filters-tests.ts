@@ -192,7 +192,7 @@ category('bio-substructure-filters', async () => {
     }
     await filter.awaitRendered();
     await delay(3000); //TODO: await for grid.onLookChanged
-  }, {skipReason: 'Need to investigate why awaitGrid does not complete'});
+  }, {});
 
   // Generates unhandled exception accessing isFiltering before bioFilter created
   test('helm-view', async () => {
@@ -403,8 +403,9 @@ category('bio-substructure-filters', async () => {
 
   test('reset-fasta', async () => {
     const df = await readDataframe('tests/filter_FASTA.csv');
-    await grok.data.detectSemanticTypes(df);
     const view = grok.shell.addTableView(df);
+    await grok.data.detectSemanticTypes(df);
+    await df.meta.detectSemanticTypes();
 
     const fSeqColName: string = 'fasta';
     const fSubStr: string = 'MD';
@@ -437,6 +438,8 @@ category('bio-substructure-filters', async () => {
   test('reopen', async () => {
     const df = await _package.files.readCsv('tests/filter_FASTA.csv');
     const view = grok.shell.addTableView(df);
+    await grok.data.detectSemanticTypes(df);
+    await df.meta.detectSemanticTypes();
 
     const filterList = [{type: 'Bio:bioSubstructureFilter', columnName: 'fasta'}];
 
@@ -453,7 +456,7 @@ category('bio-substructure-filters', async () => {
     const fg2Dn = view.dockManager.dock(fg2, DG.DOCK_TYPE.LEFT);
     await delay(100);
     await awaitGrid(view.grid);
-  }, {skipReason: 'Need to investigate why awaitGrid does not complete'});
+  }, {});
 
   async function createFilter(colName: string, df: DG.DataFrame): Promise<BioSubstructureFilter> {
     if (!df.columns.names().includes(colName)) {

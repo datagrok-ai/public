@@ -214,13 +214,23 @@ export class MonomerManager implements IMonomerManager {
     return tv ?? null;
   }
 
+  private _skipLibInputOnchange: boolean = false;
+
   async getViewRoot(libName?: string) {
     const availableMonLibs = (await this.monomerLibManamger.getFileManager()).getValidLibraryPaths();
     this._newMonomerForm.molSketcher.resize();
     if ((this.tv = this.findActiveManagerView()) && (libName ?? this.libInput.value)) {
       // get monomer library list
-      this.libInput && ((this.libInput as DG.ChoiceInput<string>).items = availableMonLibs);
-      libName && (this.libInput.value = libName);
+      try {
+        this._skipLibInputOnchange = true;
+        this.libInput && ((this.libInput as DG.ChoiceInput<string>).items = availableMonLibs);
+        libName && (this.libInput.value = libName);
+      } catch (e) {
+        grok.shell.error('Error updating library list');
+        console.error(e);
+      } finally {
+        this._skipLibInputOnchange = false;
+      }
       const df = await this.getMonomersDf(libName);
       this.tv.dataFrame = df;
       this.adjustColWidths();
@@ -287,6 +297,7 @@ export class MonomerManager implements IMonomerManager {
     this.tv.name = MonomerManager.VIEW_NAME;
     this.libInput = ui.input.choice('Monomer Library', {value: libName, items: availableMonLibs, nullable: false, onValueChanged: async () => {
       try {
+        if (this._skipLibInputOnchange) return;
         const df = await this.getMonomersDf(this.libInput.value!);
           this.tv!.dataFrame = df;
           this.adjustColWidths();
@@ -553,6 +564,8 @@ class MonomerForm implements INewMonomerForm {
       }
       try {
         this.rgroupsGridRoot.style.display = 'none';
+        const rGroupsPane = this.inputsTabControl.panes.find((p) => p.name?.toLowerCase() === 'r-groups');
+        rGroupsPane && (rGroupsPane.header.style.removeProperty('background-color'));
         let smiles = this.molSketcher.getSmiles();
         if (!smiles) {
           this.rgroupsGrid.items = [];
@@ -568,9 +581,21 @@ class MonomerForm implements INewMonomerForm {
           this.rgroupsGrid.items = [];
           this.rgroupsGrid.render();
           this.saveValidationResult = 'At least one R-group is required';
+          rGroupsPane && (rGroupsPane.header.style.setProperty('background-color', '#ff000030'));
           this.invalidateSaveButton();
           return;
         }
+
+        // check for duplicate r-groups
+        const rGroupsSet = new Set(rGroupMatches.map((match) => match[0]));
+        if (rGroupsSet.size !== rGroupMatches.length) {
+          this.saveValidationResult = 'Duplicate R-groups are not allowed';
+          this.rgroupsGridRoot.style.display = 'flex';
+          rGroupsPane && (rGroupsPane.header.style.setProperty('background-color', '#ff000030'));
+          this.invalidateSaveButton();
+          return;
+        }
+
         const rGroupNums = rGroupMatches.map((match) => Number.parseInt(match[0].match(/[1-9]/g)![0]));
         const rGroupItems: RGroup[] = rGroupNums.map((num) => {
           const existingRGroup = this.rgroupsGrid.items.find((rg) => rg[HELM_RGROUP_FIELDS.LABEL] === `R${num}`) as RGroup | undefined;
@@ -581,8 +606,8 @@ class MonomerForm implements INewMonomerForm {
             [HELM_RGROUP_FIELDS.LABEL]: `R${num}`,
           } as unknown as RGroup;
         });
-        if (this.rgroupsGrid.items.length !== rGroupItems.length)
-          this.rgroupsGrid.items = rGroupItems;
+        // if (this.rgroupsGrid.items.length !== rGroupItems.length)
+        this.rgroupsGrid.items = rGroupItems.sort((a, b) => a.label.localeCompare(b.label));
         this.rgroupsGrid.render();
         this.rgroupsGridRoot.style.display = 'flex';
         const mostSimilar = await mostSimilarNaturalAnalog(capSmiles(smiles, rGroupItems), this.polymerTypeInput.value ?? '');
