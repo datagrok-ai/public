@@ -53,12 +53,12 @@ export function getNewMonomers(rdkit: RDModule, mLib: IMonomerLib, rule: RuleRea
 
   const monomerNames = new Array<string>(totalLength);
   const resMonomers = new Array<Monomer>(totalLength);
-  const rawMonomers = new Array<string>(totalLength);
+  const monomers = new Array<string>(totalLength);
 
   const mainRxn = getReactionSmirks(rdkit, reacSmarts);
 
-  const reacCutFirst = `${reactants[0]}>>[C:1]`;
-  const reacCutSecond = `${reactants[1]}>>[C:2]`;
+  const reacCutFirst = `${reactants[0]}>>[C:1]C`;
+  const reacCutSecond = `${reactants[1]}>>[C:2]C`;
 
   const rxnCutFirst = getReactionSmirks(rdkit, reacCutFirst);
   const rxnCutSecond = getReactionSmirks(rdkit, reacCutSecond);
@@ -69,7 +69,7 @@ export function getNewMonomers(rdkit: RDModule, mLib: IMonomerLib, rule: RuleRea
     if (!monomer) throw new MonomerNotFoundError('PEPTIDE', rule.firstMonomers[i]);
 
     const sMolBlock = cutReactant(rdkit, monomer.molfile, rxnCutFirst, monomer.name);
-    rawMonomers[counter] = sMolBlock;
+    monomers[counter] = sMolBlock;
     monomerNames[counter] = `${monomer.symbol}_${monomerName}`;
     counter++;
   }
@@ -78,7 +78,7 @@ export function getNewMonomers(rdkit: RDModule, mLib: IMonomerLib, rule: RuleRea
     if (!monomer) throw new MonomerNotFoundError('PEPTIDE', rule.secondMonomers[i]);
 
     const sMolBlock = cutReactant(rdkit, monomer.molfile, rxnCutSecond, monomer.name);
-    rawMonomers[counter] = sMolBlock;
+    monomers[counter] = sMolBlock;
     monomerNames[counter] = `${monomer.symbol}_${monomerName}`;
     counter++;
   }
@@ -98,20 +98,22 @@ export function getNewMonomers(rdkit: RDModule, mLib: IMonomerLib, rule: RuleRea
     mol?.delete();
   }
   //pMolblock = reactionMembers[1]//cutProduct(rdkit, monomer1?.molfile, monomer2?.molfile, mainRxn, monomerName);
-  rawMonomers[counter] = pMolblock;
+  monomers[counter] = pMolblock;
   monomerNames[counter] = monomerName;
 
-  //after RDKit works
-  for (let i = 0; i < totalLength - 1; i ++)
-    rawMonomers[i] = rawMonomers[i].replace('0.0000 C   ', '0.0000 R#  ').replace('M  RGP  2', 'M  RGP  3   1   3');
-  rawMonomers[totalLength - 1] = modProduct(rawMonomers[totalLength - 1]);
+  //after RDKit works - [X:N] is first atom which is exploited
+  for (let i = 0; i < totalLength - 1; i ++) {
+    monomers[i] = monomers[i].replace('    0.0000    0.0000    0.0000 C   ', '    0.0000    0.0000    0.0000 R#  ')
+      .replace('M  RGP  2', 'M  RGP  3   2   3');
+  }
+  monomers[totalLength - 1] = modProduct(monomers[totalLength - 1]);
 
   for (let i = 0; i < totalLength; i ++) {
     const isProduct = i == totalLength - 1 ? true : false;
     const resMonomer: Monomer = {
       [REQ.SYMBOL]: monomerNames[i],
       [REQ.NAME]: monomerNames[i],
-      [REQ.MOLFILE]: rawMonomers[i],
+      [REQ.MOLFILE]: monomers[i],
       [REQ.AUTHOR]: '',
       [REQ.ID]: 0,
       [REQ.RGROUPS]: getNewGroups(isProduct),
