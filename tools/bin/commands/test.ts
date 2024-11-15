@@ -124,16 +124,12 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
       let reproduced = await reproducedTest(args, testsToReproduce);
       for (let test of testsToReproduce) {
         let reproducedTest = reproduced.get(test);
-        console.log(test);
-
         if (reproducedTest && !reproducedTest.failed)
           r = await updateResultsByReproduced(r, reproducedTest, test)
       }
     }
     testsResults.push(r);
     organized = testsLeft;
-    console.log(r);
-
   }
   while (r.verboseFailed.includes('Error'));
   return await mergeWorkersResults(testsResults);
