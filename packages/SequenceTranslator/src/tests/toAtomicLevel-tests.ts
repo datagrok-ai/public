@@ -85,8 +85,8 @@ category('toAtomicLevel', () => {
     try {
       const molInchi = mol.get_inchi();
       const molInchiKey = rdKitModule.get_inchikey_for_inchi(molInchi);
-      expect(mol.get_num_bonds(), 6);
-      expect(mol.get_num_atoms(), 7);
+      expect(mol.get_num_bonds(), 7);
+      expect(mol.get_num_atoms(), 8);
       // TODO: Check inchi key for the new monomer molfile
       // expect(molInchiKey, 'V2H10N2O3S-UHFFFAOYSA-N');
     } finally {
