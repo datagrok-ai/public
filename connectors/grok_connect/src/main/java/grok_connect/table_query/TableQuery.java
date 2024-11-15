@@ -1,8 +1,11 @@
 package grok_connect.table_query;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
-
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.utils.GrokConnectUtil;
 
@@ -137,7 +140,8 @@ public class TableQuery {
     }
 
     private String getSelectFields(AggrToSql aggrToSql, AddBrackets addBrackets) {
-        Set<String> preparedFields = new HashSet<>();
+        // use list to preserve order
+        List<String> preparedFields = new ArrayList<>();
         Set<String> uniqueNames = new HashSet<>();
         for (String field : fields) {
             String[] splitField = field.split("\\.");
