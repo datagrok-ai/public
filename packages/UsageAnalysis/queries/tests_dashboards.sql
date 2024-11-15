@@ -13,11 +13,12 @@ select
   case when r.passed is null then 'did not run' when r.skipped then 'skipped' when r.passed then 'passed' when not r.passed then 'failed' else 'unknown' end as status,
   r.result,
   r.duration,
-  r.benchmark
+  r.benchmark,
+  t.owner
 from tests t full join last_builds b on 1=1
-left join test_runs r on r.test_name = t.name and r.build_name = b.name and
+left join test_runs r on r.test_name = t.name and r.build_name = b.name and (t.first_run <= r.date_time or t.first_run is null) and
 r.date_time = (select max(_r.date_time) from test_runs _r where _r.test_name = r.test_name and _r.build_name = r.build_name and not _r.stress_test) and not r.stress_test
-where (t.first_run <= r.date_time or t.first_run is null) and   t.name not like '%Unhandled exceptions: Exception' and (not t.name = ': : ') and t.name not like 'Unknown:%'
+where   t.name not like '%Unhandled exceptions: Exception' and (not t.name = ': : ') and t.name not like 'Unknown:%'
 order by b.name, t.name
 
 --end
@@ -37,8 +38,8 @@ select
   r.result,
   CAST(min(r.duration) AS int)as duration
 from tests t full join last_builds b on 1=1
-left join test_runs r on r.test_name = t.name and r.build_name = b.name and r.benchmark 
-where (t.first_run <= r.date_time or t.first_run is null) and  t.name not like '%Unhandled exceptions: Exception' and (not t.name = ': : ')
+left join test_runs r on r.test_name = t.name and r.build_name = b.name and r.benchmark  and (t.first_run <= r.date_time or t.first_run is null)
+where t.name not like '%Unhandled exceptions: Exception' and (not t.name = ': : ')
 group by b.name, t.name, r.date_time, r.passed, r.skipped, r.result, t.type
 order by b.name, t.name
 --end
