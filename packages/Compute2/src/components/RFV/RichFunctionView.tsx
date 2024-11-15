@@ -307,6 +307,12 @@ export const RichFunctionView = Vue.defineComponent({
 
     const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
 
+    const viewerTabLabels = Vue.computed(() => 
+      [
+        ...currentCall.value.inputParams.values(),
+        ...currentCall.value.outputParams.values()
+      ].filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME));
+
     return () => {
       let lastCardLabel = null as string | null;
       let scalarCardCount = 0;
@@ -475,10 +481,11 @@ export const RichFunctionView = Vue.defineComponent({
                       dock-spawn-dock-to={intelligentLayout &&
                         lastCardLabel && scalarCardCount < 3 ? lastCardLabel: null
                       }
-                      dock-spawn-dock-type={intelligentLayout ? (lastCardLabel ?
-                        (categoryProps.length > 3 ?
-                          'fill': (scalarCardCount < 3 ? 'right': 'down')
-                        ): 'down') : null
+                      dock-spawn-dock-type={intelligentLayout ? (viewerTabLabels.value.length > 0 ? 
+                        (lastCardLabel ?
+                          (categoryProps.length > 3 ?
+                            'fill': (scalarCardCount < 3 ? 'right': 'down')
+                          ): 'down') : null): 'fill'
                       }
                       dock-spawn-dock-ratio={intelligentLayout ?
                         (lastCardLabel && scalarCardCount < 3 ? 0.5: 0.15) : null
