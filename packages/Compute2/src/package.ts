@@ -76,12 +76,12 @@ export async function TreeWizardEditor(call: DG.FuncCall) {
   const app = Vue.createApp(TreeWizardAppInstance, {providerFunc: call.func.nqName});
   view.root.classList.remove('ui-panel');
   view.root.classList.add('ui-box');
-  
+
   view.name = call.func.friendlyName;
   view.parentCall = thisCall;
   view.parentView = thisCall.parentCall?.aux['view'];
   view.basePath = `/${thisCall.func.name}`;
-  
+
   grok.shell.add(view);
   app.mount(view.root);
 
@@ -222,7 +222,7 @@ export async function MockProvider2(params: any) {
       id: 'link1',
       from: 'in1:stepAdd/res',
       to: 'out1:stepMul/a',
-      isMeta: true,
+      type: 'meta',
       handler({controller}) {
         controller.setViewMeta('out1', {key: 'val'});
       },
@@ -243,11 +243,11 @@ export async function MockProvider2(params: any) {
         'toInitTemp:cooling/initTemp'
       ],
       actions: 'actions:cooling',
-      isValidator: true,
+      type: 'validator',
       handler({controller}) {
         const initTemp = controller.getFirst('initTemp');
         const ambTemp = controller.getFirst('ambTemp');
-        
+
         if (initTemp < ambTemp) {
           const action = controller.getValidationAction('actions', 'action1');
 
