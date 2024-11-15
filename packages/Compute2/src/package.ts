@@ -224,13 +224,13 @@ export async function MockProvider2(params: any) {
       to: 'out1:stepMul/a',
       type: 'meta',
       handler({controller}) {
-        controller.setViewMeta('out1', {key: 'val'});
+        controller.setViewMeta('out1', {items: ['1', '2']});
       },
     },
     {
       id: 'toMul',
       from: 'from:stepAdd/res',
-      to: 'to:stepMul/a',
+      to: 'to:stepMul/b',
       defaultRestrictions: { to: 'restricted' },
     },
     {
@@ -289,11 +289,11 @@ export async function TestSub2(a: number, b: number) {
   return a - b;
 }
 
-//input: double a
+//input: string a {choices: ['0','1']}
 //input: double b
 //output: double res
 export async function TestMul2(a: number, b: number) {
-  return a * b;
+  return Number(a) * b;
 }
 
 //input: double a

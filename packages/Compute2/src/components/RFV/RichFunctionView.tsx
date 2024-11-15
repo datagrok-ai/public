@@ -254,6 +254,8 @@ export const RichFunctionView = Vue.defineComponent({
       currentCall
     );
 
+    const callMeta = Vue.computed(() => props.callMeta);
+
     const isIncomplete = Vue.computed(() => props.callState?.isOutputOutdated);
     const isRunning = Vue.computed(() => props.callState?.isRunning);
     const isRunnable = Vue.computed(() => props.callState?.isRunnable);
@@ -390,6 +392,7 @@ export const RichFunctionView = Vue.defineComponent({
                 {
                   Vue.withDirectives(<InputForm
                     funcCall={currentCall.value}
+                    callMeta={callMeta.value}
                     validationStates={validationState.value}
                     consistencyStates={props.consistencyStates}
                     onActionRequested={(actionUuid) => emit('actionRequested', actionUuid)}

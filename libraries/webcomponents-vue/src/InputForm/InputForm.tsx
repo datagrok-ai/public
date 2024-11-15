@@ -17,6 +17,7 @@ import $ from 'cash-dom';
 import {injectLockIcons} from '@datagrok-libraries/compute-utils/function-views/src/shared/utils';
 import {ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {FuncCallInputStatusable, injectInputBaseStatus, isInputInjected} from './utils';
+import {BehaviorSubject} from 'rxjs';
 
 declare global {
   namespace JSX {
@@ -38,6 +39,9 @@ export const InputForm = Vue.defineComponent({
     },
     consistencyStates: {
       type: Object as Vue.PropType<Record<string, ConsistencyInfo>>,
+    },
+    callMeta: {
+      type: Object as Vue.PropType<Record<string, BehaviorSubject<any>>>,
     },
     isReadonly: {
       type: Boolean,
@@ -69,6 +73,8 @@ export const InputForm = Vue.defineComponent({
       };
     };
 
+    const callMeta = Vue.computed(() => props.callMeta);
+
     Vue.watchEffect(() => {
       if (!currentForm.value) return;
 
@@ -78,6 +84,7 @@ export const InputForm = Vue.defineComponent({
           const input = currentForm.value!.getInput(param.property.name);
           const validationState = validationStates.value?.[param.property.name];
           const consistencyState = consistencyStates.value?.[param.property.name];
+          const paramItems = callMeta.value?.[param.property.name].value?.['items'];
 
           if (!isInputInjected(input))
             injectInputBaseStatus(input);
@@ -88,6 +95,9 @@ export const InputForm = Vue.defineComponent({
           });
 
           input.enabled = !isReadonly.value;
+
+          if (paramItems && input.inputType === DG.InputType.Choice)
+            (input as DG.ChoiceInput<any>).items = paramItems;
         });
     });
 
