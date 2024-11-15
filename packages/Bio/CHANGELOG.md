@@ -1,5 +1,12 @@
 # Bio changelog
 
+## 2.17.1 (2024-11-15)
+
+* Fix Tests
+* Fix Fix monomer manager styles
+* Fix Monomer manager incorrect loading
+* Add R-groups validations
+
 ## 2.17.0 (2024-11-06)
 
 Cell renderer: Harmonize macromolecule renderers
