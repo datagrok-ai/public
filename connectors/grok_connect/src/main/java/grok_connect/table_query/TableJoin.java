@@ -12,4 +12,13 @@ public class TableJoin {
 
     public TableJoin () {
     }
+
+    public TableJoin(String leftTableName, String rightTableName, String rightTableAlias, String joinType, List<String> leftTableKeys, List<String> rightTableKeys) {
+        this.leftTableName = leftTableName;
+        this.rightTableName = rightTableName;
+        this.rightTableAlias = rightTableAlias;
+        this.joinType = joinType;
+        this.leftTableKeys = leftTableKeys;
+        this.rightTableKeys = rightTableKeys;
+    }
 }

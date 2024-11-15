@@ -136,7 +136,7 @@ public class TableQuery {
         }
         else
             result = sql.toString();
-        return result;
+        return result.trim();
     }
 
     private String getSelectFields(AggrToSql aggrToSql, AddBrackets addBrackets) {
@@ -164,7 +164,7 @@ public class TableQuery {
             }
         }
         preparedFields.addAll(getAggFuncs().stream().map(aggrToSql::convert).filter(Objects::nonNull).collect(Collectors.toList()));
-        return preparedFields.isEmpty() ? "*\n" : preparedFields.stream()
+        return preparedFields.isEmpty() ? "*" + System.lineSeparator() : preparedFields.stream()
                 .collect(Collectors.joining(String.format(",%s", System.lineSeparator()), "", System.lineSeparator()));
     }
 

@@ -585,7 +585,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
         if (funcInfo != null) {
             String sql = funcInfo.dbFunctionName.replaceAll("#", addBrackets(aggr.colName));
-            return sql + " as " + addBrackets(funcInfo.dbFunctionName.replaceAll("#", aggr.colName));
+            return sql + " as " + addBrackets(funcInfo.dbFunctionName).replaceAll("#", aggr.colName);
         }
         else
             return null;
@@ -604,7 +604,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     private String patternToSql(FieldPredicate condition) {
-        return condition.matcher.toSql(condition.dataType, condition.field);
+        return condition.matcher.toSql(condition.dataType, addBrackets(condition.field));
     }
 
     public String queryTableSql(DataConnection conn, TableQuery query) {
