@@ -171,6 +171,7 @@ export const RichFunctionView = Vue.defineComponent({
       hashParams.activePanel = panelTitle;
     };
     const personalPanelsStorage = (call: DG.FuncCall) => `${call.func.nqName}_personal_state`;
+    const defaultPanelsStorage = (call: DG.FuncCall) => `${call.func.nqName}_default_state`;
 
     const getCurrentState = () => {
       const layout = dockRef?.value?.getLayout();
@@ -190,6 +191,18 @@ export const RichFunctionView = Vue.defineComponent({
       return item ? JSON.parse(item): null;
     };
 
+    const getSavedDefaultState = (call: DG.FuncCall): PanelsState | null => {
+      const item = localStorage.getItem(defaultPanelsStorage(call));
+      return item ? JSON.parse(item): null;
+    };
+
+    const saveDefaultState = (call: DG.FuncCall = currentCall.value) => {
+      if (!dockInited.value) return;
+
+      const state = getCurrentState();
+      if (state) localStorage.setItem(defaultPanelsStorage(call), state);
+    };
+
     const savePersonalState = (call: DG.FuncCall = currentCall.value) => {
       if (!dockInited.value) return;
 
@@ -197,8 +210,10 @@ export const RichFunctionView = Vue.defineComponent({
       if (state) localStorage.setItem(personalPanelsStorage(call), state);
     };
 
-    const removeSavedPersonalState = () => {
+    const removeSavedPersonalState = async () => {
       localStorage.removeItem(personalPanelsStorage(currentCall.value));
+      
+      await loadDefaultLayout();
     };
 
     let intelligentLayout = true;
@@ -216,6 +231,24 @@ export const RichFunctionView = Vue.defineComponent({
       await Vue.nextTick();
 
       await dockRef.value.useLayout(personalState.layout);
+
+      intelligentLayout = true;
+    };
+
+    const loadDefaultLayout = async () => {
+      const defaultState = getSavedDefaultState(currentCall.value);
+      if (!dockRef.value || !defaultState || !dockInited.value) return;
+
+      intelligentLayout = false;
+
+      historyHidden.value = defaultState.historyHidden;
+      helpHidden.value = defaultState.helpHidden;
+      formHidden.value = defaultState.formHidden;
+      visibleTabLabels.value = defaultState.visibleTabLabels;
+
+      await Vue.nextTick();
+
+      await dockRef.value.useLayout(defaultState.layout);
 
       intelligentLayout = true;
     };
@@ -240,8 +273,11 @@ export const RichFunctionView = Vue.defineComponent({
       visibleTabLabels.value = [...tabLabels.value];
     }, {immediate: true});
 
-    Vue.watch(currentCall, async () => {
-      if (dockInited.value) await loadPersonalLayout();
+    Vue.watch([currentCall, dockInited], async () => {
+      if (dockInited.value) {
+        saveDefaultState()
+        await loadPersonalLayout();
+      }
     }, {flush: 'post'});
 
     Vue.onBeforeUnmount(() => {
@@ -277,16 +313,6 @@ export const RichFunctionView = Vue.defineComponent({
 
       return (
         <div class='w-full h-full flex' ref={root}>
-          <RibbonMenu groupName='Layout'>
-            <span onClick={loadPersonalLayout}>
-              <IconFA name='life-ring' style={{'padding-right': '3px'}}/>
-              <span> Load personal </span>
-            </span>
-            <span onClick={removeSavedPersonalState}>
-              <IconFA name='eraser' style={{'padding-right': '3px'}}/>
-              <span> Remove personal </span>
-            </span>
-          </RibbonMenu>
           <RibbonMenu groupName='Panels'>
             <span
               onClick={() => formHidden.value = !formHidden.value}
@@ -317,6 +343,10 @@ export const RichFunctionView = Vue.defineComponent({
               <div> <IconFA name='history' style={menuIconStyle}/> Show history </div>
               { !historyHidden.value && <IconFA name='check'/>}
             </span> }
+            <span onClick={removeSavedPersonalState}>
+              <IconFA name='eraser' style={{'padding-right': '3px'}}/>
+              <span> Reset layout </span>
+            </span>
           </RibbonMenu>
           <RibbonPanel>
             <IconFA
