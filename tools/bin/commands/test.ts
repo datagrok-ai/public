@@ -8,8 +8,9 @@ import { Browser, Page } from 'puppeteer';
 import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
+import * as Papa from 'papaparse';
 import * as testUtils from '../utils/test-utils';
-import { WorkerOptions, loadTestsList, runWorker, ResultObject, saveCsvResults, printWorkersResult, mergeWorkersResults, Test, OrganizedTests} from '../utils/test-utils';
+import { WorkerOptions, loadTestsList, runWorker, ResultObject, saveCsvResults, printWorkersResult, mergeWorkersResults, Test, OrganizedTests as OrganizedTest } from '../utils/test-utils';
 import { setAlphabeticalOrder } from '../utils/order-functions';
 
 const testInvocationTimeout = 3600000;
@@ -34,14 +35,6 @@ export async function test(args: TestArgs): Promise<boolean> {
     packageJsonData = JSON.parse(fs.readFileSync(path.join(curDir, 'package.json'), { encoding: 'utf-8' }))
   let packageName = args.package ? utils.kebabToCamelCase(args.package) : utils.kebabToCamelCase(utils.removeScope(packageJsonData.name));
   let packagesDir = path.basename(curDir) === "packages" ? curDir : path.dirname(curDir);
-  let categoryToCheck: string | undefined = undefined;
-  let testToCheck: string | undefined = undefined;
-
-  if (args.category) {
-    categoryToCheck = args.category.toString();
-    if (args.test)
-      testToCheck = args.test.toString();
-  }
 
   console.log('Environment variable `TARGET_PACKAGE` is set to', packageName);
 
@@ -60,7 +53,7 @@ export async function test(args: TestArgs): Promise<boolean> {
   }
 
   process.env.TARGET_PACKAGE = packageName;
-  let res = await runTesting(args, categoryToCheck, testToCheck);
+  let res = await runTesting(args);
   if (args.csv)
     saveCsvResults([res.csv], csvReportDir);
   printWorkersResult(res, args.verbose)
@@ -79,11 +72,11 @@ function isArgsValid(args: TestArgs): boolean {
   return true;
 }
 
-async function runTesting(args: TestArgs, categoryToCheck: string | undefined, testToCheck: string | undefined): Promise<ResultObject> {
+async function runTesting(args: TestArgs): Promise<ResultObject> {
   color.info('Loading tests...');
   const testsObj = await loadTestsList([process.env.TARGET_PACKAGE ?? ''], args.core);
   const parsed: Test[][] = (setAlphabeticalOrder(testsObj, 1, 1));
-  let organized : OrganizedTests[]= parsed[0].map(testObj => ({
+  let organized: OrganizedTest[] = parsed[0].map(testObj => ({
     package: testObj.packageName,
     params: {
       category: testObj.category,
@@ -94,7 +87,7 @@ async function runTesting(args: TestArgs, categoryToCheck: string | undefined, t
       }
     }
   }));
-  let filtered: OrganizedTests[] = []
+  let filtered: OrganizedTest[] = []
   if (args.category) {
     for (let element of organized) {
       if (element.params.category === args.category) {
@@ -107,7 +100,7 @@ async function runTesting(args: TestArgs, categoryToCheck: string | undefined, t
 
   color.info('Starting tests...');
   let testsResults: ResultObject[] = [];
-  let r :ResultObject;
+  let r: ResultObject;
   do {
     r = await runWorker(organized, {
       benchmark: args.benchmark ?? false,
@@ -118,16 +111,84 @@ async function runTesting(args: TestArgs, categoryToCheck: string | undefined, t
       verbose: args.verbose ?? false,
       stopOnTimeout: true
     }, 1, testInvocationTimeout);
-    testsResults.push(r);
-    let testsLeft: OrganizedTests[] = [];
-    for(let testData of organized){
-      if(!r.csv.includes(`${testData.params.category},${testData.params.test}`))
+    let testsLeft: OrganizedTest[] = [];
+    let testsToReproduce: OrganizedTest[] = [];
+    for (let testData of organized) {
+      if (!r.csv.includes(`${testData.params.category},${testData.params.test}`))
         testsLeft.push(testData);
+      if (r.verboseFailed.includes(`${testData.params.category}: ${testData.params.test} :  Error:`)) {
+        testsToReproduce.push(testData);
+      }
     }
+    if (testsToReproduce.length > 0) {
+      let reproduced = await reproducedTest(args, testsToReproduce);
+      for (let test of testsToReproduce) {
+        let reproducedTest = reproduced.get(test);
+        console.log(test);
+
+        if (reproducedTest && !reproducedTest.failed)
+          r = await updateResultsByReproduced(r, reproducedTest, test)
+      }
+    }
+    testsResults.push(r);
     organized = testsLeft;
+    console.log(r);
+
   }
-  while (r.verboseFailed.includes('EXECUTION TIMEOUT'));
+  while (r.verboseFailed.includes('Error'));
   return await mergeWorkersResults(testsResults);
+}
+
+async function reproducedTest(args: TestArgs, testsToReproduce: OrganizedTest[]): Promise<Map<OrganizedTest, ResultObject>> {
+  const res: Map<OrganizedTest, ResultObject> = new Map<OrganizedTest, ResultObject>();
+  for (let test of testsToReproduce) {
+    let r = await runWorker([test], {
+      benchmark: args.benchmark ?? false,
+      catchUnhandled: false,
+      gui: false,
+      record: false,
+      report: false,
+      verbose: false,
+      stopOnTimeout: true,
+      reproduce: true
+    }, 1, testInvocationTimeout);
+    if (test.params.category && test.params.test)
+      res.set(test, r);
+  }
+  return res;
+}
+
+async function updateResultsByReproduced(curentResult: ResultObject, reproducedResult: ResultObject, testsParams: OrganizedTest): Promise<ResultObject> {
+  const table2Dict: Record<string, Record<string, string>> = {};
+  let table1 = readCSVResultData(curentResult.csv);
+  let table2 = readCSVResultData(reproducedResult.csv);
+  const flakingMap: Record<string, string> = {};
+  table2.rows.forEach(row => {
+    const key = `${row['category']},${row['name']}`;
+    flakingMap[key] = row['flaking'];
+  });
+ 
+  table1.rows.forEach(row => {
+    const key = `${row['category']},${row['name']}`;
+    if (key in flakingMap) {
+      row['flaking'] = flakingMap[key]; 
+    }
+  });
+
+  curentResult.csv = Papa.unparse(table1.rows, { columns: table1.headers });;
+  curentResult.verboseFailed = curentResult.verboseFailed.replaceAll(`${testsParams.params.category}: ${testsParams.params.test} :  Error:`, `${testsParams.params.category}: ${testsParams.params.test} : Flaking Error:`)
+  return curentResult;
+}
+
+function readCSVResultData(data: string): { headers: string[], rows: Record<string, string>[] } {
+  const parsed = Papa.parse(data, {
+    header: true,
+    skipEmptyLines: true,
+  });
+  if (parsed.errors.length > 0) {
+    throw new Error(`Error parsing CSV file: ${parsed.errors[0].message}`);
+  }
+  return { headers: parsed.meta.fields || [], rows: parsed.data as Record<string, string>[] };
 }
 
 interface TestArgs {
