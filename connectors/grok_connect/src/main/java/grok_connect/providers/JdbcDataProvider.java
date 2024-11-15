@@ -595,7 +595,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         String brackets = descriptor.nameBrackets;
         return Arrays.stream(name.split("\\."))
                 .map((str) -> str.startsWith(brackets.substring(0, 1)) ? str
-                        : brackets.charAt(0) + name + brackets.substring(brackets.length() - 1))
+                        : brackets.charAt(0) + str + brackets.substring(brackets.length() - 1))
                 .collect(Collectors.joining("."));
     }
 
