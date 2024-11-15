@@ -6,7 +6,7 @@ import {DockManager, IconFA, MarkDown} from '@datagrok-libraries/webcomponents-v
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
 import {hasAddControls, PipelineWithAdd} from '../../utils';
-import {PipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {isParallelPipelineState, isSequentialPipelineState, PipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 
 
 export const PipelineView = Vue.defineComponent({
@@ -48,6 +48,11 @@ export const PipelineView = Vue.defineComponent({
       if (el === historyRef.value?.$el) historyHidden.value = true;
       if (el === helpRef.value?.$el) helpHidden.value = true;
     };
+
+    const hasInnerStep = Vue.computed(() => 
+      (isParallelPipelineState(state.value) || isSequentialPipelineState(state.value)) && 
+      state.value.steps.length > 0
+    )
 
     const cardsClasses = 'grok-app-card grok-gallery-grid-item-wrapper pr-4';
 
@@ -108,13 +113,13 @@ export const PipelineView = Vue.defineComponent({
                     <IconFA name='info' class={'d4-picture'} />
                     <div> Review the docs </div>
                   </div> }
-                <div
+                { hasInnerStep.value && <div
                   class={cardsClasses}
                   onClick={() => emit('proceedClicked')}
                 >
                   <IconFA name='plane-departure' class={'d4-picture'} />
                   <div> Proceed to the sequence's first step </div>
-                </div>
+                </div> }
               </div>
 
               { hasAddControls(state.value) && <span>
