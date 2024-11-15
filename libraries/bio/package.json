@@ -1,14 +1,14 @@
 {
   "name": "@datagrok-libraries/bio",
   "author": {
-    "name": "Aleksandr Tanas",
-    "email": "atanas@datagrok.ai"
+    "name": "Leonid Stolbov",
+    "email": "lstolbov@datagrok.ai"
   },
   "publishConfig": {
     "access": "public"
   },
   "friendlyName": "Datagrok bio library",
-  "version": "5.45.10",
+  "version": "5.45.11",
   "description": "Bio utilities, types supporting Macromolecule, Molecule3D data",
   "dependencies": {
     "@datagrok-libraries/chem-meta": "^1.2.7",
