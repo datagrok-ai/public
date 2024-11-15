@@ -30,6 +30,7 @@ export async function getOverriddenLibrary(rules: Rules): Promise<IMonomerLibBas
       names = [];
       monomers = [];
       console.error(e);
+      grok.shell.warning(e);
     } finally {
       for (let j = 0; j < names.length; j ++)
         argLib[names[j]] = monomers[j];
