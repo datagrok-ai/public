@@ -131,7 +131,7 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
     testsResults.push(r);
     organized = testsLeft;
   }
-  while (r.verboseFailed.includes('Error'));
+  while (r.failed);
   return await mergeWorkersResults(testsResults);
 }
 
