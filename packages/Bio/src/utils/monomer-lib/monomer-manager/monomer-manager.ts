@@ -102,7 +102,7 @@ export class MonomerManager implements IMonomerManager {
   async createNewMonomerLib(libName: string, _monomers: Monomer[]): Promise<void> {
     this.tv?.grid && ui.setUpdateIndicator(this.tv.grid.root, true);
     try {
-      const monomersString = JSON.stringify(_monomers.map((m) => ({...m, lib: undefined, wem: undefined})));
+      const monomersString = JSON.stringify(_monomers.map((m) => ({...m, lib: undefined, wem: undefined})), null, 2);
       if (!libName.endsWith('.json'))
         libName += '.json';
       await (await this.monomerLibManamger.getFileManager()).addLibraryFile(monomersString, libName);
@@ -855,7 +855,7 @@ class MonomerForm implements INewMonomerForm {
       .add(infoTables)
       .addButton('Remove', async () => {
         libJSON = libJSON.filter((m) => !removingMonomers.includes(m));
-        await grok.dapi.files.writeAsText(LIB_PATH + libName, JSON.stringify(libJSON));
+        await grok.dapi.files.writeAsText(LIB_PATH + libName, JSON.stringify(libJSON, null, 2));
         await (await MonomerLibManager.getInstance()).loadLibraries(true);
         await this.refreshTable();
 
@@ -890,7 +890,7 @@ class MonomerForm implements INewMonomerForm {
         else
           libJSON.push({...monomer, lib: undefined, wem: undefined});
 
-        await grok.dapi.files.writeAsText(LIB_PATH + libName, JSON.stringify(libJSON));
+        await grok.dapi.files.writeAsText(LIB_PATH + libName, JSON.stringify(libJSON, null, 2));
         await (await MonomerLibManager.getInstance()).loadLibraries(true);
         await this.refreshTable(monomer.symbol);
         this._molChanged = false; // reset the flag
