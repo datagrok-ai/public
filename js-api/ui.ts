@@ -1359,9 +1359,9 @@ export class Tooltip {
   /** Associated the specified visual element with the corresponding item.
    * Example: {@link https://public.datagrok.ai/js/samples/ui/tooltips/tooltips}
   */
-  bind(element: HTMLElement, tooltip?: string | null | (() => string | HTMLElement | null)): HTMLElement {
+  bind(element: HTMLElement, tooltip?: string | null | (() => string | HTMLElement | null), tooltipPosition?: 'left' | 'right' | 'top' | 'bottom' | undefined | null): HTMLElement {
     if (tooltip != null)
-      api.grok_Tooltip_SetOn(element, tooltip);
+      api.grok_Tooltip_SetOn(element, tooltip, tooltipPosition);
     return element;
   }
 
@@ -2101,7 +2101,7 @@ export function setDisabled(element: HTMLElement, disabled:boolean, tooltip?: st
   if (tooltip == null)
     return;
 
-  api.grok_Tooltip_SetOn(element, tooltip);
+  api.grok_Tooltip_SetOn(element, tooltip, null);
 
   const overlay = document.createElement('span');
   overlay.style.position = 'fixed';
