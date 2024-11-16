@@ -327,7 +327,7 @@ export interface IDartApi {
   grok_Dialog_Clear(d: any): any;
   grok_Dialog_GetOpenDialogs(): any;
   grok_Tooltip_Hide(): any;
-  grok_Tooltip_SetOn(e: any, x: any): any;
+  grok_Tooltip_SetOn(e: any, x: any, position: String): any;
   grok_Tooltip_Show(content: any, x: Num, y: Num): any;
   grok_Tooltip_ShowRowGroup(dataFrame: any, checkRow: any, x: Num, y: Num): any;
   grok_Tooltip_Get_Root(): any;
