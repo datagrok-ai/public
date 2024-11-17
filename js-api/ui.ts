@@ -558,7 +558,7 @@ export function link(
     text: string,
     target: string | Function | object,
     tooltipMsg?: string,
-    options: string | ElementOptions | null = { classes: 'd4-link-external' }): HTMLAnchorElement {
+    options?: string | ElementOptions | null): HTMLAnchorElement {
   let link = element('a') as HTMLAnchorElement;
   link.classList.add('ui-link');
   link.innerText = text;
@@ -566,6 +566,7 @@ export function link(
     link.addEventListener('click', (_) => target());
   }
   else if (typeof target === 'string') {
+    link.classList.add('d4-link-external')
     link.href = target;
     link.target = '_blank';
   }
