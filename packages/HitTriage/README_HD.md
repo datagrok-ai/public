@@ -221,4 +221,4 @@ You can also modify the default shyaring permissions for all newly created campa
 3. On the context panel, expand the `Settings` pane.
 4. Modify the `Default view permissions` and `Default edit permissions` fields to set the default permissions for all newly created campaigns.
 
-![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/edit-default-hd-sharing?raw=true)
+![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/edit-default-hd-sharing.gif?raw=true)
