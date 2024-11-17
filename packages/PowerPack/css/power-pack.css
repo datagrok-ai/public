@@ -133,6 +133,17 @@
     color: var(--grey-5);
 }
 
+.pp-drop-zone {
+    border: dashed #b8bac0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: -webkit-center;
+    z-index: 6001;
+    height: 61px;
+    margin: 5px;
+}
+
 .grok-view:hover .power-pack-widget-host .ui-div::-webkit-scrollbar-thumb {
     background-color: transparent;
 }
