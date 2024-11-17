@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {AppName, HitDesignCampaign, HitDesignTemplate, IFunctionArgs} from './types';
+import {AppName, HitDesignCampaign, HitDesignTemplate, IFunctionArgs, TriagePermissions} from './types';
 import {HitDesignInfoView} from './hit-design-views/info-view';
 import {CampaignIdKey, CampaignJsonName, CampaignTableName,
   HTQueryPrefix, HTScriptPrefix, HitDesignCampaignIdKey,
@@ -19,6 +19,7 @@ import {chemFunctionsDialog} from './dialogs/functions-dialog';
 import {Subscription} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import {defaultPermissions, PermissionsDialog} from './dialogs/permissions-dialog';
+import {getDefaultSharingSettings} from '../packageSettingsEditor';
 
 export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> extends HitAppBase<T> {
   multiView: DG.MultiView;
@@ -656,7 +657,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     };
   }
 
-  async saveCampaign(notify = true): Promise<HitDesignCampaign> {
+  async saveCampaign(notify = true, isCreating = false): Promise<HitDesignCampaign> {
     const campaignId = this.campaignId!;
     const templateName = this.template!.name;
     const enrichedDf = this.dataFrame!;
@@ -667,9 +668,24 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     enrichedDf.columns.toList().forEach((col) => colTypeMap[col.name] = col.type);
     const sketchStateString = this.campaign?.tilesViewerFormSketch ?? undefined;
 
+    const getDefaultPerms = async () => {
+      try {
+        const perms = await getDefaultSharingSettings();
+        const idPerms: TriagePermissions = {view: perms.view.map((p) => p.id), edit: perms.edit.map((p) => p.id)};
+        if (idPerms.edit.length === 0)
+          idPerms.edit = [defaultPermissions.edit[0]];
+        if (idPerms.view.length === 0)
+          idPerms.view = [defaultPermissions.view[0]];
+        return idPerms;
+      } catch (e) {
+        grok.shell.error('Failed to get default permissions');
+        console.error(e);
+      }
+      return defaultPermissions;
+    };
     // if its first time save author as current user, else keep the same
     const authorUserId = this.campaign?.authorUserId ?? grok.shell.user.id;
-    const permissions = this.campaign?.permissions ?? defaultPermissions;
+    const permissions = this.campaign?.permissions ?? await getDefaultPerms();
     const authorName = authorUserId ? this.campaign?.authorUserFriendlyName ?? (await grok.dapi.users.find(authorUserId))?.friendlyName : undefined;
     const campaign: HitDesignCampaign = {
       name: campaignName,
@@ -727,6 +743,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     await _package.files.writeAsText(campaignPath,
       JSON.stringify(campaign));
     notify && grok.shell.info('Campaign saved successfully.');
+    !notify && isCreating && grok.shell.info('Campaign created successfully.');
     this.campaign = campaign;
     return campaign;
   }
