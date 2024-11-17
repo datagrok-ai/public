@@ -724,11 +724,7 @@ export class LruCache<K = any, V = any> {
   }
 }
 
-/**
- * @param {HTMLElement} element
- * @param {string | ElementOptions | null} options
- * @returns {HTMLElement}
- * */
+
 export function _options(element: HTMLElement, options: any) {
   if (options == null)
     return element;

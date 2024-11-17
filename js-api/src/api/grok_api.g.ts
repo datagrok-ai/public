@@ -1198,6 +1198,8 @@ export interface IDartApi {
   grok_Windows_Set_ShowHelp(x: Bool): any;
   grok_Windows_Get_ShowRibbon(): any;
   grok_Windows_Set_ShowRibbon(x: Bool): any;
+  grok_StringUtils_ToSentenceCase(s: String): any;
+  grok_StringUtils_CamelCaseToSentence(s: String, capitalizeFirst: Bool, capitalizeNext: Bool, capitalizeConjunctions: any): any;
   grok_Context_Create(): any;
   grok_Context_CloneDefault(): any;
   grok_Context_Get_Variable(context: any, name: String): any;
