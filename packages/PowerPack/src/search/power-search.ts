@@ -166,7 +166,7 @@ function tableQueriesFunctionsSearch(s: string, host: HTMLDivElement): void {
           return tv.root;
         } catch (e) {
           console.error(e);
-          return ui.divText('Opperation caused exeption');
+          return ui.divText('Operation caused exception');
         }
       }))),
       );
