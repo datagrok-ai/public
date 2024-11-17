@@ -524,7 +524,7 @@ export namespace chem {
       });
 
       let optionsIcon = ui.iconFA('bars', () => {
-        const menuHost = ui.div([], {style: {position: 'fixed', 'z-index': 100}});
+        const menuHost = ui.div([], {style: {position: 'fixed', zIndex: '100'}});
         this.host.parentElement?.prepend(menuHost);
         Menu.popup()
           .item('Copy as SMILES', () => navigator.clipboard.writeText(this.getSmiles()))

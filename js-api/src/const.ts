@@ -697,11 +697,12 @@ export type CsvImportOptions = {
 export type IndexPredicate = (ind: number) => boolean;
 export type StringPredicate = (str: string) => boolean;
 export type ScriptingLanguage = `${SCRIPT_LANGUAGE}`;
+type CSSProperties = Partial<Record<keyof CSSStyleDeclaration, string>>;
 
 export type ElementOptions = {
   id?: string;
   classes?: string;
-  style?: object;
+  style?: CSSProperties;
   //tooltip?: string;
   processNode?: (node: HTMLElement) => void;
   onClick?: (event: PointerEvent) => void;

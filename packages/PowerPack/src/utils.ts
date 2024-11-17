@@ -44,13 +44,11 @@ export function widgetHost(w: DG.Widget, widgetHeader?: HTMLDivElement): HTMLEle
       const widgetSettings = settings[w.factory.name] ?? (settings[w.factory.name] = { });
       widgetSettings.ignored = true;
       saveSettings();
-      grok.shell.info('To control widget visibility, go to Tools | Widgets');
     }
   }
 
   if (w.props.hasProperty('order'))
     host.style.order = w.props.order;
-
 
   const header = ui.div([
     ui.divText(w.props.hasProperty('caption') ? w.props.caption : '', 'd4-dialog-title'),
