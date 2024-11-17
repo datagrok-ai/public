@@ -280,7 +280,7 @@ export class HitDesignInfoView
       this.app.dataFrame = camp.df;
       await this.app.setTemplate(template);
       this.app.campaignProps = camp.campaignProps;
-      await this.app.saveCampaign(false);
+      await this.app.saveCampaign(false, true);
       if (template.layoutViewState && this.app.campaign)
         this.app.campaign.layout = template.layoutViewState;
     });

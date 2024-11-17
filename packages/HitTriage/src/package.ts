@@ -9,6 +9,7 @@ import {loadCampaigns} from './app/utils';
 import {AppName} from './app';
 import {PeptiHitApp} from './app/pepti-hit-app';
 import {PeptiHitHelmColName} from './app/consts';
+import {htPackageSettingsEditorWidget} from './packageSettingsEditor';
 // import {loadCampaigns} from './app/utils';
 
 export const _package = new DG.Package();
@@ -164,4 +165,12 @@ export async function demoFileSubmit(df: DG.DataFrame, molecules: string): Promi
 //output: grid_cell_renderer result
 export function gasteigerCellRenderer(): GasteigerPngRenderer {
   return new GasteigerPngRenderer();
+}
+
+//name: Hit Triage package settings editor
+//tags: packageSettingsEditor
+//input: object propList
+//output: widget result
+export async function htPackageSettingEditor(properties: DG.Property[]) {
+  return htPackageSettingsEditorWidget(properties);
 }
