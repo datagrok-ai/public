@@ -35,9 +35,8 @@ export function saveSettings(): void {
   grok.userSettings.addAll(WIDGETS_STORAGE, s);
 }
 
-export function widgetHost(w: DG.Widget, widgetHeader?: HTMLDivElement): HTMLElement {
-  const host = ui.box(null, 'power-pack-widget-host');
-  widgetHeader ??= ui.div();
+
+function initWidgetHost(host: HTMLDivElement, w: DG.Widget) {
   function remove(): void {
     host.remove();
     if (w.factory?.name) {
@@ -50,21 +49,59 @@ export function widgetHost(w: DG.Widget, widgetHeader?: HTMLDivElement): HTMLEle
   if (w.props.hasProperty('order'))
     host.style.order = w.props.order;
 
-  const header = ui.div([
-    ui.divText(w.props.hasProperty('caption') ? w.props.caption : '', 'd4-dialog-title'),
-    widgetHeader,
-    ui.icons.settings(() => {grok.shell.o = w;}, 'Edit settings'),
-    ui.icons.close(remove, 'Remove'),
-  ], 'd4-dialog-header');
+  const header = host.querySelector('.d4-dialog-header')!;
+  header.appendChild(ui.icons.settings(() => {grok.shell.o = w;}, 'Edit settings'));
+  header.appendChild(ui.icons.close(remove, 'Remove'));
 
   if (w.root.classList.contains('widget-narrow'))
     host.classList.add('widget-narrow');
   if (w.root.classList.contains('widget-wide'))
     host.classList.add('widget-wide');
 
-  host.appendChild(header);
-  host.appendChild(ui.box(w.root, 'power-pack-widget-content'));
+  host.querySelector('.power-pack-widget-content')!.appendChild(w.root);
   ui.tools.setHoverVisibility(host, Array.from(host.querySelectorAll('i')));
+}
+
+function createWidgetHost(title: string) {
+  const header = ui.div([ui.divText(title, 'd4-dialog-title'),], 'd4-dialog-header');
+  const host = ui.box(null, 'power-pack-widget-host');
+  host.appendChild(header);
+  host.appendChild(ui.box(null, 'power-pack-widget-content'));
+  return host;
+}
+
+export function widgetHostFromFunc(f: DG.Func) {
+  const host = createWidgetHost(f.friendlyName);
+  const contentDiv: HTMLDivElement = host.querySelector('.power-pack-widget-content')!;
+
+  f.apply().then(function(w: DG.Widget) {
+      ui.setUpdateIndicator(contentDiv, false, '');
+      w.factory = f;
+      if (w)
+        initWidgetHost(host, w);
+        return;
+  }).catch((e) => {
+    host.style.display = 'none';
+    host.remove();
+    console.error(`Error creating widget ${f.name}`, e);
+  }).finally(() => ui.setUpdateIndicator(contentDiv, false, ''));
+
+  setTimeout(() => {
+    if (contentDiv!.children.length == 0)
+      ui.setUpdateIndicator(contentDiv, true, '');
+  }, 1000);
+
+  if (f.options['order'] !== null)
+    host.style.order = f.options['order'];
+
+  return host;
+}
+
+
+export function widgetHost(w: DG.Widget/*, widgetHeader?: HTMLDivElement*/): HTMLElement {
+  const host = createWidgetHost(w.props.caption ?? '');
+  initWidgetHost(host, w);
+  //widgetHeader ??= ui.div();
 
   return host;
 }

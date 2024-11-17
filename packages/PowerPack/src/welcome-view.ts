@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
 import {powerSearch} from './search/power-search';
-import {widgetHost, getSettings, UserWidgetsSettings, saveSettings} from './utils';
+import {widgetHost, getSettings, UserWidgetsSettings, saveSettings, widgetHostFromFunc} from './utils';
 import {Widget} from "datagrok-api/dg";
 
 export function welcomeView(): DG.View | undefined {
@@ -33,7 +33,7 @@ export function welcomeView(): DG.View | undefined {
   view.root.classList.add('power-pack-welcome-view');
 
   const widgetFunctions = DG.Func.find({tags: ['dashboard'], returnType: 'widget'});
-  const widgets: {[index: string]: Widget} = {};
+  const widgetHosts: {[index: string]: HTMLElement} = {};
   const settings: UserWidgetsSettings = getSettings();
 
   function refresh() {
@@ -42,21 +42,8 @@ export function welcomeView(): DG.View | undefined {
       widgetsHost.removeChild(widgetsHost.firstChild);
 
     for (const f of widgetFunctions) {
-      if (!settings[f.name] || !settings[f.name].ignored) {
-        const widgetHeader = ui.div();
-        if (widgets[f.name])
-          widgetsHost.appendChild(widgetHost(widgets[f.name], widgetHeader));
-        else
-          f.apply({'header': widgetHeader}).then(function(w: DG.Widget) {
-            if (!w)
-              return;
-            w.factory = f;
-            widgets[f.name] = w;
-            widgetsHost.appendChild(widgetHost(w, widgetHeader));
-          }).catch((e) => {
-            console.error(`Unable to execute function ${f.name}`, e);
-          });
-      }
+      if (!settings[f.name] || !settings[f.name].ignored)
+        widgetsHost.appendChild(widgetHosts[f.name] ??= widgetHostFromFunc(f));
     }
   }
 
