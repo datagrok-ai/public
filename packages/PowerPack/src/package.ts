@@ -42,12 +42,14 @@ export function _welcomeView(): DG.View | undefined {
   return welcomeView();
 }
 
+//name: Recent projects
 //output: widget result
 //tags: dashboard
 export function recentProjectsWidget(): DG.Widget {
   return new RecentProjectsWidget();
 }
 
+//name: Community
 //output: widget result
 //tags: dashboard
 export function communityWidget(): DG.Widget {
@@ -64,16 +66,11 @@ export function htmlWidget(): DG.Widget {
   return new HtmlWidget();
 }
 
+//name: Learn
 //output: widget result
 //tags: dashboard
 export function learnWidget(): DG.Widget {
   return new LearningWidget();
-}
-
-//output: widget about
-//tags: dashboard
-export function aboutWidget(): DG.Widget {
-  return new AboutWidget();
 }
 
 //output: widget kpi
