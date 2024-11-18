@@ -8,6 +8,7 @@ import {serialize, deserialize} from '@datagrok-libraries/utils/src/json-seriali
 import {FuncCallInstancesBridge} from './FuncCallInstancesBridge';
 import {AdapterInitData} from './StateTreeNodes';
 import {ItemMetadata} from '../view/ViewCommunication';
+import {loadIsFavorite, saveIsFavorite} from '../../../shared-utils/utils';
 
 const RESTRICTIONS_PATH = 'INPUT_RESTRICTIONS';
 const OUTPUT_OUTDATED_PATH = 'OUTPUT_OUTDATED';
@@ -73,11 +74,13 @@ export async function saveInstanceState(
   metaCall.newId();
   await metaCall.call();
   await historyUtils.saveRun(metaCall);
+  await saveIsFavorite(metaCall, metaData?.isFavorite ?? false);
   return metaCall;
 }
 
 export async function loadInstanceState(id: string) {
   const metaCall = await historyUtils.loadRun(id, false);
+  const isFavorite = await loadIsFavorite(metaCall);
   const config: PipelineSerializedState = deserialize(metaCall.options[CONFIG_PATH] ?? '{}');
-  return [config, metaCall] as const;
+  return [config, metaCall, isFavorite] as const;
 }

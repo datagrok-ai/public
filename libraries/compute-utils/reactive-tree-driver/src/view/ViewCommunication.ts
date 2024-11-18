@@ -23,6 +23,7 @@ export interface LoadDynamicItem {
 export type ItemMetadata = {
   title?: string,
   description?: string,
+  isFavorite?: boolean,
   tags?: string[],
 }
 
