@@ -74,7 +74,6 @@ export type PipelineStateRec<S, T> = PipelineStateStatic<S, T> | PipelineStateSe
 // funccall
 
 export type ViewAction = {
-  id: string,
   uuid: string;
   position: ActionPositions;
   description?: string;
