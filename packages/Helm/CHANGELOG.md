@@ -1,5 +1,9 @@
 # Helm changelog
 
+## 2.6.0 (2024-11-18)
+
+Correct helm loading
+
 ## 2.5.10 (2024-11-15)
 
 Fix async renderer invalidation on cached rendering

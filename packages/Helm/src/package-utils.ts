@@ -56,8 +56,10 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
   // patch window.dojox.gfx.svg.Text.prototype.getTextWidth hangs
   /** get the text width in pixels */
   const pi = DG.TaskBarProgressIndicator.create('Loading Helm Web Editor ...');
+  const requireBackup = window.require;
+  //@ts-ignore
+  const defineBackup = window['define'];
   try {
-    const requireBackup = window.require;
 
     // Dojo modules required by JDraw2 and HELMWebEditor
     // 'dojo.window','dojo.io.script','dojo.io.iframe','dojo.dom',
@@ -88,7 +90,7 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
 
     try {
       // Preliminary loading BiostructureViewer package because of NGL and dojo interference
-      await initNgl();
+      //await initNgl();
 
       await timeout(async () => {
         await new Promise<void>((resolve, reject) => {
@@ -112,7 +114,7 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
               },
             },
           };
-          // Load dojo without package/sources section for the settings dojoConfig to take effect
+          // Load dojo without package/sources section for the settings dojoConfig to take effect, calleback will be called and promise resolved
           DG.Utils.loadJsCss([
             // 'https://ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/dojo.js.uncompressed.js',
             // `${_package.webRoot}/vendor/dojo-1.10.10/dojo/dojo.js.uncompressed.js`,
@@ -141,6 +143,8 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
             _package.logger.debug(`${logPrefix}, window.require( ${JSON.stringify(args)} )`);
             dojoRequire(...args);
           };
+
+          
         }
 
         /** List of dojo modules not ready yet */ let dojoNotReadyList: string[];
@@ -190,6 +194,9 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
     };
     _package.logger.debug(`${logPrefix}, end`);
   } finally {
+    window.require = requireBackup;
+    // @ts-ignore
+    window['define'] = defineBackup;
     pi.close();
   }
 }

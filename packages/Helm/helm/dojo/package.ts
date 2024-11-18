@@ -32,7 +32,7 @@ async function loadModules(): Promise<void> {
   // window.dojo$.ctx = require.context('../../vendor/dojo-1.10.10', true, /\.js\.uncompressed\.js$/);
 
   window.dojo$.uncompressed = unc;
-  window.dojo$.ctx(`./dojo/dojo.js${unc}`);
+  await window.dojo$.ctx(`./dojo/dojo.js${unc}`);
 }
 
 
