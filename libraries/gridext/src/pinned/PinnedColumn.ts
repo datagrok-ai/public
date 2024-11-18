@@ -9,6 +9,7 @@ import {GridCellRendererEx} from "../renderer/GridCellRendererEx";
 import * as PinnedUtils from "./PinnedUtils";
 import {MouseDispatcher} from "../ui/MouseDispatcher";
 import {ColumnsArgs, toDart} from "datagrok-api/dg";
+import { cloneMouseWheelEvent } from './PinnedUtils';
 function getRenderer(cell : DG.GridCell) : GridCellRendererEx | null {
   const colGrid = cell.gridColumn;
   if (colGrid === null || colGrid === undefined)
@@ -1137,7 +1138,7 @@ export class PinnedColumn {
           }
         }
         if(cellRH !== null) {
-          const nRowTable : any = cellRH.tableRowIndex;
+          const nRowTable = cellRH.tableRowIndex;
           if(nRowTable !== null) {
 
             if(this.m_colGrid.name === '') {
@@ -1146,7 +1147,7 @@ export class PinnedColumn {
                 dframe.selection.set(dframe.currentRow.idx, false, true);
             }
 
-            dframe.currentRow = nRowTable;
+            dframe.currentRowIdx = nRowTable;
           }
         }
       }
@@ -1248,10 +1249,10 @@ export class PinnedColumn {
     }
 
     setTimeout(() =>{
-      const ee = new WheelEvent(e.type, e);
+      const ee = cloneMouseWheelEvent(e, {bubbles: false});
       try{grid.overlay.dispatchEvent(ee);}
       catch(ex) {
-        //console.error(ex.message);
+        console.error('cought');
       }
     }, 1);
 
