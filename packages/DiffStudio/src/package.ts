@@ -8,6 +8,7 @@ import {initMatrOperApi} from '../wasm/matrix-operations-api';
 import {solveDefault, solveIVP} from './solver';
 import {ODEs, SolverOptions} from './solver-tools/solver-defs';
 import {DiffStudio} from './app';
+import {getIVP, IVP} from './scripting-tools';
 
 import {getBioreactorSim, getPkPdSim, showBioHelpPanel, showPkPdHelpPanel, getBallFlightSim} from './demo-models';
 
@@ -230,4 +231,12 @@ export function ballFlight(dB: number, roB: number, v: number, a: number) {
     maxDist: simlulation.col('Distance').stats.max,
     maxHeight: simlulation.col('Height').stats.max,
   };
+}
+
+//name: serializeEquations
+//description: Return serialized initial value problem for ordinary differential equations
+//input: string problem
+//output: object df
+export function serializeEquations(problem: string): IVP {
+  return getIVP(problem);
 }
