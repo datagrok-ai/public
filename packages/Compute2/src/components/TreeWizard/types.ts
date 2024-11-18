@@ -12,4 +12,4 @@ export type AugmentedStat = RestrictedStat & {
 };
 
 
-export type Status = 'locked' | 'next' | 'pending' | 'running' | 'succeeded' | 'failed' | 'partially succeeded';
+export type Status = 'next' | 'next warn' | 'next error' | 'pending' | 'running' | 'succeeded' | 'failed' | 'succeeded warn';

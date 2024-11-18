@@ -203,7 +203,7 @@ export class Driver {
 
   private runSequence(msg: RunSequence, state?: StateTree) {
     this.checkState(msg, state);
-    return state.runAction(msg.startUuid);
+    return state.runSequence(msg.startUuid);
   }
 
   private savePipeline(msg: SavePipeline, state?: StateTree) {

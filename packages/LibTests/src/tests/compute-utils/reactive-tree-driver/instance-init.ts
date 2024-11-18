@@ -7,6 +7,7 @@ import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tre
 import {PipelineInstanceConfig, PipelineStateStatic, StepFunCallState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {LoadedPipeline} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
+import {callHandler} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 
 category('ComputeUtils: Driver state tree init', async () => {
   test('Process simple initial config', async () => {
@@ -133,6 +134,14 @@ category('ComputeUtils: Driver state tree init', async () => {
     const tree = StateTree.fromPipelineConfig({config: pconf});
     const state = tree.toSerializedState({disableNodesUUID: true});
     await snapshotCompare(state, 'Process initial config with ref');
+  });
+
+  test('Process initial config with additional data', async () => {
+    const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider5', {version: '1.0'}).toPromise();
+    const pconf = await getProcessedConfig(config);
+    const tree = StateTree.fromPipelineConfig({config: pconf});
+    const state = tree.toSerializedState({disableNodesUUID: true});
+    await snapshotCompare(state, 'Process initial config with additional data');
   });
 });
 

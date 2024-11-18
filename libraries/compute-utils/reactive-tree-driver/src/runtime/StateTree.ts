@@ -51,29 +51,43 @@ export class StateTree {
   //
 
   public toSerializedState(options: StateTreeSerializationOptions = {}): PipelineSerializedState {
-    return StateTree.toStateRec(this.nodeTree.root, true, options, this.linksState) as PipelineSerializedState;
+    return StateTree.toSerializedStateRec(this.nodeTree.root, options);
   }
 
   public toState(options: StateTreeSerializationOptions = {}): PipelineState {
-    return StateTree.toStateRec(this.nodeTree.root, false, options, this.linksState) as PipelineState;
+    return StateTree.toStateRec(this.nodeTree.root, options, this.linksState);
   }
 
   public static toStateRec(
     node: TreeNode<StateTreeNode>,
-    isSerialized: boolean,
     options: StateTreeSerializationOptions = {},
     linksState?: LinksState,
-  ): PipelineState | PipelineSerializedState {
+  ): PipelineState {
     const item = node.getItem();
     const actions = linksState ? linksState.getNodeActionsData(item.uuid) : undefined;
     if (isFuncCallNode(item))
-      return isSerialized ? item.toSerializedState(options) : item.toState(options, actions);
-    const state = isSerialized ? item.toSerializedState(options) : item.toState(options, actions);
+      return item.toState(options, actions);
+    const state = item.toState(options, actions);
     const steps = node.getChildren().map((node) => {
-      const item = this.toStateRec(node.item, isSerialized, options, linksState);
+      const item = this.toStateRec(node.item, options, linksState);
       return item;
     });
-    return {...state, steps} as PipelineState;
+    return {...state, steps};
+  }
+
+  public static toSerializedStateRec(
+    node: TreeNode<StateTreeNode>,
+    options: StateTreeSerializationOptions = {},
+  ):  PipelineSerializedState {
+    const item = node.getItem();
+    if (isFuncCallNode(item))
+      return item.toSerializedState(options);
+    const state = item.toSerializedState(options);
+    const steps = node.getChildren().map((node) => {
+      const item = this.toSerializedStateRec(node.item, options);
+      return item;
+    });
+    return {...state, steps};
   }
 
   //
@@ -308,7 +322,8 @@ export class StateTree {
         return of(undefined);
       return from(nodesSeq.slice(startIdx)).pipe(
         concatMap((node) => {
-          if (!isFuncCallNode(node) || node.pendingDependencies$.value?.length || !node.getStateStore().isRunable$.value)
+          if (!isFuncCallNode(node) || node.pendingDependencies$.value?.length ||
+            !node.getStateStore().isRunable$.value || !node.getStateStore().isOutputOutdated$.value)
             return of(undefined);
           return node.getStateStore().run().pipe(
             concatMap(() => this.waitForLinks()),
@@ -804,7 +819,7 @@ export class StateTree {
     return defer(() => {
       if (this.mockMode)
         return of(undefined);
-      const state = StateTree.toStateRec(root, true, {disableNodesUUID: true});
+      const state = StateTree.toSerializedStateRec(root, {disableNodesUUID: true});
       return saveInstanceState(nqName, state, metaData);
     });
   }

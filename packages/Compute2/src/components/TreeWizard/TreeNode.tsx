@@ -13,28 +13,34 @@ import {hasAddControls, PipelineWithAdd} from '../../utils';
 
 const statusToIcon = {
   ['next']: 'arrow-right',
+  ['next warn']: 'arrow-right',
+  ['next error']: 'arrow-right',
   [`pending`]: 'circle',
   ['running']: 'hourglass-half',
   ['succeeded']: 'check-circle',
-  ['partially succeeded']: 'dot-circle',
+  ['succeeded warn']: 'dot-circle',
   ['failed']: 'times-circle',
 } as Record<Status, string>;
 
 const statusToColor = {
-  ['next']: 'blue',
+  ['next']: 'green',
+  ['next warn']: 'orange',
+  ['next error']: 'blue',
   [`pending`]: 'gray',
   ['running']: 'blue',
   ['succeeded']: 'green',
-  ['partially succeeded']: 'orange',
+  ['succeeded warn']: 'orange',
   ['failed']: 'red',
 } as Record<Status, string>;
 
 const statusToTooltip = {
   [`next`]: `This step is avaliable to run`,
+  [`next warn`]: `This step is avaliable to run, but has warnings`,
+  [`next error`]: `This step has validation errors`,
   ['pending']: 'This step has pending dependencies',
   ['running']: 'This step is running',
   ['succeeded']: 'This step is succeeded',
-  ['partially succeeded']: 'This step has issues',
+  ['succeeded warn']: 'This step has is succeeded, but has warnings',
   ['failed']: 'Run failed',
 } as Record<Status, string>;
 
@@ -46,10 +52,16 @@ const statesToStatus = (
   if (callState.isRunning) return 'running';
   if (callState.pendingDependencies?.length) return 'pending';
   if (!callState.isOutputOutdated) {
-    return getCallSuccess(validationsState, consistencyStates);
-  } else {
-    if (callState.runError) return 'failed';
-  };
+    if (callState.runError)
+      return 'failed';
+    if (hasWarnings(validationsState, consistencyStates) || hasErrors(validationsState))
+      return 'succeeded warn';
+    return 'succeeded';
+  }
+  if (hasErrors(validationsState))
+    return 'next error';
+  if (hasWarnings(validationsState, consistencyStates))
+    return 'next warn';
   return 'next';
 };
 
@@ -58,12 +70,15 @@ const getToolTip = (status: Status, isReadonly: boolean) => {
   return 'This step is locked';
 }
 
-const getCallSuccess = (validationsState?: Record<string, ValidationResult>, consistencyStates?: Record<string, ConsistencyInfo>) => {
-  const firstError = Object.values(validationsState || {}).find(val => (val.errors?.length || val.warnings?.length))
+const hasWarnings = (validationsState?: Record<string, ValidationResult>, consistencyStates?: Record<string, ConsistencyInfo>) => {
+  const firstWarning = Object.values(validationsState || {}).find(val => val.warnings?.length)
   const firstInconsistency = Object.values(consistencyStates || {}).find(val => val.inconsistent);
-  if (firstError || firstInconsistency)
-    return 'partially succeeded';
-  return 'succeeded';
+  return (firstWarning || firstInconsistency)
+}
+
+const hasErrors = (validationsState?: Record<string, ValidationResult>) => {
+  const firstWarning = Object.values(validationsState || {}).find(val => val.errors?.length)
+  return !!firstWarning;
 }
 
 export const TreeNode = Vue.defineComponent({

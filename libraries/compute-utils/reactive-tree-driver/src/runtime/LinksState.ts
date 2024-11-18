@@ -106,7 +106,7 @@ export class LinksState {
   public getNodeActionsData(uuid: string): ViewAction[] | undefined {
     const actions = this.nodesActions.get(uuid);
     if (actions)
-      return actions.map(({uuid, spec}) => ({uuid, ...spec}));
+      return actions.map(({uuid, spec: { position, description, menuCategory, friendlyName, icon }}) => ({uuid, position, description, menuCategory, friendlyName, icon}));
     return actions;
   }
 

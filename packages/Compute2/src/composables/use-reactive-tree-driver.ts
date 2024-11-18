@@ -104,6 +104,10 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
     driver.sendCommand({event: 'runStep', uuid});
   };
 
+  const runSequence = async (startUuid: string) => {
+    driver.sendCommand({event: 'runSequence', startUuid});
+  };
+
   const runAction = (actionUuid: string) => {
     driver.sendCommand({ event: 'runAction', uuid: actionUuid})
   }
@@ -136,6 +140,7 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
     loadAndReplaceNestedPipeline,
     savePipeline,
     runStep,
+    runSequence,
     runAction,
     addStep,
     removeStep,

@@ -52,6 +52,7 @@ export const TreeWizard = Vue.defineComponent({
       loadAndReplaceNestedPipeline,
       savePipeline,
       runStep,
+      runSequence,
       runAction,
       addStep,
       removeStep,
@@ -196,15 +197,17 @@ export const TreeWizard = Vue.defineComponent({
         isUserDeveloper.value = true;
       }
     })
-    
+
     const openMetadataEditDialog = () => {
       const dialog = new EditDialog(currentMetaCallData.value);
       dialog.onMetadataEdit.pipe(take(1)).subscribe((editOptions) => {
         savePipeline(editOptions)
       });
-      
+
       dialog.show({center: true, width: 500})
     }
+
+    const isTreeReady = Vue.computed(() => treeState.value && !treeMutationsLocked.value && !isGlobalLocked.value);
 
     return () => (
       Vue.withDirectives(<div class='w-full h-full'>
@@ -219,13 +222,19 @@ export const TreeWizard = Vue.defineComponent({
             tooltip={inspectorHidden.value ? 'Show inspector': 'Hide inspector'}
             onClick={() => inspectorHidden.value = !inspectorHidden.value }
           /> }
-          <IconFA 
-            name='save' 
+          {isTreeReady.value && <IconFA
+            name='forward'
+            tooltip={'Run ready steps'}
+            style={{'padding-right': '3px'}}
+            onClick={() =>runSequence(treeState.value!.uuid)}
+          /> }
+          {isTreeReady.value && <IconFA
+            name='save'
             tooltip={'Save current state of model'}
             style={{'padding-right': '3px'}}
             onClick={openMetadataEditDialog}
-          />
-          {treeState.value && isTreeReportable.value && <IconFA
+          /> }
+          {isTreeReady.value && isTreeReportable.value && <IconFA
             name='arrow-to-bottom'
             tooltip='Report all steps'
             onClick={async () => reportStep(treeState.value) }

@@ -149,6 +149,7 @@ export type AbstractPipelineStaticConfiguration<P, S, R> = {
 
 export type ParallelItemContext = {
   disableUIAdding?: boolean;
+  disableUIRemoving?: boolean;
   disableUIDragging?: boolean;
 };
 
@@ -165,6 +166,7 @@ export type AbstractPipelineParallelConfiguration<P, S, R> = {
 
 export type SequentialItemContext = {
   disableUIAdding?: boolean;
+  disableUIRemoving?: boolean;
   disableUIDragging?: boolean;
 };
 

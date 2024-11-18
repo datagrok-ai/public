@@ -358,7 +358,7 @@ export async function MockProvider3(params: any) {
   return c;
 }
 
-//name: MockWrapper
+//name: MockWrapper4
 export async function MockWrapper4() {}
 
 //input: object params
@@ -380,6 +380,70 @@ export async function MockProvider4(params: any) {
         nqName: 'LibTests:TestMul2',
       },
     ],
+    links: [{
+      id: 'link1',
+      from: 'in1:step1/a',
+      to: 'out1:step2/a',
+      handler({controller}) {
+        controller.setAll('out1', 2, 'restricted');
+        return;
+      },
+    }],
+  };
+  return config2;
+}
+
+//name: MockWrapper5
+export async function MockWrapper5() {}
+
+//input: object params
+//output: object result
+export async function MockProvider5(params: any) {
+  const config2: PipelineConfiguration = {
+    id: 'pipeline1',
+    type: 'sequential',
+    nqName: 'LibTests:MockWrapper5',
+    provider: 'LibTests:MockProvider5',
+    version: '1.0',
+    approversGroup: 'MockGroup',
+    stepTypes: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:TestAdd2Error',
+        disableUIAdding: true,
+        disableUIDragging: true,
+        disableUIRemoving: true,
+      },
+      {
+        id: 'step2',
+        nqName: 'LibTests:TestMul2',
+      },
+      {
+        id: 'pipeline2',
+        type: 'static',
+        disableUIDragging: true,
+        disableUIRemoving: true,
+        disableUIAdding: true,
+        steps: [
+          {
+            id: 'step3',
+            nqName: 'LibTests:TestSub2',
+
+          },
+          {
+            id: 'step4',
+            nqName: 'LibTests:TestDiv2'
+          }
+        ]
+      }
+    ],
+    initialSteps: [{
+      id: 'step1',
+    }, {
+      id: 'step2',
+    }, {
+      id: 'pipeline2',
+    }],
     links: [{
       id: 'link1',
       from: 'in1:step1/a',

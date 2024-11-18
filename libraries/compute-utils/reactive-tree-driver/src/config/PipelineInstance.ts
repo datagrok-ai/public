@@ -8,16 +8,12 @@ import {ActionPositions, ViewersHook} from './PipelineConfiguration';
 
 export type StepParallelInitialConfig = {
   id: ItemId;
-  disableUIRemoving?: boolean;
-  disableUIDragging?: boolean;
   initialValues?: Record<string, any>;
   inputRestrictions?: Record<string, RestrictionType>;
 }
 
 export type StepSequentialInitialConfig = {
   id: ItemId;
-  disableUIRemoving?: boolean;
-  disableUIDragging?: boolean;
   initialValues?: Record<string, any>;
   inputRestrictions?: Record<string, RestrictionType>;
 }
@@ -53,23 +49,36 @@ export type PipelineSerializedState = PipelineStateRec<StepFunCallSerializedStat
 export function isFuncCallState(state: PipelineState): state is StepFunCallState {
   return state.type === 'funccall';
 }
+
 export function isFuncCallSerializedState(state: PipelineSerializedState): state is StepFunCallSerializedState {
   return state.type === 'funccall';
 }
 
-
 export function isStaticPipelineState(state: PipelineState): state is PipelineStateStatic<StepFunCallState, PipelineInstanceRuntimeData> {
   return state.type === 'static';
 }
+
 export function isParallelPipelineState(state: PipelineState): state is PipelineStateParallel<StepFunCallState, PipelineInstanceRuntimeData> {
   return state.type === 'parallel';
 }
+
 export function isSequentialPipelineState(state: PipelineState): state is PipelineStateSequential<StepFunCallState, PipelineInstanceRuntimeData> {
   return state.type === 'sequential';
 }
 
-export type PipelineStateRec<S, T> = PipelineStateStatic<S, T> | PipelineStateSequential<S, T> | PipelineStateParallel<S, T> | S;
+export function isStaticSerializedPipelineState(state: PipelineSerializedState): state is PipelineStateStatic<StepFunCallSerializedState, {}> {
+  return state.type === 'static';
+}
 
+export function isParallelSerializedPipelineState(state: PipelineSerializedState): state is PipelineStateParallel<StepFunCallSerializedState, {}> {
+  return state.type === 'parallel';
+}
+
+export function isSequentialSerializedPipelineState(state: PipelineSerializedState): state is PipelineStateSequential<StepFunCallSerializedState, {}> {
+  return state.type === 'sequential';
+}
+
+export type PipelineStateRec<S, T> = PipelineStateStatic<S, T> | PipelineStateSequential<S, T> | PipelineStateParallel<S, T> | S;
 
 // funccall
 

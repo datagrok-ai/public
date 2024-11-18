@@ -1,0 +1,66 @@
+{
+  "configId": "pipeline1",
+  "uuid": "",
+  "provider": "LibTests:MockProvider5",
+  "version": "1.0",
+  "nqName": "LibTests:MockWrapper5",
+  "isReadonly": false,
+  "type": "sequential",
+  "steps": [
+    {
+      "type": "funccall",
+      "uuid": "",
+      "nqName": "LibTests:TestAdd2Error",
+      "configId": "step1",
+      "isReadonly": false
+    },
+    {
+      "type": "funccall",
+      "uuid": "",
+      "nqName": "LibTests:TestMul2",
+      "configId": "step2",
+      "isReadonly": false
+    },
+    {
+      "configId": "pipeline2",
+      "uuid": "",
+      "isReadonly": false,
+      "type": "static",
+      "steps": [
+        {
+          "type": "funccall",
+          "uuid": "",
+          "nqName": "LibTests:TestSub2",
+          "configId": "step3",
+          "isReadonly": false
+        },
+        {
+          "type": "funccall",
+          "uuid": "",
+          "nqName": "LibTests:TestDiv2",
+          "configId": "step4",
+          "isReadonly": false
+        }
+      ]
+    }
+  ],
+  "stepTypes": [
+    {
+      "configId": "step1",
+      "disableUIAdding": true,
+      "disableUIDragging": true,
+      "disableUIRemoving": true,
+      "nqName": "LibTests:TestAdd2Error"
+    },
+    {
+      "configId": "step2",
+      "nqName": "LibTests:TestMul2"
+    },
+    {
+      "configId": "pipeline2",
+      "disableUIAdding": true,
+      "disableUIDragging": true,
+      "disableUIRemoving": true
+    }
+  ]
+}
