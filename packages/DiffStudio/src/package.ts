@@ -8,9 +8,10 @@ import {initMatrOperApi} from '../wasm/matrix-operations-api';
 import {solveDefault, solveIVP} from './solver';
 import {ODEs, SolverOptions} from './solver-tools/solver-defs';
 import {DiffStudio} from './app';
-import {getIVP, IVP, getScriptLines} from './scripting-tools';
+import {getIVP, IVP, getScriptLines, getScriptParams} from './scripting-tools';
 
 import {getBioreactorSim, getPkPdSim, showBioHelpPanel, showPkPdHelpPanel, getBallFlightSim} from './demo-models';
+import {DF_NAME} from './constants';
 
 export const _package = new DG.Package();
 
@@ -247,4 +248,21 @@ export function serializeEquations(problem: string): IVP {
 //output: string code
 export function odesToCode(serialization: IVP): string {
   return getScriptLines(serialization).join('\n');
+}
+
+//name: solveODE
+//description: Solve initial value problem for ordinary differential equations
+//input: string problem
+//output: dataframe solution
+export async function solveODE(problem: string): Promise<DG.DataFrame> {
+  const ivp = getIVP(problem);
+  const code = getScriptLines(ivp).join('\n');
+
+  const script = DG.Script.create(code);
+  const params = getScriptParams(ivp);
+  const call = script.prepare(params);
+
+  await call.call();
+
+  return call.outputs[DF_NAME];
 }
