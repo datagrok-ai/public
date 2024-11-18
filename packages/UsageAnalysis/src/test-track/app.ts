@@ -123,6 +123,7 @@ export class TestTrack extends DG.ViewBase {
       return;
     }
 
+    let progressBar = DG.TaskBarProgressIndicator.create('Opening Test Track');
     this.isInitializing = true;
     this.initTreeView().then(() => {
       this.inited = true;
@@ -130,6 +131,7 @@ export class TestTrack extends DG.ViewBase {
 
       this.addCollabTestingSync();
       this.addReporterSync();
+      progressBar.close();
     });
 
   }
