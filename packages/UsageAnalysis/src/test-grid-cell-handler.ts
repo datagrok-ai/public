@@ -23,7 +23,6 @@ export class TestGridCellHandler extends DG.ObjectHandler {
                 if (testData[0] != pathPart && testData[1] != pathPart && testData[testData.length - 1] != pathPart)
                     category = [category, pathPart.trim()].join(':');
             let testResult: DG.DataFrame = await grok.functions.call(`${testData[0].trim()}:test`, { test: testData[testData.length - 1].trim(), category: category.trim() })
-            let tv = grok.shell.addTableView(df);
             let wasError = false;
             let wasSkipped = false;
             for (let a of testResult.rows) {
@@ -33,6 +32,7 @@ export class TestGridCellHandler extends DG.ObjectHandler {
                     wasError = true;
             }
             grok.shell.closeAll();
+            let tv = grok.shell.addTableView(df);
             if (wasSkipped)
                 grok.shell.warning(`${testData.join(':')} was skipped`);
             else if (!wasError)
