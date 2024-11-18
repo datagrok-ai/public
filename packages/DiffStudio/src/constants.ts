@@ -47,3 +47,6 @@ export const SOLVER_OPTIONS_RANGES = new Map([
   ['maxTime', {min: 1, max: 10000}],
   ['scale', {min: 0.5, max: 1}],
 ]);
+
+export const TINY = 0.0001;
+export const STEP_RATIO = 0.5;
