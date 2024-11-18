@@ -1311,10 +1311,18 @@ export class tools {
         if (e != undefined)
           e.style.maxWidth = `${width + 30}px`;
       }
+      if (!element.classList.contains('ui-input-table')) {
+        let options = $(element).find('.ui-input-options');
+        options.each((i) => {
+          let calc = this.getOptionsWidth(options[i] as HTMLElement);
+          (options[i] as HTMLElement).style.marginLeft = `-${calc}px`;
+        });
+      }
       // todo: analyze content(?) and metadata
       // todo: analyze more types
       widths.push(width);
     });
+
     return widths;
   }
 
@@ -1328,6 +1336,22 @@ export class tools {
       widths.push(renderWidth);
     });
     return widths;
+  }
+
+  private static getOptionsWidth(element: HTMLElement) {
+    let wrapper = document.createElement('div');
+    wrapper.classList.add('ui-input');
+    wrapper.classList.add('ui-input-root');
+    wrapper.style.visibility = 'hidden';
+    wrapper.style.position = 'fixed';
+    let value = document.createElement('div');
+    wrapper.append(value);
+    value.classList.add('ui-input-options');
+    value.innerHTML = element.innerHTML;
+    document.body.append(wrapper);
+    let renderWidth = Math.ceil(wrapper.getBoundingClientRect().width);
+    wrapper.remove();
+    return renderWidth;
   }
 
   private static getLabelWidth(element: HTMLElement) {
