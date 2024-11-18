@@ -211,6 +211,90 @@ abstract class TableQueryTest {
 
     public abstract String[] getSimpleJoin();
 
+
+    @Test
+    public void testSelfJoin() {
+        String selfJoinAlias = "events_1";
+        testTableQuery.fields = Arrays.stream(TEST_TABLE_FIELDS).map(f -> TEST_TABLE + "." + f).collect(Collectors.toList());
+        testTableQuery.fields.addAll(Arrays.stream(TEST_TABLE_FIELDS).map(f -> selfJoinAlias + "." + f).collect(Collectors.toList()));
+        TableJoin tableJoin = new TableJoin();
+        tableJoin.joinType = "left";
+        tableJoin.leftTableName = TEST_TABLE;
+        tableJoin.rightTableName = TEST_TABLE;
+        tableJoin.rightTableAlias = selfJoinAlias;
+        tableJoin.leftTableKeys = new ArrayList<String>(){{ add("event_type_id"); }};
+        tableJoin.rightTableKeys = new ArrayList<String>(){{ add("event_type_id"); }};
+        testTableQuery.joins = new ArrayList<TableJoin>(){{ add(tableJoin); }};
+        testQuery(testTableQuery, getSelfJoin());
+    }
+
+    public abstract String[] getSelfJoin();
+
+    @Test
+    public void testSeveralJoins() {
+        String sessionsAlias = "sessions";
+        String usersAlias = "u";
+
+        testTableQuery.fields = Arrays.stream(TEST_TABLE_FIELDS).map(f -> TEST_TABLE + "." + f).collect(Collectors.toList());
+        testTableQuery.fields.addAll(Arrays.stream(JOIN_TEST_TABLE_1_FIELDS).map(f -> JOIN_TEST_TABLE_1 + "." + f).collect(Collectors.toList()));
+        testTableQuery.fields.addAll(Arrays.stream(JOIN_TEST_TABLE_2_FIELDS).map(f -> sessionsAlias + "." + f).collect(Collectors.toList()));
+        testTableQuery.fields.addAll(Arrays.stream(JOIN_TEST_TABLE_3_FIELDS).map(f -> usersAlias + "." + f).collect(Collectors.toList()));
+
+        TableJoin tableJoin1 = new TableJoin();
+        tableJoin1.joinType = "left";
+        tableJoin1.leftTableName = TEST_TABLE;
+        tableJoin1.rightTableName = JOIN_TEST_TABLE_1;
+        tableJoin1.leftTableKeys = new ArrayList<String>(){{ add("event_type_id"); }};
+        tableJoin1.rightTableKeys = new ArrayList<String>(){{ add("id"); }};
+        testTableQuery.joins = new ArrayList<TableJoin>(){{ add(tableJoin1); }};
+
+        TableJoin tableJoin2 = new TableJoin();
+        tableJoin2.joinType = "right";
+        tableJoin2.leftTableName = TEST_TABLE;
+        tableJoin2.rightTableName = JOIN_TEST_TABLE_2;
+        tableJoin2.rightTableAlias = sessionsAlias;
+        tableJoin2.leftTableKeys = new ArrayList<String>(){{ add("session_id"); }};
+        tableJoin2.rightTableKeys = new ArrayList<String>(){{ add("id"); }};
+        testTableQuery.joins.add(tableJoin2);
+
+        TableJoin tableJoin3 = new TableJoin();
+        tableJoin3.joinType = "inner";
+        tableJoin3.leftTableName = sessionsAlias;
+        tableJoin3.rightTableName = JOIN_TEST_TABLE_3;
+        tableJoin3.rightTableAlias = usersAlias;
+        tableJoin3.leftTableKeys = new ArrayList<String>(){{ add("user_id"); }};
+        tableJoin3.rightTableKeys = new ArrayList<String>(){{ add("id"); }};
+        testTableQuery.joins.add(tableJoin3);
+
+        testQuery(testTableQuery, getSeveralJoins());
+    }
+
+    public abstract String[] getSeveralJoins();
+
+    @Test
+    public void testSeveralOnJoin() {
+        String rightTableAlias = "t";
+        testTableQuery.fields = Arrays.stream(TEST_TABLE_FIELDS).map(f -> TEST_TABLE + "." + f).collect(Collectors.toList());
+        testTableQuery.fields.addAll(Arrays.stream(JOIN_TEST_TABLE_1_FIELDS).map(f -> rightTableAlias + "." + f).collect(Collectors.toList()));
+        TableJoin tableJoin = new TableJoin();
+        tableJoin.joinType = "left";
+        tableJoin.leftTableName = TEST_TABLE;
+        tableJoin.rightTableName = JOIN_TEST_TABLE_1;
+        tableJoin.rightTableAlias = rightTableAlias;
+        tableJoin.leftTableKeys = new ArrayList<String>(){{
+            add("event_type_id");
+            add("name");
+        }};
+        tableJoin.rightTableKeys = new ArrayList<String>(){{
+            add("id");
+            add("name");
+        }};
+        testTableQuery.joins = new ArrayList<TableJoin>(){{ add(tableJoin); }};
+        testQuery(testTableQuery, getSeveralOnJoin());
+    }
+
+    public abstract String[] getSeveralOnJoin();
+
     private void testQuery(TableQuery tableQuery, String[] expected) {
         String actual = provider.queryTableSql(tableQuery.connection, tableQuery);
         String expectedQuery = getExpectedQuery(expected);
