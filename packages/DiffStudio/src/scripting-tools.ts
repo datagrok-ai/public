@@ -8,7 +8,7 @@
 */
 
 import {CONTROL_TAG, CONTROL_TAG_LEN, DF_NAME, CONTROL_EXPR, LOOP, UPDATE, MAX_LINE_CHART,
-  SOLVER_OPTIONS_RANGES} from './constants';
+  SOLVER_OPTIONS_RANGES, TINY, STEP_RATIO} from './constants';
 
 // Scripting specific constants
 export const CONTROL_SEP = ':';
@@ -974,6 +974,9 @@ function getScriptMainBodyLoopCase(ivp: IVP): string[] {
     if (idx !== 0)
       res.push(`${SCRIPT.SPACE2}${name} = ${DF_NAME}.get('${name}', ${SCRIPT.LAST_IDX});`);
   });
+
+  // eslint-disable-next-line max-len
+  res.push(`${SCRIPT.SPACE2}${DF_NAME}.set('${ivp.arg.name}', ${SCRIPT.LAST_IDX}, ${SERVICE}${ivp.arg.name}0 - Math.min(${SERVICE}h * ${STEP_RATIO}, ${TINY}));`);
 
   res.push('};');
 
