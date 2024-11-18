@@ -10,6 +10,8 @@ import {
   ComboPopup,
   RibbonMenu,
   ifOverlapping,
+  tooltip,
+  Button,
 } from '@datagrok-libraries/webcomponents-vue';
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
@@ -25,6 +27,7 @@ import {catchError, switchMap, tap, map, debounceTime, withLatestFrom, share} fr
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import { useViewersHook } from '../../composables/use-viewers-hook';
+import { ViewAction } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 
 type PanelsState = {
   historyHidden: boolean,
@@ -105,6 +108,12 @@ export const RichFunctionView = Vue.defineComponent({
     consistencyStates: {
       type: Object as Vue.PropType<Record<string, ConsistencyInfo>>,
     },
+    menuActions: {
+      type:  Object as Vue.PropType<Record<string, ViewAction[]>>
+    },
+    buttonActions: {
+      type:  Object as Vue.PropType<ViewAction[]>
+    },
     isTreeLocked: {
       type: Boolean,
       default: false,
@@ -171,6 +180,7 @@ export const RichFunctionView = Vue.defineComponent({
       hashParams.activePanel = panelTitle;
     };
     const personalPanelsStorage = (call: DG.FuncCall) => `${call.func.nqName}_personal_state`;
+    const defaultPanelsStorage = (call: DG.FuncCall) => `${call.func.nqName}_default_state`;
 
     const getCurrentState = () => {
       const layout = dockRef?.value?.getLayout();
@@ -190,6 +200,18 @@ export const RichFunctionView = Vue.defineComponent({
       return item ? JSON.parse(item): null;
     };
 
+    const getSavedDefaultState = (call: DG.FuncCall): PanelsState | null => {
+      const item = localStorage.getItem(defaultPanelsStorage(call));
+      return item ? JSON.parse(item): null;
+    };
+
+    const saveDefaultState = (call: DG.FuncCall = currentCall.value) => {
+      if (!dockInited.value) return;
+
+      const state = getCurrentState();
+      if (state) localStorage.setItem(defaultPanelsStorage(call), state);
+    };
+
     const savePersonalState = (call: DG.FuncCall = currentCall.value) => {
       if (!dockInited.value) return;
 
@@ -197,8 +219,10 @@ export const RichFunctionView = Vue.defineComponent({
       if (state) localStorage.setItem(personalPanelsStorage(call), state);
     };
 
-    const removeSavedPersonalState = () => {
+    const removeSavedPersonalState = async () => {
       localStorage.removeItem(personalPanelsStorage(currentCall.value));
+      
+      await loadDefaultLayout();
     };
 
     let intelligentLayout = true;
@@ -216,6 +240,24 @@ export const RichFunctionView = Vue.defineComponent({
       await Vue.nextTick();
 
       await dockRef.value.useLayout(personalState.layout);
+
+      intelligentLayout = true;
+    };
+
+    const loadDefaultLayout = async () => {
+      const defaultState = getSavedDefaultState(currentCall.value);
+      if (!dockRef.value || !defaultState || !dockInited.value) return;
+
+      intelligentLayout = false;
+
+      historyHidden.value = defaultState.historyHidden;
+      helpHidden.value = defaultState.helpHidden;
+      formHidden.value = defaultState.formHidden;
+      visibleTabLabels.value = defaultState.visibleTabLabels;
+
+      await Vue.nextTick();
+
+      await dockRef.value.useLayout(defaultState.layout);
 
       intelligentLayout = true;
     };
@@ -240,8 +282,11 @@ export const RichFunctionView = Vue.defineComponent({
       visibleTabLabels.value = [...tabLabels.value];
     }, {immediate: true});
 
-    Vue.watch(currentCall, async () => {
-      if (dockInited.value) await loadPersonalLayout();
+    Vue.watch([currentCall, dockInited], async () => {
+      if (dockInited.value) {
+        saveDefaultState()
+        await loadPersonalLayout();
+      }
     }, {flush: 'post'});
 
     Vue.onBeforeUnmount(() => {
@@ -268,8 +313,16 @@ export const RichFunctionView = Vue.defineComponent({
     const isSAenabled = Vue.computed(() => Utils.getFeature(features.value, 'sens-analysis', false));
     const isExportEnabled = Vue.computed(() => Utils.getFeature(features.value, 'export', true));
     const isFittingEnabled = Vue.computed(() => Utils.getFeature(features.value, 'fitting', false));
+    const menuActions = Vue.computed(() => props.menuActions);
+    const buttonActions = Vue.computed(() => props.buttonActions);
 
     const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
+
+    const viewerTabLabels = Vue.computed(() => 
+      [
+        ...currentCall.value.inputParams.values(),
+        ...currentCall.value.outputParams.values()
+      ].filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME));
 
     return () => {
       let lastCardLabel = null as string | null;
@@ -277,16 +330,6 @@ export const RichFunctionView = Vue.defineComponent({
 
       return (
         <div class='w-full h-full flex' ref={root}>
-          <RibbonMenu groupName='Layout'>
-            <span onClick={loadPersonalLayout}>
-              <IconFA name='life-ring' style={{'padding-right': '3px'}}/>
-              <span> Load personal </span>
-            </span>
-            <span onClick={removeSavedPersonalState}>
-              <IconFA name='eraser' style={{'padding-right': '3px'}}/>
-              <span> Remove personal </span>
-            </span>
-          </RibbonMenu>
           <RibbonMenu groupName='Panels'>
             <span
               onClick={() => formHidden.value = !formHidden.value}
@@ -317,7 +360,20 @@ export const RichFunctionView = Vue.defineComponent({
               <div> <IconFA name='history' style={menuIconStyle}/> Show history </div>
               { !historyHidden.value && <IconFA name='check'/>}
             </span> }
+            <span onClick={removeSavedPersonalState}>
+              <IconFA name='eraser' style={{'padding-right': '3px'}}/>
+              <span> Reset layout </span>
+            </span>
           </RibbonMenu>
+          { menuActions.value && Object.entries(menuActions.value).map(([category, actions]) => 
+            <RibbonMenu groupName={category}>
+              {
+                actions.map((action) => Vue.withDirectives(<span onClick={() => emit('actionRequested', action.uuid)}>
+                  <div> { action.icon && <IconFA name={action.icon} style={menuIconStyle}/> } { action.friendlyName ?? action.uuid } </div>
+                </span>, [[tooltip, action.description]]))
+              }
+            </RibbonMenu>) 
+          }
           <RibbonPanel>
             <IconFA
               name='play'
@@ -400,6 +456,14 @@ export const RichFunctionView = Vue.defineComponent({
                   />, [[ifOverlapping, isRunning.value, 'Recalculating...']])
                 }
                 <div class='flex sticky bottom-0 justify-end'>
+                  {
+                    buttonActions.value?.map((action) => Vue.withDirectives(
+                      <Button onClick={() => emit('actionRequested', action.uuid)}>
+                        { action.icon && <IconFA name={action.icon} /> }
+                        { action.friendlyName ?? action.uuid }
+                      </Button>
+                    , [[tooltip, action.description]]))
+                  }
                   <BigButton
                     isDisabled={!isRunnable.value || isRunning.value || props.isTreeLocked || props.isReadonly}
                     onClick={run}>
@@ -445,10 +509,11 @@ export const RichFunctionView = Vue.defineComponent({
                       dock-spawn-dock-to={intelligentLayout &&
                         lastCardLabel && scalarCardCount < 3 ? lastCardLabel: null
                       }
-                      dock-spawn-dock-type={intelligentLayout ? (lastCardLabel ?
-                        (categoryProps.length > 3 ?
-                          'fill': (scalarCardCount < 3 ? 'right': 'down')
-                        ): 'down') : null
+                      dock-spawn-dock-type={intelligentLayout ? (viewerTabLabels.value.length > 0 ? 
+                        (lastCardLabel ?
+                          (categoryProps.length > 3 ?
+                            'fill': (scalarCardCount < 3 ? 'right': 'down')
+                          ): 'down') : null): 'fill'
                       }
                       dock-spawn-dock-ratio={intelligentLayout ?
                         (lastCardLabel && scalarCardCount < 3 ? 0.5: 0.15) : null

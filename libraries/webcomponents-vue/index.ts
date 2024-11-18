@@ -3,7 +3,8 @@ export * from './src/Viewer/Viewer';
 export * from './src/RibbonPanel/RibbonPanel';
 export * from './src/RibbonMenu/RibbonMenu';
 export * from './src/elements';
-export * from './src/DockedPanel/DockedPanel'
-export * from './src/DockManager/DockManager'
-export * from './src/MarkDown/MarkDown'
-export * from './src/directives/ifOverlapping'
+export * from './src/DockedPanel/DockedPanel';
+export * from './src/DockManager/DockManager';
+export * from './src/MarkDown/MarkDown';
+export * from './src/directives/ifOverlapping';
+export * from './src/directives/tooltip';

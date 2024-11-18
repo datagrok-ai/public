@@ -9,6 +9,7 @@ import {
   isFuncCallState, isParallelPipelineState,
   isSequentialPipelineState, PipelineState,
   StepFunCallState,
+  ViewAction,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {RichFunctionView} from '../RFV/RichFunctionView';
 import {TreeNode} from './TreeNode';
@@ -115,6 +116,27 @@ export const TreeWizard = Vue.defineComponent({
 
     const isRootChoosen = Vue.computed(() => {
       return (!!chosenStepState.value?.uuid) && chosenStepState.value?.uuid === treeState.value?.uuid;
+    })
+
+    const menuActions = Vue.computed(() => {
+      return chosenStepState.value?.actions?.reduce((acc, action) => {
+        if (action.position === 'menu' && action.menuCategory)  {
+          if (acc[action.menuCategory])
+            acc[action.menuCategory].push(action);
+          else 
+            acc[action.menuCategory] = [action];
+        }
+        return acc;
+      }, {} as Record<string, ViewAction[]>)
+    })
+
+    const buttonActions = Vue.computed(() => {
+      return chosenStepState.value?.actions?.reduce((acc, action) => {
+        if (action.position === 'buttons')  {
+          acc.push(action);
+        }
+        return acc;
+      }, [] as ViewAction[])
     })
 
     Vue.watch(chosenStepUuid, (newStepId) => {
@@ -319,6 +341,8 @@ export const TreeWizard = Vue.defineComponent({
                 viewersHook={chosenStepState.value.viewersHook}
                 validationStates={states.validations[chosenStepState.value.uuid]}
                 consistencyStates={states.consistency[chosenStepState.value.uuid]}
+                menuActions={menuActions.value}
+                buttonActions={buttonActions.value}
                 isReadonly={chosenStepState.value.isReadonly}
                 isTreeLocked={treeMutationsLocked.value}
                 onUpdate:funcCall={(call) => (chosenStepState.value as StepFunCallState).funcCall = call}
