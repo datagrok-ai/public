@@ -133,11 +133,11 @@ export async function initTests() {
               subscription.unsubscribe();  
             }
           });
-          await script.apply();
           timeout = setTimeout(() => {
             subscription.unsubscribe();
             throw new Error('Script didnt pass');
           }, 10000);
+          await script.apply();
         }
       }, skip.includes(script.friendlyName) ? { skipReason: 'skip' } : { timeout: 60000 });
     });
