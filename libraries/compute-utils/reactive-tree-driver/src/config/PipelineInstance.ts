@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {ItemId, NqName, RestrictionType} from '../data/common-types';
-import {ActionPositions, ViewersHook} from './PipelineConfiguration';
+import {ActionPositions, MutationHandler, ViewersHook} from './PipelineConfiguration';
 
 //
 // initial steps config for dynamic pipelines
@@ -74,6 +74,7 @@ export type PipelineStateRec<S, T> = PipelineStateStatic<S, T> | PipelineStateSe
 // funccall
 
 export type ViewAction = {
+  id: string,
   uuid: string;
   position: ActionPositions;
   description?: string;

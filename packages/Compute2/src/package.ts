@@ -194,22 +194,46 @@ export async function MockProvider2(params: any) {
           controller.setAll('out', controller.getFirst('in') * 2);
           return;
         },
+      },
+      {
+        id: 'action2',
+        from: 'in:ambTemp',
+        to: 'out:ambTemp',
+        position: 'menu',
+        menuCategory: 'Test',
+        description: 'My menu action',
+        handler({controller}) {
+          controller.setAll('out', controller.getFirst('in') * 2);
+          return;
+        },
+      },
+      {
+        id: 'action3',
+        from: 'in:ambTemp',
+        to: 'out:ambTemp',
+        position: 'buttons',
+        menuCategory: 'Test',
+        description: 'My view action',
+        handler({controller}) {
+          controller.setAll('out', controller.getFirst('in') * 2);
+          return;
+        },
       }],
-    }, {
-      type: 'ref',
-      provider: 'Compute2:MockProvider2',
-    }, {
-      id: 'stepAdd',
-      nqName: 'Compute2:TestAdd2',
-      friendlyName: 'add',
-    }, {
-      id: 'stepMul',
-      nqName: 'Compute2:TestMul2',
-      friendlyName: 'mul',
-    }, {
-      type: 'ref',
-      provider: 'Compute2:MockProvider1',
-      version: '1.0',
+      }, {
+        type: 'ref',
+        provider: 'Compute2:MockProvider2',
+      }, {
+        id: 'stepAdd',
+        nqName: 'Compute2:TestAdd2',
+        friendlyName: 'add',
+      }, {
+        id: 'stepMul',
+        nqName: 'Compute2:TestMul2',
+        friendlyName: 'mul',
+      }, {
+        type: 'ref',
+        provider: 'Compute2:MockProvider1',
+        version: '1.0',
     }],
     initialSteps: [
       {

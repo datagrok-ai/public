@@ -10,6 +10,8 @@ import {
   ComboPopup,
   RibbonMenu,
   ifOverlapping,
+  tooltip,
+  Button,
 } from '@datagrok-libraries/webcomponents-vue';
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
@@ -25,6 +27,7 @@ import {catchError, switchMap, tap, map, debounceTime, withLatestFrom, share} fr
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import { useViewersHook } from '../../composables/use-viewers-hook';
+import { ViewAction } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 
 type PanelsState = {
   historyHidden: boolean,
@@ -104,6 +107,12 @@ export const RichFunctionView = Vue.defineComponent({
     },
     consistencyStates: {
       type: Object as Vue.PropType<Record<string, ConsistencyInfo>>,
+    },
+    menuActions: {
+      type:  Object as Vue.PropType<Record<string, ViewAction[]>>
+    },
+    buttonActions: {
+      type:  Object as Vue.PropType<ViewAction[]>
     },
     isTreeLocked: {
       type: Boolean,
@@ -304,6 +313,8 @@ export const RichFunctionView = Vue.defineComponent({
     const isSAenabled = Vue.computed(() => Utils.getFeature(features.value, 'sens-analysis', false));
     const isExportEnabled = Vue.computed(() => Utils.getFeature(features.value, 'export', true));
     const isFittingEnabled = Vue.computed(() => Utils.getFeature(features.value, 'fitting', false));
+    const menuActions = Vue.computed(() => props.menuActions);
+    const buttonActions = Vue.computed(() => props.buttonActions);
 
     const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
 
@@ -354,6 +365,15 @@ export const RichFunctionView = Vue.defineComponent({
               <span> Reset layout </span>
             </span>
           </RibbonMenu>
+          { menuActions.value && Object.entries(menuActions.value).map(([category, actions]) => 
+            <RibbonMenu groupName={category}>
+              {
+                actions.map((action) => Vue.withDirectives(<span>
+                  <div> { action.icon && <IconFA name={action.icon} style={menuIconStyle}/> } { action.friendlyName ?? action.id } </div>
+                </span>, [[tooltip, action.description]]))
+              }
+            </RibbonMenu>) 
+          }
           <RibbonPanel>
             <IconFA
               name='play'
@@ -436,6 +456,15 @@ export const RichFunctionView = Vue.defineComponent({
                   />, [[ifOverlapping, isRunning.value, 'Recalculating...']])
                 }
                 <div class='flex sticky bottom-0 justify-end'>
+                  {
+                    buttonActions.value?.map((action) => Vue.withDirectives(
+                      //@ts-ignore
+                      <Button onClick={() => action.handler}>
+                        { action.icon && <IconFA name={action.icon} /> }
+                        { action.id ?? action.friendlyName }
+                      </Button>
+                    , [[tooltip, action.description]]))
+                  }
                   <BigButton
                     isDisabled={!isRunnable.value || isRunning.value || props.isTreeLocked || props.isReadonly}
                     onClick={run}>
