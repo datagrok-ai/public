@@ -1010,6 +1010,9 @@ function getScriptMainBodyUpdateCase(ivp: IVP): string[] {
     res.push(`const ${UPDATE.DURATION}${idx + 1} = ${upd.durationFormula};`);
     res.push(`${SCRIPT.LAST_IDX} = ${DF_NAME}.rowCount - 1;`);
 
+    // eslint-disable-next-line max-len
+    res.push(`${DF_NAME}.set('${ivp.arg.name}', ${SCRIPT.LAST_IDX}, ${SERVICE}${ivp.arg.name}1 - Math.min(${SERVICE}h * ${STEP_RATIO}, ${TINY}));`);
+
     dfNames.forEach((name, idx) => {
       if (idx !== 0)
         res.push(`${name} = ${DF_NAME}.get('${name}', ${SCRIPT.LAST_IDX});`);
