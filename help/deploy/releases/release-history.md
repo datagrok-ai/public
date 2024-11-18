@@ -21,7 +21,7 @@ See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.md)
 
-## 2024-11-04
+## 2024-11-04 1.22.1
 
 ### Improvements and fixes:
 * Filters: Avoid cross firing of events in duplicate filters
