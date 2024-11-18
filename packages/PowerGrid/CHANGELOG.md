@@ -1,5 +1,9 @@
 # PowerGrid changelog
 
+## 1.4.10 (2024-11-18)
+
+* Grid scrolling and current row fixes for pinned columns
+
 ## 1.4.5 (2024-10-25)
 
 * WebGPU colors and different marker types for ScatterPlot
