@@ -11,9 +11,11 @@
   "version": "1.5.0",
   "description": "Helpers for creating tutorials",
   "dependencies": {
+    "@datagrok-libraries/compute-utils": "^1.39.5",
     "@datagrok-libraries/utils": "^4.3.0",
     "cash-dom": "^8.1.1",
-    "datagrok-api": "^1.21.1",
+    "datagrok-api": "../../js-api",
+    "dayjs": "=1.11.10",
     "rxjs": "6.6.7"
   },
   "devDependencies": {
