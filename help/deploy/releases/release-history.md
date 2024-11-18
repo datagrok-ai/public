@@ -21,14 +21,15 @@ See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.md)
 
-## 2024-11-04 1.22.1
+## 2024-11-04
 
 ### Improvements and fixes:
+* Filters: Avoid cross firing of events in duplicate filters
 * [#3119](https://github.com/datagrok-ai/public/issues/3119): Add new column: formula with multi-argument functions is parsed incorrectly if more than one argument contains a column
 * [#3107](https://github.com/datagrok-ai/public/issues/3107): Grid: Incorrect selection on grid with filtering/sorting enabled
 * [#3132](https://github.com/datagrok-ai/public/issues/3132): Color picker: Fixed opening new color picker removes previously selected color
 * [#3101](https://github.com/datagrok-ai/public/issues/3101): Shift-click selects unexpected rows in some cases
-* Filters: Avoid cross firing of events in duplicate filters
+
 
 ## 2024-10-22 Datagrok 1.22.0 release 
 
