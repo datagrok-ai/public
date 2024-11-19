@@ -1311,7 +1311,9 @@ export class tools {
         if (e != undefined)
           e.style.maxWidth = `${width + 30}px`;
       }
-      if (!element.classList.contains('ui-input-table')) {
+      if (element.classList.contains('ui-input-float') ||
+        element.classList.contains('ui-input-int') ||
+        element.classList.contains('ui-input-text')) {
         let options = $(element).find('.ui-input-options');
         options.each((i) => {
           let calc = this.getOptionsWidth(options[i] as HTMLElement);
