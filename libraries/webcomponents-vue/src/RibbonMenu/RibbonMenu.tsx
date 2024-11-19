@@ -12,10 +12,10 @@ export const RibbonMenu = Vue.defineComponent({
     },
   },
   slots: Object as Vue.SlotsType<{
-    default?: any,
+    default?: Vue.VNode[],
   }>,
   setup(props, {slots}) {
-    const elements = Vue.reactive(new Map<number, HTMLElement>)
+    const elements = Vue.reactive(new Map<number, HTMLElement>);
 
     Vue.watch(elements, async () => {
       await Vue.nextTick();
@@ -29,13 +29,13 @@ export const RibbonMenu = Vue.defineComponent({
 
       currentView.ribbonMenu
         .group(props.groupName).items(elementsArray, () => {});
-    })    
+    });
 
     const addElement = (el: Element | null | any, idx: number) => {
       const content = el;
       if (content)
         elements.set(idx, content);
-    }
+    };
 
     Vue.onUnmounted(() => {
       const currentView = grok.shell.v;
@@ -44,16 +44,19 @@ export const RibbonMenu = Vue.defineComponent({
         .group(props.groupName)
         .clear();
 
-      currentView.ribbonMenu.remove(props.groupName)
+      currentView.ribbonMenu.remove(props.groupName);
     });
 
     Vue.onBeforeUpdate(() => {
       elements.clear();
-    })
+    });
 
-    return () => 
-      slots.default?.().filter((slot: any) => slot.type !== Symbol.for('v-cmt')).map((slot: any, idx: number) => 
-        <div slot-idx={`${idx}`} style={{width: '100%'}} ref={(el) => addElement(el, idx)}> { slot } </div>
-      ) 
-  }
+    return () =>
+      slots.default?.()
+        .filter((slot) => slot.type !== Symbol.for('v-cmt'))
+        .flatMap((slot) => slot.type === Symbol.for('v-fgt') ? slot.children: slot)
+        .map((slot, idx) =>
+          <div slot-idx={`${idx}`} style={{width: '100%'}} ref={(el) => addElement(el, idx)}> { slot } </div>,
+        );
+  },
 });
