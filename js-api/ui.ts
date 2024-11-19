@@ -1313,15 +1313,17 @@ export class tools {
           e.style.width = `${width + 30}px`;
         }
       }
+      let optionsWidth = 0;
+      let options = $(element).find('.ui-input-options');
+      options.each((i) => {
+        optionsWidth += this.getOptionsWidth(options[i] as HTMLElement);
+      });
       if (element.classList.contains('ui-input-float') ||
         element.classList.contains('ui-input-int') ||
         element.classList.contains('ui-input-text')) {
-        let options = $(element).find('.ui-input-options');
-        options.each((i) => {
-          let calc = this.getOptionsWidth(options[i] as HTMLElement);
-          (options[i] as HTMLElement).style.marginLeft = `-${calc}px`;
-        });
+        (options[i] as HTMLElement).style.marginLeft = `-${optionsWidth}px`;
       }
+      width += optionsWidth;
       // todo: analyze content(?) and metadata
       // todo: analyze more types
       widths.push(width);
