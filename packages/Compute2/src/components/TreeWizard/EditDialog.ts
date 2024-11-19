@@ -7,6 +7,7 @@ import { ItemMetadata } from '@datagrok-libraries/compute-utils/reactive-tree-dr
 type EditOptions = {
   title?: string,
   description?: string,
+  isFavorite?: boolean,
   tags?: string[],
 }
 
@@ -21,6 +22,7 @@ export class EditDialog extends DG.Dialog {
 
     let title = metadata?.title ?? '';
     let description = metadata?.description ?? '';
+    let isFavorite =  metadata?.isFavorite ?? false;
     const titleInput = ui.input.string('Title', {value: title, onValueChanged: (value) => title = value});
 
     const dummyInput = ui.input.string(' ', {value: ''});
@@ -52,9 +54,14 @@ export class EditDialog extends DG.Dialog {
 
     const descInput = ui.input.string('Description', {value: description,
       onValueChanged: (value) => description = value});
+
+    const favInput = ui.input.bool('Is favorite', {value: isFavorite,
+      onValueChanged: (value) => isFavorite = value});
+
     this.add(ui.form([
       titleInput,
       descInput,
+      favInput,
       tagInput,
       dummyInput,
     ]));
@@ -68,6 +75,7 @@ export class EditDialog extends DG.Dialog {
       const editOptions = {
         title: (title !== '') ? title : null,
         description: (description !== '') ? description : null,
+        isFavorite,
         tags: tagsLine.tags.map((el) => el as any),
       } as EditOptions;
 

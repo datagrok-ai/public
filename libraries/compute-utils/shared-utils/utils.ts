@@ -234,6 +234,13 @@ export const saveIsFavorite = async (funcCall: DG.FuncCall, isFavorite: boolean)
     return grok.dapi.userDataStorage.remove(favStorageName, funcCall.id);
 };
 
+export const loadIsFavorite = async (funcCall: DG.FuncCall): Promise<boolean> => {
+  const favStorageName = `${storageName}_${funcCall.func.name}_Fav`;
+  const hasEntry = await grok.dapi.userDataStorage.getValue(favStorageName, funcCall.id, true);
+
+  return (hasEntry === '') || false;
+};
+
 export const setGridCellRendering = (
   grid: DG.Grid,
   runs: Map<string, DG.FuncCall>,

@@ -208,11 +208,12 @@ export class Driver {
 
   private savePipeline(msg: SavePipeline, state?: StateTree) {
     this.checkState(msg, state);
-    const {title, description, tags} = msg;
-    return state.save(undefined, {title, description, tags}).pipe(
+    const {title, description, isFavorite, tags} = msg;
+    return state.save(undefined, {title, description, isFavorite, tags}).pipe(
       tap((call) => this.currentMetaCallData$.next({
         id: call?.id,
         title: call?.options.title,
+        isFavorite,
         description: call?.options.description,
         tags: call?.options.tags,
       })),
@@ -222,7 +223,7 @@ export class Driver {
 
   private loadPipeline(msg: LoadPipeline) {
     return from(loadInstanceState(msg.funcCallId)).pipe(
-      concatMap(([stateLoaded, metaCall]) => {
+      concatMap(([stateLoaded, metaCall, isFavorite]) => {
         if (isFuncCallSerializedState(stateLoaded))
           throw new Error(`Wrong pipeline config in wrapper FuncCall ${msg.funcCallId}`);
         if (!stateLoaded.provider)
@@ -231,10 +232,10 @@ export class Driver {
           return of([stateLoaded, msg.config] as const);
         return callHandler<PipelineConfiguration>(stateLoaded.provider, {version: stateLoaded.version}).pipe(
           concatMap((conf) => from(getProcessedConfig(conf))),
-          map((config) => [stateLoaded, config, metaCall] as const),
+          map((config) => [stateLoaded, config, metaCall, isFavorite] as const),
         );
       }),
-      map(([state, config, metaCall]) =>
+      map(([state, config, metaCall, isFavorite]) =>
         [StateTree.fromInstanceState({
           state,
           config,
@@ -242,14 +243,15 @@ export class Driver {
           defaultValidators: true,
           mockMode: this.mockMode,
           logger: this.logger,
-        }), metaCall] as const),
-      concatMap(([state, metaCall]) => state.init().pipe(mapTo([state, metaCall] as const))),
-      tap(([state, metaCall]) => {
+        }), metaCall, isFavorite] as const),
+      concatMap(([state, metaCall, isFavorite]) => state.init().pipe(mapTo([state, metaCall, isFavorite] as const))),
+      tap(([state, metaCall, isFavorite]) => {
         this.states$.next(state);
         this.currentMetaCallData$.next({
           id: metaCall?.id,
           title: metaCall?.options.title,
           description: metaCall?.options.description,
+          isFavorite,
           tags: metaCall?.options.tags,
         });
         this.wasEdited$.next(false);

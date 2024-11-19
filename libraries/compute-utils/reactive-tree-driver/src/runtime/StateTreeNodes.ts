@@ -15,7 +15,7 @@ import {RestrictionType, ValidationResult} from '../data/common-types';
 import {mergeValidationResults} from '../utils';
 
 export const descriptionOutputs = ['name', 'description', 'tags'] as const;
-const descriptionStates = descriptionOutputs.map(id => ({id}));
+const descriptionStates = descriptionOutputs.map((id) => ({id}));
 
 export type StateTreeSerializationOptions = {
   disableNodesUUID?: boolean,
@@ -39,7 +39,8 @@ export type FuncCallStateInfo = {
 export type MetaCallInfo = {
   id?: string,
   title?: string,
-  description?: string
+  description?: string,
+  isFavorite?: boolean,
   tags?: string[],
   started?: dayjs.Dayjs
 }
@@ -373,7 +374,7 @@ export class StaticPipelineNode extends PipelineNodeBase {
       type: this.nodeType,
       steps: [],
       actions,
-      approversGroup
+      approversGroup,
     };
   }
 
@@ -406,7 +407,7 @@ export class ParallelPipelineNode extends PipelineNodeBase {
       type: this.nodeType,
       steps: [],
       actions,
-      approversGroup
+      approversGroup,
     };
   }
 
@@ -447,7 +448,7 @@ export class SequentialPipelineNode extends PipelineNodeBase {
       type: this.nodeType,
       steps: [],
       actions,
-      approversGroup
+      approversGroup,
     };
   }
 
@@ -463,7 +464,7 @@ export class SequentialPipelineNode extends PipelineNodeBase {
           return {configId, disableUIAdding, disableUIDragging, disableUIRemoving, nqName, friendlyName};
         } else {
           const {id: configId, disableUIAdding, disableUIDragging, disableUIRemoving} = s;
-          return {configId, disableUIAdding,disableUIDragging, disableUIRemoving };
+          return {configId, disableUIAdding, disableUIDragging, disableUIRemoving};
         }
       }),
     };
