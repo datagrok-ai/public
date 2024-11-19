@@ -14,7 +14,7 @@ as Datagrok will resolve it dynamically based on the container address.
 To ensure the Datagrok platform recognizes the connection as one that requires Docker, the `server` property of the JSON 
 should have the following format: `${<package name>:<container friendly name><DockerContainer>}`. The `friendly name` of 
 the container is the same as the package name when you have only one container declared in the package. If there are 
-several folders inside the `dockerfiles` of the package with Dockerfile inside, then friendlyName follows this format: `<package name>-<folder name>`.
+several folders inside the `dockerfiles` of the package with Dockerfile inside, then friendly name follows this format: `<package name>-<folder name>`.
 
 For example, consider the following Dockerfile created inside a package called `Test`:
 
@@ -61,4 +61,4 @@ See also:
 
 - [Packages Docker containers](docker_containers.md)
 - [Packages](../develop.md#packages)
-- [Access section](./access-data.md)
+- [Data Access](./access-data.md)
