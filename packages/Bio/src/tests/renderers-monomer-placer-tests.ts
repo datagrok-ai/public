@@ -50,7 +50,7 @@ category('renderers: monomerPlacer', () => {
         {src: {row: 1, x: 6}, tgt: {pos: 0}},
         {src: {row: 1, x: 26}, tgt: {pos: 1}},
         {src: {row: 1, x: 160}, tgt: {pos: 6}},
-        {src: {row: 1, x: 185}, tgt: {pos: 7}},
+        {src: {row: 1, x: 190}, tgt: {pos: 7}},
         {src: {row: 2, x: 140}, tgt: {pos: 5}},
         {src: {row: 2, x: 145}, tgt: {pos: 5}},
       ]
