@@ -52,6 +52,11 @@ export function makeValidationResult(payload?: ValidationPayload): ValidationRes
   };
 }
 
+export async function makeModel(provider: string) {
+  return DG.Func.byName('Compute2:TreeWizardEditor')
+    .prepare({call: DG.Func.byName(provider).prepare()}).call();
+}
+
 export function indexFromEnd<T>(arr: Readonly<T[]>, offset = 0): T | undefined {
   return arr[arr.length - offset - 1];
 }

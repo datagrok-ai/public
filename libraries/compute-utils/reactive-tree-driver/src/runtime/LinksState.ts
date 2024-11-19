@@ -80,10 +80,12 @@ export class LinksState {
       const inbound = links.filter((link) => this.isDataLink(link) && this.isInbound(mutationRootPath, link, addIdx, removeIdx));
       const outgoing = links.filter((link) => this.isDataLink(link) && this.isOutgoing(mutationRootPath, link, addIdx));
       const affectedMeta = links
-        .filter((link) => !this.isDataLink(link) && this.isAffected(mutationRootPath, link, addIdx, removeIdx));
-      const inboundMap = new Map(inbound.map((link) => [link.uuid, link]));
-      const outgoingMap = new Map(outgoing.map((link) => [link.uuid, link]));
-      const affectedMetaMap = new Map(affectedMeta.map((link) => [link.uuid, link]));
+        .filter((link) => !this.isDataLink(link) && !this.isDefaultValidatorLink(link) && this.isAffected(mutationRootPath, link, addIdx, removeIdx));
+      const defaultValidators = links.filter(link => this.isDefaultValidatorLink(link));
+      const inboundMap = this.toLinksMap(inbound);
+      const outgoingMap = this.toLinksMap(outgoing);
+      const affectedMetaMap = this.toLinksMap(affectedMeta);
+      const defaultValidatorsMap = this.toLinksMap(defaultValidators);
       this.linksUpdates.next(true);
       return concat(
         of(this.wireLinks(state)),
@@ -91,6 +93,7 @@ export class LinksState {
         this.runLinks(state, inboundMap, mutationRootPath, bound),
         this.runLinks(state, outgoingMap),
         this.runLinks(state, affectedMetaMap),
+        this.runLinks(state, defaultValidatorsMap),
       ).pipe(toArray(), mapTo(undefined));
     } else {
       this.linksUpdates.next(true);
@@ -378,6 +381,10 @@ export class LinksState {
     return !link.matchInfo.spec.type || link.matchInfo.spec.type === 'data';
   }
 
+  public isDefaultValidatorLink(link: Link) {
+    return link.matchInfo.isDefaultValidator;
+  }
+
   public isAffected(rootPath: Readonly<NodeAddress>, link: Link, addIdx?: number, removeIdx?: number) {
     const bound = this.getLowerBound(addIdx, removeIdx);
     return this.hasNested(rootPath, link.prefix, link.matchInfo.inputs, bound) ||
@@ -432,5 +439,9 @@ export class LinksState {
       return this.runningLinks$.pipe(filter((x) => x?.length === 0), mapTo(true as const));
     });
     return obs$;
+  }
+
+  private toLinksMap(links: Link[]) {
+    return new Map(links.map((link) => [link.uuid, link]));
   }
 }

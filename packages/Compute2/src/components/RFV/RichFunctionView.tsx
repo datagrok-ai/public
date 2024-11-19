@@ -21,13 +21,11 @@ import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-ut
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
 import {ScalarsPanel} from './ScalarsPanel';
-import {BehaviorSubject, combineLatest, EMPTY, merge, Subject} from 'rxjs';
-import {useSubscription, from} from '@vueuse/rxjs'
-import {catchError, switchMap, tap, map, debounceTime, withLatestFrom, share} from 'rxjs/operators';
+import {BehaviorSubject} from 'rxjs';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
-import { useViewersHook } from '../../composables/use-viewers-hook';
-import { ViewAction } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {useViewersHook} from '../../composables/use-viewers-hook';
+import {ViewAction} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 
 type PanelsState = {
   historyHidden: boolean,
@@ -221,7 +219,7 @@ export const RichFunctionView = Vue.defineComponent({
 
     const removeSavedPersonalState = async () => {
       localStorage.removeItem(personalPanelsStorage(currentCall.value));
-      
+
       await loadDefaultLayout();
     };
 
@@ -318,7 +316,7 @@ export const RichFunctionView = Vue.defineComponent({
 
     const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
 
-    const viewerTabLabels = Vue.computed(() => 
+    const viewerTabLabels = Vue.computed(() =>
       [
         ...currentCall.value.inputParams.values(),
         ...currentCall.value.outputParams.values()
@@ -365,14 +363,14 @@ export const RichFunctionView = Vue.defineComponent({
               <span> Reset layout </span>
             </span>
           </RibbonMenu>
-          { menuActions.value && Object.entries(menuActions.value).map(([category, actions]) => 
+          { menuActions.value && Object.entries(menuActions.value).map(([category, actions]) =>
             <RibbonMenu groupName={category}>
               {
                 actions.map((action) => Vue.withDirectives(<span onClick={() => emit('actionRequested', action.uuid)}>
                   <div> { action.icon && <IconFA name={action.icon} style={menuIconStyle}/> } { action.friendlyName ?? action.uuid } </div>
                 </span>, [[tooltip, action.description]]))
               }
-            </RibbonMenu>) 
+            </RibbonMenu>)
           }
           <RibbonPanel>
             <IconFA
@@ -509,7 +507,7 @@ export const RichFunctionView = Vue.defineComponent({
                       dock-spawn-dock-to={intelligentLayout &&
                         lastCardLabel && scalarCardCount < 3 ? lastCardLabel: null
                       }
-                      dock-spawn-dock-type={intelligentLayout ? (viewerTabLabels.value.length > 0 ? 
+                      dock-spawn-dock-type={intelligentLayout ? (viewerTabLabels.value.length > 0 ?
                         (lastCardLabel ?
                           (categoryProps.length > 3 ?
                             'fill': (scalarCardCount < 3 ? 'right': 'down')

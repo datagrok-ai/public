@@ -120,11 +120,12 @@ export const TreeWizard = Vue.defineComponent({
 
     const menuActions = Vue.computed(() => {
       return chosenStepState.value?.actions?.reduce((acc, action) => {
-        if (action.position === 'menu' && action.menuCategory)  {
-          if (acc[action.menuCategory])
-            acc[action.menuCategory].push(action);
-          else 
-            acc[action.menuCategory] = [action];
+        const menuCategory = action.menuCategory ?? 'Actions';
+        if (action.position === 'menu')  {
+          if (acc[menuCategory])
+            acc[menuCategory].push(action);
+          else
+            acc[menuCategory] = [action];
         }
         return acc;
       }, {} as Record<string, ViewAction[]>)
@@ -353,12 +354,14 @@ export const TreeWizard = Vue.defineComponent({
               />
           }
           {
-            chosenStepState.value &&
-            !isFuncCallState(chosenStepState.value) && chosenStepState.value.provider &&
+            chosenStepState.value && !isFuncCallState(chosenStepState.value) &&
             <PipelineView
-              funcCall={DG.Func.byName(chosenStepState.value.nqName!).prepare()}
+              funcCall={chosenStepState.value.provider ? DG.Func.byName(chosenStepState.value.nqName!).prepare() : undefined}
               state={chosenStepState.value}
               isRoot={isRootChoosen.value}
+              menuActions={menuActions.value}
+              buttonActions={buttonActions.value}
+              onActionRequested={runAction}
               dock-spawn-title='Step sequence review'
               onProceedClicked={() => {
                 if (chosenStepState.value && !isFuncCallState(chosenStepState.value))
