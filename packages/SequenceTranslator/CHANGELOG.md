@@ -1,5 +1,12 @@
 # Sequence Translator changelog
 
+## 1.6.2 (WIP)
+
+### New features
+
+* PolyTool rule manager enhancement
+
+
 ## 1.6.1 (2024-11-15)
 
 ### Bug fixes
