@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -76,7 +77,7 @@ export class OligoToolkitPackage extends DG.Package implements ITranslationHelpe
     if (!this.initLibDataPromise) {
       this.initLibDataPromise = (async () => {
         const packageSettings = await this.getSettings();
-        let monomersPath: string = packageSettings['MonomersPath'];
+        let monomersPath: string = packageSettings instanceof Map ? packageSettings.get('MonomersPath') : packageSettings['MonomersPath'];
         if (!monomersPath || !(await grok.dapi.files.exists(monomersPath))) {
           this.logger.warning(`Monomers path '${monomersPath}' not found. ` +
             `Fallback to monomers sample path '${FALLBACK_LIB_PATH}'.`);
