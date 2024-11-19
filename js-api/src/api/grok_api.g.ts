@@ -552,6 +552,7 @@ export interface IDartApi {
   grok_ColumnList_Selected(cols: any): any;
   grok_ColumnList_ByTags(cols: any, desiredTags: any): any;
   grok_ColumnList_GetUnusedName(cols: any, name: String, choices: any): any;
+  grok_ColumnList_SetOrder(columns: any, columnNames: any): any;
   grok_Column_FromStrings(name: String, list: any): any;
   grok_Column_FromInt32Array(name: String, data: any, length: Num): any;
   grok_Column_FromFloat32Array(name: String, data: any, length: Num): any;

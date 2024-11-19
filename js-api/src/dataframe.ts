@@ -1235,6 +1235,13 @@ export class ColumnList {
   /** Array containing column names. */
   names(): string[] { return api.grok_ColumnList_Names(this.dart); }
 
+  /** Sets column order.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/columns-ordering}
+   *  @param {string[]} columnNames - Order of columns. */
+  setOrder(columnNames: string[]): void {
+    api.grok_ColumnList_SetOrder(this.dart, columnNames);
+  }
+
   /** Creates an array of columns. */
   toList(): Column[] {
     return this.names().map((name: string) => this.byName(name));
