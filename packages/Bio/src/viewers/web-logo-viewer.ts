@@ -1,3 +1,7 @@
+/* eslint-disable max-lines */
+/* eslint-disable max-len */
+/* eslint-disable max-params */
+/* eslint-disable max-lines-per-function */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -548,7 +552,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
         style: {
           display: 'flex',
           flexDirection: 'row',
-          flexGrow: 0,
+          flexGrow: '0',
           /** For alignContent to have an effect */ flexWrap: 'wrap',
           /* backgroundColor: '#EEFFEE' */
         }

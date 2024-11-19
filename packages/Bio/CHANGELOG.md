@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.17.2 (2024-11-19)
+
+* Support Sequence renderer resizing 
+
 ## 2.17.1 (2024-11-15)
 
 * Fix Tests
