@@ -302,7 +302,7 @@ export const History = Vue.defineComponent({
       const filters = <Viewer 
         type='Filters' 
         dataFrame={historicalRunsDf.value} 
-        style={{flex: '1', width: '100%'}}
+        style={{flex: '1', width: '100%', display: showFilters.value ? 'block': 'none'}}
         onViewerChanged={(viewer) => currentFilters.value = viewer as DG.FilterGroup}
       />;
 
@@ -320,7 +320,7 @@ export const History = Vue.defineComponent({
               { controls }
               { grid }
             </div>
-            { showFilters.value ? filters: null }
+            { filters }
           </div>
         }
       </div>;

@@ -421,7 +421,7 @@ export const RichFunctionView = Vue.defineComponent({
             onInitFinished={() => dockInited.value = true}
             ref={dockRef}
           >
-            { !historyHidden.value ?
+            { !historyHidden.value &&
               <History
                 func={currentCall.value.func}
                 showActions
@@ -433,7 +433,7 @@ export const RichFunctionView = Vue.defineComponent({
                 dock-spawn-title='History'
                 ref={historyRef}
                 class='overflow-scroll h-full'
-              />: null }
+              /> }
 
             { !formHidden.value &&
               <div
