@@ -15,6 +15,7 @@ export const enum MmcrTemps {
   highlightDifference = '.mm.cellRenderer.highlightDifference',
   gapLength = '.mm.cellRenderer.gapLength',
   monomerPlacer = '.mm.cellRenderer.monomerPlacer',
+  fontSize = '.mm.cellRenderer.fontSize',
 
   rendererSettingsChanged = '.mm.cellRenderer.settingsChanged',
   overriddenLibrary = '.mm.cellRenderer.overriddenLibrary',
