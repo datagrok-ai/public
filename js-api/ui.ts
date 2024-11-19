@@ -1308,8 +1308,10 @@ export class tools {
             width = calc;
         });
         let e = $(element).find('select')[0];
-        if (e != undefined)
+        if (e != undefined) {
           e.style.maxWidth = `${width + 30}px`;
+          e.style.width = `${width + 30}px`;
+        }
       }
       if (element.classList.contains('ui-input-float') ||
         element.classList.contains('ui-input-int') ||
