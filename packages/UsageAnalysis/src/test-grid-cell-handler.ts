@@ -11,12 +11,12 @@ export class TestGridCellHandler extends DG.ObjectHandler {
         return x instanceof DG.SemanticValue && x.semType === 'test';
     }
 
-    renderProperties(gridCell: GridCell, context: any = null): HTMLElement {
+    renderProperties(semValue: DG.SemanticValue, context: any = null): HTMLElement {
         let panel = ui.accordion('testData');
-        const testData = gridCell.cell.value.split(':');
+        const testData = semValue.cell.value.split(':');
 
         const buttonsData = ui.button('Run', async () => {
-            let df = gridCell.cell.dataFrame;
+            let df = semValue.cell.dataFrame;
             let progressBar = DG.TaskBarProgressIndicator.create(`Running test ${testData.join(':')}`);
             let category = testData[1];
             for (let pathPart of testData)
@@ -40,11 +40,8 @@ export class TestGridCellHandler extends DG.ObjectHandler {
             else
                 grok.shell.error(`${testData.join(':')} failed`);
 
-            await delay(100);
-            tv.dataFrame.currentRowIdx = gridCell.cell.rowIndex ?? 0;
-            await delay(100);
-            progressBar.close();
-            df.currentCell = df.cell(gridCell.cell.rowIndex ?? 0, gridCell.cell.column.name);
+            await delay(500); 
+            grok.shell.o = (semValue); 
         });
         buttonsData.classList.add('ui-btn-raised');
         buttonsData.classList.add('ui-btn-test-run');
