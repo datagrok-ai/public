@@ -1,11 +1,11 @@
 # Sequence Translator changelog
 
-## 1.6.2 (WIP)
+## 1.6.2 (2024-11-17)
 
 ### New features
 
 * PolyTool rule manager enhancement
-
+* Sequence renderer font resizing
 
 ## 1.6.1 (2024-11-15)
 
