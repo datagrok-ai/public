@@ -24,6 +24,7 @@ export class Driver {
   public currentConsistency$ = new BehaviorSubject<Record<string, BehaviorSubject<Record<string, ConsistencyInfo>>>>({});
   public currentMeta$ = new BehaviorSubject<Record<string, BehaviorSubject<Record<string, BehaviorSubject<any>>>>>({});
   public currentConfig$ = new BehaviorSubject<PipelineConfigurationProcessed | undefined>(undefined);
+  public nodesDescriptions$ = new BehaviorSubject<Record<string, Observable<Record<string, string | string[]> | undefined>>>({});
   public currentLinks$ = new BehaviorSubject<LinksData[]>([]);
 
   public globalROLocked$ = new BehaviorSubject(false);
@@ -100,6 +101,11 @@ export class Driver {
       map((state) => state ? state.linksState.getLinksInfo() : []),
       takeUntil(this.closed$),
     ).subscribe(this.currentLinks$);
+
+    stateUpdates$.pipe(
+      map((state) => state ? state.getNodesDescriptions() : {}),
+      takeUntil(this.closed$),
+    ).subscribe(this.nodesDescriptions$);
 
     stateUpdates$.pipe(
       map((state) => state ? state.config : undefined),
