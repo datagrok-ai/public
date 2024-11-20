@@ -37,7 +37,7 @@ category('GUI: Grid', () => {
     const filterMatchingAction = getHTMLElementbyInnerText('d4-menu-item-label', 'Filter matching');
     filterMatchingAction!.click();
     await awaitCheck(() => demog.filter.trueCount == 8, 'error in Filter matching', 2000);
-  }, {skipReason: 'GROK-13162'});
+  });
 
   test('grid.deleteRows', async () => {
     const demog = grok.data.demo.demog(100);
