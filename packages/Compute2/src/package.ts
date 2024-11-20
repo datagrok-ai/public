@@ -255,7 +255,7 @@ export async function MockProvider2(params: any) {
       id: 'toMul',
       from: 'from:stepAdd/res',
       to: 'to:stepMul/b',
-      defaultRestrictions: { to: 'restricted' },
+      defaultRestrictions: { to: 'disabled' },
     },
     {
       id: 'initialTempValidator',
