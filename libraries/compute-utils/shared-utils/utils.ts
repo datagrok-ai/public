@@ -822,8 +822,7 @@ export const deepCopy = (call: DG.FuncCall) => {
       deepClone.inputs[input.name] = call.inputs[input.name];
   }
 
-  // Dirty hack to set readonly 'started' field
-  deepClone.dart.y2 = call.dart.y2;
+  if (getStartedOrNull(call)) deepClone.started = call.started;
 
   return deepClone;
 };
