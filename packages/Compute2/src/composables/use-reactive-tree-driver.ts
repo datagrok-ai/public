@@ -3,14 +3,14 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 import {useSubject, useSubscription, useObservable} from '@vueuse/rxjs';
-import {BehaviorSubject, merge} from 'rxjs';
+import {BehaviorSubject, merge, Observable} from 'rxjs';
 import {switchMap, map} from 'rxjs/operators';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
-import { ItemMetadata } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/view/ViewCommunication';
+import { ItemMetadata, SaveDynamicItem } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/view/ViewCommunication';
 
-function makeMergedItems<T>(input: Record<string, BehaviorSubject<T>>) {
+function makeMergedItems<T>(input: Record<string, Observable<T>>) {
   const entries = Object.entries(input).map(([name, state$]) => state$.pipe(map((s) => [name, s] as const)));
   return merge(...entries);
 }
@@ -33,8 +33,18 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
     calls: {} as Record<string, FuncCallStateInfo | undefined>,
     validations: {} as Record<string, Record<string, ValidationResult> | undefined>,
     consistency: {} as Record<string, Record<string, ConsistencyInfo> | undefined>,
-    meta: {} as Record<string, Record<string, BehaviorSubject<any>> | undefined>
+    meta: {} as Record<string, Record<string, BehaviorSubject<any>> | undefined>,
+    descriptions: {} as Record<string, Record<string, string | string[]> | undefined>,
   });
+
+  useSubscription(driver.nodesDescriptions$.pipe(
+    switchMap((data) => {
+      states.descriptions = {};
+      return makeMergedItems(data);
+    }),
+  ).subscribe(([k, val]) => {
+    states.descriptions[k] = Object.freeze(val);
+  }));
 
   useSubscription(driver.currentCallsState$.pipe(
     switchMap((data) => {
@@ -100,6 +110,10 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
     driver.sendCommand({event: 'savePipeline', ...metaData})
   };
 
+  const saveDynamicItem = (uuid:string, metaData?: ItemMetadata) => {
+    driver.sendCommand({event: 'saveDynamicItem', uuid, ...metaData});
+  };
+
   const runStep = async (uuid: string) => {
     driver.sendCommand({event: 'runStep', uuid});
   };
@@ -139,6 +153,7 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
     loadPipeline,
     loadAndReplaceNestedPipeline,
     savePipeline,
+    saveDynamicItem, 
     runStep,
     runSequence,
     runAction,

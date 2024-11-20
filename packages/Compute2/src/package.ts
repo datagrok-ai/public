@@ -243,6 +243,17 @@ export async function MockProvider2(params: any) {
       },
     ],
     links: [{
+      id: 'selector',
+      type: 'selector',
+      from: 'in:cooling/ambTemp',
+      to: ['out1:cooling/title', 'out2:cooling/description', 'out3:cooling/tags'],
+      handler({controller}) {
+        const val = controller.getFirst('in');
+        controller.setDescriptionItem('out1', `Title ${val}`);
+        controller.setDescriptionItem('out2', `Description ${val}`);
+        controller.setDescriptionItem('out3', [`tag ${val}`]);
+      }
+    }, {
       id: 'link1',
       from: 'in1:stepAdd/res',
       to: 'out1:stepMul/a',
