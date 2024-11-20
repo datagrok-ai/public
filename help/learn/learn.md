@@ -8,22 +8,19 @@ Predictive modeling uses statistics to predict outcomes.
 
 ## Algorithms
 
-Predictive models can be used either directly to estimate a response (outcome) given a defined set of characteristics (
-features), or indirectly to drive the choice of decision rules.
+Predictive models can be used either directly to estimate a response (outcome) given a defined set of
+characteristics (features), or indirectly to drive the choice of decision rules.
 
-Plugin uses following types of kernels:
+Predictive modeling toolkit uses a wide range of models: based on popular frameworks (Caret, Chemprop), 
+self-written in-browser toolkit (EDA). There is also a support for [custom models](./custom-machine-learning-models.md).
 
-* [R Caret](https://topepo.github.io/caret/index.html)
-* [H2O](https://h2o.ai)
-* [Chemprop](https://github.com/chemprop/chemprop)
+### Model engines
 
-To select kernel open **Tools** | **Settings...** | **Servers**
+#### Caret
 
-Set **Use Open Cpu For Predictive Modeling** to use R Caret, H2O will be used instead.
-
-### Available models
-
-For Caret:
+Caret models use [R Caret](https://topepo.github.io/caret/index.html) package.
+It provides a set of methods that could be used for 
+[classification problems](https://en.wikipedia.org/wiki/Statistical_classification).
 
 | Method    | Model                                                     |
 |-----------|-----------------------------------------------------------|
@@ -32,36 +29,37 @@ For Caret:
 | svmLinear | Support Vector Machines with Linear Kernel                |
 | svmRadial | Support Vector Machines with Radial Basis Function Kernel |
 
-For H2O:
+#### Chemprop
 
-| Method                       | Model                           |
-|------------------------------|---------------------------------|
-| Auto ML                      | Automatic model builder choosing optimal from GLM, DRF, GBM or DeepLearning |
-| Deep Learning                | Deep Learning (Neural Networks) |
-| Distributed Random Forest    | DRF                             |
-| Generalized Linear Model     | GLM                             |
-| Gradient Boosting Machine    | GBM                             |
-| Naive Bayes Classifier       |                                 |
-| K-Means Clustering           |                                 |
-| Principal Component Analysis | PCA                             |
+[Chemprop](https://github.com/chemprop/chemprop) model engine is used for applying models 
+to chemical compounds to predict molecule properties.
 
-Note: "K-Means Clustering" and "Principal Component Analysis" do not require prediction column since provides only
-output.
+Under the hood, Chemprop uses message passing neural networks. The model engine has an extensive set of parameters: dimensions of network layers, activation functions, learning rate etc.
 
+#### EDA
+
+[EDA](https://github.com/datagrok-ai/public/tree/master/packages/EDA) is a Datagrok package providing toolkit for exploratory data analysis. Among other tools, it contains the most popular classical ML models that are trained in-browser:
+
+* SVM 
+* XGBoost
+* Linear Regression
+* Softmax Classifier
+* PCA Regression
+ 
 ## Train model
 
 Example for R Caret engine:
 
 * Open table
-* Run from menu: **Tools** | **Predictive modeling** | **Train**
-* Set model name
+* Run from menu: **Tools** | **ML** | **Train model**
 * Select table that contains features
 * Select feature columns
 * Select outcome column
 * Set checkbox to impute missing values, if required
 * Set number of nearest neighbors to predict missing values, if required
-* Select modeling method. See **Available classification models** for description
-* Set percentage of train rows from table rows, 0.1..100
+* Select modeling method. Configure suggested hyperparameters
+* Click **TRAIN** button
+* Fill the information about the model
 * Run model training
 
 ## Apply model
@@ -73,42 +71,12 @@ Example for R Caret engine:
 * Set checkbox to impute missing values, if required
 * Set number of nearest neighbors to predict missing values, if required
 * Apply model
+* Result of modelling will be concatenated to source table as a new column.
 
 Also apply model available through "Models Browser" (**Tools** | **Predictive modeling** | **Browse Models**)
 or as suggested models in table properties in **Toolbox**
 or [Context Panel](../datagrok/navigation/panels/panels.md#context-panel).
 
-## Outputs
-
-### Outcome
-
-Result of modelling (train or apply) will be concatenated to source table as column with name "
-Outcome".
-
-### Roc curve
-
-Receiver operating characteristic curve, i.e. ROC curve, is a graphical plot that illustrates the diagnostic ability of
-a binary classifier system as its discrimination threshold is varied.
-
-The ROC curve is created by plotting the true positive rate (TPR) against the false positive rate (
-FPR) at various threshold settings. The true-positive rate is also known as sensitivity, recall or probability of
-detection in machine learning. The false-positive rate is also known as the fall-out or probability of false alarm and
-can be calculated as (1 - specificity). The ROC curve is thus the sensitivity as a function of fall-out.
-
-ROC analysis provides tools to select possibly optimal models and to discard suboptimal ones independently from
-(and prior to specifying) the cost context or the class distribution. ROC analysis is related in a direct and natural
-way to cost/benefit analysis of diagnostic decision making.
-
-### Confusion matrix
-
-Confusion matrix, also known as an error matrix, is a specific table layout that allows visualization of the performance
-of an algorithm, typically a supervised learning one (in unsupervised learning it is usually called a matching matrix).
-Each column of the matrix represents the instances in a predicted class while each row represents the instances in an
-actual class (or vice versa). The name stems from the fact that it makes it easy to see if the system is confusing two
-classes (i.e. commonly mislabelling one as another).
-
-It is a special kind of contingency table, with two dimensions ("actual" and "predicted"), and identical sets of "
-classes" in both dimensions (each combination of dimension and class is a variable in the contingency table).
 
 ## Deployment
 
@@ -134,8 +102,5 @@ See also:
 * [Predictive modeling](https://en.wikipedia.org/wiki/Predictive_modelling)
 * [Statistical classification](https://en.wikipedia.org/wiki/Statistical_classification)
 * [R Caret package](https://topepo.github.io/caret/index.html)
-* [H2O](https://h2o.ai/)
 * [Chemprop](https://github.com/chemprop/chemprop)
-* [Receiver operating characteristic (ROC)](https://en.wikipedia.org/wiki/Receiver_operating_characteristic)
-* [Confusion matrix](https://en.wikipedia.org/wiki/Confusion_matrix)
 * [Samples](https://public.datagrok.ai/js/samples/domains/data-science/predictive-model)

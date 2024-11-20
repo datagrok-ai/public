@@ -77,6 +77,9 @@ class MonomerLibraryManagerWidget {
   private async getWidgetContent(): Promise<HTMLElement> {
     const libControlsForm = await LibraryControlsManager.createControlsForm();
     $(libControlsForm).addClass('monomer-lib-controls-form');
+    setTimeout(() => {
+      libControlsForm && $(libControlsForm) && $(libControlsForm).removeClass('ui-form-condensed');
+    }, 200);
     const widgetContent = ui.divV([libControlsForm]);
     return widgetContent;
   }
@@ -132,7 +135,7 @@ class LibraryControlsManager {
 
   private _createControlsForm(): HTMLElement {
     const libraryControls = this.createLibraryControls();
-    const inputsForm = ui.form(libraryControls, undefined, false);
+    const inputsForm = ui.wideForm(libraryControls, undefined);
     $(inputsForm).addClass('monomer-lib-controls-form');
 
     return inputsForm;
@@ -287,7 +290,7 @@ class LibManagerView {
         const rightWidth = combinedWidth - leftWidth;
         right.style.width = `${rightWidth}px`;
       }, 100);
-      this._view.subs.push(grok.events.onCurrentViewChanged.subscribe(async () => {
+      this._view.subs.push(grok.events.onCurrentViewChanged.subscribe(() => {
         try {
           const inst = LibManagerView._instance;
           if (inst && inst._view && 'id' in grok.shell.v && grok.shell.v.id === inst._view.id)

@@ -351,7 +351,10 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
         let toUpdate: boolean = true;
         if (cellImageData)
           toUpdate = this.renderCellImageData(g, bd, gridCell, cellImageData);
-        if (!toUpdate) return;
+        if (!toUpdate) {
+          this._onRendered.next();
+          return;
+        }
 
         const task = new RenderTask<TProps, TAux>(
           gridCell.cell.rowIndex.toString(),

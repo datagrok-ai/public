@@ -134,6 +134,7 @@ export class AdmeticaViewApp {
 
     this.clearTable();
     const col = this.tableView?.dataFrame.columns.getOrCreate('smiles', 'string', 1);
+    if (!col) return;
     col!.semType = DG.SEMTYPE.MOLECULE;
     this.tableView?.dataFrame.set('smiles', 0, smiles);
     await grok.data.detectSemanticTypes(this.tableView!.dataFrame);
@@ -175,6 +176,7 @@ export class AdmeticaViewApp {
     const fileInputEditor = UiUtils.fileInput('', null, async (file: File) => {
       await this.processFile(file);
     }, null);
+    fileInputEditor.stringValue = 'Drag and drop files here or click to select a file';
     return fileInputEditor;
   }
   
@@ -187,7 +189,7 @@ export class AdmeticaViewApp {
   private styleInputEditor(root: HTMLElement): void {
     const inputEditor = root.querySelector<HTMLElement>('.ui-input-editor');
     if (!inputEditor) return;
-  
+
     Object.assign(inputEditor.style, {
       width: '100%',
       height: '100%',
@@ -196,7 +198,7 @@ export class AdmeticaViewApp {
       justifyContent: 'center',
       backgroundColor: '#ffffff',
       color: '#007bff',
-      fontSize: '22px',
+      fontSize: '14px',
       cursor: 'pointer',
       textAlign: 'center',
       borderBottom: 'none',
@@ -206,30 +208,27 @@ export class AdmeticaViewApp {
   private setupDragAndDrop(root: HTMLElement): void {
     const inputEditor = root.querySelector<HTMLElement>('.ui-input-editor');
     if (!inputEditor) return;
-  
+
     const highlightColor = '#e0f7fa';
     const defaultColor = '#ffffff';
-  
-    const setHighlightedStyle = () => {
-      inputEditor.style.backgroundColor = highlightColor;
-      inputEditor.style.borderBottom = '1px dashed #007bff';
-    };
-  
-    const resetStyle = () => {
-      inputEditor.style.backgroundColor = defaultColor;
-      inputEditor.style.borderBottom = 'none';
-    };
-  
+    inputEditor.style.border = '1px dashed #007bff';
+
+    const setHighlightedStyle = () => inputEditor.style.backgroundColor = highlightColor;
+    const resetStyle = () => inputEditor.style.backgroundColor = defaultColor;
+
     inputEditor.addEventListener('dragenter', setHighlightedStyle);
     inputEditor.addEventListener('dragover', (event) => {
       event.preventDefault();
       setHighlightedStyle();
     });
-  
+
     inputEditor.addEventListener('dragleave', resetStyle);
-    inputEditor.addEventListener('drop', resetStyle);
+    inputEditor.addEventListener('drop', (event) => {
+      event.preventDefault();
+      resetStyle();
+    });
   }
-  
+
   private removeOptionsIcon(root: HTMLElement): void {
     const optionsIcon = root.querySelector<HTMLElement>('.ui-input-options .grok-icon.fal.fa-cloud-upload');
     optionsIcon?.remove();
@@ -257,7 +256,7 @@ export class AdmeticaViewApp {
     await grok.data.detectSemanticTypes(table);
     this.tableView!.dataFrame = table;
   
-    const splashScreen = this.buildSplash(this.formContainer, 'Calculating...');
+    const splashScreen = this.buildSplash(this.tableView!.grid.root, 'Calculating...');
     const models = await getQueryParams();
     await performChemicalPropertyPredictions(
       this.tableView!.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE)!,

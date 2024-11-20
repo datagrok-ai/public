@@ -34,11 +34,15 @@
 .power-pack-widget-header {
     height: 20px;
     font-size: 16px;
-    color: gray;
+    color: grey;
 }
 
 .power-pack-widget-content {
     overflow: auto;
+}
+
+.power-pack-widget-content > .grok-loader {
+
 }
 
 .power-pack-learn-icon {
@@ -80,6 +84,7 @@
     grid-gap: 16px;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     grid-template-rows: repeat(auto-fill, 300px);
+    margin-bottom: 10px;
 }
 
 .power-pack-welcome-view .d4-search-bar {
@@ -130,6 +135,16 @@
 .pp-kpi-caption {
     font-size: 16px;
     color: var(--grey-5);
+}
+
+.pp-drop-zone {
+    border: dashed #b8bac0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: -webkit-center;
+    height: 61px;
+    margin: 5px;
 }
 
 .grok-view:hover .power-pack-widget-host .ui-div::-webkit-scrollbar-thumb {

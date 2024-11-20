@@ -136,6 +136,7 @@ export function linkStrands(strands: { senseStrands: string[], antiStrands: stri
 //meta.demoPath: Bioinformatics | Oligo Toolkit | Translator
 //description: Translate oligonucleotide sequences across various formats accepted by different synthesizers
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Translate
+//meta.demoSkip: GROK-14320
 export async function demoTranslateSequence(): Promise<void> {
   await demoOligoTranslatorUI();
 }

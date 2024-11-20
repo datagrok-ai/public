@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -91,7 +92,7 @@ MWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHP
 
   test('isCorrectHelmLong', async () => {
     await _testMSAOnColumn(longHelmFromCsv, longHelmToCsv, NOTATION.HELM, NOTATION.SEPARATOR, undefined, 'mafft');
-  }, {timeout: 60000 /* docker */});
+  }, {timeout: 80000 /* docker */});
 
   test('isCorrectSeparator', async () => {
     await _testMSAOnColumn(

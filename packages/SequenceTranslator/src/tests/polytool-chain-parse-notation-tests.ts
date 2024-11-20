@@ -49,7 +49,7 @@ category('PolyTool: Chain: parseNotation', () => {
   for (const [testName, testData] of Object.entries(tests)) {
     test(`${testName}`, async () => {
       const rules = await getRules(['rules_example.json']);
-      const resChain = await Chain.parseNotation(testData.src.seq, helmHelper);
+      const resChain = await Chain.fromSeparator(testData.src.seq, helmHelper);
       //expectArray(resChain.monomers.map((mL) => mL.length), testData.tgt.monomerCount);
       //expect(resChain.linkages.length, testData.tgt.linkageCount);
       // expect(resChain.getNotationHelm(), testData.tgt.helm);
@@ -60,7 +60,7 @@ category('PolyTool: Chain: parseNotation', () => {
       hwe.editor.setMol(resMol!);
       const resMolHelm = hwe.editor.getHelm();
 
-      const resHelm = resChain.getNotationHelm();
+      const resHelm = resChain.getHelm();
 
       expect(resMolHelm, testData.tgt.helm);
       expect(resHelm, testData.tgt.helm);

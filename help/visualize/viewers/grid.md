@@ -13,13 +13,8 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 ```
 
-Grid is a [viewer](viewers.md) for tabular data. Think Excel on steroids.
-
-:::note
-
-Certain features and functionalities described in this article are part of the [PowerGrid package](https://github.com/datagrok-ai/public/blob/master/packages/PowerGrid/README.md). For a complete experience, we recommend installation.
-
-:::
+Grid lets you efficiently work with tabular data. Think Excel on steroids, very extensible
+and built to support interactive exploration of vast amounts of scientific data.
 
 ## Controls
 
@@ -66,7 +61,7 @@ Certain features and functionalities described in this article are part of the [
 |<h4>**Column properties**</h4>||
 | Open                           | <kbd>F2</kbd>                   |
 
-## Rows and columns
+## Interacting with the grid
 
 You can access available options for rows, columns, and cells in a number of ways:
 
@@ -77,7 +72,7 @@ You can access available options for rows, columns, and cells in a number of way
 
 From there, you can [change the cell format](#format-cells), [color code a column](#color-code-columns), [pin rows](#pin-rows-and-columns), and do more. For shortcuts, see [Controls](#controls).
 
-### Rows
+## Rows
 
 Grid rows have different states: 
 
@@ -100,7 +95,7 @@ the current molecule.
 ![](img/grid-rows-interactivity.gif)
 
 
-### Columns
+## Columns
 
 Unlike Excel, cells within a grid column are assigned one of the
 predefined data types: `string`, `int`, `bigint`, `qnum`, `double`, `datetime`,
@@ -175,6 +170,30 @@ their content is automatically visualized in the **Context Panel**.
 </Tabs>
 
 :::
+
+### Selecting columns
+
+There are multiple ways to select a column:
+* Shift+click on a header to select
+* Ctrl+shift+click on a header to deselect
+* Ctrl+click on a header to invert selected state
+* Shift+drag on a header to select multiple columns at once
+* From the "Columns" pane, Shift+drag on the row headers
+* Press Shift+LEFT or Shift+RIGHT
+
+Once columns get selected, they appear in the context panel. Expand different panes
+to see column details, invoke commands, color-code, change style, explore statistics,
+and visualize the content.
+
+You can also [resize selected columns](#resizing-columns) by mouse-dragging column border in the header.
+
+### Resizing columns
+
+There are multiple ways to resize a column:
+* Mouse-drag column border in the header
+* Right-click on the grid, and choose one of the options under "Column sizing" 
+
+![](img/grid-resize-multiple-columns.gif)
 
 ## Cells
 
@@ -296,6 +315,61 @@ If images are not detected automatically, right-click the column header and sele
 
 </details>
 
+
+### Designed forms in cells
+
+You can design a [custom form](form.md) that would represent a row in the table, and 
+use this form within a cell. 
+
+To design a form and add it to the grid:
+1. Right-click on the grid
+2. Select **Add | Summary Columns | Design a Form...**
+3. Design a form, then click **CLOSE AND APPLY** on top. 
+
+![](img/grid-custom-form-in-cell.gif)
+
+:::tip tips
+
+You can also design a [stand-alone form](form.md), or use forms as [tiles](tile-viewer.md).
+
+:::
+
+### HTML forms in cells
+
+You can create forms in cells based on the arbitrary HTML, with the row values injected
+using [markup](../../develop/under-the-hood/markup.md). This allows for potentially complex
+visualizations, including SVG:
+
+![](img/grid-custom-html-form.gif)
+
+::note fun fact
+
+The EEG recording in the video above was recorded from Andrew Skalkin's head while he was helping build 
+[JAKE](https://pubmed.ncbi.nlm.nih.gov/30872988/#&gid=article-figures&pid=figure-3-uid-2) 
+sometime around 2016, back at Johnson & Johnson. Fun times! :)
+
+Datagrok is one of the very few web application capable of interactively working with sensor data - you can open
+datasets with up to a billion data points OR a million columns (not at the same time, of course).
+
+::
+
+### Adaptive number formatting
+
+Initially, the format of the numerical and datetime values is chosen in a way that lets you
+differentiate between values in a column. For instance, if all datetime values in a column have the
+time component set to "0:0", only the date is shown. When you import a CSV file, the number of
+significant digits is just enough to represent all digits after comma.  
+
+If you [resize a column](#resizing-columns) so that the content doesn't fit anymore, at first
+the precision will be degraded - time will be stripped out of dates, floating point numbers will
+lose precision and eventually will be rendered as integers. If you make the width even smaller,
+eventually the value will be rendered as a circle with the color indicating the cell value.
+For numbers, darker colors correspond to higher values. For strings, each value gets assigned 
+its own color.
+
+![Adaptive number formatting](img/grid-adaptive-number-formatting.gif)
+
+
 ## Working with data
 
 Subject to permissions, you can [add, delete, or modify records in your dataset](#controls). 
@@ -336,7 +410,25 @@ To toggle filters, in the **Top Menu**, click the filter icon.
 
 ![](img/grid-filtering.gif)
 
+Text filters highlight the occurrences of the search term right in the grid:  
+
+![](img/grid-search-highlights.gif)
+
 The **Filters Panel** is a [viewer](viewers.md). [Learn more about filters](filters.md).
+
+### Searching
+
+Press Ctrl+F to open a search box. You can search for substrings, or enter expressions
+in the form of `[column] [operator] [value]`, such as "age > 30". Matching values
+get highlighted as you type. Press UP or DOWN to go to the previous or next match.
+
+Click the hamburger menu on the right of the input field to access these options:
+* **Select matching**: Select all matching rows
+* **Filter matching**: Filter all matching rows
+* **Auto-select**: Select all matching rows as you type
+* **Auto-filter**: Filter all matching rows as you type
+
+![](../../datagrok/navigation/views/img/search-in-table.gif)
 
 ## How To
 
@@ -358,9 +450,18 @@ To change a cell's format:
 2. Select the format you want from the options provided or set a custom format
    by choosing the **Custom...** option.
 
+<Tabs>
+<TabItem value="navigation" label="Numbers">
+
+![](img/grid-custom-format.gif)
+
+</TabItem>
+<TabItem value="repositioning" label="Dates">
+
 ![](img/custom-formatting-dates.gif)
 
-<br/>
+</TabItem>
+</Tabs>
 
 :::note developers
 
@@ -439,6 +540,14 @@ To show, hide, or reorder columns:
 
 ![](img/grid-column-hide-reorder.gif)
 
+### Inspect multiple columns
+
+**Columns** pane allows you to easily search, select, and navigate columns 
+in the table. To toggle pane visibility, click **Columns** on the status bar in the bottom,
+or press Alt+C.
+
+![](img/grid-columns-preview.gif)
+
 ## Resources
 
 * Tutorials:
@@ -454,3 +563,4 @@ See also:
 * [Viewers](../viewers/viewers.md)
 * [Table View](../../datagrok/navigation/views/table-view.md)
 * [JS API: Grid](https://public.datagrok.ai/js/samples/ui/viewers/types/grid)
+* [PowerGrid package](https://github.com/datagrok-ai/public/blob/master/packages/PowerGrid/README.md) 

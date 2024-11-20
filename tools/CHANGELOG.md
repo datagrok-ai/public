@@ -1,6 +1,24 @@
 # Datagrok-tools changelog
 
 
+## 4.13.38 (2024-11-15)
+
+### Features
+
+* Minor fixes
+
+## 4.13.37 (2024-11-15)
+
+### Features
+
+* Output fixes
+
+## 4.13.36 (2024-11-15)
+
+### Features
+
+* Grok test reopens on each failed test
+
 ## 4.13.35 (2024-11-4)
 
 ### Features

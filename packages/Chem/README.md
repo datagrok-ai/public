@@ -260,6 +260,17 @@ Use **Replace latest** checkbox to remove previous analysis results when running
 
 ![R-group analysis](help/new_rgroup_analysis.gif)
 
+## Molecular format conversion
+
+Datagrok enables conversion between molecular formats like SMILES, SMARTS, Molfile V2000, and Molfile V3000, simplifying workflow processes.
+
+To run, go to **Chem** > **Transform** > **Convert Notation...** and configure parameters:
+* **Data**: Select table containing the molecules.
+* **Molecules**: Specify the column with molecular structures.
+* **Target Notation**: Choose the desired output format (e.g. smiles, smarts, molblock, v3Kmolblock).
+* **Overwrite**: Decide whether to overwrite the existing column or create a new one.
+* **Join**: Add the newly converted column to the dataframe.
+
 See also:
 
 * [Cheminformatics predictive modeling](https://datagrok.ai/help/datagrok/solutions/domains/chem/#qsar-and-qspr-modeling)
