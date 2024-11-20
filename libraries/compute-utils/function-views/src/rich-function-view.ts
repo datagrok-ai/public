@@ -5,6 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import type ExcelJS from 'exceljs';
 import type html2canvas from 'html2canvas';
+import dayjs from 'dayjs';
 import wu from 'wu';
 import $ from 'cash-dom';
 import {Subject, BehaviorSubject, Observable, merge, from, of, combineLatest} from 'rxjs';
@@ -299,10 +300,10 @@ export class RichFunctionView extends FunctionView {
   }
 
   public async loadValidators(isInput: SyncFields = SYNC_FIELD.INPUTS) {
-    const validators = (await getValidators(this.funcCall, isInput))
+    const validators = (await getValidators(this.funcCall, isInput));
 
     if (isInput === SYNC_FIELD.INPUTS)
-      this.inputValidators = validators
+      this.inputValidators = validators;
     else
       this.outputValidators = validators;
   }
@@ -996,7 +997,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   protected get categoryToDfParamMap() {
-    return categoryToDfParamMap(this.funcCall.func)
+    return categoryToDfParamMap(this.funcCall.func);
   }
 
   private get inputsStorage() {
@@ -1534,10 +1535,10 @@ export class RichFunctionView extends FunctionView {
     this.subs.push(sub3);
 
     const sub4 = (
-      isInputBase(t) ? 
-        t.onInput: 
-        getObservable((t.onInput as  ((cb: Function) => SubscriptionLike)).bind(t))
-      ).pipe(debounceTime(VALIDATION_DEBOUNCE_TIME)).subscribe(() => {
+      isInputBase(t) ?
+        t.onInput:
+        getObservable((t.onInput as ((cb: Function) => SubscriptionLike)).bind(t))
+    ).pipe(debounceTime(VALIDATION_DEBOUNCE_TIME)).subscribe(() => {
       try {
         stopUIUpdates = true;
         this.funcCall[field][val.name] = t.value;
@@ -1674,9 +1675,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   private async getValidExpRun(expFuncCall: DG.FuncCall) {
-    // Dirty hack to set readonly 'started' field
-    const tempCall = await(await grok.functions.eval('Sin')).prepare({x: 1}).call();
-    expFuncCall.dart.y2 = tempCall.dart.y2;
+    expFuncCall.started = dayjs();
 
     const immutableTags = expFuncCall.options['immutable_tags'] || [];
     expFuncCall.options['immutable_tags'] = immutableTags.includes(EXPERIMENTAL_TAG) ? immutableTags: [...immutableTags, EXPERIMENTAL_TAG];
@@ -1724,7 +1723,7 @@ export class RichFunctionView extends FunctionView {
       this.func,
       this.lastCall,
       this.dfToViewerMapping,
-    )
+    );
   };
 
   richFunctionViewSupportedFormats() {
@@ -1733,7 +1732,7 @@ export class RichFunctionView extends FunctionView {
 
   richFunctionViewExportExtensions() {
     return {
-      'Excel': 'xlsx'
+      'Excel': 'xlsx',
     };
   }
 

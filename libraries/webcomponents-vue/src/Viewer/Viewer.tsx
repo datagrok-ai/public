@@ -25,6 +25,7 @@ export const Viewer = Vue.defineComponent({
     viewerChanged: (v: DG.Viewer<any> | undefined) => v,
   },
   setup(props, {emit}) {
+    const currentDf = Vue.computed(() => props.dataFrame);
     const viewerChangedCb = (event: any) => {
       emit('viewerChanged', event.detail);
     };
@@ -32,7 +33,7 @@ export const Viewer = Vue.defineComponent({
       const viewer = <dg-viewer
         type={props.type}
         options={props.options}
-        dataFrame={props.dataFrame}
+        dataFrame={currentDf.value}
         // viewer={props.viewer} // TODO: Fix this
         onViewerChanged={viewerChangedCb}
         style={{display: 'block', flexGrow: '1'}}

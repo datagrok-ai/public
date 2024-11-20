@@ -94,7 +94,7 @@ export const InputForm = Vue.defineComponent({
             consistency: consistencyState,
           });
 
-          input.enabled = !isReadonly.value;
+          input.enabled = !isReadonly.value && consistencyState?.restriction !== 'disabled';
 
           if (paramItems && input.inputType === DG.InputType.Choice)
             (input as DG.ChoiceInput<any>).items = paramItems;
