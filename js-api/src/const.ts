@@ -198,6 +198,7 @@ export enum VIEW_TYPE {
   PACKAGE_REPOSITORIES = 'repositories',
   JS_EDITOR = 'js',
   BROWSE = 'browse',
+  HOME = 'datagrok',
 }
 
 ///////
