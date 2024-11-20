@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Observable} from 'rxjs';
-import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController} from '../RuntimeControllers';
+import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController} from '../RuntimeControllers';
 import {ItemId, NqName, RestrictionType, LinkSpecString} from '../data/common-types';
 import {StepParallelInitialConfig, StepSequentialInitialConfig} from './PipelineInstance';
 
@@ -36,7 +36,9 @@ export type Validator = HandlerBase<{ controller: IRuntimeValidatorController },
 export type MetaHandler = HandlerBase<{ controller: IRuntimeMetaController }, void>;
 export type MutationHandler = HandlerBase<{ controller: IRuntimePipelineMutationController }, void>;
 export type SelectorHandler = HandlerBase<{ controller: INameSelectorController }, void>;
+export type FunccallActionHandler = HandlerBase<{ controller: IFuncallActionController }, void>;
 export type PipelineProvider = HandlerBase<{ version?: string }, LoadedPipeline>;
+
 export type ViewersHook = (ioName: string, type: string, viewer?: DG.Viewer, meta?: any) => void;
 
 
@@ -94,7 +96,7 @@ export type ActionInfo = {
   icon?: string;
 };
 
-export type PipelineActionConfiguraion<P> = PipelineLinkConfigurationBase<P> & {
+export type DataActionConfiguraion<P> = PipelineLinkConfigurationBase<P> & {
   type?: 'data',
   handler: Handler;
 } & ActionInfo;
@@ -104,19 +106,21 @@ export type PipelineMutationConfiguration<P> = PipelineLinkConfigurationBase<P> 
   handler: MutationHandler;
 } & ActionInfo;
 
-export type StepActionConfiguraion<P> = PipelineActionConfiguraion<P>;
+export type FuncCallActionConfiguration<P> = PipelineLinkConfigurationBase<P> & {
+  type: 'funccall',
+  handler: FunccallActionHandler;
+} & ActionInfo;
 
 const actionPositions = ['buttons', 'menu', 'none'] as const;
 export type ActionPositions = typeof actionPositions[number];
 
 // static steps config
-
 export type PipelineStepConfiguration<P, S> = {
   id: ItemId;
   nqName: NqName;
   friendlyName?: string;
   io?: S;
-  actions?: StepActionConfiguraion<P>[];
+  actions?: (DataActionConfiguraion<P> | FuncCallActionConfiguration<P>)[];
   initialValues?: Record<string, any>;
   inputRestrictions?: Record<string, RestrictionType>;
   viewersHook?: ViewersHook;
@@ -130,7 +134,7 @@ export type PipelineConfigurationBase<P> = {
   version?: string;
   friendlyName?: string;
   onInit?: PipelineHookConfiguration<P>;
-  actions?: (PipelineActionConfiguraion<P> | PipelineMutationConfiguration<P>)[];
+  actions?: (DataActionConfiguraion<P> | PipelineMutationConfiguration<P> | FuncCallActionConfiguration<P>)[];
   states?: StateItem[];
 };
 

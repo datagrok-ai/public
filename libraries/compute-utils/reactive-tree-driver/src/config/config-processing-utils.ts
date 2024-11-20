@@ -1,10 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {AbstractPipelineParallelConfiguration, AbstractPipelineSequentialConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, PipelineActionConfiguraion, PipelineConfigurationInitial, PipelineConfigurationParallelInitial, PipelineConfigurationSequentialInitial, PipelineConfigurationStaticInitial, PipelineHookConfiguration, PipelineLinkConfigurationBase, PipelineMutationConfiguration, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, StepActionConfiguraion} from './PipelineConfiguration';
+import {AbstractPipelineParallelConfiguration, AbstractPipelineSequentialConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, DataActionConfiguraion, PipelineConfigurationInitial, PipelineConfigurationParallelInitial, PipelineConfigurationSequentialInitial, PipelineConfigurationStaticInitial, PipelineHookConfiguration, PipelineLinkConfigurationBase, PipelineMutationConfiguration, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, FuncCallActionConfiguration } from './PipelineConfiguration';
 import {ItemId, LinkSpecString, NqName} from '../data/common-types';
 import {callHandler} from '../utils';
 import {LinkIOParsed, parseLinkIO} from './LinkSpec';
+import wu from 'wu';
 
 //
 // Internal config processing
@@ -126,23 +127,23 @@ async function processStepConfig(conf: PipelineStepConfiguration<LinkSpecString,
 
 async function getFuncCallIO(nqName: NqName): Promise<FuncCallIODescription[]> {
   const func: DG.Func = await grok.functions.eval(nqName);
-  // make everything non-nullable
-  const inputs = func.inputs.map((input) => (
-    {id: input.name, type: input.propertyType as any, direction: 'input' as const, nullable: false}
+  const fc = func.prepare();
+  const inputs = wu(fc.inputParams.values()).map((input) => (
+    {id: input.property.name, type: input.property.propertyType as any, direction: 'input' as const, nullable: false}
   ));
-  const outputs = func.outputs.map((output) => (
-    {id: output.name, type: output.propertyType as any, direction: 'output' as const, nullable: false}
+  const outputs = wu(fc.outputParams.values()).map((output) => (
+    {id: output.property.name, type: output.property.propertyType as any, direction: 'output' as const, nullable: false}
   ));
   const io = [...inputs, ...outputs];
   return io;
 }
 
-function processPipelineActions(actionsInput: (PipelineActionConfiguraion<LinkSpecString> | PipelineMutationConfiguration<LinkSpecString>)[]) {
+function processPipelineActions(actionsInput: (DataActionConfiguraion<LinkSpecString> | PipelineMutationConfiguration<LinkSpecString> | FuncCallActionConfiguration<LinkSpecString>)[]) {
   const actions = actionsInput.map((action) => ({...processLinkData(action)}));
   return actions;
 }
 
-function processStepActions(actionsInput: StepActionConfiguraion<LinkSpecString>[]) {
+function processStepActions(actionsInput: (DataActionConfiguraion<LinkSpecString> | FuncCallActionConfiguration<LinkSpecString>)[]) {
   const actions = actionsInput.map((action) => ({...processLinkData(action)}));
   return actions;
 }

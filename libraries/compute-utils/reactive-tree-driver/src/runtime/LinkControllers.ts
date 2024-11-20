@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {TreeNode} from '../data/BaseTree';
-import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController} from '../RuntimeControllers';
+import { IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController } from '../RuntimeControllers';
 import {RestrictionType, ValidationResult} from '../data/common-types';
 import {StateTreeNode} from './StateTreeNodes';
 import {ScopeInfo} from './Link';
@@ -194,5 +194,33 @@ export class NameSelectorController extends ControllerBase<any | undefined> impl
   setDescriptionItem(name: string, val: string) {
     this.checkIsClosed();
     this.outputs[name] = val;
+  }
+}
+
+export class FuncallActionController extends ControllerBase<any | undefined> implements IFuncallActionController {
+  constructor(
+    public inputs: Record<string, any[]>,
+    public inputsSet: Set<string>,
+    public outputsSet: Set<string>,
+    public id: string,
+    public scopeInfo?: ScopeInfo,
+  ) {
+    super(inputs, inputsSet, outputsSet, id, scopeInfo);
+  }
+
+  getAll<T = any>(name: string): T[] | undefined {
+    this.checkIsClosed();
+    this.checkInput(name);
+    return this.inputs[name];
+  }
+
+  getFirst<T = any>(name: string) {
+    return this.getAll<T>(name)?.[0];
+  }
+
+  setFuncCall(name: string, state: DG.FuncCall) {
+    this.checkIsClosed();
+    this.checkOutput(name);
+    this.outputs[name] = state;
   }
 }

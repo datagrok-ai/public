@@ -1,5 +1,5 @@
 import {isNonRefSelector, LinkNonRefSelectors, LinkIOParsed, LinkRefSelectors, refSelectorAdjacent, refSelectorAll, refSelectorDirection, refSelectorFindOne} from '../config/LinkSpec';
-import {PipelineActionConfiguraion, PipelineLinkConfiguration, PipelineMutationConfiguration, StepActionConfiguraion} from '../config/PipelineConfiguration';
+import {DataActionConfiguraion, FuncCallActionConfiguration, PipelineLinkConfiguration, PipelineMutationConfiguration} from '../config/PipelineConfiguration';
 import {BaseTree, NodePath, TreeNode} from '../data/BaseTree';
 import {buildTraverseD} from '../data/graph-traverse-utils';
 import {indexFromEnd} from '../utils';
@@ -7,7 +7,7 @@ import {StateTree} from './StateTree';
 import {StateTreeNode} from './StateTreeNodes';
 
 export type LinkSpec = PipelineLinkConfiguration<LinkIOParsed[]>;
-export type ActionSpec = PipelineActionConfiguraion<LinkIOParsed[]> | PipelineMutationConfiguration<LinkIOParsed[]> | StepActionConfiguraion<LinkIOParsed[]>;
+export type ActionSpec = DataActionConfiguraion<LinkIOParsed[]> | PipelineMutationConfiguration<LinkIOParsed[]> | FuncCallActionConfiguration<LinkIOParsed[]>;
 
 type MatchedIO = {
   path: Readonly<NodePath>;
@@ -23,10 +23,6 @@ export type MatchInfo = {
   inputs: Record<string, MatchedNodePaths>;
   outputs: Record<string, MatchedNodePaths>;
   isDefaultValidator?: boolean;
-}
-
-export function isActionSpec(spec: LinkSpec | ActionSpec): spec is ActionSpec {
-  return !!(spec as ActionSpec).position;
 }
 
 export function matchLink(state: StateTree, address: NodePath, spec: LinkSpec): MatchInfo[] | undefined {
@@ -81,7 +77,7 @@ function matchLinkInstance(
 
   const ioData = [...spec.from.map((item) => ['inputs', item] as const), ...spec.to.map((item) => ['outputs', item] as const)];
   for (const [kind, io] of ioData) {
-    const skipIO = (spec.type === 'pipeline' && kind === 'outputs');
+    const skipIO = (spec.type === 'pipeline' && kind === 'outputs') || (!!io.flags?.includes('call'));
     const useDescriptionsStore = (spec.type === 'selector' && kind === 'outputs');
     const paths = matchLinkIO(rnode, currentIO, io, skipIO, useDescriptionsStore);
     if (paths.length == 0)

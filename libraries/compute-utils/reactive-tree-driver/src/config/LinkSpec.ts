@@ -4,7 +4,9 @@ import {indexFromEnd} from '../utils';
 import {IOType} from './config-processing-utils';
 
 const linkSpecGrammar = `
-Link ::= Name (':' Segment)? ('/' Segment)*
+Link ::= Name FlagList? (':' Segment)? ('/' Segment)*
+FlagList ::= WS* '(' WS* Flag WS* ('|' WS* Flag WS*)* ')' WS* {fragment=true}
+Flag ::= "call" | "io"
 Segment ::=  WS* (Selector | TargetIds) WS* {fragment=true}
 Selector ::= SelectorType '(' SelectorArgs ')'
 SelectorArgs ::= ((RefArg ',' TargetIds) | TargetIds) (',' StopIds)? {fragment=true}
@@ -24,6 +26,7 @@ const linkParser = new Parser(Grammars.Custom.getRules(linkSpecGrammar));
 
 export type LinkRefSelectors = 'after+' | 'after*' | 'after' | 'before+' | 'before*' | 'before' | 'same';
 export type LinkNonRefSelectors = 'first' | 'last' | 'all' | 'expand';
+export type LinkFlags = 'call' | 'io';
 export type LinkSelectors = LinkRefSelectors | LinkNonRefSelectors;
 
 export type LinkSegment = {
@@ -36,6 +39,7 @@ export type LinkSegment = {
 export type LinkIOParsed = {
   name: string;
   segments: LinkSegment[];
+  flags?: LinkFlags[] | undefined,
 }
 
 const nonRefSelectors = ['first', 'last', 'all', 'expand'];
@@ -72,6 +76,7 @@ export function parseLinkIO(io: string, ioType: IOType): LinkIOParsed {
   const ast = linkParser.getAST(io);
   checkAST(io, ast);
   const name = ast.children.find((cnode) => cnode.type === 'Name')!.text;
+  const flags = ast.children.filter((cnode) => cnode.type === 'Flag').map(cnode => cnode.text as LinkFlags);
   const isBase = ioType === 'base';
   const segments = ast.children.map((node) => {
     if (node.type === 'Selector') {
@@ -95,14 +100,14 @@ export function parseLinkIO(io: string, ioType: IOType): LinkIOParsed {
       const selector = 'first' as const;
       const ids = node.children.map((cnode) => cnode.text);
       return {ids, selector, stopIds: []};
-    } else if (node.type === 'Name')
+    } else if (node.type === 'Name' || node.type === 'Flag')
       return;
     throw new Error(`Link ${io}, unknown AST node type ${node.type}`);
   }).filter((x) => !!x);
   const lastSegment = indexFromEnd(segments);
   if (lastSegment && ioType !== 'base' && (lastSegment.selector !== 'first'))
     throw new Error(`Link io ${io} ending with input/output selector`);
-  return {name, segments};
+  return {name, segments, flags};
 }
 
 function checkAST(str: string, ast?: IToken) {

@@ -4,17 +4,18 @@ import * as DG from 'datagrok-api/dg';
 import {v4 as uuidv4} from 'uuid';
 import {HandlerBase} from '../config/PipelineConfiguration';
 import {BaseTree, NodeAddress, NodePath, TreeNode} from '../data/BaseTree';
-import { descriptionOutputs, StateTreeNode} from './StateTreeNodes';
+import {descriptionOutputs, StateTreeNode} from './StateTreeNodes';
 import {ActionSpec, MatchInfo} from './link-matching';
 import {BehaviorSubject, combineLatest, defer, EMPTY, merge, Subject, of} from 'rxjs';
 import {map, filter, takeUntil, withLatestFrom, switchMap, catchError, mapTo, finalize, debounceTime, timestamp, distinctUntilChanged} from 'rxjs/operators';
 import {callHandler} from '../utils';
 import {defaultLinkHandler} from './default-handler';
-import {ControllerCancelled, LinkController, MetaController, MutationController, NameSelectorController, ValidatorController} from './LinkControllers';
-import {MemoryStore} from './FuncCallAdapters';
+import {ControllerCancelled, FuncallActionController, LinkController, MetaController, MutationController, NameSelectorController, ValidatorController} from './LinkControllers';
+import {FuncCallAdapter, MemoryStore} from './FuncCallAdapters';
 import {LinksState} from './LinksState';
 import {PipelineInstanceConfig} from '../config/PipelineInstance';
 import {DriverLogger} from '../data/Logger';
+import {FuncCallInstancesBridge} from './FuncCallInstancesBridge';
 
 const VALIDATOR_DEBOUNCE_TIME = 250;
 
@@ -32,6 +33,7 @@ export class Link {
   public readonly isMeta = this.matchInfo.spec.type === 'meta';
   public readonly isMutation = this.matchInfo.spec.type === 'pipeline';
   public readonly isSelector = this.matchInfo.spec.type === 'selector';
+  public readonly isFuncallAction = this.matchInfo.spec.type === 'funccall';
 
 
   // probably a better api
@@ -139,7 +141,9 @@ export class Link {
         const includeDFMutations = Array.isArray(dataFrameMutations) ?
           dataFrameMutations.includes(inputAlias) :
           !!dataFrameMutations;
-        const state$ = item.getStateStore().getStateChanges(ioName, includeDFMutations);
+        const store = item.getStateStore();
+        const state$ = ioName ? store.getStateChanges(ioName, includeDFMutations) :
+          (store instanceof FuncCallInstancesBridge ? store.instance$.pipe(map(x => x?.adapter.getFuncCall())) : of(undefined));
         return state$;
       });
       return [inputAlias, combineLatest(inputStates)] as const;
@@ -225,10 +229,13 @@ export class Link {
     if (this.isSelector)
       return new NameSelectorController(inputs, inputSet, new Set(descriptionOutputs), this.matchInfo.spec.id, scope);
 
+    if (this.isFuncallAction)
+      return new FuncallActionController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
+
     return new LinkController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
   }
 
-  private setHandlerResults(controller: LinkController | ValidatorController | MetaController | MutationController | NameSelectorController, state: BaseTree<StateTreeNode>) {
+  private setHandlerResults(controller: LinkController | ValidatorController | MetaController | MutationController | NameSelectorController | FuncallActionController, state: BaseTree<StateTreeNode>) {
     this.lastPipelineMutations = [];
     if (this.logger) {
       this.logger.logLink('linkRunFinished', {
@@ -269,6 +276,13 @@ export class Link {
           const data = controller.outputs[outputAlias];
           const descrStore = node.getItem().nodeDescription;
           descrStore.setState(ioName, data);
+        } else if (controller instanceof FuncallActionController) {
+          const data = controller.outputs[outputAlias];
+          const stateStore = node.getItem().getStateStore();
+          if (stateStore instanceof  FuncCallInstancesBridge && !stateStore.isReadonly) {
+            const adapter = new FuncCallAdapter(data, false);
+            stateStore.change(adapter, true);
+          }
         } else {
           const data = controller.outputs[outputAlias];
           if (data) {

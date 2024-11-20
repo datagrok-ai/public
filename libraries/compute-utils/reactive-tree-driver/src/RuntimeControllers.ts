@@ -1,5 +1,6 @@
 import {PipelineInstanceConfig} from './config/PipelineInstance';
 import {RestrictionType, ValidationResult} from './data/common-types';
+import * as DG from 'datagrok-api/dg';
 
 export interface IRuntimeLinkController {
   getAll<T = any>(name: string): T[] | undefined;
@@ -30,4 +31,10 @@ export interface INameSelectorController {
   getAll<T = any>(name: string): T[] | undefined;
   getFirst<T = any>(name: string): T | undefined;
   setDescriptionItem(name: string, description: any): void;
+}
+
+export interface IFuncallActionController {
+  getAll<T = any>(name: string): T[] | undefined;
+  getFirst<T = any>(name: string): T | undefined;
+  setFuncCall(name: string, state: DG.FuncCall): void;
 }

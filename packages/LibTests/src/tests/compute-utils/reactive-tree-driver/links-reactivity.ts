@@ -7,7 +7,7 @@ import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {of, Subject} from 'rxjs';
-import {delay, mapTo, skip, switchMap, take} from 'rxjs/operators';
+import {delay, filter, mapTo, skip, switchMap, take} from 'rxjs/operators';
 import {FuncCallInstancesBridge} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/FuncCallInstancesBridge';
 import {makeValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
@@ -953,6 +953,112 @@ category('ComputeUtils: Driver links reactivity', async () => {
       expectObservable(pipeline.getItem().nodeDescription.getStateChanges('tags')).toBe('abc',
         {a: undefined, b: ['tag 1'], c: ['tag 2']});
     });
+  });
+
+  test('FuncCall pipeline actions', async () => {
+    const config1: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:TestAdd2',
+          initialValues: {
+            a: 1,
+            b: 2,
+          }
+        },
+        {
+          id: 'step2',
+          nqName: 'LibTests:TestMul2',
+          initialValues: {
+            a: 3,
+            b: 4,
+          }
+        },
+      ],
+      actions: [{
+        id: 'action1',
+        type: 'funccall',
+        from: ['a:step1/a', 'b:step1/b', 'fc(call):step2'],
+        to: 'out(call):step2',
+        position: 'none',
+        async handler({controller}) {
+          const a = controller.getFirst('a');
+          const b = controller.getFirst('b');
+          const fc = controller.getFirst('fc');
+          expectDeepEqual(a, 1);
+          expectDeepEqual(b, 2);
+          expectDeepEqual(fc instanceof DG.FuncCall, true);
+          const func: DG.Func = await grok.functions.eval('LibTests:simpleInputs');
+          const nfc = func.prepare({a : 33, b: 44});
+          controller.setFuncCall('out', nfc);
+        }
+      }],
+    };
+
+    const pconf = await getProcessedConfig(config1);
+    const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: false});
+    await tree.init().toPromise();
+    const action = [...tree.linksState.actions.values()][0];
+    await tree.runAction(action.uuid).toPromise();
+    await tree.treeMutationsLocked$.pipe(filter(x => !x), take(1)).toPromise();
+    const node = tree.nodeTree.getNode([{idx: 1}]);
+    const a = node.getItem().getStateStore().getState('a');
+    const b = node.getItem().getStateStore().getState('b');
+    expectDeepEqual(a, 33);
+    expectDeepEqual(b, 44);
+  });
+
+  test('FuncCall step actions', async () => {
+    const config1: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:TestAdd2',
+          initialValues: {
+            a: 1,
+            b: 2,
+          }
+        },
+        {
+          id: 'step2',
+          nqName: 'LibTests:TestMul2',
+          initialValues: {
+            a: 3,
+            b: 4,
+          },
+          actions: [{
+            id: 'action1',
+            type: 'funccall',
+            from: 'fc(call)',
+            to: 'out(call)',
+            position: 'none',
+            async handler({controller}) {
+              const fc = controller.getFirst('fc');
+              expectDeepEqual(fc instanceof DG.FuncCall, true);
+              const func: DG.Func = await grok.functions.eval('LibTests:simpleInputs');
+              const nfc = func.prepare({a : 33, b: 44});
+              controller.setFuncCall('out', nfc);
+            }
+          }],
+        },
+      ],
+    };
+
+    const pconf = await getProcessedConfig(config1);
+    const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: false});
+    await tree.init().toPromise();
+    const action = [...tree.linksState.actions.values()][0];
+    await tree.runAction(action.uuid).toPromise();
+    await tree.treeMutationsLocked$.pipe(filter(x => !x), take(1)).toPromise();
+    const node = tree.nodeTree.getNode([{idx: 1}]);
+    const a = node.getItem().getStateStore().getState('a');
+    const b = node.getItem().getStateStore().getState('b');
+    expectDeepEqual(a, 33);
+    expectDeepEqual(b, 44);
   });
 
 });

@@ -78,8 +78,8 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
     this.setupStateWatcher();
   }
 
-  change(adapter: IFuncCallAdapter) {
-    this.instance$.next({adapter, isNew: false});
+  change(adapter: IFuncCallAdapter, isNew = false) {
+    this.instance$.next({adapter, isNew});
   }
 
   getInstance() {
