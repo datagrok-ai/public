@@ -129,14 +129,9 @@ jobs:
                 if [[ $npm_version != ${current_version} ]]; then
                   if [ "$(awk -F. '{print $1}' <<<$current_version)" -gt "0" ]; then
                     if [[ $unpublished_deps == "" ]]; then
-                      if [[ '${{ github.ref }}' == 'refs/heads/master' ]]; then
-                        publish="publish"
-                        MATRIX_PUBLISH_JSON+=", \"publish\": \"publish\""
-                        job_name+=' and publish to NPM'
-                      else
-                        echo "It is an action for branch other than 'master'. Publish will be skipped."
-                        echo "::notice title=${PACKAGE}::It is an action for branch other than 'master'. Publish will be skipped."
-                      fi
+                      publish="publish"
+                      MATRIX_PUBLISH_JSON+=", \"publish\": \"publish\""
+                      job_name+=' and publish to NPM'
                     else
                       echo "Package $PACKAGE version ${current_version} has unpublished dependencies: $unpublished_deps. It is not going to be published"
                       echo "::notice title=${PACKAGE}::Version ${current_version} has unpublished dependencies and is not going to be published"
