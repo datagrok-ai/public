@@ -93,15 +93,20 @@ export class DemoView extends DG.ViewBase {
 
 
   private _setBreadcrumbsInViewName(viewPath: string[]): void {
-    const breadcrumbs = ui.breadcrumbs(viewPath);
+    const path = viewPath.includes('Home') ? viewPath : ['Home', ...viewPath];
+    const breadcrumbs = ui.breadcrumbs(path);
 
-    breadcrumbs.onPathClick.subscribe((value) => {
+    breadcrumbs.onPathClick.subscribe(async (value) => {
       const currentFunc = this.funcs.filter((func) => {
         return (func.name === value[value.length - 1]);
       });
       if (currentFunc.length !== 0)
         return;
-      this.nodeView(value[value.length - 1], value.join('/'));
+      if (value.length === 1 && value[0] === 'Home') {
+        await this.browseView.setHomeView();
+        return;
+      }
+      this.nodeView(value[value.length - 1], (value[0] === 'Home' ? value.slice(1) : value).join('/'));
     });
 
     const viewNameRoot = this.browseView.ribbonMenu.root.parentElement?.getElementsByClassName('d4-ribbon-name')[0];
