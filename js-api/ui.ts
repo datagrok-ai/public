@@ -1317,13 +1317,13 @@ export class tools {
       let options = $(element).find('.ui-input-options');
       options.each((i) => {
         optionsWidth += this.getOptionsWidth(options[i] as HTMLElement);
+        if (element.classList.contains('ui-input-float') ||
+          element.classList.contains('ui-input-int') ||
+          element.classList.contains('ui-input-text')) {
+          (options[i] as HTMLElement).style.marginLeft = `-${optionsWidth}px`;
+        }
+        width += optionsWidth;
       });
-      if (element.classList.contains('ui-input-float') ||
-        element.classList.contains('ui-input-int') ||
-        element.classList.contains('ui-input-text')) {
-        (options[i] as HTMLElement).style.marginLeft = `-${optionsWidth}px`;
-      }
-      width += optionsWidth;
       // todo: analyze content(?) and metadata
       // todo: analyze more types
       widths.push(width);
