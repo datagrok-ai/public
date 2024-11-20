@@ -1,5 +1,9 @@
 # PowerPack changelog
 
+## 1.2.4 (2024-11-20)
+
+* Add new column: additional validation for 'If' function
+
 ## 1.2.3 (2024-11-13)
 
 ### Bug Fixes
