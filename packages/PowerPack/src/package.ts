@@ -29,9 +29,9 @@ export function _compareColumns(): void {
 }
 
 //name: addNewColumn
-//input: funccall call {optional: true}
+//input: funccall call
 //editor-for: AddNewColumn
-export function addNewColumnDialog(call: DG.FuncCall | null = null): AddNewColumnDialog {
+export function addNewColumnDialog(call: DG.FuncCall): AddNewColumnDialog {
   return new AddNewColumnDialog(call);
 }
 

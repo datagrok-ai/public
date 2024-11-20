@@ -4,7 +4,7 @@
   "sources": [
     "css/power-pack.css"
   ],
-  "version": "1.2.1",
+  "version": "1.2.3",
   "author": {
     "name": "Andrew Skalkin",
     "email": "askalkin@datagrok.ai"
@@ -18,7 +18,7 @@
   "dependencies": {
     "@datagrok-libraries/utils": "^4.3.0",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.22.0-rc.bd7ed5670c.ca441902963",
+    "datagrok-api": "^1.22.0",
     "dayjs": "^1.11.7",
     "fuse.js": "^6.6.2",
     "rxjs": "^6.5.5",
