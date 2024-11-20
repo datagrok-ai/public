@@ -18,6 +18,7 @@
     transition: box-shadow 200ms ease-in-out;
     /*border: 1px solid #f2f2f5;*/
 }
+
 .power-pack-widget-host:hover {
     flex-direction: column;
     width: initial!important;
@@ -25,6 +26,10 @@
     grid-column: span 1;
     box-shadow: 0px 0px 2px var(--grey-2), 0px 5px 9px -4px var(--grey-3);
     /*border: 1px solid #f2f2f5;*/
+}
+
+.power-pack-widgets-host .d4-dialog-header:hover {
+    cursor: initial;
 }
 
 .power-pack-widget-host.widget-wide {
