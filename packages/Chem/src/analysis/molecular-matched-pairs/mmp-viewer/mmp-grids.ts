@@ -11,6 +11,7 @@ import {createColWithDescription} from './mmp-generations';
 import {debounceTime} from 'rxjs/operators';
 import {getInverseSubstructuresAndAlign} from './mmp-mol-rendering';
 import {MmpInput} from './mmp-viewer';
+import { Subscription } from 'rxjs';
 
 export class MmpPairedGrids {
   parentTable: DG.DataFrame;
@@ -31,7 +32,7 @@ export class MmpPairedGrids {
   enableFilters: boolean = true;
   rdkit: RDModule;
 
-  constructor(mmpInput: MmpInput, mmpa: MMPA, activityMeanNames: string[] ) {
+  constructor(subs: Subscription[], mmpInput: MmpInput, mmpa: MMPA, activityMeanNames: string[] ) {
     this.mmpa = mmpa;
     this.parentTable = mmpInput.table;
     this.fpGrid = getFragmetsPairsGrid(activityMeanNames, mmpa);
@@ -47,17 +48,18 @@ export class MmpPairedGrids {
     this.mmpMaskFrag = DG.BitSet.create(this.mmpGridFrag.dataFrame.rowCount);
 
     this.rdkit = getRdKitModule();
+
+    subs.push(DG.debounce(this.parentTable.onCurrentRowChanged, 1000).subscribe(() => {
+      if (this.parentTable!.currentRowIdx !== -1) {
+        this.refilterFragmentPairsByMolecule(true);
+        this.refreshMatchedPair(this.rdkit);
+      }
+    }));
   }
 
   setupGrids(): void {
     this.fpMaskFilter!.setAll(true);
     this.fpMaskByMolecule!.setAll(true);
-    this.parentTable.onCurrentRowChanged.pipe(debounceTime(1000)).subscribe(() => {
-      if (this.parentTable!.currentRowIdx !== -1) {
-        this.refilterFragmentPairsByMolecule(true);
-        this.refreshMatchedPair(this.rdkit);
-      }
-    });
 
     this.refilterFragmentPairsByMolecule(true);
 

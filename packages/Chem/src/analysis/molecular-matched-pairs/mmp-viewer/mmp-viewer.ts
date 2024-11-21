@@ -255,10 +255,12 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     const header = ui.h1('Fragment vs fragment', 'chem-mmpa-transformation-tab-header');
     const trellisTv = DG.TableView.create(this.pairedGrids!.fpGrid.dataFrame, false);
-    const filters = trellisTv.getFiltersGroup();
+    let filters: DG.FilterGroup | null = null;
 
     let dockNode: DG.DockNode | null = null;
     const filterIcon = ui.icons.filter(() => {
+      if (!filters)
+        filters = trellisTv.getFiltersGroup();
       if (!dockNode?.parent)
         dockNode = grok.shell.tv.dockManager.dock(filters.root, DG.DOCK_TYPE.RIGHT, null, 'Fragment filters', 0.2);
     }, 'Open fragments filters');
@@ -475,7 +477,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     //Transformations tab
     //const {activityMeanNames, fpGrid, mmpGrid} = getMmpPairsGrids(mmpa);
-    const pairedGrids = new MmpPairedGrids(mmpInput, mmpa, activityMeanNames);
+    const pairedGrids = new MmpPairedGrids(this.subs, mmpInput, mmpa, activityMeanNames);
 
     //Fragments tab
     const tp = getMmpTrellisPlot(pairedGrids.fpGrid, activityMeanNames, palette);
@@ -555,5 +557,9 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     this.parentTable!.filter.copyFrom(this.totalCutoffMask!);
     this.linesRenderer!.linesVisibility = this.linesMask!;
+  }
+
+  detach(): void {
+    super.detach();
   }
 }

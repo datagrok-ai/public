@@ -34,7 +34,7 @@ export function getMmpScatterPlot(
     showColorSelector: false,
     showSizeSelector: false,
     markerDefaultSize: 7,
-    labels: labelsColName,
+   // labels: labelsColName,
   });
   return sp;
 }

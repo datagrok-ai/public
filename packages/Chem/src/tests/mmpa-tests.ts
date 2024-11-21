@@ -197,10 +197,10 @@ category('mmpa', () => {
     checkRandomValues(fragsDf, 'Transformations_Fragments', true);
 
     //check Pairs Grid
-    await awaitCheck(() => mmp.pairedGrids?.mmpGrid?.dataFrame != null, 'mmpGrid hasn\'t been created', 3000);
-    const pairsDf = mmp.pairedGrids!.mmpGrid.dataFrame;
+    await awaitCheck(() => mmp.pairedGrids?.mmpGridTrans?.dataFrame != null, 'mmpGrid hasn\'t been created', 3000);
+    const pairsDf = mmp.pairedGrids!.mmpGridTrans.dataFrame;
     await awaitCheck(() => pairsDf.rowCount === 54 && pairsDf.columns.length === 13 && pairsDf.filter.trueCount === 3, 'Incorrect pairs grid', 3000);
-    checkRandomValues(mmp.pairedGrids!.mmpGrid.dataFrame, 'Transformations_Pairs', true);
+    checkRandomValues(mmp.pairedGrids!.mmpGridTrans.dataFrame, 'Transformations_Pairs', true);
 
     //changing fragment
     mmp.pairedGrids!.fpGrid.dataFrame.currentRowIdx = 2;
