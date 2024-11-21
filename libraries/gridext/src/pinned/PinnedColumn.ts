@@ -299,6 +299,13 @@ export class PinnedColumn {
       }
     });
 
+    const storeGridOptions = () => {
+      const gridLook = grid.getOptions(true).look;
+      this.colHeaderHeight = gridLook.colHeaderHeight;
+      this.rowHeight = gridLook.rowHeight;
+      this.colHeaderFont = gridLook.colHeaderFont;
+    }
+
     this.m_observerResizeGrid?.observe(grid.canvas); //
 
     this.m_handlerKeyDown = rxjs.fromEvent<KeyboardEvent>(eCanvasThis, 'keydown').subscribe((e : KeyboardEvent) => {
@@ -377,8 +384,10 @@ export class PinnedColumn {
     });
 
     this.m_handlerDartProperty = grid.onDartPropertyChanged.subscribe((p: any) => {
-        const g = eCanvasThis.getContext('2d');
-        headerThis.paint(g, grid);
+      storeGridOptions();
+      grid.columns.byIndex(0)!.visible = false;
+      const g = eCanvasThis.getContext('2d');
+      headerThis.paint(g, grid);
     });
 
     this.onAfterDrawContetSub = grid.onAfterDrawContent.subscribe(() => {
@@ -448,16 +457,7 @@ export class PinnedColumn {
         }
     );
 
-    const storeGridOptions = () => {
-      const gridLook = grid.getOptions(true).look;
-      this.colHeaderHeight = gridLook.colHeaderHeight;
-      this.rowHeight = gridLook.rowHeight;
-      this.colHeaderFont = gridLook.colHeaderFont;
-    }
-
     storeGridOptions();
-    grid.onDartPropertyChanged.subscribe((_) => storeGridOptions());
-
     const g = eCanvasThis.getContext('2d');
     headerThis.paint(g, grid);
   }
@@ -599,6 +599,7 @@ export class PinnedColumn {
     grid.overlay.style.left= (grid.overlay.offsetLeft - this.m_root.offsetWidth).toString() + "px";
     grid.canvas.style.width = (grid.canvas.offsetWidth + this.m_root.offsetWidth).toString() + "px";
     grid.overlay.style.width= (grid.overlay.offsetWidth + this.m_root.offsetWidth).toString() + "px";
+    grid.columns.byIndex(0)!.visible = grid.props.showRowHeader;
 
     if(this.m_root.parentNode !== null)
       this.m_root.parentNode.removeChild(this.m_root);
