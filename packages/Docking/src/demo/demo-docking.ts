@@ -49,4 +49,5 @@ export async function _demoDocking(): Promise<void> {
   setPose(POSE_COL);
 
   await prepareDockingData(table, 'System:AppData/Docking/demo_files/autodock_results.csv', 'BACE1', 'SMILES', 10);
+  table.currentCell = table.cell(0, POSE_COL);
 }
