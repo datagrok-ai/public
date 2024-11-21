@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* Scripting tools for the Initial Value Problem (IVP) solver:
      - parser of formulas defining IVP;
      - JS-script generator.
@@ -9,6 +10,8 @@
 
 import {CONTROL_TAG, CONTROL_TAG_LEN, DF_NAME, CONTROL_EXPR, LOOP, UPDATE, MAX_LINE_CHART,
   SOLVER_OPTIONS_RANGES, TINY, STEP_RATIO} from './constants';
+
+import {ModelError} from './error-utils';
 
 // Scripting specific constants
 export const CONTROL_SEP = ':';
@@ -116,32 +119,43 @@ export type IVP = {
   inputsLookup: string | null,
 };
 
+/** Help links for model errors */
+enum ERROR_LINK {
+  BASIC_MODEL = '/help/compute/diff-studio#basic-model',
+  ADV_MODEL = '/help/compute/diff-studio#advanced-model',
+  LOOP = '/help/compute/diff-studio#cyclic-process-simulation',
+  UPDATE = '/help/compute/diff-studio#multistage-model',
+  LOOP_VS_UPDATE = '/help/compute/diff-studio#creating-a-custom-differential-equation-model',
+  SOLVER_SET = '/help/compute/diff-studio#solver-settings',
+  UNIQUE = '/help/compute/diff-studio#usability-improvements',
+};
+
 /** Specific error messages */
 enum ERROR_MSG {
   CTRL_EXPR = `Unsupported control expression with the tag '${CONTROL_TAG}'`,
-  ARG = 'Incorrect argument specification',
-  LOOP = 'Incorrect loop specification',
+  ARG = `'The ${CONTROL_EXPR.ARG} block must consist of 4 lines.`,
+  LOOP = `The ${CONTROL_EXPR.LOOP} block must contain at least one line.`,
   COUNT = 'Incorrect loop count',
-  LOOP_VS_UPDATE = 'Loop- & update-blocks cannot be used together',
-  UPDATE = 'Incorrect update specification',
+  LOOP_VS_UPDATE = `The ${CONTROL_EXPR.LOOP} and ${CONTROL_EXPR.UPDATE} blocks cannot be used simultaneously.`,
+  UPDATE_LINES_COUNT = `The ${CONTROL_EXPR.UPDATE} block must contain at least one line.`,
   DURATION = 'Incorrect update duration',
-  BRACES = 'One of the braces ({, }) is missing',
-  COLON = `Incorrect use of "${CONTROL_SEP}"`,
-  CASE_INSENS = 'Non-unique name (case-insensitive): use other caption for ',
-  MISSING_INIT = 'Missing initial value for ',
-  UNDEF_NAME = `Missing name of the model: use ${CONTROL_EXPR.NAME}-block`,
-  UNDEF_DEQS = `No differential equations: use ${CONTROL_EXPR.DIF_EQ}-block`,
-  UNDEF_INITS = `No initial values: use ${CONTROL_EXPR.INITS}-block`,
-  UNDEF_ARG = `Undefined argument: use ${CONTROL_EXPR.ARG}-block`,
-  SEE_ARG = `(see ${CONTROL_EXPR.ARG}-block)`,
-  INTERVAL = `Incorrect limits for`,
-  NEGATIVE_STEP = `Incorrect step for`,
-  INCOR_STEP = `Step is greater than the length of solution interval ${SEE_ARG}`,
+  BRACES = ' Missing one of the braces ({, }).',
+  COLON = `Incorrect position of "${CONTROL_SEP}".`,
+  CASE_INSENS = 'Non-unique name (case-insensitive): use different caption for ',
+  MISSING_INIT = `Correct the ${CONTROL_EXPR.INITS} block.`,
+  UNDEF_NAME = `Model name missing. Specify the model name in the ${CONTROL_EXPR.NAME} block`,
+  UNDEF_DEQS = `Differential equation(s) are required for this model. Add equation(s) under the ${CONTROL_EXPR.DIF_EQ} block.`,
+  UNDEF_INITS = `Initial conditions are required for this model. Add initial conditions under the ${CONTROL_EXPR.INITS} block.`,
+  UNDEF_ARG = `Argument specification is required for this model. Specify an argument, its range, and a grid step in the ${CONTROL_EXPR.ARG} block.`,
+  CORRECT_ARG_LIM = `Correct limits in the ${CONTROL_EXPR.ARG} block.`,
+  INTERVAL = `Incorrect range for`,
+  NEGATIVE_STEP = `Solution grid step must be positive. Correct the ${CONTROL_EXPR.ARG} block.`,
+  INCOR_STEP = `Grid step must less than the length of solution interval. Correct the ${CONTROL_EXPR.ARG} block.`,
   MISS_COLON = `Missing "${CONTROL_SEP}"`,
-  NAN = `is not a number. Check the line`,
-  SERVICE_START = `Variable names should not start with '${SERVICE}'`,
+  NAN = `is not a valid number. Correct the line`,
+  SERVICE_START = `Variable names must not begin with '${SERVICE}'.`,
   REUSE_NAME = 'Variable reuse (case-insensitive): rename ',
-  SOLVER = `Incorrect solver options. Check the '${CONTROL_EXPR.SOLVER}'-line`,
+  SOLVER = `Incorrect solver options. Correct the '${CONTROL_EXPR.SOLVER}'-line`,
 } // ERROR_MSG
 
 /** Datagrok annotations */
@@ -206,7 +220,7 @@ type Block = {
   end: number
 }
 
-/** Get strat of the problem skipping note-lines */
+/** Get start of the problem skipping note-lines */
 function getStartOfProblemDef(lines: string[]): number {
   const linesCount = lines.length;
   let idx = 0;
@@ -215,7 +229,7 @@ function getStartOfProblemDef(lines: string[]): number {
     ++idx;
 
     if (idx === linesCount)
-      throw new Error(ERROR_MSG.UNDEF_NAME);
+      throw new ModelError(ERROR_MSG.UNDEF_NAME, ERROR_LINK.BASIC_MODEL);
   }
 
   return idx;
@@ -328,7 +342,7 @@ function getInput(line: string) : Input {
 
     // Check right-hand side
     if (isNaN(val))
-      throw new Error(`'${str}' ${ERROR_MSG.NAN}: ${line}`);
+      throw new ModelError(`'${str}' ${ERROR_MSG.NAN}: ${line}`, ERROR_LINK.BASIC_MODEL);
 
     return {
       value: val,
@@ -352,11 +366,11 @@ function getInput(line: string) : Input {
 /** Get argument (independent variable) of IVP */
 function getArg(lines: string[]): Arg {
   if (lines.length !== 4)
-    throw new Error(ERROR_MSG.ARG);
+    throw new ModelError(ERROR_MSG.ARG, ERROR_LINK.BASIC_MODEL);
 
   const sepIdx = lines[0].indexOf(CONTROL_SEP);
   if (sepIdx === -1)
-    throw new Error(`${ERROR_MSG.MISS_COLON}, see line '${lines[0]}'`);
+    throw new ModelError(`${ERROR_MSG.MISS_COLON}. Correct the line '${lines[0]}'`, ERROR_LINK.BASIC_MODEL);
 
   const commaIdx = lines[0].indexOf(COMMA);
 
@@ -389,11 +403,11 @@ function getLoop(lines: string[], begin: number, end: number): Loop {
   const size = source.length;
 
   if (size < LOOP.MIN_LINES_COUNT)
-    throw new Error(ERROR_MSG.LOOP);
+    throw new ModelError(ERROR_MSG.LOOP, ERROR_LINK.LOOP);
 
   const count = getInput(source[LOOP.COUNT_IDX]);
   if (count.value < LOOP.MIN_COUNT)
-    throw new Error(ERROR_MSG.COUNT);
+    throw new ModelError(`${ERROR_MSG.COUNT}: ${count.value}.`, ERROR_LINK.LOOP);
 
   return {count: count, updates: source.slice(LOOP.COUNT_IDX + 1)};
 }
@@ -401,26 +415,34 @@ function getLoop(lines: string[], begin: number, end: number): Loop {
 /** Get update specification */
 function getUpdate(lines: string[], begin: number, end: number): Update {
   const colonIdx = lines[begin].indexOf(CONTROL_SEP);
-  if (colonIdx === -1)
-    throw new Error(`${ERROR_MSG.MISS_COLON}. Check line: "${lines[begin]}"`);
+  if (colonIdx === -1) {
+    throw new ModelError(
+      `${ERROR_MSG.MISS_COLON}. Correct the line: "${lines[begin]}"`,
+      ERROR_LINK.UPDATE,
+    );
+  }
 
   const source = concatMultilineFormulas(lines.slice(begin + 1, end));
   const size = source.length;
 
   if (size < UPDATE.MIN_LINES_COUNT)
-    throw new Error(ERROR_MSG.UPDATE);
+    throw new ModelError(ERROR_MSG.UPDATE_LINES_COUNT, ERROR_LINK.UPDATE);
 
   const eqIdx = source[UPDATE.DURATION_IDX].indexOf(EQUAL_SIGN);
 
-  if (eqIdx === -1)
-    throw new Error(`${ERROR_MSG.UPDATE}. Check line: "${source[UPDATE.DURATION_IDX]}"`);
+  if (eqIdx === -1) {
+    throw new ModelError(
+      `Missing ${EQUAL_SIGN}. Correct the line: "${source[UPDATE.DURATION_IDX]}"`,
+      ERROR_LINK.UPDATE,
+    );
+  }
 
   return {
     name: lines[begin].slice(colonIdx + 1),
     durationFormula: source[UPDATE.DURATION_IDX].slice(eqIdx + 1).trim(),
     updates: source.slice(UPDATE.DURATION_IDX + 1),
   };
-}
+} // getUpdate
 
 /** Get output specification */
 function getOutput(lines: string[], begin: number, end: number): Map<string, Output> {
@@ -445,12 +467,20 @@ function getOutput(lines: string[], begin: number, end: number): Map<string, Out
     colonIdx = line.indexOf(CONTROL_SEP);
 
     // check braces
-    if (openIdx * closeIdx <= 0)
-      throw new Error(`${ERROR_MSG.BRACES}. Check the line '${line}' in the output-block.`);
+    if (openIdx * closeIdx <= 0) {
+      throw new ModelError(
+        `${ERROR_MSG.BRACES} Correct the line '${line}' in the ${CONTROL_EXPR.OUTPUT} block.`,
+        ERROR_LINK.ADV_MODEL,
+      );
+    }
 
     // check ":"
-    if (openIdx * colonIdx <= 0)
-      throw new Error(`${ERROR_MSG.COLON}. Check the line '${line}' in the output-block.`);
+    if (openIdx * colonIdx <= 0) {
+      throw new ModelError(
+        `${ERROR_MSG.COLON} Correct the line '${line}' in the output-block.`,
+        ERROR_LINK.ADV_MODEL,
+      );
+    }
 
     if (eqIdx === -1) {// no formula
       if (openIdx === -1) { // no annotation
@@ -561,7 +591,7 @@ export function getIVP(text: string): IVP {
 
   // check loop- & update-features: just one is supported
   if ( (loop !== null) && (updates.length > 0))
-    throw new Error(ERROR_MSG.LOOP_VS_UPDATE);
+    throw new ModelError(ERROR_MSG.LOOP_VS_UPDATE, ERROR_LINK.LOOP_VS_UPDATE);
 
   // obtained model
   const ivp = {
@@ -1112,7 +1142,7 @@ function checkSolverSettings(line: string): void {
   let sepIdx: number;
 
   if (openBraceIdx >= closeBraceIdx)
-    throw new Error(`${ERROR_MSG.BRACES}. Check the line '${line}'`);
+    throw new ModelError(`${ERROR_MSG.BRACES}. Correct the line '${line}'.`, ERROR_LINK.SOLVER_SET);
 
   for (const item of line.slice(openBraceIdx + 1, closeBraceIdx).split(ANNOT_SEPAR)) {
     sepIdx = item.indexOf(CONTROL_SEP);
@@ -1125,31 +1155,39 @@ function checkSolverSettings(line: string): void {
     if (settings.has(opt)) {
       const val = Number(settings.get(opt));
 
-      if ((val < range.min) || (val > range.max))
-        throw new Error(`${ERROR_MSG.SOLVER}: ${opt} must be in the range ${range.min}..${range.max}`);
+      if ((val < range.min) || (val > range.max)) {
+        throw new ModelError(
+          `${ERROR_MSG.SOLVER}: ${opt} must be in the range ${range.min}..${range.max}.`,
+          ERROR_LINK.SOLVER_SET,
+        );
+      }
     }
   });
-}
+} // checkSolverSettings
 
 /** Check IVP correctness */
 function checkCorrectness(ivp: IVP): void {
   // 0. Check basic elements
   if (ivp.name === undefined)
-    throw new Error(ERROR_MSG.UNDEF_NAME);
+    throw new ModelError(ERROR_MSG.UNDEF_NAME, ERROR_LINK.BASIC_MODEL);
 
   if ((ivp.deqs === undefined) || (ivp.deqs.equations.size === 0))
-    throw new Error(ERROR_MSG.UNDEF_DEQS);
+    throw new ModelError(ERROR_MSG.UNDEF_DEQS, ERROR_LINK.BASIC_MODEL);
 
   if ((ivp.inits === undefined) || (ivp.inits.size === 0))
-    throw new Error(ERROR_MSG.UNDEF_INITS);
+    throw new ModelError(ERROR_MSG.UNDEF_INITS, ERROR_LINK.BASIC_MODEL);
 
   if (ivp.arg === undefined)
-    throw new Error(ERROR_MSG.UNDEF_ARG);
+    throw new ModelError(ERROR_MSG.UNDEF_ARG, ERROR_LINK.BASIC_MODEL);
 
   // 1. Check initial values
   ivp.deqs.equations.forEach((ignore, name) => {
-    if (!ivp.inits.has(name))
-      throw new Error(`${ERROR_MSG.MISSING_INIT} "${name}"`);
+    if (!ivp.inits.has(name)) {
+      throw new ModelError(
+        `Initial value for '${name}' is missing. ${ERROR_MSG.MISSING_INIT}.`,
+        ERROR_LINK.BASIC_MODEL,
+      );
+    }
   });
 
   // 2. Check names of output columns
@@ -1161,7 +1199,7 @@ function checkCorrectness(ivp: IVP): void {
       lowCase = val.caption.toLowerCase();
 
       if (usedNames.includes(lowCase))
-        throw new Error(`${ERROR_MSG.CASE_INSENS}"${val.caption}"`);
+        throw new ModelError(`${ERROR_MSG.CASE_INSENS}'${val.caption}'.`, ERROR_LINK.UNIQUE);
       else
         usedNames.push(lowCase);
     });
@@ -1172,7 +1210,7 @@ function checkCorrectness(ivp: IVP): void {
       lowCase = name.toLowerCase();
 
       if (usedNames.includes(lowCase))
-        throw new Error(`${ERROR_MSG.CASE_INSENS}"${name}"`);
+        throw new ModelError(`${ERROR_MSG.CASE_INSENS}'${name}'.`, ERROR_LINK.UNIQUE);
       else
         usedNames.push(lowCase);
     });
@@ -1180,13 +1218,13 @@ function checkCorrectness(ivp: IVP): void {
 
   // 3. Check argument
   if (ivp.arg.initial.value >= ivp.arg.final.value)
-    throw new Error(`${ERROR_MSG.INTERVAL} ${ivp.arg.name} ${ERROR_MSG.SEE_ARG}`);
+    throw new ModelError(`${ERROR_MSG.INTERVAL} ${ivp.arg.name}. ${ERROR_MSG.CORRECT_ARG_LIM}`, ERROR_LINK.BASIC_MODEL);
 
   if (ivp.arg.step.value <= 0)
-    throw new Error(`${ERROR_MSG.NEGATIVE_STEP} ${ivp.arg.name} ${ERROR_MSG.SEE_ARG}`);
+    throw new ModelError(`${ERROR_MSG.NEGATIVE_STEP}`, ERROR_LINK.BASIC_MODEL);
 
   if (ivp.arg.step.value > ivp.arg.final.value - ivp.arg.initial.value)
-    throw new Error(ERROR_MSG.INCOR_STEP);
+    throw new ModelError(ERROR_MSG.INCOR_STEP, ERROR_LINK.BASIC_MODEL);
 
   // 4. Check script inputs, due to https://reddata.atlassian.net/browse/GROK-15152
   const scriptInputs = [] as string[];
@@ -1194,13 +1232,21 @@ function checkCorrectness(ivp: IVP): void {
 
   // 4.1) initial values
   ivp.inits.forEach((_, key) => {
-    if (key[0] === SERVICE)
-      throw new Error(`${ERROR_MSG.SERVICE_START}: check '${key}' in the ${CONTROL_EXPR.INITS}-block`);
+    if (key[0] === SERVICE) {
+      throw new ModelError(
+        `${ERROR_MSG.SERVICE_START} Correct '${key}' in the ${CONTROL_EXPR.INITS} block.`,
+        ERROR_LINK.BASIC_MODEL,
+      );
+    }
 
     current = key.toLocaleLowerCase();
 
-    if (scriptInputs.includes(current))
-      throw new Error(`${ERROR_MSG.REUSE_NAME} '${key}' (see ${CONTROL_EXPR.INITS}-block)`);
+    if (scriptInputs.includes(current)) {
+      throw new ModelError(
+        `${ERROR_MSG.REUSE_NAME} '${key}' in the ${CONTROL_EXPR.INITS} block.`,
+        ERROR_LINK.BASIC_MODEL,
+      );
+    }
 
     scriptInputs.push(current);
   });
@@ -1208,13 +1254,21 @@ function checkCorrectness(ivp: IVP): void {
   // 4.2) parameters
   if (ivp.params !== null) {
     ivp.params.forEach((_, key) => {
-      if (key[0] === SERVICE)
-        throw new Error(`${ERROR_MSG.SERVICE_START}: check '${key}' in the ${CONTROL_EXPR.PARAMS}-block`);
+      if (key[0] === SERVICE) {
+        throw new ModelError(
+          `${ERROR_MSG.SERVICE_START}: correct '${key}' in the ${CONTROL_EXPR.PARAMS} block.`,
+          ERROR_LINK.ADV_MODEL,
+        );
+      }
 
       current = key.toLocaleLowerCase();
 
-      if (scriptInputs.includes(current))
-        throw new Error(`${ERROR_MSG.REUSE_NAME} '${key}' (see ${CONTROL_EXPR.PARAMS}-block)`);
+      if (scriptInputs.includes(current)) {
+        throw new ModelError(
+          `${ERROR_MSG.REUSE_NAME} '${key}' in the ${CONTROL_EXPR.PARAMS} block.`,
+          ERROR_LINK.ADV_MODEL,
+        );
+      }
 
       scriptInputs.push(current);
     });
