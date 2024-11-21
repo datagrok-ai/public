@@ -20,7 +20,7 @@ let hist = DG.Viewer.histogram(table, {
 
 let boxPlot = DG.Viewer.boxPlot(table, {
   valueColumnName: 'weight',
-  categoryColumnName: 'race'
+  categoryColumnNames: ['race']
 });
 
 let filter = DG.Viewer.filters(table, {

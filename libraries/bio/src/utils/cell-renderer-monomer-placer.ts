@@ -19,8 +19,9 @@ import {ISeqMonomer} from '../helm/types';
 import {execMonomerHoverLinks} from '../monomer-works/monomer-hover';
 
 type MonomerPlacerProps = {
-  monomerCharWidth: number, separatorWidth: number,
-  monomerToShort: MonomerToShortFunc
+  separatorWidth: number,
+  monomerToShort: MonomerToShortFunc,
+  font: string, fontCharWidth: number,
 };
 
 export const undefinedColor = 'rgb(100,100,100)';
@@ -52,7 +53,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
   private _monomerLengthList: number[][] | null = null;
 
   // width of separator symbol
-  private separatorWidth = 5;
+  private get separatorWidth() { return this.props?.fontCharWidth ? this.props?.fontCharWidth : 5; }
   public props: MonomerPlacerProps;
   private _processedRows: DG.BitSet; // rows for which monomer lengths were processed
   private _processedMaxVisibleSeqLength: number = 0;
@@ -114,6 +115,17 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     this.reset();
   }
 
+  public static getFontSettings(tableCol?: DG.Column) {
+    const fontFamily = 'monospace';
+    let fontSize = 12;
+    if (tableCol && tableCol.temp[MmcrTemps.fontSize] &&
+        typeof tableCol.temp[MmcrTemps.fontSize] === 'number' && !isNaN(tableCol.temp[MmcrTemps.fontSize]))
+      fontSize = Math.max(tableCol.temp[MmcrTemps.fontSize], 1);
+    // monospace ratio
+    const fontWidth = fontSize * 0.6;
+    return {font: `${fontSize}px ${fontFamily}`, fontWidth};
+  }
+
   override toLog(): string {
     return `MonomerPlacer<${this.viewerId}>`;
   }
@@ -169,7 +181,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
       this._monomerLengthList = new Array(this.tableCol.length).fill(null);
 
     const sh = this.seqHelper.getSeqHandler(this.tableCol);
-    const minMonWidth = this.props.separatorWidth + 1 * this.props.monomerCharWidth;
+    const minMonWidth = this.props.separatorWidth + 1 * this.props.fontCharWidth;
     const maxVisibleSeqLength: number = Math.ceil(this.colWidth / minMonWidth);
     const seqSS: ISeqSplitted = sh.getSplitted(rowIdx);
     const visibleSeqLength: number = Math.min(maxVisibleSeqLength, seqSS.length);
@@ -183,7 +195,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         const seqMonLabel = seqSS.getOriginal(seqMonI);
         const shortMon: string = this.props.monomerToShort(seqMonLabel, this.monomerLengthLimit);
         const separatorWidth = sh.isSeparator() ? this.separatorWidth : this.props.separatorWidth;
-        const seqMonWidth: number = separatorWidth + shortMon.length * this.props.monomerCharWidth;
+        const seqMonWidth: number = separatorWidth + shortMon.length * this.props.fontCharWidth;
         res[seqMonI] = seqMonWidth;
         seqWidth += seqMonWidth;
         if (seqWidth > this.colWidth) break;
@@ -216,7 +228,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
       }
     })();
 
-    const minMonWidth = this.props.separatorWidth + 1 * this.props.monomerCharWidth;
+    const minMonWidth = this.props.separatorWidth + 1 * this.props.fontCharWidth;
     const maxVisibleSeqLength: number = Math.ceil(this.colWidth / minMonWidth);
     for (let seqIdx = startIdx; seqIdx < endIdx; seqIdx++) {
       if (this._processedRows.get(seqIdx) && maxVisibleSeqLength <= this._processedMaxVisibleSeqLength)
@@ -232,7 +244,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
       for (let seqMonI = 0; seqMonI < visibleSeqLength; ++seqMonI) {
         const seqMonLabel: string = seqSS.getOriginal(seqMonI);
         const shortMon: string = this.props.monomerToShort(seqMonLabel, this.monomerLengthLimit);
-        const seqMonWidth: number = this.props.separatorWidth + shortMon.length * this.props.monomerCharWidth;
+        const seqMonWidth: number = this.props.separatorWidth + shortMon.length * this.props.fontCharWidth;
         res[seqMonI] = Math.max(res[seqMonI] ?? 0, seqMonWidth);
         seqWidth += seqMonWidth;
         if (seqWidth >= this.colWidth) break;
@@ -320,7 +332,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
       g.beginPath();
       g.rect(x + this.padding, y + this.padding, w - this.padding - 1, h - this.padding * 2);
       g.clip();
-      g.font = '12px monospace';
+      g.font = this.props?.font ?? '12px monospace';
       g.textBaseline = 'top';
 
       //TODO: can this be replaced/merged with splitSequence?
@@ -328,7 +340,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
       const aligned: string = tableCol.getTag(bioTAGS.aligned);
 
       const separator = tableCol.getTag(bioTAGS.separator) ?? '';
-      const minMonWidth = this.props.separatorWidth + 1 * this.props.monomerCharWidth;
+      const minMonWidth = this.props.separatorWidth + 1 * this.props.fontCharWidth;
       const splitLimit = Math.ceil(w / minMonWidth);
 
       const tempReferenceSequence: string | null = tableCol.temp[tempTAGS.referenceSequence];

@@ -495,6 +495,30 @@ export interface IScatterPlotSettings {
 
   showYSelector: boolean;
 
+  /// Point lower bound for x axis whiskers.
+  xWhiskerMin: string;
+  xWhiskerMinColumnName: string;
+
+  /// Point upper bound for x axis whiskers.
+  xWhiskerMax: string;
+  xWhiskerMaxColumnName: string;
+
+  /// Point range for x axis whiskers.
+  xWhiskerRange: string;
+  xWhiskerRangeColumnName: string;
+
+  /// Point lower bound for y axis whiskers.
+  yWhiskerMin: string;
+  yWhiskerMinColumnName: string;
+
+  /// Point upper bound for y axis whiskers.
+  yWhiskerMax: string;
+  yWhiskerMaxColumnName: string;
+
+  /// Point range for y axis whiskers.
+  yWhiskerRange: string;
+  yWhiskerRangeColumnName: string;
+
   xAxisLabelOrientation: string;
 
   /// A column to be used for color-coding. Could be numerical or categorical.
@@ -552,28 +576,28 @@ export interface IScatterPlotSettings {
   linesWidth: number;
 
   /// Label columns to show next to the markers.
-  labelFormColumnNames: Array<string>;
+  labelColumnNames: Array<string>;
 
   /// Determines the rows shown on the scatter plot.
   showLabelsFor: keyof typeof RowSet;
 
-  /// To display labels separately or as markers (works for non-text labels).
-  labelColorAsMarker: boolean;
-
   /// Determines how to show marker labels.
-  showLabelsMode: keyof typeof VisibilityMode;
+  displayLabels: keyof typeof VisibilityMode;
+
+  /// Determines whether to show column names next to label values.
+  showLabelNamedColumns: keyof typeof VisibilityMode;
 
   /// If checked, display a label content as marker.
   useLabelAsMarker: boolean;
 
-  /// Determines whether to show column names next to label values.
-  showValueColumns: keyof typeof VisibilityMode;
+  /// To display labels separately or as markers (works for non-text labels).
+  labelColorAsMarker: boolean;
 
-  /// Marker radius in which label is inscribed.
-  labelCircleRadius: number;
+  /// Marker size in which label is inscribed.
+  labelAsMarkerSize: number;
 
   /// Label inner content size.
-  labelCircleContentSize: number;
+  labelContentSize: number;
 
   /// Regression line visibility (toggle by pressing R)
   showRegressionLine: boolean;
@@ -641,6 +665,8 @@ export interface IScatterPlotSettings {
   categoricalColorScheme: Array<number>;
 
   regressionLineColor: number;
+
+  whiskerColor: number;
 
   regressionLineTransparency: number;
 

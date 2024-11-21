@@ -18,15 +18,6 @@ category('AutoDock', () => {
   before(async () => {
     try {
       adSvc = await getAutoDockService();
-      if (!adSvc.ready) {
-        _package.logger.warning('AutoDock docker container is not ready, trying to start.');
-        await adSvc.startDockerContainer();
-        _package.logger.warning('AutoDock docker container successfully started.');
-        if (!adSvc.ready) {
-          _package.logger.warning('AutoDock docker container can not start, skip tests');
-          adSvc = null;
-        }
-      }
     } catch (err: any) {
       const [errMsg, errStack] = errInfo(err);
       _package.logger.error(errMsg, undefined, errStack);

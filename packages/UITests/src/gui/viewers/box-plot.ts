@@ -39,7 +39,7 @@ category('Viewers: Box Plot', () => {
   test('boxPlot.api', async () => {
     const boxPlot = v.addViewer(DG.VIEWER.BOX_PLOT, {
       'valueColumnName': 'age',
-      'categoryColumnName': 'race',
+      'categoryColumnNames': ['race'],
       'binColorColumnName': 'height',
       'markerColorColumnName': 'sex',
     });
@@ -47,7 +47,7 @@ category('Viewers: Box Plot', () => {
 
     if (boxPlot.props.valueColumnName != 'age')
       throw 'Value column has not been set'; 
-    if (boxPlot.props.categoryColumnName != 'race')
+    if (boxPlot.props.categoryColumnNames[0] != 'race')
       throw 'Category column has not been set';     
     if (boxPlot.props.binColorColumnName != 'height')
       throw 'Bin color column has not been set';   
@@ -83,7 +83,7 @@ category('Viewers: Box Plot', () => {
 
     if (boxPlot!.props.valueColumnName != 'age')
       throw 'Value column has not been deserialized'; 
-    if (boxPlot!.props.categoryColumnName != 'race')
+    if (boxPlot!.props.categoryColumnNames[0] != 'race')
       throw 'Category column has not been deserialized';     
     if (boxPlot!.props.binColorColumnName != 'height')
       throw 'Bin color column has not been deserialized';   

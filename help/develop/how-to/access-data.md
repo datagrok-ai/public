@@ -331,4 +331,5 @@ You can also use one of the following options to open files using JavaScript:
 See also:
 
 * [JavaScript Development](../develop.md)
+* [Connecting to database inside package Docker container](access-data-docker.md)
 * [Functions](../../datagrok/concepts/functions/functions.md)

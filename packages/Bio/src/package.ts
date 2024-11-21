@@ -1,3 +1,5 @@
+/* eslint-disable max-params */
+/* eslint-disable max-len */
 /* eslint max-lines: "off" */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -9,7 +11,7 @@ import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cli
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {BitArrayMetrics, KnownMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {IMonomerLib, IMonomerLibBase, IMonomerSet} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
 import {SCORE} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
@@ -24,14 +26,13 @@ import {ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/multi-colum
 import {generateLongSequence, generateLongSequence2} from '@datagrok-libraries/bio/src/utils/generator';
 import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
-import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDModule as _RDMoule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
 
 import {getMacromoleculeColumns} from './utils/ui-utils';
 import {MacromoleculeDifferenceCellRenderer, MacromoleculeSequenceCellRenderer,} from './utils/cell-renderer';
-import {MacromoleculeCustomCellRenderer} from './utils/cell-renderer-custom';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {SequenceAlignment} from './seq_align';
 import {getEncodedSeqSpaceCol} from './analysis/sequence-space';
@@ -318,7 +319,7 @@ export function SeqActivityCliffsEditor(call: DG.FuncCall) {
 //meta.columnTags: quality=Macromolecule, units=custom
 //output: grid_cell_renderer result
 export function customSequenceCellRenderer(): DG.GridCellRenderer {
-  return new MacromoleculeCustomCellRenderer();
+  return new MacromoleculeSequenceCellRenderer();
 }
 
 //name: fastaSequenceCellRenderer
@@ -764,7 +765,7 @@ export function convertDialog() {
 export async function convertSeqNotation(sequence: string, targetNotation: NOTATION, separator?: string): Promise<string | undefined | null> {
   try {
     const col = DG.Column.fromStrings('sequence', [sequence]);
-    const df = DG.DataFrame.fromColumns([col]);
+    const _df = DG.DataFrame.fromColumns([col]);
     const semType = await grok.functions.call('Bio:detectMacromolecule', {col: col});
     if (semType)
       col.semType = semType;

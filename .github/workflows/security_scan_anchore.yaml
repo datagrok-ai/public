@@ -62,7 +62,7 @@ jobs:
         with:
           args: sbom:./${{ matrix.target }}.sbom.syft.json -o json --file ${{ matrix.target }}.grype.json
       - name: Upload Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target }}.grype.json
           path: ${{ matrix.target }}.grype.json
@@ -88,7 +88,7 @@ jobs:
             .artifact.locations[].path
           ]) | @csv' ${{ matrix.target }}.grype.json > ${{ matrix.target }}.report.csv
       - name: Upload Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target }}.report.csv
           path: ${{ matrix.target }}.report.csv

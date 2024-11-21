@@ -845,7 +845,7 @@ export class ProjectsDataSource extends HttpDataSource<Project> {
     return this
       .filter(name)
       .first()
-      .then(p => p.open(options));
+      .then(p => p?.open(options) ?? throw new Error(`Project ${name} not found`));
   }
 
   /** Saves the Project */

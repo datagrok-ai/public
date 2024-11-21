@@ -168,13 +168,11 @@ for (const lang of langs) {
     test('Calculated column performance', async () => {
       const rows = DG.Test.isInBenchmark ? 10000 : 100;
       const df = grok.data.demo.demog(rows);
-      const start = Date.now();
       await df.columns.addNewCalculated('new', `CVMTests:${lang}CalcColumn(\${age})`);
-      return `Execution time: ${Date.now() - start}`;
     }, {timeout: 60000, benchmark: true, stressTest: true, skipReason: lang === 'Grok' ? 'Doesn\'t support vectorization' : undefined});
 
     test(`Dataframe performance test sequentially`, async () => {
-      const iterations = DG.Test.isInBenchmark ? 10 : 3;
+      const iterations = DG.Test.isInBenchmark ? ['JavaScript', 'Grok'].includes(lang) ? 500 : 10 : 3;
       const results = [];
       for (let i = 0; i < iterations; i++) {
         results.push(await getScriptTime(`CVMTests:${lang}SingleDf`,

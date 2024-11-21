@@ -20,13 +20,19 @@ class Types(object):
 
 def call_process(params: list):
     """
-    Calls process.
+    Calls a process with the given parameters.
 
     :param params: List of process parameters.
-    :param working_dir: Working directory.
-    :return: Log.
+    :return: Log of the process's stdout if successful.
+    :raises RuntimeError: If the process fails (return code != 0).
     """
     process = subprocess.run(params, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    log = process.stderr
-    logger.debug(f'Process log: {log}')
+    
+    if process.returncode != 0:
+        error_log = process.stderr.decode()
+        logger.error(f'Process failed with error log: {error_log}')
+        raise RuntimeError(f"Process failed with return code {process.returncode}: {error_log}")
+    
+    log = process.stdout.decode()
+    logger.debug(f'Process succeeded with log: {log}')
     return log

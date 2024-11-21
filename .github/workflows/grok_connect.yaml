@@ -164,7 +164,7 @@ jobs:
       - name: Upload Artifact
         if: github.ref != 'refs/heads/master' && startsWith(github.ref,'refs/heads/release/') != true
         id: docker-artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.param.outputs.tar }}
           path: /tmp/${{ steps.param.outputs.tar }}

@@ -115,12 +115,7 @@ category('Admetica', () => {
       const args = [molecules.toCsv(), await getQueryParams(), 'false'];
       return await runOnce(runAdmetica, ...args);
     };
-
-    const mol1k = await runAdmeticaBenchmark(1000);
-    const mol5k = await runAdmeticaBenchmark(5000);
-    const mol10k = await runAdmeticaBenchmark(10000);
-
-    return DG.toDart({"1k molecules": mol1k, "5k molecules": mol5k, "10k molecules": mol10k});
+    await DG.timeAsync('Admetica column', async () => await runAdmeticaBenchmark(5000));
   }, {timeout: 10000000000, benchmark: true });
 
   test('Calculate.Benchmark cell', async () => {
@@ -129,8 +124,7 @@ category('Admetica', () => {
     const distributionSubgroup = properties.subgroup.find((subgroup: any) => subgroup.name === "Distribution");
     const distributionModels = distributionSubgroup ? distributionSubgroup.models.map((model: any) => model.name) : [];
     const args = [smiles, distributionModels, 'false'];
-    const cellResults = await runOnce(runAdmetica, ...args);
-    return DG.toDart({"results": cellResults});
+    await DG.timeAsync('Admetica cell', async () => await runOnce(runAdmetica, ...args));
   }, {timeout: 1000000, benchmark: true});
 });
   

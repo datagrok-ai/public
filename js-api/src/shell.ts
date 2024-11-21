@@ -239,6 +239,11 @@ export class Shell {
     return toJs(api.grok_GetTableView(tableName));
   }
 
+  /** Opens a dialog for opening a file with tabular data (CSV, XSLS, etc) */
+  openFileOpenDialog() {
+    api.grok_Shell_OpenFileDialog();
+  }
+
   /** Closes everything (views, tables, projects) and returns the platform to the initial state. */
   closeAll(): void {
     api.grok_CloseAll();

@@ -16,12 +16,23 @@ export const enum BioPackagePropertiesNames {
   MaxMonomerLength = 'MaxMonomerLength',
   TooltipWebLogo = 'TooltipWebLogo',
   DefaultSeparator = 'DefaultSeparator',
+  FontSize = 'FontSize',
 }
 
 
 export class BioPackageProperties extends Map<string, any> {
   private _onPropertyChanged: Subject<string> = new Subject<string>();
   public get onPropertyChanged(): Observable<string> { return this._onPropertyChanged; }
+
+  public get fontSize(): number {
+    const vs = super.get(BioPackagePropertiesNames.FontSize);
+    return !!vs && !isNaN(vs) ? Number.parseInt(vs) : 12;
+  }
+
+  public set fontSize(value: number) {
+    super.set(BioPackagePropertiesNames.FontSize, value);
+    this._onPropertyChanged.next(BioPackagePropertiesNames.FontSize);
+  }
 
   /** Monomer symbol maximum length displayed, null for unlimited. */
   public get maxMonomerLength(): number | null {

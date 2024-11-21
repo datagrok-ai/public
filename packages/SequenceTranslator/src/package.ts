@@ -136,6 +136,7 @@ export function linkStrands(strands: { senseStrands: string[], antiStrands: stri
 //meta.demoPath: Bioinformatics | Oligo Toolkit | Translator
 //description: Translate oligonucleotide sequences across various formats accepted by different synthesizers
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Translate
+//meta.demoSkip: GROK-14320
 export async function demoTranslateSequence(): Promise<void> {
   await demoOligoTranslatorUI();
 }
@@ -301,6 +302,9 @@ export async function ptEnumeratorChemApp(): Promise<void> {
 //input: column col
 //input: string separator
 export function applyNotationProviderForCyclized(col: DG.Column<string>, separator: string) {
+  col.setTag('aligned', 'SEQ');
+  col.setTag('alphabet', 'UN');
+  col.setTag('.alphabetIsMultichar', 'true');
   col.meta.units = NOTATION.CUSTOM;
   col.tags[PolyToolTags.dataRole] = 'template';
   col.temp[SeqTemps.notationProvider] = new CyclizedNotationProvider(separator, _package.helmHelper);

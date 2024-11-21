@@ -648,8 +648,12 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
   let res = funcCall.getOutputParamValue();
 
   if (plotEmbeddings) {
-    res = grok.shell.tv.scatterPlot({x: embedColsNames[0], y: embedColsNames[1],
-      title: 'Chemical space', labels: molecules.name});
+    res = grok.shell.tv.scatterPlot({ x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical space' });
+  //temporary fix (to save backward compatibility) since labels option type has been changed from string to array in 1.23 platform version 
+  if (Object.keys(res.props).includes('labelColumnNames')) { //@ts-ignore
+    if (res.props['labelColumnNames'].constructor.name == "Array")
+      res.setOptions({labelColumnNames: [molecules.name]});
+  }
     if (clusterEmbeddings)
       res.props.colorColumnName = clusterColName;
   }
@@ -951,8 +955,11 @@ export async function activityCliffsInitFunction(sp: DG.ScatterPlotViewer): Prom
   await runActivityCliffs(sp, sp.dataFrame, molCol, encodedColWithOptions, actCol, axesNames,
     actCliffsParams.similarity, actCliffsParams.similarityMetric, actCliffsParams.options, DG.SEMTYPE.MOLECULE,
     {'units': molCol.meta.units!}, createTooltipElement, createPropPanelElement, undefined, undefined, actCliffsParams.isDemo);
-  //to draw the lines fro cliffs
-  sp.setOptions({labels: molCol.name});
+  //temporary fix (to save backward compatibility) since labels option type has been changed from string to array in 1.23 platform version 
+  if (Object.keys(sp.props).includes('labelColumnNames')) { //@ts-ignore
+    if (sp.props['labelColumnNames'].constructor.name == "Array")
+      sp.setOptions({labelColumnNames: [molCol.name]});
+  }
   sp.render(sp.getInfo()['canvas'].getContext('2d'));
 }
 

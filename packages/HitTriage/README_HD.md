@@ -42,6 +42,10 @@ Campaigns are built based on templates and encompass the actual hit design proce
 
 ![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/campaign-HD.png?raw=true)
 
+Campaigns can be groupped either by template key, status or be ungroupped. The groupping setting can be changed by clicking 'Group By' icon next to 'Comntinue Campaign' header.
+
+![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-modify-groupping.gif?raw=true)
+
 ## Getting started
 
 Continue ongoing campaigns either directly by a link or by selecting it from the campaigns table.
@@ -67,6 +71,10 @@ Hit design campaign consists of two views, a main design view and a tiles view. 
 As mentioned previously, "Stages" or tiles are defined in the template, but users can also modify them after starting the campaign. To do so, open the Progress Tracker and click the "Modify Stages" button. You can add, remove or rename stages. After clicking OK, the changes will be saved and reflected in the Progress Tracker view. If you remove a stage which had some molecules in it, those molecules will be automatically moved to the first stage.
 
 ![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-tiles-modify-stages.gif?raw=true)
+
+Campaign status can be changed through 'Submit' menu. You can set status to anything. When you start typing, you will be suggested other statuses that are already in use.
+
+![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-modify-status.gif?raw=true)
 
 ## Adding custom compute and submit functions
 
@@ -202,6 +210,15 @@ By default, any new campaign will be shared with all users. To manage who can vi
 
 ![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-permissions.gif?raw=true)
 
-Similarly, users can manage view permissions, which will restrict access to viewing the campaign or accessing it directly via link. If all users are removed from `view` permissions, only the creator of the campaign will be able to view it.
+Similarly, you can manage view permissions, which will restrict access to viewing the campaign or accessing it directly via link. If all users are removed from `view` permissions, only the creator of the campaign will be able to view it.
 
 ![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-view-permissions.gif?raw=true)
+
+You can also modify the default shyaring permissions for all newly created campaigns. To do so, modify the HitTriage package settings.
+
+1. Go to `Browse` → `Platform` and click on `Plugins` (or directly via a link at `{your_datagrok_url}/packages`).
+2. Under Cheminformatics, click on `HitTriage` package.
+3. On the context panel, expand the `Settings` pane.
+4. Modify the `Default view permissions` and `Default edit permissions` fields to set the default permissions for all newly created campaigns.
+
+![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/edit-default-hd-sharing.gif?raw=true)

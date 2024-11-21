@@ -1,5 +1,13 @@
 # PubChemApi changelog
 
+## 1.2.1 (2024-11-18)
+
+### Bug fixes
+
+* GROK-13804: WebServices | PubChem API: Some queries don't work
+* GROK-16849: PubChem | Similarity Search: Error for the 1st structure from mol1k
+* PubChem: Fix styles for panels
+
 ## 1.1.16 (2024-03-18)
 
 ### Features

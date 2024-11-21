@@ -74,3 +74,7 @@ container in the list. In order to run it, right click on the container and
 choose the `Run` option. Here is how it looks:
 
 ![docker-container](./docker.gif)
+
+See also:
+- [Packages](../develop.md#packages)
+- [Connecting to database inside package Docker container](access-data-docker.md)

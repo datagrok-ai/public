@@ -178,7 +178,7 @@ export async function getSearchWidget(molString: string, searchType: pubChemSear
     // moleculesCol = similarStructures.getCol(COLUMN_NAMES.MOLECULE);
     scoreCol = similarStructures.getCol(COLUMN_NAMES.SCORE);
     indexes = similarStructures.getCol(COLUMN_NAMES.INDEX).getRawData() as Int32Array;
-    rowCount = indexes.length;
+    rowCount = similarStructures.rowCount;
   }
 
   const cidCol = resultDf.getCol(COLUMN_NAMES.CID);

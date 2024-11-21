@@ -4,7 +4,6 @@ import {before, category, expect, expectArray, test} from '@datagrok-libraries/u
 import {runPepsea} from '../utils/pepsea';
 import {TestLogger} from './utils/test-logger';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
-import {awaitContainerStart} from '../utils/docker';
 
 category('PepSeA', () => {
   const testCsv = `HELM,MSA
@@ -29,10 +28,6 @@ category('PepSeA', () => {
 "PEPTIDE1{[NH2].*.A.N.T.T.Y.K.F.Y.R.R.N.L.L.*.[COOH]}$$$$"
 `;
   const pepseaErrorError: string = 'PepSeA error: The pair (*,M) couldn\'t be found in the substitution matrix';
-
-  before(async () => {
-    await awaitContainerStart();
-  });
 
   test('Basic alignment', async () => {
     const df = DG.DataFrame.fromCsv(testCsv);

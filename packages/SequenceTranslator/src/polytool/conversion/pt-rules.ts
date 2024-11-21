@@ -31,7 +31,9 @@ export class RuleInputs extends ActiveFiles {
     const editIcon = ui.icons.edit(async () => {
       const rulesManager = await RulesManager.getInstance(available);
       //await rulesManager.show();
-      grok.shell.addView(await rulesManager.getView());
+      // close the dialogs, its easier if we just close it from active dialogs with filtering
+      DG.Dialog.getOpenDialogs()?.filter((d) => d.root.contains(editIcon)).forEach((d) => d.close());
+      await rulesManager.getAndAddView();
     }, 'Edit rules');
 
     res.addOptions(editIcon);
@@ -153,10 +155,13 @@ export class Rules {
 
 
     for (let i = 0; i < length; i++) {
+      const fSplit = firstMonomerCol.get(i).split(',');
+      const sSplit = secondMonomerCol.get(i).split(',');
+
       const rule = {
         code: codeCol.get(i),
-        firstMonomers: firstMonomerCol.get(i).split(','),
-        secondMonomers: secondMonomerCol.get(i).split(','),
+        firstMonomers: fSplit[0] !== '' ? fSplit : [],
+        secondMonomers: sSplit[0] !== '' ? sSplit : [],
         firstLinkingGroup: firstLink.get(i),
         secondLinkingGroup: secondLink.get(i)
       };
@@ -180,11 +185,13 @@ export class Rules {
 
     for (let i = 0; i < length; i++) {
       const smartsReaction = `${firstReactant.get(i)}.${secondReactant.get(i)}>>${product.get(i)}`;
+      const fSplit = firstMonomerCol.get(i).split(',');
+      const sSplit = secondMonomerCol.get(i).split(',');
 
       const rule = {
         code: codeCol.get(i),
-        firstMonomers: firstMonomerCol.get(i).split(','),
-        secondMonomers: secondMonomerCol.get(i).split(','),
+        firstMonomers: fSplit[0] !== '' ? fSplit : [],
+        secondMonomers: sSplit[0] !== '' ? sSplit : [],
         reaction: smartsReaction,
         name: name.get(i)
       };

@@ -17,18 +17,19 @@ export const HTScriptPrefix = 'HTScript';
 export const HTQueryPrefix = 'HTQuery';
 export const ComputeQueryMolColName = 'molecules';
 export const i18n = {
-  startNewCampaign: 'New campaign',
-  createNewCampaign: 'New campaign',
+  startNewCampaign: 'New Campaign',
+  createNewCampaign: 'New Campaign',
   dataSourceFunction: 'Source',
-  createNewTemplate: 'New template',
+  createNewTemplate: 'New Template',
   StartCampaign: 'Start',
   createTemplate: 'Create',
   createCampaign: 'Create',
   download: 'Download',
   cancel: 'Cancel',
-  continueCampaigns: 'Continue a campaign',
-  createNewCampaignHeader: 'New campaign',
+  continueCampaigns: 'Continue Campaign',
+  createNewCampaignHeader: 'New Campaign',
   selectTemplate: 'Template',
+  noInformation: 'No Information',
 } as const;
 
 export const funcTypeNames = {
@@ -36,3 +37,13 @@ export const funcTypeNames = {
   function: 'function-package',
   query: 'data-query',
 } as const;
+
+export const HDCampaignsGroupingLSKey = 'HDCampaignsGrouping';
+
+export enum CampaignGroupingType {
+  None = 'None',
+  Template = 'Template',
+  Status = 'Status',
+  Author = 'Author',
+  LastModifiedUser = 'Last Modified User',
+}

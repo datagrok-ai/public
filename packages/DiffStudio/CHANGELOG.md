@@ -1,12 +1,17 @@
 # Diff Studio changelog
 
-## 1.1.6 (2024-11-01)
+## 1.2.0 (2024-12-01)
 
 Updated
 
 * The Acid Production example
 * UI: tabs order, removed unnecessary windows
 * App behavior in the case of model mistakes
+
+## 1.1.6 (2024-11-18)
+
+* Updated computations the loop & update features
+* Added the platform function for solving equations
 
 ## 1.1.5 (2024-10-10)
 

@@ -1,10 +1,13 @@
 package grok_connect.table_query;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import grok_connect.connectors_info.DataConnection;
+import grok_connect.utils.GrokConnectUtil;
 
 public class TableQuery {
     public String whereOp = "and";
@@ -17,6 +20,7 @@ public class TableQuery {
     public List<String> groupByFields = new ArrayList<>();
     public List<FieldPredicate> having = new ArrayList<>();
     public List<FieldOrder> orderBy = new ArrayList<>();
+    List<TableJoin> joins = new ArrayList<>();
     public String tableName;
     public String schema;
     public DataConnection connection;
@@ -47,6 +51,34 @@ public class TableQuery {
         sql.append("FROM");
         sql.append(System.lineSeparator());
         sql.append(table);
+
+        if (!joins.isEmpty()) {
+            sql.append(System.lineSeparator());
+            for (TableJoin joinTable: joins) {
+                sql.append(joinTable.joinType)
+                        .append(" join ")
+                        .append(joinTable.rightTableName);
+                if (GrokConnectUtil.isNotEmpty(joinTable.rightTableAlias))
+                    sql.append(" as ")
+                            .append(joinTable.rightTableAlias);
+                sql.append(" on ");
+                for (int i = 0; i < joinTable.leftTableKeys.size(); i++) {
+                    if (i > 0) {
+                        sql.append(" AND ");
+                        sql.append(System.lineSeparator());
+                    }
+                    sql.append(addBrackets.convert(joinTable.leftTableName))
+                            .append('.')
+                            .append(addBrackets.convert(joinTable.leftTableKeys.get(i)))
+                            .append(" = ")
+                            .append(addBrackets.convert(GrokConnectUtil.isNotEmpty(joinTable.rightTableAlias) ? joinTable.rightTableAlias : joinTable.rightTableName))
+                            .append(".")
+                            .append(addBrackets.convert(joinTable.rightTableKeys.get(i)))
+                            .append(System.lineSeparator());
+                }
+            }
+        }
+
         if (!whereClauses.isEmpty()) {
             sql.append(System.lineSeparator());
             List<String> clauses = new ArrayList<>();
@@ -104,14 +136,24 @@ public class TableQuery {
         }
         else
             result = sql.toString();
-        return result;
+        return result.trim();
     }
 
     private String getSelectFields(AggrToSql aggrToSql, AddBrackets addBrackets) {
+        // use list to preserve order
         List<String> preparedFields = new ArrayList<>();
+        Set<String> uniqueNames = new HashSet<>();
         for (String field : fields) {
+            String[] splitField = field.split("\\.");
+            String fieldName = splitField[splitField.length - 1];
+            String bracket;
+            if (uniqueNames.contains(fieldName) && splitField.length > 1 /* table alias in field */)
+                bracket = addBrackets.convert(field) + " as " + addBrackets.convert(field.replaceAll("\\.", "_"));
+            else
+                bracket = addBrackets.convert(field);
+            uniqueNames.add(fieldName);
+            // fallback for old code
             int num = 1;
-            String bracket = addBrackets.convert(field);
             while (true) {
                 if (!preparedFields.contains(bracket)) {
                     preparedFields.add(bracket);
@@ -122,7 +164,7 @@ public class TableQuery {
             }
         }
         preparedFields.addAll(getAggFuncs().stream().map(aggrToSql::convert).filter(Objects::nonNull).collect(Collectors.toList()));
-        return preparedFields.isEmpty() ? "*\n" : preparedFields.stream()
+        return preparedFields.isEmpty() ? "*" + System.lineSeparator() : preparedFields.stream()
                 .collect(Collectors.joining(String.format(",%s", System.lineSeparator()), "", System.lineSeparator()));
     }
 
