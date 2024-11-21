@@ -543,7 +543,10 @@ export class DiffStudio {
     const span = ui.span(['New']);
     span.classList.add('diff-studio-ribbon-text');
     const wgt = ui.divH([ui.iconFA('plus'), span]);
-    wgt.onclick = async () => {}; //TODO: Implement
+    wgt.onclick = async () => {
+      const solver = new DiffStudio();
+      await solver.runSolverApp(this.editorView!.state.doc.toString());
+    };
     ui.tooltip.bind(wgt, 'Open a copy of the current model in a new view');
 
     return wgt;
@@ -1334,7 +1337,7 @@ export class DiffStudio {
     }
   }
 
-  /** Close previousely opened performance dialog */
+  /** Close previously opened performance dialog */
   private closePerformanceDlg(): void {
     this.performanceDlg?.close();
     this.performanceDlg = null;
@@ -1592,7 +1595,7 @@ export class DiffStudio {
     return view;
   } // getBuiltInModelsCardsView
 
-  /** Return foldwer with built-in models (examples/templates) */
+  /** Return folder with built-in models (examples/templates) */
   private getFolderWithBultInModels(models: TITLE[], title: string): DG.TreeViewGroup {
     const folder = this.appTree.getOrCreateGroup(title, null, false);
     folder.onSelected.subscribe(() => {
