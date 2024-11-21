@@ -22,6 +22,7 @@ export abstract class BaseViewApp {
   browseView: DG.BrowseView;
   
   private _filePath: string = '';
+  private _addTabControl = true;
 
   private formGenerator?: (dataFrame: DG.DataFrame) => Promise<HTMLElement>;
 
@@ -37,6 +38,14 @@ export abstract class BaseViewApp {
 
   set filePath(path: string) {
     this._filePath = path;
+  }
+
+  get addTabControl(): boolean {
+    return this._addTabControl;
+  }
+
+  set addTabControl(value: boolean) {
+    this._addTabControl = value;
   }
 
   constructor(parentCall: DG.FuncCall) {
@@ -70,11 +79,16 @@ export abstract class BaseViewApp {
     this.sketcher = this.sketcherInstance.root;
     this.sketcherDiv.appendChild(this.sketcher);
   
-    const modeTabs: DG.TabControl = ui.tabControl();
-    modeTabs.onTabChanged.subscribe((tab: DG.TabPane) => this.handleModeChange(tab));
-    modeTabs.addPane('Sketch', () => this.createSketchPane());
-    modeTabs.addPane('File', () => this.fileInputPane());
-    this.modeContainer.appendChild(modeTabs.root);
+    if (this.addTabControl) {
+      const modeTabs: DG.TabControl = ui.tabControl();
+      modeTabs.onTabChanged.subscribe((tab: DG.TabPane) => this.handleModeChange(tab));
+      modeTabs.addPane('Sketch', () => this.createSketchPane());
+      modeTabs.addPane('File', () => this.fileInputPane());
+      this.modeContainer.appendChild(modeTabs.root);
+    } else {
+      this.mode = 'sketch';
+      this.modeContainer.appendChild(this.createSketchPane());
+    }
 
     this.prepareTableView();
   }
@@ -294,7 +308,7 @@ export abstract class BaseViewApp {
     await this.processFileData();
   }
   
-  protected abstract processFileData(): Promise<void>; 
+  protected async processFileData(): Promise<void> {}
 
   refresh(table: DG.DataFrame, modeContainer: HTMLElement, ratio: number) {
     if (table.rowCount > 0)
