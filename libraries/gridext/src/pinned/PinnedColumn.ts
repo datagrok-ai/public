@@ -1350,7 +1350,9 @@ export class PinnedColumn {
     const nXX = nX + ((nW*window.devicePixelRatio - nWLabel) >> 1);
     let nYY = (nY + nHCH - Math.ceil(3*window.devicePixelRatio));//-2*window.devicePixelRatio);
     //onsole.log("nXX " + nXX + " nYY = " + nYY + " CHH " + nHCH);
-    g.fillText(str, nXX, nYY);
+    // g.fillText(str, nXX, nYY);
+    const gridColHeader = DG.GridCell.createColHeader(this.m_colGrid);
+    gridColHeader.render({context: g, bounds: new DG.Rect(nX, nY, nW, nHCH)});
 
     //Paint Sort Arrow
     if(this.m_colGrid.idx > 0) {
