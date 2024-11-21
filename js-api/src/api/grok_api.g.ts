@@ -700,6 +700,7 @@ export interface IDartApi {
   grok_GridCell_Get_Renderer(gridCell: any): any;
   grok_GridCell_SetValue(gridCell: any, value: any, notify: Bool): any;
   grok_GridCell_Render(gridCell: any, g: any, bounds: any): any;
+  grok_GridCell_CreateColHeader(gridColumn: any): any;
   grok_GridCellStyle_Create(): any;
   grok_GridCellStyle_Get_Font(gcs: any): any;
   grok_GridCellStyle_Set_Font(gcs: any, x: any): any;

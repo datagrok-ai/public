@@ -500,6 +500,10 @@ export class GridCell {
     return new GridCell(api.grok_GridCell_FromValue(value));
   }
 
+  static createColHeader(gridColumn: GridColumn): GridCell {
+    return new GridCell(api.grok_GridCell_CreateColHeader(gridColumn.dart));
+  }
+
   /** @returns {string} Cell type */
   get cellType(): string {
     return api.grok_GridCell_Get_CellType(this.dart);
