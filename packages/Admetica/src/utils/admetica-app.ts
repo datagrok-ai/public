@@ -10,7 +10,7 @@ export class AdmeticaViewApp extends BaseViewApp {
     super(parentCall);
 
     this.setFormGenerator(this.customFormGenerator);
-    this.setFunction = () => this.performAdmetica();
+    this._setFunction = () => this.performAdmetica();
     this.browseView.path = 'browse/apps/Admetica';
     this.filePath = 'System:AppData/Admetica/demo_files/mol1K-demo-app.csv';
   }
@@ -59,7 +59,7 @@ export class AdmeticaViewApp extends BaseViewApp {
     const molIdx = this.tableView?.dataFrame.columns.names().indexOf('smiles');
     await addSparklines(this.tableView!.dataFrame, models.split(','), molIdx! + 1);
     
-    const form = createDynamicForm(this.tableView!.dataFrame, models.split(','), 'smiles', true);
+    const form = createDynamicForm(this.tableView!.dataFrame, models.split(','), 'smiles', false);
     return form.root;
   }
 

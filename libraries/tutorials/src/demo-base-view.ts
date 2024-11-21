@@ -10,10 +10,8 @@ interface ISplash {
 }
 
 export abstract class BaseViewApp {
-  view?: DG.View;
   parentCall: DG.FuncCall;
   tableView?: DG.TableView;
-  mode: string = 'sketch';
   container: HTMLElement;
   formContainer: HTMLElement;
   modeContainer: HTMLElement;
@@ -21,33 +19,14 @@ export abstract class BaseViewApp {
   sketcher?: HTMLElement;
   sketcherInstance: grok.chem.Sketcher;
   browseView: DG.BrowseView;
-  
-  private _filePath: string = '';
-  private _addTabControl = true;
 
-  private formGenerator?: (dataFrame: DG.DataFrame) => Promise<HTMLElement>;
-
-  setFunction?: () => Promise<void>;
-
-  setSetFunction(functionToSet: () => Promise<void>): void {
-    this.setFunction = functionToSet;
-  }
-
-  get filePath(): string {
-    return this._filePath;
-  }
-
-  set filePath(path: string) {
-    this._filePath = path;
-  }
-
-  get addTabControl(): boolean {
-    return this._addTabControl;
-  }
-
-  set addTabControl(value: boolean) {
-    this._addTabControl = value;
-  }
+  _filePath: string = '';
+  _addTabControl = true;
+  _formGenerator?: (dataFrame: DG.DataFrame) => Promise<HTMLElement>;
+  _setFunction?: () => Promise<void>;
+  _uploadCachedData?: () => Promise<HTMLElement>;
+  sketched: number = 0;
+  mode: string = 'sketch';
 
   constructor(parentCall: DG.FuncCall) {
     this.parentCall = parentCall;
@@ -68,6 +47,38 @@ export abstract class BaseViewApp {
 
     this.container.appendChild(this.modeContainer);
     this.container.appendChild(this.formContainer);
+  }
+
+  get filePath(): string {
+    return this._filePath;
+  }
+
+  set filePath(path: string) {
+    this._filePath = path;
+  }
+
+  get addTabControl(): boolean {
+    return this._addTabControl;
+  }
+
+  set addTabControl(value: boolean) {
+    this._addTabControl = value;
+  }
+
+  get uploadCachedData(): (() => Promise<HTMLElement>) | undefined {
+    return this._uploadCachedData;
+  }
+
+  set uploadCachedData(value: (() => Promise<HTMLElement>) | undefined) {
+    this._uploadCachedData = value;
+  }
+
+  setFormGenerator(generator: (dataFrame: DG.DataFrame) => Promise<HTMLElement>): void {
+    this._formGenerator = generator;
+  }
+
+  setSetFunction(setFunction: () => Promise<void>): void {
+    this._setFunction = setFunction;
   }
 
   async init(): Promise<void> {
@@ -138,7 +149,7 @@ export abstract class BaseViewApp {
   }
 
 
-  prepareTableView() {
+  private prepareTableView() {
     const table = DG.DataFrame.create(1);
     this.tableView = DG.TableView.create(table, false);
     this.tableView.parentCall = this.parentCall;
@@ -152,19 +163,15 @@ export abstract class BaseViewApp {
     }, 300);
   }
 
-  clearTable() {
+  private clearTable() {
     if (this.tableView) this.tableView.dataFrame = DG.DataFrame.create(1);
   }
 
-  clearForm() {
+  private clearForm() {
     this.formContainer.innerHTML = '';
   }
 
-  setFormGenerator(generator: (dataFrame: DG.DataFrame) => Promise<HTMLElement>): void {
-    this.formGenerator = generator;
-  }
-
-  async onChanged(smiles: string) {
+  private async onChanged(smiles: string) {
     if (!smiles) {
       this.clearForm();
       return;
@@ -179,8 +186,11 @@ export abstract class BaseViewApp {
   
     const splashScreen = this.buildSplash(this.formContainer, 'Calculating...');
     try {
-      if (this.formGenerator) {
-        const form = await this.formGenerator(this.tableView!.dataFrame);
+      if (this._uploadCachedData && this.sketched === 0) {
+        this.clearForm();
+        this.formContainer.appendChild(await this._uploadCachedData());
+      } else if (this._formGenerator) {
+        const form = await this._formGenerator(this.tableView!.dataFrame);
         this.clearForm();
         this.formContainer.appendChild(form);
       } else {
@@ -189,11 +199,12 @@ export abstract class BaseViewApp {
     } finally {
       splashScreen.close();
     }
-  
+
+    this.sketched += 1;
     this.tableView?.grid.invalidate();
   }
 
-  createFileInputPane() {
+  private createFileInputPane() {
     const fileInputEditor = this.initializeFileInputEditor();
     this.removeLabels(fileInputEditor.root);
     this.styleInputEditor(fileInputEditor.root);
@@ -235,6 +246,7 @@ export abstract class BaseViewApp {
       borderBottom: 'none',
     });
   }
+  
   
   private setupDragAndDrop(root: HTMLElement): void {
     const inputEditor = root.querySelector<HTMLElement>('.ui-input-editor');
@@ -280,7 +292,7 @@ export abstract class BaseViewApp {
     }
   }
   
-  async processFile(file: File) {
+  private async processFile(file: File) {
     if (!file) return;
 
     const extension = file.name.split('.').pop()!;
@@ -296,8 +308,8 @@ export abstract class BaseViewApp {
   
     const splashScreen = this.buildSplash(this.tableView!.grid.root, 'Calculating...');
     try {
-      if (this.setFunction) {
-        await this.setFunction();
+      if (this._setFunction) {
+        await this._setFunction();
       } else {
         console.warn('No form generator provided.');
       }
@@ -311,12 +323,12 @@ export abstract class BaseViewApp {
   
   protected async processFileData(): Promise<void> {}
 
-  refresh(table: DG.DataFrame, modeContainer: HTMLElement, ratio: number) {
+  private refresh(table: DG.DataFrame, modeContainer: HTMLElement, ratio: number) {
     if (table.rowCount > 0)
       this.tableView?.dockManager.dock(modeContainer, DG.DOCK_TYPE.TOP, null, '', ratio);
   }
   
-  buildSplash(root: HTMLElement, description: string): ISplash {
+  private buildSplash(root: HTMLElement, description: string): ISplash {
     const indicator = ui.loader();
     const panel = ui.divV([indicator, ui.p(description)], { classes: 'demo-splash-panel' });
     const loaderEl = ui.div([panel], { classes: 'demo-splash-container' });
