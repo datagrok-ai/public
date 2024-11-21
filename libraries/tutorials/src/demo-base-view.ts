@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {UiUtils} from "@datagrok-libraries/compute-utils";
+import '../css/demo.css';
 
 interface ISplash {
   close: () => void;
@@ -50,10 +51,10 @@ export abstract class BaseViewApp {
 
   constructor(parentCall: DG.FuncCall) {
     this.parentCall = parentCall;
-    this.container = ui.divH([], { classes: 'app-container' });
-    this.formContainer = ui.box(null, { classes: 'content-container', style: { height: '100%' } });
-    this.sketcherDiv = ui.div([], { classes: 'content-container', style: { border: 'none' } });
-    this.modeContainer = ui.box(null, { classes: 'mode-container', style: { height: '100%' } });
+    this.container = ui.divH([], { classes: 'demo-app-container' });
+    this.formContainer = ui.box(null, { classes: 'demo-content-container', style: { height: '100%' } });
+    this.sketcherDiv = ui.div([], { classes: 'demo-content-container', style: { border: 'none' } });
+    this.modeContainer = ui.box(null, { classes: 'demo-mode-container', style: { height: '100%' } });
     this.sketcherInstance = new grok.chem.Sketcher();
     this.browseView = grok.shell.view(DG.View.BROWSE) as DG.BrowseView;
 
@@ -198,8 +199,8 @@ export abstract class BaseViewApp {
     this.styleInputEditor(fileInputEditor.root);
     this.setupDragAndDrop(fileInputEditor.root);
     this.removeOptionsIcon(fileInputEditor.root);
-    fileInputEditor.root.classList.add('file-input');
-    return ui.divV([fileInputEditor], { classes: 'file-input-container' });
+    fileInputEditor.root.classList.add('demo-file-input');
+    return ui.divV([fileInputEditor], { classes: 'demo-file-input-container' });
   }
   
   private initializeFileInputEditor() {
@@ -317,8 +318,8 @@ export abstract class BaseViewApp {
   
   buildSplash(root: HTMLElement, description: string): ISplash {
     const indicator = ui.loader();
-    const panel = ui.divV([indicator, ui.p(description)], { classes: 'splash-panel' });
-    const loaderEl = ui.div([panel], { classes: 'splash-container' });
+    const panel = ui.divV([indicator, ui.p(description)], { classes: 'demo-splash-panel' });
+    const loaderEl = ui.div([panel], { classes: 'demo-splash-container' });
     root.append(loaderEl);
     return { el: loaderEl, close: () => loaderEl.remove() };
   }
