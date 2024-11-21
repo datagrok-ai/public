@@ -2,10 +2,19 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import { addColorCoding, addSparklines, createDynamicForm, getQueryParams, performChemicalPropertyPredictions, properties, setProperties } from './admetica-utils';
-import {BaseViewApp} from '@datagrok-libraries/tutorials/src/demo-app';
+import {BaseViewApp} from '@datagrok-libraries/tutorials/src/demo-base-view';
 import '../css/admetica.css';
 
 export class AdmeticaViewApp extends BaseViewApp {
+  constructor(parentCall: DG.FuncCall) {
+    super(parentCall);
+
+    this.setFormGenerator(this.customFormGenerator);
+    this.setFunction = () => this.performAdmetica();
+    this.browseView.path = 'browse/apps/Admetica';
+    this.filePath = 'System:AppData/Admetica/demo_files/mol1K-demo-app.csv';
+  }
+
   protected async processFileData(): Promise<void> {
     await grok.data.detectSemanticTypes(this.tableView!.dataFrame);
     const models = await getQueryParams();
@@ -32,14 +41,6 @@ export class AdmeticaViewApp extends BaseViewApp {
     }
   
     this.tableView!.grid.scrollToCell(molColName, 0);
-  }
-  constructor(parentCall: DG.FuncCall) {
-    super(parentCall);
-
-    // Set the custom form generator logic here
-    this.setFormGenerator(this.customFormGenerator);
-    this.setFunction = () => this.performAdmetica();
-    this.browseView.path = 'browse/apps/Admetica';
   }
 
   private async customFormGenerator(): Promise<HTMLElement> {

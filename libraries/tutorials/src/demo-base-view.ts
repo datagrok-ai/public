@@ -21,7 +21,7 @@ export abstract class BaseViewApp {
   sketcherInstance: grok.chem.Sketcher;
   browseView: DG.BrowseView;
   
-  private _filePath: string = 'System:AppData/Admetica/demo_files/sar-small_app.csv';
+  private _filePath: string = '';
 
   private formGenerator?: (dataFrame: DG.DataFrame) => Promise<HTMLElement>;
 
@@ -165,7 +165,6 @@ export abstract class BaseViewApp {
     const splashScreen = this.buildSplash(this.formContainer, 'Calculating...');
     try {
       if (this.formGenerator) {
-        // Wait for the asynchronous form generation to complete
         const form = await this.formGenerator(this.tableView!.dataFrame);
         this.clearForm();
         this.formContainer.appendChild(form);
