@@ -261,19 +261,19 @@ category('ComputeUtils: Driver instance additional states', async () => {
       });
       expectObservable(tree.getNodesDescriptions()[pipeline.getItem().uuid]).toBe('a-b-c', {
         a: {
-          'name': undefined,
+          'title': undefined,
           'description': undefined,
           'tags': undefined,
         },
         b: {
-          'name': 'Title 1',
+          'title': 'Title 1',
           'description': 'Description 1',
           'tags': [
             'tag 1',
           ],
         },
         c: {
-          'name': 'Title 2',
+          'title': 'Title 2',
           'description': 'Description 2',
           'tags': [
             'tag 2',

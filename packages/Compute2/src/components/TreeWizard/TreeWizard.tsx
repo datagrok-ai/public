@@ -225,7 +225,7 @@ export const TreeWizard = Vue.defineComponent({
     const openMetadataEditDialog = () => {
       if (isRootChoosen.value) {
         const rootDesc = states.descriptions[chosenStepUuid.value!];
-        const dialog = new EditDialog({...currentMetaCallData.value, ...rootDesc});
+        const dialog = new EditDialog({...rootDesc, ...currentMetaCallData.value});
         dialog.onMetadataEdit.pipe(take(1)).subscribe((editOptions) => {
           savePipeline(editOptions)
         });

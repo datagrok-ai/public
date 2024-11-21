@@ -946,7 +946,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
       cold('--a').subscribe(() => {
         node.getItem().getStateStore().setState('a', 2);
       });
-      expectObservable(pipeline.getItem().nodeDescription.getStateChanges('name')).toBe('abc',
+      expectObservable(pipeline.getItem().nodeDescription.getStateChanges('title')).toBe('abc',
         {a: undefined, b: 'Title 1', c: 'Title 2'});
       expectObservable(pipeline.getItem().nodeDescription.getStateChanges('description')).toBe('abc',
         {a: undefined, b: 'Description 1', c: 'Description 2'});
