@@ -99,8 +99,8 @@ export async function getPolyToolConvertDialog(srcCol?: DG.Column): Promise<DG.D
     const generateHelmInput = ui.input.bool(PT_UI_GET_HELM, {value: true});
     ui.tooltip.bind(generateHelmInput.root, PT_UI_ADD_HELM);
 
-    const chiralityEngineInput = ui.input.bool(PT_UI_USE_CHIRALITY, {value: false});
-    const highlightMonomersInput = ui.input.bool(PT_UI_HIGHLIGHT_MONOMERS, {value: false});
+    const chiralityEngineInput = ui.input.bool(PT_UI_USE_CHIRALITY, {value: true});
+    const highlightMonomersInput = ui.input.bool(PT_UI_HIGHLIGHT_MONOMERS, {value: true});
     let ruleFileList: string[];
     const ruleInputs = new RuleInputs(RULES_PATH, RULES_STORAGE_NAME, '.json', {
       onValueChanged: (value: string[]) => { ruleFileList = value; }

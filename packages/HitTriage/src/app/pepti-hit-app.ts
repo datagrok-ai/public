@@ -48,7 +48,7 @@ export class PeptiHitApp extends HitDesignApp<PeptiHitTemplate> {
     }
   }
 
-  protected getDesignView(): DG.TableView {
+  protected override getDesignView(): DG.TableView {
     const subs: Subscription[] = [];
     const isNew = this.dataFrame!.col(this.helmColName)?.toList().every((m) => !m && m === '');
     const helmCol = this.dataFrame!.col(this.helmColName);

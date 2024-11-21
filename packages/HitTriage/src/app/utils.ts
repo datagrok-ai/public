@@ -215,7 +215,7 @@ export function getGroupedCampaigns<T extends HitDesignCampaign | HitTriageCampa
   return groupedCampaigns;
 }
 
-export function processGroupingTable<T extends HitDesignCampaign | HitTriageCampaign = HitDesignCampaign>(table: HTMLTableElement, groupedCampaigns: {[key: string]: T[]}, numCols = 8) {
+export function processGroupingTable<T extends HitDesignCampaign | HitTriageCampaign = HitDesignCampaign>(table: HTMLTableElement, groupedCampaigns: {[key: string]: T[]}, numCols = 9) {
   table.classList.add('hit-design-groupped-campaigns-table');
   const keys = Object.keys(groupedCampaigns);
   if (keys.length < 2)
@@ -251,4 +251,74 @@ export function processGroupingTable<T extends HitDesignCampaign | HitTriageCamp
     body.insertBefore(newRow, row);
     curRow += l;
   }
+}
+
+export type EditableFieldOptions = {
+  onChange?: (val?: string | null) => void,
+  onOk?: (val?: string | null) => Promise<void>,
+  validator?: (val?: string | null) => Promise<string | null>,
+  onCancel?: () => void,
+  afterEditTextContent?: (val: string) => string,
+  beforeEditTextContent?: (val: string) => string,
+  nullable?: boolean,
+  tooltip?: string,
+}
+
+export function editableTableField(field: HTMLElement, options?: EditableFieldOptions) {
+  const editIcon = ui.icons.edit(() => {
+    let tooltipMsg = options?.tooltip ?? field.textContent ?? '';
+    const beforeEditTextContent = options?.beforeEditTextContent ?? ((val) => val);
+    const afterEditTextContent = options?.afterEditTextContent ?? ((val) => val);
+    const input = ui.input.string('smth', {value: beforeEditTextContent(field.textContent ?? ''), onValueChanged: async () => {
+      const vr = await internalValidator();
+      setTimeout(() => {
+        if (vr) {
+          input.input.classList.add('d4-invalid');
+          tooltipMsg = vr;
+          return;
+        } else {
+          input.input.classList.remove('d4-invalid');
+          tooltipMsg = options?.tooltip ?? field.textContent ?? '';
+        }
+      }, 100);
+      options?.onChange?.(input.value);
+    }});
+    ui.tooltip.bind(input.input, () => tooltipMsg);
+    const labelElement = input.root.getElementsByTagName('label').item(0);
+    if (labelElement)
+      labelElement.remove();
+    input.root.style.width = '100%';
+    const internalValidator = async () => {
+      const initialRes = !!input.value?.trim() ? null : !!options?.nullable ? null :'Field cannot be empty';
+      return initialRes ?? (options?.validator ? await options.validator(input.value) : null);
+    };
+
+    const saveButton = ui.button('Save', async () => {
+      const vr = await internalValidator();
+      if (vr) {
+        grok.shell.error(vr);
+        return;
+      }
+      await options?.onOk?.(input.value);
+      field.textContent = afterEditTextContent(input.value) ?? '';
+      ui.empty(container);
+      container.appendChild(field);
+      container.appendChild(editIcon);
+    });
+    const cancelButton = ui.button('Cancel', () => {
+      ui.empty(container);
+      container.appendChild(field);
+      container.appendChild(editIcon);
+      options?.onCancel?.();
+    });
+
+    ui.empty(container);
+    input.addOptions(cancelButton);
+    input.addOptions(saveButton);
+    container.appendChild(input.root);
+    input.input.focus();
+  }, options?.tooltip ?? 'Edit');
+  const container = ui.divH([field, editIcon], {style: {display: 'flex', alignItems: 'center'}});
+  editIcon.style.marginLeft = '5px';
+  return container;
 }

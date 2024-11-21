@@ -93,15 +93,20 @@ export class DemoView extends DG.ViewBase {
 
 
   private _setBreadcrumbsInViewName(viewPath: string[]): void {
-    const breadcrumbs = ui.breadcrumbs(viewPath);
+    const path = viewPath.includes('Home') ? viewPath : ['Home', ...viewPath];
+    const breadcrumbs = ui.breadcrumbs(path);
 
-    breadcrumbs.onPathClick.subscribe((value) => {
+    breadcrumbs.onPathClick.subscribe(async (value) => {
       const currentFunc = this.funcs.filter((func) => {
         return (func.name === value[value.length - 1]);
       });
       if (currentFunc.length !== 0)
         return;
-      this.nodeView(value[value.length - 1], value.join('/'));
+      if (value.length === 1 && value[0] === 'Home') {
+        await this.browseView.setHomeView();
+        return;
+      }
+      this.nodeView(value[value.length - 1], (value[0] === 'Home' ? value.slice(1) : value).join('/'));
     });
 
     const viewNameRoot = this.browseView.ribbonMenu.root.parentElement?.getElementsByClassName('d4-ribbon-name')[0];
@@ -133,7 +138,7 @@ export class DemoView extends DG.ViewBase {
       let tempArr: string[] = [];
 
       for (let j = 0; j < directionFuncs.length; ++j) {
-        let imgPath = `${_package.webRoot}images/demoapp/${directionFuncs[j].name}.jpg`;
+        let imgPath = `${_package.webRoot}images/demoapp/${directionFuncs[j].name}.png`;
 
         const path = directionFuncs[j].options[DG.FUNC_OPTIONS.DEMO_PATH] as string;
         const pathArray = path.split('|').map((s) => s.trim());
@@ -236,7 +241,7 @@ export class DemoView extends DG.ViewBase {
             if (response.ok) {
               return Promise.resolve(response.url)
             } else if(response.status === 404) {
-              return Promise.reject(`${_package.webRoot}images/demoapp/emptyImg.jpg`)
+              return Promise.reject(`${_package.webRoot}images/demoapp/emptyImg.png`)
             }
           })
           .then((data) => root.style.backgroundImage = `url(${data})`)

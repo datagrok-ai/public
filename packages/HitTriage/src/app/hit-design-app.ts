@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {AppName, HitDesignCampaign, HitDesignTemplate, IFunctionArgs} from './types';
+import {AppName, HitDesignCampaign, HitDesignTemplate, IFunctionArgs, TriagePermissions} from './types';
 import {HitDesignInfoView} from './hit-design-views/info-view';
 import {CampaignIdKey, CampaignJsonName, CampaignTableName,
   HTQueryPrefix, HTScriptPrefix, HitDesignCampaignIdKey,
@@ -10,7 +10,7 @@ import {CampaignIdKey, CampaignJsonName, CampaignTableName,
 import {calculateColumns, calculateSingleCellValues, getNewVid} from './utils/calculate-single-cell';
 import '../../css/hit-triage.css';
 import {_package} from '../package';
-import {addBreadCrumbsToRibbons, checkRibbonsHaveSubmit, modifyUrl, toFormatedDateString} from './utils';
+import {addBreadCrumbsToRibbons, checkRibbonsHaveSubmit, editableTableField, modifyUrl, toFormatedDateString} from './utils';
 import {HitDesignSubmitView} from './hit-design-views/submit-view';
 import {getTilesViewDialog} from './hit-design-views/tiles-view';
 import {HitAppBase} from './hit-app-base';
@@ -19,6 +19,7 @@ import {chemFunctionsDialog} from './dialogs/functions-dialog';
 import {Subscription} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import {defaultPermissions, PermissionsDialog} from './dialogs/permissions-dialog';
+import {getDefaultSharingSettings} from '../packageSettingsEditor';
 
 export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> extends HitAppBase<T> {
   multiView: DG.MultiView;
@@ -172,6 +173,11 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
   get designView(): DG.TableView {return this._designView = this.getDesignView();}
 
   get designViewName(): string {return this._designViewName;}
+
+  set designViewName(name: string) {
+    this._designViewName = name;
+    this._designView && (this._designView.name = name);
+  }
 
   get molColName() {
     return this._molColName ??= this.dataFrame?.columns.bySemType(DG.SEMTYPE.MOLECULE)?.name ?? HitDesignMolColName;
@@ -336,7 +342,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
           getTilesViewDialog(this, () => this._designView ?? null);
         });
 
-        const submitButton = ui.bigButton('Submit', () => {
+        const submitButton = ui.bigButton('Submit...', () => {
           const dialogContent = this._submitView?.render();
           if (dialogContent) {
             const dlg = ui.dialog('Submit');
@@ -384,10 +390,11 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
   }
 
   protected getDesignView(): DG.TableView {
+    this._designView && this._designView.close();
     const subs: Subscription[] = [];
     const isNew = this.dataFrame!.col(this.molColName)?.toList().every((m) => !m && m === '');
     const view = grok.shell.addTableView(this.dataFrame!);
-    this._designViewName = this.campaign?.name ?? this._designViewName;
+    this._designViewName = this.campaign?.friendlyName ?? this.campaign?.name ?? this._designViewName;
     view.name = this._designViewName;
 
     view._onAdded();
@@ -634,6 +641,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
         newPathInput.addOptions(cancelButton);
         newPathInput.addOptions(saveButton);
         pathDiv.appendChild(newPathInput.root);
+        newPathInput.input.focus();
       }, 'Edit file path');
       editIcon.style.marginLeft = '5px';
       const folderPath = getFolderPath();
@@ -643,7 +651,21 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
       return pathDiv;
     };
 
+    const campaignName = this.campaign?.friendlyName ?? this.campaign?.name ?? this.campaignId!;
+    const campaignNameField = editableTableField(ui.divText(campaignName), {
+      tooltip: 'Edit Campaign Name',
+      nullable: false,
+      onOk: async (a) => {
+        this.campaign!.friendlyName = a!;
+        await this.saveCampaign(true);
+      },
+      validator: async (a) => !!a?.trim() ? null : 'Campaign name can not be empty',
+    });
+
+
     return {
+      'Name': campaignNameField,
+      'Code': this.campaignId ?? this._campaign?.name,
       'Template': this.template?.name ?? 'Molecules',
       'File Path': getPathEditor(),
       ...(this.campaign?.authorUserFriendlyName ? {'Author': this.campaign.authorUserFriendlyName} : {}),
@@ -656,7 +678,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     };
   }
 
-  async saveCampaign(notify = true): Promise<HitDesignCampaign> {
+  async saveCampaign(notify = true, isCreating = false, customProps?: Partial<HitDesignCampaign>): Promise<HitDesignCampaign> {
     const campaignId = this.campaignId!;
     const templateName = this.template!.name;
     const enrichedDf = this.dataFrame!;
@@ -667,12 +689,28 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     enrichedDf.columns.toList().forEach((col) => colTypeMap[col.name] = col.type);
     const sketchStateString = this.campaign?.tilesViewerFormSketch ?? undefined;
 
+    const getDefaultPerms = async () => {
+      try {
+        const perms = await getDefaultSharingSettings();
+        const idPerms: TriagePermissions = {view: perms.view.map((p) => p.id), edit: perms.edit.map((p) => p.id)};
+        if (idPerms.edit.length === 0)
+          idPerms.edit = [defaultPermissions.edit[0]];
+        if (idPerms.view.length === 0)
+          idPerms.view = [defaultPermissions.view[0]];
+        return idPerms;
+      } catch (e) {
+        grok.shell.error('Failed to get default permissions');
+        console.error(e);
+      }
+      return defaultPermissions;
+    };
     // if its first time save author as current user, else keep the same
     const authorUserId = this.campaign?.authorUserId ?? grok.shell.user.id;
-    const permissions = this.campaign?.permissions ?? defaultPermissions;
+    const permissions = this.campaign?.permissions ?? await getDefaultPerms();
     const authorName = authorUserId ? this.campaign?.authorUserFriendlyName ?? (await grok.dapi.users.find(authorUserId))?.friendlyName : undefined;
     const campaign: HitDesignCampaign = {
       name: campaignName,
+      friendlyName: this.campaign?.friendlyName ?? customProps?.friendlyName ?? campaignName,
       templateName,
       status: this.campaign?.status ?? 'In Progress',
       createDate: this.campaign?.createDate ?? toFormatedDateString(new Date()),
@@ -727,7 +765,9 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     await _package.files.writeAsText(campaignPath,
       JSON.stringify(campaign));
     notify && grok.shell.info('Campaign saved successfully.');
+    !notify && isCreating && grok.shell.info('Campaign created successfully.');
     this.campaign = campaign;
+    this.designViewName = campaign.friendlyName ?? campaign.name;
     return campaign;
   }
 }

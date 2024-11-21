@@ -135,10 +135,15 @@ export async function prepareAutoDockData(
   table: DG.DataFrame, 
   ligandColumn: string, 
   poses: number
-): Promise<AutoDockDataType> {
+): Promise<AutoDockDataType | null> {
   const isGpfFile = (file: DG.FileInfo): boolean => file.extension === 'gpf';
   const configFile = (await grok.dapi.files.list(`${TARGET_PATH}/${target}`, true)).find(isGpfFile)!;
   const receptor = (await grok.dapi.files.list(`${TARGET_PATH}/${target}`)).find((file) => file.extension === 'pdbqt')!;
+
+  if (!configFile || !receptor) {
+    grok.shell.warning('Missing .gpf or .pdbqt file in the target folder.');
+    return null;
+  }
 
   const receptorData: BiostructureData = {
     binary: false,
@@ -172,6 +177,8 @@ export async function runAutodock5(table: DG.DataFrame, ligands: DG.Column, targ
   const pi = DG.TaskBarProgressIndicator.create('AutoDock load data ...');
   try {
     const data = await prepareAutoDockData(target, table, ligands.name, poses);
+    if (!data)
+      return;
 
     const app = new AutoDockApp();
     const autodockResults = await app.init(data);
@@ -360,6 +367,8 @@ export async function autodockPanel(smiles: DG.SemanticValue): Promise<DG.Widget
     resultsContainer.appendChild(loader);
 
     const widget = await runDocking(smiles, target.value!, poses.value!);
+    if (!data)
+      return;
     resultsContainer.removeChild(loader);
     if (widget) {
       resultsContainer.appendChild(widget.root);

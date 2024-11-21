@@ -558,7 +558,7 @@ export function link(
     text: string,
     target: string | Function | object,
     tooltipMsg?: string,
-    options: string | ElementOptions | null = { classes: 'd4-link-external' }): HTMLAnchorElement {
+    options?: string | ElementOptions | null): HTMLAnchorElement {
   let link = element('a') as HTMLAnchorElement;
   link.classList.add('ui-link');
   link.innerText = text;
@@ -566,6 +566,7 @@ export function link(
     link.addEventListener('click', (_) => target());
   }
   else if (typeof target === 'string') {
+    link.classList.add('d4-link-external')
     link.href = target;
     link.target = '_blank';
   }
@@ -1307,13 +1308,27 @@ export class tools {
             width = calc;
         });
         let e = $(element).find('select')[0];
-        if (e != undefined)
+        if (e != undefined) {
           e.style.maxWidth = `${width + 30}px`;
+          e.style.width = `${width + 30}px`;
+        }
       }
+      let optionsWidth = 0;
+      let options = $(element).find('.ui-input-options');
+      options.each((i) => {
+        optionsWidth += this.getOptionsWidth(options[i] as HTMLElement);
+        if (element.classList.contains('ui-input-float') ||
+          element.classList.contains('ui-input-int') ||
+          element.classList.contains('ui-input-text')) {
+          (options[i] as HTMLElement).style.marginLeft = `-${optionsWidth}px`;
+        }
+        width += optionsWidth;
+      });
       // todo: analyze content(?) and metadata
       // todo: analyze more types
       widths.push(width);
     });
+
     return widths;
   }
 
@@ -1327,6 +1342,22 @@ export class tools {
       widths.push(renderWidth);
     });
     return widths;
+  }
+
+  private static getOptionsWidth(element: HTMLElement) {
+    let wrapper = document.createElement('div');
+    wrapper.classList.add('ui-input');
+    wrapper.classList.add('ui-input-root');
+    wrapper.style.visibility = 'hidden';
+    wrapper.style.position = 'fixed';
+    let value = document.createElement('div');
+    wrapper.append(value);
+    value.classList.add('ui-input-options');
+    value.innerHTML = element.innerHTML;
+    document.body.append(wrapper);
+    let renderWidth = Math.ceil(wrapper.getBoundingClientRect().width);
+    wrapper.remove();
+    return renderWidth;
   }
 
   private static getLabelWidth(element: HTMLElement) {
@@ -1359,9 +1390,9 @@ export class Tooltip {
   /** Associated the specified visual element with the corresponding item.
    * Example: {@link https://public.datagrok.ai/js/samples/ui/tooltips/tooltips}
   */
-  bind(element: HTMLElement, tooltip?: string | null | (() => string | HTMLElement | null)): HTMLElement {
+  bind(element: HTMLElement, tooltip?: string | null | (() => string | HTMLElement | null), tooltipPosition?: 'left' | 'right' | 'top' | 'bottom' | undefined | null): HTMLElement {
     if (tooltip != null)
-      api.grok_Tooltip_SetOn(element, tooltip);
+      api.grok_Tooltip_SetOn(element, tooltip, tooltipPosition);
     return element;
   }
 
@@ -2101,7 +2132,7 @@ export function setDisabled(element: HTMLElement, disabled:boolean, tooltip?: st
   if (tooltip == null)
     return;
 
-  api.grok_Tooltip_SetOn(element, tooltip);
+  api.grok_Tooltip_SetOn(element, tooltip, null);
 
   const overlay = document.createElement('span');
   overlay.style.position = 'fixed';

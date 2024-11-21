@@ -433,3 +433,28 @@ export function handleContextMenu(args : any, fnMenuCallback : Function) : void 
     return;
   }
 }
+
+export function cloneMouseWheelEvent(e: WheelEvent, additionals?: MouseEventInit) {
+  const event = new WheelEvent(e.type, Object.assign({
+    bubbles: e.bubbles,
+    cancelable: e.cancelable,
+    view: e.view,
+    detail: e.detail,
+    screenX: e.screenX,
+    screenY: e.screenY,
+    clientX: e.clientX,
+    clientY: e.clientY,
+    ctrlKey: e.ctrlKey,
+    altKey: e.altKey,
+    shiftKey: e.shiftKey,
+    metaKey: e.metaKey,
+    button: e.button,
+    buttons: e.buttons,
+    relatedTarget: e.relatedTarget,
+    deltaX: e.deltaX,
+    deltaY: e.deltaY,
+    deltaZ: e.deltaZ,
+    deltaMode: e.deltaMode,
+  }, additionals));
+  return event;
+}

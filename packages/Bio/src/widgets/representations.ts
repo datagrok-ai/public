@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -49,6 +50,24 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
     tooltipText: `The max length of monomer symbol displayed without shortening, empty to no limit`
   });
 
+  let fontSize: number | null = (_package.properties ? _package.properties.fontSize : 12);
+  if (MmcrTemps.fontSize in col.temp && !!col.temp[MmcrTemps.fontSize] && !isNaN(col.temp[MmcrTemps.fontSize]))
+    fontSize = col.temp[MmcrTemps.fontSize];
+
+  const fontSizeInput = ui.input.int('Font Size', {
+    value: fontSize!,
+    nullable: true, min: 1, max: 50, step: 1,
+    onValueChanged: (value) => {
+      if (value && value > 0) {
+        const newValue = value ?? 12;
+        col.temp[MmcrTemps.fontSize] = newValue;
+        col.temp[MmcrTemps.rendererSettingsChanged] = rendererSettingsChangedState.true;
+        col.dataFrame.fireValuesChanged();
+      }
+    },
+    tooltipText: `The font size of monomer symbol in sequence renderer`
+  });
+
   const gapLengthInput = ui.input.int('Monomer Margin', {
     value: col.temp[MmcrTemps.gapLength] ?? 0,
     onValueChanged: (value) => {
@@ -88,7 +107,8 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
     tooltipText: 'When on, all sequences get rendered in the "diff" mode'
   });
 
-  const rdKitInputs = ui.inputs([
+  const sequenceConfigInputs = ui.inputs([
+    fontSizeInput,
     maxMonomerLengthInput,
     gapLengthInput,
     referenceSequenceInput,
@@ -96,7 +116,7 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
     compareWithCurrentInput,
   ]);
 
-  return new DG.Widget(rdKitInputs);
+  return new DG.Widget(sequenceConfigInputs);
 }
 
 /**

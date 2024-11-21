@@ -1,5 +1,19 @@
 # Sequence Translator changelog
 
+## 1.6.2 (2024-11-17)
+
+### New features
+
+* PolyTool rule manager enhancement
+* Sequence renderer font resizing
+
+## 1.6.1 (2024-11-15)
+
+### Bug fixes
+
+* PolyTool fix default options
+* PolyTool fix explicit carbon cut
+
 ## 1.6.0 (2024-11-14)
 
 ### New features

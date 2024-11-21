@@ -230,7 +230,7 @@ export class Utils {
     );
   }
 
-  static async executeTests(testsParams: { package: any, params: any }[], stopOnTimeout?:  boolean): Promise<any> {
+  static async executeTests(testsParams: { package: any, params: any }[], stopOnFail?:  boolean): Promise<any> {
     let failed = false;
     let csv = "";
     let verbosePassed = "";
@@ -240,17 +240,18 @@ export class Utils {
     let countSkipped = 0;
     let countFailed = 0;
     let resultDF: DataFrame | undefined = undefined;
-
+    DG.Test.isReproducing = true;
     for (let testParam of testsParams) {
       let df: DataFrame = await grok.functions.call(testParam.package + ':test', testParam.params);
-
+      let flakingCol = DG.Column.fromType(DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount); 
+      df.columns.add(flakingCol); 
       if (df.rowCount === 0) {
         verboseFailed += `Test result : Invocation Fail : ${testParam.params.category}: ${testParam.params.test}\n`;
         countFailed += 1;
         failed = true;
         continue;
       }
-
+      
       let row = df.rows.get(0);
       if (df.rowCount > 1) {
         let unhandledErrorRow = df.rows.get(1);
@@ -259,11 +260,14 @@ export class Utils {
           unhandledErrorRow["name"] = row.get("name");
           row = unhandledErrorRow;
         }
-      }
+      } 
       const category = row.get("category");
       const testName = row.get("name");
       const time = row.get("ms");
       const result = row.get("result");
+      const success = row.get("success");
+      const skipped = row.get("skipped");
+      row["flaking"] = success && DG.Test.isReproducing;
 
       if (resultDF === undefined){
         df.changeColumnType('result', COLUMN_TYPE.STRING);
@@ -286,7 +290,7 @@ export class Utils {
         countFailed += 1;
         failed = true;
       }
-      if(result.toString().trim() === 'EXECUTION TIMEOUT' && stopOnTimeout)
+      if((success !== true && skipped!==true)  && stopOnFail)
         break;
     }
 
@@ -720,11 +724,7 @@ export class LruCache<K = any, V = any> {
   }
 }
 
-/**
- * @param {HTMLElement} element
- * @param {string | ElementOptions | null} options
- * @returns {HTMLElement}
- * */
+
 export function _options(element: HTMLElement, options: any) {
   if (options == null)
     return element;
@@ -819,6 +819,7 @@ export namespace Test {
    * different conditions, etc.
    * */
   export let isInBenchmark = false;
+  export let isReproducing   = false;
 
   export function getTestDataGeneratorByType(type: string) {
     return api.grok_Test_GetTestDataGeneratorByType(type);

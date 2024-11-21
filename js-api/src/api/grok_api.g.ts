@@ -327,7 +327,7 @@ export interface IDartApi {
   grok_Dialog_Clear(d: any): any;
   grok_Dialog_GetOpenDialogs(): any;
   grok_Tooltip_Hide(): any;
-  grok_Tooltip_SetOn(e: any, x: any): any;
+  grok_Tooltip_SetOn(e: any, x: any, position: String): any;
   grok_Tooltip_Show(content: any, x: Num, y: Num): any;
   grok_Tooltip_ShowRowGroup(dataFrame: any, checkRow: any, x: Num, y: Num): any;
   grok_Tooltip_Get_Root(): any;
@@ -552,6 +552,7 @@ export interface IDartApi {
   grok_ColumnList_Selected(cols: any): any;
   grok_ColumnList_ByTags(cols: any, desiredTags: any): any;
   grok_ColumnList_GetUnusedName(cols: any, name: String, choices: any): any;
+  grok_ColumnList_SetOrder(columns: any, columnNames: any): any;
   grok_Column_FromStrings(name: String, list: any): any;
   grok_Column_FromInt32Array(name: String, data: any, length: Num): any;
   grok_Column_FromFloat32Array(name: String, data: any, length: Num): any;
@@ -1198,6 +1199,8 @@ export interface IDartApi {
   grok_Windows_Set_ShowHelp(x: Bool): any;
   grok_Windows_Get_ShowRibbon(): any;
   grok_Windows_Set_ShowRibbon(x: Bool): any;
+  grok_StringUtils_ToSentenceCase(s: String): any;
+  grok_StringUtils_CamelCaseToSentence(s: String, capitalizeFirst: Bool, capitalizeNext: Bool, capitalizeConjunctions: any): any;
   grok_Context_Create(): any;
   grok_Context_CloneDefault(): any;
   grok_Context_Get_Variable(context: any, name: String): any;
@@ -1367,12 +1370,13 @@ export interface IDartApi {
   grok_Package_GetModuleName(p: any, file: String): any;
   grok_Package_GetModule(p: any, file: String): any;
   grok_Package_GetIconUrl(p: any): any;
-  grok_Package_Get_Settings(packageName: String): Promise<any>;
+  grok_Package_Get_Settings_Sync(packageName: String): any;
   grok_Package_Set_Settings(packageName: String, settings: any, group: any): Promise<any>;
   grok_Package_Get_Version(p: any): any;
   grok_Package_Set_Version(p: any, version: String): any;
   grok_Package_Get_WebRoot(p: any): any;
   grok_Package_Get_Properties(packageName: String): Promise<any>;
+  grok_Package_Get_Settings(packageName: String): Promise<any>;
   grok_Rect_Pack(r: any, bytes: any): any;
   grok_Rect_Unpack(bytes: any): any;
   grok_FileInfo_FromBytes(path: String, data: any): any;
@@ -1488,6 +1492,7 @@ export interface IDartApi {
   grok_Test_GetTestDataGeneratorByType(type: String): any;
   grok_Test_GetInputTestDataGeneratorByType(inputType: String): any;
   grok_Shell_GetClientBuildInfo(): any;
+  grok_Shell_OpenFileDialog(): any;
   grok_BrowseView_Get_LocalTree(view: any): any;
   grok_BrowseView_Get_MainTree(view: any): any;
   grok_BrowseView_Get_Preview(view: any): any;
@@ -1495,6 +1500,7 @@ export interface IDartApi {
   grok_BrowseView_Get_DockManager(view: any): any;
   grok_BrowseView_Get_ShowTree(view: any): any;
   grok_BrowseView_Set_ShowTree(view: any, x: Bool): any;
+  grok_BrowseView_SetHomeView(view: any): Promise<any>;
   grok_InfoPanels_GetAccordion(x: any): any;
   grok_Reports_Get(num: Num): Promise<any>;
   grok_Reports_Find(id: String): Promise<any>;

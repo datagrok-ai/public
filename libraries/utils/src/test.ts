@@ -33,6 +33,7 @@ export namespace assure {
 
 export interface TestOptions {
   timeout?: number;
+  benchmarkWarnTimeout?: number;
   benchmarkTimeout?: number;
   unhandledExceptionTimeout?: number;
   skipReason?: string;
@@ -533,7 +534,8 @@ export async function runTests(options?: TestExecutionOptions) {
         date: new Date().toISOString(),
         category: 'Unhandled exceptions',
         name: 'Exception',
-        result: error ?? '', success: !error, ms: 0, skipped: false
+        result: error ?? '', success: !error, ms: 0, skipped: false, 
+        'flaking': DG.Test.isReproducing && !error
       };
       results.push(params);
       (<any>params).package = package_.name;
@@ -605,6 +607,8 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
     let params = {
       'success': r.success, 'result': r.result, 'ms': r.ms,
       'skipped': r.skipped, 'package': packageName, 'category': t.category, 'name': t.name, 'logs': r.logs, 'owner': r.owner,
+      'flaking': DG.Test.isReproducing && r.success,
+      'timeoutWarning' : DG.Test.isInBenchmark  && (t.options?.benchmarkWarnTimeout && r.ms > t.options?.benchmarkWarnTimeout)
     };
     if (r.result.constructor == Object) {
       const res = Object.keys(r.result).reduce((acc, k) => ({ ...acc, ['result.' + k]: r.result[k] }), {});

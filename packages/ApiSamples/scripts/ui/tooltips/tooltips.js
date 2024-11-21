@@ -6,6 +6,11 @@ v.root.appendChild(ui.divV([
   ui.tooltip.bind(ui.span(['ddd']), ui.button('Click me', () => grok.shell.info('Clicked'))),
   ui.tooltip.bind(ui.span(['Element']), ui.span([ui.iconFA('search'), 'DOM Element'])),
   ui.tooltip.bind(ui.span(['Markup']), () => ui.markdown('Learn more [here](https://wikipedia.org)')),
+  '---',
+  ui.tooltip.bind(ui.span(['Left']), 'Foo', 'left'),
+  ui.tooltip.bind(ui.span(['Right']), 'Foo', 'left'),
+  ui.tooltip.bind(ui.span(['Top']), 'Foo', 'left'),
+  ui.tooltip.bind(ui.span(['Bottom']), 'Foo', 'left'),
 ]));
 
 

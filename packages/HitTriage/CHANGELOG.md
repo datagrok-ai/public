@@ -1,5 +1,13 @@
 # HitTriage changelog
 
+## 1.3.8 (2024-11-20)
+
+* Add Campaign name setting and changing.
+
+## 1.3.7 (2024-11-17)
+
+* Add Package level management of default sharing permissions.
+
 ## 1.3.6 (2024-11-08)
 
 * Correct grouping of campaigns table, Added author/last modified user info.
