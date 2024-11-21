@@ -1110,16 +1110,22 @@ export class Package extends Entity {
   }
 
   /**
-   * Deprecated. Use getSettings instead.
-   *  Returns properties for a package.
-  */
+   * @deprecated The {@link getProperties} should not be used. Use {@link settings} instead
+   */
   getProperties(): Promise<any> {
     return this.getSettings();
   }
 
-  /** Returns settings for a package. */
+  /**
+   * @deprecated The {@link getSettings} should not be used. Use {@link settings} instead
+   */
   getSettings(): Promise<Map<string, any>> {
     return api.grok_Package_Get_Settings(this.name);
+  }
+
+  /** Returns settings for a package. */
+  get settings(): {[index: string]: any} {
+    return api.grok_Package_Get_Settings_Sync(this.name);
   }
 
   /** Updates settings for a package. */
