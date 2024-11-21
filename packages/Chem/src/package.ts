@@ -476,7 +476,7 @@ export async function chemDescriptorsTree(): Promise<object> {
 }
 
 //top-menu: Chem | Calculate | Map Identifiers...
-//name: getMapIdentifiers
+//name: Get Map Identifiers
 export async function getMapIdentifiers() {
   await openMapIdentifiersDialog();
 }
@@ -1278,7 +1278,7 @@ export function convertMolNotation(molecule: string, sourceNotation: DG.chem.Not
 }
 
 //top-menu: Chem | Transform | Convert Notation...
-//name: convertNotation
+//name: Convert Notation
 //tags: Transform
 //input: dataframe data
 //input: column molecules {semType: Molecule}
@@ -1661,7 +1661,7 @@ export async function getMolProperty(molecules: DG.Column, property: string): Pr
 
 
 //top-menu: Chem | Calculate | Toxicity Risks...
-//name: Toxicity risks
+//name: Toxicity Risks
 //tags: HitTriageFunction,Transform
 //input: dataframe table [Input data table]
 //input: column molecules {semType: Molecule}
@@ -1835,7 +1835,7 @@ export async function demoScaffold(): Promise<void> {
 
 
 //top-menu: Chem | Transform | Names To Smiles...
-//name: namesToSmiles
+//name: Names To Smiles
 //tags: Transform
 //input: dataframe data
 //input: column names
