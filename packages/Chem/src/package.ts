@@ -476,7 +476,7 @@ export async function chemDescriptorsTree(): Promise<object> {
 }
 
 //top-menu: Chem | Calculate | Map Identifiers...
-//name: Get Map Identifiers
+//name: Map Identifiers
 export async function getMapIdentifiers() {
   await openMapIdentifiersDialog();
 }
