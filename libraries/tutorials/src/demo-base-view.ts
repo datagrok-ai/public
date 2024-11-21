@@ -192,7 +192,7 @@ export abstract class BaseViewApp {
     const fileInputEditor = UiUtils.fileInput('', null, async (file: File) => {
       await this.processFile(file);
     }, null);
-    fileInputEditor.stringValue = 'Drag and drop files here or click to select a file';
+    fileInputEditor.stringValue = 'Drag and drop a CSV file here, or click to select a file.';
     return fileInputEditor;
   }
   
@@ -267,6 +267,13 @@ export abstract class BaseViewApp {
   
   async processFile(file: File) {
     if (!file) return;
+
+    const extension = file.name.split('.').pop()!;
+    if (!['csv'].includes(extension)) {
+      grok.shell.info(`The file extension ${extension} is not supported!`);
+      return;
+    }
+
     const csvData = await file.text();
     const table = DG.DataFrame.fromCsv(csvData);
     await grok.data.detectSemanticTypes(table);
