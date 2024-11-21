@@ -255,7 +255,8 @@ export class HitDesignInfoView
     };
 
     const table = ui.table(Object.values(grouppedCampaigns).flat(), (info) =>
-      ([ui.link(info.name, () => this.setCampaign(info.name), 'Continue Campaign', ''),
+      ([ui.link(info.friendlyName ?? info.name, () => this.setCampaign(info.name), 'Continue Campaign', ''),
+        info.name,
         info.createDate,
         info.authorUserFriendlyName ?? '',
         info.lastModifiedUserName ?? '',
@@ -263,7 +264,7 @@ export class HitDesignInfoView
         info.status,
         ...(deleteAndShareCampaignIcons(info)),
       ]),
-    ['Name', 'Created', 'Author', 'Last Modified by', 'Molecules', 'Status', '', '']);
+    ['Name', 'Code', 'Created', 'Author', 'Last Modified by', 'Molecules', 'Status', '', '']);
     table.style.color = 'var(--grey-5)';
     table.style.marginLeft = '24px';
     processGroupingTable(table, grouppedCampaigns);
@@ -280,7 +281,8 @@ export class HitDesignInfoView
       this.app.dataFrame = camp.df;
       await this.app.setTemplate(template);
       this.app.campaignProps = camp.campaignProps;
-      await this.app.saveCampaign(false, true);
+      const campaignName = !!camp.name?.trim() ? camp.name?.trim() : undefined;
+      await this.app.saveCampaign(false, true, {friendlyName: campaignName});
       if (template.layoutViewState && this.app.campaign)
         this.app.campaign.layout = template.layoutViewState;
     });
