@@ -39,8 +39,8 @@ export function tutorialWidget(): DG.Widget {
 }
 
 //tags: init
-export async function tutorialsInit() {
-  const properties = await _package.getProperties();
+export function tutorialsInit() {
+  const properties = _package.settings;
   setProperties(properties as unknown as { [propertyName: string]: boolean });
 
   const tutorialFuncs = DG.Func.find({tags: ['tutorial']});
