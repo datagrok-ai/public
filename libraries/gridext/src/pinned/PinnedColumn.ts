@@ -111,6 +111,7 @@ export class PinnedColumn {
   private m_handlerSel : rxjs.Subscription | null;
   private m_handlerData : rxjs.Subscription | null;
   private m_handlerDartProperty : rxjs.Subscription | null;
+  private onAfterDrawContetSub: rxjs.Subscription | null;
   //private m_handlerFilter : any;
   private m_handlerRowsResized : rxjs.Subscription | null;
   private m_handlerRowsSorted : rxjs.Subscription | null;
@@ -380,6 +381,11 @@ export class PinnedColumn {
         headerThis.paint(g, grid);
     });
 
+    this.onAfterDrawContetSub = grid.onAfterDrawContent.subscribe(() => {
+      const g = eCanvasThis.getContext('2d');
+      headerThis.paint(g, grid);
+    });
+
     this.m_handlerSel = dframe.onSelectionChanged.subscribe((e : any) => {
           setTimeout(() => {
             const g = eCanvasThis.getContext('2d');
@@ -528,6 +534,9 @@ export class PinnedColumn {
 
     this.m_handlerDartProperty?.unsubscribe();
     this.m_handlerDartProperty = null;
+
+    this.onAfterDrawContetSub?.unsubscribe();
+    this.onAfterDrawContetSub = null;
 
     this.m_handlerPinnedRowsChanged?.unsubscribe();
     this.m_handlerPinnedRowsChanged = null;
