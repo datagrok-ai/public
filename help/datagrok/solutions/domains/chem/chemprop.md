@@ -51,6 +51,8 @@ To train a model with Chemprop:
 5. **Train model**
    - Click **Train** to start the training process and generate the model.
 
+![Chemprop train](./chemprop-train.gif)
+
 ## Predict
 
 Once training is complete, follow these steps to apply a trained model for predictions:
@@ -62,3 +64,5 @@ Once training is complete, follow these steps to apply a trained model for predi
    - Select the trained model you wish to use from the available options.
 3. **Generate predictions**  
    - Click **Apply Model** to make predictions on the selected dataset.
+
+![Chemprop predict](./chemprop-predict.gif)
