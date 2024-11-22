@@ -42,7 +42,7 @@ RUN micromamba install -n base -c conda-forge awscli -y && \
     micromamba clean -afy
 
 RUN set -ex ; \
-    micromamba env create -f environment.yml ; \
+    micromamba env create -f environment.yml -y ; \
     micromamba clean -afy
 
 COPY . /app
