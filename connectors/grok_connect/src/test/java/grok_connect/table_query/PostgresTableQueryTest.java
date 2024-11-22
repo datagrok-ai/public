@@ -72,21 +72,21 @@ public class PostgresTableQueryTest extends TableQueryTest {
 
     @Override
     public String[] getAggregationAndGroupByAndHavingLimitWithoutDot() {
-        return new String[] {"SELECT", "\"id\",", "\"friendly_name\",", "\"name\",", "\"source\",",
+        return new String[] {"--input: string source", "SELECT", "\"id\",", "\"friendly_name\",", "\"name\",", "\"source\",",
                 "\"status\",", "\"description\",", "\"error_message\",", "\"error_stack_trace\",",
                 "\"event_type_id\",", "count(\"session_id\") as \"count(session_id)\"", "FROM", "\"public\".\"events\"", "GROUP BY", "\"id\", \"friendly_name\", \"name\", \"source\", " +
                 "\"status\", \"description\", \"error_message\", \"error_stack_trace\", \"event_type_id\"",
-                "HAVING", "\t((LOWER(\"source\") IN ('func','query','script')))", "limit 50"};
+                "HAVING", "\t(@source(source))", "limit 50"};
     }
 
     @Override
     public String[] getAggregationAndGroupByAndHavingLimitWithDot() {
-        return new String[] {"SELECT", "\"events\".\"id\",", "\"events\".\"friendly_name\",", "\"events\".\"name\",", "\"events\".\"source\",",
+        return new String[] {"--input: string events_source", "SELECT", "\"events\".\"id\",", "\"events\".\"friendly_name\",", "\"events\".\"name\",", "\"events\".\"source\",",
                 "\"events\".\"status\",", "\"events\".\"description\",", "\"events\".\"error_message\",",
                 "\"events\".\"error_stack_trace\",", "\"events\".\"event_type_id\",", "count(\"events\".\"session_id\") as \"count(events.session_id)\"",
                 "FROM", "\"public\".\"events\"", "GROUP BY", "\"events\".\"id\", \"events\".\"friendly_name\", \"events\".\"name\", \"events\".\"source\", " +
                 "\"events\".\"status\", \"events\".\"description\", \"events\".\"error_message\", \"events\".\"error_stack_trace\", \"events\".\"event_type_id\"",
-                "HAVING", "\t((LOWER(\"events\".\"source\") IN ('func','query','script')))", "limit 50"};
+                "HAVING", "\t(@events_source(events.source))", "limit 50"};
     }
 
     @Override

@@ -52,6 +52,7 @@ abstract class TableQueryTest {
         testTableQuery.schema = TEST_SCHEME;
         testTableQuery.connection = new DataConnection();
         testTableQuery.connection.dataSource = provider.descriptor.type;
+        testTableQuery.params = new ArrayList<>();
     }
 
     @Test
