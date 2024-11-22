@@ -24,7 +24,7 @@ import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools/solver-defs';
 import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN, getCategoryWidget,
   getReducedTable, closeWindows, getRecentModelsTable, getMyModelFiles, getEquationsFromFile} from './utils';
 
-import {ModelError, showModelErrorHint, getIsNotDefined} from './error-utils';
+import {ModelError, showModelErrorHint, getIsNotDefined, getUnexpected} from './error-utils';
 
 import '../css/app-styles.css';
 
@@ -949,6 +949,8 @@ export class DiffStudio {
         if (error instanceof Error) {
           if (error.message.includes(MISC.IS_NOT_DEF))
             throw getIsNotDefined(error.message);
+          else if (error.message.includes(MISC.UNEXPECTED))
+            throw getUnexpected(error.message);
           else
             grok.shell.error(error.message);
         } else
@@ -1346,9 +1348,21 @@ export class DiffStudio {
       const params = getScriptParams(ivp);
       const call = script.prepare(params);
       await call.call();
-    } catch (err) {
-      if (!(err instanceof CallbackAction))
-        this.processError(err);
+    } catch (error) {
+      if (!(error instanceof CallbackAction)) {
+        this.clearSolution();
+        this.isSolvingSuccess = false;
+
+        if (error instanceof Error) {
+          if (error.message.includes(MISC.IS_NOT_DEF))
+            throw getIsNotDefined(error.message);
+          else if (error.message.includes(MISC.UNEXPECTED))
+            throw getUnexpected(error.message);
+          else
+            grok.shell.error(error.message);
+        } else
+          grok.shell.error(ERROR_MSG.SCRIPTING_ISSUE);
+      }
     }
   }
 
@@ -1935,10 +1949,10 @@ export class DiffStudio {
     if (!this.isEditState) {
       setTimeout(() => {
         this.appStateInputWgt.click();
-        showModelErrorHint(err, this.tabControl.header);
+        showModelErrorHint(err, this.tabControl);
       }, UI_TIME.WGT_CLICK);
     } else
-      showModelErrorHint(err, this.tabControl.header);
+      showModelErrorHint(err, this.tabControl);
   }
 
   /** Process error */

@@ -93,3 +93,9 @@
     margin-left: auto;
     margin-right: 0px;
 }
+
+.diff-studio-highlight-text {
+    color: red;
+    font-weight: bold;
+}
+

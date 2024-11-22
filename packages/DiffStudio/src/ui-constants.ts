@@ -183,6 +183,7 @@ export enum MISC {
   CAPTION = 'caption',
   TOOLTIP = 'tooltip',
   IS_NOT_DEF = 'is not defined',
+  UNEXPECTED = 'Unexpected identifier',
 };
 
 /** Warning dialog lines */
