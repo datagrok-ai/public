@@ -143,7 +143,7 @@ enum ERROR_MSG {
   COLON = `Incorrect position of "${CONTROL_SEP}".`,
   CASE_INSENS = 'Non-unique name (case-insensitive): use different caption for ',
   MISSING_INIT = `Correct the ${CONTROL_EXPR.INITS} block.`,
-  UNDEF_NAME = `Model name missing. Specify the model name in the ${CONTROL_EXPR.NAME} block`,
+  UNDEF_NAME = `Model name missing. Specify the model name in the **${CONTROL_EXPR.NAME}** block.`,
   UNDEF_DEQS = `Differential equation(s) are required for this model. Add equation(s) under the ${CONTROL_EXPR.DIF_EQ} block.`,
   UNDEF_INITS = `Initial conditions are required for this model. Add initial conditions under the ${CONTROL_EXPR.INITS} block.`,
   UNDEF_ARG = `Argument specification is required for this model. Specify an argument, its range, and a grid step in the ${CONTROL_EXPR.ARG} block.`,
@@ -342,7 +342,7 @@ function getInput(line: string) : Input {
 
     // Check right-hand side
     if (isNaN(val))
-      throw new ModelError(`'${str}' ${ERROR_MSG.NAN}: ${line}`, ERROR_LINK.BASIC_MODEL);
+      throw new ModelError(`'${str}' ${ERROR_MSG.NAN}\n ${line}.`, ERROR_LINK.BASIC_MODEL);
 
     return {
       value: val,

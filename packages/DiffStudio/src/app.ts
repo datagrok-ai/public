@@ -24,7 +24,7 @@ import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools/solver-defs';
 import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN, getCategoryWidget,
   getReducedTable, closeWindows, getRecentModelsTable, getMyModelFiles, getEquationsFromFile} from './utils';
 
-import {ModelError} from './error-utils';
+import {ModelError, showModelErrorHint} from './error-utils';
 
 import '../css/app-styles.css';
 
@@ -481,6 +481,7 @@ export class DiffStudio {
     this.solverView.ribbonMenu = DG.Menu.create();
   }; // constructor
 
+  /** Update ribbon panel widgets */
   private updateRibbonWgts() {
     this.sensAnWgt.hidden = this.isEditState;
     this.fittingWgt.hidden = this.isEditState;
@@ -489,6 +490,7 @@ export class DiffStudio {
     this.helpIcon.hidden = !this.isEditState;
   }
 
+  /** Return the download model widget */
   private getDownLoadIcon(): HTMLElement {
     const icon = ui.iconFA('arrow-to-bottom', async () => await this.saveToLocalFile(), HINT.SAVE_LOC);
     icon.classList.add('diff-studio-ribbon-download');
@@ -496,6 +498,7 @@ export class DiffStudio {
     return icon;
   }
 
+  /** Return the run fitting widget */
   private getFitWgt(): HTMLElement {
     const span = ui.span(['Fit']);
     span.classList.add('diff-studio-ribbon-fit');
@@ -506,6 +509,7 @@ export class DiffStudio {
     return wgt;
   }
 
+  /** Return the run sensitivity analysis widget */
   private getSensAnWgt(): HTMLElement {
     const span = ui.span(['Sensitivity']);
     span.classList.add('diff-studio-ribbon-sa');
@@ -515,7 +519,7 @@ export class DiffStudio {
 
     return wgt;
   }
-
+  /** Return the app state control widget */
   private getAppStateInput(): HTMLElement {
     const input = ui.input.toggle('', {value: this.isEditState});
 
@@ -526,7 +530,7 @@ export class DiffStudio {
 
     ui.tooltip.bind(wgt, this.isEditState ? 'Finish editing' : 'Edit equations');
 
-    wgt.addEventListener('click', (e) => {
+    wgt.onclick = (e) => {
       e.stopImmediatePropagation();
       e.preventDefault();
 
@@ -535,12 +539,13 @@ export class DiffStudio {
       ui.tooltip.bind(wgt, this.isEditState ? 'Finish editing' : 'Edit equations');
       this.tabControl.currentPane = this.isEditState ? this.editPane : this.solvePane;
       this.updateRibbonWgts();
-      this.updateRefreshWidget();
-    });
+      this.updateRefreshWidget(this.isModelChanged);
+    };
 
     return wgt;
   }
 
+  /** Return the open model in a new view widget */
   private getAddNewWgt(): HTMLElement {
     const span = ui.span(['New']);
     span.classList.add('diff-studio-ribbon-text');
@@ -554,6 +559,7 @@ export class DiffStudio {
     return wgt;
   }
 
+  /** Return the open help widget */
   private getHelpIcon(): HTMLElement {
     const icon = ui.icons.help(() => {
       grok.shell.windows.showHelp = true;
@@ -564,6 +570,7 @@ export class DiffStudio {
     return icon;
   }
 
+  /** Return the export to JavaScript widget */
   private getExportToJsWgt(): HTMLElement {
     const wgt = ui.span(['</>']);
     wgt.classList.add('d4-ribbon-name');
@@ -576,6 +583,7 @@ export class DiffStudio {
     return wgt;
   }
 
+  /** Return the refresh solution widget */
   private getRefreshWgt(): HTMLElement {
     const span = ui.span(['Refresh']);
     span.classList.add('diff-studio-ribbon-text');
@@ -588,7 +596,7 @@ export class DiffStudio {
     wgt.onclick = async () => {
       if (this.isModelChanged) {
         await this.runSolving(false);
-        this.updateRefreshWidget();
+        this.updateRefreshWidget(this.isModelChanged);
       }
     };
 
@@ -597,15 +605,23 @@ export class DiffStudio {
     return wgt;
   }
 
+  /** Return widget color */
   private getColor(enabled: boolean) {
     return enabled ? '#40607F' : 'var(--grey-3)';
   }
 
-  private updateRefreshWidget() {
+  /** Update state of the refresh solution widget */
+  private updateRefreshWidget(enabled: boolean) {
     const ch = this.refreshWgt.children;
-    const color = this.getColor(this.isModelChanged);
+    const color = this.getColor(enabled);
     (ch.item(0) as HTMLElement).style.color = color;
     (ch.item(1) as HTMLElement).style.color = color;
+  }
+
+  /** Update state of the export to JavaScript widget */
+  private updateExportToJsWidget(enabled: boolean) {
+    const color = this.getColor(enabled);
+    this.exportToJsWgt.style.color = color;
   }
 
   /** Create model editor */
@@ -629,7 +645,8 @@ export class DiffStudio {
         this.toChangeSolutionViewerProps = true;
         //this.setCallWidgetsVisibility(true);
         this.toSwitchToModelTab = true;
-        this.updateRefreshWidget();
+        this.updateRefreshWidget(true);
+        this.updateExportToJsWidget(true);
       } else {
         e.stopImmediatePropagation();
         e.preventDefault();
@@ -819,9 +836,7 @@ export class DiffStudio {
       const sView = DG.ScriptView.create(script);
       grok.shell.addView(sView);
     } catch (err) {
-      this.clearSolution();
-      grok.shell.error(`${ERROR_MSG.EXPORT_TO_SCRIPT_FAILS}:
-      ${err instanceof Error ? err.message : ERROR_MSG.SCRIPTING_ISSUE}`);
+      this.processError(err);
     }
   }; // exportToJS
 
@@ -994,10 +1009,8 @@ export class DiffStudio {
     } catch (error) {
       if (error instanceof CallbackAction)
         grok.shell.warning(error.message);
-      else {
-        this.clearSolution();
-        grok.shell.error(error instanceof Error ? error.message : ERROR_MSG.SCRIPTING_ISSUE);
-      }
+      else
+        this.processError(error);
     }
   }; // runSolving
 
@@ -1296,9 +1309,7 @@ export class DiffStudio {
         inputsLookup: ivp.inputsLookup !== null ? ivp.inputsLookup : undefined,
       });
     } catch (err) {
-      this.clearSolution();
-      grok.shell.error(`${ERROR_MSG.SENS_AN_FAILS}:
-      ${(err instanceof Error) ? err.message : ERROR_MSG.SCRIPTING_ISSUE}`);
+      this.processError(err);
     }
   }
 
@@ -1313,9 +1324,7 @@ export class DiffStudio {
         inputsLookup: ivp.inputsLookup !== null ? ivp.inputsLookup : undefined,
       });
     } catch (err) {
-      this.clearSolution();
-      grok.shell.error(`${ERROR_MSG.SENS_AN_FAILS}:
-        ${(err instanceof Error) ? err.message : ERROR_MSG.SCRIPTING_ISSUE}`);
+      this.processError(err);
     }
   }
 
@@ -1335,7 +1344,7 @@ export class DiffStudio {
       await call.call();
     } catch (err) {
       if (!(err instanceof CallbackAction))
-        throw new Error((err instanceof Error) ? err.message : ERROR_MSG.SCRIPTING_ISSUE);
+        this.processError(err);
     }
   }
 
@@ -1915,5 +1924,29 @@ export class DiffStudio {
         await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
     } else
       await this.setState(STATE_BY_TITLE.get(lastModel.info as TITLE) ?? EDITOR_STATE.BASIC_TEMPLATE);
+  }
+
+  /** Show model error */
+  private showModelError(err: ModelError) {
+    if (!this.isEditState) {
+      setTimeout(() => {
+        this.appStateInputWgt.click();
+        showModelErrorHint(err, this.tabControl.header);
+      }, UI_TIME.WGT_CLICK);
+    } else
+      showModelErrorHint(err, this.tabControl.header);
+  }
+
+  /** Process error */
+  private processError(error: any) {
+    this.clearSolution();
+    if (error instanceof ModelError)
+      this.showModelError(error);
+    else
+      grok.shell.error(error instanceof Error ? error.message : ERROR_MSG.SCRIPTING_ISSUE);
+
+    this.isModelChanged = false;
+    this.updateRefreshWidget(false);
+    this.updateExportToJsWidget(false);
   }
 };
