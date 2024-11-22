@@ -15,7 +15,11 @@ module.exports = {
   },
   module: {
     rules: [
-      {test: /\.tsx?$/, loader: 'ts-loader'},
+      {test: /\.tsx?$/, loader: 'ts-loader', options: {allowTsInNodeModules: true}},
+      {
+        test: /\.css$/,
+        use: ['style-loader', 'css-loader']
+      }
     ],
   },
   devtool: 'source-map',

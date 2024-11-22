@@ -1,0 +1,17 @@
+smiles,pose,binding energy
+CC(Oc1ccccc1C(O)=O)=O,"COMPND    
+HETATM    1  C   UNK     0      34.778   4.049   8.548 -0.48 -0.02           C  
+HETATM    2  C   UNK     0      34.198   3.722   9.892 -0.41 -0.02           C  
+HETATM    3  C   UNK     0      32.710   3.689  10.079 -0.50  0.00           C  
+HETATM    4  C   UNK     0      31.802   3.984   8.923 -0.45  0.00           C  
+HETATM    5  C   UNK     0      32.382   4.311   7.578 -0.29 -0.01           C  
+HETATM    6  C   UNK     0      33.870   4.344   7.391 -0.43 -0.01           C  
+HETATM    8  C   UNK     0      36.964   5.389   8.127 -0.55 -0.09           C  
+HETATM   10  C   UNK     0      37.436   6.206   9.292 -0.68 -0.02           C  
+HETATM   11  C   UNK     0      34.450   4.671   6.047 -0.41  0.05           C  
+HETATM    7  O   UNK     0      36.266   4.082   8.361 -0.40  0.09           O  
+HETATM    9  O   UNK     0      37.189   5.878   6.727 -0.63  0.05           O  
+HETATM   12  O   UNK     0      34.538   6.099   5.596 -0.12 -0.43           O  
+HETATM   13  O   UNK     0      34.941   3.571   5.154 -0.06 -0.17           O  
+TER
+END",-5.09
