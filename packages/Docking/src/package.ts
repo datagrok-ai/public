@@ -14,6 +14,7 @@ import {_runAutodock, AutoDockService, _runAutodock2} from './utils/auto-dock-se
 import {_package, TARGET_PATH, CACHED_DOCKING, BINDING_ENERGY_COL, POSE_COL, 
   PROPERTY_DESCRIPTIONS, BINDING_ENERGY_COL_UNUSED, POSE_COL_UNUSED, setPose, setAffinity, ERROR_COL_NAME, ERROR_MESSAGE} from './utils/constants';
 import { _demoDocking } from './demo/demo-docking';
+import { DockingViewApp } from './demo/docking-app';
 
 //name: info
 export function info() {
@@ -161,6 +162,14 @@ export async function prepareAutoDockData(
   };
 }
 
+function getTableView(tableName?: string): DG.TableView {
+  const inBrowseView = grok.shell.v.type === DG.VIEW_TYPE.BROWSE;
+  const tableView = inBrowseView
+    ? ((grok.shell.view('Browse') as DG.BrowseView)?.preview as DG.TableView)
+    : (tableName ? grok.shell.getTableView(tableName) : grok.shell.tv);
+  return tableView;
+}
+
 
 //top-menu: Chem | AutoDock...
 //name: Autodock
@@ -188,8 +197,8 @@ export async function runAutodock5(table: DG.DataFrame, ligands: DG.Column, targ
     const processedResults = processAutodockResults(autodockResults, table);
     for (let col of processedResults.columns)
       table.columns.add(col);
-
-    const grid = grok.shell.getTableView(table.name).grid;
+    
+    const {grid} = getTableView(table.name);
 
     addColorCoding(grid.columns.byName(BINDING_ENERGY_COL_UNUSED)!);
     grid.sort([BINDING_ENERGY_COL_UNUSED]);
@@ -265,7 +274,8 @@ export async function getAutodockSingle(
   if (value.toLowerCase().includes(ERROR_COL_NAME))
     return new DG.Widget(ui.divText(value));
 
-  const currentTable = table ?? grok.shell.tv.dataFrame;
+  const tableView = getTableView();
+  const currentTable = table ?? tableView.dataFrame;
   //@ts-ignore
   const index = CACHED_DOCKING.V.findIndex((cachedData: DG.DataFrame) => {
     if (cachedData) {
@@ -296,7 +306,6 @@ export async function getAutodockSingle(
     zoom: true,
   });
   targetViewer.root.classList.add('bsv-container-info-panel');
-
   widget.root.append(targetViewer.root);
   if (!showProperties) return widget;
 
@@ -356,30 +365,10 @@ export async function autodockPanel(smiles: DG.SemanticValue): Promise<DG.Widget
     const loader = ui.loader();
     resultsContainer.appendChild(loader);
 
-    const ligandColumnName = 'ligand';
-    const column = DG.Column.fromStrings(ligandColumnName, [smiles.value]);
-    const table = DG.DataFrame.fromColumns([column]);
-    column.semType = DG.SEMTYPE.MOLECULE;
-    await grok.data.detectSemanticTypes(table);
-
-    const data = await prepareAutoDockData(target.value!, table, ligandColumnName, poses.value!);
-    if (!data)
-      return;
-
-    const app = new AutoDockApp();
-    const autodockResults = await app.init(data);
-
-    let widget;
-    if (autodockResults) {
-      formatColumns(autodockResults);
-      const processedResults = processAutodockResults(autodockResults, table);
-      for (let col of processedResults.columns)
-        table.columns.add(col);
-      
-      const pose = table.cell(0, POSE_COL);
-      widget = await getAutodockSingle(DG.SemanticValue.fromTableCell(pose!), false, table);
-      resultsContainer.removeChild(loader);
-      resultsContainer.appendChild(widget!.root);
+    const widget = await runDocking(smiles, target.value!, poses.value!);
+    resultsContainer.removeChild(loader);
+    if (widget) {
+      resultsContainer.appendChild(widget.root);
     }
   });
 
@@ -387,4 +376,48 @@ export async function autodockPanel(smiles: DG.SemanticValue): Promise<DG.Widget
   const panels = ui.divV([form, button, resultsContainer]);
 
   return DG.Widget.fromRoot(panels);
+}
+
+export async function runDocking(
+  smiles: DG.SemanticValue,
+  target: string,
+  poses: number
+): Promise<DG.Widget | null> {
+  const ligandColumnName = 'ligand';
+  const column = DG.Column.fromStrings(ligandColumnName, [smiles.value]);
+  const table = DG.DataFrame.fromColumns([column]);
+  column.semType = DG.SEMTYPE.MOLECULE;
+  await grok.data.detectSemanticTypes(table);
+
+  const data = await prepareAutoDockData(target, table, ligandColumnName, poses);
+  if (!data)
+    return null;
+
+  const app = new AutoDockApp();
+  const autodockResults = await app.init(data);
+
+  if (autodockResults) {
+    formatColumns(autodockResults);
+    const processedResults = processAutodockResults(autodockResults, table);
+
+    for (let col of processedResults.columns) {
+      table.columns.add(col);
+    }
+
+    const pose = table.cell(0, POSE_COL);
+    return await getAutodockSingle(DG.SemanticValue.fromTableCell(pose!), false, table);
+  }
+
+  return null;
+}
+
+//name: Docking
+//tags: app
+//input: string path {meta.url: true; optional: true}
+//output: view v
+export async function dockingApp(path?: string): Promise<DG.ViewBase | null> {
+  const parent = grok.functions.getCurrentCall();
+  const app = new DockingViewApp(parent);
+  await app.init();
+  return app.tableView!;
 }
