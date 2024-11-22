@@ -128,6 +128,7 @@ export enum LINK {
   POLLUTION = `${DIF_STUDIO_REL}#pollution`,
   COMPUTE = 'https://datagrok.ai/help/compute',
   LOAD_SAVE = `${DIF_STUDIO_REL}#loading-and-saving-data`,
+  BASIC_MODEL = '/help/compute/diff-studio#basic-model',
 };
 
 /** Error messages */
@@ -181,6 +182,7 @@ export enum MISC {
   CATEGORY = 'category',
   CAPTION = 'caption',
   TOOLTIP = 'tooltip',
+  IS_NOT_DEF = 'is not defined',
 };
 
 /** Warning dialog lines */

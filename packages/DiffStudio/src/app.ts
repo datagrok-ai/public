@@ -24,7 +24,7 @@ import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools/solver-defs';
 import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN, getCategoryWidget,
   getReducedTable, closeWindows, getRecentModelsTable, getMyModelFiles, getEquationsFromFile} from './utils';
 
-import {ModelError, showModelErrorHint} from './error-utils';
+import {ModelError, showModelErrorHint, getIsNotDefined} from './error-utils';
 
 import '../css/app-styles.css';
 
@@ -246,7 +246,7 @@ export class DiffStudio {
           this.solverMainPath = path;
         } else
           this.solverMainPath = `${PATH.APPS_DS}${PATH.CUSTOM}`;
-        await this.runSolving(true);
+        await this.runSolving();
       } else if (state) {
         this.inBrowseRun = true;
         await this.setState(state);
@@ -309,7 +309,7 @@ export class DiffStudio {
     grok.shell.windows.showContextPanel = false;
     grok.shell.windows.showProperties = false;
     grok.shell.windows.help.visible = true;
-    await this.runSolving(true);
+    await this.runSolving();
   } // runSolverDemoApp
 
   /** Return file preview view */
@@ -370,7 +370,7 @@ export class DiffStudio {
       if (node.container.dart.elementTitle)
         node.container.dart.elementTitle.hidden = true;
 
-      this.runSolving(true);
+      this.runSolving();
     }, UI_TIME.PREVIEW_RUN_SOLVING);
 
     return this.solverView;
@@ -453,7 +453,7 @@ export class DiffStudio {
 
     this.tabControl.onTabChanged.subscribe(async (_) => {
       if ((this.tabControl.currentPane === this.solvePane) && this.toChangeInputs)
-        await this.runSolving(true);
+        await this.runSolving();
     });
 
     const dockTabCtrl = () => {
@@ -595,7 +595,7 @@ export class DiffStudio {
     const wgt = ui.divH([icn, span]);
     wgt.onclick = async () => {
       if (this.isModelChanged) {
-        await this.runSolving(false);
+        await this.runSolving();
         this.updateRefreshWidget(this.isModelChanged);
       }
     };
@@ -643,7 +643,6 @@ export class DiffStudio {
         this.isSolvingSuccess = false;
         this.toRunWhenFormCreated = true;
         this.toChangeSolutionViewerProps = true;
-        //this.setCallWidgetsVisibility(true);
         this.toSwitchToModelTab = true;
         this.updateRefreshWidget(true);
         this.updateExportToJsWidget(true);
@@ -651,7 +650,7 @@ export class DiffStudio {
         e.stopImmediatePropagation();
         e.preventDefault();
 
-        await this.runSolving(false);
+        await this.runSolving();
       }
     });
 
@@ -776,22 +775,22 @@ export class DiffStudio {
       break;
 
     case EDITOR_STATE.FROM_FILE:
-      await this.runSolving(true);
+      await this.runSolving();
       break;
 
     case EDITOR_STATE.BASIC_TEMPLATE:
-      await this.runSolving(this.isStartingRun);
+      await this.runSolving();
       break;
 
     case EDITOR_STATE.ADVANCED_TEMPLATE:
     case EDITOR_STATE.EXTENDED_TEMPLATE:
       await this.saveModelToRecent(state, false);
-      await this.runSolving(this.isStartingRun);
+      await this.runSolving();
       break;
 
     default:
       await this.saveModelToRecent(state, false);
-      await this.runSolving(true);
+      await this.runSolving();
       break;
     }
 
@@ -946,7 +945,14 @@ export class DiffStudio {
       } else {
         this.clearSolution();
         this.isSolvingSuccess = false;
-        grok.shell.error(error instanceof Error ? error.message : ERROR_MSG.SCRIPTING_ISSUE);
+
+        if (error instanceof Error) {
+          if (error.message.includes(MISC.IS_NOT_DEF))
+            throw getIsNotDefined(error.message);
+          else
+            grok.shell.error(error.message);
+        } else
+          grok.shell.error(ERROR_MSG.SCRIPTING_ISSUE);
       }
     }
   }; // solve
@@ -984,13 +990,12 @@ export class DiffStudio {
   } // getInputsForm
 
   /** Run solving the current IVP */
-  private async runSolving(toShowInputsForm: boolean): Promise<void> {
+  private async runSolving(): Promise<void> {
     this.isModelChanged = false;
 
     try {
       const ivp = getIVP(this.editorView!.state.doc.toString());
       await this.generateInputs(ivp);
-      //this.setCallWidgetsVisibility(this.isSolvingSuccess);
 
       if (this.isSolvingSuccess) {
         this.toChangeInputs = false;
@@ -1003,7 +1008,6 @@ export class DiffStudio {
         this.prevInputsNode = this.inputsPanel.appendChild(form);
 
         if (this.isEditState)
-        //if (!toShowInputsForm)
           setTimeout(() => this.tabControl.currentPane = this.editPane, 5);
       }
     } catch (error) {
@@ -1919,7 +1923,7 @@ export class DiffStudio {
 
         this.editorView!.setState(newState);
         this.solverMainPath = PATH.CUSTOM;
-        await this.runSolving(true);
+        await this.runSolving();
       } else
         await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
     } else

@@ -4,6 +4,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {LINK, MISC} from './ui-constants';
+
 import '../css/app-styles.css';
 
 export class ModelError extends Error {
@@ -33,4 +35,12 @@ export function showModelErrorHint(err: ModelError, root: HTMLElement) {
   root.hidden = false;
   const popup = ui.hints.addHint(root, msg, ui.hints.POSITION.RIGHT);
   root.hidden = true;
+}
+
+export function getIsNotDefined(msg: string): ModelError {
+  const idx = msg.indexOf(MISC.IS_NOT_DEF);
+  return new ModelError(
+    `Error in formulas: **${msg.slice(0, idx)}**${msg.slice(idx)}. Correct the model.`,
+    LINK.BASIC_MODEL,
+  );
 }
