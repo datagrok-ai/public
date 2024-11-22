@@ -22,7 +22,6 @@ import {polyToolEnumerateHelmUI} from './polytool/pt-enumerate-seq-dialog';
 import {_setPeptideColumn} from './polytool/utils';
 import {PolyToolCsvLibHandler} from './polytool/csv-to-json-monomer-lib-converter';
 import {ITranslationHelper} from './types';
-import {addContextMenuUI} from './utils/context-menu';
 import {PolyToolConvertFuncEditor} from './polytool/pt-convert-editor';
 import {CyclizedNotationProvider} from './utils/cyclized';
 import {getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
@@ -248,14 +247,6 @@ export async function createMonomerLibraryForPolyTool(file: DG.FileInfo) {
   DG.Utils.download(jsonFileName, jsonFileContent);
 }
 
-// -- Handle context menu --
-
-//name: addContextMenu
-//input: object event
-export function addContextMenu(event: DG.EventData): void {
-  addContextMenuUI(event);
-}
-
 // //name: PolyTool Converter
 // //meta.icon: img/icons/structure.png
 // //meta.browsePath: PolyTool
@@ -297,6 +288,20 @@ export async function ptEnumeratorHelmApp(): Promise<void> {
 export async function ptEnumeratorChemApp(): Promise<void> {
   polyToolEnumerateChemUI();
 }
+
+
+//name: Polytool Helm Enumerator dialog
+//input: object cell {nullable: true}
+export async function getPtHelmEnumeratorDialog(cell?: DG.Cell) {
+  return polyToolEnumerateHelmUI(cell);
+}
+
+//name: Polytool Chem Enumerator dialog
+//input: object cell {nullable: true}
+export async function getPtChemEnumeratorDialog(cell?: DG.Cell) {
+  return polyToolEnumerateChemUI(cell);
+}
+
 
 //name: applyNotationProviderForHarmonizedSequence
 //input: column col

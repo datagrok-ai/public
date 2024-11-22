@@ -1,10 +1,14 @@
 package grok_connect.connectors_info;
 
 import java.util.*;
+
+import com.google.gson.annotations.SerializedName;
 import serialization.Types;
 
 
 public class FuncParam {
+    @SerializedName("#type")
+    public String type = "FuncParam";
     public String propertyType;
     public String propertySubType;
     public String name;

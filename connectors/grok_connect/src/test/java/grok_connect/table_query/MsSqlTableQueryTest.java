@@ -71,21 +71,21 @@ public class MsSqlTableQueryTest extends TableQueryTest {
 
     @Override
     public String[] getAggregationAndGroupByAndHavingLimitWithoutDot() {
-        return new String[] {"SELECT", "top 50", "[id],", "[friendly_name],", "[name],", "[source],",
+        return new String[] {"--input: string source", "SELECT", "top 50", "[id],", "[friendly_name],", "[name],", "[source],",
                 "[status],", "[description],", "[error_message],", "[error_stack_trace],",
                 "[event_type_id],", "count([session_id]) as [count(session_id)]", "FROM", "[public].[events]", "GROUP BY", "[id], [friendly_name], [name], [source], " +
                 "[status], [description], [error_message], [error_stack_trace], [event_type_id]",
-                "HAVING", "\t((LOWER([source]) IN ('func','query','script')))"};
+                "HAVING", "\t(@source(source))"};
     }
 
     @Override
     public String[] getAggregationAndGroupByAndHavingLimitWithDot() {
-        return new String[] {"SELECT", "top 50", "[events].[id],", "[events].[friendly_name],", "[events].[name],", "[events].[source],",
+        return new String[] {"--input: string events_source", "SELECT", "top 50", "[events].[id],", "[events].[friendly_name],", "[events].[name],", "[events].[source],",
                 "[events].[status],", "[events].[description],", "[events].[error_message],",
                 "[events].[error_stack_trace],", "[events].[event_type_id],", "count([events].[session_id]) as [count(events.session_id)]",
                 "FROM", "[public].[events]", "GROUP BY", "[events].[id], [events].[friendly_name], [events].[name], [events].[source], " +
                 "[events].[status], [events].[description], [events].[error_message], [events].[error_stack_trace], [events].[event_type_id]",
-                "HAVING", "\t((LOWER([events].[source]) IN ('func','query','script')))"};
+                "HAVING", "\t(@events_source(events.source))"};
     }
 
     @Override

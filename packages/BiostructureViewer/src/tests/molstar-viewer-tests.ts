@@ -48,7 +48,7 @@ category('MolstarViewer', () => {
     df.currentRowIdx = 0;
     await delay(DebounceIntervals.ligands * 2.5); // await for debounce onRebuildViewLigands
     await Promise.all([awaitGrid(view.grid), viewer.awaitRendered()]);
-    expect(viewer.ligands.current !== null, true, 'The current ligand expected.');
+    expect(viewer.ligands.current != null, true, 'The current ligand expected.');
     expect(viewer.ligands.current!.rowIdx, 0, 'The current ligand of rowIdx = 0.');
     expect(viewer.ligands.selected.length, 0);
 
@@ -92,7 +92,7 @@ category('MolstarViewer', () => {
     df.currentRowIdx = 0;
     await delay(50); // await for debounce onRebuildViewLigands
     await Promise.all([awaitGrid(view.grid), viewer.awaitRendered()]);
-    expect(viewer.ligands.current !== null, true, 'The current ligand expected');
+    expect(viewer.ligands.current != null, true, 'The current ligand expected');
     expect(viewer.ligands.current!.rowIdx, 0, 'The current ligand of rowIdx = 0.');
     expect(viewer.ligands.selected.length, 0);
 
@@ -142,7 +142,7 @@ category('MolstarViewer', () => {
     const t2 = window.performance.now();
     _package.logger.debug(`${logPrefix}, awaitRendered for currentRow ET: ${t2 - t1}`);
     const aViewer = viewer as any;
-    expect(aViewer.dataEff !== null, true, 'dataEff is null');
+    expect(aViewer.dataEff != null, true, 'dataEff is null');
     expect(aViewer.dataEff.options.name, '1QBS');
     expect((aViewer.dataEffStructureRefs?.length ?? 0) >= 2, true, 'Structure in the viewer not found');
 
@@ -151,7 +151,7 @@ category('MolstarViewer', () => {
     await awaitGrid(tv.grid);
     await delay(DebounceIntervals.currentRow * 2.5);
     await viewer.awaitRendered(15000);
-    expect(aViewer.dataEff !== null, true, 'dataEff is null');
+    expect(aViewer.dataEff != null, true, 'dataEff is null');
     expect(aViewer.dataEff.options.name, '2BDJ');
     expect((aViewer.dataEffStructureRefs?.length ?? 0) >= 2, true, 'Structure in the viewer not found');
   }, {timeout: 40000});
@@ -177,7 +177,7 @@ category('MolstarViewer', () => {
     await delay(DebounceIntervals.currentRow * 2.5);
     await viewer.awaitRendered(15000);
     const aViewer = viewer as any;
-    expect(aViewer.dataEff !== null, true, 'dataEff is null');
+    expect(aViewer.dataEff != null, true, 'dataEff is null');
     expect(aViewer.dataEff.options.name, '1QBS');
     expect((aViewer.dataEffStructureRefs?.length ?? 0) >= 2, true, 'Structure in the viewer not found');
 
@@ -186,7 +186,7 @@ category('MolstarViewer', () => {
     await awaitGrid(tv.grid);
     await delay(DebounceIntervals.currentRow * 2.5);
     await viewer.awaitRendered(15000);
-    expect(aViewer.dataEff !== null, true, 'dataEff is null');
+    expect(aViewer.dataEff != null, true, 'dataEff is null');
     expect(aViewer.dataEff.options.name, '2BDJ');
     expect((aViewer.dataEffStructureRefs?.length ?? 0) >= 2, true, 'Structure in the viewer not found');
   }, {timeout: 40000});
@@ -241,7 +241,7 @@ category('MolstarViewer', () => {
       const node = Array.from(parentElement.querySelectorAll('.d4-tree-view-group-label'))
         .find(el => el.textContent?.trim() === label)
         ?.closest('.d4-tree-view-group');
-      expect(node !== null, true, errorMsg);
+      expect(node != null, true, errorMsg);
   
       const expander = node!.querySelector('.d4-tree-view-tri') as HTMLElement;
       if (expander && !expander.classList.contains('d4-tree-view-tri-expanded'))
@@ -262,7 +262,7 @@ category('MolstarViewer', () => {
     await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'Cannot open "Select a file" dialog', 2000);
   
     const selectDialog = returnDialog('Select a file')?.root;
-    expect(selectDialog !== null, true, 'Select a file dialog is missing');
+    expect(selectDialog != null, true, 'Select a file dialog is missing');
 
     const filesNode = await clickAndExpand(selectDialog!, 'Files', 'Files group not found', 5000);
     const appDataNode = await clickAndExpand(filesNode, 'App Data', 'App Data group not found', 2500);
@@ -271,13 +271,13 @@ category('MolstarViewer', () => {
 
     const ligandNode = Array.from(dockingNode.querySelectorAll('.d4-tree-view-node'))
       .find(el => el.textContent?.trim() === 'ligand.pdbqt');
-    expect(ligandNode !== null, true, 'ligand.pdbqt file not found');
+    expect(ligandNode != null, true, 'ligand.pdbqt file not found');
     (ligandNode as HTMLElement).click();
 
     const okButton = selectDialog!.querySelector('.ui-btn-ok') as HTMLElement;
     okButton.click();
 
-    await awaitCheck(() => viewer.root.querySelector('canvas') !== null, 'Canvas not rendered', 10000);
+    await awaitCheck(() => viewer.root.querySelector('canvas') != null, 'Canvas not rendered', 10000);
   }, {timeout: 60000})
 })
 
