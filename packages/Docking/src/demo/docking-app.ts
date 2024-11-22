@@ -11,7 +11,6 @@ export class DockingViewApp extends BaseViewApp {
 
     this.setFormGenerator(this.generateCustomForm);
     this.filePath = 'System:AppData/Docking/demo_files/demo_dataset_small.csv';
-    this.browseView.path = 'browse/apps/Admetica';
     this.uploadCachedData = this.loadCachedAutodockData.bind(this);
     this.addTabControl = false;
   }
