@@ -6,10 +6,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import grok_connect.connectors_info.DataConnection;
-import grok_connect.connectors_info.DataProvider;
-import grok_connect.connectors_info.DataQueryRunResult;
-import grok_connect.connectors_info.FuncCall;
+import grok_connect.connectors_info.*;
 import grok_connect.providers.JdbcDataProvider;
 import grok_connect.table_query.TableQuery;
 import grok_connect.utils.*;
@@ -141,17 +138,17 @@ public class GrokConnect {
         });
 
         post("/query_table_sql", (request, response) -> {
-            String query = "";
+            TableQuery tableQuery = null;
             try {
                 DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
-                TableQuery tableQuery = gson.fromJson(connection.get("queryTable"), TableQuery.class);
+                tableQuery = gson.fromJson(connection.get("queryTable"), TableQuery.class);
                 DataProvider provider = providerManager.getByName(connection.dataSource);
-                query = provider.queryTableSql(connection, tableQuery);
+                tableQuery.query = provider.queryTableSql(connection, tableQuery);
             } catch (Exception ex) {
                 PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
                 buildExceptionResponse(response, printError(ex));
             }
-            return query;
+            return tableQuery != null ? gson.toJson(new TableQueryResponse(tableQuery.query, tableQuery.params.stream().filter((p) -> p.isInput).collect(Collectors.toList()))) : "";
         });
 
         post("/foreign-keys", (request, response) -> {
