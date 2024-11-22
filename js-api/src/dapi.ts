@@ -847,7 +847,7 @@ export class ProjectsDataSource extends HttpDataSource<Project> {
       .first()
       .then(p => {
         if (p)
-          return p.open();
+          return p.open(options);
         return Promise.reject(`Project ${name} not found`);
       });
   }
