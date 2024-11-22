@@ -13,6 +13,7 @@ export type TraverseHandler<R, I, A> = (acc: R, item: I, pathAddress: A, stop: (
 export interface ActionItem {
   actionName: string;
   action: string;
+  additionalParams?: Record<string, any>;
 }
 
 export interface Advice {

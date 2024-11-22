@@ -204,7 +204,7 @@ export class Driver {
 
   private runAction(msg: RunAction, state?: StateTree) {
     this.checkState(msg, state);
-    return state.runAction(msg.uuid);
+    return state.runAction(msg.uuid, msg.additionalParams);
   }
 
   private runSequence(msg: RunSequence, state?: StateTree) {

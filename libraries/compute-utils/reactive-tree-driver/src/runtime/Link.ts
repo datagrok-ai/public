@@ -7,7 +7,7 @@ import {BaseTree, NodeAddress, NodePath, TreeNode} from '../data/BaseTree';
 import {descriptionOutputs, StateTreeNode} from './StateTreeNodes';
 import {ActionSpec, MatchInfo} from './link-matching';
 import {BehaviorSubject, combineLatest, defer, EMPTY, merge, Subject, of} from 'rxjs';
-import {map, filter, takeUntil, withLatestFrom, switchMap, catchError, mapTo, finalize, debounceTime, timestamp, distinctUntilChanged} from 'rxjs/operators';
+import {map, filter, takeUntil, withLatestFrom, switchMap, catchError, mapTo, finalize, debounceTime, timestamp, distinctUntilChanged, take} from 'rxjs/operators';
 import {callHandler} from '../utils';
 import {defaultLinkHandler} from './default-handler';
 import {ControllerCancelled, FuncallActionController, LinkController, MetaController, MutationController, NameSelectorController, ValidatorController} from './LinkControllers';
@@ -20,13 +20,13 @@ import {FuncCallInstancesBridge} from './FuncCallInstancesBridge';
 const VALIDATOR_DEBOUNCE_TIME = 250;
 
 export type ScopeInfo = {
-  scope?: NodeAddress, childOffset?: number
+  scope?: NodeAddress, childOffset?: number, additionalParams?: Record<string, any>
 }
 
 export class Link {
-  private destroyed$ = new Subject<true>();
-  private isActive$ = new BehaviorSubject(false);
-  private trigger$ = new Subject<ScopeInfo>();
+  protected destroyed$ = new Subject<true>();
+  protected isActive$ = new BehaviorSubject(false);
+  protected trigger$ = new Subject<ScopeInfo>();
 
   public uuid = uuidv4();
   public readonly isValidator = this.matchInfo.spec.type === 'validator';
@@ -34,7 +34,6 @@ export class Link {
   public readonly isMutation = this.matchInfo.spec.type === 'pipeline';
   public readonly isSelector = this.matchInfo.spec.type === 'selector';
   public readonly isFuncallAction = this.matchInfo.spec.type === 'funccall';
-
 
   // probably a better api
   public lastPipelineMutations?: {
@@ -305,4 +304,23 @@ export class Action extends Link {
   ) {
     super(prefix, matchInfo, undefined, logger);
   }
+
+  exec(additionalParams: Record<string, any>, scope?: NodeAddress, childOffset?: number) {
+    this.trigger$.next({additionalParams, scope, childOffset});
+    return this.isRunning$.pipe(
+      filter((isRunning) => !isRunning),
+      take(1),
+      mapTo(undefined),
+    );
+  }
+
+  execPipelineMutations(additionalParams: Record<string, any>, scope?: NodeAddress, childOffset?: number) {
+    this.trigger$.next({additionalParams, scope, childOffset});
+    return this.isRunning$.pipe(
+      filter((isRunning) => !isRunning),
+      take(1),
+      map(() => this.lastPipelineMutations)
+    );
+  }
+
 }

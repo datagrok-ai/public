@@ -93,6 +93,7 @@ export type ActionInfo = {
   friendlyName?: string;
   description?: string;
   menuCategory?: string;
+  confirmationMessage?: string;
   icon?: string;
 };
 

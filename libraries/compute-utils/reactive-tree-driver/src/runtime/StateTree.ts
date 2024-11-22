@@ -16,6 +16,7 @@ import {LinksState, NestedMutationData} from './LinksState';
 import {ValidationResult} from '../data/common-types';
 import {DriverLogger} from '../data/Logger';
 import {ItemMetadata} from '../view/ViewCommunication';
+import {v4 as uuidv4} from 'uuid';
 
 const MAX_CONCURENT_SAVES = 5;
 
@@ -174,9 +175,9 @@ export class StateTree {
     }, false).pipe(mapTo(this));
   }
 
-  // for testing
-  public runMutateTree(data?: NestedMutationData) {
-    return this.mutateTree(() => of([data] as const));
+  // for testing only
+  public runMutateTree() {
+    return this.mutateTree(() => of([] as const));
   }
 
   public save(uuid?: string, metaData?: ItemMetadata) {
@@ -335,18 +336,15 @@ export class StateTree {
     });
   }
 
-  public runAction(uuid: string) {
+  public runAction(uuid: string, additionalParams: Record<string, any> = {}) {
     const action = this.linksState.actions.get(uuid);
     if (!action)
       throw new Error(`Action ${uuid} not found`);
     if (action.spec.type === 'pipeline') {
       return this.withTreeLock(() => {
-        action.trigger();
-        return action.isRunning$.pipe(
-          filter((isRunning) => !isRunning),
-          take(1),
+        return action.execPipelineMutations(additionalParams).pipe(
           tap(() => this.linksState.disableLinks()),
-          concatMap(() => from(action?.lastPipelineMutations ?? []).pipe(
+          concatMap((lastPipelineMutations) => from(lastPipelineMutations ?? []).pipe(
             concatMap((data) => {
               const ppath = data.path.slice(0, -1);
               const last = indexFromEnd(data.path)!;
@@ -369,18 +367,17 @@ export class StateTree {
                 concatMap(() => this.waitForLinks()),
               );
             }),
-          )),
-          toArray(),
-          tap(() => {
-            this.removeOrphanedIOMetadata();
-            this.setDepsTracker();
-          }),
-          mapTo(undefined),
+            toArray(),
+            tap(() => {
+              this.removeOrphanedIOMetadata();
+              this.setDepsTracker();
+            }),
+            mapTo(undefined),
+          ))
         );
       });
     } else {
-      action.trigger();
-      return of(undefined);
+      return action.exec(additionalParams);
     }
   }
 
@@ -737,6 +734,7 @@ export class StateTree {
   private removeOrphanedIOMetadata() {
     this.nodeTree.traverse(this.nodeTree.root, (acc, node) => {
       const item = node.getItem();
+      // TODO: clear obsolete pipeline meta
       if (!isFuncCallNode(item))
         return acc;
 

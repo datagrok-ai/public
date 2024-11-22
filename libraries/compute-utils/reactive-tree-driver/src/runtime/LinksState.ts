@@ -67,7 +67,7 @@ export class LinksState {
     this.disableLinks();
 
     const oldLinks = [...this.links.values()];
-    const links = this.createLinks(state, oldLinks);
+    const [links, addedLinks] = this.createLinks(state, oldLinks);
     this.links = new Map(links.map((link) => [link.uuid, link] as const));
 
     [this.actions, this.nodesActions] = this.createActions(state);
@@ -77,23 +77,19 @@ export class LinksState {
     if (nestedMutationData) {
       const {mutationRootPath, addIdx, removeIdx} = nestedMutationData;
       const bound = this.getLowerBound(addIdx, removeIdx);
-      const inbound = links.filter((link) => this.isDataLink(link) && this.isInbound(mutationRootPath, link, addIdx, removeIdx));
-      const outgoing = links.filter((link) => this.isDataLink(link) && this.isOutgoing(mutationRootPath, link, addIdx));
-      const affectedMeta = links
-        .filter((link) => !this.isDataLink(link) && !this.isDefaultValidatorLink(link) && this.isAffected(mutationRootPath, link, addIdx, removeIdx));
-      const defaultValidators = links.filter(link => this.isDefaultValidatorLink(link));
+      const inbound = addedLinks.filter((link) => this.isDataLink(link) && this.isInbound(mutationRootPath, link, addIdx, removeIdx));
+      const outgoing = addedLinks.filter((link) => this.isDataLink(link) && this.isOutgoing(mutationRootPath, link, addIdx));
+      const newMeta = addedLinks.filter((link) => !this.isDataLink(link));
       const inboundMap = this.toLinksMap(inbound);
       const outgoingMap = this.toLinksMap(outgoing);
-      const affectedMetaMap = this.toLinksMap(affectedMeta);
-      const defaultValidatorsMap = this.toLinksMap(defaultValidators);
+      const newMetaMap = this.toLinksMap(newMeta);
       this.linksUpdates.next(true);
       return concat(
         of(this.wireLinks(state)),
         this.runNewInits(state),
         this.runLinks(state, inboundMap, mutationRootPath, bound),
         this.runLinks(state, outgoingMap),
-        this.runLinks(state, affectedMetaMap),
-        this.runLinks(state, defaultValidatorsMap),
+        this.runLinks(state, newMetaMap),
       ).pipe(toArray(), mapTo(undefined));
     } else {
       this.linksUpdates.next(true);
@@ -109,18 +105,21 @@ export class LinksState {
   public getNodeActionsData(uuid: string): ViewAction[] | undefined {
     const actions = this.nodesActions.get(uuid);
     if (actions)
-      return actions.map(({uuid, spec: { position, description, menuCategory, friendlyName, icon }}) => ({uuid, position, description, menuCategory, friendlyName, icon}));
+      return actions.map(({uuid, spec: {position, description, menuCategory, friendlyName, icon, confirmationMessage}}) =>
+        ({uuid, position, description, menuCategory, friendlyName, icon, confirmationMessage}));
     return actions;
   }
 
   public createLinks(state: BaseTree<StateTreeNode>, oldLinks: Link[]) {
+    const addedLinks: Link[] = [];
     const newLinks = this.createStateLinks(state);
     if (this.defaultValidators) {
       const validators = this.createDefaultValidators(state);
       newLinks.push(...validators);
+      addedLinks.push(...validators);
     }
     const {toRemove, toAdd} = getLinksDiff(oldLinks, newLinks);
-    const mergedLinks = [];
+    const mergedLinks: Link[] = [];
     for (const oldLink of oldLinks) {
       if (!toRemove.has(oldLink.uuid))
         mergedLinks.push(oldLink);
@@ -136,9 +135,10 @@ export class LinksState {
         if (this.logger && !newLink.matchInfo.isDefaultValidator)
           this.logger.logLink('linkAdded', { linkUUID: newLink.uuid, prefix: newLink.prefix, id: newLink.matchInfo.spec.id });
         mergedLinks.push(newLink);
+        addedLinks.push(newLink);
       }
     }
-    return mergedLinks;
+    return [mergedLinks, addedLinks] as const;
   }
 
   public createStateLinks(state: BaseTree<StateTreeNode>) {
@@ -383,12 +383,6 @@ export class LinksState {
 
   public isDefaultValidatorLink(link: Link) {
     return link.matchInfo.isDefaultValidator;
-  }
-
-  public isAffected(rootPath: Readonly<NodeAddress>, link: Link, addIdx?: number, removeIdx?: number) {
-    const bound = this.getLowerBound(addIdx, removeIdx);
-    return this.hasNested(rootPath, link.prefix, link.matchInfo.inputs, bound) ||
-      this.hasNested(rootPath, link.prefix, link.matchInfo.outputs, bound);
   }
 
   public isInbound(rootPath: Readonly<NodeAddress>, link: Link, addIdx?: number, removeIdx?: number) {

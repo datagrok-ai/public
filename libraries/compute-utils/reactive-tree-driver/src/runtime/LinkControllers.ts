@@ -44,6 +44,10 @@ export class ControllerBase<T> {
       throw new ControllerCancelled();
   }
 
+  getAdditionalParam(name: string) {
+    return this.scopeInfo?.additionalParams?.[name];
+  }
+
   close() {
     this.isClosed = false;
   }

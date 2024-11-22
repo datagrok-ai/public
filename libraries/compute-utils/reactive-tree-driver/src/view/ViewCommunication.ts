@@ -53,6 +53,7 @@ export interface RunStep {
 export interface RunAction {
   event: 'runAction';
   uuid: string;
+  additionalParams?: Record<string, any>;
 }
 
 export interface RunSequence {
