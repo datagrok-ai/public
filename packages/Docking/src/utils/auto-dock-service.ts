@@ -113,7 +113,7 @@ export class AutoDockService implements IAutoDockService {
       throw new Error(adRes['error']);
 
     const clinfoOut: string = adRes['output'];
-    const clinfoOutMa = clinfoOut.match(/.+platform.+\s+(?<count>\d)/);
+    const clinfoOutMa = clinfoOut.match(/.+platform.+\s+(\d)/);
     if (!clinfoOutMa)
       throw new Error('Unexpected clinfo output');
     const clinfoCount = parseInt(clinfoOutMa.groups!['count']);
