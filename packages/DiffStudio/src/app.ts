@@ -1060,8 +1060,13 @@ export class DiffStudio {
         let posClose = annot.indexOf(BRACKET_CLOSE);
 
         if (posOpen !== -1) {
-          if (posClose === -1)
-            throw new Error(`${ERROR_MSG.MISSING_CLOSING_BRACKET}, see '${name}' in ${modelBlock}-block`);
+          if (posClose === -1) {
+            throw new ModelError(
+              `${ERROR_MSG.MISSING_CLOSING_BRACKET}. Correct annotation in the **${modelBlock}** block.`,
+              LINK.BASIC_MODEL,
+              annot,
+            );
+          }
 
           descr = annot.slice(posOpen + 1, posClose);
 
@@ -1071,8 +1076,13 @@ export class DiffStudio {
         posOpen = annot.indexOf(BRACE_OPEN);
         posClose = annot.indexOf(BRACE_CLOSE);
 
-        if (posOpen >= posClose)
-          throw new Error(`${ERROR_MSG.INCORRECT_BRACES_USE}, see '${name}' in ${modelBlock}-block`);
+        if (posOpen >= posClose) {
+          throw new ModelError(
+            `${ERROR_MSG.INCORRECT_BRACES_USE}. Correct annotation in the ***${modelBlock}** block.`,
+            LINK.BASIC_MODEL,
+            annot,
+          );
+        }
 
         let pos: number;
         let key: string;
@@ -1081,8 +1091,13 @@ export class DiffStudio {
         annot.slice(posOpen + 1, posClose).split(ANNOT_SEPAR).forEach((str) => {
           pos = str.indexOf(CONTROL_SEP);
 
-          if (pos === -1)
-            throw new Error(`${ERROR_MSG.MISSING_COLON}, see '${name}' in ${modelBlock}-block`);
+          if (pos === -1) {
+            throw new ModelError(
+              `${ERROR_MSG.MISSING_COLON}. Correct annotation in the **${modelBlock}** block.`,
+              LINK.BASIC_MODEL,
+              annot,
+            );
+          }
 
           key = str.slice(0, pos).trim();
           val = str.slice(pos + 1).trim();
@@ -1092,8 +1107,8 @@ export class DiffStudio {
         });
 
         options.description = descr ?? '';
-        options.name = options.caption ?? options.name;
-        options.caption = options.name;
+        options.name = options.friendlyName ?? options.name;
+        options.friendlyName = options.name;
       }
 
       if (this.startingInputs) {

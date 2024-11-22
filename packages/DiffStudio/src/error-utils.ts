@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {LINK, MISC} from './ui-constants';
+import {LINK, MISC, UI_TIME} from './ui-constants';
 
 import '../css/app-styles.css';
 
@@ -54,8 +54,9 @@ function highLight(root: HTMLElement, text: string) {
 
   if (inds.length === 1) {
     const line = lines[inds[0]];
-    line.classList.add('diff-studio-highlight-text');
-    line.scrollIntoView();
+    const numElements = root.querySelectorAll('div.cm-gutterElement');
+    numElements[inds[0]].scrollIntoView();
+    setTimeout(() => line.classList.add('diff-studio-highlight-text'), UI_TIME.WGT_CLICK);
   }
 }
 
