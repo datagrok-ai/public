@@ -14,7 +14,7 @@ import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {RestrictionType, ValidationResult} from '../data/common-types';
 import {mergeValidationResults} from '../utils';
 
-export const descriptionOutputs = ['name', 'description', 'tags'] as const;
+export const descriptionOutputs = ['title', 'description', 'tags'] as const;
 const descriptionStates = descriptionOutputs.map((id) => ({id}));
 
 export type StateTreeSerializationOptions = {

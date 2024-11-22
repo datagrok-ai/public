@@ -985,15 +985,15 @@ category('ComputeUtils: Driver links reactivity', async () => {
         id: 'selector',
         type: 'selector',
         from: 'in:step1/a',
-        to: ['out1:name', 'out2:description', 'out3:tags'],
+        to: ['out1:title', 'out2:description', 'out3:tags'],
         handler({controller}) {
           const val = controller.getFirst('in');
           controller.setDescriptionItem('out1', `Title ${val}`);
           controller.setDescriptionItem('out2', `Description ${val}`);
           controller.setDescriptionItem('out3', [`tag ${val}`]);
-        }
-      }]
-    }
+        },
+      }],
+    };
     const pconf = await getProcessedConfig(config5);
 
     testScheduler.run((helpers) => {
@@ -1008,7 +1008,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
       cold('--a').subscribe(() => {
         node.getItem().getStateStore().setState('a', 2);
       });
-      expectObservable(pipeline.getItem().nodeDescription.getStateChanges('name')).toBe('abc',
+      expectObservable(pipeline.getItem().nodeDescription.getStateChanges('title')).toBe('abc',
         {a: undefined, b: 'Title 1', c: 'Title 2'});
       expectObservable(pipeline.getItem().nodeDescription.getStateChanges('description')).toBe('abc',
         {a: undefined, b: 'Description 1', c: 'Description 2'});
@@ -1028,7 +1028,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
           initialValues: {
             a: 1,
             b: 2,
-          }
+          },
         },
         {
           id: 'step2',
@@ -1036,7 +1036,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
           initialValues: {
             a: 3,
             b: 4,
-          }
+          },
         },
       ],
       actions: [{
@@ -1053,9 +1053,9 @@ category('ComputeUtils: Driver links reactivity', async () => {
           expectDeepEqual(b, 2);
           expectDeepEqual(fc instanceof DG.FuncCall, true);
           const func: DG.Func = await grok.functions.eval('LibTests:simpleInputs');
-          const nfc = func.prepare({a : 33, b: 44});
+          const nfc = func.prepare({a: 33, b: 44});
           controller.setFuncCall('out', nfc);
-        }
+        },
       }],
     };
 
@@ -1064,7 +1064,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
     await tree.init().toPromise();
     const action = [...tree.linksState.actions.values()][0];
     await tree.runAction(action.uuid).toPromise();
-    await tree.treeMutationsLocked$.pipe(filter(x => !x), take(1)).toPromise();
+    await tree.treeMutationsLocked$.pipe(filter((x) => !x), take(1)).toPromise();
     const node = tree.nodeTree.getNode([{idx: 1}]);
     const a = node.getItem().getStateStore().getState('a');
     const b = node.getItem().getStateStore().getState('b');
@@ -1083,7 +1083,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
           initialValues: {
             a: 1,
             b: 2,
-          }
+          },
         },
         {
           id: 'step2',
@@ -1102,9 +1102,9 @@ category('ComputeUtils: Driver links reactivity', async () => {
               const fc = controller.getFirst('fc');
               expectDeepEqual(fc instanceof DG.FuncCall, true);
               const func: DG.Func = await grok.functions.eval('LibTests:simpleInputs');
-              const nfc = func.prepare({a : 33, b: 44});
+              const nfc = func.prepare({a: 33, b: 44});
               controller.setFuncCall('out', nfc);
-            }
+            },
           }],
         },
       ],
@@ -1115,7 +1115,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
     await tree.init().toPromise();
     const action = [...tree.linksState.actions.values()][0];
     await tree.runAction(action.uuid).toPromise();
-    await tree.treeMutationsLocked$.pipe(filter(x => !x), take(1)).toPromise();
+    await tree.treeMutationsLocked$.pipe(filter((x) => !x), take(1)).toPromise();
     const node = tree.nodeTree.getNode([{idx: 1}]);
     const a = node.getItem().getStateStore().getState('a');
     const b = node.getItem().getStateStore().getState('b');

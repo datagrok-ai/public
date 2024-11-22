@@ -237,15 +237,15 @@ category('ComputeUtils: Driver instance additional states', async () => {
         id: 'selector',
         type: 'selector',
         from: 'in:step1/a',
-        to: ['out1:name', 'out2:description', 'out3:tags'],
+        to: ['out1:title', 'out2:description', 'out3:tags'],
         handler({controller}) {
           const val = controller.getFirst('in');
           controller.setDescriptionItem('out1', `Title ${val}`);
           controller.setDescriptionItem('out2', `Description ${val}`);
           controller.setDescriptionItem('out3', [`tag ${val}`]);
-        }
-      }]
-        }
+        },
+      }],
+    };
     const pconf = await getProcessedConfig(config5);
     testScheduler.run((helpers) => {
       const {cold, expectObservable} = helpers;
@@ -261,24 +261,24 @@ category('ComputeUtils: Driver instance additional states', async () => {
       });
       expectObservable(tree.getNodesDescriptions()[pipeline.getItem().uuid]).toBe('a-b-c', {
         a: {
-          "name": undefined,
-          "description": undefined,
-          "tags": undefined,
+          'title': undefined,
+          'description': undefined,
+          'tags': undefined,
         },
         b: {
-          "name": "Title 1",
-          "description": "Description 1",
-          "tags": [
-            "tag 1"
-          ]
+          'title': 'Title 1',
+          'description': 'Description 1',
+          'tags': [
+            'tag 1',
+          ],
         },
         c: {
-          "name": "Title 2",
-          "description": "Description 2",
-          "tags": [
-            "tag 2"
-          ]
-        }
+          'title': 'Title 2',
+          'description': 'Description 2',
+          'tags': [
+            'tag 2',
+          ],
+        },
       });
     });
   });
