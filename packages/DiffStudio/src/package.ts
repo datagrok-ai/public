@@ -44,6 +44,7 @@ export function solveEquations(problem: ODEs, options: Partial<SolverOptions>): 
 //description: Solver of ordinary differential equations systems
 //tags: app
 //output: view v
+//meta.browsePath: Compute
 export async function runDiffStudio(): Promise<DG.ViewBase> {
   const solver = new DiffStudio(false);
   return await solver.runSolverApp();

@@ -74,6 +74,7 @@ export async function peptiHitAppTreeBrowser(treeNode: DG.TreeViewGroup, browseV
 //tags: app
 //name: Hit Triage
 //output: view v
+//meta.browsePath: Chem
 export async function hitTriageApp(): Promise<DG.ViewBase> {
   const c = grok.functions.getCurrentCall();
   return new HitTriageApp(c).multiView;
@@ -83,6 +84,7 @@ export async function hitTriageApp(): Promise<DG.ViewBase> {
 //name: Hit Design
 //meta.icon: images/icons/hit-design-icon.png
 //output: view v
+//meta.browsePath: Chem
 export async function hitDesignApp(): Promise<DG.ViewBase> {
   const c = grok.functions.getCurrentCall();
   return new HitDesignApp(c).multiView;
@@ -92,6 +94,7 @@ export async function hitDesignApp(): Promise<DG.ViewBase> {
 //name: PeptiHit
 //meta.icon: images/icons/pepti-hit-icon.png
 //output: view v
+//meta.browsePath: Peptides
 export async function peptiHitApp(): Promise<DG.ViewBase> {
   const c = grok.functions.getCurrentCall();
   await grok.functions.call('Bio:initBio', {});

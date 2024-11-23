@@ -29,6 +29,7 @@ const modeToParam = {[SEARCH_MODE.SIMILAR]: 'sim', [SEARCH_MODE.SUBSTRUCTURE]: '
 
 //tags: app
 //name: Chemspace
+//meta.browsePath: Oligo
 export async function app(): Promise<void> {
   await getApiToken();
 

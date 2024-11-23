@@ -415,6 +415,7 @@ export async function runDocking(
 //tags: app
 //input: string path {meta.url: true; optional: true}
 //output: view v
+//meta.browsePath: Bio
 export async function dockingApp(path?: string): Promise<DG.ViewBase | null> {
   const parent = grok.functions.getCurrentCall();
   const app = new DockingViewApp(parent);

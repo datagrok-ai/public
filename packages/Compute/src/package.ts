@@ -184,6 +184,7 @@ let startUriLoaded = false;
 //name: Model Catalog
 //tags: app
 //output: view v
+//meta.browsePath: Compute
 export function modelCatalog() {
   // Separately process direct link access
   const startOptionalPart = grok.shell.startUri.indexOf('?');

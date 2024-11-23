@@ -13,6 +13,7 @@ export const _package = new DG.Package();
 //input: string path {meta.url: true; optional: true}
 //input: string filter {optional: true}
 //output: view v
+//meta.browsePath: Misc
 export function metabolicGraphApp(path?: string, filter?: string): DG.ViewBase {
   const view = DG.View.create('d4-escher-container');
   view.name = 'Metabolic Graph App';
