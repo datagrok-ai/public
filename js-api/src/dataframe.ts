@@ -1357,9 +1357,10 @@ export class ColumnList {
   /** Replaces the column with the new column.
    * @param {Column} columnToReplace
    * @param {Column} newColumn
+   * @param {boolean} notify
    * */
-  replace(columnToReplace: Column | string, newColumn: Column): Column {
-    return toJs(api.grok_ColumnList_Replace(this.dart, (typeof columnToReplace === 'string') ? columnToReplace:  columnToReplace.dart, newColumn.dart));
+  replace(columnToReplace: Column | string, newColumn: Column, notify: boolean = true): Column {
+    return toJs(api.grok_ColumnList_Replace(this.dart, (typeof columnToReplace === 'string') ? columnToReplace:  columnToReplace.dart, newColumn.dart, notify));
   }
 
   /** Returns a name that does not exist in column list.

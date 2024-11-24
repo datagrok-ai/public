@@ -543,7 +543,7 @@ export interface IDartApi {
   grok_ColumnList_AddNewVirtual(cols: any, name: String, getValue: any, setValue: any, type: String): any;
   grok_ColumnList_Remove(cols: any, name: String, notify: Bool): any;
   grok_ColumnList_Contains(cols: any, name: String): any;
-  grok_ColumnList_Replace(cols: any, columnToReplace: any, newColumn: any): any;
+  grok_ColumnList_Replace(cols: any, columnToReplace: any, newColumn: any, notify: any): any;
   grok_ColumnList_Categorical(cols: any): any;
   grok_ColumnList_Numerical(cols: any): any;
   grok_ColumnList_DateTime(cols: any): any;
