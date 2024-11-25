@@ -43,20 +43,38 @@ const config: PipelineConfiguration = {
     {
       id: 'link1',
       from: 'from:step1/res',
-      to: 'to:pipeline2/step2/a'
+      to: 'to:pipeline2/step2/a',
+      defaultRestrictions: {
+        to: 'restricted',
+      }
     },
     {
       id: 'link2',
       from: 'from:pipeline2/step2/res',
-      to: 'to:pipeline2/step3/a'
+      to: 'to:pipeline2/step3/a',
+      defaultRestrictions: {
+        to: 'restricted',
+      }
     },
     {
       id: 'link3',
       from: 'from:pipeline2/step3/res',
-      to: 'to:step4/a'
+      to: 'to:step4/a',
+      defaultRestrictions: {
+        to: 'restricted',
+      }
     },
   ],
 };
+
+async function waitForMutations(tree: StateTree)  {
+  await tree.treeMutationsLocked$.pipe(
+    debounceTime(0),
+    filter(x => !x),
+    take(1)
+  ).toPromise();
+
+}
 
 category('ComputeUtils: Driver run steps sequence', async () => {
 
@@ -77,17 +95,9 @@ category('ComputeUtils: Driver run steps sequence', async () => {
     fcnode2.getStateStore().setState('b', 1);
     fcnode3.getStateStore().setState('b', 3);
     fcnode4.getStateStore().setState('b', 2);
-    await tree.treeMutationsLocked$.pipe(
-      debounceTime(0),
-      filter(x => !x),
-      take(1)
-    ).toPromise();
+    await waitForMutations(tree);
     await tree.runSequence(fcnode1.uuid).toPromise();
-    await tree.treeMutationsLocked$.pipe(
-      debounceTime(0),
-      filter(x => !x),
-      take(1)
-    ).toPromise();
+    await waitForMutations(tree);
     expectDeepEqual(fcnode4.getStateStore().getState('res'), 3);
   });
 
@@ -107,18 +117,62 @@ category('ComputeUtils: Driver run steps sequence', async () => {
     fcnode1.getStateStore().setState('b', 2);
     fcnode2.getStateStore().setState('b', 1);
     fcnode3.getStateStore().setState('b', 3);
-    await tree.treeMutationsLocked$.pipe(
-      debounceTime(0),
-      filter(x => !x),
-      take(1)
-    ).toPromise();
+    await waitForMutations(tree);
     await tree.runSequence(fcnode1.uuid).toPromise();
-    await tree.treeMutationsLocked$.pipe(
-      debounceTime(0),
-      filter(x => !x),
-      take(1)
-    ).toPromise();
+    await waitForMutations(tree);
     expectDeepEqual(fcnode3.getStateStore().getState('res'), 6);
     expectDeepEqual(fcnode4.getStateStore().getState('res'), null);
+  });
+
+  test('Should skip runned steps', async () => {
+    const pconf = await getProcessedConfig(config);
+    const tree = StateTree.fromPipelineConfig({config: pconf, defaultValidators: true});
+    await tree.init().toPromise();
+    const node1 = tree.nodeTree.getNode([{idx: 0}]);
+    const fcnode1 = node1.getItem() as FuncCallNode;
+    const node2 = tree.nodeTree.getNode([{idx: 1}, {idx: 0}]);
+    const fcnode2 = node2.getItem() as FuncCallNode;
+    const node3 = tree.nodeTree.getNode([{idx: 1}, {idx: 1}]);
+    const fcnode3 = node3.getItem() as FuncCallNode;
+    const node4 = tree.nodeTree.getNode([{idx: 2}]);
+    const fcnode4 = node4.getItem() as FuncCallNode;
+    fcnode1.getStateStore().setState('a', 1);
+    fcnode1.getStateStore().setState('b', 2);
+    fcnode2.getStateStore().setState('a', 10);
+    fcnode2.getStateStore().setState('b', 1);
+    fcnode3.getStateStore().setState('b', 3);
+    fcnode4.getStateStore().setState('b', 2);
+    await waitForMutations(tree);
+    await fcnode2.getStateStore().run().toPromise();
+    await waitForMutations(tree);
+    await tree.runSequence(fcnode1.uuid).toPromise();
+    await waitForMutations(tree);
+    expectDeepEqual(fcnode4.getStateStore().getState('res'), 13.5);
+  });
+
+  test('Should rerun steps with consistent data', async () => {
+    const pconf = await getProcessedConfig(config);
+    const tree = StateTree.fromPipelineConfig({config: pconf, defaultValidators: true});
+    await tree.init().toPromise();
+    const node1 = tree.nodeTree.getNode([{idx: 0}]);
+    const fcnode1 = node1.getItem() as FuncCallNode;
+    const node2 = tree.nodeTree.getNode([{idx: 1}, {idx: 0}]);
+    const fcnode2 = node2.getItem() as FuncCallNode;
+    const node3 = tree.nodeTree.getNode([{idx: 1}, {idx: 1}]);
+    const fcnode3 = node3.getItem() as FuncCallNode;
+    const node4 = tree.nodeTree.getNode([{idx: 2}]);
+    const fcnode4 = node4.getItem() as FuncCallNode;
+    fcnode1.getStateStore().setState('a', 1);
+    fcnode1.getStateStore().setState('b', 2);
+    fcnode2.getStateStore().setState('a', 10);
+    fcnode2.getStateStore().setState('b', 1);
+    fcnode3.getStateStore().setState('b', 3);
+    fcnode4.getStateStore().setState('b', 2);
+    await waitForMutations(tree);
+    await fcnode2.getStateStore().run().toPromise();
+    await waitForMutations(tree);
+    await tree.runSequence(fcnode1.uuid, true).toPromise();
+    await waitForMutations(tree);
+    expectDeepEqual(fcnode4.getStateStore().getState('res'), 3);
   });
 });

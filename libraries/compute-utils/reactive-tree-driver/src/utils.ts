@@ -3,6 +3,8 @@ import * as DG from 'datagrok-api/dg';
 import {Observable, defer, of} from 'rxjs';
 import {HandlerBase} from './config/PipelineConfiguration';
 import {ActionItem, Advice, ValidationPayload, ValidationResult} from './data/common-types';
+import {NodeAddressSegment, NodePathSegment, TreeNode } from './data/BaseTree';
+import {StateTreeNode} from './runtime/StateTreeNodes';
 
 export function callHandler<R, P = any>(handler: HandlerBase<P, R>, params: P): Observable<R> {
   if (typeof handler === 'string') {
@@ -55,6 +57,15 @@ export function makeValidationResult(payload?: ValidationPayload): ValidationRes
 export async function makeModel(provider: string) {
   return DG.Func.byName('Compute2:TreeWizardEditor')
     .prepare({call: DG.Func.byName(provider).prepare()}).call();
+}
+
+export function pathToUUID(rnode: TreeNode<StateTreeNode>, path: readonly NodeAddressSegment[] | readonly NodePathSegment[]): string[] {
+  const { uuids } = path.reduce((acc, {idx}) => {
+    const nnode = acc.node.getChild({idx});
+    const { uuid } = nnode.getItem();
+    return {node: nnode, uuids: [...acc.uuids, uuid]};
+  }, {node: rnode, uuids: [rnode.getItem().uuid]});
+  return uuids;
 }
 
 export function indexFromEnd<T>(arr: Readonly<T[]>, offset = 0): T | undefined {

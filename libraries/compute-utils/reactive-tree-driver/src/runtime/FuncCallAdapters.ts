@@ -5,7 +5,6 @@ import {StateItem} from '../config/PipelineConfiguration';
 import {delay, map, mapTo, startWith, switchMap, tap} from 'rxjs/operators';
 import {RestrictionType} from '../data/common-types';
 
-
 export interface IRunnableWrapper {
   id?: string;
   run(mockResults?: Record<string, any>, mockDelay?: number): Observable<any>;
@@ -21,7 +20,6 @@ export interface IStateStore {
   getState<T = any>(name: string): T | undefined;
   setState<T = any>(name: string, value: T | undefined, restrictionType?: RestrictionType): void;
   editState<T = any>(name: string, value: T | undefined): void; // for tests
-  removeRestriction(name: string): void;
   getStateNames(): string[];
 }
 
@@ -70,10 +68,6 @@ export class FuncCallAdapter implements IFuncCallAdapter {
 
   editState<T = any>(name: string, value: T | undefined) {
     this.instance.inputs[name] = value;
-  }
-
-  removeRestriction(_name: string) {
-    return;
   }
 
   getStateNames() {
@@ -127,10 +121,6 @@ export class MemoryStore implements IStateStore {
 
   editState<T = any>(name: string, value: T | undefined) {
     this.states[name]?.next(value);
-  }
-
-  removeRestriction(_name: string) {
-    return;
   }
 }
 

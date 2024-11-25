@@ -10,6 +10,11 @@ export interface RestrictionState {
   assignedValue: any,
 }
 
+export interface IRestrictionStore {
+  setRestriction<T = any>(name: string, value: T | undefined, restrictionType?: RestrictionType): void;
+  removeRestriction(name: string): void;
+}
+
 export interface BridgePreInitData {
   initialValues: Record<string, any>,
   initialRestrictions: Record<string, RestrictionState | undefined>,
@@ -28,7 +33,7 @@ interface InstanceData {
   isNew: boolean
 }
 
-export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
+export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, IRunnableWrapper {
   public instance$ = new BehaviorSubject<InstanceData | undefined>(undefined);
 
   public isRunning$ = new BehaviorSubject(false);
@@ -135,12 +140,24 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
     const currentRestriction = this.inputRestrictions$.value?.[id];
     if (currentRestriction == null)
       return;
-    const defaulRestriction = this.initialData?.initialRestrictions[id];
+    const defaultRestriction = this.initialData?.initialRestrictions[id];
     this.inputRestrictions$.next({
       ...this.inputRestrictions$.value,
-      [id]: defaulRestriction,
+      [id]: defaultRestriction,
     });
-    this.inputRestrictionsUpdates$.next([id, defaulRestriction] as const);
+    this.inputRestrictionsUpdates$.next([id, defaultRestriction] as const);
+  }
+
+  setRestriction<T = any>(id: string, val: T | undefined, restrictionType: RestrictionType = 'none') {
+    const currentInstance = this.instance$.value?.adapter;
+    if (currentInstance == null)
+      throw new Error(`Attempting to set restriction on an empty FuncCallInstancesBridge`);
+    const restrictionPayload = restrictionType === 'none' ? undefined : {assignedValue: val, type: restrictionType};
+    this.inputRestrictions$.next({
+      ...this.inputRestrictions$.value,
+      [id]: restrictionPayload,
+    });
+    this.inputRestrictionsUpdates$.next([id, restrictionPayload] as const);
   }
 
   setValidation(id: string, validatorId: string, validation: ValidationResult | undefined) {
@@ -183,6 +200,16 @@ export class FuncCallInstancesBridge implements IStateStore, IRunnableWrapper {
           this.isRunning$.next(false);
         }),
       );
+    });
+  }
+
+  overrideToConsistent() {
+    return defer(() => {
+      for(const [name, restriction] of Object.entries(this.inputRestrictions$.value ?? {})) {
+        if (restriction && (restriction.type === 'restricted' || restriction.type === 'disabled') )
+          this.setState(name, restriction.assignedValue, restriction.type);
+      }
+      return of(undefined);
     });
   }
 

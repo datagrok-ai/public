@@ -1,6 +1,4 @@
-import {BaseTree} from '../data/BaseTree';
 import {Link} from './Link';
-import {StateTreeNode} from './StateTreeNodes';
 import isEqual from 'lodash.isequal';
 
 export interface LinksDiff {
@@ -51,16 +49,16 @@ export function linkEqual(link1: Link, link2: Link): boolean {
   if (!isEqual(link1.matchInfo.spec.id, link2.matchInfo.spec.id))
     return false;
 
-  if (!isEqual(link1.prefix, link2.prefix))
+  if (!isEqual(link1.prefixUUID, link2.prefixUUID))
     return false;
 
-  if (!isEqual(link1.matchInfo.basePath, link2.matchInfo.basePath))
+  if (!isEqual(link1.matchInfo.basePathUUID, link2.matchInfo.basePathUUID))
     return false;
 
-  if (!isEqual(link1.matchInfo.inputs, link2.matchInfo.inputs))
+  if (!isEqual(link1.matchInfo.inputsUUID, link2.matchInfo.inputsUUID))
     return false;
 
-  if (!isEqual(link1.matchInfo.outputs, link2.matchInfo.outputs))
+  if (!isEqual(link1.matchInfo.outputsUUID, link2.matchInfo.outputsUUID))
     return false;
 
   return true;

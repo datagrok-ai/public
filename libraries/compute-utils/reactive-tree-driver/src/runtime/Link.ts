@@ -3,12 +3,12 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {v4 as uuidv4} from 'uuid';
 import {HandlerBase} from '../config/PipelineConfiguration';
-import {BaseTree, NodeAddress, NodePath, TreeNode} from '../data/BaseTree';
-import {descriptionOutputs, StateTreeNode} from './StateTreeNodes';
+import {BaseTree, NodePath, TreeNode} from '../data/BaseTree';
+import {descriptionOutputs, isFuncCallNode, StateTreeNode} from './StateTreeNodes';
 import {ActionSpec, MatchInfo} from './link-matching';
 import {BehaviorSubject, combineLatest, defer, EMPTY, merge, Subject, of} from 'rxjs';
 import {map, filter, takeUntil, withLatestFrom, switchMap, catchError, mapTo, finalize, debounceTime, timestamp, distinctUntilChanged, take} from 'rxjs/operators';
-import {callHandler} from '../utils';
+import {callHandler, pathToUUID} from '../utils';
 import {defaultLinkHandler} from './default-handler';
 import {ControllerCancelled, FuncallActionController, LinkController, MetaController, MutationController, NameSelectorController, ValidatorController} from './LinkControllers';
 import {FuncCallAdapter, MemoryStore} from './FuncCallAdapters';
@@ -20,7 +20,7 @@ import {FuncCallInstancesBridge} from './FuncCallInstancesBridge';
 const VALIDATOR_DEBOUNCE_TIME = 250;
 
 export type ScopeInfo = {
-  scope?: NodeAddress, childOffset?: number, additionalParams?: Record<string, any>
+  additionalParams?: Record<string, any>
 }
 
 export class Link {
@@ -34,6 +34,8 @@ export class Link {
   public readonly isMutation = this.matchInfo.spec.type === 'pipeline';
   public readonly isSelector = this.matchInfo.spec.type === 'selector';
   public readonly isFuncallAction = this.matchInfo.spec.type === 'funccall';
+
+  public prefixUUID = '';
 
   // probably a better api
   public lastPipelineMutations?: {
@@ -60,6 +62,9 @@ export class Link {
   wire(state: BaseTree<StateTreeNode>, linksState?: LinksState) {
     if (this.isWired)
       return;
+
+    this.prefixUUID = pathToUUID(state.root, this.prefix).join('/');
+
     const inputNames = Object.keys(this.matchInfo.inputs);
     const outputNames = Object.keys(this.matchInfo.outputs);
     const inputSet = new Set(inputNames);
@@ -118,8 +123,8 @@ export class Link {
     this.isActive$.next(false);
   }
 
-  trigger(scope?: NodeAddress, childOffset?: number) {
-    this.trigger$.next({scope, childOffset});
+  trigger(scope?: ScopeInfo) {
+    this.trigger$.next(scope);
   }
 
   destroy() {
@@ -252,11 +257,6 @@ export class Link {
     });
     for (const [outputAlias, nodesData] of outputsEntries) {
       for (const [ioName, nodePath, node] of nodesData) {
-        if (controller.scopeInfo?.scope &&
-          !BaseTree.isNodeChildOffseted(controller.scopeInfo.scope, nodePath, controller.scopeInfo.childOffset)
-        )
-          continue;
-
         if (controller instanceof ValidatorController) {
           const store = node.getItem().getStateStore();
           if (store instanceof MemoryStore)
@@ -286,8 +286,12 @@ export class Link {
           const data = controller.outputs[outputAlias];
           if (data) {
             const [state, restriction] = data;
+            const item = node.getItem();
             const nextValue = state instanceof DG.DataFrame ? state.clone() : state;
-            node.getItem().getStateStore().setState(ioName, nextValue, restriction);
+            if (isFuncCallNode(item) && !item.instancesWrapper.isOutputOutdated$.value)
+              item.instancesWrapper.setRestriction(ioName, nextValue, restriction);
+            else
+              node.getItem().getStateStore().setState(ioName, nextValue, restriction);
           }
         }
       }
@@ -305,8 +309,8 @@ export class Action extends Link {
     super(prefix, matchInfo, undefined, logger);
   }
 
-  exec(additionalParams: Record<string, any>, scope?: NodeAddress, childOffset?: number) {
-    this.trigger$.next({additionalParams, scope, childOffset});
+  exec(additionalParams: Record<string, any>) {
+    this.trigger$.next({additionalParams});
     return this.isRunning$.pipe(
       filter((isRunning) => !isRunning),
       take(1),
@@ -314,8 +318,8 @@ export class Action extends Link {
     );
   }
 
-  execPipelineMutations(additionalParams: Record<string, any>, scope?: NodeAddress, childOffset?: number) {
-    this.trigger$.next({additionalParams, scope, childOffset});
+  execPipelineMutations(additionalParams: Record<string, any>) {
+    this.trigger$.next({additionalParams});
     return this.isRunning$.pipe(
       filter((isRunning) => !isRunning),
       take(1),

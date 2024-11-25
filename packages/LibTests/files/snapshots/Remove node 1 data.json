@@ -728,14 +728,6 @@
           "value": 4,
           "hasValue": true
         }
-      },
-      {
-        "frame": 500,
-        "notification": {
-          "kind": "N",
-          "value": 4,
-          "hasValue": true
-        }
       }
     ]
   },

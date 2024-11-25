@@ -12,11 +12,10 @@ import {FuncCallAdapter, FuncCallMockAdapter} from './FuncCallAdapters';
 import {loadFuncCall, loadInstanceState, makeFuncCall, saveFuncCall, saveInstanceState} from './funccall-utils';
 import {ConsistencyInfo, FuncCallNode, FuncCallStateInfo, isFuncCallNode, ParallelPipelineNode, PipelineNodeBase, SequentialPipelineNode, StateTreeNode, StateTreeSerializationOptions, StaticPipelineNode} from './StateTreeNodes';
 import {indexFromEnd} from '../utils';
-import {LinksState, NestedMutationData} from './LinksState';
+import {LinksState} from './LinksState';
 import {ValidationResult} from '../data/common-types';
-import {DriverLogger} from '../data/Logger';
+import {DriverLogger, TreeUpdateMutationPayload }  from '../data/Logger';
 import {ItemMetadata} from '../view/ViewCommunication';
-import {v4 as uuidv4} from 'uuid';
 
 const MAX_CONCURENT_SAVES = 5;
 
@@ -177,7 +176,7 @@ export class StateTree {
 
   // for testing only
   public runMutateTree() {
-    return this.mutateTree(() => of([] as const));
+    return this.mutateTree(() => of([{mutationRootPath: []}] as const));
   }
 
   public save(uuid?: string, metaData?: ItemMetadata) {
@@ -220,7 +219,7 @@ export class StateTree {
       this.nodeTree.removeBrunch(path);
       const [ppath, oldIdx] = this.getMutationSlice(path);
       this.nodeTree.attachBrunch(ppath, node, node.getItem().config.id, newIdx);
-      const mutationData: NestedMutationData = {
+      const mutationData: TreeUpdateMutationPayload = {
         mutationRootPath: ppath,
         addIdx: newIdx,
         removeIdx: oldIdx,
@@ -237,7 +236,7 @@ export class StateTree {
       const [, path] = data;
       this.nodeTree.removeBrunch(path);
       const [mutationRootPath, removeIdx] = this.getMutationSlice(path);
-      const mutationData: NestedMutationData = {
+      const mutationData: TreeUpdateMutationPayload = {
         mutationRootPath,
         removeIdx,
       };
@@ -262,7 +261,7 @@ export class StateTree {
           mockMode: this.mockMode,
         });
       }
-      const mutationData: NestedMutationData = {
+      const mutationData: TreeUpdateMutationPayload = {
         mutationRootPath: ppath,
         addIdx: pos,
       };
@@ -292,7 +291,7 @@ export class StateTree {
           this.nodeTree.attachBrunch(ppath, tree.nodeTree.root, id, pos),
         ),
       );
-      const mutationData: NestedMutationData = {
+      const mutationData: TreeUpdateMutationPayload = {
         mutationRootPath: ppath,
         addIdx: pos,
       };
@@ -315,7 +314,7 @@ export class StateTree {
     });
   }
 
-  public runSequence(startUuid: string) {
+  public runSequence(startUuid: string, rerunWithConsistent?: boolean) {
     return this.withTreeLock(() => {
       const nodesSeq = this.nodeTree.traverse(this.nodeTree.root, (acc, node) => [...acc, node.getItem()], [] as StateTreeNode[]);
       const startIdx = nodesSeq.findIndex((node) => node.uuid === startUuid);
@@ -324,11 +323,18 @@ export class StateTree {
       return from(nodesSeq.slice(startIdx)).pipe(
         concatMap((node) => {
           if (!isFuncCallNode(node) || node.pendingDependencies$.value?.length ||
-            !node.getStateStore().isRunable$.value || !node.getStateStore().isOutputOutdated$.value)
+            !node.getStateStore().isRunable$.value || (!node.getStateStore().isOutputOutdated$.value && !rerunWithConsistent))
             return of(undefined);
-          return node.getStateStore().run().pipe(
-            concatMap(() => this.waitForLinks()),
-          );
+          if (rerunWithConsistent)
+            return node.getStateStore().overrideToConsistent().pipe(
+              concatMap(() => this.waitForLinks()),
+              concatMap(() => node.getStateStore().run()),
+              concatMap(() => this.waitForLinks()),
+            );
+          else
+            return node.getStateStore().run().pipe(
+              concatMap(() => this.waitForLinks()),
+            );
         }),
         toArray(),
         mapTo(undefined),
@@ -363,7 +369,7 @@ export class StateTree {
               this.nodeTree.attachBrunch(ppath, subTree.nodeTree.root, last.id, last.idx);
               return StateTree.loadOrCreateCalls(subTree, this.mockMode).pipe(
                 tap(() => this.updateNodesMap()),
-                concatMap(() => this.linksState.update(this.nodeTree, {mutationRootPath: ppath, addIdx: last.idx})),
+                concatMap(() => this.linksState.update(this.nodeTree, true)),
                 concatMap(() => this.waitForLinks()),
               );
             }),
@@ -673,7 +679,7 @@ export class StateTree {
   // locking, tree mutation and deps tracking
   //
 
-  private mutateTree<R>(fn: () => Observable<readonly [NestedMutationData?, R?]>, waitForLinks = true) {
+  private mutateTree<R>(fn: () => Observable<readonly [TreeUpdateMutationPayload?, R?]>, waitForLinks = true) {
     return defer(() => {
       if (this.logger)
         this.logger.logTreeUpdates('treeUpdateStarted');
@@ -688,7 +694,10 @@ export class StateTree {
         const [mutationData, res] = data ?? [];
         if (this.logger)
           this.logger.logMutations(mutationData);
-        return this.linksState.update(this.nodeTree, mutationData).pipe(mapTo(res));
+        const isMutation = (mutationData?.mutationRootPath && mutationData?.mutationRootPath.length > 0) ||
+          mutationData?.addIdx != null ||
+          mutationData?.removeIdx != null;
+        return this.linksState.update(this.nodeTree, isMutation).pipe(mapTo(res));
       }),
       tap(() => {
         this.removeOrphanedIOMetadata();

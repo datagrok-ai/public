@@ -7,7 +7,7 @@ import {of} from 'rxjs';
 import {concatMap, delay} from 'rxjs/operators';
 import {makeValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
-import {expectTreeData, expectTreeMeta, expectTreeValidations, getTreeStates, runRXTreeSnapshotTest} from '../../../test-utils';
+import {expectTreeConsistency, expectTreeData, expectTreeMeta, expectTreeValidations, getTreeStates, runRXTreeSnapshotTest} from '../../../test-utils';
 
 category('ComputeUtils: Driver workflow test', async () => {
   const config1: PipelineConfiguration = {
@@ -63,6 +63,9 @@ category('ComputeUtils: Driver workflow test', async () => {
             base: 'base:expand(stepSub)',
             from: 'in1:same(@base,stepSub)/res',
             to: 'out1:after+(@base,stepMul)/a',
+            defaultRestrictions: {
+              'out1': 'restricted'
+            },
           },
           {
             id: 'link32',
@@ -156,18 +159,31 @@ category('ComputeUtils: Driver workflow test', async () => {
         id: 'link1',
         from: 'in1:stepAdd/res',
         to: 'out1:stepSub/a',
+        defaultRestrictions: {
+          'out1': 'restricted'
+        },
       }, {
         id: 'link2',
         from: 'in1:stepSub/res',
         to: 'out1:pipeline3/all(stepSub|stepDiv)/a',
+        defaultRestrictions: {
+          'out1': 'restricted'
+        },
       }, {
         id: 'link3',
         from: 'in1:pipeline3/last(stepAdd|stepSub|stepMul|stepDiv)/res',
         to: 'out1:stepMul/a',
+        defaultRestrictions: {
+          'out1': 'restricted'
+        },
+
       }, {
         id: 'link4',
         from: 'in1:stepMul/res',
         to: 'out1:pipeline5/all(stepAdd|stepSub|stepMul|stepDiv)/a',
+        defaultRestrictions: {
+          'out1': 'restricted'
+        },
       }, {
         id: 'link5',
         from: 'in1:pipeline5/all(stepAdd|stepSub|stepMul|stepDiv)/res',
@@ -175,7 +191,7 @@ category('ComputeUtils: Driver workflow test', async () => {
         handler({controller}) {
           const inputs = controller.getAll<number>('in1');
           const res = inputs?.reduce((acc, num) => acc + num, 0);
-          controller.setAll('out1', res == null ||  isNaN(res) ? null : res);
+          controller.setAll('out1', res == null ||  isNaN(res) ? null : res, 'restricted');
         },
       }, {
         id: 'link6',
@@ -229,6 +245,9 @@ category('ComputeUtils: Driver workflow test', async () => {
         id: 'link12',
         from: 'in1:stepAdd/res',
         to: 'out1:stepDiv/b',
+        defaultRestrictions: {
+          'out1': 'restricted'
+        },
       },
     ],
   };
@@ -363,6 +382,15 @@ category('ComputeUtils: Driver workflow test', async () => {
     });
   });
 
+  test('Static workflow consistency', async () => {
+    const pconf = await getProcessedConfig(config1);
+    await runRXTreeSnapshotTest('Static workflow consistency', (expectObservable) => {
+      const [tree, tree$] = getTreeStates(pconf);
+      mockWorkflow(tree).subscribe();
+      expectTreeConsistency(tree$, expectObservable);
+    });
+  });
+
   test('Remove node 1 data', async () => {
     const pconf = await getProcessedConfig(config1);
     await runRXTreeSnapshotTest('Remove node 1 data', (expectObservable, cold) => {
@@ -395,6 +423,19 @@ category('ComputeUtils: Driver workflow test', async () => {
       const [tree, tree$] = getTreeStates(pconf);
       mockWorkflow(tree).subscribe();
       expectTreeValidations(tree$, expectObservable);
+      cold('500ms a').subscribe(() => {
+        const target = tree.nodeTree.getItem([{idx: 1}]);
+        tree.removeSubtree(target.uuid).subscribe();
+      });
+    });
+  });
+
+  test('Remove node 1 consistency', async () => {
+    const pconf = await getProcessedConfig(config1);
+    await runRXTreeSnapshotTest('Remove node 1 consistency', (expectObservable, cold) => {
+      const [tree, tree$] = getTreeStates(pconf);
+      mockWorkflow(tree).subscribe();
+      expectTreeConsistency(tree$, expectObservable);
       cold('500ms a').subscribe(() => {
         const target = tree.nodeTree.getItem([{idx: 1}]);
         tree.removeSubtree(target.uuid).subscribe();
@@ -441,6 +482,19 @@ category('ComputeUtils: Driver workflow test', async () => {
     });
   });
 
+  test('Remove node 4 consistency', async () => {
+    const pconf = await getProcessedConfig(config1);
+    await runRXTreeSnapshotTest('Remove node 4 consistency', (expectObservable, cold) => {
+      const [tree, tree$] = getTreeStates(pconf);
+      mockWorkflow(tree).subscribe();
+      expectTreeConsistency(tree$, expectObservable);
+      cold('500ms a').subscribe(() => {
+        const target = tree.nodeTree.getItem([{idx: 3}]);
+        tree.removeSubtree(target.uuid).subscribe();
+      });
+    });
+  });
+
   test('Add node 3-5 data', async () => {
     const pconf = await getProcessedConfig(config1);
     await runRXTreeSnapshotTest('Add node 3-5 data', (expectObservable, cold) => {
@@ -480,4 +534,16 @@ category('ComputeUtils: Driver workflow test', async () => {
     });
   });
 
+  test('Add node 3-5 consistency', async () => {
+    const pconf = await getProcessedConfig(config1);
+    await runRXTreeSnapshotTest('Add node 3-5 consistency', (expectObservable, cold) => {
+      const [tree, tree$] = getTreeStates(pconf);
+      mockWorkflow(tree).subscribe();
+      expectTreeConsistency(tree$, expectObservable);
+      cold('500ms a').subscribe(() => {
+        const target = tree.nodeTree.getItem([{idx: 2}]);
+        tree.addSubTree(target.uuid, 'stepDiv', 4).subscribe();
+      });
+    });
+  });
 });

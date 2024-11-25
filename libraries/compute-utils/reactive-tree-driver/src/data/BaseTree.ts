@@ -28,17 +28,6 @@ export class BaseTree<T> {
     return true;
   }
 
-  public static isNodeChildOffseted(path: Readonly<NodeAddress>, nodeAddress: Readonly<NodeAddress>, childOffset?: number): boolean {
-    if (childOffset == null)
-      return this.isNodeChildOrEq(path, nodeAddress);
-    if (!this.isNodeChildOrEq(path, nodeAddress))
-      return false;
-    const nextSegment = nodeAddress[path.length];
-    if (!nextSegment || nextSegment.idx < childOffset)
-      return false;
-    return true;
-  }
-
   public static isNodeAddressEq(a1: Readonly<NodeAddress>, a2: Readonly<NodeAddress>): boolean {
     for (const [level, {idx}] of a1.entries()) {
       const idx2 = a2[level]?.idx;

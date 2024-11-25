@@ -2,9 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {v4 as uuidv4} from 'uuid';
-import {BaseTree, NodeAddress, NodePath} from '../data/BaseTree';
+import {BaseTree, NodePath} from '../data/BaseTree';
 import {isFuncCallNode, StateTreeNode} from './StateTreeNodes';
-import {ActionSpec, LinkSpec, MatchedNodePaths, MatchInfo, matchNodeLink} from './link-matching';
+import {ActionSpec, LinkSpec, MatchInfo, matchNodeLink, updateMatchInfoUUIDs} from './link-matching';
 import {Action, Link} from './Link';
 import {BehaviorSubject, concat, merge, Subject, of, Observable, defer, combineLatest} from 'rxjs';
 import {takeUntil, map, scan, switchMap, filter, mapTo, toArray, take, tap, debounceTime, delay, concatMap} from 'rxjs/operators';
@@ -13,12 +13,6 @@ import {makeValidationResult} from '../utils';
 import {DriverLogger} from '../data/Logger';
 import {getLinksDiff} from './links-diff';
 import {ViewAction} from '../config/PipelineInstance';
-
-export interface NestedMutationData {
-  mutationRootPath: NodeAddress,
-  addIdx?: number,
-  removeIdx?: number,
-}
 
 export interface LinksData {
   prefix: NodePath;
@@ -63,7 +57,7 @@ export class LinksState {
     ).subscribe(this.runningLinks$);
   }
 
-  public update(state: BaseTree<StateTreeNode>, nestedMutationData?: NestedMutationData) {
+  public update(state: BaseTree<StateTreeNode>, isMutation: boolean) {
     this.disableLinks();
 
     const oldLinks = [...this.links.values()];
@@ -74,22 +68,15 @@ export class LinksState {
     this.stepsDependencies = this.calculateStepsDependencies(state, links);
     this.ioDependencies = this.calculateIoDependencies(state, links);
 
-    if (nestedMutationData) {
-      const {mutationRootPath, addIdx, removeIdx} = nestedMutationData;
-      const bound = this.getLowerBound(addIdx, removeIdx);
-      const inbound = addedLinks.filter((link) => this.isDataLink(link) && this.isInbound(mutationRootPath, link, addIdx, removeIdx));
-      const outgoing = addedLinks.filter((link) => this.isDataLink(link) && this.isOutgoing(mutationRootPath, link, addIdx));
+    if (isMutation) {
+      const newData = addedLinks.filter((link) => this.isDataLink(link));
       const newMeta = addedLinks.filter((link) => !this.isDataLink(link));
-      const inboundMap = this.toLinksMap(inbound);
-      const outgoingMap = this.toLinksMap(outgoing);
-      const newMetaMap = this.toLinksMap(newMeta);
       this.linksUpdates.next(true);
       return concat(
         of(this.wireLinks(state)),
         this.runNewInits(state),
-        this.runLinks(state, inboundMap, mutationRootPath, bound),
-        this.runLinks(state, outgoingMap),
-        this.runLinks(state, newMetaMap),
+        this.runLinks(state, this.toLinksMap(newData)),
+        this.runLinks(state, this.toLinksMap(newMeta)),
       ).pipe(toArray(), mapTo(undefined));
     } else {
       this.linksUpdates.next(true);
@@ -216,15 +203,18 @@ export class LinksState {
               ioName: io.id,
             }],
           },
+          inputsUUID: new Map(),
           outputs: {
             'out': [{
               path: [],
               ioName: io.id,
             }],
           },
+          outputsUUID: new Map(),
           actions: {},
           isDefaultValidator: true,
         };
+        updateMatchInfoUUIDs(node, minfo);
         return new Link(path, minfo, 0);
       }).filter((x) => !!x);
       return [...acc, ...(validators ?? [])];
@@ -287,7 +277,7 @@ export class LinksState {
     return deps;
   }
 
-  public runLinks(state: BaseTree<StateTreeNode>, links: Map<string, Link>, mutationRootPath?: NodeAddress, childOffset?: number) {
+  public runLinks(state: BaseTree<StateTreeNode>, links: Map<string, Link>) {
     const scheduledLinks = new Set<string>();
     const obs = state.traverse(state.root, (acc, node) => {
       const item = node.getItem();
@@ -301,7 +291,7 @@ export class LinksState {
           scheduledLinks.add(linkUUID);
           return combineLatest([
             this.runningLinks$,
-            this.getLinkRunObs(linkUUID, mutationRootPath, childOffset),
+            this.getLinkRunObs(linkUUID),
           ]).pipe(
             debounceTime(0),
             filter(([running]) => !running || running.length === 0),
@@ -385,51 +375,10 @@ export class LinksState {
     return link.matchInfo.isDefaultValidator;
   }
 
-  public isInbound(rootPath: Readonly<NodeAddress>, link: Link, addIdx?: number, removeIdx?: number) {
-    if (addIdx != null) {
-      const addedNodePath = [...rootPath, {idx: addIdx}];
-      const isNodeInbound = (this.hasNested(addedNodePath, link.prefix, link.matchInfo.outputs) &&
-        this.hasNonNested(addedNodePath, link.prefix, link.matchInfo.inputs));
-      if (isNodeInbound)
-        return isNodeInbound;
-    }
-
-    const bound = this.getLowerBound(addIdx, removeIdx);
-    return (this.hasNested(rootPath, link.prefix, link.matchInfo.outputs, bound) &&
-      this.hasNonNested(rootPath, link.prefix, link.matchInfo.inputs, bound));
-  }
-
-  public isOutgoing(rootPath: Readonly<NodeAddress>, link: Link, addIdx?: number) {
-    const addedNodePath = addIdx == null ? rootPath : [...rootPath, {idx: addIdx}];
-    return this.hasNested(addedNodePath, link.prefix, link.matchInfo.inputs) &&
-      this.hasNonNested(addedNodePath, link.prefix, link.matchInfo.outputs);
-  }
-
-  private getLowerBound(addIdx?: number, removeIdx?: number) {
-    if (addIdx == null && removeIdx == null)
-      return undefined;
-    if (addIdx != null && removeIdx != null)
-      return Math.min(addIdx, removeIdx);
-    if (addIdx != null)
-      return addIdx;
-    if (removeIdx != null)
-      return removeIdx;
-  }
-
-  private hasNested(rootPath: Readonly<NodeAddress>, prefix: Readonly<NodeAddress>, minfos: Record<string, MatchedNodePaths>, childOffset?: number) {
-    return Object.entries(minfos).some(
-      ([, minfo]) => minfo.some((io) => BaseTree.isNodeChildOffseted(rootPath, [...prefix, ...io.path], childOffset)));
-  }
-
-  private hasNonNested(rootPath: Readonly<NodeAddress>, prefix: Readonly<NodeAddress>, minfos: Record<string, MatchedNodePaths>, childOffset?: number) {
-    return Object.entries(minfos).some(
-      ([, minfo]) => minfo.some((io) => !BaseTree.isNodeChildOffseted(rootPath, [...prefix, ...io.path], childOffset)));
-  }
-
-  private getLinkRunObs(linkUUID: string, mutationPath?: NodeAddress, childOffset?: number) {
+  private getLinkRunObs(linkUUID: string) {
     const link = this.links.get(linkUUID)!;
     const obs$ = defer(() => {
-      link.trigger(mutationPath, childOffset);
+      link.trigger();
       return this.runningLinks$.pipe(filter((x) => x?.length === 0), mapTo(true as const));
     });
     return obs$;
