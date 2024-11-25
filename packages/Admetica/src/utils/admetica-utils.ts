@@ -347,7 +347,7 @@ export function addResultColumns(
   });
 
   if (addPiechart)
-    addSparklines(viewTable, updatedModelNames, molColIdx + 1);
+    addSparklines(viewTable, updatedModelNames, molColIdx + 2);
 
   addColorCoding(viewTable, updatedModelNames);
   addCustomTooltip(viewTable);
