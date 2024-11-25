@@ -9,7 +9,7 @@ import {ILineSeries, MouseOverLineEvent, ScatterPlotLinesRenderer}
   from '@datagrok-libraries/utils/src/render-lines-on-sp';
 
 import {MMPA} from '../mmp-analysis/mmpa';
-import {MMP_NAMES} from './mmp-constants';
+import {CLIFFS_TAB_TOOLTIP, FRAGMENTS_GRID_TOOLTIP, FRAGMENTS_TAB_TOOLTIP, MATHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS, MATHED_MOLECULAR_PAIRS_TOOLTIP_TRANS, MMP_NAMES} from './mmp-constants';
 
 import {PaletteCodes, getPalette} from './palette';
 import {getMmpTrellisPlot} from './mmp-frag-vs-frag';
@@ -232,12 +232,19 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       return button;
     };
 
-    const createGridDiv = (name: string, grid: DG.Grid) => {
+    const helpButton = (tooltipText: string, className: string) => {
+      const button = ui.icons.help(() => {});
+      ui.tooltip.bind(button, () => ui.divText(tooltipText, {style: {width: '300px'}}));
+      button.classList.add(className);
+      return button;
+    };
+
+    const createGridDiv = (name: string, grid: DG.Grid, tooltip: string) => {
       const header = ui.h1(name, 'chem-mmpa-transformation-tab-header');
       grid.root.prepend(header);
       return ui.splitV([
         ui.box(
-          ui.divH([header, addToWorkspaceButton(grid.dataFrame, name, 'chem-mmpa-add-to-workspace-button')]),
+          ui.divH([header, addToWorkspaceButton(grid.dataFrame, name, 'chem-mmpa-add-to-workspace-button'), helpButton(tooltip, 'chem-mmpa-grid-help-icon')]),
           {style: {maxHeight: '30px'}},
         ),
         grid.root,
@@ -245,10 +252,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     };
 
     //const mmPairsDiv = ui.div('', {style: {width: '100%', height: '100%'}});
-    const mmPairsRoot1 = createGridDiv('Matched Molecular Pairs', this.pairedGrids!.mmpGridTrans);
-    const mmPairsRoot2 = createGridDiv('Matched Molecular Pairs', this.pairedGrids!.mmpGridFrag);
+    const mmPairsRoot1 = createGridDiv('Matched Molecular Pairs', this.pairedGrids!.mmpGridTrans, MATHED_MOLECULAR_PAIRS_TOOLTIP_TRANS);
+    const mmPairsRoot2 = createGridDiv('Matched Molecular Pairs', this.pairedGrids!.mmpGridFrag, MATHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS);
     const gridsDiv = ui.splitV([
-      createGridDiv('Fragment Pairs', this.pairedGrids!.fpGrid),
+      createGridDiv('Fragment Pairs', this.pairedGrids!.fpGrid, FRAGMENTS_GRID_TOOLTIP),
       mmPairsRoot1,
     ], {}, true);
 
@@ -269,7 +276,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     tp.root.prepend(header);
     const tpDiv = ui.splitV([
       ui.box(
-        ui.divH([header, filterIcon]),
+        ui.divH([header, filterIcon, helpButton(FRAGMENTS_TAB_TOOLTIP, 'chem-mmpa-grid-help-icon')]),
         {style: {maxHeight: '30px'}},
       ),
       tp.root,
@@ -294,12 +301,15 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const cliffsTab = tabs.addPane(MMP_NAMES.TAB_CLIFFS, () => {
       return cliffs;
     });
+    const cliffsHelpButton = helpButton(CLIFFS_TAB_TOOLTIP, 'chem-mmpa-add-tab-header-button');
+    cliffsHelpButton.classList.add('cliffs-help-button');
+    cliffsTab.header.append(cliffsHelpButton);  
     cliffsTab.content.classList.add('mmpa-cliffs-tab');
     const genTab = tabs.addPane(MMP_NAMES.TAB_GENERATION, () => {
       return this.generationsGrid!.root;
     });
     genTab.header.append(addToWorkspaceButton(this.generationsGrid!.dataFrame,
-      'Generation', 'chem-mmpa-add-generation-to-workspace-button'));
+      'Generation', 'chem-mmpa-add-tab-header-button'));
 
     let refilter = true;
     tabs.onTabChanged.subscribe(() => {
@@ -362,7 +372,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const decript1 = 'Shows all fragmental substitutions for a given molecule';
     const decript2 = 'Analysis of fragments versus explored value';
     const decript3 = 'Cliffs analysis';
-    const decript4 = 'Genneration of molecules based on obtained rules';
+    const decript4 = 'Generation of molecules based on obtained rules';
 
     ui.tooltip.bind(tabs.getPane(MMP_NAMES.TAB_TRANSFORMATIONS).header, decript1);
     ui.tooltip.bind(tabs.getPane(MMP_NAMES.TAB_FRAGMENTS).header, decript2);

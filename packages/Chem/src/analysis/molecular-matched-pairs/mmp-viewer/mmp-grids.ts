@@ -76,7 +76,7 @@ export class MmpPairedGrids {
     this.mmpMaskTrans.setAll(false);
     this.refreshMatchedPair(this.rdkit);
 
-    this.mmpMaskTrans.setAll(false);
+    //this.mmpMaskTrans.setAll(false);
   }
 
   refreshMaskFragmentPairsFilter(): void {
