@@ -20,6 +20,17 @@ position: 6 # float position is supported
 See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.md)
+## 2024-11-25 1.22.2
+
+### Addressed Issues
+
+* (Bug) GROK-16997: #3145: Viewers: Scatter plot: label can be dragged out of scatter plot area and completely hidden 
+* (Bug) GROK-16948: #3120: Viewers: Scatter plot: cannot drag label if Mouse Drag = Select 
+* (Bug) GROK-16898: PC Plot: Transformation doesn't work 
+* (Bug) [#3150](https://github.com/datagrok-ai/public/issues/3150): Box plot: New multi-category Box plot is not compatible with older layouts that have only single category 
+* (Bug) GROK-16965: #3123: Scatter plot: not all formula lines are shown in some cases 
+
+
 ## 2024-11-04 1.22.1
 
 ### Addressed Issues
