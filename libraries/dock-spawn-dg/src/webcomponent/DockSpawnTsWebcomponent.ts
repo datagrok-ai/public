@@ -80,7 +80,11 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
           const slot = dockNode.elementContent as any as HTMLSlotElement;
           const element = this.slotElementMap.get(slot);
           if (element) {
-            if (this.contains(element)) this.removeChild(element);
+            if (this.contains(element)) {
+              this.observer.disconnect();
+              this.removeChild(element);
+              this.observer.observe(this, {childList: true});
+            }
             this.dispatchEvent(new CustomEvent('panel-closed', {detail: element}));
           }
         },
@@ -109,7 +113,7 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
   }
 
   public set activePanelTitle(panelTitle: string) {
-    const foundPanel = this.dockManager.getPanels().find((panel) => panel.title === panelTitle);
+    const foundPanel = this.dockManager?.getPanels().find((panel) => panel.title === panelTitle);
     if (foundPanel)
       this.dockManager.activePanel = foundPanel;
   }
@@ -119,7 +123,7 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
   }
 
   private handleAddedChildNode(element: HTMLElement) {
-    if (element instanceof Comment) return;
+    if (element instanceof Comment || (element instanceof Text && element.textContent.length === 0)) return;
 
     const slot = document.createElement('slot');
     const slotName = 'slot_' + this.slotId++;

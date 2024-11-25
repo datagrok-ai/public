@@ -357,6 +357,7 @@ export const TreeWizard = Vue.defineComponent({
               <RichFunctionView
                 class='overflow-hidden'
                 funcCall={chosenStepState.value.funcCall!}
+                uuid={chosenStepUuid.value!}
                 callState={chosenStepUuid.value ? states.calls[chosenStepUuid.value] : undefined}
                 callMeta={chosenStepUuid.value ? states.meta[chosenStepUuid.value] : undefined}
                 viewersHook={chosenStepState.value.viewersHook}

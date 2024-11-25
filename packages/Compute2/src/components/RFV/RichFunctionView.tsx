@@ -94,6 +94,9 @@ export const RichFunctionView = Vue.defineComponent({
       type: Object as Vue.PropType<DG.FuncCall>,
       required: true,
     },
+    uuid: {
+      type: String,
+    },
     callState: {
       type: Object as Vue.PropType<FuncCallStateInfo>,
     },
@@ -169,8 +172,10 @@ export const RichFunctionView = Vue.defineComponent({
       if (el === formRef.value) formHidden.value = true;
 
       const tabIdx = visibleTabLabels.value.findIndex((label) => label === el.getAttribute('dock-spawn-title'));
-      if (tabIdx >= 0)
+      if (tabIdx >= 0) {
         visibleTabLabels.value.splice(tabIdx, 1);
+        visibleTabLabels.value = [...visibleTabLabels.value];
+      }
     };
 
     const hashParams = useUrlSearchParams<{activePanel: string | null}>('hash-params');
@@ -267,7 +272,7 @@ export const RichFunctionView = Vue.defineComponent({
 
     const dockInited = Vue.ref(false);
 
-    const visibleTabLabels = Vue.ref([] as string[]);
+    const visibleTabLabels = Vue.shallowRef([] as string[]);
 
     const helpText = Vue.ref(null as null | string);
 
@@ -280,12 +285,16 @@ export const RichFunctionView = Vue.defineComponent({
       visibleTabLabels.value = [...tabLabels.value];
     }, {immediate: true});
 
-    Vue.watch([currentCall, dockInited], async () => {
-      if (dockInited.value) {
-        saveDefaultState()
-        await loadPersonalLayout();
-      }
+    const triggerSaveDefault = Vue.ref(false);
+    Vue.watch(triggerSaveDefault, async () => {
+      saveDefaultState()
+      await loadPersonalLayout();
     }, {flush: 'post'});
+
+    const handleDockInit = async () => {
+      dockInited.value = true;
+      triggerSaveDefault.value = !triggerSaveDefault.value;
+    };
 
     Vue.onBeforeUnmount(() => {
       savePersonalState(currentCall.value);
@@ -416,9 +425,10 @@ export const RichFunctionView = Vue.defineComponent({
             /> }
           </RibbonPanel>
           <DockManager
+            key={props.uuid}
             onPanelClosed={handlePanelClose}
             onUpdate:activePanelTitle={handleActivePanelChanged}
-            onInitFinished={() => dockInited.value = true}
+            onInitFinished={handleDockInit}
             ref={dockRef}
           >
             { !historyHidden.value &&
@@ -481,7 +491,6 @@ export const RichFunctionView = Vue.defineComponent({
                     return <div
                       class='flex flex-col pl-2 h-full w-full'
                       dock-spawn-title={tabLabel}
-                      key={tabLabel}
                     >
                       {
                         Vue.withDirectives(<Viewer
@@ -502,10 +511,10 @@ export const RichFunctionView = Vue.defineComponent({
                       class='h-full overflow-scroll'
                       categoryScalars={categoryProps}
                       funcCall={currentCall.value}
-                      key={tabLabel}
                       dock-spawn-title={tabLabel}
                       dock-spawn-dock-to={intelligentLayout &&
-                        lastCardLabel && scalarCardCount < 3 ? lastCardLabel: null
+                        lastCardLabel && visibleTabLabels.value.includes(lastCardLabel) && lastCardLabel !==tabLabel
+                        && scalarCardCount < 3 ? lastCardLabel: null
                       }
                       dock-spawn-dock-type={intelligentLayout ? (viewerTabLabels.value.length > 0 ?
                         (lastCardLabel ?
