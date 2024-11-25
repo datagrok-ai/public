@@ -177,7 +177,7 @@ category('UI: Choice input', () => {
     expect(selector.item(2)?.textContent, '2');
 
     expectArray(t.items, [null, '1', '2']);
-  }, { skipReason: 'https://reddata.atlassian.net/browse/GROK-15799' });
+  }, { skipReason: 'GROK-15799' });
 
   test('non-nullable', async () => {
     const t = ui.input.choice('test', { value: '1', items: ['1', '2'], nullable: false });
@@ -190,7 +190,7 @@ category('UI: Choice input', () => {
     expect(selector.item(1)?.textContent, '2');
 
     expectArray(t.items, ['1', '2']);
-  }, { skipReason: 'https://reddata.atlassian.net/browse/GROK-15799' });
+  });
 
   test('fromFunction', async () => {
     const view = grok.shell.newView();
@@ -271,7 +271,7 @@ category('UI: Choice input new', () => {
     expect(selector.item(2)?.textContent, '2');
 
     expectArray(t.items, [null, '1', '2']);
-  }, { skipReason: 'https://reddata.atlassian.net/browse/GROK-15799' });
+  }, { skipReason: 'GROK-15799' });
 
   test('non-nullable', async () => {
     const t = ui.input.choice('test', { value: '1', items: ['1', '2'], nullable: false });
@@ -284,7 +284,7 @@ category('UI: Choice input new', () => {
     expect(selector.item(1)?.textContent, '2');
 
     expectArray(t.items, ['1', '2']);
-  }, { skipReason: 'https://reddata.atlassian.net/browse/GROK-15799' });
+  });
 
   test('fromFunction', async () => {
     const view = grok.shell.newView();
@@ -308,7 +308,7 @@ category('UI: Choice input new', () => {
     expect(select.value, 'Female');
     select.value = '';
     expect(select.value, '');
-  }, { skipReason: 'https://reddata.atlassian.net/browse/GROK-15799' });
+  });
 
   test('fromProperty', async () => {
     const property = DG.Property.js('showPoints', DG.TYPE.STRING, {
@@ -343,7 +343,7 @@ category('UI: Choice input new', () => {
     expect(select.value, 'both');
     select.value = '';
     expect(select.value, '');
-  }, { skipReason: 'https://reddata.atlassian.net/browse/GROK-15799' });
+  });
 
   after(async () => {
     grok.shell.closeAll();
@@ -364,7 +364,7 @@ category('UI: Table input new', () => {
     const selector = view.root.querySelector('select.ui-input-editor') as HTMLSelectElement;
     expect(selector.item(0)?.textContent, '');
     expect(selector.item(1)?.textContent, 'demog 10');
-  }, { skipReason: 'https://reddata.atlassian.net/browse/GROK-15799' });
+  });
 
   test('non-nullable', async () => {
     const t = ui.input.table('test', { nullable: false });
@@ -374,7 +374,7 @@ category('UI: Table input new', () => {
 
     const selector = view.root.querySelector('select.ui-input-editor') as HTMLSelectElement;
     expect(selector.item(0)?.textContent, 'demog 10');
-  }, { skipReason: 'https://reddata.atlassian.net/browse/GROK-15799' });
+  }, { skipReason: 'GROK-15799' });
 
   after(async () => {
     grok.shell.closeAll();
