@@ -58,18 +58,18 @@ class WebGPUCache {
     const markerSizesParamsChanged = this.isMarkerSizesParamsChanged(sc);
     const colorChanged = this.isColorChanged(sc);
     const selectionChanged = this.isSelectionChanged(sc);
-  
+
     if (indexBufferChanged)
-        this.setIndexBuffer(sc.filter, device);
+      this.setIndexBuffer(sc.filter, device);
 
     if (columnChanged)
-        this.setColumns(xCol, yCol, device);
+      this.setColumns(xCol, yCol, device);
 
     // We'll set the viewBox and viewPort each time as this is cheap
     this.setViewBuffer(sc, device, pt);
 
     if (markerSizesParamsChanged)
-        this.setMarkerSizes(sc, device);
+      this.setMarkerSizes(sc, device);
 
     if (colorChanged)
       this.setColor(sc, device);
@@ -206,22 +206,21 @@ class WebGPUCache {
       const size = Math.max(sc.getMarkerSize(0), 2);
       this.markerSizesLength = 1;
       this.markerSizesBuffer = device.createBuffer({
-          size: getPaddedSize(this.markerSizesLength),
-          usage: GPUBufferUsage.STORAGE,
-          mappedAtCreation: true,
-        });
+        size: getPaddedSize(this.markerSizesLength),
+        usage: GPUBufferUsage.STORAGE,
+        mappedAtCreation: true,
+      });
       const scBufferArray = this.markerSizesBuffer.getMappedRange();
       new Float32Array(scBufferArray, 0, this.markerSizesLength).set([size]);
       this.markerSizesBuffer.unmap();
-    }
-    else {
+    } else {
       const sizes = sc.getMarkerSizes();
       this.markerSizesLength = sizes.length;
       this.markerSizesBuffer = device.createBuffer({
-          size: getPaddedSize(this.markerSizesLength),
-          usage: GPUBufferUsage.STORAGE,
-          mappedAtCreation: true,
-        });
+        size: getPaddedSize(this.markerSizesLength),
+        usage: GPUBufferUsage.STORAGE,
+        mappedAtCreation: true,
+      });
       const scBufferArray = this.markerSizesBuffer.getMappedRange();
       new Float32Array(scBufferArray, 0, this.markerSizesLength).set(sizes);
       this.markerSizesBuffer.unmap();
@@ -235,7 +234,7 @@ class WebGPUCache {
     this.selectedRowsColor = sc.props.selectedRowsColor;
     this.filteredRowsColor = sc.props.filteredRowsColor;
     this.filteredOutRowsColor = sc.props.filteredOutRowsColor;
-    this.invertColorScheme = sc.props.invertColorScheme;;
+    this.invertColorScheme = sc.props.invertColorScheme; ;
     this.colorAxisType = sc.props.colorAxisType;
     this.colorMin = sc.props.colorMin;
     this.colorMax = sc.props.colorMax;
@@ -243,10 +242,10 @@ class WebGPUCache {
     this.categoricalColorScheme = sc.props.categoricalColorScheme;
     this.selectionVersion = sc.dataFrame.selection.version;
     this.colorBuffer = device.createBuffer({
-        size: getPaddedSize(this.colorLength),
-        usage: GPUBufferUsage.STORAGE,
-        mappedAtCreation: true,
-      });
+      size: getPaddedSize(this.colorLength),
+      usage: GPUBufferUsage.STORAGE,
+      mappedAtCreation: true,
+    });
     const colorsArray = this.colorBuffer.getMappedRange();
     new Uint32Array(colorsArray, 0, this.colorLength).set(colors);
     this.colorBuffer.unmap();
@@ -276,35 +275,35 @@ class WebGPUCache {
   }
 
   updateTexuteAtlas(sc: DG.ScatterPlotViewer, device: GPUDevice) {
-    if (this.texture == null || this.gpuTexture == null 
-      || this.isMarkerSizesParamsChanged(sc)
-      || this.markerType != sc.getMarkerType(0) as DG.MARKER_TYPE
-      || this.minTextureSize != sc.props.markerMinSize
-      || this.maxTextureSize != sc.props.markerMaxSize) {
-        this.minTextureSize = sc.props.markerMinSize;
-        this.maxTextureSize = sc.props.markerMaxSize;
-        this.markerType = sc.getMarkerType(0) as DG.MARKER_TYPE;
+    if (this.texture == null || this.gpuTexture == null ||
+      this.isMarkerSizesParamsChanged(sc) ||
+      this.markerType != sc.getMarkerType(0) as DG.MARKER_TYPE ||
+      this.minTextureSize != sc.props.markerMinSize ||
+      this.maxTextureSize != sc.props.markerMaxSize) {
+      this.minTextureSize = sc.props.markerMinSize;
+      this.maxTextureSize = sc.props.markerMaxSize;
+      this.markerType = sc.getMarkerType(0) as DG.MARKER_TYPE;
 
-        let minSize = this.minTextureSize + sc.props.markerBorderWidth;
-        let maxSize = this.maxTextureSize + sc.props.markerBorderWidth;
-        if (!sc.props.sizeColumnName) {
-          const size = sc.getMarkerSize(0) + sc.props.markerBorderWidth;
-          minSize = size;
-          maxSize = size;
-        }
-        this.textureGridSize = Math.ceil(Math.sqrt((maxSize - minSize) + 1));
-        this.texture = createTextureAtlas(minSize, maxSize, this, sc);
+      let minSize = this.minTextureSize + sc.props.markerBorderWidth;
+      let maxSize = this.maxTextureSize + sc.props.markerBorderWidth;
+      if (!sc.props.sizeColumnName) {
+        const size = sc.getMarkerSize(0) + sc.props.markerBorderWidth;
+        minSize = size;
+        maxSize = size;
+      }
+      this.textureGridSize = Math.ceil(Math.sqrt((maxSize - minSize) + 1));
+      this.texture = createTextureAtlas(minSize, maxSize, this, sc);
 
-        this.gpuTexture = device.createTexture({
-          size: [this.texture.width, this.texture.height],
-          format: 'rgba8unorm',
-          usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
-        });  
-        device.queue.copyExternalImageToTexture(
-            { source: this.texture },
-            { texture: this.gpuTexture, premultipliedAlpha: true},
-            [this.texture.width, this.texture.height]
-        );
+      this.gpuTexture = device.createTexture({
+        size: [this.texture.width, this.texture.height],
+        format: 'rgba8unorm',
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
+      });
+      device.queue.copyExternalImageToTexture(
+        {source: this.texture},
+        {texture: this.gpuTexture, premultipliedAlpha: true},
+        [this.texture.width, this.texture.height]
+      );
     }
   }
 };
@@ -354,13 +353,13 @@ export async function scWebGPURender(sc: DG.ScatterPlotViewer, show: boolean) {
     updateCanvasPosition(cache, sc.viewBox, canvas);
 
     try {
-        if (sc.props.markerType == DG.MARKER_TYPE.DOT)
-          await webGPURenderDots(canvas, sc);
-        else
-          await webGPURenderTexture(canvas, sc);
+      if (sc.props.markerType == DG.MARKER_TYPE.DOT)
+        await webGPURenderDots(canvas, sc);
+      else
+        await webGPURenderTexture(canvas, sc);
     } catch (error) {
-        canvas.hidden = true;
-        throw error;
+      canvas.hidden = true;
+      throw error;
     }
   }
 }
@@ -368,14 +367,14 @@ export async function scWebGPURender(sc: DG.ScatterPlotViewer, show: boolean) {
 export async function scWebGPUPointHitTest(sc: DG.ScatterPlotViewer, pt: DG.Point) : Promise<number> {
   const cache = getWebGPUCache(sc);
   if (!cache)
-    throw  'Failed to get WebGPU cache for scatter plot viewer';
+    throw new Error('Failed to get WebGPU cache for scatter plot viewer');
 
   const device = await getGPUDevice();
   if (!device)
-    throw  'Failed to get WebGPU device';
+    throw new Error('Failed to get WebGPU device');
 
   if (!cache.updateAndValidate(sc, device, pt) || !cache.indexBuffer || !cache.columnBuffer || !cache.viewBuffer || !cache.markerSizesBuffer)
-    throw 'Failed to update and validate cache or to initalize buffers';
+    throw new Error('Failed to update and validate cache or to initalize buffers');
 
   const kWorkgroupSize = 100;
   const workGroupDispatchSize = Math.ceil(Math.sqrt(Math.ceil(cache.indexBufferLength / kWorkgroupSize)));
@@ -477,9 +476,8 @@ export async function scWebGPUPointHitTest(sc: DG.ScatterPlotViewer, pt: DG.Poin
 
   const info = await module.getCompilationInfo();
   for (const message of info.messages) {
-    if (message.type === 'error') {
-      throw `WebGPU hit test shader module error: ${message.message}`;
-    }
+    if (message.type === 'error')
+      throw new Error(`WebGPU hit test shader module error: ${message.message}`);
   }
 
   return hitIndex;
@@ -493,25 +491,26 @@ function areEqual(rc1: DG.Rect, rc2: DG.Rect): boolean {
 async function webGPURenderDots(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotViewer) {
   const cache = getWebGPUCache(sc);
   if (!cache)
-    throw  'Failed to get WebGPU cache for scatter plot viewer';
+    throw new Error('Failed to get WebGPU cache for scatter plot viewer');
 
   const device = await getGPUDevice();
   if (!device)
-    throw  'Failed to get WebGPU device';
+    throw new Error('Failed to get WebGPU device');
 
   if (!cache.updateAndValidate(sc, device))
-    throw 'Failed to update and validate cache or to initalize buffers';
+    throw new Error('Failed to update and validate cache or to initalize buffers');
 
-  const gpuContext = webGPUCanvas.getContext('webgpu');
+  // TODO: Remove this as unknown later. smth weird weird with the types
+  const gpuContext = webGPUCanvas.getContext('webgpu') as unknown as GPUCanvasContext | null;
   if (!gpuContext)
-    throw 'Failed to get gpu context from canvas';
+    throw new Error('Failed to get gpu context from canvas');
 
   _renderDots(device, gpuContext, cache);
 }
 
 async function _renderDots(device: GPUDevice, gpuContext: GPUCanvasContext, cache: WebGPUCache) {
   if (!cache.indexBuffer || !cache.columnBuffer || !cache.viewBuffer || !cache.colorBuffer)
-    throw 'Failed to update and validate cache or to initalize buffers';
+    throw new Error('Failed to update and validate cache or to initalize buffers');
 
   const rendersCount = cache.selectionLength > 0 ? 2 : 1;
 
@@ -531,7 +530,7 @@ async function _renderDots(device: GPUDevice, gpuContext: GPUCanvasContext, cach
     module = device.createShaderModule({
       code: wgslGetDotsRendering(cache, isSelection),
     });
-  
+
     const pipeline = device.createRenderPipeline({
       label: '1 pixel points',
       layout: 'auto',
@@ -549,13 +548,13 @@ async function _renderDots(device: GPUDevice, gpuContext: GPUCanvasContext, cach
       },
       fragment: {
         module,
-        targets: [{ format: presentationFormat }],
+        targets: [{format: presentationFormat}],
       },
       primitive: {
         topology: 'point-list',
       },
     });
-  
+
     const renderPassDescriptor = {
       label: 'Dot canvas renderPass',
       colorAttachments: [
@@ -566,7 +565,7 @@ async function _renderDots(device: GPUDevice, gpuContext: GPUCanvasContext, cach
         },
       ],
     };
-  
+
     const dataGroup = device.createBindGroup({
       layout: pipeline.getBindGroupLayout(0),
       entries: isSelection ? [
@@ -594,9 +593,8 @@ async function _renderDots(device: GPUDevice, gpuContext: GPUCanvasContext, cach
   if (module != null) {
     const info = await module.getCompilationInfo();
     for (const message of info.messages) {
-      if (message.type === 'error') {
-        throw `WebGPURender shader module error: ${message.message}`;
-      }
+      if (message.type === 'error')
+        throw new Error(`WebGPURender shader module error: ${message.message}`);
     }
   }
 }
@@ -604,29 +602,29 @@ async function _renderDots(device: GPUDevice, gpuContext: GPUCanvasContext, cach
 async function webGPURenderTexture(webGPUCanvas: HTMLCanvasElement, sc: DG.ScatterPlotViewer) {
   const cache = getWebGPUCache(sc);
   if (!cache)
-    throw  'Failed to get WebGPU cache for scatter plot viewer';
+    throw new Error('Failed to get WebGPU cache for scatter plot viewer');
 
   const device = await getGPUDevice();
   if (!device)
-    throw  'Failed to get WebGPU device';
+    throw new Error('Failed to get WebGPU device');
 
   cache.updateTexuteAtlas(sc, device);
   if (!cache.gpuTexture)
-    throw 'Failed to update texture atlas';
+    throw new Error('Failed to update texture atlas');
 
   if (!cache.updateAndValidate(sc, device) || !cache.indexBuffer || !cache.columnBuffer || !cache.viewBuffer || !cache.markerSizesBuffer || !cache.colorBuffer)
-    throw 'Failed to update and validate cache or to initalize buffers';
-
-  const gpuContext = webGPUCanvas.getContext('webgpu');
+    throw new Error('Failed to update and validate cache or to initalize buffers');
+  // TODO: Remove this as unknown later. smth weird weird with the types
+  const gpuContext = webGPUCanvas.getContext('webgpu') as unknown as GPUCanvasContext | null;
   if (!gpuContext)
-    throw 'Failed to get gpu context from canvas';
+    throw new Error('Failed to get gpu context from canvas');
 
   _renderTextures(sc, device, gpuContext, cache);
 }
 
 async function _renderTextures(sc: DG.ScatterPlotViewer, device: GPUDevice, gpuContext: GPUCanvasContext, cache: WebGPUCache) {
   if (!cache.indexBuffer || !cache.columnBuffer || !cache.viewBuffer || !cache.markerSizesBuffer || !cache.colorBuffer || !cache.gpuTexture)
-    throw 'Failed to update and validate cache or to initalize buffers';
+    throw new Error('Failed to update and validate cache or to initalize buffers');
 
   const rendersCount = cache.selectionLength > 0 ? 2 : 1;
 
@@ -646,7 +644,7 @@ async function _renderTextures(sc: DG.ScatterPlotViewer, device: GPUDevice, gpuC
     module = device.createShaderModule({
       code: wgslGetTextureRendering(sc, cache, isSelection),
     });
-  
+
     const pipeline = device.createRenderPipeline({
       label: 'sizeable points with texture',
       layout: 'auto',
@@ -683,12 +681,12 @@ async function _renderTextures(sc: DG.ScatterPlotViewer, device: GPUDevice, gpuC
         ],
       },
     });
-  
+
     const sampler = device.createSampler({
       minFilter: 'nearest',
       magFilter: 'nearest',
     });
-  
+
     const uniformValues = new Float32Array(2);
     const uniformBuffer = device.createBuffer({
       size: uniformValues.byteLength,
@@ -697,21 +695,21 @@ async function _renderTextures(sc: DG.ScatterPlotViewer, device: GPUDevice, gpuC
     const kResolutionOffset = 0;
     const resolutionValue = uniformValues.subarray(
       kResolutionOffset, kResolutionOffset + 2);
-  
+
     const dataGroup = device.createBindGroup({
       layout: pipeline.getBindGroupLayout(1),
       entries: isSelection ? [
         {binding: 0, resource: {buffer: cache.viewBuffer}},
         {binding: 1, resource: {buffer: cache.columnBuffer}},
         {binding: 2, resource: {buffer: cache.markerSizesBuffer}},
-      ] :  [
+      ] : [
         {binding: 0, resource: {buffer: cache.viewBuffer}},
         {binding: 1, resource: {buffer: cache.columnBuffer}},
         {binding: 2, resource: {buffer: cache.markerSizesBuffer}},
         {binding: 3, resource: {buffer: cache.colorBuffer}},
       ],
     });
-  
+
     const renderPassDescriptor = {
       label: 'our basic canvas renderPass',
       colorAttachments: [
@@ -722,14 +720,14 @@ async function _renderTextures(sc: DG.ScatterPlotViewer, device: GPUDevice, gpuC
         },
       ],
     };
-  
+
     // Get the current texture from the canvas context and
     // set it as the texture to render to.
     const canvasTexture = gpuContext.getCurrentTexture();
     // Update the resolution in the uniform buffer
     resolutionValue.set([canvasTexture.width, canvasTexture.height]);
     device.queue.writeBuffer(uniformBuffer, 0, uniformValues);
-  
+
     const renderGroup = device.createBindGroup({
       layout: pipeline.getBindGroupLayout(0),
       entries: [
@@ -755,9 +753,8 @@ async function _renderTextures(sc: DG.ScatterPlotViewer, device: GPUDevice, gpuC
   if (module != null) {
     const info = await module.getCompilationInfo();
     for (const message of info.messages) {
-      if (message.type === 'error') {
-        throw `WebGPURender shader module error: ${message.message}`;
-      }
+      if (message.type === 'error')
+        throw new Error(`WebGPURender shader module error: ${message.message}`);
     }
   }
 }
@@ -773,37 +770,37 @@ function getPaddedSize(length: number): number {
 }
 
 function createTextureAtlas(minSize: number, maxSize: number, cache: WebGPUCache, sc: DG.ScatterPlotViewer): OffscreenCanvas {
-    // We'll take the minimum size as 2 while adding the border width to maintain the whole size
-    const sizes = Array.from({ length: (maxSize - minSize) + 1 }, (_, i) => i + minSize);
+  // We'll take the minimum size as 2 while adding the border width to maintain the whole size
+  const sizes = Array.from({length: (maxSize - minSize) + 1}, (_, i) => i + minSize);
 
-    // Calculate the size of the atlas canvas
-    const atlasSize = (maxSize + cache.texturePadding) * cache.textureGridSize; // Each cell will have a size of maxSize + padding
-    const atlasCanvas = new OffscreenCanvas(atlasSize, atlasSize);
-    const ctx = atlasCanvas.getContext('2d');
+  // Calculate the size of the atlas canvas
+  const atlasSize = (maxSize + cache.texturePadding) * cache.textureGridSize; // Each cell will have a size of maxSize + padding
+  const atlasCanvas = new OffscreenCanvas(atlasSize, atlasSize);
+  const ctx = atlasCanvas.getContext('2d');
 
-    if (!ctx)
-        return atlasCanvas;
-
-    // Draw each size of the marker in the grid
-    sizes.forEach((size, index) => {
-      const x = index % cache.textureGridSize;
-      const y = Math.floor(index / cache.textureGridSize);
-
-      // Calculate position in the atlas
-      const cellSize = maxSize + cache.texturePadding;
-
-      // Get the canvas for the current circle size
-      const shapeCanvas = createShapeCanvas(cellSize, size, cache.markerType as DG.MARKER_TYPE, sc);
-
-      // Center the texture in the cell
-      const posX = x * cellSize;
-      const posY = y * cellSize;
-
-      // Draw the texture onto the atlas at the calculated position
-      ctx.drawImage(shapeCanvas, posX, posY);
-    });
-
+  if (!ctx)
     return atlasCanvas;
+
+  // Draw each size of the marker in the grid
+  sizes.forEach((size, index) => {
+    const x = index % cache.textureGridSize;
+    const y = Math.floor(index / cache.textureGridSize);
+
+    // Calculate position in the atlas
+    const cellSize = maxSize + cache.texturePadding;
+
+    // Get the canvas for the current circle size
+    const shapeCanvas = createShapeCanvas(cellSize, size, cache.markerType as DG.MARKER_TYPE, sc);
+
+    // Center the texture in the cell
+    const posX = x * cellSize;
+    const posY = y * cellSize;
+
+    // Draw the texture onto the atlas at the calculated position
+    ctx.drawImage(shapeCanvas, posX, posY);
+  });
+
+  return atlasCanvas;
 }
 
 function createShapeCanvas(
@@ -824,9 +821,9 @@ function createShapeCanvas(
   // Translate the origin down by the canvas height to correct the position after flipping
   ctx.translate(0, -ctx.canvas.height);
 
-  DG.Paint.marker(ctx as unknown as CanvasRenderingContext2D, shapeType, canvasSize / 2, canvasSize / 2, "#0000ff", markerSize - sc.props.markerBorderWidth);
+  DG.Paint.marker(ctx as unknown as CanvasRenderingContext2D, shapeType, canvasSize / 2, canvasSize / 2, '#0000ff', markerSize - sc.props.markerBorderWidth);
 
-  ctx.restore(); 
+  ctx.restore();
 
   return canvas;
 }

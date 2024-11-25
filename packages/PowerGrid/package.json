@@ -37,7 +37,7 @@
     "css-loader": "^7.1.2",
     "style-loader": "^4.0.0",
     "@datagrok-libraries/math": "^1.2.0",
-    "@webgpu/types": "^0.1.40"
+    "@webgpu/types": "^0.1.51"
   },
   "scripts": {
     "lint": "eslint src --ext .ts",
