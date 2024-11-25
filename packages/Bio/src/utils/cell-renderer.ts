@@ -168,8 +168,9 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     if (!seqColTemp) {
       seqColTemp = temp.rendererBack = new MonomerPlacer(gridCol, tableCol, _package.logger, maxLengthOfMonomer,
         () => {
+          const {font, fontWidth} = MonomerPlacer.getFontSettings(tableCol);
           return {
-            monomerCharWidth: 7, separatorWidth: !sh.isMsa() ? gapLength : msaGapLength,
+            font: font, fontCharWidth: fontWidth, separatorWidth: !sh.isMsa() ? gapLength : msaGapLength,
             monomerToShort: monomerToShortFunction,
           };
         });

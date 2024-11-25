@@ -47,12 +47,12 @@ class MonomerCard {
 
 class DuplicateSymbolRow {
   root: HTMLElement = ui.divH([],
-      {style: {
-        alignItems: 'center',
-        width: '100%',
-        overflow: 'hidden',
-        visibility: 'visible',
-      }, classes: 'duplicate-monomer-symbol-row'}
+    {style: {
+      alignItems: 'center',
+      width: '100%',
+      overflow: 'hidden',
+      visibility: 'visible',
+    }, classes: 'duplicate-monomer-symbol-row'}
   );
   monomerCards: MonomerCard[];
   constructor(

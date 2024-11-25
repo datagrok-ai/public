@@ -22,7 +22,6 @@ import {polyToolEnumerateHelmUI} from './polytool/pt-enumerate-seq-dialog';
 import {_setPeptideColumn} from './polytool/utils';
 import {PolyToolCsvLibHandler} from './polytool/csv-to-json-monomer-lib-converter';
 import {ITranslationHelper} from './types';
-import {addContextMenuUI} from './utils/context-menu';
 import {PolyToolConvertFuncEditor} from './polytool/pt-convert-editor';
 import {CyclizedNotationProvider} from './utils/cyclized';
 import {getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
@@ -50,7 +49,7 @@ async function initSequenceTranslatorInt(): Promise<void> {
 
 //name: Oligo Toolkit
 //meta.icon: img/icons/toolkit.png
-//meta.browsePath: Oligo
+//meta.browsePath: Peptides | Oligo Toolkit
 //tags: app
 //output: view v
 export async function oligoToolkitApp(): Promise<DG.ViewBase> {
@@ -65,7 +64,7 @@ export async function oligoToolkitApp(): Promise<DG.ViewBase> {
 
 //name: Oligo Translator
 //meta.icon: img/icons/translator.png
-//meta.browsePath: Oligo
+//meta.browsePath: Peptides | Oligo Toolkit
 //tags: app
 //output: view v
 export async function oligoTranslatorApp(): Promise<DG.ViewBase> {
@@ -75,7 +74,7 @@ export async function oligoTranslatorApp(): Promise<DG.ViewBase> {
 
 //name: Oligo Pattern
 //meta.icon: img/icons/pattern.png
-//meta.browsePath: Oligo
+//meta.browsePath: Peptides | Oligo Toolkit
 //tags: app
 //output: view v
 export async function oligoPatternApp(): Promise<DG.ViewBase> {
@@ -85,7 +84,7 @@ export async function oligoPatternApp(): Promise<DG.ViewBase> {
 
 //name: Oligo Structure
 //meta.icon: img/icons/structure.png
-//meta.browsePath: Oligo
+//meta.browsePath: Peptides | Oligo Toolkit
 //tags: app
 //output: view v
 export async function oligoStructureApp(): Promise<DG.ViewBase> {
@@ -136,6 +135,7 @@ export function linkStrands(strands: { senseStrands: string[], antiStrands: stri
 //meta.demoPath: Bioinformatics | Oligo Toolkit | Translator
 //description: Translate oligonucleotide sequences across various formats accepted by different synthesizers
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Translate
+//meta.demoSkip: GROK-14320
 export async function demoTranslateSequence(): Promise<void> {
   await demoOligoTranslatorUI();
 }
@@ -247,14 +247,6 @@ export async function createMonomerLibraryForPolyTool(file: DG.FileInfo) {
   DG.Utils.download(jsonFileName, jsonFileContent);
 }
 
-// -- Handle context menu --
-
-//name: addContextMenu
-//input: object event
-export function addContextMenu(event: DG.EventData): void {
-  addContextMenuUI(event);
-}
-
 // //name: PolyTool Converter
 // //meta.icon: img/icons/structure.png
 // //meta.browsePath: PolyTool
@@ -281,21 +273,35 @@ export function addContextMenu(event: DG.EventData): void {
 //   }
 // }
 
-//name: PolyTool Enumerator Helm
+//name: HELM Enumerator
 //meta.icon: img/icons/structure.png
-//meta.browsePath: PolyTool
+//meta.browsePath: Peptides | PolyTool
 //tags: app
 export async function ptEnumeratorHelmApp(): Promise<void> {
   await polyToolEnumerateHelmUI();
 }
 
-//name: PolyTool Enumerator Chem
+//name: Chem Enumerator
 //meta.icon: img/icons/structure.png
-//meta.browsePath: PolyTool
+//meta.browsePath: Peptides | PolyTool
 //tags: app
 export async function ptEnumeratorChemApp(): Promise<void> {
   polyToolEnumerateChemUI();
 }
+
+
+//name: Polytool Helm Enumerator dialog
+//input: object cell {nullable: true}
+export async function getPtHelmEnumeratorDialog(cell?: DG.Cell) {
+  return polyToolEnumerateHelmUI(cell);
+}
+
+//name: Polytool Chem Enumerator dialog
+//input: object cell {nullable: true}
+export async function getPtChemEnumeratorDialog(cell?: DG.Cell) {
+  return polyToolEnumerateChemUI(cell);
+}
+
 
 //name: applyNotationProviderForHarmonizedSequence
 //input: column col

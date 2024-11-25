@@ -445,7 +445,7 @@ export class RichFunctionView extends FunctionView {
 
     this.hideOutput();
 
-    const out = ui.splitH([inputBlock, ui.panel([outputBlock], {style: {'padding-top': '0px'}})], null, true);
+    const out = ui.splitH([inputBlock, ui.panel([outputBlock], {style: {paddingTop: '0px'}})], null, true);
     out.style.padding = '0 12px';
 
     inputBlock.style.maxWidth = '360px';
@@ -482,7 +482,7 @@ export class RichFunctionView extends FunctionView {
     const form = ui.divV([
       inputFormDiv,
       ...this.hasUploadMode && !this.uploadFunc ? [
-        ui.divH([ui.h2('Experimental data'), experimentalDataSwitch.root], {style: {'flex-grow': '0'}}),
+        ui.divH([ui.h2('Experimental data'), experimentalDataSwitch.root], {style: {flexGrow: '0'}}),
         outputFormDiv,
       ]: [],
       controlsForm,
@@ -520,13 +520,13 @@ export class RichFunctionView extends FunctionView {
           ui.label('Uploaded runs'),
           ui.element('div', 'splitbar-horizontal'),
           uploadedRuns.root,
-        ], {style: {'height': '50%', 'overflow-y': 'hidden'}}),
+        ], {style: {height: '50%', overflowY: 'hidden'}}),
         ui.divV([
           ui.label(simulatedFunccalls.length > 0 ? 'Simulated': 'History', {style: {'padding': '0px 10px 0px 9px'}}),
           ui.element('div', 'splitbar-horizontal'),
           historyRuns.root,
-        ], {style: {'height': '50%', 'overflow-y': 'hidden'}}),
-      ], {style: {'justify-content': 'space-between', 'gap': '10px', 'overflow-y': 'scroll', 'height': '100%'}}));
+        ], {style: {height: '50%', overflowY: 'hidden'}}),
+      ], {style: {justifyContent: 'space-between', gap: '10px', overflowY: 'scroll', height: '100%'}}));
 
       $(compareDialog.root.querySelector('.d4-dialog-contents')).removeClass('ui-form');
 
@@ -885,7 +885,7 @@ export class RichFunctionView extends FunctionView {
 
           return ui.divV([
             ui.divH([
-              ui.h2(viewerIndex === 0 ? dfBlockTitle: ' ', {style: {'white-space': 'pre'}}),
+              ui.h2(viewerIndex === 0 ? dfBlockTitle: ' ', {style: {whiteSpace: 'pre'}}),
               ...viewerIndex === 0 ? [ui.div([
                 this.outputValidationSigns[dfProp.name][0],
                 this.outputValidationSigns[dfProp.name][1],
@@ -905,7 +905,7 @@ export class RichFunctionView extends FunctionView {
           const graphics = getNoDataStub();
           graphics.classList.add('grok-scripting-image-container');
           const graphicsWrapper = ui.divV([
-            ui.h2(dfBlockTitle, {style: {'white-space': 'pre'}}),
+            ui.h2(dfBlockTitle, {style: {whiteSpace: 'pre'}}),
             graphics,
           ], {style: {...blockWidth ? {
             'width': `${blockWidth}%`,
@@ -942,7 +942,7 @@ export class RichFunctionView extends FunctionView {
         acc.append(...wrappedViewers);
 
         return acc;
-      }, ui.divH([], {'style': {'flex-wrap': 'wrap', 'flex-grow': '1', 'max-height': '100%'}}));
+      }, ui.divH([], {'style': {flexWrap: 'wrap', flexGrow: '1', maxHeight: '100%'}}));
 
       tabOutputScalarProps.forEach((scalarProp) => {
         const validationSign = getValidationIcon();
@@ -1468,7 +1468,7 @@ export class RichFunctionView extends FunctionView {
         ui.divV([
           ...desc ? [ui.divText(desc)]: [],
           ...exp ? [ui.divText(exp)]: [],
-        ], {style: {'max-width': '300px'}}) : null;
+        ], {style: {maxWidth: '300px'}}) : null;
     };
     ui.tooltip.bind(t.captionLabel, generateTooltip);
     ui.tooltip.bind(t.input, generateTooltip);
@@ -1590,10 +1590,10 @@ export class RichFunctionView extends FunctionView {
     this.subs.push(sub3);
 
     const sub4 = (
-      isInputBase(t) ? 
-        t.onInput: 
-        getObservable((t.onInput as  ((cb: Function) => SubscriptionLike)).bind(t))
-      ).pipe(debounceTime(VALIDATION_DEBOUNCE_TIME)).subscribe(() => {
+      isInputBase(t) ?
+        t.onInput:
+        getObservable((t.onInput as ((cb: Function) => SubscriptionLike)).bind(t))
+    ).pipe(debounceTime(VALIDATION_DEBOUNCE_TIME)).subscribe(() => {
       try {
         stopUIUpdates = true;
         this.funcCall[field][val.name] = t.value;
@@ -1834,7 +1834,7 @@ export class RichFunctionView extends FunctionView {
 
         ui.setDisplay(this.root, false);
         updateIndicatorWithText(this.root.parentElement!, true,
-        'Generating report. Please do not switch the browser tab...');
+          'Generating report. Please do not switch the browser tab...');
 
         const plotToSheet = async (
           sheet: ExcelJS.Worksheet,
@@ -1844,7 +1844,7 @@ export class RichFunctionView extends FunctionView {
         ) => {
           const newViewer = DG.Viewer.fromType(viewer.type, viewer.dataFrame.clone());
           newViewer.copyViewersLook(viewer);
-        
+
           const viewerBox = ui.div(newViewer.root, {style: {
             height: `${options?.heightToRender ?? 800}px`,
             width: `${options?.widthToRender ?? 800}px`,
@@ -1852,23 +1852,23 @@ export class RichFunctionView extends FunctionView {
           viewerBox.classList.add('ui-box');
           viewerBox.classList.remove('ui-div');
           this.root.insertAdjacentElement('afterend', viewerBox);
-        
+
           await delayInms(1000);
           const imageDataUrl = (await loadedHtml2canvas(viewerBox)).toDataURL();
-        
+
           viewerBox.remove();
-        
+
           const imageId = exportWorkbook.addImage({
             base64: imageDataUrl,
             extension: 'png',
           });
-        
+
           const ratio = (options?.heightInCells || options?.widthInCells) ?
             Math.min(
               (options?.heightInCells ?? Number.MAX_VALUE) / (800 / 20),
               (options?.widthInCells ?? Number.MAX_VALUE) / (800 / 100),
             ): 1;
-        
+
           sheet.addImage(imageId, {
             tl: {col: columnForImage, row: rowForImage},
             ext: {width: 800 * ratio, height: 800 * ratio},
@@ -1940,7 +1940,7 @@ export class RichFunctionView extends FunctionView {
                 viewer,
                 currentDf.columns.length + 2,
                 (index > 0) ? (index * 16) + 1 : 0,
-                {heightInCells: 16, heightToRender: 600, widthToRender: 600}
+                {heightInCells: 16, heightToRender: 600, widthToRender: 600},
               );
             };
           }
@@ -1981,7 +1981,7 @@ export class RichFunctionView extends FunctionView {
                   viewer,
                   currentDf.columns.length + 2,
                   (index > 0) ? (index * 16) + 1 : 0,
-                  {heightInCells: 16, heightToRender: 600, widthToRender: 600}
+                  {heightInCells: 16, heightToRender: 600, widthToRender: 600},
                 );
               }
             }
@@ -2008,7 +2008,7 @@ export class RichFunctionView extends FunctionView {
 
   richFunctionViewExportExtensions() {
     return {
-      'Excel': 'xlsx'
+      'Excel': 'xlsx',
     };
   }
 

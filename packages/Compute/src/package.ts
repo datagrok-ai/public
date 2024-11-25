@@ -126,7 +126,7 @@ export async function CustomUploader(params: {func: DG.Func}) {
 
   const dummyWidget = DG.Widget.fromRoot(ui.panel([ui.divV([
     ui.label('This part of dialog comes from my custom data uploader'),
-    ui.divH([uploadBtn], {style: {'justify-content': 'center'}})
+    ui.divH([uploadBtn], {style: {justifyContent: 'center'}})
   ])]));  
 
   const setLoadingSub = grok.functions.onBeforeRunAction.pipe(
@@ -184,6 +184,7 @@ let startUriLoaded = false;
 //name: Model Catalog
 //tags: app
 //output: view v
+//meta.browsePath: Compute
 export function modelCatalog() {
   // Separately process direct link access
   const startOptionalPart = grok.shell.startUri.indexOf('?');

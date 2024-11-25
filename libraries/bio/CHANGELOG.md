@@ -1,5 +1,13 @@
 # bio changelog
 
+## 5.46.0 (2024-11-19)
+
+Sequence renderer: Support font resize
+
+## 5.45.11 (2024-11-15)
+
+Async cell renderer correct invalidation
+
 ## 5.45.10 (2024-11-07)
 
 Remove the startDockerContainer method from the IAutoDockService interface

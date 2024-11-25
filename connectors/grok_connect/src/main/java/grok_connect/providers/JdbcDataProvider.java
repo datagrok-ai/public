@@ -31,12 +31,7 @@ import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.FieldPredicate;
 import grok_connect.table_query.GroupAggregation;
 import grok_connect.table_query.TableQuery;
-import grok_connect.utils.ConnectionPool;
-import grok_connect.utils.GrokConnectException;
-import grok_connect.utils.PatternMatcher;
-import grok_connect.utils.PatternMatcherResult;
-import grok_connect.utils.QueryCancelledByUser;
-import grok_connect.utils.QueryMonitor;
+import grok_connect.utils.*;
 import org.apache.commons.lang.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -182,11 +177,11 @@ public abstract class JdbcDataProvider extends DataProvider {
                         i = i + setArrayParamValue(statement, n + i + 1, param);
                     }
                     else {
-                        if (param.value == null) {
-                            statement.setNull(n + i + 1, java.sql.Types.VARCHAR);
-                        }
-                        else
-                            statement.setObject(n + i + 1, param.value);
+//                        if (param.value == null) {
+//                            statement.setNull(n + i + 1, java.sql.Types.VARCHAR);
+//                        }
+//                        else
+                        statement.setObject(n + i + 1, param.value);
                     }
                 }
                 queryLogger.debug(EventType.STATEMENT_PARAMETERS_REPLACEMENT.getMarker(EventType.Stage.END), "Replaced designated query parameters");
@@ -585,7 +580,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
         if (funcInfo != null) {
             String sql = funcInfo.dbFunctionName.replaceAll("#", addBrackets(aggr.colName));
-            return sql + " as " + addBrackets(funcInfo.dbFunctionName.replaceAll("#", aggr.colName));
+            return sql + " as " + addBrackets(funcInfo.dbFunctionName).replaceAll("#", aggr.colName);
         }
         else
             return null;
@@ -595,7 +590,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         String brackets = descriptor.nameBrackets;
         return Arrays.stream(name.split("\\."))
                 .map((str) -> str.startsWith(brackets.substring(0, 1)) ? str
-                        : brackets.charAt(0) + name + brackets.substring(brackets.length() - 1))
+                        : brackets.charAt(0) + str + brackets.substring(brackets.length() - 1))
                 .collect(Collectors.joining("."));
     }
 
@@ -604,7 +599,9 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     private String patternToSql(FieldPredicate condition) {
-        return condition.matcher.toSql(condition.dataType, condition.field);
+        if (GrokConnectUtil.isNotEmpty(condition.matcher.op) && !condition.matcher.op.equals(PatternMatcher.NONE))
+            return String.format("@%s(%s)", condition.getParamName(), condition.field);
+        return String.format("%s = @%s", condition.field, condition.getParamName());
     }
 
     public String queryTableSql(DataConnection conn, TableQuery query) {

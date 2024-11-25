@@ -113,4 +113,8 @@ export class StringUtils {
     }
     return hash;
   }
+
+  public static camelCaseToSentence(s: string, o?: {capitalizeFirst?: boolean, capitalizeNext?: boolean, capitalizeConjunctions?: boolean}) {
+    return api.grok_StringUtils_CamelCaseToSentence(s, o?.capitalizeFirst ?? true, o?.capitalizeNext ?? false, o?.capitalizeConjunctions ?? false);
+  }
 }

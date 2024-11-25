@@ -19,6 +19,7 @@ category('scaffold tree', () => {
   test('scaffoldTreeViewerOpens', async () => {
     const df = DG.Test.isInBenchmark ? await readDataframe('smiles.csv') :
       await readDataframe('tests/sar-small_test.csv');
+    await grok.data.detectSemanticTypes(df);
     const tv = grok.shell.addTableView(df);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     tv.addViewer(ScaffoldTreeViewer.TYPE);
@@ -36,6 +37,7 @@ category('scaffold tree', () => {
 
   test('parent node contains H atom', async () => {
     const tv = await createTableView('mol1K.csv');
+    await grok.data.detectSemanticTypes(tv.dataFrame);
     const scaffoldTree = new ScaffoldTreeViewer();
     const table = tv.dataFrame;
     await delay(1000);
@@ -66,6 +68,7 @@ category('scaffold tree', () => {
 
   test('edit invalid structure', async () => {
     const tv = await createTableView('mol1K.csv');
+    await grok.data.detectSemanticTypes(tv.dataFrame);
     const scaffoldTree = new ScaffoldTreeViewer();
     const table = tv.dataFrame;
   

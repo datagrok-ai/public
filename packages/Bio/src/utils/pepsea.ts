@@ -49,9 +49,6 @@ export async function runPepsea(srcCol: DG.Column<string>, unUsedName: string,
   clustersCol: DG.Column<string | number> | null = null, logger?: ILogger
 ): Promise<DG.Column<string>> {
   const pepseaContainer = await Pepsea.getDockerContainer();
-  if (pepseaContainer.status !== 'started' && pepseaContainer.status !== 'checking')
-    throw new Error('PepSeA container has not started yet');
-
   const peptideCount = srcCol.length;
   clustersCol ??= DG.Column.int('Clusters', peptideCount).init(0);
   if (clustersCol.type != DG.COLUMN_TYPE.STRING)

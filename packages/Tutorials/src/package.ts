@@ -38,8 +38,8 @@ export function tutorialWidget(): DG.Widget {
 }
 
 //tags: init
-export async function tutorialsInit() {
-  const properties = await _package.getProperties();
+export function tutorialsInit() {
+  const properties = _package.settings;
   setProperties(properties as unknown as { [propertyName: string]: boolean });
 
   const tutorialFuncs = DG.Func.find({tags: ['tutorial']});
@@ -111,18 +111,12 @@ export async function tutorialsInit() {
 //output: view v
 export function demoApp(path?: string, filter?: string): DG.ViewBase {
   const pathSegments = (!path || path === '') ? [] : path.split('/');
-  if (grok.shell.view('Browse') === undefined)
-    grok.shell.v = DG.View.createByType('browse');
   const demoView = new DemoView();
   if (pathSegments.length > 0) {
-    const pathElements = pathSegments.map((elem) => elem.replaceAll('%20', ' '));
-    const path = pathElements.join('/');
-    const func = DemoView.findDemoFunc(pathElements.join(' | '));
-    setTimeout(() => {
-      func ? demoView.startDemoFunc(func, pathElements.join(' | ')) : demoView.nodeView(pathElements[pathElements.length - 1], path);
-    }, 1);
+    const pathElements = pathSegments.map((elem) => elem.replaceAll('-', ' '));
+    const node = demoView.tree.items.find((node) => node.text === pathElements[pathElements.length - 1])?.root;
+    node?.click();
   }
-
   return demoView;
 }
 
@@ -204,7 +198,7 @@ export async function _databasesDemo() {
 }
 
 //name: scatterPlotDemo
-//description: A scatter plot (also called a scatter graph, scatter chart, scattergram, or scatter diagram) is a type of plot or mathematical diagram using Cartesian coordinates to display values for typically two variables for a set of data. If the points are color-coded you can increase the number of displayed variables to three. The data is displayed as a collection of points, each having the value of one variable determining the position on the horizontal axis and the value of the other variable determining the position on the vertical axis..
+//description: A scatter plot (also called a scatter graph, scatter chart, scattergram, or scatter diagram) is a type of plot or mathematical diagram using Cartesian coordinates to display values for typically two variables for a set of data. If the points are color-coded, you can increase the number of displayed variables to three. The data is displayed as a collection of points, each having the value of one variable determining the position on the horizontal axis and the value of the other variable determining the position on the vertical axis.
 //meta.demoPath: Visualization | General | Scatter Plot
 export async function _scatterPlotDemo() {
   await viewerDemo(DG.VIEWER.SCATTER_PLOT);
@@ -218,7 +212,7 @@ export async function _histogramDemo() {
 }
 
 //name: lineChartDemo
-//description: Line chart is a simple, two-dimensional chart with an X and Y axis, each point representing a single value. The data points are joined by a line to depict a trend, usually over time.
+//description: A line chart is a simple, two-dimensional chart with an X and Y axis, each point representing a single value. The data points are joined by a line to depict a trend, usually over time.
 //meta.demoPath: Visualization | General | Line Chart
 export async function _lineChartDemo() {
   await viewerDemo(DG.VIEWER.LINE_CHART);
@@ -232,7 +226,7 @@ export async function _barChartDemo() {
 }
 
 //name: pieChartDemo
-//description: Pie chart is useful for reflecting numerical proportions. Conceptually, it is similar to a bar chart in that it represents categorical values. A pie chart shows the relative size of a given category (a slice of the pie) compared to the entire dataset (the whole pie).
+//description: A pie chart is useful for reflecting numerical proportions. Conceptually, it is similar to a bar chart in that it represents categorical values. A pie chart shows the relative size of a given category (a slice of the pie) compared to the entire dataset (the whole pie).
 //meta.demoPath: Visualization | General | Pie Chart
 export async function _pieChartDemo() {
   await viewerDemo(DG.VIEWER.PIE_CHART);
@@ -246,42 +240,42 @@ export async function _trellisPlotDemo() {
 }
 
 //name: matrixPlotDemo
-//description: Use Matrix Plot to assess the relationship among many pairs of columns at the same time.
+//description: Use a Matrix Plot to assess the relationship among many pairs of columns at the same time.
 //meta.demoPath: Visualization | Data Separation | Matrix Plot
 export async function _matrixPlotDemo() {
   await viewerDemo(DG.VIEWER.MATRIX_PLOT);
 }
 
 //name: scatterPlot3DDemo
-//description: Use 3D scatter plot to plot data points on three axes to show the relationship between three variables. Each row in the data table is represented by a marker whose position depends on its values in the columns set on the X, Y, and Z axes. Additionally, you can color-code and size-code points, as well as display labels next to markers.
+//description: Use a 3D scatter plot to plot data points on three axes to show the relationship between three variables. Each row in the data table is represented by a marker whose position depends on its values in the columns set on the X, Y, and Z axes. Additionally, you can color-code and size-code points, as well as display labels next to markers.
 //meta.demoPath: Visualization | General | 3D Scatter Plot
 export async function _scatterPlot3DDemo() {
   await viewerDemo(DG.VIEWER.SCATTER_PLOT_3D);
 }
 
 //name: densityPlotDemo
-//description: Unlike scatter plot that visualizes each individual data point, density plot splits 2D area by bins, and color-codes it depending on the number of points that fall within this bin. The darker the color, the more points it contains.
+//description: Unlike a scatter plot that visualizes each individual data point, the density plot splits 2D area by bins and color-codes it depending on the number of points that fall within this bin. The darker the color, the more points it contains.
 //meta.demoPath: Visualization | General | Density Plot
 export async function _densityPlotDemo() {
   await viewerDemo(DG.VIEWER.DENSITY_PLOT);
 }
 
 //name: pcPlotDemo
-//description: Parallel coordinates is a common way of visualizing high-dimensional geometry and analyzing multivariate data. To show a set of points in an n-dimensional space, a backdrop is drawn consisting of n parallel lines, typically vertical and equally spaced. A point in n-dimensional space is represented as a polyline with vertices on the parallel axes; the position of the vertex on the i-th axis corresponds to the i-th coordinate of the point. This visualization is closely related to time series visualization, except that it is applied to data where the axes do not correspond to points in time, and therefore do not have a natural order. Therefore, different axis arrangements may be of interest.
+//description: Parallel coordinates are a common way of visualizing high-dimensional geometry and analyzing multivariate data. To show a set of points in an n-dimensional space, a backdrop is drawn consisting of n parallel lines, typically vertical and equally spaced. A point in n-dimensional space is represented as a polyline with vertices on the parallel axes; the position of the vertex on the i-th axis corresponds to the i-th coordinate of the point. This visualization is closely related to time series visualization, except that it is applied to data where the axes do not correspond to points in time, and therefore do not have a natural order. Therefore, different axis arrangements may be of interest.
 //meta.demoPath: Visualization | Statistical | PC Plot
 export async function _pcPlotDemo() {
   await viewerDemo(DG.VIEWER.PC_PLOT);
 }
 
 //name: networkDiagramDemo
-//description: Network diagram is used to visualize graphs, where values of the specified two columns become nodes, and rows become edges. It is possible to color-code and size-code nodes and columns by choosing the aggregate function that would apply to the values that represent an edge or a Node.js.
+//description: A network diagram is used to visualize graphs, where values of the specified two columns become nodes, and rows become edges. It is possible to color-code and size-code nodes and columns by choosing the aggregate function that would apply to the values that represent an edge or a Node.js.
 //meta.demoPath: Visualization | Data Flow and Hierarchy | Network Diagram
 export async function _networkDiagramDemo() {
   await viewerDemo(DG.VIEWER.NETWORK_DIAGRAM, {'node1ColumnName': 'Source', 'node2ColumnName': 'Target', useGoogleImage: true});
 }
 
 //name: boxPlotDemo
-//description: The box plot (a.k.a. box and whisker diagram) is a standardized way of displaying the distribution of data based on the five number summary: minimum, first quartile, median, third quartile, and maximum.
+//description: The box plot (a.k.a. box and whisker diagram) is a standardized way of displaying the distribution of data based on the five-number summary: minimum, first quartile, median, third quartile, and maximum.
 //meta.demoPath: Visualization | Statistical | Box Plot
 export async function _boxPlotDemo() {
   await viewerDemo(DG.VIEWER.BOX_PLOT);
@@ -302,7 +296,7 @@ export async function _statisticsDemo() {
 }
 
 //name: correlationPlotDemo
-//description: A quick way to assess correlations between all columns at once. Cells are color-coded by the Pearson correlation coefficient or Spearman's rank correlation coefficient . Histograms along the diagonal show the corresponding distribution. Hover over the cell to see the corresponding scatter plot. The grid is sortable. Select columns in the view by selecting corresponding rows.
+//description: A quick way to assess correlations between all columns at once. Cells are color-coded by the Pearson correlation coefficient or Spearman's rank correlation coefficient. Histograms along the diagonal show the corresponding distribution. Hover over the cell to see the corresponding scatter plot. The grid is sortable. Select columns in the view by selecting corresponding rows.
 //meta.demoPath: Visualization | Statistical |Correlation Plot
 export async function _correlationPlotDemo() {
   await viewerDemo(DG.VIEWER.CORR_PLOT);
@@ -323,7 +317,7 @@ export async function _gridDemo() {
 }
 
 //name: markupDemo
-//description: Use this viewer to host any text, arbitrary HTML content, or markdown-formatted text. In most casees, the viewer will auto-detect content type. Use the "mode" property to explicitly specify it.
+//description: Use this viewer to host any text, arbitrary HTML content, or markdown-formatted text. In most cases, the viewer will auto-detect content type. Use the "mode" property to explicitly specify it.
 //meta.demoPath: Visualization | General | Markup
 export async function _markupDemo() {
   await viewerDemo(DG.VIEWER.MARKUP);
@@ -337,14 +331,14 @@ export async function _tileViewerDemo() {
 }
 
 //name: formDemo
-//description: Form allows you to customize the appearance of the row by manually positioning the fields, and adding other visual elements, such as pictures or panels. A form can be used either as a stand-alone viewer, or as a row template of the Tile Viewer.
+//description: Form allows you to customize the appearance of the row by manually positioning the fields, and adding other visual elements, such as pictures or panels. A form can be used either as a stand-alone viewer or as a row template of the Tile Viewer.
 //meta.demoPath: Visualization | Input and Edit | Form
 export async function _formDemo() {
   await viewerDemo(DG.VIEWER.FORM);
 }
 
 ////name: shapeMapDemo
-////description: Shows a map that is applicable for the specified dataset. Typically, it would represent a geographical area (countries, states, counties, etc), but it also supports arbitrary shapes (such as a store floor plan, brain regions, or EEG electrodes).
+////description: Shows a map that is applicable to the specified dataset. Typically, it would represent a geographical area (countries, states, counties, etc), but it also supports arbitrary shapes (such as a store floor plan, brain regions, or EEG electrodes).
 ////meta.demoPath: Visualization | Geographical | Shape Map
 //export async function _shapeMapDemo() {
 //  await viewerDemo(DG.VIEWER.SHAPE_MAP);

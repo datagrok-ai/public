@@ -290,7 +290,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   }
 
   private async _initProps() {
-    if (!this.dataFrame) return;
+    if (!this.dataFrame || this.dataJson) return;
 
     // -- Pdb or Pdb Id --
     if (!this.biostructureIdColumnName) {
@@ -479,7 +479,49 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
     superOnTableAttached();
     this.setData(logIndent + 1, callLog);
+    ui.tools.waitForElementInDom(this.root).then(() => this.initializeResizeHandling());
     this.logger.debug(`${logPrefix}, end`);
+  }
+  
+  initializeResizeHandling(): void {
+    const dialogPanel = this.root.closest('.dialog-floating') as HTMLElement;
+    const accPanel = this.root.closest('.d4-accordion-pane-content') as HTMLElement;
+    const resizeTarget = dialogPanel || accPanel;
+    
+    if (!resizeTarget) return;
+    
+    const setDimensions = (element: HTMLElement | null, width: number, height: number) => {
+      if (element) {
+        element.style.width = `${width}px`;
+        element.style.height = `${height}px`;
+      }
+    };
+    
+    const resizeCanvasAndViewer = (width: number, height: number) => {
+      const canvas = this.viewer?.plugin.canvas3dContext?.canvas;
+      setDimensions(this.viewerDiv!, width, height);
+      if (canvas)
+        setDimensions(canvas, width, height);
+      this.viewer?.plugin.canvas3d?.handleResize();
+      this.viewer?.plugin.handleResize();
+    };
+    
+    this.subs.push(ui.onSizeChanged(resizeTarget).subscribe(() => {
+      const width = resizeTarget.clientWidth;
+      const height = resizeTarget.clientHeight;
+
+      if (dialogPanel) {
+        setDimensions(this.root, width, height);
+        resizeCanvasAndViewer(width, height);
+
+        const waitParentEl = this.root.parentElement;
+        if (waitParentEl?.classList.contains('grok-wait'))
+          setDimensions(waitParentEl, width, height);
+      }
+
+      if (accPanel)
+        resizeCanvasAndViewer(width, height);
+    }))
   }
 
   override detach(): void {

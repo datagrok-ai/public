@@ -93,10 +93,15 @@ export class Rules {
   getLinkRulesDf(): DG.DataFrame {
     const length = this.linkRules.length;
     const codeCol = DG.Column.int(NAME_CODE, length);
+    codeCol.setTag('friendlyName', 'Code');
     const firstMonomerCol = DG.Column.string(NAME_FIRST_MONOMERS, length);
+    firstMonomerCol.setTag('friendlyName', 'First monomers');
     const secondMonomerCol = DG.Column.string(NAME_SECOND_MONOMERS, length);
+    secondMonomerCol.setTag('friendlyName', 'Second monomers');
     const firstLinkingGroup = DG.Column.int(NAME_FIRST_LINK, length);
+    firstLinkingGroup.setTag('friendlyName', 'First group');
     const secondLinkingGroup = DG.Column.int(NAME_SECOND_LINK, length);
+    secondLinkingGroup.setTag('friendlyName', 'Second group');
 
     for (let i = 0; i < length; i++) {
       codeCol.set(i, this.linkRules[i].code);
@@ -106,20 +111,29 @@ export class Rules {
       secondLinkingGroup.set(i, this.linkRules[i].secondLinkingGroup);
     }
 
-    return DG.DataFrame.fromColumns([
+    const res = DG.DataFrame.fromColumns([
       codeCol, firstMonomerCol, secondMonomerCol, firstLinkingGroup, secondLinkingGroup
     ]);
+
+    return res;
   }
 
   getSynthesisRulesDf(): DG.DataFrame {
     const length = this.reactionRules.length;
     const codeCol = DG.Column.int(NAME_CODE, length);
+    codeCol.setTag('friendlyName', 'Code');
     const firstMonomerCol = DG.Column.string(NAME_FIRST_MONOMERS, length);
+    firstMonomerCol.setTag('friendlyName', 'First monomers');
     const secondMonomerCol = DG.Column.string(NAME_SECOND_MONOMERS, length);
+    secondMonomerCol.setTag('friendlyName', 'Second monomers');
     const name = DG.Column.string(NAME_REACTION_NAME, length);
+    name.setTag('friendlyName', 'Name');
     const firstReactant = DG.Column.string('firstReactant', length);
+    firstReactant.setTag('friendlyName', 'First reactant');
     const secondReactant = DG.Column.string('secondReactant', length);
+    secondReactant.setTag('friendlyName', 'Second reactant');
     const product = DG.Column.string('product', length);
+    product.setTag('friendlyName', 'Product');
 
     for (let i = 0; i < length; i++) {
       codeCol.set(i, this.reactionRules[i].code);

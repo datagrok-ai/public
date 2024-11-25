@@ -198,7 +198,7 @@ export class HistoricalRunsList extends DG.Widget {
       ui.divH(
         this.options?.showBatchActions ? [this.trashIcon, this.compareIcon]: [],
         {style: {'gap': '5px', 'padding': '5px'}}),
-    ], {style: {'justify-content': 'space-between', 'padding': '0px 5px'}});
+    ], {style: {justifyContent: 'space-between', padding: '0px 5px'}});
     batchActions.style.setProperty('overflow-y', 'hidden', 'important');
 
     const gridWithControls = ui.divV([
@@ -484,7 +484,7 @@ export class HistoricalRunsList extends DG.Widget {
             ),
             'Edit run metadata',
           ),
-        ], {style: {'padding': '6px 0px', 'gap': '6px', 'justify-content': 'space-between'}});
+        ], {style: {padding: '6px 0px', gap: '6px', justifyContent: 'space-between'}});
       }
 
       if (cell.tableColumn?.name === FAVORITE_COLUMN_NAME) {
@@ -713,7 +713,7 @@ export class HistoricalRunsList extends DG.Widget {
     });
 
     deleteDialog.show({center: true, width: 500, modal: true});
-  }, 'Delete selected runs'), {style: {'padding-top': '5px'}});
+  }, 'Delete selected runs'), {style: {paddingTop: '5px'}});
 
   private compareIcon = ui.div(ui.iconFA('exchange', async () => {
     const selection = this.currentDf.selection.getSelectedIndexes();
@@ -723,7 +723,7 @@ export class HistoricalRunsList extends DG.Widget {
     });
 
     this.onComparisonCalled.next(setToCompare);
-  }, 'Compare selected runs'), {style: {'padding-top': '5px'}});
+  }, 'Compare selected runs'), {style: {paddingTop: '5px'}});
 
 
   private _isFilterHidden = new BehaviorSubject(false);
@@ -736,7 +736,7 @@ export class HistoricalRunsList extends DG.Widget {
   }
   private showFiltersIcon = ui.div(ui.iconFA('filter', () => {
     this._isFilterHidden.next(!this._isFilterHidden.value);
-  }, 'Toggle filters'), {style: {'padding-top': '4px'}});
+  }, 'Toggle filters'), {style: {paddingTop: '4px'}});
 
   private _compactMode = new BehaviorSubject(this.options?.isHistory ?? false);
   public get compactMode() {
@@ -753,7 +753,7 @@ export class HistoricalRunsList extends DG.Widget {
 
   private toggleCompactMode = ui.div(ui.iconFA('expand-alt', () => {
     this.compactMode = !this.compactMode;
-  }, 'Toggle compact mode'), {style: {'padding-top': '4px'}});
+  }, 'Toggle compact mode'), {style: {paddingTop: '4px'}});
 
   private showMetadataIcon = ui.input.toggle('Metadata', {value: true, onValueChanged: () => {
     this.styleHistoryGrid();

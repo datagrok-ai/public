@@ -47,9 +47,9 @@ category('UI: Tab control', () => {
   });
 
   test('tabControl.getPane', async () => {
-    tabs.addPane('New pane', ()=> ui.div([], 'new-pane'));
+    tabs.addPane('New pane 3', ()=> ui.div([], 'new-pane'));
     const pane = tabs.panes[tabs.panes.length-1];
-    const getPane = tabs.getPane('New pane');
+    const getPane = tabs.getPane('New pane 3');
     expect(pane, getPane);
   });
 

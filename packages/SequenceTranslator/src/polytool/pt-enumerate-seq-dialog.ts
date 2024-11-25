@@ -615,7 +615,7 @@ async function polyToolEnumerateSeq(
       const templateList: string[] = new Array<string>(resList.length);
       for (let rowIdx = 0; rowIdx < resList.length; rowIdx++) {
         const pseudoHelm = resList[rowIdx][0];
-        const chain = Chain.parseHelm(pseudoHelm, helmHelper);
+        const chain = Chain.fromHelm(pseudoHelm, helmHelper);
         templateList[rowIdx] = chain.getNotation();
       }
       enumCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Enumerated', templateList);

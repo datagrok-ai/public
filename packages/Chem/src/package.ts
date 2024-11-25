@@ -477,7 +477,7 @@ export async function chemDescriptorsTree(): Promise<object> {
 }
 
 //top-menu: Chem | Calculate | Map Identifiers...
-//name: getMapIdentifiers
+//name: Map Identifiers
 export async function getMapIdentifiers() {
   await openMapIdentifiersDialog();
 }
@@ -649,8 +649,12 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
   let res = funcCall.getOutputParamValue();
 
   if (plotEmbeddings) {
-    res = grok.shell.tv.scatterPlot({x: embedColsNames[0], y: embedColsNames[1],
-      title: 'Chemical space', labels: molecules.name});
+    res = grok.shell.tv.scatterPlot({ x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical space' });
+  //temporary fix (to save backward compatibility) since labels option type has been changed from string to array in 1.23 platform version 
+  if (Object.keys(res.props).includes('labelColumnNames')) { //@ts-ignore
+    if (res.props['labelColumnNames'].constructor.name == "Array")
+      res.setOptions({labelColumnNames: [molecules.name]});
+  }
     if (clusterEmbeddings)
       res.props.colorColumnName = clusterColName;
   }
@@ -952,8 +956,11 @@ export async function activityCliffsInitFunction(sp: DG.ScatterPlotViewer): Prom
   await runActivityCliffs(sp, sp.dataFrame, molCol, encodedColWithOptions, actCol, axesNames,
     actCliffsParams.similarity, actCliffsParams.similarityMetric, actCliffsParams.options, DG.SEMTYPE.MOLECULE,
     {'units': molCol.meta.units!}, createTooltipElement, createPropPanelElement, undefined, undefined, actCliffsParams.isDemo);
-  //to draw the lines fro cliffs
-  sp.setOptions({labels: molCol.name});
+  //temporary fix (to save backward compatibility) since labels option type has been changed from string to array in 1.23 platform version 
+  if (Object.keys(sp.props).includes('labelColumnNames')) { //@ts-ignore
+    if (sp.props['labelColumnNames'].constructor.name == "Array")
+      sp.setOptions({labelColumnNames: [molCol.name]});
+  }
   sp.render(sp.getInfo()['canvas'].getContext('2d'));
 }
 
@@ -1272,7 +1279,7 @@ export function convertMolNotation(molecule: string, sourceNotation: DG.chem.Not
 }
 
 //top-menu: Chem | Transform | Convert Notation...
-//name: convertNotation
+//name: Convert Notation
 //tags: Transform
 //input: dataframe data
 //input: column molecules {semType: Molecule}
@@ -1655,7 +1662,7 @@ export async function getMolProperty(molecules: DG.Column, property: string): Pr
 
 
 //top-menu: Chem | Calculate | Toxicity Risks...
-//name: Toxicity risks
+//name: Toxicity Risks
 //tags: HitTriageFunction,Transform
 //input: dataframe table [Input data table]
 //input: column molecules {semType: Molecule}
@@ -1834,7 +1841,7 @@ export async function demoScaffold(): Promise<void> {
 
 
 //top-menu: Chem | Transform | Names To Smiles...
-//name: namesToSmiles
+//name: Names To Smiles
 //tags: Transform
 //input: dataframe data
 //input: column names

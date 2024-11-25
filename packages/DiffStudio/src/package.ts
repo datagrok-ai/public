@@ -8,8 +8,10 @@ import {initMatrOperApi} from '../wasm/matrix-operations-api';
 import {solveDefault, solveIVP} from './solver';
 import {ODEs, SolverOptions} from './solver-tools/solver-defs';
 import {DiffStudio} from './app';
+import {getIVP, IVP, getScriptLines, getScriptParams} from './scripting-tools';
 
 import {getBioreactorSim, getPkPdSim, showBioHelpPanel, showPkPdHelpPanel, getBallFlightSim} from './demo-models';
+import {DF_NAME} from './constants';
 
 export const _package = new DG.Package();
 
@@ -42,6 +44,7 @@ export function solveEquations(problem: ODEs, options: Partial<SolverOptions>): 
 //description: Solver of ordinary differential equations systems
 //tags: app
 //output: view v
+//meta.browsePath: Compute
 export async function runDiffStudio(): Promise<DG.ViewBase> {
   const solver = new DiffStudio(false);
   return await solver.runSolverApp();
@@ -230,4 +233,37 @@ export function ballFlight(dB: number, roB: number, v: number, a: number) {
     maxDist: simlulation.col('Distance').stats.max,
     maxHeight: simlulation.col('Height').stats.max,
   };
+}
+
+//name: serializeEquations
+//description: Return serialized initial value problem for ordinary differential equations
+//input: string problem
+//output: object serialization
+export function serializeEquations(problem: string): IVP {
+  return getIVP(problem);
+}
+
+//name: odesToCode
+//description: Perform ODEs serialization to JS-code
+//input: object serialization
+//output: string code
+export function odesToCode(serialization: IVP): string {
+  return getScriptLines(serialization).join('\n');
+}
+
+//name: solveODE
+//description: Solve initial value problem for ordinary differential equations
+//input: string problem
+//output: dataframe solution
+export async function solveODE(problem: string): Promise<DG.DataFrame> {
+  const ivp = getIVP(problem);
+  const code = getScriptLines(ivp).join('\n');
+
+  const script = DG.Script.create(code);
+  const params = getScriptParams(ivp);
+  const call = script.prepare(params);
+
+  await call.call();
+
+  return call.outputs[DF_NAME];
 }

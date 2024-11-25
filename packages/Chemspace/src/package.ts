@@ -29,6 +29,7 @@ const modeToParam = {[SEARCH_MODE.SIMILAR]: 'sim', [SEARCH_MODE.SUBSTRUCTURE]: '
 
 //tags: app
 //name: Chemspace
+//meta.browsePath: Oligo
 export async function app(): Promise<void> {
   await getApiToken();
 
@@ -131,7 +132,7 @@ export async function samplesPanel(smiles: string): Promise<DG.Widget> {
     category.fireChanged();
     panels = ui.divV([ui.form([shipToCountry, category]), acc.root]);
   } catch (e: any) {
-    panels = ui.divText(e.message);
+    panels = ui.divText(e);
   }
   return new DG.Widget(panels);
 }
@@ -305,32 +306,36 @@ async function getApiToken(): Promise<void> {
 //input: string formParamsStr
 //input: string paramsStr {optional: true}
 //output: string result
-export function queryMultipart(path: string, formParamsStr: string, paramsStr?: string): Promise<string> {
-  const formParams: {[key: string]: string} = JSON.parse(formParamsStr);
-  const params: {[key: string]: string | number} | undefined = paramsStr ? JSON.parse(paramsStr) : undefined;
-  // TODO: Deprecate after WebQuery 'multipart/form-data' support
-  return new Promise(function(resolve, reject) {
-    const xhr = new XMLHttpRequest();
-    const formData = new FormData();
-    Object.keys(formParams).forEach((key) => formData.append(key, formParams[key]));
-   // formData.append('SMILES', smiles);
-    const queryParams = params ? `?${Object.keys(params).map((key) => `${key}=${params[key]}`).join('&')}` : '';
-    xhr.open('POST', `${host}/v4/${path}${queryParams}`);
-    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-    xhr.setRequestHeader('Accept', 'application/json; version=2.6');
-    xhr.onload = function(): void {
-      if (this.status >= 200 && this.status < 300) {
-        const list: ChemspaceResult[] = JSON.parse(xhr.responseText)['items'];
-        if (list.length > 0)
-          resolve(JSON.stringify(list));
-        else
-          reject(new Error('No matches'));
-      } else
-        reject(new Error(xhr.statusText));
-    };
-    xhr.onerror = (): void => reject(new Error(xhr.statusText));
-    xhr.send(formData);
-  });
+export async function queryMultipart(path: string, formParamsStr: string, paramsStr?: string): Promise<string> {
+  const formParams: { [key: string]: string } = JSON.parse(formParamsStr);
+  const params: { [key: string]: string | number } | undefined = paramsStr ? JSON.parse(paramsStr) : undefined;
+
+  const formData = new FormData();
+  Object.keys(formParams).forEach((key) => formData.append(key, formParams[key]));
+  const queryUrlParams = params ? `?${Object.keys(params).map((key) => `${key}=${params[key]}`).join('&')}` : '';
+  const url = `${host}/v4/${path}${queryUrlParams}`
+
+  const queryParams = {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json; version=2.6',
+    },
+    body: formData,
+  };
+
+  try {
+    const response = await grok.dapi.fetchProxy(url, queryParams);
+    if (!response.ok)
+      throw new Error(`${response.status}, ${response.statusText}`);
+    const list: ChemspaceResult[] = (await response.json()).items;
+    if (list && list.length > 0)
+      return JSON.stringify(list);
+    else
+      throw 'No matches';
+  } catch (e) {
+    throw e;
+  }
 }
 
 function getCategoryCacheKey(cat: CATEGORY, shipToCountry: COUNTRY_CODES): string {

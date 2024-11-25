@@ -41,11 +41,6 @@ export function convert(col: DG.Column<string> | undefined, seqHelper: ISeqHelpe
     NOTATION.HELM,
   ];
   const toggleColumn = (newCol: DG.Column) => {
-    if (newCol.semType !== DG.SEMTYPE.MACROMOLECULE) {
-      targetColumnInput.value = srcCol;
-      return;
-    }
-
     srcCol = newCol;
     converterSh = seqHelper.getSeqHandler(srcCol);
     currentNotation = converterSh.notation;
@@ -69,6 +64,8 @@ export function convert(col: DG.Column<string> | undefined, seqHelper: ISeqHelpe
 
   const targetColumnInput = ui.input.column('Column', {
     table: grok.shell.t, value: srcCol,
+    filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE,
+    nullable: false,
     onValueChanged: (value) => toggleColumn(value)
   });
 

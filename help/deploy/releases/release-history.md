@@ -20,123 +20,118 @@ position: 6 # float position is supported
 See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.md)
+
 ## 2024-11-04 1.22.1
 
-### Addressed Issues
-
-* [#3119](https://github.com/datagrok-ai/public/issues/3119): Calculated column: formula with multi-argument functions is parsed incorrectly if more than one argument contains a column (WIP)
-* GROK-16793: #3101: Shift-click selects unexpected rows in some cases 
-
-
-## 2024-10-24 1.22.0
-
-### Addressed Issues
-
-* (Bug) [#3006](https://github.com/datagrok-ai/public/issues/3006): #3006: Calculated columns: changing return type triggers column reordering 
-* (Bug) [#3010](https://github.com/datagrok-ai/public/issues/3010): #3010: Qnum does not seem to work in connection with if 
-* (Improvement) GROK-16165: #2688: Scatterplot | structure labels: improve positions and sizes adjustment 
-* (Bug) GROK-16540: PowerPack: Add new column: Functions filter is reset when clicking on column event if category is checked 
-* (Improvement) GROK-16529: Ability to get Func result view 
-* (Bug) GROK-16454: Data: addTableViev: 1-million-columns script crashes the browser tab 
-* (Bug) GROK-16551: Browse: Refresh loses preview 
-* (Bug) GROK-16604: Browse: Create folder doesn't refresh tree 
-* (Bug) GROK-16601: Packages: Reset package touchedOn flag when selecting current package version (WIP)
-* (Bug) GROK-16591: Queries: Chembl | Find by Molregno throws errors when opening preview in browse 
-* (Bug) GROK-16560: Trellis plot: Error on redo command after reopening plot via undo (WIP)
-* (Bug) GROK-16597: Pivot table: Editing the viewer properties aren't reflected (WIP)
-* (Bug) GROK-16614: Viewers: ScaffoldTree: loader freezes on 0% 
-* (Bug) [#3009](https://github.com/datagrok-ai/public/issues/3009): #3009: Calculated column hints break with round bracket + curly bracket 
-* (Bug) GROK-16608: PowerPack: Add new column: Function 'if(true, "yes", error("Error"))' leads to validation error 
-* (Bug) GROK-16629: Invisible columns cause exception waterfall 
-* (Improvement) GROK-16503: Predictive modeling: interactive model comparison 
-* (Bug) GROK-16640: #3027: Cannot copy text from any input in filters panel 
-* (Bug) GROK-16561: Predictive modeling: Fix actions after incorrect inputs  
-* (Bug) GROK-16553: EDA: Missing values imputation: Fix dialog 
-* (Bug) GROK-16607: PowerPack: Add new column: Incorrect validation when using nested columns in formula 
-* (Bug) GROK-16642: Fitting view: Bugs at release & public instances 
-* (Improvement) GROK-16449: Diff Studio: Add tests & improve browsing 
-* (Improvement) GROK-16630: #3026: Viewers: Scatterplot: label placement improvements 
-* (Improvement) GROK-16650: Reports: add "Fedback" option to the Help on Top menu 
-* GROK-16495: Density plot: Increase bins after certain zoom (WIP)
-* (Improvement) GROK-16654: Diff Studio: Move Bioreactor & SimPKPD 
-* (Bug) GROK-15957: Tutorials | Closing tutorial Scripting caused error 'TypeError: Cannot read properties of undefined'  
-* GROK-16542: EDA: Softmax: Binary classification (WIP)
-* (Improvement) GROK-15444: Charts | Radar viewer : update wiki article  
-* GROK-15755: Arrow: Failing to open exported project 
-* (Improvement) [#3057](https://github.com/datagrok-ai/public/issues/3057): #3057: Integrate Pyodide as a supported language (WIP)
-* GROK-16669: Deployment of Helm chart to artifactory 
-* GROK-16646: #3032: Page is freezing for a while when colour by column is applied in some cases (large number of categories + "starts with") 
-* (Improvement) GROK-16653: DG.Func: Implement vectorization 
-* GROK-16687: User impersonation 
-* (Improvement) GROK-16680: Scripting: Refactor handlers, Script, ScriptParam classes 
-* GROK-16668: #3052: A few seconds delay on creating a screenshot of a viewer 
-* (Bug) GROK-16675: Viewers: delete Shape map viewer form Toolbox>Viewer`s menu 
-* (Bug) GROK-16626: Tables: Scrolling down makes it automatically jumps back up 
-* GROK-16697: Ability to auto update deprecated packages 
-* (Bug) GROK-16701: VectorCall: causing addNewColumn to run the script for each row instead of triggering Script.vectorize 
-* GROK-16535: #3015: Trellis plot is not re-rendered on changing settings when there is no data to display after settings change 
-* (Bug) GROK-16704: Viewers: Box plot: Legend color picker menu can't be closed 
-* (Bug) GROK-15974: Viewers | histogram :  slider with bins suddenly becomes visible 
-* (Improvement) GROK-15610: Table | Download As CSV : Set default like in-form button 
-* (Improvement) GROK-16717: Databricks: Add connector 
-* (Improvement) GROK-16709: Core: Db: Move old migrations to init_db.sql 
-* (Improvement) GROK-16686: #3063: JS API: Add capability to add color palettes to configs 
-* (Bug) GROK-16716: EDA: ANOVA: Fix incorrect column type bug 
-* (Bug) GROK-16729: Credentials wipe when package version changes 
-* GROK-16667: Diff Studio: Value lookups 
-* GROK-16725: Apply db migrations for separate schema  configured from package 
-* (Improvement) GROK-16733: Improve ScatterPlot initialization and hit test (WIP)
-* (Improvement) GROK-16735: Garbage collector 
-* (Bug) GROK-16741: Join annotation doesn't work when running from grok.functions.call 
-* GROK-15743: Multi-select creation from funcall annotation (WIP)
-* (Improvement) GROK-16743: Help: Compute: Sensitivity analysis & Fitting reorganization 
-* GROK-16742: Scatter plot: lines to connect series 
-* GROK-16671: Grid: Add method to invalidate a single grid cell 
-* GROK-15984: Grid: formula-based rendering 
-* (Improvement) GROK-16696: Compute: Sensitivity analysis & Fitting: Value lookups 
-* GROK-16753: Confusion matrix data viewer 
-* GROK-16748: Diff Studio: SA, Opt: Lookup tables 
-* (Bug) GROK-16730: Demo: Activity cliffs: Cannot read properties of null (reading 'cx') 
-* (Bug) GROK-16164: #2683: Pinned columns: left-clicking on the column name does not change the Context Panel display 
-* (Improvement) GROK-16679: Scripting: Pyodide: Add support of all DG datatypes when possible 
-* (Bug) GROK-16255: #2776: Line chart: page is frozen if too many categories are used in split 
-* (Improvement) GROK-16734: Improve ScatterPlot with WebGPU (WIP)
-* (Bug) GROK-16756: Tutorials | MVA: Fix tutorial 
-* (Improvement) GROK-16707: Core: Browse: Plugin and app hierarchy in Browse 
-* (Improvement) GROK-16763: Isolate access to package DB schema  
-* (Bug) GROK-16170: #2715: PadLeft and PadRight do not seem to work (WIP)
-* GROK-12084: Logs: integration with AWS CloudWatch 
-* (Improvement) GROK-16767: Redesign DB Migrations 
-* GROK-16764: #3095: Wrong columns are exported with 'Visible columns only' option if there are multiple views for the table 
-* (Improvement) GROK-16769: User profile view harmonization 
-* GROK-16700: DB for packages 
-* (Improvement) GROK-16708: Core: Browse: Custom order for apps in the tree 
-* (Bug) GROK-16718: Recent projects widget speedup 
-* (Bug) GROK-16425: #2959: DS: Projects: Data-sync project doesn't open if a column with operations on it was excluded from the data source 
-* (Improvement) GROK-16706: Core: Plugins: Improve uninstall/delete 
-* (Bug) GROK-16782: Bio: Fix bio-substructure-filters tests (WIP)
-* (Bug) GROK-16797: User.system.id accidentaly gets changed 
-* (Bug) GROK-16792: Core: Unexpected logout on refresh token error \- needs handling for invalid session only er 
-* GROK-16683: Show system containers logs in Apps tree. Group UA under System catalog and show all related apps there 
-* GROK-16757: Tutorials: Diff Studio (WIP)
-* (Improvement) GROK-16722: #3076: Scatterplot: Add coloring via expressions (WIP)
-* (Improvement) GROK-16798: Semantic type: Add GROK_JIRA_TICKET semType to package.json (WIP)
-* (Bug) GROK-16794: Projects: Misaligned layout on toolbox in data-sync project 
-* (Bug) GROK-16807: JS-API: dapi.queries seems to be not executable (WIP)
-* (Bug) GROK-16663: Demo app: No demo opens if you open the demo app 
-* (Bug) GROK-16585: Tree map: "Split By" property is not working 
-* (Bug) GROK-15930: Converting object to an encodable object failed. 
-* (Bug) GROK-15952: WebSocket | connection failed 
-* (Improvement) [#2981](https://github.com/datagrok-ai/public/issues/2981): #2981: Typing calculated formula: input is overwritten unexpectedly in some cases (WIP)
-* (Improvement) [#3090](https://github.com/datagrok-ai/public/issues/3090): Charts: Sunburst usability improvements 
-* (Bug) GROK-16817: FuncCall parameter with value NaN saves incorrectly 
-* (Bug) GROK-16830: Scripts: Test Track: Failed test case Scripts-Edit-6 
-* (Bug) GROK-16889: Tutorials: not loading on release for some users 
-* (Bug) GROK-16894: FuncCall options serialization fails when there are NaN values 
-* (Bug) GROK-16912: Release: Widgets loading extremely slowly (WIP)
+### Improvements and fixes:
+* Filters: Avoid cross firing of events in duplicate filters
+* [#3119](https://github.com/datagrok-ai/public/issues/3119): Add new column: formula with multi-argument functions is parsed incorrectly if more than one argument contains a column
+* [#3107](https://github.com/datagrok-ai/public/issues/3107): Grid: Incorrect selection on grid with filtering/sorting enabled
+* [#3132](https://github.com/datagrok-ai/public/issues/3132): Color picker: Fixed opening new color picker removes previously selected color
+* [#3101](https://github.com/datagrok-ai/public/issues/3101): Shift-click selects unexpected rows in some cases
 
 
+## 2024-10-22 Datagrok 1.22.0 release 
 
+The Datagrok 1.22.0 release includes stability improvements, key optimizations, and new features for a more efficient and responsive platform
+
+### Main updates
+
+* **Automated data cleanup** keeps the server lean by deleting old data and logs (could be configured)
+* **Pyodide**: you can now run Python functions, including data transformation steps, directly in the browser
+* **Plugin databases**: you can now ship a Postgres database (such as chemical registration system) with your plugin
+
+### Platform
+
+#### Browse
+* Improved structure in the Browse section for more intuitive access to plugins and apps 
+* Set a custom order for apps within the tree, making navigation faster and tailored to user needs
+* Fixes:
+  * Adding new folders now automatically refreshes the tree, keeping the view up-to-date
+  * Refreshing now retains previews without resetting, making it easier to track content
+
+#### [Scripting](https://datagrok.ai/help/compute/scripting/)
+* Added the ability to get Func result view 
+* Refactor handlers, Script, ScriptParam classes 
+* Fixed browser tab crash for 1-million-columns script
+
+#### JS API
+* [#3063](https://github.com/datagrok-ai/public/issues/3063): Added the capability to add color palettes to configs 
+* Addressed an issue preventing dapi.queries from being executable, restoring full query functionality
+
+#### Data Access
+* Database initialization update: moved legacy database migrations to init_db.sql, optimizing the setup process and reducing overhead from outdated migration files
+* Schema-specific migrations: implemented support for schema-specific database migrations that can be configured directly from packages, allowing for easier version control and better alignment with package requirements
+
+### Viewers
+* New Confusion matrix data viewer 
+* [Density plot](../../visualize/viewers/density-plot.md): Increase bins after certain zoom
+* [#3015](https://github.com/datagrok-ai/public/issues/3015): [Trellis plot](../../visualize/viewers/trellis-plot.md) is re-rendered on changing settings when there is no data to display after settings change 
+* [#3052](https://github.com/datagrok-ai/public/issues/3052): Reducing a few seconds delay on creating a screenshot of a viewer 
+* Fixes:
+  * [#2776](https://github.com/datagrok-ai/public/issues/2776): [Line Chart](../../visualize/viewers/line-chart.md): Page is not frozen if too many categories are used in split 
+  * [Histogram](../../visualize/viewers/histogram.md): Slider with bins doesn't suddenly become visible   
+  * [Box plot](../../visualize/viewers/box-plot.md): Legend color picker menu closes correctly
+  * [Scaffold tree](../../visualize/viewers/scaffold-tree.md): Fixing loader freezing on 0%
+  * [Tree map viewer](https://datagrok.ai/help/visualize/viewers/tree-map#interactivity): "Split By" option fixing
+
+#### [Grid](../../visualize/viewers/grid.md)
+* Formula-based rendering integration
+* Add method to invalidate a single grid cell 
+* Fixes:
+  * [#2683](https://github.com/datagrok-ai/public/issues/2683): Pinned columns: left-clicking on the column name does not change the Context Panel display 
+  * [#3095](https://github.com/datagrok-ai/public/issues/3095): Wrong columns are exported with 'Visible columns only' option if there are multiple views for the table 
+
+#### [Scatterplot](../../visualize/viewers/scatter-plot.md)
+* Improved label positioning and size adjustments (including for structure labels [#2688](https://github.com/datagrok-ai/public/issues/2688))
+* Added lines to connect data series
+* Added color coding via expressions to enhance data visualization capabilities
+    
+### Packages
+* Plugin management improvements: Streamlined plugin uninstall and delete processes
+* Added functionality to reset the *touchedOn* flag when selecting a package's current version
+* Ability to auto update deprecated packages
+
+
+#### [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts/CHANGELOG.md)
+* [#3090](https://github.com/datagrok-ai/public/issues/3090): Sunburst usability improvements 
+
+#### [PowerPack](https://github.com/datagrok-ai/public/blob/master/packages/PowerPack/CHANGELOG.md)
+* Fixes for 'Add new column' functionality:
+  * Fixed validation error when using if(true, "yes", error("Error")) in formulas 
+  * Resolved incorrect validation when using nested columns in a formula
+  * Fixed an error where VectorCall caused addNewColumn to run the script on each row individually, rather than utilizing Script.vectorize for efficient processing
+  * Fixed an issue where the filter reset unexpectedly when clicking on a column, even if a category was already selected
+  * [#3006](https://github.com/datagrok-ai/public/issues/3006): Changing the return type now correctly triggers column reordering
+  * [#3010](https://github.com/datagrok-ai/public/issues/3010): Resolved issue where *Qnum* was incompatible with *if* statements
+  * [#2981](https://github.com/datagrok-ai/public/issues/2981): Fixed an issue where typing in calculated formulas caused input to be unexpectedly overwritten
+  * [#3009](https://github.com/datagrok-ai/public/issues/3009): Addressed an issue with calculated column hints breaking when using round and curly brackets together
+
+#### [Diff Studio](https://datagrok.ai/help/compute/diff-studio#lookup-tables)
+* Value lookups: Implemented the use of lookup tables
+
+#### [EDA](https://datagrok.ai/help/deploy/releases/plugins/EDA#122-2024-09-12)
+* Fixes:
+  * ANOVA: Fix incorrect column type bug 
+  * Missing values imputation: Fixing dialog
+
+### Other fixes
+* [#3027](https://github.com/datagrok-ai/public/issues/3027): Cannot copy text from any input in filters panel 
+* [#3032](https://github.com/datagrok-ai/public/issues/3032): Page is freezing for a while when color by column is applied in some cases (large number of categories + "starts with") 
+* [#2715](https://github.com/datagrok-ai/public/issues/2715): PadLeft and PadRight do not seem to work (WIP)
+* [#2959](https://github.com/datagrok-ai/public/issues/2959): DS: Projects: Data-sync project doesn't open if a column with operations on it was excluded from the data source 
+* Unexpected logout on refresh token error \- needs handling for invalid session only
+* Projects: Misaligned layout on toolbox in data-sync project 
+* Converting object to an encodable object failed
+* Credentials wipe when package version changes 
+* Invisible columns cause exception waterfall 
+
+
+## 2024-11-04 Datagrok 1.21.4  
+
+### Improvements and fixes:
+* Bugfixes for model signatures synchronization
+* Text Renderer: Fixed multi-line link rendering
 
 ## 2024-09-10 Datagrok 1.21.1 release 
 
@@ -252,7 +247,10 @@ Database migrations are irreversible in this version. You cannot roll back to an
 * [#2943](https://github.com/datagrok-ai/public/issues/2943): Categorical filter in column header is not broken after removing the same column from filters panel. 
 * [#2985](https://github.com/datagrok-ai/public/issues/2985): Combined boolean filter can be removed from the project.
 
+## 2024-09-26 1.20.3
 
+### Improvement:
+* [#3032](https://github.com/datagrok-ai/public/issues/3032): Page is freezing for a while when colour by column is applied in some cases (large number of categories + "starts with") 
 
 ## 2024-08-27 1.20.2
 

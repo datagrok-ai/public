@@ -71,6 +71,17 @@ const RESERVED_FUNC_NAMES_AND_TYPES: {[key: string]: string} = {
 const DEFAULT_HINT = `Type '$' to select a column or press 'Ctrl + Space' to select a function`;
 const FUNC_OUTPUT_TYPE = 'output';
 
+const isNumerical = (type: string) => type == DG.TYPE.INT || type == DG.TYPE.FLOAT || type == DG.TYPE.NUM || type == DG.TYPE.QNUM || type == DG.TYPE.BIG_INT;
+
+const numericCast: {[key: string]: {[key: string]: string}} = {
+  [DG.TYPE.INT]: {[DG.TYPE.FLOAT]: DG.TYPE.FLOAT, [DG.TYPE.NUM]: DG.TYPE.FLOAT, [DG.TYPE.QNUM]: DG.TYPE.QNUM, [DG.TYPE.BIG_INT]: ''},
+  [DG.TYPE.FLOAT]: {[DG.TYPE.INT]: DG.TYPE.FLOAT, [DG.TYPE.NUM]: DG.TYPE.FLOAT, [DG.TYPE.QNUM]: '', [DG.TYPE.BIG_INT]: ''},
+  [DG.TYPE.NUM]: {[DG.TYPE.INT]: DG.TYPE.FLOAT, [DG.TYPE.FLOAT]: DG.TYPE.FLOAT, [DG.TYPE.QNUM]: '', [DG.TYPE.BIG_INT]: ''},
+  'number': {[DG.TYPE.INT]: DG.TYPE.FLOAT, [DG.TYPE.FLOAT]: DG.TYPE.FLOAT, [DG.TYPE.QNUM]: '', [DG.TYPE.BIG_INT]: ''},
+  [DG.TYPE.QNUM]: {[DG.TYPE.INT]: DG.TYPE.QNUM, [DG.TYPE.FLOAT]: '', [DG.TYPE.NUM]: '', [DG.TYPE.BIG_INT]: ''},
+  [DG.TYPE.BIG_INT]: {[DG.TYPE.INT]: '', [DG.TYPE.FLOAT]: '', [DG.TYPE.NUM]: '', [DG.TYPE.QNUM]: ''}
+};
+
 export class AddNewColumnDialog {
   addColumnTitle: string = 'Add New Column';
   editColumnTitle: string = 'Edit Column Formula';
@@ -688,7 +699,7 @@ export class AddNewColumnDialog {
       const funcCall = grok.functions.parse(formula, false);
       this.validateFuncCallTypes(funcCall);
     } catch (e: any) {
-      return e.message?.endsWith(': end of input expected]') ? 'Possible syntax error' : e?.message;
+      return e.message?.endsWith(': end of input expected]') ? 'Possible syntax error' : e.message ?? e;
     }
     return '';
   }
@@ -699,10 +710,12 @@ export class AddNewColumnDialog {
     const actualInputParamTypes: { [key: string]: string } = {};
     const actualInputSemTypes: { [key: string]: string } = {};
 
+    if (funcCall.func.name.toLowerCase() === 'if')
+      this.getIfFuncOutputParam(funcCall);
     //collect actual input parameter types
     for (const key of Object.keys(funcCall.inputs)) {
       if (funcCall.inputs[key] instanceof DG.FuncCall) {
-        //do not allow functions with multiple inputs 
+        //do not allow functions with multiple outputs 
         if (funcCall.inputs[key].func.outputs.length > 1)
           throw new Error(`Function ${funcCall.inputs[key].func} returns multiple values`);
         //treat $COLUMN_NAME as scalar
@@ -1010,12 +1023,12 @@ export class AddNewColumnDialog {
     const call = (DG.Func.find({name: 'AddNewColumn'})[0]).prepare({table: this.previwDf!,
       name: colName, expression: expression, type: type});
     ui.setUpdateIndicator(this.gridPreview!.root, true);
-    await call.call(false, undefined, {processed: true, report: false});
-    /*    await this.previwDf!.columns.addNewCalculated(
-        colName,
-        this.inputExpression!.value,
-        ...this.getSelectedType()
-    );*/
+      await call.call(false, undefined, {processed: true, report: false});
+      /*    await this.previwDf!.columns.addNewCalculated(
+          colName,
+          this.inputExpression!.value,
+          ...this.getSelectedType()
+      );*/
     ui.setUpdateIndicator(this.gridPreview!.root, false);
 
     this.gridPreview!.dataFrame = this.previwDf!.clone(null, columnIds);
@@ -1056,7 +1069,7 @@ export class AddNewColumnDialog {
         parenthesesPos--;
       }
       const funcName = this.getFunctionNameAtPosition(cm, parenthesesPos, -1, this.packageFunctionsParams, this.coreFunctionsParams, true)?.funcName;
-      const isAggr = funcName ? Object.values(DG.AGG).includes(funcName!.toLocaleLowerCase() as DG.AGG) : false;
+      const isAggr = funcName ? Object.entries(DG.AGG).map(([key, value]) => value).includes(funcName!.toLocaleLowerCase() as DG.AGG) : false;
       const escapedColName = grok.functions.handleOuterBracketsInColName(x.name, true);
       snippet = isAggr ? `\$[${escapedColName}]` : `\${${escapedColName}}`;
     }
@@ -1064,7 +1077,7 @@ export class AddNewColumnDialog {
       const params = (x as DG.Func).inputs.map((it) => it.semType ?? it.propertyType);
       const colPos = this.findColumnTypeMatchingParam(x);
       if (colPos !== -1) {
-        const isAggr = Object.values(DG.AGG).includes((x as DG.Func).name.toLocaleLowerCase() as DG.AGG);
+        const isAggr = Object.entries(DG.AGG).map(([key, value]) => value).includes((x as DG.Func).name.toLocaleLowerCase() as DG.AGG);
         const escapedColName = grok.functions.handleOuterBracketsInColName(this.selectedColumn!.name, true);
         params[colPos] = isAggr ? `\$[${escapedColName}]` : `\${${escapedColName}}`;
       }
@@ -1251,5 +1264,68 @@ export class AddNewColumnDialog {
         filter: filter
       } as CompletionResult
     };
+  }
+
+  getValueType(value: any): string {
+    if (!value)
+      return 'null';
+    let type: string = typeof value;
+    if (typeof value === 'number') {
+      const str = value.toString();
+      type = str.indexOf('.') === -1 && str.indexOf(',') === -1 ? DG.TYPE.INT : DG.TYPE.FLOAT;
+    }
+    return type;
+  }
+
+  getIfFuncOutputParam(call: DG.FuncCall) {
+    let outType = '';
+
+    const values = Object.entries(call.inputParams).map(([key, value]) => value);
+
+    for (const ip of values) {
+      if (ip.name == 'ifTrue' || ip.name == 'ifFalse') {
+        let pType = '';
+        if ((ip as DG.FuncCallParam).value instanceof DG.FuncCall && (ip as DG.FuncCallParam).value.func.name.toLowerCase() === 'if')
+          pType = this.getIfFuncOutputParam((ip as DG.FuncCallParam).value);
+        else  //in case columns is passed as parameter (GetCurrentRowFieldFunc) - we take column type
+          pType = (ip as DG.FuncCallParam).value instanceof DG.FuncCall ? (ip as DG.FuncCallParam).value.func.name === 'GetCurrentRowField' ?
+            this.sourceDf?.col((ip as DG.FuncCallParam).value.inputs['field'])?.type ?? 'null' :
+              Object.keys((ip as DG.FuncCallParam).value.outputParams).length > 0 ?
+                (ip as DG.FuncCallParam).value.outputParams[Object.keys((ip as DG.FuncCallParam).value.outputParams)[0]].property.propertyType : 'null' :
+                  this.getValueType((ip as DG.FuncCallParam).value);
+        if (outType == '') {
+          outType = pType;
+          continue;
+        }
+        else
+          outType = this.getOutputParamType(outType, pType);
+      }
+    }
+    return outType;
+  }
+
+  getOutputParamType(first: string, second: string) {
+    const isNullParam = (param: string) => param == 'null' || param == 'undefined'|| param == null;
+    if (isNullParam(first))
+      return !isNullParam(second) ? second : DG.TYPE.STRING;
+    else {
+      if (isNullParam(second))
+        return first;
+      else {
+        if (second == first)
+          return second;
+        else {
+          if (first ==  DG.TYPE.DYNAMIC || second ==  DG.TYPE.DYNAMIC)
+            return  DG.TYPE.DYNAMIC;
+          if (isNumerical(second) && isNumerical(first)) {
+            var resType = numericCast[first][second];
+            if (resType == '')
+              throw new Error(`If function params types (${first}, ${second}) do not match and cannot be casted to each other`);
+            return resType;
+          } else
+            throw new Error(`If function params types (${first}, ${second}) do not match and cannot be casted to each other`);
+        }
+      }
+    }
   }
 }

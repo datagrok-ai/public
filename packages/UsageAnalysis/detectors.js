@@ -10,7 +10,8 @@ TEST_SEM_TYPE = 'test';
 class UsageAnalysisPackageDetectors extends DG.Package {
     //tags: semTypeDetector
     //input: column col
-    //output: string semType
+    //output: string semType 
+    //meta.skipTest: test
     detectTest(col) {
       if ((col.name.toLowerCase().includes('test') | col.name.toLowerCase().includes('name')) && DG.Detector.sampleCategories(col, (s) => {
         return new RegExp(".*:.*:.*").test(s);

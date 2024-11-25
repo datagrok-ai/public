@@ -128,9 +128,9 @@ export class RunComparisonView extends DG.TableView {
         const rows = gc.cell.value.split(' - ') as string[];
         const elems = (rows.length > 1) ? [rows[0], ui.element('br'), rows[1]]: rows;
         gc.element = ui.div(elems, {style: {
-          'writing-mode': 'vertical-rl',
-          'text-orientation': 'mixed',
-          'margin': 'auto',
+          writingMode: 'vertical-rl',
+          textOrientation: 'mixed',
+          margin: 'auto',
         }});
         gc.element.parentElement!.style.display = 'flex';
         return;
@@ -171,7 +171,7 @@ export class RunComparisonView extends DG.TableView {
       }
     });
 
-    const unitedDfPlot = ui.box(ui.div([], {style: {'min-height': '100px'}}));
+    const unitedDfPlot = ui.box(ui.div([], {style: {minHeight: '100px'}}));
 
     const currentViewSub = grok.events.onCurrentViewChanged.subscribe(() => {
       if ((grok.shell.v as DG.View).id === this.id)

@@ -104,6 +104,7 @@ export type HitTriageCampaignStatus = string;
 
 export type HitTriageCampaign = {
     name: string,
+    friendlyName?: string,
     templateName: string,
     template?: HitDesignTemplate,
     savePath?: string,

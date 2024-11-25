@@ -210,6 +210,15 @@ By default, any new campaign will be shared with all users. To manage who can vi
 
 ![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-permissions.gif?raw=true)
 
-Similarly, users can manage view permissions, which will restrict access to viewing the campaign or accessing it directly via link. If all users are removed from `view` permissions, only the creator of the campaign will be able to view it.
+Similarly, you can manage view permissions, which will restrict access to viewing the campaign or accessing it directly via link. If all users are removed from `view` permissions, only the creator of the campaign will be able to view it.
 
 ![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-view-permissions.gif?raw=true)
+
+You can also modify the default shyaring permissions for all newly created campaigns. To do so, modify the HitTriage package settings.
+
+1. Go to `Browse` → `Platform` and click on `Plugins` (or directly via a link at `{your_datagrok_url}/packages`).
+2. Under Cheminformatics, click on `HitTriage` package.
+3. On the context panel, expand the `Settings` pane.
+4. Modify the `Default view permissions` and `Default edit permissions` fields to set the default permissions for all newly created campaigns.
+
+![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/edit-default-hd-sharing.gif?raw=true)

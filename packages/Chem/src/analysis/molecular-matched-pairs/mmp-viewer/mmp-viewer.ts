@@ -133,6 +133,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
           });
       } catch (e: any) {
         const errMsg = e instanceof Error ? e.message : e.toString();
+        grok.log.error(e);
         grok.shell.error(errMsg);
       } finally {
         $(this.root).empty();
@@ -474,6 +475,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       }
     } catch (err: any) {
       const errMsg = err instanceof Error ? err.message : err.toString();
+      grok.log.error(err);
       grok.shell.error(errMsg);
       throw new Error(errMsg);
     }

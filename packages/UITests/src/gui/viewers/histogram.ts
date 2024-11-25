@@ -13,10 +13,10 @@ category('Viewers: Histogram', () => {
 
   before(async () => {
     demog = grok.data.demo.demog(1000);
-    v = grok.shell.addTableView(demog);
   });
 
   test('histogram.visual', async () => {
+    v = grok.shell.addTableView(demog);
     const histogramChartIcon = document.getElementsByClassName('svg-histogram')[0] as HTMLElement;
     histogramChartIcon.click();
     await awaitCheck(() => document.querySelector('.d4-histogram') !== null, 'histogram not found', 3000);
@@ -37,6 +37,7 @@ category('Viewers: Histogram', () => {
   });
 
   test('histogram.api', async () => {
+    v = grok.shell.addTableView(demog);
     const histogram = v.histogram({
       value: 'weight',
       binWidthRatio: 2,
@@ -59,9 +60,8 @@ category('Viewers: Histogram', () => {
       bins: 30,
     });
 
-    await awaitCheck(() => (document.
-      querySelector('#elementContent > div.d4-layout-top > div > textarea') as HTMLSelectElement).
-      value === 'Test Histogram', 'title property has not been set', 2000);
+    await awaitCheck(() => (Array.from(document.querySelectorAll('#elementContent > div.d4-layout-top > div > textarea')) as HTMLSelectElement[]).some((e)=>e.value === 'Test Histogram')
+      , 'title property has not been set', 2000);
     if (histogram.props.bins != 30)
       throw 'bins property has not been set to 30';
     if (histogram.props.colorColumnName != 'age')
@@ -78,6 +78,7 @@ category('Viewers: Histogram', () => {
 
   // Does not work through Test Manager
   test('histogram.serialization', async () => {
+    v = grok.shell.addTableView(demog);
     await uploadProject('Test project with Histogram', demog.getTableInfo(), v, demog);
     grok.shell.closeAll();
     await grok.dapi.projects.open('Test project with Histogram');
@@ -108,7 +109,8 @@ category('Viewers: Histogram', () => {
       throw 'min range input from showRangeInputs property not found';
     if (!rangeInputMax)
       throw 'max range input from showRangeInputs property not found';
-  });
+    await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test project with Histogram').first());
+  }, {skipReason: 'GROK-12698'});
 
   test('histogram.spline.range.overlapped', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromColumns([
@@ -127,7 +129,7 @@ category('Viewers: Histogram', () => {
       tv.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Histogram test', 0.3);
 
       await awaitCheck(() => document.querySelector('.d4-histogram') !== null, 'histogram not found', 3000);
-      isViewerPresent(Array.from(v.viewers), 'Histogram');
+      isViewerPresent(Array.from(tv.viewers), 'Histogram');
     } finally {
       tv.close();
       grok.shell.closeTable(df);
@@ -151,15 +153,14 @@ category('Viewers: Histogram', () => {
       tv.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Histogram test', 0.3);
 
       await awaitCheck(() => document.querySelector('.d4-histogram') !== null, 'histogram not found', 3000);
-      isViewerPresent(Array.from(v.viewers), 'Histogram');
+      isViewerPresent(Array.from(tv.viewers), 'Histogram');
     } finally {
       tv.close();
       grok.shell.closeTable(df);
     }
-  }, {skipReason: 'GROK-12698'});
+  });
 
   after(async () => {
     grok.shell.closeAll();
-    await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test project with Histogram').first());
   });
 });
