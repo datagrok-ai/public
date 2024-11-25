@@ -209,7 +209,7 @@ export async function getPolyToolConvertEditor(call: DG.FuncCall): Promise<DG.Co
 export async function polyToolConvert2(table: DG.DataFrame,
   seqCol: DG.Column, generateHelm: boolean, chiralityEngine: boolean, rules: string[]
 ): Promise<DG.Column<string>> {
-  const ptConvertRes = await polyToolConvert(seqCol, generateHelm, chiralityEngine, rules);
+  const ptConvertRes = await polyToolConvert(seqCol, generateHelm, false, chiralityEngine, false, rules);
   return ptConvertRes[0];
 }
 
