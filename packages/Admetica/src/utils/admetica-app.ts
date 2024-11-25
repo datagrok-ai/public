@@ -1,9 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import { addColorCoding, addSparklines, createDynamicForm, getQueryParams, performChemicalPropertyPredictions, properties, setProperties } from './admetica-utils';
+import { addColorCoding, addSparklines, createDynamicForm, getQueryParams, performChemicalPropertyPredictions, properties, setProperties, updateColumnProperties } from './admetica-utils';
 import {BaseViewApp} from '@datagrok-libraries/tutorials/src/demo-base-view';
 import '../css/admetica.css';
+import { Model, Subgroup } from './constants';
 
 export class AdmeticaViewApp extends BaseViewApp {
   constructor(parentCall: DG.FuncCall) {
@@ -17,15 +18,19 @@ export class AdmeticaViewApp extends BaseViewApp {
 
   protected async processFileData(): Promise<void> {
     await grok.data.detectSemanticTypes(this.tableView!.dataFrame);
-    const models = await getQueryParams();
+    const models = properties.subgroup.flatMap((subg: Subgroup) => subg.models).map((model: Model) => model);
+    const queryParams = models.map((model: Model) => model.name);
     const molColName = this.tableView!.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE)!.name;
     const molIdx = this.tableView!.dataFrame.columns.names().findIndex(c => c === molColName);
     let i = molIdx + 2;
     
-    await addColorCoding(this.tableView!.dataFrame, models.split(','));
-    await addSparklines(this.tableView!.dataFrame, models.split(','), i, 'ADMET');
+    await addColorCoding(this.tableView!.dataFrame, queryParams);
+    await addSparklines(this.tableView!.dataFrame, queryParams, i, 'ADMET');
     i += 1;
     await setProperties();
+
+    for (const model of models)
+      updateColumnProperties(this.tableView?.grid.col(model.name)!, model);
   
     const uniqueSubgroupNames: string[] = Array.from(
       new Set(properties.subgroup.map((subg: any) => subg.name))
