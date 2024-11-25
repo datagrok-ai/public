@@ -284,7 +284,8 @@ export class AdmeticaBaseEditor {
 
     this.tree.onChildNodeExpandedChanged.subscribe((node: DG.TreeViewGroup) => {
       const subgroup = template.subgroup.find(subgroup => subgroup?.name === node.text);
-      subgroup!.expanded = node.expanded;
+      if (subgroup)
+        subgroup.expanded = node.expanded;
     });
 
     this.tree.onNodeCheckBoxToggled.subscribe((node) => {
