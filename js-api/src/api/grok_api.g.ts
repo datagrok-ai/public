@@ -617,6 +617,7 @@ export interface IDartApi {
   grok_BigIntColumn_GetValue(c: any, i: Num): any;
   grok_BigIntColumn_SetValue(c: any, i: Num, x: String, notify: Bool): any;
   grok_BigIntJs_To_BigInt(bigint: String): any;
+  grok_BigInt_To_BigIntJs(bigint: any): any;
   grok_DateTimeColumn_GetValue(c: any, i: Num): any;
   grok_DateTimeColumn_SetValue(c: any, i: Num, x: any, notify: Bool): any;
   grok_ColumnsArgs_Get_Columns(args: any): any;
