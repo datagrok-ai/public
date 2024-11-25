@@ -8,7 +8,7 @@ import {Unsubscribable} from 'rxjs';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {getSeqHelper, ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {getSeqHelper, ISeqHelper, ToAtomicLevelRes} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
 import {addMonomerHoverLink, buildMonomerHoverLink} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
@@ -23,7 +23,8 @@ import {getEnumerationChem, PT_CHEM_EXAMPLE} from './pt-enumeration-chem';
 
 import {
   PT_ERROR_DATAFRAME, PT_UI_ADD_HELM, PT_UI_DIALOG_CONVERSION, PT_UI_DIALOG_ENUMERATION,
-  PT_UI_GET_HELM, PT_UI_HIGHLIGHT_MONOMERS, PT_UI_RULES_USED, PT_UI_USE_CHIRALITY
+  PT_UI_GET_HELM, PT_UI_LINEARIZE, PT_UI_LINEARIZE_TT,
+  PT_UI_HIGHLIGHT_MONOMERS, PT_UI_RULES_USED, PT_UI_USE_CHIRALITY
 } from './const';
 
 import {_package} from '../package';
@@ -33,12 +34,13 @@ import {MonomerMap} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {ISeqMonomer} from '@datagrok-libraries/bio/src/helm/types';
 import wu from 'wu';
 import {PolymerTypes} from '@datagrok-libraries/js-draw-lite/src/types/org';
-import {getMonomersDictFromLib} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
+import {_toAtomicLevel, getMonomersDictFromLib} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
 import {monomerSeqToMolfile} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level-utils';
 import {LRUCache} from 'lru-cache';
 import {getMonomerHover, ISubstruct, setMonomerHover} from '@datagrok-libraries/chem-meta/src/types';
 import {getMolHighlight} from '@datagrok-libraries/bio/src/monomer-works/seq-to-molfile';
 import {ChemTags} from '@datagrok-libraries/chem-meta/src/consts';
+import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
 type PolyToolConvertSerialized = {
   generateHelm: boolean;
@@ -99,6 +101,9 @@ export async function getPolyToolConvertDialog(srcCol?: DG.Column): Promise<DG.D
     const generateHelmInput = ui.input.bool(PT_UI_GET_HELM, {value: true});
     ui.tooltip.bind(generateHelmInput.root, PT_UI_ADD_HELM);
 
+    const linearizeInput = ui.input.bool(PT_UI_LINEARIZE, {value: true});
+    ui.tooltip.bind(linearizeInput.root, PT_UI_LINEARIZE_TT);
+
     const chiralityEngineInput = ui.input.bool(PT_UI_USE_CHIRALITY, {value: true});
     const highlightMonomersInput = ui.input.bool(PT_UI_HIGHLIGHT_MONOMERS, {value: true});
     let ruleFileList: string[];
@@ -112,6 +117,7 @@ export async function getPolyToolConvertDialog(srcCol?: DG.Column): Promise<DG.D
     const div = ui.divV([
       srcColInput,
       generateHelmInput,
+      linearizeInput,
       chiralityEngineInput,
       highlightMonomersInput,
       rulesHeader,
@@ -121,7 +127,10 @@ export async function getPolyToolConvertDialog(srcCol?: DG.Column): Promise<DG.D
     const exec = async (): Promise<void> => {
       try {
         const ruleFileList = await ruleInputs.getActive();
-        await polyToolConvert(srcColInput.value!, generateHelmInput.value!, chiralityEngineInput.value!, ruleFileList);
+        await polyToolConvert(
+          srcColInput.value!, generateHelmInput.value!, linearizeInput.value!,
+          chiralityEngineInput.value!, highlightMonomersInput.value!, ruleFileList
+        );
       } catch (err: any) {
         defaultErrorHandler(err);
       }
@@ -261,8 +270,8 @@ function dealGroups(col: DG.Column<string>): void {
 }
 
 /** Returns Helm and molfile columns.  */
-export async function polyToolConvert(
-  seqCol: DG.Column<string>, generateHelm: boolean, chiralityEngine: boolean, ruleFiles: string[]
+export async function polyToolConvert(seqCol: DG.Column<string>,
+  generateHelm: boolean, linearize: boolean, chiralityEngine: boolean, highlight: boolean, ruleFiles: string[]
 ): Promise<[DG.Column, DG.Column]> {
   const pi = DG.TaskBarProgressIndicator.create('PolyTool converting...');
   try {
@@ -274,7 +283,7 @@ export async function polyToolConvert(
 
     const table = seqCol.dataFrame;
     const rules = await getRules(ruleFiles);
-    const resList = doPolyToolConvert(seqCol.toList(), rules, helmHelper);
+    const [resList, isLinear] = doPolyToolConvert(seqCol.toList(), rules, helmHelper);
 
     const resHelmColName = getUnusedName(table, `transformed(${seqCol.name})`);
     const resHelmCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, resHelmColName, resList.length)
@@ -284,15 +293,53 @@ export async function polyToolConvert(
     resHelmCol.setTag(DG.TAGS.CELL_RENDERER, 'helm');
     if (generateHelm && table) table.columns.add(resHelmCol, true);
 
-    const seqHelper: ISeqHelper = await getSeqHelper();
+
     const rdKitModule: RDModule = await getRdKitModule();
     const lib = await getOverriddenLibrary(rules);
     const resHelmColTemp = resHelmCol.temp;
     resHelmColTemp[MmcrTemps.overriddenLibrary] = lib;
     resHelmCol.temp = resHelmColTemp;
+
+    const seqHelper: ISeqHelper = await getSeqHelper();
     const toAtomicLevelRes =
-      await seqHelper.helmToAtomicLevel(resHelmCol, chiralityEngine, /* highlight */ generateHelm, lib);
+      await seqHelper.helmToAtomicLevel(resHelmCol, chiralityEngine, highlight, lib);
+
     const resMolCol = toAtomicLevelRes.molCol!;
+
+
+    const allLinear = isLinear.filter((l) => l).length;
+    if (linearize && allLinear > 0) {
+      const lin = new Array<string>(allLinear);
+      let counter = 0;
+      for (let i = 0; i < isLinear.length; i++) {
+        if (isLinear[i]) {
+          lin[counter] = resList[i];
+          counter++;
+        }
+      }
+
+      const linCol = DG.Column.fromStrings('helm', lin);
+      linCol.semType = DG.SEMTYPE.MACROMOLECULE;
+      linCol.meta.units = NOTATION.HELM;
+      linCol.setTag(DG.TAGS.CELL_RENDERER, 'helm');
+
+      const monomerLibHelper = await getMonomerLibHelper();
+      const systemMonomerLib = monomerLibHelper.getMonomerLib();
+      let linear: ToAtomicLevelRes | null = null;
+      try {
+        linear = await _toAtomicLevel(DG.DataFrame.create(0), linCol, systemMonomerLib, seqHelper, rdKitModule);
+        counter = 0;
+        for (let i = 0; i < isLinear.length; i++) {
+          if (isLinear[i]) {
+            resMolCol.set(i, linear!.molCol!.get(counter));
+            counter++;
+          }
+        }
+      } catch (e: any) {
+        grok.shell.warning('PolyTool was not able to linearize sequences');
+      }
+    }
+
     dealGroups(resMolCol);
     resMolCol.name = getUnusedName(table, `molfile(${seqCol.name})`);
     resMolCol.semType = DG.SEMTYPE.MOLECULE;

@@ -1,5 +1,9 @@
 # Sequence Translator changelog
 
+## 1.6.4 (WIP)
+
+PolyTool: linearization of single sequence molecules
+
 ## 1.6.3 (2024-11-22)
 
 Moved Context menu items to detector
