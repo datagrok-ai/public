@@ -240,7 +240,9 @@ export async function MockProvider2(params: any) {
         id: 'stepAdd',
       }, {
         id: 'stepMul',
-      },
+      }, {
+        id: 'cooling',
+      }
     ],
     links: [{
       id: 'selector',

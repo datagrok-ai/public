@@ -75,7 +75,7 @@ export const PipelineView = Vue.defineComponent({
         <DockManager
           onPanelClosed={handlePanelClose}
         >
-          { (!historyHidden.value && props.funcCall) ?
+          { (!historyHidden.value && props.funcCall) &&
             <History
               func={props.funcCall.func}
               showActions
@@ -86,14 +86,14 @@ export const PipelineView = Vue.defineComponent({
               dock-spawn-title='History'
               ref={historyRef}
               class='overflow-scroll h-full'
-            /> : null }
-          { (!helpHidden.value && helpText.value) ?
+            /> }
+          { (!helpHidden.value && helpText.value) &&
             <MarkDown
               markdown={helpText.value}
               dock-spawn-title='Help'
               dock-spawn-dock-type='fill'
               ref={helpRef}
-            /> : null }
+            /> }
           { menuActions.value && Object.entries(menuActions.value).map(([category, actions]) =>
             <RibbonMenu groupName={category}>
               {

@@ -429,7 +429,7 @@ export class DockManager {
 
     let ratios: number[] = null;
     let oldSplitter: SplitterDockContainer;
-    if (referenceNode.parent && referenceNode.parent.container) {
+    if (referenceNode?.parent && referenceNode.parent.container) {
       oldSplitter = referenceNode.parent.container as SplitterDockContainer;
       if (oldSplitter.getRatios)
         ratios = oldSplitter.getRatios();
