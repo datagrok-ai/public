@@ -1307,8 +1307,8 @@ export class Property {
   set nullable(s: boolean) { api.grok_Property_Set_Nullable(this.dart, s); }
 
   /** Default value */
-  get defaultValue(): any { return api.grok_Property_Get_DefaultValue(this.dart); }
-  set defaultValue(s: any) { api.grok_Property_Set_DefaultValue(this.dart, s); }
+  get defaultValue(): any { return toJs(api.grok_Property_Get_DefaultValue(this.dart)); }
+  set defaultValue(s: any) { api.grok_Property_Set_DefaultValue(this.dart, toDart(s)); }
 
   /** Property editor */
   get editor(): string { return api.grok_Property_Get(this.dart, 'editor'); }
@@ -1364,7 +1364,7 @@ export class Property {
                 getter: PropertyGetter,
                 setter: PropertySetter,
                 defaultValue: any = null): Property {
-    return new Property(api.grok_Property(name, type, getter, setter, defaultValue));
+    return new Property(api.grok_Property(name, type, getter, setter, toDart(defaultValue)));
   }
 
   /** Creates an integer property */
