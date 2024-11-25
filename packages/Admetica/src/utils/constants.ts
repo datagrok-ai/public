@@ -59,3 +59,11 @@ export const ERROR_MESSAGES = {
   MALFORMED: 'Molecule is possibly malformed',
   EMPTY: 'Molecule is empty'
 };
+
+export const colorsDictionary: { [key: string]: string } = {
+  'Absorption': '#1f77b4',
+  'Distribution': '#cf5a0c',
+  'Metabolism': '#2ca02c',
+  'Excretion': '#d62728',
+  'Toxicity': '#9467bd'
+};
