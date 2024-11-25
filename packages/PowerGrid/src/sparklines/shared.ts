@@ -62,25 +62,23 @@ export class Hit {
   isHit: boolean = false;
 }
 
-export function createTooltip(cols: DG.Column[], activeColumn: number, row: number): HTMLDivElement[] {
-  const arr: HTMLDivElement[] = [];
+export function createTooltip(cols: DG.Column[], activeColumn: number, row: number): HTMLDivElement {
+  const keysDiv = ui.divV([], { style: { marginRight: '10px', fontWeight: 'bold' } });
+  const valuesDiv = ui.divV([], { style: { fontWeight: 'normal' } });
+
   for (let i = 0; i < cols.length; i++) {
-    if (cols[i] === null)
-      continue;
-    arr.push(ui.divH([ui.divText(`${cols[i].name}:`, {
-      style: {
-        margin: '0 10px 0 0',
-        fontWeight: (activeColumn == i) ? 'bold' : 'normal',
-      }
-    }), ui.divText(`${Math.floor(cols[i].getNumber(row) * 100) / 100}`, {
-      style: {
-        fontWeight: (activeColumn == i) ? 'bold' : 'normal',
-      }
-    })]
-    )
-    );
+    if (cols[i] === null) continue;
+
+    const isActive = activeColumn === i;
+    keysDiv.appendChild(ui.divText(`${cols[i].name}:`, { 
+      style: { fontWeight: isActive ? 'bold' : 'normal' } 
+    }));
+    valuesDiv.appendChild(ui.divText(`${Math.floor(cols[i].getNumber(row) * 100) / 100}`, { 
+      style: { fontWeight: isActive ? 'bold' : 'normal' } 
+    }));
   }
-  return arr;
+
+  return ui.divH([keysDiv, valuesDiv], { style: { display: 'flex' } });
 }
 
 export function createBaseInputs(gridColumn: DG.GridColumn, settings: SummarySettingsBase): DG.InputBase[] {

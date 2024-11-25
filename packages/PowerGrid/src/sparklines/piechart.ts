@@ -247,7 +247,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
     const hitData = onHit(gridCell, e);
     if (hitData.isHit)
-      ui.tooltip.show(ui.divV(createTooltip(hitData.cols, hitData.activeColumn, hitData.row)), e.x + 16, e.y + 16);
+      ui.tooltip.show(createTooltip(hitData.cols, hitData.activeColumn, hitData.row), e.x + 16, e.y + 16);
     else
       ui.tooltip.hide();
   }
