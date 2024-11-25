@@ -1,4 +1,6 @@
 import { DataFrame, Script } from 'datagrok-api/dg';
+import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import { runTests, tests, TestContext, category, test as _test, delay, initAutoTests as initCoreTests, expect, awaitCheck, before } from '@datagrok-libraries/utils/src/test';
 export const _package = new DG.Package();
 export { tests };
