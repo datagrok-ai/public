@@ -11,7 +11,7 @@ import {createColWithDescription} from './mmp-generations';
 import {debounceTime} from 'rxjs/operators';
 import {getInverseSubstructuresAndAlign} from './mmp-mol-rendering';
 import {MmpInput} from './mmp-viewer';
-import { Subscription } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
 
 export class MmpPairedGrids {
   parentTable: DG.DataFrame;
@@ -22,6 +22,7 @@ export class MmpPairedGrids {
   fpCatsTo: string [];
   fpMaskByMolecule: DG.BitSet; //mask for a single molecule
   fpMaskFilter: DG.BitSet; //mask for a number of cases filter
+  fpMaskFragmentsTab: DG.BitSet; //mask for a number of cases filter
   //mmp for matched molecula  pairs
   mmpGridTrans: DG.Grid;
   mmpMaskTrans: DG.BitSet;
@@ -31,6 +32,9 @@ export class MmpPairedGrids {
 
   enableFilters: boolean = true;
   rdkit: RDModule;
+
+  showErrorEvent: Subject<boolean> = new Subject();
+  filters: DG.FilterGroup;
 
   constructor(subs: Subscription[], mmpInput: MmpInput, mmpa: MMPA, activityMeanNames: string[] ) {
     this.mmpa = mmpa;
@@ -47,11 +51,19 @@ export class MmpPairedGrids {
     this.mmpGridFrag = this.mmpGridTrans.dataFrame.plot.grid();
     this.mmpMaskFrag = DG.BitSet.create(this.mmpGridFrag.dataFrame.rowCount);
 
+    const trellisTv = DG.TableView.create(this.fpGrid.dataFrame, false);
+    this.filters = trellisTv.getFiltersGroup();
+    this.fpMaskFragmentsTab = DG.BitSet.create(this.fpGrid.dataFrame.rowCount);
+    //const medPairs = this.fpGrid.dataFrame.col(MMP_NAMES.PAIRS)?.stats.q3;
+    this.fpGrid.dataFrame.rows.filter((row) => row[MMP_NAMES.PAIRS] > 0);
+    this.fpMaskFragmentsTab.copyFrom(this.fpGrid.dataFrame.filter);
+
     this.rdkit = getRdKitModule();
 
     subs.push(DG.debounce(this.parentTable.onCurrentRowChanged, 1000).subscribe(() => {
       if (this.parentTable!.currentRowIdx !== -1) {
         this.refilterFragmentPairsByMolecule(true);
+        this.showErrorEvent.next(this.fpGrid.dataFrame.filter.trueCount === 0);
         this.refreshMatchedPair(this.rdkit);
       }
     }));

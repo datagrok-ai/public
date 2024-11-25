@@ -600,8 +600,7 @@
 }
 
 .chem-mmpa-add-to-workspace-button {
-  padding-top: 7px;
-  padding-left: 3px;
+  margin-top: 0px;
 }
 
 .chem-mmpa-grid-help-icon {
@@ -650,6 +649,7 @@
   position: absolute;
   z-index: 1;
   right: 0px;
+  padding-top: 30px;
 }
 
 .mmpa-slider-input {
@@ -719,6 +719,20 @@
 .mmpa-cliffs-tab .mmpa-pairs-slider {
   display: none;
 }
+
+.chem-mmpa-no-fragments-error {
+  position: absolute;
+  top: 100px;
+  z-index: 1000;
+  left: 200px;
+  color: red;
+  display: none !important;
+}
+
+.chem-mmp-no-fragments .chem-mmpa-no-fragments-error {
+  display: flex !important;
+}
+
 
 .chem-search-panel-wrapper {
   overflow: hidden;
