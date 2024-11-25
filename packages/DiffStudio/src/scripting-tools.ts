@@ -133,7 +133,7 @@ enum ERROR_LINK {
 /** Specific error messages */
 enum ERROR_MSG {
   CTRL_EXPR = `Unsupported control expression with the tag **"${CONTROL_TAG}"**`,
-  ARG = `'The **${CONTROL_EXPR.ARG}** block must consist of 4 lines.`,
+  ARG = `'The **${CONTROL_EXPR.ARG}** block must consist of 3 lines specifying initial and final time, and solution grid step.`,
   LOOP = `The **${CONTROL_EXPR.LOOP}** block must contain at least one line.`,
   COUNT = 'Incorrect loop count',
   LOOP_VS_UPDATE = `The **${CONTROL_EXPR.LOOP}** and **${CONTROL_EXPR.UPDATE}** blocks cannot be used simultaneously.`,
@@ -305,6 +305,9 @@ function getDifEquations(lines: string[]): DifEqs {
   let eqIdx = 0;
 
   for (const line of lines) {
+    if (line === undefined)
+      throw new ModelError(ERROR_MSG.UNDEF_DEQS, ERROR_LINK.BASIC_MODEL, CONTROL_EXPR.DIF_EQ);
+
     divIdx = line.indexOf(DIV_SIGN);
     eqIdx = line.indexOf(EQUAL_SIGN);
     const name = line.slice(line.indexOf('d') + 1, divIdx).replace(/[() ]/g, '');
@@ -324,6 +327,9 @@ function getExpressions(lines: string[]): Map<string, string> {
   let eqIdx = 0;
 
   for (const line of lines) {
+    if (line === undefined)
+      break;
+
     eqIdx = line.indexOf(EQUAL_SIGN);
     exprs.set(line.slice(0, eqIdx).replaceAll(' ', ''), line.slice(eqIdx + 1).trim());
   }
@@ -366,7 +372,7 @@ function getInput(line: string) : Input {
 /** Get argument (independent variable) of IVP */
 function getArg(lines: string[]): Arg {
   if (lines.length !== 4)
-    throw new ModelError(ERROR_MSG.ARG, ERROR_LINK.BASIC_MODEL);
+    throw new ModelError(ERROR_MSG.ARG, ERROR_LINK.BASIC_MODEL, CONTROL_EXPR.ARG);
 
   const sepIdx = lines[0].indexOf(CONTROL_SEP);
   if (sepIdx === -1)
@@ -390,6 +396,9 @@ function getEqualities(lines: string[], begin: number, end: number): Map<string,
   let eqIdx = 0;
 
   for (const line of source) {
+    if (line === undefined)
+      break;
+
     eqIdx = line.indexOf(EQUAL_SIGN);
     eqs.set(line.slice(0, eqIdx).replaceAll(' ', ''), getInput(line));
   }
@@ -399,6 +408,9 @@ function getEqualities(lines: string[], begin: number, end: number): Map<string,
 
 /** Get loop specification */
 function getLoop(lines: string[], begin: number, end: number): Loop {
+  if (begin >= end)
+    throw new ModelError(ERROR_MSG.LOOP, ERROR_LINK.LOOP, CONTROL_EXPR.LOOP);
+
   const source = concatMultilineFormulas(lines.slice(begin, end));
   const size = source.length;
 
@@ -427,14 +439,18 @@ function getUpdate(lines: string[], begin: number, end: number): Update {
   const size = source.length;
 
   if (size < UPDATE.MIN_LINES_COUNT)
-    throw new ModelError(ERROR_MSG.UPDATE_LINES_COUNT, ERROR_LINK.UPDATE);
+    throw new ModelError(ERROR_MSG.UPDATE_LINES_COUNT, ERROR_LINK.UPDATE, CONTROL_EXPR.UPDATE);
+
+  if (source[UPDATE.DURATION_IDX] == undefined)
+    throw new ModelError(ERROR_MSG.UPDATE_LINES_COUNT, ERROR_LINK.UPDATE, CONTROL_EXPR.UPDATE);
 
   const eqIdx = source[UPDATE.DURATION_IDX].indexOf(EQUAL_SIGN);
 
   if (eqIdx === -1) {
     throw new ModelError(
-      `Missing ${EQUAL_SIGN}. Correct the line: **${source[UPDATE.DURATION_IDX]}**`,
+      `Missing **${EQUAL_SIGN}**. Correct the line: **${source[UPDATE.DURATION_IDX]}**`,
       ERROR_LINK.UPDATE,
+      source[UPDATE.DURATION_IDX],
     );
   }
 
@@ -594,7 +610,7 @@ export function getIVP(text: string): IVP {
 
   // check loop- & update-features: just one is supported
   if ( (loop !== null) && (updates.length > 0))
-    throw new ModelError(ERROR_MSG.LOOP_VS_UPDATE, ERROR_LINK.LOOP_VS_UPDATE);
+    throw new ModelError(ERROR_MSG.LOOP_VS_UPDATE, ERROR_LINK.LOOP_VS_UPDATE, CONTROL_EXPR.LOOP);
 
   // obtained model
   const ivp = {
@@ -1144,7 +1160,7 @@ function checkSolverSettings(line: string): void {
   const closeBraceIdx = line.indexOf(BRACE_CLOSE);
   let sepIdx: number;
 
-  if (openBraceIdx >= closeBraceIdx)
+  if ((openBraceIdx < 0 )|| (closeBraceIdx < 0))
     throw new ModelError(`${ERROR_MSG.BRACES}. Correct the line **${line}**.`, ERROR_LINK.SOLVER_SET, line);
 
   for (const item of line.slice(openBraceIdx + 1, closeBraceIdx).split(ANNOT_SEPAR)) {
@@ -1162,6 +1178,7 @@ function checkSolverSettings(line: string): void {
         throw new ModelError(
           `${ERROR_MSG.SOLVER}: **${opt}** must be in the range **${range.min}..${range.max}**.`,
           ERROR_LINK.SOLVER_SET,
+          line,
         );
       }
     }

@@ -38,6 +38,7 @@ export function showModelErrorHint(err: ModelError, tabControl: DG.TabControl) {
   header.hidden = false;
   const popup = ui.hints.addHint(header, msg, ui.hints.POSITION.RIGHT);
   header.hidden = true;
+  tabControl.root.appendChild(popup);
 
   if (err.toHighlight !== undefined)
     highLight(tabControl.root, err.toHighlight);
