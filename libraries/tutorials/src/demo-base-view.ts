@@ -28,6 +28,8 @@ export abstract class BaseViewApp {
   sketched: number = 0;
   mode: string = 'sketch';
 
+  _defaultSketcherValue: { [k: string]: string } = { 'aspirin': 'CC(Oc1ccccc1C(O)=O)=O' };
+
   constructor(parentCall: DG.FuncCall) {
     this.parentCall = parentCall;
     this.container = ui.divH([], { classes: 'demo-app-container' });
@@ -73,6 +75,14 @@ export abstract class BaseViewApp {
     this._uploadCachedData = value;
   }
 
+  get sketcherValue(): { [k: string]: string } {
+    return this._defaultSketcherValue;
+  }
+
+  set sketcherValue(dict: { [k: string]: string }) {
+    this._defaultSketcherValue = dict;
+  }
+
   setFormGenerator(generator: (dataFrame: DG.DataFrame) => Promise<HTMLElement>): void {
     this._formGenerator = generator;
   }
@@ -82,12 +92,13 @@ export abstract class BaseViewApp {
   }
 
   async init(): Promise<void> {
-    this.sketcherInstance.setMolecule('CC(Oc1ccccc1C(O)=O)=O');
+    const [name, smiles] = Object.entries(this._defaultSketcherValue)[0]
+    this.sketcherInstance.setMolecule(smiles);
     this.sketcherInstance.onChanged.subscribe(async () => {
       const smiles: string = this.sketcherInstance.getSmiles();
       await this.onChanged(smiles);
     });
-    this.sketcherInstance.molInput.value = 'aspirin';
+    this.sketcherInstance.molInput.value = name;
     this.sketcher = this.sketcherInstance.root;
     this.sketcherDiv.appendChild(this.sketcher);
   
