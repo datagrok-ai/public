@@ -492,8 +492,9 @@ export class TableQueryBuilder {
 
   /** Creates {@link TableQueryBuilder} from table name
    * @param {string} table - Table name
+   * @param connection - {@link DataConnection} that {@link TableQuery} will use after the build. Can be passed lately directly to {@link TableQuery}.
    * @returns {TableQueryBuilder} */
-  static from(table: string): TableQueryBuilder { return toJs(api.grok_DbTableQueryBuilder_From(table)); }
+  static from(table: string, connection?: DataConnection): TableQueryBuilder { return toJs(api.grok_DbTableQueryBuilder_From(table, connection?.dart)); }
 
   /** Creates {@link TableQueryBuilder} from {@link TableInfo}
    * @param {TableInfo} table - TableInfo object
@@ -744,6 +745,10 @@ export class DataConnection extends Entity {
    */
   query(name: string, sql: string): DataQuery {
     return toJs(api.grok_DataConnection_Query(this.dart, name, sql));
+  }
+
+  buildQuery(table: string): TableQueryBuilder {
+    return TableQueryBuilder.from(table, this);
   }
 
   tableQuery(tableName: string): TableQuery {

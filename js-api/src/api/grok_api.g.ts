@@ -1000,7 +1000,7 @@ export interface IDartApi {
   grok_TableQuery_SetOrderByDB(tc: any, wl: any): any;
   grok_TableQuery_From(table: String): any;
   grok_TableQuery_FromTable(table: any): any;
-  grok_DbTableQueryBuilder_From(table: String): any;
+  grok_DbTableQueryBuilder_From(table: String, connection: any): any;
   grok_DbTableQueryBuilder_FromTable(table: any): any;
   grok_DbTableQueryBuilder_SelectAll(dtqb: any): any;
   grok_DbTableQueryBuilder_Select(dtqb: any, fields: any): any;
