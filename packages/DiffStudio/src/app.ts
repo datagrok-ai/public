@@ -295,11 +295,14 @@ export class DiffStudio {
   public async runSolverDemoApp(): Promise<void> {
     this.createEditorView(DEMO_TEMPLATE);
     closeWindows();
+
     this.solverView.setRibbonPanels([
-      [this.openComboMenu, this.saveBtn],
-      [this.exportToJsWgt, this.sensAnWgt, this.fittingWgt],
-      [this.helpIcon],
+      [this.openComboMenu, this.addNewWgt],
+      [this.refreshWgt, this.exportToJsWgt, this.openHelpInNewTabIcon, this.fittingWgt, this.sensAnWgt],
+      [this.saveBtn, this.downLoadIcon, this.appStateInputWgt],
     ]);
+    this.updateRibbonWgts();
+
     this.toChangePath = false;
     const helpMD = ui.markdown(demoInfo);
     helpMD.classList.add('diff-studio-demo-app-div-md');
@@ -430,6 +433,7 @@ export class DiffStudio {
   private saveBtn = ui.bigButton(TITLE.SAVE, async () => await this.saveToMyFiles(), HINT.SAVE_MY);
   private downLoadIcon = this.getDownLoadIcon();
   private helpIcon = this.getHelpIcon();
+  private openHelpInNewTabIcon = this.getHelpInNewTabIcon();
   private exportToJsWgt = this.getExportToJsWgt();
   private refreshWgt = this.getRefreshWgt();
   private sensAnWgt = this.getSensAnWgt();
@@ -491,6 +495,7 @@ export class DiffStudio {
     this.refreshWgt.hidden = !this.isEditState;
     this.exportToJsWgt.hidden = !this.isEditState;
     this.helpIcon.hidden = !this.isEditState;
+    this.openHelpInNewTabIcon.hidden = !this.isEditState;
   }
 
   /** Return the download model widget */
@@ -568,6 +573,14 @@ export class DiffStudio {
       grok.shell.windows.showHelp = true;
       this.tabControl.currentPane.content.click();
     });
+    icon.classList.add('diff-studio-help-icon');
+
+    return icon;
+  }
+
+  /** Return a widget for opening help in a new window */
+  private getHelpInNewTabIcon(): HTMLElement {
+    const icon = ui.icons.help(() => window.open(LINK.DIF_STUDIO, '_blank'), HINT.HELP);
     icon.classList.add('diff-studio-help-icon');
 
     return icon;

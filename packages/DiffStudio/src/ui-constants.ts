@@ -116,8 +116,8 @@ export const MODEL_HINT = new Map([
 export enum LINK {
   DIF_STUDIO_REL = '/help/compute/diff-studio',
   DIF_STUDIO = 'https://datagrok.ai/help/compute/diff-studio',
-  SENS_AN = 'https://datagrok.ai/help/compute/function-analysis#sensitivity-analysis',
-  FITTING = 'https://datagrok.ai/help/compute/function-analysis#parameter-optimization',
+  SENS_AN = '/help/compute/function-analysis#sensitivity-analysis',
+  FITTING = '/help/compute/function-analysis#parameter-optimization',
   CHEM_REACT = `${DIF_STUDIO_REL}#chem-reactions`,
   FERMENTATION = `${DIF_STUDIO_REL}#fermentation`,
   GA_PRODUCTION = `${DIF_STUDIO_REL}#acid-production`,
@@ -227,23 +227,25 @@ In-browser solver of ordinary differential equations
 ([ODEs](https://en.wikipedia.org/wiki/Ordinary_differential_equation))
 
 # Interactivity
-Play with model inputs on the **${TITLE.SOLVE}** tab.
+Play with the model inputs. Move sliders to explore its behavior.
 
 # Model
-Go to the **${TITLE.EDIT}** tab and modify formulas.
+Turn on the **${TITLE.EDIT}** toggle on the top panel to modify formulas.
 
 # No-code
 Define equations in a declarative form.
 
 # Examples
-Click <i class="fas fa-folder-open"></i> **Open** icon and explore **Examples**.
+Click <i class="fas fa-folder-open d4-combo-popup" style="min-width: 0px; cursor: default"></i> icon and
+explore **Library**.
 
 # Scripting
-Click **JS** button and export model to JavaScript script.
+Click **</>** icon to export model to JavaScript script.
 
 # Analysis
-* Click <i class="fas fa-analytics"></i> to run [sensitivity analysis](${LINK.SENS_AN}).
-* Click <i class="fas fa-chart-line"></i> to [optimize inputs](${LINK.FITTING}).
+Turn off the **${TITLE.EDIT}** toggle, and perform analysis:
+* Click <i class="fas fa-wave-sine"></i> **Fit** to [optimize inputs](${LINK.FITTING}).
+* Click <i class="fas fa-chart-line"></i> **Sensitivity** to run [sensitivity analysis](${LINK.SENS_AN}).
 
 # Learn more
 * [Diff Studio](${LINK.DIF_STUDIO})
