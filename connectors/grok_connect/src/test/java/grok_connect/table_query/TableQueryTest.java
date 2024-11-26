@@ -117,7 +117,7 @@ abstract class TableQueryTest {
 
     @Test
     public void testAggregationWithPattern() {
-        testTableQuery.aggregations.add(new GroupAggregation(Stats.SUM, "session_id", "count(session_id)"));
+        testTableQuery.aggregations.add(new GroupAggregation(Stats.SUM, "session_id", "sum(session_id)"));
         testQuery(testTableQuery, getExpectedAggregationWithPattern());
     }
 
