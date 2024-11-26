@@ -54,8 +54,9 @@ export class MmpPairedGrids {
     const trellisTv = DG.TableView.create(this.fpGrid.dataFrame, false);
     this.filters = trellisTv.getFiltersGroup();
     this.fpMaskFragmentsTab = DG.BitSet.create(this.fpGrid.dataFrame.rowCount);
-    //const medPairs = this.fpGrid.dataFrame.col(MMP_NAMES.PAIRS)?.stats.q3;
-    this.fpGrid.dataFrame.rows.filter((row) => row[MMP_NAMES.PAIRS] > 0);
+    const maxPairs = this.fpGrid.dataFrame.col(MMP_NAMES.PAIRS)?.stats.max;
+    if (maxPairs)
+      this.fpGrid.dataFrame.rows.filter((row) => row[MMP_NAMES.PAIRS] === maxPairs);
     this.fpMaskFragmentsTab.copyFrom(this.fpGrid.dataFrame.filter);
 
     this.rdkit = getRdKitModule();

@@ -75,6 +75,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   mmpFilters: MmpFilters | null = null;
 
   calculatedOnGPU: boolean | null = null;
+  parentTableFilterBackup: DG.BitSet | null = null;
+  cliffsFiltered = false;
 
   constructor() {
     super();
@@ -300,6 +302,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       cliffs,
     ], {style: {width: '100%', height: '100%'}});
 
+
+    //tabs generation
     tabs.addPane(MMP_NAMES.TAB_TRANSFORMATIONS, () => {
       //grok.shell.o = mmPairsRoot;
       this.pairedGrids!.enableFilters = true;
@@ -325,6 +329,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       if (tabs.currentPane.name !== MMP_NAMES.TAB_FRAGMENTS) {
         grok.shell.tv.dockManager.close(this.pairedGrids!.filters.root);
         this.pairedGrids!.fpMaskFragmentsTab.copyFrom(this.pairedGrids!.fpGrid.dataFrame.filter);
+      }
+      if (tabs.currentPane.name !== MMP_NAMES.TAB_CLIFFS) {
+        if (this.parentTableFilterBackup)
+          this.parentTable!.filter.copyFrom(this.parentTableFilterBackup);
       }
       this.currentTab = tabs.currentPane.name;
       if (tabs.currentPane.name == MMP_NAMES.TAB_TRANSFORMATIONS) {
@@ -405,6 +413,21 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.rdkitModule = rdkitModule;
 
     this.parentTable = mmpInput.table;
+    this.parentTableFilterBackup = DG.BitSet.create(this.parentTable.rowCount).copyFrom(this.parentTable.filter);
+
+    this.subs.push(DG.debounce(this.parentTable!.onFilterChanged, 1000).subscribe(() => {
+      if (!this.cliffsFiltered) {
+          this.parentTableFilterBackup!.copyFrom(this.parentTable!.filter);
+          if (this.currentTab === MMP_NAMES.TAB_CLIFFS) {
+            setTimeout(() => {
+              this.cliffsFiltered = true;
+              this.parentTable!.filter.and(this.totalCutoffMask!);
+            }, 10);
+          }
+        }
+        else
+          this.cliffsFiltered = false;
+    }));
 
     this.colorPalette = palette;
     this.mmpa = mmpa;
@@ -580,7 +603,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       }
     }
 
-    this.parentTable!.filter.copyFrom(this.totalCutoffMask!);
+    this.cliffsFiltered = true;
+    this.parentTable!.filter.copyFrom(this.parentTableFilterBackup!).and(this.totalCutoffMask!);
     this.linesRenderer!.linesVisibility = this.linesMask!;
   }
 
