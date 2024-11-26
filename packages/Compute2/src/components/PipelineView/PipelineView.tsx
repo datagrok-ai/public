@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
-import {DockManager, IconFA, MarkDown, RibbonMenu, tooltip} from '@datagrok-libraries/webcomponents-vue';
+import {DockManager, FunctionCard, IconFA, MarkDown, RibbonMenu, tooltip} from '@datagrok-libraries/webcomponents-vue';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
 import {hasAddControls, PipelineWithAdd} from '../../utils';
@@ -40,8 +40,10 @@ export const PipelineView = Vue.defineComponent({
   setup(props, {emit}) {
     const historyHidden = Vue.ref(true);
     const helpHidden = Vue.ref(true);
+    const functionsHidden = Vue.ref(true);
     const historyRef = Vue.shallowRef(null as InstanceType<typeof History> | null);
     const helpRef = Vue.shallowRef(null as InstanceType<typeof MarkDown> | null);
+    const functionsRef = Vue.shallowRef(null as HTMLElement | null);
     const state = Vue.computed(() => props.state)
     const menuActions = Vue.computed(() => props.menuActions);
     const buttonActions = Vue.computed(() => props.buttonActions);
@@ -94,6 +96,46 @@ export const PipelineView = Vue.defineComponent({
               dock-spawn-dock-type='fill'
               ref={helpRef}
             /> }
+          { hasAddControls(state.value) && !functionsHidden.value && <div 
+            class={'grok-gallery-grid'} 
+            dock-spawn-title='Steps to add'
+            dock-spawn-dock-type='fill'
+            ref={functionsRef}
+          >
+            { state.value.stepTypes
+              .map((stepType, idx) => stepType.nqName ? <FunctionCard 
+                func={DG.Func.byName(stepType.nqName)}
+                onClick={() => {
+                  const data = state.value as PipelineWithAdd;
+                  emit('addNode', {
+                    itemId: data.stepTypes[idx].configId,
+                    position: data.steps.length,
+                  });
+                }}
+              /> : <div
+              onClick={() => {
+                const data = state.value as PipelineWithAdd;
+                emit('addNode', {
+                  itemId: data.stepTypes[idx].configId,
+                  position: data.steps.length,
+                });
+              }}
+              class={'grok-gallery-grid-item-wrapper'}
+              style={{cursor: 'pointer'}}
+            >
+              <div class={'grok-gallery-grid-item grok-scripting-script d4-flex-col d4-gallery-card entity-script'}>
+                <div class={'d4-flex-col'}>
+                  <span class={'d4-link-label'}>
+                    <label class={'grok-gallery-grid-item-title'}>
+                      {stepType.friendlyName ?? stepType.configId}
+                    </label>
+                  </span>
+                </div>
+              </div>
+            </div>)
+            }
+            </div>
+          }
           { menuActions.value && Object.entries(menuActions.value).map(([category, actions]) =>
             <RibbonMenu groupName={category}>
               {
@@ -137,13 +179,6 @@ export const PipelineView = Vue.defineComponent({
                     <IconFA name='info' class={'d4-picture'} />
                     <div> Review the docs </div>
                   </div> }
-                { hasInnerStep.value && <div
-                  class={cardsClasses}
-                  onClick={() => emit('proceedClicked')}
-                >
-                  <IconFA name='plane-departure' class={'d4-picture'} />
-                  <div> Proceed to the sequence's first step </div>
-                </div> }
                 { buttonActions.value?.map((action) => Vue.withDirectives(
                   <div
                     class={cardsClasses}
@@ -155,27 +190,19 @@ export const PipelineView = Vue.defineComponent({
                 }
               </div>
 
-              { hasAddControls(state.value) && <span>
-              ... or choose the step to add:
-              </span> }
-
-              { hasAddControls(state.value) && <div class={'grok-gallery-grid'}>
-                { state.value.stepTypes
-                    .map((stepType, idx) =>
-                      <div
-                        class={cardsClasses}
-                        onClick={() => {
-                          const data = state.value as PipelineWithAdd;
-                          emit('addNode', {
-                            itemId: data.stepTypes[idx].configId,
-                            position: data.steps.length,
-                          });
-                        }}
-                      >
-                        <IconFA name='list' class={'d4-picture'} />
-                        <div> {stepType.friendlyName || stepType.nqName || stepType.configId} </div>
-                      </div>
-                )}
+              { hasAddControls(state.value) && <div
+                class={cardsClasses}
+                onClick={() => functionsHidden.value = false}
+              >
+                <IconFA name='plus' class={'d4-picture'} />
+                <div> Choose a step to add </div>
+              </div> }
+              { hasInnerStep.value && <div
+                class={cardsClasses}
+                onClick={() => emit('proceedClicked')}
+              >
+                <IconFA name='plane-departure' class={'d4-picture'} />
+                <div> Proceed to the sequence's first step </div>
               </div> }
             </div>
           </div>

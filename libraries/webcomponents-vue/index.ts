@@ -8,3 +8,4 @@ export * from './src/DockManager/DockManager';
 export * from './src/MarkDown/MarkDown';
 export * from './src/directives/ifOverlapping';
 export * from './src/directives/tooltip';
+export * from './src/FunctionCard/FunctionCard';
