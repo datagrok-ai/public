@@ -1,6 +1,6 @@
-import {before, category, expect, test, timeout} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {TableInfo} from "datagrok-api/dg";
 
 category('Connections', () => {
