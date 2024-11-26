@@ -111,10 +111,11 @@ Usage: grok publish [host]
 Upload a package
 
 Options:
-[--build|--rebuild] [--debug|--release] [-k | --key] [--suffix] [--all] [--refresh]
+[--build|--rebuild] [--debug|--release] [-k | --key] [--suffix] [--all] [--refresh] [--link]
 
 --all             Publish all available packages 
 --refresh         Publish all available already loaded packages 
+--link  	        Link the package to local utils
 
 Running \`grok publish\` is the same as running \`grok publish defaultHost --build --debug\`
 `;
