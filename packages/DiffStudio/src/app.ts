@@ -336,9 +336,12 @@ export class DiffStudio {
     saveBtn.hidden = true;
 
     const ribbonPnls = this.browseView!.getRibbonPanels();
-    ribbonPnls.push([this.sensAnWgt, this.fittingWgt]);
-    ribbonPnls.push([saveBtn, this.helpIcon]);
+    ribbonPnls.push([this.openComboMenu, this.addNewWgt]);
+    ribbonPnls.push([this.refreshWgt, this.exportToJsWgt, this.helpIcon, this.fittingWgt, this.sensAnWgt]);
+    ribbonPnls.push([this.downLoadIcon, this.appStateInputWgt, saveBtn]);
     this.browseView!.setRibbonPanels(ribbonPnls);
+
+    this.updateRibbonWgts();
 
     // routing
     const paramsIdx = path.indexOf(PATH.PARAM);
