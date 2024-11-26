@@ -63,14 +63,14 @@ export class Hit {
 }
 
 export function createTooltip(cols: DG.Column[], activeColumn: number, row: number): HTMLDivElement {
-  const keysDiv = ui.divV([], { style: { marginRight: '10px', fontWeight: 'bold' } });
+  const keysDiv = ui.divV([], { style: { marginRight: '10px', fontWeight: 'bold', textAlign: 'right' } });
   const valuesDiv = ui.divV([], { style: { fontWeight: 'normal' } });
 
   for (let i = 0; i < cols.length; i++) {
     if (cols[i] === null) continue;
 
     const isActive = activeColumn === i;
-    keysDiv.appendChild(ui.divText(`${cols[i].name}:`, { 
+    keysDiv.appendChild(ui.divText(`${cols[i].name}`, { 
       style: { fontWeight: isActive ? 'bold' : 'normal' } 
     }));
     valuesDiv.appendChild(ui.divText(`${Math.floor(cols[i].getNumber(row) * 100) / 100}`, { 
