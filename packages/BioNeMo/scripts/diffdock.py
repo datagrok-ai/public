@@ -11,7 +11,7 @@ import requests
 import time
 
 url = "https://health.api.nvidia.com/v1/biology/mit/diffdock"
-header_auth = "Bearer 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"
+header_auth = "Bearer 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"
 
 def _upload_asset(input):
     assets_url = "https://api.nvcf.nvidia.com/v2/nvcf/assets"
