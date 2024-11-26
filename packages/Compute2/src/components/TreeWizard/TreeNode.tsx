@@ -19,6 +19,7 @@ const statusToIcon = {
   ['running']: 'hourglass-half',
   ['succeeded']: 'check-circle',
   ['succeeded warn']: 'dot-circle',
+  ['succeeded inconsistent']: 'dot-circle',
   ['failed']: 'times-circle',
 } as Record<Status, string>;
 
@@ -30,6 +31,7 @@ const statusToColor = {
   ['running']: 'blue',
   ['succeeded']: 'green',
   ['succeeded warn']: 'orange',
+  ['succeeded inconsistent']: 'red',
   ['failed']: 'red',
 } as Record<Status, string>;
 
@@ -41,6 +43,7 @@ const statusToTooltip = {
   ['running']: 'This step is running',
   ['succeeded']: 'This step is succeeded',
   ['succeeded warn']: 'This step has is succeeded, but has warnings',
+  ['succeeded inconsistent']: 'This step has is succeeded, but has inconsistent inputs',
   ['failed']: 'Run failed',
 } as Record<Status, string>;
 
@@ -54,13 +57,15 @@ const statesToStatus = (
   if (!callState.isOutputOutdated) {
     if (callState.runError)
       return 'failed';
-    if (hasWarnings(validationsState, consistencyStates) || hasErrors(validationsState))
+    if (hasInconsistencies(consistencyStates))
+      return 'succeeded inconsistent';
+    if (hasWarnings(validationsState) || hasErrors(validationsState))
       return 'succeeded warn';
     return 'succeeded';
   }
   if (hasErrors(validationsState))
     return 'next error';
-  if (hasWarnings(validationsState, consistencyStates))
+  if (hasWarnings(validationsState) || hasInconsistencies(consistencyStates))
     return 'next warn';
   return 'next';
 };
@@ -70,15 +75,19 @@ const getToolTip = (status: Status, isReadonly: boolean) => {
   return 'This step is locked';
 }
 
-const hasWarnings = (validationsState?: Record<string, ValidationResult>, consistencyStates?: Record<string, ConsistencyInfo>) => {
-  const firstWarning = Object.values(validationsState || {}).find(val => val.warnings?.length)
+const hasWarnings = (validationsState?: Record<string, ValidationResult>) => {
+  const firstWarning = Object.values(validationsState || {}).find(val => val.warnings?.length);
+  return firstWarning;
+}
+
+const hasInconsistencies = (consistencyStates?: Record<string, ConsistencyInfo>) => {
   const firstInconsistency = Object.values(consistencyStates || {}).find(val => val.inconsistent);
-  return (firstWarning || firstInconsistency)
+  return firstInconsistency;
 }
 
 const hasErrors = (validationsState?: Record<string, ValidationResult>) => {
-  const firstWarning = Object.values(validationsState || {}).find(val => val.errors?.length)
-  return !!firstWarning;
+  const firstError = Object.values(validationsState || {}).find(val => val.errors?.length)
+  return firstError;
 }
 
 export const TreeNode = Vue.defineComponent({
