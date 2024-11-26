@@ -79,6 +79,7 @@ export enum TITLE {
   BROWSE = 'Browse',
   SAVE = 'Save',
   APPS = 'Apps',
+  COMP = 'Compute',
   DIF_ST = 'Diff Studio',
   NAME = 'Name',
   TYPE = 'Type',

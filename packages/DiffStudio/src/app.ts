@@ -1438,8 +1438,11 @@ export class DiffStudio {
         grok.shell.v = DG.View.createByType('browse');
 
       this.browseView = grok.shell.view(TITLE.BROWSE) as DG.BrowseView;
+
       const appsGroup = this.browseView.mainTree.getOrCreateGroup(TITLE.APPS, null, false);
-      this.appTree = appsGroup.getOrCreateGroup(TITLE.DIF_ST);
+
+      const computeGroup = appsGroup.getOrCreateGroup(TITLE.COMP, null, false);
+      this.appTree = computeGroup.getOrCreateGroup(TITLE.DIF_ST);
     }
 
     if (this.appTree.items.length > 0)
