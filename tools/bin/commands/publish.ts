@@ -32,8 +32,6 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   let url = `${host}/packages/dev/${devKey}/${packageName}`;
   if (debug) {
     try {
-      console.log(url);
-
       timestamps = await (await fetch(url + '/timestamps')).json();
       if (timestamps['#type'] === 'ApiError') {
         color.error(timestamps.message);
@@ -222,9 +220,14 @@ export async function publish(args: PublishArgs) {
     if (args.refresh)
       packagesToLoad = Object.keys(await (await fetch(url)).json());
     console.log('Loading packages:');
-    await loadPackages(curDir, packagesToLoad.join(' '), host, false, false, false, args.release);
+    await loadPackages(curDir, packagesToLoad.join(' '), host, false, false, args.link, args.release);
   }
   else {
+    if (args.link){
+      await utils.runScript(`npm install`, curDir);
+      await utils.runScript(`grok link`, curDir);
+      await utils.runScript(`npm run build`, curDir);
+    }
     await publishPackage(args);
   }
 }
@@ -318,5 +321,6 @@ interface PublishArgs {
   key?: string,
   suffix?: string,
   all?: boolean,
-  refresh?: boolean
+  refresh?: boolean,
+  link?:boolean
 }
