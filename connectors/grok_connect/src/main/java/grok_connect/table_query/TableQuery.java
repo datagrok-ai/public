@@ -55,10 +55,10 @@ public class TableQuery extends DataQuery {
             for (TableJoin joinTable: joins) {
                 sql.append(joinTable.joinType)
                         .append(" join ")
-                        .append(joinTable.rightTableName);
+                        .append(addBrackets.convert(joinTable.rightTableName));
                 if (GrokConnectUtil.isNotEmpty(joinTable.rightTableAlias))
                     sql.append(" as ")
-                            .append(joinTable.rightTableAlias);
+                            .append(addBrackets.convert(joinTable.rightTableAlias));
                 sql.append(" on ");
                 for (int i = 0; i < joinTable.leftTableKeys.size(); i++) {
                     if (i > 0) {
