@@ -112,9 +112,30 @@ export const PipelineView = Vue.defineComponent({
                     position: data.steps.length,
                   });
                 }}
-              /> : null)                    
+              /> : <div
+              onClick={() => {
+                const data = state.value as PipelineWithAdd;
+                emit('addNode', {
+                  itemId: data.stepTypes[idx].configId,
+                  position: data.steps.length,
+                });
+              }}
+              class={'grok-gallery-grid-item-wrapper'}
+              style={{cursor: 'pointer'}}
+            >
+              <div class={'grok-gallery-grid-item grok-scripting-script d4-flex-col d4-gallery-card entity-script'}>
+                <div class={'d4-flex-col'}>
+                  <span class={'d4-link-label'}>
+                    <label class={'grok-gallery-grid-item-title'}>
+                      {stepType.friendlyName ?? stepType.configId}
+                    </label>
+                  </span>
+                </div>
+              </div>
+            </div>)
             }
-          </div> }
+            </div>
+          }
           { menuActions.value && Object.entries(menuActions.value).map(([category, actions]) =>
             <RibbonMenu groupName={category}>
               {
