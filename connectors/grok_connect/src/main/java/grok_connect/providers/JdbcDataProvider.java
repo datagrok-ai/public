@@ -579,8 +579,8 @@ public abstract class JdbcDataProvider extends DataProvider {
             }
         }
         if (funcInfo != null) {
-            String sql = funcInfo.dbFunctionName.replaceAll("#", addBrackets(aggr.colName));
-            return sql + " as " + addBrackets(funcInfo.dbFunctionName).replaceAll("#", aggr.colName);
+            String sql = GrokConnectUtil.isNotEmpty(aggr.colName) ? funcInfo.dbFunctionName.replaceAll("#", addBrackets(aggr.colName)) : funcInfo.dbFunctionName;
+            return sql + " as " + (GrokConnectUtil.isNotEmpty(aggr.resultColName) ?  addBrackets(aggr.resultColName) : addBrackets(funcInfo.dbFunctionName).replaceAll("#", aggr.colName));
         }
         else
             return null;
@@ -600,7 +600,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     private String patternToSql(FieldPredicate condition) {
         if (GrokConnectUtil.isNotEmpty(condition.matcher.op) && !condition.matcher.op.equals(PatternMatcher.NONE))
-            return String.format("@%s(%s)", condition.getParamName(), condition.field);
+            return String.format("@%s(%s)", condition.getParamName(), addBrackets(condition.field));
         return String.format("%s = @%s", condition.field, condition.getParamName());
     }
 

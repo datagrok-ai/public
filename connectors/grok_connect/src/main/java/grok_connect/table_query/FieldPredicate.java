@@ -15,7 +15,10 @@ public class FieldPredicate {
     }
 
     public String getParamName() {
-        return field.replaceAll("\\.", "_").toLowerCase();
+        return field
+                .replaceAll("\\.", "_")
+                .replaceAll(" ", "_")
+                .toLowerCase();
     }
 
     @Override
