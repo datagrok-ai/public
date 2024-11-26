@@ -579,8 +579,9 @@ public abstract class JdbcDataProvider extends DataProvider {
             }
         }
         if (funcInfo != null) {
+            String brackets = descriptor.nameBrackets;
             String sql = GrokConnectUtil.isNotEmpty(aggr.colName) ? funcInfo.dbFunctionName.replaceAll("#", addBrackets(aggr.colName)) : funcInfo.dbFunctionName;
-            return sql + " as " + (GrokConnectUtil.isNotEmpty(aggr.resultColName) ?  addBrackets(aggr.resultColName) : addBrackets(funcInfo.dbFunctionName).replaceAll("#", aggr.colName));
+            return sql + " as " + (GrokConnectUtil.isNotEmpty(aggr.resultColName) ?  brackets.charAt(0) + aggr.resultColName + brackets.charAt(brackets.length() - 1): addBrackets(funcInfo.dbFunctionName).replaceAll("#", aggr.colName));
         }
         else
             return null;
