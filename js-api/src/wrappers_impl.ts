@@ -53,7 +53,8 @@ export function toJs(dart: any, check: boolean = false): any {
   } else if (type === TYPE.BYTE_ARRAY) {
     return dart;
   }
-
+  else if (type === TYPE.BIG_INT)
+    return BigInt((<any>window).grok_BigInt_To_BigIntJs(dart));
   let wrapper = (<any>window).grok_GetWrapper(dart);
   if (wrapper != null)
     return wrapper;
@@ -82,6 +83,8 @@ export function toDart(x: any): any {
     return x.dart;
   if (isPlainObject(x))
     return (<any>window).grok_JS_To_Map(x);
+  if (typeof x === 'bigint')
+    return (<any>window).grok_BigIntJs_To_BigInt(x.toString());
   return x;
 }
 

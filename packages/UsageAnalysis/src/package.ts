@@ -144,6 +144,7 @@ export async function reportsAppTreeBrowser(treeNode: DG.TreeViewGroup, browseVi
   await treeNode.group('Rules', null, false).loadSources(grok.dapi.rules.include('actions,actions.assignee').by(10));
 }
 
+//name: Usage
 //output: widget result
 //tags: dashboard
 //test: usageWidget()
@@ -151,6 +152,7 @@ export async function usageWidget(): Promise<DG.Widget | null> {
   return await hasAccess() ? new UsageWidget() : null;
 }
 
+//name: Reports
 //output: widget result
 //tags: dashboard
 //test: reportsWidget()

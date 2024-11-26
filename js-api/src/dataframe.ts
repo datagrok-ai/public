@@ -1357,9 +1357,10 @@ export class ColumnList {
   /** Replaces the column with the new column.
    * @param {Column} columnToReplace
    * @param {Column} newColumn
+   * @param {boolean} notify
    * */
-  replace(columnToReplace: Column | string, newColumn: Column): Column {
-    return toJs(api.grok_ColumnList_Replace(this.dart, (typeof columnToReplace === 'string') ? columnToReplace:  columnToReplace.dart, newColumn.dart));
+  replace(columnToReplace: Column | string, newColumn: Column, notify: boolean = true): Column {
+    return toJs(api.grok_ColumnList_Replace(this.dart, (typeof columnToReplace === 'string') ? columnToReplace:  columnToReplace.dart, newColumn.dart, notify));
   }
 
   /** Returns a name that does not exist in column list.
@@ -2524,29 +2525,37 @@ export class ColumnMetaHelper {
     return this._markers;
   }
 
-  /** Specifies the data format of the dataframe column. See also [GridColumn.format] */
-  get format(): string | null {
-    return this.column.getTag(TAGS.FORMAT) ?? api.grok_Column_GetAutoFormat(this.column.dart);
+  private setNonNullTag(key: string, value: string | null) {
+    if (value === null)
+      api.grok_Column_Remove_Tag(this.column.dart, key);
+    else
+      this.column.setTag(key, value);
   }
-  set format(x: string | null) { this.column.tags[TAGS.FORMAT] = x; }
+
+  /** Specifies the data format of the dataframe column. See also [GridColumn.format] */
+  get friendlyName(): string | null { return this.column.getTag(TAGS.FRIENDLY_NAME); }
+  set friendlyName(x: string | null) { this.setNonNullTag(TAGS.FRIENDLY_NAME, x); }
+
+  /** Specifies the data format of the dataframe column. See also [GridColumn.format] */
+  get format(): string | null { return this.column.getTag(TAGS.FORMAT) ?? api.grok_Column_GetAutoFormat(this.column.dart); }
+  set format(x: string | null) { this.setNonNullTag(TAGS.FORMAT, x); }
 
   /** Returns the maximum amount of significant digits detected in the column. */
   get sourcePrecision(): number | null { return this.column.getTag(TAGS.SOURCE_PRECISION) != null ? +this.column.getTag(TAGS.SOURCE_PRECISION) : null; }
 
   /** When set, uses the formula to calculate the column values. */
   get formula(): string | null { return this.column.getTag(TAGS.FORMULA); }
-  set formula(x: string | null) { this.column.tags[TAGS.FORMULA] = x; }
+  set formula(x: string | null) { this.setNonNullTag(TAGS.FORMULA, x); }
 
   /** Specifies the units of the dataframe column. */
   get units(): string | null { return this.column.getTag(TAGS.UNITS); }
-  set units(x: string | null) { this.column.tags[TAGS.UNITS] = x; }
-
+  set units(x: string | null) { this.setNonNullTag(TAGS.UNITS, x); }
 
   /** When set, switches the cell editor to a combo box that only allows to choose specified values.
    * Applicable for string columns only.
    * See also {@link autoChoices}. */
   get choices(): string[] | null { return JSON.parse(this.column.getTag(TAGS.CHOICES)); }
-  set choices(x: string[] | null) { this.column.tags[TAGS.CHOICES] = x != null ? JSON.stringify(x) : null; }
+  set choices(x: string[] | null) { this.setNonNullTag(TAGS.CHOICES, x != null ? JSON.stringify(x) : null); }
 
   /** When set to 'true', switches the cell editor to a combo box that only allows to choose values
    * from a list of already existing values in the column.
@@ -2573,5 +2582,5 @@ export class ColumnMetaHelper {
   /** When specified, column filter treats the split strings as separate values.
    * See also: https://datagrok.ai/help/visualize/viewers/filters#column-tags */
   get multiValueSeparator(): string { return this.column.getTag(Tags.MultiValueSeparator); }
-  set multiValueSeparator(x) { this.column.setTag(Tags.MultiValueSeparator, x); }
+  set multiValueSeparator(x) { this.setNonNullTag(Tags.MultiValueSeparator, x); }
 }

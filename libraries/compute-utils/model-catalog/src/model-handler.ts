@@ -110,7 +110,7 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   override renderMarkup(x: DG.Func): HTMLElement {
-    const markup = ui.divH([], {style: {'justify-content': 'space-between', 'width': '100%'}});
+    const markup = ui.divH([], {style: {justifyContent: 'space-between', width: '100%'}});
 
     setTimeout(async () => {
       const userGroups = await this.awaitUserGroups();
@@ -130,7 +130,7 @@ export class ModelHandler extends DG.ObjectHandler {
       const mandatoryGroupsInfo = ui.div(ui.divV([
         ui.label('You should be a member of the following group(s):', {style: {marginLeft: '0px'}}),
         ...missingMandatoryGroups.map((group) => ui.divV([
-          ui.span([getBulletIcon(), group.name], {style: {'font-weight': 600}}),
+          ui.span([getBulletIcon(), group.name], {style: {fontWeight: '600'}}),
           ...group.help ? [ui.span([group.help], {style: {marginLeft: '16px'}})]: [],
           ui.link(`Request group membership`, async () => {
             await requestMembership(group.name);
@@ -187,6 +187,10 @@ export class ModelHandler extends DG.ObjectHandler {
       iconUrl = packagePathSegments.join('/');
     }
     return ui.iconImage(func.package.name, iconUrl);
+  }
+
+  override renderView(x: DG.Func) {
+    return this.renderPreview(x).root;
   }
 
   override renderPreview(x: DG.Func): DG.View {

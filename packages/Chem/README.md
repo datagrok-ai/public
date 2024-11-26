@@ -271,6 +271,8 @@ To run, go to **Chem** > **Transform** > **Convert Notation...** and configure p
 * **Overwrite**: Decide whether to overwrite the existing column or create a new one.
 * **Join**: Add the newly converted column to the dataframe.
 
+![Convert notation](help/chem-convert-notation.gif)
+
 See also:
 
 * [Cheminformatics predictive modeling](https://datagrok.ai/help/datagrok/solutions/domains/chem/#qsar-and-qspr-modeling)

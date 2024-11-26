@@ -1,5 +1,9 @@
 # Compute changelog
 
+## 1.39.7 (2024-11-25)
+
+- Added method to render model preview in BrowseTree
+
 ## 1.39.6 (2024-11-07)
 
 - ModelCatalog: Added intergration with BrowseTree

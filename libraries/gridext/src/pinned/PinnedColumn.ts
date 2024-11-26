@@ -111,6 +111,7 @@ export class PinnedColumn {
   private m_handlerSel : rxjs.Subscription | null;
   private m_handlerData : rxjs.Subscription | null;
   private m_handlerDartProperty : rxjs.Subscription | null;
+  private onAfterDrawContetSub: rxjs.Subscription | null;
   //private m_handlerFilter : any;
   private m_handlerRowsResized : rxjs.Subscription | null;
   private m_handlerRowsSorted : rxjs.Subscription | null;
@@ -298,6 +299,13 @@ export class PinnedColumn {
       }
     });
 
+    const storeGridOptions = () => {
+      const gridLook = grid.getOptions(true).look;
+      this.colHeaderHeight = gridLook.colHeaderHeight;
+      this.rowHeight = gridLook.rowHeight;
+      this.colHeaderFont = gridLook.colHeaderFont;
+    }
+
     this.m_observerResizeGrid?.observe(grid.canvas); //
 
     this.m_handlerKeyDown = rxjs.fromEvent<KeyboardEvent>(eCanvasThis, 'keydown').subscribe((e : KeyboardEvent) => {
@@ -376,8 +384,15 @@ export class PinnedColumn {
     });
 
     this.m_handlerDartProperty = grid.onDartPropertyChanged.subscribe((p: any) => {
-        const g = eCanvasThis.getContext('2d');
-        headerThis.paint(g, grid);
+      storeGridOptions();
+      grid.columns.byIndex(0)!.visible = false;
+      const g = eCanvasThis.getContext('2d');
+      headerThis.paint(g, grid);
+    });
+
+    this.onAfterDrawContetSub = grid.onAfterDrawContent.subscribe(() => {
+      const g = eCanvasThis.getContext('2d');
+      headerThis.paint(g, grid);
     });
 
     this.m_handlerSel = dframe.onSelectionChanged.subscribe((e : any) => {
@@ -442,16 +457,7 @@ export class PinnedColumn {
         }
     );
 
-    const storeGridOptions = () => {
-      const gridLook = grid.getOptions(true).look;
-      this.colHeaderHeight = gridLook.colHeaderHeight;
-      this.rowHeight = gridLook.rowHeight;
-      this.colHeaderFont = gridLook.colHeaderFont;
-    }
-
     storeGridOptions();
-    grid.onDartPropertyChanged.subscribe((_) => storeGridOptions());
-
     const g = eCanvasThis.getContext('2d');
     headerThis.paint(g, grid);
   }
@@ -529,6 +535,9 @@ export class PinnedColumn {
     this.m_handlerDartProperty?.unsubscribe();
     this.m_handlerDartProperty = null;
 
+    this.onAfterDrawContetSub?.unsubscribe();
+    this.onAfterDrawContetSub = null;
+
     this.m_handlerPinnedRowsChanged?.unsubscribe();
     this.m_handlerPinnedRowsChanged = null;
 
@@ -590,6 +599,7 @@ export class PinnedColumn {
     grid.overlay.style.left= (grid.overlay.offsetLeft - this.m_root.offsetWidth).toString() + "px";
     grid.canvas.style.width = (grid.canvas.offsetWidth + this.m_root.offsetWidth).toString() + "px";
     grid.overlay.style.width= (grid.overlay.offsetWidth + this.m_root.offsetWidth).toString() + "px";
+    grid.columns.byIndex(0)!.visible = grid.props.showRowHeader;
 
     if(this.m_root.parentNode !== null)
       this.m_root.parentNode.removeChild(this.m_root);
@@ -1340,7 +1350,9 @@ export class PinnedColumn {
     const nXX = nX + ((nW*window.devicePixelRatio - nWLabel) >> 1);
     let nYY = (nY + nHCH - Math.ceil(3*window.devicePixelRatio));//-2*window.devicePixelRatio);
     //onsole.log("nXX " + nXX + " nYY = " + nYY + " CHH " + nHCH);
-    g.fillText(str, nXX, nYY);
+    // g.fillText(str, nXX, nYY);
+    const gridColHeader = DG.GridCell.createColHeader(this.m_colGrid);
+    gridColHeader.render({context: g, bounds: new DG.Rect(nX, nY, nW, nHCH)});
 
     //Paint Sort Arrow
     if(this.m_colGrid.idx > 0) {

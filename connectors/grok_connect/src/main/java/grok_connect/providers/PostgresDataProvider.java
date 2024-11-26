@@ -39,6 +39,7 @@ public class PostgresDataProvider extends JdbcDataProvider {
             put("text", Types.STRING);
             put("boolean", Types.BOOL);
             put("date", Types.DATE_TIME);
+            put("#timestamp.*", Types.DATE_TIME);
             put("cidr", Types.STRING);
             put("ARRAY", Types.LIST);
             put("USER_DEFINED", Types.STRING);

@@ -642,7 +642,7 @@ async function polyToolEnumerateSeq(
         buildMonomerHoverLink(resHelmCol, resMolCol, monomerLib, helmHelper.seqHelper, rdKitModule);
       } else if (dataRole === PolyToolDataRole.template) {
         const talRes = await polyToolConvert(enumCol,
-          toAtomicLevel.generateHelm, toAtomicLevel.chiralityEngine, toAtomicLevel.rules);
+          toAtomicLevel.generateHelm, false, toAtomicLevel.chiralityEngine, false, toAtomicLevel.rules);
         resHelmCol = talRes[0];
       }
     }

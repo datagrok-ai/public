@@ -1,5 +1,13 @@
 # compute-utils changelog
 
+## 1.39.7 (2024-11-25)
+
+- Added method to render model preview in BrowseTree
+
+## 1.39.6 (2024-11-22)
+
+- Updated style options to CSSOptions type
+
 ## 1.39.5 (2024-11-06)
 
 - RFV: Added validation rules for export options

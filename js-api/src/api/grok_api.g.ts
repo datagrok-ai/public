@@ -543,7 +543,7 @@ export interface IDartApi {
   grok_ColumnList_AddNewVirtual(cols: any, name: String, getValue: any, setValue: any, type: String): any;
   grok_ColumnList_Remove(cols: any, name: String, notify: Bool): any;
   grok_ColumnList_Contains(cols: any, name: String): any;
-  grok_ColumnList_Replace(cols: any, columnToReplace: any, newColumn: any): any;
+  grok_ColumnList_Replace(cols: any, columnToReplace: any, newColumn: any, notify: Bool): any;
   grok_ColumnList_Categorical(cols: any): any;
   grok_ColumnList_Numerical(cols: any): any;
   grok_ColumnList_DateTime(cols: any): any;
@@ -586,6 +586,7 @@ export interface IDartApi {
   grok_Column_Max(c: any): any;
   grok_Column_Categories(c: any): any;
   grok_Column_GetCategory(c: any, idx: Num): any;
+  grok_Column_Remove_Tag(c: any, tag: String): any;
   grok_Column_Get_Tag(c: any, tag: String): any;
   grok_Column_Set_Tag(c: any, tag: String, value: any): any;
   grok_Column_SetCategoryOrder(c: any, order: any): any;
@@ -616,6 +617,7 @@ export interface IDartApi {
   grok_BigIntColumn_GetValue(c: any, i: Num): any;
   grok_BigIntColumn_SetValue(c: any, i: Num, x: String, notify: Bool): any;
   grok_BigIntJs_To_BigInt(bigint: String): any;
+  grok_BigInt_To_BigIntJs(bigint: any): any;
   grok_DateTimeColumn_GetValue(c: any, i: Num): any;
   grok_DateTimeColumn_SetValue(c: any, i: Num, x: any, notify: Bool): any;
   grok_ColumnsArgs_Get_Columns(args: any): any;
@@ -700,6 +702,7 @@ export interface IDartApi {
   grok_GridCell_Get_Renderer(gridCell: any): any;
   grok_GridCell_SetValue(gridCell: any, value: any, notify: Bool): any;
   grok_GridCell_Render(gridCell: any, g: any, bounds: any): any;
+  grok_GridCell_CreateColHeader(gridColumn: any): any;
   grok_GridCellStyle_Create(): any;
   grok_GridCellStyle_Get_Font(gcs: any): any;
   grok_GridCellStyle_Set_Font(gcs: any, x: any): any;
@@ -1370,12 +1373,13 @@ export interface IDartApi {
   grok_Package_GetModuleName(p: any, file: String): any;
   grok_Package_GetModule(p: any, file: String): any;
   grok_Package_GetIconUrl(p: any): any;
-  grok_Package_Get_Settings(packageName: String): Promise<any>;
+  grok_Package_Get_Settings_Sync(packageName: String): any;
   grok_Package_Set_Settings(packageName: String, settings: any, group: any): Promise<any>;
   grok_Package_Get_Version(p: any): any;
   grok_Package_Set_Version(p: any, version: String): any;
   grok_Package_Get_WebRoot(p: any): any;
   grok_Package_Get_Properties(packageName: String): Promise<any>;
+  grok_Package_Get_Settings(packageName: String): Promise<any>;
   grok_Rect_Pack(r: any, bytes: any): any;
   grok_Rect_Unpack(bytes: any): any;
   grok_FileInfo_FromBytes(path: String, data: any): any;

@@ -609,7 +609,7 @@ export class SensitivityAnalysisView {
     const form = ui.div([
       this.store.analysisInputs.analysisType.input,
       this.store.analysisInputs.samplesCount.input,
-    ], {style: {'overflow-y': 'scroll', 'width': '100%'}});
+    ], {style: {overflowY: 'scroll', width: '100%'}});
 
     const lookupElement = await this.getLookupElement(inputsLookup);
     let topCategory: string | null = null;
@@ -620,7 +620,7 @@ export class SensitivityAnalysisView {
 
       if (inputs !== undefined)
         inputsByCategories.set(topCategory, [lookupElement.input.root].concat(inputs));
-      else 
+      else
         inputsByCategories.set(topCategory, [lookupElement.input.root]);
     }
 
