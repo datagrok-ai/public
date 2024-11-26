@@ -245,6 +245,8 @@ export class Utils {
       let df: DataFrame = await grok.functions.call(testParam.package + ':test', testParam.params);
       let flakingCol = DG.Column.fromType(DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount); 
       df.columns.add(flakingCol); 
+      let packageNameCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'package', Array(df.rowCount).fill(testParam.package)); 
+      df.columns.add(packageNameCol); 
       if (df.rowCount === 0) {
         verboseFailed += `Test result : Invocation Fail : ${testParam.params.category}: ${testParam.params.test}\n`;
         countFailed += 1;
