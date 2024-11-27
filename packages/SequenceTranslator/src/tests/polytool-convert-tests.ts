@@ -100,7 +100,7 @@ category('PolyTool: Convert', () => {
     test(`toHelm-${testName}`, async () => {
       const rules = await getRules(['rules_example.json']);
       const res = doPolyToolConvert([testData.src.seq], rules, helmHelper);
-      expect(res[0], testData.tgt.helm);
+      expect(res[0][0], testData.tgt.helm);
     });
   }
 
