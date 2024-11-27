@@ -24,5 +24,6 @@ export function getMmpTrellisPlot(fGrid: DG.Grid, activityMeanNames: Array<strin
     },
   });
 
+  tp.root.classList.add('chem-mmp-trellis-plot');
   return tp;
 }

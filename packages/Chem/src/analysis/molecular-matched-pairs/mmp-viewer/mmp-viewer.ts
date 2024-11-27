@@ -242,7 +242,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const tabs = ui.tabControl(null, false);
 
     const addToWorkspaceButton = (table: DG.DataFrame, name: string, className: string) => {
-      const button = ui.button('Add to workspace', () => {
+      const button = ui.icons.add(() => {
         const clonedTable = table.clone();
         clonedTable.name = name;
         const tv = grok.shell.addTableView(clonedTable);
