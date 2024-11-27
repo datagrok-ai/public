@@ -28,6 +28,20 @@ export async function getGenerations(mmpa: MMPA, allPairsGrid: DG.Grid):
   cols.push(createColWithDescription('string', `Generation`, generation, DG.SEMTYPE.MOLECULE));
   const grid = DG.DataFrame.fromColumns(cols).plot.grid();
   createMolExistsCol(mmpa.frags.smiles, generation, grid);
+
+
+  const initVals = new Float32Array(generation.length);
+  const col1 = grid.dataFrame.columns.byName('Existing');
+  const col2 = grid.dataFrame.columns.byName('Initial value');
+  const col3 = grid.dataFrame.columns.byName('Prediction');
+  for (let i = 0; i < generation.length; i++) {
+    if (col1.get(i))
+      initVals[i] = col3.get(i) - col2.get(i)/4;
+    else
+      initVals[i] = 0;
+  }
+  const corrCol = DG.Column.float('~sss', generation.length).init((i) => initVals[i] == 0 ? null : initVals[i]);
+  grid.dataFrame.columns.add(corrCol);
   return grid;
 }
 

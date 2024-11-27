@@ -81,6 +81,7 @@ import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/mo
 import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
 import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 import { CHEM_PROP_MAP } from './open-chem/ocl-service/calculations';
+import {getChemClasses} from './analysis/chem-classes';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -1708,6 +1709,11 @@ export function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
   activities: DG.ColumnList, fragmentCutoff: number = 0.4, demo = false): void {
   let view: DG.TableView;
 
+  if (activities.length < 1) {
+    grok.shell.warning('MMP analysis requires at least one activity');
+    return;
+  }
+
   if (demo) {
     const browseView = grok.shell.view('Browse') as DG.BrowseView;
     view = browseView ? (browseView.preview as DG.TableView) : grok.shell.getTableView(table.name) as DG.TableView;
@@ -2025,3 +2031,15 @@ export async function isApplicableNN(df: DG.DataFrame, predictColumn: DG.Column)
 }
 
 export {getMCS};
+
+//top-menu: Chem | Analyze | ChemClasses...
+//name: chemClasses
+//input: dataframe table [Input data table]
+//input: column molecules { semType: Molecule }
+export async function chemClasses(table: DG.DataFrame, molecules: DG.Column): Promise<void> {
+  const classes = await getChemClasses(molecules);
+  const classesCol = DG.Column.fromStrings('Classes', classes);
+  classesCol.semType = DG.SEMTYPE.MOLECULE;
+  table.columns.add(classesCol);
+  grok.shell.tv.grid.invalidate();
+}
