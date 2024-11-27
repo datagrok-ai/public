@@ -9,7 +9,7 @@ export class DockingViewApp extends BaseViewApp {
   constructor(parentCall: DG.FuncCall) {
     super(parentCall);
 
-    this.setFormGenerator(this.generateCustomForm);
+    this.formGenerator = this.generateCustomForm;
     this.filePath = 'System:AppData/Docking/demo_files/demo_dataset_small.csv';
     this.uploadCachedData = this.loadCachedAutodockData.bind(this);
     this.addTabControl = false;
