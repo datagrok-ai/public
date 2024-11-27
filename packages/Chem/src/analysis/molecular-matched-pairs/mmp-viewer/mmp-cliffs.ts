@@ -34,11 +34,16 @@ export function getMmpScatterPlot(
     showColorSelector: false,
     showSizeSelector: false,
     markerDefaultSize: 7,
+    showMarkerLabels: 'Auto',
   });
   //temporary fix (to save backward compatibility) since labels option type has been changed from string to array in 1.23 platform version 
-  if (Object.keys(sp.props).includes('labelColumnNames')) { //@ts-ignore
+  const spProps = Object.keys(sp.props);
+  if (spProps.includes('labelColumnNames')) { //@ts-ignore
     if (sp.props['labelColumnNames'].constructor.name == "Array")
       sp.setOptions({labelColumnNames: [labelsColName]});
+  }
+  if (spProps.includes('useLabelAsMarker')) { //@ts-ignore
+      sp.setOptions({useLabelAsMarker: true});
   }
   return sp;
 }

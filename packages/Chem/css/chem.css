@@ -596,16 +596,18 @@
 
 .chem-mmpa-transformation-tab-header {
   padding: 4px;
-  margin: 0px,
+  font-size: 13px;
+  margin-left: 10px;
 }
 
 .chem-mmpa-add-to-workspace-button {
-  margin-top: 0px;
+  margin-top: 7px;
+  margin-right: 10px;
 }
 
 .chem-mmpa-grid-help-icon {
   font-size: 17px;
-  padding-top: 5px;
+  padding-top: 3px;
   padding-left: 2px;
 }
 
@@ -618,7 +620,8 @@
 
 .chem-mmpa-fragments-filters-icon {
   padding-left: 5px;
-  padding-top: 7px;
+  padding-top: 5px;
+  font-size: 12px;
 }
 
 .selected > .chem-mmpa-add-tab-header-button {
@@ -741,4 +744,12 @@
 
 .chem-mmp-trellis-plot-sort-div {
   padding: 5px;
+}
+
+.chem-mmp-trellis-plot div[name="viewer selector"] {
+  display: none;
+}
+
+.chem-mmp-trellis-plot .d4-column-selector-triangle {
+  visibility: hidden;
 }

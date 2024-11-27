@@ -51,7 +51,7 @@ export class MmpPairedGrids {
     this.mmpGridFrag = this.mmpGridTrans.dataFrame.plot.grid();
     this.mmpMaskFrag = DG.BitSet.create(this.mmpGridFrag.dataFrame.rowCount);
 
-    const trellisTv = DG.TableView.create(this.fpGrid.dataFrame);
+    const trellisTv = DG.TableView.create(this.fpGrid.dataFrame, false);
     this.filters = trellisTv.getFiltersGroup();
     this.fpMaskFragmentsTab = DG.BitSet.create(this.fpGrid.dataFrame.rowCount);
     const maxPairs = this.fpGrid.dataFrame.col(MMP_NAMES.PAIRS)?.stats.max;
