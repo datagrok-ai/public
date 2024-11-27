@@ -62,7 +62,7 @@ By using a URL, you can share model runs from the **Templates**, **Examples** an
 
 Explore the relationship between inputs and outputs of your model using the [Sensitivity Analysis](function-analysis.md#sensitivity-analysis) feature. Run it directly from Diff Studio:
 
-* Click <i class="fas fa-analytics"></i> **Run sensitivity analysis** icon
+* Click <i class="fas fa-chart-line"></i> **Sensitivity** icon on the top panel
 * Apply one of the following methods:
   * [Monte Carlo](function-analysis.md#monte-carlo)
   * [Sobol](function-analysis.md#sobol)
@@ -75,7 +75,7 @@ Explore the relationship between inputs and outputs of your model using the [Sen
 
 Find input conditions leading to the specified output constraints using the [Parameter Optimization](function-analysis.md#parameter-optimization) feature. It finds input values that minimize deviation measured by [loss function](https://en.wikipedia.org/wiki/Loss_function). Run it directly from Diff Studio:
 
-* Click <i class="fas fa-chart-line"></i> **Run fitting inputs** icon
+* Click <i class="fas fa-wave-sine"></i> **Fit** icon on the top panel
 * In the `Fit` block, use switchers to specify inputs to be found:
   * Set `min` and `max` values for each selected item. They define the variation range
   * Set values of all other inputs
@@ -299,8 +299,7 @@ Specify `min`, `max` and `step` values to get sliders and clickers for the rapid
 
 ## Loading templates and examples
 
-To load a template, click the <i class="fas fa-folder-open"></i> **Load...** on the ribbon,
-select **Templates** and choose one of the following templates:
+To load a template, click <i class="fas fa-folder-open d4-combo-popup" style="min-width: 0px; cursor: default"></i> **Open** on the ribbon, select **Templates** and choose one of the following templates:
 
 | Template   | Features                                                                                    |
 |------------|---------------------------------------------------------------------------------------------|
@@ -308,13 +307,13 @@ select **Templates** and choose one of the following templates:
 | `Advanced` | Extra math features: *expressions*, *constants*, *parameters* and *tolerance* specification |
 | `Extended` | The *annotating* feature for extended UI generation                                         |
 
-To load an example, click the <i class="fas fa-folder-open"></i> **Load...** on the ribbon,
-select **Examples** and choose a one.
+To load an example, click <i class="fas fa-folder-open d4-combo-popup" style="min-width: 0px; cursor: default"></i> **Open**,
+select **Library** and choose a one.
 
 ## Examples
 
 Diff Studio has built-in examples. They cover all Diff Studio capabilities. Get access to them
-via the <i class="fas fa-folder-open"></i> **Load...** button on the ribbon and use as a template.
+via the <i class="fas fa-folder-open d4-combo-popup" style="min-width: 0px; cursor: default"></i> **Open** icon on the ribbon and use as a template.
 
 ### Chem reactions
 
@@ -381,10 +380,12 @@ with [viewers](../visualize/viewers/viewers.md) and [compute](compute.md) tools 
 
 You can convert any Diff Studio project to the Datagrok script:
 
-* Click the **JS** button on the top panel
-* Click the **SAVE** button to save generated script
+1. Turn on the **Edit** toggle on the top panel.
+2. Click **</>** icon. Script editor opens in a new view.
+3. Click the **SAVE** button.
+4. Script is created, and can be found in the "Scripts" section of the platform.
 
-Find the created Javascript script in the platform `Scripts`.
+Find the created JavaScript script in the platform `Scripts` (**Browse > Platform > Functions > Scripts**).
 
 Use `#tags: model` to add your model to the `Model Catalog`.
 Provide a description in the `#description` line:
