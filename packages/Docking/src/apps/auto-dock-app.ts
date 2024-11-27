@@ -166,8 +166,8 @@ async function runAutoDock(
 
     const npts: GridSize = {x: 40, y: 40, z: 40};
     const autodockGpf: string = buildDefaultAutodockGpf(receptorData.options!.name!, npts);
-    const posesDf = await fetchWrapper(() => adSvc.dockLigand(
-      receptorData, ligandData, gpfFile ?? autodockGpf, posesNum ?? 10, poseColName));
+    const posesDf = await adSvc.dockLigand(
+      receptorData, ligandData, gpfFile ?? autodockGpf, posesNum ?? 10, poseColName);
 
     if (posesDf.col(ERROR_COL_NAME)) {
       errorValues[errorValues.length] = {index: lRowI, value: posesDf.get(ERROR_COL_NAME, 0)};
