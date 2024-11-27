@@ -30,7 +30,7 @@ RUN /usr/local/bin/_dockerfile_initialize_user_accounts.sh && /usr/local/bin/_do
 
 RUN mkdir /app && chown $MAMBA_USER:$MAMBA_USER /app
 
-USER $MAMBA_USER
+USER mambauser
 
 WORKDIR /app
 
