@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import {getMonomerPairs, getRules, Rules} from './pt-rules';
 import {_package, applyNotationProviderForCyclized} from '../../package';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
