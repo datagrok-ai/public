@@ -47,7 +47,7 @@ export type MetaCallInfo = {
 
 export interface AdapterInitData {
   adapter: IFuncCallAdapter,
-  restrictions: Record<string, RestrictionState>,
+  restrictions: Record<string, RestrictionState | undefined>,
   isOutputOutdated: boolean,
   runError?: string,
 }

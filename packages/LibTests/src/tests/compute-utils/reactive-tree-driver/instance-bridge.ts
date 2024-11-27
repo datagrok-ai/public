@@ -146,7 +146,7 @@ category('ComputeUtils: Driver instance bridge', async () => {
       expectObservable(bridge.isRunning$, '^ 1000ms !').toBe('a', {a: false});
       expectObservable(bridge.isRunable$, '^ 1000ms !').toBe('ab', {a: false, b: true});
       expectObservable(bridge.inputRestrictionsUpdates$, '^ 1000ms !').toBe('');
-      expectObservable(bridge.getStateChanges('arg1'), '^ 1000ms !').toBe('ab', {a: undefined, b: undefined});
+      expectObservable(bridge.getStateChanges('arg1'), '^ 1000ms !').toBe('ab', {a: undefined, b: 10});
       expectObservable(bridge.getStateChanges('arg2'), '^ 1000ms !').toBe('ab', {a: undefined, b: undefined});
       expectObservable(bridge.getStateChanges('res'), '^ 1000ms !').toBe('ab', {a: undefined, b: undefined});
     });

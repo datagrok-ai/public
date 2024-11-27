@@ -248,9 +248,11 @@ export class StateTree {
     return this.mutateTree(() => {
       const [_root, _nqName, ppath] = StateTree.findPipelineNode(this, puuid);
       const subConfig = StateTree.getSubConfig(this.config, ppath, id);
-      if (isPipelineStepConfig(subConfig))
-        this.nodeTree.attachBrunch(ppath, new TreeNode(new FuncCallNode(subConfig, false)), id, pos);
-      else {
+      if (isPipelineStepConfig(subConfig)) {
+        const fcNode = new FuncCallNode(subConfig, false);
+        fcNode.initState(subConfig);
+        this.nodeTree.attachBrunch(ppath, new TreeNode(fcNode), id, pos);
+      } else {
         StateTree.fromPipelineConfig({
           config: this.config,
           startNode: subConfig,

@@ -68,13 +68,16 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
   init(data: BridgeInitData) {
     if (this.instance$.value)
       throw new Error(`Double funcCall bridge instance init`);
-    for (const [key, val] of Object.entries(this.initialValues))
-      data.adapter.setState(key, val);
-    if (data.initValues && data.adapter) {
-      for (const [key, val] of Object.entries(this.initialValues))
-        data.adapter.setState(key, val);
+    if (data.initValues) {
+      for (const [key, val] of Object.entries(this.initialValues)) {
+        if (data.restrictions[key]?.assignedValue == null)
+          data.adapter.setState(key, val);
+      }
+      for (const [key, val] of Object.entries(data.restrictions)) {
+        if (val?.assignedValue != null)
+          data.adapter.setState(key, val.assignedValue);
+      }
     }
-
     this.inputRestrictions$.next({...this.inputRestrictions$.value, ...data.restrictions});
     this.instance$.next({adapter: data.adapter, isNew: true});
     this.runError$.next(data.runError);
