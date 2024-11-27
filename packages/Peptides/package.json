@@ -15,7 +15,7 @@
   "dependencies": {
     "@datagrok-libraries/bio": "^5.45.9",
     "@datagrok-libraries/math": "^1.2.3",
-    "@datagrok-libraries/ml": "^6.7.4",
+    "@datagrok-libraries/ml": "^6.7.5",
     "@datagrok-libraries/statistics": "^1.2.12",
     "@datagrok-libraries/tutorials": "^1.4.2",
     "@datagrok-libraries/utils": "^4.3.0",

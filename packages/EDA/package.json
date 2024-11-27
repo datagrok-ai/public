@@ -5,7 +5,7 @@
     "description": "Exploratory Data Analysis Tools",
     "dependencies": {
         "@datagrok-libraries/math": "^1.2.3",
-        "@datagrok-libraries/ml": "^6.7.0",
+        "@datagrok-libraries/ml": "^6.7.5",
         "@datagrok-libraries/tutorials": "^1.4.2",
         "@datagrok-libraries/utils": "^4.3.0",
         "@keckelt/tsne": "^1.0.2",
