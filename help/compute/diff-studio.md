@@ -455,18 +455,26 @@ Use the interface to select inputs and compare model runs:
 
 ## Syntax
 
-Diff Studio lets you define model in a declarative form using simple syntax.
+Diff Studio lets you define model in a declarative form using simple syntax:
 
-### Basics
-
-Each model must include:
-
-|Keyword|Purpose|
+|Keyword|Specifies|
 |-|-|
-|**#name**|Sets name of the model.|
-|**#equations**|Specifies [ordinary differential equations](https://en.wikipedia.org/wiki/Ordinary_differential_equation).|
-|**#inits**|Defines [initial conditions](https://en.wikipedia.org/wiki/Initial_value_problem).|
-|**#argument**|Specifies the independent variable, its range, and the solution time step.|
+|**#name**|Model name|
+|**#equations**|Ordinary differential equations ([ODEs](https://en.wikipedia.org/wiki/Ordinary_differential_equation))|
+|**#inits**|[Initial conditions](https://en.wikipedia.org/wiki/Initial_value_problem)|
+|**#argument**|The independent variable, its range, and the solution time step|
+|**#expressions**|Additional computations|
+|**#parameters**|Model parameters (Diff Studio creates UI inputs for them)|
+|**#constants**|Model constants|
+|**#loop**|Multiple simulation [cycles](#cyclic-process-simulation)|
+|**#update**|Additional modeling [stage](#multistage-model)|
+|**#output**|Customized model output|
+|**#tolerance**|[Tolerance](https://pythonnumericalmethods.berkeley.edu/notebooks/chapter19.02-Tolerance.html) of the numerical method|
+|**#meta.inputs**|CSV file with inputs [lookup table](#lookup-tables)|
+|**#meta.solver**|ODEs solver [settings](#solver-settings)|
+|**#comment**|Explanations, notes, remarks, etc.|
+|**#tags**|The platform [script](#platform-script-generation) tags|
+|**#description**|The platform [script](#platform-script-generation) tooltip|
 
 See also
 
