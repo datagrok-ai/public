@@ -476,7 +476,16 @@ Diff Studio lets you define model in a declarative form using simple syntax:
 |**#tags**|The platform [script](#platform-script-generation) tags|
 |**#description**|The platform [script](#platform-script-generation) tooltip|
 
-See also
+To improve [usability](#usability-improvements), you can annotate model inputs using:
+
+|Option|Specifies|
+|-|-|
+|**caption**|Input caption|
+|**category**|Input category. Items belonging to the same category are grouped together in the UI|
+|**units**|Input measure units|
+|**min**, **max**|Input min and max values, respectively. Use them to get sliders for UI input|
+
+## See also
 
 * [Stiff equations](https://en.wikipedia.org/wiki/Stiff_equation)
 * [Numerical methods for ODEs](https://en.wikipedia.org/wiki/Numerical_methods_for_ordinary_differential_equations)
