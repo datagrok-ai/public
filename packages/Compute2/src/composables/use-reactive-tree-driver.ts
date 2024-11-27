@@ -8,7 +8,7 @@ import {switchMap, map} from 'rxjs/operators';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
-import { ItemMetadata, SaveDynamicItem } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/view/ViewCommunication';
+import {ItemMetadata} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/view/ViewCommunication';
 
 function makeMergedItems<T>(input: Record<string, Observable<T>>) {
   const entries = Object.entries(input).map(([name, state$]) => state$.pipe(map((s) => [name, s] as const)));
@@ -153,7 +153,7 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
     loadPipeline,
     loadAndReplaceNestedPipeline,
     savePipeline,
-    saveDynamicItem, 
+    saveDynamicItem,
     runStep,
     runSequence,
     runAction,

@@ -304,6 +304,14 @@ export class LinksState {
     return concat(...obs);
   }
 
+  public waitForLinks() {
+    return this.runningLinks$.pipe(
+      filter((links) => links == null || links?.length === 0),
+      debounceTime(0),
+      take(1),
+    );
+  }
+
   public runNewInits(state: BaseTree<StateTreeNode>) {
     const obs = state.traverse(state.root, (acc, node, path) => {
       const item = node.getItem();

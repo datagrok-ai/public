@@ -5,19 +5,12 @@ import * as Vue from 'vue';
 
 import {Advice, ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import type {InputFormT} from '@datagrok-libraries/webcomponents';
-import {injectInputBaseValidation, injectLockStates, isInputBase} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {ValidationResultBase} from '@datagrok-libraries/compute-utils/shared-utils/validation';
-import {
-  FuncCallInput,
-  FuncCallInputValidated,
-  isFuncCallInputValidated,
-  isInputLockable,
-} from '@datagrok-libraries/compute-utils/shared-utils/input-wrappers';
-import $ from 'cash-dom';
-import {injectLockIcons} from '@datagrok-libraries/compute-utils/function-views/src/shared/utils';
 import {ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
-import {FuncCallInputStatusable, injectInputBaseStatus, isInputInjected} from './utils';
-import {BehaviorSubject} from 'rxjs';
+import {injectInputBaseStatus, isInputInjected} from './utils';
+import {BehaviorSubject, merge} from 'rxjs';
+import {map, tap} from 'rxjs/operators';
+import {useExtractedObservable} from '@vueuse/rxjs';
 
 declare global {
   namespace JSX {
@@ -57,6 +50,20 @@ export const InputForm = Vue.defineComponent({
     const consistencyStates = Vue.computed(() => props.consistencyStates);
     const isReadonly = Vue.computed(() => props.isReadonly);
 
+    const states = Vue.reactive({
+      meta: {} as Record<string, any>
+    });
+
+    useExtractedObservable(() => props.callMeta, (meta) => {
+      states.meta = {};
+      const entries = Object.entries(meta).map(([name, state$]) => state$.pipe(map((s) => [name, s] as const)));
+      return merge(...entries).pipe(
+        tap(([k, val]) => {
+          states.meta[k] = Object.freeze(val);
+        })
+      );
+    });
+
     const currentForm = Vue.ref(undefined as undefined | DG.InputForm);
 
     const convertNewValidationToOld = (newResult: ValidationResult): ValidationResultBase => {
@@ -73,8 +80,6 @@ export const InputForm = Vue.defineComponent({
       };
     };
 
-    const callMeta = Vue.computed(() => props.callMeta);
-
     Vue.watchEffect(() => {
       if (!currentForm.value) return;
 
@@ -84,7 +89,7 @@ export const InputForm = Vue.defineComponent({
           const input = currentForm.value!.getInput(param.property.name);
           const validationState = validationStates.value?.[param.property.name];
           const consistencyState = consistencyStates.value?.[param.property.name];
-          const paramItems = callMeta.value?.[param.property.name].value?.['items'];
+          const paramItems = states.meta[param.property.name]?.['items'];
 
           if (!isInputInjected(input))
             injectInputBaseStatus(input);

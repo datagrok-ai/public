@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Observable, defer, of, merge, Subject, BehaviorSubject, from, combineLatest} from 'rxjs';
-import {finalize, map, mapTo, toArray, concatMap, tap, takeUntil, filter, debounceTime, take, scan} from 'rxjs/operators';
+import { Observable, defer, of, merge, Subject, BehaviorSubject, from, combineLatest } from 'rxjs';
+import {finalize, map, mapTo, toArray, concatMap, tap, takeUntil, concat, debounceTime, scan} from 'rxjs/operators';
 import {NodePath, BaseTree, TreeNode} from '../data/BaseTree';
 import {PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {isFuncCallSerializedState, PipelineInstanceConfig, PipelineSerializedState, PipelineState} from '../config/PipelineInstance';
@@ -329,13 +329,13 @@ export class StateTree {
             return of(undefined);
           if (rerunWithConsistent)
             return node.getStateStore().overrideToConsistent().pipe(
-              concatMap(() => this.waitForLinks()),
+              concatMap(() => this.linksState.waitForLinks()),
               concatMap(() => node.getStateStore().run()),
-              concatMap(() => this.waitForLinks()),
+              concatMap(() => this.linksState.waitForLinks()),
             );
           else
             return node.getStateStore().run().pipe(
-              concatMap(() => this.waitForLinks()),
+              concatMap(() => this.linksState.waitForLinks()),
             );
         }),
         toArray(),
@@ -349,9 +349,8 @@ export class StateTree {
     if (!action)
       throw new Error(`Action ${uuid} not found`);
     if (action.spec.type === 'pipeline') {
-      return this.withTreeLock(() => {
+      return this.mutateTree(() => {
         return action.execPipelineMutations(additionalParams).pipe(
-          tap(() => this.linksState.disableLinks()),
           concatMap((lastPipelineMutations) => from(lastPipelineMutations ?? []).pipe(
             concatMap((data) => {
               const ppath = data.path.slice(0, -1);
@@ -373,21 +372,15 @@ export class StateTree {
               } else {
                 this.nodeTree.replaceRoot(subTree.nodeTree.root);
               }
-              return StateTree.loadOrCreateCalls(subTree, this.mockMode).pipe(
-                tap(() => this.updateNodesMap()),
-                concatMap(() => this.linksState.update(this.nodeTree, true)),
-                concatMap(() => this.waitForLinks()),
-              );
-            }),
-            toArray(),
-            tap(() => {
-              this.removeOrphanedIOMetadata();
-              this.setDepsTracker();
-            }),
-            mapTo(undefined),
-          ))
+              const mutationData: TreeUpdateMutationPayload = last ? {
+                mutationRootPath: ppath,
+                addIdx: last.idx,
+              } : { mutationRootPath: [] };
+              return StateTree.loadOrCreateCalls(subTree, this.mockMode).pipe(mapTo([mutationData] as const));
+            }))
+          )
         );
-      });
+      }, true);
     } else {
       return action.exec(additionalParams);
     }
@@ -690,7 +683,7 @@ export class StateTree {
       if (this.logger)
         this.logger.logTreeUpdates('treeUpdateStarted');
       this.treeLock();
-      return (waitForLinks ? this.waitForLinks() : of(undefined)).pipe(
+      return (waitForLinks ? this.linksState.waitForLinks() : of(undefined)).pipe(
         tap(() => this.linksState.disableLinks()),
         concatMap(() => fn()),
       );
@@ -721,19 +714,11 @@ export class StateTree {
   private withTreeLock(fn: () => Observable<undefined>) {
     return defer(() => {
       this.treeLock();
-      return this.waitForLinks().pipe(concatMap(() => fn()));
+      return this.linksState.waitForLinks().pipe(concatMap(() => fn()));
     }).pipe(
       finalize(() => {
         this.treeUnlock();
       }),
-    );
-  }
-
-  private waitForLinks() {
-    return this.linksState.runningLinks$.pipe(
-      filter((links) => links == null || links?.length === 0),
-      debounceTime(0),
-      take(1),
     );
   }
 
