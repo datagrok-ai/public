@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.17.3 (2024-11-27)
+
+Monomer managers as apps
+
 ## 2.17.2 (2024-11-19)
 
 * Support Sequence renderer resizing 

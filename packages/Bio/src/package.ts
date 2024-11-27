@@ -419,14 +419,6 @@ export function getRegion(
     start ?? null, end ?? null, name ?? null);
 }
 
-//top-menu: Bio | Manage | Monomers
-//name: manageMonomersView
-//description: Edit and create monomers
-export async function manageMonomersView() {
-  const monomerManager = await MonomerManager.getInstance();
-  await monomerManager.getViewRoot();
-}
-
 //top-menu: Bio | Convert | Get Region...
 //name: Get Region Top Menu
 //description: Get sequences for a region specified from a Macromolecule
@@ -958,6 +950,29 @@ export async function manageMonomerLibraries(): Promise<void> {
 //top-menu: Bio | Manage | Monomer Libraries
 //name: Manage Monomer Libraries View
 export async function manageLibrariesView(): Promise<void> {
+  await showManageLibrariesView();
+}
+
+//top-menu: Bio | Manage | Monomers
+//name: manageMonomersView
+//description: Edit and create monomers
+export async function manageMonomersView() {
+  const monomerManager = await MonomerManager.getInstance();
+  await monomerManager.getViewRoot();
+}
+
+//name: Manage Monomers
+//tags: app
+//meta.browsePath: Peptides | Monomers
+export async function manageMonomersApp() {
+  const monomerManager = await MonomerManager.getInstance();
+  await monomerManager.getViewRoot();
+}
+
+//name: Manage Libraries
+//tags: app
+//meta.browsePath: Peptides | Monomers
+export async function manageLibrariesApp(): Promise<void> {
   await showManageLibrariesView();
 }
 

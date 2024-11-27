@@ -1,8 +1,9 @@
 # Sequence Translator changelog
 
-## 1.6.4 (WIP)
+## 1.6.4 (2024-11-27)
 
-PolyTool: linearization of single sequence molecules
+* PolyTool: linearization of single sequence molecules
+* Enumerator: Added whole library enumeration
 
 ## 1.6.3 (2024-11-22)
 
