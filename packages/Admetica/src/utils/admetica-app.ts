@@ -10,8 +10,8 @@ export class AdmeticaViewApp extends BaseViewApp {
   constructor(parentCall: DG.FuncCall) {
     super(parentCall);
 
-    this.setFormGenerator(this.customFormGenerator);
-    this._setFunction = () => this.performAdmetica();
+    this.formGenerator = this.customFormGenerator;
+    this.setFunction = () => this.performAdmetica();
     this.browseView.path = 'browse/apps/Admetica';
     this.filePath = 'System:AppData/Admetica/demo_files/mol1K-demo-app.csv';
   }
