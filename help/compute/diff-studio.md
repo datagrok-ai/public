@@ -453,6 +453,21 @@ Use the interface to select inputs and compare model runs:
 
 ![table-lookups](pics/diff-studio-table-lookups.gif)
 
+## Syntax
+
+Diff Studio lets you define model in a declarative form using simple syntax.
+
+### Basics
+
+Each model must include:
+
+|Keyword|Purpose|
+|-|-|
+|**#name**|Sets name of the model.|
+|**#equations**|Specifies [ordinary differential equations](https://en.wikipedia.org/wiki/Ordinary_differential_equation).|
+|**#inits**|Defines [initial conditions](https://en.wikipedia.org/wiki/Initial_value_problem).|
+|**#argument**|Specifies the independent variable, its range, and the solution time step.|
+
 See also
 
 * [Stiff equations](https://en.wikipedia.org/wiki/Stiff_equation)
