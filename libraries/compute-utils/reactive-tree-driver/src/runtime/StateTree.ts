@@ -355,8 +355,8 @@ export class StateTree {
           concatMap((lastPipelineMutations) => from(lastPipelineMutations ?? []).pipe(
             concatMap((data) => {
               const ppath = data.path.slice(0, -1);
-              const last = indexFromEnd(data.path)!;
-              const subConfig = StateTree.getSubConfig(this.config, ppath, last.id);
+              const last = indexFromEnd(data.path);
+              const subConfig = last ? StateTree.getSubConfig(this.config, ppath, last.id) : this.config;
               if (isPipelineStepConfig(subConfig))
                 throw new Error(`FuncCall node ${JSON.stringify(data.path)}, but pipeline is expected`);
               const subTree = StateTree.fromInstanceConfig(
@@ -367,8 +367,12 @@ export class StateTree {
                   defaultValidators: this.defaultValidators,
                   mockMode: this.mockMode,
                 });
-              this.nodeTree.removeBrunch(data.path);
-              this.nodeTree.attachBrunch(ppath, subTree.nodeTree.root, last.id, last.idx);
+              if (last) {
+                this.nodeTree.removeBrunch(data.path);
+                this.nodeTree.attachBrunch(ppath, subTree.nodeTree.root, last.id, last.idx);
+              } else {
+                this.nodeTree.replaceRoot(subTree.nodeTree.root);
+              }
               return StateTree.loadOrCreateCalls(subTree, this.mockMode).pipe(
                 tap(() => this.updateNodesMap()),
                 concatMap(() => this.linksState.update(this.nodeTree, true)),

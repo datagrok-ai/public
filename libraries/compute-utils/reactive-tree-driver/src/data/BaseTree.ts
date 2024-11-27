@@ -75,6 +75,10 @@ export class BaseTree<T> {
     this.attachBrunch(paddress, node, id, idx);
   }
 
+  replaceRoot(node: TreeNode<T>) {
+    this.root = node;
+  }
+
   removeBrunch(address: Readonly<NodeAddress>) {
     const nodeSeq = this.getNodesFromAddress(address);
     const parent = indexFromEnd(nodeSeq, 1)!;

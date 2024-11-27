@@ -11,6 +11,7 @@ import {delay, filter, mapTo, skip, switchMap, take} from 'rxjs/operators';
 import {FuncCallInstancesBridge} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/FuncCallInstancesBridge';
 import {makeValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
+import {snapshotCompare} from '../../../test-utils';
 
 
 category('ComputeUtils: Driver links reactivity', async () => {
@@ -969,6 +970,143 @@ category('ComputeUtils: Driver links reactivity', async () => {
       });
       expectObservable(out.getItem().getStateStore().getStateChanges('a')).toBe('ab', {a: undefined, b: 15});
     });
+  });
+
+  test('Run pipeline mutation actions on root pipeline', async () => {
+    const config5: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'parallel',
+      stepTypes: [
+        {
+          id: 'nestedPipeline1',
+          type: 'parallel',
+          stepTypes: [
+            {
+              id: 'step1',
+              nqName: 'LibTests:TestAdd2',
+            },
+            {
+              id: 'step2',
+              nqName: 'LibTests:TestMul2',
+            },
+          ],
+          initialSteps: [
+            {
+              id: 'step1',
+            },
+          ],
+        },
+        {
+          id: 'step',
+          nqName: 'LibTests:TestSub2',
+        },
+      ],
+      actions: [{
+        id: 'action1',
+        from: [],
+        position: 'none',
+        to: 'out1',
+        type: 'pipeline',
+        handler({controller}) {
+          controller.setPipelineState('out1', {
+            id: 'pipeline1',
+            steps: [{
+              id: 'nestedPipeline1',
+              steps: [
+                {
+                  id: 'step2',
+                  initialValues: {
+                    a: 5,
+                  },
+                },
+                {
+                  id: 'step1',
+                  initialValues: {
+                    a: 10,
+                  },
+                },
+              ],
+            }]
+          });
+        },
+      }],
+    };
+
+    const pconf = await getProcessedConfig(config5);
+    const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: false});
+    await tree.init().toPromise();
+    const action = [...tree.linksState.actions.values()][0];
+    await tree.runAction(action.uuid).toPromise();
+    const state = tree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});
+    await snapshotCompare(state, 'Run pipeline mutation actions on root pipeline');
+  });
+
+  test('Run pipeline mutation actions on pipeline', async () => {
+    const config5: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'nestedPipeline1',
+          type: 'parallel',
+          stepTypes: [
+            {
+              id: 'step1',
+              nqName: 'LibTests:TestAdd2',
+            },
+            {
+              id: 'step2',
+              nqName: 'LibTests:TestMul2',
+            },
+          ],
+          initialSteps: [
+            {
+              id: 'step1',
+            },
+          ],
+        },
+        {
+          id: 'step',
+          nqName: 'LibTests:TestSub2',
+        },
+      ],
+      actions: [{
+        id: 'action1',
+        from: [],
+        position: 'none',
+        to: 'out1:nestedPipeline1',
+        type: 'pipeline',
+        handler({controller}) {
+          controller.setPipelineState('out1',
+            {
+              id: 'nestedPipeline1',
+              steps: [
+                {
+                  id: 'step2',
+                  initialValues: {
+                    a: 5,
+                  },
+                },
+                {
+                  id: 'step1',
+                  initialValues: {
+                    a: 10,
+                  },
+                },
+              ],
+            }
+          );
+        },
+      }],
+    };
+
+    const pconf = await getProcessedConfig(config5);
+    const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: false});
+    await tree.init().toPromise();
+    const action = [...tree.linksState.actions.values()][0];
+    await tree.runAction(action.uuid).toPromise();
+    const state = tree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});
+    await snapshotCompare(state, 'Run pipeline mutation actions on pipeline');
   });
 
   test('Select state descriptions', async () => {
