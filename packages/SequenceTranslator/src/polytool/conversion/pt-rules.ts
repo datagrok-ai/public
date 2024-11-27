@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import {ActiveFiles} from '@datagrok-libraries/utils/src/settings/active-files-base';
 import {RulesManager} from './rule-manager';
 
