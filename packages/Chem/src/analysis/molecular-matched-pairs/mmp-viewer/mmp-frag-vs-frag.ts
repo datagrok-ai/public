@@ -11,8 +11,8 @@ export function getMmpTrellisPlot(fGrid: DG.Grid, activityMeanNames: Array<strin
   const aggregations = activityMeanNames.map((_) => DG.STATS.MED);
 
   const tp = DG.Viewer.fromType(DG.VIEWER.TRELLIS_PLOT, fGrid.table, {
-    xColumnNames: [fGrid.table.columns.byIndex(0).name],
-    yColumnNames: [fGrid.table.columns.byIndex(1).name],
+    xColumnNames: [MMP_NAMES.FROM],
+    yColumnNames: [MMP_NAMES.TO],
     viewerType: 'Summary',
     innerViewerLook: {
       columnNames: activityMeanNames,

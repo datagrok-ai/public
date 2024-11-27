@@ -738,3 +738,7 @@
   overflow: hidden;
   max-height: 400px;
 }
+
+.chem-mmp-trellis-plot-sort-div {
+  padding: 5px;
+}
