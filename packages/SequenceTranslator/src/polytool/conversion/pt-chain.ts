@@ -16,6 +16,7 @@ export class Chain {
   linkagesUnderRules: Linkage[];
   monomersUnderRules: string[][];
   molUnderRules: HelmMol;
+  posToPosUnderRules: number[][] = [];
 
   constructor(monomers: string[][], linkages: Linkage[], protected helmHelper: IHelmHelper) {
     this.linkages = linkages;
@@ -52,9 +53,28 @@ export class Chain {
   applyRules(rules: Rules): void {
     const sequence = this.getNotation();
 
-    const [linkages, mainFragments] = handleDuplicated(sequence, rules);
+    const [linkages, mainFragments, isDuplicated] = handleDuplicated(sequence, rules);
     const monomers = new Array<Array<string>>(mainFragments.length);
-    handleLinkRules(mainFragments, monomers, linkages, rules);
+
+    let counter = 0;
+    for (let i = 0; i < mainFragments.length; i++) {
+      monomers[i] = mainFragments[i].split('-');
+      if (!isDuplicated[i]) {
+        for (let j = 0; j < monomers[i].length; j++) {
+          this.posToPosUnderRules.push([counter]);
+          counter++;
+        }
+      } else {
+        const start = this.posToPosUnderRules.length - monomers[i].length;
+        for (let j = 0; j < monomers[i].length; j++) {
+          this.posToPosUnderRules[start + j].push(counter);
+          counter++;
+        }
+      }
+    }
+
+    //his.posToPosUnderRules
+    handleLinkRules(monomers, linkages, rules);
     handleReactionRules(monomers, linkages, rules);
 
     this.underRules = true;

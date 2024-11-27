@@ -128,7 +128,7 @@ export class RulesManager {
     }
     const helmHelper = await getHelmHelper();
 
-    const [helms, isLinear] = doPolyToolConvert(seqs, this.rules, helmHelper);
+    const [helms, isLinear, positionMaps] = doPolyToolConvert(seqs, this.rules, helmHelper);
 
     const initCol = DG.Column.fromStrings('Monomers', seqs);
     const helmCol = DG.Column.fromStrings('Helm', helms);
@@ -157,7 +157,7 @@ export class RulesManager {
     }
     const helmHelper = await getHelmHelper();
 
-    const [helms, isLinear] = doPolyToolConvert(seqs, this.rules, helmHelper);
+    const [helms, isLinear, positionMaps] = doPolyToolConvert(seqs, this.rules, helmHelper);
 
     const initCol = DG.Column.fromStrings('Monomers', seqs);
     const helmCol = DG.Column.fromStrings('Helm', helms);
