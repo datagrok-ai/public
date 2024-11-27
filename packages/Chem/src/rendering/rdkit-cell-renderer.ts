@@ -467,11 +467,11 @@ M  END
     let mhSubstruct: ISubstruct | undefined;
     try {
       const mhData = getMonomerHover();
-      if (mhData && mhData.dataFrameId == gridCell.grid?.dataFrame.id && mhData.gridRowIdx === gridCell.gridRow &&
-        mhData.seqColName === gridCell.tableColumn?.getTag(ChemTags.SEQUENCE_SRC_COL)
-      ) {
+      if (mhData && mhData.dataFrameId == gridCell.cell.column.dataFrame.id &&
+        mhData.gridRowIdx === gridCell.cell.dataFrame.mouseOverRowIdx &&
+        mhData.seqColName ===gridCell.cell.column?.getTag(ChemTags.SEQUENCE_SRC_COL)
+      )
         mhSubstruct = mhData.getSubstruct();
-      }
     } catch (err: any) {
       const [errMsg, errStack] = errInfo(err);
       _package.logger.error(errMsg, undefined, errStack);

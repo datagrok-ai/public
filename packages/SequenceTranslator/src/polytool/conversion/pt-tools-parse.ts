@@ -121,9 +121,10 @@ export function fromObjectsToHelm(linkages: Linkage[], monomers: string[][]): st
   return helm;
 }
 
-//homo and hetero dimers
-export function handleDuplicated(sequence: string, rules: Rules): [Linkage[], string[]] {
+//homo and hetero dimers/ also fills map from initial positions to positions arrays
+export function handleDuplicated(sequence: string, rules: Rules): [Linkage[], string[], boolean[]] {
   const mainFragments: string[] = [];
+  const isDuplicated: boolean[] = [];
   const linkages: Linkage[] = [];
   const heterodimerCode = rules.heterodimerCode;
   const homodimerCode = rules.homodimerCode;
@@ -134,8 +135,11 @@ export function handleDuplicated(sequence: string, rules: Rules): [Linkage[], st
     linkages.push({fChain: 0, sChain: 1, fMonomer: 1, sMonomer: 1, fR: 1, sR: 1});
     mainFragments.push(heterodimeric[1].replaceAll('{', '').replaceAll('}', ''));
     mainFragments.push(heterodimeric[2].replaceAll('{', '').replaceAll('}', ''));
+    isDuplicated.push(false);
+    isDuplicated.push(false);
   } else {
     mainFragments.push(sequence);
+    isDuplicated.push(false);
   }
 
   //NOTICE: this works only with simple single dimers
@@ -151,30 +155,16 @@ export function handleDuplicated(sequence: string, rules: Rules): [Linkage[], st
 
       mainFragments[i] = linker + body;
       mainFragments.push(body);
+      isDuplicated.push(true);
     }
   }
 
-  for (let i = 0; i < mainFragments.length; i++) {
-    if (homodimerCode !== null && mainFragments[i].includes(`(${homodimerCode!})`)) {
-      const idxSequence = mainFragments.length;
-
-      linkages.push({fChain: i, sChain: idxSequence, fMonomer: 1, sMonomer: 1, fR: 1, sR: 1});
-      const rawDimer = mainFragments[i].replace(`(${homodimerCode!})`, '');
-      const idx = rawDimer.indexOf('{');
-      const linker = rawDimer.slice(0, idx);
-      const body = rawDimer.replace(linker, '').replaceAll('{', '').replaceAll('}', '');
-
-      mainFragments[i] = linker + body;
-      mainFragments.push(body);
-    }
-  }
-
-  return [linkages, mainFragments];
+  return [linkages, mainFragments, isDuplicated];
 }
 
-export function handleLinkRules(mf: string[], monomers: string[][], linkages: Linkage[], rules: Rules): void {
-  for (let i = 0; i < mf.length; i++) {
-    const rawMonomers = mf[i].split('-');
+export function handleLinkRules(monomers: string[][], linkages: Linkage[], rules: Rules): void {
+  for (let i = 0; i < monomers.length; i++) {
+    const rawMonomers = monomers[i];
     const linkedPositions = getLinkedPositions(rawMonomers, rules.linkRules);
     const [allPos1, allPos2, allAttaches1, allAttaches2] =
       getAllCycles(rules.linkRules, rawMonomers, linkedPositions);
