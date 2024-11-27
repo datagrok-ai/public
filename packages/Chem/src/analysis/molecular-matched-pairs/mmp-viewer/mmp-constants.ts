@@ -32,6 +32,10 @@ export const columnsDescriptions: {[key: string]: string} = {
   'Prediction': 'Predicted analyzed activity/property value',
 };
 
+export enum TrellisAxis {From = 'From', To = 'To'};
+export enum TrellisSortByProp {Frequency = 'Frequency', MW = 'MW'};
+export enum TrellisSortType {None = 'None', Asc = 'Asc', Desc = 'Desc'};
+
 export const FRAGMENTS_GRID_TOOLTIP = `'Fragment Pairs' grid contains all fragments substitutions for the current molecule in the initial dataset. Molecule pairs with current substitution are shown below in 'Matched Molecular Pairs' grid. Change current row in 'Fragment Pairs' grid to search for molecule pairs with corresponding substitution.`;
 export const MATHED_MOLECULAR_PAIRS_TOOLTIP_TRANS = `'Matched Molecular Pairs' grid contains all molecule pairs with current fragment substitution from 'Fragment Pairs' grid. Pinned row is a pair, containing current molecule from initial dataset. Click on any row to select rows with corresponding molecules in initial dataset, selected rows will be pinned on top.`
 export const MATHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS = `Click on a non-empty cell in the trellis plot above to see molecule pairs with corresponding fragment substitution. Click on any row to select rows with corresponding molecules in initial dataset, selected rows will be pinned on top.`

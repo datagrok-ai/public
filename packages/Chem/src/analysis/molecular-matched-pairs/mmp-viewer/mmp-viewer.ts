@@ -9,7 +9,7 @@ import {ILineSeries, MouseOverLineEvent, ScatterPlotLinesRenderer}
   from '@datagrok-libraries/utils/src/render-lines-on-sp';
 
 import {MMPA} from '../mmp-analysis/mmpa';
-import {CLIFFS_TAB_TOOLTIP, FRAGMENTS_GRID_TOOLTIP, FRAGMENTS_TAB_TOOLTIP, MATHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS, MATHED_MOLECULAR_PAIRS_TOOLTIP_TRANS, MMP_NAMES} from './mmp-constants';
+import {CLIFFS_TAB_TOOLTIP, FRAGMENTS_GRID_TOOLTIP, FRAGMENTS_TAB_TOOLTIP, MATHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS, MATHED_MOLECULAR_PAIRS_TOOLTIP_TRANS, MMP_NAMES, TrellisAxis, TrellisSortByProp, TrellisSortType} from './mmp-constants';
 
 import {PaletteCodes, getPalette} from './palette';
 import {getMmpTrellisPlot} from './mmp-frag-vs-frag';
@@ -24,6 +24,7 @@ import {getMmpFilters, MmpFilters} from './mmp-filters';
 import {getSigFigs} from '../../../utils/chem-common';
 import {createLines} from './mmp-lines';
 import {MmpPairedGrids} from './mmp-grids';
+import { getMolProperty } from '../../../package';
 
 export type MmpInput = {
   table: DG.DataFrame,
@@ -32,6 +33,20 @@ export type MmpInput = {
   fragmentCutoff: number
 };
 
+export type TrellisSorting = {
+  [TrellisAxis.From]: SortType,
+  [TrellisAxis.To]: SortType
+}
+
+export type SortType = {
+  property: TrellisSortByProp,
+  type: TrellisSortType
+}
+
+export type SortData = {
+  frequency: number, 
+  mw?: number
+}
 
 export class MatchedMolecularPairsViewer extends DG.JsViewer {
   static TYPE: string = 'MMP';
@@ -77,6 +92,9 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   calculatedOnGPU: boolean | null = null;
   parentTableFilterBackup: DG.BitSet | null = null;
   cliffsFiltered = false;
+  mWCalulationsReady = false;
+
+  fragSortingInfo: {[key: string]: SortData} = {};
 
   constructor() {
     super();
@@ -279,10 +297,47 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     }, 'Open fragments filters');
     filterIcon.classList.add('chem-mmpa-fragments-filters-icon');
 
+    const trellisSortState: TrellisSorting = {
+      [TrellisAxis.From]: {property: TrellisSortByProp.Frequency, type: TrellisSortType.None},
+      [TrellisAxis.To]: {property: TrellisSortByProp.Frequency, type: TrellisSortType.None},
+    }
+
+
+    const sortIcon = ui.iconFA('sort-alt', () => {
+      const axisChoice = ui.input.choice('Axis', {
+        value: TrellisAxis.From, items: Object.keys(TrellisAxis), nullable: false, onValueChanged: () => {
+          propChoice.value = trellisSortState[axisChoice.value as TrellisAxis].property;
+          sortTypeChoice.value = trellisSortState[axisChoice.value as TrellisAxis].type;
+        }
+      })
+      const propChoice = ui.input.choice('Property', {
+        value: trellisSortState[TrellisAxis.From].property, items: Object.keys(TrellisSortByProp), nullable: false, onValueChanged: () => {
+          const axis = axisChoice.value as TrellisAxis;
+          if (trellisSortState[axis].property !== propChoice.value) {
+            trellisSortState[axis].property = propChoice.value as TrellisSortByProp;
+            this.sortTrellis(axis, trellisSortState[axis], tp);
+          }
+        }
+      })
+      const sortTypeChoice = ui.input.choice('Type', {
+        value: trellisSortState[TrellisAxis.From].type, items: Object.keys(TrellisSortType), nullable: false, onValueChanged: () => {
+          const axis = axisChoice.value as TrellisAxis;
+          if (trellisSortState[axis].type !== sortTypeChoice.value) {
+            trellisSortState[axis].type = sortTypeChoice.value as TrellisSortType;
+            this.sortTrellis(axis, trellisSortState[axis], tp);
+          }
+        }
+      })
+      ui.showPopup(ui.inputs([
+        axisChoice, propChoice, sortTypeChoice
+      ], 'chem-mmp-trellis-plot-sort-div'), sortIcon)
+    }, 'Sort trellis plot axes');
+    sortIcon.classList.add('chem-mmpa-fragments-filters-icon');
+
     tp.root.prepend(trellisHeader);
     const tpDiv = ui.splitV([
       ui.box(
-        ui.divH([trellisHeader, filterIcon, helpButton('chem-mmpa-grid-help-icon')]),
+        ui.divH([trellisHeader, filterIcon, sortIcon, helpButton('chem-mmpa-grid-help-icon')]),
         {style: {maxHeight: '30px'}},
       ),
       tp.root,
@@ -404,6 +459,57 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     return tabs;
   }
 
+  sortTrellis(axis: TrellisAxis, sorting: SortType, tp: DG.Viewer) {
+    const filterBackup = this.pairedGrids!.fpGrid.dataFrame.filter.clone();
+    switch (sorting.property) {
+      case TrellisSortByProp.Frequency:
+        this.sortTrellisByProp(axis, sorting.type, tp, ([key1, val1], [key2, val2]) => val1.frequency - val2.frequency,
+          ([key1, val1], [key2, val2]) => val2.frequency - val1.frequency);
+        break;
+      case TrellisSortByProp.MW:
+        if(!this.mWCalulationsReady) {
+          grok.shell.warning('MW calculations for fragments in progress. Please try again later');
+          return;
+        }
+        this.sortTrellisByProp(axis, sorting.type, tp, ([key1, val1], [key2, val2]) => val1.mw! - val2.mw!,
+        ([key1, val1], [key2, val2]) => val2.mw! - val1.mw!);
+  
+    
+    }
+    this.pairedGrids!.fpGrid.dataFrame.filter.copyFrom(filterBackup);
+  }
+
+  sortTrellisByProp(axis: TrellisAxis, type: TrellisSortType, tp: DG.Viewer,
+    ascSortFunc: (arg1: [string, SortData], arg2: [string, SortData]) => number,
+    descSortFunc: (arg1: [string, SortData], arg2: [string, SortData]) => number) {
+    const fragCol = this.pairedGrids!.fpGrid.dataFrame.col(axis);
+    const axisName = tp.props.yColumnNames[0] === axis ? 'yColumnNames' : tp.props.xColumnNames[0] === axis ? 'xColumnNames' : null;
+
+    if (fragCol) {
+      let cats: string[] = [];
+      switch (type) {
+        case TrellisSortType.None:
+          cats = fragCol.categories.map((it) => it).sort();
+          break;
+        case TrellisSortType.Asc:
+          cats = Object.entries(this.fragSortingInfo).sort(ascSortFunc).map((it) => it[0]);
+          break;
+        case TrellisSortType.Desc:
+          cats = Object.entries(this.fragSortingInfo).sort(descSortFunc).map((it) => it[0]);
+          break;
+      }
+      if (cats.length) {
+        fragCol.setCategoryOrder(cats);
+        if(axis === TrellisAxis.From)
+          this.pairedGrids!.fpCatsFrom = cats;
+        else
+          this.pairedGrids!.fpCatsTo = cats;
+      }
+    }
+    if (axisName)
+      tp.props[axisName] = tp.props[axisName];
+  }
+
   fillAll(mmpInput: MmpInput, palette: PaletteCodes,
     mmpa: MMPA, diffs: Array<Float32Array>,
     linesIdxs: Uint32Array, pairedGrids: MmpPairedGrids, generationsGrid: DG.Grid,
@@ -485,6 +591,16 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       });
 
       this.calculatedOnGPU = mmpa.gpu;
+      this.prepareMwForSorting();
+  }
+
+  async prepareMwForSorting() {
+    const frags = Object.keys(this.fragSortingInfo);
+    const smilesArray = frags.map((it) => it.replace(new RegExp('\[\*:1\]|\[R1\]|\[R:1\]|\[1\*\]','gm'),'').replaceAll('()', ''));
+    getMolProperty(DG.Column.fromStrings('smiles', smilesArray), 'MW').then((res: DG.Column) => {
+      frags.forEach((key, idx) => this.fragSortingInfo[key].mw = res.get(idx) ?? 0);
+      this.mWCalulationsReady = true;
+    })
   }
 
   async runMMP(mmpInput: MmpInput) {
@@ -503,11 +619,11 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     try {
       if (this.totalDataUpdated) {
         mmpa = await MMPA.fromData(
-          mmpInput.molecules.name, this.totalData, moleculesArray, activitiesArrays, activitiesNames);
+          mmpInput.molecules.name, this.totalData, moleculesArray, activitiesArrays, activitiesNames, this.fragSortingInfo);
         this.totalDataUpdated = false;
       } else {
         mmpa = await MMPA.init(
-          mmpInput.molecules.name, moleculesArray, mmpInput.fragmentCutoff, activitiesArrays, activitiesNames);
+          mmpInput.molecules.name, moleculesArray, mmpInput.fragmentCutoff, activitiesArrays, activitiesNames, this.fragSortingInfo);
       }
     } catch (err: any) {
       const errMsg = err instanceof Error ? err.message : err.toString();
