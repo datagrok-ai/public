@@ -26,28 +26,28 @@ develop platform [applications](../develop/how-to/build-an-app.md) and combine t
 
 To run **Diff Studio**:
 
-* Go to **Apps** and run **Diff Studio**. You will see the default code template with one simple differential equation.
-* Go to **Run** tab and you will get UI for interactive model exploration.
-* Go to **Model** tab, edit formulas or add new ones.
-* Press **F5** or go to **Run** tab to re-run calculations and see updated data.
+* Go to **Apps** and run **Diff Studio**. When you first use this application, you will see the default model.
+* Modify inputs and check computations. Use sliders for the rapid model exploration.
+* Turn on the **Edit** toggle on the top panel. Equations editor opens. Edit formulas or add new ones.
+* Click <i class="fas fa-sync"></i> **Refresh** or press **F5** to apply changes.
 
 ![Run Diff Studio](pics/diff-studio-run.gif)
 
 ### Loading and saving data
 
-* **To save model**, click the <i class="fas fa-save"></i> **Save** icon on the ribbon. The context menu opens:
-  * Click `Save as Local File...` to save model to a local file. Find the *ivp*-file in Downloads. You can open and edit this file using any text editor.
-  * Click `Save to My Files...` to save model to your platform files (**Browse > Files > My files**).
-* **To load model** from a local file, click the <i class="fas fa-folder-open"></i> **Load...** on the ribbon, choose **From file...**
-  option and choose a local file to upload.
+Click the **Save** button on the top panel to save model to your platform files (**Browse > Files > My files**)
+
+* **To save model** to your platform files (**Browse > Files > My files**), click the **Save** button on the top panel.
+* Click <i class="fas fa-arrow-to-bottom"></i> **Download** to save model to a local file. Find the *ivp*-file in Downloads. You can open and edit this file using any text editor.
+* **To load model** from a local file, click <i class="fas fa-folder-open d4-combo-popup" style="min-width: 0px; cursor: default"></i> **Open**, choose **Import...** option and choose a local file to upload.
 * **Drag-n-drop** your *ivp*-file to Datagrok. Diff Studio will open it and load formulas. You can open *ivp*-files stored in the platform.
 
 ### Browse and share models
 
-Go to **Browse > Apps** and expand the **Diff Studio** group:
+Go to **Browse > Compute > Apps** and expand the **Diff Studio** group:
 
 * Check model templates from **Templates**. Use them as a backbone of your model.
-* Click **Examples** and explore built-in models. They cover all Diff Studio capabilities.
+* Click **Library** and explore built-in models. They cover all Diff Studio capabilities.
 * Find recently opened models in **Recent**.
 
 ![Diff Studio Browsing](pics/diff-studio-browsing.gif)
