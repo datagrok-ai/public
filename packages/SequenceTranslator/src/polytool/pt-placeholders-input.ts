@@ -26,6 +26,14 @@ export class PolyToolPlaceholdersInput extends DG.JsInputBase<DG.DataFrame> {
     this.setDataFrame(DG.DataFrame.fromCsv(str));
   }
 
+  clearInput(): void {
+    const df: DG.DataFrame = DG.DataFrame.fromColumns([
+      DG.Column.fromType(DG.COLUMN_TYPE.STRING, 'Remove', 0),
+      DG.Column.fromType(DG.COLUMN_TYPE.INT, 'Position', 0),
+      DG.Column.fromType(DG.COLUMN_TYPE.STRING, 'Monomers', 0)])!;
+    this.setDataFrame(df);
+  }
+
   get placeholdersValue(): PolyToolPlaceholder[] {
     return dfToPlaceholders(this.grid.dataFrame);
   }
@@ -61,7 +69,7 @@ export class PolyToolPlaceholdersInput extends DG.JsInputBase<DG.DataFrame> {
     const df: DG.DataFrame = DG.DataFrame.fromColumns([
       removeCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, 'Remove', 0),
       DG.Column.fromType(DG.COLUMN_TYPE.INT, 'Position', 0),
-      DG.Column.fromType(DG.COLUMN_TYPE.STRING, 'Monomers', 0),])!;
+      DG.Column.fromType(DG.COLUMN_TYPE.STRING, 'Monomers', 0)])!;
     removeCol.setTag(DG.TAGS.FRIENDLY_NAME, '');
     this.grid = (await df.plot.fromType(DG.VIEWER.GRID, options)) as DG.Grid;
     this.grid.sort(['Position']);
@@ -116,20 +124,25 @@ export class PolyToolPlaceholdersInput extends DG.JsInputBase<DG.DataFrame> {
   }
 
   /** @param {number} posOutIdx continuous (outer) position index, 0-based */
-  addPosition(posOutIdx: number): void {
+  addPosition(posOutIdx: number, monomersValue?: string): void {
     const phDf = this.grid.dataFrame;
     const posList = phDf.columns.byName('Position').toList();
     let rowIdx = posList.indexOf(posOutIdx + 1);
     if (rowIdx === -1) {
       rowIdx = posList.findIndex((v) => isNaN(v));
       if (rowIdx === -1)
-        rowIdx = phDf.rows.addNew(['', posOutIdx + 1, '']).idx;
-      const tgtCell = this.grid.cell('Monomers', rowIdx);
+        rowIdx = phDf.rows.addNew(['', posOutIdx + 1, monomersValue ?? '']).idx;
+      const _tgtCell = this.grid.cell('Monomers', rowIdx);
     }
     phDf.currentCell = phDf.cell(rowIdx, 'Monomers');
     //const gridRowIdx = inputs.placeholders.grid.tableRowToGrid(rowIdx);
     //const monomersGCell = inputs.placeholders.grid.cell('Monomers', gridRowIdx);
-    const k = 42;
+  }
+
+  setMonomersValue(index: number, monomersValue: string): void {
+    const df = this.grid.dataFrame;
+    if (df.rowCount <= index) return;
+    df.set('Monomers', index, monomersValue);
   }
 
   public static async create(

@@ -24,7 +24,7 @@
       120
     ],
     "no-unused-vars": "off",
-    "@typescript-eslint/no-unused-vars": "warn",
+    "@typescript-eslint/no-unused-vars": ["warn", { "varsIgnorePattern": "^(_|ui$|grok$|DG$)", "argsIgnorePattern": "^_"}],
     "require-jsdoc": "off",
     "spaced-comment": "off",
     "linebreak-style": "off",
