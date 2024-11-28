@@ -297,7 +297,14 @@ async function updateLabelContent(labelDiv: HTMLElement, bitset: DG.BitSet, this
   const secondChild = labelDiv.childNodes.length > 1 ? labelDiv.childNodes[1] : null;
   const textContent = (labelDiv.childNodes.length > 1 && secondChild ? secondChild.textContent : firstChild?.textContent) || '';
   const copiedBitset = bitset.clone();
-  const viewerBitset = thisViewer.dataFrame ? thisViewer.dataFrame.filter : DG.BitSet.create(copiedBitset.length).setAll(false);
+  
+  const viewerBitset = thisViewer.dataFrame 
+    ? thisViewer.dataFrame.filter 
+    : DG.BitSet.create(copiedBitset.length).setAll(false);
+    
+  if (viewerBitset.length !== copiedBitset.length)
+    return;
+
   const filteredBitset = copiedBitset.and(viewerBitset);
   const bitsetCount = filteredBitset.trueCount.toString();
   const countMatch = bitsetCount === textContent;
