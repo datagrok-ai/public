@@ -9,7 +9,7 @@ import { spaceToCamelCase } from '../utils/utils';
 import puppeteer from 'puppeteer';
 import { Browser, Page } from 'puppeteer';
 import * as color from '../utils/color-utils';
-
+ 
 const fetch = require('node-fetch');
 
 const grokDir = path.join(os.homedir(), '.grok');
@@ -167,6 +167,7 @@ export async function loadPackages(packagesDir: string, packagesToLoad?: string,
 
         if (utils.isPackageDir(packageDir) && (packageFriendlyName !== undefined || packagesToLoad === "all")) {
           try {
+            console.log(`Loading package ${dirName}`);
             if (skipPublish != true) {
               await utils.runScript(`npm install`, packageDir);
               if (linkPackage)
@@ -202,7 +203,6 @@ export async function loadTestsList(packages: string[], core: boolean = false): 
     const out = await getBrowserPage(puppeteer, params);
     const browser: Browser = out.browser;
     const page: Page = out.page;
-
     const r = await page.evaluate((packages, coreTests): Promise<LoadedPackageData[] | {failReport: string}> => {
       return new Promise<LoadedPackageData[] | {failReport: string}>((resolve, reject) => {
         const promises: any[] = [];

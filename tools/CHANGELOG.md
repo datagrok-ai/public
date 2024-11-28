@@ -1,6 +1,13 @@
 # Datagrok-tools changelog
 
 
+## 4.13.39 (2024-11-26)
+
+### Features
+
+* Grok publish added ability to link packages
+* Grok test log for multiple workers fix
+
 ## 4.13.38 (2024-11-15)
 
 ### Features

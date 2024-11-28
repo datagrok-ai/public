@@ -10,7 +10,7 @@ import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
 import * as Papa from 'papaparse';
 import * as testUtils from '../utils/test-utils';
-import { WorkerOptions, loadTestsList, runWorker, ResultObject, saveCsvResults, printWorkersResult, mergeWorkersResults, Test, OrganizedTests as OrganizedTest } from '../utils/test-utils';
+import { WorkerOptions, loadTestsList, runWorker, ResultObject, saveCsvResults, printWorkersResult, mergeWorkersResults, Test, OrganizedTests as OrganizedTest, timeout } from '../utils/test-utils';
 import { setAlphabeticalOrder } from '../utils/order-functions';
 
 const testInvocationTimeout = 3600000;
@@ -75,6 +75,7 @@ function isArgsValid(args: TestArgs): boolean {
 async function runTesting(args: TestArgs): Promise<ResultObject> {
   color.info('Loading tests...');
   const testsObj = await loadTestsList([process.env.TARGET_PACKAGE ?? ''], args.core);
+  console.log(testsObj);
   const parsed: Test[][] = (setAlphabeticalOrder(testsObj, 1, 1));
   let organized: OrganizedTest[] = parsed[0].map(testObj => ({
     package: testObj.packageName,
@@ -101,37 +102,41 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
   color.info('Starting tests...');
   let testsResults: ResultObject[] = [];
   let r: ResultObject;
-  do {
-    r = await runWorker(organized, {
-      benchmark: args.benchmark ?? false,
-      catchUnhandled: args.catchUnhandled ?? false,
-      gui: args.gui ?? false,
-      record: args.record ?? false,
-      report: args.report ?? false,
-      verbose: args.verbose ?? false,
-      stopOnTimeout: true
-    }, 1, testInvocationTimeout);
-    let testsLeft: OrganizedTest[] = [];
-    let testsToReproduce: OrganizedTest[] = [];
-    for (let testData of organized) {
-      if (!r.csv.includes(`${testData.params.category},${testData.params.test}`))
-        testsLeft.push(testData);
-      if (r.verboseFailed.includes(`${testData.params.category}: ${testData.params.test} :  Error:`)) {
-        testsToReproduce.push(testData);
+  let workerId = 1;
+  await timeout(async () => {
+    do {
+      r = await runWorker(organized, {
+        benchmark: args.benchmark ?? false,
+        catchUnhandled: args.catchUnhandled ?? false,
+        gui: args.gui ?? false,
+        record: args.record ?? false,
+        report: args.report ?? false,
+        verbose: args.verbose ?? false,
+        stopOnTimeout: true
+      }, workerId, testInvocationTimeout);
+      let testsLeft: OrganizedTest[] = [];
+      let testsToReproduce: OrganizedTest[] = [];
+      for (let testData of organized) {
+        if (!r.csv.includes(`${testData.params.category},${testData.params.test}`))
+          testsLeft.push(testData);
+        if (r.verboseFailed.includes(`${testData.params.category}: ${testData.params.test} :  Error:`)) {
+          testsToReproduce.push(testData);
+        }
       }
-    }
-    if (testsToReproduce.length > 0) {
-      let reproduced = await reproducedTest(args, testsToReproduce);
-      for (let test of testsToReproduce) {
-        let reproducedTest = reproduced.get(test);
-        if (reproducedTest && !reproducedTest.failed)
-          r = await updateResultsByReproduced(r, reproducedTest, test)
+      if (testsToReproduce.length > 0) {
+        let reproduced = await reproducedTest(args, testsToReproduce);
+        for (let test of testsToReproduce) {
+          let reproducedTest = reproduced.get(test);
+          if (reproducedTest && !reproducedTest.failed)
+            r = await updateResultsByReproduced(r, reproducedTest, test)
+        }
       }
+      testsResults.push(r);
+      organized = testsLeft;
+      workerId++;
     }
-    testsResults.push(r);
-    organized = testsLeft;
-  }
-  while (r.failed);
+    while (r.failed);
+  }, testInvocationTimeout)
   return await mergeWorkersResults(testsResults);
 }
 
@@ -147,7 +152,7 @@ async function reproducedTest(args: TestArgs, testsToReproduce: OrganizedTest[])
       verbose: false,
       stopOnTimeout: true,
       reproduce: true
-    }, 1, testInvocationTimeout);
+    }, 0, testInvocationTimeout);
     if (test.params.category && test.params.test)
       res.set(test, r);
   }
@@ -163,11 +168,11 @@ async function updateResultsByReproduced(curentResult: ResultObject, reproducedR
     const key = `${row['category']},${row['name']}`;
     flakingMap[key] = row['flaking'];
   });
- 
+
   table1.rows.forEach(row => {
     const key = `${row['category']},${row['name']}`;
     if (key in flakingMap) {
-      row['flaking'] = flakingMap[key]; 
+      row['flaking'] = flakingMap[key];
     }
   });
 
