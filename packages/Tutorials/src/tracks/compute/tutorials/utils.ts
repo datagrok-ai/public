@@ -8,6 +8,27 @@ const MAX_TIME = 60000;
 /** Timeout tick */
 const TICK = 100;
 
+/** Wait for current view has element */
+export async function getViewWithElement(selector: string) {
+  let view: DG.ViewBase | null = null;  
+  let totalTime = 0;
+
+  while (true) {
+    view = grok.shell.v;
+
+    if (view.root.querySelector(selector))
+      break;
+
+    if (totalTime > MAX_TIME)
+      return null;
+
+    await new Promise((resolve) => setTimeout(resolve, TICK));
+    totalTime += TICK;
+  }
+
+  return view;  
+}
+
 /** Get the specified child */
 export async function getElement(parent: HTMLElement, selectors: string) {
   let element: HTMLElement | null;

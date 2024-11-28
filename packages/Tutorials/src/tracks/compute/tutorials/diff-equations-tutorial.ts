@@ -6,9 +6,14 @@ import * as ui from 'datagrok-api/ui';
 import {filter} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {interval, fromEvent} from 'rxjs';
-import {describeElements, singleDescription, closeWindows} from './utils';
+import {describeElements, singleDescription, closeWindows, getElement, getViewWithElement} from './utils';
 
 import '../../../../css/tutorial.css';
+
+enum DS_CONSTS {
+  EDIT_RIBBON_IDX = 2,
+  EDIT_TOGGLE_IDX = 2,
+};
 
 /** Earth's population modeling */
 export const POPULATION_MODEL = `#name: Lotka-Volterra
@@ -110,24 +115,45 @@ export class DifferentialEquationsTutorial extends Tutorial {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
-    // 1. Run
+    // 1. Open Apps
     const browseView = grok.shell.view('Browse') as DG.BrowseView;
     grok.shell.v = browseView;
-    const appsGroup = browseView.mainTree.getOrCreateGroup('Apps', null, false);
-    appsGroup.expanded = true;
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    const diffStudioTree = appsGroup.getOrCreateGroup('Diff Studio');
+    browseView.showTree = true;
+
+    const appsGroupRoot = await getElement(browseView.root, 'div[name="tree-Apps"]');
+    if (appsGroupRoot === null) {
+      grok.shell.warning('Failed to open Apps');
+      return;
+    }
+
     await this.action(
-      'Run Diff Studio',
-      fromEvent(diffStudioTree.root, 'dblclick'),
-      diffStudioTree.root,
-      'Go to <b>Browse > Apps</b>, and double click <b>Diff Studio</b>',
+      'Open Apps',
+      fromEvent(appsGroupRoot, 'click'),
+      appsGroupRoot,
+      'Go to <b>Browse</b> and click <b>Apps</b>',
     );
 
-    await new Promise((resolve) => setTimeout(resolve, 100 * 2));
-    const templateView = grok.shell.view('Template');
-    if (templateView !== undefined)
-      templateView!.close();
+    // 2. Run Diff Studio
+    const diffStudIcon = await getElement(browseView.root,'div[name="div-Diff-Studio"]');
+
+    if (diffStudIcon === null) {
+      grok.shell.warning('Diff Studio not found: install the Diff Studio package');
+      return;
+    }
+
+    await this.action(
+      'Run Diff Studio',
+      fromEvent(diffStudIcon, 'dblclick'),
+      diffStudIcon,
+      'Double-click the Diff Studio icon',
+    );
+
+    const viewToClose = await getViewWithElement('div.d4-line-chart');
+    if (viewToClose === null) {
+      grok.shell.warning('Failed to run Diff Studio');
+      return;      
+    }
+    viewToClose.close();  
 
     const openModelFunc: DG.Func = await grok.functions.eval('DiffStudio:ivpFileHandler');
     const openModelFuncCall = openModelFunc.prepare({'content': POPULATION_MODEL});
@@ -135,7 +161,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
 
     await new Promise((resolve) => setTimeout(resolve, 300));
     
-    // 2. Explore elements
+    // 3. Explore elements
     this.describe('We start with an incomplete model.');
 
     const dsView = grok.shell.v as DG.TableView;
@@ -153,7 +179,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
       'Click "Next" to go to the next item.',
     );
 
-    // 3. Play with inputs    
+    // 4. Play with inputs    
     let finishEditor = inputRoots[1].querySelector('input[class="ui-input-editor"]') as HTMLInputElement;
     await this.action(
       'Set "Finish" to 150',
@@ -162,7 +188,17 @@ export class DifferentialEquationsTutorial extends Tutorial {
       'You can also enter "150" (instead of dragging a slider) to achieve the goal.',
     );
 
-    // 4. Go to ODEs
+    // 5. Go to ODEs
+    this.describe('Explore the underlying mathematical model.');    
+    const ribbonPanels = dsView.getRibbonPanels();    
+    const editToggle = ribbonPanels[DS_CONSTS.EDIT_RIBBON_IDX][DS_CONSTS.EDIT_TOGGLE_IDX];
+    await this.action(
+      'Open equations editor',
+      fromEvent(editToggle.querySelector('div.ui-input-bool-switch.ui-input-root')!, 'click'),
+      editToggle,
+      'Turn on the <b>Edit</b> toggle',
+    );
+
     const editorRoot = dsViewRoot.querySelector('div.panel-base') as HTMLElement;
     this.describe('Explore the underlying mathematical model.');
     const modelTabRoot = dsViewRoot.querySelector('div.d4-tab-header[name="Model"]') as HTMLElement;

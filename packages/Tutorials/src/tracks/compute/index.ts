@@ -5,9 +5,9 @@ import { DifferentialEquationsTutorial } from './tutorials/diff-equations-tutori
 
 
 export const tutorials = [
-  FittingTutorial,
-  SensitivityAnalysisTutorial,
   DifferentialEquationsTutorial,
+  SensitivityAnalysisTutorial,  
+  FittingTutorial,
 ];
 
 export const scientificComputing = new Track('Scientific computing', tutorials.map((t) => new t()), 'https://datagrok.ai/help/compute/');
