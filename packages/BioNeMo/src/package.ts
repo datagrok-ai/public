@@ -124,7 +124,7 @@ async function handleRunClick(smiles: DG.SemanticValue, poses: number, target: s
   const receptor = await grok.dapi.files.readAsText(receptorFile);
 
   const diffDockModel = new DiffDockModel(table, smiles.cell.column, receptor, receptorFile.name, poses);
-  const virtualPosesColumnName = getVirtualPosesColumnName(receptorFile.name);
+  const virtualPosesColumnName = getVirtualPosesColumnName(receptorFile.name, poses);
 
   let virtualPosesColumn = table.columns.byName(virtualPosesColumnName);
 
@@ -145,8 +145,8 @@ async function handleRunClick(smiles: DG.SemanticValue, poses: number, target: s
   resultsContainer.append(combinedControl);
 }
 
-function getVirtualPosesColumnName(target: string): string {
-  return `${CONSTANTS.VIRTUAL_POSES_COLUMN_NAME}_${target}`;
+function getVirtualPosesColumnName(target: string, poses: number): string {
+  return `${CONSTANTS.VIRTUAL_POSES_COLUMN_NAME}_${target}_${poses}`;
 }
 
 //name: Demo EsmFold

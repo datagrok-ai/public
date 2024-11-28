@@ -845,7 +845,11 @@ export class ProjectsDataSource extends HttpDataSource<Project> {
     return this
       .filter(name)
       .first()
-      .then(p => p.open(options));
+      .then(p => {
+        if (p)
+          return p.open(options);
+        return Promise.reject(`Project ${name} not found`);
+      });
   }
 
   /** Saves the Project */
@@ -897,7 +901,7 @@ export class DockerDataSource {
     return new DockerContainersDataSource(api.grok_Dapi_DockerContainers());
   }
 
-  getServiceLogs(serviceName: string, limit: number): Promise<DataFrame> {
+  getServiceLogs(serviceName: string, limit: number): Promise<string> {
     return api.grok_Dapi_DockersDataSource_GetServiceLogs(serviceName, limit);
   }
 

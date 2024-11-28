@@ -14,7 +14,7 @@ import {GAP_SYMBOL, GapOriginals} from '@datagrok-libraries/bio/src/utils/macrom
 import {CellRendererBackBase, GridCellRendererTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {HelmType} from '@datagrok-libraries/bio/src/helm/types';
-import {ISeqHandler, ConvertFunc, JoinerFunc, SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
+import {ConvertFunc, ISeqHandler, JoinerFunc, SeqTemps, SeqValueBase} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 
 import {SeqHelper} from './seq-helper';
 
@@ -28,7 +28,7 @@ export class SeqHandler implements ISeqHandler {
   protected readonly _units: string; // units, of the form fasta, separator
   protected readonly _notation: NOTATION; // current notation (without :SEQ:NT, etc.)
   protected readonly _defaultGapOriginal: string;
-  protected readonly notationProvider: INotationProvider | null = null;
+  protected readonly notationProvider!: INotationProvider;
 
   private _splitter: SplitterFunc | null = null;
 
@@ -38,15 +38,25 @@ export class SeqHandler implements ISeqHandler {
     if (col.type !== DG.TYPE.STRING)
       throw new Error(`Unexpected column type '${col.type}', must be '${DG.TYPE.STRING}'.`);
     this._column = col;
-    const units = this._column.meta.units;
-    if (units !== null && units !== undefined)
-      this._units = units;
-    else
+    const units: string | null = this._column.meta.units;
+    if (!units)
       throw new Error('Units are not specified in column');
+    this._units = units!;
+
     this._notation = this.getNotation();
-    this._defaultGapOriginal = (this.isFasta()) ? GapOriginals[NOTATION.FASTA] :
-      (this.isHelm()) ? GapOriginals[NOTATION.HELM] :
-        GapOriginals[NOTATION.SEPARATOR];
+    if (this.isCustom()) {
+      // this.column.temp[SeqTemps.notationProvider] must be set at detector stage
+      this.notationProvider = this.column.temp[SeqTemps.notationProvider] ?? null;
+    }
+
+    const defaultGapOriginal = this.isFasta() ? GapOriginals[NOTATION.FASTA] :
+      this.isSeparator() ? GapOriginals[NOTATION.SEPARATOR] :
+        this.isHelm() ? GapOriginals[NOTATION.HELM] :
+          this.isCustom() ? this.notationProvider.defaultGapOriginal :
+            undefined;
+    if (defaultGapOriginal == undefined)
+      throw new Error(`Unexpected defaultGapOriginal for notation '${this.notation}'`);
+    this._defaultGapOriginal = defaultGapOriginal;
 
     if (!this.column.tags.has(TAGS.aligned) || !this.column.tags.has(TAGS.alphabet) ||
       (!this.column.tags.has(TAGS.alphabetIsMultichar) && !this.isHelm() && this.alphabet === ALPHABET.UN)
@@ -60,6 +70,8 @@ export class SeqHandler implements ISeqHandler {
         this.seqHelper.setUnitsToSeparatorColumn(this, separator);
       } else if (this.isHelm())
         this.seqHelper.setUnitsToHelmColumn(this);
+      else if (this.isCustom())
+        this.notationProvider!.setUnits(this);
       else
         throw new Error(`Unexpected units '${this.column.meta.units}'.`);
     }
@@ -82,10 +94,6 @@ export class SeqHandler implements ISeqHandler {
       }
     }
 
-    if (this.column.meta.units === NOTATION.CUSTOM) {
-      // this.column.temp[SeqTemps.notationProvider] must be set at detector stage
-      this.notationProvider = this.column.temp[SeqTemps.notationProvider] ?? null;
-    }
     this.columnVersion = this.column.version;
   }
 
@@ -241,18 +249,23 @@ export class SeqHandler implements ISeqHandler {
   }
 
   /** Any Macromolecule can be represented on Helm format. The reverse is not always possible. */
-  public async getHelm(rowIdx: number, options?: any): Promise<DG.SemanticValue<string>> {
+  public getValue(rowIdx: number, options?: any): SeqValueBase {
     const seq: string = this.column.get(rowIdx);
-    let resHelmSV: DG.SemanticValue<string>;
-    if (this.notationProvider)
-      resHelmSV = await this.notationProvider.getHelm(seq, options);
-    else {
-      const resHelm = this.convertToHelm(seq);
-      resHelmSV = DG.SemanticValue.fromValueType(resHelm, DG.SEMTYPE.MACROMOLECULE, NOTATION.HELM);
-      // TODO: set tags from column
-    }
+    let resHelm: string;
+    const resSeqValue = new SeqValueBase(rowIdx, this);
+    return resSeqValue;
+  }
 
-    return resHelmSV;
+  public getHelm(rowIdx: number): string {
+    let resHelm: string;
+    const seq = this.column.get(rowIdx);
+    if (this.notation === NOTATION.HELM)
+      resHelm = seq;
+    else if (this.notation === NOTATION.CUSTOM)
+      resHelm = this.notationProvider!.getHelm(seq, {});
+    else
+      resHelm = this.getConverter(NOTATION.HELM)(seq);
+    return resHelm;
   }
 
   private _stats: SeqColStats | null = null;
@@ -307,6 +320,8 @@ export class SeqHandler implements ISeqHandler {
   public isSeparator(): boolean { return this.notation === NOTATION.SEPARATOR || !!this.separator; }
 
   public isHelm(): boolean { return this.notation === NOTATION.HELM; }
+
+  public isCustom(): boolean { return this.notation === NOTATION.CUSTOM; }
 
   public isRna(): boolean { return this.alphabet === ALPHABET.RNA; }
 
@@ -454,6 +469,12 @@ export class SeqHandler implements ISeqHandler {
     return newColumn;
   }
 
+  get splitter(): SplitterFunc {
+    if (this._splitter === null)
+      this._splitter = this.getSplitter();
+    return this._splitter;
+  }
+
   /** Gets function to split seq value to monomers */
   protected getSplitter(limit?: number): SplitterFunc {
     let splitter: SplitterFunc | null = null;
@@ -544,12 +565,6 @@ export class SeqHandler implements ISeqHandler {
   }
 
   // -- Notation Converter --
-
-  protected get splitter(): SplitterFunc {
-    if (this._splitter === null)
-      this._splitter = this.getSplitter();
-    return this._splitter;
-  }
 
   public toFasta(targetNotation: NOTATION): boolean { return targetNotation === NOTATION.FASTA; }
 

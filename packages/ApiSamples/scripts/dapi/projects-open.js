@@ -5,4 +5,4 @@ grok.dapi.projects
   .then(p => p.open({closeAll: true}));
 
 // a shortcut method
-grok.dapi.projects.open('SAR');
+grok.dapi.projects.open('demog');

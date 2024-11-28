@@ -41,8 +41,8 @@ export class PermissionsDialog {
     //@ts-ignore
     this.viewGroupsInput.value = viewGroups;
     return ui.divV([
-      this.editGroupsInput.root,
       this.viewGroupsInput.root,
+      this.editGroupsInput.root,
     ]);
   }
 

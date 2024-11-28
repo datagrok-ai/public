@@ -4,8 +4,7 @@
 grok.data.getDemoTable('chem/smiles.csv')
   .then(t => grok.chem.searchSubstructure(
     t.col('canonical_smiles'), `
-  MJ201900                      
-
+  MJ201900\n
   6  6  1  0  0  0  0  0  0  0999 V2000
    -1.9420    0.9589    0.0000 L   0  0  0  0  0  0  0  0  0  0  0  0
    -2.6564    0.5464    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
@@ -20,7 +19,7 @@ grok.data.getDemoTable('chem/smiles.csv')
   1  2  2  0  0  0  0
   6  1  1  0  0  0  0
   1 T    2   6   7
-M  ALS   1  2 T C   N   
+M  ALS   1  2 T C   N   \n 
 M  END
 `,
   )

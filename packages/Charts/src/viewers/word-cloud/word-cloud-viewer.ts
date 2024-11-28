@@ -81,10 +81,8 @@ export class WordCloudViewer extends DG.JsViewer {
     const columns = this.dataFrame.columns.toList();
     this.strColumns = columns.filter((col) => col.type === DG.TYPE.STRING);
 
-    if (this._testColumns()) {
-      this.strColumnName = this.strColumns.reduce((prev, curr) =>
-        prev.categories.length < curr.categories.length ? prev : curr).name;
-    }
+    if (this._testColumns())
+      this.strColumnName = this.strColumns.filter((col) => col.categories.length <= MAX_UNIQUE_CATEGORIES_NUMBER && col.categories.length > 1)[0]?.name ?? '';
 
     this.render();
   }
@@ -114,8 +112,7 @@ export class WordCloudViewer extends DG.JsViewer {
       this._showMessage('Not enough data to produce the result.', ERROR_CLASS);
       return;
     }
-    if (this.strColumnName === null || this.strColumnName === '' ||
-      this.dataFrame.getCol(this.strColumnName).categories.length > MAX_UNIQUE_CATEGORIES_NUMBER) {
+    if (!this.strColumnName || this.dataFrame.getCol(this.strColumnName).categories.length > MAX_UNIQUE_CATEGORIES_NUMBER) {
       this._showMessage('The Word cloud viewer requires categorical column with 500 or fewer unique categories', ERROR_CLASS);
       return;
     }

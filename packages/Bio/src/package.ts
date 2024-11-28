@@ -1,3 +1,5 @@
+/* eslint-disable max-params */
+/* eslint-disable max-len */
 /* eslint max-lines: "off" */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -9,7 +11,7 @@ import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cli
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {BitArrayMetrics, KnownMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {IMonomerLib, IMonomerLibBase, IMonomerSet} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
 import {SCORE} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
@@ -24,12 +26,13 @@ import {ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/multi-colum
 import {generateLongSequence, generateLongSequence2} from '@datagrok-libraries/bio/src/utils/generator';
 import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
-import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDModule as _RDMoule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
+import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
+import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
 
 import {getMacromoleculeColumns} from './utils/ui-utils';
 import {MacromoleculeDifferenceCellRenderer, MacromoleculeSequenceCellRenderer,} from './utils/cell-renderer';
-import {MacromoleculeCustomCellRenderer} from './utils/cell-renderer-custom';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {SequenceAlignment} from './seq_align';
 import {getEncodedSeqSpaceCol} from './analysis/sequence-space';
@@ -69,7 +72,6 @@ import {getMolColumnFromHelm} from './utils/helm-to-molfile/utils';
 import {MonomerManager} from './utils/monomer-lib/monomer-manager/monomer-manager';
 import {calculateScoresWithEmptyValues} from './utils/calculate-scores';
 import {SeqHelper} from './utils/seq-helper/seq-helper';
-import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 
 export const _package = new BioPackage(/*{debug: true}/**/);
 
@@ -101,52 +103,46 @@ let initBioPromise: Promise<void> | null = null;
 
 //tags: init
 export async function initBio(): Promise<void> {
-  if (initBioPromise === null) {
+  if (initBioPromise === null)
     initBioPromise = initBioInt();
-  }
+
   await initBioPromise;
 }
 
 async function initBioInt() {
   const logPrefix = 'Bio: _package.initBio()';
   _package.logger.debug(`${logPrefix}, start`);
-  let monomerLib!: IMonomerLib;
-  let monomerSets!: IMonomerSet;
-  let rdKitModule!: RDModule;
-  let libHelper!: MonomerLibManager;
   const t1: number = window.performance.now();
-  await Promise.all([
-    (async () => {
-      libHelper = await MonomerLibManager.getInstance();
-      // Fix user lib settings for explicit stuck from a terminated test
-      const libSettings = await getUserLibSettings();
-      if (libSettings.explicit) {
-        libSettings.explicit = [];
-        await setUserLibSettings(libSettings);
-      }
-      libHelper.awaitLoaded(Infinity).then(() => {
-        // Do not wait for monomers and sets loaded
-        return Promise.all([libHelper.loadMonomerLib(), libHelper.loadMonomerSets()]);
-      });
-      monomerLib = libHelper.getMonomerLib();
-      monomerSets = libHelper.getMonomerSets();
-    })(),
-    (async () => {
-      const pkgProps = await _package.getProperties();
-      const bioPkgProps = new BioPackageProperties(pkgProps);
-      _package.properties = bioPkgProps;
-    })(),
-    (async () => { rdKitModule = await getRdKitModule(); })(),
-  ]).finally(() => {
-    const t2: number = window.performance.now();
-    _package.logger.debug(`${logPrefix}, loading ET: ${t2 - t1} ms`);
+  // very important that loading should happen in correct order!
+  // first make sure chem and rdkit module are loaded
+  const rdKitModule = await getRdKitModule();
+  // then load package settings
+  const pkgProps = await _package.getProperties();
+  const bioPkgProps = new BioPackageProperties(pkgProps);
+  _package.properties = bioPkgProps;
+  // then load monomer lib
+  const libHelper = await MonomerLibManager.getInstance();
+  // Fix user lib settings for explicit stuck from a terminated test
+  const libSettings = await getUserLibSettings();
+  if (libSettings.explicit) {
+    libSettings.explicit = [];
+    await setUserLibSettings(libSettings);
+  }
+  libHelper.awaitLoaded(Infinity).then(() => {
+    // Do not wait for monomers and sets loaded
+    return Promise.all([libHelper.loadMonomerLib(), libHelper.loadMonomerSets()]);
   });
-  const seqHelper = new SeqHelper(libHelper, rdKitModule);
-  _package.completeInit(seqHelper, monomerLib, monomerSets, rdKitModule);
+  const monomerLib = libHelper.getMonomerLib();
+  const monomerSets = libHelper.getMonomerSets();
+  // finally log
+  const t2: number = window.performance.now();
+  _package.logger.debug(`${logPrefix}, loading ET: ${t2 - t1} ms`);
 
   const monomers: string[] = [];
   const logPs: number[] = [];
 
+  const seqHelper = new SeqHelper(libHelper, rdKitModule);
+  _package.completeInit(seqHelper, monomerLib, monomerSets, rdKitModule);
   const series = monomerLib!.getMonomerMolsByPolymerType('PEPTIDE')!;
   Object.keys(series).forEach((symbol) => {
     monomers.push(symbol);
@@ -323,7 +319,7 @@ export function SeqActivityCliffsEditor(call: DG.FuncCall) {
 //meta.columnTags: quality=Macromolecule, units=custom
 //output: grid_cell_renderer result
 export function customSequenceCellRenderer(): DG.GridCellRenderer {
-  return new MacromoleculeCustomCellRenderer();
+  return new MacromoleculeSequenceCellRenderer();
 }
 
 //name: fastaSequenceCellRenderer
@@ -421,14 +417,6 @@ export function getRegion(
 ): DG.Column<string> {
   return getRegionDo(sequence,
     start ?? null, end ?? null, name ?? null);
-}
-
-//top-menu: Bio | Manage | Monomers
-//name: manageMonomersView
-//description: Edit and create monomers
-export async function manageMonomersView() {
-  const monomerManager = await MonomerManager.getInstance();
-  await monomerManager.getViewRoot();
 }
 
 //top-menu: Bio | Convert | Get Region...
@@ -630,7 +618,7 @@ export async function toAtomicLevel(
   const pi = DG.TaskBarProgressIndicator.create('Converting to atomic level ...');
   try {
     await initBioPromise;
-    const monomerLib = _package.monomerLib;
+    const monomerLib = seqCol.temp[MmcrTemps.overriddenLibrary] ?? _package.monomerLib;
     const seqHelper = _package.seqHelper;
     const rdKitModule = _package.rdKitModule;
     await sequenceToMolfile(table, seqCol, nonlinear, highlight, monomerLib, seqHelper, rdKitModule);
@@ -769,7 +757,7 @@ export function convertDialog() {
 export async function convertSeqNotation(sequence: string, targetNotation: NOTATION, separator?: string): Promise<string | undefined | null> {
   try {
     const col = DG.Column.fromStrings('sequence', [sequence]);
-    const df = DG.DataFrame.fromColumns([col]);
+    const _df = DG.DataFrame.fromColumns([col]);
     const semType = await grok.functions.call('Bio:detectMacromolecule', {col: col});
     if (semType)
       col.semType = semType;
@@ -965,6 +953,29 @@ export async function manageLibrariesView(): Promise<void> {
   await showManageLibrariesView();
 }
 
+//top-menu: Bio | Manage | Monomers
+//name: manageMonomersView
+//description: Edit and create monomers
+export async function manageMonomersView() {
+  const monomerManager = await MonomerManager.getInstance();
+  await monomerManager.getViewRoot();
+}
+
+//name: Manage Monomers
+//tags: app
+//meta.browsePath: Peptides | Monomers
+export async function manageMonomersApp() {
+  const monomerManager = await MonomerManager.getInstance();
+  await monomerManager.getViewRoot();
+}
+
+//name: Manage Libraries
+//tags: app
+//meta.browsePath: Peptides | Monomers
+export async function manageLibrariesApp(): Promise<void> {
+  await showManageLibrariesView();
+}
+
 //name: saveAsFasta
 //description: As FASTA...
 //tags: fileExporter
@@ -1138,7 +1149,6 @@ export async function sdfToJsonLib(table: DG.DataFrame) {
 //input: string seq { semType: Macromolecule }
 //input: bool nonlinear
 //output: string molfile { semType: Molecule }
-//meta.role: converter
 export async function seq2atomic(seq: string, nonlinear: boolean): Promise<string | undefined> {
   if (!(seq.trim())) return '';
   try {
@@ -1216,6 +1226,7 @@ export async function detectMacromoleculeProbe(file: DG.FileInfo, colName: strin
 //name: getSeqHelper
 //output: object result
 export async function getSeqHelper(): Promise<ISeqHelper> {
+  await initBio();
   return _package.seqHelper;
 }
 

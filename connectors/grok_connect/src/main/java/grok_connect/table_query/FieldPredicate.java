@@ -14,6 +14,13 @@ public class FieldPredicate {
         this.dataType = dataType;
     }
 
+    public String getParamName() {
+        return field
+                .replaceAll("\\.", "_")
+                .replaceAll(" ", "_")
+                .toLowerCase();
+    }
+
     @Override
     public String toString() {
         return field + " " + pattern;

@@ -1,3 +1,7 @@
+/* eslint-disable max-lines */
+/* eslint-disable max-len */
+/* eslint-disable max-params */
+/* eslint-disable max-lines-per-function */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -395,14 +399,14 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
     // -- Data --
     this.sequenceColumnName = this.string(PROPS.sequenceColumnName, defaults.sequenceColumnName,
-      {category: PROPS_CATS.DATA});
+      {category: PROPS_CATS.DATA, semType: DG.SEMTYPE.MACROMOLECULE});
     const aggExcludeList = [DG.AGG.KEY, DG.AGG.PIVOT, DG.AGG.MISSING_VALUE_COUNT, DG.AGG.SKEW, DG.AGG.KURT,
       DG.AGG.SELECTED_ROWS_COUNT];
     const aggChoices = Object.values(DG.AGG).filter((agg) => !aggExcludeList.includes(agg));
     this.valueAggrType = this.string(PROPS.valueAggrType, defaults.valueAggrType,
       {category: PROPS_CATS.DATA, choices: aggChoices}) as DG.AggregationType;
     this.valueColumnName = this.string(PROPS.valueColumnName, defaults.valueColumnName,
-      {category: PROPS_CATS.DATA});
+      {category: PROPS_CATS.DATA, columnTypeFilter: 'numerical'});
     this.startPositionName = this.string(PROPS.startPositionName, defaults.startPositionName,
       {category: PROPS_CATS.DATA});
     this.endPositionName = this.string(PROPS.endPositionName, defaults.endPositionName,
@@ -548,6 +552,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
         style: {
           display: 'flex',
           flexDirection: 'row',
+          flexGrow: '0',
           /** For alignContent to have an effect */ flexWrap: 'wrap',
           /* backgroundColor: '#EEFFEE' */
         }
@@ -1021,20 +1026,18 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
       // 2022-05-05 askalkin instructed to show WebLogo based on filter (not selection)
       const dfRowCount = this.dataFrame.rowCount;
-
+      const filterIndexes = dfFilter.getSelectedIndexes();
       for (let jPos = 0; jPos < length; ++jPos) {
         // Here we want to build lists of values for every monomer in position jPos
-        for (let rowI = 0; rowI < dfRowCount; ++rowI) {
-          if (dfFilter.get(rowI)) {
-            const seqS: ISeqSplitted = this.seqHandler.getSplitted(rowI);
-            const om: string = jPos < seqS.length ? seqS.getCanonical(this.startPosition + jPos) :
-              this.seqHandler.defaultGapOriginal;
-            const cm: string = this.seqHandler.defaultGapOriginal === om ? GAP_SYMBOL : om;
-            const pi = this.positions[jPos];
-            const pmi = pi.getFreq(cm);
-            ++pi.sumRowCount;
-            pmi.value = ++pmi.rowCount;
-          }
+        for (const rowI of filterIndexes) {
+          const seqS: ISeqSplitted = this.seqHandler.getSplitted(rowI);
+          const om: string = jPos + this.startPosition < seqS.length ? seqS.getCanonical(this.startPosition + jPos) :
+            this.seqHandler.defaultGapOriginal;
+          const cm: string = this.seqHandler.defaultGapOriginal === om ? GAP_SYMBOL : om;
+          const pi = this.positions[jPos];
+          const pmi = pi.getFreq(cm);
+          ++pi.sumRowCount;
+          pmi.value = ++pmi.rowCount;
         }
         if (this.valueAggrType === DG.AGG.TOTAL_COUNT) continue;
 
@@ -1047,13 +1050,13 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
         } catch { valueCol = null; }
         if (!valueCol) continue; // fallback to TOTAL_COUNT
 
-        for (let rowI = 0; rowI < dfRowCount; ++rowI) {
-          if (dfFilter.get(rowI)) { // respect the filter
-            const seqMList: ISeqSplitted = this.seqHandler.getSplitted(rowI);
-            const cm: string = seqMList.getCanonical(this.startPosition + jPos);
-            const value: number | null = valueCol.get(rowI);
-            this.positions[jPos].getFreq(cm).push(value);
-          }
+        for (const rowI of filterIndexes) {
+          const seqS: ISeqSplitted = this.seqHandler.getSplitted(rowI);
+          const om: string = jPos + this.startPosition < seqS.length ? seqS.getCanonical(this.startPosition + jPos) :
+            this.seqHandler.defaultGapOriginal;
+          const cm: string = this.seqHandler.defaultGapOriginal === om ? GAP_SYMBOL : om;
+          const value: number | null = valueCol.get(rowI);
+          this.positions[jPos].getFreq(cm).push(value);
         }
         this.positions[jPos].aggregate(this.valueAggrType);
       }

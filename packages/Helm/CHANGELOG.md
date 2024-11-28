@@ -1,5 +1,44 @@
 # Helm changelog
 
+## 2.6.0 (2024-11-18)
+
+Correct helm loading
+
+## 2.5.10 (2024-11-15)
+
+Fix async renderer invalidation on cached rendering
+
+## 2.5.9 (2024-11-01)
+
+Correct initialization of the Helm
+
+## 2.5.8 (2024-10-31)
+
+### Bug fixes
+
+* Fix HelmInput for SeqValueBase
+* Fix HelmGridCellRenderer for original and canonical symbols
+* Fix using HelmAtom
+
+## 2.5.7 (2024-10-24)
+
+### Bug fixes
+
+* Fix HelmHelper adding .seqHelper
+
+## 2.5.6 (2024-10-22)
+
+### Bug fixes
+
+* Fix HelmGridCellRenderer for size limit and flickering
+* Remove HelmMonomerPlacer, cleanup
+* Fix HelmHelper removeGaps tests using standard monomer libs
+* Fix HelmHelper adding tests for parse Helm, and with gaps
+
+## 2.5.5 (2024-10-15)
+
+* Fix Getting monomers in HWE that can contain square brackets
+
 ## 2.5.4 (2024-10-10)
 
 ### New features

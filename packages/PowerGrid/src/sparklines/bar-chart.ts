@@ -2,26 +2,24 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {
   getSettingsBase,
-  names,
   SparklineType,
   SummarySettingsBase,
   createTooltip,
   Hit,
-  isSummarySettingsBase
+  isSummarySettingsBase, SummaryColumnColoringType, createBaseInputs, getRenderColor
 } from './shared';
 
 const minH = 0.05;
 
 interface BarChartSettings extends SummarySettingsBase {
   globalScale: boolean;
-  colorCode: boolean;
 }
 
 function getSettings(gc: DG.GridColumn): BarChartSettings {
   const settings: BarChartSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
     gc.settings[SparklineType.BarChart] ??= getSettingsBase(gc, SparklineType.BarChart);
   settings.globalScale ??= false;
-  settings.colorCode ??= false;
+  settings.colorCode ??= SummaryColumnColoringType.Bins;
   return settings;
 }
 
@@ -63,7 +61,7 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
     const hitData = onHit(gridCell, e);
     if (hitData.isHit)
-      ui.tooltip.show(ui.divV(createTooltip(hitData.cols, hitData.activeColumn, hitData.row)), e.x + 16, e.y + 16);
+      ui.tooltip.show(createTooltip(hitData.cols, hitData.activeColumn, hitData.row), e.x + 16, e.y + 16);
     else
       ui.tooltip.hide();
   }
@@ -83,17 +81,20 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
     const cols = df.columns.byNames(settings.columnNames);
     const gmin = Math.min(...cols.map((c: DG.Column) => c.min));
     const gmax = Math.max(...cols.map((c: DG.Column) => c.max));
+    g.strokeStyle = DG.Color.toRgb(DG.Color.lightGray);
 
     for (let i = 0; i < cols.length; i++) {
-      if (!cols[i].isNone(row)) {
-        const color = settings.colorCode ? DG.Color.getCategoricalColor(i) : DG.Color.fromHtml('#8080ff');
-        g.setFillStyle(DG.Color.toRgb(color));
-        const scaled = settings.globalScale ? (cols[i].getNumber(row) - gmin) / (gmax - gmin) : cols[i]?.scale(row);
+      const currentCol = cols[i];
+      if (!currentCol.isNone(row)) {
+        g.setFillStyle(DG.Color.toRgb(getRenderColor(settings, DG.Color.fromHtml('#8080ff'),{column: currentCol, colIdx: i, rowIdx: row})));
+        const scaled = settings.globalScale ? (currentCol.getNumber(row) - gmin) / (gmax - gmin) : currentCol?.scale(row);
         const bb = b
           .getLeftPart(cols.length, i)
           .getBottomScaled(scaled > minH ? scaled : minH)
           .inflateRel(0.9, 1);
         g.fillRect(bb.left, bb.top, bb.width, bb.height);
+        if (settings.colorCode === SummaryColumnColoringType.Values)
+          g.strokeRect(bb.left, bb.top, bb.width, bb.height);
       }
     }
   }
@@ -113,23 +114,6 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
     const normalizeInput = DG.InputBase.forProperty(globalScaleProp, settings);
     normalizeInput.onChanged.subscribe(() => gc.grid.invalidate());
 
-    const colorCodeScaleProp = DG.Property.js('colorCode', DG.TYPE.BOOL, {
-      description: 'Activates color rendering'
-    });
-
-    const colorCodeNormalizeInput = DG.InputBase.forProperty(colorCodeScaleProp, settings);
-    colorCodeNormalizeInput.onChanged.subscribe(() => { gc.grid.invalidate(); });
-
-    const columnNames = settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical);
-    return ui.inputs([
-      normalizeInput,
-      ui.input.columns('Columns', {value: gc.grid.dataFrame.columns.byNames(columnNames),
-        table: gc.grid.dataFrame, onValueChanged: (value) => {
-          settings.columnNames = names(value);
-          gc.grid.invalidate();
-        }, available: names(gc.grid.dataFrame.columns.numerical),
-      }),
-      colorCodeNormalizeInput
-    ]);
+    return ui.inputs([normalizeInput, ...createBaseInputs(gc, settings)]);
   }
 }

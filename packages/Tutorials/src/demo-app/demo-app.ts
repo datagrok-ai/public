@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
 import {_package} from '../package';
-import {sortFunctionsByHierarchy, getParentCategoryName} from './utils';
+import {sortFunctionsByHierarchy} from './utils';
 import {DEMO_APP_HIERARCHY} from './const';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 
@@ -44,10 +44,8 @@ export class DemoView extends DG.ViewBase {
 
   public async startDemoFunc(func: DG.Func, viewPath: string): Promise<void> {
     const path = viewPath.split('|').map((s) => s.trim()).join('/');
-
-    // TODO: change to getElementById('elementContent') when it is fixed
-    const updateIndicatorRoot =
-      document.querySelector('.layout-dockarea .view-tabs .dock-container.dock-container-fill > .tab-host > .tab-content > .d4-dock-container > .grok-view.grok-view-browse > .d4-root > .splitter-container-row > .dock-container.dock-container-fill > .tab-host > .tab-content')! as HTMLElement;
+    const updateIndicatorRoot = (Array.from(document.querySelectorAll('#elementContent')) as HTMLElement[])
+      .find((el) => el.classList.contains('ui-box'))!;
 
     if (func.options['isDemoScript'] == 'True') {
       ui.setUpdateIndicator(updateIndicatorRoot, true);
@@ -89,21 +87,26 @@ export class DemoView extends DG.ViewBase {
       ui.setUpdateIndicator(updateIndicatorRoot, false);
     }
 
-    this.browseView.path = `${this.DEMO_APP_PATH}/${path}`;
+    this.browseView.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;
     this._setBreadcrumbsInViewName(viewPath.split('|').map((s) => s.trim()));
   }
 
 
   private _setBreadcrumbsInViewName(viewPath: string[]): void {
-    const breadcrumbs = ui.breadcrumbs(viewPath);
+    const path = viewPath.includes('Home') ? viewPath : ['Home', ...viewPath];
+    const breadcrumbs = ui.breadcrumbs(path);
 
-    breadcrumbs.onPathClick.subscribe((value) => {
+    breadcrumbs.onPathClick.subscribe(async (value) => {
       const currentFunc = this.funcs.filter((func) => {
         return (func.name === value[value.length - 1]);
       });
       if (currentFunc.length !== 0)
         return;
-      this.nodeView(value[value.length - 1], value.join('/'));
+      if (value.length === 1 && value[0] === 'Home') {
+        await this.browseView.setHomeView();
+        return;
+      }
+      this.nodeView(value[value.length - 1], (value[0] === 'Home' ? value.slice(1) : value).join('/'));
     });
 
     const viewNameRoot = this.browseView.ribbonMenu.root.parentElement?.getElementsByClassName('d4-ribbon-name')[0];
@@ -135,7 +138,7 @@ export class DemoView extends DG.ViewBase {
       let tempArr: string[] = [];
 
       for (let j = 0; j < directionFuncs.length; ++j) {
-        let imgPath = `${_package.webRoot}images/demoapp/${directionFuncs[j].name}.jpg`;
+        let imgPath = `${_package.webRoot}images/demoapp/${directionFuncs[j].name}.png`;
 
         const path = directionFuncs[j].options[DG.FUNC_OPTIONS.DEMO_PATH] as string;
         const pathArray = path.split('|').map((s) => s.trim());
@@ -238,7 +241,7 @@ export class DemoView extends DG.ViewBase {
             if (response.ok) {
               return Promise.resolve(response.url)
             } else if(response.status === 404) {
-              return Promise.reject(`${_package.webRoot}images/demoapp/emptyImg.jpg`)
+              return Promise.reject(`${_package.webRoot}images/demoapp/emptyImg.png`)
             }
           })
           .then((data) => root.style.backgroundImage = `url(${data})`)
@@ -293,7 +296,7 @@ export class DemoView extends DG.ViewBase {
     const view = DG.View.create();
     view.name = viewName;
     view.append(resultContainer);
-    this.browseView.path = `${this.DEMO_APP_PATH}/${path}`;
+    this.browseView.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;
 
     const directionFuncs = this.funcs.filter((func) => (func.func.options[DG.FUNC_OPTIONS.DEMO_PATH] as string).includes(viewName));
     const root = this._createViewRootElement(viewName);
@@ -433,7 +436,7 @@ export class DemoView extends DG.ViewBase {
     this.tree.root.classList.add('demo-app-tree-group');
 
     DG.debounce(this.tree.rootNode.onSelectedNodeChanged, 300).subscribe(async (value) => {
-      if (!this.tree.root.contains(value.root) || value.text === 'Demo')
+      if (!value || !this.tree.root.contains(value.root) || value.text === 'Demo')
         return;
 
       const panelRoot = this.tree.rootNode.root.parentElement!;

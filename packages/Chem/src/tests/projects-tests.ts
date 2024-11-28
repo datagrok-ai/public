@@ -246,7 +246,6 @@ async function runCurate(tv: DG.TableView): Promise<void> {
     tautomerization: false,
     mainFragment: false,
   });
-  tv.dataFrame.columns.add(df.col('curated_molecule'));
 }
 
 async function runAddChemPropertiesColumns(tv: DG.TableView): Promise<void> {

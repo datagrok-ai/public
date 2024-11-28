@@ -159,7 +159,7 @@ export async function extinctionCoefficient(sequence: string, extCoefsObj?: {[i:
 
 //name: Oligo Batch Calculator
 //tags: app
-//meta.browsePath: Oligo
+//meta.browsePath: Peptides | Oligo Toolkit
 export async function OligoBatchCalculatorApp(): Promise<void> {
   const additionalWeightsObj: {[index: string]: number} = {};
   const extinctionCoeffsObj: {[index: string]: number} = {};

@@ -23,6 +23,14 @@ extern "C" {
 	      int principalComponentsNumOfColumns);
 
 	float error(float * data1, int data1Length, float * data2, int data2Length);
+
+	int principalComponentAnalysisNipals(float * data,
+          int dataNumOfRows,
+	      int dataNumOfColumns,
+	      int numOfPrincipalComponents,
+	      float * principalComponents,
+	      int principalComponentsNumOfRows,
+	      int principalComponentsNumOfColumns);
 }
 
 #include "PCA\PCA.h"
@@ -61,4 +69,20 @@ float error(float * data1, int data1Length, float * data2, int data2Length)
 	return pca::mad(data1, data2, data1Length);
 } 
 
-
+//name: principalComponentAnalysisNipals
+//input: dataframe table
+//input: column_list columns
+//input: int componentsCount
+//output: column_list components [new(columns.rowCount, componentsCount)]
+//output: dataframe result [components]
+EMSCRIPTEN_KEEPALIVE
+int principalComponentAnalysisNipals(float * data,
+      int dataNumOfRows,
+	  int dataNumOfColumns,
+	  int numOfPrincipalComponents,
+	  float * principalComponents,
+	  int principalComponentsNumOfRows,
+	  int principalComponentsNumOfColumns)
+{
+	return pca::nipals(data, dataNumOfRows, dataNumOfColumns, numOfPrincipalComponents, principalComponents);
+}

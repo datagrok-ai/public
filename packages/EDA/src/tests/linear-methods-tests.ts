@@ -16,7 +16,7 @@ const ROWS = 100;
 const ROWS_K = 100;
 const COLS = 100;
 const COMPONENTS = 3;
-const TIMEOUT = 4000;
+const TIMEOUT = 9000;
 const INDEP_COLS = 2;
 const DEP_COLS = 5;
 const ERROR = 0.1;
@@ -24,6 +24,11 @@ const ERROR = 0.1;
 category('Principal component analysis', () => {
   test(`Performance: ${ROWS_K}K rows, ${COLS} cols, ${COMPONENTS} components`, async () => {
     const df = grok.data.demo.randomWalk(ROWS_K * 1000, COLS);
+    await computePCA(df, df.columns, COMPONENTS, false, false);
+  }, {timeout: TIMEOUT, benchmark: true});
+
+  test(`Performance: 1K rows, 5K cols, ${COMPONENTS} components`, async () => {
+    const df = grok.data.demo.randomWalk(1000, 5000);
     await computePCA(df, df.columns, COMPONENTS, false, false);
   }, {timeout: TIMEOUT, benchmark: true});
 

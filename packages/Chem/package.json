@@ -2,10 +2,10 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "1.12.3",
+  "version": "1.13.0",
   "author": {
-    "name": "Leonid Stolbov",
-    "email": "lstolbov@datagrok.ai"
+    "name": "Maria Dolotova",
+    "email": "mdolotova@datagrok.ai"
   },
   "description": "Cheminformatics support: import, rendering, sketching, calculation of properties, predictive models, augmentations, multiple analyses.",
   "repository": {
@@ -40,10 +40,10 @@
   "dependencies": {
     "datagrok-api": "^1.21.1",
     "@datagrok-libraries/chem-meta": "^1.2.7",
-    "@datagrok-libraries/ml": "^6.7.3",
-    "@datagrok-libraries/math": "^1.2.1",
+    "@datagrok-libraries/ml": "^6.7.5",
+    "@datagrok-libraries/math": "^1.2.3",
     "@datagrok-libraries/tutorials": "^1.4.2",
-    "@datagrok-libraries/utils": "^4.3.3",
+    "@datagrok-libraries/utils": "^4.3.6",
     "@types/pako": "^2.0.3",
     "typescript-lru-cache": "^2.0.0",
     "cash-dom": "^8.1.5",

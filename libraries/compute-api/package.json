@@ -9,12 +9,12 @@
   "description": "Datagrok compute global API",
   "dependencies": {
     "@datagrok-libraries/compute-utils": "^1.39.0",
-    "datagrok-api": "^1.21.1"
+    "datagrok-api": "^1.22.0"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
-    "eslint": "^9.12.0",
+    "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "typescript": "^5.6.3",
     "webpack": "^5.95.0",

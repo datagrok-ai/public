@@ -28,7 +28,6 @@ import {
   IBiostructureViewer,
   PluginLayoutControlsDisplayType,
   RegionStateOptionsType,
-  RepresentationType,
   SimpleRegionStateOptionsType,
 } from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb/index';
@@ -45,6 +44,11 @@ import {createRcsbViewer, disposeRcsbViewer} from './utils';
 
 import {_package} from '../../package';
 import { convertWasm } from '../../conversion/wasm/converterWasm';
+import { StateObjectRef } from 'molstar/lib/mol-state';
+import { createStructureRepresentationParams } from 'molstar/lib/mol-plugin-state/helpers/structure-representation-params';
+import { StructureRepresentationRegistry } from 'molstar/lib/mol-repr/structure/registry';
+import { StateTransforms } from 'molstar/lib/mol-plugin-state/transforms';
+import { StateElements } from 'molstar/lib/examples/proteopedia-wrapper/helpers';
 
 // TODO: find out which extensions are needed.
 /*const Extensions = {
@@ -80,6 +84,7 @@ export enum PROPS {
   biostructureIdColumnName = 'biostructureIdColumnName',
   /** DG.Func nqName */
   biostructureDataProvider = 'biostructureDataProvider',
+  ligandValue = 'ligandValue',
 
   // -- Style --
   representation = 'representation',
@@ -130,6 +135,12 @@ export const DebounceIntervals = {
   ligands: 20,
 };
 
+export type LigandValueData = {
+  value: string,
+  semType: string,
+  units: string,
+}
+
 export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, IMolecule3DBrowser {
   private viewed: boolean = false;
 
@@ -146,6 +157,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   [PROPS.ligandColumnName]: string;
   // [PROPS.pdbProvider]: string;
   // [PROPS.emdbProvider]: string;
+  [PROPS.ligandValue]: string;
 
   // --Style --
   [PROPS.representation]: string;
@@ -200,17 +212,17 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       {category: PROPS_CATS.DATA});
     this.biostructureDataProvider = this.string(PROPS.biostructureDataProvider, defaults.biostructureDataProvider,
       {category: PROPS_CATS.DATA, /* fill choices in setData() */});
-
+    
     this.ligandColumnName = this.string(PROPS.ligandColumnName, defaults.ligandColumnName,
       {category: PROPS_CATS.DATA, semType: DG.SEMTYPE.MOLECULE});
     // this.pdbProvider = this.string(PROPS.pdbProvider, defaults.pdbProvider,
     //   {category: PROPS_CATS.DATA});
     // this.emdbProvider = this.string(PROPS.emdbProvider, defaults.emdbProvider,
     //   {category: PROPS_CATS.DATA});
-
+    this.ligandValue = this.string(PROPS.ligandValue, null, {category: PROPS_CATS.DATA, userEditable: false});
     // -- Style --
     this.representation = this.string(PROPS.representation, defaults.representation,
-      {category: PROPS_CATS.STYLE, choices: Object.values(RepresentationType)});
+      {category: PROPS_CATS.STYLE, choices: Object.keys(StructureRepresentationRegistry.BuiltIn)});
 
     // -- Layout --
     this.layoutIsExpanded = this.bool(PROPS.layoutIsExpanded, defaults.layoutIsExpanded,
@@ -283,6 +295,30 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   private _initButtonExpand() {
     const button = $('.msp-btn.msp-btn-icon.msp-btn-link-toggle-off');
     button.on('click',  () => this.root.requestFullscreen());
+  }
+
+  private async _initProps() {
+    if (!this.dataFrame || this.dataJson) return;
+
+    // -- Pdb or Pdb Id --
+    if (!this.biostructureIdColumnName) {
+      const pdbCol = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE3D) || this.dataFrame.columns.bySemType(DG.SEMTYPE.PDB_ID);
+      if (pdbCol) {
+        this.biostructureIdColumnName = pdbCol.name;
+
+        if (pdbCol.semType === DG.SEMTYPE.PDB_ID) {
+          const funcs = await getDataProviderList(DG.SEMTYPE.MOLECULE3D);
+          this.biostructureDataProvider = funcs[0]?.nqName;
+        }
+      }
+    }
+
+    // -- Ligand --
+    if (!this.ligandColumnName) {
+      const molCol = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+      if (molCol)
+        this.ligandColumnName = molCol.name;
+    }
   }
 
   private viewerToLog(): string { return `MolstarViewer<${this.viewerId}>`; }
@@ -382,6 +418,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       }
 
       case PROPS.representation:
+        this.updateView(this.representation);
         break;
       case PROPS.showImportControls:
         break;
@@ -408,6 +445,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       case PROPS.pdbTag:
       case PROPS.biostructureDataProvider:
       case PROPS.biostructureIdColumnName:
+      case PROPS.ligandValue:
       case PROPS.ligandColumnName: {
         this.setData(logIndent + 1, callLog);
         break;
@@ -444,12 +482,55 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       this.props.getProperty(PROPS.biostructureDataProvider).choices =
         ['', ...this.biostructureDataProviderList.map((f) => f.nqName)];
     });
+    this._initProps();
 
     //this.subs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
 
     superOnTableAttached();
     this.setData(logIndent + 1, callLog);
+    ui.tools.waitForElementInDom(this.root).then(() => this.initializeResizeHandling());
     this.logger.debug(`${logPrefix}, end`);
+  }
+  
+  initializeResizeHandling(): void {
+    const dialogPanel = this.root.closest('.dialog-floating') as HTMLElement;
+    const accPanel = this.root.closest('.d4-accordion-pane-content') as HTMLElement;
+    const resizeTarget = dialogPanel || accPanel;
+    
+    if (!resizeTarget) return;
+    
+    const setDimensions = (element: HTMLElement | null, width: number, height: number) => {
+      if (element) {
+        element.style.width = `${width}px`;
+        element.style.height = `${height}px`;
+      }
+    };
+    
+    const resizeCanvasAndViewer = (width: number, height: number) => {
+      const canvas = this.viewer?.plugin.canvas3dContext?.canvas;
+      setDimensions(this.viewerDiv!, width, height);
+      if (canvas)
+        setDimensions(canvas, width, height);
+      this.viewer?.plugin.canvas3d?.handleResize();
+      this.viewer?.plugin.handleResize();
+    };
+    
+    this.subs.push(ui.onSizeChanged(resizeTarget).subscribe(() => {
+      const width = resizeTarget.clientWidth;
+      const height = resizeTarget.clientHeight;
+
+      if (dialogPanel) {
+        setDimensions(this.root, width, height);
+        resizeCanvasAndViewer(width, height);
+
+        const waitParentEl = this.root.parentElement;
+        if (waitParentEl?.classList.contains('grok-wait'))
+          setDimensions(waitParentEl, width, height);
+      }
+
+      if (accPanel)
+        resizeCanvasAndViewer(width, height);
+    }))
   }
 
   override detach(): void {
@@ -585,20 +666,15 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         if (this.pdb) pdb = this.pdb;
         if (pdb && pdb != pdbDefault)
           this.dataEff = {binary: false, ext: 'pdb', data: pdb!};
-        if (this.dataJson && this.dataJson !== BiostructureDataJson.empty)
+        if (this.dataJson && this.dataJson !== BiostructureDataJson.empty) {
           this.dataEff = BiostructureDataJson.toData(this.dataJson);
+          this.dataJson = '';
+        }
         if (this.biostructureDataProvider) {
           if (!this.biostructureDataProviderFunc) {
             this.biostructureDataProviderFunc = this.biostructureDataProviderList
               .find((f) => f.nqName === this.biostructureDataProvider) ?? null;
           }
-        }
-
-        // -- Ligand --
-        if (this.dataFrame && !this.ligandColumnName) {
-          const molCol: DG.Column | null = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-          if (molCol)
-            this.ligandColumnName = molCol.name;
         }
 
         if (!this.viewed) {
@@ -645,11 +721,11 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       delete this.splashDiv;
     }
 
+    if (this.dataFrame && this.ligandColumnName)
+      await this.destroyViewLigands(logIndent + 1, callLog);
+
     if (free /* detach */) {
       if (this.viewerDiv) {
-        if (this.dataFrame && this.ligandColumnName)
-          await this.destroyViewLigands(logIndent + 1, callLog);
-
         // Clear viewer
         // await this.viewer.clear();
         await disposeRcsbViewer(this.viewer!, this.viewerDiv);
@@ -658,7 +734,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         delete this.viewerDiv;
       }
     } else {
-      if (this.dataEffStructureRefs)
+      if (this.dataEffStructureRefs && this.viewer?.plugin)
         await removeVisualsData(this.viewer!.plugin, this.dataEffStructureRefs, callLog);
     }
     this.logger.debug(`${logPrefix}, end `);
@@ -692,10 +768,14 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     const splash = buildSplash(this.root, `Loading data of '${id}'.`);
     try {
       // while loading the next, the previous structure is covered by splash
-      const fc = await this.biostructureDataProviderFunc!.prepare({id: id}).call();
-      const dataStr = fc.getOutputParamValue() as string;
-      const dataEff = BiostructureDataJson.toData(dataStr);
-
+      const dataString = col.semType === DG.SEMTYPE.MOLECULE3D
+        ? BiostructureDataJson.fromData({ binary: false, data: id, ext: 'pdb' })
+        : await (async () => {
+          const fetchData = await this.biostructureDataProviderFunc!.prepare({ id }).call();
+          return fetchData.getOutputParamValue() as string;
+        })();
+      
+      const dataEff = BiostructureDataJson.toData(dataString);
       const plugin = this.viewer!.plugin;
       await this.destroyViewLigands(0, callLog);
       await removeVisualsData(plugin, oldStructureRefs, callLog);
@@ -736,7 +816,12 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
     }));
 
-    if (this.dataFrame && this.biostructureDataProviderFunc && this.biostructureIdColumnName) {
+    const isPdbColumn = this.biostructureIdColumnName
+      ? this.dataFrame.getCol(this.biostructureIdColumnName).semType === DG.SEMTYPE.MOLECULE3D
+      : false;
+      
+    const hasValidDataProvider = this.biostructureDataProviderFunc && !isPdbColumn;
+    if (this.dataFrame && (hasValidDataProvider || isPdbColumn)) {
       this.viewSubs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, DebounceIntervals.currentRow).subscribe(
         this.dataFrameOnCurrentRowChangedDebounced.bind(this)));
       [this.dataEff, this.dataEffStructureRefs] = await this.rebuildViewCurrentRow(
@@ -781,8 +866,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     const dataFileProp = DG.Property.fromOptions({name: 'dataFile', caption: 'Data file', type: 'file'});
     const dataFileInput = DG.InputBase.forProperty(dataFileProp);
     dataFileInput.captionLabel.innerText = 'Data file';
-    this.viewSubs.push(dataFileInput.onChanged.subscribe(async (value) => {
-      const dataFi: DG.FileInfo = value;
+    this.viewSubs.push(dataFileInput.onChanged.subscribe(async () => {
+      const dataFi: DG.FileInfo = dataFileInput.value;
       const dataA: Uint8Array = dataFi.data ? dataFi.data /* User's file*/ : await dataFi.readAsBytes()/* Shares */;
       const data: BiostructureData = {binary: true, ext: dataFi.extension, data: dataA};
       this.setOptions({
@@ -797,9 +882,21 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     this.logger.debug(`${logPrefix}, end`);
   }
 
-  private updateView(): void {
-
-  }
+  private async updateView(type: any) {
+    const entries = this.viewer!.plugin.managers.structure.selection.entries;
+    const state = this.viewer?.plugin.state;
+    entries.forEach(async ({ selection }, ref) => {
+      const cell = StateObjectRef.resolveAndCheck(state!.data, ref);
+      if (cell) {
+        const components = this.viewer!.plugin.build().to(cell)
+        const repr = createStructureRepresentationParams(this.viewer!.plugin, void 0, {
+          type: type
+        });
+        components.applyOrUpdate(StateElements.SequenceVisual, StateTransforms.Representation.StructureRepresentation3D, repr);
+        await components.commit();
+      }
+    });
+  }  
 
   private calcSize(logIndent: number, caller: string): void {
     const callLog = `calcSize( <- ${caller} )`;
@@ -878,16 +975,18 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     return comp.cell.sourceRef ?? null; // comp.version
   }
 
-  private getLigandStrOfRow(rowIdx: number): LigandData {
-    if (!this.dataFrame || !this.ligandColumnName)
-      throw new Error(`${this.viewerToLog()}.getLigandStrOfRow(), no dataFrame or ligandColumnName`);
+  private getLigandStr(rowIdx: number): LigandData {
+    if ((!this.dataFrame && !this.ligandColumnName) || !this.ligandValue)
+      throw new Error(`${this.viewerToLog()}.getLigandStr(), no dataFrame, ligandColumnName or ligandValue`);
 
+    const ligandObject = JSON.parse(this.ligandValue) as LigandValueData;
     const ligandCol: DG.Column = this.dataFrame.getCol(this.ligandColumnName);
-    const ligandUnits: string = ligandCol.meta.units!;
-    const ligandCellValue: string = ligandCol.get(rowIdx);
+    const ligandUnits: string = ligandObject.units ?? ligandCol.meta.units!;
+    const ligandCellValue: string = ligandObject.value ?? ligandCol.get(rowIdx);
+    const ligandSemType: string = ligandObject.semType ?? ligandCol.semType;
     let ligandValue: string;
     let ligandFormat: BuiltInTrajectoryFormat | TrajectoryFormatProvider;
-    switch (ligandCol.semType) {
+    switch (ligandSemType) {
       case DG.SEMTYPE.MOLECULE: {
         switch (ligandUnits) {
           default: {
@@ -917,7 +1016,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       }
 
       default:
-        throw new Error(`Unsupported ligand semantic type '${ligandCol.semType}'.`);
+        throw new Error(`Unsupported ligand semantic type '${ligandSemType}'.`);
     }
     // const ligandBlob: Blob = new Blob([ligandStr], {type: 'text/plain'});
     // return ligandBlob;
@@ -986,7 +1085,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
           (selCount > 1 ? DG.Color.selectedRows : null) :
           (selCount > 1 ? DG.Color.scaleColor(selI, 0, selCount, 0.5) : null);
 
-      const selectedLigandData = this.getLigandStrOfRow(selectedLigand.rowIdx);
+      const selectedLigandData = this.getLigandStr(selectedLigand.rowIdx);
       ligandTaskList.push(async () => {
         selectedLigand.structureRefs = await addLigandOnStage(plugin, selectedLigandData, color, this.zoom);
       });
@@ -994,7 +1093,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     if (newLigands.current) {
       const color = this.showSelectedRowsLigands ? DG.Color.currentRow : null;
 
-      const currentLigandData = this.getLigandStrOfRow(newLigands.current.rowIdx);
+      const currentLigandData = this.getLigandStr(newLigands.current.rowIdx);
       const currentLigand = newLigands.current;
       ligandTaskList.push(async () => {
         currentLigand.structureRefs = await addLigandOnStage(plugin, currentLigandData, color, this.zoom);
@@ -1005,7 +1104,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       const color =
         this.showSelectedRowsLigands || this.showCurrentRowLigand ?
           DG.Color.mouseOverRows : null;
-      const hoveredLigandData = this.getLigandStrOfRow(newLigands.hovered.rowIdx);
+      const hoveredLigandData = this.getLigandStr(newLigands.hovered.rowIdx);
       const hoveredLigand = newLigands.hovered;
       ligandTaskList.push(async () => {
         hoveredLigand.structureRefs = await addLigandOnStage(plugin, hoveredLigandData, color, this.zoom);

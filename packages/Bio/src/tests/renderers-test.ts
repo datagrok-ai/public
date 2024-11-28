@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
@@ -196,6 +197,8 @@ category('renderers', () => {
     const df: DG.DataFrame = await grok.dapi.files.readCsv('System:AppData/Bio/samples/FASTA_PT.csv');
     const view = grok.shell.addTableView(df);
     await awaitGrid(view.grid);
+    await df.meta.detectSemanticTypes();
+    await grok.data.detectSemanticTypes(df);
 
     const srcCol = df.getCol('sequence');
     const sh = seqHelper.getSeqHandler(srcCol);
@@ -239,6 +242,8 @@ CTCGGCATGC,2,0
     const df = DG.DataFrame.fromCsv(seqCoordsCsv);
     df.currentRowIdx = 0;
     const view = grok.shell.addTableView(df);
+    await df.meta.detectSemanticTypes();
+    await grok.data.detectSemanticTypes(df);
     const sp: DG.ScatterPlotViewer = df.plot.scatter({x: 'x', y: 'y'});
     view.dockManager.dock(sp, DG.DOCK_TYPE.RIGHT, null);
     await Promise.all([
@@ -253,7 +258,7 @@ CTCGGCATGC,2,0
       clientX: spBcr.left + wp.x, clientY: spBcr.top + wp.y
     });
     const spCanvas = $(sp.root).find('canvas').get()[0] as HTMLCanvasElement;
-    await testEvent(fromEvent(spCanvas, 'mousemove'), () => {
+    await testEvent(DG.debounce(fromEvent(spCanvas, 'mousemove'), 200), () => {
       _package.logger.debug(`Test: event, currentRowIdx=${df.currentRowIdx}`);
       expect($(ui.tooltip.root).find('div table.d4-row-tooltip-table tr td canvas').length, 1);
       expect(sp.hitTest(wp.x, wp.y), 1);

@@ -150,6 +150,15 @@ export function testOutputAnnotationReplaceColList(data: DG.DataFrame, col: DG.C
   return DG.DataFrame.fromColumns([colRes]).columns;
 }
 
+//name: testOutputWithoutAction
+//input: dataframe data
+//input: column col
+//output: column res
+export function testOutputWithoutAction(data: DG.DataFrame, col: DG.Column<string>): DG.Column {
+  const res = DG.Column.string('val', data.rowCount).init((i) => `${col.get(i)}_abc`);
+  return res;
+}
+
 //name: expectDate
 //shortName: expectDate
 //input: datetime actual

@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 
 import wu from 'wu';
 
-import {HelmType, ISeqMonomer, Mol} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmType, IHelmBio, ISeqMonomer, Mol} from '@datagrok-libraries/bio/src/helm/types';
 import {
   CellRendererBackAsyncBase, RenderServiceBase
 } from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
@@ -16,6 +16,7 @@ import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/mon
 import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/index';
 import {execMonomerHoverLinks} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
 import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
+import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
 import {getHoveredMonomerFromEditorMol, getSeqMonomerFromHelmAtom} from './get-hovered';
 
@@ -25,6 +26,7 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
   private _auxList: (HelmAux | null)[];
 
   private sysMonomerLib: IMonomerLibBase | null = null;
+  private helmHelper: IHelmHelper | null = null;
   private helmRenderService: HelmServiceBase | null = null;
 
   // eslint-disable-next-line max-len
@@ -42,6 +44,9 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
       (async () => {
         const libHelper = await getMonomerLibHelper();
         this.sysMonomerLib = libHelper.getMonomerLib();
+      })(),
+      (async () => {
+        this.helmHelper = await getHelmHelper();
       })(),
       (async () => {
         this.helmRenderService = await getHelmService();
@@ -94,48 +99,62 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
   protected override renderCellImageData(
     gridCtx: CanvasRenderingContext2D, gridCellBounds: DG.Rect, gridCell: DG.GridCell, cellImageData: ImageData,
   ): boolean {
+    // super.renderCellImageData(gridCtx, gridCellBounds, gridCell, cellImageData);
+    // return true;
+
+    const gcb = gridCellBounds;
     const dpr = window.devicePixelRatio;
     if (gridCell.tableRowIndex === null) return false;
     const aux = this._auxList[gridCell.tableRowIndex];
     if (!aux) return true;
+
+    const [cellWidth, cellHeight] = [gcb.width * dpr - 2, gcb.height * dpr - 2];
+    const cellDScale = Math.min(0.95 * cellWidth / aux.dBox.width, 0.95 * cellHeight / aux.dBox.height);
+    const [cellDWidth, cellDHeight] = [cellDScale * aux.dBox.width, cellDScale * aux.dBox.height];
+    const cellDBox = new DG.Rect((cellWidth - cellDWidth) / 2, (cellHeight - cellDHeight) / 2, cellDWidth, cellDHeight);
+
 
     // Draw cell image data to scale it with drawImage() while transform()
     const cellCanvas = ui.canvas(cellImageData.width, cellImageData.height);
     const cellCtx = cellCanvas.getContext('2d')!;
     cellCtx.putImageData(cellImageData, 0, 0);
 
-    // Get bbox canvas
-    const bBoxImageData = cellCtx.getImageData(aux.bBox.x, aux.bBox.y, aux.bBox.width, aux.bBox.height);
-    const bBoxCanvas = ui.canvas(aux.bBox.width, aux.bBox.height);
-    const bBoxCtx = bBoxCanvas.getContext('2d')!;
-    bBoxCtx.putImageData(bBoxImageData, 0, 0);
-
+    // // Get bbox canvas
+    // const bBoxImageData = cellCtx.getImageData(aux.bBox.x, aux.bBox.y, aux.bBox.width, aux.bBox.height);
+    // const bBoxCanvas = ui.canvas(aux.bBox.width, aux.bBox.height);
+    // const bBoxCtx = bBoxCanvas.getContext('2d')!;
+    // bBoxCtx.putImageData(bBoxImageData, 0, 0);
+    //
     const fitCanvasWidth = gridCellBounds.width * dpr - 2;
     const fitCanvasHeight = gridCellBounds.height * dpr - 2;
-
-    const bBoxRatio = Math.max(aux.bBox.width / aux.cBox.width, aux.bBox.height / aux.cBox.height);
-    const bBoxFullWidth = aux.bBox.width / bBoxRatio;
-    const bBoxFullHeight = aux.bBox.height / bBoxRatio;
-
-    const fitScale = Math.min(fitCanvasWidth / bBoxFullWidth, fitCanvasHeight / bBoxFullHeight);
-
-    // Relative shift of bbox center to cbox center
-    const bBoxShiftHR = (aux.bBox.left + aux.bBox.width / 2 - aux.cBox.width / 2) / aux.cBox.width;
-    const bBoxShiftVR = (aux.bBox.top + aux.bBox.height / 2 - aux.cBox.height / 2) / aux.cBox.height;
-
-    const bBoxFitLeft = fitCanvasWidth / 2 - bBoxCanvas.width * fitScale * (1 - 2 * bBoxShiftHR) / 2;
-    const bBoxFitTop = fitCanvasHeight / 2 - bBoxCanvas.height * fitScale * (1 - 2 * bBoxShiftVR) / 2;
-
+    //
+    // const bBoxRatio = Math.max(aux.bBox.width / aux.cBox.width, aux.bBox.height / aux.cBox.height);
+    // const bBoxFullWidth = aux.bBox.width / bBoxRatio;
+    // const bBoxFullHeight = aux.bBox.height / bBoxRatio;
+    //
+    // const fitScale = Math.min(fitCanvasWidth / bBoxFullWidth, fitCanvasHeight / bBoxFullHeight);
+    //
+    // // Relative shift of bbox center to cbox center
+    // const bBoxShiftHR = (aux.bBox.left + aux.bBox.width / 2 - aux.cBox.width / 2) / aux.cBox.width;
+    // const bBoxShiftVR = (aux.bBox.top + aux.bBox.height / 2 - aux.cBox.height / 2) / aux.cBox.height;
+    //
+    // const bBoxFitLeft = fitCanvasWidth / 2 - bBoxCanvas.width * fitScale * (1 - 2 * bBoxShiftHR) / 2;
+    // const bBoxFitTop = fitCanvasHeight / 2 - bBoxCanvas.height * fitScale * (1 - 2 * bBoxShiftVR) / 2;
+    //
     const fitCanvas = ui.canvas(fitCanvasWidth, fitCanvasHeight);
     const fitCtx = fitCanvas.getContext('2d')!;
     // fitCtx.fillStyle = '#FFFFA0';
     // fitCtx.fillRect(0, 0, fitCanvasWidth, fitCanvasHeight);
-    fitCtx.transform(fitScale, 0, 0, fitScale, bBoxFitLeft, bBoxFitTop);
-    fitCtx.drawImage(bBoxCanvas, 0, 0); // draw with scale transform
+    // fitCtx.transform(fitScale, 0, 0, fitScale, bBoxFitLeft, bBoxFitTop);
+    // fitCtx.drawImage(bBoxCanvas, 0, 0); // draw with scale transform
+    fitCtx.drawImage(cellCanvas,
+      aux.dBox.x, aux.dBox.y, aux.dBox.width, aux.dBox.height,
+      cellDBox.x, cellDBox.y, cellDBox.width, cellDBox.height);
 
     const fitCanvasData = fitCtx.getImageData(0, 0, fitCanvasWidth, fitCanvasHeight);
     this.renderOnGrid(gridCtx, gridCellBounds, gridCell, fitCanvasData);
-    return true; // request rendering
+
+    return aux.cBox.width != cellWidth || aux.cBox.height != cellHeight; // request rendering
   }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
@@ -147,19 +166,24 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
     const dpr = window.devicePixelRatio;
 
     /** {@link gridCell}.bounds */ const gcb = gridCell.bounds;
-    const argsX = (e.offsetX - gcb.x) * dpr;
-    const argsY = (e.offsetY - gcb.y) * dpr;
+    const cX = (e.offsetX - gcb.x) * dpr;
+    const cY = (e.offsetY - gcb.y) * dpr;
 
-    const editorMol: Mol<HelmType> | null = aux.mol;
+    const bX = aux.bBox.x + (cX - aux.dBox.x) * aux.bBox.width / aux.dBox.width;
+    const bY = aux.bBox.y + (cY - aux.dBox.y) * aux.bBox.height / aux.dBox.height;
+
+    const editorMol: Mol<HelmType, IHelmBio> | null = aux.mol; // in bBox world
     if (!editorMol) {
       this.logger.warning(`${logPrefix}, editorMol of the cell not found.`);
       return; // The gridCell is not rendered yet
     }
-    const hoveredAtom = getHoveredMonomerFromEditorMol(argsX, argsY, editorMol, gridCell.bounds.height);
+    const hoveredAtom = getHoveredMonomerFromEditorMol(bX, bY, editorMol, gridCell.bounds.height);
 
     let seqMonomer: ISeqMonomer | null = null;
-    if (hoveredAtom) {
-      seqMonomer = getSeqMonomerFromHelmAtom(hoveredAtom);
+    if (hoveredAtom && this.helmHelper && gridCell.tableRowIndex != null) {
+      const seqHandler = this.helmHelper.seqHelper.getSeqHandler(this.tableCol);
+      const seqValue = seqHandler.getValue(gridCell.tableRowIndex);
+      seqMonomer = getSeqMonomerFromHelmAtom(seqValue, hoveredAtom);
       const monomerLib = this.tableCol.temp[MmcrTemps.overriddenLibrary] ?? _package.monomerLib;
       const tooltipEl = monomerLib ? monomerLib.getTooltip(seqMonomer.biotype, seqMonomer.symbol) :
         ui.divText('Monomer library is not available');

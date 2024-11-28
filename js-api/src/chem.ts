@@ -494,15 +494,12 @@ export namespace chem {
       $(this.molInput).attr('placeholder', 'SMILES, MOLBLOCK, Inchi, ChEMBL id, etc');
 
       if (extractors == null) {
-        grok.dapi.functions.filter('options.role="converter"').list()
-          .then((res: Func[]) => {
-            extractors = res.filter(it => it.outputs.filter(o => o.semType == SEMTYPE.MOLECULE).length);
-          })
-          .catch((_: any) => {
-            extractors = [];
-          });
+        try {
+          extractors = Func.find({meta: {role: 'converter'}}).filter(it => it.outputs.filter(o => o.semType == SEMTYPE.MOLECULE).length);
+        } catch {
+          extractors = [];
+        }
       }
-
       const applyInput = (e: any) => {
         const newSmilesValue: string = (e?.target as HTMLTextAreaElement).value;
 
@@ -519,14 +516,15 @@ export namespace chem {
 
       this.molInput.addEventListener('paste', (e) => {
         const text = e.clipboardData?.getData('text/plain');
-        if (text != null && isMolBlock(text)) {
-          e.preventDefault();
+        if (text != null && (isMolBlock(text) || checkSmiles(text))) {
+          if (isMolBlock(text))
+            e.preventDefault();
           this.setValue(text);
         }
       });
 
       let optionsIcon = ui.iconFA('bars', () => {
-        const menuHost = ui.div([], {style: {position: 'fixed', 'z-index': 100}});
+        const menuHost = ui.div([], {style: {position: 'fixed', zIndex: '100'}});
         this.host.parentElement?.prepend(menuHost);
         Menu.popup()
           .item('Copy as SMILES', () => navigator.clipboard.writeText(this.getSmiles()))

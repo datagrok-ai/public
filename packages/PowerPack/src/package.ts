@@ -10,7 +10,6 @@ import {RecentProjectsWidget} from './widgets/recent-projects-widget';
 import {CommunityWidget} from './widgets/community-widget';
 import {WebWidget} from './widgets/web-widget';
 import {LearningWidget} from './widgets/learning-widget';
-import {AboutWidget} from './widgets/about-widget';
 import {functionSearch, pdbSearch, pubChemSearch, scriptsSearch, usersSearch, wikiSearch} from './search/entity-search';
 import {KpiWidget} from './widgets/kpi-widget';
 import {HtmlWidget} from './widgets/html-widget';
@@ -29,9 +28,9 @@ export function _compareColumns(): void {
 }
 
 //name: addNewColumn
-//input: funccall call {optional: true}
+//input: funccall call
 //editor-for: AddNewColumn
-export function addNewColumnDialog(call: DG.FuncCall | null = null): AddNewColumnDialog {
+export function addNewColumnDialog(call: DG.FuncCall): AddNewColumnDialog {
   return new AddNewColumnDialog(call);
 }
 
@@ -42,14 +41,18 @@ export function _welcomeView(): DG.View | undefined {
   return welcomeView();
 }
 
+//name: Recent projects
 //output: widget result
 //tags: dashboard
+//meta.order: 1
 export function recentProjectsWidget(): DG.Widget {
   return new RecentProjectsWidget();
 }
 
+//name: Community
 //output: widget result
 //tags: dashboard
+//meta.order: 6
 export function communityWidget(): DG.Widget {
   return new CommunityWidget();
 }
@@ -64,16 +67,12 @@ export function htmlWidget(): DG.Widget {
   return new HtmlWidget();
 }
 
+//name: Learn
 //output: widget result
 //tags: dashboard
+//meta.order: 5
 export function learnWidget(): DG.Widget {
   return new LearningWidget();
-}
-
-//output: widget about
-//tags: dashboard
-export function aboutWidget(): DG.Widget {
-  return new AboutWidget();
 }
 
 //output: widget kpi

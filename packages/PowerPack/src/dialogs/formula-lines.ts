@@ -195,9 +195,11 @@ class Table {
 
     this._dataFrame.onCurrentRowChanged.subscribe((_) => this._onItemChangedAction(this._currentItemIdx));
 
-    this._dataFrame.onValuesChanged.subscribe((_) => {
+    this._dataFrame.onValuesChanged.subscribe((ed) => {
       if (!this._notify)
         return;
+      if (ed.args?.indexes && ed.args.indexes.length === 1 && ed.args.indexes[0] !== -1)
+        this._currentItemIdx = ed.args.indexes[0];
       const item = this.currentItem!;
       item.title = this._dataFrame.get('title', this._currentItemIdx);
       item.formula = this._dataFrame.get('formula', this._currentItemIdx);
@@ -427,7 +429,8 @@ class Editor {
   /** The title must be accessible from other inputs, because it may depend on the formula */
   _ibTitle?: DG.InputBase;
   _setTitleIfEmpty(oldFormula: string, newFormula: string) {
-    if ((oldFormula === (this._ibTitle!.input as HTMLInputElement).placeholder) || newFormula === this._ibTitle!.value)
+    if ([oldFormula, this.getTitleFromFormula(oldFormula)].includes((this._ibTitle!.input as HTMLInputElement).placeholder) ||
+      newFormula === this._ibTitle!.value)
       this._ibTitle!.value = newFormula;
   }
 
@@ -626,15 +629,30 @@ class Editor {
     return ui.divH([ibArrange.root]);
   }
 
+  getTitleFromFormula(formula: string): string {
+    let title = formula;
+    if (title) {
+      const regexp = /\${(.+?)}/gi;
+      const matches: string[][] = [...title.matchAll(regexp)].map((m) => [m[0], m[1]]);
+      for (const match of matches)
+        title = title!.replace(match[0], match[1]);
+    }
+    return title;
+  }
+
   /** Creates text input for item title */
   _inputTitle(itemIdx: number): HTMLElement {
     const item = this.items[itemIdx];
+    if (!item.title || item.title === item.formula)
+      item.title = this.getTitleFromFormula(item.formula!);
+    const thisElem = this;
 
     function formTitleValue(value: string) {
-      if (value === '' || value === item.formula) {
-        elTitle.placeholder = item.formula!;
+      const potentialValue = thisElem.getTitleFromFormula(item.formula!);
+      if (value === '' || value === item.formula || value === potentialValue) {
+        elTitle.placeholder = potentialValue;
         elTitle.value = '';
-        return item.formula!;
+        return potentialValue;
       }
       elTitle.placeholder = '';
       return value;

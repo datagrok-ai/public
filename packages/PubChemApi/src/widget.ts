@@ -113,7 +113,7 @@ export async function getSearchWidget(molString: string, searchType: pubChemSear
     return new DG.Widget(ui.divText('Molecule string is malformed'));
   }
   const headerHost = ui.div();
-  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap chem-viewer-grid');
+  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap chem-viewer-grid chem-search-panel-wrapper');
   const widget = new DG.Widget(ui.divV([headerHost, compsHost]));
 
   let moleculesJson: anyObject[] | null;
@@ -178,7 +178,7 @@ export async function getSearchWidget(molString: string, searchType: pubChemSear
     // moleculesCol = similarStructures.getCol(COLUMN_NAMES.MOLECULE);
     scoreCol = similarStructures.getCol(COLUMN_NAMES.SCORE);
     indexes = similarStructures.getCol(COLUMN_NAMES.INDEX).getRawData() as Int32Array;
-    rowCount = indexes.length;
+    rowCount = similarStructures.rowCount;
   }
 
   const cidCol = resultDf.getCol(COLUMN_NAMES.CID);

@@ -2,10 +2,10 @@
   "name": "@datagrok/biostructure-viewer",
   "friendlyName": "Biostructure Viewer",
   "author": {
-    "name": "Aleksandr Tanas",
-    "email": "atanas@datagrok.ai"
+    "name": "Oleksandra Serhiienko",
+    "email": "oserhiienko@datagrok.ai"
   },
-  "version": "1.2.1",
+  "version": "1.2.3",
   "description": "Protein viewers: support for multiple file formats, stand-alone viewer, and in-grid viewer.",
   "repository": {
     "type": "git",

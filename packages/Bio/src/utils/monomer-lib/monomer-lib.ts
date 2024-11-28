@@ -43,10 +43,6 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
     public readonly error: string | undefined = undefined,
   ) {
     super(monomers, source);
-    for (const [_monomerType, monomersOfType] of Object.entries(this._monomers)) {
-      for (const [_monomerSymbol, monomer] of Object.entries(monomersOfType))
-        monomer.lib = this;
-    }
   }
 
   toJSON(): Monomer[] {
@@ -237,8 +233,10 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
     return resStr;
   }
 
+  static overrideCounter: number = 0;
+
   override(data: MonomerLibData, source: string): IMonomerLibBase {
-    return new OverriddenMonomerLib(data, source, this);
+    return new OverriddenMonomerLib(data, `override: ${++MonomerLib.overrideCounter}, ${source}`, this);
   }
 }
 

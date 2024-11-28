@@ -6,6 +6,7 @@ import './connections/queries-test';
 import './sync/data-sync-test';
 import './benchmarks/benchmark';
 import './cache/cache-test';
+import './connections/table-query-test';
 
 export const _package = new DG.Package();
 export {tests};
@@ -108,7 +109,7 @@ export async function initPackageTests() {
   const connections = await grok.dapi.connections.list();
   const categories: {[_:string]: DG.DataConnection[]} = {};
   for (const c of connections) {
-    const cat = c.dart.dataSource ?? c.dart.z;
+    const cat = c.dataSource;
     if (skip.includes(cat)) continue;
     categories[cat] ??= [];
     categories[cat].push(c);

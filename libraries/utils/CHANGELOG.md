@@ -1,14 +1,30 @@
 # utils changelog
 
+## 4.3.9 (2024-13-07)
+
+Added ability to set test owner in core tests 
+
+## 4.3.9 (2024-11-07)
+
+Added ability to set category responsivness 
+
+## 4.3.8 (2024-11-06)
+
+Added ability to set test responsivness 
+
+## 4.3.7 (2024-10-31)
+
+Fix svgToImage for non Latin1 chars
+
 ## 4.3.6 (2024-10-03)
 
 Add new item getting from items grid
 
-## 4.3.4 (2024-09-25) 
+## 4.3.4 (2024-09-25)
 
 utils lib: Add setActive and onValueChanged for ActiveFiles for dialog history
 
-## 4.3.5 (2024-09-26) 
+## 4.3.5 (2024-09-26)
 
 utils lib: Add setActive and onValueChanged for ActiveFiles for dialog history
 

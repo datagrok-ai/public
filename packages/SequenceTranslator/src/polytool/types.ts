@@ -7,19 +7,24 @@ import {PolymerType} from '@datagrok-libraries/bio/src/helm/types';
 export enum PolyToolEnumeratorTypes {
   Single = 'single',
   Matrix = 'matrix',
+  Library = 'library',
 }
 
 export type PolyToolEnumeratorType = typeof PolyToolEnumeratorTypes[keyof typeof PolyToolEnumeratorTypes];
 
-export type PolyToolPlaceholders = { position: number, monomers: string[] } [];
+export type PolyToolPlaceholder = { position: number, monomers: string[] };
 
-export type PolyToolPlaceholdersBreadth = { start: number, end: number, monomers: string[] }[];
+export type PolyToolBreadthPlaceholder = {
+  /** 0-based monomer position index */ start: number,
+  /** 0-based monomer position index */ end: number,
+  monomers: string[]
+};
 
 export type PolyToolEnumeratorParams = {
   type: PolyToolEnumeratorType;
   /** position key is zero-based */
-  placeholders?: PolyToolPlaceholders;
-  placeholdersBreadth?: PolyToolPlaceholdersBreadth;
+  placeholders?: PolyToolPlaceholder[];
+  breadthPlaceholders?: PolyToolBreadthPlaceholder[];
   keepOriginal?: boolean;
   trivialName?: boolean;
 }

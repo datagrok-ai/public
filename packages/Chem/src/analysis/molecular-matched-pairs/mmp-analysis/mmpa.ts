@@ -9,6 +9,7 @@ import {MMP_CONSTRICTIONS, MMP_ERRORS,
 import {getMmpFrags, getMmpRules} from './mmpa-fragments';
 import {getPlainData} from './mmpa-differences';
 import {calculateGenerations} from './mmpa-generations';
+import { SortData } from '../mmp-viewer/mmp-viewer';
 
 export class MMPA {
   initData: MmpInitData;
@@ -42,7 +43,7 @@ export class MMPA {
   }
 
   static async init(molName: string, molecules: string[], fragmentCutoff: number,
-    activities: Float32Array[], activitiesNames: string[]): Promise<MMPA> {
+    activities: Float32Array[], activitiesNames: string[], fragSortingInfo: {[key: string]: SortData}): Promise<MMPA> {
     const initData: MmpInitData =
     {molName, molecules, activities, activitiesNames, activitiesCount: activitiesNames.length};
 
@@ -57,13 +58,13 @@ export class MMPA {
     const frags = await getMmpFrags(molecules);
     const [rules, allCasesNumber] = await getMmpRules(frags, fragmentCutoff, gpu);
 
-    const [rulesBased, allCasesBased] = getPlainData(rules, initData, allCasesNumber);
+    const [rulesBased, allCasesBased] = getPlainData(rules, initData, allCasesNumber, fragSortingInfo);
 
     return new MMPA(initData, frags, rules, allCasesNumber, rulesBased, allCasesBased, null, null, gpu);
   }
 
   static async fromData(molName: string, data: string, molecules: string[],
-    activities: Float32Array[], activitiesNames: string[]): Promise<MMPA> {
+    activities: Float32Array[], activitiesNames: string[], fragSortingInfo: {[key: string]: SortData}): Promise<MMPA> {
     const initData: MmpInitData =
     {molName, molecules, activities, activitiesNames, activitiesCount: activitiesNames.length};
 
@@ -76,7 +77,7 @@ export class MMPA {
     const rules: MmpRules = totalParsed['rules'];
     const allCasesNumber: number = totalParsed['cases'];
 
-    const [rulesBased, allCasesBased] = getPlainData(rules, initData, allCasesNumber);
+    const [rulesBased, allCasesBased] = getPlainData(rules, initData, allCasesNumber, fragSortingInfo);
 
     const chemSpaceResult: Float32Array [] | null = totalParsed['chemSpaceResult'];
     const generationResult: MmpGeneration | null = totalParsed['generationResult'];

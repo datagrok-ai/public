@@ -1,5 +1,102 @@
 # Sequence Translator changelog
 
+## 1.6.4 (2024-11-27)
+
+* PolyTool: linearization of single sequence molecules
+* Enumerator: Added whole library enumeration
+
+## 1.6.3 (2024-11-22)
+
+Moved Context menu items to detector
+
+## 1.6.2 (2024-11-17)
+
+### New features
+
+* PolyTool rule manager enhancement
+* Sequence renderer font resizing
+
+## 1.6.1 (2024-11-15)
+
+### Bug fixes
+
+* PolyTool fix default options
+* PolyTool fix explicit carbon cut
+
+## 1.6.0 (2024-11-14)
+
+### New features
+
+* Add PolyTool work with sinthetic monomers
+
+## 1.5.3 (2024-11-06)
+
+### Bug fixes
+
+* PolyTool fix rules empty specification (all monomers undergo)
+
+## 1.5.2 (2024-11-06)
+
+### Bug fixes
+
+* PolyTool rules several instances bug fix
+
+## 1.5.1 (2024-11-06)
+
+### Bug fixes
+
+* PolyTool rules fixes rule management
+* PolyTool rules fixes crash if monomer is absent
+
+## 1.5.0 (2024-11-04)
+
+### New features
+
+* Add PolyTool interface for rule management
+
+## 1.4.10 (2024-11-01)
+
+### Bug fixes
+
+* Fix build
+
+## 1.4.9 (2024-10-31)
+
+### Bug fixes
+
+* Fix package initializing helmHelper
+* Fix Chain using HelmAtom.bio of type PtBio
+* Fix PT Enumerate dialog for harmonized sequences
+* Fix PT Enumerate for monomer hovering
+* Fix PT Enumerate for historical values
+* Fix PT Enumerate adding buildCyclizedMonomerHoverLink, WIP
+* Fix adding CyclizedGridCellRenderBack
+
+## 1.4.8 (2024-10-25)
+
+### Bug fixes
+
+* PolyTool ambigous R groups handling bug
+
+## 1.4.7 (2024-10-25)
+
+### Bug fixes
+
+* PolyTool ambigous R groups handling bug
+
+## 1.4.6 (2024-10-25)
+
+### New features
+
+* Add PolyTool Enumerate for harmonized sequences
+* PolyTool ambigous R groups handling
+
+### Bug fixes
+
+* Fix PolyTool chain, add check consistency, add tests
+* Fix PolyTool Convert tests
+* Fix the package init
+
 ## 1.4.5 (2024-10-11)
 
 ### Bug fixes

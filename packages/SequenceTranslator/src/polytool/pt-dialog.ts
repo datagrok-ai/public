@@ -7,25 +7,42 @@ import {Unsubscribable} from 'rxjs';
 
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
-import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {getSeqHelper, ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {getSeqHelper, ISeqHelper, ToAtomicLevelRes} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
-import {buildMonomerHoverLink} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
+import {addMonomerHoverLink, buildMonomerHoverLink} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
-import {getRules, RuleInputs, Rules, RULES_PATH, RULES_STORAGE_NAME} from './pt-rules';
-import {doPolyToolConvert, getOverriddenLibrary} from './pt-conversion';
+import {getRules, RuleInputs, RULES_PATH, RULES_STORAGE_NAME} from './conversion/pt-rules';
+import {doPolyToolConvert} from './conversion/pt-conversion';
+import {getOverriddenLibrary} from './conversion/pt-synthetic';
 import {defaultErrorHandler} from '../utils/err-info';
 import {getLibrariesList} from './utils';
 import {getEnumerationChem, PT_CHEM_EXAMPLE} from './pt-enumeration-chem';
 
 import {
   PT_ERROR_DATAFRAME, PT_UI_ADD_HELM, PT_UI_DIALOG_CONVERSION, PT_UI_DIALOG_ENUMERATION,
-  PT_UI_GET_HELM, PT_UI_RULES_USED, PT_UI_USE_CHIRALITY, PT_WARNING_COLUMN
+  PT_UI_GET_HELM, PT_UI_LINEARIZE, PT_UI_LINEARIZE_TT,
+  PT_UI_HIGHLIGHT_MONOMERS, PT_UI_RULES_USED, PT_UI_USE_CHIRALITY
 } from './const';
 
 import {_package} from '../package';
+import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/index';
+import {MonomerHoverLink} from '@datagrok-libraries/bio/src/monomer-works/utils';
+import {MonomerMap} from '@datagrok-libraries/bio/src/monomer-works/types';
+import {ISeqMonomer} from '@datagrok-libraries/bio/src/helm/types';
+import wu from 'wu';
+import {PolymerTypes} from '@datagrok-libraries/js-draw-lite/src/types/org';
+import {_toAtomicLevel, getMonomersDictFromLib} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
+import {monomerSeqToMolfile} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level-utils';
+import {LRUCache} from 'lru-cache';
+import {addSubstructProvider, getMonomerHover, ISubstruct, setMonomerHover}
+  from '@datagrok-libraries/chem-meta/src/types';
+import {getMolHighlight} from '@datagrok-libraries/bio/src/monomer-works/seq-to-molfile';
+import {ChemTags} from '@datagrok-libraries/chem-meta/src/consts';
+import {mergeSubstructs} from '@datagrok-libraries/chem-meta/src/types';
+import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
 type PolyToolConvertSerialized = {
   generateHelm: boolean;
@@ -38,17 +55,18 @@ type PolyToolEnumerateChemSerialized = {
   screenLibrary: string | null;
 }
 
-export function polyToolEnumerateChemUI(cell?: DG.Cell): void {
-  getPolyToolEnumerationChemDialog(cell)
-    .then((dialog) => {
-      dialog.show({resizable: true});
-    })
-    .catch((_err: any) => {
-      grok.shell.warning('To run PolyTool Enumeration, sketch the molecule and specify the R group to vary');
-    });
+export async function polyToolEnumerateChemUI(cell?: DG.Cell): Promise<void> {
+  await _package.initPromise;
+  try {
+    const dialog = await getPolyToolEnumerationChemDialog(cell);
+    dialog.show({resizable: true});
+  } catch (_err: any) {
+    grok.shell.warning('To run PolyTool Enumeration, sketch the molecule and specify the R group to vary');
+  }
 }
 
 export async function polyToolConvertUI(): Promise<void> {
+  await _package.initPromise;
   let dialog: DG.Dialog;
   try {
     dialog = await getPolyToolConvertDialog();
@@ -85,7 +103,11 @@ export async function getPolyToolConvertDialog(srcCol?: DG.Column): Promise<DG.D
     const generateHelmInput = ui.input.bool(PT_UI_GET_HELM, {value: true});
     ui.tooltip.bind(generateHelmInput.root, PT_UI_ADD_HELM);
 
-    const chiralityEngineInput = ui.input.bool(PT_UI_USE_CHIRALITY, {value: false});
+    const linearizeInput = ui.input.bool(PT_UI_LINEARIZE, {value: true});
+    ui.tooltip.bind(linearizeInput.root, PT_UI_LINEARIZE_TT);
+
+    const chiralityEngineInput = ui.input.bool(PT_UI_USE_CHIRALITY, {value: true});
+    const highlightMonomersInput = ui.input.bool(PT_UI_HIGHLIGHT_MONOMERS, {value: true});
     let ruleFileList: string[];
     const ruleInputs = new RuleInputs(RULES_PATH, RULES_STORAGE_NAME, '.json', {
       onValueChanged: (value: string[]) => { ruleFileList = value; }
@@ -97,7 +119,9 @@ export async function getPolyToolConvertDialog(srcCol?: DG.Column): Promise<DG.D
     const div = ui.divV([
       srcColInput,
       generateHelmInput,
+      linearizeInput,
       chiralityEngineInput,
+      highlightMonomersInput,
       rulesHeader,
       rulesForm
     ]);
@@ -105,7 +129,10 @@ export async function getPolyToolConvertDialog(srcCol?: DG.Column): Promise<DG.D
     const exec = async (): Promise<void> => {
       try {
         const ruleFileList = await ruleInputs.getActive();
-        await polyToolConvert(srcColInput.value!, generateHelmInput.value!, chiralityEngineInput.value!, ruleFileList);
+        await polyToolConvert(
+          srcColInput.value!, generateHelmInput.value!, linearizeInput.value!,
+          chiralityEngineInput.value!, highlightMonomersInput.value!, ruleFileList
+        );
       } catch (err: any) {
         defaultErrorHandler(err);
       }
@@ -128,7 +155,7 @@ export async function getPolyToolConvertDialog(srcCol?: DG.Column): Promise<DG.D
       /* applyInput */ (x: PolyToolConvertSerialized): void => {
         generateHelmInput.value = x.generateHelm;
         chiralityEngineInput.value = x.chiralityEngine;
-        ruleInputs.setActive(ruleFileList);
+        ruleInputs.setActive(x.rules);
       });
     return dialog;
   } catch (err: any) {
@@ -234,9 +261,20 @@ async function getPolyToolEnumerationChemDialog(cell?: DG.Cell): Promise<DG.Dial
   }
 }
 
+function dealGroups(col: DG.Column<string>): void {
+  for (let i = 0; i < col.length; i++) {
+    col.set(i, col.get(i)!.replaceAll('undefined', 'H'));
+    col.set(i, col.get(i)!.replaceAll('Oh', 'O'));
+    col.set(i, col.get(i)!.replaceAll('0.000000 3', '0.000000 0'));
+    col.set(i, col.get(i)!.replaceAll('?', 'O'));
+    col.set(i, col.get(i)!.replaceAll('0 3\n', '0 0\n'));
+    col.set(i, col.get(i)!.replaceAll('RGROUPS=(1 1)', ''));
+  }
+}
+
 /** Returns Helm and molfile columns.  */
-export async function polyToolConvert(
-  seqCol: DG.Column<string>, generateHelm: boolean, chiralityEngine: boolean, ruleFiles: string[]
+export async function polyToolConvert(seqCol: DG.Column<string>,
+  generateHelm: boolean, linearize: boolean, chiralityEngine: boolean, highlight: boolean, ruleFiles: string[]
 ): Promise<[DG.Column, DG.Column]> {
   const pi = DG.TaskBarProgressIndicator.create('PolyTool converting...');
   try {
@@ -244,11 +282,11 @@ export async function polyToolConvert(
       if (!df) return colName;
       return df.columns.getUnusedName(colName);
     };
-    await getHelmHelper(); // initializes JSDraw and org
+    const helmHelper = await getHelmHelper(); // initializes JSDraw and org
 
     const table = seqCol.dataFrame;
     const rules = await getRules(ruleFiles);
-    const resList = doPolyToolConvert(seqCol.toList(), rules);
+    const [resList, isLinear, positionMaps] = doPolyToolConvert(seqCol.toList(), rules, helmHelper);
 
     const resHelmColName = getUnusedName(table, `transformed(${seqCol.name})`);
     const resHelmCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, resHelmColName, resList.length)
@@ -258,16 +296,53 @@ export async function polyToolConvert(
     resHelmCol.setTag(DG.TAGS.CELL_RENDERER, 'helm');
     if (generateHelm && table) table.columns.add(resHelmCol, true);
 
-    const seqHelper: ISeqHelper = await getSeqHelper();
+
     const rdKitModule: RDModule = await getRdKitModule();
     const lib = await getOverriddenLibrary(rules);
     const resHelmColTemp = resHelmCol.temp;
     resHelmColTemp[MmcrTemps.overriddenLibrary] = lib;
     resHelmCol.temp = resHelmColTemp;
+
+    const seqHelper: ISeqHelper = await getSeqHelper();
     const toAtomicLevelRes =
-      await seqHelper.helmToAtomicLevel(resHelmCol, chiralityEngine, /* highlight */ generateHelm, lib);
+      await seqHelper.helmToAtomicLevel(resHelmCol, chiralityEngine, highlight, lib);
+
     const resMolCol = toAtomicLevelRes.molCol!;
 
+
+    const allLinear = isLinear.filter((l) => l).length;
+    if (linearize && allLinear > 0) {
+      const lin = new Array<string>(allLinear);
+      let counter = 0;
+      for (let i = 0; i < isLinear.length; i++) {
+        if (isLinear[i]) {
+          lin[counter] = resList[i];
+          counter++;
+        }
+      }
+
+      const linCol = DG.Column.fromStrings('helm', lin);
+      linCol.semType = DG.SEMTYPE.MACROMOLECULE;
+      linCol.meta.units = NOTATION.HELM;
+      linCol.setTag(DG.TAGS.CELL_RENDERER, 'helm');
+
+      const monomerLibHelper = await getMonomerLibHelper();
+      const systemMonomerLib = monomerLibHelper.getMonomerLib();
+      try {
+        const linear = await _toAtomicLevel(DG.DataFrame.create(0), linCol, systemMonomerLib, seqHelper, rdKitModule);
+        counter = 0;
+        for (let i = 0; i < isLinear.length; i++) {
+          if (isLinear[i]) {
+            resMolCol.set(i, linear!.molCol!.get(counter));
+            counter++;
+          }
+        }
+      } catch (e: any) {
+        grok.shell.warning('PolyTool was not able to linearize sequences');
+      }
+    }
+
+    dealGroups(resMolCol);
     resMolCol.name = getUnusedName(table, `molfile(${seqCol.name})`);
     resMolCol.semType = DG.SEMTYPE.MOLECULE;
     if (table) {
@@ -275,10 +350,125 @@ export async function polyToolConvert(
       await grok.data.detectSemanticTypes(table);
     }
 
-    buildMonomerHoverLink(resHelmCol, resMolCol, lib, seqHelper, rdKitModule);
+    //buildMonomerHoverLink(resHelmCol, resMolCol, lib, seqHelper, rdKitModule);
+    buildCyclizedMonomerHoverLink(seqCol, resHelmCol, resMolCol, lib, seqHelper, rdKitModule, positionMaps);
 
     return [resHelmCol, resMolCol];
   } finally {
     pi.close();
   }
+}
+
+function buildCyclizedMonomerHoverLink(
+  cyclizedCol: DG.Column<string>, seqCol: DG.Column<string>, molCol: DG.Column<string>,
+  monomerLib: IMonomerLibBase, seqHelper: ISeqHelper, rdKitModule: RDModule,
+  positionMaps: number[][][]
+): MonomerHoverLink {
+  function buildMonomerMap(seqCol: DG.Column<string>, tableRowIdx: number): MonomerMap {
+    const seqSH = seqHelper.getSeqHandler(seqCol);
+    const seqSS = seqSH.getSplitted(tableRowIdx);
+    const biotype = seqSH.defaultBiotype;
+    const seqMList: ISeqMonomer[] = wu.count(0).take(seqSS.length)
+      .map((posIdx) => {
+        return {position: posIdx, symbol: seqSS.getCanonical(posIdx), biotype: biotype} as ISeqMonomer;
+      })
+      .toArray();
+
+    const alphabet = seqSH.alphabet as ALPHABET;
+    const polymerType = alphabet == ALPHABET.RNA || alphabet == ALPHABET.DNA ? PolymerTypes.RNA : PolymerTypes.PEPTIDE;
+    const monomersDict = getMonomersDictFromLib([seqMList], polymerType, alphabet, monomerLib, rdKitModule);
+    // Call seq-to-molfile worker core directly
+    const molWM = monomerSeqToMolfile(seqMList, monomersDict, alphabet, polymerType);
+    return molWM.monomers;
+  }
+
+  const monomerMapLruCache = new LRUCache<string, MonomerMap>({max: 100});
+
+  function getMonomerMap(seqCol: DG.Column<string>, tableRowIdx: number): MonomerMap | null {
+    const seq = seqCol.get(tableRowIdx);
+    if (seq == null) return null;
+
+    let resMonomerMap = monomerMapLruCache.get(seq);
+    if (!resMonomerMap)
+      monomerMapLruCache.set(seq, resMonomerMap = buildMonomerMap(seqCol, tableRowIdx));
+
+    return resMonomerMap;
+  }
+
+  const resLink: MonomerHoverLink = {
+    targetCol: molCol,
+    handler: (seqGridCell: DG.GridCell, cyclizedMonomer: ISeqMonomer | null, targetGridCol: DG.GridColumn): boolean => {
+      const grid = targetGridCol.grid;
+      const tableRowIdx = seqGridCell.tableRowIndex!;
+      const gridRowIdx = seqGridCell.gridRow;
+      const targetGridCell = grid.cell(targetGridCol.name, gridRowIdx);
+      const positionMap = positionMaps[gridRowIdx];
+
+      const prev = getMonomerHover();
+      if (!prev || (prev && (prev.dataFrameId != seqCol.dataFrame.id || prev.gridRowIdx != gridRowIdx ||
+        prev.seqColName != seqCol.name || prev.seqPosition != cyclizedMonomer?.position))
+      ) {
+        if (prev) {
+          setMonomerHover(null);
+          prev.gridCell.grid?.invalidate();
+          // prev.gridCell.render();
+        }
+        if (!cyclizedMonomer) {
+          setMonomerHover(null);
+          return true;
+        }
+
+        setMonomerHover({
+          gridCell: targetGridCell,
+          dataFrameId: seqCol.dataFrame.id,
+          gridRowIdx: gridRowIdx,
+          seqColName: seqCol.name,
+          seqPosition: cyclizedMonomer ? cyclizedMonomer.position : -1,
+          getSubstruct: (): ISubstruct | undefined => { // Gets monomer highlight
+            if (!cyclizedMonomer || cyclizedMonomer.symbol === '*')
+              return undefined;
+
+            const molMonomerMap = getMonomerMap(seqCol, tableRowIdx);
+            if (!molMonomerMap)
+              return undefined;
+
+            const resSubstructList: ISubstruct[] = [];
+            const seqMonomerList: number[] = positionMap[cyclizedMonomer.position];
+            console.log(seqMonomerList);
+            for (const seqMonomer of seqMonomerList) {
+              const monomerMap = molMonomerMap.get(seqMonomer); // single monomer
+              if (!monomerMap) return {atoms: [], bonds: [], highlightAtomColors: [], highlightBondColors: []};
+              resSubstructList.push(getMolHighlight([monomerMap], monomerLib));
+            }
+            //TODO: refine merge substract
+            const res: ISubstruct = mergeSubstructs(resSubstructList);
+            return res;
+          }
+        });
+
+        // TODO: Invalidate targetGridCell
+        grid.invalidate();
+        // targetGridCell.render();
+      }
+
+      return true;
+    },
+    /* ISubstructProvider.*/getSubstruct: (tableRowIdx: number | null): ISubstruct | undefined =>{
+      // Gets whole molecule highlight
+      if (molCol.getTag(ChemTags.SEQUENCE_SRC_HL_MONOMERS) != 'true') return undefined;
+      if (tableRowIdx == null) return undefined;
+      const seq = seqCol.get(tableRowIdx);
+      if (!seq) return undefined;
+
+      const molMonomerMap = getMonomerMap(seqCol, tableRowIdx);
+      if (!molMonomerMap) return undefined;
+      const res: ISubstruct = getMolHighlight(molMonomerMap.values(), monomerLib);
+      return res;
+    }
+  };
+
+  addMonomerHoverLink(cyclizedCol.temp, resLink);
+  addSubstructProvider(molCol.temp, resLink);
+
+  return resLink;
 }

@@ -21,7 +21,7 @@ export async function test(category: string, test: string, testContext: TestCont
   // const helmInit = DG.Func.find({name: 'initHelm'})[0];
   // if (helmInit)
   //   await helmInit.apply();
-  testContext.catchUnhandled = false;
+  testContext?.catchUnhandled && (testContext.catchUnhandled = false);
   const data = await runTests({category, test, testContext});
   return DG.DataFrame.fromObjects(data)!;
 }

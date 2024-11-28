@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -5,6 +6,8 @@ import * as DG from 'datagrok-api/dg';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 import {LoggerWrapper} from '@datagrok-libraries/bio/src/utils/logger';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
 import {APP_NAME} from '../view/const';
 import {DEFAULT_LIB_FILENAME, FALLBACK_LIB_PATH} from './data-loader/const';
@@ -16,14 +19,18 @@ import {MonomerLibWrapper} from './monomer-lib/lib-wrapper';
 import {FormatConverter} from '../../translator/model/format-converter';
 import {FormatDetector} from './parsing-validation/format-detector';
 import {highlightInvalidSubsequence} from '../view/components/colored-input/input-painters';
-import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 export class OligoToolkitPackage extends DG.Package implements ITranslationHelper {
-  private _seqHelper: ISeqHelper;
+
+  private _helmHelper: IHelmHelper;
+  public get helmHelper(): IHelmHelper {
+    if (!this._helmHelper)
+      throw new Error('Package SequenceTranslator .helmHelper is not initialized');
+    return this._helmHelper;
+  }
+
   public get seqHelper(): ISeqHelper {
-    if (!this._seqHelper)
-      throw new Error('Package SequenceTranslator .seqHelper is not initialized');
-    return this._seqHelper;
+    return this._helmHelper.seqHelper;
   }
 
   private _monomerLib?: IMonomerLib;
@@ -47,23 +54,30 @@ export class OligoToolkitPackage extends DG.Package implements ITranslationHelpe
     return this._monomerLibWrapper;
   }
 
+  private _initPromise: Promise<void>;
+  public get initPromise(): Promise<void> { return this._initPromise; }
+
   constructor(opts: { debug: boolean } = {debug: false}) {
     super();
     // @ts-ignore
     super._logger = new LoggerWrapper(super.logger, opts.debug);
   }
 
-  private initPromise?: Promise<void>;
-
-  completeInit(seqHelper: ISeqHelper): void {
-    this._seqHelper = seqHelper;
+  startInit(initPromise: Promise<void>): void {
+    this._initPromise = initPromise;
   }
 
+  completeInit(helmHelper: IHelmHelper): void {
+    this._helmHelper = helmHelper;
+  }
+
+  private initLibDataPromise?: Promise<void>;
+
   async initLibData(): Promise<void> {
-    if (!this.initPromise) {
-      this.initPromise = (async () => {
+    if (!this.initLibDataPromise) {
+      this.initLibDataPromise = (async () => {
         const packageSettings = await this.getSettings();
-        let monomersPath: string = packageSettings['MonomersPath'];
+        let monomersPath: string = packageSettings instanceof Map ? packageSettings.get('MonomersPath') : packageSettings['MonomersPath'];
         if (!monomersPath || !(await grok.dapi.files.exists(monomersPath))) {
           this.logger.warning(`Monomers path '${monomersPath}' not found. ` +
             `Fallback to monomers sample path '${FALLBACK_LIB_PATH}'.`);
@@ -76,7 +90,7 @@ export class OligoToolkitPackage extends DG.Package implements ITranslationHelpe
         this._monomerLibWrapper = new MonomerLibWrapper(this.monomerLib, this.jsonData);
       })();
     }
-    return this.initPromise;
+    return this.initLibDataPromise;
   }
 
   async getTranslationHelper(): Promise<ITranslationHelper> {

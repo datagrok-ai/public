@@ -41,6 +41,11 @@
   flex-grow: 0;
 }
 
+#tt-name .ui-input-editor{
+  margin-top: 5px;
+  text-align: left;
+}
+
 #tt-edit-button {
   position: absolute;
   display: none;
@@ -164,6 +169,15 @@
   height: 100%;
 }
 
+.ui-btn-test-run{
+  max-width: 70px;
+}
+
+.ui-test-data{
+  width: 140px;
+  justify-content: space-between;
+}
+
 .tt-dialog .ui-input-textarea{ 
   display: inline-block;
 }
@@ -191,8 +205,9 @@
 
 .tt-dialog .create-ticket-button{
   align-self: end;
+  pointer-events:all !important;
 }
-
+ 
 .tt-dialog .d4-pane-jira_tickets .d4-flex-col{
   width: 75%;
 }

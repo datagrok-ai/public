@@ -2,8 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, awaitCheck, expectArray, before, after, delay} from '@datagrok-libraries/utils/src/test';
-import {_package} from '../package-test';
+import { category, test, awaitCheck, expectArray, before, after, delay } from '@datagrok-libraries/utils/src/test';
 import $ from 'cash-dom';
 
 category('Viewers: Filters', () => {
@@ -17,10 +16,10 @@ id1_0003,id2_003,id3_3`;
     const view: DG.TableView = grok.shell.addTableView(df);
 
     const filterList: { [p: string]: string }[] = [
-      {column: 'id1', type: DG.FILTER_TYPE.CATEGORICAL, label: 'id1 label'},
-      {column: 'id2', type: DG.FILTER_TYPE.CATEGORICAL, label: 'id2 label'},
+      { column: 'id1', type: DG.FILTER_TYPE.CATEGORICAL, label: 'id1 label' },
+      { column: 'id2', type: DG.FILTER_TYPE.CATEGORICAL, label: 'id2 label' },
     ];
-    const filtersViewer = view.filters({filters: filterList}) as DG.Viewer;
+    const filtersViewer = view.filters({ filters: filterList }) as DG.Viewer;
     view.dockManager.dock(filtersViewer, DG.DOCK_TYPE.LEFT, null, 'Filters', 0.4);
 
     await awaitCheck(() => {
@@ -34,15 +33,16 @@ id1_0003,id2_003,id3_3`;
   });
 
   test('customBetweenCategorical', async () => {
+    let _package = DG.Func.find({ package: 'UITests', name: 'test' })[0]?.package;
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv1);
     const view: DG.TableView = grok.shell.addTableView(df);
 
     const filterList: { [p: string]: string }[] = [
-      {column: 'id1', type: DG.FILTER_TYPE.CATEGORICAL, label: 'id1 label'},
-      {column: 'id3', type: `${_package.name}:TestCustomFilter`, label: 'custom label'},
-      {column: 'id2', type: DG.FILTER_TYPE.CATEGORICAL, label: 'id2 label'},
+      { column: 'id1', type: DG.FILTER_TYPE.CATEGORICAL, label: 'id1 label' },
+      { column: 'id3', type: `${_package.name}:TestCustomFilter`, label: 'custom label' },
+      { column: 'id2', type: DG.FILTER_TYPE.CATEGORICAL, label: 'id2 label' },
     ];
-    const filtersViewer = view.filters({filters: filterList}) as DG.Viewer;
+    const filtersViewer = view.filters({ filters: filterList }) as DG.Viewer;
 
     await awaitCheck(() => {
       const fltColNameList = $(filtersViewer.root)
@@ -60,10 +60,12 @@ category('Viewers: Filters: Collaborative filtering', () => {
   let df: DG.DataFrame;
   let tv: DG.TableView;
   let fg: DG.FilterGroup;
+  let _package: DG.Package;
   const STRUCTURE = 'Structure';
   const BENZENE = 'c1ccccc1';
 
   before(async () => {
+    _package = DG.Func.find({ package: 'UITests', name: 'test' })[0]?.package;
     df = await _package.files.readCsv('SPGI_v2_100_full.csv');
     tv = grok.shell.addTableView(df);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
@@ -145,9 +147,9 @@ category('Viewers: Filters: Collaborative filtering', () => {
     await awaitCheck(() => df.filter.trueCount === n,
       `Scatter plot: expected ${n} rows, got ${df.filter.trueCount}`, 2000);
   }
-}, {clear: false});
+}, { clear: false });
 
 const savedTree = '[{"scaffold":"\\n     RDKit          2D\\n\\n  3  2  0  0  0  0  0  0  0  0999 V2000\\n    ' +
-'0.2933    2.5312    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n   -1.0463    1.7578    0.0000 C   ' +
-'0  0  0  0  0  0  0  0  0  0  0  0\\n    0.2933    4.0781    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  ' +
-'0\\n  2  1  1  0\\n  1  3  1  0\\nM  END\\n","checked":true,"isNot":false,"expanded":true,"child_nodes":[]},"OR"]';
+  '0.2933    2.5312    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n   -1.0463    1.7578    0.0000 C   ' +
+  '0  0  0  0  0  0  0  0  0  0  0  0\\n    0.2933    4.0781    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  ' +
+  '0\\n  2  1  1  0\\n  1  3  1  0\\nM  END\\n","checked":true,"isNot":false,"expanded":true,"child_nodes":[]},"OR"]';

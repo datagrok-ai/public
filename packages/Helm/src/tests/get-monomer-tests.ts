@@ -9,7 +9,7 @@ import {
 } from '@datagrok-libraries/utils/src/test';
 import {getHelmHelper, getMonomerHandleArgs} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
-import {Atom, HelmType, IJsAtom, GetMonomerFunc} from '@datagrok-libraries/bio/src/helm/types';
+import {Atom, HelmType, IJsAtom, GetMonomerFunc, HelmAtom} from '@datagrok-libraries/bio/src/helm/types';
 import {MonomerLibSummaryType} from '@datagrok-libraries/bio/src/types';
 import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
@@ -31,6 +31,8 @@ declare const org: OrgHelmModule;
 declare const JSDraw2: JSDraw2Module;
 
 type TestDataType = { args: { a: any, name?: string }, tgt: any };
+
+const getResultDf = false;
 
 const tests: { [testName: string]: TestDataType } = {
   /* eslint-disable */
@@ -68,7 +70,7 @@ const tests: { [testName: string]: TestDataType } = {
   /* eslint-enable */
 };
 
-category('getMonomer', ()=>{
+category('getMonomer', ()=> {
   let helmHelper: IHelmHelper;
   let monomerLibHelper: IMonomerLibHelper;
   /** Backup actual user's monomer libraries settings */
@@ -95,14 +97,15 @@ category('getMonomer', ()=>{
     const helmHelper: IHelmHelper = await getHelmHelper();
     expect(helmHelper != null, true);
     const getMonomerFunc: GetMonomerFunc = helmHelper.originalMonomersFuncs!.getMonomer!;
-
-    return _testAll('original', getMonomerFunc);
-  }, {isAggregated: true});
+    const res = _testAll('original', getMonomerFunc);
+    return getResultDf ? (res ?? DG.DataFrame.create(0)) : null;
+  }, {isAggregated: getResultDf});
 
   test('monomerLib', async () =>{
     const getMonomerFunc = org.helm.webeditor.Monomers.getMonomer;
-    return _testAll('monomerLib', getMonomerFunc);
-  }, {isAggregated: true});
+    const res = _testAll('monomerLib', getMonomerFunc);
+    return getResultDf ? (res ?? DG.DataFrame.create(0)) : null;
+  }, {isAggregated: getResultDf});
 
   function _testAll(prefix: string, getMonomerFunc: GetMonomerFunc): DG.DataFrame {
     const resDf = DG.DataFrame.fromColumns([
@@ -135,10 +138,11 @@ category('getMonomer', ()=>{
       resDf.set('error', resI, errMsg);
       resDf.set('stack', resI, errStack);
       resDf.set('success', resI, false);
+      throw err;
     }
 
     for (const [[testName, testData], testI] of wu.enumerate(Object.entries(tests))) {
-      const a: Atom<HelmType> | HelmType = getAtomFromJson(testData.args.a);
+      const a: HelmAtom | HelmType = getAtomFromJson(testData.args.a);
       const [biotype, elem] = getMonomerHandleArgs(a, testData.args.name);
       const tgt = testData.tgt;
 
@@ -155,6 +159,7 @@ category('getMonomer', ()=>{
         resDf.set('error', resI, errMsg);
         resDf.set('stack', resI, errStack);
         resDf.set('success', resI, false);
+        throw err;
       }
     }
     return resDf;
@@ -173,8 +178,8 @@ category('getMonomer', ()=>{
   });
 });
 
-function getAtomFromJson(argA: IJsAtom<HelmType> | HelmType): Atom<HelmType> | HelmType {
-  let res: Atom<HelmType> | HelmType;
+function getAtomFromJson(argA: IJsAtom<HelmType> | HelmType): HelmAtom | HelmType {
+  let res: HelmAtom | HelmType;
   const a = argA as IJsAtom<HelmType>;
   if (a.T === 'ATOM')
     res = new JSDraw2.Atom(a.p, a.elem, a.bio);

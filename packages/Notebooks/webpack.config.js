@@ -1,5 +1,6 @@
 const path = require('path');
 const {CleanWebpackPlugin} = require('clean-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
   cache: {
@@ -7,9 +8,20 @@ module.exports = {
   },
   mode: 'production',
   entry: {
-    package: './src/package.js'
+    package: './src/package.js',
+    jupyterStyles: [
+      '@jupyterlab/application/style/index.css',
+      '@jupyterlab/codemirror/style/index.css',
+      '@jupyterlab/completer/style/index.css',
+      '@jupyterlab/documentsearch/style/index.css',
+      '@jupyterlab/notebook/style/index.css',
+      './css/application-base.css',
+      './css/notebooks.css',
+      './css/theme-light-extension-index.css',
+      './css/ui-components-base.css',
+    ]
   },
-  //devtool: 'inline-source-map',
+  // devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',
@@ -17,6 +29,11 @@ module.exports = {
     "openchemlib/full.js": "OCL",
     "rxjs": "rxjs",
     "rxjs/operators": "rxjs.operators"
+  },
+  resolve: {
+    fallback: {
+      'path': false,
+    }
   },
   optimization: {
     minimize: true
@@ -31,17 +48,29 @@ module.exports = {
     rules: [
       {
         test: /\.css$/,
+        exclude: /@jupyterlab.*\.css$/,
+        include: /notebooks\.css$/,
         use: [
           'style-loader',
           {
             loader: 'css-loader',
             options: {
-              import: (parsedImport, resourcePath) =>
-                !((resourcePath.endsWith('ui-components/style/index.css') && parsedImport.url.includes('base.css')) ||
-                  (resourcePath.endsWith('application/style/index.css') && parsedImport.url.includes('base.css')) ||
-                  (parsedImport.url.includes('blueprint.css')))
+              import: {
+                filter: (url, media, resourcePath) =>
+                !((resourcePath.endsWith('ui-components/style/index.css') && url.includes('base.css')) ||
+                  (resourcePath.endsWith('application/style/index.css') && url.includes('base.css')) ||
+                  (url.includes('blueprint.css')))
+              }
             }
           }
+        ]
+      },
+      {
+        test: /\.css$/,
+        exclude: /notebooks\.css$/,
+        use: [
+          MiniCssExtractPlugin.loader,
+          'css-loader',
         ]
       },
       {test: /\.html$/, use: 'file-loader'},
@@ -50,7 +79,7 @@ module.exports = {
       {
         // In .css files, svg is loaded as a data URI.
         test: /\.svg(\?v=\d+\.\d+\.\d+)?$/,
-        issuer: {test: /\.css$/},
+        issuer: /\.css$/,
         use: {
           loader: 'svg-url-loader',
           options: {encoding: 'none', limit: 10000}
@@ -60,7 +89,7 @@ module.exports = {
         // In .ts and .tsx files (both of which compile to .js), svg files
         // must be loaded as a raw string instead of data URIs.
         test: /\.svg(\?v=\d+\.\d+\.\d+)?$/,
-        issuer: {test: /\.js$/},
+        issuer: /\.js$/,
         use: {
           loader: 'raw-loader'
         }
@@ -72,6 +101,7 @@ module.exports = {
     ]
   },
   plugins: [
-    new CleanWebpackPlugin()
+    new CleanWebpackPlugin(),
+    new MiniCssExtractPlugin({ filename: 'styles/jupyter-styles.css'})
   ]
 };

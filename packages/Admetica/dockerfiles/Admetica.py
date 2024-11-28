@@ -58,8 +58,12 @@ def parallel_process_smiles(smis):
   return valid_smiles
 
 def make_chemprop_predictions(df_test, checkpoint_path, batch_size=512):
-  # Load the model onto GPU
-  mpnn = models.MPNN.load_from_checkpoint(checkpoint_path, map_location=torch.device('cuda'))
+  # Check for GPU availability
+  device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+  # Load the model onto the appropriate device
+  mpnn = models.MPNN.load_from_checkpoint(checkpoint_path, map_location=device)
+
   smis = df_test.iloc[:, 0].tolist()
   valid_indices = [i for i, smi in enumerate(smis) if not is_malformed(smi) and smi != '']
   valid_smiles = [smis[i] for i in valid_indices]
@@ -79,17 +83,22 @@ def make_chemprop_predictions(df_test, checkpoint_path, batch_size=512):
   )
 
   logging.debug('Check GPU availability')
-  logging.debug(torch.cuda.is_available())
-  logging.debug(find_usable_cuda_devices(1))
-  logging.debug(next(mpnn.parameters()).device)
+  logging.debug(f"CUDA available: {torch.cuda.is_available()}")
+
+  if torch.cuda.is_available():
+    logging.debug(f"Usable CUDA devices: {find_usable_cuda_devices(1)}")
+  else:
+    logging.debug("No usable CUDA devices found. Using CPU.")
+
+  logging.debug(f'Model device: {next(mpnn.parameters()).device}')
 
   with torch.inference_mode():
     trainer = pl.Trainer(
       logger=True,
       enable_progress_bar=True,
-      accelerator="gpu",
-      devices=find_usable_cuda_devices(1),  # Use one available GPU
-      precision=16                          # Enable mixed precision for speedup
+      accelerator="gpu" if torch.cuda.is_available() else "cpu",  # Use GPU if available, else CPU
+      devices=1,
+      precision=16 if torch.cuda.is_available() else 32   # Enable mixed precision if using GPU, otherwise default
     )
     test_preds = trainer.predict(mpnn, test_loader)
 

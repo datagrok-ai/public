@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/api-samples",
-  "version": "1.0.11",
+  "version": "1.1.0",
   "author": {
     "name": "Savenko Stanislav",
     "email": "ssavenko@datagrok.ai"
@@ -30,7 +30,7 @@
     "@datagrok/helm": "^2.5.0",
     "@datagrok/clinical-case": "^1.1.0",
     "@datagrok/power-grid": "^1.4.0",
-    "@datagrok/usage-analysis": "^2.1.0",
+    "@datagrok/usage-analysis": "^2.2.0",
     "@datagrok/charts": "^1.4.0",
     "@datagrok/chembl": "^1.1.4",
     "@datagrok/samples": "^1.0.4"

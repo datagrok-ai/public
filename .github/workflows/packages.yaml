@@ -84,13 +84,9 @@ jobs:
               unpublished_deps="$(jq -r '. | to_entries | map(select(.value | match("\\.\\./.*")))[] | "\(.key)=\(.value)"' <<<$dependencies | tr '\n' ' ')"
 
               job_test_env=''
-              runner='ubuntu-22.04'
-              if [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "admetica" ]] || \
-                 [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"admetica"* ]]; then
-                runner='ubuntu-latest-m'
-              fi
               if [ -n "$(jq  '. | select( has("test") == true )' <<< "$scripts")" ] && \
-                  [[ "$(jq  -r '. | select( has("skipCI") == true ).skipCI' "${DIR}/package.json")" != "true" ]]; then
+                  [[ "$(jq  -r '. | select( has("skipCI") == true ).skipCI' "${DIR}/package.json")" != "true" ]] && \
+                  [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" != "docking" ]]; then
                 MATRIX_PUBLISH_JSON+=", \"test\": \"test\""
                 job_name='Build, test'
                 job_test_env='Datagrok'
@@ -100,13 +96,14 @@ jobs:
                    [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "dendrogram" ]] || \
                    [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "cvmtests" ]] || \
                    [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "samples" ]] || \
+                   [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "admetica" ]] || \
                    [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]] || \
                    [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"simpkpd"* ]] || \
                    [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"cvmtests"* ]] || \
                    [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"dendrogram"* ]] || \
+                   [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"admetica"* ]] || \
                    [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"samples"* ]]; then
                   job_test_env+=',JKG'
-                  runner='ubuntu-latest-m'
                 fi
                 if [ -d "${DIR}/dockerfiles" ]; then
                   job_test_env+=',Spawner'
@@ -116,6 +113,12 @@ jobs:
                 else
                   job_test_env+=' bleeding-edge version'
                 fi
+              fi
+              runner='ubuntu-22.04'
+              if [[ "${job_test_env}" == *"JKG"* ]] || \
+                 [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "admetica" ]] || \
+                 [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"admetica"* ]]; then
+                runner='ubuntu-latest-m'
               fi
 
               name="$(jq -r .name "${DIR}/package.json")"
@@ -316,13 +319,12 @@ jobs:
           df -h
           apiUrl='http://127.0.0.1:8080/api'
           alias=${HOST}
-
           # fi
 
           echo "apiUrl=$apiUrl" >> $GITHUB_OUTPUT
           echo "alias=$alias" >> $GITHUB_OUTPUT
       - id: datagrok-tools
-        run: npm install -g datagrok-tools@latest
+        run: npm install -g datagrok-tools@4.13.31
       - if: ${{ matrix.unpublished_deps != '' }}
         run: grok link
         working-directory: packages/${{ matrix.package }}
@@ -333,6 +335,15 @@ jobs:
           key: ${{ matrix.package }}-${{ github.ref_name }}-webpack-build
           restore-keys: |
             ${{ matrix.package }}-master-webpack-build
+      - name: Remove GPU from docker configuration
+        if: matrix.docker != '' && steps.datagrok-image.outcome == 'success'
+        run: |
+          for dockerfile in $(echo -e ${{ matrix.docker }}); do
+            docker_config_file="$(dirname $dockerfile)/container.json"
+            if [ -f "${docker_config_file}" ]; then
+              jq 'del(.gpu)' ${docker_config_file} > temp.json && mv temp.json ${docker_config_file}
+            fi
+          done
       - name: Build package
         if: ${{ matrix.build == 'build' }}
         id: build
@@ -357,6 +368,9 @@ jobs:
           done
           curl -s ${{ steps.datagrok-image.outputs.apiUrl }}/info/server
           curl -s ${{ steps.datagrok-image.outputs.apiUrl }}/admin/health
+
+          token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/admin | jq -r .token)
+          curl -s -H "Authorization: $token" -H "Content-Type": "application/json" '${{ steps.datagrok-image.outputs.apiUrl }}/admin/plugins/admin/settings' -X POST -d '{"#type":"AdminPluginSettings", "agreementDate":null}'
       - name: Create configuration for grok command-line tool
         if: ${{ matrix.test == 'test' }}
         id: grok-config
@@ -420,7 +434,6 @@ jobs:
             fi
           done
         working-directory: packages/${{ matrix.package }}
-
       - name: Set required credentials
         if: ${{ matrix.test == 'test' }}
         env:
@@ -429,7 +442,7 @@ jobs:
           if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
             if [[ "${{ matrix.package }}" == "Chemspace" ]]; then
               token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/admin | jq -r .token)
-              curl -s -H "Authorization: $token" -H "Content-Type": "application/json" '${{ steps.datagrok-image.outputs.apiUrl }}/credentials/for/Chemspace:Chemspace' -X POST -d "{'apiKey': '$CHEMSPACE_APIKEY'}"
+              curl -s -H "Authorization: $token" -H "Content-Type": "application/json" '${{ steps.datagrok-image.outputs.apiUrl }}/credentials/for/Chemspace.Chemspace' -X POST -d "{\"apiKey\": \"$CHEMSPACE_APIKEY\"}"
             fi
           fi
 
@@ -439,14 +452,14 @@ jobs:
         env:
           DEV_TEST_DEV_KEY: ${{ secrets.DEV_TEST_DEV_KEY }}
           TEST_TEST_DEV_KEY: ${{ secrets.TEST_TEST_DEV_KEY }}
-        timeout-minutes: 10
+        timeout-minutes: 20
         run: |
           check_container=false
           for dockerfile in $(echo -e ${{ matrix.docker }}); do
             docker_config_file="$(dirname $dockerfile)/container.json"
             if [ -f "${docker_config_file}" ]; then
-              gpu_count=$(jq '.gpu' ${docker_config_file})
-              if [ "$gpu_count" -gt 0 ]; then
+              on_demand=$(jq '.on_demand' ${docker_config_file})
+              if [ "$on_demand" == "true" ]; then
                 check_container=false
               else
                 check_container=true
@@ -457,6 +470,7 @@ jobs:
               break
             fi
           done
+
           if [[ "${check_container}" == "true" ]] ; then
             if [[ "${{ steps.datagrok-image.outputs.alias }}" == "test" ]]; then
               key="$TEST_TEST_DEV_KEY"
@@ -480,15 +494,13 @@ jobs:
                 echo -e "\nRetrying 'docker ps'..."
               done
             fi
-          else
-            echo "GPU is not available, skipping container wait"
           fi
       - name: Test Package
         if: ${{ matrix.test == 'test' }}
         continue-on-error: ${{ contains(matrix.package, 'Tests') || matrix.package == 'Chemspace' }}
         timeout-minutes: 30
         id: test-package
-        run: npm run test -- --skip-build --skip-publish --record --csv --host ${{ steps.datagrok-image.outputs.alias }}
+        run: npm run test -- --skip-build --skip-publish --record --csv --host ${{ steps.datagrok-image.outputs.alias }} --verbose
         working-directory: packages/${{ matrix.package }}
       - name: Upload Artifact
         if: always() && steps.test-package.outcome != 'skipped'

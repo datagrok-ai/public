@@ -463,7 +463,7 @@ export class SubstructureFilter extends DG.Filter {
     */
     const columnIsFilteringByStructure = this.column?.temp[FILTER_SCAFFOLD_TAG] ?
       (JSON.parse(this.column?.temp[FILTER_SCAFFOLD_TAG]) as IColoredScaffold[])[0].molecule : '';
-    if (state.molBlock || columnIsFilteringByStructure !== state.molBlock) {
+    if (state.molBlock || (columnIsFilteringByStructure && columnIsFilteringByStructure !== state.molBlock)) {
       _package.logger.debug(`******in applyState, calling sketcher change for filter: ${this.filterId}`);
       setTimeout(function() {that._onSketchChanged();}, 1000);
     }

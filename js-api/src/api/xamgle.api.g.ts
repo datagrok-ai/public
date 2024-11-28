@@ -95,13 +95,12 @@ export interface SettingsInterface {
 
   allowEventScripts: boolean;
 
-  /// Whenever an error occurs, automatically reports extended logs to the server. Use UsageAnalysis to browse them.
-  /// This includes console logs, server logs, data connectivity logs, Docker logs, etc.
-  autoReportExtendedLogs: boolean;
-
   /// Displays Index Files check box in connection edit dialog. If it is disabled then check
   /// box will not be shown to the user and indexing of files will not be configurable.
   enableConnectionIndexFiles: boolean;
+
+  // When true, use WebGPU for rendering and advanced computations if possible.
+  enableScatterPlotWebGPUAcceleration: boolean;
 
   dateFormat: string;
 
@@ -133,6 +132,10 @@ export interface SettingsInterface {
   clientFilesCacheEnabled: boolean;
 
   dataFrameBatchSize: number;
+
+  /// Whenever an error occurs, automatically create report with extended logs and send it to the server. Use UsageAnalysis to browse them.
+  /// This includes console logs, server logs, data connectivity logs, Docker logs, etc.
+  autoReportErrors: boolean;
 
 
 }

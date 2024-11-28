@@ -4,7 +4,7 @@
     "access": "public"
   },
   "friendlyName": "Datagrok chem-meta library",
-  "version": "1.2.7",
+  "version": "1.2.8",
   "description": "RDKit JS API, utils for molfiles parsing",
   "dependencies": {
     "wu": "^2.1.0"
@@ -13,7 +13,7 @@
     "@types/wu": "^2.1.44",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
-    "eslint": "^9.12.0",
+    "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "ts-loader": "^9.2.6",
     "typescript": "^4.2.3"

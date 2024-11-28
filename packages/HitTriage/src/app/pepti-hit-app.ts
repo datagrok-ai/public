@@ -48,7 +48,7 @@ export class PeptiHitApp extends HitDesignApp<PeptiHitTemplate> {
     }
   }
 
-  protected getDesignView(): DG.TableView {
+  protected override getDesignView(): DG.TableView {
     const subs: Subscription[] = [];
     const isNew = this.dataFrame!.col(this.helmColName)?.toList().every((m) => !m && m === '');
     const helmCol = this.dataFrame!.col(this.helmColName);
@@ -80,11 +80,11 @@ export class PeptiHitApp extends HitDesignApp<PeptiHitTemplate> {
     subs.push(this.dataFrame!.onRowsAdded.pipe(filter(() => !this.isJoining))
       .subscribe(() => { // TODO, insertion of rows in the middle
         try {
-          if (this.template!.stages?.length > 0) {
+          if (this.stages.length > 0) {
             for (let i = 0; i < this.dataFrame!.rowCount; i++) {
               const colVal = this.dataFrame!.col(TileCategoriesColName)!.get(i);
               if (!colVal || colVal === '' || this.dataFrame!.col(TileCategoriesColName)?.isNone(i))
-                this.dataFrame!.set(TileCategoriesColName, i, this.template!.stages[0]);
+                this.dataFrame!.set(TileCategoriesColName, i, this.stages[0]);
             }
           }
           let lastAddedCell: DG.GridCell | null = null;
@@ -154,7 +154,7 @@ export class PeptiHitApp extends HitDesignApp<PeptiHitTemplate> {
     view?.grid && subs.push(view.grid.onCellValueEdited.subscribe(async (gc) => {
       try {
         if (gc.tableColumn?.name === TileCategoriesColName) {
-          await this.saveCampaign(undefined, false);
+          await this.saveCampaign(false);
           return;
         }
         if (gc.tableColumn?.name !== this.helmColName)

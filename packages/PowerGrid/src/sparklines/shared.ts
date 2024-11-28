@@ -9,8 +9,15 @@ export function names(columns: Iterable<DG.Column>): string[] {
   return Array.from(columns).map((c: DG.Column) => c.name);
 }
 
+export enum SummaryColumnColoringType {
+  Off = 'Off',
+  Bins = 'Bins',
+  Values = 'Values'
+}
+
 export interface SummarySettingsBase {
   columnNames: string[];
+  colorCode: SummaryColumnColoringType;
 }
 
 
@@ -55,25 +62,55 @@ export class Hit {
   isHit: boolean = false;
 }
 
-export function createTooltip(cols: DG.Column[], activeColumn: number, row: number): HTMLDivElement[] {
-  const arr: HTMLDivElement[] = [];
+export function createTooltip(cols: DG.Column[], activeColumn: number, row: number): HTMLDivElement {
+  const keysDiv = ui.divV([], { style: { marginRight: '10px', fontWeight: 'bold', textAlign: 'right' } });
+  const valuesDiv = ui.divV([], { style: { fontWeight: 'normal' } });
+
   for (let i = 0; i < cols.length; i++) {
-    if (cols[i] === null)
-      continue;
-    arr.push(ui.divH([ui.divText(`${cols[i].name}:`, {
-      style: {
-        margin: '0 10px 0 0',
-        fontWeight: (activeColumn == i) ? 'bold' : 'normal',
-      }
-    }), ui.divText(`${Math.floor(cols[i].getNumber(row) * 100) / 100}`, {
-      style: {
-        fontWeight: (activeColumn == i) ? 'bold' : 'normal',
-      }
-    })]
-    )
-    );
+    if (cols[i] === null) continue;
+
+    const isActive = activeColumn === i;
+    keysDiv.appendChild(ui.divText(`${cols[i].name}`, { 
+      style: { fontWeight: isActive ? 'bold' : 'normal' } 
+    }));
+    valuesDiv.appendChild(ui.divText(`${Math.floor(cols[i].getNumber(row) * 100) / 100}`, { 
+      style: { fontWeight: isActive ? 'bold' : 'normal' } 
+    }));
   }
-  return arr;
+
+  return ui.divH([keysDiv, valuesDiv], { style: { display: 'flex' } });
+}
+
+export function createBaseInputs(gridColumn: DG.GridColumn, settings: SummarySettingsBase): DG.InputBase[] {
+  const columnNames = settings?.columnNames ?? names(gridColumn.grid.dataFrame.columns.numerical);
+  return [
+    ui.input.columns('Columns', {
+      value: gridColumn.grid.dataFrame.columns.byNames(columnNames),
+      table: gridColumn.grid.dataFrame,
+      onValueChanged: (value) => {
+        settings.columnNames = names(value);
+        gridColumn.grid.invalidate();
+      },
+      available: names(gridColumn.grid.dataFrame.columns.numerical)
+    }),
+    ui.input.choice<SummaryColumnColoringType>('Color Code', {
+      value: settings.colorCode,
+      items: [SummaryColumnColoringType.Off, SummaryColumnColoringType.Bins, SummaryColumnColoringType.Values],
+      onValueChanged: (value) => {
+        settings.colorCode = value;
+        gridColumn.grid.invalidate();
+      },
+      tooltipText: 'Activates color rendering',
+      nullable: false
+    }),
+  ];
+}
+
+export function getRenderColor(settings: SummarySettingsBase, baseColor: number,
+   options: {column: DG.Column, colIdx: number, rowIdx: number}): number {
+  return settings.colorCode === SummaryColumnColoringType.Off ? baseColor : settings.colorCode === SummaryColumnColoringType.Bins ?
+    DG.Color.getCategoricalColor(options.colIdx) : options.column.meta.colors.getType() === DG.COLOR_CODING_TYPE.OFF ?
+    DG.Color.getRowColor(options.column, options.rowIdx) : options.column.meta.colors.getColor(options.rowIdx);
 }
 
 

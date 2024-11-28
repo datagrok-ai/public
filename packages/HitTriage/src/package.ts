@@ -9,6 +9,7 @@ import {loadCampaigns} from './app/utils';
 import {AppName} from './app';
 import {PeptiHitApp} from './app/pepti-hit-app';
 import {PeptiHitHelmColName} from './app/consts';
+import {htPackageSettingsEditorWidget} from './packageSettingsEditor';
 // import {loadCampaigns} from './app/utils';
 
 export const _package = new DG.Package();
@@ -73,6 +74,7 @@ export async function peptiHitAppTreeBrowser(treeNode: DG.TreeViewGroup, browseV
 //tags: app
 //name: Hit Triage
 //output: view v
+//meta.browsePath: Chem
 export async function hitTriageApp(): Promise<DG.ViewBase> {
   const c = grok.functions.getCurrentCall();
   return new HitTriageApp(c).multiView;
@@ -82,6 +84,7 @@ export async function hitTriageApp(): Promise<DG.ViewBase> {
 //name: Hit Design
 //meta.icon: images/icons/hit-design-icon.png
 //output: view v
+//meta.browsePath: Chem
 export async function hitDesignApp(): Promise<DG.ViewBase> {
   const c = grok.functions.getCurrentCall();
   return new HitDesignApp(c).multiView;
@@ -91,6 +94,7 @@ export async function hitDesignApp(): Promise<DG.ViewBase> {
 //name: PeptiHit
 //meta.icon: images/icons/pepti-hit-icon.png
 //output: view v
+//meta.browsePath: Peptides
 export async function peptiHitApp(): Promise<DG.ViewBase> {
   const c = grok.functions.getCurrentCall();
   await grok.functions.call('Bio:initBio', {});
@@ -164,4 +168,12 @@ export async function demoFileSubmit(df: DG.DataFrame, molecules: string): Promi
 //output: grid_cell_renderer result
 export function gasteigerCellRenderer(): GasteigerPngRenderer {
   return new GasteigerPngRenderer();
+}
+
+//name: Hit Triage package settings editor
+//tags: packageSettingsEditor
+//input: object propList
+//output: widget result
+export async function htPackageSettingEditor(properties: DG.Property[]) {
+  return htPackageSettingsEditorWidget(properties);
 }

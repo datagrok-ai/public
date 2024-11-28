@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /**
  * The class contains semantic type detectors.
  * Detectors are functions tagged with `DG.FUNC_TYPES.SEM_TYPE_DETECTOR`.
@@ -20,21 +21,38 @@ class SequenceTranslatorPackageDetectors extends DG.Package {
     const logPrefix = `ST: detectors.js: autostartContextMenu()`;
     this.logger.debug(`${logPrefix}, start`);
     grok.events.onContextMenu.subscribe((event) => {
-      this.logger.debug(`${logPrefix}, onContextMenu, start`);
-      const item = event.args.item;
-      if (item) {
-        if (item && (
-          (item instanceof DG.GridCell || item.constructor.name === 'GridCell')
-        )) {
+      try {
+        this.logger.debug(`${logPrefix}, onContextMenu, start`);
+        if (!event || !event.args || !event.args.item || !event.args.menu)
+          return;
+        const item = event.args.item;
+        const menu = event.args.menu;
+
+        const catchError = (er) => {
+          this.logger.error('enumerator error');
+          this.logger.error(er?.toString());
+        };
+
+        if ((item instanceof DG.GridCell || item.constructor?.name === 'GridCell') && item.tableColumn && item.cell) {
           const packageName = this.name;
-          grok.functions.call(`${packageName}:addContextMenu`, {event: event})
-            .catch((err) => {
-              this.logger.error('addContextMenu must not throw any exception');
-              this.logger.error(err.toString());
-            });
+          switch (item.tableColumn.semType) {
+          case DG.SEMTYPE.MACROMOLECULE: {
+            menu.item('PolyTool-Enumerate', () => { grok.functions.call(`${packageName}:getPtHelmEnumeratorDialog`, {cell: item.cell}).catch(catchError); });
+            break;
+          }
+          case DG.SEMTYPE.MOLECULE: {
+            menu.item('PolyTool-Enumerate', () => { grok.functions.call(`${packageName}:getPtChemEnumeratorDialog`, {cell: item.cell}).catch(catchError); });
+            break;
+          }
+          }
         }
+        this.logger.debug(`${logPrefix}, onContextMenu, end`);
+      } catch (error) {
+        this.logger.error(`${logPrefix}, error`);
+        this.logger.error(error?.toString());
+        if (!window.$sequenceTranslator) window.$sequenceTranslator = {};
+        window.$sequenceTranslator.contextMenuError = error;
       }
-      this.logger.debug(`${logPrefix}, onContextMenu, end`);
     });
   }
 

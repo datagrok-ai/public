@@ -238,6 +238,9 @@ export class Tags {
   /// Specifies if calculated columns are subscribed
   static CalculatedColumnsSubscribed = '.calculatedColumnsSubscribed';
 
+  /// Boolean flag that allows not to show property panel for the cell/column
+  static ShowPropPanels = '.show-prop-panels';
+
 }
 export class FuncOptions {
   /// Fully qualified name of the function that edits corresponding function calls
@@ -271,6 +274,10 @@ export class FuncOptions {
 
   /// Demo path, such as 'Viewers | Radar'
   static DemoPath = 'demoPath';
+
+  /// When set to 'true', the app operates in 'browseOnly' mode, using the browse tree for navigation
+  /// and displaying results only within the browse view
+  static BrowseOnly = 'browseOnly';
 
   /// Path in the browse tree, such as 'Oligo'
   static BrowsePath = 'browsePath';

@@ -59,11 +59,16 @@ export class GrayAllPalette extends UnknownSeqPalette {
 
 
 export class UnknownColorPalette extends UnknownSeqPalette {
-  public static palette: string[] = UnknownColorPalette.buildPalette();
+  private static _pallete: string[] | null = null;
+  public static get palette(): string[] {
+    if (!UnknownColorPalette._pallete)
+      UnknownColorPalette._pallete = UnknownColorPalette.buildPalette();
+    return UnknownColorPalette._pallete;
+  }
   // this way is just more future-proof, when we start distinguishing
   // between different polymer types for coloring of non natural aa's or nucleotides
-  public static customMonomerColors: { [symbol: string]: { [polymerType: string]: string } } = {};
-  public static polymerTypes: string[] = [];
+  private static customMonomerColors: { [symbol: string]: { [polymerType: string]: string } } = {};
+  private static polymerTypes: string[] = [];
 
   private static buildPalette(): string[] {
     getMonomerLibHelper().then((lh) => {
@@ -93,12 +98,13 @@ export class UnknownColorPalette extends UnknownSeqPalette {
   }
 
   public get(m: string, polymerType?: string): string {
+    const palleteLength = UnknownColorPalette.palette.length;
     const colorObj = UnknownColorPalette.customMonomerColors[m];
     const polType = polymerType ?? PolymerTypes.PEPTIDE;
     if (colorObj && colorObj[polType])
       return colorObj[polType];
     const hash: number = StringUtils.hashCode(m);
-    const pI = hash % UnknownColorPalette.palette.length;
+    const pI = hash % palleteLength;
     return correctColor(UnknownColorPalette.palette[pI]);
   }
 }

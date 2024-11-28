@@ -1,6 +1,6 @@
 import {Balloon, Color} from './widgets';
 import {toDart, toJs} from './wrappers';
-import {MARKER_TYPE, ViewerType} from './const';
+import {COLUMN_TYPE, MARKER_TYPE, ViewerType} from './const';
 import {Point, Rect} from './grid';
 import {IDartApi} from './api/grok_api.g';
 import * as rxjs from 'rxjs';
@@ -120,6 +120,14 @@ export namespace Paint {
     api.grok_Paint_Marker(g, markerType, x, y, c, size);
   }
 
+  export function markerTypes(): string[] {
+    return api.grok_Marker_Types();
+  }
+
+  export function markerTypeIndexes(): {[key: string]: number} {
+    return new MapProxy(api.grok_Marker_Type_Indexes()) as unknown as {[key: string]: number};
+  }
+
   /** Renders a PNG image from bytes */
   export function pngImage(g: CanvasRenderingContext2D, bounds: Rect, imageBytes: Uint8Array) {
     let r = new FileReader();
@@ -222,7 +230,7 @@ export class Utils {
     );
   }
 
-  static async executeTests(testsParams: { package: any, params: any }[]): Promise<any> {
+  static async executeTests(testsParams: { package: any, params: any }[], stopOnFail?:  boolean): Promise<any> {
     let failed = false;
     let csv = "";
     let verbosePassed = "";
@@ -232,17 +240,20 @@ export class Utils {
     let countSkipped = 0;
     let countFailed = 0;
     let resultDF: DataFrame | undefined = undefined;
-
+    DG.Test.isReproducing = true;
     for (let testParam of testsParams) {
       let df: DataFrame = await grok.functions.call(testParam.package + ':test', testParam.params);
-
+      let flakingCol = DG.Column.fromType(DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount); 
+      df.columns.add(flakingCol); 
+      let packageNameCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'package', Array(df.rowCount).fill(testParam.package)); 
+      df.columns.add(packageNameCol); 
       if (df.rowCount === 0) {
         verboseFailed += `Test result : Invocation Fail : ${testParam.params.category}: ${testParam.params.test}\n`;
         countFailed += 1;
         failed = true;
         continue;
       }
-
+      
       let row = df.rows.get(0);
       if (df.rowCount > 1) {
         let unhandledErrorRow = df.rows.get(1);
@@ -251,17 +262,23 @@ export class Utils {
           unhandledErrorRow["name"] = row.get("name");
           row = unhandledErrorRow;
         }
-      }
+      } 
       const category = row.get("category");
       const testName = row.get("name");
       const time = row.get("ms");
       const result = row.get("result");
+      const success = row.get("success");
+      const skipped = row.get("skipped");
+      row["flaking"] = success && DG.Test.isReproducing;
 
-      if (resultDF === undefined)
+      if (resultDF === undefined){
+        df.changeColumnType('result', COLUMN_TYPE.STRING);
         resultDF = df;
-      else
+      }
+      else{
+        df.changeColumnType('result', COLUMN_TYPE.STRING);
         resultDF = resultDF.append(df);
-
+      }
       if (row["skipped"]) {
         verboseSkipped += `Test result : Skipped : ${time} : ${category}: ${testName} :  ${result}\n`;
         countSkipped += 1;
@@ -275,6 +292,8 @@ export class Utils {
         countFailed += 1;
         failed = true;
       }
+      if((success !== true && skipped!==true)  && stopOnFail)
+        break;
     }
 
     if (resultDF) {
@@ -707,11 +726,7 @@ export class LruCache<K = any, V = any> {
   }
 }
 
-/**
- * @param {HTMLElement} element
- * @param {string | ElementOptions | null} options
- * @returns {HTMLElement}
- * */
+
 export function _options(element: HTMLElement, options: any) {
   if (options == null)
     return element;
@@ -790,7 +805,6 @@ export async function delay(ms: number) {
   await new Promise((r) => setTimeout(r, ms));
 }
 
-
 /** Autotest-related helpers */
 export namespace Test {
 
@@ -807,6 +821,7 @@ export namespace Test {
    * different conditions, etc.
    * */
   export let isInBenchmark = false;
+  export let isReproducing   = false;
 
   export function getTestDataGeneratorByType(type: string) {
     return api.grok_Test_GetTestDataGeneratorByType(type);

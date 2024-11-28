@@ -1,9 +1,10 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
-import {CampaignJsonName, ComputeQueryMolColName} from './consts';
-import {AppName, CampaignsType, TriagePermissions} from './types';
+import {CampaignGroupingType, CampaignJsonName, ComputeQueryMolColName, HDCampaignsGroupingLSKey, i18n} from './consts';
+import {AppName, CampaignsType, HitDesignCampaign, HitTriageCampaign, TriagePermissions} from './types';
 import {_package} from '../package';
 
 export const toFormatedDateString = (d: Date): string => {
@@ -127,6 +128,11 @@ export async function loadCampaigns<T extends AppName>(
         !await checkViewPermissions(campaignJson.authorUserId, campaignJson.permissions)
       )
         continue;
+      if (campaignJson.authorUserId && !campaignJson.authorUserFriendlyName) {
+        const user = await grok.dapi.users.find(campaignJson.authorUserId);
+        if (user)
+          campaignJson.authorUserFriendlyName = user.friendlyName;
+      }
       campaignNamesMap[campaignJson.name] = campaignJson;
     } catch (e) {
       continue;
@@ -140,13 +146,12 @@ async function checkPermissions(authorId: string, groupIdList: string[]): Promis
   const userGroupId = DG.User.current().group?.id;
   if (authorId === userId)
     return true;
-  const dapiGroups = grok.dapi.groups;
   for (const groupId of groupIdList) {
-    const group = await dapiGroups.find(groupId);
+    const group = await grok.dapi.groups.find(groupId);
     if (!group)
       continue;
     if (group.personal) {
-      const user = await dapiGroups.getUser(group);
+      const user = await grok.dapi.groups.getUser(group);
       if (user?.id === userId)
         return true;
     } else if (userGroupId && group.members.length > 0) {
@@ -163,4 +168,157 @@ export async function checkEditPermissions(authorId: string, permissions: Triage
 
 export async function checkViewPermissions(authorId: string, permissions: TriagePermissions): Promise<boolean> {
   return checkPermissions(authorId, Array.from(new Set([...permissions.view, ...permissions.edit])));
+}
+
+export function getLocalStorageValue<T = string>(key: string): T | null {
+  return localStorage.getItem(key) as unknown as T;
+}
+
+export function setLocalStorageValue(key: string, value: string) {
+  localStorage.setItem(key, value as unknown as string);
+}
+
+export function getSavedCampaignsGrouping(): CampaignGroupingType {
+  return getLocalStorageValue<CampaignGroupingType>(HDCampaignsGroupingLSKey) ?? CampaignGroupingType.None;
+}
+
+export function setSavedCampaignsGrouping(value: CampaignGroupingType) {
+  setLocalStorageValue(HDCampaignsGroupingLSKey, value);
+}
+
+export const getGroupingKey = <T extends HitDesignCampaign | HitTriageCampaign = HitDesignCampaign>(grouping: CampaignGroupingType, campaign: T): string => {
+  switch (grouping) {
+  case CampaignGroupingType.Template:
+    return campaign.template?.key ?? campaign.templateName;
+  case CampaignGroupingType.Status:
+    return campaign.status;
+  case CampaignGroupingType.Author:
+    return campaign.authorUserFriendlyName ?? i18n.noInformation;
+  case CampaignGroupingType.LastModifiedUser:
+    return campaign.lastModifiedUserName ?? i18n.noInformation;
+  default:
+    return '';
+  }
+};
+
+export function getGroupedCampaigns<T extends HitDesignCampaign | HitTriageCampaign = HitDesignCampaign>(campaigns: T[], grouping: CampaignGroupingType):
+  {[key: string]: T[]} {
+  if (grouping === CampaignGroupingType.None)
+    return {'': campaigns};
+  const groupedCampaigns: {[key: string]: T[]} = {};
+  for (const campaign of campaigns) {
+    const key = getGroupingKey(grouping, campaign);
+    if (!groupedCampaigns[key])
+      groupedCampaigns[key] = [];
+    groupedCampaigns[key].push(campaign);
+  }
+  return groupedCampaigns;
+}
+
+export function processGroupingTable<T extends HitDesignCampaign | HitTriageCampaign = HitDesignCampaign>(table: HTMLTableElement, groupedCampaigns: {[key: string]: T[]}, numCols = 9) {
+  table.classList.add('hit-design-groupped-campaigns-table');
+  const keys = Object.keys(groupedCampaigns);
+  if (keys.length < 2)
+    return table;
+  const body = table.getElementsByTagName('tbody')[0];
+  const rows = Array.from(table.getElementsByTagName('tr')).filter((row) => !row.classList.contains('header'));
+  let curRow = 0;
+
+  const setState = (expanded: boolean, start: number, end: number) => {
+    for (let i = start; i < end; i++)
+      rows[i]?.style && (rows[i].style.display = expanded ? 'table-row' : 'none');
+  };
+
+
+  for (const key of keys) {
+    const row = rows[curRow];
+    if (!row)
+      break;
+    const l = groupedCampaigns[key].length;
+    const startRow = curRow;
+    const endRow = curRow + l;
+    const acc = ui.accordion(`Hit-Design-campaigns-group-${key}`);
+    const pane = acc.addPane(key, () => {return ui.div();}, undefined, undefined, false);
+    pane.root.style.marginLeft = '-24px';
+    pane.root.onclick = () => {
+      setState(pane.expanded, startRow, endRow);
+    };
+    setState(pane.expanded, startRow, endRow);
+    const newRow = body.insertRow(0);
+    const newCell = newRow.insertCell(0);
+    newCell.appendChild(pane.root);
+    newCell.colSpan = numCols;
+    body.insertBefore(newRow, row);
+    curRow += l;
+  }
+}
+
+export type EditableFieldOptions = {
+  onChange?: (val?: string | null) => void,
+  onOk?: (val?: string | null) => Promise<void>,
+  validator?: (val?: string | null) => Promise<string | null>,
+  onCancel?: () => void,
+  afterEditTextContent?: (val: string) => string,
+  beforeEditTextContent?: (val: string) => string,
+  nullable?: boolean,
+  tooltip?: string,
+}
+
+export function editableTableField(field: HTMLElement, options?: EditableFieldOptions) {
+  const editIcon = ui.icons.edit(() => {
+    let tooltipMsg = options?.tooltip ?? field.textContent ?? '';
+    const beforeEditTextContent = options?.beforeEditTextContent ?? ((val) => val);
+    const afterEditTextContent = options?.afterEditTextContent ?? ((val) => val);
+    const input = ui.input.string('smth', {value: beforeEditTextContent(field.textContent ?? ''), onValueChanged: async () => {
+      const vr = await internalValidator();
+      setTimeout(() => {
+        if (vr) {
+          input.input.classList.add('d4-invalid');
+          tooltipMsg = vr;
+          return;
+        } else {
+          input.input.classList.remove('d4-invalid');
+          tooltipMsg = options?.tooltip ?? field.textContent ?? '';
+        }
+      }, 100);
+      options?.onChange?.(input.value);
+    }});
+    ui.tooltip.bind(input.input, () => tooltipMsg);
+    const labelElement = input.root.getElementsByTagName('label').item(0);
+    if (labelElement)
+      labelElement.remove();
+    input.root.style.width = '100%';
+    const internalValidator = async () => {
+      const initialRes = !!input.value?.trim() ? null : !!options?.nullable ? null :'Field cannot be empty';
+      return initialRes ?? (options?.validator ? await options.validator(input.value) : null);
+    };
+
+    const saveButton = ui.button('Save', async () => {
+      const vr = await internalValidator();
+      if (vr) {
+        grok.shell.error(vr);
+        return;
+      }
+      await options?.onOk?.(input.value);
+      field.textContent = afterEditTextContent(input.value) ?? '';
+      ui.empty(container);
+      container.appendChild(field);
+      container.appendChild(editIcon);
+    });
+    const cancelButton = ui.button('Cancel', () => {
+      ui.empty(container);
+      container.appendChild(field);
+      container.appendChild(editIcon);
+      options?.onCancel?.();
+    });
+
+    ui.empty(container);
+    input.addOptions(cancelButton);
+    input.addOptions(saveButton);
+    container.appendChild(input.root);
+    input.input.focus();
+  }, options?.tooltip ?? 'Edit');
+  const container = ui.divH([field, editIcon], {style: {display: 'flex', alignItems: 'center'}});
+  editIcon.style.marginLeft = '5px';
+  return container;
 }

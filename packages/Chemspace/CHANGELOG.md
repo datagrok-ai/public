@@ -1,5 +1,15 @@
 # Chemspace changelog
 
+## 1.1.3 (2024-11-18)
+
+### Bug Fixes
+
+* GROK-17022: Chemspace: opening Similar in context panel causes errors
+
+## 1.1.2 (2024-10-16)
+
+* Fixed cache invalidating
+
 ## 1.1.1 (2024-08-28)
 
 * Caching results

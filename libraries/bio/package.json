@@ -1,20 +1,20 @@
 {
   "name": "@datagrok-libraries/bio",
   "author": {
-    "name": "Aleksandr Tanas",
-    "email": "atanas@datagrok.ai"
+    "name": "Leonid Stolbov",
+    "email": "lstolbov@datagrok.ai"
   },
   "publishConfig": {
     "access": "public"
   },
   "friendlyName": "Datagrok bio library",
-  "version": "5.45.2",
+  "version": "5.46.0",
   "description": "Bio utilities, types supporting Macromolecule, Molecule3D data",
   "dependencies": {
     "@datagrok-libraries/chem-meta": "^1.2.7",
     "@datagrok-libraries/gridext": "^1.3.73",
-    "@datagrok-libraries/ml": "^6.7.4",
-    "@datagrok-libraries/utils": "^4.3.6",
+    "@datagrok-libraries/ml": "^6.7.5",
+    "@datagrok-libraries/utils": "^4.3.7",
     "@deck.gl/core": "8.8.12",
     "cash-dom": "^8.1.5",
     "datagrok-api": "^1.21.1",
@@ -28,8 +28,8 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@datagrok-libraries/helm-web-editor": "^1.1.12",
-    "@datagrok-libraries/js-draw-lite": "^0.0.9",
+    "@datagrok-libraries/helm-web-editor": "^1.1.13",
+    "@datagrok-libraries/js-draw-lite": "^0.0.10",
     "@types/signals": "1.0.1",
     "@types/three": "^0.159.0",
     "@types/uuid": "^9.0.1",

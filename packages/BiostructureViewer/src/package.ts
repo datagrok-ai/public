@@ -12,8 +12,7 @@ import {INglViewer} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
 import {NglGlServiceBase} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
 import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 import {IBiotrackViewer} from '@datagrok-libraries/bio/src/viewers/biotrack';
-import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
-import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
+import {BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
 import {delay} from '@datagrok-libraries/utils/src/test';
 
 import {byData, byId, MolstarViewer} from './viewers/molstar-viewer';
@@ -32,15 +31,15 @@ import {BiostructureAndTrackViewerApp} from './apps/biostructure-and-track-viewe
 import {previewBiostructure, previewNgl, viewNgl} from './viewers/view-preview';
 import {BiostructureViewerApp} from './apps/biostructure-viewer-app';
 import {LigandsWithBiostructureApp, LigandsWithNglApp} from './apps/ligands-with-base-app';
-import {addContextMenuUI} from './utils/context-menu';
 import {importPdbqtUI} from './utils/import-pdbqt';
-import {IPdbGridCellRenderer} from './utils/types';
 import {_getNglGlService, BsvPackage} from './package-utils';
 import {demoBio07NoScript} from './demo/bio07-molecule3d-in-grid';
 import {demoBio06NoScript} from './demo/bio06-docking-ngl';
 import {Pdbqt} from './utils/pdbqt-parser';
 import {viewMolstarUI} from './viewers/molstar-viewer/utils';
 import {BiostructureDataProviderApp} from './apps/biostructure-data-provider-app';
+import {copyRawValue, downloadRawValue, showBiostructureViewer, showNglViewer} from './utils/context-menu';
+import {defaultErrorHandler} from './utils/err-info';
 
 export const _package: BsvPackage = new BsvPackage();
 
@@ -403,12 +402,39 @@ export async function inGridDemo() {
 
 // -- Handle context menu --
 
-//name: addContextMenu
-//input: object event
-export function addContextMenu(event: DG.EventData): void {
-  addContextMenuUI(event);
+//name: Copy Biostructure raw value
+//input: object gridCell
+export async function copyRawBiostructureValue(gridCell: DG.GridCell): Promise<void> {
+  copyRawValue(gridCell);
 }
 
+//name: Download Biostructure raw value
+//input: object gridCell
+export async function downloadRawBiostructureValue(gridCell: DG.GridCell): Promise<void> {
+  downloadRawValue(gridCell);
+}
+
+//name: Show Biostructure Viewer menu item
+//input: object gridCell
+export async function showBiostructureViewerMenuItem(gridCell: DG.GridCell) {
+  await showBiostructureViewer(gridCell);
+}
+
+//name: Show NGL Viewer menu item
+//input: object gridCell
+export async function showNglViewerMenuItem(gridCell: DG.GridCell) {
+  await showNglViewer(gridCell);
+}
+
+//name: Open PDB residues table menu item
+//input: object fi
+export async function openTableResiduesMenuItem(fi: DG.FileInfo) {
+  try {
+    await openPdbResidues(fi);
+  } catch (err: any) {
+    defaultErrorHandler(err);
+  }
+}
 // -- Demo --
 
 //  // demoBio06
@@ -510,7 +536,7 @@ export async function demoFix1(): Promise<void> {
     const ppTorsionalFreeCol = poseDf.col(Cols.torsionalFree) ?? poseDf.columns.addNewFloat(Cols.torsionalFree);
     const ppUnboundSystemsCol = poseDf.col(Cols.unboundSystems) ?? poseDf.columns.addNewFloat(Cols.unboundSystems);
 
-    const pMolCol = poseDf.col(Cols.mol) ?? poseDf.columns.addNewString(Cols.mol);
+    const _pMolCol = poseDf.col(Cols.mol) ?? poseDf.columns.addNewString(Cols.mol);
     // endregion Cols
     let lastProgress: number = 0;
     const poseCount = poseDf.rowCount;
@@ -614,7 +640,7 @@ export async function demoFix3(): Promise<void> {
 // -- cache --
 //name: readAsText
 //meta.cache: client
-//meta.invalidateOn: 0 0 1 * * ?
+//meta.cache.invalidateOn: 0 * * * *
 //input: string file
 //output: string result
 export async function readAsText(file: string): Promise<string> {
@@ -623,7 +649,7 @@ export async function readAsText(file: string): Promise<string> {
 
 //name: readAsTextDapi
 //meta.cache: client
-//meta.invalidateOn: 0 0 1 * * ?
+//meta.cache.invalidateOn: 0 * * * *
 //input: string file
 //output: string result
 export async function readAsTextDapi(file: string): Promise<string> {
@@ -656,7 +682,7 @@ export async function getBiostructureRcsbPdb(id: string): Promise<string> {
 //description: Get biostructure by id as mmCIF
 //meta.dataProvider: Molecule3D
 //meta.cache: client
-//meta.invalidateOn: 0 0 1 * * ?
+//meta.cache.invalidateOn: 0 * * * *
 //input: string id
 //output: string result
 export async function getBiostructureRcsbMmcif(id: string): Promise<string> {
@@ -672,7 +698,7 @@ export async function getBiostructureRcsbMmcif(id: string): Promise<string> {
 //description: Get biostructure by id as BinaryCIF
 //meta.dataProvider: Molecule3D
 //meta.cache: client
-//meta.invalidateOn: 0 0 1 * * ?
+//meta.cache.invalidateOn: 0 * * * *
 //input: string id ='1QBS'
 //output: string result
 export async function getBiostructureRcsbBcif(id: string): Promise<string> {
@@ -704,12 +730,18 @@ export function biostructureDataToJson(
 //output: widget result
 export function structure3D(molecule: DG.SemanticValue): DG.Widget {
   const widget = new DG.Widget(ui.div([]));
-  const { dataFrame, column, rowIndex } = molecule.cell;
-  const gridCell = grok.shell.getTableView(dataFrame.name)?.grid.cell(column.name, rowIndex);
+  const {dataFrame, column, rowIndex} = molecule.cell;
+  const inBrowseView = grok.shell.v.type === DG.VIEW_TYPE.BROWSE;
+  const tableView = inBrowseView ?
+    ((grok.shell.view('Browse') as DG.BrowseView)?.preview as DG.TableView) :
+    grok.shell.getTableView(dataFrame.name);
+  const {grid} = tableView;
+  const gridCell = grid.cell(column.name, rowIndex);
   const renderer = new PdbGridCellRendererBack(null, column);
 
-  renderer.createViewer(gridCell).then(async ({ tview, viewer }) => {
+  renderer.createViewer(gridCell, tableView).then(async ({tview, viewer}) => {
     if (tview && viewer) {
+      viewer.root.classList.add('bsv-container-info-panel');
       widget.root.appendChild(viewer.root);
     }
   });

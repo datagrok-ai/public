@@ -30,7 +30,7 @@ RUN /usr/local/bin/_dockerfile_initialize_user_accounts.sh && /usr/local/bin/_do
 
 RUN mkdir /app && chown $MAMBA_USER:$MAMBA_USER /app
 
-USER $MAMBA_USER
+USER mambauser
 
 WORKDIR /app
 
@@ -42,7 +42,7 @@ RUN micromamba install -n base -c conda-forge awscli -y && \
     micromamba clean -afy
 
 RUN set -ex ; \
-    micromamba env create -f environment.yml ; \
+    micromamba env create -f environment.yml -y ; \
     micromamba clean -afy
 
 COPY . /app

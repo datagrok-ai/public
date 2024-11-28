@@ -14,9 +14,15 @@ import { TestAnalysisManager } from './test-analysis/test-analysis-manager';
 import { getDate } from './utils';
 import dayjs from "dayjs";
 import {ServiceLogsApp} from "./service_logs/service_logs";
-
+import { TestGridCellHandler } from './test-grid-cell-handler';
 
 export const _package = new DG.Package();
+
+
+//tags: init
+export function _initUA(): void {
+  DG.ObjectHandler.register(new TestGridCellHandler());
+}
 
 //name: TestsList 
 //meta.url: /tests/list
@@ -120,12 +126,15 @@ export async function reportsApp(path?: string): Promise<DG.ViewBase> {
 //meta.browsePath: Admin
 //input: string path {isOptional: true; meta.url: true}
 //input: map params {isOptional: true}
+//input: int limit {isOptional: true}
 //output: view v
-export async function serviceLogsApp(path?: string, params?: any): Promise<DG.ViewBase> {
-  const app = new ServiceLogsApp(grok.functions.getCurrentCall());
-  await app.init();
+export async function serviceLogsApp(path?: string, params?: any, limit?: number): Promise<DG.ViewBase> {
+  const currentCall = grok.functions.getCurrentCall();
+  const services = await grok.dapi.docker.getAvailableServices();
+  const app = new ServiceLogsApp(currentCall, services, path, limit);
+  if (services.length > 0)
+    app.getLogs().then((_) => {});
   return app;
-  // return ServiceLogsApp.createView(grok.functions.getCurrentCall());
 }
 
 //input: dynamic treeNode
@@ -135,6 +144,7 @@ export async function reportsAppTreeBrowser(treeNode: DG.TreeViewGroup, browseVi
   await treeNode.group('Rules', null, false).loadSources(grok.dapi.rules.include('actions,actions.assignee').by(10));
 }
 
+//name: Usage
 //output: widget result
 //tags: dashboard
 //test: usageWidget()
@@ -142,6 +152,7 @@ export async function usageWidget(): Promise<DG.Widget | null> {
   return await hasAccess() ? new UsageWidget() : null;
 }
 
+//name: Reports
 //output: widget result
 //tags: dashboard
 //test: reportsWidget()

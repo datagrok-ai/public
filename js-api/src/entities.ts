@@ -1,6 +1,17 @@
 // noinspection JSUnusedGlobalSymbols
 
-import {ColumnType, ScriptingLanguage, SemType, Type, TYPE, USER_STATUS} from "./const";
+import {
+  AGG, AggregationType,
+  COLUMN_TYPE,
+  ColumnType,
+  JOIN_TYPE,
+  JoinType,
+  ScriptingLanguage,
+  SemType,
+  Type,
+  TYPE,
+  USER_STATUS
+} from "./const";
 import { FuncCall } from "./functions";
 import {toDart, toJs} from "./wrappers";
 import {FileSource} from "./dapi";
@@ -481,8 +492,9 @@ export class TableQueryBuilder {
 
   /** Creates {@link TableQueryBuilder} from table name
    * @param {string} table - Table name
+   * @param connection - {@link DataConnection} that {@link TableQuery} will use after the build. Can be passed lately directly to {@link TableQuery}.
    * @returns {TableQueryBuilder} */
-  static from(table: string): TableQueryBuilder { return toJs(api.grok_DbTableQueryBuilder_From(table)); }
+  static from(table: string, connection?: DataConnection): TableQueryBuilder { return toJs(api.grok_DbTableQueryBuilder_From(table, connection?.dart)); }
 
   /** Creates {@link TableQueryBuilder} from {@link TableInfo}
    * @param {TableInfo} table - TableInfo object
@@ -495,10 +507,144 @@ export class TableQueryBuilder {
    * @returns {TableQueryBuilder} */
   selectAll(): TableQueryBuilder { return toJs(api.grok_DbTableQueryBuilder_SelectAll(this.dart)); }
 
-  /** Selects specified fields of the table
+  /** Selects specified fields of the table. All fields will be selected if not provided.
    * @param {string[]} fields - Array of fields to select
    * @returns {TableQueryBuilder} */
   select(fields: string[]): TableQueryBuilder { return toJs(api.grok_DbTableQueryBuilder_Select(this.dart, fields)); }
+
+  /**
+   * Performs aggregation
+   * @param {AggregationType} type - Aggregation type.
+   * @param {string} field - Column name.
+   * @param {string} fieldAlias - Name of the resulting column. Default value is agg(colName).
+   */
+  selectAggr(type: AggregationType, field: string | null, fieldAlias: string | null): TableQueryBuilder {
+    return toJs(api.grok_DbTableQueryBuilder_SelectAggr(this.dart, type, field, fieldAlias));
+  }
+
+  /**
+   * Adds an aggregation that calculates average value for the specified column.
+   * @param {string} field - Column name.
+   * @param {string} fieldAlias - Name of the resulting column. Default value is agg(colName).
+   */
+  avg(field: string, fieldAlias: string | null = 'avg'): TableQueryBuilder {
+    return this.selectAggr(AGG.AVG, field, fieldAlias);
+  }
+
+  /**
+   * Adds an aggregation that calculates minimum value for the specified column.
+   * @param {string} field - Column name.
+   * @param {string} fieldAlias - Name of the resulting column. Default value is agg(colName).
+   */
+  min(field: string, fieldAlias: string | null = 'min'): TableQueryBuilder {
+    return this.selectAggr(AGG.MIN, field, fieldAlias);
+  }
+
+  /**
+   * Adds an aggregation that calculates maximum value for the specified column.
+   * @param {string} field - Column name.
+   * @param {string} fieldAlias - Name of the resulting column. Default value is agg(colName).
+   */
+  max(field: string, fieldAlias: string | null = 'max'): TableQueryBuilder {
+    return this.selectAggr(AGG.MAX, field, fieldAlias);
+  }
+
+  /**
+   * Adds an aggregation that calculates sum of the values for the specified column.
+   * @param {string} field - Column name.
+   * @param {string} fieldAlias - Name of the resulting column. Default value is agg(colName).
+   */
+  sum(field: string, fieldAlias: string | null = 'sum'): TableQueryBuilder {
+    return this.selectAggr(AGG.SUM, field, fieldAlias);
+  }
+
+  /**
+   * Adds an aggregation that counts rows. Equivalent to count(*).
+   * @param {string} fieldAlias - Name of the resulting column. Default value is count.
+   */
+  count(fieldAlias: string = 'count'): TableQueryBuilder {
+    return this.selectAggr(AGG.TOTAL_COUNT, null, fieldAlias);
+  }
+
+  /** Adds an aggregation that counts rows for the specified column. Equivalent to count(field).
+   * @param field - Column name.
+   * @param fieldAlias Name of the resulting column. Default value is count.
+   * @returns {GroupByBuilder} */
+  valueCount(field: string, fieldAlias: string = 'count'): TableQueryBuilder {
+    return this.selectAggr(AGG.VALUE_COUNT, field, fieldAlias);
+  }
+
+  /**
+   * Adds an aggregation that counts rows with null values
+   * @param {string} field - Column name.
+   * @param {string} fieldAlias - Name of the resulting column. Default value is agg(colName).
+   */
+  nulls(field: string, fieldAlias: string | null = 'nulls'): TableQueryBuilder {
+    return this.selectAggr(AGG.MISSING_VALUE_COUNT, field, fieldAlias);
+  }
+
+  /**
+   * Performs join operation of main table or table specified in {@link leftTable} to table specified in {@link rightTable}.
+   * Specify joining fields of the main table (or table specified in {@link leftTable}) in {@link leftTableKeys} and joining fields of {@link rightTable}
+   * in {@Link rightTableKeys}.
+   * @param rightTable {string}
+   * @param joinType {JoinType}
+   * @param leftTableKeys {string[]}
+   * @param rightTableKeys {string[]}
+   * @param rightTableAlias {string} - use to specify desired alias for the joining table and apply this alias to fields specified in {@link select}.
+   * @param leftTable {string}
+   */
+  join(rightTable: string, joinType: JoinType, leftTableKeys: string[], rightTableKeys: string[], rightTableAlias?: string, leftTable?: string): TableQueryBuilder {
+    return toJs(api.grok_DbTableQueryBuilder_Join(this.dart, rightTable, joinType, leftTableKeys, rightTableKeys, rightTableAlias ?? null, leftTable ?? null));
+  }
+
+  /**
+   * Performs left join operation.
+   * @param rightTable {string}
+   * @param rightTableAlias {string}
+   * @param leftTableKeys {string[]}
+   * @param rightTableKeys {string[]}
+   * @param leftTable {string}
+   */
+  leftJoin(rightTable: string, leftTableKeys: string[], rightTableKeys: string[], rightTableAlias?: string, leftTable?: string): TableQueryBuilder {
+    return this.join(rightTable, JOIN_TYPE.LEFT, leftTableKeys, rightTableKeys, leftTable)
+  }
+
+  /**
+   * Performs right join operation.
+   * @param rightTable {string}
+   * @param rightTableAlias {string}
+   * @param leftTableKeys {string[]}
+   * @param rightTableKeys {string[]}
+   * @param leftTable {string}
+   */
+  rightJoin(rightTable: string, leftTableKeys: string[], rightTableKeys: string[], rightTableAlias?: string, leftTable?: string): TableQueryBuilder {
+    return this.join(rightTable, JOIN_TYPE.RIGHT, leftTableKeys, rightTableKeys, leftTable)
+  }
+
+  /**
+   * Performs inner join operation.
+   * @param rightTable {string}
+   * @param rightTableAlias {string}
+   * @param leftTableKeys {string[]}
+   * @param rightTableKeys {string[]}
+   * @param leftTable {string}
+   */
+  innerJoin(rightTable: string, leftTableKeys: string[], rightTableKeys: string[], rightTableAlias?: string, leftTable?: string): TableQueryBuilder {
+    return this.join(rightTable, JOIN_TYPE.INNER, leftTableKeys, rightTableKeys, leftTable)
+  }
+
+  /**
+   * Performs outer join operation.
+   * @param rightTable {string}
+   * @param rightTableAlias {string}
+   * @param leftTableKeys {string[]}
+   * @param rightTableKeys {string[]}
+   * @param leftTable {string}
+   */
+  outerJoin(rightTable: string, leftTableKeys: string[], rightTableKeys: string[], rightTableAlias?: string, leftTable?: string): TableQueryBuilder {
+    return this.join(rightTable, JOIN_TYPE.OUTER, leftTableKeys, rightTableKeys, leftTable)
+  }
 
   /** Groups rows that have the same values into summary values
    * @param {string[]} fields - Array of fields to group by
@@ -515,12 +661,22 @@ export class TableQueryBuilder {
     return toJs(api.grok_DbTableQueryBuilder_PivotOn(this.dart, fields));
   }
 
-  /** Adds a where clause to the query
-   * @param {string} field - Field name
+  /** Adds a where clause to the query.
+   * @param {string} field - Field name. If you join to other tables use correct alias or table name as prefix, e.g. <table alias>.<field>
    * @param {string} pattern - Pattern to test field values against
+   * @param columnType Should be provided, if this builder wasn't created from {@link TableInfo} or alias is used. Defaults to {@link TYPE.STRING}
    * @returns {TableQueryBuilder} */
-  where(field: string, pattern: string): TableQueryBuilder {
-    return toJs(api.grok_DbTableQueryBuilder_Where(this.dart, field, pattern));
+  where(field: string, pattern: string, columnType?: Type): TableQueryBuilder {
+    return toJs(api.grok_DbTableQueryBuilder_Where(this.dart, field, pattern, columnType ?? null));
+  }
+
+  /** Adds a having clause to the query. Use only with {@link groupBy}
+   * @param {string} field - Field name. If you join to other tables use correct alias or table name as prefix, e.g. <table alias>.<field>
+   * @param {string} pattern - Pattern to test field values against
+   * @param columnType Should be provided, if this builder wasn't created from {@link TableInfo} or alias is used. Defaults to {@link TYPE.STRING}
+   * @returns {TableQueryBuilder} */
+  having(field: string, pattern: string, columnType?: Type): TableQueryBuilder {
+    return toJs(api.grok_DbTableQueryBuilder_Having(this.dart, field, pattern, columnType ?? null));
   }
 
   /** Sorts results in ascending or descending order
@@ -569,6 +725,10 @@ export class DataConnection extends Entity {
     return toJs(api.grok_DataConnection_Get_Credentials(this.dart));
   }
 
+  get dataSource(): string {
+    return api.grok_DataConnection_Get_DataSource(this.dart);
+  }
+
   /** Collection of parameters: server, database, endpoint, etc. */
   // get parameters(): DataConnectionParams { return api.grok_DataConnection_Parameters(this.dart); }
 
@@ -585,6 +745,14 @@ export class DataConnection extends Entity {
    */
   query(name: string, sql: string): DataQuery {
     return toJs(api.grok_DataConnection_Query(this.dart, name, sql));
+  }
+
+  buildQuery(table: string): TableQueryBuilder {
+    return TableQueryBuilder.from(table, this);
+  }
+
+  tableQuery(tableName: string): TableQuery {
+    return toJs(api.grok_TableQuery_Create(this.dart));
   }
 
   /** Creates a data connection. Note that in order to be used, it has to be saved first using {@link DataConnectionsDataSource}
@@ -1106,16 +1274,22 @@ export class Package extends Entity {
   }
 
   /**
-   * Deprecated. Use getSettings instead.
-   *  Returns properties for a package.
-  */
+   * @deprecated The {@link getProperties} should not be used. Use {@link settings} instead
+   */
   getProperties(): Promise<any> {
     return this.getSettings();
   }
 
-  /** Returns settings for a package. */
+  /**
+   * @deprecated The {@link getSettings} should not be used. Use {@link settings} instead
+   */
   getSettings(): Promise<Map<string, any>> {
     return api.grok_Package_Get_Settings(this.name);
+  }
+
+  /** Returns settings for a package. */
+  get settings(): {[index: string]: any} {
+    return api.grok_Package_Get_Settings_Sync(this.name);
   }
 
   /** Updates settings for a package. */
@@ -1123,13 +1297,9 @@ export class Package extends Entity {
     return api.grok_Package_Set_Settings(this.name, props, group?.dart);
   }
 
-  private _files: FileSource | null = null;
-
   /** Global application data */
   get files(): FileSource {
-    if (this._files == null)
-      this._files = new FileSource(`System:AppData/${this.name}`);
-    return this._files;
+    return new FileSource(`System:AppData/${this.name}`);
   }
 
   public async getTests(core: boolean = false) {
@@ -1301,8 +1471,8 @@ export class Property {
   set nullable(s: boolean) { api.grok_Property_Set_Nullable(this.dart, s); }
 
   /** Default value */
-  get defaultValue(): any { return api.grok_Property_Get_DefaultValue(this.dart); }
-  set defaultValue(s: any) { api.grok_Property_Set_DefaultValue(this.dart, s); }
+  get defaultValue(): any { return toJs(api.grok_Property_Get_DefaultValue(this.dart)); }
+  set defaultValue(s: any) { api.grok_Property_Set_DefaultValue(this.dart, toDart(s)); }
 
   /** Property editor */
   get editor(): string { return api.grok_Property_Get(this.dart, 'editor'); }
@@ -1358,7 +1528,7 @@ export class Property {
                 getter: PropertyGetter,
                 setter: PropertySetter,
                 defaultValue: any = null): Property {
-    return new Property(api.grok_Property(name, type, getter, setter, defaultValue));
+    return new Property(api.grok_Property(name, type, getter, setter, toDart(defaultValue)));
   }
 
   /** Creates an integer property */
