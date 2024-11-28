@@ -76,7 +76,7 @@ export function parseLinkIO(io: string, ioType: IOType): LinkIOParsed {
   const ast = linkParser.getAST(io);
   checkAST(io, ast);
   const name = ast.children.find((cnode) => cnode.type === 'Name')!.text;
-  const flags = ast.children.filter((cnode) => cnode.type === 'Flag').map(cnode => cnode.text as LinkFlags);
+  const flags = ast.children.filter((cnode) => cnode.type === 'Flag').map((cnode) => cnode.text as LinkFlags);
   const isBase = ioType === 'base';
   const segments = ast.children.map((node) => {
     if (node.type === 'Selector') {

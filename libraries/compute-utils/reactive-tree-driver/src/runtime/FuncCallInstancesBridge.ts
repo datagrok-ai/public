@@ -208,7 +208,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
 
   overrideToConsistent() {
     return defer(() => {
-      for(const [name, restriction] of Object.entries(this.inputRestrictions$.value ?? {})) {
+      for (const [name, restriction] of Object.entries(this.inputRestrictions$.value ?? {})) {
         if (restriction && (restriction.type === 'restricted' || restriction.type === 'disabled') )
           this.setState(name, restriction.assignedValue, restriction.type);
       }

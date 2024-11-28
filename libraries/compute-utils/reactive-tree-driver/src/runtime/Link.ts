@@ -147,7 +147,7 @@ export class Link {
           !!dataFrameMutations;
         const store = item.getStateStore();
         const state$ = ioName ? store.getStateChanges(ioName, includeDFMutations) :
-          (store instanceof FuncCallInstancesBridge ? store.instance$.pipe(map(x => x?.adapter.getFuncCall())) : of(undefined));
+          (store instanceof FuncCallInstancesBridge ? store.instance$.pipe(map((x) => x?.adapter.getFuncCall())) : of(undefined));
         return state$;
       });
       return [inputAlias, combineLatest(inputStates)] as const;
@@ -278,7 +278,7 @@ export class Link {
         } else if (controller instanceof FuncallActionController) {
           const data = controller.outputs[outputAlias];
           const stateStore = node.getItem().getStateStore();
-          if (stateStore instanceof  FuncCallInstancesBridge && !stateStore.isReadonly) {
+          if (stateStore instanceof FuncCallInstancesBridge && !stateStore.isReadonly && data != null) {
             const adapter = new FuncCallAdapter(data, false);
             stateStore.change(adapter, true);
           }
@@ -323,8 +323,7 @@ export class Action extends Link {
     return this.isRunning$.pipe(
       filter((isRunning) => !isRunning),
       take(1),
-      map(() => this.lastPipelineMutations)
+      map(() => this.lastPipelineMutations),
     );
   }
-
 }

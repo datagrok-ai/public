@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {Observable, defer, of} from 'rxjs';
 import {HandlerBase} from './config/PipelineConfiguration';
 import {ActionItem, Advice, ValidationPayload, ValidationResult} from './data/common-types';
-import {NodeAddressSegment, NodePathSegment, TreeNode } from './data/BaseTree';
+import {NodeAddressSegment, NodePathSegment, TreeNode} from './data/BaseTree';
 import {StateTreeNode} from './runtime/StateTreeNodes';
 
 export function callHandler<R, P = any>(handler: HandlerBase<P, R>, params: P): Observable<R> {
@@ -60,9 +60,9 @@ export async function makeModel(provider: string) {
 }
 
 export function pathToUUID(rnode: TreeNode<StateTreeNode>, path: readonly NodeAddressSegment[] | readonly NodePathSegment[]): string[] {
-  const { uuids } = path.reduce((acc, {idx}) => {
+  const {uuids} = path.reduce((acc, {idx}) => {
     const nnode = acc.node.getChild({idx});
-    const { uuid } = nnode.getItem();
+    const {uuid} = nnode.getItem();
     return {node: nnode, uuids: [...acc.uuids, uuid]};
   }, {node: rnode, uuids: [rnode.getItem().uuid]});
   return uuids;

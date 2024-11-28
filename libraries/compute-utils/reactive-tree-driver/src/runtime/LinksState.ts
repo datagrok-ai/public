@@ -91,9 +91,10 @@ export class LinksState {
 
   public getNodeActionsData(uuid: string): ViewAction[] | undefined {
     const actions = this.nodesActions.get(uuid);
-    if (actions)
+    if (actions) {
       return actions.map(({uuid, spec: {position, description, menuCategory, friendlyName, icon, confirmationMessage}}) =>
         ({uuid, position, description, menuCategory, friendlyName, icon, confirmationMessage}));
+    }
     return actions;
   }
 
@@ -112,7 +113,7 @@ export class LinksState {
         mergedLinks.push(oldLink);
       else {
         if (this.logger && !oldLink.matchInfo.isDefaultValidator)
-          this.logger.logLink('linkRemoved', { linkUUID: oldLink.uuid, prefix: oldLink.prefix, id: oldLink.matchInfo.spec.id });
+          this.logger.logLink('linkRemoved', {linkUUID: oldLink.uuid, prefix: oldLink.prefix, id: oldLink.matchInfo.spec.id});
         oldLink.destroy();
       }
     }
@@ -120,7 +121,7 @@ export class LinksState {
     for (const newLink of newLinks) {
       if (toAdd.has(newLink.uuid)) {
         if (this.logger && !newLink.matchInfo.isDefaultValidator)
-          this.logger.logLink('linkAdded', { linkUUID: newLink.uuid, prefix: newLink.prefix, id: newLink.matchInfo.spec.id });
+          this.logger.logLink('linkAdded', {linkUUID: newLink.uuid, prefix: newLink.prefix, id: newLink.matchInfo.spec.id});
         mergedLinks.push(newLink);
         addedLinks.push(newLink);
       }

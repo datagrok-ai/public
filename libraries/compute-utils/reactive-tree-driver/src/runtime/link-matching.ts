@@ -268,7 +268,7 @@ export function updateMatchInfoUUIDs(rnode: TreeNode<StateTreeNode>, matchInfo: 
 
 function matchedPathsToUUIDs(rnode: TreeNode<StateTreeNode>, paths: MatchedNodePaths) {
   const res = new Set<string>;
-  for(const path of paths) {
+  for (const path of paths) {
     const uuids = pathToUUID(rnode, path.path);
     if (path.ioName)
       uuids.push(path.ioName);

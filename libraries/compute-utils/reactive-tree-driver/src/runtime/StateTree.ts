@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { Observable, defer, of, merge, Subject, BehaviorSubject, from, combineLatest } from 'rxjs';
+import {Observable, defer, of, merge, Subject, BehaviorSubject, from, combineLatest} from 'rxjs';
 import {finalize, map, mapTo, toArray, concatMap, tap, takeUntil, concat, debounceTime, scan} from 'rxjs/operators';
 import {NodePath, BaseTree, TreeNode} from '../data/BaseTree';
 import {PipelineConfigurationProcessed} from '../config/config-processing-utils';
@@ -14,7 +14,7 @@ import {ConsistencyInfo, FuncCallNode, FuncCallStateInfo, isFuncCallNode, Parall
 import {indexFromEnd} from '../utils';
 import {LinksState} from './LinksState';
 import {ValidationResult} from '../data/common-types';
-import {DriverLogger, TreeUpdateMutationPayload }  from '../data/Logger';
+import {DriverLogger, TreeUpdateMutationPayload} from '../data/Logger';
 import {ItemMetadata} from '../view/ViewCommunication';
 
 const MAX_CONCURENT_SAVES = 5;
@@ -78,7 +78,7 @@ export class StateTree {
   public static toSerializedStateRec(
     node: TreeNode<StateTreeNode>,
     options: StateTreeSerializationOptions = {},
-  ):  PipelineSerializedState {
+  ): PipelineSerializedState {
     const item = node.getItem();
     if (isFuncCallNode(item))
       return item.toSerializedState(options);
@@ -140,15 +140,15 @@ export class StateTree {
     const entries = this.nodeTree.traverse(this.nodeTree.root, (acc, node) => {
       const item = node.getItem();
       const stateNames = item.nodeDescription.getStateNames();
-      const stateChanges = stateNames.map(name => item.nodeDescription.getStateChanges(name).pipe(
-        map(val => [name, val] as const),
+      const stateChanges = stateNames.map((name) => item.nodeDescription.getStateChanges(name).pipe(
+        map((val) => [name, val] as const),
       ));
       const descriptions$ = merge(...stateChanges).pipe(
         scan((acc, [name, val]) => {
           return {...acc, [name]: val};
         }, {} as Record<string, string[] | string>),
-        debounceTime(0)
-      )
+        debounceTime(0),
+      );
       return [...acc, [item.uuid, descriptions$] as const];
     }, [] as (readonly [string, Observable<Record<string, string | string[]> | undefined>])[]);
     return Object.fromEntries(entries);
@@ -327,16 +327,17 @@ export class StateTree {
           if (!isFuncCallNode(node) || node.pendingDependencies$.value?.length ||
             !node.getStateStore().isRunable$.value || (!node.getStateStore().isOutputOutdated$.value && !rerunWithConsistent))
             return of(undefined);
-          if (rerunWithConsistent)
+          if (rerunWithConsistent) {
             return node.getStateStore().overrideToConsistent().pipe(
               concatMap(() => this.linksState.waitForLinks()),
               concatMap(() => node.getStateStore().run()),
               concatMap(() => this.linksState.waitForLinks()),
             );
-          else
+          } else {
             return node.getStateStore().run().pipe(
               concatMap(() => this.linksState.waitForLinks()),
             );
+          }
         }),
         toArray(),
         mapTo(undefined),
@@ -369,21 +370,26 @@ export class StateTree {
               if (last) {
                 this.nodeTree.removeBrunch(data.path);
                 this.nodeTree.attachBrunch(ppath, subTree.nodeTree.root, last.id, last.idx);
-              } else {
+              } else
                 this.nodeTree.replaceRoot(subTree.nodeTree.root);
-              }
+
               const mutationData: TreeUpdateMutationPayload = last ? {
                 mutationRootPath: ppath,
                 addIdx: last.idx,
-              } : { mutationRootPath: [] };
+              } : {mutationRootPath: []};
               return StateTree.loadOrCreateCalls(subTree, this.mockMode).pipe(mapTo([mutationData] as const));
-            }))
-          )
+            })),
+          ),
         );
       }, true);
-    } else {
+    } else if (action.spec.type === 'funccall') {
+      return this.withTreeLock(() => {
+        return action.exec(additionalParams).pipe(
+          finalize(() => this.makeStateRequests$.next(true)),
+        );
+      });
+    } else
       return action.exec(additionalParams);
-    }
   }
 
   public close() {

@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {TreeNode} from '../data/BaseTree';
-import { IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController } from '../RuntimeControllers';
+import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController} from '../RuntimeControllers';
 import {RestrictionType, ValidationResult} from '../data/common-types';
 import {StateTreeNode} from './StateTreeNodes';
 import {ScopeInfo} from './Link';
