@@ -976,12 +976,12 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   }
 
   private getLigandStr(rowIdx: number): LigandData {
-    if ((!this.dataFrame && !this.ligandColumnName) || !this.ligandValue)
-      throw new Error(`${this.viewerToLog()}.getLigandStr(), no dataFrame, ligandColumnName or ligandValue`);
+    if (!this.dataFrame || !this.ligandColumnName)
+      throw new Error(`${this.viewerToLog()}.getLigandStr(), no dataFrame or ligandColumnName`);
 
-    const ligandObject = JSON.parse(this.ligandValue) as LigandValueData;
     const ligandCol: DG.Column = this.dataFrame.getCol(this.ligandColumnName);
-    const ligandUnits: string = ligandObject.units ?? ligandCol.meta.units!;
+    const ligandObject: LigandValueData = this.ligandValue ? JSON.parse(this.ligandValue) : {};
+    const ligandUnits: string = ligandObject.units ?? ligandCol.meta.units;
     const ligandCellValue: string = ligandObject.value ?? ligandCol.get(rowIdx);
     const ligandSemType: string = ligandObject.semType ?? ligandCol.semType;
     let ligandValue: string;
