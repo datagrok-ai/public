@@ -43,6 +43,7 @@ import {getMolHighlight} from '@datagrok-libraries/bio/src/monomer-works/seq-to-
 import {ChemTags} from '@datagrok-libraries/chem-meta/src/consts';
 import {mergeSubstructs} from '@datagrok-libraries/chem-meta/src/types';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {dealGroups, helmToMol} from './conversion/pt-atomic';
 
 type PolyToolConvertSerialized = {
   generateHelm: boolean;
@@ -261,17 +262,6 @@ async function getPolyToolEnumerationChemDialog(cell?: DG.Cell): Promise<DG.Dial
   }
 }
 
-function dealGroups(col: DG.Column<string>): void {
-  for (let i = 0; i < col.length; i++) {
-    col.set(i, col.get(i)!.replaceAll('undefined', 'H'));
-    col.set(i, col.get(i)!.replaceAll('Oh', 'O'));
-    col.set(i, col.get(i)!.replaceAll('0.000000 3', '0.000000 0'));
-    col.set(i, col.get(i)!.replaceAll('?', 'O'));
-    col.set(i, col.get(i)!.replaceAll('0 3\n', '0 0\n'));
-    col.set(i, col.get(i)!.replaceAll('RGROUPS=(1 1)', ''));
-  }
-}
-
 /** Returns Helm and molfile columns.  */
 export async function polyToolConvert(seqCol: DG.Column<string>,
   generateHelm: boolean, linearize: boolean, chiralityEngine: boolean, highlight: boolean, ruleFiles: string[]
@@ -298,53 +288,18 @@ export async function polyToolConvert(seqCol: DG.Column<string>,
 
 
     const rdKitModule: RDModule = await getRdKitModule();
+    const seqHelper: ISeqHelper = await getSeqHelper();
+
     const lib = await getOverriddenLibrary(rules);
     const resHelmColTemp = resHelmCol.temp;
     resHelmColTemp[MmcrTemps.overriddenLibrary] = lib;
     resHelmCol.temp = resHelmColTemp;
 
-    const seqHelper: ISeqHelper = await getSeqHelper();
-    const toAtomicLevelRes =
-      await seqHelper.helmToAtomicLevel(resHelmCol, chiralityEngine, highlight, lib);
-
-    const resMolCol = toAtomicLevelRes.molCol!;
-
-
-    const allLinear = isLinear.filter((l) => l).length;
-    if (linearize && allLinear > 0) {
-      const lin = new Array<string>(allLinear);
-      let counter = 0;
-      for (let i = 0; i < isLinear.length; i++) {
-        if (isLinear[i]) {
-          lin[counter] = resList[i];
-          counter++;
-        }
-      }
-
-      const linCol = DG.Column.fromStrings('helm', lin);
-      linCol.semType = DG.SEMTYPE.MACROMOLECULE;
-      linCol.meta.units = NOTATION.HELM;
-      linCol.setTag(DG.TAGS.CELL_RENDERER, 'helm');
-
-      const monomerLibHelper = await getMonomerLibHelper();
-      const systemMonomerLib = monomerLibHelper.getMonomerLib();
-      try {
-        const linear = await _toAtomicLevel(DG.DataFrame.create(0), linCol, systemMonomerLib, seqHelper, rdKitModule);
-        counter = 0;
-        for (let i = 0; i < isLinear.length; i++) {
-          if (isLinear[i]) {
-            resMolCol.set(i, linear!.molCol!.get(counter));
-            counter++;
-          }
-        }
-      } catch (e: any) {
-        grok.shell.warning('PolyTool was not able to linearize sequences');
-      }
-    }
-
-    dealGroups(resMolCol);
+    const resMolCol = await helmToMol(resHelmCol, resList,
+      isLinear, chiralityEngine, highlight, linearize, lib, rdKitModule, seqHelper);
     resMolCol.name = getUnusedName(table, `molfile(${seqCol.name})`);
     resMolCol.semType = DG.SEMTYPE.MOLECULE;
+
     if (table) {
       table.columns.add(resMolCol, true);
       await grok.data.detectSemanticTypes(table);

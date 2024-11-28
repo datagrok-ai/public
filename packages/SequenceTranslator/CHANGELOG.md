@@ -1,5 +1,16 @@
 # Sequence Translator changelog
 
+## 1.6.5 (WIP)
+
+### New features
+
+* PolyTool: highlight in mol based on given notation
+* PolyTool: Rule manager enhancements
+
+### Bug fixes
+
+* PolyTool fix R3, R4 and elder groups capping
+
 ## 1.6.4 (2024-11-27)
 
 * PolyTool: linearization of single sequence molecules
