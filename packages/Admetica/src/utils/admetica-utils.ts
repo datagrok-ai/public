@@ -52,7 +52,7 @@ export async function runAdmetica(csvString: string, queryParams: string, addPro
   };
 
 
-  const path = `/df_upload?models=${queryParams}&probability=${addProbability}`;
+  const path = `/predict?models=${queryParams}&probability=${addProbability}`;
   const response = await fetchWrapper(() => sendRequestToContainer(admeticaContainer.id, path, params));
   return response;
 }
