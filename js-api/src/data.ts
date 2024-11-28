@@ -116,9 +116,8 @@ export class Db {
    * @param connectionId - fully-qualified connection name (see [nqName])
    * @param tableName - database table name
    */
-  async buildQuery(connectionId: string, tableName: string): Promise<TableQueryBuilder> {
-    const connection: DataConnection = await new Functions().eval(connectionId);
-    return connection.buildQuery(tableName);
+  buildQuery(connectionId: string, tableName: string): TableQueryBuilder {
+    return TableQueryBuilder.from(tableName, connectionId);
   }
 }
 

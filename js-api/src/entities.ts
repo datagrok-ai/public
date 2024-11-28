@@ -494,7 +494,10 @@ export class TableQueryBuilder {
    * @param {string} table - Table name
    * @param connection - {@link DataConnection} that {@link TableQuery} will use after the build. Can be passed lately directly to {@link TableQuery}.
    * @returns {TableQueryBuilder} */
-  static from(table: string, connection?: DataConnection): TableQueryBuilder { return toJs(api.grok_DbTableQueryBuilder_From(table, connection?.dart)); }
+  static from(table: string, connection?: DataConnection | string): TableQueryBuilder {
+    let conn: any = connection === undefined ? connection : connection instanceof DataConnection ? connection.dart : connection;
+    return toJs(api.grok_DbTableQueryBuilder_From(table, conn));
+  }
 
   /** Creates {@link TableQueryBuilder} from {@link TableInfo}
    * @param {TableInfo} table - TableInfo object
