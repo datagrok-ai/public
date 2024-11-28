@@ -376,7 +376,7 @@ category('Dapi: functions', async () => {
     const call = query.prepare({'x': 0.5});
     const res = (await call.call()).getOutputParamValue();
     expect(res.get('res', 0), 0.5);
-  }, {skipReason: 'GROK-16807'});
+  });
 
   test('save with NaN', async () => {
     let func = await grok.functions.eval("ApiTests:TestNaNOutput")
