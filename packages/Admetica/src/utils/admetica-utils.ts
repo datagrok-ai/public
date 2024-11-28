@@ -54,7 +54,7 @@ export async function runAdmetica(csvString: string, queryParams: string, addPro
 
   const path = `/predict?models=${queryParams}&probability=${addProbability}`;
   const response = await fetchWrapper(() => sendRequestToContainer(admeticaContainer.id, path, params));
-  return response;
+  return await convertLD50(response!, DG.Column.fromStrings('smiles', csvString.split('\n').slice(1)));
 }
 
 export async function convertLD50(response: string, smilesCol: DG.Column): Promise<string> {
@@ -62,11 +62,11 @@ export async function convertLD50(response: string, smilesCol: DG.Column): Promi
   if (!df.columns.names().includes('LD50')) return response;
 
   const ldCol = df.getCol('LD50');
-  const molWeights = await grok.functions.call('Chem: getMolProperty', {molecules: smilesCol, property: "MW"});
+  const molWeights: DG.Column = await grok.functions.call('Chem: getMolProperty', {molecules: smilesCol, property: "MW"});
 
   ldCol.init((i) => {
     const molPerKg = Math.pow(10, -ldCol.get(i));
-    const mgPerKg = molPerKg * molWeights[i] * 1000;
+    const mgPerKg = molPerKg * molWeights.get(i) * 1000;
     return mgPerKg;
   });
   
