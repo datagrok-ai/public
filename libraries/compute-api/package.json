@@ -10,7 +10,7 @@
   "dependencies": {
     "@datagrok-libraries/compute-utils": "file:../compute-utils",
     "datagrok-api": "^1.22.0",
-    "dayjs": "^1.11.10"
+    "dayjs": "=1.11.10"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.8.1",

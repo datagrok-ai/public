@@ -106,7 +106,7 @@ export function parseLinkIO(io: string, ioType: IOType): LinkIOParsed {
   }).filter((x) => !!x);
   const lastSegment = indexFromEnd(segments);
   if (lastSegment && ioType !== 'base' && (lastSegment.selector !== 'first'))
-    throw new Error(`Link io ${io} ending with input/output selector`);
+    throw new Error(`Link io ${io} is not ending with input/output selector`);
   return {name, segments, flags};
 }
 

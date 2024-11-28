@@ -89,7 +89,6 @@ export const InputForm = Vue.defineComponent({
           const input = currentForm.value!.getInput(param.property.name);
           const validationState = validationStates.value?.[param.property.name];
           const consistencyState = consistencyStates.value?.[param.property.name];
-          const paramItems = states.meta[param.property.name]?.['items'];
 
           if (!isInputInjected(input))
             injectInputBaseStatus(input);
@@ -100,7 +99,17 @@ export const InputForm = Vue.defineComponent({
           });
 
           input.enabled = !isReadonly.value && consistencyState?.restriction !== 'disabled';
+        });
+    });
 
+    Vue.watch([currentForm, states.meta], ([form, meta]) => {
+      if (!form) return;
+
+      [...currentCall.value.inputParams.values()]
+        .filter((param) => (form!.getInput(param.property.name)))
+        .forEach((param) => {
+          const input = form!.getInput(param.property.name);
+          const paramItems = meta[param.property.name]?.['items'];
           if (paramItems && input.inputType === DG.InputType.Choice)
             (input as DG.ChoiceInput<any>).items = paramItems;
         });
