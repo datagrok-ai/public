@@ -1204,7 +1204,7 @@ function checkCorrectness(ivp: IVP): void {
   ivp.deqs.equations.forEach((ignore, name) => {
     if (!ivp.inits.has(name)) {
       throw new ModelError(
-        `Initial value for **${name}** is missing. ${ERROR_MSG.MISSING_INIT}.`,
+        `Initial value for **${name}** is missing. ${ERROR_MSG.MISSING_INIT}`,
         ERROR_LINK.BASIC_MODEL,
         CONTROL_EXPR.INITS,
       );
