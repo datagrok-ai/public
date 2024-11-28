@@ -214,7 +214,6 @@ def dock_ligand():
     """
     Route to start docking in a separate process and return the result.
     """
-    kill_all_processes()
     raw_data = request.data
     result_queue = multiprocessing.Queue()
 
