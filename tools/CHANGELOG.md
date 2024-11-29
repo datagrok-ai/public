@@ -1,6 +1,12 @@
 # Datagrok-tools changelog
 
 
+## 4.13.40 (2024-11-29)
+
+### Features
+
+* Added ability to run auto tests by core variable
+
 ## 4.13.39 (2024-11-26)
 
 ### Features

@@ -40,8 +40,8 @@ export async function test(args: TestArgs): Promise<boolean> {
 
   if (args.platform && packageName !== 'ApiTests')
     color.warn('--platform flag can only be used in the ApiTests package');
-  if (args.core && packageName !== 'DevTools')
-    color.warn('--core flag can only be used in the DevTools package');
+  // if (args.core && packageName !== 'DevTools')
+  //   color.warn('--core flag can only be used in the DevTools package');
 
 
   if (!args.package) {

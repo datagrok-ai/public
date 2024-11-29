@@ -151,7 +151,7 @@ Options:
 --record            Records the test execution process in mp4 format
 --verbose           Prints detailed information about passed and skipped tests in the console
 --platform          Runs only platform tests (applicable for ApiTests package only)
---core              Runs package & core tests (applicable  for DevTools package only)
+--core              Runs package & auto tests & core tests (core tests run only from DevTools package)
 --benchmark   	    Runs tests in benchmark mode
 --stress-test       Runs shuffled stress-test only
  
