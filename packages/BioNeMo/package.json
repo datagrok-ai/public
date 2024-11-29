@@ -17,6 +17,7 @@
     "@datagrok-libraries/bio": "^5.42.14"
   },
   "devDependencies": {
+    "@datagrok/biostructure-viewer": "^1.2.4",
     "datagrok-tools": "latest",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
