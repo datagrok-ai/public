@@ -1,7 +1,13 @@
 # Datagrok-tools changelog
 
 
-## 4.13.40 (2024-11-29)
+## 4.13.41 (2024-11-29)
+
+### Features
+
+* Publish refresh orientates on debug versions of packages
+
+## 4.13.41 (2024-11-29)
 
 ### Features
 

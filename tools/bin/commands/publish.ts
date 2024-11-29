@@ -7,6 +7,7 @@ import os from 'os';
 import path from 'path';
 import walk from 'ignore-walk';
 import yaml from 'js-yaml';
+import { getDevKey, getToken } from '../utils/test-utils';
 import { checkImportStatements, checkFuncSignatures, extractExternals, checkPackageFile, checkChangelog } from './check';
 import * as utils from '../utils/utils';
 import { Indexable } from '../utils/utils';
@@ -213,12 +214,24 @@ export async function publish(args: PublishArgs) {
     utils.setHost(host, config);
 
     let baseUrl = config['servers'][host]['url'];
-    let url = `${baseUrl}/info/packages`;
+    let url: string = process.env.HOST ?? '';
+    const cfg = getDevKey(url);
+    url = cfg.url;
+  
+    const key = cfg.key;
+    const token = await getToken(url, key);
+
+    url = `${baseUrl}/packages/published/current`;
 
     let packagesToLoad =['all']
     console.log(url);
     if (args.refresh)
-      packagesToLoad = Object.keys(await (await fetch(url)).json());
+      packagesToLoad = (await (await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Authorization': token // Attach cookies here
+        }
+    })).json()).map((item : any) => item.name);
     console.log('Loading packages:');
     await loadPackages(curDir, packagesToLoad.join(' '), host, false, false, args.link, args.release);
   }
