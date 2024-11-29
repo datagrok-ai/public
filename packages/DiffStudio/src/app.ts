@@ -24,7 +24,7 @@ import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools/solver-defs';
 import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN, getCategoryWidget,
   getReducedTable, closeWindows, getRecentModelsTable, getMyModelFiles, getEquationsFromFile} from './utils';
 
-import {ModelError, showModelErrorHint, getIsNotDefined, getUnexpected} from './error-utils';
+import {ModelError, showModelErrorHint, getIsNotDefined, getUnexpected, getNullOutput} from './error-utils';
 
 import '../css/app-styles.css';
 
@@ -967,6 +967,8 @@ export class DiffStudio {
             throw getIsNotDefined(error.message);
           else if (error.message.includes(MISC.UNEXPECTED))
             throw getUnexpected(error.message);
+          else if (error.message.includes(MISC.PROP_OF_NULL))
+            throw getNullOutput();
           else
             grok.shell.error(error.message);
         } else

@@ -147,4 +147,4 @@
            P =    1  {units: atm;   caption: pressure;    category: Parameters;  min: 1;   max: 2}              [Headspace pressure]
   switchTime =  135  {units: min;   caption: switch at;   category: Time;        min: 70;  max: 180; step: 10}  [Switch mode time]
 
-#meta.inputs: mode {caption: Process mode; category: Process parameters; choices: OpenFile("System:AppData/DiffStudio/examples/bioreactor-inputs.csv")} [Reactions flow mode]
+#meta.inputs: mode {caption: Process mode; category: Process parameters; choices: OpenFile("System:AppData/DiffStudio/library/bioreactor-inputs.csv")} [Reactions flow mode]

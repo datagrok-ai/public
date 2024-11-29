@@ -83,3 +83,11 @@ export function getUnexpected(msg: string): ModelError {
     toHighlight,
   );
 }
+
+export function getNullOutput(): ModelError {
+  return new ModelError(
+    `Non-existent item in the **#output** block. Use entities specified in **#equations** or **#expressions**.`,
+    LINK.ADV_MODEL,
+    '#output',
+  );
+}

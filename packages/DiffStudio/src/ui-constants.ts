@@ -130,6 +130,7 @@ export enum LINK {
   COMPUTE = 'https://datagrok.ai/help/compute',
   LOAD_SAVE = `${DIF_STUDIO_REL}#loading-and-saving-data`,
   BASIC_MODEL = '/help/compute/diff-studio#basic-model',
+  ADV_MODEL = '/help/compute/diff-studio#advanced-model',
 };
 
 /** Error messages */
@@ -185,6 +186,7 @@ export enum MISC {
   TOOLTIP = 'tooltip',
   IS_NOT_DEF = 'is not defined',
   UNEXPECTED = 'Unexpected identifier',
+  PROP_OF_NULL = 'Cannot set properties of null',
 };
 
 /** Warning dialog lines */

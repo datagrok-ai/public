@@ -414,7 +414,7 @@ ${CONTROL_EXPR.PARAMS}:
            P =    1  {units: atm;   caption: pressure;    category: Parameters;  min: 1;   max: 2}              [Headspace pressure]
   switchTime =  135  {units: min;   caption: switch at;   category: Time;        min: 70;  max: 180; step: 10}  [Switch mode time]
   
-${CONTROL_EXPR.INPUTS}: mode {caption: Process mode; category: Process parameters; choices: OpenFile("System:AppData/DiffStudio/examples/bioreactor-inputs.csv")} [Reactions flow mode]`;
+${CONTROL_EXPR.INPUTS}: mode {caption: Process mode; category: Process parameters; choices: OpenFile("System:AppData/DiffStudio/library/bioreactor-inputs.csv")} [Reactions flow mode]`;
 
 /** Pollution model */
 const POLLUTION_MODEL = `${CONTROL_EXPR.NAME}: Pollution
