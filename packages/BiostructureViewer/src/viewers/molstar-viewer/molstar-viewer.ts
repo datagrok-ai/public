@@ -876,7 +876,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       // openBtn.disabled = !(dataFi && (dataFi.data || dataFi.url));
     }));
     this.splashDiv = ui.div(
-      ui.divV([ui.inputs([dataFileInput])/*, openBtn*/]),
+      ui.divV([dataFileInput]/*, openBtn*/),
       {classes: 'bsv-viewer-splash'} /* splash */);
     this.root.appendChild(this.splashDiv);
     this.logger.debug(`${logPrefix}, end`);
