@@ -2,15 +2,12 @@ import * as DG from 'datagrok-api/dg';
 import {category, test, before} from '@datagrok-libraries/utils/src/test';
 import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
-import {LinksState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/LinksState';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {of, Subject} from 'rxjs';
-import {delay, map, mapTo, switchMap} from 'rxjs/operators';
-import {FuncCallInstancesBridge} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/FuncCallInstancesBridge';
+import {switchMap} from 'rxjs/operators';
 import {makeValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
-import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
+import {FuncCallNode, PipelineNodeBase} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
 
 category('ComputeUtils: Driver obsolete meta cleanup', async () => {
@@ -221,6 +218,34 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
           },
         },
 
+      });
+    });
+  });
+
+  test('Remove obsolete tags', async () => {
+    const pconf = await getProcessedConfig(config);
+
+    testScheduler.run((helpers) => {
+      const {expectObservable, cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.linksState.forceInitialMetaRun = true;
+      tree.init().subscribe();
+      const outNode = tree.nodeTree.root;
+      cold('-a').subscribe(() => {
+        (outNode.getItem() as PipelineNodeBase).nodeDescription.setState('tags', {'1234': ['tag1', 'tag2']});
+      });
+      cold('10ms a').subscribe(() => {
+        tree.runMutateTree().subscribe();
+      });
+      expectObservable((outNode.getItem() as PipelineNodeBase).nodeDescription.getStateChanges('tags')).toBe('ab 8ms c', {
+        a: undefined,
+        b: {
+          "1234": [
+            "tag1",
+            "tag2"
+          ]
+        },
+        c: {},
       });
     });
   });

@@ -28,7 +28,6 @@ class DependenciesData {
 interface IoDep {
   data?: string;
   meta?: string;
-  validation?: string[];
 }
 
 type IoDeps = Record<string, IoDep>;
@@ -255,10 +254,10 @@ export class LinksState {
       for (const infosOut of Object.values(link.matchInfo.outputs)) {
         for (const infoOut of infosOut) {
           const stepPath = [...link.prefix, ...infoOut.path];
-          const stepNode = state.getNode(stepPath);
+          const node = state.getNode(stepPath);
           const ioName = infoOut.ioName!;
-          const depsData = deps.get(stepNode.getItem().uuid) ?? {};
-          const depType = link.isValidator ? 'validation' : (link.isMeta ? 'meta' : 'data');
+          const depsData = deps.get(node.getItem().uuid) ?? {};
+          const depType = link.matchInfo.spec.type ?? 'data';
           if (depsData[ioName] == null)
             depsData[ioName] = {};
           if (depType === 'meta' || depType === 'data') {
@@ -266,12 +265,8 @@ export class LinksState {
               grok.shell.warning(`Duplicate deps path ${JSON.stringify(stepPath)} io ${ioName} $`);
 
             depsData[ioName][depType] = linkId;
-          } else {
-            const currentDeps = depsData[ioName]['validation'] ?? [];
-            currentDeps.push(linkId);
-            depsData[ioName]['validation'] = currentDeps;
           }
-          deps.set(stepNode.getItem().uuid, depsData);
+          deps.set(node.getItem().uuid, depsData);
         }
       }
     }

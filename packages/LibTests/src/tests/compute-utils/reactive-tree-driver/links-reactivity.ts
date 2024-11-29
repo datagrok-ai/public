@@ -1139,6 +1139,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.init().subscribe();
       const node = tree.nodeTree.getNode([{idx: 0}]);
+      const link = [...tree.linksState.links.values()][0]
       const pipeline = tree.nodeTree.root;
       cold('-a').subscribe(() => {
         node.getItem().getStateStore().setState('a', 1);
@@ -1151,7 +1152,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
       expectObservable(pipeline.getItem().nodeDescription.getStateChanges('description')).toBe('abc',
         {a: undefined, b: 'Description 1', c: 'Description 2'});
       expectObservable(pipeline.getItem().nodeDescription.getStateChanges('tags')).toBe('abc',
-        {a: undefined, b: ['tag 1'], c: ['tag 2']});
+        {a: undefined, b: {[link.uuid]: ['tag 1']}, c: {[link.uuid]: ['tag 2']}});
     });
   });
 

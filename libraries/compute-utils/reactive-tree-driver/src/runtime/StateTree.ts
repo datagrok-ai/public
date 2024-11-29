@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Observable, defer, of, merge, Subject, BehaviorSubject, from, combineLatest} from 'rxjs';
-import {finalize, map, mapTo, toArray, concatMap, tap, takeUntil, concat, debounceTime, scan} from 'rxjs/operators';
+import {finalize, map, mapTo, toArray, concatMap, tap, takeUntil, debounceTime, scan} from 'rxjs/operators';
 import {NodePath, BaseTree, TreeNode} from '../data/BaseTree';
 import {PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {isFuncCallSerializedState, PipelineInstanceConfig, PipelineSerializedState, PipelineState} from '../config/PipelineInstance';
@@ -145,6 +145,10 @@ export class StateTree {
       ));
       const descriptions$ = merge(...stateChanges).pipe(
         scan((acc, [name, val]) => {
+          if (name === 'tags') {
+            const tags = Object.values(val ?? {}).flat() as string[];
+            return {...acc, [name]: tags};
+          }
           return {...acc, [name]: val};
         }, {} as Record<string, string[] | string>),
         debounceTime(0),
@@ -381,7 +385,7 @@ export class StateTree {
             })),
           ),
         );
-      }, true);
+      });
     } else if (action.spec.type === 'funccall') {
       return this.withTreeLock(() => {
         return action.exec(additionalParams).pipe(
@@ -738,17 +742,21 @@ export class StateTree {
   }
 
   private removeOrphanedIOMetadata() {
+    const currentLinkIds = new Set(this.linksState.links.keys());
+
     this.nodeTree.traverse(this.nodeTree.root, (acc, node) => {
       const item = node.getItem();
-      // TODO: clear obsolete pipeline meta
-      if (!isFuncCallNode(item))
-        return acc;
 
-      const ioDeps = this.linksState.ioDependencies.get(item.uuid);
-      if (!ioDeps)
+      if (!isFuncCallNode(item)) {
+        item.clearOldTags(currentLinkIds);
         return acc;
+      }
 
+      item.clearOldValidations(currentLinkIds);
+
+      const ioDeps = this.linksState.ioDependencies.get(item.uuid) ?? {};
       const ioNames = item.instancesWrapper.getStateNames();
+
       for (const ioName of ioNames) {
         const deps = ioDeps[ioName];
         if (!deps?.data)
@@ -756,12 +764,6 @@ export class StateTree {
         if (!deps?.meta)
           item.clearIOMeta(ioName);
       }
-
-      const currentValidatorIds = ioNames.flatMap((ioName) => {
-        const deps = ioDeps[ioName];
-        return deps?.validation ?? [];
-      });
-      item.clearOldValidations(new Set(currentValidatorIds));
 
       return acc;
     }, null);

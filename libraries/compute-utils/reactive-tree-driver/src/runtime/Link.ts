@@ -274,7 +274,12 @@ export class Link {
         } else if (controller instanceof NameSelectorController) {
           const data = controller.outputs[outputAlias];
           const descrStore = node.getItem().nodeDescription;
-          descrStore.setState(ioName, data);
+          if (ioName === 'tags') {
+            const ndata = { [this.uuid]: data };
+            const odata = descrStore.getState('tags') ?? {};
+            descrStore.setState(ioName, {...odata, ...ndata});
+          } else
+            descrStore.setState(ioName, data);
         } else if (controller instanceof FuncallActionController) {
           const data = controller.outputs[outputAlias];
           const stateStore = node.getItem().getStateStore();

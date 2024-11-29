@@ -927,6 +927,13 @@
           },
           "hasValue": true
         }
+      },
+      {
+        "frame": 500,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
       }
     ]
   },
@@ -960,6 +967,13 @@
           "kind": "N",
           "hasValue": true
         }
+      },
+      {
+        "frame": 500,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
       }
     ]
   },
@@ -989,6 +1003,13 @@
       },
       {
         "frame": 160,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 500,
         "notification": {
           "kind": "N",
           "hasValue": true
@@ -1041,6 +1062,13 @@
           },
           "hasValue": true
         }
+      },
+      {
+        "frame": 500,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
       }
     ]
   },
@@ -1074,6 +1102,13 @@
           "kind": "N",
           "hasValue": true
         }
+      },
+      {
+        "frame": 500,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
       }
     ]
   },
@@ -1103,6 +1138,13 @@
       },
       {
         "frame": 180,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 500,
         "notification": {
           "kind": "N",
           "hasValue": true
@@ -1155,6 +1197,13 @@
           },
           "hasValue": true
         }
+      },
+      {
+        "frame": 500,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
       }
     ]
   },
@@ -1188,6 +1237,13 @@
           "kind": "N",
           "hasValue": true
         }
+      },
+      {
+        "frame": 500,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
       }
     ]
   },
@@ -1217,6 +1273,13 @@
       },
       {
         "frame": 200,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 500,
         "notification": {
           "kind": "N",
           "hasValue": true
@@ -1269,6 +1332,13 @@
           },
           "hasValue": true
         }
+      },
+      {
+        "frame": 500,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
       }
     ]
   },
@@ -1302,6 +1372,13 @@
           "kind": "N",
           "hasValue": true
         }
+      },
+      {
+        "frame": 500,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
       }
     ]
   },
@@ -1331,6 +1408,13 @@
       },
       {
         "frame": 220,
+        "notification": {
+          "kind": "N",
+          "hasValue": true
+        }
+      },
+      {
+        "frame": 500,
         "notification": {
           "kind": "N",
           "hasValue": true

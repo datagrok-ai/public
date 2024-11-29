@@ -263,7 +263,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
         a: {
           'title': undefined,
           'description': undefined,
-          'tags': undefined,
+          'tags': [],
         },
         b: {
           'title': 'Title 1',

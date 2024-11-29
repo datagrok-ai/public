@@ -342,6 +342,20 @@ export class PipelineNodeBase implements IStoreProvider {
     return this.store;
   }
 
+  clearOldTags(currentIds: Set<string>) {
+    const cval = this.nodeDescription.getState<Record<string, string[]>>('tags') ?? [];
+    const nval: Record<string, string[]> = {};
+    let needsUpdate = false;
+    for (const [k, v] of Object.entries(cval)) {
+      if (currentIds.has(k))
+        nval[k] = v;
+      else
+        needsUpdate = true;
+    }
+    if (needsUpdate)
+      this.nodeDescription.setState('tags', nval);
+  }
+
   toBaseState(options: StateTreeSerializationOptions) {
     const res = {
       configId: this.config.id,
