@@ -480,11 +480,14 @@ jobs:
               key='admin'
             fi
             token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/$key | jq -r .token)
-            curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/$key 
+            echo "curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/$key" >> debug.txt 2>&1
+            curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/$key >> debug.txt 2>&1
             echo $token
             until .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}'
             do
-              curl -s -H 'Authorization: $token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'
+              echo "curl -s -H 'Authorization: $token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" >> debug.txt 2>&1
+              curl -s -H 'Authorization: $token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'  >> debug.txt 2>&1
+              exit 1
               sleep 1
               echo -e "\nContainer for ${{ matrix.package }} did not start yet..."
               echo -e "\nRetrying '/api/docker/containers'..."
@@ -498,6 +501,14 @@ jobs:
               done
             fi
           fi
+      - name: Upload Artifact
+        if: failure() && steps.docker-wait.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.package }}.debug
+          path: debug.txt
+          retention-days: 1
+          if-no-files-found: warn
       - name: Test Package
         if: ${{ matrix.test == 'test' }}
         continue-on-error: ${{ contains(matrix.package, 'Tests') || matrix.package == 'Chemspace' }}
