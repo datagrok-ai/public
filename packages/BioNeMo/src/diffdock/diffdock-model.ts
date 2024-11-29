@@ -122,6 +122,7 @@ export class DiffDockModel {
 
   public async createCombinedControl(poses: PosesJson, bestPose: string, bestId: number, fullHeight: boolean = true): Promise<HTMLDivElement> {
     const molstarViewer = await this.createMolstarViewer(bestPose);
+    molstarViewer.root.classList.add('bsv-container-info-panel');
     molstarViewer.root.style.alignSelf = 'center';
     if (fullHeight)
       molstarViewer.root.style.height = '100%';

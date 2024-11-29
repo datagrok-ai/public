@@ -1,5 +1,17 @@
 # BiostructureViewer changelog
 
+## 1.2.4 (2024-11-29)
+
+### Features
+
+* GROK-11759: BsV: Switch molecule representation (cartoon, balls and sticks)
+
+### Bug Fixes
+
+* BsV: Initialize properties before setting the data
+* BsV: Implement resizing for the Mol* viewer within widgets
+* BsV: Resolve styling issues when building view without data
+
 ## 1.2.3 (2024-11-22)
 
 Moved Context menu items to detector
