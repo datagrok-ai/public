@@ -509,8 +509,12 @@ export class DiffStudio {
   /** Return the run fitting widget */
   private getFitWgt(): HTMLElement {
     const span = ui.span(['Fit']);
-    span.classList.add('diff-studio-ribbon-fit');
-    const wgt = ui.divH([ui.iconFA('wave-sine'), span]);
+    span.classList.add('diff-studio-ribbon-text');
+
+    const icn = ui.iconFA('wave-sine');
+    icn.classList.add('diff-studio-ribbon-fit-icon');
+
+    const wgt = ui.divH([icn, span]);
     wgt.onclick = async () => await this.runFitting();
     ui.tooltip.bind(wgt, 'Fit parameters. Opens a separate view');
 
@@ -520,7 +524,11 @@ export class DiffStudio {
   /** Return the run sensitivity analysis widget */
   private getSensAnWgt(): HTMLElement {
     const span = ui.span(['Sensitivity']);
-    span.classList.add('diff-studio-ribbon-sa');
+    span.classList.add('diff-studio-ribbon-text');
+
+    const icn = ui.iconFA('chart-line');
+
+    icn.classList.add('diff-studio-ribbon-sa-icon');
     const wgt = ui.divH([ui.iconFA('chart-line'), span]);
     wgt.onclick = async () => await this.runSensitivityAnalysis();
     ui.tooltip.bind(wgt, 'Run sensitivity analysis. Opens a separate view');
@@ -590,9 +598,10 @@ export class DiffStudio {
   private getExportToJsWgt(): HTMLElement {
     const wgt = ui.span(['</>']);
     wgt.classList.add('d4-ribbon-name');
+    wgt.classList.add();
     wgt.style.minWidth = '20px';
-    wgt.style.marginLeft = '30px';
-    wgt.style.marginRight = '30px';
+    wgt.style.marginLeft = '7px';
+    wgt.style.marginRight = '14px';
     wgt.onclick = async () => await this.exportToJS();
     ui.tooltip.bind(wgt, HINT.TO_JS);
 
@@ -1836,6 +1845,7 @@ export class DiffStudio {
   private getOpenComboMenu(): HTMLElement {
     const menu = ui.div(ui.iconFA('folder-open', () => {}, HINT.OPEN));
     menu.classList.add('d4-combo-popup');
+    menu.classList.add('diff-studio-ribbon-widget');
     ui.tooltip.bind(menu, HINT.OPEN);
     menu.onclick = async () => (await this.getOpenModelMenu()).show();
 
