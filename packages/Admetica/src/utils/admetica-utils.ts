@@ -19,12 +19,6 @@ async function getAdmeticaContainer() {
   return admeticaContainer;
 }
 
-// can be removed, need to add to container info
-async function startAdmeticaContainer(containerId: string) {
-  grok.shell.warning('Admetica container has not started yet. Try again in a few seconds');
-  grok.dapi.docker.dockerContainers.run(containerId);
-}
-
 async function sendRequestToContainer(containerId: string, path: string, params: RequestInit): Promise<string | null> {
   try {
     const response = await grok.dapi.docker.dockerContainers.request(containerId, path, params);
@@ -37,11 +31,6 @@ async function sendRequestToContainer(containerId: string, path: string, params:
 
 export async function runAdmetica(csvString: string, queryParams: string, addProbability: string): Promise<string | null> {
   const admeticaContainer = await getAdmeticaContainer();
-  if (!admeticaContainer || (admeticaContainer.status !== 'started' && admeticaContainer.status !== 'checking')) {
-    await startAdmeticaContainer(admeticaContainer?.id);
-    return null;
-  }
-
   const params: RequestInit = {
     method: 'POST',
     headers: {
@@ -50,7 +39,6 @@ export async function runAdmetica(csvString: string, queryParams: string, addPro
     },
     body: csvString
   };
-
 
   const path = `/predict?models=${queryParams}&probability=${addProbability}`;
   const response = await fetchWrapper(() => sendRequestToContainer(admeticaContainer.id, path, params));
