@@ -24,6 +24,9 @@ export const PipelineView = Vue.defineComponent({
       type: Boolean,
       required: true,
     },
+    uuid: {
+      type: String,
+    },
     menuActions: {
       type:  Object as Vue.PropType<Record<string, ViewAction[]>>
     },
@@ -76,6 +79,7 @@ export const PipelineView = Vue.defineComponent({
       <div class='w-full h-full flex'>
         <DockManager
           onPanelClosed={handlePanelClose}
+          key={props.uuid}
         >
           { (!historyHidden.value && props.funcCall) &&
             <History
