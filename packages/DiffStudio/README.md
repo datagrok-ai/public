@@ -37,8 +37,8 @@ Datagrok provides intuitive tools for the rapid solving ODEs.
   * Explore examples in **Library**. They cover all possibilities of Diff Studio
 * Analyze model
   * Turn off the **Edit** toggle on the top panel
-  * Click <i class="fas fa-wave-sine"></i> **Fit** to [optimize inputs](https://datagrok.ai/help/compute/function-analysis#parameter-optimization)
-  * Click <i class="fas fa-chart-line"></i> **Sensitivity** to run [sensitivity analysis](https://datagrok.ai/help/compute/function-analysis#sensitivity-analysis)
+  * Click the **Fit** icon to [optimize inputs](https://datagrok.ai/help/compute/function-analysis#parameter-optimization)
+  * Click the **Sensitivity** icon to run [sensitivity analysis](https://datagrok.ai/help/compute/function-analysis#sensitivity-analysis)
 
 ## Create model from template
 

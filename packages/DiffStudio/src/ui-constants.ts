@@ -246,8 +246,8 @@ Click **</>** icon to export model to JavaScript script.
 
 # Analysis
 Turn off the **${TITLE.EDIT}** toggle, and perform analysis:
-* Click <i class="fas fa-wave-sine"></i> **Fit** to [optimize inputs](${LINK.FITTING}).
-* Click <i class="fas fa-chart-line"></i> **Sensitivity** to run [sensitivity analysis](${LINK.SENS_AN}).
+* Click the **Fit** icon on the top panel to [optimize inputs](${LINK.FITTING}).
+* Click the **Sensitivity** icon to run [sensitivity analysis](${LINK.SENS_AN}).
 
 # Learn more
 * [Diff Studio](${LINK.DIF_STUDIO})
