@@ -11,7 +11,7 @@
   "dependencies": {
     "@datagrok-libraries/bio": "^5.45.10",
     "@datagrok-libraries/utils": "^4.3.3",
-    "@datagrok-libraries/tutorials": "^1.5.1",
+    "@datagrok-libraries/tutorials": "^1.5.2",
     "datagrok-api": "^1.22.1",
     "cash-dom": "^8.1.5",
     "dayjs": "=1.11.10",
