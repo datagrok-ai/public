@@ -510,9 +510,8 @@ export class DiffStudio {
   private getFitWgt(): HTMLElement {
     const span = ui.span(['Fit']);
     span.classList.add('diff-studio-ribbon-text');
-
-    const icn = ui.iconFA('wave-sine');
-    icn.classList.add('diff-studio-ribbon-fit-icon');
+    const icn = ui.iconImage('Fit', `${_package.webRoot}files/icons/diff-studio-icon-chart-dots.svg`);
+    icn.classList.add('diff-studio-svg-icon');
 
     const wgt = ui.divH([icn, span]);
     wgt.onclick = async () => await this.runFitting();
@@ -526,10 +525,11 @@ export class DiffStudio {
     const span = ui.span(['Sensitivity']);
     span.classList.add('diff-studio-ribbon-text');
 
-    const icn = ui.iconFA('chart-line');
+    const icn = ui.iconImage('Fit', `${_package.webRoot}files/icons/diff-studio-icon-chart-sensitivity.svg`);
+    icn.classList.add('diff-studio-svg-icon');
 
     icn.classList.add('diff-studio-ribbon-sa-icon');
-    const wgt = ui.divH([ui.iconFA('chart-line'), span]);
+    const wgt = ui.divH([icn, span]);
     wgt.onclick = async () => await this.runSensitivityAnalysis();
     ui.tooltip.bind(wgt, 'Run sensitivity analysis. Opens a separate view');
 
