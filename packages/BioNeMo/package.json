@@ -7,7 +7,7 @@
     "name": "Oleksandra Serhiienko",
     "email": "oserhiienko@datagrok.ai"
   },
-  "description": "",
+  "description": "Advanced models for protein structure prediction and molecular docking",
   "dependencies": {
     "@datagrok-libraries/utils": "^4.3.0",
     "axios": "^1.7.4",

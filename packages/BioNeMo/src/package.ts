@@ -70,7 +70,7 @@ export async function getTargetFiles(): Promise<string[]> {
 
 //name: diffDockModelScript
 //meta.cache: client
-//meta.invalidateOn: 0 0 1 * * ?
+//meta.cache.invalidateOn: 0 * * * *
 //input: string ligand
 //input: string target
 //input: int poses
