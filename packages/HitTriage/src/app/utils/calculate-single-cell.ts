@@ -1,9 +1,11 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {HitTriageTemplateFunction, HitTriageTemplateScript, IComputeDialogResult} from '../types';
 import {funcTypeNames, HitDesignMolColName, ViDColFormat} from '../consts';
 import {joinQueryResults} from '../utils';
+import {_package} from '../../package';
 
 export async function calculateSingleCellValues(
   value: string, descriptors: string[], functions: HitTriageTemplateFunction[], scripts: HitTriageTemplateScript[] = [],
@@ -11,7 +13,7 @@ export async function calculateSingleCellValues(
 ): Promise<DG.DataFrame> {
   const pg = DG.TaskBarProgressIndicator.create('Calculating ...');
   // TODO: this converts value to canonical one. We need to do it in a better way
-  const canonicalSmiles = grok.chem.convert(value, grok.chem.Notation.Unknown, grok.chem.Notation.Smiles);
+  const canonicalSmiles = _package.convertToSmiles(value);
   const col = DG.Column.fromStrings(HitDesignMolColName, [canonicalSmiles]);
   const table = DG.DataFrame.fromColumns([col]);
   table.name = 'HD Single cell values';
@@ -106,18 +108,25 @@ export async function calculateColumns(resultMap: IComputeDialogResult, dataFram
   const molCol = dataFrame.col(molColName);
   if (!molCol)
     throw new Error('There is no molecule column in dataframe');
-  for (let i = 0; i < molCol.length; i++) {
+
+  const molSmilesColName = `~${molColName}.canonicalSmiles`; // chem package might have already created that, but we update it just in any case
+  const molSmilesCol = dataFrame.columns.getOrCreate(molSmilesColName, DG.TYPE.STRING, dataFrame.rowCount);
+  // we don't want to overwrite existing values, as they can contain important conformation information
+  molSmilesCol.semType = DG.SEMTYPE.MOLECULE;
+
+  const molColList = molCol.toList();
+  for (let i = 0; i < molColList.length; i++) {
     if (molCol.isNone(i))
       continue;
-    const value: string | null = molCol.get(i);
+    const value: string | null = molColList[i];
     if (!value)
       continue;
-    const newVal = grok.chem.convert(value, grok.chem.Notation.Unknown, grok.chem.Notation.Smiles);
-    molCol.set(i, newVal, false);
+    const newVal = _package.convertToSmiles(value);
+    molSmilesCol.set(i, newVal, false);
   }
   try {
     if (resultMap.descriptors && resultMap.descriptors.length > 0)
-      await grok.chem.descriptors(dataFrame!, molColName!, resultMap.descriptors);
+      await grok.chem.descriptors(dataFrame!, molSmilesColName!, resultMap.descriptors);
   } catch (e) {
     console.error('Descriptors calculation error', e);
   }
@@ -129,7 +138,7 @@ export async function calculateColumns(resultMap: IComputeDialogResult, dataFram
       const tablePropName = f.inputs[0].name;
       const colPropName = f.inputs[1].name;
       if (props)
-        await f.apply({...props, [tablePropName]: dataFrame!, [colPropName]: molColName});
+        await f.apply({...props, [tablePropName]: dataFrame!, [colPropName]: molSmilesColName});
     } catch (e) {
       console.error(e);
     }
@@ -150,7 +159,7 @@ export async function calculateColumns(resultMap: IComputeDialogResult, dataFram
           continue;
         const tablePropName = s.inputs[0].name;
         const colPropName = s.inputs[1].name;
-        const r: DG.DataFrame = await s.apply({...props, [tablePropName]: dataFrame, [colPropName]: molColName});
+        const r: DG.DataFrame = await s.apply({...props, [tablePropName]: dataFrame, [colPropName]: molSmilesColName});
         if (r && r.rowCount === dataFrame.rowCount && s.language === 'python') {
           for (const c of r.columns) {
             c.name = dataFrame.columns.getUnusedName(c.name);
@@ -178,10 +187,9 @@ export async function calculateColumns(resultMap: IComputeDialogResult, dataFram
         if (!s)
           continue;
         const listPropName = s.inputs[0].name;
-        const molList = dataFrame!.col(molColName!)!.toList();
-        const resDf: DG.DataFrame = await s.apply({...props, [listPropName]: molList});
+        const resDf: DG.DataFrame = await s.apply({...props, [listPropName]: molSmilesCol.toList()});
         if (resDf)
-          await joinQueryResults(dataFrame!, molColName!, resDf);
+          await joinQueryResults(dataFrame!, molSmilesColName!, resDf);
       } catch (e) {
         console.error(e);
       }

@@ -12,7 +12,17 @@ import {PeptiHitHelmColName} from './app/consts';
 import {htPackageSettingsEditorWidget} from './packageSettingsEditor';
 // import {loadCampaigns} from './app/utils';
 
-export const _package = new DG.Package();
+export class HTPackage extends DG.Package {
+  molToSmilesLruCache = new DG.LruCache<string, string>(2000);
+
+  convertToSmiles(mol: string): string {
+    return this.molToSmilesLruCache.getOrCreate(mol,
+      (mol) => grok.chem.convert(mol, grok.chem.Notation.Unknown, grok.chem.Notation.Smiles),
+    );
+  }
+}
+
+export const _package = new HTPackage();
 
 async function hitAppTB(treeNode: DG.TreeViewGroup, browseView: any, name: AppName) {// TODO: DG.BrowseView
   const camps = await loadCampaigns(name, []);

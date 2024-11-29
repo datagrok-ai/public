@@ -153,6 +153,7 @@ export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
         campaignFields: fieldsEditor.getFields(),
         stages: tileCategoriesEditor.getFields(),
         layoutViewState: layoutInput.getLayoutViewState() ?? undefined,
+        localLayoutPath: layoutInput.getLocalFilePath() ?? undefined,
         compute: {
           descriptors: {
             enabled: !!funcDialogRes?.descriptors?.length,
@@ -189,7 +190,7 @@ export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
         },
         ...(submitFunction ? {submit: {fName: submitFunction.name, package: submitFunction.package.name}} : {}),
       };
-      saveHitDesignTemplate(out, app.appName);
+      await saveHitDesignTemplate(out, app.appName);
       grok.shell.info('Template created successfully');
       resolve(out);
     }
@@ -200,8 +201,8 @@ export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
   return {root: form, template: promise, cancelPromise};
 }
 
-function saveHitDesignTemplate(template: PeptiHitTemplate, appName: string) {
-  _package.files.writeAsText(`${appName}/templates/${template.name}.json`, JSON.stringify(template));
+async function saveHitDesignTemplate(template: PeptiHitTemplate, appName: string) {
+  await _package.files.writeAsText(`${appName}/templates/${template.name}.json`, JSON.stringify(template));
 }
 
 

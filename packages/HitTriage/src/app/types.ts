@@ -62,6 +62,7 @@ export type HitTriageTemplate = {
     queryFunctionName?: string,
     isDataSourceQuery?: boolean,
     layoutViewState?: string,
+    localLayoutPath?: string,
 }
 
 export const CampaignFieldTypes = {

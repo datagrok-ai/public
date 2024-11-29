@@ -278,6 +278,7 @@ export class HitDesignInfoView
   async getNewCampaignAccordeon(template: T) {
     const {root, promise, cancelPromise} = newHitDesignCampaignAccordeon(template);
     promise.then(async (camp) => {
+      this.app.clearCampaign();// make sure the previous campaign is cleared
       this.app.dataFrame = camp.df;
       await this.app.setTemplate(template);
       this.app.campaignProps = camp.campaignProps;

@@ -1,5 +1,10 @@
 # HitTriage changelog
 
+## 1.3.9 (2024-11-29)
+
+* Enable working with molblocks without overwriting original data with smiles.
+* Template layouts, data sync.
+
 ## 1.3.8 (2024-11-20)
 
 * Add Campaign name setting and changing.
