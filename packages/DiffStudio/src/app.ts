@@ -430,7 +430,7 @@ export class DiffStudio {
   private openComboMenu = this.getOpenComboMenu();
   private addNewWgt = this.getAddNewWgt();
   private appStateInputWgt = this.getAppStateInput();
-  private saveBtn = ui.bigButton(TITLE.SAVE, async () => await this.saveToMyFiles(), HINT.SAVE_MY);
+  private saveBtn = this.getSaveBtn();
   private downLoadIcon = this.getDownLoadIcon();
   private helpIcon = this.getHelpIcon();
   private openHelpInNewTabIcon = this.getHelpInNewTabIcon();
@@ -496,6 +496,13 @@ export class DiffStudio {
     this.exportToJsWgt.hidden = !this.isEditState;
     this.helpIcon.hidden = !this.isEditState;
     this.openHelpInNewTabIcon.hidden = !this.isEditState;
+  }
+
+  /** Return the save model button */
+  private getSaveBtn(): HTMLButtonElement {
+    const btn = ui.bigButton(TITLE.SAVE, async () => await this.saveToMyFiles(), HINT.SAVE_MY);
+    btn.disabled = true;
+    return btn;
   }
 
   /** Return the download model widget */
@@ -669,6 +676,7 @@ export class DiffStudio {
         this.toRunWhenFormCreated = true;
         this.toChangeSolutionViewerProps = true;
         this.toSwitchToModelTab = true;
+        this.saveBtn.disabled = false;
         this.updateRefreshWidget(true);
         this.updateExportToJsWidget(true);
       } else {
@@ -765,6 +773,8 @@ export class DiffStudio {
             .onOK(async () => await save())
             .show();
         }
+
+        this.saveBtn.disabled = true;
       }, undefined, HINT.SAVE_MY)
       .show();
   }; // saveToMyFiles
@@ -774,6 +784,7 @@ export class DiffStudio {
     toClearStartingInputs: boolean = true, text?: string | undefined): Promise<void> {
     this.toChangeSolutionViewerProps = true;
     this.isModelChanged = false;
+    this.saveBtn.disabled = true;
     this.editorState = state;
     this.solutionTable = DG.DataFrame.create();
     this.solverView.dataFrame = this.solutionTable;
