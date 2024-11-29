@@ -66,6 +66,8 @@ export interface IAutoDockService {
   dockLigandColumn(receptor: BiostructureData, ligandCol: DG.Column<string>, autodockGpf: string, poseCount?: number,
     posColName?: string
   ): Promise<DG.DataFrame>;
+
+  terminate(): Promise<void>;
 }
 
 export async function getAutoDockService(): Promise<IAutoDockService> {

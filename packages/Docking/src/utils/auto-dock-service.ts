@@ -126,9 +126,7 @@ export class AutoDockService implements IAutoDockService {
     };
 
     const path = `/autodock/kill_process`;
-    const adRes = (await this.fetchAndCheck(path, params));
-    console.log('ad res');
-    console.log(adRes);
+    await this.fetchAndCheck(path, params);
   }
 
   async dockLigand(receptor: BiostructureData, ligand: BiostructureData,
@@ -231,7 +229,7 @@ export class AutoDockService implements IAutoDockService {
     if (adResponse.status !== 200) {
       const errMsg = adResponse.statusText;
       // const errMsg = (await adResponse.json())['datagrok-error'];
-     // throw new Error(errMsg);
+      // throw new Error(errMsg);
     }
     const adRes = (await adResponse.json()) as Forms.dockLigandRes;
     if ('datagrok-error' in adRes) {
