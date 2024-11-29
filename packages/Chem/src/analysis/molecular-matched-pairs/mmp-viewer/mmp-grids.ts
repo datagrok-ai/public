@@ -8,10 +8,9 @@ import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {MMPA} from '../mmp-analysis/mmpa';
 import {getRdKitModule} from '../../../utils/chem-common-rdkit';
 import {createColWithDescription} from './mmp-generations';
-import {debounceTime} from 'rxjs/operators';
 import {getInverseSubstructuresAndAlign} from './mmp-mol-rendering';
 import {MmpInput} from './mmp-viewer';
-import { Subject, Subscription } from 'rxjs';
+import {Subject, Subscription} from 'rxjs';
 
 export class MmpPairedGrids {
   parentTable: DG.DataFrame;
@@ -61,15 +60,15 @@ export class MmpPairedGrids {
     this.filters = trellisTv.getFiltersGroup();
     this.fpMaskFragmentsTab = DG.BitSet.create(this.fpGrid.dataFrame.rowCount);
     const avgPairs = this.fpGrid.dataFrame.col(MMP_NAMES.PAIRS)?.stats.avg;
-     if (avgPairs)
-       this.fpGrid.dataFrame.rows.filter((row) => row[MMP_NAMES.PAIRS] >= Math.ceil(avgPairs));
+    if (avgPairs)
+      this.fpGrid.dataFrame.rows.filter((row) => row[MMP_NAMES.PAIRS] >= Math.ceil(avgPairs));
     this.fpMaskFragmentsTab.copyFrom(this.fpGrid.dataFrame.filter);
 
     this.rdkit = getRdKitModule();
 
     subs.push(DG.debounce(this.parentTable.onCurrentRowChanged, 1000).subscribe(() => {
       if (this.parentTable!.currentRowIdx !== -1) {
-       // this.unPinMatchedPair();
+        // this.unPinMatchedPair();
         this.refilterFragmentPairsByMolecule(true);
         this.showErrorEvent.next(this.fpGrid.dataFrame.filter.trueCount === 0);
         this.refreshMatchedPair(this.rdkit);
@@ -178,7 +177,8 @@ export class MmpPairedGrids {
     this.mmpGridTrans.dataFrame.filter.copyFrom(this.mmpMaskTrans);
 
     if (idxPairs >= 0) {
-      const order = [idxPairs].concat([...Array(this.mmpGridTrans.dataFrame.rowCount).keys()].filter((it) => it !== idxPairs));
+      const order = [idxPairs].concat([...Array(this.mmpGridTrans.dataFrame.rowCount).keys()]
+        .filter((it) => it !== idxPairs));
       this.mmpGridTrans.setRowOrder(order);
     }
 
@@ -214,14 +214,14 @@ export class MmpPairedGrids {
     const mask = pairsGrid ? this.parentTableTransSelection : this.parentTableFragSelection;
 
     //reset previous selection from mask
-    for (let i = -1; (i = mask.findNext(i, true)) != -1;) {
+    for (let i = -1; (i = mask.findNext(i, true)) != -1;)
       this.parentTable.selection.set(i, false);
-    }
 
     const columns = this.mmpGridTrans.dataFrame.columns;
     const gridt = grok.shell.tv.grid ?? ((grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView).grid;
     const newSelection = DG.BitSet.create(this.parentTable.rowCount);
-    const indexesPairs = pairsGrid ? this.mmpGridTrans.dataFrame.selection.getSelectedIndexes() : this.mmpMaskTransSelection.getSelectedIndexes();
+    const indexesPairs = pairsGrid ? this.mmpGridTrans.dataFrame.selection.getSelectedIndexes() :
+      this.mmpMaskTransSelection.getSelectedIndexes();
     const indexesAllFrom = indexesPairs?.map((ip) => columns!.byName(MMP_NAMES.PAIRNUM_FROM).get(ip));
     const indexesAllTo = indexesPairs?.map((ip) => columns!.byName(MMP_NAMES.PAIRNUM_TO).get(ip));
     indexesAllFrom?.forEach((i) => newSelection.set(i, true));
@@ -246,15 +246,15 @@ export class MmpPairedGrids {
     const cases: number[] = [];
     const idxs = selectionIdxs ?? [this.fpGrid!.table.currentRowIdx];
     const maskToModify = selectionIdxs ? this.mmpMaskTransSelection : this.mmpMaskTrans;
-    for (let idx of idxs) {
+    for (const idx of idxs) {
       if (idx !== -1) {
         const ruleSmi1 = this.fpGrid.table.getCol(MMP_NAMES.FROM).get(idx);
         const ruleSmi2 = this.fpGrid.table.getCol(MMP_NAMES.TO).get(idx);
         const ruleSmiNum1 = this.mmpa.rules.smilesFrags.indexOf(ruleSmi1);
         const ruleSmiNum2 = this.mmpa.rules.smilesFrags.indexOf(ruleSmi2);
-  
+
         let counter = 0;
-  
+
         for (let i = 0; i < this.mmpa.rules.rules.length; i++) {
           const first = this.mmpa.rules.rules[i].smilesRule1;
           const second = this.mmpa.rules.rules[i].smilesRule2;

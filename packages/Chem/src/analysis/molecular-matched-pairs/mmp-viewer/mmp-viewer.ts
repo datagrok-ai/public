@@ -9,7 +9,9 @@ import {ILineSeries, MouseOverLineEvent, ScatterPlotLinesRenderer}
   from '@datagrok-libraries/utils/src/render-lines-on-sp';
 
 import {MMPA} from '../mmp-analysis/mmpa';
-import {CLIFFS_TAB_TOOLTIP, FRAGMENTS_GRID_TOOLTIP, FRAGMENTS_TAB_TOOLTIP, MATHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS, MATHED_MOLECULAR_PAIRS_TOOLTIP_TRANS, MMP_NAMES, TrellisAxis, TrellisSortByProp, TrellisSortType} from './mmp-constants';
+import {CLIFFS_TAB_TOOLTIP, FRAGMENTS_GRID_TOOLTIP, FRAGMENTS_TAB_TOOLTIP, MATHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS,
+  MATHED_MOLECULAR_PAIRS_TOOLTIP_TRANS, MMP_NAMES, TrellisAxis, TrellisSortByProp,
+  TrellisSortType} from './mmp-constants';
 
 import {PaletteCodes, getPalette} from './palette';
 import {getMmpTrellisPlot} from './mmp-frag-vs-frag';
@@ -24,7 +26,7 @@ import {getMmpFilters, MmpFilters} from './mmp-filters';
 import {getSigFigs} from '../../../utils/chem-common';
 import {createLines} from './mmp-lines';
 import {MmpPairedGrids} from './mmp-grids';
-import { getMolProperty } from '../../../package';
+import {getMolProperty} from '../../../package';
 
 export type MmpInput = {
   table: DG.DataFrame,
@@ -44,7 +46,7 @@ export type SortType = {
 }
 
 export type SortData = {
-  frequency: number, 
+  frequency: number,
   mw?: number
 }
 
@@ -221,7 +223,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.cutoffMasks![i] = DG.BitSet.create(this.parentTable!.rowCount);
       this.cutoffMasks![i].setAll(true);
     }
-
   }
 
   setupCliffsTab(sp: DG.Viewer, mmpFilters: MmpFilters, linesEditor: ScatterPlotLinesRenderer): HTMLElement {
@@ -253,19 +254,22 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       return button;
     };
 
-    const helpButton = (className: string) => {
+    const helpButton = (className: string, tooltip: string) => {
       const button = ui.icons.help(() => {});
+      ui.tooltip.bind(button, () => ui.divText(tooltip, {style: {width: '200px'}}));
       button.classList.add(className);
       return button;
     };
 
-    const createGridDiv = (name: string, grid: DG.Grid, tooltip: string) => {
+    const createGridDiv = (name: string, grid: DG.Grid, helpTooltip: string) => {
       const header = ui.h1(name, 'chem-mmpa-transformation-tab-header');
+      const helpBUtton = helpButton('chem-mmpa-grid-help-icon', helpTooltip);
       grid.root.prepend(header);
       return ui.splitV([
         ui.box(
-          ui.divH([ui.divH([header, helpButton('chem-mmpa-grid-help-icon')]), 
-            addToWorkspaceButton(grid.dataFrame, name, 'chem-mmpa-add-to-workspace-button')], {style: {justifyContent: 'space-between'}}),
+          ui.divH([ui.divH([header, helpBUtton]),
+            addToWorkspaceButton(grid.dataFrame, name, 'chem-mmpa-add-to-workspace-button')],
+          {style: {justifyContent: 'space-between'}}),
           {style: {maxHeight: '30px'}},
         ),
         grid.root,
@@ -273,15 +277,19 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     };
 
     //const mmPairsDiv = ui.div('', {style: {width: '100%', height: '100%'}});
-    const mmPairsRoot1 = createGridDiv('Matched Molecular Pairs', this.pairedGrids!.mmpGridTrans, MATHED_MOLECULAR_PAIRS_TOOLTIP_TRANS);
-    const mmPairsRoot2 = createGridDiv('Matched Molecular Pairs', this.pairedGrids!.mmpGridFrag, MATHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS);
-    const fpGrid = createGridDiv('Fragment Pairs', this.pairedGrids!.fpGrid, FRAGMENTS_GRID_TOOLTIP);
-    fpGrid.prepend(ui.divText('No substitutions found for current molecule. Please select another molecule.', 'chem-mmpa-no-fragments-error'));
+    const mmPairsRoot1 = createGridDiv('Matched Molecular Pairs',
+      this.pairedGrids!.mmpGridTrans, MATHED_MOLECULAR_PAIRS_TOOLTIP_TRANS);
+    const mmPairsRoot2 = createGridDiv('Matched Molecular Pairs',
+      this.pairedGrids!.mmpGridFrag, MATHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS);
+    const fpGrid = createGridDiv('Fragment Pairs',
+      this.pairedGrids!.fpGrid, FRAGMENTS_GRID_TOOLTIP);
+    fpGrid.prepend(ui.divText('No substitutions found for current molecule. Please select another molecule.',
+      'chem-mmpa-no-fragments-error'));
     this.subs.push(this.pairedGrids!.showErrorEvent.subscribe((showError: boolean) => {
       showError ? fpGrid.classList.add('chem-mmp-no-fragments') : fpGrid.classList.remove('chem-mmp-no-fragments');
     }));
 
-    
+
     const gridsDiv = ui.splitV([
       fpGrid,
       mmPairsRoot1,
@@ -292,53 +300,57 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     let dockNode: DG.DockNode | null = null;
     const filterIcon = ui.icons.filter(() => {
-      if (!dockNode?.parent)
-        dockNode = grok.shell.tv.dockManager.dock(this.pairedGrids!.filters.root, DG.DOCK_TYPE.RIGHT, null, 'Fragment filters', 0.2);
+      if (!dockNode?.parent) {
+        dockNode = grok.shell.tv.dockManager
+          .dock(this.pairedGrids!.filters.root, DG.DOCK_TYPE.RIGHT, null, 'Fragment filters', 0.2);
+      }
     }, 'Open fragments filters');
     filterIcon.classList.add('chem-mmpa-fragments-filters-icon');
 
     const trellisSortState: TrellisSorting = {
       [TrellisAxis.From]: {property: TrellisSortByProp.Frequency, type: TrellisSortType.None},
       [TrellisAxis.To]: {property: TrellisSortByProp.Frequency, type: TrellisSortType.None},
-    }
+    };
 
     const sortAxisChoice = ui.input.choice('Axis', {
       value: TrellisAxis.From, items: Object.keys(TrellisAxis), nullable: false, onValueChanged: () => {
         sortPropChoice.value = trellisSortState[sortAxisChoice.value as TrellisAxis].property;
         sortTypeChoice.value = trellisSortState[sortAxisChoice.value as TrellisAxis].type;
-      }
-    })
+      },
+    });
     const sortPropChoice = ui.input.choice('Property', {
-      value: trellisSortState[TrellisAxis.From].property, items: Object.keys(TrellisSortByProp), nullable: false, onValueChanged: () => {
+      value: trellisSortState[TrellisAxis.From].property, items: Object.keys(TrellisSortByProp), nullable: false,
+      onValueChanged: () => {
         const axis = sortAxisChoice.value as TrellisAxis;
         if (trellisSortState[axis].property !== sortPropChoice.value) {
           trellisSortState[axis].property = sortPropChoice.value as TrellisSortByProp;
           this.sortTrellis(axis, trellisSortState[axis], tp);
         }
-      }
-    })
+      },
+    });
     const sortTypeChoice = ui.input.choice('Type', {
-      value: trellisSortState[TrellisAxis.From].type, items: Object.keys(TrellisSortType), nullable: false, onValueChanged: () => {
+      value: trellisSortState[TrellisAxis.From].type, items: Object.keys(TrellisSortType), nullable: false,
+      onValueChanged: () => {
         const axis = sortAxisChoice.value as TrellisAxis;
         if (trellisSortState[axis].type !== sortTypeChoice.value) {
           trellisSortState[axis].type = sortTypeChoice.value as TrellisSortType;
           this.sortTrellis(axis, trellisSortState[axis], tp);
         }
-      }
-    })
+      },
+    });
 
     let initialSortPerformed = false;
     const sortIcon = ui.iconFA('sort-alt', () => {
       ui.showPopup(ui.inputs([
-        sortAxisChoice, sortPropChoice, sortTypeChoice
-      ], 'chem-mmp-trellis-plot-sort-div'), sortIcon)
+        sortAxisChoice, sortPropChoice, sortTypeChoice,
+      ], 'chem-mmp-trellis-plot-sort-div'), sortIcon);
     }, 'Sort trellis plot axes');
     sortIcon.classList.add('chem-mmpa-fragments-filters-icon');
 
     tp.root.prepend(trellisHeader);
     const tpDiv = ui.splitV([
       ui.box(
-        ui.divH([trellisHeader, filterIcon, sortIcon, helpButton('chem-mmpa-grid-help-icon')]),
+        ui.divH([trellisHeader, filterIcon, sortIcon, helpButton('chem-mmpa-grid-help-icon', FRAGMENTS_TAB_TOOLTIP)]),
         {style: {maxHeight: '30px'}},
       ),
       tp.root,
@@ -349,10 +361,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       mmPairsRoot2,
     ], {}, true);
 
-    const cliffsHeader = ui.h1('2D Molecules Map', 'chem-mmpa-transformation-tab-header');;
+    const cliffsHeader = ui.h1('2D Molecules Map', 'chem-mmpa-transformation-tab-header'); ;
     const cliffsDiv = ui.splitV([
       ui.box(
-        ui.divH([cliffsHeader, helpButton('chem-mmpa-grid-help-icon')]),
+        ui.divH([cliffsHeader, helpButton('chem-mmpa-grid-help-icon', CLIFFS_TAB_TOOLTIP)]),
         {style: {maxHeight: '30px'}},
       ),
       cliffs,
@@ -467,19 +479,17 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   sortTrellis(axis: TrellisAxis, sorting: SortType, tp: DG.Viewer) {
     const filterBackup = this.pairedGrids!.fpGrid.dataFrame.filter.clone();
     switch (sorting.property) {
-      case TrellisSortByProp.Frequency:
-        this.sortTrellisByProp(axis, sorting.type, tp, ([key1, val1], [key2, val2]) => val1.frequency - val2.frequency,
-          ([key1, val1], [key2, val2]) => val2.frequency - val1.frequency);
-        break;
-      case TrellisSortByProp.MW:
-        if(!this.mWCalulationsReady) {
-          grok.shell.warning('MW calculations for fragments in progress. Please try again later');
-          return;
-        }
-        this.sortTrellisByProp(axis, sorting.type, tp, ([key1, val1], [key2, val2]) => val1.mw! - val2.mw!,
-        ([key1, val1], [key2, val2]) => val2.mw! - val1.mw!);
-  
-    
+    case TrellisSortByProp.Frequency:
+      this.sortTrellisByProp(axis, sorting.type, tp, ([_1, val1], [_2, val2]) => val1.frequency - val2.frequency,
+        ([_1, val1], [_2, val2]) => val2.frequency - val1.frequency);
+      break;
+    case TrellisSortByProp.MW:
+      if (!this.mWCalulationsReady) {
+        grok.shell.warning('MW calculations for fragments in progress. Please try again later');
+        return;
+      }
+      this.sortTrellisByProp(axis, sorting.type, tp, ([_1, val1], [_2, val2]) => val1.mw! - val2.mw!,
+        ([_1, val1], [_2, val2]) => val2.mw! - val1.mw!);
     }
     this.pairedGrids!.fpGrid.dataFrame.filter.copyFrom(filterBackup);
   }
@@ -488,24 +498,25 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     ascSortFunc: (arg1: [string, SortData], arg2: [string, SortData]) => number,
     descSortFunc: (arg1: [string, SortData], arg2: [string, SortData]) => number) {
     const fragCol = this.pairedGrids!.fpGrid.dataFrame.col(axis);
-    const axisName = tp.props.yColumnNames[0] === axis ? 'yColumnNames' : tp.props.xColumnNames[0] === axis ? 'xColumnNames' : null;
+    const axisName = tp.props.yColumnNames[0] === axis ? 'yColumnNames' :
+      tp.props.xColumnNames[0] === axis ? 'xColumnNames' : null;
 
     if (fragCol) {
       let cats: string[] = [];
       switch (type) {
-        case TrellisSortType.None:
-          cats = fragCol.categories.map((it) => it).sort();
-          break;
-        case TrellisSortType.Asc:
-          cats = Object.entries(this.fragSortingInfo).sort(ascSortFunc).map((it) => it[0]);
-          break;
-        case TrellisSortType.Desc:
-          cats = Object.entries(this.fragSortingInfo).sort(descSortFunc).map((it) => it[0]);
-          break;
+      case TrellisSortType.None:
+        cats = fragCol.categories.map((it) => it).sort();
+        break;
+      case TrellisSortType.Asc:
+        cats = Object.entries(this.fragSortingInfo).sort(ascSortFunc).map((it) => it[0]);
+        break;
+      case TrellisSortType.Desc:
+        cats = Object.entries(this.fragSortingInfo).sort(descSortFunc).map((it) => it[0]);
+        break;
       }
       if (cats.length) {
         fragCol.setCategoryOrder(cats);
-        if(axis === TrellisAxis.From)
+        if (axis === TrellisAxis.From)
           this.pairedGrids!.fpCatsFrom = cats;
         else
           this.pairedGrids!.fpCatsTo = cats;
@@ -535,9 +546,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
               this.parentTable!.filter.and(this.totalCutoffMask!);
             }, 10);
           }
-        }
-        else
-          this.cliffsFiltered = false;
+      } else
+        this.cliffsFiltered = false;
     }));
 
     this.colorPalette = palette;
@@ -601,11 +611,12 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
   async prepareMwForSorting() {
     const frags = Object.keys(this.fragSortingInfo);
-    const smilesArray = frags.map((it) => it.replace(new RegExp('\[\*:1\]|\[R1\]|\[R:1\]|\[1\*\]','gm'),'').replaceAll('()', ''));
+    const smilesArray = frags.map((it) =>
+      it.replace(new RegExp('\[\*:1\]|\[R1\]|\[R:1\]|\[1\*\]', 'gm'), '').replaceAll('()', ''));
     getMolProperty(DG.Column.fromStrings('smiles', smilesArray), 'MW').then((res: DG.Column) => {
       frags.forEach((key, idx) => this.fragSortingInfo[key].mw = res.get(idx) ?? 0);
       this.mWCalulationsReady = true;
-    })
+    });
   }
 
   async runMMP(mmpInput: MmpInput) {
@@ -624,11 +635,13 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     try {
       if (this.totalDataUpdated) {
         mmpa = await MMPA.fromData(
-          mmpInput.molecules.name, this.totalData, moleculesArray, activitiesArrays, activitiesNames, this.fragSortingInfo);
+          mmpInput.molecules.name, this.totalData, moleculesArray,
+          activitiesArrays, activitiesNames, this.fragSortingInfo);
         this.totalDataUpdated = false;
       } else {
         mmpa = await MMPA.init(
-          mmpInput.molecules.name, moleculesArray, mmpInput.fragmentCutoff, activitiesArrays, activitiesNames, this.fragSortingInfo);
+          mmpInput.molecules.name, moleculesArray, mmpInput.fragmentCutoff,
+          activitiesArrays, activitiesNames, this.fragSortingInfo);
       }
     } catch (err: any) {
       const errMsg = err instanceof Error ? err.message : err.toString();
@@ -659,8 +672,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const {linesIdxs, lines, linesActivityCorrespondance} = createLines(mmpa, palette);
     const embedColsNames = getEmbeddingColsNames(mmpInput.table).map((it) => `~${it}`);
 
-    const mmpFilters = getMmpFilters(mmpInput, mmpa.allCasesBased.maxActs,
-      pairedGrids.fpGrid.dataFrame.col(MMP_NAMES.PAIRS)!.stats.max);
+    const mmpFilters = getMmpFilters(mmpInput, mmpa.allCasesBased.maxActs);
     console.log(`created mmpa filters`);
 
     const sp = getMmpScatterPlot(mmpInput, embedColsNames, mmpInput.molecules.name);

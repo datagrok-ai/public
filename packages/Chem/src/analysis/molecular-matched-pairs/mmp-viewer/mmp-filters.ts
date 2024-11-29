@@ -10,7 +10,7 @@ export type MmpFilters = {
     filtersDiv: HTMLDivElement;
 }
 
-export function getMmpFilters(mmpInput: MmpInput, maxActs: number[], numPairs: number): MmpFilters {
+export function getMmpFilters(mmpInput: MmpInput, maxActs: number[]): MmpFilters {
   const activitySliderInputs = new Array<DG.InputBase>(maxActs.length);
   const activityValuesDivs = new Array<HTMLDivElement>(maxActs.length);
   const activityColorInputs = new Array<DG.InputBase>(maxActs.length);
