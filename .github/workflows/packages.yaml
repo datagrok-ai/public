@@ -479,15 +479,16 @@ jobs:
             else
               key='admin'
             fi
-            token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/$key | jq -r .token)
             echo "curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/$key" >> debug.txt 2>&1
             curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/$key >> debug.txt 2>&1
-            echo $token
-            until .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}'
+            token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/$key | jq -r .token)
+            long_term_token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/sessions/current/refresh -H "Authorization: ${token}" | jq -r .token)
+            echo $long_term_token
+            until .github/scripts/check-output.sh "curl -s -H 'Authorization: $long_term_token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}'
             do
-              echo "curl -s -H 'Authorization: $token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" >> debug.txt 2>&1
+              echo "curl -s -H 'Authorization: $long_term_token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" >> debug.txt 2>&1
               curl -s -H 'Authorization: $token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'  >> debug.txt 2>&1
-              exit 1
+              curl -s -H 'Authorization: $long_term_token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'  >> debug.txt 2>&1
               sleep 1
               echo -e "\nContainer for ${{ matrix.package }} did not start yet..."
               echo -e "\nRetrying '/api/docker/containers'..."
