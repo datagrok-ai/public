@@ -322,7 +322,7 @@ export interface IHistogramSettings {
 
   legendVisibility: keyof typeof VisibilityMode;
 
-  legendPosition: keyof typeof FlexPosition;
+  legendPosition: keyof typeof FlexAutoPosition;
 
   marginLeft: number;
 
@@ -371,6 +371,18 @@ export interface IHistogramSettings {
 
   descriptionVisibilityMode: keyof typeof VisibilityMode;
 
+}
+
+export enum FlexAutoPosition {
+  Auto = 'Auto',
+  Left = 'Left',
+  Right = 'Right',
+  Top = 'Top',
+  Bottom = 'Bottom',
+  LeftTop = 'LeftTop',
+  LeftBottom = 'LeftBottom',
+  RightTop = 'RightTop',
+  RightBottom = 'RightBottom',
 }
 
 export interface IFiltersSettings {
@@ -707,7 +719,7 @@ export interface IScatterPlotSettings {
 
   legendVisibility: keyof typeof VisibilityMode;
 
-  legendPosition: keyof typeof FlexPosition;
+  legendPosition: keyof typeof FlexAutoPosition;
 
   axisFont: string;
 
@@ -943,7 +955,7 @@ export interface ILineChartSettings {
 
   legendVisibility: keyof typeof VisibilityMode;
 
-  legendPosition: keyof typeof FlexPosition;
+  legendPosition: keyof typeof FlexAutoPosition;
 
   /// When true, lines are added to the legend
   /// Requires *Multi Axis* to be enabled
@@ -1168,7 +1180,7 @@ export interface IBarChartSettings {
 
   legendVisibility: keyof typeof VisibilityMode;
 
-  legendPosition: keyof typeof FlexPosition;
+  legendPosition: keyof typeof FlexAutoPosition;
 
   outerMarginLeft: number;
 
@@ -1380,7 +1392,7 @@ export interface IBoxPlotSettings {
   /// Points are not shown if the number of rows is greater than *Show Values Limit*.
   legendVisibility: keyof typeof VisibilityMode;
 
-  legendPosition: keyof typeof FlexPosition;
+  legendPosition: keyof typeof FlexAutoPosition;
 
   showMeanCross: boolean;
 
@@ -1516,7 +1528,7 @@ export interface IPieChartSettings {
 
   legendVisibility: keyof typeof VisibilityMode;
 
-  legendPosition: keyof typeof FlexPosition;
+  legendPosition: keyof typeof FlexAutoPosition;
 
   segmentAngle: string;
   segmentAngleColumnName: string;
@@ -2177,7 +2189,7 @@ export interface ITrellisPlotSettings {
 
   legendVisibility: keyof typeof VisibilityMode;
 
-  legendPosition: keyof typeof FlexPosition;
+  legendPosition: keyof typeof FlexAutoPosition;
 
   showXSelectors: boolean;
 
