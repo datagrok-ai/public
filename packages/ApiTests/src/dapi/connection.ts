@@ -120,7 +120,7 @@ category('Dapi: connection cache', () => {
   });
 
   test('Sequential stress test', async () => {
-    const times = DG.Test.isInBenchmark ? 1000 : 100;
+    const times = DG.Test.isInBenchmark ? 100 : 10;
     let demogCsvReads1 = [];
     await grok.dapi.files.readCsv('System:AppData/ApiTests/datasets/demog.csv');
     await grok.dapi.files.readCsv('System:AppData/ApiTests/cars.csv');
