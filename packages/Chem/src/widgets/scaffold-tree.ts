@@ -242,13 +242,13 @@ function getVisibleNodes(thisViewer: ScaffoldTreeViewer): Array<TreeViewGroup> {
   return visibleNodes.slice(start, end + 10);
 }
 
-function updateLabel(thisViewer: ScaffoldTreeViewer, group: TreeViewGroup): Promise<void> {
+function updateLabel(thisViewer: ScaffoldTreeViewer, group: TreeViewGroup, updateBitset: boolean = false): Promise<void> {
   return new Promise<void>((resolve) => {
     requestAnimationFrame(async () => {
       const v = value(group);
       let { labelDiv, bitset } = v;
 
-      if (!v.bitsetCalculated) {
+      if (!v.bitsetCalculated || updateBitset) {
         if (!labelDiv) {
           labelDiv = ui.div();
           v.labelDiv = labelDiv;
@@ -337,13 +337,13 @@ async function updateLabelContent(labelDiv: HTMLElement, bitset: DG.BitSet, this
   labelDiv.onmouseleave = (e) => ui.tooltip.hide();
 }
 
-export async function updateVisibleNodes(thisViewer: ScaffoldTreeViewer) {
+export async function updateVisibleNodes(thisViewer: ScaffoldTreeViewer, updateBitset: boolean = false) {
   const visibleNodes = getVisibleNodes(thisViewer);
 
   for (const group of visibleNodes) {
     if (isOrphans(group)) continue; // Skip orphans
 
-    await updateLabel(thisViewer, group);
+    await updateLabel(thisViewer, group, updateBitset);
   }
 }
 
@@ -1986,7 +1986,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.subs.push(DG.debounce(dataFrame.onFilterChanged, 10).subscribe(async (_) => {
       if (thisViewer.tree.items.length < 1)
         return;
-      await updateVisibleNodes(thisViewer);
+      const updateBitset = !(value(this.tree.children[0]).bitset?.length === this.dataFrame.rowCount);
+      await updateVisibleNodes(thisViewer, updateBitset);
       this.bitsetUpdateInProgress = false;
       this.updateFilters(false);
     }));
@@ -2009,8 +2010,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.clearNotIcon(this.tree.children);
     }));
 
-    this.subs.push(grok.events.onViewRemoving.subscribe((_) => {
-      this.closeAll = true;
+    this.subs.push(grok.events.onViewRemoving.subscribe((eventData) => {
+      const eventView = eventData.args.view;
+      const currentView = grok.shell.getTableView(this.dataFrame.name);
+      if (eventView.id === currentView.id)
+        this.closeAll = true;
     }));
 
     this.subs.push(DG.debounce(grok.events.onCustomEvent(SCAFFOLD_TREE_SKETCHER_ACTION), 250).subscribe(async (_) => {
