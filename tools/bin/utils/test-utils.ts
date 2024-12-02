@@ -167,7 +167,7 @@ export async function loadPackages(packagesDir: string, packagesToLoad?: string,
 
         if (utils.isPackageDir(packageDir) && (packageFriendlyName !== undefined || packagesToLoad === "all")) {
           try {
-            console.log(`Loading package ${dirName}`);
+            process.stdout.write(`Building and publishing ${dirName}...`);
             if (skipPublish != true) {
               await utils.runScript(`npm install`, packageDir);
               if (linkPackage)
@@ -177,10 +177,10 @@ export async function loadPackages(packagesDir: string, packagesToLoad?: string,
               await utils.runScript(`grok publish ${hostString}${release ? ' --release' : ''}`, packageDir);
             }
             packagesToRun.set(dirName, true);
-            console.log(`Package published ${dirName}`);
+            process.stdout.write(` success!\n`);
           }
           catch (e: any) {
-            console.log(`Package wasn't published ${dirName}`);
+            process.stdout.write(` fail!\n`);
           }
         }
       }

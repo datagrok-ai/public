@@ -1935,8 +1935,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     });
 
     this.tree.onChildNodeExpandedChanged.subscribe((group: DG.TreeViewGroup) => {
-      const isFolder = value(group).orphans;
-      if (isFolder) {
+      if (isOrphans(group)) {
         const className = group.expanded ?
           'grok-icon fa-folder fas icon-fill' : 'grok-icon fa-folder-open fas icon-fill';
         const c = group.root.getElementsByClassName(className);
