@@ -256,7 +256,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     const helpButton = (className: string, tooltip: string) => {
       const button = ui.icons.help(() => {});
-      ui.tooltip.bind(button, () => ui.divText(tooltip, {style: {width: '200px'}}));
+      ui.tooltip.bind(button, () => ui.divText(tooltip, {style: {width: '300px'}}));
       button.classList.add(className);
       return button;
     };
@@ -308,53 +308,23 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     filterIcon.classList.add('chem-mmpa-fragments-filters-icon');
 
     const trellisSortState: TrellisSorting = {
-      [TrellisAxis.From]: {property: TrellisSortByProp.Frequency, type: TrellisSortType.None},
+      [TrellisAxis.From]: {property: TrellisSortByProp.Frequency, type: TrellisSortType.Desc},
       [TrellisAxis.To]: {property: TrellisSortByProp.Frequency, type: TrellisSortType.None},
     };
-
-    const sortAxisChoice = ui.input.choice('Axis', {
-      value: TrellisAxis.From, items: Object.keys(TrellisAxis), nullable: false, onValueChanged: () => {
-        sortPropChoice.value = trellisSortState[sortAxisChoice.value as TrellisAxis].property;
-        sortTypeChoice.value = trellisSortState[sortAxisChoice.value as TrellisAxis].type;
-      },
-    });
-    const sortPropChoice = ui.input.choice('Property', {
-      value: trellisSortState[TrellisAxis.From].property, items: Object.keys(TrellisSortByProp), nullable: false,
-      onValueChanged: () => {
-        const axis = sortAxisChoice.value as TrellisAxis;
-        if (trellisSortState[axis].property !== sortPropChoice.value) {
-          trellisSortState[axis].property = sortPropChoice.value as TrellisSortByProp;
-          this.sortTrellis(axis, trellisSortState[axis], tp);
-        }
-      },
-    });
-    const sortTypeChoice = ui.input.choice('Type', {
-      value: trellisSortState[TrellisAxis.From].type, items: Object.keys(TrellisSortType), nullable: false,
-      onValueChanged: () => {
-        const axis = sortAxisChoice.value as TrellisAxis;
-        if (trellisSortState[axis].type !== sortTypeChoice.value) {
-          trellisSortState[axis].type = sortTypeChoice.value as TrellisSortType;
-          this.sortTrellis(axis, trellisSortState[axis], tp);
-        }
-      },
-    });
-
-    let initialSortPerformed = false;
-    const sortIcon = ui.iconFA('sort-alt', () => {
-      ui.showPopup(ui.inputs([
-        sortAxisChoice, sortPropChoice, sortTypeChoice,
-      ], 'chem-mmp-trellis-plot-sort-div'), sortIcon);
-    }, 'Sort trellis plot axes');
-    sortIcon.classList.add('chem-mmpa-fragments-filters-icon');
 
     tp.root.prepend(trellisHeader);
     const tpDiv = ui.splitV([
       ui.box(
-        ui.divH([trellisHeader, filterIcon, sortIcon, helpButton('chem-mmpa-grid-help-icon', FRAGMENTS_TAB_TOOLTIP)]),
+        ui.divH([trellisHeader, filterIcon, helpButton('chem-mmpa-grid-help-icon', FRAGMENTS_TAB_TOOLTIP)]),
         {style: {maxHeight: '30px'}},
       ),
       tp.root,
     ], {style: {width: '100%', height: '100%'}});
+
+    tp.onEvent('d4-viewer-rendered').subscribe(() => {
+      this.createSortIcon(trellisSortState, TrellisAxis.From, tp, 'chem-mmpa-fragments-sort-icon-x-axis');
+      this.createSortIcon(trellisSortState, TrellisAxis.To, tp, 'chem-mmpa-fragments-sort-icon-y-axis');
+    });
 
     const fragmentsDiv = ui.splitV([
       tpDiv,
@@ -412,10 +382,9 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       } else if (tabs.currentPane.name == MMP_NAMES.TAB_FRAGMENTS) {
         this.pairedGrids!.refreshMaskFragmentPairsFilter();
         this.pairedGrids!.fpGrid.dataFrame.filter.copyFrom(this.pairedGrids!.fpMaskFragmentsTab);
-        if (!initialSortPerformed) {
-          initialSortPerformed = true;
-          sortTypeChoice.value = TrellisSortType.Desc;
-        }
+        this.sortTrellis(TrellisAxis.From, trellisSortState[TrellisAxis.From], tp);
+        this.sortTrellis(TrellisAxis.To, trellisSortState[TrellisAxis.To], tp);
+
         // this.pairedGrids!.enableFilters = false;
         // this.pairedGrids!.mmpMaskByFragment.setAll(false);
         // this.pairedGrids!.mmpGrid.dataFrame.filter.copyFrom(this.pairedGrids!.mmpMaskByFragment);
@@ -474,6 +443,46 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     ui.tooltip.bind(tabs.getPane(MMP_NAMES.TAB_GENERATION).header, decript4);
 
     return tabs;
+  }
+
+  createSortIcon(trellisSortState: TrellisSorting, axis: TrellisAxis, tp: DG.Viewer, className: string) {
+    const tpAxisSelectorArr = Array.from(tp.root.getElementsByClassName('d4-column-selector-column'))
+      .filter((it) => (it as HTMLElement).innerText === axis);
+    if (tpAxisSelectorArr.length) {
+      const tpAxisSelector = tpAxisSelectorArr[0] as HTMLElement;
+      const sortIconExists = tpAxisSelector.parentElement!.parentElement!.getElementsByClassName(className).length;
+      if (!sortIconExists) {
+        const sortPropChoice = ui.input.choice('Sort by', {
+          value: trellisSortState[axis].property, items: Object.keys(TrellisSortByProp), nullable: false,
+          onValueChanged: () => {
+            if (trellisSortState[axis].property !== sortPropChoice.value) {
+              trellisSortState[axis].property = sortPropChoice.value as TrellisSortByProp;
+              this.sortTrellis(axis, trellisSortState[axis], tp);
+            }
+          },
+        });
+        const sortTypeChoice = ui.input.choice('Order', {
+          value: trellisSortState[axis].type, items: Object.keys(TrellisSortType), nullable: false,
+          onValueChanged: () => {
+            if (trellisSortState[axis].type !== sortTypeChoice.value) {
+              trellisSortState[axis].type = sortTypeChoice.value as TrellisSortType;
+              this.sortTrellis(axis, trellisSortState[axis], tp);
+            }
+          },
+        });
+        const sortIcon = ui.iconFA('sort-alt', () => {
+          ui.showPopup(ui.inputs([
+            sortPropChoice, sortTypeChoice,
+          ], 'chem-mmp-trellis-plot-sort-div'), sortIcon);
+        }, `Sort ${axis} axis`);
+        sortIcon.classList.add(className);
+          tpAxisSelector.parentElement!.parentElement!.append(sortIcon);
+          tpAxisSelector.onclick = (e: MouseEvent) => {
+            e.stopImmediatePropagation();
+            e.preventDefault();
+          };
+      }
+    }
   }
 
   sortTrellis(axis: TrellisAxis, sorting: SortType, tp: DG.Viewer) {

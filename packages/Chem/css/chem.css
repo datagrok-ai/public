@@ -624,6 +624,21 @@
   font-size: 12px;
 }
 
+.chem-mmpa-fragments-sort-icon-x-axis {
+  padding-left: 5px;
+  padding-top: 6px;
+  font-size: 12px;
+  position: absolute;
+}
+
+.chem-mmpa-fragments-sort-icon-y-axis {
+    font-size: 12px;
+    position: absolute;
+    transform: rotate(90deg);
+    padding-bottom: 5px;
+    padding-left: 6px;
+}
+
 .selected > .chem-mmpa-add-tab-header-button {
   visibility: visible;
 }
@@ -751,5 +766,9 @@
 }
 
 .chem-mmp-trellis-plot .d4-column-selector-triangle {
-  visibility: hidden;
+  display: none;
+}
+
+.chem-mmp-trellis-plot .d4-column-selector {
+  pointer-events: none;
 }

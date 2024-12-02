@@ -44,7 +44,7 @@ export function getMmpScatterPlot(
       sp.setOptions({labelColumnNames: [labelsColName]});
   }
   if (spProps.includes('useLabelAsMarker')) { //@ts-ignore
-    sp.setOptions({useLabelAsMarker: true});
+    sp.setOptions({useLabelAsMarker: true, labelAsMarkerSize: 50});
   }
   return sp;
 }
