@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.46.1 (2024-12-02)
+
+Add terminate method to the IAutoDockService interface
+
 ## 5.46.0 (2024-11-19)
 
 Sequence renderer: Support font resize
