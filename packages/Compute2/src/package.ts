@@ -258,7 +258,8 @@ export async function MockProvider2(params: any) {
       to: 'out1:stepMul/a',
       type: 'meta',
       handler({controller}) {
-        controller.setViewMeta('out1', {items: ['1', '2']});
+        const addRes = controller.getFirst('in1');
+        controller.setViewMeta('out1', {items: addRes > 0? ['0', '1', '2']: ['1', '2', '3']});
       },
     },
     {
