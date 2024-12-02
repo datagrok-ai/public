@@ -54,7 +54,11 @@ const VALIDATION_TYPES_MAPPING: { [key: string]: string[] } = {
   'float': ['int', 'qnum'],
   'int': ['num', 'number', 'qnum'],
   'bool': ['boolean'],
-  'boolean': ['bool']
+  'boolean': ['bool'],
+  [DG.TYPE.LIST]: [DG.TYPE.OBJECT],
+  [DG.TYPE.COLUMN_LIST]: [DG.TYPE.OBJECT],
+  [DG.TYPE.DATA_FRAME_LIST]: [DG.TYPE.OBJECT],
+  ['num_list']: [DG.TYPE.OBJECT],
 };
 
 const FLOATING_POINT_TYPES = ['float', 'double'];
