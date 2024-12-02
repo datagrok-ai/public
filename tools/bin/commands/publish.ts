@@ -224,7 +224,6 @@ export async function publish(args: PublishArgs) {
     url = `${baseUrl}/packages/published/current`;
 
     let packagesToLoad =['all']
-    console.log(url);
     if (args.refresh)
       packagesToLoad = (await (await fetch(url, {
         method: 'GET',

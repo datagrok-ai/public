@@ -1,7 +1,13 @@
 # Datagrok-tools changelog
 
 
-## 4.13.41 (2024-11-29)
+## 4.13.43 (2024-12-02)
+
+### Features
+
+* Publish visual updates
+
+## 4.13.42 (2024-11-29)
 
 ### Features
 
