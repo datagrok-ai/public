@@ -30,6 +30,7 @@ export abstract class BaseViewApp {
   mode: string = 'sketch';
 
   sketcherValue: { [k: string]: string } = { 'aspirin': 'CC(Oc1ccccc1C(O)=O)=O' };
+  runningProcesses: (() => Promise<void>)[] = [];
 
   constructor(parentCall: DG.FuncCall) {
     this.parentCall = parentCall;
@@ -143,11 +144,19 @@ export abstract class BaseViewApp {
       return;
     }
 
-    if (this.abort)
+    if (this.abort && this.runningProcesses.length > 0) {
       await this.abort();
+      this.runningProcesses = [];
+    }
 
     const newProcessAbort = this.addNewProcess(smiles);
-    await newProcessAbort();
+    this.runningProcesses.push(newProcessAbort);
+    
+    try {
+      await newProcessAbort();
+    } finally {
+      this.runningProcesses = this.runningProcesses.filter(proc => proc !== newProcessAbort);
+    }
   }
 
   private addNewProcess(smiles: string): () => Promise<void> {
