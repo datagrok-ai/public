@@ -42,8 +42,8 @@ const statusToTooltip = {
   ['pending']: 'This step has pending dependencies',
   ['running']: 'This step is running',
   ['succeeded']: 'This step is succeeded',
-  ['succeeded warn']: 'This step has is succeeded, but has warnings',
-  ['succeeded inconsistent']: 'This step has is succeeded, but has inconsistent inputs',
+  ['succeeded warn']: 'This step is succeeded, but has warnings',
+  ['succeeded inconsistent']: 'This step is succeeded, but has inconsistent inputs',
   ['failed']: 'Run failed',
 } as Record<Status, string>;
 
