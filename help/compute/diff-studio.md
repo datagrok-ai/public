@@ -46,7 +46,7 @@ Browse and share models. Go to **Browse > Compute > Apps** and expand the **Diff
 
 Use URL to share computations. In **Browse**, click any *ivp*-file. Model preview opens. Modify inputs, copy URL, and share results:
 
-![Diff Studio Sharing](pics/diff-studio-sharing-url.gif)
+![Diff Studio Sharing](pics/diff-studio-browsing.gif)
 
 By using a URL, you can share model runs from the **Templates**, **Examples** and **Recent** groups.
 
