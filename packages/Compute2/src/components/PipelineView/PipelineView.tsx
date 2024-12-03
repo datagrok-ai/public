@@ -90,6 +90,7 @@ export const PipelineView = Vue.defineComponent({
               onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
               dock-spawn-dock-type='fill'
               dock-spawn-title='History'
+              dock-spawn-panel-icon='history'
               ref={historyRef}
               class='overflow-scroll h-full'
             /> }

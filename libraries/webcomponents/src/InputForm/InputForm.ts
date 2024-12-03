@@ -38,10 +38,17 @@ export class InputForm extends HTMLElement {
   }
 
   private async replaceFunc(funcCall: DG.FuncCall) {
+    const fcInputs = [...funcCall.inputs.entries()] as [string, any][];
     this.formInst = await DG.InputForm.forFuncCall(funcCall, {twoWayBinding: false});
-    this.formInst.onInputChanged
-      .subscribe((event) => this.dispatchEvent(new CustomEvent('input-changed', {detail: event})));
     this.attach();
+
+    setTimeout(() => {
+      fcInputs.forEach(([paramName, paramValue]) => {
+        this.formInst!.getInput(paramName).value = paramValue;
+      });
+      this.formInst!.onInputChanged
+        .subscribe((event) => this.dispatchEvent(new CustomEvent('input-changed', {detail: event})));
+    },0);
   }
 
   private attach() {

@@ -342,14 +342,14 @@ export const RichFunctionView = Vue.defineComponent({
               onClick={() => formHidden.value = !formHidden.value}
               class={'flex justify-between w-full'}
             >
-              <div> <IconFA name='pen' style={menuIconStyle}/> Show inputs </div>
+              <div> <IconFA name='arrow-to-right' style={menuIconStyle}/> Show inputs </div>
               { !formHidden.value && <IconFA name='check'/>}
             </span>
             <span
               onClick={() => visibleTabLabels.value = [...tabLabels.value]}
               class={'flex justify-between'}
             >
-              <div> <IconFA name='chart-pie'
+              <div> <IconFA name='arrow-from-left'
                 style={menuIconStyle}/> Show output tabs </div>
               { visibleTabLabels.value.length === tabLabels.value.length && <IconFA name='check'/>}
             </span>
@@ -441,6 +441,7 @@ export const RichFunctionView = Vue.defineComponent({
                 dock-spawn-dock-type='right'
                 dock-spawn-dock-ratio={0.2}
                 dock-spawn-title='History'
+                dock-spawn-panel-icon='history'
                 ref={historyRef}
                 class='overflow-scroll h-full'
               /> }
@@ -451,6 +452,7 @@ export const RichFunctionView = Vue.defineComponent({
                 dock-spawn-dock-type='left'
                 dock-spawn-dock-ratio={0.2}
                 dock-spawn-title='Inputs'
+                dock-spawn-panel-icon='arrow-to-right'
                 ref={formRef}
               >
                 {
@@ -483,14 +485,15 @@ export const RichFunctionView = Vue.defineComponent({
             {
               visibleTabLabels.value
                 .map((tabLabel) => ({tabLabel, tabContent: tabToPropertiesMap.value.inputs.get(tabLabel) ??
-                tabToPropertiesMap.value.outputs.get(tabLabel)!}))
-                .map(({tabLabel, tabContent}) => {
+                tabToPropertiesMap.value.outputs.get(tabLabel)!, isInput: !!tabToPropertiesMap.value.inputs.get(tabLabel)}))
+                .map(({tabLabel, tabContent, isInput}) => {
                   if (tabContent.type === 'dataframe') {
                     const options = tabContent.config;
                     const dfProp = tabContent.dfProp;
                     return <div
                       class='flex flex-col pl-2 h-full w-full'
                       dock-spawn-title={tabLabel}
+                      dock-spawn-panel-icon={isInput ? 'arrow-to-right': 'arrow-from-left'}
                     >
                       {
                         Vue.withDirectives(<Viewer
@@ -511,6 +514,7 @@ export const RichFunctionView = Vue.defineComponent({
                       class='h-full overflow-scroll'
                       categoryScalars={categoryProps}
                       funcCall={currentCall.value}
+                      dock-spawn-panel-icon='arrow-from-left'
                       dock-spawn-title={tabLabel}
                       dock-spawn-dock-to={intelligentLayout &&
                         lastCardLabel && visibleTabLabels.value.includes(lastCardLabel) && lastCardLabel !==tabLabel

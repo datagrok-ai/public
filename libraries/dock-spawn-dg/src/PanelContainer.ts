@@ -60,7 +60,7 @@ export class PanelContainer implements IDockContainerWithSize {
   _grayOut: HTMLDivElement;
   _ctxMenu: HTMLDivElement;
 
-  constructor(elementContent: HTMLElement, dockManager: DockManager, title?: string, panelType?: PanelType, hideCloseButton?: boolean) {
+  constructor(elementContent: HTMLElement, dockManager: DockManager, title?: string, panelType?: PanelType, hideCloseButton?: boolean, panelIcon?: string) {
     if (!title)
       title = Localizer.getString('DefaultPanelName');
     if (!panelType)
@@ -95,7 +95,7 @@ export class PanelContainer implements IDockContainerWithSize {
     this.dockManager = dockManager;
     this.title = title;
     this.containerType = ContainerType.panel;
-    this.icon = null;
+    this.icon = panelIcon;
     this.minimumAllowedChildNodes = 0;
     this._floatingDialog = undefined;
     this.isDialog = false;
@@ -154,9 +154,7 @@ export class PanelContainer implements IDockContainerWithSize {
 
     // Extract the title from the content element's attribute
     const contentTitle = this.elementContent.dataset.panelCaption;
-    const contentIcon = this.elementContent.dataset.panelIcon;
     if (contentTitle) this.title = contentTitle;
-    if (contentIcon) this.icon = contentIcon;
     this._updateTitle();
 
     this.undockInitiator = new UndockInitiator(this.elementTitle, this.performUndockToDialog.bind(this));
@@ -273,6 +271,7 @@ export class PanelContainer implements IDockContainerWithSize {
   }
 
   saveState(state: IState) {
+    state.panelIcon = this.icon;
     state.element = this.elementContent.tagName === 'SLOT' ?
       //@ts-ignore
       this.elementContent.assignedElements()[0].getAttribute('dock-spawn-title') :
@@ -291,6 +290,8 @@ export class PanelContainer implements IDockContainerWithSize {
     this.canUndock(state.canUndock);
     this.hideCloseButton(state.hideCloseButton);
     this.panelType = state.panelType;
+    this.icon = state.panelIcon;
+    this._updateTitle();
   }
 
   setActiveChild(/*child*/) {
@@ -518,8 +519,8 @@ export class PanelContainer implements IDockContainerWithSize {
   }
 
   _updateTitle() {
-    if (this.icon !== null) {
-      this.elementTitleText.innerHTML = '<img class="panel-titlebar-icon" src="' + this.icon + '"><span>' + this.title + '</span>';
+    if (!!this.icon) {
+      this.elementTitleText.innerHTML = `<i class="grok-icon fal fa-${this.icon}" style="margin-right: 3px"></i><span>${this.title}</span>`;
       return;
     }
     this.elementTitleText.innerHTML = this.title;

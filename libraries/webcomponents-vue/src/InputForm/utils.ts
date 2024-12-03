@@ -97,13 +97,13 @@ function renderValidationResults(
 }
 
 function getIconOptions(category: 'errors' | 'warnings' | 'notifications' | 'inconsistent') {
-  if (category === 'errors') return {name: 'exclamation-circle', color: 'var(--red-3)'};
+  if (category === 'errors') return {name: 'exclamation-circle', color: 'var(--red-3)!important'};
   if (category === 'warnings')
-    return {name: 'exclamation-circle', color: 'var(--orange-2)'};
+    return {name: 'exclamation-circle', color: 'var(--orange-2)!important'};
   if (category === 'notifications')
-    return {name: 'info-circle', color: 'var(--blue-1)'};
+    return {name: 'info-circle', color: 'var(--blue-1)!important'};
   if (category === 'inconsistent')
-    return {name: 'handshake-slash', color: 'var(--blue-1)'};
+    return {name: 'handshake-slash', color: 'var(--blue-1)!important'};
 }
 
 export function getValidationIcon(
@@ -130,7 +130,8 @@ export function getValidationIcon(
   if (!iconOptions) return null;
 
   const icon = ui.iconFA(iconOptions.name, () => {displayValidation(input, status, icon, popover);});
-  if (iconOptions.color) $(icon).css('color', iconOptions.color);
+  $(icon).css({'pointer-events': 'all'});
+  if (iconOptions.color) $(icon).css('color', `${iconOptions.color}!important`);
   if (iconOptions.class) $(icon).addClass(iconOptions.class);
 
   $(icon).toggleClass('fal far');
@@ -141,6 +142,7 @@ export function getValidationIcon(
 
 export const injectInputBaseStatus = (t: DG.InputBase) => {
   const validationIndicator = ui.element('i');
+  $(validationIndicator).addClass('rfv2-validation-icon');
   t.addOptions(validationIndicator);
 
   function setStatus(status: {
