@@ -48,7 +48,45 @@ Use URL to share computations. In **Browse**, click any *ivp*-file. Model previe
 
 ![Diff Studio Sharing](pics/diff-studio-browsing.gif)
 
-By using a URL, you can share model runs from the **Templates**, **Examples** and **Recent** groups.
+By using URL, you can share model runs from the **Templates**, **Examples** and **Recent** groups.
+
+### Parameter fitting
+
+Find input conditions leading to the specified output constraints using the [Parameter Optimization](function-analysis.md#parameter-optimization) feature. It finds input values that minimize deviation measured by [loss function](https://en.wikipedia.org/wiki/Loss_function). Run it directly from Diff Studio:
+
+1. Click the **Fit** icon on the top panel. **Fitting View** opens
+2. In the `Fit` block, use switchers to specify inputs to be found:
+   * Set `min` and `max` values for each selected item. They define the variation range
+   * Set values of all other inputs
+3. In the `Target` block, specify output constraints:
+   * Set dataframe with expected output values (in the table input)
+   * Set column with values of the independent variable (in the `argument` field)
+4. Specify settings of fitting:
+   * Choose numerical optimization method (in the `method` field), and set loss function type (in the `loss` field)
+   * Specify number of points to be found (in the `samples` field)
+   * Set the maximum scaled deviation between similar fitted points (in the `similarity` field): the higher the value, the fewer points will be found
+5. Click <i class="fas fa-play"></i> **Run fitting** icon. You will get a [grid](../visualize/viewers/grid) containing
+   * loss function values
+   * fitted inputs
+   * [line charts](../visualize/viewers/line-chart) visualizing the goodness of fit and showing the loss function minimization
+6. Open `Context panel` (F4). You will get the simulation run corresponding to the selected grid row
+
+![Run fitting](pics/diff-studio-run-fitting.gif)
+
+### Sensitivity analysis
+
+Explore the relationship between inputs and outputs of your model using the [Sensitivity Analysis](function-analysis.md#sensitivity-analysis) feature. Run it directly from Diff Studio:
+
+* Click the **Sensitivity** icon on the top panel
+* Apply one of the following methods:
+  * [Monte Carlo](function-analysis.md#monte-carlo)
+  * [Sobol](function-analysis.md#sobol)
+  * [Grid](function-analysis.md#grid)
+* Analyze model evaluations
+
+![Run Sens Analysis](pics/diff-studio-run-sens-analysis.gif)
+
+
 
 
 * Turn on the **Edit** toggle on the top panel. Equations editor opens. Edit formulas or add new ones.
@@ -56,9 +94,7 @@ By using a URL, you can share model runs from the **Templates**, **Examples** an
 
 Describe how to launch and the basic stuff
 
-### Parameter fitting
 
-### Sensitivity analysis
 
 
 
@@ -84,39 +120,11 @@ Click the **Save** button on the top panel to save model to your platform files 
 
 ### Sensitivity analysis
 
-Explore the relationship between inputs and outputs of your model using the [Sensitivity Analysis](function-analysis.md#sensitivity-analysis) feature. Run it directly from Diff Studio:
 
-* Click the **Sensitivity** icon on the top panel
-* Apply one of the following methods:
-  * [Monte Carlo](function-analysis.md#monte-carlo)
-  * [Sobol](function-analysis.md#sobol)
-  * [Grid](function-analysis.md#grid)
-* Analyze model evaluations
-
-![Run Sens Analysis](pics/diff-studio-run-sens-analysis.gif)
 
 ### Parameter Optimization
 
-Find input conditions leading to the specified output constraints using the [Parameter Optimization](function-analysis.md#parameter-optimization) feature. It finds input values that minimize deviation measured by [loss function](https://en.wikipedia.org/wiki/Loss_function). Run it directly from Diff Studio:
 
-* Click the **Fit** icon on the top panel
-* In the `Fit` block, use switchers to specify inputs to be found:
-  * Set `min` and `max` values for each selected item. They define the variation range
-  * Set values of all other inputs
-* In the `Target` block, specify output constraints:
-  * Set dataframe with expected output values (in the table input)
-  * Set column with values of the independent variable (in the `argument` field)
-* Specify settings of fitting:
-  * Choose numerical optimization method (in the `method` field), and set loss function type (in the `loss` field)
-  * Specify number of points to be found (in the `samples` field)
-  * Set the maximum scaled deviation between similar fitted points (in the `similarity` field): the higher the value, the fewer points will be found
-* Click <i class="fas fa-play"></i> **Run fitting** icon. You will get a [grid](../visualize/viewers/grid) containing
-  * loss function values
-  * fitted inputs
-  * [line charts](../visualize/viewers/line-chart) visualizing the goodness of fit and showing the loss function minimization
-* Open `Context panel` (F4). You will get the simulation run corresponding to the selected grid row
-
-![Run fitting](pics/diff-studio-run-fitting.gif)
 
 ## Creating a custom differential equation model
 
