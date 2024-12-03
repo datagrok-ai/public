@@ -102,10 +102,10 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
 
   getStateChanges<T = any>(id: string, includeDataFrameMutations = false): Observable<T | undefined> {
     return this.instance$.pipe(
-      switchMap((data) => {
+      switchMap((data, idx) => {
         if (data) {
           const changes$ = data.adapter.getStateChanges(id, includeDataFrameMutations);
-          if (!data.isNew)
+          if (!data.isNew && idx > 0)
             return changes$.pipe(skip(1));
           return changes$;
         }

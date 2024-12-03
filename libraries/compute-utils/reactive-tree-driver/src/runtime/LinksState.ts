@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {v4 as uuidv4} from 'uuid';
 import {BaseTree, NodePath} from '../data/BaseTree';
 import {isFuncCallNode, StateTreeNode} from './StateTreeNodes';
-import {ActionSpec, LinkSpec, MatchInfo, matchNodeLink, updateMatchInfoUUIDs} from './link-matching';
+import {ActionSpec, LinkSpec, MatchInfo, matchNodeLink} from './link-matching';
 import {Action, Link} from './Link';
 import {BehaviorSubject, concat, merge, Subject, of, Observable, defer, combineLatest} from 'rxjs';
 import {takeUntil, map, scan, switchMap, filter, mapTo, toArray, take, tap, debounceTime, delay, concatMap} from 'rxjs/operators';
@@ -103,7 +103,6 @@ export class LinksState {
     if (this.defaultValidators) {
       const validators = this.createDefaultValidators(state);
       newLinks.push(...validators);
-      addedLinks.push(...validators);
     }
     const {toRemove, toAdd} = getLinksDiff(oldLinks, newLinks);
     const mergedLinks: Link[] = [];
@@ -116,7 +115,6 @@ export class LinksState {
         oldLink.destroy();
       }
     }
-
     for (const newLink of newLinks) {
       if (toAdd.has(newLink.uuid)) {
         if (this.logger && !newLink.matchInfo.isDefaultValidator)
@@ -203,18 +201,15 @@ export class LinksState {
               ioName: io.id,
             }],
           },
-          inputsUUID: new Map(),
           outputs: {
             'out': [{
               path: [],
               ioName: io.id,
             }],
           },
-          outputsUUID: new Map(),
           actions: {},
           isDefaultValidator: true,
         };
-        updateMatchInfoUUIDs(node, minfo);
         return new Link(path, minfo, 0);
       }).filter((x) => !!x);
       return [...acc, ...(validators ?? [])];

@@ -51,20 +51,6 @@
           "kind": "N",
           "hasValue": true
         }
-      },
-      {
-        "frame": 500,
-        "notification": {
-          "kind": "N",
-          "hasValue": true
-        }
-      },
-      {
-        "frame": 500,
-        "notification": {
-          "kind": "N",
-          "hasValue": true
-        }
       }
     ]
   },
@@ -93,41 +79,6 @@
           },
           "hasValue": true
         }
-      },
-      {
-        "frame": 500,
-        "notification": {
-          "kind": "N",
-          "value": {
-            "errors": [],
-            "warnings": [
-              {
-                "description": "warning from link 9"
-              },
-              {
-                "description": "warning from link 9"
-              }
-            ],
-            "notifications": []
-          },
-          "hasValue": true
-        }
-      },
-      {
-        "frame": 500,
-        "notification": {
-          "kind": "N",
-          "value": {
-            "errors": [],
-            "warnings": [
-              {
-                "description": "warning from link 9"
-              }
-            ],
-            "notifications": []
-          },
-          "hasValue": true
-        }
       }
     ]
   },
@@ -143,20 +94,6 @@
       },
       {
         "frame": 270,
-        "notification": {
-          "kind": "N",
-          "hasValue": true
-        }
-      },
-      {
-        "frame": 500,
-        "notification": {
-          "kind": "N",
-          "hasValue": true
-        }
-      },
-      {
-        "frame": 500,
         "notification": {
           "kind": "N",
           "hasValue": true
@@ -225,41 +162,6 @@
           },
           "hasValue": true
         }
-      },
-      {
-        "frame": 500,
-        "notification": {
-          "kind": "N",
-          "value": {
-            "errors": [],
-            "warnings": [
-              {
-                "description": "warning from link 32"
-              },
-              {
-                "description": "warning from link 32"
-              }
-            ],
-            "notifications": []
-          },
-          "hasValue": true
-        }
-      },
-      {
-        "frame": 500,
-        "notification": {
-          "kind": "N",
-          "value": {
-            "errors": [],
-            "warnings": [
-              {
-                "description": "warning from link 32"
-              }
-            ],
-            "notifications": []
-          },
-          "hasValue": true
-        }
       }
     ]
   },
@@ -279,20 +181,6 @@
           "kind": "N",
           "hasValue": true
         }
-      },
-      {
-        "frame": 500,
-        "notification": {
-          "kind": "N",
-          "hasValue": true
-        }
-      },
-      {
-        "frame": 500,
-        "notification": {
-          "kind": "N",
-          "hasValue": true
-        }
       }
     ]
   },
@@ -308,20 +196,6 @@
       },
       {
         "frame": 290,
-        "notification": {
-          "kind": "N",
-          "hasValue": true
-        }
-      },
-      {
-        "frame": 500,
-        "notification": {
-          "kind": "N",
-          "hasValue": true
-        }
-      },
-      {
-        "frame": 500,
         "notification": {
           "kind": "N",
           "hasValue": true
@@ -390,41 +264,6 @@
           },
           "hasValue": true
         }
-      },
-      {
-        "frame": 500,
-        "notification": {
-          "kind": "N",
-          "value": {
-            "errors": [],
-            "warnings": [
-              {
-                "description": "warning from link 34"
-              },
-              {
-                "description": "warning from link 34"
-              }
-            ],
-            "notifications": []
-          },
-          "hasValue": true
-        }
-      },
-      {
-        "frame": 500,
-        "notification": {
-          "kind": "N",
-          "value": {
-            "errors": [],
-            "warnings": [
-              {
-                "description": "warning from link 34"
-              }
-            ],
-            "notifications": []
-          },
-          "hasValue": true
-        }
       }
     ]
   },
@@ -444,20 +283,6 @@
           "kind": "N",
           "hasValue": true
         }
-      },
-      {
-        "frame": 500,
-        "notification": {
-          "kind": "N",
-          "hasValue": true
-        }
-      },
-      {
-        "frame": 500,
-        "notification": {
-          "kind": "N",
-          "hasValue": true
-        }
       }
     ]
   },
@@ -473,20 +298,6 @@
       },
       {
         "frame": 290,
-        "notification": {
-          "kind": "N",
-          "hasValue": true
-        }
-      },
-      {
-        "frame": 500,
-        "notification": {
-          "kind": "N",
-          "hasValue": true
-        }
-      },
-      {
-        "frame": 500,
         "notification": {
           "kind": "N",
           "hasValue": true
@@ -690,20 +501,6 @@
           "kind": "N",
           "hasValue": true
         }
-      },
-      {
-        "frame": 500,
-        "notification": {
-          "kind": "N",
-          "hasValue": true
-        }
-      },
-      {
-        "frame": 500,
-        "notification": {
-          "kind": "N",
-          "hasValue": true
-        }
       }
     ]
   },
@@ -732,41 +529,6 @@
           },
           "hasValue": true
         }
-      },
-      {
-        "frame": 500,
-        "notification": {
-          "kind": "N",
-          "value": {
-            "errors": [],
-            "warnings": [
-              {
-                "description": "warning from link 7"
-              },
-              {
-                "description": "warning from link 7"
-              }
-            ],
-            "notifications": []
-          },
-          "hasValue": true
-        }
-      },
-      {
-        "frame": 500,
-        "notification": {
-          "kind": "N",
-          "value": {
-            "errors": [],
-            "warnings": [
-              {
-                "description": "warning from link 7"
-              }
-            ],
-            "notifications": []
-          },
-          "hasValue": true
-        }
       }
     ]
   },
@@ -782,20 +544,6 @@
       },
       {
         "frame": 270,
-        "notification": {
-          "kind": "N",
-          "hasValue": true
-        }
-      },
-      {
-        "frame": 500,
-        "notification": {
-          "kind": "N",
-          "hasValue": true
-        }
-      },
-      {
-        "frame": 500,
         "notification": {
           "kind": "N",
           "hasValue": true

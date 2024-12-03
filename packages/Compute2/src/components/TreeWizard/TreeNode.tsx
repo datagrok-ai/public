@@ -81,7 +81,8 @@ const hasWarnings = (validationsState?: Record<string, ValidationResult>) => {
 }
 
 const hasInconsistencies = (consistencyStates?: Record<string, ConsistencyInfo>) => {
-  const firstInconsistency = Object.values(consistencyStates || {}).find(val => val.inconsistent);
+  const firstInconsistency = Object.values(consistencyStates || {}).find(
+    val => val.inconsistent && (val.restriction === 'disabled' || val.restriction === 'restricted'));
   return firstInconsistency;
 }
 

@@ -13,15 +13,7 @@ export function getLinksDiff(oldLinks: Link[], newLinks: Link[]): LinksDiff {
   const toAdd = new Set<string>();
   const notToAdd = new Set<string>();
 
-  const filteredOldLinks: Link[] = [];
-  for (const link of oldLinks) {
-    if (!link.matchInfo.isDefaultValidator)
-      filteredOldLinks.push(link);
-    else
-      toRemove.add(link.uuid);
-  }
-
-  for (const oldLink of filteredOldLinks) {
+  for (const oldLink of oldLinks) {
     const foundNew = findLink(newLinks, oldLink);
     if (foundNew) {
       toKeep.add(oldLink.uuid);
@@ -49,16 +41,16 @@ export function linkEqual(link1: Link, link2: Link): boolean {
   if (!isEqual(link1.matchInfo.spec.id, link2.matchInfo.spec.id))
     return false;
 
-  if (!isEqual(link1.prefixUUID, link2.prefixUUID))
+  if (!isEqual(link1.prefix, link2.prefix))
     return false;
 
-  if (!isEqual(link1.matchInfo.basePathUUID, link2.matchInfo.basePathUUID))
+  if (!isEqual(link1.matchInfo.basePath, link2.matchInfo.basePath))
     return false;
 
-  if (!isEqual(link1.matchInfo.inputsUUID, link2.matchInfo.inputsUUID))
+  if (!isEqual(link1.matchInfo.inputs, link2.matchInfo.inputs))
     return false;
 
-  if (!isEqual(link1.matchInfo.outputsUUID, link2.matchInfo.outputsUUID))
+  if (!isEqual(link1.matchInfo.outputs, link2.matchInfo.outputs))
     return false;
 
   return true;

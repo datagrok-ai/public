@@ -66,16 +66,6 @@
           },
           "hasValue": true
         }
-      },
-      {
-        "frame": 500,
-        "notification": {
-          "kind": "N",
-          "value": {
-            "payload": "meta from link8"
-          },
-          "hasValue": true
-        }
       }
     ]
   },
@@ -139,16 +129,6 @@
       },
       {
         "frame": 40,
-        "notification": {
-          "kind": "N",
-          "value": {
-            "payload": "meta from link33"
-          },
-          "hasValue": true
-        }
-      },
-      {
-        "frame": 500,
         "notification": {
           "kind": "N",
           "value": {
@@ -251,16 +231,6 @@
       },
       {
         "frame": 40,
-        "notification": {
-          "kind": "N",
-          "value": {
-            "payload": "meta from link35"
-          },
-          "hasValue": true
-        }
-      },
-      {
-        "frame": 500,
         "notification": {
           "kind": "N",
           "value": {
@@ -539,16 +509,6 @@
       },
       {
         "frame": 20,
-        "notification": {
-          "kind": "N",
-          "value": {
-            "payload": "meta from link6"
-          },
-          "hasValue": true
-        }
-      },
-      {
-        "frame": 500,
         "notification": {
           "kind": "N",
           "value": {

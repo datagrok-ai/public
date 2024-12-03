@@ -35,8 +35,6 @@ export class Link {
   public readonly isSelector = this.matchInfo.spec.type === 'selector';
   public readonly isFuncallAction = this.matchInfo.spec.type === 'funccall';
 
-  public prefixUUID = '';
-
   // probably a better api
   public lastPipelineMutations?: {
     path: NodePath,
@@ -62,8 +60,6 @@ export class Link {
   wire(state: BaseTree<StateTreeNode>, linksState?: LinksState) {
     if (this.isWired)
       return;
-
-    this.prefixUUID = pathToUUID(state.root, this.prefix).join('/');
 
     const inputNames = Object.keys(this.matchInfo.inputs);
     const outputNames = Object.keys(this.matchInfo.outputs);
