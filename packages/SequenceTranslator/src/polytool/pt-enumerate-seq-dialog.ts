@@ -656,8 +656,8 @@ async function getPolyToolEnumerateDialog(
       },
       /* applyInput */ (x: PolyToolEnumerateHelmSerialized): void => {
         //inputs.macromolecule.stringValue = x.macromolecule;
-        inputs.placeholders.stringValue = x.placeholders;
         inputs.enumeratorType.value = x.enumeratorType ?? PolyToolEnumeratorTypes.Single;
+        inputs.placeholders.stringValue = x.placeholders;
         inputs.placeholdersBreadth.stringValue = x.placeholdersBreadth;
         inputs.trivialNameCol.stringValue = x.trivialNameCol;
         inputs.keepOriginal.value = x.keepOriginal ?? false;
