@@ -79,6 +79,8 @@ export function widgetHostFromFunc(f: DG.Func) {
         w.factory = f;
         initWidgetHost(host, w);
       }
+      else
+        host.remove();
   })
   .catch((e) => {
     host.style.display = 'none';
