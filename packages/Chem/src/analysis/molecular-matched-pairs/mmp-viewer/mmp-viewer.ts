@@ -42,7 +42,7 @@ export type TrellisSorting = {
 
 export type SortType = {
   property: TrellisSortByProp,
-  type: TrellisSortType
+  type?: TrellisSortType
 }
 
 export type SortData = {
@@ -267,9 +267,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       grid.root.prepend(header);
       return ui.splitV([
         ui.box(
-          ui.divH([ui.divH([header, helpBUtton]),
-            addToWorkspaceButton(grid.dataFrame, name, 'chem-mmpa-add-to-workspace-button')],
-          {style: {justifyContent: 'space-between'}}),
+          ui.divH([header,
+            addToWorkspaceButton(grid.dataFrame, name, 'chem-mmpa-add-to-workspace-button'), helpBUtton]),
           {style: {maxHeight: '30px'}},
         ),
         grid.root,
@@ -309,7 +308,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     const trellisSortState: TrellisSorting = {
       [TrellisAxis.From]: {property: TrellisSortByProp.Frequency, type: TrellisSortType.Desc},
-      [TrellisAxis.To]: {property: TrellisSortByProp.Frequency, type: TrellisSortType.None},
+      [TrellisAxis.To]: {property: TrellisSortByProp.None, type: TrellisSortType.Asc},
     };
 
     tp.root.prepend(trellisHeader);
@@ -461,6 +460,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
           value: trellisSortState[axis].property, items: Object.keys(TrellisSortByProp), nullable: false,
           onValueChanged: () => {
             if (trellisSortState[axis].property !== sortPropChoice.value) {
+              if (sortPropChoice.value === TrellisSortByProp.None)
+                sortTypeChoice.root.classList.add('chem-mmp-trellis-sort-type-invisible');
+              else
+                sortTypeChoice.root.classList.remove('chem-mmp-trellis-sort-type-invisible');
               trellisSortState[axis].property = sortPropChoice.value as TrellisSortByProp;
               this.sortTrellis(axis, trellisSortState[axis], tp);
             }
@@ -475,6 +478,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
             }
           },
         });
+        if (axis === TrellisAxis.To)
+          sortTypeChoice.root.classList.add('chem-mmp-trellis-sort-type-invisible');
         const sortIcon = ui.iconFA('sort-alt', () => {
           ui.showPopup(ui.inputs([
             sortPropChoice, sortTypeChoice,
@@ -493,8 +498,11 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   sortTrellis(axis: TrellisAxis, sorting: SortType, tp: DG.Viewer) {
     const filterBackup = this.pairedGrids!.fpGrid.dataFrame.filter.clone();
     switch (sorting.property) {
+    case TrellisSortByProp.None:
+      this.sortTrellisByProp(axis, tp);
+      break;
     case TrellisSortByProp.Frequency:
-      this.sortTrellisByProp(axis, sorting.type, tp, ([_1, val1], [_2, val2]) => val1.frequency - val2.frequency,
+      this.sortTrellisByProp(axis, tp, sorting.type, ([_1, val1], [_2, val2]) => val1.frequency - val2.frequency,
         ([_1, val1], [_2, val2]) => val2.frequency - val1.frequency);
       break;
     case TrellisSortByProp.MW:
@@ -502,15 +510,15 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         grok.shell.warning('MW calculations for fragments in progress. Please try again later');
         return;
       }
-      this.sortTrellisByProp(axis, sorting.type, tp, ([_1, val1], [_2, val2]) => val1.mw! - val2.mw!,
+      this.sortTrellisByProp(axis, tp, sorting.type, ([_1, val1], [_2, val2]) => val1.mw! - val2.mw!,
         ([_1, val1], [_2, val2]) => val2.mw! - val1.mw!);
     }
     this.pairedGrids!.fpGrid.dataFrame.filter.copyFrom(filterBackup);
   }
 
-  sortTrellisByProp(axis: TrellisAxis, type: TrellisSortType, tp: DG.Viewer,
-    ascSortFunc: (arg1: [string, SortData], arg2: [string, SortData]) => number,
-    descSortFunc: (arg1: [string, SortData], arg2: [string, SortData]) => number) {
+  sortTrellisByProp(axis: TrellisAxis, tp: DG.Viewer, type?: TrellisSortType,
+    ascSortFunc?: (arg1: [string, SortData], arg2: [string, SortData]) => number,
+    descSortFunc?: (arg1: [string, SortData], arg2: [string, SortData]) => number) {
     const fragCol = this.pairedGrids!.fpGrid.dataFrame.col(axis);
     const axisName = tp.props.yColumnNames[0] === axis ? 'yColumnNames' :
       tp.props.xColumnNames[0] === axis ? 'xColumnNames' : null;
@@ -518,7 +526,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     if (fragCol) {
       let cats: string[] = [];
       switch (type) {
-      case TrellisSortType.None:
+      case undefined:
         cats = fragCol.categories.map((it) => it).sort();
         break;
       case TrellisSortType.Asc:
@@ -626,8 +634,18 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   async prepareMwForSorting() {
     const frags = Object.keys(this.fragSortingInfo);
     chemDescriptor(DG.Column.fromStrings('smiles', frags), 'MolWt').then((res: DG.Column) => {
-      frags.forEach((key, idx) => this.fragSortingInfo[key].mw = res.get(idx) ?? 0);
+      let errorCount = 0;
+      frags.forEach((key, idx) => {
+        let resMW = res.get(idx);
+        if (!resMW || typeof resMW === 'string') {
+          errorCount++;
+          resMW = undefined;
+        }
+        this.fragSortingInfo[key].mw = resMW ?? 0;
+      });
       this.mWCalulationsReady = true;
+      if (errorCount > 0)
+        grok.shell.warning(`Molecular weight hasn't been calculated for ${errorCount} fragments`);
     });
   }
 

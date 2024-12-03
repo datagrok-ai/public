@@ -601,8 +601,9 @@
 }
 
 .chem-mmpa-add-to-workspace-button {
-  margin-top: 7px;
-  margin-right: 10px;
+  margin-top: 5px;
+  margin-left: 5px;
+  color: #2083d5;
 }
 
 .chem-mmpa-grid-help-icon {
@@ -771,4 +772,8 @@
 
 .chem-mmp-trellis-plot .d4-column-selector {
   pointer-events: none;
+}
+
+.chem-mmp-trellis-sort-type-invisible {
+  display: none!important;
 }
