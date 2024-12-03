@@ -8,4 +8,5 @@ export interface IState {
     canUndock?: boolean;
     hideCloseButton?: boolean;
     panelType?: PanelType;
+    panelIcon?: string,
 }

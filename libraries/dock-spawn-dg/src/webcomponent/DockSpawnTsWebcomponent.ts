@@ -2,7 +2,7 @@ import {DockManager} from '../DockManager.js';
 import {PanelContainer} from '../PanelContainer.js';
 import {PanelType} from '../enums/PanelType.js';
 import {DockNode} from '../DockNode.js';
-import {style, style1, style2} from './styles';
+import {faStyle, style, style1, style2} from './styles';
 import {Observable, Subscriber, Subscription} from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
 
@@ -33,7 +33,7 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
     super();
 
     const shadowRoot = this.attachShadow({mode: 'open'});
-    shadowRoot.adoptedStyleSheets = [style, style1, style2];
+    shadowRoot.adoptedStyleSheets = [style, style1, style2, faStyle];
 
     this.windowResizedBound = this.windowResized.bind(this);
     this.slotElementMap = new WeakMap();
@@ -135,7 +135,8 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
       dockPanelType = <PanelType><any>dockPanelTypeAttribute;
     const hideCloseButton = element.hasAttribute('dock-spawn-hide-close-button');
     const title = element.getAttribute('dock-spawn-title');
-    const container = new PanelContainer(slot, this.dockManager, title, dockPanelType, hideCloseButton);
+    const panelIcon = element.getAttribute('dock-spawn-panel-icon');
+    const container = new PanelContainer(slot, this.dockManager, title, dockPanelType, hideCloseButton, panelIcon);
     const customZindex = element.getAttribute('dock-spawn-z-index');
     if (customZindex && slot.parentElement) {
       slot.parentElement.style.zIndex = customZindex;
