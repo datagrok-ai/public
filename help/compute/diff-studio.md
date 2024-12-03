@@ -1,35 +1,58 @@
 ---
 title: "Diff Studio"
+keywords:    
+  - modeling complex systems processes
+  - ordinary differential equations solver
+  - initial value problem
+  - interactive modeling
+  - no-code scientific computing
+  - declarative syntax
+  - stiff equations solver
 ---
 
-**Datagrok Diff Studio** solves [ordinary differential equations](https://en.wikipedia.org/wiki/Ordinary_differential_equation) (ODEs) right within your web browser, and provides interactive exploration of their solution.
+Differential equations are crucial in modeling complex systems - from pharmacology and drug manufacturing to financial modeling and environmental studies.
 
-Differential equations play a crucial role in modeling complex systems in diverse fields, from chemical engineering and drug design to environmental studies and financial modeling.
+**Datagrok Diff Studio** solves [initial value problems](https://en.wikipedia.org/wiki/Initial_value_problem) for [ordinary differential equations](https://en.wikipedia.org/wiki/Ordinary_differential_equation) (ODEs) and visualizes solutions in real time. You can create mathematical models with auto-generated interactive interfaces or use existing models to analyze your systems. Diff Studio is a tool for:
 
-Using **Diff Studio**, you can create mathematical models, build interactive [visualizations](../visualize/viewers),
-develop platform [applications](../develop/how-to/build-an-app.md) and combine them with other features of Datagrok.
+* **Model users**
+  * Instantly see how parameter changes affect your system
+  * Find optimal parameter values that match your target data
+  * Explore model behavior using Monte Carlo, Sobol, and other methods
+* **Model creators**
+  * Start quick with pre-built models
+  * Focus on math - let the platform handle the UI
+  * Solve both stiff and non-stiff equations
+  * Handle complex multi-equation ODE systems
+  * Debug equations easily
+* **Enterprises**
+  * Save models as scripts to extend functionality and integrate with other Datagrok tools
+  * Use as a central hub for ODE models
+  * Develop custom scientific computing applications
 
-**Key benefits and features**:
+## Working with models
 
-* **Enhanced mathematical modeling:** Diff Studio can model and analyse complex multi-equation systems.
-* **Ease of use:** Diff Studio intuitive interface makes it accessible
-  and useful to both beginners and experts in mathematical modeling.
-* **Rapid design:** The collection of built-in model templates and examples speeds up model design.
-* **Streamlined integration:** In a single click, you can convert formulas to the platform [script](scripting/scripting.mdx),
-  implementing no-code development.
-* **Broad application scope:** Diff Studio usage ranges from [pharmacokinetics](https://en.wikipedia.org/wiki/Pharmacokinetics)
-  and [hybrid antibody formation](https://doi.org/10.1073/pnas.1220145110) simulation to [queues](https://en.wikipedia.org/wiki/Queueing_theory) modeling.
+Go to **Apps** and run **Diff Studio**. When you first use this application, you will see the default model.
+Modify inputs and check computations. Use sliders for the rapid model exploration. Click <i class="fas fa-arrow-to-bottom"></i> **Download** to save model to a local file. Find the *ivp*-file in Downloads. You can open and edit this file using any text editor.
+
+To load model from a local file, click <i class="fas fa-folder-open d4-combo-popup" style="min-width: 0px; cursor: default"></i> **Open**, select **Import...** and choose a local file to upload. **Drag-n-drop** your *ivp*-file to Datagrok. Diff Studio will open it and load formulas. You can open *ivp*-files stored in the platform.
+
+
+* Turn on the **Edit** toggle on the top panel. Equations editor opens. Edit formulas or add new ones.
+* Click <i class="fas fa-sync"></i> **Refresh** or press **F5** to apply changes.
+
+Describe how to launch and the basic stuff
+
+### Parameter fitting
+
+### Sensitivity analysis
+
+
 
 ## Using Diff Studio
 
 ### Running Diff Studio
 
-To run **Diff Studio**:
 
-* Go to **Apps** and run **Diff Studio**. When you first use this application, you will see the default model.
-* Modify inputs and check computations. Use sliders for the rapid model exploration.
-* Turn on the **Edit** toggle on the top panel. Equations editor opens. Edit formulas or add new ones.
-* Click <i class="fas fa-sync"></i> **Refresh** or press **F5** to apply changes.
 
 ![Run Diff Studio](pics/diff-studio-run.gif)
 
