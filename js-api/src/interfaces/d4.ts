@@ -379,10 +379,6 @@ export enum FlexAutoPosition {
   Right = 'Right',
   Top = 'Top',
   Bottom = 'Bottom',
-  LeftTop = 'LeftTop',
-  LeftBottom = 'LeftBottom',
-  RightTop = 'RightTop',
-  RightBottom = 'RightBottom',
 }
 
 export interface IFiltersSettings {
