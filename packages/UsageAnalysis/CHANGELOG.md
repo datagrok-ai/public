@@ -1,5 +1,15 @@
 # Usage Analysis changelog
 
+# 2.2.1 (2024-12-03)
+
+* Dependency: datagarok-api >= 1.22.0*
+
+## Features:
+
+* Added detector for tests tables
+* Updated test track business logic
+* Added test cases to Test Track app 
+
 # 2.2.0 (2024-10-24)
 
 * Dependency: datagarok-api >= 1.22.0*

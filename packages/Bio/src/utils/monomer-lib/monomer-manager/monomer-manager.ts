@@ -474,7 +474,7 @@ function getCaseInvariantValue<T>(obj: { [key: string]: T }, key: string): T | u
 
 // some r groups for some monomers can lack smiles, or something else :D this function will try to fix that
 function resolveRGroupInfo(rgps: RGroup[]): RGroup[] {
-  return rgps.map((rg) => {
+  return (rgps.map((rg) => {
     const cp = assignObjectCaseInvariant(RGROUP_FIELDS, rg);
     const smi = getCaseInvariantValue(cp, HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE);
     const altId = getCaseInvariantValue(cp, HELM_RGROUP_FIELDS.ALTERNATE_ID);
@@ -498,7 +498,7 @@ function resolveRGroupInfo(rgps: RGroup[]): RGroup[] {
         cp[HELM_RGROUP_FIELDS.ALTERNATE_ID] = `${label}-${capName}`;
     }
     return cp;
-  }) as RGroup[];
+  }) as RGroup[]).sort((a, b) => a.label?.localeCompare(b.label ?? '') ?? 0);
 }
 
 
@@ -607,7 +607,7 @@ class MonomerForm implements INewMonomerForm {
           } as unknown as RGroup;
         });
         // if (this.rgroupsGrid.items.length !== rGroupItems.length)
-        this.rgroupsGrid.items = rGroupItems.sort((a, b) => a.label.localeCompare(b.label));
+        this.rgroupsGrid.items = rGroupItems.sort((a, b) => a.label?.localeCompare(b.label ?? '') ?? 0);
         this.rgroupsGrid.render();
         this.rgroupsGridRoot.style.display = 'flex';
         const mostSimilar = await mostSimilarNaturalAnalog(capSmiles(smiles, rGroupItems), this.polymerTypeInput.value ?? '');
