@@ -87,7 +87,7 @@ function renderValidationResults(
       ]),
       ui.link(
         'Reset to consistent value',
-        () => input.value = consistentValue,
+        () => input.value = (consistentValue instanceof DG.DataFrame) ? consistentValue.clone() : consistentValue,
         undefined, {style: {paddingLeft: '20px'}},
       ),
     ]));

@@ -16,6 +16,7 @@ const statusToIcon = {
   ['next warn']: 'arrow-right',
   ['next error']: 'arrow-right',
   [`pending`]: 'circle',
+  [`pending executed`]: 'dot-circle',
   ['running']: 'hourglass-half',
   ['succeeded']: 'check-circle',
   ['succeeded warn']: 'dot-circle',
@@ -28,6 +29,7 @@ const statusToColor = {
   ['next warn']: 'orange',
   ['next error']: 'blue',
   [`pending`]: 'gray',
+  [`pending executed`]: 'gray',
   ['running']: 'blue',
   ['succeeded']: 'green',
   ['succeeded warn']: 'orange',
@@ -40,6 +42,7 @@ const statusToTooltip = {
   [`next warn`]: `This step is avaliable to run, but has warnings`,
   [`next error`]: `This step has validation errors`,
   ['pending']: 'This step has pending dependencies',
+  ['pending executed']: 'This step has changed dependencies',
   ['running']: 'This step is running',
   ['succeeded']: 'This step is succeeded',
   ['succeeded warn']: 'This step is succeeded, but has warnings',
@@ -53,7 +56,8 @@ const statesToStatus = (
   consistencyStates?: Record<string, ConsistencyInfo>,
 ): Status => {
   if (callState.isRunning) return 'running';
-  if (callState.pendingDependencies?.length) return 'pending';
+  if (callState.pendingDependencies?.length)
+    return callState.isOutputOutdated ? 'pending' : 'pending executed';
   if (!callState.isOutputOutdated) {
     if (callState.runError)
       return 'failed';
@@ -67,6 +71,7 @@ const statesToStatus = (
     return 'next error';
   if (hasWarnings(validationsState) || hasInconsistencies(consistencyStates))
     return 'next warn';
+
   return 'next';
 };
 

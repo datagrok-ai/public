@@ -146,7 +146,7 @@ export class StateTree {
       const descriptions$ = merge(...stateChanges).pipe(
         scan((acc, [name, val]) => {
           if (name === 'tags') {
-            const tags = Object.values(val ?? {}).flat() as string[];
+            const tags = Object.values(val ?? {}).flat().filter(x => x) as string[];
             return {...acc, [name]: tags};
           }
           return {...acc, [name]: val};
