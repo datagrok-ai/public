@@ -34,7 +34,21 @@ Differential equations are crucial in modeling complex systems - from pharmacolo
 Go to **Apps** and run **Diff Studio**. When you first use this application, you will see the default model.
 Modify inputs and check computations. Use sliders for the rapid model exploration. Click <i class="fas fa-arrow-to-bottom"></i> **Download** to save model to a local file. Find the *ivp*-file in Downloads. You can open and edit this file using any text editor.
 
+![Run Diff Studio](pics/diff-studio-run.gif)
+
 To load model from a local file, click <i class="fas fa-folder-open d4-combo-popup" style="min-width: 0px; cursor: default"></i> **Open**, select **Import...** and choose a local file to upload. **Drag-n-drop** your *ivp*-file to Datagrok. Diff Studio will open it and load formulas. You can open *ivp*-files stored in the platform.
+
+Browse and share models. Go to **Browse > Compute > Apps** and expand the **Diff Studio** group:
+
+* Check model templates from **Templates**
+* Click **Library** and explore built-in models
+* Find recently opened models in **Recent**
+
+Use URL to share computations. In **Browse**, click any *ivp*-file. Model preview opens. Modify inputs, copy URL, and share results:
+
+![Diff Studio Sharing](pics/diff-studio-sharing-url.gif)
+
+By using a URL, you can share model runs from the **Templates**, **Examples** and **Recent** groups.
 
 
 * Turn on the **Edit** toggle on the top panel. Equations editor opens. Edit formulas or add new ones.
@@ -54,7 +68,7 @@ Describe how to launch and the basic stuff
 
 
 
-![Run Diff Studio](pics/diff-studio-run.gif)
+
 
 ### Loading and saving data
 
@@ -65,21 +79,8 @@ Click the **Save** button on the top panel to save model to your platform files 
 * **To load model** from a local file, click <i class="fas fa-folder-open d4-combo-popup" style="min-width: 0px; cursor: default"></i> **Open**, choose **Import...** option and choose a local file to upload.
 * **Drag-n-drop** your *ivp*-file to Datagrok. Diff Studio will open it and load formulas. You can open *ivp*-files stored in the platform.
 
-### Browse and share models
 
-Go to **Browse > Compute > Apps** and expand the **Diff Studio** group:
 
-* Check model templates from **Templates**. Use them as a backbone of your model.
-* Click **Library** and explore built-in models. They cover all Diff Studio capabilities.
-* Find recently opened models in **Recent**.
-
-![Diff Studio Browsing](pics/diff-studio-browsing.gif)
-
-In **Browse**, click any *ivp*-file. Model preview opens. Modify inputs and check results. Use URL to share computations:
-
-![Diff Studio Sharing](pics/diff-studio-sharing-url.gif)
-
-By using a URL, you can share model runs from the **Templates**, **Examples** and **Recent** groups.
 
 ### Sensitivity analysis
 
