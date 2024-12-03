@@ -77,14 +77,16 @@ Find input conditions leading to the specified output constraints using the [Par
 
 Explore the relationship between inputs and outputs of your model using the [Sensitivity Analysis](function-analysis.md#sensitivity-analysis) feature. Run it directly from Diff Studio:
 
-* Click the **Sensitivity** icon on the top panel
-* Apply one of the following methods:
-  * [Monte Carlo](function-analysis.md#monte-carlo)
-  * [Sobol](function-analysis.md#sobol)
-  * [Grid](function-analysis.md#grid)
-* Analyze model evaluations
+1. Click the **Sensitivity** icon on the top panel. **Sensitivity Analysis View** opens
+2. Apply one of the following methods:
+   * [Monte Carlo](function-analysis.md#monte-carlo)
+   * [Sobol](function-analysis.md#sobol)
+   * [Grid](function-analysis.md#grid)
+3. Analyze model evaluations. Open `Context panel` (F4). You will get the simulation run corresponding to the selected grid row
 
 ![Run Sens Analysis](pics/diff-studio-run-sens-analysis.gif)
+
+## Creating models
 
 
 
