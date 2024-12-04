@@ -4,6 +4,7 @@ export enum MMP_NAMES {
   TO = 'To',
   PAIRS = 'Pairs',
   PAIRNUM = '~PairNum',
+  PAIR_SORT = '~PairSort',
   PAIRNUM_FROM = '~PairNumFrom',
   PAIRNUM_TO = '~PairNumTo',
   MEANDIFF = 'Mean Difference',

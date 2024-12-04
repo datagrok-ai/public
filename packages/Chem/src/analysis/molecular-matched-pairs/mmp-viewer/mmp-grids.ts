@@ -37,6 +37,7 @@ export class MmpPairedGrids {
 
   showErrorEvent: Subject<boolean> = new Subject();
   filters: DG.FilterGroup;
+  lastPairIdx: number | null = null;
 
   constructor(subs: Subscription[], mmpInput: MmpInput, mmpa: MMPA, activityMeanNames: string[] ) {
     this.mmpa = mmpa;
@@ -175,10 +176,11 @@ export class MmpPairedGrids {
     this.recoverHighlights(cases, diffFrom, diffTo, diffFromSubstrCol, diffToSubstrCol, rdkitModule);
 
     if (idxPairs >= 0) {
-      const col = this.mmpGridTrans.dataFrame.col(MMP_NAMES.FROM);
-      const molecule = col?.get(idxPairs);
-      this.mmpGridTrans.dataFrame.col(MMP_NAMES.FROM)!.valueComparer = (s1: string) => s1 === molecule ? -1 : 1;
-      this.mmpGridTrans.sort([MMP_NAMES.FROM], [true]);
+      if (this.lastPairIdx !== null)
+        this.mmpGridTrans.dataFrame.col(MMP_NAMES.PAIR_SORT)?.set(this.lastPairIdx, false);
+      this.mmpGridTrans.dataFrame.col(MMP_NAMES.PAIR_SORT)?.set(idxPairs, true);
+      this.lastPairIdx = idxPairs;
+      this.mmpGridTrans.sort([MMP_NAMES.PAIR_SORT], [false]);
     }
 
     this.mmpGridTrans.dataFrame.filter.copyFrom(this.mmpMaskTrans);
@@ -370,6 +372,7 @@ function getMatchedPairsGrid(mmpa: MMPA) : DG.Grid {
   const structureDiffToCol =
     DG.Column.fromType('object', MMP_NAMES.STRUCT_DIFF_TO_NAME, mmpa.allCasesBased.molFrom.length);
   const pairNumberCol = DG.Column.fromInt32Array(MMP_NAMES.PAIRNUM, mmpa.allCasesBased.pairNum);
+  const pairNumberSortCol = DG.Column.bool(MMP_NAMES.PAIR_SORT, mmpa.allCasesBased.pairNum.length);
   const pairNumberFromCol = DG.Column.fromInt32Array(MMP_NAMES.PAIRNUM_FROM, mmpa.allCasesBased.molNumFrom);
   const pairNumberToCol = DG.Column.fromInt32Array(MMP_NAMES.PAIRNUM_TO, mmpa.allCasesBased.molNumTo);
 
@@ -387,7 +390,7 @@ function getMatchedPairsGrid(mmpa: MMPA) : DG.Grid {
   const allTransformationsCols = [pairsFromCol, pairsToCol,
     structureDiffFromCol, structureDiffToCol,
     pairNumberCol, pairNumberFromCol, pairNumberToCol,
-    pairsFromSmilesCol, pairsToSmilesCol, ruleNumCol];
+    pairsFromSmilesCol, pairsToSmilesCol, ruleNumCol, pairNumberSortCol];
 
   for (let i = 0; i < mmpa.initData.activitiesCount; i++) {
     const name = MMP_NAMES.DIFF + ' ' + mmpa.initData.activitiesNames[i];
