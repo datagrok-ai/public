@@ -46,7 +46,7 @@ export async function ask(question: string): Promise<string> {
     temperature: 0.7
   });
 
-  return result.choices[0].message.content;
+  return result.message.content;
 }
 
 //input: string question
