@@ -47,10 +47,19 @@ export function linkEqual(link1: Link, link2: Link): boolean {
   if (!isEqual(link1.matchInfo.basePath, link2.matchInfo.basePath))
     return false;
 
+  if (!isEqual(link1.matchInfo.basePathUUID, link2.matchInfo.basePathUUID))
+    return false;
+
   if (!isEqual(link1.matchInfo.inputs, link2.matchInfo.inputs))
     return false;
 
+  if (!isEqual(link1.matchInfo.inputsUUID, link2.matchInfo.inputsUUID))
+    return false;
+
   if (!isEqual(link1.matchInfo.outputs, link2.matchInfo.outputs))
+    return false;
+
+  if (!isEqual(link1.matchInfo.outputsUUID, link2.matchInfo.outputsUUID))
     return false;
 
   return true;

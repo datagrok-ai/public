@@ -2,7 +2,7 @@ import {isNonRefSelector, LinkNonRefSelectors, LinkIOParsed, LinkRefSelectors, r
 import {DataActionConfiguraion, FuncCallActionConfiguration, PipelineLinkConfiguration, PipelineMutationConfiguration} from '../config/PipelineConfiguration';
 import {BaseTree, NodePath, TreeNode} from '../data/BaseTree';
 import {buildTraverseD} from '../data/graph-traverse-utils';
-import {indexFromEnd} from '../utils';
+import {indexFromEnd, pathToUUID} from '../utils';
 import {StateTree} from './StateTree';
 import {StateTreeNode} from './StateTreeNodes';
 
@@ -19,9 +19,12 @@ export type MatchedNodePaths = Readonly<Array<MatchedIO>>;
 export type MatchInfo = {
   spec: LinkSpec | ActionSpec;
   basePath?: Readonly<NodePath>;
+  basePathUUID?: string;
   actions: Record<string, MatchedNodePaths>;
   inputs: Record<string, MatchedNodePaths>;
+  inputsUUID: Map<string, Set<string>>;
   outputs: Record<string, MatchedNodePaths>;
+  outputsUUID: Map<string, Set<string>>;
   isDefaultValidator?: boolean;
 }
 
@@ -64,7 +67,9 @@ function matchLinkInstance(
     basePath: base?.path,
     actions,
     inputs: {},
+    inputsUUID: new Map(),
     outputs: {},
+    outputsUUID: new Map(),
   };
   const currentIO: Record<string, MatchedNodePaths> = {};
   if (base && baseName)
@@ -87,6 +92,7 @@ function matchLinkInstance(
     currentIO[io.name] = paths;
     matchInfo[kind][io.name] = paths;
   }
+  updateMatchInfoUUIDs(rnode, matchInfo);
   return matchInfo;
 }
 
@@ -243,4 +249,30 @@ function matchRefSegment(
       return [matchingNodes[0]];
   }
   throw new Error(`Unknown segement mode ${selector}`);
+}
+
+export function updateMatchInfoUUIDs(rnode: TreeNode<StateTreeNode>, matchInfo: MatchInfo) {
+  if (matchInfo.basePath) {
+    const uuids = matchedPathsToUUIDs(rnode, [{path: matchInfo.basePath}]);
+    matchInfo.basePathUUID = [...uuids.values()][0];
+  }
+  for (const [name, input] of Object.entries(matchInfo.inputs)) {
+    const s = matchedPathsToUUIDs(rnode, input);
+    matchInfo.inputsUUID.set(name, s);
+  }
+  for (const [name, output] of Object.entries(matchInfo.outputs)) {
+    const s = matchedPathsToUUIDs(rnode, output);
+    matchInfo.outputsUUID.set(name, s);
+  }
+}
+
+function matchedPathsToUUIDs(rnode: TreeNode<StateTreeNode>, paths: MatchedNodePaths) {
+  const res = new Set<string>;
+  for (const path of paths) {
+    const uuids = pathToUUID(rnode, path.path);
+    if (path.ioName)
+      uuids.push(path.ioName);
+    res.add(uuids.join('/'));
+  }
+  return res;
 }
