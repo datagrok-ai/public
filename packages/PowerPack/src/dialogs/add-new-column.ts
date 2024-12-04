@@ -129,7 +129,7 @@ export class AddNewColumnDialog {
   uiFunctions?: HTMLDivElement;
   uiDialog?: DG.Dialog;
   codeMirror?: EditorView;
-  codeMirrorDiv = ui.div('', { style: { height: '140px' } });
+  codeMirrorDiv = ui.div('', {style: {height: '140px', border: 'dotted 1px var(--grey-3)'}});
   errorDiv = ui.div('', 'cm-errort-div cm-hint-div');
   hintDiv = ui.div('', 'cm-hint-div');
   columnNames: string[] = [];
