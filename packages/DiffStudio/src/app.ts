@@ -487,7 +487,7 @@ export class DiffStudio {
 
     this.solverView.ribbonMenu = DG.Menu.create();
 
-    this.prepareClosingEvent();
+    //this.prepareClosingEvent();
   }; // constructor
 
   /** Update ribbon panel widgets */
