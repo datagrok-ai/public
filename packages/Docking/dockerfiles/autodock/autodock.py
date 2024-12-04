@@ -21,12 +21,17 @@ processes = {}
 
 def prepare_autogrid_config(folder_path, receptor_basename, autodock_gpf):
     config_path = "{}/{}.gpf".format(folder_path, receptor_basename)
+    if isinstance(autodock_gpf, unicode):
+        autodock_gpf = autodock_gpf.encode("utf-8")
     with open(config_path, "w") as config_file:
         config_file.write(autodock_gpf)
     return config_path
 
 def calculate_hash(data):
-    return hashlib.sha256(data.encode()).hexdigest()
+    if isinstance(data, unicode):
+        data = data.encode('utf-8')
+    return hashlib.sha256(data).hexdigest()
+
 
 def run_process(command, folder_path, shell=False):
     command_txt = ' '.join(command) if isinstance(command, list) else str(command)
