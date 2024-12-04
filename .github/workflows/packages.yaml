@@ -483,6 +483,8 @@ jobs:
             long_term_token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/sessions/current/refresh -H "Authorization: ${token}" | jq -r .token)
             until .github/scripts/check-output.sh "curl -s -H 'Authorization: $long_term_token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}'
             do
+              docker compose exec db psql -d datagrok -c "SELECT * FROM docker_containers;"
+              .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}'
               sleep 1
               echo -e "\nContainer for ${{ matrix.package }} did not start yet..."
               echo -e "\nRetrying '/api/docker/containers'..."
