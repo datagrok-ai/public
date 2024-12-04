@@ -174,13 +174,14 @@ export class MmpPairedGrids {
     const [idxPairs, cases] = this.findSpecificRule(diffFromSubstrCol);
     this.recoverHighlights(cases, diffFrom, diffTo, diffFromSubstrCol, diffToSubstrCol, rdkitModule);
 
-    this.mmpGridTrans.dataFrame.filter.copyFrom(this.mmpMaskTrans);
-
     if (idxPairs >= 0) {
-      const order = [idxPairs].concat([...Array(this.mmpGridTrans.dataFrame.rowCount).keys()]
-        .filter((it) => it !== idxPairs));
-      this.mmpGridTrans.setRowOrder(order);
+      const col = this.mmpGridTrans.dataFrame.col(MMP_NAMES.FROM);
+      const molecule = col?.get(idxPairs);
+      this.mmpGridTrans.dataFrame.col(MMP_NAMES.FROM)!.valueComparer = (s1: string) => s1 === molecule ? -1 : 1;
+      this.mmpGridTrans.sort([MMP_NAMES.FROM], [true]);
     }
+
+    this.mmpGridTrans.dataFrame.filter.copyFrom(this.mmpMaskTrans);
 
     progressBarPairs.close();
   }
