@@ -11,7 +11,7 @@ import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-ut
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import {hasAddControls, PipelineWithAdd} from '../../utils';
 
-const statusToIcon = {
+const statusToIcon: Record<Status, string> = {
   ['next']: 'arrow-right',
   ['next warn']: 'arrow-right',
   ['next error']: 'arrow-right',
@@ -19,25 +19,27 @@ const statusToIcon = {
   [`pending executed`]: 'dot-circle',
   ['running']: 'hourglass-half',
   ['succeeded']: 'check-circle',
+  ['succeeded info']: 'check-circle',
   ['succeeded warn']: 'dot-circle',
   ['succeeded inconsistent']: 'dot-circle',
   ['failed']: 'times-circle',
-} as Record<Status, string>;
+};
 
-const statusToColor = {
+const statusToColor: Record<Status, string> = {
   ['next']: 'green',
   ['next warn']: 'orange',
-  ['next error']: 'blue',
+  ['next error']: 'black',
   [`pending`]: 'gray',
   [`pending executed`]: 'gray',
   ['running']: 'blue',
   ['succeeded']: 'green',
+  ['succeeded info']: 'blue',
   ['succeeded warn']: 'orange',
   ['succeeded inconsistent']: 'red',
   ['failed']: 'red',
-} as Record<Status, string>;
+};
 
-const statusToTooltip = {
+const statusToTooltip: Record<Status, string> = {
   [`next`]: `This step is avaliable to run`,
   [`next warn`]: `This step is avaliable to run, but has warnings`,
   [`next error`]: `This step has validation errors`,
@@ -45,10 +47,11 @@ const statusToTooltip = {
   ['pending executed']: 'This step has changed dependencies',
   ['running']: 'This step is running',
   ['succeeded']: 'This step is succeeded',
+  ['succeeded info']: 'This step is succeeded with changes',
   ['succeeded warn']: 'This step is succeeded, but has warnings',
   ['succeeded inconsistent']: 'This step is succeeded, but has inconsistent inputs',
   ['failed']: 'Run failed',
-} as Record<Status, string>;
+};
 
 const statesToStatus = (
   callState: FuncCallStateInfo,
@@ -65,6 +68,8 @@ const statesToStatus = (
       return 'succeeded inconsistent';
     if (hasWarnings(validationsState) || hasErrors(validationsState))
       return 'succeeded warn';
+    if (hasChanges(consistencyStates))
+      return 'succeeded info';
     return 'succeeded';
   }
   if (hasErrors(validationsState))
@@ -88,6 +93,12 @@ const hasWarnings = (validationsState?: Record<string, ValidationResult>) => {
 const hasInconsistencies = (consistencyStates?: Record<string, ConsistencyInfo>) => {
   const firstInconsistency = Object.values(consistencyStates || {}).find(
     val => val.inconsistent && (val.restriction === 'disabled' || val.restriction === 'restricted'));
+  return firstInconsistency;
+}
+
+const hasChanges = (consistencyStates?: Record<string, ConsistencyInfo>) => {
+  const firstInconsistency = Object.values(consistencyStates || {}).find(
+    val => val.inconsistent && (val.restriction === 'info'));
   return firstInconsistency;
 }
 

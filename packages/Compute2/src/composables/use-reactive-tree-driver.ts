@@ -126,6 +126,10 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
     driver.sendCommand({ event: 'runAction', uuid: actionUuid})
   }
 
+  const consistencyReset = (stepUuid: string, ioName: string) => {
+    driver.sendCommand({ event: 'resetToConsistent', stepUuid, ioName });
+  }
+
   const addStep = (parentUuid: string, itemId: string, position: number) => {
     driver.sendCommand({event: 'addDynamicItem', parentUuid, itemId, position});
   };
@@ -156,6 +160,7 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
     saveDynamicItem,
     runStep,
     runSequence,
+    consistencyReset,
     runAction,
     addStep,
     removeStep,

@@ -238,7 +238,7 @@ export class FuncCallNode implements IStoreProvider {
 
   private getConsistencyChanges(): Observable<Record<string, ConsistencyInfo>> {
     const valueUpdates = this.instancesWrapper.getStateNames().map(
-      (name) => this.instancesWrapper.getStateChanges(name).pipe(skip(1), mapTo(name)));
+      (name) => this.instancesWrapper.getStateChanges(name, true).pipe(skip(1), mapTo(name)));
     const restrictionUpdates = this.instancesWrapper.inputRestrictionsUpdates$.pipe(map(([name]) => name));
     const inputUpdatesChecker$ = merge(...[...valueUpdates, restrictionUpdates]).pipe(
       withLatestFrom(this.instancesWrapper.inputRestrictions$),

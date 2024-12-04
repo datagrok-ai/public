@@ -14,6 +14,8 @@ function addPopover(icon: HTMLElement) {
 }
 
 function displayValidation(
+  emit: Function,
+  ioName: string,
   input: DG.InputBase,
   status: {
     validation?: ValidationResultBase,
@@ -21,7 +23,7 @@ function displayValidation(
   }, icon: HTMLElement, popover: HTMLElement) {
   alignPopover(icon, popover);
   ui.empty(popover);
-  const content = renderValidationResults(input, status);
+  const content = renderValidationResults(emit, ioName, input, status);
   popover.appendChild(content);
   popover.showPopover();
 }
@@ -44,6 +46,8 @@ function stylePopover(popover: HTMLElement): void {
 }
 
 function renderValidationResults(
+  emit: Function,
+  ioName: string,
   input: DG.InputBase,
   status: {
     validation?: ValidationResultBase,
@@ -66,7 +70,10 @@ function renderValidationResults(
             ui.span([advice.description]),
           ]),
           ...(advice.actions ?? []).map(
-            (action) => ui.link(action.actionName, action.action, undefined, {style: {paddingLeft: '20px'}})),
+            (action) => ui.link(
+              action.actionName,
+              emit('actionRequested', action.action),
+              undefined, {style: {paddingLeft: '20px'}})),
         ]));
       });
   }
@@ -87,7 +94,7 @@ function renderValidationResults(
       ]),
       ui.link(
         'Reset to consistent value',
-        () => input.value = (consistentValue instanceof DG.DataFrame) ? consistentValue.clone() : consistentValue,
+        () => emit('consistencyReset', ioName),
         undefined, {style: {paddingLeft: '20px'}},
       ),
     ]));
@@ -107,6 +114,8 @@ function getIconOptions(category: 'errors' | 'warnings' | 'notifications' | 'inc
 }
 
 export function getValidationIcon(
+  emit: Function,
+  ioName: string,
   input: DG.InputBase,
   status: {
   validation?: ValidationResultBase,
@@ -129,7 +138,7 @@ export function getValidationIcon(
 
   if (!iconOptions) return null;
 
-  const icon = ui.iconFA(iconOptions.name, () => {displayValidation(input, status, icon, popover);});
+  const icon = ui.iconFA(iconOptions.name, () => {displayValidation(emit, ioName, input, status, icon, popover);});
   $(icon).css({'pointer-events': 'all'});
   if (iconOptions.color) $(icon).css('color', `${iconOptions.color}!important`);
   if (iconOptions.class) $(icon).addClass(iconOptions.class);
@@ -140,7 +149,7 @@ export function getValidationIcon(
   return [icon, popover] as const;
 }
 
-export const injectInputBaseStatus = (t: DG.InputBase) => {
+export const injectInputBaseStatus = (emit: Function, ioName: string, t: DG.InputBase) => {
   const validationIndicator = ui.element('i');
   $(validationIndicator).addClass('rfv2-validation-icon');
   t.addOptions(validationIndicator);
@@ -152,7 +161,7 @@ export const injectInputBaseStatus = (t: DG.InputBase) => {
     const {validation, consistency} = status;
 
     while (validationIndicator.firstChild && validationIndicator.removeChild(validationIndicator.firstChild));
-    const iconAndPopover = getValidationIcon(t, {validation, consistency});
+    const iconAndPopover = getValidationIcon(emit, ioName, t, {validation, consistency});
     if (iconAndPopover) {
       validationIndicator.appendChild(iconAndPopover[0]);
       validationIndicator.appendChild(iconAndPopover[1]);

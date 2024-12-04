@@ -55,6 +55,7 @@ export const TreeWizard = Vue.defineComponent({
       saveDynamicItem,
       runStep,
       runSequence,
+      consistencyReset,
       runAction,
       addStep,
       removeStep,
@@ -229,22 +230,22 @@ export const TreeWizard = Vue.defineComponent({
         dialog.onMetadataEdit.pipe(take(1)).subscribe((editOptions) => {
           savePipeline(editOptions)
         });
-  
+
         dialog.show({center: true, width: 500})
         return;
-      } 
+      }
 
       if (chosenStepUuid.value) {
         const chosenStepDesc = states.descriptions[chosenStepUuid.value];
         const dialog = new EditDialog({
-          title: typeof(chosenStepDesc?.title) === 'string' ? chosenStepDesc?.title : '', 
-          description: typeof(chosenStepDesc?.description) === 'string' ? chosenStepDesc?.description : '', 
+          title: typeof(chosenStepDesc?.title) === 'string' ? chosenStepDesc?.title : '',
+          description: typeof(chosenStepDesc?.description) === 'string' ? chosenStepDesc?.description : '',
           tags: Array.isArray(chosenStepDesc?.tags) ? chosenStepDesc?.tags : [],
         });
         dialog.onMetadataEdit.pipe(take(1)).subscribe((editOptions) => {
           saveDynamicItem(chosenStepUuid.value!, editOptions)
         });
-  
+
         dialog.show({center: true, width: 500})
         return;
       }
@@ -371,6 +372,7 @@ export const TreeWizard = Vue.defineComponent({
                 onUpdate:funcCall={(call) => (chosenStepState.value as StepFunCallState).funcCall = call}
                 onRunClicked={() => runStep(chosenStepState.value!.uuid)}
                 onActionRequested={runAction}
+                onConsistencyReset={(ioName) => consistencyReset(chosenStepUuid.value!, ioName)}
                 dock-spawn-title='Step review'
                 ref={rfvRef}
               />

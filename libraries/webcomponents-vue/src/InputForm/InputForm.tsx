@@ -43,6 +43,7 @@ export const InputForm = Vue.defineComponent({
   emits: {
     formReplaced: (a: DG.InputForm | undefined) => a,
     actionRequested: (actionUuid: string) => actionUuid,
+    consistencyReset: (ioName: string) => ioName,
   },
   setup(props, {emit}) {
     const currentCall = Vue.computed(() => props.funcCall);
@@ -66,20 +67,6 @@ export const InputForm = Vue.defineComponent({
 
     const currentForm = Vue.ref(undefined as undefined | DG.InputForm);
 
-    const convertNewValidationToOld = (newResult: ValidationResult): ValidationResultBase => {
-      const convert = (error: Advice) => ({
-        description: error.description,
-        actions: error.actions?.map((actionItem) => ({actionName: actionItem.actionName, action: () => {
-          emit('actionRequested', actionItem.action);
-        }})),
-      });
-      return {
-        errors: newResult.errors?.map(convert),
-        warnings: newResult.warnings?.map(convert),
-        notifications: newResult.notifications?.map(convert),
-      };
-    };
-
     Vue.watchEffect(() => {
       if (!currentForm.value) return;
 
@@ -91,10 +78,10 @@ export const InputForm = Vue.defineComponent({
           const consistencyState = consistencyStates.value?.[param.property.name];
 
           if (!isInputInjected(input))
-            injectInputBaseStatus(input);
+            injectInputBaseStatus(emit, param.property.name, input);
 
           (input as any).setStatus({
-            validation: validationState ? convertNewValidationToOld(validationState): undefined,
+            validation: validationState,
             consistency: consistencyState,
           });
 

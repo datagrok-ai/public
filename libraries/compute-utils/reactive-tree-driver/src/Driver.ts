@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, Observable, Subject, EMPTY, of, from, combineLatest} from 'rxjs';
 import {isFuncCallSerializedState, PipelineState} from './config/PipelineInstance';
-import {AddDynamicItem, InitPipeline, LoadDynamicItem, LoadPipeline, MoveDynamicItem, RemoveDynamicItem, RunAction, RunSequence, RunStep, SaveDynamicItem, SavePipeline, ViewConfigCommands} from './view/ViewCommunication';
+import {AddDynamicItem, InitPipeline, LoadDynamicItem, LoadPipeline, MoveDynamicItem, RemoveDynamicItem, ResetToConsistent, RunAction, RunSequence, RunStep, SaveDynamicItem, SavePipeline, ViewConfigCommands} from './view/ViewCommunication';
 import {pairwise, takeUntil, concatMap, catchError, switchMap, map, mapTo, startWith, withLatestFrom, tap, distinctUntilChanged, filter} from 'rxjs/operators';
 import {StateTree} from './runtime/StateTree';
 import {loadInstanceState} from './runtime/funccall-utils';
@@ -155,6 +155,8 @@ export class Driver {
       return this.runSequence(msg, state);
     case 'savePipeline':
       return this.savePipeline(msg, state);
+    case 'resetToConsistent':
+      return this.resetToConsistent(msg, state);
     case 'loadPipeline':
       return this.loadPipeline(msg);
     case 'initPipeline':
@@ -210,6 +212,11 @@ export class Driver {
   private runSequence(msg: RunSequence, state?: StateTree) {
     this.checkState(msg, state);
     return state.runSequence(msg.startUuid);
+  }
+
+  private resetToConsistent(msg: ResetToConsistent, state?: StateTree) {
+    this.checkState(msg, state);
+    return state.resetToConsistent(msg.stepUuid, msg.ioName);
   }
 
   private savePipeline(msg: SavePipeline, state?: StateTree) {

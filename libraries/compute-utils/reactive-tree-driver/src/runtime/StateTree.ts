@@ -396,6 +396,20 @@ export class StateTree {
       return action.exec(additionalParams);
   }
 
+  public resetToConsistent(uuid: string, ioName: string) {
+    return this.withTreeLock(() => {
+      const data = this.nodeTree.find((item) => item.uuid === uuid)
+      if (!data)
+        return of(undefined);
+      const [node] = data;
+      const item = node.getItem();
+      if (!isFuncCallNode(item))
+        return of(undefined);
+      item.instancesWrapper.setToConsistent(ioName);
+      return of(undefined);
+    });
+  }
+
   public close() {
     this.nodeTree.traverse(this.nodeTree.root, (acc, node) => {
       const item = node.getItem();

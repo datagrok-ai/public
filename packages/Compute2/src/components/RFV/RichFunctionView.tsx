@@ -132,8 +132,9 @@ export const RichFunctionView = Vue.defineComponent({
   },
   emits: {
     'update:funcCall': (call: DG.FuncCall) => call,
-    'runClicked': () => {},
-    'actionRequested': (actionUuid: string) => actionUuid,
+    runClicked: () => {},
+    actionRequested: (actionUuid: string) => actionUuid,
+    consistencyReset: (ioName: string) => ioName,
   },
   methods: {
     savePersonalState: () => {},
@@ -462,6 +463,7 @@ export const RichFunctionView = Vue.defineComponent({
                     validationStates={validationState.value}
                     consistencyStates={props.consistencyStates}
                     onActionRequested={(actionUuid) => emit('actionRequested', actionUuid)}
+                    onConsistencyReset={(ioName) => emit('consistencyReset', ioName)}
                     isReadonly={props.isReadonly}
                   />, [[ifOverlapping, isRunning.value, 'Recalculating...']])
                 }

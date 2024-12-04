@@ -1,4 +1,5 @@
 import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, of, combineLatest, Observable, defer, Subject, merge, EMPTY} from 'rxjs';
 import {switchMap, map, takeUntil, finalize, mapTo, skip, distinctUntilChanged, withLatestFrom, filter, catchError, tap} from 'rxjs/operators';
 import {IFuncCallAdapter, IRunnableWrapper, IStateStore} from './FuncCallAdapters';
@@ -12,6 +13,7 @@ export interface RestrictionState {
 
 export interface IRestrictionStore {
   setRestriction<T = any>(name: string, value: T | undefined, restrictionType?: RestrictionType): void;
+  setToConsistent(name: string): void;
   removeRestriction(name: string): void;
 }
 
@@ -118,7 +120,8 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
     const currentInstance = this.instance$.value?.adapter;
     if (currentInstance == null)
       throw new Error(`Attempting to set an empty FuncCallInstancesBridge`);
-    const restrictionPayload = restrictionType === 'none' ? undefined : {assignedValue: val, type: restrictionType};
+    const assignedValue = val instanceof DG.DataFrame ? val.clone() : val;
+    const restrictionPayload = restrictionType === 'none' ? undefined : {assignedValue, type: restrictionType};
     this.inputRestrictions$.next({
       ...this.inputRestrictions$.value,
       [id]: restrictionPayload,
@@ -155,12 +158,26 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
     const currentInstance = this.instance$.value?.adapter;
     if (currentInstance == null)
       throw new Error(`Attempting to set restriction on an empty FuncCallInstancesBridge`);
-    const restrictionPayload = restrictionType === 'none' ? undefined : {assignedValue: val, type: restrictionType};
+    const assignedValue = val instanceof DG.DataFrame ? val.clone() : val;
+    const restrictionPayload = restrictionType === 'none' ? undefined : {assignedValue, type: restrictionType};
     this.inputRestrictions$.next({
       ...this.inputRestrictions$.value,
       [id]: restrictionPayload,
     });
     this.inputRestrictionsUpdates$.next([id, restrictionPayload] as const);
+  }
+
+  setToConsistent(id: string) {
+    const currentInstance = this.instance$.value?.adapter;
+    if (currentInstance == null)
+      throw new Error(`Attempting to set an empty FuncCallInstancesBridge`);
+    const currentRestriction = this.inputRestrictions$.value?.[id];
+    if (!this.isReadonly && currentRestriction) {
+      const consistentVal = currentRestriction.assignedValue instanceof DG.DataFrame ?
+        currentRestriction.assignedValue.clone() :
+        currentRestriction.assignedValue;
+      currentInstance.setState(id, consistentVal, currentRestriction.type);
+    }
   }
 
   setValidation(id: string, validatorId: string, validation: ValidationResult | undefined) {
