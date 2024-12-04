@@ -44,11 +44,17 @@ export class InputForm extends HTMLElement {
 
     setTimeout(() => {
       fcInputs.forEach(([paramName, paramValue]) => {
-        this.formInst!.getInput(paramName).value = paramValue;
+        const input = this.formInst!.getInput(paramName);
+        input.notify = false;
+        try {
+          input.value = paramValue;
+        } finally {
+          input.notify = true;
+        }
       });
       this.formInst!.onInputChanged
         .subscribe((event) => this.dispatchEvent(new CustomEvent('input-changed', {detail: event})));
-    },0);
+    }, 0);
   }
 
   private attach() {
