@@ -1196,7 +1196,7 @@ export class AddNewColumnDialog {
     this.call.setParamValue('treatAsString', this.getSelectedType()[1]);
     if (!this.edit)
       this.call.setParamValue('subscribeOnChanges', true);
-    await this.call.call();
+    await this.call.call(false, undefined, {processed: false});
   }
 
   /** Closes Add New Column Dialog Window. */
