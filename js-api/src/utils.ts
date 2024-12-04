@@ -240,7 +240,6 @@ export class Utils {
     let countSkipped = 0;
     let countFailed = 0;
     let resultDF: DataFrame | undefined = undefined;
-    DG.Test.isReproducing = true;
     for (let testParam of testsParams) {
       let df: DataFrame = await grok.functions.call(testParam.package + ':test', testParam.params);
       let flakingCol = DG.Column.fromType(DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount); 
