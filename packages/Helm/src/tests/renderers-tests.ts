@@ -55,6 +55,8 @@ category('renderers', () => {
       return $(tv.root).find('.d4-grid canvas').length > 0;
     }, 'Table view canvas not found', 100);
 
+    await grok.data.detectSemanticTypes(df);
+
     expect(helmCol.semType, DG.SEMTYPE.MACROMOLECULE);
     expect(helmCol.meta.units, NOTATION.HELM);
     expect(helmCol.getTag(DG.TAGS.CELL_RENDERER), 'helm');
@@ -78,6 +80,7 @@ RNA1{d(A)p.d(C)p.d(G)p.d(U)p}|PEPTIDE1{I.H.A.N.T.Thr_PO3H2}$$$$,0,1
     const df = DG.DataFrame.fromCsv(helmCoordsCsv);
     df.currentRowIdx = 0;
     const view = grok.shell.addTableView(df);
+    await grok.data.detectSemanticTypes(df);
     const sp: DG.ScatterPlotViewer = df.plot.scatter({x: 'x', y: 'y'});
     view.dockManager.dock(sp, DG.DOCK_TYPE.RIGHT, null);
     await Promise.all([
