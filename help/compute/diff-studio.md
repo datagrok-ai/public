@@ -88,49 +88,14 @@ Explore the relationship between inputs and outputs of your model using the [Sen
 
 ## Creating models
 
+Turn on the **Edit** toggle on the top panel. Equations editor opens. Edit formulas or add new ones.
+Click <i class="fas fa-sync"></i> **Refresh** or press **F5** to apply changes.
 
+![Edit model](pics/diff-studio-edit-model.gif)
 
+Go to **Browse > Apps > Compute > Diff Studio** and explore models from **Templates** and **Library**. They cover all capabilities of Diff Studio.
 
-* Turn on the **Edit** toggle on the top panel. Equations editor opens. Edit formulas or add new ones.
-* Click <i class="fas fa-sync"></i> **Refresh** or press **F5** to apply changes.
-
-Describe how to launch and the basic stuff
-
-
-
-
-
-## Using Diff Studio
-
-### Running Diff Studio
-
-
-
-
-
-### Loading and saving data
-
-Click the **Save** button on the top panel to save model to your platform files (**Browse > Files > My files**)
-
-* **To save model** to your platform files (**Browse > Files > My files**), click the **Save** button on the top panel.
-* Click <i class="fas fa-arrow-to-bottom"></i> **Download** to save model to a local file. Find the *ivp*-file in Downloads. You can open and edit this file using any text editor.
-* **To load model** from a local file, click <i class="fas fa-folder-open d4-combo-popup" style="min-width: 0px; cursor: default"></i> **Open**, choose **Import...** option and choose a local file to upload.
-* **Drag-n-drop** your *ivp*-file to Datagrok. Diff Studio will open it and load formulas. You can open *ivp*-files stored in the platform.
-
-
-
-
-### Sensitivity analysis
-
-
-
-### Parameter Optimization
-
-
-
-## Creating a custom differential equation model
-
-### Basic model
+### Syntax and templates
 
 A minimal model defining and solving ordinary differential equations contains
 *name*, *differential equations*, *initial values* and *argument* specifications.
@@ -138,7 +103,7 @@ A minimal model defining and solving ordinary differential equations contains
 Use the `#name` keyword to define the name of your model:
 
 ```python
-#name: Problem1
+#name: Problem 1
 ```
 
 Place differential equations in the `#equations` block. You can add as many equations as you want.
@@ -168,10 +133,6 @@ Define initial values of the functions in the `#inits` block:
   x = 2
   y = 5
 ```
-
-### Advanced model
-
-Use the advanced features to improve your model.
 
 Use `#comment` block to write a comment in any place of your model
 
@@ -227,13 +188,7 @@ To customize the computation output, select columns and their captions in the `o
 
 ![Customize output](pics/diff-studio-output.gif)
 
-Set [tolerance](https://pythonnumericalmethods.berkeley.edu/notebooks/chapter19.02-Tolerance.html) of the numerical method in the `#tolerance`-line:
-
-```python
-#tolerance: 0.00005
-```
-
-### Cyclic process simulation
+#### Cyclic process simulation
 
 Datagrok provides special capabilities for modeling cyclic processes.
 
@@ -256,7 +211,7 @@ You can set new values for parameters and change values for functions.
 
 ![Multi-stage model - loop](pics/diff-studio-loop.gif)
 
-### Multistage model
+#### Multistage model
 
 Use the `#update` feature to construct models with multiple sequential processes (stages).
 
@@ -281,16 +236,69 @@ You can add any number of `update` blocks. Simulation stages are marked with a c
 
 ![Multi-stage model - update](pics/diff-studio-update.gif)
 
-## Usability improvements
+#### Solver settings
 
-For all Diff Studio parameters, you can add annotations described in
-[functional annotations](../datagrok/concepts/functions/func-params-annotation.md).
-When you convert your model into the Datagrok script,
-Diff Studio converts it to the script input annotations,
-allowing Datagrok to automatically create rich and self-explaining UI.
+Manage the solver of ODEs to improve performance. Specify its settings in the `#meta.solver`-line:
 
-Define the desired captions for the input parameters.
-If no caption is provided, Datagrok will use variable name.
+* the numerical method (`method`)
+* the maximum number of iterations (`maxIterations`)
+* the maximum computation time (`maxTimeMs`)
+
+Diff Studio implements the following [Rosenbrock–Wanner](https://doi.org/10.1016/j.cam.2015.03.010) methods for solving ODEs:
+
+|Method|Value|
+|-------------|--------|
+|The modified Rosenbrock triple|`'mrt'`|
+|The ROS3PRw method|`'ros3prw'`|
+|The ROS34PRw method|`'ros34prw'`|
+
+By default, Diff Studio uses ROS34PRw and alerts you if computations take too long. The default time limit is 5 seconds. To customize it, set the maximum computation time (in milliseconds):
+
+```python
+#meta.solver: {method: 'mrt'; maxTimeMs: 50}
+```
+
+Set the maximum number of iterations to debug formulas in complex models.
+
+Set [tolerance](https://pythonnumericalmethods.berkeley.edu/notebooks/chapter19.02-Tolerance.html) of the numerical method in the `#tolerance`-line:
+
+```python
+#tolerance: 0.00005
+```
+
+#### Lookup tables
+
+Lookup tables are pre-defined sets of model input values. They're organized as follows:
+
+||x|y|...|
+|-----|-----|-----|---|
+|Set 1|1|2|...|
+|Set 2|3|4|...|
+
+To use a lookup table:
+
+* Create a CSV file with your table and add it to your project
+* Add the `#meta.inputs`-line to your model and specify a CSV file with a lookup table:
+
+```python
+#meta.inputs: table {choices: OpenFile("System:AppData/DiffStudio/inputs.csv")}
+```
+
+* To improve usability, define `caption`, `category` and a tooltip:
+
+```python
+#meta.inputs: table {choices: OpenFile("System:AppData/DiffStudio/inputs.csv"); caption: Mode; category: Settings} [Hint]
+```
+
+Use the interface to select inputs and compare model runs:
+
+![table-lookups](pics/diff-studio-table-lookups.gif)
+
+### Input options
+
+Diff Studio automatically creates UI. Annotate model inputs to improve usability.
+
+Define the desired captions for the input parameters. If no caption is provided, Diff Studio will use variable name.
 
 ```python
 #argument: t
@@ -410,84 +418,7 @@ The `Pollution` example describes a chemical reaction part of the air [pollution
 Datagrok's ODEs suite has tools for solving both stiff and non-stiff equations. Combine Diff Studio
 with [viewers](../visualize/viewers/viewers.md) and [compute](compute.md) tools to explore complex models.
 
-## Platform script generation
-
-You can convert any Diff Studio project to the Datagrok script:
-
-1. Turn on the **Edit** toggle on the top panel.
-2. Click **</>** icon. Script editor opens in a new view.
-3. Click the **SAVE** button.
-4. Script is created, and can be found in the "Scripts" section of the platform.
-
-Find the created JavaScript script in the platform `Scripts` (**Browse > Platform > Functions > Scripts**).
-
-Use `#tags: model` to add your model to the `Model Catalog`.
-Provide a description in the `#description` line:
-
-```python
-#name: Bioreaction
-#tags: model
-#description: Complex bioreaction simulation
-```
-
-The export feature provides an extension of your project with [scripting](scripting/scripting.mdx) tools. Apply it to get:
-
-* non-elementary and special functions' use
-* Datagrok packages' functions call
-
-## Solver settings
-
-Manage the solver of ODEs to improve performance. Specify its settings in the `#meta.solver`-line:
-
-* the numerical method (`method`)
-* the maximum number of iterations (`maxIterations`)
-* the maximum computation time (`maxTimeMs`)
-
-Diff Studio implements the following [Rosenbrock–Wanner](https://doi.org/10.1016/j.cam.2015.03.010) methods for solving ODEs:
-
-|Method|Value|
-|-------------|--------|
-|The modified Rosenbrock triple|`'mrt'`|
-|The ROS3PRw method|`'ros3prw'`|
-|The ROS34PRw method|`'ros34prw'`|
-
-By default, Diff Studio uses ROS34PRw and alerts you if computations take too long. The default time limit is 5 seconds. To customize it, set the maximum computation time (in milliseconds):
-
-```python
-#meta.solver: {method: 'mrt'; maxTimeMs: 50}
-```
-
-Set the maximum number of iterations to debug formulas in complex models.
-
-## Lookup tables
-
-Lookup tables are pre-defined sets of model input values. They're organized as follows:
-
-||x|y|...|
-|-----|-----|-----|---|
-|Set 1|1|2|...|
-|Set 2|3|4|...|
-
-To use a lookup table:
-
-* Create a CSV file with your table and add it to your project
-* Add the `#meta.inputs`-line to your model and specify a CSV file with a lookup table:
-
-```python
-#meta.inputs: table {choices: OpenFile("System:AppData/DiffStudio/inputs.csv")}
-```
-
-* To improve usability, define `caption`, `category` and a tooltip:
-
-```python
-#meta.inputs: table {choices: OpenFile("System:AppData/DiffStudio/inputs.csv"); caption: Mode; category: Settings} [Hint]
-```
-
-Use the interface to select inputs and compare model runs:
-
-![table-lookups](pics/diff-studio-table-lookups.gif)
-
-## Syntax
+## Syntax reference
 
 Diff Studio lets you define model in a declarative form using simple syntax:
 
@@ -519,8 +450,42 @@ To improve [usability](#usability-improvements), you can annotate model inputs u
 |**units**|Input measure units|
 |**min**, **max**|Input min and max values, respectively. Use them to get sliders for UI input|
 
-## See also
+## Platform script generation
 
-* [Stiff equations](https://en.wikipedia.org/wiki/Stiff_equation)
-* [Numerical methods for ODEs](https://en.wikipedia.org/wiki/Numerical_methods_for_ordinary_differential_equations)
-* [Rosenbrock–Wanner method](https://doi.org/10.1016/j.cam.2015.03.010)
+For all Diff Studio parameters, you can add annotations described in
+
+When you convert your model into the Datagrok script,
+Diff Studio converts it to the script input annotations,
+allowing Datagrok to automatically create rich and self-explaining UI.
+
+You can convert any Diff Studio model to the Datagrok script:
+
+1. Turn on the **Edit** toggle on the top panel.
+2. Click **</>** icon. Script editor opens in a new view.
+3. Click the **SAVE** button.
+4. Script is created, and can be found in the "Scripts" section of the platform.
+
+Find the created JavaScript script in the platform `Scripts` (**Browse > Platform > Functions > Scripts**).
+
+Use `#tags: model` to add your model to the `Model Catalog`.
+Provide a description in the `#description` line:
+
+```python
+#name: Bioreaction
+#tags: model
+#description: Complex bioreaction simulation
+```
+
+The export feature provides an extension of your project with [scripting](scripting/scripting.mdx) tools. Apply it to get:
+
+* non-elementary and special functions' use
+* Datagrok packages' functions call
+
+## Videos
+
+[![UGM](diff-studio-ugm.png "Open on Youtube")](https://www.youtube.com/watch?v=RS163zKe7s8&t=160s)
+
+See also
+
+* [Compute](compute.md)
+* [Function annotations](../datagrok/concepts/functions/func-params-annotation.md)
