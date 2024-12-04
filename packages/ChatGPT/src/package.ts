@@ -43,7 +43,7 @@ export async function ask(question: string): Promise<string> {
     model: 'gpt-4', // Or whichever model you want to use
     messages: [{ role: 'user', content: question }],
     max_tokens: 100,
-    temperature: 0.7
+    temperature: temperature
   });
 
   return result.message.content;
@@ -75,7 +75,7 @@ export async function askFun(question: string): Promise<string> {
     return props;
   }
 
-  const functions = DG.Func.find({package: 'Core'}).map((f) => {
+  const functions = DG.Func.find({package: 'Admetica'}).map((f) => {
     return {
       name: f.name,
       description: f.description,
@@ -92,9 +92,24 @@ export async function askFun(question: string): Promise<string> {
       { role: 'system', content: 'You are a helpful assistant that can call JavaScript functions when needed.' },
       { role: 'user', content: question }
     ],
-    functions: functions
+    functions: functions,
+    function_call: "auto"
   });
 
-  console.log(result);
+  if (result.message.function_call) {
+    const functionName = result.message.function_call.name;
+    const parameters = result.message.function_call.arguments;
+    const functionResult = await executeFunction(functionName, JSON.parse(parameters));
+    return functionResult;
+  }
   return JSON.stringify(result);
+}
+
+async function executeFunction(functionName: string, parameters: any) {
+  const func = DG.Func.find({name: functionName})[0];
+  if (func) {
+    const result = await func.apply(parameters);
+    return result;
+  }
+  throw new Error(`Function ${functionName} not found`);
 }
