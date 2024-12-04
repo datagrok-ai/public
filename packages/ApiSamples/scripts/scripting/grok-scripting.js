@@ -1,3 +1,2 @@
-grok.functions
-  .eval('OpenServerFile("System:DemoFiles/beer.csv")')
-  .then((t) => grok.shell.addTableView(t[0]));
+let t = await grok.functions.eval('OpenServerFile("System:DemoFiles/beer.csv")');
+grok.shell.addTableView(t[0]);

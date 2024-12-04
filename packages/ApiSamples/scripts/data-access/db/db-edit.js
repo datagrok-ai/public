@@ -5,7 +5,7 @@ const dbEdit = (t) => {
   const dbIdColumnName = 'id';
 
   let v = grok.shell.addTableView(t);
-  v.grid.onCellValueEdited.subscribe((c) => {
+  v.grid.onCellValueEdited.subscribe(async (c) => {
     const idColumnName = 'id'
     const dbColumnName = c.cell.column.tags['DbColumn'];
     const sql =
@@ -14,14 +14,11 @@ const dbEdit = (t) => {
       ' where ' + dbIdColumnName + " = '" + c.cell.row.get(idColumnName) + "'";
 
     grok.shell.info('Executing ' + sql);
-
-    grok.data.db
-      .query('System:Datagrok', sql)
-      .then(r => grok.shell.info('Success!'))
-      .catch(e => grok.shell.error(e));
+ 
+    await grok.data.db.query('System:Datagrok', sql);
+    grok.shell.info('Success!'); 
   });
 }
 
-grok.data.db
-  .query('System:Datagrok', 'select * from models')
-  .then(dbEdit);
+await grok.data.db.query('System:Datagrok', 'select * from models');
+dbEdit;
