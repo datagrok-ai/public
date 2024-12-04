@@ -34,8 +34,8 @@ export async function saveFuncCall(bridge: FuncCallInstancesBridge) {
     throw new Error(`FuncCall node saving during being updated`);
 
   // TODO: DF restrictions better handling
-  fc.options[RESTRICTIONS_PATH] = serialize(bridge.inputRestrictions$.value, {useJsonDF: true});
-  fc.options[OUTPUT_OUTDATED_PATH] = serialize(bridge.isOutputOutdated$.value, {useJsonDF: true});
+  fc.options[RESTRICTIONS_PATH] = serialize(bridge.inputRestrictions$.value, {useJsonDF: false});
+  fc.options[OUTPUT_OUTDATED_PATH] = serialize(bridge.isOutputOutdated$.value, {useJsonDF: false});
   fc.options[RUN_ERROR_PATH] = bridge.runError$.value;
 
   fc.newId();
@@ -67,7 +67,7 @@ export async function saveInstanceState(
   metaData?: ItemMetadata,
 ) {
   const metaCall = await makeMetaCall(nqName);
-  metaCall.options[CONFIG_PATH] = serialize(state, {useJsonDF: true});
+  metaCall.options[CONFIG_PATH] = serialize(state, {useJsonDF: false});
   if (metaData?.title) metaCall.options['title'] = metaData.title;
   if (metaData?.description) metaCall.options['description'] = metaData.description;
   if (metaData?.tags) metaCall.options['tags'] = metaData.tags;
