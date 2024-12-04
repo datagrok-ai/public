@@ -331,6 +331,8 @@ export async function runWorker(testExecutionData: OrganizedTests[], workerOptio
         (<any>window).DG.Test.isInBenchmark = true;
       if (options.reproduce)
         (<any>window).DG.Test.isReproducing = true;
+      if (options.ciCd)
+        (<any>window).DG.Test.isCiCd = true;
 
       return new Promise<any>((resolve, reject) => {
         (<any>window).DG.Utils.executeTests(testData, options.stopOnTimeout)
@@ -406,7 +408,7 @@ export async function mergeWorkersResults(workersResults: ResultObject[]): Promi
 export interface WorkerOptions {
   path?: string, catchUnhandled?: boolean, core?: boolean,
   report?: boolean, record?: boolean, verbose?: boolean, benchmark?: boolean, platform?: boolean, category?: string, test?: string,
-  stressTest?: boolean, gui?: boolean, stopOnTimeout?: boolean, reproduce?: boolean
+  stressTest?: boolean, gui?: boolean, stopOnTimeout?: boolean, reproduce?: boolean, ciCd?: boolean,
 }
 
 export type ResultObject = {

@@ -820,7 +820,8 @@ export namespace Test {
    * different conditions, etc.
    * */
   export let isInBenchmark = false;
-  export let isReproducing   = false;
+  export let isReproducing = false;
+  export let isCiCd = false;
 
   export function getTestDataGeneratorByType(type: string) {
     return api.grok_Test_GetTestDataGeneratorByType(type);

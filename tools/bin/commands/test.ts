@@ -16,7 +16,7 @@ import { setAlphabeticalOrder } from '../utils/order-functions';
 const testInvocationTimeout = 3600000;
 
 const availableCommandOptions = ['host', 'package', 'csv', 'gui', 'catchUnhandled', 'platform', 'core',
-  'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test', 'link', 'tag'];
+  'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test', 'link', 'tag', 'ci-cd'];
 
 const curDir = process.cwd();
 const grokDir = path.join(os.homedir(), '.grok');
@@ -112,6 +112,7 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
         record: args.record ?? false,
         report: args.report ?? false,
         verbose: args.verbose ?? false,
+        ciCd: args['ci-cd'] ?? false,
         stopOnTimeout: true
       }, workerId, testInvocationTimeout);
       let testsLeft: OrganizedTest[] = [];
@@ -151,7 +152,8 @@ async function reproducedTest(args: TestArgs, testsToReproduce: OrganizedTest[])
       report: false,
       verbose: false,
       stopOnTimeout: true,
-      reproduce: true
+      reproduce: true,
+      ciCd: args['ci-cd'] ?? false
     }, 0, testInvocationTimeout);
     if (test.params.category && test.params.test)
       res.set(test, r);
@@ -211,4 +213,5 @@ interface TestArgs {
   platform?: boolean,
   core?: boolean,
   'stress-test'?: boolean,
+  'ci-cd'?: boolean
 } 
