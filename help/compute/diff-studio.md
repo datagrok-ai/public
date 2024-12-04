@@ -483,7 +483,7 @@ The export feature provides an extension of your project with [scripting](script
 
 ## Videos
 
-[![UGM](diff-studio-ugm.png "Open on Youtube")](https://www.youtube.com/watch?v=RS163zKe7s8&t=160s)
+[![UGM](pics/diff-studio-ugm.png "Open on Youtube")](https://www.youtube.com/watch?v=RS163zKe7s8&t=160s)
 
 See also
 
