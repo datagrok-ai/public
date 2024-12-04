@@ -227,6 +227,10 @@ export async function MockProvider2(params: any) {
         id: 'stepMul',
         nqName: 'Compute2:TestMul2',
         friendlyName: 'mul',
+      },{
+        id: 'LongScript',
+        nqName: 'Compute2:LongScript',
+        friendlyName: 'long',
       }, {
         type: 'ref',
         provider: 'Compute2:MockProvider1',
