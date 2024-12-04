@@ -84,6 +84,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   linesActivityCorrespondance: Uint32Array | null = null;
   //generations tab objects
   generationsGrid: DG.Grid | null = null;
+  generationsGridDiv = ui.div(ui.divText('Generations in progress...'));
 
   rdkitModule: RDModule | null = null;
   currentTab = '';
@@ -242,45 +243,12 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   getTabs(tp: DG.Viewer, mmpFilters: MmpFilters, cliffs: HTMLElement): DG.TabControl {
     const tabs = ui.tabControl(null, false);
 
-    const addToWorkspaceButton = (table: DG.DataFrame, name: string, className: string) => {
-      const button = ui.icons.add(() => {
-        const clonedTable = table.clone();
-        clonedTable.name = name;
-        const tv = grok.shell.addTableView(clonedTable);
-        //without setTimeout tableView is not set as current view
-        setTimeout(() => grok.shell.v = tv, 10);
-      }, 'Add table to workspace');
-      button.classList.add(className);
-      return button;
-    };
-
-    const helpButton = (className: string, tooltip: string) => {
-      const button = ui.icons.help(() => {});
-      ui.tooltip.bind(button, () => ui.divText(tooltip, {style: {width: '300px'}}));
-      button.classList.add(className);
-      return button;
-    };
-
-    const createGridDiv = (name: string, grid: DG.Grid, helpTooltip: string) => {
-      const header = ui.h1(name, 'chem-mmpa-transformation-tab-header');
-      const helpBUtton = helpButton('chem-mmpa-grid-help-icon', helpTooltip);
-      grid.root.prepend(header);
-      return ui.splitV([
-        ui.box(
-          ui.divH([header,
-            addToWorkspaceButton(grid.dataFrame, name, 'chem-mmpa-add-to-workspace-button'), helpBUtton]),
-          {style: {maxHeight: '30px'}},
-        ),
-        grid.root,
-      ], {style: {width: '100%', height: '100%'}});
-    };
-
     //const mmPairsDiv = ui.div('', {style: {width: '100%', height: '100%'}});
-    const mmPairsRoot1 = createGridDiv('Matched Molecular Pairs',
+    const mmPairsRoot1 = this.createGridDiv('Matched Molecular Pairs',
       this.pairedGrids!.mmpGridTrans, MATHED_MOLECULAR_PAIRS_TOOLTIP_TRANS);
-    const mmPairsRoot2 = createGridDiv('Matched Molecular Pairs',
+    const mmPairsRoot2 = this.createGridDiv('Matched Molecular Pairs',
       this.pairedGrids!.mmpGridFrag, MATHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS);
-    const fpGrid = createGridDiv('Fragment Pairs',
+    const fpGrid = this.createGridDiv('Fragment Pairs',
       this.pairedGrids!.fpGrid, FRAGMENTS_GRID_TOOLTIP);
     fpGrid.prepend(ui.divText('No substitutions found for current molecule. Please select another molecule.',
       'chem-mmpa-no-fragments-error'));
@@ -314,7 +282,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     tp.root.prepend(trellisHeader);
     const tpDiv = ui.splitV([
       ui.box(
-        ui.divH([trellisHeader, filterIcon, helpButton('chem-mmpa-grid-help-icon', FRAGMENTS_TAB_TOOLTIP)]),
+        ui.divH([trellisHeader, filterIcon, this.helpButton('chem-mmpa-grid-help-icon', FRAGMENTS_TAB_TOOLTIP)]),
         {style: {maxHeight: '30px'}},
       ),
       tp.root,
@@ -333,7 +301,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const cliffsHeader = ui.h1('2D Molecules Map', 'chem-mmpa-transformation-tab-header'); ;
     const cliffsDiv = ui.splitV([
       ui.box(
-        ui.divH([cliffsHeader, helpButton('chem-mmpa-grid-help-icon', CLIFFS_TAB_TOOLTIP)]),
+        ui.divH([cliffsHeader, this.helpButton('chem-mmpa-grid-help-icon', CLIFFS_TAB_TOOLTIP)]),
         {style: {maxHeight: '30px'}},
       ),
       cliffs,
@@ -358,7 +326,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     cliffsTab.content.classList.add('mmpa-cliffs-tab');
     tabs.addPane(MMP_NAMES.TAB_GENERATION, () => {
-      return createGridDiv('Generated Molecules', this.generationsGrid!, '');
+      return this.generationsGridDiv;
     });
 
     let refilter = true;
@@ -409,30 +377,32 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
           }, 500);
         }
       } else if (tabs.currentPane.name == MMP_NAMES.TAB_GENERATION) {
-        lastSelectedTab = MMP_NAMES.TAB_GENERATION;
-        const spCorr = DG.Viewer.scatterPlot(this.generationsGrid?.dataFrame!, {
-          x: '~sss',
-          y: 'Prediction',
-          zoomAndFilter: 'no action',
-          color: 'Activity',
-          showXSelector: true,
-          showXAxis: true,
-          showYSelector: true,
-          showYAxis: true,
-          showColorSelector: true,
-          showSizeSelector: true,
-          markerDefaultSize: 7,
-        });
-        const header = ui.h1('Observed vs Predicted', 'chem-mmpa-generation-tab-cp-header');
-        spCorr.root.prepend(header);
-        const spCorrDiv = ui.splitV([
-          ui.box(
-            ui.divH([header]),
-            {style: {maxHeight: '30px'}},
-          ),
-          spCorr.root,
-        ], {style: {width: '100%', height: '100%'}});
-        grok.shell.o = spCorrDiv;
+        if (this.generationsGrid) {
+          lastSelectedTab = MMP_NAMES.TAB_GENERATION;
+          const spCorr = DG.Viewer.scatterPlot(this.generationsGrid?.dataFrame!, {
+            x: '~sss',
+            y: 'Prediction',
+            zoomAndFilter: 'no action',
+            color: 'Activity',
+            showXSelector: true,
+            showXAxis: true,
+            showYSelector: true,
+            showYAxis: true,
+            showColorSelector: true,
+            showSizeSelector: true,
+            markerDefaultSize: 7,
+          });
+          const header = ui.h1('Observed vs Predicted', 'chem-mmpa-generation-tab-cp-header');
+          spCorr.root.prepend(header);
+          const spCorrDiv = ui.splitV([
+            ui.box(
+              ui.divH([header]),
+              {style: {maxHeight: '30px'}},
+            ),
+            spCorr.root,
+          ], {style: {width: '100%', height: '100%'}});
+          grok.shell.o = spCorrDiv;
+        }
       }
     });
 
@@ -448,6 +418,39 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     return tabs;
   }
+
+  createGridDiv(name: string, grid: DG.Grid, helpTooltip: string) {
+    const header = ui.h1(name, 'chem-mmpa-transformation-tab-header');
+    const helpBUtton = this.helpButton('chem-mmpa-grid-help-icon', helpTooltip);
+    grid.root.prepend(header);
+    return ui.splitV([
+      ui.box(
+        ui.divH([header,
+          this.addToWorkspaceButton(grid.dataFrame, name, 'chem-mmpa-add-to-workspace-button'), helpBUtton]),
+        {style: {maxHeight: '30px'}},
+      ),
+      grid.root,
+    ], {style: {width: '100%', height: '100%'}});
+  };
+
+  addToWorkspaceButton(table: DG.DataFrame, name: string, className: string) {
+    const button = ui.icons.add(() => {
+      const clonedTable = table.clone();
+      clonedTable.name = name;
+      const tv = grok.shell.addTableView(clonedTable);
+      //without setTimeout tableView is not set as current view
+      setTimeout(() => grok.shell.v = tv, 10);
+    }, 'Add table to workspace');
+    button.classList.add(className);
+    return button;
+  };
+
+  helpButton(className: string, tooltip: string) {
+    const button = ui.icons.help(() => {});
+    ui.tooltip.bind(button, () => ui.divText(tooltip, {style: {width: '300px'}}));
+    button.classList.add(className);
+    return button;
+  };
 
   createSortIcon(trellisSortState: TrellisSorting, axis: TrellisAxis, tp: DG.Viewer, className: string) {
     const tpAxisSelectorArr = Array.from(tp.root.getElementsByClassName('d4-column-selector-column'))
@@ -550,7 +553,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
   fillAll(mmpInput: MmpInput, palette: PaletteCodes,
     mmpa: MMPA, diffs: Array<Float32Array>,
-    linesIdxs: Uint32Array, pairedGrids: MmpPairedGrids, generationsGrid: DG.Grid,
+    linesIdxs: Uint32Array, pairedGrids: MmpPairedGrids,
     tp: DG.Viewer, sp: DG.Viewer, mmpFilters: MmpFilters,
     linesEditor: ScatterPlotLinesRenderer, lines: ILineSeries, linesActivityCorrespondance: Uint32Array,
     rdkitModule: RDModule): void {
@@ -585,7 +588,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     //Cliffs tab setup
     this.diffs = diffs;
-    this.generationsGrid = generationsGrid;
     this.lines = lines;
     this.linesActivityCorrespondance = linesActivityCorrespondance;
     this.linesIdxs = linesIdxs;
@@ -722,10 +724,19 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       progressBarSpace.close();
     });
 
-    const generationsGrid: DG.Grid = await getGenerations(mmpa, pairedGrids.fpGrid);
+    getGenerations(mmpa, pairedGrids.fpGrid).then((genGrid: DG.Grid) => {
+      this.generationsGrid = genGrid;
+      ui.empty(this.generationsGridDiv);
+      this.generationsGridDiv.append(this.createGridDiv('Generated Molecules', this.generationsGrid!, ''));
+    }).catch((error: any) => {
+      const errorStr = `Generations haven't been completed due to error: ${error}`;
+      ui.empty(this.generationsGridDiv);
+      this.generationsGridDiv.append(ui.divText(errorStr));
+      grok.shell.error(errorStr);
+    });
 
     this.fillAll(mmpInput, palette, mmpa, mmpa.allCasesBased.diffs, linesIdxs, pairedGrids,
-      generationsGrid, tp, sp, mmpFilters, linesEditor, lines, linesActivityCorrespondance, module);
+      tp, sp, mmpFilters, linesEditor, lines, linesActivityCorrespondance, module);
 
     this.totalData = mmpa.toJSON();
     //console.profileEnd('MMP');
