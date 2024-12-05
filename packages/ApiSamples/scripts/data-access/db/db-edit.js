@@ -20,5 +20,5 @@ const dbEdit = (t) => {
   });
 }
 
-await grok.data.db.query('System:Datagrok', 'select * from models');
-dbEdit;
+let result = await grok.data.db.query('System:Datagrok', 'select * from models');
+dbEdit(result);
