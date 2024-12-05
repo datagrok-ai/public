@@ -99,10 +99,10 @@
 }
 
 .tt-link {
-  font-size: 0;
 }
 
 .tt-link:after {
+  display: none !important;
   content: attr(data-label);
   font-size: 13px;
   vertical-align: -15%;
