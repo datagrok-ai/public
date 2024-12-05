@@ -12,64 +12,67 @@ keywords:
 
 Differential equations are crucial in modeling complex systems - from pharmacology and drug manufacturing to financial modeling and environmental studies.
 
-**Datagrok Diff Studio** solves [initial value problems](https://en.wikipedia.org/wiki/Initial_value_problem) for [ordinary differential equations](https://en.wikipedia.org/wiki/Ordinary_differential_equation) (ODEs) and visualizes solutions in real time. You can create mathematical models with auto-generated interactive interfaces or use existing models to analyze your systems. Diff Studio is a tool for:
+Datagrok Diff Studio solves [initial value problems](https://en.wikipedia.org/wiki/Initial_value_problem) for
+[ordinary differential equations](https://en.wikipedia.org/wiki/Ordinary_differential_equation) (ODEs) and visualizes solutions in real time, 
+turning complex math into interactive visual models.
 
-* **Model users**
+Key benefits:
+
+* **For model users**
   * Instantly see how parameter changes affect your system
   * Find optimal parameter values that match your target data
   * Explore model behavior using Monte Carlo, Sobol, and other methods
-* **Model creators**
-  * Start quick with pre-built models
-  * Focus on math - let the platform handle the UI
+* **For model creators**
+  * Focus on the math - the platform handles visualization and interface
+  * Start quick with pre-built models  
   * Solve both stiff and non-stiff equations
   * Handle complex multi-equation ODE systems
   * Debug equations easily
-* **Enterprises**
-  * Save models as scripts to extend functionality and integrate with other Datagrok tools
-  * Use as a central hub for ODE models
-  * Develop custom scientific computing applications
+* **For organizations**
+  * Store and share all ODE models in one, centralized hub
+  * Convert models to scripts to extend functionality or integrate with other Datagrok tools
+  * Build specialized scientific applications
 
 ## Working with models
 
-Go to **Apps** and run **Diff Studio**. When you first use this application, you will see the default model.
-Modify inputs and check computations. Use sliders for the rapid model exploration. Click <i class="fas fa-arrow-to-bottom"></i> **Download** to save model to a local file. Find the *ivp*-file in Downloads. You can open and edit this file using any text editor.
+Launch Diff Studio from **Apps** > **Diff Studio**. The app opens with your recent model, or a default template if it's your first time.
+
+To load an existing model, click the <i class="fas fa-folder-open d4-combo-popup" style="min-width: 0px; cursor: default"></i> **Open** icon and choose:
+
+* **Import...** to import local IVP files (or simply drag-and-drop)
+* **Library** to open a production model from the [catalog](models.md#ordinary-differential-equations)
+* **Templates** to start with a model template
+* **My Models** to open a model from your platform files (**Browse > Files > My files**)
+* **Recent** to open your recent models
+
+Once loaded, explore models by adjusting parameters, [fitting to experimental data](#parameter-fitting), or [running sensitivity analysis](#sensitivity-analysis). Share specific model runs by copying and sharing the URL with colleagues.
 
 ![Run Diff Studio](pics/diff-studio-run.gif)
 
-To load model from a local file, click <i class="fas fa-folder-open d4-combo-popup" style="min-width: 0px; cursor: default"></i> **Open**, select **Import...** and choose a local file to upload. **Drag-n-drop** your *ivp*-file to Datagrok. Diff Studio will open it and load formulas. You can open *ivp*-files stored in the platform.
-
-Browse and share models. Go to **Browse > Compute > Apps** and expand the **Diff Studio** group:
-
-* Check model templates from **Templates**
-* Click **Library** and explore built-in models
-* Find recently opened models in **Recent**
-
-Use URL to share computations. In **Browse**, click any *ivp*-file. Model preview opens. Modify inputs, copy URL, and share results:
-
-![Diff Studio Sharing](pics/diff-studio-browsing.gif)
-
-By using URL, you can share model runs from the **Templates**, **Examples** and **Recent** groups.
+Download models using the <i class="fas fa-arrow-to-bottom"></i> **Download** icon as IVP files, which you can edit in any text editor. To store a model in Datagrok, click the **SAVE** button and specify the location.
 
 ### Parameter fitting
 
-Find input conditions leading to the specified output constraints using the [Parameter Optimization](function-analysis.md#parameter-optimization) feature. It finds input values that minimize deviation measured by [loss function](https://en.wikipedia.org/wiki/Loss_function). Run it directly from Diff Studio:
+To find input conditions that satisfy output constraints, in the top ribbon, click the **Fit** icon. This [parameter optimization](function-analysis.md#parameter-optimization) feature minimizes the deviation between model output and target data using [loss functions](https://en.wikipedia.org/wiki/Loss_function).
 
-1. Click the **Fit** icon on the top panel. **Fitting View** opens
-2. In the `Fit` block, use switchers to specify inputs to be found:
-   * Set `min` and `max` values for each selected item. They define the variation range
-   * Set values of all other inputs
-3. In the `Target` block, specify output constraints:
-   * Set dataframe with expected output values (in the table input)
-   * Set column with values of the independent variable (in the `argument` field)
-4. Specify settings of fitting:
-   * Choose numerical optimization method (in the `method` field), and set loss function type (in the `loss` field)
-   * Specify number of points to be found (in the `samples` field)
-   * Set the maximum scaled deviation between similar fitted points (in the `similarity` field): the higher the value, the fewer points will be found
-5. Click <i class="fas fa-play"></i> **Run fitting** icon. You will get a [grid](../visualize/viewers/grid) containing
-   * loss function values
-   * fitted inputs
-   * [line charts](../visualize/viewers/line-chart) visualizing the goodness of fit and showing the loss function minimization
-6. Open `Context panel` (F4). You will get the simulation run corresponding to the selected grid row
+In the fitting view, configure:
+
+1. Under **Fit**, select parameters to optimize:
+   * Toggle parameters to include in optimization
+   * Set search range (`min` and `max` values)
+   * Set fixed values for other parameters
+
+2. Under **Target**, define output constraints:
+   * Select data table (**Table**)
+   * Set independent variable columns (**Argument**)
+
+3. Under **Using**, configure optimization:
+   * Choose optimization method (**method**) and loss function type (**loss**). Diff Studio uses [Nelder-Mead method](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method) to minimize loss functions like MAD and RMSE
+   * Specify number of fitted points to find (**samples**)
+   * Specify maximum deviation between fitted points (**similarity**) - higher values yield fewer points
+4. On the top ribbon, click **Run** to generate a [grid](../visualize/viewers/grid) showing loss function values, fitted parameters, and [line charts](../visualize/viewers/line-chart) of fit quality
+
+To view the simulation for any selected result, open the **Context Panel** (F4).
 
 ![Run fitting](pics/diff-studio-run-fitting.gif)
 
@@ -82,7 +85,7 @@ Explore the relationship between inputs and outputs of your model using the [Sen
    * [Monte Carlo](function-analysis.md#monte-carlo)
    * [Sobol](function-analysis.md#sobol)
    * [Grid](function-analysis.md#grid)
-3. Analyze model evaluations. Open `Context panel` (F4). You will get the simulation run corresponding to the selected grid row
+3. Analyze model evaluations. Open `Context panel` (F4). You get the simulation run corresponding to the selected grid row
 
 ![Run Sens Analysis](pics/diff-studio-run-sens-analysis.gif)
 
@@ -92,8 +95,6 @@ Turn on the **Edit** toggle on the top panel. Equations editor opens. Edit formu
 Click <i class="fas fa-sync"></i> **Refresh** or press **F5** to apply changes.
 
 ![Edit model](pics/diff-studio-edit-model.gif)
-
-Go to **Browse > Apps > Compute > Diff Studio** and explore models from **Templates** and **Library**. They cover all capabilities of Diff Studio.
 
 ### Syntax and templates
 
@@ -298,7 +299,7 @@ Use the interface to select inputs and compare model runs:
 
 Diff Studio automatically creates UI. Annotate model inputs to improve usability.
 
-Define the desired captions for the input parameters. If no caption is provided, Diff Studio will use variable name.
+Define the desired captions for the input parameters. If no caption is provided, Diff Studio uses variable name.
 
 ```python
 #argument: t
@@ -339,116 +340,37 @@ Specify `min`, `max` and `step` values to get sliders and clickers for the rapid
 
 ![Using input annotations](pics/diff-studio-input-annotations.gif)
 
-## Loading templates and examples
-
-To load a template, click <i class="fas fa-folder-open d4-combo-popup" style="min-width: 0px; cursor: default"></i> **Open** on the ribbon, select **Templates** and choose one of the following templates:
-
-| Template   | Features                                                                                    |
-|------------|---------------------------------------------------------------------------------------------|
-| `Basic`    | Minimum project with one differential equation                                              |
-| `Advanced` | Extra math features: *expressions*, *constants*, *parameters* and *tolerance* specification |
-| `Extended` | The *annotating* feature for extended UI generation                                         |
-
-To load an example, click <i class="fas fa-folder-open d4-combo-popup" style="min-width: 0px; cursor: default"></i> **Open**,
-select **Library** and choose a one.
-
-## Examples
-
-Diff Studio has built-in examples. They cover all Diff Studio capabilities. Get access to them
-via the <i class="fas fa-folder-open d4-combo-popup" style="min-width: 0px; cursor: default"></i> **Open** icon on the ribbon and use as a template.
-
-### Chem reactions
-
-The `Chem react` example simulates deterministic [mass-action kinetics](https://en.wikipedia.org/wiki/Law_of_mass_action) given in the network
-
-![add-to-workspace](pics/diff-studio-chem-react-network.png)
-
-This example illustrates annotation of model inputs.
-
-### Robertson model
-
-Robertson’s chemical reaction model is a well-known example of [stiff equations](https://en.wikipedia.org/wiki/Stiff_equation). It describes the process
-
-![add-to-workspace](pics/diff-studio-robertson-network.png)
-
-Numerical solution of stiff problems is a complicated task. Diff Studio provides solution of both stiff and non-stiff equations.
-
-### Fermentation
-
-The `Fermentation` example illustrates the kinetics of the biochemical reactions in [fermentation](https://en.wikipedia.org/wiki/Fermentation).
-
-![add-to-workspace](pics/diff-studio-fermentation.gif)
-
-### PK
-
-[Pharmacokinetics](https://en.wikipedia.org/wiki/Pharmacokinetics) (PK) studies how the body absorbs, distributes, metabolizes, and excretes drugs over time. The `PK` example simulates this process. It demonstrates the usage of the `meta.solver` feature for numerical [solver management](#solver-settings).
-
-![add-to-workspace](pics/diff-studio-pk.png)
-
-### PK-PD
-
-PK-PD modeling simulates pharmacokinetics (PK), pharmacodynamics (PD), and their [relationship](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7348046). It is used in drug discovery and development. The `PK-PD` example illustrates the usage of the `loop` feature for dosing specification
-
-![add-to-workspace](pics/diff-studio-pk-pd.gif)
-
-### Acid production
-
-`Acid production` models gluconic acid [production](https://oatao.univ-toulouse.fr/9919/1/Elqotbi_9919.pdf) by Aspergillus niger. This example shows the usage of the `update` feature for multistage simulation
-
-![add-to-workspace](pics/diff-studio-acid-production.gif)
-
-### Nimotuzumab
-
-The `Nimotuzumab` example simulates population pharmacokinetic for [nimotuzumab](https://www.mdpi.com/1999-4923/12/12/1147). It demonstrates the `output` feature
-
-![add-to-workspace](pics/diff-studio-nimotuzumab.gif)
-
-### Bioreactor
-
-The `Bioreactor` example models the [kinetic mechanism](https://doi.org/10.1074/jbc.RA117.000303) of controlled Fab-arm exchange for the formation of bispecific immunoglobulin G1 antibodies. It shows how to use the `meta.inputs` feature to specify a table with pre-defined model inputs.
-
-![add-to-workspace](pics/diff-studio-bioreactor.png)
-
-### Pollution
-
-The `Pollution` example describes a chemical reaction part of the air [pollution model](https://archimede.uniba.it/~testset/problems/pollu.php). It consists of 25 reaction and 20 reacting compounds. This example illustrates the capability of Diff Studio to solve large systems of [stiff equations](https://en.wikipedia.org/wiki/Stiff_equation).
-
-![add-to-workspace](pics/diff-studio-pollution.png)
-
-Datagrok's ODEs suite has tools for solving both stiff and non-stiff equations. Combine Diff Studio
-with [viewers](../visualize/viewers/viewers.md) and [compute](compute.md) tools to explore complex models.
-
 ## Syntax reference
 
 Diff Studio lets you define model in a declarative form using simple syntax:
 
-|Keyword|Specifies|
-|-|-|
-|**#name**|Model name|
-|**#equations**|Ordinary differential equations ([ODEs](https://en.wikipedia.org/wiki/Ordinary_differential_equation))|
-|**#inits**|[Initial conditions](https://en.wikipedia.org/wiki/Initial_value_problem)|
-|**#argument**|The independent variable, its range, and the solution time step|
-|**#expressions**|Additional computations|
-|**#parameters**|Model parameters (Diff Studio creates UI inputs for them)|
-|**#constants**|Model constants|
-|**#loop**|Multiple simulation [cycles](#cyclic-process-simulation)|
-|**#update**|Additional modeling [stage](#multistage-model)|
-|**#output**|Customized model output|
-|**#tolerance**|[Tolerance](https://pythonnumericalmethods.berkeley.edu/notebooks/chapter19.02-Tolerance.html) of the numerical method|
-|**#meta.inputs**|CSV file with inputs [lookup table](#lookup-tables)|
-|**#meta.solver**|ODEs solver [settings](#solver-settings)|
-|**#comment**|Explanations, notes, remarks, etc.|
-|**#tags**|The platform [script](#platform-script-generation) tags|
-|**#description**|The platform [script](#platform-script-generation) tooltip|
+|Keyword|Specifies|Example|
+|-|-|-|
+|**#name**|Model name|[Basic](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/basic.ivp) template, [Robertson's](https://public.datagrok.ai/files/system.appdata/diffstudio/library/robertson.ivp) model|
+|**#equations**|Ordinary differential equations ([ODEs](https://en.wikipedia.org/wiki/Ordinary_differential_equation))|[Basic](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/basic.ivp) template, [mass-action](https://public.datagrok.ai/files/system.appdata/diffstudio/library/chem-react.ivp) kinetics simulation|
+|**#inits**|[Initial conditions](https://en.wikipedia.org/wiki/Initial_value_problem)|[Basic](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/basic.ivp) template, [fermentation](https://public.datagrok.ai/files/system.appdata/diffstudio/library/fermentation.ivp) modeling|
+|**#argument**|The independent variable, its range, and the solution time step|[Basic](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/basic.ivp) template, [pollution](https://public.datagrok.ai/files/system.appdata/diffstudio/library/pollution.ivp) model|
+|**#expressions**|Additional computations|[Advanced](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/advanced.ivp) template, [pharmacokinetics](https://public.datagrok.ai/files/system.appdata/diffstudio/library/pk.ivp) simulation|
+|**#parameters**|Model parameters (Diff Studio creates UI inputs for them)|[Advanced](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/advanced.ivp) template, [chemical reactions](https://public.datagrok.ai/files/system.appdata/diffstudio/library/chem-react.ivp) modeling|
+|**#constants**|Model constants|[Advanced](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/advanced.ivp) template, [bioreactor](https://public.datagrok.ai/files/system.appdata/diffstudio/library/bioreactor.ivp) model|
+|**#loop**|Multiple simulation [cycles](#cyclic-process-simulation)|[Pharmacokinetic-pharmacodynamic](https://public.datagrok.ai/files/system.appdata/diffstudio/library/pk-pd.ivp) simulation|
+|**#update**|Additional modeling [stage](#multistage-model)|[Gluconic acid](https://public.datagrok.ai/files/system.appdata/diffstudio/library/ga-production.ivp) production modeling|
+|**#output**|Customized model output|[Nimotuzumab](https://public.datagrok.ai/files/system.appdata/diffstudio/library/nimotuzumab.ivp) disposition model|
+|**#tolerance**|[Tolerance](https://pythonnumericalmethods.berkeley.edu/notebooks/chapter19.02-Tolerance.html) of the numerical method|[Advanced](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/advanced.ivp) template, [pollution](https://public.datagrok.ai/files/system.appdata/diffstudio/library/pollution.ivp) model|
+|**#meta.inputs**|CSV file with inputs [lookup table](#lookup-tables)|[Bioreactor](https://public.datagrok.ai/files/system.appdata/diffstudio/library/bioreactor.ivp) model|
+|**#meta.solver**|ODEs solver [settings](#solver-settings)|[Pharmacokinetics](https://public.datagrok.ai/files/system.appdata/diffstudio/library/pk.ivp) simulation|
+|**#comment**|Explanations, notes, remarks, etc.|[Advanced](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/advanced.ivp) template|
+|**#tags**|The platform [script](#platform-script-generation) tags|[Extended](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/extended.ivp) template|
+|**#description**|The platform [script](#platform-script-generation) tooltip|[Extended](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/extended.ivp) template|
 
-To improve [usability](#usability-improvements), you can annotate model inputs using:
+To improve UI, annotate model inputs using:
 
-|Option|Specifies|
-|-|-|
-|**caption**|Input caption|
-|**category**|Input category. Items belonging to the same category are grouped together in the UI|
-|**units**|Input measure units|
-|**min**, **max**|Input min and max values, respectively. Use them to get sliders for UI input|
+|Option|Specifies|Example|
+|-|-|-|
+|**caption**|Input caption|[Extended](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/extended.ivp) template|
+|**category**|Input category. Items belonging to the same category are grouped together in the UI|[Extended](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/extended.ivp) template|
+|**units**|Input measure units|[Mass-action](https://public.datagrok.ai/files/system.appdata/diffstudio/library/chem-react.ivp) kinetics simulation|
+|**min**, **max**|Input min and max values, respectively. Use them to get sliders for UI input|[Extended](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/extended.ivp) template|
 
 ## Platform script generation
 
