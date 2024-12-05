@@ -13,7 +13,7 @@ keywords:
 Differential equations are crucial in modeling complex systems - from pharmacology and drug manufacturing to financial modeling and environmental studies.
 
 Datagrok Diff Studio solves [initial value problems](https://en.wikipedia.org/wiki/Initial_value_problem) for
-[ordinary differential equations](https://en.wikipedia.org/wiki/Ordinary_differential_equation) (ODEs) and visualizes solutions in real time, 
+[ordinary differential equations](https://en.wikipedia.org/wiki/Ordinary_differential_equation) (ODEs) and visualizes solutions in real time,
 turning complex math into interactive visual models.
 
 Key benefits:
