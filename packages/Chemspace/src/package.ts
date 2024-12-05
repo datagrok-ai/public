@@ -198,7 +198,7 @@ shipToCountry: COUNTRY_CODES = COUNTRY_CODES['United States']): HTMLDivElement {
     })
     .catch((err) => {
       compsHost.firstChild?.remove();
-      const div = ui.divText('No matches');
+      const div = ui.divText(err.message ?? err);
       ui.tooltip.bind(div, `${err}`);
       compsHost.appendChild(div);
     });
@@ -265,7 +265,7 @@ export async function pricesPanel(id: string): Promise<DG.Widget> {
       })
       .catch((err: any) => {
         ui.empty(resData);
-        resData.append(ui.divText(err.message));
+        resData.append(ui.divText(err.message ?? err));
       });
     }
     else
