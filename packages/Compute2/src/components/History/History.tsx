@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
-import {IconFA, ToggleInput, Viewer} from '@datagrok-libraries/webcomponents-vue';
+import {IconFA, ifOverlapping, ToggleInput, Viewer} from '@datagrok-libraries/webcomponents-vue';
 import {historyUtils} from '@datagrok-libraries/compute-utils';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {ID_COLUMN_NAME} from '@datagrok-libraries/compute-utils/shared-components/src/history-input';
@@ -11,7 +11,9 @@ import {EXP_COLUMN_NAME, FAVORITE_COLUMN_NAME, ACTIONS_COLUMN_NAME, COMPLETE_COL
 import {HistoricalRunEdit, HistoricalRunsDelete} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {filter, take} from 'rxjs/operators';
 import wu from 'wu';
-import {useObservable, watchExtractedObservable} from '@vueuse/rxjs';
+import {watchExtractedObservable} from '@vueuse/rxjs';
+
+const GRID_INITED_EVENT = 'd4-grid-initialized';
 
 export const History = Vue.defineComponent({
   props: {
@@ -49,7 +51,6 @@ export const History = Vue.defineComponent({
   setup(props, {emit}) {
     const isLoading = Vue.ref(true);
 
-    const isCompactMode = Vue.ref(true);
     const showFilters = Vue.ref(false);
     const showInputs = Vue.ref(true);
     const showMetadata = Vue.ref(true);
@@ -85,9 +86,6 @@ export const History = Vue.defineComponent({
       DG.Column.string(DESC_COLUMN_NAME, 0),
       DG.Column.fromStrings(ID_COLUMN_NAME, []),
     ]);
-
-    const currentGrid = Vue.shallowRef(null as null | DG.Grid);
-    const currentFilters = Vue.shallowRef(null as null | DG.FilterGroup);
 
     const getRunByIdx = (idx: number) => {
       if (idx < 0) return;
@@ -181,7 +179,6 @@ export const History = Vue.defineComponent({
       deleteDialog.onFuncCallDelete.pipe(
         take(1),
       ).subscribe(async () => {
-        // ui.setUpdateIndicator(this.root, true);
         try {
           await Promise.all(
             wu(setToDelete.values()).map(async (funcCall) => {
@@ -191,24 +188,10 @@ export const History = Vue.defineComponent({
             }));
         } catch (e: any) {
           grok.shell.error(e);
-        } finally {
-          // ui.setUpdateIndicator(this.root, false);
-        }
+        } 
       });
       deleteDialog.show({center: true, width: 500});
     };
-
-    Vue.watch(currentGrid, () => {
-      Utils.setGridCellRendering(
-        currentGrid.value!,
-        historicalRuns.value,
-        onEditClick,
-        onDeleteClick,
-        onFavoriteClick,
-        onUnfavoriteClick,
-        true,
-      );
-    });
 
     const historicalRunsDf = Vue.shallowRef(defaultDf);
     Vue.watch(historicalRuns, async () => {
@@ -226,51 +209,104 @@ export const History = Vue.defineComponent({
       if (chosenRun) emit('runChosen', await historyUtils.loadRun(chosenRun.id));
     });
   
-    const applyStyles = () => {
-      const func = historicalRuns.value.values().next().value?.func as DG.Func | undefined;
+    const handleGridRendering = async (grid?: DG.Grid) => {
+      if (!grid) return;
 
-      if (currentGrid.value) {
-        Utils.styleHistoryGrid(
-          currentGrid.value, 
-          isCompactMode.value,
-          showInputs.value,
-          showMetadata.value,
-          func,
-        );
+      await grok.events.onEvent(GRID_INITED_EVENT).pipe(
+        filter((initedGrid) => initedGrid === grid),
+        take(1)
+      ).toPromise();
+
+      grid.sort([STARTED_COLUMN_NAME], [false]);
+
+      for (let i = 0; i < grid.columns.length; i++) {
+        const col = grid.columns.byIndex(i);
+        if (col && col.column?.type === DG.TYPE.DATE_TIME)
+          col.format = 'MMM d, h:mm tt';
       }
 
-      if (currentFilters.value) {
-        Utils.styleHistoryFilters(
-          currentFilters.value,
-          showMetadata.value,
-          showInputs.value,
-          props.isHistory,
-          func,
-        );
-      }
+      Utils.setGridColumnsRendering(grid);
+
+      Utils.setGridCellRendering(
+        grid,
+        historicalRuns.value,
+        onEditClick,
+        onDeleteClick,
+        onFavoriteClick,
+        onUnfavoriteClick,
+        true,
+      );
+
+      const tagCol = grid.dataFrame.getCol(TAGS_COLUMN_NAME);
+      grid.columns.setVisible([
+        ...historicalRunsDf.value.getCol(EXP_COLUMN_NAME).categories.length > 1 ? [EXP_COLUMN_NAME]: [],
+        FAVORITE_COLUMN_NAME,
+        ACTIONS_COLUMN_NAME,
+        ...showMetadata.value ? [STARTED_COLUMN_NAME]: [],
+        ...showMetadata.value && tagCol.stats.missingValueCount < tagCol.length ? [TAGS_COLUMN_NAME]: [],
+        ...showMetadata.value ? [TITLE_COLUMN_NAME]: [],
+        ...showMetadata.value ? [DESC_COLUMN_NAME]: [],
+        ...showInputs.value && currentFunc.value ? Utils.getVisibleProps(currentFunc.value)
+          .map((key) => {
+            const param = currentFunc.value.inputs.find((prop) => prop.name === key) ??
+              currentFunc.value.outputs.find((prop) => prop.name === key);
+
+            if (param)
+              return param.caption ?? Utils.getColumnName(param.name);
+            else
+              return Utils.getColumnName(key);
+          }): [],
+      ]);
     };
 
-    Vue.watch([showInputs, showMetadata, isCompactMode], () => {
-      applyStyles();
-    });
-
-    Vue.watch([historicalRuns, currentGrid, currentFilters], () => {
-      setTimeout(() => {
-        applyStyles();
-      }, 100);
-    });
-
     const fallbackText = <div class='p-1'> {props.fallbackText} </div>
+
+    const currentFunc = Vue.computed(()=> props.func)
+    const isHistory = Vue.computed(()=> props.isHistory)
+    const visibleFilterColumns = Vue.computed(() => {
+      const currentDf = historicalRunsDf.value;
+      const tagCol = currentDf.getCol(TAGS_COLUMN_NAME);
+
+      return [
+        ...showMetadata.value &&
+        currentDf.getCol(EXP_COLUMN_NAME).categories.length > 1 ? [EXP_COLUMN_NAME]: [],
+        ...showMetadata.value &&
+        (currentDf.col(FAVORITE_COLUMN_NAME)?.categories.length ?? 0) > 1 ?
+          [FAVORITE_COLUMN_NAME]: [],
+        ...showMetadata.value ? [STARTED_COLUMN_NAME, COMPLETE_COLUMN_NAME]:[],
+        ...showMetadata.value &&
+        currentDf.getCol(AUTHOR_COLUMN_NAME).categories.length > 1 ? [AUTHOR_COLUMN_NAME]: [],
+        ...showMetadata.value &&
+        tagCol.stats.missingValueCount < tagCol.length ? [TAGS_COLUMN_NAME]: [],
+        ...showMetadata.value &&
+        currentDf.getCol(TITLE_COLUMN_NAME).categories.length > 1 ? [TITLE_COLUMN_NAME]: [],
+        ...showMetadata.value &&
+        currentDf.getCol(DESC_COLUMN_NAME).categories.length > 1 ? [DESC_COLUMN_NAME]: [],
+        ...currentFunc.value && showInputs.value ? Utils.getVisibleProps(currentFunc.value)
+          .map((key) => {
+            const param = currentFunc.value.inputs.find((prop) => prop.name === key) ??
+            currentFunc.value.outputs.find((prop) => prop.name === key);
+
+            if (param)
+              return param.caption ?? Utils.getColumnName(param.name);
+            else
+              return Utils.getColumnName(key);
+          })
+          .filter((columnName) => {
+            return !isHistory.value ||
+            currentDf.getCol(columnName).categories.length > 1;
+          })
+          .map((columnName) => columnName): [],
+      ];
+    })
+
+    Vue.watch(isLoading, (val) => {
+      console.log('isLoading', val);
+    }, {immediate: true})
 
     return () => {
       const controls = <div style={{display: 'flex', justifyContent: 'space-between', padding: '0px 6px'}}>
         <div style={{'display': 'flex', 'padding': '6px 0px', 'gap': '6px'}}>
-          <IconFA 
-            name={isCompactMode.value ? 'expand-alt': 'compress-alt'} 
-            tooltip={isCompactMode.value ? 'Switch to full mode': 'Switch to compact mode'}
-            onClick={() => isCompactMode.value = !isCompactMode.value}
-            style={{alignContent: 'center'}}
-          />
           <IconFA 
             name='filter' 
             tooltip={showFilters.value ? 'Hide filters': 'Show filters'}
@@ -297,33 +333,47 @@ export const History = Vue.defineComponent({
         type='Grid'
         dataFrame={historicalRunsDf.value} 
         style={{height: '100%', width: '100%', minHeight: '300px'}}
-        onViewerChanged={(viewer) => currentGrid.value = viewer as DG.Grid}
+        onViewerChanged={(viewer) => handleGridRendering(viewer as DG.Grid | undefined)}
+        options={{
+          'showCurrentRowIndicator': true,
+          'showCurrentCellOutline': false,
+          'allowEdit': false,
+          'allowBlockSelection': false,
+          'showRowHeader': false,
+          'showColumnLabels': true,
+          'extendLastColumn': false,
+        }}
       />;
       const filters = <Viewer 
         type='Filters' 
         dataFrame={historicalRunsDf.value} 
-        style={{flex: '1', width: '100%', display: showFilters.value ? 'block': 'none'}}
-        onViewerChanged={(viewer) => currentFilters.value = viewer as DG.FilterGroup}
+        style={{
+          flex: '1', width: '100%', overflow: 'hidden'
+        }}
+        options={{
+          columnNames: visibleFilterColumns.value, 
+          'showHeader': false, 
+          allowEdit: false,
+        }}
       />;
 
-      return <div style={{height: '100%'}}>
-        {isLoading.value ? 
-          <span> Loading... </span>: 
-          historicalRuns.value.size === 0 ? 
+      return Vue.withDirectives(<div style={{overflow: 'hidden'}}>
+        { historicalRuns.value.size === 0 ? 
           fallbackText:
           <div style={{
             display: 'flex', 
-            flexDirection: isCompactMode.value ? 'column': 'row', 
-            height: '100%', width: '100%',
+            flexDirection: 'column',
+            width: '100%',
+            height: '100%',
           }}> 
             <div style={{display: 'flex', flexDirection: 'column', flex: '1'}}>
               { controls }
               { grid }
             </div>
-            { filters }
+            { showFilters.value && filters }
           </div>
         }
-      </div>;
+      </div>, [[ifOverlapping, isLoading.value, 'Loading previous runs...']]);
     };
   },
 });

@@ -276,7 +276,7 @@ export const setGridCellRendering = (
           () => onEditClick(cell),
           'Edit run metadata',
         ),
-      ], {style: {'padding': '6px 0px', 'gap': '6px', 'justify-content': 'space-between'}});
+      ], {style: {'padding': '6px', 'gap': '6px', 'justify-content': 'space-between'}});
     }
 
     if (cell.tableColumn?.name === FAVORITE_COLUMN_NAME) {
@@ -289,7 +289,7 @@ export const setGridCellRendering = (
         cell.cell.value ?
           unfavoriteIcon :
           ui.iconFA('star', () => onFavoriteClick(cell), 'Favorite'),
-        {style: {'padding': '5px 0px'}});
+        {style: {'padding': '6px'}});
     }
 
     if (cell.tableColumn?.name === EXP_COLUMN_NAME) {
@@ -299,7 +299,7 @@ export const setGridCellRendering = (
       $(experimentalTag).removeClass('fal');
 
       cell.element = cell.cell.value && cell.cell.value === 'Experimental' ?
-        ui.div(experimentalTag, {style: {'padding': '5px'}}) : ui.div();
+        ui.div(experimentalTag, {style: {'padding': '6px'}}) : ui.div();
     }
 
     if (cell.tableColumn?.name === TAGS_COLUMN_NAME) {
@@ -404,21 +404,21 @@ export const setGridCellRendering = (
   });
 };
 
-const setGridColumnsRendering = (grid: DG.Grid) => {
+export const setGridColumnsRendering = (grid: DG.Grid) => {
   const actionsCol = grid.columns.byName(ACTIONS_COLUMN_NAME);
   if (actionsCol) {
     actionsCol.cellType = 'html';
-    actionsCol.width = 35;
+    actionsCol.width = 45;
   }
 
   const favCol = grid.columns.byName(FAVORITE_COLUMN_NAME);
   if (favCol) {
     favCol.cellType = 'html';
-    favCol.width = 20;
+    favCol.width = 30;
   }
   const expCol = grid.columns.byName(EXP_COLUMN_NAME)!;
   expCol.cellType = 'html';
-  expCol.width = 20;
+  expCol.width = 30;
 
   const tagsColumn = grid.columns.byName(TAGS_COLUMN_NAME)!;
   tagsColumn.cellType = 'html';
@@ -434,16 +434,19 @@ export const styleHistoryGrid = (
   showInputsOnCards: boolean,
   showMetadataOnCards: boolean,
   func?: DG.Func,
+  useOptions?: boolean,
 ) => {
-  grid.setOptions({
-    'showCurrentRowIndicator': true,
-    'showCurrentCellOutline': false,
-    'allowEdit': false,
-    'allowBlockSelection': false,
-    'showRowHeader': false,
-    'showColumnLabels': !isCompactMode,
-    'extendLastColumn': isCompactMode,
-  });
+  if (useOptions) {
+    grid.setOptions({
+      'showCurrentRowIndicator': true,
+      'showCurrentCellOutline': false,
+      'allowEdit': false,
+      'allowBlockSelection': false,
+      'showRowHeader': false,
+      'showColumnLabels': !isCompactMode,
+      'extendLastColumn': isCompactMode,
+    });
+  }
 
   grid.sort([STARTED_COLUMN_NAME], [false]);
 

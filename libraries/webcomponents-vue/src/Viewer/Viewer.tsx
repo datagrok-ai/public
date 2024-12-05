@@ -18,8 +18,7 @@ export const Viewer = Vue.defineComponent({
   props: {
     type: String,
     dataFrame: DG.DataFrame,
-    viewer: DG.Viewer,
-    options: Object as Vue.PropType<Record<string, string | boolean>>,
+    options: Object as Vue.PropType<Record<string, string | boolean | string[]>>,
   },
   emits: {
     viewerChanged: (v: DG.Viewer<any> | undefined) => v,
@@ -29,21 +28,15 @@ export const Viewer = Vue.defineComponent({
     const viewerChangedCb = (event: any) => {
       emit('viewerChanged', event.detail);
     };
-    return () => {
-      const viewer = <dg-viewer
+    return () => <Vue.KeepAlive>
+      <dg-viewer
         type={props.type}
         options={props.options}
         dataFrame={currentDf.value}
-        // viewer={props.viewer} // TODO: Fix this
         onViewerChanged={viewerChangedCb}
         style={{display: 'block', flexGrow: '1'}}
       >
-      </dg-viewer>;
-      return (
-        <Vue.KeepAlive>
-          { viewer }
-        </Vue.KeepAlive>
-      );
-    };
+      </dg-viewer>
+    </Vue.KeepAlive>;
   },
 });

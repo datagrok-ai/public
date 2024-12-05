@@ -39,6 +39,10 @@ export const ifOverlapping = {
         LOADER_DEBOUNCE_TIME,
       ),
     );
+
+    const isOverlapping = binding.value;
+    const debouncedFn = ifOverlapping.updateFnMapping.get(el)!;
+    debouncedFn(isOverlapping);
   },
   updated: (el: HTMLElement, binding: Vue.DirectiveBinding<boolean>) => {
     const isOverlapping = binding.value;
