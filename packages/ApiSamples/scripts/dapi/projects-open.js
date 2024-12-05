@@ -1,8 +1,8 @@
 // find project, open it and close everything else
-grok.dapi.projects
+let project = await grok.dapi.projects
   .filter('demog')
-  .first()
-  .then(p => p.open({closeAll: true}));
+  .first();
+project.open({closeAll: true})
 
 // a shortcut method
 grok.dapi.projects.open('demog');

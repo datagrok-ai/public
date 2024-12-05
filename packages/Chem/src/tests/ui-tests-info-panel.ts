@@ -18,6 +18,7 @@ category('UI info panel', () => {
   test('gasteiger', async () => {
     smiles = grok.data.demo.molecules(20);
     v = grok.shell.addTableView(smiles);
+    await grok.data.detectSemanticTypes(smiles);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
     await awaitPanel(pp, 'Chemistry');
@@ -49,6 +50,7 @@ category('UI info panel', () => {
   test('identifiers', async () => {
     smiles = grok.data.demo.molecules(20);
     v = grok.shell.addTableView(smiles);
+    await grok.data.detectSemanticTypes(smiles);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
     await awaitPanel(pp, 'Structure');
@@ -62,7 +64,7 @@ category('UI info panel', () => {
       .querySelector('table') !== null, 'cannot load Identifiers', 15000);
     const it = ih.nextSibling as HTMLElement;
     for (const i of ['SCHEMBL5536145', '18722989', 'CHEMBL2262190']) {
-      expect(Array.from(it.querySelectorAll('.ui-link.d4-link-external'))
+      expect(Array.from(it.querySelectorAll('.ui-link'))
         .find((el) => el.textContent === i) !== undefined, true);
     }
     ih?.click(); await delay(10);
@@ -74,6 +76,7 @@ category('UI info panel', () => {
   test('structure2D', async () => {
     smiles = grok.data.demo.molecules(20);
     v = grok.shell.addTableView(smiles);
+    await grok.data.detectSemanticTypes(smiles);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
     await awaitPanel(pp, 'Structure', 3000);
@@ -92,6 +95,7 @@ category('UI info panel', () => {
   test('structure3D', async () => {
     smiles = grok.data.demo.molecules(20);
     v = grok.shell.addTableView(smiles);
+    await grok.data.detectSemanticTypes(smiles);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
     await awaitPanel(pp, 'Structure', 3000);
@@ -111,6 +115,7 @@ category('UI info panel', () => {
   test('properties', async () => {
     smiles = grok.data.demo.molecules(20);
     v = grok.shell.addTableView(smiles);
+    await grok.data.detectSemanticTypes(smiles);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
     await awaitPanel(pp, 'Chemistry');
@@ -130,6 +135,7 @@ category('UI info panel', () => {
   test('toxicity', async () => {
     smiles = grok.data.demo.molecules(20);
     v = grok.shell.addTableView(smiles);
+    await grok.data.detectSemanticTypes(smiles);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
     await awaitPanel(pp, 'Biology');
@@ -149,6 +155,7 @@ category('UI info panel', () => {
   test('drug likeness', async () => {
     smiles = grok.data.demo.molecules(20);
     v = grok.shell.addTableView(smiles);
+    await grok.data.detectSemanticTypes(smiles);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
     await awaitPanel(pp, 'Biology');
@@ -169,6 +176,7 @@ category('UI info panel', () => {
     smiles = grok.data.demo.molecules();
     grok.shell.o = ui.div();
     v = grok.shell.addTableView(smiles);
+    await grok.data.detectSemanticTypes(smiles);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
     await awaitPanel(pp, 'Biology');
@@ -194,6 +202,7 @@ category('UI info panel', () => {
   test('descriptors', async () => {
     smiles = grok.data.demo.molecules(20);
     v = grok.shell.addTableView(smiles);
+    await grok.data.detectSemanticTypes(smiles);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
     await awaitPanel(pp, 'Chemistry');

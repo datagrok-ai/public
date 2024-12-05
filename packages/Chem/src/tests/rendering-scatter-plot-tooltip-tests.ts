@@ -24,6 +24,7 @@ category('rendering-tooltip', () => {
     const df = DG.DataFrame.fromCsv(molCoordsCsv);
     df.currentRowIdx = 0;
     const view = grok.shell.addTableView(df);
+    await grok.data.detectSemanticTypes(df);
     const sp: DG.ScatterPlotViewer = df.plot.scatter({x: 'x', y: 'y'});
     view.dockManager.dock(sp, DG.DOCK_TYPE.RIGHT, null);
     await delay(200);

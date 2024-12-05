@@ -1,5 +1,9 @@
 # HitTriage changelog
 
+## 1.3.10 (2024-12-04)
+
+* Bump dependencies versions
+
 ## 1.3.9 (2024-11-29)
 
 * Enable working with molblocks without overwriting original data with smiles.

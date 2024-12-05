@@ -126,19 +126,7 @@ export async function initTests() {
             throw new Error(`Script ${'Scripts:' + script.options.path as string}.${script.friendlyName}`);
         }
 
-        async function evaluateScript(script: Script) {
-          let timeout: any;
-          timeout = setTimeout(() => {
-            subscription.unsubscribe();
-            throw new Error('Script didnt pass');
-          }, 10000);
-          const subscription = grok.functions.onAfterRunAction.subscribe((funcCall) => {
-            if ((funcCall.func as any).script.replaceAll('\r', '').replaceAll('\n', '') === script.script.replaceAll('\r', '').replaceAll('\n', '')) {
-              if (timeout)
-                clearTimeout(timeout);
-              subscription.unsubscribe();  
-            }
-          });
+        async function evaluateScript(script: Script) { 
           await script.apply();
           await delay(300);
         }

@@ -129,7 +129,7 @@ export class AddNewColumnDialog {
   uiFunctions?: HTMLDivElement;
   uiDialog?: DG.Dialog;
   codeMirror?: EditorView;
-  codeMirrorDiv = ui.div('', { style: { height: '140px' } });
+  codeMirrorDiv = ui.div('', {style: {height: '140px', border: 'dotted 1px var(--grey-3)'}});
   errorDiv = ui.div('', 'cm-errort-div cm-hint-div');
   hintDiv = ui.div('', 'cm-hint-div');
   columnNames: string[] = [];
@@ -1196,7 +1196,7 @@ export class AddNewColumnDialog {
     this.call.setParamValue('treatAsString', this.getSelectedType()[1]);
     if (!this.edit)
       this.call.setParamValue('subscribeOnChanges', true);
-    await this.call.call();
+    await this.call.call(false, undefined, {processed: false});
   }
 
   /** Closes Add New Column Dialog Window. */

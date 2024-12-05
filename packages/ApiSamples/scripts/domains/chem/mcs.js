@@ -1,5 +1,5 @@
 // An example of getting Maximum Common Substructure (MCS).
 
-grok.data.loadTable('https://public.datagrok.ai/demo/sar_small.csv')
-  .then(t => grok.chem.mcs(t, 'smiles')
-    .then(mcs => grok.shell.info(mcs)));
+let t = await grok.data.loadTable('https://public.datagrok.ai/demo/sar_small.csv');
+let mcs = await grok.chem.mcs(t, 'smiles'); 
+grok.shell.info(mcs)

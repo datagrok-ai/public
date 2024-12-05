@@ -62,7 +62,7 @@ function initWidgetHost(host: HTMLDivElement, w: DG.Widget) {
   ui.tools.setHoverVisibility(host, Array.from(host.querySelectorAll('i')));
 }
 
-function createWidgetHost(title: string) {
+function createWidgetHost(title: string): HTMLDivElement {
   const header = ui.div([ui.divText(title, 'd4-dialog-title'),], 'd4-dialog-header');
   const host = ui.box(null, 'power-pack-widget-host');
   host.appendChild(header);
@@ -71,20 +71,23 @@ function createWidgetHost(title: string) {
 }
 
 export function widgetHostFromFunc(f: DG.Func) {
-  const host = createWidgetHost(f.friendlyName);
-  const contentDiv: HTMLDivElement = host.querySelector('.power-pack-widget-content')!;
+  const host: HTMLDivElement = createWidgetHost(f.friendlyName);
+  const contentDiv: HTMLElement = (host.querySelector('.power-pack-widget-content')!) as HTMLElement;
 
   f.apply().then(function(w: DG.Widget) {
-      ui.setUpdateIndicator(contentDiv, false, '');
-      w.factory = f;
-      if (w)
+      if (w) {
+        w.factory = f;
         initWidgetHost(host, w);
-        return;
-  }).catch((e) => {
+      }
+      else
+        host.remove();
+  })
+  .catch((e) => {
     host.style.display = 'none';
     host.remove();
     console.error(`Error creating widget ${f.name}`, e);
-  }).finally(() => ui.setUpdateIndicator(contentDiv, false, ''));
+  })
+ .finally(() => ui.setUpdateIndicator(contentDiv, false, ''));
 
   setTimeout(() => {
     if (contentDiv!.children.length == 0)

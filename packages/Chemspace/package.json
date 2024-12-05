@@ -60,5 +60,18 @@
   "canView": [
     "All users"
   ],
-  "category": "Cheminformatics"
+  "category": "Cheminformatics",
+  "meta": {
+    "semanticTypes": [
+      {
+        "semType": "chemspace-id",
+        "description": "Compound id in the Chemspace database",
+        "parsers": [
+          {
+            "regexp": "^(CSMS|CSMB|CSCS|CSSB|CSSS)\\d{11}$"
+          }
+        ]
+      }
+    ]
+  }
 }

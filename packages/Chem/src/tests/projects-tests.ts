@@ -151,6 +151,7 @@ additionalChecks?: (tv: DG.TableView) => Promise<void>) {
       fullPath: `System:AppData/Chem/${tableName}`
     }).call(undefined, undefined, { processed: false });
     tv = grok.shell.tv;
+    await grok.data.detectSemanticTypes(tv.dataFrame);
   } else
     tv = await createTableView(tableName);
   await delay(100);

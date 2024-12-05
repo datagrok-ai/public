@@ -312,6 +312,7 @@ category('UI top menu', () => {
 
 
 async function testGroup(groupName: string, funcName: string, colName: string, dlgName: string) {
+  console.log(`testGroup, dlgName: ${dlgName}`);
   const smiles = grok.data.demo.molecules(20);
   const v = grok.shell.addTableView(smiles);
   await grok.data.detectSemanticTypes(smiles);
@@ -327,7 +328,8 @@ async function testGroup(groupName: string, funcName: string, colName: string, d
 async function getDlgAndClickOK(error: string, header: string) {
   const dlg = () => {
     return Array.from(document.getElementsByClassName('d4-dialog'))
-      .filter((dlg) => dlg.getElementsByClassName('d4-dialog-header')[0].children[0].textContent === header);
+      .filter((dlg) => dlg.getElementsByClassName('d4-dialog-header')[0]
+        .children[0].textContent?.toLocaleLowerCase() === header.toLocaleLowerCase());
   };
   await awaitCheck(() => {
     return dlg().length > 0;

@@ -1,0 +1,49 @@
+{
+  "name": "chatgpt",
+  "friendlyName": "ChatGPT",
+  "version": "0.0.1",
+  "description": "",
+  "dependencies": {
+    "datagrok-api": "latest",
+    "cash-dom": "latest",
+    "dayjs": "latest",
+    "@datagrok-libraries/utils": "latest"
+  },
+  "devDependencies": {
+    "datagrok-tools": "latest",
+    "webpack": "latest",
+    "webpack-cli": "latest",
+    "ts-loader": "latest",
+    "typescript": "latest"
+  },
+  "scripts": {
+    "link-all": "grok link",
+    "debug-chatgpt": "webpack && grok publish",
+    "release-chatgpt": "webpack && grok publish --release",
+    "build-chatgpt": "webpack",
+    "build": "webpack",
+    "debug-chatgpt-dev": "webpack && grok publish dev",
+    "release-chatgpt-dev": "webpack && grok publish dev --release",
+    "debug-chatgpt-public": "webpack && grok publish public",
+    "release-chatgpt-public": "webpack && grok publish public --release"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/ChatGPT"
+  },
+  "properties": [
+    {
+      "name": "apiKey",
+      "propertyType": "string",
+      "defaultValue": "Enter ChatGPT API key",
+      "nullable": false
+    }
+  ]
+}

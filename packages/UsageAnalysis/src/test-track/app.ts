@@ -359,6 +359,7 @@ export class TestTrack extends DG.ViewBase {
       items: this.testingNames, value: this.testingName, nullable: false, onValueChanged: (e) => {
         this.testingName = e;
         this.refresh();
+        localStorage.setItem(BATCHNAME_STORAGE_KEY, this.testingName);
       }
     });
 
@@ -645,7 +646,7 @@ export class TestTrack extends DG.ViewBase {
 
   private setStatus(node: any, data: any, statusName: string) {
     const status = statusName.toLowerCase() as Status;
-    if (node.value.status === status) return;
+    if (node?.value?.status === status) return;
     data.args.menu.clear();
     data.args.menu.root.remove();
     if (status === PASSED)
@@ -822,7 +823,9 @@ export class TestTrack extends DG.ViewBase {
   }
 
   changeNodeStatus(node: DG.TreeViewNode, status: Status, reason?: string, uid: string = this.uid, reportData: Boolean = true): void {
-    const value = node.value;
+    if(!node)
+      return;
+    const value = node?.value;
     if (value.status) {
       if (value.history.children.length === 5)
         value.history.children[4].remove();
@@ -883,11 +886,11 @@ export class TestTrack extends DG.ViewBase {
   }
 
   changeNodeReason(node: DG.TreeViewNode, status: Status, reason: string, uid: string = this.uid, reportData: Boolean = true): void {
-    if (status !== node.value.status) {
+    if (status !== node?.value?.status) {
       this.changeNodeStatus(node, status, reason, uid, reportData);
       return;
     }
-    if (reason === node.value.reason.innerText) return;
+    if (reason === node?.value?.reason?.innerText) return;
     node.value.reason.innerHTML = '';
     let severityLevel = null;
     if (errorSeverityLevels.includes(status) || status === SKIPPED) {
@@ -1083,7 +1086,7 @@ export class TestTrack extends DG.ViewBase {
       else if (gh1) result.append(this.getReasonLink(str, this.gitHubBaseUrl + gh1[1], gh1[0]));
       else if (gh2) result.append(this.getReasonLink(str, str, `#${gh2[1]}`));
       else if (slack) result.append(this.getReasonLink(str, str, 'SLACK'));
-      else result.append(ui.p(str));
+      else result.innerText = str;
     }
     result.style.lineHeight = '4px ';
     return result;
@@ -1154,8 +1157,8 @@ export class TestTrack extends DG.ViewBase {
     const history: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestTrack', { batchName: `${this.testingName}` });
 
     for (const row of history.rows) {
-
-      const reason: string = row.get('reason');
+      
+      const reason: string = row.get('reason').trim();
       const uid: string = row.get('uid');
 
       let status = row.get('status');

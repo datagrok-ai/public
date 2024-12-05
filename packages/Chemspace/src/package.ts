@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { COUNTRY_CODES } from './country-codes';
-import { ChemspacePricesTableItem, ChemspaceResult } from './model';
+import {COUNTRY_CODES} from './country-codes';
+import {ChemspacePricesTableItem, ChemspaceResult} from './model';
 
 const host = 'https://api.chem-space.com';
 let token: string | null = null;
@@ -19,9 +19,9 @@ enum SEARCH_MODE {
 
 enum CATEGORY {
   CSMS = 'CSMS',
-  CSMB = 'CSMB', 
-  CSCS = 'CSCS', 
-  CSSB = 'CSSB', 
+  CSMB = 'CSMB',
+  CSCS = 'CSCS',
+  CSSB = 'CSSB',
   CSSS = 'CSSS',
 }
 
@@ -35,7 +35,7 @@ export async function app(): Promise<void> {
 
   const molecule = ui.input.molecule('', {value: 'c1ccccc1O'});
   const mode = ui.input.choice('Mode', {
-    value: SEARCH_MODE.SIMILAR, 
+    value: SEARCH_MODE.SIMILAR,
     items: Object.values(SEARCH_MODE),
     onValueChanged: () => update(),
   }) as DG.InputBase<SEARCH_MODE>;
@@ -68,7 +68,8 @@ export async function app(): Promise<void> {
     grok.functions.call(`${_package.name}:queryMultipart`, {
       path: `search/${modeToParam[mode.value]}`,
       formParamsStr: JSON.stringify({'SMILES': molecule.value}),
-      paramsStr: JSON.stringify({category: category.value, shipToCountry: COUNTRY_CODES[shipToCountry.value! as keyof typeof COUNTRY_CODES]})
+      paramsStr: JSON.stringify({category: category.value,
+        shipToCountry: COUNTRY_CODES[shipToCountry.value! as keyof typeof COUNTRY_CODES]}),
     }).then((res) => setDataFrame(DG.DataFrame.fromJson(res)))
       .catch((_) => setDataFrame(emptyTable));
   }
@@ -91,9 +92,9 @@ export async function app(): Promise<void> {
 //output: widget result
 //condition: true
 export async function samplesPanel(smiles: string): Promise<DG.Widget> {
-
-  const updateSearchResults = (acc: DG.Accordion, categoryToData: {[key: string]: {[searchMode in SEARCH_MODE]?: HTMLDivElement}},
-    cat: CATEGORY, shipToCountry: COUNTRY_CODES) => {
+  const updateSearchResults = (acc: DG.Accordion,
+    categoryToData: {[key: string]: {[searchMode in SEARCH_MODE]?: HTMLDivElement}},
+    cat: CATEGORY, shipToCountry: COUNTRY_CODES): void => {
     const similarPanel = acc.getPane(SEARCH_MODE.SIMILAR);
     const substructurePanel = acc.getPane(SEARCH_MODE.SUBSTRUCTURE);
     const similarExpanded = similarPanel?.expanded ?? false;
@@ -103,12 +104,14 @@ export async function samplesPanel(smiles: string): Promise<DG.Widget> {
       acc.removePane(pane);
     acc.addPane(SEARCH_MODE.SIMILAR, () => {
       categoryToData[cacheKey] ??= {};
-      categoryToData[cacheKey]![SEARCH_MODE.SIMILAR] ??= createSearchPanel(SEARCH_MODE.SIMILAR, smiles, cat, shipToCountry);
+      categoryToData[cacheKey]![SEARCH_MODE.SIMILAR] ??=
+        createSearchPanel(SEARCH_MODE.SIMILAR, smiles, cat, shipToCountry);
       return categoryToData[cacheKey]![SEARCH_MODE.SIMILAR]!;
     }, similarExpanded);
     acc.addPane(SEARCH_MODE.SUBSTRUCTURE, () => {
       categoryToData[cacheKey] ??= {};
-      categoryToData[cacheKey]![SEARCH_MODE.SUBSTRUCTURE] ??= createSearchPanel(SEARCH_MODE.SUBSTRUCTURE, smiles, cat, shipToCountry);
+      categoryToData[cacheKey]![SEARCH_MODE.SUBSTRUCTURE] ??=
+        createSearchPanel(SEARCH_MODE.SUBSTRUCTURE, smiles, cat, shipToCountry);
       return categoryToData[cacheKey]![SEARCH_MODE.SUBSTRUCTURE]!;
     }, substructureExpanded);
   };
@@ -123,11 +126,13 @@ export async function samplesPanel(smiles: string): Promise<DG.Widget> {
     const shipToCountry = ui.input.choice('Ship to country', {
       value: 'United States',
       items: Object.keys(COUNTRY_CODES),
-      onValueChanged: (value) => updateSearchResults(acc, categoryToData, category.value, COUNTRY_CODES[value as keyof typeof COUNTRY_CODES]),
+      onValueChanged: (value) => updateSearchResults(acc, categoryToData, category.value,
+        COUNTRY_CODES[value as keyof typeof COUNTRY_CODES]),
     }) as DG.InputBase<string>;
     const category = ui.input.choice('Category', {
       value: CATEGORY.CSCS, items: Object.values(CATEGORY),
-      onValueChanged: (value) => updateSearchResults(acc, categoryToData, value, COUNTRY_CODES[shipToCountry.value! as keyof typeof COUNTRY_CODES]),
+      onValueChanged: (value) => updateSearchResults(acc, categoryToData, value,
+        COUNTRY_CODES[shipToCountry.value! as keyof typeof COUNTRY_CODES]),
     }) as DG.InputBase<CATEGORY>;
     category.fireChanged();
     panels = ui.divV([ui.form([shipToCountry, category]), acc.root]);
@@ -139,66 +144,66 @@ export async function samplesPanel(smiles: string): Promise<DG.Widget> {
 
 //description: Creates search panel
 export function createSearchPanel(searchMode: SEARCH_MODE, smiles: string, category: CATEGORY = CATEGORY.CSCS,
-shipToCountry: COUNTRY_CODES = COUNTRY_CODES['United States']): HTMLDivElement {
+  shipToCountry: COUNTRY_CODES = COUNTRY_CODES['United States']): HTMLDivElement {
   const headerHost = ui.divH([/*ui.h2(panelName)*/], 'chemspace-panel-header');
   const compsHost = ui.div([ui.loader()], 'd4-flex-wrap chem-viewer-grid');
   const panel = ui.divV([headerHost, compsHost], 'chemspace-panel');
 
   const queryParams: {[key: string]: any} = {
     'shipToCountry': shipToCountry,
-    'categories': category
+    'categories': category,
   };
   grok.functions.call(`${_package.name}:queryMultipart`, {
     path: `search/${modeToParam[searchMode]}`,
     formParamsStr: JSON.stringify({'SMILES': smiles}),
-    paramsStr: JSON.stringify(queryParams)
+    paramsStr: JSON.stringify(queryParams),
   }).then(async (resStr: string) => {
     const res: ChemspaceResult[] = JSON.parse(resStr);
-      compsHost.firstChild?.remove();
-      if (res.length === 0) {
-        compsHost.appendChild(ui.divText('No matches'));
-        return;
-      }
+    compsHost.firstChild?.remove();
+    if (res.length === 0) {
+      compsHost.appendChild(ui.divText('No matches'));
+      return;
+    }
 
-      function getTooltip(idx: number): HTMLDivElement {
-        const props: {[key: string]: any} = {
-          'ID': res[idx].csId,
-          'Formula': res[idx].molFormula,
-        }
-        Object.keys(res[idx].properties).forEach((prop) => props[prop] = (res[idx].properties as any)[prop])
-        return ui.divV([ui.tableFromMap(props), ui.divText('Click to open in the store.')]);
-      }
+    function getTooltip(idx: number): HTMLDivElement {
+      const props: {[key: string]: any} = {
+        'ID': res[idx].csId,
+        'Formula': res[idx].molFormula,
+      };
+      Object.keys(res[idx].properties).forEach((prop) => props[prop] = (res[idx].properties as any)[prop]);
+      return ui.divV([ui.tableFromMap(props), ui.divText('Click to open in the store.')]);
+    }
 
-      const smilesCol: DG.Column<string> = DG.Column.string('smiles', res.length).init((i) => res[i].smiles);
+    const smilesCol: DG.Column<string> = DG.Column.string('smiles', res.length).init((i) => res[i].smiles);
 
-      let similarityResult: DG.DataFrame | null = null;
-      if (searchMode === SEARCH_MODE.SIMILAR)
-        similarityResult = await grok.chem.findSimilar(smilesCol, smiles, {limit: 20, cutoff: 0.1});
+    let similarityResult: DG.DataFrame | null = null;
+    if (searchMode === SEARCH_MODE.SIMILAR)
+      similarityResult = await grok.chem.findSimilar(smilesCol, smiles, {limit: 20, cutoff: 0.1});
 
-      for (let i = 0; i < Math.min((similarityResult ? similarityResult.rowCount : res.length), 20); i++) {
-        const idx = searchMode === SEARCH_MODE.SIMILAR ? similarityResult!.get('index', i) : i;
-        const smiles = smilesCol.get(idx);
-        const molHost = ui.div();
-        grok.functions.call('Chem:drawMolecule', {'molStr': smiles, 'w': WIDTH, 'h': HEIGHT, 'popupMenu': true})
-          .then((res: HTMLElement) => {
-            molHost.append(res);
-            if (searchMode === SEARCH_MODE.SIMILAR)
-              molHost.appendChild(ui.divText(`Score: ${similarityResult?.get('score', i).toFixed(2)}`));
-          });
-        ui.tooltip.bind(molHost, () => getTooltip(idx));
-        molHost.addEventListener('click', () => window.open(res[idx].link, '_blank'));
-        compsHost.appendChild(molHost);
-      }
-      headerHost.appendChild(ui.iconFA('arrow-square-down', () => {
-        const df = DG.DataFrame.fromJson(JSON.stringify(res))
-        df.name = `Chemspace ${searchMode}`;
-        grok.shell.addTableView(df);
-      }, 'Open compounds as table'));
-      compsHost.style.overflowY = 'auto';
-    })
+    for (let i = 0; i < Math.min((similarityResult ? similarityResult.rowCount : res.length), 20); i++) {
+      const idx = searchMode === SEARCH_MODE.SIMILAR ? similarityResult!.get('index', i) : i;
+      const smiles = smilesCol.get(idx);
+      const molHost = ui.div();
+      grok.functions.call('Chem:drawMolecule', {'molStr': smiles, 'w': WIDTH, 'h': HEIGHT, 'popupMenu': true})
+        .then((res: HTMLElement) => {
+          molHost.append(res);
+          if (searchMode === SEARCH_MODE.SIMILAR)
+            molHost.appendChild(ui.divText(`Score: ${similarityResult?.get('score', i).toFixed(2)}`));
+        });
+      ui.tooltip.bind(molHost, () => getTooltip(idx));
+      molHost.addEventListener('click', () => window.open(res[idx].link, '_blank'));
+      compsHost.appendChild(molHost);
+    }
+    headerHost.appendChild(ui.iconFA('arrow-square-down', () => {
+      const df = DG.DataFrame.fromJson(JSON.stringify(res));
+      df.name = `Chemspace ${searchMode}`;
+      grok.shell.addTableView(df);
+    }, 'Open compounds as table'));
+    compsHost.style.overflowY = 'auto';
+  })
     .catch((err) => {
       compsHost.firstChild?.remove();
-      const div = ui.divText('No matches');
+      const div = ui.divText(err.message ?? err);
       ui.tooltip.bind(div, `${err}`);
       compsHost.appendChild(div);
     });
@@ -215,7 +220,8 @@ shipToCountry: COUNTRY_CODES = COUNTRY_CODES['United States']): HTMLDivElement {
 export async function pricesPanel(id: string): Promise<DG.Widget> {
   let prices: HTMLDivElement | null = null;
   const resData = ui.div([ui.loader()]);
-  const updatePrices = (categoryToData: { [key: string]: HTMLDivElement }, cat: CATEGORY, shipToCountry: COUNTRY_CODES) => {
+  const updatePrices = (categoryToData: { [key: string]: HTMLDivElement },
+    cat: string, shipToCountry: COUNTRY_CODES): void => {
     ui.empty(resData);
     const cacheKey = getCategoryCacheKey(cat, shipToCountry);
     if (!categoryToData[cacheKey]) {
@@ -223,68 +229,65 @@ export async function pricesPanel(id: string): Promise<DG.Widget> {
       grok.functions.call(`${_package.name}:queryMultipart`, {
         path: `search/${modeToParam[SEARCH_MODE.TEXT]}`,
         formParamsStr: JSON.stringify({'query': id}),
-        paramsStr: JSON.stringify({'shipToCountry': shipToCountry, 'categories': cat})
+        paramsStr: JSON.stringify({'shipToCountry': shipToCountry, 'categories': cat}),
       }).then(async (resStr: string) => {
-          const res: ChemspaceResult[] = JSON.parse(resStr);
-          ui.empty(resData);
-          if (res.length === 0) {
-            resData.appendChild(ui.divText('No matches'));
-            return;
-          };
-          if (res.length > 1) {
-            resData.appendChild(ui.divText(`Ambigous results for id ${id}`));
-            return;
-          };
-          const offers = res[0].offers;
-          const chemspacePricesArray: ChemspacePricesTableItem[] = [];
-          offers.forEach((offer) => {
-            for (let i = 0; i < offer.prices.length; i++)
-              chemspacePricesArray.push({
-                packMg: offer.prices[i].packMg,
-                priceUsd: offer.prices[i].priceUsd,
-                priceEur: offer.prices[i].priceEur,
-                vendorName: offer.vendorName,
-                vendorCode: offer.vendorCode,
-                leadTimeDays: offer.leadTimeDays,
-                purity: offer.purity
-            });
-          });
-          const table = DG.DataFrame.fromJson(JSON.stringify(chemspacePricesArray));
-          //setting format for money columns
-          ['priceUsd', 'priceEur'].forEach((name: string) => {
-            table.col(name)!.semType = 'Money';
-            if(name === 'priceUsd')
-              table.col(name)!.meta.format = 'money($)';
-          })
-          const grid = DG.Grid.create(table);
-          grid.root.classList.add('chemspace-prices-grid');
-          const button = ui.bigButton('ORDER', () => window.open(res[0].link, '_blank'));
-          button.classList.add('chemspace-order-button');
-          resData.append(grid.root);
-          resData.append(button);
-      })
-      .catch((err: any) => {
+        const res: ChemspaceResult[] = JSON.parse(resStr);
         ui.empty(resData);
-        resData.append(ui.divText(err.message));
-      });
-    }
-    else
+        if (res.length === 0) {
+          resData.appendChild(ui.divText('No matches'));
+          return;
+        };
+        if (res.length > 1) {
+          resData.appendChild(ui.divText(`Ambigous results for id ${id}`));
+          return;
+        };
+        const offers = res[0].offers;
+        const chemspacePricesArray: ChemspacePricesTableItem[] = [];
+        offers.forEach((offer) => {
+          for (let i = 0; i < offer.prices.length; i++) {
+            chemspacePricesArray.push({
+              packMg: offer.prices[i].packMg,
+              priceUsd: offer.prices[i].priceUsd,
+              priceEur: offer.prices[i].priceEur,
+              vendorName: offer.vendorName,
+              vendorCode: offer.vendorCode,
+              leadTimeDays: offer.leadTimeDays,
+              purity: offer.purity,
+            });
+          }
+        });
+        const table = DG.DataFrame.fromJson(JSON.stringify(chemspacePricesArray));
+        //setting format for money columns
+        ['priceUsd', 'priceEur'].forEach((name: string) => {
+            table.col(name)!.semType = 'Money';
+            if (name === 'priceUsd')
+              table.col(name)!.meta.format = 'money($)';
+        });
+        const grid = DG.Grid.create(table);
+        grid.root.classList.add('chemspace-prices-grid');
+        const button = ui.bigButton('ORDER', () => window.open(res[0].link, '_blank'));
+        button.classList.add('chemspace-order-button');
+        resData.append(grid.root);
+        resData.append(button);
+      })
+        .catch((err: any) => {
+          ui.empty(resData);
+          resData.append(ui.divText(err.message ?? err));
+        });
+    } else
       resData.append(categoryToData[cacheKey]);
-  }
+  };
   try {
     await getApiToken();
     const categoryToData: { [key: string]: HTMLDivElement } = {};
     const shipToCountry = ui.input.choice('Ship to country', {
       value: 'United States',
       items: Object.keys(COUNTRY_CODES),
-      onValueChanged: (value) => updatePrices(categoryToData, category.value, COUNTRY_CODES[value as keyof typeof COUNTRY_CODES]),
+      onValueChanged: (value) => updatePrices(categoryToData,
+        Object.keys(CATEGORY).join(','), COUNTRY_CODES[value as keyof typeof COUNTRY_CODES]),
     }) as DG.InputBase<string>;
-    const category = ui.input.choice('Category', {
-      value: CATEGORY.CSCS, items: Object.values(CATEGORY),
-      onValueChanged: (value) => updatePrices(categoryToData, value, COUNTRY_CODES[shipToCountry.value! as keyof typeof COUNTRY_CODES]),
-    }) as DG.InputBase<CATEGORY>;
-    category.fireChanged();
-    prices = ui.divV([ui.form([shipToCountry, category]), resData]);
+    shipToCountry.fireChanged();
+    prices = ui.divV([ui.form([shipToCountry]), resData]);
   } catch (e: any) {
     prices = ui.divText(e.message);
   }
@@ -313,7 +316,7 @@ export async function queryMultipart(path: string, formParamsStr: string, params
   const formData = new FormData();
   Object.keys(formParams).forEach((key) => formData.append(key, formParams[key]));
   const queryUrlParams = params ? `?${Object.keys(params).map((key) => `${key}=${params[key]}`).join('&')}` : '';
-  const url = `${host}/v4/${path}${queryUrlParams}`
+  const url = `${host}/v4/${path}${queryUrlParams}`;
 
   const queryParams = {
     method: 'POST',
@@ -332,12 +335,12 @@ export async function queryMultipart(path: string, formParamsStr: string, params
     if (list && list.length > 0)
       return JSON.stringify(list);
     else
-      throw 'No matches';
+      throw Error('No matches');
   } catch (e) {
     throw e;
   }
 }
 
-function getCategoryCacheKey(cat: CATEGORY, shipToCountry: COUNTRY_CODES): string {
+function getCategoryCacheKey(cat: string, shipToCountry: COUNTRY_CODES): string {
   return `${cat}|${shipToCountry}`;
 }
