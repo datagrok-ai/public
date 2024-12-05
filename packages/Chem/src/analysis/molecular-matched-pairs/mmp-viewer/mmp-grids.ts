@@ -331,10 +331,10 @@ export class MmpPairedGrids {
       pairsFrom[i] = diffFrom.get(cases[i]);
       pairsTo[i] = diffTo.get(cases[i]);
     }
-    const {inverse1, inverse2, fromAligned, toAligned} =
-      await getInverseSubstructuresAndAlign(pairsFrom, pairsTo, rdkitModule);
     // const {inverse1, inverse2, fromAligned, toAligned} =
-    //   await getInverseSubstructuresAndAlign2(fFrom, fTo, pairsFrom, pairsTo, rdkitModule);
+    //   await getInverseSubstructuresAndAlign(pairsFrom, pairsTo, rdkitModule);
+    const {inverse1, inverse2, fromAligned, toAligned} =
+      await getInverseSubstructuresAndAlign2(fFrom, fTo, pairsFrom, pairsTo, rdkitModule);
     for (let i = 0; i < cases.length; i++) {
       diffFrom.set(cases[i], fromAligned[i]);
       diffTo.set(cases[i], toAligned[i]);

@@ -2,6 +2,7 @@ import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 
 import {getRdKitService, getUncommonAtomsAndBonds} from '../../../utils/chem-common-rdkit';
+import {cutFragments, getEqualMolsIdxs} from './mmp-react-toolkit';
 
 async function getMmpMcs(molecules1: string[], molecules2: string[]): Promise<string[]> {
   const service = await getRdKitService();
@@ -72,13 +73,24 @@ export async function getInverseSubstructuresAndAlign2(fragmentFrom: string, fra
   const res1 = new Array<(ISubstruct | null)>(from.length);
   const res2 = new Array<(ISubstruct | null)>(from.length);
 
-  const mcs = await getMmpMcs(from, to);
+  //const mcs = await getMmpMcs(from, to);
+  const fromPossibleCuts = cutFragments(module, from, fragmentFrom);
+  const toPossibleCuts = cutFragments(module, to, fragmentTo);
+
 
   for (let i = 0; i < from.length; i++) {
     //aligning molecules
-    let mcsMol = null;
     let mol1 = null;
     let mol2 = null;
+    let mcsMol = null;
+    const [idx1, idx2] = getEqualMolsIdxs(module, fromPossibleCuts[i], toPossibleCuts[i]);
+
+    if (idx1 === -1 && idx2 === -1) {
+      fromAligned[i] = '';
+      toAligned[i] = '';
+      continue;
+    }
+
     const opts = JSON.stringify({
       useCoordGen: true,
       allowRGroups: true,
@@ -87,7 +99,7 @@ export async function getInverseSubstructuresAndAlign2(fragmentFrom: string, fra
     });
 
     try {
-      mcsMol = module.get_qmol(mcs[i]);
+      mcsMol = module.get_mol(fromPossibleCuts[i][idx1]);
       mol1 = module.get_mol(from[i]);
       mol2 = module.get_mol(to[i]);
       mcsMol.set_new_coords();
@@ -106,5 +118,6 @@ export async function getInverseSubstructuresAndAlign2(fragmentFrom: string, fra
       mcsMol?.delete();
     }
   }
+
   return {inverse1: res1, inverse2: res2, fromAligned: fromAligned, toAligned: toAligned};
 }
