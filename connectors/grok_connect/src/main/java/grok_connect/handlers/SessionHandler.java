@@ -5,6 +5,7 @@ import grok_connect.connectors_info.DataQueryRunResult;
 import grok_connect.log.EventType;
 import grok_connect.log.QueryLogger;
 import grok_connect.utils.GrokConnectException;
+import grok_connect.utils.QueryCancelledByUser;
 import grok_connect.utils.QueryChunkNotSent;
 import grok_connect.utils.QueryManager;
 import org.eclipse.jetty.websocket.api.Session;
@@ -25,10 +26,9 @@ public class SessionHandler {
     private static final String END_MESSAGE = "EOF";
     private static final String SIZE_RECEIVED_MESSAGE = "DATAFRAME PART SIZE RECEIVED";
     private final Session session;
-    private final ExecutorService threadPool;
+    private CompletableFuture<DataFrame> completableFuture;
     private final QueryLogger queryLogger;
     private final Logger logger;
-    private Future<DataFrame> fdf;
     private DataFrame dataFrame;
     private Boolean firstTry = true;
     private Boolean oneDfSent = false;
@@ -37,7 +37,6 @@ public class SessionHandler {
     private QueryManager queryManager;
 
     SessionHandler(Session session, QueryLogger queryLogger) {
-        threadPool = Executors.newCachedThreadPool();
         this.queryLogger = queryLogger;
         this.logger = queryLogger.getLogger();
         this.session = session;
@@ -45,17 +44,16 @@ public class SessionHandler {
     }
 
     public void onError(Throwable err) {
-        Throwable cause = err.getCause() == null ? err : err.getCause(); // we need to get cause, because error is wrapped by runtime exception
-        if (cause instanceof OutOfMemoryError) {
+        if (err instanceof OutOfMemoryError) {
             // guess it won't work because there is no memory left!
             GrokConnect.needToReboot = true;
         }
-        if (cause.getClass().equals(GrokConnectException.class))
-            cause = cause.getCause();
-        String message = cause.getMessage();
-        String stackTrace = Arrays.stream(cause.getStackTrace()).map(StackTraceElement::toString)
+        if (err.getClass().equals(GrokConnectException.class))
+            err = err.getCause();
+        String message = err.getMessage();
+        String stackTrace = Arrays.stream(err.getStackTrace()).map(StackTraceElement::toString)
                 .collect(Collectors.joining(System.lineSeparator()));
-        logger.error(EventType.ERROR.getMarker(), message, cause);
+        logger.error(EventType.ERROR.getMarker(), message, err);
         DataQueryRunResult result = new DataQueryRunResult();
         result.errorMessage = message;
         result.errorStackTrace = stackTrace;
@@ -82,7 +80,13 @@ public class SessionHandler {
             dataFrame = queryManager.isResultSetInitialized() ? queryManager.getSubDF(dfNumber) : new DataFrame();
         }
         else if (message.startsWith(SIZE_RECEIVED_MESSAGE)) {
-            fdf = threadPool.submit(() -> queryManager.getSubDF(dfNumber + 1));
+            completableFuture = GrokConnect.submitPoolTask(() -> {
+                try {
+                    return queryManager.getSubDF(dfNumber + 1);
+                } catch (SQLException | QueryCancelledByUser e) {
+                    throw new CompletionException(e);
+                }
+            });
             Marker start = EventType.SOCKET_BINARY_DATA_EXCHANGE.getMarker(dfNumber, EventType.Stage.START);
             logger.debug(start, "Sending binary data with id {} to the server...", dfNumber);
             session.getRemote().sendBytesByFuture(ByteBuffer.wrap(bytes));
@@ -105,7 +109,12 @@ public class SessionHandler {
                 oneDfSent = true;
                 if (queryManager.isResultSetInitialized()) {
                     logger.debug("-- GrokConnect thread is doing nothing. Blocking to receive next dataframe --");
-                    dataFrame = fdf.get();
+                    try {
+                        dataFrame = completableFuture.join();
+                    } catch (CompletionException e) {
+                        // rethrow exact cause
+                        throw e.getCause();
+                    }
                     logger.debug("-- Received next dataframe from executing thread --");
                     if (dataFrame.rowCount != 0) dfNumber++;
                 }
@@ -127,7 +136,6 @@ public class SessionHandler {
     }
 
     public void onClose() throws SQLException {
-        threadPool.shutdown();
         if (queryManager != null) queryManager.close();
         queryLogger.closeLogger();
     }

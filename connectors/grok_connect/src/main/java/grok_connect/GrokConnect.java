@@ -21,6 +21,11 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.servlet.ServletOutputStream;
 import javax.ws.rs.core.MediaType;
@@ -41,15 +46,15 @@ public class GrokConnect {
     public static boolean needToReboot = false;
     public static ProviderManager providerManager;
     public static Properties properties;
+    private static ExecutorService threadPool;
 
     public static void main(String[] args) {
         properties = getInfo();
         setGlobalLogLevel();
         PARENT_LOGGER.info(String.format("%s - version: %s", properties.get(NAME), properties.get(VERSION)));
         PARENT_LOGGER.info("Grok Connect initializing");
+        threadPool = Executors.newCachedThreadPool();
         PARENT_LOGGER.info(getStringLogMemory());
-        PARENT_LOGGER.trace("HELLO FROM TRACE");
-
         providerManager = new ProviderManager();
         port(DEFAULT_PORT);
         connectorsModule();
@@ -58,8 +63,12 @@ public class GrokConnect {
         PARENT_LOGGER.info("grok_connect: Connectors: {}", providerManager.getAllProvidersTypes());
     }
 
+    public static <T> CompletableFuture<T> submitPoolTask(Supplier<T> task) {
+        return CompletableFuture.supplyAsync(task, threadPool);
+    }
+
     private static void connectorsModule() {
-        webSocket("/query_socket", new QueryHandler());
+        webSocket("/query_socket", QueryHandler.class);
         // webSocket("/query_table", new QueryHandler(QueryType.tableQuery));
 
         before((request, response) -> {
@@ -297,7 +306,8 @@ public class GrokConnect {
         long used = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
         long free = Runtime.getRuntime().maxMemory() - used;
         long total = Runtime.getRuntime().maxMemory();
-        return String.format("Memory: free: %s(%.2f%%), used: %s", free, 100.0 * free/total, used);
+        int largestPoolSize = ((ThreadPoolExecutor) threadPool).getLargestPoolSize();
+        return String.format("Memory: free: %s(%.2f%%), used: %s. Largest socket pool size: %s", free, 100.0 * free/total, used, largestPoolSize);
     }
 
     private static void prepareResponse(DataQueryRunResult result, Response response, BufferAccessor buffer) {
