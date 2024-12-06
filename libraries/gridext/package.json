@@ -12,7 +12,7 @@
   "description": "DG Grid Extensions",
   "dependencies": {
     "@types/node": "^14.14.37",
-    "datagrok-api": "^1.23.0-rc.65db955990.b3a833eabf60",
+    "datagrok-api": "../../js-api",
     "rxjs": "^6.5.5"
   },
   "devDependencies": {
