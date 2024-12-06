@@ -1883,6 +1883,9 @@ export interface IGridSettings {
   /// (for instance, as a result of clicking on a point in a scatter plot)
   autoScrollRowIntoView: boolean;
 
+  /// Automatically resize column widths when row height is resized
+  autoResizeColumnWidths: boolean;
+
   showColumnGridlines: boolean;
 
   /// Reordering columns by dragging the header
