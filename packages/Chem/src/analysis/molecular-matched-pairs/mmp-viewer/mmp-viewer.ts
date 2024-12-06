@@ -333,6 +333,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     let lastSelectedTab = MMP_NAMES.TAB_TRANSFORMATIONS;
     tabs.onTabChanged.subscribe(() => {
       if (lastSelectedTab === MMP_NAMES.TAB_FRAGMENTS && tabs.currentPane.name !== MMP_NAMES.TAB_FRAGMENTS) {
+        this.pairedGrids!.currentFragmentsTab = true;
         grok.shell.tv.dockManager.close(this.pairedGrids!.filters.root);
         this.pairedGrids!.fpMaskFragmentsTab.copyFrom(this.pairedGrids!.fpGrid.dataFrame.filter);
       }
@@ -350,6 +351,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         //grok.shell.o = mmPairsRoot;
       } else if (tabs.currentPane.name == MMP_NAMES.TAB_FRAGMENTS) {
         lastSelectedTab = MMP_NAMES.TAB_FRAGMENTS;
+        this.pairedGrids!.currentFragmentsTab = true;
         this.pairedGrids!.refreshMaskFragmentPairsFilter();
         this.pairedGrids!.fpGrid.dataFrame.filter.copyFrom(this.pairedGrids!.fpMaskFragmentsTab);
         this.sortTrellis(TrellisAxis.From, trellisSortState[TrellisAxis.From], tp);
