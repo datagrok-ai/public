@@ -175,9 +175,9 @@ When working with the [grid](../../../visualize/viewers/grid.md), the default in
 |Column|<h5>**Colors**</h5> Color code a column <br/><br/> ![](img/info-panes-colors.gif)|
 |Column|<h5>**Stats**</h5> Shows summary statistics for a column <br/><br/> ![](img/context panel -stats.gif)|
 |Column|<h5>**Permissions**</h5> Specify who can edit a column |
-|Selected columns|<h5>**Plots**</h5>Visualizes selected columns for quick profiling <br/><br/> ![](../../../deploy/releases/platform/img/plots-info-pane.gif)|
+|Selected columns|<h5>**Plots**</h5>Visualizes selected columns for quick profiling <br/><br/> ![](../../../deploy/releases/img/plots-info-pane.gif)|
 |Selected rows|<h5>**Distributions**</h5> Shows distributions for numerical columns based on selected rows <br/><br/>![](img/info-pane-distributions-0.png)|
-|Selected rows|<h5>**Content**</h5> Shows details for selected rows in a spreadsheet format<br/><br/>![](../../../deploy/releases/platform/img/content-info-pane.gif)|
+|Selected rows|<h5>**Content**</h5> Shows details for selected rows in a spreadsheet format<br/><br/>![](../../../deploy/releases/img/content-info-pane.gif)|
 
 <!--
 |Table|<h5>**Properties**</h5>|
