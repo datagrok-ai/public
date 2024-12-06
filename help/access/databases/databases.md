@@ -634,6 +634,73 @@ connection also deletes a query.
 
 :::
 
+
+## Search integrated queries
+
+Datagrok allows you to define a special patterns for calling any function or query with a human-readable sentence and visualize the resulting dashboard directly from the platform search.
+
+When you create a function, script, or query that results in a table, you can annotate it with the `meta.searchPattern` tag. This tag will be used to call the function with the specified parameters within the sentence.
+
+The `searchPattern` tag can be any sentence that contains placeholders for the parameters. For example, if the annotation of the query is as follows:
+
+```sql
+--input: string target = "CHEMBL1827"
+--meta.searchPattern: "compound activity details for target ${target}"
+```
+
+Searching for "compound activity details for target CHEMBL1827" in the `Search Everywhere` bar will call the query and pass "CHEMBL1827" as the `target` parameter. The number of parameters is not limited, and they can be used in any order in the sentence.
+
+![Search integrated queries](img/search-integrated-queries.gif)
+
+:::tip
+
+Use the `Search Everywhere` bar to visualize the following queries directly from the search results:
+- `Bioactivity for bacterial targets for Shigella`
+- `Pharmacokinetic Data for LEVOFLOXACIN`
+- `Compound activity details for target CHEMBL1827`
+
+You can also add the resulting dashboard to the workspace by clicking on the `+` icon in the search results.
+
+:::
+
+<details>
+<summary>Example query</summary>
+
+```sql
+--name: bioactivity data for bacterial targets for @organism
+--friendlyName: Browse | Bioactivity for bacterial targets for @organism
+--connection: Chembl
+--input: string organism {suggestions: Chembl:organisms}
+--input: string species
+--meta.searchPattern: "Bioactivity for ${species} targets for ${organism}"
+SELECT md.chembl_id AS compound_chembl_id,
+cs.canonical_smiles,
+act.standard_type,
+act.standard_value,
+act.standard_units,
+td.chembl_id AS target_chembl_id,
+td.organism,   td.pref_name
+FROM target_dictionary td
+  JOIN assays a ON td.tid = a.tid
+  JOIN activities act ON a.assay_id = act.assay_id
+  JOIN molecule_dictionary md ON act.molregno = md.molregno
+  JOIN compound_structures cs ON md.molregno   = cs.molregno
+  JOIN organism_class oc ON td.tax_id = oc.tax_id
+    AND td.organism ILIKE @organism
+    AND oc.L1 = @species;
+--end
+
+```
+
+Here, the `state` and `city` parameters are defined as strings with default
+values. The `city` parameter's choices query references the `state` parameter
+using `@state`. This ensures that the choices are filtered based on the value of
+`state`.
+
+</details>
+
+:::
+
 <!--
 
 ## Debugging queries
