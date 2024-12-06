@@ -370,7 +370,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         refilter = false;
         if (this.lastSelectedPair) {
           setTimeout(() => {
-            grok.shell.o = fillPairInfo(this.lastSelectedPair!, this.linesIdxs!,
+            grok.shell.o = fillPairInfo(this.mmpa!, this.lastSelectedPair!, this.linesIdxs!,
               this.linesActivityCorrespondance![this.lastSelectedPair!],
               this.pairedGrids!.mmpGridTrans.dataFrame, this.diffs!, this.parentTable!, this.rdkitModule!);
           }, 500);
@@ -589,7 +589,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         this.linesRenderer!.currentLineId = event.id;
         if (event.id !== -1) {
           setTimeout(() => {
-            grok.shell.o = fillPairInfo(event.id, linesIdxs, linesActivityCorrespondance[event.id],
+            grok.shell.o = fillPairInfo(this.mmpa!, event.id, linesIdxs, linesActivityCorrespondance[event.id],
               pairedGrids.mmpGridTrans.dataFrame, diffs, mmpInput.table, rdkitModule, this.propPanelViewer!);
             this.lastSelectedPair = event.id;
             this.propPanelViewer!.fitHeaderToLabelWidth(100);
@@ -606,7 +606,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.propPanelViewer.columns = propertiesColumnsNames;
       this.propPanelViewer.inputClicked.subscribe(() => {
         setTimeout(() => {
-          grok.shell.o = fillPairInfo(
+          grok.shell.o = fillPairInfo(this.mmpa!,
             this.lastSelectedPair!, linesIdxs, linesActivityCorrespondance[this.lastSelectedPair!],
             pairedGrids.mmpGridTrans.dataFrame, diffs, mmpInput.table, rdkitModule, this.propPanelViewer!);
           this.propPanelViewer!.fitHeaderToLabelWidth(100);

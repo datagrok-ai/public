@@ -8,7 +8,7 @@ import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {MMPA} from '../mmp-analysis/mmpa';
 import {getRdKitModule} from '../../../utils/chem-common-rdkit';
 import {createColWithDescription} from './mmp-generations';
-import {getInverseSubstructuresAndAlign3} from './mmp-mol-rendering';
+import {getInverseSubstructuresAndAlign} from './mmp-mol-rendering';
 import {MmpInput} from './mmp-viewer';
 import {Subject, Subscription} from 'rxjs';
 
@@ -337,7 +337,7 @@ export class MmpPairedGrids {
     }
 
     const {inverse1, inverse2, fromAligned, toAligned} =
-      await getInverseSubstructuresAndAlign3(cores, pairsFrom, pairsTo, rdkitModule);
+      await getInverseSubstructuresAndAlign(cores, pairsFrom, pairsTo, rdkitModule);
     for (let i = 0; i < cases.length; i++) {
       diffFrom.set(cases[i], fromAligned[i]);
       diffTo.set(cases[i], toAligned[i]);
