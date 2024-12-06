@@ -29,7 +29,7 @@ export function getSettings(): UserWidgetsSettings {
 
 export function saveSettings(): void {
   console.log(settings);
-  let s: {[key: string]: any} = {};
+  const s: {[key: string]: any} = {};
   for (const key of Object.keys(settings))
     s[key] = JSON.stringify(settings[key]);
   grok.userSettings.addAll(WIDGETS_STORAGE, s);
@@ -63,7 +63,7 @@ function initWidgetHost(host: HTMLDivElement, w: DG.Widget) {
 }
 
 function createWidgetHost(title: string): HTMLDivElement {
-  const header = ui.div([ui.divText(title, 'd4-dialog-title'),], 'd4-dialog-header');
+  const header = ui.div([ui.divText(title, 'd4-dialog-title')], 'd4-dialog-header');
   const host = ui.box(null, 'power-pack-widget-host');
   host.appendChild(header);
   host.appendChild(ui.box(null, 'power-pack-widget-content'));
@@ -75,19 +75,18 @@ export function widgetHostFromFunc(f: DG.Func) {
   const contentDiv: HTMLElement = (host.querySelector('.power-pack-widget-content')!) as HTMLElement;
 
   f.apply().then(function(w: DG.Widget) {
-      if (w) {
-        w.factory = f;
-        initWidgetHost(host, w);
-      }
-      else
-        host.remove();
+    if (w) {
+      w.factory = f;
+      initWidgetHost(host, w);
+    } else
+      host.remove();
   })
-  .catch((e) => {
-    host.style.display = 'none';
-    host.remove();
-    console.error(`Error creating widget ${f.name}`, e);
-  })
- .finally(() => ui.setUpdateIndicator(contentDiv, false, ''));
+    .catch((e) => {
+      host.style.display = 'none';
+      host.remove();
+      console.error(`Error creating widget ${f.name}`, e);
+    })
+    .finally(() => ui.setUpdateIndicator(contentDiv, false, ''));
 
   setTimeout(() => {
     if (contentDiv!.children.length == 0)
@@ -102,7 +101,7 @@ export function widgetHostFromFunc(f: DG.Func) {
 
 
 export function widgetHost(w: DG.Widget/*, widgetHeader?: HTMLDivElement*/): HTMLElement {
-  const host = createWidgetHost(w.props.caption ?? '');
+  const host = createWidgetHost(w.props.hasProperty('caption') ? w.props.caption ?? '' : '');
   initWidgetHost(host, w);
   //widgetHeader ??= ui.div();
 

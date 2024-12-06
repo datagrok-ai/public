@@ -19,7 +19,7 @@ import {MMPA} from '../mmp-analysis/mmpa';
 import {ISequenceSpaceParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 
 export function getMmpScatterPlot(
-  mmpInput: MmpInput, axesColsNames: string[], labelsColName: string) : DG.Viewer {
+  mmpInput: MmpInput, axesColsNames: string[], labelsColName: string) : DG.ScatterPlotViewer {
   mmpInput.table.columns.addNewFloat(axesColsNames[0]);
   mmpInput.table.columns.addNewFloat(axesColsNames[1]);
   const sp = DG.Viewer.scatterPlot(mmpInput.table, {
@@ -66,8 +66,8 @@ function drawMolPair(molecules: string[], indexes: number[], substruct: (ISubstr
   div.append(hosts);
 };
 
-export function fillPairInfo(line: number, linesIdxs: Uint32Array, activityNum: number, pairsDf: DG.DataFrame,
-  diffs: Array<Float32Array>, parentTable: DG.DataFrame,
+export function fillPairInfo(mmpa: MMPA, line: number, linesIdxs: Uint32Array, activityNum: number,
+  pairsDf: DG.DataFrame, diffs: Array<Float32Array>, parentTable: DG.DataFrame,
   rdkitModule: RDModule, propPanelViewer?: FormsViewer):
   HTMLDivElement {
   const div = ui.divV([]);
@@ -81,6 +81,7 @@ export function fillPairInfo(line: number, linesIdxs: Uint32Array, activityNum: 
   const moleculeTo = pairsDf.get(MMP_NAMES.TO, pairIdx);
   const fromIdx = pairsDf.get(MMP_NAMES.PAIRNUM_FROM, pairIdx);
   const toIdx = pairsDf.get(MMP_NAMES.PAIRNUM_TO, pairIdx);
+  const ruleNum = pairsDf.get(MMP_NAMES.RULENUM, pairIdx);
   if (propPanelViewer) {
     const props = getMoleculesPropertiesDiv(propPanelViewer, [fromIdx, toIdx]);
     div.append(props);
@@ -93,15 +94,19 @@ export function fillPairInfo(line: number, linesIdxs: Uint32Array, activityNum: 
         [subsrtFrom, subsrtTo], moleculesDiv, parentTable, !propPanelViewer);
     } else {
       moleculesDiv.append(ui.divText(`Loading...`));
-      getInverseSubstructuresAndAlign([moleculeFrom], [moleculeTo], rdkitModule).then((res) => {
-        const {inverse1, inverse2, fromAligned, toAligned} = res;
-        pairsDf.set(MMP_NAMES.STRUCT_DIFF_FROM_NAME, pairIdx, inverse1[0]);
-        pairsDf.set(MMP_NAMES.STRUCT_DIFF_TO_NAME, pairIdx, inverse2[0]);
-        pairsDf.set(MMP_NAMES.FROM, pairIdx, fromAligned[0]);
-        pairsDf.set(MMP_NAMES.TO, pairIdx, toAligned[0]);
-        drawMolPair([fromAligned[0], toAligned[0]], [fromIdx, toIdx],
-          [inverse1[0], inverse2[0]], moleculesDiv, parentTable, !!propPanelViewer);
-      });
+      const cores = mmpa.rules.rules[ruleNum].pairs
+        .filter((pair) => pair.firstStructure === fromIdx && pair.secondStructure === toIdx);
+      if (cores.length) {
+        getInverseSubstructuresAndAlign([cores[0].core], [moleculeFrom], [moleculeTo], rdkitModule).then((res) => {
+          const {inverse1, inverse2, fromAligned, toAligned} = res;
+          pairsDf.set(MMP_NAMES.STRUCT_DIFF_FROM_NAME, pairIdx, inverse1[0]);
+          pairsDf.set(MMP_NAMES.STRUCT_DIFF_TO_NAME, pairIdx, inverse2[0]);
+          pairsDf.set(MMP_NAMES.FROM, pairIdx, fromAligned[0]);
+          pairsDf.set(MMP_NAMES.TO, pairIdx, toAligned[0]);
+          drawMolPair([fromAligned[0], toAligned[0]], [fromIdx, toIdx],
+            [inverse1[0], inverse2[0]], moleculesDiv, parentTable, !!propPanelViewer);
+        });
+      }
     }
   }
   return div;
@@ -130,7 +135,7 @@ export function runMmpChemSpace(mmpInput: MmpInput, sp: DG.Viewer, lines: ILineS
 
   spEditor.lineHover.pipe(debounceTime(500)).subscribe((event: MouseOverLineEvent) => {
     ui.tooltip.show(
-      fillPairInfo(event.id, linesIdxs, linesActivityCorrespondance[event.id],
+      fillPairInfo(mmpa, event.id, linesIdxs, linesActivityCorrespondance[event.id],
         pairsDf, mmpa.allCasesBased.diffs, mmpInput.table, rdkitModule),
       event.x, event.y);
   });

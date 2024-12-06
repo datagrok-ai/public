@@ -248,9 +248,10 @@ export function checkMoleculeValid(molecule: string): any {
 }
 
 
-export function getUncommonAtomsAndBonds(molecule: string, mcsMol: RDMol | null, rdkit: RDModule, col?: string, addHs?: boolean): ISubstruct | null {
+export function getUncommonAtomsAndBonds(molecule: string, mcsMol: RDMol | null, rdkit: RDModule,
+  col?: string, addHs?: boolean): ISubstruct | null {
   let mol = getMolSafe(molecule, {}, rdkit).mol;
-  let substruct: ISubstruct | null = null;
+  const substruct: ISubstruct | null = null;
   let uncommonAtomsBest: number[] = [];
   let uncommonBondsBest: number[] = [];
   const highlightAtomColors: { [key: string]: number[] } = {};
@@ -261,12 +262,12 @@ export function getUncommonAtomsAndBonds(molecule: string, mcsMol: RDMol | null,
         const molblockWithHs = mol.add_hs();
         mol = getMolSafe(molblockWithHs, {}, rdkit).mol;
       }
-      if(mol) {
+      if (mol) {
         let rdKol: number[] | null = null;
         if (col)
           rdKol = hexToPercentRgb(col);
-        let uncommonAtoms = [...Array(mol.get_num_atoms()).keys()];
-        let uncommonBonds = [...Array(mol.get_num_bonds()).keys()];
+        const uncommonAtoms = [...Array(mol.get_num_atoms()).keys()];
+        const uncommonBonds = [...Array(mol.get_num_bonds()).keys()];
         if (mcsMol) {
           const matchedAtomsAndBondsList: ISubstruct[] = JSON.parse(mol!.get_substruct_matches(mcsMol!));
           let errorRateTotal = Number.MAX_SAFE_INTEGER;
@@ -298,7 +299,7 @@ export function getUncommonAtomsAndBonds(molecule: string, mcsMol: RDMol | null,
           for (let i = 0; i < uncommonBondsBest.length; i++)
             highlightBondColors[uncommonBondsBest[i].toString()] = rdKol;
         }
-        return { atoms: uncommonAtomsBest, bonds: uncommonBondsBest, highlightAtomColors, highlightBondColors };
+        return {atoms: uncommonAtomsBest, bonds: uncommonBondsBest, highlightAtomColors, highlightBondColors};
       }
     }
   } catch {

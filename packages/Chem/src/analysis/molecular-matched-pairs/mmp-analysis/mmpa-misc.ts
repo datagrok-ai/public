@@ -17,7 +17,7 @@ export type MmpRules = {
   rules: {
     smilesRule1: number,
     smilesRule2: number,
-    pairs: {firstStructure: number, secondStructure: number}[]
+    pairs: {firstStructure: number, secondStructure: number, core: string}[]
   } [],
   smilesFrags: string[]
 };
