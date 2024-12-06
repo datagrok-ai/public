@@ -65,17 +65,17 @@ export const Inspector = Vue.defineComponent({
         }
         { selectedTab.value === 'Tree State' && props.treeState &&
           <div>
-            <VueJsonPretty deep={3} showLength={true} data={toJSON(props.treeState)}></VueJsonPretty>
+            <VueJsonPretty deep={4} showLength={true} data={toJSON(props.treeState)}></VueJsonPretty>
           </div>
         }
         { selectedTab.value === 'Links' && props.links &&
           <div>
-            <VueJsonPretty deep={3} showLength={true} data={toJSON(props.links)}></VueJsonPretty>
+            <VueJsonPretty deep={4} showLength={true} data={toJSON(props.links)}></VueJsonPretty>
           </div>
         }
         { selectedTab.value === 'Config' && props.config &&
           <div>
-            <VueJsonPretty deep={3} showLength={true} data={toJSON(props.config)}></VueJsonPretty>
+            <VueJsonPretty deep={4} showLength={true} data={toJSON(props.config)}></VueJsonPretty>
           </div>
         }
       </div>
