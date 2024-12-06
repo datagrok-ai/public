@@ -270,14 +270,14 @@ export class Utils {
       const skipped = row.get("skipped");
       row["flaking"] = success && DG.Test.isReproducing;
 
-      if (resultDF === undefined){
-        df.changeColumnType('result', COLUMN_TYPE.STRING);
-        resultDF = df;
-      }
-      else{
-        df.changeColumnType('result', COLUMN_TYPE.STRING);
+      df.changeColumnType('result', COLUMN_TYPE.STRING);
+      df.changeColumnType('logs', COLUMN_TYPE.STRING);
+
+      if (resultDF === undefined)
+        resultDF = df;      
+      else
         resultDF = resultDF.append(df);
-      }
+      
       if (row["skipped"]) {
         verboseSkipped += `Test result : Skipped : ${time} : ${category}: ${testName} :  ${result}\n`;
         countSkipped += 1;
