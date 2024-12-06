@@ -68,7 +68,7 @@ We continue to improve [ML capabilities](../../learn/learn.md) within the platfo
   * AUC-ROC visualization
   * Model comparison tools
   * Automatic model selection
-* New algorithms ([EDA package](link)):
+* New algorithms ([EDA package](https://github.com/datagrok-ai/public/tree/master/packages/EDA)):
   * Softmax classifier 
   * XGBoost tools
   * Partial least squares regression
@@ -168,9 +168,9 @@ You can now integrate with Datagrok using Datagrok's [REST API](../../develop/pa
 |Tool / App<div style={{ width:100 }}></div> | Purpose| Requirements <div style={{ width:150 }}></div>|Learn more<div style={{ width:150 }}></div>|
 |-----------|-------------|---------------|--------|
 | Matched Molecular Pairs | Tool for analyzing how structural changes affect molecular properties and activity | [Chem package](https://github.com/datagrok-ai/public/tree/master/packages/Chem) | [Interactive demo](https://public.datagrok.ai/browse/apps/Tutorials/Demo/Cheminformatics/Matched-Molecular-Pairs) <br/>[Wiki page](../../datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs)|
-| Docking| Tool for screening ligand libraries against AutoDock-prepared targets | [Docking package](https://github.com/datagrok-ai/public/tree/master/packages/Docking)|[Interactive demo](https://public.datagrok.ai/browse/apps/Tutorials/Demo/Bioinformatics/Docking)<br/>[GitHub](https://github.com/datagrok-ai/public/tree/master/packages/Docking)<br/><!--[Wiki page](link)-->|
-| Hit Design|App for collaborative hit design | [HitTriage package](https://github.com/datagrok-ai/public/tree/master/packages/HitTriage) |[Launch app](https://public.datagrok.ai/apps/HitTriage/HitDesign)<br/>[GitHub](https://github.com/datagrok-ai/public/blob/master/packages/HitTriage/README_HD.md)<br/><!--[Wiki page](link)--->|
-| Hit Triage |App for collaborative hit assessment and prioritization |[HitTriage package](https://github.com/datagrok-ai/public/tree/master/packages/HitTriage) |[Launch app](https://public.datagrok.ai/apps/HitTriage/HitTriage)<br/>[GitHub](https://github.com/datagrok-ai/public/blob/master/packages/HitTriage/README_HT.md)<br/><!--TODO[Wiki page](link)--->|
+| Docking| Tool for screening ligand libraries against AutoDock-prepared targets | [Docking package](https://github.com/datagrok-ai/public/tree/master/packages/Docking)|[Interactive demo](https://public.datagrok.ai/browse/apps/Tutorials/Demo/Bioinformatics/Docking)<br/>[GitHub](https://github.com/datagrok-ai/public/tree/master/packages/Docking)<br/><!--[Wiki page]-->|
+| Hit Design|App for collaborative hit design | [HitTriage package](https://github.com/datagrok-ai/public/tree/master/packages/HitTriage) |[Launch app](https://public.datagrok.ai/apps/HitTriage/HitDesign)<br/>[GitHub](https://github.com/datagrok-ai/public/blob/master/packages/HitTriage/README_HD.md)<br/><!--[Wiki page]--->|
+| Hit Triage |App for collaborative hit assessment and prioritization |[HitTriage package](https://github.com/datagrok-ai/public/tree/master/packages/HitTriage) |[Launch app](https://public.datagrok.ai/apps/HitTriage/HitTriage)<br/>[GitHub](https://github.com/datagrok-ai/public/blob/master/packages/HitTriage/README_HT.md)<br/><!--TODO[Wiki page]--->|
 
 ### Navigation and usability
 
