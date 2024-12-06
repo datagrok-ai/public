@@ -1,7 +1,8 @@
 #name: Fermentation
 #tags: model
 #description: Simulation of fermentation process in the ethanol production
-#comment: This problem is taken from https://core.ac.uk/download/pdf/11737483.pdf.
+#comment: 
+  Source: https://core.ac.uk/download/pdf/11737483.pdf.
 #equations:
   dP/dt = r * X
   dS/dt = -q * X

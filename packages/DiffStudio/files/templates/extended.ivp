@@ -3,7 +3,6 @@
 #description: 2D ordinary differential equations system sample
 #comment:
   This is an extended template. It has additional scripting annotations.
-  Use it as a backbone for the platform applications creating.
 
 #equations:
   dx/dt = E1 * y + sin(t)

@@ -52,7 +52,6 @@ ${CONTROL_EXPR.TAGS}: model
 ${CONTROL_EXPR.DESCR}: 2D ordinary differential equations system sample
 ${CONTROL_EXPR.COMMENT}:
   This is an extended template. It has additional scripting annotations.
-  Use it as a backbone for the platform applications creating.
 
 ${CONTROL_EXPR.DIF_EQ}:
   dx/dt = E1 * y + sin(t)

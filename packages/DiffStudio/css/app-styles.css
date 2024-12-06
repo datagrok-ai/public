@@ -42,6 +42,54 @@
     font-weight: bold;
 }
 
-.diff-studio-app-run-icon {
-    color: var(--green-2);
+.diff-studio-help-icon {
+    font-size: large;
+    font-weight: bold;
+    margin-right: 8px;
+}
+
+.diff-studio-ribbon-text {    
+    font-weight: normal;
+    margin-left: 2px;
+    margin-right: 8px;
+}
+
+.diff-studio-ribbon-widget {
+    margin-right: 8px;
+}
+
+.diff-studio-ribbon-download {    
+    font-weight: normal;
+    margin-left: 8px;
+    margin-right: 8px;
+}
+
+.diff-studio-inputs-category {    
+    font-size: 13px;
+    font-weight: bold;
+    margin-top: 18px;
+    padding-right: 5px;
+}
+
+.diff-studio-chevron-right {
+    padding-right: 10px;
+}
+
+.diff-studio-chevron-down {
+    padding-right: 5px;
+}
+
+.diff-studio-hint-btns-div {
+    margin-left: auto;
+    margin-right: 0px;
+}
+
+.diff-studio-highlight-text {
+    color: red;
+    font-weight: bold;
+}
+
+.diff-studio-svg-icon {    
+    height: 24px;
+    width: 24px;
 }
