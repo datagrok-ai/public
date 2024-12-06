@@ -13,6 +13,9 @@ import {CLIFFS_DF_NAME, activityCliffsIdx} from '@datagrok-libraries/ml/src/view
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 import {ScaffoldTreeViewer} from '../widgets/scaffold-tree';
+import {MatchedMolecularPairsViewer} from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
+import {MMP_NAMES} from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-constants';
+
 
 export async function _demoChemOverview(): Promise<void> {
   const sketcherType = DG.chem.currentSketcherType;
@@ -197,6 +200,22 @@ export async function _demoMMPA(): Promise<void> {
     const layout = DG.ViewLayout.fromJson(layoutString);
     tv.loadLayout(layout);
     tv.dataFrame.currentRowIdx = 0;
+    await awaitCheck(() => { //
+      const viewers: any[] =
+        Array.from(((grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView).viewers);
+      return viewers.length == 2 && viewers[1].type === 'Matched Molecular Pairs Analysis' && viewers[1].sp != null;
+    }, '', 20000);
+    const mmpV = Array.from(((grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView).viewers)
+      .filter((it) => it.type === 'Matched Molecular Pairs Analysis')[0] as MatchedMolecularPairsViewer;
+    const tabSub = mmpV.tabs!.onTabChanged.subscribe(() => {
+      if (mmpV.tabs?.currentPane.name === MMP_NAMES.TAB_CLIFFS) {
+        tabSub.unsubscribe();
+        mmpV.sp!.zoom(-0.4,
+          0.7,
+          0.5,
+          -0.1);
+      }
+    });
     // grok.shell.windows.showHelp = true;
     // grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/#matched-molecular-pairs');
   });

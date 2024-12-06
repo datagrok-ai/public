@@ -98,6 +98,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   mWCalulationsReady = false;
 
   fragSortingInfo: {[key: string]: SortData} = {};
+  sp: DG.ScatterPlotViewer | null = null;
+  tabs: DG.TabControl | null = null;
 
   constructor() {
     super();
@@ -556,7 +558,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   fillAll(mmpInput: MmpInput, palette: PaletteCodes,
     mmpa: MMPA, diffs: Array<Float32Array>,
     linesIdxs: Uint32Array, pairedGrids: MmpPairedGrids,
-    tp: DG.Viewer, sp: DG.Viewer, mmpFilters: MmpFilters,
+    tp: DG.Viewer, sp: DG.ScatterPlotViewer, mmpFilters: MmpFilters,
     linesEditor: ScatterPlotLinesRenderer, lines: ILineSeries, linesActivityCorrespondance: Uint32Array,
     rdkitModule: RDModule): void {
     this.rdkitModule = rdkitModule;
@@ -589,6 +591,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.pairedGrids.setupGrids();
 
     //Cliffs tab setup
+    this.sp = sp;
     this.diffs = diffs;
     this.lines = lines;
     this.linesActivityCorrespondance = linesActivityCorrespondance;
@@ -601,7 +604,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const cliffs = this.setupCliffsTab(sp, mmpFilters, linesEditor);
 
     //tabs
-    const tabs = this.getTabs(tp, mmpFilters, cliffs);
+    this.tabs = this.getTabs(tp, mmpFilters, cliffs);
 
       this.linesRenderer!.lineClicked.subscribe((event: MouseOverLineEvent) => {
         this.linesRenderer!.currentLineId = event.id;
@@ -615,7 +618,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         }
       });
 
-      this.mmpView.append(tabs);
+      this.mmpView.append(this.tabs);
 
       const propertiesColumnsNames = this.parentTable!.columns.names()
         .filter((name) => !name.startsWith('~'));
