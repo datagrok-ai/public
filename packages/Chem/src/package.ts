@@ -82,6 +82,7 @@ import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-util
 import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 import {CHEM_PROP_MAP} from './open-chem/ocl-service/calculations';
 import {getChemClasses} from './analysis/chem-classes';
+import {cutFragments} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-react-toolkit';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -2041,4 +2042,19 @@ export async function chemClasses(table: DG.DataFrame, molecules: DG.Column): Pr
   classesCol.semType = DG.SEMTYPE.MOLECULE;
   table.columns.add(classesCol);
   grok.shell.tv.grid.invalidate();
+}
+
+//top-menu: Chem | Transform | Deprotect...
+//name: Deprotect
+//description: Generates the new dataset based on the given structure
+//input: dataframe table [Input data table]
+//input: column molecules {semType: Molecule}
+//input: string fragment = "O=C([N:1])OCC1c2ccccc2-c2ccccc21" {semType: Molecule}
+export async function deprotect(table: DG.DataFrame, molecules: DG.Column, fragment: string): Promise<void> {
+  const module = getRdKitModule();
+  const cut = cutFragments(module, molecules.toList(), fragment);
+  const res = cut.map((c) => c[0]);
+  const col = DG.Column.fromStrings('deprotected', res);
+  col.semType = DG.SEMTYPE.MOLECULE;
+  table.columns.add(col);
 }
