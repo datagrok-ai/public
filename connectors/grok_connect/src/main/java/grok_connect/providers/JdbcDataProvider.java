@@ -144,7 +144,6 @@ public abstract class JdbcDataProvider extends DataProvider {
         queryLogger.trace("Provider {} transactions", supportsTransactions ? "supports" : "doesn't support");
         if (supportsTransactions)
             connection.setAutoCommit(false);
-
         DataQuery dataQuery = queryRun.func;
         String mainCallId = (String) queryRun.aux.get("mainCallId");
 
@@ -164,8 +163,6 @@ public abstract class JdbcDataProvider extends DataProvider {
                 queryLogger.debug("Creating PreparedStatement...");
                 PreparedStatement statement = connection.prepareStatement(query);
                 queryLogger.debug("Created PreparedStatement");
-
-                queryMonitor.addNewStatement(mainCallId, statement);
                 queryLogger.debug(EventType.STATEMENT_PARAMETERS_REPLACEMENT.getMarker(EventType.Stage.START), "Replacing designated query parameters ? with actual values...");
                 int i = 0;
                 for (int n = 0; n < names.size(); n++) {
