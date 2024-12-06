@@ -2,12 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
-import {DockManager, IconFA, ifOverlapping, RibbonMenu, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
-import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
-import {useObservable, useSubject, useSubscription, useExtractedObservable} from '@vueuse/rxjs';
+import {DockManager, IconFA, ifOverlapping, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
 import {
   isFuncCallState, isParallelPipelineState,
-  isSequentialPipelineState, PipelineState,
+  isSequentialPipelineState,
   StepFunCallState,
   ViewAction,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
@@ -22,11 +20,8 @@ import {useUrlSearchParams} from '@vueuse/core';
 import {Inspector} from '../Inspector/Inspector';
 import {findTreeNode, findTreeNodeParrent, reportStep} from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
-import { HistoricalRunEdit } from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
-import { take } from 'rxjs/operators';
-import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
-import { historyUtils } from '@datagrok-libraries/compute-utils';
-import { EditDialog } from './EditDialog';
+import {take} from 'rxjs/operators';
+import {EditDialog} from './EditDialog';
 
 const DEVELOPERS_GROUP = 'Developers';
 
@@ -336,6 +331,7 @@ export const TreeWizard = Vue.defineComponent({
                         callState={states.calls[stat.data.uuid]}
                         validationStates={states.validations[stat.data.uuid]}
                         consistencyStates={states.consistency[stat.data.uuid]}
+                        descriptions={states.descriptions[stat.data.uuid]}
                         style={{
                           'background-color': stat.data.uuid === chosenStepUuid.value ? '#f2f2f5' : null,
                         }}

@@ -122,6 +122,9 @@ export const TreeNode = Vue.defineComponent({
     consistencyStates: {
       type: Object as Vue.PropType<Record<string, ConsistencyInfo>>,
     },
+    descriptions: {
+      type: Object as Vue.PropType<Record<string, string | string[]>>,
+    },
     isDraggable: {
       type: Boolean,
     },
@@ -181,14 +184,14 @@ export const TreeNode = Vue.defineComponent({
       >
         { props.callState && progressIcon(statesToStatus(props.callState, props.validationStates, props.consistencyStates), props.isReadonly) }
         { props.stat.children.length ? openIcon() : null }
-        <span class="mtl-ml text-nowrap text-ellipsis overflow-hidden">{ nodeLabel(props.stat) }</span>
+        <span class="mtl-ml text-nowrap text-ellipsis overflow-hidden">{ props.descriptions?.title ?? nodeLabel(props.stat) }</span>
         { (isHovered.value) ?
           <div class='flex items-center px-2 w-fit justify-end ml-auto'>
             { hasAddControls(props.stat.data) ?
               <ComboPopup
                 caption={ui.iconFA('plus')}
                 items={props.stat.data.stepTypes
-                  .map((stepType) => stepType.friendlyName || stepType.nqName || stepType.configId)
+                  .map((stepType) =>  stepType.friendlyName || stepType.nqName || stepType.configId)
                 }
                 onSelected={({itemIdx}) => {
                   const data = props.stat.data as PipelineWithAdd;

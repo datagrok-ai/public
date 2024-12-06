@@ -81,7 +81,6 @@ export type PipelineHookConfiguration<P> = PipelineLinkConfigurationBase<P> & {
 
 export type PipelineSelectorConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type: 'selector',
-  base?: undefined,
   actions?: undefined;
   handler: SelectorHandler;
 };
