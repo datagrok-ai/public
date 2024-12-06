@@ -295,6 +295,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.createSortIcon(trellisSortState, TrellisAxis.To, tp, 'chem-mmpa-fragments-sort-icon-y-axis');
     });
 
+    this.sortTrellis(TrellisAxis.From, trellisSortState[TrellisAxis.From], tp);
+
     const fragmentsDiv = ui.splitV([
       tpDiv,
       mmPairsRoot2,
@@ -356,8 +358,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         this.pairedGrids!.currentFragmentsTab = true;
         this.pairedGrids!.refreshMaskFragmentPairsFilter();
         this.pairedGrids!.fpGrid.dataFrame.filter.copyFrom(this.pairedGrids!.fpMaskFragmentsTab);
-        this.sortTrellis(TrellisAxis.From, trellisSortState[TrellisAxis.From], tp);
-        this.sortTrellis(TrellisAxis.To, trellisSortState[TrellisAxis.To], tp);
 
         // this.pairedGrids!.enableFilters = false;
         // this.pairedGrids!.mmpMaskByFragment.setAll(false);
@@ -485,7 +485,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
             }
           },
         });
-        if (axis === TrellisAxis.To)
+        if (trellisSortState[axis].property === TrellisSortByProp.None)
           sortTypeChoice.root.classList.add('chem-mmp-trellis-sort-type-invisible');
         const sortIcon = ui.iconFA('sort-alt', () => {
           ui.showPopup(ui.inputs([
@@ -543,13 +543,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         cats = Object.entries(this.fragSortingInfo).sort(descSortFunc).map((it) => it[0]);
         break;
       }
-      if (cats.length) {
+      if (cats.length)
         fragCol.setCategoryOrder(cats);
-        if (axis === TrellisAxis.From)
-          this.pairedGrids!.fpCatsFrom = cats;
-        else
-          this.pairedGrids!.fpCatsTo = cats;
-      }
     }
     if (axisName)
       tp.props[axisName] = tp.props[axisName];

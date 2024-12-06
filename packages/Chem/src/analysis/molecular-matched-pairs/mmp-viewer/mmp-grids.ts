@@ -20,7 +20,6 @@ export class MmpPairedGrids {
   fpCatsFrom: string [];
   fpCatsTo: string [];
   fpMaskByMolecule: DG.BitSet; //mask for a single molecule
-  fpMaskFilter: DG.BitSet; //mask for a number of cases filter
   fpMaskFragmentsTab: DG.BitSet; //mask for a number of cases filter
   //mmp for matched molecula  pairs
   mmpGridTrans: DG.Grid;
@@ -50,7 +49,6 @@ export class MmpPairedGrids {
 
     this.mmpGridTrans = getMatchedPairsGrid(mmpa);
     this.fpMaskByMolecule = DG.BitSet.create(this.fpGrid.dataFrame.rowCount);
-    this.fpMaskFilter = DG.BitSet.create(this.fpGrid.dataFrame.rowCount);
     this.mmpMaskTrans = DG.BitSet.create(this.mmpGridTrans.dataFrame.rowCount);
     this.mmpMaskTransSelection = DG.BitSet.create(this.mmpGridTrans.dataFrame.rowCount);
     this.parentTableFragSelection = DG.BitSet.create(this.parentTable.rowCount);
@@ -80,7 +78,6 @@ export class MmpPairedGrids {
   }
 
   setupGrids(): void {
-    this.fpMaskFilter!.setAll(true);
     this.fpMaskByMolecule!.setAll(true);
 
     this.refilterFragmentPairsByMolecule(true);
@@ -117,30 +114,14 @@ export class MmpPairedGrids {
 
     this.mmpMaskTrans.setAll(false);
     this.refreshMatchedPair(this.rdkit);
-
-    //this.mmpMaskTrans.setAll(false);
   }
 
   refreshMaskFragmentPairsFilter(): void {
-    this.fpGrid.dataFrame.filter.copyFrom(this.fpMaskFilter!);
     this.enableFilters = false;
     this.mmpMaskFrag.setAll(true);
     this.unPinMatchedPair();
-    this.mmpGridFrag.dataFrame.filter.copyFrom(this.mmpMaskTrans);
+    this.mmpGridFrag.dataFrame.filter.setAll(true);
   };
-
-  refilterFragmentPairsByCases(value: number) : void {
-    this.fpMaskFilter.setAll(false);
-
-    const casesCol = this.fpGrid.dataFrame.columns.byName(MMP_NAMES.PAIRS);
-
-    for (let i = 0; i < casesCol.length; i++) {
-      if (casesCol.get(i) >= value)
-        this.fpMaskFilter.set(i, true, false);
-    }
-
-    this.fpGrid.dataFrame.filter.copyFrom(this.fpMaskFilter!);
-  }
 
   /**
   * Gets visible all fragment pairs according to selected molecule in the table.
