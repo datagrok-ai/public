@@ -9,7 +9,7 @@ import {MMP_CONSTRICTIONS, MMP_ERRORS,
 import {getMmpFrags, getMmpRules} from './mmpa-fragments';
 import {getPlainData} from './mmpa-differences';
 import {calculateGenerations} from './mmpa-generations';
-import { SortData } from '../mmp-viewer/mmp-viewer';
+import {SortData} from '../mmp-viewer/mmp-viewer';
 
 export class MMPA {
   initData: MmpInitData;

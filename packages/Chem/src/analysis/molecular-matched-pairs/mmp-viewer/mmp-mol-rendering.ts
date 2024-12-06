@@ -61,7 +61,7 @@ export async function getInverseSubstructuresAndAlign(from: string[], to: string
   return {inverse1: res1, inverse2: res2, fromAligned: fromAligned, toAligned: toAligned};
 }
 
-export async function getInverseSubstructuresAndAlign2(fragmentFrom: string, fragmentTo: string,
+export async function getInverseSubstructuresAndAlign3(cores: string[],
   from: string[], to: string[], module: RDModule):
   Promise<{
     inverse1: (ISubstruct | null)[],
@@ -73,23 +73,12 @@ export async function getInverseSubstructuresAndAlign2(fragmentFrom: string, fra
   const res1 = new Array<(ISubstruct | null)>(from.length);
   const res2 = new Array<(ISubstruct | null)>(from.length);
 
-  //const mcs = await getMmpMcs(from, to);
-  const fromPossibleCuts = cutFragments(module, from, fragmentFrom);
-  const toPossibleCuts = cutFragments(module, to, fragmentTo);
-
 
   for (let i = 0; i < from.length; i++) {
     //aligning molecules
     let mol1 = null;
     let mol2 = null;
     let mcsMol = null;
-    const [idx1, idx2] = getEqualMolsIdxs(module, fromPossibleCuts[i], toPossibleCuts[i]);
-
-    if (idx1 === -1 && idx2 === -1) {
-      fromAligned[i] = '';
-      toAligned[i] = '';
-      continue;
-    }
 
     const opts = JSON.stringify({
       useCoordGen: true,
@@ -99,7 +88,8 @@ export async function getInverseSubstructuresAndAlign2(fragmentFrom: string, fra
     });
 
     try {
-      mcsMol = module.get_mol(fromPossibleCuts[i][idx1]);
+      const core = cores[i].replace('[*:1]', '[H]');
+      mcsMol = module.get_mol(core);
       mol1 = module.get_mol(from[i]);
       mol2 = module.get_mol(to[i]);
       mcsMol.set_new_coords();

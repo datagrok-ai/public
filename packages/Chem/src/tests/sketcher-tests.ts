@@ -50,7 +50,6 @@ category('sketcher testing', () => {
     await testInchi(rdkitModule, funcs);
   }, {timeout: 90000});
 
-  
   test('malformed input', async () => {
     await testMolblock(rdkitModule, funcs, 'V2000', false, true);
   });

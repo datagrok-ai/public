@@ -1,10 +1,10 @@
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {MmpRules, MmpAllCasesBasedData, MmpInitData, MmpRulesBasedData} from './mmpa-misc';
-import { SortData } from '../mmp-viewer/mmp-viewer';
+import {SortData} from '../mmp-viewer/mmp-viewer';
 
 
-export function getPlainData(rules: MmpRules, initData: MmpInitData, allCasesNumber: number, fragSortingInfo: {[key: string]: SortData}):
-[MmpRulesBasedData, MmpAllCasesBasedData] {
+export function getPlainData(rules: MmpRules, initData: MmpInitData, allCasesNumber: number, fragSortingInfo:
+  {[key: string]: SortData}): [MmpRulesBasedData, MmpAllCasesBasedData] {
   const [fromFrag, toFrag, occasions] = getAllRulesOcasions(rules, fragSortingInfo); //rules n objects
   const [maxActs, meanDiffs, molFrom, molTo, pairNum,
     molNumFrom, molNumTo, pairsFromSmiles, pairsToSmiles,
@@ -18,7 +18,8 @@ export function getPlainData(rules: MmpRules, initData: MmpInitData, allCasesNum
   return [rulesBased, allCasesBased];
 }
 
-function getAllRulesOcasions(mmpr: MmpRules, fragSortingInfo: {[key: string]: SortData}): [string [], string [], Int32Array] {
+function getAllRulesOcasions(mmpr: MmpRules, fragSortingInfo: {[key: string]: SortData}):
+[string [], string [], Int32Array] {
   const allSize = mmpr.rules.length;
   const fromFrag = new Array<string>(allSize);
   const toFrag = new Array<string>(allSize);

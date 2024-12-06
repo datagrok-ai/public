@@ -81,7 +81,7 @@ function fillRules(
   mmpRules: MmpRules,
   rFirst:string, idxFirst: number,
   rSecond: string, idxSecond: number,
-  ruleCounter: number, allCasesCounter: number) {
+  core: string, ruleCounter: number, allCasesCounter: number) {
   let ruleSmiles1 = mmpRules.smilesFrags.indexOf(rFirst);
   let ruleSmiles2 = mmpRules.smilesFrags.indexOf(rSecond);
   let ruleIndexStraight = -1;
@@ -111,7 +111,9 @@ function fillRules(
       pairs: [],
     });
     mmpRules.rules[ruleCounter].pairs
-      .push({firstStructure: indxFirst ? idxFirst : idxSecond, secondStructure: indxFirst ? idxSecond : idxFirst});
+      .push({firstStructure: indxFirst ? idxFirst : idxSecond,
+        secondStructure: indxFirst ? idxSecond : idxFirst,
+        core});
     ruleCounter++;
     mmpRules.rules.push({
       smilesRule1: indxFirst ? ruleSmiles2: ruleSmiles1,
@@ -119,14 +121,16 @@ function fillRules(
       pairs: [],
     });
     mmpRules.rules[ruleCounter].pairs
-      .push({firstStructure: indxFirst ? idxSecond : idxFirst, secondStructure: indxFirst ? idxFirst : idxSecond});
+      .push({firstStructure: indxFirst ? idxSecond : idxFirst,
+        secondStructure: indxFirst ? idxFirst : idxSecond,
+        core});
     ruleCounter++;
     allCasesCounter += 2;
   } else {
     mmpRules.rules[ruleIndexStraight].pairs
-      .push({firstStructure: idxFirst, secondStructure: idxSecond});
+      .push({firstStructure: idxFirst, secondStructure: idxSecond, core});
     mmpRules.rules[ruleIndexInverse].pairs
-      .push({firstStructure: idxSecond, secondStructure: idxFirst});
+      .push({firstStructure: idxSecond, secondStructure: idxFirst, core});
     allCasesCounter += 2;
   }
 
@@ -190,7 +194,7 @@ function getMmpRulesCPU(fragsOut: IMmpFragmentsResult, fragmentCutoff: number): 
 
   for (let i = 0; i < pairs.length; i++) {
     [ruleCounter, allCasesCounter] = fillRules(mmpRules,
-      pairs[i].firstR, pairs[i].first, pairs[i].secondR, pairs[i].second,
+      pairs[i].firstR, pairs[i].first, pairs[i].secondR, pairs[i].second, pairs[i].core,
       ruleCounter, allCasesCounter);
   }
 
@@ -210,7 +214,7 @@ async function getMmpRulesGPU(fragsOut: IMmpFragmentsResult, fragmentCutoff: num
   for (let i = 0; i < pairs!.coreIdx.length; i++) {
     [ruleCounter, allCasesCounter] = fillRules(mmpRules,
       fragIdToFragName[pairs!.frag1Idx[i]], pairs!.mol1Idx[i], fragIdToFragName[pairs!.frag2Idx[i]], pairs!.mol2Idx[i],
-      ruleCounter, allCasesCounter);
+      fragIdToFragName[pairs!.coreIdx[i]], ruleCounter, allCasesCounter);
   }
 
   return [mmpRules, allCasesCounter, true];

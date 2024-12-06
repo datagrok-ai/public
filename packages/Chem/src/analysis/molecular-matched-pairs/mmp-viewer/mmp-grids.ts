@@ -8,7 +8,7 @@ import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {MMPA} from '../mmp-analysis/mmpa';
 import {getRdKitModule} from '../../../utils/chem-common-rdkit';
 import {createColWithDescription} from './mmp-generations';
-import {getInverseSubstructuresAndAlign, getInverseSubstructuresAndAlign2} from './mmp-mol-rendering';
+import {getInverseSubstructuresAndAlign3} from './mmp-mol-rendering';
 import {MmpInput} from './mmp-viewer';
 import {Subject, Subscription} from 'rxjs';
 
@@ -343,8 +343,10 @@ export class MmpPairedGrids {
     const fpIdx = this.fpGrid.dataFrame.currentRowIdx;
     if (fpIdx === -1)
       return;
-    const fFrom = this.fpGrid.dataFrame.columns.byName(MMP_NAMES.FROM).get(fpIdx);
-    const fTo = this.fpGrid.dataFrame.columns.byName(MMP_NAMES.TO).get(fpIdx);
+
+    const cores = new Array<string>(cases.length);
+    for (let i = 0; i < cases.length; i ++)
+      cores[i] = this.mmpa.rules.rules[fpIdx].pairs[i].core;
 
     const pairsFrom = Array<string>(cases.length);
     const pairsTo = Array<string>(cases.length);
@@ -352,10 +354,9 @@ export class MmpPairedGrids {
       pairsFrom[i] = diffFrom.get(cases[i]);
       pairsTo[i] = diffTo.get(cases[i]);
     }
-    // const {inverse1, inverse2, fromAligned, toAligned} =
-    //   await getInverseSubstructuresAndAlign(pairsFrom, pairsTo, rdkitModule);
+
     const {inverse1, inverse2, fromAligned, toAligned} =
-      await getInverseSubstructuresAndAlign2(fFrom, fTo, pairsFrom, pairsTo, rdkitModule);
+      await getInverseSubstructuresAndAlign3(cores, pairsFrom, pairsTo, rdkitModule);
     for (let i = 0; i < cases.length; i++) {
       diffFrom.set(cases[i], fromAligned[i]);
       diffTo.set(cases[i], toAligned[i]);
