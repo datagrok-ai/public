@@ -59,11 +59,11 @@ const statesToStatus = (
   consistencyStates?: Record<string, ConsistencyInfo>,
 ): Status => {
   if (callState.isRunning) return 'running';
+  if (callState.runError)
+      return 'failed';
   if (callState.pendingDependencies?.length)
     return callState.isOutputOutdated ? 'pending' : 'pending executed';
   if (!callState.isOutputOutdated) {
-    if (callState.runError)
-      return 'failed';
     if (hasInconsistencies(consistencyStates))
       return 'succeeded inconsistent';
     if (hasWarnings(validationsState) || hasErrors(validationsState))
