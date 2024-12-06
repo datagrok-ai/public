@@ -7,7 +7,7 @@ keywords:
   - release summary
 ---
 
-See details: [issues](release-history.md), [plugin changelogs](plugins/plugins.mdx), [JS API compatibility](compatibility.md)
+See details: [issues](release-history.md), [plugin changelogs](plugins/plugins.mdx), [JS API compatibility](compatibility/compatibility.mdx)
 
 ## 1.22 || 2024-Nov
 
