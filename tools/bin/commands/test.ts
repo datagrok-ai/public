@@ -118,7 +118,10 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
       let testsLeft: OrganizedTest[] = [];
       let testsToReproduce: OrganizedTest[] = [];
       for (let testData of organized) {
-        if (!r.csv.includes(`${testData.params.category},${testData.params.test}`))
+        if (!r.verbosePassed.includes(`${testData.params.category}: ${testData.params.test}`) && 
+        !r.verboseSkipped.includes(`${testData.params.category}: ${testData.params.test}`) && 
+        !r.verboseFailed.includes(`${testData.params.category}: ${testData.params.test}`) && 
+        !new RegExp(`${testData.params.category.trim()}[^\\n]*: (before|after)`).test(r.verboseFailed))
           testsLeft.push(testData);
         if (r.verboseFailed.includes(`${testData.params.category}: ${testData.params.test} :  Error:`)) {
           testsToReproduce.push(testData);

@@ -1,6 +1,12 @@
 # Datagrok-tools changelog
 
 
+## 4.13.44 (2024-12-06)
+
+### Features
+
+* Test fixed infinite testing 
+
 ## 4.13.43 (2024-12-02)
 
 ### Features
