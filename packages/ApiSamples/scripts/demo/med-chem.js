@@ -5,7 +5,7 @@ let rndCat = (categories) => categories[rnd(categories.length)];
 const addCatColumn = (columnName, categories, tags) => {
   let c = t.columns.addNewString(columnName).init((i) => rndCat(categories));
   if (tags != null) {
-    for (let key in Object.getOwnPropertyNames(tags))
+    for (let key of Object.getOwnPropertyNames(tags))
       c.tags[key] = tags[key];
   }
   return c;
@@ -66,5 +66,5 @@ ideaCreated.tags.format = 'yyyy/MM/dd';
 ideaApproved.tags.format = 'yyyy/MM/dd';
 ideaSynthesized.tags.format = 'yyyy/MM/dd';
 
-
+t.meta.detectSemanticTypes();
 grok.shell.addTableView(t);
