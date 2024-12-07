@@ -602,7 +602,7 @@ type KnownColumnTags = 'format' | 'colors';
 /** Strongly-typed column.
  * Use {@link get} and {@link set} to access elements by index.
  * */
-export class Column<T = any> {
+export class Column<T = any, TInit = T> {
   public dart: any;
   public temp: any;
   public tags: any;
@@ -859,9 +859,9 @@ export class Column<T = any> {
    * @param {string | number | boolean | Function} valueInitializer value, or a function that returns value by index
    * @returns {Column}
    * */
-  init(valueInitializer: string | number | boolean | ((ind: number) => any)): Column {
+  init(valueInitializer: TInit | ((ind: number) => TInit)): Column {
     let initType = typeof valueInitializer;
-    if (initType === 'function' && this.type === DG.TYPE.DATA_FRAME){
+    if (initType === 'function' && this.type === DG.TYPE.DATA_FRAME) {
       // @ts-ignore
       api.grok_Column_Init(this.dart, (i) => toDart(valueInitializer(i)));
     }
@@ -944,13 +944,19 @@ export class Column<T = any> {
     return api.grok_Column_SetString(this.dart, i, str, notify);
   }
 
+  /** Call this method after setting elements without notifications via {@link set} */
+  fireValuesChanged() {
+    api.grok_Column_FireValuesChanged(this.dart);
+  }
+
   /**
    * Sets [i]-th value to [x], and optionally notifies the dataframe about this change.
    * @param {number} i
    * @param value
-   * @param {boolean} notify - whether DataFrame's `changed` event should be fired
+   * @param {boolean} notify - whether DataFrame's `changed` event should be fired. Call {@link fireValuesChanged}
+   * after you are done modifying the column.
    */
-  set(i: number, value: T | null, notify: boolean = true): void {
+  set(i: number, value: TInit | null, notify: boolean = true): void {
     api.grok_Column_SetValue(this.dart, i, toDart(value), notify);
   }
 
@@ -1106,10 +1112,41 @@ export class BigIntColumn extends Column<BigInt> {
 }
 
 
-export class DateTimeColumn extends Column<dayjs.Dayjs> {
-  /**
-   * Gets [i]-th value.
-   */
+type DateTimeInit = dayjs.Dayjs | string | Date | null;
+
+export class DateTimeColumn extends Column<dayjs.Dayjs, DateTimeInit> {
+
+  static getMs(x: any): number | null {
+    if (x == '' || x == null)
+      return null;
+    if (dayjs.isDayjs(x))
+      return x.valueOf();
+    else {
+      const ms = dayjs(x).valueOf();
+      if (isNaN(ms))
+        throw `"${x}" is not convertable to date time`;
+      return ms;
+    }
+  }
+
+  init(valueInitializer: DateTimeInit | ((ind: number) => DateTimeInit)): Column {
+    let initType = typeof valueInitializer;
+    const length = this.length;
+
+    if (initType === 'function')
+      for (let i = 0; i < length; i++)
+        // @ts-ignore
+        this.set(i, valueInitializer(i), false);
+    else if (initType === 'number' || initType === 'string' || dayjs.isDayjs(valueInitializer)) {
+      const ms = DateTimeColumn.getMs(valueInitializer);
+      for (let i = 0; i < length; i++)
+        api.grok_DateTimeColumn_SetValue(this.dart, i, ms, false);
+    }
+
+    this.fireValuesChanged();
+    return this;
+  }
+
   get(row: number): dayjs.Dayjs | null {
     let v = api.grok_DateTimeColumn_GetValue(this.dart, row);
     if (v == null)
@@ -1117,16 +1154,9 @@ export class DateTimeColumn extends Column<dayjs.Dayjs> {
     return dayjs(v);
   }
 
-  /**
-   * Sets [i]-th value to [x], and optionally notifies the dataframe about this change.
-   */
-  set(i: number, value: dayjs.Dayjs | null, notify: boolean = true): void {
+  set(i: number, value: dayjs.Dayjs | string | Date | null, notify: boolean = true): void {
     // @ts-ignore
-    if (value == '')
-      value = null;
-    if (!(dayjs.isDayjs(value) || value == null))
-      value = dayjs(value);
-    api.grok_DateTimeColumn_SetValue(this.dart, i, value?.valueOf(), notify);
+    api.grok_DateTimeColumn_SetValue(this.dart, i, DateTimeColumn.getMs(value)?.valueOf(), notify);
   }
 }
 
@@ -1313,7 +1343,7 @@ export class ColumnList {
   /** Creates and adds a datetime column
    * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
    * */
-  addNewDateTime(name: string): Column { return this.addNew(name, TYPE.DATE_TIME); }
+  addNewDateTime(name: string): DateTimeColumn { return this.addNew(name, TYPE.DATE_TIME); }
 
   /** Creates and adds a boolean column
    * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
