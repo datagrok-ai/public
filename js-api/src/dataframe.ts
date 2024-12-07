@@ -859,7 +859,7 @@ export class Column<T = any, TInit = T> {
    * @param {string | number | boolean | Function} valueInitializer value, or a function that returns value by index
    * @returns {Column}
    * */
-  init(valueInitializer: string | number | boolean | Date | ((ind: number) => any)): Column {
+  init(valueInitializer: string | number | boolean | Date | dayjs.Dayjs | null | ((ind: number) => any)): Column {
     let initType = typeof valueInitializer;
     if (initType === 'function' && this.type === DG.TYPE.DATA_FRAME) {
       // @ts-ignore
