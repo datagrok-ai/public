@@ -529,6 +529,7 @@ export interface IDartApi {
   grok_GroupByBuilder_Add(b: any, agg: String, colName: String, resultColName: String): any;
   grok_GroupByBuilder_GetGroups(b: any): any;
   grok_GroupByBuilder_Where(b: any, pattern: any): any;
+  grok_ColumnList_Get_DataFrame(cols: any): any;
   grok_ColumnList_Length(cols: any): any;
   grok_ColumnList_ByIndex(cols: any, index: Num): any;
   grok_ColumnList_BySemType(cols: any, semType: String): any;

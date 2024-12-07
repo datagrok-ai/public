@@ -859,7 +859,7 @@ export class Column<T = any> {
    * @param {string | number | boolean | Function} valueInitializer value, or a function that returns value by index
    * @returns {Column}
    * */
-  init(valueInitializer: string | number | boolean | ((ind: number) => any)): Column {
+  init(valueInitializer: string | number | boolean | Date | ((ind: number) => any)): Column {
     let initType = typeof valueInitializer;
     if (initType === 'function' && this.type === DG.TYPE.DATA_FRAME){
       // @ts-ignore
@@ -1162,6 +1162,8 @@ export class ColumnList {
     this.dart = dart;
   }
 
+  get dataFrame(): DataFrame { return toJs(api.grok_ColumnList_Get_DataFrame(this.dart)); }
+
   /** Number of columns. */
   get length(): number { return api.grok_ColumnList_Length(this.dart); }
 
@@ -1256,10 +1258,10 @@ export class ColumnList {
     return column;
   }
 
-  getOrCreate(name: string, type: ColumnType, length: number): Column {
+  getOrCreate(name: string, type: ColumnType): Column {
     return this.contains(name) ?
-    this.byName(name) :
-    this.add(DG.Column.fromType(type, name, length));
+      this.byName(name) :
+      this.add(DG.Column.fromType(type, name, this.dataFrame.rowCount));
   }
 
   /** Inserts a column, and optionally notifies the parent dataframe.
