@@ -39,7 +39,7 @@ operations apply to it, like getting its URL or using it as a parameter in the
 
 </details>
 
-### Managing users
+### Adding users
 
 To create a new user: 
 1. On the **Sidebar**, click **Browse (<FAIcon icon="fa-solid fa-compass"/>) > Platform > Users**.
@@ -72,6 +72,20 @@ To create a new user:
 To manage users, in the **Users View**, find the user you want, and right-click it to access available actions.
 
 Only [Administrators](#group-types) with global permissions can add or remove users.
+
+### Disabling accounts
+
+To disable a user account, login as [administrator](#group-types), navigate
+to **Browse | Platform | Users**, right-click on the user, and select "Block".
+This will prevent user from logging in and using the platform, and this user 
+will not count towards the license. 
+
+All assets that the user has created will continue to be available in the system.
+Administrators can [share](../../datagrok/navigation/basic-tasks/basic-tasks.md#share) 
+them with others if necessary.  
+
+Currently, there is no way to permanently delete a user. We are planning 
+to implement it in the future versions.
 
 ## Groups
 
