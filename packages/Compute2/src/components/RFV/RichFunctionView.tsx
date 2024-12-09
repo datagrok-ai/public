@@ -495,7 +495,7 @@ export const RichFunctionView = Vue.defineComponent({
                     return <div
                       class='flex flex-col pl-2 h-full w-full'
                       dock-spawn-title={tabLabel}
-                      dock-spawn-panel-icon={isInput ? 'arrow-to-right': 'arrow-from-left'}
+                      dock-spawn-panel-icon={isInput ? 'arrow-from-left': 'arrow-to-right'}
                     >
                       {
                         Vue.withDirectives(<Viewer
