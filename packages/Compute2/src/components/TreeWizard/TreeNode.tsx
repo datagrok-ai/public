@@ -9,7 +9,7 @@ import {OpenIcon} from '@he-tree/vue';
 import {useElementHover} from '@vueuse/core';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
-import {hasAddControls, PipelineWithAdd} from '../../utils';
+import {hasAddControls, hasRunnableSteps, PipelineWithAdd} from '../../utils';
 
 const statusToIcon: Record<Status, string> = {
   ['next']: 'arrow-right',
@@ -142,6 +142,7 @@ export const TreeNode = Vue.defineComponent({
     addNode: ({itemId, position}:{itemId: string, position: number}) => ({itemId, position}),
     removeNode: () => {},
     toggleNode: () => {},
+    runSequence: (uuid: string) => {},
   },
   setup(props, {emit}) {
     const openIcon = () => <OpenIcon
@@ -185,10 +186,10 @@ export const TreeNode = Vue.defineComponent({
         { props.callState && progressIcon(statesToStatus(props.callState, props.validationStates, props.consistencyStates), props.isReadonly) }
         { props.stat.children.length ? openIcon() : null }
         <span class="mtl-ml text-nowrap text-ellipsis overflow-hidden">{ props.descriptions?.title ?? nodeLabel(props.stat) }</span>
-        { (isHovered.value) ?
+        { 
           <div class='flex items-center px-2 w-fit justify-end ml-auto'>
-            { hasAddControls(props.stat.data) ?
-              <ComboPopup
+            { ...isHovered.value ? [
+              ...hasAddControls(props.stat.data) ? [<ComboPopup
                 caption={ui.iconFA('plus')}
                 items={props.stat.data.stepTypes
                   .map((stepType) =>  stepType.friendlyName || stepType.nqName || stepType.configId)
@@ -202,18 +203,28 @@ export const TreeNode = Vue.defineComponent({
                   isHovered.value = false;
                 }}
                 class='d4-ribbon-item'
-              />: null }
-            { props.isDraggable ? <IconFA
-              name='grip-vertical'
-              cursor='grab'
-              class='d4-ribbon-item'
-            />: null }
-            { props.isDeletable ? <IconFA
-              name='times'
-              onClick={(e: Event) => {emit('removeNode'); e.stopPropagation();}}
-              class='d4-ribbon-item'
-            />: null }
-          </div> : null }
+              />]: [],
+              ...props.isDraggable ? [<IconFA
+                name='grip-vertical'
+                cursor='grab'
+                class='d4-ribbon-item'
+              />]: [],
+              ...props.isDeletable ? [<IconFA
+                name='times'
+                onClick={(e: Event) => {emit('removeNode'); e.stopPropagation();}}
+                class='d4-ribbon-item'
+              />]: []
+            ]: [] }
+            { hasRunnableSteps(props.stat.data) &&
+              <IconFA
+                name='forward'
+                tooltip={'Run ready steps'}
+                style={{'padding-right': '3px'}}
+                onClick={() => emit('runSequence', props.stat.data.uuid)}
+                class='d4-ribbon-item'
+              />
+            }
+          </div> }
       </div>
     );
   },

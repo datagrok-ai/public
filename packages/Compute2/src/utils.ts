@@ -56,6 +56,9 @@ export function findTreeNodeParrent(uuid: string, state: PipelineState): Pipelin
 export type PipelineWithAdd = PipelineStateSequential<StepFunCallState, PipelineInstanceRuntimeData> |
 PipelineStateParallel<StepFunCallState, PipelineInstanceRuntimeData>;
 
+export const hasRunnableSteps = (data: PipelineState): data is  PipelineWithAdd =>
+  (isParallelPipelineState(data) || isSequentialPipelineState(data)) && !data.isReadonly && data.steps.length > 0;
+
 export const hasAddControls = (data: PipelineState): data is  PipelineWithAdd =>
   (isParallelPipelineState(data) || isSequentialPipelineState(data)) && data.stepTypes.length > 0 && !data.isReadonly;
 
