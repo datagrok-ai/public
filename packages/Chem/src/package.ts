@@ -2032,18 +2032,6 @@ export async function isApplicableNN(df: DG.DataFrame, predictColumn: DG.Column)
 
 export {getMCS};
 
-//top-menu: Chem | Analyze | ChemClasses...
-//name: chemClasses
-//input: dataframe table [Input data table]
-//input: column molecules { semType: Molecule }
-export async function chemClasses(table: DG.DataFrame, molecules: DG.Column): Promise<void> {
-  const classes = await getChemClasses(molecules);
-  const classesCol = DG.Column.fromStrings('Classes', classes);
-  classesCol.semType = DG.SEMTYPE.MOLECULE;
-  table.columns.add(classesCol);
-  grok.shell.tv.grid.invalidate();
-}
-
 //top-menu: Chem | Transform | Deprotect...
 //name: Deprotect
 //description: Generates the new dataset based on the given structure
