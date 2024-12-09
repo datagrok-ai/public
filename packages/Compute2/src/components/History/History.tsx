@@ -208,6 +208,34 @@ export const History = Vue.defineComponent({
       const chosenRun = getRunByIdx(historicalRunsDf.value.currentRowIdx);
       if (chosenRun) emit('runChosen', await historyUtils.loadRun(chosenRun.id));
     });
+
+    Vue.watch([showMetadata, showInputs], () => updateVisibleColumns())
+
+    let currentGrid = null as null | DG.Grid;
+    const updateVisibleColumns = () => {
+      if (!currentGrid) return;
+
+      const tagCol = currentGrid.dataFrame.getCol(TAGS_COLUMN_NAME);
+      currentGrid.columns.setVisible([
+        ...historicalRunsDf.value.getCol(EXP_COLUMN_NAME).categories.length > 1 ? [EXP_COLUMN_NAME]: [],
+        FAVORITE_COLUMN_NAME,
+        ACTIONS_COLUMN_NAME,
+        ...showMetadata.value ? [STARTED_COLUMN_NAME]: [],
+        ...showMetadata.value && tagCol.stats.missingValueCount < tagCol.length ? [TAGS_COLUMN_NAME]: [],
+        ...showMetadata.value ? [TITLE_COLUMN_NAME]: [],
+        ...showMetadata.value ? [DESC_COLUMN_NAME]: [],
+        ...showInputs.value && currentFunc.value ? Utils.getVisibleProps(currentFunc.value)
+          .map((key) => {
+            const param = currentFunc.value.inputs.find((prop) => prop.name === key) ??
+              currentFunc.value.outputs.find((prop) => prop.name === key);
+
+            if (param)
+              return param.caption ?? Utils.getColumnName(param.name);
+            else
+              return Utils.getColumnName(key);
+          }): [],
+      ]);
+    }
   
     const handleGridRendering = async (grid?: DG.Grid) => {
       if (!grid) return;
@@ -216,6 +244,8 @@ export const History = Vue.defineComponent({
         filter((initedGrid) => initedGrid === grid),
         take(1)
       ).toPromise();
+
+      currentGrid = grid;
 
       grid.sort([STARTED_COLUMN_NAME], [false]);
 
@@ -237,26 +267,7 @@ export const History = Vue.defineComponent({
         true,
       );
 
-      const tagCol = grid.dataFrame.getCol(TAGS_COLUMN_NAME);
-      grid.columns.setVisible([
-        ...historicalRunsDf.value.getCol(EXP_COLUMN_NAME).categories.length > 1 ? [EXP_COLUMN_NAME]: [],
-        FAVORITE_COLUMN_NAME,
-        ACTIONS_COLUMN_NAME,
-        ...showMetadata.value ? [STARTED_COLUMN_NAME]: [],
-        ...showMetadata.value && tagCol.stats.missingValueCount < tagCol.length ? [TAGS_COLUMN_NAME]: [],
-        ...showMetadata.value ? [TITLE_COLUMN_NAME]: [],
-        ...showMetadata.value ? [DESC_COLUMN_NAME]: [],
-        ...showInputs.value && currentFunc.value ? Utils.getVisibleProps(currentFunc.value)
-          .map((key) => {
-            const param = currentFunc.value.inputs.find((prop) => prop.name === key) ??
-              currentFunc.value.outputs.find((prop) => prop.name === key);
-
-            if (param)
-              return param.caption ?? Utils.getColumnName(param.name);
-            else
-              return Utils.getColumnName(key);
-          }): [],
-      ]);
+      updateVisibleColumns();
     };
 
     const fallbackText = <div class='p-1'> {props.fallbackText} </div>
