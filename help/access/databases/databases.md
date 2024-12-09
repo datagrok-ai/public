@@ -648,20 +648,19 @@ The `searchPattern` tag can be any sentence that contains placeholders for the p
 --meta.searchPattern: "compound activity details for target ${target}"
 ```
 
-Searching for "compound activity details for target CHEMBL1827" in the `Search Everywhere` bar will call the query and pass "CHEMBL1827" as the `target` parameter. The number of parameters is not limited, and they can be used in any order in the sentence.
+Searching for "compound activity details for target CHEMBL1827" in the **Search Everywhere** bar will call the query and pass "CHEMBL1827" as the `target` parameter. The number of parameters is not limited, and they can be used in any order in the sentence.
 
 ![Search integrated queries](img/search-integrated-queries.gif)
 
 :::tip
 
-Use the `Search Everywhere` bar to visualize the following queries directly from the search results:
-- `Bioactivity for bacterial targets for Shigella`
-- `Pharmacokinetic Data for LEVOFLOXACIN`
-- `Compound activity details for target CHEMBL1827`
+Use the **Search Everywhere** bar to visualize the following queries directly from the search results:
+- *Bioactivity for bacterial targets for Shigella*
+- *Pharmacokinetic Data for LEVOFLOXACIN*
+- *Compound activity details for target CHEMBL1827*
 
-You can also add the resulting dashboard to the workspace by clicking on the `+` icon in the search results.
+You can also add the resulting dashboard to the workspace by clicking on the **+** icon in the search results.
 
-:::
 
 <details>
 <summary>Example query</summary>
