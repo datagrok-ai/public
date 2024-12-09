@@ -7,7 +7,6 @@ import {useDebounceFn} from '@vueuse/core';
 const LOADER_DEBOUNCE_TIME = 150;
 
 export const ifOverlapping = {
-  loaderMapping: new Map<HTMLElement, HTMLElement>(),
   updateFnMapping: new Map<HTMLElement, Function>(),
 
   mounted: (el: HTMLElement, binding: Vue.DirectiveBinding<boolean>) => {
@@ -18,16 +17,14 @@ export const ifOverlapping = {
       ui.loader(),
     ], 'd4-update-shadow');
     loader.style.zIndex = '1';
-    ifOverlapping.loaderMapping.set(el, loader);
 
     const updateFn = (isOverlapping: boolean) => {
-      const existingLoader = ifOverlapping.loaderMapping.get(el);
-      if (isOverlapping && existingLoader) {
-        el.append(existingLoader);
+      if (isOverlapping && loader) {
+        el.append(loader);
         el.classList.add('ui-box');
       }
-      if (!isOverlapping && existingLoader) {
-        existingLoader.remove();
+      if (!isOverlapping && loader) {
+        loader.remove();
         el.classList.remove('ui-box');
       }
     };
@@ -40,9 +37,7 @@ export const ifOverlapping = {
       ),
     );
 
-    const isOverlapping = binding.value;
-    const debouncedFn = ifOverlapping.updateFnMapping.get(el)!;
-    debouncedFn(isOverlapping);
+    ifOverlapping.updated(el, binding);
   },
   updated: (el: HTMLElement, binding: Vue.DirectiveBinding<boolean>) => {
     const isOverlapping = binding.value;
@@ -50,10 +45,6 @@ export const ifOverlapping = {
     debouncedFn(isOverlapping);
   },
   beforeUnmount: (el: HTMLElement) => {
-    const existingLoader = ifOverlapping.loaderMapping.get(el);
-    if (existingLoader)
-      ifOverlapping.loaderMapping.delete(el);
-
     const debouncedFn = ifOverlapping.updateFnMapping.get(el);
     if (debouncedFn)
       ifOverlapping.updateFnMapping.delete(el);
