@@ -143,6 +143,7 @@ export const TreeNode = Vue.defineComponent({
     removeNode: () => {},
     toggleNode: () => {},
     runSequence: (uuid: string) => {},
+    runStep: (uuid: string) => {},
   },
   setup(props, {emit}) {
     const openIcon = () => <OpenIcon
@@ -171,6 +172,7 @@ export const TreeNode = Vue.defineComponent({
 
     const treeNodeRef = Vue.ref(null as null | HTMLElement);
     const isHovered = useElementHover(treeNodeRef);
+    const isRunnable = Vue.computed(() => props.callState?.isRunnable);
 
     return () => (
       <div
@@ -215,14 +217,24 @@ export const TreeNode = Vue.defineComponent({
                 class='d4-ribbon-item'
               />]: []
             ]: [] }
-            { hasRunnableSteps(props.stat.data) &&
-              <IconFA
-                name='forward'
-                tooltip={'Run ready steps'}
+            { 
+              hasRunnableSteps(props.stat.data) &&
+                <IconFA
+                  name='forward'
+                  tooltip={'Run ready steps'}
+                  style={{'padding-right': '3px'}}
+                  onClick={() => emit('runSequence', props.stat.data.uuid)}
+                  class='d4-ribbon-item'
+                />                
+            } 
+            {
+              isRunnable.value && <IconFA
+                name='play'
+                tooltip={'Run this step'}
                 style={{'padding-right': '3px'}}
-                onClick={() => emit('runSequence', props.stat.data.uuid)}
+                onClick={() => emit('runStep', props.stat.data.uuid)}
                 class='d4-ribbon-item'
-              />
+              />   
             }
           </div> }
       </div>

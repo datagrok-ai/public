@@ -345,6 +345,7 @@ export const TreeWizard = Vue.defineComponent({
                         onRemoveNode={() => removeStep(stat.data.uuid)}
                         onToggleNode={() => stat.open = !stat.open}
                         onRunSequence={(uuid) => runSequence(uuid)}
+                        onRunStep={(uuid) => runStep(uuid)}
                       />
                     )
                 }
