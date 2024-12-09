@@ -1868,6 +1868,11 @@ export interface IGridSettings {
   /// Ctrl+Shift+mouse drag to unselect
   allowRowSelection: boolean;
 
+  /// Right-click and drag to pan content
+  allowContentPanning: boolean;
+
+  showColumnGroups: boolean;
+
   showRowHeader: boolean;
 
   showRowGridlines: boolean;
