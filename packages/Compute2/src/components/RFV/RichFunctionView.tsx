@@ -48,7 +48,7 @@ const tabToProperties = (func: DG.Func) => {
     outputs: new Map() as TabContent,
   };
 
-  const processDf = (dfProp: DG.Property) => {
+  const processDf = (dfProp: DG.Property, isOutput: boolean) => {
     const dfViewers = Utils.getPropViewers(dfProp).config;
     if (dfViewers.length === 0) return;
 
@@ -58,20 +58,23 @@ const tabToProperties = (func: DG.Func) => {
       const tabLabel = dfProp.category === 'Misc' ?
         dfNameWithViewer: `${dfProp.category}: ${dfNameWithViewer}`;
 
-      map.inputs.set(tabLabel, {type: 'dataframe', dfProp: dfProp, config: dfViewer});
+      if (isOutput)
+        map.outputs.set(tabLabel, {type: 'dataframe', dfProp: dfProp, config: dfViewer});
+      else
+        map.inputs.set(tabLabel, {type: 'dataframe', dfProp: dfProp, config: dfViewer});
     });
     return;
   };
 
   func.inputs
     .forEach((inputProp) => {
-      if (inputProp.propertyType === DG.TYPE.DATA_FRAME) processDf(inputProp);
+      if (inputProp.propertyType === DG.TYPE.DATA_FRAME) processDf(inputProp, false);
     });
 
   func.outputs
     .forEach((outputProp) => {
       if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
-        processDf(outputProp);
+        processDf(outputProp, true);
         return;
       }
 
@@ -343,14 +346,14 @@ export const RichFunctionView = Vue.defineComponent({
               onClick={() => formHidden.value = !formHidden.value}
               class={'flex justify-between w-full'}
             >
-              <div> <IconFA name='arrow-to-right' style={menuIconStyle}/> Show inputs </div>
+              <div> <IconFA name='sign-in' style={menuIconStyle}/> Show inputs </div>
               { !formHidden.value && <IconFA name='check'/>}
             </span>
             <span
               onClick={() => visibleTabLabels.value = [...tabLabels.value]}
               class={'flex justify-between'}
             >
-              <div> <IconFA name='arrow-from-left'
+              <div> <IconFA name='sign-out'
                 style={menuIconStyle}/> Show output tabs </div>
               { visibleTabLabels.value.length === tabLabels.value.length && <IconFA name='check'/>}
             </span>
@@ -453,7 +456,7 @@ export const RichFunctionView = Vue.defineComponent({
                 dock-spawn-dock-type='left'
                 dock-spawn-dock-ratio={0.2}
                 dock-spawn-title='Inputs'
-                dock-spawn-panel-icon='arrow-to-right'
+                dock-spawn-panel-icon='sign-in-alt'
                 ref={formRef}
               >
                 {
@@ -487,7 +490,7 @@ export const RichFunctionView = Vue.defineComponent({
             {
               visibleTabLabels.value
                 .map((tabLabel) => ({tabLabel, tabContent: tabToPropertiesMap.value.inputs.get(tabLabel) ??
-                tabToPropertiesMap.value.outputs.get(tabLabel)!, isInput: !!tabToPropertiesMap.value.inputs.get(tabLabel)}))
+                tabToPropertiesMap.value.outputs.get(tabLabel)!, isInput: !!tabToPropertiesMap.value.inputs.has(tabLabel)}))
                 .map(({tabLabel, tabContent, isInput}) => {
                   if (tabContent.type === 'dataframe') {
                     const options = tabContent.config;
@@ -495,7 +498,7 @@ export const RichFunctionView = Vue.defineComponent({
                     return <div
                       class='flex flex-col pl-2 h-full w-full'
                       dock-spawn-title={tabLabel}
-                      dock-spawn-panel-icon={isInput ? 'arrow-from-left': 'arrow-to-right'}
+                      dock-spawn-panel-icon={isInput ? 'sign-in-alt': 'sign-out-alt'}
                     >
                       {
                         Vue.withDirectives(<Viewer
@@ -516,7 +519,7 @@ export const RichFunctionView = Vue.defineComponent({
                       class='h-full overflow-scroll'
                       categoryScalars={categoryProps}
                       funcCall={currentCall.value}
-                      dock-spawn-panel-icon='arrow-from-left'
+                      dock-spawn-panel-icon='sign-out-alt'
                       dock-spawn-title={tabLabel}
                       dock-spawn-dock-to={intelligentLayout &&
                         lastCardLabel && visibleTabLabels.value.includes(lastCardLabel) && lastCardLabel !==tabLabel
