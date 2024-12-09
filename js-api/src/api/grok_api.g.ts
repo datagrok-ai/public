@@ -906,7 +906,7 @@ export interface IDartApi {
   grok_SemanticValue_FromTableCell(cell: any): any;
   grok_SemanticValue_FromGridCell(cell: any): any;
   grok_SemanticValue_Parse(s: String): any;
-  grok_SemanticValue_Register_RegExp_Parser(semType: String, regexp: String, description: String): any;
+  grok_SemanticValue_Register_RegExp_Detector(semType: String, regexp: String, description: String): any;
   grok_EntityType_Create(name: String, matching: String): any;
   grok_EntityType_Get_Name(et: any): any;
   grok_EntityType_Set_Name(et: any, s: String): any;
