@@ -1250,6 +1250,10 @@ export class SemanticValue<T = any> {
 
   static parse(s: string): SemanticValue { return api.grok_SemanticValue_Parse(s); }
 
+  static registerRegExpDetector(semType: string, regexp: string, description?: string) {
+    api.grok_SemanticValue_Register_RegExp_Detector(semType, regexp, description);
+  }
+
   get value(): T { return api.grok_SemanticValue_Get_Value(this.dart); }
   set value(x: T) { api.grok_SemanticValue_Set_Value(this.dart, x); }
 
