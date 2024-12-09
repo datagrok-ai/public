@@ -182,10 +182,6 @@ export const RichFunctionView = Vue.defineComponent({
       }
     };
 
-    const hashParams = useUrlSearchParams<{activePanel: string | null}>('hash-params');
-    const handleActivePanelChanged = (panelTitle: string | null) => {
-      hashParams.activePanel = panelTitle;
-    };
     const personalPanelsStorage = (call: DG.FuncCall) => `${call.func.nqName}_personal_state`;
     const defaultPanelsStorage = (call: DG.FuncCall) => `${call.func.nqName}_default_state`;
 
@@ -431,7 +427,6 @@ export const RichFunctionView = Vue.defineComponent({
           <DockManager
             key={props.uuid}
             onPanelClosed={handlePanelClose}
-            onUpdate:activePanelTitle={handleActivePanelChanged}
             onInitFinished={handleDockInit}
             ref={dockRef}
           >
