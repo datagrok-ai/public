@@ -10,7 +10,7 @@ import {ILineSeries, MouseOverLineEvent, ScatterPlotLinesRenderer}
 
 import {MMPA} from '../mmp-analysis/mmpa';
 import {CLIFFS_TAB_TOOLTIP, FRAGMENTS_GRID_TOOLTIP, FRAGMENTS_TAB_TOOLTIP, MATHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS,
-  MATHED_MOLECULAR_PAIRS_TOOLTIP_TRANS, MMP_NAMES, TrellisAxis, TrellisSortByProp,
+  MATHED_MOLECULAR_PAIRS_TOOLTIP_TRANS, MMP_CONTEXT_PANE_CLASS, MMP_NAMES, TrellisAxis, TrellisSortByProp,
   TrellisSortType} from './mmp-constants';
 
 import {PaletteCodes, getPalette} from './palette';
@@ -370,6 +370,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         refilter = false;
         if (this.lastSelectedPair) {
           setTimeout(() => {
+            grok.shell.windows.showContextPanel = true;
             grok.shell.o = fillPairInfo(this.mmpa!, this.lastSelectedPair!, this.linesIdxs!,
               this.linesActivityCorrespondance![this.lastSelectedPair!],
               this.pairedGrids!.mmpGridTrans.dataFrame, this.diffs!, this.parentTable!, this.rdkitModule!);
@@ -388,6 +389,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
               ),
               this.generationsSp.root,
             ], {style: {width: '100%', height: '100%'}});
+            spCorrDiv.classList.add(MMP_CONTEXT_PANE_CLASS);
+            grok.shell.windows.showContextPanel = true;
             grok.shell.o = spCorrDiv;
           }
         }
@@ -589,6 +592,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         this.linesRenderer!.currentLineId = event.id;
         if (event.id !== -1) {
           setTimeout(() => {
+            grok.shell.windows.showContextPanel = true;
             grok.shell.o = fillPairInfo(this.mmpa!, event.id, linesIdxs, linesActivityCorrespondance[event.id],
               pairedGrids.mmpGridTrans.dataFrame, diffs, mmpInput.table, rdkitModule, this.propPanelViewer!);
             this.lastSelectedPair = event.id;
@@ -606,6 +610,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.propPanelViewer.columns = propertiesColumnsNames;
       this.propPanelViewer.inputClicked.subscribe(() => {
         setTimeout(() => {
+          grok.shell.windows.showContextPanel = true;
           grok.shell.o = fillPairInfo(this.mmpa!,
             this.lastSelectedPair!, linesIdxs, linesActivityCorrespondance[this.lastSelectedPair!],
             pairedGrids.mmpGridTrans.dataFrame, diffs, mmpInput.table, rdkitModule, this.propPanelViewer!);
@@ -780,6 +785,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
   detach(): void {
+    if ((grok.shell.o as HTMLElement).classList?.contains(MMP_CONTEXT_PANE_CLASS))
+      grok.shell.o = ui.div();
     super.detach();
   }
 }

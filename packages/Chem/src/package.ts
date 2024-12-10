@@ -1703,7 +1703,7 @@ export function mmpViewer(): MatchedMolecularPairsViewer {
 //input: dataframe table [Input data table]
 //input: column molecules { semType: Molecule }
 //input: column_list activities {type: numerical}
-//input: double fragmentCutoff = 0.4 { description: Max length of fragment in % of core }
+//input: double fragmentCutoff = 0.4 { description: Maximum fragment size relative to core }
 //output: viewer result
 export function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
   activities: DG.ColumnList, fragmentCutoff: number = 0.4, demo = false): void {

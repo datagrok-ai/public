@@ -12,7 +12,7 @@ import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimen
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {debounceTime} from 'rxjs/operators';
 import {getInverseSubstructuresAndAlign} from './mmp-mol-rendering';
-import {MMP_NAMES} from './mmp-constants';
+import {MMP_CONTEXT_PANE_CLASS, MMP_NAMES} from './mmp-constants';
 import {MmpInput} from './mmp-viewer';
 import $ from 'cash-dom';
 import {MMPA} from '../mmp-analysis/mmpa';
@@ -109,6 +109,7 @@ export function fillPairInfo(mmpa: MMPA, line: number, linesIdxs: Uint32Array, a
       }
     }
   }
+  div.classList.add(MMP_CONTEXT_PANE_CLASS);
   return div;
 };
 

@@ -71,7 +71,6 @@ export class MmpPairedGrids {
       if (this.parentTable!.currentRowIdx !== -1) {
         // this.unPinMatchedPair();
         this.refilterFragmentPairsByMolecule(true);
-        this.showErrorEvent.next(this.fpGrid.dataFrame.filter.trueCount === 0);
         this.refreshMatchedPair(this.rdkit);
       }
     }));
@@ -91,16 +90,21 @@ export class MmpPairedGrids {
       this.selectPairsWithSubstitutionInParentTable(false);
     });
 
-    //workaround for case when creating a filter panel for fragments tab resets filter in transformation tab
-    const filterSub = this.fpGrid.table.onFilterChanged.subscribe((e: any) => {
-      if (!this.currentFragmentsTab && e.type === DG.VIEWER.HISTOGRAM) {
-        setTimeout(() => {
-          this.fpGrid.dataFrame.filter.copyFrom(this.fpMaskByMolecule!);
-          if (this.lastFragmentIdx)
-            this.fpGrid.table.currentRowIdx = this.lastFragmentIdx;
-          filterSub.unsubscribe();
-        }, 10);
+    let filterPanelCreated = false;
+    this.fpGrid.table.onFilterChanged.subscribe((e: any) => {
+      //workaround for case when creating a filter panel for fragments tab resets filter in transformation tab
+      if (!filterPanelCreated) {
+        if (!this.currentFragmentsTab && e.type === DG.VIEWER.HISTOGRAM) {
+          filterPanelCreated = true;
+          setTimeout(() => {
+            this.fpGrid.dataFrame.filter.copyFrom(this.fpMaskByMolecule!);
+            if (this.lastFragmentIdx)
+              this.fpGrid.table.currentRowIdx = this.lastFragmentIdx;
+          }, 10);
+        }
       }
+      //show error in case grid is empty
+      this.showErrorEvent.next(this.fpGrid.dataFrame.filter.trueCount === 0);
     });
 
     this.mmpGridTrans.table.onCurrentRowChanged.subscribe(() => {

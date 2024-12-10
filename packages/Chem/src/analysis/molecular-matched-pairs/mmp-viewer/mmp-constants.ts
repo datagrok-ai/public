@@ -43,3 +43,5 @@ export const MATHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS = `Click on a non-empty cell i
 export const FRAGMENTS_TAB_TOOLTIP = `Charts in trellis plot cells show mean difference for corresponding activities. Click on any non-empty cell on trellis plot to see molecule pairs with corresponding fragment substitution in 'Matched Molecular Pairs' grid below.`
 export const CLIFFS_TAB_TOOLTIP = `2D map where similar molecules are close to each other. Lines connect matched molecular pairs. Arrow points to a molecule with a greater activity value. Use filters on the scatter plot to change activity difference cutoff or switch of/on the lines for any activity. Click on a line to see details in a context panel.`
 export const GENERATIONS_TAB_TOOLTIP = `A generation of new molecules based on obtained rules. For each molecule from initial dataset and for each selected activity the most optimal substitution is shown with associated prediction results for all activities. We specify if initial or generated molecule is optimal. Open context panel to estimate generation model predictive ability on observed vs predicted plot.`
+
+export const MMP_CONTEXT_PANE_CLASS = 'mmp-context-pane';
