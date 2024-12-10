@@ -23,19 +23,18 @@ order by b.name, t.name
 --friendlyName:UA | Tests | Stress tests
 --connection: System:Datagrok
 --input: string batch_name {nullable: true; choices:  Query("select distinct batch_name from test_runs where stress_test and NOT batch_name = '' order by 1  desc")}
-WITH last_build AS (
+    WITH last_build AS (
     select batch_name as name  from test_runs  where stress_test  order by date_time desc limit 1
 )
 
-select r.date_time, 
-r.test_name, 
-r.passed, 
-r.duration, 
-r.params ->> 'totalWorkers' total_workers,  r.params ->> 'worker' worker, avg(rs.duration)
+select r.date_time,
+       r.test_name,
+       r.passed,
+       r.duration,
+       r.params ->> 'totalWorkers' total_workers,  r.params ->> 'worker' worker
 from test_runs r
-left join test_runs rs on rs.test_name = r.test_name  and not rs.stress_test and rs.passed
-where r.stress_test and (r.batch_name = COALESCE(NULLIF(@batch_name, ''), (select name  from last_build))) and not r.test_name like '%Unhandled exceptions: Exception' and not r.test_name = ': : '
-group by r.date_time, r.test_name, r.passed, r.duration, r.params ->> 'worker', r.params ->> 'totalWorkers'
+where r.stress_test and (r.batch_name = COALESCE(NULLIF(@batch_name, ''), (select name  from last_build))) and not r.skipped and not r.test_name like '%Unhandled exceptions: Exception' and not r.test_name = ': : '
+group by r.date_time, r.test_name, r.passed, r.duration, r.params ->> 'worker', r.params ->> 'totalWorkers', r.result
 order by r.test_name, worker
 --end
 
