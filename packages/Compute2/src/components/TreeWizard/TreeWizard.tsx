@@ -304,7 +304,7 @@ export const TreeWizard = Vue.defineComponent({
                 dock-spawn-title='Steps'
                 dock-spawn-panel-icon='folder-tree'
                 dock-spawn-dock-type='left'
-                dock-spawn-dock-ratio={0.3}
+                dock-spawn-dock-ratio={0.15}
                 dock-spawn-z-index={51}
 
                 rootDroppable={false}
