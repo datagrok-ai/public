@@ -770,6 +770,8 @@ export interface IDartApi {
   grok_GridColumn_Get_isTextColorCoded(gc: any): any;
   grok_GridColumn_Set_isTextColorCoded(gc: any, x: any): any;
   grok_GridColumn_GetDataWidth(gc: any): any;
+  grok_GridColumn_GetGroup(gc: any): any;
+  grok_GridColumn_SetGroup(gc: any, group: String): any;
   grok_GridColumnList_Move(columns: any, column: any, position: Num): any;
   grok_GridColumnList_ByIndex(columns: any, index: Num): any;
   grok_GridColumnList_ByName(columns: any, columnName: String): any;

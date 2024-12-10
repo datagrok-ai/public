@@ -66,5 +66,28 @@ ideaCreated.tags.format = 'yyyy/MM/dd';
 ideaApproved.tags.format = 'yyyy/MM/dd';
 ideaSynthesized.tags.format = 'yyyy/MM/dd';
 
+
+const groups = {
+  'Absorption': { color: '#0b74e1', columns: ['Caco2', 'Lipophilicity', 'Solubility'] },
+  'Distribution': { color: '#9d05c5', columns:  ['PPBR', 'VDss']},
+  'Metabolism': { color: '#03a14f', columns: ['CYP1A2-Inhibitor', 'CYP2C19-Inhibitor', 'CYP2C9-Inhibitor', 'CYP2C9-Substrate', 'CYP2D6-Inhibitor', 'CYP2D6-Substrate']},
+  'Excretion': { color: '#b47b4a', columns:  ['CL-Hepa', 'CL-Micro', 'Half-Life']},
+  'Toxicity': { color: '#ba0f0f', columns:  ['hERG', 'LD50']},
+  'Chemspace': { columns: ['Chemspace id', 'Vendor', 'Pack, mg', 'Price, USD', 'Lead time, days']},
+  'DRC': { columns: ['DRC', 'DRC R2', 'DRC AUC'] },
+  'R-Groups': { columns: ['Core', 'R1', 'R2', 'R3'] },
+  'Classifications': {columns: ['BSEP classification', 'HLM CLint classification', 'RLM CLint classification', 'LE-MDCK Classification', 'PAMPA Classification', 'pH6.8 HT Solubility Classification'] }
+}
+
+for (let group of Object.getOwnPropertyNames(groups))
+  for (let colName of groups[group].columns)
+    if (t.col(colName))
+      t.col(colName).tags['group'] = group;
+
 t.meta.detectSemanticTypes();
-grok.shell.addTableView(t);
+let v = grok.shell.addTableView(t);
+
+for (let group of Object.getOwnPropertyNames(groups))
+  for (let colName of groups[group].columns)
+    if (groups[group].color && v.grid.col(colName))
+      v.grid.col(colName).headerCellStyle.textColor = DG.Color.fromHtml(groups[group].color);

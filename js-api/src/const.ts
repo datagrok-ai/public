@@ -322,6 +322,7 @@ export const TAGS = {
   },
 
   LINK_CLICK_BEHAVIOR: '.linkClickBehavior',
+  GROUP: 'group',
 }
 
 export enum LINK_CLICK_BEHAVIOR {
