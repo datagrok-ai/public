@@ -161,7 +161,7 @@ export abstract class BaseViewApp {
 
   private addNewProcess(smiles: string): () => Promise<void> {
     return async () => {
-      const col = this.tableView?.dataFrame.columns.getOrCreate('smiles', 'string', 1);
+      const col = this.tableView?.dataFrame.columns.getOrCreate('smiles', 'string');
       if (!col) return;
       col!.semType = DG.SEMTYPE.MOLECULE;
       this.tableView?.dataFrame.set('smiles', 0, smiles);

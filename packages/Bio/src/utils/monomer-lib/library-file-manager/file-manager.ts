@@ -28,6 +28,7 @@ import {_package} from '../../../package';
  * All files **must** be aligned to the HELM standard before adding. */
 export class MonomerLibFileManager implements IMonomerLibFileManager {
   public filesPromise: Promise<void> = Promise.resolve();
+  public initializedPromise: Promise<void> = Promise.resolve();
 
   private constructor(
     private readonly fileValidator: MonomerLibFileValidator,
@@ -35,8 +36,19 @@ export class MonomerLibFileManager implements IMonomerLibFileManager {
     public readonly eventManager: MonomerLibFileEventManager,
     private readonly logger: ILogger,
   ) {
+    // these both are behavioral subjects, i.e. they emit their value when subscribed.
+    // initial creation/request from bio package on awaiting files promise makes no sense,
+    // until the subscription fires first time
+    let resolveFilesPromise: () => void;
+    let initialized = false;
+    this.initializedPromise =
+      Promise.race([DG.delay(1000), new Promise<void>((resolve) => resolveFilesPromise = resolve)]);
     const _libSub = this.eventManager.updateValidLibraryFileListRequested$.subscribe(() => {
       this.updateValidLibList().then(() => {});
+      if (!initialized) {
+        initialized = true;
+        resolveFilesPromise();
+      }
     });
     const _setSub = this.eventManager.updateValidSetFileListRequested$.subscribe(() => {
       this.updateValidSetList().then(() => {});
@@ -181,7 +193,7 @@ export class MonomerLibFileManager implements IMonomerLibFileManager {
 
       if (this.libListHasChanged(validLibPathList)) {
         this.eventManager.changeValidLibPathList(validLibPathList);
-        this.libHelper.loadMonomerLib(true);
+        await this.libHelper.loadMonomerLib(true);
       }
       // console.log(`files after validation:`, this.libraryEventManager.getValidFilesPathList());
 

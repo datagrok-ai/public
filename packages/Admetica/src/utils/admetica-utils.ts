@@ -288,8 +288,10 @@ export function updateColumnProperties(gridCol: DG.GridColumn, model: any): void
   const subgroupName = properties.subgroup.find((subg: Subgroup) =>
     subg.models.some((m: Model) => model.name.includes(m.name))
   )?.name;
-  if (subgroupName)
+  if (subgroupName) {
     gridCol.headerCellStyle.textColor = DG.Color.fromHtml(colorsDictionary[subgroupName]);
+    column.tags['group'] = subgroupName;
+  }
 }
 
 export function addResultColumns(

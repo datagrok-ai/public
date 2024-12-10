@@ -10,7 +10,7 @@ import {ILineSeries, MouseOverLineEvent, ScatterPlotLinesRenderer}
 
 import {MMPA} from '../mmp-analysis/mmpa';
 import {CLIFFS_TAB_TOOLTIP, FRAGMENTS_GRID_TOOLTIP, FRAGMENTS_TAB_TOOLTIP, MATHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS,
-  MATHED_MOLECULAR_PAIRS_TOOLTIP_TRANS, MMP_NAMES, TrellisAxis, TrellisSortByProp,
+  MATHED_MOLECULAR_PAIRS_TOOLTIP_TRANS, MMP_CONTEXT_PANE_CLASS, MMP_NAMES, TrellisAxis, TrellisSortByProp,
   TrellisSortType} from './mmp-constants';
 
 import {PaletteCodes, getPalette} from './palette';
@@ -84,6 +84,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   linesActivityCorrespondance: Uint32Array | null = null;
   //generations tab objects
   generationsGrid: DG.Grid | null = null;
+  corrGrid: DG.Grid | null = null;
   generationsGridDiv = ui.div(ui.divText('Generations in progress...'));
   generationsSp: DG.ScatterPlotViewer | null = null;
 
@@ -247,11 +248,11 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const tabs = ui.tabControl(null, false);
 
     //const mmPairsDiv = ui.div('', {style: {width: '100%', height: '100%'}});
-    const mmPairsRoot1 = this.createGridDiv('Matched Molecular Pairs',
+    const mmPairsRoot1 = this.createGridDiv(MMP_NAMES.PAIRS_GRID,
       this.pairedGrids!.mmpGridTrans, MATHED_MOLECULAR_PAIRS_TOOLTIP_TRANS);
-    const mmPairsRoot2 = this.createGridDiv('Matched Molecular Pairs',
+    const mmPairsRoot2 = this.createGridDiv(MMP_NAMES.PAIRS_GRID,
       this.pairedGrids!.mmpGridFrag, MATHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS);
-    const fpGrid = this.createGridDiv('Fragment Pairs',
+    const fpGrid = this.createGridDiv(MMP_NAMES.FRAGMENTS_GRID,
       this.pairedGrids!.fpGrid, FRAGMENTS_GRID_TOOLTIP);
     fpGrid.prepend(ui.divText('No substitutions found for current molecule. Please select another molecule.',
       'chem-mmpa-no-fragments-error'));
@@ -370,6 +371,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         refilter = false;
         if (this.lastSelectedPair) {
           setTimeout(() => {
+            grok.shell.windows.showContextPanel = true;
             grok.shell.o = fillPairInfo(this.mmpa!, this.lastSelectedPair!, this.linesIdxs!,
               this.linesActivityCorrespondance![this.lastSelectedPair!],
               this.pairedGrids!.mmpGridTrans.dataFrame, this.diffs!, this.parentTable!, this.rdkitModule!);
@@ -388,15 +390,17 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
               ),
               this.generationsSp.root,
             ], {style: {width: '100%', height: '100%'}});
+            spCorrDiv.classList.add(MMP_CONTEXT_PANE_CLASS);
+            grok.shell.windows.showContextPanel = true;
             grok.shell.o = spCorrDiv;
           }
         }
       }
     });
 
-    const decript1 = 'Shows all fragmental substitutions for a given molecule';
+    const decript1 = 'View all fragment substitutions found in the dataset';
     const decript2 = 'Analysis of fragments versus explored value';
-    const decript3 = 'Cliffs analysis';
+    const decript3 = 'Molecule pairs analysis on 2d scatter plot';
     const decript4 = 'Generation of molecules based on obtained rules';
 
     ui.tooltip.bind(tabs.getPane(MMP_NAMES.TAB_TRANSFORMATIONS).header, decript1);
@@ -589,6 +593,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         this.linesRenderer!.currentLineId = event.id;
         if (event.id !== -1) {
           setTimeout(() => {
+            grok.shell.windows.showContextPanel = true;
             grok.shell.o = fillPairInfo(this.mmpa!, event.id, linesIdxs, linesActivityCorrespondance[event.id],
               pairedGrids.mmpGridTrans.dataFrame, diffs, mmpInput.table, rdkitModule, this.propPanelViewer!);
             this.lastSelectedPair = event.id;
@@ -606,6 +611,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.propPanelViewer.columns = propertiesColumnsNames;
       this.propPanelViewer.inputClicked.subscribe(() => {
         setTimeout(() => {
+          grok.shell.windows.showContextPanel = true;
           grok.shell.o = fillPairInfo(this.mmpa!,
             this.lastSelectedPair!, linesIdxs, linesActivityCorrespondance[this.lastSelectedPair!],
             pairedGrids.mmpGridTrans.dataFrame, diffs, mmpInput.table, rdkitModule, this.propPanelViewer!);
@@ -708,11 +714,21 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       progressBarSpace.close();
     });
 
-    getGenerations(mmpa, pairedGrids.fpGrid).then((genGrid: DG.Grid) => {
+    getGenerations(mmpa, pairedGrids.fpGrid).then(([genGrid, corrGrid]) => {
       this.generationsGrid = genGrid;
-      this.generationsSp = DG.Viewer.scatterPlot(this.generationsGrid?.dataFrame!, {
-        x: '~sss',
-        y: 'Prediction',
+      this.corrGrid = corrGrid;
+
+      this.corrGrid.dataFrame.meta.formulaLines.addLine({
+        title: 'Identity',
+        formula: '${Observed} = ${Predicted}',
+        color: '#DBDCDF',
+        width: 1,
+        visible: true,
+      });
+
+      this.generationsSp = DG.Viewer.scatterPlot(this.corrGrid?.dataFrame!, {
+        x: 'Observed',
+        y: 'Predicted',
         zoomAndFilter: 'no action',
         color: 'Activity',
         showXSelector: true,
@@ -723,6 +739,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         showSizeSelector: true,
         markerDefaultSize: 7,
       });
+
       ui.empty(this.generationsGridDiv);
       this.generationsGridDiv.append(this.createGridDiv('Generated Molecules', this.generationsGrid!, ''));
     }).catch((error: any) => {
@@ -780,6 +797,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
   detach(): void {
+    if ((grok.shell.o as HTMLElement).classList?.contains(MMP_CONTEXT_PANE_CLASS))
+      grok.shell.o = ui.div();
     super.detach();
   }
 }

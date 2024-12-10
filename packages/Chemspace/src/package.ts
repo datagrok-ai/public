@@ -2,7 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {COUNTRY_CODES} from './country-codes';
-import {ChemspacePricesTableItem, ChemspaceResult} from './model';
+import {ChemspacePriceColumns, ChemspaceOffer, ChemspacePricesTableItem, ChemspaceResult} from './model';
+import {delay} from '@datagrok-libraries/utils/src/test';
 
 const host = 'https://api.chem-space.com';
 let token: string | null = null;
@@ -14,6 +15,7 @@ const HEIGHT = 75;
 enum SEARCH_MODE {
   SIMILAR = 'Similar',
   SUBSTRUCTURE = 'Substructure',
+  EXACT = 'Exact',
   TEXT = 'Text'
 }
 
@@ -25,11 +27,11 @@ enum CATEGORY {
   CSSS = 'CSSS',
 }
 
-const modeToParam = {[SEARCH_MODE.SIMILAR]: 'sim', [SEARCH_MODE.SUBSTRUCTURE]: 'sub', [SEARCH_MODE.TEXT]: 'text'};
+const modeToParam = {[SEARCH_MODE.SIMILAR]: 'sim', [SEARCH_MODE.SUBSTRUCTURE]: 'sub',
+  [SEARCH_MODE.TEXT]: 'text', [SEARCH_MODE.EXACT]: 'exact'};
 
 //tags: app
 //name: Chemspace
-//meta.browsePath: Oligo
 export async function app(): Promise<void> {
   await getApiToken();
 
@@ -62,6 +64,8 @@ export async function app(): Promise<void> {
     ui.setUpdateIndicator(view.root, true);
 
     function setDataFrame(t: DG.DataFrame): void {
+      if (t.rowCount === 0)
+        grok.shell.error('No matches');
       view.dataFrame = t;
       ui.setUpdateIndicator(view.root, false);
     }
@@ -328,14 +332,25 @@ export async function queryMultipart(path: string, formParamsStr: string, params
   };
 
   try {
-    const response = await grok.dapi.fetchProxy(url, queryParams);
-    if (!response.ok)
-      throw new Error(`${response.status}, ${response.statusText}`);
+    let response = await grok.dapi.fetchProxy(url, queryParams);
+    let totalAttempts = 10;
+    let attemptsCount = 0;
+    const delayMs = 1000;
+    if (!response.ok) {
+      if (response.status === 429) {
+        while (response.status === 429 && totalAttempts > 0) {
+          totalAttempts--;
+          attemptsCount++;
+          await delay(delayMs * attemptsCount);
+          response = await grok.dapi.fetchProxy(url, queryParams);
+          if (!response.ok && response.status !== 429)
+            throw new Error(`${response.status}, ${response.statusText}`);
+        }
+      } else
+        throw new Error(`${response.status}, ${response.statusText}`);
+    }
     const list: ChemspaceResult[] = (await response.json()).items;
-    if (list && list.length > 0)
-      return JSON.stringify(list);
-    else
-      throw Error('No matches');
+    return JSON.stringify(list && list.length > 0 ? list : []);
   } catch (e) {
     throw e;
   }
@@ -343,4 +358,108 @@ export async function queryMultipart(path: string, formParamsStr: string, params
 
 function getCategoryCacheKey(cat: string, shipToCountry: COUNTRY_CODES): string {
   return `${cat}|${shipToCountry}`;
+}
+
+//name: getChemspaceIds
+//meta.vectorFunc: true
+//input: column<string> molColumn {semType: Molecule}
+//input: string shipToCountry
+//output: column result
+export async function getChemspaceIds(molColumn: DG.Column, shipToCountry: string): Promise<DG.Column | undefined> {
+  const pi = DG.TaskBarProgressIndicator.create(`Getting Chemspace ids for ${molColumn.name}...`);
+  try {
+    await getApiToken();
+    const ids = Array<string>(molColumn.length);
+    for (let i = 0; i < molColumn.length; i++) {
+      let smiles = molColumn.get(i);
+      if (DG.chem.isMolBlock(smiles))
+        smiles = DG.chem.convert(smiles, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles);
+      const queryParams: {[key: string]: any} = {
+        'shipToCountry': shipToCountry,
+        'categories': 'CSMS, CSMB, CSCS, CSSB, CSSS',
+      };
+      try {
+        const resStr = await grok.functions.call(`${_package.name}:queryMultipart`, {
+          path: `search/${modeToParam[SEARCH_MODE.EXACT]}`,
+          formParamsStr: JSON.stringify({'SMILES': smiles}),
+          paramsStr: JSON.stringify(queryParams),
+        });
+        const res = JSON.parse(resStr);
+        ids[i] = res.length ? res[0].csId : '';
+      } catch (e: any) {
+        ids[i] = `Error: ${e.message ?? e}`;
+      }
+      pi.update(i/molColumn.length*100, `Got ${i} Chemspace ids from ${molColumn.length}`);
+    };
+    pi.close();
+    return DG.Column.fromStrings('csIds', ids);
+  } catch (e: any) {
+    grok.shell.error(e);
+  } finally {
+    pi.close();
+  }
+}
+
+//name: getChemspacePrices
+//input: dataframe data
+//input: column<string> idsColumn {semType: chemspace-id}
+//input: string shipToCountry
+//output: dataframe res {action:join(data)}
+export async function getChemspacePrices(data: DG.DataFrame, idsColumn: DG.Column,
+  shipToCountry: string): Promise<DG.DataFrame | undefined> {
+  const pi = DG.TaskBarProgressIndicator.create(`Getting Chemspace prices for ${idsColumn.name}...`);
+  try {
+    await getApiToken();
+    const ids = idsColumn.toList().join(',');
+    const queryParams: {[key: string]: any} = {
+      'shipToCountry': shipToCountry,
+      'categories': 'CSMS, CSMB, CSCS, CSSB, CSSS',
+      'count': idsColumn.length,
+    };
+    const resStr = await grok.functions.call(`${_package.name}:queryMultipart`, {
+      path: `search/${modeToParam[SEARCH_MODE.TEXT]}`,
+      formParamsStr: JSON.stringify({'query': ids}),
+      paramsStr: JSON.stringify(queryParams),
+    });
+    const res: ChemspaceResult[] = JSON.parse(resStr);
+    const resDict: {[key: string]: ChemspacePriceColumns | null} = {};
+
+    const select100MgOffer = (offers: ChemspaceOffer[]): ChemspacePriceColumns | null => {
+      for (const offer of offers) {
+        if (offer.prices.length) {
+          return {
+            vendorName: offer.vendorName,
+            leadTimeDays: offer.leadTimeDays ?? 0,
+            priceUsd: offer.prices[0].priceUsd!,
+            packMg: offer.prices[0].packMg,
+          };
+        }
+      }
+      return null;
+    };
+
+    for (let i = 0; i < res.length; i++)
+      resDict[res[i].csId] = select100MgOffer(res[i].offers);
+
+    const vendorCol = DG.Column.string('Vendor', idsColumn.length);
+    const leadTime = DG.Column.int('Lead time, days', idsColumn.length);
+    const mgCol = DG.Column.float('Pack, mg', idsColumn.length);
+    const priceCol = DG.Column.float('Price, USD', idsColumn.length);
+    priceCol.semType = 'Money';
+    priceCol.meta.format = 'money($)';
+    for (let i = 0; i < idsColumn.length; i++) {
+      const offer = resDict[idsColumn.get(i)];
+      if (offer) {
+        vendorCol.set(i, offer.vendorName, false);
+        priceCol.set(i, offer.priceUsd, false);
+        leadTime.set(i, offer.leadTimeDays ?? null, false);
+        mgCol.set(i, offer.packMg, false);
+      }
+    }
+    return DG.DataFrame.fromColumns([vendorCol, mgCol, priceCol, leadTime]);
+  } catch (e: any) {
+    grok.shell.error(e);
+  } finally {
+    pi.close();
+  }
 }

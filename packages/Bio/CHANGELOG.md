@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.17.5 (2024-12-09)
+
+Monomer manager: Correct loading.
+
 ## 2.17.3 (2024-11-27)
 
 Monomer managers as apps

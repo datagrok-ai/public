@@ -3,7 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
-import {MMP_NAMES, columnsDescriptions} from './mmp-constants';
+import {FRAGMENTS_GRID_HEADER_TOOLTIPS, MMP_NAMES, PAIRS_GRID_HEADER_TOOLTIPS,
+  columnsDescriptions} from './mmp-constants';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {MMPA} from '../mmp-analysis/mmpa';
 import {getRdKitModule} from '../../../utils/chem-common-rdkit';
@@ -60,9 +61,9 @@ export class MmpPairedGrids {
     const trellisTv = DG.TableView.create(this.fpGrid.dataFrame, false);
     this.filters = trellisTv.getFiltersGroup();
     this.fpMaskFragmentsTab = DG.BitSet.create(this.fpGrid.dataFrame.rowCount);
-    const avgPairs = this.fpGrid.dataFrame.col(MMP_NAMES.PAIRS)?.stats.avg;
+    const avgPairs = this.fpGrid.dataFrame.col(MMP_NAMES.PAIRS_COUNT)?.stats.avg;
     if (avgPairs)
-      this.fpGrid.dataFrame.rows.filter((row) => row[MMP_NAMES.PAIRS] >= Math.ceil(avgPairs));
+      this.fpGrid.dataFrame.rows.filter((row) => row[MMP_NAMES.PAIRS_COUNT] >= Math.ceil(avgPairs));
     this.fpMaskFragmentsTab.copyFrom(this.fpGrid.dataFrame.filter);
 
     this.rdkit = getRdKitModule();
@@ -71,7 +72,6 @@ export class MmpPairedGrids {
       if (this.parentTable!.currentRowIdx !== -1) {
         // this.unPinMatchedPair();
         this.refilterFragmentPairsByMolecule(true);
-        this.showErrorEvent.next(this.fpGrid.dataFrame.filter.trueCount === 0);
         this.refreshMatchedPair(this.rdkit);
       }
     }));
@@ -91,16 +91,21 @@ export class MmpPairedGrids {
       this.selectPairsWithSubstitutionInParentTable(false);
     });
 
-    //workaround for case when creating a filter panel for fragments tab resets filter in transformation tab
-    const filterSub = this.fpGrid.table.onFilterChanged.subscribe((e: any) => {
-      if (!this.currentFragmentsTab && e.type === DG.VIEWER.HISTOGRAM) {
-        setTimeout(() => {
-          this.fpGrid.dataFrame.filter.copyFrom(this.fpMaskByMolecule!);
-          if (this.lastFragmentIdx)
-            this.fpGrid.table.currentRowIdx = this.lastFragmentIdx;
-          filterSub.unsubscribe();
-        }, 10);
+    let filterPanelCreated = false;
+    this.fpGrid.table.onFilterChanged.subscribe((e: any) => {
+      //workaround for case when creating a filter panel for fragments tab resets filter in transformation tab
+      if (!filterPanelCreated) {
+        if (!this.currentFragmentsTab && e.type === DG.VIEWER.HISTOGRAM) {
+          filterPanelCreated = true;
+          setTimeout(() => {
+            this.fpGrid.dataFrame.filter.copyFrom(this.fpMaskByMolecule!);
+            if (this.lastFragmentIdx)
+              this.fpGrid.table.currentRowIdx = this.lastFragmentIdx;
+          }, 10);
+        }
       }
+      //show error in case grid is empty
+      this.showErrorEvent.next(this.fpGrid.dataFrame.filter.trueCount === 0);
     });
 
     this.mmpGridTrans.table.onCurrentRowChanged.subscribe(() => {
@@ -112,9 +117,27 @@ export class MmpPairedGrids {
       this.selectPairsWithSubstitutionInParentTable(true);
     });
 
+    this.createCustomGridTooltips(this.fpGrid, FRAGMENTS_GRID_HEADER_TOOLTIPS);
+    this.createCustomGridTooltips(this.mmpGridTrans, PAIRS_GRID_HEADER_TOOLTIPS, true);
+
     this.mmpMaskTrans.setAll(false);
     this.refreshMatchedPair(this.rdkit);
   }
+
+  createCustomGridTooltips(grid: DG.Grid, tooltips: {[key: string]: string}, upperCase?: boolean) {
+    grid.onCellTooltip(function(cell: DG.GridCell, x: number, y: number) {
+      if (cell.isColHeader && cell.tableColumn) {
+        let tooltip = '';
+        if (tooltips[cell.tableColumn.name])
+          tooltip = tooltips[cell.tableColumn.name];
+        else
+          tooltip = cell.tableColumn.name.replace('\u0394', upperCase ? 'Difference in' : 'difference in');
+        ui.tooltip.show(ui.divText(tooltip), x, y);
+        return true;
+      } else
+        return false;
+    });
+  };
 
   refreshMaskFragmentPairsFilter(): void {
     this.enableFilters = false;
@@ -350,8 +373,8 @@ export class MmpPairedGrids {
 function getFragmetsPairsGrid(activityMeanNames: string[], mmpa: MMPA) : DG.Grid {
   const fromCol = createColWithDescription('string', MMP_NAMES.FROM, mmpa.rulesBased.fromFrag);
   const toCol = createColWithDescription('string', MMP_NAMES.TO, mmpa.rulesBased.toFrag);
-  const occasionsCol = DG.Column.fromInt32Array(MMP_NAMES.PAIRS, mmpa.rulesBased.occasions);
-  occasionsCol.setTag('description', columnsDescriptions[MMP_NAMES.PAIRS]);
+  const occasionsCol = DG.Column.fromInt32Array(MMP_NAMES.PAIRS_COUNT, mmpa.rulesBased.occasions);
+  occasionsCol.setTag('description', columnsDescriptions[MMP_NAMES.PAIRS_COUNT]);
   fromCol.semType = DG.SEMTYPE.MOLECULE;
   toCol.semType = DG.SEMTYPE.MOLECULE;
   occasionsCol.semType = DG.TYPE.INT;

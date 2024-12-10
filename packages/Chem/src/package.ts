@@ -1703,7 +1703,7 @@ export function mmpViewer(): MatchedMolecularPairsViewer {
 //input: dataframe table [Input data table]
 //input: column molecules { semType: Molecule }
 //input: column_list activities {type: numerical}
-//input: double fragmentCutoff = 0.4 { description: Max length of fragment in % of core }
+//input: double fragmentCutoff = 0.4 { description: Maximum fragment size relative to core }
 //output: viewer result
 export function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
   activities: DG.ColumnList, fragmentCutoff: number = 0.4, demo = false): void {
@@ -2031,18 +2031,6 @@ export async function isApplicableNN(df: DG.DataFrame, predictColumn: DG.Column)
 }
 
 export {getMCS};
-
-//top-menu: Chem | Analyze | ChemClasses...
-//name: chemClasses
-//input: dataframe table [Input data table]
-//input: column molecules { semType: Molecule }
-export async function chemClasses(table: DG.DataFrame, molecules: DG.Column): Promise<void> {
-  const classes = await getChemClasses(molecules);
-  const classesCol = DG.Column.fromStrings('Classes', classes);
-  classesCol.semType = DG.SEMTYPE.MOLECULE;
-  table.columns.add(classesCol);
-  grok.shell.tv.grid.invalidate();
-}
 
 //top-menu: Chem | Transform | Deprotect...
 //name: Deprotect

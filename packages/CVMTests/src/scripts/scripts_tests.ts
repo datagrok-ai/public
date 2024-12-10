@@ -91,7 +91,7 @@ for (const lang of langs) {
           expect((result['resultInBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.FLOAT, true);
           expect((result['resultOutBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.FLOAT, true);
         }
-      }, {stressTest: true, timeout: 60000});
+      }, {timeout: 60000});
 
       test('Empty dataframe', async () => {
         const result: DG.DataFrame = await grok.functions.call(`CVMTests:${lang}EmptyDataFrame`);
@@ -153,14 +153,14 @@ for (const lang of langs) {
                             '  <li><a href="tel:+123456789">Phone</a></li>\n' +
                             '  </ul>'});
         expect(result, 3);
-      }, {timeout: 120000, stressTest: true});
+      }, {timeout: 120000});
 
       test('File type input and environment yaml', async () => {
         const files = await grok.dapi.files.list('System:AppData/CvmTests/images', false, 'silver.jpg');
         const result = await grok.functions.call('CVMTests:ImagePixelCount',
           {'fileInput': files[0]});
         expect(49090022, result);
-      }, {timeout: 120000, stressTest: true});
+      }, {timeout: 120000});
     }
   });
 
