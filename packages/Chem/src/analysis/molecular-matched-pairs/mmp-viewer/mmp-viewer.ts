@@ -84,6 +84,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   linesActivityCorrespondance: Uint32Array | null = null;
   //generations tab objects
   generationsGrid: DG.Grid | null = null;
+  corrGrid: DG.Grid | null = null;
   generationsGridDiv = ui.div(ui.divText('Generations in progress...'));
   generationsSp: DG.ScatterPlotViewer | null = null;
 
@@ -713,11 +714,12 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       progressBarSpace.close();
     });
 
-    getGenerations(mmpa, pairedGrids.fpGrid).then((genGrid: DG.Grid) => {
+    getGenerations(mmpa, pairedGrids.fpGrid).then(([genGrid, corrGrid]) => {
       this.generationsGrid = genGrid;
-      this.generationsSp = DG.Viewer.scatterPlot(this.generationsGrid?.dataFrame!, {
-        x: '~sss',
-        y: 'Prediction',
+      this.corrGrid = corrGrid;
+      this.generationsSp = DG.Viewer.scatterPlot(this.corrGrid?.dataFrame!, {
+        x: 'Observed',
+        y: 'Predicted',
         zoomAndFilter: 'no action',
         color: 'Activity',
         showXSelector: true,

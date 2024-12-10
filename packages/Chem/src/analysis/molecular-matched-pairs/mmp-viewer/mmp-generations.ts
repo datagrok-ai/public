@@ -6,7 +6,7 @@ import {getRdKitService} from '../../../utils/chem-common-rdkit';
 import {MMPA} from '../mmp-analysis/mmpa';
 
 export async function getGenerations(mmpa: MMPA, allPairsGrid: DG.Grid):
-  Promise<DG.Grid> {
+  Promise<[DG.Grid, DG.Grid]> {
   const rulesColumns = allPairsGrid.dataFrame.columns;
 
   const rulesFrom = rulesColumns.byName(MMP_NAMES.FROM).getRawData();
@@ -29,20 +29,9 @@ export async function getGenerations(mmpa: MMPA, allPairsGrid: DG.Grid):
   const grid = DG.DataFrame.fromColumns(cols).plot.grid();
   createMolExistsCol(mmpa.frags.smiles, generation, grid);
 
+  const gridCorr = getCorGrid(mmpa);
 
-  const initVals = new Float32Array(generation.length);
-  const col1 = grid.dataFrame.columns.byName('Existing');
-  const col2 = grid.dataFrame.columns.byName('Initial value');
-  const col3 = grid.dataFrame.columns.byName('Prediction');
-  for (let i = 0; i < generation.length; i++) {
-    if (col1.get(i))
-      initVals[i] = col3.get(i) - col2.get(i)/4;
-    else
-      initVals[i] = 0;
-  }
-  const corrCol = DG.Column.float('~sss', generation.length).init((i) => initVals[i] == 0 ? null : initVals[i]);
-  grid.dataFrame.columns.add(corrCol);
-  return grid;
+  return [grid, gridCorr];
 }
 
 export function createColWithDescription(colType: any, colName: string, list: any[], semType?: DG.SemType): DG.Column {
@@ -60,4 +49,41 @@ export async function createMolExistsCol(molecules: string[], generation: string
   grid.dataFrame.columns.add(boolCol);
   grid.col(boolCol.name)!.editable = false;
   grid.invalidate();
+}
+
+function getCorGrid(mmpa: MMPA): DG.Grid {
+  const activitiesCount = mmpa.initData.activitiesCount;
+  const length = mmpa.allCasesNumber*activitiesCount;
+  const initialMol = new Array<string>(length);
+  const initialFragment = new Array<string>(length);
+  const endFragment = new Array<string>(length);
+  const activity = new Array<string>(length);
+  const observed = new Array<Number>(length);
+  const predicted = new Array<Number>(length);
+
+  let counter = 0;
+  const rules = mmpa.rules.rules;
+  for (let i = 0; i < rules.length; i ++) {
+    for (let j = 0; j <rules[i].pairs.length; j++) {
+      for (let k = 0; k < activitiesCount; k++) {
+        initialMol[counter] = rules[i].pairs[j].core;
+        initialFragment[counter] = mmpa.rules.smilesFrags[rules[i].smilesRule1];
+        endFragment[counter] = mmpa.rules.smilesFrags[rules[i].smilesRule2];
+        activity[counter] = mmpa.initData.activitiesNames[k];
+        observed[counter] = mmpa.initData.activities[k][rules[i].pairs[j].secondStructure];
+        predicted[counter] = mmpa.initData.activities[k][rules[i].pairs[j].firstStructure] +
+          mmpa.rulesBased.meanDiffs[k][i];
+        counter++;
+      }
+    }
+  }
+
+  const colsCorr = [];
+  colsCorr.push(createColWithDescription('string', 'Core', initialMol, DG.SEMTYPE.MOLECULE));
+  colsCorr.push(createColWithDescription('string', 'From', initialFragment, DG.SEMTYPE.MOLECULE));
+  colsCorr.push(createColWithDescription('string', 'To', endFragment, DG.SEMTYPE.MOLECULE));
+  colsCorr.push(createColWithDescription('string', 'Activity', activity));
+  colsCorr.push(createColWithDescription('double', 'Observed', observed));
+  colsCorr.push(createColWithDescription('double', 'Predicted', predicted));
+  return DG.DataFrame.fromColumns(colsCorr).plot.grid();
 }
