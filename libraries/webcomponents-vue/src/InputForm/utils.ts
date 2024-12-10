@@ -72,7 +72,7 @@ function renderValidationResults(
           ...(advice.actions ?? []).map(
             (action) => ui.link(
               action.actionName,
-              emit('actionRequested', action.action),
+              () => emit('actionRequested', action.action),
               undefined, {style: {paddingLeft: '20px'}})),
         ]));
       });
