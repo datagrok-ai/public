@@ -118,6 +118,7 @@ export interface DGIconFAT extends DGIconFA {};
 export class DGComboPopup extends HTMLElement {
   private _caption: string | HTMLElement = 'Caption';
   private _items = [] as string[];
+  private _tooltip: string | null = null;
 
   constructor() {
     super();
@@ -133,6 +134,11 @@ export class DGComboPopup extends HTMLElement {
     this.render();
   }
 
+  public set tooltip(val: string | null) {
+    this._tooltip = val;
+    this.render();
+  }
+
   private render() {
     ui.empty(this);
     const newPopup = ui.comboPopup(
@@ -142,6 +148,7 @@ export class DGComboPopup extends HTMLElement {
         'selected', {detail: {item, itemIdx: this._items.findIndex((i) => i === item)}}),
       ),
     );
+    ui.tooltip.bind(newPopup, this._tooltip)
     newPopup.style.height = '24px';
     newPopup.style.minWidth = '0px';
     newPopup.onclick = (ev) => {

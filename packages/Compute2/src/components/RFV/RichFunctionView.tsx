@@ -308,7 +308,7 @@ export const RichFunctionView = Vue.defineComponent({
 
     const callMeta = Vue.computed(() => props.callMeta);
 
-    const isIncomplete = Vue.computed(() => props.callState?.isOutputOutdated);
+    const isOutputOutdated = Vue.computed(() => props.callState?.isOutputOutdated);
     const isRunning = Vue.computed(() => props.callState?.isRunning);
     const isRunnable = Vue.computed(() => props.callState?.isRunnable);
 
@@ -318,7 +318,7 @@ export const RichFunctionView = Vue.defineComponent({
 
     const features = Vue.computed(() => Utils.getFeatures(currentFunc.value));
     const isSAenabled = Vue.computed(() => Utils.getFeature(features.value, 'sens-analysis', false));
-    const isExportEnabled = Vue.computed(() => Utils.getFeature(features.value, 'export', true));
+    const isReportEnabled = Vue.computed(() => Utils.getFeature(features.value, 'export', true));
     const isFittingEnabled = Vue.computed(() => Utils.getFeature(features.value, 'fitting', false));
     const menuActions = Vue.computed(() => props.menuActions);
     const buttonActions = Vue.computed(() => props.buttonActions);
@@ -411,7 +411,7 @@ export const RichFunctionView = Vue.defineComponent({
               tooltip='Run step'
               onClick={run}
             />
-            { isExportEnabled.value && !isIncomplete.value && <ComboPopup
+            { isReportEnabled.value && !isOutputOutdated.value && <ComboPopup
               caption={ui.iconFA('arrow-to-bottom')}
               items={['Excel']}
               onSelected={({item: format}) => {
@@ -424,6 +424,7 @@ export const RichFunctionView = Vue.defineComponent({
                   DG.Utils.download(`${currentCall.value.func.nqName} -
                   ${Utils.getStartedOrNull(currentCall.value) ?? 'Not completed'}.xlsx`, blob));
               }}
+              tooltip='Generate a report for the current step'
             />}
             { isSAenabled.value && <IconFA
               name='analytics'

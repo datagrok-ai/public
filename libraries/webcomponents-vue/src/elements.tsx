@@ -32,7 +32,7 @@ export const BigButton = Vue.defineComponent({
     isDisabled: {
       type: Boolean,
       default: false,
-    }
+    },
   },
   emits: ['click'],
   setup(props, {slots, emit}) {
@@ -42,7 +42,7 @@ export const BigButton = Vue.defineComponent({
       if (!btn) return;
 
       btn.classList.toggle('d4-disabled', isDisabled);
-    }, { immediate: true });
+    }, {immediate: true});
 
     return () => (<button
       onClick={(p) => emit('click', p)}
@@ -72,8 +72,8 @@ export const IconFA = Vue.defineComponent({
     },
     faStyle: {
       type: String as Vue.PropType<'fal' | 'fas' | 'far' | 'fad'>,
-      default: 'fal'
-    }
+      default: 'fal',
+    },
   },
   emits: [
     'click',
@@ -110,7 +110,7 @@ export const ToggleInput = Vue.defineComponent({
     },
     tooltip: {
       type: String,
-    }
+    },
   },
   emits: {
     'update:value': (value: boolean) => value,
@@ -122,9 +122,9 @@ export const ToggleInput = Vue.defineComponent({
       nullable={props.nullable}
       tooltip={props.tooltip}
       onValueChanged={(event: any) => emit('update:value', event.detail)}
-    />
-  }
-})
+    />;
+  },
+});
 
 export const ComboPopup = Vue.defineComponent({
   name: 'ComboPopup',
@@ -135,21 +135,25 @@ export const ComboPopup = Vue.defineComponent({
     },
     items: {
       type: Array<String>,
-      default: []
-    }
+      default: [],
+    },
+    tooltip: {
+      type: String,
+    },
   },
   emits: {
     'selected': (value: {item: string, itemIdx: number}) => value,
   },
-  setup(props, { emit }){
+  setup(props, {emit}) {
     return () => <dg-combo-popup
       //@ts-ignore
       caption={props.caption}
       items={props.items}
+      tooltip={props.tooltip}
       onSelected={(e: any) => emit('selected', e.detail)}
-    />
-  }
-})
+    />;
+  },
+});
 
 export const Icon = Vue.defineComponent({
   name: 'Icon',
