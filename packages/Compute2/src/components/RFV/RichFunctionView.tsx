@@ -335,6 +335,30 @@ export const RichFunctionView = Vue.defineComponent({
       let lastCardLabel = null as string | null;
       let scalarCardCount = 0;
 
+      const getElementToDock = () => {
+        return intelligentLayout && lastCardLabel 
+        && visibleTabLabels.value.includes(lastCardLabel)
+        && scalarCardCount < 3 ? lastCardLabel: null
+      }
+
+      const getDockRatio = () => {
+        if (!intelligentLayout) return null;
+
+        return lastCardLabel && scalarCardCount < 3 ? 0.5: 0.15;
+      }
+
+      const getDockStrategy = (categoryProps: DG.Property[]) => {
+        if (!intelligentLayout) return 'fill';
+
+        if (viewerTabLabels.value.length === 0) return null;
+
+        if (categoryProps.length > 3 || scalarCardCount > 3) return 'fill'
+
+        if (!lastCardLabel) return 'down';
+
+        return scalarCardCount < 3 ? 'right': 'down';
+      }
+
       return (
         <div class='w-full h-full flex' ref={root}>
           <RibbonMenu groupName='Panels'>
@@ -516,28 +540,14 @@ export const RichFunctionView = Vue.defineComponent({
                       funcCall={currentCall.value}
                       dock-spawn-panel-icon='sign-out-alt'
                       dock-spawn-title={tabLabel}
-                      dock-spawn-dock-to={intelligentLayout &&
-                        lastCardLabel && visibleTabLabels.value.includes(lastCardLabel) && lastCardLabel !==tabLabel
-                        && scalarCardCount < 3 ? lastCardLabel: null
-                      }
-                      dock-spawn-dock-type={intelligentLayout ? (viewerTabLabels.value.length > 0 ?
-                        (lastCardLabel ?
-                          (categoryProps.length > 3 ?
-                            'fill': (scalarCardCount < 3 ? 'right': 'down')
-                          ): 'down') : null): 'fill'
-                      }
-                      dock-spawn-dock-ratio={intelligentLayout ?
-                        (lastCardLabel && scalarCardCount < 3 ? 0.5: 0.15) : null
-                      }
+                      dock-spawn-dock-to={getElementToDock()}
+                      dock-spawn-dock-type={getDockStrategy(categoryProps)}
+                      dock-spawn-dock-ratio={getDockRatio()}
                     />;
 
                     if (categoryProps.length < 3) {
                       scalarCardCount += categoryProps.length;
                       lastCardLabel = tabLabel;
-                    }
-                    if (scalarCardCount >= 2) {
-                      scalarCardCount = 0;
-                      lastCardLabel = null;
                     }
 
                     return Vue.withDirectives(panel, [[ifOverlapping, isRunning.value, 'Recalculating...']]);
