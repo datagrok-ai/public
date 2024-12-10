@@ -247,11 +247,11 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const tabs = ui.tabControl(null, false);
 
     //const mmPairsDiv = ui.div('', {style: {width: '100%', height: '100%'}});
-    const mmPairsRoot1 = this.createGridDiv('Matched Molecular Pairs',
+    const mmPairsRoot1 = this.createGridDiv(MMP_NAMES.PAIRS_GRID,
       this.pairedGrids!.mmpGridTrans, MATHED_MOLECULAR_PAIRS_TOOLTIP_TRANS);
-    const mmPairsRoot2 = this.createGridDiv('Matched Molecular Pairs',
+    const mmPairsRoot2 = this.createGridDiv(MMP_NAMES.PAIRS_GRID,
       this.pairedGrids!.mmpGridFrag, MATHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS);
-    const fpGrid = this.createGridDiv('Fragment Pairs',
+    const fpGrid = this.createGridDiv(MMP_NAMES.FRAGMENTS_GRID,
       this.pairedGrids!.fpGrid, FRAGMENTS_GRID_TOOLTIP);
     fpGrid.prepend(ui.divText('No substitutions found for current molecule. Please select another molecule.',
       'chem-mmpa-no-fragments-error'));
@@ -397,9 +397,9 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       }
     });
 
-    const decript1 = 'Shows all fragmental substitutions for a given molecule';
+    const decript1 = 'View all fragment substitutions found in the dataset';
     const decript2 = 'Analysis of fragments versus explored value';
-    const decript3 = 'Cliffs analysis';
+    const decript3 = 'Molecule pairs analysis on 2d scatter plot';
     const decript4 = 'Generation of molecules based on obtained rules';
 
     ui.tooltip.bind(tabs.getPane(MMP_NAMES.TAB_TRANSFORMATIONS).header, decript1);
