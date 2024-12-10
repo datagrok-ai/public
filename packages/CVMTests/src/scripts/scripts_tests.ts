@@ -91,7 +91,7 @@ for (const lang of langs) {
           expect((result['resultInBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.FLOAT, true);
           expect((result['resultOutBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.FLOAT, true);
         }
-      }, {stressTest: true, timeout: 60000});
+      }, {timeout: 60000});
 
       test('Empty dataframe', async () => {
         const result: DG.DataFrame = await grok.functions.call(`CVMTests:${lang}EmptyDataFrame`);
