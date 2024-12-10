@@ -717,6 +717,15 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     getGenerations(mmpa, pairedGrids.fpGrid).then(([genGrid, corrGrid]) => {
       this.generationsGrid = genGrid;
       this.corrGrid = corrGrid;
+
+      this.corrGrid.dataFrame.meta.formulaLines.addLine({
+        title: 'Identity',
+        formula: '${Observed} = ${Predicted}',
+        color: '#DBDCDF',
+        width: 1,
+        visible: true,
+      });
+
       this.generationsSp = DG.Viewer.scatterPlot(this.corrGrid?.dataFrame!, {
         x: 'Observed',
         y: 'Predicted',
@@ -730,6 +739,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         showSizeSelector: true,
         markerDefaultSize: 7,
       });
+
       ui.empty(this.generationsGridDiv);
       this.generationsGridDiv.append(this.createGridDiv('Generated Molecules', this.generationsGrid!, ''));
     }).catch((error: any) => {
