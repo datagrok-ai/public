@@ -218,32 +218,30 @@ export const TreeWizard = Vue.defineComponent({
       }
     })
 
-    const openMetadataEditDialog = () => {
-      if (isRootChoosen.value) {
-        const rootDesc = states.descriptions[chosenStepUuid.value!];
-        const dialog = new EditDialog({...rootDesc, ...currentMetaCallData.value});
-        dialog.onMetadataEdit.pipe(take(1)).subscribe((editOptions) => {
-          savePipeline(editOptions)
-        });
+    const saveSubTreeState = (uuid: string) => {
+      const chosenStepDesc = states.descriptions[uuid];
+      const dialog = new EditDialog({
+        title: typeof(chosenStepDesc?.title) === 'string' ? chosenStepDesc?.title : '',
+        description: typeof(chosenStepDesc?.description) === 'string' ? chosenStepDesc?.description : '',
+        tags: Array.isArray(chosenStepDesc?.tags) ? chosenStepDesc?.tags : [],
+      });
+      dialog.onMetadataEdit.pipe(take(1)).subscribe((editOptions) => {
+        saveDynamicItem(chosenStepUuid.value!, editOptions)
+      });
 
-        dialog.show({center: true, width: 500})
-        return;
-      }
+      dialog.show({center: true, width: 500})
+    }
 
-      if (chosenStepUuid.value) {
-        const chosenStepDesc = states.descriptions[chosenStepUuid.value];
-        const dialog = new EditDialog({
-          title: typeof(chosenStepDesc?.title) === 'string' ? chosenStepDesc?.title : '',
-          description: typeof(chosenStepDesc?.description) === 'string' ? chosenStepDesc?.description : '',
-          tags: Array.isArray(chosenStepDesc?.tags) ? chosenStepDesc?.tags : [],
-        });
-        dialog.onMetadataEdit.pipe(take(1)).subscribe((editOptions) => {
-          saveDynamicItem(chosenStepUuid.value!, editOptions)
-        });
+    const saveEntireModelState = () => {
+      if (!treeState.value) return;
 
-        dialog.show({center: true, width: 500})
-        return;
-      }
+      const rootDesc = states.descriptions[treeState.value.uuid];
+      const dialog = new EditDialog({...rootDesc, ...currentMetaCallData.value});
+      dialog.onMetadataEdit.pipe(take(1)).subscribe((editOptions) => {
+        savePipeline(editOptions)
+      });
+
+      dialog.show({center: true, width: 500})
     }
 
     const isTreeReady = Vue.computed(() => treeState.value && !treeMutationsLocked.value && !isGlobalLocked.value);
@@ -271,7 +269,7 @@ export const TreeWizard = Vue.defineComponent({
             name='save'
             tooltip={'Save current state of model'}
             style={{'padding-right': '3px'}}
-            onClick={openMetadataEditDialog}
+            onClick={saveEntireModelState}
           /> }
           {isTreeReady.value && isTreeReportable.value && <IconFA
             name='arrow-to-bottom'
@@ -346,6 +344,7 @@ export const TreeWizard = Vue.defineComponent({
                         onToggleNode={() => stat.open = !stat.open}
                         onRunSequence={(uuid) => runSequence(uuid)}
                         onRunStep={(uuid) => runStep(uuid)}
+                        onSaveStep={(uuid) => saveSubTreeState(uuid)}
                       />
                     )
                 }

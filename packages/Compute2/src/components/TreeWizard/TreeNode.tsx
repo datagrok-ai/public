@@ -9,7 +9,8 @@ import {OpenIcon} from '@he-tree/vue';
 import {useElementHover} from '@vueuse/core';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
-import {hasAddControls, hasRunnableSteps, PipelineWithAdd} from '../../utils';
+import {couldBeSaved, hasAddControls, hasRunnableSteps, PipelineWithAdd} from '../../utils';
+import { isFuncCallState } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 
 const statusToIcon: Record<Status, string> = {
   ['next']: 'arrow-right',
@@ -144,6 +145,7 @@ export const TreeNode = Vue.defineComponent({
     toggleNode: () => {},
     runSequence: (uuid: string) => {},
     runStep: (uuid: string) => {},
+    saveStep: (uuid: string) => {},
   },
   setup(props, {emit}) {
     const openIcon = () => <OpenIcon
@@ -152,6 +154,8 @@ export const TreeNode = Vue.defineComponent({
       //@ts-ignore
       onClick={(e) => {emit('toggleNode'); e.stopPropagation();}}
     />;
+
+    const isRoot = Vue.computed(() => !props.stat.parent)
 
     const progressIcon = (status: Status, isReadOnly: boolean) => {
       return <IconFA
@@ -191,6 +195,13 @@ export const TreeNode = Vue.defineComponent({
         { 
           <div class='flex items-center px-2 w-fit justify-end ml-auto'>
             { ...isHovered.value ? [
+              ...couldBeSaved(props.stat.data) && !isRoot.value ? [<IconFA
+                name='save'
+                tooltip={'Save this subtree'}
+                style={{'padding-right': '3px'}}
+                onClick={() => emit('saveStep', props.stat.data.uuid)}
+                class='d4-ribbon-item'
+              />]: [],
               ...hasAddControls(props.stat.data) ? [<ComboPopup
                 caption={ui.iconFA('plus')}
                 items={props.stat.data.stepTypes
@@ -226,6 +237,9 @@ export const TreeNode = Vue.defineComponent({
                   onClick={() => emit('runSequence', props.stat.data.uuid)}
                   class='d4-ribbon-item'
                 />                
+            } 
+            { 
+                              
             } 
             {
               isRunnable.value && <IconFA

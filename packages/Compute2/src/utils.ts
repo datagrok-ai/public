@@ -62,6 +62,7 @@ export const hasRunnableSteps = (data: PipelineState): data is  PipelineWithAdd 
 export const hasAddControls = (data: PipelineState): data is  PipelineWithAdd =>
   (isParallelPipelineState(data) || isSequentialPipelineState(data)) && data.stepTypes.length > 0 && !data.isReadonly;
 
+export const couldBeSaved = (data: PipelineState) => !isFuncCallState(data) && data.provider;
 
 export async function reportStep(treeState?: PipelineState) {
   if (treeState) {
