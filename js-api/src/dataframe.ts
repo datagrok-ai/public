@@ -27,6 +27,7 @@ import {FormulaLinesHelper} from "./helpers";
 import dayjs from "dayjs";
 import {Tags} from "./api/ddt.api.g";
 import {IDartApi} from "./api/grok_api.g";
+import {stringify} from "querystring";
 
 declare let grok: any;
 declare let DG: any;
@@ -2335,20 +2336,38 @@ export class Qnum {
   }
 }
 
+
+type GroupDescription = {
+  columns?: string[]
+  description?: string;
+  color?: string;
+}
+
+type GroupsDescription = {
+  [index: string]: GroupDescription;
+}
+
+
 export class DataFrameMetaHelper {
-  private readonly _df: DataFrame;
+  df: DataFrame;
 
   readonly formulaLines: DataFrameFormulaLinesHelper;
 
   async detectSemanticTypes() {
-    await grok.data.detectSemanticTypes(this._df);
+    await grok.data.detectSemanticTypes(this.df);
   }
 
   constructor(df: DataFrame) {
-    this._df = df;
-    this.formulaLines = new DataFrameFormulaLinesHelper(this._df);
+    this.df = df;
+    this.formulaLines = new DataFrameFormulaLinesHelper(this.df);
+  }
+
+  /** This data will be picked up by {@link Grid} to construct groups. */
+  setGroups(groups: GroupsDescription | null): void {
+    this.df.tags['.columnGroups'] = (groups ? JSON.stringify(groups) : null);
   }
 }
+
 
 export class DataFrameFormulaLinesHelper extends FormulaLinesHelper {
   readonly df: DataFrame;
@@ -2361,6 +2380,7 @@ export class DataFrameFormulaLinesHelper extends FormulaLinesHelper {
     this.df = df;
   }
 }
+
 
 export class DataFramePlotHelper {
   private readonly df: DataFrame;
