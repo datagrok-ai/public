@@ -535,9 +535,9 @@ category('DataFrame: ColumnList', () => {
 
   test('getOrCreate', async () => {
     const df = createDf();
-    df.columns.getOrCreate('countries', 'string', 2);
+    df.columns.getOrCreate('countries', 'string');
     expect(df.columns.length, 2);
-    df.columns.getOrCreate('countries1', 'string', 2);
+    df.columns.getOrCreate('countries1', 'string');
     expect(df.columns.length, 3);
   });
 
