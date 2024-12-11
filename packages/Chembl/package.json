@@ -13,8 +13,8 @@
     "directory": "packages/Chembl"
   },
   "dependencies": {
-    "datagrok-api": "^1.21.2",
-    "@datagrok-libraries/utils": "^4.3.0",
+    "@datagrok-libraries/utils": "../../libraries/utils",
+    "datagrok-api": "../../js-api",
     "@types/react-dom": "^17.0.9",
     "file-loader": "^6.2.0",
     "ts-loader": "^9.5.1",
