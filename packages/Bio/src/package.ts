@@ -964,19 +964,36 @@ export async function manageMonomersView() {
   await monomerManager.getViewRoot();
 }
 
-//name: Manage Monomers
+//name: Monomers
 //tags: app
-//meta.browsePath: Peptides | Monomers
-export async function manageMonomersApp() {
-  const monomerManager = await MonomerManager.getInstance();
-  await monomerManager.getViewRoot();
+//meta.browsePath: Peptides
+//meta.icon: files/icons/monomers.png
+//output: view v
+export async function manageLibrariesApp(): Promise<DG.View> {
+  return await showManageLibrariesView(false);
 }
 
-//name: Manage Libraries
-//tags: app
-//meta.browsePath: Peptides | Monomers
-export async function manageLibrariesApp(): Promise<void> {
-  await showManageLibrariesView();
+//name: Monomer Manager Tree Browser
+//input: dynamic treeNode
+//input: view browseView
+export async function manageLibrariesAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
+  const libraries = (await (await MonomerLibManager.getInstance()).getFileManager()).getValidLibraryPaths();
+  libraries.forEach((libName) => {
+    const libNode = treeNode.item(libName);
+    // eslint-disable-next-line rxjs/no-ignored-subscription, rxjs/no-async-subscribe
+    libNode.onSelected.subscribe(async () => {
+      const monomerManager = await MonomerManager.getNewInstance();
+      browseView.preview = await monomerManager.getViewRoot(libName, false);
+    });
+
+    libNode.root.addEventListener('dblclick', async (e) => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const monomerManager = await MonomerManager.getInstance();
+      await monomerManager.getViewRoot(libName, true);
+      monomerManager.resetCurrentRowFollowing();
+    });
+  });
 }
 
 //name: saveAsFasta

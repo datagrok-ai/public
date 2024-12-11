@@ -51,9 +51,14 @@ export const MONOMER_DF_COLUMNS = {
 
 
 export class MonomerManager implements IMonomerManager {
-  private adjustColWidths() {
+  private adjustTable() {
+    if (this.tv?.dataFrame) {
+      grok.data.detectSemanticTypes(this.tv.dataFrame);
+      this.tv.dataFrame.meta.detectSemanticTypes();
+    }
     setTimeout(() => {
       if (this.tv?.grid) {
+        this.tv!.grid.props.allowEdit = false;
         this.tv!.grid.col(MONOMER_DF_COLUMN_NAMES.NAME)!.width = 100;
         this.tv!.grid.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.width = 70;
       }
@@ -75,7 +80,7 @@ export class MonomerManager implements IMonomerManager {
       const df = await this.getMonomersDf(this.libInput.value!);
       if (this.tv?.dataFrame) {
         this.tv.dataFrame = df;
-        this.adjustColWidths();
+        this.adjustTable();
         if (scrollToRowSymbol != undefined) {
           setTimeout(() => {
             const col = df.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!;
@@ -97,6 +102,13 @@ export class MonomerManager implements IMonomerManager {
       this.instance = new MonomerManager(monManager);
     }
     return this.instance;
+  }
+
+  public static async getNewInstance(): Promise<MonomerManager> {
+    const monManager = await MonomerLibManager.getInstance();
+    await monManager.awaitLoaded();
+    await monManager.loadLibrariesPromise;
+    return new MonomerManager(monManager);
   }
 
   async createNewMonomerLib(libName: string, _monomers: Monomer[]): Promise<void> {
@@ -168,11 +180,11 @@ export class MonomerManager implements IMonomerManager {
     return this._newMonomerForm;
   }
 
-  private async getMonomersTableView(fileName?: string): Promise<DG.TableView> {
+  private async getMonomersTableView(fileName?: string, addView = true): Promise<DG.TableView> {
     const df = await this.getMonomersDf(fileName);
-    this.tv = DG.TableView.create(df, true);
-    //const f = tv.filters();
-    this.adjustColWidths();
+    this.tv = DG.TableView.create(df, addView);
+
+    this.adjustTable();
     this.tv.subs.push(
       grok.events.onContextMenu.subscribe(({args}) => {
         if (!args || !args.menu || !args.context || args.context.type !== DG.VIEWER.GRID || !args.context.tableView ||
@@ -205,21 +217,28 @@ export class MonomerManager implements IMonomerManager {
     return this.tv;
   }
 
+  private static closeAllMonomerManagers() {
+    Array.from(grok.shell.tableViews ?? []).filter((v) => v.name === MonomerManager.VIEW_NAME).forEach((v) => v.close());
+  }
+
   private findActiveManagerView() {
     if (!this.tv)
       return null;
     const tv = Array.from(grok.shell.tableViews ?? []).find((tv) => tv.id === this.tv!.id);
     if (tv)
       grok.shell.v = tv;
+    else
+      MonomerManager.closeAllMonomerManagers();
+
     return tv ?? null;
   }
 
   private _skipLibInputOnchange: boolean = false;
 
-  async getViewRoot(libName?: string) {
+  async getViewRoot(libName?: string, addView = true) {
     const availableMonLibs = (await this.monomerLibManamger.getFileManager()).getValidLibraryPaths();
     this._newMonomerForm.molSketcher.resize();
-    if ((this.tv = this.findActiveManagerView()) && (libName ?? this.libInput.value)) {
+    if (addView && (this.tv = this.findActiveManagerView()) && (libName ?? this.libInput.value)) {
       // get monomer library list
       try {
         this._skipLibInputOnchange = true;
@@ -233,12 +252,12 @@ export class MonomerManager implements IMonomerManager {
       }
       const df = await this.getMonomersDf(libName);
       this.tv.dataFrame = df;
-      this.adjustColWidths();
+      this.adjustTable();
       return this.tv;
     }
 
     libName ??= availableMonLibs[0];
-    this.tv = await this.getMonomersTableView(libName);
+    this.tv = await this.getMonomersTableView(libName, addView);
 
     // remove project save button and download from ribbons
     let ribbons = this.tv.getRibbonPanels();
@@ -300,7 +319,7 @@ export class MonomerManager implements IMonomerManager {
         if (this._skipLibInputOnchange) return;
         const df = await this.getMonomersDf(this.libInput.value!);
           this.tv!.dataFrame = df;
-          this.adjustColWidths();
+          this.adjustTable();
       } catch (e) {
         console.error(e);
       }
@@ -308,7 +327,9 @@ export class MonomerManager implements IMonomerManager {
     this.libInput.addOptions(ui.icons.add(() => { this.createNewLibDialog(); }, 'Create new monomer library...'));
     const monForm = this._newMonomerForm.form;
     monForm.prepend(this.libInput.root);
-    this.tv.dockManager.dock(monForm, DG.DOCK_TYPE.LEFT, null, undefined, 0.4);
+    ui.tools.waitForElementInDom(this.tv.root).then(() => {
+      this.tv!.dockManager.dock(monForm, DG.DOCK_TYPE.LEFT, null, undefined, 0.4);
+    });
     return this.tv;
   }
 
@@ -402,6 +423,10 @@ export class MonomerManager implements IMonomerManager {
     } finally {
       this.tv?.grid && ui.setUpdateIndicator(this.tv.grid.root, false);
     }
+  }
+
+  public resetCurrentRowFollowing() {
+    this._newMonomerForm.molChanged = false;
   }
 }
 
@@ -522,6 +547,7 @@ class MonomerForm implements INewMonomerForm {
   rgroupsGridRoot: HTMLElement;
   private _molChanged: boolean = false;
   get molChanged() { return this._molChanged; }
+  set molChanged(v: boolean) { this._molChanged = v; }
   private saveValidationResult?: string | null = null;
   private triggerMolChange: boolean = true; // makes sure that change is not triggered by copying the molecule from grid
   inputsTabControl: DG.TabControl;

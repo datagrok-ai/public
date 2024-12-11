@@ -1,3 +1,5 @@
+/* eslint-disable max-lines-per-function */
+/* eslint-disable max-lines */
 'use strict';
 /**
  * The class contains semantic type detectors.
@@ -266,7 +268,8 @@ class BioPackageDetectors extends DG.Package {
         col.setTag(DG.TAGS.CELL_RENDERER, 'sequence');
         return DG.SEMTYPE.MACROMOLECULE;
       } else {
-        const stats = this.getStats(categoriesSample, seqMinLength, splitter);
+        // for fasta, we need to include every sequence
+        const stats = this.getStats(categoriesSample, separator ? seqMinLength : 2, splitter);
         const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);
         // Empty monomer alphabet is not allowed
         if (Object.keys(stats.freq).length === 0) {
