@@ -621,7 +621,7 @@
 
 .chem-mmpa-fragments-filters-icon {
   padding-left: 5px;
-  padding-top: 5px;
+  padding-top: 6px;
   font-size: 12px;
 }
 
@@ -766,6 +766,24 @@
   display: none;
 }
 
+.chem-mmp-trellis-plot tr[name="SummaryLook"] {
+  display: none;
+}
+
+.mmp-trellis-summary-visualisation {
+  padding-left: 7px;
+  padding-top: 1px;
+}
+
+.mmp-trellis-summary-column {
+  padding-left: 7px;
+  padding-top: 4px;
+}
+
+.mmp-trellis-summary-visualisation .property-grid-item-name {
+  display: none;
+}
+
 .chem-mmp-trellis-plot .d4-column-selector-triangle {
   display: none;
 }
@@ -776,4 +794,10 @@
 
 .chem-mmp-trellis-sort-type-invisible {
   display: none!important;
+}
+
+.chem-mmp-trellis-column-picker {
+  margin-left: 7px;
+  margin-top: 3px;
+
 }

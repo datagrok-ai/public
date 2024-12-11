@@ -283,10 +283,15 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       [TrellisAxis.To]: {property: TrellisSortByProp.None, type: TrellisSortType.Asc},
     };
 
+
+    const summaryColsButton = ui.div('', 'mmp-trellis-summary-column');
+    const summaryVisualizationButton = ui.div('', 'mmp-trellis-summary-visualisation');
+
     tp.root.prepend(trellisHeader);
     const tpDiv = ui.splitV([
       ui.box(
-        ui.divH([trellisHeader, filterIcon, this.helpButton('chem-mmpa-grid-help-icon', FRAGMENTS_TAB_TOOLTIP)]),
+        ui.divH([trellisHeader, filterIcon, summaryColsButton, summaryVisualizationButton,
+          this.helpButton('chem-mmpa-grid-help-icon', FRAGMENTS_TAB_TOOLTIP)]),
         {style: {maxHeight: '30px'}},
       ),
       tp.root,
@@ -295,6 +300,17 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     tp.onEvent('d4-viewer-rendered').subscribe(() => {
       this.createSortIcon(trellisSortState, TrellisAxis.From, tp, 'chem-mmpa-fragments-sort-icon-x-axis');
       this.createSortIcon(trellisSortState, TrellisAxis.To, tp, 'chem-mmpa-fragments-sort-icon-y-axis');
+      const tpButtons = Array.from(tp.root.getElementsByTagName('button'));
+      const tpVisualizationChoice =
+        tp.root.querySelectorAll('tr[title=\'Visualization type (text, circles or bars)\'');
+      if (tpButtons.length) {
+        ui.empty(summaryColsButton);
+        summaryColsButton.append(tpButtons[0]);
+      }
+      if (tpVisualizationChoice.length) {
+        ui.empty(summaryVisualizationButton);
+        summaryVisualizationButton.append(tpVisualizationChoice[0]);
+      }
     });
 
     this.sortTrellis(TrellisAxis.From, trellisSortState[TrellisAxis.From], tp);
@@ -399,7 +415,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     });
 
     const decript1 = 'View all fragment substitutions found in the dataset';
-    const decript2 = 'Analysis of fragments versus explored value';
+    const decript2 = 'Analyze activity changes across fragment substitutions using a trellis plot';
     const decript3 = 'Molecule pairs analysis on 2d scatter plot';
     const decript4 = 'Generation of molecules based on obtained rules';
 

@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {MMP_NAMES, columnsDescriptions} from './mmp-constants';
+import {GENERATIONS_GRID_HEADER_TOOLTIPS, MMP_NAMES, columnsDescriptions} from './mmp-constants';
 import {getRdKitService} from '../../../utils/chem-common-rdkit';
 import {MMPA} from '../mmp-analysis/mmpa';
 
@@ -18,18 +18,29 @@ export async function getGenerations(mmpa: MMPA, allPairsGrid: DG.Grid):
 
   const generation = await (await getRdKitService()).mmpLinkFragments(genRes.cores, genRes.to);
   const cols = [];
-  cols.push(createColWithDescription('string', 'Structure', genRes.allStructures, DG.SEMTYPE.MOLECULE));
-  cols.push(createColWithDescription('double', `Initial value`, Array.from(genRes.allInitActivities)));
-  cols.push(createColWithDescription('string', `Activity`, genRes.activityName));
-  cols.push(createColWithDescription('string', `Core`, genRes.cores, DG.SEMTYPE.MOLECULE));
-  cols.push(createColWithDescription('string', `From`, genRes.from, DG.SEMTYPE.MOLECULE));
-  cols.push(createColWithDescription('string', `To`, genRes.to, DG.SEMTYPE.MOLECULE));
-  cols.push(createColWithDescription('double', `Prediction`, Array.from(genRes.prediction)));
-  cols.push(createColWithDescription('string', `Generation`, generation, DG.SEMTYPE.MOLECULE));
+  cols.push(createColWithDescription('string', MMP_NAMES.STRUCTURE, genRes.allStructures, DG.SEMTYPE.MOLECULE));
+  cols.push(createColWithDescription('double', MMP_NAMES.INITIAL_VALUE, Array.from(genRes.allInitActivities)));
+  cols.push(createColWithDescription('string', MMP_NAMES.ACTIVITY, genRes.activityName));
+  cols.push(createColWithDescription('string', MMP_NAMES.CORE, genRes.cores, DG.SEMTYPE.MOLECULE));
+  cols.push(createColWithDescription('string', MMP_NAMES.FROM, genRes.from, DG.SEMTYPE.MOLECULE));
+  cols.push(createColWithDescription('string', MMP_NAMES.TO, genRes.to, DG.SEMTYPE.MOLECULE));
+  cols.push(createColWithDescription('double', MMP_NAMES.PREDICTION, Array.from(genRes.prediction)));
+  cols.push(createColWithDescription('string', MMP_NAMES.GENERATIONS, generation, DG.SEMTYPE.MOLECULE));
   const grid = DG.DataFrame.fromColumns(cols).plot.grid();
   createMolExistsCol(mmpa.frags.smiles, generation, grid);
 
   const gridCorr = getCorGrid(mmpa);
+
+  grid.onCellTooltip(function(cell: DG.GridCell, x: number, y: number) {
+    if (cell.isColHeader && cell.tableColumn) {
+      let tooltip = '';
+      if (GENERATIONS_GRID_HEADER_TOOLTIPS[cell.tableColumn.name])
+        tooltip = GENERATIONS_GRID_HEADER_TOOLTIPS[cell.tableColumn.name];
+      ui.tooltip.show(ui.divText(tooltip), x, y);
+      return true;
+    } else
+      return false;
+  });
 
   return [grid, gridCorr];
 }

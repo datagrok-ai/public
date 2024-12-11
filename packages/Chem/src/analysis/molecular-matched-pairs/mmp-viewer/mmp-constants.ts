@@ -7,7 +7,7 @@ export enum MMP_NAMES {
   PAIR_SORT = '~PairSort',
   PAIRNUM_FROM = '~PairNumFrom',
   PAIRNUM_TO = '~PairNumTo',
-  MEANDIFF = 'Mean \u0394',
+  MEANDIFF = '\u0394',
   DIFF = '\u0394',
   VIEW_NAME = 'MMP Analysis',
   TAB_TRANSFORMATIONS = 'Substitutions',
@@ -22,6 +22,12 @@ export enum MMP_NAMES {
   RULENUM = '~ruleNum',
   FRAGMENTS_GRID = 'Fragments',
   PAIRS_GRID = 'Molecule Pairs',
+  STRUCTURE = 'Structure',
+  INITIAL_VALUE = 'Initial value',
+  ACTIVITY = 'Activity',
+  CORE = 'Core',
+  PREDICTION = 'Prediction',
+  GENERATIONS = 'Generation',
 }
 
 export const FRAGMENTS_GRID_HEADER_TOOLTIPS: {[key: string]: string} = {
@@ -33,6 +39,17 @@ export const FRAGMENTS_GRID_HEADER_TOOLTIPS: {[key: string]: string} = {
 export const PAIRS_GRID_HEADER_TOOLTIPS: {[key: string]: string} = {
   [MMP_NAMES.FROM]: 'Initial molecule',
   [MMP_NAMES.TO]: 'Molecule after substitution',
+};
+
+export const GENERATIONS_GRID_HEADER_TOOLTIPS: {[key: string]: string} = {
+  [MMP_NAMES.STRUCTURE]: 'Structure from initial dataset',
+  [MMP_NAMES.INITIAL_VALUE]: 'Initial activity value',
+  [MMP_NAMES.ACTIVITY]: 'Activity type',
+  [MMP_NAMES.CORE]: 'Conservative fragment',
+  [MMP_NAMES.FROM]: 'Initial fragment',
+  [MMP_NAMES.TO]: 'Fragment after substitution',
+  [MMP_NAMES.PREDICTION]: 'Activity value based on MMP rules (initial activity + mean difference)',
+  [MMP_NAMES.GENERATIONS]: 'New molecule obtained with fragments substitution',
 };
 
 export const columnsDescriptions: {[key: string]: string} = {

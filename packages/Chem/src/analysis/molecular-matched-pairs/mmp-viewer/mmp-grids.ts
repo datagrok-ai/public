@@ -379,10 +379,11 @@ function getFragmetsPairsGrid(activityMeanNames: string[], mmpa: MMPA) : DG.Grid
   toCol.semType = DG.SEMTYPE.MOLECULE;
   occasionsCol.semType = DG.TYPE.INT;
 
-  const fpCols = [fromCol, toCol, occasionsCol];
+  const fpCols = [fromCol, toCol];
 
   for (let i = 0; i < activityMeanNames.length; i++)
     fpCols.push(DG.Column.fromFloat32Array(activityMeanNames[i], mmpa.rulesBased.meanDiffs[i]));
+  fpCols.push(occasionsCol);
 
   const colorsPal = new Int32Array(fromCol.length);
   for (let i = 0; i < fromCol.length; i++)
