@@ -60,10 +60,15 @@ export class LinksState {
     this.disableLinks();
 
     const oldLinks = [...this.links.values()];
-    const [links, addedLinks] = this.createLinks(state, oldLinks);
+    const oldActions = [...this.actions.values()];
+
+    const [links, addedLinks] = this.updateLinks(state, oldLinks);
     this.links = new Map(links.map((link) => [link.uuid, link] as const));
 
-    [this.actions, this.nodesActions] = this.createActions(state);
+    const [actions, nodesActions] = this.updateActions(state, oldActions);
+    this.actions = new Map(actions.map((link) => [link.uuid, link] as const));
+    this.nodesActions = nodesActions;
+
     this.stepsDependencies = this.calculateStepsDependencies(state, links);
     this.ioDependencies = this.calculateIoDependencies(state, links);
 
@@ -97,28 +102,46 @@ export class LinksState {
     return actions;
   }
 
-  public createLinks(state: BaseTree<StateTreeNode>, oldLinks: Link[]) {
-    const addedLinks: Link[] = [];
+  public updateLinks(state: BaseTree<StateTreeNode>, oldLinks: Link[]) {
     const newLinks = this.createStateLinks(state);
     if (this.defaultValidators) {
       const validators = this.createDefaultValidators(state);
       newLinks.push(...validators);
     }
+    return this.mergeLinks(oldLinks, newLinks, 'link');
+  }
+
+  public updateActions(state: BaseTree<StateTreeNode>, oldActions: Action[]) {
+    const newActions = this.createStateActions(state);
+    const [mergedActions] = this.mergeLinks(oldActions, newActions, 'action');
+    const nodeActions = new Map<string, Action[]>;
+    for (const action of mergedActions) {
+      const node = state.getNode(action.prefix);
+      const {uuid} = node.getItem();
+      const acts = nodeActions.get(uuid) ?? [];
+      acts.push(action);
+      nodeActions.set(uuid, acts);
+    }
+    return [mergedActions, nodeActions] as const;
+  }
+
+  private mergeLinks<L extends Link>(oldLinks: L[], newLinks: L[], prefix: 'link' | 'action'): [L[], L[]] {
+    const addedLinks: L[] = [];
     const {toRemove, toAdd} = getLinksDiff(oldLinks, newLinks);
-    const mergedLinks: Link[] = [];
+    const mergedLinks: L[] = [];
     for (const oldLink of oldLinks) {
       if (!toRemove.has(oldLink.uuid))
         mergedLinks.push(oldLink);
       else {
         if (this.logger && !oldLink.matchInfo.isDefaultValidator)
-          this.logger.logLink('linkRemoved', {linkUUID: oldLink.uuid, prefix: oldLink.prefix, id: oldLink.matchInfo.spec.id});
+          this.logger.logLink(`${prefix}Added`, {linkUUID: oldLink.uuid, prefix: oldLink.prefix, id: oldLink.matchInfo.spec.id});
         oldLink.destroy();
       }
     }
     for (const newLink of newLinks) {
       if (toAdd.has(newLink.uuid)) {
         if (this.logger && !newLink.matchInfo.isDefaultValidator)
-          this.logger.logLink('linkAdded', {linkUUID: newLink.uuid, prefix: newLink.prefix, id: newLink.matchInfo.spec.id});
+          this.logger.logLink(`${prefix}Added`, {linkUUID: newLink.uuid, prefix: newLink.prefix, id: newLink.matchInfo.spec.id});
         mergedLinks.push(newLink);
         addedLinks.push(newLink);
       }
@@ -146,8 +169,8 @@ export class LinksState {
     return links;
   }
 
-  public createActions(state: BaseTree<StateTreeNode>) {
-    const actionEntries = state.traverse(state.root, (acc, node, path) => {
+  public createStateActions(state: BaseTree<StateTreeNode>) {
+    const actions = state.traverse(state.root, (acc, node, path) => {
       const item = node.getItem();
       const {config} = item;
       const matchedLinks = (config.actions ?? [])
@@ -157,21 +180,14 @@ export class LinksState {
       const links = matchedLinks.map((minfo) => {
         const spec = minfo.spec as ActionSpec;
         const action = new Action(path, minfo, spec, this.logger);
-        return [item.uuid, action] as const;
+        return action;
       });
       return [...acc, ...links];
-    }, [] as (readonly [string, Action])[]);
-    const nodeActions = new Map<string, Action[]>;
-    for (const [uuid, action] of actionEntries) {
-      const acts = nodeActions.get(uuid) ?? [];
-      acts.push(action);
-      nodeActions.set(uuid, acts);
-    }
-    const actionsMap = new Map(actionEntries.map(([, action]) => [action.uuid, action]));
-    return [actionsMap, nodeActions] as const;
+    }, [] as Action[]);
+    return actions;
   }
 
-  public createDefaultValidators(state: BaseTree<StateTreeNode>) {
+  private createDefaultValidators(state: BaseTree<StateTreeNode>) {
     const defaultValidators = state.traverse(state.root, (acc, node, path) => {
       const item = node.getItem();
       if (!isFuncCallNode(item))
@@ -220,7 +236,7 @@ export class LinksState {
   }
 
   // TODO: cycles detection
-  public calculateStepsDependencies(state: BaseTree<StateTreeNode>, links: Link[]) {
+  private calculateStepsDependencies(state: BaseTree<StateTreeNode>, links: Link[]) {
     const deps: Map<string, DependenciesData> = new Map();
     for (const link of links) {
       for (const infosIn of Object.values(link.matchInfo.inputs)) {
@@ -244,7 +260,7 @@ export class LinksState {
     return deps;
   }
 
-  public calculateIoDependencies(state: BaseTree<StateTreeNode>, links: Link[]) {
+  private calculateIoDependencies(state: BaseTree<StateTreeNode>, links: Link[]) {
     const deps = new Map<string, IoDeps>();
     for (const link of links) {
       const linkId = link.uuid;

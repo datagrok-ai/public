@@ -78,6 +78,7 @@ export function parseLinkIO(io: string, ioType: IOType): LinkIOParsed {
   const name = ast.children.find((cnode) => cnode.type === 'Name')!.text;
   const flags = ast.children.filter((cnode) => cnode.type === 'Flag').map((cnode) => cnode.text as LinkFlags);
   const isBase = ioType === 'base';
+  const isAction = ioType === 'actions';
   const segments = ast.children.map((node) => {
     if (node.type === 'Selector') {
       const selector = node.children[0].text as LinkSelectors;
@@ -105,7 +106,7 @@ export function parseLinkIO(io: string, ioType: IOType): LinkIOParsed {
     throw new Error(`Link ${io}, unknown AST node type ${node.type}`);
   }).filter((x) => !!x);
   const lastSegment = indexFromEnd(segments);
-  if (lastSegment && ioType !== 'base' && (lastSegment.selector !== 'first'))
+  if (lastSegment && !isBase && !isAction && (lastSegment.selector !== 'first'))
     throw new Error(`Link io ${io} is not ending with input/output selector`);
   return {name, segments, flags};
 }
