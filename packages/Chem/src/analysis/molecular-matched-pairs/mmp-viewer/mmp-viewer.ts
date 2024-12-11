@@ -102,6 +102,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   fragSortingInfo: {[key: string]: SortData} = {};
   sp: DG.ScatterPlotViewer | null = null;
   tabs: DG.TabControl | null = null;
+  mutationObserver: MutationObserver | null = null;
 
   constructor() {
     super();
@@ -304,6 +305,26 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       const tpVisualizationChoice =
         tp.root.querySelectorAll('tr[title=\'Visualization type (text, circles or bars)\'');
       if (tpButtons.length) {
+        //workaround to disable aggregation functions selections
+        tpButtons[0].onmousedown = () => {
+          if (!this.mutationObserver) {
+            this.mutationObserver = new MutationObserver((mutationsList) => {
+              for (let i = 0; i < mutationsList.length; i++) {
+                for (const node of Array.from(mutationsList[i].addedNodes)) {
+                  const dlgHeaders = Array.from((node as HTMLElement).getElementsByClassName('d4-dialog-title'))
+                    .filter((el) => (el as HTMLElement).innerText === 'Edit columns aggregations');
+                  if (dlgHeaders.length) {
+                    dlgHeaders[0].parentElement?.parentElement?.classList.add('mmp-trellis-summary-col-dlg');
+                    this.mutationObserver?.disconnect();
+                    this.mutationObserver = null;
+                    return;
+                  }
+                }
+              }
+            });
+            this.mutationObserver.observe(document.body, {attributes: true, childList: true});
+          }
+        };
         ui.empty(summaryColsButton);
         summaryColsButton.append(tpButtons[0]);
       }

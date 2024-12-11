@@ -784,6 +784,10 @@
   display: none;
 }
 
+.mmp-trellis-summary-col-dlg select {
+  display: none;
+}
+
 .chem-mmp-trellis-plot .d4-column-selector-triangle {
   display: none;
 }
