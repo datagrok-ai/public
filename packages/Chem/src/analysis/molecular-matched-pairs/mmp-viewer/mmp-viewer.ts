@@ -758,7 +758,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.corrGrid.dataFrame.meta.formulaLines.addLine({
         title: 'Identity',
         formula: '${Observed} = ${Predicted}',
-        color: '#DBDCDF',
+        color: '#717581',
         width: 1,
         visible: true,
       });
@@ -774,7 +774,9 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         showYAxis: true,
         showColorSelector: true,
         showSizeSelector: true,
-        markerDefaultSize: 7,
+        markerDefaultSize: mmpa.initData.molecules.length > 10000 ? 1 : 2,
+        markerType: 'circle',
+        showRegressionLine: true,
       });
 
       ui.empty(this.generationsGridDiv);
