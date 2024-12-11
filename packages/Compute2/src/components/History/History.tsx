@@ -311,10 +311,6 @@ export const History = Vue.defineComponent({
       ];
     })
 
-    Vue.watch(isLoading, (val) => {
-      console.log('isLoading', val);
-    }, {immediate: true})
-
     return () => {
       const controls = <div style={{display: 'flex', justifyContent: 'space-between', padding: '0px 6px'}}>
         <div style={{'display': 'flex', 'padding': '6px 0px', 'gap': '6px'}}>
