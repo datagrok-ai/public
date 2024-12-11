@@ -173,6 +173,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                     else if (param.propertyType.equals(Types.LIST) && param.propertySubType.equals(Types.STRING)) {
                         i = i + setArrayParamValue(statement, n + i + 1, param);
                     }
+                    else if (param.propertyType.equals(Types.BIG_INT) && param.value != null)
+                        statement.setLong(n + i + 1, Long.parseLong(param.value.toString()));
                     else {
 //                        if (param.value == null) {
 //                            statement.setNull(n + i + 1, java.sql.Types.VARCHAR);
@@ -476,6 +478,30 @@ public abstract class JdbcDataProvider extends DataProvider {
         return String.format("(%s %s (%s))", matcher.colName, matcher.op, names);
     }
 
+    @Override
+    public PatternMatcherResult boolPatternConverter(FuncParam param, PatternMatcher matcher) {
+        PatternMatcherResult result = new PatternMatcherResult();
+        if (matcher.op.equals(PatternMatcher.EQUALS)) {
+            result.query = "(" + matcher.colName + " = @" + param.name + ")";
+            result.params.add(new FuncParam(Types.BOOL, param.name, matcher.values.stream().findFirst().orElse("true")));
+        }
+        else
+            result.query = "(1 = 1)";
+        return result;
+    }
+
+    @Override
+    public PatternMatcherResult bigIntPatternConverter(FuncParam param, PatternMatcher matcher) {
+        PatternMatcherResult result = new PatternMatcherResult();
+        if (matcher.op.equals(PatternMatcher.EQUALS)) {
+            result.query = "(" + matcher.colName + " = @" + param.name + ")";
+            result.params.add(new FuncParam(Types.BIG_INT, param.name, matcher.values.stream().findFirst().orElse(null)));
+        }
+        else
+            result.query = "(1 = 1)";
+        return result;
+    }
+
     public PatternMatcherResult stringPatternConverter(FuncParam param, PatternMatcher matcher) {
         PatternMatcherResult result = new PatternMatcherResult();
 
@@ -597,7 +623,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     private String patternToSql(FieldPredicate condition) {
-        if (GrokConnectUtil.isNotEmpty(condition.matcher.op) && !condition.matcher.op.equals(PatternMatcher.NONE))
+        if (condition.matcher != null && GrokConnectUtil.isNotEmpty(condition.matcher.op) && !condition.matcher.op.equals(PatternMatcher.NONE))
             return String.format("@%s(%s)", condition.getParamName(), addBrackets(condition.field));
         return String.format("%s = @%s", condition.field, condition.getParamName());
     }

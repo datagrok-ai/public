@@ -38,6 +38,8 @@ public abstract class DataProvider
     public abstract PatternMatcherResult numericPatternConverter(FuncParam param, PatternMatcher matcher);
     public abstract PatternMatcherResult stringPatternConverter(FuncParam param, PatternMatcher matcher);
     public abstract PatternMatcherResult dateTimePatternConverter(FuncParam param, PatternMatcher matcher);
+    public abstract PatternMatcherResult boolPatternConverter(FuncParam param, PatternMatcher matcher);
+    public abstract PatternMatcherResult bigIntPatternConverter(FuncParam param, PatternMatcher matcher);
 
     @SuppressWarnings("unchecked")
     private PatternMatcherResult patternToQueryParam(FuncCall queryRun, FuncParam param, String colName) {
@@ -53,6 +55,10 @@ public abstract class DataProvider
                 return stringPatternConverter(param, matcher);
             case "datetime":
                 return dateTimePatternConverter(param, matcher);
+            case "bool":
+                return boolPatternConverter(param, matcher);
+            case "bigint":
+                return bigIntPatternConverter(param, matcher);
             default:
                 throw new UnsupportedOperationException();
         }
