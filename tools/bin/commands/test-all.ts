@@ -60,7 +60,7 @@ export async function testAll(args: TestArgs): Promise<boolean> {
 
   let testsObj = await loadTestsList(packagesToRun, args.core);
   let filteredTests: Test[] = await filterTests(testsObj, (args.tags ?? "").split(" "), args['stress-test'], args.benchmark);
-  let workersOrder = await setWorkersOrder(filteredTests, getEnumOrder(args.order ?? ''), args.workersCount, args.testRepeat);
+  let workersOrder = await setWorkersOrder(filteredTests, getEnumOrder(args.order ?? ''), args['workers-count'], args.testRepeat);
 
   let testsResults = await runTests(workersOrder, {
     benchmark: args.benchmark ?? false,
@@ -137,7 +137,6 @@ async function runTests(workersOrder: Test[][], workerOptions: WorkerOptions): P
 
   for (let workerCommands of workersCommands) {
     workersPromises.push(runWorker(workerCommands, workerOptions, workersStarted++, testInvocationTimeout));
-    await workersPromises[workersPromises.length];
   }
   let resultObjects = await Promise.all(workersPromises);
   return resultObjects;
@@ -165,5 +164,5 @@ interface TestArgs {
   'stress-test'?: boolean;
   tags?: string;
   testRepeat?: number;
-  workersCount?: number;
+  'workers-count'?: number;
 }

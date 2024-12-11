@@ -1,6 +1,12 @@
 # Datagrok-tools changelog
 
 
+## 4.13.45 (2024-12-12)
+
+### Features
+
+* Test all workers count variable fixes
+
 ## 4.13.44 (2024-12-06)
 
 ### Features
