@@ -1,21 +1,13 @@
-// Splitters
+// Use splitV and splitH to divide the area into resizable containers
+// If you want a non-even split, specify it (in pixels - this is important) in the element width or height style.
 
-let t = grok.data.demo.demog();
-let block = ui.splitV([
+ui.splitV([
   ui.splitH([
-    ui.inputs([
-      ui.input.string('Input'),
-      ui.input.choice('Select', {items: ['item 1', 'item 2'], value: 'item 1'}),
-      ui.input.textArea('text', {value: ' multi line /n text input'}),
-    ]),
-    DG.Viewer.grid(t).root
-  ], {}, true),
+    ui.divText('Top Left', { style: { width: '100px'}}),
+    ui.divText('Top Right'),
+  ], { style: { height: '40px'}}, true),
   ui.splitH([
-    DG.Viewer.scatterPlot(t).root,
-    DG.Viewer.histogram(t).root
+    ui.divText('Panel 1'),
+    ui.divText('Panel 2')
   ], {}, true)
-], {}, true);
-
-let view = grok.shell.newView('Splitters');
-view.box = true;
-view.append(block);
+], {}, true)

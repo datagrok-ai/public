@@ -1644,7 +1644,7 @@ export function boxFixed(item: Widget | InputBase | HTMLElement | null, options:
   return c;
 }
 
-/** Div flex-box container that positions child elements vertically.
+/** Positions child elements vertically and allows you to resize them.
  * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/splitters}
 */
 export function splitV(items: HTMLElement[], options: ElementOptions | null = null, resize: boolean | null = false): HTMLDivElement {
@@ -1710,7 +1710,7 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
   return b;
 }
 
-/** Div flex-box container that positions child elements horizontally.
+/** Positions child elements horizontally and allows you to resize them.
  * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/splitters}
 */
 export function splitH(items: HTMLElement[], options: ElementOptions | null = null, resize: boolean | null = false): HTMLDivElement {
