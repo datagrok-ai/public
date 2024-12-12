@@ -720,6 +720,7 @@ export interface IDartApi {
   grok_GridCellStyle_Set_Marker(gcs: any, x: any): any;
   grok_GridCellStyle_Get_MarginLeft(gcs: any): any;
   grok_GridCellStyle_Set_MarginLeft(gcs: any, x: any): any;
+  grok_GridCellRenderer_ByName(rendererName: String): any;
   grok_GridCellRenderer_Register(jsRenderer: any): any;
   grok_GridCellRenderer_Get_CellType(r: any): any;
   grok_GridCellRenderer_Render(r: any, g: any, x: Num, y: Num, w: Num, h: Num, gridCell: any): any;

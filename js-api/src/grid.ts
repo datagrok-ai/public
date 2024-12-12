@@ -1185,6 +1185,10 @@ export class GridCellRenderer extends CanvasRenderer {
     api.grok_GridCellRenderer_Register(renderer);
   }
 
+  static byName(rendererName: string): GridCellRenderer | null {
+    return api.grok_GridCellRenderer_ByName(rendererName);
+  }
+
   onKeyDown(gridCell: GridCell, e: KeyboardEvent): void {}
   onKeyPress(gridCell: GridCell, e: KeyboardEvent): void {}
 
