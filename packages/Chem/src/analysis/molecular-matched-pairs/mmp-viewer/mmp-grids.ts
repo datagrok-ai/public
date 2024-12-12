@@ -44,6 +44,7 @@ export class MmpPairedGrids {
   lastPairIdx: number | null = null;
   lastFragmentIdx: number | null = null;
   currentTab = MMP_NAMES.TAB_TRANSFORMATIONS;
+  fragsShowAllMode = true;
 
   constructor(subs: Subscription[], mmpInput: MmpInput, mmpa: MMPA, activityMeanNames: string[] ) {
     this.mmpa = mmpa;
@@ -76,8 +77,7 @@ export class MmpPairedGrids {
     this.rdkit = getRdKitModule();
 
     subs.push(DG.debounce(this.parentTable.onCurrentRowChanged, 1000).subscribe(() => {
-      if (this.parentTable!.currentRowIdx !== -1) {
-        // this.unPinMatchedPair();
+      if (this.parentTable!.currentRowIdx !== -1 && !this.fragsShowAllMode) {
         this.refilterFragmentPairsByMolecule(true);
         this.refreshMatchedPair(this.rdkit);
       }
@@ -104,8 +104,6 @@ export class MmpPairedGrids {
 
   setupGrids(): void {
     this.fpMaskByMolecule!.setAll(true);
-
-    this.refilterFragmentPairsByMolecule(true);
 
     this.fpGrid.table.onCurrentRowChanged.subscribe(() => {
       if (this.fpGrid!.table.currentRowIdx !== -1)
@@ -146,7 +144,6 @@ export class MmpPairedGrids {
     this.createCustomGridTooltips(this.mmpGridTrans, PAIRS_GRID_HEADER_TOOLTIPS);
 
     this.mmpMaskTrans.setAll(false);
-    this.refreshMatchedPair(this.rdkit);
   }
 
   createCustomGridTooltips(grid: DG.Grid, tooltips: {[key: string]: string}, mean?: boolean) {

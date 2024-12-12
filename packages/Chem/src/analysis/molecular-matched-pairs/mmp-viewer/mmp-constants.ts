@@ -30,6 +30,11 @@ export enum MMP_NAMES {
   GENERATIONS = 'Generation',
 }
 
+export enum SHOW_FRAGS_MODE {
+  All = 'All',
+  Current = 'Current molecule'
+}
+
 export const FRAGMENTS_GRID_HEADER_TOOLTIPS: {[key: string]: string} = {
   [MMP_NAMES.FROM]: 'Initial fragment',
   [MMP_NAMES.TO]: 'Fragment after substitution',

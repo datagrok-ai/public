@@ -809,3 +809,13 @@
   margin-top: 3px;
 
 }
+
+.chem-mmp-fragments-grid-mode-choice {
+  padding-left: 7px;
+  margin-top: -2px;
+  padding-right: 7px;
+}
+
+.chem-mmp-fragments-grid-mode-choice select {
+  width: 65px!important;
+}
