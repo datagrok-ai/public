@@ -819,3 +819,9 @@
 .chem-mmp-fragments-grid-mode-choice select {
   width: 65px!important;
 }
+
+.chem-mmp-grid-info-message div {
+  font-size: 12px;
+  padding-right: 10px;
+  color: var(--grey-5);
+}

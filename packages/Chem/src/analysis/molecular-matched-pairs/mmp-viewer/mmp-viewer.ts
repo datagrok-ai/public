@@ -253,13 +253,13 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     //const mmPairsDiv = ui.div('', {style: {width: '100%', height: '100%'}});
     const mmPairsRoot1 = this.createGridDiv(MMP_NAMES.PAIRS_GRID,
-      this.pairedGrids!.mmpGridTrans, MATHED_MOLECULAR_PAIRS_TOOLTIP_TRANS);
+      this.pairedGrids!.mmpGridTrans, MATHED_MOLECULAR_PAIRS_TOOLTIP_TRANS, this.pairedGrids!.mmpGridTransMessage);
 
     const mmPairsRoot2 = this.createGridDiv(MMP_NAMES.PAIRS_GRID,
-      this.pairedGrids!.mmpGridFrag, MATHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS);
+      this.pairedGrids!.mmpGridFrag, MATHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS, this.pairedGrids!.mmpGridFragMessage);
 
-    const mmPairsRoot3 = this.createGridDiv(MMP_NAMES.PAIRS_GRID,
-        this.pairedGrids!.pairsGridCliffsTab, MATHED_MOLECULAR_PAIRS_TOOLTIP_CLIFFS);
+    const mmPairsRoot3 = this.createGridDiv(MMP_NAMES.PAIRS_GRID, this.pairedGrids!.pairsGridCliffsTab,
+      MATHED_MOLECULAR_PAIRS_TOOLTIP_CLIFFS, this.pairedGrids!.pairsGridCliffsTabMessage);
     mmPairsRoot3.classList.add('mmp-pairs-grid-cliffs-tab', 'cliffs-closed');
 
     const showFragsChoice = ui.input.choice('', {items: [SHOW_FRAGS_MODE.All, SHOW_FRAGS_MODE.Current],
@@ -274,7 +274,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     showFragsChoice.root.classList.add('chem-mmp-fragments-grid-mode-choice');
 
     const fpGrid = this.createGridDiv(MMP_NAMES.FRAGMENTS_GRID,
-      this.pairedGrids!.fpGrid, FRAGMENTS_GRID_TOOLTIP, showFragsChoice.root);
+      this.pairedGrids!.fpGrid, FRAGMENTS_GRID_TOOLTIP, this.pairedGrids!.fpGridMessage, showFragsChoice.root);
     fpGrid.prepend(ui.divText('No substitutions found for current molecule. Please select another molecule.',
       'chem-mmpa-no-fragments-error'));
     this.subs.push(this.pairedGrids!.showErrorEvent.subscribe((showError: boolean) => {
@@ -507,14 +507,15 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     return tabs;
   }
 
-  createGridDiv(name: string, grid: DG.Grid, helpTooltip: string, extraEl?: HTMLElement) {
+  createGridDiv(name: string, grid: DG.Grid, helpTooltip: string, messageBox: HTMLElement, extraEl?: HTMLElement) {
     const header = ui.h1(name, 'chem-mmpa-transformation-tab-header');
     const helpBUtton = this.helpButton('chem-mmpa-grid-help-icon', helpTooltip);
     grid.root.prepend(header);
     return ui.splitV([
       ui.box(
-        ui.divH([header, extraEl ?? ui.div(),
+        ui.divH([ui.divH([header, extraEl ?? ui.div(),
           this.addToWorkspaceButton(grid.dataFrame, name, 'chem-mmpa-add-to-workspace-button'), helpBUtton]),
+        messageBox], {style: {justifyContent: 'space-between'}}),
         {style: {maxHeight: '30px'}},
       ),
       grid.root,
@@ -843,7 +844,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       });
 
       ui.empty(this.generationsGridDiv);
-      this.generationsGridDiv.append(this.createGridDiv('Generated Molecules', this.generationsGrid!, ''));
+      this.generationsGridDiv.append(this.createGridDiv('Generated Molecules', this.generationsGrid!, '', ui.div()));
     }).catch((error: any) => {
       const errorStr = `Generations haven't been completed due to error: ${error}`;
       ui.empty(this.generationsGridDiv);

@@ -19,21 +19,25 @@ export class MmpPairedGrids {
   mmpa: MMPA;
   //fp for fragment pairs
   fpGrid: DG.Grid; //transformations tab specific to molecules and fragments tab the whole
+  fpGridMessage: HTMLElement = ui.div('', 'chem-mmp-grid-info-message');
   fpCatsFrom: string [];
   fpCatsTo: string [];
   fpMaskByMolecule: DG.BitSet; //mask for a single molecule
   fpMaskFragmentsTab: DG.BitSet; //mask for a number of cases filter
   //mmp for matched molecula  pairs
   mmpGridTrans: DG.Grid;
+  mmpGridTransMessage: HTMLElement = ui.div('', 'chem-mmp-grid-info-message');
   mmpMaskTrans: DG.BitSet;
   mmpMaskTransSelection: DG.BitSet;
   parentTableFragSelection: DG.BitSet;
   parentTableTransSelection: DG.BitSet;
 
   mmpGridFrag: DG.Grid;
+  mmpGridFragMessage: HTMLElement = ui.div('', 'chem-mmp-grid-info-message');
   mmpMaskFrag: DG.BitSet;
 
   pairsGridCliffsTab: DG.Grid;
+  pairsGridCliffsTabMessage: HTMLElement = ui.div('', 'chem-mmp-grid-info-message');
   pairsMaskCliffsTab: DG.BitSet;
 
   enableFilters: boolean = true;
@@ -82,23 +86,33 @@ export class MmpPairedGrids {
         this.refreshMatchedPair(this.rdkit);
       }
     }));
-    const fpGridSub = this.fpGrid.onAfterDrawContent.subscribe(() => {
-      resizeGridColsSize(this.fpGrid, [MMP_NAMES.FROM, MMP_NAMES.TO], 150, 70);
-      fpGridSub.unsubscribe();
-    });
-    const mmpGridTransSub = this.mmpGridTrans.onAfterDrawContent.subscribe(() => {
-      resizeGridColsSize(this.mmpGridTrans, [MMP_NAMES.FROM, MMP_NAMES.TO], 150, 70);
-      mmpGridTransSub.unsubscribe();
-    });
 
-    const mmpGridFragSub = this.mmpGridFrag.onAfterDrawContent.subscribe(() => {
-      resizeGridColsSize(this.mmpGridFrag, [MMP_NAMES.FROM, MMP_NAMES.TO], 150, 70);
-      mmpGridFragSub.unsubscribe();
-    });
+    this.initialResizeGridColsSize(this.fpGrid);
+    this.initialResizeGridColsSize(this.mmpGridTrans);
+    this.initialResizeGridColsSize(this.mmpGridFrag);
+    this.initialResizeGridColsSize(this.pairsGridCliffsTab);
+    this.updateInfoMessage(this.fpGrid, this.fpGridMessage, 'fragment pair');
+    this.updateInfoMessage(this.mmpGridTrans, this.mmpGridTransMessage, 'molecule pair');
+    this.updateInfoMessage(this.mmpGridFrag, this.mmpGridFragMessage, 'molecule pair');
+    this.updateInfoMessage(this.pairsGridCliffsTab, this.pairsGridCliffsTabMessage, 'molecule pair');
+  }
 
-    const pairsGridCliffsTabSub = this.pairsGridCliffsTab.onAfterDrawContent.subscribe(() => {
-      resizeGridColsSize(this.pairsGridCliffsTab, [MMP_NAMES.FROM, MMP_NAMES.TO], 150, 70);
-      pairsGridCliffsTabSub.unsubscribe();
+  initialResizeGridColsSize(grid: DG.Grid) {
+    const gridSub = grid.onAfterDrawContent.subscribe(() => {
+      resizeGridColsSize(grid, [MMP_NAMES.FROM, MMP_NAMES.TO], 150, 70);
+      gridSub.unsubscribe();
+    });
+  }
+
+  updateInfoMessage(grid: DG.Grid, div: HTMLElement, compName: string) {
+    DG.debounce(grid.dataFrame.onFilterChanged, 500).subscribe(() => {
+      ui.empty(div);
+      const num = grid.dataFrame.filter.trueCount;
+      div.append(ui.divText(`Showing ${num} ${compName}${num === 1 ? '' : 's'} of ${grid.dataFrame.rowCount}`));
+    });
+    const gridSub = grid.onAfterDrawContent.subscribe(() => {
+      resizeGridColsSize(grid, [MMP_NAMES.FROM, MMP_NAMES.TO], 150, 70);
+      gridSub.unsubscribe();
     });
   }
 
