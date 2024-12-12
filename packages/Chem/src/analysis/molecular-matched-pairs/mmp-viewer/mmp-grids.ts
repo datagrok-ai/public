@@ -95,6 +95,7 @@ export class MmpPairedGrids {
     this.updateInfoMessage(this.mmpGridTrans, this.mmpGridTransMessage, 'molecule pair');
     this.updateInfoMessage(this.mmpGridFrag, this.mmpGridFragMessage, 'molecule pair');
     this.updateInfoMessage(this.pairsGridCliffsTab, this.pairsGridCliffsTabMessage, 'molecule pair');
+    this.fpGrid.sort([activityMeanNames[0]], [false]);
   }
 
   initialResizeGridColsSize(grid: DG.Grid) {
