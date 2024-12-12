@@ -123,21 +123,21 @@ export class MmpPairedGrids {
       this.selectPairsWithSubstitutionInParentTable(true);
     });
 
-    this.createCustomGridTooltips(this.fpGrid, FRAGMENTS_GRID_HEADER_TOOLTIPS);
-    this.createCustomGridTooltips(this.mmpGridTrans, PAIRS_GRID_HEADER_TOOLTIPS, true);
+    this.createCustomGridTooltips(this.fpGrid, FRAGMENTS_GRID_HEADER_TOOLTIPS, true);
+    this.createCustomGridTooltips(this.mmpGridTrans, PAIRS_GRID_HEADER_TOOLTIPS);
 
     this.mmpMaskTrans.setAll(false);
     this.refreshMatchedPair(this.rdkit);
   }
 
-  createCustomGridTooltips(grid: DG.Grid, tooltips: {[key: string]: string}, upperCase?: boolean) {
+  createCustomGridTooltips(grid: DG.Grid, tooltips: {[key: string]: string}, mean?: boolean) {
     grid.onCellTooltip(function(cell: DG.GridCell, x: number, y: number) {
       if (cell.isColHeader && cell.tableColumn) {
         let tooltip = '';
         if (tooltips[cell.tableColumn.name])
           tooltip = tooltips[cell.tableColumn.name];
         else
-          tooltip = cell.tableColumn.name.replace('\u0394', upperCase ? 'Difference in' : 'difference in');
+          tooltip = cell.tableColumn.name.replace('\u0394', mean ? 'Mean difference in' : 'Difference in');
         ui.tooltip.show(ui.divText(tooltip), x, y);
         return true;
       } else
