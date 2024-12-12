@@ -45,7 +45,7 @@ To load an existing model, click the <i class="fas fa-folder-open d4-combo-popup
 * **My Models** to open a model from your platform files (**Browse > Files > My files**)
 * **Recent** to open your recent models
 
-Once loaded, explore models by adjusting parameters, [fitting to experimental data](#parameter-fitting), or [running sensitivity analysis](#sensitivity-analysis). Share specific model runs by copying and sharing the URL with colleagues.
+Once loaded, explore models by adjusting parameters, [fitting to experimental data](function-analysis.md#parameter-optimization), or [running sensitivity analysis](function-analysis.md#sensitivity-analysis). Share specific model runs by copying and sharing the URL with colleagues.
 
 ![Run Diff Studio](pics/diff-studio-run.gif)
 
