@@ -297,7 +297,7 @@ abstract class TableQueryTest {
     public abstract String[] getSeveralOnJoin();
 
     private void testQuery(TableQuery tableQuery, String[] expected) {
-        String actual = provider.queryTableSql(tableQuery.connection, tableQuery);
+        String actual = provider.queryTableSql(tableQuery);
         String expectedQuery = getExpectedQuery(expected);
         Assertions.assertEquals(expectedQuery, actual);
     }

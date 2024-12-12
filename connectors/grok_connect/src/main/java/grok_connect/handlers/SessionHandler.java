@@ -1,6 +1,5 @@
 package grok_connect.handlers;
 
-import com.google.gson.Gson;
 import grok_connect.connectors_info.DataQueryRunResult;
 import grok_connect.log.EventType;
 import grok_connect.log.QueryLogger;
@@ -57,7 +56,7 @@ public class SessionHandler {
         DataQueryRunResult result = new DataQueryRunResult();
         result.errorMessage = message;
         result.errorStackTrace = stackTrace;
-        session.getRemote().sendStringByFuture(String.format("ERROR: %s", new Gson().toJson(result)));
+        session.getRemote().sendStringByFuture(String.format("ERROR: %s", GrokConnect.gson.toJson(result)));
         session.close();
     }
 
