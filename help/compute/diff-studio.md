@@ -292,7 +292,7 @@ Diff Studio automatically generates the UI, but you can use the following option
 Use this syntax to define the ODE solver configuration and improve performance:
 
 * `#meta.solver`: Defines numerical solver settings:
-  * **Method**: Choose [Rosenbrock-Wanner](link) solver
+  * **Method**: Choose [Rosenbrock-Wanner](https://doi.org/10.1016/j.cam.2015.03.010) solver
     * The ROS34PRw method (`ros34prw`, default)
     * The ROS3PRw method (`ros3prw`)
     * The modified Rosenbrock triple (`mrt`)
