@@ -1,0 +1,52 @@
+{
+  "name": "jiraconnect",
+  "friendlyName": "JiraConnect",
+  "version": "0.0.1",
+  "description": "",
+  "dependencies": {
+    "@datagrok-libraries/utils": "^4.3.6",
+    "cash-dom": "^8.1.5",
+    "cors": "^2.8.5",
+    "datagrok-api": "../../js-api",
+    "dayjs": "^1.11.13"
+  },
+  "devDependencies": {
+    "datagrok-tools": "latest",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "scripts": {
+    "link-all": "grok link",
+    "debug-jiraconnect": "webpack && grok publish",
+    "release-jiraconnect": "webpack && grok publish --release",
+    "build-jiraconnect": "webpack",
+    "build": "webpack",
+    "debug-jiraconnect-public": "webpack && grok publish public",
+    "release-jiraconnect-public": "webpack && grok publish public --release",
+    "debug-jiraconnect-local": "webpack && grok publish local",
+    "release-jiraconnect-local": "webpack && grok publish local --release",
+    "debug-jiraconnect-release": "webpack && grok publish release",
+    "release-jiraconnect-release": "webpack && grok publish release --release",
+    "debug-jiraconnect-release-ec2.datagrok.ai": "webpack && grok publish release-ec2.datagrok.ai",
+    "release-jiraconnect-release-ec2.datagrok.ai": "webpack && grok publish release-ec2.datagrok.ai --release",
+    "debug-jiraconnect-core": "webpack && grok publish core",
+    "release-jiraconnect-core": "webpack && grok publish core --release",
+    "debug-jiraconnect-ec2": "webpack && grok publish ec2",
+    "release-jiraconnect-ec2": "webpack && grok publish ec2 --release",
+    "debug-jiraconnect-test": "webpack && grok publish test",
+    "release-jiraconnect-test": "webpack && grok publish test --release"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/JiraConnect"
+  }
+}
