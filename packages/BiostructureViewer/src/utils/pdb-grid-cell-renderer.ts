@@ -124,9 +124,9 @@ export class PdbGridCellRendererBack extends CellRendererBackAsyncBase<NglGlProp
 }
 
 export class PdbGridCellRenderer extends DG.GridCellRenderer {
-  get name(): string { return 'xray'; }
+  get name(): string { return 'Molecule3D'; }
 
-  get cellType(): string { return 'xray'; }
+  get cellType(): string { return 'Molecule3D'; }
 
   get defaultHeight(): number { return 300; }
 
