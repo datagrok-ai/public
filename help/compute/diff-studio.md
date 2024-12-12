@@ -319,7 +319,7 @@ You can convert Diff Studio models to Datagrok scripts. This allows you to:
 
 Steps:
 
-1. Toggle **Edit** and click the **</>** icon
+1. Toggle **Edit** and click the `</>` icon
 1. Add metadata for catalog:
   
    ```python
