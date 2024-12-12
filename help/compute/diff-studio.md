@@ -37,7 +37,7 @@ Key benefits:
 
 Launch Diff Studio from **Apps** > **Diff Studio**. The app opens with your recent model, or a default template if it's your first time.
 
-To load an existing model, click the <i class="fas fa-folder-open d4-combo-popup" style="min-width: 0px; cursor: default"></i> **Open** icon and choose:
+To load an existing model, click the <i class="fas fa-folder-open"></i> **Open** icon and choose:
 
 * **Import...** to import local IVP files (or simply drag-and-drop)
 * **Library** to open a production model from the [catalog](models.md#ordinary-differential-equations)
