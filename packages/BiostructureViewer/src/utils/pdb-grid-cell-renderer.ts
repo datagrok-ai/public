@@ -16,6 +16,7 @@ import {IPdbGridCellRenderer} from './types';
 import {_getNglGlService} from '../package-utils';
 
 import {_package} from '../package';
+import {LruCache} from "datagrok-api/dg";
 
 export const enum Temps {
   renderer = '.renderer.pdb',
@@ -160,5 +161,59 @@ export class PdbGridCellRenderer extends DG.GridCellRenderer {
       return;
     const back = PdbGridCellRendererBack.getOrCreate(gridCell);
     back.render(g, x, y, w, h, gridCell, cellStyle);
+  }
+}
+
+
+/// Shows PDB id when the cell is small, and renders protein if the cell is higher than 40 pixels
+export class PdbIdGridCellRenderer extends DG.GridCellRenderer {
+  imageCache: LruCache = new LruCache<string, any>();
+
+  get defaultWidth() { return 50; }
+  get defaultHeight() { return 50; }
+  get name(): string { return 'PDB_ID'; }
+  get cellType(): string { return 'PDB_ID'; }
+
+  render(
+    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle,
+  ): void {
+    if (h < 40 || gridCell.cell.valueString.length < 4)
+      DG.GridCellRenderer.byName('string')?.render(g, x, y, w, h, gridCell, cellStyle);
+    else {
+      const pdb = gridCell.cell.valueString.toLowerCase();
+      const url = `https://cdn.rcsb.org/images/structures/${pdb}_assembly-1.jpeg`;
+      let cache = this.imageCache;
+
+      if (this.imageCache.has(url)) {
+        const img = this.imageCache.get(url);
+        if (img) {
+          const fit = new DG.Rect(x, y, w, h).fit(img.width, img.height);
+          g.drawImage(img, fit.x, fit.y, fit.width, fit.height);
+          DG.GridCellRenderer.byName('string')?.render(g, x, y, 40, 25, gridCell, cellStyle);
+        }
+      }
+      else {
+        DG.GridCellRenderer.byName('string')?.render(g, x, y, 40, 25, gridCell, cellStyle);
+
+        fetch(url).then(async (response) => {
+
+          if (!response.ok) {
+            g.fillStyle = 'red';
+            g.fillRect(x + w - 5, y, 5, 5);
+            return;
+          }
+
+          const blob = await response.blob();
+          const img = new Image();
+          img.src = URL.createObjectURL(blob);
+          img.onload = function () {
+            cache.set(url, img);
+            gridCell.render();
+            URL.revokeObjectURL(img.src);
+          };
+        }).catch((_) => { })
+      }
+    }
   }
 }
