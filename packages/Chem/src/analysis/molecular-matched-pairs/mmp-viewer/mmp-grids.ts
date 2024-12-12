@@ -32,6 +32,9 @@ export class MmpPairedGrids {
   mmpGridFrag: DG.Grid;
   mmpMaskFrag: DG.BitSet;
 
+  pairsGridCliffsTab: DG.Grid;
+  pairsMaskCliffsTab: DG.BitSet;
+
   enableFilters: boolean = true;
   rdkit: RDModule;
 
@@ -39,7 +42,7 @@ export class MmpPairedGrids {
   filters: DG.FilterGroup;
   lastPairIdx: number | null = null;
   lastFragmentIdx: number | null = null;
-  currentFragmentsTab = false;
+  currentTab = MMP_NAMES.TAB_TRANSFORMATIONS;
 
   constructor(subs: Subscription[], mmpInput: MmpInput, mmpa: MMPA, activityMeanNames: string[] ) {
     this.mmpa = mmpa;
@@ -57,6 +60,9 @@ export class MmpPairedGrids {
 
     this.mmpGridFrag = this.mmpGridTrans.dataFrame.plot.grid();
     this.mmpMaskFrag = DG.BitSet.create(this.mmpGridFrag.dataFrame.rowCount);
+
+    this.pairsGridCliffsTab = this.mmpGridTrans.dataFrame.plot.grid();
+    this.pairsMaskCliffsTab = DG.BitSet.create(this.mmpGridFrag.dataFrame.rowCount).setAll(true);
 
     const trellisTv = DG.TableView.create(this.fpGrid.dataFrame, false);
     this.filters = trellisTv.getFiltersGroup();
@@ -95,7 +101,7 @@ export class MmpPairedGrids {
     this.fpGrid.table.onFilterChanged.subscribe((e: any) => {
       //workaround for case when creating a filter panel for fragments tab resets filter in transformation tab
       if (!filterPanelCreated) {
-        if (!this.currentFragmentsTab && e.type === DG.VIEWER.HISTOGRAM) {
+        if (this.currentTab !== MMP_NAMES.TAB_FRAGMENTS && e.type === DG.VIEWER.HISTOGRAM) {
           filterPanelCreated = true;
           setTimeout(() => {
             this.fpGrid.dataFrame.filter.copyFrom(this.fpMaskByMolecule!);

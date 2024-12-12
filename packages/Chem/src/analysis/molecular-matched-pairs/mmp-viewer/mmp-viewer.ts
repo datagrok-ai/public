@@ -9,7 +9,8 @@ import {ILineSeries, MouseOverLineEvent, ScatterPlotLinesRenderer}
   from '@datagrok-libraries/utils/src/render-lines-on-sp';
 
 import {MMPA} from '../mmp-analysis/mmpa';
-import {CLIFFS_TAB_TOOLTIP, FRAGMENTS_GRID_TOOLTIP, FRAGMENTS_TAB_TOOLTIP, MATHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS,
+import {CLIFFS_TAB_TOOLTIP, FRAGMENTS_GRID_TOOLTIP, FRAGMENTS_TAB_TOOLTIP,
+  MATHED_MOLECULAR_PAIRS_TOOLTIP_CLIFFS, MATHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS,
   MATHED_MOLECULAR_PAIRS_TOOLTIP_TRANS, MMP_CONTEXT_PANE_CLASS, MMP_NAMES, TrellisAxis, TrellisSortByProp,
   TrellisSortType} from './mmp-constants';
 
@@ -27,6 +28,7 @@ import {getSigFigs} from '../../../utils/chem-common';
 import {createLines} from './mmp-lines';
 import {MmpPairedGrids} from './mmp-grids';
 import {chemDescriptor} from '../../../package';
+import {getZoomCoordinates} from '../../../utils/ui-utils';
 
 export type MmpInput = {
   table: DG.DataFrame,
@@ -101,6 +103,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
   fragSortingInfo: {[key: string]: SortData} = {};
   sp: DG.ScatterPlotViewer | null = null;
+  spAxesNames: string[] = [];
   tabs: DG.TabControl | null = null;
   mutationObserver: MutationObserver | null = null;
 
@@ -251,8 +254,14 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     //const mmPairsDiv = ui.div('', {style: {width: '100%', height: '100%'}});
     const mmPairsRoot1 = this.createGridDiv(MMP_NAMES.PAIRS_GRID,
       this.pairedGrids!.mmpGridTrans, MATHED_MOLECULAR_PAIRS_TOOLTIP_TRANS);
+
     const mmPairsRoot2 = this.createGridDiv(MMP_NAMES.PAIRS_GRID,
       this.pairedGrids!.mmpGridFrag, MATHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS);
+
+    const mmPairsRoot3 = this.createGridDiv(MMP_NAMES.PAIRS_GRID,
+        this.pairedGrids!.pairsGridCliffsTab, MATHED_MOLECULAR_PAIRS_TOOLTIP_CLIFFS);
+    mmPairsRoot3.classList.add('mmp-pairs-grid-cliffs-tab', 'cliffs-closed');
+
     const fpGrid = this.createGridDiv(MMP_NAMES.FRAGMENTS_GRID,
       this.pairedGrids!.fpGrid, FRAGMENTS_GRID_TOOLTIP);
     fpGrid.prepend(ui.divText('No substitutions found for current molecule. Please select another molecule.',
@@ -286,12 +295,12 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
 
     const summaryColsButton = ui.div('', 'mmp-trellis-summary-column');
-    const summaryVisualizationButton = ui.div('', 'mmp-trellis-summary-visualisation');
+    ui.tooltip.bind(summaryColsButton, 'Select columns to show in trellis plot');
 
     tp.root.prepend(trellisHeader);
     const tpDiv = ui.splitV([
       ui.box(
-        ui.divH([trellisHeader, filterIcon, summaryColsButton, summaryVisualizationButton,
+        ui.divH([trellisHeader, filterIcon, summaryColsButton,
           this.helpButton('chem-mmpa-grid-help-icon', FRAGMENTS_TAB_TOOLTIP)]),
         {style: {maxHeight: '30px'}},
       ),
@@ -302,8 +311,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.createSortIcon(trellisSortState, TrellisAxis.From, tp, 'chem-mmpa-fragments-sort-icon-x-axis');
       this.createSortIcon(trellisSortState, TrellisAxis.To, tp, 'chem-mmpa-fragments-sort-icon-y-axis');
       const tpButtons = Array.from(tp.root.getElementsByTagName('button'));
-      const tpVisualizationChoice =
-        tp.root.querySelectorAll('tr[title=\'Visualization type (text, circles or bars)\'');
       if (tpButtons.length) {
         //workaround to disable aggregation functions selections
         tpButtons[0].onmousedown = () => {
@@ -328,10 +335,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         ui.empty(summaryColsButton);
         summaryColsButton.append(tpButtons[0]);
       }
-      if (tpVisualizationChoice.length) {
-        ui.empty(summaryVisualizationButton);
-        summaryVisualizationButton.append(tpVisualizationChoice[0]);
-      }
     });
 
     this.sortTrellis(TrellisAxis.From, trellisSortState[TrellisAxis.From], tp);
@@ -341,14 +344,66 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       mmPairsRoot2,
     ], {}, true);
 
+    let cliffsOpened = false;
     const cliffsHeader = ui.h1('2D Molecules Map', 'chem-mmpa-transformation-tab-header'); ;
-    const cliffsDiv = ui.splitV([
+    const cliffsNumButton = ui.button(`Open pairs`, () => {
+      cliffsOpened = !cliffsOpened;
+      if (cliffsOpened) {
+        cliffsNumButton.innerText = 'Close pairs';
+        mmPairsRoot3.classList.replace('cliffs-closed', 'cliffs-opened');
+        //workaround for case when pairs grid is opened for the first time with minimal height
+        if (parseFloat(mmPairsRoot3.style.height.replace('px', '')) < 5)
+          mmPairsRoot3.style.height = '200px';
+      } else {
+        cliffsNumButton.innerText = 'Open pairs';
+        mmPairsRoot3.classList.replace('cliffs-opened', 'cliffs-closed');
+      }
+    });
+    cliffsNumButton.classList.add('chem-mmp-open-cliffs-button');
+    const spDiv = ui.splitV([
       ui.box(
-        ui.divH([cliffsHeader, this.helpButton('chem-mmpa-grid-help-icon', CLIFFS_TAB_TOOLTIP)]),
+        ui.divH([cliffsHeader, cliffsNumButton, this.helpButton('chem-mmpa-grid-help-icon', CLIFFS_TAB_TOOLTIP)]),
         {style: {maxHeight: '30px'}},
       ),
       cliffs,
-    ], {style: {width: '100%', height: '100%'}});
+    ]);
+
+    const cliffsDiv = ui.splitV([
+      spDiv,
+      mmPairsRoot3,
+    ], {style: {width: '100%', height: '100%'}}, true);
+
+
+    this.pairedGrids!.pairsGridCliffsTab.dataFrame.onCurrentRowChanged.subscribe(() => {
+      const currentRowIdx = this.pairedGrids!.pairsGridCliffsTab.dataFrame.currentRowIdx;
+      if (currentRowIdx !== -1 && this.currentTab === MMP_NAMES.TAB_CLIFFS) {
+        const fromIdx = this.pairedGrids!.pairsGridCliffsTab.dataFrame.get(MMP_NAMES.PAIRNUM_FROM, currentRowIdx);
+        const toIdx = this.pairedGrids!.pairsGridCliffsTab.dataFrame.get(MMP_NAMES.PAIRNUM_TO, currentRowIdx);
+        //this.lineIdxs contain idxs if pairs from pairs dataset
+        let currentLineIdx: number | null = null;
+        for (let i = 0; i < this.linesIdxs!.length; i++) {
+          if (this.linesIdxs![i] === currentRowIdx && this.linesRenderer!.visibility?.getBit(i)) {
+            currentLineIdx = i;
+            break;
+          }
+        }
+        if (currentLineIdx) {
+          this.linesRenderer!.currentLineId = currentLineIdx;
+          const {zoomLeft, zoomRight, zoomTop, zoomBottom} = getZoomCoordinates(
+              this.sp!.viewport.width,
+              this.sp!.viewport.height,
+              this.sp!.dataFrame.get(this.spAxesNames[0], fromIdx),
+              this.sp!.dataFrame.get(this.spAxesNames[1], fromIdx),
+              this.sp!.dataFrame.get(this.spAxesNames[0], toIdx),
+              this.sp!.dataFrame.get(this.spAxesNames[1], toIdx),
+          );
+            this.sp!.zoom(zoomLeft,
+              zoomTop,
+              zoomRight,
+              zoomBottom);
+        }
+      }
+    });
 
 
     //tabs generation
@@ -373,32 +428,27 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     });
 
     let refilter = true;
-    let lastSelectedTab = MMP_NAMES.TAB_TRANSFORMATIONS;
     tabs.onTabChanged.subscribe(() => {
-      if (lastSelectedTab === MMP_NAMES.TAB_FRAGMENTS && tabs.currentPane.name !== MMP_NAMES.TAB_FRAGMENTS) {
-        this.pairedGrids!.currentFragmentsTab = true;
+      if (this.currentTab === MMP_NAMES.TAB_FRAGMENTS && tabs.currentPane.name !== MMP_NAMES.TAB_FRAGMENTS) {
         grok.shell.tv.dockManager.close(this.pairedGrids!.filters.root);
         this.pairedGrids!.fpMaskFragmentsTab.copyFrom(this.pairedGrids!.fpGrid.dataFrame.filter);
       }
-      if (lastSelectedTab === MMP_NAMES.TAB_CLIFFS && tabs.currentPane.name !== MMP_NAMES.TAB_CLIFFS) {
+      if (this.currentTab === MMP_NAMES.TAB_CLIFFS && tabs.currentPane.name !== MMP_NAMES.TAB_CLIFFS) {
         if (this.parentTableFilterBackup)
           this.parentTable!.filter.copyFrom(this.parentTableFilterBackup);
       }
       this.currentTab = tabs.currentPane.name;
+      this.pairedGrids!.currentTab = tabs.currentPane.name as MMP_NAMES;
       if (tabs.currentPane.name == MMP_NAMES.TAB_TRANSFORMATIONS) {
-        lastSelectedTab = MMP_NAMES.TAB_TRANSFORMATIONS;
         this.pairedGrids!.enableFilters = true;
         //setting masks on fragments grid and pairs grid
         this.pairedGrids!.mmpGridTrans.dataFrame.filter.copyFrom(this.pairedGrids!.mmpMaskTrans);
         this.pairedGrids!.fpGrid!.dataFrame.filter.copyFrom(this.pairedGrids!.fpMaskByMolecule!);
       } else if (tabs.currentPane.name == MMP_NAMES.TAB_FRAGMENTS) {
-        lastSelectedTab = MMP_NAMES.TAB_FRAGMENTS;
-        this.pairedGrids!.currentFragmentsTab = true;
         this.pairedGrids!.refreshMaskFragmentPairsFilter();
         this.pairedGrids!.fpGrid.dataFrame.filter.copyFrom(this.pairedGrids!.fpMaskFragmentsTab);
       } else if (tabs.currentPane.name == MMP_NAMES.TAB_CLIFFS) {
-        lastSelectedTab = MMP_NAMES.TAB_CLIFFS;
-        tabs.currentPane.content.append(mmpFilters.filtersDiv);
+        this.sp!.root.append(mmpFilters.filtersDiv);
 
         if (refilter)
           grok.shell.warning('Cutoff filters were applied for all activities');
@@ -416,7 +466,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         }
       } else if (tabs.currentPane.name == MMP_NAMES.TAB_GENERATION) {
         if (this.generationsGrid) {
-          lastSelectedTab = MMP_NAMES.TAB_GENERATION;
           if (this.generationsSp) {
             const header = ui.h1('Observed vs Predicted', 'chem-mmpa-generation-tab-cp-header');
             this.generationsSp.root.prepend(header);
@@ -578,7 +627,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   fillAll(mmpInput: MmpInput, palette: PaletteCodes,
     mmpa: MMPA, diffs: Array<Float32Array>,
     linesIdxs: Uint32Array, pairedGrids: MmpPairedGrids,
-    tp: DG.Viewer, sp: DG.ScatterPlotViewer, mmpFilters: MmpFilters,
+    tp: DG.Viewer, sp: DG.ScatterPlotViewer, spAxesNames: string[], mmpFilters: MmpFilters,
     linesEditor: ScatterPlotLinesRenderer, lines: ILineSeries, linesActivityCorrespondance: Uint32Array,
     rdkitModule: RDModule): void {
     this.rdkitModule = rdkitModule;
@@ -612,6 +661,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     //Cliffs tab setup
     this.sp = sp;
+    this.spAxesNames = spAxesNames;
     this.diffs = diffs;
     this.lines = lines;
     this.linesActivityCorrespondance = linesActivityCorrespondance;
@@ -789,7 +839,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     });
 
     this.fillAll(mmpInput, palette, mmpa, mmpa.allCasesBased.diffs, linesIdxs, pairedGrids,
-      tp, sp, mmpFilters, linesEditor, lines, linesActivityCorrespondance, module);
+      tp, sp, embedColsNames, mmpFilters, linesEditor, lines, linesActivityCorrespondance, module);
 
     this.totalData = mmpa.toJSON();
     //console.profileEnd('MMP');
@@ -802,10 +852,12 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
       this.totalCutoffMask!.setAll(false);
       this.linesMask!.setAll(false);
+      this.pairedGrids?.pairsMaskCliffsTab.setAll(false);
 
       //setting activity associated masks
       for (let i = 0; i < this.lines!.from.length; i++) {
         const activityNumber = this.linesActivityCorrespondance![i];
+        //line is idx of pair in pairs dataset
         const line = this.linesIdxs![i];
         //if 'isActive' checkbox for variable is unset
         //setting line to invisible and continue, otherwise look at cutoff
@@ -817,6 +869,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
           this.cutoffMasks![activityNumber].set(this.lines!.from[i], true, false);
           this.cutoffMasks![activityNumber].set(this.lines!.to[i], true, false);
           this.linesMask!.setBit(i, true, false);
+          this.pairedGrids?.pairsMaskCliffsTab.set(line, true);
         }
       }
 
@@ -832,6 +885,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     this.cliffsFiltered = true;
     this.parentTable!.filter.copyFrom(this.parentTableFilterBackup!).and(this.totalCutoffMask!);
+    this.pairedGrids?.pairsGridCliffsTab.dataFrame.filter.copyFrom(this.pairedGrids.pairsMaskCliffsTab);
     this.linesRenderer!.linesVisibility = this.linesMask!;
   }
 

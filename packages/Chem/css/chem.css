@@ -691,9 +691,17 @@
   width: 40px;
 }
 
+.mmp-pairs-grid-cliffs-tab.cliffs-closed {
+  display: none!important;
+}
+
+.mmp-pairs-grid-cliffs-tab.cliffs-opened {
+  display:flex;
+}
+
 .mmpa-bool-input {
   padding-left: 5px;
-  margin-top: 8px;
+  margin-top: 2px;
 }
 
 .mmpa-scroll-icon {
@@ -752,6 +760,11 @@
   display: flex !important;
 }
 
+.chem-mmp-open-cliffs-button {
+  font-size: 11px;
+  height: 18px !important;
+  margin-top: 3px !important;
+}
 
 .chem-search-panel-wrapper {
   overflow: hidden;
@@ -766,22 +779,13 @@
   display: none;
 }
 
-.chem-mmp-trellis-plot tr[name="SummaryLook"] {
+.chem-mmp-trellis-plot div[name="SummaryLook"] {
   display: none;
-}
-
-.mmp-trellis-summary-visualisation {
-  padding-left: 7px;
-  padding-top: 1px;
 }
 
 .mmp-trellis-summary-column {
   padding-left: 7px;
   padding-top: 4px;
-}
-
-.mmp-trellis-summary-visualisation .property-grid-item-name {
-  display: none;
 }
 
 .mmp-trellis-summary-col-dlg select {
