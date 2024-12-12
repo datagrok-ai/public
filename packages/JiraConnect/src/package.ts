@@ -76,14 +76,17 @@ export async function getJiraField(ticketColumn: DG.Column, field: string): Prom
       const loadedIssues = await loadIssues(jiraCreds.host, new AuthCreds(jiraCreds.userName, jiraCreds.authKey),
         0, chunkSize, undefined, keysToLoad);
 
+      upperFor:
       for (let i = 0; i < (loadedIssues?.issues.length ?? 0); i++) {
         let current = loadedIssues?.issues[i].fields;
 
         for (const key of keys) {
           if (current && key in current)
             current = current[key];
-          else
-            return undefined;
+          else {
+            ticketsMap.set(ticketColumnList[index + i], '');
+            continue upperFor;
+          }
         }
         if (loadedIssues?.issues[i].key)
           ticketsMap.set(loadedIssues?.issues[i].key, (current ?? '') as string)
