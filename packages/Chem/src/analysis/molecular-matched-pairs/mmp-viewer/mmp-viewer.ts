@@ -524,7 +524,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   };
 
   helpButton(className: string, tooltip: string) {
-    const button = ui.icons.help(() => {});
+    const button = ui.icons.help(() => {
+      grok.shell.windows.showHelp = true;
+      grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#matched-molecular-pairs');
+    });
     ui.tooltip.bind(button, () => ui.divText(tooltip, {style: {width: '300px'}}));
     button.classList.add(className);
     return button;

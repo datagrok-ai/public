@@ -12,6 +12,7 @@ import {createColWithDescription} from './mmp-generations';
 import {getInverseSubstructuresAndAlign} from './mmp-mol-rendering';
 import {MmpInput} from './mmp-viewer';
 import {Subject, Subscription} from 'rxjs';
+import {resizeGridColsSize} from '../../../utils/ui-utils';
 
 export class MmpPairedGrids {
   parentTable: DG.DataFrame;
@@ -81,6 +82,24 @@ export class MmpPairedGrids {
         this.refreshMatchedPair(this.rdkit);
       }
     }));
+    const fpGridSub = this.fpGrid.onAfterDrawContent.subscribe(() => {
+      resizeGridColsSize(this.fpGrid, [MMP_NAMES.FROM, MMP_NAMES.TO], 150, 70);
+      fpGridSub.unsubscribe();
+    });
+    const mmpGridTransSub = this.mmpGridTrans.onAfterDrawContent.subscribe(() => {
+      resizeGridColsSize(this.mmpGridTrans, [MMP_NAMES.FROM, MMP_NAMES.TO], 150, 70);
+      mmpGridTransSub.unsubscribe();
+    });
+
+    const mmpGridFragSub = this.mmpGridFrag.onAfterDrawContent.subscribe(() => {
+      resizeGridColsSize(this.mmpGridFrag, [MMP_NAMES.FROM, MMP_NAMES.TO], 150, 70);
+      mmpGridFragSub.unsubscribe();
+    });
+
+    const pairsGridCliffsTabSub = this.pairsGridCliffsTab.onAfterDrawContent.subscribe(() => {
+      resizeGridColsSize(this.pairsGridCliffsTab, [MMP_NAMES.FROM, MMP_NAMES.TO], 150, 70);
+      pairsGridCliffsTabSub.unsubscribe();
+    });
   }
 
   setupGrids(): void {

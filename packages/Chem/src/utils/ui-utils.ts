@@ -81,3 +81,8 @@ export function getZoomCoordinates(W0: number, H0: number, x1: number, y1: numbe
   const zoomBottom = zoomTop - H2;
   return {zoomLeft: zoomLeft, zoomRight: zoomRight, zoomTop: zoomTop, zoomBottom: zoomBottom};
 }
+
+export function resizeGridColsSize(grid: DG.Grid, colsToResize: string[], width: number, height: number) {
+  colsToResize.forEach((colName: string) => grid.columns.byName(colName)!.width = width);
+  grid.props.rowHeight = height;
+}
