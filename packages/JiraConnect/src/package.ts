@@ -10,6 +10,7 @@ import { AuthCreds } from './api/objects';
 import { getJiraCreds } from './app/credentials';
 import { addJIRADetector } from './detectors';
 import { JiraGridCellHandler } from './jira-grid-cell-handler';
+import '../css/jira_connect.css';
 
 //name: info
 export function info() {
@@ -78,7 +79,7 @@ export async function getJiraField(ticketColumn: DG.Column, field: string): Prom
 
       upperFor:
       for (let i = 0; i < (loadedIssues?.issues.length ?? 0); i++) {
-        let current = loadedIssues?.issues[i].fields;
+        let current: any = loadedIssues?.issues[i].fields;
 
         for (const key of keys) {
           if (current && key in current)
@@ -88,15 +89,17 @@ export async function getJiraField(ticketColumn: DG.Column, field: string): Prom
             continue upperFor;
           }
         }
+        if (Array.isArray(current))
+          current = (current ?? ['']).join(', ');
+
         if (loadedIssues?.issues[i].key)
-          ticketsMap.set(loadedIssues?.issues[i].key, (current ?? '') as string)
+          ticketsMap.set(loadedIssues?.issues[i].key, (current ?? '') as string);
       }
     } catch (error) {
       console.error(`Error loading issues for index range ${index} - ${index + chunkSize}`, error);
     }
 
     index += chunkSize;
-
   }
 
   let resultList: string[] = [];
