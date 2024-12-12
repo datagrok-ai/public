@@ -141,7 +141,7 @@ export async function samplesPanel(smiles: string): Promise<DG.Widget> {
     category.fireChanged();
     panels = ui.divV([ui.form([shipToCountry, category]), acc.root]);
   } catch (e: any) {
-    panels = ui.divText(e);
+    panels = ui.divText(e.message ?? e);
   }
   return new DG.Widget(panels);
 }
@@ -293,7 +293,7 @@ export async function pricesPanel(id: string): Promise<DG.Widget> {
     shipToCountry.fireChanged();
     prices = ui.divV([ui.form([shipToCountry]), resData]);
   } catch (e: any) {
-    prices = ui.divText(e.message);
+    prices = ui.divText(e.message ?? e);
   }
   return new DG.Widget(prices);
 }
@@ -394,7 +394,7 @@ export async function getChemspaceIds(molColumn: DG.Column, shipToCountry: strin
     pi.close();
     return DG.Column.fromStrings('csIds', ids);
   } catch (e: any) {
-    grok.shell.error(e);
+    grok.shell.error(e.message ?? e);
   } finally {
     pi.close();
   }
@@ -458,7 +458,7 @@ export async function getChemspacePrices(data: DG.DataFrame, idsColumn: DG.Colum
     }
     return DG.DataFrame.fromColumns([vendorCol, mgCol, priceCol, leadTime]);
   } catch (e: any) {
-    grok.shell.error(e);
+    grok.shell.error(e.message ?? e);
   } finally {
     pi.close();
   }
