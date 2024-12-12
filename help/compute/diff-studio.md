@@ -51,41 +51,10 @@ Once loaded, explore models by adjusting parameters, [fitting to experimental da
 
 Download models using the <i class="fas fa-arrow-to-bottom"></i> **Download** icon as IVP files, which you can edit in any text editor. To store a model in Datagrok, click the **SAVE** button and specify the location.
 
-### Parameter fitting
+Analyze your model:
 
-To find input conditions that satisfy output constraints, in the top ribbon, click the **Fit** icon. This [parameter optimization](function-analysis.md#parameter-optimization) feature minimizes the deviation between model output and target data using [loss functions](https://en.wikipedia.org/wiki/Loss_function).
-
-In the fitting view, configure:
-
-1. Under **Fit**, select parameters to optimize:
-   * Toggle parameters to include in optimization
-   * Set search range (`min` and `max` values)
-   * Set fixed values for other parameters
-
-2. Under **Target**, define output constraints:
-   * Select data table (**Table**)
-   * Set independent variable columns (**Argument**)
-
-3. Under **Using**, configure optimization:
-   * Choose optimization method (**method**) and loss function type (**loss**). Diff Studio uses [Nelder-Mead method](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method) to minimize loss functions like MAD and RMSE
-   * Specify number of fitted points to find (**samples**)
-   * Specify maximum deviation between fitted points (**similarity**) - higher values yield fewer points
-4. On the top ribbon, click **Run** to generate a [grid](../visualize/viewers/grid) showing loss function values, fitted parameters, and [line charts](../visualize/viewers/line-chart) of fit quality
-
-To view the simulation for any selected result, open the **Context Panel** (F4).
-
-![Run fitting](pics/diff-studio-run-fitting.gif)
-
-### Sensitivity analysis
-
-Explore the relationship between inputs and outputs of your model using the [Sensitivity Analysis](function-analysis.md#sensitivity-analysis) feature. Run it directly from Diff Studio:
-
-1. Click the **Sensitivity** icon on the top panel. **Sensitivity Analysis View** opens
-2. Apply one of the following methods:
-   * [Monte Carlo](function-analysis.md#monte-carlo)
-   * [Sobol](function-analysis.md#sobol)
-   * [Grid](function-analysis.md#grid)
-3. Analyze model evaluations. Open `Context panel` (F4). You get the simulation run corresponding to the selected grid row
+* [Parameter Optimization](function-analysis.md#parameter-optimization): Click the **Fit** icon on the top panel to find input conditions that satisfy output constraints.
+* [Sensitivity Analysis](function-analysis.md#sensitivity-analysis): Click the **Sensitivity** icon to explore the relationship between inputs and outputs of your model.
 
 ![Run Sens Analysis](pics/diff-studio-run-sens-analysis.gif)
 
@@ -96,249 +65,270 @@ Click <i class="fas fa-sync"></i> **Refresh** or press **F5** to apply changes.
 
 ![Edit model](pics/diff-studio-edit-model.gif)
 
-### Syntax and templates
+### Model components and syntax
 
-A minimal model defining and solving ordinary differential equations contains
-*name*, *differential equations*, *initial values* and *argument* specifications.
+#### Core blocks
 
-Use the `#name` keyword to define the name of your model:
+These blocks define the basic mathematical model and are required for any model:
 
-```python
-#name: Problem 1
-```
+1. `#name`: Add a model identifier
 
-Place differential equations in the `#equations` block. You can add as many equations as you want.
-Diff Studio automatically recognizes all identifiers that you use.
-You can use one-letter or multi-letter identifiers.
+   ```python
+   #name: Problem 1
+   ```
 
-```python
-#equations:
-  dx/dt = x + y + exp(t)
-  dy/dt = x - y - cos(t)
-```
-
-Define the argument, its *initial* value, *final* value, and grid *step* in the `#argument` block.
-Datagrok provides a numerical solution within the range *[initial, final]* with the specified grid *step*.
-
-```python
-#argument: t
-  initial = 0
-  final = 1
-  step = 0.01
-```
-
-Define initial values of the functions in the `#inits` block:
-
-```python
-#inits:
-  x = 2
-  y = 5
-```
-
-Use `#comment` block to write a comment in any place of your model
-
-```python
-#comment:
-  You can provide any text here. Diff Studio just ignores it.
-```
-
-Place comments right in formulas using `//`
-
-```python
-#equations:
-  dx/dt = x + y + exp(t) // 1-st equation
-  dy/dt = x - y - cos(t) // 2-nd equation
-```
-
-Specify constants in the `#constants` block and parameters in the `#parameters` block.
-
-Diff Studio treats `constants` and `parameters` exactly the same way.
-However, when you [export equations](#platform-script-generation) to the platform script,
-Diff Studio creates input UI only for `parameters` and leave `constants` hardcoded inside the script.
-
-```python
-#constants:
-  C1 = 1
-  C2 = 3
-
-#parameters:
-  P1 = 1
-  P2 = -1
-```
-
-Define auxiliary computations in the `#expressions` block.
-The **expression** is any mathematical function containing constants, parameters, argument, and other functions.
-The only difference is that `expressions` functions are defined directly
-and don't require solving of differential equations.
-You can use expressions to separate part of the calculations and simplify your differential equations.
-
-```python
-#expressions:
-  E1 = C1 * t + P1
-  E2 = C2 * cos(2 * t) + P2
-```
-
-To customize the computation output, select columns and their captions in the `output` block:
-
-```python
-#output:
-  t {caption: Time, h}
-  A1 {caption: Central}
-  A2 {caption: Periferal}
-```
-
-![Customize output](pics/diff-studio-output.gif)
-
-#### Cyclic process simulation
-
-Datagrok provides special capabilities for modeling cyclic processes.
-
-Use the `#loop` feature to specify several modeling cycles.
-Define the number of repetitions in the mandatory `count` variable and
-use any mathematical expression to modify functions and parameters.
-You can set new values for parameters and change values for functions.
-
-```python
-#equations:
-  dy/dt = -y + sin(N*t) / t
-
-#parameters:
-  N = 1
+1. `#equations`: Define the system of ODEs to solve. Diff Studio supports any number of equations with single or multi-letter variable names
   
-#loop:
-  count = 3
-  N += 2
-```
+   ```python
+   #equations:
+     dx/dt = x + y + exp(t)
+     dy/dt = x - y - cos(t)
+   ```
+
+1. `#argument`: Defines
+   * independent variable
+   * its initial value (`initial`)
+   * final value (`final`), and
+   * grid step (`step`)
+
+   The solver calculates values at each step interval across the specified [_initial,final_] range.
+
+   ```python
+   #argument: t
+     initial = 0
+     final = 1
+     step = 0.01
+   ```
+
+1. `#inits`: Defines initial values for functions being solved
+
+   ```python
+   #inits:
+     x = 2
+     y = 5
+   ```
+
+#### Comments
+
+* `#comment`: Write a comment in any place of your model
+
+   ```python
+   #comment:
+     You can provide any text here. Diff Studio ignores it.
+   ```
+
+* Place comments right in formulas using `//`
+
+   ```python
+   #equations:
+     dx/dt = x + y + exp(t) // 1-st equation
+     dy/dt = x - y - cos(t) // 2-nd equation
+   ```
+
+#### Model parameters
+
+These blocks define values used in equations. Choose type based on intended use:
+
+* `#parameters`: Generate UI controls for model exploration
+
+   ```python
+   #parameters:
+     P1 = 1
+     P2 = -1
+
+   ```
+
+* `#constants`: Use for fixed values in equations that don't require UI controls
+
+   ```python
+   #constants:
+     C1 = 1
+     C2 = 3
+   ```
+
+#### Auxiliary calculations
+
+This block defines mathematical functions using `#parameters`, `#constants`,
+`#argument`, and other functions. These are direct calculations (no ODEs involved). Use them to break
+down complex calculations and simplify your equations.
+
+* `#expressions`
+
+   ```python
+   #expressions:
+     E1 = C1 * t + P1
+     E2 = C2 * cos(2 * t) + P2
+   ```
+
+#### Advanced features
+
+These blocks enable simulations for complex processes.
+
+##### Cyclic processes
+
+Use the `#loop` block for cyclic processes. Set `count` for number of cycles and use any valid mathematical expressions to modify parameters and functions. You can set new values for parameters and change values for functions.
+
+  ```python
+  #equations:
+    dy/dt = -y + sin(N*t) / t
+
+  #parameters:
+    N = 1
+  
+  #loop:
+    count = 3
+    N += 2
+  ```
 
 ![Multi-stage model - loop](pics/diff-studio-loop.gif)
 
-#### Multistage model
+##### Multistage processes
 
-Use the `#update` feature to construct models with multiple sequential processes (stages).
+Use the `#update` block to construct models with multiple sequential processes (stages):
 
-Add name of the first stage in the `#argument` block:
+1. First stage is always defined in the `#argument` block. Add the stage name:
 
-```python
-#argument: t, 1-st stage
-  t0 = 0.01
-  t1 = 15
-  h = 0.01
-```
+     ```python
+     #argument: t, 1-st stage
+       t0 = 0.01
+       t1 = 15
+       h = 0.01
+     ```
 
-Add the `#update` block. Enter name of the stage and set its duration. Add lines with model inputs updates. Use any valid mathematical expression to define them.
+1. Subsequent stages are defined in the `#update` blocks. Specify:
+   1. Stage name
+   1. Stage duration
+   1. Parameter modifications. To define parameters, use any valid mathematical expression.
 
-```python
-#update: 2-nd stage
-  duration = 23
-  p = p * 2
-```
+    ```python
+    #update: 2-nd stage
+      duration = 23
+      p = p * 2  
+    ```
 
-You can add any number of `update` blocks. Simulation stages are marked with a color:
+You can add any number of `#update` blocks to create simulation stages. Each stage appears in distinct color on the line chart:
 
 ![Multi-stage model - update](pics/diff-studio-update.gif)
 
-#### Solver settings
+### User interface options
 
-Manage the solver of ODEs to improve performance. Specify its settings in the `#meta.solver`-line:
+Diff Studio automatically generates the UI, but you can use the following options to improve usability:
 
-* the numerical method (`method`)
-* the maximum number of iterations (`maxIterations`)
-* the maximum computation time (`maxTimeMs`)
+* **Captions:**
 
-Diff Studio implements the following [Rosenbrock–Wanner](https://doi.org/10.1016/j.cam.2015.03.010) methods for solving ODEs:
+  * Define the desired captions for the input parameters. If no caption is provided, Diff Studio uses variable name
 
-|Method|Value|
-|-------------|--------|
-|The modified Rosenbrock triple|`'mrt'`|
-|The ROS3PRw method|`'ros3prw'`|
-|The ROS34PRw method|`'ros34prw'`|
+     ```python
+     #argument: t
+       start = 0 {caption: Initial time}
+       finish = 2 {caption: Final time}
+       step = 0.01 {caption: Calculation step}
+     ```
 
-By default, Diff Studio uses ROS34PRw and alerts you if computations take too long. The default time limit is 5 seconds. To customize it, set the maximum computation time (in milliseconds):
+  * `#output`: Caption column headers in the solution table. If no caption is provided, Diff Studio uses a variable name
 
-```python
-#meta.solver: {method: 'mrt'; maxTimeMs: 50}
-```
+     ```python
+     #output:
+       t {caption: Time, h}
+       A1 {caption: Central}
+       A2 {caption: Peripheral}
+     ```
 
-Set the maximum number of iterations to debug formulas in complex models.
+    Use this block to set any entity from `#equations` or `#expressions` you want included in the output:
 
-Set [tolerance](https://pythonnumericalmethods.berkeley.edu/notebooks/chapter19.02-Tolerance.html) of the numerical method in the `#tolerance`-line:
+  ![Customize output](pics/diff-studio-output.gif)
 
-```python
-#tolerance: 0.00005
-```
+* **Categories**: Group related inputs together by specifying their category
 
-#### Lookup tables
+   ```python
+   #parameters:
+     P1 = 1 {category: Parameters}
+     P2 = -1 {category: Parameters}
+   ```
 
-Lookup tables are pre-defined sets of model input values. They're organized as follows:
+* **Units**: Add measurement units  
 
-||x|y|...|
-|-----|-----|-----|---|
-|Set 1|1|2|...|
-|Set 2|3|4|...|
+   ```python
+   #inits:
+     x = 2 {units: C; category: Initial values}
+     y = 0 {units: C; category: Initial values}
+   ```
 
-To use a lookup table:
+* **Tooltips**: Provide tooltips in brackets `[ ]`:
 
-* Create a CSV file with your table and add it to your project
-* Add the `#meta.inputs`-line to your model and specify a CSV file with a lookup table:
+   ```python
+     P1 = 1 {category: Parameters} [P1 parameter tooltip]
+   ```
 
-```python
-#meta.inputs: table {choices: OpenFile("System:AppData/DiffStudio/inputs.csv")}
-```
+* **Input ranges**: Set min/max values and step to create sliders and clickers for interactive model exploration
 
-* To improve usability, define `caption`, `category` and a tooltip:
+   ```python
+   #inits:
+     x = 2 {min: 0; max: 5}
+     y = 0 {min: -2; max: 2; step: 0.1}
 
-```python
-#meta.inputs: table {choices: OpenFile("System:AppData/DiffStudio/inputs.csv"); caption: Mode; category: Settings} [Hint]
-```
+   ```
 
-Use the interface to select inputs and compare model runs:
+  ![Using input annotations](pics/diff-studio-input-annotations.gif)
 
-![table-lookups](pics/diff-studio-table-lookups.gif)
+* **Lookup tables**: The `#meta.inputs` block links model parameters to preset values in a lookup table. Upon linking, Diff Studio creates a dropdown menu to switch between parameter sets and automatically populates model inputs based on the selected preset. To add a lookup table:
+    1. Create a CSV file with parameter sets and upload it to Datagrok
 
-### Input options
+       |  |x |y |...|
+       |--|--|--|---|
+       |Set 1| 1| 2|...|
+       |Set 2| 3| 4|...|
 
-Diff Studio automatically creates UI. Annotate model inputs to improve usability.
+    1. Link file to model using the `#meta.inputs` block. Optionally, add a caption, category, and a tooltip:
 
-Define the desired captions for the input parameters. If no caption is provided, Diff Studio uses variable name.
+    ```python
+    #meta.inputs: table {choices: OpenFile("System:AppData/DiffStudio/inputs.csv"); caption: [UI label]; category: [Group name]} [Tooltip]
+    ```
 
-```python
-#argument: t
-  start = 0 {caption: Initial time}
-  finish = 2 {caption: Final time}
-  step = 0.01 {caption: Calculation step}
-```
+    ![table-lookups](pics/diff-studio-table-lookups.gif)
 
-Group inputs by specifying their `category`:
+### Solver configuration
 
-```python
-#parameters:
-  P1 = 1 {category: Parameters}
-  P2 = -1 {category: Parameters}
-```
+Use this syntax to define the ODE solver configuration and improve performance:
 
-Add `units`:
+* `#meta.solver`: Defines numerical solver settings:
+  * **Method**: Choose [Rosenbrock-Wanner](link) solver
+    * The ROS34PRw method (`ros34prw`, default)
+    * The ROS3PRw method (`ros3prw`)
+    * The modified Rosenbrock triple (`mrt`)
+  * **Performance limits**
+    * `maxTimeMs`: computation time, in milliseconds (default: 5000ms)
+    * `maxIterations`: iteration count for debugging
 
-```python
-#inits:
-  x = 2 {units: C; category: Initial values}
-  y = 0 {units: C; category: Initial values}
-```
+  ```python
+  #meta.solver: {method: 'mrt'; maxTimeMs: 50}
+  ```
 
-Provide tooltips in brackets `[ ]`:
+* `#tolerance`: Defines numerical method precision
+  
+  ```python
+  #tolerance: 0.00005
+  ```
 
-```python
-  P1 = 1 {category: Parameters} [P1 parameter tooltip]
-```
+## Platform integration
 
-Specify `min`, `max` and `step` values to get sliders and clickers for the rapid model exploration:
+You can convert Diff Studio models to Datagrok scripts. This allows you to:
 
-```python
-#inits:
-  x = 2 {min: 0; max: 5}
-  y = 0 {min: -2; max: 2; step: 0.1}
-```
+* Access advanced platform features and create reusable components with rich UI ([learn more](compute.md)).
+* Add your models to a Model Catalog.
 
-![Using input annotations](pics/diff-studio-input-annotations.gif)
+Steps:
+
+1. Toggle **Edit** and click the **</>** icon
+1. Add metadata for catalog:
+  
+   ```python
+   #name: Model name
+   #tags: model
+   #description: Brief description
+   ```
+
+1. Click **SAVE**. The script is created and can be found in **Browse** > **Platform** > **Functions** > **Scripts**. The conversion preserves all input annotations, maintaining intuitive UI controls.
 
 ## Syntax reference
 
@@ -353,15 +343,15 @@ Diff Studio lets you define model in a declarative form using simple syntax:
 |**#expressions**|Additional computations|[Advanced](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/advanced.ivp) template, [pharmacokinetics](https://public.datagrok.ai/files/system.appdata/diffstudio/library/pk.ivp) simulation|
 |**#parameters**|Model parameters (Diff Studio creates UI inputs for them)|[Advanced](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/advanced.ivp) template, [chemical reactions](https://public.datagrok.ai/files/system.appdata/diffstudio/library/chem-react.ivp) modeling|
 |**#constants**|Model constants|[Advanced](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/advanced.ivp) template, [bioreactor](https://public.datagrok.ai/files/system.appdata/diffstudio/library/bioreactor.ivp) model|
-|**#loop**|Multiple simulation [cycles](#cyclic-process-simulation)|[Pharmacokinetic-pharmacodynamic](https://public.datagrok.ai/files/system.appdata/diffstudio/library/pk-pd.ivp) simulation|
-|**#update**|Additional modeling [stage](#multistage-model)|[Gluconic acid](https://public.datagrok.ai/files/system.appdata/diffstudio/library/ga-production.ivp) production modeling|
+|**#loop**|Multiple simulation [cycles](#cyclic-processes)|[Pharmacokinetic-pharmacodynamic](https://public.datagrok.ai/files/system.appdata/diffstudio/library/pk-pd.ivp) simulation|
+|**#update**|Additional modeling [stage](#multistage-processes)|[Gluconic acid](https://public.datagrok.ai/files/system.appdata/diffstudio/library/ga-production.ivp) production modeling|
 |**#output**|Customized model output|[Nimotuzumab](https://public.datagrok.ai/files/system.appdata/diffstudio/library/nimotuzumab.ivp) disposition model|
 |**#tolerance**|[Tolerance](https://pythonnumericalmethods.berkeley.edu/notebooks/chapter19.02-Tolerance.html) of the numerical method|[Advanced](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/advanced.ivp) template, [pollution](https://public.datagrok.ai/files/system.appdata/diffstudio/library/pollution.ivp) model|
-|**#meta.inputs**|CSV file with inputs [lookup table](#lookup-tables)|[Bioreactor](https://public.datagrok.ai/files/system.appdata/diffstudio/library/bioreactor.ivp) model|
-|**#meta.solver**|ODEs solver [settings](#solver-settings)|[Pharmacokinetics](https://public.datagrok.ai/files/system.appdata/diffstudio/library/pk.ivp) simulation|
+|**#meta.inputs**|CSV file with inputs [lookup table](#user-interface-options)|[Bioreactor](https://public.datagrok.ai/files/system.appdata/diffstudio/library/bioreactor.ivp) model|
+|**#meta.solver**|ODEs solver [settings](#solver-configuration)|[Pharmacokinetics](https://public.datagrok.ai/files/system.appdata/diffstudio/library/pk.ivp) simulation|
 |**#comment**|Explanations, notes, remarks, etc.|[Advanced](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/advanced.ivp) template|
-|**#tags**|The platform [script](#platform-script-generation) tags|[Extended](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/extended.ivp) template|
-|**#description**|The platform [script](#platform-script-generation) tooltip|[Extended](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/extended.ivp) template|
+|**#tags**|The platform [script](#platform-integration) tags|[Extended](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/extended.ivp) template|
+|**#description**|The platform [script](#platform-integration) tooltip|[Extended](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/extended.ivp) template|
 
 To improve UI, annotate model inputs using:
 
@@ -372,42 +362,11 @@ To improve UI, annotate model inputs using:
 |**units**|Input measure units|[Mass-action](https://public.datagrok.ai/files/system.appdata/diffstudio/library/chem-react.ivp) kinetics simulation|
 |**min**, **max**|Input min and max values, respectively. Use them to get sliders for UI input|[Extended](https://public.datagrok.ai/files/system.appdata/diffstudio/templates/extended.ivp) template|
 
-## Platform script generation
+## See also
 
-For all Diff Studio parameters, you can add annotations described in
-
-When you convert your model into the Datagrok script,
-Diff Studio converts it to the script input annotations,
-allowing Datagrok to automatically create rich and self-explaining UI.
-
-You can convert any Diff Studio model to the Datagrok script:
-
-1. Turn on the **Edit** toggle on the top panel.
-2. Click **</>** icon. Script editor opens in a new view.
-3. Click the **SAVE** button.
-4. Script is created, and can be found in the "Scripts" section of the platform.
-
-Find the created JavaScript script in the platform `Scripts` (**Browse > Platform > Functions > Scripts**).
-
-Use `#tags: model` to add your model to the `Model Catalog`.
-Provide a description in the `#description` line:
-
-```python
-#name: Bioreaction
-#tags: model
-#description: Complex bioreaction simulation
-```
-
-The export feature provides an extension of your project with [scripting](scripting/scripting.mdx) tools. Apply it to get:
-
-* non-elementary and special functions' use
-* Datagrok packages' functions call
-
-## Videos
-
-[![UGM](pics/diff-studio-ugm.png "Open on Youtube")](https://www.youtube.com/watch?v=RS163zKe7s8&t=160s)
-
-See also
-
+* [Function analysis](function-analysis.md)
 * [Compute](compute.md)
 * [Function annotations](../datagrok/concepts/functions/func-params-annotation.md)
+* Videos:
+  
+  [![UGM](pics/diff-studio-ugm.png "Open on Youtube")](https://www.youtube.com/watch?v=RS163zKe7s8&t=160s)
