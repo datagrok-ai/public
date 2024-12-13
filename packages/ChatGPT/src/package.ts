@@ -6,10 +6,15 @@ import * as DG from 'datagrok-api/dg';
 export const _package = new DG.Package();
 
 type ChatGptFuncParams = { [name: string]: { type: string, description: string } };
+type Message = 
+  | { role: 'system' | 'user' | 'assistant'; content: string; }
+  | { role: 'assistant'; content: null; function_call: { name: string; arguments: string; }; }
+  | { role: 'function'; name: string; content: string; };
+
 
 let apiKey: string = '';
 let model: string = 'gpt-4';
-let temperature = 0.7;
+let temperature = 0.1;
 const url = 'https://api.openai.com/v1/chat/completions';
 
 //tags: init
@@ -49,10 +54,18 @@ export async function ask(question: string): Promise<string> {
   return result.message.content;
 }
 
-//input: string question
-//output: string answer
-export async function askFun(question: string): Promise<string> {
+async function executeFunction(functionName: string, parameters: any) {
+  const func = DG.Func.find({name: functionName})[0];
+  if (func) {
+    const result = await func.apply(parameters);
+    return result;
+  }
+  throw new Error(`Function ${functionName} not found`);
+}
 
+//input: string question
+//output: object result
+export async function askMultiStep(question: string) {
   function getType(type: string): string {
     switch (type) {
       case DG.TYPE.STRING: return 'string';
@@ -64,52 +77,82 @@ export async function askFun(question: string): Promise<string> {
   }
 
   function getProperties(f: DG.Func): ChatGptFuncParams {
-    let props: ChatGptFuncParams = {};
+    const props: ChatGptFuncParams = {};
     for (const p of f.inputs) {
       props[p.name] = {
         type: getType(p.propertyType),
         description: p.description
-      }
+      };
     }
-
     return props;
   }
 
-  const functions = DG.Func.find({package: 'Admetica'}).map((f) => {
-    return {
-      name: f.name,
-      description: f.description,
-      parameters: {
-        type: "object",
-        properties: getProperties(f)
+  const packages = ['Chem', 'Chembl'];
+
+  const functions = packages.flatMap((pkg) =>
+    DG.Func.find({ package: pkg })
+      .filter((f) => (pkg === 'Chembl' && f.name !== 'detectChemblId') || (pkg === 'Chem' && f.name === 'ChemistryGasteigerPartialCharges'))
+      .map((f) => ({
+        name: f.name,
+        description: f.description || '',
+        parameters: {
+          type: 'object',
+          properties: getProperties(f),
+        },
+      }))
+  );
+
+  const messages: Message[] = [
+    { role: 'system', content: 'You are a helpful assistant that can call JavaScript functions when needed to calculate results.' },
+    { role: 'user', content: question },
+  ];
+
+  let intermediateResult;
+  let isComplete = false;
+  let resultLog;
+
+  while (!isComplete) {
+    const result = await chatGpt({
+      model: 'gpt-4',
+      messages: messages,
+      functions: functions,
+      function_call: "auto",
+    });
+
+    if (result.message.function_call) {
+      const { name, arguments: args } = result.message.function_call;
+      const parameters = JSON.parse(args);
+
+      try {
+        const functionResult = await executeFunction(name, parameters);
+        intermediateResult = functionResult;
+        const isString = typeof functionResult === 'string';
+        const isHtml = functionResult instanceof HTMLElement;
+
+        messages.push(
+          { role: 'assistant', content: null, function_call: result.message.function_call },
+          { role: 'function', name: name, content: isString ? functionResult : isHtml ? 'HTML Object generated' : "Object generated" }
+        );
+
+      } catch (error: any) {
+        console.log(`Error executing function "${name}": ${error.message}`);
+        return `Error: ${error.message}`;
       }
+    } else {
+      isComplete = true;
+      if (result.message.content)
+        resultLog = result.message.content;
     }
-  });
-
-  const result = await chatGpt({
-    model: 'gpt-4', // Or whichever model you want to use
-    messages: [
-      { role: 'system', content: 'You are a helpful assistant that can call JavaScript functions when needed.' },
-      { role: 'user', content: question }
-    ],
-    functions: functions,
-    function_call: "auto"
-  });
-
-  if (result.message.function_call) {
-    const functionName = result.message.function_call.name;
-    const parameters = result.message.function_call.arguments;
-    const functionResult = await executeFunction(functionName, JSON.parse(parameters));
-    return functionResult;
   }
-  return JSON.stringify(result);
-}
 
-async function executeFunction(functionName: string, parameters: any) {
-  const func = DG.Func.find({name: functionName})[0];
-  if (func) {
-    const result = await func.apply(parameters);
-    return result;
+  if (intermediateResult instanceof HTMLElement && intermediateResult.style.backgroundImage) {
+    const backgroundImageUrl = intermediateResult.style.backgroundImage;
+    let base64Data = backgroundImageUrl.split('data:image/png;base64,')[1];
+    base64Data = base64Data.slice(0, -2);
+    return ui.image(`data:image/png;base64,${base64Data}`, 200, 300);
+  } else if (typeof intermediateResult === 'string') {
+    return ui.divText(resultLog);
   }
-  throw new Error(`Function ${functionName} not found`);
+
+  return resultLog;
 }
