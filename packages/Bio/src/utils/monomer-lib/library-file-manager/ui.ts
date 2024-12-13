@@ -24,8 +24,8 @@ export async function showManageLibrariesDialog(): Promise<void> {
   await DialogWrapper.showDialog();
 }
 
-export async function showManageLibrariesView() {
-  await LibManagerView.showView();
+export async function showManageLibrariesView(addView = true) {
+  return await LibManagerView.showView(addView);
 }
 
 export async function getMonomerLibraryManagerLink(): Promise<DG.Widget> {
@@ -68,8 +68,9 @@ class MonomerLibraryManagerWidget {
   private async createWidget() {
     const content = await this.getWidgetContent();
     const monomerLibHelper = await getMonomerLibHelper();
+    // eslint-disable-next-line rxjs/no-ignored-subscription
     monomerLibHelper.eventManager.addLibraryFileRequested$.subscribe(
-      async () => await this.promptToAddLibraryFiles()
+      () => this.promptToAddLibraryFiles()
     );
     return new DG.Widget(content);
   }
@@ -109,11 +110,13 @@ class LibraryControlsManager {
     private fileManager: IMonomerLibFileManager,
     private readonly userLibSettings: UserLibSettings,
   ) {
+    // eslint-disable-next-line rxjs/no-ignored-subscription
     this.fileManager.eventManager.updateUIControlsRequested$.subscribe(() => {
       this.updateControlsForm();
     });
-    this.fileManager.eventManager.librarySelectionRequested$.subscribe(async ([fileName, isSelected]) => {
-      await this.updateLibrarySelectionStatus(isSelected, fileName);
+    // eslint-disable-next-line rxjs/no-ignored-subscription
+    this.fileManager.eventManager.librarySelectionRequested$.subscribe(([fileName, isSelected]) => {
+      this.updateLibrarySelectionStatus(isSelected, fileName);
     });
   }
 
@@ -222,6 +225,7 @@ class DialogWrapper {
   static async showDialog(): Promise<void> {
     if (!DialogWrapper._instance) {
       DialogWrapper._instance = new DialogWrapper();
+      // eslint-disable-next-line rxjs/no-ignored-subscription
       DialogWrapper._instance.closeDialogSubject$.subscribe(
         () => { DialogWrapper._instance.dialog = undefined; }
       );
@@ -251,7 +255,10 @@ class DialogWrapper {
       'Upload new HELM monomer library'
     );
     dialog.add(widget);
-    dialog.onClose.subscribe(() => this.closeDialogSubject$.next());
+    const sub = dialog.onClose.subscribe(() => {
+      this.closeDialogSubject$.next();
+      sub.unsubscribe();
+    });
     return dialog;
   }
 }
@@ -259,10 +266,11 @@ class DialogWrapper {
 class LibManagerView {
   private constructor() {};
   private static _instance: LibManagerView;
+  static viewName = 'Manage Monomer Libraries';
   private _view: DG.View;
   private _duplicateManager: DuplicateMonomerManager;
   private libManager: MonomerLibManager;
-  private async getView() {
+  private async getView(addView = true) {
     const eventManager = MonomerLibFileEventManager.getInstance();
     const widget = (await MonomerLibraryManagerWidget.getInstance()).widget;
     const addButton = ui.bigButton('Add',
@@ -275,7 +283,10 @@ class LibManagerView {
         this._duplicateManager.root],
       {style: {width: '100%', height: '100%'}},
       true);
-    this._view = grok.shell.newView('Manage Monomer Libraries', [v]);
+    this._view = DG.View.fromRoot(v);
+    this._view.name = LibManagerView.viewName;
+    if (addView)
+      grok.shell.addView(this._view);
 
     ui.tools.waitForElementInDom(v).then(() => {
       setTimeout(() => {
@@ -300,24 +311,32 @@ class LibManagerView {
         }
       }));
     });
+    return this._view;
     //grok.shell.dockManager.dock(this._duplicateManager.root, DG.DOCK_TYPE.RIGHT, null, '', 0.4);
   }
 
-  static async showView() {
+  static async showView(addView = true) {
     if (!LibManagerView._instance)
       LibManagerView._instance = new LibManagerView();
     if (!LibManagerView._instance._duplicateManager)
       LibManagerView._instance._duplicateManager = await DuplicateMonomerManager.getInstance();
     if (!LibManagerView._instance.libManager)
       LibManagerView._instance.libManager = await MonomerLibManager.getInstance();
-    if (LibManagerView._instance._view &&
+    if (addView && LibManagerView._instance._view &&
         Array.from(grok.shell.views).find((v) => v.id && v.id === LibManagerView._instance._view.id)) {
       grok.shell.v = LibManagerView._instance._view;
       await LibManagerView._instance._duplicateManager.refresh();
-      return;
+      return LibManagerView._instance._view;
     }
-    LibManagerView._instance.getView();
+    // something can conflict with browse view, so need to make sure that we close all existing views
+    LibManagerView.closeExistingViews();
+    return LibManagerView._instance.getView(addView);
   }
+
+  private static closeExistingViews() {
+    Array.from(grok.shell.views).filter((v) => v.name === LibManagerView.viewName).forEach((v) => v.close());
+  }
+
   async mergeSelectedLibs() {
     const libraryExistsError = 'Library with this name already exists';
     const libManager = await MonomerLibManager.getInstance();

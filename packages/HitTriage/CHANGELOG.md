@@ -1,5 +1,9 @@
 # HitTriage changelog
 
+## 1.3.11 (2024-12-11)
+
+* Add loader to campaigns app view
+
 ## 1.3.10 (2024-12-04)
 
 * Bump dependencies versions

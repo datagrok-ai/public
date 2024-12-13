@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {MMP_NAMES, columnsDescriptions} from './mmp-constants';
 import {getRdKitService} from '../../../utils/chem-common-rdkit';
 import {MMPA} from '../mmp-analysis/mmpa';
+import {resizeGridColsSize} from '../../../utils/ui-utils';
 
 export async function getGenerations(mmpa: MMPA, allPairsGrid: DG.Grid):
   Promise<[DG.Grid, DG.Grid]> {
@@ -18,15 +19,19 @@ export async function getGenerations(mmpa: MMPA, allPairsGrid: DG.Grid):
 
   const generation = await (await getRdKitService()).mmpLinkFragments(genRes.cores, genRes.to);
   const cols = [];
-  cols.push(createColWithDescription('string', 'Structure', genRes.allStructures, DG.SEMTYPE.MOLECULE));
+  cols.push(createColWithDescription('string', MMP_NAMES.STRUCTURE, genRes.allStructures, DG.SEMTYPE.MOLECULE));
   cols.push(createColWithDescription('double', `Initial value`, Array.from(genRes.allInitActivities)));
   cols.push(createColWithDescription('string', `Activity`, genRes.activityName));
-  cols.push(createColWithDescription('string', `Core`, genRes.cores, DG.SEMTYPE.MOLECULE));
-  cols.push(createColWithDescription('string', `From`, genRes.from, DG.SEMTYPE.MOLECULE));
-  cols.push(createColWithDescription('string', `To`, genRes.to, DG.SEMTYPE.MOLECULE));
+  cols.push(createColWithDescription('string', MMP_NAMES.CORE, genRes.cores, DG.SEMTYPE.MOLECULE));
+  cols.push(createColWithDescription('string', MMP_NAMES.FROM, genRes.from, DG.SEMTYPE.MOLECULE));
+  cols.push(createColWithDescription('string', MMP_NAMES.TO, genRes.to, DG.SEMTYPE.MOLECULE));
   cols.push(createColWithDescription('double', `Prediction`, Array.from(genRes.prediction)));
   cols.push(createColWithDescription('string', `Generation`, generation, DG.SEMTYPE.MOLECULE));
   const grid = DG.DataFrame.fromColumns(cols).plot.grid();
+  const gridSub = grid.onAfterDrawContent.subscribe(() => {
+    resizeGridColsSize(grid, [MMP_NAMES.STRUCTURE, MMP_NAMES.CORE, MMP_NAMES.FROM, MMP_NAMES.TO], 150, 70);
+    gridSub.unsubscribe();
+  });
   createMolExistsCol(mmpa.frags.smiles, generation, grid);
 
   const gridCorr = getCorGrid(mmpa);

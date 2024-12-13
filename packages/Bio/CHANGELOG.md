@@ -1,5 +1,10 @@
 # Bio changelog
 
+## 2.17.6 (2024-12-11)
+
+* Add monomer manager app view with library dashboards
+* Improve detectors
+ 
 ## 2.17.5 (2024-12-09)
 
 Monomer manager: Correct loading.

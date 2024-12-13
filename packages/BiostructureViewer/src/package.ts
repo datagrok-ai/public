@@ -17,7 +17,7 @@ import {delay} from '@datagrok-libraries/utils/src/test';
 
 import {byData, byId, MolstarViewer} from './viewers/molstar-viewer';
 import {SaguaroViewer} from './viewers/saguaro-viewer';
-import {PdbGridCellRenderer, PdbGridCellRendererBack} from './utils/pdb-grid-cell-renderer';
+import {PdbGridCellRenderer, PdbGridCellRendererBack, PdbIdGridCellRenderer} from './utils/pdb-grid-cell-renderer';
 import {NglForGridTestApp} from './apps/ngl-for-grid-test-app';
 import {nglViewerGen as _nglViewerGen} from './utils/ngl-viewer-gen';
 import {NglViewer} from './viewers/ngl-viewer';
@@ -58,6 +58,15 @@ export async function init() {
 export function Molecule3dCellRenderer(): PdbGridCellRenderer {
   return new PdbGridCellRenderer();
 }
+
+//name: chemCellRenderer
+//tags: cellRenderer, cellRenderer-PDB_ID
+//meta.cellType: PDB_ID
+//output: grid_cell_renderer result
+export function pdbIdCellRenderer(): PdbIdGridCellRenderer {
+  return new PdbIdGridCellRenderer();
+}
+
 
 //name: viewPdbById
 //input: string pdbId

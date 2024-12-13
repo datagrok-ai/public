@@ -3,7 +3,7 @@ let rnd = (n) => Math.floor(n * Math.random());
 let rnd1 = (n) => Math.ceil(n * Math.random());
 let rndCat = (categories) => categories[rnd(categories.length)];
 const addCatColumn = (columnName, categories, tags) => {
-  let c = t.columns.addNewString(columnName).init((i) => rndCat(categories));
+  let c = t.col(columnName) ?? t.columns.addNewString(columnName).init((i) => rndCat(categories));
   if (tags != null) {
     for (let key of Object.getOwnPropertyNames(tags))
       c.tags[key] = tags[key];
@@ -48,7 +48,7 @@ for (let name of boolNames)
 
 
 const warnings = ['Mutagenicity', 'Tumorigenicity', 'Irritative effects', 'Reproductive effects'];
-const warningsCol = t.columns.addNewString('Toxicity').init((i) => warnings.filter((i, j) => rnd(3) === 1).join(','));
+const warningsCol = t.columns.getOrCreate('Toxicity', 'string').init((i) => warnings.filter((i, j) => rnd(3) === 1).join(','));
 warningsCol.setTag(DG.TAGS.CELL_RENDERER, 'Tags');
 
 t.columns.addNewString('Idea name').init((i) => 'GRK-' + rnd(10000));
@@ -67,7 +67,15 @@ ideaApproved.tags.format = 'yyyy/MM/dd';
 ideaSynthesized.tags.format = 'yyyy/MM/dd';
 
 
+addCatColumn('PDB_ID', ['2PRO', '3PIS', '1OVO', '4PRO', '3PRO', '1N6E', '3B4R', '7CR9', '1BOQ', '6IHG', '7YUT', '4NJV', '1GBA', '7FIZ']);
+if (!t.col('Affinity'))
+  t.columns.addNewFloat('Affinity').init((i) => Math.random() * -11.67 - 4.38);
+
+if (!t.col('JIRA'))
+  t.columns.addNewString('JIRA').init((i) => Math.random() > 0.3 ? '' : 'GROK-' + rnd1(15000));
+
 const groups = {
+  'Docking': { columns: ['PDB_ID', 'Pose', 'Affinity'] },
   'Absorption': { color: '#0b74e1', columns: ['Caco2', 'Lipophilicity', 'Solubility'] },
   'Distribution': { color: '#9d05c5', columns:  ['PPBR', 'VDss']},
   'Metabolism': { color: '#03a14f', columns: ['CYP1A2-Inhibitor', 'CYP2C19-Inhibitor', 'CYP2C9-Inhibitor', 'CYP2C9-Substrate', 'CYP2D6-Inhibitor', 'CYP2D6-Substrate']},

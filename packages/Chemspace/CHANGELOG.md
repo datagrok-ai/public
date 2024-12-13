@@ -1,5 +1,16 @@
 # Chemspace changelog
 
+## 1.1.4 (2024-11-18)
+
+### Features
+
+* Added function to add Chemspace ids via 'Add new column' dialog
+* Highligh chemspace_id semantic type
+
+### Bug Fixes
+
+* Improved errors reporting
+
 ## 1.1.3 (2024-11-18)
 
 ### Bug Fixes

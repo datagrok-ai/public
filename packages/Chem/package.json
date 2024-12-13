@@ -40,8 +40,8 @@
   "dependencies": {
     "datagrok-api": "^1.21.1",
     "@datagrok-libraries/chem-meta": "^1.2.7",
-    "@datagrok-libraries/ml": "^6.7.5",
-    "@datagrok-libraries/math": "^1.2.3",
+    "@datagrok-libraries/ml": "^6.7.6",
+    "@datagrok-libraries/math": "^1.2.4",
     "@datagrok-libraries/tutorials": "^1.4.2",
     "@datagrok-libraries/utils": "^4.3.6",
     "@types/pako": "^2.0.3",

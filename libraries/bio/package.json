@@ -13,7 +13,7 @@
   "dependencies": {
     "@datagrok-libraries/chem-meta": "^1.2.7",
     "@datagrok-libraries/gridext": "^1.3.73",
-    "@datagrok-libraries/ml": "^6.7.5",
+    "@datagrok-libraries/ml": "^6.7.6",
     "@datagrok-libraries/utils": "^4.3.7",
     "@deck.gl/core": "8.8.12",
     "cash-dom": "^8.1.5",
