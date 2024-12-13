@@ -4,8 +4,8 @@
     "version": "1.2.8",
     "description": "Exploratory Data Analysis Tools",
     "dependencies": {
-        "@datagrok-libraries/math": "^1.2.3",
-        "@datagrok-libraries/ml": "^6.7.5",
+        "@datagrok-libraries/math": "^1.2.4",
+        "@datagrok-libraries/ml": "^6.7.6",
         "@datagrok-libraries/tutorials": "^1.4.2",
         "@datagrok-libraries/utils": "../../libraries/utils",
         "@keckelt/tsne": "^1.0.2",
