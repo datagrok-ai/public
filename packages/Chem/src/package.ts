@@ -83,6 +83,8 @@ import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 import {CHEM_PROP_MAP} from './open-chem/ocl-service/calculations';
 import {getChemClasses} from './analysis/chem-classes';
 import {cutFragments} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-react-toolkit';
+import { config } from 'rxjs';
+import { ReinventBaseEditor } from './utils/chem-reinvent-dialog';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -1855,8 +1857,8 @@ export async function namesToSmiles(data: DG.DataFrame, names: DG.Column<string>
 }
 
 //name: canonicalize
-//input: string molecule { semType: Molecule }
-//output: string smiles { semType: Molecule }
+//input: string molecule { semType: molecule }
+//output: string smiles { semType: molecule }
 //meta.role: canonicalizer
 export function canonicalize(molecule: string): string {
   return convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles);
@@ -2057,4 +2059,125 @@ export async function deprotect(table: DG.DataFrame, molecules: DG.Column, fragm
   const col = DG.Column.fromStrings('deprotected', res);
   col.semType = DG.SEMTYPE.MOLECULE;
   table.columns.add(col);
+}
+export const TARGET_PATH = 'System:AppData/Chem/targets';
+
+//name: getConfigFiles
+//output: list<string> configFiles
+export async function getConfigFiles(): Promise<string[]> {
+  const targetsFiles: DG.FileInfo[] = await grok.dapi.files.list(TARGET_PATH, true);
+  const directoriesWithJson = await Promise.all(
+    targetsFiles.filter(file => file.isDirectory).map(async dir => {
+      const filesInDir = await grok.dapi.files.list(dir.fullPath, true);
+      return filesInDir.some(file => file.path.endsWith('.json')) ? dir.name : null;
+    })
+  );
+  return directoriesWithJson.filter((dir): dir is string => Boolean(dir));
+}
+
+//name: runReinvent
+//meta.cache: all
+//meta.cache.invalidateOn: 0 * * * *
+//input: string ligand {semType: Molecule} [Small molecules to dock]
+//input: string target {choices: Chem: getConfigFiles} [Folder with config and macromolecule]
+//input: list<string> models [ADME models names]
+//output: dataframe result
+export async function runReinvent(ligand: string, target: string, models: string[]): Promise<DG.DataFrame> {
+  const container = await grok.dapi.docker.dockerContainers.filter('reinvent').first();
+  const isConfigFile = (file: DG.FileInfo): boolean => file.extension === 'json';
+  const configFile = (await grok.dapi.files.list(`${TARGET_PATH}/${target}`, true)).find(isConfigFile)!;
+  const receptor = (await grok.dapi.files.list(`${TARGET_PATH}/${target}`)).find((file) => file.extension === 'pdbqt')!;
+
+  const body = {
+    smiles: [ligand],
+    config: await grok.dapi.files.readAsText(configFile.fullPath),
+    receptor: await grok.dapi.files.readAsText(receptor.fullPath),
+    admeModels: models,
+  };
+
+  const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/run_reinvent', {
+    method: 'POST',
+    body: JSON.stringify(body),
+    headers: {'Content-Type': 'application/json'},
+  });
+
+  const resultDf = DG.DataFrame.fromJson(await response.text());
+  return resultDf;
+}
+
+//name: ReinventEditor
+//tags: editor
+//input: funccall call
+export function reinventEditor(call: DG.FuncCall): void {
+  const funcEditor = new ReinventBaseEditor();
+  ui.dialog({title: 'Generate molecules...'})
+    .add(funcEditor.getEditor())
+    .onOK(async () => {
+      const params = funcEditor.getParams();
+      call.func.prepare({
+        ligand: params.ligand,
+        target: params.target,
+        models: params.models,
+      }).call(true);
+    }).show();
+}
+
+//top-menu: Chem | Generate molecules...
+//name: Reinvent
+//input: string ligand = "OC(CN1CCCC1)NC(CCC1)CC1Cl" {semType: Molecule; caption: Ligand seed} [Starting point for ligand generation]
+//input: string target {choices: Chem: getConfigFiles; caption: Dock into} [Folder with config files and macromolecule for docking]
+//input: string optimize {choices: ["OS-42 ADME", "LS-189 ADME"]; caption: Optimize} [Optimization criteria for ADME properties]
+export async function reinvent(ligand: string, target: string, optimize: string): Promise<void> {
+  (async () => {
+    const resultDfPromise = grok.functions.call('Chem:runReinvent', {
+      ligand: ligand,
+      target: target,
+      models: ['hERG']
+    });
+  
+    /** Lineage setup */
+    const schemas = await grok.dapi.stickyMeta.getSchemas();
+    const lineageSchema = schemas.find((s) => s.name === 'Chem-Reinvent-8o7bc')!;
+    const molCol = DG.Column.fromStrings('canonical_smiles', [ligand]);
+    molCol.semType = DG.SEMTYPE.MOLECULE;
+  
+    const seedDf = generateStickyDf('seed ligand');
+    const generatedDf = generateStickyDf('generated');
+  
+    const lineagePromise = grok.dapi.stickyMeta.setAllValues(lineageSchema, molCol, seedDf);
+    const resultDf: DG.DataFrame = await resultDfPromise;
+  
+    const resultMolCol = resultDf.columns.byName('SMILES');
+    const lineagePromises = resultMolCol.toList().map((smiles: string) => {
+      const col = DG.Column.fromStrings('smiles', [smiles]);
+      col.semType = DG.SEMTYPE.MOLECULE;
+      return grok.dapi.stickyMeta.setAllValues(lineageSchema, col, generatedDf);
+    });
+  
+    grok.shell.addTableView(resultDf);
+    const tableView = grok.shell.getTableView(resultDf.name);
+    const grid = tableView.grid;
+  
+    const gridCol = grid.columns.byName('Score');
+    if (gridCol) {
+      gridCol.isTextColorCoded = true;
+      gridCol.column?.meta.colors.setLinear([DG.Color.red, DG.Color.green]);
+    }
+  
+    grid.sort(['Score'], [false]);
+    await Promise.all([lineagePromise, ...lineagePromises]);
+  })();  
+}
+
+function generateStickyDf(role: string): DG.DataFrame {
+  const lineageDf = DG.DataFrame.create(1);
+  const roleCol = lineageDf.columns.addNewString('Role');
+  roleCol.set(0, role);
+  const optimizedCol = lineageDf.columns.addNewString('Optimized parameters');
+  optimizedCol.set(0, 'Binding affinity, hERG, BBB, CYP Inhibitors');
+  const authorCol = lineageDf.columns.addNewString('User');
+  authorCol.set(0, grok.shell.user.friendlyName);
+  const dateCol = lineageDf.columns.addNewString('Date');
+  dateCol.set(0, new Date().toLocaleString());
+  return lineageDf;
 }
