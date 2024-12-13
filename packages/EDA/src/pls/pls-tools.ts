@@ -171,7 +171,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   console.log(input.names?.name);
 
   if ((input.names !== undefined) && (input.names !== null))
-    predictVsReferScatter.setOptions({labelFormColumnNames: [input.names?.name]});
+    predictVsReferScatter.setOptions({labelColumnNames: [input.names?.name]});
 
   // 2. Regression Coefficients Bar Chart
   result.regressionCoefficients.name = TITLE.REGR_COEFS;
@@ -194,7 +194,8 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     xColumnName: `${TITLE.XLOADING}1`,
     yColumnName: `${TITLE.XLOADING}${result.xLoadings.length > 1 ? '2' : '1'}`,
     markerType: DG.MARKER_TYPE.CIRCLE,
-    labelFormColumnNames: [TITLE.FEATURE],
+    // @ts-ignore
+    labelColumnNames: [TITLE.FEATURE],
     help: LINK.LOADINGS,
   }));
 
@@ -219,7 +220,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   });
 
   if ((input.names !== undefined) && (input.names !== null))
-    scoresScatter.setOptions({labelFormColumnNames: [input.names?.name]});
+    scoresScatter.setOptions({labelColumnNames: [input.names?.name]});
 
   // 4.3) create lines & circles
   scoresScatter.meta.formulaLines.addAll(getLines(scoreNames));
