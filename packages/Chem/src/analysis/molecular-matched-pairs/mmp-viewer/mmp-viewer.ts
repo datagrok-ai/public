@@ -260,23 +260,25 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     const mmPairsRoot3 = this.createGridDiv(MMP_NAMES.PAIRS_GRID, this.pairedGrids!.pairsGridCliffsTab,
       MATHED_MOLECULAR_PAIRS_TOOLTIP_CLIFFS, this.pairedGrids!.pairsGridCliffsTabMessage);
-    mmPairsRoot3.classList.add('mmp-pairs-grid-cliffs-tab', 'cliffs-closed');
+    mmPairsRoot3.classList.add('mmp-pairs-grid-cliffs-tab', 'cliffs-opened');
 
     const showFragsChoice = ui.input.choice('', {items: [SHOW_FRAGS_MODE.All, SHOW_FRAGS_MODE.Current],
       nullable: false, value: SHOW_FRAGS_MODE.All,
       onValueChanged: (value) => {
         this.pairedGrids!.fragsShowAllMode = value === SHOW_FRAGS_MODE.All;
-        if (value === SHOW_FRAGS_MODE.All)
+        if (value === SHOW_FRAGS_MODE.All) {
+          this.pairedGrids!.fpMaskByMolecule.setAll(true);
           this.pairedGrids!.fpGrid.dataFrame.filter.setAll(true);
-        else
+        } else
           this.pairedGrids!.refilterFragmentPairsByMolecule(true);
       }});
     showFragsChoice.root.classList.add('chem-mmp-fragments-grid-mode-choice');
 
     const fpGrid = this.createGridDiv(MMP_NAMES.FRAGMENTS_GRID,
       this.pairedGrids!.fpGrid, FRAGMENTS_GRID_TOOLTIP, this.pairedGrids!.fpGridMessage, showFragsChoice.root);
-    fpGrid.prepend(ui.divText('No substitutions found for current molecule. Please select another molecule.',
-      'chem-mmpa-no-fragments-error'));
+    fpGrid.prepend(
+      ui.divText('No substitutions found for current molecule. Select another molecule or switch to \'All\' mode.',
+        'chem-mmpa-no-fragments-error'));
     this.subs.push(this.pairedGrids!.showErrorEvent.subscribe((showError: boolean) => {
       showError ? fpGrid.classList.add('chem-mmp-no-fragments') : fpGrid.classList.remove('chem-mmp-no-fragments');
     }));
@@ -355,9 +357,9 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       mmPairsRoot2,
     ], {}, true);
 
-    let cliffsOpened = false;
+    let cliffsOpened = true;
     const cliffsHeader = ui.h1('2D Molecules Map', 'chem-mmpa-transformation-tab-header'); ;
-    const cliffsNumButton = ui.button(`Open pairs`, () => {
+    const cliffsNumButton = ui.button(`Close pairs`, () => {
       cliffsOpened = !cliffsOpened;
       if (cliffsOpened) {
         cliffsNumButton.innerText = 'Close pairs';

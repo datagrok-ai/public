@@ -72,11 +72,7 @@ export class MmpPairedGrids {
 
     const trellisTv = DG.TableView.create(this.fpGrid.dataFrame, false);
     this.filters = trellisTv.getFiltersGroup();
-    this.fpMaskFragmentsTab = DG.BitSet.create(this.fpGrid.dataFrame.rowCount);
-    const avgPairs = this.fpGrid.dataFrame.col(MMP_NAMES.PAIRS_COUNT)?.stats.avg;
-    if (avgPairs)
-      this.fpGrid.dataFrame.rows.filter((row) => row[MMP_NAMES.PAIRS_COUNT] >= Math.ceil(avgPairs));
-    this.fpMaskFragmentsTab.copyFrom(this.fpGrid.dataFrame.filter);
+    this.fpMaskFragmentsTab = DG.BitSet.create(this.fpGrid.dataFrame.rowCount).setAll(true);
 
     this.rdkit = getRdKitModule();
 
@@ -230,7 +226,7 @@ export class MmpPairedGrids {
     const diffFrom = this.mmpGridTrans.dataFrame.getCol(MMP_NAMES.FROM);
     const diffTo = this.mmpGridTrans.dataFrame.getCol(MMP_NAMES.TO);
 
-    const [idxPairs, cases] = this.findSpecificRule(diffFromSubstrCol);
+    const [idxPairs, cases] = this.findSpecificRule(diffFromSubstrCol, this.fragsShowAllMode);
     this.recoverHighlights(cases, diffFrom, diffTo, diffFromSubstrCol, diffToSubstrCol, rdkitModule);
 
     if (idxPairs >= 0) {
@@ -270,7 +266,7 @@ export class MmpPairedGrids {
       //path from selections in fpGrid to selected rows in mmpGridTrans
       const diffFromSubstrCol = this.mmpGridTrans.dataFrame.getCol(MMP_NAMES.STRUCT_DIFF_FROM_NAME);
       const selectedRows = this.fpGrid.table.selection.getSelectedIndexes();
-      this.findSpecificRule(diffFromSubstrCol, selectedRows);
+      this.findSpecificRule(diffFromSubstrCol, this.fragsShowAllMode, selectedRows);
     }
     const mask = pairsGrid ? this.parentTableTransSelection : this.parentTableFragSelection;
 
@@ -301,13 +297,14 @@ export class MmpPairedGrids {
     }
   }
 
-  findSpecificRule(diffFromSubstrCol: DG.Column, selectionIdxs?: Int32Array): [idxPairs: number, cases: number[]] {
+  findSpecificRule(diffFromSubstrCol: DG.Column, showAllFragsMode: boolean,
+    selectionIdxs?: Int32Array): [idxPairs: number, cases: number[]] {
     const idxParent = this.parentTable!.currentRowIdx;
     let idxPairs = -1;
     const cases: number[] = [];
     const idxs = selectionIdxs ?? [this.fpGrid!.table.currentRowIdx];
     const maskToModify = selectionIdxs ? this.mmpMaskTransSelection : this.mmpMaskTrans;
-    if (idxParent !== -1) {
+    if (idxParent !== -1 || showAllFragsMode) {
       for (const idx of idxs) {
         if (idx !== -1) {
           const ruleSmi1 = this.fpGrid.table.getCol(MMP_NAMES.FROM).get(idx);
@@ -326,7 +323,7 @@ export class MmpPairedGrids {
                 if (!selectionIdxs) {
                   if (diffFromSubstrCol.get(counter) === null)
                     cases.push(counter); //cases are used for further highlight
-                  if (this.mmpa.rules.rules[i].pairs[j].firstStructure == idxParent)
+                  if (!showAllFragsMode && this.mmpa.rules.rules[i].pairs[j].firstStructure == idxParent)
                     idxPairs = counter;
                 }
               }
