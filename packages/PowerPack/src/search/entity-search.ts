@@ -54,6 +54,53 @@ export async function pdbSearch(s: string): Promise<DG.Widget | null> {
   return null;
 }
 
+export async function gptSearch(s: string): Promise<DG.Widget> {
+  const message = ui.divText("The model is generating a response, please wait...");
+  message.style.textAlign = 'center';
+  message.style.marginBottom = '10px';
+
+  const loader = ui.loader();
+  loader.style.display = 'block';
+  loader.style.margin = '0 auto';
+
+  const container = ui.divV([message, loader], {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: '100%',
+      textAlign: 'center',
+      padding: '20px'
+    }
+  });
+
+  const widget = DG.Widget.fromRoot(container);
+
+  grok.functions.call('ChatGPT: askMultiStep', { question: s })
+    .then((result: HTMLDivElement) => {
+      if (result) {
+        container.replaceChildren(
+          ui.divText(`Request: ${s}`, { style: { fontWeight: 'bold', marginBottom: '10px' } }),
+          result
+        );
+        result.style.margin = '0 auto';
+      } else {
+        container.replaceChildren(
+          ui.divText('No answer received.', { style: { color: 'gray' } })
+        );
+      }
+    })
+    .catch((error) => {
+      console.error("Error during GPT search:", error);
+      container.replaceChildren(
+        ui.divText('An error occurred while fetching the response.', { style: { color: 'red' } })
+      );
+    });
+
+  return widget;
+}
+
 export async function wikiSearch(s: string): Promise<DG.Widget | null> {
   return (s.toLowerCase().startsWith('wiki:'))
     ? iframe(`https://en.m.wikipedia.org/wiki/${s.substring(5).trim()}`)

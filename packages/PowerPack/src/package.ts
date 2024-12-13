@@ -10,7 +10,7 @@ import {RecentProjectsWidget} from './widgets/recent-projects-widget';
 import {CommunityWidget} from './widgets/community-widget';
 import {WebWidget} from './widgets/web-widget';
 import {LearningWidget} from './widgets/learning-widget';
-import {functionSearch, pdbSearch, pubChemSearch, scriptsSearch, usersSearch, wikiSearch} from './search/entity-search';
+import {functionSearch, gptSearch, pdbSearch, pubChemSearch, scriptsSearch, usersSearch, wikiSearch} from './search/entity-search';
 import {KpiWidget} from './widgets/kpi-widget';
 import {HtmlWidget} from './widgets/html-widget';
 import {viewersDialog} from './viewers-gallery';
@@ -110,6 +110,14 @@ export function _usersSearch(s: string): Promise<any[]> {
 //output: widget w
 export function _pdbSearch(s: string): Promise<any> {
   return pdbSearch(s);
+}
+
+//description: ChatGpt
+//tags: search
+//input: string s
+//output: widget w
+export function _gptSearch(s: string): Promise<any> {
+  return gptSearch(s);
 }
 
 //description: PubChem
