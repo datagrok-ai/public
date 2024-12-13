@@ -8,11 +8,13 @@ import '@datagrok-libraries/bio/src/types/ngl'; // To enable import from the NGL
 import {GridSize, IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
 import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
 import {DockingRole, DockingTags} from '@datagrok-libraries/bio/src/viewers/molecule3d';
+import {IPdbHelper, getPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 
 import {AutoDockApp, AutoDockDataType} from './apps/auto-dock-app';
 import {_runAutodock, AutoDockService, _runAutodock2} from './utils/auto-dock-service';
 import {_package, TARGET_PATH, CACHED_DOCKING, BINDING_ENERGY_COL, POSE_COL, 
-  PROPERTY_DESCRIPTIONS, BINDING_ENERGY_COL_UNUSED, POSE_COL_UNUSED, setPose, setAffinity, ERROR_COL_NAME, ERROR_MESSAGE} from './utils/constants';
+  PROPERTY_DESCRIPTIONS, BINDING_ENERGY_COL_UNUSED, POSE_COL_UNUSED, setPose, setAffinity, ERROR_COL_NAME, ERROR_MESSAGE,
+  CACHED_RESULTS} from './utils/constants';
 import { _demoDocking } from './demo/demo-docking';
 import { DockingViewApp } from './demo/docking-app';
 
@@ -291,17 +293,21 @@ export async function getAutodockSingle(
   const key = CACHED_DOCKING.K[index];
   //@ts-ignore
   const matchingValue = CACHED_DOCKING.V[index];
-  if (!matchingValue)
+
+  //check if REMARK is added
+  const addedToPdb = value.includes(BINDING_ENERGY_COL);
+  if (!matchingValue && !addedToPdb)
     return new DG.Widget(ui.divText('Docking has not been run'));
 
-  const autodockResults: DG.DataFrame = matchingValue.clone();
+  const autodockResults: DG.DataFrame = matchingValue ? matchingValue.clone() : getFromPdbs(molecule);
   const widget = new DG.Widget(ui.div([]));
 
   if (table)
     currentTable.currentRowIdx = 0;
 
+  const receptorData = matchingValue ? key.receptor : await getReceptorData(value);
   const targetViewer = await currentTable.plot.fromType('Biostructure', {
-    dataJson: BiostructureDataJson.fromData(key.receptor),
+    dataJson: BiostructureDataJson.fromData(receptorData),
     ligandColumnName: molecule.cell.column.name,
     zoom: true,
   });
@@ -320,6 +326,47 @@ export async function getAutodockSingle(
   widget.root.append(result);
 
   return widget;
+}
+
+function getFromPdbs(pdb: DG.SemanticValue): DG.DataFrame {
+  const col = pdb.cell.column;
+  if (CACHED_RESULTS.has(col.toString()))
+    return CACHED_RESULTS.get(col.toString())!;
+  
+  const resultDf = DG.DataFrame.create(col.length);
+
+  for (let idx = 0; idx < col.length; idx++) {
+    const pdbValue = col.get(idx);
+    const remarkRegex = /REMARK\s+\d+\s+([\w\s\(\)-]+)\.\s+([-\d.]+)/g;
+    let match;
+
+    while ((match = remarkRegex.exec(pdbValue)) !== null) {
+      const colName = match[1].trim();
+      const value = parseFloat(match[2].trim());
+      
+      let resultCol = resultDf.columns.byName(colName);
+      if (!resultCol) resultCol = resultDf.columns.addNewFloat(colName);
+      
+      resultDf.set(colName, idx, value);
+    }
+  }
+
+  CACHED_RESULTS.set(col.toString(), resultDf);
+
+  return resultDf;
+}
+
+async function getReceptorData(pdb: string): Promise<BiostructureData> {
+  const match = pdb.match(/REMARK\s+1\s+receptor\.\s+(.*?)\.\n/);
+  const receptorName = 'BACE1';
+  const receptor = (await grok.dapi.files.list(`${TARGET_PATH}/${receptorName}`)).find((file) => file.extension === 'pdbqt')!;
+  const receptorData: BiostructureData = {
+    binary: false,
+    data: (await grok.dapi.files.readAsText(receptor)),
+    ext: receptor.extension,
+    options: {name: receptorName,},
+  };
+  return receptorData;
 }
 
 function prop(molecule: DG.SemanticValue, propertyCol: DG.Column, host: HTMLElement) : HTMLElement {
@@ -397,15 +444,8 @@ export async function runDocking(
   const autodockResults = await app.init(data);
 
   if (autodockResults) {
-    formatColumns(autodockResults);
-    const processedResults = processAutodockResults(autodockResults, table);
-
-    for (let col of processedResults.columns) {
-      table.columns.add(col);
-    }
-
-    const pose = table.cell(0, POSE_COL);
-    return await getAutodockSingle(DG.SemanticValue.fromTableCell(pose!), false, table);
+    const pose = autodockResults.cell(0, POSE_COL);
+    return await getAutodockSingle(DG.SemanticValue.fromTableCell(pose!), false, autodockResults);
   }
 
   return null;

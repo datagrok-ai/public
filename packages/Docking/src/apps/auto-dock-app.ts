@@ -107,19 +107,22 @@ export class AutoDockApp {
     try {
       const ligandCol = this.data.ligandDf.getCol(this.data.ligandMolColName);
       const result = await runAutoDock(this.data.receptor, ligandCol, this.data.gpfFile!, this.data.posesNum!, this.poseColName, pi);
-      const posesAllDf = result?.posesAllDf;
+      let posesAllDf = result?.posesAllDf;
       const errorValues = result?.errorValues;
-      if (posesAllDf !== undefined) {
-        errorValues?.forEach(({index, value}) => {
-          posesAllDf.rows.insertAt(index, 1);
-          posesAllDf.set(POSE_COL, index, value);
-        });
-        //@ts-ignore
-        CACHED_DOCKING.K.push(this.data);
-        //@ts-ignore
-        CACHED_DOCKING.V.push(posesAllDf);
-        return posesAllDf;
+      if (!posesAllDf) {
+        posesAllDf = DG.DataFrame.create();
+        posesAllDf.columns.addNewString(POSE_COL);
       }
+
+      errorValues?.forEach(({index, value}) => {
+        posesAllDf.rows.insertAt(index, 1);
+        posesAllDf.set(POSE_COL, index, value);
+      });
+      //@ts-ignore
+      CACHED_DOCKING.K.push(this.data);
+      //@ts-ignore
+      CACHED_DOCKING.V.push(posesAllDf);
+      return posesAllDf;
     } catch (err: any) {
       const [errMsg, errStack] = errInfo(err);
       grok.shell.error(errMsg);
@@ -179,6 +182,24 @@ async function runAutoDock(
       posesDf!.rows.removeAt(1, posesDf!.rowCount - 1);
     }
     // region: add extra columns to AutoDock output
+
+    const colNames = posesDf.columns.names();
+    const nameWithExtension = receptorData.options?.name;
+    const nameWithoutExtension = nameWithExtension?.replace(/\.[^/.]+$/, '');
+    let remarkString = `REMARK   1 receptor.    ${nameWithoutExtension} J.\n`;
+    for (let i = 1; i < colNames.length; ++i) {
+      if (colNames[i] === poseColName) continue;
+      const rowValue = posesDf.get(colNames[i], 0);
+      remarkString += `REMARK   ${i + 1} ${colNames[i]}.    ${rowValue} J.`;
+      if (i !== colNames.length - 1) remarkString += '\n';
+    }
+
+    const currentPosesValue = posesDf.get(poseColName, 0);
+    const newPosesValue = currentPosesValue.replace(
+      /^COMPND.*\n/,
+      (match: string) => match + `${remarkString}\n`
+    );
+    posesDf.set(poseColName, 0, newPosesValue);
 
     const pdbqtCol = posesDf.getCol(poseColName);
     pdbqtCol.name = poseColName;

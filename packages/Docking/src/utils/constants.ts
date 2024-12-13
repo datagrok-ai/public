@@ -5,6 +5,7 @@ import { AutoDockDataType } from '../apps/auto-dock-app';
 export const _package = new DockingPackage();
 export const TARGET_PATH = 'System:AppData/Docking/targets';
 export const CACHED_DOCKING: DG.LruCache<AutoDockDataType, DG.DataFrame> = new DG.LruCache<AutoDockDataType, DG.DataFrame>();
+export const CACHED_RESULTS: DG.LruCache<string, DG.DataFrame> = new DG.LruCache<string, DG.DataFrame>();
 export let BINDING_ENERGY_COL = 'binding energy';
 export let BINDING_ENERGY_COL_UNUSED = '';
 export let POSE_COL = 'pose';
