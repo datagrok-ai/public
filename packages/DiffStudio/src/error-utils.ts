@@ -67,7 +67,7 @@ export function getIsNotDefined(msg: string): ModelError {
 
   return new ModelError(
     `Error in formulas: **${toHighlight}** ${msg.slice(idx)}. Correct the model.`,
-    LINK.BASIC_MODEL,
+    LINK.MODEL_COMPONENTS,
     toHighlight,
   );
 }
@@ -79,7 +79,7 @@ export function getUnexpected(msg: string): ModelError {
 
   return new ModelError(
     `Error in formulas: undefined identifier **${toHighlight}**. Correct the model.`,
-    LINK.BASIC_MODEL,
+    LINK.MODEL_COMPONENTS,
     toHighlight,
   );
 }
@@ -87,7 +87,7 @@ export function getUnexpected(msg: string): ModelError {
 export function getNullOutput(): ModelError {
   return new ModelError(
     `Non-existent item in the **#output** block. Use entities specified in **#equations** or **#expressions**.`,
-    LINK.ADV_MODEL,
+    LINK.INTERFACE,
     '#output',
   );
 }

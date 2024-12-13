@@ -149,6 +149,9 @@ function getLink(state: EDITOR_STATE): string {
   case EDITOR_STATE.POLLUTION:
     return LINK.POLLUTION;
 
+  case EDITOR_STATE.EXTENDED_TEMPLATE:
+    return LINK.INTERFACE;
+
   default:
     return LINK.DIF_STUDIO_REL;
   }
@@ -1103,7 +1106,7 @@ export class DiffStudio {
           if (posClose === -1) {
             throw new ModelError(
               `${ERROR_MSG.MISSING_CLOSING_BRACKET}. Correct annotation in the **${modelBlock}** block.`,
-              LINK.BASIC_MODEL,
+              LINK.MODEL_COMPONENTS,
               annot,
             );
           }
@@ -1119,7 +1122,7 @@ export class DiffStudio {
         if (posOpen >= posClose) {
           throw new ModelError(
             `${ERROR_MSG.INCORRECT_BRACES_USE}. Correct annotation in the ***${modelBlock}** block.`,
-            LINK.BASIC_MODEL,
+            LINK.MODEL_COMPONENTS,
             annot,
           );
         }
@@ -1134,7 +1137,7 @@ export class DiffStudio {
           if (pos === -1) {
             throw new ModelError(
               `${ERROR_MSG.MISSING_COLON}. Correct annotation in the **${modelBlock}** block.`,
-              LINK.BASIC_MODEL,
+              LINK.MODEL_COMPONENTS,
               annot,
             );
           }
