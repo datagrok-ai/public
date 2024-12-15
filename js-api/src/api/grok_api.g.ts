@@ -810,6 +810,7 @@ export interface IDartApi {
   grok_Grid_AutoSize(grid: any, maxWidth: Num, maxHeight: Num, minWidth: Num, minHeight: Num, autoSizeOnDataChange: Bool): any;
   grok_Grid_TableRowToGrid(grid: any, tableRow: Num): any;
   grok_Grid_GridRowToTable(grid: any, gridRow: Num): any;
+  grok_Grid_Render(grid: any, g: any, bounds: any): any;
   grok_User(): any;
   grok_User_From_Id(id: String): any;
   grok_User_Get_FirstName(u: any): any;
