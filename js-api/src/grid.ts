@@ -1157,11 +1157,11 @@ export class GridCellRenderer extends CanvasRenderer {
   clip: boolean = true;
 
   get name(): string {
-    throw 'Not implemented';
+    throw '"name" property not implemented';
   }
 
   get cellType(): string {
-    throw 'Not implemented';
+    throw '"cellType" property not implemented';
   }
 
   renderSettings(gridColumn: GridColumn): Element | null { return null; }

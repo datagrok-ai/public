@@ -11,6 +11,12 @@ import { getJiraCreds } from './app/credentials';
 import { addJIRADetector } from './detectors';
 import { JiraGridCellHandler } from './jira-grid-cell-handler';
 import '../css/jira_connect.css';
+import {LruCache} from "datagrok-api/dg";
+
+
+export const cache = new LruCache<string, JiraIssue>(100);
+export const queried = new Set<string>();
+
 
 //name: info
 export function info() {
@@ -48,8 +54,15 @@ export async function projectData(projectKey: string): Promise<Project | null> {
 //input: string issueKey
 //output: object issue
 export async function issueData(issueKey: string): Promise<JiraIssue | null> {
+  if (cache.has(issueKey))
+    return cache.get(issueKey)!;
+
+  queried.add(issueKey);
   const jiraCreds = await getJiraCreds();
   const issue = await loadIssueData(jiraCreds.host, new AuthCreds(jiraCreds.userName, jiraCreds.authKey), issueKey)
+  queried.delete(issueKey);
+  cache.set(issueKey, issue);
+
   return issue;
 }
 
