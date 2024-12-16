@@ -10,10 +10,10 @@
       {
         "containerType": "panel",
         "state": {
-          "width": 488,
+          "width": 375,
           "height": 927,
           "element": {
-            "id": "2a88ef30-9b00-11ef-cb5b-2b4122975f00",
+            "id": "d0833640-9b00-11ef-e024-478773864e93",
             "type": "Filters",
             "look": {
               "#type": "FiltersLook",
@@ -31,6 +31,8 @@
                     "~test_5"
                   ],
                   "allEnabled": true,
+                  "splittingSeparator": ":",
+                  "splitColumnName": "test",
                   "columnless-filter-identifier": "~test_0,~test_1,~test_2,~test_3,~test_4,~test_5",
                   "boolInput": null
                 },
@@ -68,14 +70,14 @@
       {
         "containerType": "vertical",
         "state": {
-          "width": 1206,
+          "width": 1319,
           "height": 927
         },
         "children": [
           {
             "containerType": "fill",
             "state": {
-              "width": 1206,
+              "width": 1319,
               "height": 463,
               "documentManager": true
             },
@@ -83,10 +85,10 @@
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 1206,
+                  "width": 1319,
                   "height": 463,
                   "element": {
-                    "id": "2a898b70-9b00-11ef-fe49-5d0e0f191b6d",
+                    "id": "d083f990-9b00-11ef-d35a-b1ef06b16fb7",
                     "type": "Grid",
                     "look": {
                       "#type": "GridLook",
@@ -152,6 +154,10 @@
                           "width": 62,
                           "columnName": "failing",
                           "cellType": "bool",
+                          "colorCodingCategorical": {
+                            "false": "#2ca02c",
+                            "true": "#d62728"
+                          },
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"
@@ -184,6 +190,7 @@
                           }
                         },
                         {
+                          "visible": false,
                           "width": 171,
                           "columnName": "1 avg(build_date)",
                           "customFormat": "M/d/yyyy HH:mm:ss.fff",
@@ -195,8 +202,15 @@
                           }
                         },
                         {
+                          "isColorCoded": true,
                           "width": 164,
                           "columnName": "1 concat unique(status)",
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {
+                            "failed": 4292224808,
+                            "passed": 4281114668,
+                            "skipped": 4292467161
+                          },
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"
@@ -220,6 +234,7 @@
                           }
                         },
                         {
+                          "visible": false,
                           "width": 171,
                           "columnName": "2 avg(build_date)",
                           "customFormat": "M/d/yyyy HH:mm:ss.fff",
@@ -231,8 +246,15 @@
                           }
                         },
                         {
+                          "isColorCoded": true,
                           "width": 164,
                           "columnName": "2 concat unique(status)",
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {
+                            "failed": 4292224808,
+                            "passed": 4281114668,
+                            "skipped": 4292467161
+                          },
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"
@@ -256,6 +278,7 @@
                           }
                         },
                         {
+                          "visible": false,
                           "width": 171,
                           "columnName": "3 avg(build_date)",
                           "customFormat": "M/d/yyyy HH:mm:ss.fff",
@@ -267,8 +290,15 @@
                           }
                         },
                         {
+                          "isColorCoded": true,
                           "width": 164,
                           "columnName": "3 concat unique(status)",
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {
+                            "failed": 4292224808,
+                            "passed": 4281114668,
+                            "skipped": 4292467161
+                          },
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"
@@ -292,6 +322,7 @@
                           }
                         },
                         {
+                          "visible": false,
                           "width": 171,
                           "columnName": "4 avg(build_date)",
                           "customFormat": "M/d/yyyy HH:mm:ss.fff",
@@ -303,8 +334,15 @@
                           }
                         },
                         {
+                          "isColorCoded": true,
                           "width": 164,
                           "columnName": "4 concat unique(status)",
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {
+                            "failed": 4292224808,
+                            "passed": 4281114668,
+                            "skipped": 4292467161
+                          },
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"
@@ -328,6 +366,7 @@
                           }
                         },
                         {
+                          "visible": false,
                           "width": 171,
                           "columnName": "5 avg(build_date)",
                           "customFormat": "M/d/yyyy HH:mm:ss.fff",
@@ -339,8 +378,15 @@
                           }
                         },
                         {
+                          "isColorCoded": true,
                           "width": 164,
                           "columnName": "5 concat unique(status)",
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {
+                            "failed": 4292224808,
+                            "passed": 4281114668,
+                            "skipped": 4292467161
+                          },
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"
@@ -349,54 +395,6 @@
                         {
                           "width": 400,
                           "columnName": "5 concat unique(result)",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "columnName": "~test_0",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "columnName": "~test_1",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "columnName": "~test_2",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "columnName": "~test_3",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "columnName": "~test_4",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "columnName": "~test_5",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"
@@ -413,148 +411,487 @@
             ]
           },
           {
-            "containerType": "panel",
+            "containerType": "horizontal",
             "state": {
-              "width": 1206,
-              "height": 463,
-              "element": {
-                "id": "2a89d990-9b00-11ef-ae7f-99c99665e0c0",
-                "type": "Bar chart",
-                "look": {
-                  "#type": "BarChartLook",
-                  "rowSource": "All",
-                  "onClick": "Filter",
-                  "valueColumnName": "1 avg(duration)",
-                  "valueAggrType": "count",
-                  "barSortType": "by value",
-                  "barSortOrder": "desc",
-                  "splitColumnName": "~test_0",
-                  "stackColumnName": "failing",
-                  "colorColumnName": ""
-                },
-                "title": "Bar chart"
-              }
+              "width": 1319,
+              "height": 463
             },
-            "children": []
+            "children": [
+              {
+                "containerType": "panel",
+                "state": {
+                  "width": 573,
+                  "height": 463,
+                  "element": {
+                    "id": "d08447b0-9b00-11ef-f8cd-bf75ff472608",
+                    "type": "Bar chart",
+                    "look": {
+                      "#type": "BarChartLook",
+                      "rowSource": "All",
+                      "onClick": "Filter",
+                      "valueColumnName": "1 avg(duration)",
+                      "valueAggrType": "count",
+                      "barSortType": "by value",
+                      "barSortOrder": "desc",
+                      "splitColumnName": "~test_0",
+                      "stackColumnName": "failing",
+                      "colorColumnName": "",
+                      "maxCategoryWidth": 100,
+                      "minTextHeight": 14
+                    },
+                    "title": "Bar chart"
+                  }
+                },
+                "children": []
+              },
+              {
+                "containerType": "panel",
+                "state": {
+                  "width": 745,
+                  "height": 463,
+                  "element": {
+                    "id": "d084bce0-9b00-11ef-841a-b5d0b3dcc680",
+                    "type": "Heat map",
+                    "look": {
+                      "#type": "GridLook",
+                      "topLevelDefaultMenu": true,
+                      "allowColumnMenu": true,
+                      "colorCoding": "None",
+                      "heatmapHorzScroll": [
+                        150,
+                        0,
+                        150
+                      ],
+                      "heatmapVertScroll": [
+                        4109,
+                        0,
+                        4109
+                      ],
+                      "colorScheme": [
+                        4292072403,
+                        4294901760
+                      ],
+                      "columns": [
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "backgroundColor": 4294440951,
+                          "customName": "",
+                          "cellType": "row header",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "test",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "owner",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "1 avg(duration)",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "1 avg(build_date)",
+                          "customFormat": "M/d/yyyy HH:mm:ss.fff",
+                          "cellType": "number",
+                          "format": "M/d/yyyy HH:mm:ss.fff",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "isColorCoded": true,
+                          "width": 30,
+                          "columnName": "1 concat unique(status)",
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {
+                            "failed": 4292224808,
+                            "passed": 4281114668,
+                            "skipped": 4292467161
+                          },
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "1 concat unique(result)",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "2 avg(duration)",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "2 avg(build_date)",
+                          "customFormat": "M/d/yyyy HH:mm:ss.fff",
+                          "cellType": "number",
+                          "format": "M/d/yyyy HH:mm:ss.fff",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "isColorCoded": true,
+                          "width": 30,
+                          "columnName": "2 concat unique(status)",
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {
+                            "failed": 4292224808,
+                            "passed": 4281114668,
+                            "skipped": 4292467161
+                          },
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "2 concat unique(result)",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "3 avg(duration)",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "3 avg(build_date)",
+                          "customFormat": "M/d/yyyy HH:mm:ss.fff",
+                          "cellType": "number",
+                          "format": "M/d/yyyy HH:mm:ss.fff",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "isColorCoded": true,
+                          "width": 30,
+                          "columnName": "3 concat unique(status)",
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {
+                            "failed": 4292224808,
+                            "passed": 4281114668,
+                            "skipped": 4292467161
+                          },
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "3 concat unique(result)",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "4 avg(duration)",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "4 avg(build_date)",
+                          "customFormat": "M/d/yyyy HH:mm:ss.fff",
+                          "cellType": "number",
+                          "format": "M/d/yyyy HH:mm:ss.fff",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "isColorCoded": true,
+                          "width": 30,
+                          "columnName": "4 concat unique(status)",
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {
+                            "failed": 4292224808,
+                            "passed": 4281114668,
+                            "skipped": 4292467161
+                          },
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "4 concat unique(result)",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "5 avg(duration)",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "5 avg(build_date)",
+                          "customFormat": "M/d/yyyy HH:mm:ss.fff",
+                          "cellType": "number",
+                          "format": "M/d/yyyy HH:mm:ss.fff",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "isColorCoded": true,
+                          "width": 30,
+                          "columnName": "5 concat unique(status)",
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {
+                            "failed": 4292224808,
+                            "passed": 4281114668,
+                            "skipped": 4292467161
+                          },
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "5 concat unique(result)",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "stable",
+                          "cellType": "bool",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "failing",
+                          "cellType": "bool",
+                          "colorCodingCategorical": {
+                            "false": "#2ca02c",
+                            "true": "#d62728"
+                          },
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "flapping",
+                          "cellType": "bool",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        }
+                      ]
+                    },
+                    "title": "Heat map"
+                  }
+                },
+                "children": []
+              }
+            ]
           }
         ]
       }
     ],
     "floating": [],
-    "tableId": "4d325630-9b00-11ef-eccd-a74387f008ba",
-    "tableName": "Table"
+    "tableId": "ba194c00-9b00-11ef-ed12-d9ce7106abd8",
+    "tableName": "result"
+  },
+  "userData": {
+    "dataFrameTooltip": "test\nowner\n1 avg(build_date)\n2 avg(build_date)\n3 avg(build_date)\n4 avg(build_date)\n5 avg(build_date)"
   },
   "columns": [
     {
       "name": "owner",
       "type": "string",
-      "id": "2a8a4ec0-9b00-11ef-d128-892716bc35c2",
+      "id": "ba467680-9b00-11ef-c781-5bf79fccb1d9",
       "friendlyName": "Owner",
       "entityTags": [
         {
           "tag": "aggr.type",
-          "id": "2a8a27b0-9b00-11ef-d3ae-8f899e48abcc"
+          "id": "d0850b00-9b00-11ef-d123-6b681c4db567"
         },
         {
           "tag": "aggr.src.col.name",
-          "id": "2a8a4ec0-9b00-11ef-f950-85c394c2e8f5"
+          "id": "d0853210-9b00-11ef-bee8-5def241f05d6"
+        },
+        {
+          "tag": ".id",
+          "id": "d0853210-9b00-11ef-d77b-0dff32881e76"
         },
         {
           "tag": ".semantic-detection-duration",
-          "id": "2a8a4ec0-9b00-11ef-ae3e-5f73acb7abc4"
+          "id": "d0853210-9b00-11ef-9b33-8974bf9ccc07"
         }
       ],
       "metaParams": {
         "aggr.type": "key",
         "aggr.src.col.name": "owner",
-        ".semantic-detection-duration": "4"
+        ".id": "ba467680-9b00-11ef-c781-5bf79fccb1d9",
+        ".semantic-detection-duration": "10"
       }
     },
     {
       "name": "1 avg(duration)",
       "type": "double",
-      "id": "7208e0f0-9b00-11ef-b47c-23d355c8bdeb",
+      "id": "ba469d90-9b00-11ef-e799-f78f85779961",
       "friendlyName": "1 avg(duration)",
       "entityTags": [
         {
           "tag": "aggr.type",
-          "id": "2a8a75d0-9b00-11ef-bdac-85b9b99276aa"
+          "id": "d0853210-9b00-11ef-90e2-a70342dd0cce"
         },
         {
           "tag": "aggr.src.col.name",
-          "id": "2a8a9ce0-9b00-11ef-b234-f32056a9e251"
+          "id": "d0855920-9b00-11ef-b0a1-4303550653fb"
         },
         {
           "tag": "aggr.pivot.values",
-          "id": "2a8a9ce0-9b00-11ef-905c-71061aa5c90d"
+          "id": "d0855920-9b00-11ef-d4f3-cd825aceec89"
         },
         {
           "tag": ".id",
-          "id": "2a8a9ce0-9b00-11ef-fd47-c75d59a0f607"
+          "id": "d0855920-9b00-11ef-9ca8-93e891320b49"
         },
         {
           "tag": ".semantic-detection-duration",
-          "id": "2a8a9ce0-9b00-11ef-fad0-df70a2fb091e"
+          "id": "d0855920-9b00-11ef-a799-d14b46bfcbef"
         }
       ],
       "metaParams": {
         "aggr.type": "avg",
         "aggr.src.col.name": "duration",
         "aggr.pivot.values": "[\"1\"]",
-        ".id": "7208e0f0-9b00-11ef-b47c-23d355c8bdeb",
-        ".semantic-detection-duration": "3"
+        ".id": "ba469d90-9b00-11ef-e799-f78f85779961",
+        ".semantic-detection-duration": "4"
       }
     },
     {
       "name": "~test_0",
       "type": "string",
-      "id": "72090800-9b00-11ef-d309-bb8c3cf6c83b",
+      "id": "d0855920-9b00-11ef-b76d-71757a804724",
       "friendlyName": "~test_0",
-      "entityTags": [
-        {
-          "tag": ".id",
-          "id": "2a8ac3f0-9b00-11ef-d491-af933f517495"
-        },
-        {
-          "tag": ".semantic-detection-duration",
-          "id": "2a8ac3f0-9b00-11ef-8e84-f9f6e03d89d8"
-        }
-      ],
-      "metaParams": {
-        ".id": "72090800-9b00-11ef-d309-bb8c3cf6c83b",
-        ".semantic-detection-duration": "2"
-      }
+      "metaParams": {}
     },
     {
       "name": "failing",
       "type": "bool",
-      "id": "72092f10-9b00-11ef-ffc3-d1741af4b988",
+      "id": "ba490e90-9b00-11ef-9d44-4b30e1313787",
       "friendlyName": "Failing",
       "entityTags": [
         {
           "tag": "formula",
-          "id": "2a8ac3f0-9b00-11ef-a727-6f0e6814dcb7"
+          "id": "d085a740-9b00-11ef-c5e7-8fbb35e1bc62"
         },
         {
           "tag": ".id",
-          "id": "2a8ac3f0-9b00-11ef-bdfb-f3d71659c42f"
+          "id": "d085a740-9b00-11ef-d44a-614719f4f10d"
+        },
+        {
+          "tag": ".color-coding-categorical",
+          "id": "d085a740-9b00-11ef-eeff-5516b7ff0e17"
         },
         {
           "tag": ".semantic-detection-duration",
-          "id": "2a8aeb00-9b00-11ef-be8e-27bf69e92d4c"
+          "id": "d085a740-9b00-11ef-ce0f-17793698f8c6"
         }
       ],
       "metaParams": {
         "formula": "Or(${1 concat unique(status)}== \"failed\",Or(${2 concat unique(status)}== \"failed\",Or(${3 concat unique(status)}== \"failed\",Or(${4 concat unique(status)}== \"failed\",${4 concat unique(status)}== \"failed\"))))",
-        ".id": "72092f10-9b00-11ef-ffc3-d1741af4b988",
-        ".semantic-detection-duration": "0"
+        ".id": "ba490e90-9b00-11ef-9d44-4b30e1313787",
+        ".color-coding-categorical": "{\"false\":\"#2ca02c\",\"true\":\"#d62728\"}",
+        ".semantic-detection-duration": "2"
       }
     }
   ],
-  "name": "Table",
-  "friendlyName": "Table",
+  "name": "Result",
+  "friendlyName": "result",
   "author": {
     "id": "13dc1770-8990-11ee-f19c-73f2990e684e"
   },
-  "createdOn": "2024-12-11T20:47:41.986Z"
+  "createdOn": "2024-12-16T12:11:00.899Z"
 }
