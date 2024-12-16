@@ -5,6 +5,9 @@ set -x -o pipefail
 crnt=$(pwd)
 
 PACKAGE=$1
+
+SKIP_CLEANUP=$2
+
 DIR="packages/$PACKAGE"
 
 dockers=$(find ${DIR}/dockerfiles -type f -name Dockerfile | tr '\n' ' ')
@@ -12,7 +15,7 @@ dockers=$(find ${DIR}/dockerfiles -type f -name Dockerfile | tr '\n' ' ')
 profiles='--profile datagrok --profile db'
 if [ -d "${DIR}/dockerfiles" ]; then
     profiles+=' --profile grok_spawner'
-  
+
     for dockerfile in $(echo -e $dockers); do
       docker_config_file="$(dirname $dockerfile)/container.json"
       cp $docker_config_file $docker_config_file.bkp
@@ -66,22 +69,26 @@ alias='githubactions'
 
 # Cleanup function (like 'finally')
 cleanup() {
-    echo "Performing cleanup..."
-    cd ${crnt} || exit 1
+    if [ -z "$SKIP_CLEANUP" ]; then
+        echo "Performing cleanup..."
+        cd ${crnt} || exit 1
 
-    git status
-    git checkout .
-    git stash pop
-    if [ -d "${DIR}/dockerfiles" ]; then
-        for dockerfile in $(echo -e $dockers); do
-          docker_config_file="$(dirname $dockerfile)/container.json"
-          mv $docker_config_file.bkp $docker_config_file
-        done
+        git status
+        git checkout .
+        git stash pop
+        if [ -d "${DIR}/dockerfiles" ]; then
+            for dockerfile in $(echo -e $dockers); do
+              docker_config_file="$(dirname $dockerfile)/container.json"
+              mv $docker_config_file.bkp $docker_config_file
+            done
+        fi
+        docker compose -p ${alias} -f "docker/github_actions.docker-compose.yaml" --profile all down --volumes
+        docker rm -f $(docker ps --format {{.Names}} | grep ${alias}) || true
+        docker compose -p ${alias} -f "docker/github_actions.docker-compose.yaml" --profile all down --volumes
+        rm -rf "docker/github_actions.docker-compose.yaml"
+    else
+      echo "Cleanup is skipped."
     fi
-    docker compose -p ${alias} -f "docker/github_actions.docker-compose.yaml" --profile all down --volumes
-    docker rm -f $(docker ps --format {{.Names}} | grep ${alias}) || true
-    docker compose -p ${alias} -f "docker/github_actions.docker-compose.yaml" --profile all down --volumes
-    rm -rf "docker/github_actions.docker-compose.yaml"
 }
 
 # Trap EXIT to always run the cleanup function
