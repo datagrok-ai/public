@@ -15,6 +15,7 @@
     "uuid": "^10.0.0"
   },
   "devDependencies": {
+    "@datagrok/api-tests": "^1.8.0",
     "@types/uuid": "^10.0.0",
     "datagrok-tools": "latest",
     "ts-loader": "^9.5.1",
