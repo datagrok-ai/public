@@ -81,12 +81,12 @@ public class PostgresTableQueryTest extends TableQueryTest {
 
     @Override
     public String[] getAggregationAndGroupByAndHavingLimitWithDot() {
-        return new String[] {"--input: string events_source0", "--input: string events_source1", "--input: string events_source2", "SELECT", "\"events\".\"id\",", "\"events\".\"friendly_name\",", "\"events\".\"name\",", "\"events\".\"source\",",
+        return new String[] {"--input: string eventsSource0", "--input: string eventsSource1", "--input: string eventsSource2", "SELECT", "\"events\".\"id\",", "\"events\".\"friendly_name\",", "\"events\".\"name\",", "\"events\".\"source\",",
                 "\"events\".\"status\",", "\"events\".\"description\",", "\"events\".\"error_message\",",
                 "\"events\".\"error_stack_trace\",", "\"events\".\"event_type_id\",", "count(\"events\".\"session_id\") as \"count(events.session_id)\"",
                 "FROM", "\"public\".\"events\"", "GROUP BY", "\"events\".\"id\", \"events\".\"friendly_name\", \"events\".\"name\", \"events\".\"source\", " +
                 "\"events\".\"status\", \"events\".\"description\", \"events\".\"error_message\", \"events\".\"error_stack_trace\", \"events\".\"event_type_id\"",
-                "HAVING", "\t((\"events\".\"source\" in (@events_source0,@events_source1,@events_source2)))", "limit 50"};
+                "HAVING", "\t((\"events\".\"source\" in (@eventsSource0,@eventsSource1,@eventsSource2)))", "limit 50"};
     }
 
     @Override
