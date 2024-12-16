@@ -132,7 +132,7 @@ if [ "$long_term_token" == "null" ] || [ -z "$long_term_token" ]; then
 else
   echo "Token is valid: $token"
 fi
-curl -s -H "Authorization: $long_term_token" -H "Content-Type": "application/json" "${apiUrl}/admin/plugins/admin/settings" -X POST -d '{"#type":"AdminPluginSettings", "agreementDate":null}'
+curl -s -H "Authorization: $long_term_token" -H "Content-Type": "application/json" "${apiUrl}/admin/plugins/admin/settings" -X POST -d '{"#type":"AdminPluginSettings", "agreementDate":null}' || exit 1
 
 key='admin'
 grok config add --default --alias ${alias} --server "${apiUrl}" --key "$key" || exit 1
@@ -248,3 +248,5 @@ fi
 cd ${DIR} || exit 1
 
 npm run test -- --skip-build --skip-publish --record --csv --host ${alias} --verbose
+
+cd ${crnt} || exit 1
