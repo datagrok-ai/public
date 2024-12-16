@@ -43,6 +43,7 @@ export class MmpPairedGrids {
   rdkit: RDModule;
 
   showErrorEvent: Subject<boolean> = new Subject();
+  showEmptyPairsWarningEvent: Subject<boolean> = new Subject();
   filters: DG.FilterGroup | null = null;
   lastPairIdx: number | null = null;
   lastFragmentIdx: number | null = null;
@@ -146,6 +147,10 @@ export class MmpPairedGrids {
 
     this.mmpGridTrans.table.onSelectionChanged.subscribe(() => {
       this.selectPairsWithSubstitutionInParentTable(true);
+    });
+
+    this.mmpGridTrans.table.onFilterChanged.subscribe(() => {
+      this.showEmptyPairsWarningEvent.next(this.mmpGridTrans.dataFrame.filter.trueCount === 0);
     });
 
     this.createCustomGridTooltips(this.fpGrid, FRAGMENTS_GRID_HEADER_TOOLTIPS, true);

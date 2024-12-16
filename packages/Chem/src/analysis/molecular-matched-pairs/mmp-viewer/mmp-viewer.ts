@@ -272,6 +272,14 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const mmPairsRoot1 = this.createGridDiv(MMP_NAMES.PAIRS_GRID,
       this.pairedGrids!.mmpGridTrans, MATHED_MOLECULAR_PAIRS_TOOLTIP_TRANS, this.pairedGrids!.mmpGridTransMessage);
 
+    mmPairsRoot1.prepend(
+      ui.divText('Select fragments pair from \'Fragments\' dataset to see corresponding molecule pairs',
+        'chem-mmpa-no-pairs-warning'));
+    this.subs.push(this.pairedGrids!.showEmptyPairsWarningEvent.subscribe((showWarning: boolean) => {
+      showWarning ? mmPairsRoot1.classList.add('chem-mmp-no-pairs') :
+        mmPairsRoot1.classList.remove('chem-mmp-no-pairs');
+    }));
+
     const showFragsChoice = ui.input.choice('', {items: [SHOW_FRAGS_MODE.All, SHOW_FRAGS_MODE.Current],
       nullable: false, value: SHOW_FRAGS_MODE.All,
       onValueChanged: (value) => {

@@ -760,6 +760,18 @@
   display: flex !important;
 }
 
+.chem-mmpa-no-pairs-warning {
+  position: absolute;
+  top: 100px;
+  z-index: 1000;
+  left: 200px;
+  display: none !important;
+}
+
+.chem-mmp-no-pairs .chem-mmpa-no-pairs-warning {
+  display: flex !important;
+}
+
 .chem-mmp-open-cliffs-button {
   font-size: 11px;
   height: 18px !important;
