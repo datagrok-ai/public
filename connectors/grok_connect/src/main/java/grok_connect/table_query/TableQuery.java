@@ -206,7 +206,7 @@ public class TableQuery extends DataQuery {
             default:
                 throw new UnsupportedOperationException(clause.dataType + " is not supported");
         }
-
+        params.removeIf((p) -> p.name.equals(paramName));
         params.addAll(result.params);
         for (FuncParam p: result.params) {
             sqlHeader.append(String.format("--input: %s %s", p.propertyType, p.name));
