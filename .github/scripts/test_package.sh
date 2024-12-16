@@ -109,7 +109,22 @@ do
     sleep 1
 done
 token=$(curl -s -X POST ${apiUrl}/users/login/dev/admin | jq -r .token)
-curl -s -H "Authorization: $token" -H "Content-Type": "application/json" "${apiUrl}/admin/plugins/admin/settings" -X POST -d '{"#type":"AdminPluginSettings", "agreementDate":null}' || exit 1
+# Check if the token is null
+if [ "$token" == "null" ] || [ -z "$token" ]; then
+  echo "Error: Token is null or empty."
+  exit 1
+else
+  echo "Token is valid: $token"
+fi
+long_term_token=$(curl -s -X POST ${apiUrl}/users/sessions/current/refresh -H "Authorization: ${token}" | jq -r .token)
+# Check if the token is null
+if [ "$long_term_token" == "null" ] || [ -z "$long_term_token" ]; then
+  echo "Error: Token is null or empty."
+  exit 1
+else
+  echo "Token is valid: $token"
+fi
+curl -s -H "Authorization: $long_term_token" -H "Content-Type": "application/json" "${apiUrl}/admin/plugins/admin/settings" -X POST -d '{"#type":"AdminPluginSettings", "agreementDate":null}'
 
 key='admin'
 grok config add --default --alias ${alias} --server "${apiUrl}" --key "$key" || exit 1
@@ -157,8 +172,7 @@ done
 cd ${crnt} || exit 1
 
 if [[ "${PACKAGE}" == "Chemspace" ]]; then
-  token=$(curl -s -X POST ${apiUrl}/users/login/dev/admin | jq -r .token)
-  curl -s -H "Authorization: $token" -H "Content-Type": "application/json" "${apiUrl}/credentials/for/Chemspace.Chemspace" -X POST -d "{\"apiKey\": \"$CHEMSPACE_APIKEY\"}"
+  curl -s -H "Authorization: $long_term_token" -H "Content-Type": "application/json" "${apiUrl}/credentials/for/Chemspace.Chemspace" -X POST -d "{\"apiKey\": \"$CHEMSPACE_APIKEY\"}"
 fi
 
 check_container=false
@@ -186,8 +200,6 @@ if [[ "${check_container}" == "true" ]] ; then
     else
       key='admin'
     fi
-    token=$(curl -s -X POST ${apiUrl}/users/login/dev/$key | jq -r .token)
-    long_term_token=$(curl -s -X POST ${apiUrl}/users/sessions/current/refresh -H "Authorization: ${token}" | jq -r .token)
 
     count=0
     retries=50
