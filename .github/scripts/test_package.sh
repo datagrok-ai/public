@@ -64,6 +64,28 @@ gsed -i '/"dbServer": "database"/a\ \ \ \ \ \ \ \ \ \ "initialSetupCompleted": t
 apiUrl="http://127.0.0.1:${DATAGROK_PORT}/api"
 alias='githubactions'
 
+# Cleanup function (like 'finally')
+cleanup() {
+    echo "Performing cleanup..."
+    cd ${crnt} || exit 1
+
+    git status
+    git checkout .
+    git stash pop
+    if [ -d "${DIR}/dockerfiles" ]; then
+        for dockerfile in $(echo -e $dockers); do
+          docker_config_file="$(dirname $dockerfile)/container.json"
+          mv $docker_config_file.bkp $docker_config_file
+        done
+    fi
+    docker compose -p ${alias} -f "docker/github_actions.docker-compose.yaml" --profile all down --volumes
+    docker rm -f $(docker ps --format {{.Names}} | grep ${alias}) || true
+    rm -rf "docker/github_actions.docker-compose.yaml"
+}
+
+# Trap EXIT to always run the cleanup function
+trap cleanup EXIT
+
 docker compose -p ${alias} -f "docker/github_actions.docker-compose.yaml" --profile all down --volumes || exit 1
 docker rm -f $(docker ps --format {{.Names}} | grep ${alias}) || true
 docker compose -p ${alias} -f "docker/github_actions.docker-compose.yaml" ${profiles} pull || exit 1
@@ -206,16 +228,3 @@ fi
 cd ${DIR} || exit 1
 
 npm run test -- --skip-build --skip-publish --record --csv --host ${alias} --verbose
-
-cd ${crnt} || exit 1
-
-git stash pop
-if [ -d "${DIR}/dockerfiles" ]; then
-    for dockerfile in $(echo -e $dockers); do
-      docker_config_file="$(dirname $dockerfile)/container.json"
-      mv $docker_config_file.bkp $docker_config_file
-    done
-fi
-docker compose -p ${alias} -f "docker/github_actions.docker-compose.yaml" --profile all down --volumes
-docker rm -f $(docker ps --format {{.Names}} | grep ${alias})
-rm -rf "docker/github_actions.docker-compose.yaml"
