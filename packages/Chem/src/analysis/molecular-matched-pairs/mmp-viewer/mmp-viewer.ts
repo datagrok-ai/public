@@ -87,7 +87,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   generationsGrid: DG.Grid | null = null;
   corrGrid: DG.Grid | null = null;
   generationsGridDiv = ui.div(ui.divText('Generations in progress...'));
-  generationsInitialized = false;
   generationsSp: DG.ScatterPlotViewer | null = null;
 
   rdkitModule: RDModule | null = null;
@@ -110,7 +109,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   tp: DG.Viewer | null = null;
   activityMeanNames: string[] = [];
   fragmentsDiv = ui.div(ui.divText('Generating fragments tab...'));
-  fragmentsInitialized = false;
 
   constructor() {
     super();
@@ -183,27 +181,38 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
   getTabs(): DG.TabControl {
+    const decript1 = 'View all fragment substitutions found in the dataset';
+    const decript2 = 'Analyze activity changes across fragment substitutions using a trellis plot';
+    const decript3 = 'Molecule pairs analysis on 2d scatter plot';
+    const decript4 = 'Generation of molecules based on obtained rules';
+
     const tabs = ui.tabControl(null, false);
 
-    tabs.addPane(MMP_NAMES.TAB_TRANSFORMATIONS, () => {
+    const transformationsTab = tabs.addPane(MMP_NAMES.TAB_TRANSFORMATIONS, () => {
       this.pairedGrids!.enableFilters = true;
       return this.getTransformationsTab();
     });
+    ui.tooltip.bind(transformationsTab.header, decript1);
 
     const fragmentsTab = tabs.addPane(MMP_NAMES.TAB_FRAGMENTS, () => {
       this.prepareMwForSorting();
+      //need timeout not to freeze when switching to tab
+      setTimeout(() => {
+        this.setupFragmentsTab();
+      }, 100);
       return this.fragmentsDiv;
     });
-    fragmentsTab.content.classList.add('mmpa-fragments-tab');
+    ui.tooltip.bind(fragmentsTab.header, decript2);
 
     const cliffsTab = tabs.addPane(MMP_NAMES.TAB_CLIFFS, () => {
       return this.getCliffsTab();
     });
-    cliffsTab.content.classList.add('mmpa-cliffs-tab');
+    ui.tooltip.bind(cliffsTab.header, decript3);
 
-    tabs.addPane(MMP_NAMES.TAB_GENERATION, () => {
-      return this.generationsGridDiv;
+    const genTab = tabs.addPane(MMP_NAMES.TAB_GENERATION, () => {
+      return this.getGenerationsTab();
     });
+    ui.tooltip.bind(genTab.header, decript4);
 
     let refilter = true;
     tabs.onTabChanged.subscribe(() => {
@@ -224,19 +233,14 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         this.pairedGrids!.mmpGridTrans.dataFrame.filter.copyFrom(this.pairedGrids!.mmpMaskTrans);
         this.pairedGrids!.fpGrid!.dataFrame.filter.copyFrom(this.pairedGrids!.fpMaskByMolecule!);
       } else if (tabs.currentPane.name == MMP_NAMES.TAB_FRAGMENTS) {
-        if (!this.fragmentsInitialized) {
-          this.fragmentsInitialized = true;
-          //using setTimeout not to freeze when switching tabs
-          setTimeout(() => {
-            this.setupFragmentsTab();
-            this.pairedGrids!.refreshMaskFragmentPairsFilter();
-            this.pairedGrids!.fpGrid.dataFrame.filter.copyFrom(this.pairedGrids!.fpMaskFragmentsTab);
-          }, 100);
-          return;
-        }
+        if (!fragmentsTab.content.classList.contains('mmpa-fragments-tab'))
+          fragmentsTab.content.classList.add('mmpa-fragments-tab');
         this.pairedGrids!.refreshMaskFragmentPairsFilter();
         this.pairedGrids!.fpGrid.dataFrame.filter.copyFrom(this.pairedGrids!.fpMaskFragmentsTab);
       } else if (tabs.currentPane.name == MMP_NAMES.TAB_CLIFFS) {
+        if (!cliffsTab.content.classList.contains('mmpa-cliffs-tab'))
+          cliffsTab.content.classList.add('mmpa-cliffs-tab');
+
         this.sp!.root.append(this.mmpFilters!.filtersDiv);
 
         if (refilter)
@@ -254,10 +258,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
           }, 500);
         }
       } else if (tabs.currentPane.name == MMP_NAMES.TAB_GENERATION) {
-        if (!this.generationsInitialized) {
-          this.setupGenerationsTab();
-          this.generationsInitialized = true;
-        }
         if (this.generationsGrid) {
           if (this.generationsSp) {
             const header = ui.h1('Observed vs Predicted', 'chem-mmpa-generation-tab-cp-header');
@@ -276,16 +276,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         }
       }
     });
-
-    const decript1 = 'View all fragment substitutions found in the dataset';
-    const decript2 = 'Analyze activity changes across fragment substitutions using a trellis plot';
-    const decript3 = 'Molecule pairs analysis on 2d scatter plot';
-    const decript4 = 'Generation of molecules based on obtained rules';
-
-    ui.tooltip.bind(tabs.getPane(MMP_NAMES.TAB_TRANSFORMATIONS).header, decript1);
-    ui.tooltip.bind(tabs.getPane(MMP_NAMES.TAB_FRAGMENTS).header, decript2);
-    ui.tooltip.bind(tabs.getPane(MMP_NAMES.TAB_CLIFFS).header, decript3);
-    ui.tooltip.bind(tabs.getPane(MMP_NAMES.TAB_GENERATION).header, decript4);
 
     return tabs;
   }
@@ -430,7 +420,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       const embeddings = res.coordinates;
       for (const col of embeddings)
         this.parentTable!.columns.replace(col.name, col);
-
+      //workaround for case when sp is opened for the first time with minimal height
+      spDiv.style.height = '800px';
       this.totalData = this.mmpa!.toJSON();
       progressBarSpace.close();
     });
@@ -500,9 +491,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       if (cliffsOpened) {
         cliffsNumButton.innerText = 'Close pairs';
         mmPairsRoot3.classList.replace('cliffs-closed', 'cliffs-opened');
-        //workaround for case when pairs grid is opened for the first time with minimal height
-        if (parseFloat(mmPairsRoot3.style.height.replace('px', '')) < 5)
-          mmPairsRoot3.style.height = '200px';
       } else {
         cliffsNumButton.innerText = 'Open pairs';
         mmPairsRoot3.classList.replace('cliffs-opened', 'cliffs-closed');
@@ -583,7 +571,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     }
   }
 
-  setupGenerationsTab(): void {
+  getGenerationsTab(): HTMLElement {
     getGenerations(this.mmpa!, this.pairedGrids!.fpGrid).then(([genGrid, corrGrid]) => {
       this.generationsGrid = genGrid;
       this.corrGrid = corrGrid;
@@ -620,6 +608,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.generationsGridDiv.append(ui.divText(errorStr));
       grok.shell.error(errorStr);
     });
+    return this.generationsGridDiv;
   }
 
   createGridDiv(name: string, grid: DG.Grid, helpTooltip: string, messageBox: HTMLElement, extraEl?: HTMLElement) {
