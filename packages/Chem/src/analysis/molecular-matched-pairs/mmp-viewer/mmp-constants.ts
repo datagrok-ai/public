@@ -48,17 +48,19 @@ export const PAIRS_GRID_HEADER_TOOLTIPS: {[key: string]: string} = {
 
 export const GENERATIONS_GRID_HEADER_TOOLTIPS: {[key: string]: string} = {
   [MMP_NAMES.STRUCTURE]: 'Structure from initial dataset',
-  [MMP_NAMES.INITIAL_VALUE]: 'Initial activity value',
-  [MMP_NAMES.ACTIVITY]: 'Activity type',
   [MMP_NAMES.CORE]: 'Conservative fragment',
   [MMP_NAMES.FROM]: 'Initial fragment',
   [MMP_NAMES.TO]: 'Fragment after substitution',
-  [MMP_NAMES.PREDICTION]: 'Activity value based on MMP rules (initial activity + mean difference)',
-  [MMP_NAMES.GENERATIONS]: 'New molecule obtained with fragments substitution',
+  'New molecule': 'New molecule obtained with fragments substitution',
+  [MMP_NAMES.ACTIVITY]: 'Activity type',
+  'Original activity': 'Initial activity value',
+  'New activity': 'Activity value based on MMP rules (initial activity + mean difference)',
+  '\u0394 activity': 'Activity difference',
+  'Prediction': 'Molecule exists in the initial dataset',
 };
 
 export const columnsDescriptions: {[key: string]: string} = {
-  'Core': 'Common core',
+  [MMP_NAMES.CORE]: 'Common core',
   [MMP_NAMES.FROM]: 'Original fragment',
   [MMP_NAMES.TO]: 'Replacement fragment',
   [MMP_NAMES.PAIRS_COUNT]: 'Total number of pairs',
