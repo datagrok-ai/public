@@ -12,4 +12,5 @@ export enum WORKER_CALL {
   MMP_GET_MCS = 'mmpGetMcs',
   MOST_COMMON_STRUCTURE = 'mostCommonStructure',
   R_GROUP_ANALYSIS = 'rGroupAnalysis',
+  INVERSE_SUBSTRUCTURE_AND_ALIGN = 'getInverseSubstructuresAndAlign',
 }

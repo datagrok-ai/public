@@ -1,6 +1,7 @@
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {getMolSafe} from './mol-creation_rdkit';
-import {MolList, RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {MolList, RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import { ISubstruct } from '@datagrok-libraries/chem-meta/src/types';
 
 export const defaultMorganFpRadius = 2;
 export const defaultMorganFpLength = 2048;
@@ -104,4 +105,74 @@ export function getSigFigs(n: number, sig: number) {
 export function getFirstNSymbols(number: number, digits: number): string {
   const str = number.toFixed(digits).toString().slice(0, digits);
   return str[str.length - 1] === '.' ? number.toFixed(1).toString() : str;
+}
+
+export function getUncommonAtomsAndBonds(molecule: string, mcsMol: RDMol | null, rdkit: RDModule,
+  col?: string, addHs?: boolean): ISubstruct | null {
+  let mol = getMolSafe(molecule, {}, rdkit).mol;
+  const substruct: ISubstruct | null = null;
+  let uncommonAtomsBest: number[] = [];
+  let uncommonBondsBest: number[] = [];
+  const highlightAtomColors: { [key: string]: number[] } = {};
+  const highlightBondColors: { [key: string]: number[] } = {};
+  try {
+    if (mol) {
+      if (addHs) {
+        const molblockWithHs = mol.add_hs();
+        mol = getMolSafe(molblockWithHs, {}, rdkit).mol;
+      }
+      if (mol) {
+        let rdKol: number[] | null = null;
+        if (col)
+          rdKol = hexToPercentRgb(col);
+        const uncommonAtoms = [...Array(mol.get_num_atoms()).keys()];
+        const uncommonBonds = [...Array(mol.get_num_bonds()).keys()];
+        if (mcsMol) {
+          const matchedAtomsAndBondsList: ISubstruct[] = JSON.parse(mol!.get_substruct_matches(mcsMol!));
+          let errorRateTotal = Number.MAX_SAFE_INTEGER;
+          for (let i = 0; i < matchedAtomsAndBondsList.length; i++) {
+            let uncommonAtomsSingle = [...uncommonAtoms];
+            let uncommonBondsSingle = [...uncommonBonds];
+            if (matchedAtomsAndBondsList[i].atoms)
+              uncommonAtomsSingle = getArraysDifference(uncommonAtomsSingle, matchedAtomsAndBondsList[i].atoms!.sort((a, b) => { return a - b; }));
+            if (matchedAtomsAndBondsList[i].bonds)
+              uncommonBondsSingle = getArraysDifference(uncommonBondsSingle, matchedAtomsAndBondsList[i].bonds!.sort((a, b) => { return a - b; }));
+
+            let errorRate = 0;
+            for (let j = 0; j < uncommonBondsSingle.length - 1; j++) {
+              if (Math.abs(uncommonBondsSingle[j] - uncommonBondsSingle[j + 1]) > 1)
+                errorRate++;
+            }
+            if (errorRate < errorRateTotal) {
+              errorRateTotal = errorRate;
+              uncommonAtomsBest = uncommonAtomsSingle;
+              uncommonBondsBest = uncommonBondsSingle;
+            }
+          }
+        }
+        if (rdKol) {
+          for (let i = 0; i < uncommonAtomsBest.length; i++)
+            highlightAtomColors[uncommonAtomsBest[i].toString()] = rdKol;
+        }
+        if (rdKol) {
+          for (let i = 0; i < uncommonBondsBest.length; i++)
+            highlightBondColors[uncommonBondsBest[i].toString()] = rdKol;
+        }
+        return {atoms: uncommonAtomsBest, bonds: uncommonBondsBest, highlightAtomColors, highlightBondColors};
+      }
+    }
+  } catch {
+    //do nothing, if molecule is invalid - return empty substruct obj
+  } finally {
+    mol?.delete();
+  }
+  return substruct;
+}
+
+function getArraysDifference(largerArr: number[], smallerArr: number[]) {
+  const diffArr: number[] = [];
+  let counter = 0;
+  for (let i = 0; i < largerArr.length; i++)
+    largerArr[i] === smallerArr[counter] ? counter++ : diffArr.push(largerArr[i]);
+  return diffArr;
 }

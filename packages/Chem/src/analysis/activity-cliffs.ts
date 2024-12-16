@@ -1,12 +1,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {drawMoleculeToCanvas, getUncommonAtomsAndBonds} from '../utils/chem-common-rdkit';
+import {drawMoleculeToCanvas} from '../utils/chem-common-rdkit';
 import {ITooltipAndPanelParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {convertMolNotation, getRdKitModule} from '../package';
 import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getMCS} from '../utils/most-common-subs';
 import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
+import { getUncommonAtomsAndBonds } from '../utils/chem-common';
 
 const canvasWidth = 200;
 const canvasHeight = 100;

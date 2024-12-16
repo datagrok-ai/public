@@ -10,7 +10,8 @@ import {getRdKitModule} from '../package';
 import {SubstructureSearchType} from '../constants';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {getRDKitFpAsUint8Array} from '../chem-searches';
-import {IMmpFragmentsResult, IRGroupAnalysisResult} from './rdkit-service-worker-substructure';
+import {IMmpFragmentsResult, InverseSubstructureRes, IRGroupAnalysisResult} from './rdkit-service-worker-substructure';
+import { ISubstruct } from '@datagrok-libraries/chem-meta/src/types';
 export interface IParallelBatchesRes {
   getProgress: () => number,
   setTerminateFlag: () => void,
@@ -567,6 +568,23 @@ export class RdKitService {
       t.parallelWorkers[i].mmpGetMcs(segment),
     (data: string[][]): string[] => {
       return ([] as string[]).concat(...data);
+    });
+    return res;
+  }
+
+  async getInverseSubstructuresAndAlign(cores: string[], from: string[], to: string[]):
+    Promise<InverseSubstructureRes> {
+    const t = this;
+    const res = await this._initParallelWorkersArray([cores, from, to], (i: number, segment: string[][]) =>
+      t.parallelWorkers[i].getInverseSubstructuresAndAlign(segment[0], segment[1], segment[2]),
+    (data: InverseSubstructureRes[]): InverseSubstructureRes => {
+      console.log(`########### ${performance.now()}`);
+      return {
+        inverse1: ([] as (ISubstruct | null)[]).concat(...data.map(((it) => it.inverse1))),
+        inverse2: ([] as (ISubstruct | null)[]).concat(...data.map(((it) => it.inverse2))),
+        fromAligned: ([] as string[]).concat(...data.map(((it) => it.fromAligned))),
+        toAligned: ([] as string[]).concat(...data.map(((it) => it.toAligned))),
+      };
     });
     return res;
   }

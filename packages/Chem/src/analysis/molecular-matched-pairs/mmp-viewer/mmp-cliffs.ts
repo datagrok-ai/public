@@ -13,16 +13,15 @@ import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/
 import {debounceTime} from 'rxjs/operators';
 import {getInverseSubstructuresAndAlign} from './mmp-mol-rendering';
 import {MMP_CONTEXT_PANE_CLASS, MMP_NAMES} from './mmp-constants';
-import {MmpInput} from './mmp-viewer';
 import $ from 'cash-dom';
 import {MMPA} from '../mmp-analysis/mmpa';
 import {ISequenceSpaceParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 
 export function getMmpScatterPlot(
-  mmpInput: MmpInput, axesColsNames: string[], labelsColName: string) : DG.ScatterPlotViewer {
-  mmpInput.table.columns.addNewFloat(axesColsNames[0]);
-  mmpInput.table.columns.addNewFloat(axesColsNames[1]);
-  const sp = DG.Viewer.scatterPlot(mmpInput.table, {
+  parentTable: DG.DataFrame, axesColsNames: string[], labelsColName: string) : DG.ScatterPlotViewer {
+  parentTable.columns.addNewFloat(axesColsNames[0]);
+  parentTable.columns.addNewFloat(axesColsNames[1]);
+  const sp = DG.Viewer.scatterPlot(parentTable, {
     x: axesColsNames[0],
     y: axesColsNames[1],
     zoomAndFilter: 'no action',
@@ -120,11 +119,11 @@ function getMoleculesPropertiesDiv(propPanelViewer: FormsViewer, idxs: number[])
   return ui.div(propPanelViewer.root, {style: {height: '100%'}});
 }
 
-export function runMmpChemSpace(mmpInput: MmpInput, sp: DG.Viewer, lines: ILineSeries,
+export function runMmpChemSpace(parentTable: DG.DataFrame, molCol: DG.Column, sp: DG.Viewer, lines: ILineSeries,
   linesIdxs: Uint32Array, linesActivityCorrespondance: Uint32Array, pairsDf: DG.DataFrame, mmpa: MMPA,
   rdkitModule: RDModule, embedColsNames: string[]): [ScatterPlotLinesRenderer, ISequenceSpaceParams] {
   const chemSpaceParams = {
-    seqCol: mmpInput.molecules,
+    seqCol: molCol,
     methodName: DimReductionMethods.UMAP,
     similarityMetric: BitArrayMetricsNames.Tanimoto as BitArrayMetrics,
     embedAxesNames: embedColsNames,
@@ -137,7 +136,7 @@ export function runMmpChemSpace(mmpInput: MmpInput, sp: DG.Viewer, lines: ILineS
   spEditor.lineHover.pipe(debounceTime(500)).subscribe((event: MouseOverLineEvent) => {
     ui.tooltip.show(
       fillPairInfo(mmpa, event.id, linesIdxs, linesActivityCorrespondance[event.id],
-        pairsDf, mmpa.allCasesBased.diffs, mmpInput.table, rdkitModule),
+        pairsDf, mmpa.allCasesBased.diffs, parentTable, rdkitModule),
       event.x, event.y);
   });
 

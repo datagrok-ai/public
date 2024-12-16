@@ -1,7 +1,7 @@
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 
-import {getUncommonAtomsAndBonds} from '../../../utils/chem-common-rdkit';
+import {getUncommonAtomsAndBonds} from '../../../utils/chem-common';
 
 
 export async function getInverseSubstructuresAndAlign(cores: string[],
