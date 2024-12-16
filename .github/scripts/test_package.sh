@@ -80,6 +80,7 @@ cleanup() {
     fi
     docker compose -p ${alias} -f "docker/github_actions.docker-compose.yaml" --profile all down --volumes
     docker rm -f $(docker ps --format {{.Names}} | grep ${alias}) || true
+    docker compose -p ${alias} -f "docker/github_actions.docker-compose.yaml" --profile all down --volumes
     rm -rf "docker/github_actions.docker-compose.yaml"
 }
 
