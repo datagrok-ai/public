@@ -35,7 +35,7 @@ type PanelsState = {
   layout: string,
 };
 
-const dfBlockTitle = (dfProp: DG.Property) => dfProp.options['caption'] ?? dfProp.name ?? ' ';
+const dfBlockTitle = (dfProp: DG.Property, viewer: Record<string, string | boolean>) => viewer.title ?? dfProp.options['caption'] ?? dfProp.name ?? ' ';
 
 type TabContent = Map<string,
   {type: 'dataframe', dfProp: DG.Property, config: Record<string, string | boolean> } |
@@ -53,7 +53,7 @@ const tabToProperties = (func: DG.Func) => {
     if (dfViewers.length === 0) return;
 
     dfViewers.forEach((dfViewer) => {
-      const dfNameWithViewer = `${dfBlockTitle(dfProp)} / ${dfViewer['type']}`;
+      const dfNameWithViewer = `${dfBlockTitle(dfProp, dfViewer)} / ${dfViewer['type']}`;
 
       const tabLabel = dfProp.category === 'Misc' ?
         dfNameWithViewer: `${dfProp.category}: ${dfNameWithViewer}`;
