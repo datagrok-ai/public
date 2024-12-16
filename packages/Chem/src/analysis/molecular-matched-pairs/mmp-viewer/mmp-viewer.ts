@@ -110,6 +110,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   activityMeanNames: string[] = [];
   fragmentsDiv = ui.div(ui.divText('Generating fragments tab...'));
 
+  spCorrDiv = ui.div(ui.divText('Generating correlation scatter plot...'));
+
   constructor() {
     super();
     DG.debounce(this.onPropertyChangedObs, 50).subscribe(this.onPropertyChangedDebounced.bind(this));
@@ -258,22 +260,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
           }, 500);
         }
       } else if (tabs.currentPane.name == MMP_NAMES.TAB_GENERATION) {
-        if (this.generationsGrid) {
-          if (this.generationsSp) {
-            const header = ui.h1('Observed vs Predicted', 'chem-mmpa-generation-tab-cp-header');
-            this.generationsSp.root.prepend(header);
-            const spCorrDiv = ui.splitV([
-              ui.box(
-                ui.divH([header]),
-                {style: {maxHeight: '30px'}},
-              ),
-              this.generationsSp.root,
-            ], {style: {width: '100%', height: '100%'}});
-            spCorrDiv.classList.add(MMP_CONTEXT_PANE_CLASS);
-            grok.shell.windows.showContextPanel = true;
-            grok.shell.o = spCorrDiv;
-          }
-        }
+        grok.shell.windows.showContextPanel = true;
+        grok.shell.o = this.spCorrDiv;
       }
     });
 
@@ -602,6 +590,19 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
       ui.empty(this.generationsGridDiv);
       this.generationsGridDiv.append(this.createGridDiv('Generated Molecules', this.generationsGrid!, '', ui.div()));
+
+      const header = ui.h1('Observed vs Predicted', 'chem-mmpa-generation-tab-cp-header');
+      this.generationsSp.root.prepend(header);
+      this.spCorrDiv = ui.splitV([
+        ui.box(
+          ui.divH([header]),
+          {style: {maxHeight: '30px'}},
+        ),
+        this.generationsSp.root,
+      ], {style: {width: '100%', height: '100%'}});
+      this.spCorrDiv.classList.add(MMP_CONTEXT_PANE_CLASS);
+      grok.shell.windows.showContextPanel = true;
+      grok.shell.o = this.spCorrDiv;
     }).catch((error: any) => {
       const errorStr = `Generations haven't been completed due to error: ${error}`;
       ui.empty(this.generationsGridDiv);
