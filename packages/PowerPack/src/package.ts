@@ -17,6 +17,7 @@ import {viewersDialog} from './viewers-gallery';
 import {windowsManagerPanel} from './windows-manager';
 import {initSearch} from './search/power-search';
 import { newUsersSearch, registerDGUserHandler } from './dg-db';
+import {merge} from "rxjs";
 
 export const _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
@@ -168,6 +169,28 @@ export async function powerPackInit() {
   initSearch();
   _properties = await _package.getProperties();
   await registerDGUserHandler(_package);
+
+  // saving and restoring the scrolls when changing views
+  const maxDepth = 40;
+  const elementMap = new Map<HTMLElement, number>();
+  const getScrolledChild = (node: HTMLElement, depth = 0) => {
+    if (depth > maxDepth)
+      return;
+    if (node.scrollTop)
+      elementMap.set(node, node.scrollTop);
+    node.children && Array.from(node.children)
+      .forEach((child) => getScrolledChild(child as HTMLElement, depth + 1));
+  };
+  const setScrolls = () => {
+    elementMap.forEach((scroll, node) => {
+      if (document.body.contains(node)) {
+        node.scrollTop = scroll;
+        elementMap.delete(node);
+      }
+    });
+  }
+  merge(grok.events.onCurrentViewChanging, grok.events.onViewChanging).subscribe((_) => getScrolledChild(document.body));
+  DG.debounce(merge(grok.events.onCurrentViewChanged, grok.events.onViewChanged), 10).subscribe((_) => setScrolls());
 }
 
 //description: Windows Manager
