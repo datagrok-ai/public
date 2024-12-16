@@ -103,6 +103,8 @@ export class MMPA {
       'cases': this.allCasesNumber,
       'chemSpaceResult': this.chemSpaceResult,
       'generationResult': this.generationResult,
+    }, function(key, val) {
+      return val && !isNaN(Number(val)) && val.toFixed ? Number(val.toFixed(5)) : val;
     });
   }
 
