@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
-import { openDB, deleteDB, wrap, unwrap, DBSchema } from 'idb';
+import { openDB, DBSchema } from 'idb';
 import {
   Viewer, InputForm,
   BigButton, IconFA,
@@ -97,7 +97,7 @@ const STORE_NAME = 'RFV2Layouts';
 interface ComputeSchema extends DBSchema {
   [STORE_NAME]: {
     key: string;
-    value: string;
+    value: PanelsState;
   };
 }
 
@@ -214,25 +214,25 @@ export const RichFunctionView = Vue.defineComponent({
       const layout = dockRef?.value?.getLayout();
       if (!layout) return null;
 
-      return JSON.stringify({
+      return {
         historyHidden: historyHidden.value,
         helpHidden: helpHidden.value,
         formHidden: formHidden.value,
         visibleTabLabels: visibleTabLabels.value,
         layout,
-      });
+      };
     };
 
     const getSavedPersonalState = async (call: DG.FuncCall): Promise<PanelsState | null> => {
       const item = await layoutDatabase.value?.get(STORE_NAME, personalPanelsStorage(call));
 
-      return item ? JSON.parse(item): null;
+      return item ?? null;
     };
 
     const getSavedDefaultState = async (call: DG.FuncCall): Promise<PanelsState | null> => {
       const item = await layoutDatabase.value?.get(STORE_NAME, defaultPanelsStorage(call));
 
-      return item ? JSON.parse(item): null;
+      return item ?? null;
     };
 
     const saveDefaultState = (call: DG.FuncCall = currentCall.value) => {
