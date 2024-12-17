@@ -291,6 +291,8 @@ export const TreeWizard = Vue.defineComponent({
               ref={inspectorInstance}
               dock-spawn-title='Inspector'
               class='h-full overflow-scroll'
+              dock-spawn-dock-type='right'
+              dock-spawn-dock-ratio='0.2'
             ></Inspector>
           }
           {
@@ -302,7 +304,7 @@ export const TreeWizard = Vue.defineComponent({
                 dock-spawn-title='Steps'
                 dock-spawn-panel-icon='folder-tree'
                 dock-spawn-dock-type='left'
-                dock-spawn-dock-ratio={0.15}
+                dock-spawn-dock-ratio={0.2}
                 dock-spawn-z-index={51}
 
                 rootDroppable={false}
