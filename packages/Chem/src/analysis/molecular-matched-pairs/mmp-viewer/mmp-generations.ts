@@ -46,7 +46,7 @@ export async function getGenerations(mmpa: MMPA, allPairsGrid: DG.Grid):
     resizeGridColsSize(grid, [MMP_NAMES.STRUCTURE, MMP_NAMES.CORE, MMP_NAMES.FROM, MMP_NAMES.TO], 150, 70);
     gridSub.unsubscribe();
   });
-  createMolExistsCol(mmpa.frags.smiles, generation, grid);
+  createMolExistsCol(mmpa.initData.molecules, generation, grid);
 
   const gridCorr = getCorGrid(mmpa);
 

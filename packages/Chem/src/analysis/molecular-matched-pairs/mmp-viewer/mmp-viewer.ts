@@ -10,8 +10,8 @@ import {ILineSeries, MouseOverLineEvent, ScatterPlotLinesRenderer}
 
 import {MMPA} from '../mmp-analysis/mmpa';
 import {CLIFFS_TAB_TOOLTIP, FRAGMENTS_GRID_TOOLTIP, FRAGMENTS_TAB_TOOLTIP,
-  MATHED_MOLECULAR_PAIRS_TOOLTIP_CLIFFS, MATHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS,
-  MATHED_MOLECULAR_PAIRS_TOOLTIP_TRANS, MMP_CONTEXT_PANE_CLASS, MMP_NAMES, SHOW_FRAGS_MODE,
+  MATCHED_MOLECULAR_PAIRS_TOOLTIP_CLIFFS, MATCHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS,
+  MATCHED_MOLECULAR_PAIRS_TOOLTIP_TRANS, MMP_CONTEXT_PANE_CLASS, MMP_NAMES, SHOW_FRAGS_MODE,
   TrellisAxis, TrellisSortByProp, TrellisSortType} from './mmp-constants';
 
 import {PaletteCodes, getPalette} from './palette';
@@ -270,7 +270,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
   getTransformationsTab(): HTMLElement {
     const mmPairsRoot1 = this.createGridDiv(MMP_NAMES.PAIRS_GRID,
-      this.pairedGrids!.mmpGridTrans, MATHED_MOLECULAR_PAIRS_TOOLTIP_TRANS, this.pairedGrids!.mmpGridTransMessage);
+      this.pairedGrids!.mmpGridTrans, MATCHED_MOLECULAR_PAIRS_TOOLTIP_TRANS, this.pairedGrids!.mmpGridTransMessage);
 
     mmPairsRoot1.prepend(
       ui.divText('Select fragments pair from \'Fragments\' dataset to see corresponding molecule pairs',
@@ -382,7 +382,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.sortTrellis(TrellisAxis.From, trellisSortState[TrellisAxis.From], this.tp);
 
     const mmPairsRoot2 = this.createGridDiv(MMP_NAMES.PAIRS_GRID,
-      this.pairedGrids!.mmpGridFrag, MATHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS, this.pairedGrids!.mmpGridFragMessage);
+      this.pairedGrids!.mmpGridFrag, MATCHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS, this.pairedGrids!.mmpGridFragMessage);
 
     ui.empty(this.fragmentsDiv);
     this.fragmentsDiv.append(ui.splitV([
@@ -446,7 +446,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.mmpFilters.activityActiveInputs.map((ai) => ai.value), false);
 
     const mmPairsRoot3 = this.createGridDiv(MMP_NAMES.PAIRS_GRID, this.pairedGrids!.pairsGridCliffsTab,
-      MATHED_MOLECULAR_PAIRS_TOOLTIP_CLIFFS, this.pairedGrids!.pairsGridCliffsTabMessage);
+      MATCHED_MOLECULAR_PAIRS_TOOLTIP_CLIFFS, this.pairedGrids!.pairsGridCliffsTabMessage);
     mmPairsRoot3.classList.add('mmp-pairs-grid-cliffs-tab', 'cliffs-opened');
 
     this.pairedGrids!.pairsGridCliffsTab.dataFrame.onCurrentRowChanged.subscribe(() => {

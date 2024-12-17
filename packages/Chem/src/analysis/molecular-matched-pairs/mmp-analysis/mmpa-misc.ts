@@ -68,3 +68,9 @@ export type MmpGeneration = {
   prediction: Float32Array;
   activityName: string [];
 };
+
+export type MmpFragments = {
+  fragCodes: [number, number][][],
+  idToName: string[],
+  sizes: Uint32Array
+};

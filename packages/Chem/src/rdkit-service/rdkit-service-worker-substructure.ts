@@ -5,7 +5,7 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {RuleId} from '../panels/structural-alerts';
 import {SubstructureSearchType} from '../constants';
 import {stringArrayToMolList, getUncommonAtomsAndBonds} from '../utils/chem-common';
-import { ISubstruct } from '@datagrok-libraries/chem-meta/src/types';
+import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 
 export enum MolNotation {
   Smiles = 'smiles',
@@ -74,7 +74,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     if (!molecules)
       throw new Error('Chem | Molecules for substructure serach haven\'t been provided');
 
-    const queryMol = getQueryMolSafe(queryMolString, queryMolBlockFailover, this._rdKitModule); 
+    const queryMol = getQueryMolSafe(queryMolString, queryMolBlockFailover, this._rdKitModule);
     let queryCanonicalSmiles = '';
     if (queryMol !== null) {
       if (searchType === SubstructureSearchType.EXACT_MATCH) {
@@ -100,7 +100,9 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       return matches.buffer;
     const details = JSON.stringify({sanitize: false, removeHs: false, assignStereo: false});
     for (let i = 0; i < molecules.length; ++i) {
-      const terminationCheckDelay = queryCanonicalSmiles ? this._terminationCheckDelay * 10 : this._terminationCheckDelay;
+      const terminationCheckDelay = queryCanonicalSmiles ?
+        this._terminationCheckDelay * 10 :
+        this._terminationCheckDelay;
 
       if (i % terminationCheckDelay === 0) //every N molecules check for termination flag
         await new Promise((r) => setTimeout(r, 0));
@@ -344,9 +346,9 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
             if (unmatches[counter] !== j) {
               const rgroup = cols[colNames[i]]!.at(j - counter);
               if (isRGroupCol) {
-                if(rgroup.has_prop(rgroupTargetAtomsPropName))
+                if (rgroup.has_prop(rgroupTargetAtomsPropName))
                   atomsToHighlight[i - numOfNonRGroupCols][j] = new Uint32Array(JSON.parse(rgroup.get_prop(rgroupTargetAtomsPropName)));
-                if(rgroup.has_prop(rgroupTargetBondsPropName))
+                if (rgroup.has_prop(rgroupTargetBondsPropName))
                   bondsToHighlight[i - numOfNonRGroupCols][j] = new Uint32Array(JSON.parse(rgroup.get_prop(rgroupTargetBondsPropName)));
               }
               col[j] = rgroup.get_smiles();
