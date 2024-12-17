@@ -2029,37 +2029,4 @@ export class DiffStudio {
     this.updateRefreshWidget(false);
     this.updateExportToJsWidget(false);
   }
-
-  /**  */
-  private prepareClosingEvent() {
-    this.solverView.subs.push(
-      grok.events.onViewRemoving.subscribe((event) => {
-        const closedView = event.args.view as DG.ViewBase;
-
-        if (closedView == this.solverView) {
-          const onCloseAction = () => {
-            dlg.close();
-            for (const sub of this.solverView.subs)
-              sub.unsubscribe();
-            this.solverView.close();
-          };
-
-          const dlg = ui.dialog({title: 'Unsaved Changes'})
-            .add(ui.divText('You have unsaved changes. What would you like to do?'))
-            .addButton('Save', () => {
-              onCloseAction();
-              grok.shell.info('Saving...');
-            })
-            .addButton('Don\'t save', () => {
-              onCloseAction();
-              grok.shell.warning('Exit without saving...');
-            })
-            .onCancel(() => grok.shell.warning('You\'ve canceled closing!'))
-            .show();
-
-          event.preventDefault();
-        }
-      }),
-    );
-  }
 };

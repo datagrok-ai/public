@@ -8,19 +8,31 @@ import {LINK, MISC, UI_TIME} from './ui-constants';
 
 import '../css/app-styles.css';
 
+/** Diff Studio model error */
 export class ModelError extends Error {
-  public helpUrl: string;
-  public toHighlight: string = undefined;
+  private helpUrl: string;
+  private toHighlight: string = undefined;
 
   constructor(message: string, helpUrl: string, toHighlight?: string) {
     super(message);
     this.helpUrl = helpUrl;
     this.toHighlight = toHighlight;
   }
-};
 
+  public getHelpUrl() {
+    return this.helpUrl;
+  }
+
+  public getToHighlight() {
+    return this.toHighlight;
+  }
+}; // ModelError
+
+/** Show hint indicating the model error */
 export function showModelErrorHint(err: ModelError, tabControl: DG.TabControl) {
   const clearBtn = ui.button('Clear', () => popup.remove());
+  const helpUrl = err.getHelpUrl();
+  const toHighlight = err.getToHighlight();
 
   const msg = ui.divV([
     ui.h1('Model Error'),
@@ -28,7 +40,7 @@ export function showModelErrorHint(err: ModelError, tabControl: DG.TabControl) {
       ui.markdown(err.message),
       ui.link('See help', () => {
         grok.shell.windows.help.visible = true;
-        grok.shell.windows.help.showHelp(err.helpUrl);
+        grok.shell.windows.help.showHelp(helpUrl);
       }),
       ui.divH([clearBtn], 'diff-studio-hint-btns-div'),
     ]),
@@ -40,11 +52,12 @@ export function showModelErrorHint(err: ModelError, tabControl: DG.TabControl) {
   header.hidden = true;
   tabControl.root.appendChild(popup);
 
-  if (err.toHighlight !== undefined)
-    highLight(tabControl.root, err.toHighlight);
-}
+  if (toHighlight !== undefined)
+    highLightText(tabControl.root, toHighlight);
+} // showModelErrorHint
 
-function highLight(root: HTMLElement, text: string) {
+/** Find the specified text in the root element and highlight it */
+function highLightText(root: HTMLElement, text: string) {
   const lines = root.querySelectorAll('div.cm-line');
   const inds: number[] = [];
 
@@ -59,8 +72,9 @@ function highLight(root: HTMLElement, text: string) {
     numElements[inds[0]].scrollIntoView();
     setTimeout(() => line.classList.add('diff-studio-highlight-text'), UI_TIME.WGT_CLICK);
   }
-}
+} // highLight
 
+/** Return ModelError corresponding to ".. is not defined" */
 export function getIsNotDefined(msg: string): ModelError {
   const idx = msg.indexOf(MISC.IS_NOT_DEF);
   const toHighlight = msg.slice(0, idx - 1);
@@ -72,6 +86,7 @@ export function getIsNotDefined(msg: string): ModelError {
   );
 }
 
+/** Return unexpected entity name */
 export function getUnexpected(msg: string): ModelError {
   const start = msg.indexOf(`'`) + 1;
   const finish = msg.lastIndexOf(`'`);
@@ -84,6 +99,7 @@ export function getUnexpected(msg: string): ModelError {
   );
 }
 
+/** Return ModelError corresponding to "Cannot set properties of null" */
 export function getNullOutput(): ModelError {
   return new ModelError(
     `Non-existent item in the **#output** block. Use entities specified in **#equations** or **#expressions**.`,
