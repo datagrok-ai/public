@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
+import { openDB, deleteDB, wrap, unwrap, DBSchema } from 'idb';
 import {
   Viewer, InputForm,
   BigButton, IconFA,
@@ -16,7 +17,7 @@ import {
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
-import {useUrlSearchParams} from '@vueuse/core';
+import {computedAsync, useUrlSearchParams} from '@vueuse/core';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
@@ -90,6 +91,16 @@ const tabToProperties = (func: DG.Func) => {
   return map;
 };
 
+const LAYOUT_DB_NAME = 'ComputeDB';
+const STORE_NAME = 'RFV2Layouts';
+
+interface ComputeSchema extends DBSchema {
+  [STORE_NAME]: {
+    key: string;
+    value: string;
+  };
+}
+
 export const RichFunctionView = Vue.defineComponent({
   name: 'RichFunctionView',
   props: {
@@ -144,6 +155,20 @@ export const RichFunctionView = Vue.defineComponent({
     loadPersonalLayout: () => {}
   },
   setup(props, {emit, expose}) {
+    const layoutDatabase = computedAsync(async () => {
+      const db = await openDB<ComputeSchema>(LAYOUT_DB_NAME, 1, {
+        blocked: () => {
+          grok.shell.error(`Layout database requires update. Please close all webpages with models opened.`)
+        },
+        upgrade: (db, oldVersion) => {
+          if (oldVersion === 0) 
+            db.createObjectStore(STORE_NAME);
+        }
+      })
+
+      return db;
+    }, null)
+
     const currentCall = Vue.computed(() => props.funcCall);
 
     const tabToPropertiesMap = Vue.computed(() => tabToProperties(currentCall.value.func));
@@ -198,13 +223,15 @@ export const RichFunctionView = Vue.defineComponent({
       });
     };
 
-    const getSavedPersonalState = (call: DG.FuncCall): PanelsState | null => {
-      const item = localStorage.getItem(personalPanelsStorage(call));
+    const getSavedPersonalState = async (call: DG.FuncCall): Promise<PanelsState | null> => {
+      const item = await layoutDatabase.value?.get(STORE_NAME, personalPanelsStorage(call));
+
       return item ? JSON.parse(item): null;
     };
 
-    const getSavedDefaultState = (call: DG.FuncCall): PanelsState | null => {
-      const item = localStorage.getItem(defaultPanelsStorage(call));
+    const getSavedDefaultState = async (call: DG.FuncCall): Promise<PanelsState | null> => {
+      const item = await layoutDatabase.value?.get(STORE_NAME, defaultPanelsStorage(call));
+
       return item ? JSON.parse(item): null;
     };
 
@@ -212,25 +239,25 @@ export const RichFunctionView = Vue.defineComponent({
       if (!dockInited.value) return;
 
       const state = getCurrentState();
-      if (state) localStorage.setItem(defaultPanelsStorage(call), state);
+      if (state) layoutDatabase.value?.put(STORE_NAME, state, defaultPanelsStorage(call));
     };
 
     const savePersonalState = (call: DG.FuncCall = currentCall.value) => {
       if (!dockInited.value) return;
 
       const state = getCurrentState();
-      if (state) localStorage.setItem(personalPanelsStorage(call), state);
+      if (state) layoutDatabase.value?.put(STORE_NAME, state, personalPanelsStorage(call));
     };
 
     const removeSavedPersonalState = async () => {
-      localStorage.removeItem(personalPanelsStorage(currentCall.value));
+      layoutDatabase.value?.delete(STORE_NAME, personalPanelsStorage(currentCall.value));
 
       await loadDefaultLayout();
     };
 
     let intelligentLayout = true;
     const loadPersonalLayout = async () => {
-      const personalState = getSavedPersonalState(currentCall.value);
+      const personalState = await getSavedPersonalState(currentCall.value);
       if (!dockRef.value || !personalState || !dockInited.value) return;
 
       intelligentLayout = false;
@@ -248,7 +275,7 @@ export const RichFunctionView = Vue.defineComponent({
     };
 
     const loadDefaultLayout = async () => {
-      const defaultState = getSavedDefaultState(currentCall.value);
+      const defaultState = await getSavedDefaultState(currentCall.value);
       if (!dockRef.value || !defaultState || !dockInited.value) return;
 
       intelligentLayout = false;
