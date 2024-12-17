@@ -52,6 +52,7 @@ export const style1 = css`
 }
 .panel-titlebar-text {
   color: #9497a0;
+  text-wrap-mode: nowrap;
 }
 .dockspan-tab-handle:only-child .dockspan-tab-handle-text {
   color: #9497a0;
