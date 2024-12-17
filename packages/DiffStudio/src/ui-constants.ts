@@ -142,7 +142,7 @@ export enum ERROR_MSG {
   SCRIPTING_ISSUE = 'Platform scripting issue',
   UI_ISSUE = 'UI creating issue',
   MISSING_CLOSING_BRACKET = 'Annotation error: **"]"** is missing',
-  INCORRECT_BRACES_USE = 'Annotation error: incorrect use of **"{}"**.',
+  INCORRECT_BRACES_USE = 'Annotation error: incorrect use of **"{}"**',
   MISSING_COLON = 'Annotation error: **":"** is missing',
   CHECK_ARGUMENTS = ' (check the **#argument** block)',
   INCORRECT_ARG_SEGM = 'Incorrect limits for the argument',

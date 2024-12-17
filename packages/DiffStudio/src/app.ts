@@ -1106,7 +1106,7 @@ export class DiffStudio {
           if (posClose === -1) {
             throw new ModelError(
               `${ERROR_MSG.MISSING_CLOSING_BRACKET}. Correct annotation in the **${modelBlock}** block.`,
-              LINK.MODEL_COMPONENTS,
+              LINK.INTERFACE,
               annot,
             );
           }
@@ -1122,7 +1122,7 @@ export class DiffStudio {
         if (posOpen >= posClose) {
           throw new ModelError(
             `${ERROR_MSG.INCORRECT_BRACES_USE}. Correct annotation in the ***${modelBlock}** block.`,
-            LINK.MODEL_COMPONENTS,
+            LINK.INTERFACE,
             annot,
           );
         }
@@ -1137,7 +1137,7 @@ export class DiffStudio {
           if (pos === -1) {
             throw new ModelError(
               `${ERROR_MSG.MISSING_COLON}. Correct annotation in the **${modelBlock}** block.`,
-              LINK.MODEL_COMPONENTS,
+              LINK.INTERFACE,
               annot,
             );
           }

@@ -121,13 +121,15 @@ export type IVP = {
 
 /** Help links for model errors */
 enum ERROR_LINK {
-  BASIC_MODEL = '/help/compute/diff-studio#basic-model',
-  ADV_MODEL = '/help/compute/diff-studio#advanced-model',
-  LOOP = '/help/compute/diff-studio#cyclic-process-simulation',
-  UPDATE = '/help/compute/diff-studio#multistage-model',
-  LOOP_VS_UPDATE = '/help/compute/diff-studio#creating-a-custom-differential-equation-model',
-  SOLVER_SET = '/help/compute/diff-studio#solver-settings',
-  UNIQUE = '/help/compute/diff-studio#usability-improvements',
+  MAIN_DOCS = '/help/compute/diff-studio',
+  CORE_BLOCKS = `${MAIN_DOCS}#core-blocks`,
+  COMPS_SYNTAX = `${MAIN_DOCS}#model-components-and-syntax`,
+  LOOP = `${MAIN_DOCS}#cyclic-processes`,
+  UPDATE = `${MAIN_DOCS}#multistage-processes`,
+  UI_OPTS = `${MAIN_DOCS}#user-interface-options`,
+  LOOP_VS_UPDATE = `${MAIN_DOCS}#advanced-features`,
+  SOLVER_CONFIG = `${MAIN_DOCS}#solver-configuration`,
+  MODEL_PARAMS = `${MAIN_DOCS}#model-parameters`,
 };
 
 /** Specific error messages */
@@ -229,7 +231,7 @@ function getStartOfProblemDef(lines: string[]): number {
     ++idx;
 
     if (idx === linesCount)
-      throw new ModelError(ERROR_MSG.UNDEF_NAME, ERROR_LINK.BASIC_MODEL);
+      throw new ModelError(ERROR_MSG.UNDEF_NAME, ERROR_LINK.CORE_BLOCKS);
   }
 
   return idx;
@@ -306,7 +308,7 @@ function getDifEquations(lines: string[]): DifEqs {
 
   for (const line of lines) {
     if (line === undefined)
-      throw new ModelError(ERROR_MSG.UNDEF_DEQS, ERROR_LINK.BASIC_MODEL, CONTROL_EXPR.DIF_EQ);
+      throw new ModelError(ERROR_MSG.UNDEF_DEQS, ERROR_LINK.CORE_BLOCKS, CONTROL_EXPR.DIF_EQ);
 
     divIdx = line.indexOf(DIV_SIGN);
     eqIdx = line.indexOf(EQUAL_SIGN);
@@ -348,7 +350,7 @@ function getInput(line: string) : Input {
 
     // Check right-hand side
     if (isNaN(val))
-      throw new ModelError(`**${str}** ${ERROR_MSG.NAN}\n **${line}**.`, ERROR_LINK.BASIC_MODEL, line);
+      throw new ModelError(`**${str}** ${ERROR_MSG.NAN}\n **${line}**.`, ERROR_LINK.COMPS_SYNTAX, line);
 
     return {
       value: val,
@@ -361,7 +363,7 @@ function getInput(line: string) : Input {
 
   // Check right-hand side
   if (isNaN(val))
-    throw new ModelError(`**${str.slice(0, braceIdx)}** ${ERROR_MSG.NAN}: **${line}**`, ERROR_LINK.BASIC_MODEL, line);
+    throw new ModelError(`**${str.slice(0, braceIdx)}** ${ERROR_MSG.NAN}: **${line}**`, ERROR_LINK.COMPS_SYNTAX, line);
 
   return {
     value: val,
@@ -372,11 +374,11 @@ function getInput(line: string) : Input {
 /** Get argument (independent variable) of IVP */
 function getArg(lines: string[]): Arg {
   if (lines.length !== 4)
-    throw new ModelError(ERROR_MSG.ARG, ERROR_LINK.BASIC_MODEL, CONTROL_EXPR.ARG);
+    throw new ModelError(ERROR_MSG.ARG, ERROR_LINK.CORE_BLOCKS, CONTROL_EXPR.ARG);
 
   const sepIdx = lines[0].indexOf(CONTROL_SEP);
   if (sepIdx === -1)
-    throw new ModelError(`${ERROR_MSG.MISS_COLON}. Correct the line **${lines[0]}**`, ERROR_LINK.BASIC_MODEL, lines[0]);
+    throw new ModelError(`${ERROR_MSG.MISS_COLON}. Correct the line **${lines[0]}**`, ERROR_LINK.CORE_BLOCKS, lines[0]);
 
   const commaIdx = lines[0].indexOf(COMMA);
 
@@ -487,7 +489,7 @@ function getOutput(lines: string[], begin: number, end: number): Map<string, Out
     if (openIdx * closeIdx <= 0) {
       throw new ModelError(
         `${ERROR_MSG.BRACES} Correct the line **${line}** in the **${CONTROL_EXPR.OUTPUT}** block.`,
-        ERROR_LINK.ADV_MODEL,
+        ERROR_LINK.UI_OPTS,
         line,
       );
     }
@@ -496,7 +498,7 @@ function getOutput(lines: string[], begin: number, end: number): Map<string, Out
     if (openIdx * colonIdx <= 0) {
       throw new ModelError(
         `${ERROR_MSG.COLON} Correct the line **${line}** in the **#output** block.`,
-        ERROR_LINK.ADV_MODEL,
+        ERROR_LINK.UI_OPTS,
         line,
       );
     }
@@ -1161,7 +1163,7 @@ function checkSolverSettings(line: string): void {
   let sepIdx: number;
 
   if ((openBraceIdx < 0 )|| (closeBraceIdx < 0))
-    throw new ModelError(`${ERROR_MSG.BRACES}. Correct the line **${line}**.`, ERROR_LINK.SOLVER_SET, line);
+    throw new ModelError(`${ERROR_MSG.BRACES}. Correct the line **${line}**.`, ERROR_LINK.SOLVER_CONFIG, line);
 
   for (const item of line.slice(openBraceIdx + 1, closeBraceIdx).split(ANNOT_SEPAR)) {
     sepIdx = item.indexOf(CONTROL_SEP);
@@ -1177,7 +1179,7 @@ function checkSolverSettings(line: string): void {
       if ((val < range.min) || (val > range.max)) {
         throw new ModelError(
           `${ERROR_MSG.SOLVER}: **${opt}** must be in the range **${range.min}..${range.max}**.`,
-          ERROR_LINK.SOLVER_SET,
+          ERROR_LINK.SOLVER_CONFIG,
           line,
         );
       }
@@ -1189,23 +1191,23 @@ function checkSolverSettings(line: string): void {
 function checkCorrectness(ivp: IVP): void {
   // 0. Check basic elements
   if (ivp.name === undefined)
-    throw new ModelError(ERROR_MSG.UNDEF_NAME, ERROR_LINK.BASIC_MODEL);
+    throw new ModelError(ERROR_MSG.UNDEF_NAME, ERROR_LINK.CORE_BLOCKS);
 
   if ((ivp.deqs === undefined) || (ivp.deqs.equations.size === 0))
-    throw new ModelError(ERROR_MSG.UNDEF_DEQS, ERROR_LINK.BASIC_MODEL);
+    throw new ModelError(ERROR_MSG.UNDEF_DEQS, ERROR_LINK.CORE_BLOCKS);
 
   if ((ivp.inits === undefined) || (ivp.inits.size === 0))
-    throw new ModelError(ERROR_MSG.UNDEF_INITS, ERROR_LINK.BASIC_MODEL);
+    throw new ModelError(ERROR_MSG.UNDEF_INITS, ERROR_LINK.CORE_BLOCKS);
 
   if (ivp.arg === undefined)
-    throw new ModelError(ERROR_MSG.UNDEF_ARG, ERROR_LINK.BASIC_MODEL);
+    throw new ModelError(ERROR_MSG.UNDEF_ARG, ERROR_LINK.CORE_BLOCKS);
 
   // 1. Check initial values
   ivp.deqs.equations.forEach((ignore, name) => {
     if (!ivp.inits.has(name)) {
       throw new ModelError(
         `Initial value for **${name}** is missing. ${ERROR_MSG.MISSING_INIT}`,
-        ERROR_LINK.BASIC_MODEL,
+        ERROR_LINK.CORE_BLOCKS,
         CONTROL_EXPR.INITS,
       );
     }
@@ -1220,7 +1222,7 @@ function checkCorrectness(ivp: IVP): void {
       lowCase = val.caption.toLowerCase();
 
       if (usedNames.includes(lowCase))
-        throw new ModelError(`${ERROR_MSG.CASE_INSENS}**${val.caption}**.`, ERROR_LINK.UNIQUE, CONTROL_EXPR.OUTPUT);
+        throw new ModelError(`${ERROR_MSG.CASE_INSENS}**${val.caption}**.`, ERROR_LINK.UI_OPTS, CONTROL_EXPR.OUTPUT);
       else
         usedNames.push(lowCase);
     });
@@ -1231,7 +1233,7 @@ function checkCorrectness(ivp: IVP): void {
       lowCase = name.toLowerCase();
 
       if (usedNames.includes(lowCase))
-        throw new ModelError(`${ERROR_MSG.CASE_INSENS}**${name}**.`, ERROR_LINK.UNIQUE);
+        throw new ModelError(`${ERROR_MSG.CASE_INSENS}**${name}**.`, ERROR_LINK.UI_OPTS);
       else
         usedNames.push(lowCase);
     });
@@ -1241,7 +1243,7 @@ function checkCorrectness(ivp: IVP): void {
   if (ivp.arg.initial.value >= ivp.arg.final.value) {
     throw new ModelError(
       `${ERROR_MSG.INTERVAL} **${ivp.arg.name}**. ${ERROR_MSG.CORRECT_ARG_LIM}`,
-      ERROR_LINK.BASIC_MODEL,
+      ERROR_LINK.CORE_BLOCKS,
       CONTROL_EXPR.ARG,
     );
   }
@@ -1249,11 +1251,11 @@ function checkCorrectness(ivp: IVP): void {
   if (ivp.arg.step.value <= 0) {
     throw new ModelError(
       `${ERROR_MSG.NEGATIVE_STEP}`,
-      ERROR_LINK.BASIC_MODEL);
+      ERROR_LINK.CORE_BLOCKS);
   }
 
   if (ivp.arg.step.value > ivp.arg.final.value - ivp.arg.initial.value)
-    throw new ModelError(ERROR_MSG.INCOR_STEP, ERROR_LINK.BASIC_MODEL);
+    throw new ModelError(ERROR_MSG.INCOR_STEP, ERROR_LINK.CORE_BLOCKS);
 
   // 4. Check script inputs, due to https://reddata.atlassian.net/browse/GROK-15152
   const scriptInputs = [] as string[];
@@ -1264,7 +1266,7 @@ function checkCorrectness(ivp: IVP): void {
     if (key[0] === SERVICE) {
       throw new ModelError(
         `${ERROR_MSG.SERVICE_START} Correct **"${key}"** in the **${CONTROL_EXPR.INITS}** block.`,
-        ERROR_LINK.BASIC_MODEL,
+        ERROR_LINK.CORE_BLOCKS,
       );
     }
 
@@ -1273,7 +1275,7 @@ function checkCorrectness(ivp: IVP): void {
     if (scriptInputs.includes(current)) {
       throw new ModelError(
         `${ERROR_MSG.REUSE_NAME} **"${key}"** in the **${CONTROL_EXPR.INITS}** block.`,
-        ERROR_LINK.BASIC_MODEL,
+        ERROR_LINK.CORE_BLOCKS,
       );
     }
 
@@ -1286,7 +1288,7 @@ function checkCorrectness(ivp: IVP): void {
       if (key[0] === SERVICE) {
         throw new ModelError(
           `${ERROR_MSG.SERVICE_START}: correct **"${key}"** in the **${CONTROL_EXPR.PARAMS}** block.`,
-          ERROR_LINK.ADV_MODEL,
+          ERROR_LINK.MODEL_PARAMS,
         );
       }
 
@@ -1295,7 +1297,7 @@ function checkCorrectness(ivp: IVP): void {
       if (scriptInputs.includes(current)) {
         throw new ModelError(
           `${ERROR_MSG.REUSE_NAME} **"${key}"** in the **${CONTROL_EXPR.PARAMS}** block.`,
-          ERROR_LINK.ADV_MODEL,
+          ERROR_LINK.MODEL_PARAMS,
         );
       }
 
