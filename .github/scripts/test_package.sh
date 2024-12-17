@@ -143,7 +143,7 @@ grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencie
 if [ -n "$grok_deps" ]; then
 for dep in $grok_deps; do
   current_dir=$(pwd)
-  cd node_modules/$dep
+  cd $(echo "node_modules/$dep" | tr -d '\r') || exit 1
   count=0
   retries=5
   echo "Publishing $dep to ${alias}..."
@@ -159,7 +159,7 @@ for dep in $grok_deps; do
       exit $exit
     fi
   done
-  cd $current_dir
+  cd $current_dir || exit 1
 done
 fi
 
