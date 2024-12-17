@@ -212,7 +212,7 @@ if [[ "${check_container}" == "true" ]] ; then
     fi
 
     count=0
-    retries=50
+    retries=20
     until .github/scripts/check-output.sh "curl -s -H 'Authorization: $long_term_token' '${apiUrl}/docker/containers'" "${PACKAGE}"
     do
       wait=$((2 ** count))
@@ -238,7 +238,7 @@ if [[ "${check_container}" == "true" ]] ; then
     done
     if [[ "${apiUrl}" == *"127.0.0.1"* ]]; then
       count=0
-      retries=50
+      retries=20
       until .github/scripts/check-output.sh "docker ps" "${PACKAGE}"
       do
         wait=$((2 ** count))
