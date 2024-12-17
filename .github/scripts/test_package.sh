@@ -62,7 +62,7 @@ export GROK_CONNECT_PORT=2345
 export DATAGROK_DB_PORT=15434
 
 cp docker/localhost.docker-compose.yaml docker/github_actions.docker-compose.yaml
-sed -i '/"dbServer": "database"/a\ \ \ \ \ \ \ \ \ \ "initialSetupCompleted": true,' docker/github_actions.docker-compose.yaml
+sed -i '/"dbServer": "database"/a\ \ \ \ \ \ \ \ \ \ "initialSetupCompleted": true,' docker/github_actions.docker-compose.yaml || exit 1
 
 datlasUrl="http://127.0.0.1:${DATAGROK_PORT}"
 apiUrl="http://127.0.0.1:${DATAGROK_PORT}/api"
