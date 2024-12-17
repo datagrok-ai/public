@@ -64,6 +64,7 @@ export DATAGROK_DB_PORT=15434
 cp docker/localhost.docker-compose.yaml docker/github_actions.docker-compose.yaml
 gsed -i '/"dbServer": "database"/a\ \ \ \ \ \ \ \ \ \ "initialSetupCompleted": true,' docker/github_actions.docker-compose.yaml
 
+datlasUrl="http://127.0.0.1:${DATAGROK_PORT}"
 apiUrl="http://127.0.0.1:${DATAGROK_PORT}/api"
 alias='githubactions'
 
@@ -133,6 +134,7 @@ else
   echo "Token is valid: $token"
 fi
 curl -s -H "Authorization: $long_term_token" -H "Content-Type": "application/json" "${apiUrl}/admin/plugins/admin/settings" -X POST -d '{"#type":"AdminPluginSettings", "agreementDate":null}' || exit 1
+curl -s -H "Authorization: $long_term_token" -H "Content-Type": "application/json"  "${apiUrl}/admin/plugins/admin/settings" -X POST -d "{\"webRoot\": \"${datlasUrl}\", \"apiRoot\": \"${apiUrl}\"}" || exit 1
 
 key='admin'
 grok config add --default --alias ${alias} --server "${apiUrl}" --key "$key" || exit 1
