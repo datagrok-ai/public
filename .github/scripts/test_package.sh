@@ -236,15 +236,6 @@ if [[ "${check_container}" == "true" ]] ; then
       count=$((count + 1))
       if [ "$count" -lt "$retries" ]; then
           docker compose -p ${alias} -f "docker/github_actions.docker-compose.yaml" --profile all exec db sh -c "PAGER=cat psql -U postgres -d datagrok -c 'SELECT * FROM docker_containers;'"
-#          token=$(curl -s -X POST ${apiUrl}/users/login/dev/admin | jq -r .token)
-#          # Check if the token is null
-#          if [ "$token" == "null" ] || [ -z "$token" ]; then
-#            echo "Error: Token is null or empty."
-#            exit 1
-#          else
-#            echo "Token is valid: $token"
-#          fi
-#          .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' '${apiUrl}/docker/containers'" "${PACKAGE}"
           sleep $wait
           echo -e "\nContainer for ${PACKAGE} did not start yet..."
           echo -e "\nRetrying '/api/docker/containers'..."
