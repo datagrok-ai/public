@@ -307,15 +307,15 @@ async function runRGroupAnalysis(tv: DG.TableView): Promise<void> {
 }
 
 async function saveAndOpenProject(tv: DG.TableView, dataSync?: boolean): Promise<void> {
-  let project = DG.Project.create();
-  let tableInfo = tv.dataFrame.getTableInfo();
+  const project = DG.Project.create();
+  const tableInfo = tv.dataFrame.getTableInfo();
   if (dataSync) {
     //@ts-ignore
     tableInfo.tags[DG.Tags.DataSync] = 'sync';
     //@ts-ignore
-    tableInfo.tags[DG.Tags.CreationScript] = grok.shell.tv.dataFrame.getTag(DG.Tags.CreationScript);  
+    tableInfo.tags[DG.Tags.CreationScript] = grok.shell.tv.dataFrame.getTag(DG.Tags.CreationScript);
   }
-  let layoutInfo = tv.getInfo();
+  const layoutInfo = tv.getInfo();
   project.addChild(tableInfo);
   project.addChild(layoutInfo);
   await grok.dapi.tables.uploadDataFrame(tv.dataFrame);

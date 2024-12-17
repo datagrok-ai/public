@@ -309,10 +309,13 @@ export class MmpPairedGrids {
     if (idxParent !== -1 || showAllFragsMode) {
       for (const idx of idxs) {
         if (idx !== -1) {
-          const ruleSmi1 = this.fpGrid.table.getCol(MMP_NAMES.FROM).get(idx);
-          const ruleSmi2 = this.fpGrid.table.getCol(MMP_NAMES.TO).get(idx);
-          const ruleSmiNum1 = this.mmpa.rules.smilesFrags.indexOf(ruleSmi1);
-          const ruleSmiNum2 = this.mmpa.rules.smilesFrags.indexOf(ruleSmi2);
+          // const ruleSmi1 = this.fpGrid.table.getCol(MMP_NAMES.FROM).get(idx);
+          // const ruleSmi2 = this.fpGrid.table.getCol(MMP_NAMES.TO).get(idx);
+          // const ruleSmiNum1 = this.mmpa.rules.smilesFrags.indexOf(ruleSmi1);
+          // const ruleSmiNum2 = this.mmpa.rules.smilesFrags.indexOf(ruleSmi2);
+
+          const ruleSmiNum1 = this.mmpa.rules.rules[idx].smilesRule1;
+          const ruleSmiNum2 = this.mmpa.rules.rules[idx].smilesRule2;
 
           let counter = 0;
 
@@ -355,10 +358,12 @@ export class MmpPairedGrids {
     }
 
     if (idx !== -1) {
-      const ruleSmi1 = this.fpGrid.table.getCol(MMP_NAMES.FROM).get(idx);
-      const ruleSmi2 = this.fpGrid.table.getCol(MMP_NAMES.TO).get(idx);
-      const ruleSmiNum1 = this.mmpa.rules.smilesFrags.indexOf(ruleSmi1);
-      const ruleSmiNum2 = this.mmpa.rules.smilesFrags.indexOf(ruleSmi2);
+      // const ruleSmi1 = this.fpGrid.table.getCol(MMP_NAMES.FROM).get(idx);
+      // const ruleSmi2 = this.fpGrid.table.getCol(MMP_NAMES.TO).get(idx);
+      // const ruleSmiNum1 = this.mmpa.rules.smilesFrags.indexOf(ruleSmi1);
+      // const ruleSmiNum2 = this.mmpa.rules.smilesFrags.indexOf(ruleSmi2);
+      const ruleSmiNum1 = this.mmpa.rules.rules[idx].smilesRule1;
+      const ruleSmiNum2 = this.mmpa.rules.rules[idx].smilesRule2;
 
       let counter = 0;
 
@@ -386,7 +391,7 @@ export class MmpPairedGrids {
 
     const cores = new Array<string>(cases.length);
     for (let i = 0; i < cases.length; i ++)
-      cores[i] = this.mmpa.rules.rules[fpIdx].pairs[i].core;
+      cores[i] = this.mmpa.frags.idToName[this.mmpa.rules.rules[fpIdx].pairs[i].core];
 
     const pairsFrom = Array<string>(cases.length);
     const pairsTo = Array<string>(cases.length);

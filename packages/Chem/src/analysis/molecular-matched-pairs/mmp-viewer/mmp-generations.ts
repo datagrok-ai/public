@@ -85,9 +85,9 @@ function getCorGrid(mmpa: MMPA): DG.Grid {
   for (let i = 0; i < rules.length; i ++) {
     for (let j = 0; j <rules[i].pairs.length; j++) {
       for (let k = 0; k < activitiesCount; k++) {
-        initialMol[counter] = rules[i].pairs[j].core;
-        initialFragment[counter] = mmpa.rules.smilesFrags[rules[i].smilesRule1];
-        endFragment[counter] = mmpa.rules.smilesFrags[rules[i].smilesRule2];
+        initialMol[counter] = mmpa.frags.idToName[rules[i].pairs[j].core];
+        initialFragment[counter] = mmpa.frags.idToName[mmpa.rules.smilesFrags[rules[i].smilesRule1]];
+        endFragment[counter] = mmpa.frags.idToName[mmpa.rules.smilesFrags[rules[i].smilesRule2]];
         activity[counter] = mmpa.initData.activitiesNames[k];
         observed[counter] = mmpa.initData.activities[k][rules[i].pairs[j].secondStructure];
         predicted[counter] = mmpa.initData.activities[k][rules[i].pairs[j].firstStructure] +

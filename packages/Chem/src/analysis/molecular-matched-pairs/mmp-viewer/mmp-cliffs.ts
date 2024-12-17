@@ -96,7 +96,8 @@ export function fillPairInfo(mmpa: MMPA, line: number, linesIdxs: Uint32Array, a
       const cores = mmpa.rules.rules[ruleNum].pairs
         .filter((pair) => pair.firstStructure === fromIdx && pair.secondStructure === toIdx);
       if (cores.length) {
-        getInverseSubstructuresAndAlign([cores[0].core], [moleculeFrom], [moleculeTo], rdkitModule).then((res) => {
+        getInverseSubstructuresAndAlign([mmpa.frags.idToName[cores[0].core]],
+          [moleculeFrom], [moleculeTo], rdkitModule).then((res) => {
           const {inverse1, inverse2, fromAligned, toAligned} = res;
           pairsDf.set(MMP_NAMES.STRUCT_DIFF_FROM_NAME, pairIdx, inverse1[0]);
           pairsDf.set(MMP_NAMES.STRUCT_DIFF_TO_NAME, pairIdx, inverse2[0]);

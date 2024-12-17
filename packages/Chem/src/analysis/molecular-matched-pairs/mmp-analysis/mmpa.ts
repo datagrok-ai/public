@@ -1,6 +1,5 @@
 import * as DG from 'datagrok-api/dg';
 import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
-import {IMmpFragmentsResult} from '../../../rdkit-service/rdkit-service-worker-substructure';
 import {chemSpace} from '../../chem-space';
 import {ISequenceSpaceParams, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 
@@ -59,7 +58,7 @@ export class MMPA {
     const frags = await getMmpFrags(molecules);
     const [rules, allCasesNumber] = await getMmpRules(frags, fragmentCutoff, gpu);
 
-    const [rulesBased, allCasesBased] = getPlainData(rules, initData, allCasesNumber, fragSortingInfo);
+    const [rulesBased, allCasesBased] = getPlainData(rules, frags, initData, allCasesNumber, fragSortingInfo);
 
     return new MMPA(initData, frags, rules, allCasesNumber, rulesBased, allCasesBased, null, null, gpu);
   }
@@ -78,7 +77,7 @@ export class MMPA {
     const rules: MmpRules = totalParsed['rules'];
     const allCasesNumber: number = totalParsed['cases'];
 
-    const [rulesBased, allCasesBased] = getPlainData(rules, initData, allCasesNumber, fragSortingInfo);
+    const [rulesBased, allCasesBased] = getPlainData(rules, frags, initData, allCasesNumber, fragSortingInfo);
 
     const chemSpaceResult: Float32Array [] | null = totalParsed['chemSpaceResult'];
     const generationResult: MmpGeneration | null = totalParsed['generationResult'];

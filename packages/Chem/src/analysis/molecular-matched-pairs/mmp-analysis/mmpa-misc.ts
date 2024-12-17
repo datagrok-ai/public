@@ -17,17 +17,17 @@ export type MmpRules = {
   rules: {
     smilesRule1: number,
     smilesRule2: number,
-    pairs: {firstStructure: number, secondStructure: number, core: string}[]
+    pairs: {firstStructure: number, secondStructure: number, core: number}[]
   } [],
-  smilesFrags: string[]
+  smilesFrags: number[]
 };
 
 export type MolecularPair = {
-  first: number,
-  second: number,
-  core: string,
-  firstR: string,
-  secondR: string
+  first: number, //molecule
+  second: number, //molecule
+  core: number, //frag
+  firstR: number, //frag
+  secondR: number //frag
 };
 
 export type MmpInitData = {

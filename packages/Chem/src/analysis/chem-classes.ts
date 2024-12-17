@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {getMmpFrags} from './molecular-matched-pairs/mmp-analysis/mmpa-fragments';
+//import {getMmpFrags} from './molecular-matched-pairs/mmp-analysis/mmpa-fragments';
 
 // export interface IMmpFragmentsResult {
 //   frags: [string, string][][];
