@@ -175,7 +175,7 @@ export const TreeWizard = Vue.defineComponent({
     const rfvRef = Vue.ref(null as InstanceType<typeof RichFunctionView> | null);
 
     const handlePanelClose = (el: HTMLElement) => {
-      if (el === treeInstance.value?.$el.parentElement) treeHidden.value = true;
+      if (el === treeInstance.value?.$el) treeHidden.value = true;
       if (el === inspectorInstance.value?.$el) inspectorHidden.value = true;
     };
 
