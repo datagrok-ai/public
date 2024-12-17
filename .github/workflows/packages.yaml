@@ -510,10 +510,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.package }}.test-results
-          path: |
-            packages/${{ matrix.package }}/test-record.mp4
-            packages/${{ matrix.package }}/test-report.csv
-            packages/${{ matrix.package }}/test-console-output.log
+          path: packages/${{ matrix.package }}/test-*
           retention-days: 14
           if-no-files-found: warn
       - name: Create error notification
