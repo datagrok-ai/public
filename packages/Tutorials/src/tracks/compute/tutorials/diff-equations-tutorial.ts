@@ -13,6 +13,15 @@ import '../../../../css/tutorial.css';
 enum DS_CONSTS {
   EDIT_RIBBON_IDX = 2,
   EDIT_TOGGLE_IDX = 2,
+  REFRESH_RIBBON_IDX = 1,
+  REFRESH_ICN_IDX = 0,
+};
+
+enum LINKS {
+  DIF_STUDIO = 'https://datagrok.ai/help/compute/diff-studio',
+  COMPS_SYNTAX = 'https://datagrok.ai/help/compute/diff-studio#model-components-and-syntax',
+  ADVANCES = 'https://datagrok.ai/help/compute/diff-studio#advanced-features',
+  MODELS = 'https://datagrok.ai/help/compute/models',
 };
 
 /** Earth's population modeling */
@@ -70,7 +79,7 @@ const editorInfo = [
   * the grid step`,
   `# Annotation
   
-  Diff Studio automatically generates user interface. To improve usability, specifiy in braces \`{}\`:
+  Diff Studio automatically generates user interface. To improve usability, specify in braces \`{}\`:
 
   * \`min\` and \`max\` to get sliders for the rapid model exploration
   * \`caption\` to get the desired input caption
@@ -80,13 +89,13 @@ const editorInfo = [
   Define initial values here.`,
   `# Parameters
   
-  If your model has paraterers, specify them here.`,
+  If your model has parameters, specify them here.`,
   `# Annotation
   
-  To improve usability, specifiy tooltips in brackets \`[]\`.`,
+  To improve usability, specify tooltips in brackets \`[]\`.`,
   `# Output
 
-  The computation output is a dataframe. Customize it here.`,
+  The computation output is a dataframe. Customize its columns here.`,
 ];
 
 /** Tutorial on solving differential equations */
@@ -97,16 +106,16 @@ export class DifferentialEquationsTutorial extends Tutorial {
   get description() {
     return 'Learn how to model processes defined by differential equations with Diff Studio';
   }
-  get steps() {return 12;}
+  get steps() {return 14;}
 
   demoTable: string = '';
-  helpUrl: string = 'https://datagrok.ai/help/compute/diff-studio';
+  helpUrl: string = LINKS.DIF_STUDIO;
 
   protected async _run() {
     this.header.textContent = this.name;
     this.describe('Diff Studio enables the simulation of processes defined by ordinary differential equations.');
     this.describe(ui.link('Learn more', this.helpUrl).outerHTML);
-    this.title('Model');
+    this.title('Models definition review');
     this.describe(`Let\'s implement the Lotka-Volterra predator-prey ${ui.link('model', this.helpUrl).outerHTML}.`);
     closeWindows();
 
@@ -194,21 +203,14 @@ export class DifferentialEquationsTutorial extends Tutorial {
     const editToggle = ribbonPanels[DS_CONSTS.EDIT_RIBBON_IDX][DS_CONSTS.EDIT_TOGGLE_IDX];
     await this.action(
       'Open equations editor',
-      fromEvent(editToggle.querySelector('div.ui-input-bool-switch.ui-input-root')!, 'click'),
+      fromEvent(editToggle.querySelector('div.ui-input-editor')!, 'click'),
       editToggle,
       'Turn on the <b>Edit</b> toggle',
     );
 
-    const editorRoot = dsViewRoot.querySelector('div.panel-base') as HTMLElement;
-    this.describe('Explore the underlying mathematical model.');
-    const modelTabRoot = dsViewRoot.querySelector('div.d4-tab-header[name="Model"]') as HTMLElement;
-    await this.action(
-      'Click the Model tab',
-      fromEvent(modelTabRoot, 'click'),
-      modelTabRoot,
-    );
-
-    // 5. Explore equations editor
+    // 6. Explore equations
+    const editorRoot = dsViewRoot.querySelector('div.panel-base.splitter-container-horizontal') as HTMLElement;
+    let ignore = await getElement(editorRoot, 'div.cm-line');
     editorRoot.style.width = '515px';
     const lineRoots = editorRoot.querySelectorAll('div[class="cm-line"]') as unknown as HTMLElement[];
 
@@ -229,8 +231,10 @@ export class DifferentialEquationsTutorial extends Tutorial {
       'Click "Next" to go to the next item.',
     );
 
-    // 6. Complete 1st equation  
-    this.title('Improvement');
+    this.describe(`Diff Studio enables creating models declaratively using a simple ${ui.link('syntax', LINKS.COMPS_SYNTAX).outerHTML}.`);
+
+    // 7. Complete 1st equation  
+    this.title('Improving models');
     this.describe('Let\'s modify the model so that it takes into account the interaction between predator and prey.');
 
     const tutorialPanelRoot = document.querySelector('div.tutorials-root-description.ui-div');
@@ -238,7 +242,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
     let equation = 'dx/dt = alpha * x - beta * x * y';
     let rawEquation = equation.replaceAll(' ', '');
     let codeDiv = ui.divV([
-      ui.label('Get the equation'),
+      ui.label('Complete the first equation to'),
       ui.divH([
         ui.div(equation, 'tutorials-code-section'),
         ui.div(ui.iconFA('copy', () => {
@@ -257,11 +261,11 @@ export class DifferentialEquationsTutorial extends Tutorial {
 
     codeDiv.hidden = true;
 
-    // 7. Complete 2nd equation    
+    // 8. Complete 2nd equation    
     equation = 'dy/dt = -gamma * y + delta * x * y';
     rawEquation = equation.replaceAll(' ', '');
     codeDiv = ui.divV([
-      ui.label('Get the equation'),
+      ui.label('Complete the second equation to'),
       ui.divH([
         ui.div(equation, 'tutorials-code-section'),
         ui.div(ui.iconFA('copy', () => {
@@ -280,35 +284,45 @@ export class DifferentialEquationsTutorial extends Tutorial {
 
     codeDiv.hidden = true;
 
-    // 8. Check meaning
+    this.describe(`Find more features at the ${ui.link('link', LINKS.ADVANCES).outerHTML}.`);
+
+    // 9. Refresh
+    const refreshIcn = ribbonPanels[DS_CONSTS.REFRESH_RIBBON_IDX][DS_CONSTS.REFRESH_ICN_IDX];
+    await this.action(
+      'Apply changes',
+      fromEvent(refreshIcn, 'click'),
+      refreshIcn,
+      'Click the Refresh icon',
+    );
+
+    // 10. Check meaning
     const description = '# Updates\n\nNow, the model takes into account:' + 
       '\n* the effect of the presence of predators on the prey death rate' +
       '\n* the effect of the presence of prey on the predator\'s growth rate';
     
-    let okBtn = singleDescription(lineRoots[1], description, 'Go to the next step');
+    let okBtn = singleDescription(lineChartRoot, description, 'Go to the next step');
 
     await this.action(
       'Click "OK"',
       fromEvent(okBtn, 'click'),
       undefined,
       'Check the updates. Click "OK" to go to the next step.',
-    );    
-
-    // 9. Run computations
-    this.title('Exploration');
-    const runIcnRoot = document.querySelector('i.grok-icon.fal.fa-play.fas') as HTMLElement;
-
-    await this.action(
-      'Run the model',
-      fromEvent(runIcnRoot, 'click'),
-      runIcnRoot,
-      `Click the <b>Run</b> icon on the top panel.`,
     );
 
-    editorRoot.style.width = '220px';
+    // 11. Close editor
+    this.title('Exploration');
 
-    // 10. Play with inputs 
-    uiFormRoot = dsViewRoot.querySelector('div.ui-form') as HTMLElement;   
+    await this.action(
+      'Close equations editor',
+      fromEvent(editToggle.querySelector('div.ui-input-editor')!, 'click'),
+      editToggle,
+      'Turn off the <b>Edit</b> toggle',
+    );
+
+    editorRoot.style.width = '241px';
+
+    // 12. Play with inputs
+    uiFormRoot = await getElement(dsViewRoot, 'div.ui-form') as HTMLElement;
     inputRoots = uiFormRoot.querySelectorAll('div.ui-input.ui-input-root.ui-input-float');
 
     const preyEditor = inputRoots[3].querySelector('input[class="ui-input-editor"]') as HTMLInputElement;
@@ -317,9 +331,8 @@ export class DifferentialEquationsTutorial extends Tutorial {
       interval(100).pipe(filter(() => preyEditor.value == '2')),
       preyEditor,
       'Reduce the initial value of the prey population.',
-    );
+    );    
 
-    // 11. Play with inputs    
     const deltaEditor = inputRoots[8].querySelector('input[class="ui-input-editor"]') as HTMLInputElement;
     await this.action(
       'Set "Delta" to 0.1',
@@ -328,7 +341,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
       'Reduce the effect of preys on the predator\'s growth rate.',
     );
 
-    // 12. Play with inputs
+    // 13. Play with inputs
     finishEditor = inputRoots[1].querySelector('input[class="ui-input-editor"]') as HTMLInputElement;
     await this.action(
       'Set "Finish" to 150',
@@ -336,5 +349,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
       finishEditor,
       'Get a simulation over a longer time period.',
     );
+
+    this.describe(`Find useful Diff Studio ${ui.link('models', LINKS.MODELS).outerHTML}.`);
   } // _run
 } // DifferentialEquationsTutorial
