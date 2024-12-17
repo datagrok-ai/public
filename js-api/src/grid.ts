@@ -9,6 +9,7 @@ import {SemType} from './const';
 import {Property} from './entities';
 import {IFormSettings, IGridSettings} from "./interfaces/d4";
 import {IDartApi} from "./api/grok_api.g";
+import * as DG from "./dataframe";
 
 
 const api: IDartApi = <any>window;
@@ -783,6 +784,12 @@ export class GridColumnList {
   add(options: {gridColumnName?: string, cellType: string, index?: number}): GridColumn {
     return api.grok_GridColumnList_Add(this.dart, options.cellType, options.gridColumnName);
   }
+
+  /** Removes a grid column at the specified position. */
+  removeAt(index: number) { api.grok_GridColumnList_RemoveAt(this.dart, index); }
+
+  /** Removes all columns. */
+  clear() { api.grok_GridColumnList_Clear(this.dart); }
 }
 
 /** DataFrame-bound viewer that contains {@link Form} */
@@ -1057,6 +1064,11 @@ export class Grid extends Viewer<IGridSettings> {
   /** Resizes the grid to fit the content */
   autoSize(maxWidth: number, maxHeight: number, minWidth?: number, minHeight?: number, autoSizeOnDataChange?: boolean): void {
     api.grok_Grid_AutoSize(this.dart, maxWidth, maxHeight, minWidth, minHeight, autoSizeOnDataChange);
+  }
+
+  /** Renders the content of this grid to the specified canvas and bounds. */
+  render(g: CanvasRenderingContext2D, bounds: Rect) {
+    api.grok_Grid_Render(this.dart, g, bounds.toDart());
   }
 }
 

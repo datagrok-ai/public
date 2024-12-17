@@ -574,7 +574,7 @@ export class Row {
         return true;
       },
       get(target: any, name) {
-        if (name == 'cells' || name == 'get' || name == 'toDart' || target.hasOwnProperty(name))
+        if (name == 'cells' || name == 'get' || name == 'toDart' || name == 'toMap' || target.hasOwnProperty(name))
           return target[<any>name];
         return target.table.get(name, target.idx);
       }
@@ -582,6 +582,14 @@ export class Row {
   }
 
   get cells(): Iterable<Cell> { return _toIterable(api.grok_Row_Get_Cells(this.table.dart, this.idx)); }
+
+  /** Returns a JS object with column names as keys and values as values. */
+  toMap(): {[index: string]: any} {
+    const res: {[index: string]: any} = {};
+    for (const column of this.table.columns)
+      res[column.name] = column.get(this.idx);
+    return res;
+  }
 
   /** Returns this row's value for the specified column
    * @param {string} columnName
@@ -1236,6 +1244,14 @@ export class ColumnList {
   byTags(tags: object): Iterable<Column> {
     return _toIterable(api.grok_ColumnList_ByTags(this.dart, tags));
   }
+
+  /** Returns the first column that satisfies the specified criteria. */
+  firstWhere(predicate: (col: Column) => boolean): Column | undefined {
+    for (const col of this)
+      if (predicate(col))
+        return col;
+  }
+
 
   /** Finds categorical columns.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/find-columns} */

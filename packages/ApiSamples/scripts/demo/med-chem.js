@@ -87,15 +87,6 @@ const groups = {
   'Classifications': {columns: ['BSEP classification', 'HLM CLint classification', 'RLM CLint classification', 'LE-MDCK Classification', 'PAMPA Classification', 'pH6.8 HT Solubility Classification'] }
 }
 
-for (let group of Object.getOwnPropertyNames(groups))
-  for (let colName of groups[group].columns)
-    if (t.col(colName))
-      t.col(colName).tags['group'] = group;
-
 t.meta.detectSemanticTypes();
-let v = grok.shell.addTableView(t);
 
-for (let group of Object.getOwnPropertyNames(groups))
-  for (let colName of groups[group].columns)
-    if (groups[group].color && v.grid.col(colName))
-      v.grid.col(colName).headerCellStyle.textColor = DG.Color.fromHtml(groups[group].color);
+t.meta.setGroups(groups);

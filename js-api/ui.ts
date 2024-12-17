@@ -801,7 +801,7 @@ export namespace input {
 
   export interface IColumnInputInitOptions<T> extends IInputInitOptions<T> {
     table?: DataFrame;
-    filter?: Function;
+    filter?: (col: Column) => boolean;
   }
 
   export interface IColumnsInputInitOptions<T> extends IColumnInputInitOptions<T> {
