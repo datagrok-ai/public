@@ -397,7 +397,7 @@ jobs:
               count=0
               retries=5
               echo "Publishing $dep to ${{ steps.datagrok-image.outputs.alias }}..."
-              until grok publish ${{ steps.datagrok-image.outputs.alias }}; do
+              until grok publish ${{ steps.datagrok-image.outputs.alias }} --release; do
                 exit=$?
                 wait=$((2 ** count))
                 count=$((count + 1))
@@ -418,7 +418,7 @@ jobs:
         run: |
           count=0
           retries=5
-          until grok publish ${{ steps.datagrok-image.outputs.alias }}; do
+          until grok publish ${{ steps.datagrok-image.outputs.alias }} --release; do
             exit=$?
             if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
               docker compose -p datagrok logs --no-color --timestamps datagrok

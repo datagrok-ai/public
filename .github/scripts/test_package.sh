@@ -125,7 +125,7 @@ if [ "$token" == "null" ] || [ -z "$token" ]; then
 else
   echo "Token is valid: $token"
 fi
-long_term_token=$(curl -s -X POST ${apiUrl}/users/sessions/current/refresh -H "Authorization: ${token}" | jq -r .token)
+long_term_token=$(curl -s -X POST "${apiUrl}/users/sessions/current/refresh" -H "Authorization: ${token}" | jq -r .token)
 # Check if the token is null
 if [ "$long_term_token" == "null" ] || [ -z "$long_term_token" ]; then
   echo "Error: Token is null or empty."
