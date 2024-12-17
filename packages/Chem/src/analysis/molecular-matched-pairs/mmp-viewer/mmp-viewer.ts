@@ -897,10 +897,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
   async prepareMwForSorting() {
-    const frags = Object.keys(this.fragSortingInfo);
+    const frags = Object.keys(this.fragSortingInfo).map((idx) => this.mmpa?.frags.idToName[Number(idx)]) as string[];
     chemDescriptor(DG.Column.fromStrings('smiles', frags), 'MolWt').then((res: DG.Column) => {
       let errorCount = 0;
-      frags.forEach((key, idx) => {
+      frags.forEach((key: string, idx) => {
         let resMW = res.get(idx);
         if (!resMW || typeof resMW === 'string') {
           errorCount++;
