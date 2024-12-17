@@ -247,7 +247,6 @@ export class SunburstViewer extends EChartViewer {
         !columnNamesToRemove.includes(columnName));
       this.render();
     }));
-    this.addSelectionOrDataSubs();
   }
 
   onTableAttached(propertyChanged?: boolean): void {
@@ -285,6 +284,22 @@ export class SunburstViewer extends EChartViewer {
       rowSource, this.inheritFromGrid);
   }
 
+  async renderMolecule(params: any) {
+    const image = await TreeUtils.getMoleculeImage(params.name);
+    const img = new Image();
+    img.src = image!.toDataURL('image/png');
+    params.data.label = {
+      show: true,
+      formatter: '{b}',
+      color: 'rgba(0,0,0,0)',
+      height: '80',
+      width: '70',
+      backgroundColor: {
+        image: img.src,
+      },
+    }
+  }
+
   formatLabel(params: any) {
     //@ts-ignore
     const ItemAreaInfoArray = this.chart.getModel().getSeriesByIndex(0).getData()._itemLayouts.slice(1);
@@ -293,8 +308,19 @@ export class SunburstViewer extends EChartViewer {
       if (getCurrentItemIndex === index)
         return item;
     });
+
     const { r, r0, startAngle, endAngle } = ItemLayoutInfo;
     const { width, height } = this.calculateRingDimensions(r0, r, startAngle, endAngle);
+
+    if (params.data.semType === 'Molecule') {
+      const imageWidth = 70;
+      const imageHeight = 80;
+      if (width >= imageWidth && height >= imageHeight) {
+        this.renderMolecule(params);
+        return ' ';
+      }
+      return ' ';
+    }
 
     const averageCharWidth = 5;
     const averageCharHeight = 10;
