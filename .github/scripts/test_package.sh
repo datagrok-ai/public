@@ -109,7 +109,7 @@ npm install
 if [[ "${unpublished_deps}" != "" ]]; then
     grok link
 fi
-npm run build -- --mode=production
+npm run build -- --mode=production || exit 1
 
 cd ${crnt} || exit 1
 
