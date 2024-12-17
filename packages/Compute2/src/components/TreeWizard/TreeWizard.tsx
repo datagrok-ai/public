@@ -144,16 +144,16 @@ export const TreeWizard = Vue.defineComponent({
 
     const treeInstance = Vue.ref(null as InstanceType<typeof Draggable> | null);
 
-    let oldClosed = [] as string[];
+    let oldClosed = new Set<string>();
 
     Vue.watch(treeState, (_nextState, oldState) => {
       if (oldState && treeInstance.value) {
         const oldStats = treeInstance.value.statsFlat as AugmentedStat[];
         oldClosed = oldStats.reduce((acc, stat) => {
           if (!stat.open)
-            acc.push(stat.data.uuid);
+            acc.add(stat.data.uuid);
           return acc;
-        }, [] as string[]);
+        }, new Set<string>());
       }
     }, { immediate: true });
 
@@ -164,7 +164,7 @@ export const TreeWizard = Vue.defineComponent({
     });
 
     const restoreOpenedNodes = (stat: AugmentedStat) => {
-      if (oldClosed.includes(stat.data.uuid))
+      if (oldClosed.has(stat.data.uuid))
         stat.open = false;
       return stat;
     };
@@ -322,6 +322,8 @@ export const TreeWizard = Vue.defineComponent({
                 onClick:node={(stat) => {
                   chosenStepUuid.value = stat.data.uuid
                 }}
+                onClose:node={(stat) => oldClosed.add(stat.data.uuid)}
+                onOpen:node={(stat) => oldClosed.delete(stat.data.uuid)}
               >
                 {
                   ({stat}: {stat: AugmentedStat}) =>
