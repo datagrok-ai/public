@@ -284,7 +284,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
 
     codeDiv.hidden = true;
 
-    this.describe(`Find more features at the ${ui.link('link', LINKS.ADVANCES).outerHTML}.`);
+    this.describe(`Find more capabilities at the ${ui.link('link', LINKS.ADVANCES).outerHTML}.`);
 
     // 9. Refresh
     const refreshIcn = ribbonPanels[DS_CONSTS.REFRESH_RIBBON_IDX][DS_CONSTS.REFRESH_ICN_IDX];

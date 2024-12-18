@@ -42,6 +42,14 @@ const sobolViewersInfo = [
   Overall impact of parameters, including their interactions with each other: **Angle** produces greater contribution than **Velocity**.`,
 ];
 
+/** Help links */
+enum LINK {
+  SENS_AN = 'https://datagrok.ai/help/compute/function-analysis#sensitivity-analysis',
+  MONTE_CARLO = 'https://en.wikipedia.org/wiki/Monte_Carlo_method',
+  SOBOL = 'https://en.wikipedia.org/wiki/Variance-based_sensitivity_analysis',
+  DIF_STUDIO = 'https://datagrok.ai/help/compute/diff-studio',
+};
+
 /** Tutorial on sensitivity analysis */
 export class SensitivityAnalysisTutorial extends Tutorial {
   get name() {
@@ -50,10 +58,10 @@ export class SensitivityAnalysisTutorial extends Tutorial {
   get description() {
     return 'Analyze the relationship between inputs and outputs of the model';
   }
-  get steps() {return 15;}
+  get steps() {return 16;}
 
   demoTable: string = '';
-  helpUrl: string = 'https://datagrok.ai/help/compute/function-analysis#sensitivity-analysis';
+  helpUrl: string = LINK.SENS_AN;
 
   protected async _run() {
     this.header.textContent = this.name;
@@ -68,42 +76,57 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
-    // 1. Run model catalog
+    // 1. Open Apps
     const browseView = grok.shell.view('Browse') as DG.BrowseView;
     grok.shell.v = browseView;
-    const appsGroup = browseView.mainTree.getOrCreateGroup('Apps', null, false);
-    appsGroup.expanded = true;
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    const modelCatalogNode = appsGroup.items.find((node) => node.text === 'Model Catalog');
-
-    if (modelCatalogNode === undefined) {
-      grok.shell.warning('Cannot run this tutorial: the package Compute is not installed');
+    browseView.showTree = true;
+    
+    const appsGroupRoot = await getElement(browseView.root, 'div[name="tree-Apps"]');
+    if (appsGroupRoot === null) {
+      grok.shell.warning('Failed to open Apps');
       return;
     }
-
-    // 1. Model Catalog
+    
     await this.action(
-      'Open Model Catalog',
-      fromEvent(modelCatalogNode.root, 'dblclick'),
-      modelCatalogNode.root,
-      'Go to <b>Browse > Apps</b>, and double click <b>Model Catalog</b>.',
+     'Open Apps',
+      fromEvent(appsGroupRoot, 'click'),
+      appsGroupRoot,
+      'Go to <b>Browse</b> and click <b>Apps</b>',
     );
 
-    // 2. Run model
-    const modelIconRoot = await getElement(grok.shell.v.root, 'span.d4-link-label[name="span-ballFlight"]');
-    if (modelIconRoot === null) {
-      grok.shell.warning('Model Catalog run timeout exceeded');
+    // 2. Run Diff Studio
+    let name = window.location.href.includes('jnj.com') ? 'Model-Hub' : 'Model-Catalog';
+    const modelCatalogIcn = await getElement(browseView.root,`div[name="div-${name}"]`);
+    name = name.replace('-',' ');
+    
+    if (modelCatalogIcn === null) {
+      grok.shell.warning(`${name} not found: install the Compute package`);
       return;
     }
+    
+    await this.action(
+      `Run ${name}`,
+      fromEvent(modelCatalogIcn, 'dblclick'),
+      modelCatalogIcn,
+      `Double-click the ${name} icon`,
+    );
 
+    // 3. Run model
+    const rootDiv = document.querySelector('div[id="rootDiv"]') as HTMLElement;
+    const modelIconRoot = await getElement(rootDiv, 'span.d4-link-label[name="span-ballFlight"]');
+      if (modelIconRoot === null) {
+        grok.shell.warning(`${name} run timeout exceeded`);
+        return;
+    }
+    
     await this.action(
       'Run the "Ball flight" model',
       fromEvent(modelIconRoot, 'dblclick'),
       modelIconRoot,
       'Double click <b>Ball flight</b>.',
-    );
+    ); 
 
-    // 3. Play
+    // 4. Play
     const modelView = await getView('Ball flight');
     if (modelView === null) {
       grok.shell.warning('Model run timeout exceeded');
@@ -120,7 +143,8 @@ export class SensitivityAnalysisTutorial extends Tutorial {
 
     let okBtn = singleDescription(
       modelRoot,
-      '# Model\n\nThis is a ball flight simulation.',
+      `# Simulation\n\nThis model takes the ball and thrown parameters, and 
+      computes\n\n* the flight trajectory\n\n* max height and distance`,
       'Go to the next step',
     );
     
@@ -131,7 +155,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       `Click "OK" to go to the next step.`,
     );
 
-    // 4. Run sens.analysis
+    // 5. Run sens.analysis
     this.title('Analysis');
     this.describe('How does Angle affect the flight trajectory? Let\'s answer this question.');
 
@@ -144,7 +168,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       'Click the "Run sensitivity analysis" icon on the top panel.',
     );
 
-    // 5. Set samples
+    // 6. Set samples
     const sensAnView = await getView('ballFlight - comparison') as DG.TableView;
     if (sensAnView === null) {
       grok.shell.warning('Sensitivity analysis run timeout exceeded');
@@ -163,7 +187,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     const samplesInputEditor = samplesInputRoot.querySelector('input.ui-input-editor') as HTMLInputElement;
     const samplesSource = fromEvent(samplesInputEditor, 'input').pipe(map((_) => samplesInputEditor.value), filter((val) => val === '100'));
 
-    this.describe('Monte Carlo is the default method, and the <b>Samples</b> value defines the number of model evaluations.');
+    this.describe(`${ui.link('Monte Carlo', LINK.MONTE_CARLO).outerHTML} is the default method, and the <b>Samples</b> value defines the number of model evaluations.`);
 
     await this.action(
       'Set "Samples" to 100',
@@ -172,7 +196,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       'Increase <b>Samples</b> to get more accurate results.',
     );
 
-    // 6. Switch Angle
+    // 7. Switch Angle
     const angleFitInputRoot = children[16] as HTMLElement;
     const angleSwitcher = angleFitInputRoot.querySelector('div.ui-input-editor') as HTMLElement;
 
@@ -182,7 +206,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       angleSwitcher,
     );
 
-    // 7. Run sens.analysis
+    // 8. Run sens.analysis
     const runIcnRoot = document.querySelector('i.grok-icon.fal.fa-play.fas') as HTMLElement;
     const runBtnRoot = children[children.length - 1].querySelector('button.ui-btn') as HTMLButtonElement;
 
@@ -199,7 +223,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       `Click the <b>Run</b> button or the <b>Run</b> icon on the top panel.`,
     );    
 
-    // 8. Explore viewers
+    // 9. Explore viewers
 
     // Wait for computations complete
     const pcPlotRoot = await getElement(sensAnView.root, 'div.d4-pc-plot');
@@ -218,7 +242,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       'Click "Next" to switch to the next viewer.',
     );
 
-    // 9. Optimization
+    // 10. Optimization
     this.title('Optimization');
     this.describe(`Use features of ${ui.link('PC plot', 'https://datagrok.ai/help/visualize/viewers/pc-plot').outerHTML} to solve extreme problems.`);
 
@@ -234,7 +258,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    // 10. Check grid
+    // 11. Check grid
     okBtn = singleDescription(
       sensAnView.grid.root,
       '# Maximum\n\n**Angle** providing the highest **Max distance**',
@@ -248,7 +272,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       'Click "OK" to go to the next step.',
     );
 
-    // 11. Parameters' impact
+    // 12. Parameters' impact
 
     // Align elements
     const panelRoot = sensAnView.root.querySelector('div.panel-base') as HTMLElement;
@@ -258,7 +282,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
 
     this.title('Parameters\' impact');
     this.describe(`Explore which of the throw parameters has the most significant impact on
-    <b>Max distance</b> and <b>Max height</b>. The Sobol method provides a quantitative assessment of the parameters' impact.`);
+    <b>Max distance</b> and <b>Max height</b>. The ${ui.link('Sobol', LINK.SOBOL).outerHTML} method provides a quantitative assessment of the parameters' impact.`);
 
     const methodInputRoot = children[0] as HTMLElement;
     const methodChoiceRoot = methodInputRoot.querySelector('select.ui-input-editor') as HTMLSelectElement;
@@ -270,7 +294,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       methodInputRoot,
     );
 
-    // 12. Switch Velocity
+    // 13. Switch Velocity
     const velocityFitInputRoot = children[12] as HTMLElement;
     const velocitySwitcher = velocityFitInputRoot.querySelector('div.ui-input-editor') as HTMLElement;
 
@@ -280,7 +304,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       velocitySwitcher,
     );
 
-    // 13. Run sens.analysis
+    // 14. Run sens.analysis
     runSensAnPromise = new Promise<void>((res, rej) => resolve = res);
     await this.action(
       'Run sensitivity analysis',
@@ -288,7 +312,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       runIcnRoot,
     );
 
-    // 14. Explore viewers
+    // 15. Explore viewers
     // Wait for computations complete
     const barChartRoot = await getElement(sensAnView.root, 'div.d4-bar-chart');
     if (barChartRoot === null) {
@@ -306,7 +330,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       'Click "Next" to switch to the next viewer',
     );
 
-    // 15. The Grid  method note
+    // 16. The Grid  method note
     panelRoot.style.width = '300px';
     const methodLabelRoot = children[0].querySelector('label.ui-label') as HTMLElement;
     okBtn = singleDescription(
@@ -319,5 +343,8 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       'Click "OK"',
       fromEvent(okBtn, 'click'),
     );
+
+    this.describe(`Apply ${ui.link('Sensitivity Analysis', LINK.SENS_AN).outerHTML} to both ${name} and 
+    ${ui.link('Diff Studio', LINK.DIF_STUDIO).outerHTML} models.`);
   } // _run
 } // SensitivityAnalysisTutorial
