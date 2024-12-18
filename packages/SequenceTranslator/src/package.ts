@@ -49,7 +49,7 @@ async function initSequenceTranslatorInt(): Promise<void> {
 
 //name: Oligo Toolkit
 //meta.icon: img/icons/toolkit.png
-//meta.browsePath: Oligo
+//meta.browsePath: Peptides | Oligo Toolkit
 //tags: app
 //output: view v
 export async function oligoToolkitApp(): Promise<DG.ViewBase> {
@@ -64,7 +64,7 @@ export async function oligoToolkitApp(): Promise<DG.ViewBase> {
 
 //name: Oligo Translator
 //meta.icon: img/icons/translator.png
-//meta.browsePath: Oligo
+//meta.browsePath: Peptides | Oligo Toolkit
 //tags: app
 //output: view v
 export async function oligoTranslatorApp(): Promise<DG.ViewBase> {
@@ -74,7 +74,7 @@ export async function oligoTranslatorApp(): Promise<DG.ViewBase> {
 
 //name: Oligo Pattern
 //meta.icon: img/icons/pattern.png
-//meta.browsePath: Oligo
+//meta.browsePath: Peptides | Oligo Toolkit
 //tags: app
 //output: view v
 export async function oligoPatternApp(): Promise<DG.ViewBase> {
@@ -84,7 +84,7 @@ export async function oligoPatternApp(): Promise<DG.ViewBase> {
 
 //name: Oligo Structure
 //meta.icon: img/icons/structure.png
-//meta.browsePath: Oligo
+//meta.browsePath: Peptides | Oligo Toolkit
 //tags: app
 //output: view v
 export async function oligoStructureApp(): Promise<DG.ViewBase> {
@@ -209,7 +209,7 @@ export async function getPolyToolConvertEditor(call: DG.FuncCall): Promise<DG.Co
 export async function polyToolConvert2(table: DG.DataFrame,
   seqCol: DG.Column, generateHelm: boolean, chiralityEngine: boolean, rules: string[]
 ): Promise<DG.Column<string>> {
-  const ptConvertRes = await polyToolConvert(seqCol, generateHelm, chiralityEngine, rules);
+  const ptConvertRes = await polyToolConvert(seqCol, generateHelm, false, chiralityEngine, false, rules);
   return ptConvertRes[0];
 }
 
@@ -273,17 +273,17 @@ export async function createMonomerLibraryForPolyTool(file: DG.FileInfo) {
 //   }
 // }
 
-//name: PolyTool Enumerator Helm
+//name: HELM Enumerator
 //meta.icon: img/icons/structure.png
-//meta.browsePath: PolyTool
+//meta.browsePath: Peptides | PolyTool
 //tags: app
 export async function ptEnumeratorHelmApp(): Promise<void> {
   await polyToolEnumerateHelmUI();
 }
 
-//name: PolyTool Enumerator Chem
+//name: Chem Enumerator
 //meta.icon: img/icons/structure.png
-//meta.browsePath: PolyTool
+//meta.browsePath: Peptides | PolyTool
 //tags: app
 export async function ptEnumeratorChemApp(): Promise<void> {
   polyToolEnumerateChemUI();

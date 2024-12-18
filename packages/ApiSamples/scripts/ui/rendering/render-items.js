@@ -40,25 +40,25 @@ grid2.onCellRender.subscribe(function (args) {
 
 // Render card
 let rendedCard = ui.div();
-grok.dapi.scripts
-  .list({pageSize: 1})
-  .then((scripts) => rendedCard.append(ui.div(scripts.map((p) => ui.renderCard(p)))));
+let scripts = await grok.dapi.scripts
+  .list({pageSize: 1});
+rendedCard.append(ui.div(scripts.map((p) => ui.renderCard(p))));
 
 // Render list
 let rendedList = ui.div();
-grok.dapi.users
-  .list({pageSize: 5})
-  .then((users) => rendedList.append(ui.list(users)))
-
+let users = await grok.dapi.users
+  .list({pageSize: 5});
+rendedList.append(ui.list(users));
 // Render table  
 let rendedTable = ui.div();
-grok.dapi.users.current().then((user) => rendedTable.append(ui.tableFromMap({
+let user = await grok.dapi.users.current();
+rendedTable.append(ui.tableFromMap({
   'First name': user.firstName,
   'Last name': user.lastName,
   'Login': user.login,
   'Picture': user.picture,
   'Project': user.project,
-})));
+}));
 
 // Layout
 let container = ui.block([

@@ -31,7 +31,7 @@ if (command in commands) {
   } catch (err) { 
     console.error(err);
     console.log(help[command]);
-    exitWithCode(1);
+    exitWithCode(255);
   }
 } else 
   console.log(help.help);

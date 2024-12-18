@@ -9,9 +9,9 @@
   },
   "description": "Integrates Datagrok with molecular docking algorithms and tools.",
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.45.10",
+    "@datagrok-libraries/bio": "^5.46.1",
     "@datagrok-libraries/utils": "^4.3.3",
-    "@datagrok-libraries/tutorials": "^1.5.1",
+    "@datagrok-libraries/tutorials": "^1.5.2",
     "datagrok-api": "^1.22.1",
     "cash-dom": "^8.1.5",
     "dayjs": "=1.11.10",
@@ -19,7 +19,7 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@datagrok/biostructure-viewer": "^1.2.0",
+    "@datagrok/biostructure-viewer": "^1.2.4",
     "@types/wu": "^2.1.44",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4",

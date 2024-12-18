@@ -12,17 +12,16 @@ import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimen
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {debounceTime} from 'rxjs/operators';
 import {getInverseSubstructuresAndAlign} from './mmp-mol-rendering';
-import {MMP_NAMES} from './mmp-constants';
-import {MmpInput} from './mmp-viewer';
+import {MMP_CONTEXT_PANE_CLASS, MMP_NAMES} from './mmp-constants';
 import $ from 'cash-dom';
 import {MMPA} from '../mmp-analysis/mmpa';
 import {ISequenceSpaceParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 
 export function getMmpScatterPlot(
-  mmpInput: MmpInput, axesColsNames: string[], labelsColName: string) : DG.Viewer {
-  mmpInput.table.columns.addNewFloat(axesColsNames[0]);
-  mmpInput.table.columns.addNewFloat(axesColsNames[1]);
-  const sp = DG.Viewer.scatterPlot(mmpInput.table, {
+  parentTable: DG.DataFrame, axesColsNames: string[], labelsColName: string) : DG.ScatterPlotViewer {
+  parentTable.columns.addNewFloat(axesColsNames[0]);
+  parentTable.columns.addNewFloat(axesColsNames[1]);
+  const sp = DG.Viewer.scatterPlot(parentTable, {
     x: axesColsNames[0],
     y: axesColsNames[1],
     zoomAndFilter: 'no action',
@@ -34,11 +33,17 @@ export function getMmpScatterPlot(
     showColorSelector: false,
     showSizeSelector: false,
     markerDefaultSize: 7,
+    showMarkerLabels: 'Auto',
   });
-  //temporary fix (to save backward compatibility) since labels option type has been changed from string to array in 1.23 platform version 
-  if (Object.keys(sp.props).includes('labelColumnNames')) { //@ts-ignore
-    if (sp.props['labelColumnNames'].constructor.name == "Array")
+  //temporary fix (to save backward compatibility) since labels
+  //option type has been changed from string to array in 1.23 platform version
+  const spProps = Object.keys(sp.props);
+  if (spProps.includes('labelColumnNames')) { //@ts-ignore
+    if (sp.props['labelColumnNames'].constructor.name == 'Array')
       sp.setOptions({labelColumnNames: [labelsColName]});
+  }
+  if (spProps.includes('useLabelAsMarker')) { //@ts-ignore
+    sp.setOptions({useLabelAsMarker: true, labelAsMarkerSize: 50});
   }
   return sp;
 }
@@ -60,8 +65,8 @@ function drawMolPair(molecules: string[], indexes: number[], substruct: (ISubstr
   div.append(hosts);
 };
 
-export function fillPairInfo(line: number, linesIdxs: Uint32Array, activityNum: number, pairsDf: DG.DataFrame,
-  diffs: Array<Float32Array>, parentTable: DG.DataFrame,
+export function fillPairInfo(mmpa: MMPA, line: number, linesIdxs: Uint32Array, activityNum: number,
+  pairsDf: DG.DataFrame, diffs: Array<Float32Array>, parentTable: DG.DataFrame,
   rdkitModule: RDModule, propPanelViewer?: FormsViewer):
   HTMLDivElement {
   const div = ui.divV([]);
@@ -75,6 +80,7 @@ export function fillPairInfo(line: number, linesIdxs: Uint32Array, activityNum: 
   const moleculeTo = pairsDf.get(MMP_NAMES.TO, pairIdx);
   const fromIdx = pairsDf.get(MMP_NAMES.PAIRNUM_FROM, pairIdx);
   const toIdx = pairsDf.get(MMP_NAMES.PAIRNUM_TO, pairIdx);
+  const ruleNum = pairsDf.get(MMP_NAMES.RULENUM, pairIdx);
   if (propPanelViewer) {
     const props = getMoleculesPropertiesDiv(propPanelViewer, [fromIdx, toIdx]);
     div.append(props);
@@ -87,17 +93,23 @@ export function fillPairInfo(line: number, linesIdxs: Uint32Array, activityNum: 
         [subsrtFrom, subsrtTo], moleculesDiv, parentTable, !propPanelViewer);
     } else {
       moleculesDiv.append(ui.divText(`Loading...`));
-      getInverseSubstructuresAndAlign([moleculeFrom], [moleculeTo], rdkitModule).then((res) => {
-        const {inverse1, inverse2, fromAligned, toAligned} = res;
-        pairsDf.set(MMP_NAMES.STRUCT_DIFF_FROM_NAME, pairIdx, inverse1[0]);
-        pairsDf.set(MMP_NAMES.STRUCT_DIFF_TO_NAME, pairIdx, inverse2[0]);
-        pairsDf.set(MMP_NAMES.FROM, pairIdx, fromAligned[0]);
-        pairsDf.set(MMP_NAMES.TO, pairIdx, toAligned[0]);
-        drawMolPair([fromAligned[0], toAligned[0]], [fromIdx, toIdx],
-          [inverse1[0], inverse2[0]], moleculesDiv, parentTable, !!propPanelViewer);
-      });
+      const cores = mmpa.rules.rules[ruleNum].pairs
+        .filter((pair) => pair.firstStructure === fromIdx && pair.secondStructure === toIdx);
+      if (cores.length) {
+        getInverseSubstructuresAndAlign([mmpa.frags.idToName[cores[0].core]],
+          [moleculeFrom], [moleculeTo], rdkitModule).then((res) => {
+          const {inverse1, inverse2, fromAligned, toAligned} = res;
+          pairsDf.set(MMP_NAMES.STRUCT_DIFF_FROM_NAME, pairIdx, inverse1[0]);
+          pairsDf.set(MMP_NAMES.STRUCT_DIFF_TO_NAME, pairIdx, inverse2[0]);
+          pairsDf.set(MMP_NAMES.FROM, pairIdx, fromAligned[0]);
+          pairsDf.set(MMP_NAMES.TO, pairIdx, toAligned[0]);
+          drawMolPair([fromAligned[0], toAligned[0]], [fromIdx, toIdx],
+            [inverse1[0], inverse2[0]], moleculesDiv, parentTable, !!propPanelViewer);
+        });
+      }
     }
   }
+  div.classList.add(MMP_CONTEXT_PANE_CLASS);
   return div;
 };
 
@@ -108,11 +120,11 @@ function getMoleculesPropertiesDiv(propPanelViewer: FormsViewer, idxs: number[])
   return ui.div(propPanelViewer.root, {style: {height: '100%'}});
 }
 
-export function runMmpChemSpace(mmpInput: MmpInput, sp: DG.Viewer, lines: ILineSeries,
+export function runMmpChemSpace(parentTable: DG.DataFrame, molCol: DG.Column, sp: DG.Viewer, lines: ILineSeries,
   linesIdxs: Uint32Array, linesActivityCorrespondance: Uint32Array, pairsDf: DG.DataFrame, mmpa: MMPA,
   rdkitModule: RDModule, embedColsNames: string[]): [ScatterPlotLinesRenderer, ISequenceSpaceParams] {
   const chemSpaceParams = {
-    seqCol: mmpInput.molecules,
+    seqCol: molCol,
     methodName: DimReductionMethods.UMAP,
     similarityMetric: BitArrayMetricsNames.Tanimoto as BitArrayMetrics,
     embedAxesNames: embedColsNames,
@@ -124,8 +136,8 @@ export function runMmpChemSpace(mmpInput: MmpInput, sp: DG.Viewer, lines: ILineS
 
   spEditor.lineHover.pipe(debounceTime(500)).subscribe((event: MouseOverLineEvent) => {
     ui.tooltip.show(
-      fillPairInfo(event.id, linesIdxs, linesActivityCorrespondance[event.id],
-        pairsDf, mmpa.allCasesBased.diffs, mmpInput.table, rdkitModule),
+      fillPairInfo(mmpa, event.id, linesIdxs, linesActivityCorrespondance[event.id],
+        pairsDf, mmpa.allCasesBased.diffs, parentTable, rdkitModule),
       event.x, event.y);
   });
 

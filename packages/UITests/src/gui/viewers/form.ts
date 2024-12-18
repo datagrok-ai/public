@@ -12,10 +12,10 @@ category('Viewers: Form', () => {
 
   before(async () => {
     demog = grok.data.demo.demog(1000);
-    tv = grok.shell.addTableView(demog);
   });
 
   test('form.visual', async () => {
+    tv = grok.shell.addTableView(demog);
     const formIcon = document.getElementsByClassName('svg-form')[0] as HTMLElement;
     formIcon.click();
     await awaitCheck(() => document.querySelector('.d4-form') !== null, 'cannot find form', 3000);
@@ -60,6 +60,8 @@ category('Viewers: Form', () => {
   });
 
   test('form.api', async () => {
+    tv = grok.shell.addTableView(demog);
+    debugger
     const form = tv.form({
       title: 'SuperTitle',
       description: 'SuperDescription',
@@ -69,15 +71,16 @@ category('Viewers: Form', () => {
       throw new Error('title has not been set');
     if (form.props.description != 'SuperDescription')
       throw new Error('description has not been set');
-    const titleElem = document.querySelector('#elementContent .d4-viewer-title > textarea') as HTMLTextAreaElement;
+    const titleElemList = Array.from(document.querySelectorAll('#elementContent .panel-titlebar .panel-titlebar-text')) as HTMLElement[];
     const descElem = document.querySelector('#elementContent .d4-viewer-description p') as HTMLElement;
-    if (titleElem.value != 'SuperTitle')
+    if (titleElemList.every((e)=> e.innerText != 'SuperTitle'))
       throw new Error('title property has not been set');
     if (descElem.innerHTML != 'SuperDescription')
       throw new Error('description property has not been set');
-  }, {skipReason: 'GROK-11670'});
+  });
 
   test('form.serialization', async () => {
+    tv = grok.shell.addTableView(demog);
     tv.form();
     await awaitCheck(() => document.querySelector('.d4-form') !== null, 'cannot find form', 3000);
     const layout = tv.saveLayout();

@@ -138,22 +138,6 @@ export class TreeUtils {
           };
         }
 
-        if (columns[colIdx].semType === DG.SEMTYPE.MOLECULE) {
-          const image = await TreeUtils.getMoleculeImage(name);
-          const img = new Image();
-          img.src = image!.toDataURL('image/png');
-          node.label = {
-            show: true,
-            formatter: '{b}',
-            color: 'rgba(0,0,0,0)',
-            height: '80',
-            width: '70',
-            backgroundColor: {
-              image: img.src,
-            },
-          }
-        }
-
         if (colIdx === columns.length - 1)
           propNames.forEach((prop) => node[prop] = aggrValues[prop]);
 

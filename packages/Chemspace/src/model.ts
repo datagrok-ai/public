@@ -45,3 +45,10 @@ export type ChemspacePricesTableItem = {
     leadTimeDays?: number;
     purity: number;
 }
+
+export type ChemspacePriceColumns = {
+    vendorName: string;
+    leadTimeDays?: number;
+    priceUsd: number;
+    packMg: number;
+}

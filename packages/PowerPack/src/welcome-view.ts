@@ -4,8 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
 import {powerSearch} from './search/power-search';
-import {widgetHost, getSettings, UserWidgetsSettings, saveSettings, widgetHostFromFunc} from './utils';
-import {Widget} from "datagrok-api/dg";
+import {getSettings, saveSettings, UserWidgetsSettings, widgetHostFromFunc} from './utils';
 
 export function welcomeView(): DG.View | undefined {
   let searchStr = null;
@@ -37,14 +36,19 @@ export function welcomeView(): DG.View | undefined {
   const settings: UserWidgetsSettings = getSettings();
 
   function refresh() {
+    grok.dapi.groups.find(DG.User.current().group.id).then((userGroup: DG.Group) => {
+      while (widgetsHost.firstChild)
+        widgetsHost.removeChild(widgetsHost.firstChild);
 
-    while (widgetsHost.firstChild)
-      widgetsHost.removeChild(widgetsHost.firstChild);
-
-    for (const f of widgetFunctions) {
-      if (!settings[f.name] || !settings[f.name].ignored)
-        widgetsHost.appendChild(widgetHosts[f.name] ??= widgetHostFromFunc(f));
-    }
+      for (const f of widgetFunctions) {
+        const canView: string[] = f.options['canView']?.split(',') ?? [];
+        if (canView.length === 0 || (userGroup.memberships.some((g) => canView.includes(g.friendlyName))
+            || userGroup.adminMemberships.some((g) => canView.includes(g.friendlyName)))) {
+          if (!settings[f.name] || !settings[f.name].ignored)
+            widgetsHost.appendChild(widgetHosts[f.name] ??= widgetHostFromFunc(f));
+        }
+      }
+    });
   }
 
   refresh();
@@ -53,18 +57,16 @@ export function welcomeView(): DG.View | undefined {
     grok.shell.windows.context.visible = true;
     const existingNames = Object.keys(settings).filter((name) => DG.Func.byName(name));
 
-    const form = ui.form(
-      existingNames.map((name) => ui.input.bool(DG.Func.byName(name).friendlyName, {
-        value: !settings[name].ignored,
-        onValueChanged: (value, input) => {
-          settings[name].ignored = !value;
-          refresh();
-          saveSettings();
-        }
-      }))
+    grok.shell.o = ui.form(
+        existingNames.map((name) => ui.input.bool(DG.Func.byName(name).friendlyName, {
+          value: !settings[name].ignored,
+          onValueChanged: (value, input) => {
+            settings[name].ignored = !value;
+            refresh();
+            saveSettings();
+          }
+        }))
     );
-
-    grok.shell.o = form;
   }
 
   widgetsPanel.appendChild(ui.link('Customize widgets...', () => customizeWidgets()));

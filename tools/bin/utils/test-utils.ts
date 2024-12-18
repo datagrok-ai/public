@@ -9,7 +9,7 @@ import { spaceToCamelCase } from '../utils/utils';
 import puppeteer from 'puppeteer';
 import { Browser, Page } from 'puppeteer';
 import * as color from '../utils/color-utils';
-
+ 
 const fetch = require('node-fetch');
 
 const grokDir = path.join(os.homedir(), '.grok');
@@ -167,6 +167,7 @@ export async function loadPackages(packagesDir: string, packagesToLoad?: string,
 
         if (utils.isPackageDir(packageDir) && (packageFriendlyName !== undefined || packagesToLoad === "all")) {
           try {
+            process.stdout.write(`Building and publishing ${dirName}...`);
             if (skipPublish != true) {
               await utils.runScript(`npm install`, packageDir);
               if (linkPackage)
@@ -176,10 +177,10 @@ export async function loadPackages(packagesDir: string, packagesToLoad?: string,
               await utils.runScript(`grok publish ${hostString}${release ? ' --release' : ''}`, packageDir);
             }
             packagesToRun.set(dirName, true);
-            console.log(`Package published ${dirName}`);
+            process.stdout.write(` success!\n`);
           }
           catch (e: any) {
-            console.log(`Package wasn't published ${dirName}`);
+            process.stdout.write(` fail!\n`);
           }
         }
       }
@@ -202,7 +203,6 @@ export async function loadTestsList(packages: string[], core: boolean = false): 
     const out = await getBrowserPage(puppeteer, params);
     const browser: Browser = out.browser;
     const page: Page = out.page;
-
     const r = await page.evaluate((packages, coreTests): Promise<LoadedPackageData[] | {failReport: string}> => {
       return new Promise<LoadedPackageData[] | {failReport: string}>((resolve, reject) => {
         const promises: any[] = [];
@@ -331,6 +331,8 @@ export async function runWorker(testExecutionData: OrganizedTests[], workerOptio
         (<any>window).DG.Test.isInBenchmark = true;
       if (options.reproduce)
         (<any>window).DG.Test.isReproducing = true;
+      if (options.ciCd)
+        (<any>window).DG.Test.isCiCd = true;
 
       return new Promise<any>((resolve, reject) => {
         (<any>window).DG.Utils.executeTests(testData, options.stopOnTimeout)
@@ -406,7 +408,7 @@ export async function mergeWorkersResults(workersResults: ResultObject[]): Promi
 export interface WorkerOptions {
   path?: string, catchUnhandled?: boolean, core?: boolean,
   report?: boolean, record?: boolean, verbose?: boolean, benchmark?: boolean, platform?: boolean, category?: string, test?: string,
-  stressTest?: boolean, gui?: boolean, stopOnTimeout?: boolean, reproduce?: boolean
+  stressTest?: boolean, gui?: boolean, stopOnTimeout?: boolean, reproduce?: boolean, ciCd?: boolean,
 }
 
 export type ResultObject = {

@@ -1,6 +1,43 @@
 # Datagrok-tools changelog
 
 
+## 4.13.45 (2024-12-12)
+
+### Features
+
+* Test all workers count variable fixes
+
+## 4.13.44 (2024-12-06)
+
+### Features
+
+* Test fixed infinite testing 
+
+## 4.13.43 (2024-12-02)
+
+### Features
+
+* Publish visual updates
+
+## 4.13.42 (2024-11-29)
+
+### Features
+
+* Publish refresh orientates on debug versions of packages
+
+## 4.13.41 (2024-11-29)
+
+### Features
+
+* Added ability to run auto tests by core variable
+
+## 4.13.39 (2024-11-26)
+
+### Features
+
+* Grok publish added ability to link packages
+* Grok test log for multiple workers fix
+
 ## 4.13.38 (2024-11-15)
 
 ### Features

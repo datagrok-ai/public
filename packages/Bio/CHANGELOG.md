@@ -1,5 +1,18 @@
 # Bio changelog
 
+## 2.17.6 (2024-12-11)
+
+* Add monomer manager app view with library dashboards
+* Improve detectors
+ 
+## 2.17.5 (2024-12-09)
+
+Monomer manager: Correct loading.
+
+## 2.17.3 (2024-11-27)
+
+Monomer managers as apps
+
 ## 2.17.2 (2024-11-19)
 
 * Support Sequence renderer resizing 

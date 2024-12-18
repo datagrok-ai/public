@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -xe
 
 command=$1
 expected_result=$2
@@ -15,5 +15,6 @@ if [[ "$exact_match" == "true" ]]; then
         exit 1
     fi
 else
+    echo -e "${result}"
     echo -e "${result}" | grep -i "${expected_result}"
 fi

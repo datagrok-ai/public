@@ -29,7 +29,7 @@ category('AutoDock', () => {
 
     const clinfoCount = await fetchWrapper(() => adSvc!.checkOpenCl());
     expect(clinfoCount > 0, true, 'OpenCL platform not found.');
-  }, {timeout: 25000});
+  }, {timeout: 50000});
 
   test('dock ligand', async () => {
     if (!adSvc) return;

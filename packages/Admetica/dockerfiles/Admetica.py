@@ -26,14 +26,6 @@ CORS(app)
 logging_level = logging.DEBUG
 logging.basicConfig(level=logging_level)
 
-models_extensions = [
-  "Pgp-Inhibitor.pkl", "Caco2.ckpt", "Lipophilicity.ckpt",
-  "Solubility.ckpt", "PPBR.ckpt", "VDss.ckpt", "CYP1A2-Inhibitor.ckpt", "CYP1A2-Substrate.ckpt",
-  "CYP3A4-Inhibitor.pkl", "CYP3A4-Substrate.pkl", "CYP2C19-Inhibitor.ckpt", "CYP2C19-Substrate.ckpt",
-  "CYP2C9-Inhibitor.ckpt", "CYP2C9-Substrate.ckpt", "CYP2D6-Substrate.ckpt",
-  "CYP2D6-Inhibitor.ckpt", "CL-Hepa.ckpt", "CL-Micro.ckpt", "Half-Life.ckpt", "hERG.ckpt", "LD50.ckpt"
-]
-
 def is_malformed(smiles):
   try:
     mol = Chem.MolFromSmiles(smiles)
@@ -126,28 +118,29 @@ def calculate_chemprop_probability(smiles_list, model):
     for smiles in smiles_list
   ]
 
-def handle_model(model, df_test, add_probability):
-  test_model_name = next((ext for ext in models_extensions if model in ext), None)
-  if not test_model_name:
+def find_model(model):
+  files_in_dir = os.listdir()
+  model_name = next(
+    (file for file in files_in_dir if model.lower() in file.lower() and file.lower().endswith('.ckpt')),
+    None
+  )
+  return model_name
+
+def predict_for_model(model, df_test, add_probability):
+  model_name = find_model(model)
+  if not model_name:
     raise ValueError(f"No matching model extension found for model '{model}'")
 
-  if 'ckpt' in test_model_name:
-    start = time()
-    predictions = make_chemprop_predictions(df_test, test_model_name)
-    logging.debug(f'Chemprop prediction for {model} took {time() - start}')
-    df = pd.DataFrame(predictions, columns=[model])
-    if add_probability:
-      probabilities = calculate_chemprop_probability(df_test.iloc[:, 0].tolist(), model)
-      df[f'Y_{model}_probability'] = probabilities
-  else:
-    predictions, probabilities = make_euclia_predictions(df_test, test_model_name, add_probability)
-    df = pd.DataFrame({f'{model}': predictions})
-    if add_probability:
-      df[f'{model}_probability'] = probabilities
-
+  start = time()
+  predictions = make_chemprop_predictions(df_test, model_name)
+  logging.debug(f'Chemprop prediction for {model} took {time() - start}')
+  df = pd.DataFrame(predictions, columns=[model])
+  if add_probability:
+    probabilities = calculate_chemprop_probability(df_test.iloc[:, 0].tolist(), model)
+    df[f'Y_{model}_probability'] = probabilities
   return df
 
-def handle_uploaded_data(data, models, add_probability, batch_size=1000):
+def predict(data, models, add_probability, batch_size=1000):
   models_res = models.split(",")
   result_dfs = []
 
@@ -164,7 +157,7 @@ def handle_uploaded_data(data, models, add_probability, batch_size=1000):
     model_results = []
     for j in range(0, len(df_test), batch_size):
       batch_df = df_test.iloc[j:j + batch_size]
-      result_df = handle_model(model, batch_df, add_probability)
+      result_df = predict_for_model(model, batch_df, add_probability)
       model_results.append(result_df)
     model_result_df = pd.concat(model_results, axis=0, ignore_index=True)
     result_dfs.append(model_result_df)
@@ -172,14 +165,14 @@ def handle_uploaded_data(data, models, add_probability, batch_size=1000):
   final_df = pd.concat(result_dfs, axis=1).loc[:, ~pd.concat(result_dfs, axis=1).columns.duplicated()]
   return final_df.to_csv(index=False)
 
-@app.route('/df_upload', methods=['POST'])
-def df_upload():
+@app.route('/predict', methods=['POST'])
+def admetica_predict():
   raw_data = request.data
 
   models = request.args.get('models')
   add_probability = request.args.get('probability', 'false') == 'true'
   start = time()
-  response = handle_uploaded_data(raw_data, models, add_probability)
+  response = predict(raw_data, models, add_probability)
   logging.debug(f'Time required: {time() - start}')
   return response
 

@@ -2,7 +2,7 @@ import {Column, DataFrame} from "./dataframe";
 import {toJs} from "./wrappers";
 import {FuncCall, Functions} from "./functions";
 import {CsvImportOptions, DemoDatasetName, JOIN_TYPE, JoinType, StringPredicate, SyncType, TYPE} from "./const";
-import {DataConnection} from "./entities";
+import {DataConnection, TableQueryBuilder} from "./entities";
 import {IDartApi} from "./api/grok_api.g";
 
 const api: IDartApi = <any>window;
@@ -109,6 +109,15 @@ export class Db {
     let connection: DataConnection = await new Functions().eval(connectionId);
     let q = connection.query('adhoc', sql);
     return await q.apply();
+  }
+
+  /**
+   * Creates {@link TableQueryBuilder} that can be used to construct sql queries.
+   * @param connectionId - fully-qualified connection name (see [nqName])
+   * @param tableName - database table name
+   */
+  buildQuery(connectionId: string, tableName: string): TableQueryBuilder {
+    return TableQueryBuilder.from(tableName, connectionId);
   }
 }
 

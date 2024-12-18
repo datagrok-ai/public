@@ -38,6 +38,7 @@ export let c: DG.FuncCall;
 
 //name: Clinical Case
 //tags: app
+//meta.browsePath: Clinical
 export async function clinicalCaseApp(): Promise<any> {
   c = grok.functions.getCurrentCall();
   validationRulesList = await grok.data.loadTable(`${_package.webRoot}tables/validation-rules.csv`);

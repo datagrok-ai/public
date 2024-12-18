@@ -32,6 +32,8 @@ export const PT_WARNING_COLUMN = 'No marcomolecule column chosen!';
 
 export const PT_UI_GET_HELM = 'Get HELM';
 export const PT_UI_ADD_HELM = 'Add HELM column';
+export const PT_UI_LINEARIZE = 'Linearize';
+export const PT_UI_LINEARIZE_TT = 'Make representation linear if possible';
 export const PT_UI_USE_CHIRALITY = 'Chirality engine';
 export const PT_UI_HIGHLIGHT_MONOMERS = 'Highlight monomers';
 export const PT_UI_DIALOG_CONVERSION = 'Poly Tool Conversion';

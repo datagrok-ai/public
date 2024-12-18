@@ -12,19 +12,19 @@ const pairsFromMolblock = `
      RDKit          2D
 
  13 14  0  0  0  0  0  0  0  0999 V2000
-    0.6347   -1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    1.1346   -0.4330    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    0.6347    0.4330    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.3653    0.4330    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.8654    1.2990    0.0000 Cl  0  0  0  0  0  0  0  0  0  0  0  0
-   -0.8654   -0.4330    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.3653   -1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.8655   -2.1650    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.3654   -3.0310    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    0.6346   -3.0310    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    1.1346   -2.1650    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    2.1346   -2.1650    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    2.6346   -3.0311    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.4546    1.4171    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.9545    2.2831    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.4546    3.1491    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.5454    3.1491    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.0455    4.0151    0.0000 Cl  0  0  0  0  0  0  0  0  0  0  0  0
+   -1.0455    2.2831    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.5454    1.4171    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.0455    0.5511    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.5454   -0.3149    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.4546   -0.3149    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.9545    0.5511    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.9545    0.5511    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    2.4546   -0.3149    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
   1  2  2  0
   2  3  1  0
   3  4  2  0
@@ -46,20 +46,20 @@ const pairsToMolblock = `
      RDKit          2D
 
  14 15  0  0  0  0  0  0  0  0999 V2000
-    0.6346   -1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    1.1345   -0.4330    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    0.6347    0.4330    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.3653    0.4330    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.8654    1.2990    0.0000 Cl  0  0  0  0  0  0  0  0  0  0  0  0
-   -0.8653   -0.4330    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.3654   -1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.8653   -2.1650    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.3654   -3.0312    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    0.6346   -3.0312    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    1.1345   -2.1650    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    2.1345   -2.1650    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    2.6346   -3.0310    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    3.6346   -3.0310    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.4546    1.4172    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.9545    2.2832    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.4546    3.1492    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.5454    3.1492    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.0455    4.0152    0.0000 Cl  0  0  0  0  0  0  0  0  0  0  0  0
+   -1.0453    2.2832    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.5454    1.4172    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.0454    0.5512    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.5455   -0.3150    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.4545   -0.3150    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.9544    0.5512    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.9544    0.5512    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    2.4545   -0.3148    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    3.4545   -0.3148    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
   1  2  2  0
   2  3  1  0
   3  4  2  0
@@ -193,14 +193,14 @@ category('mmpa', () => {
     //check Fragments Grid
     await awaitCheck(() => mmp.pairedGrids?.fpGrid?.dataFrame != null, 'All pairs grid hasn\'t been created', 3000);
     const fragsDf = mmp.pairedGrids!.fpGrid.dataFrame;
-    await awaitCheck(() => fragsDf.rowCount === 40 && fragsDf.columns.length === 7 && fragsDf.filter.trueCount === 2, 'Incorrect fragments grid', 3000);
+    await awaitCheck(() => fragsDf.rowCount === 40 && fragsDf.columns.length === 9 && fragsDf.filter.trueCount === 2, 'Incorrect fragments grid', 3000);
     checkRandomValues(fragsDf, 'Transformations_Fragments', true);
 
     //check Pairs Grid
-    await awaitCheck(() => mmp.pairedGrids?.mmpGrid?.dataFrame != null, 'mmpGrid hasn\'t been created', 3000);
-    const pairsDf = mmp.pairedGrids!.mmpGrid.dataFrame;
-    await awaitCheck(() => pairsDf.rowCount === 54 && pairsDf.columns.length === 13 && pairsDf.filter.trueCount === 3, 'Incorrect pairs grid', 3000);
-    checkRandomValues(mmp.pairedGrids!.mmpGrid.dataFrame, 'Transformations_Pairs', true);
+    await awaitCheck(() => mmp.pairedGrids?.mmpGridTrans?.dataFrame != null, 'mmpGrid hasn\'t been created', 3000);
+    const pairsDf = mmp.pairedGrids!.mmpGridTrans.dataFrame;
+    await awaitCheck(() => pairsDf.rowCount === 54 && pairsDf.columns.length === 14 && pairsDf.filter.trueCount === 3, 'Incorrect pairs grid', 3000);
+    checkRandomValues(mmp.pairedGrids!.mmpGridTrans.dataFrame, 'Transformations_Pairs', true);
 
     //changing fragment
     mmp.pairedGrids!.fpGrid.dataFrame.currentRowIdx = 2;

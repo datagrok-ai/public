@@ -7,22 +7,20 @@ import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import com.mysql.cj.xdevapi.Table;
 import grok_connect.GrokConnect;
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.log.EventType;
 import grok_connect.log.QueryLogger;
 import grok_connect.providers.JdbcDataProvider;
 import grok_connect.resultset.ResultSetManager;
+import grok_connect.table_query.TableQuery;
 import org.slf4j.Logger;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import serialization.DataFrame;
 
 public class QueryManager {
     public static final String CHUNK_NUMBER_TAG = "chunkNumber";
-    private static final Gson gson = new GsonBuilder()
-            .registerTypeAdapter(Property.class, new PropertyAdapter())
-            .create();
     public static final String FETCH_SIZE_KEY = "connectFetchSize";
     public static final String INIT_FETCH_SIZE_KEY = "initConnectFetchSize";
     private static final int MAX_CHUNK_SIZE_BYTES = 10_000_000;
@@ -49,7 +47,7 @@ public class QueryManager {
         this.logger = queryLogger.getLogger();
         this.queryLogger = queryLogger;
         logger.debug("Deserializing json call and preprocessing it...");
-        query = gson.fromJson(message, FuncCall.class);
+        query = GrokConnect.gson.fromJson(message, FuncCall.class);
         query.setParamValues();
         query.afterDeserialization();
         isDebug = query.debugQuery;
@@ -59,6 +57,15 @@ public class QueryManager {
         if (isDebug)
             initMessage = message;
         logger.debug("Deserialized and preprocessed call");
+        processTableQuery();
+    }
+
+    private void processTableQuery() {
+        if (query.func instanceof TableQuery) {
+            logger.debug("Building table query...");
+            query.func.query = provider.queryTableSql((TableQuery) query.func);
+            logger.debug("TableQuery was built");
+        }
     }
 
     public void initResultSet(FuncCall query) throws GrokConnectException, QueryCancelledByUser, SQLException {
@@ -77,8 +84,9 @@ public class QueryManager {
     public void dryRun(boolean skipColumnFillingLog) throws QueryCancelledByUser, SQLException, GrokConnectException {
         // need to create new FuncCall on every run because state of params changes irrevocably after each run
         queryLogger.writeLog(false);
-        FuncCall query = gson.fromJson(initMessage, FuncCall.class);
+        FuncCall query = GrokConnect.gson.fromJson(initMessage, FuncCall.class);
         query.setParamValues();
+        processTableQuery();
         initResultSet(query);
         queryLogger.writeLog(!skipColumnFillingLog);
         if (changedFetchSize)

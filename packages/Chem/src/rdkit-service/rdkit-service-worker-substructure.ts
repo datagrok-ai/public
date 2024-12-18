@@ -4,7 +4,8 @@ import {IMolContext, getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rd
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {RuleId} from '../panels/structural-alerts';
 import {SubstructureSearchType} from '../constants';
-import {stringArrayToMolList} from '../utils/chem-common';
+import {stringArrayToMolList, getUncommonAtomsAndBonds} from '../utils/chem-common';
+import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 
 export enum MolNotation {
   Smiles = 'smiles',
@@ -24,6 +25,13 @@ export interface IRGroupAnalysisResult {
 export interface IMmpFragmentsResult {
   frags: [string, string][][];
   smiles: string[];
+}
+
+export type InverseSubstructureRes = {
+  inverse1: (ISubstruct | null)[],
+  inverse2: (ISubstruct | null)[],
+  fromAligned: string[],
+  toAligned: string[]
 }
 
 const MALFORMED_MOL_V2000 = `
@@ -66,7 +74,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     if (!molecules)
       throw new Error('Chem | Molecules for substructure serach haven\'t been provided');
 
-    const queryMol = getQueryMolSafe(queryMolString, queryMolBlockFailover, this._rdKitModule); 
+    const queryMol = getQueryMolSafe(queryMolString, queryMolBlockFailover, this._rdKitModule);
     let queryCanonicalSmiles = '';
     if (queryMol !== null) {
       if (searchType === SubstructureSearchType.EXACT_MATCH) {
@@ -92,7 +100,9 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       return matches.buffer;
     const details = JSON.stringify({sanitize: false, removeHs: false, assignStereo: false});
     for (let i = 0; i < molecules.length; ++i) {
-      const terminationCheckDelay = queryCanonicalSmiles ? this._terminationCheckDelay * 10 : this._terminationCheckDelay;
+      const terminationCheckDelay = queryCanonicalSmiles ?
+        this._terminationCheckDelay * 10 :
+        this._terminationCheckDelay;
 
       if (i % terminationCheckDelay === 0) //every N molecules check for termination flag
         await new Promise((r) => setTimeout(r, 0));
@@ -336,9 +346,9 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
             if (unmatches[counter] !== j) {
               const rgroup = cols[colNames[i]]!.at(j - counter);
               if (isRGroupCol) {
-                if(rgroup.has_prop(rgroupTargetAtomsPropName))
+                if (rgroup.has_prop(rgroupTargetAtomsPropName))
                   atomsToHighlight[i - numOfNonRGroupCols][j] = new Uint32Array(JSON.parse(rgroup.get_prop(rgroupTargetAtomsPropName)));
-                if(rgroup.has_prop(rgroupTargetBondsPropName))
+                if (rgroup.has_prop(rgroupTargetBondsPropName))
                   bondsToHighlight[i - numOfNonRGroupCols][j] = new Uint32Array(JSON.parse(rgroup.get_prop(rgroupTargetBondsPropName)));
               }
               col[j] = rgroup.get_smiles();
@@ -505,7 +515,6 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         mol2?.mol?.delete();
       }
     }
-
     return res;
   }
 
@@ -542,5 +551,55 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     } finally {
       mols?.delete();
     }
+  }
+
+
+  getInverseSubstructuresAndAlign(cores: string[],
+    from: string[], to: string[]):
+    InverseSubstructureRes {
+    const fromAligned = new Array<string>(from.length);
+    const toAligned = new Array<string>(from.length);
+    const res1 = new Array<(ISubstruct | null)>(from.length);
+    const res2 = new Array<(ISubstruct | null)>(from.length);
+
+    for (let i = 0; i < from.length; i++) {
+      //aligning molecules
+      let mol1 = null;
+      let mol2 = null;
+      let mcsMol = null;
+
+      const opts = JSON.stringify({
+        useCoordGen: true,
+        allowRGroups: true,
+        acceptFailure: false,
+        alignOnly: true,
+      });
+
+      try {
+        const core = cores[i].replace('[*:1]', '[H]');
+        mcsMol = this._rdKitModule.get_mol(core);
+        mol1 = this._rdKitModule.get_mol(from[i]);
+        mol2 = this._rdKitModule.get_mol(to[i]);
+        mcsMol.set_new_coords();
+        mol1.generate_aligned_coords(mcsMol, opts);
+        mol2.generate_aligned_coords(mcsMol, opts);
+        fromAligned[i] = mol1.get_molblock();
+        toAligned[i] = mol2.get_molblock();
+        res1[i] = getUncommonAtomsAndBonds(from[i], mcsMol, this._rdKitModule, '#bc131f');
+        //@ts-ignore
+        res1[i]['highlightBondWidthMultiplier'] = 40;
+        res2[i] = getUncommonAtomsAndBonds(to[i], mcsMol, this._rdKitModule, '#49bead');
+        //@ts-ignore
+        res2[i]['highlightBondWidthMultiplier'] = 40;
+      } catch (e: any) {
+        fromAligned[i] = '';
+        toAligned[i] = '';
+      } finally {
+        mol1?.delete();
+        mol2?.delete();
+        mcsMol?.delete();
+      }
+    }
+    return {inverse1: res1, inverse2: res2, fromAligned: fromAligned, toAligned: toAligned};
   }
 }

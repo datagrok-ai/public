@@ -64,3 +64,25 @@ export function getGridCellColTemp<TValue, TTemp>(
     throw new Error(`Grid cell renderer back store (GridColumn or Column) not found.`);
   return [gridCol, tableCol, temp];
 }
+
+export function getZoomCoordinates(W0: number, H0: number, x1: number, y1: number, x2: number, y2: number) {
+  const W1 = Math.abs(x1 - x2);
+  const H1 = Math.abs(y1 - y2);
+  const scaleW = W0 / W1;
+  const scaleH = H0 / H1;
+  const scale = Math.min(scaleW, scaleH);
+  const W2 = (W0 / scale) * 5;
+  const H2 = (H0 / scale) * 5;
+  const left = x1 < x2 ? x1 : x2;
+  const top = y1 > y2 ? y1 : y2;
+  const zoomLeft = (left + W1 / 2) - W2 / 2;
+  const zoomRight = zoomLeft + W2;
+  const zoomTop = (top - H1 / 2) + H2 / 2;
+  const zoomBottom = zoomTop - H2;
+  return {zoomLeft: zoomLeft, zoomRight: zoomRight, zoomTop: zoomTop, zoomBottom: zoomBottom};
+}
+
+export function resizeGridColsSize(grid: DG.Grid, colsToResize: string[], width: number, height: number) {
+  colsToResize.forEach((colName: string) => grid.columns.byName(colName)!.width = width);
+  grid.props.rowHeight = height;
+}

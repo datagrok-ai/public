@@ -189,6 +189,10 @@ export class ModelHandler extends DG.ObjectHandler {
     return ui.iconImage(func.package.name, iconUrl);
   }
 
+  override renderView(x: DG.Func) {
+    return this.renderPreview(x).root;
+  }
+
   override renderPreview(x: DG.Func): DG.View {
     const editorName = x.options.editor ?? 'Compute:RichFunctionViewEditor';
     //@ts-ignore

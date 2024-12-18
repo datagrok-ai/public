@@ -167,7 +167,7 @@ export async function waitForElement(selector: string, error: string, wait=3000)
  * @param  {DG.DockNode} TM
  * @return {Promise<void>}
  */
-export async function testApp(app: DG.Func, TM: DG.DockNode): Promise<void> {
+export async function testApp(app: DG.Func): Promise<void> {
   // const nodes = [...grok.shell.dockManager.rootNode.children];
   // const lastNode = nodes[0];
   // console.log(nodes);

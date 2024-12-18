@@ -1,7 +1,11 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import {ActiveFiles} from '@datagrok-libraries/utils/src/settings/active-files-base';
 import {RulesManager} from './rule-manager';
+import {RuleCards} from './pt-rule-cards';
+import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {applyNotationProviderForCyclized} from '../../package';
 
 export const RULES_PATH = 'System:AppData/SequenceTranslator/polytool-rules/';
 export const RULES_STORAGE_NAME = 'Polytool';
@@ -93,10 +97,22 @@ export class Rules {
   getLinkRulesDf(): DG.DataFrame {
     const length = this.linkRules.length;
     const codeCol = DG.Column.int(NAME_CODE, length);
+    codeCol.setTag('friendlyName', 'Code');
+    //ui.tooltip.bind(codeCol.root, 'Click to zoom');
     const firstMonomerCol = DG.Column.string(NAME_FIRST_MONOMERS, length);
+    firstMonomerCol.setTag('friendlyName', 'First monomers');
+    firstMonomerCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    applyNotationProviderForCyclized(firstMonomerCol, ',');
+
     const secondMonomerCol = DG.Column.string(NAME_SECOND_MONOMERS, length);
+    secondMonomerCol.setTag('friendlyName', 'Second monomers');
+    secondMonomerCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    applyNotationProviderForCyclized(secondMonomerCol, ',');
+
     const firstLinkingGroup = DG.Column.int(NAME_FIRST_LINK, length);
+    firstLinkingGroup.setTag('friendlyName', 'First group');
     const secondLinkingGroup = DG.Column.int(NAME_SECOND_LINK, length);
+    secondLinkingGroup.setTag('friendlyName', 'Second group');
 
     for (let i = 0; i < length; i++) {
       codeCol.set(i, this.linkRules[i].code);
@@ -106,20 +122,43 @@ export class Rules {
       secondLinkingGroup.set(i, this.linkRules[i].secondLinkingGroup);
     }
 
-    return DG.DataFrame.fromColumns([
+    const res = DG.DataFrame.fromColumns([
       codeCol, firstMonomerCol, secondMonomerCol, firstLinkingGroup, secondLinkingGroup
     ]);
+
+    return res;
+  }
+
+  async getLinkCards(): Promise<RuleCards[]> {
+    const length = this.linkRules.length;
+    const cards: RuleCards[] = new Array<RuleCards>(length);
+    const monomerLibHelper = await getMonomerLibHelper();
+    const systemMonomerLib = monomerLibHelper.getMonomerLib();
+
+    for (let i = 0; i < length; i++) {
+      cards[i] = new RuleCards(this.linkRules[i].firstMonomers, this.linkRules[i].secondMonomers,
+        systemMonomerLib, this.linkRules[i].code, this);
+    }
+
+    return cards;
   }
 
   getSynthesisRulesDf(): DG.DataFrame {
     const length = this.reactionRules.length;
     const codeCol = DG.Column.int(NAME_CODE, length);
+    codeCol.setTag('friendlyName', 'Code');
     const firstMonomerCol = DG.Column.string(NAME_FIRST_MONOMERS, length);
+    firstMonomerCol.setTag('friendlyName', 'First monomers');
     const secondMonomerCol = DG.Column.string(NAME_SECOND_MONOMERS, length);
+    secondMonomerCol.setTag('friendlyName', 'Second monomers');
     const name = DG.Column.string(NAME_REACTION_NAME, length);
+    name.setTag('friendlyName', 'Name');
     const firstReactant = DG.Column.string('firstReactant', length);
+    firstReactant.setTag('friendlyName', 'First reactant');
     const secondReactant = DG.Column.string('secondReactant', length);
+    secondReactant.setTag('friendlyName', 'Second reactant');
     const product = DG.Column.string('product', length);
+    product.setTag('friendlyName', 'Product');
 
     for (let i = 0; i < length; i++) {
       codeCol.set(i, this.reactionRules[i].code);

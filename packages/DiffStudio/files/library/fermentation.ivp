@@ -1,0 +1,27 @@
+#name: Fermentation
+#tags: model
+#description: Simulation of fermentation process in the ethanol production
+#comment: 
+  Source: https://core.ac.uk/download/pdf/11737483.pdf.
+#equations:
+  dP/dt = r * X
+  dS/dt = -q * X
+  dX/dt = V * S / (K + S) * X
+
+#argument: t
+  initial = 0 {units: d; caption: Initial; category: Time; min: 0; max: 10} [Initial time of simulation]
+  final = 70 {units: d; caption: Final; category: Time; min: 15; max: 100} [Final time of simulation]
+  step = 0.01 {units: d; caption: Step; category: Time; min: 0.01; max: 1} [Time step of simlulation]
+
+#inits:  
+  P = 4.276 {units: ml/ml; caption: ethanol, P; category: Initials; min: 3; max: 6} [Concentration of ethanol]
+  S = 0.3185 {units: mg/ml; caption: glucose, S; category: Initials; min: 0.1; max: 0.5} [Concentration of glucose]
+  X = 9.2E-2 {units: mg/ml; caption: saccharomyces, X; category: Initials; min: 0.01; max: 0.2} [Saccharomyces wet weight]
+
+#parameters:
+  r = 1.3455 {units: mg/ml; category: Parameters; min: 1; max: 2} [The growth rate of ethanol]
+  q = 1.1129E-2 {units: mg/ml; category: Parameters; min: 0.01; max: 0.2} [The rate of glucose consumption]
+  V = 8.7E-2 {units: mg/ml; category: Parameters; min: 0.01; max: 0.2} [The maximal growth rate of Saccharomyces]
+  K = 6.28E-2 {category: Parameters} [Michaelis-Menten constant]
+  
+#tolerance: 1E-7

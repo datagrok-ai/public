@@ -139,10 +139,10 @@ public class CassandraDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public PatternMatcherResult stringPatternConverter(FuncParam param, PatternMatcher matcher) {
+    public PatternMatcherResult stringPatternConverter(String paramName, PatternMatcher matcher) {
         PatternMatcherResult result = new PatternMatcherResult();
         String type = "string";
-        String _query = matcher.colName +  " LIKE @" + param.name;
+        String _query = matcher.colName +  " LIKE @" + paramName;
         List<String> values = matcher.values;
         String value = null;
         if (values.size() > 0)
@@ -151,27 +151,27 @@ public class CassandraDataProvider extends JdbcDataProvider {
         switch (matcher.op) {
             case PatternMatcher.EQUALS:
                 result.query = _query;
-                result.params.add(new FuncParam(type, param.name, value));
+                result.params.add(new FuncParam(type, paramName, value));
                 break;
             case PatternMatcher.CONTAINS:
                 result.query = _query;
-                result.params.add(new FuncParam(type, param.name, "%" + value + "%"));
+                result.params.add(new FuncParam(type, paramName, "%" + value + "%"));
                 break;
             case PatternMatcher.STARTS_WITH:
                 result.query = _query;
-                result.params.add(new FuncParam(type, param.name, value + "%"));
+                result.params.add(new FuncParam(type, paramName, value + "%"));
                 break;
             case PatternMatcher.ENDS_WITH:
                 result.query = _query;
-                result.params.add(new FuncParam(type, param.name, "%" + value));
+                result.params.add(new FuncParam(type, paramName, "%" + value));
                 break;
             case PatternMatcher.REGEXP:
                 result.query = getRegexQuery(matcher.colName, value);
-                result.params.add(new FuncParam(type, param.name, value));
+                result.params.add(new FuncParam(type, paramName, value));
                 break;
             case PatternMatcher.IN:
             case PatternMatcher.NOT_IN:
-                String names = paramToNamesString(param, matcher, type, result);
+                String names = paramToNamesString(paramName, matcher, type, result);
                 result.query = getInQuery(matcher, names);
                 break;
             case PatternMatcher.IS_NULL:
@@ -185,53 +185,52 @@ public class CassandraDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public PatternMatcherResult numericPatternConverter(FuncParam param, PatternMatcher matcher) {
+    public PatternMatcherResult numericPatternConverter(String paramName, String typeName, PatternMatcher matcher) {
         PatternMatcherResult result = new PatternMatcherResult();
-        String type = param.options.get("pattern");
         switch (matcher.op) {
             case PatternMatcher.NONE:
                 result.query = "1 = 1";
                 break;
             case PatternMatcher.RANGE_NUM:
-                String name0 = param.name + "R0";
-                String name1 = param.name + "R1";
+                String name0 = paramName + "R0";
+                String name1 = paramName + "R1";
                 result.query = matcher.colName + " >= @" + name0 + " AND " + matcher.colName + " <= @" + name1;
-                result.params.add(new FuncParam(type, name0, matcher.values.get(0)));
-                result.params.add(new FuncParam(type, name1, matcher.values.get(1)));
+                result.params.add(new FuncParam(typeName, name0, matcher.values.get(0)));
+                result.params.add(new FuncParam(typeName, name1, matcher.values.get(1)));
                 break;
             case PatternMatcher.IN:
             case PatternMatcher.NOT_IN:
-                String names = paramToNamesString(param, matcher, type, result);
+                String names = paramToNamesString(paramName, matcher, typeName, result);
                 result.query = getInQuery(matcher, names);
                 break;
             case PatternMatcher.IS_NULL:
             case PatternMatcher.IS_NOT_NULL:
                 throw new UnsupportedOperationException(NULL_MESSAGE);
             default:
-                result.query = matcher.colName + " " + matcher.op + " @" + param.name;
-                result.params.add(new FuncParam(type, param.name, matcher.values.get(0)));
+                result.query = matcher.colName + " " + matcher.op + " @" + paramName;
+                result.params.add(new FuncParam(typeName, paramName, matcher.values.get(0)));
                 break;
         }
         return result;
     }
 
     @Override
-    public PatternMatcherResult dateTimePatternConverter(FuncParam param, PatternMatcher matcher) {
+    public PatternMatcherResult dateTimePatternConverter(String paramName, PatternMatcher matcher) {
         PatternMatcherResult result = new PatternMatcherResult();
 
         switch (matcher.op) {
             case PatternMatcher.EQUALS:
-                result.query = matcher.colName + " = @" + param.name;
-                result.params.add(new FuncParam("datetime", param.name, matcher.values.get(0)));
+                result.query = matcher.colName + " = @" + paramName;
+                result.params.add(new FuncParam("datetime", paramName, matcher.values.get(0)));
                 break;
             case PatternMatcher.BEFORE:
             case PatternMatcher.AFTER:
-                result.query = matcher.colName + PatternMatcher.cmp(matcher.op, matcher.include1) + "@" + param.name;
-                result.params.add(new FuncParam("datetime", param.name, matcher.values.get(0)));
+                result.query = matcher.colName + PatternMatcher.cmp(matcher.op, matcher.include1) + "@" + paramName;
+                result.params.add(new FuncParam("datetime", paramName, matcher.values.get(0)));
                 break;
             case PatternMatcher.RANGE_DATE_TIME:
-                String name0 = param.name + "R0";
-                String name1 = param.name + "R1";
+                String name0 = paramName + "R0";
+                String name1 = paramName + "R1";
                 result.query = matcher.colName + PatternMatcher.cmp(PatternMatcher.AFTER, matcher.include1) + "@" + name0 + " AND " +
                         matcher.colName + PatternMatcher.cmp(PatternMatcher.BEFORE, matcher.include2) + "@" + name1;
                 result.params.add(new FuncParam("datetime", name0, matcher.values.get(0)));

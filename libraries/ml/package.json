@@ -8,10 +8,10 @@
     "email": "drizhinashvili@datagrok.ai"
   },
   "friendlyName": "Datagrok ML library",
-  "version": "6.7.4",
+  "version": "6.7.6",
   "description": "Machine learning supporting utilities",
   "dependencies": {
-    "@datagrok-libraries/math": "^1.2.0",
+    "@datagrok-libraries/math": "^1.2.4",
     "@datagrok-libraries/utils": "^4.3.0",
     "@keckelt/tsne": "^1.0.2",
     "@types/seedrandom": "^3.0.8",

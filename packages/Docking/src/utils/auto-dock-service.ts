@@ -113,11 +113,20 @@ export class AutoDockService implements IAutoDockService {
       throw new Error(adRes['error']);
 
     const clinfoOut: string = adRes['output'];
-    const clinfoOutMa = clinfoOut.match(/.+platform.+\s+(\d)/);
+    const clinfoOutMa = clinfoOut.match(/Number of platforms\s+(\d+)/);
     if (!clinfoOutMa)
       throw new Error('Unexpected clinfo output');
-    const clinfoCount = parseInt(clinfoOutMa.groups!['count']);
+    const clinfoCount = parseInt(clinfoOutMa[1]);
     return clinfoCount;
+  }
+
+  async terminate(): Promise<void> {
+    const params: RequestInit = {
+      method: 'POST'
+    };
+
+    const path = `/autodock/kill_process`;
+    await this.fetchAndCheck(path, params);
   }
 
   async dockLigand(receptor: BiostructureData, ligand: BiostructureData,
@@ -220,7 +229,7 @@ export class AutoDockService implements IAutoDockService {
     if (adResponse.status !== 200) {
       const errMsg = adResponse.statusText;
       // const errMsg = (await adResponse.json())['datagrok-error'];
-      throw new Error(errMsg);
+      // throw new Error(errMsg);
     }
     const adRes = (await adResponse.json()) as Forms.dockLigandRes;
     if ('datagrok-error' in adRes) {

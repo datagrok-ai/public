@@ -254,16 +254,16 @@ category('View: DockingNested', () => {
         isRightOf(resFillOfDownOfRightDiv, tv.grid.root) &&
         isRightOf(resLeftOfRightDiv, tv.grid.root) &&
         //isLeftOf(resLeftOfRightDiv, resRightDiv) &&
-        isLeftOf(resLeftOfRightDiv, resFillOfRightDiv) &&
-        isLeftOf(resLeftOfRightDiv, resDownOfRightDiv) &&
-        isLeftOf(resLeftOfRightDiv, resFillOfDownOfRightDiv)
+        isLeftOf(resLeftOfRightDiv, resFillOfRightDiv)&&
+        isLeftOf(resDownOfRightDiv, resLeftOfRightDiv) &&
+        isLeftOf(resFillOfDownOfRightDiv, resLeftOfRightDiv)
       ) && (
         //isDownOf(resDownOfRightDiv, resRightDiv) &&
         //isDownOf(resFillOfDownOfRightDiv, resRightDiv) &&
         isDownOf(resFillOfDownOfRightDiv, resFillOfRightDiv)
       );
     }, 'LEFT OF FILL OF DOWN AND FILL OF RIGHT OF MAIN failed', 1000);
-  }, {skipReason: 'GROK-13242'});
+  });
 });
 
 function isLeftOf(tgt: Element, ref: Element): boolean {

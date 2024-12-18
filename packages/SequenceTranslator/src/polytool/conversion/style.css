@@ -1,0 +1,32 @@
+.monomer-card-rule-root {
+    border: 2px solid var(--grey-2);
+    border-radius: 5px;
+    padding: 5px;
+    margin: 5px;
+    overflow: hidden;
+    align-items: center;
+    cursor: pointer;
+    width: 200px;
+    height: 210px;
+    min-width: 200px;
+    min-height: 210px;
+}
+
+.monomer-card-info-rules {
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 10px;
+}
+
+.monomer-card-info-rules > div:nth-child(2) {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.monomer-card-info-rules > div:nth-child(1) {
+    font-weight: bold;
+    margin-right: 5px;
+    text-wrap: nowrap;
+}

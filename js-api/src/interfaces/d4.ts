@@ -322,7 +322,7 @@ export interface IHistogramSettings {
 
   legendVisibility: keyof typeof VisibilityMode;
 
-  legendPosition: keyof typeof FlexPosition;
+  legendPosition: keyof typeof FlexAutoPosition;
 
   marginLeft: number;
 
@@ -371,6 +371,14 @@ export interface IHistogramSettings {
 
   descriptionVisibilityMode: keyof typeof VisibilityMode;
 
+}
+
+export enum FlexAutoPosition {
+  Auto = 'Auto',
+  Left = 'Left',
+  Right = 'Right',
+  Top = 'Top',
+  Bottom = 'Bottom',
 }
 
 export interface IFiltersSettings {
@@ -707,7 +715,7 @@ export interface IScatterPlotSettings {
 
   legendVisibility: keyof typeof VisibilityMode;
 
-  legendPosition: keyof typeof FlexPosition;
+  legendPosition: keyof typeof FlexAutoPosition;
 
   axisFont: string;
 
@@ -943,7 +951,7 @@ export interface ILineChartSettings {
 
   legendVisibility: keyof typeof VisibilityMode;
 
-  legendPosition: keyof typeof FlexPosition;
+  legendPosition: keyof typeof FlexAutoPosition;
 
   /// When true, lines are added to the legend
   /// Requires *Multi Axis* to be enabled
@@ -1168,7 +1176,7 @@ export interface IBarChartSettings {
 
   legendVisibility: keyof typeof VisibilityMode;
 
-  legendPosition: keyof typeof FlexPosition;
+  legendPosition: keyof typeof FlexAutoPosition;
 
   outerMarginLeft: number;
 
@@ -1380,7 +1388,7 @@ export interface IBoxPlotSettings {
   /// Points are not shown if the number of rows is greater than *Show Values Limit*.
   legendVisibility: keyof typeof VisibilityMode;
 
-  legendPosition: keyof typeof FlexPosition;
+  legendPosition: keyof typeof FlexAutoPosition;
 
   showMeanCross: boolean;
 
@@ -1516,7 +1524,7 @@ export interface IPieChartSettings {
 
   legendVisibility: keyof typeof VisibilityMode;
 
-  legendPosition: keyof typeof FlexPosition;
+  legendPosition: keyof typeof FlexAutoPosition;
 
   segmentAngle: string;
   segmentAngleColumnName: string;
@@ -1860,6 +1868,11 @@ export interface IGridSettings {
   /// Ctrl+Shift+mouse drag to unselect
   allowRowSelection: boolean;
 
+  /// Right-click and drag to pan content
+  allowContentPanning: boolean;
+
+  showColumnGroups: boolean;
+
   showRowHeader: boolean;
 
   showRowGridlines: boolean;
@@ -1874,6 +1887,9 @@ export interface IGridSettings {
   /// Automatically scroll current row into view when it is set from outside
   /// (for instance, as a result of clicking on a point in a scatter plot)
   autoScrollRowIntoView: boolean;
+
+  /// Automatically resize column widths when row height is resized
+  autoResizeColumnWidths: boolean;
 
   showColumnGridlines: boolean;
 
@@ -2177,7 +2193,7 @@ export interface ITrellisPlotSettings {
 
   legendVisibility: keyof typeof VisibilityMode;
 
-  legendPosition: keyof typeof FlexPosition;
+  legendPosition: keyof typeof FlexAutoPosition;
 
   showXSelectors: boolean;
 

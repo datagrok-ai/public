@@ -6,14 +6,19 @@ import {Chain} from './pt-chain';
 import {_package} from '../../package';
 
 /** The main PolyTool convert engine. Returns list of Helms. Covered with tests. */
-export function doPolyToolConvert(sequences: string[], rules: Rules, helmHelper: IHelmHelper): string[] {
+export function doPolyToolConvert(sequences: string[], rules: Rules, helmHelper: IHelmHelper):
+[string[], boolean[], number[][][]] {
   const helms = new Array<string>(sequences.length);
+  const isLinear = new Array<boolean>(sequences.length);
+  const positionMaps = new Array<number[][]>(sequences.length);
   for (let i = 0; i < sequences.length; i++) {
     try {
       if (sequences[i] == null) { helms[i] = ''; } else {
         const chain = Chain.fromSeparator(sequences[i], helmHelper);
         chain.applyRules(rules);
+        isLinear[i] = chain.monomersUnderRules.length > 1 || chain.linkagesUnderRules.length > 0 ? false : true;
         helms[i] = chain.getHelm();
+        positionMaps[i] = chain.posToPosUnderRules;
       }
     } catch (err: any) {
       const [errMsg, errStack] = errInfo(err);
@@ -21,5 +26,5 @@ export function doPolyToolConvert(sequences: string[], rules: Rules, helmHelper:
       helms[i] = '';
     }
   }
-  return helms;
+  return [helms, isLinear, positionMaps];
 }

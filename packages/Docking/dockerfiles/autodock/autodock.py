@@ -8,6 +8,8 @@ import re
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
 import logging
+import multiprocessing
+import signal
 
 logging_level = logging.WARNING
 logging.basicConfig(level=logging_level)
@@ -15,14 +17,21 @@ logging.basicConfig(level=logging_level)
 app = Flask(__name__)
 logging.warning('autodock app started version -- 12 -- ')
 
+processes = {}
+
 def prepare_autogrid_config(folder_path, receptor_basename, autodock_gpf):
     config_path = "{}/{}.gpf".format(folder_path, receptor_basename)
+    if isinstance(autodock_gpf, unicode):
+        autodock_gpf = autodock_gpf.encode("utf-8")
     with open(config_path, "w") as config_file:
         config_file.write(autodock_gpf)
     return config_path
 
 def calculate_hash(data):
-    return hashlib.sha256(data.encode()).hexdigest()
+    if isinstance(data, unicode):
+        data = data.encode('utf-8')
+    return hashlib.sha256(data).hexdigest()
+
 
 def run_process(command, folder_path, shell=False):
     command_txt = ' '.join(command) if isinstance(command, list) else str(command)
@@ -153,10 +162,12 @@ def check_opencl():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
-@app.route('/autodock/dock_ligand', methods=['POST'])
-def dock_ligand():
-    raw_data = request.data
-    json_data = json.loads(raw_data)
+def dock_ligand_process(request_data, result_queue):
+    """
+    The function to handle docking logic in a separate process.
+    Sends the result to the main process via the result_queue.
+    """
+    json_data = json.loads(request_data)
 
     receptor_value, receptor_format, ligand_value, ligand_format, autodock_gpf, pose_count, debug_mode = \
         extract_json_values(json_data)
@@ -175,20 +186,16 @@ def dock_ligand():
 
     if return_code != 0:
         error = gpu_output if gpu_output != '' else gpu_error
-        response = {
-            'error': error
-        }
-        return jsonify(response)
+        result_queue.put({'error': error})
+        return
 
     dlg_path = '{}-{}.dlg'.format(receptor_name, ligand_name)
     out_path = '{}-{}.pdbqt'.format(receptor_name, ligand_name)
     grep_return_code, grep_output, grep_error = convert_dlg_to_pdbqt(folder_path, dlg_path, out_path)
     if grep_return_code != 0:
         error = grep_output if grep_output != '' else grep_error
-        response = {
-            'error': error
-        }
-        return jsonify(response)
+        result_queue.put({'error': error})
+        return
 
     with open('{}/{}'.format(folder_path, out_path), 'r') as result_file:
         result_content = result_file.read()
@@ -205,7 +212,45 @@ def dock_ligand():
             'grep_error': grep_error
         }
 
-    return jsonify(response)
+    result_queue.put(response)
+
+@app.route('/autodock/dock_ligand', methods=['POST'])
+def dock_ligand():
+    """
+    Route to start docking in a separate process and return the result.
+    """
+    raw_data = request.data
+    result_queue = multiprocessing.Queue()
+
+    process = multiprocessing.Process(target=dock_ligand_process, args=(raw_data, result_queue))
+    process.start()
+    processes[process.pid] = process
+
+    process.join()
+
+    if not result_queue.empty():
+        result = result_queue.get()
+        return jsonify(result)
+
+    return jsonify({'error': 'Something went wrong during the docking process.'}), 500
+
+@app.route('/autodock/kill_process', methods=['POST'])
+def kill_all_processes():
+    """
+    Route to kill all running docking processes.
+    """
+    killed_processes = []
+    for pid, process in list(processes.items()):
+        if process.is_alive():
+            os.kill(pid, signal.SIGTERM)
+            process.join()
+            killed_processes.append(pid)
+            del processes[pid]
+
+    if killed_processes:
+        return jsonify({'message': 'Processes {} terminated.'.format(killed_processes)})
+    else:
+        return jsonify({'message': 'No running processes found.'}), 200
 
 @app.route('/autodock/dock_ligand_list', methods=['POST'])
 def dock_list_ligands():

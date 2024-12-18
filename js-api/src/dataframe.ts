@@ -27,6 +27,7 @@ import {FormulaLinesHelper} from "./helpers";
 import dayjs from "dayjs";
 import {Tags} from "./api/ddt.api.g";
 import {IDartApi} from "./api/grok_api.g";
+import {stringify} from "querystring";
 
 declare let grok: any;
 declare let DG: any;
@@ -573,7 +574,7 @@ export class Row {
         return true;
       },
       get(target: any, name) {
-        if (name == 'cells' || name == 'get' || name == 'toDart' || target.hasOwnProperty(name))
+        if (name == 'cells' || name == 'get' || name == 'toDart' || name == 'toMap' || target.hasOwnProperty(name))
           return target[<any>name];
         return target.table.get(name, target.idx);
       }
@@ -581,6 +582,14 @@ export class Row {
   }
 
   get cells(): Iterable<Cell> { return _toIterable(api.grok_Row_Get_Cells(this.table.dart, this.idx)); }
+
+  /** Returns a JS object with column names as keys and values as values. */
+  toMap(): {[index: string]: any} {
+    const res: {[index: string]: any} = {};
+    for (const column of this.table.columns)
+      res[column.name] = column.get(this.idx);
+    return res;
+  }
 
   /** Returns this row's value for the specified column
    * @param {string} columnName
@@ -602,7 +611,7 @@ type KnownColumnTags = 'format' | 'colors';
 /** Strongly-typed column.
  * Use {@link get} and {@link set} to access elements by index.
  * */
-export class Column<T = any> {
+export class Column<T = any, TInit = T> {
   public dart: any;
   public temp: any;
   public tags: any;
@@ -859,9 +868,9 @@ export class Column<T = any> {
    * @param {string | number | boolean | Function} valueInitializer value, or a function that returns value by index
    * @returns {Column}
    * */
-  init(valueInitializer: string | number | boolean | ((ind: number) => any)): Column {
+  init(valueInitializer: string | number | boolean | Date | dayjs.Dayjs | null | ((ind: number) => any)): Column {
     let initType = typeof valueInitializer;
-    if (initType === 'function' && this.type === DG.TYPE.DATA_FRAME){
+    if (initType === 'function' && this.type === DG.TYPE.DATA_FRAME) {
       // @ts-ignore
       api.grok_Column_Init(this.dart, (i) => toDart(valueInitializer(i)));
     }
@@ -944,13 +953,19 @@ export class Column<T = any> {
     return api.grok_Column_SetString(this.dart, i, str, notify);
   }
 
+  /** Call this method after setting elements without notifications via {@link set} */
+  fireValuesChanged() {
+    api.grok_Column_FireValuesChanged(this.dart);
+  }
+
   /**
    * Sets [i]-th value to [x], and optionally notifies the dataframe about this change.
    * @param {number} i
    * @param value
-   * @param {boolean} notify - whether DataFrame's `changed` event should be fired
+   * @param {boolean} notify - whether DataFrame's `changed` event should be fired. Call {@link fireValuesChanged}
+   * after you are done modifying the column.
    */
-  set(i: number, value: T | null, notify: boolean = true): void {
+  set(i: number, value: TInit | null, notify: boolean = true): void {
     api.grok_Column_SetValue(this.dart, i, toDart(value), notify);
   }
 
@@ -1106,10 +1121,41 @@ export class BigIntColumn extends Column<BigInt> {
 }
 
 
-export class DateTimeColumn extends Column<dayjs.Dayjs> {
-  /**
-   * Gets [i]-th value.
-   */
+type DateTimeInit = dayjs.Dayjs | string | Date | null;
+
+export class DateTimeColumn extends Column<dayjs.Dayjs, DateTimeInit> {
+
+  static getMs(x: any): number | null {
+    if (x == '' || x == null)
+      return null;
+    if (dayjs.isDayjs(x))
+      return x.valueOf();
+    else {
+      const ms = dayjs(x).valueOf();
+      if (isNaN(ms))
+        throw `"${x}" is not convertable to date time`;
+      return ms;
+    }
+  }
+
+  init(valueInitializer: DateTimeInit | ((ind: number) => DateTimeInit)): Column {
+    let initType = typeof valueInitializer;
+    const length = this.length;
+
+    if (initType === 'function')
+      for (let i = 0; i < length; i++)
+        // @ts-ignore
+        this.set(i, valueInitializer(i), false);
+    else if (initType === 'number' || initType === 'string' || dayjs.isDayjs(valueInitializer)) {
+      const ms = DateTimeColumn.getMs(valueInitializer);
+      for (let i = 0; i < length; i++)
+        api.grok_DateTimeColumn_SetValue(this.dart, i, ms, false);
+    }
+
+    this.fireValuesChanged();
+    return this;
+  }
+
   get(row: number): dayjs.Dayjs | null {
     let v = api.grok_DateTimeColumn_GetValue(this.dart, row);
     if (v == null)
@@ -1117,16 +1163,9 @@ export class DateTimeColumn extends Column<dayjs.Dayjs> {
     return dayjs(v);
   }
 
-  /**
-   * Sets [i]-th value to [x], and optionally notifies the dataframe about this change.
-   */
-  set(i: number, value: dayjs.Dayjs | null, notify: boolean = true): void {
+  set(i: number, value: dayjs.Dayjs | string | Date | null, notify: boolean = true): void {
     // @ts-ignore
-    if (value == '')
-      value = null;
-    if (!(dayjs.isDayjs(value) || value == null))
-      value = dayjs(value);
-    api.grok_DateTimeColumn_SetValue(this.dart, i, value?.valueOf(), notify);
+    api.grok_DateTimeColumn_SetValue(this.dart, i, DateTimeColumn.getMs(value)?.valueOf(), notify);
   }
 }
 
@@ -1161,6 +1200,8 @@ export class ColumnList {
   constructor(dart: any) {
     this.dart = dart;
   }
+
+  get dataFrame(): DataFrame { return toJs(api.grok_ColumnList_Get_DataFrame(this.dart)); }
 
   /** Number of columns. */
   get length(): number { return api.grok_ColumnList_Length(this.dart); }
@@ -1203,6 +1244,14 @@ export class ColumnList {
   byTags(tags: object): Iterable<Column> {
     return _toIterable(api.grok_ColumnList_ByTags(this.dart, tags));
   }
+
+  /** Returns the first column that satisfies the specified criteria. */
+  firstWhere(predicate: (col: Column) => boolean): Column | undefined {
+    for (const col of this)
+      if (predicate(col))
+        return col;
+  }
+
 
   /** Finds categorical columns.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/find-columns} */
@@ -1256,10 +1305,10 @@ export class ColumnList {
     return column;
   }
 
-  getOrCreate(name: string, type: ColumnType, length: number): Column {
+  getOrCreate(name: string, type: ColumnType): Column {
     return this.contains(name) ?
-    this.byName(name) :
-    this.add(DG.Column.fromType(type, name, length));
+      this.byName(name) :
+      this.add(DG.Column.fromType(type, name, this.dataFrame.rowCount));
   }
 
   /** Inserts a column, and optionally notifies the parent dataframe.
@@ -1313,7 +1362,7 @@ export class ColumnList {
   /** Creates and adds a datetime column
    * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
    * */
-  addNewDateTime(name: string): Column { return this.addNew(name, TYPE.DATE_TIME); }
+  addNewDateTime(name: string): DateTimeColumn { return this.addNew(name, TYPE.DATE_TIME); }
 
   /** Creates and adds a boolean column
    * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
@@ -1357,9 +1406,10 @@ export class ColumnList {
   /** Replaces the column with the new column.
    * @param {Column} columnToReplace
    * @param {Column} newColumn
+   * @param {boolean} notify
    * */
-  replace(columnToReplace: Column | string, newColumn: Column): Column {
-    return toJs(api.grok_ColumnList_Replace(this.dart, (typeof columnToReplace === 'string') ? columnToReplace:  columnToReplace.dart, newColumn.dart));
+  replace(columnToReplace: Column | string, newColumn: Column, notify: boolean = true): Column {
+    return toJs(api.grok_ColumnList_Replace(this.dart, (typeof columnToReplace === 'string') ? columnToReplace:  columnToReplace.dart, newColumn.dart, notify));
   }
 
   /** Returns a name that does not exist in column list.
@@ -2302,20 +2352,38 @@ export class Qnum {
   }
 }
 
+
+type GroupDescription = {
+  columns?: string[]
+  description?: string;
+  color?: string;
+}
+
+type GroupsDescription = {
+  [index: string]: GroupDescription;
+}
+
+
 export class DataFrameMetaHelper {
-  private readonly _df: DataFrame;
+  df: DataFrame;
 
   readonly formulaLines: DataFrameFormulaLinesHelper;
 
   async detectSemanticTypes() {
-    await grok.data.detectSemanticTypes(this._df);
+    await grok.data.detectSemanticTypes(this.df);
   }
 
   constructor(df: DataFrame) {
-    this._df = df;
-    this.formulaLines = new DataFrameFormulaLinesHelper(this._df);
+    this.df = df;
+    this.formulaLines = new DataFrameFormulaLinesHelper(this.df);
+  }
+
+  /** This data will be picked up by {@link Grid} to construct groups. */
+  setGroups(groups: GroupsDescription | null): void {
+    this.df.tags['.columnGroups'] = (groups ? JSON.stringify(groups) : null);
   }
 }
+
 
 export class DataFrameFormulaLinesHelper extends FormulaLinesHelper {
   readonly df: DataFrame;
@@ -2328,6 +2396,7 @@ export class DataFrameFormulaLinesHelper extends FormulaLinesHelper {
     this.df = df;
   }
 }
+
 
 export class DataFramePlotHelper {
   private readonly df: DataFrame;
@@ -2524,29 +2593,37 @@ export class ColumnMetaHelper {
     return this._markers;
   }
 
-  /** Specifies the data format of the dataframe column. See also [GridColumn.format] */
-  get format(): string | null {
-    return this.column.getTag(TAGS.FORMAT) ?? api.grok_Column_GetAutoFormat(this.column.dart);
+  private setNonNullTag(key: string, value: string | null) {
+    if (value === null)
+      api.grok_Column_Remove_Tag(this.column.dart, key);
+    else
+      this.column.setTag(key, value);
   }
-  set format(x: string | null) { this.column.tags[TAGS.FORMAT] = x; }
+
+  /** Specifies the data format of the dataframe column. See also [GridColumn.format] */
+  get friendlyName(): string | null { return this.column.getTag(TAGS.FRIENDLY_NAME); }
+  set friendlyName(x: string | null) { this.setNonNullTag(TAGS.FRIENDLY_NAME, x); }
+
+  /** Specifies the data format of the dataframe column. See also [GridColumn.format] */
+  get format(): string | null { return this.column.getTag(TAGS.FORMAT) ?? api.grok_Column_GetAutoFormat(this.column.dart); }
+  set format(x: string | null) { this.setNonNullTag(TAGS.FORMAT, x); }
 
   /** Returns the maximum amount of significant digits detected in the column. */
   get sourcePrecision(): number | null { return this.column.getTag(TAGS.SOURCE_PRECISION) != null ? +this.column.getTag(TAGS.SOURCE_PRECISION) : null; }
 
   /** When set, uses the formula to calculate the column values. */
   get formula(): string | null { return this.column.getTag(TAGS.FORMULA); }
-  set formula(x: string | null) { this.column.tags[TAGS.FORMULA] = x; }
+  set formula(x: string | null) { this.setNonNullTag(TAGS.FORMULA, x); }
 
   /** Specifies the units of the dataframe column. */
   get units(): string | null { return this.column.getTag(TAGS.UNITS); }
-  set units(x: string | null) { this.column.tags[TAGS.UNITS] = x; }
-
+  set units(x: string | null) { this.setNonNullTag(TAGS.UNITS, x); }
 
   /** When set, switches the cell editor to a combo box that only allows to choose specified values.
    * Applicable for string columns only.
    * See also {@link autoChoices}. */
   get choices(): string[] | null { return JSON.parse(this.column.getTag(TAGS.CHOICES)); }
-  set choices(x: string[] | null) { this.column.tags[TAGS.CHOICES] = x != null ? JSON.stringify(x) : null; }
+  set choices(x: string[] | null) { this.setNonNullTag(TAGS.CHOICES, x != null ? JSON.stringify(x) : null); }
 
   /** When set to 'true', switches the cell editor to a combo box that only allows to choose values
    * from a list of already existing values in the column.
@@ -2573,5 +2650,5 @@ export class ColumnMetaHelper {
   /** When specified, column filter treats the split strings as separate values.
    * See also: https://datagrok.ai/help/visualize/viewers/filters#column-tags */
   get multiValueSeparator(): string { return this.column.getTag(Tags.MultiValueSeparator); }
-  set multiValueSeparator(x) { this.column.setTag(Tags.MultiValueSeparator, x); }
+  set multiValueSeparator(x) { this.setNonNullTag(Tags.MultiValueSeparator, x); }
 }

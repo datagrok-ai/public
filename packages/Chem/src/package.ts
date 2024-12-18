@@ -50,7 +50,7 @@ import {ActivityCliffsParams, createPropPanelElement, createTooltipElement} from
 import {chemDiversitySearch, ChemDiversityViewer} from './analysis/chem-diversity-viewer';
 import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {chemSpace, runChemSpace} from './analysis/chem-space';
-import {RGroupDecompRes, RGroupParams, rGroupAnalysis, rGroupDecomp, loadRGroupUserSettings} from './analysis/r-group-analysis';
+import {RGroupDecompRes, RGroupParams, rGroupAnalysis, rGroupDecomp} from './analysis/r-group-analysis';
 import {MatchedMolecularPairsViewer} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
 
 //file importers
@@ -65,7 +65,7 @@ import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/
 import {_demoActivityCliffs, _demoChemOverview, _demoDatabases4,
   _demoMMPA,
   _demoRgroupAnalysis, _demoScaffoldTree, _demoSimilarityDiversitySearch} from './demo/demo';
-import {getStructuralAlertsByRules, RuleId, RuleSet, runStructuralAlertsDetection, STRUCT_ALERTS_RULES_NAMES} from './panels/structural-alerts';
+import {getStructuralAlertsByRules, RuleId, RuleSet, STRUCT_ALERTS_RULES_NAMES} from './panels/structural-alerts';
 import {getmolColumnHighlights} from './widgets/col-highlights';
 import {RDLog, RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {malformedDataWarning} from './utils/malformed-data-utils';
@@ -80,7 +80,8 @@ import JSZip from 'jszip';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
 import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
-import { CHEM_PROP_MAP } from './open-chem/ocl-service/calculations';
+import {CHEM_PROP_MAP} from './open-chem/ocl-service/calculations';
+import {cutFragments} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-react-toolkit';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -507,11 +508,11 @@ export async function chemDescriptor(molecules: DG.Column, descriptor: string): 
   try {
     const descCols = await fetchWrapper(() => calculateDescriptors(molecules, [descriptor]));
     descCol = descCols.length ? descCols.filter((it) => it)[0] : DG.Column.string(descriptor, molecules.length).init(`Error calculating ${descriptor}`);
-  } catch(e) {
+  } catch (e) {
     descCol = DG.Column.string(descriptor, molecules.length).init(`Error calculating ${descriptor}`);
   }
   return descCol;
-}  
+}
 
 
 //name: SearchSubstructureEditor
@@ -648,12 +649,12 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
   let res = funcCall.getOutputParamValue();
 
   if (plotEmbeddings) {
-    res = grok.shell.tv.scatterPlot({ x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical space' });
-  //temporary fix (to save backward compatibility) since labels option type has been changed from string to array in 1.23 platform version 
-  if (Object.keys(res.props).includes('labelColumnNames')) { //@ts-ignore
-    if (res.props['labelColumnNames'].constructor.name == "Array")
-      res.setOptions({labelColumnNames: [molecules.name]});
-  }
+    res = grok.shell.tv.scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical space'});
+    //temporary fix (to save backward compatibility) since labels option type has been changed from string to array in 1.23 platform version
+    if (Object.keys(res.props).includes('labelColumnNames')) { //@ts-ignore
+      if (res.props['labelColumnNames'].constructor.name == 'Array')
+        res.setOptions({labelColumnNames: [molecules.name]});
+    }
     if (clusterEmbeddings)
       res.props.colorColumnName = clusterColName;
   }
@@ -955,9 +956,9 @@ export async function activityCliffsInitFunction(sp: DG.ScatterPlotViewer): Prom
   await runActivityCliffs(sp, sp.dataFrame, molCol, encodedColWithOptions, actCol, axesNames,
     actCliffsParams.similarity, actCliffsParams.similarityMetric, actCliffsParams.options, DG.SEMTYPE.MOLECULE,
     {'units': molCol.meta.units!}, createTooltipElement, createPropPanelElement, undefined, undefined, actCliffsParams.isDemo);
-  //temporary fix (to save backward compatibility) since labels option type has been changed from string to array in 1.23 platform version 
+  //temporary fix (to save backward compatibility) since labels option type has been changed from string to array in 1.23 platform version
   if (Object.keys(sp.props).includes('labelColumnNames')) { //@ts-ignore
-    if (sp.props['labelColumnNames'].constructor.name == "Array")
+    if (sp.props['labelColumnNames'].constructor.name == 'Array')
       sp.setOptions({labelColumnNames: [molCol.name]});
   }
   sp.render(sp.getInfo()['canvas'].getContext('2d'));
@@ -1008,7 +1009,7 @@ export function addInchisTopMenu(table: DG.DataFrame, col: DG.Column): void {
 //output: column res
 export function getInchis(molecules: DG.Column): DG.Column {
   return getInchisImpl(molecules);
-}  
+}
 
 
 //top-menu: Chem | Calculate | To InchI Keys...
@@ -1028,7 +1029,7 @@ export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void 
 //output: column res
 export function getInchiKeys(molecules: DG.Column): DG.Column {
   return getInchiKeysImpl(molecules);
-}  
+}
 
 
 //top-menu: Chem | Analyze | Structural Alerts...
@@ -1090,8 +1091,8 @@ export async function runStructuralAlerts(table: DG.DataFrame, molecules: DG.Col
   const ruleSet: RuleSet = {'PAINS': pains, 'BMS': bms, 'SureChEMBL': sureChembl, 'MLSMR': mlsmr,
     'Dundee': dundee, 'Inpharmatica': inpharmatica, 'LINT': lint, 'Glaxo': glaxo};
   const resultDf = await getStructuralAlertsByRules(molecules, ruleSet);
-  
-  if(resultDf) {
+
+  if (resultDf) {
     for (const resultCol of resultDf.columns) {
       resultCol.name = table.columns.getUnusedName(`${resultCol.name} (${molecules.name})`);
       table.columns.add(resultCol);
@@ -1109,13 +1110,12 @@ export async function runStructuralAlert(molecules: DG.Column, alert: RuleId): P
   let col: DG.Column = DG.Column.string(alert, molecules.length).init(`Error calculating ${alert}`);
   try {
     const ruleSet: {[key: string]: boolean} = {};
-    for (const rule of STRUCT_ALERTS_RULES_NAMES) { 
+    for (const rule of STRUCT_ALERTS_RULES_NAMES)
       ruleSet[rule] = alert.toLocaleLowerCase() === rule.toLocaleLowerCase();
-    }
-  
+
     const resultDf = await getStructuralAlertsByRules(molecules, ruleSet as RuleSet);
-    if (resultDf){
-      if(!resultDf.columns.names().length)
+    if (resultDf) {
+      if (!resultDf.columns.names().length)
         col = DG.Column.string(alert, molecules.length).init(`Incorrect alert`);
       else
         col = resultDf.columns.byIndex(0);
@@ -1260,7 +1260,7 @@ export async function convertMoleculeNotation(molecule: DG.Column, targetNotatio
     col = DG.Column.fromStrings(`${molecule.name}_${targetNotation}`, res);
     col.semType = DG.SEMTYPE.MOLECULE;
   } catch (e: any) {
-    col = DG.Column.string(`${molecule.name}_${targetNotation}`, molecule.length).init((i) => e?.message);
+    col = DG.Column.string(`${molecule.name}_${targetNotation}`, molecule.length).init((_) => e?.message);
   }
   return col;
 }
@@ -1645,16 +1645,16 @@ export async function getMolProperty(molecules: DG.Column, property: string): Pr
   try {
     const propNames = Object.keys(CHEM_PROP_MAP);
     let props: string[] = [];
-  
+
     for (const propName of propNames)
       props = props.concat(propName === property ? [property] : []);
-  
+
     const cols = await getPropertiesAsColumns(molecules, props);
-    if(!cols.length)
+    if (!cols.length)
       col = DG.Column.string(property, molecules.length).init(`Incorrect property`);
     else
       col = cols[0];
-  } catch(e) {}
+  } catch (e) {}
 
   return col;
 }
@@ -1702,11 +1702,16 @@ export function mmpViewer(): MatchedMolecularPairsViewer {
 //input: dataframe table [Input data table]
 //input: column molecules { semType: Molecule }
 //input: column_list activities {type: numerical}
-//input: double fragmentCutoff = 0.4 { description: Max length of fragment in % of core }
+//input: double fragmentCutoff = 0.4 { description: Maximum fragment size relative to core }
 //output: viewer result
 export function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
   activities: DG.ColumnList, fragmentCutoff: number = 0.4, demo = false): void {
   let view: DG.TableView;
+
+  if (activities.length < 1) {
+    grok.shell.warning('MMP analysis requires at least one activity');
+    return;
+  }
 
   if (demo) {
     const browseView = grok.shell.view('Browse') as DG.BrowseView;
@@ -2025,3 +2030,18 @@ export async function isApplicableNN(df: DG.DataFrame, predictColumn: DG.Column)
 }
 
 export {getMCS};
+
+//top-menu: Chem | Transform | Deprotect...
+//name: Deprotect
+//description: Generates the new dataset based on the given structure
+//input: dataframe table [Input data table]
+//input: column molecules {semType: Molecule}
+//input: string fragment = "O=C([N:1])OCC1c2ccccc2-c2ccccc21" {semType: Molecule}
+export async function deprotect(table: DG.DataFrame, molecules: DG.Column, fragment: string): Promise<void> {
+  const module = getRdKitModule();
+  const cut = cutFragments(module, molecules.toList(), fragment);
+  const res = cut.map((c) => c[0]);
+  const col = DG.Column.fromStrings('deprotected', res);
+  col.semType = DG.SEMTYPE.MOLECULE;
+  table.columns.add(col);
+}

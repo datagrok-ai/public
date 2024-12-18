@@ -7,6 +7,7 @@ import os from 'os';
 import path from 'path';
 import walk from 'ignore-walk';
 import yaml from 'js-yaml';
+import { getDevKey, getToken } from '../utils/test-utils';
 import { checkImportStatements, checkFuncSignatures, extractExternals, checkPackageFile, checkChangelog } from './check';
 import * as utils from '../utils/utils';
 import { Indexable } from '../utils/utils';
@@ -32,8 +33,6 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   let url = `${host}/packages/dev/${devKey}/${packageName}`;
   if (debug) {
     try {
-      console.log(url);
-
       timestamps = await (await fetch(url + '/timestamps')).json();
       if (timestamps['#type'] === 'ApiError') {
         color.error(timestamps.message);
@@ -215,16 +214,32 @@ export async function publish(args: PublishArgs) {
     utils.setHost(host, config);
 
     let baseUrl = config['servers'][host]['url'];
-    let url = `${baseUrl}/info/packages`;
+    let url: string = process.env.HOST ?? '';
+    const cfg = getDevKey(url);
+    url = cfg.url;
+  
+    const key = cfg.key;
+    const token = await getToken(url, key);
+
+    url = `${baseUrl}/packages/published/current`;
 
     let packagesToLoad =['all']
-    console.log(url);
     if (args.refresh)
-      packagesToLoad = Object.keys(await (await fetch(url)).json());
+      packagesToLoad = (await (await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Authorization': token // Attach cookies here
+        }
+    })).json()).map((item : any) => item.name);
     console.log('Loading packages:');
-    await loadPackages(curDir, packagesToLoad.join(' '), host, false, false, false, args.release);
+    await loadPackages(curDir, packagesToLoad.join(' '), host, false, false, args.link, args.release);
   }
   else {
+    if (args.link){
+      await utils.runScript(`npm install`, curDir);
+      await utils.runScript(`grok link`, curDir);
+      await utils.runScript(`npm run build`, curDir);
+    }
     await publishPackage(args);
   }
 }
@@ -318,5 +333,6 @@ interface PublishArgs {
   key?: string,
   suffix?: string,
   all?: boolean,
-  refresh?: boolean
+  refresh?: boolean,
+  link?:boolean
 }

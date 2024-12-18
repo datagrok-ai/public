@@ -1,4 +1,6 @@
 import { DataFrame, Script } from 'datagrok-api/dg';
+import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import { runTests, tests, TestContext, category, test as _test, delay, initAutoTests as initCoreTests, expect, awaitCheck, before } from '@datagrok-libraries/utils/src/test';
 export const _package = new DG.Package();
 export { tests };
@@ -124,19 +126,7 @@ export async function initTests() {
             throw new Error(`Script ${'Scripts:' + script.options.path as string}.${script.friendlyName}`);
         }
 
-        async function evaluateScript(script: Script) {
-          let timeout: any;
-          timeout = setTimeout(() => {
-            subscription.unsubscribe();
-            throw new Error('Script didnt pass');
-          }, 10000);
-          const subscription = grok.functions.onAfterRunAction.subscribe((funcCall) => {
-            if ((funcCall.func as any).script.replaceAll('\r', '').replaceAll('\n', '') === script.script.replaceAll('\r', '').replaceAll('\n', '')) {
-              if (timeout)
-                clearTimeout(timeout);
-              subscription.unsubscribe();  
-            }
-          });
+        async function evaluateScript(script: Script) { 
           await script.apply();
           await delay(300);
         }

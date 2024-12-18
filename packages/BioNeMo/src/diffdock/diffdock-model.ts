@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { IPdbHelper, getPdbHelper } from '@datagrok-libraries/bio/src/pdb/pdb-helper';
+import { MolfileHandler } from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import '../../css/bionemo.css';
 
 // Constants
@@ -49,7 +50,7 @@ export class DiffDockModel {
   private async calculatePoses() {
     const posesColumn = this.createColumn(DG.TYPE.STRING, CONSTANTS.POSES_COLUMN_NAME, this.ligands.length);
     const confidenceColumn = this.createColumn(DG.TYPE.FLOAT, CONSTANTS.CONFIDENCE_COLUMN_NAME, this.ligands.length);
-    const virtualPosesColumn = this.createColumn(DG.TYPE.STRING, `${CONSTANTS.VIRTUAL_POSES_COLUMN_NAME}_${this.targetName}`, this.ligands.length);
+    const virtualPosesColumn = this.createColumn(DG.TYPE.STRING, `${CONSTANTS.VIRTUAL_POSES_COLUMN_NAME}_${this.targetName}_${this.poses}`, this.ligands.length);
     const grid = grok.shell.getTableView(this.df.name).grid;
 
     for (let i = 0; i < posesColumn.length; ++i) {
@@ -91,7 +92,9 @@ export class DiffDockModel {
   public async getPosesJson(ligand: string, units: string): Promise<PosesJson> {
     const isSmiles = units === DG.UNITS.Molecule.SMILES;
     const ligandValue = isSmiles ? DG.chem.convert(ligand, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock) : ligand;
-    const jsonText = await grok.functions.call('Bionemo:diffDockModelScript', {ligand: ligandValue, target: this.target, poses: this.poses});
+    const sdf = MolfileHandler.getInstance(ligandValue).z.every((coord) => coord === 0) ?
+    (await grok.functions.call('Chem:SmilesTo3DCoordinates', {molecule: ligandValue})).replaceAll('\\n', '\n') : ligandValue;
+    const jsonText = await grok.functions.call('Bionemo:diffDockModelScript', {ligand: sdf, target: this.target, poses: this.poses});
     return JSON.parse(jsonText);
   }
 
@@ -119,6 +122,7 @@ export class DiffDockModel {
 
   public async createCombinedControl(poses: PosesJson, bestPose: string, bestId: number, fullHeight: boolean = true): Promise<HTMLDivElement> {
     const molstarViewer = await this.createMolstarViewer(bestPose);
+    molstarViewer.root.classList.add('bsv-container-info-panel');
     molstarViewer.root.style.alignSelf = 'center';
     if (fullHeight)
       molstarViewer.root.style.height = '100%';
@@ -131,7 +135,12 @@ export class DiffDockModel {
     const comboPopup = ui.comboPopup(items[bestId], items, (item: string) => {
       comboPopup.getElementsByTagName('span')[0].textContent = item;
       const idx = parseInt(item.split(' ')[1]) - 1;
-      molstarViewer.apply({ 'ligandValue': poses.ligand_positions[idx] });
+      const ligandObject = {
+        value: poses.ligand_positions[idx],
+        semType: DG.SEMTYPE.MOLECULE,
+        units: DG.UNITS.Molecule.MOLBLOCK,
+      };
+      molstarViewer.apply({ 'ligandValue': JSON.stringify(ligandObject)});
       molstarViewer.onPropertyChanged(ligandValueProp!);
       molstarViewer.onPropertyChanged(ligandColProp!);
     });
@@ -143,10 +152,16 @@ export class DiffDockModel {
   }
 
   private async createMolstarViewer(bestPose: string): Promise<DG.Widget> {
+    const ligandObject = {
+      value: bestPose,
+      semType: DG.SEMTYPE.MOLECULE,
+      units: DG.UNITS.Molecule.MOLBLOCK,
+    };
+
     return await this.ligands.dataFrame.plot.fromType('Biostructure', {
       pdb: this.target,
       ligandColumnName: this.ligands.name,
-      ligandValue: bestPose,
+      ligandValue: JSON.stringify(ligandObject),
       zoom: true,
     });
   }

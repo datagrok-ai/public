@@ -68,8 +68,10 @@ function regexEntitiesSearch(s: string, host: HTMLDivElement): void {
         ui.link('Open table', () => {
           const df = DG.DataFrame.create(semValues.length);
           df.columns.addNewString(semValues[0].semType).init((i) => semValues[i].value);
-          grok.shell.addTable(df);
-        })], {style: { marginBottom: '10px'}}),
+          setTimeout(() => {
+            grok.shell.addTableView(df);
+          });
+        })], {style: {marginBottom: '10px'}}),
       itemsPanel,
     ]);
     for (const sv of semValues)

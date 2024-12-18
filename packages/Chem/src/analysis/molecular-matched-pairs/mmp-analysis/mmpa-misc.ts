@@ -17,17 +17,17 @@ export type MmpRules = {
   rules: {
     smilesRule1: number,
     smilesRule2: number,
-    pairs: {firstStructure: number, secondStructure: number}[]
+    pairs: {firstStructure: number, secondStructure: number, core: number}[]
   } [],
-  smilesFrags: string[]
+  smilesFrags: number[]
 };
 
 export type MolecularPair = {
-  first: number,
-  second: number,
-  core: string,
-  firstR: string,
-  secondR: string
+  first: number, //molecule
+  second: number, //molecule
+  core: number, //frag
+  firstR: number, //frag
+  secondR: number //frag
 };
 
 export type MmpInitData = {
@@ -67,4 +67,10 @@ export type MmpGeneration = {
   to: string [];
   prediction: Float32Array;
   activityName: string [];
+};
+
+export type MmpFragments = {
+  fragCodes: [number, number][][],
+  idToName: string[],
+  sizes: Uint32Array
 };

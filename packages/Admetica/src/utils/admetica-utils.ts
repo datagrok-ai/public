@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { _package } from '../package-test';
-import { TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, DEFAULT_LOWER_VALUE, DEFAULT_UPPER_VALUE, TAGS, DEFAULT_TABLE_NAME, ERROR_MESSAGES } from './constants';
+import { TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, DEFAULT_LOWER_VALUE, DEFAULT_UPPER_VALUE, TAGS, DEFAULT_TABLE_NAME, ERROR_MESSAGES, colorsDictionary } from './constants';
 import { PieChartCellRenderer } from '@datagrok/power-grid/src/sparklines/piechart';
 import { CellRenderViewer } from '@datagrok-libraries/utils/src/viewers/cell-render-viewer';
 import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
@@ -19,12 +19,6 @@ async function getAdmeticaContainer() {
   return admeticaContainer;
 }
 
-// can be removed, need to add to container info
-async function startAdmeticaContainer(containerId: string) {
-  grok.shell.warning('Admetica container has not started yet. Try again in a few seconds');
-  grok.dapi.docker.dockerContainers.run(containerId);
-}
-
 async function sendRequestToContainer(containerId: string, path: string, params: RequestInit): Promise<string | null> {
   try {
     const response = await grok.dapi.docker.dockerContainers.request(containerId, path, params);
@@ -37,11 +31,6 @@ async function sendRequestToContainer(containerId: string, path: string, params:
 
 export async function runAdmetica(csvString: string, queryParams: string, addProbability: string): Promise<string | null> {
   const admeticaContainer = await getAdmeticaContainer();
-  if (!admeticaContainer || (admeticaContainer.status !== 'started' && admeticaContainer.status !== 'checking')) {
-    await startAdmeticaContainer(admeticaContainer?.id);
-    return null;
-  }
-
   const params: RequestInit = {
     method: 'POST',
     headers: {
@@ -51,10 +40,9 @@ export async function runAdmetica(csvString: string, queryParams: string, addPro
     body: csvString
   };
 
-
-  const path = `/df_upload?models=${queryParams}&probability=${addProbability}`;
+  const path = `/predict?models=${queryParams}&probability=${addProbability}`;
   const response = await fetchWrapper(() => sendRequestToContainer(admeticaContainer.id, path, params));
-  return response;
+  return await convertLD50(response!, DG.Column.fromStrings('smiles', csvString.split('\n').slice(1)));
 }
 
 export async function convertLD50(response: string, smilesCol: DG.Column): Promise<string> {
@@ -62,11 +50,11 @@ export async function convertLD50(response: string, smilesCol: DG.Column): Promi
   if (!df.columns.names().includes('LD50')) return response;
 
   const ldCol = df.getCol('LD50');
-  const molWeights = await grok.functions.call('Chem: getMolProperty', {molecules: smilesCol, property: "MW"});
+  const molWeights: DG.Column = await grok.functions.call('Chem: getMolProperty', {molecules: smilesCol, property: "MW"});
 
   ldCol.init((i) => {
     const molPerKg = Math.pow(10, -ldCol.get(i));
-    const mgPerKg = molPerKg * molWeights[i] * 1000;
+    const mgPerKg = molPerKg * molWeights.get(i) * 1000;
     return mgPerKg;
   });
   
@@ -152,14 +140,13 @@ function generateNumber(): number {
 }
 
 function createPieSettings(table: DG.DataFrame, columnNames: string[], properties: any): any {
-  const colors = ['#1f77b4', '#cf5a0c', '#2ca02c', '#d62728', '#9467bd'];
   let sectors: any[] = [];
-  let sectorColorIndex = 0;
 
   for (const subgroup of properties.subgroup) {
+    const subgroupColor = colorsDictionary[subgroup.name];
     const sector: any = {
       name: subgroup.name,
-      sectorColor: colors[sectorColorIndex],
+      sectorColor: subgroupColor,
       subsectors: []
     };
     
@@ -185,7 +172,7 @@ function createPieSettings(table: DG.DataFrame, columnNames: string[], propertie
           column.setTag(TAGS.HIGH, max);
           column.setTag(TAGS.LOW, min);
           column.setTag(TAGS.WEIGHT, weight.toString());
-          column.setTag(TAGS.SECTOR_COLOR, colors[sectorColorIndex]);
+          column.setTag(TAGS.SECTOR_COLOR, subgroupColor);
         }
           
         sector.subsectors.push({
@@ -199,8 +186,6 @@ function createPieSettings(table: DG.DataFrame, columnNames: string[], propertie
 
     if (sector.subsectors.length > 0)
       sectors.push(sector);
-
-    sectorColorIndex = (sectorColorIndex + 1) % colors.length;  
   }
     
   return {
@@ -215,6 +200,7 @@ function createPieSettings(table: DG.DataFrame, columnNames: string[], propertie
 
 export function addSparklines(table: DG.DataFrame, columnNames: string[], index: number, name?: string): void {
   const tv = getTableView(table);
+  const {grid} = tv;
   if (!tv) return;
 
   let pieChartIdx: number;
@@ -228,10 +214,12 @@ export function addSparklines(table: DG.DataFrame, columnNames: string[], index:
 
   const pieName = pieChartIdx === 0 ? "piechart" : `piechart (${pieChartIdx})`
   name ??= pieName;
-  const pie = tv.grid.columns.add({ gridColumnName: name, cellType: 'piechart', index: index });
+  const pie = grid.columns.add({ gridColumnName: name, cellType: 'piechart' });
 
   pie.settings = { columnNames: columnNames };
   pie.settings = createPieSettings(table, columnNames, properties);
+
+  grid.columns.byName(name)?.move(index);
 }
 
 function getTooltipContent(model: any, value: any): string {
@@ -285,51 +273,79 @@ function getTableView(dataFrame: DG.DataFrame): DG.TableView {
   return tableView;
 }
 
-function updateColumnProperties(column: DG.Column, model: any, viewTable: DG.DataFrame): void {
-  const newColumnName = viewTable.columns.getUnusedName(column.name);
-  column.name = newColumnName;
+export function updateColumnProperties(gridCol: DG.GridColumn, model: any): void {
+  if (!gridCol.column) return;
+
+  const column = gridCol.column;
   column.meta.format = '0.000';
-  column.setTag(DG.TAGS.DESCRIPTION, model.properties.find((prop: any) => prop.property.name === 'description').object.description);
+
+  const description = model.properties.find((prop: any) => prop.property.name === 'description')?.object.description;
+  if (description)
+    column.setTag(DG.TAGS.DESCRIPTION, description);
+
   column.meta.units = model.units;
+
+  const subgroupName = properties.subgroup.find((subg: Subgroup) =>
+    subg.models.some((m: Model) => model.name.includes(m.name))
+  )?.name;
+  if (subgroupName) {
+    gridCol.headerCellStyle.textColor = DG.Color.fromHtml(colorsDictionary[subgroupName]);
+    column.tags['group'] = subgroupName;
+  }
 }
 
-export function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, addPiechart: boolean = true, addForm: boolean = true, molColIdx: number, update: boolean = false): void {
+export function addResultColumns(
+  table: DG.DataFrame,
+  viewTable: DG.DataFrame,
+  addPiechart: boolean = true,
+  addForm: boolean = true,
+  molColIdx: number,
+  update: boolean = false
+): void {
   if (table.columns.length === 0) return;
 
-  if (table.rowCount > viewTable.rowCount)
+  if (table.rowCount > viewTable.rowCount) {
     table.rows.removeAt(table.rowCount - 1);
+  }
 
   const modelNames: string[] = table.columns.names();
   const updatedModelNames: string[] = [];
-  const models = properties.subgroup.flatMap((subgroup: any) => subgroup.models.map((model: any) => model));
+  const models = properties.subgroup.flatMap((subgroup: Subgroup) => subgroup.models);
 
-  for (let i = 0; i < modelNames.length; ++i) {
-    let column: DG.Column = table.columns.byName(modelNames[i]);
-    const colToReplace = viewTable.col(modelNames[i]);
-    for (const model of models) {
-      if (model.name === modelNames[i]) {
-        if (!update || !colToReplace) updateColumnProperties(column, model, viewTable);
-        break;
-      }
-    }
-    updatedModelNames.push(column.name);
-    if (!update || !colToReplace)
-      viewTable.columns.add(column);
-    else {
-      viewTable.columns.replace(colToReplace!, column);
+  for (const modelName of modelNames) {
+    const column: DG.Column = table.columns.byName(modelName);
+    const newColumnName = viewTable.columns.getUnusedName(column.name);
+    column.name = newColumnName;
+
+    const colToReplace = viewTable.col(modelName);
+    const model = models.find((m: any) => m.name === modelName);
+
+    if (model) {
+      if (!update || !colToReplace)
+        viewTable.columns.add(column);
+      else
+        viewTable.columns.replace(colToReplace, column);
+      updatedModelNames.push(column.name);
     }
   }
 
+  const tableView = getTableView(viewTable);
+  const {grid} = tableView;
+  models.forEach((model: Model) => {
+    const col = grid.col(model.name);
+    if (col) updateColumnProperties(col, model);
+  });
+
   if (addPiechart)
-    addSparklines(viewTable, updatedModelNames, molColIdx + 1);
+    addSparklines(viewTable, updatedModelNames, molColIdx + 2);
 
   addColorCoding(viewTable, updatedModelNames);
   addCustomTooltip(viewTable);
 
   if (addForm) {
     const form = createDynamicForm(viewTable, updatedModelNames, viewTable.columns.names()[molColIdx], addPiechart);
-    grok.shell.tv.dockManager.dock(form, DG.DOCK_TYPE.RIGHT, null, 'Form', 0.45);
-    grok.shell.tv.grid.invalidate();
+    tableView.dockManager.dock(form, DG.DOCK_TYPE.RIGHT, null, 'Form', 0.45);
+    grid.invalidate();
   }
 }
 

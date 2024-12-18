@@ -144,7 +144,7 @@ To open, on the **Status Bar**, click **Columns:**
 
 <br/>
 
-![](../../deploy/releases/platform/img/column-preview-filter-by-type.gif)
+![](../../deploy/releases/img/column-preview-filter-by-type.gif)
 
 </TabItem>
 <TabItem value="repositioning" label="Repositioning">
@@ -164,7 +164,7 @@ their content is automatically visualized in the **Context Panel**.
 
 <br/>
 
-![](../../deploy/releases/platform/img/plots-info-pane.gif)
+![](../../deploy/releases/img/plots-info-pane.gif)
 
 </TabItem>
 </Tabs>
@@ -217,7 +217,7 @@ To apply a cell renderer manually:
   >additional parameters. 
 1. Click **OK**.
 
-![](../../deploy/releases/platform/img/release1.18-cellrend-tags-multichoice-dropdown.gif)
+![](../../deploy/releases/img/release1.18-cellrend-tags-multichoice-dropdown.gif)
 
 Examples of built-in renderers include molecules, URL based images, fit lines, comboboxes, and more. <!--For the full list, see [Supported cell renderers].  //TODO: New doc: supported-cell-renderers.md-->
 
@@ -244,7 +244,7 @@ To add a smart form, right-click a cell and select **Add** > **Summary Columns**
 
 <br/>
 
-![smart forms](../../deploy/releases/platform/img/smart-forms.gif)
+![smart forms](../../deploy/releases/img/smart-forms.gif)
 
 </TabItem>
 <TabItem value="sparklines" label="Sparklines">
@@ -293,7 +293,7 @@ Here's how:
 1. [Link the tables](../../transform/link-tables.md).
 1. Right click any cell, select **Add** > **Linked Tables**, and choose the table you want. A column with data from the linked table is added to your dataset. 
 
-![Linked table data in cell](../../deploy/releases/platform/img/grid-nested-linked-tables.gif) 
+![Linked table data in cell](../../deploy/releases/img/grid-nested-linked-tables.gif) 
 
 ### Images
 

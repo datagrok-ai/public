@@ -101,11 +101,11 @@ export class OutliersSelectionViewer extends DG.JsViewer {
       }
 
       const confirmBtn = () => ui.div(
-        ui.iconFA('check', confirmOutliers, 'Confirm the outliers'), {style: {'text-align': 'center', 'margin': '6px'}},
+        ui.iconFA('check', confirmOutliers, 'Confirm the outliers'), {style: {textAlign: 'center', 'margin': '6px'}},
       );
 
       const cancelBtn = () => ui.div(
-        ui.iconFA('times', cancelOutliers, 'Cancel the outliers'), {style: {'text-align': 'center', 'margin': '6px'}},
+        ui.iconFA('times', cancelOutliers, 'Cancel the outliers'), {style: {textAlign: 'center', 'margin': '6px'}},
       );
 
       const deleteBtn = (rationale: string) => ui.div(
@@ -117,7 +117,7 @@ export class OutliersSelectionViewer extends DG.JsViewer {
             }
           }
           inputData.fireValuesChanged();
-        }, 'Remove the outliers group'), {style: {'text-align': 'center', 'margin': '6px'}},
+        }, 'Remove the outliers group'), {style: {textAlign: 'center', margin: '6px'}},
       );
 
       if (gc.gridColumn.name === 'Actions') {

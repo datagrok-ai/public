@@ -7,6 +7,7 @@ import {PolymerType} from '@datagrok-libraries/bio/src/helm/types';
 export enum PolyToolEnumeratorTypes {
   Single = 'single',
   Matrix = 'matrix',
+  Library = 'library',
 }
 
 export type PolyToolEnumeratorType = typeof PolyToolEnumeratorTypes[keyof typeof PolyToolEnumeratorTypes];

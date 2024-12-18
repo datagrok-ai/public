@@ -4,6 +4,7 @@ import {delay, category, expect, test, expectObject, expectExceptionAsync} from 
 category('Docker', () => {
   const containerOnDemandName: string = 'Cvmtests-docker-test1';
   const containerSimple: string = 'Cvmtests-docker-test2';
+  const incorrectId: string = '00000000-0000-0000-0000-000000000000';
 
   test('Get response: On demand', async () => {
     const container = await grok.dapi.docker.dockerContainers.filter(containerOnDemandName).first();
@@ -13,7 +14,6 @@ category('Docker', () => {
   }, {timeout: 120000, stressTest: true});
 
   test('Get response: Incorrect', async () => {
-    const incorrectId = crypto.randomUUID();
     let response = await grok.dapi.docker.dockerContainers.fetchProxy(incorrectId, '/square?number=4');
     // container not found
     expect(response.status, 404, 'Status should be 404 indicating that container doesn\'t exist');
@@ -47,7 +47,6 @@ category('Docker', () => {
   }, {timeout: 180000, stressTest: true});
 
   test('Get container logs: Incorrect', async () => {
-    const incorrectId = crypto.randomUUID();
     await expectExceptionAsync(async () => {
       await grok.dapi.docker.dockerContainers.getContainerLogs(incorrectId);
     });

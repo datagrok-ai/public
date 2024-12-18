@@ -248,14 +248,14 @@ export async function runScript(script: string, path: string, verbose: boolean =
   try {
     const { stdout, stderr } = await execAsync(script, { cwd: path });
     if (stderr && verbose) {
-      console.error(`Warning/Error: ${stderr}`);
+      console.error(`Warning/Error: ${stderr}`); 
     }
     if (stdout && verbose) {
       console.log(`Output: ${stdout}`);
     }
   } catch (error: any) {
     console.error(`Execution failed: ${error.message}`);
-    throw new Error("Cant run script");
+    throw new Error(`Cant run script ${script}`);
   }
 }
 

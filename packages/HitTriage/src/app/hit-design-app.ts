@@ -187,6 +187,8 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
 
   set campaign(campaign: HitDesignCampaign | undefined) {this._campaign = campaign;}
 
+  clearCampaign() {this._campaign = undefined;}
+
   private _duplicateVidCache?: {
     colVersion: number,
     valueCounts: Int32Array | Uint32Array,
@@ -332,6 +334,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
 
         const calculateRibbon = ui.iconFA('wrench', getComputeDialog, 'Calculate additional properties');
         const addNewRowButton = ui.icons.add(() => {this.dataFrame?.rows.addNew(null, true);}, 'Add new row');
+        const applyLayoutButton = ui.iconSvg('view-layout', () => {this.applyTemplateLayout(view);}, `Apply template layout ${this.template?.localLayoutPath ? '(Loaded from mounted file storage)' : '(Static)'}`);
         const permissionsButton = ui.iconFA('share', async () => {
           await (new PermissionsDialog(this.campaign?.permissions)).show((res) => {
             this.campaign!.permissions = res;
@@ -365,6 +368,8 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
         if (this.campaign && this.template && !this.campaign.template)
           this.campaign.template = this.template;
 
+        if (this.template?.layoutViewState || this.template?.localLayoutPath)
+          ribbonButtons.unshift(applyLayoutButton);
         if (this.hasEditPermission)
           ribbonButtons.unshift(permissionsButton);
         ribbonButtons.unshift(calculateRibbon);
@@ -389,6 +394,35 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     return view;
   }
 
+  protected async applyTemplateLayout(view: DG.TableView) {
+    if (!view) {
+      grok.shell.error('No view found');
+      return;
+    }
+    if (this.template?.localLayoutPath) {
+      try {
+        const file = await grok.dapi.files.readAsText(this.template.localLayoutPath);
+        const layout = DG.ViewLayout.fromJson(file);
+        view.loadLayout(layout);
+        return;
+      } catch (e) {
+        grok.shell.error('Failed to apply layout from mounted file storage. Falling back to static layout');
+        _package.logger.error(e);
+      }
+    }
+    if (!this.template?.layoutViewState) {
+      grok.shell.error('No layout found');
+      return;
+    }
+    try {
+      const layout = DG.ViewLayout.fromViewState(this.template.layoutViewState);
+      view.loadLayout(layout);
+    } catch (e) {
+      grok.shell.error('Failed to apply template layout. Check console for more details.');
+      _package.logger.error(e);
+    }
+  }
+
   protected getDesignView(): DG.TableView {
     this._designView && this._designView.close();
     const subs: Subscription[] = [];
@@ -398,7 +432,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     view.name = this._designViewName;
 
     view._onAdded();
-    const layoutViewState = this._campaign?.layout ?? this.template?.layoutViewState;
+    const layoutViewState = this._campaign?.layout;
     if (layoutViewState) {
       try {
         const layout = DG.ViewLayout.fromViewState(layoutViewState);
@@ -408,9 +442,11 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
         console.error(e);
       }
     }
-
+    this.checkGrid(view);
     if (isNew)
       grok.functions.call('Chem:editMoleculeCell', {cell: view.grid.cell(this._molColName, 0)});
+
+    this.initGridSubs(view, subs);
 
     subs.push(this.dataFrame!.onRowsAdded.pipe(filter(() => !this.isJoining))
       .subscribe(() => { // TODO, insertion of rows in the middle
@@ -435,8 +471,6 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
         } catch (e) {
           console.error(e);
         }
-        //const lastCell = view.grid.cell(this.molColName, this.dataFrame!.rowCount - 1);
-        //view.grid.onCellValueEdited
       }));
     subs.push(grok.events.onContextMenu.subscribe((args) => {
       try {
@@ -482,11 +516,39 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
       }
     }));
 
-    if (!view?.grid) {
+    subs.push(grok.events.onViewLayoutApplied.subscribe((vI) => {
+      if (!vI || vI.view !== view)
+        return;
+      this.initGridSubs(view, subs);
+    }));
+
+    this.initDesignViewRibbons(view, subs);
+    view.parentCall = this.parentCall;
+    return view;
+  }
+
+  checkGrid(view: DG.TableView) {
+    if (!view.grid) {
       grok.shell.error('Applied layout created view without grid. Resetting layout.');
       view.resetLayout();
     }
-    view?.grid && subs.push(view.grid.onCellValueEdited.subscribe(async (gc) => {
+  }
+
+  // some of the subs are on grid, layout application will detach the grid, thus we need to re-init those subs
+  protected _gridSubs: {grid: DG.Grid, subs: Subscription[]} | null = null;
+
+  protected initGridSubs(view: DG.TableView, subs: Subscription[]) {
+    if (this._gridSubs && this._gridSubs.grid === view.grid)
+      return;
+    if (this._gridSubs)
+      this._gridSubs.subs.forEach((s) => s.unsubscribe());
+    this.checkGrid(view);
+    if (!view.grid) {
+      grok.shell.error('No grid found, cannot initialize grid subscriptions');
+      return;
+    }
+    this._gridSubs = {grid: view.grid, subs: []};
+    view?.grid && this._gridSubs.subs.push(view.grid.onCellValueEdited.subscribe(async (gc) => {
       try {
         if (gc.tableColumn?.name === TileCategoriesColName) {
           await this.saveCampaign(false);
@@ -503,14 +565,14 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
           try {
             const canonicals = gc.tableColumn.toList().map((cv) => {
               try {
-                return grok.chem.convert(cv, grok.chem.Notation.Unknown, grok.chem.Notation.Smiles);
+                return _package.convertToSmiles(cv);
               } catch (e) {
                 return '';
               }
             },
             );
             const canonicalNewValue =
-                grok.chem.convert(newValue, grok.chem.Notation.Unknown, grok.chem.Notation.Smiles);
+              _package.convertToSmiles(newValue);
             if (canonicals?.length === this.dataFrame!.rowCount) {
               for (let i = 0; i < canonicals.length; i++) {
                 if (canonicals[i] === canonicalNewValue &&
@@ -541,7 +603,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
       }
     }));
 
-    view?.grid && subs.push(view.grid.onCellRender.subscribe((args) => {
+    view?.grid && this._gridSubs.subs.push(view.grid.onCellRender.subscribe((args) => {
       try {
         // color duplicate vid values
         const cell = args.cell;
@@ -556,9 +618,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
         }
       } catch (e) {}
     }));
-    this.initDesignViewRibbons(view, subs);
-    view.parentCall = this.parentCall;
-    return view;
+    this._gridSubs.subs.forEach((s) => subs.push(s));
   }
 
   getSummary(): {[_: string]: any} {

@@ -100,14 +100,14 @@ category('PolyTool: Convert', () => {
     test(`toHelm-${testName}`, async () => {
       const rules = await getRules(['rules_example.json']);
       const res = doPolyToolConvert([testData.src.seq], rules, helmHelper);
-      expect(res[0], testData.tgt.helm);
+      expect(res[0][0], testData.tgt.helm);
     });
   }
 
   for (const [testName, testData] of Object.entries(tests)) {
     test(`toAtomicLevel-${testName}`, async () => {
       const rules = await getRules(['rules_example.json']);
-      const helmList = doPolyToolConvert([testData.src.seq], rules, helmHelper);
+      const [helmList, isLinear, positionMaps] = doPolyToolConvert([testData.src.seq], rules, helmHelper);
 
       const lib = await getOverriddenLibrary(rules);
 
