@@ -23,6 +23,7 @@ select
   t.type, 
   r.date_time,
   case when r.passed is null then 'did not run' when r.skipped then 'skipped' when r.passed then 'passed' when not r.passed then 'failed' else 'unknown' end as status,
+  COALESCE(r.params->>'flaking', 'false')::bool as flaking, 
   r.result,
   r.duration,
   coalesce(nullif(t.owner, ''), p.package_author, '') as owner

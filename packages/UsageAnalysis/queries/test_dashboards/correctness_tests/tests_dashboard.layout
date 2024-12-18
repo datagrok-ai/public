@@ -10,10 +10,10 @@
       {
         "containerType": "panel",
         "state": {
-          "width": 375,
+          "width": 283,
           "height": 927,
           "element": {
-            "id": "d0833640-9b00-11ef-e024-478773864e93",
+            "id": "3fb7db40-9b00-11ef-cf1f-0d296674fe70",
             "type": "Filters",
             "look": {
               "#type": "FiltersLook",
@@ -46,8 +46,9 @@
                   "type": "bool-columns",
                   "column": null,
                   "active": true,
-                  "mode": "AND",
+                  "mode": "OR",
                   "true": [
+                    true,
                     true,
                     true,
                     true
@@ -55,9 +56,10 @@
                   "false": [
                     true,
                     true,
+                    true,
                     true
                   ],
-                  "columnless-filter-identifier": "stable,failing,flapping",
+                  "columnless-filter-identifier": "needs_attention,stable,failing,flaking",
                   "boolInput": null
                 }
               ]
@@ -70,41 +72,45 @@
       {
         "containerType": "vertical",
         "state": {
-          "width": 1319,
+          "width": 1411,
           "height": 927
         },
         "children": [
           {
             "containerType": "fill",
             "state": {
-              "width": 1319,
-              "height": 463,
+              "width": 1411,
+              "height": 553,
               "documentManager": true
             },
             "children": [
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 1319,
-                  "height": 463,
+                  "width": 1411,
+                  "height": 553,
                   "element": {
-                    "id": "d083f990-9b00-11ef-d35a-b1ef06b16fb7",
+                    "id": "3fb82960-9b00-11ef-8d38-0556ff897361",
                     "type": "Grid",
                     "look": {
                       "#type": "GridLook",
                       "showAddNewRowIcon": true,
                       "addNewRowOnLastRowEdit": true,
+                      "showColumnLabels": false,
+                      "colHeaderHeight": 69,
+                      "rowHeight": 36,
                       "sortByColumnNames": [
                         "stable"
                       ],
                       "sortTypes": [
-                        null
+                        false
                       ],
                       "topLevelDefaultMenu": true,
                       "allowColumnMenu": true,
+                      "colLabelsOrientation": "Vert",
                       "columns": [
                         {
-                          "width": 44,
+                          "width": 25.489655172413805,
                           "backgroundColor": 4294440951,
                           "customName": "",
                           "cellType": "row header",
@@ -114,7 +120,7 @@
                           }
                         },
                         {
-                          "width": 400,
+                          "width": 326.8252873563223,
                           "columnName": "test",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
@@ -126,7 +132,7 @@
                           }
                         },
                         {
-                          "width": 313,
+                          "width": 90.21793103448275,
                           "columnName": "owner",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
@@ -138,7 +144,16 @@
                           }
                         },
                         {
-                          "width": 61,
+                          "width": 108.25977011494255,
+                          "columnName": "needs_attention",
+                          "cellType": "bool",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 48.54712643678161,
                           "columnName": "stable",
                           "cellType": "bool",
                           "headerCellStyle": {
@@ -151,11 +166,11 @@
                           }
                         },
                         {
-                          "width": 62,
+                          "width": 61.12643678160923,
                           "columnName": "failing",
                           "cellType": "bool",
                           "colorCodingCategorical": {
-                            "false": "#2ca02c",
+                            "false": "#98df8a",
                             "true": "#d62728"
                           },
                           "headerCellStyle": {
@@ -168,22 +183,9 @@
                           }
                         },
                         {
-                          "width": 73,
-                          "columnName": "flapping",
+                          "width": 58.57471264367817,
+                          "columnName": "flaking",
                           "cellType": "bool",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          },
-                          "settings": {
-                            "isPinned": false,
-                            "idxPinned": -1
-                          }
-                        },
-                        {
-                          "width": 114,
-                          "columnName": "1 avg(duration)",
-                          "cellType": "number",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"
@@ -191,7 +193,7 @@
                         },
                         {
                           "visible": false,
-                          "width": 171,
+                          "width": 99.06206896551727,
                           "columnName": "1 avg(build_date)",
                           "customFormat": "M/d/yyyy HH:mm:ss.fff",
                           "cellType": "number",
@@ -203,12 +205,17 @@
                         },
                         {
                           "isColorCoded": true,
-                          "width": 164,
+                          "width": 14.35402298850575,
                           "columnName": "1 concat unique(status)",
+                          "tooltipColumns": [
+                            "1 avg(build_date)",
+                            "1 concat unique(result)"
+                          ],
+                          "tooltipType": "Columns",
                           "colorCodingType": "Categorical",
                           "colorCodingCategorical": {
                             "failed": 4292224808,
-                            "passed": 4281114668,
+                            "passed": 4288208778,
                             "skipped": 4292467161
                           },
                           "headerCellStyle": {
@@ -217,7 +224,151 @@
                           }
                         },
                         {
-                          "width": 400,
+                          "isColorCoded": true,
+                          "width": 14.35402298850575,
+                          "columnName": "2 concat unique(status)",
+                          "tooltipColumns": [
+                            "2 avg(build_date)",
+                            "2 concat unique(result)"
+                          ],
+                          "tooltipType": "Columns",
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {
+                            "failed": 4292224808,
+                            "passed": 4288208778,
+                            "skipped": 4292467161
+                          },
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "isColorCoded": true,
+                          "width": 14.032183908045987,
+                          "columnName": "3 concat unique(status)",
+                          "tooltipColumns": [
+                            "3 avg(build_date)",
+                            "3 concat unique(result)"
+                          ],
+                          "tooltipType": "Columns",
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {
+                            "failed": 4292224808,
+                            "passed": 4288208778,
+                            "skipped": 4292467161
+                          },
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "isColorCoded": true,
+                          "width": 14.35402298850575,
+                          "columnName": "4 concat unique(status)",
+                          "tooltipColumns": [
+                            "4 avg(build_date)",
+                            "4 concat unique(result)"
+                          ],
+                          "tooltipType": "Columns",
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {
+                            "failed": 4292224808,
+                            "passed": 4288208778,
+                            "skipped": 4292467161
+                          },
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "isColorCoded": true,
+                          "width": 14.032183908045987,
+                          "columnName": "5 concat unique(status)",
+                          "tooltipColumns": [
+                            "5 avg(build_date)",
+                            "5 concat unique(result)"
+                          ],
+                          "tooltipType": "Columns",
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {
+                            "failed": 4292224808,
+                            "passed": 4288208778,
+                            "skipped": 4292467161
+                          },
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 46.63727652097516,
+                          "columnName": "chart",
+                          "cellType": "fit",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 143.54022988505753,
+                          "columnName": "1 avg(duration)",
+                          "customFormat": "int",
+                          "cellType": "number",
+                          "format": "int",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 151.65057471264365,
+                          "columnName": "2 avg(duration)",
+                          "customFormat": "int",
+                          "cellType": "number",
+                          "format": "int",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 144.44137931034484,
+                          "columnName": "4 avg(duration)",
+                          "customFormat": "int",
+                          "cellType": "number",
+                          "format": "int",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 139.93563218390807,
+                          "columnName": "3 avg(duration)",
+                          "customFormat": "int",
+                          "cellType": "number",
+                          "format": "int",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 139.03448275862073,
+                          "columnName": "5 avg(duration)",
+                          "customFormat": "int",
+                          "cellType": "number",
+                          "format": "int",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 231.72413793103456,
                           "columnName": "1 concat unique(result)",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
@@ -225,17 +376,8 @@
                           }
                         },
                         {
-                          "width": 114,
-                          "columnName": "2 avg(duration)",
-                          "cellType": "number",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
                           "visible": false,
-                          "width": 171,
+                          "width": 99.06206896551727,
                           "columnName": "2 avg(build_date)",
                           "customFormat": "M/d/yyyy HH:mm:ss.fff",
                           "cellType": "number",
@@ -246,22 +388,7 @@
                           }
                         },
                         {
-                          "isColorCoded": true,
-                          "width": 164,
-                          "columnName": "2 concat unique(status)",
-                          "colorCodingType": "Categorical",
-                          "colorCodingCategorical": {
-                            "failed": 4292224808,
-                            "passed": 4281114668,
-                            "skipped": 4292467161
-                          },
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 400,
+                          "width": 231.72413793103456,
                           "columnName": "2 concat unique(result)",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
@@ -269,17 +396,8 @@
                           }
                         },
                         {
-                          "width": 114,
-                          "columnName": "3 avg(duration)",
-                          "cellType": "number",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
                           "visible": false,
-                          "width": 171,
+                          "width": 99.06206896551727,
                           "columnName": "3 avg(build_date)",
                           "customFormat": "M/d/yyyy HH:mm:ss.fff",
                           "cellType": "number",
@@ -290,22 +408,7 @@
                           }
                         },
                         {
-                          "isColorCoded": true,
-                          "width": 164,
-                          "columnName": "3 concat unique(status)",
-                          "colorCodingType": "Categorical",
-                          "colorCodingCategorical": {
-                            "failed": 4292224808,
-                            "passed": 4281114668,
-                            "skipped": 4292467161
-                          },
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 400,
+                          "width": 231.72413793103456,
                           "columnName": "3 concat unique(result)",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
@@ -313,17 +416,8 @@
                           }
                         },
                         {
-                          "width": 114,
-                          "columnName": "4 avg(duration)",
-                          "cellType": "number",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
                           "visible": false,
-                          "width": 171,
+                          "width": 99.06206896551727,
                           "columnName": "4 avg(build_date)",
                           "customFormat": "M/d/yyyy HH:mm:ss.fff",
                           "cellType": "number",
@@ -334,22 +428,7 @@
                           }
                         },
                         {
-                          "isColorCoded": true,
-                          "width": 164,
-                          "columnName": "4 concat unique(status)",
-                          "colorCodingType": "Categorical",
-                          "colorCodingCategorical": {
-                            "failed": 4292224808,
-                            "passed": 4281114668,
-                            "skipped": 4292467161
-                          },
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 400,
+                          "width": 231.72413793103456,
                           "columnName": "4 concat unique(result)",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
@@ -357,17 +436,8 @@
                           }
                         },
                         {
-                          "width": 114,
-                          "columnName": "5 avg(duration)",
-                          "cellType": "number",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
                           "visible": false,
-                          "width": 171,
+                          "width": 99.06206896551727,
                           "columnName": "5 avg(build_date)",
                           "customFormat": "M/d/yyyy HH:mm:ss.fff",
                           "cellType": "number",
@@ -378,23 +448,58 @@
                           }
                         },
                         {
-                          "isColorCoded": true,
-                          "width": 164,
-                          "columnName": "5 concat unique(status)",
-                          "colorCodingType": "Categorical",
-                          "colorCodingCategorical": {
-                            "failed": 4292224808,
-                            "passed": 4281114668,
-                            "skipped": 4292467161
-                          },
+                          "width": 231.72413793103456,
+                          "columnName": "5 concat unique(result)",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"
                           }
                         },
                         {
-                          "width": 400,
-                          "columnName": "5 concat unique(result)",
+                          "visible": false,
+                          "width": 98.22528735632187,
+                          "columnName": "1 first(flaking)",
+                          "cellType": "bool",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 98.22528735632187,
+                          "columnName": "2 first(flaking)",
+                          "cellType": "bool",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 98.22528735632187,
+                          "columnName": "3 first(flaking)",
+                          "cellType": "bool",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 98.22528735632187,
+                          "columnName": "4 first(flaking)",
+                          "cellType": "bool",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 98.22528735632187,
+                          "columnName": "5 first(flaking)",
+                          "cellType": "bool",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"
@@ -402,7 +507,7 @@
                         }
                       ]
                     },
-                    "title": "result",
+                    "title": "Grid",
                     "default": true
                   }
                 },
@@ -413,17 +518,17 @@
           {
             "containerType": "horizontal",
             "state": {
-              "width": 1319,
-              "height": 463
+              "width": 1411,
+              "height": 373
             },
             "children": [
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 573,
-                  "height": 463,
+                  "width": 541,
+                  "height": 373,
                   "element": {
-                    "id": "d08447b0-9b00-11ef-f8cd-bf75ff472608",
+                    "id": "3fb87780-9b00-11ef-f1ce-7369b5af9469",
                     "type": "Bar chart",
                     "look": {
                       "#type": "BarChartLook",
@@ -437,7 +542,8 @@
                       "stackColumnName": "failing",
                       "colorColumnName": "",
                       "maxCategoryWidth": 100,
-                      "minTextHeight": 14
+                      "minTextHeight": 14,
+                      "legendVisibility": "Never"
                     },
                     "title": "Bar chart"
                   }
@@ -447,13 +553,15 @@
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 745,
-                  "height": 463,
+                  "width": 869,
+                  "height": 373,
                   "element": {
-                    "id": "d084bce0-9b00-11ef-841a-b5d0b3dcc680",
+                    "id": "3fb8c5a0-9b00-11ef-fe2b-0da757bd931b",
                     "type": "Heat map",
                     "look": {
                       "#type": "GridLook",
+                      "colHeaderHeight": 43,
+                      "rowHeight": 160,
                       "topLevelDefaultMenu": true,
                       "allowColumnMenu": true,
                       "colorCoding": "None",
@@ -463,9 +571,9 @@
                         150
                       ],
                       "heatmapVertScroll": [
-                        4109,
+                        4155,
                         0,
-                        4109
+                        4155
                       ],
                       "colorScheme": [
                         4292072403,
@@ -505,7 +613,9 @@
                           "visible": false,
                           "width": 30,
                           "columnName": "1 avg(duration)",
+                          "customFormat": "int",
                           "cellType": "number",
+                          "format": "int",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"
@@ -530,7 +640,7 @@
                           "colorCodingType": "Categorical",
                           "colorCodingCategorical": {
                             "failed": 4292224808,
-                            "passed": 4281114668,
+                            "passed": 4288208778,
                             "skipped": 4292467161
                           },
                           "headerCellStyle": {
@@ -551,7 +661,9 @@
                           "visible": false,
                           "width": 30,
                           "columnName": "2 avg(duration)",
+                          "customFormat": "int",
                           "cellType": "number",
+                          "format": "int",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"
@@ -576,7 +688,7 @@
                           "colorCodingType": "Categorical",
                           "colorCodingCategorical": {
                             "failed": 4292224808,
-                            "passed": 4281114668,
+                            "passed": 4288208778,
                             "skipped": 4292467161
                           },
                           "headerCellStyle": {
@@ -597,7 +709,9 @@
                           "visible": false,
                           "width": 30,
                           "columnName": "3 avg(duration)",
+                          "customFormat": "int",
                           "cellType": "number",
+                          "format": "int",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"
@@ -622,7 +736,7 @@
                           "colorCodingType": "Categorical",
                           "colorCodingCategorical": {
                             "failed": 4292224808,
-                            "passed": 4281114668,
+                            "passed": 4288208778,
                             "skipped": 4292467161
                           },
                           "headerCellStyle": {
@@ -643,7 +757,9 @@
                           "visible": false,
                           "width": 30,
                           "columnName": "4 avg(duration)",
+                          "customFormat": "int",
                           "cellType": "number",
+                          "format": "int",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"
@@ -668,7 +784,7 @@
                           "colorCodingType": "Categorical",
                           "colorCodingCategorical": {
                             "failed": 4292224808,
-                            "passed": 4281114668,
+                            "passed": 4288208778,
                             "skipped": 4292467161
                           },
                           "headerCellStyle": {
@@ -689,7 +805,9 @@
                           "visible": false,
                           "width": 30,
                           "columnName": "5 avg(duration)",
+                          "customFormat": "int",
                           "cellType": "number",
+                          "format": "int",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"
@@ -714,7 +832,7 @@
                           "colorCodingType": "Categorical",
                           "colorCodingCategorical": {
                             "failed": 4292224808,
-                            "passed": 4281114668,
+                            "passed": 4288208778,
                             "skipped": 4292467161
                           },
                           "headerCellStyle": {
@@ -747,7 +865,7 @@
                           "columnName": "failing",
                           "cellType": "bool",
                           "colorCodingCategorical": {
-                            "false": "#2ca02c",
+                            "false": "#98df8a",
                             "true": "#d62728"
                           },
                           "headerCellStyle": {
@@ -758,7 +876,77 @@
                         {
                           "visible": false,
                           "width": 30,
-                          "columnName": "flapping",
+                          "columnName": "1 first(flaking)",
+                          "cellType": "bool",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "2 first(flaking)",
+                          "cellType": "bool",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "3 first(flaking)",
+                          "cellType": "bool",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "4 first(flaking)",
+                          "cellType": "bool",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "5 first(flaking)",
+                          "cellType": "bool",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "flaking",
+                          "cellType": "bool",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "chart",
+                          "cellType": "fit",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "needs_attention",
                           "cellType": "bool",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
@@ -778,113 +966,136 @@
       }
     ],
     "floating": [],
-    "tableId": "ba194c00-9b00-11ef-ed12-d9ce7106abd8",
+    "tableId": "a1f33710-9b00-11ef-d5b3-2bca9b7b52f7",
     "tableName": "result"
   },
   "userData": {
-    "dataFrameTooltip": "test\nowner\n1 avg(build_date)\n2 avg(build_date)\n3 avg(build_date)\n4 avg(build_date)\n5 avg(build_date)"
+    "dataFrameTooltip": "test\nowner",
+    ".columnTags": {
+      "needs_attention": {
+        ".%initialName": "needs_attention (2)"
+      }
+    }
   },
   "columns": [
     {
       "name": "owner",
       "type": "string",
-      "id": "ba467680-9b00-11ef-c781-5bf79fccb1d9",
+      "id": "a21516f0-9b00-11ef-ae60-e3cbe4d291b6",
       "friendlyName": "Owner",
       "entityTags": [
         {
           "tag": "aggr.type",
-          "id": "d0850b00-9b00-11ef-d123-6b681c4db567"
+          "id": "3fb913c0-9b00-11ef-c106-c36d65f63bd5"
         },
         {
           "tag": "aggr.src.col.name",
-          "id": "d0853210-9b00-11ef-bee8-5def241f05d6"
+          "id": "3fb913c0-9b00-11ef-cc4c-b54a2e16c93b"
         },
         {
           "tag": ".id",
-          "id": "d0853210-9b00-11ef-d77b-0dff32881e76"
+          "id": "3fb93ad0-9b00-11ef-ba3b-27d2bc619b2b"
         },
         {
           "tag": ".semantic-detection-duration",
-          "id": "d0853210-9b00-11ef-9b33-8974bf9ccc07"
+          "id": "3fb93ad0-9b00-11ef-a809-bb5345636434"
         }
       ],
       "metaParams": {
         "aggr.type": "key",
         "aggr.src.col.name": "owner",
-        ".id": "ba467680-9b00-11ef-c781-5bf79fccb1d9",
+        ".id": "a21516f0-9b00-11ef-ae60-e3cbe4d291b6",
         ".semantic-detection-duration": "10"
       }
     },
     {
       "name": "1 avg(duration)",
       "type": "double",
-      "id": "ba469d90-9b00-11ef-e799-f78f85779961",
+      "id": "a21516f0-9b00-11ef-9e5f-4102f1b67e51",
       "friendlyName": "1 avg(duration)",
       "entityTags": [
         {
           "tag": "aggr.type",
-          "id": "d0853210-9b00-11ef-90e2-a70342dd0cce"
+          "id": "3fb93ad0-9b00-11ef-f4de-61b0bb0a22fa"
         },
         {
           "tag": "aggr.src.col.name",
-          "id": "d0855920-9b00-11ef-b0a1-4303550653fb"
+          "id": "3fb93ad0-9b00-11ef-f602-f534c5378427"
         },
         {
           "tag": "aggr.pivot.values",
-          "id": "d0855920-9b00-11ef-d4f3-cd825aceec89"
+          "id": "3fb93ad0-9b00-11ef-d3d1-1b7ddc88cab4"
+        },
+        {
+          "tag": "friendlyName",
+          "id": "3fb93ad0-9b00-11ef-8e8b-0baf646ccd55"
         },
         {
           "tag": ".id",
-          "id": "d0855920-9b00-11ef-9ca8-93e891320b49"
+          "id": "3fb93ad0-9b00-11ef-f7e1-21f47dc22da3"
+        },
+        {
+          "tag": "format",
+          "id": "3fb93ad0-9b00-11ef-bcbf-ff63355df0a2"
         },
         {
           "tag": ".semantic-detection-duration",
-          "id": "d0855920-9b00-11ef-a799-d14b46bfcbef"
+          "id": "3fb961e0-9b00-11ef-ac93-3943d6fd97b2"
         }
       ],
       "metaParams": {
         "aggr.type": "avg",
         "aggr.src.col.name": "duration",
         "aggr.pivot.values": "[\"1\"]",
-        ".id": "ba469d90-9b00-11ef-e799-f78f85779961",
-        ".semantic-detection-duration": "4"
+        "friendlyName": "2024-12-13-1.23.0.BE-2 duration",
+        ".id": "a21516f0-9b00-11ef-9e5f-4102f1b67e51",
+        "format": "int",
+        ".semantic-detection-duration": "7"
       }
     },
     {
       "name": "~test_0",
       "type": "string",
-      "id": "d0855920-9b00-11ef-b76d-71757a804724",
+      "id": "3fb961e0-9b00-11ef-e5b5-47e86207c934",
       "friendlyName": "~test_0",
-      "metaParams": {}
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "3fb961e0-9b00-11ef-8639-cf24fc6737c8"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "3"
+      }
     },
     {
       "name": "failing",
       "type": "bool",
-      "id": "ba490e90-9b00-11ef-9d44-4b30e1313787",
+      "id": "a217d610-9b00-11ef-e119-5303fbb8cdc9",
       "friendlyName": "Failing",
       "entityTags": [
         {
           "tag": "formula",
-          "id": "d085a740-9b00-11ef-c5e7-8fbb35e1bc62"
+          "id": "3fb961e0-9b00-11ef-bc68-19365d30957f"
         },
         {
           "tag": ".id",
-          "id": "d085a740-9b00-11ef-d44a-614719f4f10d"
+          "id": "3fb988f0-9b00-11ef-a1bd-9d3d81f819d7"
         },
         {
           "tag": ".color-coding-categorical",
-          "id": "d085a740-9b00-11ef-eeff-5516b7ff0e17"
+          "id": "3fb988f0-9b00-11ef-a8ff-e78346934349"
         },
         {
           "tag": ".semantic-detection-duration",
-          "id": "d085a740-9b00-11ef-ce0f-17793698f8c6"
+          "id": "3fb988f0-9b00-11ef-8d72-412be1946efa"
         }
       ],
       "metaParams": {
         "formula": "Or(${1 concat unique(status)}== \"failed\",Or(${2 concat unique(status)}== \"failed\",Or(${3 concat unique(status)}== \"failed\",Or(${4 concat unique(status)}== \"failed\",${4 concat unique(status)}== \"failed\"))))",
-        ".id": "ba490e90-9b00-11ef-9d44-4b30e1313787",
-        ".color-coding-categorical": "{\"false\":\"#2ca02c\",\"true\":\"#d62728\"}",
-        ".semantic-detection-duration": "2"
+        ".id": "a217d610-9b00-11ef-e119-5303fbb8cdc9",
+        ".color-coding-categorical": "{\"false\":\"#98df8a\",\"true\":\"#d62728\"}",
+        ".semantic-detection-duration": "1"
       }
     }
   ],
@@ -893,5 +1104,5 @@
   "author": {
     "id": "13dc1770-8990-11ee-f19c-73f2990e684e"
   },
-  "createdOn": "2024-12-16T12:11:00.899Z"
+  "createdOn": "2024-12-18T14:34:55.091Z"
 }
