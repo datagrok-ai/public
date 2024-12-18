@@ -1146,7 +1146,7 @@ export class DiffStudio {
           val = str.slice(pos + 1).trim();
 
           // @ts-ignore
-          options[key] = strToVal(val);
+          options[key !== 'caption' ? key : 'friendlyName'] = strToVal(val);
         });
 
         options.description = descr ?? '';
