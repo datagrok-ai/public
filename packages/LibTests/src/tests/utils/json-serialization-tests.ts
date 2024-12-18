@@ -13,14 +13,14 @@ category('Utils: jsonSerialization', async () => {
     expectDeepEqual(results, initial);
   });
 
-  // test('serialize/deserialize works with JSON DF', async () => {
-  //   const initial = {a: DG.DataFrame.fromColumns([
-  //     DG.Column.fromList('string', 'a', ['a', 'b']),
-  //     DG.Column.fromList('double', 'b', [1.0, 2.2]),
-  //   ])};
-  //   const results = deserialize(serialize(initial, {useJsonDF: true}));
-  //   expectDeepEqual(results, initial);
-  // });
+  test('serialize/deserialize works with JSON DF', async () => {
+    const initial = {a: DG.DataFrame.fromColumns([
+      DG.Column.fromList('string', 'a', ['a', 'b']),
+      DG.Column.fromList('double', 'b', [1.0, 2.2]),
+    ])};
+    const results = deserialize(serialize(initial, {useJsonDF: true}));
+    expectDeepEqual(results, initial);
+  });
 
   test('serialize/deserialize works with Map/Set', async () => {
     const initial = {s: new Set([1, 2, 3]), m: new Map([[1, 2], [3, 4]])};
