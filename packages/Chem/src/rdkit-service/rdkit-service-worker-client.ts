@@ -56,4 +56,7 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
     molecules: string[], exactAtomSearch: boolean, exactBondSearch: boolean,
   ): Promise<string> =>
     this.call(WORKER_CALL.MOST_COMMON_STRUCTURE, [molecules, exactAtomSearch, exactBondSearch]);
+
+  getInverseSubstructuresAndAlign = async (cores: string[], from: string[], to: string[]) =>
+    this.call(WORKER_CALL.INVERSE_SUBSTRUCTURE_AND_ALIGN, [cores, from, to]);
 }

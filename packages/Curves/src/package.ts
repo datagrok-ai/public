@@ -1,3 +1,4 @@
+import {_PlateGridCellRenderer} from './package.g';
 import {_MultiCurveViewer} from './package.g';
 import {_FitChartCellRenderer} from './package.g';
 /* Do not change these import lines to match external modules in webpack configuration */
@@ -10,6 +11,7 @@ import {convertXMLToIFitChartData} from './fit/fit-parser';
 import {LogOptions} from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {FitStatistics} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {FitConstants} from './fit/const';
+import {PlateCellHandler} from "./plate/plate-cell-renderer";
 
 
 export const _package = new DG.Package();
@@ -30,6 +32,7 @@ export async function curveFitDemo(): Promise<void> {
 //tags: init
 export function _initCurves(): void {
   DG.ObjectHandler.register(new FitGridCellHandler());
+  DG.ObjectHandler.register(new PlateCellHandler());
 }
 
 //name: addStatisticsColumn
@@ -100,3 +103,4 @@ export function addAggrStatisticsColumn(df: DG.DataFrame, colName: string, propN
 
 export {_FitChartCellRenderer};
 export {_MultiCurveViewer};
+export {_PlateGridCellRenderer};

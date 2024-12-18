@@ -5,7 +5,8 @@ import {CONTROL_EXPR} from './constants';
 const CHEM_REACT_MODEL = `${CONTROL_EXPR.NAME}: Chem react
 ${CONTROL_EXPR.TAGS}: model
 ${CONTROL_EXPR.DESCR}: Mass-action kinetics illustration
-${CONTROL_EXPR.COMMENT}: This model is taken from https://doi.org/10.1002/ijch.201800003.
+${CONTROL_EXPR.COMMENT}: 
+  Source: https://doi.org/10.1002/ijch.201800003.
 ${CONTROL_EXPR.DIF_EQ}:
   dx1/dt = -k1 * x1 + k2 * (x2)**2 + k3 * x1 * x3 
            - k4 * (x1)**2 - 2 * k5 * (x1)**2 + k6 * x2 * x4
@@ -41,7 +42,7 @@ ${CONTROL_EXPR.TOL}: 5e-5`;
 /** Robertson's chemical reaction model - stiff ODEs */
 const ROBERTSON_MODEL = `${CONTROL_EXPR.NAME}: Robertson
 ${CONTROL_EXPR.TAGS}: model
-${CONTROL_EXPR.DESCR}: Robertson's chemical reaction model
+${CONTROL_EXPR.DESCR}: Robertson chemical reaction model
 ${CONTROL_EXPR.COMMENT}: This is classic example of stiff ODEs.
 ${CONTROL_EXPR.DIF_EQ}:
   dA/dt = -0.04 * A + 1e4 * B * C
@@ -64,7 +65,8 @@ ${CONTROL_EXPR.TOL}: 1e-7`;
 const FERMENTATION_MODEL = `${CONTROL_EXPR.NAME}: Fermentation
 ${CONTROL_EXPR.TAGS}: model
 ${CONTROL_EXPR.DESCR}: Simulation of fermentation process in the ethanol production
-${CONTROL_EXPR.COMMENT}: This problem is taken from https://core.ac.uk/download/pdf/11737483.pdf.
+${CONTROL_EXPR.COMMENT}: 
+  Source: https://core.ac.uk/download/pdf/11737483.pdf.
 ${CONTROL_EXPR.DIF_EQ}:
   dP/dt = r * X
   dS/dt = -q * X
@@ -188,10 +190,10 @@ ${CONTROL_EXPR.UPDATE}: 2-nd stage
   S += 70
 
 ${CONTROL_EXPR.INITS}:  
-  X = 5 {units: kg/m^3; caption: biomass; category: Initial concentrations; min: 1; max: 10} [Aspergillus niger biomass]
-  S = 150 {units: kg/m^3; caption: glucose; category: Initial concentrations; min: 50; max: 200} [Glucose]
-  O = 7 {units: kg/m^3; caption: oxygen; category: Initial concentrations; min: 1; max: 10} [Dissolved oxygen]
-  P = 0 {units: kg/m^3; caption: acid; category: Initial concentrations; min: 0; max: 0.1} [Gluconic acid]
+  X = 5 {units: kg/m³; caption: biomass; category: Initial concentrations; min: 1; max: 10} [Aspergillus niger biomass]
+  S = 150 {units: kg/m³; caption: glucose; category: Initial concentrations; min: 50; max: 200} [Glucose]
+  O = 7 {units: kg/m³; caption: oxygen; category: Initial concentrations; min: 1; max: 10} [Dissolved oxygen]
+  P = 0 {units: kg/m³; caption: acid; category: Initial concentrations; min: 0; max: 0.1} [Gluconic acid]
 
 ${CONTROL_EXPR.OUTPUT}:
   t {caption: time}
@@ -212,7 +214,7 @@ ${CONTROL_EXPR.PARAMS}:
   Ks = 1.309e2 {units: g/L; category: Parameters} [Monod type model parameter]
   Ko = 3.63e-4 {units: g/L; category: Parameters} [Monod type model parameter]
   Kla = 1.7e-2 {units: 1/s; category: Parameters} [Volumetric mass transfer coefficient]
-  Cod = 15 {units: kg/m^3; category: Parameters} [Liquid phase dissolved oxygen saturation concentration]
+  Cod = 15 {units: kg/m³; category: Parameters} [Liquid phase dissolved oxygen saturation concentration]
   
 ${CONTROL_EXPR.TOL}: 1e-9`;
 
@@ -220,7 +222,8 @@ ${CONTROL_EXPR.TOL}: 1e-9`;
 const NIMOTUZUMAB_MODEL = `${CONTROL_EXPR.NAME}: Nimotuzumab
 ${CONTROL_EXPR.TAGS}: model
 ${CONTROL_EXPR.DESCR}: Nimotuzumab disposition model
-${CONTROL_EXPR.COMMENT}: Source: https://www.mdpi.com/1999-4923/12/12/1147
+${CONTROL_EXPR.COMMENT}:
+  Source: https://www.mdpi.com/1999-4923/12/12/1147
 ${CONTROL_EXPR.DIF_EQ}:
   dA1/dt = (-(CL * A3 / V1 + Q / V1) * A1 + Q / V2 * A2 - kint * Rtot * A1 / (Kss + A1 / V1)) 
            / (1 + Rtot * Kss / (Kss + A1 / V1)**2)
@@ -265,7 +268,8 @@ ${CONTROL_EXPR.TOL}: 1e-7`;
 const BIOREACTOR_MODEL = `${CONTROL_EXPR.NAME}: Bioreactor
 ${CONTROL_EXPR.TAGS}: model
 ${CONTROL_EXPR.DESCR}: Bioreactor simulation
-${CONTROL_EXPR.COMMENT}: Source paper is https://doi.org/10.1074/jbc.RA117.000303.
+${CONTROL_EXPR.COMMENT}: 
+  Source: https://doi.org/10.1074/jbc.RA117.000303.
 ${CONTROL_EXPR.DIF_EQ}:
 
   d(FFox)/dt = -E11 + E12
@@ -410,13 +414,14 @@ ${CONTROL_EXPR.PARAMS}:
            P =    1  {units: atm;   caption: pressure;    category: Parameters;  min: 1;   max: 2}              [Headspace pressure]
   switchTime =  135  {units: min;   caption: switch at;   category: Time;        min: 70;  max: 180; step: 10}  [Switch mode time]
   
-${CONTROL_EXPR.INPUTS}: mode {caption: Process mode; category: Process parameters; choices: OpenFile("System:AppData/DiffStudio/examples/bioreactor-inputs.csv")} [Reactions flow mode]`;
+${CONTROL_EXPR.INPUTS}: mode {caption: Process mode; category: Process parameters; choices: OpenFile("System:AppData/DiffStudio/library/bioreactor-inputs.csv")} [Reactions flow mode]`;
 
 /** Pollution model */
 const POLLUTION_MODEL = `${CONTROL_EXPR.NAME}: Pollution
 ${CONTROL_EXPR.TAGS}: model
 ${CONTROL_EXPR.DESCR}: The chemical reaction part of the air pollution model developed at The Dutch National Institute of Public Health and Environmental Protection
-${CONTROL_EXPR.COMMENT}: Source is https://archimede.uniba.it/~testset/report/pollu.pdf
+${CONTROL_EXPR.COMMENT}: 
+  Source: https://archimede.uniba.it/~testset/report/pollu.pdf
 ${CONTROL_EXPR.DIF_EQ}:
   dy1/dt = -(r1 + r10 + r14 + r23 + r24) + (r2 + r3 + r9 + r11 + r12 + r22 + r25)
 

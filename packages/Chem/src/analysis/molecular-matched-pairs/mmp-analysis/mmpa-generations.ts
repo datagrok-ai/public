@@ -1,10 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import {generationsGPU} from '@datagrok-libraries/math/src/webGPU/mmp/webGPU-generations';
-import {MMP_CONSTRICTIONS, MMP_ERRORS} from './mmpa-misc';
+import {MMP_CONSTRICTIONS, MMP_ERRORS, MmpFragments} from './mmpa-misc';
 
 export async function calculateGenerations(structuresN: number, activityN: number, moleculesArray: string[],
   allStructures: string[], allInitActivities: Float32Array, activityName: string[], activities: Float32Array[],
-  activityNames: string[], frags: [string, string][][], meanDiffs: Float32Array[], prediction: Float32Array,
+  activityNames: string[], frags: MmpFragments, meanDiffs: Float32Array[], prediction: Float32Array,
   cores: string[], from: string[], to: string[], rulesFrom: ArrayLike<number>, rulesTo: ArrayLike<number>,
   rulesFromCats: string[], rulesToCats: string[], gpu: boolean, strictCPU: boolean = false) {
   try {
@@ -40,7 +40,7 @@ export async function calculateGenerations(structuresN: number, activityN: numbe
 
 async function generationsCPU(structuresN: number, activityN: number, moleculesArray: string[],
   allStructures: string[], allInitActivities: Float32Array, activityName: string[], activities: Float32Array[],
-  activityNames: string[], frags: [string, string][][], meanDiffs: Float32Array[], prediction: Float32Array,
+  activityNames: string[], frags: MmpFragments, meanDiffs: Float32Array[], prediction: Float32Array,
   cores: string[], from: string[], to: string[], rulesFrom: ArrayLike<number>, rulesTo: ArrayLike<number>,
   rulesFromCats: string[], rulesToCats: string[]) {
   for (let i = 0; i < structuresN; i ++) {
@@ -50,9 +50,9 @@ async function generationsCPU(structuresN: number, activityN: number, moleculesA
       activityName[j * structuresN + i] = activityNames[j];
     }
 
-    for (let j = 0; j < frags[i].length; j++) {
-      const core = frags[i][j][0];
-      const subst = frags[i][j][1];
+    for (let j = 0; j < frags.fragCodes[i].length; j++) {
+      const core = frags.idToName[frags.fragCodes[i][j][0]];
+      const subst = frags.idToName[frags.fragCodes[i][j][1]];
       if (core != '') {
         for (let k = 0; k < rulesFrom.length; k++) {
           if (subst === rulesFromCats[rulesFrom[k]] ) {

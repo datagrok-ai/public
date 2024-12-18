@@ -2,9 +2,9 @@
 
 Diff Studio is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai) platform. It provides in-browser tools for solving [initial value problem](https://en.wikipedia.org/wiki/Initial_value_problem) for systems of ordinary differential equations (ODE) and its interactive exploration.
 
-* Go to **Apps** and run **Diff Studio**
+* Go to **Apps > Compute** and run **Diff Studio**
 * Enter formulas or modify template
-* Press **F5** or go to **Run** tab
+* Run computations and explore your model
 
 The solver takes a set of the differential equations in a declarative form, and creates a UI that solves the equations, visualizes the results, and lets you change parameters on the fly.
 
@@ -13,35 +13,32 @@ The solver takes a set of the differential equations in a declarative form, and 
 Datagrok provides intuitive tools for the rapid solving ODEs.
 
 * Run the solver:
-  * Go to **Apps** and run **Diff Studio**
-  * Go to **Run** tab to launch computations
-* Modify a template:
+  * Go to **Apps > Compute**
+  * Run **Diff Studio**
+  * Modify inputs and explore computations
+* Modify equations:
+  * Turn on the **Edit** toggle on the top panel
   * Edit formulas or add new ones
-  * Press **F5** or go to **Run** tab
-  * Cahnge inputs and explore your model
-* Use an advanced template:
-  * Click on the "Open" icon <i class="fas fa-folder-open"></i> on the top panel
-  * Select **Templates > Advanced...**
-  * Modify formulas and press **F5**
-* Save model in a local file:
-  * Click on the "Save" icon <i class="fas fa-save"></i> on the top panel
-  * Click `Save as Local File...` to save model to a local file. Find the ivp-file in Downloads. You can open and edit this file using any text editor
-  * Click `Save to My Files...` to save model to your platform files (**Browse > Files > My files**)
+  * Click <i class="fas fa-sync"></i> **Refresh** or press **F5** to apply changes
+* Use templates:
+  * Click <i class="fas fa-folder-open d4-combo-popup" style="min-width: 0px; cursor: default"></i> **Open** icon on the top panel
+  * Go to **Templates** and select one of them
+  * Once you have completed your model, turn off the **Edit** toggle  
+* Save model:
+  * Click the **Save** button on the top panel to save model to your platform files (**Browse > Files > My files**)
+  * Click <i class="fas fa-arrow-to-bottom"></i> **Download** to save model to a local file. Find the *ivp*-file in Downloads. You can open and edit this file using any text editor
 * Drag-n-drop:
   * Drag *ivp*-file with equations right into the browser
-* Load equations from a local file:
-  * Click on the "Open" icon <i class="fas fa-folder-open"></i> on the top panel
-  * Select **From file...**
-  * Select a file with formulas
-* Explore model:
-  * Click on the "Run sensitivity analysis" icon <i class="fas fa-analytics"></i>
-  * Analyze the relationship between inputs and outputs using one of the following methods:
-    * [Monte Carlo](https://datagrok.ai/help/compute/function-analysis#monte-carlo)
-    * [Sobol](https://datagrok.ai/help/compute/function-analysis#sobol)
-    * [Grid](https://datagrok.ai/help/compute/function-analysis#grid)
-* Fit parameters:
-  * Click on the "Fit inputs" icon <i class="grok-icon fas fa-chart-line"></i>
-  * Find input conditions leading to specified output constraints
+* Load model:
+  * Click <i class="fas fa-folder-open d4-combo-popup" style="min-width: 0px; cursor: default"></i> **Open** on the top panel
+  * Select **Import...** to load model from local file
+  * **My Models** contains models from your platform files
+  * Find last called models in **Recent**
+  * Explore examples in **Library**. They cover all possibilities of Diff Studio
+* Analyze model
+  * Turn off the **Edit** toggle on the top panel
+  * Click the **Fit** icon to [optimize inputs](https://datagrok.ai/help/compute/function-analysis#parameter-optimization)
+  * Click the **Sensitivity** icon to run [sensitivity analysis](https://datagrok.ai/help/compute/function-analysis#sensitivity-analysis)
 
 ## Create model from template
 
@@ -252,9 +249,10 @@ This table compares the efficiency of the methods when solving each test problem
 
 Once you are satisfied with the result, you can convert your model to a Datagrok application. To do so:
 
-1. Click **JS** button on the top panel
-2. Click **SAVE** button
-3. Script is created, and can be found in the "Scripts" section of the platform
+1. Turn on the **Edit** toggle on the top panel
+2. Click **</>** icon. Script editor opens in a new view
+3. Click **SAVE** button
+4. Script is created, and can be found in the "Scripts" section of the platform
 
 Improve usability. Use `#tags: model` to add your model to `Model Catalog`. Provide a description in the `#description`-line:
 

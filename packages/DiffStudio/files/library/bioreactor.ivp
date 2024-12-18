@@ -1,7 +1,8 @@
 #name: Bioreactor
 #tags: model
 #description: Bioreactor simulation
-#comment: Source paper is https://doi.org/10.1074/jbc.RA117.000303.
+#comment: 
+  Source: https://doi.org/10.1074/jbc.RA117.000303.
 #equations:
 
   d(FFox)/dt = -E11 + E12
@@ -146,4 +147,4 @@
            P =    1  {units: atm;   caption: pressure;    category: Parameters;  min: 1;   max: 2}              [Headspace pressure]
   switchTime =  135  {units: min;   caption: switch at;   category: Time;        min: 70;  max: 180; step: 10}  [Switch mode time]
 
-#meta.inputs: mode {caption: Process mode; category: Process parameters; choices: OpenFile("System:AppData/DiffStudio/examples/bioreactor-inputs.csv")} [Reactions flow mode]
+#meta.inputs: mode {caption: Process mode; category: Process parameters; choices: OpenFile("System:AppData/DiffStudio/library/bioreactor-inputs.csv")} [Reactions flow mode]

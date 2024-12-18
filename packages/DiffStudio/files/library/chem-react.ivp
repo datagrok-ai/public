@@ -1,7 +1,8 @@
 #name: Chem react
 #tags: model
 #description: Mass-action kinetics illustration
-#comment: This model is taken from https://doi.org/10.1002/ijch.201800003.
+#comment: 
+  Source: https://doi.org/10.1002/ijch.201800003.
 #equations:
   dx1/dt = -k1 * x1 + k2 * (x2)**2 + k3 * x1 * x3 
            - k4 * (x1)**2 - 2 * k5 * (x1)**2 + k6 * x2 * x4

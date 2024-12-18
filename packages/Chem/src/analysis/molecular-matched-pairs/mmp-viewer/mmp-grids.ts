@@ -7,9 +7,8 @@ import {FRAGMENTS_GRID_HEADER_TOOLTIPS, MMP_NAMES, PAIRS_GRID_HEADER_TOOLTIPS,
   columnsDescriptions} from './mmp-constants';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {MMPA} from '../mmp-analysis/mmpa';
-import {getRdKitModule} from '../../../utils/chem-common-rdkit';
+import {getRdKitModule, getRdKitService} from '../../../utils/chem-common-rdkit';
 import {createColWithDescription} from './mmp-generations';
-import {getInverseSubstructuresAndAlign} from './mmp-mol-rendering';
 import {MmpInput} from './mmp-viewer';
 import {Subject, Subscription} from 'rxjs';
 import {resizeGridColsSize} from '../../../utils/ui-utils';
@@ -44,7 +43,8 @@ export class MmpPairedGrids {
   rdkit: RDModule;
 
   showErrorEvent: Subject<boolean> = new Subject();
-  filters: DG.FilterGroup;
+  showEmptyPairsWarningEvent: Subject<boolean> = new Subject();
+  filters: DG.FilterGroup | null = null;
   lastPairIdx: number | null = null;
   lastFragmentIdx: number | null = null;
   currentTab = MMP_NAMES.TAB_TRANSFORMATIONS;
@@ -70,8 +70,6 @@ export class MmpPairedGrids {
     this.pairsGridCliffsTab = this.mmpGridTrans.dataFrame.plot.grid();
     this.pairsMaskCliffsTab = DG.BitSet.create(this.mmpGridFrag.dataFrame.rowCount).setAll(true);
 
-    const trellisTv = DG.TableView.create(this.fpGrid.dataFrame, false);
-    this.filters = trellisTv.getFiltersGroup();
     this.fpMaskFragmentsTab = DG.BitSet.create(this.fpGrid.dataFrame.rowCount).setAll(true);
 
     this.rdkit = getRdKitModule();
@@ -79,7 +77,7 @@ export class MmpPairedGrids {
     subs.push(DG.debounce(this.parentTable.onCurrentRowChanged, 1000).subscribe(() => {
       if (this.parentTable!.currentRowIdx !== -1 && !this.fragsShowAllMode) {
         this.refilterFragmentPairsByMolecule(true);
-        this.refreshMatchedPair(this.rdkit);
+        this.refreshMatchedPair();
       }
     }));
 
@@ -118,7 +116,7 @@ export class MmpPairedGrids {
 
     this.fpGrid.table.onCurrentRowChanged.subscribe(() => {
       if (this.fpGrid!.table.currentRowIdx !== -1)
-        this.refreshMatchedPair(this.rdkit);
+        this.refreshMatchedPair();
     });
 
     this.fpGrid.table.onSelectionChanged.subscribe(() => {
@@ -149,6 +147,10 @@ export class MmpPairedGrids {
 
     this.mmpGridTrans.table.onSelectionChanged.subscribe(() => {
       this.selectPairsWithSubstitutionInParentTable(true);
+    });
+
+    this.mmpGridTrans.table.onFilterChanged.subscribe(() => {
+      this.showEmptyPairsWarningEvent.next(this.mmpGridTrans.dataFrame.filter.trueCount === 0);
     });
 
     this.createCustomGridTooltips(this.fpGrid, FRAGMENTS_GRID_HEADER_TOOLTIPS, true);
@@ -217,7 +219,7 @@ export class MmpPairedGrids {
   * Prepares all the entities to show for selected pair.
   * @param {RDModule} rdkitModule RDkit module instance
   */
-  async refreshMatchedPair(rdkitModule: RDModule) : Promise<void> {
+  async refreshMatchedPair() : Promise<void> {
     const progressBarPairs = DG.TaskBarProgressIndicator.create(`Refreshing pairs...`);
 
     this.mmpMaskTrans.setAll(false);
@@ -227,7 +229,7 @@ export class MmpPairedGrids {
     const diffTo = this.mmpGridTrans.dataFrame.getCol(MMP_NAMES.TO);
 
     const [idxPairs, cases] = this.findSpecificRule(diffFromSubstrCol, this.fragsShowAllMode);
-    this.recoverHighlights(cases, diffFrom, diffTo, diffFromSubstrCol, diffToSubstrCol, rdkitModule);
+    this.recoverHighlights(cases, diffFrom, diffTo, diffFromSubstrCol, diffToSubstrCol);
 
     if (idxPairs >= 0) {
       if (this.lastPairIdx !== null)
@@ -307,10 +309,8 @@ export class MmpPairedGrids {
     if (idxParent !== -1 || showAllFragsMode) {
       for (const idx of idxs) {
         if (idx !== -1) {
-          const ruleSmi1 = this.fpGrid.table.getCol(MMP_NAMES.FROM).get(idx);
-          const ruleSmi2 = this.fpGrid.table.getCol(MMP_NAMES.TO).get(idx);
-          const ruleSmiNum1 = this.mmpa.rules.smilesFrags.indexOf(ruleSmi1);
-          const ruleSmiNum2 = this.mmpa.rules.smilesFrags.indexOf(ruleSmi2);
+          const ruleSmiNum1 = this.mmpa.rules.rules[idx].smilesRule1;
+          const ruleSmiNum2 = this.mmpa.rules.rules[idx].smilesRule2;
 
           let counter = 0;
 
@@ -353,10 +353,8 @@ export class MmpPairedGrids {
     }
 
     if (idx !== -1) {
-      const ruleSmi1 = this.fpGrid.table.getCol(MMP_NAMES.FROM).get(idx);
-      const ruleSmi2 = this.fpGrid.table.getCol(MMP_NAMES.TO).get(idx);
-      const ruleSmiNum1 = this.mmpa.rules.smilesFrags.indexOf(ruleSmi1);
-      const ruleSmiNum2 = this.mmpa.rules.smilesFrags.indexOf(ruleSmi2);
+      const ruleSmiNum1 = this.mmpa.rules.rules[idx].smilesRule1;
+      const ruleSmiNum2 = this.mmpa.rules.rules[idx].smilesRule2;
 
       let counter = 0;
 
@@ -376,7 +374,7 @@ export class MmpPairedGrids {
 
   async recoverHighlights(
     cases: number[], diffFrom : DG.Column, diffTo: DG.Column,
-    diffFromSubstrCol: DG.Column, diffToSubstrCol: DG.Column, rdkitModule: RDModule) : Promise<void> {
+    diffFromSubstrCol: DG.Column, diffToSubstrCol: DG.Column) : Promise<void> {
     //get actual fragments
     const fpIdx = this.fpGrid.dataFrame.currentRowIdx;
     if (fpIdx === -1)
@@ -384,7 +382,7 @@ export class MmpPairedGrids {
 
     const cores = new Array<string>(cases.length);
     for (let i = 0; i < cases.length; i ++)
-      cores[i] = this.mmpa.rules.rules[fpIdx].pairs[i].core;
+      cores[i] = this.mmpa.frags.idToName[this.mmpa.rules.rules[fpIdx].pairs[i].core];
 
     const pairsFrom = Array<string>(cases.length);
     const pairsTo = Array<string>(cases.length);
@@ -392,15 +390,20 @@ export class MmpPairedGrids {
       pairsFrom[i] = diffFrom.get(cases[i]);
       pairsTo[i] = diffTo.get(cases[i]);
     }
+    const rdkitService = await getRdKitService();
 
-    const {inverse1, inverse2, fromAligned, toAligned} =
-      await getInverseSubstructuresAndAlign(cores, pairsFrom, pairsTo, rdkitModule);
-    for (let i = 0; i < cases.length; i++) {
-      diffFrom.set(cases[i], fromAligned[i]);
-      diffTo.set(cases[i], toAligned[i]);
-      diffFromSubstrCol.set(cases[i], inverse1[i]);
-      diffToSubstrCol.set(cases[i], inverse2[i]);
-    }
+    const pb = DG.TaskBarProgressIndicator.create(`Preparing highlights...`);
+    rdkitService.getInverseSubstructuresAndAlign(cores, pairsFrom, pairsTo).then((res) => {
+      const {inverse1, inverse2, fromAligned, toAligned} = res;
+      for (let i = 0; i < cases.length; i++) {
+        diffFrom.set(cases[i], fromAligned[i]);
+        diffTo.set(cases[i], toAligned[i]);
+        diffFromSubstrCol.set(cases[i], inverse1[i]);
+        diffToSubstrCol.set(cases[i], inverse2[i]);
+      }
+      this.mmpGridTrans.invalidate();
+      pb.close();
+    });
   }
 }
 

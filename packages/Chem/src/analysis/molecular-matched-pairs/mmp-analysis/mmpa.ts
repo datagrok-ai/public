@@ -1,11 +1,11 @@
 import * as DG from 'datagrok-api/dg';
 import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
-import {IMmpFragmentsResult} from '../../../rdkit-service/rdkit-service-worker-substructure';
 import {chemSpace} from '../../chem-space';
 import {ISequenceSpaceParams, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 
 import {MMP_CONSTRICTIONS, MMP_ERRORS,
-  MmpRules, MmpInitData, MmpAllCasesBasedData, MmpRulesBasedData, MmpGeneration} from './mmpa-misc';
+  MmpRules, MmpInitData, MmpAllCasesBasedData, MmpRulesBasedData, MmpGeneration,
+  MmpFragments} from './mmpa-misc';
 import {getMmpFrags, getMmpRules} from './mmpa-fragments';
 import {getPlainData} from './mmpa-differences';
 import {calculateGenerations} from './mmpa-generations';
@@ -15,7 +15,7 @@ export class MMPA {
   initData: MmpInitData;
   gpu: boolean;
 
-  frags: IMmpFragmentsResult;
+  frags: MmpFragments;
   rules: MmpRules;
   allCasesNumber: number;
 
@@ -25,7 +25,7 @@ export class MMPA {
   chemSpaceResult: Float32Array [] | null = null;
   generationResult: MmpGeneration | null = null;
 
-  constructor(initData: MmpInitData, frags: IMmpFragmentsResult, rules: MmpRules, allCasesNumber: number,
+  constructor(initData: MmpInitData, frags: MmpFragments, rules: MmpRules, allCasesNumber: number,
     rulesBased: MmpRulesBasedData, allCasesBased: MmpAllCasesBasedData,
     chemSpaceResult: Float32Array [] | null, generationResult: MmpGeneration | null, gpu: boolean) {
     this.initData = initData;
@@ -58,7 +58,7 @@ export class MMPA {
     const frags = await getMmpFrags(molecules);
     const [rules, allCasesNumber] = await getMmpRules(frags, fragmentCutoff, gpu);
 
-    const [rulesBased, allCasesBased] = getPlainData(rules, initData, allCasesNumber, fragSortingInfo);
+    const [rulesBased, allCasesBased] = getPlainData(rules, frags, initData, allCasesNumber, fragSortingInfo);
 
     return new MMPA(initData, frags, rules, allCasesNumber, rulesBased, allCasesBased, null, null, gpu);
   }
@@ -73,11 +73,11 @@ export class MMPA {
 
     const totalParsed = JSON.parse(data);
 
-    const frags: IMmpFragmentsResult = totalParsed['fragments'];
+    const frags: MmpFragments = totalParsed['fragments'];
     const rules: MmpRules = totalParsed['rules'];
     const allCasesNumber: number = totalParsed['cases'];
 
-    const [rulesBased, allCasesBased] = getPlainData(rules, initData, allCasesNumber, fragSortingInfo);
+    const [rulesBased, allCasesBased] = getPlainData(rules, frags, initData, allCasesNumber, fragSortingInfo);
 
     const chemSpaceResult: Float32Array [] | null = totalParsed['chemSpaceResult'];
     const generationResult: MmpGeneration | null = totalParsed['generationResult'];
@@ -103,6 +103,8 @@ export class MMPA {
       'cases': this.allCasesNumber,
       'chemSpaceResult': this.chemSpaceResult,
       'generationResult': this.generationResult,
+    }, function(key, val) {
+      return val && !isNaN(Number(val)) && val.toFixed ? Number(val.toFixed(5)) : val;
     });
   }
 
@@ -145,7 +147,7 @@ export class MMPA {
 
       await calculateGenerations(structuresN, activityN, this.initData.molecules, allStructures, allInitActivities,
         activityName, this.initData.activities, this.initData.activitiesNames,
-        this.frags.frags, this.rulesBased.meanDiffs,
+        this.frags, this.rulesBased.meanDiffs,
         prediction, cores, from, to,
         rulesFrom, rulesTo, rulesFromCats, rulesToCats, this.gpu);
 

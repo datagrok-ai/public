@@ -4,28 +4,28 @@ import * as grok from 'datagrok-api/grok';
 import {getRdKitService} from '../../../utils/chem-common-rdkit';
 import {webGPUMMP} from '@datagrok-libraries/math/src/webGPU/mmp/webGPU-mmp';
 import {IMmpFragmentsResult} from '../../../rdkit-service/rdkit-service-worker-substructure';
-import {MMP_CONSTRICTIONS, MMP_ERRORS, MmpRules, MolecularPair} from './mmpa-misc';
+import {MMP_CONSTRICTIONS, MMP_ERRORS, MmpFragments, MmpRules, MolecularPair} from './mmpa-misc';
 
 /**
 * Runs paralled fragmentation for molecules
 * @param {DG.Column} molecules column with molecules
 */
-export async function getMmpFrags(molecules: string[]): Promise<IMmpFragmentsResult> {
+export async function getMmpFrags(molecules: string[]): Promise<MmpFragments> {
   const service = await getRdKitService();
   const res = await service.mmpGetFragments(molecules);
-  return res;
+  return encodeFragments(res);
 }
 
 export async function getMmpRules(
-  fragsOut: IMmpFragmentsResult, fragmentCutoff: number, gpu: boolean, strictCPU = false):
+  fragsOut: MmpFragments, fragmentCutoff: number, gpu: boolean, strictCPU = false):
   Promise<[MmpRules, number, boolean]> {
   let rules: MmpRules | null = null;
   let allCaseesNumber = 0;
   let useGpu = false;
 
   try {
-    if (fragsOut.frags.length < 10 || !gpu || strictCPU) {
-      if (fragsOut.frags.length > MMP_CONSTRICTIONS.CPU)
+    if (fragsOut.fragCodes.length < 10 || !gpu || strictCPU) {
+      if (fragsOut.fragCodes.length > MMP_CONSTRICTIONS.CPU)
         throw new Error(MMP_ERRORS.FRAGMENTS_CPU);
 
       [rules, allCaseesNumber, useGpu] = getMmpRulesCPU(fragsOut, fragmentCutoff);
@@ -55,33 +55,33 @@ export async function getMmpRules(
 function getBestFragmentPair(
   dimFirst: number, idxFirst: number,
   dimSecond: number, idxSecond: number,
-  fragsOut: IMmpFragmentsResult): [string, string, string] {
-  let core = '';
-  let r1 = ''; // molecule minus core for first molecule in pair
-  let r2 = ''; // molecule minus core for second molecule in pair
+  fragsOut: MmpFragments): [number, number, number] {
+  let core: number | null = null;
+  let r1: number | null = null; // molecule minus core for first molecule in pair
+  let r2: number | null = null; // molecule minus core for second molecule in pair
 
   //here we get the best possible fragment pair
   for (let p1 = 0; p1 < dimFirst; p1++) {
     for (let p2 = 0; p2 < dimSecond; p2++) {
-      if (fragsOut.frags[idxFirst][p1][0] === fragsOut.frags[idxSecond][p2][0]) {
-        const newCore = fragsOut.frags[idxFirst][p1][0];
-        if (newCore.length > core.length) {
+      if (fragsOut.fragCodes[idxFirst][p1][0] === fragsOut.fragCodes[idxSecond][p2][0]) {
+        const newCore = fragsOut.fragCodes[idxFirst][p1][0];
+        if (!core || fragsOut.sizes[newCore] > fragsOut.sizes[core]) {
           core = newCore;
-          r1 = fragsOut.frags[idxFirst][p1][1];
-          r2 = fragsOut.frags[idxSecond][p2][1];
+          r1 = fragsOut.fragCodes[idxFirst][p1][1];
+          r2 = fragsOut.fragCodes[idxSecond][p2][1];
         }
       }
     }
   }
 
-  return [core, r1, r2];
+  return [core!, r1!, r2!];
 }
 
 function fillRules(
   mmpRules: MmpRules,
-  rFirst:string, idxFirst: number,
-  rSecond: string, idxSecond: number,
-  core: string, ruleCounter: number, allCasesCounter: number) {
+  rFirst:number, idxFirst: number,
+  rSecond: number, idxSecond: number,
+  core: number, ruleCounter: number, allCasesCounter: number) {
   let ruleSmiles1 = mmpRules.smilesFrags.indexOf(rFirst);
   let ruleSmiles2 = mmpRules.smilesFrags.indexOf(rSecond);
   let ruleIndexStraight = -1;
@@ -137,7 +137,7 @@ function fillRules(
   return [ruleCounter, allCasesCounter];
 }
 
-function encodeFragments(fragsOut: IMmpFragmentsResult): [[number, number][][], string[], Uint32Array] {
+function encodeFragments(fragsOut: IMmpFragmentsResult): MmpFragments {
   const res: [number, number][][] = new Array(fragsOut.frags.length)
     .fill(null).map((_, i) => new Array(fragsOut.frags[i].length).fill(null).map((_) => [0, 0]));
 
@@ -166,24 +166,23 @@ function encodeFragments(fragsOut: IMmpFragmentsResult): [[number, number][][], 
 
   const fragSizes = new Uint32Array(maxFragmentIndex).map((_, i) => fragIdToFragName[i].length);
 
-
-  return [res, fragIdToFragName, fragSizes];
+  return {fragCodes: res, idToName: fragIdToFragName, sizes: fragSizes};
 }
 
-function getMmpRulesCPU(fragsOut: IMmpFragmentsResult, fragmentCutoff: number): [MmpRules, number, boolean] {
+function getMmpRulesCPU(fragsOut: MmpFragments, fragmentCutoff: number): [MmpRules, number, boolean] {
   const mmpRules: MmpRules = {rules: [], smilesFrags: []};
-  const dim = fragsOut.frags.length;
+  const dim = fragsOut.fragCodes.length;
 
   const pairs: MolecularPair[] = [];
 
   for (let i = 0; i < dim; i++) {
-    const dimFirstMolecule = fragsOut.frags[i].length;
+    const dimFirstMolecule = fragsOut.fragCodes[i].length;
     for (let j = i + 1; j < dim; j++) {
-      const dimSecondMolecule = fragsOut.frags[j].length;
+      const dimSecondMolecule = fragsOut.fragCodes[j].length;
       const [core, firstR, secondR] = getBestFragmentPair(dimFirstMolecule, i, dimSecondMolecule, j, fragsOut);
-      if (core === '' ||
-      firstR.length / core.length > fragmentCutoff ||
-      secondR.length / core.length > fragmentCutoff) {/*idx++;*/ continue;}
+      if (fragsOut.idToName[core] === '' ||
+        fragsOut.sizes[firstR] / fragsOut.sizes[core] > fragmentCutoff ||
+        fragsOut.sizes[secondR] / fragsOut.sizes[core] > fragmentCutoff) {/*idx++;*/ continue;}
 
       pairs.push({first: i, second: j, core, firstR, secondR});
     }
@@ -201,20 +200,20 @@ function getMmpRulesCPU(fragsOut: IMmpFragmentsResult, fragmentCutoff: number): 
   return [mmpRules, allCasesCounter, false];
 }
 
-async function getMmpRulesGPU(fragsOut: IMmpFragmentsResult, fragmentCutoff: number):
+async function getMmpRulesGPU(fragsOut: MmpFragments, fragmentCutoff: number):
   Promise<[MmpRules, number, boolean]> {
   const mmpRules: MmpRules = {rules: [], smilesFrags: []};
 
-  const [encodedFrags, fragIdToFragName, fragSizes] = encodeFragments(fragsOut);
-  const pairs = await webGPUMMP(encodedFrags, fragSizes, fragmentCutoff);
+  //const [encodedFrags, fragIdToFragName, fragSizes] = encodeFragments(fragsOut);
+  const pairs = await webGPUMMP(fragsOut.fragCodes, fragsOut.sizes, fragmentCutoff);
 
   let ruleCounter = 0;
   let allCasesCounter = 0;
 
   for (let i = 0; i < pairs!.coreIdx.length; i++) {
     [ruleCounter, allCasesCounter] = fillRules(mmpRules,
-      fragIdToFragName[pairs!.frag1Idx[i]], pairs!.mol1Idx[i], fragIdToFragName[pairs!.frag2Idx[i]], pairs!.mol2Idx[i],
-      fragIdToFragName[pairs!.coreIdx[i]], ruleCounter, allCasesCounter);
+      pairs!.frag1Idx[i], pairs!.mol1Idx[i], pairs!.frag2Idx[i],
+      pairs!.mol2Idx[i], pairs!.coreIdx[i], ruleCounter, allCasesCounter);
   }
 
   return [mmpRules, allCasesCounter, true];
