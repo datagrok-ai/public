@@ -21,10 +21,10 @@
   S += 70
 
 #inits:  
-  X = 5 {units: kg/m^3; caption: biomass; category: Initial concentrations; min: 1; max: 10} [Aspergillus niger biomass]
-  S = 150 {units: kg/m^3; caption: glucose; category: Initial concentrations; min: 50; max: 200} [Glucose]
-  O = 7 {units: kg/m^3; caption: oxygen; category: Initial concentrations; min: 1; max: 10} [Dissolved oxygen]
-  P = 0 {units: kg/m^3; caption: acid; category: Initial concentrations; min: 0; max: 0.1} [Gluconic acid]
+  X = 5 {units: kg/m³; caption: biomass; category: Initial concentrations; min: 1; max: 10} [Aspergillus niger biomass]
+  S = 150 {units: kg/m³; caption: glucose; category: Initial concentrations; min: 50; max: 200} [Glucose]
+  O = 7 {units: kg/m³; caption: oxygen; category: Initial concentrations; min: 1; max: 10} [Dissolved oxygen]
+  P = 0 {units: kg/m³; caption: acid; category: Initial concentrations; min: 0; max: 0.1} [Gluconic acid]
 
 #output:
   t {caption: time}
@@ -45,6 +45,6 @@
   Ks = 1.309e2 {units: g/L; category: Parameters} [Monod type model parameter]
   Ko = 3.63e-4 {units: g/L; category: Parameters} [Monod type model parameter]
   Kla = 1.7e-2 {units: 1/s; category: Parameters} [Volumetric mass transfer coefficient]
-  Cod = 15 {units: kg/m^3; category: Parameters} [Liquid phase dissolved oxygen saturation concentration]
+  Cod = 15 {units: kg/m³; category: Parameters} [Liquid phase dissolved oxygen saturation concentration]
   
 #tolerance: 1e-9

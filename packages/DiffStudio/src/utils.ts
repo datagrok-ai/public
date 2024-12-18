@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {MISC, INPUTS_DF, LOOKUP_DF_FAIL, LOOKUP_EXPR_FAIL, TITLE} from './ui-constants';
+import {MISC, INPUTS_DF, LOOKUP_DF_FAIL, LOOKUP_EXPR_FAIL, TITLE, PATH} from './ui-constants';
 import {CONTROL_EXPR} from './constants';
 import {CONTROL_SEP, BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR} from './scripting-tools';
 
@@ -46,12 +46,12 @@ export function error(df1: DG.DataFrame, df2: DG.DataFrame): number {
 
 /** Return unused IVP-file name */
 export function unusedFileName(name: string, files: string[]): string {
-  if (!files.includes(`${name}.${MISC.IVP_EXT}`))
+  if (!files.includes(`${name}.${MISC.MODEL_FILE_EXT}`))
     return name;
 
   let num = 1;
 
-  while (files.includes(`${name}(${num}).${MISC.IVP_EXT}`))
+  while (files.includes(`${name}(${num}).${MISC.MODEL_FILE_EXT}`))
     ++num;
 
   return `${name}(${num})`;
@@ -206,3 +206,94 @@ export function getLookupsInfo(inputsLookup: string) {
     choices: info.get(MISC.CHOICES),
   };
 } // getLookupsInfo
+
+/** Check whether a table contains NaN-s */
+export function hasNaN(df: DG.DataFrame): boolean {
+  for (const col of df.columns) {
+    if (!col.isNumerical)
+      continue;
+
+    if (isNaN(col.stats.avg))
+      return true;
+  }
+
+  return false;
+}
+
+/** Return the reduced solution table */
+export function getReducedTable(df: DG.DataFrame): DG.DataFrame {
+  const reducedCols: DG.Column[] = [];
+
+  for (const col of df.columns)
+    reducedCols.push(DG.Column.fromList(col.type, col.name, [col.get(0)]));
+
+  const reduced = DG.DataFrame.fromColumns(reducedCols);
+  reduced.name = df.name;
+
+  return reduced;
+}
+
+/** Close redundant windows */
+export function closeWindows() {
+  grok.shell.windows.showToolbox = false;
+  grok.shell.windows.showContextPanel = false;
+  grok.shell.windows.showConsole = false;
+  grok.shell.windows.showVariables = false;
+  grok.shell.windows.showTables = false;
+  grok.shell.windows.showColumns = false;
+}
+
+/** Get dataframe with recent models */
+export async function getRecentModelsTable(): Promise<DG.DataFrame> {
+  const folder = `${grok.shell.user.project.name}:Home/`;
+  const dfs = await grok.dapi.files.readBinaryDataFrames(`${folder}${PATH.RECENT}`);
+  return dfs[0];
+}
+
+/** Return model files from user's home */
+export async function getMyModelFiles(): Promise<DG.FileInfo[]> {
+  const folder = `${grok.shell.user.project.name}:Home/`;
+  return await grok.dapi.files.list(folder, true, MISC.MODEL_FILE_EXT);
+}
+
+/** Get equations from file */
+export async function getEquationsFromFile(path: string): Promise<string | null> {
+  try {
+    const exist = await grok.dapi.files.exists(path);
+    const idx = path.lastIndexOf('/');
+    const folderPath = path.slice(0, idx + 1);
+    let file: DG.FileInfo;
+
+    if (exist) {
+      const fileList = await grok.dapi.files.list(folderPath);
+      file = fileList.find((file) => file.nqName === path);
+
+      return await file.readAsString();
+    } else
+      return null;
+  } catch (e) {
+    return null;
+  }
+}
+
+/** Return category control widget */
+export function getCategoryWidget(category: string, inputs: DG.InputBase[]) {
+  const updateWgts = (isExpanded: boolean) => {
+    chevronToOpen.hidden = isExpanded;
+    chevronToClose.hidden = !isExpanded;
+
+    inputs.forEach((inp) => inp.root.hidden = !isExpanded);
+  };
+
+  const chevronToOpen = ui.iconFA('chevron-right', () => updateWgts(true), 'Open category');
+  chevronToOpen.classList.add('diff-studio-chevron-right');
+  chevronToOpen.hidden = true;
+
+  const chevronToClose = ui.iconFA('chevron-down', () => updateWgts(false), 'Close category');
+  chevronToClose.classList.add('diff-studio-chevron-down');
+
+  return ui.divH(
+    [chevronToOpen, chevronToClose, ui.label(category)],
+    'diff-studio-inputs-category',
+  );
+}

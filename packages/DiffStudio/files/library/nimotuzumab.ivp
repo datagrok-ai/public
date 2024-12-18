@@ -1,7 +1,8 @@
 #name: Nimotuzumab
 #tags: model
 #description: Nimotuzumab disposition model
-#comment: Source: https://www.mdpi.com/1999-4923/12/12/1147
+#comment:
+  Source: https://www.mdpi.com/1999-4923/12/12/1147
 #equations:
   dA1/dt = (-(CL * A3 / V1 + Q / V1) * A1 + Q / V2 * A2 - kint * Rtot * A1 / (Kss + A1 / V1)) 
            / (1 + Rtot * Kss / (Kss + A1 / V1)**2)

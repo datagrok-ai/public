@@ -1,5 +1,22 @@
 # Diff Studio changelog
 
+## 1.2.0 (2024-12-01)
+
+UI/UX updates:
+
+* Edit/Consumption modes toggle
+* Reorganized top menu
+* Improved icon placement and visibility
+* Implemented run of the app with last called model
+* Collapsability of input categories
+* Sources and comments in the examples
+* Model error indication
+
+Fixes:
+
+* The Acid Production example
+* The behavior on the NaN-s case
+
 ## 1.1.6 (2024-11-18)
 
 * Updated computations the loop & update features
