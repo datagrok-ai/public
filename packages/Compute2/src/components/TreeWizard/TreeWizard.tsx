@@ -57,6 +57,18 @@ export const TreeWizard = Vue.defineComponent({
       moveStep,
     } = useReactiveTreeDriver(Vue.toRef(props, 'providerFunc'));
 
+    const runActionWithConfirmation = (uuid: string) => {
+      const calledAction = chosenStepState.value?.actions?.find((action) => action.uuid === uuid);
+      const confirmationMessage = calledAction?.confirmationMessage;
+      if (confirmationMessage) {
+        ui.dialog(`Action confirmation`)
+          .add(ui.markdown(confirmationMessage))
+          .onOK(() => runAction(uuid))
+          .show({center: true, modal: true})
+      } else {
+        runAction(uuid)
+      }
+    }
 
     const chosenStepUuid = Vue.ref<string | undefined>(undefined);
 
@@ -372,7 +384,7 @@ export const TreeWizard = Vue.defineComponent({
                 isTreeLocked={treeMutationsLocked.value}
                 onUpdate:funcCall={(call) => (chosenStepState.value as StepFunCallState).funcCall = call}
                 onRunClicked={() => runStep(chosenStepState.value!.uuid)}
-                onActionRequested={runAction}
+                onActionRequested={runActionWithConfirmation}
                 onConsistencyReset={(ioName) => consistencyReset(chosenStepUuid.value!, ioName)}
                 dock-spawn-title='Step review'
                 ref={rfvRef}
@@ -387,7 +399,7 @@ export const TreeWizard = Vue.defineComponent({
               isRoot={isRootChoosen.value}
               menuActions={menuActions.value}
               buttonActions={buttonActions.value}
-              onActionRequested={runAction}
+              onActionRequested={runActionWithConfirmation}
               dock-spawn-title='Step sequence review'
               onProceedClicked={() => {
                 if (chosenStepState.value && !isFuncCallState(chosenStepState.value))
