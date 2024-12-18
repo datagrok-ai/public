@@ -48,8 +48,9 @@ export type SortType = {
 }
 
 export type SortData = {
-  frequency: number,
-  mw?: number
+  fragmentIdxs: number[],
+  frequencies: number[],
+  mw?: Float32Array,
 }
 
 export class MatchedMolecularPairsViewer extends DG.JsViewer {
@@ -100,7 +101,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   cliffsFiltered = false;
   mWCalulationsReady = false;
 
-  fragSortingInfo: {[key: string]: SortData} = {};
+  fragSortingInfo: SortData = {fragmentIdxs: [], frequencies: []};
   sp: DG.ScatterPlotViewer | null = null;
   spAxesNames: string[] = [];
   tabs: DG.TabControl | null = null;
@@ -710,39 +711,48 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.sortTrellisByProp(axis, tp);
       break;
     case TrellisSortByProp.Frequency:
-      this.sortTrellisByProp(axis, tp, sorting.type, ([_1, val1], [_2, val2]) => val1.frequency - val2.frequency,
-        ([_1, val1], [_2, val2]) => val2.frequency - val1.frequency);
+      this.sortTrellisByProp(axis, tp, this.fragSortingInfo.frequencies,
+        sorting.type);
       break;
     case TrellisSortByProp.MW:
       if (!this.mWCalulationsReady) {
         grok.shell.warning('MW calculations for fragments in progress. Please try again later');
         return;
+      } else if (!this.fragSortingInfo.mw || this.fragSortingInfo.mw.every((it) => it === 0)) {
+        grok.shell.warning('Molecular weights haven\'t been calculated');
+        return;
       }
-      this.sortTrellisByProp(axis, tp, sorting.type, ([_1, val1], [_2, val2]) => val1.mw! - val2.mw!,
-        ([_1, val1], [_2, val2]) => val2.mw! - val1.mw!);
+      this.sortTrellisByProp(axis, tp, this.fragSortingInfo.mw, sorting.type);
     }
     this.pairedGrids!.fpGrid.dataFrame.filter.copyFrom(filterBackup);
   }
 
-  sortTrellisByProp(axis: TrellisAxis, tp: DG.Viewer, type?: TrellisSortType,
-    ascSortFunc?: (arg1: [string, SortData], arg2: [string, SortData]) => number,
-    descSortFunc?: (arg1: [string, SortData], arg2: [string, SortData]) => number) {
+  sortTrellisByProp(axis: TrellisAxis, tp: DG.Viewer, sortData?: number[] | Float32Array,
+    type?: TrellisSortType) {
     const fragCol = this.pairedGrids!.fpGrid.dataFrame.col(axis);
     const axisName = tp.props.yColumnNames[0] === axis ? 'yColumnNames' :
       tp.props.xColumnNames[0] === axis ? 'xColumnNames' : null;
 
+    const frags = this.fragSortingInfo.fragmentIdxs.map((idx) => this.mmpa?.frags.idToName[idx]) as string[];
+    const indexesArray = [...Array(this.fragSortingInfo.fragmentIdxs.length).keys()];
+
     if (fragCol) {
       let cats: string[] = [];
-      switch (type) {
-      case undefined:
+      if (!type)
         cats = fragCol.categories.map((it) => it).sort();
-        break;
-      case TrellisSortType.Asc:
-        cats = Object.entries(this.fragSortingInfo).sort(ascSortFunc).map((it) => it[0]);
-        break;
-      case TrellisSortType.Desc:
-        cats = Object.entries(this.fragSortingInfo).sort(descSortFunc).map((it) => it[0]);
-        break;
+      else {
+        if (this.fragSortingInfo.fragmentIdxs && sortData) {
+          switch (type) {
+          case TrellisSortType.Asc:
+            cats = indexesArray.sort((a: number, b: number) => sortData[a] - sortData[b] > 0 ? 1 : -1)
+              .map((it) => frags[it]);
+            break;
+          case TrellisSortType.Desc:
+            cats = indexesArray.sort((a: number, b: number) => sortData[a] - sortData[b] > 0 ? -1 : 1)
+              .map((it) => frags[it]);
+            break;
+          }
+        }
       }
       if (cats.length)
         fragCol.setCategoryOrder(cats);
@@ -897,8 +907,9 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
   async prepareMwForSorting() {
-    const frags = Object.keys(this.fragSortingInfo).map((idx) => this.mmpa?.frags.idToName[Number(idx)]) as string[];
+    const frags = this.fragSortingInfo.fragmentIdxs.map((idx) => this.mmpa?.frags.idToName[idx]) as string[];
     chemDescriptor(DG.Column.fromStrings('smiles', frags), 'MolWt').then((res: DG.Column) => {
+      this.fragSortingInfo.mw = new Float32Array(this.fragSortingInfo.fragmentIdxs.length);
       let errorCount = 0;
       frags.forEach((key: string, idx) => {
         let resMW = res.get(idx);
@@ -906,7 +917,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
           errorCount++;
           resMW = undefined;
         }
-        this.fragSortingInfo[key].mw = resMW ?? 0;
+        this.fragSortingInfo.mw![idx] = resMW ?? 0;
       });
       this.mWCalulationsReady = true;
       if (errorCount > 0)

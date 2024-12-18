@@ -3,8 +3,7 @@ import {MmpAllCasesBasedData, MmpFragments, MmpInitData, MmpRules, MmpRulesBased
 import {SortData} from '../mmp-viewer/mmp-viewer';
 
 export function getPlainData(rules: MmpRules, frags: MmpFragments,
-  initData: MmpInitData, allCasesNumber: number, fragSortingInfo:
-  {[key: string]: SortData}): [MmpRulesBasedData, MmpAllCasesBasedData] {
+  initData: MmpInitData, allCasesNumber: number, fragSortingInfo: SortData): [MmpRulesBasedData, MmpAllCasesBasedData] {
   const [fromFrag, toFrag, occasions] = getAllRulesOcasions(rules, frags, fragSortingInfo); //rules n objects
   const [maxActs, meanDiffs, molFrom, molTo, pairNum,
     molNumFrom, molNumTo, pairsFromSmiles, pairsToSmiles,
@@ -18,7 +17,7 @@ export function getPlainData(rules: MmpRules, frags: MmpFragments,
   return [rulesBased, allCasesBased];
 }
 
-function getAllRulesOcasions(mmpr: MmpRules, frags: MmpFragments, fragSortingInfo: {[key: string]: SortData}):
+function getAllRulesOcasions(mmpr: MmpRules, frags: MmpFragments, fragSortingInfo: SortData):
 [string [], string [], Int32Array] {
   const allSize = mmpr.rules.length;
   const fromFrag = new Array<string>(allSize);
@@ -29,10 +28,12 @@ function getAllRulesOcasions(mmpr: MmpRules, frags: MmpFragments, fragSortingInf
     fromFrag[i] = frags.idToName[fromFragment];
     toFrag[i] = frags.idToName[mmpr.smilesFrags[mmpr.rules[i].smilesRule2]];
     occasions[i] = mmpr.rules[i].pairs.length;
-    if (!fragSortingInfo[fromFragment])
-      fragSortingInfo[fromFragment] = {frequency: mmpr.rules[i].pairs.length};
-    else
-      fragSortingInfo[fromFragment].frequency += mmpr.rules[i].pairs.length;
+    const fragIdxInSortingInfo = fragSortingInfo.fragmentIdxs.indexOf(fromFragment);
+    if (fragIdxInSortingInfo === -1) {
+      fragSortingInfo.fragmentIdxs.push(fromFragment);
+      fragSortingInfo.frequencies.push(mmpr.rules[i].pairs.length);
+    } else
+      fragSortingInfo.frequencies[fragIdxInSortingInfo] += mmpr.rules[i].pairs.length;
   }
   return [fromFrag, toFrag, occasions];
 }
