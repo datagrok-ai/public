@@ -1234,6 +1234,7 @@ export class tools {
         }
       }
       if (form.classList.contains('d4-dialog-contents')) {
+        form.classList.remove('ui-form-condensed');
         let dialogFormWidth = tools.formLabelMaxWidths.get(form)! + tools.formMinInputWidths.get(form)! + 40;
         if (form.style.minWidth != `${dialogFormWidth}px`)
           form.style.minWidth = `${dialogFormWidth}px`;
@@ -1322,7 +1323,13 @@ export class tools {
           element.classList.contains('ui-input-text')) {
           (options[i] as HTMLElement).style.marginLeft = `-${optionsWidth}px`;
         }
-        width += optionsWidth;
+        if (optionsWidth > 0) {
+          let inputs = $(element).find('.ui-input-editor');
+          inputs.each((i) => {
+            inputs[i]!.style.paddingRight = `${optionsWidth}px`;
+          });
+        }
+        // width += optionsWidth;
       });
       // todo: analyze content(?) and metadata
       // todo: analyze more types
