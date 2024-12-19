@@ -22,6 +22,7 @@ enum LINKS {
   COMPS_SYNTAX = 'https://datagrok.ai/help/compute/diff-studio#model-components-and-syntax',
   ADVANCES = 'https://datagrok.ai/help/compute/diff-studio#advanced-features',
   MODELS = 'https://datagrok.ai/help/compute/models',
+  LOTKA_VOLT = 'https://en.wikipedia.org/wiki/Lotka%E2%80%93Volterra_equations',
 };
 
 /** Earth's population modeling */
@@ -116,7 +117,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
     this.describe('Diff Studio enables the simulation of processes defined by ordinary differential equations.');
     this.describe(ui.link('Learn more', this.helpUrl).outerHTML);
     this.title('Models definition review');
-    this.describe(`Let\'s implement the Lotka-Volterra predator-prey ${ui.link('model', this.helpUrl).outerHTML}.`);
+    this.describe(`Let\'s implement the Lotka-Volterra predator-prey ${ui.link('model', LINKS.LOTKA_VOLT).outerHTML}.`);
     closeWindows();
 
     if (grok.shell.view('Browse') === undefined) {

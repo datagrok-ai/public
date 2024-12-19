@@ -110,14 +110,14 @@ export function describeElements(roots: HTMLElement[], description: string[]): H
 }
 
 /** Description of a single element */
-export function singleDescription(root: HTMLElement, description: string, tooltip: string): HTMLButtonElement {
+export function singleDescription(root: HTMLElement, description: string, tooltip: string, position: ui.hints.POSITION = ui.hints.POSITION.LEFT): HTMLButtonElement {
   const clearBtn = ui.button('ok', () => hint.click(), tooltip);
   const btnDiv = ui.divH([clearBtn]);
   const msg = ui.divV([
     ui.markdown(description),
     btnDiv,
   ]);
-  const popup = ui.hints.addHint(root, msg, 'left');
+  const popup = ui.hints.addHint(root, msg, position);
   btnDiv.style.marginLeft = 'auto';
   btnDiv.style.marginRight = '0';
   const hint = ui.hints.addHintIndicator(popup, undefined, 4000);
