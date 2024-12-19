@@ -14,6 +14,7 @@ import {
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {zipSync, Zippable} from 'fflate';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import { ConsistencyInfo } from "@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes";
 
 export function findTreeNode(uuid: string, state: PipelineState): PipelineState | undefined {
   const notVisitedStates = [state];
@@ -56,13 +57,26 @@ export function findTreeNodeParrent(uuid: string, state: PipelineState): Pipelin
 export type PipelineWithAdd = PipelineStateSequential<StepFunCallState, PipelineInstanceRuntimeData> |
 PipelineStateParallel<StepFunCallState, PipelineInstanceRuntimeData>;
 
-export const hasRunnableSteps = (data: PipelineState): data is  PipelineWithAdd =>
+export const hasRunnableSteps = (data: PipelineState): data is PipelineWithAdd =>
   (isParallelPipelineState(data) || isSequentialPipelineState(data)) && !data.isReadonly && data.steps.length > 0;
 
-export const hasAddControls = (data: PipelineState): data is  PipelineWithAdd =>
+export const hasAddControls = (data: PipelineState): data is PipelineWithAdd =>
   (isParallelPipelineState(data) || isSequentialPipelineState(data)) && data.stepTypes.length > 0 && !data.isReadonly;
 
-export const couldBeSaved = (data: PipelineState) => !isFuncCallState(data) && data.provider;
+export const couldBeSaved = (data: PipelineState): data is PipelineWithAdd => !isFuncCallState(data) && !!data.provider;
+
+export const isSubtree = (data: PipelineState): data is PipelineWithAdd => !isFuncCallState(data);
+
+export const hasSubtreeInconsistencies = (
+  data: PipelineState, 
+  consistencyStates: Record<string, Record<string, ConsistencyInfo> | undefined>
+) => {
+  return isSubtree(data) && data.steps.some((step) => 
+    isFuncCallState(step) ? 
+      hasInconsistencies(consistencyStates[step.uuid]):
+      step.steps.some((nestedStep) => hasInconsistencies(consistencyStates[nestedStep.uuid]))    
+  )
+}
 
 export async function reportStep(treeState?: PipelineState) {
   if (treeState) {
@@ -111,4 +125,10 @@ export async function reportStep(treeState?: PipelineState) {
     );
 
   }
+}
+
+export const hasInconsistencies = (consistencyStates?: Record<string, ConsistencyInfo>) => {
+  const firstInconsistency = Object.values(consistencyStates || {}).find(
+    val => val.inconsistent && (val.restriction === 'disabled' || val.restriction === 'restricted'));
+  return firstInconsistency;
 }

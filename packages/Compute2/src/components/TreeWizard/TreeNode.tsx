@@ -9,8 +9,7 @@ import {OpenIcon} from '@he-tree/vue';
 import {useElementHover} from '@vueuse/core';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
-import {couldBeSaved, hasAddControls, hasRunnableSteps, PipelineWithAdd} from '../../utils';
-import { isFuncCallState } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {couldBeSaved, hasAddControls, isSubtree, PipelineWithAdd, hasInconsistencies} from '../../utils';
 
 const statusToIcon: Record<Status, string> = {
   ['next']: 'arrow-right',
@@ -91,12 +90,6 @@ const hasWarnings = (validationsState?: Record<string, ValidationResult>) => {
   return firstWarning;
 }
 
-const hasInconsistencies = (consistencyStates?: Record<string, ConsistencyInfo>) => {
-  const firstInconsistency = Object.values(consistencyStates || {}).find(
-    val => val.inconsistent && (val.restriction === 'disabled' || val.restriction === 'restricted'));
-  return firstInconsistency;
-}
-
 const hasChanges = (consistencyStates?: Record<string, ConsistencyInfo>) => {
   const firstInconsistency = Object.values(consistencyStates || {}).find(
     val => val.inconsistent && (val.restriction === 'info'));
@@ -137,13 +130,16 @@ export const TreeNode = Vue.defineComponent({
     },
     isReadonly: {
       type: Boolean,
+    },
+    hasInconsistentSubsteps: {
+      type: Boolean,
     }
   },
   emits: {
     addNode: ({itemId, position}:{itemId: string, position: number}) => ({itemId, position}),
     removeNode: () => {},
     toggleNode: () => {},
-    runSequence: (uuid: string) => {},
+    runSubtree: (startUuid: string, rerunWithConsistent?: boolean, endUuid?: string) => {},
     runStep: (uuid: string) => {},
     saveStep: (uuid: string) => {},
   },
@@ -178,6 +174,11 @@ export const TreeNode = Vue.defineComponent({
     const isHovered = useElementHover(treeNodeRef);
     const isRunnable = Vue.computed(() => props.callState?.isRunnable);
 
+    const status = Vue.computed(() => {
+      if (props.callState) 
+        return statesToStatus(props.callState, props.validationStates, props.consistencyStates)
+    })
+
     return () => (
       <div
         style={{
@@ -189,7 +190,7 @@ export const TreeNode = Vue.defineComponent({
         }}
         ref={treeNodeRef}
       >
-        { props.callState && progressIcon(statesToStatus(props.callState, props.validationStates, props.consistencyStates), props.isReadonly) }
+        { status.value && progressIcon(status.value, props.isReadonly) }
         { props.stat.children.length ? openIcon() : null }
         <span class="mtl-ml text-nowrap text-ellipsis overflow-hidden">{ props.descriptions?.title ?? nodeLabel(props.stat) }</span>
         { 
@@ -226,29 +227,42 @@ export const TreeNode = Vue.defineComponent({
                 name='times'
                 onClick={(e: Event) => {emit('removeNode'); e.stopPropagation();}}
                 class='d4-ribbon-item'
-              />]: []
+              />]: [],              
             ]: [] }
-            { 
-              hasRunnableSteps(props.stat.data) &&
-                <IconFA
-                  name='forward'
-                  tooltip={'Run ready steps'}
-                  style={{'padding-right': '3px'}}
-                  onClick={() => emit('runSequence', props.stat.data.uuid)}
-                  class='d4-ribbon-item'
-                />                
-            } 
-            { 
-                              
-            } 
+            { props.hasInconsistentSubsteps && <IconFA
+              name='sync'
+              class='d4-ribbon-item'
+              tooltip='Rerun substeps with consistent values'
+              animation={props.callState?.isRunning ? 'spin': null}
+              onClick={() => {
+                const subtreeData = props.stat.data as PipelineWithAdd;
+                const firstSubstep = subtreeData.steps.at(0);
+                const lastSubstep = subtreeData.steps.at(-1);
+                if (firstSubstep && lastSubstep)
+                  emit('runSubtree', firstSubstep.uuid, true, lastSubstep.uuid)
+              }}
+            /> }
             {
-              isRunnable.value && <IconFA
+              isRunnable.value && !props.isReadonly && hasInconsistencies(props.consistencyStates) &&
+                <IconFA
+                  name='sync'
+                  tooltip={'Rerun this step with consistent inputs'}
+                  style={{'padding-right': '3px'}}
+                  onClick={(e) => {
+                    emit('runSubtree', props.stat.data.uuid, true, props.stat.data.uuid);
+                    e.stopPropagation();
+                  }}
+                  class='d4-ribbon-item'
+                />
+            }
+            {
+              status.value === 'next' && !props.isReadonly && <IconFA
                 name='play'
                 tooltip={'Run this step'}
                 style={{'padding-right': '3px'}}
-                onClick={() => emit('runStep', props.stat.data.uuid)}
+                onClick={(e) => {emit('runStep', props.stat.data.uuid); e.stopPropagation()}}
                 class='d4-ribbon-item'
-              />   
+              />
             }
           </div> }
       </div>

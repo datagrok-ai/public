@@ -433,11 +433,6 @@ export const RichFunctionView = Vue.defineComponent({
             </RibbonMenu>)
           }
           <RibbonPanel>
-            <IconFA
-              name='play'
-              tooltip='Run step'
-              onClick={run}
-            />
             { isReportEnabled.value && !isOutputOutdated.value && <ComboPopup
               caption={ui.iconFA('arrow-to-bottom')}
               items={['Excel']}

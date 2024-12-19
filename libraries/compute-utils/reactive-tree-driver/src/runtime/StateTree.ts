@@ -146,7 +146,7 @@ export class StateTree {
       const descriptions$ = merge(...stateChanges).pipe(
         scan((acc, [name, val]) => {
           if (name === 'tags') {
-            const tags = Object.values(val ?? {}).flat().filter(x => x) as string[];
+            const tags = Object.values(val ?? {}).flat().filter((x) => x) as string[];
             return {...acc, [name]: tags};
           }
           return {...acc, [name]: val};
@@ -320,13 +320,14 @@ export class StateTree {
     });
   }
 
-  public runSequence(startUuid: string, rerunWithConsistent?: boolean) {
+  public runSequence(startUuid: string, rerunWithConsistent?: boolean, endUuid?: string) {
     return this.withTreeLock(() => {
       const nodesSeq = this.nodeTree.traverse(this.nodeTree.root, (acc, node) => [...acc, node.getItem()], [] as StateTreeNode[]);
       const startIdx = nodesSeq.findIndex((node) => node.uuid === startUuid);
+      const endIdx = nodesSeq.findIndex((node) => node.uuid === endUuid);
       if (startIdx < 0)
         return of(undefined);
-      return from(nodesSeq.slice(startIdx)).pipe(
+      return from(nodesSeq.slice(startIdx, endIdx >=0 ? endIdx + 1: undefined)).pipe(
         concatMap((node) => {
           if (!isFuncCallNode(node) || node.pendingDependencies$.value?.length ||
             !node.getStateStore().isRunable$.value || (!node.getStateStore().isOutputOutdated$.value && !rerunWithConsistent))
@@ -398,7 +399,7 @@ export class StateTree {
 
   public resetToConsistent(uuid: string, ioName: string) {
     return this.withTreeLock(() => {
-      const data = this.nodeTree.find((item) => item.uuid === uuid)
+      const data = this.nodeTree.find((item) => item.uuid === uuid);
       if (!data)
         return of(undefined);
       const [node] = data;
