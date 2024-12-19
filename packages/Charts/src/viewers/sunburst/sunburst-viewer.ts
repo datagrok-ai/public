@@ -225,6 +225,7 @@ export class SunburstViewer extends EChartViewer {
       return;
     this.subs.push(this.dataFrame.onMetadataChanged.subscribe((_) => this.render()));
     this.subs.push(grok.events.onEvent('d4-grid-color-coding-changed').subscribe(() => this.render()));
+    this.subs.push(this.dataFrame.onValuesChanged.subscribe((_) => this.render()));
     this.subs.push(grok.events.onEvent('d4-current-viewer-changed').subscribe((args) => {
       const {viewer} = args.args;
       if (viewer instanceof SunburstViewer)
@@ -340,7 +341,7 @@ export class SunburstViewer extends EChartViewer {
       return ' ';
 
     const name = params.name;
-    const lines = name.split(' ');
+    const lines = name.split(/[\s-]/);
     let result = '';
     let remainingHeight = maxHeightCharacters;
 
