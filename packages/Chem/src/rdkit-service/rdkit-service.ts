@@ -578,7 +578,6 @@ export class RdKitService {
     const res = await this._initParallelWorkersArray([cores, from, to], (i: number, segment: string[][]) =>
       t.parallelWorkers[i].getInverseSubstructuresAndAlign(segment[0], segment[1], segment[2]),
     (data: InverseSubstructureRes[]): InverseSubstructureRes => {
-      console.log(`########### ${performance.now()}`);
       return {
         inverse1: ([] as (ISubstruct | null)[]).concat(...data.map(((it) => it.inverse1))),
         inverse2: ([] as (ISubstruct | null)[]).concat(...data.map(((it) => it.inverse2))),
