@@ -21,16 +21,16 @@ function generateCommonValueFormula(operation, suffix, value) {
     return '${' + builds[0] + suffix + value;
   for (var i = 0; i + 2 < builds.length; i++)
     result += operation + '(${' + builds[i] + suffix + value + ',';
-  result += operation + '(${' + builds[builds.length - 2] + suffix + value + ',${' +  builds[builds.length - 2] + suffix + value + ')';
+  result += operation + '(${' + builds[builds.length - 2] + suffix + value + ',${' +  builds[builds.length - 1] + suffix + value + ')';
   for (var i = 0; i + 2 < builds.length; i++)
     result += ')';
   return result;
 }
 
-pivot.columns.addNewCalculated('stable', generateCommonValueFormula("And", ' concat unique(status)}', '== "passed"'), 'bool');
-pivot.columns.addNewCalculated('failing', generateCommonValueFormula("Or", ' concat unique(status)}', '== "failed"'), 'bool');
-pivot.columns.addNewCalculated('flaking', generateCommonValueFormula("Or", ' first(flaking)}', '== true'), 'bool');
-pivot.columns.addNewCalculated('needs_attention', "Or(${flaking},${failing})", 'bool');
+await pivot.columns.addNewCalculated('stable', generateCommonValueFormula("And", ' concat unique(status)}', '== "passed"'), 'bool');
+await pivot.columns.addNewCalculated('failing', generateCommonValueFormula("Or", ' concat unique(status)}', '== "failed"'), 'bool');
+await pivot.columns.addNewCalculated('flaking', generateCommonValueFormula("Or", ' first(flaking)}', '== true'), 'bool');
+await pivot.columns.addNewCalculated('needs_attention', "Or(${flaking},${failing})", 'bool');
 
 function replaceColumn(prefix, type, buildName, newType) {
   var col = pivot.columns.byName(prefix + type);
@@ -45,7 +45,7 @@ for (var i = 1; i <= builds.length; i++) {
   replaceColumn(i, ' avg(duration)', buildName, ' duration');
 }
 
-const jsonColumn = pivot.columns.addNewString('chart');
+const jsonColumn = pivot.columns.addNewString('duration');
 jsonColumn.semType = FIT_SEM_TYPE;
 for (let i = 0; i < pivot.rowCount; i++) {
   var chartData = {
