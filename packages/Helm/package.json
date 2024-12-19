@@ -20,7 +20,7 @@
     "@datagrok-libraries/chem-meta": "^1.2.7",
     "cash-dom": "^8.1.1",
     "@datagrok-libraries/utils": "../../libraries/utils",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.23.0-rc.d168dd2c49.4c8e26043",
     "dayjs": "^1.10.6",
     "lru-cache": "^10.4.3",
     "rxjs": "^6.5.5",
