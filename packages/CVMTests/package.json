@@ -9,7 +9,7 @@
   "servicePackage": true,
   "description": "Automated CVM tests",
   "dependencies": {
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.23.0-rc.d168dd2c49.4c8e26043",
     "cash-dom": "^8.1.5",
     "dayjs": "^1.11.13",
     "@datagrok-libraries/utils": "../../libraries/utils"
