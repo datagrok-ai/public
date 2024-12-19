@@ -282,10 +282,7 @@ Resources:
                           '#type': oldSettings['settings']['#type'],
                           'apiUrl': oldSettings['settings']['apiUrl'],
                           'cvmUrl': oldSettings['settings']['cvmUrl'],
-                          'h2oUrl': oldSettings['settings']['h2oUrl'],
                           'cvmUrlClient': f"https://{cvmClient}",
-                          'cvmSplit': oldSettings['settings']['cvmSplit'],
-                          'jupyterGatewayToken': oldSettings['settings']['jupyterGatewayToken'],
                           'jupyterNotebookToken': oldSettings['settings']['jupyterNotebookToken']
                       }
 

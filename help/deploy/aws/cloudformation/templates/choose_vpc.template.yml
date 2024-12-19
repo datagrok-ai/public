@@ -58,7 +58,6 @@ Parameters:
     Description: Public subnet to deploy Datagrok Load Balancer. Use private subnet here if you disable access from internet (InternetIngressAccess).
   DatagrokPublicSubnet2:
     Type: AWS::EC2::Subnet::Id
-    Default: ''
     Description: Public subnet to deploy Datagrok Load Balancer. Use private subnet here if you disable access from internet (InternetIngressAccess).
   DatagrokPrivateSubnet1:
     Type: AWS::EC2::Subnet::Id
@@ -192,11 +191,11 @@ Rules:
         AssertDescription: Separate public and private subnets must be specified for access from internet (DatagrokPublicSubnet2 and DatagrokPrivateSubnet1 match)
 Resources:
   DatagrokPrivateSubnetRouteAssos1:
-    Type: Custom::NonResource
+    Type: AWS::CloudFormation::WaitConditionHandle
     Condition: CreateVPC
   DatagrokPrivateSubnetRouteAssos2:
-    Type: Custom::NonResource
+    Type: AWS::CloudFormation::WaitConditionHandle
     Condition: CreateVPC
   DatagrokPrivateSubnetRouteTable:
-    Type: Custom::NonResource
+    Type: AWS::CloudFormation::WaitConditionHandle
     Condition: CreateVPC
