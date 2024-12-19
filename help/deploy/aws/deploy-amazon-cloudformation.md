@@ -192,14 +192,13 @@ We prepared specific template for every need of our customers, answer simple que
     
     ##### How to deploy
 
-    1. Use the [link](https://console.aws.amazon.com/cloudformation/home#/stacks/quickcreate?templateURL=https%3A%2F%2Fdatagrok-data.s3.us-east-2.amazonaws.com%2Fdeployment%2Fvpc-fargate-dns-basic.yml&stackName=datagrok) 
+    1. Use the [link](https://console.aws.amazon.com/cloudformation/home#/stacks/quickcreate?templateURL=https%3A%2F%2Fdatagrok-data.s3.us-east-2.amazonaws.com%2Fdeployment%2Fnetwork-fargate-dns-basic.yml&stackName=datagrok) 
        to open CloudFormation template and fill all required parameters.
 
         1. [Specify stack name](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html). 
            To meet AWS naming requirements, name must be shorter than _10 symbols_ and correspond [S3 Bucket naming rules](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html).
            We use 'datagrok' by default, but you may prefer to also specify env in the stack name.
         2. `DatagrokArnSSLCertificate`: Specify AWS ACM ARN for `DATAGROK_DNS` and `CVM_DNS` from the 2nd prerequisites step.
-        3. 
 
     2. Wait until AWS completes the deployment. The stack status will be 'CREATE_COMPLETE.' 
        The script created datagrok stand with all required infrastructure from scratch using external DNS service and existing AWS ACM certificate. 
