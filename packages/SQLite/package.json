@@ -13,7 +13,7 @@
     "directory": "packages/SQLite"
   },
   "dependencies": {
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.23.0-rc.93fe433b08.41a4d2ab8d9c",
     "@datagrok-libraries/utils": "../../libraries/utils",
     "file-loader": "^6.2.0",
     "ts-loader": "^9.5.1",
