@@ -2002,6 +2002,8 @@ export interface IGridSettings {
 
   marginBottom: number;
 
+  allowStickyMeta: keyof typeof AllowStickyMetaType;
+
   /// Heatmap horizontal scroll positions (maxRangeValue, minValue, maxValue)
   heatmapHorzScroll: Array<number>;
 
@@ -2064,6 +2066,12 @@ export enum GridColorCodingType {
   Auto = 'Auto',
   All = 'All',
   None = 'None',
+}
+
+export enum AllowStickyMetaType {
+  Auto = 'Auto',
+  Always = 'Always',
+  Never = 'Never',
 }
 
 export interface IGridCellStyle {
