@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {ItemId, NqName, RestrictionType} from '../data/common-types';
-import {ActionInfo, ViewersHook} from './PipelineConfiguration';
+import {ActionInfo, CustomExport, ViewersHook} from './PipelineConfiguration';
 
 //
 // initial steps config for dynamic pipelines
@@ -111,6 +111,7 @@ export type StepFunCallState = {
 export type PipelineInstanceRuntimeData = {
   actions: ViewAction[] | undefined;
   approversGroup: string | undefined;
+  customExports: CustomExport[] | undefined;
 }
 
 export type PipelineInstanceBase<I, T> = {
