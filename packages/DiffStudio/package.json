@@ -19,7 +19,7 @@
     "cash-dom": "^8.1.5",
     "codemirror": "^6.0.1",
     "css-loader": "^6.10.0",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.23.0-rc.93fe433b08.41a4d2ab8d9c",
     "dayjs": "=1.11.10",
     "style-loader": "^3.3.4"
   },
