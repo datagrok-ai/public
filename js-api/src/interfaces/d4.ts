@@ -961,6 +961,10 @@ export interface ILineChartSettings {
 
   multiAxisLegendPosition: keyof typeof FlexExtendedPosition;
 
+  categoryCustomColorIndices: Array<number>;
+
+  categoryCustomColors: Array<number>;
+
   innerChartMarginTop: number;
 
   innerChartMarginBottom: number;
