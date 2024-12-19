@@ -19,7 +19,7 @@
     "@datagrok-libraries/statistics": "^1.2.12",
     "@datagrok-libraries/tutorials": "^1.4.2",
     "@datagrok-libraries/utils": "../../libraries/utils",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.23.0-rc.93fe433b08.41a4d2ab8d9c",
     "@webgpu/types": "^0.1.40",
     "cash-dom": "^8.1.5",
     "file-loader": "^6.2.0",
