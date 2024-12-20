@@ -10,10 +10,10 @@ import {MMP_CONSTRICTIONS, MMP_ERRORS, MmpFragments, MmpRules, MolecularPair} fr
 * Runs paralled fragmentation for molecules
 * @param {DG.Column} molecules column with molecules
 */
-export async function getMmpFrags(molecules: string[]): Promise<MmpFragments> {
+export async function getMmpFrags(molecules: string[]): Promise<[MmpFragments, string[]]> {
   const service = await getRdKitService();
   const res = await service.mmpGetFragments(molecules);
-  return encodeFragments(res);
+  return [encodeFragments(res), res.smiles];
 }
 
 export async function getMmpRules(

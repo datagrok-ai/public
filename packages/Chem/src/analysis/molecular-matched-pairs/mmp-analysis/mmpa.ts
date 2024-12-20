@@ -55,7 +55,8 @@ export class MMPA {
     else if (molecules.length > MMP_CONSTRICTIONS.GPU)
       throw new Error(MMP_ERRORS.FRAGMENTS_GPU);
 
-    const frags = await getMmpFrags(molecules);
+    const [frags, canonical] = await getMmpFrags(molecules);
+    initData.molecules = canonical;
     const [rules, allCasesNumber] = await getMmpRules(frags, fragmentCutoff, gpu);
 
     const [rulesBased, allCasesBased] = getPlainData(rules, frags, initData, allCasesNumber, fragSortingInfo);
