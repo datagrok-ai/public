@@ -12,7 +12,7 @@ import {IPdbHelper, getPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-help
 
 import {AutoDockApp, AutoDockDataType} from './apps/auto-dock-app';
 import {_runAutodock, AutoDockService, _runAutodock2} from './utils/auto-dock-service';
-import {_package, TARGET_PATH, CACHED_DOCKING, BINDING_ENERGY_COL, POSE_COL, 
+import {_package, TARGET_PATH, BINDING_ENERGY_COL, POSE_COL, 
   PROPERTY_DESCRIPTIONS, BINDING_ENERGY_COL_UNUSED, POSE_COL_UNUSED, setPose, setAffinity, ERROR_COL_NAME, ERROR_MESSAGE,
   CACHED_RESULTS} from './utils/constants';
 import { _demoDocking } from './demo/demo-docking';
@@ -140,10 +140,11 @@ export async function prepareAutoDockData(
 ): Promise<AutoDockDataType | null> {
   const isGpfFile = (file: DG.FileInfo): boolean => file.extension === 'gpf';
   const configFile = (await grok.dapi.files.list(`${TARGET_PATH}/${target}`, true)).find(isGpfFile)!;
-  const receptor = (await grok.dapi.files.list(`${TARGET_PATH}/${target}`)).find((file) => file.extension === 'pdbqt')!;
-
+  const receptor = (await grok.dapi.files.list(`${TARGET_PATH}/${target}`))
+    .find(file => ['pdbqt', 'pdb'].includes(file.extension)) || null;
+  
   if (!configFile || !receptor) {
-    grok.shell.warning('Missing .gpf or .pdbqt file in the target folder.');
+    grok.shell.warning('Missing .gpf or .pdbqt/.pdb file in the target folder.');
     return null;
   }
 
@@ -278,34 +279,18 @@ export async function getAutodockSingle(
 
   const tableView = getTableView();
   const currentTable = table ?? tableView.dataFrame;
-  //@ts-ignore
-  const index = CACHED_DOCKING.V.findIndex((cachedData: DG.DataFrame) => {
-    if (cachedData) {
-      const names = currentTable?.columns.names();
-      const indexPoses = names!.findIndex(name => name.includes(molecule.cell.column.name));
-      const samePoses = cachedData.col(molecule.cell.column.name)?.toString() === currentTable?.col(names![indexPoses])?.toString();
-      return currentTable?.rowCount === cachedData.rowCount && samePoses;
-    }
-    return false;
-  });
-
-  //@ts-ignore
-  const key = CACHED_DOCKING.K[index];
-  //@ts-ignore
-  const matchingValue = CACHED_DOCKING.V[index];
-
-  //check if REMARK is added
+  
   const addedToPdb = value.includes(BINDING_ENERGY_COL);
-  if (!matchingValue && !addedToPdb)
+  if (!addedToPdb)
     return new DG.Widget(ui.divText('Docking has not been run'));
 
-  const autodockResults: DG.DataFrame = matchingValue ? matchingValue.clone() : getFromPdbs(molecule);
+  const autodockResults: DG.DataFrame = getFromPdbs(molecule);
   const widget = new DG.Widget(ui.div([]));
 
   if (table)
     currentTable.currentRowIdx = 0;
 
-  const receptorData = matchingValue ? key.receptor : await getReceptorData(value);
+  const receptorData = await getReceptorData(value);
   const targetViewer = await currentTable.plot.fromType('Biostructure', {
     dataJson: BiostructureDataJson.fromData(receptorData),
     ligandColumnName: molecule.cell.column.name,
@@ -357,9 +342,10 @@ function getFromPdbs(pdb: DG.SemanticValue): DG.DataFrame {
 }
 
 async function getReceptorData(pdb: string): Promise<BiostructureData> {
-  const match = pdb.match(/REMARK\s+1\s+receptor\.\s+(.*?)\.\n/);
-  const receptorName = 'BACE1';
-  const receptor = (await grok.dapi.files.list(`${TARGET_PATH}/${receptorName}`)).find((file) => file.extension === 'pdbqt')!;
+  const match = pdb.match(/REMARK\s+1\s+receptor\.\s+(\S+)\s+J\./);
+  const receptorName = match ? match[1] : '';
+  const receptor = (await grok.dapi.files.list(`${TARGET_PATH}/${receptorName}`))
+    .find(file => ['pdbqt', 'pdb'].includes(file.extension))!;
   const receptorData: BiostructureData = {
     binary: false,
     data: (await grok.dapi.files.readAsText(receptor)),

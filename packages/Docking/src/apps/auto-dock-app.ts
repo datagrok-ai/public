@@ -9,7 +9,7 @@ import {
 import {IPdbHelper, getPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
-import {_package, CACHED_DOCKING, BINDING_ENERGY_COL, POSE_COL, ERROR_COL_NAME} from '../utils/constants';
+import {_package, BINDING_ENERGY_COL, POSE_COL, ERROR_COL_NAME} from '../utils/constants';
 import {buildDefaultAutodockGpf} from '../utils/auto-dock-service';
 import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 
@@ -118,10 +118,6 @@ export class AutoDockApp {
         posesAllDf.rows.insertAt(index, 1);
         posesAllDf.set(POSE_COL, index, value);
       });
-      //@ts-ignore
-      CACHED_DOCKING.K.push(this.data);
-      //@ts-ignore
-      CACHED_DOCKING.V.push(posesAllDf);
       return posesAllDf;
     } catch (err: any) {
       const [errMsg, errStack] = errInfo(err);
