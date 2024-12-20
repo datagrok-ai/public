@@ -1,6 +1,5 @@
 import * as DG from 'datagrok-api/dg';
 import { DockingPackage } from '../package-utils';
-import { AutoDockDataType } from '../apps/auto-dock-app';
 
 export const _package = new DockingPackage();
 export const TARGET_PATH = 'System:AppData/Docking/targets';

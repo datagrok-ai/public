@@ -1,8 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+
 import {BaseViewApp} from '@datagrok-libraries/tutorials/src/demo-base-view';
-import { getAutoDockService, getAutodockSingle, prepareAutoDockData, runDocking } from '../package';
 import { IAutoDockService } from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
+
+import { getAutoDockService, getAutodockSingle, runDocking } from '../package';
 
 export class DockingViewApp extends BaseViewApp {
   constructor(parentCall: DG.FuncCall) {

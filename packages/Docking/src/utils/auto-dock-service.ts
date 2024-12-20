@@ -1,15 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import wu from 'wu';
-
-import {
-  AutoDockRunResult, GridSize, IAutoDockService
-} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
-import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
+import {GridSize, IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
+import {BiostructureData} from '@datagrok-libraries/bio/src/pdb/types';
 import {getPdbHelper, IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 import {DockerContainerStatus, awaitStatus} from '@datagrok-libraries/bio/src/utils/docker';
-import {delay, expectExceptionAsync} from '@datagrok-libraries/utils/src/test';
 import {Molecule3DUnitsHandler} from '@datagrok-libraries/bio/src/molecule-3d/molecule-3d-units-handler';
 import {MoleculeUnitsHandler} from '@datagrok-libraries/bio/src/molecule/molecule-units-handler';
 

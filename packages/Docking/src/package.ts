@@ -2,21 +2,18 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import $ from 'cash-dom';
 
 import '@datagrok-libraries/bio/src/types/ngl'; // To enable import from the NGL module declared in bio lib
 import {GridSize, IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
 import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
 import {DockingRole, DockingTags} from '@datagrok-libraries/bio/src/viewers/molecule3d';
-import {IPdbHelper, getPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 
 import {AutoDockApp, AutoDockDataType} from './apps/auto-dock-app';
 import {_runAutodock, AutoDockService, _runAutodock2} from './utils/auto-dock-service';
-import {_package, TARGET_PATH, BINDING_ENERGY_COL, POSE_COL, 
-  PROPERTY_DESCRIPTIONS, BINDING_ENERGY_COL_UNUSED, POSE_COL_UNUSED, setPose, setAffinity, ERROR_COL_NAME, ERROR_MESSAGE,
-  CACHED_RESULTS} from './utils/constants';
+import {_package, TARGET_PATH, BINDING_ENERGY_COL, POSE_COL, BINDING_ENERGY_COL_UNUSED, POSE_COL_UNUSED, ERROR_COL_NAME, ERROR_MESSAGE} from './utils/constants';
 import { _demoDocking } from './demo/demo-docking';
 import { DockingViewApp } from './demo/docking-app';
+import { addColorCoding, formatColumns, getFromPdbs, getReceptorData, processAutodockResults, prop } from './utils/utils';
 
 //name: info
 export function info() {
@@ -229,30 +226,6 @@ export async function runAutodock5(table: DG.DataFrame, ligands: DG.Column, targ
   }
 }
 
-function formatColumns(autodockResults: DG.DataFrame) {
-  for (let col of autodockResults.columns.numerical)
-    col.meta.format = '0.00';
-}
-
-export function addColorCoding(column: DG.GridColumn) {
-  column.isTextColorCoded = true;
-  column.column!.meta.colors.setLinear([DG.Color.green, DG.Color.red]);
-}
-
-function processAutodockResults(autodockResults: DG.DataFrame, table: DG.DataFrame): DG.DataFrame {
-  const affinityDescription = 'Estimated Free Energy of Binding.\
-    Lower values correspond to stronger binding.';
-  const poseCol = autodockResults.col(POSE_COL);
-  poseCol!.name = table.columns.getUnusedName(POSE_COL);
-  setPose(poseCol!.name);
-  const affinityCol = autodockResults.col(BINDING_ENERGY_COL);
-  affinityCol!.name = table.columns.getUnusedName(BINDING_ENERGY_COL);
-  setAffinity(affinityCol!.name);
-  const processedTable = DG.DataFrame.fromColumns([poseCol!, affinityCol!]);
-  affinityCol!.setTag(DG.TAGS.DESCRIPTION, affinityDescription);
-  return processedTable;
-}
-
 //name: isApplicable
 //input: semantic_value molecule
 //output: bool result
@@ -311,68 +284,6 @@ export async function getAutodockSingle(
   widget.root.append(result);
 
   return widget;
-}
-
-function getFromPdbs(pdb: DG.SemanticValue): DG.DataFrame {
-  const col = pdb.cell.column;
-  if (CACHED_RESULTS.has(col.toString()))
-    return CACHED_RESULTS.get(col.toString())!;
-  
-  const resultDf = DG.DataFrame.create(col.length);
-
-  for (let idx = 0; idx < col.length; idx++) {
-    const pdbValue = col.get(idx);
-    const remarkRegex = /REMARK\s+\d+\s+([\w\s\(\)-]+)\.\s+([-\d.]+)/g;
-    let match;
-
-    while ((match = remarkRegex.exec(pdbValue)) !== null) {
-      const colName = match[1].trim();
-      const value = parseFloat(match[2].trim());
-      
-      let resultCol = resultDf.columns.byName(colName);
-      if (!resultCol) resultCol = resultDf.columns.addNewFloat(colName);
-      
-      resultDf.set(colName, idx, value);
-    }
-  }
-
-  CACHED_RESULTS.set(col.toString(), resultDf);
-
-  return resultDf;
-}
-
-async function getReceptorData(pdb: string): Promise<BiostructureData> {
-  const match = pdb.match(/REMARK\s+1\s+receptor\.\s+(\S+)\s+J\./);
-  const receptorName = match ? match[1] : '';
-  const receptor = (await grok.dapi.files.list(`${TARGET_PATH}/${receptorName}`))
-    .find(file => ['pdbqt', 'pdb'].includes(file.extension))!;
-  const receptorData: BiostructureData = {
-    binary: false,
-    data: (await grok.dapi.files.readAsText(receptor)),
-    ext: receptor.extension,
-    options: {name: receptorName,},
-  };
-  return receptorData;
-}
-
-function prop(molecule: DG.SemanticValue, propertyCol: DG.Column, host: HTMLElement) : HTMLElement {
-  const addColumnIcon = ui.iconFA('plus', () => {
-    const df = molecule.cell.dataFrame;
-    propertyCol.name = df.columns.getUnusedName(propertyCol.name);
-    propertyCol.setTag(DG.TAGS.DESCRIPTION, PROPERTY_DESCRIPTIONS[propertyCol.name]);
-    df.columns.add(propertyCol);
-  }, `Calculate ${propertyCol.name} for the whole table`);
-
-  ui.tools.setHoverVisibility(host, [addColumnIcon]);
-  $(addColumnIcon)
-    .css('color', '#2083d5')
-    .css('position', 'absolute')
-    .css('top', '2px')
-    .css('left', '-12px')
-    .css('margin-right', '5px');
-  
-  const idx = molecule.cell.rowIndex;
-  return ui.divH([addColumnIcon, propertyCol.get(idx)], {style: {'position': 'relative'}});
 }
 
 //name: Demo Docking

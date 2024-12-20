@@ -1,9 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {BINDING_ENERGY_COL, POSE_COL, _package, setPose} from '../utils/constants';
-import { addColorCoding, prepareAutoDockData } from '../package';
 import { delay } from '@datagrok-libraries/utils/src/test';
+
+import {BINDING_ENERGY_COL, POSE_COL, _package, setPose} from '../utils/constants';
+import { addColorCoding } from '../utils/utils';
 
 export async function openMoleculeDataset(name: string): Promise<DG.TableView> {
   const table = DG.DataFrame.fromCsv(await grok.dapi.files.readAsText(name));
