@@ -62,14 +62,14 @@ The Datagrok 1.23.0 release includes stability and data access improvements
     * Automatic hiding when the viewer size is too small
 
     * Proper rendering when positioned on top
-* [Trellis plot](../../../visualize/viewers/trellis-plot.md):  Support for mouse-over row group for inner viewers
-*  [#3184](https://github.com/datagrok-ai/public/issues/3184): [Tile Viewer](../../../visualize/viewers/tile-viewer.md): Scroll reset and rendering issues after adding new viewer
+* [Trellis plot](../../visualize/viewers/trellis-plot.md):  Support for mouse-over row group for inner viewers
+*  [#3184](https://github.com/datagrok-ai/public/issues/3184): [Tile Viewer](../../visualize/viewers/tile-viewer.md): Scroll reset and rendering issues after adding new viewer
 * Fixes:
-  * [Line Chart](../../../visualize/viewers/line-chart.md):
+  * [Line Chart](../../visualize/viewers/line-chart.md):
        * [#3033](https://github.com/datagrok-ai/public/issues/3033): Viewer has 'Marker size' option, but it cannot be changed
        * [#2776](https://github.com/datagrok-ai/public/issues/2776):  Page is frozen if too many categories are used in split
   * [#3150](https://github.com/datagrok-ai/public/issues/3150): [Box plot](../../visualize/viewers/box-plot.md): New multi-category box plot is not compatible with older layouts that have only single category
-  *  [#3188](https://github.com/datagrok-ai/public/issues/3188): [Bar chart](../../../visualize/viewers/bar-chart.md): Some categories are missing in the legend when data is filtered
+  *  [#3188](https://github.com/datagrok-ai/public/issues/3188): [Bar chart](../../visualize/viewers/bar-chart.md): Some categories are missing in the legend when data is filtered
 
 
 #### [Grid](../../visualize/viewers/grid.md)
@@ -99,7 +99,7 @@ The Datagrok 1.23.0 release includes stability and data access improvements
 
 * Plugin management improvements: Added package install logs to UI
 
-#### [Hit Triage:](https://github.com/datagrok-ai/public/tree/master/packages/HitTriage:/CHANGELOG.md)
+#### [Hit Triage:](https://github.com/datagrok-ai/public/tree/master/packages/HitTriage/CHANGELOG.md)
 
 * Added the ability to edit campaign stages once the campaign starts
 
