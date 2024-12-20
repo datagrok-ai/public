@@ -3,7 +3,7 @@
 1. Open **Diff Studio** and Load **PK-PD Model**:
 * Go to Apps and run **Diff Studio**.
 * Click on the Open model icon on the ribbon.
-* Select Examples > **PK-PD** to load the cyclic model.
+* Select Library > **PK-PD** to load the cyclic model.
 2. Modify Count Input:
 * In the PK-PD model, locate the Count input.
 * Use the **clickers** to modify the Count value. Observe the solution changes in real-time as the Count input is modified.

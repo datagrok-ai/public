@@ -3,7 +3,7 @@
 1. Open **Diff Studio** and Load **Acid Production**:
 * Go to Apps and run **Diff Studio**.
 * Click on the Open model icon on the ribbon.
-* Select Examples > **Acid Production** to load the cyclic model.
+* Select Library > **Acid Production** to load the cyclic model.
 2. Modify inputs:
 * Use the **clickers** or simply change numbers to modify the values. Observe the solution changes in real-time.
 3. Check **Tooltips** of Inputs. Hover over various input fields in the Acid Production model. Verify that tooltips are displayed correctly, providing relevant information for each input.
