@@ -86,7 +86,8 @@ export const PipelineView = Vue.defineComponent({
               showBatchActions
               isHistory
               onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
-              dock-spawn-dock-type='fill'
+              dock-spawn-dock-type='right'
+              dock-spawn-dock-ratio={0.35}
               dock-spawn-title='History'
               dock-spawn-panel-icon='history'
               ref={historyRef}
@@ -95,7 +96,8 @@ export const PipelineView = Vue.defineComponent({
           { hasAddControls(state.value) && !functionsHidden.value && <div 
             class={'grok-gallery-grid'} 
             dock-spawn-title='Steps to add'
-            dock-spawn-dock-type='fill'
+            dock-spawn-dock-type='right'
+            dock-spawn-dock-ratio={0.35}
             ref={functionsRef}
           >
             { state.value.stepTypes
@@ -162,8 +164,7 @@ export const PipelineView = Vue.defineComponent({
           }
           <div
             dock-spawn-hide-close-button
-            dock-spawn-dock-type='left'
-            dock-spawn-dock-ratio={0.35}
+            dock-spawn-dock-type='fill'
             dock-spawn-title='Actions'
             {...{mode: 'Card'}}
             class={'p-2'}
