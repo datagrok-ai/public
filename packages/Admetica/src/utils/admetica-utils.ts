@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { _package } from '../package-test';
 import { TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, DEFAULT_LOWER_VALUE, DEFAULT_UPPER_VALUE, TAGS, DEFAULT_TABLE_NAME, ERROR_MESSAGES, colorsDictionary } from './constants';
-import { PieChartCellRenderer } from '@datagrok/power-grid/src/sparklines/piechart';
 import { CellRenderViewer } from '@datagrok-libraries/utils/src/viewers/cell-render-viewer';
 import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
 
@@ -452,7 +451,7 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
   pieSettings.sectors.values = result!;
   gridCol!.settings = pieSettings;
 
-  const pieChartRenderer = new PieChartCellRenderer();
+  const pieChartRenderer = await grok.functions.call('PowerGrid:piechartCellRenderer');
   return CellRenderViewer.fromGridCell(gridCell, pieChartRenderer).root;
 }
 
