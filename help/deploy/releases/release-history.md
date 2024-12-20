@@ -20,15 +20,124 @@ position: 6 # float position is supported
 See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.md)
+## 2024-12-20 Datagrok 1.23.0 release
+
+The Datagrok 1.23.0 release includes stability and data access improvements
+
+### Main updates
+*  **Visual Query**: you can join multiple tables, choose which columns to include in your report, and decide how to pivot and group them. You can show one or multiple aggregated values for rows and produce a pivot table that shows an aggregated value for every intersection of rows and columns
+* **Improved function execution**: parallel queries and scripts now run 10x faster
+
+### Platform
+
+#### Browse
+
+* Galleries: Enabled keyboard navigation and selection in brief and card mode
+
+
+#### [Scripting](https://datagrok.ai/help/compute/scripting/)
+
+* Inputs: improved InputForm alignment, including for InputForms with complex options
+    
+#### JS API
+
+* Added indefinite parameter to `grok.shell.info`
+* Ability to specify tooltip position relative to the element (left / right / top / bottom)
+* Added support for different types of parameters for calls:
+    *  `grok.functions.call('sin', 0.5);`
+  * `grok.functions.call('sin', {x: 0.5});`
+  * `grok.functions.call('sin', [0.5]);`
+
+
+#### Data Access
+
+*  Enhanced Visual Query
+* Improve client-server socket dispatch for functions execution: parallel queries and scripts now run 10x faster
+
+   
+### Viewers
+
+* Legend improvements and fixes:
+    * Automatic positioning for optimal layout
+    * Automatic hiding when the viewer size is too small
+
+    * Proper rendering when positioned on top
+* [Trellis plot](../../../visualize/viewers/trellis-plot.md):  Support for mouse-over row group for inner viewers
+*  [#3184](https://github.com/datagrok-ai/public/issues/3184): [Tile Viewer](../../../visualize/viewers/tile-viewer.md): Scroll reset and rendering issues after adding new viewer
+* Fixes:
+  * [Line Chart](../../../visualize/viewers/line-chart.md):
+       * [#3033](https://github.com/datagrok-ai/public/issues/3033): Viewer has 'Marker size' option, but it cannot be changed
+       * [#2776](https://github.com/datagrok-ai/public/issues/2776):  Page is frozen if too many categories are used in split
+  * [#3150](https://github.com/datagrok-ai/public/issues/3150): [Box plot](../../visualize/viewers/box-plot.md): New multi-category box plot is not compatible with older layouts that have only single category
+  *  [#3188](https://github.com/datagrok-ai/public/issues/3188): [Bar chart](../../../visualize/viewers/bar-chart.md): Some categories are missing in the legend when data is filtered
+
+
+#### [Grid](../../visualize/viewers/grid.md)
+
+
+* [#2968](https://github.com/datagrok-ai/public/issues/2968): Implemented the functionality to change the style of multiple columns simultaneously 
+* Fixed:
+  * [#3101](https://github.com/datagrok-ai/public/issues/3101): Shift-click selects unexpected rows in some cases
+  *  [#3168](https://github.com/datagrok-ai/public/issues/3168):  Horizontal scroll bar in table disappears on double clicking it
+
+#### [Scatterplot](../../visualize/viewers/scatter-plot.md)
+* [#3124](https://github.com/datagrok-ai/public/issues/3124): Ability to resize Structure labels
+* [#3142](https://github.com/datagrok-ai/public/issues/3142): Ability to define columns for scatterplot whiskers
+* [#2708](https://github.com/datagrok-ai/public/issues/2708): Preserve formula line configuration upon changing columns on the axis
+* Fixed:
+    * [ #3091](https://github.com/datagrok-ai/public/issues/3091): Show a more detailed message for a missing column
+    * [#3055](https://github.com/datagrok-ai/public/issues/3055): Page is freezing after applying layout with multiple scaffold trees with large number of structures (data-specific)
+    *  [#2965](https://github.com/datagrok-ai/public/issues/2965): Legend color cannot be edited (no color picker icon) if both color and markers use the same column
+    * [#3145](https://github.com/datagrok-ai/public/issues/3145): Label can be dragged out of scatter plot area and completely hidden
+   * [#3123](https://github.com/datagrok-ai/public/issues/3123): Not all formula lines are shown in some cases
+    * [#3175](https://github.com/datagrok-ai/public/issues/3175): Scatterplot with conditionally colored column as color inconsistency: color editor icon is shown, but colors cannot be changed
+    * [#3176](https://github.com/datagrok-ai/public/issues/3176): Some labels disappear unexpectedly on zoom in / out
+    * [#3180](https://github.com/datagrok-ai/public/issues/3180): Labels: Context menu disappears when unclicking the mouse
+
+
+### Packages
+
+* Plugin management improvements: Added package install logs to UI
+
+#### [Hit Triage:](https://github.com/datagrok-ai/public/tree/master/packages/HitTriage:/CHANGELOG.md)
+
+* Added the ability to edit campaign stages once the campaign starts
+
+
+### Other fixes
+
+* [#3122](https://github.com/datagrok-ai/public/issues/3122): Pinned columns: Opening the project with pinned columns hides the pinned columns
+*  [#3119](https://github.com/datagrok-ai/public/issues/3119): Add new column: formula with multi-argument functions is parsed incorrectly if more than one argument contains a column
+* [#3024](https://github.com/datagrok-ai/public/issues/3024):  Parsing source maps is loading the platform
+
+
+## 2024-12-20 1.22.3
+
+### Improvements and fixes:
+* Viewers:
+  * [#3133](https://github.com/datagrok-ai/public/issues/3133): [Grid](../../visualize/viewers/grid.md): Right arrow on changing column position with drag-and-drop is  working if there is not panel/viewer at the right side;
+  * [#3184](https://github.com/datagrok-ai/public/issues/3184): [Tile viewer](../../visualize/viewers/tile-viewer.md): Scroll reset and rendering issues after adding new viewer; 
+  * [#3188](https://github.com/datagrok-ai/public/issues/3188): [Bar chart](../../visualize/viewers/bar-chart.md): Some categories are missing in the legend when data is filtered; 
+  * [Scatterplot](../../visualize/viewers/scatter-plot.md):
+    * [#2965](https://github.com/datagrok-ai/public/issues/2965): Legend color can not be edited if both color and markers use the same column; 
+    * [#3176](https://github.com/datagrok-ai/public/issues/3176): Some labels disappear unexpectedly on zoom in / out; 
+    * [#3189](https://github.com/datagrok-ai/public/issues/3189): Scatter plot labels are shown for filtered out points; 
+    * [#3191](https://github.com/datagrok-ai/public/issues/3191): Some dots are not shown on scatter plot when labels are enabled; 
+    * [#3175](https://github.com/datagrok-ai/public/issues/3175): Scatter plot with conditionally colored column as color inconsistency: color editor icon is shown, but colors cannot be changed;
+* [#3174](https://github.com/datagrok-ai/public/issues/3176): Table header tooltip overlaps menus;
+* [#3168](https://github.com/datagrok-ai/public/issues/3168): Horizontal scroll bar in table disappears on double clicking it. 
+
+
 ## 2024-11-25 1.22.2
 
-### Addressed Issues
-
-* (Bug) GROK-16997: #3145: Viewers: Scatter plot: label can be dragged out of scatter plot area and completely hidden 
-* (Bug) GROK-16948: #3120: Viewers: Scatter plot: cannot drag label if Mouse Drag = Select 
-* (Bug) GROK-16898: PC Plot: Transformation doesn't work 
-* (Bug) [#3150](https://github.com/datagrok-ai/public/issues/3150): Box plot: New multi-category Box plot is not compatible with older layouts that have only single category 
-* (Bug) GROK-16965: #3123: Scatter plot: not all formula lines are shown in some cases 
+### Improvements and fixes:
+* Viewers:
+  * [Scatterplot](../../visualize/viewers/scatter-plot.md):
+    * [#3145](https://github.com/datagrok-ai/public/issues/3145): Label can be dragged out of scatter plot area and completely hidden; 
+    * [#3120](https://github.com/datagrok-ai/public/issues/3120): Cannot drag label if Mouse Drag = Select;
+    * [#3123](https://github.com/datagrok-ai/public/issues/3123): Not all formula lines are shown; 
+  * [PC Plot](../../visualize/viewers/pc-plot.md): Transformation doesn't work; 
+  * [#3150](https://github.com/datagrok-ai/public/issues/3150): [Box plot](../../visualize/viewers/box-plot.md): New multi-category Box plot is not compatible with older layouts that have only single category. 
 
 
 ## 2024-11-04 1.22.1
