@@ -1,7 +1,7 @@
 {
   "#type": "ViewInfo",
   "table": {
-    "id": "2d897490-9b00-11ef-bb56-cf322fcdda84"
+    "id": "94e609e4-b5b7-437e-b91f-01da1ff73b17"
   },
   "type": "TableView",
   "viewStateMap": {
@@ -14,10 +14,10 @@
       {
         "containerType": "panel",
         "state": {
-          "width": 213,
+          "width": 210,
           "height": 927,
           "element": {
-            "id": "4fed51a0-9b00-11ef-fc7c-87a344ed7dbc",
+            "id": "81da4460-9b00-11ef-c4b7-79c21be04d65",
             "type": "Filters",
             "look": {
               "#type": "FiltersLook",
@@ -31,13 +31,12 @@
                     "~test_1",
                     "~test_2",
                     "~test_3",
-                    "~test_4",
-                    "~test_5"
+                    "~test_4"
                   ],
                   "allEnabled": true,
                   "splittingSeparator": ":",
                   "splitColumnName": "test",
-                  "columnless-filter-identifier": "~test_0,~test_1,~test_2,~test_3,~test_4,~test_5",
+                  "columnless-filter-identifier": "~test_0,~test_1,~test_2,~test_3,~test_4",
                   "boolInput": null
                 },
                 {
@@ -55,15 +54,19 @@
                     true,
                     true,
                     true,
+                    true,
+                    true,
                     true
                   ],
                   "false": [
                     true,
                     true,
                     true,
+                    true,
+                    true,
                     true
                   ],
-                  "columnless-filter-identifier": "needs_attention,stable,failing,flaking",
+                  "columnless-filter-identifier": "2 first(flaking),3 first(flaking),4 first(flaking),5 first(flaking),1 first(flaking),has_suspicious",
                   "boolInput": null
                 }
               ]
@@ -76,14 +79,14 @@
       {
         "containerType": "vertical",
         "state": {
-          "width": 1078,
+          "width": 1081,
           "height": 927
         },
         "children": [
           {
             "containerType": "fill",
             "state": {
-              "width": 1078,
+              "width": 1081,
               "height": 553,
               "documentManager": true
             },
@@ -91,10 +94,10 @@
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 1078,
+                  "width": 1081,
                   "height": 553,
                   "element": {
-                    "id": "4fed9fc0-9b00-11ef-edf8-27c5ac895c71",
+                    "id": "81da6b70-9b00-11ef-d574-5db55ee61de0",
                     "type": "Grid",
                     "look": {
                       "#type": "GridLook",
@@ -102,13 +105,7 @@
                       "addNewRowOnLastRowEdit": true,
                       "showColumnLabels": false,
                       "colHeaderHeight": 69,
-                      "rowHeight": 34,
-                      "sortByColumnNames": [
-                        "stable"
-                      ],
-                      "sortTypes": [
-                        false
-                      ],
+                      "rowHeight": 129,
                       "topLevelDefaultMenu": true,
                       "allowColumnMenu": true,
                       "colLabelsOrientation": "Vert",
@@ -148,8 +145,8 @@
                           }
                         },
                         {
-                          "width": 85.86119698771306,
-                          "columnName": "needs_attention",
+                          "width": 115,
+                          "columnName": "has_suspicious",
                           "cellType": "bool",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
@@ -157,39 +154,18 @@
                           }
                         },
                         {
-                          "width": 38.502893380895756,
-                          "columnName": "stable",
-                          "cellType": "bool",
+                          "width": 82,
+                          "columnName": "min",
+                          "cellType": "number",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"
-                          },
-                          "settings": {
-                            "isPinned": false,
-                            "idxPinned": -1
                           }
                         },
                         {
-                          "width": 48.47958779231076,
-                          "columnName": "failing",
-                          "cellType": "bool",
-                          "colorCodingCategorical": {
-                            "false": "#98df8a",
-                            "true": "#d62728"
-                          },
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          },
-                          "settings": {
-                            "isPinned": false,
-                            "idxPinned": -1
-                          }
-                        },
-                        {
-                          "width": 46.45580657946889,
-                          "columnName": "flaking",
-                          "cellType": "bool",
+                          "width": 82,
+                          "columnName": "max",
+                          "cellType": "number",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"
@@ -308,7 +284,7 @@
                           }
                         },
                         {
-                          "width": 48.202177933018284,
+                          "width": 182.88473392233414,
                           "columnName": "duration",
                           "cellType": "fit",
                           "headerCellStyle": {
@@ -522,7 +498,7 @@
           {
             "containerType": "horizontal",
             "state": {
-              "width": 1078,
+              "width": 1081,
               "height": 373
             },
             "children": [
@@ -532,7 +508,7 @@
                   "width": 412,
                   "height": 373,
                   "element": {
-                    "id": "4fedc6d0-9b00-11ef-a887-e51b1e22306e",
+                    "id": "81da9280-9b00-11ef-a638-a7f5716a8712",
                     "type": "Bar chart",
                     "look": {
                       "#type": "BarChartLook",
@@ -557,10 +533,10 @@
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 665,
+                  "width": 668,
                   "height": 373,
                   "element": {
-                    "id": "4fee3c00-9b00-11ef-c71e-e9503ec734df",
+                    "id": "81dab990-9b00-11ef-bf4f-393564eeea8d",
                     "type": "Heat map",
                     "look": {
                       "#type": "GridLook",
@@ -575,9 +551,9 @@
                         150
                       ],
                       "heatmapVertScroll": [
-                        4040,
+                        121,
                         0,
-                        4040
+                        121
                       ],
                       "colorScheme": [
                         4292072403,
@@ -856,30 +832,6 @@
                         {
                           "visible": false,
                           "width": 30,
-                          "columnName": "stable",
-                          "cellType": "bool",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "failing",
-                          "cellType": "bool",
-                          "colorCodingCategorical": {
-                            "false": "#98df8a",
-                            "true": "#d62728"
-                          },
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
                           "columnName": "1 first(flaking)",
                           "cellType": "bool",
                           "headerCellStyle": {
@@ -930,28 +882,38 @@
                         {
                           "visible": false,
                           "width": 30,
-                          "columnName": "flaking",
-                          "cellType": "bool",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "needs_attention",
-                          "cellType": "bool",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
                           "columnName": "duration",
                           "cellType": "fit",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "min",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "max",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 30,
+                          "columnName": "has_suspicious",
+                          "cellType": "bool",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"
@@ -970,13 +932,13 @@
       }
     ],
     "floating": [],
-    "tableId": "2d897490-9b00-11ef-bb56-cf322fcdda84",
-    "tableName": "result"
+    "tableId": "94e609e4-b5b7-437e-b91f-01da1ff73b17",
+    "tableName": "Benchmark_ Dashboard"
   },
   "userData": {
     "TABLE_ROW_HEIGHT_KEY": null
   },
-  "id": "2d89e9c0-9b00-11ef-a0c2-854368becc02",
-  "name": "Tests Dashboard",
-  "friendlyName": "Tests Dashboard"
+  "id": "552022cd-3534-5faf-88d7-0888b63d29e5",
+  "name": "BenchmarkDashboard",
+  "friendlyName": "1. Benchmark Dashboard"
 }

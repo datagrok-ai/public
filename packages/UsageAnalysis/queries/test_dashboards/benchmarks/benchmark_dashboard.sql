@@ -1,5 +1,5 @@
---name: TestsDashboard
---friendlyName: UA | Tests | Tests
+--name: BenchmarksDashboard
+--friendlyName: UA | Tests | Benchmarks
 --connection: System:Datagrok
 --input: bool showNotRun = false
 --input: bool showBenchmarks = false

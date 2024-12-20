@@ -1,0 +1,19 @@
+{
+    "tags": [
+      "UA"
+    ],
+    "description": "Overview of CI/CD test results.",
+    "tables": [
+      {
+        "path": "0_Tests_Dashboard.csv",
+        "creationScript": "UsageAnalysis:TestsDashboard(false,false,false,5)",
+        "id": "2d897490-9b00-11ef-bb56-cf322fcdda84"
+      },
+      {
+        "path": "1_Benchmark_Dashboard.csv",
+        "creationScript": "UsageAnalysis:BenchmarksDashboard(false,true,true,5)",
+        "id": "94e609e4-b5b7-437e-b91f-01da1ff73b17"
+      }
+    ]
+  }
+  
