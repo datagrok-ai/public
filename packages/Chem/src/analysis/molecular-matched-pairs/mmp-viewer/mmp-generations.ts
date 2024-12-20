@@ -23,7 +23,7 @@ export async function getGenerations(mmpa: MMPA, allPairsGrid: DG.Grid):
   cols.push(createColWithDescription('string', MMP_NAMES.CORE, genRes.cores, DG.SEMTYPE.MOLECULE));
   cols.push(createColWithDescription('string', MMP_NAMES.FROM, genRes.from, DG.SEMTYPE.MOLECULE));
   cols.push(createColWithDescription('string', MMP_NAMES.TO, genRes.to, DG.SEMTYPE.MOLECULE));
-  cols.push(createColWithDescription('string', `New molecule`, generation, DG.SEMTYPE.MOLECULE));
+  cols.push(createColWithDescription('string', MMP_NAMES.NEW_MOLECULE, generation, DG.SEMTYPE.MOLECULE));
   cols.push(createColWithDescription('string', `Activity`, genRes.activityName));
   cols.push(createColWithDescription('double', `Original activity`, Array.from(genRes.allInitActivities)));
   cols.push(createColWithDescription('double', `New activity`, Array.from(genRes.prediction)));
@@ -64,7 +64,7 @@ export function createColWithDescription(colType: any, colName: string, list: an
 
 export async function createMolExistsCol(molecules: string[], generation: string[], grid: DG.Grid): Promise<void> {
   const moleculesSet = new Set(molecules);
-  const boolCol = DG.Column.bool('Prediction', generation.length).init((i) => moleculesSet.has(generation[i]));
+  const boolCol = DG.Column.bool(MMP_NAMES.PREDICTION, generation.length).init((i) => !moleculesSet.has(generation[i]));
   grid.dataFrame.columns.add(boolCol);
   grid.col(boolCol.name)!.editable = false;
   grid.invalidate();

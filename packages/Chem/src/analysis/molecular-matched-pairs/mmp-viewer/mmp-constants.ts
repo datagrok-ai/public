@@ -28,6 +28,7 @@ export enum MMP_NAMES {
   CORE = 'Core',
   PREDICTION = 'Prediction',
   GENERATIONS = 'Generation',
+  NEW_MOLECULE = 'New molecule',
 }
 
 export enum SHOW_FRAGS_MODE {

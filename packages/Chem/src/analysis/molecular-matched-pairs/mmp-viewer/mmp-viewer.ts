@@ -112,6 +112,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   fragmentsDiv = ui.div(ui.divText('Generating fragments tab...'));
 
   spCorrDiv = ui.div(ui.divText('Generating correlation scatter plot...'));
+  showFragmentsChoice: DG.InputBase | null = null;
 
   constructor() {
     super();
@@ -281,7 +282,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         mmPairsRoot1.classList.remove('chem-mmp-no-pairs');
     }));
 
-    const showFragsChoice = ui.input.choice('', {items: [SHOW_FRAGS_MODE.All, SHOW_FRAGS_MODE.Current],
+    this.showFragmentsChoice = ui.input.choice('', {items: [SHOW_FRAGS_MODE.All, SHOW_FRAGS_MODE.Current],
       nullable: false, value: SHOW_FRAGS_MODE.All,
       onValueChanged: (value) => {
         this.pairedGrids!.fragsShowAllMode = value === SHOW_FRAGS_MODE.All;
@@ -291,10 +292,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         } else
           this.pairedGrids!.refilterFragmentPairsByMolecule(true);
       }});
-    showFragsChoice.root.classList.add('chem-mmp-fragments-grid-mode-choice');
+    this.showFragmentsChoice.root.classList.add('chem-mmp-fragments-grid-mode-choice');
 
     const fpGrid = this.createGridDiv(MMP_NAMES.FRAGMENTS_GRID,
-      this.pairedGrids!.fpGrid, FRAGMENTS_GRID_TOOLTIP, this.pairedGrids!.fpGridMessage, showFragsChoice.root);
+      this.pairedGrids!.fpGrid, FRAGMENTS_GRID_TOOLTIP, this.pairedGrids!.fpGridMessage, this.showFragmentsChoice.root);
     fpGrid.prepend(
       ui.divText('No substitutions found for current molecule. Select another molecule or switch to \'All\' mode.',
         'chem-mmpa-no-fragments-error'));
