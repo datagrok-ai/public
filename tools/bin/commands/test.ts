@@ -75,7 +75,8 @@ function isArgsValid(args: TestArgs): boolean {
 async function runTesting(args: TestArgs): Promise<ResultObject> {
   color.info('Loading tests...');
   const testsObj = await loadTestsList([process.env.TARGET_PACKAGE ?? ''], args.core);
-  console.log(testsObj);
+  if (args.verbose)
+    console.log(testsObj);
   const parsed: Test[][] = (setAlphabeticalOrder(testsObj, 1, 1));
   if (parsed.length == 0)
     return {
