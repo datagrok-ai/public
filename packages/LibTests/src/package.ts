@@ -265,6 +265,16 @@ export async function TestAdd2Error(a: number, b: number) {
   return a + b;
 }
 
+//input: double a
+//input: double b
+//input: double c
+//input: double d
+//input: double e
+//output: double res
+export async function TestMultiarg5(a: number, b: number, c: number, d: number, e: number) {
+  return a + b + c + d + e;
+}
+
 //name: MockWrapper1
 export async function MockWrapper1() {}
 

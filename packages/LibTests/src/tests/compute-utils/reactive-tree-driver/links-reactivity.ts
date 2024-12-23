@@ -1262,4 +1262,78 @@ category('ComputeUtils: Driver links reactivity', async () => {
     expectDeepEqual(b, 44);
   });
 
+  test('Links priority ordering per node', async () => {
+    const config1: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:TestMultiarg5',
+        }
+      ],
+      links: [
+        {
+          id: 'd-e',
+          from: 'in:step1/d',
+          to: 'out:step1/e',
+          nodePriority: 1,
+          handler({controller}) {
+            const in1 = controller.getFirst('in');
+            controller.setAll('out', in1);
+            return of(void(0)).pipe(delay(100));
+          },
+        },
+        {
+          id: 'a-b',
+          from: 'in:step1/a',
+          to: 'out:step1/b',
+          nodePriority: 4,
+          handler({controller}) {
+            const in1 = controller.getFirst('in');
+            controller.setAll('out', in1);
+            return of(void(0)).pipe(delay(100));
+          },
+        },
+        {
+          id: 'c-d',
+          from: 'in:step1/c',
+          to: 'out:step1/d',
+          nodePriority: 2,
+          handler({controller}) {
+            const in1 = controller.getFirst('in');
+            controller.setAll('out', in1);
+            return of(void(0)).pipe(delay(100));
+          },
+        },
+        {
+          id: 'b-c',
+          from: 'in:step1/b',
+          to: 'out:step1/c',
+          nodePriority: 3,
+          handler({controller}) {
+            const in1 = controller.getFirst('in');
+            controller.setAll('out', in1);
+            return of(void(0)).pipe(delay(100));
+          },
+        }
+      ]
+    };
+    const pconf = await getProcessedConfig(config1);
+
+    testScheduler.run((helpers) => {
+      const {cold, expectObservable} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const node = tree.nodeTree.getNode([{idx: 0}]);
+      cold('-a').subscribe(() => {
+        node.getItem().getStateStore().setState('a', 1);
+      });
+      expectObservable(node.getItem().getStateStore().getStateChanges('a')).toBe('ab', {a: undefined, b: 1});
+      expectObservable(node.getItem().getStateStore().getStateChanges('b')).toBe('a 100ms b', {a: undefined, b: 1});
+      expectObservable(node.getItem().getStateStore().getStateChanges('c')).toBe('a 200ms b', {a: undefined, b: 1});
+      expectObservable(node.getItem().getStateStore().getStateChanges('d')).toBe('a 300ms b', {a: undefined, b: 1});
+      expectObservable(node.getItem().getStateStore().getStateChanges('e')).toBe('a 400ms b', {a: undefined, b: 1});
+    });
+  });
 });

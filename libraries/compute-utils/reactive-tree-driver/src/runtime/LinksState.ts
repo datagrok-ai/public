@@ -291,12 +291,17 @@ export class LinksState {
     const obs = state.traverse(state.root, (acc, node) => {
       const item = node.getItem();
       const deps = this.stepsDependencies.get(item.uuid);
-      const linkRuns = [...(deps?.links ?? [])]
+      const toRunLinks = [...(deps?.links ?? [])]
         .filter((linkUUID) => {
           const link = links.get(linkUUID);
           return link && !scheduledLinks.has(linkUUID);
-        })
-        .map((linkUUID) => {
+        });
+      const priorityOrderedLinks = toRunLinks.sort((a, b) => {
+        const l1 = links.get(a)!;
+        const l2 = links.get(b)!;
+        return (l2.matchInfo.spec.nodePriority ?? 0) - (l1.matchInfo.spec.nodePriority ?? 0);
+      });
+      const linkRuns = priorityOrderedLinks.map((linkUUID) => {
           scheduledLinks.add(linkUUID);
           return combineLatest([
             this.runningLinks$,
