@@ -74,13 +74,10 @@ export function fillPairInfo(mmpa: MMPA, line: number, linesIdxs: Uint32Array, a
   const moleculesDiv = ui.divH([]);
   div.append(moleculesDiv);
   const pairIdx = linesIdxs[line];
-  const subsrtFrom = pairsDf.get(MMP_NAMES.STRUCT_DIFF_FROM_NAME, pairIdx);
-  const subsrtTo = pairsDf.get(MMP_NAMES.STRUCT_DIFF_TO_NAME, pairIdx);
   const moleculeFrom = pairsDf.get(MMP_NAMES.FROM, pairIdx);
   const moleculeTo = pairsDf.get(MMP_NAMES.TO, pairIdx);
   const fromIdx = pairsDf.get(MMP_NAMES.PAIRNUM_FROM, pairIdx);
   const toIdx = pairsDf.get(MMP_NAMES.PAIRNUM_TO, pairIdx);
-  const ruleNum = pairsDf.get(MMP_NAMES.RULENUM, pairIdx);
   if (propPanelViewer) {
     const props = getMoleculesPropertiesDiv(propPanelViewer, [fromIdx, toIdx]);
     div.append(props);
@@ -88,25 +85,15 @@ export function fillPairInfo(mmpa: MMPA, line: number, linesIdxs: Uint32Array, a
     const diff = ui.tableFromMap({'Diff': getSigFigs(diffs[activityNum][pairIdx], 4)});
     diff.style.maxWidth = '150px';
     div.append(diff);
-    if (subsrtFrom || subsrtTo) {
-      drawMolPair([moleculeFrom, moleculeTo], [fromIdx, toIdx],
-        [subsrtFrom, subsrtTo], moleculesDiv, parentTable, !propPanelViewer);
-    } else {
-      moleculesDiv.append(ui.divText(`Loading...`));
-      const cores = mmpa.rules.rules[ruleNum].pairs
-        .filter((pair) => pair.firstStructure === fromIdx && pair.secondStructure === toIdx);
-      if (cores.length) {
-        getInverseSubstructuresAndAlign([mmpa.frags.idToName[cores[0].core]],
-          [moleculeFrom], [moleculeTo], rdkitModule).then((res) => {
-          const {inverse1, inverse2, fromAligned, toAligned} = res;
-          pairsDf.set(MMP_NAMES.STRUCT_DIFF_FROM_NAME, pairIdx, inverse1[0]);
-          pairsDf.set(MMP_NAMES.STRUCT_DIFF_TO_NAME, pairIdx, inverse2[0]);
-          pairsDf.set(MMP_NAMES.FROM, pairIdx, fromAligned[0]);
-          pairsDf.set(MMP_NAMES.TO, pairIdx, toAligned[0]);
-          drawMolPair([fromAligned[0], toAligned[0]], [fromIdx, toIdx],
-            [inverse1[0], inverse2[0]], moleculesDiv, parentTable, !!propPanelViewer);
-        });
-      }
+    moleculesDiv.append(ui.divText(`Loading...`));
+    const core = mmpa.frags.idToName[pairsDf.get(MMP_NAMES.CORE_NUM, pairIdx)].replace('[*:1]', '[H]');
+    if (core) {
+      getInverseSubstructuresAndAlign([core],
+        [moleculeFrom], [moleculeTo], rdkitModule).then((res) => {
+        const {inverse1, inverse2, fromAligned, toAligned} = res;
+        drawMolPair([fromAligned[0], toAligned[0]], [fromIdx, toIdx],
+          [inverse1[0], inverse2[0]], moleculesDiv, parentTable, !!propPanelViewer);
+      });
     }
   }
   div.classList.add(MMP_CONTEXT_PANE_CLASS);

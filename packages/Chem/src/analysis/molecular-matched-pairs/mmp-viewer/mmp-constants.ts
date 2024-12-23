@@ -14,8 +14,6 @@ export enum MMP_NAMES {
   TAB_FRAGMENTS = 'Fragments',
   TAB_CLIFFS = 'Cliffs',
   TAB_GENERATION = 'Generation',
-  STRUCT_DIFF_FROM_NAME = '~structDiffFrom',
-  STRUCT_DIFF_TO_NAME = '~structDiffTo',
   COLOR = 'color',
   SMI1 = '~smi1',
   SMI2 = '~smi2',

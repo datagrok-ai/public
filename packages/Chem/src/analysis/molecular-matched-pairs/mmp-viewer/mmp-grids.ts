@@ -395,10 +395,6 @@ function getFragmetsPairsGrid(activityMeanNames: string[], mmpa: MMPA) : DG.Grid
 function getMatchedPairsGrid(mmpa: MMPA, rdkit: RDModule) : DG.Grid {
   const pairsFromCol = createColWithDescription('string', MMP_NAMES.FROM, mmpa.allCasesBased.molFrom);
   const pairsToCol = createColWithDescription('string', MMP_NAMES.TO, mmpa.allCasesBased.molTo);
-  const structureDiffFromCol =
-    DG.Column.fromType('object', MMP_NAMES.STRUCT_DIFF_FROM_NAME, mmpa.allCasesBased.molFrom.length);
-  const structureDiffToCol =
-    DG.Column.fromType('object', MMP_NAMES.STRUCT_DIFF_TO_NAME, mmpa.allCasesBased.molFrom.length);
   const pairNumberCol = DG.Column.fromInt32Array(MMP_NAMES.PAIRNUM, mmpa.allCasesBased.pairNum);
   const pairNumberSortCol = DG.Column.bool(MMP_NAMES.PAIR_SORT, mmpa.allCasesBased.pairNum.length);
   const pairNumberFromCol = DG.Column.fromInt32Array(MMP_NAMES.PAIRNUM_FROM, mmpa.allCasesBased.molNumFrom);
@@ -414,9 +410,7 @@ function getMatchedPairsGrid(mmpa: MMPA, rdkit: RDModule) : DG.Grid {
   pairsFromCol.semType = DG.SEMTYPE.MOLECULE;
   pairsToCol.semType = DG.SEMTYPE.MOLECULE;
 
-  const allTransformationsCols = [pairsFromCol, pairsToCol,
-    structureDiffFromCol, structureDiffToCol,
-    pairNumberCol, pairNumberFromCol, pairNumberToCol,
+  const allTransformationsCols = [pairsFromCol, pairsToCol, pairNumberCol, pairNumberFromCol, pairNumberToCol,
     pairsFromSmilesCol, pairsToSmilesCol, ruleNumCol, pairNumberSortCol, coreNumCol];
 
   for (let i = 0; i < mmpa.initData.activitiesCount; i++) {
