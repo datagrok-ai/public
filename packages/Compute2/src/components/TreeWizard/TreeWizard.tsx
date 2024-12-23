@@ -16,14 +16,31 @@ import {AugmentedStat} from './types';
 import '@he-tree/vue/style/default.css';
 import '@he-tree/vue/style/material-design.css';
 import {PipelineView} from '../PipelineView/PipelineView';
-import {useUrlSearchParams} from '@vueuse/core';
+import {computedAsync, useUrlSearchParams} from '@vueuse/core';
 import {Inspector} from '../Inspector/Inspector';
 import {findTreeNode, findTreeNodeParrent, hasInconsistencies, hasSubtreeInconsistencies, isSubtree, reportStep} from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
 import {take} from 'rxjs/operators';
 import {EditDialog} from './EditDialog';
+import { DBSchema, openDB } from 'idb';
 
 const DEVELOPERS_GROUP = 'Developers';
+
+type PanelsState = {
+  inspectorHidden: boolean,
+  treeHidden: boolean,
+  layout: string,
+};
+
+const LAYOUT_DB_NAME = 'ComputeDB';
+const STORE_NAME = 'TreeWizardLayouts';
+
+interface ComputeSchema extends DBSchema {
+  [STORE_NAME]: {
+    key: string;
+    value: PanelsState;
+  };
+}
 
 export const TreeWizard = Vue.defineComponent({
   name: 'TreeWizard',
@@ -31,6 +48,30 @@ export const TreeWizard = Vue.defineComponent({
     providerFunc: {type: String, required: true},
   },
   setup(props) {
+    const layoutDatabase = computedAsync(async () => {
+      const db = await openDB<ComputeSchema>(LAYOUT_DB_NAME, 2, {
+        blocked: () => {
+          grok.shell.error(`Layout database requires update. Please close all webpages with models opened.`)
+        },
+        upgrade: (db, oldVersion) => {
+          if (oldVersion === 0) {
+            db.createObjectStore(STORE_NAME);
+            return;
+          }
+
+          const hasStore = db.objectStoreNames.contains(STORE_NAME)
+          if (!hasStore) {
+            db.createObjectStore(STORE_NAME);
+          }
+        }
+      })
+
+      return db;
+    }, null)
+
+    Vue.onBeforeUnmount(() => {
+      savePersonalState(providerFunc.value);
+    });
 
     // TODO: handle providerFunc changes, not necessary as of now
     const {
@@ -98,6 +139,101 @@ export const TreeWizard = Vue.defineComponent({
           rfvRef.value?.loadPersonalLayout();
         }, 50)
       }
+    };
+
+    const dockInited = Vue.ref(false);
+    const triggerSaveDefault = Vue.ref(false);
+    Vue.watch(triggerSaveDefault, async () => {
+      saveDefaultState()
+      await loadPersonalLayout();
+    }, {flush: 'post'});
+
+    const handleDockInit = async () => {
+      dockInited.value = true;
+      triggerSaveDefault.value = !triggerSaveDefault.value;
+    };
+
+    const dockRef = Vue.shallowRef(null as InstanceType<typeof DockManager> | null);
+
+    const personalPanelsStorage = (func: DG.Func) => `${func.nqName}_personal_state`;
+    const defaultPanelsStorage = (func: DG.Func) => `${func.nqName}_default_state`;
+
+    const getCurrentState = () => {
+      const layout = dockRef?.value?.getLayout();
+      if (!layout) return null;
+
+      return {
+        inspectorHidden: inspectorHidden.value,
+        treeHidden: treeHidden.value,
+        layout,
+      };
+    };
+
+    const getSavedPersonalState = async (func: DG.Func): Promise<PanelsState | null> => {
+      const item = await layoutDatabase.value?.get(STORE_NAME, personalPanelsStorage(func));
+
+      return item ?? null;
+    };
+
+    const getSavedDefaultState = async (func: DG.Func): Promise<PanelsState | null> => {
+      const item = await layoutDatabase.value?.get(STORE_NAME, defaultPanelsStorage(func));
+
+      return item ?? null;
+    };
+
+    const providerFunc = Vue.computed(() => DG.Func.byName(props.providerFunc))
+
+    const saveDefaultState = (func: DG.Func = providerFunc.value) => {
+      if (!dockInited.value) return;
+
+      const state = getCurrentState();
+      if (state) layoutDatabase.value?.put(STORE_NAME, state, defaultPanelsStorage(func));
+    };
+
+    const savePersonalState = (func: DG.Func = providerFunc.value) => {
+      if (!dockInited.value) return;
+
+      const state = getCurrentState();
+      if (state) layoutDatabase.value?.put(STORE_NAME, state, personalPanelsStorage(func));
+    };
+
+    const removeSavedPersonalState = async () => {
+      layoutDatabase.value?.delete(STORE_NAME, personalPanelsStorage(providerFunc.value));
+
+      await loadDefaultLayout();
+    };
+
+    let intelligentLayout = true;
+    const loadPersonalLayout = async () => {
+      const personalState = await getSavedPersonalState(providerFunc.value);
+      if (!dockRef.value || !personalState || !dockInited.value) return;
+
+      intelligentLayout = false;
+
+      inspectorHidden.value = personalState.inspectorHidden;
+      treeHidden.value = personalState.treeHidden;
+
+      await Vue.nextTick();
+
+      await dockRef.value.useLayout(personalState.layout);
+
+      intelligentLayout = true;
+    };
+
+    const loadDefaultLayout = async () => {
+      const defaultState = await getSavedDefaultState(providerFunc.value);
+      if (!dockRef.value || !defaultState || !dockInited.value) return;
+
+      intelligentLayout = false;
+
+      inspectorHidden.value = defaultState.inspectorHidden;
+      treeHidden.value = defaultState.treeHidden;
+
+      await Vue.nextTick();
+
+      await dockRef.value.useLayout(defaultState.layout);
+
+      intelligentLayout = true;
     };
 
     const providerFuncName = Vue.computed(() => props.providerFunc.substring(props.providerFunc.indexOf(':') + 1))
@@ -194,12 +330,17 @@ export const TreeWizard = Vue.defineComponent({
 
     const treeHidden = Vue.ref(false);
     const inspectorHidden = Vue.ref(true);
+    const rfvHidden = Vue.ref(true);
+    const pipelineViewHidden = Vue.ref(true);
     const inspectorInstance = Vue.ref(null as InstanceType<typeof Inspector> | null);
     const rfvRef = Vue.ref(null as InstanceType<typeof RichFunctionView> | null);
+    const pipelineViewRef = Vue.ref(null as InstanceType<typeof PipelineView> | null);
 
     const handlePanelClose = (el: HTMLElement) => {
       if (el === treeInstance.value?.$el) treeHidden.value = true;
       if (el === inspectorInstance.value?.$el) inspectorHidden.value = true;
+      if (el === rfvRef.value?.$el) rfvHidden.value = true;
+      if (el === pipelineViewRef.value?.$el) pipelineViewHidden.value = true;
     };
 
     const isEachDraggable = (stat: AugmentedStat) => {
@@ -313,6 +454,8 @@ export const TreeWizard = Vue.defineComponent({
         </RibbonPanel>
         {treeState.value &&
         <DockManager class='block h-full'
+          ref={dockRef}
+          onInitFinished={handleDockInit}
           onPanelClosed={handlePanelClose}
           onUpdate:activePanelTitle={handleActivePanelChanged}
         >
@@ -355,6 +498,9 @@ export const TreeWizard = Vue.defineComponent({
                 onAfter-drop={onAfterDrop}
                 onClick:node={(stat) => {
                   chosenStepUuid.value = stat.data.uuid
+
+                  if (isFuncCallState(stat.data)) rfvHidden.value = false;
+                  if (!isFuncCallState(stat.data)) pipelineViewHidden.value = false;
                 }}
                 onClose:node={(stat) => oldClosed.add(stat.data.uuid)}
                 onOpen:node={(stat) => oldClosed.delete(stat.data.uuid)}
@@ -388,7 +534,7 @@ export const TreeWizard = Vue.defineComponent({
               </Draggable>, [[ifOverlapping, treeMutationsLocked.value, 'Locked...']]): null
           }
           {
-            chosenStepState.value &&
+            !rfvHidden.value && chosenStepState.value &&
             isFuncCallState(chosenStepState.value) && chosenStepState.value.funcCall &&
               <RichFunctionView
                 class='overflow-hidden'
@@ -414,7 +560,7 @@ export const TreeWizard = Vue.defineComponent({
               />
           }
           {
-            chosenStepState.value && !isFuncCallState(chosenStepState.value) &&
+            !pipelineViewHidden.value && chosenStepState.value && !isFuncCallState(chosenStepState.value) &&
             <PipelineView
               funcCall={chosenStepState.value.provider ? DG.Func.byName(chosenStepState.value.nqName!).prepare() : undefined}
               state={chosenStepState.value}
@@ -425,8 +571,11 @@ export const TreeWizard = Vue.defineComponent({
               onActionRequested={runActionWithConfirmation}
               dock-spawn-title='Step sequence review'
               onProceedClicked={() => {
-                if (chosenStepState.value && !isFuncCallState(chosenStepState.value))
+                if (chosenStepState.value && !isFuncCallState(chosenStepState.value)) {
                   chosenStepUuid.value = chosenStepState.value.steps[0].uuid;
+                  if (isFuncCallState(chosenStepState.value.steps[0])) rfvHidden.value = false;
+                  if (!isFuncCallState(chosenStepState.value.steps[0])) pipelineViewHidden.value = false;
+                }
               }}
               onUpdate:funcCall={
                 (newCall) => {
@@ -444,6 +593,7 @@ export const TreeWizard = Vue.defineComponent({
               onAddNode={({itemId, position}) => {
                 addStep(chosenStepState.value!.uuid, itemId, position);
               }}
+              ref={pipelineViewRef}
             />
           }
         </DockManager> }

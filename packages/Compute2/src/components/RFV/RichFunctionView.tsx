@@ -160,7 +160,7 @@ export const RichFunctionView = Vue.defineComponent({
   },
   setup(props, {emit, expose}) {
     const layoutDatabase = computedAsync(async () => {
-      const db = await openDB<ComputeSchema>(LAYOUT_DB_NAME, 1, {
+      const db = await openDB<ComputeSchema>(LAYOUT_DB_NAME, 2, {
         blocked: () => {
           grok.shell.error(`Layout database requires update. Please close all webpages with models opened.`)
         },
