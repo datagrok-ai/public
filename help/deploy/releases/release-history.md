@@ -20,18 +20,6 @@ position: 6 # float position is supported
 See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.md)
-## 2024-12-23 1.22.3
-
-### Addressed Issues
-
-* GROK-16455: #2965: Scatter plot: legend colour cannot be edited (no colour picker icon) if both colour and markers use the same column 
-* (Bug) GROK-17049: #3168: Horizontal scroll bar in table disappears on double clicking it 
-* (Bug) GROK-17081: #3184: Viewers: Tile Viewer: Scroll reset and rendering issues after adding new viewer 
-* (Bug) [#3176](https://github.com/datagrok-ai/public/issues/3176): #3176: Scatter plot: some labels disappear unexpectedly on zoom in / out 
-* (Bug) [#3188](https://github.com/datagrok-ai/public/issues/3188): #3188: Bar chart: some categories are missing in the legend when data is filtered 
-* (Bug) [#3189](https://github.com/datagrok-ai/public/issues/3189): #3189: Scatter plot labels are shown for filtered out points 
-* (Bug) [#3191](https://github.com/datagrok-ai/public/issues/3191): #3191: Some dots are not shown on scatter plot when labels are enabled 
-
 
 ## 2024-12-23 1.22.3
 
