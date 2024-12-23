@@ -12,6 +12,7 @@ const skip = [
   // Skipped
   'function-events', 'demo', 'ui-events', 'last-error', 'chem-benchmark',
   'menu-customization', '10k-columns-updates', '100-million-rows',
+  'sticky-meta-1-tags', 'sticky-meta-2-semtype', /* skipped as they spawn persisting data */
   'files' /* do not test manually */,
 
   // To fix
