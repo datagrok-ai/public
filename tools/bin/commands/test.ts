@@ -77,6 +77,17 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
   const testsObj = await loadTestsList([process.env.TARGET_PACKAGE ?? ''], args.core);
   console.log(testsObj);
   const parsed: Test[][] = (setAlphabeticalOrder(testsObj, 1, 1));
+  if (parsed.length == 0)
+    return {
+      failed: true,
+      verbosePassed: 'Package not found',
+      verboseSkipped: 'Package not found',
+      verboseFailed: 'Package not found',
+      passedAmount: 0,
+      skippedAmount: 0,
+      failedAmount: 0,
+      csv: ''
+    };
   let organized: OrganizedTest[] = parsed[0].map(testObj => ({
     package: testObj.packageName,
     params: {

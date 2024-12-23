@@ -1,5 +1,12 @@
 # Datagrok-tools changelog
 
+## 4.13.46 (2024-12-23)
+
+### Features
+
+* Improved error handling:
+  - Different exit codes for package errors / grok script errors
+  - Graceful error handling when testing non-existing packages
 
 ## 4.13.45 (2024-12-12)
 
