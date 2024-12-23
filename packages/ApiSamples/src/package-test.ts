@@ -2,6 +2,7 @@ import { DataFrame, Script } from 'datagrok-api/dg';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import { runTests, tests, TestContext, category, test as _test, delay, initAutoTests as initCoreTests, expect, awaitCheck, before } from '@datagrok-libraries/utils/src/test';
+import {categoryOwners}  from './tests/owners';
 export const _package = new DG.Package();
 export { tests };
 
@@ -76,6 +77,10 @@ export async function initTests() {
   const scripts = await grok.dapi.scripts.filter('package.shortName = "ApiSamples"').list();
   for (const script of scripts) {
     let catName = ('Scripts:' + script.options.path as string).replaceAll('/', ':');
+    let owner: string | undefined;
+    for (let category of Object.keys(categoryOwners))
+      if (catName.startsWith(category))
+        owner = categoryOwners[category];
     category(catName, () => {
       if(!beforeArrAdded.includes(catName) && beforeArr[catName.replaceAll(' ', '')]){
         before(async ()=>{
@@ -131,6 +136,8 @@ export async function initTests() {
           await delay(300);
         }
       }, skip.includes(script.friendlyName) ? { skipReason: 'skip' } : { timeout: 60000 });
+    }, {
+      owner: owner
     });
   }
 }
