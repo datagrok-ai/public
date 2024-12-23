@@ -57,7 +57,7 @@ export async function test(args: TestArgs): Promise<boolean> {
   if (args.csv)
     saveCsvResults([res.csv], csvReportDir);
   printWorkersResult(res, args.verbose)
-  if (!res)
+  if (res.failed)
     testUtils.exitWithCode(1);
   else
     testUtils.exitWithCode(0);
