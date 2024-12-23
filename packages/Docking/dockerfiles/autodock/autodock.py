@@ -11,11 +11,10 @@ import logging
 import multiprocessing
 import signal
 
-logging_level = logging.WARNING
+logging_level = logging.DEBUG
 logging.basicConfig(level=logging_level)
 
 app = Flask(__name__)
-logging.warning('autodock app started version -- 12 -- ')
 
 processes = {}
 
@@ -148,6 +147,10 @@ def extract_json_values(json_data):
     pose_count = json_data.get('pose_count', 30)
     debug_mode = request.args.get('debug', False)
     return receptor_value, receptor_format, ligand_value, ligand_format, autodock_gpf, pose_count, debug_mode
+
+@app.route('/health_check', methods=['GET'])
+def health_check():
+    return jsonify({"success": True}), 200
 
 @app.route('/check_opencl', methods=['GET'])
 def check_opencl():
