@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
-import type {DGBigButtonT, DGButtonT, DGComboPopupT, DGIconFAT, DGIconT, DGToggleInputT} from '@datagrok-libraries/webcomponents';
+import type {DGBigButtonT, DGButtonT, DGComboPopupT, DGIconFAT, DGToggleInputT} from '@datagrok-libraries/webcomponents';
 
 declare global {
   namespace JSX {
@@ -11,7 +11,6 @@ declare global {
       'dg-button': DGButtonT,
       'dg-big-button': DGBigButtonT,
       'dg-icon-fa': DGIconFAT,
-      'dg-icon': DGIconT,
       'dg-toggle-input': DGToggleInputT
       'dg-combo-popup': DGComboPopupT
     }
@@ -74,14 +73,27 @@ export const IconFA = Vue.defineComponent({
       type: String as Vue.PropType<'fal' | 'fas' | 'far' | 'fad'>,
       default: 'fal',
     },
+    isDisabled: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: [
     'click',
   ],
   setup(props, {emit}) {
+    const icon = Vue.shallowRef<HTMLElement | null>(null);
+
+    Vue.watch([() => props.isDisabled, icon] as const, ([isDisabled, btn]) => {
+      if (!btn) return;
+
+      btn.classList.toggle('d4-disabled', isDisabled);
+    }, {immediate: true});
+
     return () => {
       return (<dg-icon-fa
         name={props.name}
+        ref={icon}
         cursor={props.cursor}
         animation={props.animation}
         tooltip={props.tooltip}
@@ -94,7 +106,7 @@ export const IconFA = Vue.defineComponent({
 });
 
 export const ToggleInput = Vue.defineComponent({
-  name: 'IconFA',
+  name: 'ToggleInput',
   props: {
     caption: {
       type: String,
@@ -152,34 +164,5 @@ export const ComboPopup = Vue.defineComponent({
       tooltip={props.tooltip}
       onSelected={(e: any) => emit('selected', e.detail)}
     />;
-  },
-});
-
-export const Icon = Vue.defineComponent({
-  name: 'Icon',
-  props: {
-    name: String,
-    cursor: {
-      type: String,
-      default: 'pointer',
-    },
-    tooltip: {
-      type: String as Vue.PropType<string | null>,
-      default: null,
-    },
-  },
-  emits: [
-    'click',
-  ],
-  setup(props, {emit}) {
-    return () => {
-      return (<dg-icon
-        name={props.name}
-        cursor={props.cursor}
-        tooltip={props.tooltip}
-        onClick={(e: Event) => emit('click', e)}
-      >
-      </dg-icon>);
-    };
   },
 });

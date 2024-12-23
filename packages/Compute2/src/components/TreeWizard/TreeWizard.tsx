@@ -268,6 +268,7 @@ export const TreeWizard = Vue.defineComponent({
     }
 
     const isTreeReady = Vue.computed(() => treeState.value && !treeMutationsLocked.value && !isGlobalLocked.value);
+    const nextStepId = Vue.computed(() => treeState.value);
 
     return () => (
       Vue.withDirectives(<div class='w-full h-full'>
@@ -402,8 +403,10 @@ export const TreeWizard = Vue.defineComponent({
                 buttonActions={buttonActions.value}
                 isReadonly={chosenStepState.value.isReadonly}
                 isTreeLocked={treeMutationsLocked.value}
+                showStepNavigation={true}
                 onUpdate:funcCall={(call) => (chosenStepState.value as StepFunCallState).funcCall = call}
                 onRunClicked={() => runStep(chosenStepState.value!.uuid)}
+                onNextClicked={() => grok.shell.info('Next step!')}
                 onActionRequested={runActionWithConfirmation}
                 onConsistencyReset={(ioName) => consistencyReset(chosenStepUuid.value!, ioName)}
                 dock-spawn-title='Step review'
