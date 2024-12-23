@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.46.2 (2024-12-23)
+
+Add healthCheck method to the IAutoDockService interface
+
 ## 5.46.1 (2024-12-02)
 
 Add terminate method to the IAutoDockService interface
