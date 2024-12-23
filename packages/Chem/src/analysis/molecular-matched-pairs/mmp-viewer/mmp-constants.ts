@@ -26,6 +26,7 @@ export enum MMP_NAMES {
   INITIAL_VALUE = 'Initial value',
   ACTIVITY = 'Activity',
   CORE = 'Core',
+  CORE_NUM = '~Core',
   PREDICTION = 'Prediction',
   GENERATIONS = 'Generation',
   NEW_MOLECULE = 'New molecule',

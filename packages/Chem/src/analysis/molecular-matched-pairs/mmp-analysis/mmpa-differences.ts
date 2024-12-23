@@ -7,12 +7,12 @@ export function getPlainData(rules: MmpRules, frags: MmpFragments,
   const [fromFrag, toFrag, occasions] = getAllRulesOcasions(rules, frags, fragSortingInfo); //rules n objects
   const [maxActs, meanDiffs, molFrom, molTo, pairNum,
     molNumFrom, molNumTo, pairsFromSmiles, pairsToSmiles,
-    ruleNum, diffs, activityPairsIdxs] =
+    ruleNum, diffs, activityPairsIdxs, coreNums] =
     calculateActivityDiffs(initData.molecules, initData.activities, rules, frags, allCasesNumber, occasions);
 
   const rulesBased: MmpRulesBasedData = {fromFrag, toFrag, occasions, meanDiffs};
   const allCasesBased: MmpAllCasesBasedData = {maxActs, molFrom, molTo, pairNum,
-    molNumFrom, molNumTo, pairsFromSmiles, pairsToSmiles, ruleNum, diffs, activityPairsIdxs};
+    molNumFrom, molNumTo, pairsFromSmiles, pairsToSmiles, ruleNum, diffs, activityPairsIdxs, coreNums};
 
   return [rulesBased, allCasesBased];
 }
@@ -54,7 +54,8 @@ function calculateActivityDiffs(
     pairsToSmiles: string[],
     ruleNum: Int32Array,
     diffs: Float32Array[],
-    activityPairsIdxs: BitArray[]
+    activityPairsIdxs: BitArray[],
+    coreNums: Int32Array,
  ] {
   const variates = activities.length;
   const maxActs = new Array<number>(variates).fill(0);
@@ -66,6 +67,7 @@ function calculateActivityDiffs(
 
   const molFrom = new Array<string>(allCasesNumber);
   const molTo = new Array<string>(allCasesNumber);
+  const coresNums = new Int32Array(allCasesNumber);
   const pairNum = new Int32Array(allCasesNumber);
   const molNumFrom = new Int32Array(allCasesNumber);
   const molNumTo = new Int32Array(allCasesNumber);
@@ -90,6 +92,7 @@ function calculateActivityDiffs(
 
       molFrom[pairIdx] = molecules[idx1];
       molTo[pairIdx] = molecules[idx2];
+      coresNums[pairIdx] = mmpr.rules[i].pairs[j].core;
 
       for (let k = 0; k < variates; k++) {
         //TODO: make more efficient
@@ -122,5 +125,5 @@ function calculateActivityDiffs(
   }
 
   return [maxActs, meanDiffs, molFrom, molTo,
-    pairNum, molNumFrom, molNumTo, pairsFromSmiles, pairsToSmiles, ruleNum, diffs, activityPairsIdxs];
+    pairNum, molNumFrom, molNumTo, pairsFromSmiles, pairsToSmiles, ruleNum, diffs, activityPairsIdxs, coresNums];
 }

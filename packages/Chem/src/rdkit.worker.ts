@@ -49,8 +49,6 @@ ctx.addEventListener('message', async (e: any) => {
       result = _rdKitServiceWorker!.mmpGetMcs(args[0]);
     else if (op === WORKER_CALL.MOST_COMMON_STRUCTURE)
       result = _rdKitServiceWorker!.mostCommonStructure(args[0], args[1], args[2]);
-    else if (op === WORKER_CALL.INVERSE_SUBSTRUCTURE_AND_ALIGN)
-      result = _rdKitServiceWorker!.getInverseSubstructuresAndAlign(args[0], args[1], args[2]);
 
     port.postMessage({op: op, retval: result});
   } catch (e) {
