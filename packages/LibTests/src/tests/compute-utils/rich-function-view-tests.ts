@@ -232,7 +232,7 @@ category('ComputeUtils: RichFunctionView Inputs', async () => {
 
   test('Simple inputs default values', async () => {
     const view = new RichFunctionView('Libtests:simpleInputsDefaultValues', {historyEnabled: false, isTabbed: false});
-    
+
     await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
     await delay(100);
     const expected = {

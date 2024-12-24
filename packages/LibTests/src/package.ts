@@ -1,23 +1,19 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
-// eslint-disable-next-line
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 import {FuncCallInput} from '@datagrok-libraries/compute-utils/shared-utils/input-wrappers';
 import {BehaviorSubject} from 'rxjs';
 import {distinctUntilChanged} from 'rxjs/operators';
 import equal from 'deep-equal';
-import {ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult} from '@datagrok-libraries/compute-utils';
-import {CompositionPipeline, PipelineCompositionConfiguration, PipelineConfiguration} from '@datagrok-libraries/compute-utils';
-import {delay} from '@datagrok-libraries/utils/src/test';
-import type {ViewerT, InputFormT} from '@datagrok-libraries/webcomponents/src';
-import {createApp} from 'vue';
-import {VueViewerTestApp} from './components/VueViewerTestApp';
-import {VueFormTestApp} from './components/VueFormTestApp';
-import {VueElementsTestApp} from './components/VueElelementsTestApp';
+import {
+  PipelineConfiguration,
+  ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult,
+} from '@datagrok-libraries/compute-utils';
+import type {ViewerT, InputFormT} from '@datagrok-libraries/webcomponents';
 
 export const _package = new DG.Package();
-
 //
 // Validators manual testing
 //
@@ -127,677 +123,6 @@ export function ValidatorActionsDemoFactory(params: any) {
   };
 }
 
-//
-// Composition pipeline manual testing
-//
-
-//name: MockWrapper
-export function MockWrapper() {}
-
-//name: MockWrapper1
-export function MockWrapper1() {}
-
-//name: MockWrapper2
-export function MockWrapper2() {}
-
-//name: MockWrapper3
-export function MockWrapper3() {}
-
-//name: MockWrapper4
-export function MockWrapper4() {}
-
-//name: MockWrapper5
-export function MockWrapper5() {}
-
-//name: MockWrapper6
-export function MockWrapper6() {}
-
-//name: MockWrapper7
-export function MockWrapper7() {}
-
-//name: MockWrapper8
-export function MockWrapper8() {}
-
-//name: MockWrapper9
-export function MockWrapper9() {}
-
-//name: MockWrapper10
-export function MockWrapper10() {}
-
-//name: MockWrapper11
-export function MockWrapper11() {}
-
-//name: MockWrapper12
-export function MockWrapper12() {}
-
-//name: MockWrapper13
-export function MockWrapper13() {}
-
-//name: MockWrapper14
-export function MockWrapper14() {}
-
-//name: MockWrapper15
-export function MockWrapper15() {}
-
-//name: TestWrapper1
-export function TestWrapper1() {}
-
-//name: TestWrapper2
-export function TestWrapper2() {}
-
-//name: TestWrapper3
-export function TestWrapper3() {}
-
-//name: TestWrapper4
-export function TestWrapper4() {}
-
-//name: TestWrapper5
-export function TestWrapper5() {}
-
-
-//name: MockHook1
-//input: object params
-export function MockHook1(params: any) {
-  return;
-}
-
-//name: MockHook2
-//input: object params
-export function MockHook2(params: any) {
-  return;
-}
-
-//name: MockHandler1
-//input: object params
-export function MockHandler1(params: any) {
-  return;
-}
-
-//name: MockHandler2
-//input: object params
-export function MockHandler2(params: any) {
-  return;
-}
-
-//name: MockTripple
-//input: double a
-//output: double res
-export function MockTripple(a: number) {
-  return 3 * a;
-}
-
-//name: MockPopup1
-//input: double a
-//input: double b
-//input: double c
-//output: double res
-export function MockPopup1(a: number, b: number, c: number) {
-  return a * b * c;
-}
-
-//name: MockPopup2
-//input: double a
-//input: double b
-//input: double c
-//output: double res
-export function MockPopup2(a: number, b: number, c: number) {
-  return a + b + c;
-}
-
-//name: TestFn1
-//input: double a
-//input: double b
-//input: double c
-//output: double res
-export function TestFn1(a: number, b: number, c: number) {
-  return a + b + c;
-}
-
-//name: TestFn2
-//input: double a
-//input: double b
-//input: double c
-//output: double res
-export function TestFn2(a: number, b: number, c: number) {
-  return a * b * c;
-}
-
-//name: TestFn3
-//input: double a
-//input: double b
-//input: double c
-//input: double d
-//output: double res
-export function TestFn3(a: number, b: number, c: number, d: number) {
-  return a + b + c + d;
-}
-
-//name: TestFn4
-//input: double a
-//input: double b
-//input: double c
-//input: double d
-//output: double res
-export function TestFn4(a: number, b: number, c: number, d: number) {
-  return a * b * c * d;
-}
-
-//name: TestFn5
-//input: double a
-//input: double b
-//input: double c
-//input: double d
-//input: double e
-//output: double res
-export function TestFn5(a: number, b: number, c: number, d: number, e: number) {
-  return a + b + c + d + e;
-}
-
-//name: TestFn6
-//input: double a
-//input: double b
-//input: double c
-//input: double d
-//input: double e
-//output: double res
-export function TestFn6(a: number, b: number, c: number, d: number, e: number) {
-  return a * b * c * d * e;
-}
-
-
-//name: TestCompositionPipeline1
-//description: Composition pipeline output-input link
-//output: object pipeline
-//tags: test
-export async function TestCompositionPipeline1() {
-  const pipeline = new CompositionPipeline({
-    id: 'testPipeline',
-    nqName: 'LibTests:MockWrapper1',
-    steps: [
-      {
-        id: 'step1',
-        nqName: 'LibTests:AddMock',
-      },
-      {
-        id: 'step2',
-        nqName: 'LibTests:MulMock',
-      },
-    ],
-    links: [{
-      id: 'link1',
-      from: ['step1', 'res'],
-      to: ['step2', 'a'],
-    }],
-  });
-  grok.shell.addView(pipeline.makePipelineView());
-  await pipeline.init();
-  return pipeline;
-}
-
-//name: TestCompositionPipeline2
-//description: Composition pipeline input-input link
-//output: object pipeline
-//tags: test
-export async function TestCompositionPipeline2() {
-  const pipeline = new CompositionPipeline({
-    id: 'testPipeline',
-    nqName: 'LibTests:MockWrapper2',
-    steps: [
-      {
-        id: 'step1',
-        nqName: 'LibTests:AddMock',
-      },
-      {
-        id: 'step2',
-        nqName: 'LibTests:MulMock',
-      },
-    ],
-    links: [{
-      id: 'link1',
-      from: ['step1', 'a'],
-      to: ['step2', 'a'],
-    }],
-  });
-  grok.shell.addView(pipeline.makePipelineView());
-  await pipeline.init();
-  return pipeline;
-}
-
-//name: TestCompositionPipeline3
-//description: Composition pipeline input-input handler link
-//output: object pipeline
-//tags: test
-export async function TestCompositionPipeline3() {
-  const pipeline = new CompositionPipeline({
-    id: 'testPipeline',
-    nqName: 'LibTests:MockWrapper3',
-    steps: [
-      {
-        id: 'step1',
-        nqName: 'LibTests:AddMock',
-      },
-      {
-        id: 'step2',
-        nqName: 'LibTests:MulMock',
-      },
-    ],
-    links: [{
-      id: 'link1',
-      from: ['step1', 'a'],
-      to: ['step2', 'a'],
-      handler: async ({controller}) => {
-        const val = controller.getState(['step1', 'a']);
-        controller.setState(['step2', 'a'], val * 2);
-      },
-    }],
-  });
-  grok.shell.addView(pipeline.makePipelineView());
-  await pipeline.init();
-  return pipeline;
-}
-
-//name: TestCompositionPipeline4
-//description: Composition pipeline input-input async handler link
-//output: object pipeline
-//tags: test
-export async function TestCompositionPipeline4() {
-  const pipeline = new CompositionPipeline({
-    id: 'testPipeline',
-    nqName: 'LibTests:MockWrapper4',
-    steps: [
-      {
-        id: 'step1',
-        nqName: 'LibTests:AddMock',
-      },
-      {
-        id: 'step2',
-        nqName: 'LibTests:MulMock',
-      },
-    ],
-    links: [{
-      id: 'link1',
-      from: ['step1', 'a'],
-      to: ['step2', 'a'],
-      handler: async ({controller}) => {
-        const val = controller.getState(['step1', 'a']);
-        await delay(2000);
-        controller.setState(['step2', 'a'], val * 2);
-      },
-    }],
-  });
-  grok.shell.addView(pipeline.makePipelineView());
-  await pipeline.init();
-  return pipeline;
-}
-
-
-//name: TestCompositionPipeline5
-//description: Composition pipeline input-input async action
-//output: object pipeline
-//tags: test
-export async function TestCompositionPipeline5() {
-  const pipeline = new CompositionPipeline({
-    id: 'testPipeline',
-    nqName: 'LibTests:MockWrapper5',
-    steps: [
-      {
-        id: 'step1',
-        nqName: 'LibTests:AddMock',
-        states: [{id: 'state11'}],
-        actions: [{
-          id: 'action1',
-          friendlyName: 'action1',
-          from: [['step1', 'state11']],
-          to: ['step2', 'b'],
-          handler: async ({controller}) => {
-            const val = controller.getState(['step1', 'state11']);
-            controller.setState(['step2', 'b'], val * 2);
-          },
-          position: 'buttons',
-        }],
-      },
-      {
-        id: 'step2',
-        nqName: 'LibTests:MulMock',
-      },
-    ],
-    links: [{
-      id: 'link1',
-      from: ['step1', 'a'],
-      to: ['step2', 'a'],
-    }, {
-      id: 'link2',
-      from: ['step1', 'a'],
-      to: ['step1', 'state11'],
-    }],
-  });
-  grok.shell.addView(pipeline.makePipelineView());
-  await pipeline.init();
-  return pipeline;
-}
-
-
-//name: TestCompositionPipeline6
-//description: Composition pipeline composition
-//output: object pipeline
-//tags: test
-export async function TestCompositionPipeline6() {
-  const conf1 = {
-    id: 'testPipeline1',
-    nqName: 'LibTests:MockWrapper6',
-    steps: [
-      {
-        id: 'step1',
-        nqName: 'LibTests:AddMock',
-      },
-      {
-        id: 'step2',
-        nqName: 'LibTests:MulMock',
-      },
-    ],
-    links: [{
-      id: 'link1',
-      from: ['step1', 'res'],
-      to: ['step2', 'a'],
-    }, {
-      id: 'link2',
-      from: ['step2', 'res'],
-      to: ['testPipeline2', 'step1', 'a'],
-    }],
-  };
-  const conf2 = {
-    id: 'testPipeline2',
-    nqName: 'LibTests:MockWrapper13',
-    steps: [
-      {
-        id: 'step1',
-        nqName: 'LibTests:TestFn1',
-      },
-    ],
-  };
-  const pipeline = new CompositionPipeline(CompositionPipeline.compose(conf1, [conf2]));
-  grok.shell.addView(pipeline.makePipelineView());
-  await pipeline.init();
-  return pipeline;
-}
-
-
-//name: TestCompositionPipeline7
-//description: Composition pipeline composition positioning
-//output: object pipeline
-//tags: test
-export async function TestCompositionPipeline7() {
-  const conf1: PipelineConfiguration = {
-    id: 'testPipeline1',
-    nqName: 'LibTests:MockWrapper7',
-    steps: [
-      {
-        id: 'step1',
-        nqName: 'LibTests:AddMock',
-      },
-      {
-        id: 'step2',
-        nqName: 'LibTests:MulMock',
-      },
-    ],
-  };
-  const conf2: PipelineCompositionConfiguration = {
-    id: 'testPipeline2',
-    nqName: 'LibTests:MockWrapper13',
-    steps: [
-      {
-        id: 'step1',
-        nqName: 'LibTests:MockTripple',
-        friendlyName: 'MockTripple1',
-      },
-      {
-        id: 'step2',
-        nqName: 'LibTests:MockTripple',
-        friendlyName: 'MockTripple2',
-      },
-    ],
-    nestedPipelinesConfig: {
-      'testPipeline1': {insertBeforeStep: 'step2'},
-    },
-  };
-  const conf = CompositionPipeline.compose(conf2, [conf1]);
-  const pipeline = new CompositionPipeline(conf);
-  grok.shell.addView(pipeline.makePipelineView());
-  await pipeline.init();
-  return pipeline;
-}
-
-
-//name: TestCompositionPipeline8
-//description: Composition pipeline popup
-//output: object pipeline
-//tags: test
-export async function TestCompositionPipeline8() {
-  const pipeline = new CompositionPipeline({
-    id: 'testPipeline',
-    nqName: 'LibTests:MockWrapper8',
-    steps: [
-      {
-        id: 'step1',
-        nqName: 'LibTests:AddMock',
-        popups: [{
-          id: 'popup1',
-          friendlyName: 'popup1',
-          nqName: 'LibTests:MockPopup1',
-          position: 'buttons',
-        }],
-      },
-      {
-        id: 'step2',
-        nqName: 'LibTests:MulMock',
-      },
-    ],
-    links: [{
-      id: 'link1',
-      from: ['step1', 'res'],
-      to: ['step2', 'a'],
-    }, {
-      id: 'link2',
-      from: ['step1', 'popup1', 'res'],
-      to: ['step1', 'b'],
-    }],
-  });
-  grok.shell.addView(pipeline.makePipelineView());
-  await pipeline.init();
-  return pipeline;
-}
-
-//name: TestCompositionPipeline9
-//description: Composition pipeline popup action
-//output: object pipeline
-//tags: test
-export async function TestCompositionPipeline9() {
-  const pipeline = new CompositionPipeline({
-    id: 'testPipeline',
-    nqName: 'LibTests:MockWrapper9',
-    steps: [
-      {
-        id: 'step1',
-        nqName: 'LibTests:AddMock',
-        popups: [{
-          id: 'popup1',
-          friendlyName: 'popup1',
-          nqName: 'LibTests:MockPopup1',
-          position: 'buttons',
-          actions: [{
-            id: 'action1',
-            friendlyName: 'action1',
-            handler: async () => {
-              grok.shell.info('action1');
-            },
-            position: 'buttons',
-          }],
-        }],
-      },
-      {
-        id: 'step2',
-        nqName: 'LibTests:MulMock',
-      },
-    ],
-    links: [{
-      id: 'link1',
-      from: ['step1', 'res'],
-      to: ['step2', 'a'],
-    }, {
-      id: 'link2',
-      from: ['step1', 'popup1', 'res'],
-      to: ['step1', 'b'],
-    }],
-  });
-  grok.shell.addView(pipeline.makePipelineView());
-  await pipeline.init();
-  return pipeline;
-}
-
-//name: TestCompositionPipeline10
-//description: Composition pipeline composition with links
-//output: object pipeline
-//tags: test
-export async function TestCompositionPipeline10() {
-  const conf1: PipelineConfiguration = {
-    id: 'testPipeline1',
-    nqName: 'LibTests:MockWrapper14',
-    steps: [
-      {
-        id: 'step1',
-        nqName: 'LibTests:AddMock',
-      },
-      {
-        id: 'step2',
-        nqName: 'LibTests:MulMock',
-      },
-    ],
-    links: [{
-      id: 'link1',
-      from: ['step1', 'res'],
-      to: ['step2', 'a'],
-    }],
-  };
-  const conf2: PipelineCompositionConfiguration = {
-    id: 'testPipeline2',
-    nqName: 'LibTests:MockWrapper10',
-    steps: [
-      {
-        id: 'step1',
-        nqName: 'LibTests:MockTripple',
-      },
-    ],
-    links: [{
-      id: 'link1',
-      from: ['step1', 'res'],
-      to: ['testPipeline1', 'step1', 'a'],
-    }],
-  };
-  const conf = CompositionPipeline.compose(conf2, [conf1]);
-  const pipeline = new CompositionPipeline(conf);
-  grok.shell.addView(pipeline.makePipelineView());
-  await pipeline.init();
-  return pipeline;
-}
-
-//name: TestCompositionPipeline11
-//description: Composition pipeline remove link
-//output: object pipeline
-//tags: test
-export async function TestCompositionPipeline11() {
-  const conf1: PipelineConfiguration = {
-    id: 'testPipeline1',
-    nqName: 'LibTests:MockWrapper11',
-    steps: [
-      {
-        id: 'step1',
-        nqName: 'LibTests:AddMock',
-      },
-      {
-        id: 'step2',
-        nqName: 'LibTests:MulMock',
-      },
-    ],
-    links: [{
-      id: 'link1',
-      from: ['step1', 'res'],
-      to: ['step2', 'a'],
-    }],
-  };
-  const conf2: PipelineCompositionConfiguration = {
-    id: 'testPipeline2',
-    nqName: 'LibTests:MockWrapper15',
-    steps: [
-      {
-        id: 'step1',
-        nqName: 'LibTests:MockTripple',
-      },
-    ],
-    links: [{
-      id: 'link1',
-      from: ['step1', 'res'],
-      to: ['testPipeline1', 'step2', 'a'],
-    }],
-    itemsToRemove: [['testPipeline1', 'link1']],
-  };
-  const conf = CompositionPipeline.compose(conf2, [conf1]);
-  const pipeline = new CompositionPipeline(conf);
-  grok.shell.addView(pipeline.makePipelineView());
-  await pipeline.init();
-  return pipeline;
-}
-
-//name: TestCompositionPipeline12
-//description: Composition pipeline validator
-//output: object pipeline
-//tags: test
-export async function TestCompositionPipeline12() {
-  const pipeline = new CompositionPipeline({
-    id: 'testPipeline',
-    nqName: 'LibTests:MockWrapper12',
-    steps: [
-      {
-        id: 'step1',
-        nqName: 'LibTests:AddMock',
-      },
-      {
-        id: 'step2',
-        nqName: 'LibTests:MulMock',
-        actions: [{
-          id: 'action1',
-          friendlyName: 'action1',
-          from: ['step1', 'a'],
-          to: ['step2', 'a'],
-          handler: async ({controller}) => {
-            const val = controller.getState(['step1', 'a']);
-            controller.setState(['step2', 'a'], val);
-          },
-          position: 'none',
-        }],
-      },
-    ],
-    links: [{
-      id: 'link1',
-      from: [['step1', 'a'], ['step2', 'a']],
-      to: ['step2', 'a'],
-      handler: async ({controller}) => {
-        const valS = controller.getState(['step1', 'a']);
-        const valC = controller.getState(['step2', 'a']);
-        if (valC !== valS) {
-          const action1 = controller.getValidationAction(['step2', 'action1'], `set to ${valS}`);
-          const adv1 = makeAdvice('Try using the provided value', [action1]);
-          controller.setValidation(['step2', 'a'], makeValidationResult({notifications: [adv1]}));
-        } else
-          controller.setValidation(['step2', 'a'], undefined);
-      },
-    }],
-  });
-  grok.shell.addView(pipeline.makePipelineView());
-  await pipeline.init();
-  return pipeline;
-}
-
-
 //tags: test
 export async function TestViewerComponent() {
   const view = new DG.ViewBase();
@@ -895,27 +220,249 @@ export async function TestElements() {
   grok.shell.addView(view);
 }
 
-//tags: test
-export async function TestVueViewerComponent() {
-  const view = new DG.ViewBase();
-  const app = createApp(VueViewerTestApp);
-  app.mount(view.root);
-  grok.shell.addView(view);
+// pipeline driver testing
+
+//input: double a
+//input: double b
+//output: double res
+export async function TestAdd2(a: number, b: number) {
+  return a + b;
 }
 
-//tags: test
-export async function TestVueFormComponent() {
-  const view = new DG.ViewBase();
-  const app = createApp(VueFormTestApp);
-  app.mount(view.root);
-  grok.shell.addView(view);
+//input: double a
+//input: double b
+//output: double res
+export async function TestSub2(a: number, b: number) {
+  return a - b;
 }
 
+//input: double a
+//input: double b
+//output: double res
+export async function TestMul2(a: number, b: number) {
+  return a * b;
+}
 
-//tags: test
-export async function TestVueElements() {
-  const view = new DG.ViewBase();
-  const app = createApp(VueElementsTestApp);
-  app.mount(view.root);
-  grok.shell.addView(view);
+//input: double a
+//input: double b
+//output: double res
+export async function TestDiv2(a: number, b: number) {
+  return a / b;
+}
+
+//input: dataframe df
+//output: dataframe res
+export async function TestDF1(df: DG.DataFrame) {
+  return df;
+}
+
+//input: double a
+//input: double b
+//output: double res
+export async function TestAdd2Error(a: number, b: number) {
+  if (a < 0 || b < 0)
+    throw new Error('Test error');
+  return a + b;
+}
+
+//input: double a
+//input: double b
+//input: double c
+//input: double d
+//input: double e
+//output: double res
+export async function TestMultiarg5(a: number, b: number, c: number, d: number, e: number) {
+  return a + b + c + d + e;
+}
+
+//name: MockWrapper1
+export async function MockWrapper1() {}
+
+//input: object params
+//output: object result
+export async function MockProvider1(params: any) {
+  const c: PipelineConfiguration = {
+    id: 'pipeline1',
+    nqName: 'LibTests:MockWrapper1',
+    provider: 'LibTests:MockProvider1',
+    version: '1.0',
+    type: 'static',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:TestAdd2',
+      },
+      {
+        id: 'step2',
+        nqName: 'LibTests:TestMul2',
+      },
+    ],
+    links: [{
+      id: 'link1',
+      from: 'in1:step1/res',
+      to: 'out1:step2/a',
+    }],
+  };
+  return c;
+}
+
+//name: MockWrapper2
+export async function MockWrapper2() {}
+
+//input: object params
+//output: object result
+export async function MockProvider2(params: any) {
+  const c: PipelineConfiguration = {
+    id: 'pipelinePar',
+    nqName: 'LibTests:MockWrapper2',
+    provider: 'LibTests:MockProvider2',
+    version: '1.0',
+    type: 'parallel',
+    stepTypes: [{
+      id: 'stepAdd',
+      nqName: 'LibTests:TestAdd2',
+      friendlyName: 'add',
+    }, {
+      id: 'stepMul',
+      nqName: 'LibTests:TestMul2',
+      friendlyName: 'mul',
+    }, {
+      type: 'ref',
+      provider: 'LibTests:MockProvider1',
+      version: '1.0',
+    }],
+    initialSteps: [
+      {
+        id: 'stepAdd',
+      }, {
+        id: 'pipeline1',
+      },
+    ],
+  };
+  return c;
+}
+
+//name: MockWrapper3
+export async function MockWrapper3() {}
+
+//input: object params
+//output: object result
+export async function MockProvider3(params: any) {
+  const c: PipelineConfiguration = {
+    id: 'pipelinePar',
+    nqName: 'LibTests:MockWrapper3',
+    provider: 'LibTests:MockProvider3',
+    version: '1.0',
+    type: 'parallel',
+    stepTypes: [{
+      type: 'ref',
+      provider: 'LibTests:MockProvider2',
+      version: '1.0',
+    }],
+    initialSteps: [
+      {
+        id: 'pipelinePar',
+      },
+    ],
+  };
+  return c;
+}
+
+//name: MockWrapper4
+export async function MockWrapper4() {}
+
+//input: object params
+//output: object result
+export async function MockProvider4(params: any) {
+  const config2: PipelineConfiguration = {
+    id: 'pipeline1',
+    type: 'static',
+    nqName: 'LibTests:MockWrapper4',
+    provider: 'LibTests:MockProvider4',
+    version: '1.0',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:TestAdd2Error',
+      },
+      {
+        id: 'step2',
+        nqName: 'LibTests:TestMul2',
+      },
+    ],
+    links: [{
+      id: 'link1',
+      from: 'in1:step1/a',
+      to: 'out1:step2/a',
+      handler({controller}) {
+        controller.setAll('out1', 2, 'restricted');
+        return;
+      },
+    }],
+  };
+  return config2;
+}
+
+//name: MockWrapper5
+export async function MockWrapper5() {}
+
+//input: object params
+//output: object result
+export async function MockProvider5(params: any) {
+  const config2: PipelineConfiguration = {
+    id: 'pipeline1',
+    type: 'sequential',
+    nqName: 'LibTests:MockWrapper5',
+    provider: 'LibTests:MockProvider5',
+    version: '1.0',
+    approversGroup: 'MockGroup',
+    stepTypes: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:TestAdd2Error',
+        disableUIAdding: true,
+        disableUIDragging: true,
+        disableUIRemoving: true,
+      },
+      {
+        id: 'step2',
+        nqName: 'LibTests:TestMul2',
+      },
+      {
+        id: 'pipeline2',
+        type: 'static',
+        disableUIDragging: true,
+        disableUIRemoving: true,
+        disableUIAdding: true,
+        steps: [
+          {
+            id: 'step3',
+            nqName: 'LibTests:TestSub2',
+
+          },
+          {
+            id: 'step4',
+            nqName: 'LibTests:TestDiv2'
+          }
+        ]
+      }
+    ],
+    initialSteps: [{
+      id: 'step1',
+    }, {
+      id: 'step2',
+    }, {
+      id: 'pipeline2',
+    }],
+    links: [{
+      id: 'link1',
+      from: 'in1:step1/a',
+      to: 'out1:step2/a',
+      handler({controller}) {
+        controller.setAll('out1', 2, 'restricted');
+        return;
+      },
+    }],
+  };
+  return config2;
 }

@@ -13,7 +13,8 @@
   "dependencies": {
     "js-base64": "^3.7.5",
     "cash-dom": "^8.1.1",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.21.1",
+    "dayjs": "=1.11.10",
     "fast-sha256": "^1.3.0",
     "rxjs": "^6.5.5",
     "wu": "^2.1.0"

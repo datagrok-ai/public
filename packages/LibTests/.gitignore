@@ -30,4 +30,9 @@ dist/
 
 # Emitted *.js files
 src/**/*.js
+src/**/*.js.map
+vite.config.js
+vite.config.js.map
+vite-tests.config.js
+vite-tests.config.js.map
 test-console-output.log

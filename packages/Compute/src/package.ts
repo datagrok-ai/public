@@ -6,18 +6,22 @@ import {filter, take} from 'rxjs/operators';
 import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-viewer';
 import {
   ComputationView as ComputationViewInst,
-  RichFunctionView as RichFunctionViewInst, 
+  RichFunctionView as RichFunctionViewInst,
   PipelineView as PipelineViewInst,
-  CompositionPipeline as CompositionPipelineViewInst,
-  UiUtils, 
+  UiUtils,
 } from "@datagrok-libraries/compute-utils";
-import { 
-  ValidationInfo, 
-  makeAdvice as makeAdviceInst, 
+import {
+  ValidationInfo,
+  makeAdvice as makeAdviceInst,
   makeValidationResult as makeValidationResultInst,
   makeRevalidation as makeRevalidationInst,
   mergeValidationResults as mergeValidationResultsInst,
 } from '@datagrok-libraries/compute-utils/shared-utils/validation';
+export {
+  makeValidationResult as makeValidationResult2,
+  makeAdvice as makeAdvice2,
+  mergeValidationResults as mergeValidationResults2,
+} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {ModelCatalogView, ModelHandler} from '@datagrok-libraries/compute-utils/model-catalog';
 import {
   testPipeline as testPipelineInst
@@ -111,7 +115,7 @@ export async function CustomDataUploader(func: DG.Func) {
     'heatTransferCoeff': 8.3,
     'simTime': 21600,
     }).call();
-    
+
   return [dummyFunccall]
 }
 
@@ -127,7 +131,7 @@ export async function CustomUploader(params: {func: DG.Func}) {
   const dummyWidget = DG.Widget.fromRoot(ui.panel([ui.divV([
     ui.label('This part of dialog comes from my custom data uploader'),
     ui.divH([uploadBtn], {style: {justifyContent: 'center'}})
-  ])]));  
+  ])]));
 
   const setLoadingSub = grok.functions.onBeforeRunAction.pipe(
     filter((call) => call.id === uploadFuncCall.id)
@@ -163,8 +167,8 @@ export function init() {
 
   if (!(DG.ObjectHandler.list().find((handler) => handler.type === "Model"))) {
     DG.ObjectHandler.register(new ModelHandler());
-  }  
-  
+  }
+
   grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
     const ent = acc.context;
     if (ent == null)
@@ -347,32 +351,32 @@ export async function modelCatalogTreeBrowser(treeNode: DG.TreeViewGroup, browse
   const modelSource = grok.dapi.functions.filter('(#model)');
   const modelList = await modelSource.list();
   const departments = modelList.reduce((acc, model) => {
-    if (model.options.department) 
+    if (model.options.department)
       acc.add(model.options.department)
-    else 
+    else
       acc.add(NO_CATEGORY)
     return acc;
   }, new Set([] as string[]));
-  
+
   const hlProcesses = modelList.reduce((acc, model) => {
-    if (model.options.HL_process) 
-      acc.add(model.options.HL_process) 
-    else 
+    if (model.options.HL_process)
+      acc.add(model.options.HL_process)
+    else
       acc.add(NO_CATEGORY)
     return acc;
   }, new Set([] as string[]));
 
   const processes = modelList.reduce((acc, model) => {
-    if (model.options.process) 
+    if (model.options.process)
       acc.add(model.options.process)
-    else 
+    else
       acc.add(NO_CATEGORY)
     return acc;
   }, new Set([] as string[]));
 
   for (const department of departments) {
     const serverDep = (department !== NO_CATEGORY ? department: undefined);
-    const hasModelsDep = modelList.find((model) => 
+    const hasModelsDep = modelList.find((model) =>
       model.options.department === serverDep
     )
 
@@ -381,7 +385,7 @@ export async function modelCatalogTreeBrowser(treeNode: DG.TreeViewGroup, browse
     const depNode = treeNode.getOrCreateGroup(department, null, false)
     for (const hlProcess of hlProcesses) {
       const serverHlProcess = (hlProcess !== NO_CATEGORY ? hlProcess: undefined);
-      const hasModelsHl = modelList.find((model) => 
+      const hasModelsHl = modelList.find((model) =>
         model.options.department === serverDep &&
         model.options.HL_process === serverHlProcess
       )
@@ -391,7 +395,7 @@ export async function modelCatalogTreeBrowser(treeNode: DG.TreeViewGroup, browse
       const hlNode = hlProcess !== NO_CATEGORY ? depNode.getOrCreateGroup(hlProcess, null, false): depNode;
       for (const process of processes) {
         const serverProcess = (process !== NO_CATEGORY ? process: undefined);
-        const hasModels = modelList.find((model) => 
+        const hasModels = modelList.find((model) =>
           model.options.department === serverDep &&
           model.options.HL_process === serverHlProcess &&
           model.options.process === serverProcess
@@ -407,7 +411,7 @@ export async function modelCatalogTreeBrowser(treeNode: DG.TreeViewGroup, browse
           const processRules = process === NO_CATEGORY ? `(options.process = null)`: `(options.process in ("${process}"))`;
           const filteringRules = `(${[modelRule, depRules, hlProcessRules, processRules].join(' and ')})`
           processNode.loadSources(grok.dapi.functions.filter(filteringRules));
-        })        
+        })
       }
     }
   }
@@ -419,7 +423,6 @@ export const testPipeline = testPipelineInst;
 export const CompView = ComputationViewInst;
 export const RFV = RichFunctionViewInst;
 export const Pipeline = PipelineViewInst;
-export const CompositionPipeline = CompositionPipelineViewInst;
 export const makeValidationResult = makeValidationResultInst;
 export const makeAdvice = makeAdviceInst;
 export const makeRevalidation = makeRevalidationInst;

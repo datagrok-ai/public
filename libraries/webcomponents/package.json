@@ -1,7 +1,7 @@
 {
   "name": "@datagrok-libraries/webcomponents",
   "sideEffects": false,
-  "version": "0.0.2",
+  "version": "0.0.5",
   "description": "Datagrok web components wrappers",
   "dependencies": {
     "cash-dom": "^8.1.4",
@@ -22,7 +22,8 @@
     "link": "npm link",
     "link-api": "npm link datagrok-api",
     "link-all": "npm link datagrok-api",
-    "build": "tsc",
+    "clean": "npx tsc --build --clean",
+    "build": "npx tsc --build",
     "lint": "eslint . --ext .ts",
     "lint-fix": "eslint . --ext .ts --fix",
     "build-all": "npm --prefix ./../../js-api run build && npm run build"

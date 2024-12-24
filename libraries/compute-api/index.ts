@@ -17,16 +17,18 @@ declare global {
       CompView: ConstructorTypeOf<ComputationView>,
       RFV: ConstructorTypeOf<RichFunctionView>,
       Pipeline: ConstructorTypeOf<PipelineView>,
-      CompositionPipeline: {
-        new (...args:any[]): CompositionPipeline,
-        compose: typeof composeCompositionPipeline
-      }
 
       makeValidationResult: typeof makeValidationResult,
       makeAdvice: typeof makeAdvice,
       makeRevalidation: typeof makeRevalidation,
       mergeValidationResults: typeof mergeValidationResults,
-    }
+
+      makeValidationResult2: typeof makeValidationResult2,
+      makeAdvice2: typeof makeAdvice2,
+      mergeValidationResults2: typeof mergeValidationResults2,
+
+      makeModel: typeof makeModel,
+    },
   }
 }
 
@@ -46,14 +48,31 @@ export {
 };
 
 import {
-  ComputationView, RichFunctionView, PipelineView, CompositionPipeline,
-  createCompView, createRFV, createPipeline, createCompositionPipeline, composeCompositionPipeline,
-  PipelineCompositionConfiguration, PipelineConfiguration,
+  makeValidationResult2, makeAdvice2, mergeValidationResults2
+} from './src/validation2'
+export {
+  makeValidationResult2, makeAdvice2, mergeValidationResults2,
+};
+
+import {
+  makeModel,
+} from '@datagrok-libraries/compute-utils/reactive-tree-driver';
+export {
+  makeModel
+};
+
+export type {
+  PipelineConfiguration, IRuntimeLinkController, IRuntimeMetaController,
+  IRuntimeValidatorController, IRuntimePipelineMutationController
+} from '@datagrok-libraries/compute-utils/reactive-tree-driver/index';
+
+import {
+  ComputationView, RichFunctionView, PipelineView,
+  createCompView, createRFV, createPipeline
 } from './src/views';
 export {
-  ComputationView, RichFunctionView, PipelineView, CompositionPipeline,
-  createCompView, createRFV, createPipeline, createCompositionPipeline, composeCompositionPipeline,
-  PipelineCompositionConfiguration, PipelineConfiguration,
+  ComputationView, RichFunctionView, PipelineView,
+  createCompView, createRFV, createPipeline
 };
 
 export async function initComputeApi() {

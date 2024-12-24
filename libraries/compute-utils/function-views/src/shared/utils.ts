@@ -5,7 +5,8 @@ import $ from 'cash-dom';
 import {RUN_ID_COL_LABEL, RUN_NAME_COL_LABEL, VIEWER_PATH, viewerTypesMapping} from '../../../shared-utils/consts';
 import wu from 'wu';
 import {Observable} from 'rxjs';
-import {SubscriptionLike} from '../../../shared-utils/input-wrappers';
+import {FuncCallInput, SubscriptionLike} from '../../../shared-utils/input-wrappers';
+import {isInputBase} from '../../../shared-utils/utils';
 
 export const delay = (delayInms: number) => {
   return new Promise((resolve) => setTimeout(resolve, delayInms));
@@ -253,4 +254,51 @@ export const getStarted = (call: DG.FuncCall) => {
   } catch {
     return 'Not completed';
   }
+};
+
+export const injectLockIcons = (
+  t: FuncCallInput,
+  onUnlock: Function,
+  onUndo: Function,
+  onWarningClick: Function,
+) => {
+  t.root.addEventListener('click', () => onUnlock());
+
+  const lockIcon = ui.iconFA('lock');
+  $(lockIcon).addClass('rfv-icon-lock');
+  $(lockIcon).css({color: `var(--grey-2)`});
+
+  const unlockIcon = ui.iconFA('lock-open');
+  $(unlockIcon).addClass('rfv-icon-unlock');
+  $(unlockIcon).css({color: `var(--grey-2)`});
+
+  const resetIcon = ui.iconFA('undo', (e: MouseEvent) => onUndo(e), 'Reset value to computed value');
+  $(resetIcon).addClass('rfv-icon-undo');
+  $(resetIcon).css({color: `var(--blue-2)`});
+
+  const warningIcon = ui.iconFA('exclamation-circle', null);
+  ui.tooltip.bind(warningIcon, () => onWarningClick());
+  $(warningIcon).addClass('rfv-icon-warning');
+  $(warningIcon).css({color: `var(--orange-2)`});
+
+  function defaultPlaceLockStateIcons(
+    lockIcon: HTMLElement,
+    unlockIcon: HTMLElement,
+    resetIcon: HTMLElement,
+    warningIcon: HTMLElement,
+  ) {
+    // If custom input is not DG.InputBase instance then do nothing
+    if (!isInputBase(t)) return;
+
+    t.addOptions(lockIcon);
+    t.addOptions(unlockIcon);
+    t.addOptions(resetIcon);
+    t.addOptions(warningIcon);
+  }
+
+  const tAny = (t as any);
+  // if no custom place for lock state icons is provided then use default placing
+  if (!tAny.placeLockStateIcons)
+    tAny.placeLockStateIcons = defaultPlaceLockStateIcons;
+  tAny.placeLockStateIcons(lockIcon, unlockIcon, resetIcon, warningIcon);
 };

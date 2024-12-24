@@ -1,17 +1,20 @@
 {
   "name": "@datagrok/webcomponents",
   "friendlyName": "WebComponents",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "",
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.3.0",
-    "@datagrok-libraries/webcomponents": "^0.0.2",
-    "cash-dom": "^8.1.5",
+    "@datagrok-libraries/dock-spawn-dg": "../../libraries/dock-spawn-dg",
+    "@datagrok-libraries/utils": "file:../../libraries/utils",
+    "@datagrok-libraries/webcomponents": "file:../../libraries/webcomponents",
+    "cash-dom": "^8.1.4",
+    "css-loader": "^7.1.2",
     "datagrok-api": "^1.21.1",
-    "dayjs": "^1.11.4"
+    "dayjs": "=1.11.10",
+    "dock-spawn-dg": "file:../../libraries/dock-spawn-dg",
+    "style-loader": "^4.0.0"
   },
   "devDependencies": {
-    "datagrok-tools": "latest",
     "source-map-loader": "^5.0.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
@@ -19,7 +22,7 @@
     "webpack-cli": "^5.1.4"
   },
   "scripts": {
-    "link-all": "",
+    "link-all": "npm link datagrok-api @datagrok-libraries/webcomponents @datagrok-libraries/dock-spawn-dg",
     "debug-webcomponents": "webpack && grok publish",
     "release-webcomponents": "webpack && grok publish --release",
     "build-webcomponents": "webpack",
