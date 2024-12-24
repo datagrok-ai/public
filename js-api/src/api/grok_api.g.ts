@@ -1065,7 +1065,7 @@ export interface IDartApi {
   grok_ColumnsInput(name: any, table: any, availableColumns: any, checkedColumns: any): any;
   grok_TableInput(name: String, t: any, items: any): any;
   grok_ColorInput(name: any, value: any): any;
-  grok_ColorPicker(color: any, onChanged: any, colorDiv: any): any;
+  grok_ColorPicker(color: any, onChanged: any, colorDiv: any, onOk: any, onCancel: any): any;
   grok_RadioInput(name: any, value: any, items: any): any;
   grok_CodeEditor(script: String, mode: String, placeholder: String, root: any): any;
   grok_ProgressIndicator_Get_Canceled(pi: any): any;

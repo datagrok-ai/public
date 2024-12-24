@@ -1054,8 +1054,8 @@ export function colorInput(name: string, value: string, onValueChanged: Function
   return new InputBase(api.grok_ColorInput(name, value), onValueChanged);
 }
 
-export function colorPicker(color: number, onChanged: (color: number) => void, colorDiv: HTMLElement): HTMLElement {
-  return api.grok_ColorPicker(color, onChanged, colorDiv);
+export function colorPicker(color: number, onChanged: (color: number) => void, colorDiv: HTMLElement, onOk: Function | null, onCancel: Function | null = null): HTMLElement {
+  return api.grok_ColorPicker(color, onChanged, colorDiv, onOk, onCancel);
 }
 
 /** @deprecated The method will be removed soon. Use {@link input.radio} instead */
