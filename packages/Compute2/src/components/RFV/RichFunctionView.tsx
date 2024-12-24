@@ -530,7 +530,7 @@ export const RichFunctionView = Vue.defineComponent({
                     , [[tooltip, action.description]]))
                   }
                   {
-                    !props.showStepNavigation && <BigButton
+                    <BigButton
                       isDisabled={!isRunnable.value || isRunning.value || props.isTreeLocked || props.isReadonly}
                       onClick={run}
                     >
@@ -538,19 +538,12 @@ export const RichFunctionView = Vue.defineComponent({
                     </BigButton>
                   }
                   {
-                    props.showStepNavigation && !isOutputOutdated.value && <div class='flex flex-row'> 
+                    props.showStepNavigation && !isOutputOutdated.value &&
                       <BigButton
                         onClick={next}
                       >
                         Next
                       </BigButton>
-                      <IconFA
-                        isDisabled={!isRunnable.value || isRunning.value || props.isTreeLocked || props.isReadonly}
-                        onClick={run}
-                      >
-                        { isOutputOutdated.value ? 'Run':'Rerun' }
-                      </IconFA>
-                    </div>
                   }
                 </div>
               </div> }
