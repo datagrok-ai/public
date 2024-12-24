@@ -1,11 +1,14 @@
 package grok_connect.connectors_info;
 
 import java.util.*;
+
+import com.google.gson.annotations.SerializedName;
 import org.apache.commons.lang3.text.*;
 
 
-public class DataQuery
-{
+public class DataQuery {
+    @SerializedName("#type")
+    public String type;
     public String id;
     public String name;
     public String query;

@@ -2,32 +2,24 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {
   getSettingsBase,
-  names,
   SparklineType,
   SummarySettingsBase,
   createTooltip,
   Hit,
-  isSummarySettingsBase
+  isSummarySettingsBase, SummaryColumnColoringType, createBaseInputs, getRenderColor
 } from './shared';
 
 const minH = 0.05;
 
-enum BarChartColoringType {
-  Off = 'Off',
-  Bins = 'Bins',
-  Values = 'Values'
-}
-
 interface BarChartSettings extends SummarySettingsBase {
   globalScale: boolean;
-  colorCode: BarChartColoringType;
 }
 
 function getSettings(gc: DG.GridColumn): BarChartSettings {
   const settings: BarChartSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
     gc.settings[SparklineType.BarChart] ??= getSettingsBase(gc, SparklineType.BarChart);
   settings.globalScale ??= false;
-  settings.colorCode ??= BarChartColoringType.Off;
+  settings.colorCode ??= SummaryColumnColoringType.Bins;
   return settings;
 }
 
@@ -69,7 +61,7 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
     const hitData = onHit(gridCell, e);
     if (hitData.isHit)
-      ui.tooltip.show(ui.divV(createTooltip(hitData.cols, hitData.activeColumn, hitData.row)), e.x + 16, e.y + 16);
+      ui.tooltip.show(createTooltip(hitData.cols, hitData.activeColumn, hitData.row), e.x + 16, e.y + 16);
     else
       ui.tooltip.hide();
   }
@@ -94,17 +86,14 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
     for (let i = 0; i < cols.length; i++) {
       const currentCol = cols[i];
       if (!currentCol.isNone(row)) {
-        const color = settings.colorCode === BarChartColoringType.Off ? DG.Color.fromHtml('#8080ff') :
-          settings.colorCode === BarChartColoringType.Bins ? DG.Color.getCategoricalColor(i) :
-          currentCol.meta.colors.getType() === DG.COLOR_CODING_TYPE.OFF ? DG.Color.getRowColor(currentCol, row) : currentCol.meta.colors.getColor(row);
-        g.setFillStyle(DG.Color.toRgb(color));
+        g.setFillStyle(DG.Color.toRgb(getRenderColor(settings, DG.Color.fromHtml('#8080ff'),{column: currentCol, colIdx: i, rowIdx: row})));
         const scaled = settings.globalScale ? (currentCol.getNumber(row) - gmin) / (gmax - gmin) : currentCol?.scale(row);
         const bb = b
           .getLeftPart(cols.length, i)
           .getBottomScaled(scaled > minH ? scaled : minH)
           .inflateRel(0.9, 1);
         g.fillRect(bb.left, bb.top, bb.width, bb.height);
-        if (settings.colorCode === BarChartColoringType.Values)
+        if (settings.colorCode === SummaryColumnColoringType.Values)
           g.strokeRect(bb.left, bb.top, bb.width, bb.height);
       }
     }
@@ -125,25 +114,6 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
     const normalizeInput = DG.InputBase.forProperty(globalScaleProp, settings);
     normalizeInput.onChanged.subscribe(() => gc.grid.invalidate());
 
-    const columnNames = settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical);
-    return ui.inputs([
-      normalizeInput,
-      ui.input.columns('Columns', {value: gc.grid.dataFrame.columns.byNames(columnNames),
-        table: gc.grid.dataFrame, onValueChanged: (value) => {
-          settings.columnNames = names(value);
-          gc.grid.invalidate();
-        }, available: names(gc.grid.dataFrame.columns.numerical),
-      }),
-      ui.input.choice<BarChartColoringType>('Color Code', {
-        value: settings.colorCode,
-        items: [BarChartColoringType.Off, BarChartColoringType.Bins, BarChartColoringType.Values],
-        onValueChanged: (value) => {
-          settings.colorCode = value;
-          gc.grid.invalidate();
-        },
-        tooltipText: 'Activates color rendering',
-        nullable: false
-      }),
-    ]);
+    return ui.inputs([normalizeInput, ...createBaseInputs(gc, settings)]);
   }
 }

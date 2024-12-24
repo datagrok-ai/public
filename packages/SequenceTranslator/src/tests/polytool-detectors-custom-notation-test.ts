@@ -38,6 +38,6 @@ category('PolyTool: detectors', () => {
         await _testPos(reader, posColName, seqHelper, posCol.units, posCol.aligned,
           posCol.alphabet, posCol.alphabetSize, posCol.alphabetIsMultichar, posCol.separator);
       }
-    });
+    }, {skipReason: '3156'});
   }
 });

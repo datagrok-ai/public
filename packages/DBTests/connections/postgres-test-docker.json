@@ -1,0 +1,17 @@
+{
+  "#type": "DataConnection",
+  "name": "PostgresDocker",
+  "friendlyName": "PostgresDocker",
+  "parameters": {
+    "server": "${Dbtests:Dbtests<DockerContainer>}",
+    "db": "world"
+  },
+  "credentials" : {
+    "parameters" : {
+      "login": "datagrok",
+      "password": "datagrok"
+    }
+  },
+  "dataSource": "Postgres",
+  "description": "Connection to Postgres `world` database located in Dbtest package docker container. Login, password and db are taken directly from Dockerfile. Server is specified as nqName of package Docker container."
+}

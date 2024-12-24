@@ -138,22 +138,6 @@ export class TreeUtils {
           };
         }
 
-        if (columns[colIdx].semType === DG.SEMTYPE.MOLECULE) {
-          const image = await TreeUtils.getMoleculeImage(name);
-          const img = new Image();
-          img.src = image!.toDataURL('image/png');
-          node.label = {
-            show: true,
-            formatter: '{b}',
-            color: 'rgba(0,0,0,0)',
-            height: '80',
-            width: '70',
-            backgroundColor: {
-              image: img.src,
-            },
-          }
-        }
-
         if (colIdx === columns.length - 1)
           propNames.forEach((prop) => node[prop] = aggrValues[prop]);
 
@@ -188,10 +172,10 @@ export class TreeUtils {
     return TreeUtils.toForestAsync(dataFrame, splitByColumnNames, rowMask, selection, inherit);
   }
 
-  static async getMoleculeImage(name: string): Promise<HTMLCanvasElement> {
+  static async getMoleculeImage(name: string, width: number, height: number): Promise<HTMLCanvasElement> {
     const image: HTMLCanvasElement = ui.canvas();
-    image.width = 70;
-    image.height = 80;
+    image.width = width;
+    image.height = height;
     await grok.chem.canvasMol(0, 0, image.width, image.height, image, name);
     return image;
   }

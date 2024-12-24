@@ -1,5 +1,9 @@
 # KetcherSketcher changelog
 
+## 2.2.1 (2024-11-05)
+
+* Fixed styles
+
 ## 2.1.10 (2024-07-26)
 
 * Updated ketcher libraries up to 2.21.0 and Datagrok api to 1.20.0

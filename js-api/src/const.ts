@@ -198,6 +198,7 @@ export enum VIEW_TYPE {
   PACKAGE_REPOSITORIES = 'repositories',
   JS_EDITOR = 'js',
   BROWSE = 'browse',
+  HOME = 'datagrok',
 }
 
 ///////
@@ -321,6 +322,7 @@ export const TAGS = {
   },
 
   LINK_CLICK_BEHAVIOR: '.linkClickBehavior',
+  GROUP: 'group',
 }
 
 export enum LINK_CLICK_BEHAVIOR {
@@ -566,18 +568,24 @@ export enum DEMO_DATASET {
 
 /** @enum {DOCK_TYPE} */
 export enum DOCK_TYPE {
-  LEFT = "left",
-  RIGHT = "right",
-  TOP = "up",
-  DOWN = "down",
-  FILL = "fill",
+  LEFT = 'left',
+  RIGHT = 'right',
+  TOP = 'up',
+  DOWN = 'down',
+  FILL = 'fill',
 }
 
 export enum LEGEND_POSITION {
-  LEFT = "left",
-  RIGHT = "right",
-  TOP = "top",
-  BOTTOM = "bottom",
+  AUTO = 'auto',
+  LEFT = 'left',
+  RIGHT = 'right',
+  TOP = 'top',
+  BOTTOM = 'bottom',
+  // TODO: commented temporarily
+  // LEFT_TOP = 'left top',
+  // LEFT_BOTTOM = 'left bottom',
+  // RIGHT_TOP = 'right top',
+  // RIGHT_BOTTOM = 'right bottom'
 }
 
 export enum COLOR_CODING_TYPE {
@@ -697,11 +705,12 @@ export type CsvImportOptions = {
 export type IndexPredicate = (ind: number) => boolean;
 export type StringPredicate = (str: string) => boolean;
 export type ScriptingLanguage = `${SCRIPT_LANGUAGE}`;
+type CSSProperties = Partial<Record<keyof CSSStyleDeclaration, string>>;
 
 export type ElementOptions = {
   id?: string;
   classes?: string;
-  style?: object;
+  style?: CSSProperties;
   //tooltip?: string;
   processNode?: (node: HTMLElement) => void;
   onClick?: (event: PointerEvent) => void;

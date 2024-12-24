@@ -212,7 +212,9 @@ export function demoTestUnitsCellRenderer() {
 export async function _autoPowerGrid() {
   PinnedUtils.registerPinnedColumns();
   DG.GridCellRenderer.register(new ScatterPlotCellRenderer());
-  gpuDevice = await getGPUDevice();
+
+  if (navigator.gpu)
+    gpuDevice = await getGPUDevice();
 }
 
 //name: Forms

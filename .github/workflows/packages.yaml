@@ -324,7 +324,7 @@ jobs:
           echo "apiUrl=$apiUrl" >> $GITHUB_OUTPUT
           echo "alias=$alias" >> $GITHUB_OUTPUT
       - id: datagrok-tools
-        run: npm install -g datagrok-tools@4.13.31
+        run: npm install -g datagrok-tools@latest
       - if: ${{ matrix.unpublished_deps != '' }}
         run: grok link
         working-directory: packages/${{ matrix.package }}
@@ -397,7 +397,7 @@ jobs:
               count=0
               retries=5
               echo "Publishing $dep to ${{ steps.datagrok-image.outputs.alias }}..."
-              until grok publish ${{ steps.datagrok-image.outputs.alias }}; do
+              until grok publish ${{ steps.datagrok-image.outputs.alias }} --release; do
                 exit=$?
                 wait=$((2 ** count))
                 count=$((count + 1))
@@ -418,7 +418,7 @@ jobs:
         run: |
           count=0
           retries=5
-          until grok publish ${{ steps.datagrok-image.outputs.alias }}; do
+          until grok publish ${{ steps.datagrok-image.outputs.alias }} --release; do
             exit=$?
             if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
               docker compose -p datagrok logs --no-color --timestamps datagrok
@@ -434,7 +434,6 @@ jobs:
             fi
           done
         working-directory: packages/${{ matrix.package }}
-
       - name: Set required credentials
         if: ${{ matrix.test == 'test' }}
         env:
@@ -453,29 +452,51 @@ jobs:
         env:
           DEV_TEST_DEV_KEY: ${{ secrets.DEV_TEST_DEV_KEY }}
           TEST_TEST_DEV_KEY: ${{ secrets.TEST_TEST_DEV_KEY }}
-        timeout-minutes: 10
+        timeout-minutes: 20
         run: |
-          if [[ "${{ steps.datagrok-image.outputs.alias }}" == "test" ]]; then
-            key="$TEST_TEST_DEV_KEY"
-          elif [[ "${{ steps.datagrok-image.outputs.alias }}" == "dev" ]]; then
-            key="$DEV_TEST_DEV_KEY"
-          else
-            key='admin'
-          fi
-          token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/$key | jq -r .token)
-          until .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}'
-          do
-            sleep 1
-            echo -e "\nContainer for ${{ matrix.package }} did not start yet..."
-            echo -e "\nRetrying '/api/docker/containers'..."
+          check_container=false
+          for dockerfile in $(echo -e ${{ matrix.docker }}); do
+            docker_config_file="$(dirname $dockerfile)/container.json"
+            if [ -f "${docker_config_file}" ]; then
+              on_demand=$(jq '.on_demand' ${docker_config_file})
+              if [ "$on_demand" == "true" ]; then
+                check_container=false
+              else
+                check_container=true
+                break
+              fi
+            else
+              check_container=true
+              break
+            fi
           done
-          if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
-            until .github/scripts/check-output.sh "docker ps" '${{ matrix.package }}'
+
+          if [[ "${check_container}" == "true" ]] ; then
+            if [[ "${{ steps.datagrok-image.outputs.alias }}" == "test" ]]; then
+              key="$TEST_TEST_DEV_KEY"
+            elif [[ "${{ steps.datagrok-image.outputs.alias }}" == "dev" ]]; then
+              key="$DEV_TEST_DEV_KEY"
+            else
+              key='admin'
+            fi
+            token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/$key | jq -r .token)
+            long_term_token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/sessions/current/refresh -H "Authorization: ${token}" | jq -r .token)
+            until .github/scripts/check-output.sh "curl -s -H 'Authorization: $long_term_token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}'
             do
+              docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile all exec db psql -U postgres -d datagrok -c "SELECT * FROM docker_containers;"
+              .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}'
               sleep 1
               echo -e "\nContainer for ${{ matrix.package }} did not start yet..."
-              echo -e "\nRetrying 'docker ps'..."
+              echo -e "\nRetrying '/api/docker/containers'..."
             done
+            if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
+              until .github/scripts/check-output.sh "docker ps" '${{ matrix.package }}'
+              do
+                sleep 1
+                echo -e "\nContainer for ${{ matrix.package }} did not start yet..."
+                echo -e "\nRetrying 'docker ps'..."
+              done
+            fi
           fi
       - name: Test Package
         if: ${{ matrix.test == 'test' }}
@@ -489,10 +510,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.package }}.test-results
-          path: |
-            packages/${{ matrix.package }}/test-record.mp4
-            packages/${{ matrix.package }}/test-report.csv
-            packages/${{ matrix.package }}/test-console-output.log
+          path: packages/${{ matrix.package }}/test-*
           retention-days: 14
           if-no-files-found: warn
       - name: Create error notification

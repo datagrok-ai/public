@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
 import {powerSearch} from './search/power-search';
-import {widgetHost, getSettings, UserWidgetsSettings} from './utils';
+import {getSettings, saveSettings, UserWidgetsSettings, widgetHostFromFunc} from './utils';
 
 export function welcomeView(): DG.View | undefined {
   let searchStr = null;
@@ -24,32 +24,57 @@ export function welcomeView(): DG.View | undefined {
 
   const searchHost = ui.block([], 'power-pack-search-host');
   const widgetsHost = ui.div([], 'power-pack-widgets-host');
-  const viewHost = ui.div([widgetsHost, searchHost]);
+  const widgetsPanel = ui.div([widgetsHost]);
+  const viewHost = ui.div([widgetsPanel, searchHost]);
   const view = DG.View.create();
   view.root.appendChild(inputHost);
   view.root.appendChild(viewHost);
   view.root.classList.add('power-pack-welcome-view');
 
   const widgetFunctions = DG.Func.find({tags: ['dashboard'], returnType: 'widget'});
+  const widgetHosts: {[index: string]: HTMLElement} = {};
   const settings: UserWidgetsSettings = getSettings();
-  for (const f of widgetFunctions) {
-    if (!settings[f.name] || settings[f.name].ignored) {
-      const widgetHeader = ui.div();
-      f.apply({'header': widgetHeader}).then(function(w: DG.Widget) {
-        if (!w)
-          return;
-        w.factory = f;
-        widgetsHost.appendChild(widgetHost(w, widgetHeader));
-      }).catch((e) => {
-        console.error(`Unable to execute function ${f.name}`, e);
-      });
-    }
+
+  function refresh() {
+    grok.dapi.groups.find(DG.User.current().group.id).then((userGroup: DG.Group) => {
+      while (widgetsHost.firstChild)
+        widgetsHost.removeChild(widgetsHost.firstChild);
+
+      for (const f of widgetFunctions) {
+        const canView: string[] = f.options['canView']?.split(',') ?? [];
+        if (canView.length === 0 || (userGroup.memberships.some((g) => canView.includes(g.friendlyName))
+            || userGroup.adminMemberships.some((g) => canView.includes(g.friendlyName)))) {
+          if (!settings[f.name] || !settings[f.name].ignored)
+            widgetsHost.appendChild(widgetHosts[f.name] ??= widgetHostFromFunc(f));
+        }
+      }
+    });
   }
+
+  refresh();
+
+  function customizeWidgets() {
+    grok.shell.windows.context.visible = true;
+    const existingNames = Object.keys(settings).filter((name) => DG.Func.byName(name));
+
+    grok.shell.o = ui.form(
+        existingNames.map((name) => ui.input.bool(DG.Func.byName(name).friendlyName, {
+          value: !settings[name].ignored,
+          onValueChanged: (value, input) => {
+            settings[name].ignored = !value;
+            refresh();
+            saveSettings();
+          }
+        }))
+    );
+  }
+
+  widgetsPanel.appendChild(ui.link('Customize widgets...', () => customizeWidgets()));
 
   function doSearch(s: string) {
     input.value = s;
     const search = s !== '';
-    widgetsHost.style.display = (search ? 'none' : '');
+    widgetsPanel.style.display = (search ? 'none' : '');
     searchHost.style.display = (search ? '' : 'none');
     if (search != null)
       powerSearch(s, searchHost);

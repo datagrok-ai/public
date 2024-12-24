@@ -682,6 +682,10 @@ export class BrowseView extends View {
 
   get showTree(): boolean { return api.grok_BrowseView_Get_ShowTree(this.dart); }
   set showTree(x: boolean) { api.grok_BrowseView_Set_ShowTree(this.dart, x); }
+
+  async setHomeView(): Promise<void> {
+    await api.grok_BrowseView_SetHomeView(this.dart);
+  }
 }
 
 

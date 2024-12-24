@@ -1,0 +1,36 @@
+#name: Chem react
+#tags: model
+#description: Mass-action kinetics illustration
+#comment: 
+  Source: https://doi.org/10.1002/ijch.201800003.
+#equations:
+  dx1/dt = -k1 * x1 + k2 * (x2)**2 + k3 * x1 * x3 
+           - k4 * (x1)**2 - 2 * k5 * (x1)**2 + k6 * x2 * x4
+
+  dx2/dt = 2 * k1 * x1 - 2 * k2 * (x2)**2 
+           + k5 * (x1)**2 - k6 * x2 * x4
+
+  dx3/dt = -k3 * x1 * x3 + k4 * (x1)**2 + k6 * x2 * x4
+
+  dx4/dt = k5 * (x1)**2 - k6 * x2 * x4
+
+#parameters:
+  k1 = 0.7 {category: Reaction parameters; min: 0.1; max: 5}
+  k2 = 0.9 {category: Reaction parameters; min: 0.1; max: 5}
+  k3 = 1.2 {category: Reaction parameters; min: 0.1; max: 5}
+  k4 = 3.4 {category: Reaction parameters; min: 0.1; max: 5}
+  k5 = 2.3 {category: Reaction parameters; min: 0.1; max: 5}
+  k6 = 4.5 {category: Reaction parameters; min: 0.1; max: 5}
+
+#inits:
+  x1 = 1 {units: mol/L; category: Initial concentrations; min: 0; max: 2}
+  x2 = 0 {units: mol/L; category: Initial concentrations; min: 0; max: 2}
+  x3 = 0 {units: mol/L; category: Initial concentrations; min: 0; max: 2}
+  x4 = 0 {units: mol/L; category: Initial concentrations; min: 0; max: 2}
+
+#argument: t
+  initial = 0 {units: min; caption: Initial; category: Time; min: 0; max: 5} [Initial time of simulation]
+  final = 6 {units: min; caption: Final; category: Time; min: 6; max: 10} [Final time of simulation]
+  step = 0.01 {units: min; caption: Step; category: Time; min: 0.01; max: 0.1; step: 0.001} [Time step of simlulation]
+
+#tolerance: 5e-5

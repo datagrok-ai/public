@@ -558,7 +558,7 @@ export function link(
     text: string,
     target: string | Function | object,
     tooltipMsg?: string,
-    options: string | ElementOptions | null = { classes: 'd4-link-external' }): HTMLAnchorElement {
+    options?: string | ElementOptions | null): HTMLAnchorElement {
   let link = element('a') as HTMLAnchorElement;
   link.classList.add('ui-link');
   link.innerText = text;
@@ -566,6 +566,7 @@ export function link(
     link.addEventListener('click', (_) => target());
   }
   else if (typeof target === 'string') {
+    link.classList.add('d4-link-external')
     link.href = target;
     link.target = '_blank';
   }
@@ -800,7 +801,7 @@ export namespace input {
 
   export interface IColumnInputInitOptions<T> extends IInputInitOptions<T> {
     table?: DataFrame;
-    filter?: Function;
+    filter?: (col: Column) => boolean;
   }
 
   export interface IColumnsInputInitOptions<T> extends IColumnInputInitOptions<T> {
@@ -1233,6 +1234,7 @@ export class tools {
         }
       }
       if (form.classList.contains('d4-dialog-contents')) {
+        form.classList.remove('ui-form-condensed');
         let dialogFormWidth = tools.formLabelMaxWidths.get(form)! + tools.formMinInputWidths.get(form)! + 40;
         if (form.style.minWidth != `${dialogFormWidth}px`)
           form.style.minWidth = `${dialogFormWidth}px`;
@@ -1307,13 +1309,33 @@ export class tools {
             width = calc;
         });
         let e = $(element).find('select')[0];
-        if (e != undefined)
+        if (e != undefined) {
           e.style.maxWidth = `${width + 30}px`;
+          e.style.width = `${width + 30}px`;
+        }
       }
+      let optionsWidth = 0;
+      let options = $(element).find('.ui-input-options');
+      options.each((i) => {
+        optionsWidth += this.getOptionsWidth(options[i] as HTMLElement);
+        if (element.classList.contains('ui-input-float') ||
+          element.classList.contains('ui-input-int') ||
+          element.classList.contains('ui-input-text')) {
+          (options[i] as HTMLElement).style.marginLeft = `-${optionsWidth}px`;
+        }
+        if (optionsWidth > 0) {
+          let inputs = $(element).find('.ui-input-editor');
+          inputs.each((i) => {
+            inputs[i]!.style.paddingRight = `${optionsWidth}px`;
+          });
+        }
+        // width += optionsWidth;
+      });
       // todo: analyze content(?) and metadata
       // todo: analyze more types
       widths.push(width);
     });
+
     return widths;
   }
 
@@ -1327,6 +1349,22 @@ export class tools {
       widths.push(renderWidth);
     });
     return widths;
+  }
+
+  private static getOptionsWidth(element: HTMLElement) {
+    let wrapper = document.createElement('div');
+    wrapper.classList.add('ui-input');
+    wrapper.classList.add('ui-input-root');
+    wrapper.style.visibility = 'hidden';
+    wrapper.style.position = 'fixed';
+    let value = document.createElement('div');
+    wrapper.append(value);
+    value.classList.add('ui-input-options');
+    value.innerHTML = element.innerHTML;
+    document.body.append(wrapper);
+    let renderWidth = Math.ceil(wrapper.getBoundingClientRect().width);
+    wrapper.remove();
+    return renderWidth;
   }
 
   private static getLabelWidth(element: HTMLElement) {
@@ -1359,9 +1397,9 @@ export class Tooltip {
   /** Associated the specified visual element with the corresponding item.
    * Example: {@link https://public.datagrok.ai/js/samples/ui/tooltips/tooltips}
   */
-  bind(element: HTMLElement, tooltip?: string | null | (() => string | HTMLElement | null)): HTMLElement {
+  bind(element: HTMLElement, tooltip?: string | null | (() => string | HTMLElement | null), tooltipPosition?: 'left' | 'right' | 'top' | 'bottom' | undefined | null): HTMLElement {
     if (tooltip != null)
-      api.grok_Tooltip_SetOn(element, tooltip);
+      api.grok_Tooltip_SetOn(element, tooltip, tooltipPosition);
     return element;
   }
 
@@ -1613,7 +1651,7 @@ export function boxFixed(item: Widget | InputBase | HTMLElement | null, options:
   return c;
 }
 
-/** Div flex-box container that positions child elements vertically.
+/** Positions child elements vertically and allows you to resize them.
  * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/splitters}
 */
 export function splitV(items: HTMLElement[], options: ElementOptions | null = null, resize: boolean | null = false): HTMLDivElement {
@@ -1679,7 +1717,7 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
   return b;
 }
 
-/** Div flex-box container that positions child elements horizontally.
+/** Positions child elements horizontally and allows you to resize them.
  * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/splitters}
 */
 export function splitH(items: HTMLElement[], options: ElementOptions | null = null, resize: boolean | null = false): HTMLDivElement {
@@ -2101,7 +2139,7 @@ export function setDisabled(element: HTMLElement, disabled:boolean, tooltip?: st
   if (tooltip == null)
     return;
 
-  api.grok_Tooltip_SetOn(element, tooltip);
+  api.grok_Tooltip_SetOn(element, tooltip, null);
 
   const overlay = document.createElement('span');
   overlay.style.position = 'fixed';

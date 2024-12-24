@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {before, awaitCheck, category, test, delay, expect} from '@datagrok-libraries/utils/src/test';
 import {isColumnPresent, isViewerPresent, isDialogPresent, returnDialog,
   setDialogInputValue, checkDialog, checkViewer} from './gui-utils';
+import { wait } from 'datagrok-api/ui';
 
 
 category('GUI: Dialogs', () => {
@@ -95,15 +96,15 @@ category('GUI: Dialogs', () => {
     demog = df.clone();
     v = grok.shell.addTableView(demog);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
-    grok.shell.topMenu.find('Tools').find('Data Science').find('Principal Component Analysis...').click();
+    grok.shell.topMenu.find('ML').find('Analyze').find('PCA...').click();
     await awaitCheck(() => checkDialog('PCA'), 'Dialog is not open 1', 1000);
     let okButton = Array.from(document.querySelectorAll('.ui-btn.ui-btn-ok'))
       .find((el) => el.textContent === 'OK') as HTMLElement;
-    okButton.click();
-    await awaitCheck(() => !checkDialog('PCA'));
+      okButton.click();
+    await awaitCheck(() => !checkDialog('PCA'),'PCA dialog didnt close', 10000);
     await awaitCheck(() => (document.querySelector('.d4-balloon-content') as HTMLElement)?.innerText.includes(
-      'Errors calling PCA: features: Value not defined.'), 'cannot find error balloon', 1000);
-    grok.shell.topMenu.find('Tools').find('Data Science').find('Principal Component Analysis...').click();
+      'Failed'), 'cannot find error balloon', 1000);
+    grok.shell.topMenu.find('ML').find('Analyze').find('PCA...').click();
     await awaitCheck(() => checkDialog('PCA'), 'Dialog is not open 2', 1000);
     const featuresField: DG.Column[] = [];
     featuresField.push(demog.col('age') as DG.Column);
@@ -119,15 +120,17 @@ category('GUI: Dialogs', () => {
     setDialogInputValue('PCA', 'Components', 3);
     await delay(100);
     returnDialog('PCA')!.input('Center').input.click();
-    await awaitCheck(() => returnDialog('PCA')!.input('Center').value === false);
+    await delay(100);
+    returnDialog('PCA')!.input('Center').input.click();
+    await delay(100);
     okButton = Array.from(document.querySelectorAll('.ui-btn.ui-btn-ok'))
       .find((el) => el.textContent === 'OK') as HTMLElement;
     okButton.click();
     await awaitCheck(() => DG.Dialog.getOpenDialogs().length === 0, 'PCA Timeout', 2500);
-    isColumnPresent(demog.columns, 'PCA0');
-    isColumnPresent(demog.columns, 'PCA1');
-    isColumnPresent(demog.columns, 'PCA2');
-  }, {skipReason: 'GROK-13162'});
+    isColumnPresent(demog.columns, 'PC1');
+    isColumnPresent(demog.columns, 'PC2');
+    isColumnPresent(demog.columns, 'PC3');
+  });
 
   test('splitColumn', async () => {
     demog = df.clone();

@@ -8,22 +8,25 @@
     "access": "public"
   },
   "friendlyName": "Tutorials",
-  "version": "1.4.3",
+  "version": "1.5.2",
   "description": "Helpers for creating tutorials",
   "dependencies": {
+    "@datagrok-libraries/compute-utils": "^1.39.5",
     "@datagrok-libraries/utils": "^4.3.0",
-    "cash-dom": "^8.1.1",
-    "datagrok-api": "^1.21.1",
+    "cash-dom": "^8.1.4",
+    "datagrok-api": "^1.22.1",
+    "dayjs": "=1.11.10",
     "rxjs": "6.6.7"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^5.39.0",
-    "@typescript-eslint/parser": "^5.39.0",
+    "@typescript-eslint/eslint-plugin": "^8.8.1",
+    "@typescript-eslint/parser": "^8.8.1",
     "dts-bundle-generator": "^7.0.0",
-    "eslint": "^8.25.0",
+    "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
-    "ts-loader": "^9.4.1",
-    "typescript": "^4.8.4"
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.6.3",
+    "@types/wu": "^2.1.44"
   },
   "scripts": {
     "link": "npm link",

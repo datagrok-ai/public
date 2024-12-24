@@ -11,6 +11,13 @@ formats (such as fasta or csv) and multiple notations for natural and modified r
 nucleotide and amino acid sequences. The sequences are automatically detected and classified while preserving their
 initial notation. Datagrok allows you to convert sequences between different notations as well.
 
+To convert sequences, go to **Bio** > **Convert** > **Notation...** and configure the parameters:
+
+- **Data**: Select the table containing the sequences.
+- **Sequences**: Choose the column with sequence data.
+- **Target Notation**: Select the desired output format (fasta, helm, separator).
+- **Separator**: If converting to **separator**, specify the delimiter (e.g., `-`, `.`, `/`).
+
 ![Notation converter](../../help/uploads/macromolecules/macromolecules-notation-converter-800.gif "Notation converter")
 
 See:

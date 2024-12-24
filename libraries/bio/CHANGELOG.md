@@ -1,5 +1,25 @@
 # bio changelog
 
+## 5.46.2 (2024-12-23)
+
+Add healthCheck method to the IAutoDockService interface
+
+## 5.46.1 (2024-12-02)
+
+Add terminate method to the IAutoDockService interface
+
+## 5.46.0 (2024-11-19)
+
+Sequence renderer: Support font resize
+
+## 5.45.11 (2024-11-15)
+
+Async cell renderer correct invalidation
+
+## 5.45.10 (2024-11-07)
+
+Remove the startDockerContainer method from the IAutoDockService interface
+
 ## 5.45.9 (2024-11-01)
 
 Unknown pallete correct initialization

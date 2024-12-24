@@ -66,8 +66,9 @@ category('UI: Users', () => {
     user.status = DG.USER_STATUS.STATUS_NEW;
     user.firstName = 'new';
     user.lastName = 'user';
-    // TODO: add save and delete when will work
-  }, { skipReason: 'GROK-11318' });
+    await grok.dapi.users.save(user);
+    await grok.dapi.users.delete(user);    
+  });
 
   test('actions.addServiceUser', async () => {
     const dialogsBefore = DG.Dialog.getOpenDialogs().length;

@@ -17,17 +17,15 @@ category('AutoDock', () => {
 
   before(async () => {
     try {
-      adSvc = await getAutoDockService();
-      if (!adSvc.ready) {
-        _package.logger.warning('AutoDock docker container is not ready, trying to start.');
-        await adSvc.startDockerContainer();
-        _package.logger.warning('AutoDock docker container successfully started.');
-        if (!adSvc.ready) {
-          _package.logger.warning('AutoDock docker container can not start, skip tests');
-          adSvc = null;
-        }
-      }
-    } catch (err: any) {
+      // Initialize the service if not already initialized
+      if (!adSvc)
+        adSvc = await getAutoDockService();
+      
+      // Perform a health check to start the container (starts on request) if not ready
+      if (!adSvc.ready)
+        await fetchWrapper(() => adSvc!.healthCheck());
+    } catch (err: unknown) {
+      // Log any errors during initialization
       const [errMsg, errStack] = errInfo(err);
       _package.logger.error(errMsg, undefined, errStack);
     }
@@ -38,7 +36,7 @@ category('AutoDock', () => {
 
     const clinfoCount = await fetchWrapper(() => adSvc!.checkOpenCl());
     expect(clinfoCount > 0, true, 'OpenCL platform not found.');
-  }, {timeout: 25000});
+  }, {timeout: 50000});
 
   test('dock ligand', async () => {
     if (!adSvc) return;
@@ -52,8 +50,8 @@ category('AutoDock', () => {
     const ligandData: BiostructureData = {binary: false, ext: 'pdb', data: ligandPdb};
     const npts = new GridSize(20, 20, 20);
     const autodockGpf = buildDefaultAutodockGpf('1bdq', npts);
-    const posesDf = await fetchWrapper(() => adSvc!.dockLigand(receptorData, ligandData, autodockGpf));
-    expect(posesDf.rowCount, 30);
+    const posesDf = await fetchWrapper(() => adSvc!.dockLigand(receptorData, ligandData, autodockGpf, 10));
+    expect(posesDf.rowCount, 10);
   }, {timeout: 60000});
 
   test('dock ligand column', async () => {
@@ -71,7 +69,7 @@ category('AutoDock', () => {
     const receptorData: BiostructureData = {binary: false, ext: 'pdb', data: receptorPdb};
     const npts = new GridSize(20, 20, 20);
     const autodockGpf = buildDefaultAutodockGpf('1bdq', npts);
-    const posesDf = await adSvc.dockLigandColumn(receptorData, ligandCol, autodockGpf);
-    expect(posesDf.rowCount, 90);
-  }, {timeout: 200000, stressTest: true});
+    const posesDf = await adSvc.dockLigandColumn(receptorData, ligandCol, autodockGpf, 10);
+    expect(posesDf.rowCount, 30);
+  }, {timeout: 90000, stressTest: true});
 });

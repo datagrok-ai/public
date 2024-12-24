@@ -8,7 +8,7 @@
     "email": "aparamonov@datagrok.ai"
   },
   "fullName": "Utils",
-  "version": "4.3.7",
+  "version": "4.3.12",
   "description": "Common utilities",
   "dependencies": {
     "js-base64": "^3.7.5",
@@ -20,6 +20,7 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
+    "@types/node": "^22.9.0",
     "@types/wu": "^2.1.44",
     "@typescript-eslint/eslint-plugin": "^5.11.0",
     "@typescript-eslint/parser": "^5.11.0",

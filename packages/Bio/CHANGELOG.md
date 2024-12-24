@@ -1,5 +1,33 @@
 # Bio changelog
 
+## 2.17.6 (2024-12-11)
+
+* Add monomer manager app view with library dashboards
+* Improve detectors
+ 
+## 2.17.5 (2024-12-09)
+
+Monomer manager: Correct loading.
+
+## 2.17.3 (2024-11-27)
+
+Monomer managers as apps
+
+## 2.17.2 (2024-11-19)
+
+* Support Sequence renderer resizing 
+
+## 2.17.1 (2024-11-15)
+
+* Fix Tests
+* Fix Fix monomer manager styles
+* Fix Monomer manager incorrect loading
+* Add R-groups validations
+
+## 2.17.0 (2024-11-06)
+
+Cell renderer: Harmonize macromolecule renderers
+
 ## 2.16.9 (2024-11-01)
 
 Correct package initialization

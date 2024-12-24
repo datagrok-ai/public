@@ -76,4 +76,6 @@ category('Packages: migrations', () => {
     await expectExceptionAsync(() => publish(packageWithDropEntities, 'apitestsbad', false));
     await deletePackage('apitestsbad');
   });
+}, {
+  owner: 'kamelichev@datagrok.ai'
 });

@@ -1,1 +1,48 @@
-{"name":"PHD-2","templateName":"Peptide hits Demo","status":"In Progress","createDate":"2024/9/4","campaignFields":{"Chemist":"Someone"},"columnSemTypes":{"Helm":"Macromolecule","Molecule":"Molecule","Stage":null,"V-iD":null},"rowCount":1,"filteredRowCount":1,"savePath":"System.AppData/HitTriage/PeptiHit/campaigns/PHD-2/enriched_table.csv","columnTypes":{"Helm":"string","Molecule":"string","Stage":"string","V-iD":"string","MolWt":"double","HeavyAtomMolWt":"double","FractionCSP3":"double"},"version":2,"authorUserId":"7a6a9f30-25d0-11ef-c943-0b65a97fa481","permissions":{"view":["a4b45840-9a50-11e6-9cc9-8546b8bf62e6"],"edit":["a4b45840-9a50-11e6-9cc9-8546b8bf62e6"]},"layout":"{\"containerType\":\"fill\",\"state\":{\"width\":701,\"height\":889,\"documentManager\":true},\"children\":[{\"containerType\":\"panel\",\"state\":{\"width\":701,\"height\":889,\"element\":{\"id\":\"41404730-4ce0-11ef-a35c-937ec35463b4\",\"type\":\"Grid\",\"look\":{\"#type\":\"GridLook\",\"showAddNewRowIcon\":true,\"addNewRowOnLastRowEdit\":true,\"rowHeight\":100,\"topLevelDefaultMenu\":true,\"allowColumnMenu\":true,\"columns\":[{\"width\":20,\"backgroundColor\":4294440951,\"customName\":\"\",\"cellType\":\"row header\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":400,\"columnName\":\"Helm\",\"cellType\":\"helm\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":200,\"columnName\":\"Molecule\",\"cellType\":\"Molecule\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":60,\"columnName\":\"Stage\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":72,\"columnName\":\"V-iD\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":63,\"columnName\":\"MolWt\",\"cellType\":\"number\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":131,\"columnName\":\"HeavyAtomMolWt\",\"cellType\":\"number\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":105,\"columnName\":\"FractionCSP3\",\"cellType\":\"number\",\"headerCellStyle\":{\"textWrap\":\"words\"}}]},\"title\":\"Table\",\"default\":true}},\"children\":[]}],\"floating\":[],\"tableId\":\"34c341b0-4ce0-11ef-9215-3b488e649d82\",\"tableName\":\"Table\"}","template":{"name":"Peptide hits Demo","key":"PHD","campaignFields":[{"name":"Chemist","type":"String","required":true}],"stages":["Design","Consideration","Synthesis","Testing"],"compute":{"descriptors":{"enabled":true,"args":["MolWt","HeavyAtomMolWt","FractionCSP3"]},"functions":[],"scripts":[],"queries":[]}}}
+{
+  "name": "PHD-2",
+  "templateName": "Peptide hits Demo",
+  "status": "In Progress",
+  "createDate": "2024/9/4",
+  "campaignFields": { "Chemist": "Someone" },
+  "columnSemTypes": {
+    "Helm": "Macromolecule",
+    "Molecule": "Molecule",
+    "Stage": null,
+    "V-iD": null
+  },
+  "rowCount": 1,
+  "filteredRowCount": 1,
+  "savePath": "System.AppData/HitTriage/PeptiHit/campaigns/PHD-2/enriched_table.csv",
+  "columnTypes": {
+    "Helm": "string",
+    "Molecule": "string",
+    "Stage": "string",
+    "V-iD": "string",
+    "MolWt": "double",
+    "HeavyAtomMolWt": "double",
+    "FractionCSP3": "double"
+  },
+  "version": 2,
+  "permissions": {
+    "view": ["a4b45840-9a50-11e6-9cc9-8546b8bf62e6"],
+    "edit": ["a4b45840-9a50-11e6-9cc9-8546b8bf62e6"]
+  },
+  "layout": "{\"containerType\":\"fill\",\"state\":{\"width\":701,\"height\":889,\"documentManager\":true},\"children\":[{\"containerType\":\"panel\",\"state\":{\"width\":701,\"height\":889,\"element\":{\"id\":\"41404730-4ce0-11ef-a35c-937ec35463b4\",\"type\":\"Grid\",\"look\":{\"#type\":\"GridLook\",\"showAddNewRowIcon\":true,\"addNewRowOnLastRowEdit\":true,\"rowHeight\":100,\"topLevelDefaultMenu\":true,\"allowColumnMenu\":true,\"columns\":[{\"width\":20,\"backgroundColor\":4294440951,\"customName\":\"\",\"cellType\":\"row header\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":400,\"columnName\":\"Helm\",\"cellType\":\"helm\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":200,\"columnName\":\"Molecule\",\"cellType\":\"Molecule\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":60,\"columnName\":\"Stage\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":72,\"columnName\":\"V-iD\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":63,\"columnName\":\"MolWt\",\"cellType\":\"number\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":131,\"columnName\":\"HeavyAtomMolWt\",\"cellType\":\"number\",\"headerCellStyle\":{\"textWrap\":\"words\"}},{\"width\":105,\"columnName\":\"FractionCSP3\",\"cellType\":\"number\",\"headerCellStyle\":{\"textWrap\":\"words\"}}]},\"title\":\"Table\",\"default\":true}},\"children\":[]}],\"floating\":[],\"tableId\":\"34c341b0-4ce0-11ef-9215-3b488e649d82\",\"tableName\":\"Table\"}",
+  "template": {
+    "name": "Peptide hits Demo",
+    "key": "PHD",
+    "campaignFields": [
+      { "name": "Chemist", "type": "String", "required": true }
+    ],
+    "stages": ["Design", "Consideration", "Synthesis", "Testing"],
+    "compute": {
+      "descriptors": {
+        "enabled": true,
+        "args": ["MolWt", "HeavyAtomMolWt", "FractionCSP3"]
+      },
+      "functions": [],
+      "scripts": [],
+      "queries": []
+    }
+  }
+}

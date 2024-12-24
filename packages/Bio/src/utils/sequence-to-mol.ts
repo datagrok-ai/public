@@ -34,7 +34,7 @@ export async function sequenceToMolfile(
       df.columns.add(helmCol, false);
     }
     try {
-      res = await seqHelper.helmToAtomicLevel(helmCol, true, true);
+      res = await seqHelper.helmToAtomicLevel(helmCol, true, true, monomerLib);
     } finally {
       if (helmCol !== macroMolecule) {
         df.columns.remove(helmCol.name);

@@ -13,6 +13,9 @@ import {CLIFFS_DF_NAME, activityCliffsIdx} from '@datagrok-libraries/ml/src/view
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 import {ScaffoldTreeViewer} from '../widgets/scaffold-tree';
+import {MatchedMolecularPairsViewer} from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
+import {MMP_NAMES} from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-constants';
+
 
 export async function _demoChemOverview(): Promise<void> {
   const sketcherType = DG.chem.currentSketcherType;

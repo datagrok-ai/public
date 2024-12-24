@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {registerChemblIdHandler} from './handlers';
-import {chemblBioactivityForTargetsSearch, chemblPKForDrugSearch} from './search-scripts';
 
 export const _package = new DG.Package();
 
@@ -71,16 +70,16 @@ export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = f
       const similarityCol = table.getCol('similarity');
       const order = similarityCol.getSortedOrder();
       const descendingOrder = order.slice().sort((a, b) => similarityCol.get(b) - similarityCol.get(a));
-      
+
       const reorderedMols: string[] = new Array<string>(descendingOrder.length);
       const reorderedScores: number[] = new Array<number>(descendingOrder.length);
-      
+
       for (let i = 0; i < descendingOrder.length; ++i) {
         const index = descendingOrder[i];
         reorderedMols[i] = moleculeCol.get(index);
         reorderedScores[i] = similarityCol.get(index);
       }
-      
+
       moleculeCol.init((i) => reorderedMols[i]);
       similarityCol.init((i) => reorderedScores[i]);
     }
@@ -187,20 +186,3 @@ export async function chemblIdToSmilesTs(id: string): Promise<string> {
   return await grok.functions.call('Chembl:chemblIdToSmiles', {id: id});
   //return 'CN(C)CCc1c[nH]c2ccc(C[C@H]3COC(=O)N3)cc12';
 }
-
-//name: chemblBioactivitySearchWidget
-//tags: search
-//input: string s
-//output: widget w
-export async function chemblBioactivitySearchWidget(s: string) {
-  return await chemblBioactivityForTargetsSearch(s);
-}
-
-//name: chemblPKForDrugSearchWidget
-//tags: search
-//input: string s
-//output: widget w
-export async function chemblPKForDrugSearchWidget(s: string) {
-  return await chemblPKForDrugSearch(s);
-}
-

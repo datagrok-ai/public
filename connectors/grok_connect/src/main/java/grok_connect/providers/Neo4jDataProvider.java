@@ -76,35 +76,35 @@ public class Neo4jDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public PatternMatcherResult stringPatternConverter(FuncParam param, PatternMatcher matcher) {
+    public PatternMatcherResult stringPatternConverter(String paramName, PatternMatcher matcher) {
         PatternMatcherResult result = new PatternMatcherResult();
         String type = "string";
         String formatQuery = "(toLower(%s) %s toLower(@%s))";
         String value = (matcher.values.get(0)).toLowerCase();
         switch (matcher.op) {
             case PatternMatcher.EQUALS:
-                result.setQuery(String.format(formatQuery, matcher.colName, "=", param.name));
-                result.addParam(new FuncParam(type, param.name, value));
+                result.setQuery(String.format(formatQuery, matcher.colName, "=", paramName));
+                result.addParam(new FuncParam(type, paramName, value));
                 break;
             case PatternMatcher.CONTAINS:
-                result.setQuery(String.format(formatQuery, matcher.colName, PatternMatcher.CONTAINS, param.name));
-                result.addParam(new FuncParam(type, param.name, value));
+                result.setQuery(String.format(formatQuery, matcher.colName, PatternMatcher.CONTAINS, paramName));
+                result.addParam(new FuncParam(type, paramName, value));
                 break;
             case PatternMatcher.STARTS_WITH:
-                result.setQuery(String.format(formatQuery, matcher.colName, PatternMatcher.STARTS_WITH, param.name));
-                result.addParam(new FuncParam(type, param.name, value));
+                result.setQuery(String.format(formatQuery, matcher.colName, PatternMatcher.STARTS_WITH, paramName));
+                result.addParam(new FuncParam(type, paramName, value));
                 break;
             case PatternMatcher.ENDS_WITH:
-                result.setQuery(String.format(formatQuery, matcher.colName, PatternMatcher.ENDS_WITH, param.name));
-                result.addParam(new FuncParam(type, param.name, value));
+                result.setQuery(String.format(formatQuery, matcher.colName, PatternMatcher.ENDS_WITH, paramName));
+                result.addParam(new FuncParam(type, paramName, value));
                 break;
             case PatternMatcher.REGEXP:
                 result.setQuery(getRegexQuery(matcher.colName, value));
-                result.addParam(new FuncParam(type, param.name, value));
+                result.addParam(new FuncParam(type, paramName, value));
                 break;
             case PatternMatcher.IN:
             case PatternMatcher.NOT_IN:
-                String names = paramToNamesString(param, matcher, type, result);
+                String names = paramToNamesString(paramName, matcher, type, result);
                 result.setQuery(getInQuery(matcher, names));
                 break;
             default:
@@ -115,7 +115,7 @@ public class Neo4jDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public PatternMatcherResult dateTimePatternConverter(FuncParam param, PatternMatcher matcher) {
+    public PatternMatcherResult dateTimePatternConverter(String paramName, PatternMatcher matcher) {
         PatternMatcherResult result = new PatternMatcherResult();
         String compareString =
                 String.format("localdatetime({year:%s.year, month:%s.month, day:%s.day})",
@@ -123,18 +123,18 @@ public class Neo4jDataProvider extends JdbcDataProvider {
         String queryFormat = "(%s %s @%s)";
         switch (matcher.op) {
             case PatternMatcher.EQUALS:
-                result.setQuery(String.format(queryFormat, compareString, "=", param.name));
-                result.addParam(new FuncParam("datetime", param.name, matcher.values.get(0)));
+                result.setQuery(String.format(queryFormat, compareString, "=", paramName));
+                result.addParam(new FuncParam("datetime", paramName, matcher.values.get(0)));
                 break;
             case PatternMatcher.BEFORE:
             case PatternMatcher.AFTER:
                 result.setQuery(String.format(queryFormat, compareString,
-                        PatternMatcher.cmp(matcher.op, matcher.include1), param.name));
-                result.addParam(new FuncParam("datetime", param.name, matcher.values.get(0)));
+                        PatternMatcher.cmp(matcher.op, matcher.include1), paramName));
+                result.addParam(new FuncParam("datetime", paramName, matcher.values.get(0)));
                 break;
             case PatternMatcher.RANGE_DATE_TIME:
-                String name0 = param.name + "R0";
-                String name1 = param.name + "R1";
+                String name0 = paramName + "R0";
+                String name1 = paramName + "R1";
                 result.setQuery(String.format("(%s %s @%s AND %s %s @%s)", compareString,
                                 PatternMatcher.cmp(PatternMatcher.AFTER, matcher.include1),
                                 name0, compareString, PatternMatcher.cmp(PatternMatcher.BEFORE, matcher.include2), name1));

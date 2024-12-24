@@ -68,3 +68,7 @@
 .monomer-manager-form-tab-control input.d4-invalid {
     background: #ff000030;
 }
+
+.monomer-lib-controls-form .ui-input-root {
+    flex-wrap: nowrap !important;
+}

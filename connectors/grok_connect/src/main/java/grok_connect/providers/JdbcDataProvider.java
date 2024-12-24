@@ -28,15 +28,9 @@ import grok_connect.log.EventType;
 import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
-import grok_connect.table_query.FieldPredicate;
 import grok_connect.table_query.GroupAggregation;
 import grok_connect.table_query.TableQuery;
-import grok_connect.utils.ConnectionPool;
-import grok_connect.utils.GrokConnectException;
-import grok_connect.utils.PatternMatcher;
-import grok_connect.utils.PatternMatcherResult;
-import grok_connect.utils.QueryCancelledByUser;
-import grok_connect.utils.QueryMonitor;
+import grok_connect.utils.*;
 import org.apache.commons.lang.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -149,7 +143,6 @@ public abstract class JdbcDataProvider extends DataProvider {
         queryLogger.trace("Provider {} transactions", supportsTransactions ? "supports" : "doesn't support");
         if (supportsTransactions)
             connection.setAutoCommit(false);
-
         DataQuery dataQuery = queryRun.func;
         String mainCallId = (String) queryRun.aux.get("mainCallId");
 
@@ -169,8 +162,6 @@ public abstract class JdbcDataProvider extends DataProvider {
                 queryLogger.debug("Creating PreparedStatement...");
                 PreparedStatement statement = connection.prepareStatement(query);
                 queryLogger.debug("Created PreparedStatement");
-
-                queryMonitor.addNewStatement(mainCallId, statement);
                 queryLogger.debug(EventType.STATEMENT_PARAMETERS_REPLACEMENT.getMarker(EventType.Stage.START), "Replacing designated query parameters ? with actual values...");
                 int i = 0;
                 for (int n = 0; n < names.size(); n++) {
@@ -181,12 +172,14 @@ public abstract class JdbcDataProvider extends DataProvider {
                     else if (param.propertyType.equals(Types.LIST) && param.propertySubType.equals(Types.STRING)) {
                         i = i + setArrayParamValue(statement, n + i + 1, param);
                     }
+                    else if (param.propertyType.equals(Types.BIG_INT) && param.value != null)
+                        statement.setLong(n + i + 1, Long.parseLong(param.value.toString()));
                     else {
-                        if (param.value == null) {
-                            statement.setNull(n + i + 1, java.sql.Types.VARCHAR);
-                        }
-                        else
-                            statement.setObject(n + i + 1, param.value);
+//                        if (param.value == null) {
+//                            statement.setNull(n + i + 1, java.sql.Types.VARCHAR);
+//                        }
+//                        else
+                        statement.setObject(n + i + 1, param.value);
                     }
                 }
                 queryLogger.debug(EventType.STATEMENT_PARAMETERS_REPLACEMENT.getMarker(EventType.Stage.END), "Replaced designated query parameters");
@@ -437,11 +430,11 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
     }
 
-    protected static String paramToNamesString(FuncParam param, PatternMatcher matcher, String type,
+    protected static String paramToNamesString(String paramName, PatternMatcher matcher, String type,
                                                PatternMatcherResult result) {
         StringBuilder builder = new StringBuilder();
         for (int n = 0 ; n < matcher.values.size(); n++) {
-            String name = param.name + n;
+            String name = paramName + n;
             builder.append("@");
             builder.append(name);
             builder.append(",");
@@ -450,23 +443,23 @@ public abstract class JdbcDataProvider extends DataProvider {
         return builder.deleteCharAt(builder.length() - 1).toString();
     }
 
-    public PatternMatcherResult numericPatternConverter(FuncParam param, PatternMatcher matcher) {
+    @Override
+    public PatternMatcherResult numericPatternConverter(String paramName, String typeName, PatternMatcher matcher) {
         PatternMatcherResult result = new PatternMatcherResult();
-        String type = param.options.get("pattern");
         switch (matcher.op) {
             case PatternMatcher.NONE:
                 result.query = "(1 = 1)";
                 break;
             case PatternMatcher.RANGE_NUM:
-                String name0 = param.name + "R0";
-                String name1 = param.name + "R1";
+                String name0 = paramName + "R0";
+                String name1 = paramName + "R1";
                 result.query = "(" + matcher.colName + " >= @" + name0 + " AND " + matcher.colName + " <= @" + name1 + ")";
-                result.params.add(new FuncParam(type, name0, matcher.values.get(0)));
-                result.params.add(new FuncParam(type, name1, matcher.values.get(1)));
+                result.params.add(new FuncParam(typeName, name0, matcher.values.get(0)));
+                result.params.add(new FuncParam(typeName, name1, matcher.values.get(1)));
                 break;
             case PatternMatcher.IN:
             case PatternMatcher.NOT_IN:
-                String names = paramToNamesString(param, matcher, type, result);
+                String names = paramToNamesString(paramName, matcher, typeName, result);
                 result.query = getInQuery(matcher, names);
                 break;
             case PatternMatcher.IS_NULL:
@@ -474,8 +467,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                 result.query = String.format("(%s %s)", matcher.colName, matcher.op);
                 break;
             default:
-                result.query = "(" + matcher.colName + " " + matcher.op + " @" + param.name + ")";
-                result.params.add(new FuncParam(type, param.name, matcher.values.get(0)));
+                result.query = "(" + matcher.colName + " " + matcher.op + " @" + paramName + ")";
+                result.params.add(new FuncParam(typeName, paramName, matcher.values.get(0)));
                 break;
         }
         return result;
@@ -484,7 +477,32 @@ public abstract class JdbcDataProvider extends DataProvider {
         return String.format("(%s %s (%s))", matcher.colName, matcher.op, names);
     }
 
-    public PatternMatcherResult stringPatternConverter(FuncParam param, PatternMatcher matcher) {
+    @Override
+    public PatternMatcherResult boolPatternConverter(String paramName, PatternMatcher matcher) {
+        PatternMatcherResult result = new PatternMatcherResult();
+        if (matcher.op.equals(PatternMatcher.EQUALS)) {
+            result.query = "(" + matcher.colName + " = @" + paramName + ")";
+            result.params.add(new FuncParam(Types.BOOL, paramName, matcher.values.stream().findFirst().orElse("true")));
+        }
+        else
+            result.query = "(1 = 1)";
+        return result;
+    }
+
+    @Override
+    public PatternMatcherResult bigIntPatternConverter(String paramName, PatternMatcher matcher) {
+        PatternMatcherResult result = new PatternMatcherResult();
+        if (matcher.op.equals(PatternMatcher.EQUALS)) {
+            result.query = "(" + matcher.colName + " = @" + paramName + ")";
+            result.params.add(new FuncParam(Types.BIG_INT, paramName, matcher.values.stream().findFirst().orElse(null)));
+        }
+        else
+            result.query = "(1 = 1)";
+        return result;
+    }
+
+    @Override
+    public PatternMatcherResult stringPatternConverter(String paramName, PatternMatcher matcher) {
         PatternMatcherResult result = new PatternMatcherResult();
 
         if (matcher.op.equals(PatternMatcher.NONE)) {
@@ -493,7 +511,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
 
         String type = "string";
-        String _query = "(LOWER(" + matcher.colName + ") LIKE @" + param.name + ")";
+        String _query = "(LOWER(" + matcher.colName + ") LIKE @" + paramName + ")";
         List<String> values = matcher.values;
         String value = null;
         if (values.size() > 0)
@@ -502,27 +520,27 @@ public abstract class JdbcDataProvider extends DataProvider {
         switch (matcher.op) {
             case PatternMatcher.EQUALS:
                 result.query = _query;
-                result.params.add(new FuncParam(type, param.name, value));
+                result.params.add(new FuncParam(type, paramName, value));
                 break;
             case PatternMatcher.CONTAINS:
                 result.query = _query;
-                result.params.add(new FuncParam(type, param.name, "%" + value + "%"));
+                result.params.add(new FuncParam(type, paramName, "%" + value + "%"));
                 break;
             case PatternMatcher.STARTS_WITH:
                 result.query = _query;
-                result.params.add(new FuncParam(type, param.name, value + "%"));
+                result.params.add(new FuncParam(type, paramName, value + "%"));
                 break;
             case PatternMatcher.ENDS_WITH:
                 result.query = _query;
-                result.params.add(new FuncParam(type, param.name, "%" + value));
+                result.params.add(new FuncParam(type, paramName, "%" + value));
                 break;
             case PatternMatcher.REGEXP:
                 result.query = getRegexQuery(matcher.colName, value);
-                result.params.add(new FuncParam(type, param.name, value));
+                result.params.add(new FuncParam(type, paramName, value));
                 break;
             case PatternMatcher.IN:
             case PatternMatcher.NOT_IN:
-                String names = paramToNamesString(param, matcher, type, result);
+                String names = paramToNamesString(paramName, matcher, type, result);
                 result.query = getInQuery(matcher, names);
                 break;
             case PatternMatcher.IS_NULL:
@@ -541,22 +559,23 @@ public abstract class JdbcDataProvider extends DataProvider {
         throw new UnsupportedOperationException("REGEXP is not supported for this provider");
     }
 
-    public PatternMatcherResult dateTimePatternConverter(FuncParam param, PatternMatcher matcher) {
+    @Override
+    public PatternMatcherResult dateTimePatternConverter(String paramName, PatternMatcher matcher) {
         PatternMatcherResult result = new PatternMatcherResult();
 
         switch (matcher.op) {
             case PatternMatcher.EQUALS:
-                result.query = "(" + matcher.colName + " = @" + param.name + ")";
-                result.params.add(new FuncParam("datetime", param.name, matcher.values.get(0)));
+                result.query = "(" + matcher.colName + " = @" + paramName + ")";
+                result.params.add(new FuncParam("datetime", paramName, matcher.values.get(0)));
                 break;
             case PatternMatcher.BEFORE:
             case PatternMatcher.AFTER:
-                result.query = "(" + matcher.colName + PatternMatcher.cmp(matcher.op, matcher.include1) + "@" + param.name + ")";
-                result.params.add(new FuncParam("datetime", param.name, matcher.values.get(0)));
+                result.query = "(" + matcher.colName + PatternMatcher.cmp(matcher.op, matcher.include1) + "@" + paramName + ")";
+                result.params.add(new FuncParam("datetime", paramName, matcher.values.get(0)));
                 break;
             case PatternMatcher.RANGE_DATE_TIME:
-                String name0 = param.name + "R0";
-                String name1 = param.name + "R1";
+                String name0 = paramName + "R0";
+                String name1 = paramName + "R1";
                 result.query = "(" + matcher.colName + PatternMatcher.cmp(PatternMatcher.AFTER, matcher.include1) + "@" + name0 + " AND " +
                         matcher.colName + PatternMatcher.cmp(PatternMatcher.BEFORE, matcher.include2) + "@" + name1 + ")";
                 result.params.add(new FuncParam("datetime", name0, matcher.values.get(0)));
@@ -575,7 +594,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         return result;
     }
 
-    protected String aggrToSql(GroupAggregation aggr) {
+    public String aggrToSql(GroupAggregation aggr) {
         AggrFunctionInfo funcInfo = null;
         for (AggrFunctionInfo info: descriptor.aggregations) {
             if (info.functionName.equals(aggr.aggType)) {
@@ -584,8 +603,9 @@ public abstract class JdbcDataProvider extends DataProvider {
             }
         }
         if (funcInfo != null) {
-            String sql = funcInfo.dbFunctionName.replaceAll("#", addBrackets(aggr.colName));
-            return sql + " as " + addBrackets(funcInfo.dbFunctionName.replaceAll("#", aggr.colName));
+            String brackets = descriptor.nameBrackets;
+            String sql = GrokConnectUtil.isNotEmpty(aggr.colName) ? funcInfo.dbFunctionName.replaceAll("#", addBrackets(aggr.colName)) : funcInfo.dbFunctionName;
+            return sql + " as " + (GrokConnectUtil.isNotEmpty(aggr.resultColName) ?  brackets.charAt(0) + aggr.resultColName + brackets.charAt(brackets.length() - 1): addBrackets(funcInfo.dbFunctionName).replaceAll("#", aggr.colName));
         }
         else
             return null;
@@ -595,7 +615,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         String brackets = descriptor.nameBrackets;
         return Arrays.stream(name.split("\\."))
                 .map((str) -> str.startsWith(brackets.substring(0, 1)) ? str
-                        : brackets.charAt(0) + name + brackets.substring(brackets.length() - 1))
+                        : brackets.charAt(0) + str + brackets.substring(brackets.length() - 1))
                 .collect(Collectors.joining("."));
     }
 
@@ -603,24 +623,8 @@ public abstract class JdbcDataProvider extends DataProvider {
         return query + "limit " + limit.toString();
     }
 
-    private String patternToSql(FieldPredicate condition) {
-        return condition.matcher.toSql(condition.dataType, condition.field);
-    }
-
-    public String queryTableSql(DataConnection conn, TableQuery query) {
-        return query.toSql(this::aggrToSql, this::patternToSql, this::limitToSql, this::addBrackets,
-                descriptor.limitAtEnd);
-    }
-
-    public DataFrame queryTable(DataConnection conn, TableQuery query) throws QueryCancelledByUser, GrokConnectException {
-        FuncCall queryRun = new FuncCall();
-        queryRun.func = new DataQuery();
-        String sql = queryTableSql(conn, query);
-        if (sql == null)
-            return new DataFrame();
-        queryRun.func.query = sql;
-        queryRun.func.connection = conn;
-        return execute(queryRun);
+    public String queryTableSql(TableQuery query) {
+        return query.toSql();
     }
 
     public String castParamValueToSqlDateTime(FuncParam param) {

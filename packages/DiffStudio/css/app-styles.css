@@ -1,0 +1,95 @@
+.diff-studio-demo-app-div-help {
+    padding: 10px;
+    overflow: auto;
+}
+
+.diff-studio-demo-app-div-md {
+    fontWeight: lighter;
+}
+
+.diff-studio-eqs-editor {
+    overflow: auto;
+    height: 100%;
+}
+
+.diff-studio-app-card .diff-studio-ui-image{
+	min-width: 100%;
+	min-height: 120px;
+	background-size: cover;
+	margin-bottom: 12px;
+}
+
+.diff-studio-card-title {
+    font-weight: bold;
+    color: var(--grey-6);
+    margin: 0px 0px 5px 0px;
+}
+
+.diff-studio-card-description {
+    font-weight: normal;
+    color: var(--grey-4);
+    margin: 0px;
+    max-height: 50px;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.diff-studio-app-input-choice {
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.diff-studio-help-icon {
+    font-size: large;
+    font-weight: bold;
+    margin-right: 8px;
+}
+
+.diff-studio-ribbon-text {    
+    font-weight: normal;
+    margin-left: 2px;
+    margin-right: 8px;
+}
+
+.diff-studio-ribbon-widget {
+    margin-right: 8px;
+}
+
+.diff-studio-ribbon-download {    
+    font-weight: normal;
+    margin-left: 8px;
+    margin-right: 8px;
+}
+
+.diff-studio-inputs-category {    
+    font-size: 13px;
+    font-weight: bold;
+    margin-top: 18px;
+    padding-right: 5px;
+}
+
+.diff-studio-chevron-right {
+    padding-right: 10px;
+}
+
+.diff-studio-chevron-down {
+    padding-right: 5px;
+}
+
+.diff-studio-hint-btns-div {
+    margin-left: auto;
+    margin-right: 0px;
+}
+
+.diff-studio-highlight-text {
+    color: red;
+    font-weight: bold;
+}
+
+.diff-studio-svg-icon {    
+    height: 24px;
+    width: 24px;
+}

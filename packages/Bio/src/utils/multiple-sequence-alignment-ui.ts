@@ -12,7 +12,6 @@ import {pepseaMethods, runPepsea} from './pepsea';
 import {checkInputColumn} from './check-input-column';
 import {MultipleSequenceAlignmentUIOptions} from './types';
 import {kalignVersion, msaDefaultOptions} from './constants';
-import {awaitContainerStart} from './docker';
 
 import '../../css/msa.css';
 import {_package} from '../package';
@@ -176,7 +175,6 @@ async function onColInputChange(
       gapExtendInput.value ??= msaDefaultOptions.pepsea.gapExtend;
 
       return async () => {
-        await awaitContainerStart();
         return runPepsea(col, unusedName, methodInput.value!,
           gapOpenInput.value!, gapExtendInput.value!, clustersColInput.value);
       };
@@ -190,7 +188,6 @@ async function onColInputChange(
       // convert to helm and assign alignment function to PepSea
 
       return async () => {
-        await awaitContainerStart();
         return runPepsea(helmCol, unusedName, methodInput.value!,
           gapOpenInput.value!, gapExtendInput.value!, clustersColInput.value);
       };

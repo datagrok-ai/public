@@ -111,10 +111,11 @@ Usage: grok publish [host]
 Upload a package
 
 Options:
-[--build|--rebuild] [--debug|--release] [-k | --key] [--suffix] [--all] [--refresh]
+[--build|--rebuild] [--debug|--release] [-k | --key] [--suffix] [--all] [--refresh] [--link]
 
 --all             Publish all available packages 
 --refresh         Publish all available already loaded packages 
+--link  	        Link the package to local utils
 
 Running \`grok publish\` is the same as running \`grok publish defaultHost --build --debug\`
 `;
@@ -150,7 +151,7 @@ Options:
 --record            Records the test execution process in mp4 format
 --verbose           Prints detailed information about passed and skipped tests in the console
 --platform          Runs only platform tests (applicable for ApiTests package only)
---core              Runs package & core tests (applicable  for DevTools package only)
+--core              Runs package & auto tests & core tests (core tests run only from DevTools package)
 --benchmark   	    Runs tests in benchmark mode
 --stress-test       Runs shuffled stress-test only
  
@@ -164,7 +165,7 @@ const HELP_TESTALL = `
 Usage: grok testall
 
 Options:
-[--packages] [--host] [--csv] [--gui] [--skip-build] [--skip-publish] [--link-package] [--catchUnhandled] [--report] [--record] [--verbose] [--benchmark] [--stress-test] [--order] [--tags] [--testRepeat] [--workersCount]
+[--packages] [--host] [--csv] [--gui] [--skip-build] [--skip-publish] [--link-package] [--catchUnhandled] [--report] [--record] [--verbose] [--benchmark] [--stress-test] [--order] [--tags] [--testRepeat] [--workers-count]
 
 --packages          Specify a packages names to run tests for
 --host              Host alias as in the config file
@@ -183,7 +184,7 @@ Options:
 --order             Specify order for tests invocation
 --tags              Filter tests by tag name for run
 --testRepeat        Set amount of tests repeats
---workersCount      Set amount of workers for tests run
+--workers-count      Set amount of workers for tests run
 
 Run tests of all or specified packages 
 

@@ -1,5 +1,17 @@
 # EDA changelog
 
+## 1.2.6 (2024-11-05)
+
+Fixed:
+
+* Samples naming in Multivariate Analysis
+
+## 1.2.5 (2024-11-05)
+
+Fixed:
+
+* Labels in Multivariate Analysis
+
 ## 1.2.4 (2024-10-31)
 
 Fixed:

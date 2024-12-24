@@ -1,18 +1,11 @@
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 
-import {getRdKitService, getUncommonAtomsAndBonds} from '../../../utils/chem-common-rdkit';
+import {getUncommonAtomsAndBonds} from '../../../utils/chem-common';
 
-async function getMmpMcs(molecules1: string[], molecules2: string[]): Promise<string[]> {
-  const service = await getRdKitService();
-  const molecules: [string, string][] = new Array<[string, string]>(molecules1.length);
-  for (let i = 0; i < molecules1.length; i++)
-    molecules[i] = [molecules1[i], molecules2[i]];
 
-  return await service.mmpGetMcs(molecules);
-}
-
-export async function getInverseSubstructuresAndAlign(from: string[], to: string[], module: RDModule):
+export async function getInverseSubstructuresAndAlign(cores: string[],
+  from: string[], to: string[], module: RDModule):
   Promise<{
     inverse1: (ISubstruct | null)[],
     inverse2: (ISubstruct | null)[],
@@ -23,13 +16,13 @@ export async function getInverseSubstructuresAndAlign(from: string[], to: string
   const res1 = new Array<(ISubstruct | null)>(from.length);
   const res2 = new Array<(ISubstruct | null)>(from.length);
 
-  const mcs = await getMmpMcs(from, to);
 
   for (let i = 0; i < from.length; i++) {
     //aligning molecules
-    let mcsMol = null;
     let mol1 = null;
     let mol2 = null;
+    let mcsMol = null;
+
     const opts = JSON.stringify({
       useCoordGen: true,
       allowRGroups: true,
@@ -38,7 +31,8 @@ export async function getInverseSubstructuresAndAlign(from: string[], to: string
     });
 
     try {
-      mcsMol = module.get_qmol(mcs[i]);
+      const core = cores[i].replace('[*:1]', '[H]');
+      mcsMol = module.get_mol(core);
       mol1 = module.get_mol(from[i]);
       mol2 = module.get_mol(to[i]);
       mcsMol.set_new_coords();
@@ -47,7 +41,11 @@ export async function getInverseSubstructuresAndAlign(from: string[], to: string
       fromAligned[i] = mol1.get_molblock();
       toAligned[i] = mol2.get_molblock();
       res1[i] = getUncommonAtomsAndBonds(from[i], mcsMol, module, '#bc131f');
+      //@ts-ignore
+      res1[i]['highlightBondWidthMultiplier'] = 40;
       res2[i] = getUncommonAtomsAndBonds(to[i], mcsMol, module, '#49bead');
+      //@ts-ignore
+      res2[i]['highlightBondWidthMultiplier'] = 40;
     } catch (e: any) {
       fromAligned[i] = '';
       toAligned[i] = '';
@@ -57,5 +55,6 @@ export async function getInverseSubstructuresAndAlign(from: string[], to: string
       mcsMol?.delete();
     }
   }
+
   return {inverse1: res1, inverse2: res2, fromAligned: fromAligned, toAligned: toAligned};
 }

@@ -9,18 +9,32 @@ import {loadCampaigns} from './app/utils';
 import {AppName} from './app';
 import {PeptiHitApp} from './app/pepti-hit-app';
 import {PeptiHitHelmColName} from './app/consts';
+import {htPackageSettingsEditorWidget} from './packageSettingsEditor';
 // import {loadCampaigns} from './app/utils';
 
-export const _package = new DG.Package();
+export class HTPackage extends DG.Package {
+  molToSmilesLruCache = new DG.LruCache<string, string>(2000);
+
+  convertToSmiles(mol: string): string {
+    return this.molToSmilesLruCache.getOrCreate(mol,
+      (mol) => grok.chem.convert(mol, grok.chem.Notation.Unknown, grok.chem.Notation.Smiles),
+    );
+  }
+}
+
+export const _package = new HTPackage();
 
 async function hitAppTB(treeNode: DG.TreeViewGroup, browseView: any, name: AppName) {// TODO: DG.BrowseView
+  const loaderDiv = ui.div([], {style: {width: '50px', height: '24px', position: 'relative'}});
+  loaderDiv.innerHTML = `<div class="grok-loader"><div></div><div></div><div></div><div></div></div>`;
+  const loaderItem = treeNode.item(loaderDiv);
   const camps = await loadCampaigns(name, []);
 
   for (const [_, camp] of Object.entries(camps)) {
     const savePath = 'ingest' in camp ? camp.ingest.query : camp.savePath;
-    if (!savePath || await grok.dapi.files.exists(savePath) === false)
+    if (!savePath || !(await grok.dapi.files.exists(savePath)))
       continue;
-    const node = treeNode.item(camp.name);
+    const node = treeNode.item(camp.friendlyName ?? camp.name);
     node.onSelected.subscribe(async (_) => {
       try {
         const df = await grok.dapi.files.readCsv(savePath);
@@ -50,6 +64,7 @@ async function hitAppTB(treeNode: DG.TreeViewGroup, browseView: any, name: AppNa
       }
     });
   }
+  loaderItem.remove();
 }
 
 //input: dynamic treeNode
@@ -73,6 +88,7 @@ export async function peptiHitAppTreeBrowser(treeNode: DG.TreeViewGroup, browseV
 //tags: app
 //name: Hit Triage
 //output: view v
+//meta.browsePath: Chem
 export async function hitTriageApp(): Promise<DG.ViewBase> {
   const c = grok.functions.getCurrentCall();
   return new HitTriageApp(c).multiView;
@@ -82,6 +98,7 @@ export async function hitTriageApp(): Promise<DG.ViewBase> {
 //name: Hit Design
 //meta.icon: images/icons/hit-design-icon.png
 //output: view v
+//meta.browsePath: Chem
 export async function hitDesignApp(): Promise<DG.ViewBase> {
   const c = grok.functions.getCurrentCall();
   return new HitDesignApp(c).multiView;
@@ -91,6 +108,7 @@ export async function hitDesignApp(): Promise<DG.ViewBase> {
 //name: PeptiHit
 //meta.icon: images/icons/pepti-hit-icon.png
 //output: view v
+//meta.browsePath: Peptides
 export async function peptiHitApp(): Promise<DG.ViewBase> {
   const c = grok.functions.getCurrentCall();
   await grok.functions.call('Bio:initBio', {});
@@ -164,4 +182,12 @@ export async function demoFileSubmit(df: DG.DataFrame, molecules: string): Promi
 //output: grid_cell_renderer result
 export function gasteigerCellRenderer(): GasteigerPngRenderer {
   return new GasteigerPngRenderer();
+}
+
+//name: Hit Triage package settings editor
+//tags: packageSettingsEditor
+//input: object propList
+//output: widget result
+export async function htPackageSettingEditor(properties: DG.Property[]) {
+  return htPackageSettingsEditorWidget(properties);
 }

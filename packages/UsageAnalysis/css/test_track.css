@@ -99,10 +99,10 @@
 }
 
 .tt-link {
-  font-size: 0;
 }
 
 .tt-link:after {
+  display: none !important;
   content: attr(data-label);
   font-size: 13px;
   vertical-align: -15%;
@@ -167,6 +167,15 @@
 
 .tt-dialog .ui-input-textarea {
   height: 100%;
+}
+
+.ui-btn-test-run{
+  max-width: 70px;
+}
+
+.ui-test-data{
+  width: 140px;
+  justify-content: space-between;
 }
 
 .tt-dialog .ui-input-textarea{ 

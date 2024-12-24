@@ -36,6 +36,7 @@ export enum TITLE {
   EXPLORE = 'Explore',
   FEATURES = 'Feature names',
   BROWSE = 'Browse',
+  ANALYSIS = 'Features Analysis',
 }
 
 /** Tooltips */

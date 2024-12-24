@@ -81,7 +81,7 @@ category('DataFrame: Methods', () => {
     const t = DG.DataFrame.create(3);
     t.columns.add(DG.Column.fromInt32Array('numbers', Int32Array.from([1, 4, 2])));
     t.columns.add(DG.Column.fromInt32Array('digits', Int32Array.from([2, 1, 3])));
-    return t.getDensity(4, 2, 'numbers', 'digits');
+    t.getDensity(4, 2, 'numbers', 'digits');
   });
 
   test('getSortedOrder', async () => {
@@ -94,7 +94,7 @@ category('DataFrame: Methods', () => {
 
   test('getTableInfo', async () => {
     const df1 = createDf();
-    return df1.getTableInfo();
+    df1.getTableInfo();
   });
 
   test('getTag | setTag', async () => {
@@ -535,9 +535,9 @@ category('DataFrame: ColumnList', () => {
 
   test('getOrCreate', async () => {
     const df = createDf();
-    df.columns.getOrCreate('countries', 'string', 2);
+    df.columns.getOrCreate('countries', 'string');
     expect(df.columns.length, 2);
-    df.columns.getOrCreate('countries1', 'string', 2);
+    df.columns.getOrCreate('countries1', 'string');
     expect(df.columns.length, 3);
   });
 
@@ -578,7 +578,7 @@ category('DataFrame: ColumnList', () => {
 
   test('toString', async () => {
     const df1 = createDf();
-    return df1.columns.toString();
+    df1.columns.toString();
   });
 });
 

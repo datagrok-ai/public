@@ -1,3 +1,5 @@
+/* eslint-disable max-params */
+/* eslint-disable max-len */
 /* eslint max-lines: "off" */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -9,7 +11,7 @@ import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cli
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {BitArrayMetrics, KnownMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {IMonomerLib, IMonomerLibBase, IMonomerSet} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
 import {SCORE} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
@@ -24,14 +26,13 @@ import {ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/multi-colum
 import {generateLongSequence, generateLongSequence2} from '@datagrok-libraries/bio/src/utils/generator';
 import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
-import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDModule as _RDMoule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
 
 import {getMacromoleculeColumns} from './utils/ui-utils';
 import {MacromoleculeDifferenceCellRenderer, MacromoleculeSequenceCellRenderer,} from './utils/cell-renderer';
-import {MacromoleculeCustomCellRenderer} from './utils/cell-renderer-custom';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {SequenceAlignment} from './seq_align';
 import {getEncodedSeqSpaceCol} from './analysis/sequence-space';
@@ -84,7 +85,7 @@ export async function getMonomerLibHelper(): Promise<IMonomerLibHelper> {
   return await MonomerLibManager.getInstance();
 }
 
-export let hydrophobPalette: SeqPaletteCustom | null = null;
+//export let hydrophobPalette: SeqPaletteCustom | null = null;
 
 export class SeqPaletteCustom implements SeqPalette {
   private readonly _palette: { [m: string]: string };
@@ -127,39 +128,42 @@ async function initBioInt() {
     libSettings.explicit = [];
     await setUserLibSettings(libSettings);
   }
-  libHelper.awaitLoaded(Infinity).then(() => {
-    // Do not wait for monomers and sets loaded
-    return Promise.all([libHelper.loadMonomerLib(), libHelper.loadMonomerSets()]);
-  });
+  await libHelper.awaitLoaded(Infinity);
+  if (!libHelper.initialLoadCompleted)
+    await libHelper.loadMonomerLib();
+  // Do not wait for monomers and sets loaded
+  libHelper.loadMonomerSets();
   const monomerLib = libHelper.getMonomerLib();
   const monomerSets = libHelper.getMonomerSets();
   // finally log
   const t2: number = window.performance.now();
   _package.logger.debug(`${logPrefix}, loading ET: ${t2 - t1} ms`);
 
-  const monomers: string[] = [];
-  const logPs: number[] = [];
+  // const monomers: string[] = [];
+  // const logPs: number[] = [];
 
   const seqHelper = new SeqHelper(libHelper, rdKitModule);
   _package.completeInit(seqHelper, monomerLib, monomerSets, rdKitModule);
-  const series = monomerLib!.getMonomerMolsByPolymerType('PEPTIDE')!;
-  Object.keys(series).forEach((symbol) => {
-    monomers.push(symbol);
-    const block = series[symbol].replaceAll('#R', 'O ');
-    const mol = rdKitModule.get_mol(block);
-    const logP = JSON.parse(mol.get_descriptors()).CrippenClogP;
-    logPs.push(logP);
-    mol?.delete();
-  });
 
-  const sum = logPs.reduce((a, b) => a + b, 0);
-  const avg = (sum / logPs.length) || 0;
+  // NB! do not delete the code below. not used now but in future we might use hydrophobicity palette
+  // const series = monomerLib!.getMonomerMolsByPolymerType('PEPTIDE')!;
+  // Object.keys(series).forEach((symbol) => {
+  //   monomers.push(symbol);
+  //   const block = series[symbol].replaceAll('#R', 'O ');
+  //   const mol = rdKitModule.get_mol(block);
+  //   const logP = JSON.parse(mol.get_descriptors()).CrippenClogP;
+  //   logPs.push(logP);
+  //   mol?.delete();
+  // });
 
-  const palette: { [monomer: string]: string } = {};
-  for (let i = 0; i < monomers.length; i++)
-    palette[monomers[i]] = logPs[i] < avg ? '#4682B4' : '#DC143C';
+  // const sum = logPs.reduce((a, b) => a + b, 0);
+  // const avg = (sum / logPs.length) || 0;
 
-  hydrophobPalette = new SeqPaletteCustom(palette);
+  // const palette: { [monomer: string]: string } = {};
+  // for (let i = 0; i < monomers.length; i++)
+  //   palette[monomers[i]] = logPs[i] < avg ? '#4682B4' : '#DC143C';
+
+  // hydrophobPalette = new SeqPaletteCustom(palette);
 
   _package.logger.debug(`${logPrefix}, end`);
 }
@@ -318,7 +322,7 @@ export function SeqActivityCliffsEditor(call: DG.FuncCall) {
 //meta.columnTags: quality=Macromolecule, units=custom
 //output: grid_cell_renderer result
 export function customSequenceCellRenderer(): DG.GridCellRenderer {
-  return new MacromoleculeCustomCellRenderer();
+  return new MacromoleculeSequenceCellRenderer();
 }
 
 //name: fastaSequenceCellRenderer
@@ -416,14 +420,6 @@ export function getRegion(
 ): DG.Column<string> {
   return getRegionDo(sequence,
     start ?? null, end ?? null, name ?? null);
-}
-
-//top-menu: Bio | Manage | Monomers
-//name: manageMonomersView
-//description: Edit and create monomers
-export async function manageMonomersView() {
-  const monomerManager = await MonomerManager.getInstance();
-  await monomerManager.getViewRoot();
 }
 
 //top-menu: Bio | Convert | Get Region...
@@ -764,7 +760,7 @@ export function convertDialog() {
 export async function convertSeqNotation(sequence: string, targetNotation: NOTATION, separator?: string): Promise<string | undefined | null> {
   try {
     const col = DG.Column.fromStrings('sequence', [sequence]);
-    const df = DG.DataFrame.fromColumns([col]);
+    const _df = DG.DataFrame.fromColumns([col]);
     const semType = await grok.functions.call('Bio:detectMacromolecule', {col: col});
     if (semType)
       col.semType = semType;
@@ -958,6 +954,46 @@ export async function manageMonomerLibraries(): Promise<void> {
 //name: Manage Monomer Libraries View
 export async function manageLibrariesView(): Promise<void> {
   await showManageLibrariesView();
+}
+
+//top-menu: Bio | Manage | Monomers
+//name: manageMonomersView
+//description: Edit and create monomers
+export async function manageMonomersView() {
+  const monomerManager = await MonomerManager.getInstance();
+  await monomerManager.getViewRoot();
+}
+
+//name: Monomers
+//tags: app
+//meta.browsePath: Peptides
+//meta.icon: files/icons/monomers.png
+//output: view v
+export async function manageLibrariesApp(): Promise<DG.View> {
+  return await showManageLibrariesView(false);
+}
+
+//name: Monomer Manager Tree Browser
+//input: dynamic treeNode
+//input: view browseView
+export async function manageLibrariesAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
+  const libraries = (await (await MonomerLibManager.getInstance()).getFileManager()).getValidLibraryPaths();
+  libraries.forEach((libName) => {
+    const libNode = treeNode.item(libName);
+    // eslint-disable-next-line rxjs/no-ignored-subscription, rxjs/no-async-subscribe
+    libNode.onSelected.subscribe(async () => {
+      const monomerManager = await MonomerManager.getNewInstance();
+      browseView.preview = await monomerManager.getViewRoot(libName, false);
+    });
+
+    libNode.root.addEventListener('dblclick', async (e) => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const monomerManager = await MonomerManager.getInstance();
+      await monomerManager.getViewRoot(libName, true);
+      monomerManager.resetCurrentRowFollowing();
+    });
+  });
 }
 
 //name: saveAsFasta

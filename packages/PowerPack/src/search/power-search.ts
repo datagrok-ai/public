@@ -61,15 +61,17 @@ function regexEntitiesSearch(s: string, host: HTMLDivElement): void {
 
   if (semValues.every((sv) => sv?.semType && sv.semType == semValues[0].semType) &&
     DG.ObjectHandler.forEntity(semValues[0])) {
-    const itemsPanel = ui.div([], {style: {'display': 'flex', 'flex-wrap': 'wrap'}});
+    const itemsPanel = ui.div([], {style: {display: 'flex', flexWrap: 'wrap'}});
     const panel = ui.divV([
       ui.span([
         `${semValues.length} ${semValues[0].semType} ${semValues.length == 1 ? 'object. ' : 'objects. '}`,
         ui.link('Open table', () => {
           const df = DG.DataFrame.create(semValues.length);
           df.columns.addNewString(semValues[0].semType).init((i) => semValues[i].value);
-          grok.shell.addTable(df);
-        })], {style: {'margin-bottom': '10px'}}),
+          setTimeout(() => {
+            grok.shell.addTableView(df);
+          });
+        })], {style: {marginBottom: '10px'}}),
       itemsPanel,
     ]);
     for (const sv of semValues)
@@ -166,7 +168,7 @@ function tableQueriesFunctionsSearch(s: string, host: HTMLDivElement): void {
           return tv.root;
         } catch (e) {
           console.error(e);
-          return ui.divText('Opperation caused exeption');
+          return ui.divText('Operation caused exception');
         }
       }))),
       );
@@ -213,6 +215,6 @@ function functionEvaluationsSearch(s: string, host: HTMLDivElement): void {
 
   grok.functions
     .eval(s)
-    .then((result) => host.appendChild(ui.span([s + ' = ', result], {style: {'font-size': '20px'}})))
+    .then((result) => host.appendChild(ui.span([s + ' = ', result], {style: {fontSize: '20px'}})))
     .catch(() => {});
 }

@@ -123,6 +123,7 @@ export class TestTrack extends DG.ViewBase {
       return;
     }
 
+    let progressBar = DG.TaskBarProgressIndicator.create('Opening Test');
     this.isInitializing = true;
     this.initTreeView().then(() => {
       this.inited = true;
@@ -130,6 +131,7 @@ export class TestTrack extends DG.ViewBase {
 
       this.addCollabTestingSync();
       this.addReporterSync();
+      progressBar.close();
     });
 
   }
@@ -353,10 +355,13 @@ export class TestTrack extends DG.ViewBase {
       this.testingNames.push(this.testingName);
 
     this.addTestingButton = ui.button(getIcon('plus', { style: 'fas' }), async () => { await this.showAddNewTestingDialog() });
-    this.testingNameSelector = ui.input.choice('', { items: this.testingNames, value: this.testingName, nullable: false, onValueChanged:(e)=>{
-      this.testingName = e;
-      this.refresh();
-    } });
+    this.testingNameSelector = ui.input.choice('', {
+      items: this.testingNames, value: this.testingName, nullable: false, onValueChanged: (e) => {
+        this.testingName = e;
+        this.refresh();
+        localStorage.setItem(BATCHNAME_STORAGE_KEY, this.testingName);
+      }
+    });
 
     this.nameDiv.append(this.addTestingButton);
     this.nameDiv.append(this.testingNameSelector.root);
@@ -641,7 +646,7 @@ export class TestTrack extends DG.ViewBase {
 
   private setStatus(node: any, data: any, statusName: string) {
     const status = statusName.toLowerCase() as Status;
-    if (node.value.status === status) return;
+    if (node?.value?.status === status) return;
     data.args.menu.clear();
     data.args.menu.root.remove();
     if (status === PASSED)
@@ -687,8 +692,8 @@ export class TestTrack extends DG.ViewBase {
   updateGroupStatus(group: DG.TreeViewGroup): void {
     group.value.icon.innerHTML = '';
     const statuses = group.value.children.map((el: TestCase | Category) => el.status);
+    let status: typeof PASSED | typeof MINORFAIL | typeof CRITICALFAIL | typeof BLOCKFAIL | typeof SKIPPED = statuses.includes(BLOCKFAIL) ? BLOCKFAIL : statuses.includes(CRITICALFAIL) ? CRITICALFAIL : statuses.includes(MINORFAIL) ? MINORFAIL : statuses.includes(SKIPPED) ? SKIPPED : PASSED;
 
-    const status = errorSeverityLevels.some((e) => statuses.includes(e)) ? CRITICALFAIL : statuses.includes(SKIPPED) ? SKIPPED : PASSED;
     group.value.status = status;
     if (status === PASSED && statuses.some((e: any) => e == undefined)) {
       group.value.status = null;
@@ -749,7 +754,7 @@ export class TestTrack extends DG.ViewBase {
             'priority': {
               'name': ticketPriorityLevel[errorTypeSelector.value]
             },
-            'customfield_10439':this.testingName
+            'customfield_10439': this.testingName
           },
         }),
         'updateHistory': false,
@@ -765,25 +770,27 @@ export class TestTrack extends DG.ViewBase {
         createTicketBtn.disabled = false;
       });
     })
-    
-    createTicketBtn.disabled =true;
-    const errorTypeSelector = ui.input.choice('Severity', { value: '', items: ['', ...errorSeverityLevels], nullable: false, onValueChanged:(e)=>{
+
+    createTicketBtn.disabled = true;
+    const errorTypeSelector = ui.input.choice('Severity', {
+      value: '', items: ['', ...errorSeverityLevels], nullable: false, onValueChanged: (e) => {
         createTicketBtn.disabled = ticketSummary.value.length === 0 || errorTypeSelector.value == '';
-    }});
-    
+      }
+    });
+
     const textInput = ui.input.textArea(errorSeverityLevels.includes(status) ? 'Tickets' : 'Reasons', { value: value, nullable: false });
     textInput.classList.add('ui-input-reason');
     ticketSummary.onChanged.subscribe((value) => {
       createTicketBtn.disabled = value.length === 0 || errorTypeSelector.value == '';
     })
- 
-    const createTicketButtonTooltip = ui.tooltip.bind(createTicketBtn, 'Ensure that you selected severity level and wrote ticket summary.') 
+
+    const createTicketButtonTooltip = ui.tooltip.bind(createTicketBtn, 'Ensure that you selected severity level and wrote ticket summary.')
 
     createTicketBtn.classList.add('create-ticket-button');
     const jiraTicketsTab = ui.divH([ui.divV([ticketSummary, ticketDescription]), createTicketBtn]);
-      
-    errorTypeSelector.addValidator((value)=>{
-      if(value == '')
+
+    errorTypeSelector.addValidator((value) => {
+      if (value == '')
         return 'Can\'t be null';
       return null;
     });
@@ -794,9 +801,6 @@ export class TestTrack extends DG.ViewBase {
           status = value;
       });
       dialog.add(errorTypeSelector);
-    }
-    else {
-      status = CRITICALFAIL; 
     }
     dialog.root.addEventListener('keydown', (e) => {
       if (e.key == 'Enter' && document.activeElement?.nodeName === 'TEXTAREA')
@@ -810,16 +814,18 @@ export class TestTrack extends DG.ViewBase {
       const accordion = ui.accordion();
       accordion.addPane('Jira Tickets', () => jiraTicketsTab)
       dialog.add(accordion);
-    } 
+    }
 
     dialog.show({ resizable: false });
     dialog.initDefaultHistory();
-    
-    const okButton = dialog.root.getElementsByClassName("d4-dialog-footer")[0].getElementsByClassName('ui-btn-ok')[0]; 
+
+    const okButton = dialog.root.getElementsByClassName("d4-dialog-footer")[0].getElementsByClassName('ui-btn-ok')[0];
   }
 
   changeNodeStatus(node: DG.TreeViewNode, status: Status, reason?: string, uid: string = this.uid, reportData: Boolean = true): void {
-    const value = node.value;
+    if(!node)
+      return;
+    const value = node?.value;
     if (value.status) {
       if (value.history.children.length === 5)
         value.history.children[4].remove();
@@ -880,11 +886,11 @@ export class TestTrack extends DG.ViewBase {
   }
 
   changeNodeReason(node: DG.TreeViewNode, status: Status, reason: string, uid: string = this.uid, reportData: Boolean = true): void {
-    if (status !== node.value.status) {
+    if (status !== node?.value?.status) {
       this.changeNodeStatus(node, status, reason, uid, reportData);
       return;
     }
-    if (reason === node.value.reason.innerText) return;
+    if (reason === node?.value?.reason?.innerText) return;
     node.value.reason.innerHTML = '';
     let severityLevel = null;
     if (errorSeverityLevels.includes(status) || status === SKIPPED) {
@@ -1080,7 +1086,7 @@ export class TestTrack extends DG.ViewBase {
       else if (gh1) result.append(this.getReasonLink(str, this.gitHubBaseUrl + gh1[1], gh1[0]));
       else if (gh2) result.append(this.getReasonLink(str, str, `#${gh2[1]}`));
       else if (slack) result.append(this.getReasonLink(str, str, 'SLACK'));
-      else result.append(ui.p(str));
+      else result.innerText = str;
     }
     result.style.lineHeight = '4px ';
     return result;
@@ -1151,8 +1157,8 @@ export class TestTrack extends DG.ViewBase {
     const history: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestTrack', { batchName: `${this.testingName}` });
 
     for (const row of history.rows) {
-
-      const reason: string = row.get('reason');
+      
+      const reason: string = row.get('reason').trim();
       const uid: string = row.get('uid');
 
       let status = row.get('status');

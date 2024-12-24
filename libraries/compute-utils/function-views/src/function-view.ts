@@ -592,7 +592,14 @@ export abstract class FunctionView extends DG.ViewBase {
     if (this.isExportEnabled && this.exportConfig && this.exportConfig.supportedFormats.length > 0) {
       ribbonMenu
         .group('Export')
-        .items(this.getFormats(), this.exportRun.bind(this))
+        .items(this.getFormats(), this.exportRun.bind(this), {isValid: () => {
+          if (!this.isHistorical.value) return 'Run should be completed to be exported';
+
+          if (this.mandatoryConsistent && this.consistencyState.value === 'inconsistent')
+            return 'Run should be consistent to be exported';
+
+          return null;
+        }})
         .endGroup();
     }
 

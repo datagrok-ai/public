@@ -54,6 +54,15 @@ export class PolyToolPlaceholdersBreadthInput extends DG.JsInputBase<DG.DataFram
     for (const sub of this.subs) sub.unsubscribe();
     for (const sub of this.dataFrameSubs) sub.unsubscribe();
   }
+  public clearInput(): void {
+    const df: DG.DataFrame = DG.DataFrame.fromColumns([
+      DG.Column.fromType(DG.COLUMN_TYPE.STRING, 'Remove', 0),
+      DG.Column.fromType(DG.COLUMN_TYPE.INT, 'Start', 0),
+      DG.Column.fromType(DG.COLUMN_TYPE.INT, 'End', 0),
+      DG.Column.fromType(DG.COLUMN_TYPE.STRING, 'Monomers', 0),
+    ])!;
+    this.setDataFrame(df);
+  }
 
   async render(heightRowCount?: number, options?: {}): Promise<void> {
     let removeCol: DG.Column<boolean>;

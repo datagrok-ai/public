@@ -64,7 +64,7 @@ function getTestResult(times: number[], expectedCount: number): object {
   };
 }
 
-async function benchmarkQuery(query: string, count: number): Promise<object> {
+async function benchmarkQuery(query: string, count: number): Promise<object|undefined> {
   const times = [];
   for (let i = 0; i < count; i++)
     times.push(await getDataQueryTime(query));
@@ -72,7 +72,7 @@ async function benchmarkQuery(query: string, count: number): Promise<object> {
     times.shift();
     count--;
   }
-  return getTestResult(times, count);
+  return count > 1 ? getTestResult(times, count) : undefined;
 }
 
 export async function getDataQueryTime(dataQueryName: string): Promise<number> {

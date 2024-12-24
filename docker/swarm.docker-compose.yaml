@@ -255,37 +255,6 @@ services:
           - nginx_cvm
     logging: *default-logging
 
-  grok_compute:
-    image: datagrok/grok_compute:latest
-    stop_grace_period: 2m
-    deploy:
-      replicas: 1
-      mode: replicated
-      endpoint_mode: dnsrr
-      placement: *cvm-placement
-      update_config:
-        <<: *update-config
-        order: start-first
-      restart_policy:
-        <<: *restart-policy
-      rollback_config:
-        <<: *rollback-config
-        order: start-first
-      resources:
-        reservations:
-          cpus: '0.125'
-          memory: 100M
-    healthcheck:
-      <<: *healthcheck
-      test: ["CMD", "wget", "-SqO", "-", "http://localhost:5005/grok_compute/info"]
-    environment:
-      GROK_COMPUTE_NUM_CORES: 2
-    networks:
-      datagrok:
-        aliases:
-          - grok_compute
-    logging: *default-logging
-
   jupyter_notebook:
     image: datagrok/jupyter_notebook:latest
     stop_grace_period: 2m
@@ -333,11 +302,26 @@ services:
         order: start-first
       resources:
         reservations:
-          cpus: '0.125'
-          memory: 300M
+          cpus: '1'
+          memory: 500M
     healthcheck:
       <<: *healthcheck
       test: ["CMD", "curl", "-f", "http://localhost:5005/jupyter/helper/info"]
+    environment:
+      GROK_PARAMETERS: |
+        {
+          "dbServer": "database",
+          "dbPort": "5432",
+          "db": "datagrok",
+          "dbLogin": "datagrok",
+          "dbPassword": "datagrok123",
+          "isolatesCount": 1,
+          "deployDemo": false,
+          "deployTestDemo": false,
+          "datlasApiUrl": "http://datagrok:8082",
+          "jupyterToken": "4b8ed936cf61a1c5e37a8b3a845599941c272de6e29330a0",
+          "capabilities": ["jupyter"]
+        }
     networks:
       datagrok:
         aliases:

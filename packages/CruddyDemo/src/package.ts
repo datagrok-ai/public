@@ -10,6 +10,7 @@ import {chemblConfig} from "./apps/chembl-app";
 export const _package = new DG.Package();
 
 //tags: app
+//meta.browsePath: Dev
 export function northwindDemo() {
   new CruddyApp(northwindConfig).run();
 }

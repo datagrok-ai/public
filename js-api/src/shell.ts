@@ -45,7 +45,7 @@ export class Shell {
   }
 
   async reportTest(type: String, params: object): Promise<void> {
-    await fetch(`${grok.dapi.root}/log/tests/${type}?benchmark=${(<any>window).DG.Test.isInBenchmark}`, {
+    await fetch(`${grok.dapi.root}/log/tests/${type}?benchmark=${(<any>window).DG.Test.isInBenchmark}&ciCd=${(<any>window).DG.Test.isCiCd}`, {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       credentials: 'same-origin',
       body: api.grok_JSON_encode(toDart(params))
@@ -237,6 +237,11 @@ export class Shell {
   //Obsolete
   getTableView(tableName: string): TableView {
     return toJs(api.grok_GetTableView(tableName));
+  }
+
+  /** Opens a dialog for opening a file with tabular data (CSV, XSLS, etc) */
+  openFileOpenDialog() {
+    api.grok_Shell_OpenFileDialog();
   }
 
   /** Closes everything (views, tables, projects) and returns the platform to the initial state. */

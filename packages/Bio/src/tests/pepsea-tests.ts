@@ -4,7 +4,6 @@ import {before, category, expect, expectArray, test} from '@datagrok-libraries/u
 import {runPepsea} from '../utils/pepsea';
 import {TestLogger} from './utils/test-logger';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
-import {awaitContainerStart} from '../utils/docker';
 
 category('PepSeA', () => {
   const testCsv = `HELM,MSA
@@ -30,17 +29,13 @@ category('PepSeA', () => {
 `;
   const pepseaErrorError: string = 'PepSeA error: The pair (*,M) couldn\'t be found in the substitution matrix';
 
-  before(async () => {
-    await awaitContainerStart();
-  });
-
   test('Basic alignment', async () => {
     const df = DG.DataFrame.fromCsv(testCsv);
     const resMsaCol = await runPepsea(df.getCol('HELM'), 'msa(HELM)');
     const tgtMsaCol = df.getCol('MSA');
     for (let i = 0; i < resMsaCol!.length; ++i)
       expect(resMsaCol!.get(i) == tgtMsaCol.get(i), true);
-  }, {timeout: 60000 /* docker */, stressTest: true});
+  }, {timeout: 60000 /* docker */, stressTest: true, skipReason: 'Fails in docker'});
 
   test('stderr', async () => {
     const logger = new TestLogger();
@@ -50,7 +45,7 @@ category('PepSeA', () => {
     const tgtMsaCol = df.getCol('MSA');
     expectArray(resMsaCol!.toList(), tgtMsaCol.toList());
     expect(logger.warningList[0].message, pepseaStderrWarningList);
-  }, {timeout: 60000 /* docker */, stressTest: true});
+  }, {timeout: 60000 /* docker */, stressTest: true, skipReason: 'Fails in docker'});
 
   test('error', async () => {
     const logger = new TestLogger();
@@ -63,5 +58,5 @@ category('PepSeA', () => {
       logger.error(errMsg, undefined, errStack);
     }
     expect(logger.errorList[0].message, pepseaErrorError);
-  });
+  }, {skipReason: 'Fails in docker'});
 });

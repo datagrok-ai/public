@@ -10,7 +10,6 @@ import {RecentProjectsWidget} from './widgets/recent-projects-widget';
 import {CommunityWidget} from './widgets/community-widget';
 import {WebWidget} from './widgets/web-widget';
 import {LearningWidget} from './widgets/learning-widget';
-import {AboutWidget} from './widgets/about-widget';
 import {functionSearch, pdbSearch, pubChemSearch, scriptsSearch, usersSearch, wikiSearch} from './search/entity-search';
 import {KpiWidget} from './widgets/kpi-widget';
 import {HtmlWidget} from './widgets/html-widget';
@@ -18,6 +17,7 @@ import {viewersDialog} from './viewers-gallery';
 import {windowsManagerPanel} from './windows-manager';
 import {initSearch} from './search/power-search';
 import { newUsersSearch, registerDGUserHandler } from './dg-db';
+import {merge} from "rxjs";
 
 export const _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
@@ -42,14 +42,18 @@ export function _welcomeView(): DG.View | undefined {
   return welcomeView();
 }
 
+//name: Recent projects
 //output: widget result
 //tags: dashboard
+//meta.order: 1
 export function recentProjectsWidget(): DG.Widget {
   return new RecentProjectsWidget();
 }
 
+//name: Community
 //output: widget result
 //tags: dashboard
+//meta.order: 6
 export function communityWidget(): DG.Widget {
   return new CommunityWidget();
 }
@@ -64,16 +68,12 @@ export function htmlWidget(): DG.Widget {
   return new HtmlWidget();
 }
 
+//name: Learn
 //output: widget result
 //tags: dashboard
+//meta.order: 5
 export function learnWidget(): DG.Widget {
   return new LearningWidget();
-}
-
-//output: widget about
-//tags: dashboard
-export function aboutWidget(): DG.Widget {
-  return new AboutWidget();
 }
 
 //output: widget kpi
@@ -169,6 +169,28 @@ export async function powerPackInit() {
   initSearch();
   _properties = await _package.getProperties();
   await registerDGUserHandler(_package);
+
+  // saving and restoring the scrolls when changing views
+  const maxDepth = 40;
+  const elementMap = new Map<HTMLElement, number>();
+  const getScrolledChild = (node: HTMLElement, depth = 0) => {
+    if (depth > maxDepth)
+      return;
+    if (node.scrollTop)
+      elementMap.set(node, node.scrollTop);
+    node.children && Array.from(node.children)
+      .forEach((child) => getScrolledChild(child as HTMLElement, depth + 1));
+  };
+  const setScrolls = () => {
+    elementMap.forEach((scroll, node) => {
+      if (document.body.contains(node)) {
+        node.scrollTop = scroll;
+        elementMap.delete(node);
+      }
+    });
+  }
+  merge(grok.events.onCurrentViewChanging, grok.events.onViewChanging).subscribe((_) => getScrolledChild(document.body));
+  DG.debounce(merge(grok.events.onCurrentViewChanged, grok.events.onViewChanged), 10).subscribe((_) => setScrolls());
 }
 
 //description: Windows Manager

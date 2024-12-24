@@ -139,15 +139,18 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     grok.shell.tableView(input.table.name);
 
   // 0.1 Buffer table
-  const buffer = DG.DataFrame.fromColumns([
+  const loadingsRegrCoefsTable = DG.DataFrame.fromColumns([
     DG.Column.fromStrings(TITLE.FEATURE, featuresNames),
     result.regressionCoefficients,
   ]);
 
+  loadingsRegrCoefsTable.name = `${input.table.name}(${TITLE.ANALYSIS})`;
+  grok.shell.addTable(loadingsRegrCoefsTable);
+
   // 0.2. Add X-Loadings
   result.xLoadings.forEach((col, idx) => {
-    col.name = buffer.columns.getUnusedName(`${TITLE.XLOADING}${idx + 1}`);
-    buffer.columns.add(col);
+    col.name = loadingsRegrCoefsTable.columns.getUnusedName(`${TITLE.XLOADING}${idx + 1}`);
+    loadingsRegrCoefsTable.columns.add(col);
   });
 
   // 1. Predicted vs Reference scatter plot
@@ -165,12 +168,15 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     help: LINK.MODEL,
   }));
 
+  console.log(input.names?.name);
+
   if ((input.names !== undefined) && (input.names !== null))
-    predictVsReferScatter.setOptions({labelFormColumnNames: [input.names?.name]});
+    predictVsReferScatter.setOptions({labelColumnNames: [input.names?.name]});
 
   // 2. Regression Coefficients Bar Chart
   result.regressionCoefficients.name = TITLE.REGR_COEFS;
-  const regrCoeffsBar = view.addViewer(DG.Viewer.barChart(buffer, {
+  const regrCoeffsBar = view.addViewer(DG.Viewer.barChart(loadingsRegrCoefsTable, {
+    table: loadingsRegrCoefsTable.name,
     title: TITLE.REGR_COEFS,
     splitColumnName: TITLE.FEATURE,
     valueColumnName: result.regressionCoefficients.name,
@@ -182,12 +188,14 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
 
   // 3. Loadings Scatter Plot
   result.xLoadings.forEach((col, idx) => col.name = `${TITLE.XLOADING}${idx + 1}`);
-  const loadingsScatter = view.addViewer(DG.Viewer.scatterPlot(buffer, {
+  const loadingsScatter = view.addViewer(DG.Viewer.scatterPlot(loadingsRegrCoefsTable, {
+    table: loadingsRegrCoefsTable.name,
     title: TITLE.LOADINGS,
     xColumnName: `${TITLE.XLOADING}1`,
     yColumnName: `${TITLE.XLOADING}${result.xLoadings.length > 1 ? '2' : '1'}`,
     markerType: DG.MARKER_TYPE.CIRCLE,
-    labelFormColumnNames: [TITLE.FEATURE],
+    // @ts-ignore
+    labelColumnNames: [TITLE.FEATURE],
     help: LINK.LOADINGS,
   }));
 
@@ -212,7 +220,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   });
 
   if ((input.names !== undefined) && (input.names !== null))
-    predictVsReferScatter.setOptions({labelFormColumnNames: [input.names?.name]});
+    scoresScatter.setOptions({labelColumnNames: [input.names?.name]});
 
   // 4.3) create lines & circles
   scoresScatter.meta.formulaLines.addAll(getLines(scoreNames));
@@ -249,10 +257,14 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     DG.Column.fromFloat32Array(input.predict.name, yExplVars),
   ]);
 
+  explVarsDF.name = `${input.table.name}(${TITLE.EXPL_VAR})`;
+  grok.shell.addTable(explVarsDF);
+
   xExplVars.forEach((arr, idx) => explVarsDF.columns.add(DG.Column.fromFloat32Array(featuresNames[idx], arr)));
 
   // 5.3) bar chart
   const explVarsBar = view.addViewer(DG.Viewer.barChart(explVarsDF, {
+    table: explVarsDF.name,
     title: TITLE.EXPL_VAR,
     splitColumnName: TITLE.COMPONENTS,
     valueColumnName: input.predict.name,
@@ -377,7 +389,7 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
   const namesInputs = ui.input.column(TITLE.NAMES, {
     table: table,
     value: names,
-    onValueChanged: () => names = predictInput.value ?? undefined,
+    onValueChanged: (value) => names = value ?? undefined,
     filter: (col: DG.Column) => col.type === DG.COLUMN_TYPE.STRING},
   );
   namesInputs.setTooltip(HINT.NAMES);
@@ -387,6 +399,8 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
     .add(ui.form([predictInput, featuresInput, componentsInput, namesInputs]))
     .addButton(TITLE.RUN, async () => {
       dlg.close();
+
+      console.log(names);
 
       await performMVA({
         table: table,

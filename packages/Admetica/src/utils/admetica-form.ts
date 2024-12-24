@@ -5,7 +5,7 @@ export class FormStateGenerator {
   table: string;
   categories: { [s: string]: string[] };
   molColName: string;
-  addPiechart: boolean;
+  addPiechart: boolean = true;
   maxHeight: number;
 
   constructor(table: string, categories: { [s: string]: string[] }, molColName: string, addPiechart: boolean, maxHeight: number = 600) {
@@ -65,7 +65,8 @@ export class FormStateGenerator {
       "viewerSettings": {
         "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
         "input-value": `                         ${categoryName}`,
-        "backgroundColor": 4293717745
+        "backgroundColor": 4293717745,
+        "textColor": 4278190080
       }
     };
   }
@@ -106,7 +107,7 @@ export class FormStateGenerator {
         "type": "sparkline-cell",
         "viewerSettings": {
           "table": this.table,
-          "column": piechartIndex === 1 ? "piechart" : `piechart (${piechartIndex})`
+          "column": piechartIndex === 0 ? "piechart" : `piechart (${piechartIndex})`
         }
       });
 
@@ -137,7 +138,9 @@ export class FormStateGenerator {
 
     return {
       "#type": "SketchState",
-      "elementStates": elementStates
+      "elementStates": elementStates,
+      "table": this.table,
+      "formDesigned": true
     };
   }
 

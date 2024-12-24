@@ -34,7 +34,7 @@ USER $MAMBA_USER
 
 WORKDIR /app
 
-COPY environment.yml /app/
+COPY --chown=$MAMBA_USER:$MAMBA_USER environment.yml /app/
 
 RUN micromamba install -n base -c conda-forge awscli -y && \
     micromamba run -n base aws s3 cp s3://datagrok-data/models/admetox /app --no-sign-request --recursive --region us-east-2 && \
@@ -42,10 +42,10 @@ RUN micromamba install -n base -c conda-forge awscli -y && \
     micromamba clean -afy
 
 RUN set -ex ; \
-    micromamba env create -f environment.yml ; \
+    micromamba env create -f environment.yml -y ; \
     micromamba clean -afy
 
-COPY . /app
+COPY --chown=$MAMBA_USER:$MAMBA_USER . /app
 
 SHELL ["micromamba","run","-n","myenv", "/bin/bash","-c"]
 

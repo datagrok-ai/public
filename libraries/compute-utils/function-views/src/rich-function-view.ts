@@ -422,7 +422,7 @@ export class RichFunctionView extends FunctionView {
 
     this.hideOutput();
 
-    const out = ui.splitH([inputBlock, ui.panel([outputBlock], {style: {'padding-top': '0px'}})], null, true);
+    const out = ui.splitH([inputBlock, ui.panel([outputBlock], {style: {paddingTop: '0px'}})], null, true);
     out.style.padding = '0 12px';
 
     inputBlock.style.maxWidth = '360px';
@@ -459,7 +459,7 @@ export class RichFunctionView extends FunctionView {
     const form = ui.divV([
       inputFormDiv,
       ...this.hasUploadMode && !this.uploadFunc ? [
-        ui.divH([ui.h2('Experimental data'), experimentalDataSwitch.root], {style: {'flex-grow': '0'}}),
+        ui.divH([ui.h2('Experimental data'), experimentalDataSwitch.root], {style: {flexGrow: '0'}}),
         outputFormDiv,
       ]: [],
       controlsForm,
@@ -497,13 +497,13 @@ export class RichFunctionView extends FunctionView {
           ui.label('Uploaded runs'),
           ui.element('div', 'splitbar-horizontal'),
           uploadedRuns.root,
-        ], {style: {'height': '50%', 'overflow-y': 'hidden'}}),
+        ], {style: {height: '50%', overflowY: 'hidden'}}),
         ui.divV([
           ui.label(simulatedFunccalls.length > 0 ? 'Simulated': 'History', {style: {'padding': '0px 10px 0px 9px'}}),
           ui.element('div', 'splitbar-horizontal'),
           historyRuns.root,
-        ], {style: {'height': '50%', 'overflow-y': 'hidden'}}),
-      ], {style: {'justify-content': 'space-between', 'gap': '10px', 'overflow-y': 'scroll', 'height': '100%'}}));
+        ], {style: {height: '50%', overflowY: 'hidden'}}),
+      ], {style: {justifyContent: 'space-between', gap: '10px', overflowY: 'scroll', height: '100%'}}));
 
       $(compareDialog.root.querySelector('.d4-dialog-contents')).removeClass('ui-form');
 
@@ -862,7 +862,7 @@ export class RichFunctionView extends FunctionView {
 
           return ui.divV([
             ui.divH([
-              ui.h2(viewerIndex === 0 ? dfBlockTitle: ' ', {style: {'white-space': 'pre'}}),
+              ui.h2(viewerIndex === 0 ? dfBlockTitle: ' ', {style: {whiteSpace: 'pre'}}),
               ...viewerIndex === 0 ? [ui.div([
                 this.outputValidationSigns[dfProp.name][0],
                 this.outputValidationSigns[dfProp.name][1],
@@ -882,7 +882,7 @@ export class RichFunctionView extends FunctionView {
           const graphics = getNoDataStub();
           graphics.classList.add('grok-scripting-image-container');
           const graphicsWrapper = ui.divV([
-            ui.h2(dfBlockTitle, {style: {'white-space': 'pre'}}),
+            ui.h2(dfBlockTitle, {style: {whiteSpace: 'pre'}}),
             graphics,
           ], {style: {...blockWidth ? {
             'width': `${blockWidth}%`,
@@ -919,7 +919,7 @@ export class RichFunctionView extends FunctionView {
         acc.append(...wrappedViewers);
 
         return acc;
-      }, ui.divH([], {'style': {'flex-wrap': 'wrap', 'flex-grow': '1', 'max-height': '100%'}}));
+      }, ui.divH([], {'style': {flexWrap: 'wrap', flexGrow: '1', maxHeight: '100%'}}));
 
       tabOutputScalarProps.forEach((scalarProp) => {
         const validationSign = getValidationIcon();
@@ -1413,7 +1413,7 @@ export class RichFunctionView extends FunctionView {
         ui.divV([
           ...desc ? [ui.divText(desc)]: [],
           ...exp ? [ui.divText(exp)]: [],
-        ], {style: {'max-width': '300px'}}) : null;
+        ], {style: {maxWidth: '300px'}}) : null;
     };
     ui.tooltip.bind(t.captionLabel, generateTooltip);
     ui.tooltip.bind(t.input, generateTooltip);

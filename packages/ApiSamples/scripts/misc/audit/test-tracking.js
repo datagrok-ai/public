@@ -1,2 +1,2 @@
-const df = await grok.data.query('UsageAnalysis:Tests');
+const df = await grok.data.query('UsageAnalysis:TestsDashboard');
 grok.shell.addTableView(df);

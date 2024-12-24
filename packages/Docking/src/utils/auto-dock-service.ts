@@ -1,15 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import wu from 'wu';
-
-import {
-  AutoDockRunResult, GridSize, IAutoDockService
-} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
-import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
+import {GridSize, IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
+import {BiostructureData} from '@datagrok-libraries/bio/src/pdb/types';
 import {getPdbHelper, IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 import {DockerContainerStatus, awaitStatus} from '@datagrok-libraries/bio/src/utils/docker';
-import {delay, expectExceptionAsync} from '@datagrok-libraries/utils/src/test';
 import {Molecule3DUnitsHandler} from '@datagrok-libraries/bio/src/molecule-3d/molecule-3d-units-handler';
 import {MoleculeUnitsHandler} from '@datagrok-libraries/bio/src/molecule/molecule-units-handler';
 
@@ -82,38 +77,6 @@ export class AutoDockService implements IAutoDockService {
     this.dcName = `${_package.name.toLowerCase()}-autodock`;
   }
 
-  async startDockerContainer(timeout: number = 30000): Promise<void> {
-    // TODO: Use the new dockerContainers API
-    const res = await grok.dapi.docker.dockerContainers.run(this.dc.id /*, true */);
-    let end: boolean = false;
-    for (let i = 0; i < timeout / 200; ++i) {
-      this.dc = await grok.dapi.docker.dockerContainers.find(this.dc.id);
-      switch (this.dc.status) {
-        case 'stopped': {
-          await grok.dapi.docker.dockerContainers.run(this.dc.id);
-          break;
-        }
-        case 'pending change':
-        case 'changing': {
-          // skip to wait
-          break;
-        }
-        case 'checking':
-        case 'started': {
-          end = true;
-          break;
-        }
-        case 'error': {
-          throw new Error('Docker container error state.');
-        }
-      }
-      if (end) break;
-      await delay(200);
-    }
-    if (!end) throw new Error('Docker container run timeout.');
-    this.dc = await grok.dapi.docker.dockerContainers.find(this.dc.id);
-  }
-
   async init(): Promise<void> {
     [this.dc, this.ph] = await Promise.all([
       // returns docker container with status not actual soon
@@ -134,6 +97,16 @@ export class AutoDockService implements IAutoDockService {
 
   // -- Methods --
 
+  async healthCheck(): Promise<void> {
+    const path = '/health_check';
+    const params: RequestInit = {
+      method: 'GET',
+    }
+    const adRes = await this.fetchAndCheck(path, params);
+    if (!adRes)
+      throw new Error('Health check failed.');
+  }
+
   async checkOpenCl(): Promise<number> {
     const path = '/check_opencl';
     const params: RequestInit = {
@@ -145,11 +118,20 @@ export class AutoDockService implements IAutoDockService {
       throw new Error(adRes['error']);
 
     const clinfoOut: string = adRes['output'];
-    const clinfoOutMa = clinfoOut.match(/.+platform.+\s+(?<count>\d)/);
+    const clinfoOutMa = clinfoOut.match(/Number of platforms\s+(\d+)/);
     if (!clinfoOutMa)
       throw new Error('Unexpected clinfo output');
-    const clinfoCount = parseInt(clinfoOutMa.groups!['count']);
+    const clinfoCount = parseInt(clinfoOutMa[1]);
     return clinfoCount;
+  }
+
+  async terminate(): Promise<void> {
+    const params: RequestInit = {
+      method: 'POST'
+    };
+
+    const path = `/autodock/kill_process`;
+    await this.fetchAndCheck(path, params);
   }
 
   async dockLigand(receptor: BiostructureData, ligand: BiostructureData,
@@ -252,7 +234,7 @@ export class AutoDockService implements IAutoDockService {
     if (adResponse.status !== 200) {
       const errMsg = adResponse.statusText;
       // const errMsg = (await adResponse.json())['datagrok-error'];
-      throw new Error(errMsg);
+      // throw new Error(errMsg);
     }
     const adRes = (await adResponse.json()) as Forms.dockLigandRes;
     if ('datagrok-error' in adRes) {

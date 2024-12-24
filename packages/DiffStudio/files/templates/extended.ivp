@@ -1,0 +1,32 @@
+#name: Extended
+#tags: model
+#description: 2D ordinary differential equations system sample
+#comment:
+  This is an extended template. It has additional scripting annotations.
+
+#equations:
+  dx/dt = E1 * y + sin(t)
+  dy/dt = E2 * x - pow(t, 5)
+
+#expressions:
+  E1 = C1 * exp(-t) + P1
+  E2 = C2 * cos(2 * t) + P2
+
+#constants:
+  C1 = 1
+  C2 = 3
+
+#parameters:
+  P1 = 1 {category: Parameters; min: 1; max: 10} [P1 parameter]
+  P2 = -1 {category: Parameters; min: -10; max: -1} [P2 parameter]
+
+#inits:
+  x = 2 {category: Initial values; min: 0; max: 5} [Initial value of x]
+  y = 0 {category: Initial values; min: -2; max: 2} [Initial value of y]
+
+#argument: t
+  start = 0 {caption: Initial; category: Time; min: 0; max: 10} [Initial time of simulation]
+  finish = 10 {caption: Final; category: Time; min: 10; max: 20} [Final time of simulation]
+  step = 0.01 {caption: Step; category: Time; min: 0.01; max: 0.1; step: 0.001} [Time step of simlulation]
+
+#tolerance: 5e-5

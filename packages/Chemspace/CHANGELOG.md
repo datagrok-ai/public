@@ -1,5 +1,22 @@
 # Chemspace changelog
 
+## 1.1.4 (2024-11-18)
+
+### Features
+
+* Added function to add Chemspace ids via 'Add new column' dialog
+* Highligh chemspace_id semantic type
+
+### Bug Fixes
+
+* Improved errors reporting
+
+## 1.1.3 (2024-11-18)
+
+### Bug Fixes
+
+* GROK-17022: Chemspace: opening Similar in context panel causes errors
+
 ## 1.1.2 (2024-10-16)
 
 * Fixed cache invalidating

@@ -36,15 +36,6 @@ export class DemoView extends DG.ViewBase {
     if (this.tree.items.length === 0)
       this._initTree();
     this._initContent();
-    // temporary solution, waiting for the browseOnly apps, now need to do this unfortunately
-    // setTimeout(() => {
-    //   const views = Array.from(grok.shell.views);
-    //   const dv = views.find((view) => view instanceof DemoView);
-    //   this.browseView.preview = this as unknown as DG.View;
-    //   grok.shell.v = this.browseView;
-    //   if (dv)
-    //     dv.close();
-    // }, 500);
   }
 
   static findDemoFunc(demoPath: string): DG.Func {
@@ -96,21 +87,26 @@ export class DemoView extends DG.ViewBase {
       ui.setUpdateIndicator(updateIndicatorRoot, false);
     }
 
-    this.browseView.path = `${this.DEMO_APP_PATH}/${path}`;
+    this.browseView.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;
     this._setBreadcrumbsInViewName(viewPath.split('|').map((s) => s.trim()));
   }
 
 
   private _setBreadcrumbsInViewName(viewPath: string[]): void {
-    const breadcrumbs = ui.breadcrumbs(viewPath);
+    const path = viewPath.includes('Home') ? viewPath : ['Home', ...viewPath];
+    const breadcrumbs = ui.breadcrumbs(path);
 
-    breadcrumbs.onPathClick.subscribe((value) => {
+    breadcrumbs.onPathClick.subscribe(async (value) => {
       const currentFunc = this.funcs.filter((func) => {
         return (func.name === value[value.length - 1]);
       });
       if (currentFunc.length !== 0)
         return;
-      this.nodeView(value[value.length - 1], value.join('/'));
+      if (value.length === 1 && value[0] === 'Home') {
+        await this.browseView.setHomeView();
+        return;
+      }
+      this.nodeView(value[value.length - 1], (value[0] === 'Home' ? value.slice(1) : value).join('/'));
     });
 
     const viewNameRoot = this.browseView.ribbonMenu.root.parentElement?.getElementsByClassName('d4-ribbon-name')[0];
@@ -142,7 +138,7 @@ export class DemoView extends DG.ViewBase {
       let tempArr: string[] = [];
 
       for (let j = 0; j < directionFuncs.length; ++j) {
-        let imgPath = `${_package.webRoot}images/demoapp/${directionFuncs[j].name}.jpg`;
+        let imgPath = `${_package.webRoot}images/demoapp/${directionFuncs[j].name}.png`;
 
         const path = directionFuncs[j].options[DG.FUNC_OPTIONS.DEMO_PATH] as string;
         const pathArray = path.split('|').map((s) => s.trim());
@@ -245,7 +241,7 @@ export class DemoView extends DG.ViewBase {
             if (response.ok) {
               return Promise.resolve(response.url)
             } else if(response.status === 404) {
-              return Promise.reject(`${_package.webRoot}images/demoapp/emptyImg.jpg`)
+              return Promise.reject(`${_package.webRoot}images/demoapp/emptyImg.png`)
             }
           })
           .then((data) => root.style.backgroundImage = `url(${data})`)
@@ -300,7 +296,7 @@ export class DemoView extends DG.ViewBase {
     const view = DG.View.create();
     view.name = viewName;
     view.append(resultContainer);
-    this.browseView.path = `${this.DEMO_APP_PATH}/${path}`;
+    this.browseView.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;
 
     const directionFuncs = this.funcs.filter((func) => (func.func.options[DG.FUNC_OPTIONS.DEMO_PATH] as string).includes(viewName));
     const root = this._createViewRootElement(viewName);

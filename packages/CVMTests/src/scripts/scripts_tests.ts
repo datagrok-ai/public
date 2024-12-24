@@ -91,7 +91,7 @@ for (const lang of langs) {
           expect((result['resultInBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.FLOAT, true);
           expect((result['resultOutBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.FLOAT, true);
         }
-      }, {stressTest: true, timeout: 60000});
+      }, {timeout: 60000});
 
       test('Empty dataframe', async () => {
         const result: DG.DataFrame = await grok.functions.call(`CVMTests:${lang}EmptyDataFrame`);
@@ -153,14 +153,14 @@ for (const lang of langs) {
                             '  <li><a href="tel:+123456789">Phone</a></li>\n' +
                             '  </ul>'});
         expect(result, 3);
-      }, {timeout: 120000, stressTest: true});
+      }, {timeout: 120000});
 
       test('File type input and environment yaml', async () => {
         const files = await grok.dapi.files.list('System:AppData/CvmTests/images', false, 'silver.jpg');
         const result = await grok.functions.call('CVMTests:ImagePixelCount',
           {'fileInput': files[0]});
         expect(49090022, result);
-      }, {timeout: 120000, stressTest: true});
+      }, {timeout: 120000});
     }
   });
 
@@ -168,13 +168,11 @@ for (const lang of langs) {
     test('Calculated column performance', async () => {
       const rows = DG.Test.isInBenchmark ? 10000 : 100;
       const df = grok.data.demo.demog(rows);
-      const start = Date.now();
       await df.columns.addNewCalculated('new', `CVMTests:${lang}CalcColumn(\${age})`);
-      return `Execution time: ${Date.now() - start}`;
     }, {timeout: 60000, benchmark: true, stressTest: true, skipReason: lang === 'Grok' ? 'Doesn\'t support vectorization' : undefined});
 
     test(`Dataframe performance test sequentially`, async () => {
-      const iterations = DG.Test.isInBenchmark ? 10 : 3;
+      const iterations = DG.Test.isInBenchmark ? ['JavaScript', 'Grok'].includes(lang) ? 500 : 10 : 3;
       const results = [];
       for (let i = 0; i < iterations; i++) {
         results.push(await getScriptTime(`CVMTests:${lang}SingleDf`,

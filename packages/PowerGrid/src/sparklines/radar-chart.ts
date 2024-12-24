@@ -1,7 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {getSettingsBase, names, SummarySettingsBase, createTooltip, distance, Hit,
-  SparklineType, isSummarySettingsBase} from './shared';
+import {
+  getSettingsBase, SummarySettingsBase, createTooltip, distance, Hit,
+  SparklineType, isSummarySettingsBase, SummaryColumnColoringType, createBaseInputs, getRenderColor
+} from './shared';
 
 
 class it {
@@ -19,11 +21,13 @@ interface RadarChartSettings extends SummarySettingsBase {
 }
 
 function getSettings(gc: DG.GridColumn): RadarChartSettings {
-  return isSummarySettingsBase(gc.settings) ? gc.settings :
+  const settings = isSummarySettingsBase(gc.settings) ? gc.settings :
     (gc.settings[SparklineType.Radar] as RadarChartSettings) ??= {
       ...getSettingsBase(gc, SparklineType.Radar),
       // ...{radius: 10,},
     };
+  settings.colorCode ??= SummaryColumnColoringType.Off;
+  return settings;
 }
 
 
@@ -73,7 +77,7 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
     const hitData: Hit = onHit(gridCell, e);
     if (hitData.isHit)
-      ui.tooltip.show(ui.divV(createTooltip(hitData.cols, hitData.activeColumn, hitData.row)), e.x + 16, e.y + 16);
+      ui.tooltip.show(createTooltip(hitData.cols, hitData.activeColumn, hitData.row), e.x + 16, e.y + 16);
     else
       ui.tooltip.hide();
   }
@@ -123,25 +127,15 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
         .stroke();
     }
     it.range(cols.length).map(function(i) {
-      if (!cols[i].isNone(row)) {
+      if (!cols[i].isNone(row))
         DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, p(i, cols[i].scale(row)).x, p(i, cols[i].scale(row)).y,
-          DG.Color.fromHtml('#1E90FF'), 3);
-      }
+          getRenderColor(settings, DG.Color.fromHtml('#1E90FF'), {column: cols[i], colIdx: i, rowIdx: row}), 3);
     });
   }
 
   renderSettings(gc: DG.GridColumn): Element {
     const settings: RadarChartSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
       gc.settings[SparklineType.Radar] ??= getSettings(gc);
-
-    const columnNames = settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical);
-    return ui.inputs([
-      ui.input.columns('Сolumns', {value: gc.grid.dataFrame.columns.byNames(columnNames),
-        table: gc.grid.dataFrame, onValueChanged: (value) => {
-          settings.columnNames = names(value);
-          gc.grid.invalidate();
-        }, available: names(gc.grid.dataFrame.columns.numerical),
-      }),
-    ]);
+    return ui.inputs(createBaseInputs(gc, settings));
   }
 }

@@ -12,13 +12,12 @@ import {INglViewer} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
 import {NglGlServiceBase} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
 import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 import {IBiotrackViewer} from '@datagrok-libraries/bio/src/viewers/biotrack';
-import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
-import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
+import {BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
 import {delay} from '@datagrok-libraries/utils/src/test';
 
 import {byData, byId, MolstarViewer} from './viewers/molstar-viewer';
 import {SaguaroViewer} from './viewers/saguaro-viewer';
-import {PdbGridCellRenderer, PdbGridCellRendererBack} from './utils/pdb-grid-cell-renderer';
+import {PdbGridCellRenderer, PdbGridCellRendererBack, PdbIdGridCellRenderer} from './utils/pdb-grid-cell-renderer';
 import {NglForGridTestApp} from './apps/ngl-for-grid-test-app';
 import {nglViewerGen as _nglViewerGen} from './utils/ngl-viewer-gen';
 import {NglViewer} from './viewers/ngl-viewer';
@@ -32,15 +31,15 @@ import {BiostructureAndTrackViewerApp} from './apps/biostructure-and-track-viewe
 import {previewBiostructure, previewNgl, viewNgl} from './viewers/view-preview';
 import {BiostructureViewerApp} from './apps/biostructure-viewer-app';
 import {LigandsWithBiostructureApp, LigandsWithNglApp} from './apps/ligands-with-base-app';
-import {addContextMenuUI} from './utils/context-menu';
 import {importPdbqtUI} from './utils/import-pdbqt';
-import {IPdbGridCellRenderer} from './utils/types';
 import {_getNglGlService, BsvPackage} from './package-utils';
 import {demoBio07NoScript} from './demo/bio07-molecule3d-in-grid';
 import {demoBio06NoScript} from './demo/bio06-docking-ngl';
 import {Pdbqt} from './utils/pdbqt-parser';
 import {viewMolstarUI} from './viewers/molstar-viewer/utils';
 import {BiostructureDataProviderApp} from './apps/biostructure-data-provider-app';
+import {copyRawValue, downloadRawValue, showBiostructureViewer, showNglViewer} from './utils/context-menu';
+import {defaultErrorHandler} from './utils/err-info';
 
 export const _package: BsvPackage = new BsvPackage();
 
@@ -59,6 +58,15 @@ export async function init() {
 export function Molecule3dCellRenderer(): PdbGridCellRenderer {
   return new PdbGridCellRenderer();
 }
+
+//name: chemCellRenderer
+//tags: cellRenderer, cellRenderer-PDB_ID
+//meta.cellType: PDB_ID
+//output: grid_cell_renderer result
+export function pdbIdCellRenderer(): PdbIdGridCellRenderer {
+  return new PdbIdGridCellRenderer();
+}
+
 
 //name: viewPdbById
 //input: string pdbId
@@ -403,12 +411,39 @@ export async function inGridDemo() {
 
 // -- Handle context menu --
 
-//name: addContextMenu
-//input: object event
-export function addContextMenu(event: DG.EventData): void {
-  addContextMenuUI(event);
+//name: Copy Biostructure raw value
+//input: object gridCell
+export async function copyRawBiostructureValue(gridCell: DG.GridCell): Promise<void> {
+  copyRawValue(gridCell);
 }
 
+//name: Download Biostructure raw value
+//input: object gridCell
+export async function downloadRawBiostructureValue(gridCell: DG.GridCell): Promise<void> {
+  downloadRawValue(gridCell);
+}
+
+//name: Show Biostructure Viewer menu item
+//input: object gridCell
+export async function showBiostructureViewerMenuItem(gridCell: DG.GridCell) {
+  await showBiostructureViewer(gridCell);
+}
+
+//name: Show NGL Viewer menu item
+//input: object gridCell
+export async function showNglViewerMenuItem(gridCell: DG.GridCell) {
+  await showNglViewer(gridCell);
+}
+
+//name: Open PDB residues table menu item
+//input: object fi
+export async function openTableResiduesMenuItem(fi: DG.FileInfo) {
+  try {
+    await openPdbResidues(fi);
+  } catch (err: any) {
+    defaultErrorHandler(err);
+  }
+}
 // -- Demo --
 
 //  // demoBio06
@@ -510,7 +545,7 @@ export async function demoFix1(): Promise<void> {
     const ppTorsionalFreeCol = poseDf.col(Cols.torsionalFree) ?? poseDf.columns.addNewFloat(Cols.torsionalFree);
     const ppUnboundSystemsCol = poseDf.col(Cols.unboundSystems) ?? poseDf.columns.addNewFloat(Cols.unboundSystems);
 
-    const pMolCol = poseDf.col(Cols.mol) ?? poseDf.columns.addNewString(Cols.mol);
+    const _pMolCol = poseDf.col(Cols.mol) ?? poseDf.columns.addNewString(Cols.mol);
     // endregion Cols
     let lastProgress: number = 0;
     const poseCount = poseDf.rowCount;
@@ -704,17 +739,18 @@ export function biostructureDataToJson(
 //output: widget result
 export function structure3D(molecule: DG.SemanticValue): DG.Widget {
   const widget = new DG.Widget(ui.div([]));
-  const { dataFrame, column, rowIndex } = molecule.cell;
+  const {dataFrame, column, rowIndex} = molecule.cell;
   const inBrowseView = grok.shell.v.type === DG.VIEW_TYPE.BROWSE;
-  const tableView = inBrowseView
-    ? ((grok.shell.view('Browse') as DG.BrowseView)?.preview as DG.TableView)
-    : grok.shell.getTableView(dataFrame.name);
-  const { grid } = tableView;
+  const tableView = inBrowseView ?
+    ((grok.shell.view('Browse') as DG.BrowseView)?.preview as DG.TableView) :
+    grok.shell.getTableView(dataFrame.name);
+  const {grid} = tableView;
   const gridCell = grid.cell(column.name, rowIndex);
   const renderer = new PdbGridCellRendererBack(null, column);
 
-  renderer.createViewer(gridCell, tableView).then(async ({ tview, viewer }) => {
+  renderer.createViewer(gridCell, tableView).then(async ({tview, viewer}) => {
     if (tview && viewer) {
+      viewer.root.classList.add('bsv-container-info-panel');
       widget.root.appendChild(viewer.root);
     }
   });

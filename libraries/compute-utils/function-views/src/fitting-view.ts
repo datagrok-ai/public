@@ -240,7 +240,7 @@ export class FittingView {
             ui.tooltip.bind(input.captionLabel, (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Output dataframe' : 'Output scalar');
 
             input.onChanged.subscribe((value) => {
-              temp.target = input.value; // fixing the bug https://reddata.atlassian.net/browse/GROK-16642 
+              temp.target = input.value; // fixing the bug https://reddata.atlassian.net/browse/GROK-16642
 
               if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
                 if (temp.target) {
@@ -452,7 +452,7 @@ export class FittingView {
         DG.DOCK_TYPE.LEFT,
         null,
         `${this.func.name} - Fitting`,
-       0.25,
+        0.25,
       );
 
       this.comparisonView.grid.columns.byName(RUN_NAME_COL_LABEL)!.visible = false;
@@ -641,7 +641,7 @@ export class FittingView {
     });
 
     // the main form
-    const form = ui.div([fitHeader], {style: {'overflow-y': 'scroll', 'width': '100%'}});
+    const form = ui.div([fitHeader], {style: {overflowY: 'scroll', width: '100%'}});
 
     const lookupElement = await this.getLookupElement(inputsLookup);
     let topCategory: string | null = null;
@@ -652,7 +652,7 @@ export class FittingView {
 
       if (inputs !== undefined)
         inputsByCategories.set(topCategory, [lookupElement.input.root].concat(inputs));
-      else 
+      else
         inputsByCategories.set(topCategory, [lookupElement.input.root]);
     }
 

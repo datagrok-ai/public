@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.19.1 (2024-12-10)
+
+Fix JS-API related changes
+
 ## 1.19.0 (2024-11-01)
 
 Migrate to new seqHelper API

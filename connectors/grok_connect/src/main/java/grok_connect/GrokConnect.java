@@ -6,10 +6,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import grok_connect.connectors_info.DataConnection;
-import grok_connect.connectors_info.DataProvider;
-import grok_connect.connectors_info.DataQueryRunResult;
-import grok_connect.connectors_info.FuncCall;
+import grok_connect.connectors_info.*;
 import grok_connect.providers.JdbcDataProvider;
 import grok_connect.table_query.TableQuery;
 import grok_connect.utils.*;
@@ -24,9 +21,15 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.servlet.ServletOutputStream;
 import javax.ws.rs.core.MediaType;
+
 import grok_connect.handlers.QueryHandler;
 import spark.Response;
 
@@ -37,10 +40,12 @@ public class GrokConnect {
     private static final String DEFAULT_URI = String.format("http://localhost:%s", DEFAULT_PORT);
     private static final String DEFAULT_LOG_EXCEPTION_MESSAGE = "An exception was thrown";
     private static final Logger PARENT_LOGGER = (Logger) LoggerFactory.getLogger(GrokConnect.class);
-    private static final Gson gson = new GsonBuilder()
-            .registerTypeAdapter(Property.class, new PropertyAdapter())
-            .create();
     private static final String LOG_LEVEL_PREFIX = "LogLevel";
+    private static ExecutorService threadPool;
+    public static final Gson gson = new GsonBuilder()
+            .registerTypeAdapter(Property.class, new PropertyAdapter())
+            .registerTypeAdapter(DataQuery.class, new DataQueryDeserializer())
+            .create();
     public static boolean needToReboot = false;
     public static ProviderManager providerManager;
     public static Properties properties;
@@ -50,9 +55,8 @@ public class GrokConnect {
         setGlobalLogLevel();
         PARENT_LOGGER.info(String.format("%s - version: %s", properties.get(NAME), properties.get(VERSION)));
         PARENT_LOGGER.info("Grok Connect initializing");
+        threadPool = Executors.newCachedThreadPool();
         PARENT_LOGGER.info(getStringLogMemory());
-        PARENT_LOGGER.trace("HELLO FROM TRACE");
-
         providerManager = new ProviderManager();
         port(DEFAULT_PORT);
         connectorsModule();
@@ -61,9 +65,12 @@ public class GrokConnect {
         PARENT_LOGGER.info("grok_connect: Connectors: {}", providerManager.getAllProvidersTypes());
     }
 
+    public static <T> CompletableFuture<T> submitPoolTask(Supplier<T> task) {
+        return CompletableFuture.supplyAsync(task, threadPool);
+    }
+
     private static void connectorsModule() {
-        webSocket("/query_socket", new QueryHandler());
-        // webSocket("/query_table", new QueryHandler(QueryType.tableQuery));
+        webSocket("/query_socket", QueryHandler.class);
 
         before((request, response) -> {
             PARENT_LOGGER.debug("Endpoint {} was called", request.pathInfo());
@@ -141,17 +148,17 @@ public class GrokConnect {
         });
 
         post("/query_table_sql", (request, response) -> {
-            String query = "";
+            TableQuery tableQuery = null;
             try {
                 DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
-                TableQuery tableQuery = gson.fromJson(connection.get("queryTable"), TableQuery.class);
+                tableQuery = gson.fromJson(connection.get("queryTable"), TableQuery.class);
                 DataProvider provider = providerManager.getByName(connection.dataSource);
-                query = provider.queryTableSql(connection, tableQuery);
+                tableQuery.query = provider.queryTableSql(tableQuery);
             } catch (Exception ex) {
                 PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
                 buildExceptionResponse(response, printError(ex));
             }
-            return query;
+            return tableQuery != null ? gson.toJson(new TableQueryResponse(tableQuery.query, tableQuery.params.stream().filter((p) -> p.isInput).collect(Collectors.toList()))) : "";
         });
 
         post("/foreign-keys", (request, response) -> {
@@ -300,7 +307,8 @@ public class GrokConnect {
         long used = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
         long free = Runtime.getRuntime().maxMemory() - used;
         long total = Runtime.getRuntime().maxMemory();
-        return String.format("Memory: free: %s(%.2f%%), used: %s", free, 100.0 * free/total, used);
+        int largestPoolSize = ((ThreadPoolExecutor) threadPool).getLargestPoolSize();
+        return String.format("Memory: free: %s(%.2f%%), used: %s. Largest socket pool size: %s", free, 100.0 * free/total, used, largestPoolSize);
     }
 
     private static void prepareResponse(DataQueryRunResult result, Response response, BufferAccessor buffer) {
