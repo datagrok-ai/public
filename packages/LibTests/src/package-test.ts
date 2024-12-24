@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {TestContext, runTests, tests, initAutoTests as initTests } from '@datagrok-libraries/utils/src/test';
+import {TestContext, runTests, tests, initAutoTests as initTests} from '@datagrok-libraries/utils/src/test';
 
 import './tests/compute-api/rich-function-view-tests';
 import './tests/utils/expect-tests';

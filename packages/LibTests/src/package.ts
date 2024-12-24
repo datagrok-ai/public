@@ -66,7 +66,6 @@ export function RangeValidatorFactory(params: any) {
   return (val: number) => {
     if (val < min || val > max)
       return makeValidationResult({errors: [`Out of range [${min}, ${max}] value: ${val}`]});
-
   };
 }
 
@@ -78,7 +77,6 @@ export function AsyncValidatorDemoFactory(params: any) {
     await new Promise((resolve) => setTimeout(resolve, 100));
     if (val === 0)
       return makeValidationResult({warnings: [`Try non-null value`]});
-
   };
 }
 
@@ -442,10 +440,10 @@ export async function MockProvider5(params: any) {
           },
           {
             id: 'step4',
-            nqName: 'LibTests:TestDiv2'
-          }
-        ]
-      }
+            nqName: 'LibTests:TestDiv2',
+          },
+        ],
+      },
     ],
     initialSteps: [{
       id: 'step1',

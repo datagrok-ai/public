@@ -1,3 +1,4 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {category, test, before} from '@datagrok-libraries/utils/src/test';
 import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
@@ -824,7 +825,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
       s.pipe(
         delay(1),
       ).subscribe((uuid) => {
-        tree.runAction(uuid, { val: 100 });
+        tree.runAction(uuid, {val: 100});
       });
       expectObservable(inNode.getItem().getStateStore().getStateChanges('a')).toBe('ab 250ms c', {a: undefined, b: 1, c: 100});
     });
@@ -1026,7 +1027,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
                   },
                 },
               ],
-            }]
+            }],
           });
         },
       }],
@@ -1094,7 +1095,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
                   },
                 },
               ],
-            }
+            },
           );
         },
       }],
@@ -1139,7 +1140,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.init().subscribe();
       const node = tree.nodeTree.getNode([{idx: 0}]);
-      const link = [...tree.linksState.links.values()][0]
+      const link = [...tree.linksState.links.values()][0];
       const pipeline = tree.nodeTree.root;
       cold('-a').subscribe(() => {
         node.getItem().getStateStore().setState('a', 1);
@@ -1270,7 +1271,7 @@ category('ComputeUtils: Driver links reactivity', async () => {
         {
           id: 'step1',
           nqName: 'LibTests:TestMultiarg5',
-        }
+        },
       ],
       links: [
         {
@@ -1316,8 +1317,8 @@ category('ComputeUtils: Driver links reactivity', async () => {
             controller.setAll('out', in1);
             return of(void(0)).pipe(delay(100));
           },
-        }
-      ]
+        },
+      ],
     };
     const pconf = await getProcessedConfig(config1);
 

@@ -33,10 +33,10 @@ export async function snapshotCompare(actual: any, snapshotName: string) {
 export type ExpectObservableNamed = (name: string, observable: Observable<any>, subscriptionMarbles?: string) => void;
 
 export async function runRXTreeSnapshotTest(testName: string, fn: (expectObservable: ExpectObservableNamed, cold: typeof TestScheduler.prototype.createColdObservable) => void) {
-  let current: {data: any, expectName?: string}[] = [];
-  let snapshotName = testName;
+  const current: {data: any, expectName?: string}[] = [];
+  const snapshotName = testName;
 
-  let testScheduler = new TestScheduler((data, fakeExp) => {
+  const testScheduler = new TestScheduler((data, fakeExp) => {
     const expectName = fakeExp[0].notification.value;
     current.push({expectName, data});
   });
@@ -59,7 +59,7 @@ export async function runRXTreeSnapshotTest(testName: string, fn: (expectObserva
     for (let idx = 0; idx < allExpected.length; idx++) {
       const expected = allExpected[idx];
       const actual = current[idx];
-      expectDeepEqual(actual.expectName, expected.expectName, { prefix: `${idx} test name`});
+      expectDeepEqual(actual.expectName, expected.expectName, {prefix: `${idx} test name`});
       expectDeepEqual(actual.data, expected.data, {prefix: `${idx} ${expected.expectName}`});
     }
   }
@@ -73,7 +73,7 @@ export function getTreeStates(config: PipelineConfigurationProcessed): [StateTre
     initialTree.makeStateRequests$.pipe(
       startWith(initialTree),
       mapTo(initialTree),
-    )
+    ),
   ] as const;
 }
 
@@ -102,7 +102,7 @@ export function expectTreeData(tree$: Observable<StateTree>, expectObservable: E
     expectObservable,
     'data',
     (node) => node.getStateStore().getStateNames(),
-    (node, name) => node.getStateStore().getStateChanges(name)
+    (node, name) => node.getStateStore().getStateChanges(name),
   );
 }
 
@@ -117,11 +117,11 @@ export function expectTreeMeta(tree$: Observable<StateTree>, expectObservable: E
         return node.metaInfo$.pipe(
           switchMap((meta) => {
             return meta[name] ?? of(undefined);
-          })
+          }),
         );
       }
       return of(undefined);
-    }
+    },
   );
 }
 
@@ -136,11 +136,11 @@ export function expectTreeValidations(tree$: Observable<StateTree>, expectObserv
         return node.validationInfo$.pipe(
           map((val) => {
             return val[name];
-          })
+          }),
         );
       }
       return of(undefined);
-    }
+    },
   );
 }
 
@@ -156,10 +156,10 @@ export function expectTreeConsistency(tree$: Observable<StateTree>, expectObserv
         return node.consistencyInfo$.pipe(
           map((val) => {
             return val[name];
-          })
+          }),
         );
       }
       return of(undefined);
-    }
+    },
   );
 }

@@ -180,6 +180,5 @@ category('ComputeUtils: Driver links additional states propagation', async () =>
         },
       });
     });
-
   });
 });

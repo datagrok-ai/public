@@ -27,5 +27,4 @@ category('Utils: jsonSerialization', async () => {
     const results = deserialize(serialize(initial));
     expectDeepEqual(results, initial);
   });
-
 });

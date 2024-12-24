@@ -109,7 +109,5 @@ category('ComputeUtils: Driver onInit hook running', async () => {
       );
       expectObservable(item$).toBe('250ms b', {b: 10});
     });
-
   });
-
 });

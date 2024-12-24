@@ -174,7 +174,6 @@ category('ComputeUtils: Driver init calls', async () => {
       (x) => {
         if (!((x as StepFunCallState).funcCall instanceof DG.FuncCall))
           throw new Error(`funcCall is not an instance of DG.FuncCall`);
-
       },
     );
   });
@@ -225,5 +224,4 @@ category('ComputeUtils: Driver init calls', async () => {
     expectDeepEqual(fc.inputs.a, 1);
     expectDeepEqual(fc.inputs.b, 2);
   });
-
 });

@@ -64,7 +64,7 @@ category('ComputeUtils: Driver workflow test', async () => {
             from: 'in1:same(@base,stepSub)/res',
             to: 'out1:after+(@base,stepMul)/a',
             defaultRestrictions: {
-              'out1': 'restricted'
+              'out1': 'restricted',
             },
           },
           {
@@ -160,21 +160,21 @@ category('ComputeUtils: Driver workflow test', async () => {
         from: 'in1:stepAdd/res',
         to: 'out1:stepSub/a',
         defaultRestrictions: {
-          'out1': 'restricted'
+          'out1': 'restricted',
         },
       }, {
         id: 'link2',
         from: 'in1:stepSub/res',
         to: 'out1:pipeline3/all(stepSub|stepDiv)/a',
         defaultRestrictions: {
-          'out1': 'restricted'
+          'out1': 'restricted',
         },
       }, {
         id: 'link3',
         from: 'in1:pipeline3/last(stepAdd|stepSub|stepMul|stepDiv)/res',
         to: 'out1:stepMul/a',
         defaultRestrictions: {
-          'out1': 'restricted'
+          'out1': 'restricted',
         },
 
       }, {
@@ -182,7 +182,7 @@ category('ComputeUtils: Driver workflow test', async () => {
         from: 'in1:stepMul/res',
         to: 'out1:pipeline5/all(stepAdd|stepSub|stepMul|stepDiv)/a',
         defaultRestrictions: {
-          'out1': 'restricted'
+          'out1': 'restricted',
         },
       }, {
         id: 'link5',
@@ -191,7 +191,7 @@ category('ComputeUtils: Driver workflow test', async () => {
         handler({controller}) {
           const inputs = controller.getAll<number>('in1');
           const res = inputs?.reduce((acc, num) => acc + num, 0);
-          controller.setAll('out1', res == null ||  isNaN(res) ? null : res, 'restricted');
+          controller.setAll('out1', res == null || isNaN(res) ? null : res, 'restricted');
         },
       }, {
         id: 'link6',
@@ -246,7 +246,7 @@ category('ComputeUtils: Driver workflow test', async () => {
         from: 'in1:stepAdd/res',
         to: 'out1:stepDiv/b',
         defaultRestrictions: {
-          'out1': 'restricted'
+          'out1': 'restricted',
         },
       },
     ],

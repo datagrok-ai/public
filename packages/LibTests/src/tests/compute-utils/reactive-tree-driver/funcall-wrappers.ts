@@ -226,5 +226,4 @@ category('ComputeUtils: Driver FuncCall wrapper', async () => {
     const val = await adapter.getStateChanges('res', true).pipe(takeUntil(end$), toArray()).toPromise();
     expectDeepEqual(val, [null, 3]);
   });
-
 });

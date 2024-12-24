@@ -404,5 +404,4 @@ category('ComputeUtils: Driver instance bridge', async () => {
       expectObservable(bridge.getStateChanges('res'), '^ 1000ms !').toBe('ab', {a: undefined, b: undefined});
     });
   });
-
 });

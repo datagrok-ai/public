@@ -153,7 +153,6 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
         b: {key: 'val2'},
         c: undefined,
       });
-
     });
   });
 
@@ -221,14 +220,13 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
       expectObservable((outNode.getItem() as PipelineNodeBase).nodeDescription.getStateChanges('tags')).toBe('ab 8ms c', {
         a: undefined,
         b: {
-          "1234": [
-            "tag1",
-            "tag2"
-          ]
+          '1234': [
+            'tag1',
+            'tag2',
+          ],
         },
         c: {},
       });
     });
   });
-
 });

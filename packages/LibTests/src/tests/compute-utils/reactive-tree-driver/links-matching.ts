@@ -632,7 +632,7 @@ category('ComputeUtils: Driver links matching', async () => {
           id: 'step3',
           nqName: 'LibTests:TestDiv2',
 
-        }
+        },
       ],
       links: [{
         id: 'link1',
@@ -649,5 +649,4 @@ category('ComputeUtils: Driver links matching', async () => {
     const matchInfos = links.map((link) => matchLink(tree, [], link));
     await snapshotCompare(matchInfos, 'Links not matching');
   });
-
 });

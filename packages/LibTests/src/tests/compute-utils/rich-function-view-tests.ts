@@ -62,7 +62,6 @@ category('ComputeUtils: RichFunctionView Inputs', async () => {
     expectDeepEqual(getFuncCallIO(view.lastCall!), expected, {prefix: 'lastCall'});
     for (const [name, val] of Object.entries(inputValues))
       expectDeepEqual(inputsMap[name].value, val, {prefix: `input ${name}`});
-
   });
 
   test('Simple inputs inputs tweak', async () => {
@@ -363,7 +362,6 @@ category('ComputeUtils: RichFunctionView Inputs', async () => {
     expectDeepEqual(getFuncCallIO(view.lastCall!), applyTransformations(fc1), {prefix: 'lastCall'});
     expectDeepEqual(inputsMap.data.value, inputValues.data, {prefix: 'data'});
   });
-
 });
 
 category('ComputeUtils: RichFunctionView Validation', async () => {
@@ -510,5 +508,4 @@ category('ComputeUtils: RichFunctionView Validation', async () => {
       },
     );
   });
-
 });

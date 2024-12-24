@@ -45,24 +45,24 @@ category('ComputeUtils: Driver steps dependencies tracking', async () => {
         from: 'in1:step1/res',
         to: 'out1:step2/a',
         defaultRestrictions: {
-          out1: 'restricted'
-        }
+          out1: 'restricted',
+        },
       },
       {
         id: 'link2',
         from: 'in1:step2/res',
         to: 'out1:step3/a',
         defaultRestrictions: {
-          out1: 'restricted'
-        }
+          out1: 'restricted',
+        },
       },
       {
         id: 'link3',
         from: 'in1:step3/res',
         to: 'out1:step4/a',
         defaultRestrictions: {
-          out1: 'restricted'
-        }
+          out1: 'restricted',
+        },
       },
     ],
   };
@@ -251,7 +251,6 @@ category('ComputeUtils: Driver steps dependencies tracking', async () => {
         },
       });
     });
-
   });
 
   test('Track transitive dependencies', async () => {
@@ -302,16 +301,16 @@ category('ComputeUtils: Driver steps dependencies tracking', async () => {
           'isRunnable': true,
           'isOutputOutdated': true,
           'pendingDependencies': [],
-        }
+        },
       });
       expectObservable(((node4.getItem()) as FuncCallNode).consistencyInfo$).toBe('a 4ms b', {
         a: {},
         b: {
           a: {
-            "restriction": "restricted",
-            "inconsistent": false,
-            "assignedValue": 3
-          }
+            'restriction': 'restricted',
+            'inconsistent': false,
+            'assignedValue': 3,
+          },
         },
       });
     });
@@ -375,55 +374,54 @@ category('ComputeUtils: Driver steps dependencies tracking', async () => {
         },
         b:
          {
-           "isRunning": true,
-           "isRunnable": true,
-           "isOutputOutdated": true,
-           "pendingDependencies": []
+           'isRunning': true,
+           'isRunnable': true,
+           'isOutputOutdated': true,
+           'pendingDependencies': [],
          },
         c: {
-          "isRunning": true,
-          "isRunnable": false,
-          "isOutputOutdated": true,
-          "pendingDependencies": []
+          'isRunning': true,
+          'isRunnable': false,
+          'isOutputOutdated': true,
+          'pendingDependencies': [],
         },
         d: {
-          "isRunning": true,
-          "isRunnable": false,
-          "isOutputOutdated": false,
-          "pendingDependencies": []
+          'isRunning': true,
+          'isRunnable': false,
+          'isOutputOutdated': false,
+          'pendingDependencies': [],
         },
         e: {
-          "isRunning": false,
-          "isRunnable": false,
-          "isOutputOutdated": false,
-          "pendingDependencies": []
+          'isRunning': false,
+          'isRunnable': false,
+          'isOutputOutdated': false,
+          'pendingDependencies': [],
         },
         f:
           {
-            "isRunning": false,
-            "isRunnable": true,
-            "isOutputOutdated": false,
-            "pendingDependencies": []
-          }
+            'isRunning': false,
+            'isRunnable': true,
+            'isOutputOutdated': false,
+            'pendingDependencies': [],
+          },
       });
       expectObservable(((node4.getItem()) as FuncCallNode).consistencyInfo$).toBe('a 4ms b---b-c', {
         a: {},
         b: {
           a: {
-            "restriction": "restricted",
-            "inconsistent": false,
-            "assignedValue": 3
-          }
+            'restriction': 'restricted',
+            'inconsistent': false,
+            'assignedValue': 3,
+          },
         },
         c: {
           a: {
-            "restriction": "restricted",
-            "inconsistent": true,
-            "assignedValue": 10
+            'restriction': 'restricted',
+            'inconsistent': true,
+            'assignedValue': 10,
           },
-        }
+        },
       });
     });
   });
-
 });

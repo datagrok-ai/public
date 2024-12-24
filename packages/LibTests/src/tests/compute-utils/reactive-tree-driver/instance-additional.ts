@@ -418,6 +418,5 @@ category('ComputeUtils: Driver instance additional states', async () => {
       'runError': 'Error: Test error',
       'pendingDependencies': [],
     });
-
   });
 });

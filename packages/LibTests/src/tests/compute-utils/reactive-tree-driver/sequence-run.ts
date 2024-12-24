@@ -23,7 +23,7 @@ const config: PipelineConfiguration = {
     {
       id: 'pipeline2',
       type: 'static',
-      steps:[
+      steps: [
         {
           id: 'step2',
           nqName: 'LibTests:TestSub2',
@@ -32,7 +32,7 @@ const config: PipelineConfiguration = {
           id: 'step3',
           nqName: 'LibTests:TestMul2',
         },
-      ]
+      ],
     },
     {
       id: 'step4',
@@ -46,7 +46,7 @@ const config: PipelineConfiguration = {
       to: 'to:pipeline2/step2/a',
       defaultRestrictions: {
         to: 'restricted',
-      }
+      },
     },
     {
       id: 'link2',
@@ -54,7 +54,7 @@ const config: PipelineConfiguration = {
       to: 'to:pipeline2/step3/a',
       defaultRestrictions: {
         to: 'restricted',
-      }
+      },
     },
     {
       id: 'link3',
@@ -62,22 +62,20 @@ const config: PipelineConfiguration = {
       to: 'to:step4/a',
       defaultRestrictions: {
         to: 'restricted',
-      }
+      },
     },
   ],
 };
 
-async function waitForMutations(tree: StateTree)  {
+async function waitForMutations(tree: StateTree) {
   await tree.treeMutationsLocked$.pipe(
     debounceTime(0),
-    filter(x => !x),
-    take(1)
+    filter((x) => !x),
+    take(1),
   ).toPromise();
-
 }
 
 category('ComputeUtils: Driver run steps sequence', async () => {
-
   test('Should run ready sequence', async () => {
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf, defaultValidators: true});

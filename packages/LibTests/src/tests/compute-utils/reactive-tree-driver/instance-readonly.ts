@@ -73,5 +73,4 @@ category('ComputeUtils: Driver state tree readonly', async () => {
     const lc = loadedTree.toSerializedState({disableNodesUUID: true, disableCallsUUID: true});
     expectDeepEqual(lc, sc);
   });
-
 });
