@@ -1,5 +1,5 @@
 {
-  "name": "dock-spawn-dg",
+  "name": "@datagrok-libraries/dock-spawn-dg",
   "version": "0.0.1",
   "description": "A TypeScript Version of dock-spawn with changes for Datagrok",
   "license": "MIT",
