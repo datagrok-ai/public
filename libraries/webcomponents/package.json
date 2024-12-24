@@ -2,6 +2,10 @@
   "name": "@datagrok-libraries/webcomponents",
   "sideEffects": false,
   "version": "0.0.6",
+  "author": {
+    "name": "Aufar Zakiev",
+    "email": "aufar.zakiev@softwarecountry.com"
+  },
   "description": "Datagrok web components wrappers",
   "dependencies": {
     "cash-dom": "^8.1.4",
