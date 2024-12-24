@@ -1,17 +1,20 @@
 {
   "name": "@datagrok/webcomponents",
   "friendlyName": "WebComponents",
-  "version": "0.0.3",
-  "description": "",
+  "version": "0.0.6",
+  "author": {
+    "name": "Aufar Zakiev",
+    "email": "aufar.zakiev@softwarecountry.com"
+  },
+  "description": "WebComponents runtime code",
   "dependencies": {
-    "@datagrok-libraries/dock-spawn-dg": "../../libraries/dock-spawn-dg",
-    "@datagrok-libraries/utils": "file:../../libraries/utils",
-    "@datagrok-libraries/webcomponents": "file:../../libraries/webcomponents",
+    "@datagrok-libraries/dock-spawn-dg": "^0.0.1",
+    "@datagrok-libraries/utils": "^4.3.12",
+    "@datagrok-libraries/webcomponents": "^0.0.6",
     "cash-dom": "^8.1.4",
     "css-loader": "^7.1.2",
     "datagrok-api": "^1.21.1",
     "dayjs": "=1.11.10",
-    "dock-spawn-dg": "file:../../libraries/dock-spawn-dg",
     "style-loader": "^4.0.0"
   },
   "devDependencies": {
