@@ -177,10 +177,10 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
         settings.normalization = value;
         gridColumn.grid.invalidate();
       },
-      tooltipText: 'Defines how values are scaled:\n' +
-        'ROW: Scales each row individually (row minimum to row maximum). Use for comparing values within a row.\n' +
+      tooltipText: 'Defines how values are scaled:<br>' +
+        'ROW: Scales each row individually (row minimum to row maximum). Use for comparing values within a row.<br>' +
         'COLUMN: Scales each column individually (column minimum to column maximum).' +
-        'Use when columns have different units.\n' +
+        'Use when columns have different units.<br>' +
         'GLOBAL: Applies a single scale across all values.' +
         'Use for comparing values across columns with the same units (e.g., tracking changes over time).',
       nullable: false
