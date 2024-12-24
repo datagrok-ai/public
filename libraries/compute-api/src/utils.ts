@@ -12,5 +12,5 @@ export function testPipeline(
 }
 
 export function makeModel(provider: string): Promise<DG.FuncCall> {
-  return window.compute.makeModel(provider)
+  return window.compute.makeModel(provider);
 }

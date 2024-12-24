@@ -48,8 +48,8 @@ export {
 };
 
 import {
-  makeValidationResult2, makeAdvice2, mergeValidationResults2
-} from './src/validation2'
+  makeValidationResult2, makeAdvice2, mergeValidationResults2,
+} from './src/validation2';
 export {
   makeValidationResult2, makeAdvice2, mergeValidationResults2,
 };
@@ -58,21 +58,21 @@ import {
   makeModel,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver';
 export {
-  makeModel
+  makeModel,
 };
 
 export type {
   PipelineConfiguration, IRuntimeLinkController, IRuntimeMetaController,
-  IRuntimeValidatorController, IRuntimePipelineMutationController
+  IRuntimeValidatorController, IRuntimePipelineMutationController,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/index';
 
 import {
   ComputationView, RichFunctionView, PipelineView,
-  createCompView, createRFV, createPipeline
+  createCompView, createRFV, createPipeline,
 } from './src/views';
 export {
   ComputationView, RichFunctionView, PipelineView,
-  createCompView, createRFV, createPipeline
+  createCompView, createRFV, createPipeline,
 };
 
 export async function initComputeApi() {
