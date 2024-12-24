@@ -20,4 +20,4 @@ category('Widgets', () => {
     expect(legend.position, DG.LEGEND_POSITION.BOTTOM);
     expect(legend.root.classList.contains(`d4-legend-${DG.LEGEND_POSITION.BOTTOM}`), true);
   });
-});
+}, {owner: 'agolovko@datagrok.ai'});

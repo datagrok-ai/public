@@ -37,7 +37,7 @@ category('Widgets: ValueLookup with no nullables', () => {
     expect(inputs['cyl'].value, 6);
     expect(inputs['disp'].value, 160);
   }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15792'});
-});
+}, {owner: 'dkovalyov@datagrok.ai'});
 
 category('Widgets: ValueLookup with with nullables', () => {
   let inputs = {} as Record<string, DG.InputBase>;
@@ -71,7 +71,7 @@ category('Widgets: ValueLookup with with nullables', () => {
     expect(inputs['cyl'].value, null);
     expect(inputs['disp'].value, null);
   }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15792', owner: zakievAufar});
-});
+}, {owner: 'dkovalyov@datagrok.ai'});
 
 category('Widgets: InputForm fc replacement edge cases', () => {
   let inputs = {} as Record<string, DG.InputBase>;
@@ -124,7 +124,7 @@ category('Widgets: InputForm fc replacement edge cases', () => {
     expect(inputs['disp'].value, null);
     expect(inputs['with_choices'].value, '0');
   }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15741', owner: zakievAufar});
-});
+}, {owner: 'dkovalyov@datagrok.ai'});
 
 category('Widgets: InputForm API', () => {
   let inputs = {} as Record<string, DG.InputBase>;
@@ -284,7 +284,7 @@ category('Widgets: InputForm API', () => {
       ['stringInput', 'intInput', 'doubleInput', 'boolInput', 'choiceInput', 'tableInput'],
     );
   }, {owner: zakievAufar});
-});
+}, {owner: 'dkovalyov@datagrok.ai'});
 
 
 category('Widgets: InputForm w/ custom input', () => {
@@ -395,4 +395,4 @@ category('Widgets: InputForm w/ custom input', () => {
       ['stringInput'],
     );
   }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737', owner: zakievAufar});
-});
+}, {owner: 'dkovalyov@datagrok.ai'});

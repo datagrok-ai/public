@@ -103,4 +103,4 @@ category('Grid', () => {
     grid.setOptions({allowEdit: false, showColumnLabels: false, colHeaderHeight: 100});
     expect(Object.keys(grid.getOptions().look).length, 5);
   });
-});
+}, {owner: 'dkovalyov@datagrok.ai'});
