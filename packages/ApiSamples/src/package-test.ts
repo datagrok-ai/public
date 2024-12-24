@@ -79,8 +79,9 @@ export async function initTests() {
   for (const script of scripts) {
     let catName = ('Scripts:' + script.options.path as string).replaceAll('/', ':');
     let owner: string | undefined;
+    let fullCatName = catName + ':' + script.friendlyName;
     for (let category of Object.keys(categoryOwners))
-      if (catName.startsWith(category))
+      if (fullCatName.startsWith(category))
         owner = categoryOwners[category];
     category(catName, () => {
       if(!beforeArrAdded.includes(catName) && beforeArr[catName.replaceAll(' ', '')]){
@@ -136,9 +137,7 @@ export async function initTests() {
           await script.apply();
           await delay(300);
         }
-      }, skip.includes(script.friendlyName) ? { skipReason: 'skip' } : { timeout: 60000 });
-    }, {
-      owner: owner
+      }, skip.includes(script.friendlyName) ? { skipReason: 'skip', owner: owner } : { timeout: 60000, owner: owner });
     });
   }
 }
