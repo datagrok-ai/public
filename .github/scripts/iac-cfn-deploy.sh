@@ -76,15 +76,15 @@ if [[ $action == *"deploy"* ]]; then
     done
 
 
-#    echo "Copying to S3 CFN scripts for AWS marketplace..."
-#    for f in help/deploy/aws/cloudformation/*-marketplace.yml; do
-#        file=$(basename "$f")
-#        latest_s3_pushed=$(aws s3api list-objects-v2 --bucket datagrok-data --prefix "deployment/${file%.yml}-${datagrok_version}" --query 'Contents == null || (Contents| sort_by(@, &LastModified) | [-1].Key)' --output text)
-#        if [[ $latest_s3_pushed == "True" ]]; then
-#            new_version="deployment/${file%.yml}-${datagrok_version}-0.yml"
-#        else
-#            new_version=$(echo "$latest_s3_pushed" | sed -E 's/(.+-)([0-9]+)(\.yml)/echo "\1$((\2+1))\3"/e')
-#        fi
-#        aws s3 cp "$f" "s3://datagrok-data/${new_version}" --acl public-read;
-#    done
+    echo "Copying to S3 CFN scripts for AWS marketplace..."
+    for f in help/deploy/aws/cloudformation/*-marketplace.yml; do
+        file=$(basename "$f")
+        latest_s3_pushed=$(aws s3api list-objects-v2 --bucket datagrok-data --prefix "deployment/${file%.yml}-${datagrok_version}" --query 'Contents == null || (Contents| sort_by(@, &LastModified) | [-1].Key)' --output text)
+        if [[ $latest_s3_pushed == "True" ]]; then
+            new_version="deployment/${file%.yml}-${datagrok_version}-0.yml"
+        else
+            new_version=$(echo "$latest_s3_pushed" | sed -E 's/(.+-)([0-9]+)(\.yml)/echo "\1$((\2+1))\3"/e')
+        fi
+        aws s3 cp "$f" "s3://datagrok-data/${new_version}" --acl public-read;
+    done
 fi

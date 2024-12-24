@@ -214,8 +214,8 @@ Parameters:
     Description: VPC to deploy Datagrok stack
     Type: AWS::EC2::VPC::Id
   DatagrokVersion:
-    AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+(-rc)?)|latest|stable|bleeding-edge
-    Default: 1.23.0-rc
+    AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|stable|bleeding-edge
+    Default: 1.23.0
     Description: Enter Datagrok docker image version.
     Type: String
   GrokConnectVersion:
