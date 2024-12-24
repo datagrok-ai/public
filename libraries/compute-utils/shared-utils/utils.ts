@@ -276,7 +276,7 @@ export const setGridCellRendering = (
           () => onEditClick(cell),
           'Edit run metadata',
         ),
-      ], {style: {'padding': '6px', 'gap': '6px', 'justify-content': 'space-between'}});
+      ], {style: {padding: '6px', gap: '6px', justifyContent: 'space-between'}});
     }
 
     if (cell.tableColumn?.name === FAVORITE_COLUMN_NAME) {

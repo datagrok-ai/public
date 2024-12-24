@@ -175,14 +175,14 @@ export class HistoricalRunsList extends DG.Widget {
       this.toggleCompactMode, this.trashIcon,
       this.compareIcon, this.showFiltersIcon], false);
 
-    this.setGridCellRendering();
-
     const listChangedSub = this.onRunsChanged.subscribe(async (runs) => {
+      this.setGridCellRendering();
+
       if (runs.size > 0) {
         const newRunsDf = await getRunsDfFromList(
           runs,
           runs.values().next().value!.func,
-          this.options
+          this.options,
         );
         const func = runs.values().next().value!.func as DG.Func;
 
@@ -306,7 +306,8 @@ export class HistoricalRunsList extends DG.Widget {
       this.showEditDialog(
         run,
         this.isFavoriteByIndex(cell.tableRowIndex!),
-      )};
+      );
+    };
 
     const onDeleteClick = (cell: DG.GridCell) => {
       const setToDelete = new Set([this.getRunByIdx(cell.tableRowIndex!)!]);
@@ -330,17 +331,17 @@ export class HistoricalRunsList extends DG.Widget {
         }
       });
       deleteDialog.show({center: true, width: 500});
-    }
+    };
 
     const onFavoriteClick = (cell: DG.GridCell) => {
       const run = this.getRunByIdx(cell.tableRowIndex!)!;
       saveIsFavorite(run, true).then(() => this.updateRun(run));
-    }
+    };
 
     const onUnfavoriteClick = (cell: DG.GridCell) => {
       const run = this.getRunByIdx(cell.tableRowIndex!)!;
       saveIsFavorite(run, false).then(() => this.updateRun(run));
-    }
+    };
 
     setGridCellRendering(
       this._historyGrid,
@@ -349,8 +350,8 @@ export class HistoricalRunsList extends DG.Widget {
       onDeleteClick,
       onFavoriteClick,
       onUnfavoriteClick,
-      this.options?.showActions ?? false
-    )
+      this.options?.showActions ?? false,
+    );
   }
 
   async deleteRun(id: string) {
@@ -501,8 +502,8 @@ export class HistoricalRunsList extends DG.Widget {
       this._compactMode.value,
       this.showInputsIcon.value,
       this.showMetadataIcon.value,
-      this.runs.values().next().value?.func
-    )
+      this.runs.values().next().value?.func,
+    );
   }
 
   private get currentDf() {
@@ -517,15 +518,14 @@ export class HistoricalRunsList extends DG.Widget {
       this.showMetadataIcon.value,
       this.showInputsIcon.value,
       this.options?.isHistory ?? false,
-      func
-    )
+      func,
+    );
 
     if (hasValidFilters) {
       $(this.filterWithText).css({paddingTop: '10px'});
       ui.setDisplay(this.defaultFiltersText, false);
-    } else {
+    } else
       ui.setDisplay(this.defaultFiltersText, true);
-    }
   }
 
   private redrawSelectionState() {
