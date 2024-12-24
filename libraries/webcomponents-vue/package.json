@@ -2,6 +2,10 @@
   "name": "@datagrok-libraries/webcomponents-vue",
   "sideEffects": false,
   "version": "0.0.6",
+  "author": {
+    "name": "Aufar Zakiev",
+    "email": "aufar.zakiev@softwarecountry.com"
+  },
   "description": "Datagrok web components vue wrappers",
   "dependencies": {
     "@datagrok-libraries/compute-utils": "^1.40.0",
