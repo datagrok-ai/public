@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/ketcher-sketcher",
   "friendlyName": "Ketcher Sketcher",
-  "version": "2.2.1",
+  "version": "2.3.0",
   "author": {
     "name": "Maria Dolotova",
     "email": "mdolotova@datagrok.ai"
@@ -34,7 +34,7 @@
     "typescript": "latest",
     "worker-loader": "latest",
     "puppeteer": "^13.7.0",
-    "@datagrok/chem": "^1.12.0"
+    "@datagrok/chem": "^1.14.0"
   },
   "scripts": {
     "lint": "eslint src --ext .ts",

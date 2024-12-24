@@ -15,11 +15,11 @@
     "@codemirror/state": "^6.3.1",
     "@datagrok-libraries/compute-utils": "^1.39.4",
     "@datagrok-libraries/tutorials": "^1.4.2",
-    "@datagrok-libraries/utils": "../../libraries/utils",
+    "@datagrok-libraries/utils": "^4.4.0",
     "cash-dom": "^8.1.5",
     "codemirror": "^6.0.1",
     "css-loader": "^6.10.0",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.23.0",
     "dayjs": "=1.11.10",
     "style-loader": "^3.3.4"
   },

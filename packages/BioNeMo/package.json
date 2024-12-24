@@ -2,22 +2,22 @@
   "name": "@datagrok/bionemo",
   "friendlyName": "BioNeMo",
   "fullName": "BioNeMo",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": {
     "name": "Oleksandra Serhiienko",
     "email": "oserhiienko@datagrok.ai"
   },
   "description": "Advanced models for protein structure prediction and molecular docking",
   "dependencies": {
-    "@datagrok-libraries/utils": "../../libraries/utils",
+    "@datagrok-libraries/utils": "^4.4.0",
     "axios": "^1.7.4",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.23.0",
     "dayjs": "^1.11.13",
     "@datagrok-libraries/bio": "^5.42.14"
   },
   "devDependencies": {
-    "@datagrok/biostructure-viewer": "^1.2.4",
+    "@datagrok/biostructure-viewer": "^1.3.0",
     "datagrok-tools": "latest",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",

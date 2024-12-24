@@ -13,10 +13,10 @@
     "directory": "packages/Arrow"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "../../libraries/utils",
+    "@datagrok-libraries/utils": "^4.4.0",
     "apache-arrow": "^15",
     "cash-dom": "^8.1.1",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.23.0",
     "dayjs": "^1.10.6",
     "file-loader": "^6.2.0",
     "parquet-wasm": "0.6.1"
