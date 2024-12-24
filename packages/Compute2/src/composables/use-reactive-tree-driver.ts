@@ -104,10 +104,10 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
 
   const loadAndReplaceNestedPipeline = (parentUuid: string, dbId: string, itemId: string, position: number) => {
     driver.sendCommand({event: 'loadDynamicItem', parentUuid, dbId, itemId, position, readonly: true, isReplace: true});
-  }
+  };
 
   const savePipeline = (metaData?: ItemMetadata) => {
-    driver.sendCommand({event: 'savePipeline', ...metaData})
+    driver.sendCommand({event: 'savePipeline', ...metaData});
   };
 
   const saveDynamicItem = (uuid:string, metaData?: ItemMetadata) => {
@@ -123,12 +123,12 @@ export function useReactiveTreeDriver(providerFunc: Vue.Ref<string>) {
   };
 
   const runAction = (actionUuid: string) => {
-    driver.sendCommand({ event: 'runAction', uuid: actionUuid})
-  }
+    driver.sendCommand({event: 'runAction', uuid: actionUuid});
+  };
 
   const consistencyReset = (stepUuid: string, ioName: string) => {
-    driver.sendCommand({ event: 'resetToConsistent', stepUuid, ioName });
-  }
+    driver.sendCommand({event: 'resetToConsistent', stepUuid, ioName});
+  };
 
   const addStep = (parentUuid: string, itemId: string, position: number) => {
     driver.sendCommand({event: 'addDynamicItem', parentUuid, itemId, position});

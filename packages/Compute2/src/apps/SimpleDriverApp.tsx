@@ -5,8 +5,8 @@ import {BigButton, Button, InputForm} from '@datagrok-libraries/webcomponents-vu
 import {defineComponent, KeepAlive, onUnmounted, reactive, shallowRef} from 'vue';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
 import {useObservable, useSubscription} from '@vueuse/rxjs';
-import {isFuncCallState, isParallelPipelineState, 
-  isSequentialPipelineState, PipelineState} from 
+import {isFuncCallState, isParallelPipelineState,
+  isSequentialPipelineState, PipelineState} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {map, switchMap} from 'rxjs/operators';
 import {merge} from 'rxjs';

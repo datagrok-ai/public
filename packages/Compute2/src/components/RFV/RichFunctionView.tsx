@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
-import { openDB, DBSchema } from 'idb';
+import {openDB, DBSchema} from 'idb';
 import {
   Viewer, InputForm,
   BigButton, IconFA,
@@ -124,10 +124,10 @@ export const RichFunctionView = Vue.defineComponent({
       type: Object as Vue.PropType<Record<string, ConsistencyInfo>>,
     },
     menuActions: {
-      type:  Object as Vue.PropType<Record<string, ViewAction[]>>
+      type: Object as Vue.PropType<Record<string, ViewAction[]>>,
     },
     buttonActions: {
-      type:  Object as Vue.PropType<ViewAction[]>
+      type: Object as Vue.PropType<ViewAction[]>,
     },
     isTreeLocked: {
       type: Boolean,
@@ -145,33 +145,33 @@ export const RichFunctionView = Vue.defineComponent({
     },
     showStepNavigation: {
       type: Boolean,
-    }
+    },
   },
   emits: {
     'update:funcCall': (call: DG.FuncCall) => call,
-    runClicked: () => {},
-    nextClicked: () => {},
-    actionRequested: (actionUuid: string) => actionUuid,
-    consistencyReset: (ioName: string) => ioName,
+    'runClicked': () => {},
+    'nextClicked': () => {},
+    'actionRequested': (actionUuid: string) => actionUuid,
+    'consistencyReset': (ioName: string) => ioName,
   },
   methods: {
     savePersonalState: () => {},
-    loadPersonalLayout: () => {}
+    loadPersonalLayout: () => {},
   },
   setup(props, {emit, expose}) {
     const layoutDatabase = computedAsync(async () => {
       const db = await openDB<ComputeSchema>(LAYOUT_DB_NAME, 2, {
         blocked: () => {
-          grok.shell.error(`Layout database requires update. Please close all webpages with models opened.`)
+          grok.shell.error(`Layout database requires update. Please close all webpages with models opened.`);
         },
         upgrade: (db, oldVersion) => {
-          if (oldVersion === 0) 
+          if (oldVersion === 0)
             db.createObjectStore(STORE_NAME);
-        }
-      })
+        },
+      });
 
       return db;
-    }, null)
+    }, null);
 
     const currentCall = Vue.computed(() => props.funcCall);
 
@@ -303,7 +303,7 @@ export const RichFunctionView = Vue.defineComponent({
     expose({
       savePersonalState,
       loadPersonalLayout,
-    })
+    });
 
     const dockInited = Vue.ref(false);
 
@@ -322,7 +322,7 @@ export const RichFunctionView = Vue.defineComponent({
 
     const triggerSaveDefault = Vue.ref(false);
     Vue.watch(triggerSaveDefault, async () => {
-      saveDefaultState()
+      saveDefaultState();
       await loadPersonalLayout();
     }, {flush: 'post'});
 
@@ -335,10 +335,10 @@ export const RichFunctionView = Vue.defineComponent({
       savePersonalState(currentCall.value);
     });
 
-    const { setViewerRef } = useViewersHook(
+    const {setViewerRef} = useViewersHook(
       Vue.toRef(props, 'viewersHook'),
       Vue.toRef(props, 'callMeta'),
-      currentCall
+      currentCall,
     );
 
     const callMeta = Vue.computed(() => props.callMeta);
@@ -363,7 +363,7 @@ export const RichFunctionView = Vue.defineComponent({
     const viewerTabLabels = Vue.computed(() =>
       [
         ...currentCall.value.inputParams.values(),
-        ...currentCall.value.outputParams.values()
+        ...currentCall.value.outputParams.values(),
       ].filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME));
 
     return () => {
@@ -371,28 +371,28 @@ export const RichFunctionView = Vue.defineComponent({
       let scalarCardCount = 0;
 
       const getElementToDock = () => {
-        return intelligentLayout && lastCardLabel 
-        && visibleTabLabels.value.includes(lastCardLabel)
-        && scalarCardCount < 3 ? lastCardLabel: null
-      }
+        return intelligentLayout && lastCardLabel &&
+        visibleTabLabels.value.includes(lastCardLabel) &&
+        scalarCardCount < 3 ? lastCardLabel: null;
+      };
 
       const getDockRatio = () => {
         if (!intelligentLayout) return null;
 
         return lastCardLabel && scalarCardCount < 3 ? 0.5: 0.15;
-      }
+      };
 
       const getDockStrategy = (categoryProps: DG.Property[]) => {
         if (!intelligentLayout) return 'fill';
 
         if (viewerTabLabels.value.length === 0) return null;
 
-        if (categoryProps.length > 3 || scalarCardCount > 3) return 'fill'
+        if (categoryProps.length > 3 || scalarCardCount > 3) return 'fill';
 
         if (!lastCardLabel) return 'down';
 
         return scalarCardCount < 3 ? 'right': 'down';
-      }
+      };
 
       return (
         <div class='w-full h-full flex' ref={root}>
@@ -527,7 +527,7 @@ export const RichFunctionView = Vue.defineComponent({
                         { action.icon && <IconFA name={action.icon} /> }
                         { action.friendlyName ?? action.uuid }
                       </Button>
-                    , [[tooltip, action.description]]))
+                      , [[tooltip, action.description]]))
                   }
                   {
                     <BigButton
@@ -538,7 +538,11 @@ export const RichFunctionView = Vue.defineComponent({
                     </BigButton>
                   }
                   {
+<<<<<<< Updated upstream
                     props.showStepNavigation && !isOutputOutdated.value &&
+=======
+                    props.showStepNavigation && !isOutputOutdated.value && <div class='flex flex-row'>
+>>>>>>> Stashed changes
                       <BigButton
                         onClick={next}
                       >

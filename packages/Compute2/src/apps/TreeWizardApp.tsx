@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 import '@he-tree/vue/style/default.css';
 import '@he-tree/vue/style/material-design.css';
-import { TreeWizard } from '../components/TreeWizard/TreeWizard';
+import {TreeWizard} from '../components/TreeWizard/TreeWizard';
 
 export const TreeWizardApp = Vue.defineComponent({
   name: 'TreeWizardApp',
@@ -14,6 +14,6 @@ export const TreeWizardApp = Vue.defineComponent({
   setup(props) {
     return () => (
       <TreeWizard providerFunc={props.providerFunc}/>
-    )
+    );
   },
 });

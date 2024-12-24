@@ -24,7 +24,7 @@ export const History = Vue.defineComponent({
     fallbackText: {
       type: String,
       default: 'No historical runs found',
-    }, 
+    },
     showActions: {
       type: Boolean,
       default: false,
@@ -40,7 +40,7 @@ export const History = Vue.defineComponent({
     propFuncs: {
       type: Object as Vue.PropType<Record<string, (currentRun: DG.FuncCall) => string>>,
       default: {},
-    }, 
+    },
   },
   emits: {
     runChosen: (chosenCall: DG.FuncCall) => chosenCall,
@@ -104,7 +104,7 @@ export const History = Vue.defineComponent({
 
     const showEditDialog = (funcCall: DG.FuncCall, isFavorite: boolean) => {
       const editDialog = new HistoricalRunEdit(funcCall, isFavorite);
-  
+
       editDialog.onMetadataEdit.pipe(take(1)).subscribe(async (editOptions) => {
         if (!props.isHistory)
           updateRun(funcCall);
@@ -117,7 +117,7 @@ export const History = Vue.defineComponent({
               if (editOptions.title) fullCall.options['title'] = editOptions.title;
               if (editOptions.description) fullCall.options['description'] = editOptions.description;
               if (editOptions.tags) fullCall.options['tags'] = editOptions.tags;
-  
+
               return [historyUtils.saveRun(fullCall), fullCall] as const;
             })
             .then(([, fullCall]) => {
@@ -130,7 +130,7 @@ export const History = Vue.defineComponent({
       });
       editDialog.show({center: true, width: 500});
     };
-    
+
     const onEditClick = (cell: DG.GridCell) => {
       const run = getRunByIdx(cell.tableRowIndex!)!;
       showEditDialog(
@@ -188,7 +188,7 @@ export const History = Vue.defineComponent({
             }));
         } catch (e: any) {
           grok.shell.error(e);
-        } 
+        }
       });
       deleteDialog.show({center: true, width: 500});
     };
@@ -196,7 +196,7 @@ export const History = Vue.defineComponent({
     const historicalRunsDf = Vue.shallowRef(defaultDf);
     Vue.watch(historicalRuns, async () => {
       const df = await Utils.getRunsDfFromList(
-        historicalRuns.value, 
+        historicalRuns.value,
         props.func,
         Vue.toValue(() => props),
       );
@@ -209,7 +209,7 @@ export const History = Vue.defineComponent({
       if (chosenRun) emit('runChosen', await historyUtils.loadRun(chosenRun.id, false, false));
     });
 
-    Vue.watch([showMetadata, showInputs], () => updateVisibleColumns())
+    Vue.watch([showMetadata, showInputs], () => updateVisibleColumns());
 
     let currentGrid = null as null | DG.Grid;
     const updateVisibleColumns = () => {
@@ -235,14 +235,14 @@ export const History = Vue.defineComponent({
               return Utils.getColumnName(key);
           }): [],
       ]);
-    }
-  
+    };
+
     const handleGridRendering = async (grid?: DG.Grid) => {
       if (!grid) return;
 
       await grok.events.onEvent(GRID_INITED_EVENT).pipe(
         filter((initedGrid) => initedGrid === grid),
-        take(1)
+        take(1),
       ).toPromise();
 
       currentGrid = grid;
@@ -270,10 +270,10 @@ export const History = Vue.defineComponent({
       updateVisibleColumns();
     };
 
-    const fallbackText = <div class='p-1'> {props.fallbackText} </div>
+    const fallbackText = <div class='p-1'> {props.fallbackText} </div>;
 
-    const currentFunc = Vue.computed(()=> props.func)
-    const isHistory = Vue.computed(()=> props.isHistory)
+    const currentFunc = Vue.computed(()=> props.func);
+    const isHistory = Vue.computed(()=> props.isHistory);
     const visibleFilterColumns = Vue.computed(() => {
       const currentDf = historicalRunsDf.value;
       const tagCol = currentDf.getCol(TAGS_COLUMN_NAME);
@@ -309,13 +309,13 @@ export const History = Vue.defineComponent({
           })
           .map((columnName) => columnName): [],
       ];
-    })
+    });
 
     return () => {
       const controls = <div style={{display: 'flex', justifyContent: 'space-between', padding: '0px 6px'}}>
         <div style={{'display': 'flex', 'padding': '6px 0px', 'gap': '6px'}}>
-          <IconFA 
-            name='filter' 
+          <IconFA
+            name='filter'
             tooltip={showFilters.value ? 'Hide filters': 'Show filters'}
             faStyle={showFilters.value ? 'fal': 'fad'}
             onClick={() => showFilters.value = !showFilters.value}
@@ -333,12 +333,12 @@ export const History = Vue.defineComponent({
           />
         </div>
         <div style={{display: 'flex'}}>
-          
+
         </div>
       </div>;
-      const grid = <Viewer 
+      const grid = <Viewer
         type='Grid'
-        dataFrame={historicalRunsDf.value} 
+        dataFrame={historicalRunsDf.value}
         style={{height: '100%', width: '100%', minHeight: '300px'}}
         onViewerChanged={(viewer) => handleGridRendering(viewer as DG.Grid | undefined)}
         options={{
@@ -351,28 +351,28 @@ export const History = Vue.defineComponent({
           'extendLastColumn': false,
         }}
       />;
-      const filters = <Viewer 
-        type='Filters' 
-        dataFrame={historicalRunsDf.value} 
+      const filters = <Viewer
+        type='Filters'
+        dataFrame={historicalRunsDf.value}
         style={{
-          flex: '1', width: '100%', overflow: 'hidden'
+          flex: '1', width: '100%', overflow: 'hidden',
         }}
         options={{
-          columnNames: visibleFilterColumns.value, 
-          'showHeader': false, 
-          allowEdit: false,
+          'columnNames': visibleFilterColumns.value,
+          'showHeader': false,
+          'allowEdit': false,
         }}
       />;
 
       return Vue.withDirectives(<div style={{overflow: 'hidden'}}>
-        { historicalRuns.value.size === 0 ? 
+        { historicalRuns.value.size === 0 ?
           fallbackText:
           <div style={{
-            display: 'flex', 
+            display: 'flex',
             flexDirection: 'column',
             width: '100%',
             height: '100%',
-          }}> 
+          }}>
             <div style={{display: 'flex', flexDirection: 'column', flex: '1'}}>
               { controls }
               { grid }

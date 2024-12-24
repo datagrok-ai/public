@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { fromEvent, Subject } from 'rxjs';
-import { ItemMetadata } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/view/ViewCommunication';
+import {fromEvent, Subject} from 'rxjs';
+import {ItemMetadata} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/view/ViewCommunication';
 
 type EditOptions = {
   title?: string,
@@ -22,7 +22,7 @@ export class EditDialog extends DG.Dialog {
 
     let title = metadata?.title ?? '';
     let description = metadata?.description ?? '';
-    let isFavorite =  metadata?.isFavorite ?? false;
+    let isFavorite = metadata?.isFavorite ?? false;
     const titleInput = ui.input.string('Title', {value: title, onValueChanged: (value) => title = value});
 
     const dummyInput = ui.input.string(' ', {value: ''});

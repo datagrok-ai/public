@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
-import {useSubscription, from} from '@vueuse/rxjs'
+import {useSubscription, from} from '@vueuse/rxjs';
 import {BehaviorSubject, combineLatest, EMPTY, merge, Subject} from 'rxjs';
 import {catchError, switchMap, tap, map, debounceTime, withLatestFrom, share, shareReplay} from 'rxjs/operators';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
@@ -21,11 +21,11 @@ function runViewersHook(viewersHook: ViewersHook | undefined, io: string, viewer
 export function useViewersHook(
   viewersHook: Vue.Ref<ViewersHook | undefined>,
   metaStates: Vue.Ref<Record<string, BehaviorSubject<any>> | undefined>,
-  currentCall: Vue.Ref<DG.FuncCall>
+  currentCall: Vue.Ref<DG.FuncCall>,
 ) {
-  const metaStates$ = from(metaStates, { immediate: true });
-  const viewersHook$ = from(viewersHook, { immediate: true });
-  const currentCall$ = from(currentCall, { immediate: true });
+  const metaStates$ = from(metaStates, {immediate: true});
+  const viewersHook$ = from(viewersHook, {immediate: true});
+  const currentCall$ = from(currentCall, {immediate: true});
 
   const viewerStates$ = currentCall$.pipe(
     map((call) => {
@@ -40,7 +40,7 @@ export function useViewersHook(
     shareReplay(1),
   );
 
-  const viewerChanges$ = new Subject<readonly [DG.Viewer | undefined,  string, string]>();
+  const viewerChanges$ = new Subject<readonly [DG.Viewer | undefined, string, string]>();
   const viewersSub = viewerChanges$.pipe(
     withLatestFrom(viewerStates$),
     tap(([[viewer, io, type], viewerStates]) => {
@@ -49,7 +49,7 @@ export function useViewersHook(
         const viewers = viewers$.value;
         viewers$.next({...viewers, [type]: viewer});
       }
-    })
+    }),
   ).subscribe();
   useSubscription(viewersSub);
 
@@ -76,9 +76,9 @@ export function useViewersHook(
             grok.shell.error(e);
             console.error(e);
             return EMPTY;
-          })
-        )
-      })
+          }),
+        );
+      });
       return merge(...hookRuns);
     }),
   ).subscribe();
@@ -86,7 +86,7 @@ export function useViewersHook(
 
   const setViewerRef = (viewer: DG.Viewer | undefined, io: string, type: string) => {
     viewerChanges$.next([viewer, io, type] as const);
-  }
+  };
 
-  return { setViewerRef };
+  return {setViewerRef};
 }

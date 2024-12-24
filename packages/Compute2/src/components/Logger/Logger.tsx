@@ -19,17 +19,17 @@ export const Logger = Vue.defineComponent({
         if (item.type === 'treeUpdateStarted' || item.type === 'treeUpdateFinished') {
           const dateString = item.timestamp.toISOString();
           return (
-            <div key={item.uuid} style={{ display: 'flex', borderBottom: '1px solid Gainsboro', marginTop: '5px' }}>
+            <div key={item.uuid} style={{display: 'flex', borderBottom: '1px solid Gainsboro', marginTop: '5px'}}>
               <span>
                 { dateString } | { item.type }
               </span>
             </div>
           );
-        } else if(item.type === 'treeUpdateMutation') {
+        } else if (item.type === 'treeUpdateMutation') {
           const dateString = item.timestamp.toISOString();
           const pathString = item.mutationRootPath?.length ? [...item.mutationRootPath.map(({idx}) => idx)].join('/') : '/';
           return (
-            <div key={item.uuid} style={{ display: 'flex', borderBottom: '1px solid Gainsboro', marginTop: '5px' }}>
+            <div key={item.uuid} style={{display: 'flex', borderBottom: '1px solid Gainsboro', marginTop: '5px'}}>
               <span>
                 { dateString } | { item.type } | mutationRootPath: { pathString } | addIdx: { String(item.addIdx) } | removeIdx: { String(item.removeIdx) }
               </span>
@@ -39,7 +39,7 @@ export const Logger = Vue.defineComponent({
           const dateString = item.timestamp.toISOString();
           const pathString = [...item.prefix.map(({idx}) => idx), item.id].join('/');
           return (
-            <div key={item.uuid} style={{ display: 'flex', borderBottom: '1px solid Gainsboro', marginTop: '5px' }}>
+            <div key={item.uuid} style={{display: 'flex', borderBottom: '1px solid Gainsboro', marginTop: '5px'}}>
               <span>
                 { dateString } | { item.type } | { pathString } | { item.linkUUID }
               </span>
@@ -48,6 +48,6 @@ export const Logger = Vue.defineComponent({
         }
       });
       return <div>{ logs }</div>;
-    }
-  }
+    };
+  },
 });

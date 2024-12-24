@@ -15,7 +15,7 @@ export const FormApp = Vue.defineComponent({
     };
 
     const changeFuncCall = () => {
-      const nfc = fc.value?.func.nqName === 'LibTests:SimpleInputs' ? 
+      const nfc = fc.value?.func.nqName === 'LibTests:SimpleInputs' ?
         DG.Func.byName('Compute:ObjectCooling').prepare():
         DG.Func.byName('LibTests:SimpleInputs').prepare();
       fc.value = nfc;

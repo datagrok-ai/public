@@ -60,7 +60,7 @@ const statesToStatus = (
 ): Status => {
   if (callState.isRunning) return 'running';
   if (callState.runError)
-      return 'failed';
+    return 'failed';
   if (callState.pendingDependencies?.length)
     return callState.isOutputOutdated ? 'pending' : 'pending executed';
   if (!callState.isOutputOutdated) {
@@ -83,23 +83,23 @@ const statesToStatus = (
 const getToolTip = (status: Status, isReadonly: boolean) => {
   if (!isReadonly || status !== 'next') return statusToTooltip[status];
   return 'This step is locked';
-}
+};
 
 const hasWarnings = (validationsState?: Record<string, ValidationResult>) => {
-  const firstWarning = Object.values(validationsState || {}).find(val => val.warnings?.length);
+  const firstWarning = Object.values(validationsState || {}).find((val) => val.warnings?.length);
   return firstWarning;
-}
+};
 
 const hasChanges = (consistencyStates?: Record<string, ConsistencyInfo>) => {
   const firstInconsistency = Object.values(consistencyStates || {}).find(
-    val => val.inconsistent && (val.restriction === 'info'));
+    (val) => val.inconsistent && (val.restriction === 'info'));
   return firstInconsistency;
-}
+};
 
 const hasErrors = (validationsState?: Record<string, ValidationResult>) => {
-  const firstError = Object.values(validationsState || {}).find(val => val.errors?.length)
+  const firstError = Object.values(validationsState || {}).find((val) => val.errors?.length);
   return firstError;
-}
+};
 
 export const TreeNode = Vue.defineComponent({
   props: {
@@ -133,7 +133,7 @@ export const TreeNode = Vue.defineComponent({
     },
     hasInconsistentSubsteps: {
       type: Boolean,
-    }
+    },
   },
   emits: {
     addNode: ({itemId, position}:{itemId: string, position: number}) => ({itemId, position}),
@@ -151,7 +151,7 @@ export const TreeNode = Vue.defineComponent({
       onClick={(e) => {emit('toggleNode'); e.stopPropagation();}}
     />;
 
-    const isRoot = Vue.computed(() => !props.stat.parent)
+    const isRoot = Vue.computed(() => !props.stat.parent);
 
     const progressIcon = (status: Status, isReadOnly: boolean) => {
       return <IconFA
@@ -175,9 +175,9 @@ export const TreeNode = Vue.defineComponent({
     const isRunnable = Vue.computed(() => props.callState?.isRunnable);
 
     const status = Vue.computed(() => {
-      if (props.callState) 
-        return statesToStatus(props.callState, props.validationStates, props.consistencyStates)
-    })
+      if (props.callState)
+        return statesToStatus(props.callState, props.validationStates, props.consistencyStates);
+    });
 
     return () => (
       <div
@@ -193,7 +193,7 @@ export const TreeNode = Vue.defineComponent({
         { status.value && progressIcon(status.value, props.isReadonly) }
         { props.stat.children.length ? openIcon() : null }
         <span class="mtl-ml text-nowrap text-ellipsis overflow-hidden">{ props.descriptions?.title ?? nodeLabel(props.stat) }</span>
-        { 
+        {
           <div class='flex items-center px-2 w-fit justify-end ml-auto'>
             { ...isHovered.value ? [
               ...couldBeSaved(props.stat.data) && !isRoot.value ? [<IconFA
@@ -206,7 +206,7 @@ export const TreeNode = Vue.defineComponent({
               ...hasAddControls(props.stat.data) ? [<ComboPopup
                 caption={ui.iconFA('plus')}
                 items={props.stat.data.stepTypes
-                  .map((stepType) =>  stepType.friendlyName || stepType.nqName || stepType.configId)
+                  .map((stepType) => stepType.friendlyName || stepType.nqName || stepType.configId)
                 }
                 onSelected={({itemIdx}) => {
                   const data = props.stat.data as PipelineWithAdd;
@@ -227,7 +227,7 @@ export const TreeNode = Vue.defineComponent({
                 name='times'
                 onClick={(e: Event) => {emit('removeNode'); e.stopPropagation();}}
                 class='d4-ribbon-item'
-              />]: [],              
+              />]: [],
             ]: [] }
             { props.hasInconsistentSubsteps && <IconFA
               name='sync'
@@ -239,7 +239,7 @@ export const TreeNode = Vue.defineComponent({
                 const firstSubstep = subtreeData.steps.at(0);
                 const lastSubstep = subtreeData.steps.at(-1);
                 if (firstSubstep && lastSubstep)
-                  emit('runSubtree', firstSubstep.uuid, true, lastSubstep.uuid)
+                  emit('runSubtree', firstSubstep.uuid, true, lastSubstep.uuid);
               }}
             /> }
             {
@@ -260,7 +260,7 @@ export const TreeNode = Vue.defineComponent({
                 name='play'
                 tooltip={'Run this step'}
                 style={{'padding-right': '3px'}}
-                onClick={(e) => {emit('runStep', props.stat.data.uuid); e.stopPropagation()}}
+                onClick={(e) => {emit('runStep', props.stat.data.uuid); e.stopPropagation();}}
                 class='d4-ribbon-item'
               />
             }

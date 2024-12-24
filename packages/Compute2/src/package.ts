@@ -11,9 +11,9 @@ import {HistoryApp as HistoryAppInstance} from './apps/HistoryApp';
 import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
 import {SimpleDriverApp as SimpleDriverAppInstance} from './apps/SimpleDriverApp';
 import {RFVApp} from './apps/RFVApp';
-import { PipelineConfiguration } from '@datagrok-libraries/compute-utils';
-import './tailwind.css'
-import { makeAdvice, makeValidationResult } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
+import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
+import './tailwind.css';
+import {makeAdvice, makeValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 
 export const _package = new DG.Package();
 
@@ -219,22 +219,22 @@ export async function MockProvider2(params: any) {
           return;
         },
       }],
-      }, {
-        id: 'stepAdd',
-        nqName: 'Compute2:TestAdd2',
-        friendlyName: 'add',
-      }, {
-        id: 'stepMul',
-        nqName: 'Compute2:TestMul2',
-        friendlyName: 'mul',
-      },{
-        id: 'LongScript',
-        nqName: 'Compute2:LongScript',
-        friendlyName: 'long',
-      }, {
-        type: 'ref',
-        provider: 'Compute2:MockProvider1',
-        version: '1.0',
+    }, {
+      id: 'stepAdd',
+      nqName: 'Compute2:TestAdd2',
+      friendlyName: 'add',
+    }, {
+      id: 'stepMul',
+      nqName: 'Compute2:TestMul2',
+      friendlyName: 'mul',
+    }, {
+      id: 'LongScript',
+      nqName: 'Compute2:LongScript',
+      friendlyName: 'long',
+    }, {
+      type: 'ref',
+      provider: 'Compute2:MockProvider1',
+      version: '1.0',
     }],
     initialSteps: [
       {
@@ -243,7 +243,7 @@ export async function MockProvider2(params: any) {
         id: 'stepMul',
       }, {
         id: 'cooling',
-      }
+      },
     ],
     links: [{
       id: 'selector',
@@ -255,7 +255,7 @@ export async function MockProvider2(params: any) {
         controller.setDescriptionItem('out1', `Title ${val}`);
         controller.setDescriptionItem('out2', `Description ${val}`);
         controller.setDescriptionItem('out3', [`tag ${val}`]);
-      }
+      },
     }, {
       id: 'link1',
       from: 'in1:stepAdd/res',
@@ -270,7 +270,7 @@ export async function MockProvider2(params: any) {
       id: 'toMul',
       from: 'from:stepAdd/res',
       to: 'to:stepMul/b',
-      defaultRestrictions: { to: 'restricted' },
+      defaultRestrictions: {to: 'restricted'},
     },
     {
       id: 'initialTempValidator',
@@ -279,7 +279,7 @@ export async function MockProvider2(params: any) {
         'ambTemp:cooling/ambTemp',
       ],
       to: [
-        'toInitTemp:cooling/initTemp'
+        'toInitTemp:cooling/initTemp',
       ],
       actions: 'actions:cooling',
       type: 'validator',
@@ -293,15 +293,14 @@ export async function MockProvider2(params: any) {
           if (!action) return;
 
           controller.setValidation('toInitTemp',
-            makeValidationResult({ errors: [
+            makeValidationResult({errors: [
               makeAdvice(
                 `Initial temperature should be more than ambient temperature ${ambTemp}`,
-                [{actionName: `Set reasonable initial temperature`, action}]
-              )
+                [{actionName: `Set reasonable initial temperature`, action}],
+              ),
             ]}));
-        } else {
+        } else
           controller.setValidation('toInitTemp');
-        }
       },
     }],
   };

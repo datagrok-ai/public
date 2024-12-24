@@ -13,9 +13,9 @@ import {LinksData} from '@datagrok-libraries/compute-utils/reactive-tree-driver/
 
 function replacer(key: any, value: any) {
   // Filtering out properties
-  if (value instanceof DG.FuncCall) {
+  if (value instanceof DG.FuncCall)
     return `#FuncCall`;
-  }
+
   if (value instanceof DG.DataFrame)
     return `#DataFrame`;
   return value;
@@ -41,7 +41,7 @@ export const Inspector = Vue.defineComponent({
     const selectedTab = Vue.ref('Log');
     const toJSON = (x: any) => {
       return x ? JSON.parse(JSON.stringify(x, replacer)) : {};
-    }
+    };
 
     const lastVisibleIdx = Vue.ref(0);
     return () => (
@@ -80,5 +80,5 @@ export const Inspector = Vue.defineComponent({
         }
       </div>
     );
-  }
+  },
 });

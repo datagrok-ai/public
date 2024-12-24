@@ -7,7 +7,7 @@ import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
 import {hasAddControls, PipelineWithAdd} from '../../utils';
 import {isParallelPipelineState, isSequentialPipelineState, PipelineState, ViewAction} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
-import { computedAsync } from '@vueuse/core';
+import {computedAsync} from '@vueuse/core';
 
 
 export const PipelineView = Vue.defineComponent({
@@ -29,17 +29,17 @@ export const PipelineView = Vue.defineComponent({
       type: String,
     },
     menuActions: {
-      type:  Object as Vue.PropType<Record<string, ViewAction[]>>
+      type: Object as Vue.PropType<Record<string, ViewAction[]>>,
     },
     buttonActions: {
-      type:  Object as Vue.PropType<ViewAction[]>
+      type: Object as Vue.PropType<ViewAction[]>,
     },
   },
   emits: {
     'update:funcCall': (call: DG.FuncCall) => call,
     'proceedClicked': () => {},
     'actionRequested': (actionUuid: string) => actionUuid,
-    'addNode': ({itemId, position}:{itemId: string, position: number}) => ({itemId, position})
+    'addNode': ({itemId, position}:{itemId: string, position: number}) => ({itemId, position}),
   },
   setup(props, {emit}) {
     const historyHidden = Vue.ref(true);
@@ -48,18 +48,18 @@ export const PipelineView = Vue.defineComponent({
     const historyRef = Vue.shallowRef(null as InstanceType<typeof History> | null);
     const helpRef = Vue.shallowRef(null as InstanceType<typeof MarkDown> | null);
     const functionsRef = Vue.shallowRef(null as HTMLElement | null);
-    const state = Vue.computed(() => props.state)
+    const state = Vue.computed(() => props.state);
     const menuActions = Vue.computed(() => props.menuActions);
     const buttonActions = Vue.computed(() => props.buttonActions);
     const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
 
-    const hoveredFunc = Vue.shallowRef(null as DG.Func | null)
+    const hoveredFunc = Vue.shallowRef(null as DG.Func | null);
 
     const helpText = computedAsync(async () => {
       if (!hoveredFunc.value) return null;
 
       return Utils.getContextHelp(hoveredFunc.value);
-    }, null)
+    }, null);
 
     const handlePanelClose = async (el: HTMLElement) => {
       if (el === historyRef.value?.$el) historyHidden.value = true;
@@ -68,8 +68,8 @@ export const PipelineView = Vue.defineComponent({
 
     const hasInnerStep = Vue.computed(() =>
       (isParallelPipelineState(state.value) || isSequentialPipelineState(state.value)) &&
-      state.value.steps.length > 0
-    )
+      state.value.steps.length > 0,
+    );
 
     const cardsClasses = 'grok-app-card grok-gallery-grid-item-wrapper pr-4';
 
@@ -93,8 +93,8 @@ export const PipelineView = Vue.defineComponent({
               ref={historyRef}
               class='overflow-scroll h-full'
             /> }
-          { hasAddControls(state.value) && !functionsHidden.value && <div 
-            class={'grok-gallery-grid'} 
+          { hasAddControls(state.value) && !functionsHidden.value && <div
+            class={'grok-gallery-grid'}
             dock-spawn-title='Steps to add'
             dock-spawn-dock-type='right'
             dock-spawn-dock-ratio={0.35}
@@ -105,9 +105,9 @@ export const PipelineView = Vue.defineComponent({
                 const func = stepType.nqName ? DG.Func.byName(stepType.nqName): null;
                 const language = func instanceof DG.Script ? func.language: 'javascript';
                 const iconBackground = `background-image: url("/images/entities/${language}.png"); padding-right: 3px;`;
-                
-                return <div 
-                  class='p-2 border-solid border-1 border-[#dbdcdf] m-4' 
+
+                return <div
+                  class='p-2 border-solid border-1 border-[#dbdcdf] m-4'
                   style={{width: '208px'}}
                   onMouseover={() => hoveredFunc.value = func}
                   onMouseleave={() => hoveredFunc.value = null}
@@ -115,25 +115,25 @@ export const PipelineView = Vue.defineComponent({
                   <div class='flex flex-col'>
                     <div class='flex flex-row justify-between'>
                       <div class='flex flex-row items-center'>
-                        { func ? 
+                        { func ?
                           <i style={iconBackground} class={'grok-icon image-icon'}></i>:
                           <IconFA style={{'padding-right': '3px'}} name='folder-tree' />
                         }
-                        <div> 
+                        <div>
                           <span class='text-[#2083d5]'> {stepType.friendlyName ?? stepType.configId} </span>
                         </div>
                       </div>
                       <div class='flex flex-row'>
-                        { func?.options.help && <IconFA 
+                        { func?.options.help && <IconFA
                           class='d4-ribbon-item'
-                          name='question-circle' 
+                          name='question-circle'
                           tooltip={helpText.value}
                           style={{'padding-left': '5px'}}
-                          /> 
+                        />
                         }
-                        <IconFA 
+                        <IconFA
                           class='d4-ribbon-item'
-                          name='plus' 
+                          name='plus'
                           tooltip='Add step to the tree'
                           onClick={() => {
                             const data = state.value as PipelineWithAdd;
@@ -148,9 +148,10 @@ export const PipelineView = Vue.defineComponent({
                     </div>
                     { func && <label class='description'> {func.description} </label> }
                   </div>
-                </div>})
+                </div>;
+              })
             }
-            </div>
+          </div>
           }
           { menuActions.value && Object.entries(menuActions.value).map(([category, actions]) =>
             <RibbonMenu groupName={category}>
@@ -171,7 +172,7 @@ export const PipelineView = Vue.defineComponent({
             style={{overflow: 'auto'}}
           >
             <div
-             style={{minWidth: '200px'}}
+              style={{minWidth: '200px'}}
             >
               <span>
               This is a sequence of steps. You may:

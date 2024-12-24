@@ -8,7 +8,6 @@ import {History} from '../components/History/History';
 export const HistoryApp = Vue.defineComponent({
   name: 'HistoryApp',
   setup: () => {
-    
     return () => <History
       func={DG.Func.byName('Compute:ObjectCooling')}
       showActions={true}

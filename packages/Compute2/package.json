@@ -4,9 +4,9 @@
   "version": "0.0.1",
   "description": "",
   "dependencies": {
-    "@datagrok-libraries/compute-utils": "file:../../libraries/compute-utils",
-    "@datagrok-libraries/utils": "file:../../libraries/utils",
-    "@datagrok-libraries/webcomponents-vue": "file:../../libraries/webcomponents-vue",
+    "@datagrok-libraries/compute-utils": "^1.40.0",
+    "@datagrok-libraries/utils": "^4.3.12",
+    "@datagrok-libraries/webcomponents-vue": "^0.0.6",
     "@he-tree/vue": "^2.8.7",
     "@types/wu": "^2.1.44",
     "@vueuse/core": "^11.1.0",
@@ -22,6 +22,7 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
+    "@types/lodash.isequal": "^4.5.8",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
     "@vue/babel-plugin-jsx": "^1.2.4",
@@ -29,6 +30,8 @@
     "babel-loader": "^9.2.1",
     "css-loader": "^7.1.2",
     "datagrok-tools": "latest",
+    "eslint": "^8.57.1",
+    "eslint-config-google": "^0.14.0",
     "postcss": "^8.4.47",
     "postcss-loader": "^8.1.1",
     "source-map-loader": "^5.0.0",
@@ -45,6 +48,8 @@
     "release-compute2": "webpack && grok publish --release",
     "build-compute2": "webpack",
     "build": "webpack",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint-fix": "eslint . --ext .ts,.tsx --fix",
     "debug-compute2-dev": "webpack && grok publish dev",
     "release-compute2-dev": "webpack && grok publish dev --release",
     "debug-compute2-public": "webpack && grok publish public",
