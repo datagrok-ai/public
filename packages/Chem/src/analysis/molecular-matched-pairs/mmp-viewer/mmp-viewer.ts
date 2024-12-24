@@ -20,7 +20,6 @@ import {getMmpScatterPlot, runMmpChemSpace, fillPairInfo} from './mmp-cliffs';
 import {getGenerations} from './mmp-generations';
 
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 import {getEmbeddingColsNames} from
   '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
 import {getMmpFilters, MmpFilters} from './mmp-filters';
@@ -93,7 +92,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   rdkitModule: RDModule | null = null;
   currentTab = '';
   lastSelectedPair: number | null = null;
-  propPanelViewer: FormsViewer | null = null;
   mmpFilters: MmpFilters | null = null;
 
   calculatedOnGPU: boolean | null = null;
@@ -257,8 +255,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
           setTimeout(() => {
             grok.shell.windows.showContextPanel = true;
             grok.shell.o = fillPairInfo(this.mmpa!, this.lastSelectedPair!, this.linesIdxs!,
-              this.linesActivityCorrespondance![this.lastSelectedPair!],
-              this.pairedGrids!.mmpGridTrans.dataFrame, this.diffs!, this.parentTable!, this.rdkitModule!);
+              this.linesActivityCorrespondance![this.lastSelectedPair!], this.pairedGrids!.mmpGridTrans.dataFrame,
+              this.diffs!, this.parentTable!, this.rdkitModule!, this.moleculesCol!.name);
           }, 500);
         }
       } else if (tabs.currentPane.name == MMP_NAMES.TAB_GENERATION) {
@@ -437,9 +435,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
           grok.shell.windows.showContextPanel = true;
           grok.shell.o = fillPairInfo(this.mmpa!, event.id, this.linesIdxs!, linesActivityCorrespondance[event.id],
             this.pairedGrids!.mmpGridTrans.dataFrame, this.diffs!, this.parentTable!, this.rdkitModule!,
-            this.propPanelViewer!);
+            this.moleculesCol!.name, true);
           this.lastSelectedPair = event.id;
-          this.propPanelViewer!.fitHeaderToLabelWidth(100);
         }, 500);
       }
     });
@@ -795,21 +792,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.tabs = this.getTabs();
 
     this.root.append(this.tabs.root);
-
-    const propertiesColumnsNames = this.parentTable!.columns.names()
-      .filter((name) => !name.startsWith('~'));
-    this.propPanelViewer = new FormsViewer();
-    this.propPanelViewer.dataframe = this.parentTable!;
-    this.propPanelViewer.columns = propertiesColumnsNames;
-    this.propPanelViewer.inputClicked.subscribe(() => {
-      setTimeout(() => {
-        grok.shell.windows.showContextPanel = true;
-        grok.shell.o = fillPairInfo(this.mmpa!,
-            this.lastSelectedPair!, this.linesIdxs!, this.linesActivityCorrespondance![this.lastSelectedPair!],
-            pairedGrids.mmpGridTrans.dataFrame, diffs, mmpInput.table, this.rdkitModule!, this.propPanelViewer!);
-          this.propPanelViewer!.fitHeaderToLabelWidth(100);
-      }, 500);
-    });
 
     this.calculatedOnGPU = mmpa.gpu;
   }
