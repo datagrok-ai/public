@@ -160,36 +160,3 @@ export class DGComboPopup extends HTMLElement {
 
 export interface DGComboPopupT extends DGComboPopup {};
 
-export class DGIcon extends HTMLElement {
-  _name = 'svg-pie-chart';
-  _cursor = 'pointer';
-  _tooltip = null as null | string;
-
-  constructor() {
-    super();
-  }
-
-  private render() {
-    ui.empty(this);
-    const t = ui.iconSvg(this._name, null, this._tooltip);
-    t.style.cursor = this._cursor;
-    this.appendChild(t);
-  }
-
-  set name(val: string) {
-    this._name = val;
-    this.render();
-  }
-
-  set cursor(val: string) {
-    this._cursor = val;
-    this.render();
-  }
-
-  set tooltip(val: string | null) {
-    this._tooltip = val;
-    this.render();
-  }
-}
-
-export interface DGIconT extends DGIcon {};

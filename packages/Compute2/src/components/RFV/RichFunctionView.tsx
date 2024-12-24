@@ -142,11 +142,15 @@ export const RichFunctionView = Vue.defineComponent({
     },
     viewersHook: {
       type: Function as Vue.PropType<ViewersHook>,
+    },
+    showStepNavigation: {
+      type: Boolean,
     }
   },
   emits: {
     'update:funcCall': (call: DG.FuncCall) => call,
     runClicked: () => {},
+    nextClicked: () => {},
     actionRequested: (actionUuid: string) => actionUuid,
     consistencyReset: (ioName: string) => ioName,
   },
@@ -156,7 +160,7 @@ export const RichFunctionView = Vue.defineComponent({
   },
   setup(props, {emit, expose}) {
     const layoutDatabase = computedAsync(async () => {
-      const db = await openDB<ComputeSchema>(LAYOUT_DB_NAME, 1, {
+      const db = await openDB<ComputeSchema>(LAYOUT_DB_NAME, 2, {
         blocked: () => {
           grok.shell.error(`Layout database requires update. Please close all webpages with models opened.`)
         },
@@ -182,6 +186,10 @@ export const RichFunctionView = Vue.defineComponent({
 
     const run = async () => {
       emit('runClicked');
+    };
+
+    const next = async () => {
+      emit('nextClicked');
     };
 
     const formHidden = Vue.ref(false);
@@ -521,11 +529,29 @@ export const RichFunctionView = Vue.defineComponent({
                       </Button>
                     , [[tooltip, action.description]]))
                   }
-                  <BigButton
-                    isDisabled={!isRunnable.value || isRunning.value || props.isTreeLocked || props.isReadonly}
-                    onClick={run}>
-                  Run
-                  </BigButton>
+                  {
+                    !props.showStepNavigation && <BigButton
+                      isDisabled={!isRunnable.value || isRunning.value || props.isTreeLocked || props.isReadonly}
+                      onClick={run}
+                    >
+                      { isOutputOutdated.value ? 'Run':'Rerun' }
+                    </BigButton>
+                  }
+                  {
+                    props.showStepNavigation && !isOutputOutdated.value && <div class='flex flex-row'> 
+                      <BigButton
+                        onClick={next}
+                      >
+                        Next
+                      </BigButton>
+                      <IconFA
+                        isDisabled={!isRunnable.value || isRunning.value || props.isTreeLocked || props.isReadonly}
+                        onClick={run}
+                      >
+                        { isOutputOutdated.value ? 'Run':'Rerun' }
+                      </IconFA>
+                    </div>
+                  }
                 </div>
               </div> }
 
