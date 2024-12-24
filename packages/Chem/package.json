@@ -2,7 +2,7 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "1.14.0",
+  "version": "1.13.0",
   "author": {
     "name": "Maria Dolotova",
     "email": "mdolotova@datagrok.ai"
@@ -38,7 +38,7 @@
     }
   ],
   "dependencies": {
-    "datagrok-api": "^1.23.0",
+    "datagrok-api": "../../js-api",
     "@datagrok-libraries/chem-meta": "^1.2.9",
     "@datagrok-libraries/ml": "^6.7.6",
     "@datagrok-libraries/math": "^1.2.5",

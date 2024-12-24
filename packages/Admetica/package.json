@@ -20,7 +20,7 @@
     "dayjs": "=1.11.10"
   },
   "devDependencies": {
-    "@datagrok/chem": "^1.14.0",
+    "@datagrok/chem": "^1.13.0",
     "@datagrok/power-grid": "^1.5.0",
     "css-loader": "^7.1.2",
     "style-loader": "^4.0.0",

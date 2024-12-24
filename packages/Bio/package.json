@@ -67,7 +67,7 @@
   "devDependencies": {
     "@datagrok-libraries/helm-web-editor": "^1.1.13",
     "@datagrok-libraries/js-draw-lite": "^0.0.10",
-    "@datagrok/chem": "^1.14.0",
+    "@datagrok/chem": "^1.13.0",
     "@datagrok/dendrogram": "^1.2.33",
     "@datagrok/helm": "^2.7.0",
     "@types/node": "^17.0.24",

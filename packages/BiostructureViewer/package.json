@@ -45,7 +45,7 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@datagrok/chem": "^1.14.0",
+    "@datagrok/chem": "^1.13.0",
     "@datagrok/samples": "^1.0.0",
     "@types/node": "^18.19.0",
     "@types/react": "17.0.37",

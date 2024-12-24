@@ -28,7 +28,7 @@
     "@typescript-eslint/parser": "^8.8.1",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
-    "@datagrok/chem": "^1.14.0"
+    "@datagrok/chem": "^1.13.0"
   },
   "scripts": {
     "install-dependencies": "npm install",

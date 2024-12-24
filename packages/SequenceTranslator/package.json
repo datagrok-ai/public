@@ -43,7 +43,7 @@
     "@datagrok-libraries/js-draw-lite": "^0.0.10",
     "@datagrok/bio": "^2.18.0",
     "@datagrok/helm": "^2.7.0",
-    "@datagrok/chem": "^1.14.0",
+    "@datagrok/chem": "^1.13.0",
     "@types/jquery": "^3.5.14",
     "@types/js-yaml": "^4.0.5",
     "@types/lodash": "^4.14.202",
