@@ -19,9 +19,9 @@ export const MarkDown = Vue.defineComponent({
     markdown: {
       type: String,
       required: true,
-    }
+    },
   },
   setup(props) {
-    return () => <dg-markdown content={props.markdown}/>
-  }
+    return () => <dg-markdown content={props.markdown}/>;
+  },
 });

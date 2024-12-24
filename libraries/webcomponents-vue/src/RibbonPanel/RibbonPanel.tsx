@@ -9,7 +9,7 @@ export const RibbonPanel = Vue.defineComponent({
     default?: any,
   }>,
   setup(_, {slots}) {
-    const elements = Vue.reactive(new Map<number, HTMLElement>)
+    const elements = Vue.reactive(new Map<number, HTMLElement>);
 
     Vue.watch(elements, async () => {
       await Vue.nextTick();
@@ -19,7 +19,7 @@ export const RibbonPanel = Vue.defineComponent({
       const elementsArray = [...elements.values()];
       const filteredPanels = currentView
         .getRibbonPanels()
-        .filter((panel) => !panel.some((ribbonItem) => elementsArray.includes(ribbonItem.children[0] as HTMLElement)))
+        .filter((panel) => !panel.some((ribbonItem) => elementsArray.includes(ribbonItem.children[0] as HTMLElement)));
       currentView.setRibbonPanels(filteredPanels);
 
       currentView.setRibbonPanels([
@@ -36,13 +36,13 @@ export const RibbonPanel = Vue.defineComponent({
           elem.parentElement?.classList.remove('d4-ribbon-item');
         }
       });
-    })    
+    });
 
     const addElement = (el: Element | null | any, idx: number) => {
       const content = el;
       if (content)
         elements.set(idx, content);
-    }
+    };
 
     Vue.onUnmounted(() => {
       const currentView = grok.shell.v;
@@ -50,14 +50,14 @@ export const RibbonPanel = Vue.defineComponent({
       const elementsArray = [...elements.values()];
       const filteredPanels = currentView
         .getRibbonPanels()
-        .filter((panel) => !panel.some((ribbonItem) => elementsArray.includes(ribbonItem.children[0] as HTMLElement)))
+        .filter((panel) => !panel.some((ribbonItem) => elementsArray.includes(ribbonItem.children[0] as HTMLElement)));
 
       currentView.setRibbonPanels(filteredPanels);
     });
 
-    return () => 
-      slots.default?.().filter((slot: any) => slot.type !== Symbol.for('v-cmt')).map((slot: any, idx: number) => 
-        <div slot-idx={`${idx}`} ref={(el) => addElement(el, idx)}> { slot } </div>
-      ) 
-  }
+    return () =>
+      slots.default?.().filter((slot: any) => slot.type !== Symbol.for('v-cmt')).map((slot: any, idx: number) =>
+        <div slot-idx={`${idx}`} ref={(el) => addElement(el, idx)}> { slot } </div>,
+      );
+  },
 });

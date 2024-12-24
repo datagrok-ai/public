@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
 import type {DockSpawnTsWebcomponent} from '@datagrok-libraries/dock-spawn-dg/lib';
-import type { IState } from '@datagrok-libraries/dock-spawn-dg/lib/interfaces/IState';
+import type {IState} from '@datagrok-libraries/dock-spawn-dg/lib/interfaces/IState';
 
 
 declare global {
@@ -18,23 +18,23 @@ declare global {
 export const DockManager = Vue.defineComponent({
   name: 'DockManager',
   props: {
-    activePanelTitle: Object as Vue.PropType<String>
+    activePanelTitle: Object as Vue.PropType<String>,
   },
   slots: Object as Vue.SlotsType<{
     default?: Vue.VNode[],
   }>,
   emits: {
-    panelClosed: (element: HTMLElement) => element,
+    'panelClosed': (element: HTMLElement) => element,
     'update:activePanelTitle': (newPanel: string | null, prevPanel: string | null) => {},
-    initFinished: () => {}
+    'initFinished': () => {},
   },
   methods: {
     //@ts-ignore
     getLayout: (): string | null => {},
-    useLayout: async (layout: string) => {}
+    useLayout: async (layout: string) => {},
   },
   setup(props, {slots, emit, expose}) {
-    let dockSpawnRef = Vue.ref(null as DockSpawnTsWebcomponent | null);
+    const dockSpawnRef = Vue.ref(null as DockSpawnTsWebcomponent | null);
 
     const inited = Vue.ref(false);
     Vue.watch(inited, async () => {
@@ -45,40 +45,40 @@ export const DockManager = Vue.defineComponent({
           .querySelectorAll(`slot`);
         slots.forEach((slot) => {
           const content = (slot.assignedElements() as HTMLElement[])
-            .find((el) => el.getAttribute('dock-spawn-title') && el.getAttribute('dock-spawn-title') === state.element); 
+            .find((el) => el.getAttribute('dock-spawn-title') && el.getAttribute('dock-spawn-title') === state.element);
           if (content) aimSlot = slot;
-        })
+        });
 
-        return { 
+        return {
           element: aimSlot!,
           title: state.element!,
-        }
+        };
       };
-    }, {once: true})
+    }, {once: true});
 
     const getLayout = () => {
       return dockSpawnRef.value?.getLayout() ?? null;
-    }
+    };
 
     const useLayout = async (layout: string) => {
-      await dockSpawnRef.value?.useLayout(layout)
-    }
+      await dockSpawnRef.value?.useLayout(layout);
+    };
     expose({
       'getLayout': getLayout,
-      'useLayout': useLayout
-    })
+      'useLayout': useLayout,
+    });
 
     return () => {
-      return <dock-spawn-ts 
+      return <dock-spawn-ts
         style={{'width': '100%'}}
         activePanelTitle={props.activePanelTitle}
         onPanelClosed={(ev: {detail: any}) => emit('panelClosed', ev.detail)}
         onActivePanelChanged={(ev: {detail: {newPanel: string | null, prevPanel: string | null}}) => emit('update:activePanelTitle', ev.detail.newPanel, ev.detail.prevPanel)}
-        onInitFinished={() => {inited.value = true; emit('initFinished')}}
+        onInitFinished={() => {inited.value = true; emit('initFinished');}}
         ref={dockSpawnRef}
       >
         { slots.default?.() }
-      </dock-spawn-ts>
+      </dock-spawn-ts>;
     };
   },
 });
