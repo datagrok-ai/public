@@ -44,7 +44,7 @@ See also:
 * (Improvement) GROK-16812: #3106: Viewers: Bar Chart: Summary Columns Improvements (WIP)
 * GROK-16759: #3091: Scatterplot: show a more detailed message for a missing column 
 * (Bug) GROK-16857: Databases: An error occurs when clicking Postrgres > CHEMBL > Browse > Summary (the last item) 
-* (Bug) GROK-16876: PowerPack: Add new column: Column names like '${name1} + ${name2}' are not parsed correctly if used within function 
+* (Bug) GROK-16876: PowerPack: Add new column: Column names like '\${name1} + \${name2}' are not parsed correctly if used within function 
 * (Bug) GROK-16927: Amazon S3 Provider does not return updatedOn for directories 
 * (Bug) GROK-16847: Chem: Databases: Empty structure is shown (WIP)
 * (Bug) GROK-16902: Chem: Substructure Search: exclude molecule column in the `Molecule Properties` (WIP)
