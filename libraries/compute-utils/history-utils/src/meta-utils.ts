@@ -51,12 +51,12 @@ async function getOrCreateModelStickyMeta(modelName: string) {
   const {modelUserSchemaName, modelSMESchemaName, runTagUser, runTagSME, runColNameUser, runColNameSME} = getNames(modelName);
 
   const schemas = await grok.dapi.stickyMeta.getSchemas();
-  const userSchema = schemas.find(s => s.name === modelUserSchemaName);
-  const SMESchema = schemas.find(s => s.name === modelSMESchemaName);
+  const userSchema = schemas.find((s) => s.name === modelUserSchemaName);
+  const SMESchema = schemas.find((s) => s.name === modelSMESchemaName);
 
-  if (userSchema && SMESchema) {
-    return { userSchema, SMESchema };
-  }
+  if (userSchema && SMESchema)
+    return {userSchema, SMESchema};
+
 
   const modelUserSchema = await grok.dapi.stickyMeta.createSchema(modelUserSchemaName,
     [{name: runColNameUser, matchBy: `source=${runTagUser}`}],
@@ -70,7 +70,7 @@ async function getOrCreateModelStickyMeta(modelName: string) {
 
       {name: 'approvalRequested', type: 'bool'},
       {name: 'approvalRequestTimestamp', type: 'int'},
-      {name: 'isDeleted', type: 'bool'}
+      {name: 'isDeleted', type: 'bool'},
     ],
   );
 
@@ -95,7 +95,7 @@ async function getOrCreateModelStickyMeta(modelName: string) {
       {name: 'recallTimestamp', type: 'int'},
     ],
   );
-  return { userSchema: modelUserSchema, SMESchema: modelSMESchema };
+  return {userSchema: modelUserSchema, SMESchema: modelSMESchema};
 }
 
 function getUserMetaDF(meta: UserMeta) {
@@ -155,8 +155,8 @@ async function attachUserStickyMeta(modelName: string, id: string, meta: UserMet
 
 async function getUserStickyMeta(modelName: string, ids: string[]) {
   const {userSchema} = await getOrCreateModelStickyMeta(modelName);
-  const metaCol = getUserMetaCol(modelName, ids)
-  const meta = await grok.dapi.stickyMeta.getAllValues(userSchema, metaCol)
+  const metaCol = getUserMetaCol(modelName, ids);
+  const meta = await grok.dapi.stickyMeta.getAllValues(userSchema, metaCol);
   return meta;
 }
 
@@ -169,7 +169,7 @@ async function attachSMEStickyMeta(modelName: string, id: string, meta: SMEMeta)
 
 async function getSMEStickyMeta(modelName: string, ids: string[]) {
   const {SMESchema} = await getOrCreateModelStickyMeta(modelName);
-  const metaCol = getSMEMetaCol(modelName, ids)
+  const metaCol = getSMEMetaCol(modelName, ids);
   const meta = await grok.dapi.stickyMeta.getAllValues(SMESchema, metaCol);
   return meta;
 }
@@ -190,8 +190,8 @@ async function testUserWorkflow() {
   const fc = await makeMockFuncCall();
   console.log(`created FC ${fc.id}`);
   // work around bug
-  const id = `UUID: ${fc.id}`
-  await attachUserStickyMeta(modelName, id, { title: 'Some Title', authorId: 'MockId', authorName: 'MockName' });
+  const id = `UUID: ${fc.id}`;
+  await attachUserStickyMeta(modelName, id, {title: 'Some Title', authorId: 'MockId', authorName: 'MockName'});
   console.log(`saved FC user meta ${fc.id}`);
   console.log(`starting loading FC ${fc.id}`);
   // TODO: reader should handle absent stiky metas

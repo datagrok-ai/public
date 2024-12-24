@@ -271,7 +271,7 @@ export class Link {
           const data = controller.outputs[outputAlias];
           const descrStore = node.getItem().nodeDescription;
           if (ioName === 'tags') {
-            const ndata = { [this.uuid]: data };
+            const ndata = {[this.uuid]: data};
             const odata = descrStore.getState('tags') ?? {};
             descrStore.setState(ioName, {...odata, ...ndata});
           } else

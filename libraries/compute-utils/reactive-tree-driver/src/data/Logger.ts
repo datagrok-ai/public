@@ -69,7 +69,7 @@ export class DriverLogger {
   private log: LogItem[] = [];
   public logs$ = new BehaviorSubject<LogItem[]>([]);
 
-  logLink(type: 'linkRunStarted' | 'linkRunFinished' | 'linkAdded' | 'linkRemoved' |  'actionAdded' | 'actionRemoved', data: LinkLogPayload) {
+  logLink(type: 'linkRunStarted' | 'linkRunFinished' | 'linkAdded' | 'linkRemoved' | 'actionAdded' | 'actionRemoved', data: LinkLogPayload) {
     const uuid = uuidv4();
     const timestamp = new Date();
     const logItem = {type, uuid, timestamp, ...data};

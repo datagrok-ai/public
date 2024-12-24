@@ -391,7 +391,7 @@ export class StaticPipelineNode extends PipelineNodeBase {
       steps: [],
       actions,
       approversGroup,
-      customExports: this.config.customExports
+      customExports: this.config.customExports,
     };
   }
 
@@ -425,7 +425,7 @@ export class ParallelPipelineNode extends PipelineNodeBase {
       steps: [],
       actions,
       approversGroup,
-      customExports: this.config.customExports
+      customExports: this.config.customExports,
     };
   }
 
@@ -467,7 +467,7 @@ export class SequentialPipelineNode extends PipelineNodeBase {
       steps: [],
       actions,
       approversGroup,
-      customExports: this.config.customExports
+      customExports: this.config.customExports,
     };
   }
 

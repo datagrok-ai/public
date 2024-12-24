@@ -302,17 +302,17 @@ export class LinksState {
         return (l2.matchInfo.spec.nodePriority ?? 0) - (l1.matchInfo.spec.nodePriority ?? 0);
       });
       const linkRuns = priorityOrderedLinks.map((linkUUID) => {
-          scheduledLinks.add(linkUUID);
-          return combineLatest([
-            this.runningLinks$,
-            this.getLinkRunObs(linkUUID),
-          ]).pipe(
-            debounceTime(0),
-            filter(([running]) => !running || running.length === 0),
-            take(1),
-            mapTo(undefined),
-          );
-        });
+        scheduledLinks.add(linkUUID);
+        return combineLatest([
+          this.runningLinks$,
+          this.getLinkRunObs(linkUUID),
+        ]).pipe(
+          debounceTime(0),
+          filter(([running]) => !running || running.length === 0),
+          take(1),
+          mapTo(undefined),
+        );
+      });
       return [...acc, ...linkRuns];
     }, [] as Observable<undefined>[]);
     return concat(...obs);

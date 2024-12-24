@@ -366,7 +366,7 @@ export class PipelineView extends FunctionView {
 
         if (currentStep && this.helpFiles[currentStep.func.nqName]) {
           if (this.getHelpState() === 'opened')
-            this.showHelpWithDelay(currentStep)
+            this.showHelpWithDelay(currentStep);
         }
       };
 
@@ -578,7 +578,7 @@ export class PipelineView extends FunctionView {
   }
 
   private async showHelpWithDelay(currentStep: StepState) {
-    showHelpWithDelay(this.helpFiles[currentStep.func.nqName])
+    showHelpWithDelay(this.helpFiles[currentStep.func.nqName]);
   }
 
   private findCurrentStep() {

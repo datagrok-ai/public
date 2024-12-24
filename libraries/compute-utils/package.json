@@ -1,14 +1,14 @@
 {
   "name": "@datagrok-libraries/compute-utils",
   "friendlyName": "ComputeUtils",
-  "version": "1.39.7",
+  "version": "1.40.0",
   "author": {
     "name": "Aufar Zakiev",
     "email": "aufar.zakiev@softwarecountry.com"
   },
   "description": "Datagrok compute utils",
   "dependencies": {
-    "@datagrok-libraries/utils": "file:../utils",
+    "@datagrok-libraries/utils": "^4.3.12",
     "@types/lodash.clonedeepwith": "^4.5.9",
     "@types/uuid": "^10.0.0",
     "cash-dom": "^8.1.4",
