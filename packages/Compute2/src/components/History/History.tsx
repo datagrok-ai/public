@@ -112,7 +112,7 @@ export const History = Vue.defineComponent({
           return ((editOptions.favorite !== 'same') ?
             Utils.saveIsFavorite(funcCall, (editOptions.favorite === 'favorited')) :
             Promise.resolve())
-            .then(() => historyUtils.loadRun(funcCall.id, false))
+            .then(() => historyUtils.loadRun(funcCall.id, false, false))
             .then((fullCall) => {
               if (editOptions.title) fullCall.options['title'] = editOptions.title;
               if (editOptions.description) fullCall.options['description'] = editOptions.description;
@@ -150,7 +150,7 @@ export const History = Vue.defineComponent({
     };
 
     const deleteRun = async (id: string) => {
-      return historyUtils.loadRun(id, true)
+      return historyUtils.loadRun(id, true, false)
         .then(async (loadedRun) => {
           return [
             await (props.isHistory ? historyUtils.deleteRun(loadedRun): Promise.resolve()),
@@ -206,7 +206,7 @@ export const History = Vue.defineComponent({
     watchExtractedObservable(historicalRunsDf, (p) => p.onCurrentRowChanged, async () => {
       historicalRunsDf.value.rows.select(() => false);
       const chosenRun = getRunByIdx(historicalRunsDf.value.currentRowIdx);
-      if (chosenRun) emit('runChosen', await historyUtils.loadRun(chosenRun.id));
+      if (chosenRun) emit('runChosen', await historyUtils.loadRun(chosenRun.id, false, false));
     });
 
     Vue.watch([showMetadata, showInputs], () => updateVisibleColumns())
