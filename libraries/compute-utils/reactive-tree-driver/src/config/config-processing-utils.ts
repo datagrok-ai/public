@@ -126,7 +126,7 @@ async function processStepConfig(conf: PipelineStepConfiguration<LinkSpecString,
 }
 
 async function getFuncCallIO(nqName: NqName): Promise<FuncCallIODescription[]> {
-  const func: DG.Func = await grok.functions.eval(nqName);
+  const func = DG.Func.byName(nqName);
   const fc = func.prepare();
   const inputs = wu(fc.inputParams.values()).map((input) => (
     {id: input.property.name, type: input.property.propertyType as any, direction: 'input' as const, nullable: false}

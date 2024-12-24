@@ -308,7 +308,7 @@ export abstract class FunctionView extends DG.ViewBase {
     if (runId && !this.options.isTabbed)
       this.linkFunccall(await historyUtils.loadRun(runId));
     else {
-      const func: DG.Func = await grok.functions.eval(this.initValue);
+      const func = DG.Func.byName(this.initValue);
       this.linkFunccall(func.prepare({}));
     }
 
@@ -354,7 +354,7 @@ export abstract class FunctionView extends DG.ViewBase {
   public async onComparisonLaunch(fullFuncCalls: DG.FuncCall[]) {
     const comparator = this.comparatorFunc;
     if (comparator) {
-      const comparatorFunc: DG.Func = await grok.functions.eval(comparator);
+      const comparatorFunc = DG.Func.byName(comparator);
       const comparatorCall = await comparatorFunc.prepare(
         {params: {'comparedRuns': fullFuncCalls}},
       ).call();
@@ -376,7 +376,7 @@ export abstract class FunctionView extends DG.ViewBase {
 
     const compareCustomizer = this.compareCustomizer;
     if (compareCustomizer) {
-      const compareCustomizerFunc: DG.Func = await grok.functions.eval(compareCustomizer);
+      const compareCustomizerFunc = DG.Func.byName(compareCustomizer);
       await compareCustomizerFunc.prepare(
         {params: {'defaultView': defaultView}},
       ).call();

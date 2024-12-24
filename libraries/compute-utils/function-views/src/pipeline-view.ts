@@ -206,7 +206,7 @@ export class PipelineView extends FunctionView {
     );
 
     const stepScripts = this.initialConfig.map(async (config) => {
-      const stepScript = await grok.functions.eval(config.funcName);
+      const stepScript = DG.Func.byName(config.funcName);
       return {stepScript, stepId: getStepId(config)};
     });
     const scriptsWithStepId = await Promise.all(stepScripts) as {stepScript: DG.Script, stepId: string}[];
@@ -237,7 +237,7 @@ export class PipelineView extends FunctionView {
       // TO DO: replace for type guard
       const editorName = (scriptWithId.stepScript.script) ? extractEditor(scriptWithId.stepScript): DEFAULT_EDITOR;
       if (!editorFuncs[editorName])
-        editorFuncs[editorName] = await(grok.functions.eval(editorName.split(' ').join('')) as Promise<DG.Func>);
+        editorFuncs[editorName] = DG.Func.byName(editorName.split(' ').join(''));
       this.steps[scriptWithId.stepId].editor = editorName;
 
       return Promise.resolve();
@@ -684,7 +684,7 @@ export class PipelineView extends FunctionView {
       // Used to reset 'started' field
       callCopy = await createPartialCopy(callToSave);
     }
-    if (callCopy.id) callCopy.newId();
+    callCopy.newId();
 
     const stepsSaving = Object.values(this.steps)
       .filter((step) => step.visibility.value === VISIBILITY_STATE.VISIBLE)

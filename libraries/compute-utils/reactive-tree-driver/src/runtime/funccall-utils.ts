@@ -19,7 +19,7 @@ const CONFIG_PATH = 'PIPELINE_CONFIG';
 export async function makeFuncCall(
   nqName: string, isReadonly: boolean,
 ): Promise<AdapterInitData> {
-  const func: DG.Func = await grok.functions.eval(nqName);
+  const func = DG.Func.byName(nqName);
   const fc = func.prepare({});
   fc.newId();
   const adapter = new FuncCallAdapter(fc, isReadonly);
@@ -56,7 +56,7 @@ export async function loadFuncCall(
 }
 
 export async function makeMetaCall(nqName: string) {
-  const func: DG.Func = await grok.functions.eval(nqName);
+  const func = DG.Func.byName(nqName);
   const metaCall = func.prepare({});
   return metaCall;
 }

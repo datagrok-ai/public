@@ -178,7 +178,7 @@ async function getSMEStickyMeta(modelName: string, ids: string[]) {
 // test workflow
 
 async function makeMockFuncCall() {
-  const func = await grok.functions.eval('Libtests:TestAdd2') as DG.Func;
+  const func = DG.Func.byName('Libtests:TestAdd2') as DG.Func;
   const fc = func.prepare({a: 1, b: 2});
   fc.newId();
   return fc;

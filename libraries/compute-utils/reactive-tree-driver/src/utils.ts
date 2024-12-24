@@ -9,7 +9,7 @@ import {StateTreeNode} from './runtime/StateTreeNodes';
 export function callHandler<R, P = any>(handler: HandlerBase<P, R>, params: P): Observable<R> {
   if (typeof handler === 'string') {
     return defer(async () => {
-      const f: DG.Func = await grok.functions.eval(handler);
+      const f = DG.Func.byName(handler);
       const call = f.prepare({params});
       await call.call();
       const res = call.getOutputParamValue() as R;

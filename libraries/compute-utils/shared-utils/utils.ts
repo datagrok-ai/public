@@ -722,7 +722,7 @@ export const createPartialCopy = async (call: DG.FuncCall) => {
   // grok.functions.eval creates an ID.
   // So we should control it and overwrite ID by null again if necessary.
 
-  const callCopy: DG.FuncCall = (await grok.functions.eval(call.func.nqName))
+  const callCopy: DG.FuncCall = DG.Func.byName(call.func.nqName)
     //@ts-ignore
     .prepare([...call.inputs].reduce((acc, [key, val]) => {
       acc[key] = val;
@@ -918,7 +918,7 @@ export const getValidators = async (funcCall: DG.FuncCall, isInput: SyncFields =
     params
       .filter((param) => !!param.property.options.validatorFunc)
       .map(async (param) => {
-        const func: DG.Func = await grok.functions.eval(param.property.options.validatorFunc);
+        const func = DG.Func.byName(param.property.options.validatorFunc);
         const call = func.prepare({params: JSON.parse(param.property.options.validatorFuncOptions || '{}')});
         await call.call();
 
