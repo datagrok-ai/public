@@ -3,10 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
-import {Advice, ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
+import type {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import type {InputFormT} from '@datagrok-libraries/webcomponents';
-import {ValidationResultBase} from '@datagrok-libraries/compute-utils/shared-utils/validation';
-import {ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
+import type {ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {injectInputBaseStatus, isInputInjected} from './utils';
 import {BehaviorSubject, merge} from 'rxjs';
 import {map, tap} from 'rxjs/operators';
@@ -52,7 +51,7 @@ export const InputForm = Vue.defineComponent({
     const isReadonly = Vue.computed(() => props.isReadonly);
 
     const states = Vue.reactive({
-      meta: {} as Record<string, any>
+      meta: {} as Record<string, any>,
     });
 
     useExtractedObservable(() => props.callMeta, (meta) => {
@@ -61,7 +60,7 @@ export const InputForm = Vue.defineComponent({
       return merge(...entries).pipe(
         tap(([k, val]) => {
           states.meta[k] = Object.freeze(val);
-        })
+        }),
       );
     });
 

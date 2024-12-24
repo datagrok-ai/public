@@ -1,10 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
-import {ValidationResultBase} from '@datagrok-libraries/compute-utils/shared-utils/validation';
+import type {ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
+import type {ValidationResultBase} from '@datagrok-libraries/compute-utils/shared-utils/validation';
 import $ from 'cash-dom';
-import {FuncCallInput, isFuncCallInput} from '@datagrok-libraries/compute-utils/shared-utils/input-wrappers';
+import type {FuncCallInput} from '@datagrok-libraries/compute-utils/shared-utils/input-wrappers';
 
 function addPopover(icon: HTMLElement) {
   const popover = ui.div([], 'd4-tooltip');
@@ -192,6 +192,10 @@ export interface FuncCallInputStatusable<T = any> extends FuncCallInput<T> {
     validation?: ValidationResultBase,
     consistency?: ConsistencyInfo,
   }) => void;
+}
+
+export function isFuncCallInput<T = any>(arg: any): arg is FuncCallInput<T> {
+  return arg && arg.root && arg.onInput;
 }
 
 export function isInputInjected(arg: any): arg is FuncCallInputStatusable {
