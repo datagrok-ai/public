@@ -28,7 +28,7 @@ export  async function loadNPM(args: LoadNPMArgs) {
 
     let testingResults = await page.evaluate((): Promise<void> => { 
       return new Promise<any>((resolve, reject) => {
-        (<any>window).grok.functions.call("triggerNpmInstall:test", {}).then((results: any) => {
+        (<any>window).grok.functions.call("installPackages:test", {}).then((results: any) => {
             resolve(results);
           })
           .catch((e:any)=>{

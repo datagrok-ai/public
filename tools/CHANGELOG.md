@@ -1,5 +1,11 @@
 # Datagrok-tools changelog
 
+## 4.13.48 (2024-12-25)
+
+### Features
+
+* Added load npm
+
 ## 4.13.47 (2024-12-25)
 
 ### Features
