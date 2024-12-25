@@ -538,11 +538,7 @@ export const RichFunctionView = Vue.defineComponent({
                     </BigButton>
                   }
                   {
-<<<<<<< Updated upstream
                     props.showStepNavigation && !isOutputOutdated.value &&
-=======
-                    props.showStepNavigation && !isOutputOutdated.value && <div class='flex flex-row'>
->>>>>>> Stashed changes
                       <BigButton
                         onClick={next}
                       >
