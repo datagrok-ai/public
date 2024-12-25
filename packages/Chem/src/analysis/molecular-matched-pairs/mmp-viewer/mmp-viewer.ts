@@ -481,24 +481,20 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       }
     });
 
-    let cliffsOpened = true;
-    const cliffsHeader = ui.h1('2D Molecules Map', 'chem-mmpa-transformation-tab-header'); ;
-    const cliffsNumButton = ui.button(`Close pairs`, () => {
-      cliffsOpened = !cliffsOpened;
-      if (cliffsOpened) {
-        cliffsNumButton.innerText = 'Close pairs';
+    let pairsOpened = true;
+    const cliffsHeader = ui.h1('2D Molecules Map', 'chem-mmpa-transformation-tab-header');
+    const showPairs = ui.input.bool('ShowPairs', {value: pairsOpened, onValueChanged: () => {
+      pairsOpened = !pairsOpened;
+      if (pairsOpened)
         mmPairsRoot3.classList.replace('cliffs-closed', 'cliffs-opened');
-      } else {
-        cliffsNumButton.innerText = 'Open pairs';
+      else
         mmPairsRoot3.classList.replace('cliffs-opened', 'cliffs-closed');
-      }
-    });
-    cliffsNumButton.classList.add('chem-mmp-open-cliffs-button');
-
+    }});
+    showPairs.root.classList.add('chem-mmp-show-pairs-checkbox');
 
     const spDiv = ui.splitV([
       ui.box(
-        ui.divH([cliffsHeader, cliffsNumButton, this.helpButton('chem-mmpa-grid-help-icon', CLIFFS_TAB_TOOLTIP)]),
+        ui.divH([cliffsHeader, showPairs.root, this.helpButton('chem-mmpa-grid-help-icon', CLIFFS_TAB_TOOLTIP)]),
         {style: {maxHeight: '30px'}},
       ),
       this.sp.root,

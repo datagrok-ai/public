@@ -772,12 +772,6 @@
   display: flex !important;
 }
 
-.chem-mmp-open-cliffs-button {
-  font-size: 11px;
-  height: 18px !important;
-  margin-top: 3px !important;
-}
-
 .chem-search-panel-wrapper {
   overflow: hidden;
   max-height: 400px;
@@ -848,5 +842,15 @@
 }
 
 .chem-mmp-context-pane-mol-header {
-  align-content: center
+  align-content: center;
+}
+
+.chem-mmp-show-pairs-checkbox {
+  padding-right: 5px;
+  padding-left: 10px;
+  margin-top: -5px;
+}
+
+.chem-mmp-show-pairs-checkbox label {
+  margin-right: 3px!important;
 }
