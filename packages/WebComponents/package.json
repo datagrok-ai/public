@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/webcomponents",
   "friendlyName": "WebComponents",
-  "version": "0.0.6",
+  "version": "1.0.0",
   "author": {
     "name": "Aufar Zakiev",
     "email": "aufar.zakiev@softwarecountry.com"
@@ -13,7 +13,7 @@
     "@datagrok-libraries/webcomponents": "^0.0.6",
     "cash-dom": "^8.1.4",
     "css-loader": "^7.1.2",
-    "datagrok-api": "^1.21.1",
+    "datagrok-api": "^1.23.0",
     "dayjs": "=1.11.10",
     "style-loader": "^4.0.0"
   },
