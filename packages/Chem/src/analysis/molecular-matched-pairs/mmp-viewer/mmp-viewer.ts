@@ -86,7 +86,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   //generations tab objects
   generationsGrid: DG.Grid | null = null;
   corrGrid: DG.Grid | null = null;
-  generationsGridDiv = ui.div(ui.divText('Generations in progress...'));
+  generationsGridDiv = ui.div();
   generationsSp: DG.ScatterPlotViewer | null = null;
 
   rdkitModule: RDModule | null = null;
@@ -107,9 +107,9 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
   tp: DG.Viewer | null = null;
   activityMeanNames: string[] = [];
-  fragmentsDiv = ui.div(ui.divText('Generating fragments tab...'));
+  fragmentsDiv = ui.div();
 
-  spCorrDiv = ui.div(ui.divText('Generating correlation scatter plot...'));
+  spCorrDiv = ui.div();
   showFragmentsChoice: DG.InputBase | null = null;
 
   constructor() {
@@ -202,6 +202,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       setTimeout(() => {
         this.setupFragmentsTab();
       }, 100);
+      ui.setUpdateIndicator(this.fragmentsDiv, true, 'Generating fragments trellis plot...');
       return this.fragmentsDiv;
     });
     ui.tooltip.bind(fragmentsTab.header, decript2);
@@ -385,6 +386,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.pairedGrids!.mmpGridFrag, MATCHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS, this.pairedGrids!.mmpGridFragMessage);
 
     ui.empty(this.fragmentsDiv);
+    ui.setUpdateIndicator(this.fragmentsDiv, false);
     this.fragmentsDiv.append(ui.splitV([
       tpDiv,
       mmPairsRoot2,
@@ -420,7 +422,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       spDiv.style.height = '800px';
       this.totalData = this.mmpa!.toJSON();
       progressBarSpace.close();
-    });
+    }).catch((error: any) => {
+      const errorStr = `Scatter plot haven't been completed due to error: ${error}`;
+      grok.shell.error(errorStr);
+    }).finally(() => ui.setUpdateIndicator(this.sp!.root, false));
     this.sp.root.style.width = '100%';
 
     this.totalCutoffMask!.setAll(true);
@@ -491,6 +496,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         mmPairsRoot3.classList.replace('cliffs-opened', 'cliffs-closed');
     }});
     showPairs.root.classList.add('chem-mmp-show-pairs-checkbox');
+
+    ui.setUpdateIndicator(this.sp.root, true, 'Genarating cliffs scatter plot...');
 
     const spDiv = ui.splitV([
       ui.box(
@@ -577,6 +584,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         visible: true,
       });
 
+      ui.setUpdateIndicator(this.generationsGridDiv, false);
+      ui.empty(this.generationsGridDiv);
+      this.generationsGridDiv.append(this.createGridDiv('Generated Molecules', this.generationsGrid!, '', ui.div()));
+
       this.generationsSp = DG.Viewer.scatterPlot(this.corrGrid?.dataFrame!, {
         x: 'Observed',
         y: 'Predicted',
@@ -593,27 +604,29 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         showRegressionLine: true,
       });
 
-      ui.empty(this.generationsGridDiv);
-      this.generationsGridDiv.append(this.createGridDiv('Generated Molecules', this.generationsGrid!, '', ui.div()));
-
       const header = ui.h1('Observed vs Predicted', 'chem-mmpa-generation-tab-cp-header');
       this.generationsSp.root.prepend(header);
-      this.spCorrDiv = ui.splitV([
+      ui.setUpdateIndicator(this.spCorrDiv, false);
+      this.spCorrDiv.append(ui.splitV([
         ui.box(
           ui.divH([header]),
           {style: {maxHeight: '30px'}},
         ),
         this.generationsSp.root,
-      ], {style: {width: '100%', height: '100%'}});
+      ], {style: {width: '100%', height: '100%'}}));
       this.spCorrDiv.classList.add(MMP_CONTEXT_PANE_CLASS);
       grok.shell.windows.showContextPanel = true;
       grok.shell.o = this.spCorrDiv;
     }).catch((error: any) => {
       const errorStr = `Generations haven't been completed due to error: ${error}`;
+      ui.setUpdateIndicator(this.generationsGridDiv, false);
+      ui.setUpdateIndicator(this.spCorrDiv, false);
       ui.empty(this.generationsGridDiv);
       this.generationsGridDiv.append(ui.divText(errorStr));
       grok.shell.error(errorStr);
     });
+    ui.setUpdateIndicator(this.generationsGridDiv, true, 'Generations in progress...');
+    ui.setUpdateIndicator(this.spCorrDiv, true, 'Generating correlation scatter plot...');
     return this.generationsGridDiv;
   }
 
