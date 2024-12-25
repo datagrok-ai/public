@@ -298,7 +298,7 @@ function setAdmeGroups(table: DG.DataFrame, columnNames: string[]): void {
   };
 
   const subgroupDict = createSubgroupDict(properties, columnNames);
-  table.meta.setGroups(subgroupDict);
+  //table.meta.setGroups(subgroupDict);
 }
 
 export function updateColumnProperties(gridCol: DG.GridColumn, model: any): void {
@@ -318,7 +318,7 @@ export function updateColumnProperties(gridCol: DG.GridColumn, model: any): void
   )?.name;
   if (subgroupName) {
     gridCol.headerCellStyle.textColor = DG.Color.fromHtml(colorsDictionary[subgroupName]);
-    column.setTag(DG.TAGS.GROUP, subgroupName);
+    //column.setTag(DG.TAGS.GROUP, subgroupName);
   }
 }
 
