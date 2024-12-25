@@ -47,6 +47,13 @@ export interface Subgroup {
   models: Model[];
 }
 
+export interface SubgroupDict {
+  [key: string]: {
+    color: string;
+    columns: string[];
+  };
+}
+
 export const TAGS = {
   SECTOR_COLOR: ".sectorColor",
   LOW: ".low",
