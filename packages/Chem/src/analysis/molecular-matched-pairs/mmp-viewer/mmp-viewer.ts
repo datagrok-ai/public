@@ -431,6 +431,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.linesRenderer!.lineClicked.subscribe((event: MouseOverLineEvent) => {
       this.linesRenderer!.currentLineId = event.id;
       if (event.id !== -1) {
+        const pairId = this.linesIdxs![event.id];
+        this.pairedGrids!.pairsGridCliffsTab.dataFrame.currentRowIdx = pairId;
         setTimeout(() => {
           grok.shell.windows.showContextPanel = true;
           grok.shell.o = fillPairInfo(this.mmpa!, event.id, this.linesIdxs!, linesActivityCorrespondance[event.id],
