@@ -96,6 +96,7 @@ The Datagrok 1.23.0 release includes stability and data access improvements
 
 * [#3122](https://github.com/datagrok-ai/public/issues/3122): Pinned columns: Opening the project with pinned columns hides the pinned columns
 *  [#3119](https://github.com/datagrok-ai/public/issues/3119): Add new column: formula with multi-argument functions is parsed incorrectly if more than one argument contains a column
+* [#3211](https://github.com/datagrok-ai/public/issues/3211): Add new column: do not show error message when using ‘IsNotEmpty’ for numerics
 * [#3024](https://github.com/datagrok-ai/public/issues/3024):  Parsing source maps is loading the platform
 
 ### Packages
