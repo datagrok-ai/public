@@ -2,9 +2,7 @@
 import { exec } from 'child_process';
 import fs from 'fs';
 import os from 'os';
-import path from 'path';
-import puppeteer from 'puppeteer';
-import { Browser, Page } from 'puppeteer';
+import path from 'path'; 
 import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
@@ -75,8 +73,6 @@ function isArgsValid(args: TestArgs): boolean {
 async function runTesting(args: TestArgs): Promise<ResultObject> {
   color.info('Loading tests...');
   const testsObj = await loadTestsList([process.env.TARGET_PACKAGE ?? ''], args.core);
-  if (args.verbose)
-    console.log(testsObj);
   const parsed: Test[][] = (setAlphabeticalOrder(testsObj, 1, 1));
   if (parsed.length == 0)
     return {
@@ -100,17 +96,21 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
       }
     }
   }));
-  let filtered: OrganizedTest[] = []
+  let filtered: OrganizedTest[] = [];
+  let categoryRegex = new RegExp(`${args.category?.replaceAll(' ', '')}.*`)
   if (args.category) {
     for (let element of organized) {
-      if (element.params.category === args.category) {
+      if ((categoryRegex.test(element.params.category.replaceAll(' ', '')))) {
         if (element.params.test === args.test || !args.test)
           filtered.push(element);
       }
     }
     organized = filtered;
   }
-
+  if (args.verbose){
+    console.log(filtered);
+    console.log(`Tests total: ${filtered.length}`);
+  }
   color.info('Starting tests...');
   let testsResults: ResultObject[] = [];
   let r: ResultObject;

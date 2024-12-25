@@ -1,5 +1,11 @@
 # Datagrok-tools changelog
 
+## 4.13.47 (2024-12-25)
+
+### Features
+
+* Fixed category selection for test
+
 ## 4.13.46 (2024-12-23)
 
 ### Features
