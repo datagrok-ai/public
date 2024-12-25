@@ -21,7 +21,7 @@ interface IData {
 }
 
 class ProjectDGFunctionsParser {
-    private functionRegex = new RegExp("\\s*(?:function\\s+)?(\\w+)\\s*\\(([^)]*)\\)\\s*:\\s*([^\\{\\;]*)\\s*\\{?;?\\s*$");
+    private functionRegex = new RegExp("\\s*(?:function\\s+)?(\\w+)\\s*\\(([^)]*)\\)\\s*:\\s*((?:[^\\{\\;]*)|(?:\\{.*\\}))\\s*\\{?;?\\s*$");
     private getAccessorRegex = new RegExp("\\s*get\\s+([^\\(]*)\\s*\\(\\)\\s*:\\s*([^\\{\\;]*)\\s*");
     private setAccessorRegex = new RegExp("\\s*set\\s+([^\\(]*)\\s*\\(([^\\)]*)\\)");
     private nonPublicRegex = new RegExp("\\s*((private)|(protected))\\s+");
