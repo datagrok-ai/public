@@ -687,7 +687,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
             }
           },
         });
-        const sortTypeChoice = ui.input.choice('Order', {
+        const sortTypeChoice = ui.input.radio('', {
           value: trellisSortState[axis].type, items: Object.keys(TrellisSortType), nullable: false,
           onValueChanged: () => {
             if (trellisSortState[axis].type !== sortTypeChoice.value) {
