@@ -12,21 +12,24 @@
     "@datagrok-libraries/bio": "^5.46.2",
     "@datagrok-libraries/utils": "^4.4.0",
     "@datagrok-libraries/tutorials": "^1.5.2",
-    "cash-dom": "^8.1.5",
     "datagrok-api": "^1.23.0",
-    "dayjs": "=1.11.10"
+    "cash-dom": "^8.1.5",
+    "dayjs": "=1.11.10",
+    "rxjs": "^6.5.5",
+    "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@datagrok/biostructure-viewer": "^1.3.0",
+    "@datagrok/biostructure-viewer": "^1.2.4",
+    "@types/wu": "^2.1.44",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4",
     "css-loader": "^7.1.2",
     "style-loader": "^4.0.0",
-    "ts-loader": "^9.5.1",
-    "typescript": "^5.6.3",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4"
+    "ts-loader": "9.4.2",
+    "typescript": "^5.3.3"
   },
   "scripts": {
-    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio @datagrok-libraries/tutorials",
     "debug-docking": "webpack && grok publish ",
     "release-docking": "webpack && grok publish --release",
     "build-docking": "webpack",
@@ -46,7 +49,7 @@
     "test": "grok test",
     "test-dev": "grok test --host dev",
     "test-local": "grok test --host localhost",
-    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/bio run build && npm run build"
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/bio run build && npm --prefix ./../../libraries/tutorials run build && npm run build"
   },
   "canEdit": [
     "Developers"
