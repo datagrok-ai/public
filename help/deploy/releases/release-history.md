@@ -122,7 +122,7 @@ The Datagrok 1.23.0 release includes stability and data access improvements
     * [#3191](https://github.com/datagrok-ai/public/issues/3191): Some dots are not shown on scatter plot when labels are enabled
     * [#3175](https://github.com/datagrok-ai/public/issues/3175): Scatter plot with conditionally colored column as color inconsistency: color editor icon is shown, but colors cannot be changed
 * [#3174](https://github.com/datagrok-ai/public/issues/3176): Table header tooltip overlaps menus
-* [#3168](https://github.com/datagrok-ai/public/issues/3168): Horizontal scroll bar in table disappears on double clicking it
+* [#3168](https://github.com/datagrok-ai/public/issues/3168): Horizontal scroll bar in table disappears on double-click
 
 
 ## 2024-11-25 1.22.2
