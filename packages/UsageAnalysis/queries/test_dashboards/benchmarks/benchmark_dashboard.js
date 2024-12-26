@@ -62,22 +62,22 @@ for (var i = 1; i <= builds.length; i++) {
   replaceColumn(i, ' avg(duration)', buildName, ' duration');
 }
 
-const jsonColumn = pivot.columns.addNewString('duration');
-jsonColumn.semType = FIT_SEM_TYPE;
-for (let i = 0; i < pivot.rowCount; i++) {
-  var chartData = {
-    series: [{
-      fitFunction: "linear",
-      points: [
-        {x: 1, y: pivot.columns.byName('1 avg(duration)').get(i)},
-        {x: 2, y: pivot.columns.byName('2 avg(duration)').get(i)},
-        {x: 3, y: pivot.columns.byName('3 avg(duration)').get(i)},
-        {x: 4, y: pivot.columns.byName('4 avg(duration)').get(i)},
-        {x: 5, y: pivot.columns.byName('5 avg(duration)').get(i)},
-      ]
-    }]
-  };
-  jsonColumn.set(i, JSON.stringify(chartData));
-}
+// const jsonColumn = pivot.columns.addNewString('duration');
+// jsonColumn.semType = FIT_SEM_TYPE;
+// for (let i = 0; i < pivot.rowCount; i++) {
+//   var chartData = {
+//     series: [{
+//       fitFunction: "linear",
+//       points: [
+//         {x: 1, y: pivot.columns.byName('1 avg(duration)').get(i)},
+//         {x: 2, y: pivot.columns.byName('2 avg(duration)').get(i)},
+//         {x: 3, y: pivot.columns.byName('3 avg(duration)').get(i)},
+//         {x: 4, y: pivot.columns.byName('4 avg(duration)').get(i)},
+//         {x: 5, y: pivot.columns.byName('5 avg(duration)').get(i)},
+//       ]
+//     }]
+//   };
+//   jsonColumn.set(i, JSON.stringify(chartData));
+// }
 
 out = pivot;

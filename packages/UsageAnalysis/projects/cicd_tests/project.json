@@ -6,12 +6,12 @@
     "tables": [
       {
         "path": "0_Tests_Dashboard.csv",
-        "creationScript": "UsageAnalysis:TestsDashboard(false,false,false,5)",
+        "creationScript": "UsageAnalysis:TestsDashboard(5,false,false,true)",
         "id": "2d897490-9b00-11ef-bb56-cf322fcdda84"
       },
       {
         "path": "1_Benchmark_Dashboard.csv",
-        "creationScript": "UsageAnalysis:BenchmarksDashboard(false,true,true,5)",
+        "creationScript": "UsageAnalysis:BenchmarksDashboard(5,false,true,true)",
         "id": "94e609e4-b5b7-437e-b91f-01da1ff73b17"
       }
     ]

@@ -7,17 +7,17 @@
   "viewStateMap": {
     "containerType": "horizontal",
     "state": {
-      "width": 1292,
+      "width": 1068,
       "height": 927
     },
     "children": [
       {
         "containerType": "panel",
         "state": {
-          "width": 210,
+          "width": 171,
           "height": 927,
           "element": {
-            "id": "81da4460-9b00-11ef-c4b7-79c21be04d65",
+            "id": "b446e430-c210-11ef-e020-83e57d376450",
             "type": "Filters",
             "look": {
               "#type": "FiltersLook",
@@ -79,14 +79,14 @@
       {
         "containerType": "vertical",
         "state": {
-          "width": 1081,
+          "width": 896,
           "height": 927
         },
         "children": [
           {
             "containerType": "fill",
             "state": {
-              "width": 1081,
+              "width": 896,
               "height": 553,
               "documentManager": true
             },
@@ -94,10 +94,10 @@
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 1081,
+                  "width": 896,
                   "height": 553,
                   "element": {
-                    "id": "81da6b70-9b00-11ef-d574-5db55ee61de0",
+                    "id": "b4473250-c210-11ef-b87d-89b6a436c0d5",
                     "type": "Grid",
                     "look": {
                       "#type": "GridLook",
@@ -284,12 +284,25 @@
                           }
                         },
                         {
-                          "width": 182.88473392233414,
-                          "columnName": "duration",
-                          "cellType": "fit",
+                          "width": 80,
+                          "customName": "sparkline",
+                          "cellType": "sparkline",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"
+                          },
+                          "settings": {
+                            "sparkline": {
+                              "columnNames": [
+                                "1 avg(duration)",
+                                "2 avg(duration)",
+                                "3 avg(duration)",
+                                "4 avg(duration)",
+                                "5 avg(duration)"
+                              ],
+                              "normalization": "Row",
+                              "colorCode": "Values"
+                            }
                           }
                         },
                         {
@@ -498,17 +511,17 @@
           {
             "containerType": "horizontal",
             "state": {
-              "width": 1081,
+              "width": 896,
               "height": 373
             },
             "children": [
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 412,
+                  "width": 339,
                   "height": 373,
                   "element": {
-                    "id": "81da9280-9b00-11ef-a638-a7f5716a8712",
+                    "id": "b4475960-c210-11ef-a919-cb78648ba929",
                     "type": "Bar chart",
                     "look": {
                       "#type": "BarChartLook",
@@ -533,10 +546,10 @@
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 668,
+                  "width": 556,
                   "height": 373,
                   "element": {
-                    "id": "81dab990-9b00-11ef-bf4f-393564eeea8d",
+                    "id": "b4478070-c210-11ef-84e7-2bb09f86f516",
                     "type": "Heat map",
                     "look": {
                       "#type": "GridLook",
@@ -874,16 +887,6 @@
                           "width": 30,
                           "columnName": "5 first(flaking)",
                           "cellType": "bool",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "duration",
-                          "cellType": "fit",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"

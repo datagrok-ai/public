@@ -3,17 +3,17 @@
   "viewStateMap": {
     "containerType": "horizontal",
     "state": {
-      "width": 1292,
+      "width": 1068,
       "height": 927
     },
     "children": [
       {
         "containerType": "panel",
         "state": {
-          "width": 210,
+          "width": 171,
           "height": 927,
           "element": {
-            "id": "791b3140-9b00-11ef-ab21-7df6ffad6d4c",
+            "id": "b446e430-c210-11ef-e020-83e57d376450",
             "type": "Filters",
             "look": {
               "#type": "FiltersLook",
@@ -75,14 +75,14 @@
       {
         "containerType": "vertical",
         "state": {
-          "width": 1081,
+          "width": 896,
           "height": 927
         },
         "children": [
           {
             "containerType": "fill",
             "state": {
-              "width": 1081,
+              "width": 896,
               "height": 553,
               "documentManager": true
             },
@@ -90,10 +90,10 @@
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 1081,
+                  "width": 896,
                   "height": 553,
                   "element": {
-                    "id": "791b5850-9b00-11ef-a0f2-9bed3fae2c32",
+                    "id": "b4473250-c210-11ef-b87d-89b6a436c0d5",
                     "type": "Grid",
                     "look": {
                       "#type": "GridLook",
@@ -280,12 +280,25 @@
                           }
                         },
                         {
-                          "width": 182.88473392233414,
-                          "columnName": "duration",
-                          "cellType": "fit",
+                          "width": 80,
+                          "customName": "sparkline",
+                          "cellType": "sparkline",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
                             "textWrap": "words"
+                          },
+                          "settings": {
+                            "sparkline": {
+                              "columnNames": [
+                                "1 avg(duration)",
+                                "2 avg(duration)",
+                                "3 avg(duration)",
+                                "4 avg(duration)",
+                                "5 avg(duration)"
+                              ],
+                              "normalization": "Row",
+                              "colorCode": "Values"
+                            }
                           }
                         },
                         {
@@ -494,17 +507,17 @@
           {
             "containerType": "horizontal",
             "state": {
-              "width": 1081,
+              "width": 896,
               "height": 373
             },
             "children": [
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 412,
+                  "width": 339,
                   "height": 373,
                   "element": {
-                    "id": "791b7f60-9b00-11ef-c97a-63312f2e84b4",
+                    "id": "b4475960-c210-11ef-a919-cb78648ba929",
                     "type": "Bar chart",
                     "look": {
                       "#type": "BarChartLook",
@@ -529,10 +542,10 @@
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 668,
+                  "width": 556,
                   "height": 373,
                   "element": {
-                    "id": "791ba670-9b00-11ef-86d4-f5374d807d64",
+                    "id": "b4478070-c210-11ef-84e7-2bb09f86f516",
                     "type": "Heat map",
                     "look": {
                       "#type": "GridLook",
@@ -878,16 +891,6 @@
                         {
                           "visible": false,
                           "width": 30,
-                          "columnName": "duration",
-                          "cellType": "fit",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
                           "columnName": "min",
                           "cellType": "number",
                           "headerCellStyle": {
@@ -931,99 +934,6 @@
     "tableId": "94e609e4-b5b7-437e-b91f-01da1ff73b17",
     "tableName": "Benchmark_ Dashboard"
   },
-  "type": "TableView",
-  "columns": [
-    {
-      "name": "owner",
-      "type": "string",
-      "id": "75989a30-9b00-11ef-9714-3bcd9070628b",
-      "friendlyName": "Owner",
-      "entityTags": [
-        {
-          "tag": "aggr.type",
-          "id": "791c1ba0-9b00-11ef-c358-672816c316ce"
-        },
-        {
-          "tag": "aggr.src.col.name",
-          "id": "791c1ba0-9b00-11ef-80ac-e5309df76f26"
-        },
-        {
-          "tag": ".semantic-detection-duration",
-          "id": "791c1ba0-9b00-11ef-f78b-e1e0010eefae"
-        },
-        {
-          "tag": ".id",
-          "id": "791c1ba0-9b00-11ef-bc9a-6bb5a071a5c9"
-        }
-      ],
-      "metaParams": {
-        "aggr.type": "key",
-        "aggr.src.col.name": "owner",
-        ".semantic-detection-duration": "10",
-        ".id": "75989a30-9b00-11ef-9714-3bcd9070628b"
-      }
-    },
-    {
-      "name": "1 avg(duration)",
-      "type": "double",
-      "id": "7598c140-9b00-11ef-b7f8-e3b6cef57ad4",
-      "friendlyName": "1 avg(duration)",
-      "entityTags": [
-        {
-          "tag": "aggr.type",
-          "id": "791c1ba0-9b00-11ef-e625-976104e8b230"
-        },
-        {
-          "tag": "aggr.src.col.name",
-          "id": "791c1ba0-9b00-11ef-f04e-5bb77bd1620b"
-        },
-        {
-          "tag": "aggr.pivot.values",
-          "id": "791c1ba0-9b00-11ef-a3ce-cbde027fd47e"
-        },
-        {
-          "tag": "friendlyName",
-          "id": "791c1ba0-9b00-11ef-d53c-dd79625be051"
-        },
-        {
-          "tag": ".semantic-detection-duration",
-          "id": "791c42b0-9b00-11ef-fb40-9bd0d2ae2ccc"
-        },
-        {
-          "tag": "format",
-          "id": "791c42b0-9b00-11ef-b66d-9d85f534e7f2"
-        },
-        {
-          "tag": ".id",
-          "id": "791c42b0-9b00-11ef-814d-25e359251de8"
-        }
-      ],
-      "metaParams": {
-        "aggr.type": "avg",
-        "aggr.src.col.name": "duration",
-        "aggr.pivot.values": "[\"1\"]",
-        "friendlyName": "2024-12-20-1.23.0.BE-1 duration",
-        ".semantic-detection-duration": "1",
-        "format": "int",
-        ".id": "7598c140-9b00-11ef-b7f8-e3b6cef57ad4"
-      }
-    },
-    {
-      "name": "~test_0",
-      "type": "string",
-      "id": "7598c140-9b00-11ef-d36b-f3ed2cee2433",
-      "friendlyName": "~test_0",
-      "entityTags": [
-        {
-          "tag": ".id",
-          "id": "791c42b0-9b00-11ef-e8b3-733568a826e2"
-        }
-      ],
-      "metaParams": {
-        ".id": "7598c140-9b00-11ef-d36b-f3ed2cee2433"
-      }
-    }
-  ],
   "id": "791bcd80-9b00-11ef-bc35-6d89def67ce2",
   "name": "BenchmarkDashboard",
   "friendlyName": "Benchmark Dashboard"

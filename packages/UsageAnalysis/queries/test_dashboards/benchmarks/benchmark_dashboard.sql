@@ -1,10 +1,10 @@
 --name: BenchmarksDashboard
 --friendlyName: UA | Tests | Benchmarks
 --connection: System:Datagrok
---input: bool showNotRun = false
---input: bool showBenchmarks = false
---input: bool showNotCiCd = false
 --input: int lastBuildsNum = 5
+--input: bool showNotRun = false {optional: true}
+--input: bool showBenchmarks = true {optional: true}
+--input: bool showNotCiCd = false {optional: true}
 WITH last_builds AS (
     select name, build_date
     from builds b
