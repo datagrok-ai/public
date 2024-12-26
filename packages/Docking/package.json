@@ -30,7 +30,7 @@
     "typescript": "^5.3.3"
   },
   "scripts": {
-    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio @datagrok-libraries/tutorials",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio",
     "debug-docking": "webpack && grok publish ",
     "release-docking": "webpack && grok publish --release",
     "build-docking": "webpack",
@@ -50,7 +50,7 @@
     "test": "grok test",
     "test-dev": "grok test --host dev",
     "test-local": "grok test --host localhost",
-    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/bio run build && npm --prefix ./../../libraries/tutorials run build && npm run build"
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/bio run build && npm run build"
   },
   "canEdit": [
     "Developers"
