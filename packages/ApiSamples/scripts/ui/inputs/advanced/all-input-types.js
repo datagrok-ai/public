@@ -48,8 +48,8 @@ let object = {
   choice: 'Apple',
   multiChoice: ['Apple'],
   //file: '',
-  users: [DG.User.current()],
-  userGroups: [DG.User.current()],
+  user: [DG.User.admin],
+  userGroups: [DG.Group.developers],
 };
 
 const div = ui.divV([

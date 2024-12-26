@@ -830,6 +830,9 @@ export interface IDartApi {
   grok_User_Get_Picture(u: any): any;
   grok_User_ToMarkup(u: any): any;
   grok_User_Get_Group(u: any): any;
+  grok_User_Test(): any;
+  grok_User_Admin(): any;
+  grok_User_System(): any;
   grok_UserSession_Get_ExternalToken(s: any): any;
   grok_UserSession_Get_Type(s: any): any;
   grok_UserSession_Get_User(s: any): any;
@@ -844,6 +847,13 @@ export interface IDartApi {
   grok_Group_Set_Personal(g: any, x: any): any;
   grok_Group_Get_Hidden(g: any): any;
   grok_Group_Set_Hidden(g: any, x: any): any;
+  grok_Group_AllUsers(): any;
+  grok_Group_Developers(): any;
+  grok_Group_NeedToCreate(): any;
+  grok_Group_Test(): any;
+  grok_Group_Admin(): any;
+  grok_Group_System(): any;
+  grok_Group_Administrators(): any;
   grok_Property(name: String, type: String, getter: any, setter: any, defaultValue: any): any;
   grok_Property_Get_Get(p: any): any;
   grok_Property_Set_Get(p: any, x: any): any;
