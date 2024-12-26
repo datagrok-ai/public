@@ -9,12 +9,11 @@ import shutil
 
 app = Flask(__name__)
 
-# Configure logging
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
-        logging.StreamHandler(sys.stdout)  # Output logs to stdout for Docker compatibility
+        logging.StreamHandler(sys.stdout)
     ]
 )
 
@@ -78,7 +77,7 @@ def run_reinvent():
         device = "cpu"
         """
 
-        prior_filename = "/Users/aleksashka/REINVENT4/priors/mol2mol_similarity.prior"
+        prior_filename = f"/{current_directory}/REINVENT4/priors/mol2mol_similarity.prior"
         parameters = f"""
         [parameters]
         prior_file = "{prior_filename}"
@@ -87,7 +86,7 @@ def run_reinvent():
         sample_strategy = "multinomial"
         smiles_file = "/{current_directory}/{smiles_filename}"
 
-        batch_size = 5
+        batch_size = 1
 
         use_checkpoint = false
         use_cuda = false
@@ -106,7 +105,7 @@ def run_reinvent():
         [[stage]]
         
         max_score = 1.0
-        max_steps = 25
+        max_steps = 1
         chkpt_file = 'stage1.chkpt'
         
         [stage.scoring]
@@ -117,9 +116,9 @@ def run_reinvent():
         [[stage.scoring.component.DockStream.endpoint]]
         name = "Docking with Dockstream"
         weight = 1
-        params.configuration_path = "/Users/aleksashka/Desktop/AutoDock_Vina_demo/kras_docking.json"
-        params.docker_script_path = "/Users/aleksashka/DockStream/docker.py"
-        params.docker_python_path =   "/opt/anaconda3/envs/DockStream/bin/python"
+        params.configuration_path = "/{current_directory}/kras_docking.json"
+        params.docker_script_path = "/{current_directory}/DockStream/docker.py"
+        params.docker_python_path =   "/opt/conda/envs/DockStream/bin/python"
         transform.type = "reverse_sigmoid"
         transform.high = 0
         transform.low = -10

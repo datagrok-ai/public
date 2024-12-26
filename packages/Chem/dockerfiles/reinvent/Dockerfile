@@ -25,7 +25,10 @@ WORKDIR /app
 RUN git clone https://github.com/MolecularAI/REINVENT4.git && \
     git clone https://github.com/MolecularAI/DockStream.git
 
-RUN find /app/REINVENT4 -type f -exec sed -i 's/model_dump()/model_config/g' {} +
+# Fix issues by modifying specific scripts in the REINVENT repository
+# Replace calls to `model_dump()` with `model_config` due to compatibility problems
+RUN find /app/REINVENT4/reinvent -type f \( -name "Reinvent.py" -o -name "run_staged_learning.py" \) \
+    -exec sed -i 's/model_dump()/model_config/g' {} +
 
 COPY . /app
 
@@ -35,6 +38,7 @@ RUN python3.10 -m venv /app/venv && \
     cd /app/REINVENT4 && \
     /app/venv/bin/pip install --no-deps .
 
+# Install Miniforge for macOS compatibility (handles macOS-specific Python environment issues)
 RUN if [ "$(uname -m)" = "aarch64" ]; then \
         curl -fsSL https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh -o /tmp/miniforge.sh; \
     else \
@@ -51,7 +55,13 @@ RUN conda update -n base -c defaults conda -y
 
 WORKDIR /app/DockStream
 
-RUN sed -i 's/python = 3.7/python = 3.10/' environment.yml
+# Update DockStream environment file:
+# - Change Python version to 3.10
+# - Remove incompatible `pydantic` version and manually specify compatible version
+RUN sed -i 's/python = 3.7/python = 3.10/' environment.yml && \
+    sed -i '/pydantic/d' environment.yml && \
+    sed -i '/dependencies:/a \  - pip' environment.yml && \
+    sed -i '/- pip/a \  - pip:\n    - pydantic==1.10.19' environment.yml
 
 RUN conda env create -f environment.yml && \
     conda clean --all --yes
