@@ -1,10 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { Model, ModelColoring, Subgroup, Template, TEMPLATES_FOLDER } from './constants';
 
-import '../css/admetica.css';
+import { Model, ModelColoring, Subgroup, Template, TEMPLATES_FOLDER } from './constants';
 import { getTemplates } from './admetica-utils';
+import '../css/admetica.css';
 
 export class AdmeticaBaseEditor {
   tableInput: DG.InputBase<DG.DataFrame | null>;

@@ -2,23 +2,23 @@ import {awaitCheck, before, category, delay, expect, expectArray, test} from '@d
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { runAdmetica, performChemicalPropertyPredictions, getQueryParams, properties, setProperties } from '../utils/admetica-utils';
+import { runAdmetica, performChemicalPropertyPredictions, getQueryParams, properties, setProperties, healthCheck } from '../utils/admetica-utils';
 import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
 
 category('Admetica', () => {
   let v: DG.TableView;
   let molecules: DG.DataFrame;
   let smilesColumn: DG.Column;
+  let admeticaContainer: DG.DockerContainer | null;
     
   before(async () => {
     grok.shell.closeAll();
     grok.shell.windows.showProperties = false;
+    if (!admeticaContainer)
+      admeticaContainer = await grok.dapi.docker.dockerContainers.filter('admetica').first();
+    if (admeticaContainer.status !== 'started')
+      await fetchWrapper(() => healthCheck());
     await setProperties();
-  });
-    
-  test('Container', async () => {
-    const admetDockerfile = await grok.dapi.docker.dockerContainers.filter('admetica').first();
-    expect(admetDockerfile != null, true);
   });
 
   test('Container. Post request', async () => {
@@ -26,7 +26,7 @@ category('Admetica', () => {
     O=C1Nc2ccccc2C(C2CCCCC2)=NC1`;
     const bbbResults = await fetchWrapper(() => runAdmetica(smiles, 'PPBR,VDss', 'false'));
     expect(bbbResults != null, true);
-  }, {timeout: 100000});
+  }, {timeout: 25000});
 
   test('Calculate dialog. UI', async () => {
     molecules = grok.data.demo.molecules(100);
