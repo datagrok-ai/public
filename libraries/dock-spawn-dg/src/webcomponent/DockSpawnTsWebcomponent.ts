@@ -47,9 +47,11 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
     this.observer.disconnect();
     const oldPanels = this.dockManager.getPanels();
     await this.dockManager.loadState(serializedState);
-    this.observer.observe(this, {childList: true});
     oldPanels.forEach((panel) => panel.elementContentContainer.remove());
     this.dockManager.element.firstChild.remove();
+    
+    this.observer.observe(this, {childList: true});
+    
     setTimeout(() => {
       this.dockManager.invalidate();
     }, 50)    
@@ -178,9 +180,9 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
   }
 
   private handleRemovedChildNode(element: HTMLElement) {
-    const node = this.elementContainerMap.get(element);
-    if (node)
-      node.close();
+    const panel = this.elementContainerMap.get(element);
+    if (panel)
+      panel.close();
     this.elementContainerMap.delete(element);
   }
 

@@ -565,6 +565,9 @@ export class PanelContainer implements IDockContainerWithSize {
 
   private async closeInternal(runCallback: boolean) {
     let close = true;
+    
+    if (!(this.elementContentContainer.parentElement === this.dockManager.config.dialogRootElement))
+      this.prepareForDocking();
 
     if (this.elementContentContainer.parentElement === this.dockManager.config.dialogRootElement) {
       if (!runCallback)

@@ -606,7 +606,8 @@ export class DockManager {
     while (stack.length > 0) {
       const topNode = stack.pop();
 
-      if (topNode.container === container)
+      //@ts-ignore
+      if (topNode.container.title === container.title)
         return topNode;
       [].push.apply(stack, topNode.children);
     }
