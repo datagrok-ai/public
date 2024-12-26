@@ -74,11 +74,8 @@
     "style-loader": "^4.0.0",
     "css-loader": "^7.1.2",
     "ts-loader": "^9.5.1",
-    "@datagrok/chembl": "^1.2.0",
     "@datagrok/charts": "^1.4.0",
-    "@datagrok/power-grid": "^1.5.0",
-    "@datagrok/pubchem-api": "^1.1.16",
-    "@datagrok/chembl-api": "^1.0.12"
+    "@datagrok/power-grid": "^1.5.0"
   },
   "browser": {
     "fs": false,

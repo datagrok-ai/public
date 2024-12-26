@@ -62,8 +62,7 @@ import {renderMolecule} from './rendering/render-molecule';
 import {RDKitReactionRenderer} from './rendering/rdkit-reaction-renderer';
 import {structure3dWidget} from './widgets/structure3d';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
-import {_demoActivityCliffs, _demoChemOverview, _demoDatabases4,
-  _demoMMPA,
+import {_demoActivityCliffs, _demoChemOverview, _demoMMPA,
   _demoRgroupAnalysis, _demoScaffoldTree, _demoSimilarityDiversitySearch} from './demo/demo';
 import {getStructuralAlertsByRules, RuleId, RuleSet, STRUCT_ALERTS_RULES_NAMES} from './panels/structural-alerts';
 import {getmolColumnHighlights} from './widgets/col-highlights';
@@ -1824,12 +1823,6 @@ export async function demoActivityCliffs(): Promise<void> {
   _demoActivityCliffs();
 }
 
-//name: Demo Databases
-//description: Running various queries to chemical databases using convenient input forms
-//meta.demoPath: Cheminformatics | Chemical Databases
-export async function demoDatabases(): Promise<void> {
-  await _demoDatabases4();
-}
 
 //name: Demo Scaffold Tree
 //description: Running scaffold analysis with hierarchical tree
