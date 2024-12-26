@@ -298,7 +298,9 @@ function setAdmeGroups(table: DG.DataFrame, columnNames: string[]): void {
   };
 
   const subgroupDict = createSubgroupDict(properties, columnNames);
-  //table.meta.setGroups(subgroupDict);
+  // Temporary workaround: Addresses the issue where setGroups does not trigger a refresh 
+  // when adding to an existing grid. This fix will be removed once the issue is resolved.
+  table.temp['.columnGroups'] = subgroupDict;
 }
 
 export function updateColumnProperties(gridCol: DG.GridColumn, model: any): void {
@@ -318,7 +320,7 @@ export function updateColumnProperties(gridCol: DG.GridColumn, model: any): void
   )?.name;
   if (subgroupName) {
     gridCol.headerCellStyle.textColor = DG.Color.fromHtml(colorsDictionary[subgroupName]);
-    //column.setTag(DG.TAGS.GROUP, subgroupName);
+    column.setTag('group', subgroupName);
   }
 }
 
@@ -376,8 +378,6 @@ export function addResultColumns(
     tableView.dockManager.dock(form, DG.DOCK_TYPE.RIGHT, null, 'Form', 0.45);
     grid.invalidate();
   }
-
-  grok.shell.addTableView(viewTable);
 }
 
 export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue): Promise<DG.Accordion> {
