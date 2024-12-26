@@ -1,5 +1,9 @@
 # Chembl changelog
 
+## 1.2.1 (2024-12-26)
+
+* Moved Chemical Databases demo to Chembl package from Chem
+
 ## 1.1.6 (2024-12-06)
 
 * Add Search integrated queries
