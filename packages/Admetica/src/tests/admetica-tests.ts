@@ -22,8 +22,6 @@ category('Admetica', () => {
   });
 
   test('Container. Post request', async () => {
-    grok.shell.info('Admetica container status');
-    grok.shell.info(admeticaContainer?.status);
     const smiles = `smiles
     O=C1Nc2ccccc2C(C2CCCCC2)=NC1`;
     const bbbResults = await fetchWrapper(() => runAdmetica(smiles, 'PPBR,VDss', 'false'));
@@ -31,8 +29,6 @@ category('Admetica', () => {
   }, {timeout: 25000});
 
   test('Calculate dialog. UI', async () => {
-    grok.shell.info('Admetica container status');
-    grok.shell.info(admeticaContainer?.status);
     molecules = grok.data.demo.molecules(100);
     v = grok.shell.addTableView(molecules);
     await grok.data.detectSemanticTypes(molecules);
@@ -55,8 +51,6 @@ category('Admetica', () => {
   });
 
   test('Calculate dialog. Added properties', async () => {
-    grok.shell.info('Admetica container status');
-    grok.shell.info(admeticaContainer?.status);
     molecules = grok.data.demo.molecules(5);
     v = grok.shell.addTableView(molecules);
     await delay(1000);
@@ -71,8 +65,6 @@ category('Admetica', () => {
   }, {timeout: 100000});
 
   test('Calculate. For single cell', async () => {
-    grok.shell.info('Admetica container status');
-    grok.shell.info(admeticaContainer?.status);
     const molecules = grok.data.demo.molecules(20);
     const v = grok.shell.addTableView(molecules);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'Cannot load table', 3000);
