@@ -1,8 +1,12 @@
 {
-  "name": "compute2",
+  "name": "@datagrok/compute2",
   "friendlyName": "Compute2",
-  "version": "0.0.1",
-  "description": "",
+  "version": "1.0.0",
+  "author": {
+    "name": "Aufar Zakiev",
+    "email": "aufar.zakiev@softwarecountry.com"
+  },
+  "description": "Provides UI based on Vue/Webcomponents",
   "dependencies": {
     "@datagrok-libraries/compute-utils": "^1.40.0",
     "@datagrok-libraries/utils": "^4.3.12",

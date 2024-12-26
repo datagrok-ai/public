@@ -316,6 +316,7 @@ const sharedLibExternals: { [lib: string]: {} } = {
   'common/ngl_viewer/ngl.js': { 'NGL': 'NGL' },
   'common/openchemlib-full.js': { 'openchemlib/full': 'OCL' },
   'common/codemirror/codemirror.js': { 'codemirror': 'CodeMirror' },
+  'common/vue.js': { 'vue': 'Vue'}
 };
 
 export function checkPackageFile(packagePath: string, json: PackageFile, options?: {

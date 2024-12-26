@@ -1,5 +1,12 @@
 # Datagrok-tools changelog
 
+## 4.13.49 (2024-12-26)
+
+### Features
+
+* Removed load npm
+* Added ability to set vue as external lib for check
+
 ## 4.13.48 (2024-12-25)
 
 ### Features
