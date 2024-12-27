@@ -139,7 +139,7 @@ export class AggregationTutorial extends Tutorial {
 
     const serializedParams = '[{"#type":"GroupAggregation","aggType":"key","colName":"RACE"},' +
       '{"#type":"GroupAggregation","aggType":"key","colName":"SEX"},{"#type":"GroupAggregation",' +
-      '"aggType":"pivot","colName":"DIS_POP"},{"#type":"GroupAggregation","aggType":"avg","colName":"WEIGHT"}]';
+      '"aggType":"pivot","colName":"DIS_POP"},{"#type":"GroupAggregation","aggType":"med","colName":"WEIGHT"}]';
 
     const historyStr = window.localStorage['grok-aggregation-history'];
     const initialParamsLen = historyStr ? JSON.parse(historyStr).length : 0;

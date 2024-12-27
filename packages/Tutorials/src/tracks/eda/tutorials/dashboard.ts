@@ -93,7 +93,7 @@ export class DashboardTutorial extends Tutorial {
     const resultRowCount = 645;
     await this.action('Click "OK" to run the query', grok.functions.onAfterRunAction.pipe(filter((call) => {
       const res = call.outputs.get('result');
-      return call.func.name === 'StoresInState' &&
+      return (call.func.name === 'StoresInState' || call.func.name.includes('StoresInState_')) &&
         res instanceof DG.DataFrame && res?.rowCount === resultRowCount;
     })), $(paramEditorDlg.root).find('button.ui-btn.ui-btn-ok')[0]);
 
