@@ -83,8 +83,6 @@ import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 import {CHEM_PROP_MAP} from './open-chem/ocl-service/calculations';
 import {getChemClasses} from './analysis/chem-classes';
 import {cutFragments} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-react-toolkit';
-import { config } from 'rxjs';
-import { ReinventBaseEditor } from './utils/chem-reinvent-dialog';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -2114,23 +2112,6 @@ export async function runReinvent(ligand: string, target: string, optimize: stri
 
   const resultDf = DG.DataFrame.fromJson(await response.text());
   return resultDf;
-}
-
-//name: ReinventEditor
-//tags: editor
-//input: funccall call
-export function reinventEditor(call: DG.FuncCall): void {
-  const funcEditor = new ReinventBaseEditor();
-  ui.dialog({title: 'Generate molecules...'})
-    .add(funcEditor.getEditor())
-    .onOK(async () => {
-      const params = funcEditor.getParams();
-      call.func.prepare({
-        ligand: params.ligand,
-        target: params.target,
-        models: params.models,
-      }).call(true);
-    }).show();
 }
 
 //top-menu: Chem | Generate molecules...
