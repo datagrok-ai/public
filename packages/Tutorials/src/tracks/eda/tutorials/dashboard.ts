@@ -78,7 +78,8 @@ export class DashboardTutorial extends Tutorial {
         return lines.length > 0 && lines[0] !== undefined && lines[0].textContent?.trim() === paramAnnotation;
       })), null, paramQueryDescription);
 
-    await this.buttonClickAction($('.d4-ribbon')[0]!, 'Save the query', 'SAVE');
+    await this.buttonClickAction((grok.shell.windows.simpleMode ? $('.layout-dockarea .d4-ribbon') : $('.d4-ribbon'))[0]!,
+      'Save the query', 'SAVE');
 
     const browseSidebar = grok.shell.sidebar.getPane('Browse').header;
     await this.action(
