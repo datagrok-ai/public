@@ -35,7 +35,7 @@ function getPos(col: number, row: number, constants: getPosConstants): DG.Point 
   const gmax = settings.normalization === SparklinesNormalizationType.Global ? Math.max(...cols.map((c: DG.Column) => c.max)) :
     settings.normalization === SparklinesNormalizationType.Row ? Math.max(...cols.map((c: DG.Column) => c.getNumber(row))) : 0;
   const r: number = [SparklinesNormalizationType.Row, SparklinesNormalizationType.Global].includes(settings.normalization) ?
-    (cols[col].getNumber(row) - gmin) / (gmax - gmin) : cols[col].scale(row);
+    (gmax === gmin ? 0 : (cols[col].getNumber(row) - gmin) / (gmax - gmin)) : cols[col].scale(row);
 
   return new DG.Point(
     b.left + b.width * (cols.length == 1 ? 0 : col / (cols.length - 1)),
@@ -178,10 +178,10 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
         gridColumn.grid.invalidate();
       },
       tooltipText: 'Defines how values are scaled:<br>' +
-        'ROW: Scales each row individually (row minimum to row maximum). Use for comparing values within a row.<br>' +
-        'COLUMN: Scales each column individually (column minimum to column maximum).' +
+        '- ROW: Scales each row individually (row minimum to row maximum). Use for comparing values within a row.<br>' +
+        '- COLUMN: Scales each column individually (column minimum to column maximum).' +
         'Use when columns have different units.<br>' +
-        'GLOBAL: Applies a single scale across all values.' +
+        '- GLOBAL: Applies a single scale across all values.' +
         'Use for comparing values across columns with the same units (e.g., tracking changes over time).',
       nullable: false
     });
