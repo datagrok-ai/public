@@ -30,12 +30,12 @@ def run_reinvent():
         logging.debug(f'smiles list: {smiles_list}')
         config_string = json_data.get('config', " ")
         receptor_file_content = json_data.get('receptor', " ")
-        adme_models = json_data.get('admeModels', [])
+        adme_config = json_data.get('admeConfig', " ")
 
         output_csv = "stage1_1.csv"
 
-        if not smiles_list or not config_string or not receptor_file_content:
-            return {"error": "Missing required inputs: 'smiles', 'config', or 'receptor'"}, 400
+        if not smiles_list or not config_string or not receptor_file_content or not adme_config:
+            return {"error": "Missing required inputs: 'smiles', 'config', or 'receptor' or 'adme config'"}, 400
         
         # Write SMILES to .smi file
         smiles_filename = "smiles.smi"
@@ -55,6 +55,8 @@ def run_reinvent():
             receptor_file.write(receptor_file_content)
         logging.info("Receptor file written: %s", receptor_filename)
 
+        chemprop_data = json.loads(adme_config)
+        chemprop_configs = chemprop_data["chemprop_configs"]
 
         logging.info("Starting the REINVENT process...")
         current_directory = os.getcwd()
@@ -101,7 +103,33 @@ def run_reinvent():
         rate = 0.0001
         """
 
-        stages_template = fstages = f"""
+        chemprop_template = ""
+        for config in chemprop_configs:
+            model_name = config["model_name"]
+            target_column = config["target_column"]
+            weight = config["weight"]
+            transform = config["transform"]
+            
+            chemprop_template += f"""
+            [[stage.scoring.component]]
+            [stage.scoring.component.ChemProp]
+            
+            [[stage.scoring.component.ChemProp.endpoint]]
+            name = "{model_name}"
+            weight = {weight}
+            
+            params.checkpoint_dir = "/{current_directory}/{model_name}"
+            params.rdkit_2d_normalized = true
+            params.target_column = "{target_column}"
+            
+            transform.type = "{transform["type"]}"
+            transform.high = {transform["high"]}
+            transform.low = {transform["low"]}
+            transform.k = {transform["k"]}
+            
+            """
+        
+        stages_template = f"""
         [[stage]]
         
         max_score = 1.0
@@ -123,123 +151,10 @@ def run_reinvent():
         transform.high = 0
         transform.low = -10
         transform.k = 0.5
-        
-        [[stage.scoring.component]]
-        [stage.scoring.component.ChemProp]
-        
-        [[stage.scoring.component.ChemProp.endpoint]]
-        name = "ChemProp"
-        weight = 0.5
-        
-        params.checkpoint_dir = "/{current_directory}/hERG/"
-        params.rdkit_2d_normalized = true
-        params.target_column = "Class"
-        
-        transform.type = "reverse_sigmoid"
-        transform.high = 1.0
-        transform.low = 0.0
-        transform.k = 0.5
-
-        [[stage.scoring.component]]
-        [stage.scoring.component.ChemProp]
-        
-        [[stage.scoring.component.ChemProp.endpoint]]
-        name = "ChemProp"
-        weight = 0.5
-        
-        params.checkpoint_dir = "/{current_directory}/BBB/"
-        params.rdkit_2d_normalized = true
-        params.target_column = "Class"
-        
-        transform.type = "reverse_sigmoid"
-        transform.high = 1.0
-        transform.low = 0.0
-        transform.k = 0.5
-
-        [[stage.scoring.component]]
-        [stage.scoring.component.ChemProp]
-        
-        [[stage.scoring.component.ChemProp.endpoint]]
-        name = "ChemProp"
-        weight = 0.5
-        
-        params.checkpoint_dir = "/{current_directory}/CYP1A2-Inhibitor/"
-        params.rdkit_2d_normalized = true
-        params.target_column = "Activity"
-        
-        transform.type = "reverse_sigmoid"
-        transform.high = 1.0
-        transform.low = 0.0
-        transform.k = 0.5
-
-        [[stage.scoring.component]]
-        [stage.scoring.component.ChemProp]
-        
-        [[stage.scoring.component.ChemProp.endpoint]]
-        name = "ChemProp"
-        weight = 0.5
-        
-        params.checkpoint_dir = "/{current_directory}/CYP2C19-Inhibitor/"
-        params.rdkit_2d_normalized = true
-        params.target_column = "Activity"
-        
-        transform.type = "reverse_sigmoid"
-        transform.high = 1.0
-        transform.low = 0.0
-        transform.k = 0.5
-
-        [[stage.scoring.component]]
-        [stage.scoring.component.ChemProp]
-        
-        [[stage.scoring.component.ChemProp.endpoint]]
-        name = "ChemProp"
-        weight = 0.5
-        
-        params.checkpoint_dir = "/{current_directory}/CYP2C9-Inhibitor/"
-        params.rdkit_2d_normalized = true
-        params.target_column = "Activity"
-        
-        transform.type = "reverse_sigmoid"
-        transform.high = 1.0
-        transform.low = 0.0
-        transform.k = 0.5
-
-        [[stage.scoring.component]]
-        [stage.scoring.component.ChemProp]
-        
-        [[stage.scoring.component.ChemProp.endpoint]]
-        name = "ChemProp"
-        weight = 0.5
-        
-        params.checkpoint_dir = "/{current_directory}/CYP2D6-Inhibitor/"
-        params.rdkit_2d_normalized = true
-        params.target_column = "Activity"
-        
-        transform.type = "reverse_sigmoid"
-        transform.high = 1.0
-        transform.low = 0.0
-        transform.k = 0.5
-
-        [[stage.scoring.component]]
-        [stage.scoring.component.ChemProp]
-        
-        [[stage.scoring.component.ChemProp.endpoint]]
-        name = "ChemProp"
-        weight = 0.5
-        
-        params.checkpoint_dir = "/{current_directory}/CYP3A4-Inhibitor/"
-        params.rdkit_2d_normalized = true
-        params.target_column = "Activity"
-        
-        transform.type = "reverse_sigmoid"
-        transform.high = 1.0
-        transform.low = 0.0
-        transform.k = 0.5
-        
         """
 
         # Combine configurations
-        config = global_parameters + parameters + learning_strategy + stages_template
+        config = global_parameters + parameters + learning_strategy + stages_template + chemprop_template
 
         logging.debug("Generated configuration: %s", config)
 
@@ -268,11 +183,7 @@ def run_reinvent():
         # Read and process the output CSV
         logging.info("Reading output CSV: %s", output_csv)
         df = pd.read_csv(output_csv)
-        #df_cleaned = df[(df["SMILES_state"] != 0)].drop_duplicates(subset=["SMILES"])
-        #logging.info("Processed DataFrame with %d records", len(df_cleaned))
-
-        # Return the cleaned DataFrame as JSON
-        #return df_cleaned.to_json(orient='records')
+        df = df.drop_duplicates(subset='SMILES')
         return df.to_json(orient='records')
 
     except subprocess.CalledProcessError as e:
