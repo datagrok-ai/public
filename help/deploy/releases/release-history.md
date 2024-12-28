@@ -62,9 +62,6 @@ The Datagrok 1.23.0 release includes stability and data access improvements
     * Proper rendering when positioned on top
 * [Trellis plot](../../visualize/viewers/trellis-plot.md): Added support for mouse-over row group for inner viewers
 * Fixed:
-  * [Line Chart](../../visualize/viewers/line-chart.md):
-       * [#3033](https://github.com/datagrok-ai/public/issues/3033): Viewer has 'Marker size' option, but it cannot be changed
-       * [#2776](https://github.com/datagrok-ai/public/issues/2776):  Page is frozen if too many categories are used in split
   *  [#3184](https://github.com/datagrok-ai/public/issues/3184): [Tile Viewer](../../visualize/viewers/tile-viewer.md): Scroll reset and rendering issues after adding new viewer
   * [#3150](https://github.com/datagrok-ai/public/issues/3150): [Box plot](../../visualize/viewers/box-plot.md): New multi-category box plot is not compatible with older layouts that have only single category
   *  [#3188](https://github.com/datagrok-ai/public/issues/3188): [Bar chart](../../visualize/viewers/bar-chart.md): Some categories are missing in the legend when data is filtered
@@ -79,6 +76,7 @@ The Datagrok 1.23.0 release includes stability and data access improvements
   *  [#3168](https://github.com/datagrok-ai/public/issues/3168):  Horizontal scroll bar in table disappears on double-click
 
 #### [Scatterplot](../../visualize/viewers/scatter-plot.md)
+
 * [#3124](https://github.com/datagrok-ai/public/issues/3124): Added support for resizing structure labels
 * [#3142](https://github.com/datagrok-ai/public/issues/3142): Added ability to define columns for scatterplot whiskers
 * [#2708](https://github.com/datagrok-ai/public/issues/2708): Preserve formula line configuration upon changing columns on the axis
@@ -91,6 +89,13 @@ The Datagrok 1.23.0 release includes stability and data access improvements
     * [#3175](https://github.com/datagrok-ai/public/issues/3175): Scatterplot with conditionally colored column as color inconsistency: color editor icon is shown, but colors cannot be changed
     * [#3176](https://github.com/datagrok-ai/public/issues/3176): Some labels disappear unexpectedly on zoom in / out
     * [#3180](https://github.com/datagrok-ai/public/issues/3180): Labels: Context menu disappears when unclicking the mouse
+
+#### [Line Chart](../../visualize/viewers/line-chart.md)
+
+* [#3111](https://github.com/datagrok-ai/public/issues/3111): Added color pickers to the legend
+* Fixed:
+  * [#3033](https://github.com/datagrok-ai/public/issues/3033): Viewer has 'Marker size' option, but it cannot be changed
+  * [#2776](https://github.com/datagrok-ai/public/issues/2776):  Page is frozen if too many categories are used in split
 
 ### Other fixes
 
