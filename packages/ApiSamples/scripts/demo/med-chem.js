@@ -54,14 +54,9 @@ warningsCol.setTag(DG.TAGS.CELL_RENDERER, 'Tags');
 t.columns.addNewString('Idea name').init((i) => 'GRK-' + rnd(10000));
 addCatColumn('Idea status', ['Created', 'Approved', 'Synthesized']);
 addCatColumn('Idea author', ['Jack Hammer', 'Paul Smith', 'Maria DePiotra', 'Marlon Voicek']);
-let ideaCreated = t.columns.addNewDateTime('Idea created');
-let ideaApproved = t.columns.addNewDateTime('Idea approved');
-let ideaSynthesized = t.columns.addNewDateTime('Idea synthesized');
-for (let i = 0; i < t.rowCount; i++) {
-  ideaCreated.set(i, dayjs().year(1990 + rnd(30)).month(rnd1(12)).day(rnd1(28)).startOf('day'));
-  ideaApproved.set(i, ideaCreated.get(i).add(rnd(100), 'day'));
-  ideaSynthesized.set(i, ideaApproved.get(i).add(rnd(100), 'day'));
-}
+let ideaCreated = t.columns.addNewDateTime('Idea created').init((_) => dayjs().year(1990 + rnd(30)).month(rnd1(12)).day(rnd1(28)).startOf('day'));
+let ideaApproved = t.columns.addNewDateTime('Idea approved').init((i) => ideaCreated.get(i).add(rnd(100), 'day'));
+let ideaSynthesized = t.columns.addNewDateTime('Idea synthesized').init((i) => ideaApproved.get(i).add(rnd(100), 'day'));
 ideaCreated.tags.format = 'yyyy/MM/dd';
 ideaApproved.tags.format = 'yyyy/MM/dd';
 ideaSynthesized.tags.format = 'yyyy/MM/dd';
