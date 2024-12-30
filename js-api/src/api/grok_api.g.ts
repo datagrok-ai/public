@@ -705,6 +705,7 @@ export interface IDartApi {
   grok_GridCell_SetValue(gridCell: any, value: any, notify: Bool): any;
   grok_GridCell_Render(gridCell: any, g: any, bounds: any): any;
   grok_GridCell_CreateColHeader(gridColumn: any): any;
+  grok_GridCell_Get_Value(gridCell: any): any;
   grok_GridCellStyle_Create(): any;
   grok_GridCellStyle_Get_Font(gcs: any): any;
   grok_GridCellStyle_Set_Font(gcs: any, x: any): any;
@@ -773,6 +774,8 @@ export interface IDartApi {
   grok_GridColumn_GetDataWidth(gc: any): any;
   grok_GridColumn_GetGroup(gc: any): any;
   grok_GridColumn_SetGroup(gc: any, group: String): any;
+  grok_GridColumn_Get_OnPrepareValueScript(gc: any): any;
+  grok_GridColumn_Set_OnPrepareValueScript(gc: any, x: String): any;
   grok_GridColumnList_Move(columns: any, column: any, position: Num): any;
   grok_GridColumnList_ByIndex(columns: any, index: Num): any;
   grok_GridColumnList_ByName(columns: any, columnName: String): any;

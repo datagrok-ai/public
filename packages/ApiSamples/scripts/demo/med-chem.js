@@ -82,6 +82,11 @@ const groups = {
   'Classifications': {columns: ['BSEP classification', 'HLM CLint classification', 'RLM CLint classification', 'LE-MDCK Classification', 'PAMPA Classification', 'pH6.8 HT Solubility Classification'] }
 }
 
-t.meta.detectSemanticTypes();
+// settings virtual columns
+const v = grok.shell.getTableView('Med Chem');
+if (v) {
+  //v.grid.
+}
 
+t.meta.detectSemanticTypes();
 t.meta.setGroups(groups);

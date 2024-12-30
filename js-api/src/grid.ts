@@ -564,6 +564,14 @@ export class GridCell {
     return new Cell(api.grok_GridCell_Get_Cell(this.dart));
   }
 
+  /** Returns the value of the grid cell.
+   * Note that the value could differ from the corresponding table cell due to the following:
+   * 1. setting gridCell.value inside onPrepareCell
+   * 2. as a result of evaluating onPrepareValueScript */
+  get value(): any {
+    return toJs(api.grok_GridCell_Get_Value(this.dart));
+  }
+
   /** @returns {GridCellStyle} Style to use for rendering. */
   get style(): GridCellStyle {
     return new GridCellStyle(api.grok_GridCell_Get_Style(this.dart));
@@ -699,6 +707,11 @@ export class GridColumn {
   /** isTextColorCoded. Whether to apply color to the text or background. */
   get isTextColorCoded(): boolean { return api.grok_GridColumn_Get_isTextColorCoded(this.dart); }
   set isTextColorCoded(x: boolean) { api.grok_GridColumn_Set_isTextColorCoded(this.dart, x); }
+
+  /** A script that returns cell value, using the "gridCell" parameter.
+   * See example: ApiSamples/grid/advanced/dynamic-value-retrieval.js */
+  get onPrepareValueScript(): string { return api.grok_GridColumn_Get_OnPrepareValueScript(this.dart); }
+  set onPrepareValueScript(x: string) { api.grok_GridColumn_Set_OnPrepareValueScript(this.dart, x); }
 
   /** Left border (in pixels in the virtual viewport) */
   get left(): number { return api.grok_GridColumn_Get_Left(this.dart); }
