@@ -22,15 +22,15 @@ export function setPackageRandomOrder(tests: Test[], workersAmount: number, test
 
     const splittedPackagesArray = splitArray([...packages.values()], workersAmount);
     const splittedTestsArray: any[] = [];
-    
+
     for (let splitArray of splittedPackagesArray) {
         let testsArray: any = [];
         for (let packageTests of splitArray) {
             testsArray = testsArray.concat(packageTests);
         }
         splittedTestsArray.push(testsArray);
-    } 
-    
+    }
+
     return splittedTestsArray;
 }
 
@@ -64,7 +64,25 @@ export function setPackageAlphabeticalOrder(tests: Test[], workersAmount: number
             testsArray = testsArray.concat(packageTests);
         }
         splittedTestsArray.push(testsArray);
-    } 
+    }
+
+    return splittedTestsArray;
+}
+
+export function setTestToWorkerOrder(tests: Test[], workersAmount: number, testRepeats: number): Test[][] {
+    let splittedTestsArray: Test[][] = []
+
+    if (workersAmount > tests.length)
+        workersAmount = tests.length;
+
+    const orderedTests = shuffle(tests);
+
+    for (let i = 0; i < workersAmount; i++) {
+        splittedTestsArray.push([]);
+        for (let test of orderedTests) {
+            splittedTestsArray[splittedTestsArray.length-1].push({...test});
+        }
+    }
 
     return splittedTestsArray;
 }

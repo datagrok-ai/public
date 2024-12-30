@@ -5,7 +5,7 @@ import path from 'path';
 import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
 import * as testUtils from '../utils/test-utils';
-import { setRandomOrder, setAlphabeticalOrder, setPackageRandomOrder, setPackageAlphabeticalOrder } from '../utils/order-functions';
+import { setRandomOrder, setAlphabeticalOrder, setPackageRandomOrder, setPackageAlphabeticalOrder, setTestToWorkerOrder } from '../utils/order-functions';
 import { WorkerOptions, loadTestsList, saveCsvResults, printWorkersResult, runWorker, ResultObject, Test, OrganizedTests } from '../utils/test-utils';
 
 enum order {
@@ -13,6 +13,7 @@ enum order {
   alphabetical = 1,
   packageRandom = 2,
   packageAlphabetical = 3,
+  testToWorker = 4,
 }
 
 function getEnumOrder(orderStr: string): order {
@@ -30,8 +31,11 @@ function getEnumOrder(orderStr: string): order {
       return order.packageRandom;
       break;
     case "packagealphabetical":
-    case "packageatoz":
-      return order.packageAlphabetical;
+      case "packageatoz":
+        return order.packageAlphabetical;
+        break;
+    case "testtoworker":
+      return order.testToWorker;
       break;
   }
   return order.random;
@@ -48,7 +52,8 @@ const orderingFunctions: Map<order, (tests: Test[], workersAmount: number, testR
   [order.random, setRandomOrder],
   [order.alphabetical, setAlphabeticalOrder],
   [order.packageRandom, setPackageRandomOrder],
-  [order.packageAlphabetical, setPackageAlphabeticalOrder]
+  [order.packageAlphabetical, setPackageAlphabeticalOrder],
+  [order.testToWorker, setTestToWorkerOrder]
 ]);
 let workersStarted: number = 0;
 
