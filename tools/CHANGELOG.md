@@ -1,5 +1,12 @@
 # Datagrok-tools changelog
 
+## 4.13.51 (2024-12-30)
+
+### Features
+
+* Minor fix for testToWorker order in testsAll
+
+
 ## 4.13.50 (2024-12-30)
 
 ### Features

@@ -75,9 +75,8 @@ export function setTestToWorkerOrder(tests: Test[], workersAmount: number, testR
     if (workersAmount > tests.length)
         workersAmount = tests.length;
 
-    const orderedTests = shuffle(tests);
-
     for (let i = 0; i < workersAmount; i++) {
+        const orderedTests = shuffle(tests);
         splittedTestsArray.push([]);
         for (let test of orderedTests) {
             splittedTestsArray[splittedTestsArray.length-1].push({...test});
