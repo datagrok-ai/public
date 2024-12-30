@@ -3,6 +3,10 @@
   "friendlyName": "JiraConnect",
   "version": "0.0.1",
   "description": "",
+  "author": {
+    "name": "Savenko Stanislav",
+    "email": "ssavenko@datagrok.ai"
+  },
   "dependencies": {
     "@datagrok-libraries/utils": "^4.3.6",
     "cash-dom": "^8.1.5",
