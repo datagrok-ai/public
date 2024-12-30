@@ -1,11 +1,11 @@
 {
   "name": "@datagrok/charts",
   "fullName": "Charts",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Charts package provides visualizations built using the [ECharts](https://echarts.apache.org/en/index.html) library.",
   "author": {
-    "name": "Dmytro Kovalyov",
-    "email": "dkovalyov@datagrok.ai"
+    "name": "Oleksandra Serhiienko",
+    "email": "oserhiienko@datagrok.ai"
   },
   "repository": {
     "type": "git",
@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@datagrok-libraries/statistics": "^1.2.9",
-    "@datagrok-libraries/utils": "^4.3.0",
+    "@datagrok-libraries/utils": "^4.3.12",
     "cash-dom": "^8.1.0",
     "circos": "^2.1.0",
     "d3": "^7.8.1",

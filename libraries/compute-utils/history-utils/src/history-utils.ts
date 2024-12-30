@@ -62,9 +62,28 @@ export namespace historyUtils {
    * @param skipDfLoad If true, skips replacing TableInfo with the actual dataframe
    * @returns Requested FuncCall
    */
-  export async function loadRun(funcCallId: string, skipDfLoad = false) {
+  export async function loadRun(funcCallId: string, skipDfLoad = false, skipFileLoad = true) {
     const pulledRun = await grok.dapi.functions.calls.allPackageVersions()
       .include('session.user,func.package, inputs, outputs').find(funcCallId);
+
+    if (!skipFileLoad) {
+      const fileInputs = wu(pulledRun.inputParams.values() as DG.FuncCallParam[])
+        .filter((input) => input.property.propertyType === DG.TYPE.FILE &&
+          !!pulledRun.inputs[input.name]);
+
+      await Promise.all(fileInputs
+        .map(async (input) => {
+          const {id, name} = JSON.parse(pulledRun.inputs[input.name]);
+          const bytes = await grok.dapi.files.readAsBytes(id);
+          const fileInfo = DG.FileInfo.fromBytes(name, bytes);
+          fileInfo.id = id;
+          pulledRun.inputs[input.name] = fileInfo;
+
+          return Promise.resolve();
+        }),
+      );
+    }
+
 
     if (!skipDfLoad) {
       const dfOutputs = wu(pulledRun.outputParams.values() as DG.FuncCallParam[])
@@ -97,7 +116,7 @@ export namespace historyUtils {
    * @param callToSave FuncCall to save
    * @returns Saved FuncCall
    */
-  export async function saveRun(callToSave: DG.FuncCall) {
+  export async function saveRun(callToSave: DG.FuncCall, skipFileSave = true) {
     let allGroup = groupsCache.get('All users');
 
     if (!allGroup) {
@@ -107,6 +126,23 @@ export namespace historyUtils {
 
     const callCopy = deepCopy(callToSave);
     if (isIncomplete(callCopy)) callCopy.options['createdOn'] = dayjs().utc(true).unix();
+
+    if (!skipFileSave) {
+      const fileInputs = wu(callCopy.inputParams.values() as DG.FuncCallParam[])
+        .filter((input) => input.property.propertyType === DG.TYPE.FILE &&
+        !!callCopy.inputs[input.name]);
+
+      await Promise.all(fileInputs
+        .map(async (input) => {
+          const fileInfo = callCopy.inputs[input.name] as DG.FileInfo;
+          const filledFileInfo = DG.FileInfo.fromBytes(fileInfo.name, await fileInfo.readAsBytes());
+          await grok.dapi.files.write(filledFileInfo);
+          callCopy.inputs[input.name] = {id: filledFileInfo.id, name: filledFileInfo.name};
+
+          return Promise.resolve();
+        }),
+      );
+    }
 
     const dfOutputs = wu(callCopy.outputParams.values() as DG.FuncCallParam[])
       .filter((output) =>

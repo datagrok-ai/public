@@ -20,7 +20,6 @@ import {getMmpScatterPlot, runMmpChemSpace, fillPairInfo} from './mmp-cliffs';
 import {getGenerations} from './mmp-generations';
 
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 import {getEmbeddingColsNames} from
   '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
 import {getMmpFilters, MmpFilters} from './mmp-filters';
@@ -48,8 +47,9 @@ export type SortType = {
 }
 
 export type SortData = {
-  frequency: number,
-  mw?: number
+  fragmentIdxs: number[],
+  frequencies: number[],
+  mw?: Float32Array,
 }
 
 export class MatchedMolecularPairsViewer extends DG.JsViewer {
@@ -86,13 +86,12 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   //generations tab objects
   generationsGrid: DG.Grid | null = null;
   corrGrid: DG.Grid | null = null;
-  generationsGridDiv = ui.div(ui.divText('Generations in progress...'));
+  generationsGridDiv = ui.div();
   generationsSp: DG.ScatterPlotViewer | null = null;
 
   rdkitModule: RDModule | null = null;
   currentTab = '';
   lastSelectedPair: number | null = null;
-  propPanelViewer: FormsViewer | null = null;
   mmpFilters: MmpFilters | null = null;
 
   calculatedOnGPU: boolean | null = null;
@@ -100,7 +99,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   cliffsFiltered = false;
   mWCalulationsReady = false;
 
-  fragSortingInfo: {[key: string]: SortData} = {};
+  fragSortingInfo: SortData = {fragmentIdxs: [], frequencies: []};
   sp: DG.ScatterPlotViewer | null = null;
   spAxesNames: string[] = [];
   tabs: DG.TabControl | null = null;
@@ -108,9 +107,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
   tp: DG.Viewer | null = null;
   activityMeanNames: string[] = [];
-  fragmentsDiv = ui.div(ui.divText('Generating fragments tab...'));
+  fragmentsDiv = ui.div();
 
-  spCorrDiv = ui.div(ui.divText('Generating correlation scatter plot...'));
+  spCorrDiv = ui.div();
+  showFragmentsChoice: DG.InputBase | null = null;
 
   constructor() {
     super();
@@ -202,6 +202,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       setTimeout(() => {
         this.setupFragmentsTab();
       }, 100);
+      ui.setUpdateIndicator(this.fragmentsDiv, true, 'Generating fragments trellis plot...');
       return this.fragmentsDiv;
     });
     ui.tooltip.bind(fragmentsTab.header, decript2);
@@ -255,8 +256,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
           setTimeout(() => {
             grok.shell.windows.showContextPanel = true;
             grok.shell.o = fillPairInfo(this.mmpa!, this.lastSelectedPair!, this.linesIdxs!,
-              this.linesActivityCorrespondance![this.lastSelectedPair!],
-              this.pairedGrids!.mmpGridTrans.dataFrame, this.diffs!, this.parentTable!, this.rdkitModule!);
+              this.linesActivityCorrespondance![this.lastSelectedPair!], this.pairedGrids!.mmpGridTrans.dataFrame,
+              this.diffs!, this.parentTable!, this.rdkitModule!, this.moleculesCol!.name);
           }, 500);
         }
       } else if (tabs.currentPane.name == MMP_NAMES.TAB_GENERATION) {
@@ -280,7 +281,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         mmPairsRoot1.classList.remove('chem-mmp-no-pairs');
     }));
 
-    const showFragsChoice = ui.input.choice('', {items: [SHOW_FRAGS_MODE.All, SHOW_FRAGS_MODE.Current],
+    this.showFragmentsChoice = ui.input.choice('', {items: [SHOW_FRAGS_MODE.All, SHOW_FRAGS_MODE.Current],
       nullable: false, value: SHOW_FRAGS_MODE.All,
       onValueChanged: (value) => {
         this.pairedGrids!.fragsShowAllMode = value === SHOW_FRAGS_MODE.All;
@@ -290,10 +291,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         } else
           this.pairedGrids!.refilterFragmentPairsByMolecule(true);
       }});
-    showFragsChoice.root.classList.add('chem-mmp-fragments-grid-mode-choice');
+    this.showFragmentsChoice.root.classList.add('chem-mmp-fragments-grid-mode-choice');
 
     const fpGrid = this.createGridDiv(MMP_NAMES.FRAGMENTS_GRID,
-      this.pairedGrids!.fpGrid, FRAGMENTS_GRID_TOOLTIP, this.pairedGrids!.fpGridMessage, showFragsChoice.root);
+      this.pairedGrids!.fpGrid, FRAGMENTS_GRID_TOOLTIP, this.pairedGrids!.fpGridMessage, this.showFragmentsChoice.root);
     fpGrid.prepend(
       ui.divText('No substitutions found for current molecule. Select another molecule or switch to \'All\' mode.',
         'chem-mmpa-no-fragments-error'));
@@ -385,6 +386,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.pairedGrids!.mmpGridFrag, MATCHED_MOLECULAR_PAIRS_TOOLTIP_FRAGS, this.pairedGrids!.mmpGridFragMessage);
 
     ui.empty(this.fragmentsDiv);
+    ui.setUpdateIndicator(this.fragmentsDiv, false);
     this.fragmentsDiv.append(ui.splitV([
       tpDiv,
       mmPairsRoot2,
@@ -420,7 +422,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       spDiv.style.height = '800px';
       this.totalData = this.mmpa!.toJSON();
       progressBarSpace.close();
-    });
+    }).catch((error: any) => {
+      const errorStr = `Scatter plot haven't been completed due to error: ${error}`;
+      grok.shell.error(errorStr);
+    }).finally(() => ui.setUpdateIndicator(this.sp!.root, false));
     this.sp.root.style.width = '100%';
 
     this.totalCutoffMask!.setAll(true);
@@ -431,13 +436,14 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.linesRenderer!.lineClicked.subscribe((event: MouseOverLineEvent) => {
       this.linesRenderer!.currentLineId = event.id;
       if (event.id !== -1) {
+        const pairId = this.linesIdxs![event.id];
+        this.pairedGrids!.pairsGridCliffsTab.dataFrame.currentRowIdx = pairId;
         setTimeout(() => {
           grok.shell.windows.showContextPanel = true;
           grok.shell.o = fillPairInfo(this.mmpa!, event.id, this.linesIdxs!, linesActivityCorrespondance[event.id],
             this.pairedGrids!.mmpGridTrans.dataFrame, this.diffs!, this.parentTable!, this.rdkitModule!,
-            this.propPanelViewer!);
+            this.moleculesCol!.name, true);
           this.lastSelectedPair = event.id;
-          this.propPanelViewer!.fitHeaderToLabelWidth(100);
         }, 500);
       }
     });
@@ -480,24 +486,22 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       }
     });
 
-    let cliffsOpened = true;
-    const cliffsHeader = ui.h1('2D Molecules Map', 'chem-mmpa-transformation-tab-header'); ;
-    const cliffsNumButton = ui.button(`Close pairs`, () => {
-      cliffsOpened = !cliffsOpened;
-      if (cliffsOpened) {
-        cliffsNumButton.innerText = 'Close pairs';
+    let pairsOpened = true;
+    const cliffsHeader = ui.h1('2D Molecules Map', 'chem-mmpa-transformation-tab-header');
+    const showPairs = ui.input.bool('ShowPairs', {value: pairsOpened, onValueChanged: () => {
+      pairsOpened = !pairsOpened;
+      if (pairsOpened)
         mmPairsRoot3.classList.replace('cliffs-closed', 'cliffs-opened');
-      } else {
-        cliffsNumButton.innerText = 'Open pairs';
+      else
         mmPairsRoot3.classList.replace('cliffs-opened', 'cliffs-closed');
-      }
-    });
-    cliffsNumButton.classList.add('chem-mmp-open-cliffs-button');
+    }});
+    showPairs.root.classList.add('chem-mmp-show-pairs-checkbox');
 
+    ui.setUpdateIndicator(this.sp.root, true, 'Genarating cliffs scatter plot...');
 
     const spDiv = ui.splitV([
       ui.box(
-        ui.divH([cliffsHeader, cliffsNumButton, this.helpButton('chem-mmpa-grid-help-icon', CLIFFS_TAB_TOOLTIP)]),
+        ui.divH([cliffsHeader, showPairs.root, this.helpButton('chem-mmpa-grid-help-icon', CLIFFS_TAB_TOOLTIP)]),
         {style: {maxHeight: '30px'}},
       ),
       this.sp.root,
@@ -580,6 +584,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         visible: true,
       });
 
+      ui.setUpdateIndicator(this.generationsGridDiv, false);
+      ui.empty(this.generationsGridDiv);
+      this.generationsGridDiv.append(this.createGridDiv('Generated Molecules', this.generationsGrid!, '', ui.div()));
+
       this.generationsSp = DG.Viewer.scatterPlot(this.corrGrid?.dataFrame!, {
         x: 'Observed',
         y: 'Predicted',
@@ -596,27 +604,29 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         showRegressionLine: true,
       });
 
-      ui.empty(this.generationsGridDiv);
-      this.generationsGridDiv.append(this.createGridDiv('Generated Molecules', this.generationsGrid!, '', ui.div()));
-
       const header = ui.h1('Observed vs Predicted', 'chem-mmpa-generation-tab-cp-header');
       this.generationsSp.root.prepend(header);
-      this.spCorrDiv = ui.splitV([
+      ui.setUpdateIndicator(this.spCorrDiv, false);
+      this.spCorrDiv.append(ui.splitV([
         ui.box(
           ui.divH([header]),
           {style: {maxHeight: '30px'}},
         ),
         this.generationsSp.root,
-      ], {style: {width: '100%', height: '100%'}});
+      ], {style: {width: '100%', height: '100%'}}));
       this.spCorrDiv.classList.add(MMP_CONTEXT_PANE_CLASS);
       grok.shell.windows.showContextPanel = true;
       grok.shell.o = this.spCorrDiv;
     }).catch((error: any) => {
       const errorStr = `Generations haven't been completed due to error: ${error}`;
+      ui.setUpdateIndicator(this.generationsGridDiv, false);
+      ui.setUpdateIndicator(this.spCorrDiv, false);
       ui.empty(this.generationsGridDiv);
       this.generationsGridDiv.append(ui.divText(errorStr));
       grok.shell.error(errorStr);
     });
+    ui.setUpdateIndicator(this.generationsGridDiv, true, 'Generations in progress...');
+    ui.setUpdateIndicator(this.spCorrDiv, true, 'Generating correlation scatter plot...');
     return this.generationsGridDiv;
   }
 
@@ -677,7 +687,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
             }
           },
         });
-        const sortTypeChoice = ui.input.choice('Order', {
+        const sortTypeChoice = ui.input.radio('', {
           value: trellisSortState[axis].type, items: Object.keys(TrellisSortType), nullable: false,
           onValueChanged: () => {
             if (trellisSortState[axis].type !== sortTypeChoice.value) {
@@ -710,39 +720,48 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.sortTrellisByProp(axis, tp);
       break;
     case TrellisSortByProp.Frequency:
-      this.sortTrellisByProp(axis, tp, sorting.type, ([_1, val1], [_2, val2]) => val1.frequency - val2.frequency,
-        ([_1, val1], [_2, val2]) => val2.frequency - val1.frequency);
+      this.sortTrellisByProp(axis, tp, this.fragSortingInfo.frequencies,
+        sorting.type);
       break;
     case TrellisSortByProp.MW:
       if (!this.mWCalulationsReady) {
         grok.shell.warning('MW calculations for fragments in progress. Please try again later');
         return;
+      } else if (!this.fragSortingInfo.mw || this.fragSortingInfo.mw.every((it) => it === 0)) {
+        grok.shell.warning('Molecular weights haven\'t been calculated');
+        return;
       }
-      this.sortTrellisByProp(axis, tp, sorting.type, ([_1, val1], [_2, val2]) => val1.mw! - val2.mw!,
-        ([_1, val1], [_2, val2]) => val2.mw! - val1.mw!);
+      this.sortTrellisByProp(axis, tp, this.fragSortingInfo.mw, sorting.type);
     }
     this.pairedGrids!.fpGrid.dataFrame.filter.copyFrom(filterBackup);
   }
 
-  sortTrellisByProp(axis: TrellisAxis, tp: DG.Viewer, type?: TrellisSortType,
-    ascSortFunc?: (arg1: [string, SortData], arg2: [string, SortData]) => number,
-    descSortFunc?: (arg1: [string, SortData], arg2: [string, SortData]) => number) {
+  sortTrellisByProp(axis: TrellisAxis, tp: DG.Viewer, sortData?: number[] | Float32Array,
+    type?: TrellisSortType) {
     const fragCol = this.pairedGrids!.fpGrid.dataFrame.col(axis);
     const axisName = tp.props.yColumnNames[0] === axis ? 'yColumnNames' :
       tp.props.xColumnNames[0] === axis ? 'xColumnNames' : null;
 
+    const frags = this.fragSortingInfo.fragmentIdxs.map((idx) => this.mmpa?.frags.idToName[idx]) as string[];
+    const indexesArray = [...Array(this.fragSortingInfo.fragmentIdxs.length).keys()];
+
     if (fragCol) {
       let cats: string[] = [];
-      switch (type) {
-      case undefined:
+      if (!type)
         cats = fragCol.categories.map((it) => it).sort();
-        break;
-      case TrellisSortType.Asc:
-        cats = Object.entries(this.fragSortingInfo).sort(ascSortFunc).map((it) => it[0]);
-        break;
-      case TrellisSortType.Desc:
-        cats = Object.entries(this.fragSortingInfo).sort(descSortFunc).map((it) => it[0]);
-        break;
+      else {
+        if (this.fragSortingInfo.fragmentIdxs && sortData) {
+          switch (type) {
+          case TrellisSortType.Asc:
+            cats = indexesArray.sort((a: number, b: number) => sortData[a] - sortData[b] > 0 ? 1 : -1)
+              .map((it) => frags[it]);
+            break;
+          case TrellisSortType.Desc:
+            cats = indexesArray.sort((a: number, b: number) => sortData[a] - sortData[b] > 0 ? -1 : 1)
+              .map((it) => frags[it]);
+            break;
+          }
+        }
       }
       if (cats.length)
         fragCol.setCategoryOrder(cats);
@@ -784,21 +803,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.tabs = this.getTabs();
 
     this.root.append(this.tabs.root);
-
-    const propertiesColumnsNames = this.parentTable!.columns.names()
-      .filter((name) => !name.startsWith('~'));
-    this.propPanelViewer = new FormsViewer();
-    this.propPanelViewer.dataframe = this.parentTable!;
-    this.propPanelViewer.columns = propertiesColumnsNames;
-    this.propPanelViewer.inputClicked.subscribe(() => {
-      setTimeout(() => {
-        grok.shell.windows.showContextPanel = true;
-        grok.shell.o = fillPairInfo(this.mmpa!,
-            this.lastSelectedPair!, this.linesIdxs!, this.linesActivityCorrespondance![this.lastSelectedPair!],
-            pairedGrids.mmpGridTrans.dataFrame, diffs, mmpInput.table, this.rdkitModule!, this.propPanelViewer!);
-          this.propPanelViewer!.fitHeaderToLabelWidth(100);
-      }, 500);
-    });
 
     this.calculatedOnGPU = mmpa.gpu;
   }
@@ -897,8 +901,9 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
   async prepareMwForSorting() {
-    const frags = Object.keys(this.fragSortingInfo).map((idx) => this.mmpa?.frags.idToName[Number(idx)]) as string[];
+    const frags = this.fragSortingInfo.fragmentIdxs.map((idx) => this.mmpa?.frags.idToName[idx]) as string[];
     chemDescriptor(DG.Column.fromStrings('smiles', frags), 'MolWt').then((res: DG.Column) => {
+      this.fragSortingInfo.mw = new Float32Array(this.fragSortingInfo.fragmentIdxs.length);
       let errorCount = 0;
       frags.forEach((key: string, idx) => {
         let resMW = res.get(idx);
@@ -906,7 +911,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
           errorCount++;
           resMW = undefined;
         }
-        this.fragSortingInfo[key].mw = resMW ?? 0;
+        this.fragSortingInfo.mw![idx] = resMW ?? 0;
       });
       this.mWCalulationsReady = true;
       if (errorCount > 0)

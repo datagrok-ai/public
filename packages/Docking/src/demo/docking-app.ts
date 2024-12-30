@@ -1,9 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+
 import {BaseViewApp} from '@datagrok-libraries/tutorials/src/demo-base-view';
-import { getAutoDockService, getAutodockSingle, prepareAutoDockData, runDocking } from '../package';
-import { prepareDockingData } from './demo-docking';
 import { IAutoDockService } from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
+
+import { getAutoDockService, getAutodockSingle, runDocking } from '../package';
 
 export class DockingViewApp extends BaseViewApp {
   constructor(parentCall: DG.FuncCall) {
@@ -40,9 +41,6 @@ export class DockingViewApp extends BaseViewApp {
     this.tableView!.dataFrame = sampleData;
     await grok.data.detectSemanticTypes(sampleData);
     this.tableView!.grid.invalidate();
-
-    const resultsPath = 'System:AppData/Docking/demo_files/demo_app_results.csv';
-    await prepareDockingData(sampleData, resultsPath, 'kras', 'pdb', 10);
 
     const dockingWidget = await this.createDockingWidget(sampleData.cell(0, 'pose'), sampleData);
     return dockingWidget!;

@@ -1,0 +1,24 @@
+[
+  [
+    {
+      "basePath": [
+        {
+          "id": "stepMul",
+          "idx": 1
+        }
+      ],
+      "inputs": {},
+      "outputs": {}
+    },
+    {
+      "basePath": [
+        {
+          "id": "stepMul",
+          "idx": 5
+        }
+      ],
+      "inputs": {},
+      "outputs": {}
+    }
+  ]
+]

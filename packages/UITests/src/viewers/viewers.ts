@@ -27,7 +27,7 @@ category('Viewers: Core Viewers', () => {
       await testViewer(v, v === '3d scatter plot' ? grok.data.demo.demog(100) : df.clone());
     }, {skipReason: skip[v]});
   }
-});
+}, {owner: 'dkovalyov@datagrok.ai'});
 
 category('Viewers', ()=> {
   test('Viewers issues', async ()=> {
@@ -41,7 +41,7 @@ category('Viewers', ()=> {
     await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.BOX_PLOT, {rowSource: DG.RowSet.MouseOverRow});
     await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.LINE_CHART, {xAxisTickmarksMode: DG.AxisTickmarksMode.Custom});
     await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.PIVOT_TABLE, {aggregateColumnNames: ['study']});
-  });
+  }, {owner: 'dkovalyov@datagrok.ai'});
 });
 
 category('Viewers', () => {

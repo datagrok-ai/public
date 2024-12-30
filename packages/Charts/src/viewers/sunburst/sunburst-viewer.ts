@@ -155,7 +155,7 @@ export class SunburstViewer extends EChartViewer {
 
       ui.tooltip.showRowGroup(this.dataFrame, (i) => this.isRowMatch(i, params.name), tooltipX, tooltipY);
       if (params.data.semType === DG.SEMTYPE.MOLECULE) {
-        const image = await TreeUtils.getMoleculeImage(params.name);
+        const image = await TreeUtils.getMoleculeImage(params.name, 150, 100);
         const { width, height } = image;
 
         if (width && height) {
@@ -225,6 +225,7 @@ export class SunburstViewer extends EChartViewer {
       return;
     this.subs.push(this.dataFrame.onMetadataChanged.subscribe((_) => this.render()));
     this.subs.push(grok.events.onEvent('d4-grid-color-coding-changed').subscribe(() => this.render()));
+    this.subs.push(this.dataFrame.onValuesChanged.subscribe((_) => this.render()));
     this.subs.push(grok.events.onEvent('d4-current-viewer-changed').subscribe((args) => {
       const {viewer} = args.args;
       if (viewer instanceof SunburstViewer)
@@ -284,16 +285,16 @@ export class SunburstViewer extends EChartViewer {
       rowSource, this.inheritFromGrid);
   }
 
-  async renderMolecule(params: any) {
-    const image = await TreeUtils.getMoleculeImage(params.name);
+  async renderMolecule(params: any, width: number, height: number) {
+    const image = await TreeUtils.getMoleculeImage(params.name, width, height);
     const img = new Image();
     img.src = image!.toDataURL('image/png');
     params.data.label = {
       show: true,
       formatter: '{b}',
       color: 'rgba(0,0,0,0)',
-      height: '80',
-      width: '70',
+      height: height.toString(),
+      width: width.toString(),
       backgroundColor: {
         image: img.src,
       },
@@ -313,10 +314,18 @@ export class SunburstViewer extends EChartViewer {
     const { width, height } = this.calculateRingDimensions(r0, r, startAngle, endAngle);
 
     if (params.data.semType === 'Molecule') {
-      const imageWidth = 70;
-      const imageHeight = 80;
-      if (width >= imageWidth && height >= imageHeight) {
-        this.renderMolecule(params);
+      const minImageWidth = 70;
+      const minImageHeight = 80;
+    
+      if (width >= minImageWidth && height >= minImageHeight) {
+        const scaleByWidth = width / minImageWidth;
+        const scaleByHeight = height / minImageHeight;
+        const scale = Math.min(scaleByWidth, scaleByHeight);
+    
+        const renderWidth = Math.max(minImageWidth, minImageWidth * scale);
+        const renderHeight = Math.max(minImageHeight, minImageHeight * scale);
+    
+        this.renderMolecule(params, renderWidth, renderHeight);
         return ' ';
       }
       return ' ';
@@ -332,7 +341,7 @@ export class SunburstViewer extends EChartViewer {
       return ' ';
 
     const name = params.name;
-    const lines = name.split(' ');
+    const lines = name.split(/[\s-]/);
     let result = '';
     let remainingHeight = maxHeightCharacters;
 
@@ -386,9 +395,13 @@ export class SunburstViewer extends EChartViewer {
     if (!this.dataFrame)
       return;
 
-    this.eligibleHierarchyNames = (orderedHierarchyNames ?? this.hierarchyColumnNames).filter(
-      (name) => this.dataFrame.getCol(name).categories.length <= CATEGORIES_NUMBER,
-    );
+    if (this.filter.trueCount >= CATEGORIES_NUMBER) {
+      this.eligibleHierarchyNames = (orderedHierarchyNames ?? this.hierarchyColumnNames).filter(
+        (name) => this.dataFrame.getCol(name).categories.length <= CATEGORIES_NUMBER,
+      );
+    } else {
+      this.eligibleHierarchyNames = orderedHierarchyNames ??  this.hierarchyColumnNames;
+    }
 
     if (!this.eligibleHierarchyNames.length) {
       this._showMessage('The Sunburst viewer requires at least one categorical column with fewer than 500 unique categories', ERROR_CLASS);

@@ -2,7 +2,11 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {category, before, after, expect, test, delay, awaitCheck} from '@datagrok-libraries/utils/src/test';
-import {setDialogInputValue, isColumnPresent} from './gui-utils';
+
+const identifiers: {[key: string]: string} = {
+  'Smiles': 'CN1CCC(Oc2ccc(C(F)(F)F)cc2)CC1',
+  'Inchi': 'InChI=1S/C13H16F3NO/c1-17-8-6-12(7-9-17)18-11-4-2-10(3-5-11)13(14,15)16/h2-5,12H,6-9H2,1H3',
+  'Inchi key': 'LYQFNMXUTCIRCY-UHFFFAOYSA-N'};
 
 
 category('UI info panel', () => {
@@ -63,9 +67,43 @@ category('UI info panel', () => {
     await awaitCheck(() => (ih.nextSibling as HTMLElement)
       .querySelector('table') !== null, 'cannot load Identifiers', 15000);
     const it = ih.nextSibling as HTMLElement;
-    for (const i of ['SCHEMBL5536145', '18722989', 'CHEMBL2262190']) {
-      expect(Array.from(it.querySelectorAll('.ui-link'))
-        .find((el) => el.textContent === i) !== undefined, true);
+    //re-wrote using for loops instead of Array.from and filter since getting OOM when trying to debug in chrome with breakpoints
+    const rowsElAr = it.querySelectorAll('tr');
+    for (const key of Object.keys(identifiers)) {
+      let found = false;
+      innerLoop:
+      for (let i = 0; i < rowsElAr.length; i++) {
+        const label = (rowsElAr[i].children[0].children[0] as HTMLElement).innerText;
+        const value = (rowsElAr[i].children[1].children[0] as HTMLElement).innerText;
+        if (label === key && value === identifiers[key]) {
+          found = true;
+          break innerLoop;
+        }
+      }
+      expect(found, true, `${key} identifier not found`);
+    }
+    const chemblPackInstalled = DG.Func.find({package: 'ChemblApi', name: 'getCompoundsIds'}).length;
+    if (chemblPackInstalled) {
+      const links = it.querySelectorAll('.ui-link');
+      for (const i of ['SCHEMBL5536145', '18722989', 'CHEMBL2262190']) {
+        let found = false;
+        innerLoop:
+        for (let j = 0; j < links.length; j++) {
+          if (links[j].textContent === i) {
+            found = true;
+            break innerLoop;
+          }
+        }
+        expect(found, true, `${i} identifier not found`);
+      }
+    }
+    const pubChemPackInstalled = DG.Func.find({package: 'PubchemApi', name: 'GetIupacName'}).length;
+    if (pubChemPackInstalled) {
+      await awaitCheck(()=> {
+        const divs = Array.from(it.querySelectorAll('div'))
+          .filter((it) => (it as HTMLElement).innerText === '1-methyl-4-[4-(trifluoromethyl)phenoxy]piperidine');
+        return divs.length > 0;
+      }, 'Incorrect name', 3000);
     }
     ih?.click(); await delay(10);
     v.close();
@@ -192,7 +230,7 @@ category('UI info panel', () => {
     await awaitCheck(() => {
       return (sa?.nextSibling as HTMLElement).querySelectorAll('.chem-canvas').length === 10;
     },
-      'number of displayed canvases with molecules does not match the expected', 10000);
+    'number of displayed canvases with molecules does not match the expected', 10000);
     sa?.click(); await delay(10);
     v?.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();

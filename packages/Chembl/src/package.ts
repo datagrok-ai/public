@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {registerChemblIdHandler} from './handlers';
+import {_demoDatabasesChembl} from './demo';
 
 export const _package = new DG.Package();
 
@@ -185,4 +186,12 @@ export async function chemblIdToSmilesTs(id: string): Promise<string> {
   // damn, it returns null instead of the actual molecule
   return await grok.functions.call('Chembl:chemblIdToSmiles', {id: id});
   //return 'CN(C)CCc1c[nH]c2ccc(C[C@H]3COC(=O)N3)cc12';
+}
+
+
+//name: Demo Databases 2
+//description: Running various queries to chemical databases using convenient input forms
+//meta.demoPath: Cheminformatics | Chemical Databases 2
+export async function demoDatabasesChembl(): Promise<void> {
+  await _demoDatabasesChembl();
 }

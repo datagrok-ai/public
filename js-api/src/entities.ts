@@ -199,6 +199,12 @@ export class User extends Entity {
       "System": "3e32c5fa-ac9c-4d39-8b4b-4db3e576b3c3",
     } as const;
   }
+
+  static get test(): User { return new User(api.grok_User_Test()); }
+
+  static get admin(): User { return new User(api.grok_User_Admin()); }
+
+  static get system(): User { return new User(api.grok_User_System()); }
 }
 
 
@@ -988,6 +994,20 @@ export class Group extends Entity {
       "Administrators": "1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5",
     } as const;
   }
+
+  static get allUsers(): Group { return new Group(api.grok_Group_AllUsers()); }
+
+  static get developers(): Group { return new Group(api.grok_Group_Developers()); }
+
+  static get needToCreate(): Group { return new Group(api.grok_Group_NeedToCreate()); }
+
+  static get test(): Group { return new Group(api.grok_Group_Test()); }
+
+  static get admin(): Group { return new Group(api.grok_Group_Admin()); }
+
+  static get system(): Group { return new Group(api.grok_Group_System()); }
+
+  static get administrators(): Group { return new Group(api.grok_Group_Administrators()); }
 }
 
 /** @extends Func

@@ -100,7 +100,7 @@ export function twoDfOutput(x1: number, x2: number, x3: number, a : number, b : 
 
 //name: try
 export async function foo() {
-  const someFunc: DG.Func = await grok.functions.eval('SA:twoDfOutput');
+  const someFunc = DG.Func.byName('SA:twoDfOutput');
   console.log(someFunc);
 
   console.log('INPUTS:');

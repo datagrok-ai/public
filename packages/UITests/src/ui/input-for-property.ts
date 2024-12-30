@@ -84,5 +84,4 @@ category('UI: Inputs for property', () => {
   after(async () => {
     grok.shell.closeAll();
   });
-});
-
+}, {owner: 'dkovalyov@datagrok.ai'});

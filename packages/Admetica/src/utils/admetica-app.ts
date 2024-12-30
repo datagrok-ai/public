@@ -1,10 +1,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import { addColorCoding, addSparklines, createDynamicForm, getQueryParams, performChemicalPropertyPredictions, properties, setProperties, updateColumnProperties } from './admetica-utils';
+
 import {BaseViewApp} from '@datagrok-libraries/tutorials/src/demo-base-view';
-import '../css/admetica.css';
+
+import { addColorCoding, addSparklines, createDynamicForm, getQueryParams, performChemicalPropertyPredictions, properties, setProperties, updateColumnProperties } from './admetica-utils';
 import { Model, Subgroup } from './constants';
+import '../css/admetica.css';
 
 export class AdmeticaViewApp extends BaseViewApp {
   constructor(parentCall: DG.FuncCall) {

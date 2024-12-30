@@ -19,27 +19,43 @@ interface getPosConstants {
   cols: DG.Column[];
 }
 
+export enum SparklinesNormalizationType {
+  Row = 'Row',
+  Column = 'Column',
+  Global = 'Global'
+}
+
 
 function getPos(col: number, row: number, constants: getPosConstants): DG.Point {
   const b = constants.b;
   const settings = constants.settings;
   const cols = constants.cols;
-  const gmin = settings.globalScale ? Math.min(...cols.map((c: DG.Column) => c.min)) : 0;
-  const gmax = settings.globalScale ? Math.max(...cols.map((c: DG.Column) => c.max)) : 0;
-  const r: number = settings.globalScale ? (cols[col].getNumber(row) - gmin) / (gmax - gmin) : cols[col].scale(row);
+  const gmin = settings.normalization === SparklinesNormalizationType.Global ? Math.min(...cols.map((c: DG.Column) => c.min)) :
+    settings.normalization === SparklinesNormalizationType.Row ? Math.min(...cols.map((c: DG.Column) => c.getNumber(row))) : 0;
+  const gmax = settings.normalization === SparklinesNormalizationType.Global ? Math.max(...cols.map((c: DG.Column) => c.max)) :
+    settings.normalization === SparklinesNormalizationType.Row ? Math.max(...cols.map((c: DG.Column) => c.getNumber(row))) : 0;
+  const r: number = [SparklinesNormalizationType.Row, SparklinesNormalizationType.Global].includes(settings.normalization) ?
+    (gmax === gmin ? 0 : (cols[col].getNumber(row) - gmin) / (gmax - gmin)) : cols[col].scale(row);
+
   return new DG.Point(
     b.left + b.width * (cols.length == 1 ? 0 : col / (cols.length - 1)),
     (b.top + b.height) - b.height * r);
 }
 
 interface SparklineSettings extends SummarySettingsBase {
-  globalScale: boolean;
+  normalization: SparklinesNormalizationType;
 }
 
 function getSettings(gc: DG.GridColumn): SparklineSettings {
   const settings: SparklineSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
     gc.settings[SparklineType.Sparkline] ??= getSettingsBase(gc, SparklineType.Sparkline);
-  settings.globalScale ??= false;
+
+  //@ts-ignore: convert old format to new - backwards compatibility
+  if (settings.globalScale !== undefined && settings.globalScale !== null)
+    //@ts-ignore
+    settings.normalization = settings.globalScale ? SparklinesNormalizationType.Global : SparklinesNormalizationType.Column;
+
+  settings.normalization ??= SparklinesNormalizationType.Column;
   settings.colorCode ??= SummaryColumnColoringType.Bins;
   return settings;
 }
@@ -68,8 +84,8 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
     cols: cols
   };
 
-  const MousePoint = new DG.Point(e.offsetX, e.offsetY);
-  const activeColumn = Math.floor((MousePoint.x - b.left + Math.sqrt(minDistance)) /
+  const mousePoint = new DG.Point(e.offsetX, e.offsetY);
+  const activeColumn = Math.floor((mousePoint.x - b.left + Math.sqrt(minDistance)) /
     b.width * (cols.length - 1 > 0 ? cols.length - 1 : 1));
   if (activeColumn >= cols.length || activeColumn === -1) {
     return {
@@ -82,7 +98,7 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
 
   const activePoint = getPos(activeColumn, row, getPosConstants);
   return {
-    isHit: distance(activePoint, MousePoint) < minDistance,
+    isHit: distance(activePoint, mousePoint) < minDistance,
     activeColumn: activeColumn,
     row: row,
     cols: cols,
@@ -154,16 +170,21 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
     const settings: SparklineSettings = isSummarySettingsBase(gridColumn.settings) ? gridColumn.settings :
       gridColumn.settings[SparklineType.Sparkline] ??= getSettings(gridColumn);
 
-    const globalScaleProp = DG.Property.js('globalScale', DG.TYPE.BOOL, {
-      description: 'Determines the way a value is mapped to the vertical scale.\n' +
-        '- Global Scale OFF: bottom is column minimum, top is column maximum. Use when columns ' +
-        'contain values in different units.\n' +
-        '- Global Scale ON: uses the same scale. This lets you compare values ' +
-        'across columns, if units are the same (for instance, use it for tracking change over time).'
+    const normalizeInput = ui.input.choice<SparklinesNormalizationType>('Normalization', {
+      value: settings.normalization,
+      items: [SparklinesNormalizationType.Row, SparklinesNormalizationType.Column, SparklinesNormalizationType.Global],
+      onValueChanged: (value) => {
+        settings.normalization = value;
+        gridColumn.grid.invalidate();
+      },
+      tooltipText: 'Defines how values are scaled:<br>' +
+        '- ROW: Scales each row individually (row minimum to row maximum). Use for comparing values within a row.<br>' +
+        '- COLUMN: Scales each column individually (column minimum to column maximum).' +
+        'Use when columns have different units.<br>' +
+        '- GLOBAL: Applies a single scale across all values.' +
+        'Use for comparing values across columns with the same units (e.g., tracking changes over time).',
+      nullable: false
     });
-
-    const normalizeInput = DG.InputBase.forProperty(globalScaleProp, settings);
-    normalizeInput.onChanged.subscribe(() => gridColumn.grid.invalidate());
 
     return ui.inputs([normalizeInput, ...createBaseInputs(gridColumn, settings)]);
   }

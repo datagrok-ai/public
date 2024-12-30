@@ -20,6 +20,7 @@ position: 6 # float position is supported
 See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.md)
+
 ## 2024-12-20 Datagrok 1.23.0 release
 
 The Datagrok 1.23.0 release includes stability and data access improvements
@@ -83,9 +84,9 @@ The Datagrok 1.23.0 release includes stability and data access improvements
 * Fixed:
     * [ #3091](https://github.com/datagrok-ai/public/issues/3091): Show a more detailed message for a missing column
     * [#3055](https://github.com/datagrok-ai/public/issues/3055): Page is freezing after applying layout with multiple scaffold trees with large number of structures (data-specific)
-    *  [#2965](https://github.com/datagrok-ai/public/issues/2965): Legend color cannot be edited (no color picker icon) if both color and markers use the same column
+    * [#2965](https://github.com/datagrok-ai/public/issues/2965): Legend color cannot be edited (no color picker icon) if both color and markers use the same column
     * [#3145](https://github.com/datagrok-ai/public/issues/3145): Label can be dragged out of scatter plot area and completely hidden
-   * [#3123](https://github.com/datagrok-ai/public/issues/3123): Not all formula lines are shown in some cases
+    * [#3123](https://github.com/datagrok-ai/public/issues/3123): Not all formula lines are shown in some cases
     * [#3175](https://github.com/datagrok-ai/public/issues/3175): Scatterplot with conditionally colored column as color inconsistency: color editor icon is shown, but colors cannot be changed
     * [#3176](https://github.com/datagrok-ai/public/issues/3176): Some labels disappear unexpectedly on zoom in / out
     * [#3180](https://github.com/datagrok-ai/public/issues/3180): Labels: Context menu disappears when unclicking the mouse
@@ -100,7 +101,7 @@ The Datagrok 1.23.0 release includes stability and data access improvements
 ### Other fixes
 
 * [#3122](https://github.com/datagrok-ai/public/issues/3122): Pinned columns: Opening the project with pinned columns hides the pinned columns
-*  [#3119](https://github.com/datagrok-ai/public/issues/3119): Add new column: formula with multi-argument functions is parsed incorrectly if more than one argument contains a column
+* [#3119](https://github.com/datagrok-ai/public/issues/3119): Add new column: formula with multi-argument functions is parsed incorrectly if more than one argument contains a column
 * [#3211](https://github.com/datagrok-ai/public/issues/3211): Add new column: do not show error message when using ‘IsNotEmpty’ for numerics
 * [#3024](https://github.com/datagrok-ai/public/issues/3024):  Parsing source maps is loading the platform
 

@@ -2,16 +2,17 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
 import {FRAGMENTS_GRID_HEADER_TOOLTIPS, MMP_NAMES, PAIRS_GRID_HEADER_TOOLTIPS,
   columnsDescriptions} from './mmp-constants';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {MMPA} from '../mmp-analysis/mmpa';
-import {getRdKitModule, getRdKitService} from '../../../utils/chem-common-rdkit';
+import {getRdKitModule} from '../../../utils/chem-common-rdkit';
 import {createColWithDescription} from './mmp-generations';
 import {MmpInput} from './mmp-viewer';
 import {Subject, Subscription} from 'rxjs';
 import {resizeGridColsSize} from '../../../utils/ui-utils';
+import {MMPSubstructProvider} from './mmp-substruct-provider';
+import {addSubstructProvider} from '@datagrok-libraries/chem-meta/src/types';
 
 export class MmpPairedGrids {
   parentTable: DG.DataFrame;
@@ -51,13 +52,14 @@ export class MmpPairedGrids {
   fragsShowAllMode = true;
 
   constructor(subs: Subscription[], mmpInput: MmpInput, mmpa: MMPA, activityMeanNames: string[] ) {
+    this.rdkit = getRdKitModule();
     this.mmpa = mmpa;
     this.parentTable = mmpInput.table;
     this.fpGrid = getFragmetsPairsGrid(activityMeanNames, mmpa);
     this.fpCatsFrom = this.fpGrid.dataFrame.columns.byName(MMP_NAMES.FROM).categories;
     this.fpCatsTo = this.fpGrid.dataFrame.columns.byName(MMP_NAMES.TO).categories;
 
-    this.mmpGridTrans = getMatchedPairsGrid(mmpa);
+    this.mmpGridTrans = getMatchedPairsGrid(mmpa, this.rdkit);
     this.fpMaskByMolecule = DG.BitSet.create(this.fpGrid.dataFrame.rowCount);
     this.mmpMaskTrans = DG.BitSet.create(this.mmpGridTrans.dataFrame.rowCount);
     this.mmpMaskTransSelection = DG.BitSet.create(this.mmpGridTrans.dataFrame.rowCount);
@@ -71,8 +73,6 @@ export class MmpPairedGrids {
     this.pairsMaskCliffsTab = DG.BitSet.create(this.mmpGridFrag.dataFrame.rowCount).setAll(true);
 
     this.fpMaskFragmentsTab = DG.BitSet.create(this.fpGrid.dataFrame.rowCount).setAll(true);
-
-    this.rdkit = getRdKitModule();
 
     subs.push(DG.debounce(this.parentTable.onCurrentRowChanged, 1000).subscribe(() => {
       if (this.parentTable!.currentRowIdx !== -1 && !this.fragsShowAllMode) {
@@ -223,13 +223,8 @@ export class MmpPairedGrids {
     const progressBarPairs = DG.TaskBarProgressIndicator.create(`Refreshing pairs...`);
 
     this.mmpMaskTrans.setAll(false);
-    const diffFromSubstrCol = this.mmpGridTrans.dataFrame.getCol(MMP_NAMES.STRUCT_DIFF_FROM_NAME);
-    const diffToSubstrCol = this.mmpGridTrans.dataFrame.getCol(MMP_NAMES.STRUCT_DIFF_TO_NAME);
-    const diffFrom = this.mmpGridTrans.dataFrame.getCol(MMP_NAMES.FROM);
-    const diffTo = this.mmpGridTrans.dataFrame.getCol(MMP_NAMES.TO);
 
-    const [idxPairs, cases] = this.findSpecificRule(diffFromSubstrCol, this.fragsShowAllMode);
-    this.recoverHighlights(cases, diffFrom, diffTo, diffFromSubstrCol, diffToSubstrCol);
+    const [idxPairs] = this.findSpecificRule(this.fragsShowAllMode);
 
     if (idxPairs >= 0) {
       if (this.lastPairIdx !== null)
@@ -266,9 +261,8 @@ export class MmpPairedGrids {
     if (!pairsGrid) {
       this.mmpMaskTransSelection.setAll(false);
       //path from selections in fpGrid to selected rows in mmpGridTrans
-      const diffFromSubstrCol = this.mmpGridTrans.dataFrame.getCol(MMP_NAMES.STRUCT_DIFF_FROM_NAME);
       const selectedRows = this.fpGrid.table.selection.getSelectedIndexes();
-      this.findSpecificRule(diffFromSubstrCol, this.fragsShowAllMode, selectedRows);
+      this.findSpecificRule(this.fragsShowAllMode, selectedRows);
     }
     const mask = pairsGrid ? this.parentTableTransSelection : this.parentTableFragSelection;
 
@@ -299,11 +293,10 @@ export class MmpPairedGrids {
     }
   }
 
-  findSpecificRule(diffFromSubstrCol: DG.Column, showAllFragsMode: boolean,
-    selectionIdxs?: Int32Array): [idxPairs: number, cases: number[]] {
+  findSpecificRule(showAllFragsMode: boolean,
+    selectionIdxs?: Int32Array): [idxPairs: number] {
     const idxParent = this.parentTable!.currentRowIdx;
     let idxPairs = -1;
-    const cases: number[] = [];
     const idxs = selectionIdxs ?? [this.fpGrid!.table.currentRowIdx];
     const maskToModify = selectionIdxs ? this.mmpMaskTransSelection : this.mmpMaskTrans;
     if (idxParent !== -1 || showAllFragsMode) {
@@ -321,8 +314,6 @@ export class MmpPairedGrids {
               if (ruleSmiNum1 == first && ruleSmiNum2 == second) {
                 maskToModify.set(counter, true, false);
                 if (!selectionIdxs) {
-                  if (diffFromSubstrCol.get(counter) === null)
-                    cases.push(counter); //cases are used for further highlight
                   if (!showAllFragsMode && this.mmpa.rules.rules[i].pairs[j].firstStructure == idxParent)
                     idxPairs = counter;
                 }
@@ -333,7 +324,7 @@ export class MmpPairedGrids {
         }
       }
     }
-    return [idxPairs, cases];
+    return [idxPairs];
   }
 
   refilterMatchedPairsByFragments(cats: [number, number]): void {
@@ -371,40 +362,6 @@ export class MmpPairedGrids {
 
     this.mmpGridFrag.dataFrame.filter.copyFrom(this.mmpMaskFrag);
   }
-
-  async recoverHighlights(
-    cases: number[], diffFrom : DG.Column, diffTo: DG.Column,
-    diffFromSubstrCol: DG.Column, diffToSubstrCol: DG.Column) : Promise<void> {
-    //get actual fragments
-    const fpIdx = this.fpGrid.dataFrame.currentRowIdx;
-    if (fpIdx === -1)
-      return;
-
-    const cores = new Array<string>(cases.length);
-    for (let i = 0; i < cases.length; i ++)
-      cores[i] = this.mmpa.frags.idToName[this.mmpa.rules.rules[fpIdx].pairs[i].core];
-
-    const pairsFrom = Array<string>(cases.length);
-    const pairsTo = Array<string>(cases.length);
-    for (let i = 0; i < cases.length; i++) {
-      pairsFrom[i] = diffFrom.get(cases[i]);
-      pairsTo[i] = diffTo.get(cases[i]);
-    }
-    const rdkitService = await getRdKitService();
-
-    const pb = DG.TaskBarProgressIndicator.create(`Preparing highlights...`);
-    rdkitService.getInverseSubstructuresAndAlign(cores, pairsFrom, pairsTo).then((res) => {
-      const {inverse1, inverse2, fromAligned, toAligned} = res;
-      for (let i = 0; i < cases.length; i++) {
-        diffFrom.set(cases[i], fromAligned[i]);
-        diffTo.set(cases[i], toAligned[i]);
-        diffFromSubstrCol.set(cases[i], inverse1[i]);
-        diffToSubstrCol.set(cases[i], inverse2[i]);
-      }
-      this.mmpGridTrans.invalidate();
-      pb.close();
-    });
-  }
 }
 
 function getFragmetsPairsGrid(activityMeanNames: string[], mmpa: MMPA) : DG.Grid {
@@ -435,13 +392,9 @@ function getFragmetsPairsGrid(activityMeanNames: string[], mmpa: MMPA) : DG.Grid
   return fpGrid;
 }
 
-function getMatchedPairsGrid(mmpa: MMPA) : DG.Grid {
+function getMatchedPairsGrid(mmpa: MMPA, rdkit: RDModule) : DG.Grid {
   const pairsFromCol = createColWithDescription('string', MMP_NAMES.FROM, mmpa.allCasesBased.molFrom);
   const pairsToCol = createColWithDescription('string', MMP_NAMES.TO, mmpa.allCasesBased.molTo);
-  const structureDiffFromCol =
-    DG.Column.fromType('object', MMP_NAMES.STRUCT_DIFF_FROM_NAME, mmpa.allCasesBased.molFrom.length);
-  const structureDiffToCol =
-    DG.Column.fromType('object', MMP_NAMES.STRUCT_DIFF_TO_NAME, mmpa.allCasesBased.molFrom.length);
   const pairNumberCol = DG.Column.fromInt32Array(MMP_NAMES.PAIRNUM, mmpa.allCasesBased.pairNum);
   const pairNumberSortCol = DG.Column.bool(MMP_NAMES.PAIR_SORT, mmpa.allCasesBased.pairNum.length);
   const pairNumberFromCol = DG.Column.fromInt32Array(MMP_NAMES.PAIRNUM_FROM, mmpa.allCasesBased.molNumFrom);
@@ -450,18 +403,15 @@ function getMatchedPairsGrid(mmpa: MMPA) : DG.Grid {
   const pairsFromSmilesCol = DG.Column.fromStrings(MMP_NAMES.SMI1, mmpa.allCasesBased.pairsFromSmiles);
   const pairsToSmilesCol = DG.Column.fromStrings(MMP_NAMES.SMI2, mmpa.allCasesBased.pairsToSmiles);
   const ruleNumCol = DG.Column.fromInt32Array(MMP_NAMES.RULENUM, mmpa.allCasesBased.ruleNum);
+  const coreNumCol = DG.Column.fromInt32Array(MMP_NAMES.CORE_NUM, mmpa.allCasesBased.coreNums);
 
   pairsFromSmilesCol.semType = DG.SEMTYPE.MOLECULE;
   pairsToSmilesCol.semType = DG.SEMTYPE.MOLECULE;
   pairsFromCol.semType = DG.SEMTYPE.MOLECULE;
   pairsToCol.semType = DG.SEMTYPE.MOLECULE;
-  pairsFromCol.temp[ChemTemps.SUBSTRUCT_COL] = MMP_NAMES.STRUCT_DIFF_FROM_NAME;
-  pairsToCol.temp[ChemTemps.SUBSTRUCT_COL] = MMP_NAMES.STRUCT_DIFF_TO_NAME;
 
-  const allTransformationsCols = [pairsFromCol, pairsToCol,
-    structureDiffFromCol, structureDiffToCol,
-    pairNumberCol, pairNumberFromCol, pairNumberToCol,
-    pairsFromSmilesCol, pairsToSmilesCol, ruleNumCol, pairNumberSortCol];
+  const allTransformationsCols = [pairsFromCol, pairsToCol, pairNumberCol, pairNumberFromCol, pairNumberToCol,
+    pairsFromSmilesCol, pairsToSmilesCol, ruleNumCol, pairNumberSortCol, coreNumCol];
 
   for (let i = 0; i < mmpa.initData.activitiesCount; i++) {
     const name = MMP_NAMES.DIFF + ' ' + mmpa.initData.activitiesNames[i];
@@ -469,5 +419,14 @@ function getMatchedPairsGrid(mmpa: MMPA) : DG.Grid {
   }
 
   const pairedTransformations = DG.DataFrame.fromColumns(allTransformationsCols);
+
+  const substructProviderFrom = new MMPSubstructProvider(mmpa.frags.idToName,
+    pairedTransformations, MMP_NAMES.FROM, rdkit, '#bc131f');
+  addSubstructProvider(pairsFromCol.temp, substructProviderFrom);
+
+  const substructProviderTo = new MMPSubstructProvider(mmpa.frags.idToName,
+    pairedTransformations, MMP_NAMES.TO, rdkit, '#49bead');
+  addSubstructProvider(pairsToCol.temp, substructProviderTo);
+
   return pairedTransformations.plot.grid();
 }

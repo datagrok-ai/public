@@ -43,7 +43,7 @@ export class MMPA {
   }
 
   static async init(molName: string, molecules: string[], fragmentCutoff: number,
-    activities: Float32Array[], activitiesNames: string[], fragSortingInfo: {[key: string]: SortData}): Promise<MMPA> {
+    activities: Float32Array[], activitiesNames: string[], fragSortingInfo: SortData): Promise<MMPA> {
     const initData: MmpInitData =
     {molName, molecules, activities, activitiesNames, activitiesCount: activitiesNames.length};
 
@@ -55,7 +55,8 @@ export class MMPA {
     else if (molecules.length > MMP_CONSTRICTIONS.GPU)
       throw new Error(MMP_ERRORS.FRAGMENTS_GPU);
 
-    const frags = await getMmpFrags(molecules);
+    const [frags, canonical] = await getMmpFrags(molecules);
+    initData.molecules = canonical;
     const [rules, allCasesNumber] = await getMmpRules(frags, fragmentCutoff, gpu);
 
     const [rulesBased, allCasesBased] = getPlainData(rules, frags, initData, allCasesNumber, fragSortingInfo);
@@ -64,7 +65,7 @@ export class MMPA {
   }
 
   static async fromData(molName: string, data: string, molecules: string[],
-    activities: Float32Array[], activitiesNames: string[], fragSortingInfo: {[key: string]: SortData}): Promise<MMPA> {
+    activities: Float32Array[], activitiesNames: string[], fragSortingInfo: SortData): Promise<MMPA> {
     const initData: MmpInitData =
     {molName, molecules, activities, activitiesNames, activitiesCount: activitiesNames.length};
 

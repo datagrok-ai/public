@@ -251,13 +251,13 @@ category('MolstarViewer', () => {
     expect(selectDialog != null, true, 'Select a file dialog is missing');
 
     const filesNode = await clickAndExpand(selectDialog!, 'Files', 'Files group not found', 5000);
-    const appDataNode = await clickAndExpand(filesNode, 'App Data', 'App Data group not found', 2500);
-    const bioStructureNode = await clickAndExpand(appDataNode, 'BiostructureViewer', 'BiostructureViewer group not found', 2500);
-    const dockingNode = await clickAndExpand(bioStructureNode, 'docking', 'Docking group not found', 2500);
+    const demoNode = await clickAndExpand(filesNode, 'Demo', 'Demo group not found', 2500);
+    const bioNode = await clickAndExpand(demoNode, 'bio', 'bio group not found', 2500);
+    const pdbNode = await clickAndExpand(bioNode, 'pdb', 'pdb group not found', 2500);
 
-    const ligandNode = Array.from(dockingNode.querySelectorAll('.d4-tree-view-node'))
-      .find(el => el.textContent?.trim() === 'ligand.pdbqt');
-    expect(ligandNode != null, true, 'ligand.pdbqt file not found');
+    const ligandNode = Array.from(pdbNode.querySelectorAll('.d4-tree-view-node'))
+      .find(el => el.textContent?.trim() === 'md.pdb');
+    expect(ligandNode != null, true, 'md.pdb file not found');
     (ligandNode as HTMLElement).click();
 
     const okButton = selectDialog!.querySelector('.ui-btn-ok') as HTMLElement;

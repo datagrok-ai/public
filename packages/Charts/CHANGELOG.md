@@ -1,5 +1,16 @@
 # Charts changelog
 
+## 1.4.2 (2024-12-19)
+
+### Bug Fixes
+
+* GROK-16954: Charts: Fixed globe throws errors if no column found
+* Charts: Sunburst: Improved logic for labels rendering
+* Charts: Word cloud: Fixed cases when no column selected
+* [#3196](https://github.com/datagrok-ai/public/issues/3196): Charts: Sunburst causes performance issues
+* Charts: Sunburst: Resolved an issue where certain columns were not used when applying the row source
+* Charts: Sunburst: Increased the size of rendered structures in the tooltip and implemented dynamic size adjustments based on segment size
+
 ## 1.4.1 (2024-10-03)
 
 ### Bug Fixes

@@ -57,6 +57,7 @@ export type MmpAllCasesBasedData = {
     ruleNum: Int32Array;
     diffs: Float32Array[];
     activityPairsIdxs: BitArray[];
+    coreNums: Int32Array;
 };
 
 export type MmpGeneration = {

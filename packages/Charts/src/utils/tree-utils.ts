@@ -172,10 +172,10 @@ export class TreeUtils {
     return TreeUtils.toForestAsync(dataFrame, splitByColumnNames, rowMask, selection, inherit);
   }
 
-  static async getMoleculeImage(name: string): Promise<HTMLCanvasElement> {
+  static async getMoleculeImage(name: string, width: number, height: number): Promise<HTMLCanvasElement> {
     const image: HTMLCanvasElement = ui.canvas();
-    image.width = 70;
-    image.height = 80;
+    image.width = width;
+    image.height = height;
     await grok.chem.canvasMol(0, 0, image.width, image.height, image, name);
     return image;
   }

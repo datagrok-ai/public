@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {filter} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
-import {Observable, combineLatest} from 'rxjs';
+import {Observable, combineLatest, interval} from 'rxjs';
 import $, {Cash} from 'cash-dom';
 import { _package } from '../../../package';
 
@@ -169,16 +169,10 @@ export class RGroupsAnalysisTutorial extends Tutorial {
     this.title('Switch axes', true);
     this.describe(`Finally, let’s change the R-groups used on the plot.`);
 
-    await this.action('Set the value for the X axis to R4', new Observable((subscriber: any) => {
-      const observer = new MutationObserver((mutationsList, observer) => {
-        mutationsList.forEach((m) => {
-          if (m.target.textContent === 'R4') {
-            subscriber.next(true);
-            observer.disconnect();
-          }
-        });
-      });
-      observer.observe(v.root.querySelectorAll('.d4-columns-host')[0].children[0].children[1], {childList: true, subtree: true});
-    }));
+    const trellis = Array.from(grok.shell.tv.viewers).find((v) => v.type === DG.VIEWER.TRELLIS_PLOT)! as DG.Viewer<DG.ITrellisPlotSettings>;
+    await this.action('Set the value for the X axis to R4',
+      interval(1000).pipe(filter(() => {
+        return trellis.props.xColumnNames[0] === 'R4';
+    })));
   }
 }

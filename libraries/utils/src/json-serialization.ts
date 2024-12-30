@@ -1,24 +1,33 @@
 import * as DG from 'datagrok-api/dg';
-
-// Support for json serialization/deserialization of objects that
-// include DataFrames. Not efficient, intended for writing tests.
+import {fromUint8Array, toUint8Array} from 'js-base64';
 
 const customTypeKey = '_DG_CUSTOM_SERIALIZED_TOKEN_';
 
-export function serialize(obj: any, space = 2) {
+export type SerializeOptions = {
+  space?: number,
+  useJsonDF?: boolean,
+};
+
+export function serialize(obj: any, options: SerializeOptions = {}) {
   return JSON.stringify(
     obj,
     (_key, value) => {
-      if (value instanceof DG.DataFrame) {
+      if (value instanceof DG.DataFrame && !options.useJsonDF) {
         return {
           [customTypeKey]: 'DataFrame',
-          value: Array.from(value.toByteArray())
+          value: fromUint8Array(value.toByteArray())
+        };
+      }
+      if (value instanceof DG.DataFrame && options.useJsonDF) {
+        return {
+          [customTypeKey]: 'DataFrameJSON',
+          value: value.toJson()
         };
       }
       if (value instanceof ArrayBuffer) {
         return {
           [customTypeKey]: 'ArrayBuffer',
-          value: Array.from(new Uint8Array(value))
+          value: fromUint8Array(new Uint8Array(value))
         };
       }
       if (value instanceof Map) {
@@ -35,7 +44,7 @@ export function serialize(obj: any, space = 2) {
       }
       return value;
     },
-    space
+    options.space
   );
 }
 
@@ -55,9 +64,11 @@ export function transform(_key: string, value: any) {
   if (value && value[customTypeKey] && value.value) {
     switch (value[customTypeKey]) {
     case 'DataFrame':
-      return DG.DataFrame.fromByteArray(new Uint8Array(value.value));
+      return DG.DataFrame.fromByteArray(toUint8Array(value.value));
+    case 'DataFrameJSON':
+      return DG.DataFrame.fromJson(JSON.stringify(value.value));
     case 'ArrayBuffer':
-      return new Uint8Array(value.value).buffer;
+      return toUint8Array(value.value).buffer;
     case 'Map':
       return new Map(value.value);
     case 'Set':

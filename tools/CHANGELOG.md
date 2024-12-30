@@ -1,5 +1,31 @@
 # Datagrok-tools changelog
 
+## 4.13.49 (2024-12-26)
+
+### Features
+
+* Removed load npm
+* Added ability to set vue as external lib for check
+
+## 4.13.48 (2024-12-25)
+
+### Features
+
+* Added load npm
+
+## 4.13.47 (2024-12-25)
+
+### Features
+
+* Fixed category selection for test
+
+## 4.13.46 (2024-12-23)
+
+### Features
+
+* Improved error handling:
+  - Different exit codes for package errors / grok script errors
+  - Graceful error handling when testing non-existing packages
 
 ## 4.13.45 (2024-12-12)
 

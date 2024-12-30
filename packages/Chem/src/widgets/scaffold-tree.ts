@@ -1561,15 +1561,33 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     const paletteIcon = ui.iconFA('palette');
 
-    const colorPicker = ui.colorPicker(DG.Color.fromHtml(chosenColor), (color: number) => {
-      colorPicker.style.cssText += 'background-color: hsla(0, 0%, 0%, 0) !important';
-      groupValue.colorOn = true;
+    let initialColor = DG.Color.fromHtml(chosenColor);
+    
+    const applyColor = (color: number) => {
       chosenColor = DG.Color.toHtml(color);
-      this.updateColorIcon(colorIcon, chosenColor);
+      groupValue.colorOn = true;
       groupValue.chosenColor = chosenColor;
+      this.updateColorIcon(colorIcon, chosenColor);
       this.setColorToHighlight(group, chosenColor, true);
-      this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
-    }, paletteIcon);
+    };
+    
+    const onOk = () => {
+      initialColor = DG.Color.fromHtml(chosenColor);
+      applyColor(DG.Color.fromHtml(chosenColor));
+    };
+    
+    const onCancel = () => applyColor(initialColor);
+    
+    const colorPicker = ui.colorPicker(
+      DG.Color.fromHtml(chosenColor),
+      (color) => {
+        colorPicker.style.cssText += 'background-color: hsla(0, 0%, 0%, 0) !important';
+        applyColor(color);
+      },
+      paletteIcon,
+      onOk,
+      onCancel
+    );
 
     paletteIcon.classList.add('palette-icon');
     disablePaletteIcon(paletteIcon);

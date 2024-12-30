@@ -1,14 +1,13 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { _package } from '../package-test';
-import { TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, DEFAULT_LOWER_VALUE, DEFAULT_UPPER_VALUE, TAGS, DEFAULT_TABLE_NAME, ERROR_MESSAGES, colorsDictionary } from './constants';
-import { PieChartCellRenderer } from '@datagrok/power-grid/src/sparklines/piechart';
+
 import { CellRenderViewer } from '@datagrok-libraries/utils/src/viewers/cell-render-viewer';
 import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
 
-import '../css/admetica.css';
+import { TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, DEFAULT_LOWER_VALUE, DEFAULT_UPPER_VALUE, TAGS, DEFAULT_TABLE_NAME, ERROR_MESSAGES, colorsDictionary } from './constants';
 import { FormStateGenerator } from './admetica-form';
+import '../css/admetica.css';
 
 export let properties: any;
 export const tablePieChartIndexMap: Map<string, number> = new Map();
@@ -27,6 +26,17 @@ async function sendRequestToContainer(containerId: string, path: string, params:
     //grok.log.error(error);
     return null;
   }
+}
+
+export async function healthCheck() {
+  const admeticaContainer = await getAdmeticaContainer();
+  const path = '/health_check';
+  const params: RequestInit = {
+    method: 'GET',
+  }
+  const response = await fetchWrapper(() => sendRequestToContainer(admeticaContainer.id, path, params));
+  if (!response)
+    throw new Error('Health check failed.');
 }
 
 export async function runAdmetica(csvString: string, queryParams: string, addProbability: string): Promise<string | null> {
@@ -119,7 +129,6 @@ export function addColorCoding(table: DG.DataFrame, columnNames: string[], showI
     applyColumnColorCoding(column, matchingModel);
   }
 }
-
 
 function createConditionalColoringRules(coloring: ModelColoring): { [index: string]: string | number } {
   const conditionalColors = Object.entries(coloring).slice(1);
@@ -273,6 +282,27 @@ function getTableView(dataFrame: DG.DataFrame): DG.TableView {
   return tableView;
 }
 
+function setAdmeGroups(table: DG.DataFrame, columnNames: string[]): void {
+  const isColumnRelatedToSubgroup = (column: string, subgroup: Subgroup): boolean => {
+    return subgroup.models.some(model => column.includes(model.name));
+  };
+
+  const createSubgroupDict = (properties: any, columnNames: string[]) => {
+    return properties.subgroup.reduce((dict: { [key: string]: { color: string; columns: string[] } }, subgroup: Subgroup) => {
+      dict[subgroup.name] = {
+        color: colorsDictionary[subgroup.name],
+        columns: columnNames.filter(column => isColumnRelatedToSubgroup(column, subgroup))
+      };
+      return dict;
+    }, {});
+  };
+
+  const subgroupDict = createSubgroupDict(properties, columnNames);
+  // Temporary workaround: Addresses the issue where setGroups does not trigger a refresh 
+  // when adding to an existing grid. This fix will be removed once the issue is resolved.
+  table.temp['.columnGroups'] = subgroupDict;
+}
+
 export function updateColumnProperties(gridCol: DG.GridColumn, model: any): void {
   if (!gridCol.column) return;
 
@@ -290,7 +320,7 @@ export function updateColumnProperties(gridCol: DG.GridColumn, model: any): void
   )?.name;
   if (subgroupName) {
     gridCol.headerCellStyle.textColor = DG.Color.fromHtml(colorsDictionary[subgroupName]);
-    column.tags['group'] = subgroupName;
+    column.setTag('group', subgroupName);
   }
 }
 
@@ -339,6 +369,7 @@ export function addResultColumns(
   if (addPiechart)
     addSparklines(viewTable, updatedModelNames, molColIdx + 2);
 
+  setAdmeGroups(viewTable, updatedModelNames);
   addColorCoding(viewTable, updatedModelNames);
   addCustomTooltip(viewTable);
 
@@ -452,7 +483,7 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
   pieSettings.sectors.values = result!;
   gridCol!.settings = pieSettings;
 
-  const pieChartRenderer = new PieChartCellRenderer();
+  const pieChartRenderer = await grok.functions.call('PowerGrid:piechartCellRenderer');
   return CellRenderViewer.fromGridCell(gridCell, pieChartRenderer).root;
 }
 

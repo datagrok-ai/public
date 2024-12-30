@@ -21,6 +21,21 @@ export interface ValidationResultBase {
   notifications?: Advice[];
 }
 
+export function mergeValidationResultsBase(...results: (ValidationResultBase | undefined)[]): ValidationResultBase {
+  const errors = [];
+  const warnings = [];
+  const notifications = [];
+
+  for (const result of results) {
+    if (result) {
+      errors.push(...(result.errors ?? []));
+      warnings.push(...(result.warnings ?? []));
+      notifications.push(...(result.notifications ?? []));
+    }
+  }
+  return {errors, warnings, notifications};
+}
+
 export interface ValidationResult extends ValidationResultBase {
   // revalidation request
   revalidate?: string[];

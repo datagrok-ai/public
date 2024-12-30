@@ -12,7 +12,7 @@
 //input: int simTime = 21600 {caption: Simulation time; units: sec; category: Simulation; validatorFunc: Compute:SimTimeValidator; validatorFuncOptions: { "reasonableMin": 10800, "reasonableMax": 100000} }
 //output: dataframe simulation {caption: Temp. vs time; category: Output; viewer: Line chart(block: 75) | Grid(block: 25)}
 //output: double timeToCool {caption: Time to cool; units: sec.; category: Output}
-//output: double coolingFactor {caption: Cooling factor; units: 1 / sec.; category: Calculations}
+//output: double coolingFactor {caption: Cooling factor; units: 1 / sec.; category: Calculations; precision: 5}
 //output: double tempDiff {caption: Temperature difference; units: C; category: Calculations}
 //editor: Compute:RichFunctionViewEditor
 //meta.features: {"sens-analysis": true, "upload": true}

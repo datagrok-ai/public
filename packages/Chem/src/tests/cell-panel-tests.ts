@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {category, test, expect, expectFloat, before, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {assessDruglikeness, drugLikenessWidget} from '../widgets/drug-likeness';
-import {getIdMap} from '../widgets/identifiers';
+import {getIdentifiersSingle} from '../widgets/identifiers';
 // import {getPanelElements, molfileWidget} from '../widgets/molfile';
 import {propertiesWidget} from '../widgets/properties';
 import {getStructuralAlerts, structuralAlertsWidget} from '../widgets/structural-alerts';
@@ -13,13 +13,21 @@ import * as utils from './utils';
 // import $ from 'cash-dom';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import {getDescriptorsSingle} from '../descriptors/descriptors-calculation';
 import * as CONST from './const';
-import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {structure2dWidget} from '../widgets/structure2d';
 import {structure3dWidget} from '../widgets/structure3d';
 import {molV2000, molV3000} from './utils';
-import { EMPTY_MOLECULE_MESSAGE } from '../constants';
+import {EMPTY_MOLECULE_MESSAGE} from '../constants';
+import {checkPackage} from '../utils/elemental-analysis-utils';
+
+const identifiers: {[key: string]: string} = {
+  'Smiles': 'CC(C)Cc1ccc(C(C)C(=O)N2CCCC2C(=O)OCCO)cc1',
+  'Inchi': 'InChI=1S/C20H29NO4/c1-14(2)13-16-6-8-17(9-7-16)15(3)19(23)21-10-4-5-18(21)20(24)25-12-11-22/h6-9,14-15,18,22H,4-5,10-13H2,1-3H3',
+  'Inchi key': 'UEEWWZTXTMHYOK-UHFFFAOYSA-N'};
+
+const additionalIdentifiers: {[key: string]: string} = {
+  'Chembl': 'CHEMBL2262183', 'PubChem': '76330284', 'bindingdb': '50487960',
+};
 
 category('cell panel', async () => {
   const molStr = 'CC(C)Cc1ccc(cc1)C(C)C(=O)N2CCCC2C(=O)OCCO';
@@ -46,13 +54,17 @@ category('cell panel', async () => {
   });
 
   test('identifiers', async () => {
-    const rdKitModule = getRdKitModule();
-    const mol = rdKitModule.get_mol(molStr);
-    const inchiKey = rdKitModule.get_inchikey_for_inchi(mol.get_inchi());
-    mol.delete();
-    const idMap = await getIdMap(inchiKey);
-    const expectedIdMap = await utils.loadFileAsText('tests/identifiers.json');
-    expect(JSON.stringify(idMap), expectedIdMap);
+    const res: any = await getIdentifiersSingle(molStr);
+    console.log(res);
+    for (const key of Object.keys(identifiers))
+      expect(res[key], identifiers[key]);
+    if (checkPackage('ChemblApi', 'getCompoundsIds')) {
+      Object.keys(additionalIdentifiers).forEach((it) => {
+        expect(res[it].innerText, additionalIdentifiers[it]);
+      });
+    }
+    if (checkPackage('PubchemApi', 'GetIupacName'))
+      expect(Object.keys(res).includes('Name'), true);
   });
 
   test('properties', async () => {
@@ -162,11 +174,11 @@ category('cell panel', async () => {
       const widget: DG.Widget = await grok.functions.call('Chem:descriptorsWidget', {smiles: mol});
       if (mol === CONST.EMPTY) {
         await awaitCheck(() => widget.root.innerText === EMPTY_MOLECULE_MESSAGE,
-        `empty data handled incorrectly`, 5000);
+          `empty data handled incorrectly`, 5000);
       } else {
         await awaitCheck(() => widget.root.querySelector('table') !== null,
-        `descriptors table hasn\'t been created for ${mol}`, 55000);
+          `descriptors table hasn\'t been created for ${mol}`, 55000);
       }
     }
-  }, { timeout: 60000, stressTest: true });
+  }, {timeout: 60000, stressTest: true});
 });

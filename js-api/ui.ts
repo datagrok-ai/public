@@ -1054,8 +1054,8 @@ export function colorInput(name: string, value: string, onValueChanged: Function
   return new InputBase(api.grok_ColorInput(name, value), onValueChanged);
 }
 
-export function colorPicker(color: number, onChanged: (color: number) => void, colorDiv: HTMLElement): HTMLElement {
-  return api.grok_ColorPicker(color, onChanged, colorDiv);
+export function colorPicker(color: number, onChanged: (color: number) => void, colorDiv: HTMLElement, onOk: Function | null, onCancel: Function | null = null): HTMLElement {
+  return api.grok_ColorPicker(color, onChanged, colorDiv, onOk, onCancel);
 }
 
 /** @deprecated The method will be removed soon. Use {@link input.radio} instead */
@@ -1234,6 +1234,7 @@ export class tools {
         }
       }
       if (form.classList.contains('d4-dialog-contents')) {
+        form.classList.remove('ui-form-condensed');
         let dialogFormWidth = tools.formLabelMaxWidths.get(form)! + tools.formMinInputWidths.get(form)! + 40;
         if (form.style.minWidth != `${dialogFormWidth}px`)
           form.style.minWidth = `${dialogFormWidth}px`;
@@ -1322,7 +1323,13 @@ export class tools {
           element.classList.contains('ui-input-text')) {
           (options[i] as HTMLElement).style.marginLeft = `-${optionsWidth}px`;
         }
-        width += optionsWidth;
+        if (optionsWidth > 0) {
+          let inputs = $(element).find('.ui-input-editor');
+          inputs.each((i) => {
+            inputs[i]!.style.paddingRight = `${optionsWidth}px`;
+          });
+        }
+        // width += optionsWidth;
       });
       // todo: analyze content(?) and metadata
       // todo: analyze more types

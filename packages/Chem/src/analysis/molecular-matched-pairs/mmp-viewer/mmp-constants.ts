@@ -14,8 +14,6 @@ export enum MMP_NAMES {
   TAB_FRAGMENTS = 'Fragments',
   TAB_CLIFFS = 'Cliffs',
   TAB_GENERATION = 'Generation',
-  STRUCT_DIFF_FROM_NAME = '~structDiffFrom',
-  STRUCT_DIFF_TO_NAME = '~structDiffTo',
   COLOR = 'color',
   SMI1 = '~smi1',
   SMI2 = '~smi2',
@@ -26,8 +24,10 @@ export enum MMP_NAMES {
   INITIAL_VALUE = 'Initial value',
   ACTIVITY = 'Activity',
   CORE = 'Core',
+  CORE_NUM = '~Core',
   PREDICTION = 'Prediction',
   GENERATIONS = 'Generation',
+  NEW_MOLECULE = 'New molecule',
 }
 
 export enum SHOW_FRAGS_MODE {
@@ -83,3 +83,6 @@ export const CLIFFS_TAB_TOOLTIP = `2D map where similar molecules are close to e
 export const GENERATIONS_TAB_TOOLTIP = `A generation of new molecules based on obtained rules. For each molecule from initial dataset and for each selected activity the most optimal substitution is shown with associated prediction results for all activities. We specify if initial or generated molecule is optimal. Open context panel to estimate generation model predictive ability on observed vs predicted plot.`;
 
 export const MMP_CONTEXT_PANE_CLASS = 'mmp-context-pane';
+
+export const MOL_CANVAS_WIDTH = 170;
+export const MOL_CANVAS_HEIGHT = 75;

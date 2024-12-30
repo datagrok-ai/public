@@ -1,0 +1,129 @@
+import {DockManager} from './DockManager.js';
+import {DockModel} from './DockModel.js';
+import {DockNode} from './DockNode.js';
+import {PanelContainer} from './PanelContainer.js';
+import {HorizontalDockContainer} from './HorizontalDockContainer.js';
+import {VerticalDockContainer} from './VerticalDockContainer.js';
+import {DocumentManagerContainer} from './DocumentManagerContainer.js';
+import {FillDockContainer} from './FillDockContainer.js';
+import {Dialog} from './Dialog.js';
+import {Utils} from './Utils.js';
+import {IPanelInfo} from './interfaces/IPanelInfo.js';
+import {INodeInfo} from './interfaces/INodeInfo.js';
+import {IDockContainer} from './interfaces/IDockContainer.js';
+
+/**
+ * Deserializes the dock layout hierarchy from JSON and creates a dock hierarhcy graph
+ */
+export class DockGraphDeserializer {
+  dockManager: DockManager;
+  documentManagerNode: DockNode;
+
+  constructor(dockManager: DockManager) {
+    this.dockManager = dockManager;
+  }
+
+  async deserialize(_json: string): Promise<DockModel> {
+    const info = JSON.parse(_json);
+    const model = new DockModel();
+    model.rootNode = await this._buildGraph(info.graphInfo);
+    model.dialogs = await this._buildDialogs(info.dialogsInfo);
+    model.documentManagerNode = this.documentManagerNode;
+    return model;
+  }
+
+  async _buildGraph(nodeInfo: INodeInfo) {
+    const childrenInfo = nodeInfo.children;
+    const children: DockNode[] = [];
+    for (const childInfo of childrenInfo) {
+      const childNode = await this._buildGraph(childInfo);
+      if (childNode !== null)
+        children.push(childNode);
+    };
+
+    // Build the container owned by this node
+    const container = await this._createContainer(nodeInfo, children);
+    if (container === null)
+      return null;
+
+    // Build the node for this container and attach it's children
+    const node = new DockNode(container);
+    if (container instanceof DocumentManagerContainer)
+      this.documentManagerNode = node;
+    node.children = children;
+    for (const childNode of node.children.reverse())
+      childNode.parent = node;
+    ;
+    node.children.reverse();
+    // node.container.setActiveChild(node.container);
+    return node;
+  }
+
+  async _createContainer(nodeInfo: INodeInfo, children: DockNode[]) {
+    const containerType = nodeInfo.containerType;
+    const containerState = nodeInfo.state;
+    let container;
+
+    const childContainers: IDockContainer[] = [];
+    for (const childNode of children)
+      childContainers.push(childNode.container);
+
+
+    if (containerType === 'panel') {
+      container = await PanelContainer.loadFromState(containerState, this.dockManager);
+      if (!container?.prepareForDocking)
+        return null;
+      container.prepareForDocking();
+      Utils.removeNode(container.elementPanel);
+    } else if (containerType === 'horizontal')
+      container = new HorizontalDockContainer(this.dockManager, childContainers);
+    else if (containerType === 'vertical')
+      container = new VerticalDockContainer(this.dockManager, childContainers);
+    else if (containerType === 'fill') {
+      // Check if this is a document manager
+
+      // TODO: Layout engine compares the string 'fill', so cannot create another subclass type
+      // called document_manager and have to resort to this hack. use RTTI in layout engine
+      const typeDocumentManager = containerState.documentManager;
+      if (typeDocumentManager)
+        container = new DocumentManagerContainer(this.dockManager);
+      else
+        container = new FillDockContainer(this.dockManager);
+    } else
+      throw new Error('Cannot create dock container of unknown type: ' + containerType);
+
+    // Restore the state of the container
+    container.loadState(containerState);
+
+    // container.performLayout(childContainers);
+    return container;
+  }
+
+  async _buildDialogs(dialogsInfo: IPanelInfo[]) {
+    const dialogs: Dialog[] = [];
+    for (const dialogInfo of dialogsInfo) {
+      const containerType = dialogInfo.containerType;
+      const containerState = dialogInfo.state;
+      let container;
+      if (containerType === 'panel') {
+        container = await PanelContainer.loadFromState(containerState, this.dockManager);
+        if (container.prepareForDocking) {
+          Utils.removeNode(container.elementPanel);
+          container.isDialog = true;
+          const dialog = new Dialog(container, this.dockManager);
+          if (dialogInfo.position.x > document.body.clientWidth ||
+                        dialogInfo.position.y > document.body.clientHeight - 70) {
+            dialogInfo.position.x = 20;
+            dialogInfo.position.y = 70;
+          }
+          dialog.setPosition(dialogInfo.position.x, dialogInfo.position.y);
+          dialog.isHidden = dialogInfo.isHidden;
+          if (dialog.isHidden)
+            dialog.hide();
+          dialogs.push(dialog);
+        }
+      }
+    }
+    return dialogs;
+  }
+}

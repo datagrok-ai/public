@@ -85,6 +85,6 @@ if [[ $action == *"deploy"* ]]; then
         else
             new_version=$(echo "$latest_s3_pushed" | sed -E 's/(.+-)([0-9]+)(\.yml)/echo "\1$((\2+1))\3"/e')
         fi
-        aws s3 cp "$f" "s3://datagrok-data/deployment/${new_version}" --acl public-read;
+        aws s3 cp "$f" "s3://datagrok-data/${new_version}" --acl public-read;
     done
 fi

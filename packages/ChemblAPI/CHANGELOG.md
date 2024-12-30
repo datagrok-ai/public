@@ -1,5 +1,9 @@
 # ChemblAPI changelog
 
+## 1.1.2 (2024-12-27)
+
+Added more tests
+
 ## 1.1.1 (2024-10-24)
 
 ### Bug fixes

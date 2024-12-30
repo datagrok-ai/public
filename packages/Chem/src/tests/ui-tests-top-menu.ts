@@ -106,25 +106,34 @@ category('UI top menu', () => {
     v = grok.shell.addTableView(smiles);
     await grok.data.detectSemanticTypes(smiles);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
-    grok.shell.topMenu.find('Chem').group('Calculate').find('Map Identifiers...').click();
+
 
     await callDialog();
-    setDialogInputValue('Chem Map Identifiers', 'To Source', 'mcule');
+    setDialogInputValue('Chem Map Identifiers', 'To Source', 'inchi');
     let okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
     okButton!.click();
-    await awaitCheck(() => grok.shell.t.columns.contains('mcule'), 'cannot find mcule column', 15000);
+    await awaitCheck(() => grok.shell.t.columns.contains('inchi'), 'cannot find inchi column', 15000);
 
-    await callDialog();
-    setDialogInputValue('Chem Map Identifiers', 'To Source', 'chembl');
-    okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
-    okButton!.click();
-    await awaitCheck(() => grok.shell.t.columns.contains('chembl'), 'cannot find chembl column', 15000);
+    const chemblPackInstalled = DG.Func.find({package: 'ChemblApi', name: 'getCompoundsIds'}).length;
+    if (chemblPackInstalled) {
+      await callDialog();
+      setDialogInputValue('Chem Map Identifiers', 'To Source', 'mcule');
+      okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
+      okButton!.click();
+      await awaitCheck(() => grok.shell.t.columns.contains('mcule'), 'cannot find mcule column', 15000);
 
-    await callDialog();
-    setDialogInputValue('Chem Map Identifiers', 'To Source', 'pubchem');
-    okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
-    okButton!.click();
-    await awaitCheck(() => grok.shell.t.columns.contains('pubchem'), 'cannot find pubchem column', 15000);
+      await callDialog();
+      setDialogInputValue('Chem Map Identifiers', 'To Source', 'chembl');
+      okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
+      okButton!.click();
+      await awaitCheck(() => grok.shell.t.columns.contains('chembl'), 'cannot find chembl column', 15000);
+
+      await callDialog();
+      setDialogInputValue('Chem Map Identifiers', 'To Source', 'pubchem');
+      okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
+      okButton!.click();
+      await awaitCheck(() => grok.shell.t.columns.contains('pubchem'), 'cannot find pubchem column', 15000);
+    }
     v.close();
     grok.shell.o = ui.div();
 
@@ -132,7 +141,7 @@ category('UI top menu', () => {
       grok.shell.topMenu.find('Chem').group('Calculate').find('Map Identifiers...').click();
       await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot find Chem Map Identifiers dialog', 1000);
     }
-  }, {timeout: 60000, skipReason: 'GROK-15384'});
+  }, {timeout: 60000});
 
   test('substructure search', async () => {
     smiles = grok.data.demo.molecules(20);

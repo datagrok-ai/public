@@ -22,7 +22,7 @@ Parameters:
   InternetSubnetAllow:
     Type: String
     AllowedPattern: "[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/[0-9]+"
-    Description: Subnet for access to Datagrok client endpoints. Set CIDR to 0.0.0.0/0 to allow all IP addresses access, or another CIDR range. To specify multiple subnets use comma as a delimiter.
+    Description: Subnet for access to Datagrok client endpoints. Set CIDR to 0.0.0.0/0 to allow all IP addresses access, or another CIDR range.
   InternetSubnetAllow2:
     Type: String
     AllowedPattern: "(^$)|([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/[0-9]+)"
@@ -215,20 +215,6 @@ Resources:
           IpProtocol: TCP
           SourceSecurityGroupId:
             Ref: DatagrokSecurityGroup
-        - Description:
-            Fn::Sub: "${AWS::StackName} Allow internal connections from Datagrok to H2O"
-          FromPort: 54321
-          ToPort: 54321
-          IpProtocol: TCP
-          SourceSecurityGroupId:
-            Ref: DatagrokSecurityGroup
-        - Description:
-            Fn::Sub: "${AWS::StackName} Allow internal connections from Datagrok to H2O GH"
-          FromPort: 5005
-          ToPort: 5005
-          IpProtocol: TCP
-          SourceSecurityGroupId:
-            Ref: DatagrokSecurityGroup
       SecurityGroupEgress:
         - Description:
             Fn::Sub: "${AWS::StackName} CVM egress rules"
@@ -274,30 +260,6 @@ Resources:
       IpProtocol: TCP
       ToPort: 443
     Type: AWS::EC2::SecurityGroupIngress
-  Cvm5005Ingress:
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow
-      Description:
-        Fn::Sub: "${AWS::StackName} 5005/tcp on CVM ALB for H2O GH"
-      FromPort: 5005
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 5005
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm54321Ingress:
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow
-      Description:
-        Fn::Sub: "${AWS::StackName} 54321/tcp on CVM ALB for H2O"
-      FromPort: 54321
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 54321
-    Type: AWS::EC2::SecurityGroupIngress
   Cvm80Ingress2:
     Condition: AccessFromInternetSubnetAllow2
     Properties:
@@ -323,32 +285,6 @@ Resources:
         Ref: CvmALBSecurityGroup
       IpProtocol: TCP
       ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm5005Ingress2:
-    Condition: AccessFromInternetSubnetAllow2
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow2
-      Description:
-        Fn::Sub: "${AWS::StackName} 5005/tcp on CVM ALB for H2O GH"
-      FromPort: 5005
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 5005
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm54321Ingress2:
-    Condition: AccessFromInternetSubnetAllow2
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow2
-      Description:
-        Fn::Sub: "${AWS::StackName} 54321/tcp on CVM ALB for H2O"
-      FromPort: 54321
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 54321
     Type: AWS::EC2::SecurityGroupIngress
   Cvm80Ingress3:
     Condition: AccessFromInternetSubnetAllow3
@@ -376,32 +312,6 @@ Resources:
       IpProtocol: TCP
       ToPort: 443
     Type: AWS::EC2::SecurityGroupIngress
-  Cvm5005Ingress3:
-    Condition: AccessFromInternetSubnetAllow3
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow3
-      Description:
-        Fn::Sub: "${AWS::StackName} 5005/tcp on CVM ALB for H2O GH"
-      FromPort: 5005
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 5005
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm54321Ingress3:
-    Condition: AccessFromInternetSubnetAllow3
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow3
-      Description:
-        Fn::Sub: "${AWS::StackName} 54321/tcp on CVM ALB for H2O"
-      FromPort: 54321
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 54321
-    Type: AWS::EC2::SecurityGroupIngress
   Cvm80IngressVPC:
     Properties:
       CidrIp:
@@ -425,30 +335,6 @@ Resources:
         Ref: CvmALBSecurityGroup
       IpProtocol: TCP
       ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm5005IngressVPC:
-    Properties:
-      CidrIp:
-        Ref: CIDR
-      Description:
-        Fn::Sub: "${AWS::StackName} VPC 5005/tcp on CVM ALB for H2O GH"
-      FromPort: 5005
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 5005
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm54321IngressVPC:
-    Properties:
-      CidrIp:
-        Ref: CIDR
-      Description:
-        Fn::Sub: "${AWS::StackName} VPC 54321/tcp on CVM ALB for H2O"
-      FromPort: 54321
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 54321
     Type: AWS::EC2::SecurityGroupIngress
   Cvm80IngressNatGW:
     Condition: AccessFromNatGW
@@ -481,38 +367,6 @@ Resources:
         Ref: CvmALBSecurityGroup
       IpProtocol: TCP
       ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm5005IngressNatGW:
-    Condition: AccessFromNatGW
-    Properties:
-      CidrIp:
-        Fn::Sub:
-          - "${ip}/32"
-          - ip:
-              Ref: DatagrokNatGatewayEIP
-      Description:
-        Fn::Sub: "${AWS::StackName} NatGW 5005/tcp on CVM ALB for H2O GH"
-      FromPort: 5005
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 5005
-    Type: AWS::EC2::SecurityGroupIngress
-  Cvm54321IngressNatGW:
-    Condition: AccessFromNatGW
-    Properties:
-      CidrIp:
-        Fn::Sub:
-          - "${ip}/32"
-          - ip:
-              Ref: DatagrokNatGatewayEIP
-      Description:
-        Fn::Sub: "${AWS::StackName} NatGW 54321/tcp on CVM ALB for H2O"
-      FromPort: 54321
-      GroupId:
-        Ref: CvmALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 54321
     Type: AWS::EC2::SecurityGroupIngress
   DatagrokSecurityGroup:
     Properties:
@@ -862,305 +716,6 @@ Resources:
         - CertificateArn:
             Ref: DatagrokArnSSLCertificate
     Type: AWS::ElasticLoadBalancingV2::Listener
-  DatagrokH2oService:
-    DependsOn:
-      - DatagrokH2oTCP5005Listener
-      - DatagrokH2oTCP5005IntListener
-      - DatagrokH2oTCP54321Listener
-      - DatagrokH2oTCP54321IntListener
-    Properties:
-      Cluster:
-        Fn::GetAtt:
-          - CvmCluster
-          - Arn
-      DeploymentConfiguration:
-        MaximumPercent: 200
-        MinimumHealthyPercent: 100
-      DeploymentController:
-        Type: ECS
-      DesiredCount: 1
-      LaunchType: "FARGATE"
-      LoadBalancers:
-        - ContainerName: h2o
-          ContainerPort: 5005
-          TargetGroupArn:
-            Ref: DatagrokH2oTCP5005TargetGroup
-        - ContainerName: h2o
-          ContainerPort: 54321
-          TargetGroupArn:
-            Ref: DatagrokH2oTCP54321TargetGroup
-        - ContainerName: h2o
-          ContainerPort: 5005
-          TargetGroupArn:
-            Ref: DatagrokH2oTCP5005IntTargetGroup
-        - ContainerName: h2o
-          ContainerPort: 54321
-          TargetGroupArn:
-            Ref: DatagrokH2oTCP54321IntTargetGroup
-      NetworkConfiguration:
-        AwsvpcConfiguration:
-          AssignPublicIp: DISABLED
-          SecurityGroups:
-            - Ref: CvmSecurityGroup
-          Subnets:
-            - Ref: DatagrokPrivateSubnet1
-            - Ref: DatagrokPrivateSubnet2
-      PlatformVersion: 1.4.0
-      PropagateTags: SERVICE
-      SchedulingStrategy: REPLICA
-      ServiceRegistries:
-        - RegistryArn:
-            Fn::GetAtt:
-              - DatagrokH2oServiceDiscoveryEntry
-              - Arn
-      Tags:
-        - Key: Name
-          Value:
-            Fn::Sub: "${AWS::StackName} Datagrok CVM H2O Service"
-        - Key: datagrok.component
-          Value: cvm
-        - Key: datagrok.service
-          Value: h2o
-      TaskDefinition:
-        Ref: DatagrokH2oTaskDefinition
-    Type: AWS::ECS::Service
-  DatagrokH2oServiceDiscoveryEntry:
-    Properties:
-      Description:
-        Fn::Sub: "${AWS::StackName} Datagrok CVM h2o service discovery entry in Cloud Map"
-      DnsConfig:
-        DnsRecords:
-          - TTL: 60
-            Type: A
-        RoutingPolicy: MULTIVALUE
-      HealthCheckCustomConfig:
-        FailureThreshold: 1
-      Name: h2o
-      NamespaceId:
-        Ref: DatagrokCloudMap
-    Type: AWS::ServiceDiscovery::Service
-  DatagrokH2oTCP5005Listener:
-    Properties:
-      DefaultActions:
-        - ForwardConfig:
-            TargetGroups:
-              - TargetGroupArn:
-                  Ref: DatagrokH2oTCP5005TargetGroup
-          Type: forward
-      LoadBalancerArn:
-        Ref: CvmLoadBalancer
-      Port: 5005
-      Protocol: HTTPS
-      Certificates:
-        - CertificateArn:
-            Ref: DatagrokArnSSLCertificate
-    Type: AWS::ElasticLoadBalancingV2::Listener
-  DatagrokH2oTCP5005IntListener:
-    Properties:
-      DefaultActions:
-        - ForwardConfig:
-            TargetGroups:
-              - TargetGroupArn:
-                  Ref: DatagrokH2oTCP5005IntTargetGroup
-          Type: forward
-      LoadBalancerArn:
-        Ref: CvmLoadBalancerInt
-      Port: 5005
-      Protocol: HTTP
-    Type: AWS::ElasticLoadBalancingV2::Listener
-  DatagrokH2oTCP5005TargetGroup:
-    Properties:
-      Name:
-        Fn::Sub: "${AWS::StackName}-datagrok-cvm-h2o-gh"
-      Port: 5005
-      Protocol: HTTP
-      Tags:
-        - Key: datagrok.component
-          Value: cvm
-      TargetType: 'ip'
-      VpcId:
-        Ref: DatagrokVPC
-      HealthCheckPath: "/helper/info"
-      Matcher:
-        HttpCode: '200'
-      TargetGroupAttributes:
-        - Key: stickiness.enabled
-          Value: 'true'
-        - Key: stickiness.type
-          Value: lb_cookie
-        - Key: stickiness.lb_cookie.duration_seconds
-          Value: '86400'
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  DatagrokH2oTCP5005IntTargetGroup:
-    Properties:
-      Name:
-        Fn::Sub: "${AWS::StackName}-datagrok-cvm-h2o-gh-i"
-      Port: 5005
-      Protocol: HTTP
-      Tags:
-        - Key: datagrok.component
-          Value: cvm
-      TargetType: 'ip'
-      VpcId:
-        Ref: DatagrokVPC
-      HealthCheckPath: "/helper/info"
-      Matcher:
-        HttpCode: '200'
-      TargetGroupAttributes:
-        - Key: stickiness.enabled
-          Value: 'true'
-        - Key: stickiness.type
-          Value: lb_cookie
-        - Key: stickiness.lb_cookie.duration_seconds
-          Value: '86400'
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  DatagrokH2oTCP54321Listener:
-    Properties:
-      DefaultActions:
-        - ForwardConfig:
-            TargetGroups:
-              - TargetGroupArn:
-                  Ref: DatagrokH2oTCP54321TargetGroup
-          Type: forward
-      LoadBalancerArn:
-        Ref: CvmLoadBalancer
-      Port: 54321
-      Protocol: HTTPS
-      Certificates:
-        - CertificateArn:
-            Ref: DatagrokArnSSLCertificate
-    Type: AWS::ElasticLoadBalancingV2::Listener
-  DatagrokH2oTCP54321IntListener:
-    Properties:
-      DefaultActions:
-        - ForwardConfig:
-            TargetGroups:
-              - TargetGroupArn:
-                  Ref: DatagrokH2oTCP54321IntTargetGroup
-          Type: forward
-      LoadBalancerArn:
-        Ref: CvmLoadBalancerInt
-      Port: 54321
-      Protocol: HTTP
-    Type: AWS::ElasticLoadBalancingV2::Listener
-  DatagrokH2oTCP54321TargetGroup:
-    Properties:
-      Name:
-        Fn::Sub: "${AWS::StackName}-datagrok-cvm-h2o"
-      Port: 54321
-      Protocol: HTTP
-      Tags:
-        - Key: datagrok.component
-          Value: cvm
-      TargetType: 'ip'
-      VpcId:
-        Ref: DatagrokVPC
-      HealthCheckPath: "/3/About"
-      Matcher:
-        HttpCode: '200'
-      TargetGroupAttributes:
-        - Key: stickiness.enabled
-          Value: 'true'
-        - Key: stickiness.type
-          Value: lb_cookie
-        - Key: stickiness.lb_cookie.duration_seconds
-          Value: '86400'
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  DatagrokH2oTCP54321IntTargetGroup:
-    Properties:
-      Name:
-        Fn::Sub: "${AWS::StackName}-datagrok-cvm-h2o-i"
-      Port: 54321
-      Protocol: HTTP
-      Tags:
-        - Key: datagrok.component
-          Value: cvm
-      TargetType: 'ip'
-      VpcId:
-        Ref: DatagrokVPC
-      HealthCheckPath: "/3/About"
-      Matcher:
-        HttpCode: '200'
-      TargetGroupAttributes:
-        - Key: stickiness.enabled
-          Value: 'true'
-        - Key: stickiness.type
-          Value: lb_cookie
-        - Key: stickiness.lb_cookie.duration_seconds
-          Value: '86400'
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  DatagrokH2oTaskDefinition:
-    Properties:
-      ContainerDefinitions:
-        - Command:
-            - Fn::Sub: "${AWS::Region}.compute.internal"
-            - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
-            - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
-          Essential: false
-          Image:
-            Fn::Sub:
-              - "${domain}/${repo}:${tag}"
-              - domain:
-                  Fn::FindInMap: [ Images, Searchdomain, domain ]
-                repo:
-                  Fn::FindInMap: [ Images, Searchdomain, repo ]
-                tag:
-                  Fn::FindInMap: [ Images, Searchdomain, version ]
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group:
-                Ref: DatagrokLogGroup
-              awslogs-region:
-                Ref: AWS::Region
-              awslogs-stream-prefix: h2o
-          MemoryReservation: 100
-          ReadonlyRootFilesystem: true
-          Name: ResolvConf
-        - DependsOn:
-            - Condition: SUCCESS
-              ContainerName: ResolvConf
-          Essential: true
-          Image:
-            Fn::Sub:
-              - "${domain}/${repo}:${tag}"
-              - domain:
-                  Fn::FindInMap: [ Images, H2o, domain ]
-                repo:
-                  Fn::FindInMap: [ Images, H2o, repo ]
-                tag:
-                  Ref: H2oVersion
-          LinuxParameters: { }
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group:
-                Ref: DatagrokLogGroup
-              awslogs-region:
-                Ref: AWS::Region
-              awslogs-stream-prefix: h2o
-          MemoryReservation: 1024
-          #          ReadonlyRootFilesystem: true
-          Name: h2o
-          PortMappings:
-            - ContainerPort: 5005
-              HostPort: 5005
-              Protocol: tcp
-            - ContainerPort: 54321
-              HostPort: 54321
-              Protocol: tcp
-      Cpu: '512'
-      ExecutionRoleArn:
-        Fn::GetAtt:
-          - DatagrokTaskExecutionRole
-          - Arn
-      Family:
-        Fn::Sub: "${AWS::StackName}-datagrok-cvm-h2o"
-      Memory: '2048'
-      NetworkMode: awsvpc
-      RequiresCompatibilities:
-        - "FARGATE"
-    Type: AWS::ECS::TaskDefinition
   DatagrokJupyterKernelGatewayService:
     DependsOn:
       - CvmTCP80Listener
@@ -2548,25 +2103,6 @@ Resources:
           Fn::GetAtt:
             - CvmLoadBalancerInt
             - DNSName
-  DatagrokH2oPrivateDNS:
-    Type: AWS::Route53::RecordSet
-    Properties:
-      HostedZoneId:
-        Ref: DatagrokPrivateDNSZone
-      Comment:
-        Fn::Sub: "${AWS::StackName} Private Datagrok H2O DNS for internal routing"
-      Name:
-        Fn::Sub: h2o.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal.
-      Type: A
-      AliasTarget:
-        HostedZoneId:
-          Fn::GetAtt:
-            - CvmLoadBalancerInt
-            - CanonicalHostedZoneID
-        DNSName:
-          Fn::GetAtt:
-            - CvmLoadBalancerInt
-            - DNSName
   GrokConnectPrivateDNS:
     Type: AWS::Route53::RecordSet
     Properties:
@@ -2613,12 +2149,15 @@ Resources:
             Resource: "*"
           - Action:
               - ecs:DescribeTaskDefinition
+              - ecs:ListTaskDefinitions
+              - ecs:DeregisterTaskDefinition
             Condition: { }
             Effect: Allow
             Resource: "*"
           - Action:
               - "ecs:DescribeServices"
               - "ecs:UpdateService"
+              - "ecs:DeleteService"
             Condition:
               ArnEquals:
                 ecs:cluster:
@@ -2633,6 +2172,7 @@ Resources:
                     Ref: DatagrokCluster
           - Action:
               - "ecs:CreateService"
+              - "ecs:TagResource"
             Condition:
               StringEquals:
                 aws:RequestTag/caller: [ "grok_spawner" ]
@@ -2671,6 +2211,14 @@ Resources:
                     Fn::GetAtt:
                       - DatagrokLogGroup
                       - Arn
+          - Action:
+              - "ecs:DescribeClusters"
+            Effect: Allow
+            Resource:
+              Fn::Sub:
+                - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${cluster_name}"
+                - cluster_name:
+                    Ref: DatagrokCluster
       ManagedPolicyName:
         Fn::Sub: "${AWS::StackName}-GrokSpawner-${AWS::Region}"
   GrokSpawnerECRPolicy:
@@ -2967,7 +2515,10 @@ Resources:
           Environment:
             - Name: "GROK_SPAWNER_DOCKER_REGISTRY_SECRET_ARN"
               Value: ""
-            - Name: "GROK_SPAWNER_ECS_SUBNETS"
+            - Name: "GROK_SPAWNER_DATAGROK_ECS_CLUSTER"
+              Value:
+                Ref: DatagrokCluster
+            - Name: "GROK_SPAWNER_DATAGROK_ECS_SUBNETS"
               Value:
                 Fn::Sub:
                   - '["${s1}", "${s2}"]'
@@ -2975,13 +2526,13 @@ Resources:
                       Ref: DatagrokPrivateSubnet1
                     s2:
                       Ref: DatagrokPrivateSubnet2
-            - Name: "GROK_SPAWNER_ECS_SECURITY_GROUPS"
+            - Name: "GROK_SPAWNER_DATAGROK_ECS_SECURITY_GROUPS"
               Value:
                 Fn::Sub:
                   - '["${s1}"]'
                   - s1:
                       Ref: DatagrokSecurityGroup
-            - Name: "GROK_SPAWNER_ECS_EXEC_ROLE"
+            - Name: "GROK_SPAWNER_DATAGROK_ECS_EXEC_ROLE"
               Value:
                 Fn::GetAtt:
                   - DatagrokTaskExecutionRole
@@ -2995,7 +2546,7 @@ Resources:
             - Name: "GROK_SPAWNER_KANIKO_TASK_DEFINITION"
               Value:
                 Ref: DatagrokKanikoTaskDefinition
-            - Name: "GROK_SPAWNER_ECS_LOG_GROUP"
+            - Name: "GROK_SPAWNER_DATAGROK_ECS_LOG_GROUP"
               Value:
                 Fn::Sub:
                   - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${logs}
@@ -3017,14 +2568,14 @@ Resources:
             - ContainerPort: 8000
               HostPort: 8000
               Protocol: tcp
-      Cpu: '256'
+      Cpu: '1024'
       ExecutionRoleArn:
         Fn::GetAtt:
           - DatagrokTaskExecutionRole
           - Arn
       Family:
         Fn::Sub: "${AWS::StackName}-datagrok-grok_spawner"
-      Memory: '512'
+      Memory: '4096'
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - "FARGATE"

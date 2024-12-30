@@ -28,6 +28,8 @@ COPY --from=mambaorg/micromamba:latest /usr/local/bin/_dockerfile_initialize_use
 COPY --from=mambaorg/micromamba:latest /usr/local/bin/_dockerfile_setup_root_prefix.sh /usr/local/bin/_dockerfile_setup_root_prefix.sh
 RUN /usr/local/bin/_dockerfile_initialize_user_accounts.sh && /usr/local/bin/_dockerfile_setup_root_prefix.sh
 
+RUN mkdir /app && chown $MAMBA_USER:$MAMBA_USER /app
+
 USER $MAMBA_USER
 
 WORKDIR /app

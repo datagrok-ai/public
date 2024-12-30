@@ -33,7 +33,7 @@ category('pinned-column', () => {
     await grok.functions.call('PowerGrid:addPinnedColumn', {gridCol: pin1GCol});
     await grok.functions.call('PowerGrid:addPinnedColumn', {gridCol: pin2GCol});
   });
-});
+}, {owner: 'dkovalyov@datagrok.ai'});
 
 async function _openGrid(csv: string): Promise<DG.TableView> {
   const df = DG.DataFrame.fromCsv(csv);

@@ -1,10 +1,14 @@
 ### Verify Scripting and Model Interaction in Diff Studio
 
 1. Open **Diff Studio**. Open JavaScript Script:
-* Click on the JS button on the ribbon. A view with a JavaScript script should open.
+* Turn on the Edit toggle on the ribbon, equations editor opens; 
+* Click on the **</>** icon on the ribbon, a view with JavaScript script opens;
 2. Run the Script:
 * Execute the JavaScript script.
-* Move the slider for the Final at input.
+* Move the slider for the *Final at* input. 
+
+REMARK. This UI does NOT contain the Process mode input (unlike Diff Studio)
+
 * Observe Changes: Verify that the table and line chart are modified in real-time as you move the slider.
 3. Save the Script:
 * Add "//tags: model" to JS body. Save the script after confirming that it runs correctly.

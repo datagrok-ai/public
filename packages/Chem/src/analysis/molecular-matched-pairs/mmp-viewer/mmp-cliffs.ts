@@ -5,14 +5,13 @@ import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {drawMoleculeToCanvas} from '../../../utils/chem-common-rdkit';
 import {getSigFigs} from '../../../utils/chem-common';
-import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 import {ILineSeries, MouseOverLineEvent, ScatterPlotCurrentLineStyle, ScatterPlotLinesRenderer}
   from '@datagrok-libraries/utils/src/render-lines-on-sp';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {debounceTime} from 'rxjs/operators';
 import {getInverseSubstructuresAndAlign} from './mmp-mol-rendering';
-import {MMP_CONTEXT_PANE_CLASS, MMP_NAMES} from './mmp-constants';
+import {MMP_CONTEXT_PANE_CLASS, MMP_NAMES, MOL_CANVAS_HEIGHT, MOL_CANVAS_WIDTH} from './mmp-constants';
 import $ from 'cash-dom';
 import {MMPA} from '../mmp-analysis/mmpa';
 import {ISequenceSpaceParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
@@ -33,7 +32,7 @@ export function getMmpScatterPlot(
     showColorSelector: false,
     showSizeSelector: false,
     markerDefaultSize: 7,
-    showMarkerLabels: 'Auto',
+    displayLabels: 'Auto',
   });
   //temporary fix (to save backward compatibility) since labels
   //option type has been changed from string to array in 1.23 platform version
@@ -48,77 +47,101 @@ export function getMmpScatterPlot(
   return sp;
 }
 
-function drawMolPair(molecules: string[], indexes: number[], substruct: (ISubstruct | null)[], div: HTMLDivElement,
-  parentTable: DG.DataFrame, tooltip?: boolean) {
+function drawMolPairTooltop(molecules: string[], substruct: (ISubstruct | null)[], div: HTMLDivElement) {
   ui.empty(div);
   const hosts = ui.divH([]);
-  if (!tooltip)
-    hosts.classList.add('chem-mmpa-context-pane-mol-div');
-  const canvasWidth = 170;
-  const canvasHeight = 75;
-  for (let i = 0; i < 2; i++) {
-    const imageHost = ui.canvas(canvasWidth, canvasHeight);
-    imageHost.onclick = () => {parentTable.currentRowIdx = indexes[i];};
-    drawMoleculeToCanvas(0, 0, canvasWidth, canvasHeight, imageHost, molecules[i], '', undefined, substruct[i]);
+  const molHosts = getMoleculePairImages(molecules, substruct);
+  for (const imageHost of molHosts)
     hosts.append(imageHost);
-  }
   div.append(hosts);
 };
 
+function drawMolPairContextPane(molecules: string[], indexes: number[], substruct: (ISubstruct | null)[],
+  divArray: HTMLDivElement[],
+  parentTable: DG.DataFrame) {
+  divArray.forEach((it) => ui.empty(it));
+  const molHosts = getMoleculePairImages(molecules, substruct, parentTable, indexes);
+  divArray[0].append(molHosts[0]);
+  divArray[1].append(molHosts[1]);
+};
+
+export function getMoleculePairImages(molecules: string[], substruct: (ISubstruct | null)[],
+  parentTable?: DG.DataFrame, indexes?: number[]): HTMLCanvasElement[] {
+  const molHosts = [];
+  for (let i = 0; i < 2; i++) {
+    const imageHost = ui.canvas(MOL_CANVAS_WIDTH, MOL_CANVAS_HEIGHT);
+    if (indexes && parentTable)
+      imageHost.onclick = () => {parentTable.currentRowIdx = indexes[i];};
+    drawMoleculeToCanvas(0, 0, MOL_CANVAS_WIDTH, MOL_CANVAS_HEIGHT, imageHost,
+      molecules[i], '', undefined, substruct[i]);
+    molHosts.push(imageHost);
+  }
+  return molHosts;
+}
+
 export function fillPairInfo(mmpa: MMPA, line: number, linesIdxs: Uint32Array, activityNum: number,
   pairsDf: DG.DataFrame, diffs: Array<Float32Array>, parentTable: DG.DataFrame,
-  rdkitModule: RDModule, propPanelViewer?: FormsViewer):
+  rdkitModule: RDModule, molColName: string, propPanelViewer?: boolean):
   HTMLDivElement {
-  const div = ui.divV([]);
-  $(div).css({'width': '100%', 'height': '100%'});
-  const moleculesDiv = ui.divH([]);
-  div.append(moleculesDiv);
   const pairIdx = linesIdxs[line];
-  const subsrtFrom = pairsDf.get(MMP_NAMES.STRUCT_DIFF_FROM_NAME, pairIdx);
-  const subsrtTo = pairsDf.get(MMP_NAMES.STRUCT_DIFF_TO_NAME, pairIdx);
   const moleculeFrom = pairsDf.get(MMP_NAMES.FROM, pairIdx);
   const moleculeTo = pairsDf.get(MMP_NAMES.TO, pairIdx);
   const fromIdx = pairsDf.get(MMP_NAMES.PAIRNUM_FROM, pairIdx);
   const toIdx = pairsDf.get(MMP_NAMES.PAIRNUM_TO, pairIdx);
-  const ruleNum = pairsDf.get(MMP_NAMES.RULENUM, pairIdx);
+
+  const div = propPanelViewer ? ui.divH([]) : ui.divV([]);
+  let moleculesDiv: HTMLDivElement | null = null;
+  let contextPaneMolDivs: HTMLDivElement[] | null = null;
   if (propPanelViewer) {
-    const props = getMoleculesPropertiesDiv(propPanelViewer, [fromIdx, toIdx]);
-    div.append(props);
+    contextPaneMolDivs = [ui.div(ui.divText(`Loading...`)), ui.div(ui.divText(`Loading...`))];
+    const headers = ui.divV([], 'chem-mmp-context-pane-headers');
+    const mol1Div = ui.divV([]);
+    const mol2Div = ui.divV([]);
+    const propertiesColumnsNames = parentTable!.columns.names()
+      .filter((name) => !name.startsWith('~'));
+    for (const colName of propertiesColumnsNames) {
+      if (colName === molColName) {
+        const molColHeader = ui.div(ui.divText(colName, 'chem-mmp-context-pane-item'),
+          {style: {height: `${MOL_CANVAS_HEIGHT}px`}});
+        molColHeader.classList.add('chem-mmp-context-pane-mol-header');
+        headers.append(molColHeader);
+        mol1Div.append(contextPaneMolDivs[0]);
+        mol2Div.append(contextPaneMolDivs[1]);
+      } else {
+        headers.append(ui.divText(colName, 'chem-mmp-context-pane-item'));
+        mol1Div.append(ui.div(ui.divText(parentTable.get(colName, fromIdx), 'chem-mmp-context-pane-item')));
+        mol2Div.append(ui.div(ui.divText(parentTable.get(colName, toIdx), 'chem-mmp-context-pane-item')));
+      }
+    }
+    div.append(headers, mol1Div, mol2Div);
   } else {
+    $(div).css({'width': '100%', 'height': '100%'});
+    moleculesDiv = ui.divH([]);
+    div.append(moleculesDiv);
     const diff = ui.tableFromMap({'Diff': getSigFigs(diffs[activityNum][pairIdx], 4)});
     diff.style.maxWidth = '150px';
     div.append(diff);
-    if (subsrtFrom || subsrtTo) {
-      drawMolPair([moleculeFrom, moleculeTo], [fromIdx, toIdx],
-        [subsrtFrom, subsrtTo], moleculesDiv, parentTable, !propPanelViewer);
-    } else {
-      moleculesDiv.append(ui.divText(`Loading...`));
-      const cores = mmpa.rules.rules[ruleNum].pairs
-        .filter((pair) => pair.firstStructure === fromIdx && pair.secondStructure === toIdx);
-      if (cores.length) {
-        getInverseSubstructuresAndAlign([mmpa.frags.idToName[cores[0].core]],
-          [moleculeFrom], [moleculeTo], rdkitModule).then((res) => {
-          const {inverse1, inverse2, fromAligned, toAligned} = res;
-          pairsDf.set(MMP_NAMES.STRUCT_DIFF_FROM_NAME, pairIdx, inverse1[0]);
-          pairsDf.set(MMP_NAMES.STRUCT_DIFF_TO_NAME, pairIdx, inverse2[0]);
-          pairsDf.set(MMP_NAMES.FROM, pairIdx, fromAligned[0]);
-          pairsDf.set(MMP_NAMES.TO, pairIdx, toAligned[0]);
-          drawMolPair([fromAligned[0], toAligned[0]], [fromIdx, toIdx],
-            [inverse1[0], inverse2[0]], moleculesDiv, parentTable, !!propPanelViewer);
-        });
+    moleculesDiv.append(ui.divText(`Loading...`));
+  }
+  const core = mmpa.frags.idToName[pairsDf.get(MMP_NAMES.CORE_NUM, pairIdx)].replace('[*:1]', '[H]');
+  if (core) {
+    getInverseSubstructuresAndAlign([core],
+      [moleculeFrom], [moleculeTo], rdkitModule).then((res) => {
+      const {inverse1, inverse2, fromAligned, toAligned} = res;
+
+      if (!propPanelViewer && moleculesDiv) //tooptip
+        drawMolPairTooltop([fromAligned[0], toAligned[0]], [inverse1[0], inverse2[0]], moleculesDiv);
+      else { //context panel
+        if (contextPaneMolDivs) {
+          drawMolPairContextPane([fromAligned[0], toAligned[0]], [fromIdx, toIdx],
+            [inverse1[0], inverse2[0]], contextPaneMolDivs, parentTable);
+        }
       }
-    }
+    });
   }
   div.classList.add(MMP_CONTEXT_PANE_CLASS);
   return div;
 };
-
-function getMoleculesPropertiesDiv(propPanelViewer: FormsViewer, idxs: number[]): HTMLElement {
-  propPanelViewer.fixedRowNumbers = idxs;
-  propPanelViewer.root.classList.add('chem-mmpa-forms-viewer');
-
-  return ui.div(propPanelViewer.root, {style: {height: '100%'}});
-}
 
 export function runMmpChemSpace(parentTable: DG.DataFrame, molCol: DG.Column, sp: DG.Viewer, lines: ILineSeries,
   linesIdxs: Uint32Array, linesActivityCorrespondance: Uint32Array, pairsDf: DG.DataFrame, mmpa: MMPA,
@@ -137,7 +160,7 @@ export function runMmpChemSpace(parentTable: DG.DataFrame, molCol: DG.Column, sp
   spEditor.lineHover.pipe(debounceTime(500)).subscribe((event: MouseOverLineEvent) => {
     ui.tooltip.show(
       fillPairInfo(mmpa, event.id, linesIdxs, linesActivityCorrespondance[event.id],
-        pairsDf, mmpa.allCasesBased.diffs, parentTable, rdkitModule),
+        pairsDf, mmpa.allCasesBased.diffs, parentTable, rdkitModule, molCol.name),
       event.x, event.y);
   });
 
