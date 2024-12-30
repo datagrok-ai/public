@@ -1012,6 +1012,13 @@ export function bioSubstructureFilter(): BioSubstructureFilter {
   return new BioSubstructureFilter(_package.seqHelper, _package.logger);
 }
 
+//name: Bio Substructure Filter Test
+//description: Substructure filter for Helm package tests
+//output: object result
+export function bioSubstructureFilterTest(): BioSubstructureFilter {
+  return new BioSubstructureFilter(_package.seqHelper, _package.logger);
+}
+
 // -- Test apps --
 
 //name: webLogoLargeApp

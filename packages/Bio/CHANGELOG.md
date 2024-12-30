@@ -1,5 +1,11 @@
 # Bio changelog
 
+## 2.18.1 (2024-12-30)
+
+* Removed dependency from Helm package
+* Moved substructure filter types to bio library
+* Updated tests
+
 ## 2.17.6 (2024-12-11)
 
 * Add monomer manager app view with library dashboards

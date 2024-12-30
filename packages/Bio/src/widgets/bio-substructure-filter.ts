@@ -23,8 +23,9 @@ import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 import {helmSubstructureSearch, linearSubstructureSearch} from '../substructure-search/substructure-search';
 import {updateDivInnerHTML} from '../utils/ui-utils';
-import {BioFilterBase, BioFilterProps, IBioFilter, IFilterProps} from './bio-substructure-filter-types';
+import {BioFilterBase, BioFilterProps, IBioFilter, IFilterProps} from '@datagrok-libraries/bio/src/substructure-filter/bio-substructure-filter-types';
 import {HelmBioFilter} from './bio-substructure-filter-helm';
+import { _package } from '../package';
 
 const FILTER_SYNC_EVENT: string = 'bio-substructure-filter';
 
@@ -42,8 +43,9 @@ export class SeparatorFilterProps extends BioFilterProps {
   constructor(
     substructure: string,
     public readonly separator?: string,
+    logger?: DG.PackageLogger
   ) {
-    super(substructure, false);
+    super(substructure, false, logger);
     this.readOnly = true;
   }
 }
@@ -276,7 +278,7 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
 }
 
 export class FastaBioFilter extends BioFilterBase<BioFilterProps> {
-  readonly emptyProps = new BioFilterProps('');
+  readonly emptyProps = new BioFilterProps('', undefined, _package.logger);
 
   readonly substructureInput: DG.InputBase<string>;
 
@@ -288,7 +290,7 @@ export class FastaBioFilter extends BioFilterBase<BioFilterProps> {
     this.substructureInput = ui.input.string('', {
       value: '', onValueChanged: (value) => {
         window.setTimeout(() => {
-          this.props = new BioFilterProps(value);
+          this.props = new BioFilterProps(value, undefined, _package.logger);
           if (!this._propsChanging) this.onChanged.next();
         }, 0 /* next event cycle */);
       }, placeholder: 'Substructure'
@@ -318,7 +320,7 @@ export class FastaBioFilter extends BioFilterBase<BioFilterProps> {
 }
 
 export class SeparatorBioFilter extends BioFilterBase<SeparatorFilterProps> {
-  readonly emptyProps = new SeparatorFilterProps('', undefined);
+  readonly emptyProps = new SeparatorFilterProps('', undefined, _package.logger);
 
   readonly substructureInput: DG.InputBase<string>;
   readonly separatorInput: DG.InputBase<string>;
@@ -331,14 +333,14 @@ export class SeparatorBioFilter extends BioFilterBase<SeparatorFilterProps> {
 
     this.substructureInput = ui.input.string('', {
       value: '', onValueChanged: (value) => {
-        this.props = new SeparatorFilterProps(value, this.props.separator);
+        this.props = new SeparatorFilterProps(value, this.props.separator, _package.logger);
         if (!this._propsChanging) this.onChanged.next();
       }, placeholder: 'Substructure'
     });
     this.separatorInput = ui.input.string('', {
       value: this.colSeparator = colSeparator, onValueChanged: (value) => {
         const separator: string | undefined = !!value ? value : undefined;
-        this.props = new SeparatorFilterProps(this.props.substructure, separator);
+        this.props = new SeparatorFilterProps(this.props.substructure, separator, _package.logger);
         if (!this._propsChanging) this.onChanged.next();
       }, placeholder: 'Separator'
     });
@@ -361,7 +363,7 @@ export class SeparatorBioFilter extends BioFilterBase<SeparatorFilterProps> {
   get isFiltering(): boolean { return this.props.substructure !== ''; };
 
   resetFilter(): void {
-    this.props = new SeparatorFilterProps('');
+    this.props = new SeparatorFilterProps('', undefined, _package.logger);
   }
 
   get filterPanel() {

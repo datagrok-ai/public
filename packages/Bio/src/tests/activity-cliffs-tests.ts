@@ -27,7 +27,9 @@ category('activityCliffs', async () => {
   const seqEncodingFunc = DG.Func.find({name: 'macromoleculePreprocessingFunction', package: 'Bio'})[0];
   const helmEncodingFunc = DG.Func.find({name: 'helmPreprocessingFunction', package: 'Bio'})[0];
   before(async () => {
-    helmHelper = await getHelmHelper(); // init Helm package
+    const helmPackInstalled = DG.Func.find({package: 'Helm', name: 'getHelmHelper'}).length;
+    if (helmPackInstalled)
+      helmHelper = await getHelmHelper(); // init Helm package
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
 
@@ -61,10 +63,13 @@ category('activityCliffs', async () => {
   });
 
   test('Helm', async () => {
-    const df = await _package.files.readCsv('samples/HELM_50.csv');
-    const _view = grok.shell.addTableView(df);
-
-    await _testActivityCliffsOpen(df, DimReductionMethods.UMAP,
-      'HELM', 'Activity', 65, 20, BitArrayMetricsNames.Tanimoto, helmEncodingFunc);
+    const helmPackInstalled = DG.Func.find({package: 'Helm', name: 'getHelmHelper'}).length;
+    if (helmPackInstalled) {
+      const df = await _package.files.readCsv('samples/HELM_50.csv');
+      const _view = grok.shell.addTableView(df);
+  
+      await _testActivityCliffsOpen(df, DimReductionMethods.UMAP,
+        'HELM', 'Activity', 65, 20, BitArrayMetricsNames.Tanimoto, helmEncodingFunc);
+    }
   });
 });
