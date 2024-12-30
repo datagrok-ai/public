@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.47.1 (2024-12-30)
+
+Moved bio substructure filter types from Bio package to bio library
+
 ## 5.46.2 (2024-12-23)
 
 Add healthCheck method to the IAutoDockService interface
