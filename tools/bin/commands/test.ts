@@ -8,7 +8,7 @@ import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
 import * as Papa from 'papaparse';
 import * as testUtils from '../utils/test-utils';
-import { WorkerOptions, loadTestsList, runWorker, ResultObject, saveCsvResults, printWorkersResult, mergeWorkersResults, Test, OrganizedTests as OrganizedTest, timeout } from '../utils/test-utils';
+import { BrowserOptions, loadTestsList, runBrowser, ResultObject, saveCsvResults, printBrowsersResult, mergeBrowsersResults, Test, OrganizedTests as OrganizedTest, timeout } from '../utils/test-utils';
 import { setAlphabeticalOrder } from '../utils/order-functions';
 
 const testInvocationTimeout = 3600000;
@@ -54,7 +54,7 @@ export async function test(args: TestArgs): Promise<boolean> {
   let res = await runTesting(args);
   if (args.csv)
     saveCsvResults([res.csv], csvReportDir);
-  printWorkersResult(res, args.verbose)
+  printBrowsersResult(res, args.verbose)
   if (res.failed)
     testUtils.exitWithCode(1);
   else
@@ -114,10 +114,10 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
   color.info('Starting tests...');
   let testsResults: ResultObject[] = [];
   let r: ResultObject;
-  let workerId = 1;
+  let browserId = 1;
   await timeout(async () => {
     do {
-      r = await runWorker(organized, {
+      r = await runBrowser(organized, {
         benchmark: args.benchmark ?? false,
         catchUnhandled: args.catchUnhandled ?? false,
         gui: args.gui ?? false,
@@ -126,7 +126,7 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
         verbose: args.verbose ?? false,
         ciCd: args['ci-cd'] ?? false,
         stopOnTimeout: true
-      }, workerId, testInvocationTimeout);
+      }, browserId, testInvocationTimeout);
       let testsLeft: OrganizedTest[] = [];
       let testsToReproduce: OrganizedTest[] = [];
       for (let testData of organized) {
@@ -149,17 +149,17 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
       }
       testsResults.push(r);
       organized = testsLeft;
-      workerId++;
+      browserId++;
     }
     while (r.failed);
   }, testInvocationTimeout)
-  return await mergeWorkersResults(testsResults);
+  return await mergeBrowsersResults(testsResults);
 }
 
 async function reproducedTest(args: TestArgs, testsToReproduce: OrganizedTest[]): Promise<Map<OrganizedTest, ResultObject>> {
   const res: Map<OrganizedTest, ResultObject> = new Map<OrganizedTest, ResultObject>();
   for (let test of testsToReproduce) {
-    let r = await runWorker([test], {
+    let r = await runBrowser([test], {
       benchmark: args.benchmark ?? false,
       catchUnhandled: false,
       gui: false,

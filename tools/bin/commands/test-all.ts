@@ -5,15 +5,15 @@ import path from 'path';
 import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
 import * as testUtils from '../utils/test-utils';
-import { setRandomOrder, setAlphabeticalOrder, setPackageRandomOrder, setPackageAlphabeticalOrder, setTestToWorkerOrder } from '../utils/order-functions';
-import { WorkerOptions, loadTestsList, saveCsvResults, printWorkersResult, runWorker, ResultObject, Test, OrganizedTests } from '../utils/test-utils';
+import { setRandomOrder, setAlphabeticalOrder, setPackageRandomOrder, setPackageAlphabeticalOrder, setTestToBrowserOrder } from '../utils/order-functions';
+import { BrowserOptions, loadTestsList, saveCsvResults, printBrowsersResult, runBrowser, ResultObject, Test, OrganizedTests } from '../utils/test-utils';
 
 enum order {
   random = 0,
   alphabetical = 1,
   packageRandom = 2,
   packageAlphabetical = 3,
-  testToWorker = 4,
+  testToBrowser = 4,
 }
 
 function getEnumOrder(orderStr: string): order {
@@ -34,8 +34,8 @@ function getEnumOrder(orderStr: string): order {
       case "packageatoz":
         return order.packageAlphabetical;
         break;
-    case "testtoworker":
-      return order.testToWorker;
+    case "testtobrowser":
+      return order.testToBrowser;
       break;
   }
   return order.random;
@@ -48,14 +48,14 @@ const csvReportDir = path.join(curDir, 'test-report.csv');
 
 const testInvocationTimeout = 7200000;
 
-const orderingFunctions: Map<order, (tests: Test[], workersAmount: number, testRepeats: number) => Test[][]> = new Map<order, (tests: Test[], workersAmount: number, testRepeats: number) => Test[][]>([
+const orderingFunctions: Map<order, (tests: Test[], browsersAmount: number, testRepeats: number) => Test[][]> = new Map<order, (tests: Test[], browsersAmount: number, testRepeats: number) => Test[][]>([
   [order.random, setRandomOrder],
   [order.alphabetical, setAlphabeticalOrder],
   [order.packageRandom, setPackageRandomOrder],
   [order.packageAlphabetical, setPackageAlphabeticalOrder],
-  [order.testToWorker, setTestToWorkerOrder]
+  [order.testToBrowser, setTestToBrowserOrder]
 ]);
-let workersStarted: number = 0;
+let browsersStarted: number = 0;
 
 export async function testAll(args: TestArgs): Promise<boolean> {
   const config = yaml.load(fs.readFileSync(confPath, { encoding: 'utf-8' })) as utils.Config;
@@ -65,9 +65,9 @@ export async function testAll(args: TestArgs): Promise<boolean> {
 
   let testsObj = await loadTestsList(packagesToRun, args.core);
   let filteredTests: Test[] = await filterTests(testsObj, (args.tags ?? "").split(" "), args['stress-test'], args.benchmark);
-  let workersOrder = await setWorkersOrder(filteredTests, getEnumOrder(args.order ?? ''), args['workers-count'], args.testRepeat);
+  let browsersOrder = await setBrowsersOrder(filteredTests, getEnumOrder(args.order ?? ''), args['browsers-count'], args.testRepeat);
 
-  let testsResults = await runTests(workersOrder, {
+  let testsResults = await runTests(browsersOrder, {
     benchmark: args.benchmark ?? false,
     catchUnhandled: args.catchUnhandled ?? false,
     gui: args.gui ?? false,
@@ -78,8 +78,8 @@ export async function testAll(args: TestArgs): Promise<boolean> {
 
   let i = 0;
   for (let result of testsResults) {
-    console.log(`\nWorker #${i++} `)
-    printWorkersResult(result, args.verbose);
+    console.log(`\nBrowser #${i++} `)
+    printBrowsersResult(result, args.verbose);
   }
 
   if (args.csv) {
@@ -111,39 +111,39 @@ async function filterTests(tests: Test[], tags: string[], stressTest: boolean = 
   return filteredTests;
 }
 
-async function setWorkersOrder(tests: Test[], invocationOrder: order = 0, countOfWorkers: number = 1, testRepeats: number = 1): Promise<Test[][]> {
+async function setBrowsersOrder(tests: Test[], invocationOrder: order = 0, countOfBrowsers: number = 1, testRepeats: number = 1): Promise<Test[][]> {
   let resultOrder: Test[][] = [];
 
   let orderingFunction = orderingFunctions.get(invocationOrder);
   if (orderingFunction !== undefined)
-    resultOrder = orderingFunction(tests, countOfWorkers, testRepeats);
+    resultOrder = orderingFunction(tests, countOfBrowsers, testRepeats);
   else
     throw new Error("Cannot find ordering function");
   return resultOrder;
 }
 
-async function runTests(workersOrder: Test[][], workerOptions: WorkerOptions): Promise<ResultObject[]> {
-  let workersCommands: OrganizedTests[][] = [];
+async function runTests(browsersOrder: Test[][], browserOptions: BrowserOptions): Promise<ResultObject[]> {
+  let browsersCommands: OrganizedTests[][] = [];
 
-  for (let workerOrder of workersOrder)
-    workersCommands.push(workerOrder.map(testObj => ({
+  for (let browserOrder of browsersOrder)
+    browsersCommands.push(browserOrder.map(testObj => ({
       package: testObj.packageName,
       params: {
         category: testObj.category,
         test: testObj.name,
         options: {
-          catchUnhandled: workerOptions.catchUnhandled,
-          report: workerOptions.report
+          catchUnhandled: browserOptions.catchUnhandled,
+          report: browserOptions.report
         }
       }
     })))
 
-  let workersPromises: Promise<ResultObject>[] = [];
+  let browsersPromises: Promise<ResultObject>[] = [];
 
-  for (let workerCommands of workersCommands) {
-    workersPromises.push(runWorker(workerCommands, workerOptions, workersStarted++, testInvocationTimeout));
+  for (let browserCommands of browsersCommands) {
+    browsersPromises.push(runBrowser(browserCommands, browserOptions, browsersStarted++, testInvocationTimeout));
   }
-  let resultObjects = await Promise.all(workersPromises);
+  let resultObjects = await Promise.all(browsersPromises);
   return resultObjects;
 }
 
@@ -169,5 +169,5 @@ interface TestArgs {
   'stress-test'?: boolean;
   tags?: string;
   testRepeat?: number;
-  'workers-count'?: number;
+  'browsers-count'?: number;
 }

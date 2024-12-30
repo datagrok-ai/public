@@ -1,5 +1,12 @@
 # Datagrok-tools changelog
 
+## 4.13.52 (2024-12-30)
+
+### Features
+
+* Refactored workers to browsers
+
+
 ## 4.13.51 (2024-12-30)
 
 ### Features

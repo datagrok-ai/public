@@ -165,7 +165,7 @@ const HELP_TESTALL = `
 Usage: grok testall
 
 Options:
-[--packages] [--host] [--csv] [--gui] [--skip-build] [--skip-publish] [--link-package] [--catchUnhandled] [--report] [--record] [--verbose] [--benchmark] [--stress-test] [--order] [--tags] [--testRepeat] [--workers-count]
+[--packages] [--host] [--csv] [--gui] [--skip-build] [--skip-publish] [--link-package] [--catchUnhandled] [--report] [--record] [--verbose] [--benchmark] [--stress-test] [--order] [--tags] [--testRepeat] [--browsers-count]
 
 --packages          Specify a packages names to run tests for
 --host              Host alias as in the config file
@@ -184,7 +184,7 @@ Options:
 --order             Specify order for tests invocation
 --tags              Filter tests by tag name for run
 --testRepeat        Set amount of tests repeats
---workers-count      Set amount of workers for tests run
+--browsers-count      Set amount of browsers for tests run
 
 Run tests of all or specified packages 
 
