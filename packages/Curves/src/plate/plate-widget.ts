@@ -49,7 +49,12 @@ export class PlateWidget extends DG.Widget {
   get plateData() { return this._plateData; }
   set plateData(t: DG.DataFrame) {
     this._plateData = t;
-    this._colorColumn = t.columns.firstWhere((col) => col.type == TYPE.FLOAT);
+    this._colorColumn = t.columns.firstWhere((col) => col.name == 'activity' && col.type == TYPE.FLOAT)
+      ?? t.columns.firstWhere((col) => col.name == 'activity' && col.type == TYPE.FLOAT)
+      ?? t.columns.firstWhere((col) => col.name != 'row' && col.name != 'col' && col.type == TYPE.FLOAT)
+      ?? t.columns.firstWhere((col) => col.type == TYPE.FLOAT)
+      ?? t.columns.byIndex(0);
+
     let rowCol: DG.Column<number> = this._plateData.col('row')!;
     let colCol: DG.Column<number> = this._plateData.col('col')!;
     for (let i = 0; i < this._plateData.rowCount; i++)
@@ -86,7 +91,7 @@ export class PlateWidget extends DG.Widget {
     if (gc.isColHeader && gc.gridColumn.idx > 0)
       g.fillText('' + gc.gridColumn.idx, x + w / 2, y + h / 2);
     // row header
-    else if (gc.gridColumn.idx == 0 && gc.gridRow > 0)
+    else if (gc.gridColumn.idx == 0 && gc.gridRow >= 0)
       g.fillText(String.fromCharCode(65 + gc.gridRow), x + w / 2, y + h / 2);
     else if (h > 0 && dataRow) {
       g.beginPath();
