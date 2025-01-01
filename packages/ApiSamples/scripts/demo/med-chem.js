@@ -69,6 +69,9 @@ if (!t.col('Affinity'))
 if (!t.col('JIRA'))
   t.columns.addNewString('JIRA').init((i) => Math.random() > 0.3 ? '' : 'GROK-' + rnd1(15000));
 
+addCatColumn('Plate file', ['file://System:DemoFiles/hts/plate-96-1.csv', 'file://System:DemoFiles/hts/plate-96-2.csv', 'file://System:DemoFiles/hts/plate-96-3.csv']);
+addCatColumn('Plate folder', ['file://System:DemoFiles/hts/']);
+
 const groups = {
   'Docking': { columns: ['PDB_ID', 'Pose', 'Affinity'] },
   'Absorption': { color: '#0b74e1', columns: ['Caco2', 'Lipophilicity', 'Solubility'] },
@@ -79,13 +82,15 @@ const groups = {
   'Chemspace': { columns: ['Chemspace id', 'Vendor', 'Pack, mg', 'Price, USD', 'Lead time, days']},
   'DRC': { columns: ['DRC', 'DRC R2', 'DRC AUC'] },
   'R-Groups': { columns: ['Core', 'R1', 'R2', 'R3'] },
-  'Classifications': {columns: ['BSEP classification', 'HLM CLint classification', 'RLM CLint classification', 'LE-MDCK Classification', 'PAMPA Classification', 'pH6.8 HT Solubility Classification'] }
+  'Classifications': {columns: ['BSEP classification', 'HLM CLint classification', 'RLM CLint classification', 'LE-MDCK Classification', 'PAMPA Classification', 'pH6.8 HT Solubility Classification'] },
+  'Ideation': { columns: ['Idea status', 'Idea author', 'Idea created', 'Idea approved', 'Idea synthesized']},
 }
 
 // settings virtual columns
-const v = grok.shell.getTableView('Med Chem');
-if (v) {
-  //v.grid.
+const tv = grok.shell.getTableView('Med Chem');
+if (tv) {
+  tv.grid.columns.add({gridColumnName: 'plate', cellType: 'Plate'})
+    .onPrepareValueScript = 'return grok.data.demo.wells(96); ';
 }
 
 t.meta.detectSemanticTypes();
