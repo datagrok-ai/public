@@ -51,8 +51,11 @@ await pivot.columns.addNewCalculated('has_suspicious', 'And(${min} / ${max} < 0.
 
 function replaceColumn(prefix, type, buildName, newType) {
   var col = pivot.columns.byName(prefix + type);
-  col.setTag('friendlyName', buildName + newType);
+  col?.setTag('friendlyName', buildName + newType);
 }
+
+pivot.columns.byName('owner').semType = 'User';
+pivot.columns.byName('owner').setTag('cell.renderer', 'User');
 
 for (var i = 1; i <= builds.length; i++) {
   var buildName = buildNames[i - 1];
