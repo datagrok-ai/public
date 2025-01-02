@@ -532,7 +532,7 @@ export class GridCell {
 
   /** @returns {Row} Corresponding table row, or null. */
   get tableRow(): Row | null {
-    return this.isTableCell || this.isRowHeader ? this.cell.row : null;
+    return this.cell?.row;
   }
 
   /** @returns {number|null} Index of the corresponding table row. */

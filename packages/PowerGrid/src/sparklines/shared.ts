@@ -40,7 +40,8 @@ export enum SparklineType {
   PieChart = 'piechart',
   Radar = 'radar',
   Sparkline = 'sparkline',
-  Form = 'smartform'
+  Form = 'smartform',
+  Tags = 'tags',
 }
 
 export const sparklineTypes: string[] = [
