@@ -22,5 +22,4 @@ for(let col of cols){
 	pivot.columns.add(col);
 }
 
-console.log(pivot)
 out = pivot;
