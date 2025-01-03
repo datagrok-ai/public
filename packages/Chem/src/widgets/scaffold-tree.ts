@@ -563,7 +563,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   skipAutoGenerate: boolean = false;
   workersInit: boolean = false;
   progressBar: DG.TaskBarProgressIndicator | null = null;
-  MoleculeColumn: string;
+  moleculeColumnName: string;
   molColPropObserver: MutationObserver | null = null;
   Table: string;
   treeEncode: string;
@@ -611,10 +611,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.molColumnIdx = this.molColumns[this.tableIdx].length > 0 ? 0 : -1;
     }
 
-    this.MoleculeColumn = this.string('MoleculeColumn', molColNames.length === 0 ? null : molColNames[0], {
-      choices: molColNames,
+    this.moleculeColumnName = this.column('molecule', {
+      defaultValue: molColNames.length === 0 ? null : molColNames[0],
       category: 'Data',
-      userEditable: this.molColumns.length > 0
+      userEditable: this.molColumns.length > 0,
+      nullable: false,
+      semType: DG.SEMTYPE.MOLECULE,
     });
 
     this.threshold = this.float('threshold', 0, {
@@ -650,7 +652,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   getFilterSum(): string {
-    return `${this.MoleculeColumn}: ${ScaffoldTreeViewer.TYPE}`;
+    return `${this.moleculeColumnName}: ${ScaffoldTreeViewer.TYPE}`;
   }
 
   addToFilters() {
@@ -1855,7 +1857,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.message = NO_MOL_COL_ERROR_MSG;
     (this._iconAdd! as any).inert = true;
     this._iconAdd!.style.color = 'grey';
-    this.MoleculeColumn = '';
+    this.moleculeColumnName = '';
   }
 
   onPropertyChanged(p: DG.Property): void {
@@ -1881,18 +1883,18 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.dataFrameSwitchgInProgress = true;
       this.clear();
       this.molColumnIdx = this.molColumns[this.tableIdx].length > 0 ? 0 : -1;
-      this.MoleculeColumn = this.molColumns[this.tableIdx][this.molColumnIdx].name;
+      this.moleculeColumnName = this.molColumns[this.tableIdx][this.molColumnIdx].name;
       this.dataFrameSwitchgInProgress = false;
 
       const div = getMoleculePropertyDiv();
       if (div !== null)
-        div.innerHTML = this.MoleculeColumn;
+        div.innerHTML = this.moleculeColumnName;
       this.toggleTreeGenerationVisibility();
       // set the DataFrame first to trigger onFrameAttached, which ensures correct filtering on the appropriate table
       this.dataFrame = grok.shell.tables.find((df) => df.name === this.Table)!;
-    } else if (p.name === 'MoleculeColumn') {
+    } else if (p.name === 'moleculeColumnName') {
       for (let n = 0; n < this.molColumns[this.tableIdx].length; ++n) {
-        if (this.molColumns[this.tableIdx][n].name === this.MoleculeColumn) {
+        if (this.molColumns[this.tableIdx][n].name === this.moleculeColumnName) {
           if (this.molColumnIdx === n)
             return;
 
@@ -1902,7 +1904,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       }
       this.clear();
       this.summary = this.getFilterSum();
-      //this.molColumn = this.dataFrame.columns.byName(this.MoleculeColumn);
+      //this.molColumn = this.dataFrame.columns.byName(this.moleculeColumnName);
     } else if (p.name === 'treeEncode') {
       if (this.treeEncodeUpdateInProgress)
         return;
@@ -1956,8 +1958,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       return;
     }
 
-    if (this.molColumnIdx >= 0 && this.MoleculeColumn == null)
-      this.MoleculeColumn = this.molColumns[this.tableIdx][this.molColumnIdx].name;
+    if (this.molColumnIdx >= 0 && this.moleculeColumnName == null)
+      this.moleculeColumnName = this.molColumns[this.tableIdx][this.molColumnIdx].name;
 
     const thisViewer = this;
     this.tree.onNodeContextMenu.subscribe((args: any) => {

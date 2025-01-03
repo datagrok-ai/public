@@ -98,7 +98,7 @@ export class ScaffoldTreeFilter extends DG.Filter {
     this.viewer.applyFilter = false;
     this.viewer.resizable = true;
     this.viewer.molCol = this.column;
-    this.viewer.MoleculeColumn = this.columnName!;
+    this.viewer.moleculeColumnName = this.columnName!;
     this.viewer.dataFrame = dataFrame;
     this.root.appendChild(this.viewer.root);
   }
