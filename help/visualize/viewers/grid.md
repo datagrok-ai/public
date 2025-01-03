@@ -195,6 +195,11 @@ There are multiple ways to resize a column:
 
 ![](img/grid-resize-multiple-columns.gif)
 
+
+### Column groups
+
+![](img/grid-column-groups.gif)
+
 ## Cells
 
 You can customize the display of cell data using [cell renderers](#cell-renderers). Grid cells can also contain values from [multiple columns](#summary-columns) or [linked tables](#data-from-linked-tables), and display embedded [images](#images).
