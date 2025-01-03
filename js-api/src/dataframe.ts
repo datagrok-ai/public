@@ -2618,6 +2618,10 @@ export class ColumnMetaHelper {
   get units(): string | null { return this.column.getTag(TAGS.UNITS); }
   set units(x: string | null) { this.setNonNullTag(TAGS.UNITS, x); }
 
+  /** Specifies the units of the dataframe column. */
+  get cellRenderer(): string | null { return this.column.getTag(TAGS.CELL_RENDERER); }
+  set cellRenderer(x: string | null) { this.setNonNullTag(TAGS.CELL_RENDERER, x); }
+
   /** When set, switches the cell editor to a combo box that only allows to choose specified values.
    * Applicable for string columns only.
    * See also {@link autoChoices}. */
