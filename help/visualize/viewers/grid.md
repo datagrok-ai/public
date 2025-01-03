@@ -187,6 +187,19 @@ and visualize the content.
 
 You can also [resize selected columns](#resizing-columns) by mouse-dragging column border in the header.
 
+### Hiding and unhiding columns
+
+There are many ways to hide a column:
+* [Resize](#resizing-columns) it, bringing its width to 0
+* Right-click, select "Order or hide columns...", and uncheck corresponding checkboxes
+* Select a number of columns and click "Hide" on the context panel
+
+You can tell whether there are hidden columns by looking at the column header separators -
+it gets bolder and darker if there are hidden columns. To unhide a column, double-click
+on the corresponding column separator, like shown on the picture below:
+
+![](img/grid-unhide-columns.gif)
+
 ### Resizing columns
 
 There are multiple ways to resize a column:
