@@ -195,8 +195,28 @@ There are multiple ways to resize a column:
 
 ![](img/grid-resize-multiple-columns.gif)
 
+### Resizing rows and columns
+
+When you resize row heights, columns widths automatically adjust in order to provide
+the best experience. This lets you "zoom out" to see the bigger picture, or the opposite -
+zoom in to see additional details in the cell (especially useful for dynamic cells that
+render differently depending on your zoom level, such as proteins, users, forms, or 
+JIRA tickets).
+
+![](img/grid-dynamic-column-widths.gif)
+
+You can do mouse-panning (with the right mouse button) just like in a Google map! It is 
+particularly useful if you are exploring a big and wide dataset in the zoomed-out mode.
+
+![](img/grid-mouse-pan-content.gif)
 
 ### Column groups
+
+Group columns together by selecting them and then choosing the "Group columns..." action 
+in the context panel. You can also specify group color. Once columns are grouped, group name will appear above 
+columns names. You can use it for selecting and moving all columns at once.
+
+You can quickly show or hide groups of columns from [filters](filters.md).
 
 ![](img/grid-column-groups.gif)
 
