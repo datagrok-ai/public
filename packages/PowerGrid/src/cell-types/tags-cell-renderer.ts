@@ -75,7 +75,7 @@ export class TagsCellRenderer extends DG.GridCellRenderer {
       const drawTag = () => {
         const color = getColor(tag);
         g.fillStyle = DG.Color.toHtml(color);
-        g.roundRect(x + cx, y + cy, width + 4, Math.min(h - 2 * dy, 16), 4);
+        g.roundRect(x + cx, y + cy, width + 4, Math.min(h - 2 * dy, 17), 4);
         g.fill();
 
         if (fits) {
@@ -88,7 +88,7 @@ export class TagsCellRenderer extends DG.GridCellRenderer {
         drawTag();
       else {
         cx = 2;
-        cy += 16;
+        cy += 19;
         drawTag();
       }
 
