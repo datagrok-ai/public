@@ -200,12 +200,9 @@ export const TreeWizard = Vue.defineComponent({
       await loadDefaultLayout();
     };
 
-    let intelligentLayout = true;
     const loadPersonalLayout = async () => {
       const personalState = await getSavedPersonalState(providerFunc.value);
       if (!dockRef.value || !personalState || !dockInited.value) return;
-
-      intelligentLayout = false;
 
       inspectorHidden.value = personalState.inspectorHidden;
       treeHidden.value = personalState.treeHidden;
@@ -213,15 +210,11 @@ export const TreeWizard = Vue.defineComponent({
       await Vue.nextTick();
 
       await dockRef.value.useLayout(personalState.layout);
-
-      intelligentLayout = true;
     };
 
     const loadDefaultLayout = async () => {
       const defaultState = await getSavedDefaultState(providerFunc.value);
       if (!dockRef.value || !defaultState || !dockInited.value) return;
-
-      intelligentLayout = false;
 
       inspectorHidden.value = defaultState.inspectorHidden;
       treeHidden.value = defaultState.treeHidden;
@@ -229,8 +222,6 @@ export const TreeWizard = Vue.defineComponent({
       await Vue.nextTick();
 
       await dockRef.value.useLayout(defaultState.layout);
-
-      intelligentLayout = true;
     };
 
     const providerFuncName = Vue.computed(() => props.providerFunc.substring(props.providerFunc.indexOf(':') + 1));
