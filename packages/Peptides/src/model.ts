@@ -51,11 +51,12 @@ import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimen
 import {AggregationColumns, MonomerPositionStats} from './utils/statistics';
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 import {getDbscanWorker} from '@datagrok-libraries/math';
-import {markovCluster} from '@datagrok-libraries/ml/src/MCL/clustering-view';
 import {DistanceAggregationMethods} from '@datagrok-libraries/ml/src/distance-matrix/types';
 import {ClusterMaxActivityViewer, IClusterMaxActivity} from './viewers/cluster-max-activity-viewer';
-import {MCL_OPTIONS_TAG, MCLSerializableOptions} from '@datagrok-libraries/ml/src/MCL';
+import {MCLSerializableOptions} from '@datagrok-libraries/ml/src/MCL';
 import {PeptideUtils} from './peptideUtils';
+import {getGPUAdapterDescription} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
+import {MCLViewer} from '@datagrok-libraries/ml/src/MCL/mcl-viewer';
 
 export enum VIEWER_TYPE {
   SEQUENCE_VARIABILITY_MAP = 'Sequence Variability Map',
@@ -63,6 +64,7 @@ export enum VIEWER_TYPE {
   LOGO_SUMMARY_TABLE = 'Logo Summary Table',
   DENDROGRAM = 'Dendrogram',
   CLUSTER_MAX_ACTIVITY = 'Active peptide selection',
+  MCL = 'MCL',
 }
 
 export type CachedWebLogoTooltip = { bar: string, tooltip: HTMLDivElement | null };
@@ -106,7 +108,7 @@ export class PeptidesModel {
   // sequence space viewer
   _sequenceSpaceViewer: DG.ScatterPlotViewer | null = null;
   //MCL viewer
-  _mclViewer: DG.ScatterPlotViewer | null = null;
+  _mclViewer: MCLViewer | null = null;
   /**
    * @param {DG.DataFrame}dataFrame - DataFrame to use for analysis
    */
@@ -143,7 +145,7 @@ export class PeptidesModel {
    */
   get analysisView(): DG.TableView {
     if (this._analysisView === undefined) {
-      this._analysisView = wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame?.getTag(DG.TAGS.ID) === this.id);
+      this._analysisView = this.id ? wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame?.getTag(DG.TAGS.ID) === this.id) : undefined;
       if (typeof this._analysisView === 'undefined')
         this._analysisView = grok.shell.addTableView(this.df);
     }
@@ -166,11 +168,13 @@ export class PeptidesModel {
    */
   get settings(): type.PeptidesSettings | null {
     const settingsStr = this.df.getTag(C.TAGS.SETTINGS);
-    if (settingsStr == null)
+    if (!settingsStr)
       return null;
 
 
     this._settings ??= JSON.parse(settingsStr);
+    if (this._settings?.mclSettings && !(this._settings.mclSettings.webGPUDescriptionPromise instanceof Promise))
+      this._settings.mclSettings.webGPUDescriptionPromise = getGPUAdapterDescription();
     return this._settings!;
   }
 
@@ -358,7 +362,14 @@ export class PeptidesModel {
       dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).name = C.COLUMNS_NAMES.ACTIVITY;
 
 
-    dataFrame.temp[PeptidesModel.modelName] ??= new PeptidesModel(dataFrame);
+    //dataFrame.temp[PeptidesModel.modelName] ??= new PeptidesModel(dataFrame);
+    if (!dataFrame.temp[PeptidesModel.modelName]) {
+      const model = dataFrame.temp[PeptidesModel.modelName] = new PeptidesModel(dataFrame);
+      const settings = model.settings;
+      // this is important bit. settings are written by startAnalysis function or other viewers, but separate viewers will not init the peptides model
+      if (settings)
+        model.init(settings);
+    }
     return dataFrame.temp[PeptidesModel.modelName] as PeptidesModel;
   }
 
@@ -690,20 +701,23 @@ export class PeptidesModel {
     const cols = this.df.columns;
     const splitSeqDf = splitAlignedSequences(this.df.getCol(this.settings!.sequenceColumnName), PeptideUtils.getSeqHelper());
     const positionColumns = splitSeqDf.columns.names();
-    for (const colName of positionColumns) {
-      let col = this.df.col(colName);
-      const newCol = splitSeqDf.getCol(colName);
-      if (col !== null)
-        cols.remove(colName);
-
-
-      const newColCat = newCol.categories;
-      const newColData = newCol.getRawData();
-      col = cols.addNew(newCol.name, newCol.type).init((i) => newColCat[newColData[i]]);
-      col.setTag(C.TAGS.ANALYSIS_COL, `${true}`);
-      col.setTag(C.TAGS.POSITION_COL, `${true}`);
-      CR.setMonomerRenderer(col, this.alphabet);
+    if (positionColumns.every((colName) => cols.contains(colName)))
+      positionColumns.forEach((colName) => CR.setMonomerRenderer(this.df.col(colName)!, this.alphabet));
+    else {
+      for (const colName of positionColumns) {
+        let col = this.df.col(colName);
+        const newCol = splitSeqDf.getCol(colName);
+        if (col !== null)
+          cols.remove(colName);
+        const newColCat = newCol.categories;
+        const newColData = newCol.getRawData();
+        col = cols.addNew(newCol.name, newCol.type).init((i) => newColCat[newColData[i]]);
+        col.setTag(C.TAGS.ANALYSIS_COL, `${true}`);
+        col.setTag(C.TAGS.POSITION_COL, `${true}`);
+        CR.setMonomerRenderer(col, this.alphabet);
+      }
     }
+
     this.df.name = name;
   }
 
@@ -1133,7 +1147,7 @@ export class PeptidesModel {
       activityColumnName: this.settings!.activityColumnName,
       clusterColumnName: potentialClusterCol ?? wu(this.df.columns.categorical).next().value?.name,
       activityTarget: C.ACTIVITY_TARGET.HIGH,
-      connectivityColumnName: this._mclCols.find((colName) => colName.toLowerCase().startsWith('connectivity')),
+      connectivityColumnName: this._mclCols.find((colName) => colName.toLowerCase().startsWith('connectivity')) ?? this.df.columns.names().find((colName) => colName.toLowerCase().includes('connectivity') && this.df.col(colName)?.isNumerical) ?? '',
       clusterSizeThreshold: 20,
       activityThreshold: 1000,
     };
@@ -1296,51 +1310,44 @@ export class PeptidesModel {
       }
     });
 
-    const bioPreprocessingFunc = DG.Func.find({package: 'Bio', name: 'macromoleculePreprocessingFunction'})[0];
-    const mclViewer = await markovCluster(
-      this.df, [seqCol], [mclParams!.distanceF], [1],
-      DistanceAggregationMethods.MANHATTAN, [bioPreprocessingFunc], [{
+    const serializedOptions: string = JSON.stringify({
+      cols: [seqCol].map((col) => col.name),
+      metrics: [mclParams!.distanceF],
+      weights: [1],
+      aggregationMethod: DistanceAggregationMethods.MANHATTAN,
+      preprocessingFuncs: ['macromoleculePreprocessingFunction'],
+      preprocessingFuncArgs: [{
         gapOpen: mclParams!.gapOpen, gapExtend: mclParams!.gapExtend,
         fingerprintType: mclParams!.fingerprintType,
       }],
-      mclParams!.threshold, mclParams!.maxIterations, mclParams.useWebGPU,
-      mclParams!.inflation, mclParams.minClusterSize,
-    );
-    mclAdditionSub.unsubscribe();
+      threshold: mclParams!.threshold,
+      maxIterations: mclParams!.maxIterations,
+      useWebGPU: mclParams.useWebGPU,
+      inflate: mclParams!.inflation,
+      minClusterSize: mclParams.minClusterSize,
+    } satisfies MCLSerializableOptions);
 
-    // find logo summery viewer and make it rerender
-    const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
-    if (lstViewer) { // beware, this is accessing private things
-      lstViewer._clusterStats = null;
-      lstViewer._clusterSelection = null;
-      lstViewer._viewerGrid = null;
-      lstViewer._logoSummaryTable = null;
-      lstViewer.render();
-    }
-
-    if (mclViewer?.sc) {
-      const serializedOptions: string = JSON.stringify({
-        cols: [seqCol].map((col) => col.name),
-        metrics: [mclParams!.distanceF],
-        weights: [1],
-        aggregationMethod: DistanceAggregationMethods.MANHATTAN,
-        preprocessingFuncs: [bioPreprocessingFunc].map((func) => func?.name ?? null),
-        preprocessingFuncArgs: [{
-          gapOpen: mclParams!.gapOpen, gapExtend: mclParams!.gapExtend,
-          fingerprintType: mclParams!.fingerprintType,
-        }],
-        threshold: mclParams!.threshold,
-        maxIterations: mclParams!.maxIterations,
-        useWebGPU: mclParams.useWebGPU,
-        inflate: mclParams!.inflation,
-        minClusterSize: mclParams.minClusterSize,
-      } satisfies MCLSerializableOptions);
-      this.df.setTag(MCL_OPTIONS_TAG, serializedOptions);
-
-
-      //@ts-ignore
-      mclViewer.sc.props['initializationFunction'] = 'EDA:MCLInitializationFunction';
-      this._mclViewer = mclViewer?.sc ?? null;
+    const tv = grok.shell.getTableView(this.df.name);
+    if (tv) {
+      const func = DG.Func.find({package: 'EDA', name: 'markovClusteringViewer'})[0];
+      if (!func)
+        throw new Error('Markov clustering function is not found');
+      // make sure eda is loaded
+      await func.apply();
+      tv.addViewer(VIEWER_TYPE.MCL, {mclProps: serializedOptions}) as MCLViewer;
+      //tv.addViewer(VIEWER_TYPE.MCL, {mclProps: serializedOptions});
+      // the addviewer method goes through dart, so it returns JSViewer instead of MCLViewer, so also need to wait a bit
+      await DG.delay(500);
+      this._mclViewer = this.findViewer(VIEWER_TYPE.MCL) as MCLViewer;
+      await this._mclViewer.initPromise;
+      const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
+      if (lstViewer) { // beware, this is accessing private things
+        lstViewer._clusterStats = null;
+        lstViewer._clusterSelection = null;
+        lstViewer._viewerGrid = null;
+        lstViewer._logoSummaryTable = null;
+        lstViewer.render();
+      }
     }
   }
 
