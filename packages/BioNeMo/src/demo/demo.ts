@@ -29,7 +29,7 @@ export async function _demoDiffDockModel(): Promise<void> {
     
   const posesColumn = table.columns.byName(posesColumnName);
   posesColumn.setTag(DG.TAGS.SEMTYPE, DG.SEMTYPE.MOLECULE3D);
-  posesColumn.setTag(DG.TAGS.CELL_RENDERER, 'xray');
+  posesColumn.setTag(DG.TAGS.CELL_RENDERER, DG.SEMTYPE.MOLECULE3D);
   posesColumn.setTag('docking.role', 'ligand');
     
   await grok.data.detectSemanticTypes(table);

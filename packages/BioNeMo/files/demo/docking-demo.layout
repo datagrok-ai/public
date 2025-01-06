@@ -54,7 +54,7 @@
                 {
                   "width": 100,
                   "columnName": "poses",
-                  "cellType": "xray",
+                  "cellType": "Molecule3D",
                   "contentCellStyle": {},
                   "headerCellStyle": {}
                 },
