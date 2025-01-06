@@ -68,6 +68,12 @@ RUN conda env create -f environment.yml && \
 
 RUN chmod -R 777 /opt/conda/envs/DockStream
 
+# AWS CLI installation and models download
+RUN conda install -n base -c conda-forge awscli -y && \
+    conda run -n base aws s3 cp s3://datagrok-data/models/reinvent /app --no-sign-request --recursive --region us-east-2 && \
+    conda remove -n base awscli -y && \
+    conda clean --all --yes
+
 WORKDIR /app
 
 RUN mkdir -p /app/autodock_vina && \
