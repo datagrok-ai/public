@@ -87,7 +87,7 @@ export const PipelineView = Vue.defineComponent({
               isHistory
               onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
               dock-spawn-dock-type='right'
-              dock-spawn-dock-ratio={0.35}
+              dock-spawn-dock-ratio={0.7}
               dock-spawn-title='History'
               dock-spawn-panel-icon='history'
               ref={historyRef}
@@ -97,7 +97,7 @@ export const PipelineView = Vue.defineComponent({
             class={'grok-gallery-grid'}
             dock-spawn-title='Steps to add'
             dock-spawn-dock-type='right'
-            dock-spawn-dock-ratio={0.35}
+            dock-spawn-dock-ratio={0.7}
             ref={functionsRef}
           >
             { state.value.stepTypes
